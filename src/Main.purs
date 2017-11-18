@@ -8,17 +8,42 @@ import Data.Tuple
 import Signal as S
 import Signal.Channel (CHANNEL, subscribe, send, channel)
 
--- | A `Patch` is a `Signal` with a corresponding list of HTML elements
--- | for the user interface components.
-data Patch a = Patch (Array (Node a)) (S.Signal a)
+data Type = Tuple String String
 
--- | A `Node` is a `Signal` with a corresponding list of HTML elements
--- | for the user interface components.
-data Node a = Node (Tuple (Array (Inlet a)) (Array (Outlet a))) (S.Signal a)
+type PatchModel a =
+    { id :: String
+    , title :: String
+    , nodes :: Array (Node a)
+    , links :: Array (Link a)
+    }
 
-data Inlet a = Inlet (S.Signal a)
+type NodeModel a =
+    { id :: String
+    , title :: String
+    , type :: Type
+    , inlets :: Array (Inlet a)
+    , outlets :: Array (Outlet a)
+    }
 
-data Outlet a = Outlet (S.Signal a)
+type InletModel a =
+    { id :: String
+    , label :: String
+    , type :: Type
+    }
+
+type OutletModel a =
+    { id :: String
+    , label :: String
+    , type :: Type
+    }
+
+data Patch a = Patch (PatchModel a) (S.Signal a)
+
+data Node a = Node (NodeModel a) (S.Signal a)
+
+data Inlet a = Inlet (InletModel a) (S.Signal a)
+
+data Outlet a = Outlet (OutletModel a) (S.Signal a)
 
 data Link a = Link (Tuple (Outlet a) (Inlet a))
 
