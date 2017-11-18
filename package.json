@@ -1,13 +1,13 @@
 {
-    "name": "purescript-webpack-example",
+    "name": "rpd-purs",
     "version": "0.1.0",
     "private": true,
-    "description": "Example using PureScript with webpack",
+    "description": "Reactive Patch Development with PureScript",
     "license": "MIT",
-    "repository": "ethul/purescript-webpack-example",
+    "repository": "shamansir/rpd-purs",
     "author": {
-      "name": "Eric Thul",
-      "email": "thul.eric@gmail.com"
+      "name": "Ulric Wilfred",
+      "email": "shaman.sir@gmail.com"
     },
     "files": [],
     "scripts": {
