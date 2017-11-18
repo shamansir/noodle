@@ -4,7 +4,6 @@ import Prelude
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 
-import Data.Tuple
 import Signal as S
 import Signal.Channel (CHANNEL, subscribe, send, channel)
 
@@ -59,4 +58,5 @@ hello = S.constant "Hello Joe!"
 helloEffect :: forall eff. S.Signal (Eff (console :: CONSOLE | eff) Unit)
 helloEffect = hello S.~> log
 
+main :: forall eff. Eff (console :: CONSOLE | eff) Unit
 main = S.runSignal helloEffect
