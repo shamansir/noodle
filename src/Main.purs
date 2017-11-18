@@ -8,17 +8,19 @@ import Data.Tuple
 import Signal as S
 import Signal.Channel (CHANNEL, subscribe, send, channel)
 
+data Id = String
+
 data Type = Tuple String String
 
 type PatchModel a =
-    { id :: String
+    { id :: Id
     , title :: String
     , nodes :: Array (Node a)
     , links :: Array (Link a)
     }
 
 type NodeModel a =
-    { id :: String
+    { id :: Id
     , title :: String
     , type :: Type
     , inlets :: Array (Inlet a)
@@ -26,13 +28,13 @@ type NodeModel a =
     }
 
 type InletModel a =
-    { id :: String
+    { id :: Id
     , label :: String
     , type :: Type
     }
 
 type OutletModel a =
-    { id :: String
+    { id :: Id
     , label :: String
     , type :: Type
     }
@@ -45,8 +47,16 @@ data Inlet a = Inlet (InletModel a) (S.Signal a)
 
 data Outlet a = Outlet (OutletModel a) (S.Signal a)
 
-data Link a = Link (Tuple (Outlet a) (Inlet a))
+data Link a = Link (Outlet a) (Inlet a)
 
-main :: forall e. Eff (console :: CONSOLE | e) Unit
-main = do
-  log "Hello sailor!"
+connect :: forall a. Outlet a -> Inlet a -> Link a
+connect outlet inlet =
+    Link outlet inlet
+
+hello :: S.Signal String
+hello = S.constant "Hello Joe!"
+
+helloEffect :: forall eff. S.Signal (Eff (console :: CONSOLE | eff) Unit)
+helloEffect = hello S.~> log
+
+main = S.runSignal helloEffect
