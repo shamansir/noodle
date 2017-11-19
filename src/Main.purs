@@ -1,11 +1,12 @@
 module Main where
 
 import Prelude
+
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-
 import Signal as S
-import Signal.Channel (CHANNEL, subscribe, send, channel)
+-- import Signal.Channel (CHANNEL, subscribe, send, channel)
+import Signal.Time as ST
 
 data Id = String
 
@@ -53,7 +54,7 @@ connect outlet inlet =
     Link outlet inlet
 
 hello :: S.Signal String
-hello = S.constant "Hello Joe!"
+hello = (ST.every 1000.0) S.~> show
 
 helloEffect :: forall eff. S.Signal (Eff (console :: CONSOLE | eff) Unit)
 helloEffect = hello S.~> log
