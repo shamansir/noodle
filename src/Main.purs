@@ -2,6 +2,8 @@ module Main where
 
 import Prelude
 
+import Data.Array ((:))
+
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Signal as S
@@ -52,6 +54,10 @@ data Link a = Link (Outlet a) (Inlet a)
 connect :: forall a. Outlet a -> Inlet a -> Link a
 connect outlet inlet =
     Link outlet inlet
+
+addInlet :: forall a. Inlet a -> Node a -> Node a
+addInlet inlet'@(Inlet inlet inletSignal) (Node node nodeSignal) =
+    Node (node { inlets = inlet' : node.inlets }) (S.merge nodeSignal inletSignal)
 
 hello :: S.Signal String
 hello = (ST.every 1000.0) S.~> show
