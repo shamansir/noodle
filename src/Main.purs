@@ -2,62 +2,76 @@ module Main where
 
 import Prelude
 
-import Data.Array ((:))
-
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
+import Data.Array ((:))
+-- import Data.Monoid (mempty)
 import Signal as S
--- import Signal.Channel (CHANNEL, subscribe, send, channel)
 import Signal.Time as ST
 
-data Id = String
+type Id = String
 
 data Type = Tuple String String
 
-type PatchModel a =
+type PatchModel a x =
     { id :: Id
     , title :: String
-    , nodes :: Array (Node a)
-    , links :: Array (Link a)
+    , nodes :: Array (Node a x)
+    , links :: Array (Link a x)
     }
 
-type NodeModel a =
+type NodeModel =
     { id :: Id
     , title :: String
     , type :: Type
-    , inlets :: Array (Inlet a)
-    , outlets :: Array (Outlet a)
+    , inlets :: Array InletModel
+    , outlets :: Array OutletModel
     }
 
-type InletModel a =
+type InletModel =
     { id :: Id
     , label :: String
     , type :: Type
     }
 
-type OutletModel a =
+type OutletModel =
     { id :: Id
     , label :: String
     , type :: Type
     }
 
-data Patch a = Patch (PatchModel a) (S.Signal a)
+data Flow a x = Bang | Data a | Error x
 
-data Node a = Node (NodeModel a) (S.Signal a)
+data Patch a x = Patch (PatchModel a x) (S.Signal (Flow a x))
 
-data Inlet a = Inlet (InletModel a) (S.Signal a)
+data Node a x = Node NodeModel (S.Signal (Flow a x))
 
-data Outlet a = Outlet (OutletModel a) (S.Signal a)
+data Inlet a x = Inlet InletModel (S.Signal (Flow a x))
 
-data Link a = Link (Outlet a) (Inlet a)
+data Outlet a x = Outlet OutletModel (S.Signal (Flow a x))
 
-connect :: forall a. Outlet a -> Inlet a -> Link a
+data Link a x = Link (Outlet a x) (Inlet a x)
+
+createNode :: forall a x. String -> Type -> Node a x
+createNode title nodeType =
+    Node
+        { id : "test"
+        , title : title
+        , type : nodeType
+        , inlets : []
+        , outlets : []
+        }
+        (S.constant Bang)
+
+connect :: forall a x. Outlet a x -> Inlet a x -> Link a x
 connect outlet inlet =
     Link outlet inlet
 
-addInlet :: forall a. Inlet a -> Node a -> Node a
-addInlet inlet'@(Inlet inlet inletSignal) (Node node nodeSignal) =
-    Node (node { inlets = inlet' : node.inlets }) (S.merge nodeSignal inletSignal)
+addInlet :: forall a x. Inlet a x -> Node a x -> Node a x
+-- addInlet inlet'@(Inlet inlet inletSignal) (Node node nodeSignal) =
+--  Node (node { inlets = inlet' : node.inlets }) (S.merge nodeSignal inletSignal)
+addInlet (Inlet inlet inletSignal) (Node node nodeSignal) =
+    Node (node { inlets = inlet : node.inlets }) (S.merge nodeSignal inletSignal)
 
 hello :: S.Signal String
 hello = (ST.every 1000.0) S.~> show
