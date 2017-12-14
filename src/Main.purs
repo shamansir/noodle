@@ -52,6 +52,16 @@ data Outlet a x = Outlet OutletModel (S.Signal (Flow a x))
 
 data Link a x = Link (Outlet a x) (Inlet a x)
 
+createPatch :: forall a x. String -> Patch a x
+createPatch title =
+    Patch
+        { id : "test"
+        , title : title
+        , nodes : []
+        , links : []
+        }
+        (S.constant Bang)
+
 createNode :: forall a x. String -> Type -> Node a x
 createNode title nodeType =
     Node
@@ -60,6 +70,24 @@ createNode title nodeType =
         , type : nodeType
         , inlets : []
         , outlets : []
+        }
+        (S.constant Bang)
+
+createInlet :: forall a x. String -> Type -> Inlet a x
+createInlet label inletType =
+    Inlet
+        { id : "test"
+        , label : label
+        , type : inletType
+        }
+        (S.constant Bang)
+
+createOutlet :: forall a x. String -> Type -> Outlet a x
+createOutlet label outletType =
+    Outlet
+        { id : "test"
+        , label : label
+        , type : outletType
         }
         (S.constant Bang)
 
@@ -72,6 +100,10 @@ addInlet :: forall a x. Inlet a x -> Node a x -> Node a x
 --  Node (node { inlets = inlet' : node.inlets }) (S.merge nodeSignal inletSignal)
 addInlet (Inlet inlet inletSignal) (Node node nodeSignal) =
     Node (node { inlets = inlet : node.inlets }) (S.merge nodeSignal inletSignal)
+
+addOutlet :: forall a x. Outlet a x -> Node a x -> Node a x
+addOutlet (Outlet outlet outletSignal) (Node node nodeSignal) =
+    Node (node { outlets = outlet : node.outlets }) (S.merge nodeSignal outletSignal)
 
 hello :: S.Signal String
 hello = (ST.every 1000.0) S.~> show
