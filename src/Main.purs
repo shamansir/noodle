@@ -108,6 +108,28 @@ addOutlet :: forall n c a x. Outlet c a x -> Node n c a x -> Node n c a x
 addOutlet (Outlet outlet outletSignal) (Node node nodeSignal) =
     Node (node { outlets = outlet : node.outlets }) (S.merge nodeSignal outletSignal)
 
+attach :: forall c a x. S.Signal a -> Inlet c a x -> Inlet c a x
+attach dataSignal (Inlet inlet inletSignal) =
+    let
+        mappedSignal = (\d -> Data d) S.<~ dataSignal
+    in
+        Inlet inlet (S.merge inletSignal mappedSignal)
+
+attachErrors :: forall c a x. S.Signal x -> Inlet c a x -> Inlet c a x
+attachErrors errorSignal (Inlet inlet inletSignal) =
+    let
+        mappedSignal = (\x -> Error x) S.<~ errorSignal
+    in
+        Inlet inlet (S.merge inletSignal mappedSignal)
+
+send :: forall c a x. a -> Inlet c a x -> Inlet c a x
+send v =
+    attach (S.constant v)
+
+sendError :: forall c a x. x -> Inlet c a x -> Inlet c a x
+sendError e =
+    attachErrors (S.constant e)
+
 hello :: S.Signal String
 hello = (ST.every 1000.0) S.~> show
 
