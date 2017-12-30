@@ -16,10 +16,17 @@ type Id = String
 -- `a` — data type
 -- `x` — error type
 
+-- type PatchModel n c a x =
+--     { id :: Id
+--     , title :: String
+--     , nodes :: Array (Node n c a x)
+--     , links :: Array (Link c a x)
+--     }
+
 type PatchModel n c a x =
     { id :: Id
     , title :: String
-    , nodes :: Array (Node n c a x)
+    , nodes :: Array (NodeModel n c)
     , links :: Array (Link c a x)
     }
 
@@ -98,6 +105,10 @@ connect :: forall c a x. Outlet c a x -> Inlet c a x -> Link c a x
 connect outlet inlet =
     Link outlet inlet
 
+addNode :: forall n c a x. Node n c a x -> Patch n c a x -> Patch n c a x
+addNode (Node node nodeSignal) (Patch patch patchSignal) =
+    Patch (patch { nodes = node : patch.nodes }) (S.merge patchSignal nodeSignal)
+
 addInlet :: forall n c a x. Inlet c a x -> Node n c a x -> Node n c a x
 -- addInlet inlet'@(Inlet inlet inletSignal) (Node node nodeSignal) =
 --  Node (node { inlets = inlet' : node.inlets }) (S.merge nodeSignal inletSignal)
@@ -136,5 +147,21 @@ hello = (ST.every 1000.0) S.~> show
 helloEffect :: forall eff. S.Signal (Eff (console :: CONSOLE | eff) Unit)
 helloEffect = hello S.~> log
 
+main_ :: forall eff. Eff (console :: CONSOLE | eff) Unit
+main_ = S.runSignal helloEffect
+
+data MyNodeType = NumNode | StrNode
+
+data MyInletType = NumInlet | StrInlet
+
 main :: forall eff. Eff (console :: CONSOLE | eff) Unit
-main = S.runSignal helloEffect
+main =
+    let
+        patch = createPatch "foo"
+        node = createNode "num" NumNode
+        inlet = createInlet "foo" StrInlet
+        nodeWithInlet = addInlet inlet node
+        (Patch _ sumSignal) = addNode nodeWithInlet patch
+    in
+        -- send "5" inlet
+        S.runSignal (sumSignal S.~> log)
