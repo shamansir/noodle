@@ -133,6 +133,14 @@ attachErrors errorSignal (Inlet inlet inletSignal) =
     in
         Inlet inlet (S.merge inletSignal mappedSignal)
 
+stringRenderer :: forall n c a x. Patch n c a x -> S.Signal String
+stringRenderer (Patch _ patchSignal) =
+    patchSignal S.~> (\item ->
+        case item of
+            Bang -> show "Bang"
+            Data d -> show d
+            Error x -> show ("Error: " <> (show x)))
+
 send :: forall c a x. a -> Inlet c a x -> Inlet c a x
 send v =
     attach (S.constant v)
@@ -164,4 +172,4 @@ main =
         (Patch _ sumSignal) = addNode nodeWithInlet patch
     in
         -- send "5" inlet
-        S.runSignal (sumSignal S.~> log)
+        S.runSignal ((stringRenderer patch) S.~> log)
