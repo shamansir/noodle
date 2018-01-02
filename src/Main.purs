@@ -4,7 +4,8 @@ import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Data.Array ((:))
+import Data.Array ((:), delete, find)
+import Data.Maybe
 -- import Data.Monoid (mempty)
 import Signal as S
 import Signal.Time as ST
@@ -23,23 +24,21 @@ type LinkId = Id
 -- `a` — data type
 -- `x` — error type
 
--- type PatchModel n c a x =
---     { id :: Id
---     , title :: String
---     , nodes :: Array (Node n c a x)
---     , links :: Array (Link c a x)
---     }
-
-data NetworkMsg n c a x
-    = AddPatch (Patch' n c a x)
-    | SelectPatch (Patch' n c a x)
-    | EnterPatch (Patch' n c a x)
-    | ExitPatch (Patch' n c a x)
-    | AddNode (Node' n c)
-    | AddInlet (Node' n c) (Inlet' c)
-    | AddOutlet (Node' n c) (Outlet' c)
-    | Connect (Inlet' c) (Outlet' c)
-    | Disconnect (Inlet' c) (Outlet' c)
+data NetworkMsg n c
+    = AddPatch PatchId String
+    | AddPatch' PatchId
+    | SelectPatch PatchId
+    | DeselectPatch
+    | EnterPatch PatchId
+    | ExitPatch PatchId
+    | AddNode PatchId n NodeId String
+    | AddNode' PatchId n NodeId
+    | AddInlet PatchId NodeId c InletId String
+    | AddInlet' PatchId NodeId c InletId
+    | AddOutlet PatchId NodeId c OutletId String
+    | AddOutlet' PatchId NodeId c OutletId
+    | Connect PatchId NodeId NodeId InletId OutletId
+    | Disconnect PatchId NodeId NodeId InletId OutletId
     -- Hide Inlet'
     -- Disable Link'
 
@@ -50,8 +49,9 @@ data FlowMsg c a x
 
 type Network' n c a x =
     { id :: NetworkId
-    , title :: String
     , patches :: Array (Patch' n c a x)
+    , selected :: Maybe PatchId
+    , entered :: Array PatchId
     }
 
 type Patch' n c a x =
@@ -87,7 +87,10 @@ type Link' c =
     , outlet :: Outlet' c
     }
 
-data Flow a x = Bang | Data a | Error x
+data Flow a x
+    = Bang
+    | Data a
+    | Error x
 
 data Network n c a x = Network (Network' n c a x) (S.Signal (Flow a x))
 
@@ -101,8 +104,33 @@ data Outlet c a x = Outlet (Outlet' c) (S.Signal (Flow a x))
 
 data Link c a x = Link (Outlet c a x) (Inlet c a x)
 
-update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
-update (AddPatch patch) network = addPatch "test" "test" network
+init :: forall n c a x. NetworkId -> Network n c a x
+init id =
+    Network
+        { id : id
+        , patches : []
+        , selected : Nothing
+        , entered : []
+        }
+        (S.constant Bang)
+
+update :: forall n c a x. NetworkMsg n c -> Network n c a x -> Network n c a x
+update (AddPatch id title) = addPatch id title
+update (AddPatch' id) = addPatch id id
+update (SelectPatch id) = selectPatch id
+update DeselectPatch = deselectPatch
+update (EnterPatch id) = enterPatch id
+update (ExitPatch id) = exitPatch id
+update (AddNode patchId type_ id title) = addNode patchId type_ id title
+update (AddNode' patchId type_ id) = addNode patchId type_ id id
+update (AddInlet patchId nodeId type_ id title) = addInlet patchId nodeId type_ id title
+update (AddInlet' patchId nodeId type_ id) = addInlet patchId nodeId type_ id id
+update (AddOutlet patchId nodeId type_ id title) = addOutlet patchId nodeId type_ id title
+update (AddOutlet' patchId nodeId type_ id) = addOutlet patchId nodeId type_ id id
+update (Connect patchId srcNodeId dstNodeId inletId outletId) =
+    connect patchId srcNodeId dstNodeId inletId outletId
+update (Disconnect patchId srcNodeId dstNodeId inletId outletId) =
+    disconnect patchId srcNodeId dstNodeId inletId outletId
 
 addPatch :: forall n c a x. PatchId -> String -> Network n c a x -> Network n c a x
 addPatch id title (Network network networkSignal) =
@@ -119,6 +147,98 @@ addPatch id title (Network network networkSignal) =
         Network
             network { patches = patch : network.patches }
             (S.merge networkSignal patchSignal)
+
+selectPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
+selectPatch id (Network network networkSignal) =
+    Network
+        network { selected = Just id }
+        networkSignal
+
+deselectPatch :: forall n c a x. Network n c a x -> Network n c a x
+deselectPatch (Network network networkSignal) =
+    Network
+        network { selected = Nothing }
+        networkSignal
+
+enterPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
+enterPatch id (Network network networkSignal) =
+    Network
+        network { entered = id : network.entered }
+        networkSignal
+
+exitPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
+exitPatch id (Network network networkSignal) =
+    Network
+        network { entered = delete id network.entered }
+        networkSignal
+
+addNode :: forall n c a x. PatchId -> n -> NodeId -> String -> Network n c a x -> Network n c a x
+addNode patchId type_ id title (Network network networkSignal) =
+    let
+        nodeSignal = (S.constant Bang)
+        node =
+            Node
+                { id : id
+                , title : title
+                , type : type_
+                , inlets : []
+                , outlets : []
+                }
+                nodeSignal
+        -- patch = find (\patch -> patch.id == patchId) network.patches
+        -- patch' =
+        --     Patch (patch { nodes = node : patch.nodes }) (S.merge patchSignal nodeSignal)
+    in
+        (Network network networkSignal) -- FIXME: implement
+
+addInlet
+    :: forall n c a x.
+    PatchId
+    -> NodeId
+    -> c
+    -> InletId
+    -> String
+    -> Network n c a x
+    -> Network n c a x
+addInlet patchId nodeId type_ id title (Network network networkSignal) =
+    (Network network networkSignal) -- FIXME: implement
+
+addOutlet
+    :: forall n c a x.
+    PatchId
+    -> NodeId
+    -> c
+    -> OutletId
+    -> String
+    -> Network n c a x
+    -> Network n c a x
+addOutlet patchId nodeId type_ id title (Network network networkSignal) =
+    (Network network networkSignal) -- FIXME: implement
+
+connect
+    :: forall n c a x.
+    PatchId
+    -> NodeId
+    -> NodeId
+    -> InletId
+    -> OutletId
+    -> Network n c a x
+    -> Network n c a x
+connect patchId scrNodeId dstNodeId inletId outletId (Network network networkSignal) =
+    (Network network networkSignal) -- FIXME: implement
+
+disconnect
+    :: forall n c a x.
+    PatchId
+    -> NodeId
+    -> NodeId
+    -> InletId
+    -> OutletId
+    -> Network n c a x
+    -> Network n c a x
+disconnect patchId scrNodeId dstNodeId inletId outletId (Network network networkSignal) =
+    (Network network networkSignal) -- FIXME: implement
+
 
 createPatch' :: forall n c a x. String -> Patch n c a x
 createPatch' title =
@@ -240,7 +360,6 @@ main =
         inlet = createInlet' "foo" StrInlet
         nodeWithInlet = addInlet' inlet node
         (Patch _ sumSignal) = addNode' nodeWithInlet patch
+        -- signalLog = S.runSignal ((stringRenderer patch) S.~> log)
     in
-        -- send "5" inlet
-        do
-            S.runSignal ((stringRenderer patch) S.~> log)
+        S.runSignal helloEffect
