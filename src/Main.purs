@@ -23,28 +23,28 @@ type Id = String
 --     , links :: Array (Link c a x)
 --     }
 
-type PatchModel n c a x =
+type Patch' n c a x =
     { id :: Id
     , title :: String
-    , nodes :: Array (NodeModel n c)
+    , nodes :: Array (Node' n c)
     , links :: Array (Link c a x)
     }
 
-type NodeModel n c =
+type Node' n c =
     { id :: Id
     , title :: String
     , type :: n
-    , inlets :: Array (InletModel c)
-    , outlets :: Array (OutletModel c)
+    , inlets :: Array (Inlet' c)
+    , outlets :: Array (Outlet' c)
     }
 
-type InletModel c =
+type Inlet' c =
     { id :: Id
     , label :: String
     , type :: c
     }
 
-type OutletModel c =
+type Outlet' c =
     { id :: Id
     , label :: String
     , type :: c
@@ -52,13 +52,13 @@ type OutletModel c =
 
 data Flow a x = Bang | Data a | Error x
 
-data Patch n c a x = Patch (PatchModel n c a x) (S.Signal (Flow a x))
+data Patch n c a x = Patch (Patch' n c a x) (S.Signal (Flow a x))
 
-data Node n c a x = Node (NodeModel n c) (S.Signal (Flow a x))
+data Node n c a x = Node (Node' n c) (S.Signal (Flow a x))
 
-data Inlet c a x = Inlet (InletModel c) (S.Signal (Flow a x))
+data Inlet c a x = Inlet (Inlet' c) (S.Signal (Flow a x))
 
-data Outlet c a x = Outlet (OutletModel c) (S.Signal (Flow a x))
+data Outlet c a x = Outlet (Outlet' c) (S.Signal (Flow a x))
 
 data Link c a x = Link (Outlet c a x) (Inlet c a x)
 
@@ -133,12 +133,24 @@ attachErrors errorSignal (Inlet inlet inletSignal) =
     in
         Inlet inlet (S.merge inletSignal mappedSignal)
 
-stringRenderer :: forall n c a x. Patch n c a x -> S.Signal String
+-- instance showPercentage :: Show Percentage where
+--   show (Percentage n) = show n <> "%"
+
+-- one :: forall a. (Semiring a) => a
+
+-- semiring1 :: forall a. Semiring a => a
+
+-- equal1 = one :: forall a. Semiring a => Eq a => a
+
+stringRenderer :: forall n c a x. Show a => Show x => Patch n c a x -> S.Signal String
 stringRenderer (Patch _ patchSignal) =
     patchSignal S.~> (\item ->
         case item of
             Bang -> show "Bang"
             Data d -> show d
+             -- make data items require a Show instance,
+             -- maybe even everywhere. Also create some type class which defines interfaces
+             -- for Node type and Channel type?
             Error x -> show ("Error: " <> (show x)))
 
 send :: forall c a x. a -> Inlet c a x -> Inlet c a x
@@ -172,4 +184,6 @@ main =
         (Patch _ sumSignal) = addNode nodeWithInlet patch
     in
         -- send "5" inlet
-        S.runSignal ((stringRenderer patch) S.~> log)
+        do
+            S.runSignal ((stringRenderer patch) S.~> log)
+            send "5" inlet
