@@ -11,6 +11,13 @@ import Signal.Time as ST
 
 type Id = String
 
+type NetworkId = Id
+type PatchId = Id
+type NodeId = Id
+type InletId = Id
+type OutletId = Id
+type LinkId = Id
+
 -- `n` — node type
 -- `c` — channel type
 -- `a` — data type
@@ -24,9 +31,10 @@ type Id = String
 --     }
 
 data NetworkMsg n c a x
-    = CreatePatch (Patch' n c a x)
+    = AddPatch (Patch' n c a x)
     | SelectPatch (Patch' n c a x)
-    | ClosePatch (Patch' n c a x)
+    | EnterPatch (Patch' n c a x)
+    | ExitPatch (Patch' n c a x)
     | AddNode (Node' n c)
     | AddInlet (Node' n c) (Inlet' c)
     | AddOutlet (Node' n c) (Outlet' c)
@@ -40,15 +48,21 @@ data FlowMsg c a x
     | Attach (Inlet' c) (S.Signal a) -- send streams to Outlets?
     | SendError (Inlet' c)
 
+type Network' n c a x =
+    { id :: NetworkId
+    , title :: String
+    , patches :: Array (Patch' n c a x)
+    }
+
 type Patch' n c a x =
-    { id :: Id
+    { id :: PatchId
     , title :: String
     , nodes :: Array (Node' n c)
     , links :: Array (Link c a x)
     }
 
 type Node' n c =
-    { id :: Id
+    { id :: NodeId
     , title :: String
     , type :: n
     , inlets :: Array (Inlet' c)
@@ -56,18 +70,26 @@ type Node' n c =
     }
 
 type Inlet' c =
-    { id :: Id
+    { id :: InletId
     , label :: String
     , type :: c
     }
 
 type Outlet' c =
-    { id :: Id
+    { id :: OutletId
     , label :: String
     , type :: c
     }
 
+type Link' c =
+    { id :: LinkId
+    , inlet :: Inlet' c
+    , outlet :: Outlet' c
+    }
+
 data Flow a x = Bang | Data a | Error x
+
+data Network n c a x = Network (Network' n c a x) (S.Signal (Flow a x))
 
 data Patch n c a x = Patch (Patch' n c a x) (S.Signal (Flow a x))
 
@@ -79,8 +101,27 @@ data Outlet c a x = Outlet (Outlet' c) (S.Signal (Flow a x))
 
 data Link c a x = Link (Outlet c a x) (Inlet c a x)
 
-createPatch :: forall n c a x. String -> Patch n c a x
-createPatch title =
+update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
+update (AddPatch patch) network = addPatch "test" "test" network
+
+addPatch :: forall n c a x. PatchId -> String -> Network n c a x -> Network n c a x
+addPatch id title (Network network networkSignal) =
+    let
+        (Patch patch patchSignal) =
+            Patch
+                { id : id
+                , title : title
+                , nodes : []
+                , links : []
+                }
+                (S.constant Bang)
+    in
+        Network
+            network { patches = patch : network.patches }
+            (S.merge networkSignal patchSignal)
+
+createPatch' :: forall n c a x. String -> Patch n c a x
+createPatch' title =
     Patch
         { id : "test"
         , title : title
@@ -89,8 +130,8 @@ createPatch title =
         }
         (S.constant Bang)
 
-createNode :: forall n c a x. String -> n -> Node n c a x
-createNode title nodeType =
+createNode' :: forall n c a x. String -> n -> Node n c a x
+createNode' title nodeType =
     Node
         { id : "test"
         , title : title
@@ -100,8 +141,8 @@ createNode title nodeType =
         }
         (S.constant Bang)
 
-createInlet :: forall c a x. String -> c -> Inlet c a x
-createInlet label inletType =
+createInlet' :: forall c a x. String -> c -> Inlet c a x
+createInlet' label inletType =
     Inlet
         { id : "test"
         , label : label
@@ -109,8 +150,8 @@ createInlet label inletType =
         }
         (S.constant Bang)
 
-createOutlet :: forall c a x. String -> c -> Outlet c a x
-createOutlet label outletType =
+createOutlet' :: forall c a x. String -> c -> Outlet c a x
+createOutlet' label outletType =
     Outlet
         { id : "test"
         , label : label
@@ -118,37 +159,45 @@ createOutlet label outletType =
         }
         (S.constant Bang)
 
-connect :: forall c a x. Outlet c a x -> Inlet c a x -> Link c a x
-connect outlet inlet =
+connect' :: forall c a x. Outlet c a x -> Inlet c a x -> Link c a x
+connect' outlet inlet =
     Link outlet inlet
 
-addNode :: forall n c a x. Node n c a x -> Patch n c a x -> Patch n c a x
-addNode (Node node nodeSignal) (Patch patch patchSignal) =
+addNode' :: forall n c a x. Node n c a x -> Patch n c a x -> Patch n c a x
+addNode' (Node node nodeSignal) (Patch patch patchSignal) =
     Patch (patch { nodes = node : patch.nodes }) (S.merge patchSignal nodeSignal)
 
-addInlet :: forall n c a x. Inlet c a x -> Node n c a x -> Node n c a x
+addInlet' :: forall n c a x. Inlet c a x -> Node n c a x -> Node n c a x
 -- addInlet inlet'@(Inlet inlet inletSignal) (Node node nodeSignal) =
 --  Node (node { inlets = inlet' : node.inlets }) (S.merge nodeSignal inletSignal)
-addInlet (Inlet inlet inletSignal) (Node node nodeSignal) =
+addInlet' (Inlet inlet inletSignal) (Node node nodeSignal) =
     Node (node { inlets = inlet : node.inlets }) (S.merge nodeSignal inletSignal)
 
-addOutlet :: forall n c a x. Outlet c a x -> Node n c a x -> Node n c a x
-addOutlet (Outlet outlet outletSignal) (Node node nodeSignal) =
+addOutlet' :: forall n c a x. Outlet c a x -> Node n c a x -> Node n c a x
+addOutlet' (Outlet outlet outletSignal) (Node node nodeSignal) =
     Node (node { outlets = outlet : node.outlets }) (S.merge nodeSignal outletSignal)
 
-attach :: forall c a x. S.Signal a -> Inlet c a x -> Inlet c a x
-attach dataSignal (Inlet inlet inletSignal) =
+attach' :: forall c a x. S.Signal a -> Inlet c a x -> Inlet c a x
+attach' dataSignal (Inlet inlet inletSignal) =
     let
         mappedSignal = (\d -> Data d) S.<~ dataSignal
     in
         Inlet inlet (S.merge inletSignal mappedSignal)
 
-attachErrors :: forall c a x. S.Signal x -> Inlet c a x -> Inlet c a x
-attachErrors errorSignal (Inlet inlet inletSignal) =
+attachErrors' :: forall c a x. S.Signal x -> Inlet c a x -> Inlet c a x
+attachErrors' errorSignal (Inlet inlet inletSignal) =
     let
         mappedSignal = (\x -> Error x) S.<~ errorSignal
     in
         Inlet inlet (S.merge inletSignal mappedSignal)
+
+send' :: forall c a x. a -> Inlet c a x -> Inlet c a x
+send' v =
+    attach' (S.constant v)
+
+sendError' :: forall c a x. x -> Inlet c a x -> Inlet c a x
+sendError' e =
+    attachErrors' (S.constant e)
 
 -- instance showPercentage :: Show Percentage where
 --   show (Percentage n) = show n <> "%"
@@ -170,14 +219,6 @@ stringRenderer (Patch _ patchSignal) =
              -- for Node type and Channel type?
             Error x -> show ("Error: " <> (show x)))
 
-send :: forall c a x. a -> Inlet c a x -> Inlet c a x
-send v =
-    attach (S.constant v)
-
-sendError :: forall c a x. x -> Inlet c a x -> Inlet c a x
-sendError e =
-    attachErrors (S.constant e)
-
 hello :: S.Signal String
 hello = (ST.every 1000.0) S.~> show
 
@@ -194,13 +235,12 @@ data MyInletType = NumInlet | StrInlet
 main :: forall eff. Eff (console :: CONSOLE | eff) Unit
 main =
     let
-        patch = createPatch "foo"
-        node = createNode "num" NumNode
-        inlet = createInlet "foo" StrInlet
-        nodeWithInlet = addInlet inlet node
-        (Patch _ sumSignal) = addNode nodeWithInlet patch
+        patch = createPatch' "foo"
+        node = createNode' "num" NumNode
+        inlet = createInlet' "foo" StrInlet
+        nodeWithInlet = addInlet' inlet node
+        (Patch _ sumSignal) = addNode' nodeWithInlet patch
     in
         -- send "5" inlet
         do
             S.runSignal ((stringRenderer patch) S.~> log)
-            send "5" inlet
