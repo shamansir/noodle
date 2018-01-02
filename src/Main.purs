@@ -23,6 +23,23 @@ type Id = String
 --     , links :: Array (Link c a x)
 --     }
 
+data NetworkMsg n c a x
+    = CreatePatch (Patch' n c a x)
+    | SelectPatch (Patch' n c a x)
+    | ClosePatch (Patch' n c a x)
+    | AddNode (Node' n c)
+    | AddInlet (Node' n c) (Inlet' c)
+    | AddOutlet (Node' n c) (Outlet' c)
+    | Connect (Inlet' c) (Outlet' c)
+    | Disconnect (Inlet' c) (Outlet' c)
+    -- Hide Inlet'
+    -- Disable Link'
+
+data FlowMsg c a x
+    = Send (Inlet' c) -- send data to Outlets?
+    | Attach (Inlet' c) (S.Signal a) -- send streams to Outlets?
+    | SendError (Inlet' c)
+
 type Patch' n c a x =
     { id :: Id
     , title :: String
