@@ -4,11 +4,40 @@ import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Data.Array ((:), delete, find)
-import Data.Maybe
+import Data.Map (Map, insert, delete, values)
+import Data.Array as Array
+import Data.Array ((:))
+import Data.Maybe (Maybe(..))
 -- import Data.Monoid (mempty)
 import Signal as S
 import Signal.Time as ST
+
+-- Signal helpers
+
+data Pool i a
+    = Pool
+        (Map i (S.Signal a))
+        (S.Signal a)
+
+plug :: forall i a. Ord i => i -> S.Signal a -> Pool i a -> Pool i a
+plug key signal (Pool map poolSignal) =
+    let
+        map' = insert key signal map
+        poolSignal' = S.merge poolSignal signal
+    in
+        (Pool map' signal)
+
+unplug :: forall i a. Ord i => i -> a -> Pool i a -> Pool i a
+unplug key fallback (Pool map poolSignal) =
+    let
+        map' = delete key map
+        poolSignal' = case S.mergeMany (values map') of
+            Just signal -> signal
+            Nothing -> S.constant fallback
+    in
+        (Pool map' poolSignal')
+
+-- RPD
 
 type Id = String
 
@@ -104,6 +133,8 @@ data Outlet c a x = Outlet (Outlet' c) (S.Signal (Flow a x))
 
 data Link c a x = Link (Outlet c a x) (Inlet c a x)
 
+-- main functions
+
 init :: forall n c a x. NetworkId -> Network n c a x
 init id =
     Network
@@ -131,6 +162,8 @@ update (Connect patchId srcNodeId dstNodeId inletId outletId) =
     connect patchId srcNodeId dstNodeId inletId outletId
 update (Disconnect patchId srcNodeId dstNodeId inletId outletId) =
     disconnect patchId srcNodeId dstNodeId inletId outletId
+
+-- helpers
 
 addPatch :: forall n c a x. PatchId -> String -> Network n c a x -> Network n c a x
 addPatch id title (Network network networkSignal) =
@@ -169,7 +202,7 @@ enterPatch id (Network network networkSignal) =
 exitPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
 exitPatch id (Network network networkSignal) =
     Network
-        network { entered = delete id network.entered }
+        network { entered = Array.delete id network.entered }
         networkSignal
 
 addNode :: forall n c a x. PatchId -> n -> NodeId -> String -> Network n c a x -> Network n c a x
@@ -192,8 +225,8 @@ addNode patchId type_ id title (Network network networkSignal) =
         (Network network networkSignal) -- FIXME: implement
 
 addInlet
-    :: forall n c a x.
-    PatchId
+    :: forall n c a x
+     . PatchId
     -> NodeId
     -> c
     -> InletId
@@ -204,8 +237,8 @@ addInlet patchId nodeId type_ id title (Network network networkSignal) =
     (Network network networkSignal) -- FIXME: implement
 
 addOutlet
-    :: forall n c a x.
-    PatchId
+    :: forall n c a x
+     . PatchId
     -> NodeId
     -> c
     -> OutletId
@@ -216,8 +249,8 @@ addOutlet patchId nodeId type_ id title (Network network networkSignal) =
     (Network network networkSignal) -- FIXME: implement
 
 connect
-    :: forall n c a x.
-    PatchId
+    :: forall n c a x
+     . PatchId
     -> NodeId
     -> NodeId
     -> InletId
@@ -228,8 +261,8 @@ connect patchId scrNodeId dstNodeId inletId outletId (Network network networkSig
     (Network network networkSignal) -- FIXME: implement
 
 disconnect
-    :: forall n c a x.
-    PatchId
+    :: forall n c a x
+     . PatchId
     -> NodeId
     -> NodeId
     -> InletId
@@ -239,6 +272,7 @@ disconnect
 disconnect patchId scrNodeId dstNodeId inletId outletId (Network network networkSignal) =
     (Network network networkSignal) -- FIXME: implement
 
+-- helpers 2
 
 createPatch' :: forall n c a x. String -> Patch n c a x
 createPatch' title =
@@ -322,11 +356,7 @@ sendError' e =
 -- instance showPercentage :: Show Percentage where
 --   show (Percentage n) = show n <> "%"
 
--- one :: forall a. (Semiring a) => a
-
--- semiring1 :: forall a. Semiring a => a
-
--- equal1 = one :: forall a. Semiring a => Eq a => a
+-- rendering
 
 stringRenderer :: forall n c a x. Show a => Show x => Patch n c a x -> S.Signal String
 stringRenderer (Patch _ patchSignal) =
@@ -339,6 +369,8 @@ stringRenderer (Patch _ patchSignal) =
              -- for Node type and Channel type?
             Error x -> show ("Error: " <> (show x)))
 
+-- test stuff
+
 hello :: S.Signal String
 hello = (ST.every 1000.0) S.~> show
 
@@ -347,6 +379,8 @@ helloEffect = hello S.~> log
 
 main_ :: forall eff. Eff (console :: CONSOLE | eff) Unit
 main_ = S.runSignal helloEffect
+
+-- main function with a custom patch
 
 data MyNodeType = NumNode | StrNode
 
