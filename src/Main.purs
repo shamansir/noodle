@@ -4,6 +4,7 @@ import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
+import Data.Map as Map
 import Data.Map (Map, insert, delete, values)
 import Data.Array as Array
 import Data.Array ((:))
@@ -19,13 +20,17 @@ data Pool i a
         (Map i (S.Signal a))
         (S.Signal a)
 
+emptyPool :: forall i a. Ord i => a -> Pool i a
+emptyPool fallback =
+    (Pool Map.empty (S.constant fallback))
+
 plug :: forall i a. Ord i => i -> S.Signal a -> Pool i a -> Pool i a
 plug key signal (Pool map poolSignal) =
     let
         map' = insert key signal map
         poolSignal' = S.merge poolSignal signal
     in
-        (Pool map' signal)
+        (Pool map' poolSignal')
 
 unplug :: forall i a. Ord i => i -> a -> Pool i a -> Pool i a
 unplug key fallback (Pool map poolSignal) =
@@ -121,11 +126,11 @@ data Flow a x
     | Data a
     | Error x
 
-data Network n c a x = Network (Network' n c a x) (S.Signal (Flow a x))
+data Network n c a x = Network (Network' n c a x) (Pool PatchId (Flow a x))
 
-data Patch n c a x = Patch (Patch' n c a x) (S.Signal (Flow a x))
+data Patch n c a x = Patch (Patch' n c a x) (Pool NodeId (Flow a x))
 
-data Node n c a x = Node (Node' n c) (S.Signal (Flow a x))
+data Node n c a x = Node (Node' n c) (Pool InletId (Flow a x))
 
 data Inlet c a x = Inlet (Inlet' c) (S.Signal (Flow a x))
 
@@ -143,7 +148,7 @@ init id =
         , selected : Nothing
         , entered : []
         }
-        (S.constant Bang)
+        (emptyPool Bang)
 
 update :: forall n c a x. NetworkMsg n c -> Network n c a x -> Network n c a x
 update (AddPatch id title) = addPatch id title
@@ -166,20 +171,22 @@ update (Disconnect patchId srcNodeId dstNodeId inletId outletId) =
 -- helpers
 
 addPatch :: forall n c a x. PatchId -> String -> Network n c a x -> Network n c a x
-addPatch id title (Network network networkSignal) =
+addPatch id title (Network network networkPool) =
     let
-        (Patch patch patchSignal) =
+        (Patch patch patchPool) =
             Patch
                 { id : id
                 , title : title
                 , nodes : []
                 , links : []
                 }
-                (S.constant Bang)
+                (emptyPool Bang)
+        (Pool _ patchSignal) = patchPool
+        networkPool' = plug id patchSignal networkPool
     in
         Network
             network { patches = patch : network.patches }
-            (S.merge networkSignal patchSignal)
+            networkPool'
 
 selectPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
 selectPatch id (Network network networkSignal) =
@@ -217,7 +224,7 @@ addNode patchId type_ id title (Network network networkSignal) =
                 , inlets : []
                 , outlets : []
                 }
-                nodeSignal
+                (emptyPool Bang)
         -- patch = find (\patch -> patch.id == patchId) network.patches
         -- patch' =
         --     Patch (patch { nodes = node : patch.nodes }) (S.merge patchSignal nodeSignal)
@@ -282,7 +289,7 @@ createPatch' title =
         , nodes : []
         , links : []
         }
-        (S.constant Bang)
+        (emptyPool Bang)
 
 createNode' :: forall n c a x. String -> n -> Node n c a x
 createNode' title nodeType =
@@ -293,7 +300,7 @@ createNode' title nodeType =
         , inlets : []
         , outlets : []
         }
-        (S.constant Bang)
+        (emptyPool Bang)
 
 createInlet' :: forall c a x. String -> c -> Inlet c a x
 createInlet' label inletType =
@@ -318,18 +325,18 @@ connect' outlet inlet =
     Link outlet inlet
 
 addNode' :: forall n c a x. Node n c a x -> Patch n c a x -> Patch n c a x
-addNode' (Node node nodeSignal) (Patch patch patchSignal) =
-    Patch (patch { nodes = node : patch.nodes }) (S.merge patchSignal nodeSignal)
+addNode' (Node node (Pool _ nodeSignal)) (Patch patch patchPool) =
+    Patch (patch { nodes = node : patch.nodes }) (plug node.id nodeSignal patchPool)
 
 addInlet' :: forall n c a x. Inlet c a x -> Node n c a x -> Node n c a x
 -- addInlet inlet'@(Inlet inlet inletSignal) (Node node nodeSignal) =
 --  Node (node { inlets = inlet' : node.inlets }) (S.merge nodeSignal inletSignal)
-addInlet' (Inlet inlet inletSignal) (Node node nodeSignal) =
-    Node (node { inlets = inlet : node.inlets }) (S.merge nodeSignal inletSignal)
+addInlet' (Inlet inlet inletSignal) (Node node nodePool) =
+    Node (node { inlets = inlet : node.inlets }) (plug inlet.id inletSignal nodePool)
 
 addOutlet' :: forall n c a x. Outlet c a x -> Node n c a x -> Node n c a x
-addOutlet' (Outlet outlet outletSignal) (Node node nodeSignal) =
-    Node (node { outlets = outlet : node.outlets }) (S.merge nodeSignal outletSignal)
+addOutlet' (Outlet outlet outletSignal) (Node node nodePool) =
+    Node (node { outlets = outlet : node.outlets }) (plug outlet.id outletSignal nodePool)
 
 attach' :: forall c a x. S.Signal a -> Inlet c a x -> Inlet c a x
 attach' dataSignal (Inlet inlet inletSignal) =
@@ -359,7 +366,7 @@ sendError' e =
 -- rendering
 
 stringRenderer :: forall n c a x. Show a => Show x => Patch n c a x -> S.Signal String
-stringRenderer (Patch _ patchSignal) =
+stringRenderer (Patch _ (Pool _ patchSignal)) =
     patchSignal S.~> (\item ->
         case item of
             Bang -> show "Bang"
