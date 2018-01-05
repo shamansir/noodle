@@ -4,12 +4,11 @@ import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Data.Map as Map
-import Data.Map (Map, insert, delete, values)
-import Data.Array as Array
 import Data.Array ((:))
+import Data.Array as Array
+import Data.Map (Map, insert, delete, values)
+import Data.Map as Map
 import Data.Maybe (Maybe(..))
--- import Data.Monoid (mempty)
 import Signal as S
 import Signal.Time as ST
 
@@ -20,7 +19,14 @@ data Pool i a
         (Map i (S.Signal a))
         (S.Signal a)
 
-emptyPool :: forall i a. Ord i => a -> Pool i a
+-- getPoolSignal :: forall i a. Pool i a -> S.Signal a
+-- getPoolSignal (Pool _ signal) = signal
+
+getSignal :: forall i a. Ord i => i -> Pool i a -> Maybe (S.Signal a)
+getSignal id (Pool map _) =
+    Map.lookup id map
+
+emptyPool :: forall i a. a -> Pool i a
 emptyPool fallback =
     (Pool Map.empty (S.constant fallback))
 
@@ -49,8 +55,9 @@ type Id = String
 type NetworkId = Id
 type PatchId = Id
 type NodeId = Id
-type InletId = Id
-type OutletId = Id
+type ChannelId = Id
+type InletId = ChannelId
+type OutletId = ChannelId
 type LinkId = Id
 
 -- `n` — node type
@@ -213,9 +220,9 @@ exitPatch id (Network network networkSignal) =
         networkSignal
 
 addNode :: forall n c a x. PatchId -> n -> NodeId -> String -> Network n c a x -> Network n c a x
-addNode patchId type_ id title (Network network networkSignal) =
+addNode patchId type_ id title (Network network networkPool) =
     let
-        nodeSignal = (S.constant Bang)
+        nodePool = (emptyPool Bang)
         node =
             Node
                 { id : id
@@ -224,12 +231,15 @@ addNode patchId type_ id title (Network network networkSignal) =
                 , inlets : []
                 , outlets : []
                 }
-                (emptyPool Bang)
+                nodePool
+        (Pool _ nodeSignal) = nodePool
+        patchSignal = getSignal patchId networkPool
+        -- FIXME: we need to get patch with its pool anyway
         -- patch = find (\patch -> patch.id == patchId) network.patches
         -- patch' =
         --     Patch (patch { nodes = node : patch.nodes }) (S.merge patchSignal nodeSignal)
     in
-        (Network network networkSignal) -- FIXME: implement
+        (Network network networkPool) -- FIXME: implement
 
 addInlet
     :: forall n c a x
@@ -240,8 +250,8 @@ addInlet
     -> String
     -> Network n c a x
     -> Network n c a x
-addInlet patchId nodeId type_ id title (Network network networkSignal) =
-    (Network network networkSignal) -- FIXME: implement
+addInlet patchId nodeId type_ id title (Network network networkPool) =
+    (Network network networkPool) -- FIXME: implement
 
 addOutlet
     :: forall n c a x
@@ -252,8 +262,8 @@ addOutlet
     -> String
     -> Network n c a x
     -> Network n c a x
-addOutlet patchId nodeId type_ id title (Network network networkSignal) =
-    (Network network networkSignal) -- FIXME: implement
+addOutlet patchId nodeId type_ id title (Network network networkPool) =
+    (Network network networkPool) -- FIXME: implement
 
 connect
     :: forall n c a x
@@ -264,8 +274,8 @@ connect
     -> OutletId
     -> Network n c a x
     -> Network n c a x
-connect patchId scrNodeId dstNodeId inletId outletId (Network network networkSignal) =
-    (Network network networkSignal) -- FIXME: implement
+connect patchId scrNodeId dstNodeId inletId outletId (Network network networkPool) =
+    (Network network networkPool) -- FIXME: implement
 
 disconnect
     :: forall n c a x
@@ -276,8 +286,8 @@ disconnect
     -> OutletId
     -> Network n c a x
     -> Network n c a x
-disconnect patchId scrNodeId dstNodeId inletId outletId (Network network networkSignal) =
-    (Network network networkSignal) -- FIXME: implement
+disconnect patchId scrNodeId dstNodeId inletId outletId (Network network networkPool) =
+    (Network network networkPool) -- FIXME: implement
 
 -- helpers 2
 
