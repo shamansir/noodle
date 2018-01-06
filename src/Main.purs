@@ -74,6 +74,7 @@ type LinkId = Id
 data NetworkMsg n c
     = AddPatch PatchId String
     | AddPatch' PatchId
+    | RemovePatch PatchId
     | SelectPatch PatchId
     | DeselectPatch
     | EnterPatch PatchId
@@ -168,6 +169,7 @@ init id =
 update :: forall n c a x. NetworkMsg n c -> Network n c a x -> Network n c a x
 update (AddPatch id title) = addPatch id title
 update (AddPatch' id) = addPatch id id
+update (RemovePatch id) = removePatch id
 update (SelectPatch id) = selectPatch id
 update DeselectPatch = deselectPatch
 update (EnterPatch id) = enterPatch id
@@ -186,7 +188,7 @@ update (Disconnect patchId srcNodeId dstNodeId inletId outletId) =
 -- helpers
 
 addPatch :: forall n c a x. PatchId -> String -> Network n c a x -> Network n c a x
-addPatch id title (Network network networkSignal) =
+addPatch id title network@(Network network' networkSignal) =
     let
         patchSignal = S.constant Bang
         patch =
@@ -197,35 +199,51 @@ addPatch id title (Network network networkSignal) =
                 , links : Map.empty
                 }
                 patchSignal
-        patches' = network.patches |> insert id patch
-        networkSignal' = S.merge networkSignal patchSignal
+    in
+        network |> addPatch' patch
+
+addPatch' :: forall n c a x. Patch n c a x -> Network n c a x -> Network n c a x
+addPatch' patch@(Patch patch' patchSignal) (Network network' networkSignal) =
+    Network
+        network' { patches = network'.patches |> insert patch'.id patch }
+        (S.merge networkSignal patchSignal)
+
+removePatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
+removePatch patchId (Network network' networkSignal) =
+    let
+        patches' = network'.patches |> delete patchId
+        extractSignal = (\(Patch _ patchSignal) -> patchSignal)
+        newPatchSignals =
+            case S.mergeMany (map extractSignal patches') of
+                Just sumSignal -> sumSignal
+                Nothing -> S.constant Bang
     in
         Network
-            network { patches = patches' }
-            networkSignal'
+            network' { patches = patches' }
+            newPatchSignals
 
 selectPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
-selectPatch id (Network network networkSignal) =
+selectPatch id (Network network' networkSignal) =
     Network
-        network { selected = Just id }
+        network' { selected = Just id }
         networkSignal
 
 deselectPatch :: forall n c a x. Network n c a x -> Network n c a x
-deselectPatch (Network network networkSignal) =
+deselectPatch (Network network' networkSignal) =
     Network
-        network { selected = Nothing }
+        network' { selected = Nothing }
         networkSignal
 
 enterPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
-enterPatch id (Network network networkSignal) =
+enterPatch id (Network network' networkSignal) =
     Network
-        network { entered = id : network.entered }
+        network' { entered = id : network'.entered }
         networkSignal
 
 exitPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
-exitPatch id (Network network networkSignal) =
+exitPatch id (Network network' networkSignal) =
     Network
-        network { entered = Array.delete id network.entered }
+        network' { entered = Array.delete id network'.entered }
         networkSignal
 
 addNode :: forall n c a x. PatchId -> n -> NodeId -> String -> Network n c a x -> Network n c a x
@@ -244,13 +262,16 @@ addNode patchId type_ id title network@(Network network' networkSignal) =
                         }
                         nodeSignal
                 (Patch patch' patchSignal) = patch
-
-                -- FIXME: we need to get patch with its pool anyway
-                -- patch = find (\patch -> patch.id == patchId) network.patches
-                -- patch' =
-                --     Patch (patch { nodes = node : patch.nodes }) (S.merge patchSignal nodeSignal)
+                patchWithNewNode =
+                    Patch
+                       (patch' { nodes = patch'.nodes |> insert id node })
+                       (S.merge patchSignal nodeSignal)
+                networkWithNoPatch =
+                    network |> removePatch patchId
+                networkWithNewPatch =
+                    network |> addPatch' patchWithNewNode
             in
-                (Network network' networkSignal) -- FIXME: implement
+                networkWithNewPatch
         Nothing -> network -- return network unchanged in case of error. FIXME: return an error
 
 addInlet
