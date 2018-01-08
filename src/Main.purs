@@ -27,12 +27,12 @@ data MyInletType = NumInlet | StrInlet
 
 main :: forall eff. Eff (console :: CONSOLE | eff) Unit
 main =
-    let
-        patch = createPatch' "foo"
-        node = createNode' "num" NumNode
-        inlet = createInlet' "foo" StrInlet
-        nodeWithInlet = addInlet' inlet node
-        (Patch _ sumSignal) = addNode' nodeWithInlet patch
+    -- let
+        -- patch = createPatch' "foo"
+        -- node = createNode' "num" NumNode
+        -- inlet = createInlet' "foo" StrInlet
+        -- nodeWithInlet = addInlet' inlet node
+        -- (Patch _ sumSignal) = addNode' nodeWithInlet patch
         -- signalLog = S.runSignal ((stringRenderer patch) S.~> log)
-    in
+    -- in
         S.runSignal helloEffect

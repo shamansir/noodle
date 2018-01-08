@@ -1,16 +1,9 @@
 module Tmp where
 
-import Prelude
-
-import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log)
-import Data.Array ((:))
-import Data.Array as Array
-import Data.Map (Map, insert, delete, values)
+import Data.Map (Map, insert)
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
 import Signal as S
-import Signal.Time as ST
 import Data.Function (apply, applyFlipped)
 
 -- RPD
@@ -113,6 +106,11 @@ data Outlet c a x = Outlet (Outlet' c) (FSignal a x)
 
 data Link c a x = Link (Outlet c a x) (Inlet c a x)
 
+-- Elm-style operators
+
+infixr 0 apply as <|
+infixl 1 applyFlipped as |>
+
 createPatch' :: forall n c a x. String -> Patch n c a x
 createPatch' title =
     Patch
@@ -203,13 +201,3 @@ sendError' e =
 
 -- rendering
 
-stringRenderer :: forall n c a x. Show a => Show x => Patch n c a x -> S.Signal String
-stringRenderer (Patch _ patchSignal) =
-    patchSignal S.~> (\item ->
-        case item of
-            Bang -> show "Bang"
-            Data d -> show d
-             -- make data items require a Show instance,
-             -- maybe even everywhere. Also create some type class which defines interfaces
-             -- for Node type and Channel type?
-            Error x -> show ("Error: " <> (show x)))

@@ -216,9 +216,9 @@ exitPatch id (Network network' networkSignal) =
 addNode :: forall n c a x. PatchId -> n -> NodeId -> String -> Network n c a x -> Network n c a x
 addNode patchId type_ id title network@(Network network' networkSignal) =
     case network'.patches |> Map.lookup patchId of
-        Just patch ->
+        Just (Patch patch' patchSignal) ->
             let
-                nodeSignal = (S.constant Bang)
+                nodeSignal = S.constant Bang
                 node =
                     Node
                         { id : id
@@ -228,7 +228,6 @@ addNode patchId type_ id title network@(Network network' networkSignal) =
                         , outlets : Map.empty
                         }
                         nodeSignal
-                (Patch patch' patchSignal) = patch
                 patchWithNewNode =
                     Patch
                        (patch' { nodes = patch'.nodes |> insert id node })
@@ -239,7 +238,13 @@ addNode patchId type_ id title network@(Network network' networkSignal) =
                     network |> addPatch' patchWithNewNode
             in
                 networkWithNewPatch
-        Nothing -> network -- return network unchanged in case of error. FIXME: return an error
+        Nothing -> network -- return network unchanged in case of error. FIXME: return maybe
+
+
+removeNode :: forall n c a x. PatchId -> NodeId -> Network n c a x -> Network n c a x
+removeNode patchId nodeId network@(Network network' networkSignal) =
+    network -- TODO: implement
+
 
 addInlet
     :: forall n c a x
@@ -250,8 +255,50 @@ addInlet
     -> String
     -> Network n c a x
     -> Network n c a x
-addInlet patchId nodeId type_ id title (Network network networkPool) =
-    (Network network networkPool) -- FIXME: implement
+addInlet patchId nodeId type_ id label network@(Network network' networkPool) =
+    case network'.patches |> Map.lookup patchId of
+        Just (Patch patch' patchSignal) ->
+            case patch'.nodes |> Map.lookup nodeId of
+                Just (Node node' nodeSignal) ->
+                    let
+                        inletSignal = S.constant Bang
+                        inlet =
+                            Inlet
+                                { id : id
+                                , label : label
+                                , type : type_
+                                }
+                                inletSignal
+                        nodeWithNewInlet =
+                            Node
+                                (node' { inlets = node'.inlets |> insert id inlet })
+                                (S.merge nodeSignal inletSignal)
+                        extractSignal = (\(Node _ nodeSignal) -> nodeSignal)
+                        nodes' = patch'.nodes |> delete nodeId
+                        newNodeSignals =
+                            -- FIXME: rewrite with map?
+                            case S.mergeMany (map extractSignal nodes') of
+                                Just sumSignal -> sumSignal
+                                Nothing -> S.constant Bang
+                        patchWithNoNode =
+                            Patch
+                                (patch' { nodes = nodes' })
+                                newNodeSignals
+                        patchWithNewNode =
+                            case patchWithNoNode of
+                                Patch patch' patchSignal ->
+                                    Patch
+                                        patch' { nodes =
+                                            patch'.nodes |> insert nodeId nodeWithNewInlet }
+                                        patchSignal
+                        networkWithNoPatch =
+                            network |> removePatch patchId
+                        networkWithNewPatch =
+                            network |> addPatch' patchWithNewNode
+                    in
+                        networkWithNewPatch
+                Nothing -> network -- return network unchanged in case of error. FIXME: return maybe
+        Nothing -> network -- return network unchanged in case of error. FIXME: return maybe
 
 addOutlet
     :: forall n c a x
