@@ -45,21 +45,34 @@ data NetworkMsg n c
     | DeselectPatch
     | EnterPatch PatchId
     | ExitPatch PatchId
-    | AddNode PatchId n NodeId String
-    | AddNode' PatchId n NodeId
-    | AddInlet PatchId NodeId c InletId String
-    | AddInlet' PatchId NodeId c InletId
-    | AddOutlet PatchId NodeId c OutletId String
-    | AddOutlet' PatchId NodeId c OutletId
-    | Connect PatchId NodeId NodeId InletId OutletId
-    | Disconnect PatchId NodeId NodeId InletId OutletId
-    -- Hide Inlet'
-    -- Disable Link'
+    | ChangePatch PatchId (PatchMsg n c)
+
+
+data PatchMsg n c
+    = AddNode n NodeId String
+    | AddNode' n NodeId
+    | RemoveNode NodeId
+    | Connect NodeId NodeId InletId OutletId
+    | Disconnect NodeId NodeId InletId OutletId
+    -- Disable Link
+    | ChangeNode NodeId (NodeMsg c)
+
+
+data NodeMsg c
+    = AddInlet c InletId String
+    | AddInlet' c InletId
+    | AddOutlet c OutletId String
+    | AddOutlet' c OutletId
+    | RemoveInlet InletId
+    | RemoveOutlet OutletId
+    -- Hide InletId
+
 
 data FlowMsg c a x
     = Send (Inlet' c) a -- send data to Outlets?
     | Attach (Inlet' c) (S.Signal a) -- send streams to Outlets?
     | SendError (Inlet' c) x
+
 
 type Network' n c a x =
     { id :: NetworkId
@@ -132,6 +145,7 @@ init id =
         }
         (S.constant Bang)
 
+
 update :: forall n c a x. NetworkMsg n c -> Network n c a x -> Network n c a x
 update (AddPatch id title) = addPatch id title
 update (AddPatch' id) = addPatch id id
@@ -140,16 +154,31 @@ update (SelectPatch id) = selectPatch id
 update DeselectPatch = deselectPatch
 update (EnterPatch id) = enterPatch id
 update (ExitPatch id) = exitPatch id
-update (AddNode patchId type_ id title) = addNode patchId type_ id title
-update (AddNode' patchId type_ id) = addNode patchId type_ id id
-update (AddInlet patchId nodeId type_ id title) = addInlet patchId nodeId type_ id title
-update (AddInlet' patchId nodeId type_ id) = addInlet patchId nodeId type_ id id
-update (AddOutlet patchId nodeId type_ id title) = addOutlet patchId nodeId type_ id title
-update (AddOutlet' patchId nodeId type_ id) = addOutlet patchId nodeId type_ id id
-update (Connect patchId srcNodeId dstNodeId inletId outletId) =
-    connect patchId srcNodeId dstNodeId inletId outletId
-update (Disconnect patchId srcNodeId dstNodeId inletId outletId) =
-    disconnect patchId srcNodeId dstNodeId inletId outletId
+update (ChangePatch patchId patchMsg) network = network -- TODO
+
+
+updatePatch :: forall n c a x. PatchMsg n c -> Patch n c a x -> Patch n c a x
+updatePatch (AddNode type_ id title) = addNode type_ id title
+updatePatch (AddNode' type_ id) = addNode type_ id id
+updatePatch (RemoveNode id) = removeNode id
+updatePatch (Connect srcNodeId dstNodeId inletId outletId) =
+    connect srcNodeId dstNodeId inletId outletId
+updatePatch (Disconnect srcNodeId dstNodeId inletId outletId) =
+    disconnect srcNodeId dstNodeId inletId outletId
+updatePatch (ChangeNode nodeId nodeMsg) patch = patch -- TODO
+
+
+updateNode :: forall n c a x. NodeMsg n c -> Node n c a x -> Node n c a x
+updateNode (AddInlet type_ id title) = addInlet type_ id title
+updateNode (AddInlet' type_ id) = addInlet type_ id id
+updateNode (AddOutlet type_ id title) = addInlet type_ id title
+updateNode (AddOutlet' type_ id) = addInlet type_ id id
+updateNode (RemoveInlet id) = removeInlet id
+updateNode (RemoveOutlet id) = removeOutlet id
+
+
+-- Send, Attach etc.
+
 
 -- helpers
 
