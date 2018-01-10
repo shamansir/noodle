@@ -119,6 +119,7 @@ data Flow a x
     | Data a
     | Error x
 
+
 type FSignal a x = S.Signal (Flow a x)
 
 data Network n c a x = Network (Network' n c a x) (FSignal a x)
@@ -147,34 +148,67 @@ init id =
 
 
 update :: forall n c a x. NetworkMsg n c -> Network n c a x -> Network n c a x
-update (AddPatch id title) = addPatch id title
-update (AddPatch' id) = addPatch id id
-update (RemovePatch id) = removePatch id
-update (SelectPatch id) = selectPatch id
-update DeselectPatch = deselectPatch
-update (EnterPatch id) = enterPatch id
-update (ExitPatch id) = exitPatch id
-update (ChangePatch patchId patchMsg) network = network -- TODO
+update (AddPatch id title) network = network |> addPatch id title
+update (AddPatch' id) network      = network |> addPatch id id
+update (RemovePatch id) network    = network |> removePatch id
+update (SelectPatch id) network    = network |> selectPatch id
+update DeselectPatch network       = network |> deselectPatch
+update (EnterPatch id) network     = network |> enterPatch id
+update (ExitPatch id) network      = network |> exitPatch id
+update (ChangePatch patchId patchMsg) network@(Network network' _) =
+    case network'.patches |> Map.lookup patchId of
+        Just patch ->
+            let
+                updatedPatch = patch |> updatePatch patchMsg
+                patches' = network'.patches |> Map.insert patchId updatedPatch
+                (Patch patch' patchSignal) = updatedPatch
+                extractSignal = (\(Patch _ patchSignal) -> patchSignal)
+                newPatchSignals =
+                    case S.mergeMany (map extractSignal patches') of
+                        Just sumSignal -> sumSignal
+                        Nothing -> S.constant Bang
+            in
+                Network
+                    network' { patches = patches' }
+                    newPatchSignals
+        Nothing -> network -- TODO: throw error
 
 
 updatePatch :: forall n c a x. PatchMsg n c -> Patch n c a x -> Patch n c a x
-updatePatch (AddNode type_ id title) = addNode type_ id title
-updatePatch (AddNode' type_ id) = addNode type_ id id
-updatePatch (RemoveNode id) = removeNode id
-updatePatch (Connect srcNodeId dstNodeId inletId outletId) =
-    connect srcNodeId dstNodeId inletId outletId
-updatePatch (Disconnect srcNodeId dstNodeId inletId outletId) =
-    disconnect srcNodeId dstNodeId inletId outletId
-updatePatch (ChangeNode nodeId nodeMsg) patch = patch -- TODO
+updatePatch (AddNode type_ id title) patch = patch |> addNode type_ id title
+updatePatch (AddNode' type_ id) patch      = patch |> addNode type_ id id
+updatePatch (RemoveNode id) patch          = patch |> removeNode id
+updatePatch (Connect srcNodeId dstNodeId inletId outletId) patch =
+    patch |> connect srcNodeId dstNodeId inletId outletId
+updatePatch (Disconnect srcNodeId dstNodeId inletId outletId) patch =
+    patch |> disconnect srcNodeId dstNodeId inletId outletId
+updatePatch (ChangeNode nodeId nodeMsg) patch@(Patch patch' _) =
+    case patch'.nodes |> Map.lookup nodeId of
+        Just patch ->
+            let
+                updatedNode = patch |> updateNode nodeMsg
+                nodes' = patch'.nodes |> Map.insert nodeId updatedNode
+                (Node node' nodeSignal) = updatedNode
+                extractSignal = (\(Node _ nodeSignal) -> nodeSignal)
+                newNodeSignals =
+                    case S.mergeMany (map extractSignal nodes') of
+                        Just sumSignal -> sumSignal
+                        Nothing -> S.constant Bang
+            in
+                Patch
+                    patch' { nodes = nodes' }
+                    newNodeSignals
+        Nothing -> patch -- TODO: throw error
 
 
 updateNode :: forall n c a x. NodeMsg n c -> Node n c a x -> Node n c a x
-updateNode (AddInlet type_ id title) = addInlet type_ id title
-updateNode (AddInlet' type_ id) = addInlet type_ id id
-updateNode (AddOutlet type_ id title) = addInlet type_ id title
-updateNode (AddOutlet' type_ id) = addInlet type_ id id
-updateNode (RemoveInlet id) = removeInlet id
-updateNode (RemoveOutlet id) = removeOutlet id
+updateNode (AddInlet type_ id title) node  = node |> addInlet type_ id title
+updateNode (AddInlet' type_ id) node       = node |> addInlet type_ id id
+updateNode (AddOutlet type_ id title) node = node |> addOutlet type_ id title
+updateNode (AddOutlet' type_ id) node      = node |> addInlet type_ id id
+--updateNode (RemoveInlet id) node           = node |> removeInlet id
+--updateNode (RemoveOutlet id) node          = node |> removeOutlet id
+-- TODO: Send etc
 
 
 -- Send, Attach etc.
