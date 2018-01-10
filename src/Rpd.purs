@@ -201,26 +201,26 @@ updatePatch (ChangeNode nodeId nodeMsg) patch@(Patch patch' _) =
         Nothing -> patch -- TODO: throw error
 
 
-updateNode :: forall n c a x. NodeMsg n c -> Node n c a x -> Node n c a x
+updateNode :: forall n c a x. NodeMsg c -> Node n c a x -> Node n c a x
 updateNode (AddInlet type_ id title) node  = node |> addInlet type_ id title
 updateNode (AddInlet' type_ id) node       = node |> addInlet type_ id id
 updateNode (AddOutlet type_ id title) node = node |> addOutlet type_ id title
 updateNode (AddOutlet' type_ id) node      = node |> addInlet type_ id id
---updateNode (RemoveInlet id) node           = node |> removeInlet id
---updateNode (RemoveOutlet id) node          = node |> removeOutlet id
+updateNode (RemoveInlet id) node           = node -- |> removeInlet id
+updateNode (RemoveOutlet id) node          = node -- |> removeOutlet id
 -- TODO: Send etc
 
 
 -- Send, Attach etc.
 
 
--- helpers
+-- helpers: Network
 
 addPatch :: forall n c a x. PatchId -> String -> Network n c a x -> Network n c a x
 addPatch id title network@(Network network' networkSignal) =
     let
         patchSignal = S.constant Bang
-        patch =
+        patch@(Patch patch' _) =
             Patch
                 { id : id
                 , title : title
@@ -229,13 +229,10 @@ addPatch id title network@(Network network' networkSignal) =
                 }
                 patchSignal
     in
-        network |> addPatch' patch
+        Network
+            network' { patches = network'.patches |> insert patch'.id patch }
+            (S.merge networkSignal patchSignal)
 
-addPatch' :: forall n c a x. Patch n c a x -> Network n c a x -> Network n c a x
-addPatch' patch@(Patch patch' patchSignal) (Network network' networkSignal) =
-    Network
-        network' { patches = network'.patches |> insert patch'.id patch }
-        (S.merge networkSignal patchSignal)
 
 removePatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
 removePatch patchId (Network network' networkSignal) =
@@ -276,128 +273,114 @@ exitPatch id (Network network' networkSignal) =
         network' { entered = Array.delete id network'.entered }
         networkSignal
 
-addNode :: forall n c a x. PatchId -> n -> NodeId -> String -> Network n c a x -> Network n c a x
-addNode patchId type_ id title network@(Network network' networkSignal) =
-    case network'.patches |> Map.lookup patchId of
-        Just (Patch patch' patchSignal) ->
-            let
-                nodeSignal = S.constant Bang
-                node =
-                    Node
-                        { id : id
-                        , title : title
-                        , type : type_
-                        , inlets : Map.empty
-                        , outlets : Map.empty
-                        }
-                        nodeSignal
-                patchWithNewNode =
-                    Patch
-                       (patch' { nodes = patch'.nodes |> insert id node })
-                       (S.merge patchSignal nodeSignal)
-                networkWithNoPatch =
-                    network |> removePatch patchId
-                networkWithNewPatch =
-                    network |> addPatch' patchWithNewNode
-            in
-                networkWithNewPatch
-        Nothing -> network -- return network unchanged in case of error. FIXME: return maybe
+
+-- helpers: Patch
+
+addNode :: forall n c a x. n -> NodeId -> String -> Patch n c a x -> Patch n c a x
+addNode type_ id title patch@(Patch patch' patchSignal) =
+    let
+        nodeSignal = S.constant Bang
+        node@(Node node' _) =
+            Node
+                { id : id
+                , title : title
+                , type : type_
+                , inlets : Map.empty
+                , outlets : Map.empty
+                }
+                nodeSignal
+    in
+        Patch
+            patch' { nodes = patch'.nodes |> insert node'.id node }
+            (S.merge patchSignal nodeSignal)
 
 
-removeNode :: forall n c a x. PatchId -> NodeId -> Network n c a x -> Network n c a x
-removeNode patchId nodeId network@(Network network' networkSignal) =
-    network -- TODO: implement
+removeNode :: forall n c a x. NodeId -> Patch n c a x -> Patch n c a x
+removeNode nodeId patch@(Patch patch' patchSignal) =
+    let
+        nodes' = patch'.nodes |> delete nodeId
+        extractSignal = (\(Node _ nodeSignal) -> nodeSignal)
+        newNodeSignals =
+            -- FIXME: rewrite with map?
+            case S.mergeMany (map extractSignal nodes') of
+                Just sumSignal -> sumSignal
+                Nothing -> S.constant Bang
+    in
+        Patch
+            patch' { nodes = nodes' }
+            newNodeSignals
 
-
-addInlet
-    :: forall n c a x
-     . PatchId
-    -> NodeId
-    -> c
-    -> InletId
-    -> String
-    -> Network n c a x
-    -> Network n c a x
-addInlet patchId nodeId type_ id label network@(Network network' networkPool) =
-    case network'.patches |> Map.lookup patchId of
-        Just (Patch patch' patchSignal) ->
-            case patch'.nodes |> Map.lookup nodeId of
-                Just (Node node' nodeSignal) ->
-                    let
-                        inletSignal = S.constant Bang
-                        inlet =
-                            Inlet
-                                { id : id
-                                , label : label
-                                , type : type_
-                                }
-                                inletSignal
-                        nodeWithNewInlet =
-                            Node
-                                (node' { inlets = node'.inlets |> insert id inlet })
-                                (S.merge nodeSignal inletSignal)
-                        extractSignal = (\(Node _ nodeSignal) -> nodeSignal)
-                        nodes' = patch'.nodes |> delete nodeId
-                        newNodeSignals =
-                            -- FIXME: rewrite with map?
-                            case S.mergeMany (map extractSignal nodes') of
-                                Just sumSignal -> sumSignal
-                                Nothing -> S.constant Bang
-                        patchWithNoNode =
-                            Patch
-                                (patch' { nodes = nodes' })
-                                newNodeSignals
-                        patchWithNewNode =
-                            case patchWithNoNode of
-                                Patch patch' patchSignal ->
-                                    Patch
-                                        patch' { nodes =
-                                            patch'.nodes |> insert nodeId nodeWithNewInlet }
-                                        patchSignal
-                        networkWithNoPatch =
-                            network |> removePatch patchId
-                        networkWithNewPatch =
-                            network |> addPatch' patchWithNewNode
-                    in
-                        networkWithNewPatch
-                Nothing -> network -- return network unchanged in case of error. FIXME: return maybe
-        Nothing -> network -- return network unchanged in case of error. FIXME: return maybe
-
-addOutlet
-    :: forall n c a x
-     . PatchId
-    -> NodeId
-    -> c
-    -> OutletId
-    -> String
-    -> Network n c a x
-    -> Network n c a x
-addOutlet patchId nodeId type_ id title (Network network networkPool) =
-    (Network network networkPool) -- FIXME: implement
 
 connect
     :: forall n c a x
-     . PatchId
-    -> NodeId
+     . NodeId
     -> NodeId
     -> InletId
     -> OutletId
-    -> Network n c a x
-    -> Network n c a x
-connect patchId scrNodeId dstNodeId inletId outletId (Network network networkPool) =
-    (Network network networkPool) -- FIXME: implement
+    -> Patch n c a x
+    -> Patch n c a x
+connect scrNodeId dstNodeId inletId outletId (Patch patch' patchSignal) =
+    (Patch patch' patchSignal) -- FIXME: implement
+
 
 disconnect
     :: forall n c a x
-     . PatchId
-    -> NodeId
+     . NodeId
     -> NodeId
     -> InletId
     -> OutletId
-    -> Network n c a x
-    -> Network n c a x
-disconnect patchId scrNodeId dstNodeId inletId outletId (Network network networkPool) =
-    (Network network networkPool) -- FIXME: implement
+    -> Patch n c a x
+    -> Patch n c a x
+disconnect scrNodeId dstNodeId inletId outletId (Patch patch' patchSignal) =
+    (Patch patch' patchSignal) -- FIXME: implement
+
+
+-- helpers: Node
+
+addInlet
+    :: forall n c a x
+     . c
+    -> InletId
+    -> String
+    -> Node n c a x
+    -> Node n c a x
+addInlet type_ id label node@(Node node' nodeSignal) =
+    let
+        inletSignal = S.constant Bang
+        inlet@(Inlet inlet' _) =
+            Inlet
+                { id : id
+                , label : label
+                , type : type_
+                }
+                inletSignal
+    in
+        Node
+            node' { inlets = node'.inlets |> insert inlet'.id inlet }
+            (S.merge nodeSignal inletSignal)
+
+addOutlet
+    :: forall n c a x
+     . c
+    -> OutletId
+    -> String
+    -> Node n c a x
+    -> Node n c a x
+addOutlet type_ id label node@(Node node' nodeSignal) =
+    let
+        outletSignal = S.constant Bang
+        outlet@(Outlet outlet' _) =
+            Outlet
+                { id : id
+                , label : label
+                , type : type_
+                }
+                outletSignal
+    in
+        Node
+            node' { outlets = node'.outlets |> insert outlet'.id outlet }
+            (S.merge nodeSignal outletSignal)
+
 
 stringRenderer :: forall n c a x. Show a => Show x => Patch n c a x -> S.Signal String
 stringRenderer (Patch _ patchSignal) =
