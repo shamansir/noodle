@@ -4,18 +4,20 @@ module Rpd
     , NetworkMsg, update, init
     , addPatch, removePatch, selectPatch, deselectPatch, enterPatch, exitPatch
     , addNode, addInlet, addOutlet, connect, disconnect
-    , stringRenderer
+    , log, logWithData
     ) where
 
 import Prelude
 
 import Data.Array ((:))
 import Data.Array as Array
+import Data.Function (apply, applyFlipped)
+import Data.Int.Bits (xor)
 import Data.Map (Map, insert, delete, values)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
+import Data.Tuple
 import Signal as S
-import Data.Function (apply, applyFlipped)
 
 -- Elm-style operators
 
@@ -46,26 +48,30 @@ data NetworkMsg n c
     | EnterPatch PatchId
     | ExitPatch PatchId
     | ChangePatch PatchId (PatchMsg n c)
+    | NetworkGotEmpty -- TODO: remove
 
 
 data PatchMsg n c
     = AddNode n NodeId String
     | AddNode' n NodeId
     | RemoveNode NodeId
-    | Connect NodeId NodeId InletId OutletId
-    | Disconnect NodeId NodeId InletId OutletId
+    | Connect NodeId NodeId OutletId InletId
+    | Disconnect NodeId NodeId OutletId InletId
     -- Disable Link
     | ChangeNode NodeId (NodeMsg c)
+    | PatchGotEmpty -- TODO: remove
 
 
-data NodeMsg c
+data NodeMsg c -- a x
     = AddInlet c InletId String
     | AddInlet' c InletId
     | AddOutlet c OutletId String
     | AddOutlet' c OutletId
     | RemoveInlet InletId
     | RemoveOutlet OutletId
+    -- | Process (Map InletId (Flow a x)) (Map OutletId (Flow a x))
     -- Hide InletId
+    | NodeGotEmpty -- TODO: remove
 
 
 data FlowMsg c a x
@@ -92,6 +98,7 @@ type Node' n c a x =
     { id :: NodeId
     , title :: String
     , type :: n
+    , process :: Maybe (Map InletId (Value a x) -> Map OutletId (Value a x))
     , inlets :: Map InletId (Inlet c a x)
     , outlets :: Map OutletId (Outlet c a x)
     }
@@ -114,25 +121,32 @@ type Outlet' c =
 --     , outlet :: Outlet' c
 --     }
 
-data Flow a x
+data Value a x
     = Bang
     | Data a
     | Error x
 
 
-type FSignal a x = S.Signal (Flow a x)
+-- The signal where all the data flows: Bangs, data chunks and errors
+type FlowSignal a x = S.Signal (Value a x)
 
-data Network n c a x = Network (Network' n c a x) (FSignal a x)
+-- The signal where the messages go
+type MsgSignal m = S.Signal m
 
-data Patch n c a x = Patch (Patch' n c a x) (FSignal a x)
+-- The special signal for nodes which tracks the data flow through node inputs and outlets
+type ProcessSingal a x = S.Signal (Tuple (Map InletId (Value a x)) (Map OutletId (Value a x)))
 
-data Node n c a x = Node (Node' n c a x) (FSignal a x)
+data Network n c a x = Network (Network' n c a x) (MsgSignal (NetworkMsg n c))
 
-data Inlet c a x = Inlet (Inlet' c) (FSignal a x)
+data Patch n c a x = Patch (Patch' n c a x) (MsgSignal (PatchMsg n c))
 
-data Outlet c a x = Outlet (Outlet' c) (FSignal a x)
+data Node n c a x = Node (Node' n c a x) (MsgSignal (NodeMsg c)) (ProcessSingal a x)
 
-data Link c a x = Link (Outlet c a x) (Inlet c a x)
+data Inlet c a x = Inlet (Inlet' c) (FlowSignal a x)
+
+data Outlet c a x = Outlet (Outlet' c) (FlowSignal a x)
+
+data Link c a x = Link (Outlet c a x) (Inlet c a x) (FlowSignal a x)
 
 -- main functions
 
@@ -155,6 +169,7 @@ update (SelectPatch id) network    = network |> selectPatch id
 update DeselectPatch network       = network |> deselectPatch
 update (EnterPatch id) network     = network |> enterPatch id
 update (ExitPatch id) network      = network |> exitPatch id
+update NetworkGotEmpty network     = network
 update (ChangePatch patchId patchMsg) network@(Network network' _) =
     case network'.patches |> Map.lookup patchId of
         Just patch ->
@@ -182,6 +197,7 @@ updatePatch (Connect srcNodeId dstNodeId inletId outletId) patch =
     patch |> connect srcNodeId dstNodeId inletId outletId
 updatePatch (Disconnect srcNodeId dstNodeId inletId outletId) patch =
     patch |> disconnect srcNodeId dstNodeId inletId outletId
+updatePatch PatchGotEmpty patch            = patch
 updatePatch (ChangeNode nodeId nodeMsg) patch@(Patch patch' _) =
     case patch'.nodes |> Map.lookup nodeId of
         Just patch ->
@@ -208,6 +224,7 @@ updateNode (AddOutlet type_ id title) node = node |> addOutlet type_ id title
 updateNode (AddOutlet' type_ id) node      = node |> addInlet type_ id id
 updateNode (RemoveInlet id) node           = node -- |> removeInlet id
 updateNode (RemoveOutlet id) node          = node -- |> removeOutlet id
+updateNode NodeGotEmpty node               = node
 -- TODO: Send etc
 
 
@@ -233,17 +250,16 @@ addPatch id title network@(Network network' networkSignal) =
             network' { patches = network'.patches |> insert patch'.id patch }
             (S.merge networkSignal patchSignal)
 
-
 removePatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
 removePatch patchId (Network network' networkSignal) =
     let
         patches' = network'.patches |> delete patchId
-        extractSignal = (\(Patch _ patchSignal) -> patchSignal)
+        extractSignal = (\(Patch patch' patchSignal) ->
+            patchSignal S.~> (\patchMsg -> ChangePatch patchId patchMsg))
         newPatchSignals =
-            -- FIXME: rewrite with map?
             case S.mergeMany (map extractSignal patches') of
                 Just sumSignal -> sumSignal
-                Nothing -> S.constant Bang
+                Nothing -> S.constant NetworkGotEmpty -- TODO: remove
     in
         Network
             network' { patches = patches' }
@@ -285,6 +301,7 @@ addNode type_ id title patch@(Patch patch' patchSignal) =
                 { id : id
                 , title : title
                 , type : type_
+                , process : Nothing
                 , inlets : Map.empty
                 , outlets : Map.empty
                 }
@@ -299,12 +316,13 @@ removeNode :: forall n c a x. NodeId -> Patch n c a x -> Patch n c a x
 removeNode nodeId patch@(Patch patch' patchSignal) =
     let
         nodes' = patch'.nodes |> delete nodeId
-        extractSignal = (\(Node _ nodeSignal) -> nodeSignal)
+        extractSignal = (\(Node node' nodeSignal _) ->
+            nodeSignal S.~> (\nodeMsg -> ChangeNode nodeId nodeMsg))
         newNodeSignals =
             -- FIXME: rewrite with map?
             case S.mergeMany (map extractSignal nodes') of
                 Just sumSignal -> sumSignal
-                Nothing -> S.constant Bang
+                Nothing -> S.constant PatchGotEmpty
     in
         Patch
             patch' { nodes = nodes' }
@@ -382,13 +400,24 @@ addOutlet type_ id label node@(Node node' nodeSignal) =
             (S.merge nodeSignal outletSignal)
 
 
-stringRenderer :: forall n c a x. Show a => Show x => Patch n c a x -> S.Signal String
-stringRenderer (Patch _ patchSignal) =
-    patchSignal S.~> (\item ->
-        case item of
+-- make data items require a Show instance,
+-- maybe even everywhere. Also create some type class which defines interfaces
+-- for Node type and Channel type?
+-- like accept() allow() etc.
+
+log :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
+log (Network _ networkSignal) =
+    networkSignal S.~> (\message ->
+        case message of
             Bang -> show "Bang"
             Data d -> show d
-             -- make data items require a Show instance,
-             -- maybe even everywhere. Also create some type class which defines interfaces
-             -- for Node type and Channel type?
+            Error x -> show ("Error: " <> (show x)))
+
+
+logWithData :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
+logWithData (Network _ networkSignal) =
+    networkSignal S.~> (\message ->
+        case message of
+            Bang -> show "Bang"
+            Data d -> show d
             Error x -> show ("Error: " <> (show x)))
