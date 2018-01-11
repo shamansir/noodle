@@ -7,8 +7,10 @@ module Rpd
     , log--, logData
     ) where
 
+import Data.Tuple
 import Prelude
 
+import DOM.HTML.HTMLMediaElement (networkState)
 import Data.Array ((:))
 import Data.Array as Array
 import Data.Function (apply, applyFlipped)
@@ -16,7 +18,6 @@ import Data.Int.Bits (xor)
 import Data.Map (Map, insert, delete, values)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
-import Data.Tuple
 import Signal as S
 
 -- Elm-style operators
@@ -165,6 +166,7 @@ init id =
 
 
 update :: forall n c a x. NetworkMsg n c -> Network n c a x -> Network n c a x
+update CreateNetwork network       = network
 update (AddPatch id title) network = network |> addPatch id title
 update (AddPatch' id) network      = network |> addPatch id id
 update (RemovePatch id) network    = network |> removePatch id
@@ -179,12 +181,10 @@ update (ChangePatch patchId patchMsg) network@(Network network' _) =
             let
                 updatedPatch = patch |> updatePatch patchMsg
                 patches' = network'.patches |> Map.insert patchId updatedPatch
-                (Patch patch' patchSignal) = updatedPatch
-                extractSignal = (\(Patch _ patchSignal) -> patchSignal)
                 newPatchSignals =
-                    case S.mergeMany (map extractSignal patches') of
+                    case S.mergeMany (map adaptPatchSignal patches') of
                         Just sumSignal -> sumSignal
-                        Nothing -> S.constant Bang
+                        Nothing -> S.constant NetworkGotEmpty
             in
                 Network
                     network' { patches = patches' }
@@ -193,6 +193,7 @@ update (ChangePatch patchId patchMsg) network@(Network network' _) =
 
 
 updatePatch :: forall n c a x. PatchMsg n c -> Patch n c a x -> Patch n c a x
+updatePatch CreatePatch patch              = patch
 updatePatch (AddNode type_ id title) patch = patch |> addNode type_ id title
 updatePatch (AddNode' type_ id) patch      = patch |> addNode type_ id id
 updatePatch (RemoveNode id) patch          = patch |> removeNode id
@@ -207,12 +208,10 @@ updatePatch (ChangeNode nodeId nodeMsg) patch@(Patch patch' _) =
             let
                 updatedNode = patch |> updateNode nodeMsg
                 nodes' = patch'.nodes |> Map.insert nodeId updatedNode
-                (Node node' nodeSignal) = updatedNode
-                extractSignal = (\(Node _ nodeSignal) -> nodeSignal)
                 newNodeSignals =
-                    case S.mergeMany (map extractSignal nodes') of
+                    case S.mergeMany (map adaptNodeSignal nodes') of
                         Just sumSignal -> sumSignal
-                        Nothing -> S.constant Bang
+                        Nothing -> S.constant PatchGotEmpty
             in
                 Patch
                     patch' { nodes = nodes' }
@@ -221,6 +220,7 @@ updatePatch (ChangeNode nodeId nodeMsg) patch@(Patch patch' _) =
 
 
 updateNode :: forall n c a x. NodeMsg c -> Node n c a x -> Node n c a x
+updateNode CreateNode node                 = node
 updateNode (AddInlet type_ id title) node  = node |> addInlet type_ id title
 updateNode (AddInlet' type_ id) node       = node |> addInlet type_ id id
 updateNode (AddOutlet type_ id title) node = node |> addOutlet type_ id title
@@ -299,7 +299,7 @@ addNode :: forall n c a x. n -> NodeId -> String -> Patch n c a x -> Patch n c a
 addNode type_ id title patch@(Patch patch' patchSignal) =
     let
         nodeSignal = S.constant CreateNode
-        node@(Node node' _) =
+        node@(Node node' _ _) =
             Node
                 { id : id
                 , title : title
@@ -309,6 +309,7 @@ addNode type_ id title patch@(Patch patch' patchSignal) =
                 , outlets : Map.empty
                 }
                 nodeSignal
+                (S.constant (Tuple Map.empty Map.empty))
     in
         Patch
             patch' { nodes = patch'.nodes |> insert node'.id node }
@@ -365,7 +366,7 @@ addInlet
     -> String
     -> Node n c a x
     -> Node n c a x
-addInlet type_ id label node@(Node node' nodeSignal) =
+addInlet type_ id label node@(Node node' nodeSignal processSignal) =
     let
         inletSignal = S.constant Bang
         inlet@(Inlet inlet' _) =
@@ -378,7 +379,8 @@ addInlet type_ id label node@(Node node' nodeSignal) =
     in
         Node
             node' { inlets = node'.inlets |> insert inlet'.id inlet }
-            (S.merge nodeSignal inletSignal)
+            nodeSignal
+            processSignal
 
 addOutlet
     :: forall n c a x
@@ -387,7 +389,7 @@ addOutlet
     -> String
     -> Node n c a x
     -> Node n c a x
-addOutlet type_ id label node@(Node node' nodeSignal _) =
+addOutlet type_ id label node@(Node node' nodeSignal processSignal) =
     let
         outletSignal = S.constant Bang
         outlet@(Outlet outlet' _) =
@@ -400,7 +402,8 @@ addOutlet type_ id label node@(Node node' nodeSignal _) =
     in
         Node
             node' { outlets = node'.outlets |> insert outlet'.id outlet }
-            (S.merge nodeSignal outletSignal)
+            nodeSignal
+            processSignal
 
 
 
@@ -409,8 +412,8 @@ adaptPatchSignal (Patch patch' patchSignal) =
     patchSignal S.~> (\patchMsg -> ChangePatch patch'.id patchMsg)
 
 
-adaptNodeSignal :: forall n c a x. Patch n c a x -> MsgSignal (NetworkMsg n c)
-adaptNodeSignal (Node node' nodeSignal) =
+adaptNodeSignal :: forall n c a x. Node n c a x -> MsgSignal (PatchMsg n c)
+adaptNodeSignal (Node node' nodeSignal _) =
     nodeSignal S.~> (\nodeMsg -> ChangeNode node'.id nodeMsg)
 
 
