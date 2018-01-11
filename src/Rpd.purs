@@ -4,7 +4,7 @@ module Rpd
     , NetworkMsg, update, init
     , addPatch, removePatch, selectPatch, deselectPatch, enterPatch, exitPatch
     , addNode, addInlet, addOutlet, connect, disconnect
-    , log, logWithData
+    , log--, logData
     ) where
 
 import Prelude
@@ -40,7 +40,8 @@ type LinkId = Id
 -- `x` — error type
 
 data NetworkMsg n c
-    = AddPatch PatchId String
+    = CreateNetwork
+    | AddPatch PatchId String
     | AddPatch' PatchId
     | RemovePatch PatchId
     | SelectPatch PatchId
@@ -52,7 +53,8 @@ data NetworkMsg n c
 
 
 data PatchMsg n c
-    = AddNode n NodeId String
+    = CreatePatch
+    | AddNode n NodeId String
     | AddNode' n NodeId
     | RemoveNode NodeId
     | Connect NodeId NodeId OutletId InletId
@@ -63,7 +65,8 @@ data PatchMsg n c
 
 
 data NodeMsg c -- a x
-    = AddInlet c InletId String
+    = CreateNode
+    | AddInlet c InletId String
     | AddInlet' c InletId
     | AddOutlet c OutletId String
     | AddOutlet' c OutletId
@@ -158,7 +161,7 @@ init id =
         , selected : Nothing
         , entered : []
         }
-        (S.constant Bang)
+        (S.constant CreateNetwork)
 
 
 update :: forall n c a x. NetworkMsg n c -> Network n c a x -> Network n c a x
@@ -236,7 +239,7 @@ updateNode NodeGotEmpty node               = node
 addPatch :: forall n c a x. PatchId -> String -> Network n c a x -> Network n c a x
 addPatch id title network@(Network network' networkSignal) =
     let
-        patchSignal = S.constant Bang
+        patchSignal = S.constant CreatePatch
         patch@(Patch patch' _) =
             Patch
                 { id : id
@@ -248,7 +251,7 @@ addPatch id title network@(Network network' networkSignal) =
     in
         Network
             network' { patches = network'.patches |> insert patch'.id patch }
-            (S.merge networkSignal patchSignal)
+            (adaptPatchSignal patch |> S.merge networkSignal)
 
 removePatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
 removePatch patchId (Network network' networkSignal) =
@@ -295,7 +298,7 @@ exitPatch id (Network network' networkSignal) =
 addNode :: forall n c a x. n -> NodeId -> String -> Patch n c a x -> Patch n c a x
 addNode type_ id title patch@(Patch patch' patchSignal) =
     let
-        nodeSignal = S.constant Bang
+        nodeSignal = S.constant CreateNode
         node@(Node node' _) =
             Node
                 { id : id
@@ -309,7 +312,7 @@ addNode type_ id title patch@(Patch patch' patchSignal) =
     in
         Patch
             patch' { nodes = patch'.nodes |> insert node'.id node }
-            (S.merge patchSignal nodeSignal)
+            (adaptNodeSignal node |> S.merge patchSignal)
 
 
 removeNode :: forall n c a x. NodeId -> Patch n c a x -> Patch n c a x
@@ -384,7 +387,7 @@ addOutlet
     -> String
     -> Node n c a x
     -> Node n c a x
-addOutlet type_ id label node@(Node node' nodeSignal) =
+addOutlet type_ id label node@(Node node' nodeSignal _) =
     let
         outletSignal = S.constant Bang
         outlet@(Outlet outlet' _) =
@@ -400,24 +403,76 @@ addOutlet type_ id label node@(Node node' nodeSignal) =
             (S.merge nodeSignal outletSignal)
 
 
+
+adaptPatchSignal :: forall n c a x. Patch n c a x -> MsgSignal (NetworkMsg n c)
+adaptPatchSignal (Patch patch' patchSignal) =
+    patchSignal S.~> (\patchMsg -> ChangePatch patch'.id patchMsg)
+
+
+adaptNodeSignal :: forall n c a x. Patch n c a x -> MsgSignal (NetworkMsg n c)
+adaptNodeSignal (Node node' nodeSignal) =
+    nodeSignal S.~> (\nodeMsg -> ChangeNode node'.id nodeMsg)
+
+
 -- make data items require a Show instance,
 -- maybe even everywhere. Also create some type class which defines interfaces
 -- for Node type and Channel type?
 -- like accept() allow() etc.
 
 log :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
-log (Network _ networkSignal) =
-    networkSignal S.~> (\message ->
-        case message of
-            Bang -> show "Bang"
-            Data d -> show d
-            Error x -> show ("Error: " <> (show x)))
+log = logNetwork
 
 
-logWithData :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
-logWithData (Network _ networkSignal) =
-    networkSignal S.~> (\message ->
-        case message of
-            Bang -> show "Bang"
-            Data d -> show d
-            Error x -> show ("Error: " <> (show x)))
+instance showNetworkMsg :: Show (NetworkMsg n c) where
+    show CreateNetwork = "Create Network"
+    show (AddPatch patchId title) = "Add Patch: " <> patchId <> " " <> title
+    show (AddPatch' patchId) = "Add Patch: " <> patchId
+    show (RemovePatch patchId) = "Remove Patch: " <> patchId
+    show (SelectPatch patchId) = "Select Patch: " <> patchId
+    show DeselectPatch = "Deselect Patch"
+    show (EnterPatch patchId) = "Enter Patch: " <> patchId
+    show (ExitPatch patchId) = "Exit Patch: " <> patchId
+    show (ChangePatch patchId patchMsg) = "Change Patch: " <> patchId <> " :: " <> show patchMsg
+    show NetworkGotEmpty = "Network got empty"
+
+
+instance showPatchMsg :: Show (PatchMsg n c) where
+    show CreatePatch = "Create Patch"
+    show (AddNode _type nodeId title) = "Add Node: " <> nodeId <> " " <> title
+    show (AddNode' _type nodeId)      = "Add Node: " <> nodeId
+    show (RemoveNode patchId)         = "Remove Node: " <> patchId
+    show (Connect srcNodeId dstNodeId outletId inletId) =
+        "Connect Oulet " <> outletId <> " from Node " <> srcNodeId <>
+        "to Inlet " <> inletId <> " from Node " <> dstNodeId
+    show (Disconnect srcNodeId dstNodeId outletId inletId) =
+        "Disconnect Oulet " <> outletId <> " from Node " <> srcNodeId <>
+        "from Inlet " <> inletId <> " from Node " <> dstNodeId
+    show (ChangeNode nodeId nodeMsg) =
+        "Change Node: " <> nodeId <> " :: " <> show nodeMsg
+    show PatchGotEmpty = "Patch got empty"
+
+
+instance showNodeMsg :: Show (NodeMsg c) where
+    show CreateNode = "Create Node"
+    show (AddInlet type_ inletId title)   = "Add Inlet: " <> inletId <> " " <> title
+    show (AddInlet' type_ inletId)        = "Add Inlet: " <> inletId
+    show (AddOutlet type_ outletId title) = "Add Outlet: " <> outletId <> " " <> title
+    show (AddOutlet' type_ outletId)      = "Add Outlet: " <> outletId
+    show (RemoveInlet inletId)            = "Remove Inlet" <> inletId
+    show (RemoveOutlet outletId)          = "Remove Outlet" <> outletId
+    show NodeGotEmpty                     = "Node got empty"
+
+
+logNetwork :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
+logNetwork (Network _ networkSignal) =
+    networkSignal S.~> show
+
+
+
+-- logData :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
+-- logData (Network _ networkSignal) =
+--     networkSignal S.~> (\message ->
+--         case message of
+--             Bang -> show "Bang"
+--             Data d -> show d
+--             Error x -> show ("Error: " <> (show x)))
