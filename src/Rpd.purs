@@ -324,6 +324,7 @@ addPatch id title network@(Network network' networkSignal) =
             network' { patches = network'.patches |> insert patch'.id patch }
             (adaptPatchSignal patch |> S.merge networkSignal)
 
+
 removePatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
 removePatch patchId (Network network' networkSignal) =
     let
@@ -339,6 +340,7 @@ removePatch patchId (Network network' networkSignal) =
             network' { patches = patches' }
             newPatchSignals
 
+
 selectPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
 selectPatch id (Network network' networkSignal) =
     Network
@@ -351,11 +353,13 @@ deselectPatch (Network network' networkSignal) =
         network' { selected = Nothing }
         networkSignal
 
+
 enterPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
 enterPatch id (Network network' networkSignal) =
     Network
         network' { entered = id : network'.entered }
         networkSignal
+
 
 exitPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
 exitPatch id (Network network' networkSignal) =
@@ -394,7 +398,6 @@ removeNode nodeId patch@(Patch patch' patchSignal) =
         extractSignal = (\(Node node' nodeSignal _) ->
             nodeSignal S.~> (\nodeMsg -> ChangeNode nodeId nodeMsg))
         newNodeSignals =
-            -- FIXME: rewrite with map?
             case S.mergeMany (map extractSignal nodes') of
                 Just sumSignal -> sumSignal
                 Nothing -> S.constant PatchGotEmpty
@@ -408,23 +411,37 @@ connect
     :: forall n c a x
      . NodeId
     -> NodeId
-    -> InletId
     -> OutletId
+    -> InletId
     -> Patch n c a x
     -> Patch n c a x
-connect scrNodeId dstNodeId inletId outletId (Patch patch' patchSignal) =
-    (Patch patch' patchSignal) -- FIXME: implement
+connect scrNodeId dstNodeId outletId inletId patch@(Patch patch' patchSignal) =
+    case Map.lookup scrNodeId patch'.nodes,
+         Map.lookup dstNodeId patch'.nodes of
+        Just srcNode@(Node srcNode' _ _),
+        Just dstNode@(Node dstNode' _ _) ->
+            case Map.lookup outletId srcNode'.outlets,
+                 Map.lookup inletId dstNode'.inlets of
+                Just outlet@(Outlet outlet' _ outletDataStream),
+                Just inlet@(Inlet inlet' _ inletDataStream) ->
+                    let
+                        connectOutletMsg = ChangeInlet outletId (ConnectToInlet inletDataStream)
+                        connectInletMsg = ChangeOutlet inletId (ConnectToOutlet outletDataStream)
+                    in
+                        updatePatch connectOutletMsg |> updatePatch connectInletMsg
+                _, _ -> patch -- TODO: throw error
+        _, _ -> patch -- TODO: throw error
 
 
 disconnect
     :: forall n c a x
      . NodeId
     -> NodeId
-    -> InletId
     -> OutletId
+    -> InletId
     -> Patch n c a x
     -> Patch n c a x
-disconnect scrNodeId dstNodeId inletId outletId (Patch patch' patchSignal) =
+disconnect scrNodeId dstNodeId outletId inletId (Patch patch' patchSignal) =
     (Patch patch' patchSignal) -- FIXME: implement
 
 
