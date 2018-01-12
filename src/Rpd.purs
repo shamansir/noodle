@@ -40,7 +40,7 @@ type LinkId = Id
 -- `a` — data type
 -- `x` — error type
 
-data NetworkMsg n c
+data NetworkMsg n c a x
     = CreateNetwork
     | AddPatch PatchId String
     | AddPatch' PatchId
@@ -49,11 +49,11 @@ data NetworkMsg n c
     | DeselectPatch
     | EnterPatch PatchId
     | ExitPatch PatchId
-    | ChangePatch PatchId (PatchMsg n c)
+    | ChangePatch PatchId (PatchMsg n c a x)
     | NetworkGotEmpty -- TODO: remove
 
 
-data PatchMsg n c
+data PatchMsg n c a x
     = CreatePatch
     | AddNode n NodeId String
     | AddNode' n NodeId
@@ -61,11 +61,11 @@ data PatchMsg n c
     | Connect NodeId NodeId OutletId InletId
     | Disconnect NodeId NodeId OutletId InletId
     -- Disable Link
-    | ChangeNode NodeId (NodeMsg c)
+    | ChangeNode NodeId (NodeMsg c a x)
     | PatchGotEmpty -- TODO: remove
 
 
-data NodeMsg c
+data NodeMsg c a x
     = CreateNode
     | AddInlet c InletId String
     | AddInlet' c InletId
@@ -73,8 +73,8 @@ data NodeMsg c
     | AddOutlet' c OutletId
     | RemoveInlet InletId
     | RemoveOutlet OutletId
-    | ChangeInlet InletId InletMsg
-    | ChangeOutlet OutletId OutletMsg
+    | ChangeInlet InletId (InletMsg a x)
+    | ChangeOutlet OutletId (OutletMsg a x)
     -- | Process (Map InletId (Flow a x)) (Map OutletId (Flow a x))
     -- Hide InletId
     | NodeGotEmpty -- TODO: remove
@@ -82,9 +82,9 @@ data NodeMsg c
 
 -- TODO: use general ChannelMsg / FlowMsg ... ?
 
-data InletMsg
+data InletMsg a x
     = CreateInlet
-    | ConnectToOutlet -- TODO: + stream?
+    | ConnectToOutlet (FlowSignal a x)
     | DisconnectFromOutlet
     | Hide
     -- | Receive a
@@ -93,12 +93,12 @@ data InletMsg
 
 
 
-data OutletMsg
+data OutletMsg a x
     -- = Send a
     -- | Emit c (S.Signal a)
     -- | SendError x
     = CreateOutlet
-    | ConnectToInlet -- TODO: + stream?
+    | ConnectToInlet (FlowSignal a x)
     | DisconnectFromInlet
 
 
@@ -119,7 +119,7 @@ type Patch' n c a x =
     { id :: PatchId
     , title :: String
     , nodes :: Map NodeId (Node n c a x)
-    , links :: Map LinkId (Link c a x)
+    , links :: Array (Link c a x)
     }
 
 type Node' n c a x =
@@ -159,17 +159,17 @@ type MsgSignal m = S.Signal m
 -- The special signal for nodes which tracks the data flow through node inputs and outlets
 type ProcessSingal a x = S.Signal (Tuple (Map InletId (Value a x)) (Map OutletId (Value a x)))
 
-data Network n c a x = Network (Network' n c a x) (MsgSignal (NetworkMsg n c))
+data Network n c a x = Network (Network' n c a x) (MsgSignal (NetworkMsg n c a x))
 
-data Patch n c a x = Patch (Patch' n c a x) (MsgSignal (PatchMsg n c))
+data Patch n c a x = Patch (Patch' n c a x) (MsgSignal (PatchMsg n c a x))
 
-data Node n c a x = Node (Node' n c a x) (MsgSignal (NodeMsg c)) (ProcessSingal a x)
+data Node n c a x = Node (Node' n c a x) (MsgSignal (NodeMsg c a x)) (ProcessSingal a x)
 
-data Inlet c a x = Inlet (Inlet' c) (MsgSignal InletMsg) (FlowSignal a x)
+data Inlet c a x = Inlet (Inlet' c) (MsgSignal (InletMsg a x)) (FlowSignal a x)
 
-data Outlet c a x = Outlet (Outlet' c) (MsgSignal OutletMsg) (FlowSignal a x)
+data Outlet c a x = Outlet (Outlet' c) (MsgSignal (OutletMsg a x)) (FlowSignal a x)
 
-data Link c a x = Link OutletId InletId (FlowSignal a x)
+data Link c a x = Link NodeId NodeId OutletId InletId (FlowSignal a x)
 
 -- main functions
 
@@ -184,7 +184,7 @@ init id =
         (S.constant CreateNetwork)
 
 
-update :: forall n c a x. NetworkMsg n c -> Network n c a x -> Network n c a x
+update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
 update CreateNetwork network       = network
 update (AddPatch id title) network = network |> addPatch id title
 update (AddPatch' id) network      = network |> addPatch id id
@@ -211,7 +211,7 @@ update (ChangePatch patchId patchMsg) network@(Network network' _) =
         Nothing -> network -- TODO: throw error
 
 
-updatePatch :: forall n c a x. PatchMsg n c -> Patch n c a x -> Patch n c a x
+updatePatch :: forall n c a x. PatchMsg n c a x -> Patch n c a x -> Patch n c a x
 updatePatch CreatePatch patch              = patch
 updatePatch (AddNode type_ id title) patch = patch |> addNode type_ id title
 updatePatch (AddNode' type_ id) patch      = patch |> addNode type_ id id
@@ -238,7 +238,7 @@ updatePatch (ChangeNode nodeId nodeMsg) patch@(Patch patch' _) =
         Nothing -> patch -- TODO: throw error
 
 
-updateNode :: forall n c a x. NodeMsg c -> Node n c a x -> Node n c a x
+updateNode :: forall n c a x. NodeMsg c a x -> Node n c a x -> Node n c a x
 updateNode CreateNode node                 = node
 updateNode (AddInlet type_ id title) node  = node |> addInlet type_ id title
 updateNode (AddInlet' type_ id) node       = node |> addInlet type_ id id
@@ -289,16 +289,16 @@ updateNode (ChangeOutlet outletId outletMsg) node@(Node node' _ processSignal) =
         Nothing -> node -- TODO: throw error
 
 
-updateInlet :: forall c a x. InletMsg -> Inlet c a x -> Inlet c a x
+updateInlet :: forall c a x. InletMsg a x -> Inlet c a x -> Inlet c a x
 updateInlet CreateInlet inlet = inlet
-updateInlet ConnectToOutlet inlet = inlet
+updateInlet (ConnectToOutlet signal) inlet = inlet
 updateInlet DisconnectFromOutlet inlet = inlet
 updateInlet Hide inlet = inlet
 
 
-updateOutlet :: forall c a x. OutletMsg -> Outlet c a x -> Outlet c a x
+updateOutlet :: forall c a x. OutletMsg a x -> Outlet c a x -> Outlet c a x
 updateOutlet CreateOutlet outlet = outlet
-updateOutlet ConnectToInlet outlet = outlet
+updateOutlet (ConnectToInlet signal) outlet = outlet
 updateOutlet DisconnectFromInlet outlet = outlet
 
 
@@ -316,7 +316,7 @@ addPatch id title network@(Network network' networkSignal) =
                 { id : id
                 , title : title
                 , nodes : Map.empty
-                , links : Map.empty
+                , links : []
                 }
                 patchSignal
     in
@@ -415,8 +415,8 @@ connect
     -> InletId
     -> Patch n c a x
     -> Patch n c a x
-connect scrNodeId dstNodeId outletId inletId patch@(Patch patch' patchSignal) =
-    case Map.lookup scrNodeId patch'.nodes,
+connect srcNodeId dstNodeId outletId inletId patch@(Patch patch' patchSignal) =
+    case Map.lookup srcNodeId patch'.nodes,
          Map.lookup dstNodeId patch'.nodes of
         Just srcNode@(Node srcNode' _ _),
         Just dstNode@(Node dstNode' _ _) ->
@@ -425,10 +425,24 @@ connect scrNodeId dstNodeId outletId inletId patch@(Patch patch' patchSignal) =
                 Just outlet@(Outlet outlet' _ outletDataStream),
                 Just inlet@(Inlet inlet' _ inletDataStream) ->
                     let
-                        connectOutletMsg = ChangeInlet outletId (ConnectToInlet inletDataStream)
-                        connectInletMsg = ChangeOutlet inletId (ConnectToOutlet outletDataStream)
+                        connectOutletMsg
+                            = ConnectToOutlet outletDataStream
+                            |> ChangeInlet inletId
+                            |> ChangeNode srcNodeId
+                        connectInletMsg
+                            = ConnectToInlet inletDataStream
+                            |> ChangeOutlet outletId
+                            |> ChangeNode dstNodeId
+                        link =
+                            Link srcNodeId dstNodeId outletId inletId outletDataStream
+                        patchWithLink =
+                            Patch
+                                patch' { links = link : patch'.links }
+                                patchSignal
                     in
-                        updatePatch connectOutletMsg |> updatePatch connectInletMsg
+                        patchWithLink
+                              |> updatePatch connectOutletMsg
+                              |> updatePatch connectInletMsg
                 _, _ -> patch -- TODO: throw error
         _, _ -> patch -- TODO: throw error
 
@@ -497,22 +511,22 @@ addOutlet type_ id label node@(Node node' nodeSignal processSignal) =
 
 
 
-adaptPatchSignal :: forall n c a x. Patch n c a x -> MsgSignal (NetworkMsg n c)
+adaptPatchSignal :: forall n c a x. Patch n c a x -> MsgSignal (NetworkMsg n c a x)
 adaptPatchSignal (Patch patch' patchSignal) =
     patchSignal S.~> (\patchMsg -> ChangePatch patch'.id patchMsg)
 
 
-adaptNodeSignal :: forall n c a x. Node n c a x -> MsgSignal (PatchMsg n c)
+adaptNodeSignal :: forall n c a x. Node n c a x -> MsgSignal (PatchMsg n c a x)
 adaptNodeSignal (Node node' nodeSignal _) =
     nodeSignal S.~> (\nodeMsg -> ChangeNode node'.id nodeMsg)
 
 
-adaptInletSignal :: forall n c a x. Inlet c a x -> MsgSignal (NodeMsg c)
+adaptInletSignal :: forall n c a x. Inlet c a x -> MsgSignal (NodeMsg c a x)
 adaptInletSignal (Inlet inlet' inletSignal _) =
     inletSignal S.~> (\inletMsg -> ChangeInlet inlet'.id inletMsg)
 
 
-adaptOutletSignal :: forall n c a x. Outlet c a x -> MsgSignal (NodeMsg c)
+adaptOutletSignal :: forall n c a x. Outlet c a x -> MsgSignal (NodeMsg c a x)
 adaptOutletSignal (Outlet outlet' outletSignal _) =
     outletSignal S.~> (\outletMsg -> ChangeOutlet outlet'.id outletMsg)
 
@@ -526,7 +540,7 @@ log :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
 log = logNetwork
 
 
-instance showNetworkMsg :: Show (NetworkMsg n c) where
+instance showNetworkMsg :: Show (NetworkMsg n c a x) where
     show CreateNetwork = "Create Network"
     show (AddPatch patchId title) = "Add Patch: " <> patchId <> " " <> title
     show (AddPatch' patchId) = "Add Patch: " <> patchId
@@ -539,7 +553,7 @@ instance showNetworkMsg :: Show (NetworkMsg n c) where
     show NetworkGotEmpty = "Network got empty"
 
 
-instance showPatchMsg :: Show (PatchMsg n c) where
+instance showPatchMsg :: Show (PatchMsg n c a x) where
     show CreatePatch = "Create Patch"
     show (AddNode _type nodeId title) = "Add Node: " <> nodeId <> " " <> title
     show (AddNode' _type nodeId) = "Add Node: " <> nodeId
@@ -555,7 +569,7 @@ instance showPatchMsg :: Show (PatchMsg n c) where
     show PatchGotEmpty = "Patch got empty"
 
 
-instance showNodeMsg :: Show (NodeMsg c) where
+instance showNodeMsg :: Show (NodeMsg c a x) where
     show CreateNode = "Create Node"
     show (AddInlet type_ inletId title)   = "Add Inlet: " <> inletId <> " " <> title
     show (AddInlet' type_ inletId)        = "Add Inlet: " <> inletId
@@ -570,16 +584,16 @@ instance showNodeMsg :: Show (NodeMsg c) where
     show NodeGotEmpty                     = "Node got empty"
 
 
-instance showInletMsg :: Show InletMsg where
+instance showInletMsg :: Show (InletMsg a x) where
     show CreateInlet = "Create Inlet"
-    show ConnectToOutlet = "Connect to Outlet"
+    show (ConnectToOutlet _) = "Connect to Outlet"
     show DisconnectFromOutlet = "Disconnect from Outlet"
     show Hide = "Hide Inlet"
 
 
-instance showOutletMsg :: Show OutletMsg where
+instance showOutletMsg :: Show (OutletMsg a x) where
     show CreateOutlet = "Create Outlet"
-    show ConnectToInlet = "Connect to Inlet"
+    show (ConnectToInlet _) = "Connect to Inlet"
     show DisconnectFromInlet = "Disconnect from Inlet"
 
 
