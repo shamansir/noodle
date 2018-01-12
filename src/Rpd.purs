@@ -7,14 +7,12 @@ module Rpd
     , log--, logData
     ) where
 
-import Data.Tuple
 import Prelude
+import Data.Tuple (Tuple(..))
 
-import DOM.HTML.HTMLMediaElement (networkState)
 import Data.Array ((:))
 import Data.Array as Array
 import Data.Function (apply, applyFlipped)
-import Data.Int.Bits (xor)
 import Data.Map (Map, insert, delete, values)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
@@ -50,6 +48,7 @@ data NetworkMsg n c a x
     | EnterPatch PatchId
     | ExitPatch PatchId
     | ChangePatch PatchId (PatchMsg n c a x)
+    | ChangePatch' (Patch n c a x)
     | NetworkGotEmpty -- TODO: remove
 
 
@@ -62,6 +61,7 @@ data PatchMsg n c a x
     | Disconnect NodeId NodeId OutletId InletId
     -- Disable Link
     | ChangeNode NodeId (NodeMsg c a x)
+    | ChangeNode' (Node n c a x)
     | PatchGotEmpty -- TODO: remove
 
 
@@ -74,9 +74,9 @@ data NodeMsg c a x
     | RemoveInlet InletId
     | RemoveOutlet OutletId
     | ChangeInlet InletId (InletMsg c a x)
+    | ChangeInlet' (Inlet c a x)
     | ChangeOutlet OutletId (OutletMsg c a x)
-    -- | Process (Map InletId (Flow a x)) (Map OutletId (Flow a x))
-    -- Hide InletId
+    | ChangeOutlet' (Outlet c a x)
     | NodeGotEmpty -- TODO: remove
 
 
@@ -197,18 +197,19 @@ update NetworkGotEmpty network     = network
 update (ChangePatch patchId patchMsg) network@(Network network' _) =
     case network'.patches |> Map.lookup patchId of
         Just patch ->
-            let
-                updatedPatch = patch |> updatePatch patchMsg
-                patches' = network'.patches |> Map.insert patchId updatedPatch
-                newPatchSignals =
-                    case S.mergeMany (map adaptPatchSignal patches') of
-                        Just sumSignal -> sumSignal
-                        Nothing -> S.constant NetworkGotEmpty
-            in
-                Network
-                    network' { patches = patches' }
-                    newPatchSignals
+            update (ChangePatch' (patch |> updatePatch patchMsg)) network
         Nothing -> network -- TODO: throw error
+update (ChangePatch' updatedPatch@(Patch patch' _)) network@(Network network' _) =
+    let
+        patches' = network'.patches |> Map.insert patch'.id updatedPatch
+        newPatchSignals =
+            case S.mergeMany (map adaptPatchSignal patches') of
+                Just sumSignal -> sumSignal
+                Nothing -> S.constant NetworkGotEmpty
+    in
+        Network
+            network' { patches = patches' }
+            newPatchSignals
 
 
 updatePatch :: forall n c a x. PatchMsg n c a x -> Patch n c a x -> Patch n c a x
@@ -224,18 +225,19 @@ updatePatch PatchGotEmpty patch            = patch
 updatePatch (ChangeNode nodeId nodeMsg) patch@(Patch patch' _) =
     case patch'.nodes |> Map.lookup nodeId of
         Just node ->
-            let
-                updatedNode = node |> updateNode nodeMsg
-                nodes' = patch'.nodes |> Map.insert nodeId updatedNode
-                newNodeSignals =
-                    case S.mergeMany (map adaptNodeSignal nodes') of
-                        Just sumSignal -> sumSignal
-                        Nothing -> S.constant PatchGotEmpty
-            in
-                Patch
-                    patch' { nodes = nodes' }
-                    newNodeSignals
+            updatePatch (ChangeNode' (node |> updateNode nodeMsg)) patch
         Nothing -> patch -- TODO: throw error
+updatePatch (ChangeNode' updatedNode@(Node node' _ _)) patch@(Patch patch' _) =
+    let
+        nodes' = patch'.nodes |> Map.insert node'.id updatedNode
+        newNodeSignals =
+            case S.mergeMany (map adaptNodeSignal nodes') of
+                Just sumSignal -> sumSignal
+                Nothing -> S.constant PatchGotEmpty
+    in
+        Patch
+            patch' { nodes = nodes' }
+            newNodeSignals
 
 
 updateNode :: forall n c a x. NodeMsg c a x -> Node n c a x -> Node n c a x
@@ -250,43 +252,45 @@ updateNode NodeGotEmpty node               = node
 updateNode (ChangeInlet inletId inletMsg) node@(Node node' _ processSignal) =
     case node'.inlets |> Map.lookup inletId of
         Just inlet ->
-            let
-                updatedInlet = inlet |> updateInlet inletMsg
-                inlets' = node'.inlets |> Map.insert inletId updatedInlet
-                newInletSignals =
-                    case S.mergeMany (map adaptInletSignal inlets') of
-                        Just sumSignal -> sumSignal
-                        Nothing -> S.constant NodeGotEmpty
-                outletSignals =
-                    case S.mergeMany (map adaptOutletSignal node'.outlets) of
-                        Just sumSignal -> sumSignal
-                        Nothing -> S.constant NodeGotEmpty
-            in
-                Node
-                    node' { inlets = inlets' }
-                    (S.merge newInletSignals outletSignals)
-                    processSignal
+            updateNode (ChangeInlet' (inlet |> updateInlet inletMsg)) node
         Nothing -> node -- TODO: throw error
+updateNode (ChangeInlet' updatedInlet@(Inlet inlet' _ _)) node@(Node node' _ processSignal) =
+    let
+        inlets' = node'.inlets |> Map.insert inlet'.id updatedInlet
+        newInletSignals =
+            case S.mergeMany (map adaptInletSignal inlets') of
+                Just sumSignal -> sumSignal
+                Nothing -> S.constant NodeGotEmpty
+        outletSignals =
+            case S.mergeMany (map adaptOutletSignal node'.outlets) of
+                Just sumSignal -> sumSignal
+                Nothing -> S.constant NodeGotEmpty
+    in
+        Node
+            node' { inlets = inlets' }
+            (S.merge newInletSignals outletSignals)
+            processSignal
 updateNode (ChangeOutlet outletId outletMsg) node@(Node node' _ processSignal) =
     case node'.outlets |> Map.lookup outletId of
         Just outlet ->
-            let
-                updatedOutlet = outlet |> updateOutlet outletMsg
-                outlets' = node'.outlets |> Map.insert outletId updatedOutlet
-                newOutletSignals =
-                    case S.mergeMany (map adaptOutletSignal outlets') of
-                        Just sumSignal -> sumSignal
-                        Nothing -> S.constant NodeGotEmpty
-                inletSignals =
-                    case S.mergeMany (map adaptInletSignal node'.inlets) of
-                        Just sumSignal -> sumSignal
-                        Nothing -> S.constant NodeGotEmpty
-            in
-                Node
-                    node' { outlets = outlets' }
-                    (S.merge inletSignals newOutletSignals)
-                    processSignal
+            updateNode (ChangeOutlet' (outlet |> updateOutlet outletMsg)) node
         Nothing -> node -- TODO: throw error
+updateNode (ChangeOutlet' updatedOutlet@(Outlet outlet' _ _)) node@(Node node' _ processSignal) =
+    let
+        outlets' = node'.outlets |> Map.insert outlet'.id updatedOutlet
+        newOutletSignals =
+            case S.mergeMany (map adaptOutletSignal outlets') of
+                Just sumSignal -> sumSignal
+                Nothing -> S.constant NodeGotEmpty
+        inletSignals =
+            case S.mergeMany (map adaptInletSignal node'.inlets) of
+                Just sumSignal -> sumSignal
+                Nothing -> S.constant NodeGotEmpty
+    in
+        Node
+            node' { outlets = outlets' }
+            (S.merge inletSignals newOutletSignals)
+            processSignal
 
 
 updateInlet :: forall c a x. InletMsg c a x -> Inlet c a x -> Inlet c a x
@@ -552,6 +556,7 @@ instance showNetworkMsg :: Show (NetworkMsg n c a x) where
     show (EnterPatch patchId) = "Enter Patch: " <> patchId
     show (ExitPatch patchId) = "Exit Patch: " <> patchId
     show (ChangePatch patchId patchMsg) = "Change Patch: " <> patchId <> " :: " <> show patchMsg
+    show (ChangePatch' (Patch patch' _)) = "Change Patch (ref): " <> patch'.id
     show NetworkGotEmpty = "Network got empty"
 
 
@@ -568,22 +573,27 @@ instance showPatchMsg :: Show (PatchMsg n c a x) where
         "from Inlet " <> inletId <> " from Node " <> dstNodeId
     show (ChangeNode nodeId nodeMsg) =
         "Change Node: " <> nodeId <> " :: " <> show nodeMsg
+    show (ChangeNode' (Node node' _ _)) = "Change Node (ref): " <> node'.id
     show PatchGotEmpty = "Patch got empty"
 
 
 instance showNodeMsg :: Show (NodeMsg c a x) where
     show CreateNode = "Create Node"
-    show (AddInlet type_ inletId title)   = "Add Inlet: " <> inletId <> " " <> title
-    show (AddInlet' type_ inletId)        = "Add Inlet: " <> inletId
+    show (AddInlet type_ inletId title) = "Add Inlet: " <> inletId <> " " <> title
+    show (AddInlet' type_ inletId) = "Add Inlet: " <> inletId
     show (AddOutlet type_ outletId title) = "Add Outlet: " <> outletId <> " " <> title
-    show (AddOutlet' type_ outletId)      = "Add Outlet: " <> outletId
-    show (RemoveInlet inletId)            = "Remove Inlet" <> inletId
-    show (RemoveOutlet outletId)          = "Remove Outlet" <> outletId
+    show (AddOutlet' type_ outletId) = "Add Outlet: " <> outletId
+    show (RemoveInlet inletId) = "Remove Inlet" <> inletId
+    show (RemoveOutlet outletId) = "Remove Outlet" <> outletId
     show (ChangeInlet inletId inletMsg) =
         "Change Inlet: " <> inletId <> " :: " <> show inletMsg
+    show (ChangeInlet' (Inlet inlet' _ _)) =
+        "Change Inlet (ref): " <> inlet'.id
     show (ChangeOutlet outletId outletMsg) =
         "Change Outlet: " <> outletId <> " :: " <> show outletMsg
-    show NodeGotEmpty                     = "Node got empty"
+    show (ChangeOutlet' (Outlet outlet' _ _)) =
+        "Change Outlet (ref): " <> outlet'.id
+    show NodeGotEmpty = "Node got empty"
 
 
 instance showInletMsg :: Show (InletMsg c a x) where
