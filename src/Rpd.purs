@@ -73,8 +73,8 @@ data NodeMsg c a x
     | AddOutlet' c OutletId
     | RemoveInlet InletId
     | RemoveOutlet OutletId
-    | ChangeInlet InletId (InletMsg a x)
-    | ChangeOutlet OutletId (OutletMsg a x)
+    | ChangeInlet InletId (InletMsg c a x)
+    | ChangeOutlet OutletId (OutletMsg c a x)
     -- | Process (Map InletId (Flow a x)) (Map OutletId (Flow a x))
     -- Hide InletId
     | NodeGotEmpty -- TODO: remove
@@ -82,10 +82,10 @@ data NodeMsg c a x
 
 -- TODO: use general ChannelMsg / FlowMsg ... ?
 
-data InletMsg a x
+data InletMsg c a x
     = CreateInlet
-    | ConnectToOutlet (FlowSignal a x)
-    | DisconnectFromOutlet
+    | ConnectToOutlet (Outlet' c) (FlowSignal a x)
+    | DisconnectFromOutlet (Outlet' c)
     | Hide
     -- | Receive a
     -- | Attach c (S.Signal a)
@@ -93,13 +93,13 @@ data InletMsg a x
 
 
 
-data OutletMsg a x
+data OutletMsg c a x
     -- = Send a
     -- | Emit c (S.Signal a)
     -- | SendError x
     = CreateOutlet
-    | ConnectToInlet (FlowSignal a x)
-    | DisconnectFromInlet
+    | ConnectToInlet (Inlet' c)
+    | DisconnectFromInlet (Inlet' c)
 
 
 data Value a x
@@ -165,9 +165,9 @@ data Patch n c a x = Patch (Patch' n c a x) (MsgSignal (PatchMsg n c a x))
 
 data Node n c a x = Node (Node' n c a x) (MsgSignal (NodeMsg c a x)) (ProcessSingal a x)
 
-data Inlet c a x = Inlet (Inlet' c) (MsgSignal (InletMsg a x)) (FlowSignal a x)
+data Inlet c a x = Inlet (Inlet' c) (MsgSignal (InletMsg c a x)) (FlowSignal a x)
 
-data Outlet c a x = Outlet (Outlet' c) (MsgSignal (OutletMsg a x)) (FlowSignal a x)
+data Outlet c a x = Outlet (Outlet' c) (MsgSignal (OutletMsg c a x)) (FlowSignal a x)
 
 data Link c a x = Link NodeId NodeId OutletId InletId (FlowSignal a x)
 
@@ -289,17 +289,18 @@ updateNode (ChangeOutlet outletId outletMsg) node@(Node node' _ processSignal) =
         Nothing -> node -- TODO: throw error
 
 
-updateInlet :: forall c a x. InletMsg a x -> Inlet c a x -> Inlet c a x
+updateInlet :: forall c a x. InletMsg c a x -> Inlet c a x -> Inlet c a x
 updateInlet CreateInlet inlet = inlet
-updateInlet (ConnectToOutlet signal) inlet = inlet
-updateInlet DisconnectFromOutlet inlet = inlet
+updateInlet (ConnectToOutlet _ signal) (Inlet inlet' msgSignal dataSignal) =
+    Inlet inlet' msgSignal (S.merge dataSignal signal)
+updateInlet (DisconnectFromOutlet _) inlet = inlet -- FIXME: implement
 updateInlet Hide inlet = inlet
 
 
-updateOutlet :: forall c a x. OutletMsg a x -> Outlet c a x -> Outlet c a x
+updateOutlet :: forall c a x. OutletMsg c a x -> Outlet c a x -> Outlet c a x
 updateOutlet CreateOutlet outlet = outlet
-updateOutlet (ConnectToInlet signal) outlet = outlet
-updateOutlet DisconnectFromInlet outlet = outlet
+updateOutlet (ConnectToInlet _) outlet = outlet
+updateOutlet (DisconnectFromInlet _) outlet = outlet -- FIXME: implement
 
 
 -- Send, Attach etc.
@@ -426,14 +427,15 @@ connect srcNodeId dstNodeId outletId inletId patch@(Patch patch' patchSignal) =
                 Just inlet@(Inlet inlet' _ inletDataStream) ->
                     let
                         connectOutletMsg
-                            = ConnectToOutlet outletDataStream
+                            = ConnectToOutlet outlet' outletDataStream
                             |> ChangeInlet inletId
                             |> ChangeNode srcNodeId
                         connectInletMsg
-                            = ConnectToInlet inletDataStream
+                            = ConnectToInlet inlet'
                             |> ChangeOutlet outletId
                             |> ChangeNode dstNodeId
                         link =
+                            -- FIXME: do not repeat outletStream ?
                             Link srcNodeId dstNodeId outletId inletId outletDataStream
                         patchWithLink =
                             Patch
@@ -584,17 +586,17 @@ instance showNodeMsg :: Show (NodeMsg c a x) where
     show NodeGotEmpty                     = "Node got empty"
 
 
-instance showInletMsg :: Show (InletMsg a x) where
+instance showInletMsg :: Show (InletMsg c a x) where
     show CreateInlet = "Create Inlet"
-    show (ConnectToOutlet _) = "Connect to Outlet"
-    show DisconnectFromOutlet = "Disconnect from Outlet"
+    show (ConnectToOutlet _ _) = "Connect to Outlet"
+    show (DisconnectFromOutlet _) = "Disconnect from Outlet"
     show Hide = "Hide Inlet"
 
 
-instance showOutletMsg :: Show (OutletMsg a x) where
+instance showOutletMsg :: Show (OutletMsg c a x) where
     show CreateOutlet = "Create Outlet"
     show (ConnectToInlet _) = "Connect to Inlet"
-    show DisconnectFromInlet = "Disconnect from Inlet"
+    show (DisconnectFromInlet _) = "Disconnect from Inlet"
 
 
 logNetwork :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
