@@ -8,7 +8,6 @@ module Rpd
     ) where
 
 import Prelude
-import Data.Tuple (Tuple(..))
 
 import Data.Array ((:))
 import Data.Array as Array
@@ -16,6 +15,7 @@ import Data.Function (apply, applyFlipped)
 import Data.Map (Map, insert, delete, values)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
+import Data.Tuple (Tuple(..))
 import Signal as S
 
 -- Elm-style operators
@@ -153,23 +153,29 @@ type Outlet' c =
 -- The signal where all the data flows: Bangs, data chunks and errors
 type FlowSignal a x = S.Signal (Value a x)
 
+type TaggedFlowSignal a x = S.Signal (Tuple InletId (Value a x))
+
 -- The signal where the messages go
 type MsgSignal m = S.Signal m
 
 -- The special signal for nodes which tracks the data flow through node inputs and outlets
-type ProcessSingal a x = S.Signal (Tuple (Map InletId (Value a x)) (Map OutletId (Value a x)))
+type ProcessSignal a x = S.Signal (Tuple (Map InletId (Value a x)) (Map OutletId (Value a x)))
 
 data Network n c a x = Network (Network' n c a x) (MsgSignal (NetworkMsg n c a x))
 
 data Patch n c a x = Patch (Patch' n c a x) (MsgSignal (PatchMsg n c a x))
 
-data Node n c a x = Node (Node' n c a x) (MsgSignal (NodeMsg c a x)) (ProcessSingal a x)
+data Node n c a x = Node (Node' n c a x) (MsgSignal (NodeMsg c a x)) (ProcessSignal a x)
 
 data Inlet c a x = Inlet (Inlet' c) (MsgSignal (InletMsg c a x)) (FlowSignal a x)
 
 data Outlet c a x = Outlet (Outlet' c) (MsgSignal (OutletMsg c a x)) (FlowSignal a x)
 
 data Link c a x = Link NodeId NodeId OutletId InletId (FlowSignal a x)
+
+initProcessSignal :: forall a x. ProcessSignal a x
+initProcessSignal =
+    S.constant (Tuple Map.empty Map.empty)
 
 -- main functions
 
@@ -261,6 +267,21 @@ updateNode (ChangeInlet' updatedInlet@(Inlet inlet' _ _)) node@(Node node' _ pro
             case S.mergeMany (map adaptInletSignal inlets') of
                 Just sumSignal -> sumSignal
                 Nothing -> S.constant NodeGotEmpty
+        processSignal' =
+            case node'.process of
+                Just processFn ->
+                    case S.mergeMany (map tagFlowSignal inlets') of
+                        Just taggedSignal ->
+                            S.foldp (\(Tuple inletId inletVal) (Tuple inletVals _) ->
+                                let
+                                    inletVals' = inletVals |> Map.insert inletId inletVal
+                                    outletVals' = processFn inletVals'
+                                in
+                                    Tuple inletVals' outletVals'
+                            ) (Tuple Map.empty Map.empty) taggedSignal
+                        Nothing -> initProcessSignal
+                Nothing -> processSignal
+        -- TODO: adapt outlet flow signal to receive updates from processSignal
         outletSignals =
             case S.mergeMany (map adaptOutletSignal node'.outlets) of
                 Just sumSignal -> sumSignal
@@ -269,7 +290,7 @@ updateNode (ChangeInlet' updatedInlet@(Inlet inlet' _ _)) node@(Node node' _ pro
         Node
             node' { inlets = inlets' }
             (S.merge newInletSignals outletSignals)
-            processSignal
+            processSignal'
 updateNode (ChangeOutlet outletId outletMsg) node@(Node node' _ processSignal) =
     case node'.outlets |> Map.lookup outletId of
         Just outlet ->
@@ -535,6 +556,11 @@ adaptInletSignal (Inlet inlet' inletSignal _) =
 adaptOutletSignal :: forall n c a x. Outlet c a x -> MsgSignal (NodeMsg c a x)
 adaptOutletSignal (Outlet outlet' outletSignal _) =
     outletSignal S.~> (\outletMsg -> ChangeOutlet outlet'.id outletMsg)
+
+
+tagFlowSignal :: forall n c a x. Inlet c a x -> TaggedFlowSignal a x
+tagFlowSignal (Inlet inlet' _ flowSignal) =
+    flowSignal S.~> (\val -> Tuple inlet'.id val)
 
 
 -- make data items require a Show instance,
