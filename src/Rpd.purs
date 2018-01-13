@@ -106,6 +106,7 @@ data Value a x
     = Bang
     | Data a
     | Error x
+    | SysError String
 
 
 type Network' n c a x =
@@ -280,8 +281,43 @@ updateNode (ChangeInlet' updatedInlet@(Inlet inlet' _ _)) node@(Node node' _ pro
                                     Tuple inletVals' outletVals'
                             ) (Tuple Map.empty Map.empty) taggedSignal
                         Nothing -> initProcessSignal
-                Nothing -> processSignal
-        -- TODO: adapt outlet flow signal to receive updates from processSignal
+                Nothing -> initProcessSignal -- processSignal
+        outlets' = map (\(Outlet outlet' msgSignal flowSignal) ->
+            let
+                filteredProcessSignal =
+                    S.filter
+                        (\(Tuple _ outletVals) -> Map.member outlet'.id outletVals)
+                        (Tuple Map.empty Map.empty)
+                        processSignal'
+                flowSignal' =
+                    map
+                        (\(Tuple _ outletVals) ->
+                            case Map.lookup outlet'.id outletVals of
+                                Just value -> value
+                                Nothing -> SysError "Failed to find outlet"
+                        )
+                        filteredProcessSignal
+            in
+                Outlet outlet' msgSignal flowSignal'
+        ) node'.outlets
+        -- outlets' = map
+        --     (\(Outlet outlet' msgSignal flowSignal) ->
+        --         let
+        --             filteredProcessSignal =
+        --                 S.filter
+        --                     (Tuple _ outletVals -> Map.member outlet'.id outletVals)
+        --                     processSignal'
+        --             flowSignal' =
+        --                 map
+        --                     (\(Tuple _ outletVals) ->
+        --                         case Map.lookup outlet'.id outletVals of
+        --                             Just value -> value
+        --                             Nothing -> SysError "Failed to find outlet"
+        --                     )
+        --                 filteredProcessSignal
+        --         in
+        --             Outlet outlet' msgSignal flowSignal'
+        --     ) node'.outlets
         outletSignals =
             case S.mergeMany (map adaptOutletSignal node'.outlets) of
                 Just sumSignal -> sumSignal
