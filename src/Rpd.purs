@@ -284,40 +284,16 @@ updateNode (ChangeInlet' updatedInlet@(Inlet inlet' _ _)) node@(Node node' _ pro
                 Nothing -> initProcessSignal -- processSignal
         outlets' = map (\(Outlet outlet' msgSignal flowSignal) ->
             let
-                filteredProcessSignal =
-                    S.filter
-                        (\(Tuple _ outletVals) -> Map.member outlet'.id outletVals)
-                        (Tuple Map.empty Map.empty)
-                        processSignal'
                 flowSignal' =
-                    map
-                        (\(Tuple _ outletVals) ->
-                            case Map.lookup outlet'.id outletVals of
-                                Just value -> value
-                                Nothing -> SysError "Failed to find outlet"
-                        )
-                        filteredProcessSignal
+                    S.merge
+                        (S.filterMap
+                            (\(Tuple _ outletVals) -> Map.lookup outlet'.id outletVals)
+                            (SysError "Failed to find outlet")
+                            processSignal')
+                        flowSignal
             in
                 Outlet outlet' msgSignal flowSignal'
         ) node'.outlets
-        -- outlets' = map
-        --     (\(Outlet outlet' msgSignal flowSignal) ->
-        --         let
-        --             filteredProcessSignal =
-        --                 S.filter
-        --                     (Tuple _ outletVals -> Map.member outlet'.id outletVals)
-        --                     processSignal'
-        --             flowSignal' =
-        --                 map
-        --                     (\(Tuple _ outletVals) ->
-        --                         case Map.lookup outlet'.id outletVals of
-        --                             Just value -> value
-        --                             Nothing -> SysError "Failed to find outlet"
-        --                     )
-        --                 filteredProcessSignal
-        --         in
-        --             Outlet outlet' msgSignal flowSignal'
-        --     ) node'.outlets
         outletSignals =
             case S.mergeMany (map adaptOutletSignal node'.outlets) of
                 Just sumSignal -> sumSignal
