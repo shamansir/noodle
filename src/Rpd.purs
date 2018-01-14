@@ -659,31 +659,35 @@ logNetwork (Network _ networkSignal) =
     networkSignal S.~> show
 
 
-logDataFlow :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
-logDataFlow (Network _ networkSignal) =
-    let
-        maybeShowDataSignal =
-            networkSignal
-                |> S.filterMap (\networkMsg ->
-                    case networkMsg of
-                        ChangePatch _ (ChangeNode _ (ChangeInlet' (Inlet inlet' _ dataSignal)))
-                            -> Just dataSignal
-                        ChangePatch _ (ChangeNode _ (ChangeOutlet' (Outlet outlet' _ dataSignal)))
-                            -> Just dataSignal
-                        _ -> Nothing
-                ) (S.constant Bang)
-                |> S.mergeMany
-                -- |> map show
-    in
-        case maybeShowDataSignal of
-            Just showDataSignal -> showDataSignal |> map show
-            Nothing -> S.constant ""
+-- logDataFlow :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
+-- logDataFlow (Network network' _) =
+--     let
+--         allNodes = map (\(Patch patch' _) -> patch'.nodes) network'.patches
+--         allDataSignals =
+--             map (\(Node node' _ _) ->
+--                 (map (\(Inlet inlet' _ dataSignal) -> dataSignal) node'.inlets)
+--                  <> (map (\(Outlet outlet' _ dataSignal) -> dataSignal) node'.outlets)
+--             ) allNodes
+--         -- probably has no sense since we're changing data signal next time we send data
+--     in
+--         allDataSignals
 
-
--- logData :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
--- logData (Network _ networkSignal) =
---     networkSignal S.~> (\message ->
---         case message of
---             Bang -> show "Bang"
---             Data d -> show d
---             Error x -> show ("Error: " <> (show x)))
+-- logDataFlow :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
+-- logDataFlow (Network _ networkSignal) =
+--      let
+--         maybeShowDataSignal =
+--             networkSignal
+--                 |> S.filterMap (\networkMsg ->
+--                     case networkMsg of
+--                         ChangePatch _ (ChangeNode _ (ChangeInlet' (Inlet inlet' _ dataSignal)))
+--                             -> Just dataSignal
+--                         ChangePatch _ (ChangeNode _ (ChangeOutlet' (Outlet outlet' _ dataSignal)))
+--                             -> Just dataSignal
+--                         _ -> Nothing
+--                 ) (S.constant Bang)
+--                 |> S.mergeMany
+--                 -- |> map show
+--      in
+--         case maybeShowDataSignal of
+--             Just showDataSignal -> showDataSignal |> map show
+--             Nothing -> S.constant ""
