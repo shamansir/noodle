@@ -647,10 +647,37 @@ instance showOutletMsg :: Show (OutletMsg c a x) where
     show (DisconnectFromInlet _) = "Disconnect from Inlet"
 
 
-logNetwork :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
+instance showValue :: ( Show a, Show x ) => Show (Value a x) where
+    show Bang = "Bang"
+    show (Data val) = "Data: " <> show val
+    show (Error err) = "Error: " <> show err
+    show (SysError msg) = "System Error: " <> msg
+
+
+logNetwork :: forall n c a x. Network n c a x -> S.Signal String
 logNetwork (Network _ networkSignal) =
     networkSignal S.~> show
 
+
+logDataFlow :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
+logDataFlow (Network _ networkSignal) =
+    let
+        maybeShowDataSignal =
+            networkSignal
+                |> S.filterMap (\networkMsg ->
+                    case networkMsg of
+                        ChangePatch _ (ChangeNode _ (ChangeInlet' (Inlet inlet' _ dataSignal)))
+                            -> Just dataSignal
+                        ChangePatch _ (ChangeNode _ (ChangeOutlet' (Outlet outlet' _ dataSignal)))
+                            -> Just dataSignal
+                        _ -> Nothing
+                ) (S.constant Bang)
+                |> S.mergeMany
+                -- |> map show
+    in
+        case maybeShowDataSignal of
+            Just showDataSignal -> showDataSignal |> map show
+            Nothing -> S.constant ""
 
 
 -- logData :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
