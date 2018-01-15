@@ -8,6 +8,13 @@ import Signal as S
 import Signal.Time as ST
 import Data.Function (apply, applyFlipped)
 
+import Rpd as Rpd
+
+-- Elm-style operators
+
+infixr 0 apply as <|
+infixl 1 applyFlipped as |>
+
 -- test stuff
 
 hello :: S.Signal String
@@ -27,6 +34,9 @@ data MyInletType = NumInlet | StrInlet
 
 main :: forall eff. Eff (console :: CONSOLE | eff) Unit
 main =
+    let
+        network = Rpd.init "network" |>
+    in
     -- let
         -- patch = createPatch' "foo"
         -- node = createNode' "num" NumNode
