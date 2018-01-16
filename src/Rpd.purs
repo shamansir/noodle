@@ -10,6 +10,7 @@ module Rpd
 import Prelude
 
 import Control.Plus (empty)
+
 import Data.Array ((:))
 import Data.Array as Array
 import Data.Function (apply, applyFlipped)
@@ -18,6 +19,7 @@ import Data.Map (Map, insert, delete, values)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
+
 import Signal as S
 
 -- Elm-style operators
@@ -651,9 +653,6 @@ tagFlowSignal (Inlet inlet' _ flowSignal) =
 -- for Node type and Channel type?
 -- like accept() allow() etc.
 
-log :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
-log = logNetwork
-
 
 instance showNetworkMsg :: Show (NetworkMsg n c a x) where
     show CreateNetwork = "Create Network"
@@ -723,6 +722,10 @@ instance showValue :: ( Show a, Show x ) => Show (Value a x) where
     show (Data val) = "Data: " <> show val
     show (Error err) = "Error: " <> show err
     show (SysError msg) = "System Error: " <> msg
+
+
+log :: forall n c a x. Network n c a x -> S.Signal String
+log = logNetwork
 
 
 logNetwork :: forall n c a x. Network n c a x -> S.Signal String

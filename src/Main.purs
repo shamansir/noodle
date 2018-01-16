@@ -4,11 +4,10 @@ import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
+import Data.Function (apply, applyFlipped)
+import Rpd as Rpd
 import Signal as S
 import Signal.Time as ST
-import Data.Function (apply, applyFlipped)
-
-import Rpd as Rpd
 
 -- Elm-style operators
 
@@ -35,8 +34,10 @@ data MyInletType = NumInlet | StrInlet
 main :: forall eff. Eff (console :: CONSOLE | eff) Unit
 main =
     let
-        network = Rpd.init "network" |>
+        network = Rpd.init "network"
+            |> Rpd.addPatch "foo" "bar"
     in
+        S.runSignal (Rpd.log network S.~> log)
     -- let
         -- patch = createPatch' "foo"
         -- node = createNode' "num" NumNode
@@ -45,4 +46,4 @@ main =
         -- (Patch _ sumSignal) = addNode' nodeWithInlet patch
         -- signalLog = S.runSignal ((stringRenderer patch) S.~> log)
     -- in
-        S.runSignal helloEffect
+        -- S.runSignal helloEffect
