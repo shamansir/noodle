@@ -196,21 +196,27 @@ init id =
 
 
 update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
-update CreateNetwork network       = network
-update (AddPatch id title) network = network |> addPatch' id title
-update (AddPatch' id) network      = network |> addPatch' id id
-update (RemovePatch id) network    = network |> removePatch' id
-update (SelectPatch id) network    = network |> selectPatch' id
-update DeselectPatch network       = network |> deselectPatch'
-update (EnterPatch id) network     = network |> enterPatch' id
-update (ExitPatch id) network      = network |> exitPatch' id
-update NetworkGotEmpty network     = network
-update (ChangePatch patchId patchMsg) network@(Network network' _) =
+update networkMsg (Network network' networkSignal) =
+    Network network' (S.merge networkSignal (S.constant networkMsg))
+        |> update' networkMsg
+
+
+update' :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
+update' CreateNetwork network       = network
+update' (AddPatch id title) network = network |> addPatch' id title
+update' (AddPatch' id) network      = network |> addPatch' id id
+update' (RemovePatch id) network    = network |> removePatch' id
+update' (SelectPatch id) network    = network |> selectPatch' id
+update' DeselectPatch network       = network |> deselectPatch'
+update' (EnterPatch id) network     = network |> enterPatch' id
+update' (ExitPatch id) network      = network |> exitPatch' id
+update' NetworkGotEmpty network     = network
+update' (ChangePatch patchId patchMsg) network@(Network network' _) =
     case network'.patches |> Map.lookup patchId of
         Just patch ->
-            update (ChangePatch' (patch |> updatePatch patchMsg)) network
+            update' (ChangePatch' (patch |> updatePatch patchMsg)) network
         Nothing -> network -- TODO: throw error
-update (ChangePatch' updatedPatch@(Patch patch' _)) network@(Network network' _) =
+update' (ChangePatch' updatedPatch@(Patch patch' _)) network@(Network network' _) =
     let
         patches' = network'.patches |> Map.insert patch'.id updatedPatch
         newPatchSignals =
@@ -224,21 +230,27 @@ update (ChangePatch' updatedPatch@(Patch patch' _)) network@(Network network' _)
 
 
 updatePatch :: forall n c a x. PatchMsg n c a x -> Patch n c a x -> Patch n c a x
-updatePatch CreatePatch patch              = patch
-updatePatch (AddNode type_ id title) patch = patch |> addNode' type_ id title
-updatePatch (AddNode' type_ id) patch      = patch |> addNode' type_ id id
-updatePatch (RemoveNode id) patch          = patch |> removeNode' id
-updatePatch (Connect srcNodeId dstNodeId inletId outletId) patch =
+updatePatch patchMsg (Patch patch' patchSignal) =
+    Patch patch' (S.merge patchSignal (S.constant patchMsg))
+        |> updatePatch' patchMsg
+
+
+updatePatch' :: forall n c a x. PatchMsg n c a x -> Patch n c a x -> Patch n c a x
+updatePatch' CreatePatch patch              = patch
+updatePatch' (AddNode type_ id title) patch = patch |> addNode' type_ id title
+updatePatch' (AddNode' type_ id) patch      = patch |> addNode' type_ id id
+updatePatch' (RemoveNode id) patch          = patch |> removeNode' id
+updatePatch' (Connect srcNodeId dstNodeId inletId outletId) patch =
     patch |> connect' srcNodeId dstNodeId inletId outletId
-updatePatch (Disconnect srcNodeId dstNodeId inletId outletId) patch =
+updatePatch' (Disconnect srcNodeId dstNodeId inletId outletId) patch =
     patch |> disconnect' srcNodeId dstNodeId inletId outletId
-updatePatch PatchGotEmpty patch            = patch
-updatePatch (ChangeNode nodeId nodeMsg) patch@(Patch patch' _) =
+updatePatch' PatchGotEmpty patch            = patch
+updatePatch' (ChangeNode nodeId nodeMsg) patch@(Patch patch' _) =
     case patch'.nodes |> Map.lookup nodeId of
         Just node ->
-            updatePatch (ChangeNode' (node |> updateNode nodeMsg)) patch
+            updatePatch' (ChangeNode' (node |> updateNode nodeMsg)) patch
         Nothing -> patch -- TODO: throw error
-updatePatch (ChangeNode' updatedNode@(Node node' _ _)) patch@(Patch patch' _) =
+updatePatch' (ChangeNode' updatedNode@(Node node' _ _)) patch@(Patch patch' _) =
     let
         nodes' = patch'.nodes |> Map.insert node'.id updatedNode
         newNodeSignals =
@@ -252,20 +264,26 @@ updatePatch (ChangeNode' updatedNode@(Node node' _ _)) patch@(Patch patch' _) =
 
 
 updateNode :: forall n c a x. NodeMsg c a x -> Node n c a x -> Node n c a x
-updateNode CreateNode node                 = node
-updateNode (AddInlet type_ id title) node  = node |> addInlet' type_ id title
-updateNode (AddInlet' type_ id) node       = node |> addInlet' type_ id id
-updateNode (AddOutlet type_ id title) node = node |> addOutlet' type_ id title
-updateNode (AddOutlet' type_ id) node      = node |> addInlet' type_ id id
-updateNode (RemoveInlet id) node           = node -- |> removeInlet id
-updateNode (RemoveOutlet id) node          = node -- |> removeOutlet id
-updateNode NodeGotEmpty node               = node
-updateNode (ChangeInlet inletId inletMsg) node@(Node node' _ processSignal) =
+updateNode nodeMsg (Node node' nodeSignal processSignal) =
+    Node node' (S.merge nodeSignal (S.constant nodeMsg)) processSignal
+        |> updateNode' nodeMsg
+
+
+updateNode' :: forall n c a x. NodeMsg c a x -> Node n c a x -> Node n c a x
+updateNode' CreateNode node                 = node
+updateNode' (AddInlet type_ id title) node  = node |> addInlet' type_ id title
+updateNode' (AddInlet' type_ id) node       = node |> addInlet' type_ id id
+updateNode' (AddOutlet type_ id title) node = node |> addOutlet' type_ id title
+updateNode' (AddOutlet' type_ id) node      = node |> addInlet' type_ id id
+updateNode' (RemoveInlet id) node           = node -- |> removeInlet id
+updateNode' (RemoveOutlet id) node          = node -- |> removeOutlet id
+updateNode' NodeGotEmpty node               = node
+updateNode' (ChangeInlet inletId inletMsg) node@(Node node' _ processSignal) =
     case node'.inlets |> Map.lookup inletId of
         Just inlet ->
-            updateNode (ChangeInlet' (inlet |> updateInlet inletMsg)) node
+            updateNode' (ChangeInlet' (inlet |> updateInlet inletMsg)) node
         Nothing -> node -- TODO: throw error
-updateNode (ChangeInlet' updatedInlet@(Inlet inlet' _ _)) node@(Node node' _ processSignal) =
+updateNode' (ChangeInlet' updatedInlet@(Inlet inlet' _ _)) node@(Node node' _ processSignal) =
     let
         inlets' = node'.inlets |> Map.insert inlet'.id updatedInlet
         newInletSignals =
@@ -307,12 +325,12 @@ updateNode (ChangeInlet' updatedInlet@(Inlet inlet' _ _)) node@(Node node' _ pro
             node' { inlets = inlets' }
             (S.merge newInletSignals outletSignals)
             processSignal'
-updateNode (ChangeOutlet outletId outletMsg) node@(Node node' _ processSignal) =
+updateNode' (ChangeOutlet outletId outletMsg) node@(Node node' _ processSignal) =
     case node'.outlets |> Map.lookup outletId of
         Just outlet ->
             updateNode (ChangeOutlet' (outlet |> updateOutlet outletMsg)) node
         Nothing -> node -- TODO: throw error
-updateNode (ChangeOutlet' updatedOutlet@(Outlet outlet' _ _)) node@(Node node' _ processSignal) =
+updateNode' (ChangeOutlet' updatedOutlet@(Outlet outlet' _ _)) node@(Node node' _ processSignal) =
     let
         outlets' = node'.outlets |> Map.insert outlet'.id updatedOutlet
         newOutletSignals =
@@ -331,17 +349,29 @@ updateNode (ChangeOutlet' updatedOutlet@(Outlet outlet' _ _)) node@(Node node' _
 
 
 updateInlet :: forall c a x. InletMsg c a x -> Inlet c a x -> Inlet c a x
-updateInlet CreateInlet inlet = inlet
-updateInlet (ConnectToOutlet _ signal) (Inlet inlet' msgSignal dataSignal) =
+updateInlet inletMsg (Inlet inlet' inletSignal dataSignal) =
+    Inlet inlet' (S.merge inletSignal (S.constant inletMsg)) dataSignal
+        |> updateInlet' inletMsg
+
+
+updateInlet' :: forall c a x. InletMsg c a x -> Inlet c a x -> Inlet c a x
+updateInlet' CreateInlet inlet = inlet
+updateInlet' (ConnectToOutlet _ signal) (Inlet inlet' msgSignal dataSignal) =
     Inlet inlet' msgSignal (S.merge dataSignal signal)
-updateInlet (DisconnectFromOutlet _) inlet = inlet -- FIXME: implement
-updateInlet Hide inlet = inlet
+updateInlet' (DisconnectFromOutlet _) inlet = inlet -- FIXME: implement
+updateInlet' Hide inlet = inlet
 
 
 updateOutlet :: forall c a x. OutletMsg c a x -> Outlet c a x -> Outlet c a x
-updateOutlet CreateOutlet outlet = outlet
-updateOutlet (ConnectToInlet _) outlet = outlet
-updateOutlet (DisconnectFromInlet _) outlet = outlet -- FIXME: implement
+updateOutlet outletMsg (Outlet outlet' outletSignal dataSignal) =
+    Outlet outlet' (S.merge outletSignal (S.constant outletMsg)) dataSignal
+        |> updateOutlet' outletMsg
+
+
+updateOutlet' :: forall c a x. OutletMsg c a x -> Outlet c a x -> Outlet c a x
+updateOutlet' CreateOutlet outlet = outlet
+updateOutlet' (ConnectToInlet _) outlet = outlet
+updateOutlet' (DisconnectFromInlet _) outlet = outlet -- FIXME: implement
 
 
 -- Send, Attach etc.
