@@ -43,7 +43,7 @@ type LinkId = Id
 -- `x` — error type
 
 data NetworkMsg n c a x
-    = CreateNetwork
+    = CreateNetwork NetworkId
     | AddPatch PatchId String
     | AddPatch' PatchId
     | RemovePatch PatchId
@@ -192,17 +192,17 @@ init id =
         , selected : Nothing
         , entered : []
         }
-        (S.constant CreateNetwork)
+        (S.constant (CreateNetwork id))
 
 
 update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
 update networkMsg (Network network' networkSignal) =
-    Network network' (S.merge networkSignal (S.constant networkMsg))
+    (Network network' (S.merge networkSignal (S.constant networkMsg)))
         |> update' networkMsg
 
 
 update' :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
-update' CreateNetwork network       = network
+update' (CreateNetwork id) network  = network
 update' (AddPatch id title) network = network |> addPatch' id title
 update' (AddPatch' id) network      = network |> addPatch' id id
 update' (RemovePatch id) network    = network |> removePatch' id
@@ -685,7 +685,7 @@ tagFlowSignal (Inlet inlet' _ flowSignal) =
 
 
 instance showNetworkMsg :: Show (NetworkMsg n c a x) where
-    show CreateNetwork = "Create Network"
+    show (CreateNetwork networkId) = "Create Network: " <> networkId
     show (AddPatch patchId title) = "Add Patch: " <> patchId <> " " <> title
     show (AddPatch' patchId) = "Add Patch: " <> patchId
     show (RemovePatch patchId) = "Remove Patch: " <> patchId
