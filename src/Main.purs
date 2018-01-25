@@ -8,6 +8,8 @@ import Data.Function (apply, applyFlipped)
 import Rpd as Rpd
 import Signal as S
 import Signal.Time as ST
+import Signal.Channel as SC
+import Signal.Loop as SL
 
 -- Elm-style operators
 
@@ -31,12 +33,24 @@ data MyNodeType = NumNode | StrNode
 
 data MyInletType = NumInlet | StrInlet
 
-main :: forall eff. Eff (console :: C.CONSOLE | eff) Unit
-main =
-    let
-        network = Rpd.addPatch "foo" "bar" (Rpd.init "network")
-    in
-        S.runSignal (Rpd.log network S.~> C.log)
+-- main :: forall eff. Eff (console :: C.CONSOLE | eff) Unit
+-- main =
+    -- let
+    --     network = Rpd.addPatch "foo" "bar" (Rpd.init "network")
+    --     trySignal = S.merge (S.constant "a") (ST.delay 100.0 (S.constant "b"))
+    -- in
+    --     S.runSignal (trySignal S.~> C.log)
+
+main :: Eff (console :: C.CONSOLE, channel :: SC.CHANNEL) Unit
+main = void do
+  let view :: Int -> SL.Emitter (console :: C.CONSOLE, channel :: SC.CHANNEL) Int
+      view n emit = void do
+        C.log $ "Received: " <> show n
+        when (n < 10) $ emit (n + 1)
+
+  -- The loop reads the most recent value from the "future" signal
+  -- and uses the view function to display it and simulate the next event.
+  SL.runLoop 0 \future -> map view future
 
 
 
