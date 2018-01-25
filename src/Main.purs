@@ -41,16 +41,22 @@ data MyInletType = NumInlet | StrInlet
     -- in
     --     S.runSignal (trySignal S.~> C.log)
 
+data MsgWrapper n c a x = MsgWrapper Int (Rpd.NetworkMsg n c a x)
+
 main :: Eff (console :: C.CONSOLE, channel :: SC.CHANNEL) Unit
 main = void do
-  let view :: Int -> SL.Emitter (console :: C.CONSOLE, channel :: SC.CHANNEL) Int
-      view n emit = void do
-        C.log $ "Received: " <> show n
-        when (n < 10) $ emit (n + 1)
+  let
+      view
+        :: forall n c a x
+        . (MsgWrapper n c a x)
+        -> SL.Emitter (console :: C.CONSOLE, channel :: SC.CHANNEL) (MsgWrapper n c a x)
+      view (MsgWrapper num msg) emit = void do
+        C.log $ "Received: " <> show num <> " / " <> show msg
+        when (num < 10) $ emit (MsgWrapper (num + 1) (Rpd.CreateNetwork "test") )
 
   -- The loop reads the most recent value from the "future" signal
   -- and uses the view function to display it and simulate the next event.
-  SL.runLoop 0 \future -> map view future
+  SL.runLoop (MsgWrapper 0 (Rpd.CreateNetwork "a")) \future -> map view future
 
 
 

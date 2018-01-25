@@ -1,7 +1,11 @@
 module Rpd
     ( Id, NetworkId, PatchId, NodeId, ChannelId, InletId, OutletId, LinkId
     , Network, Patch, Node, Inlet, Outlet, Link
-    , NetworkMsg, update, init
+    -- exported only for tests, remove it later
+    , FlowSignal, Value, Outlet', Inlet', Node', Patch', Network'
+    , NetworkMsg(..), PatchMsg(..), NodeMsg(..), InletMsg(..), OutletMsg(..)
+    -- end of the things to remove
+    , update, init
     , addPatch, removePatch, selectPatch, deselectPatch, enterPatch, exitPatch
     , addNode, addInlet, addOutlet, connect, disconnect
     , log--, logData
