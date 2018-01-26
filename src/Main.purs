@@ -4,12 +4,15 @@ import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console as C
+import Data.Array (head, tail)
 import Data.Function (apply, applyFlipped)
+import Data.Maybe (fromMaybe)
+import Data.String (joinWith)
 import Rpd as Rpd
 import Signal as S
-import Signal.Time as ST
 import Signal.Channel as SC
 import Signal.Loop as SL
+import Signal.Time as ST
 
 -- Elm-style operators
 
@@ -41,22 +44,26 @@ data MyInletType = NumInlet | StrInlet
     -- in
     --     S.runSignal (trySignal S.~> C.log)
 
-data MsgWrapper n c a x = MsgWrapper Int (Rpd.NetworkMsg n c a x)
-
 main :: Eff (console :: C.CONSOLE, channel :: SC.CHANNEL) Unit
 main = void do
   let
       view
         :: forall n c a x
-        . (MsgWrapper n c a x)
-        -> SL.Emitter (console :: C.CONSOLE, channel :: SC.CHANNEL) (MsgWrapper n c a x)
-      view (MsgWrapper num msg) emit = void do
-        C.log $ "Received: " <> show num <> " / " <> show msg
-        when (num < 10) $ emit (MsgWrapper (num + 1) (Rpd.CreateNetwork "test") )
+        . Array (Rpd.NetworkMsg n c a x)
+        -> SL.Emitter (console :: C.CONSOLE, channel :: SC.CHANNEL) (Array (Rpd.NetworkMsg n c a x))
+      view msgStack emit = void do
+        let
+            nextMsg = fromMaybe Rpd.Stop (head msgStack)
+            isStop = case nextMsg of
+                Rpd.Stop -> true
+                _ -> false
+        C.log $ "Stack: " <> (joinWith " <> " (map show msgStack))
+        C.log $ "Received: " <> show nextMsg
+        when (not isStop) $ emit (fromMaybe [] (tail msgStack))
 
   -- The loop reads the most recent value from the "future" signal
   -- and uses the view function to display it and simulate the next event.
-  SL.runLoop (MsgWrapper 0 (Rpd.CreateNetwork "a")) \future -> map view future
+  SL.runLoop [ Rpd.CreateNetwork "a", Rpd.Stop ] \future -> map view future
 
 
 

@@ -57,6 +57,7 @@ data NetworkMsg n c a x
     | ExitPatch PatchId
     | ChangePatch PatchId (PatchMsg n c a x)
     | ChangePatch' (Patch n c a x)
+    | Stop
     | NetworkGotEmpty -- TODO: remove
 
 
@@ -214,6 +215,7 @@ update' (SelectPatch id) network    = network |> selectPatch' id
 update' DeselectPatch network       = network |> deselectPatch'
 update' (EnterPatch id) network     = network |> enterPatch' id
 update' (ExitPatch id) network      = network |> exitPatch' id
+update' Stop network                = network
 update' NetworkGotEmpty network     = network
 update' (ChangePatch patchId patchMsg) network@(Network network' _) =
     case network'.patches |> Map.lookup patchId of
@@ -699,6 +701,7 @@ instance showNetworkMsg :: Show (NetworkMsg n c a x) where
     show (ExitPatch patchId) = "Exit Patch: " <> patchId
     show (ChangePatch patchId patchMsg) = "Change Patch: " <> patchId <> " :: " <> show patchMsg
     show (ChangePatch' (Patch patch' _)) = "Change Patch (ref): " <> patch'.id
+    show Stop = "Stop"
     show NetworkGotEmpty = "Network got empty"
 
 
