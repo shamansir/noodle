@@ -2,8 +2,8 @@ module Main where
 
 import Prelude
 
-import Control.Coroutine as Co
 import Control.Coroutine (($$), ($~), (~$), (/\))
+import Control.Coroutine as Co
 import Control.Monad.Aff (Aff, delay, launchAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
@@ -14,8 +14,8 @@ import Control.Monad.Trans.Class (lift)
 import Data.Array (head, tail)
 import Data.Function (apply, applyFlipped)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.String (joinWith)
 import Data.Newtype (wrap)
+import Data.String (joinWith)
 import Rpd as Rpd
 import Signal as S
 import Signal.Channel as SC
@@ -88,43 +88,47 @@ data MyInletType = NumInlet | StrInlet
 --   emit 3
 
 
-nats :: forall eff. Co.Producer Int (Aff eff) Unit
-nats = go 0
-  where
-  go i = do
-    Co.emit i
-    lift (delay (wrap 10.0)) -- 10ms delay
-    go (i + 1)
+-- nats :: forall eff. Co.Producer Int (Aff eff) Unit
+-- nats = go 0
+--   where
+--   go i = do
+--     Co.emit i
+--     lift (delay (wrap 10.0)) -- 10ms delay
+--     go (i + 1)
 
-printer :: forall eff. Co.Consumer String (Aff (console :: C.CONSOLE | eff)) Unit
-printer = forever do
-  s <- Co.await
-  lift (liftEff (C.log s))
-  pure Nothing
+-- printer :: forall eff. Co.Consumer String (Aff (console :: C.CONSOLE | eff)) Unit
+-- printer = forever do
+--   s <- Co.await
+--   lift (liftEff (C.log s))
+--   pure Nothing
 
-showing :: forall a m. Show a => Monad m => Co.Transformer a String m Unit
-showing = forever (Co.transform show)
+-- showing :: forall a m. Show a => Monad m => Co.Transformer a String m Unit
+-- showing = forever (Co.transform show)
 
-coshowing :: forall eff. Co.CoTransformer String Int (Aff (console :: C.CONSOLE | eff)) Unit
-coshowing = go 0
-  where
-  go i = do
-    o <- Co.cotransform i
-    lift (liftEff (C.log o))
-    go (i + 1)
+-- coshowing :: forall eff. Co.CoTransformer String Int (Aff (console :: C.CONSOLE | eff)) Unit
+-- coshowing = go 0
+--   where
+--   go i = do
+--     o <- Co.cotransform i
+--     lift (liftEff (C.log o))
+--     go (i + 1)
 
-main :: forall eff. Eff (exception :: E.EXCEPTION, console :: C.CONSOLE | eff) Unit
-main = void $ launchAff do
-  Co.runProcess (showing `Co.fuseCoTransform` coshowing)
-  Co.runProcess ((nats $~ showing) $$ printer)
-  Co.runProcess (nats /\ nats $$ showing ~$ printer)
+-- main :: forall eff. Eff (exception :: E.EXCEPTION, console :: C.CONSOLE | eff) Unit
+-- main = void $ launchAff do
+--   Co.runProcess (showing `Co.fuseCoTransform` coshowing)
+--   Co.runProcess ((nats $~ showing) $$ printer)
+--   Co.runProcess (nats /\ nats $$ showing ~$ printer)
 
 
-main__ :: Eff (console :: C.CONSOLE, channel :: SC.CHANNEL) Unit
-main__ = void do
+main :: Eff (console :: C.CONSOLE, channel :: SC.CHANNEL) Unit
+main = void do
     c <- SC.channel (Rpd.CreateNetwork "a")
     let s = SC.subscribe c
     S.runSignal (map show s S.~> C.log)
+    SC.send c (Rpd.CreateNetwork "b")
+    SC.send c (Rpd.CreateNetwork "c")
+    -- Rpd.createNetwork |>
+    --     Rpd.addPatch "a" "Test"
     pure s
 
 

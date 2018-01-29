@@ -5,7 +5,7 @@ module Rpd
     , FlowSignal, Value, Outlet', Inlet', Node', Patch', Network'
     , NetworkMsg(..), PatchMsg(..), NodeMsg(..), InletMsg(..), OutletMsg(..)
     -- end of the things to remove
-    , update, init
+    , update, createNetwork
     , addPatch, removePatch, selectPatch, deselectPatch, enterPatch, exitPatch
     , addNode, addInlet, addOutlet, connect, disconnect
     -- , log--, logData
@@ -13,9 +13,8 @@ module Rpd
 
 import Prelude
 
-import Control.Plus (empty)
 import Control.Monad.Eff (Eff)
-
+import Control.Plus (empty)
 import Data.Array ((:))
 import Data.Array as Array
 import Data.Function (apply, applyFlipped)
@@ -24,7 +23,6 @@ import Data.Map (Map, insert, delete, values)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
-
 import Signal as S
 import Signal.Channel as SC
 
@@ -59,7 +57,7 @@ data NetworkMsg n c a x
     | ExitPatch PatchId
     | ChangePatch PatchId (PatchMsg n c a x)
     | ChangePatch' (Patch n c a x)
-    | Stop
+--    | Stop
 
 
 data PatchMsg n c a x
@@ -168,20 +166,6 @@ type Outlet' c =
 type Renderer n c a x eff = (Network n c a x -> Eff eff Unit)
 
 
-type App nodes channels datatype error effect =
-    { network :: Network nodes channels datatype error
-    , messages :: S.Signal (NetworkMsg nodes channels datatype error)
-    -- , data :: SC.Channel
-    --     { patch :: PatchId
-    --     , node :: NodeId
-    --     , inlet :: InletId
-    --     , value :: Value datatype error
-    --     }
-    -- , data :: ProcessChannel datatype error
-    , renderers :: Array (Renderer nodes channels datatype error effect)
-    }
-
-
 -- The signal where all the data flows: Bangs, data chunks and errors
 -- type FlowChannel a x = SC.Channel (Value a x)
 type FlowSignal a x = S.Signal (Value a x)
@@ -209,20 +193,51 @@ data Outlet c a x = Outlet (Outlet' c) (FlowSignal a x)
 
 data Link c a x = Link NodeId NodeId OutletId InletId (FlowSignal a x)
 
+
+-- API:
+
+createNetwork = CreateNetwork
+addPatch = AddPatch
+removePatch = RemovePatch
+selectPatch = SelectPatch
+deselectPatch = DeselectPatch
+enterPatch = EnterPatch
+exitPatch = ExitPatch
+
+createPatch = CreatePatch
+addNode = AddNode
+removeNode = RemoveNode
+connect = Connect
+disconnect = Disconnect
+
+createNode = CreateNode
+addInlet = AddInlet
+addOutlet = AddOutlet
+removeInlet = RemoveInlet
+removeOutlet = RemoveOutlet
+
+hideInlet = Hide
+
+-- Logic:
+
+
+type App nodes channels datatype error effect =
+    { network :: Network nodes channels datatype error
+    , messages :: S.Signal (NetworkMsg nodes channels datatype error)
+    -- , data :: SC.Channel
+    --     { patch :: PatchId
+    --     , node :: NodeId
+    --     , inlet :: InletId
+    --     , value :: Value datatype error
+    --     }
+    -- , data :: ProcessChannel datatype error
+    , renderers :: Array (Renderer nodes channels datatype error effect)
+    }
+
+
 initProcessChannel :: forall a x. ProcessSignal a x
 initProcessChannel =
     S.constant (Tuple Map.empty Map.empty)
-
--- main functions
-
-init :: forall n c a x. NetworkId -> Network n c a x
-init id =
-    Network
-        { id : id
-        , patches : Map.empty
-        , selected : Nothing
-        , entered : []
-        }
 
 
 update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
@@ -234,7 +249,7 @@ update (SelectPatch id) network    = network |> selectPatch' id
 update DeselectPatch network       = network |> deselectPatch'
 update (EnterPatch id) network     = network |> enterPatch' id
 update (ExitPatch id) network      = network |> exitPatch' id
-update Stop network                = network
+--update Stop network                = network
 update (ChangePatch patchId patchMsg) network@(Network network') =
     case network'.patches |> Map.lookup patchId of
         Just patch ->
@@ -342,35 +357,43 @@ updateOutlet (DisconnectFromInlet _) outlet = outlet -- FIXME: implement
 
 -- Send, Attach etc.
 
+-- Helpers
 
--- API:
+createNetwork_ :: forall n c a x. NetworkId -> Network n c a x
+createNetwork_ id =
+    Network
+        { id : id
+        , patches : Map.empty
+        , selected : Nothing
+        , entered : []
+        }
 
-addPatch :: forall n c a x. PatchId -> String -> Network n c a x -> Network n c a x
-addPatch patchId title network = network |> update (AddPatch patchId title)
+addPatch_ :: forall n c a x. PatchId -> String -> Network n c a x -> Network n c a x
+addPatch_ patchId title network = network |> update (AddPatch patchId title)
 
-removePatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
-removePatch patchId network = network |> update (RemovePatch patchId)
+removePatch_ :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
+removePatch_ patchId network = network |> update (RemovePatch patchId)
 
-selectPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
-selectPatch patchId network = network |> update (SelectPatch patchId)
+selectPatch_ :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
+selectPatch_ patchId network = network |> update (SelectPatch patchId)
 
-deselectPatch :: forall n c a x. Network n c a x -> Network n c a x
-deselectPatch network = network |> update DeselectPatch
+deselectPatch_ :: forall n c a x. Network n c a x -> Network n c a x
+deselectPatch_ network = network |> update DeselectPatch
 
-enterPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
-enterPatch patchId network = network |> update (EnterPatch patchId)
+enterPatch_ :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
+enterPatch_ patchId network = network |> update (EnterPatch patchId)
 
-exitPatch :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
-exitPatch patchId network = network |> update (ExitPatch patchId)
+exitPatch_ :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
+exitPatch_ patchId network = network |> update (ExitPatch patchId)
 
-addNode :: forall n c a x. n -> NodeId -> String -> Patch n c a x -> Patch n c a x
-addNode type_ nodeId title patch = patch |> updatePatch (AddNode type_ nodeId title)
+addNode_ :: forall n c a x. n -> NodeId -> String -> Patch n c a x -> Patch n c a x
+addNode_ type_ nodeId title patch = patch |> updatePatch (AddNode type_ nodeId title)
 
-removeNode :: forall n c a x. NodeId -> Patch n c a x -> Patch n c a x
-removeNode nodeId patch = patch |> updatePatch (RemoveNode nodeId)
+removeNode_ :: forall n c a x. NodeId -> Patch n c a x -> Patch n c a x
+removeNode_ nodeId patch = patch |> updatePatch (RemoveNode nodeId)
 
 
-connect
+connect_
     :: forall n c a x
      . NodeId
     -> NodeId
@@ -378,10 +401,10 @@ connect
     -> InletId
     -> Patch n c a x
     -> Patch n c a x
-connect srcNodeId dstNodeId outletId inletId patch =
+connect_ srcNodeId dstNodeId outletId inletId patch =
     patch |> updatePatch (Connect srcNodeId dstNodeId outletId inletId)
 
-disconnect
+disconnect_
     :: forall n c a x
      . NodeId
     -> NodeId
@@ -389,27 +412,27 @@ disconnect
     -> InletId
     -> Patch n c a x
     -> Patch n c a x
-disconnect srcNodeId dstNodeId outletId inletId patch =
+disconnect_ srcNodeId dstNodeId outletId inletId patch =
     patch |> updatePatch (Disconnect srcNodeId dstNodeId outletId inletId)
 
-addInlet
+addInlet_
     :: forall n c a x
      . c
     -> InletId
     -> String
     -> Node n c a x
     -> Node n c a x
-addInlet type_ inletId label node =
+addInlet_ type_ inletId label node =
     node |> updateNode (AddInlet type_ inletId label)
 
-addOutlet
+addOutlet_
     :: forall n c a x
      . c
     -> OutletId
     -> String
     -> Node n c a x
     -> Node n c a x
-addOutlet type_ inletId label node =
+addOutlet_ type_ inletId label node =
     node |> updateNode (AddOutlet type_ inletId label)
 
 -- implementations: Network
@@ -632,7 +655,7 @@ instance showNetworkMsg :: Show (NetworkMsg n c a x) where
     show (ExitPatch patchId) = "Exit Patch: " <> patchId
     show (ChangePatch patchId patchMsg) = "Change Patch: " <> patchId <> " :: " <> show patchMsg
     show (ChangePatch' (Patch patch')) = "Change Patch (ref): " <> patch'.id
-    show Stop = "Stop"
+    --show Stop = "Stop"
 
 
 instance showPatchMsg :: Show (PatchMsg n c a x) where
