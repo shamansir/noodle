@@ -6,6 +6,7 @@ module Rpd
     , NetworkMsg(..), PatchMsg(..), NodeMsg(..), InletMsg(..), OutletMsg(..)
     -- end of the things to remove
     , update, createNetwork
+    , changePatch
     , addPatch, removePatch, selectPatch, deselectPatch, enterPatch, exitPatch
     , addNode, addInlet, addOutlet, connect, disconnect
     -- , log--, logData
@@ -217,6 +218,11 @@ removeInlet = RemoveInlet
 removeOutlet = RemoveOutlet
 
 hideInlet = Hide
+
+
+changePatch :: forall n c a x. PatchId -> Array (PatchMsg n c a x) -> Array (NetworkMsg n c a x)
+changePatch patchId patchMessages =
+    patchMessages |> map (\patchMsg -> ChangePatch patchId patchMsg)
 
 -- Logic:
 

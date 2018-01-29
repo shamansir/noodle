@@ -11,7 +11,7 @@ import Control.Monad.Eff.Console as C
 import Control.Monad.Eff.Exception as E
 import Control.Monad.Rec.Class (forever)
 import Control.Monad.Trans.Class (lift)
-import Data.Array (head, tail)
+import Data.Array ((:), head, tail)
 import Data.Function (apply, applyFlipped)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (wrap)
@@ -26,6 +26,7 @@ import Signal.Time as ST
 
 infixr 0 apply as <|
 infixl 1 applyFlipped as |>
+
 
 -- test stuff
 
@@ -125,9 +126,18 @@ main = void do
     c <- SC.channel (Rpd.CreateNetwork "a")
     let s = SC.subscribe c
     S.runSignal (map show s S.~> C.log)
-    SC.send c (Rpd.CreateNetwork "b")
-    SC.send c (Rpd.CreateNetwork "c")
-    -- Rpd.createNetwork |>
+    map (SC.send c)
+        ( Rpd.createNetwork "b"
+        : Rpd.addPatch "test" "Test"
+        : Rpd.changePatch
+            "test"
+            ( Rpd.addNode NumNode "aaa" "test"
+            : []
+            )
+        : [])
+    -- SC.send c (Rpd.CreateNetwork "b")
+    -- SC.send c (Rpd.CreateNetwork "c")
+    -- -- Rpd.createNetwork |>
     --     Rpd.addPatch "a" "Test"
     pure s
 
