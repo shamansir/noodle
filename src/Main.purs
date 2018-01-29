@@ -49,7 +49,7 @@ main = void do
   let
       view
         :: forall n c a x
-        . Array (Rpd.NetworkMsg n c a x)
+         . Array (Rpd.NetworkMsg n c a x)
         -> SL.Emitter (console :: C.CONSOLE, channel :: SC.CHANNEL) (Array (Rpd.NetworkMsg n c a x))
       view msgStack emit = void do
         let
