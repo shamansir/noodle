@@ -2,12 +2,20 @@ module Main where
 
 import Prelude
 
+import Control.Coroutine as Co
+import Control.Coroutine (($$), ($~), (~$), (/\))
+import Control.Monad.Aff (Aff, delay, launchAff)
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console as C
+import Control.Monad.Eff.Exception as E
+import Control.Monad.Rec.Class (forever)
+import Control.Monad.Trans.Class (lift)
 import Data.Array (head, tail)
 import Data.Function (apply, applyFlipped)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (joinWith)
+import Data.Newtype (wrap)
 import Rpd as Rpd
 import Signal as S
 import Signal.Channel as SC
@@ -44,26 +52,103 @@ data MyInletType = NumInlet | StrInlet
     -- in
     --     S.runSignal (trySignal S.~> C.log)
 
-main :: Eff (console :: C.CONSOLE, channel :: SC.CHANNEL) Unit
-main = void do
-  let
-      view
-        :: forall n c a x
-         . Array (Rpd.NetworkMsg n c a x)
-        -> SL.Emitter (console :: C.CONSOLE, channel :: SC.CHANNEL) (Array (Rpd.NetworkMsg n c a x))
-      view msgStack emit = void do
-        let
-            nextMsg = fromMaybe Rpd.Stop (head msgStack)
-            isStop = case nextMsg of
-                Rpd.Stop -> true
-                _ -> false
-        C.log $ "Stack: " <> (joinWith " <> " (map show msgStack))
-        C.log $ "Received: " <> show nextMsg
-        when (not isStop) $ emit (fromMaybe [] (tail msgStack))
+-- main :: Eff (console :: C.CONSOLE, channel :: SC.CHANNEL) Unit
+-- main = void do
+--   let
+--       view
+--         :: forall n c a x
+--          . Array (Rpd.NetworkMsg n c a x)
+--         -> SL.Emitter (console :: C.CONSOLE, channel :: SC.CHANNEL) (Array (Rpd.NetworkMsg n c a x))
+--       view msgStack emit = void do
+--         let
+--             nextMsg = fromMaybe Rpd.Stop (head msgStack)
+--             isStop = case nextMsg of
+--                 Rpd.Stop -> true
+--                 _ -> false
+--         C.log $ "Stack: " <> (joinWith " <> " (map show msgStack))
+--         C.log $ "Received: " <> show nextMsg
+--         when (not isStop) $ emit (fromMaybe [] (tail msgStack))
 
-  -- The loop reads the most recent value from the "future" signal
-  -- and uses the view function to display it and simulate the next event.
-  SL.runLoop [ Rpd.CreateNetwork "a", Rpd.Stop ] \future -> map view future
+--   -- The loop reads the most recent value from the "future" signal
+--   -- and uses the view function to display it and simulate the next event.
+--   SL.runLoop [ Rpd.CreateNetwork "a", Rpd.Stop ] \future -> map view future
+
+
+-- data Emit a = Emit o a
+
+-- type Producer = Free Emit
+
+-- emit :: o -> Generator Unit
+-- emit o = liftF (Emit o unit)
+
+-- emit3 :: Producer Int
+-- emit3 = do
+--   emit 1
+--   emit 2
+--   emit 3
+
+
+nats :: forall eff. Co.Producer Int (Aff eff) Unit
+nats = go 0
+  where
+  go i = do
+    Co.emit i
+    lift (delay (wrap 10.0)) -- 10ms delay
+    go (i + 1)
+
+printer :: forall eff. Co.Consumer String (Aff (console :: C.CONSOLE | eff)) Unit
+printer = forever do
+  s <- Co.await
+  lift (liftEff (C.log s))
+  pure Nothing
+
+showing :: forall a m. Show a => Monad m => Co.Transformer a String m Unit
+showing = forever (Co.transform show)
+
+coshowing :: forall eff. Co.CoTransformer String Int (Aff (console :: C.CONSOLE | eff)) Unit
+coshowing = go 0
+  where
+  go i = do
+    o <- Co.cotransform i
+    lift (liftEff (C.log o))
+    go (i + 1)
+
+main :: forall eff. Eff (exception :: E.EXCEPTION, console :: C.CONSOLE | eff) Unit
+main = void $ launchAff do
+  Co.runProcess (showing `Co.fuseCoTransform` coshowing)
+  Co.runProcess ((nats $~ showing) $$ printer)
+  Co.runProcess (nats /\ nats $$ showing ~$ printer)
+
+
+main__ :: Eff (console :: C.CONSOLE, channel :: SC.CHANNEL) Unit
+main__ = void do
+    c <- SC.channel (Rpd.CreateNetwork "a")
+    let s = SC.subscribe c
+    S.runSignal (map show s S.~> C.log)
+    pure s
+
+
+-- main :: Eff (console :: C.CONSOLE, channel :: SC.CHANNEL) Unit
+-- main = void do
+--   let view :: Int -> SL.Emitter (console :: C.CONSOLE, channel :: SC.CHANNEL) Int
+--       view n emit = void do
+--         C.log $ "Received: " <> show n
+--         when (n < 500) $ emit (n + 1)
+
+--   -- The loop reads the most recent value from the "future" signal
+--   -- and uses the view function to display it and simulate the next event.
+--   SL.runLoop 0 \future -> map view future
+
+-- runLoop
+--   :: forall eff a
+--    . a
+--   -> Loop (channel :: CHANNEL | eff) a
+--   -> Eff (channel :: CHANNEL | eff) (Signal a)
+-- runLoop startVal loopF = do
+--   channel' <- channel startVal
+--   let signal' = subscribe channel'
+--   runSignal (map (_ $ send channel') (loopF signal'))
+--   pure signal'
 
 
 
