@@ -10,13 +10,15 @@ import Test.Unit.Assert as Assert
 import Test.Unit.Console (TESTOUTPUT)
 import Test.Unit.Main (runTest)
 
+import Rpd
+
 main :: forall eff. Eff ( console :: CONSOLE
                         , testOutput :: TESTOUTPUT
                         , avar :: AVAR
                         | eff) Unit
 main = runTest do
-  suite "sync code" do
-    test "arithmetic" do
+  suite "API" do
+    test "initialization" do
       Assert.assert "2 + 2 should be 4" $ (2 + 2) == 4
       Assert.assertFalse "2 + 2 shouldn't be 5" $ (2 + 2) == 5
       Assert.equal (2 + 2) 4

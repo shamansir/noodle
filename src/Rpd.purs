@@ -22,8 +22,9 @@ import Data.Function (apply, applyFlipped)
 import Data.List as List
 import Data.Map (Map, insert, delete, values)
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (Tuple(..))
+import Data.Unit as Unit
 import Signal as S
 import Signal.Channel as SC
 
@@ -58,7 +59,7 @@ data NetworkMsg n c a x
     | ExitPatch PatchId
     | ChangePatch PatchId (PatchMsg n c a x)
     | ChangePatch' (Patch n c a x)
---    | Stop
+    | Stop
 
 
 data PatchMsg n c a x
@@ -227,18 +228,45 @@ changePatch patchId patchMessages =
 -- Logic:
 
 
-type App nodes channels datatype error effect =
-    { network :: Network nodes channels datatype error
-    , messages :: S.Signal (NetworkMsg nodes channels datatype error)
-    -- , data :: SC.Channel
-    --     { patch :: PatchId
-    --     , node :: NodeId
-    --     , inlet :: InletId
-    --     , value :: Value datatype error
-    --     }
-    -- , data :: ProcessChannel datatype error
-    , renderers :: Array (Renderer nodes channels datatype error effect)
-    }
+data App nodes channels datatype error effect =
+    App
+        { network :: Network nodes channels datatype error
+        , messages :: S.Signal (NetworkMsg nodes channels datatype error)
+        -- , data :: SC.Channel
+        --     { patch :: PatchId
+        --     , node :: NodeId
+        --     , inlet :: InletId
+        --     , value :: Value datatype error
+        --     }
+        -- , data :: ProcessChannel datatype error
+        , renderers :: Array (Renderer nodes channels datatype error effect)
+        }
+
+
+runApp :: forall n c a x eff. Array (NetworkMsg n c a x) -> App n c a x eff
+runApp [] =
+    App
+        { network : createNetwork_ "a"
+        , messages : S.constant (createNetwork "a")
+        , renderers : []
+        }
+runApp messages = do
+    c <- SC.channel (Array.head messages |> fromMaybe Stop)
+    let s = SC.subscribe c
+        app =
+            App
+                { network : createNetwork_ "a"
+                , messages : s
+                , renderers : []
+                }
+    Array.foldM
+        (\msgStack msg -> do
+            SC.send c msg
+            --fromMaybe [] (tail msgStack)
+        )
+        Unit.unit
+        (Array.tail messages |> fromMaybe [ Stop ])
+    pure app
 
 
 initProcessChannel :: forall a x. ProcessSignal a x
@@ -661,7 +689,7 @@ instance showNetworkMsg :: Show (NetworkMsg n c a x) where
     show (ExitPatch patchId) = "Exit Patch: " <> patchId
     show (ChangePatch patchId patchMsg) = "Change Patch: " <> patchId <> " :: " <> show patchMsg
     show (ChangePatch' (Patch patch')) = "Change Patch (ref): " <> patch'.id
-    --show Stop = "Stop"
+    show Stop = "Stop"
 
 
 instance showPatchMsg :: Show (PatchMsg n c a x) where
