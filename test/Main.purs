@@ -19,7 +19,7 @@ import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
 
-import Rpd
+--import Rpd
 
 main :: Eff (RunnerEffects ()) Unit
 main = run [consoleReporter] do
