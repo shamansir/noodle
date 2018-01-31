@@ -19,6 +19,7 @@
     "purescript-test-unit": "^13.0.0",
     "purescript-debug": "^3.0.0",
     "purescript-signal-loop": "^2.0.0",
-    "purescript-coroutines": "^4.0.0"
+    "purescript-coroutines": "^4.0.0",
+    "purescript-spec": "^2.0.0"
   }
 }
