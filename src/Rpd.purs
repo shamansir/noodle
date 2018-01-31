@@ -1,11 +1,11 @@
 module Rpd
     ( Id, NetworkId, PatchId, NodeId, ChannelId, InletId, OutletId, LinkId
-    , Network, Patch, Node, Inlet, Outlet, Link
+    , App, Network, Patch, Node, Inlet, Outlet, Link
     -- exported only for tests, remove it later
     , FlowSignal, Value, Outlet', Inlet', Node', Patch', Network'
     , NetworkMsg(..), PatchMsg(..), NodeMsg(..), InletMsg(..), OutletMsg(..)
     -- end of the things to remove
-    , update, createNetwork
+    , run, update, createNetwork
     , changePatch
     , addPatch, removePatch, selectPatch, deselectPatch, enterPatch, exitPatch
     , addNode, addInlet, addOutlet, connect, disconnect
@@ -49,7 +49,8 @@ type LinkId = Id
 -- `x` — error type
 
 data NetworkMsg n c a x
-    = CreateNetwork NetworkId
+    = Start
+    | CreateNetwork NetworkId
     | AddPatch PatchId String
     | AddPatch' PatchId
     | RemovePatch PatchId
@@ -230,7 +231,7 @@ changePatch patchId patchMessages =
 
 data App nodes channels datatype error effect =
     App
-        { network :: Network nodes channels datatype error
+        { network :: Maybe (Network nodes channels datatype error)
         , messages :: S.Signal (NetworkMsg nodes channels datatype error)
         -- , data :: SC.Channel
         --     { patch :: PatchId
@@ -243,22 +244,22 @@ data App nodes channels datatype error effect =
         }
 
 
-runApp :: forall n c a x eff. Array (NetworkMsg n c a x) -> App n c a x eff
-runApp [] =
-    App
-        { network : createNetwork_ "a"
-        , messages : S.constant (createNetwork "a")
-        , renderers : []
-        }
-runApp messages = do
-    c <- SC.channel (Array.head messages |> fromMaybe Stop)
+run :: forall n c a x eff
+     . Array (NetworkMsg n c a x)
+    -> (S.Signal (NetworkMsg n c a x) ->
+        S.Signal (Eff (channel :: SC.CHANNEL | eff) Unit))
+    -> Eff (channel :: SC.CHANNEL | eff) Unit
+run messages f = void do
+    c <- SC.channel Start
     let s = SC.subscribe c
         app =
             App
-                { network : createNetwork_ "a"
+                { network : Nothing
                 , messages : s
                 , renderers : []
                 }
+    SC.send c (Array.head messages |> fromMaybe Stop)
+    S.runSignal (f s)
     Array.foldM
         (\msgStack msg -> do
             SC.send c msg
@@ -266,7 +267,7 @@ runApp messages = do
         )
         Unit.unit
         (Array.tail messages |> fromMaybe [ Stop ])
-    pure app
+    pure s
 
 
 initProcessChannel :: forall a x. ProcessSignal a x
@@ -275,6 +276,7 @@ initProcessChannel =
 
 
 update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
+update Start network               = network
 update (CreateNetwork id) network  = network
 update (AddPatch id title) network = network |> addPatch' id title
 update (AddPatch' id) network      = network |> addPatch' id id
@@ -293,6 +295,7 @@ update (ChangePatch' updatedPatch@(Patch patch')) network@(Network network') =
     Network
         network' { patches =
             network'.patches |> Map.insert patch'.id updatedPatch }
+update Stop network                = network
 
 
 updatePatch :: forall n c a x. PatchMsg n c a x -> Patch n c a x -> Patch n c a x
@@ -679,6 +682,7 @@ tagFlowSignal (Inlet inlet' flowSignal) =
 
 
 instance showNetworkMsg :: Show (NetworkMsg n c a x) where
+    show Start = "Start"
     show (CreateNetwork networkId) = "Create Network: " <> networkId
     show (AddPatch patchId title) = "Add Patch: " <> patchId <> " " <> title
     show (AddPatch' patchId) = "Add Patch: " <> patchId
