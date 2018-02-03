@@ -15,6 +15,8 @@ module Rpd
 import Prelude
 
 import Control.Monad.Eff (Eff)
+import Control.Monad.Writer
+import Control.Monad.Writer.Class
 import Control.Plus (empty)
 import Data.Array ((:))
 import Data.Array as Array
@@ -170,12 +172,12 @@ type Outlet' c =
 --     | Console
 
 
-data NetworkActions' n c a x = NetworkAction' (List.List (NetworkMsg n c a x)) (Network n c a x)
-data PatchActions' n c a x = PatchActions' (List.List (PatchMsg n c a x)) (Patch n c a x)
-data NodeActions' n c a x = NodeActions' (List.List (NetworkMsg n c a x)) (Node n c a x)
-data InletActions' c a x = InletActions' (List.List (InletMsg c a x)) (Inlet c a x)
-data OutletActions' c a x = OutletActions' (List.List (OutletMsg c a x)) (Outlet c a x)
-data LinkActions' c a x = LinkActions' (Link c a x)
+type NetworkActions' n c a x = Writer (List.List (NetworkMsg n c a x)) (Network n c a x)
+type PatchActions' n c a x = Writer (List.List (PatchMsg n c a x)) (Patch n c a x)
+type NodeActions' n c a x = Writer (List.List (NetworkMsg n c a x)) (Node n c a x)
+type InletActions' c a x = Writer (List.List (InletMsg c a x)) (Inlet c a x)
+type OutletActions' c a x = Writer (List.List (OutletMsg c a x)) (Outlet c a x)
+type LinkActions' c a x = (Link c a x)
 
 
 data Actions n c a x
@@ -197,6 +199,8 @@ data Actions n c a x
 -- addInlet :: InletActions -> NodeActions
 
 -- modifyInlet :: InletActions -> InletActions
+
+-- ^ WRITER MONAD
 
 -- etc...
 
