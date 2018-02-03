@@ -121,6 +121,10 @@ data Value a x
 type Network' n c a x =
     { id :: NetworkId
     , patches :: Map PatchId (Patch n c a x)
+    , nodes :: Map NodeId (Node n c a x)
+    , inlets :: Map InletId (Inlet c a x)
+    , outlets :: Map OutletId (Outlet c a x)
+    , links ::  Map LinkId (Link c a x)
     , selected :: Maybe PatchId
     , entered :: Array PatchId
     }
@@ -128,17 +132,17 @@ type Network' n c a x =
 type Patch' n c a x =
     { id :: PatchId
     , title :: String
-    , nodes :: Map NodeId (Node n c a x)
-    , links :: Array (Link c a x)
+    , nodes :: Array NodeId
+    , links :: Array LinkId
     }
 
 type Node' n c a x =
     { id :: NodeId
     , title :: String
     , type :: n
+    , inlets :: Array InletId
+    , outlets :: Array OutletId
     , process :: Maybe (Map InletId (Value a x) -> Map OutletId (Value a x))
-    , inlets :: Map InletId (Inlet c a x)
-    , outlets :: Map OutletId (Outlet c a x)
     }
 
 type Inlet' c =
