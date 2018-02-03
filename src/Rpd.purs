@@ -170,6 +170,39 @@ type Outlet' c =
 --     | Console
 
 
+data NetworkActions' n c a x = NetworkAction' (List.List (NetworkMsg n c a x)) (Network n c a x)
+data PatchActions' n c a x = PatchActions' (List.List (PatchMsg n c a x)) (Patch n c a x)
+data NodeActions' n c a x = NodeActions' (List.List (NetworkMsg n c a x)) (Node n c a x)
+data InletActions' c a x = InletActions' (List.List (InletMsg c a x)) (Inlet c a x)
+data OutletActions' c a x = OutletActions' (List.List (OutletMsg c a x)) (Outlet c a x)
+data LinkActions' c a x = LinkActions' (Link c a x)
+
+
+data Actions n c a x
+    = NetworkActions (NetworkActions' n c a x)
+    | PatchActions (PatchActions' n c a x)
+    | NodeActions (NodeActions' n c a x)
+    | InletActions (InletActions' c a x)
+    | OutletActions (OutletActions' c a x)
+    | LinkActions (LinkActions' c a x)
+
+
+-- type Actions n c a x = List.List (Action n c a x)
+
+
+-- init = ( [] )
+
+-- addNode :: NodeActions -> PatchActions
+
+-- addInlet :: InletActions -> NodeActions
+
+-- modifyInlet :: InletActions -> InletActions
+
+-- etc...
+
+-- run :: Actions n c a x ->
+
+
 type Renderer n c a x eff = (Network n c a x -> Eff eff Unit)
 
 
