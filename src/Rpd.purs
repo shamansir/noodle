@@ -1,30 +1,27 @@
 module Rpd
-    ( Id, NetworkId, PatchId, NodeId, ChannelId, InletId, OutletId, LinkId
+    ( Id, PatchId, NodeId, ChannelId, InletId, OutletId, LinkId
     , App, Network, Patch, Node, Inlet, Outlet, Link
-    -- exported only for tests, remove it later
-    , FlowSignal, Value, Outlet', Inlet', Node', Patch', Network'
-    , NetworkMsg(..), PatchMsg(..), NodeMsg(..), InletMsg(..), OutletMsg(..)
-    -- end of the things to remove
-    , run, update, createNetwork
+    , run, update, network
     , changePatch
     , addPatch, removePatch, selectPatch, deselectPatch, enterPatch, exitPatch
     , addNode, addInlet, addOutlet, connect, disconnect
     -- , log--, logData
     ) where
 
+import Control.Monad.Writer
+import Control.Monad.Writer.Class
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Control.Monad.Writer
-import Control.Monad.Writer.Class
 import Control.Plus (empty)
-import Data.Array ((:))
 import Data.Array as Array
 import Data.Function (apply, applyFlipped)
+import Data.List ((:))
 import Data.List as List
 import Data.Map (Map, insert, delete, values)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Monoid (mempty)
 import Data.Tuple (Tuple(..))
 import Data.Unit as Unit
 import Signal as S
@@ -37,13 +34,14 @@ infixl 1 applyFlipped as |>
 
 type Id = String
 
-type NetworkId = Id
+
 type PatchId = Id
 type NodeId = Id
 type ChannelId = Id
 type InletId = ChannelId
 type OutletId = ChannelId
 type LinkId = Id
+
 
 -- `n` — node type
 -- `c` — channel type
@@ -52,7 +50,6 @@ type LinkId = Id
 
 data NetworkMsg n c a x
     = Start
-    | CreateNetwork NetworkId
     | AddPatch PatchId String
     | AddPatch' PatchId
     | RemovePatch PatchId
@@ -61,7 +58,7 @@ data NetworkMsg n c a x
     | EnterPatch PatchId
     | ExitPatch PatchId
     | ChangePatch PatchId (PatchMsg n c a x)
-    | ChangePatch' (Patch n c a x)
+    -- | ChangePatch' (Patch n c a x)
     | Stop
 
 
@@ -74,7 +71,7 @@ data PatchMsg n c a x
     | Disconnect NodeId NodeId OutletId InletId
     -- Disable Link
     | ChangeNode NodeId (NodeMsg c a x)
-    | ChangeNode' (Node n c a x)
+    -- | ChangeNode' (Node n c a x)
 
 
 data NodeMsg c a x
@@ -86,17 +83,19 @@ data NodeMsg c a x
     | RemoveInlet InletId
     | RemoveOutlet OutletId
     | ChangeInlet InletId (InletMsg c a x)
-    | ChangeInlet' (Inlet c a x)
+    -- | ChangeInlet' (Inlet c a x)
     | ChangeOutlet OutletId (OutletMsg c a x)
-    | ChangeOutlet' (Outlet c a x)
+    -- | ChangeOutlet' (Outlet c a x)
 
 
 -- TODO: use general ChannelMsg / FlowMsg ... ?
 
 data InletMsg c a x
     = CreateInlet
-    | ConnectToOutlet (Outlet' c) (FlowSignal a x)
-    | DisconnectFromOutlet (Outlet' c)
+    -- | ConnectToOutlet (Outlet' c) (FlowSignal a x)
+    -- | DisconnectFromOutlet (Outlet' c)
+    | ConnectToOutlet OutletId (FlowSignal a x)
+    | DisconnectFromOutlet OutletId
     | Hide
     -- | Receive a
     -- | Attach c (S.Signal a)
@@ -109,8 +108,10 @@ data OutletMsg c a x
     -- | Emit c (S.Signal a)
     -- | SendError x
     = CreateOutlet
-    | ConnectToInlet (Inlet' c)
-    | DisconnectFromInlet (Inlet' c)
+    -- | ConnectToInlet (Inlet' c)
+    -- | DisconnectFromInlet (Inlet' c)
+    | ConnectToInlet InletId
+    | DisconnectFromInlet InletId
 
 
 data Value a x
@@ -118,75 +119,6 @@ data Value a x
     | Data a
     | Error x
     | SysError String
-
-
-type Network' n c a x =
-    { id :: NetworkId
-    , patches :: Map PatchId (Patch n c a x)
-    , nodes :: Map NodeId (Node n c a x)
-    , inlets :: Map InletId (Inlet c a x)
-    , outlets :: Map OutletId (Outlet c a x)
-    , links ::  Map LinkId (Link c a x)
-    , selected :: Maybe PatchId
-    , entered :: Array PatchId
-    }
-
-type Patch' n c a x =
-    { id :: PatchId
-    , title :: String
-    , nodes :: Array NodeId
-    , links :: Array LinkId
-    }
-
-type Node' n c a x =
-    { id :: NodeId
-    , title :: String
-    , type :: n
-    , inlets :: Array InletId
-    , outlets :: Array OutletId
-    , process :: Maybe (Map InletId (Value a x) -> Map OutletId (Value a x))
-    }
-
-type Inlet' c =
-    { id :: InletId
-    , label :: String
-    , type :: c
-    }
-
-type Outlet' c =
-    { id :: OutletId
-    , label :: String
-    , type :: c
-    }
-
--- type Link' c =
---     { id :: LinkId
---     , inlet :: Inlet' c
---     , outlet :: Outlet' c
---     }
-
-
--- data Render
---     = Html
---     | Svg
---     | Console
-
-
-type NetworkActions' n c a x = Writer (List.List (NetworkMsg n c a x)) (Network n c a x)
-type PatchActions' n c a x = Writer (List.List (PatchMsg n c a x)) (Patch n c a x)
-type NodeActions' n c a x = Writer (List.List (NetworkMsg n c a x)) (Node n c a x)
-type InletActions' c a x = Writer (List.List (InletMsg c a x)) (Inlet c a x)
-type OutletActions' c a x = Writer (List.List (OutletMsg c a x)) (Outlet c a x)
-type LinkActions' c a x = (Link c a x)
-
-
-data Actions n c a x
-    = NetworkActions (NetworkActions' n c a x)
-    | PatchActions (PatchActions' n c a x)
-    | NodeActions (NodeActions' n c a x)
-    | InletActions (InletActions' c a x)
-    | OutletActions (OutletActions' c a x)
-    | LinkActions (LinkActions' c a x)
 
 
 -- type Actions n c a x = List.List (Action n c a x)
@@ -207,9 +139,6 @@ data Actions n c a x
 -- run :: Actions n c a x ->
 
 
-type Renderer n c a x eff = (Network n c a x -> Eff eff Unit)
-
-
 -- The signal where all the data flows: Bangs, data chunks and errors
 -- type FlowChannel a x = SC.Channel (Value a x)
 type FlowSignal a x = S.Signal (Value a x)
@@ -225,22 +154,110 @@ type TaggedFlowSignal a x = S.Signal (Tuple InletId (Value a x))
 -- type ProcessChannel a x = SC.Channel (Tuple (Map InletId (Value a x)) (Map OutletId (Value a x)))
 type ProcessSignal a x = S.Signal (Tuple (Map InletId (Value a x)) (Map OutletId (Value a x)))
 
-data Network n c a x = Network (Network' n c a x)
 
-data Patch n c a x = Patch (Patch' n c a x)
+data Network n c a x =
+    Network
+        { messages :: S.Signal (NetworkMsg n c a x)
+        , patches :: Map PatchId (Patch n c a x)
+        , nodes :: Map NodeId (Node n c a x)
+        , inlets :: Map InletId (Inlet c a x)
+        , outlets :: Map OutletId (Outlet c a x)
+        , links ::  Map LinkId (Link c a x)
+        , selected :: Maybe PatchId
+        , entered :: Array PatchId
+        }
 
-data Node n c a x = Node (Node' n c a x) (ProcessSignal a x)
 
-data Inlet c a x = Inlet (Inlet' c) (FlowSignal a x)
+data Patch n c a x =
+    Patch
+        { id :: PatchId
+        , title :: String
+        , nodes :: Array NodeId
+        , links :: Array LinkId
+        }
 
-data Outlet c a x = Outlet (Outlet' c) (FlowSignal a x)
 
-data Link c a x = Link NodeId NodeId OutletId InletId (FlowSignal a x)
+data Node n c a x =
+    Node
+        { id :: NodeId
+        , title :: String
+        , type :: n
+        , inlets :: Array InletId
+        , outlets :: Array OutletId
+        , process :: Maybe (Map InletId (Value a x) -> Map OutletId (Value a x))
+        }
+        (ProcessSignal a x)
 
+
+data Inlet c a x =
+    Inlet
+        { id :: InletId
+        , label :: String
+        , type :: c
+        }
+        (FlowSignal a x)
+
+
+data Outlet c a x =
+    Outlet
+        { id :: OutletId
+        , label :: String
+        , type :: c
+        }
+        (FlowSignal a x)
+
+
+data Link c a x = Link
+        { id :: LinkId
+        , inlet :: InletId
+        , outlet :: OutletId
+        }
+        (FlowSignal a x)
+
+
+type NetworkActions' n c a x = Writer (List.List (NetworkMsg n c a x)) (Network n c a x)
+type PatchActions' n c a x = Writer (List.List (PatchMsg n c a x)) (Patch n c a x)
+type NodeActions' n c a x = Writer (List.List (NodeMsg n c a x)) (Node n c a x)
+type InletActions' c a x = Writer (List.List (InletMsg c a x)) (Inlet c a x)
+type OutletActions' c a x = Writer (List.List (OutletMsg c a x)) (Outlet c a x)
+type LinkActions' c a x = (Link c a x)
+
+
+data Actions n c a x
+    = NetworkActions (NetworkActions' n c a x)
+    | PatchActions (PatchActions' n c a x)
+    | NodeActions (NodeActions' n c a x)
+    | InletActions (InletActions' c a x)
+    | OutletActions (OutletActions' c a x)
+    | LinkActions (LinkActions' c a x)
 
 -- API:
 
-createNetwork = CreateNetwork
+
+network' :: Network
+network' =
+    Network
+        { messages : S.constant Start
+        , patches : Map.empty
+        , nodes : Map.empty
+        , inlets : Map.empty
+        , outlets : Map.empty
+        , links :  Map.empty
+        , selected : Nothing
+        , entered : []
+        }
+
+
+network :: NetworkActions'
+network = do
+    tell (msg : mempty)
+    newNetwork
+    where
+        msg = Start
+        newNetwork = network'
+        newNetwork' = update msg network
+
+
 addPatch = AddPatch
 removePatch = RemovePatch
 selectPatch = SelectPatch
@@ -269,11 +286,12 @@ changePatch patchId patchMessages =
 
 -- Logic:
 
+type Renderer n c a x eff = (Network n c a x -> Eff eff Unit)
+
 
 data App nodes channels datatype error effect =
     App
         { network :: Maybe (Network nodes channels datatype error)
-        , messages :: S.Signal (NetworkMsg nodes channels datatype error)
         -- , data :: SC.Channel
         --     { patch :: PatchId
         --     , node :: NodeId
@@ -293,12 +311,6 @@ run :: forall n c a x eff
 run messages f = void do
     c <- SC.channel Start
     let s = SC.subscribe c
-        app =
-            App
-                { network : Nothing
-                , messages : s
-                , renderers : []
-                }
     SC.send c (Array.head messages |> fromMaybe Stop)
     S.runSignal (f s)
     Array.foldM
@@ -318,7 +330,6 @@ initProcessChannel =
 
 update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
 update Start network               = network
-update (CreateNetwork id) network  = network
 update (AddPatch id title) network = network |> addPatch' id title
 update (AddPatch' id) network      = network |> addPatch' id id
 update (RemovePatch id) network    = network |> removePatch' id

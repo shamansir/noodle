@@ -1,33 +1,36 @@
 What would be cool to have in API:
 
 ```purescript
-let
-	myPatch = patch “MyPatch”
-	sumNode = node SumNode
-	inletA = getInlet “a” sumNode
-	inletB = getInlet “b” sumNode
-	myCustomNode = node CustomNode “Custom”
-		|> addInlet (inlet NumberChannel “a” |> allow
-            [ StringChannel fromString ])
-		|> addInlet (inlet NumberChannel “b” |> default 10)
-		|> addOutlet (outlet NumberChannel “out “)
-		|> process (\inlets -> { out: inlets.a * inlets.b })
-in
-	inletA |> send 10 |> send 20
-    inletB |> send 10 |> send 10 |> send 5
-    myCustomNode |> getInlet "a" |> send "12" |> send 11
-    myCustomNode |> getOutlet "out" |> connect (sumNode |> getInlet "a")
-    myPatch |> addNode sumNode
-    myCustomNode |> getInlet "b" |> send 13
-	network = init |> addPatch myPatch
-	run network
+	Rpd.run [ renderToConsole ] do
+        let
+            myPatch = patch “MyPatch”
+            sumNode = node SumNode
+            inletA = getInlet “a” sumNode
+            inletB = getInlet “b” sumNode
+            myCustomNode = node CustomNode “Custom”
+                |> addInlet (inlet NumberChannel “a” |> allow
+                    [ StringChannel fromString ])
+                |> addInlet (inlet NumberChannel “b” |> default 10)
+                |> addOutlet (outlet NumberChannel “out “)
+                |> process (\inlets -> { out: inlets.a * inlets.b })
+        in
+            inletA |> send 10 |> send 20
+            inletB |> send 10 |> send 10 |> send 5
+            myCustomNode |> getInlet "a" |> send "12" |> send 11
+            myCustomNode |> getOutlet "out" |> connect (sumNode |> getInlet "a")
+            myPatch |> addNode sumNode
+            myCustomNode |> getInlet "b" |> send 13
+            myNetwork = network |> addPatch myPatch
+            runSignal (map show myNetwork.messages ~> log)
+            pure myNetwork
 
-network.messages ==
+
+myNetwork.messages ==
     signal with [ CreateNetwork, AddPatch …, AddNode …,  ]
 
-log network.messages = "CreateNetwork\nAdd Patch ...\nAddNode ...\n"
+log myNetwork.messages = "CreateNetwork\nAdd Patch ...\nAddNode ...\n"
 
-network.data ==
+myNetwork.data ==
     signal with:
         [ Flow "MyPatch" "sumNode" "a" 10
         , Flow "MyPatch" "sumNode" "a" 20

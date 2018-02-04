@@ -45,7 +45,6 @@ main = run [consoleReporter] do
         chan <- liftEff $ SC.channel 0
         let sig = debounce 10.0 $ SC.subscribe chan
             send' = liftEff <<< SC.send chan
-
         _ <- forkAff $ expect' sig [0,2,4]
         wait 20.0
         send' 1
@@ -56,6 +55,7 @@ main = run [consoleReporter] do
         wait 5.0
         send' 4
         wait 20.0
+
 
 
 wait :: forall e. Number -> Aff e Unit
