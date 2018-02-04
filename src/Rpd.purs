@@ -1,10 +1,11 @@
 module Rpd
     ( Id, PatchId, NodeId, ChannelId, InletId, OutletId, LinkId
     , App, Network, Patch, Node, Inlet, Outlet, Link
-    , run, update, network
-    , changePatch
-    , addPatch, removePatch, selectPatch, deselectPatch, enterPatch, exitPatch
-    , addNode, addInlet, addOutlet, connect, disconnect
+    , run
+    , network, patch, node, inlet, outlet
+    , addPatch, removePatch, select, deselect, enter, exit
+    , addNode, addInlet, addOutlet
+    -- , connect, disconnect
     -- , log--, logData
     ) where
 
@@ -50,42 +51,53 @@ type LinkId = Id
 
 data NetworkMsg n c a x
     = Start
-    -- Patch --
-    | AddPatch PatchId String
-    | AddPatch' PatchId
-    | SelectPatch PatchId
-    | DeselectPatch
-    | EnterPatch PatchId
-    | ExitPatch PatchId
-    | ChangePatch PatchId (PatchMsg n c a x)
-    | ChangePatch' PatchId (List.List (PatchMsg n c a x))
-    | RemovePatch PatchId
-    -- Node --
-    | AddNode PatchId n NodeId String
-    | AddNode' PatchId n NodeId
-    | ChangeNode NodeId (NodeMsg c a x)
-    | ChangeNode' NodeId (List.List (NodeMsg n c a x))
-    | RemoveNode NodeId
-    -- Inlet --
-    | AddInlet NodeId c InletId String
-    | AddInlet' NodeId c InletId
-    | HideInlet InletId
-    | RevealInlet InletId
-    | ChangeInlet InletId (InletMsg c a x)
-    | ChangeInlet' InletId (List.List (InletMsg n c a x))
-    | ConnectToOutlet OutletId (FlowSignal a x)
-    | DisconnectFromOutlet OutletId
-    | RemoveInlet InletId
-    -- Outlet --
-    | AddOutlet NodeId c OutletId String
-    | AddOutlet' NodeId c OutletId
-    | ChangeOutlet OutletId (OutletMsg c a x)
-    | ChangeOutlet' OutletId (List.List (OutletMsg n c a x))
-    | RemoveOutlet OutletId
-    -- Link --
+    | UpdatePatch PatchId PatchMsg
+    | UpdatePatch' PatchId (List.List PatchMsg)
+    | ForgetPatch PatchId
+    | UpdateNode NodeId (NodeMsg n)
+    | UpdateNode' NodeId (List.List (NodeMsg n))
+    | ForgetNode NodeId
+    | UpdateInlet InletId (InletMsg c a x)
+    | UpdateInlet' InletId (List.List (InletMsg c a x))
+    | ForgetInlet InletId
+    | UpdateOutlet OutletId (OutletMsg c a x)
+    | UpdateOutlet' OutletId (List.List (OutletMsg c a x))
+    | ForgetOutlet OutletId
     | Connect NodeId NodeId OutletId InletId
     | Disconnect NodeId NodeId OutletId InletId
     | Stop
+
+
+data PatchMsg
+    = InitPatch String
+    | SelectPatch
+    | DeselectPatch
+    | EnterPatch
+    | ExitPatch
+    | AddNode NodeId
+    | RemoveNode NodeId
+
+
+data NodeMsg n
+    = InitNode n String
+    | AddInlet InletId
+    | RemoveInlet InletId
+    | AddOutlet InletId
+    | RemoveOutlet OutletId
+
+
+data InletMsg c a x
+    = InitInlet c String
+    | ConnectToOutlet OutletId (FlowSignal a x)
+    | DisconnectFromOutlet OutletId
+    | HideInlet
+    | RevealInlet
+
+
+data OutletMsg c
+    = InitOutlet c String
+    | ConnectToInlet InletId
+    | DisconnectFromInlet InletId
 
 
 data Value a x
@@ -155,7 +167,7 @@ data Node n c a x =
     Node
         { id :: NodeId
         , title :: String
-        , type :: n
+        , type :: Maybe n
         , inlets :: Array InletId
         , outlets :: Array OutletId
         , process :: Maybe (Map InletId (Value a x) -> Map OutletId (Value a x))
@@ -167,7 +179,7 @@ data Inlet c a x =
     Inlet
         { id :: InletId
         , label :: String
-        , type :: c
+        , type :: Maybe c
         }
         (FlowSignal a x)
 
@@ -176,12 +188,12 @@ data Outlet c a x =
     Outlet
         { id :: OutletId
         , label :: String
-        , type :: c
+        , type :: Maybe c
         }
         (FlowSignal a x)
 
 
-data Link c a x = Link
+data Link a x = Link
         { id :: LinkId
         , inlet :: InletId
         , outlet :: OutletId
@@ -189,11 +201,11 @@ data Link c a x = Link
         (FlowSignal a x)
 
 
-type NetworkActions' n c a x = Writer (List.List (NetworkMsg n c a x)) (Network n c a x)
-type PatchActions' n c a x = Writer (List.List (PatchMsg n c a x)) (Patch n c a x)
-type NodeActions' n c a x = Writer (List.List (NodeMsg n c a x)) (Node n c a x)
-type InletActions' c a x = Writer (List.List (InletMsg c a x)) (Inlet c a x)
-type OutletActions' c a x = Writer (List.List (OutletMsg c a x)) (Outlet c a x)
+type NetworkActions' n c a x = Writer (Array (NetworkMsg n c a x)) (Network n c a x)
+type PatchActions' n c a x = Writer (Array (PatchMsg n c a x)) (Patch n c a x)
+type NodeActions' n c a x = Writer (Array (NodeMsg n c a x)) (Node n c a x)
+type InletActions' c a x = Writer (Array (InletMsg c a x)) (Inlet c a x)
+type OutletActions' c a x = Writer (Array (OutletMsg c a x)) (Outlet c a x)
 type LinkActions' c a x = (Link c a x)
 
 
@@ -204,6 +216,7 @@ data Actions n c a x
     | InletActions (InletActions' c a x)
     | OutletActions (OutletActions' c a x)
     | LinkActions (LinkActions' c a x)
+
 
 -- API:
 
@@ -222,36 +235,150 @@ network' =
         }
 
 
+patch' :: Patch
+patch' =
+    Patch
+        { id : "test"
+        , title : "Noname"
+        , nodes : []
+        , links : []
+        }
+
+
+node' :: Node
+node' =
+    Node
+        { id : "test"
+        , title : "Unknown"
+        , type : Nothing
+        , inlets : []
+        , outlets : []
+        , process : Nothing
+        }
+
+
+inlet' :: Inlet
+inlet' =
+    Inlet
+        { id: "test"
+        , label : "foo"
+        , type : Nothing
+        }
+        S.constant Bang
+
+
+outlet' :: Outlet
+outlet' =
+    Outlet
+        { id: "test"
+        , label : "foo"
+        , type : Nothing
+        }
+        S.constant Bang
+
+
+tellAndPerform :: forall a b. b -> (b -> a) -> a -> Writer (Array b) a
+tellAndPerform msg updateF subj = do
+    tell [ msg ]
+    updateF msg subj
+
+
+tellAndPerform' :: forall a b. b -> (b -> a) -> Writer (Array b) a -> Writer (Array b) a
+tellAndPerform' msg updateF (WriterT prevMsgs subj) = do
+    tell (msg : prevMsgs)
+    updateF msg subj
+
+
 network :: NetworkActions'
-network = do
-    tell (msg : mempty)
-    newNetwork
-    where
-        msg = Start
-        newNetwork = network'
-        newNetwork' = update msg network
+network = tellAndPerform Start update network'
 
 
-addPatch = AddPatch
-removePatch = RemovePatch
-selectPatch = SelectPatch
-deselectPatch = DeselectPatch
-enterPatch = EnterPatch
-exitPatch = ExitPatch
+patch :: String -> PatchActions'
+patch title =
+    tellAndPerform (InitPatch title) updatePatch patch'
 
-createPatch = CreatePatch
-addNode = AddNode
-removeNode = RemoveNode
-connect = Connect
-disconnect = Disconnect
 
-createNode = CreateNode
-addInlet = AddInlet
-addOutlet = AddOutlet
-removeInlet = RemoveInlet
-removeOutlet = RemoveOutlet
+node :: forall n. n -> String -> NodeActions'
+node type_ title =
+    tellAndPerform (InitNode type_ title) updateNode node'
 
-hideInlet = Hide
+
+inlet :: forall c. c -> String -> NodeActions'
+inlet type_ label =
+    tellAndPerform (InitInlet type_ label) updateInlet inlet'
+
+
+outlet :: forall c. c -> String -> NodeActions'
+outlet type_ label =
+    tellAndPerform (InitOutlet type_ label) updateOutlet outlet'
+
+
+addPatch :: PatchActions' -> NetworkActions' -> NetworkActions'
+addPatch (WriterT patchActions patch) network =
+    -- FIXME: use modified patch instance?
+    tellAndPerform' (UpdatePatch' patch.id patchActions) update network
+
+
+removePatch :: PatchActions' -> NetworkActions'
+removePatch (WriterT _ patch) network =
+    -- FIXME: use unperformed patch actions?
+    tellAndPerform' (ForgetPatch patch.id) update network
+
+
+select :: PatchActions' -> PatchActions'
+select patch =
+    tellAndPerform' SelectPatch updatePatch patch
+
+
+deselect :: PatchActions' -> PatchActions'
+deselect patch =
+    tellAndPerform' DeselectPatch updatePatch patch
+
+
+enter :: PatchActions' -> PatchActions'
+enter patch =
+    tellAndPerform' EnterPatch updatePatch patch
+
+
+exit :: PatchActions' -> PatchActions'
+exit patch =
+    tellAndPerform' ExitPatch updatePatch patch
+
+
+addNode :: NodeActions' -> PatchActions' -> PatchActions'
+addNode (WriterT nodeActions node) patch =
+    -- FIXME: use modified node instance?
+    tellAndPerform' (UpdateNode' node.id nodeActions) updatePatch patch
+
+
+removeNode :: NodeActions' -> PatchActions' -> PatchActions'
+removeNode (WriterT _ node) patch =
+    -- FIXME: use unperformed inlet actions?
+    tellAndPerform' (ForgetInlet inlet.id) updateNode node
+
+
+addInlet :: InletActions' -> NodeActions' -> NodeActions'
+addInlet (WriterT inletActions inlet) node =
+    -- FIXME: use modified inlet instance?
+    tellAndPerform' (UpdateInlet' inlet.id inletActions) updateNode node
+
+
+removeInlet :: InletActions' -> NodeActions' -> NodeActions'
+removeInlet (WriterT _ inlet) node =
+    -- FIXME: use unperformed inlet actions?
+    tellAndPerform' (ForgetInlet inlet.id) updateNode node
+
+
+addOutlet :: OutletActions' -> NodeActions' -> NodeActions'
+addOutlet (WriterT outletActions outlet) node =
+    -- FIXME: use modified inlet instance?
+    tellAndPerform' (UpdateOutlet' outlet.id outletActions) updateNode node
+
+
+removeOutlet :: OutletActions' -> NodeActions' -> NodeActions'
+removeOutlet (WriterT _ outlet) node =
+    -- FIXME: use unperformed inlet actions?
+    tellAndPerform' (ForgetOutlet outlet.id) updateNode node
 
 
 changePatch :: forall n c a x. PatchId -> Array (PatchMsg n c a x) -> Array (NetworkMsg n c a x)
