@@ -50,68 +50,42 @@ type LinkId = Id
 
 data NetworkMsg n c a x
     = Start
+    -- Patch --
     | AddPatch PatchId String
     | AddPatch' PatchId
-    | RemovePatch PatchId
     | SelectPatch PatchId
     | DeselectPatch
     | EnterPatch PatchId
     | ExitPatch PatchId
     | ChangePatch PatchId (PatchMsg n c a x)
-    -- | ChangePatch' (Patch n c a x)
-    | Stop
-
-
-data PatchMsg n c a x
-    = CreatePatch
-    | AddNode n NodeId String
-    | AddNode' n NodeId
-    | RemoveNode NodeId
-    | Connect NodeId NodeId OutletId InletId
-    | Disconnect NodeId NodeId OutletId InletId
-    -- Disable Link
+    | ChangePatch' PatchId (List.List (PatchMsg n c a x))
+    | RemovePatch PatchId
+    -- Node --
+    | AddNode PatchId n NodeId String
+    | AddNode' PatchId n NodeId
     | ChangeNode NodeId (NodeMsg c a x)
-    -- | ChangeNode' (Node n c a x)
-
-
-data NodeMsg c a x
-    = CreateNode
-    | AddInlet c InletId String
-    | AddInlet' c InletId
-    | AddOutlet c OutletId String
-    | AddOutlet' c OutletId
-    | RemoveInlet InletId
-    | RemoveOutlet OutletId
+    | ChangeNode' NodeId (List.List (NodeMsg n c a x))
+    | RemoveNode NodeId
+    -- Inlet --
+    | AddInlet NodeId c InletId String
+    | AddInlet' NodeId c InletId
+    | HideInlet InletId
+    | RevealInlet InletId
     | ChangeInlet InletId (InletMsg c a x)
-    -- | ChangeInlet' (Inlet c a x)
-    | ChangeOutlet OutletId (OutletMsg c a x)
-    -- | ChangeOutlet' (Outlet c a x)
-
-
--- TODO: use general ChannelMsg / FlowMsg ... ?
-
-data InletMsg c a x
-    = CreateInlet
-    -- | ConnectToOutlet (Outlet' c) (FlowSignal a x)
-    -- | DisconnectFromOutlet (Outlet' c)
+    | ChangeInlet' InletId (List.List (InletMsg n c a x))
     | ConnectToOutlet OutletId (FlowSignal a x)
     | DisconnectFromOutlet OutletId
-    | Hide
-    -- | Receive a
-    -- | Attach c (S.Signal a)
-    -- | ReceiveError x
-
-
-
-data OutletMsg c a x
-    -- = Send a
-    -- | Emit c (S.Signal a)
-    -- | SendError x
-    = CreateOutlet
-    -- | ConnectToInlet (Inlet' c)
-    -- | DisconnectFromInlet (Inlet' c)
-    | ConnectToInlet InletId
-    | DisconnectFromInlet InletId
+    | RemoveInlet InletId
+    -- Outlet --
+    | AddOutlet NodeId c OutletId String
+    | AddOutlet' NodeId c OutletId
+    | ChangeOutlet OutletId (OutletMsg c a x)
+    | ChangeOutlet' OutletId (List.List (OutletMsg n c a x))
+    | RemoveOutlet OutletId
+    -- Link --
+    | Connect NodeId NodeId OutletId InletId
+    | Disconnect NodeId NodeId OutletId InletId
+    | Stop
 
 
 data Value a x
