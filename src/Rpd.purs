@@ -51,17 +51,13 @@ type LinkId = Id
 
 data NetworkMsg n c a x
     = Start
-    | UpdatePatch PatchId PatchMsg
-    | UpdatePatch' PatchId (List.List PatchMsg)
+    | UpdatePatch (Array PatchMsg) (Patch n c a x)
     | ForgetPatch PatchId
-    | UpdateNode NodeId (NodeMsg n)
-    | UpdateNode' NodeId (List.List (NodeMsg n))
+    | UpdateNode (Array (NodeMsg n)) (Node n c a x)
     | ForgetNode NodeId
-    | UpdateInlet InletId (InletMsg c a x)
-    | UpdateInlet' InletId (List.List (InletMsg c a x))
+    | UpdateInlet (Array (InletMsg c a x)) (Inlet c a x)
     | ForgetInlet InletId
-    | UpdateOutlet OutletId (OutletMsg c a x)
-    | UpdateOutlet' OutletId (List.List (OutletMsg c a x))
+    | UpdateOutlet (Array (OutletMsg c a x)) (Outlet c a x)
     | ForgetOutlet OutletId
     | Connect NodeId NodeId OutletId InletId
     | Disconnect NodeId NodeId OutletId InletId
@@ -315,8 +311,7 @@ outlet type_ label =
 
 addPatch :: PatchActions' -> NetworkActions' -> NetworkActions'
 addPatch (WriterT patchActions patch) network =
-    -- FIXME: use modified patch instance?
-    tellAndPerform' (UpdatePatch' patch.id patchActions) update network
+    tellAndPerform' (UpdatePatch patchActions patch) update network
 
 
 removePatch :: PatchActions' -> NetworkActions'
@@ -347,8 +342,7 @@ exit patch =
 
 addNode :: NodeActions' -> PatchActions' -> PatchActions'
 addNode (WriterT nodeActions node) patch =
-    -- FIXME: use modified node instance?
-    tellAndPerform' (UpdateNode' node.id nodeActions) updatePatch patch
+    tellAndPerform' (UpdateNode nodeActions node) updatePatch patch
 
 
 removeNode :: NodeActions' -> PatchActions' -> PatchActions'
@@ -359,8 +353,7 @@ removeNode (WriterT _ node) patch =
 
 addInlet :: InletActions' -> NodeActions' -> NodeActions'
 addInlet (WriterT inletActions inlet) node =
-    -- FIXME: use modified inlet instance?
-    tellAndPerform' (UpdateInlet' inlet.id inletActions) updateNode node
+    tellAndPerform' (UpdateInlet inletActions inlet) updateNode node
 
 
 removeInlet :: InletActions' -> NodeActions' -> NodeActions'
@@ -371,13 +364,12 @@ removeInlet (WriterT _ inlet) node =
 
 addOutlet :: OutletActions' -> NodeActions' -> NodeActions'
 addOutlet (WriterT outletActions outlet) node =
-    -- FIXME: use modified inlet instance?
-    tellAndPerform' (UpdateOutlet' outlet.id outletActions) updateNode node
+    tellAndPerform' (UpdateOutlet outletActions outlet) updateNode node
 
 
 removeOutlet :: OutletActions' -> NodeActions' -> NodeActions'
 removeOutlet (WriterT _ outlet) node =
-    -- FIXME: use unperformed inlet actions?
+    -- FIXME: use unperformed outlet actions?
     tellAndPerform' (ForgetOutlet outlet.id) updateNode node
 
 

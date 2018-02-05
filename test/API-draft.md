@@ -11,7 +11,7 @@ What would be cool to have in API:
                 |> addInlet (inlet NumberChannel “a” |> allow
                     [ StringChannel fromString ])
                 |> addInlet (inlet NumberChannel “b” |> default 10)
-                |> addOutlet (outlet NumberChannel “out “)
+                |> addOutlet (outlet NumberChannel “out“)
                 |> process (\inlets -> { out: inlets.a * inlets.b })
         in
             inletA |> send 10 |> send 20
