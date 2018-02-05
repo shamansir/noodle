@@ -373,10 +373,6 @@ removeOutlet (WriterT _ outlet) node =
     tellAndPerform' (ForgetOutlet outlet.id) updateNode node
 
 
-changePatch :: forall n c a x. PatchId -> Array (PatchMsg n c a x) -> Array (NetworkMsg n c a x)
-changePatch patchId patchMessages =
-    patchMessages |> map (\patchMsg -> ChangePatch patchId patchMsg)
-
 -- Logic:
 
 type Renderer n c a x eff = (Network n c a x -> Eff eff Unit)
@@ -423,199 +419,128 @@ initProcessChannel =
 
 update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
 update Start network               = network
-update (AddPatch id title) network = network |> addPatch' id title
-update (AddPatch' id) network      = network |> addPatch' id id
-update (RemovePatch id) network    = network |> removePatch' id
-update (SelectPatch id) network    = network |> selectPatch' id
-update DeselectPatch network       = network |> deselectPatch'
-update (EnterPatch id) network     = network |> enterPatch' id
-update (ExitPatch id) network      = network |> exitPatch' id
---update Stop network                = network
-update (ChangePatch patchId patchMsg) network@(Network network') =
-    case network'.patches |> Map.lookup patchId of
-        Just patch ->
-            update (ChangePatch' (patch |> updatePatch patchMsg)) network
-        Nothing -> network -- TODO: throw error
-update (ChangePatch' updatedPatch@(Patch patch')) network@(Network network') =
-    Network
-        network' { patches =
-            network'.patches |> Map.insert patch'.id updatedPatch }
-update Stop network                = network
+
+
+
+-- update (AddPatch id title) network = network |> addPatch' id title
+-- update (AddPatch' id) network      = network |> addPatch' id id
+-- update (RemovePatch id) network    = network |> removePatch' id
+-- update (SelectPatch id) network    = network |> selectPatch' id
+-- update DeselectPatch network       = network |> deselectPatch'
+-- update (EnterPatch id) network     = network |> enterPatch' id
+-- update (ExitPatch id) network      = network |> exitPatch' id
+-- --update Stop network                = network
+-- update (ChangePatch patchId patchMsg) network@(Network network') =
+--     case network'.patches |> Map.lookup patchId of
+--         Just patch ->
+--             update (ChangePatch' (patch |> updatePatch patchMsg)) network
+--         Nothing -> network -- TODO: throw error
+-- update (ChangePatch' updatedPatch@(Patch patch')) network@(Network network') =
+--     Network
+--         network' { patches =
+--             network'.patches |> Map.insert patch'.id updatedPatch }
+-- update Stop network                = network
 
 
 updatePatch :: forall n c a x. PatchMsg n c a x -> Patch n c a x -> Patch n c a x
-updatePatch CreatePatch patch              = patch
-updatePatch (AddNode type_ id title) patch = patch |> addNode' type_ id title
-updatePatch (AddNode' type_ id) patch      = patch |> addNode' type_ id id
-updatePatch (RemoveNode id) patch          = patch |> removeNode' id
-updatePatch (Connect srcNodeId dstNodeId inletId outletId) patch =
-    patch |> connect' srcNodeId dstNodeId inletId outletId
-updatePatch (Disconnect srcNodeId dstNodeId inletId outletId) patch =
-    patch |> disconnect' srcNodeId dstNodeId inletId outletId
-updatePatch (ChangeNode nodeId nodeMsg) patch@(Patch patch') =
-    case patch'.nodes |> Map.lookup nodeId of
-        Just node ->
-            updatePatch (ChangeNode' (node |> updateNode nodeMsg)) patch
-        Nothing -> patch -- TODO: throw error
-updatePatch (ChangeNode' updatedNode@(Node node' _)) (Patch patch') =
-    Patch
-        patch'
-            { nodes = patch'.nodes |> Map.insert node'.id updatedNode
-            }
+updatePatch (InitPatch title) patch              = patch
+
+-- updatePatch (AddNode type_ id title) patch = patch |> addNode' type_ id title
+-- updatePatch (AddNode' type_ id) patch      = patch |> addNode' type_ id id
+-- updatePatch (RemoveNode id) patch          = patch |> removeNode' id
+-- updatePatch (Connect srcNodeId dstNodeId inletId outletId) patch =
+--     patch |> connect' srcNodeId dstNodeId inletId outletId
+-- updatePatch (Disconnect srcNodeId dstNodeId inletId outletId) patch =
+--     patch |> disconnect' srcNodeId dstNodeId inletId outletId
+-- updatePatch (ChangeNode nodeId nodeMsg) patch@(Patch patch') =
+--     case patch'.nodes |> Map.lookup nodeId of
+--         Just node ->
+--             updatePatch (ChangeNode' (node |> updateNode nodeMsg)) patch
+--         Nothing -> patch -- TODO: throw error
+-- updatePatch (ChangeNode' updatedNode@(Node node' _)) (Patch patch') =
+--     Patch
+--         patch'
+--             { nodes = patch'.nodes |> Map.insert node'.id updatedNode
+--             }
 
 
 updateNode :: forall n c a x. NodeMsg c a x -> Node n c a x -> Node n c a x
-updateNode CreateNode node                 = node
-updateNode (AddInlet type_ id title) node  = node |> addInlet' type_ id title
-updateNode (AddInlet' type_ id) node       = node |> addInlet' type_ id id
-updateNode (AddOutlet type_ id title) node = node |> addOutlet' type_ id title
-updateNode (AddOutlet' type_ id) node      = node |> addInlet' type_ id id
-updateNode (RemoveInlet id) node           = node -- |> removeInlet id
-updateNode (RemoveOutlet id) node          = node -- |> removeOutlet id
-updateNode (ChangeInlet inletId inletMsg) node@(Node node' processSignal) =
-    case node'.inlets |> Map.lookup inletId of
-        Just inlet ->
-            updateNode (ChangeInlet' (inlet |> updateInlet inletMsg)) node
-        Nothing -> node -- TODO: throw error
-updateNode (ChangeInlet' updatedInlet@(Inlet inlet' _)) node@(Node node' _) =
-    let
-        inlets' = node'.inlets |> Map.insert inlet'.id updatedInlet
-        processSignal' =
-            case node'.process of
-                Just processFn ->
-                    case S.mergeMany (map tagFlowSignal inlets') of
-                        Just taggedSignal ->
-                            S.foldp (\(Tuple inletId inletVal) (Tuple inletVals _) ->
-                                let
-                                    inletVals' = inletVals |> Map.insert inletId inletVal
-                                    outletVals' = processFn inletVals'
-                                in
-                                    Tuple inletVals' outletVals'
-                            ) (Tuple Map.empty Map.empty) taggedSignal
-                        Nothing -> initProcessChannel
-                Nothing -> initProcessChannel -- processChannel
-        outlets' = map (\(Outlet outlet' flowSignal) ->
-            let
-                flowSignal' =
-                    S.merge
-                        (S.filterMap
-                            (\(Tuple _ outletVals) -> Map.lookup outlet'.id outletVals)
-                            (SysError "Failed to find outlet")
-                            processSignal')
-                        flowSignal
-            in
-                Outlet outlet' flowSignal'
-        ) node'.outlets
-    in
-        Node
-            node' { inlets = inlets' }
-            processSignal'
-updateNode (ChangeOutlet outletId outletMsg) node@(Node node' processSignal) =
-    case node'.outlets |> Map.lookup outletId of
-        Just outlet ->
-            updateNode (ChangeOutlet' (outlet |> updateOutlet outletMsg)) node
-        Nothing -> node -- TODO: throw error
-updateNode (ChangeOutlet' updatedOutlet@(Outlet outlet' _)) node@(Node node' processSignal) =
-    Node
-        node'
-            { outlets = node'.outlets |> Map.insert outlet'.id updatedOutlet
-            }
-        processSignal
+updateNode (InitNode title) node              = node
+
+-- updateNode CreateNode node                 = node
+-- updateNode (AddInlet type_ id title) node  = node |> addInlet' type_ id title
+-- updateNode (AddInlet' type_ id) node       = node |> addInlet' type_ id id
+-- updateNode (AddOutlet type_ id title) node = node |> addOutlet' type_ id title
+-- updateNode (AddOutlet' type_ id) node      = node |> addInlet' type_ id id
+-- updateNode (RemoveInlet id) node           = node -- |> removeInlet id
+-- updateNode (RemoveOutlet id) node          = node -- |> removeOutlet id
+-- updateNode (ChangeInlet inletId inletMsg) node@(Node node' processSignal) =
+--     case node'.inlets |> Map.lookup inletId of
+--         Just inlet ->
+--             updateNode (ChangeInlet' (inlet |> updateInlet inletMsg)) node
+--         Nothing -> node -- TODO: throw error
+-- updateNode (ChangeInlet' updatedInlet@(Inlet inlet' _)) node@(Node node' _) =
+--     let
+--         inlets' = node'.inlets |> Map.insert inlet'.id updatedInlet
+--         processSignal' =
+--             case node'.process of
+--                 Just processFn ->
+--                     case S.mergeMany (map tagFlowSignal inlets') of
+--                         Just taggedSignal ->
+--                             S.foldp (\(Tuple inletId inletVal) (Tuple inletVals _) ->
+--                                 let
+--                                     inletVals' = inletVals |> Map.insert inletId inletVal
+--                                     outletVals' = processFn inletVals'
+--                                 in
+--                                     Tuple inletVals' outletVals'
+--                             ) (Tuple Map.empty Map.empty) taggedSignal
+--                         Nothing -> initProcessChannel
+--                 Nothing -> initProcessChannel -- processChannel
+--         outlets' = map (\(Outlet outlet' flowSignal) ->
+--             let
+--                 flowSignal' =
+--                     S.merge
+--                         (S.filterMap
+--                             (\(Tuple _ outletVals) -> Map.lookup outlet'.id outletVals)
+--                             (SysError "Failed to find outlet")
+--                             processSignal')
+--                         flowSignal
+--             in
+--                 Outlet outlet' flowSignal'
+--         ) node'.outlets
+--     in
+--         Node
+--             node' { inlets = inlets' }
+--             processSignal'
+-- updateNode (ChangeOutlet outletId outletMsg) node@(Node node' processSignal) =
+--     case node'.outlets |> Map.lookup outletId of
+--         Just outlet ->
+--             updateNode (ChangeOutlet' (outlet |> updateOutlet outletMsg)) node
+--         Nothing -> node -- TODO: throw error
+-- updateNode (ChangeOutlet' updatedOutlet@(Outlet outlet' _)) node@(Node node' processSignal) =
+--     Node
+--         node'
+--             { outlets = node'.outlets |> Map.insert outlet'.id updatedOutlet
+--             }
+--         processSignal
 
 
 updateInlet :: forall c a x. InletMsg c a x -> Inlet c a x -> Inlet c a x
-updateInlet CreateInlet inlet = inlet
-updateInlet (ConnectToOutlet _ signal) (Inlet inlet' dataSignal) =
-    Inlet inlet' (S.merge dataSignal signal)
-updateInlet (DisconnectFromOutlet _) inlet = inlet -- FIXME: implement
-updateInlet Hide inlet = inlet
+updateInlet (InitInlet label) = inlet
+-- updateInlet CreateInlet inlet = inlet
+-- updateInlet (ConnectToOutlet _ signal) (Inlet inlet' dataSignal) =
+--     Inlet inlet' (S.merge dataSignal signal)
+-- updateInlet (DisconnectFromOutlet _) inlet = inlet -- FIXME: implement
+-- updateInlet Hide inlet = inlet
 
 
 updateOutlet :: forall c a x. OutletMsg c a x -> Outlet c a x -> Outlet c a x
-updateOutlet CreateOutlet outlet = outlet
-updateOutlet (ConnectToInlet _) outlet = outlet
-updateOutlet (DisconnectFromInlet _) outlet = outlet -- FIXME: implement
+updateOutlet (InitInlet label) outlet = outlet
+-- updateOutlet (ConnectToInlet _) outlet = outlet
+-- updateOutlet (DisconnectFromInlet _) outlet = outlet -- FIXME: implement
 
 
 -- Send, Attach etc.
-
--- Helpers
-
-createNetwork_ :: forall n c a x. NetworkId -> Network n c a x
-createNetwork_ id =
-    Network
-        { id : id
-        , patches : Map.empty
-        , selected : Nothing
-        , entered : []
-        }
-
-addPatch_ :: forall n c a x. PatchId -> String -> Network n c a x -> Network n c a x
-addPatch_ patchId title network = network |> update (AddPatch patchId title)
-
-removePatch_ :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
-removePatch_ patchId network = network |> update (RemovePatch patchId)
-
-selectPatch_ :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
-selectPatch_ patchId network = network |> update (SelectPatch patchId)
-
-deselectPatch_ :: forall n c a x. Network n c a x -> Network n c a x
-deselectPatch_ network = network |> update DeselectPatch
-
-enterPatch_ :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
-enterPatch_ patchId network = network |> update (EnterPatch patchId)
-
-exitPatch_ :: forall n c a x. PatchId -> Network n c a x -> Network n c a x
-exitPatch_ patchId network = network |> update (ExitPatch patchId)
-
-addNode_ :: forall n c a x. n -> NodeId -> String -> Patch n c a x -> Patch n c a x
-addNode_ type_ nodeId title patch = patch |> updatePatch (AddNode type_ nodeId title)
-
-removeNode_ :: forall n c a x. NodeId -> Patch n c a x -> Patch n c a x
-removeNode_ nodeId patch = patch |> updatePatch (RemoveNode nodeId)
-
-
-connect_
-    :: forall n c a x
-     . NodeId
-    -> NodeId
-    -> OutletId
-    -> InletId
-    -> Patch n c a x
-    -> Patch n c a x
-connect_ srcNodeId dstNodeId outletId inletId patch =
-    patch |> updatePatch (Connect srcNodeId dstNodeId outletId inletId)
-
-disconnect_
-    :: forall n c a x
-     . NodeId
-    -> NodeId
-    -> OutletId
-    -> InletId
-    -> Patch n c a x
-    -> Patch n c a x
-disconnect_ srcNodeId dstNodeId outletId inletId patch =
-    patch |> updatePatch (Disconnect srcNodeId dstNodeId outletId inletId)
-
-addInlet_
-    :: forall n c a x
-     . c
-    -> InletId
-    -> String
-    -> Node n c a x
-    -> Node n c a x
-addInlet_ type_ inletId label node =
-    node |> updateNode (AddInlet type_ inletId label)
-
-addOutlet_
-    :: forall n c a x
-     . c
-    -> OutletId
-    -> String
-    -> Node n c a x
-    -> Node n c a x
-addOutlet_ type_ inletId label node =
-    node |> updateNode (AddOutlet type_ inletId label)
 
 -- implementations: Network
 
@@ -826,66 +751,89 @@ tagFlowSignal (Inlet inlet' flowSignal) =
 -- like accept() allow() etc.
 
 
+instance showNetwork :: Show (Network n c a x) where
+    show network = "(Network \n"
+        <> Map.size network.patches <> " Patches\n"
+        <> Map.size network.nodes <> " Nodes\n"
+        <> Map.size network.inlets <> " Inlets\n"
+        <> Map.size network.outlets <> " Outlets\n"
+        <> "Selected Patch: " <> show (lift network.selected)
+        <> "Entered Patches: " <> network.entered
+        <> ")"
+
+
+instance showPatch :: Show (Patch n c a x) where
+    show patch = "(Patch " <> patch.id <> "\n"
+        <> Array.length patch.nodes <> " Nodes\n"
+        <> Array.length patch.links <> " Links\n"
+        <> ")"
+
+
+instance showNode :: Show (Node n c a x) where
+    show node = "(Node " <> node.id <> "\n"
+        <> Array.length node.inlets <> " Inlets\n"
+        <> Array.length node.outlets <> " Outlets\n"
+        <> ")"
+
+
+instance showInlet :: Show (Inlet c a x) where
+    show inlet = "(Inlet " <> inlet.id <> " " <> inlet.label <> ")"
+
+
+instance showOutlet :: Show (Outlet c a x) where
+    show outlet = "(Outlet " <> outlet.id <> " " <> outlet.label <> ")"
+
+
 instance showNetworkMsg :: Show (NetworkMsg n c a x) where
     show Start = "Start"
-    show (CreateNetwork networkId) = "Create Network: " <> networkId
-    show (AddPatch patchId title) = "Add Patch: " <> patchId <> " " <> title
-    show (AddPatch' patchId) = "Add Patch: " <> patchId
-    show (RemovePatch patchId) = "Remove Patch: " <> patchId
-    show (SelectPatch patchId) = "Select Patch: " <> patchId
-    show DeselectPatch = "Deselect Patch"
-    show (EnterPatch patchId) = "Enter Patch: " <> patchId
-    show (ExitPatch patchId) = "Exit Patch: " <> patchId
-    show (ChangePatch patchId patchMsg) = "Change Patch: " <> patchId <> " :: " <> show patchMsg
-    show (ChangePatch' (Patch patch')) = "Change Patch (ref): " <> patch'.id
+    show (UpdatePatch _ patch) = "Update patch: " <> show patch
+    show (ForgetPatch patchId) = "Forget patch: " <> patchId
+    show (UpdateNode _ node) = "Update node: " <> show node
+    show (ForgetNode nodeId) = "Forget node: " <> nodeId
+    show (UpdateInlet _ inlet) = "Update inlet: " <> show inlet
+    show (ForgetInlet inletId) = "Forget inlet: " <> inletId
+    show (UpdateOutlet _ outlet) = "Update outlet: " <> show outlet
+    show (ForgetOutlet outletId) = "Forget outlet: " <> outletId
+    show (Connect srcNodeId dstNodeId outletId inletId) = "Connect:\n"
+        <> "Node " <> srcNodeId <> " -> Node " <> dstNodeId <> "\n"
+        <> "Outlet " <> outletId <> " -> Inlet " <> inletId
+    show (Disconnect srcNodeId dstNodeId outletId inletId) = "Disconnect:\n"
+        <> "Node " <> srcNodeId <> " -> Node " <> dstNodeId <> "\n"
+        <> "Outlet " <> outletId <> " -> Inlet " <> inletId
     show Stop = "Stop"
 
 
 instance showPatchMsg :: Show (PatchMsg n c a x) where
-    show CreatePatch = "Create Patch"
-    show (AddNode _type nodeId title) = "Add Node: " <> nodeId <> " " <> title
-    show (AddNode' _type nodeId) = "Add Node: " <> nodeId
-    show (RemoveNode patchId) = "Remove Node: " <> patchId
-    show (Connect srcNodeId dstNodeId outletId inletId) =
-        "Connect Oulet " <> outletId <> " from Node " <> srcNodeId <>
-        "to Inlet " <> inletId <> " from Node " <> dstNodeId
-    show (Disconnect srcNodeId dstNodeId outletId inletId) =
-        "Disconnect Oulet " <> outletId <> " from Node " <> srcNodeId <>
-        "from Inlet " <> inletId <> " from Node " <> dstNodeId
-    show (ChangeNode nodeId nodeMsg) =
-        "Change Node: " <> nodeId <> " :: " <> show nodeMsg
-    show (ChangeNode' (Node node' _)) = "Change Node (ref): " <> node'.id
+    show (InitPatch title) = "Init patch: " <> title
+    show SelectPatch = "Select patch"
+    show DeselectPatch = "Deselect patch"
+    show EnterPatch = "Enter patch"
+    show ExitPatch = "Exit patch"
+    show (AddNode nodeId) = "Add node: " <> nodeId
+    show (RemoveNode nodeId) = "Remove node:"  <> nodeId
 
 
-instance showNodeMsg :: Show (NodeMsg c a x) where
-    show CreateNode = "Create Node"
-    show (AddInlet type_ inletId title) = "Add Inlet: " <> inletId <> " " <> title
-    show (AddInlet' type_ inletId) = "Add Inlet: " <> inletId
-    show (AddOutlet type_ outletId title) = "Add Outlet: " <> outletId <> " " <> title
-    show (AddOutlet' type_ outletId) = "Add Outlet: " <> outletId
-    show (RemoveInlet inletId) = "Remove Inlet" <> inletId
-    show (RemoveOutlet outletId) = "Remove Outlet" <> outletId
-    show (ChangeInlet inletId inletMsg) =
-        "Change Inlet: " <> inletId <> " :: " <> show inletMsg
-    show (ChangeInlet' (Inlet inlet' _)) =
-        "Change Inlet (ref): " <> inlet'.id
-    show (ChangeOutlet outletId outletMsg) =
-        "Change Outlet: " <> outletId <> " :: " <> show outletMsg
-    show (ChangeOutlet' (Outlet outlet' _)) =
-        "Change Outlet (ref): " <> outlet'.id
+
+instance showNodeMsg :: Show (NodeMsg n c a x) where
+    show (InitNode type_ title) = "Init node: " <> type_ <> " " <> title
+    show (AddInlet inletId) = "Add inlet: " <> inletId
+    show (RemoveInlet inletId) = "Remove inlet:"  <> inletId
+    show (AddOutlet outletId) = "Add outlet: " <> outletId
+    show (RemoveOutlet outletId) = "Remove outlet:"  <> outletId
 
 
 instance showInletMsg :: Show (InletMsg c a x) where
-    show CreateInlet = "Create Inlet"
-    show (ConnectToOutlet _ _) = "Connect to Outlet"
-    show (DisconnectFromOutlet _) = "Disconnect from Outlet"
-    show Hide = "Hide Inlet"
+    show (InitInlet type_ label) = "Init inlet: " <> type_ <> " " <> label
+    show (ConnectToOutlet outletId _) = "Connect to outlet: " <> outletId
+    show (DisconnectFromOutlet outletId) = "Disconnect from outlet:"  <> outletId
+    show HideInlet = "Hide inlet"
+    show RevealInlet = "Reveal inlet"
 
 
 instance showOutletMsg :: Show (OutletMsg c a x) where
-    show CreateOutlet = "Create Outlet"
-    show (ConnectToInlet _) = "Connect to Inlet"
-    show (DisconnectFromInlet _) = "Disconnect from Inlet"
+    show (InitOutlet type_ label) = "Init outlet: " <> type_ <> " " <> label
+    show (ConnectToInlet inletId) = "Connect to inlet: " <> inletId
+    show (DisconnectFromInlet inletId) = "Disconnect from inlet:"  <> inletId
 
 
 instance showValue :: ( Show a, Show x ) => Show (Value a x) where
