@@ -9,11 +9,11 @@ module Rpd
     -- , log--, logData
     ) where
 
-import Control.Monad.Writer
-import Control.Monad.Writer.Class
 import Prelude
 
 import Control.Monad.Eff (Eff)
+import Control.Monad.Writer
+import Control.Monad.Writer.Class
 import Control.Plus (empty)
 import Data.Array as Array
 import Data.Array ((:))
@@ -276,8 +276,10 @@ outlet' =
 
 tellAndPerform :: forall a b. b -> (b -> a -> a) -> a -> Writer (Array b) a
 tellAndPerform msg updateF subj = do
-    tell [ msg ]
-    updateF msg subj
+    let
+        msgs = [ msg ]
+    tell msgs
+    writer (Tuple (updateF msg subj) msgs)
 
 
 tellAndPerform' :: forall a b. b -> (b -> a -> a) -> Writer (Array b) a -> Writer (Array b) a
@@ -286,7 +288,7 @@ tellAndPerform' msg updateF w = do
         (Tuple subj prevMsgs) = runWriter w
         joinedMsgs = msg : prevMsgs
     tell joinedMsgs
-    writer (Tuple joinedMsgs (updateF msg subj))
+    writer (Tuple (updateF msg subj) joinedMsgs)
 
 
 network :: NetworkActions'
@@ -475,39 +477,46 @@ tagFlowSignal (Inlet inlet' flowSignal) =
 
 
 instance showNetwork :: Show (Network n c a x) where
-    show network = "(Network \n"
-        <> Map.size network.patches <> " Patches\n"
-        <> Map.size network.nodes <> " Nodes\n"
-        <> Map.size network.inlets <> " Inlets\n"
-        <> Map.size network.outlets <> " Outlets\n"
-        <> "Selected Patch: " <> show (lift network.selected)
-        <> "Entered Patches: " <> network.entered
+    show (Network network) = "(Network \n"
+        <> show (Map.size network.patches) <> " Patches\n"
+        <> show (Map.size network.nodes) <> " Nodes\n"
+        <> show (Map.size network.inlets) <> " Inlets\n"
+        <> show (Map.size network.outlets) <> " Outlets\n"
+        <> "Selected Patch: " <> show network.selected
+        <> "Entered Patches: " <> show network.entered
         <> ")"
 
 
 instance showPatch :: Show (Patch n c a x) where
-    show patch = "(Patch " <> patch.id <> "\n"
-        <> Array.length patch.nodes <> " Nodes\n"
-        <> Array.length patch.links <> " Links\n"
+    show (Patch patch) = "(Patch " <> patch.id <> "\n"
+        <> show (Array.length patch.nodes) <> " Nodes\n"
+        <> show (Array.length patch.links) <> " Links\n"
         <> ")"
 
 
-instance showNode :: Show (Node n c a x) where
-    show node = "(Node " <> node.id <> "\n"
-        <> Array.length node.inlets <> " Inlets\n"
-        <> Array.length node.outlets <> " Outlets\n"
+instance showNode :: Show n => Show (Node n c a x) where
+    show (Node node _) = "(Node " <> node.id <> "\n"
+        <> show node.type <> " "
+        <> show (Array.length node.inlets) <> " Inlets\n"
+        <> show (Array.length node.outlets) <> " Outlets\n"
         <> ")"
 
 
-instance showInlet :: Show (Inlet c a x) where
-    show inlet = "(Inlet " <> inlet.id <> " " <> inlet.label <> ")"
+instance showInlet :: Show c => Show (Inlet c a x) where
+    show (Inlet inlet _) =
+        "(Inlet " <> inlet.id <> " "
+                  <> show inlet.type <> " "
+                  <> inlet.label <> ")"
 
 
-instance showOutlet :: Show (Outlet c a x) where
-    show outlet = "(Outlet " <> outlet.id <> " " <> outlet.label <> ")"
+instance showOutlet :: Show c => Show (Outlet c a x) where
+    show (Outlet outlet _) =
+        "(Outlet " <> show outlet.type <> " "
+                   <> outlet.id <> " "
+                   <> outlet.label <> ")"
 
 
-instance showNetworkMsg :: Show (NetworkMsg n c a x) where
+instance showNetworkMsg :: ( Show n, Show c ) => Show (NetworkMsg n c a x) where
     show Start = "Start"
     show (UpdatePatch _ patch) = "Update patch: " <> show patch
     show (ForgetPatch patchId) = "Forget patch: " <> patchId
@@ -526,7 +535,7 @@ instance showNetworkMsg :: Show (NetworkMsg n c a x) where
     show Stop = "Stop"
 
 
-instance showPatchMsg :: Show (PatchMsg n c a x) where
+instance showPatchMsg :: Show (PatchMsg) where
     show (InitPatch title) = "Init patch: " <> title
     show SelectPatch = "Select patch"
     show DeselectPatch = "Deselect patch"
@@ -537,24 +546,24 @@ instance showPatchMsg :: Show (PatchMsg n c a x) where
 
 
 
-instance showNodeMsg :: Show (NodeMsg n c a x) where
-    show (InitNode type_ title) = "Init node: " <> type_ <> " " <> title
+instance showNodeMsg :: Show n => Show (NodeMsg n) where
+    show (InitNode type_ title) = "Init node: " <> show type_ <> " " <> title
     show (AddInlet inletId) = "Add inlet: " <> inletId
     show (RemoveInlet inletId) = "Remove inlet:"  <> inletId
     show (AddOutlet outletId) = "Add outlet: " <> outletId
     show (RemoveOutlet outletId) = "Remove outlet:"  <> outletId
 
 
-instance showInletMsg :: Show (InletMsg c a x) where
-    show (InitInlet type_ label) = "Init inlet: " <> type_ <> " " <> label
+instance showInletMsg :: Show c => Show (InletMsg c a x) where
+    show (InitInlet type_ label) = "Init inlet: " <> show type_ <> " " <> label
     show (ConnectToOutlet outletId _) = "Connect to outlet: " <> outletId
     show (DisconnectFromOutlet outletId) = "Disconnect from outlet:"  <> outletId
     show HideInlet = "Hide inlet"
     show RevealInlet = "Reveal inlet"
 
 
-instance showOutletMsg :: Show (OutletMsg c a x) where
-    show (InitOutlet type_ label) = "Init outlet: " <> type_ <> " " <> label
+instance showOutletMsg :: Show c => Show (OutletMsg c) where
+    show (InitOutlet type_ label) = "Init outlet: " <> show type_ <> " " <> label
     show (ConnectToInlet inletId) = "Connect to inlet: " <> inletId
     show (DisconnectFromInlet inletId) = "Disconnect from inlet:"  <> inletId
 
