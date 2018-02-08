@@ -16,8 +16,9 @@ import Prelude
 import Control.Monad.Eff (Eff)
 import Control.Plus (empty)
 import Data.Array as Array
+import Data.Array ((:))
 import Data.Function (apply, applyFlipped)
-import Data.List ((:))
+--import Data.List ((:))
 import Data.List as List
 import Data.Map (Map, insert, delete, values)
 import Data.Map as Map
@@ -273,16 +274,19 @@ outlet' =
         S.constant Bang
 
 
-tellAndPerform :: forall a b. b -> (b -> a) -> a -> Writer (Array b) a
+tellAndPerform :: forall a b. b -> (b -> a -> a) -> a -> Writer (Array b) a
 tellAndPerform msg updateF subj = do
     tell [ msg ]
     updateF msg subj
 
 
-tellAndPerform' :: forall a b. b -> (b -> a) -> Writer (Array b) a -> Writer (Array b) a
-tellAndPerform' msg updateF (WriterT prevMsgs subj) = do
-    tell (msg : prevMsgs)
-    updateF msg subj
+tellAndPerform' :: forall a b. b -> (b -> a -> a) -> Writer (Array b) a -> Writer (Array b) a
+tellAndPerform' msg updateF w = do
+    let
+        (Tuple subj prevMsgs) = runWriter w
+        joinedMsgs = msg : prevMsgs
+    tell joinedMsgs
+    writer (Tuple joinedMsgs (updateF msg subj))
 
 
 network :: NetworkActions'
