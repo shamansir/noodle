@@ -291,6 +291,24 @@ tellAndPerform' msg updateF w = do
     writer (Tuple (updateF msg subj) joinedMsgs)
 
 
+tellAndPerform''
+    :: forall a b c d
+     . b
+    -> (b -> a -> a)
+    -> (b -> d)
+    -> Writer (Array d) c
+    -> Writer (Array b) a
+    -> Writer (Array b) a
+tellAndPerform'' msg mapF updateF srcW trgW = do
+    let
+        (Tuple _ srcMsgs) = runWriter srcW
+        (Tuple trgSubj _) = runWriter trgW
+        trgMsgs = srcMsgs |> map mapF
+        joinedMsgs = msg : trgMsgs
+    tell joinedMsgs
+    writer (Tuple (update msg trgSubj) joinedMsgs)
+
+
 network :: NetworkActions'
 network = tellAndPerform Start update network'
 
@@ -315,18 +333,27 @@ outlet type_ label =
     tellAndPerform (InitOutlet type_ label) updateOutlet outlet'
 
 
-addPatch :: PatchActions' -> NetworkActions' -> NetworkActions'
+addPatch :: PatchActions' n c a x -> NetworkActions' n c a x -> NetworkActions' n c a x
 addPatch (WriterT patchActions patch) network =
     tellAndPerform' (UpdatePatch patchActions patch) update network
 
 
-removePatch :: PatchActions' -> NetworkActions'
-removePatch (WriterT _ patch) network =
-    -- FIXME: use unperformed patch actions?
-    tellAndPerform' (ForgetPatch patch.id) update network
+removePatch
+    :: forall n c a x
+     . PatchActions' n c a x
+    -> NetworkActions' n c a x
+    -> NetworkActions' n c a x
+removePatch patchActions network = do
+    let
+        msg = (ForgetPatch patch.id)
+        (Tuple patch patchMsgs) = runWriter patchActions
+        networkMsgs = patchMsgs |> map (\patchMsg -> UpdatePatch [ patchMsg ] patch)
+        joinedMsgs = msg : networkMsgs
+    tell joinedMsgs
+    writer (Tuple (update msg network) joinedMsgs)
 
 
-select :: PatchActions' -> PatchActions'
+select :: forall n c a x. PatchActions' n c a x -> PatchActions' n c a x
 select patch =
     tellAndPerform' SelectPatch updatePatch patch
 
