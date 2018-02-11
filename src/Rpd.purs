@@ -274,16 +274,13 @@ outlet' =
         S.constant Bang
 
 
-tellAndPerform :: forall a b. b -> (b -> a -> a) -> a -> Writer (Array b) a
-tellAndPerform msg updateF subj = do
-    let
-        msgs = [ msg ]
-    tell msgs
-    writer (Tuple (updateF msg subj) msgs)
-
-
-tellAndPerform' :: forall a b. b -> (b -> a -> a) -> Writer (Array b) a -> Writer (Array b) a
-tellAndPerform' msg updateF w = do
+tellAndPerform
+    :: forall subj msg
+     . msg
+    -> (msg -> subj -> subj)
+    -> Writer (Array msg) subj
+    -> Writer (Array msg) subj
+tellAndPerform msg updateF w = do
     let
         (Tuple subj prevMsgs) = runWriter w
         joinedMsgs = msg : prevMsgs
@@ -291,15 +288,15 @@ tellAndPerform' msg updateF w = do
     writer (Tuple (updateF msg subj) joinedMsgs)
 
 
-tellAndPerform''
-    :: forall srcSubj srcMsg trgSubj trgMsg
-     . (srcSubj -> trgMsg)
-    -> (trgMsg -> trgSubj -> trgSubj)
-    -> (srcSubj -> srcMsg -> trgMsg)
-    -> Writer (Array srcMsg) srcSubj
-    -> Writer (Array trgMsg) trgSubj
-    -> Writer (Array trgMsg) trgSubj
-tellAndPerform'' msgF updateF mapF srcW trgW = do
+tellAndPerform'
+    :: forall ssubj smsg tsubj tmsg
+     . (ssubj -> tmsg)
+    -> (tmsg -> tsubj -> tsubj)
+    -> (ssubj -> smsg -> tmsg)
+    -> Writer (Array smsg) ssubj
+    -> Writer (Array tmsg) tsubj
+    -> Writer (Array tmsg) tsubj
+tellAndPerform' msgF updateF mapF srcW trgW = do
     let
         (Tuple srcSubj srcMsgs) = runWriter srcW
         (Tuple trgSubj _) = runWriter trgW
@@ -345,69 +342,78 @@ removePatch
     -> NetworkActions' n c a x
     -> NetworkActions' n c a x
 removePatch patchActions networkActions = do
-    tellAndPerform''
-        (\patch -> ForgetPatch patch.id)
+    tellAndPerform'
+        (\(PatchT patch') -> ForgetPatch patch'.id)
         update
-        (\patch patchMsg -> UpdatePatch [ patchMsg ] (PatchT patch))
+        (\patch patchMsg -> UpdatePatch [ patchMsg ] patch)
         patchActions
         networkActions
 
 
 select :: forall n c a x. PatchActions' n c a x -> PatchActions' n c a x
 select patchActions =
-    tellAndPerform' SelectPatch updatePatch patch
+    tellAndPerform SelectPatch updatePatch patch
 
 
 deselect :: PatchActions' -> PatchActions'
 deselect patchActions =
-    tellAndPerform' DeselectPatch updatePatch patch
+    tellAndPerform DeselectPatch updatePatch patch
 
 
 enter :: PatchActions' -> PatchActions'
 enter patchActions =
-    tellAndPerform' EnterPatch updatePatch patch
+    tellAndPerform EnterPatch updatePatch patch
 
 
 exit :: PatchActions' -> PatchActions'
 exit patchActions =
-    tellAndPerform' ExitPatch updatePatch patch
+    tellAndPerform ExitPatch updatePatch patchActions
 
 
 addNode :: NodeActions' -> PatchActions' -> PatchActions'
-addNode (WriterT nodeActions node) patchActions =
-    tellAndPerform' (UpdateNode nodeActions node) updatePatch patch
+addNode nodeActions patchActions =
+    patchActions -- FIXME: implement
+    -- tellAndPerform' (UpdateNode nodeActions node) updatePatch patch
 
 
-removeNode :: NodeActions' -> PatchActions' -> PatchActions'
-removeNode (WriterT _ node) patchActions =
-    -- FIXME: use unperformed inlet actions?
-    tellAndPerform' (ForgetInlet inlet.id) updateNode node
+removeNode
+    :: forall n c a x
+     . NodeActions' n c a x
+    -> PatchActions' n c a x
+    -> PatchActions' n c a x
+removeNode nodeActions patchActions =
+    patchActions -- FIXME: implement
+    -- tellAndPerform' (ForgetInlet inlet.id) updateNode node
 
 
-addInlet :: InletActions' -> NodeActions' -> NodeActions'
-addInlet (WriterT inletActions inlet) nodeActions =
-    tellAndPerform' (UpdateInlet inletActions inlet) updateNode node
+addInlet :: forall n c a x. InletActions' c a x -> NodeActions' n c a x -> NodeActions' n c a x
+addInlet inletActions nodeActions =
+    nodeActions -- FIXME: implement
+    -- tellAndPerform (UpdateInlet inletActions inlet) updateNode nodeActions
 
 
-removeInlet :: InletActions' -> NodeActions' -> NodeActions'
-removeInlet (WriterT _ inlet) nodeActions =
-    -- FIXME: use unperformed inlet actions?
-    tellAndPerform' (ForgetInlet inlet.id) updateNode node
+removeInlet :: forall n c a x. InletActions' c a x -> NodeActions' n c a x -> NodeActions' n c a x
+removeInlet inletActions nodeActions =
+    nodeActions -- FIXME: implement
+    -- tellAndPerform (ForgetInlet inlet.id) updateNode nodeActions
 
 
-addOutlet :: OutletActions' -> NodeActions' -> NodeActions'
-addOutlet (WriterT outletActions outlet) nodeActions =
-    tellAndPerform' (UpdateOutlet outletActions outlet) updateNode node
+addOutlet :: forall n c a x. OutletActions' c a x -> NodeActions' n c a x -> NodeActions' n c a x
+addOutlet outletActions nodeActions =
+    nodeActions -- FIXME: implement
+    -- tellAndPerform' (UpdateOutlet outletActions outlet) updateNode nodeActions
 
 
 removeOutlet :: forall n c a x. OutletActions' c a x -> NodeActions' n c a x -> NodeActions' n c a x
-removeOutlet outletAction nodeActions = do
-    tellAndPerform''
-        (ForgetOutlet outlet.id)
-        updateNode
-        (\patch patchMsg -> UpdatePatch [ patchMsg ] patch)
-        outletAction
-        nodeActions
+removeOutlet outletAction nodeActions =
+    nodeActions -- FIXME: implemeent
+    -- do
+    -- tellAndPerform'
+    --     (\(OutletT outlet' _) -> ForgetOutlet outlet'.id)
+    --     update
+    --     (\outlet outletMsg -> UpdateOutlet [ outletMsg ] outlet)
+    --     outletAction
+    --     ?todo
 
 
 -- Logic:
