@@ -139,7 +139,7 @@ type ProcessSignal a x = S.Signal (Tuple (Map InletId (Value a x)) (Map OutletId
 
 
 data Network n c a x =
-    Network
+    NetworkT
         { messages :: S.Signal (NetworkMsg n c a x)
         , patches :: Map PatchId (Patch n c a x)
         , nodes :: Map NodeId (Node n c a x)
@@ -152,7 +152,7 @@ data Network n c a x =
 
 
 data Patch n c a x =
-    Patch
+    PatchT
         { id :: PatchId
         , title :: String
         , nodes :: Array NodeId
@@ -161,7 +161,7 @@ data Patch n c a x =
 
 
 data Node n c a x =
-    Node
+    NodeT
         { id :: NodeId
         , title :: String
         , type :: Maybe n
@@ -173,7 +173,7 @@ data Node n c a x =
 
 
 data Inlet c a x =
-    Inlet
+    InletT
         { id :: InletId
         , label :: String
         , type :: Maybe c
@@ -182,7 +182,7 @@ data Inlet c a x =
 
 
 data Outlet c a x =
-    Outlet
+    OutletT
         { id :: OutletId
         , label :: String
         , type :: Maybe c
@@ -190,7 +190,7 @@ data Outlet c a x =
         (FlowSignal a x)
 
 
-data Link a x = Link
+data Link a x = LinkT
         { id :: LinkId
         , inlet :: InletId
         , outlet :: OutletId
@@ -218,9 +218,9 @@ data Actions n c a x
 -- API:
 
 
-network' :: Network
+network' :: forall n c a x. Network n c a x
 network' =
-    Network
+    NetworkT
         { messages : S.constant Start
         , patches : Map.empty
         , nodes : Map.empty
@@ -232,9 +232,9 @@ network' =
         }
 
 
-patch' :: Patch
+patch' :: forall n c a x. Patch n c a x
 patch' =
-    Patch
+    PatchT
         { id : "test"
         , title : "Noname"
         , nodes : []
@@ -242,9 +242,9 @@ patch' =
         }
 
 
-node' :: Node
+node' :: forall n c a x. Node n c a x
 node' =
-    Node
+    NodeT
         { id : "test"
         , title : "Unknown"
         , type : Nothing
@@ -254,9 +254,9 @@ node' =
         }
 
 
-inlet' :: Inlet
+inlet' :: forall c a x. Inlet c a x
 inlet' =
-    Inlet
+    InletT
         { id: "test"
         , label : "foo"
         , type : Nothing
@@ -264,9 +264,9 @@ inlet' =
         S.constant Bang
 
 
-outlet' :: Outlet
+outlet' :: forall c a x. Outlet c a x
 outlet' =
-    Outlet
+    OutletT
         { id: "test"
         , label : "foo"
         , type : Nothing
@@ -292,28 +292,29 @@ tellAndPerform' msg updateF w = do
 
 
 tellAndPerform''
-    :: forall a b c d
-     . b
-    -> (b -> a -> a)
-    -> (b -> d)
-    -> Writer (Array d) c
-    -> Writer (Array b) a
-    -> Writer (Array b) a
-tellAndPerform'' msg mapF updateF srcW trgW = do
+    :: forall srcSubj srcMsg trgSubj trgMsg
+     . (srcSubj -> trgMsg)
+    -> (trgMsg -> trgSubj -> trgSubj)
+    -> (srcSubj -> srcMsg -> trgMsg)
+    -> Writer (Array srcMsg) srcSubj
+    -> Writer (Array trgMsg) trgSubj
+    -> Writer (Array trgMsg) trgSubj
+tellAndPerform'' msgF updateF mapF srcW trgW = do
     let
-        (Tuple _ srcMsgs) = runWriter srcW
+        (Tuple srcSubj srcMsgs) = runWriter srcW
         (Tuple trgSubj _) = runWriter trgW
-        trgMsgs = srcMsgs |> map mapF
-        joinedMsgs = msg : trgMsgs
+        trgMsg = msgF srcSubj
+        trgMsgs = srcMsgs |> map (mapF srcSubj)
+        joinedMsgs = trgMsg : trgMsgs
     tell joinedMsgs
-    writer (Tuple (update msg trgSubj) joinedMsgs)
+    writer (Tuple (updateF trgMsg trgSubj) joinedMsgs)
 
 
 network :: NetworkActions'
 network = tellAndPerform Start update network'
 
 
-patch :: String -> PatchActions'
+patch :: forall n c a x. String -> PatchActions' n c a x
 patch title =
     tellAndPerform (InitPatch title) updatePatch patch'
 
@@ -334,7 +335,7 @@ outlet type_ label =
 
 
 addPatch :: PatchActions' n c a x -> NetworkActions' n c a x -> NetworkActions' n c a x
-addPatch (WriterT patchActions patch) network =
+addPatch (WriterT patchActions patch) networkActions =
     tellAndPerform' (UpdatePatch patchActions patch) update network
 
 
@@ -343,67 +344,70 @@ removePatch
      . PatchActions' n c a x
     -> NetworkActions' n c a x
     -> NetworkActions' n c a x
-removePatch patchActions network = do
-    let
-        msg = (ForgetPatch patch.id)
-        (Tuple patch patchMsgs) = runWriter patchActions
-        networkMsgs = patchMsgs |> map (\patchMsg -> UpdatePatch [ patchMsg ] patch)
-        joinedMsgs = msg : networkMsgs
-    tell joinedMsgs
-    writer (Tuple (update msg network) joinedMsgs)
+removePatch patchActions networkActions = do
+    tellAndPerform''
+        (\patch -> ForgetPatch patch.id)
+        update
+        (\patch patchMsg -> UpdatePatch [ patchMsg ] (PatchT patch))
+        patchActions
+        networkActions
 
 
 select :: forall n c a x. PatchActions' n c a x -> PatchActions' n c a x
-select patch =
+select patchActions =
     tellAndPerform' SelectPatch updatePatch patch
 
 
 deselect :: PatchActions' -> PatchActions'
-deselect patch =
+deselect patchActions =
     tellAndPerform' DeselectPatch updatePatch patch
 
 
 enter :: PatchActions' -> PatchActions'
-enter patch =
+enter patchActions =
     tellAndPerform' EnterPatch updatePatch patch
 
 
 exit :: PatchActions' -> PatchActions'
-exit patch =
+exit patchActions =
     tellAndPerform' ExitPatch updatePatch patch
 
 
 addNode :: NodeActions' -> PatchActions' -> PatchActions'
-addNode (WriterT nodeActions node) patch =
+addNode (WriterT nodeActions node) patchActions =
     tellAndPerform' (UpdateNode nodeActions node) updatePatch patch
 
 
 removeNode :: NodeActions' -> PatchActions' -> PatchActions'
-removeNode (WriterT _ node) patch =
+removeNode (WriterT _ node) patchActions =
     -- FIXME: use unperformed inlet actions?
     tellAndPerform' (ForgetInlet inlet.id) updateNode node
 
 
 addInlet :: InletActions' -> NodeActions' -> NodeActions'
-addInlet (WriterT inletActions inlet) node =
+addInlet (WriterT inletActions inlet) nodeActions =
     tellAndPerform' (UpdateInlet inletActions inlet) updateNode node
 
 
 removeInlet :: InletActions' -> NodeActions' -> NodeActions'
-removeInlet (WriterT _ inlet) node =
+removeInlet (WriterT _ inlet) nodeActions =
     -- FIXME: use unperformed inlet actions?
     tellAndPerform' (ForgetInlet inlet.id) updateNode node
 
 
 addOutlet :: OutletActions' -> NodeActions' -> NodeActions'
-addOutlet (WriterT outletActions outlet) node =
+addOutlet (WriterT outletActions outlet) nodeActions =
     tellAndPerform' (UpdateOutlet outletActions outlet) updateNode node
 
 
-removeOutlet :: OutletActions' -> NodeActions' -> NodeActions'
-removeOutlet (WriterT _ outlet) node =
-    -- FIXME: use unperformed outlet actions?
-    tellAndPerform' (ForgetOutlet outlet.id) updateNode node
+removeOutlet :: forall n c a x. OutletActions' c a x -> NodeActions' n c a x -> NodeActions' n c a x
+removeOutlet outletAction nodeActions = do
+    tellAndPerform''
+        (ForgetOutlet outlet.id)
+        updateNode
+        (\patch patchMsg -> UpdatePatch [ patchMsg ] patch)
+        outletAction
+        nodeActions
 
 
 -- Logic:
@@ -452,20 +456,20 @@ initProcessChannel =
 
 update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
 update Start network = network
-update (UpdatePatch _ patch@(Patch { id })) (Network network'@{ patches }) =
-    Network network'
+update (UpdatePatch _ patch@(PatchT { id })) (NetworkT network'@{ patches }) =
+    NetworkT network'
         { patches =
             patches |> Map.insert id patch }
-update (ForgetPatch patchId) (Network network'@{ patches }) =
-    Network network'
+update (ForgetPatch patchId) (NetworkT network'@{ patches }) =
+    NetworkT network'
         { patches =
             patches |> Map.delete patchId }
-update (UpdateNode _ node@(Node { id } _)) (Network network'@{ nodes }) =
-    Network network'
+update (UpdateNode _ node@(NodeT { id } _)) (NetworkT network'@{ nodes }) =
+    NetworkT network'
         { nodes =
             nodes |> Map.insert id node }
-update (ForgetNode nodeId) (Network network'@{ nodes }) =
-    Network network'
+update (ForgetNode nodeId) (NetworkT network'@{ nodes }) =
+    NetworkT network'
         { nodes =
             nodes |> Map.delete nodeId }
 update (Connect srcId dstId outletId inletId) network = network -- TODO: implement
@@ -493,7 +497,7 @@ updateOutlet _ outlet = outlet -- FIXME : implement
 
 
 tagFlowSignal :: forall n c a x. Inlet c a x -> TaggedFlowSignal a x
-tagFlowSignal (Inlet inlet' flowSignal) =
+tagFlowSignal (InletT inlet' flowSignal) =
     flowSignal S.~> (\val -> Tuple inlet'.id val)
 
 
@@ -504,7 +508,7 @@ tagFlowSignal (Inlet inlet' flowSignal) =
 
 
 instance showNetwork :: Show (Network n c a x) where
-    show (Network network) = "(Network \n"
+    show (NetworkT network) = "(Network \n"
         <> show (Map.size network.patches) <> " Patches\n"
         <> show (Map.size network.nodes) <> " Nodes\n"
         <> show (Map.size network.inlets) <> " Inlets\n"
@@ -515,14 +519,14 @@ instance showNetwork :: Show (Network n c a x) where
 
 
 instance showPatch :: Show (Patch n c a x) where
-    show (Patch patch) = "(Patch " <> patch.id <> "\n"
+    show (PatchT patch) = "(Patch " <> patch.id <> "\n"
         <> show (Array.length patch.nodes) <> " Nodes\n"
         <> show (Array.length patch.links) <> " Links\n"
         <> ")"
 
 
 instance showNode :: Show n => Show (Node n c a x) where
-    show (Node node _) = "(Node " <> node.id <> "\n"
+    show (NodeT node _) = "(Node " <> node.id <> "\n"
         <> show node.type <> " "
         <> show (Array.length node.inlets) <> " Inlets\n"
         <> show (Array.length node.outlets) <> " Outlets\n"
@@ -530,14 +534,14 @@ instance showNode :: Show n => Show (Node n c a x) where
 
 
 instance showInlet :: Show c => Show (Inlet c a x) where
-    show (Inlet inlet _) =
+    show (InletT inlet _) =
         "(Inlet " <> inlet.id <> " "
                   <> show inlet.type <> " "
                   <> inlet.label <> ")"
 
 
 instance showOutlet :: Show c => Show (Outlet c a x) where
-    show (Outlet outlet _) =
+    show (OutletT outlet _) =
         "(Outlet " <> show outlet.type <> " "
                    <> outlet.id <> " "
                    <> outlet.label <> ")"
@@ -612,16 +616,16 @@ instance showValue :: ( Show a, Show x ) => Show (Value a x) where
 
 
 logDataFlow :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
-logDataFlow (Network network') =
+logDataFlow (NetworkT network') =
     let
         allNodes = List.foldr
-            (\(Patch patch') allNodes ->
+            (\(PatchT patch') allNodes ->
                 allNodes <> values patch'.nodes) empty (values network'.patches)
         allDataSignals =
-            List.foldr (\(Node node' dataSignal) allSignals ->
+            List.foldr (\(NodeT node' dataSignal) allSignals ->
                 allSignals
-                    <> (map (\(Inlet inlet' dataSignal) -> dataSignal) (values node'.inlets))
-                    <> (map (\(Outlet outlet' dataSignal) -> dataSignal) (values node'.outlets))
+                    <> (map (\(InletT inlet' dataSignal) -> dataSignal) (values node'.inlets))
+                    <> (map (\(OutletT outlet' dataSignal) -> dataSignal) (values node'.outlets))
             ) empty allNodes
     in
         case S.mergeMany allDataSignals of
