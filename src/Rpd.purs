@@ -198,10 +198,10 @@ data Link a x = LinkT
 
 
 type NetworkActions' n c a x = SC.Channel (NetworkMsg n c a x)
-type PatchActions' = SC.Channel PatchMsg
-type NodeActions' n = SC.Channel (NodeMsg n)
-type InletActions' c a x = SC.Channel (InletMsg c a x)
-type OutletActions' c = SC.Channel (OutletMsg c)
+type PatchActions' = Tuple PatchId (SC.Channel PatchMsg)
+type NodeActions' n = Tuple NodeId (SC.Channel (NodeMsg n))
+type InletActions' c a x = Tuple InletId (SC.Channel (InletMsg c a x))
+type OutletActions' c = Tuple OutletId (SC.Channel (OutletMsg c))
 
 -- type NetworkActions' n c a x = Writer (Array (NetworkMsg n c a x)) (Network n c a x)
 -- type PatchActions' n c a x = Writer (Array PatchMsg) (Patch n c a x)
@@ -346,8 +346,8 @@ removePatch
      . PatchActions'
     -> NetworkActions' n c a x
     -> NetworkActions' n c a x
-removePatch _ networkActions = do
-    SC.send (ForgetPatch patch'.id)
+removePatch (Tuple patchId _) networkActions = do
+    SC.send networkActions (ForgetPatch patchId)
 
 
 select ::PatchActions' -> PatchActions'
