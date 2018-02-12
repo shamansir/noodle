@@ -9,16 +9,15 @@ module Rpd
     -- , log--, logData
     ) where
 
+import Control.Monad.Writer
+import Control.Monad.Writer.Class
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Control.Monad.Writer
-import Control.Monad.Writer.Class
 import Control.Plus (empty)
-import Data.Array as Array
 import Data.Array ((:))
+import Data.Array as Array
 import Data.Function (apply, applyFlipped)
---import Data.List ((:))
 import Data.List as List
 import Data.Map (Map, insert, delete, values)
 import Data.Map as Map
@@ -198,21 +197,27 @@ data Link a x = LinkT
         (FlowSignal a x)
 
 
-type NetworkActions' n c a x = Writer (Array (NetworkMsg n c a x)) (Network n c a x)
-type PatchActions' n c a x = Writer (Array PatchMsg) (Patch n c a x)
-type NodeActions' n c a x = Writer (Array (NodeMsg n)) (Node n c a x)
-type InletActions' c a x = Writer (Array (InletMsg c a x)) (Inlet c a x)
-type OutletActions' c a x = Writer (Array (OutletMsg c)) (Outlet c a x)
-type LinkActions' c a x = (Link a x)
+type NetworkActions' n c a x = SC.Channel (NetworkMsg n c a x)
+type PatchActions' = SC.Channel PatchMsg
+type NodeActions' n = SC.Channel (NodeMsg n)
+type InletActions' c a x = SC.Channel (InletMsg c a x)
+type OutletActions' c = SC.Channel (OutletMsg c)
+
+-- type NetworkActions' n c a x = Writer (Array (NetworkMsg n c a x)) (Network n c a x)
+-- type PatchActions' n c a x = Writer (Array PatchMsg) (Patch n c a x)
+-- type NodeActions' n c a x = Writer (Array (NodeMsg n)) (Node n c a x)
+-- type InletActions' c a x = Writer (Array (InletMsg c a x)) (Inlet c a x)
+-- type OutletActions' c a x = Writer (Array (OutletMsg c)) (Outlet c a x)
+-- type LinkActions' c a x = (Link a x)
 
 
 data Actions n c a x
     = NetworkActions (NetworkActions' n c a x)
-    | PatchActions (PatchActions' n c a x)
-    | NodeActions (NodeActions' n c a x)
+    | PatchActions PatchActions'
+    | NodeActions (NodeActions' n)
     | InletActions (InletActions' c a x)
-    | OutletActions (OutletActions' c a x)
-    | LinkActions (LinkActions' c a x)
+    | OutletActions (OutletActions' c)
+    -- | LinkActions (LinkActions' c a x)
 
 
 -- API:
@@ -307,50 +312,45 @@ tellAndPerform' msgF updateF mapF srcW trgW = do
     writer (Tuple (updateF trgMsg trgSubj) joinedMsgs)
 
 
-network :: NetworkActions'
+network :: forall n c a x. NetworkActions' n c a x
 network = tellAndPerform Start update network'
 
 
-patch :: forall n c a x. String -> PatchActions' n c a x
+patch :: String -> PatchActions'
 patch title =
     tellAndPerform (InitPatch title) updatePatch patch'
 
 
-node :: forall n. n -> String -> NodeActions'
+node :: forall n. n -> String -> NodeActions' n
 node type_ title =
     tellAndPerform (InitNode type_ title) updateNode node'
 
 
-inlet :: forall c. c -> String -> NodeActions'
+inlet :: forall c a x. c -> String -> InletActions' c a x
 inlet type_ label =
     tellAndPerform (InitInlet type_ label) updateInlet inlet'
 
 
-outlet :: forall c. c -> String -> NodeActions'
+outlet :: forall c. c -> String -> OutletActions' c
 outlet type_ label =
     tellAndPerform (InitOutlet type_ label) updateOutlet outlet'
 
 
-addPatch :: PatchActions' n c a x -> NetworkActions' n c a x -> NetworkActions' n c a x
+addPatch :: PatchActions' -> NetworkActions' n c a x -> NetworkActions' n c a x
 addPatch (WriterT patchActions patch) networkActions =
     tellAndPerform' (UpdatePatch patchActions patch) update network
 
 
 removePatch
     :: forall n c a x
-     . PatchActions' n c a x
+     . PatchActions'
     -> NetworkActions' n c a x
     -> NetworkActions' n c a x
-removePatch patchActions networkActions = do
-    tellAndPerform'
-        (\(PatchT patch') -> ForgetPatch patch'.id)
-        update
-        (\patch patchMsg -> UpdatePatch [ patchMsg ] patch)
-        patchActions
-        networkActions
+removePatch _ networkActions = do
+    SC.send (ForgetPatch patch'.id)
 
 
-select :: forall n c a x. PatchActions' n c a x -> PatchActions' n c a x
+select ::PatchActions' -> PatchActions'
 select patchActions =
     tellAndPerform SelectPatch updatePatch patch
 
@@ -377,34 +377,34 @@ addNode nodeActions patchActions =
 
 
 removeNode
-    :: forall n c a x
-     . NodeActions' n c a x
-    -> PatchActions' n c a x
-    -> PatchActions' n c a x
+    :: forall n
+     . NodeActions' n
+    -> PatchActions'
+    -> PatchActions'
 removeNode nodeActions patchActions =
     patchActions -- FIXME: implement
     -- tellAndPerform' (ForgetInlet inlet.id) updateNode node
 
 
-addInlet :: forall n c a x. InletActions' c a x -> NodeActions' n c a x -> NodeActions' n c a x
+addInlet :: forall n c a x. InletActions' c a x -> NodeActions' n  -> NodeActions' n
 addInlet inletActions nodeActions =
     nodeActions -- FIXME: implement
     -- tellAndPerform (UpdateInlet inletActions inlet) updateNode nodeActions
 
 
-removeInlet :: forall n c a x. InletActions' c a x -> NodeActions' n c a x -> NodeActions' n c a x
+removeInlet :: forall n c a x. InletActions' c a x -> NodeActions' n -> NodeActions' n
 removeInlet inletActions nodeActions =
     nodeActions -- FIXME: implement
     -- tellAndPerform (ForgetInlet inlet.id) updateNode nodeActions
 
 
-addOutlet :: forall n c a x. OutletActions' c a x -> NodeActions' n c a x -> NodeActions' n c a x
+addOutlet :: forall n c a x. OutletActions' c a x -> NodeActions' n -> NodeActions' n
 addOutlet outletActions nodeActions =
     nodeActions -- FIXME: implement
     -- tellAndPerform' (UpdateOutlet outletActions outlet) updateNode nodeActions
 
 
-removeOutlet :: forall n c a x. OutletActions' c a x -> NodeActions' n c a x -> NodeActions' n c a x
+removeOutlet :: forall n c. OutletActions' c -> NodeActions' n -> NodeActions' n
 removeOutlet outletAction nodeActions =
     nodeActions -- FIXME: implemeent
     -- do
