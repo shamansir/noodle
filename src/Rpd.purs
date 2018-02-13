@@ -197,11 +197,19 @@ data Link a x = LinkT
         (FlowSignal a x)
 
 
-type NetworkActions' n c a x = SC.Channel (NetworkMsg n c a x)
-type PatchActions' = Tuple PatchId (SC.Channel PatchMsg)
-type NodeActions' n = Tuple NodeId (SC.Channel (NodeMsg n))
-type InletActions' c a x = Tuple InletId (SC.Channel (InletMsg c a x))
-type OutletActions' c = Tuple OutletId (SC.Channel (OutletMsg c))
+newtype Actions' e a =
+    Actions' (Eff (channel :: SC.CHANNEL | e) (SC.Channel a))
+
+newtype TaggedActions' e a i  =
+    TaggedActions'
+        (Eff (channel :: SC.CHANNEL | e) (Tuple i (SC.Channel a)))
+
+
+type NetworkActions' e n c a x = Actions' e (NetworkMsg n c a x)
+type PatchActions' e = TaggedActions' e PatchMsg PatchId
+type NodeActions' e n = TaggedActions' e (NodeMsg n) NodeId
+type InletActions' e c a x = TaggedActions' e (InletMsg c a x) InletId
+type OutletActions' e c = TaggedActions' e (OutletMsg c) OutletId
 
 -- type NetworkActions' n c a x = Writer (Array (NetworkMsg n c a x)) (Network n c a x)
 -- type PatchActions' n c a x = Writer (Array PatchMsg) (Patch n c a x)
@@ -211,12 +219,12 @@ type OutletActions' c = Tuple OutletId (SC.Channel (OutletMsg c))
 -- type LinkActions' c a x = (Link a x)
 
 
-data Actions n c a x
-    = NetworkActions (NetworkActions' n c a x)
-    | PatchActions PatchActions'
-    | NodeActions (NodeActions' n)
-    | InletActions (InletActions' c a x)
-    | OutletActions (OutletActions' c)
+data Actions e n c a x
+    = NetworkActions (NetworkActions' e n c a x)
+    | PatchActions (PatchActions' e)
+    | NodeActions (NodeActions' e n)
+    | InletActions (InletActions' e c a x)
+    | OutletActions (OutletActions' e c)
     -- | LinkActions (LinkActions' c a x)
 
 
@@ -312,42 +320,53 @@ tellAndPerform' msgF updateF mapF srcW trgW = do
     writer (Tuple (updateF trgMsg trgSubj) joinedMsgs)
 
 
-network :: forall n c a x. NetworkActions' n c a x
+getId :: forall e a i. TaggedActions' e a i -> i
+getId (TaggedActions' (Tuple id _)) =
+    id
+
+
+taggedActions :: forall e a i. i -> a -> TaggedActions' e a i
+taggedActions id default = TaggedActions' $ do
+    chan <- SC.channel default
+    pure $ Tuple id chan
+
+
+network :: forall e n c a x. NetworkActions' e n c a x
 network = tellAndPerform Start update network'
 
 
-patch :: String -> PatchActions'
+patch :: forall e. String -> PatchActions' e
 patch title =
-    tellAndPerform (InitPatch title) updatePatch patch'
+    taggedActions title (InitPatch title)
 
 
-node :: forall n. n -> String -> NodeActions' n
+node :: forall e n. e n -> String -> NodeActions' e n
 node type_ title =
     tellAndPerform (InitNode type_ title) updateNode node'
 
 
-inlet :: forall c a x. c -> String -> InletActions' c a x
+inlet :: forall e c a x. c -> String -> InletActions' e c a x
 inlet type_ label =
     tellAndPerform (InitInlet type_ label) updateInlet inlet'
 
 
-outlet :: forall c. c -> String -> OutletActions' c
+outlet :: forall e c. c -> String -> OutletActions' e c
 outlet type_ label =
     tellAndPerform (InitOutlet type_ label) updateOutlet outlet'
 
 
-addPatch :: PatchActions' -> NetworkActions' n c a x -> NetworkActions' n c a x
+addPatch :: PatchActions' e -> NetworkActions' e n c a x -> NetworkActions' e n c a x
 addPatch (WriterT patchActions patch) networkActions =
     tellAndPerform' (UpdatePatch patchActions patch) update network
 
 
 removePatch
-    :: forall n c a x
-     . PatchActions'
-    -> NetworkActions' n c a x
-    -> NetworkActions' n c a x
-removePatch (Tuple patchId _) networkActions = do
-    SC.send networkActions (ForgetPatch patchId)
+    :: forall e n c a x
+     . PatchActions' e
+    -> NetworkActions' e n c a x
+    -> NetworkActions' e n c a x
+removePatch patchActions networkActions = do
+    SC.send networkActions (ForgetPatch (getId patchActions))
 
 
 select ::PatchActions' -> PatchActions'
@@ -377,34 +396,34 @@ addNode nodeActions patchActions =
 
 
 removeNode
-    :: forall n
-     . NodeActions' n
-    -> PatchActions'
-    -> PatchActions'
+    :: forall e n
+     . NodeActions' e n
+    -> PatchActions' e
+    -> PatchActions' e
 removeNode nodeActions patchActions =
     patchActions -- FIXME: implement
     -- tellAndPerform' (ForgetInlet inlet.id) updateNode node
 
 
-addInlet :: forall n c a x. InletActions' c a x -> NodeActions' n  -> NodeActions' n
+addInlet :: forall e n c a x. InletActions' c a x -> NodeActions' e n  -> NodeActions' e n
 addInlet inletActions nodeActions =
     nodeActions -- FIXME: implement
     -- tellAndPerform (UpdateInlet inletActions inlet) updateNode nodeActions
 
 
-removeInlet :: forall n c a x. InletActions' c a x -> NodeActions' n -> NodeActions' n
+removeInlet :: forall e n c a x. InletActions' e c a x -> NodeActions' e n -> NodeActions' e n
 removeInlet inletActions nodeActions =
     nodeActions -- FIXME: implement
     -- tellAndPerform (ForgetInlet inlet.id) updateNode nodeActions
 
 
-addOutlet :: forall n c a x. OutletActions' c a x -> NodeActions' n -> NodeActions' n
+addOutlet :: forall e n c a x. OutletActions' e c a x -> NodeActions' e n -> NodeActions' e n
 addOutlet outletActions nodeActions =
     nodeActions -- FIXME: implement
     -- tellAndPerform' (UpdateOutlet outletActions outlet) updateNode nodeActions
 
 
-removeOutlet :: forall n c. OutletActions' c -> NodeActions' n -> NodeActions' n
+removeOutlet :: forall e n c. OutletActions' e c -> NodeActions' e n -> NodeActions' e n
 removeOutlet outletAction nodeActions =
     nodeActions -- FIXME: implemeent
     -- do
