@@ -320,6 +320,13 @@ tellAndPerform' msgF updateF mapF srcW trgW = do
     writer (Tuple (updateF trgMsg trgSubj) joinedMsgs)
 
 
+sendMsg :: forall e a i. a -> TaggedActions' e a i -> TaggedActions' e a i
+sendMsg msg src = TaggedActions' $ do
+    TaggedActions' (Tuple _ chan) <- src
+    SC.send chan msg
+    pure $ Tuple id chan
+
+
 getId :: forall e a i. TaggedActions' e a i -> i
 getId (TaggedActions' (Tuple id _)) =
     id
@@ -369,9 +376,9 @@ removePatch patchActions networkActions = do
     SC.send networkActions (ForgetPatch (getId patchActions))
 
 
-select ::PatchActions' -> PatchActions'
+select :: forall e. PatchActions' e -> PatchActions' e
 select patchActions =
-    tellAndPerform SelectPatch updatePatch patch
+    sendMsg patchActions SelectPatch
 
 
 deselect :: PatchActions' -> PatchActions'
