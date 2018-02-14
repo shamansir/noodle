@@ -14,6 +14,7 @@ import Control.Monad.Writer.Class
 import Prelude
 
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Class (liftEff)
 import Control.Plus (empty)
 import Data.Array ((:))
 import Data.Array as Array
@@ -23,7 +24,7 @@ import Data.Map (Map, insert, delete, values)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Monoid (mempty)
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), snd)
 import Data.Unit as Unit
 import Signal as S
 import Signal.Channel as SC
@@ -205,6 +206,11 @@ newtype TaggedActions' e a i  =
         (Eff (channel :: SC.CHANNEL | e) (Tuple i (SC.Channel a)))
 
 
+-- newtype TaggedActions' e  =
+--     TaggedActions'
+--         (Eff (channel :: SC.CHANNEL | e) (Tuple String (SC.Channel Int)))
+
+
 type NetworkActions' e n c a x = Actions' e (NetworkMsg n c a x)
 type PatchActions' e = TaggedActions' e PatchMsg PatchId
 type NodeActions' e n = TaggedActions' e (NodeMsg n) NodeId
@@ -265,6 +271,7 @@ node' =
         , outlets : []
         , process : Nothing
         }
+        (S.constant (Tuple Map.empty Map.empty)) -- FIXME: make simple message
 
 
 inlet' :: forall c a x. Inlet c a x
@@ -274,7 +281,7 @@ inlet' =
         , label : "foo"
         , type : Nothing
         }
-        S.constant Bang
+        (S.constant Bang)
 
 
 outlet' :: forall c a x. Outlet c a x
@@ -284,7 +291,7 @@ outlet' =
         , label : "foo"
         , type : Nothing
         }
-        S.constant Bang
+        (S.constant Bang)
 
 
 tellAndPerform
@@ -320,16 +327,15 @@ tellAndPerform' msgF updateF mapF srcW trgW = do
     writer (Tuple (updateF trgMsg trgSubj) joinedMsgs)
 
 
-sendMsg :: forall e a i. a -> TaggedActions' e a i -> TaggedActions' e a i
-sendMsg msg src = TaggedActions' $ do
-    TaggedActions' (Tuple _ chan) <- src
-    SC.send chan msg
-    pure $ Tuple id chan
-
-
 getId :: forall e a i. TaggedActions' e a i -> i
 getId (TaggedActions' (Tuple id _)) =
     id
+
+
+actions :: forall e a i. a -> Actions' e a
+actions default = Actions' $ do
+    chan <- SC.channel default
+    pure $ chan
 
 
 taggedActions :: forall e a i. i -> a -> TaggedActions' e a i
@@ -338,28 +344,31 @@ taggedActions id default = TaggedActions' $ do
     pure $ Tuple id chan
 
 
+sendMsg :: forall e a i. a -> TaggedActions' e a i -> TaggedActions' e a i
+sendMsg msg (TaggedActions' eff) = TaggedActions' $ do
+    (Tuple id chan) <- liftEff eff
+    SC.send chan msg
+    pure $ Tuple id chan
+
+
 network :: forall e n c a x. NetworkActions' e n c a x
-network = tellAndPerform Start update network'
+network = actions Start
 
 
 patch :: forall e. String -> PatchActions' e
-patch title =
-    taggedActions title (InitPatch title)
+patch title = taggedActions title (InitPatch title)
 
 
-node :: forall e n. e n -> String -> NodeActions' e n
-node type_ title =
-    tellAndPerform (InitNode type_ title) updateNode node'
+node :: forall e n. n -> String -> NodeActions' e n
+node type_ title = taggedActions title (InitNode type_ title)
 
 
 inlet :: forall e c a x. c -> String -> InletActions' e c a x
-inlet type_ label =
-    tellAndPerform (InitInlet type_ label) updateInlet inlet'
+inlet type_ label = taggedActions label (InitInlet type_ label)
 
 
 outlet :: forall e c. c -> String -> OutletActions' e c
-outlet type_ label =
-    tellAndPerform (InitOutlet type_ label) updateOutlet outlet'
+outlet type_ label = taggedActions label (InitOutlet type_ label)
 
 
 addPatch :: PatchActions' e -> NetworkActions' e n c a x -> NetworkActions' e n c a x
@@ -373,17 +382,17 @@ removePatch
     -> NetworkActions' e n c a x
     -> NetworkActions' e n c a x
 removePatch patchActions networkActions = do
-    SC.send networkActions (ForgetPatch (getId patchActions))
+    sendMsg (ForgetPatch (getId patchActions)) networkActions
 
 
 select :: forall e. PatchActions' e -> PatchActions' e
 select patchActions =
-    sendMsg patchActions SelectPatch
+    sendMsg SelectPatch patchActions
 
 
 deselect :: PatchActions' -> PatchActions'
 deselect patchActions =
-    tellAndPerform DeselectPatch updatePatch patch
+    sendMsg DeselectPatch patchActions
 
 
 enter :: PatchActions' -> PatchActions'
