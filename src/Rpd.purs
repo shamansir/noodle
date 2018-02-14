@@ -1,6 +1,10 @@
 module Rpd
     ( Id, PatchId, NodeId, ChannelId, InletId, OutletId, LinkId
     , App, Network, Patch, Node, Inlet, Outlet, Link
+    -- TRY TO REMOVE LATER
+    , NetworkMsg(..), PatchMsg(..), NodeMsg(..), InletMsg(..), OutletMsg(..)
+    , FlowSignal, Value, Actions', TaggedActions'
+    -- END OF TRY TO REMOVE LATER
     , run
     , network, patch, node, inlet, outlet
     , addPatch, removePatch, select, deselect, enter, exit
@@ -9,22 +13,16 @@ module Rpd
     -- , log--, logData
     ) where
 
-import Control.Monad.Writer
-import Control.Monad.Writer.Class
 import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
-import Control.Plus (empty)
-import Data.Array ((:))
 import Data.Array as Array
 import Data.Function (apply, applyFlipped)
-import Data.List as List
-import Data.Map (Map, insert, delete, values)
+import Data.Map (Map) -- , insert, delete, values)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Monoid (mempty)
-import Data.Tuple (Tuple(..), snd)
+import Data.Tuple (Tuple(..))
 import Data.Unit as Unit
 import Signal as S
 import Signal.Channel as SC
@@ -294,42 +292,43 @@ outlet' =
         (S.constant Bang)
 
 
-tellAndPerform
-    :: forall subj msg
-     . msg
-    -> (msg -> subj -> subj)
-    -> Writer (Array msg) subj
-    -> Writer (Array msg) subj
-tellAndPerform msg updateF w = do
-    let
-        (Tuple subj prevMsgs) = runWriter w
-        joinedMsgs = msg : prevMsgs
-    tell joinedMsgs
-    writer (Tuple (updateF msg subj) joinedMsgs)
+-- tellAndPerform
+--     :: forall subj msg
+--      . msg
+--     -> (msg -> subj -> subj)
+--     -> Writer (Array msg) subj
+--     -> Writer (Array msg) subj
+-- tellAndPerform msg updateF w = do
+--     let
+--         (Tuple subj prevMsgs) = runWriter w
+--         joinedMsgs = msg : prevMsgs
+--     tell joinedMsgs
+--     writer (Tuple (updateF msg subj) joinedMsgs)
 
 
-tellAndPerform'
-    :: forall ssubj smsg tsubj tmsg
-     . (ssubj -> tmsg)
-    -> (tmsg -> tsubj -> tsubj)
-    -> (ssubj -> smsg -> tmsg)
-    -> Writer (Array smsg) ssubj
-    -> Writer (Array tmsg) tsubj
-    -> Writer (Array tmsg) tsubj
-tellAndPerform' msgF updateF mapF srcW trgW = do
-    let
-        (Tuple srcSubj srcMsgs) = runWriter srcW
-        (Tuple trgSubj _) = runWriter trgW
-        trgMsg = msgF srcSubj
-        trgMsgs = srcMsgs |> map (mapF srcSubj)
-        joinedMsgs = trgMsg : trgMsgs
-    tell joinedMsgs
-    writer (Tuple (updateF trgMsg trgSubj) joinedMsgs)
+-- tellAndPerform'
+--     :: forall ssubj smsg tsubj tmsg
+--      . (ssubj -> tmsg)
+--     -> (tmsg -> tsubj -> tsubj)
+--     -> (ssubj -> smsg -> tmsg)
+--     -> Writer (Array smsg) ssubj
+--     -> Writer (Array tmsg) tsubj
+--     -> Writer (Array tmsg) tsubj
+-- tellAndPerform' msgF updateF mapF srcW trgW = do
+--     let
+--         (Tuple srcSubj srcMsgs) = runWriter srcW
+--         (Tuple trgSubj _) = runWriter trgW
+--         trgMsg = msgF srcSubj
+--         trgMsgs = srcMsgs |> map (mapF srcSubj)
+--         joinedMsgs = trgMsg : trgMsgs
+--     tell joinedMsgs
+--     writer (Tuple (updateF trgMsg trgSubj) joinedMsgs)
 
 
-getId :: forall e a i. TaggedActions' e a i -> i
-getId (TaggedActions' (Tuple id _)) =
-    id
+getId :: forall e a i. TaggedActions' e a i -> Eff ( channel :: SC.CHANNEL | e) i
+getId (TaggedActions' eff) = do
+    (Tuple id _) <- liftEff eff
+    pure $ id
 
 
 actions :: forall e a i. a -> Actions' e a
@@ -349,6 +348,21 @@ sendMsg msg (TaggedActions' eff) = TaggedActions' $ do
     (Tuple id chan) <- liftEff eff
     SC.send chan msg
     pure $ Tuple id chan
+
+
+sendMsg' :: forall e a. a -> Actions' e a -> Actions' e a
+sendMsg' msg (Actions' eff) = Actions' $ do
+    chan <- liftEff eff
+    SC.send chan msg
+    pure $ chan
+
+
+sendMsgUp :: forall e a b i. (i -> a) -> TaggedActions' e b i -> Actions' e a -> Actions' e a
+sendMsgUp msgF (TaggedActions' teff) (Actions' eff) = Actions' $ do
+    (Tuple id _) <- liftEff teff
+    chan <- liftEff eff
+    SC.send chan $ msgF id
+    pure $ chan
 
 
 network :: forall e n c a x. NetworkActions' e n c a x
@@ -371,9 +385,14 @@ outlet :: forall e c. c -> String -> OutletActions' e c
 outlet type_ label = taggedActions label (InitOutlet type_ label)
 
 
-addPatch :: PatchActions' e -> NetworkActions' e n c a x -> NetworkActions' e n c a x
-addPatch (WriterT patchActions patch) networkActions =
-    tellAndPerform' (UpdatePatch patchActions patch) update network
+addPatch
+    :: forall e n c a x
+     . PatchActions' e
+    -> NetworkActions' e n c a x
+    -> NetworkActions' e n c a x
+addPatch patchActions networkActions =
+    networkActions
+    -- tellAndPerform' (UpdatePatch patchActions patch) update network
 
 
 removePatch
@@ -381,31 +400,50 @@ removePatch
      . PatchActions' e
     -> NetworkActions' e n c a x
     -> NetworkActions' e n c a x
-removePatch patchActions networkActions = do
-    sendMsg (ForgetPatch (getId patchActions)) networkActions
+removePatch patchActions networkActions =
+    sendMsgUp
+        (\patchId -> ForgetPatch patchId)
+        patchActions
+        networkActions
+    -- do
+    --     patchId <- liftEff (getId patchActions)
+    --     let msg = (ForgetPatch patchId)
+    --     sendMsg' msg networkActions
+    -- --pure $ chan
+
+
+    -- let
+    --     eff :: Eff (channel :: SC.CHANNEL | e) PatchId
+    --     eff = getId patchActions
+    --     patchId :: PatchId
+    --     patchId = getId ?patchActions
+    --     msg :: NetworkMsg n c a x
+    --     msg = (ForgetPatch patchId)
+    -- in
+    --     sendMsg' msg networkActions
 
 
 select :: forall e. PatchActions' e -> PatchActions' e
-select patchActions =
-    sendMsg SelectPatch patchActions
+select patchActions = sendMsg SelectPatch patchActions
 
 
-deselect :: PatchActions' -> PatchActions'
-deselect patchActions =
-    sendMsg DeselectPatch patchActions
+deselect :: forall e. PatchActions' e -> PatchActions' e
+deselect patchActions = sendMsg DeselectPatch patchActions
 
 
-enter :: PatchActions' -> PatchActions'
-enter patchActions =
-    tellAndPerform EnterPatch updatePatch patch
+enter :: forall e. PatchActions' e -> PatchActions' e
+enter patchActions = sendMsg EnterPatch patchActions
 
 
-exit :: PatchActions' -> PatchActions'
-exit patchActions =
-    tellAndPerform ExitPatch updatePatch patchActions
+exit :: forall e. PatchActions' e -> PatchActions' e
+exit patchActions = sendMsg ExitPatch patchActions
 
 
-addNode :: NodeActions' -> PatchActions' -> PatchActions'
+addNode
+    :: forall e n
+     . NodeActions' e n
+    -> PatchActions' e
+    -> PatchActions' e
 addNode nodeActions patchActions =
     patchActions -- FIXME: implement
     -- tellAndPerform' (UpdateNode nodeActions node) updatePatch patch
@@ -421,7 +459,7 @@ removeNode nodeActions patchActions =
     -- tellAndPerform' (ForgetInlet inlet.id) updateNode node
 
 
-addInlet :: forall e n c a x. InletActions' c a x -> NodeActions' e n  -> NodeActions' e n
+addInlet :: forall e n c a x. InletActions' e c a x -> NodeActions' e n  -> NodeActions' e n
 addInlet inletActions nodeActions =
     nodeActions -- FIXME: implement
     -- tellAndPerform (UpdateInlet inletActions inlet) updateNode nodeActions
@@ -433,7 +471,7 @@ removeInlet inletActions nodeActions =
     -- tellAndPerform (ForgetInlet inlet.id) updateNode nodeActions
 
 
-addOutlet :: forall e n c a x. OutletActions' e c a x -> NodeActions' e n -> NodeActions' e n
+addOutlet :: forall e n c. OutletActions' e c -> NodeActions' e n -> NodeActions' e n
 addOutlet outletActions nodeActions =
     nodeActions -- FIXME: implement
     -- tellAndPerform' (UpdateOutlet outletActions outlet) updateNode nodeActions
@@ -617,7 +655,6 @@ instance showPatchMsg :: Show (PatchMsg) where
     show (RemoveNode nodeId) = "Remove node:"  <> nodeId
 
 
-
 instance showNodeMsg :: Show n => Show (NodeMsg n) where
     show (InitNode type_ title) = "Init node: " <> show type_ <> " " <> title
     show (AddInlet inletId) = "Add inlet: " <> inletId
@@ -647,28 +684,34 @@ instance showValue :: ( Show a, Show x ) => Show (Value a x) where
     show (SysError msg) = "System Error: " <> msg
 
 
--- log :: forall n c a x. Network n c a x -> S.Signal String
--- log = logNetwork
+log
+    :: forall n c a x
+     . Show n => Show c => Show a => Show x
+    => Network n c a x -> S.Signal String
+log = logNetwork
 
 
--- logNetwork :: forall n c a x. Network n c a x -> S.Signal String
--- logNetwork (Network _ networkSignal) =
---     networkSignal S.~> show
+logNetwork
+    :: forall n c a x
+     . Show n => Show c => Show a => Show x
+    => Network n c a x -> S.Signal String
+logNetwork (NetworkT network') =
+    network'.messages S.~> show
 
 
-logDataFlow :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
-logDataFlow (NetworkT network') =
-    let
-        allNodes = List.foldr
-            (\(PatchT patch') allNodes ->
-                allNodes <> values patch'.nodes) empty (values network'.patches)
-        allDataSignals =
-            List.foldr (\(NodeT node' dataSignal) allSignals ->
-                allSignals
-                    <> (map (\(InletT inlet' dataSignal) -> dataSignal) (values node'.inlets))
-                    <> (map (\(OutletT outlet' dataSignal) -> dataSignal) (values node'.outlets))
-            ) empty allNodes
-    in
-        case S.mergeMany allDataSignals of
-            Just signal -> map show signal
-            Nothing -> S.constant "Empty"
+-- logDataFlow :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
+-- logDataFlow (NetworkT network') =
+--     let
+--         allNodes = List.foldr
+--             (\(PatchT patch') allNodes ->
+--                 allNodes <> values patch'.nodes) empty (values network'.patches)
+--         allDataSignals =
+--             List.foldr (\(NodeT node' dataSignal) allSignals ->
+--                 allSignals
+--                     <> (map (\(InletT inlet' dataSignal) -> dataSignal) (values node'.inlets))
+--                     <> (map (\(OutletT outlet' dataSignal) -> dataSignal) (values node'.outlets))
+--             ) empty allNodes
+--     in
+--         case S.mergeMany allDataSignals of
+--             Just signal -> map show signal
+--             Nothing -> S.constant "Empty"
