@@ -412,9 +412,8 @@ addPatch patchActions networkActions =
     sendMsgUpAndSubscribe
         (\patchId -> ForgetPatch patchId)
         (\patchMsg patchId -> UpdatePatch patchId patchMsg)
-        patchActions -- subscribe networkAction to patchActions
+        patchActions
         networkActions
-    -- tellAndPerform' (UpdatePatch patchActions patch) update network
 
 
 removePatch
@@ -427,22 +426,6 @@ removePatch patchActions networkActions =
         (\patchId -> ForgetPatch patchId)
         patchActions
         networkActions
-    -- do
-    --     patchId <- liftEff (getId patchActions)
-    --     let msg = (ForgetPatch patchId)
-    --     sendMsg' msg networkActions
-    -- --pure $ chan
-
-
-    -- let
-    --     eff :: Eff (channel :: SC.CHANNEL | e) PatchId
-    --     eff = getId patchActions
-    --     patchId :: PatchId
-    --     patchId = getId ?patchActions
-    --     msg :: NetworkMsg n c a x
-    --     msg = (ForgetPatch patchId)
-    -- in
-    --     sendMsg' msg networkActions
 
 
 select :: forall e. PatchActions' e -> PatchActions' e
@@ -468,7 +451,11 @@ addNode
     -> PatchActions' e
 addNode nodeActions patchActions =
     patchActions -- FIXME: implement
-    -- tellAndPerform' (UpdateNode nodeActions node) updatePatch patch
+    -- sendMsgUpAndSubscribe
+    --     (\nodeId -> ForgetNode nodeId)
+    --     (\nodeMsg nodeId -> UpdateNode nodeId nodeMsg)
+    --     nodeActions
+    --     patchActions
 
 
 removeNode
@@ -558,27 +545,23 @@ initProcessChannel =
 update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
 update Start network = network
 update (UpdatePatch patchId patchMsg) (NetworkT network'@{ patches }) =
-    case Map.lookup patchId patches of
-        Just patch ->
-            NetworkT network'
-                { patches =
-                    patches
-                        |> Map.insert patchId (updatePatch patchMsg patch)
-                }
-        Nothing -> (NetworkT network')
+    NetworkT network'
+        { patches =
+            patches
+                -- use Map.alter instead?
+                |> Map.update (\patch -> Just $ updatePatch patchMsg patch) patchId
+        }
 update (ForgetPatch patchId) (NetworkT network'@{ patches }) =
     NetworkT network'
         { patches =
             patches |> Map.delete patchId }
 update (UpdateNode nodeId nodeMsg) (NetworkT network'@{ nodes }) =
-    case Map.lookup nodeId nodes of
-        Just node ->
-            NetworkT network'
-                { nodes =
-                    nodes
-                        |> Map.insert nodeId (updateNode nodeMsg node)
-                }
-        Nothing -> (NetworkT network')
+    NetworkT network'
+        { nodes =
+            nodes
+                -- use Map.alter instead?
+                |> Map.update (\node -> Just $ updateNode nodeMsg node) nodeId
+        }
 update (ForgetNode nodeId) (NetworkT network'@{ nodes }) =
     NetworkT network'
         { nodes =
@@ -660,13 +643,13 @@ instance showOutlet :: Show c => Show (Outlet c a x) where
 
 instance showNetworkMsg :: ( Show n, Show c ) => Show (NetworkMsg n c a x) where
     show Start = "Start"
-    show (UpdatePatch _ patch) = "Update patch: " <> show patch
+    show (UpdatePatch patchId patchMsg) = "Update patch: " <> patchId <> " -> " <> show patchMsg
     show (ForgetPatch patchId) = "Forget patch: " <> patchId
-    show (UpdateNode _ node) = "Update node: " <> show node
+    show (UpdateNode nodeId nodeMsg) = "Update node: " <> nodeId <> " -> " <> show nodeMsg
     show (ForgetNode nodeId) = "Forget node: " <> nodeId
-    show (UpdateInlet _ inlet) = "Update inlet: " <> show inlet
+    show (UpdateInlet inletId inletMsg) = "Update inlet: " <> inletId <> " -> " <> show inletMsg
     show (ForgetInlet inletId) = "Forget inlet: " <> inletId
-    show (UpdateOutlet _ outlet) = "Update outlet: " <> show outlet
+    show (UpdateOutlet outletId outletMsg) = "Update outlet: " <> outletId <> " -> " <> show outletMsg
     show (ForgetOutlet outletId) = "Forget outlet: " <> outletId
     show (Connect srcNodeId dstNodeId outletId inletId) = "Connect:\n"
         <> "Node " <> srcNodeId <> " -> Node " <> dstNodeId <> "\n"

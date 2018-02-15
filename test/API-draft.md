@@ -1,7 +1,7 @@
 What would be cool to have in API:
 
 ```purescript
-	Rpd.run [ renderToConsole ] do
+	Rpd.run [ renderToConsole ] $ do
         let
             myPatch = patch “MyPatch”
             sumNode = node SumNode
