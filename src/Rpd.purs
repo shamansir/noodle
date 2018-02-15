@@ -373,14 +373,29 @@ sendMsgUpAndSubscribe
     -> Actions' e a
     -> Actions' e a
 sendMsgUpAndSubscribe msgF toUpperF (TaggedActions' teff) (Actions' eff) = Actions' $ do
-    (Tuple id srcChan) <- liftEff teff
-    trgChan <- liftEff eff
-    SC.send trgChan $ msgF id
+    (Tuple srcId srcChan) <- liftEff teff
+    dstChan <- liftEff eff
+    SC.send dstChan $ msgF srcId
     _ <- S.unwrap $ SC.subscribe srcChan S.~>
-        (\srcMsg -> SC.send trgChan $ toUpperF srcMsg id)
-    -- _ <- S.unwrap ((SC.subscribe srcChan) S.~>
-    --     (\srcMsg -> SC.send trgChan (toUpperF srcMsg id)))
-    pure $ trgChan
+        (\srcMsg -> SC.send dstChan $ toUpperF srcMsg srcId)
+    pure $ dstChan
+
+
+sendMsgUpAndSubscribe'
+    :: forall e a b ia ib
+     . (ib -> a)
+    -> (b -> ib -> a)
+    -> TaggedActions' e b ib
+    -> TaggedActions' e a ia
+    -> TaggedActions' e a ia
+sendMsgUpAndSubscribe' msgF toUpperF (TaggedActions' srcEff) (TaggedActions' dstEff) =
+    TaggedActions' $ do
+        (Tuple srcId srcChan) <- liftEff srcEff
+        (Tuple dstId dstChan) <- liftEff dstEff
+        SC.send dstChan $ msgF srcId
+        _ <- S.unwrap $ SC.subscribe srcChan S.~>
+            (\srcMsg -> SC.send dstChan $ toUpperF srcMsg srcId)
+        pure $ Tuple dstId dstChan
 
 
 network :: forall e n c a x. NetworkActions' e n c a x
@@ -451,7 +466,7 @@ addNode
     -> PatchActions' e
 addNode nodeActions patchActions =
     patchActions -- FIXME: implement
-    -- sendMsgUpAndSubscribe
+    -- sendMsgUpAndSubscribe'
     --     (\nodeId -> ForgetNode nodeId)
     --     (\nodeMsg nodeId -> UpdateNode nodeId nodeMsg)
     --     nodeActions
