@@ -19,7 +19,7 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Data.Array as Array
 import Data.Function (apply, applyFlipped)
-import Data.Map (Map) -- , insert, delete, values)
+import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (Tuple(..))
@@ -50,13 +50,13 @@ type LinkId = Id
 
 data NetworkMsg n c a x
     = Start
-    | UpdatePatch (Array PatchMsg) (Patch n c a x)
+    | UpdatePatch PatchId PatchMsg
     | ForgetPatch PatchId
-    | UpdateNode (Array (NodeMsg n)) (Node n c a x)
+    | UpdateNode NodeId (NodeMsg n)
     | ForgetNode NodeId
-    | UpdateInlet (Array (InletMsg c a x)) (Inlet c a x)
+    | UpdateInlet InletId (InletMsg c a x)
     | ForgetInlet InletId
-    | UpdateOutlet (Array (OutletMsg c)) (Outlet c a x)
+    | UpdateOutlet OutletId (OutletMsg c)
     | ForgetOutlet OutletId
     | Connect NodeId NodeId OutletId InletId
     | Disconnect NodeId NodeId OutletId InletId
@@ -365,6 +365,24 @@ sendMsgUp msgF (TaggedActions' teff) (Actions' eff) = Actions' $ do
     pure $ chan
 
 
+sendMsgUpAndSubscribe
+    :: forall e a b i
+     . (i -> a)
+    -> (b -> i -> a)
+    -> TaggedActions' e b i
+    -> Actions' e a
+    -> Actions' e a
+sendMsgUpAndSubscribe msgF toUpperF (TaggedActions' teff) (Actions' eff) = Actions' $ do
+    (Tuple id srcChan) <- liftEff teff
+    trgChan <- liftEff eff
+    SC.send trgChan $ msgF id
+    _ <- S.unwrap $ SC.subscribe srcChan S.~>
+        (\srcMsg -> SC.send trgChan $ toUpperF srcMsg id)
+    -- _ <- S.unwrap ((SC.subscribe srcChan) S.~>
+    --     (\srcMsg -> SC.send trgChan (toUpperF srcMsg id)))
+    pure $ trgChan
+
+
 network :: forall e n c a x. NetworkActions' e n c a x
 network = actions Start
 
@@ -391,7 +409,11 @@ addPatch
     -> NetworkActions' e n c a x
     -> NetworkActions' e n c a x
 addPatch patchActions networkActions =
-    networkActions
+    sendMsgUpAndSubscribe
+        (\patchId -> ForgetPatch patchId)
+        (\patchMsg patchId -> UpdatePatch patchId patchMsg)
+        patchActions -- subscribe networkAction to patchActions
+        networkActions
     -- tellAndPerform' (UpdatePatch patchActions patch) update network
 
 
@@ -535,18 +557,28 @@ initProcessChannel =
 
 update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
 update Start network = network
-update (UpdatePatch _ patch@(PatchT { id })) (NetworkT network'@{ patches }) =
-    NetworkT network'
-        { patches =
-            patches |> Map.insert id patch }
+update (UpdatePatch patchId patchMsg) (NetworkT network'@{ patches }) =
+    case Map.lookup patchId patches of
+        Just patch ->
+            NetworkT network'
+                { patches =
+                    patches
+                        |> Map.insert patchId (updatePatch patchMsg patch)
+                }
+        Nothing -> (NetworkT network')
 update (ForgetPatch patchId) (NetworkT network'@{ patches }) =
     NetworkT network'
         { patches =
             patches |> Map.delete patchId }
-update (UpdateNode _ node@(NodeT { id } _)) (NetworkT network'@{ nodes }) =
-    NetworkT network'
-        { nodes =
-            nodes |> Map.insert id node }
+update (UpdateNode nodeId nodeMsg) (NetworkT network'@{ nodes }) =
+    case Map.lookup nodeId nodes of
+        Just node ->
+            NetworkT network'
+                { nodes =
+                    nodes
+                        |> Map.insert nodeId (updateNode nodeMsg node)
+                }
+        Nothing -> (NetworkT network')
 update (ForgetNode nodeId) (NetworkT network'@{ nodes }) =
     NetworkT network'
         { nodes =
