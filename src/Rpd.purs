@@ -510,7 +510,8 @@ initProcessChannel =
 
 update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
 update Start network = network
-update (UpdatePatch patchId patchMsg) (NetworkT network'@{ patches, nodes }) =
+update (UpdatePatch patchId patchMsg)
+       (NetworkT network'@{ patches, nodes, inlets, outlets }) =
     let
         patches' = patches
                 -- use Map.alter instead?
@@ -520,11 +521,25 @@ update (UpdatePatch patchId patchMsg) (NetworkT network'@{ patches, nodes }) =
                 nodes |> Map.update (\node -> Just $ updateNode nodeMsg node) nodeId
             ForgetNode nodeId ->
                 nodes |> Map.delete nodeId
+            -- TODO: connect / disconnect
             _ -> nodes
+        inlets' = case patchMsg of
+            (UpdateNode _ (UpdateInlet inletId inletMsg)) ->
+                inlets |> Map.update (\inlet -> Just $ updateInlet inletMsg inlet) inletId
+            (UpdateNode _ (ForgetInlet inletId)) ->
+                inlets |> Map.delete inletId
+            _ -> inlets
+        outlets' = case patchMsg of
+            (UpdateNode _ (UpdateOutlet outletId outletMsg)) ->
+                outlets |> Map.update (\outlet -> Just $ updateOutlet outletMsg outlet) outletId
+            (UpdateNode _ (ForgetOutlet outletId)) ->
+                outlets |> Map.delete outletId
+            _ -> outlets
     in
         NetworkT network'
             { patches = patches'
             , nodes = nodes'
+            , inlets = inlets'
             }
 update (ForgetPatch patchId) (NetworkT network'@{ patches }) =
     NetworkT network'
