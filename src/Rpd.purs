@@ -47,38 +47,37 @@ type LinkId = Id
 -- `c` — channel type
 -- `a` — data type
 -- `x` — error type
+-- `e` — effect
 
 data NetworkMsg n c a x
     = Start
-    | UpdatePatch PatchId PatchMsg
+    | AddPatch PatchId
+    | UpdatePatch PatchId (PatchMsg n c a x)
     | ForgetPatch PatchId
-    | UpdateNode NodeId (NodeMsg n)
-    | ForgetNode NodeId
-    | UpdateInlet InletId (InletMsg c a x)
-    | ForgetInlet InletId
-    | UpdateOutlet OutletId (OutletMsg c)
-    | ForgetOutlet OutletId
-    | Connect NodeId NodeId OutletId InletId
-    | Disconnect NodeId NodeId OutletId InletId
     | Stop
 
 
-data PatchMsg
+data PatchMsg n c a x
     = InitPatch String
     | SelectPatch
     | DeselectPatch
     | EnterPatch
     | ExitPatch
     | AddNode NodeId
-    | RemoveNode NodeId
+    | UpdateNode NodeId (NodeMsg n c a x)
+    | ForgetNode NodeId
+    | Connect NodeId NodeId OutletId InletId
+    | Disconnect NodeId NodeId OutletId InletId
 
 
-data NodeMsg n
+data NodeMsg n c a x
     = InitNode n String
     | AddInlet InletId
-    | RemoveInlet InletId
-    | AddOutlet InletId
-    | RemoveOutlet OutletId
+    | UpdateInlet InletId (InletMsg c a x)
+    | ForgetInlet InletId
+    | AddOutlet OutletId
+    | UpdateOutlet OutletId (OutletMsg c)
+    | ForgetOutlet OutletId
 
 
 data InletMsg c a x
@@ -100,24 +99,6 @@ data Value a x
     | Data a
     | Error x
     | SysError String
-
-
--- type Actions n c a x = List.List (Action n c a x)
-
-
--- init = ( [] )
-
--- addNode :: NodeActions -> PatchActions
-
--- addInlet :: InletActions -> NodeActions
-
--- modifyInlet :: InletActions -> InletActions
-
--- ^ WRITER MONAD
-
--- etc...
-
--- run :: Actions n c a x ->
 
 
 -- The signal where all the data flows: Bangs, data chunks and errors
@@ -210,23 +191,16 @@ newtype TaggedActions' e a i  =
 
 
 type NetworkActions' e n c a x = Actions' e (NetworkMsg n c a x)
-type PatchActions' e = TaggedActions' e PatchMsg PatchId
-type NodeActions' e n = TaggedActions' e (NodeMsg n) NodeId
+type PatchActions' e n c a x = TaggedActions' e (PatchMsg n c a x) PatchId
+type NodeActions' e n c a x = TaggedActions' e (NodeMsg n c a x) NodeId
 type InletActions' e c a x = TaggedActions' e (InletMsg c a x) InletId
 type OutletActions' e c = TaggedActions' e (OutletMsg c) OutletId
-
--- type NetworkActions' n c a x = Writer (Array (NetworkMsg n c a x)) (Network n c a x)
--- type PatchActions' n c a x = Writer (Array PatchMsg) (Patch n c a x)
--- type NodeActions' n c a x = Writer (Array (NodeMsg n)) (Node n c a x)
--- type InletActions' c a x = Writer (Array (InletMsg c a x)) (Inlet c a x)
--- type OutletActions' c a x = Writer (Array (OutletMsg c)) (Outlet c a x)
--- type LinkActions' c a x = (Link a x)
 
 
 data Actions e n c a x
     = NetworkActions (NetworkActions' e n c a x)
-    | PatchActions (PatchActions' e)
-    | NodeActions (NodeActions' e n)
+    | PatchActions (PatchActions' e n c a x)
+    | NodeActions (NodeActions' e n c a x)
     | InletActions (InletActions' e c a x)
     | OutletActions (OutletActions' e c)
     -- | LinkActions (LinkActions' c a x)
@@ -291,38 +265,6 @@ outlet' =
         }
         (S.constant Bang)
 
-
--- tellAndPerform
---     :: forall subj msg
---      . msg
---     -> (msg -> subj -> subj)
---     -> Writer (Array msg) subj
---     -> Writer (Array msg) subj
--- tellAndPerform msg updateF w = do
---     let
---         (Tuple subj prevMsgs) = runWriter w
---         joinedMsgs = msg : prevMsgs
---     tell joinedMsgs
---     writer (Tuple (updateF msg subj) joinedMsgs)
-
-
--- tellAndPerform'
---     :: forall ssubj smsg tsubj tmsg
---      . (ssubj -> tmsg)
---     -> (tmsg -> tsubj -> tsubj)
---     -> (ssubj -> smsg -> tmsg)
---     -> Writer (Array smsg) ssubj
---     -> Writer (Array tmsg) tsubj
---     -> Writer (Array tmsg) tsubj
--- tellAndPerform' msgF updateF mapF srcW trgW = do
---     let
---         (Tuple srcSubj srcMsgs) = runWriter srcW
---         (Tuple trgSubj _) = runWriter trgW
---         trgMsg = msgF srcSubj
---         trgMsgs = srcMsgs |> map (mapF srcSubj)
---         joinedMsgs = trgMsg : trgMsgs
---     tell joinedMsgs
---     writer (Tuple (updateF trgMsg trgSubj) joinedMsgs)
 
 
 getId :: forall e a i. TaggedActions' e a i -> Eff ( channel :: SC.CHANNEL | e) i
@@ -402,11 +344,11 @@ network :: forall e n c a x. NetworkActions' e n c a x
 network = actions Start
 
 
-patch :: forall e. String -> PatchActions' e
+patch :: forall e n c a x. String -> PatchActions' e n c a x
 patch title = taggedActions title (InitPatch title)
 
 
-node :: forall e n. n -> String -> NodeActions' e n
+node :: forall e n c a x. n -> String -> NodeActions' e n c a x
 node type_ title = taggedActions title (InitNode type_ title)
 
 
@@ -420,12 +362,12 @@ outlet type_ label = taggedActions label (InitOutlet type_ label)
 
 addPatch
     :: forall e n c a x
-     . PatchActions' e
+     . PatchActions' e n c a x
     -> NetworkActions' e n c a x
     -> NetworkActions' e n c a x
 addPatch patchActions networkActions =
     sendMsgUpAndSubscribe
-        (\patchId -> ForgetPatch patchId)
+        (\patchId -> AddPatch patchId)
         (\patchMsg patchId -> UpdatePatch patchId patchMsg)
         patchActions
         networkActions
@@ -433,7 +375,7 @@ addPatch patchActions networkActions =
 
 removePatch
     :: forall e n c a x
-     . PatchActions' e
+     . PatchActions' e n c a x
     -> NetworkActions' e n c a x
     -> NetworkActions' e n c a x
 removePatch patchActions networkActions =
@@ -443,74 +385,83 @@ removePatch patchActions networkActions =
         networkActions
 
 
-select :: forall e. PatchActions' e -> PatchActions' e
+select :: forall e n c a x. PatchActions' e n c a x -> PatchActions' e n c a x
 select patchActions = sendMsg SelectPatch patchActions
 
 
-deselect :: forall e. PatchActions' e -> PatchActions' e
+deselect :: forall e n c a x. PatchActions' e n c a x -> PatchActions' e n c a x
 deselect patchActions = sendMsg DeselectPatch patchActions
 
 
-enter :: forall e. PatchActions' e -> PatchActions' e
+enter :: forall e n c a x. PatchActions' e n c a x -> PatchActions' e n c a x
 enter patchActions = sendMsg EnterPatch patchActions
 
 
-exit :: forall e. PatchActions' e -> PatchActions' e
+exit :: forall e n c a x. PatchActions' e n c a x -> PatchActions' e n c a x
 exit patchActions = sendMsg ExitPatch patchActions
 
 
 addNode
-    :: forall e n
-     . NodeActions' e n
-    -> PatchActions' e
-    -> PatchActions' e
+    :: forall e n c a x
+     . NodeActions' e n c a x
+    -> PatchActions' e n c a x
+    -> PatchActions' e n c a x
 addNode nodeActions patchActions =
-    patchActions -- FIXME: implement
-    -- sendMsgUpAndSubscribe'
-    --     (\nodeId -> ForgetNode nodeId)
-    --     (\nodeMsg nodeId -> UpdateNode nodeId nodeMsg)
-    --     nodeActions
-    --     patchActions
+    -- patchActions -- FIXME: implement
+    sendMsgUpAndSubscribe'
+        (\nodeId -> AddNode nodeId)
+        (\nodeMsg nodeId -> UpdateNode nodeId nodeMsg)
+        nodeActions
+        patchActions
 
 
 removeNode
-    :: forall e n
-     . NodeActions' e n
-    -> PatchActions' e
-    -> PatchActions' e
+    :: forall e n c a x
+     . NodeActions' e n c a x
+    -> PatchActions' e n c a x
+    -> PatchActions' e n c a x
 removeNode nodeActions patchActions =
     patchActions -- FIXME: implement
     -- tellAndPerform' (ForgetInlet inlet.id) updateNode node
 
 
-addInlet :: forall e n c a x. InletActions' e c a x -> NodeActions' e n  -> NodeActions' e n
+addInlet
+    :: forall e n c a x
+     . InletActions' e c a x
+    -> NodeActions' e n c a x
+    -> NodeActions' e n c a x
 addInlet inletActions nodeActions =
     nodeActions -- FIXME: implement
     -- tellAndPerform (UpdateInlet inletActions inlet) updateNode nodeActions
 
 
-removeInlet :: forall e n c a x. InletActions' e c a x -> NodeActions' e n -> NodeActions' e n
+removeInlet
+    :: forall e n c a x
+     . InletActions' e c a x
+    -> NodeActions' e n c a x
+    -> NodeActions' e n c a x
 removeInlet inletActions nodeActions =
     nodeActions -- FIXME: implement
     -- tellAndPerform (ForgetInlet inlet.id) updateNode nodeActions
 
 
-addOutlet :: forall e n c. OutletActions' e c -> NodeActions' e n -> NodeActions' e n
+addOutlet
+    :: forall e n c a x
+     . OutletActions' e c
+    -> NodeActions' e n c a x
+    -> NodeActions' e n c a x
 addOutlet outletActions nodeActions =
     nodeActions -- FIXME: implement
     -- tellAndPerform' (UpdateOutlet outletActions outlet) updateNode nodeActions
 
 
-removeOutlet :: forall e n c. OutletActions' e c -> NodeActions' e n -> NodeActions' e n
+removeOutlet
+    :: forall e n c a x
+     . OutletActions' e c
+    -> NodeActions' e n c a x
+    -> NodeActions' e n c a x
 removeOutlet outletAction nodeActions =
     nodeActions -- FIXME: implemeent
-    -- do
-    -- tellAndPerform'
-    --     (\(OutletT outlet' _) -> ForgetOutlet outlet'.id)
-    --     update
-    --     (\outlet outletMsg -> UpdateOutlet [ outletMsg ] outlet)
-    --     outletAction
-    --     ?todo
 
 
 -- Logic:
@@ -559,38 +510,36 @@ initProcessChannel =
 
 update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
 update Start network = network
-update (UpdatePatch patchId patchMsg) (NetworkT network'@{ patches }) =
-    NetworkT network'
-        { patches =
-            patches
+update (UpdatePatch patchId patchMsg) (NetworkT network'@{ patches, nodes }) =
+    let
+        patches' = patches
                 -- use Map.alter instead?
                 |> Map.update (\patch -> Just $ updatePatch patchMsg patch) patchId
-        }
+        nodes' = case patchMsg of
+            UpdateNode nodeId nodeMsg ->
+                nodes |> Map.update (\node -> Just $ updateNode nodeMsg node) nodeId
+            ForgetNode nodeId ->
+                nodes |> Map.delete nodeId
+            _ -> nodes
+    in
+        NetworkT network'
+            { patches = patches'
+            , nodes = nodes'
+            }
 update (ForgetPatch patchId) (NetworkT network'@{ patches }) =
     NetworkT network'
         { patches =
             patches |> Map.delete patchId }
-update (UpdateNode nodeId nodeMsg) (NetworkT network'@{ nodes }) =
-    NetworkT network'
-        { nodes =
-            nodes
-                -- use Map.alter instead?
-                |> Map.update (\node -> Just $ updateNode nodeMsg node) nodeId
-        }
-update (ForgetNode nodeId) (NetworkT network'@{ nodes }) =
-    NetworkT network'
-        { nodes =
-            nodes |> Map.delete nodeId }
-update (Connect srcId dstId outletId inletId) network = network -- TODO: implement
 update _ network = network -- FIXME : implement
 
 
-updatePatch :: forall n c a x. PatchMsg -> Patch n c a x -> Patch n c a x
+updatePatch :: forall n c a x. PatchMsg n c a x -> Patch n c a x -> Patch n c a x
 updatePatch (InitPatch title) patch = patch
+updatePatch (Connect srcId dstId outletId inletId) patch = patch -- TODO: implement
 updatePatch _ patch = patch -- FIXME : implement
 
 
-updateNode :: forall n c a x. NodeMsg n -> Node n c a x -> Node n c a x
+updateNode :: forall n c a x. NodeMsg n c a x -> Node n c a x -> Node n c a x
 updateNode (InitNode type_ title) node = node
 updateNode _ node = node -- FIXME : implement
 
@@ -658,39 +607,37 @@ instance showOutlet :: Show c => Show (Outlet c a x) where
 
 instance showNetworkMsg :: ( Show n, Show c ) => Show (NetworkMsg n c a x) where
     show Start = "Start"
+    show (AddPatch patchId) = "Add patch: " <> patchId
     show (UpdatePatch patchId patchMsg) = "Update patch: " <> patchId <> " -> " <> show patchMsg
     show (ForgetPatch patchId) = "Forget patch: " <> patchId
-    show (UpdateNode nodeId nodeMsg) = "Update node: " <> nodeId <> " -> " <> show nodeMsg
-    show (ForgetNode nodeId) = "Forget node: " <> nodeId
-    show (UpdateInlet inletId inletMsg) = "Update inlet: " <> inletId <> " -> " <> show inletMsg
-    show (ForgetInlet inletId) = "Forget inlet: " <> inletId
-    show (UpdateOutlet outletId outletMsg) = "Update outlet: " <> outletId <> " -> " <> show outletMsg
-    show (ForgetOutlet outletId) = "Forget outlet: " <> outletId
-    show (Connect srcNodeId dstNodeId outletId inletId) = "Connect:\n"
-        <> "Node " <> srcNodeId <> " -> Node " <> dstNodeId <> "\n"
-        <> "Outlet " <> outletId <> " -> Inlet " <> inletId
-    show (Disconnect srcNodeId dstNodeId outletId inletId) = "Disconnect:\n"
-        <> "Node " <> srcNodeId <> " -> Node " <> dstNodeId <> "\n"
-        <> "Outlet " <> outletId <> " -> Inlet " <> inletId
     show Stop = "Stop"
 
 
-instance showPatchMsg :: Show (PatchMsg) where
+instance showPatchMsg :: ( Show n, Show c ) => Show (PatchMsg n c a x) where
     show (InitPatch title) = "Init patch: " <> title
     show SelectPatch = "Select patch"
     show DeselectPatch = "Deselect patch"
     show EnterPatch = "Enter patch"
     show ExitPatch = "Exit patch"
     show (AddNode nodeId) = "Add node: " <> nodeId
-    show (RemoveNode nodeId) = "Remove node:"  <> nodeId
+    show (UpdateNode nodeId nodeMsg) = "Update node: " <> nodeId <> " -> " <> show nodeMsg
+    show (ForgetNode nodeId) = "Remove node:"  <> nodeId
+    show (Connect srcNodeId dstNodeId outletId inletId) = "Connect:\n"
+        <> "Node " <> srcNodeId <> " -> Node " <> dstNodeId <> "\n"
+        <> "Outlet " <> outletId <> " -> Inlet " <> inletId
+    show (Disconnect srcNodeId dstNodeId outletId inletId) = "Disconnect:\n"
+        <> "Node " <> srcNodeId <> " -> Node " <> dstNodeId <> "\n"
+        <> "Outlet " <> outletId <> " -> Inlet " <> inletId
 
 
-instance showNodeMsg :: Show n => Show (NodeMsg n) where
+instance showNodeMsg :: ( Show n, Show c ) => Show (NodeMsg n c a x) where
     show (InitNode type_ title) = "Init node: " <> show type_ <> " " <> title
     show (AddInlet inletId) = "Add inlet: " <> inletId
-    show (RemoveInlet inletId) = "Remove inlet:"  <> inletId
+    show (UpdateInlet inletId inletMsg) = "Update inlet: " <> inletId <> " -> " <> show inletMsg
+    show (ForgetInlet inletId) = "Forhet inlet:"  <> inletId
     show (AddOutlet outletId) = "Add outlet: " <> outletId
-    show (RemoveOutlet outletId) = "Remove outlet:"  <> outletId
+    show (UpdateOutlet outletId outletMsg) = "Update outlet: " <> outletId <> " -> " <> show outletMsg
+    show (ForgetOutlet outletId) = "Remove outlet:"  <> outletId
 
 
 instance showInletMsg :: Show c => Show (InletMsg c a x) where
