@@ -2,6 +2,7 @@ module Test.Main where
 
 import Prelude
 
+import Data.Function (apply, applyFlipped)
 import Data.Time.Duration as Duration
 
 import Control.Monad.Aff (Aff, delay, forkAff)
@@ -22,7 +23,11 @@ import Test.Signal (expect')
 
 import Rpd as R
 
+infixr 0 apply as <|
+infixl 1 applyFlipped as |>
+
 data MyNodeType = SumNode | CustomNode
+data MyChannelType = NumberChannel | StringChannel
 
 main :: forall eff. Eff (RunnerEffects ( ref :: REF, channel :: SC.CHANNEL | eff )) Unit
 main = run [consoleReporter] do
@@ -32,13 +37,12 @@ main = run [consoleReporter] do
         let
           app = R.run [] do
             let
-
               myPatch = R.patch "MyPatch"
               sumNode = R.node SumNode
               inletA = R.getInlet "a" sumNode
               inletB = R.getInlet "b" sumNode
               myCustomNode =
-                node CustomNode "Custom"
+                R.node CustomNode "Custom"
                   |> R.addInlet (R.inlet NumberChannel "a" |> R.allow
                       [ StringChannel fromString ])
                   |> R.addInlet (R.inlet NumberChannel "b" |> default 10)

@@ -9,6 +9,7 @@ module Rpd
     , network, patch, node, inlet, outlet
     , addPatch, removePatch, select, deselect, enter, exit
     , addNode, addInlet, addOutlet
+    , getInlet
     -- , connect, disconnect
     -- , log--, logData
     ) where
@@ -51,19 +52,20 @@ type LinkId = Id
 
 data NetworkMsg n c a x
     = Start
-    | AddPatch PatchId
+    | RequestPatch PatchId
     | UpdatePatch PatchId (PatchMsg n c a x)
     | ForgetPatch PatchId
     | Stop
 
 
 data PatchMsg n c a x
-    = InitPatch String
+    = RequestPatchAccess
+    | InitPatch String
     | SelectPatch
     | DeselectPatch
     | EnterPatch
     | ExitPatch
-    | AddNode NodeId
+    | RequestNode NodeId -- create or update
     | UpdateNode NodeId (NodeMsg n c a x)
     | ForgetNode NodeId
     | Connect NodeId NodeId OutletId InletId
@@ -71,17 +73,20 @@ data PatchMsg n c a x
 
 
 data NodeMsg n c a x
-    = InitNode n String
-    | AddInlet InletId
+    = RequestNodeAccess
+    | InitNode n String
+    | RequestInlet InletId
     | UpdateInlet InletId (InletMsg c a x)
     | ForgetInlet InletId
-    | AddOutlet OutletId
+    | GetOutlet OutletId
+    | RequestOutlet OutletId -- create or update
     | UpdateOutlet OutletId (OutletMsg c)
     | ForgetOutlet OutletId
 
 
 data InletMsg c a x
-    = InitInlet c String
+    = RequestInletAccess
+    | InitInlet c String
     | ConnectToOutlet OutletId (FlowSignal a x)
     | DisconnectFromOutlet OutletId
     | HideInlet
@@ -90,6 +95,7 @@ data InletMsg c a x
 
 data OutletMsg c
     = InitOutlet c String
+    | RequestOutletAccess
     | ConnectToInlet InletId
     | DisconnectFromInlet InletId
 
@@ -273,32 +279,38 @@ getId (TaggedActions' eff) = do
     pure $ id
 
 
+-- Init `Actions'` channel with given message
 actions :: forall e a i. a -> Actions' e a
 actions default = Actions' $ do
     chan <- SC.channel default
     pure $ chan
 
 
+-- Init `TaggedActions'` channel with given ID and message
 taggedActions :: forall e a i. i -> a -> TaggedActions' e a i
 taggedActions id default = TaggedActions' $ do
     chan <- SC.channel default
     pure $ Tuple id chan
 
 
-sendMsg :: forall e a i. a -> TaggedActions' e a i -> TaggedActions' e a i
-sendMsg msg (TaggedActions' eff) = TaggedActions' $ do
-    (Tuple id chan) <- liftEff eff
-    SC.send chan msg
-    pure $ Tuple id chan
-
-
-sendMsg' :: forall e a. a -> Actions' e a -> Actions' e a
-sendMsg' msg (Actions' eff) = Actions' $ do
+-- Send given message to the `Actions'` channel
+sendMsg :: forall e a. a -> Actions' e a -> Actions' e a
+sendMsg msg (Actions' eff) = Actions' $ do
     chan <- liftEff eff
     SC.send chan msg
     pure $ chan
 
 
+-- Send given message to the `TaggedActions'` channel
+sendMsg' :: forall e a i. a -> TaggedActions' e a i -> TaggedActions' e a i
+sendMsg' msg (TaggedActions' eff) = TaggedActions' $ do
+    (Tuple id chan) <- liftEff eff
+    SC.send chan msg
+    pure $ Tuple id chan
+
+
+-- Given the child `TaggedActions'` channel, adapt message with `msgF`
+-- and send it to the parent `Actions'` channel
 sendMsgUp :: forall e a b i. (i -> a) -> TaggedActions' e b i -> Actions' e a -> Actions' e a
 sendMsgUp msgF (TaggedActions' teff) (Actions' eff) = Actions' $ do
     (Tuple id _) <- liftEff teff
@@ -307,6 +319,10 @@ sendMsgUp msgF (TaggedActions' teff) (Actions' eff) = Actions' $ do
     pure $ chan
 
 
+-- Given the child `TaggedActions'` channel, adapt message with `msgF`
+-- and send it to the parent `Actions'` channel,
+-- then subscribe parent channel to all the messages sent from a child,
+-- using `toUpperF` to adapt them to parent scope
 sendMsgUpAndSubscribe
     :: forall e a b i
      . (i -> a)
@@ -323,6 +339,10 @@ sendMsgUpAndSubscribe msgF toUpperF (TaggedActions' teff) (Actions' eff) = Actio
     pure $ dstChan
 
 
+-- Given the child `TaggedActions'` channel, adapt message with `msgF`
+-- and send it to the parent `TaggedActions'` channel,
+-- then subscribe parent channel to all the messages sent from a child,
+-- using `toUpperF` to adapt them to parent scope.
 sendMsgUpAndSubscribe'
     :: forall e a b ia ib
      . (ib -> a)
@@ -338,6 +358,30 @@ sendMsgUpAndSubscribe' msgF toUpperF (TaggedActions' srcEff) (TaggedActions' dst
         _ <- S.unwrap $ SC.subscribe srcChan S.~>
             (\srcMsg -> SC.send dstChan $ toUpperF srcMsg srcId)
         pure $ Tuple dstId dstChan
+
+
+-- Given an ID and default message, create new child `TaggedActions'` channel,
+-- send default message there, then adapt next message with `msgF`
+-- and send it to the parent `TaggedActions'` channel,
+-- then subscribe parent channel to all the messages sent from a child,
+-- using `toUpperF` to adapt them to parent scope.
+-- Return the created child channel.
+requestAccess
+    :: forall e a b ia ib
+     . ib
+    -> b
+    -> (ib -> a)
+    -> (b -> ib -> a)
+    -> TaggedActions' e a ia
+    -> TaggedActions' e b ib
+requestAccess srcId defMsg msgF toUpperF (TaggedActions' dstEff) =
+    TaggedActions' $ do
+        srcChan <- SC.channel defMsg
+        (Tuple dstId dstChan) <- liftEff dstEff
+        SC.send dstChan $ msgF srcId
+        _ <- S.unwrap $ SC.subscribe srcChan S.~>
+            (\srcMsg -> SC.send dstChan $ toUpperF srcMsg srcId)
+        pure $ Tuple srcId srcChan
 
 
 network :: forall e n c a x. NetworkActions' e n c a x
@@ -367,8 +411,8 @@ addPatch
     -> NetworkActions' e n c a x
 addPatch patchActions networkActions =
     sendMsgUpAndSubscribe
-        (\patchId -> AddPatch patchId)
-        (\patchMsg patchId -> UpdatePatch patchId patchMsg)
+        RequestPatch
+        (flip UpdatePatch)
         patchActions
         networkActions
 
@@ -380,25 +424,25 @@ removePatch
     -> NetworkActions' e n c a x
 removePatch patchActions networkActions =
     sendMsgUp
-        (\patchId -> ForgetPatch patchId)
+        ForgetPatch
         patchActions
         networkActions
 
 
 select :: forall e n c a x. PatchActions' e n c a x -> PatchActions' e n c a x
-select patchActions = sendMsg SelectPatch patchActions
+select patchActions = sendMsg' SelectPatch patchActions
 
 
 deselect :: forall e n c a x. PatchActions' e n c a x -> PatchActions' e n c a x
-deselect patchActions = sendMsg DeselectPatch patchActions
+deselect patchActions = sendMsg' DeselectPatch patchActions
 
 
 enter :: forall e n c a x. PatchActions' e n c a x -> PatchActions' e n c a x
-enter patchActions = sendMsg EnterPatch patchActions
+enter patchActions = sendMsg' EnterPatch patchActions
 
 
 exit :: forall e n c a x. PatchActions' e n c a x -> PatchActions' e n c a x
-exit patchActions = sendMsg ExitPatch patchActions
+exit patchActions = sendMsg' ExitPatch patchActions
 
 
 addNode
@@ -407,12 +451,25 @@ addNode
     -> PatchActions' e n c a x
     -> PatchActions' e n c a x
 addNode nodeActions patchActions =
-    -- patchActions -- FIXME: implement
     sendMsgUpAndSubscribe'
-        (\nodeId -> AddNode nodeId)
-        (\nodeMsg nodeId -> UpdateNode nodeId nodeMsg)
+        RequestNode
+        (flip UpdateNode)
         nodeActions
         patchActions
+
+
+getInlet
+    :: forall e n c a x
+     . InletId
+    -> NodeActions' e n c a x
+    -> InletActions' e c a x
+getInlet inletId nodeActions =
+    requestAccess
+        inletId
+        RequestInletAccess
+        RequestInlet
+        (flip UpdateInlet)
+        nodeActions
 
 
 removeNode
@@ -622,7 +679,7 @@ instance showOutlet :: Show c => Show (Outlet c a x) where
 
 instance showNetworkMsg :: ( Show n, Show c ) => Show (NetworkMsg n c a x) where
     show Start = "Start"
-    show (AddPatch patchId) = "Add patch: " <> patchId
+    show (RequestPatch patchId) = "Request patch: " <> patchId
     show (UpdatePatch patchId patchMsg) = "Update patch: " <> patchId <> " -> " <> show patchMsg
     show (ForgetPatch patchId) = "Forget patch: " <> patchId
     show Stop = "Stop"
@@ -630,11 +687,12 @@ instance showNetworkMsg :: ( Show n, Show c ) => Show (NetworkMsg n c a x) where
 
 instance showPatchMsg :: ( Show n, Show c ) => Show (PatchMsg n c a x) where
     show (InitPatch title) = "Init patch: " <> title
+    show RequestPatchAccess = "Request patch access"
     show SelectPatch = "Select patch"
     show DeselectPatch = "Deselect patch"
     show EnterPatch = "Enter patch"
     show ExitPatch = "Exit patch"
-    show (AddNode nodeId) = "Add node: " <> nodeId
+    show (RequestNode nodeId) = "Request node: " <> nodeId
     show (UpdateNode nodeId nodeMsg) = "Update node: " <> nodeId <> " -> " <> show nodeMsg
     show (ForgetNode nodeId) = "Remove node:"  <> nodeId
     show (Connect srcNodeId dstNodeId outletId inletId) = "Connect:\n"
@@ -647,16 +705,19 @@ instance showPatchMsg :: ( Show n, Show c ) => Show (PatchMsg n c a x) where
 
 instance showNodeMsg :: ( Show n, Show c ) => Show (NodeMsg n c a x) where
     show (InitNode type_ title) = "Init node: " <> show type_ <> " " <> title
-    show (AddInlet inletId) = "Add inlet: " <> inletId
+    show RequestNodeAccess = "Request node access"
+    show (RequestInlet inletId) = "Request inlet: " <> inletId
     show (UpdateInlet inletId inletMsg) = "Update inlet: " <> inletId <> " -> " <> show inletMsg
     show (ForgetInlet inletId) = "Forhet inlet:"  <> inletId
-    show (AddOutlet outletId) = "Add outlet: " <> outletId
+    show (RequestOutlet outletId) = "Request outlet: " <> outletId
+    show (GetOutlet outletId) = "Get inlet: " <> outletId
     show (UpdateOutlet outletId outletMsg) = "Update outlet: " <> outletId <> " -> " <> show outletMsg
     show (ForgetOutlet outletId) = "Remove outlet:"  <> outletId
 
 
 instance showInletMsg :: Show c => Show (InletMsg c a x) where
     show (InitInlet type_ label) = "Init inlet: " <> show type_ <> " " <> label
+    show RequestInletAccess = "Request inlet access"
     show (ConnectToOutlet outletId _) = "Connect to outlet: " <> outletId
     show (DisconnectFromOutlet outletId) = "Disconnect from outlet:"  <> outletId
     show HideInlet = "Hide inlet"
@@ -665,6 +726,7 @@ instance showInletMsg :: Show c => Show (InletMsg c a x) where
 
 instance showOutletMsg :: Show c => Show (OutletMsg c) where
     show (InitOutlet type_ label) = "Init outlet: " <> show type_ <> " " <> label
+    show RequestOutletAccess = "Request outlet access"
     show (ConnectToInlet inletId) = "Connect to inlet: " <> inletId
     show (DisconnectFromInlet inletId) = "Disconnect from inlet:"  <> inletId
 
