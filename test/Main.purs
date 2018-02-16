@@ -9,6 +9,7 @@ import Control.Monad.Aff (Aff, delay, forkAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Ref (REF)
+import Control.Monad.Eff.Console as C
 
 import Test.Spec (pending, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -35,6 +36,7 @@ main = run [consoleReporter] do
     describe "Running the application" do
       it "runs with provided network structure" do
         let
+          fromString = (\_ -> "a")
           app = R.run [] do
             let
               myPatch = R.patch "MyPatch"
@@ -45,17 +47,17 @@ main = run [consoleReporter] do
                 R.node CustomNode "Custom"
                   |> R.addInlet (R.inlet NumberChannel "a" |> R.allow
                       [ StringChannel fromString ])
-                  |> R.addInlet (R.inlet NumberChannel "b" |> default 10)
+                  |> R.addInlet (R.inlet NumberChannel "b" |> R.default 10)
                   |> R.addOutlet (R.outlet NumberChannel "out")
                   |> R.process (\inlets -> { out: inlets.a * inlets.b })
             inletA |> R.send 10 |> R.send 20
             inletB |> R.send 10 |> R.send 10 |> R.send 5
             myCustomNode |> R.getInlet "a" |> R.send "12" |> R.send 11
-            myCustomNode |> R.getOutlet "out" |> R.connect (sumNode |> getInlet "a")
-            myPatch |> R.addNode R.sumNode
+            myCustomNode |> R.getOutlet "out" |> R.connect (sumNode |> R.getInlet "a")
+            myPatch |> R.addNode sumNode
             myCustomNode |> R.getInlet "b" |> R.send 13
-            myNetwork <- network |> R.addPatch myPatch
-            S.runSignal (map show myNetwork.messages S.~> log)
+            myNetwork <- R.network |> R.addPatch myPatch
+            S.runSignal (map show myNetwork.messages S.~> C.log)
             pure myNetwork
         true `shouldEqual` true
 

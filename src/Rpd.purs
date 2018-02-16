@@ -8,8 +8,9 @@ module Rpd
     , run
     , network, patch, node, inlet, outlet
     , addPatch, removePatch, select, deselect, enter, exit
-    , addNode, addInlet, addOutlet
-    , getInlet
+    , addNode
+    , addInlet, getInlet, addOutlet, getOutlet, process, connect
+    , allow, default, send
     -- , connect, disconnect
     -- , log--, logData
     ) where
@@ -23,6 +24,7 @@ import Data.Function (apply, applyFlipped)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.String as String
 import Data.Tuple (Tuple(..))
 import Data.Unit as Unit
 import Signal as S
@@ -87,6 +89,7 @@ data NodeMsg n c a x
 data InletMsg c a x
     = RequestInletAccess
     | InitInlet c String
+    | Allow (Map c (Unit -> a))
     | ConnectToOutlet OutletId (FlowSignal a x)
     | DisconnectFromOutlet OutletId
     | HideInlet
@@ -123,6 +126,9 @@ type TaggedFlowSignal a x = S.Signal (Tuple InletId (Value a x))
 type ProcessSignal a x = S.Signal (Tuple (Map InletId (Value a x)) (Map OutletId (Value a x)))
 
 
+type ProcessF a x = (Map InletId (Value a x) -> Map OutletId (Value a x))
+
+
 data Network n c a x =
     NetworkT
         { messages :: S.Signal (NetworkMsg n c a x)
@@ -152,7 +158,7 @@ data Node n c a x =
         , type :: Maybe n
         , inlets :: Array InletId
         , outlets :: Array OutletId
-        , process :: Maybe (Map InletId (Value a x) -> Map OutletId (Value a x))
+        , process :: Maybe (ProcessF a x)
         }
         (ProcessSignal a x)
 
@@ -458,6 +464,35 @@ addNode nodeActions patchActions =
         patchActions
 
 
+removeNode
+    :: forall e n c a x
+     . NodeActions' e n c a x
+    -> PatchActions' e n c a x
+    -> PatchActions' e n c a x
+removeNode nodeActions patchActions =
+    patchActions -- FIXME: implement
+
+
+addInlet
+    :: forall e n c a x
+     . InletActions' e c a x
+    -> NodeActions' e n c a x
+    -> NodeActions' e n c a x
+addInlet inletActions nodeActions =
+    nodeActions -- FIXME: implement
+
+
+
+connect
+    :: forall e n c a x
+     . OutletActions' e c
+    -> InletActions' e c a x
+    -> InletActions' e c a x
+    -- -> NodeActions' e n c a x
+connect outletActions inletActions  =
+    inletActions -- FIXME: implement
+
+
 getInlet
     :: forall e n c a x
      . InletId
@@ -472,24 +507,18 @@ getInlet inletId nodeActions =
         nodeActions
 
 
-removeNode
+getOutlet
     :: forall e n c a x
-     . NodeActions' e n c a x
-    -> PatchActions' e n c a x
-    -> PatchActions' e n c a x
-removeNode nodeActions patchActions =
-    patchActions -- FIXME: implement
-    -- tellAndPerform' (ForgetInlet inlet.id) updateNode node
-
-
-addInlet
-    :: forall e n c a x
-     . InletActions' e c a x
+     . OutletId
     -> NodeActions' e n c a x
-    -> NodeActions' e n c a x
-addInlet inletActions nodeActions =
-    nodeActions -- FIXME: implement
-    -- tellAndPerform (UpdateInlet inletActions inlet) updateNode nodeActions
+    -> OutletActions' e c
+getOutlet outletId nodeActions =
+    requestAccess
+        outletId
+        RequestOutletAccess
+        RequestOutlet
+        (flip UpdateOutlet)
+        nodeActions
 
 
 removeInlet
@@ -499,7 +528,6 @@ removeInlet
     -> NodeActions' e n c a x
 removeInlet inletActions nodeActions =
     nodeActions -- FIXME: implement
-    -- tellAndPerform (ForgetInlet inlet.id) updateNode nodeActions
 
 
 addOutlet
@@ -509,7 +537,6 @@ addOutlet
     -> NodeActions' e n c a x
 addOutlet outletActions nodeActions =
     nodeActions -- FIXME: implement
-    -- tellAndPerform' (UpdateOutlet outletActions outlet) updateNode nodeActions
 
 
 removeOutlet
@@ -519,6 +546,42 @@ removeOutlet
     -> NodeActions' e n c a x
 removeOutlet outletAction nodeActions =
     nodeActions -- FIXME: implemeent
+
+
+process
+    :: forall e n c a x
+     . ProcessF a x
+    -> NodeActions' e n c a x
+    -> NodeActions' e n c a x
+process processF nodeActions =
+    nodeActions -- FIXME: implemeent
+
+
+allow
+    :: forall e n c a x
+     . Array (Tuple c (Unit -> a))
+    -> InletActions' e c a x
+    -> InletActions' e c a x
+allow list inletActions =
+    inletActions -- FIXME: implement
+
+
+default
+    :: forall e n c a x
+     . a
+    -> InletActions' e c a x
+    -> InletActions' e c a x
+default val inletActions =
+    inletActions -- FIXME: implement
+
+
+send
+    :: forall e n c a x
+     . a
+    -> InletActions' e c a x
+    -> InletActions' e c a x
+send val inletActions =
+    inletActions -- FIXME: implement
 
 
 -- Logic:
@@ -720,6 +783,8 @@ instance showInletMsg :: Show c => Show (InletMsg c a x) where
     show RequestInletAccess = "Request inlet access"
     show (ConnectToOutlet outletId _) = "Connect to outlet: " <> outletId
     show (DisconnectFromOutlet outletId) = "Disconnect from outlet:"  <> outletId
+    show (Allow allowMap) = "Allow: " <>
+        (Map.keys allowMap |> map show |> Array.fromFoldable |> String.joinWith ", ")
     show HideInlet = "Hide inlet"
     show RevealInlet = "Reveal inlet"
 
