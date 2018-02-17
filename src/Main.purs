@@ -5,10 +5,7 @@ import Prelude
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console as C
 
-import Data.Array ((:))
-
 import Rpd as Rpd
-import Signal as S
 import Signal.Channel as SC
 
 
@@ -21,6 +18,7 @@ data MyInletType = NumInlet | StrInlet
 
 main :: Eff (console :: C.CONSOLE, channel :: SC.CHANNEL) Unit
 main = void do
-    Rpd.run
-        ( Rpd.createNetwork "a" : Rpd.createNetwork "b" : [] )
-        (\s -> map show s S.~> C.log)
+    Rpd.run [] Rpd.network
+    -- Rpd.run
+    --     ( Rpd.createNetwork "a" : Rpd.createNetwork "b" : [] )
+    --     (\s -> map show s S.~> C.log)

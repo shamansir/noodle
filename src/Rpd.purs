@@ -1,6 +1,7 @@
 module Rpd
     ( Id, PatchId, NodeId, ChannelId, InletId, OutletId, LinkId
-    , App, Network, Patch, Node, Inlet, Outlet, Link
+    , App(..), Renderer
+    , Network, Patch, Node, Inlet, Outlet, Link
     -- TRY TO REMOVE LATER
     , NetworkMsg(..), PatchMsg(..), NodeMsg(..), InletMsg(..), OutletMsg(..)
     , FlowSignal, Value(..), Actions', TaggedActions'
