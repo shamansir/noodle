@@ -611,23 +611,29 @@ data App nodes channels datatype error effect =
 
 
 run :: forall n c a x eff
-     . Array (NetworkMsg n c a x)
-    -> (S.Signal (NetworkMsg n c a x) ->
-        S.Signal (Eff (channel :: SC.CHANNEL | eff) Unit))
-    -> Eff (channel :: SC.CHANNEL | eff) Unit
-run messages f = void do
+     . Array (Renderer n c a x eff)
+    -> NetworkActions' eff n c a x
+    -> Eff (channel :: SC.CHANNEL | eff) (App n c a x eff)
+run renderers networkActions = do
     c <- SC.channel Start
     let s = SC.subscribe c
-    SC.send c (Array.head messages |> fromMaybe Stop)
-    S.runSignal (f s)
-    Array.foldM
-        (\msgStack msg -> do
-            SC.send c msg
-            --fromMaybe [] (tail msgStack)
-        )
-        Unit.unit
-        (Array.tail messages |> fromMaybe [ Stop ])
-    pure s
+        network = network'
+        app =
+            App
+                { network :Just network
+                , renderers : renderers
+                }
+    -- SC.send c Stop
+    -- SC.send c (Array.head messages |> fromMaybe Stop)
+    -- S.runSignal (f s)
+    -- Array.foldM
+    --     (\msgStack msg -> do
+    --         SC.send c msg
+    --         --fromMaybe [] (tail msgStack)
+    --     )
+    --     Unit.unit
+    --     (Array.tail messages |> fromMaybe [ Stop ])
+    pure app
 
 
 initProcessChannel :: forall a x. ProcessSignal a x

@@ -44,7 +44,7 @@ main = run [consoleReporter] do
           app = R.run [] do
             let
               myPatch = R.patch "MyPatch"
-              sumNode = R.node SumNode "f"
+              sumNode = R.node SumNode "sum"
               inletA = R.getInlet "a" sumNode
               inletB = R.getInlet "b" sumNode
               myCustomNode =
@@ -63,14 +63,15 @@ main = run [consoleReporter] do
 
             inletA |> R.send 10 |> R.send 20
             inletB |> R.send 10 |> R.send 10 |> R.send 5
+            -- inletB |> R.send "10" |> R.send "10" |> R.send "5"
             myCustomNode |> R.getInlet "a" |> R.send 12 |> R.send 11
             myCustomNode |> R.getOutlet "out" |> R.connect (sumNode |> R.getInlet "a")
             myPatch |> R.addNode sumNode
             myCustomNode |> R.getInlet "b" |> R.send 13
             myNetwork <- R.network |> R.addPatch myPatch
-            pure myNetwork
+            pure R.network
         messages <- R.getMessages app
-        S.runSignal (map show app.messages S.~> C.log)
+        -- S.runSignal (map show app.messages S.~> C.log)
         true `shouldEqual` true
 
   -- describe "purescript-spec" do
