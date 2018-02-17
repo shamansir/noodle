@@ -4,6 +4,10 @@ import Prelude
 
 import Data.Function (apply, applyFlipped)
 import Data.Time.Duration as Duration
+import Data.Tuple (Tuple(..))
+import Data.Map (Map)
+import Data.Map as Map
+import Data.Maybe (Maybe(..), fromMaybe)
 
 import Control.Monad.Aff (Aff, delay, forkAff)
 import Control.Monad.Eff (Eff)
@@ -36,29 +40,37 @@ main = run [consoleReporter] do
     describe "Running the application" do
       it "runs with provided network structure" do
         let
-          fromString = (\_ -> "a")
+          toInt = (\_ -> 20)
           app = R.run [] do
             let
               myPatch = R.patch "MyPatch"
-              sumNode = R.node SumNode
+              sumNode = R.node SumNode "f"
               inletA = R.getInlet "a" sumNode
               inletB = R.getInlet "b" sumNode
               myCustomNode =
                 R.node CustomNode "Custom"
                   |> R.addInlet (R.inlet NumberChannel "a" |> R.allow
-                      [ StringChannel fromString ])
+                      [ Tuple StringChannel toInt ])
                   |> R.addInlet (R.inlet NumberChannel "b" |> R.default 10)
                   |> R.addOutlet (R.outlet NumberChannel "out")
-                  |> R.process (\inlets -> { out: inlets.a * inlets.b })
+                  -- |> R.process (\inlets -> { out: inlets.a * inlets.b })
+                  |> R.process
+                    (\inlets ->
+                      Map.singleton "out"
+                        ((Map.lookup "a" inlets |> fromMaybe (R.Data 0)) *
+                         (Map.lookup "b" inlets |> fromMaybe (R.Data 0)))
+                    )
+
             inletA |> R.send 10 |> R.send 20
             inletB |> R.send 10 |> R.send 10 |> R.send 5
-            myCustomNode |> R.getInlet "a" |> R.send "12" |> R.send 11
+            myCustomNode |> R.getInlet "a" |> R.send 12 |> R.send 11
             myCustomNode |> R.getOutlet "out" |> R.connect (sumNode |> R.getInlet "a")
             myPatch |> R.addNode sumNode
             myCustomNode |> R.getInlet "b" |> R.send 13
             myNetwork <- R.network |> R.addPatch myPatch
-            S.runSignal (map show myNetwork.messages S.~> C.log)
             pure myNetwork
+        messages <- R.getMessages app
+        S.runSignal (map show app.messages S.~> C.log)
         true `shouldEqual` true
 
   -- describe "purescript-spec" do

@@ -3,9 +3,9 @@ module Rpd
     , App, Network, Patch, Node, Inlet, Outlet, Link
     -- TRY TO REMOVE LATER
     , NetworkMsg(..), PatchMsg(..), NodeMsg(..), InletMsg(..), OutletMsg(..)
-    , FlowSignal, Value, Actions', TaggedActions'
+    , FlowSignal, Value(..), Actions', TaggedActions'
     -- END OF TRY TO REMOVE LATER
-    , run
+    , run, getMessages
     , network, patch, node, inlet, outlet
     , addPatch, removePatch, select, deselect, enter, exit
     , addNode
@@ -390,6 +390,13 @@ requestAccess srcId defMsg msgF toUpperF (TaggedActions' dstEff) =
         pure $ Tuple srcId srcChan
 
 
+getMessages :: forall n c a x e. App n c a x e -> S.Signal (NetworkMsg n c a x)
+getMessages (App { network }) =
+    case network of
+        Just (NetworkT network') -> network'.messages
+        Nothing -> S.constant (Start)
+
+
 network :: forall e n c a x. NetworkActions' e n c a x
 network = actions Start
 
@@ -485,12 +492,12 @@ addInlet inletActions nodeActions =
 
 connect
     :: forall e n c a x
-     . OutletActions' e c
-    -> InletActions' e c a x
-    -> InletActions' e c a x
+     . InletActions' e c a x
+    -> OutletActions' e c
+    -> OutletActions' e c
     -- -> NodeActions' e n c a x
-connect outletActions inletActions  =
-    inletActions -- FIXME: implement
+connect inletActions outletActions =
+    outletActions -- FIXME: implement
 
 
 getInlet
