@@ -2,37 +2,42 @@ module Test.Main where
 
 import Prelude
 
-import Data.Function (apply, applyFlipped)
-import Data.Time.Duration as Duration
-import Data.Tuple (Tuple(..))
-import Data.Map (Map)
-import Data.Map as Map
-import Data.Maybe (Maybe(..), fromMaybe)
-
 import Control.Monad.Aff (Aff, delay, forkAff, makeAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Ref (REF)
 import Control.Monad.Eff.Console as C
-
+import Control.Monad.Eff.Ref (REF)
+import Data.Function (apply, applyFlipped)
+import Data.Map (Map)
+import Data.Map as Map
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Time.Duration as Duration
+import Data.Tuple (Tuple(..))
+import Rpd as R
+import Signal as S
+import Signal.Channel as SC
+import Signal.Time (debounce)
+import Test.Signal (expect')
 import Test.Spec (pending, describe, it)
 import Test.Spec.Assertions (shouldEqual, fail)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
-
-import Signal as S
-import Signal.Channel as SC
-import Signal.Time (debounce)
-
-import Test.Signal (expect')
-
-import Rpd as R
 
 infixr 0 apply as <|
 infixl 1 applyFlipped as |>
 
 data MyNodeType = SumNode | CustomNode
 data MyChannelType = NumberChannel | StringChannel
+
+
+logMessages
+  :: forall e n c a x
+   . Show n => Show c
+  => S.Signal (R.NetworkMsg n c a x)
+  -> Eff ( console :: C.CONSOLE | e ) Unit
+logMessages sig = do
+  S.runSignal (sig S.~> (\msg -> C.log (show msg)))
+
 
 main :: forall eff. Eff (RunnerEffects ( ref :: REF, channel :: SC.CHANNEL | eff )) Unit
 main = run [consoleReporter] do
@@ -42,11 +47,14 @@ main = run [consoleReporter] do
         _ <- liftEff (R.run [] R.network)
         pure unit
       it "able to log messages" do
-        app <- liftEff (R.run [] R.network)
-        let messages = R.getMessages app
+        let
+          network :: forall e a x. R.Actions' e (R.NetworkMsg MyNodeType MyChannelType a x)
+          network = R.network
+        app' <- liftEff (R.run [] network)
+        let messages = R.getMessages app'
         -- _ <- forkAff $ expect' ?what []
         -- liftEff (S.runSignal messages)
-        -- liftEff (S.runSignal (messages S.~> (\msg -> show msg) S.~> C.log))
+        liftEff (logMessages messages)
         -- S.runSignal (map show messages S.~> C.log)
         pure unit
       it "creates the complex network" do
@@ -93,3 +101,13 @@ wait :: forall e. Number -> Aff e Unit
 wait t = do
   delay (Duration.Milliseconds t)
   pure unit
+
+
+instance showMyNodeType :: Show MyNodeType where
+  show SumNode = "SumNode"
+  show CustomNode = "CustomNode"
+
+
+instance showMyChannelType :: Show MyChannelType where
+  show NumberChannel = "SumNode"
+  show StringChannel = "CustomNode"
