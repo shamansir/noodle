@@ -50,20 +50,19 @@ main = run [consoleReporter] do
         let
           network :: forall e a x. R.Actions' e (R.NetworkMsg MyNodeType MyChannelType a x)
           network = R.network
-        app' <- liftEff (R.run [] network)
-        let messages = R.getMessages app'
-        -- _ <- forkAff $ expect' ?what []
-        -- liftEff (S.runSignal messages)
+        app <- liftEff $ R.run [] network
+        let messages = R.getMessages app
         liftEff (logMessages messages)
-        -- S.runSignal (map show messages S.~> C.log)
+        pure unit
+      it "fires expected messages on creation" do
+        let
+          network :: forall e a x. R.Actions' e (R.NetworkMsg MyNodeType MyChannelType a x)
+          network = R.network
+        app <- liftEff $ R.run [] network
+        let showSig = R.getMessages app S.~> show
+        expect' showSig ["Start"]
         pure unit
       it "creates the complex network" do
-
-        -- app <- R.run [] R.network
-        -- messages <- R.getMessages app
-        -- _ <- forkAff $ expect' ?what []
-        -- liftEff (S.runSignal messages)
-        -- S.runSignal (map show messages S.~> C.log)
         (R.App app) <- liftEff (R.run [] do
             let
               toInt = (\_ -> 20)
