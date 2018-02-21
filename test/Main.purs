@@ -48,7 +48,7 @@ main = run [consoleReporter] do
         pure unit
       it "able to log messages" do
         let
-          network :: forall e a x. R.Actions' e (R.NetworkMsg MyNodeType MyChannelType a x)
+          network :: forall e a x. R.Actions e MyNodeType MyChannelType a x
           network = R.network
         app <- liftEff $ R.run [] network
         let messages = R.getMessages app
@@ -56,7 +56,7 @@ main = run [consoleReporter] do
         pure unit
       it "fires expected messages on creation" do
         let
-          network :: forall e a x. R.Actions' e (R.NetworkMsg MyNodeType MyChannelType a x)
+          network :: forall e a x. R.Actions e MyNodeType MyChannelType a x
           network = R.network
         app <- liftEff $ R.run [] network
         let showSig = R.getMessages app S.~> show

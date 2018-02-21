@@ -625,7 +625,7 @@ data App nodes channels datatype error effect =
 
 run :: forall n c a x eff
      . Array (Renderer n c a x eff)
-    -> NetworkActions' eff n c a x
+    -> Actions eff n c a x
     -> Eff (channel :: SC.CHANNEL | eff) (App n c a x eff)
 run renderers networkActions = do
     c <- SC.channel Start
