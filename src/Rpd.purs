@@ -4,7 +4,7 @@ module Rpd
     , Network, Patch, Node, Inlet, Outlet, Link
     -- TRY TO REMOVE LATER
     , NetworkMsg(..), PatchMsg(..), NodeMsg(..), InletMsg(..), OutletMsg(..)
-    , FlowSignal, Value(..), Actions', TaggedActions'
+    , FlowSignal, Value(..), Actions, Actions', TaggedActions'
     -- END OF TRY TO REMOVE LATER
     , run, getMessages
     , network, patch, node, inlet, outlet
@@ -190,17 +190,20 @@ data Link a x = LinkT
         (FlowSignal a x)
 
 
-newtype Actions' e a =
-    Actions' (Eff (channel :: SC.CHANNEL | e) (SC.Channel a))
+type Actions' e a =
+    Eff (channel :: SC.CHANNEL | e) (SC.Channel a)
 
-newtype TaggedActions' e a i  =
-    TaggedActions'
-        (Eff (channel :: SC.CHANNEL | e) (Tuple i (SC.Channel a)))
+type TaggedActions' e a i  =
+    Eff (channel :: SC.CHANNEL | e) (Tuple i (SC.Channel a))
 
 
 -- newtype TaggedActions' e  =
 --     TaggedActions'
 --         (Eff (channel :: SC.CHANNEL | e) (Tuple String (SC.Channel Int)))
+
+
+-- make a general type : Actions, and use Tuple to
+-- send pairs of ID and Message to the signal?
 
 
 type NetworkActions' e n c a x = Actions' e (NetworkMsg n c a x)
@@ -210,12 +213,23 @@ type InletActions' e c a x = TaggedActions' e (InletMsg c a x) InletId
 type OutletActions' e c = TaggedActions' e (OutletMsg c) OutletId
 
 
+-- or just use a data type below, just restrict methods to special types
+-- by removing the quote and the types with quote?
+
+-- remove `c`` since it can be replaced with `a`, or vice versa
+
+-- if messages will fail to record, pass the function to
+-- `Rpd.run` as the last argument and call it with created
+-- channel after subscribing to it. then, require this channel
+-- to be passed to `Rpd.network` so it will use it as a target
+-- for messages and subscribe all children to it?
+
 data Actions e n c a x
-    = NetworkActions (NetworkActions' e n c a x)
-    | PatchActions (PatchActions' e n c a x)
-    | NodeActions (NodeActions' e n c a x)
-    | InletActions (InletActions' e c a x)
-    | OutletActions (OutletActions' e c)
+    = NetworkActions (Actions' e (NetworkMsg n c a x))
+    | PatchActions (TaggedActions' e (PatchMsg n c a x) PatchId)
+    | NodeActions (TaggedActions' e (NodeMsg n c a x) NodeId)
+    | InletActions (TaggedActions' e (InletMsg c a x) InletId)
+    | OutletActions (TaggedActions' e (OutletMsg c) OutletId)
     -- | LinkActions (LinkActions' c a x)
 
 
@@ -281,28 +295,28 @@ outlet' =
 
 
 getId :: forall e a i. TaggedActions' e a i -> Eff ( channel :: SC.CHANNEL | e) i
-getId (TaggedActions' eff) = do
+getId eff = do
     (Tuple id _) <- liftEff eff
     pure $ id
 
 
 -- Init `Actions'` channel with given message
 actions :: forall e a i. a -> Actions' e a
-actions default = Actions' $ do
+actions default = do
     chan <- SC.channel default
     pure $ chan
 
 
 -- Init `TaggedActions'` channel with given ID and message
 taggedActions :: forall e a i. i -> a -> TaggedActions' e a i
-taggedActions id default = TaggedActions' $ do
+taggedActions id default = do
     chan <- SC.channel default
     pure $ Tuple id chan
 
 
 -- Send given message to the `Actions'` channel
 sendMsg :: forall e a. a -> Actions' e a -> Actions' e a
-sendMsg msg (Actions' eff) = Actions' $ do
+sendMsg msg eff = do
     chan <- liftEff eff
     SC.send chan msg
     pure $ chan
@@ -310,7 +324,7 @@ sendMsg msg (Actions' eff) = Actions' $ do
 
 -- Send given message to the `TaggedActions'` channel
 sendMsg' :: forall e a i. a -> TaggedActions' e a i -> TaggedActions' e a i
-sendMsg' msg (TaggedActions' eff) = TaggedActions' $ do
+sendMsg' msg eff = do
     (Tuple id chan) <- liftEff eff
     SC.send chan msg
     pure $ Tuple id chan
@@ -319,7 +333,7 @@ sendMsg' msg (TaggedActions' eff) = TaggedActions' $ do
 -- Given the child `TaggedActions'` channel, adapt message with `msgF`
 -- and send it to the parent `Actions'` channel
 sendMsgUp :: forall e a b i. (i -> a) -> TaggedActions' e b i -> Actions' e a -> Actions' e a
-sendMsgUp msgF (TaggedActions' teff) (Actions' eff) = Actions' $ do
+sendMsgUp msgF teff eff = do
     (Tuple id _) <- liftEff teff
     chan <- liftEff eff
     SC.send chan $ msgF id
@@ -337,7 +351,7 @@ sendMsgUpAndSubscribe
     -> TaggedActions' e b i
     -> Actions' e a
     -> Actions' e a
-sendMsgUpAndSubscribe msgF toUpperF (TaggedActions' teff) (Actions' eff) = Actions' $ do
+sendMsgUpAndSubscribe msgF toUpperF teff eff = do
     (Tuple srcId srcChan) <- liftEff teff
     dstChan <- liftEff eff
     SC.send dstChan $ msgF srcId
@@ -357,14 +371,13 @@ sendMsgUpAndSubscribe'
     -> TaggedActions' e b ib
     -> TaggedActions' e a ia
     -> TaggedActions' e a ia
-sendMsgUpAndSubscribe' msgF toUpperF (TaggedActions' srcEff) (TaggedActions' dstEff) =
-    TaggedActions' $ do
-        (Tuple srcId srcChan) <- liftEff srcEff
-        (Tuple dstId dstChan) <- liftEff dstEff
-        SC.send dstChan $ msgF srcId
-        _ <- S.unwrap $ SC.subscribe srcChan S.~>
-            (\srcMsg -> SC.send dstChan $ toUpperF srcMsg srcId)
-        pure $ Tuple dstId dstChan
+sendMsgUpAndSubscribe' msgF toUpperF srcEff dstEff = do
+    (Tuple srcId srcChan) <- liftEff srcEff
+    (Tuple dstId dstChan) <- liftEff dstEff
+    SC.send dstChan $ msgF srcId
+    _ <- S.unwrap $ SC.subscribe srcChan S.~>
+        (\srcMsg -> SC.send dstChan $ toUpperF srcMsg srcId)
+    pure $ Tuple dstId dstChan
 
 
 -- Given an ID and default message, create new child `TaggedActions'` channel,
@@ -381,14 +394,13 @@ requestAccess
     -> (b -> ib -> a)
     -> TaggedActions' e a ia
     -> TaggedActions' e b ib
-requestAccess srcId defMsg msgF toUpperF (TaggedActions' dstEff) =
-    TaggedActions' $ do
-        srcChan <- SC.channel defMsg
-        (Tuple dstId dstChan) <- liftEff dstEff
-        SC.send dstChan $ msgF srcId
-        _ <- S.unwrap $ SC.subscribe srcChan S.~>
-            (\srcMsg -> SC.send dstChan $ toUpperF srcMsg srcId)
-        pure $ Tuple srcId srcChan
+requestAccess srcId defMsg msgF toUpperF dstEff = do
+    srcChan <- SC.channel defMsg
+    (Tuple dstId dstChan) <- liftEff dstEff
+    SC.send dstChan $ msgF srcId
+    _ <- S.unwrap $ SC.subscribe srcChan S.~>
+        (\srcMsg -> SC.send dstChan $ toUpperF srcMsg srcId)
+    pure $ Tuple srcId srcChan
 
 
 getMessages :: forall n c a x e. App n c a x e -> S.Signal (NetworkMsg n c a x)
@@ -398,24 +410,24 @@ getMessages (App { network }) =
         Nothing -> S.constant (Start)
 
 
-network :: forall e n c a x. NetworkActions' e n c a x
-network = actions Start
+network :: forall e n c a x. Actions e n c a x
+network = NetworkActions (actions Start)
 
 
-patch :: forall e n c a x. String -> PatchActions' e n c a x
-patch title = taggedActions title (InitPatch title)
+patch :: forall e n c a x. String -> Actions e n c a x
+patch title = PatchActions $ taggedActions title (InitPatch title)
 
 
-node :: forall e n c a x. n -> String -> NodeActions' e n c a x
-node type_ title = taggedActions title (InitNode type_ title)
+node :: forall e n c a x. n -> String -> Actions e n c a x
+node type_ title = NodeActions $ taggedActions title (InitNode type_ title)
 
 
-inlet :: forall e c a x. c -> String -> InletActions' e c a x
-inlet type_ label = taggedActions label (InitInlet type_ label)
+inlet :: forall e n c a x. c -> String -> Actions e n c a x
+inlet type_ label = InletActions $ taggedActions label (InitInlet type_ label)
 
 
-outlet :: forall e c. c -> String -> OutletActions' e c
-outlet type_ label = taggedActions label (InitOutlet type_ label)
+outlet :: forall e n c a x. c -> String -> Actions e n c a x
+outlet type_ label = OutletActions $ taggedActions label (InitOutlet type_ label)
 
 
 addPatch
