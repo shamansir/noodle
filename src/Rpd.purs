@@ -4,7 +4,7 @@ module Rpd
     , Network, Patch, Node, Inlet, Outlet, Link
     -- TRY TO REMOVE LATER
     , NetworkMsg(..), PatchMsg(..), NodeMsg(..), InletMsg(..), OutletMsg(..)
-    , FlowSignal, Value(..), Actions, Actions', TaggedActions'
+    , FlowSignal, Value(..), Actions
     -- END OF TRY TO REMOVE LATER
     , run, getMessages
     , network, patch, node, inlet, outlet
@@ -190,27 +190,18 @@ data Link a x = LinkT
         (FlowSignal a x)
 
 
-type Actions' e a =
-    Eff (channel :: SC.CHANNEL | e) (SC.Channel a)
-
-type TaggedActions' e a i  =
-    Eff (channel :: SC.CHANNEL | e) (Tuple i (SC.Channel a))
-
-
--- newtype TaggedActions' e  =
---     TaggedActions'
---         (Eff (channel :: SC.CHANNEL | e) (Tuple String (SC.Channel Int)))
+newtype Actions e msg id = Actions (Eff (channel :: SC.CHANNEL | e) (Tuple id (SC.Channel msg)))
 
 
 -- make a general type : Actions, and use Tuple to
 -- send pairs of ID and Message to the signal?
 
 
-type NetworkActions' e n c a x = Actions' e (NetworkMsg n c a x)
-type PatchActions' e n c a x = TaggedActions' e (PatchMsg n c a x) PatchId
-type NodeActions' e n c a x = TaggedActions' e (NodeMsg n c a x) NodeId
-type InletActions' e c a x = TaggedActions' e (InletMsg c a x) InletId
-type OutletActions' e c = TaggedActions' e (OutletMsg c) OutletId
+type NetworkActions e n c a x = Actions e (NetworkMsg n c a x) Unit
+type PatchActions e n c a x = Actions e (PatchMsg n c a x) PatchId
+type NodeActions e n c a x = Actions e (NodeMsg n c a x) NodeId
+type InletActions e c a x = Actions e (InletMsg c a x) InletId
+type OutletActions e c = Actions e (OutletMsg c) OutletId
 
 
 -- or just use a data type below, just restrict methods to special types
@@ -223,14 +214,6 @@ type OutletActions' e c = TaggedActions' e (OutletMsg c) OutletId
 -- channel after subscribing to it. then, require this channel
 -- to be passed to `Rpd.network` so it will use it as a target
 -- for messages and subscribe all children to it?
-
-data Actions e n c a x
-    = NetworkActions (Actions' e (NetworkMsg n c a x))
-    | PatchActions (TaggedActions' e (PatchMsg n c a x) PatchId)
-    | NodeActions (TaggedActions' e (NodeMsg n c a x) NodeId)
-    | InletActions (TaggedActions' e (InletMsg c a x) InletId)
-    | OutletActions (TaggedActions' e (OutletMsg c) OutletId)
-    -- | LinkActions (LinkActions' c a x)
 
 
 -- API:
@@ -294,21 +277,19 @@ outlet' =
 
 
 
-getId :: forall e a i. TaggedActions' e a i -> Eff ( channel :: SC.CHANNEL | e) i
+getId :: forall e a i. Actions e a i -> Eff ( channel :: SC.CHANNEL | e) i
 getId eff = do
     (Tuple id _) <- liftEff eff
     pure $ id
 
 
 -- Init `Actions'` channel with given message
-actions :: forall e a i. a -> Actions' e a
-actions default = do
-    chan <- SC.channel default
-    pure $ chan
+actions :: forall e a i. a -> Actions e a i
+actions default = taggedActions unit default
 
 
 -- Init `TaggedActions'` channel with given ID and message
-taggedActions :: forall e a i. i -> a -> TaggedActions' e a i
+taggedActions :: forall e a i. i -> a -> Actions e a i
 taggedActions id default = do
     chan <- SC.channel default
     pure $ Tuple id chan
@@ -410,31 +391,31 @@ getMessages (App { network }) =
         Nothing -> S.constant (Start)
 
 
-network :: forall e n c a x. Actions e n c a x
-network = NetworkActions (actions Start)
+network :: forall e n c a x. NetworkActions e n c a x
+network = (actions Start)
 
 
-patch :: forall e n c a x. String -> Actions e n c a x
-patch title = PatchActions $ taggedActions title (InitPatch title)
+patch :: forall e n c a x. String -> PatchActions e n c a x
+patch title = taggedActions title (InitPatch title)
 
 
-node :: forall e n c a x. n -> String -> Actions e n c a x
-node type_ title = NodeActions $ taggedActions title (InitNode type_ title)
+node :: forall e n c a x. n -> String -> NodeActions e n c a x
+node type_ title = taggedActions title (InitNode type_ title)
 
 
-inlet :: forall e n c a x. c -> String -> Actions e n c a x
-inlet type_ label = InletActions $ taggedActions label (InitInlet type_ label)
+inlet :: forall e n c a x. c -> String -> InletActions e n c a x
+inlet type_ label = taggedActions label (InitInlet type_ label)
 
 
-outlet :: forall e n c a x. c -> String -> Actions e n c a x
-outlet type_ label = OutletActions $ taggedActions label (InitOutlet type_ label)
+outlet :: forall e n c a x. c -> String -> OutletActions e n c a x
+outlet type_ label = taggedActions label (InitOutlet type_ label)
 
 
 addPatch
     :: forall e n c a x
-     . PatchActions' e n c a x
-    -> NetworkActions' e n c a x
-    -> NetworkActions' e n c a x
+     . PatchActions e n c a x
+    -> NetworkActions e n c a x
+    -> NetworkActions e n c a x
 addPatch patchActions networkActions =
     sendMsgUpAndSubscribe
         RequestPatch
@@ -445,9 +426,9 @@ addPatch patchActions networkActions =
 
 removePatch
     :: forall e n c a x
-     . PatchActions' e n c a x
-    -> NetworkActions' e n c a x
-    -> NetworkActions' e n c a x
+     . PatchActions e n c a x
+    -> NetworkActions e n c a x
+    -> NetworkActions e n c a x
 removePatch patchActions networkActions =
     sendMsgUp
         ForgetPatch
@@ -455,27 +436,27 @@ removePatch patchActions networkActions =
         networkActions
 
 
-select :: forall e n c a x. PatchActions' e n c a x -> PatchActions' e n c a x
+select :: forall e n c a x. PatchActions e n c a x -> PatchActions e n c a x
 select patchActions = sendMsg' SelectPatch patchActions
 
 
-deselect :: forall e n c a x. PatchActions' e n c a x -> PatchActions' e n c a x
+deselect :: forall e n c a x. PatchActions e n c a x -> PatchActions e n c a x
 deselect patchActions = sendMsg' DeselectPatch patchActions
 
 
-enter :: forall e n c a x. PatchActions' e n c a x -> PatchActions' e n c a x
+enter :: forall e n c a x. PatchActions e n c a x -> PatchActions e n c a x
 enter patchActions = sendMsg' EnterPatch patchActions
 
 
-exit :: forall e n c a x. PatchActions' e n c a x -> PatchActions' e n c a x
+exit :: forall e n c a x. PatchActions e n c a x -> PatchActions e n c a x
 exit patchActions = sendMsg' ExitPatch patchActions
 
 
 addNode
     :: forall e n c a x
-     . NodeActions' e n c a x
-    -> PatchActions' e n c a x
-    -> PatchActions' e n c a x
+     . NodeActions e n c a x
+    -> PatchActions e n c a x
+    -> PatchActions e n c a x
 addNode nodeActions patchActions =
     sendMsgUpAndSubscribe'
         RequestNode
@@ -486,18 +467,18 @@ addNode nodeActions patchActions =
 
 removeNode
     :: forall e n c a x
-     . NodeActions' e n c a x
-    -> PatchActions' e n c a x
-    -> PatchActions' e n c a x
+     . NodeActions e n c a x
+    -> PatchActions e n c a x
+    -> PatchActions e n c a x
 removeNode nodeActions patchActions =
     patchActions -- FIXME: implement
 
 
 addInlet
     :: forall e n c a x
-     . InletActions' e c a x
-    -> NodeActions' e n c a x
-    -> NodeActions' e n c a x
+     . InletActions e c a x
+    -> NodeActions e n c a x
+    -> NodeActions e n c a x
 addInlet inletActions nodeActions =
     nodeActions -- FIXME: implement
 
@@ -505,10 +486,10 @@ addInlet inletActions nodeActions =
 
 connect
     :: forall e n c a x
-     . InletActions' e c a x
-    -> OutletActions' e c
-    -> OutletActions' e c
-    -- -> NodeActions' e n c a x
+     . InletActions e c a x
+    -> OutletActions e c
+    -> OutletActions e c
+    -- -> NodeActions e n c a x
 connect inletActions outletActions =
     outletActions -- FIXME: implement
 
@@ -516,8 +497,8 @@ connect inletActions outletActions =
 getInlet
     :: forall e n c a x
      . InletId
-    -> NodeActions' e n c a x
-    -> InletActions' e c a x
+    -> NodeActions e n c a x
+    -> InletActions e c a x
 getInlet inletId nodeActions =
     requestAccess
         inletId
@@ -530,8 +511,8 @@ getInlet inletId nodeActions =
 getOutlet
     :: forall e n c a x
      . OutletId
-    -> NodeActions' e n c a x
-    -> OutletActions' e c
+    -> NodeActions e n c a x
+    -> OutletActions e c
 getOutlet outletId nodeActions =
     requestAccess
         outletId
@@ -543,27 +524,27 @@ getOutlet outletId nodeActions =
 
 removeInlet
     :: forall e n c a x
-     . InletActions' e c a x
-    -> NodeActions' e n c a x
-    -> NodeActions' e n c a x
+     . InletActions e c a x
+    -> NodeActions e n c a x
+    -> NodeActions e n c a x
 removeInlet inletActions nodeActions =
     nodeActions -- FIXME: implement
 
 
 addOutlet
     :: forall e n c a x
-     . OutletActions' e c
-    -> NodeActions' e n c a x
-    -> NodeActions' e n c a x
+     . OutletActions e c
+    -> NodeActions e n c a x
+    -> NodeActions e n c a x
 addOutlet outletActions nodeActions =
     nodeActions -- FIXME: implement
 
 
 removeOutlet
     :: forall e n c a x
-     . OutletActions' e c
-    -> NodeActions' e n c a x
-    -> NodeActions' e n c a x
+     . OutletActions e c
+    -> NodeActions e n c a x
+    -> NodeActions e n c a x
 removeOutlet outletAction nodeActions =
     nodeActions -- FIXME: implemeent
 
@@ -571,8 +552,8 @@ removeOutlet outletAction nodeActions =
 process
     :: forall e n c a x
      . ProcessF a x
-    -> NodeActions' e n c a x
-    -> NodeActions' e n c a x
+    -> NodeActions e n c a x
+    -> NodeActions e n c a x
 process processF nodeActions =
     nodeActions -- FIXME: implemeent
 
@@ -580,8 +561,8 @@ process processF nodeActions =
 allow
     :: forall e n c a x
      . Array (Tuple c (Unit -> a))
-    -> InletActions' e c a x
-    -> InletActions' e c a x
+    -> InletActions e c a x
+    -> InletActions e c a x
 allow list inletActions =
     inletActions -- FIXME: implement
 
@@ -589,8 +570,8 @@ allow list inletActions =
 default
     :: forall e n c a x
      . a
-    -> InletActions' e c a x
-    -> InletActions' e c a x
+    -> InletActions e c a x
+    -> InletActions e c a x
 default val inletActions =
     inletActions -- FIXME: implement
 
@@ -598,8 +579,8 @@ default val inletActions =
 send
     :: forall e n c a x
      . a
-    -> InletActions' e c a x
-    -> InletActions' e c a x
+    -> InletActions e c a x
+    -> InletActions e c a x
 send val inletActions =
     inletActions -- FIXME: implement
 
