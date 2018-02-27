@@ -279,7 +279,7 @@ outlet' =
 
 
 getId :: forall e a i. Actions e a i -> Eff ( channel :: SC.CHANNEL | e) i
-getId eff = do
+getId (Actions eff) = do
     (id /\ _) <- liftEff eff
     pure $ id
 
@@ -391,11 +391,11 @@ node :: forall e n c a x. n -> String -> NodeActions e n c a x
 node type_ title = taggedActions title (InitNode type_ title)
 
 
-inlet :: forall e n c a x. c -> String -> InletActions e n c a x
+inlet :: forall e c a x. c -> String -> InletActions e c a x
 inlet type_ label = taggedActions label (InitInlet type_ label)
 
 
-outlet :: forall e n c a x. c -> String -> OutletActions e n c a x
+outlet :: forall e c. c -> String -> OutletActions e c
 outlet type_ label = taggedActions label (InitOutlet type_ label)
 
 
@@ -594,7 +594,7 @@ data App nodes channels datatype error effect =
 
 run :: forall n c a x eff
      . Array (Renderer n c a x eff)
-    -> Actions eff n c a x
+    -> NetworkActions eff n c a x
     -> Eff (channel :: SC.CHANNEL | eff) (App n c a x eff)
 run renderers networkActions = do
     c <- SC.channel Start
