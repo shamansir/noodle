@@ -27,6 +27,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String as String
 import Data.Tuple (Tuple(..))
+import Data.Tuple.Nested ((/\), type (/\))
 import Data.Unit as Unit
 import Signal as S
 import Signal.Channel as SC
@@ -115,16 +116,16 @@ data Value a x
 -- type FlowChannel a x = SC.Channel (Value a x)
 type FlowSignal a x = S.Signal (Value a x)
 
--- type TaggedFlowChannel a x = SC.Channel (Tuple InletId (Value a x))
-type TaggedFlowSignal a x = S.Signal (Tuple InletId (Value a x))
+-- type TaggedFlowChannel a x = SC.Channel (InletId /\ (Value a x))
+type TaggedFlowSignal a x = S.Signal (InletId /\ (Value a x))
 
 -- The signal where the messages go
 --type MsgChannel m = SC.Channel m
 -- type MsgEmitter eff m = SL.Emitter eff m
 
 -- The special channel for nodes which tracks the data flow through node inputs and outlets
--- type ProcessChannel a x = SC.Channel (Tuple (Map InletId (Value a x)) (Map OutletId (Value a x)))
-type ProcessSignal a x = S.Signal (Tuple (Map InletId (Value a x)) (Map OutletId (Value a x)))
+-- type ProcessChannel a x = SC.Channel (Map InletId (Value a x) /\ Map OutletId (Value a x))
+type ProcessSignal a x = S.Signal (Map InletId (Value a x) /\ Map OutletId (Value a x))
 
 
 type ProcessF a x = (Map InletId (Value a x) -> Map OutletId (Value a x))
@@ -190,7 +191,7 @@ data Link a x = LinkT
         (FlowSignal a x)
 
 
-newtype Actions e msg id = Actions (Eff (channel :: SC.CHANNEL | e) (Tuple id (SC.Channel msg)))
+newtype Actions e msg id = Actions (Eff (channel :: SC.CHANNEL | e) (id /\ (SC.Channel msg)))
 
 
 -- make a general type : Actions, and use Tuple to
@@ -253,7 +254,7 @@ node' =
         , outlets : []
         , process : Nothing
         }
-        (S.constant (Tuple Map.empty Map.empty)) -- FIXME: make simple message
+        (S.constant (Map.empty /\ Map.empty)) -- FIXME: make simple message
 
 
 inlet' :: forall c a x. Inlet c a x
@@ -279,109 +280,96 @@ outlet' =
 
 getId :: forall e a i. Actions e a i -> Eff ( channel :: SC.CHANNEL | e) i
 getId eff = do
-    (Tuple id _) <- liftEff eff
+    (id /\ _) <- liftEff eff
     pure $ id
 
 
--- Init `Actions'` channel with given message
+-- Init `Actions` channel with given message
 actions :: forall e a i. a -> Actions e a i
 actions default = taggedActions unit default
 
 
--- Init `TaggedActions'` channel with given ID and message
+-- Init `Actions` channel with given ID and message
 taggedActions :: forall e a i. i -> a -> Actions e a i
 taggedActions id default = do
     chan <- SC.channel default
-    pure $ Tuple id chan
+    pure $ id /\ chan
 
 
--- Send given message to the `Actions'` channel
-sendMsg :: forall e a. a -> Actions' e a -> Actions' e a
+-- Send given message to the `Actions` channel
+-- sendMsg :: forall e a. a -> Actions' e a -> Actions' e a
+-- sendMsg msg eff = do
+--     chan <- liftEff eff
+--     SC.send chan msg
+--     pure $ chan
+
+
+-- Send given message to the `Actions` channel
+sendMsg :: forall e a i. a -> Actions e a i -> Actions e a i
 sendMsg msg eff = do
-    chan <- liftEff eff
+    (id /\ chan) <- liftEff eff
     SC.send chan msg
-    pure $ chan
+    pure $ id /\ chan
 
 
--- Send given message to the `TaggedActions'` channel
-sendMsg' :: forall e a i. a -> TaggedActions' e a i -> TaggedActions' e a i
-sendMsg' msg eff = do
-    (Tuple id chan) <- liftEff eff
-    SC.send chan msg
-    pure $ Tuple id chan
-
-
--- Given the child `TaggedActions'` channel, adapt message with `msgF`
--- and send it to the parent `Actions'` channel
-sendMsgUp :: forall e a b i. (i -> a) -> TaggedActions' e b i -> Actions' e a -> Actions' e a
+-- Given the child `Actions` channel, adapt message with `msgF`
+-- and send it to the parent `Actions` channel
+sendMsgUp :: forall e a b i j. (j -> a) -> Actions e b j -> Actions e a i -> Actions e a i
 sendMsgUp msgF teff eff = do
-    (Tuple id _) <- liftEff teff
+    (id /\ _) <- liftEff teff
     chan <- liftEff eff
     SC.send chan $ msgF id
     pure $ chan
 
 
--- Given the child `TaggedActions'` channel, adapt message with `msgF`
--- and send it to the parent `Actions'` channel,
--- then subscribe parent channel to all the messages sent from a child,
--- using `toUpperF` to adapt them to parent scope
-sendMsgUpAndSubscribe
-    :: forall e a b i
-     . (i -> a)
-    -> (b -> i -> a)
-    -> TaggedActions' e b i
-    -> Actions' e a
-    -> Actions' e a
-sendMsgUpAndSubscribe msgF toUpperF teff eff = do
-    (Tuple srcId srcChan) <- liftEff teff
-    dstChan <- liftEff eff
-    SC.send dstChan $ msgF srcId
-    _ <- S.unwrap $ SC.subscribe srcChan S.~>
-        (\srcMsg -> SC.send dstChan $ toUpperF srcMsg srcId)
-    pure $ dstChan
-
-
--- Given the child `TaggedActions'` channel, adapt message with `msgF`
--- and send it to the parent `TaggedActions'` channel,
+-- Given the child `Actions` channel, adapt message with `msgF`
+-- and send it to the parent `Actions` channel,
 -- then subscribe parent channel to all the messages sent from a child,
 -- using `toUpperF` to adapt them to parent scope.
-sendMsgUpAndSubscribe'
-    :: forall e a b ia ib
-     . (ib -> a)
-    -> (b -> ib -> a)
-    -> TaggedActions' e b ib
-    -> TaggedActions' e a ia
-    -> TaggedActions' e a ia
-sendMsgUpAndSubscribe' msgF toUpperF srcEff dstEff = do
-    (Tuple srcId srcChan) <- liftEff srcEff
-    (Tuple dstId dstChan) <- liftEff dstEff
+sendMsgUpAndSubscribe
+    :: forall e a b i j
+     . (j -> a)
+    -> (b -> j -> a)
+    -> Actions e b j
+    -> Actions e a i
+    -> Actions e a i
+sendMsgUpAndSubscribe msgF toUpperF srcEff dstEff = do
+-- sendMsgUpAndSubscribe msgF toUpperF teff eff = do
+    (srcId /\ srcChan) <- liftEff srcEff
+    (dstId /\ dstChan) <- liftEff dstEff
     SC.send dstChan $ msgF srcId
     _ <- S.unwrap $ SC.subscribe srcChan S.~>
         (\srcMsg -> SC.send dstChan $ toUpperF srcMsg srcId)
-    pure $ Tuple dstId dstChan
+    pure $ dstId /\ dstChan
+    -- (srcId /\ srcChan) <- liftEff teff
+    -- dstChan <- liftEff eff
+    -- SC.send dstChan $ msgF srcId
+    -- _ <- S.unwrap $ SC.subscribe srcChan S.~>
+    --     (\srcMsg -> SC.send dstChan $ toUpperF srcMsg srcId)
+    -- pure $ dstChan
 
 
--- Given an ID and default message, create new child `TaggedActions'` channel,
+-- Given an ID and default message, create new child `Actions` channel,
 -- send default message there, then adapt next message with `msgF`
--- and send it to the parent `TaggedActions'` channel,
+-- and send it to the parent `Actions` channel,
 -- then subscribe parent channel to all the messages sent from a child,
 -- using `toUpperF` to adapt them to parent scope.
 -- Return the created child channel.
 requestAccess
-    :: forall e a b ia ib
-     . ib
+    :: forall e a b i j
+     . j
     -> b
-    -> (ib -> a)
-    -> (b -> ib -> a)
-    -> TaggedActions' e a ia
-    -> TaggedActions' e b ib
+    -> (j -> a)
+    -> (b -> j -> a)
+    -> Actions e a i
+    -> Actions e b j
 requestAccess srcId defMsg msgF toUpperF dstEff = do
     srcChan <- SC.channel defMsg
-    (Tuple dstId dstChan) <- liftEff dstEff
+    (dstId /\ dstChan) <- liftEff dstEff
     SC.send dstChan $ msgF srcId
     _ <- S.unwrap $ SC.subscribe srcChan S.~>
         (\srcMsg -> SC.send dstChan $ toUpperF srcMsg srcId)
-    pure $ Tuple srcId srcChan
+    pure $ srcId /\ srcChan
 
 
 getMessages :: forall n c a x e. App n c a x e -> S.Signal (NetworkMsg n c a x)
@@ -560,7 +548,7 @@ process processF nodeActions =
 
 allow
     :: forall e n c a x
-     . Array (Tuple c (Unit -> a))
+     . Array (c /\ (Unit -> a))
     -> InletActions e c a x
     -> InletActions e c a x
 allow list inletActions =
@@ -632,7 +620,7 @@ run renderers networkActions = do
 
 initProcessChannel :: forall a x. ProcessSignal a x
 initProcessChannel =
-    S.constant (Tuple Map.empty Map.empty)
+    S.constant (Map.empty /\ Map.empty)
 
 
 update :: forall n c a x. NetworkMsg n c a x -> Network n c a x -> Network n c a x
@@ -698,7 +686,7 @@ updateOutlet _ outlet = outlet -- FIXME : implement
 
 tagFlowSignal :: forall n c a x. Inlet c a x -> TaggedFlowSignal a x
 tagFlowSignal (InletT inlet' flowSignal) =
-    flowSignal S.~> (\val -> Tuple inlet'.id val)
+    flowSignal S.~> (\val -> inlet'.id /\ val)
 
 
 -- make data items require a Show instance,
