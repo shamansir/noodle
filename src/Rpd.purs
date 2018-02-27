@@ -291,7 +291,7 @@ actions default = taggedActions unit default
 
 -- Init `Actions` channel with given ID and message
 taggedActions :: forall e a i. i -> a -> Actions e a i
-taggedActions id default = do
+taggedActions id default = Actions $ do
     chan <- SC.channel default
     pure $ id /\ chan
 
@@ -306,7 +306,7 @@ taggedActions id default = do
 
 -- Send given message to the `Actions` channel
 sendMsg :: forall e a i. a -> Actions e a i -> Actions e a i
-sendMsg msg eff = do
+sendMsg msg (Actions eff) = Actions $ do
     (id /\ chan) <- liftEff eff
     SC.send chan msg
     pure $ id /\ chan
@@ -315,11 +315,11 @@ sendMsg msg eff = do
 -- Given the child `Actions` channel, adapt message with `msgF`
 -- and send it to the parent `Actions` channel
 sendMsgUp :: forall e a b i j. (j -> a) -> Actions e b j -> Actions e a i -> Actions e a i
-sendMsgUp msgF teff eff = do
-    (id /\ _) <- liftEff teff
-    chan <- liftEff eff
-    SC.send chan $ msgF id
-    pure $ chan
+sendMsgUp msgF (Actions srcEff) (Actions trgEff) = Actions $ do
+    (srcId /\ _) <- liftEff srcEff
+    (trgId /\ chan) <- liftEff trgEff
+    SC.send chan $ msgF srcId
+    pure $ trgId /\ chan
 
 
 -- Given the child `Actions` channel, adapt message with `msgF`
@@ -333,7 +333,7 @@ sendMsgUpAndSubscribe
     -> Actions e b j
     -> Actions e a i
     -> Actions e a i
-sendMsgUpAndSubscribe msgF toUpperF srcEff dstEff = do
+sendMsgUpAndSubscribe msgF toUpperF (Actions srcEff) (Actions dstEff) = Actions $ do
 -- sendMsgUpAndSubscribe msgF toUpperF teff eff = do
     (srcId /\ srcChan) <- liftEff srcEff
     (dstId /\ dstChan) <- liftEff dstEff
@@ -363,7 +363,7 @@ requestAccess
     -> (b -> j -> a)
     -> Actions e a i
     -> Actions e b j
-requestAccess srcId defMsg msgF toUpperF dstEff = do
+requestAccess srcId defMsg msgF toUpperF (Actions dstEff) = Actions $ do
     srcChan <- SC.channel defMsg
     (dstId /\ dstChan) <- liftEff dstEff
     SC.send dstChan $ msgF srcId
@@ -425,19 +425,19 @@ removePatch patchActions networkActions =
 
 
 select :: forall e n c a x. PatchActions e n c a x -> PatchActions e n c a x
-select patchActions = sendMsg' SelectPatch patchActions
+select patchActions = sendMsg SelectPatch patchActions
 
 
 deselect :: forall e n c a x. PatchActions e n c a x -> PatchActions e n c a x
-deselect patchActions = sendMsg' DeselectPatch patchActions
+deselect patchActions = sendMsg DeselectPatch patchActions
 
 
 enter :: forall e n c a x. PatchActions e n c a x -> PatchActions e n c a x
-enter patchActions = sendMsg' EnterPatch patchActions
+enter patchActions = sendMsg EnterPatch patchActions
 
 
 exit :: forall e n c a x. PatchActions e n c a x -> PatchActions e n c a x
-exit patchActions = sendMsg' ExitPatch patchActions
+exit patchActions = sendMsg ExitPatch patchActions
 
 
 addNode
@@ -446,7 +446,7 @@ addNode
     -> PatchActions e n c a x
     -> PatchActions e n c a x
 addNode nodeActions patchActions =
-    sendMsgUpAndSubscribe'
+    sendMsgUpAndSubscribe
         RequestNode
         (flip UpdateNode)
         nodeActions
