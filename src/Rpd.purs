@@ -285,7 +285,7 @@ getId (Actions eff) = do
 
 
 -- Init `Actions` channel with given message
-actions :: forall e a i. a -> Actions e a i
+actions :: forall e a. a -> Actions e a Unit
 actions default = taggedActions unit default
 
 
