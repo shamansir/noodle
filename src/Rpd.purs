@@ -5,7 +5,7 @@ module Rpd
     -- TRY TO REMOVE LATER
     , NetworkMsg(..), PatchMsg(..), NodeMsg(..), InletMsg(..), OutletMsg(..)
     , FlowSignal, Value(..), Actions
-    , NetworkActions
+    , NetworkActions, logNetworkMsg
     -- END OF TRY TO REMOVE LATER
     , Messages
     , run, getMessages
@@ -93,8 +93,9 @@ data NodeMsg n c a x
 data InletMsg c a x
     = RequestInletAccess
     | InitInlet c String
-    | Allow (Map c (Unit -> a))
-    | ConnectToOutlet OutletId (FlowSignal a x)
+    -- | Allow (Map c (Unit -> a))
+    -- | ConnectToOutlet OutletId (FlowSignal a x)
+    | ConnectToOutlet OutletId
     | DisconnectFromOutlet OutletId
     | HideInlet
     | RevealInlet
@@ -112,6 +113,21 @@ data Value a x
     | Data a
     | Error x
     | SysError String
+
+
+-- derive instance eqNetworkMsg :: (Eq n, Eq c) => Eq (NetworkMsg n c a x)
+-- derive instance eqPatchMsg :: (Eq n, Eq c) => Eq (PatchMsg n c a x)
+-- derive instance eqNodeMsg :: (Eq n, Eq c) => Eq (NodeMsg n c a x)
+-- derive instance eqInletMsg :: Eq c => Eq (InletMsg c a x)
+-- derive instance eqOutletMsg :: Eq c => Eq (OutletMsg c)
+-- derive instance eqValue :: (Eq a, Eq x) => Eq (Value a x)
+
+-- derive instance ordNetworkMsg :: (Ord n, Ord c) => Ord (NetworkMsg n c a x)
+-- derive instance ordPatchMsg :: (Ord n, Ord c) => Ord (PatchMsg n c a x)
+-- derive instance ordNodeMsg :: (Ord n, Ord c) => Ord (NodeMsg n c a x)
+-- derive instance ordInletMsg :: Ord c => Ord (InletMsg c a x)
+-- derive instance ordOutletMsg :: Ord c => Ord (OutletMsg c)
+-- derive instance ordValue :: (Ord a, Ord x) => Ord (Value a x)
 
 
 -- The signal where all the data flows: Bangs, data chunks and errors
@@ -781,10 +797,10 @@ instance showNodeMsg :: ( Show n, Show c ) => Show (NodeMsg n c a x) where
 instance showInletMsg :: Show c => Show (InletMsg c a x) where
     show (InitInlet type_ label) = "Init inlet: " <> show type_ <> " " <> label
     show RequestInletAccess = "Request inlet access"
-    show (ConnectToOutlet outletId _) = "Connect to outlet: " <> outletId
+    show (ConnectToOutlet outletId) = "Connect to outlet: " <> outletId
     show (DisconnectFromOutlet outletId) = "Disconnect from outlet:"  <> outletId
-    show (Allow allowMap) = "Allow: " <>
-        (Map.keys allowMap |> map show |> Array.fromFoldable |> String.joinWith ", ")
+    -- show (Allow allowMap) = "Allow: " <>
+    --     (Map.keys allowMap |> map show |> Array.fromFoldable |> String.joinWith ", ")
     show HideInlet = "Hide inlet"
     show RevealInlet = "Reveal inlet"
 
@@ -805,18 +821,40 @@ instance showValue :: ( Show a, Show x ) => Show (Value a x) where
 
 log
     :: forall n c a x
-     . Show n => Show c => Show a => Show x
+     . Show n => Show c
     => Network n c a x -> S.Signal String
 log = logNetwork
 
 
 logNetwork
     :: forall n c a x
-     . Show n => Show c => Show a => Show x
+     . Show n => Show c
     => Network n c a x -> S.Signal String
 logNetwork (NetworkT network') =
-    network'.messages S.~> show
+    network'.messages |> logMessages
 
+
+logMessages
+    :: forall n c a x
+     . Show n => Show c
+    => Messages n c a x
+    -> S.Signal String
+logMessages messages = messages S.~> show
+
+-- logActions
+--     :: forall e n c a x
+--      . Show msg => Show id
+--     => Actions e msg id -> S.Signal String
+-- logActions (Actions eff) = do
+    -- TODO: implement
+
+logNetworkMsg
+    :: forall n c a x
+     . Show n => Show c
+    => Array (NetworkMsg n c a x)
+    -> Array String
+logNetworkMsg messages =
+    map show messages
 
 -- logDataFlow :: forall n c a x. Show a => Show x => Network n c a x -> S.Signal String
 -- logDataFlow (NetworkT network') =

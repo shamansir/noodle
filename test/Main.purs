@@ -7,6 +7,8 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console as C
 import Control.Monad.Eff.Ref (REF)
+
+import Data.Foldable (fold)
 import Data.Function (apply, applyFlipped)
 import Data.Map (Map)
 import Data.Map as Map
@@ -64,7 +66,7 @@ logMessages sig = do
 
 getShowSignal
   :: forall n c a x
-   . Show n => Show c
+   . Show n => Show c -- => Show a => Show x
   => R.Messages n c a x
   -> S.Signal String
 getShowSignal sig =
@@ -79,9 +81,7 @@ main = run [consoleReporter] do
         _ <- liftEff (R.run [] R.network)
         pure unit
       it "able to log messages" do
-        let
-          network :: forall e. R.NetworkActions e MyNodeType MyChannelType TestData TestErr
-          network = R.network
+        let network = R.network
         app <- liftEff $ R.run [] network
         let
           messages :: R.Messages MyNodeType MyChannelType TestData TestErr
@@ -91,7 +91,7 @@ main = run [consoleReporter] do
         pure unit
       it "fires expected messages on creation" do
         let
-          network :: forall e. R.NetworkActions e MyNodeType MyChannelType TestData TestErr
+          -- network :: forall e a x. R.NetworkActions e MyNodeType MyChannelType TestData TestErr
           network = R.network
         app <- liftEff $ R.run [] network
         let
@@ -101,7 +101,7 @@ main = run [consoleReporter] do
         expect' showSig ["Start"]
         pure unit
       it "creates the complex network" do
-        (R.App app) <- liftEff (R.run [] do
+        app <- liftEff (R.run [] do
             let
               toInt = (\_ -> 20)
               myPatch = R.patch "MyPatch"
@@ -131,8 +131,26 @@ main = run [consoleReporter] do
             -- myCustomNode |> R.getInlet "b" |> R.send 13
             let myNetwork = R.network |> R.addPatch myPatch
             myNetwork)
+        let
+          messages :: R.Messages MyNodeType MyChannelType TestData TestErr
+          messages = R.getMessages app
+          showSig = messages |> getShowSignal
+        expect' showSig ["Start"] -- ["Start, "]
         pure unit
 
+
+-- expectMessages
+--   :: forall e n c a x
+--    . Show n => Show c => Show a => Show x
+--   => Array String
+--   -> R.App n c a x e
+--   -> Aff (ref :: REF, channel :: SC.CHANNEL, avar :: AVAR | e) Unit
+-- expectMessages expectation app = do
+--   let
+--     -- messages :: R.Messages MyNodeType MyChannelType TestData TestErr
+--     messages = R.getMessages app
+--     showSig = messages |> getShowSignal
+--   expect' showSig expectation -- ["Start"]
 
 wait :: forall e. Number -> Aff e Unit
 wait t = do
