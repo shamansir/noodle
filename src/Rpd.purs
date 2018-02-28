@@ -5,7 +5,9 @@ module Rpd
     -- TRY TO REMOVE LATER
     , NetworkMsg(..), PatchMsg(..), NodeMsg(..), InletMsg(..), OutletMsg(..)
     , FlowSignal, Value(..), Actions
+    , NetworkActions
     -- END OF TRY TO REMOVE LATER
+    , Messages
     , run, getMessages
     , network, patch, node, inlet, outlet
     , addPatch, removePatch, select, deselect, enter, exit
@@ -131,9 +133,12 @@ type ProcessSignal a x = S.Signal (Map InletId (Value a x) /\ Map OutletId (Valu
 type ProcessF a x = (Map InletId (Value a x) -> Map OutletId (Value a x))
 
 
+type Messages n c a x = S.Signal (NetworkMsg n c a x)
+
+
 data Network n c a x =
     NetworkT
-        { messages :: S.Signal (NetworkMsg n c a x)
+        { messages :: Messages n c a x
         , patches :: Map PatchId (Patch n c a x)
         , nodes :: Map NodeId (Node n c a x)
         , inlets :: Map InletId (Inlet c a x)
@@ -372,7 +377,7 @@ requestAccess srcId defMsg msgF toUpperF (Actions dstEff) = Actions $ do
     pure $ srcId /\ srcChan
 
 
-getMessages :: forall n c a x e. App n c a x e -> S.Signal (NetworkMsg n c a x)
+getMessages :: forall n c a x e. App n c a x e -> Messages n c a x
 getMessages (App { network }) =
     case network of
         Just (NetworkT network') -> network'.messages
@@ -592,9 +597,9 @@ data App nodes channels datatype error effect =
         }
 
 
-run :: forall n c a x eff
+run :: forall n c a x eff msg id
      . Array (Renderer n c a x eff)
-    -> NetworkActions eff n c a x
+    -> Actions eff msg id
     -> Eff (channel :: SC.CHANNEL | eff) (App n c a x eff)
 run renderers networkActions = do
     c <- SC.channel Start

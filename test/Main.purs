@@ -26,17 +26,49 @@ import Test.Spec.Runner (RunnerEffects, run)
 infixr 0 apply as <|
 infixl 1 applyFlipped as |>
 
+
 data MyNodeType = SumNode | CustomNode
 data MyChannelType = NumberChannel | StringChannel
+
+data TestData = AData | BData
+data TestErr = AErr | BErr
+
+instance showMyNodeType :: Show (MyNodeType) where
+  show SumNode = "SumNode"
+  show CustomNode = "CustomNode"
+
+
+instance showMyChannelType :: Show MyChannelType where
+  show NumberChannel = "SumNode"
+  show StringChannel = "CustomNode"
+
+
+instance showTestData :: Show TestData where
+  show AData = "AData"
+  show BData = "BData"
+
+
+instance showTestErr :: Show TestErr where
+  show AErr = "AErr"
+  show BErr = "BErr"
 
 
 logMessages
   :: forall e n c a x
    . Show n => Show c
-  => S.Signal (R.NetworkMsg n c a x)
+  => R.Messages n c a x
   -> Eff ( console :: C.CONSOLE | e ) Unit
 logMessages sig = do
   S.runSignal (sig S.~> (\msg -> C.log (show msg)))
+
+
+getShowSignal
+  :: forall n c a x
+   . Show n => Show c
+  => R.Messages n c a x
+  -> S.Signal String
+getShowSignal sig =
+  sig S.~> show
 
 
 main :: forall eff. Eff (RunnerEffects ( ref :: REF, channel :: SC.CHANNEL | eff )) Unit
@@ -48,18 +80,24 @@ main = run [consoleReporter] do
         pure unit
       it "able to log messages" do
         let
-          network :: forall e a x. R.Actions e MyNodeType MyChannelType a x
+          network :: forall e. R.NetworkActions e MyNodeType MyChannelType TestData TestErr
           network = R.network
         app <- liftEff $ R.run [] network
-        let messages = R.getMessages app
+        let
+          messages :: R.Messages MyNodeType MyChannelType TestData TestErr
+          --messages = S.constant R.Start
+          messages = R.getMessages app
         liftEff (logMessages messages)
         pure unit
       it "fires expected messages on creation" do
         let
-          network :: forall e a x. R.Actions e MyNodeType MyChannelType a x
+          network :: forall e. R.NetworkActions e MyNodeType MyChannelType TestData TestErr
           network = R.network
         app <- liftEff $ R.run [] network
-        let showSig = R.getMessages app S.~> show
+        let
+          messages :: R.Messages MyNodeType MyChannelType TestData TestErr
+          messages = R.getMessages app
+          showSig = messages |> getShowSignal
         expect' showSig ["Start"]
         pure unit
       it "creates the complex network" do
@@ -100,13 +138,3 @@ wait :: forall e. Number -> Aff e Unit
 wait t = do
   delay (Duration.Milliseconds t)
   pure unit
-
-
-instance showMyNodeType :: Show MyNodeType where
-  show SumNode = "SumNode"
-  show CustomNode = "CustomNode"
-
-
-instance showMyChannelType :: Show MyChannelType where
-  show NumberChannel = "SumNode"
-  show StringChannel = "CustomNode"
