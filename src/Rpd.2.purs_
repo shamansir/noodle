@@ -1,0 +1,59 @@
+module Main where
+import Prelude
+
+import Data.Foldable (fold)
+import Data.Tuple (Tuple)
+
+import Text.Smolder.HTML as H
+import Text.Smolder.Markup ((!), text)
+import Text.Smolder.HTML.Attributes as A
+
+import Color (black, toHexString)
+
+import Flare.Smolder (runFlareHTML)
+import Flare
+
+import Signal as S
+
+data MyData
+  = Bang
+  | Str' String
+  | Int' Int
+
+
+data Network d = Network (Array (Patch d))
+data Patch d = Patch String (Array (Node d)) (Array Link)
+--data Patch = Patch String (Array (Node Unit Unit)) (Array Link)
+data Node d = Node String (Array (Inlet d)) (Array (Outlet d))-- (S.Signal Unit)
+--data Node a b = Node String (a -> b)
+--data Node a b = Node String (Map String Unit -> Map String Unit)
+data Inlet d = Inlet String (S.Signal d)
+data Outlet d = Outlet String (S.Signal d)
+data Link = Link
+
+
+myNode =
+  Node "f"
+    [ Inlet "a" (S.constant (Str' "i"))
+    , Inlet "b" (S.constant (Int' 2))
+    ]
+    [ Outlet "c" (S.constant (Int' 6))
+    ]
+
+
+main = runFlareHTML "controls" "output" ui
+
+-- This is the full user interface definition:
+ui = markup <$> string    "Title"     "Try Flare!"
+            <*> color     "Color"     black
+            <*> intSlider "Font size" 5 50 26
+            <*> boolean   "Italic"    false
+
+
+markup title color fontSize italic = do
+  H.h1 ! A.style ("color: " <> toHexString color <> ";" <>
+                  "font-size: " <> show fontSize <> "px;" <>
+                  "font-style: " <> if italic then "italic" else "normal")
+       $ (text title)
+
+  H.p $ text (fold ["A", "B"])
