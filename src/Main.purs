@@ -1,26 +1,23 @@
 module Main where
 
+import Data.Tuple
 import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console as C
-
-import Rpd as Rpd
-import Signal as S
-import Signal.Channel as SC
-
-import Data.Foldable (for_, fold)
-import Data.Tuple
 import DOM (DOM)
 import DOM.HTML (window)
 import DOM.HTML.Types (htmlDocumentToNonElementParentNode)
 import DOM.HTML.Window (document)
 import DOM.Node.NonElementParentNode (getElementById)
 import DOM.Node.Types (ElementId(..))
-import Text.Smolder.Renderer.DOM (render)
-
-import Text.Smolder.Markup as H
+import Data.Foldable (for_, fold)
+import Rpd as Rpd
+import Signal as S
+import Signal.Channel as SC
 import Text.Smolder.HTML as H
+import Text.Smolder.Markup as H
+import Text.Smolder.Renderer.DOM (render)
 
 
 data MyData
@@ -107,14 +104,17 @@ view s =
     --     (\s -> map show s S.~> C.log)
 
 
-main :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE | e) Unit
+main :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE, channel :: SC.CHANNEL | e) Unit
 main = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
   --for_ element (render <@> viewData Bang)
+  channel <- SC.channel "abc"
+  let signal = SC.subscribe channel
   for_ element (\element ->
-    S.runSignal (map (\t -> render element $ view t) (S.constant "abc"))
+    S.runSignal (map (\t -> render element $ view t) signal)
   )
+  SC.send channel "test"
   -- for_ element (S.runSignal (map (render ) S.constant myNetwork))
 
 
