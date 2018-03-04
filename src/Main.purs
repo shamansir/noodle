@@ -24,7 +24,7 @@ import Text.Smolder.HTML (div) as H
 view :: ∀ e. H.Markup e
 view =
   H.div
-    $ H.text "Hello, PoieScript!"
+    $ H.text "Hello, PureScript!"
 
 
 -- main function with a custom patch
