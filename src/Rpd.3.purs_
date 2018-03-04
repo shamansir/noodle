@@ -8,7 +8,10 @@ import Data.Maybe (Maybe)
 
 import Text.Smolder.HTML as H
 import Text.Smolder.Markup ((!), text)
+import Text.Smolder.Markup (Markup) as H
 import Text.Smolder.HTML.Attributes as A
+
+import Text.Smolder.Renderer.HTML (render)
 
 import Color (black, toHexString)
 
@@ -55,7 +58,39 @@ myNode =
     (\_ -> [ (Tuple "c" (Int' 10) ) ] )
 
 
-main = runFlareHTML "controls" "output" ui
+myNetwork :: Network MyData
+myNetwork =
+  Network
+    [ Patch "p"
+      [ myNode
+      , myNode
+      ]
+      []
+    ]
+
+
+listen :: Network MyData -> S.Signal MyData
+listen nw = S.constant Bang
+
+
+render :: forall e. Network MyData -> H.Markup e
+render nw =
+  H.p $ text (fold ["A", "B"] <> show (a 5))
+
+renderData :: forall e. MyData -> H.Markup e
+renderData d =
+  H.p $ text (fold ["A", "B"] <> show (a 5))
+
+
+
+main = void do
+      nwSignal <- S.constant myNetwork
+      --game <- S.foldp step start signal
+      S.runSignal (map render $ S.constant myNetwork)
+      -- dataSignal <- S.constant Bang
+      -- S.runSignal (map renderData dataSignal)
+
+--runFlareHTML "controls" "output" ui
 
 -- This is the full user interface definition:
 ui = markup <$> string    "Title"     "Try Flare!"
@@ -73,54 +108,13 @@ markup title color fontSize italic = do
   H.p $ text (fold ["A", "B"] <> show (a 5))
 
 
+-- foreign import asBody """
+--   function asBody(html) {
+--     return function() {
+--       onload = function() {
+--         document.body.innerHTML = html;
+--       };
+--     };
+--   }""" :: forall eff. String -> Eff (dom :: DOM | eff) Unit
 
-
-a :: Int -> Int
-a x =
-  let a' = 3 :: Int
-  in a' + x
-
-
-
-plot m n1 s col time =
-      filled (fillColor col) $
-        path (map point angles)
-
-      where point phi = { x: 100.0 + radius phi * cos phi
-                        , y: 100.0 + radius phi * sin phi }
-            angles = map (\i -> 2.0 * pi / toNumber points * toNumber i)
-                         (0 .. points)
-            points = 400
-            n2 = s + 3.0 * sin (0.005 * time)
-            n3 = s + 3.0 * cos (0.005 * time)
-            radius phi = 20.0 * pow expr (- 1.0 / n1)
-              where expr = first + second
-                    first = pow (abs (cos (m * phi / 4.0))) n2
-                    second = pow (abs (sin (m * phi / 4.0))) n3
-
-ui7 = plot <$> (numberSlider "m"  0.0 10.0 1.0  7.0)
-           <*> (numberSlider "n1" 1.0 10.0 0.1  4.0)
-           <*> (numberSlider "s"  4.0 16.0 0.1 14.0)
-           <*> (color "Color" (hsl 333.0 0.6 0.5))
-           <*> lift animationFrame
-
-
-
-
-table h w = H.table $ foldMap row (0 .. h)
-  where row i = H.tr $ foldMap (cell i) (0 .. w)
-        cell i j = H.td (H.text (show i <> "," <> show j))
-
-ui = table <$> intSlider_ 0 9 5 <*> intSlider_ 0 9 5
-
-
-
-
-
-
-actions = string "Add item:" "Orange" <**> button "Add" (flip const) cons
-
-list = foldp id ["Apple", "Banana"] actions
-
-ui = (H.ul <<< foldMap (H.li <<< H.text)) <$> list
-
+-- main = asBody $ render view
