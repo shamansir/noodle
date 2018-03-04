@@ -24,7 +24,7 @@ import Text.Smolder.HTML (div) as H
 view :: ∀ e. H.Markup e
 view =
   H.div
-    $ H.text "Hello, PureScript!"
+    $ H.text "Hello, PoieScript!"
 
 
 -- main function with a custom patch
@@ -43,7 +43,7 @@ view =
     --     (\s -> map show s S.~> C.log)
 
 
-main :: forall e. Eff (console :: C.CONSOLE, dom :: DOM | e) Unit
+main :: ∀ e. Eff (dom :: DOM | e) Unit
 main = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType

@@ -17,7 +17,8 @@
     "webpack:server:debug": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack-dev-server --progress --inline --hot",
     "purs:compile": "purs compile 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs'",
     "purs:bundle": "purs bundle output/**/*.js",
-    "start": "node bundle.js"
+    "purs:server": "pulp server",
+    "start": "node output/app.js"
   },
   "dependencies": {
     "lodash.difference": "^4.5.0",

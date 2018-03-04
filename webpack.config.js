@@ -18,8 +18,10 @@ const plugins =
   ]
 ;
 
+console.log('DIRNAME', __dirname);
+
 module.exports = {
-  devtool: 'eval-source-map',
+  // devtool: 'eval-source-map',
 
   devServer: {
     contentBase: '.',
@@ -30,9 +32,10 @@ module.exports = {
   entry: './src/Main.purs',
 
   output: {
-    path: __dirname,
+    path: path.resolve(__dirname, 'output'),
+    publicPath: '/output/',
     pathinfo: true,
-    filename: 'bundle.js'
+    filename: 'app.js'
   },
 
   module: {
@@ -43,11 +46,15 @@ module.exports = {
           {
             loader: 'purs-loader',
             options: {
+              exclude: /output/,
               src: [
                 'bower_components/purescript-*/src/**/*.purs',
                 'src/**/*.purs'
               ],
-              bundle: false,
+              // bundle: true,
+              // pscBundleArgs: {
+              //   main: "Main"
+              // },
               psc: 'psa',
               watch: isWebpackDevServer || isWatch,
               pscIde: false
@@ -60,8 +67,13 @@ module.exports = {
 
   resolve: {
     modules: [ 'node_modules', 'bower_components' ],
+    //root: [ path.resolve('./src') ],
     extensions: [ '.purs', '.js']
   },
+
+  // devServer : {
+  //   contentBase : './output'
+  // },
 
   plugins: [
     new webpack.LoaderOptionsPlugin({
