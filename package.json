@@ -1,33 +1,33 @@
 {
-    "name": "rpd-purs",
-    "version": "0.1.0",
-    "private": true,
-    "description": "Reactive Patch Development with PureScript",
-    "license": "MIT",
-    "repository": "shamansir/rpd-purs",
-    "author": {
-      "name": "Ulric Wilfred",
-      "email": "shaman.sir@gmail.com"
-    },
-    "files": [],
-    "scripts": {
-      "webpack": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack --progress --bail",
-      "webpack:watch": "PATH=$PATH:../releases/psc-package DEBUG=purs-loader* DEBUG_DEPTH=100 webpack --progress --display-error-details --display verbose --watch",
-      "webpack:server": "webpack-dev-server --progress --inline --hot",
-      "webpack:server:debug": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack-dev-server --progress --inline --hot",
-      "purs:compile": "purs compile 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs'",
-      "purs:bundle": "purs bundle output/**/*.js",
-      "start": "node bundle.js"
-    },
-    "dependencies": {
-      "lodash.difference": "^4.5.0",
-      "purescript": "^0.11.0",
-      "purescript-psa": "^0.5.0",
-      "purs-loader": "^3.1.1",
-      "react": "^15.3.2",
-      "react-dom": "^15.3.2",
-      "webpack": "^3.5.5",
-      "webpack-dev-server": "^2.7.1",
-      "wrappy": "^1.0.2"
-    }
+  "name": "rpd-purs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reactive Patch Development with PureScript",
+  "license": "MIT",
+  "repository": "shamansir/rpd-purs",
+  "author": {
+    "name": "Ulric Wilfred",
+    "email": "shaman.sir@gmail.com"
+  },
+  "files": [],
+  "scripts": {
+    "webpack": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack --progress --bail",
+    "webpack:watch": "PATH=$PATH:../releases/psc-package DEBUG=purs-loader* DEBUG_DEPTH=100 webpack --progress --display-error-details --display verbose --watch",
+    "webpack:server": "webpack-dev-server --progress --inline --hot",
+    "webpack:server:debug": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack-dev-server --progress --inline --hot",
+    "purs:compile": "purs compile 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs'",
+    "purs:bundle": "purs bundle output/**/*.js",
+    "start": "node bundle.js"
+  },
+  "dependencies": {
+    "lodash.difference": "^4.5.0",
+    "purescript": "^0.11.0",
+    "purescript-psa": "^0.5.0",
+    "purs-loader": "^3.1.1",
+    "react": "^15.3.2",
+    "react-dom": "^15.3.2",
+    "webpack": "^3.5.5",
+    "webpack-dev-server": "^2.7.1",
+    "wrappy": "^1.0.2"
   }
+}
