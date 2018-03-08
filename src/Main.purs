@@ -15,6 +15,7 @@ import Data.Foldable (for_, fold)
 import Rpd as Rpd
 import Signal as S
 import Signal.Channel as SC
+import Signal.Time as ST
 import Text.Smolder.HTML as H
 import Text.Smolder.Markup as H
 import Text.Smolder.Renderer.DOM (render)
@@ -33,10 +34,10 @@ type AdaptF d = (d -> d)
 data Network d = Network (Array (Patch d))
 data Patch d = Patch String (Array (Node d)) (Array Link)
 --data Patch = Patch String (Array (Node Unit Unit)) (Array Link)
-data Node d = Node String (Array (Inlet d)) (Array (Outlet d)) (ProcessF d) -- (S.Signal Unit)
+data Node d = Node String (Array (Inlet d)) (Array (Outlet d)) (ProcessF d) -- (S.Signal Unit) add node type just for tagging?
 --data Node a b = Node String (a -> b)
 --data Node a b = Node String (Map String Unit -> Map String Unit)
-data Inlet d = Inlet String (S.Signal d)
+data Inlet d = Inlet String (S.Signal d) -- change to channel
 --data Inlet d = Inlet String (Maybe (AdaptF d))
 data Outlet d = Outlet String (S.Signal d)
 data Link = Link
@@ -79,7 +80,10 @@ viewNetwork nw =
 
 viewData :: forall e. MyData -> H.Markup e
 viewData d =
-  H.p $ H.text (fold ["A", "B"] <> show (a 5))
+  H.p $ H.text $ case d of
+    Bang -> "Bang"
+    Str' str -> "String: " <> str
+    Int' int -> "Int: " <> show int
 
 
 view :: ∀ e. String -> H.Markup e
@@ -109,12 +113,15 @@ main = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
   --for_ element (render <@> viewData Bang)
-  channel <- SC.channel "abc"
+  channel <- SC.channel Bang
   let signal = SC.subscribe channel
   for_ element (\element ->
-    S.runSignal (map (\t -> render element $ view t) signal)
+    S.runSignal (map (\t -> render element $ viewData t) signal)
   )
-  SC.send channel "test"
+  SC.send channel $ Str' "test"
+  let every300s = (ST.every 300.0) S.~> (\_ -> SC.send channel (Int' 300))
+  S.runSignal every300s
+
   -- for_ element (S.runSignal (map (render ) S.constant myNetwork))
 
 
