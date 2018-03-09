@@ -1,6 +1,7 @@
 module Main where
 
 import Data.Tuple
+import Data.Tuple.Nested ((/\))
 import Prelude
 
 import Control.Monad.Eff (Eff)
@@ -20,6 +21,7 @@ import Text.Smolder.HTML as H
 import Text.Smolder.Markup as H
 import Text.Smolder.Renderer.DOM (render)
 
+import Rpd as R
 
 data MyData
   = Bang
@@ -27,40 +29,24 @@ data MyData
   | Int' Int
 
 
-type ProcessF d = (Array (Tuple String d) -> Array (Tuple String d))
-
-type AdaptF d = (d -> d)
-
-data Network d = Network (Array (Patch d))
-data Patch d = Patch String (Array (Node d)) (Array Link)
---data Patch = Patch String (Array (Node Unit Unit)) (Array Link)
-data Node d = Node String (Array (Inlet d)) (Array (Outlet d)) (ProcessF d) -- (S.Signal Unit) add node type just for tagging?
---data Node a b = Node String (a -> b)
---data Node a b = Node String (Map String Unit -> Map String Unit)
-data Inlet d = Inlet String (S.Signal d) -- change to channel
---data Inlet d = Inlet String (Maybe (AdaptF d))
-data Outlet d = Outlet String (S.Signal d)
-data Link = Link
-
-
+myNode :: R.Node MyData
 myNode =
-  Node "f"
-    [ Inlet "a" (S.constant (Str' "i"))
-    , Inlet "b" (S.constant (Int' 2))
+  R.node "f"
+    [ R.inlet "a" (Str' "i")
+    , R.inlet "b" (Int' 2)
     ]
-    [ Outlet "c" (S.constant (Int' 6))
+    [ R.outlet "c"
     ]
-    (\_ -> [ (Tuple "c" (Int' 10) ) ] )
+    -- (\_ -> [ "c" /\ Int' 10 ] )
 
 
---myNetwork :: Network MyData
+myNetwork :: R.Network MyData
 myNetwork =
-  Network
-    [ Patch "p"
+  R.network
+    [ R.patch "p"
       [ myNode
       , myNode
       ]
-      []
     ]
 
 
@@ -70,11 +56,11 @@ a x =
   in a' + x
 
 
-listen :: Network MyData -> S.Signal MyData
+listen :: R.Network MyData -> S.Signal MyData
 listen nw = S.constant Bang
 
 
-viewNetwork :: forall e. Network MyData -> H.Markup e
+viewNetwork :: forall e. R.Network MyData -> H.Markup e
 viewNetwork nw =
   H.p $ H.text (fold ["A", "B"] <> show (a 5))
 
