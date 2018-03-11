@@ -6,6 +6,7 @@ import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console as C
+import Control.Monad.Free (Free)
 import DOM (DOM)
 import DOM.HTML (window)
 import DOM.HTML.Types (htmlDocumentToNonElementParentNode)
@@ -44,7 +45,7 @@ myNode =
 myNetwork :: R.Network MyData
 myNetwork =
   R.network
-    [ R.patch "p"
+    [ R.patch "Patch One"
       [ myNode
       , myNode
       ]
@@ -65,23 +66,37 @@ main = do
   channel <- SC.channel Bang
   let signal = SC.subscribe channel
   for_ element (\element -> do
-    runRpd element signal myNetwork
+    runRpd element signal viewData myNetwork
   )
   SC.send channel $ Str' "test"
   let every300s = (ST.every 300.0) S.~> (\_ -> SC.send channel (Int' 300))
   S.runSignal every300s
 
 
-runRpd
-  :: ∀ e
-   . Element
-  -> S.Signal MyData
-  -- -> (d -> H.Markup e)
-  -> R.Network MyData
-  -> Eff (dom :: DOM | e) Unit
-runRpd targetElm dataSignal network = do
-  S.runSignal (map (\t -> render targetElm $ viewData t) dataSignal)
-  render targetElm $ Render.network myNetwork
+-- runRpd :: forall t26 t29 t30.
+--       Element
+--       -> S.Signal t26
+--          -> (t26
+--              -> H.Markup ( dom :: DOM
+--                     | t30
+--                     )
+--             )
+--             -> R.Network t26
+--                -> Eff
+--                     ( dom :: DOM
+--                     | t29
+--                     )
+--                     Unit
+-- runRpd
+--   :: ∀ e d
+--    . Element
+--   -> S.Signal d
+--   -> ?what
+--   -> R.Network d
+--   -> Eff (dom :: DOM | e) Unit
+runRpd targetElm dataSignal renderData network = do
+  S.runSignal (map (\t -> render targetElm $ renderData t) dataSignal)
+  render targetElm $ Render.network network
 
 
 viewData :: ∀ e. MyData -> H.Markup e

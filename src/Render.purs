@@ -8,12 +8,15 @@ import Text.Smolder.HTML as H
 import Text.Smolder.Markup as H
 import Text.Smolder.Renderer.DOM (render)
 import Data.Foldable (for_)
+import Data.Array
 
 import Rpd as R
 
 network :: forall e d. R.Network d -> H.Markup e
 network (R.Network patches) =
-  H.div $
+  H.div $ do
+    H.p $ H.text "Network"
+    H.p $ H.text $ "Has " <> (show $ length patches) <> " Patches"
     for_ patches patch
 
 
