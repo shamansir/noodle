@@ -1,6 +1,7 @@
 module Rpd
-    ( Rpd, Network, Patch, Node, Inlet, Outlet, Link
-    , network, patch, node, inlet, inlet', outlet, connect
+    ( Rpd, Network(..), Patch(..), Node, Inlet, Outlet, Link
+    , network, patch, node, inlet, inlet', outlet--, connect
+    --, NetworkT, PatchT
     ) where
 
 
@@ -58,8 +59,8 @@ outlet label =
 
 
 -- connect inside a Patch??
-connect :: forall d e. Inlet d -> Outlet d -> d -> Eff ( channel :: SC.CHANNEL | e ) (SC.Channel d)
-connect inlet outlet defaultVal = do
-    channel <- SC.channel defaultVal
-    pure channel
+-- connect :: forall d e. Inlet d -> Outlet d -> d -> Eff ( channel :: SC.CHANNEL | e ) (SC.Channel d)
+-- connect inlet outlet defaultVal = do
+--     channel <- SC.channel defaultVal
+--     pure channel
 

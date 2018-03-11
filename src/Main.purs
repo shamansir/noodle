@@ -22,6 +22,7 @@ import Text.Smolder.Markup as H
 import Text.Smolder.Renderer.DOM (render)
 
 import Rpd as R
+import Render as Render
 
 data MyData
   = Bang
@@ -32,8 +33,8 @@ data MyData
 myNode :: R.Node MyData
 myNode =
   R.node "f"
-    [ R.inlet "a" (Str' "i")
-    , R.inlet "b" (Int' 2)
+    [ R.inlet' "a" (Str' "i")
+    , R.inlet' "b" (Int' 2)
     ]
     [ R.outlet "c"
     ]
@@ -60,9 +61,9 @@ listen :: R.Network MyData -> S.Signal MyData
 listen nw = S.constant Bang
 
 
-viewNetwork :: forall e. R.Network MyData -> H.Markup e
-viewNetwork nw =
-  H.p $ H.text (fold ["A", "B"] <> show (a 5))
+-- viewNetwork :: forall e. R.Network MyData -> H.Markup e
+-- viewNetwork nw =
+--   H.p $ H.text (fold ["A", "B"] <> show (a 5))
 
 viewData :: forall e. MyData -> H.Markup e
 viewData d =
@@ -75,7 +76,7 @@ viewData d =
 view :: ∀ e. String -> H.Markup e
 view s =
   H.div
-    $ H.text s
+     $ H.text s
 
 
 -- main function with a custom patch
@@ -101,8 +102,9 @@ main = do
   --for_ element (render <@> viewData Bang)
   channel <- SC.channel Bang
   let signal = SC.subscribe channel
-  for_ element (\element ->
+  for_ element (\element -> do
     S.runSignal (map (\t -> render element $ viewData t) signal)
+    render element $ Render.network myNetwork
   )
   SC.send channel $ Str' "test"
   let every300s = (ST.every 300.0) S.~> (\_ -> SC.send channel (Int' 300))
