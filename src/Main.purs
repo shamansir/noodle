@@ -11,7 +11,7 @@ import DOM.HTML (window)
 import DOM.HTML.Types (htmlDocumentToNonElementParentNode)
 import DOM.HTML.Window (document)
 import DOM.Node.NonElementParentNode (getElementById)
-import DOM.Node.Types (ElementId(..))
+import DOM.Node.Types (ElementId(..), Element)
 import Data.Foldable (for_, fold)
 import Rpd as Rpd
 import Signal as S
@@ -57,44 +57,6 @@ a x =
   in a' + x
 
 
-listen :: R.Network MyData -> S.Signal MyData
-listen nw = S.constant Bang
-
-
--- viewNetwork :: forall e. R.Network MyData -> H.Markup e
--- viewNetwork nw =
---   H.p $ H.text (fold ["A", "B"] <> show (a 5))
-
-viewData :: forall e. MyData -> H.Markup e
-viewData d =
-  H.p $ H.text $ case d of
-    Bang -> "Bang"
-    Str' str -> "String: " <> str
-    Int' int -> "Int: " <> show int
-
-
-view :: ∀ e. String -> H.Markup e
-view s =
-  H.div
-     $ H.text s
-
-
--- main function with a custom patch
-
--- data MyNodeType = NumNode | StrNode
-
--- data MyInletType = NumInlet | StrInlet
-
-
--- main :: Eff (console :: C.CONSOLE, channel :: SC.CHANNEL) Unit
--- main = void do
---     C.log "test"
-    --Rpd.run [] Rpd.network
-    -- Rpd.run
-    --     ( Rpd.createNetwork "a" : Rpd.createNetwork "b" : [] )
-    --     (\s -> map show s S.~> C.log)
-
-
 main :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE, channel :: SC.CHANNEL | e) Unit
 main = do
   documentType <- document =<< window
@@ -103,14 +65,31 @@ main = do
   channel <- SC.channel Bang
   let signal = SC.subscribe channel
   for_ element (\element -> do
-    S.runSignal (map (\t -> render element $ viewData t) signal)
-    render element $ Render.network myNetwork
+    runRpd element signal myNetwork
   )
   SC.send channel $ Str' "test"
   let every300s = (ST.every 300.0) S.~> (\_ -> SC.send channel (Int' 300))
   S.runSignal every300s
 
-  -- for_ element (S.runSignal (map (render ) S.constant myNetwork))
+
+runRpd
+  :: ∀ e
+   . Element
+  -> S.Signal MyData
+  -- -> (d -> H.Markup e)
+  -> R.Network MyData
+  -> Eff (dom :: DOM | e) Unit
+runRpd targetElm dataSignal network = do
+  S.runSignal (map (\t -> render targetElm $ viewData t) dataSignal)
+  render targetElm $ Render.network myNetwork
+
+
+viewData :: ∀ e. MyData -> H.Markup e
+viewData d =
+  H.p $ H.text $ case d of
+    Bang -> "Bang"
+    Str' str -> "String: " <> str
+    Int' int -> "Int: " <> show int
 
 
   -- nwSignal <- S.constant myNetwork

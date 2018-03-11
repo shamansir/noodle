@@ -28,6 +28,7 @@ data Inlet d = Inlet String (S.Signal d)
 data Outlet d = Outlet String (Maybe (S.Signal d))
 data Link = LinkT
 
+
 network :: forall d. Array (Patch d) -> Network d
 network patches =
     Network patches
