@@ -62,38 +62,17 @@ main :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE, channel :: SC.CHANNEL | e)
 main = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
-  --for_ element (render <@> viewData Bang)
   channel <- SC.channel Bang
   let signal = SC.subscribe channel
+  --for_ element (render <@> viewData Bang)
   for_ element (\element -> do
     runRpd element signal viewData myNetwork
   )
   SC.send channel $ Str' "test"
-  let every300s = (ST.every 300.0) S.~> (\_ -> SC.send channel (Int' 300))
-  S.runSignal every300s
+  -- let every300s = (ST.every 300.0) S.~> (\_ -> SC.send channel (Int' 300))
+  -- S.runSignal every300s
 
 
--- runRpd :: forall t26 t29 t30.
---       Element
---       -> S.Signal t26
---          -> (t26
---              -> H.Markup ( dom :: DOM
---                     | t30
---                     )
---             )
---             -> R.Network t26
---                -> Eff
---                     ( dom :: DOM
---                     | t29
---                     )
---                     Unit
--- runRpd
---   :: ∀ e d
---    . Element
---   -> S.Signal d
---   -> ?what
---   -> R.Network d
---   -> Eff (dom :: DOM | e) Unit
 runRpd targetElm dataSignal renderData network = do
   S.runSignal (map (\t -> render targetElm $ renderData t) dataSignal)
   render targetElm $ Render.network network
@@ -105,11 +84,3 @@ viewData d =
     Bang -> "Bang"
     Str' str -> "String: " <> str
     Int' int -> "Int: " <> show int
-
-
-  -- nwSignal <- S.constant myNetwork
-  --game <- S.foldp step start signal
-  -- H.render $ render myNetwork
-  -- S.runSignal (map render $ S.constant myNetwork)
-  -- dataSignal <- S.constant Bang
-  -- S.runSignal (map renderData dataSignal)

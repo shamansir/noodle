@@ -1,5 +1,6 @@
 module Rpd
-    ( Rpd, Network(..), Patch(..), Node, Inlet, Outlet, Link
+    ( Rpd, Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
+    , ProcessF
     , network, patch, node, inlet, inlet', outlet--, connect
     --, NetworkT, PatchT
     ) where
