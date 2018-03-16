@@ -72,6 +72,10 @@ data RpdEvent
 
 data MyEvent = EventOne | EventTwo
 
+instance showMyEvent :: Show MyEvent where
+  show EventOne = "Event One"
+  show EventTwo = "Event EventTwo"
+
 type Listener e = MyEvent -> Eff ( console :: C.CONSOLE | e ) Unit
 
 type Model = Int
