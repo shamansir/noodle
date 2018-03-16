@@ -8,6 +8,7 @@ import Data.Foldable (for_, fold)
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console as C
+import Control.Monad.Free (Free)
 
 import DOM (DOM)
 import DOM.HTML (window)
@@ -63,6 +64,12 @@ a x =
   in a' + x
 
 
+data RpdEvent
+  = Connect
+  | Move
+  | Resize
+
+
 data MyEvent = EventOne | EventTwo
 
 type Listener e = MyEvent -> Eff ( console :: C.CONSOLE | e ) Unit
@@ -84,17 +91,28 @@ listener evt =
   C.log "got the event"
 
 listenerHtml :: forall e. Element -> Event -> Eff ( dom :: DOM | e ) Unit
-listenerHtml trg evt =
+listenerHtml trg _ =
   render trg (H.div $ H.text "Got the event")
+
+listenerHtml' :: forall e. Element -> MyEvent -> Event -> Eff ( dom :: DOM | e ) Unit
+listenerHtml' trg _ _ =
+  render trg (H.div $ H.text "Got the event")
+
 
 main :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE | e) Unit
 main = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
   for_ element (\element -> do
-    render element (H.div #! on "click" (eventListener listener) $ H.text "Foo")
-    render element (H.div #! on "click" (eventListener $ listenerHtml element) $ H.text "Bar")
+    render element (H.div #! on "click" (eventListener listener) $ H.text "AAAA")
+    render element (H.div #! on "click" (eventListener $ listenerHtml element) $ H.text "BBB")
+    render element (H.div #! on "click" (eventListener $ listenerHtml' element EventOne) $ H.text "CCC")
+    render element $ testF element
   )
+
+testF :: forall e. Element -> Free (H.MarkupM (EventListener ( dom :: DOM | e ) ) ) Unit
+testF element
+  = H.div #! on "click" (eventListener $ listenerHtml' element EventOne) $ H.text "DDD"
 
 -- main :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE, channel :: SC.CHANNEL | e) Unit
 -- main = do
