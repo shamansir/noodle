@@ -98,6 +98,10 @@ listenerHtml' :: forall e. Element -> MyEvent -> Event -> Eff ( dom :: DOM | e )
 listenerHtml' trg _ _ =
   render trg (H.div $ H.text "Got the event")
 
+listenerHtml'' :: forall e. Element -> MyEvent -> Eff ( dom :: DOM | e ) Unit
+listenerHtml'' trg _ =
+  render trg (H.div $ H.text "Got the event")
+
 
 main :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE | e) Unit
 main = do
@@ -108,11 +112,16 @@ main = do
     render element (H.div #! on "click" (eventListener $ listenerHtml element) $ H.text "BBB")
     render element (H.div #! on "click" (eventListener $ listenerHtml' element EventOne) $ H.text "CCC")
     render element $ testF element
+    render element $ testF' element
   )
 
-testF :: forall e. Element -> Free (H.MarkupM (EventListener ( dom :: DOM | e ) ) ) Unit
+testF :: forall e. Element -> H.Markup (EventListener ( dom :: DOM | e ))
 testF element
   = H.div #! on "click" (eventListener $ listenerHtml' element EventOne) $ H.text "DDD"
+
+testF' :: forall e. Element -> H.Markup (EventListener ( dom :: DOM | e ))
+testF' element
+  = H.div #! on "click" (eventListener $ const $ listenerHtml'' element EventOne) $ H.text "EEE"
 
 -- main :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE, channel :: SC.CHANNEL | e) Unit
 -- main = do
