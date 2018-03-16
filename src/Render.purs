@@ -44,30 +44,30 @@ type DomMarkup e = H.Markup (EventListener ( dom :: DOM | e ))
 
 
 network :: forall e d. R.Network d -> Listener e -> DomMarkup e
-network (R.Network patches) _ =
+network (R.Network patches) l =
     H.div $ do
         H.p $ H.text "Network"
         H.p $ H.text $ "\tHas " <> (show $ length patches) <> " Patches"
-        for_ patches patch
+        for_ patches (\p -> patch p l)
 
 
 patch :: forall e d. R.Patch d -> Listener e -> DomMarkup e
-patch (R.Patch label nodes links) _ =
+patch (R.Patch label nodes links) l =
     H.div $ do
         H.p $ H.text $ "Patch: " <> label
         H.p $ H.text $ "\tHas " <> (show $ length nodes) <> " Nodes"
         H.p $ H.text $ "\tHas " <> (show $ length links) <> " Links"
-        for_ nodes node
+        for_ nodes (\n -> node n l)
 
 
 node :: forall e d. R.Node d -> Listener e -> DomMarkup e
-node (R.Node name inlets outlets _) _ =
+node (R.Node name inlets outlets _) l =
     H.div $ do
         H.p $ H.text $ "Node: " <> name
         H.p $ H.text $ "\tHas " <> (show $ length inlets) <> " Inlets"
         H.p $ H.text $ "\tHas " <> (show $ length outlets) <> " Outlets"
-        for_ inlets inlet
-        for_ outlets outlet
+        for_ inlets (\i -> inlet i l)
+        for_ outlets (\o -> outlet o l)
 
 
 inlet :: forall e d. R.Inlet d -> Listener e -> DomMarkup e
