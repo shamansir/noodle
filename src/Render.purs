@@ -1,7 +1,7 @@
 module Render
     ( network
-    , Event
-    , Listener
+    , Event(..)
+    , Events
     , update
     ) where
 
@@ -21,18 +21,22 @@ import Text.Smolder.Markup as H
 import Text.Smolder.Markup ((#!), on)
 -- import Text.Smolder.Renderer.DOM (render)
 
+import Signal as S
+import Signal.Channel as SC
+import Signal.Time as ST
+
 import Rpd as R
 
 
 data Event
-    = Connect String String
+    = Start
+    | Connect String String
     | Drag Int Int
 
 
-type Listener e = Event -> Eff ( dom :: DOM | e ) Unit
+type Events e = Event -> Eff ( channel :: SC.CHANNEL | e ) Unit
 
-
-type DomMarkup e = H.Markup (EventListener ( dom :: DOM | e ))
+type Markup e = H.Markup (EventListener ( channel :: SC.CHANNEL | e ))
 
 -- type Listener e = DOM.Event -> Eff ( dom :: DOM | e ) Unit
 
@@ -44,7 +48,7 @@ type DomMarkup e = H.Markup (EventListener ( dom :: DOM | e ))
 --     render element (H.div #! on "click" (eventListener $ listenerHtml element) $ H.text "Bar")
 
 
-network :: forall e d. R.Network d -> Listener e -> DomMarkup e
+network :: forall e d. R.Network d -> Events e -> Markup e -- (S.Signal Event, Markup e)
 network (R.Network patches) l =
     H.div $ do
         H.p $ H.text "Network"
@@ -52,7 +56,7 @@ network (R.Network patches) l =
         for_ patches (\p -> patch p l)
 
 
-patch :: forall e d. R.Patch d -> Listener e -> DomMarkup e
+patch :: forall e d. R.Patch d -> Events e -> Markup e
 patch (R.Patch label nodes links) l =
     H.div $ do
         H.p $ H.text $ "Patch: " <> label
@@ -61,7 +65,7 @@ patch (R.Patch label nodes links) l =
         for_ nodes (\n -> node n l)
 
 
-node :: forall e d. R.Node d -> Listener e -> DomMarkup e
+node :: forall e d. R.Node d -> Events e -> Markup e
 node (R.Node name inlets outlets _) l =
     H.div $ do
         H.p $ H.text $ "Node: " <> name
@@ -71,7 +75,7 @@ node (R.Node name inlets outlets _) l =
         for_ outlets (\o -> outlet o l)
 
 
-inlet :: forall e d. R.Inlet d -> Listener e -> DomMarkup e
+inlet :: forall e d. R.Inlet d -> Events e -> Markup e
 inlet (R.Inlet label _) onEvent =
     H.div $ do
         H.p #! on "click" (eventListener $ const $ onEvent evt) $ H.text $ "Inlet: " <> label
@@ -79,14 +83,15 @@ inlet (R.Inlet label _) onEvent =
         evt = Connect "foo" "bar"
 
 
-outlet :: forall e d. R.Outlet d -> Listener e -> DomMarkup e
+outlet :: forall e d. R.Outlet d -> Events e -> Markup e
 outlet (R.Outlet label _) _ =
     H.div $ do
         H.p $ H.text $ "Outlet: " <> label
 
 
-update :: forall e d. Event -> R.Network d -> DomMarkup e
+update :: forall e d. Event -> R.Network d -> Markup e
 update evt _ =
     case evt of
+        Start -> H.p $ H.text $ "Start"
         Connect s1 s2 -> H.p $ H.text $ "Connect: " <> s1 <> s2
         Drag i1 i2 -> H.p $ H.text $ "Drag: " <> show i1 <> show i2
