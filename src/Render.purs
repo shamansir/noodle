@@ -2,6 +2,7 @@ module Render
     ( network
     , Event
     , Listener
+    , update
     ) where
 
 import Prelude
@@ -83,4 +84,9 @@ outlet (R.Outlet label _) _ =
     H.div $ do
         H.p $ H.text $ "Outlet: " <> label
 
-evt = eventListener
+
+update :: forall e d. Event -> R.Network d -> DomMarkup e
+update evt _ =
+    case evt of
+        Connect s1 s2 -> H.p $ H.text $ "Connect: " <> s1 <> s2
+        Drag i1 i2 -> H.p $ H.text $ "Drag: " <> show i1 <> show i2

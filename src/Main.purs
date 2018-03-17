@@ -64,12 +64,6 @@ a x =
   in a' + x
 
 
-data RpdEvent
-  = Connect
-  | Move
-  | Resize
-
-
 data MyEvent = EventOne | EventTwo
 
 instance showMyEvent :: Show MyEvent where
@@ -107,8 +101,8 @@ listenerHtml'' trg _ =
   render trg (H.div $ H.text "Got the event")
 
 
-main :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE | e) Unit
-main = do
+main' :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE | e) Unit
+main' = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
   for_ element (\element -> do
@@ -127,24 +121,27 @@ testF' :: forall e. Element -> H.Markup (EventListener ( dom :: DOM | e ))
 testF' element
   = H.div #! on "click" (eventListener $ const $ listenerHtml'' element EventOne) $ H.text "EEE"
 
--- main :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE, channel :: SC.CHANNEL | e) Unit
--- main = do
---   documentType <- document =<< window
---   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
---   channel <- SC.channel Bang
---   let signal = SC.subscribe channel
---   --for_ element (render <@> viewData Bang)
---   for_ element (\element -> do
---     runRpd element signal viewData myNetwork
---   )
---   SC.send channel $ Str' "test"
---   -- let every300s = (ST.every 300.0) S.~> (\_ -> SC.send channel (Int' 300))
---   -- S.runSignal every300s
+main :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE, channel :: SC.CHANNEL | e) Unit
+main = do
+  documentType <- document =<< window
+  element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
+  channel <- SC.channel Bang
+  let signal = SC.subscribe channel
+  --for_ element (render <@> viewData Bang)
+  for_ element (\element -> do
+    -- runRpd element signal viewData myNetwork
+    runRpd element signal myNetwork
+  )
+  SC.send channel $ Str' "test"
+  -- let every300s = (ST.every 300.0) S.~> (\_ -> SC.send channel (Int' 300))
+  -- S.runSignal every300s
 
 
+runRpd targetElm dataSignal network = do
 -- runRpd targetElm dataSignal renderData network = do
---   S.runSignal (map (\t -> render targetElm $ renderData t) dataSignal)
---   render targetElm $ Render.network network
+  -- S.runSignal (map (\t -> render targetElm $ renderData t) dataSignal)
+  render targetElm $ Render.network network
+    (\evt -> render targetElm $ Render.update evt network)
 
 
 -- viewData :: forall e. MyData -> H.Markup (Render.Listener e)
