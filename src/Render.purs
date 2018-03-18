@@ -14,7 +14,7 @@ import DOM.Event.Event as DOM
 import DOM.Event.EventTarget (EventListener, eventListener)
 import Data.Array (length)
 import Data.Foldable (class Foldable, for_, foldr)
-import Data.FoldableWithIndex (class FoldableWithIndex, foldrWithIndex)
+import Data.FoldableWithIndex (class FoldableWithIndex, foldlWithIndex, foldWithIndexM)
 import Rpd as R
 import Signal as S
 import Signal.Channel as SC
@@ -43,26 +43,8 @@ type Updates d e = R.Network d -> Eff ( channel :: SC.CHANNEL | e ) Unit
 
 type Markup e = H.Markup (EventListener ( channel :: SC.CHANNEL | e ))
 
--- type Listener e = DOM.Event -> Eff ( dom :: DOM | e ) Unit
 
-
--- listenerHtml :: forall e. Element -> Event -> Eff ( dom :: DOM | e ) Unit
--- listenerHtml trg evt =
---   render trg (H.div $ H.text "Got the event")
-
---     render element (H.div #! on "click" (eventListener $ listenerHtml element) $ H.text "Bar")
-
-
-forIndexed_
-    :: forall i f a m
-    . FoldableWithIndex i f => Applicative m
-    => f a -> (i -> a -> m Unit) -> m Unit
-forIndexed_ subj f =
-    -- for_ == foldr ((*>) <<< (\p -> patch nw p l)) (pure unit) patches
-    foldrWithIndex (\idx elm _ -> f idx elm) (pure unit) subj
-
-
-network :: forall d e. R.Network d -> Updates d e -> Markup e -- (S.Signal Event, Markup e)
+network :: forall d e. R.Network d -> Updates d e -> Markup e
 network nw@(R.Network patches) l =
     H.div $ do
         H.p $ H.text "Network"
@@ -113,3 +95,11 @@ update evt network =
     --     Start -> H.p $ H.text $ "Start"
     --     Connect s1 s2 -> H.p $ H.text $ "Connect: " <> s1 <> s2
     --     Drag i1 i2 -> H.p $ H.text $ "Drag: " <> show i1 <> show i2
+
+
+forIndexed_
+    :: forall i f a m
+    . FoldableWithIndex i f => Monad m
+    => f a -> (i -> a -> m Unit) -> m Unit
+forIndexed_ array f =
+    foldWithIndexM (flip $ const f) unit array
