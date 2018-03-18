@@ -20,6 +20,11 @@ type AdaptF d = (d -> d)
 
 data Rpd d = RpdT (Network d)
 
+
+-- type Patches d = Array (Patch d)
+
+ --- instance patchesFoldableWithIndex ::
+
 data Network d = Network (Array (Patch d)) -- (S.Signal d) -- change to info about where data flows
 data Patch d = Patch String (Array (Node d)) (Array Link)
 data Node d = Node String (Array (Inlet d)) (Array (Outlet d)) (ProcessF d) -- (S.Signal Unit) add node type just for tagging?
