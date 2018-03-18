@@ -72,13 +72,14 @@ main = do
 
 runRpd :: forall e d. Element -> R.Network d -> Eff ( dom :: DOM, channel :: SC.CHANNEL | e ) Unit
 runRpd targetElm network = do
-  channel <- SC.channel Render.Start
+  channel <- SC.channel myNetwork -- just pass updated network through network
   let signal = SC.subscribe channel
-  let sender = (\evt -> do SC.send channel evt)
-  S.runSignal (signal S.~> (\evt -> render targetElm $ Render.update evt network))
+  let sender = (\network -> do SC.send channel network)
+  -- S.folp
+  S.runSignal (signal S.~> (\network -> render targetElm $ Render.network network sender))
 -- runRpd targetElm dataSignal renderData network = do
   -- S.runSignal (map (\t -> render targetElm $ renderData t) dataSignal)
-  render targetElm $ Render.network network sender
+  -- render targetElm $ Render.network network sender
 
       -- render targetElm $ Render.update evt network)
 
