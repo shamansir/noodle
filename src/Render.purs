@@ -30,15 +30,6 @@ data Event
     | Drag Int Int
 
 
-data PatchId = PatchId Int
-
-data NodePath = NodePath PatchId Int
-
-data InletPath = InletPath NodePath Int
-
-data OutletPath = OutletPath NodePath Int
-
-
 type Updates d e = R.Network d -> Eff ( channel :: SC.CHANNEL | e ) Unit
 
 type Markup e = H.Markup (EventListener ( channel :: SC.CHANNEL | e ))
@@ -49,41 +40,41 @@ network nw@(R.Network patches) l =
     H.div $ do
         H.p $ H.text "Network"
         H.p $ H.text $ "\tHas " <> (show $ length patches) <> " Patches"
-        forIndexed_ patches (\idx p -> patch nw (PatchId idx) p l)
+        forIndexed_ patches (\idx p -> patch nw p l)
 
 
-patch :: forall d e. R.Network d -> PatchId -> R.Patch d -> Updates d e -> Markup e
-patch nw patchId (R.Patch label nodes links) l =
+patch :: forall d e. R.Network d -> R.Patch d -> Updates d e -> Markup e
+patch nw (R.Patch patchId label nodes links) l =
     H.div $ do
         H.p $ H.text $ "Patch: " <> label
         H.p $ H.text $ "\tHas " <> (show $ length nodes) <> " Nodes"
         H.p $ H.text $ "\tHas " <> (show $ length links) <> " Links"
         forIndexed_ nodes (\nodeIdx n ->
-            node nw (NodePath patchId nodeIdx) n l)
+            node nw n l)
 
 
-node :: forall d e. R.Network d -> NodePath -> R.Node d -> Updates d e -> Markup e
-node nw path (R.Node name inlets outlets _) l =
+node :: forall d e. R.Network d -> R.Node d -> Updates d e -> Markup e
+node nw (R.Node path name inlets outlets _) l =
     H.div $ do
         H.p $ H.text $ "Node: " <> name
         H.p $ H.text $ "\tHas " <> (show $ length inlets) <> " Inlets"
         H.p $ H.text $ "\tHas " <> (show $ length outlets) <> " Outlets"
         forIndexed_ inlets (\idx i ->
-            inlet nw (InletPath path idx) i l)
+            inlet nw i l)
         forIndexed_ outlets (\idx o ->
-            outlet nw (OutletPath path idx) o l)
+            outlet nw o l)
 
 
-inlet :: forall d e. R.Network d -> InletPath -> R.Inlet d -> Updates d e -> Markup e
-inlet nw path (R.Inlet label _) onUpdate =
+inlet :: forall d e. R.Network d -> R.Inlet d -> Updates d e -> Markup e
+inlet nw (R.Inlet path label _) onUpdate =
     H.div $ do
         H.p #! on "click" (eventListener $ const $ onUpdate $ update evt nw) $ H.text $ "Inlet: " <> label
     where
         evt = Connect "foo" "bar"
 
 
-outlet :: forall d e. R.Network d -> OutletPath -> R.Outlet d -> Updates d e -> Markup e
-outlet nw path (R.Outlet label _) _ =
+outlet :: forall d e. R.Network d -> R.Outlet d -> Updates d e -> Markup e
+outlet nw (R.Outlet path label _) _ =
     H.div $ do
         H.p $ H.text $ "Outlet: " <> label
 
