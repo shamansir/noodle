@@ -50,7 +50,7 @@ myNetwork =
     [ R.patch "Patch One"
       [ myNode
       , myNode
-      ]
+      ] -- >>> connect (patch.getNode 0) "a" (patch.getNode 1) "b"
     ]
 
 

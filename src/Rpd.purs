@@ -134,3 +134,14 @@ connect' outletPath inletPath network =
 --     channel <- SC.channel defaultVal
 --     pure channel
 
+instance showPatchId :: Show PatchId where
+    show (PatchId id) = "P" <> show id
+
+instance showNodePath :: Show NodePath where
+    show (NodePath patchId id) = show patchId <> "/N" <> show id
+
+instance showInletPath :: Show InletPath where
+    show (InletPath nodePath id) = show nodePath <> "/I" <> show id
+
+instance showOutletPath :: Show OutletPath where
+    show (OutletPath nodePath id) = show nodePath <> "/O" <> show id
