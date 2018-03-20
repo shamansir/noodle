@@ -1,19 +1,21 @@
 module Rpd
-    ( Rpd, Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
+    ( Rpd
+    , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
+    , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , ProcessF
     , network, patch, node, inlet, inlet', outlet--, connect
     --, NetworkT, PatchT
     , PatchId, NodePath, InletPath, OutletPath
     ) where
 
+import Prelude
 
 import Control.Monad.Eff
+import Control.Monad.Eff.Class (liftEff)
+--import Control.Monad.Eff.Random (RANDOM, randomInt)
 import Data.Maybe
-
-import Control.Monad.Eff.Random (RANDOM, randomInt)
-import Data.Either.Nested (either10)
+import Data.Array (mapWithIndex)
 import Data.Tuple.Nested (type (/\))
-import Prelude (Unit, id, ($), bind, pure)
 import Signal as S
 import Signal.Channel as SC
 
@@ -43,46 +45,69 @@ data Outlet d = Outlet OutletPath String (Maybe (S.Signal d))
 data Link = Link OutletPath InletPath
 
 
-type WithId e a = Eff ( random :: RANDOM | e ) a
+-- data NormalizedNetwork d =
+--     NormalizedNetwork
+--         (Array (Patch' d))
+--         (Array (Node' d))
+--         (Array (Inlet' d))
+--         (Array (Outlet' d))
+--         (Array (Link' d))
+
+-- type WithId e a = Eff ( random :: RANDOM | e ) a
 
 
-addId :: forall a e. (Int -> a) -> WithId e a
-addId f = do
-    id <- randomInt 0 100
-    pure $ f id
+-- type LazyNode d e = (PatchId -> WithId e (Node d))
+type LazyPatch d = (PatchId -> Patch d)
+type LazyNode d = (NodePath -> Node d)
+type LazyInlet d = (InletPath -> Inlet d)
+type LazyOutlet d = (OutletPath -> Outlet d)
 
 
-network :: forall d. Array (Patch d) -> Network d
-network patches =
+-- addId :: forall a e. (Int -> a) -> WithId e a
+-- addId f = do
+--     id <- randomInt 0 100
+--     pure $ f id
+
+
+network :: forall d. Array (LazyPatch d) -> Network d
+network lazyPatches =
     Network patches
+    where
+        patches = mapWithIndex (\idx lazyPatch -> lazyPatch $ PatchId idx) lazyPatches
 
 
-patch :: forall d e. String -> Array (Node d) -> WithId e (Patch d)
-patch name nodes =
-    addId $ \patchId ->
-        Patch (PatchId patchId) name nodes []
+patch :: forall d e. String -> Array (LazyNode d) -> LazyPatch d
+patch name lazyNodes =
+    \patchId ->
+        let
+            nodes = mapWithIndex (\idx lazyNode -> lazyNode (NodePath patchId idx)) lazyNodes
+        in
+            Patch patchId name nodes []
 
 
-node :: forall d e. String -> Array (Inlet d) -> Array (Outlet d) -> (PatchId -> WithId e (Node d))
-node name inlets outlets =
-    \patchId -> addId $
-        \nodeId -> Node (NodePath patchId nodeId) name inlets outlets id
+node :: forall d. String -> Array (LazyInlet d) -> Array (LazyOutlet d) -> LazyNode d
+node name lazyInlets lazyOutlets =
+    \nodePath ->
+        let
+            inlets = mapWithIndex (\idx lazyInlet -> lazyInlet (InletPath nodePath idx)) lazyInlets
+            outlets = mapWithIndex (\idx lazyOutlet -> lazyOutlet (OutletPath nodePath idx)) lazyOutlets
+        in
+            Node nodePath name inlets outlets id
 
 
-inlet :: forall d e. String -> S.Signal d -> (NodePath -> WithId e (Inlet d))
+inlet :: forall d. String -> S.Signal d -> LazyInlet d
 inlet label dataSource =
-    \nodePath -> addId $
-        \inletId -> Inlet (InletPath nodePath inletId) label dataSource
+    \inletPath -> Inlet inletPath label dataSource
 
 
-inlet' :: forall d e. String -> d -> (NodePath -> WithId e (Inlet d))
+inlet' :: forall d e. String -> d -> LazyInlet d
 inlet' label defaultVal =
     inlet label $ S.constant defaultVal
 
 
-outlet :: forall d e. String -> (NodePath -> WithId e (Outlet d))
+outlet :: forall d e. String -> LazyOutlet d
 outlet label =
-    \nodePath -> addId $ \outletId -> Outlet (OutletPath nodePath outletId) label Nothing
+    \outletPath -> Outlet outletPath label Nothing
 
 
 -- updatePatch

@@ -33,7 +33,7 @@ data MyData
   | Int' Int
 
 
-myNode :: R.Node MyData
+myNode :: R.LazyNode MyData
 myNode =
   R.node "f"
     [ R.inlet' "a" (Str' "i")

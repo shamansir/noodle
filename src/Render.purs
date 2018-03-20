@@ -14,7 +14,7 @@ import DOM.Event.Event as DOM
 import DOM.Event.EventTarget (EventListener, eventListener)
 import Data.Array (length)
 import Data.Foldable (class Foldable, for_, foldr)
-import Data.FoldableWithIndex (class FoldableWithIndex, foldlWithIndex, foldWithIndexM)
+import Data.FoldableWithIndex (class FoldableWithIndex, forWithIndex_)
 import Rpd as R
 import Signal as S
 import Signal.Channel as SC
@@ -90,7 +90,7 @@ update evt network =
 
 forIndexed_
     :: forall i f a m
-    . FoldableWithIndex i f => Monad m
+    . FoldableWithIndex i f => Applicative m
     => f a -> (i -> a -> m Unit) -> m Unit
-forIndexed_ array f =
-    foldWithIndexM (flip $ const f) unit array
+forIndexed_ =
+    forWithIndex_
