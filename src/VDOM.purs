@@ -1,4 +1,4 @@
-module VDOM (render) where
+module VDOM where
 
 import Prelude
 import Data.CatList as CatList
@@ -30,7 +30,9 @@ type E eff = EventListener (dom :: DOM | eff)
 
 -- render :: ∀ eff. Element → Markup (E eff) → Eff (dom :: DOM | eff) Unit
 --render :: ∀ e l v. Element → Markup (E e) l → VNode e l v
-render target = foldFree (renderNode target)
+
+-- TODO: make this function (below) work
+-- render target = foldFree (renderNode target)
 
 
 renderAttrs attrs = StrMap.fromFoldable tuples
@@ -42,23 +44,26 @@ renderAttrs attrs = StrMap.fromFoldable tuples
 
 --renderNode :: ∀ eff. Element → MarkupM (E eff) → Eff (dom :: DOM | eff) Unit
 --renderNode :: ∀ e l v. Element → Markup (E e) l → VNode e l v
-renderNode p (M.Element name children attrs CatList.CatNil rest) = do
-  let el = h name (renderAttrs attrs) (renderNode <$> fromFoldable children)
-  render el children
-  _ ← Node.appendChild (elementToNode el) (elementToNode p)
-  pure rest
-renderNode p (M.Element name children attrs events rest) = do
-  let handlers = convertHandler <$> events
-      convertHandler (M.EventHandler name callback) = On name callback
-  el ← with (h name (renderAttrs attrs) (renderNode <$> fromFoldable children)) (fromFoldable handlers)
-  render el children
-  _ ← Node.appendChild (elementToNode el) (elementToNode p)
-  pure rest
-renderNode p (M.Content t rest) = do
-  textNode ← text t
-  _ ← Node.appendChild (textToNode textNode) (elementToNode p)
-  pure rest
-renderNode p (M.Empty rest) = pure rest
+
+
+-- TODO: make this function (below) work
+-- renderNode p (M.Element name children attrs CatList.CatNil rest) = do
+--   let el = h name (renderAttrs attrs) (renderNode <$> fromFoldable children)
+--   render el children
+--   _ ← Node.appendChild (elementToNode el) (elementToNode p)
+--   pure rest
+-- renderNode p (M.Element name children attrs events rest) = do
+--   let handlers = convertHandler <$> events
+--       convertHandler (M.EventHandler name callback) = On name callback
+--   el ← with (h name (renderAttrs attrs) (renderNode <$> fromFoldable children)) (fromFoldable handlers)
+--   render el children
+--   _ ← Node.appendChild (elementToNode el) (elementToNode p)
+--   pure rest
+-- renderNode p (M.Content t rest) = do
+--   textNode ← text t
+--   _ ← Node.appendChild (textToNode textNode) (elementToNode p)
+--   pure rest
+-- renderNode p (M.Empty rest) = pure rest
 
 
 -- TODO: patch (use the one from VDOM, just pass from markup?)
