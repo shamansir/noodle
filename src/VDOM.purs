@@ -1,4 +1,4 @@
-module Text.Smolder.Renderer.VDOM (render) where
+module VDOM (render) where
 
 import Prelude
 import Data.CatList as CatList
@@ -30,8 +30,15 @@ render target = foldFree (renderNode target)
 
 
 renderNode :: ∀ foo eff. Element → MarkupM (E eff) foo → Eff (dom :: DOM | eff) foo
-renderNode p (Element name children attrs events rest) = do
+renderNode p (Element name children attrs CatList.CatNil rest) = do
   el ← h name attrs (renderNode <$> fromFoldable children)
+  render el children
+  _ ← Node.appendChild (elementToNode el) (elementToNode p)
+  pure rest
+renderNode p (Element name children attrs events rest) = do
+  let handlers = convertHandler <$> events
+      convertHandler (EventHandler name callback) = On name callback
+  el ← with (h name attrs (renderNode <$> fromFoldable children)) (fromFoldable handlers)
   render el children
   _ ← Node.appendChild (elementToNode el) (elementToNode p)
   pure rest
@@ -41,6 +48,8 @@ renderNode p (Content t rest) = do
   pure rest
 renderNode p (Empty rest) = pure rest
 
+
+-- TODO: patch (use the one from VDOM, just pass from markup?)
 
 -- element :: ∀ eff. String → CatList Attr → CatList (EventHandler (E eff)) → Eff (dom :: DOM | eff) Element
 -- element name attrs events = do
@@ -64,3 +73,22 @@ renderNode p (Empty rest) = pure rest
 -- |         withPrevious = foldp go (Tuple Nothing Nothing) input
 -- |         go next (Tuple _ prev) = Tuple prev next
 -- |         patchDOM (Tuple prev next) = patch api target prev next
+
+
+-- | Update a DOM element's children in place.
+-- |
+-- | This will update existing nodes in place where possible,
+-- | preserving their state. Other nodes will be created or deleted
+-- | as appropriate.
+-- |
+-- | Please note that this function is currently not very smart -- it
+-- | can't tell if a child node has moved inside its parent, and will
+-- | not be able to reuse such nodes. (TODO)
+-- patch :: ∀ eff. Element → Markup (E eff) → Eff (dom :: DOM | eff) Unit
+-- patch parent markup = do
+--   let node = elementToNode parent
+--   children ← childrenOf node
+--   childRef ← unsafeRunRef $ newRef children
+--   foldFree (walk node childRef) markup
+--   remainder ← unsafeRunRef $ readRef childRef
+--   removeNodes node remainder
