@@ -63,20 +63,24 @@ main = do
   --for_ element (render <@> viewData Bang)
   for_ element (\element -> do
     -- runRpd element signal viewData myNetwork
-    runRpd element myNetwork
+    -- runRpd element myNetwork
+    Render.render element myNetwork
   )
   SC.send channel $ Str' "test"
   -- let every300s = (ST.every 300.0) S.~> (\_ -> SC.send channel (Int' 300))
   -- S.runSignal every300s
+  -- TODO: Test if we still may send data through the channels bound to outlets
 
 
-runRpd :: forall e d. Element -> R.Network d -> Eff ( dom :: DOM, channel :: SC.CHANNEL | e ) Unit
-runRpd targetElm network = do
-  channel <- SC.channel myNetwork -- just pass updated network through network
-  let signal = SC.subscribe channel
-  let sender = (\network -> do SC.send channel network)
-  -- S.folp
-  S.runSignal (signal S.~> (\network -> render targetElm $ Render.network network sender))
+-- runRpd :: forall e d. Element -> R.Network d -> Eff ( dom :: DOM, channel :: SC.CHANNEL | e ) Unit
+-- runRpd targetElm network = do
+--   channel <- SC.channel myNetwork -- just pass updated network through network
+--   let signal = SC.subscribe channel
+--   let sender = (\network -> do SC.send channel network)
+--   -- S.folp
+--   S.runSignal (signal S.~> (\network -> render targetElm $ Render.network network sender))
+
+
 -- runRpd targetElm dataSignal renderData network = do
   -- S.runSignal (map (\t -> render targetElm $ renderData t) dataSignal)
   -- render targetElm $ Render.network network sender

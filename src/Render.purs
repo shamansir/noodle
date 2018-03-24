@@ -1,8 +1,6 @@
 module Render
-    ( network
+    ( render
     , Event(..)
-    , Updates
-    , update
     ) where
 
 import Prelude
@@ -15,6 +13,9 @@ import DOM.Event.EventTarget (EventListener, eventListener)
 import Data.Array (length)
 import Data.Foldable (class Foldable, for_, foldr)
 import Data.FoldableWithIndex (class FoldableWithIndex, forWithIndex_)
+import Data.Maybe (Maybe(..))
+import Data.Tuple (Tuple(..), snd)
+import Data.Tuple.Nested ((/\), type (/\))
 import Rpd as R
 import Signal as S
 import Signal.Channel as SC
@@ -22,6 +23,22 @@ import Signal.Time as ST
 import Text.Smolder.HTML as H
 import Text.Smolder.Markup ((#!), on)
 import Text.Smolder.Markup as H
+import DOM.Node.Types (Element)
+
+
+newtype UIState =
+    UIState
+        { dragging :: Maybe R.NodePath
+        , connecting :: Maybe R.OutletPath
+        }
+
+
+initState :: UIState
+initState =
+    UIState
+        { dragging : Nothing
+        , connecting : Nothing
+        }
 
 
 data Event
@@ -34,52 +51,69 @@ type Updates d e = R.Network d -> Eff ( channel :: SC.CHANNEL | e ) Unit
 
 type Markup e = H.Markup (EventListener ( channel :: SC.CHANNEL | e ))
 
+type UI d = UIState /\ R.Network d
 
-network :: forall d e. R.Network d -> Updates d e -> Markup e
-network nw@(R.Network patches) l =
+
+render :: forall d e. Element -> R.Network d -> Markup e
+render target nw l = do
+    let state = initState
+    let ui = state /\ nw
+    channel <- SC.channel nw
+    let signal = SC.subscribe channel
+    let sender = (\network -> do SC.send channel network)
+    -- S.folp
+    S.runSignal (signal S.~> (\network -> render target $ network network sender))
+
+
+network :: forall d e. UI d -> Updates d e -> Markup e
+network ui@( _ /\ nw@(R.Network patches) ) l =
     H.div $ do
         H.p $ H.text "Network"
         H.p $ H.text $ "\tHas " <> (show $ length patches) <> " Patches"
-        for_ patches (\p -> patch nw p l)
+        for_ patches (\p -> patch ui p l)
 
 
-patch :: forall d e. R.Network d -> R.Patch d -> Updates d e -> Markup e
-patch nw (R.Patch patchId label nodes links) l =
+patch :: forall d e. UI d -> R.Patch d -> Updates d e -> Markup e
+patch ui (R.Patch patchId label nodes links) l =
     H.div $ do
         H.p $ H.text $ "Patch: " <> label <> " " <> show patchId
         H.p $ H.text $ "\tHas " <> (show $ length nodes) <> " Nodes"
         H.p $ H.text $ "\tHas " <> (show $ length links) <> " Links"
-        for_ nodes (\n -> node nw n l)
+        for_ nodes (\n -> node ui n l)
 
 
-node :: forall d e. R.Network d -> R.Node d -> Updates d e -> Markup e
-node nw (R.Node path name inlets outlets _) l =
+node :: forall d e. UI d -> R.Node d -> Updates d e -> Markup e
+node ui (R.Node path name inlets outlets _) l =
     H.div $ do
         H.p $ H.text $ "Node: " <> name <> " " <> show path
         H.p $ H.text $ "\tHas " <> (show $ length inlets) <> " Inlets"
         H.p $ H.text $ "\tHas " <> (show $ length outlets) <> " Outlets"
-        for_ inlets (\i -> inlet nw i l)
-        for_ outlets (\o -> outlet nw o l)
+        for_ inlets (\i -> inlet ui i l)
+        for_ outlets (\o -> outlet ui o l)
 
 
-inlet :: forall d e. R.Network d -> R.Inlet d -> Updates d e -> Markup e
-inlet nw (R.Inlet path label _) onUpdate =
+inlet :: forall d e. UI d -> R.Inlet d -> Updates d e -> Markup e
+inlet ui (R.Inlet path label _) onUpdate =
     H.div $ do
-        H.p #! on "click" (eventListener $ const $ onUpdate $ update evt nw) $ H.text $ "Inlet: " <> label <> " " <> show path
+        H.p #! on "click" (eventListener $ const $ onUpdate $ snd $ update evt ui) $ H.text $ "Inlet: " <> label <> " " <> show path
     where
         evt = Connect "foo" "bar"
 
 
-outlet :: forall d e. R.Network d -> R.Outlet d -> Updates d e -> Markup e
-outlet nw (R.Outlet path label _) _ =
+outlet :: forall d e. UI d -> R.Outlet d -> Updates d e -> Markup e
+outlet ui (R.Outlet path label _) _ =
     H.div $ do
         H.p $ H.text $ "Outlet: " <> label <> " " <> show path
 
 
-update :: forall d e. Event -> R.Network d -> R.Network d
-update evt network =
-    network
+-- TODO: Add UIState in the loop
+update :: forall d e. Event -> Tuple UIState (R.Network d) -> Tuple UIState (R.Network d)
+update evt (state /\ network) =
+    Tuple state network
     -- case evt of
     --     Start -> H.p $ H.text $ "Start"
     --     Connect s1 s2 -> H.p $ H.text $ "Connect: " <> s1 <> s2
     --     Drag i1 i2 -> H.p $ H.text $ "Drag: " <> show i1 <> show i2
+
+
+-- TODO: render :: forall d e. Network d -> Eff ( dom :: DOM | e ) Unit
