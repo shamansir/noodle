@@ -60,7 +60,10 @@ main = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
   for_ element (\element -> do
-    R.run (Render.render element) myNetwork
+    let
+      renderer ::R.Renderer MyData
+      renderer = Render.render element
+    R.run renderer myNetwork
   )
 
 -- main' :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE, channel :: SC.CHANNEL | e) Unit

@@ -23,6 +23,7 @@ import Signal.Time as ST
 import Text.Smolder.HTML as H
 import Text.Smolder.Markup ((#!), on)
 import Text.Smolder.Markup as H
+import Text.Smolder.Renderer.DOM as ToDOM
 import DOM.Node.Types (Element)
 
 
@@ -54,9 +55,10 @@ type Markup e = H.Markup (EventListener ( channel :: SC.CHANNEL | e ))
 type UI d = UIState /\ R.Network d
 
 
-render :: forall d e. Element -> R.Network d -> Markup e
-render target nw =
-    H.div $ H.text "Test"
+render :: forall d e. Element -> Updates d e -> R.Network d -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
+render target sender nw = do
+    let state = initState
+    ToDOM.render target (network (state /\ nw) sender)
     -- let state = initState
     -- let ui = state /\ nw
     -- channel <- SC.channel nw
