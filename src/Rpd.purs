@@ -1,5 +1,6 @@
 module Rpd
-    ( Rpd
+    ( Rpd, run
+    , Renderer
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , ProcessF
@@ -8,12 +9,11 @@ module Rpd
     , PatchId, NodePath, InletPath, OutletPath
     ) where
 
+import Control.Monad.Eff
+import Data.Maybe
 import Prelude
 
-import Control.Monad.Eff
 import Control.Monad.Eff.Class (liftEff)
---import Control.Monad.Eff.Random (RANDOM, randomInt)
-import Data.Maybe
 import Data.Array (mapWithIndex)
 import Data.Tuple.Nested (type (/\))
 import Signal as S
@@ -67,6 +67,21 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 -- addId f = do
 --     id <- randomInt 0 100
 --     pure $ f id
+
+
+type Renderer d e = (Network d -> Eff ( channel :: SC.CHANNEL | e ) Unit) -> Network d -> Eff ( channel :: SC.CHANNEL | e ) Unit
+
+
+run :: forall d e. Renderer d e -> Network d -> Eff ( channel :: SC.CHANNEL | e ) Unit
+run renderer network = do
+    channel <- SC.channel network
+    let signal = SC.subscribe channel
+    let sender = (\network -> do SC.send channel network)
+    let render = renderer sender
+    let update = \nw _ -> render nw
+    -- S.folp
+    S.runSignal $ S.foldp update (pure unit) signal
+    -- S.runSignal (signal S.~> (\network -> render target $ network network sender))
 
 
 network :: forall d. Array (LazyPatch d) -> Network d

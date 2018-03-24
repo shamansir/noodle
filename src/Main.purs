@@ -27,6 +27,7 @@ import Text.Smolder.Markup ((#!), on)
 import Text.Smolder.Markup as H
 import Text.Smolder.Renderer.DOM (render)
 
+
 data MyData
   = Bang
   | Str' String
@@ -54,19 +55,27 @@ myNetwork =
     ]
 
 
-main :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE, channel :: SC.CHANNEL | e) Unit
+main :: ∀ e. Eff (dom :: DOM, channel :: SC.CHANNEL | e) Unit
 main = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
-  channel <- SC.channel Bang
-  let signal = SC.subscribe channel
-  --for_ element (render <@> viewData Bang)
   for_ element (\element -> do
-    -- runRpd element signal viewData myNetwork
-    -- runRpd element myNetwork
-    Render.render element myNetwork
+    R.run (Render.render element) myNetwork
   )
-  SC.send channel $ Str' "test"
+
+-- main' :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE, channel :: SC.CHANNEL | e) Unit
+-- main' = do
+--   documentType <- document =<< window
+--   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
+--   channel <- SC.channel Bang
+--   let signal = SC.subscribe channel
+--   --for_ element (render <@> viewData Bang)
+--   for_ element (\element -> do
+--     -- runRpd element signal viewData myNetwork
+--     -- runRpd element myNetwork
+--     R.run (Render.render element) myNetwork
+--   )
+--   SC.send channel $ Str' "test"
   -- let every300s = (ST.every 300.0) S.~> (\_ -> SC.send channel (Int' 300))
   -- S.runSignal every300s
   -- TODO: Test if we still may send data through the channels bound to outlets

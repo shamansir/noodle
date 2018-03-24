@@ -55,14 +55,14 @@ type UI d = UIState /\ R.Network d
 
 
 render :: forall d e. Element -> R.Network d -> Markup e
-render target nw l = do
-    let state = initState
-    let ui = state /\ nw
-    channel <- SC.channel nw
-    let signal = SC.subscribe channel
-    let sender = (\network -> do SC.send channel network)
-    -- S.folp
-    S.runSignal (signal S.~> (\network -> render target $ network network sender))
+render target nw =
+    H.div $ H.text "Test"
+    -- let state = initState
+    -- let ui = state /\ nw
+    -- channel <- SC.channel nw
+    -- let signal = SC.subscribe channel
+    -- let sender = (\network -> do SC.send channel network)
+    -- S.runSignal (signal S.~> (\network -> render target $ network network sender))
 
 
 network :: forall d e. UI d -> Updates d e -> Markup e
