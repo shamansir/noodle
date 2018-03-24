@@ -61,7 +61,7 @@ main = do
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
   for_ element (\element -> do
     let
-      renderer ::R.Renderer MyData
+      --renderer ::R.Renderer MyData
       renderer = Render.render element
     R.run renderer myNetwork
   )

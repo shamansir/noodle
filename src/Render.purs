@@ -48,9 +48,9 @@ data Event
     | Drag Int Int
 
 
-type Updates d e = R.Network d -> Eff ( channel :: SC.CHANNEL | e ) Unit
+type Updates d e = R.Network d -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
 
-type Markup e = H.Markup (EventListener ( channel :: SC.CHANNEL | e ))
+type Markup e = H.Markup (EventListener ( channel :: SC.CHANNEL, dom :: DOM | e ))
 
 type UI d = UIState /\ R.Network d
 
