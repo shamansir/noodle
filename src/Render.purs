@@ -47,7 +47,7 @@ data Event
     | Connect String String
     | Drag Int Int
 
-type Updates d e = R.Updates UIState d e
+type Updates d e = R.Updates UIState d (dom :: DOM | e )
 
 
 type UI d = R.UI UIState d
@@ -67,9 +67,9 @@ renderer elm =
 
 
 render :: forall d e. Element -> UI d -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
-render target ui nw = do
-    let state = initState -- This thing should be called at start of the render loop!
-    ToDOM.render target (network (state /\ nw) sender)
+render target ui = do
+    ToDOM.patch target (network ui ?what)
+    --ToDOM.render target (network ui ?what)
     -- let state = initState
     -- let ui = state /\ nw
     -- channel <- SC.channel nw
@@ -79,7 +79,7 @@ render target ui nw = do
 
 
 network :: forall d e. UI d -> Updates d e -> Markup e
-network ui@( _ /\ nw@(R.Network patches) ) l =
+network ui@(R.UI _ (R.Network patches)) l =
     H.div $ do
         H.p $ H.text "Network"
         H.p $ H.text $ "\tHas " <> (show $ length patches) <> " Patches"
@@ -120,13 +120,13 @@ outlet ui (R.Outlet path label _) _ =
 
 
 --transformWith :: Event ->
-transformWith l evt ui = const $ l $ snd $ update evt ui
+transformWith l evt ui = (\_ -> l $ update evt ui)
 
 
 -- TODO: Add UIState in the loop
-update :: forall d e. Event -> Tuple UIState (R.Network d) -> Tuple UIState (R.Network d)
-update evt (state /\ network) =
-    Tuple state network
+update :: forall d e. Event -> UI d -> UI d
+update evt (R.UI state network) =
+    R.UI state network
     -- case evt of
     --     Start -> H.p $ H.text $ "Start"
     --     Connect s1 s2 -> H.p $ H.text $ "Connect: " <> s1 <> s2
