@@ -47,17 +47,18 @@ data Event
     | Connect String String
     | Drag Int Int
 
+type Updates d e = R.Updates UIState d e
 
-type Updates d e = R.Network d -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
+
+type UI d = R.UI UIState d
+
 
 type Markup e = H.Markup (EventListener ( channel :: SC.CHANNEL, dom :: DOM | e ))
-
-type UI d = UIState /\ R.Network d
 
 
 render :: forall d e. Element -> Updates d e -> R.Network d -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
 render target sender nw = do
-    let state = initState
+    let state = initState -- This thing should be called at start of the render loop!
     ToDOM.render target (network (state /\ nw) sender)
     -- let state = initState
     -- let ui = state /\ nw
@@ -95,9 +96,9 @@ node ui (R.Node path name inlets outlets _) l =
 
 
 inlet :: forall d e. UI d -> R.Inlet d -> Updates d e -> Markup e
-inlet ui (R.Inlet path label _) onUpdate =
+inlet ui (R.Inlet path label _) l =
     H.div $ do
-        H.p #! on "click" (eventListener $ const $ onUpdate $ snd $ update evt ui) $ H.text $ "Inlet: " <> label <> " " <> show path
+        H.p #! on "click" (eventListener $ transformWith l evt ui) $ H.text $ "Inlet: " <> label <> " " <> show path
     where
         evt = Connect "foo" "bar"
 
@@ -106,6 +107,10 @@ outlet :: forall d e. UI d -> R.Outlet d -> Updates d e -> Markup e
 outlet ui (R.Outlet path label _) _ =
     H.div $ do
         H.p $ H.text $ "Outlet: " <> label <> " " <> show path
+
+
+--transformWith :: Event ->
+transformWith l evt ui = const $ l $ snd $ update evt ui
 
 
 -- TODO: Add UIState in the loop

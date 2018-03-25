@@ -1,6 +1,6 @@
 module Rpd
     ( Rpd, run
-    , Renderer
+    , UI(..), Updates(..), Renderer
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , ProcessF
@@ -16,6 +16,7 @@ import Prelude
 import Control.Monad.Eff.Class (liftEff)
 import Data.Array (mapWithIndex)
 import Data.Tuple.Nested (type (/\))
+import Math (e)
 import Signal as S
 import Signal.Channel as SC
 
@@ -68,17 +69,34 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 --     id <- randomInt 0 100
 --     pure $ f id
 
+data UI s d = UI s (Network d)
 
-type Renderer d e = (Network d -> Eff ( channel :: SC.CHANNEL | e ) Unit) -> Network d -> Eff ( channel :: SC.CHANNEL | e ) Unit
+
+type Updates s d e = UI s d -> Eff ( channel :: SC.CHANNEL | e ) Unit
 
 
-run :: forall d e. Renderer d e -> Network d -> Eff ( channel :: SC.CHANNEL | e ) Unit
+-- class Renderer state data' eff where
+--     init :: Network data' -> UI state data'
+--     update :: UI state data' -> Eff ( channel :: SC.CHANNEL | eff ) Unit
+
+
+type Renderer state data' eff =
+    { init :: Network data' -> state
+    , update :: UI state data' -> Eff ( channel :: SC.CHANNEL | eff ) Unit
+    }
+
+
+-- type Renderer s d e = Updates s d e -> (Network d -> UI s d) -> Eff ( channel :: SC.CHANNEL | e ) Unit
+
+
+run :: forall s d e. Renderer s d e -> Network d -> Eff ( channel :: SC.CHANNEL | e ) Unit
 run renderer network = do
-    channel <- SC.channel network
+    let ui = UI (renderer.init network) network
+    channel <- SC.channel ui
     let signal = SC.subscribe channel
-    let sender = (\network -> do SC.send channel network)
-    let render = renderer sender
-    let update = \nw _ -> render nw
+    let sender = (\ui -> do SC.send channel ui)
+    --let render = renderer sender
+    let update = \ui _ -> renderer.update ui
     -- S.folp
     S.runSignal $ S.foldp update (pure unit) signal
     -- S.runSignal (signal S.~> (\network -> render target $ network network sender))
