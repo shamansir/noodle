@@ -83,7 +83,7 @@ type Updates s d e = UI s d -> Eff ( channel :: SC.CHANNEL | e ) Unit
 
 
 type Renderer state data' eff =
-    { init :: Network data' -> state
+    { init :: Network data' -> SC.Channel data' -> state
     , update :: UI state data' -> Eff ( channel :: SC.CHANNEL | eff ) Unit
     }
 
