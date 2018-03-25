@@ -56,6 +56,8 @@ data Link = Link OutletPath InletPath
 
 -- type WithId e a = Eff ( random :: RANDOM | e ) a
 
+-- data UpdateSubj d = UNetwork | UPatch PatchId | UNode NodePath | ... | UBatch [UpdateSubj d]
+
 
 -- type LazyNode d e = (PatchId -> WithId e (Node d))
 type LazyPatch d = (PatchId -> Patch d)

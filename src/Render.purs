@@ -56,8 +56,18 @@ type UI d = R.UI UIState d
 type Markup e = H.Markup (EventListener ( channel :: SC.CHANNEL, dom :: DOM | e ))
 
 
-render :: forall d e. Element -> Updates d e -> R.Network d -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
-render target sender nw = do
+type DomRenderer d e = R.Renderer UIState d e
+
+
+renderer :: forall d e. Element -> DomRenderer d e
+renderer elm =
+    { init : initState
+    , render : render elm
+    }
+
+
+render :: forall d e. Element -> UI d -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
+render target ui nw = do
     let state = initState -- This thing should be called at start of the render loop!
     ToDOM.render target (network (state /\ nw) sender)
     -- let state = initState
