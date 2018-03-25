@@ -62,7 +62,7 @@ main = do
   for_ element (\element -> do
     let
       --renderer ::R.Renderer MyData
-      renderer = Render.render element
+      renderer = Render.renderer element
     R.run renderer myNetwork
   )
 

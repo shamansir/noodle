@@ -1,5 +1,5 @@
 module Render
-    ( render
+    ( renderer
     , Event(..)
     ) where
 
@@ -31,16 +31,6 @@ newtype UIState d =
     UIState
         { dragging :: Maybe R.NodePath
         , connecting :: Maybe R.OutletPath
-        , updates :: SC.Channel (UI d)
-        }
-
-
-initState :: forall d. SC.Channel (UI d) -> UIState d
-initState chan =
-    UIState
-        { dragging : Nothing
-        , connecting : Nothing
-        , updates : chan
         }
 
 
@@ -55,22 +45,60 @@ type Updates d e = R.Updates (UIState d) d (dom :: DOM | e )
 type UI d = R.UI (UIState d) d
 
 
+type UIChannel d = SC.Channel (UI d)
+
+
 type Markup e = H.Markup (EventListener ( channel :: SC.CHANNEL, dom :: DOM | e ))
 
 
-type DomRenderer d e = R.Renderer (UIState d) d e
+type DomRenderer d = R.Renderer (UIState d) d
 
 
-renderer :: forall d e. Element -> DomRenderer d e
+initState :: forall d. UIState d
+initState =
+    UIState
+        { dragging : Nothing
+        , connecting : Nothing
+        }
+
+
+init :: forall d e. R.Network d -> Eff (channel :: SC.CHANNEL | e) (UIChannel d)
+init nw =
+    SC.channel (R.UI initState nw)
+
+
+renderer :: forall d. Element -> DomRenderer d
 renderer elm =
-    { init : initState
-    , render : render elm
-    }
+    R.Renderer
+        { init : init
+        , update : render elm
+        }
 
 
-render :: forall d e. Element -> UI d -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
-render target ui = do
-    ToDOM.patch target (network ui)
+-- { init :: Network d0
+--               -> Eff
+--                    ( channel :: CHANNEL
+--                    | e1
+--                    )
+--                    (Channel (UI (UIState d0) d0))
+--     , update :: UI (UIState d0) d0
+--                 -> Channel (UI (UIState d0) d0)
+--                    -> Eff
+--                         ( channel :: CHANNEL
+--                         | e1
+--                         )
+--                         Unit
+--     }
+
+
+render
+    :: forall d e
+     . Element
+    -> UI d
+    -> UIChannel d
+    -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
+render target ui ch = do
+    ToDOM.patch target (network ui ch)
     --ToDOM.render target (network ui ?what)
     -- let state = initState
     -- let ui = state /\ nw
@@ -80,50 +108,49 @@ render target ui = do
     -- S.runSignal (signal S.~> (\network -> render target $ network network sender))
 
 
-network :: forall d e. UI d -> Markup e
-network ui@(R.UI _ (R.Network patches)) =
+network :: forall d e. UI d -> UIChannel d -> Markup e
+network ui@(R.UI _ (R.Network patches)) ch =
     H.div $ do
         H.p $ H.text "Network"
         H.p $ H.text $ "\tHas " <> (show $ length patches) <> " Patches"
-        for_ patches (\p -> patch ui p)
+        for_ patches (\p -> patch ui ch p)
 
 
-patch :: forall d e. UI d -> R.Patch d -> Markup e
-patch ui (R.Patch patchId label nodes links) =
+patch :: forall d e. UI d -> UIChannel d -> R.Patch d -> Markup e
+patch ui ch (R.Patch patchId label nodes links) =
     H.div $ do
         H.p $ H.text $ "Patch: " <> label <> " " <> show patchId
         H.p $ H.text $ "\tHas " <> (show $ length nodes) <> " Nodes"
         H.p $ H.text $ "\tHas " <> (show $ length links) <> " Links"
-        for_ nodes (\n -> node ui n)
+        for_ nodes (\n -> node ui ch n)
 
 
-node :: forall d e. UI d -> R.Node d -> Markup e
-node ui (R.Node path name inlets outlets _) =
+node :: forall d e. UI d -> UIChannel d -> R.Node d -> Markup e
+node ui ch (R.Node path name inlets outlets _) =
     H.div $ do
         H.p $ H.text $ "Node: " <> name <> " " <> show path
         H.p $ H.text $ "\tHas " <> (show $ length inlets) <> " Inlets"
         H.p $ H.text $ "\tHas " <> (show $ length outlets) <> " Outlets"
-        for_ inlets (\i -> inlet ui i)
-        for_ outlets (\o -> outlet ui o)
+        for_ inlets (\i -> inlet ui ch i)
+        for_ outlets (\o -> outlet ui ch o)
 
 
-inlet :: forall d e. UI d -> R.Inlet d -> Markup e
-inlet ui@(R.UI s _) (R.Inlet path label _) =
+inlet :: forall d e. UI d -> UIChannel d -> R.Inlet d -> Markup e
+inlet ui@(R.UI s _) ch (R.Inlet path label _) =
     H.div $ do
-        H.p #! on "click" (eventListener $ transformWith updates evt ui) $ H.text $ "Inlet: " <> label <> " " <> show path
+        H.p #! on "click" (eventListener $ transformWith ch evt ui) $ H.text $ "Inlet: " <> label <> " " <> show path
     where
-        UIState { updates } = s
         evt = Connect "foo" "bar"
 
 
-outlet :: forall d e. UI d -> R.Outlet d -> Markup e
-outlet ui (R.Outlet path label _) =
+outlet :: forall d e. UI d -> UIChannel d -> R.Outlet d -> Markup e
+outlet ui ch (R.Outlet path label _) =
     H.div $ do
         H.p $ H.text $ "Outlet: " <> label <> " " <> show path
 
 
 --transformWith :: Event ->
-transformWith l evt ui = (\_ -> l $ update evt ui)
+transformWith ch evt ui = (\_ -> SC.send ch $ update evt ui)
 
 
 -- TODO: Add UIState in the loop
