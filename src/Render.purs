@@ -51,7 +51,7 @@ type UIChannel d = SC.Channel (UI d)
 type Markup e = H.Markup (EventListener ( channel :: SC.CHANNEL, dom :: DOM | e ))
 
 
-type DomRenderer d = R.Renderer (UIState d) d
+type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
 
 
 initState :: forall d. UIState d
@@ -67,12 +67,12 @@ init nw =
     SC.channel (R.UI initState nw)
 
 
-renderer :: forall d. Element -> DomRenderer d
-renderer elm =
-    R.Renderer
-        { init : init
-        , update : render elm
-        }
+renderer :: forall d e. Element -> DomRenderer d e
+renderer target ch = do
+    signal <- SC.subscribe ch
+    --ToDOM.patch target (network ui ch)
+    --let update = \ui _ -> renderer.update ui channel
+    S.foldp update (pure unit) signal
 
 
 -- { init :: Network d0
@@ -99,6 +99,8 @@ render
     -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
 render target ui ch = do
     ToDOM.patch target (network ui ch)
+    let update = \ui _ -> renderer.update ui channel
+    S.runSignal $ S.foldp update (pure unit) signal
     --ToDOM.render target (network ui ?what)
     -- let state = initState
     -- let ui = state /\ nw
