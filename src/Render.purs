@@ -6,6 +6,7 @@ module Render
 import Prelude
 
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import DOM (DOM)
 import DOM.Event.Event as DOM
@@ -27,7 +28,7 @@ import Text.Smolder.Renderer.DOM as ToDOM
 import DOM.Node.Types (Element)
 
 
-newtype UIState d =
+newtype UIState =
     UIState
         { dragging :: Maybe R.NodePath
         , connecting :: Maybe R.OutletPath
@@ -39,10 +40,10 @@ data Event
     | Connect String String
     | Drag Int Int
 
-type Updates d e = R.Updates (UIState d) d (dom :: DOM | e )
+-- type Updates d e = R.Updates (UIState d) d (dom :: DOM | e )
 
 
-type UI d = R.UI (UIState d) d
+data UI d = UI UIState (R.Network d)
 
 
 type UIChannel d = SC.Channel (UI d)
@@ -54,7 +55,7 @@ type Markup e = H.Markup (EventListener ( channel :: SC.CHANNEL, dom :: DOM | e 
 type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
 
 
-initState :: forall d. UIState d
+initState :: UIState
 initState =
     UIState
         { dragging : Nothing
@@ -62,17 +63,24 @@ initState =
         }
 
 
-init :: forall d e. R.Network d -> Eff (channel :: SC.CHANNEL | e) (UIChannel d)
-init nw =
-    SC.channel (R.UI initState nw)
+initUi :: forall d e. R.Network d -> Eff (channel :: SC.CHANNEL | e) (UIChannel d)
+initUi nw =
+    SC.channel (UI initState nw)
 
 
-renderer :: forall d e. Element -> DomRenderer d e
-renderer target ch = do
-    signal <- SC.subscribe ch
+renderer :: forall d e. Element -> R.Network d -> S.Signal (Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit)
+-- renderer :: forall d e. Element -> DomRenderer d e
+renderer target nw = do
+    nwChannel <- SC.channel nw
+    let nwSignal = SC.subscribe nwChannel
+    -- stateChannel <- SC.channel initState
+    uiChannel <- SC.channel (UI initState nw)
+    let uiSignal = SC.subscribe uiChannel
     --ToDOM.patch target (network ui ch)
-    --let update = \ui _ -> renderer.update ui channel
-    S.foldp update (pure unit) signal
+    --let update = \ui _ -> update ui uiChannel
+    -- liftEff $ uiSignal S.~> (\ui -> render target ui uiChannel)
+    pure $ uiSignal S.~> (\ui -> render target ui uiChannel)
+    -- S.foldp update (UI initState nw) uiSignal
 
 
 -- { init :: Network d0
@@ -99,8 +107,7 @@ render
     -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
 render target ui ch = do
     ToDOM.patch target (network ui ch)
-    let update = \ui _ -> renderer.update ui channel
-    S.runSignal $ S.foldp update (pure unit) signal
+
     --ToDOM.render target (network ui ?what)
     -- let state = initState
     -- let ui = state /\ nw
@@ -111,7 +118,7 @@ render target ui ch = do
 
 
 network :: forall d e. UI d -> UIChannel d -> Markup e
-network ui@(R.UI _ (R.Network patches)) ch =
+network ui@(UI _ (R.Network patches)) ch =
     H.div $ do
         H.p $ H.text "Network"
         H.p $ H.text $ "\tHas " <> (show $ length patches) <> " Patches"
@@ -138,7 +145,7 @@ node ui ch (R.Node path name inlets outlets _) =
 
 
 inlet :: forall d e. UI d -> UIChannel d -> R.Inlet d -> Markup e
-inlet ui@(R.UI s _) ch (R.Inlet path label _) =
+inlet ui@(UI s _) ch (R.Inlet path label _) =
     H.div $ do
         H.p #! on "click" (eventListener $ transformWith ch evt ui) $ H.text $ "Inlet: " <> label <> " " <> show path
     where
@@ -157,8 +164,8 @@ transformWith ch evt ui = (\_ -> SC.send ch $ update evt ui)
 
 -- TODO: Add UIState in the loop
 update :: forall d e. Event -> UI d -> UI d
-update evt (R.UI state network) =
-    R.UI state network
+update evt (UI state network) =
+    UI state network
     -- case evt of
     --     Start -> H.p $ H.text $ "Start"
     --     Connect s1 s2 -> H.p $ H.text $ "Connect: " <> s1 <> s2

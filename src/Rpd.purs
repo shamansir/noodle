@@ -78,7 +78,7 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 --     update :: UI state data' -> Eff ( channel :: SC.CHANNEL | eff ) Unit
 
 
-type Renderer d e = SC.Channel (Network d) -> S.Signal (Eff ( channel :: SC.CHANNEL | e ) Unit)
+type Renderer d e = Network d -> S.Signal (Eff ( channel :: SC.CHANNEL | e ) Unit)
     -- Network data' -> SC.Channel (UI state data')
 
 
@@ -88,8 +88,8 @@ type Renderer d e = SC.Channel (Network d) -> S.Signal (Eff ( channel :: SC.CHAN
 run :: forall d e. Renderer d e -> Network d -> Eff ( channel :: SC.CHANNEL | e ) Unit
 run renderer network = do
     -- let ui = UI (renderer.init network) network
-    channel <- SC.channel network
-    S.runSignal $ renderer channel
+    -- channel <- SC.channel network
+    S.runSignal $ renderer network
 
     -- let signal = SC.subscribe channel
     --let sender = (\ui -> do SC.send channel ui)
