@@ -68,13 +68,13 @@ initUi nw =
     SC.channel (UI initState nw)
 
 
-renderer
-    :: forall d e
-     . Element
-    -> R.Network d
-    -> Eff (channel :: SC.CHANNEL | e)
-           (S.Signal (Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit))
--- renderer :: forall d e. Element -> DomRenderer d e
+-- renderer
+--     :: forall d e
+--      . Element
+--     -> R.Network d
+--     -> Eff (channel :: SC.CHANNEL | e)
+--            (S.Signal (Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit))
+renderer :: forall d e. Element -> DomRenderer d e
 renderer target nw = do
     --nwChannel <- SC.channel nw
     -- let nwSignal = SC.subscribe nwChannel

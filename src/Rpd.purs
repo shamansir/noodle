@@ -1,6 +1,7 @@
 module Rpd
     ( Rpd, run
     , Renderer
+    , WrapEff
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , ProcessF
@@ -77,19 +78,23 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 --     init :: Network data' -> UI state data'
 --     update :: UI state data' -> Eff ( channel :: SC.CHANNEL | eff ) Unit
 
+type WrapEff e =
+    Eff (channel :: SC.CHANNEL | e) (S.Signal (Eff ( channel :: SC.CHANNEL | e ) Unit))
 
-type Renderer d e = Network d -> S.Signal (Eff ( channel :: SC.CHANNEL | e ) Unit)
+type Renderer d e = Network d -> WrapEff e
+
     -- Network data' -> SC.Channel (UI state data')
 
 
 -- type Renderer s d e = Updates s d e -> (Network d -> UI s d) -> Eff ( channel :: SC.CHANNEL | e ) Unit
 
 
-run :: forall d e. Renderer d e -> Network d -> Eff ( channel :: SC.CHANNEL | e ) Unit
+run :: forall d e. Renderer d e -> Network d -> Eff (channel :: SC.CHANNEL | e) Unit
 run renderer network = do
     -- let ui = UI (renderer.init network) network
     -- channel <- SC.channel network
-    S.runSignal $ renderer network
+    signal <- renderer network
+    S.runSignal signal
 
     -- let signal = SC.subscribe channel
     --let sender = (\ui -> do SC.send channel ui)

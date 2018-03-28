@@ -6,6 +6,7 @@ import Prelude
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console as C
 import Control.Monad.Free (Free)
+import Control.Monad.Eff.Class (liftEff)
 import DOM (DOM)
 import DOM.Event.Event (Event)
 import DOM.Event.EventTarget (EventListener, eventListener)
@@ -16,6 +17,7 @@ import DOM.Node.NonElementParentNode (getElementById)
 import DOM.Node.Types (ElementId(..), Element)
 import Data.Foldable (for_, fold)
 import Data.Tuple.Nested ((/\))
+--import Render (renderer)
 import Render as Render
 import Rpd as R
 import Signal as S
@@ -60,10 +62,8 @@ main = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
   for_ element (\element -> do
-    let
-      --renderer ::R.Renderer MyData
-      renderer = Render.renderer element
-    R.run renderer myNetwork
+    let renderer = Render.renderer element
+    liftEff $ R.run renderer myNetwork
   )
 
 -- main' :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE, channel :: SC.CHANNEL | e) Unit
