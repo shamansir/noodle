@@ -11,6 +11,7 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 import DOM (DOM)
 import DOM.Event.Event as DOM
 import DOM.Event.EventTarget (EventListener, eventListener)
+import DOM.Node.Types (Element)
 import Data.Array (length)
 import Data.Foldable (class Foldable, for_, foldr)
 import Data.FoldableWithIndex (class FoldableWithIndex, forWithIndex_)
@@ -25,7 +26,6 @@ import Text.Smolder.HTML as H
 import Text.Smolder.Markup ((#!), on)
 import Text.Smolder.Markup as H
 import Text.Smolder.Renderer.DOM as ToDOM
-import DOM.Node.Types (Element)
 
 
 newtype UIState =
@@ -68,14 +68,20 @@ initUi nw =
     SC.channel (UI initState nw)
 
 
-renderer :: forall d e. Element -> R.Network d -> S.Signal (Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit)
+renderer
+    :: forall d e
+     . Element
+    -> R.Network d
+    -> Eff (channel :: SC.CHANNEL | e)
+           (S.Signal (Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit))
 -- renderer :: forall d e. Element -> DomRenderer d e
 renderer target nw = do
-    nwChannel <- SC.channel nw
-    let nwSignal = SC.subscribe nwChannel
+    --nwChannel <- SC.channel nw
+    -- let nwSignal = SC.subscribe nwChannel
     -- stateChannel <- SC.channel initState
     uiChannel <- SC.channel (UI initState nw)
     let uiSignal = SC.subscribe uiChannel
+    -- TODO: let mergedSignal = S.sampleOn
     --ToDOM.patch target (network ui ch)
     --let update = \ui _ -> update ui uiChannel
     -- liftEff $ uiSignal S.~> (\ui -> render target ui uiChannel)
