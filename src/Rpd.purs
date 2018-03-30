@@ -1,7 +1,7 @@
 module Rpd
     ( Rpd, run
     , Renderer
-    , WrapEff
+    , RenderEff
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , ProcessF
@@ -68,41 +68,16 @@ type LazyInlet d = (InletPath -> Inlet d)
 type LazyOutlet d = (OutletPath -> Outlet d)
 
 
--- addId :: forall a e. (Int -> a) -> WithId e a
--- addId f = do
---     id <- randomInt 0 100
---     pure $ f id
-
-
--- class Renderer state data' eff where
---     init :: Network data' -> UI state data'
---     update :: UI state data' -> Eff ( channel :: SC.CHANNEL | eff ) Unit
-
-type WrapEff e =
+type RenderEff e =
     Eff (channel :: SC.CHANNEL | e) (S.Signal (Eff ( channel :: SC.CHANNEL | e ) Unit))
 
-type Renderer d e = Network d -> WrapEff e
-
-    -- Network data' -> SC.Channel (UI state data')
-
-
--- type Renderer s d e = Updates s d e -> (Network d -> UI s d) -> Eff ( channel :: SC.CHANNEL | e ) Unit
+type Renderer d e = Network d -> RenderEff e
 
 
 run :: forall d e. Renderer d e -> Network d -> Eff (channel :: SC.CHANNEL | e) Unit
 run renderer network = do
-    -- let ui = UI (renderer.init network) network
-    -- channel <- SC.channel network
     signal <- renderer network
     S.runSignal signal
-
-    -- let signal = SC.subscribe channel
-    --let sender = (\ui -> do SC.send channel ui)
-    --let render = renderer sender
-    -- let update = \ui _ -> renderer.update ui channel
-    -- S.folp
-
-    -- S.runSignal (signal S.~> (\network -> render target $ network network sender))
 
 
 network :: forall d. Array (LazyPatch d) -> Network d

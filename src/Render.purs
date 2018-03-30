@@ -46,10 +46,13 @@ data Event
 data UI d = UI UIState (R.Network d)
 
 
-type UIChannel d = SC.Channel (UI d)
+type UIChannel d = SC.Channel Event
 
 
-type Markup e = H.Markup (EventListener ( channel :: SC.CHANNEL, dom :: DOM | e ))
+type Listener e = EventListener ( channel :: SC.CHANNEL, dom :: DOM | e )
+
+
+type Markup e = H.Markup (Listener e)
 
 
 type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
@@ -63,46 +66,12 @@ initState =
         }
 
 
-initUi :: forall d e. R.Network d -> Eff (channel :: SC.CHANNEL | e) (UIChannel d)
-initUi nw =
-    SC.channel (UI initState nw)
-
-
--- renderer
---     :: forall d e
---      . Element
---     -> R.Network d
---     -> Eff (channel :: SC.CHANNEL | e)
---            (S.Signal (Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit))
 renderer :: forall d e. Element -> DomRenderer d e
 renderer target nw = do
-    --nwChannel <- SC.channel nw
-    -- let nwSignal = SC.subscribe nwChannel
-    -- stateChannel <- SC.channel initState
-    uiChannel <- SC.channel (UI initState nw)
-    let uiSignal = SC.subscribe uiChannel
-    -- TODO: let mergedSignal = S.sampleOn
-    --ToDOM.patch target (network ui ch)
-    --let update = \ui _ -> update ui uiChannel
-    -- liftEff $ uiSignal S.~> (\ui -> render target ui uiChannel)
-    pure $ uiSignal S.~> (\ui -> render target ui uiChannel)
-    -- S.foldp update (UI initState nw) uiSignal
-
-
--- { init :: Network d0
---               -> Eff
---                    ( channel :: CHANNEL
---                    | e1
---                    )
---                    (Channel (UI (UIState d0) d0))
---     , update :: UI (UIState d0) d0
---                 -> Channel (UI (UIState d0) d0)
---                    -> Eff
---                         ( channel :: CHANNEL
---                         | e1
---                         )
---                         Unit
---     }
+    evtChannel <- SC.channel Start
+    let evtSignal = SC.subscribe evtChannel
+    let uiSignal = S.foldp update (UI initState nw) evtSignal
+    pure $ uiSignal S.~> (\ui -> render target ui evtChannel)
 
 
 render
@@ -113,14 +82,6 @@ render
     -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
 render target ui ch = do
     ToDOM.patch target (network ui ch)
-
-    --ToDOM.render target (network ui ?what)
-    -- let state = initState
-    -- let ui = state /\ nw
-    -- channel <- SC.channel nw
-    -- let signal = SC.subscribe channel
-    -- let sender = (\network -> do SC.send channel network)
-    -- S.runSignal (signal S.~> (\network -> render target $ network network sender))
 
 
 network :: forall d e. UI d -> UIChannel d -> Markup e
@@ -153,7 +114,7 @@ node ui ch (R.Node path name inlets outlets _) =
 inlet :: forall d e. UI d -> UIChannel d -> R.Inlet d -> Markup e
 inlet ui@(UI s _) ch (R.Inlet path label _) =
     H.div $ do
-        H.p #! on "click" (eventListener $ transformWith ch evt ui) $ H.text $ "Inlet: " <> label <> " " <> show path
+        H.p #! on "click" (sendEvt ch evt) $ H.text $ "Inlet: " <> label <> " " <> show path
     where
         evt = Connect "foo" "bar"
 
@@ -164,8 +125,12 @@ outlet ui ch (R.Outlet path label _) =
         H.p $ H.text $ "Outlet: " <> label <> " " <> show path
 
 
+sendEvt :: forall d e. UIChannel d -> Event -> Listener e
+sendEvt ch evt =
+    eventListener $ const $ SC.send ch evt
+
 --transformWith :: Event ->
-transformWith ch evt ui = (\_ -> SC.send ch $ update evt ui)
+-- transformWith ch evt ui = (\_ -> SC.send ch $ update evt ui)
 
 
 -- TODO: Add UIState in the loop
