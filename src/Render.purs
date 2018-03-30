@@ -32,7 +32,6 @@ newtype UIState =
     UIState
         { dragging :: Maybe R.NodePath
         , connecting :: Maybe R.OutletPath
-        , foo :: Number
         }
 
 
@@ -40,7 +39,7 @@ data Event
     = Start
     | Connect String String
     | Drag Int Int
-    | ChangeFoo Number
+    -- | Data R.InletPath d
 
 -- type Updates d e = R.Updates (UIState d) d (dom :: DOM | e )
 
@@ -65,7 +64,6 @@ initState =
     UIState
         { dragging : Nothing
         , connecting : Nothing
-        , foo : 0.0
         }
 
 
@@ -74,9 +72,7 @@ renderer target nw = do
     evtChannel <- SC.channel Start
     let evtSignal = SC.subscribe evtChannel
     let uiSignal = S.foldp update (UI initState nw) evtSignal
-    SC.send evtChannel (ChangeFoo 12.0)
-    let everySignal = ST.every 6.0 S.~> (\n -> SC.send evtChannel (ChangeFoo n))
-    S.runSignal everySignal
+    --let maybeDataSignal = R.subscribeAllData nw
     pure $ uiSignal S.~> (\ui -> render target ui evtChannel)
 
 
@@ -93,7 +89,6 @@ render target ui ch = do
 network :: forall d e. UI d -> UIChannel d -> Markup e
 network ui@(UI (UIState s) (R.Network patches)) ch =
     H.div $ do
-        H.p $ H.text $ show s.foo
         H.p $ H.text "Network"
         H.p $ H.text $ "\tHas " <> (show $ length patches) <> " Patches"
         for_ patches (\p -> patch ui ch p)
@@ -140,21 +135,10 @@ sendEvt ch evt =
 -- transformWith ch evt ui = (\_ -> SC.send ch $ update evt ui)
 
 
--- TODO: Add UIState in the loop
 update :: forall d e. Event -> UI d -> UI d
 update evt (UI state network) =
     case evt of
-        ChangeFoo newVal ->
-            let
-                (UIState s) = state
-                newState = UIState (s { foo = newVal })
-            in
-                UI newState network
         _ -> UI state network
-    -- case evt of
-    --     Start -> H.p $ H.text $ "Start"
-    --     Connect s1 s2 -> H.p $ H.text $ "Connect: " <> s1 <> s2
-    --     Drag i1 i2 -> H.p $ H.text $ "Drag: " <> show i1 <> show i2
 
 
 -- TODO: render :: forall d e. Network d -> Eff ( dom :: DOM | e ) Unit

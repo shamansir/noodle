@@ -6,6 +6,7 @@ module Rpd
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , ProcessF
     , network, patch, node, inlet, inlet', outlet--, connect
+    , subscribeAllData
     --, NetworkT, PatchT
     , PatchId, NodePath, InletPath, OutletPath
     ) where
@@ -15,12 +16,11 @@ import Data.Maybe
 import Prelude
 
 import Control.Monad.Eff.Class (liftEff)
-import Data.Array (mapWithIndex)
-import Data.Tuple.Nested (type (/\))
-import Math (e)
+import DOM (DOM)
+import Data.Array (concatMap, mapWithIndex)
+import Data.Tuple.Nested ((/\), type (/\))
 import Signal as S
 import Signal.Channel as SC
-import DOM (DOM)
 
 type ProcessF d = (Array (String /\ d) -> Array (String /\ d))
 
@@ -62,7 +62,7 @@ data Link = Link OutletPath InletPath
 
 
 -- type LazyNode d e = (PatchId -> WithId e (Node d))
-type LazyPatch d = (PatchId -> Patch d)
+type LazyPatch d = (PatchId -> Patch d) -- Reader monad
 type LazyNode d = (NodePath -> Node d)
 type LazyInlet d = (InletPath -> Inlet d)
 type LazyOutlet d = (OutletPath -> Outlet d)
@@ -111,14 +111,30 @@ inlet label dataSource =
     \inletPath -> Inlet inletPath label dataSource
 
 
-inlet' :: forall d e. String -> d -> LazyInlet d
+inlet' :: forall d. String -> d -> LazyInlet d
 inlet' label defaultVal =
     inlet label $ S.constant defaultVal
 
 
-outlet :: forall d e. String -> LazyOutlet d
+outlet :: forall d. String -> LazyOutlet d
 outlet label =
     \outletPath -> Outlet outletPath label Nothing
+
+
+subscribeAllData
+    :: forall d
+     . Network d
+    -- -> S.Signal (InletPath /\ d) /\ S.Signal (OutletPath /\ d)
+    -> Maybe (S.Signal (InletPath /\ d))
+subscribeAllData (Network patches) =
+    let
+        allNodes = concatMap (\(Patch patchId _ nodes _) -> nodes) patches
+        allInlets = concatMap (\(Node _ _ inlets _ _) -> inlets) allNodes
+        allOutlets = concatMap (\(Node _ _ _ outlets _) -> outlets) allNodes
+        extractInletSignal = \(Inlet path _ signal) -> signal S.~> (\d -> path /\ d)
+        --extractOutletSignal = \(Outlet path _ maybeSignal) -> maybeSignal S.~> (\d -> path /\ d)
+    in
+        S.mergeMany (map extractInletSignal allInlets)
 
 
 -- updatePatch
