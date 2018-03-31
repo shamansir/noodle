@@ -15,8 +15,8 @@ import DOM.Node.Types (Element)
 import Data.Array (length)
 import Data.Foldable (class Foldable, for_, foldr)
 import Data.FoldableWithIndex (class FoldableWithIndex, forWithIndex_)
-import Data.Maybe (Maybe(..))
-import Data.Tuple (Tuple(..), snd)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Tuple (Tuple(..), snd, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Rpd as R
 import Signal as S
@@ -28,26 +28,28 @@ import Text.Smolder.Markup as H
 import Text.Smolder.Renderer.DOM as ToDOM
 
 
-newtype UIState =
+newtype UIState d =
     UIState
         { dragging :: Maybe R.NodePath
         , connecting :: Maybe R.OutletPath
+        , dataI :: Maybe (R.InletPath /\ d)
         }
 
 
-data Event
+data Event d
     = Start
+    | Skip
     | Connect String String
     | Drag Int Int
-    -- | Data R.InletPath d
+    | Data R.InletPath d
 
 -- type Updates d e = R.Updates (UIState d) d (dom :: DOM | e )
 
 
-data UI d = UI UIState (R.Network d)
+data UI d = UI (UIState d) (R.Network d)
 
 
-type UIChannel d = SC.Channel Event
+type UIChannel d = SC.Channel (Event d)
 
 
 type Listener e = EventListener ( channel :: SC.CHANNEL, dom :: DOM | e )
@@ -59,11 +61,12 @@ type Markup e = H.Markup (Listener e)
 type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
 
 
-initState :: UIState
+initState :: forall d. UIState d
 initState =
     UIState
         { dragging : Nothing
         , connecting : Nothing
+        , dataI : Nothing
         }
 
 
@@ -72,7 +75,7 @@ renderer target nw = do
     evtChannel <- SC.channel Start
     let evtSignal = SC.subscribe evtChannel
     let uiSignal = S.foldp update (UI initState nw) evtSignal
-    --let maybeDataSignal = R.subscribeAllData nw
+    let _ = getDataSignal nw S.~> (\dataEvt -> SC.send evtChannel dataEvt)
     pure $ uiSignal S.~> (\ui -> render target ui evtChannel)
 
 
@@ -83,7 +86,15 @@ render
     -> UIChannel d
     -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
 render target ui ch = do
-    ToDOM.patch target (network ui ch)
+    ToDOM.patch target $ network ui ch
+
+
+getDataSignal :: forall d. R.Network d -> S.Signal (Event d)
+getDataSignal nw =
+    maybe
+        (S.constant Skip)
+        (\s -> s S.~> uncurry Data)
+        (R.subscribeAllData nw)
 
 
 network :: forall d e. UI d -> UIChannel d -> Markup e
@@ -127,7 +138,7 @@ outlet ui ch (R.Outlet path label _) =
         H.p $ H.text $ "Outlet: " <> label <> " " <> show path
 
 
-sendEvt :: forall d e. UIChannel d -> Event -> Listener e
+sendEvt :: forall d e. UIChannel d -> Event d -> Listener e
 sendEvt ch evt =
     eventListener $ const $ SC.send ch evt
 
@@ -135,9 +146,14 @@ sendEvt ch evt =
 -- transformWith ch evt ui = (\_ -> SC.send ch $ update evt ui)
 
 
-update :: forall d e. Event -> UI d -> UI d
-update evt (UI state network) =
+update :: forall d e. Event d -> UI d -> UI d
+update evt (UI state@(UIState s) network) =
     case evt of
+        Data inletPath val ->
+            let
+                newState = UIState (s { dataI = Just (inletPath /\ val) })
+            in
+                UI newState network
         _ -> UI state network
 
 
