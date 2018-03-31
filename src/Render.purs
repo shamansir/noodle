@@ -75,7 +75,8 @@ renderer target nw = do
     evtChannel <- SC.channel Start
     let evtSignal = SC.subscribe evtChannel
     let uiSignal = S.foldp update (UI initState nw) evtSignal
-    let _ = getDataSignal nw S.~> (\dataEvt -> SC.send evtChannel dataEvt)
+    let dataSignal = getDataSignal nw S.~> (\dataEvt -> SC.send evtChannel dataEvt)
+    S.runSignal dataSignal
     -- TODO: run data signal
     -- TODO: remove
     -- let sendToInlet = R.inletPath 0 0 0

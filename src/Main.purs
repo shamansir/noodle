@@ -33,14 +33,16 @@ import Text.Smolder.Renderer.DOM (render)
 data MyData
   = Bang
   | Str' String
-  | Int' Int
+  | Num' Number
 
 
 myNode :: R.LazyNode MyData
 myNode =
   R.node "f"
     [ R.inlet' "a" (Str' "i")
-    , R.inlet' "b" (Int' 2)
+    , R.inlet' "b" (Str' "test") -- FIXME: "test" is not shown!
+    , R.inlet "d" (ST.every ST.second S.~> Num')
+    , R.inlet' "e" (Num' 3.0) -- FIXME: "3.0" is not shown!
     ]
     [ R.outlet "c"
     ]
@@ -70,7 +72,7 @@ main = do
 instance showMyData :: Show MyData where
   show Bang = "Bang"
   show (Str' s) = "Str: " <> s
-  show (Int' n) = "Int: " <> show n
+  show (Num' n) = "Num: " <> show n
 
 
 -- main' :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE, channel :: SC.CHANNEL | e) Unit
