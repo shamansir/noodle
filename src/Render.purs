@@ -32,7 +32,8 @@ newtype UIState d =
     UIState
         { dragging :: Maybe R.NodePath
         , connecting :: Maybe R.OutletPath
-        , dataI :: Maybe (R.InletPath /\ d)
+        -- , dataI :: Maybe (R.InletPath /\ d)
+        , dataI :: Maybe (R.InletPath /\ Number)
         }
 
 
@@ -41,7 +42,8 @@ data Event d
     | Skip
     | Connect String String
     | Drag Int Int
-    | Data R.InletPath d
+    -- | DataI (R.InletPath /\ d)
+    | DataI (R.InletPath /\ Number)
 
 -- type Updates d e = R.Updates (UIState d) d (dom :: DOM | e )
 
@@ -76,6 +78,12 @@ renderer target nw = do
     let evtSignal = SC.subscribe evtChannel
     let uiSignal = S.foldp update (UI initState nw) evtSignal
     let _ = getDataSignal nw S.~> (\dataEvt -> SC.send evtChannel dataEvt)
+    -- TODO: run data signal
+    -- TODO: remove
+    let sendToInlet = R.inletPath 0 0 0
+    let dataEverySec = ST.every 1000.0 S.~> (\t -> SC.send evtChannel (DataI $ sendToInlet /\ t))
+    S.runSignal dataEverySec
+    -- TODO: /remove
     pure $ uiSignal S.~> (\ui -> render target ui evtChannel)
 
 
@@ -93,7 +101,8 @@ getDataSignal :: forall d. R.Network d -> S.Signal (Event d)
 getDataSignal nw =
     maybe
         (S.constant Skip)
-        (\s -> s S.~> uncurry Data)
+        -- (\s -> s S.~> DataI)
+        (\s -> s S.~> (\(path /\ _) -> DataI (path /\ 0.0)))
         (R.subscribeAllData nw)
 
 
@@ -125,11 +134,19 @@ node ui ch (R.Node path name inlets outlets _) =
 
 
 inlet :: forall d e. UI d -> UIChannel d -> R.Inlet d -> Markup e
-inlet ui@(UI s _) ch (R.Inlet path label _) =
+inlet ui@(UI (UIState s) _) ch (R.Inlet path label _) =
     H.div $ do
         H.p #! on "click" (sendEvt ch evt) $ H.text $ "Inlet: " <> label <> " " <> show path
+        H.p $ H.text $ dataText
     where
         evt = Connect "foo" "bar"
+        dataText =
+            case s.dataI of
+                Just (path' /\ val) ->
+                    if (path' == path) then
+                        "Has Data: " <> show val
+                    else "No Data"
+                Nothing -> "No Data"
 
 
 outlet :: forall d e. UI d -> UIChannel d -> R.Outlet d -> Markup e
@@ -147,13 +164,12 @@ sendEvt ch evt =
 
 
 update :: forall d e. Event d -> UI d -> UI d
-update evt (UI state@(UIState s) network) =
+update evt (UI state@(UIState st) network) =
     case evt of
-        Data inletPath val ->
-            let
-                newState = UIState (s { dataI = Just (inletPath /\ val) })
-            in
-                UI newState network
+        DataI pathAndVal ->
+            UI
+                (UIState (st { dataI = Just pathAndVal }))
+                network
         _ -> UI state network
 
 

@@ -9,6 +9,7 @@ module Rpd
     , subscribeAllData
     --, NetworkT, PatchT
     , PatchId, NodePath, InletPath, OutletPath
+    , patchId, nodePath, inletPath, outletPath
     ) where
 
 import Control.Monad.Eff
@@ -30,11 +31,8 @@ data Rpd d = RpdT (Network d)
 
 
 data PatchId = PatchId Int
-
 data NodePath = NodePath PatchId Int
-
 data InletPath = InletPath NodePath Int
-
 data OutletPath = OutletPath NodePath Int
 
 
@@ -155,6 +153,23 @@ connect' :: forall d. OutletPath -> InletPath -> Network d -> Network d
 connect' outletPath inletPath network =
     network
 
+
+patchId :: Int -> PatchId
+patchId = PatchId
+
+
+nodePath :: Int -> Int -> NodePath
+nodePath pId nId = NodePath (PatchId pId) nId
+
+
+inletPath :: Int -> Int -> Int -> InletPath
+inletPath pId nId iId = InletPath (NodePath (PatchId pId) nId) iId
+
+
+outletPath :: Int -> Int -> Int -> OutletPath
+outletPath pId nId iId = OutletPath (NodePath (PatchId pId) nId) iId
+
+
 -- connect inside a Patch??
 -- connect :: forall d e. Inlet d -> Outlet d -> d -> Eff ( channel :: SC.CHANNEL | e ) (SC.Channel d)
 -- connect inlet outlet defaultVal = do
@@ -172,3 +187,16 @@ instance showInletPath :: Show InletPath where
 
 instance showOutletPath :: Show OutletPath where
     show (OutletPath nodePath id) = show nodePath <> "/O" <> show id
+
+
+instance eqPatchId :: Eq PatchId where
+    eq (PatchId a) (PatchId b) = (a == b)
+
+instance eqNodePath :: Eq NodePath where
+    eq (NodePath pa a) (NodePath pb b) = (pa == pb) && (a == b)
+
+instance eqInletPath :: Eq InletPath where
+    eq (InletPath na a) (InletPath nb b) = (na == nb) && (a == b)
+
+instance eqOutletPath :: Eq OutletPath where
+    eq (OutletPath na a) (OutletPath nb b) = (na == nb) && (a == b)
