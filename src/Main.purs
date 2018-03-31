@@ -66,6 +66,13 @@ main = do
     liftEff $ R.run renderer myNetwork
   )
 
+
+instance showMyData :: Show MyData where
+  show Bang = "Bang"
+  show (Str' s) = "Str: " <> s
+  show (Int' n) = "Int: " <> show n
+
+
 -- main' :: ∀ e. Eff (dom :: DOM, console :: C.CONSOLE, channel :: SC.CHANNEL | e) Unit
 -- main' = do
 --   documentType <- document =<< window

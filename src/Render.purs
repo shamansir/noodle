@@ -32,8 +32,7 @@ newtype UIState d =
     UIState
         { dragging :: Maybe R.NodePath
         , connecting :: Maybe R.OutletPath
-        -- , dataI :: Maybe (R.InletPath /\ d)
-        , dataI :: Maybe (R.InletPath /\ Number)
+        , dataI :: Maybe (R.InletPath /\ d)
         }
 
 
@@ -42,8 +41,7 @@ data Event d
     | Skip
     | Connect String String
     | Drag Int Int
-    -- | DataI (R.InletPath /\ d)
-    | DataI (R.InletPath /\ Number)
+    | DataI (R.InletPath /\ d)
 
 -- type Updates d e = R.Updates (UIState d) d (dom :: DOM | e )
 
@@ -72,7 +70,7 @@ initState =
         }
 
 
-renderer :: forall d e. Element -> DomRenderer d e
+renderer :: forall d e. (Show d) => Element -> DomRenderer d e
 renderer target nw = do
     evtChannel <- SC.channel Start
     let evtSignal = SC.subscribe evtChannel
@@ -80,16 +78,17 @@ renderer target nw = do
     let _ = getDataSignal nw S.~> (\dataEvt -> SC.send evtChannel dataEvt)
     -- TODO: run data signal
     -- TODO: remove
-    let sendToInlet = R.inletPath 0 0 0
-    let dataEverySec = ST.every 1000.0 S.~> (\t -> SC.send evtChannel (DataI $ sendToInlet /\ t))
-    S.runSignal dataEverySec
+    -- let sendToInlet = R.inletPath 0 0 0
+    -- let dataEverySec = ST.every 1000.0 S.~> (\t -> SC.send evtChannel (DataI $ sendToInlet /\ t))
+    -- S.runSignal dataEverySec
     -- TODO: /remove
     pure $ uiSignal S.~> (\ui -> render target ui evtChannel)
 
 
 render
     :: forall d e
-     . Element
+     . Show d
+    => Element
     -> UI d
     -> UIChannel d
     -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
@@ -101,12 +100,11 @@ getDataSignal :: forall d. R.Network d -> S.Signal (Event d)
 getDataSignal nw =
     maybe
         (S.constant Skip)
-        -- (\s -> s S.~> DataI)
-        (\s -> s S.~> (\(path /\ _) -> DataI (path /\ 0.0)))
+        (\s -> s S.~> DataI)
         (R.subscribeAllData nw)
 
 
-network :: forall d e. UI d -> UIChannel d -> Markup e
+network :: forall d e. (Show d) => UI d -> UIChannel d -> Markup e
 network ui@(UI (UIState s) (R.Network patches)) ch =
     H.div $ do
         H.p $ H.text "Network"
@@ -114,7 +112,7 @@ network ui@(UI (UIState s) (R.Network patches)) ch =
         for_ patches (\p -> patch ui ch p)
 
 
-patch :: forall d e. UI d -> UIChannel d -> R.Patch d -> Markup e
+patch :: forall d e. (Show d) => UI d -> UIChannel d -> R.Patch d -> Markup e
 patch ui ch (R.Patch patchId label nodes links) =
     H.div $ do
         H.p $ H.text $ "Patch: " <> label <> " " <> show patchId
@@ -123,7 +121,7 @@ patch ui ch (R.Patch patchId label nodes links) =
         for_ nodes (\n -> node ui ch n)
 
 
-node :: forall d e. UI d -> UIChannel d -> R.Node d -> Markup e
+node :: forall d e. (Show d) => UI d -> UIChannel d -> R.Node d -> Markup e
 node ui ch (R.Node path name inlets outlets _) =
     H.div $ do
         H.p $ H.text $ "Node: " <> name <> " " <> show path
@@ -133,7 +131,7 @@ node ui ch (R.Node path name inlets outlets _) =
         for_ outlets (\o -> outlet ui ch o)
 
 
-inlet :: forall d e. UI d -> UIChannel d -> R.Inlet d -> Markup e
+inlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Inlet d -> Markup e
 inlet ui@(UI (UIState s) _) ch (R.Inlet path label _) =
     H.div $ do
         H.p #! on "click" (sendEvt ch evt) $ H.text $ "Inlet: " <> label <> " " <> show path
