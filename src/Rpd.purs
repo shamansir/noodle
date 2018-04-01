@@ -4,22 +4,21 @@ module Rpd
     , RenderEff
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
-    , DataSignal, DataPackage
+    , DataSignal, DataMsg(..)
     , ProcessF
     , network, patch, node, inlet, inlet', outlet--, connect
     --, NetworkT, PatchT
     , PatchId, NodePath, InletPath, OutletPath
     , patchId, nodePath, inletPath, outletPath
+    , ifFromInlet, ifFromOutlet
     ) where
 
-import Control.Monad.Eff
-import Data.Maybe
 import Prelude
 
-import Control.Monad.Eff.Class (liftEff)
-import DOM (DOM)
+import Control.Monad.Eff (Eff)
+import Data.Maybe (Maybe(..))
 import Data.Array (concatMap, mapWithIndex)
-import Data.Tuple.Nested ((/\), type (/\))
+import Data.Tuple.Nested (type (/\))
 import Signal as S
 import Signal.Channel as SC
 
@@ -67,24 +66,24 @@ type LazyInlet d = (InletPath -> Inlet d)
 type LazyOutlet d = (OutletPath -> Outlet d)
 
 
-type DataPackage d = InletPath /\ d
+data DataMsg d
+    = FromInlet InletPath d
+    | FromOutlet OutletPath d
 
-type DataSignal d = S.Signal (DataPackage d)
+type DataSignal d = S.Signal (DataMsg d)
 
 
 type RenderEff e =
     Eff (channel :: SC.CHANNEL | e) (S.Signal (Eff ( channel :: SC.CHANNEL | e ) Unit))
 
 
-type Renderer d e = DataSignal d -> Network d -> RenderEff e
+type Renderer d e = Maybe (DataSignal d) -> Network d -> RenderEff e
 
 
-run :: forall d e. Renderer d e -> d -> Network d -> Eff (channel :: SC.CHANNEL | e) Unit
-run renderer defaultData network = do
+run :: forall d e. Renderer d e -> Network d -> Eff (channel :: SC.CHANNEL | e) Unit
+run renderer network = do
     let maybeDataSignal = prepareDataSignal network
-    let emptySignal = S.constant ((inletPath 0 0 0) /\ defaultData)
-    let dataSignal = fromMaybe emptySignal maybeDataSignal
-    renderSignal <- renderer dataSignal network
+    renderSignal <- renderer maybeDataSignal network
     S.runSignal renderSignal
 
 
@@ -144,10 +143,24 @@ prepareDataSignal (Network patches) =
         allNodes = concatMap (\(Patch patchId _ nodes _) -> nodes) patches
         allInlets = concatMap (\(Node _ _ inlets _ _) -> inlets) allNodes
         allOutlets = concatMap (\(Node _ _ _ outlets _) -> outlets) allNodes
-        extractInletSignal = \(Inlet path _ _ signal) -> signal S.~> (\d -> path /\ d)
+        extractInletSignal = \(Inlet path _ _ signal) -> signal S.~> (\d -> FromInlet path d)
         --extractOutletSignal = \(Outlet path _ maybeSignal) -> maybeSignal S.~> (\d -> path /\ d)
     in
         S.mergeMany (map extractInletSignal allInlets)
+
+
+-- returns data extracted from data message if it came from the specified inlet
+-- or else returns `Nothing``
+ifFromInlet :: forall d. InletPath -> DataMsg d -> Maybe d
+ifFromInlet path (FromInlet inletPath d) | inletPath == path = Just d
+ifFromInlet _ _ = Nothing
+
+
+-- returns data extracted from data message if it came from the specified outlet
+-- or else returns `Nothing``
+ifFromOutlet :: forall d. OutletPath -> DataMsg d -> Maybe d
+ifFromOutlet path (FromOutlet outletPath d) | outletPath == path = Just d
+ifFromOutlet _ _ = Nothing
 
 
 -- updatePatch

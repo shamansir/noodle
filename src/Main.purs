@@ -1,33 +1,21 @@
 module Main where
 
-import Data.Tuple
 import Prelude
-
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console as C
-import Control.Monad.Free (Free)
 import Control.Monad.Eff.Class (liftEff)
 import DOM (DOM)
-import DOM.Event.Event (Event)
-import DOM.Event.EventTarget (EventListener, eventListener)
 import DOM.HTML (window)
 import DOM.HTML.Types (htmlDocumentToNonElementParentNode)
 import DOM.HTML.Window (document)
 import DOM.Node.NonElementParentNode (getElementById)
-import DOM.Node.Types (ElementId(..), Element)
-import Data.Foldable (for_, fold)
-import Data.Tuple.Nested ((/\))
+import DOM.Node.Types (ElementId(..)) -- , Element)
+import Data.Foldable (for_)
 --import Render (renderer)
 import Render as Render
 import Rpd as R
 import Signal as S
-import Signal.Channel (CHANNEL)
 import Signal.Channel as SC
 import Signal.Time as ST
-import Text.Smolder.HTML as H
-import Text.Smolder.Markup ((#!), on)
-import Text.Smolder.Markup as H
-import Text.Smolder.Renderer.DOM (render)
 
 
 data MyData
@@ -41,6 +29,7 @@ myNode =
   R.node "f"
     [ R.inlet' "a" (Str' "i")
     , R.inlet' "b" (Str' "test") -- FIXME: "test" is not shown!
+    , R.inlet "f" (ST.every (2.0 * ST.second) S.~> Num')  -- FIXME: also not shown!
     , R.inlet "d" (ST.every ST.second S.~> Num')
     , R.inlet' "e" (Num' 3.0) -- FIXME: "3.0" is not shown!
     ]
@@ -65,7 +54,7 @@ main = do
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
   for_ element (\element -> do
     let renderer = Render.renderer element
-    liftEff $ R.run renderer Bang myNetwork
+    liftEff $ R.run renderer myNetwork
   )
 
 

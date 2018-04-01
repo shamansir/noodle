@@ -6,22 +6,15 @@ module Render
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (CONSOLE, log)
 import DOM (DOM)
-import DOM.Event.Event as DOM
 import DOM.Event.EventTarget (EventListener, eventListener)
 import DOM.Node.Types (Element)
 import Data.Array (length)
-import Data.Foldable (class Foldable, for_, foldr)
-import Data.FoldableWithIndex (class FoldableWithIndex, forWithIndex_)
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Tuple (Tuple(..), snd, uncurry)
-import Data.Tuple.Nested ((/\), type (/\))
+import Data.Foldable (for_)
+import Data.Maybe (Maybe(..), maybe)
 import Rpd as R
 import Signal as S
 import Signal.Channel as SC
-import Signal.Time as ST
 import Text.Smolder.HTML as H
 import Text.Smolder.Markup ((#!), on)
 import Text.Smolder.Markup as H
@@ -32,7 +25,7 @@ newtype UIState d =
     UIState
         { dragging :: Maybe R.NodePath
         , connecting :: Maybe R.OutletPath
-        , dataI :: Maybe (R.InletPath /\ d)
+        , dataMsg :: Maybe (R.DataMsg d)
         }
 
 
@@ -41,7 +34,7 @@ data Event d
     | Skip
     | Connect String String
     | Drag Int Int
-    | DataI (R.InletPath /\ d)
+    | Data (R.DataMsg d)
 
 -- type Updates d e = R.Updates (UIState d) d (dom :: DOM | e )
 
@@ -66,19 +59,22 @@ initState =
     UIState
         { dragging : Nothing
         , connecting : Nothing
-        , dataI : Nothing
+        , dataMsg : Nothing
         }
 
 
 renderer :: forall d e. (Show d) => Element -> DomRenderer d e
-renderer target dataSignal nw = do
+renderer target maybeDataSignal nw = do
     evtChannel <- SC.channel Start
     let evtSignal = SC.subscribe evtChannel
     let uiSignal = S.foldp update (UI initState nw) evtSignal
-    let renderData = dataSignal S.~> DataI S.~> (\dataEvt -> SC.send evtChannel dataEvt)
-    S.runSignal renderData
+    case maybeDataSignal of
+        Just dataSignal -> do
+            let sendData = (\dataEvt -> SC.send evtChannel dataEvt)
+            let renderDataSignal = dataSignal S.~> Data S.~> sendData
+            S.runSignal renderDataSignal
+        Nothing -> pure unit
     pure $ uiSignal S.~> (\ui -> render target ui evtChannel)
-
 
 render
     :: forall d e
@@ -89,18 +85,6 @@ render
     -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
 render target ui ch = do
     ToDOM.patch target $ network ui ch
-
-
-adaptData :: forall d. S.Signal (R.DataPackage d) -> S.Signal (Event d)
-adaptData s = s S.~> DataI
-
-
--- getDataSignal :: forall d. R.Network d -> S.Signal (Event d)
--- getDataSignal nw =
---     maybe
---         (S.constant Skip)
---         (\s -> s S.~> DataI)
---         (R.subscribeAllData nw)
 
 
 network :: forall d e. (Show d) => UI d -> UIChannel d -> Markup e
@@ -134,17 +118,14 @@ inlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Inlet d -> Markup e
 inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault _) =
     H.div $ do
         H.p #! on "click" (sendEvt ch evt) $ H.text $ "Inlet: " <> label <> " " <> show path
-        H.p $ H.text $ dataText
+        H.p $ H.text $ dataText s.dataMsg
     where
         evt = Connect "foo" "bar"
-        dataText =
+        dataText (Just dataMsg) =
             ---s.dataI >>>
-            maybe "No data"
-                (\(path' /\ val) ->
-                    if (path' == path) then
-                        "Has Data: " <> show val
-                    else "No Data")
-                s.dataI
+            maybe "No data" (\val -> "Has data: " <> show val) $ R.ifFromInlet path dataMsg
+        dataText Nothing = "No data"
+
 
 
 outlet :: forall d e. UI d -> UIChannel d -> R.Outlet d -> Markup e
@@ -162,13 +143,11 @@ sendEvt ch evt =
 
 
 update :: forall d e. Event d -> UI d -> UI d
-update evt (UI state@(UIState st) network) =
-    case evt of
-        DataI pathAndVal ->
-            UI
-                (UIState (st { dataI = Just pathAndVal }))
-                network
-        _ -> UI state network
+update (Data dataMsg) (UI (UIState state) network) =
+    UI
+        (UIState (state { dataMsg = Just dataMsg }))
+        network
+update _ ui = ui
 
 
 -- TODO: render :: forall d e. Network d -> Eff ( dom :: DOM | e ) Unit
