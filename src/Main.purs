@@ -65,7 +65,7 @@ main = do
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
   for_ element (\element -> do
     let renderer = Render.renderer element
-    liftEff $ R.run renderer myNetwork
+    liftEff $ R.run renderer Bang myNetwork
   )
 
 

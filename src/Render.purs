@@ -71,12 +71,14 @@ initState =
 
 
 renderer :: forall d e. (Show d) => Element -> DomRenderer d e
-renderer target nw = do
+renderer target dataSignal nw = do
     evtChannel <- SC.channel Start
     let evtSignal = SC.subscribe evtChannel
     let uiSignal = S.foldp update (UI initState nw) evtSignal
-    let dataSignal = getDataSignal nw S.~> (\dataEvt -> SC.send evtChannel dataEvt)
-    S.runSignal dataSignal -- FIXME: should be performed by Rpd.run
+    let adaptData = DataI
+    -- let dataSignal = getDataSignal nw S.~> (\dataEvt -> SC.send evtChannel dataEvt)
+    let dataSignal' = dataSignal S.~> adaptData S.~> (\dataEvt -> SC.send evtChannel dataEvt)
+    -- S.runSignal dataSignal -- FIXME: should be performed by Rpd.run
     -- TODO: run data signal
     -- TODO: remove
     -- let sendToInlet = R.inletPath 0 0 0
@@ -97,12 +99,16 @@ render target ui ch = do
     ToDOM.patch target $ network ui ch
 
 
-getDataSignal :: forall d. R.Network d -> S.Signal (Event d)
-getDataSignal nw =
-    maybe
-        (S.constant Skip)
-        (\s -> s S.~> DataI)
-        (R.subscribeAllData nw)
+adaptData :: forall d. S.Signal (R.DataPackage d) -> S.Signal (Event d)
+adaptData s = s S.~> DataI
+
+
+-- getDataSignal :: forall d. R.Network d -> S.Signal (Event d)
+-- getDataSignal nw =
+--     maybe
+--         (S.constant Skip)
+--         (\s -> s S.~> DataI)
+--         (R.subscribeAllData nw)
 
 
 network :: forall d e. (Show d) => UI d -> UIChannel d -> Markup e

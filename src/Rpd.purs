@@ -4,9 +4,9 @@ module Rpd
     , RenderEff
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
+    , DataSignal, DataPackage
     , ProcessF
     , network, patch, node, inlet, inlet', outlet--, connect
-    , subscribeAllData
     --, NetworkT, PatchT
     , PatchId, NodePath, InletPath, OutletPath
     , patchId, nodePath, inletPath, outletPath
@@ -40,7 +40,8 @@ data Network d = Network (Array (Patch d)) -- (S.Signal d) -- change to info abo
 data Patch d = Patch PatchId String (Array (Node d)) (Array Link)
 data Node d = Node NodePath String (Array (Inlet d)) (Array (Outlet d)) (ProcessF d) -- (S.Signal Unit) add node type just for tagging?
 --data Node d = Node String (Map String d -> Map String d)
-data Inlet d = Inlet InletPath String (Maybe d) (S.Signal d) -- Channel?
+-- S.constant is not able to send values afterwards, so we store the default value inside
+data Inlet d = Inlet InletPath String (Maybe d) (S.Signal d)
 --data Inlet d = Inlet String (Maybe (AdaptF d))
 data Outlet d = Outlet OutletPath String (Maybe (S.Signal d))
 data Link = Link OutletPath InletPath
@@ -66,16 +67,28 @@ type LazyInlet d = (InletPath -> Inlet d)
 type LazyOutlet d = (OutletPath -> Outlet d)
 
 
+type DataPackage d = InletPath /\ d
+
+type DataSignal d = S.Signal (DataPackage d)
+
+
 type RenderEff e =
     Eff (channel :: SC.CHANNEL | e) (S.Signal (Eff ( channel :: SC.CHANNEL | e ) Unit))
 
-type Renderer d e = Network d -> RenderEff e
+
+type Renderer d e = DataSignal d -> Network d -> RenderEff e
 
 
-run :: forall d e. Renderer d e -> Network d -> Eff (channel :: SC.CHANNEL | e) Unit
-run renderer network = do
-    signal <- renderer network
-    S.runSignal signal
+run :: forall d e. Renderer d e -> d -> Network d -> Eff (channel :: SC.CHANNEL | e) Unit
+run renderer defaultData network = do
+    let maybeDataSignal = subscribeAllData network
+    let dataToEff = (\(inletPath /\ val) -> pure unit)
+    let emptySignal = S.constant ((inletPath 0 0 0) /\ defaultData)
+    let dataSignal = fromMaybe emptySignal maybeDataSignal
+    S.runSignal $ dataSignal S.~> dataToEff
+    renderSignal <- renderer dataSignal network  -- (\_ -> subscribeAllData)
+    S.runSignal renderSignal
+    --maybe (pure unit) (\dataSignal -> S.runSignal dataSignal) maybeDataSignal
 
 
 network :: forall d. Array (LazyPatch d) -> Network d
