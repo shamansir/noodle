@@ -76,7 +76,7 @@ renderer target nw = do
     let evtSignal = SC.subscribe evtChannel
     let uiSignal = S.foldp update (UI initState nw) evtSignal
     let dataSignal = getDataSignal nw S.~> (\dataEvt -> SC.send evtChannel dataEvt)
-    S.runSignal dataSignal
+    S.runSignal dataSignal -- FIXME: should be performed by Rpd.run
     -- TODO: run data signal
     -- TODO: remove
     -- let sendToInlet = R.inletPath 0 0 0
@@ -133,19 +133,20 @@ node ui ch (R.Node path name inlets outlets _) =
 
 
 inlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Inlet d -> Markup e
-inlet ui@(UI (UIState s) _) ch (R.Inlet path label _) =
+inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault _) =
     H.div $ do
         H.p #! on "click" (sendEvt ch evt) $ H.text $ "Inlet: " <> label <> " " <> show path
         H.p $ H.text $ dataText
     where
         evt = Connect "foo" "bar"
         dataText =
-            case s.dataI of
-                Just (path' /\ val) ->
+            ---s.dataI >>>
+            maybe "No data"
+                (\(path' /\ val) ->
                     if (path' == path) then
                         "Has Data: " <> show val
-                    else "No Data"
-                Nothing -> "No Data"
+                    else "No Data")
+                s.dataI
 
 
 outlet :: forall d e. UI d -> UIChannel d -> R.Outlet d -> Markup e

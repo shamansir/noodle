@@ -40,7 +40,7 @@ data Network d = Network (Array (Patch d)) -- (S.Signal d) -- change to info abo
 data Patch d = Patch PatchId String (Array (Node d)) (Array Link)
 data Node d = Node NodePath String (Array (Inlet d)) (Array (Outlet d)) (ProcessF d) -- (S.Signal Unit) add node type just for tagging?
 --data Node d = Node String (Map String d -> Map String d)
-data Inlet d = Inlet InletPath String (S.Signal d) -- Channel?
+data Inlet d = Inlet InletPath String (Maybe d) (S.Signal d) -- Channel?
 --data Inlet d = Inlet String (Maybe (AdaptF d))
 data Outlet d = Outlet OutletPath String (Maybe (S.Signal d))
 data Link = Link OutletPath InletPath
@@ -106,12 +106,17 @@ node name lazyInlets lazyOutlets =
 
 inlet :: forall d. String -> S.Signal d -> LazyInlet d
 inlet label dataSource =
-    \inletPath -> Inlet inletPath label dataSource
+    \inletPath -> Inlet inletPath label Nothing dataSource
 
 
 inlet' :: forall d. String -> d -> LazyInlet d
 inlet' label defaultVal =
-    inlet label $ S.constant defaultVal
+    inlet_ label defaultVal $ S.constant defaultVal
+
+
+inlet_ :: forall d. String -> d -> S.Signal d -> LazyInlet d
+inlet_ label defaultVal dataSource =
+    \inletPath -> Inlet inletPath label (Just defaultVal) dataSource
 
 
 outlet :: forall d. String -> LazyOutlet d
@@ -129,7 +134,7 @@ subscribeAllData (Network patches) =
         allNodes = concatMap (\(Patch patchId _ nodes _) -> nodes) patches
         allInlets = concatMap (\(Node _ _ inlets _ _) -> inlets) allNodes
         allOutlets = concatMap (\(Node _ _ _ outlets _) -> outlets) allNodes
-        extractInletSignal = \(Inlet path _ signal) -> signal S.~> (\d -> path /\ d)
+        extractInletSignal = \(Inlet path _ _ signal) -> signal S.~> (\d -> path /\ d)
         --extractOutletSignal = \(Outlet path _ maybeSignal) -> maybeSignal S.~> (\d -> path /\ d)
     in
         S.mergeMany (map extractInletSignal allInlets)
