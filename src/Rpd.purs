@@ -81,14 +81,11 @@ type Renderer d e = DataSignal d -> Network d -> RenderEff e
 
 run :: forall d e. Renderer d e -> d -> Network d -> Eff (channel :: SC.CHANNEL | e) Unit
 run renderer defaultData network = do
-    let maybeDataSignal = subscribeAllData network
-    let dataToEff = (\(inletPath /\ val) -> pure unit)
+    let maybeDataSignal = prepareDataSignal network
     let emptySignal = S.constant ((inletPath 0 0 0) /\ defaultData)
     let dataSignal = fromMaybe emptySignal maybeDataSignal
-    S.runSignal $ dataSignal S.~> dataToEff
-    renderSignal <- renderer dataSignal network  -- (\_ -> subscribeAllData)
+    renderSignal <- renderer dataSignal network
     S.runSignal renderSignal
-    --maybe (pure unit) (\dataSignal -> S.runSignal dataSignal) maybeDataSignal
 
 
 network :: forall d. Array (LazyPatch d) -> Network d
@@ -137,12 +134,12 @@ outlet label =
     \outletPath -> Outlet outletPath label Nothing
 
 
-subscribeAllData
+prepareDataSignal
     :: forall d
      . Network d
     -- -> S.Signal (InletPath /\ d) /\ S.Signal (OutletPath /\ d)
-    -> Maybe (S.Signal (InletPath /\ d))
-subscribeAllData (Network patches) =
+    -> Maybe (DataSignal d)
+prepareDataSignal (Network patches) =
     let
         allNodes = concatMap (\(Patch patchId _ nodes _) -> nodes) patches
         allInlets = concatMap (\(Node _ _ inlets _ _) -> inlets) allNodes

@@ -75,16 +75,8 @@ renderer target dataSignal nw = do
     evtChannel <- SC.channel Start
     let evtSignal = SC.subscribe evtChannel
     let uiSignal = S.foldp update (UI initState nw) evtSignal
-    let adaptData = DataI
-    -- let dataSignal = getDataSignal nw S.~> (\dataEvt -> SC.send evtChannel dataEvt)
-    let dataSignal' = dataSignal S.~> adaptData S.~> (\dataEvt -> SC.send evtChannel dataEvt)
-    -- S.runSignal dataSignal -- FIXME: should be performed by Rpd.run
-    -- TODO: run data signal
-    -- TODO: remove
-    -- let sendToInlet = R.inletPath 0 0 0
-    -- let dataEverySec = ST.every 1000.0 S.~> (\t -> SC.send evtChannel (DataI $ sendToInlet /\ t))
-    -- S.runSignal dataEverySec
-    -- TODO: /remove
+    let renderData = dataSignal S.~> DataI S.~> (\dataEvt -> SC.send evtChannel dataEvt)
+    S.runSignal renderData
     pure $ uiSignal S.~> (\ui -> render target ui evtChannel)
 
 
