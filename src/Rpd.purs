@@ -198,6 +198,11 @@ outletPath :: Int -> Int -> Int -> OutletPath
 outletPath pId nId iId = OutletPath (NodePath (PatchId pId) nId) iId
 
 
+-- | Get the current value of a signal. Should be in purescript-signal, pending
+-- https://github.com/bodil/purescript-signal/pull/60
+foreign import get :: forall e a. S.Signal a -> Eff e a
+
+
 -- connect inside a Patch??
 -- connect :: forall d e. Inlet d -> Outlet d -> d -> Eff ( channel :: SC.CHANNEL | e ) (SC.Channel d)
 -- connect inlet outlet defaultVal = do
