@@ -1,0 +1,85 @@
+purs repl 'bower_components/purescript-*/src/**/*.purs'
+
+import Signal as S
+import Signal.Time as ST
+import Data.Maybe (maybe, fromMaybe)
+import Control.Monad.Eff.Console (log)
+
+S.runSignal $ ST.every ST.second S.~> show S.~> log
+let sig = ST.every ST.second in S.runSignal $ sig S.~> show S.~> log
+let sig = ST.every ST.second S.~> show S.~> log in S.runSignal sig
+let sig = fromMaybe (S.constant 0.0) $ S.mergeMany [ ST.every (2.0 * ST.second), ST.every ST.second ] in S.runSignal $ sig S.~> show S.~> log
+
+  let sig = fromMaybe (S.constant "None") $
+    S.mergeMany [
+      ST.every (2.0 * ST.second) S.~> (\t -> "2x:" <> show t)
+    , ST.every ST.second S.~> (\t -> "1x:" <> show t)
+    ]
+  in S.runSignal $ sig S.~> log
+
+
+  let sig = fromMaybe (S.constant "<NO>") $
+    S.mergeMany [
+      ST.every (2.0 * ST.second) S.~> (\t -> "2x:" <> show t)
+    , ST.every ST.second S.~> (\t -> "1x:" <> show t)
+    ]
+  --S.runSignal $ sig S.~> log
+  documentType <- document =<< window
+  element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
+  for_ element (\element -> do
+    -- S.runSignal $ sig S.~> (\val -> ToDOM.render element $ do
+    S.runSignal $ sig S.~> (\val -> ToDOM.patch element $ do
+      H.text val
+      H.br
+    )
+  )
+
+
+
+Things to test:
+- if default inlet values are rendered even for multiple inlets
+- if parallel signals being sent to inlets are received proper values in proper time
+  (i.e. one every second and another every two seconds)
+
+
+
+import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Console (log, CONSOLE)
+import DOM (DOM)
+import DOM.HTML (window)
+import DOM.HTML.Types (htmlDocumentToNonElementParentNode)
+import DOM.HTML.Window (document)
+import DOM.Node.NonElementParentNode (getElementById)
+import DOM.Node.Types (ElementId(..)) -- , Element)
+import Data.Foldable (for_)
+import Data.Maybe (fromMaybe)
+import Signal as S
+import Signal.Time as ST
+import Text.Smolder.HTML as H
+import Text.Smolder.Markup ((#!), on)
+import Text.Smolder.Markup as H
+import Data.Tuple.Nested ((/\), type (/\))
+import Text.Smolder.Renderer.DOM as ToDOM
+
+
+main :: ∀ e. Eff (dom :: DOM, console :: CONSOLE | e) Unit
+main =
+  let sig = fromMaybe (S.constant (0 /\ "NO")) $
+    S.mergeMany [
+      ST.every (2.0 * ST.second) S.~> (\t -> 2 /\ show t)
+    , ST.every ST.second S.~> (\t -> 1 /\ show t)
+    ]
+  --S.runSignal $ sig S.~> log
+  documentType <- document =<< window
+  element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
+  for_ element (\element -> do
+    -- S.runSignal $ sig S.~> (\val -> ToDOM.render element $ do
+    S.runSignal $ sig S.~> (\(num /\ val) -> ToDOM.patch element $ do
+      H.text $ if (num == 0) then show num <> ":" <> val else "<0:EMPTY>"
+      H.br
+      H.text $ if (num == 1) then show num <> ":" <> val else "<1:EMPTY>"
+      H.br
+      H.text $ if (num == 2) then show num <> ":" <> val else "<2:EMPTY>"
+      H.br
+    )
