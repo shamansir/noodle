@@ -233,3 +233,19 @@ instance eqInletPath :: Eq InletPath where
 
 instance eqOutletPath :: Eq OutletPath where
     eq (OutletPath na a) (OutletPath nb b) = (na == nb) && (a == b)
+
+
+instance ordPatchId :: Ord PatchId where
+    compare (PatchId a) (PatchId b) = compare a b
+
+instance ordNodePath :: Ord NodePath where
+    compare (NodePath pa a) (NodePath pb b) =
+        compare (compare pa pb) (compare a b)
+
+instance ordInletPath :: Ord InletPath where
+    compare (InletPath na a) (InletPath nb b) =
+        compare (compare na nb) (compare a b)
+
+instance ordOutletPath :: Ord OutletPath where
+    compare (OutletPath na a) (OutletPath nb b) =
+        compare (compare na nb) (compare a b)

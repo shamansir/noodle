@@ -11,9 +11,9 @@ import DOM.Event.EventTarget (EventListener, eventListener)
 import DOM.Node.Types (Element)
 import Data.Array (length)
 import Data.Foldable (for_)
-import Data.Maybe (Maybe(..), maybe)
-import Data.Map as Map
 import Data.Map (Map(..))
+import Data.Map as Map
+import Data.Maybe (Maybe(..), maybe)
 import Rpd as R
 import Signal as S
 import Signal.Channel as SC
@@ -150,9 +150,24 @@ sendEvt ch evt =
 
 update :: forall d e. Event d -> UI d -> UI d
 update (Data dataMsg) (UI (UIState state) network) =
-    UI
-        (UIState (state { curDataMsg = Just dataMsg }))
-        network
+    let
+        curDataMsg = Just dataMsg
+    in
+        UI
+            (UIState $
+                state { curDataMsg = Just dataMsg
+                      , lastInletData =
+                            case dataMsg of
+                                R.FromInlet inletPath d ->
+                                    Map.insert inletPath d state.lastInletData
+                                _ -> state.lastInletData
+                      , lastOutletData =
+                            case dataMsg of
+                                R.FromOutlet outletPath d ->
+                                    Map.insert outletPath d state.lastOutletData
+                                _ -> state.lastOutletData
+                      })
+            network
 update _ ui = ui
 
 
