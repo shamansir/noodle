@@ -12,6 +12,8 @@ import DOM.Node.Types (Element)
 import Data.Array (length)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..), maybe)
+import Data.Map as Map
+import Data.Map (Map(..))
 import Rpd as R
 import Signal as S
 import Signal.Channel as SC
@@ -25,7 +27,9 @@ newtype UIState d =
     UIState
         { dragging :: Maybe R.NodePath
         , connecting :: Maybe R.OutletPath
-        , dataMsg :: Maybe (R.DataMsg d)
+        , curDataMsg :: Maybe (R.DataMsg d)
+        , lastInletData :: Map R.InletPath d
+        , lastOutletData :: Map R.OutletPath d
         }
 
 
@@ -59,7 +63,9 @@ initState =
     UIState
         { dragging : Nothing
         , connecting : Nothing
-        , dataMsg : Nothing
+        , curDataMsg : Nothing
+        , lastInletData : Map.empty
+        , lastOutletData : Map.empty
         }
 
 
@@ -118,7 +124,7 @@ inlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Inlet d -> Markup e
 inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault _) =
     H.div $ do
         H.p #! on "click" (sendEvt ch evt) $ H.text $ "Inlet: " <> label <> " " <> show path
-        H.p $ H.text $ dataText s.dataMsg
+        H.p $ H.text $ dataText s.curDataMsg
     where
         evt = Connect "foo" "bar"
         dataText (Just dataMsg) =
@@ -145,7 +151,7 @@ sendEvt ch evt =
 update :: forall d e. Event d -> UI d -> UI d
 update (Data dataMsg) (UI (UIState state) network) =
     UI
-        (UIState (state { dataMsg = Just dataMsg }))
+        (UIState (state { curDataMsg = Just dataMsg }))
         network
 update _ ui = ui
 
