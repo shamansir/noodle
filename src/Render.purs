@@ -6,6 +6,7 @@ module Render
 import Prelude
 
 import Control.Monad.Eff (Eff)
+import Control.Alternative ((<|>))
 import DOM (DOM)
 import DOM.Event.EventTarget (EventListener, eventListener)
 import DOM.Node.Types (Element)
@@ -13,7 +14,7 @@ import Data.Array (length)
 import Data.Foldable (for_)
 import Data.Map (Map(..))
 import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Rpd as R
 import Signal as S
 import Signal.Channel as SC
@@ -127,10 +128,9 @@ inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault _) =
         H.p $ H.text $ dataText s.curDataMsg
     where
         evt = Connect "foo" "bar"
-        dataText (Just dataMsg) =
-            ---s.dataI >>>
-            maybe "No data" (\val -> "Has data: " <> show val) $ R.ifFromInlet path dataMsg
-        dataText Nothing = "No data"
+        dataText dataMsg = maybe "No data" (\v -> "Has data: " <> show v) $ do
+            dataMsg' <- dataMsg
+            pure $ R.ifFromInlet path dataMsg' <|> Map.lookup path s.lastInletData
 
 
 
