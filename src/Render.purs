@@ -37,7 +37,8 @@ newtype UIState d =
 data Event d
     = Start
     | Skip
-    | Connect String String
+    | ConnectFrom R.OutletPath
+    | ConnectTo R.InletPath
     | Drag Int Int
     | Data (R.DataMsg d)
 
@@ -122,22 +123,33 @@ node ui ch (R.Node path name inlets outlets _) =
 
 
 inlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Inlet d -> Markup e
-inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault _) =
+inlet (UI (UIState s) _) ch (R.Inlet path label maybeDefault _) =
     H.div $ do
-        H.p #! on "click" (sendEvt ch evt) $ H.text $ "Inlet: " <> label <> " " <> show path
+        H.p #! on "click" maybeConnect $ H.text $ "Inlet: " <> label <> " " <> show path
         H.p $ H.text $ dataText s.curDataMsg
     where
-        evt = Connect "foo" "bar"
+        maybeConnect = sendEvt ch $ case s.connecting of
+            Just outletPath -> ConnectTo path
+            Nothing -> Skip
         dataText dataMsg = maybe "No data" (\v -> "Has data: " <> show v) $ do
             dataMsg' <- dataMsg
             pure $ R.ifFromInlet path dataMsg' <|> Map.lookup path s.lastInletData
 
 
 
-outlet :: forall d e. UI d -> UIChannel d -> R.Outlet d -> Markup e
-outlet ui ch (R.Outlet path label _) =
+outlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Outlet d -> Markup e
+outlet (UI (UIState s) _) ch (R.Outlet path label _) =
     H.div $ do
-        H.p $ H.text $ "Outlet: " <> label <> " " <> show path
+        H.p #! on "click" tryConnecting $ H.text $ "Outlet: " <> label <> " " <> show path
+        H.p $ H.text $ dataText s.curDataMsg
+    where
+        tryConnecting = sendEvt ch $ case s.connecting of
+            Just _ -> Skip
+            Nothing -> ConnectFrom path
+        dataText dataMsg = maybe "No data" (\v -> "Has data: " <> show v) $ do
+            dataMsg' <- dataMsg
+            pure $ R.ifFromOutlet path dataMsg' <|> Map.lookup path s.lastOutletData
+
 
 
 sendEvt :: forall d e. UIChannel d -> Event d -> Listener e
