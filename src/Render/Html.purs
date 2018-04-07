@@ -68,7 +68,7 @@ network ui@(UI (UIState s) (R.Network patches)) ch =
 
 
 patch :: forall d e. (Show d) => UI d -> UIChannel d -> R.Patch d -> Markup e
-patch ui ch patch@(R.Patch patchId label nodes links) =
+patch ui ch (R.Patch patchId label nodes links) =
     H.div #! on "click" maybeSelect $
         if isSelected then do
             H.p $ H.text $ "<" <> show patchId <> ": " <> label <> ">"
@@ -78,7 +78,7 @@ patch ui ch patch@(R.Patch patchId label nodes links) =
         else
             H.p $ H.text $ "[" <> show patchId <> "]"
     where
-        isSelected = isPatchSelected ui patch
+        isSelected = isPatchSelected (getSelection ui) patchId
         className = "patch " <> (if isSelected then "_selected" else "")
         maybeSelect = sendEvt ch $ Select (SPatch patchId)
 

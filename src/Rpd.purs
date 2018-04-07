@@ -11,6 +11,7 @@ module Rpd
     , PatchId, NodePath, InletPath, OutletPath, LinkId
     , patchId, nodePath, inletPath, outletPath
     , ifFromInlet, ifFromOutlet
+    , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
     ) where
 
 import Prelude
@@ -162,6 +163,26 @@ ifFromInlet _ _ = Nothing
 ifFromOutlet :: forall d. OutletPath -> DataMsg d -> Maybe d
 ifFromOutlet path (FromOutlet outletPath d) | outletPath == path = Just d
 ifFromOutlet _ _ = Nothing
+
+
+isNodeInPatch :: NodePath -> PatchId -> Boolean
+isNodeInPatch (NodePath patchId' _) patchId = patchId == patchId'
+
+
+isInletInPatch :: InletPath -> PatchId -> Boolean
+isInletInPatch (InletPath nodePath _) patchId = isNodeInPatch nodePath patchId
+
+
+isOutletInPatch :: OutletPath -> PatchId -> Boolean
+isOutletInPatch (OutletPath nodePath _) patchId = isNodeInPatch nodePath patchId
+
+
+isInletInNode :: InletPath -> NodePath -> Boolean
+isInletInNode (InletPath nodePath' _) nodePath = nodePath == nodePath'
+
+
+isOutletInNode :: OutletPath -> NodePath -> Boolean
+isOutletInNode (OutletPath nodePath' _) nodePath = nodePath == nodePath'
 
 
 -- updatePatch

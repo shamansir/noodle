@@ -2,7 +2,7 @@ module Render
     ( UI(..)
     , UIState(..)
     , Event(..), Selection(..), getSelection
-    , isPatchSelected
+    , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
     , UIChannel
     , init, update
     ) where
@@ -44,7 +44,7 @@ data Selection
     | SPatch R.PatchId
     | SNode R.NodePath
     | SInlet R.InletPath
-    | SOutlet R.InletPath
+    | SOutlet R.OutletPath
     | SLink R.LinkId
 
 
@@ -95,6 +95,15 @@ update _ ui = ui
 
 select :: forall d. Selection -> Selection -> Maybe Selection
 select newSelection SNone = Just newSelection
+select (SPatch newPatch) prevSelection   | isPatchSelected prevSelection newPatch = Just SNone
+                                         | otherwise = Just (SPatch newPatch)
+select (SNode newNode) prevSelection     | isNodeSelected prevSelection newNode = Just SNone
+                                         | otherwise = Just (SNode newNode)
+select (SInlet newInlet) prevSelection   | isInletSelected prevSelection newInlet = Just SNone
+                                         | otherwise = Just (SInlet newInlet)
+select (SOutlet newOutlet) prevSelection | isOutletSelected prevSelection newOutlet = Just SNone
+                                         | otherwise = Just (SOutlet newOutlet)
+select SNone _ = Just SNone
 select _ _ = Nothing
 
 
@@ -107,8 +116,26 @@ setSelection newSelection (UI (UIState s) network) =
     UI (UIState $ s { selection = newSelection }) network
 
 
-isPatchSelected :: forall d. UI d -> R.Patch d -> Boolean
-isPatchSelected ui (R.Patch patchId _ _ _) =
-    case getSelection ui of
-            SPatch selectedId -> selectedId == patchId
-            _ -> false
+isPatchSelected :: Selection -> R.PatchId -> Boolean
+isPatchSelected (SPatch selectedPatchId) patchId = selectedPatchId == patchId
+isPatchSelected (SNode nodePath) patchId = R.isNodeInPatch nodePath patchId
+isPatchSelected (SInlet inletPath) patchId = R.isInletInPatch inletPath patchId
+isPatchSelected (SOutlet outletPath) patchId = R.isOutletInPatch outletPath patchId
+isPatchSelected _ _ = false
+
+
+isNodeSelected :: Selection -> R.NodePath -> Boolean
+isNodeSelected (SNode selectedNodePath) nodePath = selectedNodePath == nodePath
+isNodeSelected (SInlet inletPath) nodePath = R.isInletInNode inletPath nodePath
+isNodeSelected (SOutlet outletPath) nodePath = R.isOutletInNode outletPath nodePath
+isNodeSelected _ _ = false
+
+
+isInletSelected :: forall d. Selection -> R.InletPath -> Boolean
+isInletSelected (SInlet selectedInletPath) inletPath = selectedInletPath == inletPath
+isInletSelected _ _ = false
+
+
+isOutletSelected :: forall d. Selection -> R.OutletPath -> Boolean
+isOutletSelected (SOutlet selectedOutletPath) outletPath = selectedOutletPath == outletPath
+isOutletSelected _ _ = false
