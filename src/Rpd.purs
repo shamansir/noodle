@@ -243,6 +243,9 @@ instance showInletPath :: Show InletPath where
 instance showOutletPath :: Show OutletPath where
     show (OutletPath nodePath id) = show nodePath <> "/O" <> show id
 
+instance showLinkId :: Show LinkId where
+    show (LinkId id) = "L" <> show id
+
 
 instance eqPatchId :: Eq PatchId where
     eq (PatchId a) (PatchId b) = (a == b)

@@ -93,6 +93,9 @@ update (Select selection) ui =
 update _ ui = ui
 
 
+-- updateAndLog :: forall d e. Event d -> UI d -> String /\ UI d
+
+
 select :: forall d. Selection -> Selection -> Maybe Selection
 select newSelection SNone = Just newSelection
 select (SPatch newPatch) prevSelection   | isPatchSelected prevSelection newPatch = Just SNone
@@ -139,3 +142,35 @@ isInletSelected _ _ = false
 isOutletSelected :: forall d. Selection -> R.OutletPath -> Boolean
 isOutletSelected (SOutlet selectedOutletPath) outletPath = selectedOutletPath == outletPath
 isOutletSelected _ _ = false
+
+
+instance showSelection :: Show Selection where
+    show SNone = "Nothing selected"
+    show SNetwork = "Network selected"
+    show (SPatch patchId) = show patchId <> " selected"
+    show (SNode nodePath) = show nodePath <> " selected"
+    show (SInlet inletPath) = show inletPath <> " selected"
+    show (SOutlet outletPath) = show outletPath <> " selected"
+    show (SLink linkId) = show linkId <> " selected"
+
+
+instance showUIState :: (Show d) => Show (UIState d) where
+    show (UIState { selection, dragging, connecting })
+        = "Selection: " <> show selection <>
+        ", Dragging: " <> show dragging <>
+        ", Connecting " <> show connecting
+
+
+instance showUI :: (Show d) => Show (UI d) where
+    show (UI state _ ) = show state
+
+
+instance showEvent :: (Show d) => Show (Event d) where
+    show Start = "Start"
+    show Skip = "Skip"
+    show (ConnectFrom outletPath) = "Start connecting from " <> show outletPath
+    show (ConnectTo inletPath) = "Finish connecting at " <> show inletPath
+    -- | Drag Int Int
+    -- | Data (R.DataMsg d)
+    show (Select selection) = "Select " <> show selection
+    show _ = ""

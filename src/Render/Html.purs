@@ -56,7 +56,9 @@ render
     -> UIChannel d
     -> Eff ( channel :: SC.CHANNEL, dom :: DOM | e ) Unit
 render target ui ch = do
-    ToDOM.patch target $ network ui ch
+    ToDOM.patch target $ do
+        H.div $ H.text $ show ui
+        network ui ch
 
 
 network :: forall d e. (Show d) => UI d -> UIChannel d -> Markup e
@@ -72,8 +74,8 @@ patch ui ch (R.Patch patchId label nodes links) =
     H.div #! on "click" maybeSelect $
         if isSelected then do
             H.p $ H.text $ "<" <> show patchId <> ": " <> label <> ">"
-            H.p $ H.text $ "\tHas " <> (show $ length nodes) <> " Nodes"
-            H.p $ H.text $ "\tHas " <> (show $ length links) <> " Links"
+            H.p $ H.text $ friendlyLength "Node" "Nodes" nodes
+            H.p $ H.text $ friendlyLength "Link" "Links" links
             for_ nodes (\n -> node ui ch n)
         else
             H.p $ H.text $ "[" <> show patchId <> "]"
@@ -84,13 +86,20 @@ patch ui ch (R.Patch patchId label nodes links) =
 
 
 node :: forall d e. (Show d) => UI d -> UIChannel d -> R.Node d -> Markup e
-node ui ch (R.Node path name inlets outlets _) =
-    H.div $ do
-        H.p $ H.text $ "Node: " <> name <> " " <> show path
-        H.p $ H.text $ "\tHas " <> (show $ length inlets) <> " Inlets"
-        H.p $ H.text $ "\tHas " <> (show $ length outlets) <> " Outlets"
-        for_ inlets (\i -> inlet ui ch i)
-        for_ outlets (\o -> outlet ui ch o)
+node ui ch (R.Node nodePath name inlets outlets _) =
+    H.div #! on "click" maybeSelect $
+        if isSelected then do
+            H.p $ H.text $ "<" <> show nodePath <> ": " <> name <> ">"
+            H.p $ H.text $ friendlyLength "Inlet" "Inlets" inlets
+            H.p $ H.text $ friendlyLength "Outlet" "Outlets" outlets
+            for_ inlets (\i -> inlet ui ch i)
+            for_ outlets (\o -> outlet ui ch o)
+        else
+            H.p $ H.text $ "[" <> show nodePath <> "]"
+    where
+        isSelected = isNodeSelected (getSelection ui) nodePath
+        className = "node " <> (if isSelected then "_selected" else "")
+        maybeSelect = sendEvt ch $ Select (SNode nodePath)
 
 
 inlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Inlet d -> Markup e
