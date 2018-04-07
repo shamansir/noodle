@@ -8,7 +8,7 @@ module Rpd
     , ProcessF
     , network, patch, node, inlet, inlet', outlet--, connect
     --, NetworkT, PatchT
-    , PatchId, NodePath, InletPath, OutletPath
+    , PatchId, NodePath, InletPath, OutletPath, LinkId
     , patchId, nodePath, inletPath, outletPath
     , ifFromInlet, ifFromOutlet
     ) where
@@ -33,6 +33,7 @@ data PatchId = PatchId Int
 data NodePath = NodePath PatchId Int
 data InletPath = InletPath NodePath Int
 data OutletPath = OutletPath NodePath Int
+data LinkId = LinkId Int
 
 
 data Network d = Network (Array (Patch d)) -- (S.Signal d) -- change to info about where data flows

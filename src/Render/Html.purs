@@ -16,7 +16,8 @@ import DOM.Node.Types (Element)
 import Signal as S
 import Signal.Channel as SC
 import Text.Smolder.HTML as H
-import Text.Smolder.Markup ((#!), on)
+import Text.Smolder.HTML.Attributes as HA
+import Text.Smolder.Markup ((#!), (!), on)
 import Text.Smolder.Markup as H
 import Text.Smolder.Renderer.DOM as ToDOM
 
@@ -59,7 +60,7 @@ render target ui ch = do
 
 network :: forall d e. (Show d) => UI d -> UIChannel d -> Markup e
 network ui@(UI (UIState s) (R.Network patches)) ch =
-    H.div $ do
+    H.div ! HA.style "font-family: monospace" $ do
         H.p $ H.text "Network"
         H.p $ H.text $ "\tHas " <> (show $ length patches) <> " Patches"
         for_ patches (\p -> patch ui ch p)

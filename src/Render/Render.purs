@@ -1,7 +1,7 @@
 module Render
     ( UI(..)
     , UIState(..)
-    , Event(..)
+    , Event(..), Selection(..)
     , UIChannel
     , init, update
     ) where
@@ -18,7 +18,8 @@ import Signal.Channel as SC
 
 newtype UIState d =
     UIState
-        { dragging :: Maybe R.NodePath
+        { selection :: Selection
+        , dragging :: Maybe R.NodePath
         , connecting :: Maybe R.OutletPath
         , curDataMsg :: Maybe (R.DataMsg d)
         , lastInletData :: Map R.InletPath d
@@ -33,6 +34,17 @@ data Event d
     | ConnectTo R.InletPath
     | Drag Int Int
     | Data (R.DataMsg d)
+    | Select Selection
+
+
+data Selection
+    = SNone
+    | SNetwork -- a.k.a. None ?
+    | SPatch R.PatchId
+    | SNode R.NodePath
+    | SInlet R.InletPath
+    | SOutlet R.InletPath
+    | SLink R.LinkId
 
 
 data UI d = UI (UIState d) (R.Network d)
@@ -44,7 +56,8 @@ type UIChannel d = SC.Channel (Event d)
 init :: forall d. UIState d
 init =
     UIState
-        { dragging : Nothing
+        { selection : SNone
+        , dragging : Nothing
         , connecting : Nothing
         , curDataMsg : Nothing
         , lastInletData : Map.empty
