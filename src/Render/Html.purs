@@ -1,21 +1,18 @@
-module Render
-    ( renderer
-    , Event(..)
-    ) where
+module Render.Html where
 
 import Prelude
 
+
 import Control.Monad.Eff (Eff)
 import Control.Alternative ((<|>))
+import Data.Map (Map(..))
+import Data.Foldable (for_)
+import Data.Array (length)
+import Data.Map as Map
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import DOM (DOM)
 import DOM.Event.EventTarget (EventListener, eventListener)
 import DOM.Node.Types (Element)
-import Data.Array (length)
-import Data.Foldable (for_)
-import Data.Map (Map(..))
-import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Rpd as R
 import Signal as S
 import Signal.Channel as SC
 import Text.Smolder.HTML as H
@@ -23,32 +20,8 @@ import Text.Smolder.Markup ((#!), on)
 import Text.Smolder.Markup as H
 import Text.Smolder.Renderer.DOM as ToDOM
 
-
-newtype UIState d =
-    UIState
-        { dragging :: Maybe R.NodePath
-        , connecting :: Maybe R.OutletPath
-        , curDataMsg :: Maybe (R.DataMsg d)
-        , lastInletData :: Map R.InletPath d
-        , lastOutletData :: Map R.OutletPath d
-        }
-
-
-data Event d
-    = Start
-    | Skip
-    | ConnectFrom R.OutletPath
-    | ConnectTo R.InletPath
-    | Drag Int Int
-    | Data (R.DataMsg d)
-
--- type Updates d e = R.Updates (UIState d) d (dom :: DOM | e )
-
-
-data UI d = UI (UIState d) (R.Network d)
-
-
-type UIChannel d = SC.Channel (Event d)
+import Rpd as R
+import Render
 
 
 type Listener e = EventListener ( channel :: SC.CHANNEL, dom :: DOM | e )
@@ -60,22 +33,11 @@ type Markup e = H.Markup (Listener e)
 type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
 
 
-initState :: forall d. UIState d
-initState =
-    UIState
-        { dragging : Nothing
-        , connecting : Nothing
-        , curDataMsg : Nothing
-        , lastInletData : Map.empty
-        , lastOutletData : Map.empty
-        }
-
-
 renderer :: forall d e. (Show d) => Element -> DomRenderer d e
 renderer target maybeDataSignal nw = do
     evtChannel <- SC.channel Start
     let evtSignal = SC.subscribe evtChannel
-    let uiSignal = S.foldp update (UI initState nw) evtSignal
+    let uiSignal = S.foldp update (UI init nw) evtSignal
     case maybeDataSignal of
         Just dataSignal -> do
             let sendData = (\dataEvt -> SC.send evtChannel dataEvt)
@@ -156,31 +118,3 @@ sendEvt :: forall d e. UIChannel d -> Event d -> Listener e
 sendEvt ch evt =
     eventListener $ const $ SC.send ch evt
 
---transformWith :: Event ->
--- transformWith ch evt ui = (\_ -> SC.send ch $ update evt ui)
-
-
-update :: forall d e. Event d -> UI d -> UI d
-update (Data dataMsg) (UI (UIState state) network) =
-    let
-        curDataMsg = Just dataMsg
-    in
-        UI
-            (UIState $
-                state { curDataMsg = Just dataMsg
-                      , lastInletData =
-                            case dataMsg of
-                                R.FromInlet inletPath d ->
-                                    Map.insert inletPath d state.lastInletData
-                                _ -> state.lastInletData
-                      , lastOutletData =
-                            case dataMsg of
-                                R.FromOutlet outletPath d ->
-                                    Map.insert outletPath d state.lastOutletData
-                                _ -> state.lastOutletData
-                      })
-            network
-update _ ui = ui
-
-
--- TODO: render :: forall d e. Network d -> Eff ( dom :: DOM | e ) Unit

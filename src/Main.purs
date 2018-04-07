@@ -12,6 +12,7 @@ import DOM.Node.Types (ElementId(..)) -- , Element)
 import Data.Foldable (for_)
 --import Render (renderer)
 import Render as Render
+import Render.Html as RenderH
 import Rpd as R
 import Signal as S
 import Signal.Channel as SC
@@ -53,7 +54,7 @@ main = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
   for_ element (\element -> do
-    let renderer = Render.renderer element
+    let renderer = RenderH.renderer element
     liftEff $ R.run renderer myNetwork
   )
 
