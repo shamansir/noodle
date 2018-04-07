@@ -1,0 +1,11 @@
+.network {
+    font-family: monospace;
+}
+
+.patches {
+    display: flex;
+}
+
+.patch._selected {
+    color: red;
+}

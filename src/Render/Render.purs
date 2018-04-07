@@ -1,7 +1,8 @@
 module Render
     ( UI(..)
     , UIState(..)
-    , Event(..), Selection(..)
+    , Event(..), Selection(..), getSelection
+    , isPatchSelected
     , UIChannel
     , init, update
     ) where
@@ -85,4 +86,29 @@ update (Data dataMsg) (UI (UIState state) network) =
                                 _ -> state.lastOutletData
                       })
             network
+update (Select selection) ui =
+    case select selection $ getSelection ui of
+        Just newSelection -> setSelection newSelection ui
+        Nothing -> ui
 update _ ui = ui
+
+
+select :: forall d. Selection -> Selection -> Maybe Selection
+select newSelection SNone = Just newSelection
+select _ _ = Nothing
+
+
+getSelection :: forall d. UI d -> Selection
+getSelection (UI (UIState s) _) = s.selection
+
+
+setSelection :: forall d. Selection -> UI d -> UI d
+setSelection newSelection (UI (UIState s) network) =
+    UI (UIState $ s { selection = newSelection }) network
+
+
+isPatchSelected :: forall d. UI d -> R.Patch d -> Boolean
+isPatchSelected ui (R.Patch patchId _ _ _) =
+    case getSelection ui of
+            SPatch selectedId -> selectedId == patchId
+            _ -> false

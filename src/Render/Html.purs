@@ -47,6 +47,7 @@ renderer target maybeDataSignal nw = do
         Nothing -> pure unit
     pure $ uiSignal S.~> (\ui -> render target ui evtChannel)
 
+
 render
     :: forall d e
      . Show d
@@ -60,19 +61,26 @@ render target ui ch = do
 
 network :: forall d e. (Show d) => UI d -> UIChannel d -> Markup e
 network ui@(UI (UIState s) (R.Network patches)) ch =
-    H.div ! HA.style "font-family: monospace" $ do
-        H.p $ H.text "Network"
-        H.p $ H.text $ "\tHas " <> (show $ length patches) <> " Patches"
-        for_ patches (\p -> patch ui ch p)
+    H.div ! HA.className "network" $ do
+        H.p $ H.text $ "Network: " <> friendlyLength "Patch" "Patches" patches
+        H.div ! HA.className "patches" $
+            for_ patches (\p -> patch ui ch p)
 
 
 patch :: forall d e. (Show d) => UI d -> UIChannel d -> R.Patch d -> Markup e
-patch ui ch (R.Patch patchId label nodes links) =
-    H.div $ do
-        H.p $ H.text $ "Patch: " <> label <> " " <> show patchId
-        H.p $ H.text $ "\tHas " <> (show $ length nodes) <> " Nodes"
-        H.p $ H.text $ "\tHas " <> (show $ length links) <> " Links"
-        for_ nodes (\n -> node ui ch n)
+patch ui ch patch@(R.Patch patchId label nodes links) =
+    H.div #! on "click" maybeSelect $
+        if isSelected then do
+            H.p $ H.text $ "<" <> show patchId <> ": " <> label <> ">"
+            H.p $ H.text $ "\tHas " <> (show $ length nodes) <> " Nodes"
+            H.p $ H.text $ "\tHas " <> (show $ length links) <> " Links"
+            for_ nodes (\n -> node ui ch n)
+        else
+            H.p $ H.text $ "[" <> show patchId <> "]"
+    where
+        isSelected = isPatchSelected ui patch
+        className = "patch " <> (if isSelected then "_selected" else "")
+        maybeSelect = sendEvt ch $ Select (SPatch patchId)
 
 
 node :: forall d e. (Show d) => UI d -> UIChannel d -> R.Node d -> Markup e
@@ -119,3 +127,11 @@ sendEvt :: forall d e. UIChannel d -> Event d -> Listener e
 sendEvt ch evt =
     eventListener $ const $ SC.send ch evt
 
+
+
+friendlyLength :: forall a. String -> String -> Array a -> String
+friendlyLength s m xs =
+    case (length xs) of
+        0 -> "No " <> m
+        1 -> "One " <> s
+        n -> show n <> " " <> m
