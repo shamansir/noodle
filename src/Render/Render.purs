@@ -4,13 +4,15 @@ module Render
     , Event(..), Selection(..), getSelection
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
     , UIChannel
-    , init, update
+    , init, update, update'
     ) where
 
 import Prelude
 
 import Data.Map (Map(..))
 import Data.Map as Map
+import Data.Array ((:))
+import Data.Array as Array
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Rpd as R
 import Signal as S
@@ -25,6 +27,7 @@ newtype UIState d =
         , curDataMsg :: Maybe (R.DataMsg d)
         , lastInletData :: Map R.InletPath d
         , lastOutletData :: Map R.OutletPath d
+        , lastEvents :: Array (Event d) -- FIXME: remove
         }
 
 
@@ -63,6 +66,7 @@ init =
         , curDataMsg : Nothing
         , lastInletData : Map.empty
         , lastOutletData : Map.empty
+        , lastEvents : []
         }
 
 
@@ -92,6 +96,20 @@ update (Select selection) ui =
         Nothing -> ui
 update _ ui = ui
 
+
+-- FIXME: remove or replace with Writer Monad
+update' :: forall d e. Event d -> UI d -> UI d
+update' evt ui =
+    let
+        UI (UIState state) network = update evt ui
+        state' =
+            if isMeaningfulEvent evt then
+                state { lastEvents = Array.take 5 $ evt : state.lastEvents }
+            else
+                state
+
+    in
+        UI (UIState state') network
 
 -- updateAndLog :: forall d e. Event d -> UI d -> String /\ UI d
 
@@ -144,6 +162,15 @@ isOutletSelected (SOutlet selectedOutletPath) outletPath = selectedOutletPath ==
 isOutletSelected _ _ = false
 
 
+isMeaningfulEvent :: forall d. Event d -> Boolean
+isMeaningfulEvent Start = true
+isMeaningfulEvent Skip = true
+isMeaningfulEvent (ConnectFrom _) = true
+isMeaningfulEvent (ConnectTo _) = true
+isMeaningfulEvent (Select _) = true
+isMeaningfulEvent _ = false
+
+
 instance showSelection :: Show Selection where
     show SNone = "Nothing selected"
     show SNetwork = "Network selected"
@@ -155,10 +182,11 @@ instance showSelection :: Show Selection where
 
 
 instance showUIState :: (Show d) => Show (UIState d) where
-    show (UIState { selection, dragging, connecting })
+    show (UIState { selection, dragging, connecting, lastEvents })
         = "Selection: " <> show selection <>
         ", Dragging: " <> show dragging <>
-        ", Connecting " <> show connecting
+        ", Connecting " <> show connecting <>
+        ", Last events " <> show (Array.reverse lastEvents)
 
 
 instance showUI :: (Show d) => Show (UI d) where
@@ -173,4 +201,4 @@ instance showEvent :: (Show d) => Show (Event d) where
     -- | Drag Int Int
     -- | Data (R.DataMsg d)
     show (Select selection) = "Select " <> show selection
-    show _ = ""
+    show _ = "x"

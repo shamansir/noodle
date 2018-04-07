@@ -38,7 +38,7 @@ renderer :: forall d e. (Show d) => Element -> DomRenderer d e
 renderer target maybeDataSignal nw = do
     evtChannel <- SC.channel Start
     let evtSignal = SC.subscribe evtChannel
-    let uiSignal = S.foldp update (UI init nw) evtSignal
+    let uiSignal = S.foldp update' (UI init nw) evtSignal
     case maybeDataSignal of
         Just dataSignal -> do
             let sendData = (\dataEvt -> SC.send evtChannel dataEvt)
