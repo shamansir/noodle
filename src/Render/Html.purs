@@ -64,18 +64,18 @@ render target ui ch = do
 network :: forall d e. (Show d) => UI d -> UIChannel d -> Markup e
 network ui@(UI (UIState s) (R.Network patches)) ch =
     H.div ! HA.className "network" $ do
-        H.p $ H.text $ "Network: " <> friendlyLength "Patch" "Patches" patches
+        H.p $ H.text $ "Network: " <> (show $ length patches) <> "P"
         H.div ! HA.className "patches" $
             for_ patches (\p -> patch ui ch p)
 
 
 patch :: forall d e. (Show d) => UI d -> UIChannel d -> R.Patch d -> Markup e
 patch ui ch (R.Patch patchId label nodes links) =
-    H.div $
+    H.div ! HA.className className $
         if isSelected then do
-            H.p #! clickHandler $ H.text $ "<" <> show patchId <> ": " <> label <> ">"
-            H.p $ H.text $ friendlyLength "Node" "Nodes" nodes
-            H.p $ H.text $ friendlyLength "Link" "Links" links
+            H.p #! clickHandler $ H.text $ "<" <> show patchId <> ": " <> label <> "> "
+                <> "N" <> (show $ length nodes) <> " "
+                <> "L" <> (show $ length links)
             for_ nodes (\n -> node ui ch n)
         else
             H.p #! clickHandler $ H.text $ "[" <> show patchId <> "]"
@@ -88,13 +88,13 @@ patch ui ch (R.Patch patchId label nodes links) =
 
 node :: forall d e. (Show d) => UI d -> UIChannel d -> R.Node d -> Markup e
 node ui ch (R.Node nodePath name inlets outlets _) =
-    H.div $
+    H.div ! HA.className className $
         if isSelected then do
-            H.p #! clickHandler $ H.text $ "<" <> show nodePath <> ": " <> name <> ">"
-            H.p $ H.text $ friendlyLength "Inlet" "Inlets" inlets
-            H.p $ H.text $ friendlyLength "Outlet" "Outlets" outlets
-            for_ inlets (\i -> inlet ui ch i)
-            for_ outlets (\o -> outlet ui ch o)
+            H.p #! clickHandler $ H.text $ "<" <> show nodePath <> ": " <> name <> "> "
+                <> "I" <> (show $ length inlets) <> " "
+                <> "O" <> (show $ length outlets)
+            H.div ! HA.className "inlets" $ for_ inlets (\i -> inlet ui ch i)
+            H.div ! HA.className "outlets" $ for_ outlets (\o -> outlet ui ch o)
         else
             H.p #! clickHandler $ H.text $ "[" <> show nodePath <> "]"
     where
@@ -105,30 +105,53 @@ node ui ch (R.Node nodePath name inlets outlets _) =
 
 
 inlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Inlet d -> Markup e
-inlet (UI (UIState s) _) ch (R.Inlet path label maybeDefault _) =
-    H.div $ do
-        H.p #! on "click" maybeConnect $ H.text $ "Inlet: " <> label <> " " <> show path
-        H.p $ H.text $ dataText s.curDataMsg
+inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault _) =
+    H.div ! HA.className className $
+        if isSelected then
+            H.div $ do
+                H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ "(X)"
+                H.span #! clickHandler $ H.text $ "<" <> show path <> ": " <> label <> "> "
+                H.span $ H.text $ dataText s.curDataMsg
+        else
+            H.div $ do
+                H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ "(X)"
+                H.span #! clickHandler $ H.text $ "[" <> show path <> "]"
     where
+        isSelected = isInletSelected (getSelection ui) path
+        className = "inlet " <> (if isSelected then "_selected" else "")
+        maybeSelect = sendEvt ch $ Select (SInlet path)
         maybeConnect = sendEvt ch $ case s.connecting of
             Just outletPath -> ConnectTo path
             Nothing -> Skip
-        dataText dataMsg = maybe "No data" (\v -> "Has data: " <> show v) $ do
+        clickHandler = on "click" maybeSelect
+        connectorClickHandler = on "click" maybeConnect
+        dataText dataMsg = maybe "--" show $ do
             dataMsg' <- dataMsg
             pure $ R.ifFromInlet path dataMsg' <|> Map.lookup path s.lastInletData
 
 
-
 outlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Outlet d -> Markup e
-outlet (UI (UIState s) _) ch (R.Outlet path label _) =
-    H.div $ do
-        H.p #! on "click" tryConnecting $ H.text $ "Outlet: " <> label <> " " <> show path
-        H.p $ H.text $ dataText s.curDataMsg
+outlet ui@(UI (UIState s) _) ch (R.Outlet path label _) =
+    H.div ! HA.className className $
+        if isSelected then
+            H.div $ do
+                H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ "(X)"
+                H.span #! clickHandler $ H.text $ "<" <> show path <> ": " <> label <> "> "
+                H.span $ H.text $ dataText s.curDataMsg
+        else
+            H.div $ do
+                H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ "(X)"
+                H.span #! clickHandler $ H.text $ "[" <> show path <> "]"
     where
-        tryConnecting = sendEvt ch $ case s.connecting of
+        isSelected = isOutletSelected (getSelection ui) path
+        className = "outlet " <> (if isSelected then "_selected" else "")
+        maybeSelect = sendEvt ch $ Select (SOutlet path)
+        maybeConnect = sendEvt ch $ case s.connecting of
             Just _ -> Skip
             Nothing -> ConnectFrom path
-        dataText dataMsg = maybe "No data" (\v -> "Has data: " <> show v) $ do
+        clickHandler = on "click" maybeSelect
+        connectorClickHandler = on "click" maybeConnect
+        dataText dataMsg = maybe "--" show $ do
             dataMsg' <- dataMsg
             pure $ R.ifFromOutlet path dataMsg' <|> Map.lookup path s.lastOutletData
 
@@ -139,10 +162,3 @@ sendEvt ch evt =
     eventListener $ const $ SC.send ch evt
 
 
-
-friendlyLength :: forall a. String -> String -> Array a -> String
-friendlyLength s m xs =
-    case (length xs) of
-        0 -> "No " <> m
-        1 -> "One " <> s
-        n -> show n <> " " <> m

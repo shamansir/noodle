@@ -6,6 +6,43 @@
     display: flex;
 }
 
-.patch._selected {
+.patch > *:first-child {
+    cursor: pointer;
+}
+
+.patch._selected > *:first-child {
     color: red;
+}
+
+.node > *:first-child {
+    cursor: pointer;
+}
+
+.node._selected > *:first-child {
+    color: red;
+}
+
+.inlet > * > *:nth-child(2) {
+    cursor: pointer;
+}
+
+.inlet._selected > * > *:nth-child(2) {
+    color: red;
+}
+
+.outlet > * > *:nth-child(2) {
+    cursor: pointer;
+}
+
+.outlet._selected > * > *:nth-child(2) {
+    color: red;
+}
+
+.connector {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.inlets {
+    margin-bottom: 5px;
 }
