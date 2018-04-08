@@ -2,8 +2,14 @@
     font-family: monospace;
 }
 
-.patches {
+.patches, .nodes {
     display: flex;
+    align-items: flex-start;
+}
+
+.patch, .node {
+    margin-right: 40px;
+    display: inline-block;
 }
 
 .patch > *:first-child {
@@ -14,12 +20,20 @@
     color: red;
 }
 
+/* .node {
+    max-width: 300px;
+} */
+
 .node > *:first-child {
     cursor: pointer;
 }
 
 .node._selected > *:first-child {
     color: red;
+}
+
+.inlet {
+    overflow: hidden;
 }
 
 .inlet > * > *:nth-child(2) {
@@ -32,6 +46,11 @@
 
 .inlet._waiting .connector {
     color: blue;
+    cursor: cell;
+}
+
+.outlet .connector {
+    cursor: pointer;
 }
 
 .outlet._waiting .connector {
@@ -40,6 +59,7 @@
 
 .outlet._connecting .connector {
     color: blue;
+    cursor: cell;
 }
 
 .outlet > * > *:nth-child(2) {

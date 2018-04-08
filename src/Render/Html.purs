@@ -76,7 +76,8 @@ patch ui ch (R.Patch patchId label nodes links) =
             H.p #! clickHandler $ H.text $ "<" <> show patchId <> ": " <> label <> "> "
                 <> "N" <> (show $ length nodes) <> " "
                 <> "L" <> (show $ length links)
-            for_ nodes (\n -> node ui ch n)
+            H.div ! HA.className "nodes" $
+                for_ nodes (\n -> node ui ch n)
         else
             H.p #! clickHandler $ H.text $ "[" <> show patchId <> "]"
     where
