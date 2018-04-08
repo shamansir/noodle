@@ -118,11 +118,14 @@ select :: forall d. Selection -> Selection -> Maybe Selection
 select newSelection SNone = Just newSelection
 select (SPatch newPatch) prevSelection   | isPatchSelected prevSelection newPatch = Just SNone
                                          | otherwise = Just (SPatch newPatch)
-select (SNode newNode) prevSelection     | isNodeSelected prevSelection newNode = Just SNone
+select (SNode newNode) prevSelection     | isNodeSelected prevSelection newNode =
+                                                Just (SPatch $ R.getPatchOfNode newNode)
                                          | otherwise = Just (SNode newNode)
-select (SInlet newInlet) prevSelection   | isInletSelected prevSelection newInlet = Just SNone
+select (SInlet newInlet) prevSelection   | isInletSelected prevSelection newInlet =
+                                                Just (SNode $ R.getNodeOfInlet newInlet)
                                          | otherwise = Just (SInlet newInlet)
-select (SOutlet newOutlet) prevSelection | isOutletSelected prevSelection newOutlet = Just SNone
+select (SOutlet newOutlet) prevSelection | isOutletSelected prevSelection newOutlet =
+                                                Just (SNode $ R.getNodeOfOutlet newOutlet)
                                          | otherwise = Just (SOutlet newOutlet)
 select SNone _ = Just SNone
 select _ _ = Nothing
@@ -172,21 +175,21 @@ isMeaningfulEvent _ = false
 
 
 instance showSelection :: Show Selection where
-    show SNone = "Nothing selected"
-    show SNetwork = "Network selected"
-    show (SPatch patchId) = show patchId <> " selected"
-    show (SNode nodePath) = show nodePath <> " selected"
-    show (SInlet inletPath) = show inletPath <> " selected"
-    show (SOutlet outletPath) = show outletPath <> " selected"
-    show (SLink linkId) = show linkId <> " selected"
+    show SNone = "Nothing"
+    show SNetwork = "Network"
+    show (SPatch patchId) = show patchId
+    show (SNode nodePath) = show nodePath
+    show (SInlet inletPath) = show inletPath
+    show (SOutlet outletPath) = show outletPath
+    show (SLink linkId) = show linkId
 
 
 instance showUIState :: (Show d) => Show (UIState d) where
     show (UIState { selection, dragging, connecting, lastEvents })
         = "Selection: " <> show selection <>
         ", Dragging: " <> show dragging <>
-        ", Connecting " <> show connecting <>
-        ", Last events " <> show (Array.reverse lastEvents)
+        ", Connecting: " <> show connecting <>
+        ", Last events: " <> show (Array.reverse lastEvents)
 
 
 instance showUI :: (Show d) => Show (UI d) where

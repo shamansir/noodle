@@ -71,35 +71,37 @@ network ui@(UI (UIState s) (R.Network patches)) ch =
 
 patch :: forall d e. (Show d) => UI d -> UIChannel d -> R.Patch d -> Markup e
 patch ui ch (R.Patch patchId label nodes links) =
-    H.div #! on "click" maybeSelect $
+    H.div $
         if isSelected then do
-            H.p $ H.text $ "<" <> show patchId <> ": " <> label <> ">"
+            H.p #! clickHandler $ H.text $ "<" <> show patchId <> ": " <> label <> ">"
             H.p $ H.text $ friendlyLength "Node" "Nodes" nodes
             H.p $ H.text $ friendlyLength "Link" "Links" links
             for_ nodes (\n -> node ui ch n)
         else
-            H.p $ H.text $ "[" <> show patchId <> "]"
+            H.p #! clickHandler $ H.text $ "[" <> show patchId <> "]"
     where
         isSelected = isPatchSelected (getSelection ui) patchId
         className = "patch " <> (if isSelected then "_selected" else "")
         maybeSelect = sendEvt ch $ Select (SPatch patchId)
+        clickHandler = on "click" maybeSelect
 
 
 node :: forall d e. (Show d) => UI d -> UIChannel d -> R.Node d -> Markup e
 node ui ch (R.Node nodePath name inlets outlets _) =
-    H.div #! on "click" maybeSelect $
+    H.div $
         if isSelected then do
-            H.p $ H.text $ "<" <> show nodePath <> ": " <> name <> ">"
+            H.p #! clickHandler $ H.text $ "<" <> show nodePath <> ": " <> name <> ">"
             H.p $ H.text $ friendlyLength "Inlet" "Inlets" inlets
             H.p $ H.text $ friendlyLength "Outlet" "Outlets" outlets
             for_ inlets (\i -> inlet ui ch i)
             for_ outlets (\o -> outlet ui ch o)
         else
-            H.p $ H.text $ "[" <> show nodePath <> "]"
+            H.p #! clickHandler $ H.text $ "[" <> show nodePath <> "]"
     where
         isSelected = isNodeSelected (getSelection ui) nodePath
         className = "node " <> (if isSelected then "_selected" else "")
         maybeSelect = sendEvt ch $ Select (SNode nodePath)
+        clickHandler = on "click" maybeSelect
 
 
 inlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Inlet d -> Markup e

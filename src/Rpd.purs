@@ -12,6 +12,7 @@ module Rpd
     , patchId, nodePath, inletPath, outletPath
     , ifFromInlet, ifFromOutlet
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
+    , getPatchOfNode, getPatchOfInlet, getPatchOfInlet, getNodeOfInlet, getNodeOfOutlet
     ) where
 
 import Prelude
@@ -218,6 +219,26 @@ inletPath pId nId iId = InletPath (NodePath (PatchId pId) nId) iId
 
 outletPath :: Int -> Int -> Int -> OutletPath
 outletPath pId nId iId = OutletPath (NodePath (PatchId pId) nId) iId
+
+
+getPatchOfNode :: NodePath -> PatchId
+getPatchOfNode (NodePath pId _) = pId
+
+
+getPatchOfInlet :: InletPath -> PatchId
+getPatchOfInlet inlet = getPatchOfNode $ getNodeOfInlet inlet
+
+
+getPatchOfOutlet :: OutletPath -> PatchId
+getPatchOfOutlet outlet = getPatchOfNode $ getNodeOfOutlet outlet
+
+
+getNodeOfInlet :: InletPath -> NodePath
+getNodeOfInlet  (InletPath nPath _) = nPath
+
+
+getNodeOfOutlet :: OutletPath -> NodePath
+getNodeOfOutlet  (OutletPath nPath _) = nPath
 
 
 -- | Get the current value of a signal. Should be in purescript-signal, pending
