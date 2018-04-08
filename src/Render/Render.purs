@@ -1,7 +1,7 @@
 module Render
     ( UI(..)
     , UIState(..)
-    , Event(..), Selection(..), getSelection
+    , Event(..), Selection(..), getSelection, getConnecting
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
     , UIChannel
     , init, update, update'
@@ -90,6 +90,10 @@ update (Data dataMsg) (UI (UIState state) network) =
                                 _ -> state.lastOutletData
                       })
             network
+update (ConnectFrom outletPath) (UI (UIState state) network) =
+    UI (UIState $ state { connecting = Just outletPath }) network
+update (ConnectTo _) (UI (UIState state) network) =
+    UI (UIState $ state { connecting = Nothing }) network
 update (Select selection) ui =
     case select selection $ getSelection ui of
         Just newSelection -> setSelection newSelection ui
@@ -133,6 +137,10 @@ select _ _ = Nothing
 
 getSelection :: forall d. UI d -> Selection
 getSelection (UI (UIState s) _) = s.selection
+
+
+getConnecting :: forall d. UI d -> Maybe R.OutletPath
+getConnecting (UI (UIState s) _) = s.connecting
 
 
 setSelection :: forall d. Selection -> UI d -> UI d

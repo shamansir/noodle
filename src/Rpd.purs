@@ -12,7 +12,8 @@ module Rpd
     , patchId, nodePath, inletPath, outletPath
     , ifFromInlet, ifFromOutlet
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
-    , getPatchOfNode, getPatchOfInlet, getPatchOfInlet, getNodeOfInlet, getNodeOfOutlet
+    , notInTheSameNode
+    , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
     ) where
 
 import Prelude
@@ -184,6 +185,10 @@ isInletInNode (InletPath nodePath' _) nodePath = nodePath == nodePath'
 
 isOutletInNode :: OutletPath -> NodePath -> Boolean
 isOutletInNode (OutletPath nodePath' _) nodePath = nodePath == nodePath'
+
+
+notInTheSameNode :: InletPath -> OutletPath -> Boolean
+notInTheSameNode (InletPath iNodePath _) (OutletPath oNodePath _) = iNodePath /= oNodePath
 
 
 -- updatePatch

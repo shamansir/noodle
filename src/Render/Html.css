@@ -30,6 +30,18 @@
     color: red;
 }
 
+.inlet._waiting .connector {
+    color: blue;
+}
+
+.outlet._waiting .connector {
+    color: red;
+}
+
+.outlet._connecting .connector {
+    color: blue;
+}
+
 .outlet > * > *:nth-child(2) {
     cursor: pointer;
 }

@@ -9,7 +9,7 @@ import Data.Map (Map(..))
 import Data.Foldable (for_)
 import Data.Array (length)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import DOM (DOM)
 import DOM.Event.EventTarget (EventListener, eventListener)
 import DOM.Node.Types (Element)
@@ -109,22 +109,25 @@ inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault _) =
     H.div ! HA.className className $
         if isSelected then
             H.div $ do
-                H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ "(X)"
+                H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ connectorLabel
                 H.span #! clickHandler $ H.text $ "<" <> show path <> ": " <> label <> "> "
                 H.span $ H.text $ dataText s.curDataMsg
         else
             H.div $ do
-                H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ "(X)"
+                H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ connectorLabel
                 H.span #! clickHandler $ H.text $ "[" <> show path <> "]"
     where
         isSelected = isInletSelected (getSelection ui) path
-        className = "inlet " <> (if isSelected then "_selected" else "")
+        isWaitingForConnection = fromMaybe false $ R.notInTheSameNode path <$> getConnecting ui
+        className = "inlet" <> (if isSelected then " _selected" else " ")
+            <> (if isWaitingForConnection then " _waiting" else " ")
         maybeSelect = sendEvt ch $ Select (SInlet path)
         maybeConnect = sendEvt ch $ case s.connecting of
             Just outletPath -> ConnectTo path
             Nothing -> Skip
         clickHandler = on "click" maybeSelect
         connectorClickHandler = on "click" maybeConnect
+        connectorLabel = if isWaitingForConnection then "(+)" else "(X)"
         dataText dataMsg = maybe "--" show $ do
             dataMsg' <- dataMsg
             pure $ R.ifFromInlet path dataMsg' <|> Map.lookup path s.lastInletData
@@ -135,22 +138,25 @@ outlet ui@(UI (UIState s) _) ch (R.Outlet path label _) =
     H.div ! HA.className className $
         if isSelected then
             H.div $ do
-                H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ "(X)"
+                H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ connectorLabel
                 H.span #! clickHandler $ H.text $ "<" <> show path <> ": " <> label <> "> "
                 H.span $ H.text $ dataText s.curDataMsg
         else
             H.div $ do
-                H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ "(X)"
+                H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ connectorLabel
                 H.span #! clickHandler $ H.text $ "[" <> show path <> "]"
     where
         isSelected = isOutletSelected (getSelection ui) path
-        className = "outlet " <> (if isSelected then "_selected" else "")
+        isConnectingSomething = isJust $ getConnecting ui
+        isCurrentlyConnecting = fromMaybe false $ ((==) path) <$> getConnecting ui
+        className = "outlet" <> (if isSelected then " _selected" else " ")
+                     <> (if isConnectingSomething then " _waiting" else " ")
+                     <> (if isCurrentlyConnecting then " _connecting" else " ")
         maybeSelect = sendEvt ch $ Select (SOutlet path)
-        maybeConnect = sendEvt ch $ case s.connecting of
-            Just _ -> Skip
-            Nothing -> ConnectFrom path
+        maybeConnect = sendEvt ch $ ConnectFrom path
         clickHandler = on "click" maybeSelect
         connectorClickHandler = on "click" maybeConnect
+        connectorLabel = if isCurrentlyConnecting then "(*)" else "(+)"
         dataText dataMsg = maybe "--" show $ do
             dataMsg' <- dataMsg
             pure $ R.ifFromOutlet path dataMsg' <|> Map.lookup path s.lastOutletData
