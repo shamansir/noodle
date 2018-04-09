@@ -39,6 +39,11 @@ data OutletPath = OutletPath NodePath Int
 data LinkId = LinkId Int
 
 
+data DataSource d
+    = UserSource (S.Signal d)
+    | OutletSource OutletPath (S.Signal d)
+
+
 data Network d = Network (Array (Patch d)) -- (S.Signal d) -- change to info about where data flows
 data Patch d = Patch PatchId String (Array (Node d)) (Array Link)
 data Node d = Node NodePath String (Array (Inlet d)) (Array (Outlet d)) (ProcessF d) -- (S.Signal Unit) add node type just for tagging?
