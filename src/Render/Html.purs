@@ -108,7 +108,7 @@ node ui ch (R.Node nodePath name inlets outlets _) =
 
 
 inlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Inlet d -> Markup e
-inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault _) =
+inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault sources) =
     H.div ! HA.className className $
         if isSelected then
             H.div $ do
@@ -130,7 +130,10 @@ inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault _) =
             Nothing -> Skip
         clickHandler = on "click" maybeSelect
         connectorClickHandler = on "click" maybeConnect
-        connectorLabel = if isWaitingForConnection then "(+)" else "(X)"
+        connectorLabel =
+            if isWaitingForConnection then "(+)"
+            else if length sources > 0 then "(" <> show (length sources) <> ")"
+            else "(X)"
         dataText dataMsg = maybe "--" show $ do
             dataMsg' <- dataMsg
             pure $ R.ifFromInlet path dataMsg' <|> Map.lookup path s.lastInletData

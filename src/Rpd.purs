@@ -45,6 +45,10 @@ data DataSource d
     | OutletSource OutletPath (S.Signal d)
 
 
+-- TODO: normalize network, change to plain IDs maybe, or use paths as keys,
+--       they implement Eq anyway
+-- TODO: change the types below to records?
+
 data Network d = Network (Array (Patch d)) -- (S.Signal d) -- change to info about where data flows
 data Patch d = Patch PatchId String (Array (Node d)) (Array Link)
 data Node d = Node NodePath String (Array (Inlet d)) (Array (Outlet d)) (ProcessF d) -- (S.Signal Unit) add node type just for tagging?
@@ -130,6 +134,11 @@ inlet label dataSource =
 inlet' :: forall d. String -> d -> LazyInlet d
 inlet' label defaultVal =
     inlet_ label defaultVal $ S.constant defaultVal
+
+
+-- inlet'' :: forall d. String -> LazyInlet d
+-- inlet'' label =
+--     \inletPath -> Inlet inletPath label Nothing [ ]
 
 
 inlet_ :: forall d. String -> d -> S.Signal d -> LazyInlet d

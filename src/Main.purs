@@ -21,18 +21,18 @@ import Signal.Time as ST
 
 data MyData
   = Bang
-  | Str' String
-  | Num' Number
+  | Str' String String
+  | Num' String Number
 
 
 myNode :: R.LazyNode MyData
 myNode =
   R.node "f"
-    [ R.inlet' "a" (Str' "i")
-    , R.inlet' "b" (Str' "test") -- FIXME: "test" is not shown!
-    , R.inlet "f" (ST.every (2.0 * ST.second) S.~> Num')  -- FIXME: also not shown!
-    , R.inlet "d" (ST.every ST.second S.~> Num')
-    , R.inlet' "e" (Num' 3.0) -- FIXME: "3.0" is not shown!
+    [ R.inlet' "a" (Str' "a" "i")
+    , R.inlet' "b" (Str' "b" "test")
+    , R.inlet "f" (ST.every (2.0 * ST.second) S.~> Num' "f")
+    , R.inlet "d" (ST.every ST.second S.~> Num' "d")
+    , R.inlet' "e" (Num' "e" 3.0)
     ]
     [ R.outlet "c"
     ]
@@ -61,5 +61,5 @@ main = do
 
 instance showMyData :: Show MyData where
   show Bang = "Bang"
-  show (Str' s) = "Str: " <> s
-  show (Num' n) = "Num: " <> show n
+  show (Str' label s) = "Str: " <> label <> "/" <> s
+  show (Num' label n) = "Num: " <> label <> "/" <> show n
