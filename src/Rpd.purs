@@ -4,12 +4,13 @@ module Rpd
     , RenderEff
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
-    , DataSignal, DataMsg(..)
+    , DataSignal, DataMsg(..), DataSource
     , ProcessF
     , network, patch, node, inlet, inlet', outlet--, connect
     --, NetworkT, PatchT
     , PatchId, NodePath, InletPath, OutletPath, LinkId
     , patchId, nodePath, inletPath, outletPath
+    , subscribeDataSignal
     , ifFromInlet, ifFromOutlet
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
     , notInTheSameNode
@@ -19,8 +20,8 @@ module Rpd
 import Prelude
 
 import Control.Monad.Eff (Eff)
+import Data.Array (concatMap, mapWithIndex, catMaybes)
 import Data.Maybe (Maybe(..))
-import Data.Array (concatMap, mapWithIndex)
 import Data.Tuple.Nested (type (/\))
 import Signal as S
 import Signal.Channel as SC
@@ -49,7 +50,7 @@ data Patch d = Patch PatchId String (Array (Node d)) (Array Link)
 data Node d = Node NodePath String (Array (Inlet d)) (Array (Outlet d)) (ProcessF d) -- (S.Signal Unit) add node type just for tagging?
 --data Node d = Node String (Map String d -> Map String d)
 -- S.constant is not able to send values afterwards, so we store the default value inside
-data Inlet d = Inlet InletPath String (Maybe d) (S.Signal d)
+data Inlet d = Inlet InletPath String (Maybe d) (Array (DataSource d))
 --data Inlet d = Inlet String (Maybe (AdaptF d))
 data Outlet d = Outlet OutletPath String (Maybe (S.Signal d))
 data Link = Link OutletPath InletPath
@@ -79,6 +80,7 @@ data DataMsg d
     = FromInlet InletPath d
     | FromOutlet OutletPath d
 
+
 type DataSignal d = S.Signal (DataMsg d)
 
 
@@ -86,14 +88,12 @@ type RenderEff e =
     Eff (channel :: SC.CHANNEL | e) (S.Signal (Eff ( channel :: SC.CHANNEL | e ) Unit))
 
 
-type Renderer d e = Maybe (DataSignal d) -> Network d -> RenderEff e
+type Renderer d e = Network d -> RenderEff e
 
 
 run :: forall d e. Renderer d e -> Network d -> Eff (channel :: SC.CHANNEL | e) Unit
 run renderer network = do
-    let maybeDataSignal = prepareDataSignal network
-    renderSignal <- renderer maybeDataSignal network
-    S.runSignal renderSignal
+    renderer network >>= S.runSignal
 
 
 network :: forall d. Array (LazyPatch d) -> Network d
@@ -124,7 +124,7 @@ node name lazyInlets lazyOutlets =
 
 inlet :: forall d. String -> S.Signal d -> LazyInlet d
 inlet label dataSource =
-    \inletPath -> Inlet inletPath label Nothing dataSource
+    \inletPath -> Inlet inletPath label Nothing [ UserSource dataSource ]
 
 
 inlet' :: forall d. String -> d -> LazyInlet d
@@ -133,8 +133,8 @@ inlet' label defaultVal =
 
 
 inlet_ :: forall d. String -> d -> S.Signal d -> LazyInlet d
-inlet_ label defaultVal dataSource =
-    \inletPath -> Inlet inletPath label (Just defaultVal) dataSource
+inlet_ label defaultVal dataSource  =
+    \inletPath -> Inlet inletPath label (Just defaultVal) [ UserSource dataSource ]
 
 
 outlet :: forall d. String -> LazyOutlet d
@@ -142,20 +142,28 @@ outlet label =
     \outletPath -> Outlet outletPath label Nothing
 
 
-prepareDataSignal
+subscribeDataSignal
     :: forall d
      . Network d
     -- -> S.Signal (InletPath /\ d) /\ S.Signal (OutletPath /\ d)
     -> Maybe (DataSignal d)
-prepareDataSignal (Network patches) =
+subscribeDataSignal (Network patches) =
     let
-        allNodes = concatMap (\(Patch patchId _ nodes _) -> nodes) patches
+        allNodes = concatMap (\(Patch _ _ nodes _) -> nodes) patches
         allInlets = concatMap (\(Node _ _ inlets _ _) -> inlets) allNodes
         allOutlets = concatMap (\(Node _ _ _ outlets _) -> outlets) allNodes
-        extractInletSignal = \(Inlet path _ _ signal) -> signal S.~> (\d -> FromInlet path d)
-        --extractOutletSignal = \(Outlet path _ maybeSignal) -> maybeSignal S.~> (\d -> path /\ d)
+        adaptInletDataSources path dataSource =
+            signal S.~> (\d -> FromInlet path d)
+            where
+                signal =
+                    case dataSource of
+                        UserSource signal -> signal
+                        OutletSource _ signal -> signal
+        extractInletSignals = \(Inlet path _ _ signals) ->
+            S.mergeMany $ map (adaptInletDataSources path) signals
+        --extractOutletSignal = \(Outlet path _ maybeSignal) -> maybeSignal S.~> (\d -> FromOutlet path d)
     in
-        S.mergeMany (map extractInletSignal allInlets)
+        S.mergeMany $ catMaybes $ map extractInletSignals allInlets
 
 
 -- returns data extracted from data message if it came from the specified inlet

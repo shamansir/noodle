@@ -4,6 +4,7 @@ import Prelude
 
 
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Class (liftEff)
 import Control.Alternative ((<|>))
 import Data.Map (Map(..))
 import Data.Foldable (for_)
@@ -35,7 +36,8 @@ type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
 
 
 renderer :: forall d e. (Show d) => Element -> DomRenderer d e
-renderer target maybeDataSignal nw = do
+renderer target nw = do
+    let maybeDataSignal = R.subscribeDataSignal nw
     evtChannel <- SC.channel Start
     let evtSignal = SC.subscribe evtChannel
     let uiSignal = S.foldp update' (UI init nw) evtSignal
