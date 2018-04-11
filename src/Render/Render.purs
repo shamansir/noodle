@@ -174,13 +174,13 @@ isOutletSelected _ _ = false
 
 
 isMeaningfulEvent :: forall d. Event d -> Boolean
--- isMeaningfulEvent Start = true
--- isMeaningfulEvent Skip = true
--- isMeaningfulEvent (ConnectFrom _) = true
--- isMeaningfulEvent (ConnectTo _) = true
--- isMeaningfulEvent (Select _) = true
--- isMeaningfulEvent _ = false
-isMeaningfulEvent _ = true
+isMeaningfulEvent Start = true
+isMeaningfulEvent Skip = true
+isMeaningfulEvent (ConnectFrom _) = true
+isMeaningfulEvent (ConnectTo _) = true
+isMeaningfulEvent (Select _) = true
+isMeaningfulEvent _ = false
+-- isMeaningfulEvent _ = true
 
 
 instance showSelection :: Show Selection where
@@ -194,11 +194,12 @@ instance showSelection :: Show Selection where
 
 
 instance showUIState :: (Show d) => Show (UIState d) where
-    show (UIState { selection, dragging, connecting, lastInletData, lastEvents })
+    show (UIState { selection, dragging, connecting, lastInletData, lastOutletData, lastEvents })
         = "Selection: " <> show selection <>
         ", Dragging: " <> show dragging <>
         ", Connecting: " <> show connecting <>
         ", Inlets: " <> show lastInletData <>
+        ", Outlets: " <> show lastOutletData <>
         ", Last events: " <> show (Array.reverse lastEvents)
 
 

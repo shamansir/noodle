@@ -33,6 +33,7 @@ type AdaptF d = (d -> d)
 data Rpd d = RpdT (Network d)
 
 
+-- TODO: FIXME store paths as arrays
 data PatchId = PatchId Int
 data NodePath = NodePath PatchId Int
 data InletPath = InletPath NodePath Int
@@ -280,6 +281,17 @@ foreign import get :: forall e a. S.Signal a -> Eff e a
 --     channel <- SC.channel defaultVal
 --     pure channel
 
+
+unpackNodePath :: NodePath -> Array Int
+unpackNodePath (NodePath (PatchId patchId) id) = [ patchId, id ]
+
+unpackInletPath :: InletPath -> Array Int
+unpackInletPath (InletPath nodePath id) = unpackNodePath nodePath <> [ id ]
+
+unpackOutletPath :: OutletPath -> Array Int
+unpackOutletPath (OutletPath nodePath id) = unpackNodePath nodePath <> [ id ]
+
+
 instance showPatchId :: Show PatchId where
     show (PatchId id) = "P" <> show id
 
@@ -319,13 +331,13 @@ instance ordPatchId :: Ord PatchId where
     compare (PatchId a) (PatchId b) = compare a b
 
 instance ordNodePath :: Ord NodePath where
-    compare (NodePath pa a) (NodePath pb b) =
-        compare (compare pa pb) (compare a b)
+    compare nodePath1 nodePath2 =
+        compare (unpackNodePath nodePath1)  (unpackNodePath nodePath2)
 
 instance ordInletPath :: Ord InletPath where
-    compare (InletPath na a) (InletPath nb b) =
-        compare (compare na nb) (compare a b)
+    compare inletPath1 inletPath2 =
+        compare (unpackInletPath inletPath1)  (unpackInletPath inletPath2)
 
 instance ordOutletPath :: Ord OutletPath where
-    compare (OutletPath na a) (OutletPath nb b) =
-        compare (compare na nb) (compare a b)
+    compare outletPath1 outletPath2 =
+        compare (unpackOutletPath outletPath1)  (unpackOutletPath outletPath2)

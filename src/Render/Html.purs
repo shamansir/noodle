@@ -1,19 +1,20 @@
 module Render.Html where
 
 import Prelude
+import Render
 
-
+import Control.Alternative ((<|>))
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
-import Control.Alternative ((<|>))
-import Data.Map (Map(..))
-import Data.Foldable (for_)
-import Data.Array (length)
-import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import DOM (DOM)
 import DOM.Event.EventTarget (EventListener, eventListener)
 import DOM.Node.Types (Element)
+import Data.Array (length)
+import Data.Foldable (for_)
+import Data.Map (Map(..))
+import Data.Map as Map
+import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
+import Rpd as R
 import Signal as S
 import Signal.Channel as SC
 import Text.Smolder.HTML as H
@@ -21,9 +22,6 @@ import Text.Smolder.HTML.Attributes as HA
 import Text.Smolder.Markup ((#!), (!), on)
 import Text.Smolder.Markup as H
 import Text.Smolder.Renderer.DOM as ToDOM
-
-import Rpd as R
-import Render
 
 
 type Listener e = EventListener ( channel :: SC.CHANNEL, dom :: DOM | e )
@@ -114,7 +112,6 @@ inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault sources) =
             H.div $ do
                 H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ connectorLabel
                 H.span #! clickHandler $ H.text $ "<" <> show path <> ": " <> label <> "> "
-                --H.span $ H.text $ dataText s.curDataMsg
                 H.span $ H.text dataText
         else
             H.div $ do
@@ -136,9 +133,6 @@ inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault sources) =
             else if length sources > 0 then "(" <> show (length sources) <> ")"
             else "(X)"
         dataText = show $ Map.lookup path s.lastInletData
-        -- dataText dataMsg = maybe "--" show $ do
-        --     dataMsg' <- dataMsg
-        --     pure $ R.ifFromInlet path dataMsg' <|> Map.lookup path s.lastInletData
 
 
 outlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Outlet d -> Markup e

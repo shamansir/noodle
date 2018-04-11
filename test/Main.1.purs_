@@ -120,6 +120,47 @@ wait t = do
 
 
 
+> myMap' = Map.empty :: Map R.InletPath String
+
+> myMap2 = Map.insert (R.InletPath (R.NodePath (R.PatchId 7) 11) 2) "foo" myMap'
+> Map.lookup (R.InletPath (R.NodePath (R.PatchId 7) 11) 2) myMap2
+(Just "foo")
+
+> Map.lookup (R.InletPath (R.NodePath (R.PatchId 7) 11) 1) myMap2
+Nothing
+
+> Map.lookup (R.InletPath (R.NodePath (R.PatchId 7) 11) 3) myMap2
+Nothing
+
+> myMap3 = Map.insert (R.InletPath (R.NodePath (R.PatchId 7) 9) 2) "bar" myMap2
+> Map.lookup (R.InletPath (R.NodePath (R.PatchId 7) 11) 3) myMap3
+Nothing
+
+> Map.lookup (R.InletPath (R.NodePath (R.PatchId 7) 11) 2) myMap3
+(Just "foo")
+
+> myMap3
+(fromFoldable [(Tuple P7/N11/I2 "foo"),(Tuple P7/N9/I2 "bar")])
+
+> Map.lookup (R.InletPath (R.NodePath (R.PatchId 7) 11) 4) myMap3
+Nothing
+
+> Map.lookup (R.InletPath (R.NodePath (R.PatchId 7) 10) 4) myMap3 --- WHY??
+(Just "foo")
+
+> myMap3
+(fromFoldable [(Tuple P7/N11/I2 "foo"),(Tuple P7/N9/I2 "bar")])
+
+> R.InletPath (R.NodePath (R.PatchId 7) 10) 4 == R.InletPath (R.NodePath (R.PatchId 7) 11) 2
+false
+
+> R.InletPath (R.NodePath (R.PatchId 7) 11) 2
+P7/N11/I2
+
+> compare (R.InletPath (R.NodePath (R.PatchId 7) 10) 4) (R.InletPath (R.NodePath (R.PatchId 7) 11) 2)
+EQ -- that's it!
+
+
 
 
 
