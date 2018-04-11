@@ -114,7 +114,8 @@ inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault sources) =
             H.div $ do
                 H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ connectorLabel
                 H.span #! clickHandler $ H.text $ "<" <> show path <> ": " <> label <> "> "
-                H.span $ H.text $ dataText s.curDataMsg
+                --H.span $ H.text $ dataText s.curDataMsg
+                H.span $ H.text dataText
         else
             H.div $ do
                 H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ connectorLabel
@@ -134,9 +135,10 @@ inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault sources) =
             if isWaitingForConnection then "(+)"
             else if length sources > 0 then "(" <> show (length sources) <> ")"
             else "(X)"
-        dataText dataMsg = maybe "--" show $ do
-            dataMsg' <- dataMsg
-            pure $ R.ifFromInlet path dataMsg' <|> Map.lookup path s.lastInletData
+        dataText = show $ Map.lookup path s.lastInletData
+        -- dataText dataMsg = maybe "--" show $ do
+        --     dataMsg' <- dataMsg
+        --     pure $ R.ifFromInlet path dataMsg' <|> Map.lookup path s.lastInletData
 
 
 outlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Outlet d -> Markup e

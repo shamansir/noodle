@@ -6,9 +6,9 @@ module Rpd
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , DataSignal, DataMsg(..), DataSource
     , ProcessF
-    , network, patch, node, inlet, inlet', outlet--, connect
+    , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet--, connect
     --, NetworkT, PatchT
-    , PatchId, NodePath, InletPath, OutletPath, LinkId
+    , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
     , subscribeDataSignal
     , ifFromInlet, ifFromOutlet
@@ -126,23 +126,24 @@ node name lazyInlets lazyOutlets =
             Node nodePath name inlets outlets id
 
 
-inlet :: forall d. String -> S.Signal d -> LazyInlet d
-inlet label dataSource =
+inlet :: forall d. String -> LazyInlet d
+inlet label =
+    \inletPath -> Inlet inletPath label Nothing [ ]
+
+
+inlet' :: forall d. String -> S.Signal d -> LazyInlet d
+inlet' label dataSource =
     \inletPath -> Inlet inletPath label Nothing [ UserSource dataSource ]
 
 
-inlet' :: forall d. String -> d -> LazyInlet d
-inlet' label defaultVal =
-    inlet_ label defaultVal $ S.constant defaultVal
+inletWithDefault :: forall d. String -> d -> LazyInlet d
+inletWithDefault label defaultVal =
+    -- inlet_ label defaultVal $ S.constant defaultVal
+    \inletPath -> Inlet inletPath label (Just defaultVal) [ ]
 
 
--- inlet'' :: forall d. String -> LazyInlet d
--- inlet'' label =
---     \inletPath -> Inlet inletPath label Nothing [ ]
-
-
-inlet_ :: forall d. String -> d -> S.Signal d -> LazyInlet d
-inlet_ label defaultVal dataSource  =
+inletWithDefault' :: forall d. String -> d -> S.Signal d -> LazyInlet d
+inletWithDefault' label defaultVal dataSource  =
     \inletPath -> Inlet inletPath label (Just defaultVal) [ UserSource dataSource ]
 
 
@@ -167,7 +168,7 @@ subscribeDataSignal (Network patches) =
                 signal =
                     case dataSource of
                         UserSource signal -> signal
-                        OutletSource _ signal -> signal
+                        OutletSource _ signal -> signal -- TODO: add outlet info
         extractInletSignals = \(Inlet path _ _ signals) ->
             S.mergeMany $ map (adaptInletDataSources path) signals
         --extractOutletSignal = \(Outlet path _ maybeSignal) -> maybeSignal S.~> (\d -> FromOutlet path d)
@@ -293,6 +294,12 @@ instance showOutletPath :: Show OutletPath where
 
 instance showLinkId :: Show LinkId where
     show (LinkId id) = "L" <> show id
+
+
+
+instance showDataMsg :: Show d => Show (DataMsg d) where
+    show (FromInlet inletPath d) = show inletPath <> " " <> show d
+    show (FromOutlet outletPath d) = show outletPath <> " " <> show d
 
 
 instance eqPatchId :: Eq PatchId where

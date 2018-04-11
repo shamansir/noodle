@@ -117,3 +117,46 @@ wait :: forall e. Number -> Aff e Unit
 wait t = do
   delay (Duration.Milliseconds t)
   pure unit
+
+
+
+
+
+
+R.InletPath (R.NodePath (R.PatchId 7) 11) 2 == R.InletPath (R.NodePath (R.PatchId 6) 11) 2
+
+
+myNode :: String -> R.LazyNode MyData
+myNode nodeId =
+  R.node "f"
+    [ R.inletWithDefault "a" (Str' (nodeId <> "a") "i")
+    , R.inletWithDefault "b" (Str' (nodeId <> "b") "test")
+    , R.inlet "f" -- (ST.every (2.0 * ST.second) S.~> Num' (nodeId <> "f"))
+    , R.inlet "d" -- (ST.every ST.second S.~> Num' (nodeId <> "d"))
+    , R.inletWithDefault "e" (Num' (nodeId <> "e") 3.0)
+    ]
+    [ R.outlet "c"
+    ]
+    -- (\_ -> [ "c" /\ Int' 10 ] )
+
+
+myNetwork :: R.Network MyData
+myNetwork =
+  R.network
+    [ R.patch "Patch One"
+      [ myNode "1"
+      , myNode "2"
+      ] -- >>> connect (patch.getNode 0) "a" (patch.getNode 1) "b"
+    ]
+
+
+
+
+main :: ∀ e. Eff (dom :: DOM, channel :: SC.CHANNEL | e) Unit
+main = do
+  documentType <- document =<< window
+  element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
+  for_ element (\element -> do
+    let renderer = RenderH.renderer element
+    liftEff $ R.run renderer myNetwork
+  )
