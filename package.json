@@ -18,6 +18,7 @@
     "purs:compile": "purs compile 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs'",
     "purs:bundle": "purs bundle output/**/*.js",
     "purs:server": "pulp server",
+    "purs:repl": "purs repl 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs'",
     "start": "node output/app.js"
   },
   "dependencies": {
