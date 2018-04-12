@@ -142,7 +142,7 @@ outlet ui@(UI (UIState s) _) ch (R.Outlet path label _) =
             H.div $ do
                 H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ connectorLabel
                 H.span #! clickHandler $ H.text $ "<" <> show path <> ": " <> label <> "> "
-                H.span $ H.text $ dataText s.curDataMsg
+                H.span $ H.text dataText
         else
             H.div $ do
                 H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ connectorLabel
@@ -159,9 +159,7 @@ outlet ui@(UI (UIState s) _) ch (R.Outlet path label _) =
         clickHandler = on "click" maybeSelect
         connectorClickHandler = on "click" maybeConnect
         connectorLabel = if isCurrentlyConnecting then "(*)" else "(+)"
-        dataText dataMsg = maybe "--" show $ do
-            dataMsg' <- dataMsg
-            pure $ R.ifFromOutlet path dataMsg' <|> Map.lookup path s.lastOutletData
+        dataText = show $ Map.lookup path s.lastOutletData
 
 
 

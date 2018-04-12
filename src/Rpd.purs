@@ -20,7 +20,7 @@ module Rpd
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Data.Array (concatMap, mapWithIndex, catMaybes)
+import Data.Array (concatMap, mapWithIndex, catMaybes, concat)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\))
 import Signal as S
@@ -160,6 +160,7 @@ subscribeDataSignal
     -> Maybe (DataSignal d)
 subscribeDataSignal (Network patches) =
     let
+        -- TODO: maybe use `sampleOn` instead
         allNodes = concatMap (\(Patch _ _ nodes _) -> nodes) patches
         allInlets = concatMap (\(Node _ _ inlets _ _) -> inlets) allNodes
         allOutlets = concatMap (\(Node _ _ _ outlets _) -> outlets) allNodes
@@ -170,11 +171,16 @@ subscribeDataSignal (Network patches) =
                     case dataSource of
                         UserSource signal -> signal
                         OutletSource _ signal -> signal -- TODO: add outlet info
+        adaptOutletSignal path signal =
+            signal S.~> (\d -> FromOutlet path d)
         extractInletSignals = \(Inlet path _ _ signals) ->
             S.mergeMany $ map (adaptInletDataSources path) signals
-        --extractOutletSignal = \(Outlet path _ maybeSignal) -> maybeSignal S.~> (\d -> FromOutlet path d)
+        extractOutletSignals = \(Outlet path _ maybeSignal) ->
+            adaptOutletSignal path <$> maybeSignal
+        inletSignals = catMaybes $ map extractInletSignals allInlets
+        outletSignals = catMaybes $ map extractOutletSignals allOutlets
     in
-        S.mergeMany $ catMaybes $ map extractInletSignals allInlets
+        S.mergeMany $ inletSignals <> outletSignals
 
 
 -- returns data extracted from data message if it came from the specified inlet
