@@ -6,7 +6,8 @@ module Rpd
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , DataSignal, DataMsg(..), DataSource
     , ProcessF
-    , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet--, connect
+    , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet
+    , connect, connect'
     --, NetworkT, PatchT
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
@@ -20,8 +21,8 @@ module Rpd
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Data.Array (concatMap, mapWithIndex, catMaybes, concat)
-import Data.Maybe (Maybe(..))
+import Data.Array ((:), concatMap, mapWithIndex, catMaybes, modifyAt)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Tuple.Nested (type (/\))
 import Signal as S
 import Signal.Channel as SC
@@ -156,11 +157,11 @@ outlet label =
 subscribeDataSignal
     :: forall d
      . Network d
-    -- -> S.Signal (InletPath /\ d) /\ S.Signal (OutletPath /\ d)
+    -- -> (d -> InletPath -> Eff e Unit)
+    -- -> (d -> OutletPath -> Eff e Unit)
     -> Maybe (DataSignal d)
 subscribeDataSignal (Network patches) =
     let
-        -- TODO: maybe use `sampleOn` instead
         allNodes = concatMap (\(Patch _ _ nodes _) -> nodes) patches
         allInlets = concatMap (\(Node _ _ inlets _ _) -> inlets) allNodes
         allOutlets = concatMap (\(Node _ _ _ outlets _) -> outlets) allNodes
@@ -170,7 +171,7 @@ subscribeDataSignal (Network patches) =
                 signal =
                     case dataSource of
                         UserSource signal -> signal
-                        OutletSource _ signal -> signal -- TODO: add outlet info
+                        OutletSource _ signal -> signal
         adaptOutletSignal path signal =
             signal S.~> (\d -> FromOutlet path d)
         extractInletSignals = \(Inlet path _ _ signals) ->
@@ -221,13 +222,36 @@ notInTheSameNode :: InletPath -> OutletPath -> Boolean
 notInTheSameNode (InletPath iNodePath _) (OutletPath oNodePath _) = iNodePath /= oNodePath
 
 
--- updatePatch
+-- TODO: change return type of the functions below to Maybe,
+-- to identify the case when subject wasn't modified
 
--- updateNode
+updatePatch :: forall d. (Patch d -> Patch d) -> PatchId -> Network d -> Network d
+updatePatch updater (PatchId patchId) (Network patches) =
+    Network $ fromMaybe patches $ modifyAt patchId updater patches
 
--- updateInlet
 
--- updateOutlet
+updateNode :: forall d. (Node d -> Node d) -> NodePath -> Network d -> Network d
+updateNode updater (NodePath patchId nodeId) network =
+    updatePatch (\(Patch id title nodes links) ->
+        let nodes' = fromMaybe nodes $ modifyAt nodeId updater nodes
+        in Patch id title nodes' links
+    ) patchId network
+
+
+updateInlet :: forall d. (Inlet d -> Inlet d) -> InletPath -> Network d -> Network d
+updateInlet updater (InletPath nodePath inletId) network =
+    updateNode (\(Node path label inlets outlets processF) ->
+        let inlets' = fromMaybe inlets $ modifyAt inletId updater inlets
+        in Node path label inlets' outlets processF
+    ) nodePath network
+
+
+updateOutlet :: forall d. (Outlet d -> Outlet d) -> OutletPath -> Network d -> Network d
+updateOutlet updater (OutletPath nodePath outletId) network =
+    updateNode (\(Node path label inlets outlets processF) ->
+        let outlets' = fromMaybe outlets $ modifyAt outletId updater outlets
+        in Node path label inlets outlets' processF
+    ) nodePath network
 
 
 connect :: forall d. Outlet d -> Inlet d -> Patch d -> Patch d
@@ -238,6 +262,20 @@ connect outlet inlet patch =
 connect' :: forall d. OutletPath -> InletPath -> Network d -> Network d
 connect' outletPath inletPath network =
     network
+    -- let
+    --     patchId = getPatchOfInlet inletPath
+    --     newLink = Link outletPath inletPath
+    --     network' = updatePatch
+    --         (\(Patch id title nodes links) -> Patch id title nodes $ newLink : links)
+    --         patchId
+    --         network
+    --     newSource = UserSource $ S.constant "test" -- FIXME: use outletStream
+    -- in
+    --     updateInlet
+    --         (\(Inlet path label defaultVal dataSources) ->
+    --             Inlet path label defaultVal $ newSource : dataSources)
+    --         inletPath
+    --         network'
 
 
 patchId :: Int -> PatchId

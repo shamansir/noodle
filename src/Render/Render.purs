@@ -92,8 +92,13 @@ update (Data dataMsg) (UI (UIState state) network) =
             network
 update (ConnectFrom outletPath) (UI (UIState state) network) =
     UI (UIState $ state { connecting = Just outletPath }) network
-update (ConnectTo _) (UI (UIState state) network) =
-    UI (UIState $ state { connecting = Nothing }) network
+update (ConnectTo inletPath) (UI (UIState state) network) =
+    UI (UIState $ state { connecting = Nothing }) network'
+    where
+        network' =
+            case state.connecting of
+                Just outletPath -> R.connect' outletPath inletPath network
+                Nothing -> network
 update (Select selection) ui =
     case select selection $ getSelection ui of
         Just newSelection -> setSelection newSelection ui
@@ -101,7 +106,6 @@ update (Select selection) ui =
 update _ ui = ui
 
 
--- FIXME: remove or replace with Writer Monad
 update' :: forall d e. Event d -> UI d -> UI d
 update' evt ui =
     let

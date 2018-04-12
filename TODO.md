@@ -23,6 +23,8 @@ Implement adding nodes.
 
 Implement import / export.
 
+Error system.
+
 Renderers and Styles (may be from JS?).
 
 Tests.
