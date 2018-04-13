@@ -24,7 +24,6 @@ newtype UIState d =
         { selection :: Selection
         , dragging :: Maybe R.NodePath
         , connecting :: Maybe R.OutletPath
-        , curDataMsg :: Maybe (R.DataMsg d)
         , lastInletData :: Map R.InletPath d
         , lastOutletData :: Map R.OutletPath d
         , lastEvents :: Array (Event d) -- FIXME: remove
@@ -63,7 +62,6 @@ init =
         { selection : SNone
         , dragging : Nothing
         , connecting : Nothing
-        , curDataMsg : Nothing -- FIXME: remove
         , lastInletData : Map.empty
         , lastOutletData : Map.empty
         , lastEvents : []
@@ -77,8 +75,7 @@ update (Data dataMsg) (UI (UIState state) network) =
     in
         UI
             (UIState $
-                state { curDataMsg = Just dataMsg
-                      , lastInletData =
+                state { lastInletData =
                             case dataMsg of
                                 R.FromInlet inletPath d ->
                                     Map.insert inletPath d state.lastInletData
