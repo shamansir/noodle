@@ -21,8 +21,8 @@ module Rpd
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Data.Array ((:), concatMap, mapWithIndex, catMaybes, modifyAt)
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, modifyAt)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested (type (/\))
 import Signal as S
 import Signal.Channel as SC
@@ -34,7 +34,6 @@ type AdaptF d = (d -> d)
 data Rpd d = Rpd (Network d)
 
 
--- TODO: FIXME store paths as arrays
 data PatchId = PatchId Int
 data NodePath = NodePath PatchId Int
 data InletPath = InletPath NodePath Int
@@ -93,11 +92,9 @@ data Link = Link OutletPath InletPath
 
 -- type WithId e a = Eff ( random :: RANDOM | e ) a
 
--- data UpdateSubj d = UNetwork | UPatch PatchId | UNode NodePath | ... | UBatch [UpdateSubj d]
 
-
--- type LazyNode d e = (PatchId -> WithId e (Node d))
-type LazyPatch d = (PatchId -> Patch d) -- Reader monad
+ -- Reader monad
+type LazyPatch d = (PatchId -> Patch d)
 type LazyNode d = (NodePath -> Node d)
 type LazyInlet d = (InletPath -> Inlet d)
 type LazyOutlet d = (OutletPath -> Outlet d)
@@ -254,27 +251,53 @@ ifFromOutlet _ _ = Nothing
 
 
 isNodeInPatch :: NodePath -> PatchId -> Boolean
-isNodeInPatch (NodePath patchId' _) patchId = patchId == patchId'
+isNodeInPatch (NodePath patchId' _) patchId =
+    patchId == patchId'
 
 
 isInletInPatch :: InletPath -> PatchId -> Boolean
-isInletInPatch (InletPath nodePath _) patchId = isNodeInPatch nodePath patchId
+isInletInPatch (InletPath nodePath _) patchId =
+    isNodeInPatch nodePath patchId
 
 
 isOutletInPatch :: OutletPath -> PatchId -> Boolean
-isOutletInPatch (OutletPath nodePath _) patchId = isNodeInPatch nodePath patchId
+isOutletInPatch (OutletPath nodePath _) patchId =
+    isNodeInPatch nodePath patchId
 
 
 isInletInNode :: InletPath -> NodePath -> Boolean
-isInletInNode (InletPath nodePath' _) nodePath = nodePath == nodePath'
+isInletInNode (InletPath nodePath' _) nodePath =
+    nodePath == nodePath'
 
 
 isOutletInNode :: OutletPath -> NodePath -> Boolean
-isOutletInNode (OutletPath nodePath' _) nodePath = nodePath == nodePath'
+isOutletInNode (OutletPath nodePath' _) nodePath =
+    nodePath == nodePath'
 
 
 notInTheSameNode :: InletPath -> OutletPath -> Boolean
-notInTheSameNode (InletPath iNodePath _) (OutletPath oNodePath _) = iNodePath /= oNodePath
+notInTheSameNode (InletPath iNodePath _) (OutletPath oNodePath _) =
+    iNodePath /= oNodePath
+
+
+findPatch :: forall d. PatchId -> Network d -> Maybe (Patch d)
+findPatch (PatchId index) (Network { patches }) =
+    patches !! index
+
+
+findNode :: forall d. NodePath -> Network d -> Maybe (Node d)
+findNode (NodePath patchId index) network =
+    findPatch patchId network >>= (\(Patch { nodes }) -> nodes !! index)
+
+
+findInlet :: forall d. InletPath -> Network d -> Maybe (Inlet d)
+findInlet (InletPath nodePath index) network =
+    findNode nodePath network >>= (\(Node { inlets }) -> inlets !! index)
+
+
+findOutlet :: forall d. OutletPath -> Network d -> Maybe (Outlet d)
+findOutlet (OutletPath nodePath index) network =
+    findNode nodePath network >>= (\(Node { outlets }) -> outlets !! index)
 
 
 -- TODO: change return type of the functions below to Maybe,
@@ -323,23 +346,25 @@ connect outlet inlet patch =
     patch
 
 
-connect' :: forall d. OutletPath -> InletPath -> Network d -> Network d
+connect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
 connect' outletPath inletPath network =
-    network
-    -- let
-    --     patchId = getPatchOfInlet inletPath
-    --     newLink = Link outletPath inletPath
-    --     network' = updatePatch
-    --         (\(Patch id title nodes links) -> Patch id title nodes $ newLink : links)
-    --         patchId
-    --         network
-    --     newSource = UserSource $ S.constant "test" -- FIXME: use outletStream
-    -- in
-    --     updateInlet
-    --         (\(Inlet path label defaultVal dataSources) ->
-    --             Inlet path label defaultVal $ newSource : dataSources)
-    --         inletPath
-    --         network'
+    findOutlet outletPath network
+        >>= \(Outlet { signal }) -> signal
+        >>= \signal ->
+            let
+                patchId = getPatchOfInlet inletPath
+                newLink = Link outletPath inletPath
+                network' = updatePatch
+                    (\(Patch patch@{ links }) -> Patch patch { links = newLink : links })
+                    patchId
+                    network
+                newSource = OutletSource outletPath signal
+            in
+                Just $ updateInlet
+                    (\(Inlet inlet@{ sources }) ->
+                        Inlet inlet { sources = newSource : sources})
+                    inletPath
+                    network'
 
 
 patchId :: Int -> PatchId
