@@ -31,7 +31,7 @@ type ProcessF d = (Array (String /\ d) -> Array (String /\ d))
 
 type AdaptF d = (d -> d)
 
-data Rpd d = RpdT (Network d)
+data Rpd d = Rpd (Network d)
 
 
 -- TODO: FIXME store paths as arrays
