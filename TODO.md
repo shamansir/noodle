@@ -32,7 +32,7 @@ Tests.
 Secondary:
 ==========
 
-Make Network normalized after creation (not a tree, but a collection of Patches, Nodes, Inlets, Outlets, Links arrays, may be paths may still stay as keys).
+Make Network normalized after creation (not a tree, but a collection of Patches, Nodes, Inlets, Outlets, Links arrays, may be paths may still stay as keys, may be paths or subjects could contain both global indices and nested paths).
 
 Make Patches, Nodes, Inlets, Outlets, Links to be records, this will simplify unpacking etc.
 
@@ -47,3 +47,5 @@ Try [Incremental DOM](https://pursuit.purescript.org/packages/purescript-smolder
 Try VDOM from `use-vdom` branch. It fails, since Smolder is no more with Smolder-VDOM (Smolder-VDOM is not updated to latest Smolder).
 
 See https://github.com/bodil/purescript-vdom/blob/master/test/Main.purs for a reference.
+
+Think on the ways for user to implement custom node types. Are they just functions to create custom nodes?

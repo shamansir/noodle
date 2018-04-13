@@ -63,7 +63,7 @@ init =
         { selection : SNone
         , dragging : Nothing
         , connecting : Nothing
-        , curDataMsg : Nothing
+        , curDataMsg : Nothing -- FIXME: remove
         , lastInletData : Map.empty
         , lastOutletData : Map.empty
         , lastEvents : []

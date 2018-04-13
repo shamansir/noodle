@@ -49,16 +49,37 @@ data DataSource d
 
 -- TODO: normalize network, change to plain IDs maybe, or use paths as keys,
 --       they implement Eq anyway
--- TODO: change the types below to records?
 
-data Network d = Network (Array (Patch d)) -- (S.Signal d) -- change to info about where data flows
-data Patch d = Patch PatchId String (Array (Node d)) (Array Link)
-data Node d = Node NodePath String (Array (Inlet d)) (Array (Outlet d)) (ProcessF d) -- (S.Signal Unit) add node type just for tagging?
---data Node d = Node String (Map String d -> Map String d)
+data Network d = Network
+    { patches :: Array (Patch d)
+    }
+data Patch d = Patch
+    { id :: PatchId
+    , name :: String
+    , nodes :: Array (Node d)
+    , links :: Array Link
+    }
+data Node d = Node
+    { path :: NodePath
+    , name :: String
+    , inlets :: Array (Inlet d)
+    , outlets :: Array (Outlet d)
+    , process :: ProcessF d -- (Map String d -> Map String d)
+    }
 -- S.constant is not able to send values afterwards, so we store the default value inside
-data Inlet d = Inlet InletPath String (Maybe d) (Array (DataSource d))
+data Inlet d = Inlet
+    { path :: InletPath
+    , label :: String
+    , default :: Maybe d
+    , sources :: Array (DataSource d)
+    -- Maybe (AdaptF d)
+    }
 --data Inlet d = Inlet String (Maybe (AdaptF d))
-data Outlet d = Outlet OutletPath String (Maybe (S.Signal d))
+data Outlet d = Outlet
+    { path :: OutletPath
+    , label :: String
+    , signal :: Maybe (S.Signal d)
+    }
 data Link = Link OutletPath InletPath
 
 
@@ -104,54 +125,88 @@ run renderer network = do
 
 network :: forall d. Array (LazyPatch d) -> Network d
 network lazyPatches =
-    Network patches
+    Network { patches }
     where
-        patches = mapWithIndex (\idx lazyPatch -> lazyPatch $ PatchId idx) lazyPatches
+        patches = mapWithIndex
+            (\idx lazyPatch -> lazyPatch $ PatchId idx) lazyPatches
 
 
 patch :: forall d e. String -> Array (LazyNode d) -> LazyPatch d
 patch name lazyNodes =
     \patchId ->
         let
-            nodes = mapWithIndex (\idx lazyNode -> lazyNode (NodePath patchId idx)) lazyNodes
+            nodes = mapWithIndex
+                (\idx lazyNode ->
+                    lazyNode (NodePath patchId idx)) lazyNodes
         in
-            Patch patchId name nodes []
+            Patch
+                { id : patchId
+                , name
+                , nodes
+                , links : []
+                }
 
 
 node :: forall d. String -> Array (LazyInlet d) -> Array (LazyOutlet d) -> LazyNode d
 node name lazyInlets lazyOutlets =
     \nodePath ->
         let
-            inlets = mapWithIndex (\idx lazyInlet -> lazyInlet (InletPath nodePath idx)) lazyInlets
-            outlets = mapWithIndex (\idx lazyOutlet -> lazyOutlet (OutletPath nodePath idx)) lazyOutlets
+            inlets = mapWithIndex
+                (\idx lazyInlet ->
+                    lazyInlet (InletPath nodePath idx)) lazyInlets
+            outlets = mapWithIndex
+                (\idx lazyOutlet ->
+                    lazyOutlet (OutletPath nodePath idx)) lazyOutlets
         in
-            Node nodePath name inlets outlets id
+            Node
+                { path : nodePath
+                , name
+                , inlets
+                , outlets
+                , process : id
+                }
 
 
 inlet :: forall d. String -> LazyInlet d
 inlet label =
-    \inletPath -> Inlet inletPath label Nothing [ ]
+    inlet_ label Nothing []
 
 
 inlet' :: forall d. String -> S.Signal d -> LazyInlet d
 inlet' label dataSource =
-    \inletPath -> Inlet inletPath label Nothing [ UserSource dataSource ]
+    inlet_ label Nothing [ UserSource dataSource ]
 
+
+-- should not be exposed
+inlet_ :: forall d. String -> Maybe d -> Array (DataSource d) -> LazyInlet d
+inlet_ label maybeDefault sources =
+    \inletPath ->
+        Inlet
+            { path : inletPath
+            , label
+            , default : maybeDefault
+            , sources
+            }
 
 inletWithDefault :: forall d. String -> d -> LazyInlet d
 inletWithDefault label defaultVal =
     -- inlet_ label defaultVal $ S.constant defaultVal
-    \inletPath -> Inlet inletPath label (Just defaultVal) [ ]
+    inlet_ label (Just defaultVal) [ ]
 
 
 inletWithDefault' :: forall d. String -> d -> S.Signal d -> LazyInlet d
 inletWithDefault' label defaultVal dataSource  =
-    \inletPath -> Inlet inletPath label (Just defaultVal) [ UserSource dataSource ]
+    inlet_ label (Just defaultVal) [ UserSource dataSource ]
 
 
 outlet :: forall d. String -> LazyOutlet d
 outlet label =
-    \outletPath -> Outlet outletPath label Nothing
+    \outletPath ->
+        Outlet
+            { path : outletPath
+            , label
+            , signal : Nothing
+            }
 
 
 subscribeDataSignal
@@ -160,11 +215,11 @@ subscribeDataSignal
     -- -> (d -> InletPath -> Eff e Unit)
     -- -> (d -> OutletPath -> Eff e Unit)
     -> Maybe (DataSignal d)
-subscribeDataSignal (Network patches) =
+subscribeDataSignal (Network { patches }) =
     let
-        allNodes = concatMap (\(Patch _ _ nodes _) -> nodes) patches
-        allInlets = concatMap (\(Node _ _ inlets _ _) -> inlets) allNodes
-        allOutlets = concatMap (\(Node _ _ _ outlets _) -> outlets) allNodes
+        allNodes = concatMap (\(Patch { nodes }) -> nodes) patches
+        allInlets = concatMap (\(Node { inlets }) -> inlets) allNodes
+        allOutlets = concatMap (\(Node { outlets }) -> outlets) allNodes
         adaptInletDataSources path dataSource =
             signal S.~> (\d -> FromInlet path d)
             where
@@ -174,10 +229,10 @@ subscribeDataSignal (Network patches) =
                         OutletSource _ signal -> signal
         adaptOutletSignal path signal =
             signal S.~> (\d -> FromOutlet path d)
-        extractInletSignals = \(Inlet path _ _ signals) ->
-            S.mergeMany $ map (adaptInletDataSources path) signals
-        extractOutletSignals = \(Outlet path _ maybeSignal) ->
-            adaptOutletSignal path <$> maybeSignal
+        extractInletSignals = \(Inlet { path, sources }) ->
+            S.mergeMany $ map (adaptInletDataSources path) sources
+        extractOutletSignals = \(Outlet { path, signal }) ->
+            adaptOutletSignal path <$> signal
         inletSignals = catMaybes $ map extractInletSignals allInlets
         outletSignals = catMaybes $ map extractOutletSignals allOutlets
     in
@@ -226,31 +281,40 @@ notInTheSameNode (InletPath iNodePath _) (OutletPath oNodePath _) = iNodePath /=
 -- to identify the case when subject wasn't modified
 
 updatePatch :: forall d. (Patch d -> Patch d) -> PatchId -> Network d -> Network d
-updatePatch updater (PatchId patchId) (Network patches) =
-    Network $ fromMaybe patches $ modifyAt patchId updater patches
+updatePatch updater (PatchId patchId) (Network network) =
+    Network network
+        { patches = fromMaybe network.patches
+            $ modifyAt patchId updater network.patches
+        }
 
 
 updateNode :: forall d. (Node d -> Node d) -> NodePath -> Network d -> Network d
 updateNode updater (NodePath patchId nodeId) network =
-    updatePatch (\(Patch id title nodes links) ->
-        let nodes' = fromMaybe nodes $ modifyAt nodeId updater nodes
-        in Patch id title nodes' links
+    updatePatch (\(Patch patch) ->
+        Patch patch
+            { nodes = fromMaybe patch.nodes
+                $ modifyAt nodeId updater patch.nodes
+            }
     ) patchId network
 
 
 updateInlet :: forall d. (Inlet d -> Inlet d) -> InletPath -> Network d -> Network d
 updateInlet updater (InletPath nodePath inletId) network =
-    updateNode (\(Node path label inlets outlets processF) ->
-        let inlets' = fromMaybe inlets $ modifyAt inletId updater inlets
-        in Node path label inlets' outlets processF
+    updateNode (\(Node node) ->
+        Node node
+            { inlets = fromMaybe node.inlets
+                $ modifyAt inletId updater node.inlets
+            }
     ) nodePath network
 
 
 updateOutlet :: forall d. (Outlet d -> Outlet d) -> OutletPath -> Network d -> Network d
 updateOutlet updater (OutletPath nodePath outletId) network =
-    updateNode (\(Node path label inlets outlets processF) ->
-        let outlets' = fromMaybe outlets $ modifyAt outletId updater outlets
-        in Node path label inlets outlets' processF
+    updateNode (\(Node node) ->
+        Node node
+            { outlets = fromMaybe node.outlets
+                $ modifyAt outletId updater node.outlets
+            }
     ) nodePath network
 
 

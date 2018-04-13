@@ -62,7 +62,7 @@ render target ui ch = do
 
 
 network :: forall d e. (Show d) => UI d -> UIChannel d -> Markup e
-network ui@(UI (UIState s) (R.Network patches)) ch =
+network ui@(UI (UIState s) (R.Network { patches })) ch =
     H.div ! HA.className "network" $ do
         H.p $ H.text $ "Network: " <> (show $ length patches) <> "P"
         H.div ! HA.className "patches" $
@@ -70,43 +70,43 @@ network ui@(UI (UIState s) (R.Network patches)) ch =
 
 
 patch :: forall d e. (Show d) => UI d -> UIChannel d -> R.Patch d -> Markup e
-patch ui ch (R.Patch patchId label nodes links) =
+patch ui ch (R.Patch { id, name, nodes, links }) =
     H.div ! HA.className className $
         if isSelected then do
-            H.p #! clickHandler $ H.text $ "<" <> show patchId <> ": " <> label <> "> "
+            H.p #! clickHandler $ H.text $ "<" <> show id <> ": " <> name <> "> "
                 <> "N" <> (show $ length nodes) <> " "
                 <> "L" <> (show $ length links)
             H.div ! HA.className "nodes" $
                 for_ nodes (\n -> node ui ch n)
         else
-            H.p #! clickHandler $ H.text $ "[" <> show patchId <> "]"
+            H.p #! clickHandler $ H.text $ "[" <> show id <> "]"
     where
-        isSelected = isPatchSelected (getSelection ui) patchId
+        isSelected = isPatchSelected (getSelection ui) id
         className = "patch " <> (if isSelected then "_selected" else "")
-        maybeSelect = sendEvt ch $ Select (SPatch patchId)
+        maybeSelect = sendEvt ch $ Select (SPatch id)
         clickHandler = on "click" maybeSelect
 
 
 node :: forall d e. (Show d) => UI d -> UIChannel d -> R.Node d -> Markup e
-node ui ch (R.Node nodePath name inlets outlets _) =
+node ui ch (R.Node { path, name, inlets, outlets }) =
     H.div ! HA.className className $
         if isSelected then do
-            H.p #! clickHandler $ H.text $ "<" <> show nodePath <> ": " <> name <> "> "
+            H.p #! clickHandler $ H.text $ "<" <> show path <> ": " <> name <> "> "
                 <> "I" <> (show $ length inlets) <> " "
                 <> "O" <> (show $ length outlets)
             H.div ! HA.className "inlets" $ for_ inlets (\i -> inlet ui ch i)
             H.div ! HA.className "outlets" $ for_ outlets (\o -> outlet ui ch o)
         else
-            H.p #! clickHandler $ H.text $ "[" <> show nodePath <> "]"
+            H.p #! clickHandler $ H.text $ "[" <> show path <> "]"
     where
-        isSelected = isNodeSelected (getSelection ui) nodePath
+        isSelected = isNodeSelected (getSelection ui) path
         className = "node " <> (if isSelected then "_selected" else "")
-        maybeSelect = sendEvt ch $ Select (SNode nodePath)
+        maybeSelect = sendEvt ch $ Select (SNode path)
         clickHandler = on "click" maybeSelect
 
 
 inlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Inlet d -> Markup e
-inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault sources) =
+inlet ui@(UI (UIState s) _) ch (R.Inlet { path, label, default, sources }) =
     H.div ! HA.className className $
         if isSelected then
             H.div $ do
@@ -136,7 +136,7 @@ inlet ui@(UI (UIState s) _) ch (R.Inlet path label maybeDefault sources) =
 
 
 outlet :: forall d e. (Show d) => UI d -> UIChannel d -> R.Outlet d -> Markup e
-outlet ui@(UI (UIState s) _) ch (R.Outlet path label _) =
+outlet ui@(UI (UIState s) _) ch (R.Outlet { path, label }) =
     H.div ! HA.className className $
         if isSelected then
             H.div $ do
