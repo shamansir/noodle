@@ -39,6 +39,10 @@ renderer target nw = do
     evtChannel <- SC.channel Start
     let evtSignal = SC.subscribe evtChannel
     let uiSignal = S.foldp update' (UI init nw) evtSignal
+    -- renderDataSignal <- maybeDataSignal >>= \dataSignal -> do
+    --     let sendData = \dataEvt -> SC.send evtChannel dataEvt
+    --     dataSignal S.~> Data S.~> sendData
+    -- S.runSignal renderDataSignal
     case maybeDataSignal of
         Just dataSignal -> do
             let sendData = (\dataEvt -> SC.send evtChannel dataEvt)

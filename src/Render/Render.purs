@@ -94,7 +94,7 @@ update (ConnectTo inletPath) (UI (UIState state) network) =
     where
         network' =
             case state.connecting of
-                Just outletPath -> R.connect' outletPath inletPath network
+                Just outletPath -> fromMaybe network $ R.connect' outletPath inletPath network
                 Nothing -> network
 update (Select selection) ui =
     case select selection $ getSelection ui of

@@ -30,12 +30,13 @@ myNode :: String -> R.LazyNode MyData
 myNode nodeId =
   R.node "f"
     [ R.inlet "a" -- WithDefault "a" (Str' (nodeId <> "a") "i")
-    , R.inletWithDefault "b" (Str' (nodeId <> "b") "test")
-    , R.inlet' "f" (ST.every (5.0 * ST.second) S.~> Num' (nodeId <> "f"))
+    , R.inletWithDefault "b" $ Str' (nodeId <> "b") "test"
+    , R.inlet' "f" $ ST.every (5.0 * ST.second) S.~> Num' (nodeId <> "f")
     , R.inlet "d" -- (ST.every ST.second S.~> Num' (nodeId <> "d"))
     , R.inlet "e" -- WithDefault "e" (Num' (nodeId <> "e") 3.0)
     ]
     [ R.outlet "c"
+    , R.outlet' "x" $ ST.every (10.0 * ST.second) S.~> Num' (nodeId <> "x")
     ]
     -- (\_ -> [ "c" /\ Int' 10 ] )
 

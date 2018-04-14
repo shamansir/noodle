@@ -6,7 +6,7 @@ module Rpd
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , DataSignal, DataMsg(..), DataSource
     , ProcessF
-    , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet
+    , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
     , connect, connect'
     --, NetworkT, PatchT
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
@@ -203,6 +203,17 @@ outlet label =
             { path : outletPath
             , label
             , signal : Nothing
+            }
+
+
+-- TODO: remove, outlets should only produce values from `process` function
+outlet' :: forall d. String -> S.Signal d -> LazyOutlet d
+outlet' label signal =
+    \outletPath ->
+        Outlet
+            { path : outletPath
+            , label
+            , signal : Just signal
             }
 
 
