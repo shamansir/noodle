@@ -11,10 +11,9 @@ import DOM.HTML.Window (document)
 import DOM.Node.NonElementParentNode (getElementById)
 import DOM.Node.Types (ElementId(..)) -- , Element)
 import Data.Foldable (for_)
---import Render (renderer)
-import Render as Render
-import Render.Html as RenderH
 import Rpd as R
+import Rpd.Render as Render
+import Rpd.Render.Html as RenderH
 import Signal as S
 import Signal.Channel as SC
 import Signal.Time as ST

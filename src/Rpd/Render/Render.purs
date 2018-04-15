@@ -1,4 +1,4 @@
-module Render
+module Rpd.Render
     ( UI(..)
     , UIState(..)
     , Event(..), Selection(..), getSelection, getConnecting

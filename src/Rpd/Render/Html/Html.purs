@@ -1,7 +1,6 @@
-module Render.Html where
+module Rpd.Render.Html where
 
 import Prelude
-import Render
 
 import Control.Alternative ((<|>))
 import Control.Monad.Eff (Eff)
@@ -15,6 +14,7 @@ import Data.Map (Map(..))
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import Rpd as R
+import Rpd.Render
 import Signal as S
 import Signal.Channel as SC
 import Text.Smolder.HTML as H
