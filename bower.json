@@ -17,7 +17,8 @@
     "purescript-smolder": "^10.2.0",
     "purescript-smolder-dom": "^2.0.0",
     "purescript-foldable-traversable": "^3.7.1",
-    "purescript-vdom": "git://github.com/jacereda/purescript-vdom#master"
+    "purescript-vdom": "git://github.com/jacereda/purescript-vdom#master",
+    "purescript-behaviors": "^6.3.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0",
