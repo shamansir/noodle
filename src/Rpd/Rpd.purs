@@ -1,18 +1,16 @@
 module Rpd
     ( Rpd, run
-    , Renderer
-    , RenderEff
+    , Renderer, RenderEff
+    , Flow, DataSource
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
-    , DataSignal, DataMsg(..), DataSource
     , ProcessF
     , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
     , connect, connect'
     --, NetworkT, PatchT
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
-    , subscribeDataSignal
-    , ifFromInlet, ifFromOutlet
+    , subscribeDataFlow
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
     , notInTheSameNode
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
@@ -25,7 +23,10 @@ import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, modifyAt)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested (type (/\))
 import Signal as S
-import Signal.Channel as SC
+-- import Signal.Channel as SC
+import FRP (FRP)
+import FRP.Event (Event, create, subscribe)
+import FRP.Event.Class (fold)
 
 type ProcessF d = (Array (String /\ d) -> Array (String /\ d))
 
@@ -33,6 +34,7 @@ type AdaptF d = (d -> d)
 
 data Rpd d = Rpd (Network d)
 
+type Flow d = Event d
 
 data PatchId = PatchId Int
 data NodePath = NodePath PatchId Int
@@ -42,8 +44,8 @@ data LinkId = LinkId Int
 
 
 data DataSource d
-    = UserSource (S.Signal d)
-    | OutletSource OutletPath (S.Signal d)
+    = UserSource (Flow d)
+    | OutletSource OutletPath (Flow d)
 
 
 -- TODO: normalize network, change to plain IDs maybe, or use paths as keys,
@@ -77,7 +79,7 @@ data Inlet d = Inlet
 data Outlet d = Outlet
     { path :: OutletPath
     , label :: String
-    , signal :: Maybe (S.Signal d)
+    , signal :: Maybe (Flow d)
     }
 data Link = Link OutletPath InletPath
 
@@ -100,24 +102,24 @@ type LazyInlet d = (InletPath -> Inlet d)
 type LazyOutlet d = (OutletPath -> Outlet d)
 
 
-data DataMsg d
-    = FromInlet InletPath d
-    | FromOutlet OutletPath d
+-- data DataMsg d
+--     = FromInlet InletPath d
+--     | FromOutlet OutletPath d
 
 
-type DataSignal d = S.Signal (DataMsg d)
+-- type DataFlow d = Flow (DataMsg d)
 
-
+type Canceler e =
+    Eff (frp :: FRP | e) (Eff (frp :: FRP | e) Unit)
 type RenderEff e =
-    Eff (channel :: SC.CHANNEL | e) (S.Signal (Eff ( channel :: SC.CHANNEL | e ) Unit))
+    Eff (frp :: FRP | e) (Eff (frp :: FRP | e) Unit)
 
 
 type Renderer d e = Network d -> RenderEff e
 
 
-run :: forall d e. Renderer d e -> Network d -> Eff (channel :: SC.CHANNEL | e) Unit
-run renderer network = do
-    renderer network >>= S.runSignal
+run :: forall d e. Renderer d e -> Network d -> RenderEff e
+run renderer network = renderer network
 
 
 network :: forall d. Array (LazyPatch d) -> Network d
@@ -169,7 +171,7 @@ inlet label =
     inlet_ label Nothing []
 
 
-inlet' :: forall d. String -> S.Signal d -> LazyInlet d
+inlet' :: forall d. String -> Flow d -> LazyInlet d
 inlet' label dataSource =
     inlet_ label Nothing [ UserSource dataSource ]
 
@@ -191,7 +193,7 @@ inletWithDefault label defaultVal =
     inlet_ label (Just defaultVal) [ ]
 
 
-inletWithDefault' :: forall d. String -> d -> S.Signal d -> LazyInlet d
+inletWithDefault' :: forall d. String -> d -> Flow d -> LazyInlet d
 inletWithDefault' label defaultVal dataSource  =
     inlet_ label (Just defaultVal) [ UserSource dataSource ]
 
@@ -207,7 +209,7 @@ outlet label =
 
 
 -- TODO: remove, outlets should only produce values from `process` function
-outlet' :: forall d. String -> S.Signal d -> LazyOutlet d
+outlet' :: forall d. String -> Flow d -> LazyOutlet d
 outlet' label signal =
     \outletPath ->
         Outlet
@@ -217,48 +219,36 @@ outlet' label signal =
             }
 
 
-subscribeDataSignal
-    :: forall d
+subscribeDataFlow
+    :: forall d e
      . Network d
-    -- -> (d -> InletPath -> Eff e Unit)
-    -- -> (d -> OutletPath -> Eff e Unit)
-    -> Maybe (DataSignal d)
-subscribeDataSignal (Network { patches }) =
+    -> (d -> InletPath -> Eff (frp :: FRP | e) Unit)
+    -> (d -> OutletPath -> Eff (frp :: FRP | e) Unit)
+    -> Canceler e
+subscribeDataFlow (Network { patches }) inletHandler outletHandler =
     let
         allNodes = concatMap (\(Patch { nodes }) -> nodes) patches
         allInlets = concatMap (\(Node { inlets }) -> inlets) allNodes
         allOutlets = concatMap (\(Node { outlets }) -> outlets) allNodes
         adaptInletDataSources path dataSource =
-            signal S.~> (\d -> FromInlet path d)
+            subscribe flow (\d -> inletHandler d path)
             where
-                signal =
-                    case dataSource of
-                        UserSource signal -> signal
-                        OutletSource _ signal -> signal
-        adaptOutletSignal path signal =
-            signal S.~> (\d -> FromOutlet path d)
+                flow = case dataSource of
+                    UserSource flow -> flow
+                    OutletSource _ flow -> flow
+        adaptOutletFlow path flow =
+            subscribe flow (\d -> outletHandler d path)
         extractInletSignals = \(Inlet { path, sources }) ->
             S.mergeMany $ map (adaptInletDataSources path) sources
         extractOutletSignals = \(Outlet { path, signal }) ->
             adaptOutletSignal path <$> signal
         inletSignals = catMaybes $ map extractInletSignals allInlets
         outletSignals = catMaybes $ map extractOutletSignals allOutlets
+        cancelers = []
     in
-        S.mergeMany $ inletSignals <> outletSignals
-
-
--- returns data extracted from data message if it came from the specified inlet
--- or else returns `Nothing``
-ifFromInlet :: forall d. InletPath -> DataMsg d -> Maybe d
-ifFromInlet path (FromInlet inletPath d) | inletPath == path = Just d
-ifFromInlet _ _ = Nothing
-
-
--- returns data extracted from data message if it came from the specified outlet
--- or else returns `Nothing``
-ifFromOutlet :: forall d. OutletPath -> DataMsg d -> Maybe d
-ifFromOutlet path (FromOutlet outletPath d) | outletPath == path = Just d
-ifFromOutlet _ _ = Nothing
+        --S.mergeMany $ inletSignals <> outletSignals
+        \_ ->
+            map cancellers id
 
 
 isNodeInPatch :: NodePath -> PatchId -> Boolean
@@ -414,11 +404,6 @@ getNodeOfOutlet :: OutletPath -> NodePath
 getNodeOfOutlet  (OutletPath nPath _) = nPath
 
 
--- | Get the current value of a signal. Should be in purescript-signal, pending
--- https://github.com/bodil/purescript-signal/pull/60
-foreign import get :: forall e a. S.Signal a -> Eff e a
-
-
 -- connect inside a Patch??
 -- connect :: forall d e. Inlet d -> Outlet d -> d -> Eff ( channel :: SC.CHANNEL | e ) (SC.Channel d)
 -- connect inlet outlet defaultVal = do
@@ -450,12 +435,6 @@ instance showOutletPath :: Show OutletPath where
 
 instance showLinkId :: Show LinkId where
     show (LinkId id) = "L" <> show id
-
-
-
-instance showDataMsg :: Show d => Show (DataMsg d) where
-    show (FromInlet inletPath d) = show inletPath <> " " <> show d
-    show (FromOutlet outletPath d) = show outletPath <> " " <> show d
 
 
 instance eqPatchId :: Eq PatchId where

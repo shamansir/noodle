@@ -15,7 +15,6 @@ import Data.Array ((:))
 import Data.Array as Array
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Rpd as R
-import Signal as S
 import Signal.Channel as SC
 
 
