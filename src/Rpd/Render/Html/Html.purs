@@ -39,7 +39,7 @@ type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
 type PushF' d e = PushF d ( dom :: DOM | e )
 
 
-renderer :: forall d e. (Show d) => Element -> DomRenderer d e
+--renderer :: forall d e. (Show d) => Element -> DomRenderer d e
 renderer target nw = do
     --    let maybeDataSignal = R.subscribeDataSignal nw
     --    evtChannel <- SC.channel Start
@@ -47,7 +47,6 @@ renderer target nw = do
     --    let uiSignal = S.foldp update' (UI init nw) evtSignal
     { event : channel, push } <- create
     --let foldingF = f push
-    push Start
     --evtChannel <- SC.channel Start
     --let evtSignal = SC.subscribe evtChannel
     -- let
@@ -60,7 +59,9 @@ renderer target nw = do
                         -- R.subscribeDataFlow nw
                 -- pure ui'
     let uiFlow = Event.fold update' channel (UI init nw)
-    subscribe uiFlow $ \ui -> do render target ui push
+    _ <- subscribe uiFlow $ \ui -> do render target ui push
+    push Start
+
 
     -- renderDataSignal <- maybeDataSignal >>= \dataSignal -> do
     --     let sendData = \dataEvt -> SC.send evtChannel dataEvt

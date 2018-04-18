@@ -123,7 +123,7 @@ type Renderer d e = Network d -> RenderEff e
 
 
 run :: forall d e. Renderer d e -> Network d -> RenderEff e
-run renderer network = renderer network
+run renderer nw = renderer nw
 
 
 network :: forall d. Array (LazyPatch d) -> Network d

@@ -57,9 +57,11 @@ main :: ∀ e. Eff (dom :: DOM, frp :: FRP | e) Unit
 main = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
-  for_ element (\element -> do
+  for_ element (\element ->
     let renderer = RenderH.renderer element
-    liftEff $ R.run renderer myNetwork
+    -- R.run renderer myNetwork
+    in renderer myNetwork
+    --pure unit
   )
 
 
