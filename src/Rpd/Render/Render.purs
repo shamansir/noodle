@@ -1,9 +1,9 @@
 module Rpd.Render
     ( UI(..)
     , UIState(..)
-    , Event(..), Selection(..), getSelection, getConnecting
+    , PushF
+    , Message(..), Selection(..), getSelection, getConnecting
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
-    , UIChannel
     , init, update, update'
     ) where
 
@@ -15,7 +15,7 @@ import Data.Array ((:))
 import Data.Array as Array
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Rpd as R
-import Signal.Channel as SC
+-- import Signal.Channel as SC
 
 
 newtype UIState d =
@@ -25,17 +25,18 @@ newtype UIState d =
         , connecting :: Maybe R.OutletPath
         , lastInletData :: Map R.InletPath d
         , lastOutletData :: Map R.OutletPath d
-        , lastEvents :: Array (Event d) -- FIXME: remove
+        , lastMessages :: Array (Message d) -- FIXME: remove
         }
 
 
-data Event d
+data Message d
     = Start
     | Skip
     | ConnectFrom R.OutletPath
     | ConnectTo R.InletPath
     | Drag Int Int
-    | Data (R.DataMsg d)
+    | InletData R.InletPath d
+    | OutletData R.OutletPath d
     | Select Selection
 
 
@@ -52,7 +53,7 @@ data Selection
 data UI d = UI (UIState d) (R.Network d)
 
 
-type UIChannel d = SC.Channel (Event d)
+type PushF d e = Message d -> R.RpdEff' e
 
 
 init :: forall d. UIState d
@@ -63,29 +64,27 @@ init =
         , connecting : Nothing
         , lastInletData : Map.empty
         , lastOutletData : Map.empty
-        , lastEvents : []
+        , lastMessages : []
         }
 
 
-update :: forall d e. Event d -> UI d -> UI d
-update (Data dataMsg) (UI (UIState state) network) =
-    let
-        curDataMsg = Just dataMsg
-    in
-        UI
-            (UIState $
-                state { lastInletData =
-                            case dataMsg of
-                                R.FromInlet inletPath d ->
-                                    Map.insert inletPath d state.lastInletData
-                                _ -> state.lastInletData
-                      , lastOutletData =
-                            case dataMsg of
-                                R.FromOutlet outletPath d ->
-                                    Map.insert outletPath d state.lastOutletData
-                                _ -> state.lastOutletData
-                      })
-            network
+update :: forall d e. Message d -> UI d -> UI d
+update (InletData inletPath d) (UI (UIState state) network) =
+    UI
+        (UIState $
+            state
+                { lastInletData =
+                    Map.insert inletPath d state.lastInletData
+                })
+        network
+update (OutletData outletPath d) (UI (UIState state) network) =
+    UI
+        (UIState $
+            state
+                { lastOutletData =
+                    Map.insert outletPath d state.lastOutletData
+                })
+        network
 update (ConnectFrom outletPath) (UI (UIState state) network) =
     UI (UIState $ state { connecting = Just outletPath }) network
 update (ConnectTo inletPath) (UI (UIState state) network) =
@@ -102,13 +101,13 @@ update (Select selection) ui =
 update _ ui = ui
 
 
-update' :: forall d e. Event d -> UI d -> UI d
-update' evt ui =
+update' :: forall d e. Message d -> UI d -> UI d
+update' msg ui =
     let
-        UI (UIState state) network = update evt ui
+        UI (UIState state) network = update msg ui
         state' =
-            if isMeaningfulEvent evt then
-                state { lastEvents = Array.take 5 $ evt : state.lastEvents }
+            if isMeaningfulMessage msg then
+                state { lastMessages = Array.take 5 $ msg : state.lastMessages }
             else
                 state
 
@@ -173,14 +172,14 @@ isOutletSelected (SOutlet selectedOutletPath) outletPath = selectedOutletPath ==
 isOutletSelected _ _ = false
 
 
-isMeaningfulEvent :: forall d. Event d -> Boolean
-isMeaningfulEvent Start = true
-isMeaningfulEvent Skip = true
-isMeaningfulEvent (ConnectFrom _) = true
-isMeaningfulEvent (ConnectTo _) = true
-isMeaningfulEvent (Select _) = true
-isMeaningfulEvent _ = false
--- isMeaningfulEvent _ = true
+isMeaningfulMessage :: forall d. Message d -> Boolean
+isMeaningfulMessage Start = true
+isMeaningfulMessage Skip = true
+isMeaningfulMessage (ConnectFrom _) = true
+isMeaningfulMessage (ConnectTo _) = true
+isMeaningfulMessage (Select _) = true
+isMeaningfulMessage _ = false
+-- isMeaningfulMessage _ = true
 
 
 instance showSelection :: Show Selection where
@@ -194,20 +193,20 @@ instance showSelection :: Show Selection where
 
 
 instance showUIState :: (Show d) => Show (UIState d) where
-    show (UIState { selection, dragging, connecting, lastInletData, lastOutletData, lastEvents })
+    show (UIState { selection, dragging, connecting, lastInletData, lastOutletData, lastMessages })
         = "Selection: " <> show selection <>
         ", Dragging: " <> show dragging <>
         ", Connecting: " <> show connecting <>
         ", Inlets: " <> show lastInletData <>
         ", Outlets: " <> show lastOutletData <>
-        ", Last events: " <> show (Array.reverse lastEvents)
+        ", Last events: " <> show (Array.reverse lastMessages)
 
 
 instance showUI :: (Show d) => Show (UI d) where
     show (UI state _ ) = show state
 
 
-instance showEvent :: (Show d) => Show (Event d) where
+instance showMessage :: (Show d) => Show (Message d) where
     show Start = "Start"
     show Skip = "Skip"
     show (ConnectFrom outletPath) = "Start connecting from " <> show outletPath
@@ -215,5 +214,6 @@ instance showEvent :: (Show d) => Show (Event d) where
     -- | Drag Int Int
     -- | Data (R.DataMsg d)
     show (Select selection) = "Select " <> show selection
-    show (Data dataMsg) = "Data " <> show dataMsg
+    show (InletData inletPath d) = "InletData " <> show inletPath <> " " <> show d
+    show (OutletData outletPath d) = "OutletData " <> show outletPath <> " " <> show d
     show _ = "?"

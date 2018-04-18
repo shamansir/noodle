@@ -1,5 +1,5 @@
 module Rpd
-    ( Rpd, run
+    ( Rpd, run, RpdEff, RpdEff'
     , Renderer, RenderEff
     , Flow, DataSource
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
@@ -109,11 +109,14 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 
 
 -- type DataFlow d = Flow (DataMsg d)
-
+type RpdEff e = (frp :: FRP | e)
+type RpdEff' e = Eff (RpdEff e) Unit
 type Canceller e =
-    Eff (frp :: FRP | e) (Eff (frp :: FRP | e) Unit)
+    -- RpdEff e (RpdEff e Unit)
+    Eff (RpdEff e) (RpdEff' e)
 type RenderEff e =
-    Eff (frp :: FRP | e) (Eff (frp :: FRP | e) Unit)
+    -- RpdEff e (RpdEff e Unit)
+    Eff (RpdEff e) (RpdEff' e)
 
 
 type Renderer d e = Network d -> RenderEff e
@@ -228,6 +231,8 @@ subscribeDataFlow
     -> Canceller e
 subscribeDataFlow (Network { patches }) inletHandler outletHandler =
     let
+        -- TODO: use lenses: https://github.com/purescript-contrib/purescript-lens
+        --                   http://brianhamrick.com/blog/records-haskell-purescript
         allNodes = concatMap (\(Patch { nodes }) -> nodes) patches
         allInlets = concatMap (\(Node { inlets }) -> inlets) allNodes
         allOutlets = concatMap (\(Node { outlets }) -> outlets) allNodes
@@ -245,10 +250,8 @@ subscribeDataFlow (Network { patches }) inletHandler outletHandler =
             adaptOutletFlow path <$> flow
         inletFlows = concatMap extractInletFlows allInlets
         outletFlows = catMaybes $ map extractOutletFlows allOutlets
-        cancellers = inletFlows <> outletFlows
     in
-        --S.mergeMany $ inletSignals <> outletSignals
-        fold cancellers
+        fold $ inletFlows <> outletFlows
 
 
 isNodeInPatch :: NodePath -> PatchId -> Boolean
