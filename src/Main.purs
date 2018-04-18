@@ -58,10 +58,9 @@ main = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType
   for_ element (\element ->
-    let renderer = RenderH.renderer element
-    -- R.run renderer myNetwork
-    in renderer myNetwork
-    --pure unit
+    RenderH.renderer element myNetwork
+    -- let renderer = RenderH.renderer element
+    -- in R.run renderer myNetwork
   )
 
 

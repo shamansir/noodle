@@ -40,12 +40,14 @@ type PushF' d e = PushF d ( dom :: DOM | e )
 
 
 --renderer :: forall d e. (Show d) => Element -> DomRenderer d e
+renderer :: forall d e. (Show d) => Element -> R.Network d ->
+    Eff (R.RpdEff (dom :: DOM | e)) Unit
 renderer target nw = do
     --    let maybeDataSignal = R.subscribeDataSignal nw
     --    evtChannel <- SC.channel Start
     --    let evtSignal = SC.subscribe evtChannel
     --    let uiSignal = S.foldp update' (UI init nw) evtSignal
-    { event : channel, push } <- create
+
     --let foldingF = f push
     --evtChannel <- SC.channel Start
     --let evtSignal = SC.subscribe evtChannel
@@ -58,6 +60,14 @@ renderer target nw = do
                 -- if (evt == ConnectTo) then
                         -- R.subscribeDataFlow nw
                 -- pure ui'
+
+    -- TODO: when uiState.lastConnection is not Nothing,
+    --       subscribe again to R.subscribeDataFlow,
+    --       save the returned canceller,
+    --       and then call this canceller on next such case,
+    --       just before subscribing to a new flow.
+
+    { event : channel, push } <- create
     let uiFlow = Event.fold update' channel (UI init nw)
     _ <- subscribe uiFlow $ \ui -> do render target ui push
     push Start

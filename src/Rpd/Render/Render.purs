@@ -65,7 +65,7 @@ init =
         , lastInletData : Map.empty
         , lastOutletData : Map.empty
         , lastMessages : []
-        -- TODO: lastLink: Maybe Link
+        -- TODO: latestConnection: Maybe Link
         }
 
 
