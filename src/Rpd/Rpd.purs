@@ -19,14 +19,15 @@ module Rpd
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, modifyAt)
+import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, modifyAt, foldr)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested (type (/\))
-import Signal as S
+-- import Signal as S
 -- import Signal.Channel as SC
 import FRP (FRP)
 import FRP.Event (Event, create, subscribe)
-import FRP.Event.Class (fold)
+-- import FRP.Event.Class (fold)
+import Data.Foldable (fold)
 
 type ProcessF d = (Array (String /\ d) -> Array (String /\ d))
 
@@ -79,7 +80,7 @@ data Inlet d = Inlet
 data Outlet d = Outlet
     { path :: OutletPath
     , label :: String
-    , signal :: Maybe (Flow d)
+    , flow :: Maybe (Flow d)
     }
 data Link = Link OutletPath InletPath
 
@@ -109,7 +110,7 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 
 -- type DataFlow d = Flow (DataMsg d)
 
-type Canceler e =
+type Canceller e =
     Eff (frp :: FRP | e) (Eff (frp :: FRP | e) Unit)
 type RenderEff e =
     Eff (frp :: FRP | e) (Eff (frp :: FRP | e) Unit)
@@ -204,18 +205,18 @@ outlet label =
         Outlet
             { path : outletPath
             , label
-            , signal : Nothing
+            , flow : Nothing
             }
 
 
 -- TODO: remove, outlets should only produce values from `process` function
 outlet' :: forall d. String -> Flow d -> LazyOutlet d
-outlet' label signal =
+outlet' label flow =
     \outletPath ->
         Outlet
             { path : outletPath
             , label
-            , signal : Just signal
+            , flow : Just flow
             }
 
 
@@ -224,7 +225,7 @@ subscribeDataFlow
      . Network d
     -> (d -> InletPath -> Eff (frp :: FRP | e) Unit)
     -> (d -> OutletPath -> Eff (frp :: FRP | e) Unit)
-    -> Canceler e
+    -> Canceller e
 subscribeDataFlow (Network { patches }) inletHandler outletHandler =
     let
         allNodes = concatMap (\(Patch { nodes }) -> nodes) patches
@@ -238,17 +239,16 @@ subscribeDataFlow (Network { patches }) inletHandler outletHandler =
                     OutletSource _ flow -> flow
         adaptOutletFlow path flow =
             subscribe flow (\d -> outletHandler d path)
-        extractInletSignals = \(Inlet { path, sources }) ->
-            S.mergeMany $ map (adaptInletDataSources path) sources
-        extractOutletSignals = \(Outlet { path, signal }) ->
-            adaptOutletSignal path <$> signal
-        inletSignals = catMaybes $ map extractInletSignals allInlets
-        outletSignals = catMaybes $ map extractOutletSignals allOutlets
-        cancelers = []
+        extractInletFlows = \(Inlet { path, sources }) ->
+            map (adaptInletDataSources path) sources
+        extractOutletFlows = \(Outlet { path, flow }) ->
+            adaptOutletFlow path <$> flow
+        inletFlows = concatMap extractInletFlows allInlets
+        outletFlows = catMaybes $ map extractOutletFlows allOutlets
+        cancellers = inletFlows <> outletFlows
     in
         --S.mergeMany $ inletSignals <> outletSignals
-        \_ ->
-            map cancellers id
+        fold cancellers
 
 
 isNodeInPatch :: NodePath -> PatchId -> Boolean
@@ -350,7 +350,7 @@ connect outlet inlet patch =
 connect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
 connect' outletPath inletPath network =
     findOutlet outletPath network
-        >>= \(Outlet { signal }) -> signal
+        >>= \(Outlet { flow }) -> flow
         >>= \signal ->
             let
                 patchId = getPatchOfInlet inletPath
