@@ -41,21 +41,26 @@ type PushF' d e = PushF d ( dom :: DOM | e )
 
 renderer :: forall d e. (Show d) => Element -> DomRenderer d e
 renderer target nw = do
-    --let maybeDataSignal = R.subscribeDataFlow nw
+    --    let maybeDataSignal = R.subscribeDataSignal nw
+    --    evtChannel <- SC.channel Start
+    --    let evtSignal = SC.subscribe evtChannel
+    --    let uiSignal = S.foldp update' (UI init nw) evtSignal
     { event : channel, push } <- create
     --let foldingF = f push
     push Start
     --evtChannel <- SC.channel Start
     --let evtSignal = SC.subscribe evtChannel
-    let
-        f evt ui =
-            let ui' = update' evt ui
-            in do
-                render target ui' push
+    -- let
+    --     f :: Message d -> UI d -> Eff (R.RpdEff (dom :: DOM | e)) (UI d)
+    --     f msg ui = do
+    --         let ui' = update' msg ui
+    --         render target ui' push
+    --         pure ui'
                 -- if (evt == ConnectTo) then
                         -- R.subscribeDataFlow nw
-                pure ui'
-    Event.fold f channel (UI init nw)
+                -- pure ui'
+    let uiFlow = Event.fold update' channel (UI init nw)
+    subscribe uiFlow $ \ui -> do render target ui push
 
     -- renderDataSignal <- maybeDataSignal >>= \dataSignal -> do
     --     let sendData = \dataEvt -> SC.send evtChannel dataEvt
