@@ -1,6 +1,7 @@
 module Rpd.Render.Html where
 
 import Prelude
+import Rpd.Render
 
 import Control.Alternative ((<|>))
 import Control.Monad.Eff (Eff)
@@ -8,23 +9,19 @@ import Control.Monad.Eff.Class (liftEff)
 import DOM (DOM)
 import DOM.Event.EventTarget (EventListener, eventListener)
 import DOM.Node.Types (Element)
+import Data.Array ((:))
 import Data.Array (length)
+import Data.Array as Array
 import Data.Foldable (for_)
 import Data.Map (Map(..))
 import Data.Map as Map
+import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
-import Data.Array ((:))
-import Data.Array as Array
-import Rpd as R
-import Rpd.Render
---import Rpd.Render as Render
 import FRP (FRP)
 import FRP.Event (Event, create, subscribe)
 import FRP.Event.Class as Event
--- import Signal as S
--- import Signal.Channel as SC
+import Rpd as R
 import Text.Smolder.HTML as H
 import Text.Smolder.HTML.Attributes as HA
 import Text.Smolder.Markup ((#!), (!), on)
@@ -84,7 +81,7 @@ renderer target nw = do
 
     { event : channel, push } <- create
     let uiFlow = Event.fold update' channel $ init' nw
-    _ <- subscribe uiFlow $ \ui -> do render' target ui push
+    _ <- subscribe uiFlow $ \ui -> render' target push ui
     push Start
 
 
@@ -113,10 +110,10 @@ render
     :: forall d e
      . Show d
     => Element
-    -> UI d
     -> Push' d e
+    -> UI d
     -> R.RenderEff ( dom :: DOM | e )
-render target ui push =
+render target push ui =
     ToDOM.patch target $ do
         H.div $ H.text $ show ui
         network push ui
@@ -126,16 +123,25 @@ render'
     :: forall d e
      . Show d
     => Element
-    -> State d e
     -> Push' d e
+    -> State d e
     -> R.RenderEff ( dom :: DOM | e )
-render' target (ui /\ NoLinksChanged /\ _) push = render target ui push
-render' target (ui /\ LinksChanged /\ maybeCanceller) push = do
-    -- cancel <- case maybeCanceller of
-    --     Just cancel -> cancel
-    --     Nothing -> pure $ pure unit
-    -- cancel
-    render target ui push
+render' target push (ui /\ NoLinksChanged /\ _) = render target push ui
+render' target push (ui /\ LinksChanged /\ maybeCanceller) = do
+    cancelPrev <- case maybeCanceller of
+        Just cancel -> cancel
+        Nothing -> pure $ pure unit
+    cancelPrev
+    let (UI _ network) = ui
+    let cancelNext = subscribeDataFlow' push network
+    render' target push (ui /\ NoLinksChanged /\ Just cancelNext)
+
+
+subscribeDataFlow' :: forall d e. Push' d e -> R.Network d -> Canceller' e
+subscribeDataFlow' push network =
+    R.subscribeDataFlow network
+        (\d inletPath -> pure unit) -- sendEvt push $ DataAtInlet inletPath d)
+        (\d outletPath -> pure unit) -- sendEvt push $ DataAtOutlet outletPath d)
 
 
 network :: forall d e. (Show d) => Push' d e -> UI d -> Markup e

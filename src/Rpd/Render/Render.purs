@@ -35,8 +35,8 @@ data Message d
     | ConnectFrom R.OutletPath
     | ConnectTo R.InletPath
     | Drag Int Int
-    | InletData R.InletPath d
-    | OutletData R.OutletPath d
+    | DataAtInlet R.InletPath d
+    | DataAtOutlet R.OutletPath d
     | Select Selection
 
 
@@ -70,7 +70,7 @@ init =
 
 
 update :: forall d e. Message d -> UI d -> UI d
-update (InletData inletPath d) (UI (UIState state) network) =
+update (DataAtInlet inletPath d) (UI (UIState state) network) =
     UI
         (UIState $
             state
@@ -78,7 +78,7 @@ update (InletData inletPath d) (UI (UIState state) network) =
                     Map.insert inletPath d state.lastInletData
                 })
         network
-update (OutletData outletPath d) (UI (UIState state) network) =
+update (DataAtOutlet outletPath d) (UI (UIState state) network) =
     UI
         (UIState $
             state
@@ -189,6 +189,6 @@ instance showMessage :: (Show d) => Show (Message d) where
     -- | Drag Int Int
     -- | Data (R.DataMsg d)
     show (Select selection) = "Select " <> show selection
-    show (InletData inletPath d) = "InletData " <> show inletPath <> " " <> show d
-    show (OutletData outletPath d) = "OutletData " <> show outletPath <> " " <> show d
+    show (DataAtInlet inletPath d) = "InletData " <> show inletPath <> " " <> show d
+    show (DataAtOutlet outletPath d) = "OutletData " <> show outletPath <> " " <> show d
     show _ = "?"
