@@ -127,10 +127,8 @@ render'
     -> State d e
     -> R.RenderEff ( dom :: DOM | e )
 render' target push (ui /\ NoLinksChanged /\ _) = render target push ui
-render' target push (ui /\ LinksChanged /\ maybeCanceller) = do
-    cancelPrev <- case maybeCanceller of
-        Just cancel -> cancel
-        Nothing -> pure $ pure unit
+render' target push (ui /\ LinksChanged /\ maybeCancel) = do
+    cancelPrev <- fromMaybe (pure $ pure unit) maybeCancel
     cancelPrev
     let (UI _ network) = ui
     let cancelNext = subscribeDataFlow' push network
@@ -140,8 +138,8 @@ render' target push (ui /\ LinksChanged /\ maybeCanceller) = do
 subscribeDataFlow' :: forall d e. Push' d e -> R.Network d -> Canceller' e
 subscribeDataFlow' push network =
     R.subscribeDataFlow network
-        (\d inletPath -> pure unit) -- sendEvt push $ DataAtInlet inletPath d)
-        (\d outletPath -> pure unit) -- sendEvt push $ DataAtOutlet outletPath d)
+        (\d inletPath -> push $ DataAtInlet inletPath d)
+        (\d outletPath -> push $ DataAtOutlet outletPath d)
 
 
 network :: forall d e. (Show d) => Push' d e -> UI d -> Markup e
