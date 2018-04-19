@@ -44,7 +44,7 @@ type Canceller' e = R.Canceller ( dom :: DOM | e )
 
 data LinksState = NoLinksChanged | LinksChanged
 
-type State d e = UI d /\ LinksState /\ Maybe (Canceller' e)
+type State d = UI d /\ LinksState
 
 
 --renderer :: forall d e. (Show d) => Element -> DomRenderer d e
@@ -81,7 +81,7 @@ renderer target nw = do
 
     { event : channel, push } <- create
     let uiFlow = Event.fold update' channel $ init' nw
-    _ <- subscribe uiFlow $ \ui -> render' target push ui
+    _ <- subscribe uiFlow $ \state -> render' target push state Nothing
     push Start
 
 
@@ -124,15 +124,16 @@ render'
      . Show d
     => Element
     -> Push' d e
-    -> State d e
+    -> State d
+    -> Maybe (Canceller' e)
     -> R.RenderEff ( dom :: DOM | e )
-render' target push (ui /\ NoLinksChanged /\ _) = render target push ui
-render' target push (ui /\ LinksChanged /\ maybeCancel) = do
+render' target push (ui /\ NoLinksChanged) _ = render target push ui
+render' target push (ui /\ LinksChanged) maybeCancel = do
     cancelPrev <- fromMaybe (pure $ pure unit) maybeCancel
     cancelPrev
     let (UI _ network) = ui
     let cancelNext = subscribeDataFlow' push network
-    render' target push (ui /\ NoLinksChanged /\ Just cancelNext)
+    render' target push (ui /\ NoLinksChanged) (Just cancelNext)
 
 
 subscribeDataFlow' :: forall d e. Push' d e -> R.Network d -> Canceller' e
@@ -266,9 +267,9 @@ isMeaningfulMessage (Select _) = true
 isMeaningfulMessage _ = false
 -- isMeaningfulMessage _ = true
 
-
-update' :: forall d e. Message d -> State d e -> State d e
-update' msg (ui /\ linksState /\ c) =
+-- TODO: use Writer monad
+update' :: forall d. Message d -> State d -> State d
+update' msg (ui /\ linksState) =
     let
         UI (UIState state) network = update msg ui
         linksState' = areLinksChanged msg
@@ -279,8 +280,8 @@ update' msg (ui /\ linksState /\ c) =
                 state
 
     in
-        UI (UIState state') network /\ linksState' /\ c
+        UI (UIState state') network /\ linksState'
 
 
-init' :: forall d e. R.Network d -> State d e
-init' nw = UI init nw /\ NoLinksChanged /\ Nothing
+init' :: forall d. R.Network d -> State d
+init' nw = UI init nw /\ LinksChanged
