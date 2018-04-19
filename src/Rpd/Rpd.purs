@@ -1,5 +1,5 @@
 module Rpd
-    ( Rpd, run, RpdEff, RpdEff'
+    ( Rpd, run, RpdEff
     , Renderer, RenderEff
     , Flow, DataSource
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
@@ -10,7 +10,7 @@ module Rpd
     --, NetworkT, PatchT
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
-    , subscribeDataFlow
+    , subscribeDataFlow, Canceller
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
     , notInTheSameNode
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
@@ -109,14 +109,11 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 
 
 -- type DataFlow d = Flow (DataMsg d)
-type RpdEff e = (frp :: FRP | e)
-type RpdEff' e = Eff (RpdEff e) Unit
+type RpdEff e v = Eff (frp :: FRP | e) v
 type Canceller e =
-    -- RpdEff e (RpdEff e Unit)
-    Eff (RpdEff e) (RpdEff' e)
+    RpdEff e (RpdEff e Unit)
 type RenderEff e =
-    -- RpdEff e (RpdEff e Unit)
-    Eff (RpdEff e) (RpdEff' e)
+    RpdEff e Unit
 
 
 type Renderer d e = Network d -> RenderEff e

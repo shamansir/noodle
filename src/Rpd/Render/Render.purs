@@ -1,10 +1,10 @@
 module Rpd.Render
     ( UI(..)
     , UIState(..)
-    , PushF
+    , Push
     , Message(..), Selection(..), getSelection, getConnecting
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
-    , init, update, update'
+    , init, update
     ) where
 
 import Prelude
@@ -53,7 +53,7 @@ data Selection
 data UI d = UI (UIState d) (R.Network d)
 
 
-type PushF d e = Message d -> R.RpdEff' e
+type Push d e = Message d -> R.RpdEff e Unit
 
 
 init :: forall d. UIState d
@@ -100,22 +100,6 @@ update (Select selection) ui =
         Just newSelection -> setSelection newSelection ui
         Nothing -> ui
 update _ ui = ui
-
-
-update' :: forall d e. Message d -> UI d -> UI d
-update' msg ui =
-    let
-        UI (UIState state) network = update msg ui
-        state' =
-            if isMeaningfulMessage msg then
-                state { lastMessages = Array.take 5 $ msg : state.lastMessages }
-            else
-                state
-
-    in
-        UI (UIState state') network
-
--- updateAndLog :: forall d e. Event d -> UI d -> String /\ UI d
 
 
 select :: forall d. Selection -> Selection -> Maybe Selection
@@ -171,16 +155,6 @@ isInletSelected _ _ = false
 isOutletSelected :: forall d. Selection -> R.OutletPath -> Boolean
 isOutletSelected (SOutlet selectedOutletPath) outletPath = selectedOutletPath == outletPath
 isOutletSelected _ _ = false
-
-
-isMeaningfulMessage :: forall d. Message d -> Boolean
-isMeaningfulMessage Start = true
-isMeaningfulMessage Skip = true
-isMeaningfulMessage (ConnectFrom _) = true
-isMeaningfulMessage (ConnectTo _) = true
-isMeaningfulMessage (Select _) = true
-isMeaningfulMessage _ = false
--- isMeaningfulMessage _ = true
 
 
 instance showSelection :: Show Selection where

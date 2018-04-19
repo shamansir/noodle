@@ -12,10 +12,15 @@ import Data.Array (length)
 import Data.Foldable (for_)
 import Data.Map (Map(..))
 import Data.Map as Map
+import Data.Tuple as Tuple
+import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
+import Data.Array ((:))
+import Data.Array as Array
 import Rpd as R
 import Rpd.Render
 --import Rpd.Render as Render
+import FRP (FRP)
 import FRP.Event (Event, create, subscribe)
 import FRP.Event.Class as Event
 -- import Signal as S
@@ -27,7 +32,7 @@ import Text.Smolder.Markup as H
 import Text.Smolder.Renderer.DOM as ToDOM
 
 
-type Listener e = EventListener (R.RpdEff (dom :: DOM | e))
+type Listener e = EventListener (dom :: DOM, frp :: FRP | e)
 
 
 type Markup e = H.Markup (Listener e)
@@ -36,12 +41,22 @@ type Markup e = H.Markup (Listener e)
 type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
 
 
-type PushF' d e = PushF d ( dom :: DOM | e )
+type Push' d e = Push d ( dom :: DOM | e )
+
+type Canceller' e = R.Canceller ( dom :: DOM | e )
+
+data LinksState = NoLinksChanged | LinksChanged
+
+type State d e = UI d /\ LinksState /\ Maybe (Canceller' e)
 
 
 --renderer :: forall d e. (Show d) => Element -> DomRenderer d e
-renderer :: forall d e. (Show d) => Element -> R.Network d ->
-    Eff (R.RpdEff (dom :: DOM | e)) Unit
+renderer
+    :: forall d e
+     . (Show d)
+    => Element
+    -> R.Network d
+    -> R.RenderEff ( dom :: DOM | e )
 renderer target nw = do
     --    let maybeDataSignal = R.subscribeDataSignal nw
     --    evtChannel <- SC.channel Start
@@ -68,8 +83,8 @@ renderer target nw = do
     --       just before subscribing to a new flow.
 
     { event : channel, push } <- create
-    let uiFlow = Event.fold update' channel (UI init nw)
-    _ <- subscribe uiFlow $ \ui -> do render target ui push
+    let uiFlow = Event.fold update' channel $ init' nw
+    _ <- subscribe uiFlow $ \ui -> do render' target ui push
     push Start
 
 
@@ -99,60 +114,76 @@ render
      . Show d
     => Element
     -> UI d
-    -> PushF' d e
-    -> R.RpdEff' (dom :: DOM | e)
-render target ui pushF = do
+    -> Push' d e
+    -> R.RenderEff ( dom :: DOM | e )
+render target ui push =
     ToDOM.patch target $ do
         H.div $ H.text $ show ui
-        network ui pushF
+        network push ui
 
 
-network :: forall d e. (Show d) => UI d -> PushF' d e -> Markup e
-network ui@(UI (UIState s) (R.Network { patches })) pushF =
+render'
+    :: forall d e
+     . Show d
+    => Element
+    -> State d e
+    -> Push' d e
+    -> R.RenderEff ( dom :: DOM | e )
+render' target (ui /\ NoLinksChanged /\ _) push = render target ui push
+render' target (ui /\ LinksChanged /\ maybeCanceller) push = do
+    -- cancel <- case maybeCanceller of
+    --     Just cancel -> cancel
+    --     Nothing -> pure $ pure unit
+    -- cancel
+    render target ui push
+
+
+network :: forall d e. (Show d) => Push' d e -> UI d -> Markup e
+network push ui@(UI (UIState s) (R.Network { patches })) =
     H.div ! HA.className "network" $ do
         H.p $ H.text $ "Network: " <> (show $ length patches) <> "P"
         H.div ! HA.className "patches" $
-            for_ patches (\p -> patch ui pushF p)
+            for_ patches $ patch push ui
 
 
-patch :: forall d e. (Show d) => UI d -> PushF' d e -> R.Patch d -> Markup e
-patch ui pushF (R.Patch { id, name, nodes, links }) =
+patch :: forall d e. (Show d) => Push' d e -> UI d -> R.Patch d -> Markup e
+patch push ui (R.Patch { id, name, nodes, links }) =
     H.div ! HA.className className $
         if isSelected then do
             H.p #! clickHandler $ H.text $ "<" <> show id <> ": " <> name <> "> "
                 <> "N" <> (show $ length nodes) <> " "
                 <> "L" <> (show $ length links)
             H.div ! HA.className "nodes" $
-                for_ nodes (\n -> node ui pushF n)
+                for_ nodes $ node push ui
         else
             H.p #! clickHandler $ H.text $ "[" <> show id <> "]"
     where
         isSelected = isPatchSelected (getSelection ui) id
         className = "patch " <> (if isSelected then "_selected" else "")
-        maybeSelect = sendEvt pushF $ Select (SPatch id)
+        maybeSelect = sendEvt push $ Select (SPatch id)
         clickHandler = on "click" maybeSelect
 
 
-node :: forall d e. (Show d) => UI d -> PushF' d e -> R.Node d -> Markup e
-node ui pushF (R.Node { path, name, inlets, outlets }) =
+node :: forall d e. (Show d) => Push' d e -> UI d -> R.Node d -> Markup e
+node push ui (R.Node { path, name, inlets, outlets }) =
     H.div ! HA.className className $
         if isSelected then do
             H.p #! clickHandler $ H.text $ "<" <> show path <> ": " <> name <> "> "
                 <> "I" <> (show $ length inlets) <> " "
                 <> "O" <> (show $ length outlets)
-            H.div ! HA.className "inlets" $ for_ inlets (\i -> inlet ui pushF i)
-            H.div ! HA.className "outlets" $ for_ outlets (\o -> outlet ui pushF o)
+            H.div ! HA.className "inlets" $ for_ inlets $ inlet push ui
+            H.div ! HA.className "outlets" $ for_ outlets $ outlet push ui
         else
             H.p #! clickHandler $ H.text $ "[" <> show path <> "]"
     where
         isSelected = isNodeSelected (getSelection ui) path
         className = "node " <> (if isSelected then "_selected" else "")
-        maybeSelect = sendEvt pushF $ Select (SNode path)
+        maybeSelect = sendEvt push $ Select (SNode path)
         clickHandler = on "click" maybeSelect
 
 
-inlet :: forall d e. (Show d) => UI d -> PushF' d e-> R.Inlet d -> Markup e
-inlet ui@(UI (UIState s) _) pushF (R.Inlet { path, label, default, sources }) =
+inlet :: forall d e. (Show d) => Push' d e -> UI d -> R.Inlet d -> Markup e
+inlet push ui@(UI (UIState s) _) (R.Inlet { path, label, default, sources }) =
     H.div ! HA.className className $
         if isSelected then
             H.div $ do
@@ -168,8 +199,8 @@ inlet ui@(UI (UIState s) _) pushF (R.Inlet { path, label, default, sources }) =
         isWaitingForConnection = fromMaybe false $ R.notInTheSameNode path <$> getConnecting ui
         className = "inlet" <> (if isSelected then " _selected" else " ")
             <> (if isWaitingForConnection then " _waiting" else " ")
-        maybeSelect = sendEvt pushF $ Select (SInlet path)
-        maybeConnect = sendEvt pushF $ case s.connecting of
+        maybeSelect = sendEvt push $ Select (SInlet path)
+        maybeConnect = sendEvt push $ case s.connecting of
             Just outletPath -> ConnectTo path
             Nothing -> Skip
         clickHandler = on "click" maybeSelect
@@ -181,8 +212,8 @@ inlet ui@(UI (UIState s) _) pushF (R.Inlet { path, label, default, sources }) =
         dataText = show $ Map.lookup path s.lastInletData
 
 
-outlet :: forall d e. (Show d) => UI d -> PushF' d e -> R.Outlet d -> Markup e
-outlet ui@(UI (UIState s) _) pushF (R.Outlet { path, label }) =
+outlet :: forall d e. (Show d) => Push' d e -> UI d -> R.Outlet d -> Markup e
+outlet push ui@(UI (UIState s) _) (R.Outlet { path, label }) =
     H.div ! HA.className className $
         if isSelected then
             H.div $ do
@@ -200,8 +231,8 @@ outlet ui@(UI (UIState s) _) pushF (R.Outlet { path, label }) =
         className = "outlet" <> (if isSelected then " _selected" else " ")
                      <> (if isConnectingSomething then " _waiting" else " ")
                      <> (if isCurrentlyConnecting then " _connecting" else " ")
-        maybeSelect = sendEvt pushF $ Select (SOutlet path)
-        maybeConnect = sendEvt pushF $ ConnectFrom path
+        maybeSelect = sendEvt push $ Select (SOutlet path)
+        maybeConnect = sendEvt push $ ConnectFrom path
         clickHandler = on "click" maybeSelect
         connectorClickHandler = on "click" maybeConnect
         connectorLabel = if isCurrentlyConnecting then "(*)" else "(+)"
@@ -209,8 +240,43 @@ outlet ui@(UI (UIState s) _) pushF (R.Outlet { path, label }) =
 
 
 
-sendEvt :: forall d e. PushF' d e -> Message d -> Listener e
-sendEvt pushF evt =
-    eventListener $ const $ pushF evt
+sendEvt :: forall d e. Push' d e -> Message d -> Listener e
+sendEvt push evt =
+    eventListener $ const $ push evt
 
 
+areLinksChanged :: forall d. Message d -> LinksState
+areLinksChanged (ConnectTo _) = LinksChanged
+areLinksChanged _ = NoLinksChanged
+
+
+-- updateAndLog :: forall d e. Event d -> UI d -> String /\ UI d
+
+
+isMeaningfulMessage :: forall d. Message d -> Boolean
+isMeaningfulMessage Start = true
+isMeaningfulMessage Skip = true
+isMeaningfulMessage (ConnectFrom _) = true
+isMeaningfulMessage (ConnectTo _) = true
+isMeaningfulMessage (Select _) = true
+isMeaningfulMessage _ = false
+-- isMeaningfulMessage _ = true
+
+
+update' :: forall d e. Message d -> State d e -> State d e
+update' msg (ui /\ linksState /\ c) =
+    let
+        UI (UIState state) network = update msg ui
+        linksState' = areLinksChanged msg
+        state' =
+            if isMeaningfulMessage msg then
+                state { lastMessages = Array.take 5 $ msg : state.lastMessages }
+            else
+                state
+
+    in
+        UI (UIState state') network /\ linksState' /\ c
+
+
+init' :: forall d e. R.Network d -> State d e
+init' nw = UI init nw /\ NoLinksChanged /\ Nothing
