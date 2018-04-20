@@ -20,7 +20,7 @@ import Prelude
 
 import Control.Monad.Eff (Eff)
 import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, modifyAt, foldr)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
 import Data.Tuple.Nested (type (/\))
 -- import Signal as S
 -- import Signal.Channel as SC
@@ -347,24 +347,24 @@ connect outlet inlet patch =
 
 
 connect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
-connect' outletPath inletPath network =
-    findOutlet outletPath network
-        >>= \(Outlet { flow }) -> flow
-        >>= \flow ->
-            let
-                patchId = getPatchOfInlet inletPath
-                newLink = Link outletPath inletPath
-                network' = updatePatch
+connect' outletPath inletPath network = do
+    outlet <- findOutlet outletPath network
+    let (Outlet { flow }) = outlet
+    flow' <- flow
+    let
+        -- flow' = fromMaybe' (\_ -> ) flow
+        patchId = getPatchOfInlet inletPath
+        newLink = Link outletPath inletPath
+        network' = updatePatch
                     (\(Patch patch@{ links }) -> Patch patch { links = newLink : links })
                     patchId
                     network
-                newSource = OutletSource outletPath flow
-            in
-                Just $ updateInlet
-                    (\(Inlet inlet@{ sources }) ->
-                        Inlet inlet { sources = newSource : sources })
-                    inletPath
-                    network'
+        newSource = OutletSource outletPath flow'
+    pure $ updateInlet
+                (\(Inlet inlet@{ sources }) ->
+                    Inlet inlet { sources = newSource : sources })
+                inletPath
+                network'
 
 
 patchId :: Int -> PatchId
