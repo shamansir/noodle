@@ -223,11 +223,12 @@ outlet' label flow =
 subscribeDataFlow
     :: forall d e
      . Network d
-    -> (d -> InletPath -> Eff (frp :: FRP | e) Unit)
-    -> (d -> OutletPath -> Eff (frp :: FRP | e) Unit)
+    -> (d -> InletPath -> RpdEff e Unit)
+    -> (d -> OutletPath -> RpdEff e Unit)
     -> Canceller e
 subscribeDataFlow (Network { patches }) inletHandler outletHandler =
-    let
+    fold $ inletFlows <> outletFlows
+    where
         -- TODO: use lenses: https://github.com/purescript-contrib/purescript-lens
         --                   http://brianhamrick.com/blog/records-haskell-purescript
         allNodes = concatMap (\(Patch { nodes }) -> nodes) patches
@@ -247,8 +248,6 @@ subscribeDataFlow (Network { patches }) inletHandler outletHandler =
             adaptOutletFlow path <$> flow
         inletFlows = concatMap extractInletFlows allInlets
         outletFlows = catMaybes $ map extractOutletFlows allOutlets
-    in
-        fold $ inletFlows <> outletFlows
 
 
 isNodeInPatch :: NodePath -> PatchId -> Boolean
@@ -351,7 +350,7 @@ connect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
 connect' outletPath inletPath network =
     findOutlet outletPath network
         >>= \(Outlet { flow }) -> flow
-        >>= \signal ->
+        >>= \flow ->
             let
                 patchId = getPatchOfInlet inletPath
                 newLink = Link outletPath inletPath
@@ -359,11 +358,11 @@ connect' outletPath inletPath network =
                     (\(Patch patch@{ links }) -> Patch patch { links = newLink : links })
                     patchId
                     network
-                newSource = OutletSource outletPath signal
+                newSource = OutletSource outletPath flow
             in
                 Just $ updateInlet
                     (\(Inlet inlet@{ sources }) ->
-                        Inlet inlet { sources = newSource : sources})
+                        Inlet inlet { sources = newSource : sources })
                     inletPath
                     network'
 

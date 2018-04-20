@@ -4,7 +4,7 @@ module Rpd.Render
     , Push
     , Message(..), Selection(..), getSelection, getConnecting
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
-    , init, update
+    , init, update, dataSubUnsub, areLinksChanged
     ) where
 
 import Prelude
@@ -25,6 +25,7 @@ newtype UIState d =
         , connecting :: Maybe R.OutletPath
         , lastInletData :: Map R.InletPath d
         , lastOutletData :: Map R.OutletPath d
+        --, prevCanceller :: Maybe (R.Canceller e)
         , lastMessages :: Array (Message d) -- FIXME: remove
         }
 
@@ -69,7 +70,7 @@ init =
         }
 
 
-update :: forall d e. Message d -> UI d -> UI d
+update :: forall d. Message d -> UI d -> UI d
 update (DataAtInlet inletPath d) (UI (UIState state) network) =
     UI
         (UIState $
@@ -100,6 +101,36 @@ update (Select selection) ui =
         Just newSelection -> setSelection newSelection ui
         Nothing -> ui
 update _ ui = ui
+
+
+dataSubUnsub
+    :: forall d e
+     . (Maybe (R.Canceller e) -> R.RpdEff e Unit)
+    -> (d -> R.InletPath -> R.RpdEff e Unit)
+    -> (d -> R.OutletPath -> R.RpdEff e Unit)
+    -> R.Network d
+    -> Message d
+    -> Maybe (R.Canceller e)
+    -> R.RpdEff e Unit
+dataSubUnsub push inletHandler outletHandler network msg maybeCancel = do
+    cancelPrev <- fromMaybe (pure $ pure unit) maybeCancel
+    cancelPrev
+    let cancelNext = R.subscribeDataFlow network inletHandler outletHandler
+    push $ Just cancelNext
+    pure unit
+
+
+-- TODO:
+-- addLog :: forall d x. (Message d -> UI d -> x) -> Writer (Array (Message d)) x
+-- addLog f =
+--     \msg ui -> do
+--         tell msg
+--         pure $ f msg ui
+
+
+areLinksChanged :: forall d. Message d -> Boolean
+areLinksChanged (ConnectTo _) = true
+areLinksChanged _ = false
 
 
 select :: forall d. Selection -> Selection -> Maybe Selection

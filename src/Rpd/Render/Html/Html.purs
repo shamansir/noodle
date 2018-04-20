@@ -42,9 +42,7 @@ type Push' d e = Push d ( dom :: DOM | e )
 
 type Canceller' e = R.Canceller ( dom :: DOM | e )
 
-data LinksState = NoLinksChanged | LinksChanged
-
-type State d = UI d /\ LinksState
+type State d = UI d
 
 
 --renderer :: forall d e. (Show d) => Element -> DomRenderer d e
@@ -79,10 +77,17 @@ renderer target nw = do
     --       and then call this canceller on next such case,
     --       just before subscribing to a new flow.
 
-    { event : channel, push } <- create
-    let uiFlow = Event.fold update' channel $ init' nw
-    _ <- subscribe uiFlow $ \state -> render' target push state Nothing
-    push Start
+
+
+    { event : messages, push : pushMsg } <- create
+    -- { event : linksChanged, push : pushLinksChanged } <- create
+    -- let dataSubUnsub' = dataSubUnsub pushLinksChanged (pushInletData pushMsg) (pushOutletData pushMsg)
+    let uiFlow = Event.fold update' messages $ UI init nw
+    -- let linksChangedFlow = map areLinksChanged messages
+    --let dataFlow = Event.fold dataSubUnsub' messages $ pure Nothing
+    -- _ <- subscribe dataFlow $
+    _ <- subscribe uiFlow $ \state -> render target pushMsg state
+    pushMsg Start
 
 
     -- renderDataSignal <- maybeDataSignal >>= \dataSignal -> do
@@ -106,6 +111,22 @@ renderer target nw = do
     -- pure $ uiSignal S.~> (\ui -> render target ui evtChannel)
 
 
+pushInletData
+    :: forall d e
+     . Push d e
+    -> (d -> R.InletPath -> R.RpdEff e Unit)
+pushInletData push =
+    (\d inletPath -> push $ DataAtInlet inletPath d)
+
+
+pushOutletData
+    :: forall d e
+     . Push d e
+    -> (d -> R.OutletPath -> R.RpdEff e Unit)
+pushOutletData push =
+    (\d outletPath -> push $ DataAtOutlet outletPath d)
+
+
 render
     :: forall d e
      . Show d
@@ -117,23 +138,6 @@ render target push ui =
     ToDOM.patch target $ do
         H.div $ H.text $ show ui
         network push ui
-
-
-render'
-    :: forall d e
-     . Show d
-    => Element
-    -> Push' d e
-    -> State d
-    -> Maybe (Canceller' e)
-    -> R.RenderEff ( dom :: DOM | e )
-render' target push (ui /\ NoLinksChanged) _ = render target push ui
-render' target push (ui /\ LinksChanged) maybeCancel = do
-    cancelPrev <- fromMaybe (pure $ pure unit) maybeCancel
-    cancelPrev
-    let (UI _ network) = ui
-    let cancelNext = subscribeDataFlow' push network
-    render' target push (ui /\ NoLinksChanged) (Just cancelNext)
 
 
 subscribeDataFlow' :: forall d e. Push' d e -> R.Network d -> Canceller' e
@@ -250,11 +254,6 @@ sendEvt push evt =
     eventListener $ const $ push evt
 
 
-areLinksChanged :: forall d. Message d -> LinksState
-areLinksChanged (ConnectTo _) = LinksChanged
-areLinksChanged _ = NoLinksChanged
-
-
 -- updateAndLog :: forall d e. Event d -> UI d -> String /\ UI d
 
 
@@ -269,9 +268,9 @@ isMeaningfulMessage _ = false
 
 -- TODO: use Writer monad
 update' :: forall d. Message d -> State d -> State d
-update' msg (ui /\ linksState) =
+update' msg state =
     let
-        UI (UIState state) network = update msg ui
+        UI (UIState state) network = update msg state
         linksState' = areLinksChanged msg
         state' =
             if isMeaningfulMessage msg then
@@ -280,8 +279,4 @@ update' msg (ui /\ linksState) =
                 state
 
     in
-        UI (UIState state') network /\ linksState'
-
-
-init' :: forall d. R.Network d -> State d
-init' nw = UI init nw /\ LinksChanged
+        UI (UIState state') network
