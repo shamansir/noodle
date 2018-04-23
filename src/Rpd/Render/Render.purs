@@ -2,7 +2,7 @@ module Rpd.Render
     ( UI(..)
     , UIState
     , Push
-    , Message(..), Selection(..), getSelection, getConnecting
+    , Message(..), Selection(..)
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
     , init, update, subscribeData, areLinksChanged
     ) where
@@ -77,11 +77,11 @@ update :: forall d. Message d -> UI d -> UI d
 update msg@(ConnectTo inletPath) (UI state network) =
     UI state' network'
     where
-        state' = updateState msg (state { areLinksChanged = true })
         network' =
             case state.connecting of
                 Just outletPath -> fromMaybe network $ R.connect' outletPath inletPath network
                 Nothing -> network
+        state' = updateState msg (state { areLinksChanged = true })
 update msg (UI state network) =
     UI (updateState msg (state { areLinksChanged = false })) network
 
@@ -103,8 +103,8 @@ updateState (ConnectTo inletPath) state =
     state { connecting = Nothing }
 updateState (Select selection) state =
     case select selection state.selection of
-        Just newSelection -> state { selection = state.selection }
-        Nothing -> state
+        Just newSelection -> state { selection = newSelection }
+        Nothing -> state -- SNone?
 updateState _ state = state
 
 
@@ -146,19 +146,6 @@ select (SOutlet newOutlet) prevSelection | isOutletSelected prevSelection newOut
                                          | otherwise = Just (SOutlet newOutlet)
 select SNone _ = Just SNone
 select _ _ = Nothing
-
-
-getSelection :: forall d. UI d -> Selection
-getSelection (UI s _) = s.selection
-
-
-getConnecting :: forall d. UI d -> Maybe R.OutletPath
-getConnecting (UI s _) = s.connecting
-
-
-setSelection :: forall d. Selection -> UI d -> UI d
-setSelection newSelection (UI s network) =
-    UI (s { selection = newSelection }) network
 
 
 isPatchSelected :: Selection -> R.PatchId -> Boolean

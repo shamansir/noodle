@@ -62,8 +62,6 @@ renderer target nw = do
         subscribeData' = subscribeData (pushInletData pushMsg) (pushOutletData pushMsg)
         pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
         triggeredCancellers = Event.sampleOn_ pastCancellers cancellerTriggers
-        -- FIXME: what to do with the first state, should areLinksChanged be `true` at first?
-        -- FIXME: implement setting/removing areLinksChanged flag
         subFlow = map (\(UI _ network) -> do subscribeData' network)
             $ filter (\(UI state _) -> state.areLinksChanged) uiFlow
     _ <- subscribe triggeredCancellers $ \maybeCancel -> do
@@ -75,8 +73,8 @@ renderer target nw = do
         let cancelNext = do subscriber unit
         saveCanceller cancelNext
         pure unit
-    _ <- subscribe uiFlow $ \ui -> render target pushMsg ui
     _ <- do subscribeData' nw unit
+    _ <- subscribe uiFlow $ \ui -> render target pushMsg ui
     pushMsg Start
 
 
@@ -118,7 +116,7 @@ network push ui@(UI s (R.Network { patches })) =
 
 
 patch :: forall d e. (Show d) => Push' d e -> UI d -> R.Patch d -> Markup e
-patch push ui (R.Patch { id, name, nodes, links }) =
+patch push ui@(UI s _) (R.Patch { id, name, nodes, links }) =
     H.div ! HA.className className $
         if isSelected then do
             H.p #! clickHandler $ H.text $ "<" <> show id <> ": " <> name <> "> "
@@ -129,14 +127,14 @@ patch push ui (R.Patch { id, name, nodes, links }) =
         else
             H.p #! clickHandler $ H.text $ "[" <> show id <> "]"
     where
-        isSelected = isPatchSelected (getSelection ui) id
+        isSelected = isPatchSelected s.selection id
         className = "patch " <> (if isSelected then "_selected" else "")
         maybeSelect = sendEvt push $ Select (SPatch id)
         clickHandler = on "click" maybeSelect
 
 
 node :: forall d e. (Show d) => Push' d e -> UI d -> R.Node d -> Markup e
-node push ui (R.Node { path, name, inlets, outlets }) =
+node push ui@(UI s _) (R.Node { path, name, inlets, outlets }) =
     H.div ! HA.className className $
         if isSelected then do
             H.p #! clickHandler $ H.text $ "<" <> show path <> ": " <> name <> "> "
@@ -147,14 +145,14 @@ node push ui (R.Node { path, name, inlets, outlets }) =
         else
             H.p #! clickHandler $ H.text $ "[" <> show path <> "]"
     where
-        isSelected = isNodeSelected (getSelection ui) path
+        isSelected = isNodeSelected s.selection path
         className = "node " <> (if isSelected then "_selected" else "")
         maybeSelect = sendEvt push $ Select (SNode path)
         clickHandler = on "click" maybeSelect
 
 
 inlet :: forall d e. (Show d) => Push' d e -> UI d -> R.Inlet d -> Markup e
-inlet push ui@(UI s _) (R.Inlet { path, label, default, sources }) =
+inlet push (UI s _) (R.Inlet { path, label, default, sources }) =
     H.div ! HA.className className $
         if isSelected then
             H.div $ do
@@ -166,8 +164,8 @@ inlet push ui@(UI s _) (R.Inlet { path, label, default, sources }) =
                 H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ connectorLabel
                 H.span #! clickHandler $ H.text $ "[" <> show path <> "]"
     where
-        isSelected = isInletSelected (getSelection ui) path
-        isWaitingForConnection = fromMaybe false $ R.notInTheSameNode path <$> getConnecting ui
+        isSelected = isInletSelected s.selection path
+        isWaitingForConnection = fromMaybe false $ R.notInTheSameNode path <$> s.connecting
         className = "inlet" <> (if isSelected then " _selected" else " ")
             <> (if isWaitingForConnection then " _waiting" else " ")
         maybeSelect = sendEvt push $ Select (SInlet path)
@@ -184,7 +182,7 @@ inlet push ui@(UI s _) (R.Inlet { path, label, default, sources }) =
 
 
 outlet :: forall d e. (Show d) => Push' d e -> UI d -> R.Outlet d -> Markup e
-outlet push ui@(UI s _) (R.Outlet { path, label }) =
+outlet push (UI s _) (R.Outlet { path, label }) =
     H.div ! HA.className className $
         if isSelected then
             H.div $ do
@@ -196,9 +194,9 @@ outlet push ui@(UI s _) (R.Outlet { path, label }) =
                 H.span ! HA.className "connector" #! connectorClickHandler $ H.text $ connectorLabel
                 H.span #! clickHandler $ H.text $ "[" <> show path <> "]"
     where
-        isSelected = isOutletSelected (getSelection ui) path
-        isConnectingSomething = isJust $ getConnecting ui
-        isCurrentlyConnecting = fromMaybe false $ ((==) path) <$> getConnecting ui
+        isSelected = isOutletSelected s.selection path
+        isConnectingSomething = isJust s.connecting
+        isCurrentlyConnecting = fromMaybe false $ ((==) path) <$> s.connecting
         className = "outlet" <> (if isSelected then " _selected" else " ")
                      <> (if isConnectingSomething then " _waiting" else " ")
                      <> (if isCurrentlyConnecting then " _connecting" else " ")
@@ -232,13 +230,12 @@ isMeaningfulMessage _ = false
 update' :: forall d. Message d -> UI d -> UI d
 update' msg state =
     let
-        UI state network = update msg state
-        linksState' = areLinksChanged msg
-        state' =
+        UI state' network = update msg state
+        state'' =
             if isMeaningfulMessage msg then
-                state { lastMessages = Array.take 5 $ msg : state.lastMessages }
+                state' { lastMessages = Array.take 5 $ msg : state'.lastMessages }
             else
-                state
+                state'
 
     in
-        UI state' network
+        UI state'' network
