@@ -54,108 +54,30 @@ renderer
     -> R.Network d
     -> R.RenderEff ( dom :: DOM | e )
 renderer target nw = do
-    --    let maybeDataSignal = R.subscribeDataSignal nw
-    --    evtChannel <- SC.channel Start
-    --    let evtSignal = SC.subscribe evtChannel
-    --    let uiSignal = S.foldp update' (UI init nw) evtSignal
-
-    --let foldingF = f push
-    --evtChannel <- SC.channel Start
-    --let evtSignal = SC.subscribe evtChannel
-    -- let
-    --     f :: Message d -> UI d -> Eff (R.RpdEff (dom :: DOM | e)) (UI d)
-    --     f msg ui = do
-    --         let ui' = update' msg ui
-    --         render target ui' push
-    --         pure ui'
-                -- if (evt == ConnectTo) then
-                        -- R.subscribeDataFlow nw
-                -- pure ui'
-
-    -- TODO: when uiState.lastConnection is not Nothing,
-    --       subscribe again to R.subscribeDataFlow,
-    --       save the returned canceller,
-    --       and then call this canceller on next such case,
-    --       just before subscribing to a new flow.
-
-
-
     { event : messages, push : pushMsg } <- create
     let uiFlow = Event.fold update' messages $ UI init nw
     { event : cancellers, push : pushCanceller } <- create
-    let subscribeData' = subscribeData (pushInletData pushMsg) (pushOutletData pushMsg)
-    let filteredUiFlow = filter (\(UI (UIState state) _) -> state.areLinksChanged) uiFlow
-    let subFlow = map (\(UI _ network) -> do subscribeData' network) filteredUiFlow -- (subscribeData' nw)
-        -- this should be called on every links update, so it pushes the corresponding
-        -- FromInlet/FromOutlet messages
-
-        -- dataSubUnsub' = dataSubUnsub (pushInletData pushMsg) (pushOutletData pushMsg)
-
-
-        -- subscribeData :: forall d e. UI d -> Maybe (R.Canceller e) -> R.RpdEff e (Maybe (R.Canceller e) /\ UI d)
-
-
-
-        -- subscribeData ui@(UI (UIState state) network) maybeCancel | state.areLinksChanged = do
-        --     nextCancel <- dataSubUnsub' network maybeCancel
-        --     pure $ (Just nextCancel) /\ ui
-        -- subscribeData ui@(UI (UIState state) _) maybeCancel = do pure $ maybeCancel /\ ui
-        -- _ = Event.mapAccum (subscribeData) uiFlow Nothing
-
-
-        -- linksChanged -- Event (Maybe Canceller e)
-        -- sampleOn ~= merge ??, merge uiFlow + cancellers, because we push cancellers there
-        -- dataFlow =
-        --     Event.fold
-        --         (\ui maybeCancel ->
-        --             if ui.linksChanged
-        --                 then dataSubUnsub' network maybeCancel
-        --                 else unit
-        --         ) uiFlow Nothing
-
-    -- _ <- subscribe uiFlow $ \ui -> if state.linksChanged then dataSubUnsub' network cancelled else unit
-    -- _ <- subscribe subUnsubFlow $ \(maybeCancel /\ subscribe) -> do
-    --         _ <- fromMaybe (pure unit) maybeCancel
-    --         _ <- subscribe unit
-    --         pure unit
-    _ <- subscribe cancellers $ \canceller -> do
-        cancel <- canceller
+    let
+        pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
+        subscribeData' = subscribeData (pushInletData pushMsg) (pushOutletData pushMsg)
+        -- FIXME: what to do with the first state, should areLinksChanged be `true` at first?
+        -- FIXME: implement setting/removing areLinksChanged flag
+        subFlow = map (\(UI _ network) -> do subscribeData' network)
+            $ filter (\(UI (UIState state) _) -> state.areLinksChanged) uiFlow
+    _ <- subscribe pastCancellers $ \maybeCancel -> do
+        let cancel = fromMaybe (pure $ pure unit) maybeCancel
         _ <- cancel
         pure unit
     _ <- subscribe subFlow $ \subscriber -> do
         let cancelNext = do subscriber unit
+        -- FIXME: we should push canceller before subscribing,
+        --        because pushing it actually triggers the
+        --        unsubscription from the previous time,
+        --        so it should be performed before
         pushCanceller cancelNext
         pure unit
     _ <- subscribe uiFlow $ \ui -> render target pushMsg ui
-    --pushLinksChanged Nothing
     pushMsg Start
-
-
-    -- renderDataSignal <- maybeDataSignal >>= \dataSignal -> do
-    --     let sendData = \dataEvt -> SC.send evtChannel dataEvt
-    --     dataSignal S.~> Data S.~> sendData
-    -- S.runSignal renderDataSignal
-    -- where
-    --     f evt ui = do
-    --         let ui' = update' evt ui
-    --         render target ui push
-    --         -- if (evt == ConnectTo) then
-    --         -- R.subscribeDataFlow nw
-    --         pure ui'
-
-    -- case maybeDataSignal of
-    --     Just dataSignal -> do
-    --         let sendData = (\dataEvt -> SC.send evtChannel dataEvt)
-    --         let renderDataSignal = dataSignal S.~> Data S.~> sendData
-    --         S.runSignal renderDataSignal
-    --     Nothing -> pure unit
-    -- pure $ uiSignal S.~> (\ui -> render target ui evtChannel)
-
--- forall t13 t16 t27. Bind t16 => Applicative t16 => (Network t13 -> Maybe t27 -> t16 t27) -> UI t13 -> Maybe t27 -> t16 (Tuple (Maybe t27) (UI t13))
--- subscribeData subUnsub ui@(UI (UIState state) network) maybeCancel | state.areLinksChanged = do
---     nextCancel <- subUnsub network maybeCancel
---     pure $ (Just nextCancel) /\ ui
--- subscribeData _ ui@(UI (UIState state) _) maybeCancel = do pure $ maybeCancel /\ ui
 
 
 pushInletData
@@ -185,13 +107,6 @@ render target push ui =
     ToDOM.patch target $ do
         H.div $ H.text $ show ui
         network push ui
-
-
-subscribeDataFlow' :: forall d e. Push' d e -> R.Network d -> Canceller' e
-subscribeDataFlow' push network =
-    R.subscribeDataFlow network
-        (\d inletPath -> push $ DataAtInlet inletPath d)
-        (\d outletPath -> push $ DataAtOutlet outletPath d)
 
 
 network :: forall d e. (Show d) => Push' d e -> UI d -> Markup e
