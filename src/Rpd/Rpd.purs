@@ -10,7 +10,7 @@ module Rpd
     --, NetworkT, PatchT
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
-    , subscribeDataFlow, Canceller
+    , subscribeDataFlow, Canceller, Subscriber
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
     , notInTheSameNode
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
@@ -21,7 +21,7 @@ import Prelude
 import Control.Monad.Eff (Eff)
 import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, modifyAt, foldr)
 import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
-import Data.Tuple.Nested (type (/\))
+import Data.Tuple.Nested ((/\), type (/\))
 -- import Signal as S
 -- import Signal.Channel as SC
 import FRP (FRP)
@@ -110,6 +110,8 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 
 -- type DataFlow d = Flow (DataMsg d)
 type RpdEff e v = Eff (frp :: FRP | e) v
+type Subscriber e =
+    (Unit -> Canceller e)
 type Canceller e =
     RpdEff e (RpdEff e Unit)
 type RenderEff e =

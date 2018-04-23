@@ -4,16 +4,17 @@ module Rpd.Render
     , Push
     , Message(..), Selection(..), getSelection, getConnecting
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
-    , init, update, dataSubUnsub, areLinksChanged
+    , init, update, subscribeData, areLinksChanged
     ) where
 
 import Prelude
 
-import Data.Map (Map(..))
-import Data.Map as Map
 import Data.Array ((:))
 import Data.Array as Array
+import Data.Map (Map(..))
+import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Tuple.Nested ((/\), type (/\))
 import Rpd as R
 -- import Signal.Channel as SC
 
@@ -25,7 +26,9 @@ newtype UIState d =
         , connecting :: Maybe R.OutletPath
         , lastInletData :: Map R.InletPath d
         , lastOutletData :: Map R.OutletPath d
-        --, prevCanceller :: Maybe (R.Canceller e)
+        , areLinksChanged :: Boolean
+        -- TODO: lastConnection: Maybe Link
+        -- , prevCanceller :: Maybe (R.Canceller e)
         , lastMessages :: Array (Message d) -- FIXME: remove
         }
 
@@ -65,8 +68,8 @@ init =
         , connecting : Nothing
         , lastInletData : Map.empty
         , lastOutletData : Map.empty
+        , areLinksChanged : false
         , lastMessages : []
-        -- TODO: latestConnection: Maybe Link
         }
 
 
@@ -103,21 +106,44 @@ update (Select selection) ui =
 update _ ui = ui
 
 
-dataSubUnsub
+-- dataSubUnsub
+--     :: forall d e
+--      . (R.Canceller e -> R.RpdEff e Unit)
+--     -> (d -> R.InletPath -> R.RpdEff e Unit)
+--     -> (d -> R.OutletPath -> R.RpdEff e Unit)
+--     -> R.Network d
+--     -> Maybe (R.Canceller e)
+--     -> R.RpdEff e Unit
+-- dataSubUnsub push inletHandler outletHandler network maybeCancel = do
+--     cancelPrev <- fromMaybe (pure $ pure unit) maybeCancel
+--     cancelPrev
+--     let cancelNext = R.subscribeDataFlow network inletHandler outletHandler
+--     push $ cancelNext
+--     pure unit
+
+
+-- dataSubUnsub
+--     :: forall d e
+--      . (d -> R.InletPath -> R.RpdEff e Unit)
+--     -> (d -> R.OutletPath -> R.RpdEff e Unit)
+--     -> R.Network d
+--     -> Maybe (R.Canceller e)
+--     -> Maybe (R.Canceller e) /\ R.Subscriber e
+-- dataSubUnsub inletHandler outletHandler network maybeCancel =
+--     maybeCancelPrev /\ subscribe
+--     where
+--         maybeCancelPrev = maybeCancel
+--         subscribe = (\_ -> R.subscribeDataFlow network inletHandler outletHandler)
+
+
+subscribeData
     :: forall d e
-     . (Maybe (R.Canceller e) -> R.RpdEff e Unit)
-    -> (d -> R.InletPath -> R.RpdEff e Unit)
+     . (d -> R.InletPath -> R.RpdEff e Unit)
     -> (d -> R.OutletPath -> R.RpdEff e Unit)
     -> R.Network d
-    -> Message d
-    -> Maybe (R.Canceller e)
-    -> R.RpdEff e Unit
-dataSubUnsub push inletHandler outletHandler network msg maybeCancel = do
-    cancelPrev <- fromMaybe (pure $ pure unit) maybeCancel
-    cancelPrev
-    let cancelNext = R.subscribeDataFlow network inletHandler outletHandler
-    push $ Just cancelNext
-    pure unit
+    -> (Unit -> R.Canceller e)
+subscribeData inletHandler outletHandler network =
+    \_ -> R.subscribeDataFlow network inletHandler outletHandler
 
 
 -- TODO:

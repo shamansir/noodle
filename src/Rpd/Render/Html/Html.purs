@@ -6,6 +6,7 @@ import Rpd.Render
 import Control.Alternative ((<|>))
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
+import Control.MonadZero (guard)
 import DOM (DOM)
 import DOM.Event.EventTarget (EventListener, eventListener)
 import DOM.Node.Types (Element)
@@ -13,9 +14,11 @@ import Data.Array ((:))
 import Data.Array (length)
 import Data.Array as Array
 import Data.Foldable (for_)
+import Data.Filterable (filter)
 import Data.Map (Map(..))
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
+import Data.Tuple (curry, uncurry)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import FRP (FRP)
@@ -41,8 +44,6 @@ type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
 type Push' d e = Push d ( dom :: DOM | e )
 
 type Canceller' e = R.Canceller ( dom :: DOM | e )
-
-type State d = UI d
 
 
 --renderer :: forall d e. (Show d) => Element -> DomRenderer d e
@@ -80,13 +81,53 @@ renderer target nw = do
 
 
     { event : messages, push : pushMsg } <- create
-    -- { event : linksChanged, push : pushLinksChanged } <- create
-    -- let dataSubUnsub' = dataSubUnsub pushLinksChanged (pushInletData pushMsg) (pushOutletData pushMsg)
     let uiFlow = Event.fold update' messages $ UI init nw
-    -- let linksChangedFlow = map areLinksChanged messages
-    --let dataFlow = Event.fold dataSubUnsub' messages $ pure Nothing
-    -- _ <- subscribe dataFlow $
-    _ <- subscribe uiFlow $ \state -> render target pushMsg state
+    { event : cancellers, push : pushCanceller } <- create
+    let subscribeData' = subscribeData (pushInletData pushMsg) (pushOutletData pushMsg)
+    let filteredUiFlow = filter (\(UI (UIState state) _) -> state.areLinksChanged) uiFlow
+    let subFlow = map (\(UI _ network) -> do subscribeData' network) filteredUiFlow -- (subscribeData' nw)
+        -- this should be called on every links update, so it pushes the corresponding
+        -- FromInlet/FromOutlet messages
+
+        -- dataSubUnsub' = dataSubUnsub (pushInletData pushMsg) (pushOutletData pushMsg)
+
+
+        -- subscribeData :: forall d e. UI d -> Maybe (R.Canceller e) -> R.RpdEff e (Maybe (R.Canceller e) /\ UI d)
+
+
+
+        -- subscribeData ui@(UI (UIState state) network) maybeCancel | state.areLinksChanged = do
+        --     nextCancel <- dataSubUnsub' network maybeCancel
+        --     pure $ (Just nextCancel) /\ ui
+        -- subscribeData ui@(UI (UIState state) _) maybeCancel = do pure $ maybeCancel /\ ui
+        -- _ = Event.mapAccum (subscribeData) uiFlow Nothing
+
+
+        -- linksChanged -- Event (Maybe Canceller e)
+        -- sampleOn ~= merge ??, merge uiFlow + cancellers, because we push cancellers there
+        -- dataFlow =
+        --     Event.fold
+        --         (\ui maybeCancel ->
+        --             if ui.linksChanged
+        --                 then dataSubUnsub' network maybeCancel
+        --                 else unit
+        --         ) uiFlow Nothing
+
+    -- _ <- subscribe uiFlow $ \ui -> if state.linksChanged then dataSubUnsub' network cancelled else unit
+    -- _ <- subscribe subUnsubFlow $ \(maybeCancel /\ subscribe) -> do
+    --         _ <- fromMaybe (pure unit) maybeCancel
+    --         _ <- subscribe unit
+    --         pure unit
+    _ <- subscribe cancellers $ \canceller -> do
+        cancel <- canceller
+        _ <- cancel
+        pure unit
+    _ <- subscribe subFlow $ \subscriber -> do
+        let cancelNext = do subscriber unit
+        pushCanceller cancelNext
+        pure unit
+    _ <- subscribe uiFlow $ \ui -> render target pushMsg ui
+    --pushLinksChanged Nothing
     pushMsg Start
 
 
@@ -109,6 +150,12 @@ renderer target nw = do
     --         S.runSignal renderDataSignal
     --     Nothing -> pure unit
     -- pure $ uiSignal S.~> (\ui -> render target ui evtChannel)
+
+-- forall t13 t16 t27. Bind t16 => Applicative t16 => (Network t13 -> Maybe t27 -> t16 t27) -> UI t13 -> Maybe t27 -> t16 (Tuple (Maybe t27) (UI t13))
+-- subscribeData subUnsub ui@(UI (UIState state) network) maybeCancel | state.areLinksChanged = do
+--     nextCancel <- subUnsub network maybeCancel
+--     pure $ (Just nextCancel) /\ ui
+-- subscribeData _ ui@(UI (UIState state) _) maybeCancel = do pure $ maybeCancel /\ ui
 
 
 pushInletData
@@ -267,7 +314,7 @@ isMeaningfulMessage _ = false
 -- isMeaningfulMessage _ = true
 
 -- TODO: use Writer monad
-update' :: forall d. Message d -> State d -> State d
+update' :: forall d. Message d -> UI d -> UI d
 update' msg state =
     let
         UI (UIState state) network = update msg state
