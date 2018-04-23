@@ -1,6 +1,6 @@
 module Rpd.Render
     ( UI(..)
-    , UIState(..)
+    , UIState
     , Push
     , Message(..), Selection(..), getSelection, getConnecting
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
@@ -19,18 +19,19 @@ import Rpd as R
 -- import Signal.Channel as SC
 
 
-newtype UIState d =
-    UIState
-        { selection :: Selection
-        , dragging :: Maybe R.NodePath
-        , connecting :: Maybe R.OutletPath
-        , lastInletData :: Map R.InletPath d
-        , lastOutletData :: Map R.OutletPath d
-        , areLinksChanged :: Boolean
-        -- TODO: lastConnection: Maybe Link
-        -- , prevCanceller :: Maybe (R.Canceller e)
-        , lastMessages :: Array (Message d) -- FIXME: remove
-        }
+-- newtype UIState d =
+--     UIState
+type UIState d =
+    { selection :: Selection
+    , dragging :: Maybe R.NodePath
+    , connecting :: Maybe R.OutletPath
+    , lastInletData :: Map R.InletPath d
+    , lastOutletData :: Map R.OutletPath d
+    , areLinksChanged :: Boolean
+    -- TODO: lastConnection: Maybe Link
+    -- , prevCanceller :: Maybe (R.Canceller e)
+    , lastMessages :: Array (Message d) -- FIXME: remove
+    }
 
 
 data Message d
@@ -62,78 +63,49 @@ type Push d e = Message d -> R.RpdEff e Unit
 
 init :: forall d. UIState d
 init =
-    UIState
-        { selection : SNone
-        , dragging : Nothing
-        , connecting : Nothing
-        , lastInletData : Map.empty
-        , lastOutletData : Map.empty
-        , areLinksChanged : false
-        , lastMessages : []
-        }
+    { selection : SNone
+    , dragging : Nothing
+    , connecting : Nothing
+    , lastInletData : Map.empty
+    , lastOutletData : Map.empty
+    , areLinksChanged : false
+    , lastMessages : []
+    }
 
 
 update :: forall d. Message d -> UI d -> UI d
-update (DataAtInlet inletPath d) (UI (UIState state) network) =
-    UI
-        (UIState $
-            state
-                { lastInletData =
-                    Map.insert inletPath d state.lastInletData
-                })
-        network
-update (DataAtOutlet outletPath d) (UI (UIState state) network) =
-    UI
-        (UIState $
-            state
-                { lastOutletData =
-                    Map.insert outletPath d state.lastOutletData
-                })
-        network
-update (ConnectFrom outletPath) (UI (UIState state) network) =
-    UI (UIState $ state { connecting = Just outletPath }) network
-update (ConnectTo inletPath) (UI (UIState state) network) =
-    UI (UIState $ state { connecting = Nothing }) network'
+update msg@(ConnectTo inletPath) (UI state network) =
+    UI state' network'
     where
+        state' = updateState msg (state { areLinksChanged = true })
         network' =
             case state.connecting of
                 Just outletPath -> fromMaybe network $ R.connect' outletPath inletPath network
                 Nothing -> network
-update (Select selection) ui =
-    case select selection $ getSelection ui of
-        Just newSelection -> setSelection newSelection ui
-        Nothing -> ui
-update _ ui = ui
+update msg (UI state network) =
+    UI (updateState msg (state { areLinksChanged = false })) network
 
 
--- dataSubUnsub
---     :: forall d e
---      . (R.Canceller e -> R.RpdEff e Unit)
---     -> (d -> R.InletPath -> R.RpdEff e Unit)
---     -> (d -> R.OutletPath -> R.RpdEff e Unit)
---     -> R.Network d
---     -> Maybe (R.Canceller e)
---     -> R.RpdEff e Unit
--- dataSubUnsub push inletHandler outletHandler network maybeCancel = do
---     cancelPrev <- fromMaybe (pure $ pure unit) maybeCancel
---     cancelPrev
---     let cancelNext = R.subscribeDataFlow network inletHandler outletHandler
---     push $ cancelNext
---     pure unit
-
-
--- dataSubUnsub
---     :: forall d e
---      . (d -> R.InletPath -> R.RpdEff e Unit)
---     -> (d -> R.OutletPath -> R.RpdEff e Unit)
---     -> R.Network d
---     -> Maybe (R.Canceller e)
---     -> Maybe (R.Canceller e) /\ R.Subscriber e
--- dataSubUnsub inletHandler outletHandler network maybeCancel =
---     maybeCancelPrev /\ subscribe
---     where
---         maybeCancelPrev = maybeCancel
---         subscribe = (\_ -> R.subscribeDataFlow network inletHandler outletHandler)
+updateState :: forall d. Message d -> UIState d -> UIState d
+updateState (DataAtInlet inletPath d) state =
+    state
+        { lastInletData =
+            Map.insert inletPath d state.lastInletData
+        }
+updateState (DataAtOutlet outletPath d) state =
+    state
+        { lastOutletData =
+            Map.insert outletPath d state.lastOutletData
+        }
+updateState (ConnectFrom outletPath) state =
+    state { connecting = Just outletPath }
+updateState (ConnectTo inletPath) state =
+    state { connecting = Nothing }
+updateState (Select selection) state =
+    case select selection state.selection of
+        Just newSelection -> state { selection = state.selection }
+        Nothing -> state
+updateState _ state = state
 
 
 subscribeData
@@ -177,16 +149,16 @@ select _ _ = Nothing
 
 
 getSelection :: forall d. UI d -> Selection
-getSelection (UI (UIState s) _) = s.selection
+getSelection (UI s _) = s.selection
 
 
 getConnecting :: forall d. UI d -> Maybe R.OutletPath
-getConnecting (UI (UIState s) _) = s.connecting
+getConnecting (UI s _) = s.connecting
 
 
 setSelection :: forall d. Selection -> UI d -> UI d
-setSelection newSelection (UI (UIState s) network) =
-    UI (UIState $ s { selection = newSelection }) network
+setSelection newSelection (UI s network) =
+    UI (s { selection = newSelection }) network
 
 
 isPatchSelected :: Selection -> R.PatchId -> Boolean
@@ -224,18 +196,14 @@ instance showSelection :: Show Selection where
     show (SLink linkId) = show linkId
 
 
-instance showUIState :: (Show d) => Show (UIState d) where
-    show (UIState { selection, dragging, connecting, lastInletData, lastOutletData, lastMessages })
+instance showUI :: (Show d) => Show (UI d) where
+    show (UI { selection, dragging, connecting, lastInletData, lastOutletData, lastMessages } _)
         = "Selection: " <> show selection <>
         ", Dragging: " <> show dragging <>
         ", Connecting: " <> show connecting <>
         ", Inlets: " <> show lastInletData <>
         ", Outlets: " <> show lastOutletData <>
         ", Last events: " <> show (Array.reverse lastMessages)
-
-
-instance showUI :: (Show d) => Show (UI d) where
-    show (UI state _ ) = show state
 
 
 instance showMessage :: (Show d) => Show (Message d) where

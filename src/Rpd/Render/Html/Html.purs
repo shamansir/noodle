@@ -56,27 +56,27 @@ renderer
 renderer target nw = do
     { event : messages, push : pushMsg } <- create
     let uiFlow = Event.fold update' messages $ UI init nw
-    { event : cancellers, push : pushCanceller } <- create
+    { event : cancellers, push : saveCanceller } <- create
+    { event : cancellerTriggers, push : triggerPrevCanceller } <- create
     let
-        pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
         subscribeData' = subscribeData (pushInletData pushMsg) (pushOutletData pushMsg)
+        pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
+        triggeredCancellers = Event.sampleOn_ pastCancellers cancellerTriggers
         -- FIXME: what to do with the first state, should areLinksChanged be `true` at first?
         -- FIXME: implement setting/removing areLinksChanged flag
         subFlow = map (\(UI _ network) -> do subscribeData' network)
-            $ filter (\(UI (UIState state) _) -> state.areLinksChanged) uiFlow
-    _ <- subscribe pastCancellers $ \maybeCancel -> do
+            $ filter (\(UI state _) -> state.areLinksChanged) uiFlow
+    _ <- subscribe triggeredCancellers $ \maybeCancel -> do
         let cancel = fromMaybe (pure $ pure unit) maybeCancel
         _ <- cancel
         pure unit
     _ <- subscribe subFlow $ \subscriber -> do
+        triggerPrevCanceller unit
         let cancelNext = do subscriber unit
-        -- FIXME: we should push canceller before subscribing,
-        --        because pushing it actually triggers the
-        --        unsubscription from the previous time,
-        --        so it should be performed before
-        pushCanceller cancelNext
+        saveCanceller cancelNext
         pure unit
     _ <- subscribe uiFlow $ \ui -> render target pushMsg ui
+    _ <- do subscribeData' nw unit
     pushMsg Start
 
 
@@ -110,7 +110,7 @@ render target push ui =
 
 
 network :: forall d e. (Show d) => Push' d e -> UI d -> Markup e
-network push ui@(UI (UIState s) (R.Network { patches })) =
+network push ui@(UI s (R.Network { patches })) =
     H.div ! HA.className "network" $ do
         H.p $ H.text $ "Network: " <> (show $ length patches) <> "P"
         H.div ! HA.className "patches" $
@@ -154,7 +154,7 @@ node push ui (R.Node { path, name, inlets, outlets }) =
 
 
 inlet :: forall d e. (Show d) => Push' d e -> UI d -> R.Inlet d -> Markup e
-inlet push ui@(UI (UIState s) _) (R.Inlet { path, label, default, sources }) =
+inlet push ui@(UI s _) (R.Inlet { path, label, default, sources }) =
     H.div ! HA.className className $
         if isSelected then
             H.div $ do
@@ -184,7 +184,7 @@ inlet push ui@(UI (UIState s) _) (R.Inlet { path, label, default, sources }) =
 
 
 outlet :: forall d e. (Show d) => Push' d e -> UI d -> R.Outlet d -> Markup e
-outlet push ui@(UI (UIState s) _) (R.Outlet { path, label }) =
+outlet push ui@(UI s _) (R.Outlet { path, label }) =
     H.div ! HA.className className $
         if isSelected then
             H.div $ do
@@ -232,7 +232,7 @@ isMeaningfulMessage _ = false
 update' :: forall d. Message d -> UI d -> UI d
 update' msg state =
     let
-        UI (UIState state) network = update msg state
+        UI state network = update msg state
         linksState' = areLinksChanged msg
         state' =
             if isMeaningfulMessage msg then
@@ -241,4 +241,4 @@ update' msg state =
                 state
 
     in
-        UI (UIState state') network
+        UI state' network
