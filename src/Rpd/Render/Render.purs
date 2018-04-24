@@ -9,6 +9,7 @@ module Rpd.Render
 
 import Prelude
 
+import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Data.Array ((:))
 import Data.Array as Array

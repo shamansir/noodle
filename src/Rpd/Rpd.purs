@@ -232,8 +232,9 @@ subscribeDataFlow
     -> Network d
     -> Subscriber e
 subscribeDataFlow inletHandler outletHandler (Network { patches }) = do
-    log "!!! subscribing data flow"
-    pure $ fold $ inletFlows <> outletFlows
+    pure $ do
+        log "!!! subscribing data flow"
+        fold $ inletFlows <> outletFlows
     where
         -- TODO: use lenses: https://github.com/purescript-contrib/purescript-lens
         --                   http://brianhamrick.com/blog/records-haskell-purescript

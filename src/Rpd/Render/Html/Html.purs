@@ -66,24 +66,27 @@ renderer target nw = do
         subscribeData' = subscribeData (pushInletData pushMsg) (pushOutletData pushMsg)
         pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
         triggeredCancellers = Event.sampleOn_ pastCancellers cancellerTriggers
-        sub (UI _ network) = subscribeData' network
+        sub (UI _ network) = network
         subFlow = map sub
             $ filter (\(UI state _) -> state.areLinksChanged) uiFlow
     _ <- subscribe triggeredCancellers $ \maybeCancel -> do
-        let cancel = fromMaybe (pure $ pure unit) maybeCancel
+        let cancel = fromMaybe (pure unit) maybeCancel
         log $ "cancel called: " <> maybe "empty" (const "some") maybeCancel
         _ <- cancel
         pure unit
-    _ <- subscribe subFlow $ \subscriber -> do
+    _ <- subscribe subFlow $ \nw -> do
         log "trigger prev cancel"
         triggerPrevCanceller unit
         log "subscribe"
+        subscriber <- subscribeData' nw
         cancelNext <- subscriber
         log "save canceller"
         _ <- saveCanceller cancelNext
         pure unit
     _ <- do
-        cancelNext <- subscribeData' nw
+        log "first subscription"
+        subscriber <- subscribeData' nw
+        cancelNext <- subscriber
         _ <- saveCanceller cancelNext
         pure unit
     _ <- subscribe uiFlow $ \ui -> render target pushMsg ui
