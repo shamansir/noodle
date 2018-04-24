@@ -41,6 +41,7 @@ data Message d
     | Skip
     | ConnectFrom R.OutletPath
     | ConnectTo R.InletPath
+    | DisconnectAt R.InletPath
     | Drag Int Int
     | DataAtInlet R.InletPath d
     | DataAtOutlet R.OutletPath d
@@ -84,8 +85,16 @@ update msg@(ConnectTo inletPath) (UI state network) =
                 Just outletPath -> fromMaybe network $ R.connect' outletPath inletPath network
                 Nothing -> network
         state' = updateState msg (state { areLinksChanged = true })
+update msg@(DisconnectAt inletPath) (UI state network) =
+    UI state' network'
+    where
+        network' = fromMaybe network $ R.disconnectLast inletPath network
+        state' = updateState msg (state { areLinksChanged = true })
 update msg (UI state network) =
     UI (updateState msg (state { areLinksChanged = false })) network
+
+
+-- TODO: updateNetwork :: forall d. Message d -> Network d -> Bool /\ Network d
 
 
 updateState :: forall d. Message d -> UIState d -> UIState d
@@ -101,7 +110,7 @@ updateState (DataAtOutlet outletPath d) state =
         }
 updateState (ConnectFrom outletPath) state =
     state { connecting = Just outletPath }
-updateState (ConnectTo inletPath) state =
+updateState (ConnectTo _) state =
     state { connecting = Nothing }
 updateState (Select selection) state =
     case select selection state.selection of
@@ -200,7 +209,8 @@ instance showMessage :: (Show d) => Show (Message d) where
     show Start = "Start"
     show Skip = "Skip"
     show (ConnectFrom outletPath) = "Start connecting from " <> show outletPath
-    show (ConnectTo inletPath) = "Finish connecting at " <> show inletPath
+    show (ConnectTo inletPath) = "Connect to " <> show inletPath
+    show (DisconnectAt inletPath) = "Disconnect at " <> show inletPath
     -- | Drag Int Int
     -- | Data (R.DataMsg d)
     show (Select selection) = "Select " <> show selection

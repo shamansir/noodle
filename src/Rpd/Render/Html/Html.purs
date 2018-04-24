@@ -149,7 +149,7 @@ patch push ui@(UI s _) (R.Patch { id, name, nodes, links }) =
     where
         isSelected = isPatchSelected s.selection id
         className = "patch " <> (if isSelected then "_selected" else "")
-        maybeSelect = sendEvt push $ Select (SPatch id)
+        maybeSelect = sendMsg push $ Select (SPatch id)
         clickHandler = on "click" maybeSelect
 
 
@@ -167,7 +167,7 @@ node push ui@(UI s _) (R.Node { path, name, inlets, outlets }) =
     where
         isSelected = isNodeSelected s.selection path
         className = "node " <> (if isSelected then "_selected" else "")
-        maybeSelect = sendEvt push $ Select (SNode path)
+        maybeSelect = sendMsg push $ Select (SNode path)
         clickHandler = on "click" maybeSelect
 
 
@@ -188,16 +188,18 @@ inlet push (UI s _) (R.Inlet { path, label, default, sources }) =
         isWaitingForConnection = fromMaybe false $ R.notInTheSameNode path <$> s.connecting
         className = "inlet" <> (if isSelected then " _selected" else " ")
             <> (if isWaitingForConnection then " _waiting" else " ")
-        maybeSelect = sendEvt push $ Select (SInlet path)
-        maybeConnect = sendEvt push $ case s.connecting of
-            Just outletPath -> ConnectTo path
-            Nothing -> Skip
+        clickMsg :: Message d
+        clickMsg =
+            if isWaitingForConnection then ConnectTo path else Skip
+        maybeSelect = sendMsg push $ Select (SInlet path)
+        maybeConnect = sendMsg push clickMsg
         clickHandler = on "click" maybeSelect
         connectorClickHandler = on "click" maybeConnect
         connectorLabel =
-            if isWaitingForConnection then "(+)"
-            else if length sources > 0 then "(" <> show (length sources) <> ")"
-            else "(X)"
+            if isWaitingForConnection then "(+)" <> checkCon
+            else if length sources > 0 then "(" <> show (length sources) <> ")" <> checkCon
+            else "(X)" <> checkCon
+        checkCon = maybe "Nah" (const "Jah") s.connecting <> show clickMsg
         dataText = show $ Map.lookup path s.lastInletData
 
 
@@ -220,8 +222,8 @@ outlet push (UI s _) (R.Outlet { path, label }) =
         className = "outlet" <> (if isSelected then " _selected" else " ")
                      <> (if isConnectingSomething then " _waiting" else " ")
                      <> (if isCurrentlyConnecting then " _connecting" else " ")
-        maybeSelect = sendEvt push $ Select (SOutlet path)
-        maybeConnect = sendEvt push $ ConnectFrom path
+        maybeSelect = sendMsg push $ Select (SOutlet path)
+        maybeConnect = sendMsg push $ ConnectFrom path
         clickHandler = on "click" maybeSelect
         connectorClickHandler = on "click" maybeConnect
         connectorLabel = if isCurrentlyConnecting then "(*)" else "(+)"
@@ -229,9 +231,15 @@ outlet push (UI s _) (R.Outlet { path, label }) =
 
 
 
-sendEvt :: forall d e. Push' d e -> Message d -> Listener e
-sendEvt push evt =
-    eventListener $ const $ push evt
+sendMsg :: forall d e. (Show d) => Push' d e -> Message d -> Listener e
+sendMsg push msg =
+    -- eventListener $ const $ push evt
+    -- _ <- log $ "<<<" <> show msg
+    eventListener (\_ -> do
+        log $ ">>>" <> show msg
+        _ <- push msg
+        pure unit
+    )
 
 
 -- updateAndLog :: forall d e. Event d -> UI d -> String /\ UI d
@@ -248,9 +256,9 @@ isMeaningfulMessage _ = false
 
 -- TODO: use Writer monad
 update' :: forall d. Message d -> UI d -> UI d
-update' msg state =
+update' msg ui =
     let
-        UI state' network = update msg state
+        UI state' network = update msg ui
         state'' =
             if isMeaningfulMessage msg then
                 state' { lastMessages = Array.take 5 $ msg : state'.lastMessages }

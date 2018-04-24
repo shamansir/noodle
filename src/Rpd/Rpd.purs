@@ -6,7 +6,7 @@ module Rpd
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , ProcessF
     , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
-    , connect, connect'
+    , connect, connect', disconnect, disconnect', disconnectLast
     --, NetworkT, PatchT
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
@@ -18,9 +18,10 @@ module Rpd
 
 import Prelude
 
+import Data.Monoid (mempty)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, modifyAt, foldr)
+import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, modifyAt, foldr, findMap, delete, filter)
 import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
 import Data.Tuple.Nested ((/\), type (/\))
 -- import Signal as S
@@ -60,7 +61,7 @@ data Patch d = Patch
     { id :: PatchId
     , name :: String
     , nodes :: Array (Node d)
-    , links :: Array Link
+    , links :: Array Link -- TODO: links partly duplicate Inlet: sources, aren't they?
     }
 data Node d = Node
     { path :: NodePath
@@ -195,6 +196,7 @@ inlet_ label maybeDefault sources =
             , sources
             }
 
+
 inletWithDefault :: forall d. String -> d -> LazyInlet d
 inletWithDefault label defaultVal =
     -- inlet_ label defaultVal $ S.constant defaultVal
@@ -257,6 +259,31 @@ subscribeDataFlow inletHandler outletHandler (Network { patches }) = do
             adaptOutletFlow path <$> flow
         inletFlows = concatMap extractInletFlows allInlets
         outletFlows = catMaybes $ map extractOutletFlows allOutlets
+
+
+findTopConnection :: forall d. InletPath -> Network d -> Maybe OutletPath
+findTopConnection inletPath network =
+    findInlet inletPath network >>=
+        (\(Inlet { sources }) -> findMap (\src ->
+                case src of
+                    UserSource _ -> Nothing
+                    OutletSource outletPath _ -> Just outletPath
+            ) sources
+        )
+
+findSource :: forall d. OutletPath -> InletPath -> Network d -> Maybe (DataSource d)
+findSource outletPath inletPath network =
+    findInlet inletPath network >>=
+        (\(Inlet { sources }) -> findMap (\src ->
+                -- OutletSource outletPath' _ <- src
+                -- pure $ if (outletPath' == outletPath) then src else unit
+                case src of
+                    UserSource _ -> Nothing
+                    OutletSource outletPath' _ ->
+                        if (outletPath' == outletPath) then Just src
+                        else Nothing
+            ) sources
+        )
 
 
 isNodeInPatch :: NodePath -> PatchId -> Boolean
@@ -352,7 +379,7 @@ updateOutlet updater (OutletPath nodePath outletId) network =
 
 connect :: forall d. Outlet d -> Inlet d -> Patch d -> Patch d
 connect outlet inlet patch =
-    patch
+    patch -- FIXME: implement
 
 
 connect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
@@ -374,6 +401,54 @@ connect' outletPath inletPath network = do
                     Inlet inlet { sources = newSource : sources })
                 inletPath
                 network'
+
+
+disconnect :: forall d. Outlet d -> Inlet d -> Patch d -> Patch d
+disconnect outlet inlet patch =
+    patch -- FIXME: implement
+
+
+disconnect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
+disconnect' outletPath inletPath network = do
+    network' <- removeLink outletPath inletPath network
+    outlet <- findOutlet outletPath network'
+    inlet <- findInlet inletPath network'
+    -- source <- findSource outletPath inletPath network'
+    let
+        isFromOutlet oPath1 (OutletSource oPath2 _) = oPath1 == oPath2
+        isFromOutlet _ _ = false
+    -- TODO: optimize, do not search through network several times
+    pure $ updateInlet
+                (\(Inlet inlet@{ sources }) ->
+                    -- Inlet inlet { sources = deleteBy cmpSources source sources })
+                    Inlet inlet { sources = filter (not $ isFromOutlet outletPath) sources })
+                inletPath
+                network'
+
+
+disconnectLast :: forall d. InletPath -> Network d -> Maybe (Network d)
+disconnectLast inletPath network =
+    -- TODO: optimize with searching last and updating simultaneously
+    findTopConnection inletPath network
+        >>= (\outletPath -> disconnect' outletPath inletPath network)
+
+
+-- TODO: findLink :: forall d. InletPath -> Network d -> Maybe (Link d)
+
+
+removeLink :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
+removeLink outletPath inletPath network = do
+    let
+        oPatchId = getPatchOfOutlet outletPath
+        iPatchId = getPatchOfInlet inletPath
+    patchId <- if oPatchId == iPatchId then Just oPatchId else Nothing
+    let
+        network' = updatePatch
+                    (\(Patch patch@{ links }) ->
+                        Patch patch { links = delete (Link outletPath inletPath) links })
+                    patchId
+                    network
+    pure network'
 
 
 patchId :: Int -> PatchId
@@ -472,3 +547,20 @@ instance ordInletPath :: Ord InletPath where
 instance ordOutletPath :: Ord OutletPath where
     compare outletPath1 outletPath2 =
         compare (unpackOutletPath outletPath1)  (unpackOutletPath outletPath2)
+
+
+-- TODO: create HasId / HasPath typeclass
+instance eqPatch :: Eq (Patch d) where
+    eq (Patch { id : idA }) (Patch { id : idB }) = (idA == idB)
+
+instance eqNode :: Eq (Node d) where
+    eq (Node { path : pathA }) (Node { path : pathB }) = (pathA == pathB)
+
+instance eqInlet :: Eq (Inlet d) where
+    eq (Inlet { path : pathA }) (Inlet { path : pathB }) = (pathA == pathB)
+
+instance eqOutlet :: Eq (Outlet d) where
+    eq (Outlet { path : pathA }) (Outlet { path : pathB }) = (pathA == pathB)
+
+instance eqLink :: Eq Link where
+    eq (Link outletA inletA) (Link outletB inletB) = (outletA == outletB) && (inletA == inletB)
