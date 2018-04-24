@@ -6,6 +6,7 @@ import Rpd.Render
 import Control.Alternative ((<|>))
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.MonadZero (guard)
 import DOM (DOM)
 import DOM.Event.EventTarget (EventListener, eventListener)
@@ -31,8 +32,11 @@ import Text.Smolder.Markup ((#!), (!), on)
 import Text.Smolder.Markup as H
 import Text.Smolder.Renderer.DOM as ToDOM
 
+-- type HtmlEffE e = R.RpdEffE ( dom :: DOM | e )
+-- type HtmlEff e v = R.RenderEff (HtmlEffE e) v
 
-type Listener e = EventListener (dom :: DOM, frp :: FRP | e)
+-- FIXME: both CONSOLE and FRP should not be here
+type Listener e = EventListener ( console :: CONSOLE, dom :: DOM, frp :: FRP | e )
 
 
 type Markup e = H.Markup (Listener e)
@@ -62,18 +66,28 @@ renderer target nw = do
         subscribeData' = subscribeData (pushInletData pushMsg) (pushOutletData pushMsg)
         pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
         triggeredCancellers = Event.sampleOn_ pastCancellers cancellerTriggers
-        subFlow = map (\(UI _ network) -> do subscribeData' network)
+        sub (UI _ network) = subscribeData' network
+        subFlow = map sub
             $ filter (\(UI state _) -> state.areLinksChanged) uiFlow
     _ <- subscribe triggeredCancellers $ \maybeCancel -> do
         let cancel = fromMaybe (pure $ pure unit) maybeCancel
+        log $ "cancel called: " <> maybe "empty" (const "some") maybeCancel
         _ <- cancel
         pure unit
     _ <- subscribe subFlow $ \subscriber -> do
+        log "trigger prev cancel"
         triggerPrevCanceller unit
-        let cancelNext = do subscriber unit
-        saveCanceller cancelNext
+        log "subscribe"
+        let s = subscriber
+        _ <- subscriber
+        log "save canceller"
+        _ <- saveCanceller s
         pure unit
-    _ <- do subscribeData' nw unit
+    _ <- do
+        let s = subscribeData' nw
+        _ <- s
+        _ <- saveCanceller s
+        pure unit
     _ <- subscribe uiFlow $ \ui -> render target pushMsg ui
     pushMsg Start
 
@@ -83,7 +97,9 @@ pushInletData
      . Push d e
     -> (d -> R.InletPath -> R.RpdEff e Unit)
 pushInletData push =
-    (\d inletPath -> push $ DataAtInlet inletPath d)
+    (\d inletPath -> do
+        log $ "Receive from " <> show inletPath
+        push $ DataAtInlet inletPath d)
 
 
 pushOutletData
@@ -91,7 +107,9 @@ pushOutletData
      . Push d e
     -> (d -> R.OutletPath -> R.RpdEff e Unit)
 pushOutletData push =
-    (\d outletPath -> push $ DataAtOutlet outletPath d)
+    (\d outletPath -> do
+        log $ "Receive from " <> show outletPath
+        push $ DataAtOutlet outletPath d)
 
 
 render

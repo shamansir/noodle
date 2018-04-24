@@ -4,6 +4,7 @@ import Prelude
 import Data.Int (floor)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Console (CONSOLE)
 import DOM (DOM)
 import DOM.HTML (window)
 import DOM.HTML.Types (htmlDocumentToNonElementParentNode)
@@ -53,7 +54,7 @@ myNetwork =
     ]
 
 
-main :: ∀ e. Eff (dom :: DOM, frp :: FRP | e) Unit
+main :: ∀ e. R.RpdEff ( dom :: DOM, console :: CONSOLE | e ) Unit
 main = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType

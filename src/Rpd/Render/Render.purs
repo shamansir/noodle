@@ -9,6 +9,7 @@ module Rpd.Render
 
 import Prelude
 
+import Control.Monad.Eff.Console (CONSOLE, log)
 import Data.Array ((:))
 import Data.Array as Array
 import Data.Map (Map(..))
@@ -113,9 +114,10 @@ subscribeData
      . (d -> R.InletPath -> R.RpdEff e Unit)
     -> (d -> R.OutletPath -> R.RpdEff e Unit)
     -> R.Network d
-    -> (Unit -> R.Canceller e)
-subscribeData inletHandler outletHandler network =
-    \_ -> R.subscribeDataFlow network inletHandler outletHandler
+    -> R.Canceller e
+subscribeData inletHandler outletHandler network = do
+    log "aaa"
+    R.subscribeDataFlow inletHandler outletHandler network
 
 
 -- TODO:

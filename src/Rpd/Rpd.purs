@@ -1,5 +1,5 @@
 module Rpd
-    ( Rpd, run, RpdEff
+    ( Rpd, run, RpdEff, RpdEffE
     , Renderer, RenderEff
     , Flow, DataSource
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
@@ -19,6 +19,7 @@ module Rpd
 import Prelude
 
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Console (CONSOLE, log)
 import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, modifyAt, foldr)
 import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
 import Data.Tuple.Nested ((/\), type (/\))
@@ -109,7 +110,8 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 
 
 -- type DataFlow d = Flow (DataMsg d)
-type RpdEff e v = Eff (frp :: FRP | e) v
+type RpdEffE e = (frp :: FRP, console :: CONSOLE | e)
+type RpdEff e v = Eff (RpdEffE e) v
 type Subscriber e =
     (Unit -> Canceller e)
 type Canceller e =
@@ -224,11 +226,12 @@ outlet' label flow =
 
 subscribeDataFlow
     :: forall d e
-     . Network d
-    -> (d -> InletPath -> RpdEff e Unit)
+     . (d -> InletPath -> RpdEff e Unit)
     -> (d -> OutletPath -> RpdEff e Unit)
+    -> Network d
     -> Canceller e
-subscribeDataFlow (Network { patches }) inletHandler outletHandler =
+subscribeDataFlow inletHandler outletHandler (Network { patches }) = do
+    log "!!! subscribing data flow"
     fold $ inletFlows <> outletFlows
     where
         -- TODO: use lenses: https://github.com/purescript-contrib/purescript-lens
