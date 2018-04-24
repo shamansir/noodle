@@ -114,7 +114,7 @@ subscribeData
      . (d -> R.InletPath -> R.RpdEff e Unit)
     -> (d -> R.OutletPath -> R.RpdEff e Unit)
     -> R.Network d
-    -> R.Canceller e
+    -> R.Subscriber e
 subscribeData inletHandler outletHandler network = do
     log "aaa"
     R.subscribeDataFlow inletHandler outletHandler network

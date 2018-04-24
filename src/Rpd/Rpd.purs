@@ -112,10 +112,11 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 -- type DataFlow d = Flow (DataMsg d)
 type RpdEffE e = (frp :: FRP, console :: CONSOLE | e)
 type RpdEff e v = Eff (RpdEffE e) v
-type Subscriber e =
-    (Unit -> Canceller e)
 type Canceller e =
     RpdEff e (RpdEff e Unit)
+    -- (Unit -> RpdEff e (RpdEff e Unit))
+type Subscriber e =
+    RpdEff e (Canceller e)
 type RenderEff e =
     RpdEff e Unit
 
@@ -229,10 +230,10 @@ subscribeDataFlow
      . (d -> InletPath -> RpdEff e Unit)
     -> (d -> OutletPath -> RpdEff e Unit)
     -> Network d
-    -> Canceller e
+    -> Subscriber e
 subscribeDataFlow inletHandler outletHandler (Network { patches }) = do
     log "!!! subscribing data flow"
-    fold $ inletFlows <> outletFlows
+    pure $ fold $ inletFlows <> outletFlows
     where
         -- TODO: use lenses: https://github.com/purescript-contrib/purescript-lens
         --                   http://brianhamrick.com/blog/records-haskell-purescript

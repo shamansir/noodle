@@ -78,15 +78,13 @@ renderer target nw = do
         log "trigger prev cancel"
         triggerPrevCanceller unit
         log "subscribe"
-        let s = subscriber
-        _ <- subscriber
+        cancelNext <- subscriber
         log "save canceller"
-        _ <- saveCanceller s
+        _ <- saveCanceller cancelNext
         pure unit
     _ <- do
-        let s = subscribeData' nw
-        _ <- s
-        _ <- saveCanceller s
+        cancelNext <- subscribeData' nw
+        _ <- saveCanceller cancelNext
         pure unit
     _ <- subscribe uiFlow $ \ui -> render target pushMsg ui
     pushMsg Start
