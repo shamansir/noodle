@@ -62,19 +62,20 @@ renderer target nw = do
     let uiFlow = Event.fold update' messages $ UI init nw
     { event : cancellers, push : saveCanceller } <- create
     { event : cancellerTriggers, push : triggerPrevCanceller } <- create
+    -- FIXME: remove logs and CONSOLE effect everywhere
+    -- FIXME: move complex code to Render.purs
     let
         subscribeData' = subscribeData (pushInletData pushMsg) (pushOutletData pushMsg)
         pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
         triggeredCancellers = Event.sampleOn_ pastCancellers cancellerTriggers
-        sub (UI _ network) = network
-        subFlow = map sub
+        networksBylinksChanged = map (\(UI _ network) -> network)
             $ filter (\(UI state _) -> state.areLinksChanged) uiFlow
     _ <- subscribe triggeredCancellers $ \maybeCancel -> do
         let cancel = fromMaybe (pure unit) maybeCancel
         log $ "cancel called: " <> maybe "empty" (const "some") maybeCancel
         _ <- cancel
         pure unit
-    _ <- subscribe subFlow $ \nw -> do
+    _ <- subscribe networksBylinksChanged $ \nw -> do
         log "trigger prev cancel"
         triggerPrevCanceller unit
         log "subscribe"

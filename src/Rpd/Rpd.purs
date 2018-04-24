@@ -109,6 +109,8 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 --     | FromOutlet OutletPath d
 
 
+-- FIXME: define our own RPD effect
+
 -- type DataFlow d = Flow (DataMsg d)
 type RpdEffE e = (frp :: FRP, console :: CONSOLE | e)
 type RpdEff e v = Eff (RpdEffE e) v
