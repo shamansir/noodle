@@ -1,6 +1,11 @@
 Primary:
 ========
 
+Second click on any connector in the same node, after connecting the outlet to inlet fires "Connect To" message again and again, while `s.connecting` is `Nothing` and if I add the message to the connector text — it is the right one.
+Could that be caused with rerender or new subscriptions to data flows — I don't know. May be try to turn them off?
+
+Second subscription (first, caused by events, but not the initial code) has no stored canceller (it says: `cancel: empty`).
+
 Implement creating links with clicking source outlet and target inlet.
 
 Implement creating links with dragging.
