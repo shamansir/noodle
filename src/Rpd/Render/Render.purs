@@ -93,48 +93,65 @@ init =
 
 
 update :: forall d. Message d -> UI d -> UI d
-update msg@(ConnectTo inletPath) (UI state network) =
+update msg (UI state network) =
+    update' msg (UI state' network)
+    where
+        state' = state { areLinksChanged = false }
+
+
+update' :: forall d. Message d -> UI d -> UI d
+update' (DataAtInlet inletPath d) (UI state network) =
+    UI state' network
+    where
+        state' =
+            state
+                { lastInletData =
+                    Map.insert inletPath d state.lastInletData
+                }
+update' (DataAtOutlet outletPath d) (UI state network) =
+    UI state' network
+    where
+        state' =
+            state
+                { lastOutletData =
+                    Map.insert outletPath d state.lastOutletData
+                }
+update' (Click (CSOutletConnector outletPath)) (UI state network) =
+    UI state' network
+    where
+        state' = state { connecting = Just outletPath }
+update' (Click (CSInletConnector inletPath)) (UI state network)
+    | isJust state.connecting =
     UI state' network'
     where
-        network' =
+        state' =
+            state { connecting = Nothing, areLinksChanged = true }
+        network'=
             case state.connecting of
-                Just outletPath -> fromMaybe network $ R.connect' outletPath inletPath network
+                Just outletPath ->
+                    fromMaybe network $ R.connect' outletPath inletPath network
                 Nothing -> network
-        state' = updateState msg (state { areLinksChanged = true })
-update msg@(DisconnectAt inletPath) (UI state network) =
+update' (Click (CSInletConnector inletPath)) (UI state network)
+    | isNothing state.connecting =
     UI state' network'
     where
         network' = fromMaybe network $ R.disconnectLast inletPath network
-        state' = updateState msg (state { areLinksChanged = true })
-update msg (UI state network) =
-    UI (updateState msg (state { areLinksChanged = false })) network
+        state' = state { areLinksChanged = true }
+update' (Click subject) (UI state network)
+    | affectsSelection subject =
+    UI state' network
+    where
+        selection = fromMaybe state.selection $ subjectToSelection subject
+        state' =
+            case select selection state.selection of
+                Just newSelection -> state { selection = newSelection }
+                Nothing -> state -- SNone?
 
 
--- TODO: updateNetwork :: forall d. Message d -> Network d -> Bool /\ Network d
+-- affectsSelection :: ClickSubject -> Boolean
 
 
-updateState :: forall d. Message d -> UIState d -> UIState d
-updateState (DataAtInlet inletPath d) state =
-    state
-        { lastInletData =
-            Map.insert inletPath d state.lastInletData
-        }
-updateState (DataAtOutlet outletPath d) state =
-    state
-        { lastOutletData =
-            Map.insert outletPath d state.lastOutletData
-        }
-updateState (Click (CSOutlet outletPath)) state | isNothing state.connecting =
-    state { connecting = Just outletPath } -- , areLinksChanged = true }
-updateState (Click (CSOutlet outletPath)) state | isJust state.connecting =
-    state -- { connecting = Nothing }
-updateState (ConnectTo _) state =
-    state { connecting = Nothing }
-updateState (Select selection) state =
-    case select selection state.selection of
-        Just newSelection -> state { selection = newSelection }
-        Nothing -> state -- SNone?
-updateState _ state = state
+-- subjectToSelection :: ClickSubject -> Selection
 
 
 subscribeData
