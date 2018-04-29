@@ -2,9 +2,9 @@ module Rpd.Render
     ( UI(..)
     , UIState
     , Push
-    , Message(..), Selection(..)
+    , Message(..), Selection(..), ClickSubject(..)
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
-    , init, update, subscribeData, areLinksChanged
+    , init, update, subscribeData
     ) where
 
 import Prelude
@@ -141,17 +141,28 @@ update' (Click subject) (UI state network)
     | affectsSelection subject =
     UI state' network
     where
-        selection = fromMaybe state.selection $ subjectToSelection subject
+        selection = subjectToSelection subject -- subjectToSelection SNone subject ?
         state' =
             case select selection state.selection of
                 Just newSelection -> state { selection = newSelection }
                 Nothing -> state -- SNone?
+update' _ ui = ui
 
 
--- affectsSelection :: ClickSubject -> Boolean
+affectsSelection :: ClickSubject -> Boolean
+affectsSelection (CSInletConnector _) = false
+affectsSelection (CSOutletConnector _) = false
+affectsSelection _ = true
 
 
--- subjectToSelection :: ClickSubject -> Selection
+subjectToSelection :: ClickSubject -> Selection
+subjectToSelection (CSNetwork) = SNetwork
+subjectToSelection (CSPatch id) = SPatch id
+subjectToSelection (CSNode path) = SNode path
+subjectToSelection (CSInlet path) = SInlet path
+subjectToSelection (CSOutlet path) = SOutlet path
+subjectToSelection (CSLink id) = SLink id
+subjectToSelection _ = SNone
 
 
 subscribeData
@@ -173,9 +184,9 @@ subscribeData inletHandler outletHandler network = do
 --         pure $ f msg ui
 
 
-areLinksChanged :: forall d. Message d -> Boolean
-areLinksChanged (ConnectTo _) = true
-areLinksChanged _ = false
+-- areLinksChanged :: forall d. Message d -> Boolean
+-- areLinksChanged (ConnectTo _) = true
+-- areLinksChanged _ = false
 
 
 select :: forall d. Selection -> Selection -> Maybe Selection
@@ -231,13 +242,14 @@ instance showSelection :: Show Selection where
 
 
 instance showClickSubject :: Show ClickSubject where
-    show SNone = "Nothing"
-    show SNetwork = "Network"
-    show (SPatch patchId) = show patchId
-    show (SNode nodePath) = show nodePath
-    show (SInlet inletPath) = show inletPath
-    show (SOutlet outletPath) = show outletPath
-    show (SLink linkId) = show linkId
+    show CSNetwork = "Network"
+    show (CSPatch patchId) = "Patch: " <> show patchId
+    show (CSNode nodePath) = "Node: " <> show nodePath
+    show (CSInlet inletPath) = "Inlet: " <> show inletPath
+    show (CSOutlet outletPath) = "Outlet: " <> show outletPath
+    show (CSLink linkId) = "Link: " <> show linkId
+    show (CSInletConnector inletPath) = "InletCon: " <> show inletPath
+    show (CSOutletConnector outletPath) = "OutletCon: " <> show outletPath
 
 
 instance showUI :: (Show d) => Show (UI d) where
@@ -252,12 +264,7 @@ instance showUI :: (Show d) => Show (UI d) where
 
 instance showMessage :: (Show d) => Show (Message d) where
     show Init = "Init"
-    show (Click clickSubject) = "Start connecting from " <> show clickSubject
-    show (ConnectTo inletPath) = "Connect to " <> show inletPath
-    show (DisconnectAt inletPath) = "Disconnect at " <> show inletPath
-    -- | Drag Int Int
-    -- | Data (R.DataMsg d)
-    show (Select selection) = "Select " <> show selection
-    show (InformDataAtInlet inletPath d) = "InletData " <> show inletPath <> " " <> show d
-    show (InformDataAtOutlet outletPath d) = "OutletData " <> show outletPath <> " " <> show d
+    show (Click subject) = "Click " <> show subject
+    show (DataAtInlet inletPath d) = "InletData " <> show inletPath <> " " <> show d
+    show (DataAtOutlet outletPath d) = "OutletData " <> show outletPath <> " " <> show d
     show _ = "?"
