@@ -93,7 +93,7 @@ renderer target nw = do
     --     _ <- saveCanceller cancelNext
     --     pure unit
     _ <- subscribe uiFlow $ \ui -> render target pushMsg ui
-    pushMsg Start
+    pushMsg Init
 
 
 pushInletData
@@ -142,25 +142,25 @@ patch :: forall d e. (Show d) => FireMsg d e -> UI d -> R.Patch d -> Markup e
 patch fire ui@(UI s _) (R.Patch { id, name, nodes, links }) =
     H.div ! HA.className className $
         if isSelected then do
-            H.p #! on "click" maybeSelect
+            H.p #! on "click" patchClick
                 $ H.text $ "<" <> show id <> ": " <> name <> "> "
                     <> "N" <> (show $ length nodes) <> " "
                     <> "L" <> (show $ length links)
             H.div ! HA.className "nodes"
                 $ for_ nodes $ node fire ui
         else
-            H.p #! on "click" maybeSelect $ H.text $ "[" <> show id <> "]"
+            H.p #! on "click" patchClick $ H.text $ "[" <> show id <> "]"
     where
         isSelected = isPatchSelected s.selection id
         className = "patch " <> (if isSelected then "_selected" else "")
-        maybeSelect = fire $ Select (SPatch id)
+        patchClick = fire $ Click (CSPatch id)
 
 
 node :: forall d e. (Show d) => FireMsg d e -> UI d -> R.Node d -> Markup e
 node fire ui@(UI s _) (R.Node { path, name, inlets, outlets }) =
     H.div ! HA.className className $
         if isSelected then do
-            H.p #! on "click" maybeSelect
+            H.p #! on "click" nodeClick
                 $ H.text $ "<" <> show path <> ": " <> name <> "> "
                     <> "I" <> (show $ length inlets) <> " "
                     <> "O" <> (show $ length outlets)
@@ -169,48 +169,38 @@ node fire ui@(UI s _) (R.Node { path, name, inlets, outlets }) =
             H.div ! HA.className "outlets"
                 $ for_ outlets $ outlet fire ui
         else
-            H.p #! on "click" maybeSelect $ H.text $ "[" <> show path <> "]"
+            H.p #! on "click" nodeClick $ H.text $ "[" <> show path <> "]"
     where
         isSelected = isNodeSelected s.selection path
         className = "node " <> (if isSelected then "_selected" else "")
-        maybeSelect = fire $ Select (SNode path)
+        nodeClick = fire $ Click (CSNode path)
 
 inlet :: forall d e. (Show d) => FireMsg d e -> UI d -> R.Inlet d -> Markup e
 inlet fire (UI s _) (R.Inlet { path, label, default, sources }) =
     H.div ! HA.className className $
         if isSelected then
             H.div $ do
-                connector
-                H.span #! on "click" maybeSelect
+                H.span ! HA.className "connector"
+                    #! on "click" inletConnectorClick $ H.text $ connectorLabel
+                H.span #! on "click" inletClick
                     $ H.text $ "<" <> show path <> ": " <> label <> "> "
                 H.span $ H.text dataText
         else
             H.div $ do
-                connector
-                H.span #! on "click" maybeSelect $ H.text $ "[" <> show path <> "]"
+                H.span ! HA.className "connector"
+                    #! on "click" inletConnectorClick $ H.text $ connectorLabel
+                H.span #! on "click" inletClick $ H.text $ "[" <> show path <> "]"
     where
         isSelected = isInletSelected s.selection path
         isWaitingForConnection = fromMaybe false $ R.notInTheSameNode path <$> s.connecting
         className = "inlet" <> (if isSelected then " _selected" else " ")
             <> (if isWaitingForConnection then " _waiting" else " ")
-        maybeSelect = fire $ Select (SInlet path)
-        -- maybeConnect = fire $ ConnectTo path
-        -- maybeDisconnect = fire $ DisconnectAt path
-        -- maybeSkip = fire Skip
+        inletClick = fire $ Click (CSInlet path)
+        inletConnectorClick = fire $ Click (CSInletConnector path)
         connectorLabel =
             if isWaitingForConnection then "(+)"
             else if length sources > 0 then "(" <> show (length sources) <> ")"
             else "(X)"
-        connector =
-            if isJust s.connecting then
-                H.span ! HA.className "connector _waiting" #! on "click" (fire $ ConnectTo path)
-                    $ H.text $ connectorLabel
-            else if length sources > 0 then
-                H.span ! HA.className "connector _disconnect" #! on "click" (fire $ DisconnectAt path)
-                    $ H.text $ connectorLabel
-            else
-                H.span ! HA.className "connector" #! on "click" (fire Skip)
-                    $ H.text $ connectorLabel
         dataText = show $ Map.lookup path s.lastInletData
 
 
@@ -219,16 +209,18 @@ outlet fire (UI s _) (R.Outlet { path, label }) =
     H.div ! HA.className className $
         if isSelected then
             H.div $ do
-                H.span ! HA.className "connector" #! on "click" maybeConnect
+                H.span ! HA.className "connector"
+                    #! on "click" outletConnectorClick
                     $ H.text $ connectorLabel
-                H.span #! on "click" maybeSelect
+                H.span #! on "click" outletClick
                     $ H.text $ "<" <> show path <> ": " <> label <> "> "
                 H.span $ H.text dataText
         else
             H.div $ do
-                H.span ! HA.className "connector" #! on "click" maybeConnect
+                H.span ! HA.className "connector"
+                    #! on "click" outletConnectorClick
                     $ H.text $ connectorLabel
-                H.span #! on "click" maybeSelect
+                H.span #! on "click" outletClick
                     $ H.text $ "[" <> show path <> "]"
     where
         isSelected = isOutletSelected s.selection path
@@ -237,11 +229,10 @@ outlet fire (UI s _) (R.Outlet { path, label }) =
         className = "outlet" <> (if isSelected then " _selected" else " ")
                      <> (if isConnectingSomething then " _waiting" else " ")
                      <> (if isCurrentlyConnecting then " _connecting" else " ")
-        maybeSelect = fire $ Select (SOutlet path)
-        maybeConnect = fire $ ConnectFrom path
+        outletClick = fire $ Click (CSOutlet path)
+        outletConnectorClick = fire $ Click (CSOutletConnector path)
         connectorLabel = if isCurrentlyConnecting then "(*)" else "(+)"
         dataText = show $ Map.lookup path s.lastOutletData
-
 
 
 prepareToFire :: forall d e. (Show d) => Push' d e -> FireMsg d e
