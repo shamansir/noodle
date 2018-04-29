@@ -15,7 +15,7 @@ import Data.Array ((:))
 import Data.Array as Array
 import Data.Map (Map(..))
 import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust, isNothing)
 import Data.Tuple.Nested ((/\), type (/\))
 import Rpd as R
 -- import Signal.Channel as SC
@@ -36,16 +36,21 @@ type UIState d =
     }
 
 
+-- data Message d
+--     = Init
+--     | Select Selection -- TrySelecting Selection
+--     | ConnectFrom R.OutletPath
+--     | ConnectTo R.InletPath
+--     | DisconnectAt R.InletPath
+--     | DataAtInlet R.InletPath d
+--     | DataAtOutlet R.OutletPath d
+
+
 data Message d
-    = Start
-    | Skip
-    | ConnectFrom R.OutletPath
-    | ConnectTo R.InletPath
-    | DisconnectAt R.InletPath
-    | Drag Int Int
+    = Init
+    | Click ClickSubject
     | DataAtInlet R.InletPath d
     | DataAtOutlet R.OutletPath d
-    | Select Selection
 
 
 data Selection
@@ -56,6 +61,17 @@ data Selection
     | SInlet R.InletPath
     | SOutlet R.OutletPath
     | SLink R.LinkId
+
+
+data ClickSubject
+    = CSNetwork -- a.k.a. None / Background ?
+    | CSPatch R.PatchId
+    | CSNode R.NodePath
+    | CSInlet R.InletPath
+    | CSInletConnector R.InletPath
+    | CSOutlet R.OutletPath
+    | CSOutletConnector R.OutletPath
+    | CSLink R.LinkId
 
 
 data UI d = UI (UIState d) (R.Network d)
@@ -108,8 +124,10 @@ updateState (DataAtOutlet outletPath d) state =
         { lastOutletData =
             Map.insert outletPath d state.lastOutletData
         }
-updateState (ConnectFrom outletPath) state =
-    state { connecting = Just outletPath }
+updateState (Click (CSOutlet outletPath)) state | isNothing state.connecting =
+    state { connecting = Just outletPath } -- , areLinksChanged = true }
+updateState (Click (CSOutlet outletPath)) state | isJust state.connecting =
+    state -- { connecting = Nothing }
 updateState (ConnectTo _) state =
     state { connecting = Nothing }
 updateState (Select selection) state =
@@ -195,6 +213,16 @@ instance showSelection :: Show Selection where
     show (SLink linkId) = show linkId
 
 
+instance showClickSubject :: Show ClickSubject where
+    show SNone = "Nothing"
+    show SNetwork = "Network"
+    show (SPatch patchId) = show patchId
+    show (SNode nodePath) = show nodePath
+    show (SInlet inletPath) = show inletPath
+    show (SOutlet outletPath) = show outletPath
+    show (SLink linkId) = show linkId
+
+
 instance showUI :: (Show d) => Show (UI d) where
     show (UI { selection, dragging, connecting, lastInletData, lastOutletData, lastMessages } _)
         = "Selection: " <> show selection <>
@@ -206,14 +234,13 @@ instance showUI :: (Show d) => Show (UI d) where
 
 
 instance showMessage :: (Show d) => Show (Message d) where
-    show Start = "Start"
-    show Skip = "Skip"
-    show (ConnectFrom outletPath) = "Start connecting from " <> show outletPath
+    show Init = "Init"
+    show (Click clickSubject) = "Start connecting from " <> show clickSubject
     show (ConnectTo inletPath) = "Connect to " <> show inletPath
     show (DisconnectAt inletPath) = "Disconnect at " <> show inletPath
     -- | Drag Int Int
     -- | Data (R.DataMsg d)
     show (Select selection) = "Select " <> show selection
-    show (DataAtInlet inletPath d) = "InletData " <> show inletPath <> " " <> show d
-    show (DataAtOutlet outletPath d) = "OutletData " <> show outletPath <> " " <> show d
+    show (InformDataAtInlet inletPath d) = "InletData " <> show inletPath <> " " <> show d
+    show (InformDataAtOutlet outletPath d) = "OutletData " <> show outletPath <> " " <> show d
     show _ = "?"

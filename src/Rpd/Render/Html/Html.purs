@@ -206,7 +206,7 @@ inlet fire (UI s _) (R.Inlet { path, label, default, sources }) =
                 H.span ! HA.className "connector _waiting" #! on "click" (fire $ ConnectTo path)
                     $ H.text $ connectorLabel
             else if length sources > 0 then
-                H.span ! HA.className "connector" #! on "click" (fire $ DisconnectAt path)
+                H.span ! HA.className "connector _disconnect" #! on "click" (fire $ DisconnectAt path)
                     $ H.text $ connectorLabel
             else
                 H.span ! HA.className "connector" #! on "click" (fire Skip)

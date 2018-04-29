@@ -20,6 +20,8 @@ Remove `update'` from `Render.purs` and create visual history of events in UI, a
 
 Make `Rpd` a module, not just a single file.
 
+`Bang` message.
+
 Add multi-selection for nodes and patches.
 
 Add abitity to collapse nodes.
