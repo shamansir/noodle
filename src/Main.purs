@@ -19,7 +19,7 @@ import Rpd.Render.Html as RenderH
 -- import Signal.Channel as SC
 -- import Signal.Time as ST
 import FRP (FRP)
-import FRP.Event (Event, create, subscribe)
+import FRP.Event (Event, create, subscribe, fold)
 import FRP.Event.Time (interval)
 
 
@@ -39,7 +39,7 @@ myNode nodeId =
     , R.inlet "e" -- WithDefault "e" (Num' (nodeId <> "e") 3.0)
     ]
     [ R.outlet "c"
-    , R.outlet' "x" $ map (Num' (nodeId <> "x")) $ interval 10000
+    , R.outlet' "x" $ map (Num' (nodeId <> "x")) $ fold (\_ n -> n + 1) (interval 5000) 0
     ]
     -- (\_ -> [ "c" /\ Int' 10 ] )
 

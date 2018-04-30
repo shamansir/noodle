@@ -68,7 +68,8 @@ renderer target nw = do
     -- FIXME: move complex code to Render.purs
     let
         subscribeData' = subscribeData (pushInletData pushMsg) (pushOutletData pushMsg)
-        pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
+        --pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
+        pastCancellers = map (\c -> Just c) cancellers
         triggeredCancellers = Event.sampleOn_ pastCancellers cancellerTriggers
         networksBylinksChanged = map (\(UI _ network) -> network)
             $ filter (\(UI state _) -> state.areLinksChanged) uiFlow
