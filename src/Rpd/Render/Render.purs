@@ -32,13 +32,15 @@ type UIState d =
     , areLinksChanged :: Boolean
     -- TODO: lastConnection: Maybe Link
     -- , prevCanceller :: Maybe (R.Canceller e)
-    , lastMessages :: Array (Message d) -- FIXME: remove
+    , lastMessages :: Array (Message d) -- FIXME: remove, make some friendly debugger or History plugin to track it
+    , friendlyLog :: String -- FIXME: remove, as well as the above
     }
 
 
 -- data Message d
 --     = Init
 --     | Select Selection -- TrySelecting Selection
+--     | Deselect Selection
 --     | ConnectFrom R.OutletPath
 --     | ConnectTo R.InletPath
 --     | DisconnectAt R.InletPath
@@ -46,6 +48,12 @@ type UIState d =
 --     | DataAtOutlet R.OutletPath d
 
 
+-- TODO: Rename to UIEvent and produce more meaningful Messages out of it?
+--       or maybe there should be some Rpd Command, like Message above,
+--       which affects the state, also used for import and export,
+--       and most of the UI Events could be converted to such and vice versa?
+--       So Commands are the things which change Network and Messages are the things
+--       which change UI State!
 data Message d
     = Init
     | Click ClickSubject
@@ -89,6 +97,7 @@ init =
     , lastOutletData : Map.empty
     , areLinksChanged : false
     , lastMessages : []
+    , friendlyLog : ""
     }
 
 
@@ -96,7 +105,10 @@ update :: forall d. Message d -> UI d -> UI d
 update msg (UI state network) =
     update' msg (UI state' network)
     where
-        state' = state { areLinksChanged = false }
+        state' = state
+            { areLinksChanged = false
+            , friendlyLog = ""
+            }
 
 
 update' :: forall d. Message d -> UI d -> UI d
@@ -119,13 +131,21 @@ update' (DataAtOutlet outletPath d) (UI state network) =
 update' (Click (CSOutletConnector outletPath)) (UI state network) =
     UI state' network
     where
-        state' = state { connecting = Just outletPath }
+        state' = state
+            { connecting = Just outletPath
+            , friendlyLog = "connect from " <> show outletPath
+            }
 update' (Click (CSInletConnector inletPath)) (UI state network)
     | isJust state.connecting =
     UI state' network'
     where
         state' =
-            state { connecting = Nothing, areLinksChanged = true }
+            state
+                { connecting = Nothing
+                , areLinksChanged = true
+                , friendlyLog = "connect " <> maybe "?" show state.connecting
+                        <> " to " <> show inletPath
+                }
         network'=
             case state.connecting of
                 Just outletPath ->
@@ -136,7 +156,10 @@ update' (Click (CSInletConnector inletPath)) (UI state network)
     UI state' network'
     where
         network' = fromMaybe network $ R.disconnectLast inletPath network
-        state' = state { areLinksChanged = true }
+        state' = state
+            { areLinksChanged = true
+            , friendlyLog = "disconnect last at " <> show inletPath
+            }
 update' (Click subject) (UI state network)
     | affectsSelection subject =
     UI state' network
@@ -144,7 +167,10 @@ update' (Click subject) (UI state network)
         selection = subjectToSelection subject -- subjectToSelection SNone subject ?
         state' =
             case select selection state.selection of
-                Just newSelection -> state { selection = newSelection }
+                Just newSelection -> state
+                    { selection = newSelection
+                    , friendlyLog = "select " <> show newSelection
+                    }
                 Nothing -> state -- SNone?
 update' _ ui = ui
 
@@ -253,13 +279,14 @@ instance showClickSubject :: Show ClickSubject where
 
 
 instance showUI :: (Show d) => Show (UI d) where
-    show (UI { selection, dragging, connecting, lastInletData, lastOutletData, lastMessages } _)
-        = "Selection: " <> show selection <>
-        ", Dragging: " <> show dragging <>
-        ", Connecting: " <> show connecting <>
-        ", Inlets: " <> show lastInletData <>
-        ", Outlets: " <> show lastOutletData <>
-        ", Last events: " <> show (Array.reverse lastMessages)
+    show (UI s _)
+        = "Selection: " <> show s.selection <>
+        ", Dragging: " <> show s.dragging <>
+        ", Connecting: " <> show s.connecting <>
+        ", Inlets: " <> show s.lastInletData <>
+        ", Outlets: " <> show s.lastOutletData <>
+        ", Last events: " <> show (Array.reverse s.lastMessages) <>
+        ", Friendly log: " <> s.friendlyLog
 
 
 instance showMessage :: (Show d) => Show (Message d) where
@@ -267,4 +294,4 @@ instance showMessage :: (Show d) => Show (Message d) where
     show (Click subject) = "Click " <> show subject
     show (DataAtInlet inletPath d) = "InletData " <> show inletPath <> " " <> show d
     show (DataAtOutlet outletPath d) = "OutletData " <> show outletPath <> " " <> show d
-    show _ = "?"
+    --show _ = "?"

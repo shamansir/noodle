@@ -71,6 +71,7 @@ data Node d = Node
     , process :: ProcessF d -- (Map String d -> Map String d)
     }
 -- S.constant is not able to send values afterwards, so we store the default value inside
+-- TODO: inlet sources should be a set of outletPaths, so outlet-inlet pairs would be unique
 data Inlet d = Inlet
     { path :: InletPath
     , label :: String
