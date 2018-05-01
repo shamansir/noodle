@@ -15,6 +15,9 @@ import Data.Array ((:))
 import Data.Array as Array
 import Data.Map (Map(..))
 import Data.Map as Map
+import Data.Set (Set(..))
+import Data.Set as Set
+import Data.Foldable (foldr)
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust, isNothing)
 import Data.Tuple.Nested ((/\), type (/\))
 import Rpd as R
@@ -61,14 +64,14 @@ data Message d
     | DataAtOutlet R.OutletPath d
 
 
-data Selection
+data Selection -- TODO: allow multiple selections
     = SNone
-    | SNetwork -- a.k.a. None ?
+    | SNetwork
     | SPatch R.PatchId
-    | SNode R.NodePath
-    | SInlet R.InletPath
-    | SOutlet R.OutletPath
-    | SLink R.LinkId
+    | SNodes (Set R.NodePath)
+    | SInlets (Set R.InletPath)
+    | SOutlets (Set R.OutletPath)
+    | SLinks (Set R.LinkId)
 
 
 data ClickSubject
@@ -164,31 +167,13 @@ update' (Click subject) (UI state network)
     | affectsSelection subject =
     UI state' network
     where
-        selection = subjectToSelection subject -- subjectToSelection SNone subject ?
+        newSelection = join state.selection subject
         state' =
-            case select selection state.selection of
-                Just newSelection -> state
-                    { selection = newSelection
-                    , friendlyLog = "select " <> show newSelection
-                    }
-                Nothing -> state -- SNone?
+            state
+                { selection = newSelection
+                , friendlyLog = "select " <> show newSelection
+                }
 update' _ ui = ui
-
-
-affectsSelection :: ClickSubject -> Boolean
-affectsSelection (CSInletConnector _) = false
-affectsSelection (CSOutletConnector _) = false
-affectsSelection _ = true
-
-
-subjectToSelection :: ClickSubject -> Selection
-subjectToSelection (CSNetwork) = SNetwork
-subjectToSelection (CSPatch id) = SPatch id
-subjectToSelection (CSNode path) = SNode path
-subjectToSelection (CSInlet path) = SInlet path
-subjectToSelection (CSOutlet path) = SOutlet path
-subjectToSelection (CSLink id) = SLink id
-subjectToSelection _ = SNone
 
 
 subscribeData
@@ -215,45 +200,75 @@ subscribeData inletHandler outletHandler network = do
 -- areLinksChanged _ = false
 
 
-select :: forall d. Selection -> Selection -> Maybe Selection
-select newSelection SNone = Just newSelection
-select (SPatch newPatch) prevSelection   | isPatchSelected prevSelection newPatch = Just SNone
-                                         | otherwise = Just (SPatch newPatch)
-select (SNode newNode) prevSelection     | isNodeSelected prevSelection newNode =
-                                                Just (SPatch $ R.getPatchOfNode newNode)
-                                         | otherwise = Just (SNode newNode)
-select (SInlet newInlet) prevSelection   | isInletSelected prevSelection newInlet =
-                                                Just (SNode $ R.getNodeOfInlet newInlet)
-                                         | otherwise = Just (SInlet newInlet)
-select (SOutlet newOutlet) prevSelection | isOutletSelected prevSelection newOutlet =
-                                                Just (SNode $ R.getNodeOfOutlet newOutlet)
-                                         | otherwise = Just (SOutlet newOutlet)
-select SNone _ = Just SNone
-select _ _ = Nothing
+affectsSelection :: ClickSubject -> Boolean
+affectsSelection (CSInletConnector _) = false
+affectsSelection (CSOutletConnector _) = false
+affectsSelection _ = true
+
+
+join :: Selection -> ClickSubject -> Selection
+join _ CSNetwork = SNetwork
+join SNone (CSPatch newPatch) = SPatch newPatch
+join prevSelection (CSPatch newPatch) | isPatchSelected prevSelection newPatch = SNone
+                                      | otherwise = SPatch newPatch
+join SNone (CSNode newNode) = SNodes $ Set.singleton newNode
+join prevSelection (CSNode newNode) | isNodeSelected prevSelection newNode = prevSelection -- remove node from selection
+                                    | otherwise = prevSelection -- it depends on what was selected
+join SNone (CSInlet newInlet) = SInlets $ Set.singleton newInlet
+join SNone (CSOutlet newOutlet) = SOutlets $ Set.singleton newOutlet
+join SNone (CSLink newLink) = SLinks $ Set.singleton newLink
+join prevSelection _ = prevSelection
+
+
+-- select :: forall d. Selection -> Selection -> Maybe Selection
+-- select newSelection SNone = Just newSelection
+-- select (SPatch newPatch) prevSelection   | isPatchSelected prevSelection newPatch = Just SNone
+--                                          | otherwise = Just (SPatch newPatch)
+-- select (SNode newNode) prevSelection     | isNodeSelected prevSelection newNode =
+--                                                 Just (SPatch $ R.getPatchOfNode newNode)
+--                                          | otherwise = Just (SNode newNode)
+-- select (SInlet newInlet) prevSelection   | isInletSelected prevSelection newInlet =
+--                                                 Just (SNode $ R.getNodeOfInlet newInlet)
+--                                          | otherwise = Just (SInlet newInlet)
+-- select (SOutlet newOutlet) prevSelection | isOutletSelected prevSelection newOutlet =
+--                                                 Just (SNode $ R.getNodeOfOutlet newOutlet)
+--                                          | otherwise = Just (SOutlet newOutlet)
+-- select SNone _ = Just SNone
+-- select _ _ = Nothing
+
+
+someSatisfy :: forall a. (a -> Boolean) -> Set a -> Boolean
+someSatisfy predicate set =
+    foldr (\elm res -> res || predicate elm) false set
 
 
 isPatchSelected :: Selection -> R.PatchId -> Boolean
 isPatchSelected (SPatch selectedPatchId) patchId = selectedPatchId == patchId
-isPatchSelected (SNode nodePath) patchId = R.isNodeInPatch nodePath patchId
-isPatchSelected (SInlet inletPath) patchId = R.isInletInPatch inletPath patchId
-isPatchSelected (SOutlet outletPath) patchId = R.isOutletInPatch outletPath patchId
+isPatchSelected (SNodes nodePaths) patchId =
+    someSatisfy (flip R.isNodeInPatch $ patchId) nodePaths
+isPatchSelected (SInlets inletPaths) patchId =
+    someSatisfy (flip R.isInletInPatch $ patchId) inletPaths
+isPatchSelected (SOutlets outletPaths) patchId =
+    someSatisfy (flip R.isOutletInPatch $ patchId) outletPaths
 isPatchSelected _ _ = false
 
 
 isNodeSelected :: Selection -> R.NodePath -> Boolean
-isNodeSelected (SNode selectedNodePath) nodePath = selectedNodePath == nodePath
-isNodeSelected (SInlet inletPath) nodePath = R.isInletInNode inletPath nodePath
-isNodeSelected (SOutlet outletPath) nodePath = R.isOutletInNode outletPath nodePath
+isNodeSelected (SNodes nodePaths) nodePath = someSatisfy ((==) nodePath) nodePaths
+isNodeSelected (SInlets inletPaths) nodePath =
+    someSatisfy (flip R.isInletInNode $ nodePath) inletPaths
+isNodeSelected (SOutlets outletPaths) nodePath =
+    someSatisfy (flip R.isOutletInNode $ nodePath) outletPaths
 isNodeSelected _ _ = false
 
 
 isInletSelected :: forall d. Selection -> R.InletPath -> Boolean
-isInletSelected (SInlet selectedInletPath) inletPath = selectedInletPath == inletPath
+isInletSelected (SInlets inletPaths) inletPath = someSatisfy ((==) inletPath) inletPaths
 isInletSelected _ _ = false
 
 
 isOutletSelected :: forall d. Selection -> R.OutletPath -> Boolean
-isOutletSelected (SOutlet selectedOutletPath) outletPath = selectedOutletPath == outletPath
+isOutletSelected (SOutlets outletPaths) outletPath = someSatisfy ((==) outletPath) outletPaths
 isOutletSelected _ _ = false
 
 
@@ -261,10 +276,10 @@ instance showSelection :: Show Selection where
     show SNone = "Nothing"
     show SNetwork = "Network"
     show (SPatch patchId) = show patchId
-    show (SNode nodePath) = show nodePath
-    show (SInlet inletPath) = show inletPath
-    show (SOutlet outletPath) = show outletPath
-    show (SLink linkId) = show linkId
+    show (SNodes nodePaths) = show nodePaths
+    show (SInlets inletPaths) = show inletPaths
+    show (SOutlets outletPaths) = show outletPaths
+    show (SLinks linkIds) = show linkIds
 
 
 instance showClickSubject :: Show ClickSubject where

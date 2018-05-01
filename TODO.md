@@ -1,10 +1,15 @@
 Primary:
 ========
 
-Second click on any connector in the same node, after connecting the outlet to inlet fires "Connect To" message again and again, while `s.connecting` is `Nothing` and if I add the message to the connector text — it is the right one.
-Could that be caused with rerender or new subscriptions to data flows — I don't know. May be try to turn them off?
+Implement better UI, looking closer to what we have in the original Rpd, so:
 
-Second subscription (first, caused by events, but not the initial code) has no stored canceller (it says: `cancel: empty`).
+    - No more collapsing nodes this way, nodes are always expanded in current patch by default;
+    - Selections, single by default, multiple with modifier; And it is selection, not collapse/expand;
+    - Better grid for nodes, outlets should be on the right side and inlets on the left;
+    - Implement Interactions, these are Clicks, Moves and User-forced commands,
+      they are easily translated to Messages being Select (Modifier) / Expand / OpendPatch etc.;
+
+Add abitity to collapse nodes by clicking their title.
 
 Implement creating links with clicking source outlet and target inlet.
 
@@ -14,17 +19,11 @@ Implement disconnecting links.
 
 Implement removing nodes.
 
-Text-rendered nodes should be moveable anyway.
-
 Remove `update'` from `Render.purs` and create visual history of events in UI, as a component.
 
 Make `Rpd` a module, not just a single file.
 
 `Bang` message.
-
-Add multi-selection for nodes and patches.
-
-Add abitity to collapse nodes.
 
 Implement adding nodes.
 
@@ -33,6 +32,8 @@ Implement import / export.
 Error system.
 
 Renderers and Styles (may be from JS?).
+
+Some terminal renderer, like `ncurses`. Text-rendered nodes should be moveable anyway.
 
 Tests.
 
