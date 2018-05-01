@@ -2,6 +2,7 @@ module Rpd.Render.Html where
 
 import Prelude
 import Rpd.Render
+import Rpd.Render.Create
 
 import Control.Alternative ((<|>))
 import Control.Monad.Eff (Eff)
@@ -45,9 +46,8 @@ type Markup e = H.Markup (Listener e)
 type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
 
 
-type Push' d e = Push d ( dom :: DOM | e )
+type FireInteraction e = Interaction -> Listener e
 
-type FireMsg d e = Message d -> Listener e
 
 type Canceller' e = R.Canceller ( dom :: DOM | e )
 
@@ -57,71 +57,16 @@ renderer
     :: forall d e
      . (Show d)
     => Element
-    -> R.Network d
-    -> R.RenderEff ( dom :: DOM | e )
-renderer target nw = do
-    { event : messages, push : pushMsg } <- create
-    let uiFlow = Event.fold update' messages $ UI init nw
-    { event : cancellers, push : saveCanceller } <- create
-    { event : cancellerTriggers, push : triggerPrevCanceller } <- create
-    -- FIXME: remove logs and CONSOLE effect everywhere
-    -- FIXME: move complex code to Render.purs
-    let
-        subscribeData' = subscribeData (pushInletData pushMsg) (pushOutletData pushMsg)
-        --pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
-        pastCancellers = map (\c -> Just c) cancellers
-        triggeredCancellers = Event.sampleOn_ pastCancellers cancellerTriggers
-        networksBylinksChanged = map (\(UI _ network) -> network)
-            $ filter (\(UI state _) -> state.areLinksChanged) uiFlow
-    _ <- subscribe triggeredCancellers $ \maybeCancel -> do
-        let cancel = fromMaybe (pure unit) maybeCancel
-        log $ "cancel called: " <> maybe "empty" (const "some") maybeCancel
-        _ <- cancel
-        pure unit
-    _ <- subscribe networksBylinksChanged $ \nw -> do
-        log "trigger prev cancel"
-        triggerPrevCanceller unit
-        log "subscribe"
-        subscriber <- subscribeData' nw
-        cancelNext <- subscriber
-        log "save canceller"
-        _ <- saveCanceller cancelNext
-        pure unit
-    _ <- do
-        log "first subscription"
-        subscriber <- subscribeData' nw
-        cancelNext <- subscriber
-        _ <- saveCanceller cancelNext
-        pure unit
-    _ <- subscribe uiFlow $ \ui -> render target pushMsg ui
-    pushMsg Init
-
-
-pushInletData
-    :: forall d e
-     . Push d e
-    -> (d -> R.InletPath -> R.RpdEff e Unit)
-pushInletData push =
-    (\d inletPath -> do
-        -- log $ "Receive from " <> show inletPath
-        push $ DataAtInlet inletPath d)
-
-
-pushOutletData
-    :: forall d e
-     . Push d e
-    -> (d -> R.OutletPath -> R.RpdEff e Unit)
-pushOutletData push =
-    (\d outletPath -> do
-        --log $ "Receive from " <> show outletPath
-        push $ DataAtOutlet outletPath d)
+    -> R.Renderer d ( dom :: DOM | e )
+renderer target =
+    createRenderer (\push ui -> render target push ui)
 
 
 render
     :: forall d e
      . Show d
     => Element
-    -> Push' d e
+    -> Push ( dom :: DOM | e )
     -> UI d
     -> R.RenderEff ( dom :: DOM | e )
 render target push ui =
@@ -131,7 +76,7 @@ render target push ui =
     where fire = prepareToFire push
 
 
-network :: forall d e. (Show d) => FireMsg d e -> UI d -> Markup e
+network :: forall d e. (Show d) => FireInteraction e -> UI d -> Markup e
 network fire ui@(UI s (R.Network { patches })) =
     H.div ! HA.className "network" $ do
         H.p $ H.text $ "Network: " <> (show $ length patches) <> "P"
@@ -139,7 +84,7 @@ network fire ui@(UI s (R.Network { patches })) =
             $ for_ patches $ patch fire ui
 
 
-patch :: forall d e. (Show d) => FireMsg d e -> UI d -> R.Patch d -> Markup e
+patch :: forall d e. (Show d) => FireInteraction e -> UI d -> R.Patch d -> Markup e
 patch fire ui@(UI s _) (R.Patch { id, name, nodes, links }) =
     H.div ! HA.className className $
         if isSelected then do
@@ -157,7 +102,7 @@ patch fire ui@(UI s _) (R.Patch { id, name, nodes, links }) =
         patchClick = fire $ Click (CSPatch id)
 
 
-node :: forall d e. (Show d) => FireMsg d e -> UI d -> R.Node d -> Markup e
+node :: forall d e. (Show d) => FireInteraction e -> UI d -> R.Node d -> Markup e
 node fire ui@(UI s _) (R.Node { path, name, inlets, outlets }) =
     H.div ! HA.className className $
         if isSelected then do
@@ -176,7 +121,7 @@ node fire ui@(UI s _) (R.Node { path, name, inlets, outlets }) =
         className = "node " <> (if isSelected then "_selected" else "")
         nodeClick = fire $ Click (CSNode path)
 
-inlet :: forall d e. (Show d) => FireMsg d e -> UI d -> R.Inlet d -> Markup e
+inlet :: forall d e. (Show d) => FireInteraction e -> UI d -> R.Inlet d -> Markup e
 inlet fire (UI s _) (R.Inlet { path, label, default, sources }) =
     H.div ! HA.className className $
         if isSelected then
@@ -205,7 +150,7 @@ inlet fire (UI s _) (R.Inlet { path, label, default, sources }) =
         dataText = show $ Map.lookup path s.lastInletData
 
 
-outlet :: forall d e. (Show d) => FireMsg d e -> UI d -> R.Outlet d -> Markup e
+outlet :: forall d e. (Show d) => FireInteraction e -> UI d -> R.Outlet d -> Markup e
 outlet fire (UI s _) (R.Outlet { path, label }) =
     H.div ! HA.className className $
         if isSelected then
@@ -236,36 +181,12 @@ outlet fire (UI s _) (R.Outlet { path, label }) =
         dataText = show $ Map.lookup path s.lastOutletData
 
 
-prepareToFire :: forall d e. (Show d) => Push' d e -> FireMsg d e
-prepareToFire push msg =
+prepareToFire :: forall e. Push ( dom :: DOM | e ) -> FireInteraction e
+prepareToFire push interaction =
     -- eventListener $ const $ push msg
     -- _ <- log $ "<<<" <> show msg
     eventListener (\_ -> do
-        log $ ">>>" <> show msg
-        _ <- push msg
+        log $ ">>>" <> show interaction
+        _ <- push interaction
         pure unit
     )
-
-
--- updateAndLog :: forall d e. Event d -> UI d -> String /\ UI d
-
-
-isMeaningfulMessage :: forall d. Message d -> Boolean
-isMeaningfulMessage (DataAtInlet _ _) = false
-isMeaningfulMessage (DataAtOutlet _ _) = false
-isMeaningfulMessage _ = true
--- isMeaningfulMessage _ = true
-
--- TODO: use Writer monad
-update' :: forall d. Message d -> UI d -> UI d
-update' msg ui =
-    let
-        UI state' network = update msg ui
-        state'' =
-            if isMeaningfulMessage msg then
-                state' { lastMessages = Array.take 5 $ msg : state'.lastMessages }
-            else
-                state'
-
-    in
-        UI state'' network

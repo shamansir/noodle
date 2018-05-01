@@ -2,9 +2,9 @@ module Rpd.Render
     ( UI(..)
     , UIState
     , Push
-    , Message(..), Selection(..), ClickSubject(..)
+    , Message(..), Interaction(..), Selection(..), Subject(..)
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
-    , init, update, subscribeData
+    , init, update, updateAndLog, subscribeData
     ) where
 
 import Prelude
@@ -36,32 +36,25 @@ type UIState d =
     -- TODO: lastConnection: Maybe Link
     -- , prevCanceller :: Maybe (R.Canceller e)
     , lastMessages :: Array (Message d) -- FIXME: remove, make some friendly debugger or History plugin to track it
-    , friendlyLog :: String -- FIXME: remove, as well as the above
+    , lastInteractions :: Array Interaction -- FIXME: remove, make some friendly debugger or History plugin to track it
+    -- , friendlyLog :: String -- FIXME: remove, as well as the above
     }
 
 
--- data Message d
---     = Init
---     | Select Selection -- TrySelecting Selection
---     | Deselect Selection
---     | ConnectFrom R.OutletPath
---     | ConnectTo R.InletPath
---     | DisconnectAt R.InletPath
---     | DataAtInlet R.InletPath d
---     | DataAtOutlet R.OutletPath d
-
-
--- TODO: Rename to UIEvent and produce more meaningful Messages out of it?
---       or maybe there should be some Rpd Command, like Message above,
---       which affects the state, also used for import and export,
---       and most of the UI Events could be converted to such and vice versa?
---       So Commands are the things which change Network and Messages are the things
---       which change UI State!
 data Message d
     = Init
-    | Click ClickSubject
+    | AffectSelection Subject
+    | ConnectFrom R.OutletPath
+    | ConnectTo R.InletPath
+    | DisconnectAt R.InletPath
+    | OpenPatch R.PatchId
+    | ClosePatch R.PatchId
     | DataAtInlet R.InletPath d
     | DataAtOutlet R.OutletPath d
+
+
+data Interaction
+    = Click Subject
 
 
 data Selection -- TODO: allow multiple selections
@@ -74,10 +67,11 @@ data Selection -- TODO: allow multiple selections
     | SLinks (Set R.LinkId)
 
 
-data ClickSubject
+data Subject
     = CSNetwork -- a.k.a. None / Background ?
     | CSPatch R.PatchId
     | CSNode R.NodePath
+    | CSNodeHandle R.NodePath
     | CSInlet R.InletPath
     | CSInletConnector R.InletPath
     | CSOutlet R.OutletPath
@@ -88,7 +82,7 @@ data ClickSubject
 data UI d = UI (UIState d) (R.Network d)
 
 
-type Push d e = Message d -> R.RpdEff e Unit
+type Push e = Interaction -> R.RpdEff e Unit
 
 
 init :: forall d. UIState d
@@ -100,7 +94,8 @@ init =
     , lastOutletData : Map.empty
     , areLinksChanged : false
     , lastMessages : []
-    , friendlyLog : ""
+    , lastInteractions : []
+    -- , friendlyLog : ""
     }
 
 
@@ -108,9 +103,10 @@ update :: forall d. Message d -> UI d -> UI d
 update msg (UI state network) =
     update' msg (UI state' network)
     where
+        --msg = interactionToMessage interaction state
         state' = state
             { areLinksChanged = false
-            , friendlyLog = ""
+            --, friendlyLog = ""
             }
 
 
@@ -131,14 +127,14 @@ update' (DataAtOutlet outletPath d) (UI state network) =
                 { lastOutletData =
                     Map.insert outletPath d state.lastOutletData
                 }
-update' (Click (CSOutletConnector outletPath)) (UI state network) =
+update' (ConnectFrom outletPath) (UI state network) =
     UI state' network
     where
         state' = state
             { connecting = Just outletPath
-            , friendlyLog = "connect from " <> show outletPath
+            --, friendlyLog = "connect from " <> show outletPath
             }
-update' (Click (CSInletConnector inletPath)) (UI state network)
+update' (ConnectTo inletPath) (UI state network)
     | isJust state.connecting =
     UI state' network'
     where
@@ -146,24 +142,24 @@ update' (Click (CSInletConnector inletPath)) (UI state network)
             state
                 { connecting = Nothing
                 , areLinksChanged = true
-                , friendlyLog = "connect " <> maybe "?" show state.connecting
-                        <> " to " <> show inletPath
+                --, friendlyLog = "connect " <> maybe "?" show state.connecting
+                --        <> " to " <> show inletPath
                 }
         network'=
             case state.connecting of
                 Just outletPath ->
                     fromMaybe network $ R.connect' outletPath inletPath network
                 Nothing -> network
-update' (Click (CSInletConnector inletPath)) (UI state network)
+update' (DisconnectAt inletPath) (UI state network)
     | isNothing state.connecting =
     UI state' network'
     where
         network' = fromMaybe network $ R.disconnectLast inletPath network
         state' = state
             { areLinksChanged = true
-            , friendlyLog = "disconnect last at " <> show inletPath
+            --, friendlyLog = "disconnect last at " <> show inletPath
             }
-update' (Click subject) (UI state network)
+update' (AffectSelection subject) (UI state network)
     | affectsSelection subject =
     UI state' network
     where
@@ -171,9 +167,35 @@ update' (Click subject) (UI state network)
         state' =
             state
                 { selection = newSelection
-                , friendlyLog = "select " <> show newSelection
+                --, friendlyLog = "select " <> show newSelection
                 }
 update' _ ui = ui
+
+
+
+-- updateAndLog :: forall d e. Event d -> UI d -> String /\ UI d
+
+
+isMeaningfulMessage :: forall d. Message d -> Boolean
+isMeaningfulMessage (DataAtInlet _ _) = false
+isMeaningfulMessage (DataAtOutlet _ _) = false
+isMeaningfulMessage _ = true
+-- isMeaningfulMessage _ = true
+
+
+-- TODO: use Writer monad for logging
+updateAndLog :: forall d. Message d -> UI d -> UI d
+updateAndLog msg ui =
+    let
+        UI state' network = update msg ui
+        state'' =
+            if isMeaningfulMessage msg then
+                state' { lastMessages = Array.take 5 $ msg : state'.lastMessages }
+            else
+                state'
+
+    in
+        UI state'' network
 
 
 subscribeData
@@ -200,13 +222,23 @@ subscribeData inletHandler outletHandler network = do
 -- areLinksChanged _ = false
 
 
-affectsSelection :: ClickSubject -> Boolean
+interactionToMessage :: forall d. Interaction -> UIState d -> Message d
+interactionToMessage interaction state = Init -- FIXME: implement
+
+
+
+affectsSelection :: Subject -> Boolean
 affectsSelection (CSInletConnector _) = false
 affectsSelection (CSOutletConnector _) = false
 affectsSelection _ = true
 
-
-join :: Selection -> ClickSubject -> Selection
+{-
+if patch was clicked, we select it, deselect and close all the others, and open it, unless it was already opened.
+if node title was clicked, we expand or collapse it
+if node was clicked, we select it and only it. if it was clicked with modifier, we add or remove it to/from selection.
+same for inlets, outlets, and links
+-}
+join :: Selection -> Subject -> Selection
 join _ CSNetwork = SNetwork
 join SNone (CSPatch newPatch) = SPatch newPatch
 join prevSelection (CSPatch newPatch) | isPatchSelected prevSelection newPatch = SNone
@@ -282,10 +314,11 @@ instance showSelection :: Show Selection where
     show (SLinks linkIds) = show linkIds
 
 
-instance showClickSubject :: Show ClickSubject where
+instance showSubject :: Show Subject where
     show CSNetwork = "Network"
     show (CSPatch patchId) = "Patch: " <> show patchId
     show (CSNode nodePath) = "Node: " <> show nodePath
+    show (CSNodeHandle nodePath) = "Node title: " <> show nodePath
     show (CSInlet inletPath) = "Inlet: " <> show inletPath
     show (CSOutlet outletPath) = "Outlet: " <> show outletPath
     show (CSLink linkId) = "Link: " <> show linkId
@@ -301,12 +334,20 @@ instance showUI :: (Show d) => Show (UI d) where
         ", Inlets: " <> show s.lastInletData <>
         ", Outlets: " <> show s.lastOutletData <>
         ", Last events: " <> show (Array.reverse s.lastMessages) <>
-        ", Friendly log: " <> s.friendlyLog
+        ", Last interactions: " <> show (Array.reverse s.lastInteractions)
+        --", Friendly log: " <> s.friendlyLog
 
 
 instance showMessage :: (Show d) => Show (Message d) where
     show Init = "Init"
+    show (AffectSelection subject) = "Affect selection " <> show subject
+    show (ConnectFrom outletPath) = "Connect from " <> show outletPath
+    show (ConnectTo inletPath) = "Connect to " <> show inletPath
+    show (DisconnectAt inletPath) = "Disconnect at " <> show inletPath
+    show (OpenPatch patchId) = "Open patch " <> show patchId
+    show (ClosePatch patchId) = "Close patch " <> show patchId
+    show (DataAtInlet inlet d) = "Data at inlet " <> show inlet <> " " <> show d
+    show (DataAtOutlet outlet d) = "Data at outlet " <> show outlet <> " " <> show d
+
+instance showInteraction :: Show Interaction where
     show (Click subject) = "Click " <> show subject
-    show (DataAtInlet inletPath d) = "InletData " <> show inletPath <> " " <> show d
-    show (DataAtOutlet outletPath d) = "OutletData " <> show outletPath <> " " <> show d
-    --show _ = "?"
