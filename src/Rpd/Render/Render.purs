@@ -36,7 +36,7 @@ type UIState d =
     -- TODO: lastConnection: Maybe Link
     -- , prevCanceller :: Maybe (R.Canceller e)
     , lastMessages :: Array (Message d) -- FIXME: remove, make some friendly debugger or History plugin to track it
-    , lastInteractions :: Array Interaction -- FIXME: remove, make some friendly debugger or History plugin to track it
+    , lastInteractions :: Array (Interaction d) -- FIXME: remove, make some friendly debugger or History plugin to track it
     -- , friendlyLog :: String -- FIXME: remove, as well as the above
     }
 
@@ -49,12 +49,12 @@ data Message d
     | DisconnectAt R.InletPath
     | OpenPatch R.PatchId
     | ClosePatch R.PatchId
+
+
+data Interaction d
+    = Click Subject
     | DataAtInlet R.InletPath d
     | DataAtOutlet R.OutletPath d
-
-
-data Interaction
-    = Click Subject
 
 
 data Selection -- TODO: allow multiple selections
@@ -82,7 +82,7 @@ data Subject
 data UI d = UI (UIState d) (R.Network d)
 
 
-type Push e = Interaction -> R.RpdEff e Unit
+type Push d e = Interaction d -> R.RpdEff e Unit
 
 
 init :: forall d. UIState d
@@ -176,26 +176,14 @@ update' _ ui = ui
 -- updateAndLog :: forall d e. Event d -> UI d -> String /\ UI d
 
 
-isMeaningfulMessage :: forall d. Message d -> Boolean
-isMeaningfulMessage (DataAtInlet _ _) = false
-isMeaningfulMessage (DataAtOutlet _ _) = false
-isMeaningfulMessage _ = true
--- isMeaningfulMessage _ = true
-
-
 -- TODO: use Writer monad for logging
 updateAndLog :: forall d. Message d -> UI d -> UI d
 updateAndLog msg ui =
     let
-        UI state' network = update msg ui
-        state'' =
-            if isMeaningfulMessage msg then
-                state' { lastMessages = Array.take 5 $ msg : state'.lastMessages }
-            else
-                state'
-
+        UI state network = update msg ui
+        state' = state { lastMessages = Array.take 5 $ msg : state.lastMessages }
     in
-        UI state'' network
+        UI state' network
 
 
 subscribeData
@@ -222,7 +210,7 @@ subscribeData inletHandler outletHandler network = do
 -- areLinksChanged _ = false
 
 
-interactionToMessage :: forall d. Interaction -> UIState d -> Message d
+interactionToMessage :: forall d. Interaction d -> UIState d -> Message d
 interactionToMessage interaction state = Init -- FIXME: implement
 
 
@@ -346,8 +334,8 @@ instance showMessage :: (Show d) => Show (Message d) where
     show (DisconnectAt inletPath) = "Disconnect at " <> show inletPath
     show (OpenPatch patchId) = "Open patch " <> show patchId
     show (ClosePatch patchId) = "Close patch " <> show patchId
+
+instance showInteraction :: (Show d) => Show (Interaction d) where
+    show (Click subject) = "Click " <> show subject
     show (DataAtInlet inlet d) = "Data at inlet " <> show inlet <> " " <> show d
     show (DataAtOutlet outlet d) = "Data at outlet " <> show outlet <> " " <> show d
-
-instance showInteraction :: Show Interaction where
-    show (Click subject) = "Click " <> show subject

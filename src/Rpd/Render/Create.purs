@@ -19,8 +19,9 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 createRenderer :: forall d e. (Push e -> UI d -> R.RenderEff e) -> R.Renderer d e
 createRenderer render = (\nw -> do
     { event : interactions, push : pushInteraction } <- create
-    { event : messages, push : pushMsg } <- create
-    let uiFlow = Event.fold updateAndLog messages $ UI init nw
+    -- { event : messages, push : pushMsg } <- create
+    -- FIXME: pass fired interactions to messages flow and adapt them
+    let uiFlow = Event.fold updateAndLog interactions $ UI init nw
     { event : cancellers, push : saveCanceller } <- create
     { event : cancellerTriggers, push : triggerPrevCanceller } <- create
     -- FIXME: remove logs and CONSOLE effect everywhere
