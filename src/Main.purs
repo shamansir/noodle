@@ -40,6 +40,7 @@ myNode nodeId =
     ]
     [ R.outlet "c"
     , R.outlet' "x" $ map (Num' (nodeId <> "x")) $ fold (\_ n -> n + 1) (interval 5000) 0
+    , R.outlet' "y" $ map (Num' (nodeId <> "y")) $ fold (\_ n -> n + 1) (interval 2000) 0
     ]
     -- (\_ -> [ "c" /\ Int' 10 ] )
 
