@@ -20,24 +20,27 @@ createRenderer :: forall d e. (Push d e -> UI d -> R.RenderEff e) -> R.Renderer 
 createRenderer render = (\nw -> do
     { event : interactions, push : pushInteraction } <- create
     -- { event : messages, push : pushMsg } <- create
+    -- TODO: Event UIState/Interaction + Event Network -> Event UI/Message
     -- FIXME: pass fired interactions to messages flow and adapt them
     let
         foldingF = \interaction ui@(UI state _) ->
             updateAndLog (interactionToMessage interaction state) ui
+        -- TODO: Event.fold update messages $ UI init nw
         uiFlow = Event.fold foldingF interactions $ UI init nw
     { event : cancellers, push : saveCanceller } <- create
     { event : cancellerTriggers, push : triggerPrevCanceller } <- create
     -- FIXME: remove logs and CONSOLE effect everywhere
     let
-        subscribeData' = subscribeData (pushInletData pushInteraction) (pushOutletData pushInteraction)
+        subscribeData' =
+            subscribeData
+                (pushInletData pushInteraction)
+                (pushOutletData pushInteraction)
         --pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
-        pastCancellers = map (\c -> Just c) cancellers
-        triggeredCancellers = Event.sampleOn_ pastCancellers cancellerTriggers
+        triggeredCancellers = Event.sampleOn_ cancellers cancellerTriggers
         networksBylinksChanged = map (\(UI _ network) -> network)
             $ filter (\(UI state _) -> state.areLinksChanged) uiFlow
-    _ <- subscribe triggeredCancellers $ \maybeCancel -> do
-        let cancel = fromMaybe (pure unit) maybeCancel
-        log $ "cancel called: " <> maybe "empty" (const "some") maybeCancel
+    _ <- subscribe triggeredCancellers $ \cancel -> do
+        log $ "cancel called."
         _ <- cancel
         pure unit
     _ <- subscribe networksBylinksChanged $ \nw -> do

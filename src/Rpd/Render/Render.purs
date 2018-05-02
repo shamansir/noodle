@@ -14,12 +14,12 @@ import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Data.Array ((:))
 import Data.Array as Array
+import Data.Foldable (foldr)
 import Data.Map (Map(..))
 import Data.Map as Map
+import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust, isNothing)
 import Data.Set (Set(..))
 import Data.Set as Set
-import Data.Foldable (foldr)
-import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust, isNothing)
 import Data.Tuple.Nested ((/\), type (/\))
 import Rpd as R
 -- import Signal.Channel as SC
@@ -167,7 +167,7 @@ update' (AffectSelection subject) (UI state network)
     | affectsSelection subject =
     UI state' network
     where
-        newSelection = join state.selection subject
+        newSelection = affectSelection state.selection subject
         state' =
             state
                 { selection = newSelection
@@ -221,8 +221,17 @@ subscribeData inletHandler outletHandler network = do
 -- areLinksChanged _ = false
 
 
+-- TODO: rename to `subscribe` and `Sub`s, like in Elm
+-- https://github.com/elm-lang/mouse/blob/master/src/Mouse.elm
 interactionToMessage :: forall d. Interaction d -> UIState d -> Message d
-interactionToMessage interaction state = NoOp -- FIXME: implement
+interactionToMessage (Click (CSInletConnector inlet)) state
+    | isJust state.connecting = ConnectTo inlet
+    | otherwise = DisconnectAt inlet
+interactionToMessage (Click (CSOutletConnector outlet)) state = ConnectFrom outlet
+interactionToMessage (Click subj) _ | affectsSelection subj = AffectSelection subj
+interactionToMessage (DataAtInlet inlet d) _ = SendDataToInlet inlet d
+interactionToMessage (DataAtOutlet outlet d) _ = SendDataToOutlet outlet d
+interactionToMessage _ _ = NoOp
 
 
 
@@ -237,18 +246,18 @@ if node title was clicked, we expand or collapse it
 if node was clicked, we select it and only it. if it was clicked with modifier, we add or remove it to/from selection.
 same for inlets, outlets, and links
 -}
-join :: Selection -> Subject -> Selection
-join _ CSNetwork = SNetwork
-join SNone (CSPatch newPatch) = SPatch newPatch
-join prevSelection (CSPatch newPatch) | isPatchSelected prevSelection newPatch = SNone
-                                      | otherwise = SPatch newPatch
-join SNone (CSNode newNode) = SNodes $ Set.singleton newNode
-join prevSelection (CSNode newNode) | isNodeSelected prevSelection newNode = prevSelection -- remove node from selection
-                                    | otherwise = prevSelection -- it depends on what was selected
-join SNone (CSInlet newInlet) = SInlets $ Set.singleton newInlet
-join SNone (CSOutlet newOutlet) = SOutlets $ Set.singleton newOutlet
-join SNone (CSLink newLink) = SLinks $ Set.singleton newLink
-join prevSelection _ = prevSelection
+affectSelection :: Selection -> Subject -> Selection
+affectSelection _ CSNetwork = SNetwork
+affectSelection SNone (CSPatch newPatch) = SPatch newPatch
+affectSelection prevSelection (CSPatch newPatch) | isPatchSelected prevSelection newPatch = SNone
+                                                 | otherwise = SPatch newPatch
+affectSelection SNone (CSNode newNode) = SNodes $ Set.singleton newNode
+affectSelection prevSelection (CSNode newNode) | isNodeSelected prevSelection newNode = prevSelection -- remove node from selection
+                                               | otherwise = prevSelection -- it depends on what was selected
+affectSelection SNone (CSInlet newInlet) = SInlets $ Set.singleton newInlet
+affectSelection SNone (CSOutlet newOutlet) = SOutlets $ Set.singleton newOutlet
+affectSelection SNone (CSLink newLink) = SLinks $ Set.singleton newLink
+affectSelection prevSelection _ = prevSelection
 
 
 -- select :: forall d. Selection -> Selection -> Maybe Selection

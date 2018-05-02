@@ -23,6 +23,8 @@ Remove `update'` from `Render.purs` and create visual history of events in UI, a
 
 Make `Interaction`s act similarly to subscriptions in Elm: allow to subscribe them separately (i.e. clicks, data) and fire corresponding messages in response, receiving the last model/state on each conversion, to create `Message` from `Interaction`.
 
+`Interactions` are actually `Event`s, but that will make them confused with FRP `Events`. We may either rename `Event`s from `FRP` to `Flow`s, or rename `Interactions` to `Sub`s like they are named in `Elm`.
+
 Separate `Network` and its construction from `Rpd` core.
 
 Make `Rpd` a module, not just a single file.
@@ -40,6 +42,8 @@ Renderers and Styles (may be from JS?).
 Some terminal renderer, like `ncurses`. Text-rendered nodes should be moveable anyway.
 
 Tests.
+
+Aren't `Link`s duplicate the inlet sources, may be they shoun't be stored in the `Network`, but rather be collected from it when it is required to render them.
 
 Secondary:
 ==========
