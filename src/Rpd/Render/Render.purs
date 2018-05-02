@@ -83,6 +83,10 @@ data Subject
     | CSLink R.LinkId
 
 
+data SelectionMode
+    = Multiple
+    | Single
+
 data UI d = UI (UIState d) (R.Network d)
 
 
@@ -167,7 +171,7 @@ update' (AffectSelection subject) (UI state network)
     | affectsSelection subject =
     UI state' network
     where
-        newSelection = affectSelection state.selection subject
+        newSelection = affectSelection state.selection Single subject
         state' =
             state
                 { selection = newSelection
@@ -246,18 +250,22 @@ if node title was clicked, we expand or collapse it
 if node was clicked, we select it and only it. if it was clicked with modifier, we add or remove it to/from selection.
 same for inlets, outlets, and links
 -}
-affectSelection :: Selection -> Subject -> Selection
-affectSelection _ CSNetwork = SNetwork
-affectSelection SNone (CSPatch newPatch) = SPatch newPatch
-affectSelection prevSelection (CSPatch newPatch) | isPatchSelected prevSelection newPatch = SNone
-                                                 | otherwise = SPatch newPatch
-affectSelection SNone (CSNode newNode) = SNodes $ Set.singleton newNode
-affectSelection prevSelection (CSNode newNode) | isNodeSelected prevSelection newNode = prevSelection -- remove node from selection
-                                               | otherwise = prevSelection -- it depends on what was selected
-affectSelection SNone (CSInlet newInlet) = SInlets $ Set.singleton newInlet
-affectSelection SNone (CSOutlet newOutlet) = SOutlets $ Set.singleton newOutlet
-affectSelection SNone (CSLink newLink) = SLinks $ Set.singleton newLink
-affectSelection prevSelection _ = prevSelection
+affectSelection :: Selection -> SelectionMode -> Subject -> Selection
+affectSelection _ _ CSNetwork = SNetwork
+affectSelection prevSelection Single (CSPatch newPatch)
+    | isPatchSelected prevSelection newPatch = SNone
+    | otherwise = SPatch newPatch
+affectSelection prevSelection Single (CSNode newNode)
+    | isNodeSelected prevSelection newNode = SNone
+    | otherwise = SNodes $ Set.singleton newNode
+affectSelection prevSelection Single (CSInlet newInlet)
+    | isInletSelected prevSelection newInlet = SNone
+    | otherwise = SInlets $ Set.singleton newInlet
+affectSelection prevSelection Single (CSOutlet newOutlet)
+    | isOutletSelected prevSelection newOutlet = SNone
+    | otherwise = SOutlets $ Set.singleton newOutlet
+affectSelection prevSelection Single (CSLink newLink) = SLinks $ Set.singleton newLink
+affectSelection prevSelection _ _ = prevSelection
 
 
 -- select :: forall d. Selection -> Selection -> Maybe Selection

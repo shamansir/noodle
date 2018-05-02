@@ -15,12 +15,13 @@ import DOM.Node.Types (Element)
 import Data.Array ((:))
 import Data.Array (length)
 import Data.Array as Array
-import Data.Foldable (for_)
 import Data.Filterable (filter)
+import Data.Foldable (for_)
 import Data.Map (Map(..))
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
-import Data.Tuple (curry, uncurry)
+import Data.String.NonEmpty (NonEmptyString(..), fromString, joinWith, singleton)
+import Data.Tuple (curry, uncurry, fst, snd)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import FRP (FRP)
@@ -59,7 +60,7 @@ renderer
     => Element
     -> R.Renderer d ( dom :: DOM | e )
 renderer target =
-    createRenderer (\push ui -> render target push ui)
+    createRenderer $ render target
 
 
 render
@@ -87,7 +88,7 @@ network fire ui@(UI s (R.Network { patches })) =
 patch :: forall d e. (Show d) => FireInteraction d e -> UI d -> R.Patch d -> Markup e
 patch fire ui@(UI s _) (R.Patch { id, name, nodes, links }) =
     H.div ! HA.className className $
-        if isSelected then do
+        if isOpened then do
             H.p #! on "click" patchClick
                 $ H.text $ "<" <> show id <> ": " <> name <> "> "
                     <> "N" <> (show $ length nodes) <> " "
@@ -97,15 +98,19 @@ patch fire ui@(UI s _) (R.Patch { id, name, nodes, links }) =
         else
             H.p #! on "click" patchClick $ H.text $ "[" <> show id <> "]"
     where
+        isOpened = true
         isSelected = isPatchSelected s.selection id
-        className = "patch " <> (if isSelected then "_selected" else "")
+        className = quickClass "patch"
+                [ isSelected /\ "_selected"
+                , isOpened /\ "_opended"
+                ]
         patchClick = fire $ Click (CSPatch id)
 
 
 node :: forall d e. (Show d) => FireInteraction d e -> UI d -> R.Node d -> Markup e
 node fire ui@(UI s _) (R.Node { path, name, inlets, outlets }) =
     H.div ! HA.className className $
-        if isSelected then do
+        if isExpanded then do
             H.p #! on "click" nodeClick
                 $ H.text $ "<" <> show path <> ": " <> name <> "> "
                     <> "I" <> (show $ length inlets) <> " "
@@ -117,8 +122,9 @@ node fire ui@(UI s _) (R.Node { path, name, inlets, outlets }) =
         else
             H.p #! on "click" nodeClick $ H.text $ "[" <> show path <> "]"
     where
+        isExpanded = true
         isSelected = isNodeSelected s.selection path
-        className = "node " <> (if isSelected then "_selected" else "")
+        className = quickClass "node" [ isSelected /\ "_selected" ]
         nodeClick = fire $ Click (CSNode path)
 
 inlet :: forall d e. (Show d) => FireInteraction d e -> UI d -> R.Inlet d -> Markup e
@@ -139,8 +145,10 @@ inlet fire (UI s _) (R.Inlet { path, label, default, sources }) =
     where
         isSelected = isInletSelected s.selection path
         isWaitingForConnection = fromMaybe false $ R.notInTheSameNode path <$> s.connecting
-        className = "inlet" <> (if isSelected then " _selected" else " ")
-            <> (if isWaitingForConnection then " _waiting" else " ")
+        className = quickClass "inlet"
+                [ isSelected /\ "_selected"
+                , isWaitingForConnection /\ "_waiting"
+                ]
         inletClick = fire $ Click (CSInlet path)
         inletConnectorClick = fire $ Click (CSInletConnector path)
         connectorLabel =
@@ -172,13 +180,29 @@ outlet fire (UI s _) (R.Outlet { path, label }) =
         isSelected = isOutletSelected s.selection path
         isConnectingSomething = isJust s.connecting
         isCurrentlyConnecting = fromMaybe false $ ((==) path) <$> s.connecting
-        className = "outlet" <> (if isSelected then " _selected" else " ")
-                     <> (if isConnectingSomething then " _waiting" else " ")
-                     <> (if isCurrentlyConnecting then " _connecting" else " ")
+        className = quickClass "inlet"
+            [ isSelected /\ "_selected"
+            , isConnectingSomething /\ "_waiting"
+            , isCurrentlyConnecting /\ "_connecting"
+            ]
         outletClick = fire $ Click (CSOutlet path)
         outletConnectorClick = fire $ Click (CSOutletConnector path)
         connectorLabel = if isCurrentlyConnecting then "(*)" else "(+)"
         dataText = show $ Map.lookup path s.lastOutletData
+
+
+quickClass :: String -> Array (Boolean /\ String) -> String
+quickClass baseClass flags
+    | length flags > 0 =
+        baseClass <> " " <> joinWith " " classes
+        where
+            classes =
+                map (fromMaybe $ singleton '?')
+                    $ filter isJust
+                    $ map fromString
+                    $ map snd
+                    $ filter fst flags
+    | otherwise = baseClass
 
 
 prepareToFire :: forall d e. (Show d) => Push d ( dom :: DOM | e ) -> FireInteraction d e
