@@ -80,7 +80,6 @@ render target push ui =
 network :: forall d e. (Show d) => FireInteraction d e -> UI d -> Markup e
 network fire ui@(UI s (R.Network { patches })) =
     H.div ! HA.className "network" $ do
-        H.p $ H.text $ "Network: " <> (show $ length patches) <> "P"
         H.div ! HA.className "patches"
             $ for_ patches $ patch fire ui
 
@@ -89,14 +88,15 @@ patch :: forall d e. (Show d) => FireInteraction d e -> UI d -> R.Patch d -> Mar
 patch fire ui@(UI s _) (R.Patch { id, name, nodes, links }) =
     H.div ! HA.className className $
         if isOpened then do
-            H.p #! on "click" patchClick
+            H.div #! on "click" patchClick ! HA.className "handle"
                 $ H.text $ "<" <> show id <> ": " <> name <> "> "
                     <> "N" <> (show $ length nodes) <> " "
                     <> "L" <> (show $ length links)
             H.div ! HA.className "nodes"
                 $ for_ nodes $ node fire ui
         else
-            H.p #! on "click" patchClick $ H.text $ "[" <> show id <> "]"
+            H.div #! on "click" patchClick ! HA.className "handle"
+                $ H.text $ "[" <> show id <> "]"
     where
         isOpened = true
         isSelected = isPatchSelected s.selection id
@@ -111,37 +111,36 @@ node :: forall d e. (Show d) => FireInteraction d e -> UI d -> R.Node d -> Marku
 node fire ui@(UI s _) (R.Node { path, name, inlets, outlets }) =
     H.div ! HA.className className $
         if isExpanded then do
-            H.p #! on "click" nodeClick
+            H.div #! on "click" nodeClick ! HA.className "handle"
                 $ H.text $ "<" <> show path <> ": " <> name <> "> "
                     <> "I" <> (show $ length inlets) <> " "
                     <> "O" <> (show $ length outlets)
-            H.div ! HA.className "inlets"
-                $ for_ inlets $ inlet fire ui
-            H.div ! HA.className "outlets"
-                $ for_ outlets $ outlet fire ui
+            H.div ! HA.className "body" $ do
+                H.div ! HA.className "inlets"
+                    $ for_ inlets $ inlet fire ui
+                H.div ! HA.className "outlets"
+                    $ for_ outlets $ outlet fire ui
         else
-            H.p #! on "click" nodeClick $ H.text $ "[" <> show path <> "]"
+            H.p #! on "click" nodeClick ! HA.className "handle"
+                $ H.text $ "[" <> show path <> "]"
     where
         isExpanded = true
         isSelected = isNodeSelected s.selection path
         className = quickClass "node" [ isSelected /\ "_selected" ]
         nodeClick = fire $ Click (CSNode path)
 
+
 inlet :: forall d e. (Show d) => FireInteraction d e -> UI d -> R.Inlet d -> Markup e
 inlet fire (UI s _) (R.Inlet { path, label, default, sources }) =
-    H.div ! HA.className className $
-        if isSelected then
-            H.div $ do
-                H.span ! HA.className "connector"
-                    #! on "click" inletConnectorClick $ H.text $ connectorLabel
-                H.span #! on "click" inletClick
-                    $ H.text $ "<" <> show path <> ": " <> label <> "> "
-                H.span $ H.text dataText
-        else
-            H.div $ do
-                H.span ! HA.className "connector"
-                    #! on "click" inletConnectorClick $ H.text $ connectorLabel
-                H.span #! on "click" inletClick $ H.text $ "[" <> show path <> "]"
+    H.div ! HA.className className $ do
+        H.span ! HA.className "connector"
+            #! on "click" inletConnectorClick $ H.text $ connectorLabel
+        H.span ! HA.className "value" $ H.text dataText
+        H.span #! on "click" inletClick ! HA.className "handle" $
+            if isSelected then
+                H.text $ "<" <> show path <> ": " <> label <> ">"
+            else
+                H.text $ "[" <> show path <> ": " <> label <> "]"
     where
         isSelected = isInletSelected s.selection path
         isWaitingForConnection = fromMaybe false $ R.notInTheSameNode path <$> s.connecting
@@ -160,27 +159,21 @@ inlet fire (UI s _) (R.Inlet { path, label, default, sources }) =
 
 outlet :: forall d e. (Show d) => FireInteraction d e -> UI d -> R.Outlet d -> Markup e
 outlet fire (UI s _) (R.Outlet { path, label }) =
-    H.div ! HA.className className $
-        if isSelected then
-            H.div $ do
-                H.span ! HA.className "connector"
-                    #! on "click" outletConnectorClick
-                    $ H.text $ connectorLabel
-                H.span #! on "click" outletClick
-                    $ H.text $ "<" <> show path <> ": " <> label <> "> "
-                H.span $ H.text dataText
-        else
-            H.div $ do
-                H.span ! HA.className "connector"
-                    #! on "click" outletConnectorClick
-                    $ H.text $ connectorLabel
-                H.span #! on "click" outletClick
-                    $ H.text $ "[" <> show path <> "]"
+    H.div ! HA.className className $ do
+        H.span #! on "click" outletClick ! HA.className "handle" $
+            if isSelected then
+                H.text $ "<" <> show path <> ": " <> label <> ">"
+            else
+                H.text $ "[" <> show path <> ": " <> label <> "]"
+        H.span ! HA.className "value" $ H.text dataText
+        H.span ! HA.className "connector"
+            #! on "click" outletConnectorClick
+            $ H.text $ connectorLabel
     where
         isSelected = isOutletSelected s.selection path
         isConnectingSomething = isJust s.connecting
         isCurrentlyConnecting = fromMaybe false $ ((==) path) <$> s.connecting
-        className = quickClass "inlet"
+        className = quickClass "outlet"
             [ isSelected /\ "_selected"
             , isConnectingSomething /\ "_waiting"
             , isCurrentlyConnecting /\ "_connecting"

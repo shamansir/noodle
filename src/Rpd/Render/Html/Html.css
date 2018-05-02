@@ -29,35 +29,60 @@ body {
     display: inline-block;
 }
 
-.patch > *:first-child {
+.patch > .handle {
     cursor: pointer;
 }
 
-.patch._selected > *:first-child {
+.patch._selected > .handle {
     color: red;
 }
 
-/* .node {
-    max-width: 300px;
-} */
+.node {
+    border: 1px double black;
+}
 
-.node > *:first-child {
+.node > .handle {
     cursor: pointer;
+    text-align: center;
+    vertical-align: baseline;
+    line-height: 20px;
 }
 
-.node._selected > *:first-child {
+.node._selected > .handle {
     color: red;
+}
+
+.node > .body {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.node > .body > .inlets {
+    margin-right: 10px;
+    margin-bottom: 10px;
+    display: grid;
+}
+
+.node >  .body > .outlets {
+    margin-left: 10px;
+    margin-bottom: 10px;
+    display: grid;
 }
 
 .inlet {
     overflow: hidden;
+    display: grid;
+    grid-template-columns: 28px auto 110px;
 }
 
-.inlet > * > *:nth-child(2) {
+.inlet > .connector,
+.inlet > .handle {
     cursor: pointer;
 }
 
-.inlet._selected > * > *:nth-child(2) {
+.inlet._selected > .connector,
+.inlet._selected > .handle {
     color: red;
 }
 
@@ -66,8 +91,19 @@ body {
     cursor: cell;
 }
 
-.outlet .connector {
+.outlet {
+    display: grid;
+    grid-template-columns: 110px auto 28px;
+}
+
+.outlet > .connector,
+.outlet > .handle {
     cursor: pointer;
+}
+
+.outlet._selected > .connector,
+.outlet._selected > .handle {
+    color: red;
 }
 
 .outlet._waiting .connector {
@@ -79,19 +115,12 @@ body {
     cursor: cell;
 }
 
-.outlet > * > *:nth-child(2) {
-    cursor: pointer;
+.inlet .connector,
+.outlet .connector {
+    min-width: 20px;
 }
 
-.outlet._selected > * > *:nth-child(2) {
-    color: red;
-}
-
-.connector {
-    margin-left: 5px;
-    margin-right: 5px;
-}
-
-.inlets {
-    margin-bottom: 5px;
+.inlet .value,
+.outlet .value {
+    max-width: 100px;
 }
