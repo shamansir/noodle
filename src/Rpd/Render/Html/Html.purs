@@ -72,8 +72,8 @@ render
     -> R.RenderEff ( dom :: DOM | e )
 render target push ui =
     ToDOM.patch target $ do
-        H.div $ H.text $ show ui
         network fire ui
+        H.div ! HA.className "debug" $ H.text $ show ui
     where fire = prepareToFire push
 
 
