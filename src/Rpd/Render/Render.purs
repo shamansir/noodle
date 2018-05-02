@@ -5,6 +5,7 @@ module Rpd.Render
     , Message(..), Interaction(..), Selection(..), Subject(..)
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
     , init, update, updateAndLog, subscribeData
+    , interactionToMessage -- FIXME: Do not expose
     ) where
 
 import Prelude
@@ -42,17 +43,20 @@ type UIState d =
 
 
 data Message d
-    = Init
+    = NoOp
     | AffectSelection Subject
     | ConnectFrom R.OutletPath
     | ConnectTo R.InletPath
     | DisconnectAt R.InletPath
     | OpenPatch R.PatchId
     | ClosePatch R.PatchId
+    | SendDataToInlet R.InletPath d
+    | SendDataToOutlet R.OutletPath d
 
 
 data Interaction d
-    = Click Subject
+    = Init
+    | Click Subject
     | DataAtInlet R.InletPath d
     | DataAtOutlet R.OutletPath d
 
@@ -111,7 +115,7 @@ update msg (UI state network) =
 
 
 update' :: forall d. Message d -> UI d -> UI d
-update' (DataAtInlet inletPath d) (UI state network) =
+update' (SendDataToInlet inletPath d) (UI state network) =
     UI state' network
     where
         state' =
@@ -119,7 +123,7 @@ update' (DataAtInlet inletPath d) (UI state network) =
                 { lastInletData =
                     Map.insert inletPath d state.lastInletData
                 }
-update' (DataAtOutlet outletPath d) (UI state network) =
+update' (SendDataToOutlet outletPath d) (UI state network) =
     UI state' network
     where
         state' =
@@ -172,16 +176,23 @@ update' (AffectSelection subject) (UI state network)
 update' _ ui = ui
 
 
-
 -- updateAndLog :: forall d e. Event d -> UI d -> String /\ UI d
 
+shouldLogMessage :: forall d. Message d -> Boolean
+shouldLogMessage (SendDataToInlet _ _) = false
+shouldLogMessage (SendDataToOutlet _ _) = false
+shouldLogMessage _ = true
 
 -- TODO: use Writer monad for logging
 updateAndLog :: forall d. Message d -> UI d -> UI d
 updateAndLog msg ui =
     let
         UI state network = update msg ui
-        state' = state { lastMessages = Array.take 5 $ msg : state.lastMessages }
+        state' =
+            if shouldLogMessage msg then
+                state { lastMessages = Array.take 5 $ msg : state.lastMessages }
+            else
+                state
     in
         UI state' network
 
@@ -211,7 +222,7 @@ subscribeData inletHandler outletHandler network = do
 
 
 interactionToMessage :: forall d. Interaction d -> UIState d -> Message d
-interactionToMessage interaction state = Init -- FIXME: implement
+interactionToMessage interaction state = NoOp -- FIXME: implement
 
 
 
@@ -327,15 +338,18 @@ instance showUI :: (Show d) => Show (UI d) where
 
 
 instance showMessage :: (Show d) => Show (Message d) where
-    show Init = "Init"
+    show NoOp = "NoOp"
     show (AffectSelection subject) = "Affect selection " <> show subject
     show (ConnectFrom outletPath) = "Connect from " <> show outletPath
     show (ConnectTo inletPath) = "Connect to " <> show inletPath
     show (DisconnectAt inletPath) = "Disconnect at " <> show inletPath
     show (OpenPatch patchId) = "Open patch " <> show patchId
     show (ClosePatch patchId) = "Close patch " <> show patchId
+    show (SendDataToInlet inlet d) = "Data at inlet " <> show inlet <> " " <> show d
+    show (SendDataToOutlet outlet d) = "Data at outlet " <> show outlet <> " " <> show d
 
 instance showInteraction :: (Show d) => Show (Interaction d) where
+    show Init = "Init"
     show (Click subject) = "Click " <> show subject
     show (DataAtInlet inlet d) = "Data at inlet " <> show inlet <> " " <> show d
     show (DataAtOutlet outlet d) = "Data at outlet " <> show outlet <> " " <> show d

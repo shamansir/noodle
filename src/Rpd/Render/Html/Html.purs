@@ -46,7 +46,7 @@ type Markup e = H.Markup (Listener e)
 type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
 
 
-type FireInteraction e = Interaction -> Listener e
+type FireInteraction d e = Interaction d -> Listener e
 
 
 type Canceller' e = R.Canceller ( dom :: DOM | e )
@@ -66,7 +66,7 @@ render
     :: forall d e
      . Show d
     => Element
-    -> Push ( dom :: DOM | e )
+    -> Push d ( dom :: DOM | e )
     -> UI d
     -> R.RenderEff ( dom :: DOM | e )
 render target push ui =
@@ -76,7 +76,7 @@ render target push ui =
     where fire = prepareToFire push
 
 
-network :: forall d e. (Show d) => FireInteraction e -> UI d -> Markup e
+network :: forall d e. (Show d) => FireInteraction d e -> UI d -> Markup e
 network fire ui@(UI s (R.Network { patches })) =
     H.div ! HA.className "network" $ do
         H.p $ H.text $ "Network: " <> (show $ length patches) <> "P"
@@ -84,7 +84,7 @@ network fire ui@(UI s (R.Network { patches })) =
             $ for_ patches $ patch fire ui
 
 
-patch :: forall d e. (Show d) => FireInteraction e -> UI d -> R.Patch d -> Markup e
+patch :: forall d e. (Show d) => FireInteraction d e -> UI d -> R.Patch d -> Markup e
 patch fire ui@(UI s _) (R.Patch { id, name, nodes, links }) =
     H.div ! HA.className className $
         if isSelected then do
@@ -102,7 +102,7 @@ patch fire ui@(UI s _) (R.Patch { id, name, nodes, links }) =
         patchClick = fire $ Click (CSPatch id)
 
 
-node :: forall d e. (Show d) => FireInteraction e -> UI d -> R.Node d -> Markup e
+node :: forall d e. (Show d) => FireInteraction d e -> UI d -> R.Node d -> Markup e
 node fire ui@(UI s _) (R.Node { path, name, inlets, outlets }) =
     H.div ! HA.className className $
         if isSelected then do
@@ -121,7 +121,7 @@ node fire ui@(UI s _) (R.Node { path, name, inlets, outlets }) =
         className = "node " <> (if isSelected then "_selected" else "")
         nodeClick = fire $ Click (CSNode path)
 
-inlet :: forall d e. (Show d) => FireInteraction e -> UI d -> R.Inlet d -> Markup e
+inlet :: forall d e. (Show d) => FireInteraction d e -> UI d -> R.Inlet d -> Markup e
 inlet fire (UI s _) (R.Inlet { path, label, default, sources }) =
     H.div ! HA.className className $
         if isSelected then
@@ -150,7 +150,7 @@ inlet fire (UI s _) (R.Inlet { path, label, default, sources }) =
         dataText = show $ Map.lookup path s.lastInletData
 
 
-outlet :: forall d e. (Show d) => FireInteraction e -> UI d -> R.Outlet d -> Markup e
+outlet :: forall d e. (Show d) => FireInteraction d e -> UI d -> R.Outlet d -> Markup e
 outlet fire (UI s _) (R.Outlet { path, label }) =
     H.div ! HA.className className $
         if isSelected then
@@ -181,7 +181,7 @@ outlet fire (UI s _) (R.Outlet { path, label }) =
         dataText = show $ Map.lookup path s.lastOutletData
 
 
-prepareToFire :: forall e. Push ( dom :: DOM | e ) -> FireInteraction e
+prepareToFire :: forall d e. (Show d) => Push d ( dom :: DOM | e ) -> FireInteraction d e
 prepareToFire push interaction =
     -- eventListener $ const $ push msg
     -- _ <- log $ "<<<" <> show msg

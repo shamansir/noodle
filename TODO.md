@@ -21,6 +21,10 @@ Implement removing nodes.
 
 Remove `update'` from `Render.purs` and create visual history of events in UI, as a component.
 
+Make `Interaction`s act similarly to subscriptions in Elm: allow to subscribe them separately (i.e. clicks, data) and fire corresponding messages in response, receiving the last model/state on each conversion, to create `Message` from `Interaction`.
+
+Separate `Network` and its construction from `Rpd` core.
+
 Make `Rpd` a module, not just a single file.
 
 `Bang` message.

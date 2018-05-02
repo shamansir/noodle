@@ -16,17 +16,20 @@ import Data.Filterable (filter)
 import Control.Monad.Eff.Console (CONSOLE, log)
 
 
-createRenderer :: forall d e. (Push e -> UI d -> R.RenderEff e) -> R.Renderer d e
+createRenderer :: forall d e. (Push d e -> UI d -> R.RenderEff e) -> R.Renderer d e
 createRenderer render = (\nw -> do
     { event : interactions, push : pushInteraction } <- create
     -- { event : messages, push : pushMsg } <- create
     -- FIXME: pass fired interactions to messages flow and adapt them
-    let uiFlow = Event.fold updateAndLog interactions $ UI init nw
+    let
+        foldingF = \interaction ui@(UI state _) ->
+            updateAndLog (interactionToMessage interaction state) ui
+        uiFlow = Event.fold foldingF interactions $ UI init nw
     { event : cancellers, push : saveCanceller } <- create
     { event : cancellerTriggers, push : triggerPrevCanceller } <- create
     -- FIXME: remove logs and CONSOLE effect everywhere
     let
-        subscribeData' = subscribeData (pushInletData pushMsg) (pushOutletData pushMsg)
+        subscribeData' = subscribeData (pushInletData pushInteraction) (pushOutletData pushInteraction)
         --pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
         pastCancellers = map (\c -> Just c) cancellers
         triggeredCancellers = Event.sampleOn_ pastCancellers cancellerTriggers
@@ -53,12 +56,12 @@ createRenderer render = (\nw -> do
         _ <- saveCanceller cancelNext
         pure unit
     _ <- subscribe uiFlow $ \ui -> render pushInteraction ui
-    pushMsg Init
+    pushInteraction Init
 )
 
 pushInletData
     :: forall d e
-     . (Message d -> R.RpdEff e Unit)
+     . (Interaction d -> R.RpdEff e Unit)
     -> (d -> R.InletPath -> R.RpdEff e Unit)
 pushInletData push =
     (\d inletPath -> do
@@ -68,7 +71,7 @@ pushInletData push =
 
 pushOutletData
     :: forall d e
-     . (Message d -> R.RpdEff e Unit)
+     . (Interaction d -> R.RpdEff e Unit)
     -> (d -> R.OutletPath -> R.RpdEff e Unit)
 pushOutletData push =
     (\d outletPath -> do
