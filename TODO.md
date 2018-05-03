@@ -19,6 +19,11 @@ Implement disconnecting links.
 
 Implement removing nodes.
 
+Implement processing data in the nodes.
+
+Add `SubscribeData InletId PrevCanceller` and `SubscribeAllData PrevCanceller` messages instead of listening for `areLinksChanged`. Or just store
+cancellers in the `UIState` and execute/clean them up on this event?
+
 Remove `update'` from `Render.purs` and create visual history of events in UI, as a component.
 
 Make `Interaction`s act similarly to subscriptions in Elm: allow to subscribe them separately (i.e. clicks, data) and fire corresponding messages in response, receiving the last model/state on each conversion, to create `Message` from `Interaction`.
@@ -49,6 +54,8 @@ Secondary:
 ==========
 
 Make Network normalized after creation (not a tree, but a collection of Patches, Nodes, Inlets, Outlets, Links arrays, may be paths may still stay as keys, may be paths or subjects could contain both global indices and nested paths).
+
+Now event folds (like `Event.fold ... Event.interval`) are reset on every network change, that's since we re-subscribe all the data sources on that matter. There are thoughts to think on, on how to implement it the right way, but the general idea is that there should be some `Flow (data inlet/outlet)` stored somewhere (not `UIState` or `Network`, since it requires no resubscription on every `update`) with the ability to push data to it, and on `connect`, we should subscribe to new data source (or `map` its data) and pass these events to the shared flow (so `connect` returns the effect) and on `disconnect` we should unsubscribe it (or `filter` its data).
 
 Make Patches, Nodes, Inlets, Outlets, Links to be records, this will simplify unpacking etc.
 

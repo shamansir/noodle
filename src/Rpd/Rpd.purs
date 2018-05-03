@@ -6,7 +6,7 @@ module Rpd
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , ProcessF
     , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
-    , connect, connect', disconnect, disconnect', disconnectLast
+    , connect, connect', disconnect, disconnect', disconnectLast, processWith
     --, NetworkT, PatchT
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
@@ -19,6 +19,9 @@ module Rpd
 import Prelude
 
 import Data.Monoid (mempty)
+import Data.Map (Map)
+import Data.Map as Map
+import Data.Maybe (isJust)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, modifyAt, foldr, findMap, delete, filter)
@@ -30,7 +33,10 @@ import Rpd.Flow (FLOW, Flow, FlowEffE, subscribe)
 -- import FRP.Event.Class (fold)
 import Data.Foldable (fold)
 
-type ProcessF d = (Array (String /\ d) -> Array (String /\ d))
+-- type ProcessF d = (Array (String /\ d) -> Array (String /\ d))
+type ProcessF d = (Map String d -> Map String d)
+type ProcessF' d = (String -> d -> d)
+type ProcessF'' d = (String -> d -> Maybe d)
 
 type AdaptF d = (d -> d)
 
@@ -378,6 +384,27 @@ updateOutlet updater (OutletPath nodePath outletId) network =
 connect :: forall d. Outlet d -> Inlet d -> Patch d -> Patch d
 connect outlet inlet patch =
     patch -- FIXME: implement
+
+
+processWith :: forall d. ProcessF d -> LazyNode d -> LazyNode d
+processWith processF nodeF =
+    \path -> case nodeF path of Node node -> Node node { process = processF }
+
+
+processWith' :: forall d. ProcessF' d -> LazyNode d -> LazyNode d
+processWith' processF =
+    processWith f
+    where
+        f inputs = Map.mapWithKey processF inputs
+
+
+processWith'' :: forall d. ProcessF'' d -> d -> LazyNode d -> LazyNode d
+processWith'' processF default =
+    processWith f
+    where
+        f inputs = map (fromMaybe default)
+                    $ Map.filter isJust
+                    $ Map.mapWithKey processF inputs
 
 
 connect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)

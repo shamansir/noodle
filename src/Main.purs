@@ -2,6 +2,8 @@ module Main where
 
 import Prelude
 import Data.Int (floor)
+import Data.Map as Map
+import Data.Maybe (fromMaybe)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE)
@@ -51,10 +53,14 @@ myNetwork =
   R.network
     [ R.patch "Patch One"
       [ myNode "1"
-      , myNode "2"
+      , R.processWith processF $ myNode "2"
       ] -- >>> connect (patch.getNode 0) "a" (patch.getNode 1) "b"
     ]
-
+  where
+    processF inputs | Map.isEmpty inputs = Map.empty
+    processF inputs | Map.member "d" inputs =
+      Map.singleton "c" $ fromMaybe Bang $ Map.lookup "d" inputs
+    processF inputs = Map.empty
 
 main :: ∀ e. R.RpdEff ( dom :: DOM, console :: CONSOLE | e ) Unit
 main = do
