@@ -7,9 +7,7 @@ import Prelude
 import Rpd as R
 import Rpd.Render
 
-import FRP (FRP)
-import FRP.Event (Event, create, subscribe)
-import FRP.Event.Class as Event
+import Rpd.Flow (create, subscribe, fold, sampleOn_)
 
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import Data.Filterable (filter)
@@ -18,7 +16,7 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 
 createRenderer :: forall d e. (Push d e -> UI d -> R.RenderEff e) -> R.Renderer d e
 createRenderer render = (\nw -> do
-    { event : interactions, push : pushInteraction } <- create
+    { flow : interactions, push : pushInteraction } <- create
     -- { event : messages, push : pushMsg } <- create
     -- TODO: Event UIState/Interaction + Event Network -> Event UI/Message
     -- FIXME: pass fired interactions to messages flow and adapt them
@@ -26,9 +24,9 @@ createRenderer render = (\nw -> do
         foldingF = \interaction ui@(UI state _) ->
             updateAndLog (interactionToMessage interaction state) ui
         -- TODO: Event.fold update messages $ UI init nw
-        uiFlow = Event.fold foldingF interactions $ UI init nw
-    { event : cancellers, push : saveCanceller } <- create
-    { event : cancellerTriggers, push : triggerPrevCanceller } <- create
+        uiFlow = fold foldingF interactions $ UI init nw
+    { flow : cancellers, push : saveCanceller } <- create
+    { flow : cancellerTriggers, push : triggerPrevCanceller } <- create
     -- FIXME: remove logs and CONSOLE effect everywhere
     let
         subscribeData' =
@@ -36,7 +34,7 @@ createRenderer render = (\nw -> do
                 (pushInletData pushInteraction)
                 (pushOutletData pushInteraction)
         --pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
-        triggeredCancellers = Event.sampleOn_ cancellers cancellerTriggers
+        triggeredCancellers = sampleOn_ cancellers cancellerTriggers
         networksBylinksChanged = map (\(UI _ network) -> network)
             $ filter (\(UI state _) -> state.areLinksChanged) uiFlow
     _ <- subscribe triggeredCancellers $ \cancel -> do

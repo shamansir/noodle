@@ -1,7 +1,7 @@
 module Rpd
     ( Rpd, run, RpdEff, RpdEffE
     , Renderer, RenderEff
-    , Flow, DataSource
+    , DataSource
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , ProcessF
@@ -26,8 +26,7 @@ import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
 import Data.Tuple.Nested ((/\), type (/\))
 -- import Signal as S
 -- import Signal.Channel as SC
-import FRP (FRP)
-import FRP.Event (Event, create, subscribe)
+import Rpd.Flow (FLOW, Flow, FlowEffE, subscribe)
 -- import FRP.Event.Class (fold)
 import Data.Foldable (fold)
 
@@ -36,8 +35,6 @@ type ProcessF d = (Array (String /\ d) -> Array (String /\ d))
 type AdaptF d = (d -> d)
 
 data Rpd d = Rpd (Network d)
-
-type Flow d = Event d
 
 data PatchId = PatchId Int
 data NodePath = NodePath PatchId Int
@@ -114,7 +111,7 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 -- FIXME: define our own RPD effect
 
 -- type DataFlow d = Flow (DataMsg d)
-type RpdEffE e = (frp :: FRP, console :: CONSOLE | e)
+type RpdEffE e = FlowEffE (console :: CONSOLE | e)
 type RpdEff e v = Eff (RpdEffE e) v
 type Canceller e =
     RpdEff e (RpdEff e Unit)

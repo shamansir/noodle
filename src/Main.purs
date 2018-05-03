@@ -21,6 +21,7 @@ import Rpd.Render.Html as RenderH
 import FRP (FRP)
 import FRP.Event (Event, create, subscribe, fold)
 import FRP.Event.Time (interval)
+import Rpd.Flow (flow)
 
 
 data MyData
@@ -34,13 +35,13 @@ myNode nodeId =
   R.node "f"
     [ R.inlet "a" -- WithDefault "a" (Str' (nodeId <> "a") "i")
     , R.inletWithDefault "b" $ Str' (nodeId <> "b") "test"
-    , R.inlet' "f" $ map (Num' (nodeId <> "f")) $ interval 5000
+    , R.inlet' "f" $ flow $ map (Num' (nodeId <> "f")) $ interval 5000
     , R.inlet "d" -- (ST.every ST.second S.~> Num' (nodeId <> "d"))
     , R.inlet "e" -- WithDefault "e" (Num' (nodeId <> "e") 3.0)
     ]
     [ R.outlet "c"
-    , R.outlet' "x" $ map (Num' (nodeId <> "x")) $ fold (\_ n -> n + 1) (interval 5000) 0
-    , R.outlet' "y" $ map (Num' (nodeId <> "y")) $ fold (\_ n -> n + 1) (interval 2000) 0
+    , R.outlet' "x" $ flow $ map (Num' (nodeId <> "x")) $ fold (\_ n -> n + 1) (interval 5000) 0
+    , R.outlet' "y" $ flow $ map (Num' (nodeId <> "y")) $ fold (\_ n -> n + 1) (interval 2000) 0
     ]
     -- (\_ -> [ "c" /\ Int' 10 ] )
 

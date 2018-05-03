@@ -28,6 +28,7 @@ import FRP (FRP)
 import FRP.Event (Event, create, subscribe)
 import FRP.Event.Class as Event
 import Rpd as R
+import Rpd.Flow as R
 import Text.Smolder.HTML as H
 import Text.Smolder.HTML.Attributes as HA
 import Text.Smolder.Markup ((#!), (!), on)
@@ -37,18 +38,15 @@ import Text.Smolder.Renderer.DOM as ToDOM
 -- type HtmlEffE e = R.RpdEffE ( dom :: DOM | e )
 -- type HtmlEff e v = R.RenderEff (HtmlEffE e) v
 
--- FIXME: both CONSOLE and FRP should not be here
-type Listener e = EventListener ( console :: CONSOLE, dom :: DOM, frp :: FRP | e )
+type DomEffE e = R.RpdEffE ( dom :: DOM | e )
 
+type Listener e = EventListener (DomEffE e)
 
 type Markup e = H.Markup (Listener e)
 
-
 type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
 
-
 type FireInteraction d e = Interaction d -> Listener e
-
 
 type Canceller' e = R.Canceller ( dom :: DOM | e )
 
