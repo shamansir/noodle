@@ -48,10 +48,13 @@ data Message d
     | ConnectFrom R.OutletPath
     | ConnectTo R.InletPath
     | DisconnectAt R.InletPath
+    | SubscribeData R.InletPath
+    | SubscribeAllData
     | OpenPatch R.PatchId
     | ClosePatch R.PatchId
     | SendDataToInlet R.InletPath d
     | SendDataToOutlet R.OutletPath d
+    | Batch (Array (Message d))
 
 
 data Interaction d
@@ -360,10 +363,13 @@ instance showMessage :: (Show d) => Show (Message d) where
     show (ConnectFrom outletPath) = "Connect from " <> show outletPath
     show (ConnectTo inletPath) = "Connect to " <> show inletPath
     show (DisconnectAt inletPath) = "Disconnect at " <> show inletPath
+    show (SubscribeData inletPath) = "Subscribe data from " <> show inletPath
+    show SubscribeAllData = "Subscribe all data"
     show (OpenPatch patchId) = "Open patch " <> show patchId
     show (ClosePatch patchId) = "Close patch " <> show patchId
     show (SendDataToInlet inlet d) = "Data at inlet " <> show inlet <> " " <> show d
     show (SendDataToOutlet outlet d) = "Data at outlet " <> show outlet <> " " <> show d
+    show (Batch messages) = "Batch: " <> show messages
 
 instance showInteraction :: (Show d) => Show (Interaction d) where
     show Init = "Init"
