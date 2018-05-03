@@ -180,6 +180,8 @@ update' (AffectSelection subject) (UI state network)
                 { selection = newSelection
                 --, friendlyLog = "select " <> show newSelection
                 }
+update' (Batch messages) ui =
+    foldr update' ui messages
 update' _ ui = ui
 
 
@@ -231,9 +233,10 @@ subscribeData inletHandler outletHandler network = do
 -- TODO: rename to `subscribe` and `Sub`s, like in Elm
 -- https://github.com/elm-lang/mouse/blob/master/src/Mouse.elm
 interactionToMessage :: forall d. Interaction d -> UIState d -> Message d
+interactionToMessage Init _ = SubscribeAllData
 interactionToMessage (Click (CSInletConnector inlet)) state
-    | isJust state.connecting = ConnectTo inlet
-    | otherwise = DisconnectAt inlet
+    | isJust state.connecting = Batch [ ConnectTo inlet, SubscribeData inlet ]
+    | otherwise = Batch [ DisconnectAt inlet, SubscribeData inlet ]
 interactionToMessage (Click (CSOutletConnector outlet)) state = ConnectFrom outlet
 interactionToMessage (Click subj) _ | affectsSelection subj = AffectSelection subj
 interactionToMessage (DataAtInlet inlet d) _ = SendDataToInlet inlet d
