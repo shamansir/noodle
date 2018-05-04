@@ -44,17 +44,16 @@ type UIState d =
 
 data Message d
     = NoOp
+    | SubscribeAllData
     | AffectSelection Subject
     | ConnectFrom R.OutletPath
     | ConnectTo R.InletPath
     | DisconnectAt R.InletPath
-    | SubscribeData R.InletPath
-    | SubscribeAllData
     | OpenPatch R.PatchId
     | ClosePatch R.PatchId
     | SendDataToInlet R.InletPath d
     | SendDataToOutlet R.OutletPath d
-    | Batch (Array (Message d))
+    -- FIXME: this way we're able to do infite recursion with batches, change to Message d | Batch (Array (Message d)) to fix this
 
 
 data Interaction d
@@ -90,6 +89,7 @@ data SelectionMode
     = Multiple
     | Single
 
+
 data UI d = UI (UIState d) (R.Network d)
 
 
@@ -122,6 +122,8 @@ update msg (UI state network) =
 
 
 update' :: forall d. Message d -> UI d -> UI d
+update' (SubscribeAllData) ui =
+    ui -- FIXME: implement
 update' (SendDataToInlet inletPath d) (UI state network) =
     UI state' network
     where
@@ -180,8 +182,8 @@ update' (AffectSelection subject) (UI state network)
                 { selection = newSelection
                 --, friendlyLog = "select " <> show newSelection
                 }
-update' (Batch messages) ui =
-    foldr update' ui messages
+-- update' (Batch messages) ui =
+--     foldr update' ui messages
 update' _ ui = ui
 
 
@@ -235,8 +237,8 @@ subscribeData inletHandler outletHandler network = do
 interactionToMessage :: forall d. Interaction d -> UIState d -> Message d
 interactionToMessage Init _ = SubscribeAllData
 interactionToMessage (Click (CSInletConnector inlet)) state
-    | isJust state.connecting = Batch [ ConnectTo inlet, SubscribeData inlet ]
-    | otherwise = Batch [ DisconnectAt inlet, SubscribeData inlet ]
+    | isJust state.connecting = ConnectTo inlet
+    | otherwise = DisconnectAt inlet
 interactionToMessage (Click (CSOutletConnector outlet)) state = ConnectFrom outlet
 interactionToMessage (Click subj) _ | affectsSelection subj = AffectSelection subj
 interactionToMessage (DataAtInlet inlet d) _ = SendDataToInlet inlet d
@@ -362,17 +364,17 @@ instance showUI :: (Show d) => Show (UI d) where
 
 instance showMessage :: (Show d) => Show (Message d) where
     show NoOp = "NoOp"
+    -- show Start = "Start"
+    show SubscribeAllData = "Subscribe all data"
     show (AffectSelection subject) = "Affect selection " <> show subject
     show (ConnectFrom outletPath) = "Connect from " <> show outletPath
     show (ConnectTo inletPath) = "Connect to " <> show inletPath
     show (DisconnectAt inletPath) = "Disconnect at " <> show inletPath
-    show (SubscribeData inletPath) = "Subscribe data from " <> show inletPath
-    show SubscribeAllData = "Subscribe all data"
     show (OpenPatch patchId) = "Open patch " <> show patchId
     show (ClosePatch patchId) = "Close patch " <> show patchId
     show (SendDataToInlet inlet d) = "Data at inlet " <> show inlet <> " " <> show d
     show (SendDataToOutlet outlet d) = "Data at outlet " <> show outlet <> " " <> show d
-    show (Batch messages) = "Batch: " <> show messages
+    -- show (Batch messages) = "Batch: " <> show messages
 
 instance showInteraction :: (Show d) => Show (Interaction d) where
     show Init = "Init"
