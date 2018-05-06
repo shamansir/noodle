@@ -9,9 +9,15 @@ import Rpd.Render
 
 import Rpd.Flow (create, subscribe, fold, sampleOn_)
 
+import Control.Monad.Eff (Eff)
+import Data.Map (Map)
+import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import Data.Filterable (filter)
 import Control.Monad.Eff.Console (CONSOLE, log)
+
+
+type Cancellers e = Map R.InletPath (Map Int (R.Canceller e))
 
 
 createRenderer :: forall d e. (Push d e -> UI d -> R.RenderEff e) -> R.Renderer d e
@@ -25,6 +31,13 @@ createRenderer render = (\nw -> do
             updateAndLog (interactionToMessage interaction state) ui
         -- TODO: Event.fold update messages $ UI init nw
         uiFlow = fold foldingF interactions $ UI init nw
+        -- messages are lost, but we need them to know whar to do
+        -- may be we need a flow where messages and states will be in a tuple
+        -- (Writer Monad?)
+        cancellers_ :: Eff e (Cancellers e)
+        cancellers_ = pure Map.empty
+        dataFoldingF = \ui cancellers -> cancellers
+        dataFlow = fold dataFoldingF uiFlow $ cancellers_
     { flow : cancellers, push : saveCanceller } <- create
     { flow : cancellerTriggers, push : triggerPrevCanceller } <- create
     -- FIXME: remove logs and CONSOLE effect everywhere

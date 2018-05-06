@@ -53,7 +53,6 @@ data Message d
     | ClosePatch R.PatchId
     | SendDataToInlet R.InletPath d
     | SendDataToOutlet R.OutletPath d
-    -- FIXME: this way we're able to do infite recursion with batches, change to Message d | Batch (Array (Message d)) to fix this
 
 
 data Interaction d
