@@ -13,6 +13,7 @@ import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff (Eff)
 import Data.Map (Map)
 import Data.Map as Map
+import Data.Array (head)
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -20,7 +21,7 @@ import Data.Filterable (filter)
 import Control.Monad.Eff.Console (CONSOLE, log)
 
 
-type Cancellers e = Map R.InletPath (Map Int (R.Canceller e))
+type Cancellers e = Map R.InletPath (Array (R.Canceller e))
 
 
 createRenderer :: forall d e. (Push d e -> UI d -> R.RenderEff e) -> R.Renderer d e
@@ -80,13 +81,15 @@ dataFoldingF
      . (d -> R.InletPath -> R.RpdEff e Unit)
     -> (d -> R.OutletPath -> R.RpdEff e Unit)
     -> (UI d /\ Message d)
-    -> Eff e (Cancellers e)
-    -> Eff e (Cancellers e)
+    -> R.RpdEff e (Cancellers e)
+    -> R.RpdEff e (Cancellers e)
 dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = do
     cancellers <- cancellersEff
-    pure $ case msg of
-        SubscribeAllData -> cancellers
+    {- pure $ -}
+    case msg of
+        SubscribeAllData -> pure cancellers
             -- TODO: subscribe to all inlets and their sources
+            -- FIXME: implement
         ConnectTo inlet ->
             -- how to ensure if it is the correct source, not user source?
             -- or we are not allowing user sources after running a network?
@@ -94,20 +97,19 @@ dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = 
                 Just source ->
                     let dataFlow = R.getFlowOf source
                     in do
-                        --canceller <- subscribe dataFlow (\d -> inletHandler d inlet)
-                        cancellers
-                Nothing -> cancellers
-        DisconnectAt inlet ->
+                        -- FIXME: implement
+                        canceller <- subscribe dataFlow (\d -> inletHandler d inlet)
+                        pure cancellers
+                Nothing -> pure cancellers
+        DisconnectAt inlet -> do
             -- how to ensure if it is the correct source, not user source?
             -- or we are not allowing user sources after running a network?
-            case R.findTopSource inlet network of
-                Just source ->
-                    let dataFlow = R.getFlowOf source
-                    in do
-                        --canceller <- subscribe dataFlow (\d -> inletHandler d inlet)
-                        cancellers
-                Nothing -> cancellers
-        _ -> cancellers
+            -- case R.findTopSource inlet network of
+            let maybeCancel = Map.lookup inlet cancellers >>= head
+            cancel <- fromMaybe (pure $ pure unit) maybeCancel
+            _ <- cancel
+            pure cancellers
+        _ -> pure cancellers
 
 
 pushInletData
