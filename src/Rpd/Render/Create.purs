@@ -9,6 +9,7 @@ import Rpd.Render
 
 import Rpd.Flow (create, subscribe, fold, sampleOn_)
 
+import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff (Eff)
 import Data.Map (Map)
 import Data.Map as Map
@@ -28,7 +29,11 @@ createRenderer render = (\nw -> do
     let
         uiMsgFlow = fold foldingF interactions $ UI init nw /\ NoOp
         uiFlow = map fst uiMsgFlow
-        dataFlow = fold dataFoldingF uiMsgFlow $ Map.empty
+        dataFoldingF' =
+            dataFoldingF
+                (pushInletData pushInteraction)
+                (pushOutletData pushInteraction)
+        dataFlow = fold dataFoldingF' uiMsgFlow $ pure Map.empty
     { flow : cancellers, push : saveCanceller } <- create
     { flow : cancellerTriggers, push : triggerPrevCanceller } <- create
     -- FIXME: remove logs and CONSOLE effect everywhere
@@ -70,8 +75,39 @@ foldingF interaction (ui@(UI state _) /\ _) =
     where msg = interactionToMessage interaction state
 
 
-dataFoldingF :: forall d e. (UI d /\ Message d) -> Cancellers e -> Cancellers e
-dataFoldingF ui cancellers = cancellers -- FIXME: implement
+dataFoldingF
+    :: forall d e
+     . (d -> R.InletPath -> R.RpdEff e Unit)
+    -> (d -> R.OutletPath -> R.RpdEff e Unit)
+    -> (UI d /\ Message d)
+    -> Eff e (Cancellers e)
+    -> Eff e (Cancellers e)
+dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = do
+    cancellers <- cancellersEff
+    pure $ case msg of
+        SubscribeAllData -> cancellers
+            -- TODO: subscribe to all inlets and their sources
+        ConnectTo inlet ->
+            -- how to ensure if it is the correct source, not user source?
+            -- or we are not allowing user sources after running a network?
+            case R.findTopSource inlet network of
+                Just source ->
+                    let dataFlow = R.getFlowOf source
+                    in do
+                        --canceller <- subscribe dataFlow (\d -> inletHandler d inlet)
+                        cancellers
+                Nothing -> cancellers
+        DisconnectAt inlet ->
+            -- how to ensure if it is the correct source, not user source?
+            -- or we are not allowing user sources after running a network?
+            case R.findTopSource inlet network of
+                Just source ->
+                    let dataFlow = R.getFlowOf source
+                    in do
+                        --canceller <- subscribe dataFlow (\d -> inletHandler d inlet)
+                        cancellers
+                Nothing -> cancellers
+        _ -> cancellers
 
 
 pushInletData

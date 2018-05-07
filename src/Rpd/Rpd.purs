@@ -14,6 +14,7 @@ module Rpd
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
     , notInTheSameNode
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
+    , findTopSource, getFlowOf
     ) where
 
 import Prelude
@@ -24,7 +25,7 @@ import Data.Map as Map
 import Data.Maybe (isJust)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, modifyAt, foldr, findMap, delete, filter)
+import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, modifyAt, foldr, findMap, delete, filter, head)
 import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
 import Data.Tuple.Nested ((/\), type (/\))
 -- import Signal as S
@@ -274,6 +275,18 @@ findTopConnection inletPath network =
                     OutletSource outletPath _ -> Just outletPath
             ) sources
         )
+
+findTopSource :: forall d. InletPath -> Network d -> Maybe (DataSource d)
+findTopSource inletPath network =
+    findInlet inletPath network >>= \(Inlet { sources }) -> head sources
+
+
+getFlowOf :: forall d. DataSource d -> Flow d
+getFlowOf dataSource =
+    case dataSource of
+        UserSource flow -> flow
+        OutletSource _ flow -> flow
+
 
 findSource :: forall d. OutletPath -> InletPath -> Network d -> Maybe (DataSource d)
 findSource outletPath inletPath network =
