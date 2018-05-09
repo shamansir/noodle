@@ -7,13 +7,13 @@ import Prelude
 import Rpd as R
 import Rpd.Render
 
-import Rpd.Flow (create, subscribe, fold, sampleOn_)
+import Rpd.Flow (Flow, create, subscribe, fold, sampleOn_)
 
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff (Eff)
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Array (head)
+import Data.Array (head, (:))
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -87,6 +87,7 @@ dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = 
     cancellers <- cancellersEff
     {- pure $ -}
     case msg of
+        -- AddNode -> pure cancellers -- FIXME: implement
         SubscribeAllData -> pure cancellers
             -- TODO: subscribe to all inlets and their sources
             -- FIXME: implement
@@ -94,12 +95,15 @@ dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = 
             -- how to ensure if it is the correct source, not user source?
             -- or we are not allowing user sources after running a network?
             case R.findTopSource inlet network of
-                Just source ->
-                    let dataFlow = R.getFlowOf source
-                    in do
-                        -- FIXME: implement
-                        canceller <- subscribe dataFlow (\d -> inletHandler d inlet)
-                        pure cancellers
+                Just source -> pure $
+                    let
+                        canceller = do
+                            c <- subscribe (R.getFlowOf source) (\d -> inletHandler d inlet)
+                            pure c
+                        cancellers' = Map.lookup inlet cancellers >>=
+                            \inletCancellers -> do
+                                pure $ Map.insert inlet (canceller : inletCancellers) cancellers
+                    in fromMaybe cancellers cancellers'
                 Nothing -> pure cancellers
         DisconnectAt inlet -> do
             -- how to ensure if it is the correct source, not user source?
