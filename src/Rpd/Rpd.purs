@@ -26,7 +26,8 @@ import Data.Map as Map
 import Data.Maybe (isJust)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, modifyAt, foldr, findMap, delete, filter, head)
+import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, mapMaybe, modifyAt, foldr, findMap, delete, filter, head)
+import Data.Map (fromFoldable)
 import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
 import Data.Tuple.Nested ((/\), type (/\))
 -- import Signal as S
@@ -129,6 +130,8 @@ type Subscriber e =
     RpdEff e (Canceller e)
 type RenderEff e =
     RpdEff e Unit
+type MappedCancellers e =
+    Map OutletPath (Canceller e) /\ Map InletPath (Array (Canceller e))
 
 
 type Renderer d e = Network d -> RenderEff e
@@ -491,9 +494,43 @@ subscribeAll
      . (InletPath -> DataSource d -> d -> RpdEff e Unit)
     -> (OutletPath -> d -> RpdEff e Unit)
     -> Network d
-    -> Map InletPath (Canceller e) /\ Map OutletPath (Canceller e)
-subscribeAll inletHandler outletHandler network =
-    Map.empty /\ Map.empty
+    -> MappedCancellers e
+subscribeAll inletHandler outletHandler (Network { patches }) =
+    let
+        allNodes = concatMap (\(Patch { nodes }) -> nodes) patches
+    in
+        Map.empty /\ Map.empty
+        -- FIXME: implement, use Map.union and subscribeNode' for every node
+        -- or something similar to subscribeNode' but without joining maps,
+        -- which could take time, so push values to the map we have them
+        -- (and they're Just exist)
+
+
+subscribeNode
+    :: forall d e
+     . (InletPath -> DataSource d -> d -> RpdEff e Unit)
+    -> (OutletPath -> d -> RpdEff e Unit)
+    -> NodePath
+    -> Network d
+    -> Maybe (MappedCancellers e)
+subscribeNode inletHandler outletHandler nodePath network =
+    subscribeNode' inletHandler outletHandler <$> findNode nodePath network
+
+
+subscribeNode'
+    :: forall d e
+     . (InletPath -> DataSource d -> d -> RpdEff e Unit)
+    -> (OutletPath -> d -> RpdEff e Unit)
+    -> Node d
+    -> MappedCancellers e
+subscribeNode' inletHandler outletHandler (Node { outlets, inlets }) =
+    let
+        outletF = \o@(Outlet { path }) ->
+                (/\) path <$> subscribeOutlet' (outletHandler path) o
+        inletF = \i@(Inlet { path }) ->
+                path /\ subscribeInlet' (inletHandler path) i
+    in (fromFoldable $ mapMaybe outletF outlets)
+    /\ (fromFoldable $ map inletF inlets)
 
 
 subscribeOutlet
