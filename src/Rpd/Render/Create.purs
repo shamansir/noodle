@@ -88,12 +88,13 @@ dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = 
     {- pure $ -}
     case msg of
         -- AddNode -> pure cancellers -- FIXME: implement
-        SubscribeAllData -> pure cancellers
-            -- TODO: subscribe to all inlets and their sources
-            -- FIXME: implement
+        SubscribeAllData -> do
+            -- TODO: subscribe to all inlets, outlets and their sources
+            -- subscriber <- subscribeData
+            --     (pushInletData pushInteraction)
+            --     (pushOutletData pushInteraction) network
+            pure cancellers
         ConnectTo inlet ->
-            -- how to ensure if it is the correct source, not user source?
-            -- or we are not allowing user sources after running a network?
             case R.findTopSource inlet network of
                 Just source -> pure $
                     let
@@ -106,9 +107,13 @@ dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = 
                     in fromMaybe cancellers cancellers'
                 Nothing -> pure cancellers
         DisconnectAt inlet -> do
-            -- how to ensure if it is the correct source, not user source?
-            -- or we are not allowing user sources after running a network?
-            -- case R.findTopSource inlet network of
+            -- TODO: think on the fact that last source could be not the found one!
+            -- (because user sources, etc.)
+            -- currently the logic of connecting/disconnecting + update, kinda guarantees that
+            -- it is the same one, however it's better to be sure and do not only trust the
+            -- core logic to be conformant with this one, but also may be introduce IDs to ensure
+            -- everything is properly arranged...
+            -- What to do with the Links in the Network also?
             let maybeCancel = Map.lookup inlet cancellers >>= head
             cancel <- fromMaybe (pure $ pure unit) maybeCancel
             _ <- cancel

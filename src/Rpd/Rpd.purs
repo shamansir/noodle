@@ -10,11 +10,12 @@ module Rpd
     --, NetworkT, PatchT
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
-    , subscribeDataFlow, Canceller, Subscriber
+    -- , subscribeDataFlow,
+    , Canceller, Subscriber
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
     , notInTheSameNode
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
-    , findTopSource, getFlowOf
+    -- , findTopSource, getFlowOf
     ) where
 
 import Prelude
@@ -66,6 +67,7 @@ data Patch d = Patch
     , name :: String
     , nodes :: Array (Node d)
     , links :: Array Link -- TODO: links partly duplicate Inlet: sources, aren't they?
+    -- TODO: maybe store Connections: Map InletPath (Array DataSource)
     }
 data Node d = Node
     { path :: NodePath
@@ -469,6 +471,73 @@ disconnectLast inletPath network =
     -- TODO: optimize with searching last and updating simultaneously
     findTopConnection inletPath network
         >>= (\outletPath -> disconnect' outletPath inletPath network)
+
+
+-- getConnections :: Node -> (Map OutletPath InletPath) or (Array Link)
+
+-- getConnections :: Patch -> (Map OutletPath InletPath) or (Array Link)
+
+-- subscribeAll :: Network -> f -> Map (Inlet (Canceler e)) /\ Map (Outlet (Canceler e))
+
+-- subscribeNode :: Node -> f -> Map (Inlet (Canceler e)) /\ Map (Outlet (Canceler e))
+
+-- subscribePatch :: Patch -> f -> Map (Inlet (Canceler e)) /\ Map (Outlet (Canceler e))
+
+-- subscribeInlets :: Node -> f -> Map (Inlet (Canceler e))
+
+
+-- subscribeAll
+--     :: forall d e
+--      . Network d -> d -> f -> Map (Inlet (Canceler e)) /\ Map (Outlet (Canceler e))
+
+subscribeOutlet
+    :: forall d e
+     . (d -> RpdEff e Unit)
+    -> OutletPath
+    -> Network d
+    -> Maybe (Canceller e)
+subscribeOutlet f outletPath network =
+    findOutlet outletPath network >>= subscribeOutlet' f
+
+
+subscribeOutlet'
+    :: forall d e
+     . (d -> RpdEff e Unit)
+    -> Outlet d
+    -> Maybe (Canceller e)
+subscribeOutlet' f (Outlet { flow : maybeFlow }) = do
+    flow <- maybeFlow
+    pure $ do
+        cancel <- subscribe flow f
+        pure cancel
+
+
+subscribeInlet
+    :: forall d e
+     . (DataSource d -> d -> RpdEff e Unit)
+    -> InletPath
+    -> Network d
+    -> Maybe (Array (Canceller e))
+subscribeInlet f inletPath network =
+    subscribeInlet' f <$> findInlet inletPath network
+
+
+subscribeInlet'
+    :: forall d e
+     . (DataSource d -> d -> RpdEff e Unit)
+    -> Inlet d
+    -> Array (Canceller e)
+subscribeInlet' f (Inlet { sources }) =
+    map
+        (\source -> do
+            cancel <- subscribe (getFlowOf source) (f source)
+            pure cancel
+        ) sources
+
+
+-- subscribeTopOfInlet
+
+-- subscribeOutlet :: Outlet -> f -> Canceler e
 
 
 -- TODO: findLink :: forall d. InletPath -> Network d -> Maybe (Link d)
