@@ -486,9 +486,15 @@ disconnectLast inletPath network =
 -- subscribeInlets :: Node -> f -> Map (Inlet (Canceler e))
 
 
--- subscribeAll
---     :: forall d e
---      . Network d -> d -> f -> Map (Inlet (Canceler e)) /\ Map (Outlet (Canceler e))
+subscribeAll
+    :: forall d e
+     . (InletPath -> DataSource d -> d -> RpdEff e Unit)
+    -> (OutletPath -> d -> RpdEff e Unit)
+    -> Network d
+    -> Map InletPath (Canceller e) /\ Map OutletPath (Canceller e)
+subscribeAll inletHandler outletHandler network =
+    Map.empty /\ Map.empty
+
 
 subscribeOutlet
     :: forall d e
@@ -535,7 +541,28 @@ subscribeInlet' f (Inlet { sources }) =
         ) sources
 
 
--- subscribeTopOfInlet
+subscribeTopOfInlet
+    :: forall d e
+     . (DataSource d -> d -> RpdEff e Unit)
+    -> InletPath
+    -> Network d
+    -> Maybe (Canceller e)
+subscribeTopOfInlet f inletPath network =
+    findInlet inletPath network >>= subscribeTopOfInlet' f
+
+
+subscribeTopOfInlet'
+    :: forall d e
+     . (DataSource d -> d -> RpdEff e Unit)
+    -> Inlet d
+    -> Maybe (Canceller e)
+subscribeTopOfInlet' f (Inlet { sources }) =
+    (\topSource -> do
+        cancel <- subscribe (getFlowOf topSource) (f topSource)
+        pure cancel
+    ) <$> head sources
+
+
 
 -- subscribeOutlet :: Outlet -> f -> Canceler e
 
