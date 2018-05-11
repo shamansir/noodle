@@ -498,12 +498,16 @@ subscribeAll
 subscribeAll inletHandler outletHandler (Network { patches }) =
     let
         allNodes = concatMap (\(Patch { nodes }) -> nodes) patches
-    in
-        Map.empty /\ Map.empty
-        -- FIXME: implement, use Map.union and subscribeNode' for every node
-        -- or something similar to subscribeNode' but without joining maps,
-        -- which could take time, so push values to the map we have them
-        -- (and they're Just exist)
+        outletF = \o@(Outlet { path }) ->
+                (/\) path <$> subscribeOutlet' (outletHandler path) o
+        inletF = \i@(Inlet { path }) ->
+                path /\ subscribeInlet' (inletHandler path) i
+        -- allInletsAndOutlets = concatMap
+        --     (\(Node { inlets, outlets }) -> inlets /\ outlets) allNodes
+        allInlets = concatMap (\(Node { inlets }) -> inlets) allNodes
+        allOutlets = concatMap (\(Node { outlets }) -> outlets) allNodes
+    in (fromFoldable $ mapMaybe outletF allOutlets)
+    /\ (fromFoldable $ map inletF allInlets)
 
 
 subscribeNode
