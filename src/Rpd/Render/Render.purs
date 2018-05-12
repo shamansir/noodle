@@ -166,7 +166,7 @@ update' (DisconnectAt inletPath) (UI state network)
     | isNothing state.connecting =
     UI state' network'
     where
-        network' = fromMaybe network $ R.disconnectLast inletPath network
+        network' = fromMaybe network $ R.disconnectTop inletPath network
         state' = state
             { areLinksChanged = true
             --, friendlyLog = "disconnect last at " <> show inletPath

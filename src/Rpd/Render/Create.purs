@@ -13,6 +13,7 @@ import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff (Eff)
 import Data.Map (Map)
 import Data.Map as Map
+import Data.Array as Array
 import Data.Array (head, (:))
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import Data.Tuple (fst)
@@ -93,19 +94,22 @@ dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = 
             -- subscriber <- subscribeData
             --     (pushInletData pushInteraction)
             --     (pushOutletData pushInteraction) network
-            pure cancellers
+            pure $ R.subscribeAll
+                (\inlet _ d -> inletHandler d inlet)
+                (\outlet d -> outletHandler d outlet)
+                network
         ConnectTo inlet ->
-            case R.findTopSource inlet network of
-                Just source -> pure $
-                    let
-                        canceller = do
-                            c <- subscribe (R.getFlowOf source) (\d -> inletHandler d inlet)
-                            pure c
-                        cancellers' = Map.lookup inlet cancellers >>=
-                            \inletCancellers -> do
-                                pure $ Map.insert inlet (canceller : inletCancellers) cancellers
-                    in fromMaybe cancellers cancellers'
-                Nothing -> pure cancellers
+            pure $ let
+                canceller = do
+                    c <- R.subscribeTop (\_ d -> inletHandler d inlet) inlet network
+                    pure c
+                cancellers' = do
+                    inletCancellers <- Map.lookup inlet cancellers
+                    canceller' <- canceller
+                    let inletCancellers' = canceller' : inletCancellers
+                        cancellers' = Map.insert inlet inletCancellers' cancellers
+                    pure cancellers'
+            in fromMaybe cancellers cancellers'
         DisconnectAt inlet -> do
             -- TODO: think on the fact that last source could be not the found one!
             -- (because user sources, etc.)

@@ -6,11 +6,12 @@ module Rpd
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , ProcessF
     , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
-    , connect, connect', disconnect, disconnect', disconnectLast, processWith
+    , connect, connect', disconnect, disconnect', disconnectTop, processWith
     --, NetworkT, PatchT
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
     -- , subscribeDataFlow,
+    , subscribeAll, subscribeTop
     , Canceller, Subscriber
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
     , notInTheSameNode
@@ -469,12 +470,14 @@ disconnect' outletPath inletPath network = do
                 network'
 
 
-disconnectLast :: forall d. InletPath -> Network d -> Maybe (Network d)
-disconnectLast inletPath network =
+disconnectTop :: forall d. InletPath -> Network d -> Maybe (Network d)
+disconnectTop inletPath network =
     -- TODO: optimize with searching last and updating simultaneously
     findTopConnection inletPath network
         >>= (\outletPath -> disconnect' outletPath inletPath network)
 
+
+-- disconnectLast' :: forall d. InletPath -> Network d -> Maybe (Network d)
 
 -- getConnections :: Node -> (Map OutletPath InletPath) or (Array Link)
 
@@ -582,22 +585,22 @@ subscribeInlet' f (Inlet { sources }) =
         ) sources
 
 
-subscribeTopOfInlet
+subscribeTop
     :: forall d e
      . (DataSource d -> d -> RpdEff e Unit)
     -> InletPath
     -> Network d
     -> Maybe (Canceller e)
-subscribeTopOfInlet f inletPath network =
-    findInlet inletPath network >>= subscribeTopOfInlet' f
+subscribeTop f inletPath network =
+    findInlet inletPath network >>= subscribeTop' f
 
 
-subscribeTopOfInlet'
+subscribeTop'
     :: forall d e
      . (DataSource d -> d -> RpdEff e Unit)
     -> Inlet d
     -> Maybe (Canceller e)
-subscribeTopOfInlet' f (Inlet { sources }) =
+subscribeTop' f (Inlet { sources }) =
     (\topSource -> do
         cancel <- subscribe (getFlowOf topSource) (f topSource)
         pure cancel
