@@ -4,7 +4,7 @@ module Rpd.Render
     , Push
     , Message(..), Interaction(..), Selection(..), Subject(..)
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
-    , init, update, updateAndLog, subscribeData
+    , init, update, updateAndLog
     , interactionToMessage -- FIXME: Do not expose
     ) where
 
@@ -207,15 +207,15 @@ updateAndLog msg ui =
         UI state' network
 
 
-subscribeData
-    :: forall d e
-     . (d -> R.InletPath -> R.RpdEff e Unit)
-    -> (d -> R.OutletPath -> R.RpdEff e Unit)
-    -> R.Network d
-    -> R.Subscriber e
-subscribeData inletHandler outletHandler network = do
-    log "aaa"
-    R.subscribeDataFlow inletHandler outletHandler network
+-- subscribeData
+--     :: forall d e
+--      . (d -> R.InletPath -> R.RpdEff e Unit)
+--     -> (d -> R.OutletPath -> R.RpdEff e Unit)
+--     -> R.Network d
+--     -> R.Subscriber e
+-- subscribeData inletHandler outletHandler network = do
+--     log "aaa"
+--     R.subscribeDataFlow inletHandler outletHandler network
 
 
 -- TODO:

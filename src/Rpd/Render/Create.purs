@@ -36,34 +36,34 @@ createRenderer render = (\nw -> do
     { flow : cancelers, push : saveCanceler } <- create
     { flow : cancelerTriggers, push : triggerPrevCanceler } <- create
     -- FIXME: remove logs and CONSOLE effect everywhere
-    let
-        subscribeData' =
-            subscribeData
-                (pushInletData pushInteraction)
-                (pushOutletData pushInteraction)
-        --pastCancelers = map (\{ last } -> last) $ Event.withLast cancelers
-        triggeredCancelers = sampleOn_ cancelers cancelerTriggers
-        networksBylinksChanged = map (\(UI _ network) -> network)
-            $ filter (\(UI state _) -> state.areLinksChanged) uiFlow
-    _ <- subscribe triggeredCancelers $ \cancel -> do
-        log $ "cancel called."
-        _ <- cancel
-        pure unit
-    _ <- subscribe networksBylinksChanged $ \nw -> do
-        log "trigger prev cancel"
-        triggerPrevCanceler unit
-        log "subscribe"
-        subscriber <- subscribeData' nw
-        cancelNext <- subscriber
-        log "save canceler"
-        _ <- saveCanceler cancelNext
-        pure unit
-    _ <- do
-        log "first subscription"
-        subscriber <- subscribeData' nw
-        cancelNext <- subscriber
-        _ <- saveCanceler cancelNext
-        pure unit
+    -- let
+    --     subscribeData' =
+    --         subscribeData
+    --             (pushInletData pushInteraction)
+    --             (pushOutletData pushInteraction)
+    --     --pastCancelers = map (\{ last } -> last) $ Event.withLast cancelers
+    --     triggeredCancelers = sampleOn_ cancelers cancelerTriggers
+    --     networksBylinksChanged = map (\(UI _ network) -> network)
+    --         $ filter (\(UI state _) -> state.areLinksChanged) uiFlow
+    -- _ <- subscribe triggeredCancelers $ \cancel -> do
+    --     log $ "cancel called."
+    --     _ <- cancel
+    --     pure unit
+    -- _ <- subscribe networksBylinksChanged $ \nw -> do
+    --     log "trigger prev cancel"
+    --     triggerPrevCanceler unit
+    --     log "subscribe"
+    --     subscriber <- subscribeData' nw
+    --     cancelNext <- subscriber
+    --     log "save canceler"
+    --     _ <- saveCanceler cancelNext
+    --     pure unit
+    -- _ <- do
+    --     log "first subscription"
+    --     subscriber <- subscribeData' nw
+    --     cancelNext <- subscriber
+    --     _ <- saveCanceler cancelNext
+    --     pure unit
     _ <- subscribe uiFlow $ \ui -> render pushInteraction ui
     pushInteraction Init
 )

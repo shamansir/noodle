@@ -48,7 +48,7 @@ type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
 
 type FireInteraction d e = Interaction d -> Listener e
 
-type Canceller' e = R.Canceller ( dom :: DOM | e )
+-- type Canceler' e = R.Canceler ( dom :: DOM | e )
 
 
 --renderer :: forall d e. (Show d) => Element -> DomRenderer d e
