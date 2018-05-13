@@ -33,36 +33,36 @@ createRenderer render = (\nw -> do
                 (pushInletData pushInteraction)
                 (pushOutletData pushInteraction)
         dataFlow = fold dataFoldingF' uiMsgFlow $ pure (Map.empty /\ Map.empty)
-    { flow : cancellers, push : saveCanceller } <- create
-    { flow : cancellerTriggers, push : triggerPrevCanceller } <- create
+    { flow : cancelers, push : saveCanceler } <- create
+    { flow : cancelerTriggers, push : triggerPrevCanceler } <- create
     -- FIXME: remove logs and CONSOLE effect everywhere
     let
         subscribeData' =
             subscribeData
                 (pushInletData pushInteraction)
                 (pushOutletData pushInteraction)
-        --pastCancellers = map (\{ last } -> last) $ Event.withLast cancellers
-        triggeredCancellers = sampleOn_ cancellers cancellerTriggers
+        --pastCancelers = map (\{ last } -> last) $ Event.withLast cancelers
+        triggeredCancelers = sampleOn_ cancelers cancelerTriggers
         networksBylinksChanged = map (\(UI _ network) -> network)
             $ filter (\(UI state _) -> state.areLinksChanged) uiFlow
-    _ <- subscribe triggeredCancellers $ \cancel -> do
+    _ <- subscribe triggeredCancelers $ \cancel -> do
         log $ "cancel called."
         _ <- cancel
         pure unit
     _ <- subscribe networksBylinksChanged $ \nw -> do
         log "trigger prev cancel"
-        triggerPrevCanceller unit
+        triggerPrevCanceler unit
         log "subscribe"
         subscriber <- subscribeData' nw
         cancelNext <- subscriber
-        log "save canceller"
-        _ <- saveCanceller cancelNext
+        log "save canceler"
+        _ <- saveCanceler cancelNext
         pure unit
     _ <- do
         log "first subscription"
         subscriber <- subscribeData' nw
         cancelNext <- subscriber
-        _ <- saveCanceller cancelNext
+        _ <- saveCanceler cancelNext
         pure unit
     _ <- subscribe uiFlow $ \ui -> render pushInteraction ui
     pushInteraction Init
@@ -79,13 +79,13 @@ dataFoldingF
      . (d -> R.InletPath -> R.RpdEff e Unit)
     -> (d -> R.OutletPath -> R.RpdEff e Unit)
     -> (UI d /\ Message d)
-    -> R.RpdEff e (R.MappedCancellers e)
-    -> R.RpdEff e (R.MappedCancellers e)
-dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = do
-    (allOutletCancellers /\ allInletCancellers) <- cancellersEff
+    -> R.RpdEff e (R.Cancelers e)
+    -> R.RpdEff e (R.Cancelers e)
+dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancelersEff = do
+    (allOutletCancelers /\ allInletCancelers) <- cancelersEff
     {- pure $ -}
     case msg of
-        -- AddNode -> pure cancellers -- FIXME: implement
+        -- AddNode -> pure cancelers -- FIXME: implement
         SubscribeAllData -> do
             -- TODO: subscribe to all inlets, outlets and their sources
             -- subscriber <- subscribeData
@@ -97,16 +97,16 @@ dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = 
                 network
         ConnectTo inlet ->
             pure $ let
-                canceller = do
+                canceler = do
                     c <- R.subscribeTop (\_ d -> inletHandler d inlet) inlet network
                     pure c
-                allInletCancellers' = do
-                    inletCancellers <- Map.lookup inlet allInletCancellers
-                    canceller' <- canceller
-                    let inletCancellers' = canceller' : inletCancellers
-                        cancellers' = Map.insert inlet inletCancellers' allInletCancellers
-                    pure cancellers'
-            in allOutletCancellers /\ fromMaybe allInletCancellers allInletCancellers'
+                allInletCancelers' = do
+                    inletCancelers <- Map.lookup inlet allInletCancelers
+                    canceler' <- canceler
+                    let inletCancelers' = canceler' : inletCancelers
+                        cancelers' = Map.insert inlet inletCancelers' allInletCancelers
+                    pure cancelers'
+            in allOutletCancelers /\ fromMaybe allInletCancelers allInletCancelers'
         DisconnectAt inlet -> do
             -- TODO: think on the fact that last source could be not the found one!
             -- (because user sources, etc.)
@@ -115,11 +115,11 @@ dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = 
             -- core logic to be conformant with this one, but also may be introduce IDs to ensure
             -- everything is properly arranged...
             -- What to do with the Links in the Network also?
-            let maybeCancel = Map.lookup inlet allInletCancellers >>= head
+            let maybeCancel = Map.lookup inlet allInletCancelers >>= head
             cancel <- fromMaybe (pure $ pure unit) maybeCancel
             _ <- cancel
-            pure $ allOutletCancellers /\ allInletCancellers
-        _ -> pure $ allOutletCancellers /\ allInletCancellers
+            pure $ allOutletCancelers /\ allInletCancelers
+        _ -> pure $ allOutletCancelers /\ allInletCancelers
 
 
 pushInletData

@@ -12,7 +12,7 @@ module Rpd
     , patchId, nodePath, inletPath, outletPath
     -- , subscribeDataFlow,
     , subscribeAll, subscribeTop
-    , Canceller, Subscriber, MappedCancellers
+    , Canceler, Subscriber, Cancelers, initCancelers
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
     , notInTheSameNode
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
@@ -124,15 +124,15 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 -- type DataFlow d = Flow (DataMsg d)
 type RpdEffE e = FlowEffE (console :: CONSOLE | e)
 type RpdEff e v = Eff (RpdEffE e) v
-type Canceller e =
+type Canceler e =
     RpdEff e (RpdEff e Unit)
     -- (Unit -> RpdEff e (RpdEff e Unit))
 type Subscriber e =
-    RpdEff e (Canceller e)
+    RpdEff e (Canceler e)
 type RenderEff e =
     RpdEff e Unit
-type MappedCancellers e =
-    Map OutletPath (Canceller e) /\ Map InletPath (Array (Canceller e))
+type Cancelers e =
+    Map OutletPath (Canceler e) /\ Map InletPath (Array (Canceler e))
 
 
 type Renderer d e = Network d -> RenderEff e
@@ -240,36 +240,36 @@ outlet' label flow =
             }
 
 
-subscribeDataFlow
-    :: forall d e
-     . (d -> InletPath -> RpdEff e Unit)
-    -> (d -> OutletPath -> RpdEff e Unit)
-    -> Network d
-    -> Subscriber e
-subscribeDataFlow inletHandler outletHandler (Network { patches }) = do
-    pure $ do
-        log "!!! subscribing data flow"
-        fold $ inletFlows <> outletFlows
-    where
-        -- TODO: use lenses: https://github.com/purescript-contrib/purescript-lens
-        --                   http://brianhamrick.com/blog/records-haskell-purescript
-        allNodes = concatMap (\(Patch { nodes }) -> nodes) patches
-        allInlets = concatMap (\(Node { inlets }) -> inlets) allNodes
-        allOutlets = concatMap (\(Node { outlets }) -> outlets) allNodes
-        adaptInletDataSources path dataSource =
-            subscribe flow (\d -> inletHandler d path)
-            where
-                flow = case dataSource of
-                    UserSource flow -> flow
-                    OutletSource _ flow -> flow
-        adaptOutletFlow path flow =
-            subscribe flow (\d -> outletHandler d path)
-        extractInletFlows = \(Inlet { path, sources }) ->
-            map (adaptInletDataSources path) sources
-        extractOutletFlows = \(Outlet { path, flow }) ->
-            adaptOutletFlow path <$> flow
-        inletFlows = concatMap extractInletFlows allInlets
-        outletFlows = catMaybes $ map extractOutletFlows allOutlets
+-- subscribeDataFlow
+--     :: forall d e
+--      . (d -> InletPath -> RpdEff e Unit)
+--     -> (d -> OutletPath -> RpdEff e Unit)
+--     -> Network d
+--     -> Subscriber e
+-- subscribeDataFlow inletHandler outletHandler (Network { patches }) = do
+--     pure $ do
+--         log "!!! subscribing data flow"
+--         fold $ inletFlows <> outletFlows
+--     where
+--         -- TODO: use lenses: https://github.com/purescript-contrib/purescript-lens
+--         --                   http://brianhamrick.com/blog/records-haskell-purescript
+--         allNodes = concatMap (\(Patch { nodes }) -> nodes) patches
+--         allInlets = concatMap (\(Node { inlets }) -> inlets) allNodes
+--         allOutlets = concatMap (\(Node { outlets }) -> outlets) allNodes
+--         adaptInletDataSources path dataSource =
+--             subscribe flow (\d -> inletHandler d path)
+--             where
+--                 flow = case dataSource of
+--                     UserSource flow -> flow
+--                     OutletSource _ flow -> flow
+--         adaptOutletFlow path flow =
+--             subscribe flow (\d -> outletHandler d path)
+--         extractInletFlows = \(Inlet { path, sources }) ->
+--             map (adaptInletDataSources path) sources
+--         extractOutletFlows = \(Outlet { path, flow }) ->
+--             adaptOutletFlow path <$> flow
+--         inletFlows = concatMap extractInletFlows allInlets
+--         outletFlows = catMaybes $ map extractOutletFlows allOutlets
 
 
 findTopConnection :: forall d. InletPath -> Network d -> Maybe OutletPath
@@ -492,12 +492,16 @@ disconnectTop inletPath network =
 -- subscribeInlets :: Node -> f -> Map (Inlet (Canceler e))
 
 
+initCancelers :: forall e. Cancelers e
+initCancelers = Map.empty /\ Map.empty
+
+
 subscribeAll
     :: forall d e
      . (InletPath -> DataSource d -> d -> RpdEff e Unit)
     -> (OutletPath -> d -> RpdEff e Unit)
     -> Network d
-    -> MappedCancellers e
+    -> Cancelers e
 subscribeAll inletHandler outletHandler (Network { patches }) =
     let
         allNodes = concatMap (\(Patch { nodes }) -> nodes) patches
@@ -519,7 +523,7 @@ subscribeNode
     -> (OutletPath -> d -> RpdEff e Unit)
     -> NodePath
     -> Network d
-    -> Maybe (MappedCancellers e)
+    -> Maybe (Cancelers e)
 subscribeNode inletHandler outletHandler nodePath network =
     subscribeNode' inletHandler outletHandler <$> findNode nodePath network
 
@@ -529,7 +533,7 @@ subscribeNode'
      . (InletPath -> DataSource d -> d -> RpdEff e Unit)
     -> (OutletPath -> d -> RpdEff e Unit)
     -> Node d
-    -> MappedCancellers e
+    -> Cancelers e
 subscribeNode' inletHandler outletHandler (Node { outlets, inlets }) =
     let
         outletF = \o@(Outlet { path }) ->
@@ -545,7 +549,7 @@ subscribeOutlet
      . (d -> RpdEff e Unit)
     -> OutletPath
     -> Network d
-    -> Maybe (Canceller e)
+    -> Maybe (Canceler e)
 subscribeOutlet f outletPath network =
     findOutlet outletPath network >>= subscribeOutlet' f
 
@@ -554,7 +558,7 @@ subscribeOutlet'
     :: forall d e
      . (d -> RpdEff e Unit)
     -> Outlet d
-    -> Maybe (Canceller e)
+    -> Maybe (Canceler e)
 subscribeOutlet' f (Outlet { flow : maybeFlow }) = do
     flow <- maybeFlow
     pure $ do
@@ -567,7 +571,7 @@ subscribeInlet
      . (DataSource d -> d -> RpdEff e Unit)
     -> InletPath
     -> Network d
-    -> Maybe (Array (Canceller e))
+    -> Maybe (Array (Canceler e))
 subscribeInlet f inletPath network =
     subscribeInlet' f <$> findInlet inletPath network
 
@@ -576,7 +580,7 @@ subscribeInlet'
     :: forall d e
      . (DataSource d -> d -> RpdEff e Unit)
     -> Inlet d
-    -> Array (Canceller e)
+    -> Array (Canceler e)
 subscribeInlet' f (Inlet { sources }) =
     map
         (\source -> do
@@ -590,7 +594,7 @@ subscribeTop
      . (DataSource d -> d -> RpdEff e Unit)
     -> InletPath
     -> Network d
-    -> Maybe (Canceller e)
+    -> Maybe (Canceler e)
 subscribeTop f inletPath network =
     findInlet inletPath network >>= subscribeTop' f
 
@@ -599,7 +603,7 @@ subscribeTop'
     :: forall d e
      . (DataSource d -> d -> RpdEff e Unit)
     -> Inlet d
-    -> Maybe (Canceller e)
+    -> Maybe (Canceler e)
 subscribeTop' f (Inlet { sources }) =
     (\topSource -> do
         cancel <- subscribe (getFlowOf topSource) (f topSource)
