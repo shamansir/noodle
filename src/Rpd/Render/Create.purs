@@ -22,9 +22,6 @@ import Data.Filterable (filter)
 import Control.Monad.Eff.Console (CONSOLE, log)
 
 
-type Cancellers e = Map R.InletPath (Array (R.Canceller e))
-
-
 createRenderer :: forall d e. (Push d e -> UI d -> R.RenderEff e) -> R.Renderer d e
 createRenderer render = (\nw -> do
     { flow : interactions, push : pushInteraction } <- create
@@ -35,7 +32,7 @@ createRenderer render = (\nw -> do
             dataFoldingF
                 (pushInletData pushInteraction)
                 (pushOutletData pushInteraction)
-        dataFlow = fold dataFoldingF' uiMsgFlow $ pure Map.empty
+        dataFlow = fold dataFoldingF' uiMsgFlow $ pure (Map.empty /\ Map.empty)
     { flow : cancellers, push : saveCanceller } <- create
     { flow : cancellerTriggers, push : triggerPrevCanceller } <- create
     -- FIXME: remove logs and CONSOLE effect everywhere
@@ -82,10 +79,10 @@ dataFoldingF
      . (d -> R.InletPath -> R.RpdEff e Unit)
     -> (d -> R.OutletPath -> R.RpdEff e Unit)
     -> (UI d /\ Message d)
-    -> R.RpdEff e (Cancellers e)
-    -> R.RpdEff e (Cancellers e)
+    -> R.RpdEff e (R.MappedCancellers e)
+    -> R.RpdEff e (R.MappedCancellers e)
 dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = do
-    cancellers <- cancellersEff
+    (allOutletCancellers /\ allInletCancellers) <- cancellersEff
     {- pure $ -}
     case msg of
         -- AddNode -> pure cancellers -- FIXME: implement
@@ -103,13 +100,13 @@ dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = 
                 canceller = do
                     c <- R.subscribeTop (\_ d -> inletHandler d inlet) inlet network
                     pure c
-                cancellers' = do
-                    inletCancellers <- Map.lookup inlet cancellers
+                allInletCancellers' = do
+                    inletCancellers <- Map.lookup inlet allInletCancellers
                     canceller' <- canceller
                     let inletCancellers' = canceller' : inletCancellers
-                        cancellers' = Map.insert inlet inletCancellers' cancellers
+                        cancellers' = Map.insert inlet inletCancellers' allInletCancellers
                     pure cancellers'
-            in fromMaybe cancellers cancellers'
+            in allOutletCancellers /\ fromMaybe allInletCancellers allInletCancellers'
         DisconnectAt inlet -> do
             -- TODO: think on the fact that last source could be not the found one!
             -- (because user sources, etc.)
@@ -118,11 +115,11 @@ dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancellersEff = 
             -- core logic to be conformant with this one, but also may be introduce IDs to ensure
             -- everything is properly arranged...
             -- What to do with the Links in the Network also?
-            let maybeCancel = Map.lookup inlet cancellers >>= head
+            let maybeCancel = Map.lookup inlet allInletCancellers >>= head
             cancel <- fromMaybe (pure $ pure unit) maybeCancel
             _ <- cancel
-            pure cancellers
-        _ -> pure cancellers
+            pure $ allOutletCancellers /\ allInletCancellers
+        _ -> pure $ allOutletCancellers /\ allInletCancellers
 
 
 pushInletData

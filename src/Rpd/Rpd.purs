@@ -12,7 +12,7 @@ module Rpd
     , patchId, nodePath, inletPath, outletPath
     -- , subscribeDataFlow,
     , subscribeAll, subscribeTop
-    , Canceller, Subscriber
+    , Canceller, Subscriber, MappedCancellers
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
     , notInTheSameNode
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
