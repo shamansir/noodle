@@ -24,6 +24,13 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 
 createRenderer :: forall d e. (Push d e -> UI d -> R.RenderEff e) -> R.Renderer d e
 createRenderer render = (\nw -> do
+    -- TODO: try `sampleOn`, may be it's the more proper thing to use
+    --       instead of `fold` in case of data subscriptions/cancels.
+    {- The code below should work instead, when
+       https://github.com/paf31/purescript-behaviors/issues/27
+       is dealt with. Like, folds start fresh on every subscription,
+       and it is what breaks the flow.
+    -}
     { flow : interactions, push : pushInteraction } <- create
     let
         uiMsgFlow = fold foldingF interactions $ UI init nw /\ NoOp
@@ -33,37 +40,7 @@ createRenderer render = (\nw -> do
                 (pushInletData pushInteraction)
                 (pushOutletData pushInteraction)
         dataFlow = fold dataFoldingF' uiMsgFlow $ pure (Map.empty /\ Map.empty)
-    { flow : cancelers, push : saveCanceler } <- create
-    { flow : cancelerTriggers, push : triggerPrevCanceler } <- create
-    -- FIXME: remove logs and CONSOLE effect everywhere
-    -- let
-    --     subscribeData' =
-    --         subscribeData
-    --             (pushInletData pushInteraction)
-    --             (pushOutletData pushInteraction)
-    --     --pastCancelers = map (\{ last } -> last) $ Event.withLast cancelers
-    --     triggeredCancelers = sampleOn_ cancelers cancelerTriggers
-    --     networksBylinksChanged = map (\(UI _ network) -> network)
-    --         $ filter (\(UI state _) -> state.areLinksChanged) uiFlow
-    -- _ <- subscribe triggeredCancelers $ \cancel -> do
-    --     log $ "cancel called."
-    --     _ <- cancel
-    --     pure unit
-    -- _ <- subscribe networksBylinksChanged $ \nw -> do
-    --     log "trigger prev cancel"
-    --     triggerPrevCanceler unit
-    --     log "subscribe"
-    --     subscriber <- subscribeData' nw
-    --     cancelNext <- subscriber
-    --     log "save canceler"
-    --     _ <- saveCanceler cancelNext
-    --     pure unit
-    -- _ <- do
-    --     log "first subscription"
-    --     subscriber <- subscribeData' nw
-    --     cancelNext <- subscriber
-    --     _ <- saveCanceler cancelNext
-    --     pure unit
+    _ <- subscribe dataFlow id
     _ <- subscribe uiFlow $ \ui -> render pushInteraction ui
     pushInteraction Init
 )
@@ -91,6 +68,7 @@ dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancelersEff = d
             -- subscriber <- subscribeData
             --     (pushInletData pushInteraction)
             --     (pushOutletData pushInteraction) network
+            log "subscribing"
             pure $ R.subscribeAll
                 (\inlet _ d -> inletHandler d inlet)
                 (\outlet d -> outletHandler d outlet)

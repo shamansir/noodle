@@ -559,9 +559,10 @@ subscribeOutlet'
      . (d -> RpdEff e Unit)
     -> Outlet d
     -> Maybe (Canceler e)
-subscribeOutlet' f (Outlet { flow : maybeFlow }) = do
+subscribeOutlet' f (Outlet { path, flow : maybeFlow }) = do
     flow <- maybeFlow
     pure $ do
+        log $ "subscribeOutlet " <> show path
         cancel <- subscribe flow f
         pure cancel
 
@@ -581,9 +582,10 @@ subscribeInlet'
      . (DataSource d -> d -> RpdEff e Unit)
     -> Inlet d
     -> Array (Canceler e)
-subscribeInlet' f (Inlet { sources }) =
+subscribeInlet' f (Inlet { path, sources }) =
     map
         (\source -> do
+            log $ "subscribeInlet " <> show path
             cancel <- subscribe (getFlowOf source) (f source)
             pure cancel
         ) sources
