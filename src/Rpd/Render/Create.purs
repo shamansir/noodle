@@ -3,27 +3,57 @@ module Rpd.Render.Create
     ) where
 
 import Prelude
-
-import Rpd as R
 import Rpd.Render
 
-import Rpd.Flow (Flow, create, subscribe, fold, sampleOn_)
-
-import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Console (CONSOLE, log)
+import Data.Array (head, (:))
+import Data.Array as Array
+import Data.Filterable (filter)
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Array as Array
-import Data.Array (head, (:))
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Filterable (filter)
-import Control.Monad.Eff.Console (CONSOLE, log)
+import Rpd as R
+import Rpd.Flow
+    ( Flow
+    , create
+    , subscribe
+    , fold
+    , sampleOn, sampleOn_
+    , mapAccum
+    , gateBy
+    , withLast
+    )
 
 
-createRenderer :: forall d e. (Push d e -> UI d -> R.RenderEff e) -> R.Renderer d e
+createRenderer :: forall d e. (Show d) => (Push d e -> UI d -> R.RenderEff e) -> R.Renderer d e
 createRenderer render = (\nw -> do
+    { flow : interactions, push : pushInteraction } <- create
+    --{ flow : subscriptions, push : pushCancelers } <- create
+    let
+        uiMsgFlow = fold foldingF interactions $ UI init nw /\ NoOp
+        uiFlow = map fst uiMsgFlow
+        dataFoldingF' =
+            dataFoldingF
+                (pushInletData pushInteraction)
+                (pushOutletData pushInteraction)
+        dataFlow = fold dataFoldingF' uiMsgFlow $ pure (Map.empty /\ Map.empty)
+        -- dataFlow = withLast uiMsgFlow
+    -- _ <- subscribe dataFlow (\msg -> log $ "aaa " <> show msg)
+    -- _ <- subscribe dataFlow (\(eff /\ msg /\ cancellers) -> do
+        -- _ <- eff
+        -- log $ "from subscriber: " <> show msg
+    --)
+    _ <- subscribe dataFlow id -- perform eff on the result
+    _ <- subscribe uiMsgFlow $ \(ui /\ msg) -> do
+        -- if messagAffectsSubscriptions msg
+        --     then pure unit
+        --     else pure unit
+        render pushInteraction ui
+    pushInteraction Init
     -- TODO: try `sampleOn`, may be it's the more proper thing to use
     --       instead of `fold` in case of data subscriptions/cancels.
     {- The code below should work instead, when
@@ -31,6 +61,7 @@ createRenderer render = (\nw -> do
        is dealt with. Like, folds start fresh on every subscription,
        and it is what breaks the flow.
     -}
+    {-
     { flow : interactions, push : pushInteraction } <- create
     let
         uiMsgFlow = fold foldingF interactions $ UI init nw /\ NoOp
@@ -43,6 +74,7 @@ createRenderer render = (\nw -> do
     _ <- subscribe dataFlow id
     _ <- subscribe uiFlow $ \ui -> render pushInteraction ui
     pushInteraction Init
+    -}
 )
 
 foldingF :: forall d. Interaction d -> (UI d /\ Message d) -> (UI d /\ Message d)
@@ -51,15 +83,24 @@ foldingF interaction (ui@(UI state _) /\ _) =
     where msg = interactionToMessage interaction state
 
 
+messagAffectsSubscriptions :: forall d. Message d -> Boolean
+messagAffectsSubscriptions SubscribeAllData = true
+messagAffectsSubscriptions (ConnectTo _) = true
+messagAffectsSubscriptions (DisconnectAt _) = true
+messagAffectsSubscriptions _ = false
+
 dataFoldingF
     :: forall d e
-     . (d -> R.InletPath -> R.RpdEff e Unit)
+     . (Show d)
+    => (d -> R.InletPath -> R.RpdEff e Unit)
     -> (d -> R.OutletPath -> R.RpdEff e Unit)
     -> (UI d /\ Message d)
     -> R.RpdEff e (R.Cancelers e)
     -> R.RpdEff e (R.Cancelers e)
 dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancelersEff = do
+    log $ "bbb: " <> show msg
     (allOutletCancelers /\ allInletCancelers) <- cancelersEff
+    log "before case"
     {- pure $ -}
     case msg of
         -- AddNode -> pure cancelers -- FIXME: implement
@@ -93,9 +134,17 @@ dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancelersEff = d
             -- core logic to be conformant with this one, but also may be introduce IDs to ensure
             -- everything is properly arranged...
             -- What to do with the Links in the Network also?
-            let maybeCancel = Map.lookup inlet allInletCancelers >>= head
-            cancel <- fromMaybe (pure $ pure unit) maybeCancel
-            _ <- cancel
+            let
+                maybeCancel :: Maybe (R.Canceler e)
+                maybeCancel = Map.lookup inlet allInletCancelers >>= head
+            case maybeCancel of
+                Just cancel -> do
+                    cancelEff <- cancel
+                    -- _ <- cancelEff
+                    pure unit
+                Nothing -> pure unit
+            -- cancelEff :: R.Canceler e <- fromMaybe (pure $ pure unit) maybeCancel
+            -- _ <- cancelEff
             pure $ allOutletCancelers /\ allInletCancelers
         _ -> pure $ allOutletCancelers /\ allInletCancelers
 
@@ -119,3 +168,9 @@ pushOutletData push =
         --log $ "Receive from " <> show outletPath
         push $ DataAtOutlet outletPath d)
 
+
+
+showCancelers :: forall e. R.Cancelers e -> String
+showCancelers (outletCancelers /\ inletCancelers) =
+    show $ "Outlets: " <> (show $ Map.keys outletCancelers) <>
+           "Inlets: " <> (show $ Map.keys inletCancelers)

@@ -125,7 +125,7 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 type RpdEffE e = FlowEffE (console :: CONSOLE | e)
 type RpdEff e v = Eff (RpdEffE e) v
 type Canceler e =
-    RpdEff e (RpdEff e Unit)
+    RpdEff e Unit
     -- (Unit -> RpdEff e (RpdEff e Unit))
 type Subscriber e =
     RpdEff e (Canceler e)
@@ -559,12 +559,22 @@ subscribeOutlet'
      . (d -> RpdEff e Unit)
     -> Outlet d
     -> Maybe (Canceler e)
-subscribeOutlet' f (Outlet { path, flow : maybeFlow }) = do
-    flow <- maybeFlow
-    pure $ do
-        log $ "subscribeOutlet " <> show path
-        cancel <- subscribe flow f
-        pure cancel
+subscribeOutlet' f (Outlet { path, flow : maybeFlow }) =
+    case maybeFlow of
+        Just flow -> do
+            -- log $ "subscribeOutlet " <> show path
+            let
+                cancel = do
+                    subEff <- subscribe flow f
+                    cancel <- subEff
+                    pure cancel
+            pure cancel
+        Nothing -> pure $ pure unit
+    -- flow <- maybeFlow
+    -- pure $ do
+    --     log $ "subscribeOutlet " <> show path
+    --     cancel <- subscribe flow f
+    --     pure cancel
 
 
 subscribeInlet
@@ -586,7 +596,8 @@ subscribeInlet' f (Inlet { path, sources }) =
     map
         (\source -> do
             log $ "subscribeInlet " <> show path
-            cancel <- subscribe (getFlowOf source) (f source)
+            subEff <- subscribe (getFlowOf source) (f source)
+            cancel <- subEff
             pure cancel
         ) sources
 
@@ -608,7 +619,8 @@ subscribeTop'
     -> Maybe (Canceler e)
 subscribeTop' f (Inlet { sources }) =
     (\topSource -> do
-        cancel <- subscribe (getFlowOf topSource) (f topSource)
+        subEff <- subscribe (getFlowOf topSource) (f topSource)
+        cancel <- subEff
         pure cancel
     ) <$> head sources
 

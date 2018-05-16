@@ -2,7 +2,7 @@ module Rpd.Flow
     ( FLOW
     , Flow
     , FlowEff, FlowEffE
-    , subscribe, create, fold, sampleOn_
+    , subscribe, create, fold, sampleOn, sampleOn_, mapAccum, gateBy, withLast
     , flow
     ) where
 
@@ -52,8 +52,16 @@ flow = id
 fold = E.fold
 
 
+mapAccum = E.mapAccum
+
+sampleOn = E.sampleOn
+
+
 sampleOn_ = E.sampleOn_
 
+gateBy = E.gateBy
+
+withLast = E.withLast
 
 -- instance flowIsEvent :: E.IsEvent Flow where
 --     fold f (Flow e) i = Flow $ E.fold f e i
