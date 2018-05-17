@@ -2,7 +2,7 @@ module Rpd.Flow
     ( FLOW
     , Flow
     , FlowEff, FlowEffE
-    , subscribe, create, fold, sampleOn, sampleOn_, mapAccum, gateBy, withLast
+    , subscribe, create, fold, sampleOn, sampleOn_, mapAccum, gateBy, withLast, foldH
     , flow
     ) where
 
@@ -50,6 +50,9 @@ flow = id
 
 
 fold = E.fold
+
+--foldH :: IsEvent event ⇒ (a → b → b) → event a → b → event b
+foreign import foldH :: forall a b. (a -> b -> b) -> E.Event a -> b -> E.Event b
 
 
 mapAccum = E.mapAccum

@@ -26,13 +26,14 @@ import Rpd.Flow
     , mapAccum
     , gateBy
     , withLast
+    , foldH
     )
 
 
 createRenderer :: forall d e. (Show d) => (Push d e -> UI d -> R.RenderEff e) -> R.Renderer d e
 createRenderer render = (\nw -> do
     { flow : interactions, push : pushInteraction } <- create
-    --{ flow : subscriptions, push : pushCancelers } <- create
+    --{ flow : subs, push : pushSubEff } <- create
     let
         uiMsgFlow = fold foldingF interactions $ UI init nw /\ NoOp
         uiFlow = map fst uiMsgFlow
@@ -40,14 +41,27 @@ createRenderer render = (\nw -> do
             dataFoldingF
                 (pushInletData pushInteraction)
                 (pushOutletData pushInteraction)
-        dataFlow = fold dataFoldingF' uiMsgFlow $ pure (Map.empty /\ Map.empty)
+        -- dataFoldingF'' :: (UI d /\ Message d) -> R.Cancelers e -> R.Cancelers e
+        -- dataFoldingF'' = \uiMsg cancelers ->
+        --     let
+        --         eff :: R.RpdEff e (R.Cancelers e)
+        --         eff = dataFoldingF' uiMsg cancelers
+        --         -- cancelers' :: R.Cancelers e
+        --         -- cancelers' = liftEff eff
+        --         cancelers' :: R.Cancelers e
+        --         cancelers' = do
+        --             res <- pushSubEff eff
+        --             r <- res
+        --             pure r
+        --     in cancelers'
+        dataFlow = fold dataFoldingF' uiMsgFlow $ (Map.empty /\ Map.empty)
         -- dataFlow = withLast uiMsgFlow
-    -- _ <- subscribe dataFlow (\msg -> log $ "aaa " <> show msg)
+    -- _ <- subscribe dataFlow $ \(ui /\ msg) _ -> log $ "aaa " <> show msg
     -- _ <- subscribe dataFlow (\(eff /\ msg /\ cancellers) -> do
         -- _ <- eff
         -- log $ "from subscriber: " <> show msg
     --)
-    _ <- subscribe dataFlow id -- perform eff on the result
+    _ <- subscribe dataFlow (\_ -> pure unit) -- perform eff on the result
     _ <- subscribe uiMsgFlow $ \(ui /\ msg) -> do
         -- if messagAffectsSubscriptions msg
         --     then pure unit
@@ -95,59 +109,64 @@ dataFoldingF
     => (d -> R.InletPath -> R.RpdEff e Unit)
     -> (d -> R.OutletPath -> R.RpdEff e Unit)
     -> (UI d /\ Message d)
-    -> R.RpdEff e (R.Cancelers e)
-    -> R.RpdEff e (R.Cancelers e)
-dataFoldingF inletHandler outletHandler ((UI _ network) /\ msg) cancelersEff = do
-    log $ "bbb: " <> show msg
-    (allOutletCancelers /\ allInletCancelers) <- cancelersEff
-    log "before case"
-    {- pure $ -}
-    case msg of
-        -- AddNode -> pure cancelers -- FIXME: implement
-        SubscribeAllData -> do
-            -- TODO: subscribe to all inlets, outlets and their sources
-            -- subscriber <- subscribeData
-            --     (pushInletData pushInteraction)
-            --     (pushOutletData pushInteraction) network
-            log "subscribing"
-            pure $ R.subscribeAll
-                (\inlet _ d -> inletHandler d inlet)
-                (\outlet d -> outletHandler d outlet)
-                network
-        ConnectTo inlet ->
-            pure $ let
-                canceler = do
-                    c <- R.subscribeTop (\_ d -> inletHandler d inlet) inlet network
-                    pure c
-                allInletCancelers' = do
-                    inletCancelers <- Map.lookup inlet allInletCancelers
-                    canceler' <- canceler
-                    let inletCancelers' = canceler' : inletCancelers
-                        cancelers' = Map.insert inlet inletCancelers' allInletCancelers
-                    pure cancelers'
-            in allOutletCancelers /\ fromMaybe allInletCancelers allInletCancelers'
-        DisconnectAt inlet -> do
-            -- TODO: think on the fact that last source could be not the found one!
-            -- (because user sources, etc.)
-            -- currently the logic of connecting/disconnecting + update, kinda guarantees that
-            -- it is the same one, however it's better to be sure and do not only trust the
-            -- core logic to be conformant with this one, but also may be introduce IDs to ensure
-            -- everything is properly arranged...
-            -- What to do with the Links in the Network also?
-            let
-                maybeCancel :: Maybe (R.Canceler e)
-                maybeCancel = Map.lookup inlet allInletCancelers >>= head
-            case maybeCancel of
-                Just cancel -> do
-                    cancelEff <- cancel
-                    -- _ <- cancelEff
-                    pure unit
-                Nothing -> pure unit
-            -- cancelEff :: R.Canceler e <- fromMaybe (pure $ pure unit) maybeCancel
-            -- _ <- cancelEff
-            pure $ allOutletCancelers /\ allInletCancelers
-        _ -> pure $ allOutletCancelers /\ allInletCancelers
-
+    -> R.Cancelers e
+    -> R.Cancelers e
+dataFoldingF
+    inletHandler
+    outletHandler
+    ((UI _ network) /\ msg)
+    ( allOutletCancelers /\ allInletCancelers ) =
+    let
+        cancelers =
+            {- pure $ -}
+            case msg of
+                -- AddNode -> pure cancelers -- FIXME: implement
+                SubscribeAllData ->
+                    -- TODO: subscribe to all inlets, outlets and their sources
+                    -- subscriber <- subscribeData
+                    --     (pushInletData pushInteraction)
+                    --     (pushOutletData pushInteraction) network
+                    R.subscribeAll
+                        (\inlet _ d -> inletHandler d inlet)
+                        (\outlet d -> outletHandler d outlet)
+                        network
+                ConnectTo inlet ->
+                    let
+                        canceler = R.subscribeTop (\_ d -> inletHandler d inlet) inlet network
+                        allInletCancelers' = do
+                            inletCancelers <- Map.lookup inlet allInletCancelers
+                            canceler' <- canceler
+                            let inletCancelers' = canceler' : inletCancelers
+                                cancelers' = Map.insert inlet inletCancelers' allInletCancelers
+                            pure cancelers'
+                    in allOutletCancelers /\ fromMaybe allInletCancelers allInletCancelers'
+                DisconnectAt inlet ->
+                    -- TODO: think on the fact that last source could be not the found one!
+                    -- (because user sources, etc.)
+                    -- currently the logic of connecting/disconnecting + update, kinda guarantees that
+                    -- it is the same one, however it's better to be sure and do not only trust the
+                    -- core logic to be conformant with this one, but also may be introduce IDs to ensure
+                    -- everything is properly arranged...
+                    -- What to do with the Links in the Network also?
+                    let
+                        maybeCancel :: Maybe (R.Canceler e)
+                        maybeCancel = Map.lookup inlet allInletCancelers >>= head
+                        _ = case maybeCancel of
+                            Just cancel -> do
+                                log "perform cancel"
+                                _ <- cancel
+                                -- _ <- cancelEff
+                                pure unit
+                            Nothing -> pure unit
+                    in
+                        -- TODO: remove the canceller?
+                        allOutletCancelers /\ allInletCancelers
+                _ -> allOutletCancelers /\ allInletCancelers
+        -- newCancelers :: R.Cancelers e
+        -- newCancelers = do
+        --     c <- subUnsubEff
+        --     pure c
+    in cancelers
 
 pushInletData
     :: forall d e

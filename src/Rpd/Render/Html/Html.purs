@@ -202,6 +202,6 @@ prepareToFire push interaction =
     -- _ <- log $ "<<<" <> show msg
     eventListener (\_ -> do
         log $ ">>>" <> show interaction
-        _ <- push interaction
+        push interaction
         pure unit
     )
