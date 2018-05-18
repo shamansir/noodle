@@ -33,7 +33,7 @@ import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
 import Data.Tuple.Nested ((/\), type (/\))
 -- import Signal as S
 -- import Signal.Channel as SC
-import Rpd.Flow (FLOW, Flow, FlowEffE, subscribe)
+import Rpd.Flow (FLOW, Flow, FlowEffE, subscribe, foldH)
 -- import FRP.Event.Class (fold)
 import Data.Foldable (fold)
 
@@ -133,6 +133,8 @@ type RenderEff e =
     RpdEff e Unit
 type Cancelers e =
     Map OutletPath (Canceler e) /\ Map InletPath (Array (Canceler e))
+type Subscribers e =
+    Map OutletPath (Subscriber e) /\ Map InletPath (Array (Subscriber e))
 
 
 type Renderer d e = Network d -> RenderEff e
@@ -501,7 +503,7 @@ subscribeAll
      . (InletPath -> DataSource d -> d -> RpdEff e Unit)
     -> (OutletPath -> d -> RpdEff e Unit)
     -> Network d
-    -> Cancelers e
+    -> Subscribers e
 subscribeAll inletHandler outletHandler (Network { patches }) =
     let
         allNodes = concatMap (\(Patch { nodes }) -> nodes) patches
@@ -523,7 +525,7 @@ subscribeNode
     -> (OutletPath -> d -> RpdEff e Unit)
     -> NodePath
     -> Network d
-    -> Maybe (Cancelers e)
+    -> Maybe (Subscribers e)
 subscribeNode inletHandler outletHandler nodePath network =
     subscribeNode' inletHandler outletHandler <$> findNode nodePath network
 
@@ -533,7 +535,7 @@ subscribeNode'
      . (InletPath -> DataSource d -> d -> RpdEff e Unit)
     -> (OutletPath -> d -> RpdEff e Unit)
     -> Node d
-    -> Cancelers e
+    -> Subscribers e
 subscribeNode' inletHandler outletHandler (Node { outlets, inlets }) =
     let
         outletF = \o@(Outlet { path }) ->
@@ -549,7 +551,7 @@ subscribeOutlet
      . (d -> RpdEff e Unit)
     -> OutletPath
     -> Network d
-    -> Maybe (Canceler e)
+    -> Maybe (Subscriber e)
 subscribeOutlet f outletPath network =
     findOutlet outletPath network >>= subscribeOutlet' f
 
@@ -558,23 +560,10 @@ subscribeOutlet'
     :: forall d e
      . (d -> RpdEff e Unit)
     -> Outlet d
-    -> Maybe (Canceler e)
+    -> Maybe (Subscriber e) -- TODO: return subscriber to execute later instead
 subscribeOutlet' f (Outlet { path, flow : maybeFlow }) =
-    case maybeFlow of
-        Just flow -> do
-            -- log $ "subscribeOutlet " <> show path
-            let
-                cancel = do
-                    subEff <- subscribe flow f
-                    cancel <- subEff
-                    pure cancel
-            pure cancel
-        Nothing -> pure $ pure unit
-    -- flow <- maybeFlow
-    -- pure $ do
-    --     log $ "subscribeOutlet " <> show path
-    --     cancel <- subscribe flow f
-    --     pure cancel
+    maybeFlow >>=
+        \flow -> pure $ subscribe flow f
 
 
 subscribeInlet
@@ -582,7 +571,7 @@ subscribeInlet
      . (DataSource d -> d -> RpdEff e Unit)
     -> InletPath
     -> Network d
-    -> Maybe (Array (Canceler e))
+    -> Maybe (Array (Subscriber e))
 subscribeInlet f inletPath network =
     subscribeInlet' f <$> findInlet inletPath network
 
@@ -591,14 +580,11 @@ subscribeInlet'
     :: forall d e
      . (DataSource d -> d -> RpdEff e Unit)
     -> Inlet d
-    -> Array (Canceler e)
+    -> Array (Subscriber e)
 subscribeInlet' f (Inlet { path, sources }) =
     map
-        (\source -> do
-            log $ "subscribeInlet " <> show path
-            subEff <- subscribe (getFlowOf source) (f source)
-            cancel <- subEff
-            pure cancel
+        (\source ->
+            subscribe (getFlowOf source) (f source)
         ) sources
 
 

@@ -54,7 +54,7 @@ createRenderer render = (\nw -> do
         --             r <- res
         --             pure r
         --     in cancelers'
-        dataFlow = fold dataFoldingF' uiMsgFlow $ (Map.empty /\ Map.empty)
+        dataFlow = foldH dataFoldingF' uiMsgFlow $ (Map.empty /\ Map.empty)
         -- dataFlow = withLast uiMsgFlow
     -- _ <- subscribe dataFlow $ \(ui /\ msg) _ -> log $ "aaa " <> show msg
     -- _ <- subscribe dataFlow (\(eff /\ msg /\ cancellers) -> do
