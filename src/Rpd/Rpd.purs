@@ -12,7 +12,7 @@ module Rpd
     , patchId, nodePath, inletPath, outletPath
     -- , subscribeDataFlow,
     , subscribeAll, subscribeTop
-    , Canceler, Subscriber, Cancelers, initCancelers
+    , Subscriber, Canceler, Subscribers, Cancelers, initCancelers
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
     , notInTheSameNode
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
@@ -593,7 +593,7 @@ subscribeTop
      . (DataSource d -> d -> RpdEff e Unit)
     -> InletPath
     -> Network d
-    -> Maybe (Canceler e)
+    -> Maybe (Subscriber e)
 subscribeTop f inletPath network =
     findInlet inletPath network >>= subscribeTop' f
 
@@ -602,12 +602,10 @@ subscribeTop'
     :: forall d e
      . (DataSource d -> d -> RpdEff e Unit)
     -> Inlet d
-    -> Maybe (Canceler e)
+    -> Maybe (Subscriber e)
 subscribeTop' f (Inlet { sources }) =
-    (\topSource -> do
-        subEff <- subscribe (getFlowOf topSource) (f topSource)
-        cancel <- subEff
-        pure cancel
+    (\topSource ->
+        subscribe (getFlowOf topSource) (f topSource)
     ) <$> head sources
 
 

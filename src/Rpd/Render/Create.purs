@@ -30,6 +30,8 @@ import Rpd.Flow
     )
 
 
+-- https://dvdsgl.co/2016/a-trello-monad-in-the-dark/
+
 createRenderer :: forall d e. (Show d) => (Push d e -> UI d -> R.RenderEff e) -> R.Renderer d e
 createRenderer render = (\nw -> do
     { flow : interactions, push : pushInteraction } <- create
@@ -109,15 +111,17 @@ dataFoldingF
     => (d -> R.InletPath -> R.RpdEff e Unit)
     -> (d -> R.OutletPath -> R.RpdEff e Unit)
     -> (UI d /\ Message d)
-    -> R.Cancelers e
-    -> R.Cancelers e
+    -> R.RpdEff e (R.Cancelers e)
+    -> R.RpdEff e (R.Cancelers e)
 dataFoldingF
     inletHandler
     outletHandler
     ((UI _ network) /\ msg)
-    ( allOutletCancelers /\ allInletCancelers ) =
+    cancellersEff = do
+    ( allOutletCancelers /\ allInletCancelers ) <- cancellersEff
     let
-        cancelers =
+        subscribers :: R.Subscribers e
+        subscribers =
             {- pure $ -}
             case msg of
                 -- AddNode -> pure cancelers -- FIXME: implement
@@ -166,7 +170,7 @@ dataFoldingF
         -- newCancelers = do
         --     c <- subUnsubEff
         --     pure c
-    in cancelers
+    pure subscribers
 
 pushInletData
     :: forall d e
