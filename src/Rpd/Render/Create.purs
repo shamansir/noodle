@@ -119,58 +119,25 @@ dataFoldingF
     ((UI _ network) /\ msg)
     cancellersEff = do
     ( allOutletCancelers /\ allInletCancelers ) <- cancellersEff
-    let
-        subscribers :: R.Subscribers e
-        subscribers =
-            {- pure $ -}
-            case msg of
-                -- AddNode -> pure cancelers -- FIXME: implement
-                SubscribeAllData ->
-                    -- TODO: subscribe to all inlets, outlets and their sources
-                    -- subscriber <- subscribeData
-                    --     (pushInletData pushInteraction)
-                    --     (pushOutletData pushInteraction) network
-                    R.subscribeAll
-                        (\inlet _ d -> inletHandler d inlet)
-                        (\outlet d -> outletHandler d outlet)
-                        network
-                ConnectTo inlet ->
-                    let
-                        canceler = R.subscribeTop (\_ d -> inletHandler d inlet) inlet network
-                        allInletCancelers' = do
-                            inletCancelers <- Map.lookup inlet allInletCancelers
-                            canceler' <- canceler
-                            let inletCancelers' = canceler' : inletCancelers
-                                cancelers' = Map.insert inlet inletCancelers' allInletCancelers
-                            pure cancelers'
-                    in allOutletCancelers /\ fromMaybe allInletCancelers allInletCancelers'
-                DisconnectAt inlet ->
-                    -- TODO: think on the fact that last source could be not the found one!
-                    -- (because user sources, etc.)
-                    -- currently the logic of connecting/disconnecting + update, kinda guarantees that
-                    -- it is the same one, however it's better to be sure and do not only trust the
-                    -- core logic to be conformant with this one, but also may be introduce IDs to ensure
-                    -- everything is properly arranged...
-                    -- What to do with the Links in the Network also?
-                    let
-                        maybeCancel :: Maybe (R.Canceler e)
-                        maybeCancel = Map.lookup inlet allInletCancelers >>= head
-                        _ = case maybeCancel of
-                            Just cancel -> do
-                                log "perform cancel"
-                                _ <- cancel
-                                -- _ <- cancelEff
-                                pure unit
-                            Nothing -> pure unit
-                    in
-                        -- TODO: remove the canceller?
-                        allOutletCancelers /\ allInletCancelers
-                _ -> allOutletCancelers /\ allInletCancelers
-        -- newCancelers :: R.Cancelers e
-        -- newCancelers = do
-        --     c <- subUnsubEff
-        --     pure c
-    pure subscribers
+    pure $ case msg of
+            -- AddNode -> pure cancelers -- FIXME: implement
+            SubscribeAllData ->
+                R.subscribeAll
+                    (\inlet _ d -> inletHandler d inlet)
+                    (\outlet d -> outletHandler d outlet)
+                    network
+                -- subscribe with function below and execute all
+            ConnectToInlet inlet ->
+                -- subscribe with function below and execute subscriber,
+                -- then insert the resulting canceler into the map
+            DisconnectAt inlet ->
+                -- execute the canceler returned from function below,
+                -- then remove it from the map
+    where
+        subscribeAll :: R.Network d -> R.Subscribers e
+        connectToInlet :: R.InletPath -> Maybe (R.Subscriber e)
+        disconnectAtInlet :: R.InletPath -> Maybe (R.Canceler e)
+
 
 pushInletData
     :: forall d e
