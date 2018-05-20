@@ -11,7 +11,7 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 import Data.Array (head, (:))
 import Data.Array as Array
 import Data.Filterable (filter)
-import Data.Map (Map)
+import Data.Map (Map, mapWithKey)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import Data.Tuple (fst)
@@ -56,7 +56,7 @@ createRenderer render = (\nw -> do
         --             r <- res
         --             pure r
         --     in cancelers'
-        dataFlow = foldH dataFoldingF' uiMsgFlow $ (Map.empty /\ Map.empty)
+        dataFlow = foldH dataFoldingF' uiMsgFlow $ pure (Map.empty /\ Map.empty)
         -- dataFlow = withLast uiMsgFlow
     -- _ <- subscribe dataFlow $ \(ui /\ msg) _ -> log $ "aaa " <> show msg
     -- _ <- subscribe dataFlow (\(eff /\ msg /\ cancellers) -> do
@@ -118,25 +118,51 @@ dataFoldingF
     outletHandler
     ((UI _ network) /\ msg)
     cancellersEff = do
-    ( allOutletCancelers /\ allInletCancelers ) <- cancellersEff
-    pure $ case msg of
-            -- AddNode -> pure cancelers -- FIXME: implement
+    ( allOutletCancelers /\ allInletCancelers ) :: R.Cancelers e <- cancellersEff
+    pure $
+        case msg of
+            {- AddNode -> pure cancelers -- FIXME: implement -}
             SubscribeAllData ->
-                R.subscribeAll
-                    (\inlet _ d -> inletHandler d inlet)
-                    (\outlet d -> outletHandler d outlet)
-                    network
-                -- subscribe with function below and execute all
-            ConnectToInlet inlet ->
-                -- subscribe with function below and execute subscriber,
-                -- then insert the resulting canceler into the map
-            DisconnectAt inlet ->
-                -- execute the canceler returned from function below,
-                -- then remove it from the map
+                let
+                    ( allOutletSubscribers /\ allInletSubscribers ) = subscribeAll network
+                    allOutletCancelers' :: Map R.OutletPath (R.Canceler e)
+                    allOutletCancelers' =
+                        map performSub allOutletSubscribers
+                    allInletCancelers' :: Map R.InletPath (Array (R.Canceler e))
+                    allInletCancelers' =
+                        map (map performSub) allInletSubscribers
+                in do
+                    allOutletCancelers' /\ allInletCancelers
+                {- subscribe with function below and execute all -}
+            -- FIXME: implement
+            -- ConnectTo inlet ->
+                {- subscribe with function below and execute subscriber,
+                -- then insert the resulting canceler into the map -}
+                -- connectToInlet inlet network
+            -- FIXME: implement
+            -- DisconnectAt inlet ->
+            --     disconnectAtInlet inlet allInletCancelers
+                {- execute the canceler returned from function below,
+                -- then remove it from the map -}
+            _ -> ( allOutletCancelers /\ allInletCancelers )
     where
+        performSub :: R.Subscriber e -> R.Canceler e
+        performSub sub = do
+            canceler :: R.Canceler e <- sub
+            c <- canceler
+            pure c
         subscribeAll :: R.Network d -> R.Subscribers e
-        connectToInlet :: R.InletPath -> Maybe (R.Subscriber e)
-        disconnectAtInlet :: R.InletPath -> Maybe (R.Canceler e)
+        subscribeAll network =
+            R.subscribeAll
+                (\inlet _ d -> inletHandler d inlet)
+                (\outlet d -> outletHandler d outlet)
+                network
+        connectToInlet :: R.InletPath -> R.Network d -> Maybe (R.Subscriber e)
+        connectToInlet inlet network =
+            R.subscribeTop (\_ d -> inletHandler d inlet) inlet network
+        disconnectAtInlet :: R.InletPath -> Map R.InletPath (Array (R.Canceler e)) -> Maybe (R.Canceler e)
+        disconnectAtInlet inlet allInletCancelers =
+            Map.lookup inlet allInletCancelers >>= head
 
 
 pushInletData
