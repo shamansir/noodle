@@ -8,7 +8,7 @@ import Rpd.Render
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Data.Array (head, (:))
+import Data.Array (head, tail, (:))
 import Data.Array as Array
 import Data.Filterable (filter)
 import Data.Map (Map, mapWithKey)
@@ -119,38 +119,71 @@ dataFoldingF
     ((UI _ network) /\ msg)
     cancellersEff = do
     ( allOutletCancelers /\ allInletCancelers ) :: R.Cancelers e <- cancellersEff
-    pure $
-        case msg of
-            {- AddNode -> pure cancelers -- FIXME: implement -}
-            SubscribeAllData ->
+    case msg of
+        {- AddNode -> pure cancelers -- FIXME: implement -}
+        SubscribeAllData ->
+            let
+                ( allOutletSubscribers /\ allInletSubscribers ) = subscribeAll network
+                allOutletCancelers' :: Map R.OutletPath (R.Canceler e)
+                allOutletCancelers' =
+                    map performSub allOutletSubscribers
+                allInletCancelers' :: Map R.InletPath (Array (R.Canceler e))
+                allInletCancelers' =
+                    map (map performSub) allInletSubscribers
+            in pure $ allOutletCancelers' /\ allInletCancelers'
+            {- subscribe with function below and execute all -}
+        -- FIXME: implement
+        ConnectTo inlet -> do
                 let
-                    ( allOutletSubscribers /\ allInletSubscribers ) = subscribeAll network
-                    allOutletCancelers' :: Map R.OutletPath (R.Canceler e)
-                    allOutletCancelers' =
-                        map performSub allOutletSubscribers
-                    allInletCancelers' :: Map R.InletPath (Array (R.Canceler e))
-                    allInletCancelers' =
-                        map (map performSub) allInletSubscribers
-                in do
-                    allOutletCancelers' /\ allInletCancelers
-                {- subscribe with function below and execute all -}
-            -- FIXME: implement
-            -- ConnectTo inlet ->
-                {- subscribe with function below and execute subscriber,
-                -- then insert the resulting canceler into the map -}
-                -- connectToInlet inlet network
-            -- FIXME: implement
-            -- DisconnectAt inlet ->
-            --     disconnectAtInlet inlet allInletCancelers
-                {- execute the canceler returned from function below,
-                -- then remove it from the map -}
-            _ -> ( allOutletCancelers /\ allInletCancelers )
+                    maybeCanceler :: Maybe (R.Canceler e)
+                    maybeCanceler = connectToInlet inlet network <#> performSub
+                case maybeCanceler of
+                    Just canceler ->
+                        let
+                            inletCancelers' :: Array (R.Canceler e)
+                            inletCancelers' =
+                                case Map.lookup inlet allInletCancelers of
+                                    Just inletCancelers -> canceler : inletCancelers
+                                    Nothing -> [ canceler ]
+                            allInletCancelers' :: Map R.InletPath (Array (R.Canceler e))
+                            allInletCancelers' =
+                                Map.insert inlet inletCancelers' allInletCancelers
+                        in pure $ allOutletCancelers /\ allInletCancelers'
+                    Nothing -> pure $ allOutletCancelers /\ allInletCancelers
+            {- subscribe with function below and execute subscriber,
+            -- then insert the resulting canceler into the map -}
+            -- connectToInlet inlet network
+        -- FIXME: implement
+        DisconnectAt inlet -> do
+            -- _ <- fromMaybe (pure unit) $ disconnectAtInlet inlet allInletCancelers <#> performCancel
+            case disconnectAtInlet inlet allInletCancelers <#> performCancel of
+                Just eff -> do
+                    _ <- eff
+                    let
+                        inletCancelers' :: Array (R.Canceler e)
+                        inletCancelers' =
+                            -- FIMXE: the search is performed second time, first time at disconnectAtInlet
+                            case Map.lookup inlet allInletCancelers of
+                                Just inletCancelers -> fromMaybe [] $ tail inletCancelers -- tail inletCancelers <|> []
+                                Nothing -> [ ]
+                        allInletCancelers' :: Map R.InletPath (Array (R.Canceler e))
+                        allInletCancelers' =
+                            Map.insert inlet inletCancelers' allInletCancelers
+                    pure $ allOutletCancelers /\ allInletCancelers'
+                Nothing -> pure $ allOutletCancelers /\ allInletCancelers
+            {- execute the canceler returned from function below,
+            -- then remove it from the map -}
+        _ -> pure ( allOutletCancelers /\ allInletCancelers )
     where
         performSub :: R.Subscriber e -> R.Canceler e
         performSub sub = do
             canceler :: R.Canceler e <- sub
             c <- canceler
             pure c
+        performCancel :: R.Canceler e -> R.RpdEff e Unit
+        performCancel can = do
+            _ <- can
+            pure unit
         subscribeAll :: R.Network d -> R.Subscribers e
         subscribeAll network =
             R.subscribeAll
