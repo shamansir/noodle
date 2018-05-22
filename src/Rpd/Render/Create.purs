@@ -5,8 +5,9 @@ module Rpd.Render.Create
 import Prelude
 import Rpd.Render
 
-import Control.Monad.Eff (Eff)
+import Control.Monad.Eff (Eff, foreachE)
 import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Data.Array (head, tail, (:))
 import Data.Array as Array
@@ -56,7 +57,7 @@ createRenderer render = (\nw -> do
         --             r <- res
         --             pure r
         --     in cancelers'
-        dataFlow = foldH dataFoldingF' uiMsgFlow $ pure (Map.empty /\ Map.empty)
+        dataFlow = fold dataFoldingF' uiMsgFlow $ Map.empty /\ Map.empty
         -- dataFlow = withLast uiMsgFlow
     -- _ <- subscribe dataFlow $ \(ui /\ msg) _ -> log $ "aaa " <> show msg
     -- _ <- subscribe dataFlow (\(eff /\ msg /\ cancellers) -> do
@@ -111,14 +112,13 @@ dataFoldingF
     => (d -> R.InletPath -> R.RpdEff e Unit)
     -> (d -> R.OutletPath -> R.RpdEff e Unit)
     -> (UI d /\ Message d)
-    -> R.RpdEff e (R.Cancelers e)
-    -> R.RpdEff e (R.Cancelers e)
+    -> R.Cancelers e
+    -> R.Cancelers e
 dataFoldingF
     inletHandler
     outletHandler
     ((UI _ network) /\ msg)
-    cancellersEff = do
-    ( allOutletCancelers /\ allInletCancelers ) :: R.Cancelers e <- cancellersEff
+    ( allOutletCancelers /\ allInletCancelers ) = do
     case msg of
         {- AddNode -> pure cancelers -- FIXME: implement -}
         SubscribeAllData ->
@@ -126,11 +126,12 @@ dataFoldingF
                 ( allOutletSubscribers /\ allInletSubscribers ) = subscribeAll network
                 allOutletCancelers' :: Map R.OutletPath (R.Canceler e)
                 allOutletCancelers' =
-                    map performSub allOutletSubscribers
+                   -- performSub <$> allOutletSubscribers
+                    (\sub -> liftEff $ performSub sub) <$> allOutletSubscribers
                 allInletCancelers' :: Map R.InletPath (Array (R.Canceler e))
                 allInletCancelers' =
-                    map (map performSub) allInletSubscribers
-            in pure $ allOutletCancelers' /\ allInletCancelers'
+                    map performSub <$> allInletSubscribers
+            in allOutletCancelers' /\ allInletCancelers'
             {- subscribe with function below and execute all -}
         -- FIXME: implement
         ConnectTo inlet -> do
@@ -148,8 +149,8 @@ dataFoldingF
                             allInletCancelers' :: Map R.InletPath (Array (R.Canceler e))
                             allInletCancelers' =
                                 Map.insert inlet inletCancelers' allInletCancelers
-                        in pure $ allOutletCancelers /\ allInletCancelers'
-                    Nothing -> pure $ allOutletCancelers /\ allInletCancelers
+                        in allOutletCancelers /\ allInletCancelers'
+                    Nothing -> allOutletCancelers /\ allInletCancelers
             {- subscribe with function below and execute subscriber,
             -- then insert the resulting canceler into the map -}
             -- connectToInlet inlet network
@@ -157,8 +158,7 @@ dataFoldingF
         DisconnectAt inlet -> do
             -- _ <- fromMaybe (pure unit) $ disconnectAtInlet inlet allInletCancelers <#> performCancel
             case disconnectAtInlet inlet allInletCancelers <#> performCancel of
-                Just eff -> do
-                    _ <- eff
+                Just _ -> do
                     let
                         inletCancelers' :: Array (R.Canceler e)
                         inletCancelers' =
@@ -169,21 +169,16 @@ dataFoldingF
                         allInletCancelers' :: Map R.InletPath (Array (R.Canceler e))
                         allInletCancelers' =
                             Map.insert inlet inletCancelers' allInletCancelers
-                    pure $ allOutletCancelers /\ allInletCancelers'
-                Nothing -> pure $ allOutletCancelers /\ allInletCancelers
+                    allOutletCancelers /\ allInletCancelers'
+                Nothing -> allOutletCancelers /\ allInletCancelers
             {- execute the canceler returned from function below,
             -- then remove it from the map -}
-        _ -> pure ( allOutletCancelers /\ allInletCancelers )
+        _ -> allOutletCancelers /\ allInletCancelers
     where
         performSub :: R.Subscriber e -> R.Canceler e
-        performSub sub = do
-            canceler :: R.Canceler e <- sub
-            c <- canceler
-            pure c
-        performCancel :: R.Canceler e -> R.RpdEff e Unit
-        performCancel can = do
-            _ <- can
-            pure unit
+        performSub = unsafePerformEff -- FIXME: unsafe
+        performCancel :: R.Canceler e -> Unit
+        performCancel = unsafePerformEff -- FIXME: unsafe
         subscribeAll :: R.Network d -> R.Subscribers e
         subscribeAll network =
             R.subscribeAll
