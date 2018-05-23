@@ -17,9 +17,11 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
+import FRP (FRP)
 import Rpd as R
 import Rpd.Flow
     ( Flow
+    , FLOW
     , create
     , subscribe
     , fold
@@ -33,8 +35,11 @@ import Rpd.Flow
 
 -- https://dvdsgl.co/2016/a-trello-monad-in-the-dark/
 
+-- introduce newtype Canceler/Subscriber
+-- create SubUnsub module for managing data subscriptions
+-- remove Flow module, merge stuff there with SubUnsub, or just name SubUnsub -> Flow, but the separate type is not needed
 createRenderer :: forall d e. (Show d) => (Push d e -> UI d -> R.RenderEff e) -> R.Renderer d e
-createRenderer render = (\nw -> do
+createRenderer render = \nw -> do
     { flow : interactions, push : pushInteraction } <- create
     --{ flow : subs, push : pushSubEff } <- create
     let
@@ -64,7 +69,7 @@ createRenderer render = (\nw -> do
         -- _ <- eff
         -- log $ "from subscriber: " <> show msg
     --)
-    _ <- subscribe dataFlow (\_ -> pure unit) -- perform eff on the result
+    _ <- subscribe dataFlow (\_ -> pure unit) -- TODO: perform eff on the result
     _ <- subscribe uiMsgFlow $ \(ui /\ msg) -> do
         -- if messagAffectsSubscriptions msg
         --     then pure unit
@@ -92,7 +97,7 @@ createRenderer render = (\nw -> do
     _ <- subscribe uiFlow $ \ui -> render pushInteraction ui
     pushInteraction Init
     -}
-)
+
 
 foldingF :: forall d. Interaction d -> (UI d /\ Message d) -> (UI d /\ Message d)
 foldingF interaction (ui@(UI state _) /\ _) =
@@ -106,6 +111,7 @@ messagAffectsSubscriptions (ConnectTo _) = true
 messagAffectsSubscriptions (DisconnectAt _) = true
 messagAffectsSubscriptions _ = false
 
+
 dataFoldingF
     :: forall d e
      . (Show d)
@@ -118,7 +124,7 @@ dataFoldingF
     inletHandler
     outletHandler
     ((UI _ network) /\ msg)
-    ( allOutletCancelers /\ allInletCancelers ) = do
+    (allOutletCancelers /\ allInletCancelers) = do
     case msg of
         {- AddNode -> pure cancelers -- FIXME: implement -}
         SubscribeAllData ->
