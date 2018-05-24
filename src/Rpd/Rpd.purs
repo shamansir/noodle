@@ -4,9 +4,9 @@ module Rpd
     , DataSource(..), Flow, getFlowOf
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
-    , ProcessF
     , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
-    , connect, connect', disconnect, disconnect', disconnectTop, processWith
+    , connect, connect', disconnect, disconnect', disconnectTop
+    , ProcessF, processWith
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
@@ -19,8 +19,9 @@ import Prelude
 
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (isJust, Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Array ((:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head)
+-- import Data.Tuple.Nested (type (/\))
 
 import Control.Monad.Eff (Eff, kind Effect)
 
@@ -31,12 +32,13 @@ import FRP.Event (Event)
 type Flow d = Event d
 
 
--- type ProcessF d = (Array (String /\ d) -> Array (String /\ d))
+-- type ProcessF d = (Map InletPath d -> Map OutletPath d)
 type ProcessF d = (Map String d -> Map String d)
-type ProcessF' d = (String -> d -> d)
-type ProcessF'' d = (String -> d -> Maybe d)
+-- type DirectProcessF d = (String -> d -> String /\ d)
+-- type DirectProcessF' d = (String -> d -> d)
+-- type OptionalProcessF d = (String -> d -> Maybe d)
+-- type OptionalProcessF' d = (String -> d -> String /\ Maybe d)
 
-type AdaptF d = (d -> d)
 
 data Rpd d = Rpd (Network d)
 
@@ -71,6 +73,7 @@ data Node d = Node
     , inlets :: Array (Inlet d)
     , outlets :: Array (Outlet d)
     , process :: ProcessF d -- (Map String d -> Map String d)
+    -- , flow :: Flow (Map (Inlet d) d /\ Map (Outlet d) d)
     }
 -- S.constant is not able to send values afterwards, so we store the default value inside
 -- TODO: inlet sources should be a set of outletPaths, so outlet-inlet pairs would be unique
@@ -168,7 +171,7 @@ node name lazyInlets lazyOutlets =
                 , name
                 , inlets
                 , outlets
-                , process : id
+                , process : const Map.empty
                 }
 
 
@@ -347,30 +350,44 @@ updateOutlet updater (OutletPath nodePath outletId) network =
     ) nodePath network
 
 
-connect :: forall d. Outlet d -> Inlet d -> Patch d -> Patch d
-connect outlet inlet patch =
-    patch -- FIXME: implement
-
-
 processWith :: forall d. ProcessF d -> LazyNode d -> LazyNode d
 processWith processF nodeF =
     \path -> case nodeF path of Node node -> Node node { process = processF }
 
 
-processWith' :: forall d. ProcessF' d -> LazyNode d -> LazyNode d
-processWith' processF =
-    processWith f
-    where
-        f inputs = Map.mapWithKey processF inputs
+-- getInletLabel :: forall d. Node d -> InletPath -> Maybe String
+-- getInletLabel (Node { inlets }) path' =
+--     Array.filter (\(Inlet { path }) -> path == path') path inlets <#> \(Inlet { label }) -> label
 
 
-processWith'' :: forall d. ProcessF'' d -> d -> LazyNode d -> LazyNode d
-processWith'' processF default =
-    processWith f
-    where
-        f inputs = map (fromMaybe default)
-                    $ Map.filter isJust
-                    $ Map.mapWithKey processF inputs
+-- processWith' :: forall d. ProcessF' d -> LazyNode d -> LazyNode d
+-- processWith' processF =
+--     processWith f
+--     where
+--         f inputs = Map.mapWithKey processF inputs
+
+
+-- processWith'' :: forall d. ProcessF'' d -> d -> LazyNode d -> LazyNode d
+-- processWith'' processF default =
+--     processWith f
+--     where
+--         f inputs = map (fromMaybe default)
+--                     $ Map.filter isJust
+--                     $ Map.mapWithKey processF inputs
+
+
+-- processWith''' :: forall d. ProcessF''' d -> d -> LazyNode d -> LazyNode d
+-- processWith''' processF default =
+--     processWith f
+--     where
+--         f inputs = map (fromMaybe default)
+--                     $ Map.filter isJust
+--                     $ Map.mapWithKey processF inputs
+
+
+connect :: forall d. Outlet d -> Inlet d -> Patch d -> Patch d
+connect outlet inlet patch =
+    patch -- FIXME: implement
 
 
 connect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
