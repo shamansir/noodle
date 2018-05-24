@@ -42,15 +42,13 @@ Make Network normalized after creation (not a tree, but a collection of Patches,
 Secondary:
 ==========
 
-Add `RPD` Effect.
-
-Renderers are just `Network -> RpdEff` for now, so it's not actually a renderer but a general function to produce effects when network was 'prepared' (see below) — it could work for tests as well.
+Add `RPD` Effect. May be it should be produced by all these functions which subscribe to new data flows, and so the result of the `Rpd.run` function should contain it as well.
 
 Join Paths with the same data type and make them easily extractable to arrays.
 
 Maybe `Behavior` from `purescript-behaviors` is the better way to store / represent the processing function?
 
-We have 'unprepared network' and 'prepared network' states now — which could be confusing even while we model our API not to allow interchanging these states by accident. 'Prepared network' is the network the network which was subscribed to all data flows inside and produces data. 'unprepared network' is just structure.
+We have 'unprepared network' and 'prepared network' states now — which could be confusing even while we model our API not to allow interchanging these states by accident. 'Prepared network' is the network the network which was subscribed to all data flows inside and produces data. 'unprepared network' is just structure. Maybe differtiate them using separate `Network` data tags,like literally, `Prepared` and `Unprepared`?
 
 Maybe get rid of `DataMsg` and use data flow listeners with the help of `sampleOn` instead? So it won't be a separate stream but rather subscribers to all the inlets and outlets signals?
 

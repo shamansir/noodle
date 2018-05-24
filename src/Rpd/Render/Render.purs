@@ -41,6 +41,11 @@ import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import FRP.Event as Event
 
 
+type RenderEff e = R.RpdEff e Unit
+
+type Renderer d e = R.Network d -> RenderEff e
+
+
 type UIState d =
     { selection :: Selection
     , dragging :: Maybe R.NodePath

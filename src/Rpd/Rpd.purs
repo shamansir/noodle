@@ -1,6 +1,5 @@
 module Rpd
     ( Rpd, run, RpdEff, RpdEffE
-    , Renderer, RenderEff
     , DataSource(..), Flow, getFlowOf
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
@@ -120,14 +119,10 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 type RpdEffE e = ( frp :: FRP | e )
 type RpdEff e v = Eff (RpdEffE e) v
 
-type RenderEff e =
-    RpdEff e Unit
-
-
-type Renderer d e = Network d -> RenderEff e
-
-
-run :: forall d e. Renderer d e -> Network d -> RenderEff e
+-- may be it will make more sense when we'll do subscriptions before passing network to rederer
+-- also, may be change to ehm... `UnpreparedNetwork`` and then the subscriber gets the `Real` one?
+-- is it the place where RPD effect should be added to the result, like with subscriptions?
+run :: forall d e. (Network d -> RpdEff e Unit) -> Network d -> RpdEff e Unit
 run renderer nw = renderer nw
 
 
