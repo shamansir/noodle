@@ -1,5 +1,6 @@
 module Rpd.Render
-    ( UI(..)
+    ( Renderer, RenderEff
+    , UI(..)
     , UIState
     , Push
     , Message(..), Interaction(..), Selection(..), Subject(..)
@@ -10,11 +11,10 @@ module Rpd.Render
 import Prelude
 
 import Rpd
-    ( Network, Renderer
+    ( Network
     , PatchId, NodePath, InletPath, OutletPath, LinkId
-    , RenderEff
-    , connect'
     , RpdEff
+    , connect'
     , disconnectTop
     , isNodeInPatch, isInletInNode, isInletInPatch, isOutletInPatch, isOutletInNode
     ) as R
@@ -129,7 +129,7 @@ init =
 
 
 -- https://dvdsgl.co/2016/a-trello-monad-in-the-dark/
-create :: forall d e. (Show d) => (Push d e -> UI d -> R.RenderEff e) -> R.Renderer d e
+create :: forall d e. (Show d) => (Push d e -> UI d -> RenderEff e) -> Renderer d e
 create render = \nw -> do
     { event : interactions, push : pushInteraction } <- Event.create
     --{ flow : subs, push : pushSubEff } <- create

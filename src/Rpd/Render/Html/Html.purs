@@ -5,6 +5,7 @@ import Prelude
 import Rpd as R
 import Rpd.Render
     ( create
+    , Renderer, RenderEff
     , UI(..), Interaction(..), Subject(..), Push
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
     )
@@ -38,7 +39,7 @@ type Listener e = EventListener (DomEffE e)
 
 type Markup e = H.Markup (Listener e)
 
-type DomRenderer d e = R.Renderer d (DomEffE e)
+type DomRenderer d e = Renderer d (DomEffE e)
 
 type FireInteraction d e = Interaction d -> Listener e
 
@@ -50,7 +51,7 @@ renderer
     :: forall d e
      . (Show d)
     => Element
-    -> R.Renderer d ( dom :: DOM | e )
+    -> Renderer d ( dom :: DOM | e )
 renderer target =
     create $ render target
 
@@ -61,7 +62,7 @@ render
     => Element
     -> Push d ( dom :: DOM | e )
     -> UI d
-    -> R.RenderEff ( dom :: DOM | e )
+    -> RenderEff ( dom :: DOM | e )
 render target push ui =
     ToDOM.patch target $ do
         network fire ui
