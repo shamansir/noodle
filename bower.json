@@ -1,7 +1,6 @@
 {
   "name": "rpd-purs",
   "ignore": [
-    "**/.*",
     "node_modules",
     "bower_components",
     "output"
