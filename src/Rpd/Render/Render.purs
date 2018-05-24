@@ -4,29 +4,43 @@ module Rpd.Render
     , Push
     , Message(..), Interaction(..), Selection(..), Subject(..)
     , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
-    , init, update, updateAndLog
-    , interactionToMessage -- FIXME: Do not expose
+    , create
     ) where
 
 import Prelude
 
-import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (CONSOLE, log)
-import Data.Array ((:))
+import Rpd
+    ( Network, Renderer
+    , PatchId, NodePath, InletPath, OutletPath, LinkId
+    , RenderEff
+    , connect'
+    , RpdEff
+    , disconnectTop
+    , isNodeInPatch, isInletInNode, isInletInPatch, isOutletInPatch, isOutletInNode
+    ) as R
+import Rpd.Flow
+    ( Subscriber, Subscribers, Canceler, Cancelers
+    , subscribeAll, subscribeTop
+    , initCancelers
+    ) as R
+
+import Data.Array ((:), head, tail)
 import Data.Array as Array
 import Data.Foldable (foldr)
-import Data.Map (Map(..))
+import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust, isNothing)
-import Data.Set (Set(..))
+import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing)
+import Data.Set (Set)
 import Data.Set as Set
+import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
-import Rpd as R
--- import Signal.Channel as SC
+
+import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Unsafe (unsafePerformEff)
+
+import FRP.Event as Event
 
 
--- newtype UIState d =
---     UIState
 type UIState d =
     { selection :: Selection
     , dragging :: Maybe R.NodePath
@@ -107,6 +121,52 @@ init =
     , lastInteractions : []
     -- , friendlyLog : ""
     }
+
+
+-- https://dvdsgl.co/2016/a-trello-monad-in-the-dark/
+create :: forall d e. (Show d) => (Push d e -> UI d -> R.RenderEff e) -> R.Renderer d e
+create render = \nw -> do
+    { event : interactions, push : pushInteraction } <- Event.create
+    --{ flow : subs, push : pushSubEff } <- create
+    let
+        uiMsgFlow = Event.fold updateUi interactions $ UI init nw /\ NoOp
+        uiFlow = map fst uiMsgFlow
+        trackTheFlow' =
+            trackTheFlow
+                (pushInletData pushInteraction)
+                (pushOutletData pushInteraction)
+        dataFlow = Event.fold trackTheFlow' uiMsgFlow R.initCancelers
+    _ <- Event.subscribe dataFlow (\_ -> pure unit) -- TODO: perform eff on the result
+    _ <- Event.subscribe uiMsgFlow $ \(ui /\ msg) -> do
+        render pushInteraction ui
+    pushInteraction Init
+    -- TODO: try `sampleOn`, may be it's the more proper thing to use
+    --       instead of `fold` in case of data subscriptions/cancels.
+    {- The code below should work instead, when
+       https://github.com/paf31/purescript-behaviors/issues/27
+       is dealt with. Like, folds start fresh on every subscription,
+       and it is what breaks the flow.
+    -}
+    {-
+    { flow : interactions, push : pushInteraction } <- create
+    let
+        uiMsgFlow = fold foldingF interactions $ UI init nw /\ NoOp
+        uiFlow = map fst uiMsgFlow
+        dataFoldingF' =
+            dataFoldingF
+                (pushInletData pushInteraction)
+                (pushOutletData pushInteraction)
+        dataFlow = fold dataFoldingF' uiMsgFlow $ pure (Map.empty /\ Map.empty)
+    _ <- subscribe dataFlow id
+    _ <- subscribe uiFlow $ \ui -> render pushInteraction ui
+    pushInteraction Init
+    -}
+
+
+updateUi :: forall d. Interaction d -> (UI d /\ Message d) -> (UI d /\ Message d)
+updateUi interaction (ui@(UI state _) /\ _) =
+    updateAndLog msg ui /\ msg
+    where msg = interactionToMessage interaction state
 
 
 update :: forall d. Message d -> UI d -> UI d
@@ -317,14 +377,128 @@ isNodeSelected (SOutlets outletPaths) nodePath =
 isNodeSelected _ _ = false
 
 
-isInletSelected :: forall d. Selection -> R.InletPath -> Boolean
+isInletSelected :: Selection -> R.InletPath -> Boolean
 isInletSelected (SInlets inletPaths) inletPath = someSatisfy ((==) inletPath) inletPaths
 isInletSelected _ _ = false
 
 
-isOutletSelected :: forall d. Selection -> R.OutletPath -> Boolean
+isOutletSelected :: Selection -> R.OutletPath -> Boolean
 isOutletSelected (SOutlets outletPaths) outletPath = someSatisfy ((==) outletPath) outletPaths
 isOutletSelected _ _ = false
+
+
+
+trackTheFlow
+    :: forall d e
+     . (Show d)
+    => (d -> R.InletPath -> R.RpdEff e Unit)
+    -> (d -> R.OutletPath -> R.RpdEff e Unit)
+    -> (UI d /\ Message d)
+    -> R.Cancelers e
+    -> R.Cancelers e
+trackTheFlow
+    inletHandler
+    outletHandler
+    ((UI _ network) /\ msg)
+    (allOutletCancelers /\ allInletCancelers) = do
+    case msg of
+        {- AddNode -> pure cancelers -- FIXME: implement -}
+        SubscribeAllData ->
+            let
+                ( allOutletSubscribers /\ allInletSubscribers ) = subscribeAll network
+                allOutletCancelers' :: Map R.OutletPath (R.Canceler e)
+                allOutletCancelers' =
+                   -- performSub <$> allOutletSubscribers
+                    (\sub -> liftEff $ performSub sub) <$> allOutletSubscribers
+                allInletCancelers' :: Map R.InletPath (Array (R.Canceler e))
+                allInletCancelers' =
+                    map performSub <$> allInletSubscribers
+            in allOutletCancelers' /\ allInletCancelers'
+            {- subscribe with function below and execute all -}
+        -- FIXME: implement
+        ConnectTo inlet -> do
+                let
+                    maybeCanceler :: Maybe (R.Canceler e)
+                    maybeCanceler = connectToInlet inlet network <#> performSub
+                case maybeCanceler of
+                    Just canceler ->
+                        let
+                            inletCancelers' :: Array (R.Canceler e)
+                            inletCancelers' =
+                                case Map.lookup inlet allInletCancelers of
+                                    Just inletCancelers -> canceler : inletCancelers
+                                    Nothing -> [ canceler ]
+                            allInletCancelers' :: Map R.InletPath (Array (R.Canceler e))
+                            allInletCancelers' =
+                                Map.insert inlet inletCancelers' allInletCancelers
+                        in allOutletCancelers /\ allInletCancelers'
+                    Nothing -> allOutletCancelers /\ allInletCancelers
+            {- subscribe with function below and execute subscriber,
+            -- then insert the resulting canceler into the map -}
+            -- connectToInlet inlet network
+        -- FIXME: implement
+        DisconnectAt inlet -> do
+            -- _ <- fromMaybe (pure unit) $ disconnectAtInlet inlet allInletCancelers <#> performCancel
+            case disconnectAtInlet inlet allInletCancelers <#> performCancel of
+                Just _ -> do
+                    let
+                        inletCancelers' :: Array (R.Canceler e)
+                        inletCancelers' =
+                            -- FIMXE: the search is performed second time, first time at disconnectAtInlet
+                            case Map.lookup inlet allInletCancelers of
+                                Just inletCancelers -> fromMaybe [] $ tail inletCancelers -- tail inletCancelers <|> []
+                                Nothing -> [ ]
+                        allInletCancelers' :: Map R.InletPath (Array (R.Canceler e))
+                        allInletCancelers' =
+                            Map.insert inlet inletCancelers' allInletCancelers
+                    allOutletCancelers /\ allInletCancelers'
+                Nothing -> allOutletCancelers /\ allInletCancelers
+            {- execute the canceler returned from function below,
+            -- then remove it from the map -}
+        _ -> allOutletCancelers /\ allInletCancelers
+    where
+        performSub :: R.Subscriber e -> R.Canceler e
+        performSub = unsafePerformEff -- FIXME: unsafe
+        performCancel :: R.Canceler e -> Unit
+        performCancel = unsafePerformEff -- FIXME: unsafe
+        subscribeAll :: R.Network d -> R.Subscribers e
+        subscribeAll network' =
+            R.subscribeAll
+                (\inlet _ d -> inletHandler d inlet)
+                (\outlet d -> outletHandler d outlet)
+                network'
+        connectToInlet :: R.InletPath -> R.Network d -> Maybe (R.Subscriber e)
+        connectToInlet inlet network' =
+            R.subscribeTop (\_ d -> inletHandler d inlet) inlet network'
+        disconnectAtInlet :: R.InletPath -> Map R.InletPath (Array (R.Canceler e)) -> Maybe (R.Canceler e)
+        disconnectAtInlet inlet allInletCancelers' =
+            Map.lookup inlet allInletCancelers' >>= head
+
+
+pushInletData
+    :: forall d e
+     . (Interaction d -> R.RpdEff e Unit)
+    -> (d -> R.InletPath -> R.RpdEff e Unit)
+pushInletData push =
+    (\d inletPath -> do
+        -- log $ "Receive from " <> show inletPath
+        push $ DataAtInlet inletPath d)
+
+
+pushOutletData
+    :: forall d e
+     . (Interaction d -> R.RpdEff e Unit)
+    -> (d -> R.OutletPath -> R.RpdEff e Unit)
+pushOutletData push =
+    (\d outletPath -> do
+        --log $ "Receive from " <> show outletPath
+        push $ DataAtOutlet outletPath d)
+
+
+showCancelers :: forall e. R.Cancelers e -> String
+showCancelers (outletCancelers /\ inletCancelers) =
+    show $ "Outlets: " <> (show $ Map.keys outletCancelers) <>
+           "Inlets: " <> (show $ Map.keys inletCancelers)
 
 
 instance showSelection :: Show Selection where

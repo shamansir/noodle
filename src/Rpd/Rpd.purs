@@ -1,40 +1,34 @@
 module Rpd
-    ( RPD
-    , Rpd, run, RpdEff, RpdEffE
+    ( Rpd, run, RpdEff, RpdEffE
     , Renderer, RenderEff
-    , DataSource, Flow
+    , DataSource(..), Flow, getFlowOf
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
     , ProcessF
     , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
     , connect, connect', disconnect, disconnect', disconnectTop, processWith
-    --, NetworkT, PatchT
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
-    -- , subscribeDataFlow,
-    , subscribeAll, subscribeTop
-    , Subscriber, Canceler, Subscribers, Cancelers, initCancelers
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
     , notInTheSameNode
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
-    -- , findTopSource, getFlowOf
+    , findPatch, findNode, findOutlet, findInlet
     ) where
 
 import Prelude
 
-import Data.Monoid (mempty)
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, Maybe(..), fromMaybe)
+import Data.Array ((:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head)
+
 import Control.Monad.Eff (Eff, kind Effect)
-import Control.Monad.Eff.Console (CONSOLE, log)
-import Data.Array ((:), (!!), concatMap, mapWithIndex, catMaybes, mapMaybe, modifyAt, foldr, findMap, delete, filter, head)
-import Data.Map (fromFoldable)
-import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Foldable (fold)
+
 import FRP (FRP)
-import FRP.Event (Event, subscribe)
+import FRP.Event (Event)
+
+
+type Flow d = Event d
 
 
 -- type ProcessF d = (Array (String /\ d) -> Array (String /\ d))
@@ -51,9 +45,6 @@ data NodePath = NodePath PatchId Int
 data InletPath = InletPath NodePath Int
 data OutletPath = OutletPath NodePath Int
 data LinkId = LinkId Int
-
-
-type Flow d = Event d
 
 
 data DataSource d
@@ -121,9 +112,9 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 --     = FromInlet InletPath d
 --     | FromOutlet OutletPath d
 
-foreign import data RPD :: Effect
+-- foreign import data RPD :: Effect
 
-type RpdEffE e = (rpd :: RPD | e)
+type RpdEffE e = ( frp :: FRP | e )
 type RpdEff e v = Eff (RpdEffE e) v
 
 type RenderEff e =
@@ -248,13 +239,6 @@ findTopConnection inletPath network =
 findTopSource :: forall d. InletPath -> Network d -> Maybe (DataSource d)
 findTopSource inletPath network =
     findInlet inletPath network >>= \(Inlet { sources }) -> head sources
-
-
-getFlowOf :: forall d. DataSource d -> Flow d
-getFlowOf dataSource =
-    case dataSource of
-        UserSource flow -> flow
-        OutletSource _ flow -> flow
 
 
 findSource :: forall d. OutletPath -> InletPath -> Network d -> Maybe (DataSource d)
@@ -462,6 +446,13 @@ removeLink outletPath inletPath network = do
                     patchId
                     network
     pure network'
+
+
+getFlowOf :: forall d. DataSource d -> Flow d
+getFlowOf dataSource =
+    case dataSource of
+        UserSource flow -> flow
+        OutletSource _ flow -> flow
 
 
 patchId :: Int -> PatchId

@@ -1,50 +1,44 @@
 module Rpd.Render.Html where
 
 import Prelude
-import Rpd.Render
-import Rpd.Render.Create
 
-import Control.Alternative ((<|>))
-import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (CONSOLE, log)
-import Control.MonadZero (guard)
+import Rpd as R
+import Rpd.Render
+    ( create
+    , UI(..), Interaction(..), Subject(..), Push
+    , isPatchSelected, isNodeSelected, isInletSelected, isOutletSelected
+    )
+
+import Data.Array (length)
+import Data.Filterable (filter)
+import Data.Foldable (for_)
+import Data.Map as Map
+import Data.Maybe (fromMaybe, isJust)
+import Data.String.NonEmpty (fromString, joinWith, singleton)
+import Data.Tuple (fst, snd)
+import Data.Tuple.Nested ((/\), type (/\))
+
 import DOM (DOM)
 import DOM.Event.EventTarget (EventListener, eventListener)
 import DOM.Node.Types (Element)
-import Data.Array ((:))
-import Data.Array (length)
-import Data.Array as Array
-import Data.Filterable (filter)
-import Data.Foldable (for_)
-import Data.Map (Map(..))
-import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
-import Data.String.NonEmpty (NonEmptyString(..), fromString, joinWith, singleton)
-import Data.Tuple (curry, uncurry, fst, snd)
-import Data.Tuple as Tuple
-import Data.Tuple.Nested ((/\), type (/\))
-import FRP (FRP)
-import FRP.Event (Event, create, subscribe)
-import FRP.Event.Class as Event
-import Rpd as R
-import Rpd.Flow as R
-import Text.Smolder.HTML as H
+
+import Text.Smolder.HTML (div, p, span) as H
 import Text.Smolder.HTML.Attributes as HA
 import Text.Smolder.Markup ((#!), (!), on)
-import Text.Smolder.Markup as H
+import Text.Smolder.Markup (Markup, text) as H
 import Text.Smolder.Renderer.DOM as ToDOM
 
 -- type HtmlEffE e = R.RpdEffE ( dom :: DOM | e )
 -- type HtmlEff e v = R.RenderEff (HtmlEffE e) v
 
-type DomEffE e = R.RpdEffE ( dom :: DOM | e )
+
+type DomEffE e = R.RpdEffE (dom :: DOM | e)
 
 type Listener e = EventListener (DomEffE e)
 
 type Markup e = H.Markup (Listener e)
 
-type DomRenderer d e = R.Renderer d ( dom :: DOM | e )
+type DomRenderer d e = R.Renderer d (DomEffE e)
 
 type FireInteraction d e = Interaction d -> Listener e
 
@@ -58,7 +52,7 @@ renderer
     => Element
     -> R.Renderer d ( dom :: DOM | e )
 renderer target =
-    createRenderer $ render target
+    create $ render target
 
 
 render
@@ -201,7 +195,7 @@ prepareToFire push interaction =
     -- eventListener $ const $ push msg
     -- _ <- log $ "<<<" <> show msg
     eventListener (\_ -> do
-        log $ ">>>" <> show interaction
+        -- log $ ">>>" <> show interaction
         push interaction
         pure unit
     )

@@ -1,12 +1,36 @@
-module Rpd.Flow (test) where
+module Rpd.Flow
+    ( SubscriberEff
+    , Subscriber, Subscribers
+    , Canceler, Cancelers, initCancelers
+    , subscribeAll, subscribeNode, subscribeTop
+    , flow
+    ) where
+
+import Prelude
+
+import Rpd
+    ( Network(..), Patch(..), Node(..), Inlet(..), Outlet(..)
+    , NodePath, InletPath, OutletPath
+    , DataSource, Flow, getFlowOf
+    , findNode, findInlet, findOutlet
+    , RpdEff
+    )
+
+import Data.Maybe (Maybe)
+import Data.Array (concatMap, mapMaybe, head)
+import Data.Map (Map, fromFoldable)
+import Data.Map as Map
+import Data.Tuple.Nested ((/\), type (/\))
+
+import FRP.Event (Event, subscribe)
 
 
 type SubscriberEff e =
-    RpdEff ( frp :: FRP | e) Unit
+    RpdEff e Unit
 type Canceler e =
-    RpdEff (frp :: FRP | e) Unit
+    RpdEff e Unit
 type Subscriber e =
-    RpdEff (frp :: FRP | e) (Canceler e)
+    RpdEff e (Canceler e)
 type Cancelers e =
     Map OutletPath (Canceler e) /\ Map InletPath (Array (Canceler e))
 type Subscribers e =
@@ -20,7 +44,10 @@ type Subscribers e =
 -- newtype Subscribers e =
 --     Subscribers (Map OutletPath (Subscriber e) /\ Map InletPath (Array (Subscriber e)))
 
-{- Data flow: subscriptions, cancelling, etc. -}
+
+flow :: forall d. Event d -> Flow d
+flow = id
+
 
 initCancelers :: forall e. Cancelers e
 initCancelers = Map.empty /\ Map.empty
@@ -91,7 +118,7 @@ subscribeOutlet'
     -> Maybe (Subscriber e) -- TODO: return subscriber to execute later instead
 subscribeOutlet' f (Outlet { path, flow : maybeFlow }) =
     maybeFlow >>=
-        \flow -> pure $ subscribe flow f
+        \flow' -> pure $ subscribe flow' f
 
 
 subscribeInlet
