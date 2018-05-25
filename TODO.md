@@ -46,9 +46,17 @@ Add `RPD` Effect. May be it should be produced by all these functions which subs
 
 Join Paths with the same data type and make them easily extractable to arrays.
 
+After dealing with tests, think on:
+
+    * Returning `Aff` instead of `Eff` from any renderer or any handler, and so from `Rpd.run`: so handler would be able to handle the errors or pass them to the `main` function;
+    * Add _node flow_ (i.e. `process` function) subscriptions/canceling to `Subscribers` and `Cancelers`;
+    * Think on moving `Subscribers` and `Cancelers` into the _prepared_ `Network`: start the subscriptions with the same `fold` as for rendering now, but inside `run` (may be we'll have to move `Rpd.run` to `Rpd.Flow.run`);
+    * ...^ so we'll be able to manage subscriptions in `connect` / `disconnect` / `addNode` etc. functions, return `Eff`s from them and so may be even deal this way with `unsafePerformEff`;
+    * Since all the data flow should start/work just by running the Rpd system, without any special hander, even with the `pure unit` one;
+
 Maybe `Behavior` from `purescript-behaviors` is the better way to store / represent the processing function?
 
-We have 'unprepared network' and 'prepared network' states now — which could be confusing even while we model our API not to allow interchanging these states by accident. 'Prepared network' is the network the network which was subscribed to all data flows inside and produces data. 'unprepared network' is just structure. Maybe differtiate them using separate `Network` data tags,like literally, `Prepared` and `Unprepared`?
+We have 'unprepared network' and 'prepared network' states now — which could be confusing even while we model our API not to allow interchanging these states by accident. 'Prepared network' is the network the network which was subscribed to all data flows inside and produces data. 'unprepared network' is just structure. Maybe differtiate them using separate `Network` data tags,like literally, `Prepared` and `Unprepared` or just `Network` and `NetworkDef` (like both _deferred_ and _definition_, you see?).
 
 Maybe get rid of `DataMsg` and use data flow listeners with the help of `sampleOn` instead? So it won't be a separate stream but rather subscribers to all the inlets and outlets signals?
 
