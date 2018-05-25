@@ -2,25 +2,22 @@ module Test.Main where
 
 import Prelude
 
-import Data.Time.Duration (Milliseconds(..))
-
-import Control.Monad.Aff (delay)
 import Control.Monad.Aff (Aff, attempt, delay, makeAff, runAff, launchAff, throwError, try)
+import Control.Monad.Aff (delay)
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Ref (REF, newRef, readRef, writeRef)
 import Control.Monad.Eff.Class (liftEff)
-
+import Control.Monad.Eff.Ref (REF, newRef, readRef, writeRef)
+import Data.Time.Duration (Milliseconds(..))
+import Data.Tuple.Nested ((/\))
+import FRP (FRP)
+import Rpd (run, empty, Network) as Rpd
+import Rpd.Flow (Subscribers, subscribeAll) as Rpd
+import RpdTest.Network.Empty (network) as TestEmpty
+import RpdTest.Network.Flow (network) as TestFlow
 import Test.Spec (pending, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
-
-import FRP (FRP)
-
-import Rpd (run, empty, Network) as Rpd
-
-import RpdTest.Network.Flow (network) as TestFlow
-import RpdTest.Network.Empty (network) as TestEmpty
 
 
 type TestAffE e = (ref :: REF, frp :: FRP | e)
@@ -35,7 +32,21 @@ main = run [consoleReporter] do
         runWith TestEmpty.network
           \nw -> pure unit
     describe "subscribing to the data flow" do
-      pure unit
+      it "receives the data from events" do
+        -- TODO: move tests for a network in the module with this network, export as a suite
+        runWith TestFlow.network
+          \nw ->
+            do
+              collectedData <- liftEff $ do
+                collectedData <- newRef []
+                let
+                  onInletData path source d = do pure unit
+                  onOutletData path d = do pure unit
+                  subscribers = Rpd.subscribeAll onInletData onOutletData nw
+                _ <- performSubs subscribers
+                readRef collectedData
+              -- collectedData `shouldEqual` []
+              pure unit
     describe "connecting channels after creation" do
       pure unit
     describe "disconnecting channels after creation" do
@@ -73,3 +84,8 @@ runWith initialNetwork f = do
     Rpd.run (writeRef networkRef) initialNetwork
     readRef networkRef
   f newNetwork
+
+
+performSubs :: forall e. Rpd.Subscribers e -> Eff e Unit
+performSubs subs = do
+  pure unit
