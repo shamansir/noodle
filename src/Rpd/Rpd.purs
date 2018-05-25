@@ -3,6 +3,7 @@ module Rpd
     , DataSource(..), Flow, getFlowOf
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , LazyPatch, LazyNode, LazyInlet, LazyOutlet
+    , empty
     , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
     , connect, connect', disconnect, disconnect', disconnectTop
     , ProcessF, processWith
@@ -124,6 +125,10 @@ type RpdEff e v = Eff (RpdEffE e) v
 -- is it the place where RPD effect should be added to the result, like with subscriptions?
 run :: forall d e. (Network d -> RpdEff e Unit) -> Network d -> RpdEff e Unit
 run renderer nw = renderer nw
+
+
+empty :: forall d. Network d
+empty = Network { patches : [] }
 
 
 network :: forall d. Array (LazyPatch d) -> Network d

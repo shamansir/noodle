@@ -1,4 +1,4 @@
-module RPDTest.Network.TestCreate
+module RpdTest.Network.Flow
     ( network, MyData ) where
 
 import Prelude

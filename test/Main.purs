@@ -17,28 +17,59 @@ import Test.Spec.Runner (RunnerEffects, run)
 
 import FRP (FRP)
 
-import Rpd (run) as Rpd
+import Rpd (run, empty, Network) as Rpd
 
-import RPDTest.Network.TestCreate (network) as TestCreate
+import RpdTest.Network.Flow (network) as TestFlow
+import RpdTest.Network.Empty (network) as TestEmpty
 
-main :: Eff (RunnerEffects (frp :: FRP, ref :: REF)) Unit
+
+type TestAffE e = (ref :: REF, frp :: FRP | e)
+type TestAff e = Aff (TestAffE e) Unit
+
+
+main :: forall e. Eff (RunnerEffects (TestAffE e)) Unit
 main = run [consoleReporter] do
   describe "RPD" do
     describe "creating" do
       it "constructing the network works" do
-        -- makeAff, writeRef etc., see Signal tests
-        res <- liftEff $ do
-          testRef <- newRef "a"
-          Rpd.run (\_ -> writeRef testRef "b") TestCreate.network
-          readRef testRef
-        res `shouldEqual` "Alligator"
-    describe "connecting nodes" do
+        runWith TestEmpty.network
+          \nw -> pure unit
+    describe "subscribing to the data flow" do
       pure unit
-      -- it "runs in NodeJS" $ pure unit
-      -- it "runs in the browser" $ pure unit
-      -- it "supports streaming reporters" $ pure unit
-      -- it "supports async specs" do
+    describe "connecting channels after creation" do
+      pure unit
+    describe "disconnecting channels after creation" do
+      pure unit
+    describe "manually sending data to the channels after creation" do
+      pure unit
+    describe "manually sending delayed data to the channels after creation" do
       --   delay (Milliseconds 100.0)
-      --   res <-  pure "Alligator"
-      --   res `shouldEqual` "Alligator"
-      -- it "is PureScript 0.10.x compatible" $ pure unit
+      pure unit
+    describe "adding nodes after creation" do
+      pure unit
+    describe "deleting nodes after creation" do
+      pure unit
+    describe "processing the output from nodes" do
+      describe "with predefined function" do
+        pure unit
+      describe "with function defined after creation" do
+        pure unit
+      describe "after adding an outlet" do
+        pure unit
+      describe "after removing an outlet" do
+        pure unit
+      describe "after changing the node structure" do
+        pure unit
+      describe "after deleting the receiving node" do
+        pure unit
+      describe "after adding new node" do
+        pure unit
+
+
+runWith :: forall e d. Rpd.Network d -> (Rpd.Network d -> TestAff e) -> TestAff e
+runWith initialNetwork f = do
+  newNetwork <- liftEff $ do
+    networkRef <- newRef Rpd.empty
+    Rpd.run (writeRef networkRef) initialNetwork
+    readRef networkRef
+  f newNetwork
