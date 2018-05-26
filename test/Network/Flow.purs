@@ -4,23 +4,28 @@ module RpdTest.Network.Flow
 import Prelude
 
 import Test.Spec (Spec, describe, it)
+import Test.Spec.Assertions (shouldEqual)
 import Test.Util (TestAffE, runWith)
 
+import Control.Monad.Aff (delay)
 import Control.Monad.Eff (Eff, foreachE)
+import Control.Monad.Eff.Ref (REF)
 import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import Control.Monad.Eff.Ref (newRef, readRef, writeRef)
-import Control.Monad.Eff.Console (log)
+import Control.Monad.Eff.Console (log, CONSOLE)
 
 import Rpd as R
-import Rpd.Flow (flow, subscribeAll, Subscribers) as R
+import Rpd.Flow (flow, subscribeAll, Subscribers, Canceler) as R
 
 import Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.Tuple.Nested ((/\))
 import Data.Array (fromFoldable)
+import Data.Time.Duration (Milliseconds(..))
 
 import FRP (FRP)
-import FRP.Event as Event
+import FRP.Event (create, fold, subscribe) as Event
 import FRP.Event.Time (interval)
 
 data MyData
@@ -40,10 +45,10 @@ node nodeId =
     [ R.outlet "c"
     , R.outlet' "x" $ R.flow
         $ map (Num' (nodeId <> "x"))
-        $ Event.fold (\_ n -> n + 1) (interval 5000) 0
+        $ Event.fold (\_ n -> n + 1) (interval 500) 0
     , R.outlet' "y" $ R.flow
         $ map (Num' (nodeId <> "y"))
-        $ Event.fold (\_ n -> n + 1) (interval 2000) 0
+        $ Event.fold (\_ n -> n + 1) (interval 200) 0
     ]
     -- (\_ -> [ "c" /\ Int' 10 ] )
 
@@ -69,19 +74,19 @@ spec = do
         runWith network
           \nw ->
             do
-              collectedData <- liftEff $ do
-                collectedData <- newRef []
-                let
-                  onInletData path source d = do
-                    log $ show path -- <> show d
-                    pure unit
-                  onOutletData path d = do
-                    log $ show path -- <> show d
-                    pure unit
-                  subscribers = R.subscribeAll onInletData onOutletData nw
-                _ <- performSubs subscribers
-                readRef collectedData
-              -- collectedData `shouldEqual` []
+              collectedData <- liftEff $ newRef []
+              let
+                onInletData path source d =
+                  log $ show path -- <> show d
+                onOutletData path d =
+                  log $ show path -- <> show d
+                subscribers :: R.Subscribers ( console :: CONSOLE, ref :: REF | e )
+                subscribers = R.subscribeAll onInletData onOutletData nw
+              liftEff $ performSubs subscribers
+              collectedData' <- liftEff $ readRef collectedData
+              _ <- delay (Milliseconds 1000.0)
+              liftEff $ log "test"
+              "aa" `shouldEqual` "bb"
               pure unit
   describe "connecting channels after creation" do
     pure unit
@@ -100,7 +105,8 @@ spec = do
 
 performSubs :: forall e. R.Subscribers e -> Eff (frp :: FRP | e) Unit
 performSubs ( outletSubscribers /\ inletSubscribers ) =
-  foreachE (fromFoldable $ Map.values outletSubscribers) $
-    \sub -> do
-      _ <- sub
-      pure unit
+  foreachE (fromFoldable $ Map.values outletSubscribers)
+    \sub ->
+      do
+        _ <- liftEff $ sub
+        pure unit

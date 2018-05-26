@@ -467,14 +467,13 @@ trackTheFlow
         performCancel :: R.Canceler e -> Unit
         performCancel = unsafePerformEff -- FIXME: unsafe
         subscribeAll :: R.Network d -> R.Subscribers e
-        subscribeAll network' =
+        subscribeAll =
             R.subscribeAll
                 (\inlet _ d -> inletHandler d inlet)
                 (\outlet d -> outletHandler d outlet)
-                network'
         connectToInlet :: R.InletPath -> R.Network d -> Maybe (R.Subscriber e)
-        connectToInlet inlet network' =
-            R.subscribeTop (\_ d -> inletHandler d inlet) inlet network'
+        connectToInlet inlet =
+            R.subscribeTop (\_ d -> inletHandler d inlet) inlet
         disconnectAtInlet :: R.InletPath -> Map R.InletPath (Array (R.Canceler e)) -> Maybe (R.Canceler e)
         disconnectAtInlet inlet allInletCancelers' =
             Map.lookup inlet allInletCancelers' >>= head

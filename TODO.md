@@ -53,6 +53,7 @@ After dealing with tests, think on:
     * Think on moving `Subscribers` and `Cancelers` into the _prepared_ `Network`: start the subscriptions with the same `fold` as for rendering now, but inside `run` (may be we'll have to move `Rpd.run` to `Rpd.Flow.run`);
     * ...^ so we'll be able to manage subscriptions in `connect` / `disconnect` / `addNode` etc. functions, return `Eff`s from them and so may be even deal this way with `unsafePerformEff`;
     * Since all the data flow should start/work just by running the Rpd system, without any special hander, even with the `pure unit` one;
+    * On the other hand we don't need effects/subscriptions to construct new data flows in these cases — we may just use maps/sampleOn etc. to create the new flow and the renderer (or any effectful handler) should react accordingly to situation: subscribe the new flow, for example;
 
 Maybe `Behavior` from `purescript-behaviors` is the better way to store / represent the processing function?
 
