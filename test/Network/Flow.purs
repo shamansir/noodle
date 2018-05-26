@@ -74,18 +74,18 @@ spec = do
         runWith network
           \nw ->
             do
-              collectedData <- liftEff $ newRef []
-              let
-                onInletData path source d =
-                  log $ show path -- <> show d
-                onOutletData path d =
-                  log $ show path -- <> show d
-                subscribers :: R.Subscribers ( console :: CONSOLE, ref :: REF | e )
-                subscribers = R.subscribeAll onInletData onOutletData nw
-              liftEff $ performSubs subscribers
-              collectedData' <- liftEff $ readRef collectedData
+              collectedData <- liftEff $ do
+                target <- newRef []
+                let
+                  onInletData path source d =
+                    log $ show path -- <> show d
+                  onOutletData path d =
+                    log $ show path -- <> show d
+                  subscribers = R.subscribeAll onInletData onOutletData nw
+                performSubs subscribers
+                readRef target
               _ <- delay (Milliseconds 1000.0)
-              liftEff $ log "test"
+              liftEff $ log "end"
               "aa" `shouldEqual` "bb"
               pure unit
   describe "connecting channels after creation" do
@@ -105,8 +105,7 @@ spec = do
 
 performSubs :: forall e. R.Subscribers e -> Eff (frp :: FRP | e) Unit
 performSubs ( outletSubscribers /\ inletSubscribers ) =
-  foreachE (fromFoldable $ Map.values outletSubscribers)
-    \sub ->
-      do
-        _ <- liftEff $ sub
-        pure unit
+  foreachE (fromFoldable $ Map.values outletSubscribers) $
+    \sub -> do
+      _ <- liftEff $ sub
+      pure unit
