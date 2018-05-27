@@ -138,31 +138,19 @@ collectData nw period = do
 
 performSubs :: forall e. R.Subscribers e -> Eff (frp :: FRP | e) (Array (R.Canceler e))
 performSubs ( outletSubscribers /\ inletSubscribers ) = do
-  let
-    outletCancelers :: Eff (frp :: FRP | e) (Array (R.Canceler e))
-    outletCancelers = traverse performSub $ fromFoldable $ Map.values outletSubscribers
-    cancelersTree :: Array (Array (R.Subscriber e))
-    cancelersTree = fromFoldable $ Map.values inletSubscribers
-    inletCancelers :: Array (Eff (frp :: FRP | e) (Array (R.Canceler e)))
-    -- inletCancelers = concatMap performSub $ (fromFoldable $ Map.values inletSubscribers)
-    inletCancelers = map (traverse performSub) cancelersTree
-    --inletCancelers':: Eff (frp :: FRP | e) (Array (R.Canceler e))
-    inletCancelers' :: Eff (frp :: FRP | e) (Array (R.Canceler e))
-    inletCancelers' = pure $ concatMap unsafePerformEff inletCancelers
-  a <- outletCancelers
-  b <- inletCancelers'
-  pure $ a <> b
+  performSubs'
+    $ (fromFoldable $ Map.values outletSubscribers)
+      <> (concatMap id $ fromFoldable $ Map.values inletSubscribers)
+
+
+performSubs' :: forall e. Array (R.Subscriber e) -> Eff (frp :: FRP | e) (Array (R.Canceler e))
+performSubs' subscribers =
+  traverse performSub subscribers
   where
-    -- f :: Eff ( frp :: FRP | e ) (Array (Eff ( frp :: FRP | e ) Unit))
-    --   -> Eff ( frp :: FRP | e ) (Eff ( frp :: FRP | e ) Unit)
-    -- f effects = do
-    --   e :: Array (Eff ( frp :: FRP | e ) Unit) <- effects
-    --   foreachE e ?what
     performSub sub =
       do
         canceler <- liftEff $ sub
         pure canceler
-
 
 -- TODO:
 -- cancelSubs :: forall e. R.Cancelers e -> Eff (frp :: FRP | e) Unit
