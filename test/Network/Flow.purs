@@ -16,13 +16,14 @@ import Control.Monad.Eff.Ref (newRef, readRef, writeRef)
 import Control.Monad.Eff.Console (log, CONSOLE)
 
 import Rpd as R
-import Rpd.Flow (flow, subscribeAll, Subscribers, Cancelers,Canceler) as R
+import Rpd.Flow (flow, subscribeAll, Subscribers, Cancelers, Subscriber, Canceler) as R
 
 import Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array ((:), fromFoldable)
+import Data.Array ((:), fromFoldable, concatMap, fold, intercalate)
 import Data.Time.Duration (Milliseconds(..))
+import Data.Traversable (traverse)
 
 import FRP (FRP)
 import FRP.Event (create, fold, subscribe) as Event
@@ -81,7 +82,7 @@ spec = do
             do
               collectedData <- collectData network (Milliseconds 1000.0)
               liftEff $ log $ "collected: " <> show collectedData
-              "aa" `shouldEqual` "bb"
+              collectedData `shouldEqual` []
               pure unit
   describe "connecting channels after creation" do
     pure unit
@@ -101,7 +102,7 @@ spec = do
 collectData :: forall d e. R.Network d -> Milliseconds -> Aff (TestAffE e) (Array R.OutletPath)
 collectData nw period = do
   target <- liftEff $ newRef []
-  liftEff $ do
+  _ <- liftEff $ do
     let
       onInletData path source d = do
         log $ show path -- <> show d
@@ -115,12 +116,52 @@ collectData nw period = do
   liftEff $ readRef target
 
 
-performSubs :: forall e. R.Subscribers e -> Eff (frp :: FRP | e) Unit
-performSubs ( outletSubscribers /\ inletSubscribers ) =
-  foreachE (fromFoldable $ Map.values outletSubscribers) $
-    \sub -> do
-      _ <- liftEff $ sub
-      pure unit
+-- expectFn :: forall e a. Eq a => Show a => Signal a -> Array a -> Test (ref :: REF | e)
+-- expectFn sig vals = makeAff \resolve -> do
+--   remaining <- newRef vals
+--   let getNext val = do
+--         nextValArray <- readRef remaining
+--         let nextVals = fromFoldable nextValArray
+--         case nextVals of
+--           Cons x xs -> do
+--             if x /= val then resolve $ Left $ error $ "expected " <> show x <> " but got " <> show val
+--               else case xs of
+--                 Nil -> resolve $ Right unit
+--                 _ -> writeRef remaining (toUnfoldable xs)
+--           Nil -> resolve $ Left $ error "unexpected emptiness"
+--   runSignal $ sig ~> getNext
+--   pure nonCanceler
+
+-- expect :: forall e a. Eq a => Show a => Int -> Signal a -> Array a -> Test (ref :: REF, timer :: TIMER, avar :: AVAR | e)
+-- expect time sig vals = timeout time $ expectFn sig vals
+
+
+performSubs :: forall e. R.Subscribers e -> Eff (frp :: FRP | e) (Array (R.Canceler e))
+performSubs ( outletSubscribers /\ inletSubscribers ) = do
+  let
+    outletCancelers :: Eff (frp :: FRP | e) (Array (R.Canceler e))
+    outletCancelers = traverse performSub $ fromFoldable $ Map.values outletSubscribers
+    cancelersTree :: Array (Array (R.Subscriber e))
+    cancelersTree = fromFoldable $ Map.values inletSubscribers
+    inletCancelers :: Array (Eff (frp :: FRP | e) (Array (R.Canceler e)))
+    -- inletCancelers = concatMap performSub $ (fromFoldable $ Map.values inletSubscribers)
+    inletCancelers = map (traverse performSub) cancelersTree
+    --inletCancelers':: Eff (frp :: FRP | e) (Array (R.Canceler e))
+    inletCancelers' :: Eff (frp :: FRP | e) (Array (R.Canceler e))
+    inletCancelers' = pure $ concatMap unsafePerformEff inletCancelers
+  a <- outletCancelers
+  b <- inletCancelers'
+  pure $ a <> b
+  where
+    -- f :: Eff ( frp :: FRP | e ) (Array (Eff ( frp :: FRP | e ) Unit))
+    --   -> Eff ( frp :: FRP | e ) (Eff ( frp :: FRP | e ) Unit)
+    -- f effects = do
+    --   e :: Array (Eff ( frp :: FRP | e ) Unit) <- effects
+    --   foreachE e ?what
+    performSub sub =
+      do
+        canceler <- liftEff $ sub
+        pure canceler
 
 
 -- TODO:
