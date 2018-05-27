@@ -7,7 +7,7 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Util (TestAffE, runWith)
 
-import Control.Monad.Aff (delay)
+import Control.Monad.Aff (Aff, delay)
 import Control.Monad.Eff (Eff, foreachE)
 import Control.Monad.Eff.Ref (REF)
 import Control.Monad.Eff.Class (liftEff)
@@ -16,17 +16,22 @@ import Control.Monad.Eff.Ref (newRef, readRef, writeRef)
 import Control.Monad.Eff.Console (log, CONSOLE)
 
 import Rpd as R
-import Rpd.Flow (flow, subscribeAll, Subscribers, Canceler) as R
+import Rpd.Flow (flow, subscribeAll, Subscribers, Cancelers,Canceler) as R
 
 import Data.Map as Map
 import Data.Maybe (fromMaybe)
-import Data.Tuple.Nested ((/\))
-import Data.Array (fromFoldable)
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Array ((:), fromFoldable)
 import Data.Time.Duration (Milliseconds(..))
 
 import FRP (FRP)
 import FRP.Event (create, fold, subscribe) as Event
 import FRP.Event.Time (interval)
+
+
+type CollectedData d =
+  (Array (R.InletPath /\ R.DataSource d /\ d)) /\ (Array (R.OutletPath /\ d))
+
 
 data MyData
   = Bang
@@ -74,18 +79,8 @@ spec = do
         runWith network
           \nw ->
             do
-              collectedData <- liftEff $ do
-                target <- newRef []
-                let
-                  onInletData path source d =
-                    log $ show path -- <> show d
-                  onOutletData path d =
-                    log $ show path -- <> show d
-                  subscribers = R.subscribeAll onInletData onOutletData nw
-                performSubs subscribers
-                readRef target
-              _ <- delay (Milliseconds 1000.0)
-              liftEff $ log "end"
+              collectedData <- collectData network (Milliseconds 1000.0)
+              liftEff $ log $ "collected: " <> show collectedData
               "aa" `shouldEqual` "bb"
               pure unit
   describe "connecting channels after creation" do
@@ -103,9 +98,35 @@ spec = do
     pure unit
 
 
+collectData :: forall d e. R.Network d -> Milliseconds -> Aff (TestAffE e) (Array R.OutletPath)
+collectData nw period = do
+  target <- liftEff $ newRef []
+  liftEff $ do
+    let
+      onInletData path source d = do
+        log $ show path -- <> show d
+      onOutletData path d = do
+        curData <- readRef target
+        _ <- writeRef target (path : curData)
+        pure unit
+      subscribers = R.subscribeAll onInletData onOutletData nw
+    performSubs subscribers
+  delay period
+  liftEff $ readRef target
+
+
 performSubs :: forall e. R.Subscribers e -> Eff (frp :: FRP | e) Unit
 performSubs ( outletSubscribers /\ inletSubscribers ) =
   foreachE (fromFoldable $ Map.values outletSubscribers) $
     \sub -> do
       _ <- liftEff $ sub
       pure unit
+
+
+-- TODO:
+-- cancelSubs :: forall e. R.Cancelers e -> Eff (frp :: FRP | e) Unit
+-- cancelSubs ( outletSubscribers /\ inletSubscribers ) =
+--   foreachE (fromFoldable $ Map.values outletSubscribers) $
+--     \sub -> do
+--       _ <- liftEff $ sub
+--       pure unit
