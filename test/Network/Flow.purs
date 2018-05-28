@@ -24,6 +24,9 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array ((:), fromFoldable, concatMap, fold, intercalate)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (traverse)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
+import Data.Generic.Rep.Eq (genericEq)
 
 import FRP (FRP)
 import FRP.Event (create, fold, subscribe) as Event
@@ -38,6 +41,15 @@ data MyData
   = Bang
   | Str' String String
   | Num' String Int
+
+derive instance genericMyData :: Generic MyData _
+
+instance showMyData :: Show MyData where
+  show = genericShow
+
+instance eqMyData :: Eq MyData where
+  eq = genericEq
+
 
 node :: String -> R.LazyNode MyData
 node nodeId =
@@ -82,7 +94,18 @@ spec = do
             do
               collectedData <- collectData network (Milliseconds 1000.0)
               liftEff $ log $ "collected: " <> show collectedData
-              collectedData `shouldEqual` []
+              collectedData `shouldEqual`
+                [ outletPath 0 1 2 /\ Num' "2y" 4
+                , outletPath 0 0 2 /\ Num' "1y" 4
+                , outletPath 0 1 2 /\ Num' "2y" 3
+                , outletPath 0 0 2 /\ Num' "1y" 3
+                , outletPath 0 1 1 /\ Num' "2x" 1
+                , outletPath 0 0 1 /\ Num' "1x" 1
+                , outletPath 0 1 2 /\ Num' "2y" 2
+                , outletPath 0 0 2 /\ Num' "1y" 2
+                , outletPath 0 1 2 /\ Num' "2y" 1
+                , outletPath 0 0 2 /\ Num' "1y" 1
+                ]
               pure unit
   describe "connecting channels after creation" do
     pure unit
@@ -97,23 +120,57 @@ spec = do
     pure unit
   describe "deleting nodes after creation" do
     pure unit
+  where
+    outletPath :: Int -> Int -> Int -> R.OutletPath
+    outletPath a b c = R.OutletPath (R.NodePath (R.PatchId a) b) c
 
 
-collectData :: forall d e. R.Network d -> Milliseconds -> Aff (TestAffE e) (Array R.OutletPath)
+-- collectData
+--   :: forall e
+--    . R.Network MyData
+--   -> Milliseconds
+--   -> Aff (TestAffE e) (Array (R.OutletPath /\ MyData))
+-- collectData nw period = do
+--   target <- liftEff $ newRef []
+--   cancelers <- liftEff $ do
+--     let
+--       onInletData :: R.InletPath -> R.DataSource MyData -> MyData -> Eff (TestAffE e) Unit
+--       onInletData path source d = do
+--         log $ show path <> show d
+--       onOutletData path d = do
+--         curData <- readRef target
+--         _ <- writeRef target $ (path /\ d) : curData
+--         pure unit
+--       subscribers = R.subscribeAll onInletData onOutletData nw
+--     performSubs subscribers
+--   delay period
+--   liftEff $ cancelSubs cancelers
+--   liftEff $ readRef target
+
+
+collectData
+  :: forall e
+   . R.Network MyData
+  -> Milliseconds
+  -> Aff (TestAffE e) (Array (R.OutletPath /\ MyData))
 collectData nw period = do
-  target <- liftEff $ newRef []
-  _ <- liftEff $ do
-    let
-      onInletData path source d = do
-        log $ show path -- <> show d
-      onOutletData path d = do
-        curData <- readRef target
-        _ <- writeRef target (path : curData)
-        pure unit
-      subscribers = R.subscribeAll onInletData onOutletData nw
-    performSubs subscribers
+  target /\ cancelers <- liftEff $ do
+    target <- newRef []
+    cancelers <- do
+      let
+        onInletData path source d = do
+          log $ show path <> show d
+        onOutletData path d = do
+          curData <- readRef target
+          _ <- writeRef target $ (path /\ d) : curData
+          pure unit
+        subscribers = R.subscribeAll onInletData onOutletData nw
+      performSubs subscribers
+    pure $ target /\ cancelers
   delay period
-  liftEff $ readRef target
+  liftEff $ do
+    cancelSubs cancelers
+    readRef target
 
 
 -- expectFn :: forall e a. Eq a => Show a => Signal a -> Array a -> Test (ref :: REF | e)
@@ -152,10 +209,10 @@ performSubs' subscribers =
         canceler <- liftEff $ sub
         pure canceler
 
--- TODO:
--- cancelSubs :: forall e. R.Cancelers e -> Eff (frp :: FRP | e) Unit
--- cancelSubs ( outletSubscribers /\ inletSubscribers ) =
---   foreachE (fromFoldable $ Map.values outletSubscribers) $
---     \sub -> do
---       _ <- liftEff $ sub
---       pure unit
+
+cancelSubs :: forall e. Array (R.Canceler e) -> Eff (frp :: FRP | e) Unit
+cancelSubs cancelers =
+  foreachE cancelers $
+    \canceler -> do
+      _ <- canceler
+      pure unit
