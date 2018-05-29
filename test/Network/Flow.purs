@@ -130,20 +130,24 @@ spec = do
               collectedData <- collectData network (Milliseconds 1000.0)
               liftEff $ log $ "collected: " <> show collectedData
               collectedData `shouldEqual`
-                [ outletPath 0 1 1 /\ Banana
-                , outletPath 0 1 1 /\ Banana
-                , outletPath 0 0 2 /\ (Apple 4)
-                , outletPath 0 1 1 /\ Banana
-                , outletPath 0 1 1 /\ Banana
-                , outletPath 0 0 2 /\ (Apple 3)
-                , outletPath 0 1 1 /\ Banana
-                , outletPath 0 0 1 /\ Letter
-                , outletPath 0 1 1 /\ Banana
-                , outletPath 0 0 2 /\ (Apple 2)
-                , outletPath 0 1 1 /\ Banana
-                , outletPath 0 1 1 /\ Banana
-                , outletPath 0 0 2 /\ (Apple 1)
-                , outletPath 0 1 1 /\ Banana
+                [ OutletData (outletPath 0 1 1) Banana
+                , OutletData (outletPath 0 1 1) Banana
+                , InletData (inletPath 0 0 5) (Curse 4)
+                , OutletData (outletPath 0 0 2) (Apple 4)
+                , OutletData (outletPath 0 1 1) Banana
+                , OutletData (outletPath 0 1 1) Banana
+                , InletData (inletPath 0 0 5) (Curse 3)
+                , OutletData (outletPath 0 0 2) (Apple 3)
+                , OutletData (outletPath 0 1 1) Banana
+                , OutletData (outletPath 0 0 1) Letter
+                , OutletData (outletPath 0 1 1) Banana
+                , InletData (inletPath 0 0 5) (Curse 2)
+                , OutletData (outletPath 0 0 2) (Apple 2)
+                , OutletData (outletPath 0 1 1) Banana
+                , OutletData (outletPath 0 1 1) Banana
+                , InletData (inletPath 0 0 5) (Curse 1)
+                , OutletData (outletPath 0 0 2) (Apple 1)
+                , OutletData (outletPath 0 1 1) Banana
                 ]
               pure unit
   describe "connecting channels after creation" do
@@ -162,6 +166,8 @@ spec = do
   where
     outletPath :: Int -> Int -> Int -> R.OutletPath
     outletPath a b c = R.OutletPath (R.NodePath (R.PatchId a) b) c
+    inletPath :: Int -> Int -> Int -> R.InletPath
+    inletPath a b c = R.InletPath (R.NodePath (R.PatchId a) b) c
 
 
 -- collectData
@@ -187,22 +193,37 @@ spec = do
 --   liftEff $ readRef target
 
 
+data TraceItem d
+  = InletData R.InletPath d
+  | OutletData R.OutletPath d
+type TracedFlow d = Array (TraceItem d)
+
+derive instance genericTraceItem :: Generic (TraceItem d) _
+
+instance showTraceItem :: Show d => Show (TraceItem d) where
+  show = genericShow
+
+instance eqTraceItem :: Eq d => Eq (TraceItem d) where
+  eq = genericEq
+
 collectData
   :: forall d e
    . (Show d)
   => R.Network d
   -> Milliseconds
-  -> Aff (TestAffE e) (Array (R.OutletPath /\ d))
+  -> Aff (TestAffE e) (TracedFlow d)
 collectData nw period = do
   target /\ cancelers <- liftEff $ do
     target <- newRef []
     cancelers <- do
       let
         onInletData path source d = do
-          log $ show path <> show d
+          curData <- readRef target
+          _ <- writeRef target $ (InletData path d) : curData
+          pure unit
         onOutletData path d = do
           curData <- readRef target
-          _ <- writeRef target $ (path /\ d) : curData
+          _ <- writeRef target $ (OutletData path d) : curData
           pure unit
         subscribers = R.subscribeAll onInletData onOutletData nw
       performSubs subscribers
@@ -211,26 +232,6 @@ collectData nw period = do
   liftEff $ do
     cancelSubs cancelers
     readRef target
-
-
--- expectFn :: forall e a. Eq a => Show a => Signal a -> Array a -> Test (ref :: REF | e)
--- expectFn sig vals = makeAff \resolve -> do
---   remaining <- newRef vals
---   let getNext val = do
---         nextValArray <- readRef remaining
---         let nextVals = fromFoldable nextValArray
---         case nextVals of
---           Cons x xs -> do
---             if x /= val then resolve $ Left $ error $ "expected " <> show x <> " but got " <> show val
---               else case xs of
---                 Nil -> resolve $ Right unit
---                 _ -> writeRef remaining (toUnfoldable xs)
---           Nil -> resolve $ Left $ error "unexpected emptiness"
---   runSignal $ sig ~> getNext
---   pure nonCanceler
-
--- expect :: forall e a. Eq a => Show a => Int -> Signal a -> Array a -> Test (ref :: REF, timer :: TIMER, avar :: AVAR | e)
--- expect time sig vals = timeout time $ expectFn sig vals
 
 
 performSubs :: forall e. R.Subscribers e -> Eff (frp :: FRP | e) (Array (R.Canceler e))
