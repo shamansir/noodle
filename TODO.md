@@ -56,6 +56,8 @@ After dealing with tests, think on:
     * On the other hand we don't need effects/subscriptions to construct new data flows in these cases — we may just use maps/sampleOn etc. to create the new flow and the renderer (or any effectful handler) should react accordingly to situation: subscribe the new flow, for example;
     * Maybe any Canceler should be `data Canceler = InletCanceler InletPath (Eff ... ) | OutletCanceler OutletPath (Eff ... ) | NodeCanceler NodePath (Eff ...)` — that would complicate searching for a proper canceler in Arrays (though we still may keep them in Maps for faster access),but that would simplify types and subscriptions in general;
 
+Consider sending `Inlet`/`Outlet` objects to subscribers etc. instead of their paths, since it's not handy to search for inlet name in a network you have no access to...
+
 Maybe `Behavior` from `purescript-behaviors` is the better way to store / represent the processing function? [This page](https://github.com/funkia/hareactive) explains a lot about event a.k.a. stream/behavior differences.
 
 We have 'unprepared network' and 'prepared network' states now — which could be confusing even while we model our API not to allow interchanging these states by accident. 'Prepared network' is the network the network which was subscribed to all data flows inside and produces data. 'unprepared network' is just structure. Maybe differtiate them using separate `Network` data tags,like literally, `Prepared` and `Unprepared` or just `Network` and `NetworkDef` (like both _deferred_ and _definition_, you see?).

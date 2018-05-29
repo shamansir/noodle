@@ -37,74 +37,113 @@ type CollectedData d =
   (Array (R.InletPath /\ R.DataSource d /\ d)) /\ (Array (R.OutletPath /\ d))
 
 
-data MyData
-  = Bang
-  | Str' String String
-  | Num' String Int
+data Delivery
+  = Damaged
+  | Email
+  | Letter
+  | Parcel
+  | TV
+  | IKEAFurniture
+  | Car
+  | Notebook
+  | Curse Int
+  | Liver
+  | Banana
+  | Apple Int
+  | Pills
 
-derive instance genericMyData :: Generic MyData _
+derive instance genericDelivery :: Generic Delivery _
 
-instance showMyData :: Show MyData where
+instance showDelivery :: Show Delivery where
   show = genericShow
 
-instance eqMyData :: Eq MyData where
+instance eqDelivery :: Eq Delivery where
   eq = genericEq
 
 
-node :: String -> R.LazyNode MyData
-node nodeId =
-  R.node "f"
-    [ R.inlet "a" -- WithDefault "a" (Str' (nodeId <> "a") "i")
-    , R.inletWithDefault "b" $ Str' (nodeId <> "b") "test"
-    , R.inlet' "f" $ R.flow $ map (Num' (nodeId <> "f")) $ interval 5000
-    , R.inlet "d" -- (ST.every ST.second S.~> Num' (nodeId <> "d"))
-    , R.inlet "e" -- WithDefault "e" (Num' (nodeId <> "e") 3.0)
+postServiceNode :: R.LazyNode Delivery
+postServiceNode =
+  R.node "Post Service"
+    [ R.inlet "Mezozon"
+    , R.inletWithDefault "Mr. Schtirlitz" Liver
+    , R.inlet' "Buyer UG" $ R.flow $ const Pills <$> interval 5000
+    , R.inlet "Mrs. Black Widow"
+    , R.inlet "eBay"
+    , R.inlet' "kleinanzeige"
+        $ R.flow $ map Curse $ Event.fold (\_ n -> n + 1) (interval 200) 0
     ]
-    [ R.outlet "c"
-    , R.outlet' "x" $ R.flow
-        $ map (Num' (nodeId <> "x"))
-        $ Event.fold (\_ n -> n + 1) (interval 500) 0
-    , R.outlet' "y" $ R.flow
-        $ map (Num' (nodeId <> "y"))
+    [ R.outlet "Postman 1"
+    , R.outlet' "Postman 2" $ R.flow
+        $ const Letter <$> (interval 500)
+    , R.outlet' "Truck 1" $ R.flow
+        $ map Apple
         $ Event.fold (\_ n -> n + 1) (interval 200) 0
     ]
     -- (\_ -> [ "c" /\ Int' 10 ] )
 
-network :: R.Network MyData
+upsNode :: R.LazyNode Delivery
+upsNode =
+  R.node "UPS"
+    [ R.inlet "Incoming 1"
+    , R.inlet "Incoming 2"
+    ]
+    [ R.outlet "Outgoing 1"
+    , R.outlet' "Outgoing 2"
+        $ R.flow $ const Banana <$> interval 100
+    ]
+
+recipientNode :: R.LazyNode Delivery
+recipientNode =
+  R.node "Recepient"
+    [ R.inlet "hands"
+    , R.inlet "postbox"
+    , R.inlet "pocket"
+    ]
+    [ R.outlet "debts"
+    , R.outlet "taxes"
+    ]
+
+
+network :: R.Network Delivery
 network =
   R.network
     [ R.patch "Patch One"
-      [ node "1"
-      , R.processWith processF $ node "2"
+      [ postServiceNode
+      , upsNode
+      , recipientNode
+      -- , R.processWith processF $ node "2"
       ] -- >>> connect (patch.getNode 0) "a" (patch.getNode 1) "b"
     ]
-  where
-    processF inputs | Map.isEmpty inputs = Map.empty
-    processF inputs | Map.member "d" inputs =
-      Map.singleton "c" $ fromMaybe Bang $ Map.lookup "d" inputs
-    processF inputs = Map.empty
+  -- where
+  --   processF inputs | Map.isEmpty inputs = Map.empty
+  --   processF inputs | Map.member "d" inputs =
+  --     Map.singleton "c" $ fromMaybe Damaged $ Map.lookup "d" inputs
+  --   processF inputs = Map.empty
 
 spec :: forall e. Spec (TestAffE e) Unit
 spec = do
   describe "subscribing to the data flow" do
       it "receives the data from events" do
-        -- TODO: move tests for a network in the module with this network, export as a suite
         runWith network
           \nw ->
             do
               collectedData <- collectData network (Milliseconds 1000.0)
               liftEff $ log $ "collected: " <> show collectedData
               collectedData `shouldEqual`
-                [ outletPath 0 1 2 /\ Num' "2y" 4
-                , outletPath 0 0 2 /\ Num' "1y" 4
-                , outletPath 0 1 2 /\ Num' "2y" 3
-                , outletPath 0 0 2 /\ Num' "1y" 3
-                , outletPath 0 1 1 /\ Num' "2x" 1
-                , outletPath 0 0 1 /\ Num' "1x" 1
-                , outletPath 0 1 2 /\ Num' "2y" 2
-                , outletPath 0 0 2 /\ Num' "1y" 2
-                , outletPath 0 1 2 /\ Num' "2y" 1
-                , outletPath 0 0 2 /\ Num' "1y" 1
+                [ outletPath 0 1 1 /\ Banana
+                , outletPath 0 1 1 /\ Banana
+                , outletPath 0 0 2 /\ (Apple 4)
+                , outletPath 0 1 1 /\ Banana
+                , outletPath 0 1 1 /\ Banana
+                , outletPath 0 0 2 /\ (Apple 3)
+                , outletPath 0 1 1 /\ Banana
+                , outletPath 0 0 1 /\ Letter
+                , outletPath 0 1 1 /\ Banana
+                , outletPath 0 0 2 /\ (Apple 2)
+                , outletPath 0 1 1 /\ Banana
+                , outletPath 0 1 1 /\ Banana
+                , outletPath 0 0 2 /\ (Apple 1)
+                , outletPath 0 1 1 /\ Banana
                 ]
               pure unit
   describe "connecting channels after creation" do
@@ -149,10 +188,11 @@ spec = do
 
 
 collectData
-  :: forall e
-   . R.Network MyData
+  :: forall d e
+   . (Show d)
+  => R.Network d
   -> Milliseconds
-  -> Aff (TestAffE e) (Array (R.OutletPath /\ MyData))
+  -> Aff (TestAffE e) (Array (R.OutletPath /\ d))
 collectData nw period = do
   target /\ cancelers <- liftEff $ do
     target <- newRef []
