@@ -3,31 +3,28 @@ module RpdTest.Network.Flow
 
 import Prelude
 
-import Test.Spec (Spec, describe, it)
-import Test.Spec.Assertions (shouldEqual)
-import Test.Util (TestAffE, runWith)
-
 import Control.Monad.Aff (Aff, delay)
 import Control.Monad.Eff (Eff, foreachE)
 import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Ref (newRef, readRef, writeRef)
 import Control.Monad.Eff.Console (log, CONSOLE)
-
-import Rpd as R
-import Rpd.Flow (flow, subscribeAll, Subscribers, Subscriber, Canceler) as R
-
+import Control.Monad.Eff.Ref (newRef, readRef, writeRef)
+import Data.Array (fromFoldable, concatMap, snoc, replicate)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Eq (genericEq)
+import Data.Generic.Rep.Show (genericShow)
 import Data.Map as Map
-import Data.Tuple.Nested ((/\))
-import Data.Array (fromFoldable, concatMap, snoc)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (traverse)
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
-import Data.Generic.Rep.Eq (genericEq)
-
+import Data.Tuple.Nested ((/\))
 import FRP (FRP)
 import FRP.Event (fold) as Event
 import FRP.Event.Time (interval)
+import Rpd as R
+import Rpd.Flow (flow, subscribeAll, Subscribers, Subscriber, Canceler) as R
+import Test.Spec (Spec, describe, it, pending)
+import Test.Spec.Assertions (shouldEqual)
+import Test.Util (TestAffE, runWith)
+import Text.Smolder.SVG.Attributes (unitsPerEm)
 
 
 infixl 6 snoc as +>
@@ -59,47 +56,70 @@ instance eqDelivery :: Eq Delivery where
 
 spec :: forall e. Spec (TestAffE e) Unit
 spec = do
-  describe "subscribing to the data flow" do
-      it "receives the data from events" do
-        runWith postNetwork
-          \nw ->
-            do
-              collectedData <- collectData nw (Milliseconds 1000.0)
-              liftEff $ log $ "collected: " <> show collectedData
-              collectedData `shouldEqual`
-                [ OutletData (outletPath 0 1 1) Banana
-                , OutletData (outletPath 0 0 2) (Apple 1)
-                , InletData  (inletPath 0 0 5)  (Curse 1)
-                , OutletData (outletPath 0 1 1) Banana
-                , OutletData (outletPath 0 1 1) Banana
-                , OutletData (outletPath 0 0 2) (Apple 2)
-                , InletData  (inletPath 0 0 5)  (Curse 2)
-                , OutletData (outletPath 0 1 1) Banana
-                , OutletData (outletPath 0 0 1) Letter
-                , OutletData (outletPath 0 1 1) Banana
-                , OutletData (outletPath 0 0 2) (Apple 3)
-                , InletData  (inletPath 0 0 5)  (Curse 3)
-                , OutletData (outletPath 0 1 1) Banana
-                , OutletData (outletPath 0 1 1) Banana
-                , OutletData (outletPath 0 0 2) (Apple 4)
-                , InletData  (inletPath 0 0 5)  (Curse 4)
-                , OutletData (outletPath 0 1 1) Banana
-                , OutletData (outletPath 0 1 1) Banana
-                ]
-              pure unit
-  describe "connecting channels after creation" do
-    pure unit
-  describe "disconnecting channels after creation" do
-    pure unit
-  describe "manually sending data to the channels after creation" do
-    pure unit
-  describe "manually sending delayed data to the channels after creation" do
-    --   delay (Milliseconds 100.0)
-    pure unit
-  describe "adding nodes after creation" do
-    pure unit
-  describe "deleting nodes after creation" do
-    pure unit
+  describe "before running the system" $ do
+    pending "receives no data when inlet has no flow"
+    it "receives the data from the flow attached to the inlet" $ do
+      let
+        network =
+          R.network [
+            R.patch "Test 0001" [
+              R.node "Recepient"
+                [ R.inlet' "mouth" $ R.flow $ const Pills <$> interval 100 ]
+                [ ]
+            ]
+          ]
+      runWith network
+        \nw ->
+          do
+            collectedData <- collectData nw (Milliseconds 600.0)
+            collectedData `shouldEqual` (replicate 5 $ InletData (inletPath 0 0 0) Pills)
+            pure unit
+    pending "receives no data when outlet has no flow"
+    it "subscriber receives all the data flowing in the complex network" do
+      runWith postNetwork
+        \nw ->
+          do
+            collectedData <- collectData nw (Milliseconds 1000.0)
+            -- liftEff $ log $ "collected: " <> show collectedData
+            collectedData `shouldEqual`
+              [ OutletData (outletPath 0 1 1) Banana
+              , OutletData (outletPath 0 0 2) (Apple 1)
+              , InletData  (inletPath 0 0 5)  (Curse 1)
+              , OutletData (outletPath 0 1 1) Banana
+              , OutletData (outletPath 0 1 1) Banana
+              , OutletData (outletPath 0 0 2) (Apple 2)
+              , InletData  (inletPath 0 0 5)  (Curse 2)
+              , OutletData (outletPath 0 1 1) Banana
+              , OutletData (outletPath 0 0 1) Letter
+              , OutletData (outletPath 0 1 1) Banana
+              , OutletData (outletPath 0 0 2) (Apple 3)
+              , InletData  (inletPath 0 0 5)  (Curse 3)
+              , OutletData (outletPath 0 1 1) Banana
+              , OutletData (outletPath 0 1 1) Banana
+              , OutletData (outletPath 0 0 2) (Apple 4)
+              , InletData  (inletPath 0 0 5)  (Curse 4)
+              , OutletData (outletPath 0 1 1) Banana
+              , OutletData (outletPath 0 1 1) Banana
+              ]
+            pure unit
+  describe "after running the system" do
+    pending "TODO"
+  -- describe "subscribing to the data flow" do
+  --     it "receives the data from events" do
+
+  -- describe "connecting channels after running the system" do
+  --   pure unit
+  -- describe "disconnecting channels after running the system" do
+  --   pure unit
+  -- describe "manually sending data to the channels after running the system" do
+  --   pure unit
+  -- describe "manually sending delayed data to the channels after running the system" do
+  --   --   delay (Milliseconds 100.0)
+  --   pure unit
+  -- describe "adding nodes after creation" do
+  --   pure unit
+  -- describe "deleting nodes after creation" do
+  --   pure unit
   where
     outletPath :: Int -> Int -> Int -> R.OutletPath
     outletPath a b c = R.OutletPath (R.NodePath (R.PatchId a) b) c
@@ -225,6 +245,7 @@ collectData nw period = do
           curData <- readRef target
           _ <- writeRef target $ curData +> OutletData path d
           pure unit
+        -- FIXME: Rpd.subscribeAll should actually subscribe!
         subscribers = R.subscribeAll onInletData onOutletData nw
       performSubs subscribers
     pure $ target /\ cancelers
