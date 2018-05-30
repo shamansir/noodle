@@ -9,19 +9,16 @@ import Test.Util (TestAffE, runWith)
 
 import Control.Monad.Aff (Aff, delay)
 import Control.Monad.Eff (Eff, foreachE)
-import Control.Monad.Eff.Ref (REF)
 import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import Control.Monad.Eff.Ref (newRef, readRef, writeRef)
 import Control.Monad.Eff.Console (log, CONSOLE)
 
 import Rpd as R
-import Rpd.Flow (flow, subscribeAll, Subscribers, Cancelers, Subscriber, Canceler) as R
+import Rpd.Flow (flow, subscribeAll, Subscribers, Subscriber, Canceler) as R
 
 import Data.Map as Map
-import Data.Maybe (fromMaybe)
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array ((:), fromFoldable, concatMap, fold, intercalate)
+import Data.Tuple.Nested ((/\))
+import Data.Array (fromFoldable, concatMap, snoc)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (traverse)
 import Data.Generic.Rep (class Generic)
@@ -29,12 +26,11 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Generic.Rep.Eq (genericEq)
 
 import FRP (FRP)
-import FRP.Event (create, fold, subscribe) as Event
+import FRP.Event (fold) as Event
 import FRP.Event.Time (interval)
 
 
-type CollectedData d =
-  (Array (R.InletPath /\ R.DataSource d /\ d)) /\ (Array (R.OutletPath /\ d))
+infixl 6 snoc as +>
 
 
 data Delivery
@@ -61,92 +57,33 @@ instance eqDelivery :: Eq Delivery where
   eq = genericEq
 
 
-postServiceNode :: R.LazyNode Delivery
-postServiceNode =
-  R.node "Post Service"
-    [ R.inlet "Mezozon"
-    , R.inletWithDefault "Mr. Schtirlitz" Liver
-    , R.inlet' "Buyer UG" $ R.flow $ const Pills <$> interval 5000
-    , R.inlet "Mrs. Black Widow"
-    , R.inlet "eBay"
-    , R.inlet' "kleinanzeige"
-        $ R.flow $ map Curse $ Event.fold (\_ n -> n + 1) (interval 200) 0
-    ]
-    [ R.outlet "Postman 1"
-    , R.outlet' "Postman 2" $ R.flow
-        $ const Letter <$> (interval 500)
-    , R.outlet' "Truck 1" $ R.flow
-        $ map Apple
-        $ Event.fold (\_ n -> n + 1) (interval 200) 0
-    ]
-    -- (\_ -> [ "c" /\ Int' 10 ] )
-
-upsNode :: R.LazyNode Delivery
-upsNode =
-  R.node "UPS"
-    [ R.inlet "Incoming 1"
-    , R.inlet "Incoming 2"
-    ]
-    [ R.outlet "Outgoing 1"
-    , R.outlet' "Outgoing 2"
-        $ R.flow $ const Banana <$> interval 100
-    ]
-
-recipientNode :: R.LazyNode Delivery
-recipientNode =
-  R.node "Recepient"
-    [ R.inlet "hands"
-    , R.inlet "postbox"
-    , R.inlet "pocket"
-    ]
-    [ R.outlet "debts"
-    , R.outlet "taxes"
-    ]
-
-
-network :: R.Network Delivery
-network =
-  R.network
-    [ R.patch "Patch One"
-      [ postServiceNode
-      , upsNode
-      , recipientNode
-      -- , R.processWith processF $ node "2"
-      ] -- >>> connect (patch.getNode 0) "a" (patch.getNode 1) "b"
-    ]
-  -- where
-  --   processF inputs | Map.isEmpty inputs = Map.empty
-  --   processF inputs | Map.member "d" inputs =
-  --     Map.singleton "c" $ fromMaybe Damaged $ Map.lookup "d" inputs
-  --   processF inputs = Map.empty
-
 spec :: forall e. Spec (TestAffE e) Unit
 spec = do
   describe "subscribing to the data flow" do
       it "receives the data from events" do
-        runWith network
+        runWith postNetwork
           \nw ->
             do
-              collectedData <- collectData network (Milliseconds 1000.0)
+              collectedData <- collectData nw (Milliseconds 1000.0)
               liftEff $ log $ "collected: " <> show collectedData
               collectedData `shouldEqual`
                 [ OutletData (outletPath 0 1 1) Banana
+                , OutletData (outletPath 0 0 2) (Apple 1)
+                , InletData  (inletPath 0 0 5)  (Curse 1)
                 , OutletData (outletPath 0 1 1) Banana
-                , InletData (inletPath 0 0 5) (Curse 4)
-                , OutletData (outletPath 0 0 2) (Apple 4)
                 , OutletData (outletPath 0 1 1) Banana
-                , OutletData (outletPath 0 1 1) Banana
-                , InletData (inletPath 0 0 5) (Curse 3)
-                , OutletData (outletPath 0 0 2) (Apple 3)
+                , OutletData (outletPath 0 0 2) (Apple 2)
+                , InletData  (inletPath 0 0 5)  (Curse 2)
                 , OutletData (outletPath 0 1 1) Banana
                 , OutletData (outletPath 0 0 1) Letter
                 , OutletData (outletPath 0 1 1) Banana
-                , InletData (inletPath 0 0 5) (Curse 2)
-                , OutletData (outletPath 0 0 2) (Apple 2)
+                , OutletData (outletPath 0 0 2) (Apple 3)
+                , InletData  (inletPath 0 0 5)  (Curse 3)
                 , OutletData (outletPath 0 1 1) Banana
                 , OutletData (outletPath 0 1 1) Banana
-                , InletData (inletPath 0 0 5) (Curse 1)
-                , OutletData (outletPath 0 0 2) (Apple 1)
+                , OutletData (outletPath 0 0 2) (Apple 4)
+                , InletData  (inletPath 0 0 5)  (Curse 4)
+                , OutletData (outletPath 0 1 1) Banana
                 , OutletData (outletPath 0 1 1) Banana
                 ]
               pure unit
@@ -168,6 +105,67 @@ spec = do
     outletPath a b c = R.OutletPath (R.NodePath (R.PatchId a) b) c
     inletPath :: Int -> Int -> Int -> R.InletPath
     inletPath a b c = R.InletPath (R.NodePath (R.PatchId a) b) c
+
+
+postServiceNode :: R.LazyNode Delivery
+postServiceNode =
+  R.node "Post Service"
+    [ R.inlet "Mezozon"
+    , R.inletWithDefault "Mr. Schtirlitz" Liver
+    , R.inlet' "Buyer UG" $ R.flow $ const Pills <$> interval 5000
+    , R.inlet "Mrs. Black Widow"
+    , R.inlet "eBay"
+    , R.inlet' "kleinanzeige"
+        $ R.flow $ map Curse $ Event.fold (\_ n -> n + 1) (interval 200) 0
+    ]
+    [ R.outlet "Postman 1"
+    , R.outlet' "Postman 2" $ R.flow
+        $ const Letter <$> (interval 500)
+    , R.outlet' "Truck 1" $ R.flow
+        $ map Apple
+        $ Event.fold (\_ n -> n + 1) (interval 200) 0
+    ]
+
+
+upsNode :: R.LazyNode Delivery
+upsNode =
+  R.node "UPS"
+    [ R.inlet "Incoming 1"
+    , R.inlet "Incoming 2"
+    ]
+    [ R.outlet "Outgoing 1"
+    , R.outlet' "Outgoing 2"
+        $ R.flow $ const Banana <$> interval 100
+    ]
+
+
+recipientNode :: R.LazyNode Delivery
+recipientNode =
+  R.node "Recepient"
+    [ R.inlet "hands"
+    , R.inlet "postbox"
+    , R.inlet "pocket"
+    ]
+    [ R.outlet "debts"
+    , R.outlet "taxes"
+    ]
+
+
+postNetwork :: R.Network Delivery
+postNetwork =
+  R.network
+    [ R.patch "Post Network"
+      [ postServiceNode
+      , upsNode
+      , recipientNode
+      -- , R.processWith processF $ node "2"
+      ] -- >>> connect (patch.getNode 0) "a" (patch.getNode 1) "b"
+    ]
+  -- where
+  --   processF inputs | Map.isEmpty inputs = Map.empty
+  --   processF inputs | Map.member "d" inputs =
+  --     Map.singleton "c" $ fromMaybe Damaged $ Map.lookup "d" inputs
+  --   processF inputs = Map.empty
 
 
 -- collectData
@@ -196,6 +194,7 @@ spec = do
 data TraceItem d
   = InletData R.InletPath d
   | OutletData R.OutletPath d
+
 type TracedFlow d = Array (TraceItem d)
 
 derive instance genericTraceItem :: Generic (TraceItem d) _
@@ -205,6 +204,7 @@ instance showTraceItem :: Show d => Show (TraceItem d) where
 
 instance eqTraceItem :: Eq d => Eq (TraceItem d) where
   eq = genericEq
+
 
 collectData
   :: forall d e
@@ -219,11 +219,11 @@ collectData nw period = do
       let
         onInletData path source d = do
           curData <- readRef target
-          _ <- writeRef target $ (InletData path d) : curData
+          _ <- writeRef target $ curData +> InletData path d
           pure unit
         onOutletData path d = do
           curData <- readRef target
-          _ <- writeRef target $ (OutletData path d) : curData
+          _ <- writeRef target $ curData +> OutletData path d
           pure unit
         subscribers = R.subscribeAll onInletData onOutletData nw
       performSubs subscribers
