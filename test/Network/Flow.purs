@@ -8,6 +8,7 @@ import Control.Monad.Eff (Eff, foreachE)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (log, CONSOLE)
 import Control.Monad.Eff.Ref (newRef, readRef, writeRef)
+
 import Data.Array (fromFoldable, concatMap, snoc, replicate)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
@@ -16,15 +17,17 @@ import Data.Map as Map
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (traverse)
 import Data.Tuple.Nested ((/\))
+
 import FRP (FRP)
 import FRP.Event (fold) as Event
 import FRP.Event.Time (interval)
+
 import Rpd as R
 import Rpd.Flow (flow, subscribeAll, Subscribers, Subscriber, Canceler) as R
-import Test.Spec (Spec, describe, it, pending)
+
+import Test.Spec (Spec, describe, it, pending, pending')
 import Test.Spec.Assertions (shouldEqual)
 import Test.Util (TestAffE, runWith)
-import Text.Smolder.SVG.Attributes (unitsPerEm)
 
 
 infixl 6 snoc as +>
@@ -56,9 +59,58 @@ instance eqDelivery :: Eq Delivery where
 
 spec :: forall e. Spec (TestAffE e) Unit
 spec = do
-  describe "before running the system" $ do
-    pending "receives no data when inlet has no flow"
-    it "receives the data from the flow attached to the inlet" $ do
+  describe "flow is defined before running the system" $ do
+    it "we receive no data from the inlet when it has no flow or default value" $ do
+      let
+        network :: R.Network Delivery
+        network =
+          R.network [
+            R.patch "Test 0001" [
+              R.node "Specimen"
+                [ R.inlet "foo" ]
+                [ ]
+            ]
+          ]
+      runWith network
+        \nw ->
+          do
+            collectedData <- collectData nw (Milliseconds 100.0)
+            collectedData `shouldEqual` []
+            pure unit
+    it "we receive no data from the outlet when it has no flow" $ do
+      let
+        network :: R.Network Delivery
+        network =
+          R.network [
+            R.patch "Test 0002" [
+              R.node "Specimen"
+                [ ]
+                [ R.outlet "bar"  ]
+            ]
+          ]
+      runWith network
+        \nw ->
+          do
+            collectedData <- collectData nw (Milliseconds 100.0)
+            collectedData `shouldEqual` []
+            pure unit
+    pending' "we're able to collect the default value from the inlet" $ do
+      let
+        network =
+          R.network [
+            R.patch "Test 0001" [
+              R.node "Recepient"
+                [ R.inletWithDefault "mouth" Pills ]
+                [ ]
+            ]
+          ]
+      runWith network
+        \nw ->
+          do
+            collectedData <- collectData nw (Milliseconds 100.0)
+            collectedData `shouldEqual` [ InletData (inletPath 0 0 0) Pills ]
+            pure unit
+    it "we're able to collect the data from the flow attached to the inlet" $ do
       let
         network =
           R.network [
@@ -74,6 +126,23 @@ spec = do
             collectedData <- collectData nw (Milliseconds 600.0)
             collectedData `shouldEqual` (replicate 5 $ InletData (inletPath 0 0 0) Pills)
             pure unit
+    it "we're able to collect the data from the flow attached to the outlet" $ do
+      let
+        network =
+          R.network [
+            R.patch "Test 0001" [
+              R.node "Producer"
+                [ ]
+                [ R.outlet' "factory" $ R.flow $ const Banana <$> interval 100 ]
+            ]
+          ]
+      runWith network
+        \nw ->
+          do
+            collectedData <- collectData nw (Milliseconds 600.0)
+            collectedData `shouldEqual` (replicate 5 $ OutletData (outletPath 0 0 0) Banana)
+            pure unit
+    -- TODO: also try subscribing to the specific inlet / outlet for all the cases where it has sense
     pending "receives no data when outlet has no flow"
     it "subscriber receives all the data flowing in the complex network" do
       runWith postNetwork
@@ -102,7 +171,7 @@ spec = do
               , OutletData (outletPath 0 1 1) Banana
               ]
             pure unit
-  describe "after running the system" do
+  describe "flow is defined after running the system" do
     pending "TODO"
   -- describe "subscribing to the data flow" do
   --     it "receives the data from events" do
