@@ -385,9 +385,23 @@ processWith processF nodeF =
 --                     $ Map.mapWithKey processF inputs
 
 
-connect :: forall d. Outlet d -> Inlet d -> Patch d -> Patch d
-connect outlet inlet patch =
-    patch -- FIXME: implement
+-- FIXME: we shouldn't require nodes here, but how could we solve that if everything's lazy?
+connect
+    :: forall d
+     . LazyNode d
+    -> LazyOutlet d
+    -> LazyNode d
+    -> LazyInlet d
+    -> LazyPatch d
+    -> LazyPatch d
+connect produceNodeF outletF receiveNodeF inletF patchF =
+    patchF
+    -- \path ->
+    --     let
+    --         (Patch { links }) = patchF path
+    --         links' = Link
+    --     in
+    --         patch
 
 
 connect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)

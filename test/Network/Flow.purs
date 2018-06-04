@@ -9,7 +9,7 @@ import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (log, CONSOLE)
 import Control.Monad.Eff.Ref (newRef, readRef, writeRef)
 
-import Data.Array (fromFoldable, concatMap, snoc, replicate)
+import Data.Array (fromFoldable, concatMap, snoc, replicate, concat)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
@@ -60,6 +60,7 @@ instance eqDelivery :: Eq Delivery where
 spec :: forall e. Spec (TestAffE e) Unit
 spec = do
   describe "flow is defined before running the system" $ do
+
     it "we receive no data from the inlet when it has no flow or default value" $ do
       let
         network :: R.Network Delivery
@@ -77,6 +78,7 @@ spec = do
             collectedData <- collectData nw (Milliseconds 100.0)
             collectedData `shouldEqual` []
             pure unit
+
     it "we receive no data from the outlet when it has no flow" $ do
       let
         network :: R.Network Delivery
@@ -85,7 +87,7 @@ spec = do
             R.patch "Test 0002" [
               R.node "Specimen"
                 [ ]
-                [ R.outlet "bar"  ]
+                [ R.outlet "bar" ]
             ]
           ]
       runWith network
@@ -94,7 +96,9 @@ spec = do
             collectedData <- collectData nw (Milliseconds 100.0)
             collectedData `shouldEqual` []
             pure unit
+
     pending' "we're able to collect the default value from the inlet" $ do
+    -- or we shouldn't be able to collect it, and it's the value rendered from inlet data and sent on connection first, and also when there's no flow in outlet/inlet??
       let
         network =
           R.network [
@@ -110,6 +114,7 @@ spec = do
             collectedData <- collectData nw (Milliseconds 100.0)
             collectedData `shouldEqual` [ InletData (inletPath 0 0 0) Pills ]
             pure unit
+
     it "we're able to collect the data from the flow attached to the inlet" $ do
       let
         network =
@@ -126,6 +131,7 @@ spec = do
             collectedData <- collectData nw (Milliseconds 600.0)
             collectedData `shouldEqual` (replicate 5 $ InletData (inletPath 0 0 0) Pills)
             pure unit
+
     it "we're able to collect the data from the flow attached to the outlet" $ do
       let
         network =
@@ -142,8 +148,40 @@ spec = do
             collectedData <- collectData nw (Milliseconds 600.0)
             collectedData `shouldEqual` (replicate 5 $ OutletData (outletPath 0 0 0) Banana)
             pure unit
+
+    it "connecting the outlet to the inlet actually sends the data" $ do
+      let
+        factory = R.outlet' "factory" $ R.flow $ const Banana <$> interval 100
+        consume = R.inlet "consumer"
+        producerNode =
+          R.node "Producer"
+            [ ]
+              [ factory ]
+        receiverNode =
+          R.node "Receiver"
+            [ consume ]
+            [ ]
+        patch =
+          R.patch "Test 0001"
+            [ producerNode
+            , receiverNode
+            ]
+        --patch' = R.connect producerNode factory receiverNode consume patch
+        --network = R.network [ patch' ]
+        network = R.network [ patch ]
+      runWith network
+        \nw ->
+          do
+            collectedData <- collectData nw (Milliseconds 600.0)
+            collectedData `shouldEqual`
+                (concat $ replicate 5 $
+                  [ OutletData (outletPath 0 0 0) Banana
+                  , InletData (inletPath 0 1 0) Banana
+                  ]
+                )
+            pure unit
+
     -- TODO: also try subscribing to the specific inlet / outlet for all the cases where it has sense
-    pending "receives no data when outlet has no flow"
     it "subscriber receives all the data flowing in the complex network" do
       runWith postNetwork
         \nw ->
@@ -171,8 +209,10 @@ spec = do
               , OutletData (outletPath 0 1 1) Banana
               ]
             pure unit
+
   describe "flow is defined after running the system" do
     pending "TODO"
+
   -- describe "subscribing to the data flow" do
   --     it "receives the data from events" do
 
