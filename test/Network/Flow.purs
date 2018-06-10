@@ -242,7 +242,7 @@ spec = do
             collectedData <- collectData nw (Milliseconds 600.0)
             collectedData `shouldEqual`
                 (replicate 5 $ OutletData (outletPath 0 0 0) Banana)
-            let nw' = fromMaybe nw $ R.connect' (outletPath 0 1 0) (inletPath 0 0 0) nw
+            let nw' = fromMaybe nw $ R.connect' (outletPath 0 0 0) (inletPath 0 1 0) nw
             collectedInletData <-
               collectTopDataFromInlet nw' (inletPath 0 1 0) (Milliseconds 600.0)
             collectedInletData `shouldEqual` (replicate 5 Banana)
@@ -330,29 +330,6 @@ postNetwork =
   --   processF inputs | Map.member "d" inputs =
   --     Map.singleton "c" $ fromMaybe Damaged $ Map.lookup "d" inputs
   --   processF inputs = Map.empty
-
-
--- collectData
---   :: forall e
---    . R.Network MyData
---   -> Milliseconds
---   -> Aff (TestAffE e) (Array (R.OutletPath /\ MyData))
--- collectData nw period = do
---   target <- liftEff $ newRef []
---   cancelers <- liftEff $ do
---     let
---       onInletData :: R.InletPath -> R.DataSource MyData -> MyData -> Eff (TestAffE e) Unit
---       onInletData path source d = do
---         log $ show path <> show d
---       onOutletData path d = do
---         curData <- readRef target
---         _ <- writeRef target $ (path /\ d) : curData
---         pure unit
---       subscribers = R.subscribeAll onInletData onOutletData nw
---     performSubs subscribers
---   delay period
---   liftEff $ cancelSubs cancelers
---   liftEff $ readRef target
 
 
 data TraceItem d
