@@ -420,7 +420,6 @@ trackTheFlow
                     map performSub <$> allInletSubscribers
             in allOutletCancelers' /\ allInletCancelers'
             {- subscribe with function below and execute all -}
-        -- FIXME: implement
         ConnectTo inlet -> do
                 let
                     maybeCanceler :: Maybe (R.Canceler e)
@@ -441,7 +440,6 @@ trackTheFlow
             {- subscribe with function below and execute subscriber,
             -- then insert the resulting canceler into the map -}
             -- connectToInlet inlet network
-        -- FIXME: implement
         DisconnectAt inlet -> do
             -- _ <- fromMaybe (pure unit) $ disconnectAtInlet inlet allInletCancelers <#> performCancel
             case disconnectAtInlet inlet allInletCancelers <#> performCancel of

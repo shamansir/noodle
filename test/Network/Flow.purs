@@ -17,13 +17,18 @@ import Data.Map as Map
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (traverse)
 import Data.Tuple.Nested ((/\))
+import Data.Maybe (fromMaybe)
 
 import FRP (FRP)
 import FRP.Event (fold) as Event
 import FRP.Event.Time (interval)
 
 import Rpd as R
-import Rpd.Flow (flow, subscribeAll, Subscribers, Subscriber, Canceler) as R
+import Rpd.Flow
+  ( flow
+  , subscribeAll, subscribeTop
+  , Subscribers, Subscriber, Canceler
+  ) as R
 
 import Test.Spec (Spec, describe, it, pending, pending')
 import Test.Spec.Assertions (shouldEqual)
@@ -167,9 +172,8 @@ spec = do
             [ producerNode
             , receiverNode
             ]
-        patch' = R.connect (outletPath 0 1 0) (inletPath 0 0 0) patch
-        --network = R.network [ patch' ]
-        network = R.network [ patch ]
+        patch' = R.connect (outletPath 0 0 0) (inletPath 0 1 0) patch
+        network = R.network [ patch' ]
       runWith network
         \nw ->
           do
@@ -212,7 +216,39 @@ spec = do
             pure unit
 
   describe "flow is defined after running the system" do
-    pending "TODO"
+
+    it "connecting the outlet to the inlet actually sends the data" $ do
+      -- TODO: test it for the "after" case below first, then bring back
+      let
+        factory = R.outlet' "factory" $ R.flow $ const Banana <$> interval 100
+        consume = R.inlet "consumer"
+        producerNode =
+          R.node "Producer"
+            [ ]
+            [ factory ]
+        receiverNode =
+          R.node "Receiver"
+            [ consume ]
+            [ ]
+        patch =
+          R.patch "Test 0001"
+            [ producerNode
+            , receiverNode
+            ]
+        network = R.network [ patch ]
+      runWith network
+        \nw ->
+          do
+            collectedData <- collectData nw (Milliseconds 600.0)
+            collectedData `shouldEqual`
+                (concat $ replicate 5 $
+                  [ OutletData (outletPath 0 0 0) Banana
+                  , InletData (inletPath 0 1 0) Banana
+                  ]
+                )
+            collectedInletData <- collectDataFromInlet nw (inletPath 0 1 0) (Milliseconds 600.0)
+            collectedInletData `shouldEqual` []
+            pure unit
 
   -- describe "subscribing to the data flow" do
   --     it "receives the data from events" do
@@ -327,6 +363,8 @@ data TraceItem d
 
 type TracedFlow d = Array (TraceItem d)
 
+type TracedInletFlow d = Array d
+
 derive instance genericTraceItem :: Generic (TraceItem d) _
 
 instance showTraceItem :: Show d => Show (TraceItem d) where
@@ -355,7 +393,6 @@ collectData nw period = do
           curData <- readRef target
           _ <- writeRef target $ curData +> OutletData path d
           pure unit
-        -- FIXME: Rpd.subscribeAll should actually subscribe!
         subscribers = R.subscribeAll onInletData onOutletData nw
       performSubs subscribers
     pure $ target /\ cancelers
@@ -363,6 +400,50 @@ collectData nw period = do
   liftEff $ do
     cancelSubs cancelers
     readRef target
+
+
+collectDataFromInlet
+  :: forall d e
+   . (Show d)
+  => R.Network d
+  -> R.InletPath
+  -> Milliseconds
+  -> Aff (TestAffE e) (TracedInletFlow d)
+collectDataFromInlet nw inletPath period = do
+  {-
+  liftEff $ do
+    nw' <- R.connect' (outletPath 0 1 0) (inletPath 0 0 0)
+    subscriber <- R.subscribeTop (inletPath 0 0 0) nw'
+    pure unit
+  -}
+  target /\ canceler <- liftEff $ do
+    target <- newRef []
+    canceler <- do
+      let
+        onInletData source d = do
+          curData <- readRef target
+          _ <- writeRef target $ curData +> d
+          pure unit
+        subscriber = fromMaybe (pure $ pure unit) $ R.subscribeTop onInletData inletPath nw
+      performSub subscriber
+    pure $ target /\ canceler
+  delay period
+  liftEff $ do
+    cancelSub canceler
+    readRef target
+
+
+performSub :: forall e. R.Subscriber e -> Eff (frp :: FRP | e) (R.Canceler e)
+performSub sub =
+  do
+    canceler <- liftEff $ sub
+    pure canceler
+
+
+cancelSub :: forall e. R.Canceler e -> Eff (frp :: FRP | e) Unit
+cancelSub canceler = do
+  _ <- canceler
+  pure unit
 
 
 performSubs :: forall e. R.Subscribers e -> Eff (frp :: FRP | e) (Array (R.Canceler e))
@@ -375,16 +456,8 @@ performSubs ( outletSubscribers /\ inletSubscribers ) = do
 performSubs' :: forall e. Array (R.Subscriber e) -> Eff (frp :: FRP | e) (Array (R.Canceler e))
 performSubs' subscribers =
   traverse performSub subscribers
-  where
-    performSub sub =
-      do
-        canceler <- liftEff $ sub
-        pure canceler
 
 
 cancelSubs :: forall e. Array (R.Canceler e) -> Eff (frp :: FRP | e) Unit
 cancelSubs cancelers =
-  foreachE cancelers $
-    \canceler -> do
-      _ <- canceler
-      pure unit
+  foreachE cancelers cancelSub
