@@ -56,6 +56,43 @@ After dealing with tests, think on:
     * On the other hand we don't need effects/subscriptions to construct new data flows in these cases — we may just use maps/sampleOn etc. to create the new flow and the renderer (or any effectful handler) should react accordingly to situation: subscribe the new flow, for example;
     * Maybe any Canceler should be `data Canceler = InletCanceler InletPath (Eff ... ) | OutletCanceler OutletPath (Eff ... ) | NodeCanceler NodePath (Eff ...)` — that would complicate searching for a proper canceler in Arrays (though we still may keep them in Maps for faster access),but that would simplify types and subscriptions in general;
 
+Consider adding errors instead of returning `Maybe`s in some cases, with `Either` or not, I don't know. For example, if connection nwas failed, it's better to know the reason why.
+
+IDs and Paths:
+
+    We don't know IDs and Paths before constructing the network, since they describe the path in full, and requires the whole structure to be ready, it's not very convenient. Could that be a `Maybe` field in every definition? If it is set, then the subject is already in the network, if it's not, it's detached, but still can be accessed. Running the network fills the paths.
+
+    May be random IDs/Hashes are ok, but so we produce `RANDOM` effect even while we construct the network. (Why not though).
+
+    Do we need paths at all? Do we need them for normalization?
+
+    Do we need to separate "unprepared" and "prepared" networks (some of thought on it were somewhere around here)?
+
+Some thoughts directly from the head, don't consider them smart:
+
+    What if unprepared Network is `do`-able and uses commands to construct a network instead of the prepared structure? And only when we run it, we convert commands to the Network we know.
+
+        The cons here are:
+
+        - we need indexes (unsafe) for commands of connection etc.
+
+        The pros here are:
+
+        - It is easy to import networks as commands;
+        - We don’t need same  commands in renderers;
+
+    On the other hand methods are the same commands written as functions, especially now, when `connect` takes indexes actually. But we need to to keep Network the main subject, since when all the methods return network, we may make it a Monad(?). And then RPD == Eff (..) Network.
+
+    And so no way to provide API like in Collage, where addNode returns Node and all the methods related to Node operate on the Node instance?
+
+    We may still make them so if we make Node, Patch, Inlet, Outlet etc. also `do`-able?
+
+    The unprepared Network is the one where there’s no FRP effect, but any other effect may persist.
+
+    So maybe RPD === Eff ( FRP | e ) Network and NetworkDef === Eff ( RANDOM ) Network or something.
+
+    Also `connect` should require only Nodes and Outlet and Inlet indices, if we affect Patch and not Network.
+
 Consider sending `Inlet`/`Outlet` objects to subscribers etc. instead of their paths, since it's not handy to search for inlet name in a network you have no access to...
 
 Maybe `Behavior` from `purescript-behaviors` is the better way to store / represent the processing function? [This page](https://github.com/funkia/hareactive) explains a lot about event a.k.a. stream/behavior differences.

@@ -156,7 +156,7 @@ spec = do
         producerNode =
           R.node "Producer"
             [ ]
-              [ factory ]
+            [ factory ]
         receiverNode =
           R.node "Receiver"
             [ consume ]
@@ -166,7 +166,7 @@ spec = do
             [ producerNode
             , receiverNode
             ]
-        --patch' = R.connect producerNode factory receiverNode consume patch
+        patch' = R.connect (outletPath 0 1 0) (inletPath 0 0 0) patch
         --network = R.network [ patch' ]
         network = R.network [ patch ]
       runWith network

@@ -21,7 +21,7 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Array ((:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head)
--- import Data.Tuple.Nested (type (/\))
+import Data.Tuple.Nested ((/\))
 
 import Control.Monad.Eff (Eff, kind Effect)
 
@@ -385,23 +385,42 @@ processWith processF nodeF =
 --                     $ Map.mapWithKey processF inputs
 
 
--- FIXME: we shouldn't require nodes here, but how could we solve that if everything's lazy?
 connect
     :: forall d
-     . LazyNode d
-    -> LazyOutlet d
-    -> LazyNode d
-    -> LazyInlet d
+     . OutletPath
+    -> InletPath
     -> LazyPatch d
     -> LazyPatch d
-connect produceNodeF outletF receiveNodeF inletF patchF =
-    patchF
-    -- \path ->
-    --     let
-    --         (Patch { links }) = patchF path
-    --         links' = Link
-    --     in
-    --         patch
+connect outletPath inletPath patchF =
+    \path ->
+        let
+            patch@(Patch p@{ id : patchId, nodes, links }) = patchF path
+            OutletPath producingNodePath outletIdx = outletPath
+            InletPath receivingNodePath inletIdx = inletPath
+        in
+            if isNodeInPatch producingNodePath patchId
+              && isNodeInPatch receivingNodePath patchId then
+                let
+                    newLink = Link outletPath inletPath
+                    NodePath _ producingNodeIdx = producingNodePath
+                    NodePath _ receivingNodeIdx = receivingNodePath
+                in case ((nodes !! producingNodeIdx) /\ (nodes !! receivingNodeIdx)) of
+                    ( Just producingNode /\ Just receivingNode ) ->
+                        let
+                            Node { outlets } = producingNode
+                            Node { inlets } = receivingNode
+                        in
+                            case ( outlets !! outletIdx /\ inlets !! inletIdx) of
+                                ( Just outlet /\ Just inlet ) ->
+                                    let
+                                        Outlet { flow : maybeFlow } = outlet
+                                    in
+                                        -- TOO LOW!!
+                                        patch
+                                _ -> patch
+                        -- Patch p { links = newLink : links }
+                    _ -> patch
+            else patch
 
 
 connect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
