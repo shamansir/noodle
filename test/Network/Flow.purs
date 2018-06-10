@@ -16,8 +16,8 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Map as Map
 import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (traverse)
-import Data.Tuple.Nested ((/\))
-import Data.Maybe (fromMaybe)
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Maybe (Maybe(..), fromMaybe)
 
 import FRP (FRP)
 import FRP.Event (fold) as Event
@@ -245,7 +245,8 @@ spec = do
             let nw' = fromMaybe nw $ R.connect' (outletPath 0 0 0) (inletPath 0 1 0) nw
             collectedInletData <-
               collectTopDataFromInlet nw' (inletPath 0 1 0) (Milliseconds 600.0)
-            collectedInletData `shouldEqual` (replicate 5 Banana)
+            collectedInletData `shouldEqual`
+                (replicate 5 $ Just (outletPath 0 0 0) /\ Banana)
             pure unit
 
   -- describe "subscribing to the data flow" do
@@ -338,7 +339,7 @@ data TraceItem d
 
 type TracedFlow d = Array (TraceItem d)
 
-type TracedInletFlow d = Array d
+type TracedInletFlow d = Array (Maybe R.OutletPath /\ d)
 
 derive instance genericTraceItem :: Generic (TraceItem d) _
 
@@ -389,9 +390,13 @@ collectTopDataFromInlet nw inletPath period = do
     target <- newRef []
     canceler <- do
       let
+        extractOutletSrc source =
+          case source of
+            R.UserSource _ -> Nothing
+            R.OutletSource outletPath _ -> Just outletPath
         onInletData source d = do
           curData <- readRef target
-          _ <- writeRef target $ curData +> d
+          _ <- writeRef target $ curData +> (extractOutletSrc source /\ d)
           pure unit
         subscriber = fromMaybe (pure $ pure unit)
           $ R.subscribeTop onInletData inletPath nw
