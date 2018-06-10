@@ -241,13 +241,11 @@ spec = do
           do
             collectedData <- collectData nw (Milliseconds 600.0)
             collectedData `shouldEqual`
-                (concat $ replicate 5 $
-                  [ OutletData (outletPath 0 0 0) Banana
-                  , InletData (inletPath 0 1 0) Banana
-                  ]
-                )
-            collectedInletData <- collectDataFromInlet nw (inletPath 0 1 0) (Milliseconds 600.0)
-            collectedInletData `shouldEqual` []
+                (replicate 5 $ OutletData (outletPath 0 0 0) Banana)
+            let nw' = fromMaybe nw $ R.connect' (outletPath 0 1 0) (inletPath 0 0 0) nw
+            collectedInletData <-
+              collectTopDataFromInlet nw' (inletPath 0 1 0) (Milliseconds 600.0)
+            collectedInletData `shouldEqual` (replicate 5 Banana)
             pure unit
 
   -- describe "subscribing to the data flow" do
@@ -402,20 +400,14 @@ collectData nw period = do
     readRef target
 
 
-collectDataFromInlet
+collectTopDataFromInlet
   :: forall d e
    . (Show d)
   => R.Network d
   -> R.InletPath
   -> Milliseconds
   -> Aff (TestAffE e) (TracedInletFlow d)
-collectDataFromInlet nw inletPath period = do
-  {-
-  liftEff $ do
-    nw' <- R.connect' (outletPath 0 1 0) (inletPath 0 0 0)
-    subscriber <- R.subscribeTop (inletPath 0 0 0) nw'
-    pure unit
-  -}
+collectTopDataFromInlet nw inletPath period = do
   target /\ canceler <- liftEff $ do
     target <- newRef []
     canceler <- do
@@ -424,7 +416,8 @@ collectDataFromInlet nw inletPath period = do
           curData <- readRef target
           _ <- writeRef target $ curData +> d
           pure unit
-        subscriber = fromMaybe (pure $ pure unit) $ R.subscribeTop onInletData inletPath nw
+        subscriber = fromMaybe (pure $ pure unit)
+          $ R.subscribeTop onInletData inletPath nw
       performSub subscriber
     pure $ target /\ canceler
   delay period
