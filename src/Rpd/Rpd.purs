@@ -392,35 +392,8 @@ connect
     -> LazyPatch d
     -> LazyPatch d
 connect outletPath inletPath patchF =
-    \path ->
-        let
-            patch@(Patch p@{ id : patchId, nodes, links }) = patchF path
-            OutletPath producingNodePath outletIdx = outletPath
-            InletPath receivingNodePath inletIdx = inletPath
-        in
-            if isNodeInPatch producingNodePath patchId
-              && isNodeInPatch receivingNodePath patchId then
-                let
-                    newLink = Link outletPath inletPath
-                    NodePath _ producingNodeIdx = producingNodePath
-                    NodePath _ receivingNodeIdx = receivingNodePath
-                in case ((nodes !! producingNodeIdx) /\ (nodes !! receivingNodeIdx)) of
-                    ( Just producingNode /\ Just receivingNode ) ->
-                        let
-                            Node { outlets } = producingNode
-                            Node { inlets } = receivingNode
-                        in
-                            case ( outlets !! outletIdx /\ inlets !! inletIdx) of
-                                ( Just outlet /\ Just inlet ) ->
-                                    let
-                                        Outlet { flow : maybeFlow } = outlet
-                                    in
-                                        -- TOO LOW!!
-                                        patch
-                                _ -> patch
-                        -- Patch p { links = newLink : links }
-                    _ -> patch
-            else patch
+    -- TODO: implement
+    patchF
 
 
 connect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)

@@ -149,7 +149,8 @@ spec = do
             collectedData `shouldEqual` (replicate 5 $ OutletData (outletPath 0 0 0) Banana)
             pure unit
 
-    it "connecting the outlet to the inlet actually sends the data" $ do
+    pending' "connecting the outlet to the inlet actually sends the data" $ do
+      -- TODO: test it for the "after" case below first, then bring back
       let
         factory = R.outlet' "factory" $ R.flow $ const Banana <$> interval 100
         consume = R.inlet "consumer"
