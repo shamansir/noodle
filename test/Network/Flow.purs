@@ -442,6 +442,37 @@ instance eqTraceItem :: Eq d => Eq (TraceItem d) where
   eq = genericEq
 
 
+andExpectToReceive
+  :: forall e d
+   . Show d => Eq d
+  => (R.Network d -> Maybe (R.Network d))
+  -> TracedFlow d
+  -> Number
+  -> R.Network d
+  -> Aff (TestAffE e) (R.Network d)
+andExpectToReceive f expectedData delay nw = do
+  let nw' = fromMaybe nw $ f nw
+  collectedData <- collectData nw (Milliseconds delay)
+  collectedData `shouldEqual` expectedData
+  pure nw'
+
+
+andExpectToReceiveFromInlet
+  :: forall e d
+   . Show d => Eq d
+  => (R.Network d -> Maybe (R.Network d))
+  -> TracedInletFlow d
+  -> Number
+  -> R.InletPath
+  -> R.Network d
+  -> Aff (TestAffE e) (R.Network d)
+andExpectToReceiveFromInlet f expectedData delay inletPath nw = do
+  let nw' = fromMaybe nw $ f nw
+  collectedData <- collectTopDataFromInlet nw inletPath (Milliseconds delay)
+  collectedData `shouldEqual` expectedData
+  pure nw'
+
+
 collectData
   :: forall d e
    . (Show d)
