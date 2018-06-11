@@ -193,7 +193,7 @@ spec = do
       runWith postNetwork
         \nw ->
           do
-            collectedData <- collectData nw (Milliseconds 1000.0)
+            collectedData <- collectData nw (Milliseconds 510.0)
             -- liftEff $ log $ "collected: " <> show collectedData
             collectedData `shouldEqual`
               [ OutletData (outletPath 0 1 1) Banana
@@ -214,6 +214,7 @@ spec = do
               , InletData  (inletPath 0 0 5)  (Curse 4)
               , OutletData (outletPath 0 1 1) Banana
               , OutletData (outletPath 0 1 1) Banana
+              , OutletData (outletPath 0 0 1) Letter
               ]
             pure unit
 
@@ -252,8 +253,8 @@ spec = do
 
     it "connecting the outlet to the inlet and then disconnecting it works as well" $ do
       let
-        factory1 = R.outlet' "factory-1" $ R.flow $ const Banana <$> interval 50
-        factory2 = R.outlet' "factory-2" $ R.flow $ const Liver <$> interval 25
+        factory1 = R.outlet' "factory-1" $ R.flow $ const Banana <$> interval 60
+        factory2 = R.outlet' "factory-2" $ R.flow $ const Liver <$> interval 50
         consume = R.inlet "consumer"
         producerNode =
           R.node "Producer"
@@ -274,34 +275,33 @@ spec = do
           do
             collectedData <- collectData nw (Milliseconds 300.0)
             collectedData `shouldEqual`
-                ((concat $ replicate 5 $
+                ((concat $ replicate 4 $
                   [ OutletData (outletPath 0 0 1) Liver
                   , OutletData (outletPath 0 0 0) Banana
-                  , OutletData (outletPath 0 0 1) Liver
                   ]
                 ) +> OutletData (outletPath 0 0 1) Liver)
             let nw' = fromMaybe nw $ R.connect' (outletPath 0 0 0) (inletPath 0 1 0) nw
             collectedInletData <-
               collectTopDataFromInlet nw' (inletPath 0 1 0) (Milliseconds 300.0)
             collectedInletData `shouldEqual`
-                (replicate 5 $ Just (outletPath 0 0 0) /\ Banana)
+                (replicate 4 $ Just (outletPath 0 0 0) /\ Banana)
             let nw'' = fromMaybe nw' $ R.connect' (outletPath 0 0 1) (inletPath 0 1 0) nw'
             collectedInletData' <-
               collectTopDataFromInlet nw'' (inletPath 0 1 0) (Milliseconds 300.0)
             collectedInletData' `shouldEqual`
-                (replicate 10 $ Just (outletPath 0 0 1) /\ Liver)
+                (replicate 5 $ Just (outletPath 0 0 1) /\ Liver)
             -- TODO: also check we have two data sources there, may be in another spec
             let nw''' = fromMaybe nw'' $ R.disconnectTop (inletPath 0 1 0) nw''
             collectedInletData'' <-
               collectTopDataFromInlet nw''' (inletPath 0 1 0) (Milliseconds 300.0)
             collectedInletData'' `shouldEqual`
-                (replicate 5 $ Just (outletPath 0 0 0) /\ Banana)
+                (replicate 4 $ Just (outletPath 0 0 0) /\ Banana)
             pure unit
 
     it "connecting several outlets to the inlet merges their flows" $ do
       let
-        factory1 = R.outlet' "factory-1" $ R.flow $ const Banana <$> interval 50
-        factory2 = R.outlet' "factory-2" $ R.flow $ const Liver <$> interval 25
+        factory1 = R.outlet' "factory-1" $ R.flow $ const Banana <$> interval 60
+        factory2 = R.outlet' "factory-2" $ R.flow $ const Liver <$> interval 50
         consume = R.inlet "consumer"
         producerNode1 =
           R.node "Producer-1"
@@ -329,13 +329,11 @@ spec = do
             let nw'' = fromMaybe nw' $ R.connect' (outletPath 0 1 0) (inletPath 0 2 0) nw'
             collectedData <- collectData nw'' (Milliseconds 300.0)
             collectedData `shouldEqual`
-                ((concat $ replicate 5 $
+                ((concat $ replicate 4 $
                   [ OutletData (outletPath 0 1 0) Liver
                   , InletData  (inletPath  0 2 0) Liver
                   , OutletData (outletPath 0 0 0) Banana
                   , InletData  (inletPath  0 2 0) Banana
-                  , OutletData (outletPath 0 1 0) Liver
-                  , InletData  (inletPath  0 2 0) Liver
                   ]
                 ) +> OutletData (outletPath 0 1 0) Liver
                   +> InletData  (inletPath  0 2 0) Liver)
@@ -369,18 +367,18 @@ postServiceNode =
   R.node "Post Service"
     [ R.inlet "Mezozon"
     , R.inletWithDefault "Mr. Schtirlitz" Liver
-    , R.inlet' "Buyer UG" $ R.flow $ const Pills <$> interval 5000
+    , R.inlet' "Buyer UG" $ R.flow $ const Pills <$> interval 2500
     , R.inlet "Mrs. Black Widow"
     , R.inlet "eBay"
     , R.inlet' "kleinanzeige"
-        $ R.flow $ map Curse $ Event.fold (\_ n -> n + 1) (interval 200) 0
+        $ R.flow $ map Curse $ Event.fold (\_ n -> n + 1) (interval 100) 0
     ]
     [ R.outlet "Postman 1"
     , R.outlet' "Postman 2" $ R.flow
-        $ const Letter <$> (interval 500)
+        $ const Letter <$> (interval 250)
     , R.outlet' "Truck 1" $ R.flow
         $ map Apple
-        $ Event.fold (\_ n -> n + 1) (interval 200) 0
+        $ Event.fold (\_ n -> n + 1) (interval 100) 0
     ]
 
 
@@ -392,7 +390,7 @@ upsNode =
     ]
     [ R.outlet "Outgoing 1"
     , R.outlet' "Outgoing 2"
-        $ R.flow $ const Banana <$> interval 100
+        $ R.flow $ const Banana <$> interval 50
     ]
 
 
@@ -442,7 +440,7 @@ instance eqTraceItem :: Eq d => Eq (TraceItem d) where
   eq = genericEq
 
 
-andExpectToReceive
+andExpectToReceiveFromNetwork
   :: forall e d
    . Show d => Eq d
   => (R.Network d -> Maybe (R.Network d))
@@ -450,7 +448,7 @@ andExpectToReceive
   -> Number
   -> R.Network d
   -> Aff (TestAffE e) (R.Network d)
-andExpectToReceive f expectedData delay nw = do
+andExpectToReceiveFromNetwork f expectedData delay nw = do
   let nw' = fromMaybe nw $ f nw
   collectedData <- collectData nw (Milliseconds delay)
   collectedData `shouldEqual` expectedData
