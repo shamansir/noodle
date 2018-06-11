@@ -126,14 +126,14 @@ spec = do
           R.network [
             R.patch "Test 0001" [
               R.node "Recepient"
-                [ R.inlet' "mouth" $ R.flow $ const Pills <$> interval 100 ]
+                [ R.inlet' "mouth" $ R.flow $ const Pills <$> interval 50 ]
                 [ ]
             ]
           ]
       runWith network
         \nw ->
           do
-            collectedData <- collectData nw (Milliseconds 600.0)
+            collectedData <- collectData nw (Milliseconds 300.0)
             collectedData `shouldEqual` (replicate 5 $ InletData (inletPath 0 0 0) Pills)
             pure unit
 
@@ -144,20 +144,22 @@ spec = do
             R.patch "Test 0001" [
               R.node "Producer"
                 [ ]
-                [ R.outlet' "factory" $ R.flow $ const Banana <$> interval 100 ]
+                [ R.outlet' "factory" $ R.flow $ const Banana <$> interval 50 ]
             ]
           ]
       runWith network
         \nw ->
           do
-            collectedData <- collectData nw (Milliseconds 600.0)
-            collectedData `shouldEqual` (replicate 5 $ OutletData (outletPath 0 0 0) Banana)
+            collectedData <- collectData nw (Milliseconds 300.0)
+            collectedData `shouldEqual`
+              (replicate 5 $ OutletData (outletPath 0 0 0) Banana)
             pure unit
 
     pending' "connecting the outlet to the inlet actually sends the data" $ do
       -- TODO: test it for the "after" case below first, then bring back
       let
-        factory = R.outlet' "factory" $ R.flow $ const Banana <$> interval 100
+        factory = R.outlet' "factory"
+                    $ R.flow $ const Banana <$> interval 50
         consume = R.inlet "consumer"
         producerNode =
           R.node "Producer"
@@ -177,7 +179,7 @@ spec = do
       runWith network
         \nw ->
           do
-            collectedData <- collectData nw (Milliseconds 600.0)
+            collectedData <- collectData nw (Milliseconds 300.0)
             collectedData `shouldEqual`
                 (concat $ replicate 5 $
                   [ OutletData (outletPath 0 0 0) Banana
@@ -218,9 +220,8 @@ spec = do
   describe "flow is defined after running the system" do
 
     it "connecting the outlet to the inlet actually sends the data" $ do
-      -- TODO: test it for the "after" case below first, then bring back
       let
-        factory = R.outlet' "factory" $ R.flow $ const Banana <$> interval 100
+        factory = R.outlet' "factory" $ R.flow $ const Banana <$> interval 50
         consume = R.inlet "consumer"
         producerNode =
           R.node "Producer"
@@ -239,14 +240,105 @@ spec = do
       runWith network
         \nw ->
           do
-            collectedData <- collectData nw (Milliseconds 600.0)
+            collectedData <- collectData nw (Milliseconds 300.0)
             collectedData `shouldEqual`
                 (replicate 5 $ OutletData (outletPath 0 0 0) Banana)
             let nw' = fromMaybe nw $ R.connect' (outletPath 0 0 0) (inletPath 0 1 0) nw
             collectedInletData <-
-              collectTopDataFromInlet nw' (inletPath 0 1 0) (Milliseconds 600.0)
+              collectTopDataFromInlet nw' (inletPath 0 1 0) (Milliseconds 300.0)
             collectedInletData `shouldEqual`
                 (replicate 5 $ Just (outletPath 0 0 0) /\ Banana)
+            pure unit
+
+    it "connecting the outlet to the inlet and then disconnecting it works as well" $ do
+      let
+        factory1 = R.outlet' "factory-1" $ R.flow $ const Banana <$> interval 50
+        factory2 = R.outlet' "factory-2" $ R.flow $ const Liver <$> interval 25
+        consume = R.inlet "consumer"
+        producerNode =
+          R.node "Producer"
+            [ ]
+            [ factory1, factory2 ]
+        receiverNode =
+          R.node "Receiver"
+            [ consume ]
+            [ ]
+        patch =
+          R.patch "Test 0001"
+            [ producerNode
+            , receiverNode
+            ]
+        network = R.network [ patch ]
+      runWith network
+        \nw ->
+          do
+            collectedData <- collectData nw (Milliseconds 300.0)
+            collectedData `shouldEqual`
+                ((concat $ replicate 5 $
+                  [ OutletData (outletPath 0 0 1) Liver
+                  , OutletData (outletPath 0 0 0) Banana
+                  , OutletData (outletPath 0 0 1) Liver
+                  ]
+                ) +> OutletData (outletPath 0 0 1) Liver)
+            let nw' = fromMaybe nw $ R.connect' (outletPath 0 0 0) (inletPath 0 1 0) nw
+            collectedInletData <-
+              collectTopDataFromInlet nw' (inletPath 0 1 0) (Milliseconds 300.0)
+            collectedInletData `shouldEqual`
+                (replicate 5 $ Just (outletPath 0 0 0) /\ Banana)
+            let nw'' = fromMaybe nw' $ R.connect' (outletPath 0 0 1) (inletPath 0 1 0) nw'
+            collectedInletData' <-
+              collectTopDataFromInlet nw'' (inletPath 0 1 0) (Milliseconds 300.0)
+            collectedInletData' `shouldEqual`
+                (replicate 10 $ Just (outletPath 0 0 1) /\ Liver)
+            -- TODO: also check we have two data sources there, may be in another spec
+            let nw''' = fromMaybe nw'' $ R.disconnectTop (inletPath 0 1 0) nw''
+            collectedInletData'' <-
+              collectTopDataFromInlet nw''' (inletPath 0 1 0) (Milliseconds 300.0)
+            collectedInletData'' `shouldEqual`
+                (replicate 5 $ Just (outletPath 0 0 0) /\ Banana)
+            pure unit
+
+    it "connecting several outlets to the inlet merges their flows" $ do
+      let
+        factory1 = R.outlet' "factory-1" $ R.flow $ const Banana <$> interval 50
+        factory2 = R.outlet' "factory-2" $ R.flow $ const Liver <$> interval 25
+        consume = R.inlet "consumer"
+        producerNode1 =
+          R.node "Producer-1"
+            [ ]
+            [ factory1 ]
+        producerNode2 =
+          R.node "Producer-2"
+            [ ]
+            [ factory2 ]
+        receiverNode =
+          R.node "Receiver"
+            [ consume ]
+            [ ]
+        patch =
+          R.patch "Test 0001"
+            [ producerNode1
+            , producerNode2
+            , receiverNode
+            ]
+        network = R.network [ patch ]
+      runWith network
+        \nw ->
+          do
+            let nw' = fromMaybe nw $ R.connect' (outletPath 0 0 0) (inletPath 0 2 0) nw
+            let nw'' = fromMaybe nw' $ R.connect' (outletPath 0 1 0) (inletPath 0 2 0) nw'
+            collectedData <- collectData nw'' (Milliseconds 300.0)
+            collectedData `shouldEqual`
+                ((concat $ replicate 5 $
+                  [ OutletData (outletPath 0 1 0) Liver
+                  , InletData  (inletPath  0 2 0) Liver
+                  , OutletData (outletPath 0 0 0) Banana
+                  , InletData  (inletPath  0 2 0) Banana
+                  , OutletData (outletPath 0 1 0) Liver
+                  , InletData  (inletPath  0 2 0) Liver
+                  ]
+                ) +> OutletData (outletPath 0 1 0) Liver
+                  +> InletData  (inletPath  0 2 0) Liver)
             pure unit
 
   -- describe "subscribing to the data flow" do
