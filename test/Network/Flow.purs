@@ -67,6 +67,7 @@ spec = do
   describe "flow is defined before running the system" $ do
 
     it "we receive no data from the inlet when it has no flow or default value" $ do
+
       let
         network :: R.Network Delivery
         network =
@@ -77,6 +78,7 @@ spec = do
                 [ ]
             ]
           ]
+
       runWith network
         \nw ->
           do
@@ -85,6 +87,7 @@ spec = do
             pure unit
 
     it "we receive no data from the outlet when it has no flow" $ do
+
       let
         network :: R.Network Delivery
         network =
@@ -95,6 +98,7 @@ spec = do
                 [ R.outlet "bar" ]
             ]
           ]
+
       runWith network
         \nw ->
           do
@@ -104,6 +108,7 @@ spec = do
 
     pending' "we're able to collect the default value from the inlet" $ do
     -- or we shouldn't be able to collect it, and it's the value rendered from inlet data and sent on connection first, and also when there's no flow in outlet/inlet??
+
       let
         network =
           R.network [
@@ -113,6 +118,7 @@ spec = do
                 [ ]
             ]
           ]
+
       runWith network
         \nw ->
           do
@@ -121,6 +127,7 @@ spec = do
             pure unit
 
     it "we're able to collect the data from the flow attached to the inlet" $ do
+
       let
         network =
           R.network [
@@ -130,6 +137,7 @@ spec = do
                 [ ]
             ]
           ]
+
       runWith network
         \nw ->
           do
@@ -138,6 +146,7 @@ spec = do
             pure unit
 
     it "we're able to collect the data from the flow attached to the outlet" $ do
+
       let
         network =
           R.network [
@@ -147,6 +156,7 @@ spec = do
                 [ R.outlet' "factory" $ R.flow $ const Banana <$> interval 50 ]
             ]
           ]
+
       runWith network
         \nw ->
           do
@@ -157,6 +167,7 @@ spec = do
 
     pending' "connecting the outlet to the inlet actually sends the data" $ do
       -- TODO: test it for the "after" case below first, then bring back
+
       let
         factory = R.outlet' "factory"
                     $ R.flow $ const Banana <$> interval 50
@@ -176,6 +187,7 @@ spec = do
             ]
         patch' = R.connect (outletPath 0 0 0) (inletPath 0 1 0) patch
         network = R.network [ patch' ]
+
       runWith network
         \nw ->
           do
@@ -238,20 +250,24 @@ spec = do
             , receiverNode
             ]
         network = R.network [ patch ]
+
       runWith network
         \nw ->
           do
             collectedData <- collectData nw (Milliseconds 300.0)
             collectedData `shouldEqual`
                 (replicate 5 $ OutletData (outletPath 0 0 0) Banana)
+
             let nw' = fromMaybe nw $ R.connect' (outletPath 0 0 0) (inletPath 0 1 0) nw
             collectedInletData <-
               collectTopDataFromInlet nw' (inletPath 0 1 0) (Milliseconds 300.0)
             collectedInletData `shouldEqual`
                 (replicate 5 $ Just (outletPath 0 0 0) /\ Banana)
+
             pure unit
 
     it "connecting the outlet to the inlet and then disconnecting it works as well" $ do
+
       let
         factory1 = R.outlet' "factory-1" $ R.flow $ const Banana <$> interval 60
         factory2 = R.outlet' "factory-2" $ R.flow $ const Liver <$> interval 50
@@ -270,9 +286,11 @@ spec = do
             , receiverNode
             ]
         network = R.network [ patch ]
+
       runWith network
         \nw ->
           do
+
             collectedData <- collectData nw (Milliseconds 300.0)
             collectedData `shouldEqual`
                 ((concat $ replicate 4 $
@@ -280,22 +298,25 @@ spec = do
                   , OutletData (outletPath 0 0 0) Banana
                   ]
                 ) +> OutletData (outletPath 0 0 1) Liver)
+
             let nw' = fromMaybe nw $ R.connect' (outletPath 0 0 0) (inletPath 0 1 0) nw
             collectedInletData <-
               collectTopDataFromInlet nw' (inletPath 0 1 0) (Milliseconds 300.0)
             collectedInletData `shouldEqual`
                 (replicate 4 $ Just (outletPath 0 0 0) /\ Banana)
+
             let nw'' = fromMaybe nw' $ R.connect' (outletPath 0 0 1) (inletPath 0 1 0) nw'
             collectedInletData' <-
               collectTopDataFromInlet nw'' (inletPath 0 1 0) (Milliseconds 300.0)
             collectedInletData' `shouldEqual`
                 (replicate 5 $ Just (outletPath 0 0 1) /\ Liver)
-            -- TODO: also check we have two data sources there, may be in another spec
+
             let nw''' = fromMaybe nw'' $ R.disconnectTop (inletPath 0 1 0) nw''
             collectedInletData'' <-
               collectTopDataFromInlet nw''' (inletPath 0 1 0) (Milliseconds 300.0)
             collectedInletData'' `shouldEqual`
                 (replicate 4 $ Just (outletPath 0 0 0) /\ Banana)
+
             pure unit
 
     it "connecting several outlets to the inlet merges their flows" $ do
@@ -322,6 +343,7 @@ spec = do
             , receiverNode
             ]
         network = R.network [ patch ]
+
       runWith network
         \nw ->
           do
@@ -336,7 +358,48 @@ spec = do
                   , InletData  (inletPath  0 2 0) Banana
                   ]
                 ) +> OutletData (outletPath 0 1 0) Liver
-                  +> InletData  (inletPath  0 2 0) Liver)
+                  +> InletData (inletPath  0 2 0) Liver)
+            pure unit
+
+    it "disconnecting all the sources stops the flow" $ do
+
+      let
+        factory1 = R.outlet' "factory-1" $ R.flow $ const Banana <$> interval 60
+        factory2 = R.outlet' "factory-2" $ R.flow $ const Liver <$> interval 50
+        consume = R.inlet "consumer"
+        producerNode =
+          R.node "Producer"
+            [ ]
+            [ factory1
+            , factory2
+            ]
+        receiverNode =
+          R.node "Receiver"
+            [ consume ]
+            [ ]
+        patch =
+          R.patch "Test 0001"
+            [ producerNode
+            , receiverNode
+            ]
+        network = R.network [ patch ]
+
+      runWith network
+        \nw ->
+          do
+            let
+              nw' = fromMaybe nw $ R.connect' (outletPath 0 0 0) (inletPath 0 2 0) nw
+              nw'' = fromMaybe nw' $ R.connect' (outletPath 0 1 0) (inletPath 0 2 0) nw'
+              nw''' = fromMaybe nw'' $ R.disconnectTop (inletPath 0 1 0) nw''
+              nw'''' = fromMaybe nw''' $ R.disconnectTop (inletPath 0 1 0) nw'''
+            collectedData <- collectTopDataFromInlet nw'''' (inletPath 0 1 0) (Milliseconds 300.0)
+            collectedData `shouldEqual` []
+            collectedData' <- collectData nw'''' (Milliseconds 300.0)
+            collectedData' `shouldEqual`
+              ((concat $ replicate 4 $
+                [ OutletData (outletPath 0 0 1) Liver
+                , OutletData (outletPath 0 0 0) Banana
+                ]) +> OutletData (outletPath 0 0 1) Liver)
             pure unit
 
   -- describe "subscribing to the data flow" do
@@ -445,12 +508,12 @@ andExpectToReceiveFromNetwork
    . Show d => Eq d
   => (R.Network d -> Maybe (R.Network d))
   -> TracedFlow d
-  -> Number
+  -> Milliseconds
   -> R.Network d
   -> Aff (TestAffE e) (R.Network d)
 andExpectToReceiveFromNetwork f expectedData delay nw = do
   let nw' = fromMaybe nw $ f nw
-  collectedData <- collectData nw (Milliseconds delay)
+  collectedData <- collectData nw delay
   collectedData `shouldEqual` expectedData
   pure nw'
 
@@ -459,14 +522,14 @@ andExpectToReceiveFromInlet
   :: forall e d
    . Show d => Eq d
   => (R.Network d -> Maybe (R.Network d))
-  -> TracedInletFlow d
-  -> Number
   -> R.InletPath
+  -> Milliseconds
+  -> TracedInletFlow d
   -> R.Network d
   -> Aff (TestAffE e) (R.Network d)
-andExpectToReceiveFromInlet f expectedData delay inletPath nw = do
+andExpectToReceiveFromInlet f inletPath delay expectedData nw = do
   let nw' = fromMaybe nw $ f nw
-  collectedData <- collectTopDataFromInlet nw inletPath (Milliseconds delay)
+  collectedData <- collectTopDataFromInlet nw inletPath delay
   collectedData `shouldEqual` expectedData
   pure nw'
 
