@@ -387,11 +387,13 @@ spec = do
       runWith network
         \nw ->
           do
+
             let
               nw' = fromMaybe nw $ R.connect' (outletPath 0 0 0) (inletPath 0 2 0) nw
               nw'' = fromMaybe nw' $ R.connect' (outletPath 0 1 0) (inletPath 0 2 0) nw'
               nw''' = fromMaybe nw'' $ R.disconnectTop (inletPath 0 1 0) nw''
               nw'''' = fromMaybe nw''' $ R.disconnectTop (inletPath 0 1 0) nw'''
+
             collectedData <- collectTopDataFromInlet nw'''' (inletPath 0 1 0) (Milliseconds 300.0)
             collectedData `shouldEqual` []
             collectedData' <- collectData nw'''' (Milliseconds 300.0)
@@ -400,6 +402,7 @@ spec = do
                 [ OutletData (outletPath 0 0 1) Liver
                 , OutletData (outletPath 0 0 0) Banana
                 ]) +> OutletData (outletPath 0 0 1) Liver)
+
             pure unit
 
   -- describe "subscribing to the data flow" do

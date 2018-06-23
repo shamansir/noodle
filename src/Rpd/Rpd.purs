@@ -2,7 +2,7 @@ module Rpd
     ( Rpd, run, RpdEff, RpdEffE
     , DataSource(..), Flow, getFlowOf
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
-    , LazyPatch, LazyNode, LazyInlet, LazyOutlet
+    , RunningNetwork
     , empty
     , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
     , connect, connect', disconnect, disconnect', disconnectTop
@@ -56,7 +56,6 @@ data DataSource d
 
 -- TODO: normalize network, change to plain IDs maybe, or use paths as keys,
 --       they implement Eq anyway
-
 data Network d = Network
     { patches :: Array (Patch d)
     }
@@ -104,13 +103,6 @@ data Link = Link OutletPath InletPath
 -- type WithId e a = Eff ( random :: RANDOM | e ) a
 
 
- -- Reader monad
-type LazyPatch d = (PatchId -> Patch d)
-type LazyNode d = (NodePath -> Node d)
-type LazyInlet d = (InletPath -> Inlet d)
-type LazyOutlet d = (OutletPath -> Outlet d)
-
-
 -- data DataMsg d
 --     = FromInlet InletPath d
 --     | FromOutlet OutletPath d
@@ -119,6 +111,8 @@ type LazyOutlet d = (OutletPath -> Outlet d)
 
 type RpdEffE e = ( frp :: FRP | e )
 type RpdEff e v = Eff (RpdEffE e) v
+
+data RunningNetwork d e = RpdEff e (Network d)
 
 -- may be it will make more sense when we'll do subscriptions before passing network to rederer
 -- also, may be change to ehm... `UnpreparedNetwork`` and then the subscriber gets the `Real` one?
