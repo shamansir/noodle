@@ -52,41 +52,81 @@ data LinkId = LinkId Int
 data DataSource d
     = UserSource (Flow d)
     | OutletSource OutletPath (Flow d)
+    -- | UISource (Flow d)
 
+type PatchDef d =
+    { name :: String
+    , nodeDefs :: Array (NodeDef d)
+    , linkDefs :: Array LinkDef -- TODO: links partly duplicate Inlet: sources, aren't they?
+    -- TODO: maybe store Connections: Map InletPath (Array DataSource)
+    }
+type NodeDef d =
+    { name :: String
+    , inletDefs :: Array (InletDef d)
+    , outletDefs :: Array (OutletDef d)
+    , process :: ProcessF d
+    -- , flow :: Flow (Map (Inlet d) d /\ Map (Outlet d) d)
+    }
+type InletDef d =
+    { label :: String
+    , default :: Maybe d
+    -- , accept :: d
+    -- , sources :: Array (DataSource d)
+    -- Maybe (AdaptF d)
+    }
+type OutletDef d =
+    { label :: String
+    , flow :: Maybe (Flow d)
+    }
+type LinkDef = (Int /\ Int) /\ (Int /\ Int)
+
+-- data BuilderContext
+--     = BCPatch PatchId
+--     | BCNode NodePath
+--     |
+
+-- data NetworkBuilder = NetworkBuilder BuilderContext
+
+-- newPatch 'Test'
+-- addNode 'aaa'
+-- addNode' colorNode
+-- addNode'' colorNode { name = 'CLR' }
+-- addNode'' paletteNode { processF = ... }
+-- addInlet 0 'ff'
+-- send 0 0 (interval 5 foo)
+-- addInlet' colorInlet
+-- addInlet'' colorInlet { label = 'a' } -- may fail
+-- addOutlet 0 'sum'
+-- connect 0 0 1 0
 
 -- TODO: normalize network, change to plain IDs maybe, or use paths as keys,
 --       they implement Eq anyway
-data Network d = Network
-    { patches :: Array (Patch d)
+data Network d = Network -- (NetworkDef d)
+    { name :: String
     }
-data Patch d = Patch
-    { id :: PatchId
-    , name :: String
+
+data Patch d = Patch PatchId -- (PatchDef d)
+    { name :: String
     , nodes :: Array (Node d)
     , links :: Array Link -- TODO: links partly duplicate Inlet: sources, aren't they?
     -- TODO: maybe store Connections: Map InletPath (Array DataSource)
     }
-data Node d = Node
-    { path :: NodePath
-    , name :: String
-    , inlets :: Array (Inlet d)
+data Node d = Node NodePath -- (NodeDef d)
+    { inlets :: Array (Inlet d)
     , outlets :: Array (Outlet d)
-    , process :: ProcessF d -- (Map String d -> Map String d)
-    -- , flow :: Flow (Map (Inlet d) d /\ Map (Outlet d) d)
     }
 -- S.constant is not able to send values afterwards, so we store the default value inside
 -- TODO: inlet sources should be a set of outletPaths, so outlet-inlet pairs would be unique
-data Inlet d = Inlet
-    { path :: InletPath
-    , label :: String
+data Inlet d = Inlet InletPath
+    { label :: String
     , default :: Maybe d
     , sources :: Array (DataSource d)
+    -- , accept :: d
     -- Maybe (AdaptF d)
     }
 --data Inlet d = Inlet String (Maybe (AdaptF d))
-data Outlet d = Outlet
-    { path :: OutletPath
-    , label :: String
+data Outlet d = Outlet OutletPath
+    { label :: String
     , flow :: Maybe (Flow d)
     }
 data Link = Link OutletPath InletPath
@@ -125,31 +165,34 @@ empty :: forall d. Network d
 empty = Network { patches : [] }
 
 
-network :: forall d. Array (LazyPatch d) -> Network d
-network lazyPatches =
-    Network { patches }
-    where
-        patches = mapWithIndex
-            (\idx lazyPatch -> lazyPatch $ PatchId idx) lazyPatches
+-- network :: forall d. Array (Patch d) -> Network d
+-- network lazyPatches =
+--     Network { patches }
+--     where
+--         patches = mapWithIndex
+--             (\idx lazyPatch -> lazyPatch $ PatchId idx) lazyPatches
 
 
-patch :: forall d e. String -> Array (LazyNode d) -> LazyPatch d
-patch name lazyNodes =
-    \patchId ->
-        let
-            nodes = mapWithIndex
-                (\idx lazyNode ->
-                    lazyNode (NodePath patchId idx)) lazyNodes
-        in
-            Patch
-                { id : patchId
-                , name
+newPatch :: forall d e. String -> Network d -> Network d
+newPatch name (Network nw) =
+    Network nw { patches = patch : nw.patches } where
+        patchId = PatchId (length nw.patches)
+        patch =
+            Patch patch
+                { name
                 , nodes
                 , links : []
                 }
 
+-- addPatch1 :: forall d e. PatchId -> String -> Network d -> Network d
 
-node :: forall d. String -> Array (LazyInlet d) -> Array (LazyOutlet d) -> LazyNode d
+-- addPatch' :: forall d e. String -> RunningNetwork d e -> RunningNetwork d e
+
+addNode :: forall d. PatchId -> String -> Network d -> Network d
+addNode = undefined
+
+
+node :: forall d. String -> Array (Inlet d) -> Array (Outlet d) -> Node d
 node name lazyInlets lazyOutlets =
     \nodePath ->
         let
@@ -169,18 +212,18 @@ node name lazyInlets lazyOutlets =
                 }
 
 
-inlet :: forall d. String -> LazyInlet d
+inlet :: forall d. String -> Inlet d
 inlet label =
     inlet_ label Nothing []
 
 
-inlet' :: forall d. String -> Flow d -> LazyInlet d
+inlet' :: forall d. String -> Flow d -> Inlet d
 inlet' label dataSource =
     inlet_ label Nothing [ UserSource dataSource ]
 
 
 -- should not be exposed
-inlet_ :: forall d. String -> Maybe d -> Array (DataSource d) -> LazyInlet d
+inlet_ :: forall d. String -> Maybe d -> Array (DataSource d) -> Inlet d
 inlet_ label maybeDefault sources =
     \inletPath ->
         Inlet
@@ -191,18 +234,18 @@ inlet_ label maybeDefault sources =
             }
 
 
-inletWithDefault :: forall d. String -> d -> LazyInlet d
+inletWithDefault :: forall d. String -> d -> Inlet d
 inletWithDefault label defaultVal =
     -- inlet_ label defaultVal $ S.constant defaultVal
     inlet_ label (Just defaultVal) [ ]
 
 
-inletWithDefault' :: forall d. String -> d -> Flow d -> LazyInlet d
+inletWithDefault' :: forall d. String -> d -> Flow d -> Inlet d
 inletWithDefault' label defaultVal dataSource  =
     inlet_ label (Just defaultVal) [ UserSource dataSource ]
 
 
-outlet :: forall d. String -> LazyOutlet d
+outlet :: forall d. String -> Outlet d
 outlet label =
     \outletPath ->
         Outlet
@@ -213,7 +256,7 @@ outlet label =
 
 
 -- TODO: remove, outlets should only produce values from `process` function
-outlet' :: forall d. String -> Flow d -> LazyOutlet d
+outlet' :: forall d. String -> Flow d -> Outlet d
 outlet' label flow =
     \outletPath ->
         Outlet
@@ -344,9 +387,9 @@ updateOutlet updater (OutletPath nodePath outletId) network =
     ) nodePath network
 
 
-processWith :: forall d. ProcessF d -> LazyNode d -> LazyNode d
-processWith processF nodeF =
-    \path -> case nodeF path of Node node -> Node node { process = processF }
+processWith :: forall d. ProcessF d -> Node d -> Node d
+processWith processF (Node node) =
+    Node node { process = processF }
 
 
 -- getInletLabel :: forall d. Node d -> InletPath -> Maybe String
@@ -383,8 +426,8 @@ connect
     :: forall d
      . OutletPath
     -> InletPath
-    -> LazyPatch d
-    -> LazyPatch d
+    -> Patch d
+    -> Patch d
 connect outletPath inletPath patchF =
     -- TODO: implement
     patchF
