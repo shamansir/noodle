@@ -23,7 +23,7 @@
     "purs:repl": "purs repl 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs'",
     "purs:mod-repl": "purs repl 'bower_components/purescript-*/src/**/*.purs'",
     "purs:test": "pulp test",
-    "start": "node output/app.js"
+    "start": "npm run purs:server"
   },
   "dependencies": {
     "lodash.difference": "^4.5.0",

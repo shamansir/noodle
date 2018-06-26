@@ -8,3 +8,84 @@ So, user should be able both to construct the `Network` before running The Flow,
 Even when user runs the `Rpd` system w/o any renderer, data should be sent to inlets, processing in the nodes should run, etc.
 
 Technically it means `Subsribers` and `Cancelers` are all managed inside the `RunningNetwork`, instead of the renderer. So `RunningNetwork` produces `FRP` effect. `Renderer` receives `TheFlow` along with the `Network` instance, so it will be able to react to changes inside it. It produces `DOM` effect of course.
+
+```purescript
+colorNode :: NodeDef d
+colorNode =
+    NodeDef
+        { name : "color"
+        , process : process
+        , type : -- userType ??? optional field ???
+        , render : "html" -> ...
+        }
+        [ intInlet "r"
+        , intInlet "g"
+        , intInlet "b"
+        ]
+        [ colorOutlet "color"
+        ]
+    where
+        process = ()
+...
+
+render "html" colorNode == ???
+render node =
+    case node.def.type of
+        "color" ... ?
+
+colorInlet :: InletDef d
+colorInlet =
+    InletDef
+    { accept : accept
+    , adapt : adapt
+    , show : show
+    , render : "html" -> ...
+    }
+    where
+        adapt =
+        accept (Color _) = True
+        accept _ = False
+        show (Color _) = ...
+        show _ = "Error"
+
+
+render "html" intInlet ==
+
+addNode 0 colorNode
+addInlet 0 0 intInlet
+send 0 0 (interval (Milliseconds 5) 10)
+connect 0 0 0 2
+
+
+
+typeclass Renderer Html =
+    render (Node | Inlet | Outlet)
+        case node.type ...
+    renderData d =
+
+
+
+data BuilderContext
+    = BCPatch PatchId
+    | BCNode NodePath
+    |
+
+data NetworkBuilder = NetworkBuilder BuilderContext
+
+newPatch 'Test'
+addNode 'aaa'
+addNode' colorNode
+addNode'' colorNode { name = 'CLR' }
+addNode'' paletteNode { processF = ... }
+addInlet 0 'ff'
+send 0 0 (interval 5 foo)
+addInlet' colorInlet
+addInlet'' colorInlet { label = 'a' } -- may fail
+addOutlet 0 'sum'
+connect 0 0 1 0
+```
+
+
+purescript-behaviors is now 100% FFI-free, updated for 0.12 (thanks @jusrin00!), and I've broken out the event implementation as a separate library
+https://pursuit.purescript.org/packages/purescript-behaviors/7.0.0 …
+https://pursuit.purescript.org/packages/purescript-event/1.2.4 …

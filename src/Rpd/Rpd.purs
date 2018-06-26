@@ -4,7 +4,7 @@ module Rpd
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
     , RunningNetwork
     , empty
-    , network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
+    --, network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
     , connect, connect', disconnect, disconnect', disconnectTop
     , ProcessF, processWith
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
@@ -17,14 +17,12 @@ module Rpd
 
 import Prelude
 
+import Control.Monad.Eff (Eff, kind Effect)
+import Data.Array ((:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head, length)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Array ((:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head)
 import Data.Tuple.Nested ((/\))
-
-import Control.Monad.Eff (Eff, kind Effect)
-
 import FRP (FRP)
 import FRP.Event (Event)
 
@@ -56,17 +54,17 @@ data DataSource d
 
 type PatchDef d =
     { name :: String
-    , nodeDefs :: Array (NodeDef d)
-    , linkDefs :: Array LinkDef -- TODO: links partly duplicate Inlet: sources, aren't they?
+    -- , nodeDefs :: Array (NodeDef d)
+    -- , linkDefs :: Array LinkDef -- TODO: links partly duplicate Inlet: sources, aren't they?
     -- TODO: maybe store Connections: Map InletPath (Array DataSource)
     }
 type NodeDef d =
     { name :: String
-    , inletDefs :: Array (InletDef d)
-    , outletDefs :: Array (OutletDef d)
+    -- , inletDefs :: Array (InletDef d)
+    -- , outletDefs :: Array (OutletDef d)
     , process :: ProcessF d
     -- , flow :: Flow (Map (Inlet d) d /\ Map (Outlet d) d)
-    }
+    | r }
 type InletDef d =
     { label :: String
     , default :: Maybe d
@@ -76,28 +74,10 @@ type InletDef d =
     }
 type OutletDef d =
     { label :: String
-    , flow :: Maybe (Flow d)
+    -- , flow :: Maybe (Flow d)
     }
-type LinkDef = (Int /\ Int) /\ (Int /\ Int)
+-- type LinkDef = (Int /\ Int) /\ (Int /\ Int)
 
--- data BuilderContext
---     = BCPatch PatchId
---     | BCNode NodePath
---     |
-
--- data NetworkBuilder = NetworkBuilder BuilderContext
-
--- newPatch 'Test'
--- addNode 'aaa'
--- addNode' colorNode
--- addNode'' colorNode { name = 'CLR' }
--- addNode'' paletteNode { processF = ... }
--- addInlet 0 'ff'
--- send 0 0 (interval 5 foo)
--- addInlet' colorInlet
--- addInlet'' colorInlet { label = 'a' } -- may fail
--- addOutlet 0 'sum'
--- connect 0 0 1 0
 
 -- TODO: normalize network, change to plain IDs maybe, or use paths as keys,
 --       they implement Eq anyway
@@ -180,9 +160,8 @@ newPatch name (Network nw) =
         patch =
             Patch patch
                 { name
-                , nodes
-                , links : []
                 }
+                []
 
 -- addPatch1 :: forall d e. PatchId -> String -> Network d -> Network d
 
