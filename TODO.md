@@ -42,6 +42,8 @@ Make Network normalized after creation (not a tree, but a collection of Patches,
 Secondary:
 ==========
 
+How may user specify the types for the nodes or channels if user wants to render them differently depending on type? Should the Node/Channel renderer be stored in definition structure instead? Maybe `data` is what should be rendered and node body renderer belongs to the node? How to search for the nodes if they have no readable type? May be all the definitions should be extensible records, so user will be able to add `type` field manually and so determine the type in the renderer when some Node/Channel has its time to render?
+
 Add `RPD` Effect. May be it should be produced by all these functions which subscribe to new data flows, and so the result of the `Rpd.run` function should contain it as well.
 
 Join Paths with the same data type and make them easily extractable to arrays.

@@ -72,17 +72,39 @@ data BuilderContext
 
 data NetworkBuilder = NetworkBuilder BuilderContext
 
-newPatch 'Test'
-addNode 'aaa'
-addNode' colorNode
-addNode'' colorNode { name = 'CLR' }
-addNode'' paletteNode { processF = ... }
-addInlet 0 'ff'
-send 0 0 (interval 5 foo)
-addInlet' colorInlet
-addInlet'' colorInlet { label = 'a' } -- may fail
-addOutlet 0 'sum'
-connect 0 0 1 0
+empty
+    # newPatch 'Test'
+    # addNode 'aaa'
+    # addNode' colorNode
+    # addNode'' colorNode { name = 'CLR' }
+    # addNode'' paletteNode { processF = ... }
+    # addInlet 0 'ff'
+    -- let lastNodePath <- getLastNode
+    # send 0 0 (interval 5 foo)
+    # addInlet' colorInlet
+    # addInlet'' colorInlet { label = 'a' } -- may fail
+    # addOutlet 0 'sum'
+    # connect 0 0 1 0
+
+
+reusableNode nw =
+    addNode '...' nw
+       # addInlet 0 'ff'
+
+
+do
+    addNode 'aaa'
+    let lastNode = getLastNode -- actually path
+    addInlet lastNode
+    setProcess lastNode (\ -> ...)
+    pure nw
+
+
+withLastNode (\node ->
+    ...
+    ...
+)
+
 ```
 
 

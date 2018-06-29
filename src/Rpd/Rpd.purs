@@ -52,7 +52,7 @@ data DataSource d
     | OutletSource OutletPath (Flow d)
     -- | UISource (Flow d)
 
-type PatchDef d =
+type PatchDef =
     { name :: String
     -- , nodeDefs :: Array (NodeDef d)
     -- , linkDefs :: Array LinkDef -- TODO: links partly duplicate Inlet: sources, aren't they?
@@ -64,51 +64,67 @@ type NodeDef d =
     -- , outletDefs :: Array (OutletDef d)
     , process :: ProcessF d
     -- , flow :: Flow (Map (Inlet d) d /\ Map (Outlet d) d)
-    | r }
+    }
 type InletDef d =
     { label :: String
     , default :: Maybe d
-    -- , accept :: d
+    , accept :: d
     -- , sources :: Array (DataSource d)
     -- Maybe (AdaptF d)
     }
-type OutletDef d =
+type OutletDef d r =
     { label :: String
     -- , flow :: Maybe (Flow d)
     }
 -- type LinkDef = (Int /\ Int) /\ (Int /\ Int)
 
+infixr 6 type Map as /->
 
 -- TODO: normalize network, change to plain IDs maybe, or use paths as keys,
 --       they implement Eq anyway
 data Network d = Network -- (NetworkDef d)
     { name :: String
     }
+    { patches :: PatchId /-> Patch d
+    , nodes :: NodePath /-> Node d
+    , inlets :: InletPath /-> Inlet d
+    , outlets :: OutletPath /-> Outlet d
+    , links :: Array Link
+    }
 
-data Patch d = Patch PatchId -- (PatchDef d)
-    { name :: String
-    , nodes :: Array (Node d)
-    , links :: Array Link -- TODO: links partly duplicate Inlet: sources, aren't they?
-    -- TODO: maybe store Connections: Map InletPath (Array DataSource)
-    }
-data Node d = Node NodePath -- (NodeDef d)
-    { inlets :: Array (Inlet d)
-    , outlets :: Array (Outlet d)
-    }
+data Patch =
+    Patch
+        PatchId
+        PatchDef
+        { nodes :: Array NodePath
+        , links :: Array Link -- TODO: links partly duplicate Inlet: sources, aren't they?
+        -- TODO: maybe store Connections: Map InletPath (Array DataSource)
+        }
+data Node d =
+    Node
+        NodePath -- (NodeDef d)
+        (NodeDef d)
+        { inlets :: Array (Inlet d)
+        , outlets :: Array (Outlet d)
+        }
 -- S.constant is not able to send values afterwards, so we store the default value inside
 -- TODO: inlet sources should be a set of outletPaths, so outlet-inlet pairs would be unique
-data Inlet d = Inlet InletPath
-    { label :: String
-    , default :: Maybe d
-    , sources :: Array (DataSource d)
-    -- , accept :: d
-    -- Maybe (AdaptF d)
-    }
+data Inlet d =
+    Inlet
+        InletPath
+        (InletDef d)
+        { sources :: Array (DataSource d)
+        -- , accept :: d
+        -- Maybe (AdaptF d)
+        }
+
 --data Inlet d = Inlet String (Maybe (AdaptF d))
-data Outlet d = Outlet OutletPath
-    { label :: String
-    , flow :: Maybe (Flow d)
-    }
+data Outlet d =
+    Outlet
+        OutletPath
+        (OutletDef d)
+        { flow :: Maybe (Flow d)
+        }
 data Link = Link OutletPath InletPath
 
 
@@ -153,14 +169,18 @@ empty = Network { patches : [] }
 --             (\idx lazyPatch -> lazyPatch $ PatchId idx) lazyPatches
 
 
-newPatch :: forall d e. String -> Network d -> Network d
-newPatch name (Network nw) =
+addPatch :: forall d. String -> Network d -> Network d
+addPatch name =
+    addPatch' { name }
+
+
+addPatch' :: forall d. PatchDef d -> Network d -> Network d
+addPatch' def (Network nw) =
     Network nw { patches = patch : nw.patches } where
         patchId = PatchId (length nw.patches)
         patch =
             Patch patch
-                { name
-                }
+                def
                 []
 
 -- addPatch1 :: forall d e. PatchId -> String -> Network d -> Network d
