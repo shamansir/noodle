@@ -18,13 +18,15 @@ module Rpd
 import Prelude
 
 import Control.Monad.Eff (Eff, kind Effect)
-import Data.Array ((:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head, length)
+import Data.List (List, (:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head, length)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested ((/\))
 import FRP (FRP)
 import FRP.Event (Event)
+
+import Unsafe.Coerce
 
 
 type Flow d = Event d
@@ -52,16 +54,16 @@ data DataSource d
     | OutletSource OutletPath (Flow d)
     -- | UISource (Flow d)
 
-type PatchDef =
+type PatchDef d =
     { name :: String
-    -- , nodeDefs :: Array (NodeDef d)
+    , nodeDefs :: List (NodeDef d)
     -- , linkDefs :: Array LinkDef -- TODO: links partly duplicate Inlet: sources, aren't they?
     -- TODO: maybe store Connections: Map InletPath (Array DataSource)
     }
 type NodeDef d =
     { name :: String
-    -- , inletDefs :: Array (InletDef d)
-    -- , outletDefs :: Array (OutletDef d)
+    , inletDefs :: List (InletDef d)
+    , outletDefs :: List (OutletDef d)
     , process :: ProcessF d
     -- , flow :: Flow (Map (Inlet d) d /\ Map (Outlet d) d)
     }
@@ -72,7 +74,7 @@ type InletDef d =
     -- , sources :: Array (DataSource d)
     -- Maybe (AdaptF d)
     }
-type OutletDef d r =
+type OutletDef d =
     { label :: String
     -- , flow :: Maybe (Flow d)
     }
@@ -84,6 +86,7 @@ infixr 6 type Map as /->
 --       they implement Eq anyway
 data Network d = Network -- (NetworkDef d)
     { name :: String
+    , patchDefs :: List (PatchDef d)
     }
     { patches :: PatchId /-> Patch d
     , nodes :: NodePath /-> Node d
@@ -91,21 +94,20 @@ data Network d = Network -- (NetworkDef d)
     , outlets :: OutletPath /-> Outlet d
     , links :: Array Link
     }
-
-data Patch =
+data Patch d =
     Patch
         PatchId
-        PatchDef
-        { nodes :: Array NodePath
-        , links :: Array Link -- TODO: links partly duplicate Inlet: sources, aren't they?
+        (PatchDef d)
+        { nodes :: List NodePath
+        , links :: List Link -- TODO: links partly duplicate Inlet: sources, aren't they?
         -- TODO: maybe store Connections: Map InletPath (Array DataSource)
         }
 data Node d =
     Node
         NodePath -- (NodeDef d)
         (NodeDef d)
-        { inlets :: Array (Inlet d)
-        , outlets :: Array (Outlet d)
+        { inlets :: List InletPath
+        , outlets :: List OutletPath
         }
 -- S.constant is not able to send values afterwards, so we store the default value inside
 -- TODO: inlet sources should be a set of outletPaths, so outlet-inlet pairs would be unique
@@ -113,7 +115,7 @@ data Inlet d =
     Inlet
         InletPath
         (InletDef d)
-        { sources :: Array (DataSource d)
+        { sources :: List (DataSource d)
         -- , accept :: d
         -- Maybe (AdaptF d)
         }
@@ -179,7 +181,8 @@ addPatch' def (Network nw) =
     Network nw { patches = patch : nw.patches } where
         patchId = PatchId (length nw.patches)
         patch =
-            Patch patch
+            Patch
+                patchId
                 def
                 []
 
@@ -188,7 +191,7 @@ addPatch' def (Network nw) =
 -- addPatch' :: forall d e. String -> RunningNetwork d e -> RunningNetwork d e
 
 addNode :: forall d. PatchId -> String -> Network d -> Network d
-addNode = undefined
+addNode = unsafeCoerce
 
 
 node :: forall d. String -> Array (Inlet d) -> Array (Outlet d) -> Node d
@@ -345,45 +348,66 @@ findOutlet (OutletPath nodePath index) network =
     findNode nodePath network >>= (\(Node { outlets }) -> outlets !! index)
 
 
--- TODO: change return type of the functions below to Maybe,
--- to identify the case when subject wasn't modified
-
-updatePatch :: forall d. (Patch d -> Patch d) -> PatchId -> Network d -> Network d
-updatePatch updater (PatchId patchId) (Network network) =
-    Network network
-        { patches = fromMaybe network.patches
-            $ modifyAt patchId updater network.patches
-        }
-
-
-updateNode :: forall d. (Node d -> Node d) -> NodePath -> Network d -> Network d
-updateNode updater (NodePath patchId nodeId) network =
-    updatePatch (\(Patch patch) ->
-        Patch patch
-            { nodes = fromMaybe patch.nodes
-                $ modifyAt nodeId updater patch.nodes
-            }
-    ) patchId network
+updatePatch :: forall d. (Patch d -> Patch d) -> PatchId -> Network d -> Maybe (Network d)
+updatePatch updater patchId nw@(Network def state@{ patches }) = do
+    -- { patches = Map.update (Just <$> updater) patchId patches }
+    patch <- Map.lookup patchId patches
+    let patches' = Map.insert patchId patch patches
+    pure $
+        Network
+            def
+            state { patches = patches' }
 
 
-updateInlet :: forall d. (Inlet d -> Inlet d) -> InletPath -> Network d -> Network d
-updateInlet updater (InletPath nodePath inletId) network =
-    updateNode (\(Node node) ->
-        Node node
-            { inlets = fromMaybe node.inlets
-                $ modifyAt inletId updater node.inlets
-            }
-    ) nodePath network
+updateNode :: forall d. (Node d -> Node d) -> NodePath -> Network d -> Maybe (Network d)
+updateNode updater path@(NodePath patchId _) nw = do
+    (Network def state@{ nodes }) <- updatePatch
+        (\(Patch patchId pdef pstate@{ nodes }) ->
+            Patch patchId pdef
+                pstate { nodes = path : nodes }
+        ) patchId nw
+    nw' <- do
+        node <- Map.lookup path nodes
+        let nodes' = Map.insert path node nodes
+        pure $
+            Network
+                def
+                state { nodes = nodes' }
+    pure nw'
 
 
-updateOutlet :: forall d. (Outlet d -> Outlet d) -> OutletPath -> Network d -> Network d
-updateOutlet updater (OutletPath nodePath outletId) network =
-    updateNode (\(Node node) ->
-        Node node
-            { outlets = fromMaybe node.outlets
-                $ modifyAt outletId updater node.outlets
-            }
-    ) nodePath network
+updateInlet :: forall d. (Inlet d -> Inlet d) -> InletPath -> Network d -> Maybe (Network d)
+updateInlet updater path@(InletPath nodePath _) nw = do
+    (Network def state@{ inlets }) <- updateNode
+        (\(Node nodePath ndef nstate@{ inlets }) ->
+            Node nodePath ndef
+                nstate { inlets = path : inlets }
+        ) nodePath nw
+    nw' <- do
+        inlet <- Map.lookup path inlets
+        let inlets' = Map.insert path inlet inlets
+        pure $
+            Network
+                def
+                state { inlets = inlets' }
+    pure nw'
+
+
+updateOutlet :: forall d. (Outlet d -> Outlet d) -> OutletPath -> Network d -> Maybe (Network d)
+updateOutlet updater path@(OutletPath nodePath _) nw = do
+    (Network def state@{ outlets }) <- updateNode
+        (\(Node nodePath ndef nstate@{ outlets }) ->
+            Node nodePath ndef
+                nstate { outlets = path : outlets }
+        ) nodePath nw
+    nw' <- do
+        outlet <- Map.lookup path outlets
+        let outlets' = Map.insert path outlet outlets
+        pure $
+            Network
+                def
+                state { outlets = outlets' }
+    pure nw'
 
 
 processWith :: forall d. ProcessF d -> Node d -> Node d
