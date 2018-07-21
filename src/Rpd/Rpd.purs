@@ -2,31 +2,34 @@ module Rpd
     ( Rpd, run, RpdEff, RpdEffE
     , DataSource(..), Flow, getFlowOf
     , Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)
+    , PatchDef, NodeDef, InletDef, OutletDef
     , RunningNetwork
-    , empty
+    --, emptyNetwork
     --, network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
-    , connect, connect', disconnect, disconnect', disconnectTop
-    , ProcessF, processWith
+    --, connect, connect', disconnect, disconnect', disconnectTop
+    , ProcessF
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
     , notInTheSameNode
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
-    , findPatch, findNode, findOutlet, findInlet
+    --, findPatch, findNode, findOutlet, findInlet
     ) where
 
+import Data.Either
 import Prelude
+import Unsafe.Coerce
 
 import Control.Monad.Eff (Eff, kind Effect)
-import Data.List (List, (:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head, length)
+import Data.List (List(..), (:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head, length)
+import Data.List as List
+import Data.List.Lazy (Step(..))
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe, maybe')
 import Data.Tuple.Nested ((/\))
 import FRP (FRP)
 import FRP.Event (Event)
-
-import Unsafe.Coerce
 
 
 type Flow d = Event d
@@ -152,6 +155,8 @@ type RpdEff e v = Eff (RpdEffE e) v
 
 data RunningNetwork d e = RpdEff e (Network d)
 
+data UpdateError = UpdateError String
+
 -- may be it will make more sense when we'll do subscriptions before passing network to rederer
 -- also, may be change to ehm... `UnpreparedNetwork`` and then the subscriber gets the `Real` one?
 -- is it the place where RPD effect should be added to the result, like with subscriptions?
@@ -159,8 +164,17 @@ run :: forall d e. (Network d -> RpdEff e Unit) -> Network d -> RpdEff e Unit
 run renderer nw = renderer nw
 
 
-empty :: forall d. Network d
-empty = Network { patches : [] }
+{-
+emptyNetwork :: forall d. Network d
+emptyNetwork = Network { patches : [] }
+
+
+emptyPatch :: forall d. PatchId -> Patch d
+emptyPatch id =
+    Patch id
+        { name : }
+        { patches : [] }
+-}
 
 
 -- network :: forall d. Array (Patch d) -> Network d
@@ -171,29 +185,67 @@ empty = Network { patches : [] }
 --             (\idx lazyPatch -> lazyPatch $ PatchId idx) lazyPatches
 
 
+nextPatchId :: forall d. Network d -> PatchId
+nextPatchId (Network _ { patches }) =
+    PatchId (Map.size patches)
+
+
+nextNodePath :: forall d. PatchId -> Network d -> Either UpdateError NodePath
+nextNodePath patchId (Network _ { patches }) = do
+    (Patch _ _ { nodes }) <- Map.lookup patchId patches
+                                # note (UpdateError "")
+    pure $ NodePath patchId $ length nodes
+
+
 addPatch :: forall d. String -> Network d -> Network d
 addPatch name =
-    addPatch' { name }
+    addPatch'
+        { name
+        , nodeDefs : List.Nil
+        }
 
 
 addPatch' :: forall d. PatchDef d -> Network d -> Network d
-addPatch' def (Network nw) =
-    Network nw { patches = patch : nw.patches } where
-        patchId = PatchId (length nw.patches)
+addPatch' pdef nw@(Network nwdef nws) =
+    Network
+        nwdef
+        nws
+        { patches = Map.insert patchId patch nws.patches }
+    where
+        patchId = nextPatchId nw
         patch =
             Patch
                 patchId
-                def
-                []
+                pdef
+                { nodes : List.Nil
+                , links : List.Nil
+                }
 
 -- addPatch1 :: forall d e. PatchId -> String -> Network d -> Network d
 
 -- addPatch' :: forall d e. String -> RunningNetwork d e -> RunningNetwork d e
 
-addNode :: forall d. PatchId -> String -> Network d -> Network d
-addNode = unsafeCoerce
+addNode :: forall d. PatchId -> String -> Network d -> Either UpdateError (Network d)
+addNode patchId name nw = do
+    nodePath <- nextNodePath patchId nw
+    let
+        node =
+            Node
+                nodePath
+                { name, inletDefs : List.Nil, outletDefs : List.Nil, process : id }
+                { inlets : List.Nil, outlets : List.Nil }
+        updater (Patch _ def p@{ nodes }) =
+            Patch
+                patchId
+                def
+                (p { nodes = nodePath : nodes })
+    (Network def nw'@{ nodes }) <- updatePatch updater patchId nw
+    pure $ Network
+        def
+        nw' { nodes = Map.insert nodePath node nodes }
 
 
+{-
 node :: forall d. String -> Array (Inlet d) -> Array (Outlet d) -> Node d
 node name lazyInlets lazyOutlets =
     \nodePath ->
@@ -212,7 +264,6 @@ node name lazyInlets lazyOutlets =
                 , outlets
                 , process : const Map.empty
                 }
-
 
 inlet :: forall d. String -> Inlet d
 inlet label =
@@ -267,7 +318,9 @@ outlet' label flow =
             , flow : Just flow
             }
 
+-}
 
+{-
 findTopConnection :: forall d. InletPath -> Network d -> Maybe OutletPath
 findTopConnection inletPath network =
     findInlet inletPath network >>=
@@ -296,6 +349,7 @@ findSource outletPath inletPath network =
                         else Nothing
             ) sources
         )
+-}
 
 
 isNodeInPatch :: NodePath -> PatchId -> Boolean
@@ -328,6 +382,7 @@ notInTheSameNode (InletPath iNodePath _) (OutletPath oNodePath _) =
     iNodePath /= oNodePath
 
 
+{-
 findPatch :: forall d. PatchId -> Network d -> Maybe (Patch d)
 findPatch (PatchId index) (Network { patches }) =
     patches !! index
@@ -346,20 +401,31 @@ findInlet (InletPath nodePath index) network =
 findOutlet :: forall d. OutletPath -> Network d -> Maybe (Outlet d)
 findOutlet (OutletPath nodePath index) network =
     findNode nodePath network >>= (\(Node { outlets }) -> outlets !! index)
+-}
 
-
-updatePatch :: forall d. (Patch d -> Patch d) -> PatchId -> Network d -> Maybe (Network d)
+updatePatch
+    :: forall d
+     . (Patch d -> Patch d)
+    -> PatchId
+    -> Network d
+    -> Either UpdateError (Network d)
 updatePatch updater patchId nw@(Network def state@{ patches }) = do
-    -- { patches = Map.update (Just <$> updater) patchId patches }
-    patch <- Map.lookup patchId patches
-    let patches' = Map.insert patchId patch patches
+    patch <- Map.lookup patchId patches # note (UpdateError "")
     pure $
         Network
             def
-            state { patches = patches' }
+            state
+                { patches =
+                    Map.insert patchId (updater patch) patches
+                }
 
 
-updateNode :: forall d. (Node d -> Node d) -> NodePath -> Network d -> Maybe (Network d)
+updateNode
+    :: forall d
+     . (Node d -> Node d)
+    -> NodePath
+    -> Network d
+    -> Either UpdateError (Network d)
 updateNode updater path@(NodePath patchId _) nw = do
     (Network def state@{ nodes }) <- updatePatch
         (\(Patch patchId pdef pstate@{ nodes }) ->
@@ -367,16 +433,23 @@ updateNode updater path@(NodePath patchId _) nw = do
                 pstate { nodes = path : nodes }
         ) patchId nw
     nw' <- do
-        node <- Map.lookup path nodes
-        let nodes' = Map.insert path node nodes
+        node <- Map.lookup path nodes # note (UpdateError "")
         pure $
             Network
                 def
-                state { nodes = nodes' }
+                state
+                    { nodes =
+                        Map.insert path (updater node) nodes
+                    }
     pure nw'
 
 
-updateInlet :: forall d. (Inlet d -> Inlet d) -> InletPath -> Network d -> Maybe (Network d)
+updateInlet
+    :: forall d
+     . (Inlet d -> Inlet d)
+    -> InletPath
+    -> Network d
+    -> Either UpdateError (Network d)
 updateInlet updater path@(InletPath nodePath _) nw = do
     (Network def state@{ inlets }) <- updateNode
         (\(Node nodePath ndef nstate@{ inlets }) ->
@@ -384,7 +457,7 @@ updateInlet updater path@(InletPath nodePath _) nw = do
                 nstate { inlets = path : inlets }
         ) nodePath nw
     nw' <- do
-        inlet <- Map.lookup path inlets
+        inlet <- Map.lookup path inlets # note (UpdateError "")
         let inlets' = Map.insert path inlet inlets
         pure $
             Network
@@ -393,7 +466,12 @@ updateInlet updater path@(InletPath nodePath _) nw = do
     pure nw'
 
 
-updateOutlet :: forall d. (Outlet d -> Outlet d) -> OutletPath -> Network d -> Maybe (Network d)
+updateOutlet
+    :: forall d
+     . (Outlet d -> Outlet d)
+    -> OutletPath
+    -> Network d
+    -> Either UpdateError (Network d)
 updateOutlet updater path@(OutletPath nodePath _) nw = do
     (Network def state@{ outlets }) <- updateNode
         (\(Node nodePath ndef nstate@{ outlets }) ->
@@ -401,18 +479,13 @@ updateOutlet updater path@(OutletPath nodePath _) nw = do
                 nstate { outlets = path : outlets }
         ) nodePath nw
     nw' <- do
-        outlet <- Map.lookup path outlets
+        outlet <- Map.lookup path outlets # note (UpdateError "")
         let outlets' = Map.insert path outlet outlets
         pure $
             Network
                 def
                 state { outlets = outlets' }
     pure nw'
-
-
-processWith :: forall d. ProcessF d -> Node d -> Node d
-processWith processF (Node node) =
-    Node node { process = processF }
 
 
 -- getInletLabel :: forall d. Node d -> InletPath -> Maybe String
@@ -456,6 +529,7 @@ connect outletPath inletPath patchF =
     patchF
 
 
+{-
 connect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
 connect' outletPath inletPath network = do
     outlet <- findOutlet outletPath network
@@ -475,13 +549,14 @@ connect' outletPath inletPath network = do
                     Inlet inlet { sources = newSource : sources })
                 inletPath
                 network'
+-}
 
 
 disconnect :: forall d. Outlet d -> Inlet d -> Patch d -> Patch d
 disconnect outlet inlet patch =
     patch -- FIXME: implement
 
-
+{-
 disconnect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
 disconnect' outletPath inletPath network = do
     network' <- removeLink outletPath inletPath network
@@ -498,14 +573,15 @@ disconnect' outletPath inletPath network = do
                     Inlet inlet { sources = filter (not $ isFromOutlet outletPath) sources })
                 inletPath
                 network'
+-}
 
-
+{-
 disconnectTop :: forall d. InletPath -> Network d -> Maybe (Network d)
 disconnectTop inletPath network =
     -- TODO: optimize with searching last and updating simultaneously
     findTopConnection inletPath network
         >>= (\outletPath -> disconnect' outletPath inletPath network)
-
+-}
 
 -- disconnectLast' :: forall d. InletPath -> Network d -> Maybe (Network d)
 
@@ -515,7 +591,7 @@ disconnectTop inletPath network =
 
 -- TODO: findLink :: forall d. InletPath -> Network d -> Maybe (Link d)
 
-
+{-
 removeLink :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
 removeLink outletPath inletPath network = do
     let
@@ -529,6 +605,7 @@ removeLink outletPath inletPath network = do
                     patchId
                     network
     pure network'
+-}
 
 
 getFlowOf :: forall d. DataSource d -> Flow d
@@ -638,16 +715,16 @@ instance ordOutletPath :: Ord OutletPath where
 
 -- TODO: create HasId / HasPath typeclass
 instance eqPatch :: Eq (Patch d) where
-    eq (Patch { id : idA }) (Patch { id : idB }) = (idA == idB)
+    eq (Patch idA _ _) (Patch idB _ _) = (idA == idB)
 
 instance eqNode :: Eq (Node d) where
-    eq (Node { path : pathA }) (Node { path : pathB }) = (pathA == pathB)
+    eq (Node pathA _ _) (Node pathB _ _) = (pathA == pathB)
 
 instance eqInlet :: Eq (Inlet d) where
-    eq (Inlet { path : pathA }) (Inlet { path : pathB }) = (pathA == pathB)
+    eq (Inlet pathA _ _) (Inlet pathB _ _) = (pathA == pathB)
 
 instance eqOutlet :: Eq (Outlet d) where
-    eq (Outlet { path : pathA }) (Outlet { path : pathB }) = (pathA == pathB)
+    eq (Outlet pathA _ _) (Outlet pathB _ _) = (pathA == pathB)
 
 instance eqLink :: Eq Link where
     eq (Link outletA inletA) (Link outletB inletB) = (outletA == outletB) && (inletA == inletB)
