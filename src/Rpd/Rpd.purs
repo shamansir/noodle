@@ -206,11 +206,11 @@ addPatch name =
 
 
 addPatch' :: forall d. PatchDef d -> Network d -> Network d
-addPatch' pdef nw@(Network nwdef nws) =
+addPatch' pdef nw@(Network nwdef nwstate) =
     Network
         nwdef
-        nws
-        { patches = Map.insert patchId patch nws.patches }
+        nwstate
+        { patches = Map.insert patchId patch nwstate.patches }
     where
         patchId = nextPatchId nw
         patch =
@@ -227,22 +227,27 @@ addPatch' pdef nw@(Network nwdef nws) =
 
 addNode :: forall d. PatchId -> String -> Network d -> Either UpdateError (Network d)
 addNode patchId name nw = do
+    addNode' patchId { name, inletDefs : List.Nil, outletDefs : List.Nil, process : id } nw
+
+
+addNode' :: forall d. PatchId -> NodeDef d -> Network d -> Either UpdateError (Network d)
+addNode' patchId def nw = do
     nodePath <- nextNodePath patchId nw
     let
         node =
             Node
                 nodePath
-                { name, inletDefs : List.Nil, outletDefs : List.Nil, process : id }
+                def
                 { inlets : List.Nil, outlets : List.Nil }
-        updater (Patch _ def p@{ nodes }) =
+        updater (Patch _ pdef pstate@{ nodes }) =
             Patch
                 patchId
-                def
-                (p { nodes = nodePath : nodes })
-    (Network def nw'@{ nodes }) <- updatePatch updater patchId nw
+                pdef
+                (pstate { nodes = nodePath : nodes })
+    (Network nwdef nwstate@{ nodes }) <- updatePatch updater patchId nw
     pure $ Network
-        def
-        nw' { nodes = Map.insert nodePath node nodes }
+        nwdef
+        nwstate { nodes = Map.insert nodePath node nodes }
 
 
 {-
