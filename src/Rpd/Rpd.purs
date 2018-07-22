@@ -21,6 +21,7 @@ import Prelude
 import Unsafe.Coerce
 
 import Control.Monad.Eff (Eff, kind Effect)
+import Control.MonadZero (guard)
 import Data.List (List(..), (:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head, length)
 import Data.List as List
 import Data.List.Lazy (Step(..))
@@ -95,7 +96,7 @@ data Network d = Network -- (NetworkDef d)
     , nodes :: NodePath /-> Node d
     , inlets :: InletPath /-> Inlet d
     , outlets :: OutletPath /-> Outlet d
-    , links :: Array Link
+    , links :: List Link
     }
 data Patch d =
     Patch
@@ -257,7 +258,7 @@ addNode' patchId def nw = do
             Patch
                 patchId
                 pdef
-                (pstate { nodes = nodePath : nodes })
+                $ pstate { nodes = nodePath : nodes }
     (Network nwdef nwstate@{ nodes }) <- updatePatch updater patchId nw
     pure $ Network
         nwdef
@@ -277,7 +278,7 @@ addInlet' nodePath def nw = do
             Node
                 nodePath
                 ndef
-                (nstate { inlets = inletPath : inlets })
+                $ nstate { inlets = inletPath : inlets }
     (Network nwdef nwstate@{ inlets }) <- updateNode updater nodePath nw
     pure $ Network
         nwdef
@@ -297,11 +298,46 @@ addOutlet' nodePath def nw = do
             Node
                 nodePath
                 ndef
-                (nstate { outlets = outletPath : outlets })
+                $ nstate { outlets = outletPath : outlets }
     (Network nwdef nwstate@{ outlets }) <- updateNode updater nodePath nw
     pure $ Network
         nwdef
         nwstate { outlets = Map.insert outletPath outlet outlets }
+
+
+connect
+    :: forall d
+     . OutletPath
+    -> InletPath
+    -> Network d
+    -> Either UpdateError (Network d)
+    -- -> Eff e (Either UpdateError (Network d))
+connect outletPath inletPath network@(Network _ { nodes, outlets, inlets }) = do
+    outlet <- Map.lookup outletPath outlets # note (UpdateError "")
+    inlet <- Map.lookup inletPath inlets # note (UpdateError "")
+    let outletPatch = getPatchOfOutlet outletPath
+    let inletPatch = getPatchOfInlet inletPath
+    --guard (inletPatch == outletPatch)
+    -- if (inletPatch == outletPatch) then do
+    _ <- if (inletPatch == outletPatch) then pure unit else Left (UpdateError "")
+    let
+        patchId = inletPatch
+        (Outlet _ _ { flow }) = outlet
+    flow' <- flow # note (UpdateError "")
+    let newLink = Link outletPath inletPath
+    network' <- updatePatch
+                    (\(Patch patchId def pstate@{ links }) ->
+                        Patch patchId def $ pstate { links = newLink : links })
+                    inletPatch
+                    network
+    let newSource = OutletSource outletPath flow'
+    network'' <- updateInlet
+                (\(Inlet inletPath def istate@{ sources }) ->
+                    Inlet inletPath def $ istate { sources = newSource : sources })
+                inletPath
+                network'
+    pure $ network''
+    -- else $ UpdateError ""
 
 {-
 node :: forall d. String -> Array (Inlet d) -> Array (Outlet d) -> Node d
@@ -576,6 +612,7 @@ updateOutlet updater path@(OutletPath nodePath _) nw = do
 --                     $ Map.mapWithKey processF inputs
 
 
+{-
 connect
     :: forall d
      . OutletPath
@@ -585,7 +622,7 @@ connect
 connect outletPath inletPath patchF =
     -- TODO: implement
     patchF
-
+-}
 
 {-
 connect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
