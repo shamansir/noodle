@@ -197,6 +197,20 @@ nextNodePath patchId (Network _ { patches }) = do
     pure $ NodePath patchId $ length nodes
 
 
+nextInletPath :: forall d. NodePath -> Network d -> Either UpdateError InletPath
+nextInletPath nodePath (Network _ { nodes }) = do
+    (Node _ _ { inlets }) <- Map.lookup nodePath nodes
+                                # note (UpdateError "")
+    pure $ InletPath nodePath $ length inlets
+
+
+nextOutletPath :: forall d. NodePath -> Network d -> Either UpdateError OutletPath
+nextOutletPath nodePath (Network _ { nodes }) = do
+    (Node _ _ { outlets }) <- Map.lookup nodePath nodes
+                                # note (UpdateError "")
+    pure $ OutletPath nodePath $ length outlets
+
+
 addPatch :: forall d. String -> Network d -> Network d
 addPatch name =
     addPatch'
@@ -249,6 +263,45 @@ addNode' patchId def nw = do
         nwdef
         nwstate { nodes = Map.insert nodePath node nodes }
 
+
+addInlet' :: forall d. NodePath -> InletDef d -> Network d -> Either UpdateError (Network d)
+addInlet' nodePath def nw = do
+    inletPath <- nextInletPath nodePath nw
+    let
+        inlet =
+            Inlet
+                inletPath
+                def
+                { sources : List.Nil }
+        updater (Node _ ndef nstate@{ inlets }) =
+            Node
+                nodePath
+                ndef
+                (nstate { inlets = inletPath : inlets })
+    (Network nwdef nwstate@{ inlets }) <- updateNode updater nodePath nw
+    pure $ Network
+        nwdef
+        nwstate { inlets = Map.insert inletPath inlet inlets }
+
+
+addOutlet' :: forall d. NodePath -> OutletDef d -> Network d -> Either UpdateError (Network d)
+addOutlet' nodePath def nw = do
+    outletPath <- nextOutletPath nodePath nw
+    let
+        outlet =
+            Outlet
+                outletPath
+                def
+                { flow : Nothing }
+        updater (Node _ ndef nstate@{ outlets }) =
+            Node
+                nodePath
+                ndef
+                (nstate { outlets = outletPath : outlets })
+    (Network nwdef nwstate@{ outlets }) <- updateNode updater nodePath nw
+    pure $ Network
+        nwdef
+        nwstate { outlets = Map.insert outletPath outlet outlets }
 
 {-
 node :: forall d. String -> Array (Inlet d) -> Array (Outlet d) -> Node d
