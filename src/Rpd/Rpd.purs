@@ -29,7 +29,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe, maybe')
 import Data.Tuple.Nested ((/\))
 import FRP (FRP)
-import FRP.Event (Event, subscribe)
+import FRP.Event (Event, subscribe, create)
 
 
 --import Rpd.Flow as Flow
@@ -53,7 +53,7 @@ type ProcessF d = (Map String d -> Map String d)
 -- type OptionalProcessF' d = (String -> d -> String /\ Maybe d)
 
 
-data Rpd d e = Rpd (RpdEff e (Network d e))
+type Rpd d = forall e. RpdEff e (Network d e)
 
 data PatchId = PatchId Int
 data NodePath = NodePath PatchId Int
@@ -172,9 +172,14 @@ data UpdateError = UpdateError String
 -- may be it will make more sense when we'll do subscriptions before passing network to rederer
 -- also, may be change to ehm... `UnpreparedNetwork`` and then the subscriber gets the `Real` one?
 -- is it the place where RPD effect should be added to the result, like with subscriptions?
-run :: forall d e. (Network d e -> RpdEff e Unit) -> Network d e -> RpdEff e Unit
+run :: forall d e. (Rpd d -> RpdEff e Unit) -> Rpd d -> RpdEff e Unit
 run renderer nw = renderer nw
 
+
+makePushableFlow :: forall d e. RpdEff e (PushableFlow d e)
+makePushableFlow = do
+    { push, event } <- create
+    pure $ PushableFlow push event
 
 {-
 emptyNetwork :: forall d. Network d
@@ -276,16 +281,22 @@ addNode' patchId def nw = do
         nwstate { nodes = Map.insert nodePath node nodes }
 
 
-addInlet' :: forall d. NodePath -> InletDef d -> Network d -> Either UpdateError (Network d)
+addInlet'
+    :: forall d e
+     . NodePath
+    -> InletDef d
+    -> Network d e
+    -> Either UpdateError (RpdEff e (Network d e))
 addInlet' nodePath def nw = do
     inletPath <- nextInletPath nodePath nw
+    pushableFlow <- makePushableFlow
     let
         inlet =
             Inlet
                 inletPath
                 def
                 { sources : List.Nil
-                , flow : Nothing
+                , flow : pushableFlow
                 }
         updater (Node _ ndef nstate@{ inlets }) =
             Node
@@ -298,15 +309,21 @@ addInlet' nodePath def nw = do
         nwstate { inlets = Map.insert inletPath inlet inlets }
 
 
-addOutlet' :: forall d e. NodePath -> OutletDef d -> Network d e -> Either UpdateError (Network d e)
+addOutlet'
+    :: forall d e
+     . NodePath
+    -> OutletDef d
+    -> Network d e
+    -> Either UpdateError (RpdEff e (Network d e))
 addOutlet' nodePath def nw = do
     outletPath <- nextOutletPath nodePath nw
+    pushableFlow <- makePushableFlow
     let
         outlet =
             Outlet
                 outletPath
                 def
-                { flow : Nothing }
+                { flow : pushableFlow }
         updater (Node _ ndef nstate@{ outlets }) =
             Node
                 nodePath
@@ -333,7 +350,7 @@ connect outletPath inletPath network@(Network def { nodes, outlets, inlets }) = 
         patchId = inletPatch
         newLink = Link outletPath inletPath
     outlet <- Map.lookup outletPath outlets # note (UpdateError "")
-    _      <- Map.lookup inletPath inlets   # note (UpdateError "")
+    _      <- Map.lookup inletPath  inlets  # note (UpdateError "")
 
     let
         (Outlet _ _ { flow }) = outlet
