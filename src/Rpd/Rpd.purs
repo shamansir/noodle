@@ -23,15 +23,15 @@ import Unsafe.Coerce
 import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Class (liftEff)
 import Control.MonadZero (guard)
+import Data.Foldable (foldMap)
 import Data.List (List(..), (:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head, length)
 import Data.List as List
 import Data.List.Lazy (Step(..))
-import Data.Foldable (foldMap)
-import Data.Traversable (traverse)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe, maybe')
-import Data.Tuple.Nested ((/\))
+import Data.Traversable (sequence, traverse)
+import Data.Tuple.Nested ((/\), type (/\))
 import FRP (FRP)
 import FRP.Event (Event, subscribe, create)
 
@@ -109,15 +109,15 @@ data Network d e = Network -- (NetworkDef d)
     , nodes :: NodePath /-> Node d
     , inlets :: InletPath /-> Inlet d e
     , outlets :: OutletPath /-> Outlet d e
-    , links :: List Link
-    , linkCancelers :: Link /-> Canceler e
+    , links :: Int /-> Link
+    , linkCancelers :: Int /-> Canceler e
     }
 data Patch d =
     Patch
         PatchId
         (PatchDef d)
         { nodes :: List NodePath
-        , links :: List Link -- TODO: links partly duplicate Inlet: sources, aren't they?
+        , links :: List Int -- TODO: links partly duplicate Inlet: sources, aren't they?
         -- TODO: maybe store Connections: Map InletPath (Array DataSource)
         }
 data Node d =
@@ -376,35 +376,51 @@ connect
     -> InletPath
     -> Network d e
     -> RpdEff e (Either UpdateError (Network d e))
-connect outletPath inletPath network@(Network def { nodes, outlets, inlets }) =
+connect outletPath inletPath network@(Network nwdef nwstate@{ nodes, outlets, inlets, links }) = do
     -- let patchId = extractPatchId outletPath inletPath
+    let linkId = Map.size links + 1
+    let newLink = Link outletPath inletPath
+
+    ePatchId :: Either UpdateError PatchId <-
+        pure $ extractPatchId outletPath inletPath
+    eFlows :: Either UpdateError (PushableFlow d e /\ PushableFlow d e) <-
+        pure $ extractFlows
+            <$> (Map.lookup outletPath outlets # note (UpdateError ""))
+            <*> (Map.lookup inletPath  inlets  # note (UpdateError ""))
+
     let
-        subscriber :: Either UpdateError (RpdEff e (RpdEff e Unit))
-        subscriber =
-            extractPatchId outletPath inletPath >>= \patchId -> do
-                let newLink = Link outletPath inletPath
-                inletPFlow /\ outletPFlow <-
-                    (\(Outlet _ _ { flow : outletPFlow }) (Inlet _ _ { flow : inletPFlow }) ->
-                        inletPFlow /\ outletPFlow)
-                        <$> (Map.lookup outletPath outlets # note (UpdateError ""))
-                        <*> (Map.lookup inletPath  inlets  # note (UpdateError ""))
+        subscribeAndSave :: PatchId -> (PushableFlow d e /\ PushableFlow d e) -> RpdEff e (Either UpdateError (Network d e))
+        subscribeAndSave patchId (outletPFlow /\ inletPFlow) = do
+            let (PushableFlow _ outletFlow) = outletPFlow
+            let (PushableFlow pushToInlet inletFlow) = inletPFlow
+            let newSource = OutletSource outletPath outletFlow
 
-                let (PushableFlow _ outletFlow) = outletPFlow
-                let (PushableFlow pushToInlet inletFlow) = inletPFlow
-                let newSource = OutletSource outletPath outletFlow
+            canceler :: Canceler e <- subscribe outletFlow pushToInlet
 
-                --TODO: network changes
+            network' :: Either UpdateError (Network d e) <- do
+                pure $ Network nwdef
+                        (nwstate { links = Map.insert linkId newLink links })
+                        # updatePatch
+                            (\(Patch patchId def pstate@{ links }) ->
+                                Patch patchId def $ pstate { links = linkId : links })
+                            patchId
+                        # (either Left
+                            $ updateInlet
+                                (\(Inlet inletPath def istate@{ sources }) ->
+                                    Inlet inletPath def $ istate { sources = newSource : sources })
+                                inletPath)
+            pure network'
 
-                subscriber <- pure $ subscribe outletFlow pushToInlet
+    let (result :: _) = subscribeAndSave <$> ePatchId <*> eFlows
 
-                pure subscriber
+    pure $ pure network
 
-    in do
-        canceler :: Either UpdateError (RpdEff e Unit) <- traverse id subscriber
-        pure $ pure network
+    -- subscribeAndSave <$> ePatchId <*> eFlows
 
-    --pure $ pure network
     where
+        extractFlows :: Outlet d e -> Inlet d e -> (PushableFlow d e /\ PushableFlow d e)
+        extractFlows (Outlet _ _ { flow : outletPFlow }) (Inlet _ _ { flow : inletPFlow }) =
+            outletPFlow /\ inletPFlow
         extractPatchId :: OutletPath -> InletPath -> Either UpdateError PatchId
         extractPatchId outletPath inletPath =
             let
@@ -413,44 +429,7 @@ connect outletPath inletPath network@(Network def { nodes, outlets, inlets }) =
             in
                 guardE inletPatch (inletPatch == outletPatch) ""
 
-    {-
-    let newLink = Link outletPath inletPath
-    (inletPFlow /\ outletPFlow) <- do
-        outlet <- Map.lookup outletPath outlets # note (UpdateError "")
-        inlet  <- Map.lookup inletPath  inlets  # note (UpdateError "")
-
-        let
-            (Outlet _ _ { flow : outletPFlow }) = outlet
-            (Inlet _ _ { flow : inletPFlow }) = inlet
-
-        pure (inletPFlow /\ outletPFlow)
-
-    let (PushableFlow _ outletFlow) = outletPFlow
-    let (PushableFlow pushToInlet inletFlow) = inletPFlow
-    let newSource = OutletSource outletPath outletFlow
-    network' :: Network d e <- do
-        nw <- network
-            # updatePatch
-                (\(Patch patchId def pstate@{ links }) ->
-                    Patch patchId def $ pstate { links = newLink : links })
-                patchId
-            # (either Left
-                $ updateInlet
-                    (\(Inlet inletPath def istate@{ sources }) ->
-                        Inlet inletPath def $ istate { sources = newSource : sources })
-                    inletPath)
-                -- (\Network -> Either Error Network) -> Either Error Network -> Either Error Network
-
-        pure nw
-
-    canceler :: Canceler e <- subscribe outletFlow pushToInlet
-    -}
-
-        -- TODO:
-        --network''' <- Network def { cancelers = Map.insert newLink canceler cancelers  }
-        -- subscribe the inlet to the output of outlet, save the canceler,
-        -- then re-subscribe `process`` function of the target node to update values including this inlet
-        -- so we have to cancel previous `process` subscription
+    -- TODO: re-subscribe `process`` function of the target node to update values including this
 
 {-
 node :: forall d. String -> Array (Inlet d) -> Array (Outlet d) -> Node d
