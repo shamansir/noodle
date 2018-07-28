@@ -361,14 +361,7 @@ addOutlet' nodePath def nw = do
 
 guardE :: forall a. a -> Boolean -> String -> Either UpdateError a
 guardE v check errorText =
-    if check then pure v else Left (UpdateError "")
-
-
-liftE :: forall a e. Either UpdateError a -> RpdEff e (Either UpdateError a)
-liftE eitherError =
-    case eitherError of
-        Left error -> pure (Left error)
-        Right v -> pure $ Right v
+    if check then pure v else Left (UpdateError errorText)
 
 connect
     :: forall d e
@@ -411,12 +404,9 @@ connect outletPath inletPath network@(Network nwdef nwstate@{ nodes, outlets, in
                                 inletPath)
                     -- TODO: re-subscribe `process`` function of the target node to update values including this connection
             pure network'
+        (network' :: _) = subscribeAndSave <$> ePatchId <*> eFlows
 
-    let
-        (result :: _) = subscribeAndSave <$> ePatchId <*> eFlows
-        (result2 :: _) = either (const $ pure $ pure network) id result
-
-    result2
+    either (const $ pure $ pure network) id network'
 
     -- subscribeAndSave <$> ePatchId <*> eFlows
 
