@@ -409,11 +409,14 @@ connect outletPath inletPath network@(Network nwdef nwstate@{ nodes, outlets, in
                                 (\(Inlet inletPath def istate@{ sources }) ->
                                     Inlet inletPath def $ istate { sources = newSource : sources })
                                 inletPath)
+                    -- TODO: re-subscribe `process`` function of the target node to update values including this connection
             pure network'
 
-    let (result :: _) = subscribeAndSave <$> ePatchId <*> eFlows
+    let
+        (result :: _) = subscribeAndSave <$> ePatchId <*> eFlows
+        (result2 :: _) = either (const $ pure $ pure network) id result
 
-    pure $ pure network
+    result2
 
     -- subscribeAndSave <$> ePatchId <*> eFlows
 
@@ -428,8 +431,6 @@ connect outletPath inletPath network@(Network nwdef nwstate@{ nodes, outlets, in
                 inletPatch = getPatchOfInlet inletPath
             in
                 guardE inletPatch (inletPatch == outletPatch) ""
-
-    -- TODO: re-subscribe `process`` function of the target node to update values including this
 
 {-
 node :: forall d. String -> Array (Inlet d) -> Array (Outlet d) -> Node d
