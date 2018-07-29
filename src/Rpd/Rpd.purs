@@ -391,22 +391,29 @@ connect outletPath inletPath network@(Network nwdef nwstate@{ nodes, outlets, in
             canceler :: Canceler e <- subscribe outletFlow pushToInlet
 
             network' :: Either UpdateError (Network d e) <- do
-                pure $ Network nwdef
-                        (nwstate { links = Map.insert linkId newLink links })
-                        # updatePatch
-                            (\(Patch patchId def pstate@{ links }) ->
-                                Patch patchId def $ pstate { links = linkId : links })
-                            patchId
-                        # (either Left
-                            $ updateInlet
-                                (\(Inlet inletPath def istate@{ sources }) ->
-                                    Inlet inletPath def $ istate { sources = newSource : sources })
-                                inletPath)
+                pure $ storeLinkInTheNetwork linkId newLink network
+                     # storeLinkInThePatch patchId linkId
+                     # (either Left $ storeSourceInTheInlet inletPath newSource)
                     -- TODO: re-subscribe `process`` function of the target node to update values including this connection
             pure network'
-        (network' :: _) = subscribeAndSave <$> ePatchId <*> eFlows
+            where
+                storeLinkInTheNetwork linkId newLink (Network nwdef nwstate@{ links }) =
+                    Network nwdef
+                        (nwstate { links = Map.insert linkId newLink links })
+                storeLinkInThePatch patchId linkId network =
+                    updatePatch
+                            (\(Patch patchId def pstate@{ links }) ->
+                                Patch patchId def $ pstate { links = linkId : links })
+                            patchId network
+                storeSourceInTheInlet inletPath newSource network =
+                    updateInlet
+                            (\(Inlet inletPath def istate@{ sources }) ->
+                                Inlet inletPath def $ istate { sources = newSource : sources })
+                            inletPath network
 
-    either (const $ pure $ pure network) id network'
+        --(network' :: _) = subscribeAndSave <$> ePatchId <*> eFlows
+
+    either (const $ pure $ pure network) id $ subscribeAndSave <$> ePatchId <*> eFlows
 
     -- subscribeAndSave <$> ePatchId <*> eFlows
 
