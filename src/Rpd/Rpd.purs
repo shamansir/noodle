@@ -32,6 +32,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe, maybe')
 import Data.Traversable (sequence, traverse)
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Lens (Lens', lens, view, set, over)
 import FRP (FRP)
 import FRP.Event (Event, subscribe, create)
 
@@ -41,6 +42,15 @@ import FRP.Event (Event, subscribe, create)
 type Rpd d e = Network d e
 type RpdOp d e = Either UpdateError (Rpd d e)
 type RpdEffOp d e = RpdEff e (RpdOp d e)
+
+
+-- instance functorRpdOp :: Functor (RpdOp d) where
+-- instance applyRpdOp :: Apply (RpdOp d) where
+-- instance applicativeRpdOp :: Applicative (RpdOp d) where
+
+-- instance functorRpdEffOp :: Functor (RpdEffOp d) where
+-- instance applyRpdEffOp :: Apply (RpdEffOp d) where
+-- instance applicativeRpdEffOp :: Applicative (RpdEffOp d) where
 
 
 type Flow d = Event d
@@ -150,6 +160,22 @@ data Outlet d e =
         { flow :: PushableFlow d e
         }
 data Link = Link OutletPath InletPath
+
+
+_patch :: forall d e. Lens' (Network d e) (Maybe (Patch d))
+_patch = unsafeCoerce
+
+_node :: forall d e. Lens' (Network d e) (Maybe (Node d))
+_node = unsafeCoerce
+
+_inlet :: forall d e. Lens' (Network d e) (Maybe (Inlet d e))
+_inlet = unsafeCoerce
+
+_outlet :: forall d e. Lens' (Network d e) (Maybe (Outlet d e))
+_outlet = unsafeCoerce
+
+_link :: forall d e. Lens' (Network d e) (Maybe Link)
+_link = unsafeCoerce
 
 
 -- data NormalizedNetwork d =
