@@ -38,6 +38,10 @@ import FRP.Event (Event, subscribe, create)
 
 --import Rpd.Flow as Flow
 
+type Rpd d e = Network d e
+type RpdOp d e = Either UpdateError (Rpd d e)
+type RpdEffOp d e = RpdEff e (RpdOp d e)
+
 
 type Flow d = Event d
 type PushF d e = (d -> RpdEff e Unit)
@@ -55,9 +59,6 @@ type ProcessF d = (Map String d -> Map String d)
 -- type DirectProcessF' d = (String -> d -> d)
 -- type OptionalProcessF d = (String -> d -> Maybe d)
 -- type OptionalProcessF' d = (String -> d -> String /\ Maybe d)
-
-
-type Rpd d = forall e. RpdEff e (Network d e)
 
 data PatchId = PatchId Int
 data NodePath = NodePath PatchId Int
@@ -101,6 +102,8 @@ infixr 6 type Map as /->
 
 -- TODO: normalize network, change to plain IDs maybe, or use paths as keys,
 --       they implement Eq anyway
+-- TODO: try to get rid of `e` by using `forall e.` where possible (`PushableFlow` has to have
+--       it in context of one call)
 data Network d e = Network -- (NetworkDef d)
     { name :: String
     , patchDefs :: List (PatchDef d)
@@ -176,7 +179,7 @@ data UpdateError = UpdateError String
 -- may be it will make more sense when we'll do subscriptions before passing network to rederer
 -- also, may be change to ehm... `UnpreparedNetwork`` and then the subscriber gets the `Real` one?
 -- is it the place where RPD effect should be added to the result, like with subscriptions?
-run :: forall d e. (Rpd d -> RpdEff e Unit) -> Rpd d -> RpdEff e Unit
+run :: forall d e. (Rpd d e -> RpdEff e Unit) -> Rpd d e -> RpdEff e Unit
 run renderer nw = renderer nw
 
 
@@ -265,7 +268,7 @@ addNode
      . PatchId
     -> String
     -> Network d e
-    -> RpdEff e (Either UpdateError (Network d e))
+    -> RpdEffOp d e
 addNode patchId name nw =
     addNode' patchId { name, inletDefs : List.Nil, outletDefs : List.Nil, process : id } nw
 
@@ -275,7 +278,7 @@ addNode'
      . PatchId
     -> NodeDef d
     -> Network d e
-    -> RpdEff e (Either UpdateError (Network d e))
+    -> RpdEffOp d e
 addNode' patchId def nw = do
     pure $ do
         nodePath <- nextNodePath patchId nw
@@ -309,7 +312,7 @@ addInlet'
      . NodePath
     -> InletDef d
     -> Network d e
-    -> RpdEff e (Either UpdateError (Network d e))
+    -> RpdEffOp d e
 addInlet' nodePath def nw = do
     pushableFlow <- makePushableFlow
     pure $ do
@@ -338,7 +341,7 @@ addOutlet'
      . NodePath
     -> OutletDef d
     -> Network d e
-    -> RpdEff e (Either UpdateError (Network d e))
+    -> RpdEffOp d e
 addOutlet' nodePath def nw = do
     pushableFlow <- makePushableFlow
     pure $ do
@@ -368,7 +371,7 @@ connect
      . OutletPath
     -> InletPath
     -> Network d e
-    -> RpdEff e (Either UpdateError (Network d e))
+    -> RpdEffOp d e
 connect outletPath inletPath network@(Network nwdef nwstate@{ nodes, outlets, inlets, links }) = do
     -- let patchId = extractPatchId outletPath inletPath
     let linkId = Map.size links + 1
@@ -592,7 +595,7 @@ updatePatch
      . (Patch d -> Patch d)
     -> PatchId
     -> Network d e
-    -> Either UpdateError (Network d e)
+    -> RpdOp d e
 updatePatch updater patchId nw@(Network def state@{ patches }) = do
     patch <- Map.lookup patchId patches # note (UpdateError "")
     pure $
@@ -609,7 +612,7 @@ updateNode
      . (Node d -> Node d)
     -> NodePath
     -> Network d e
-    -> Either UpdateError (Network d e)
+    -> RpdOp d e
 updateNode updater path@(NodePath patchId _) (Network def state@{ nodes }) = do
     node <- Map.lookup path nodes # note (UpdateError "")
     pure $
@@ -625,7 +628,7 @@ updateInlet
      . (Inlet d e -> Inlet d e)
     -> InletPath
     -> Network d e
-    -> Either UpdateError (Network d e)
+    -> RpdOp d e
 updateInlet updater path@(InletPath nodePath _) (Network def state@{ inlets }) = do
     inlet <- Map.lookup path inlets # note (UpdateError "")
     let inlets' = Map.insert path inlet inlets
@@ -640,7 +643,7 @@ updateOutlet
      . (Outlet d e -> Outlet d e)
     -> OutletPath
     -> Network d e
-    -> Either UpdateError (Network d e)
+    -> RpdOp d e
 updateOutlet updater path@(OutletPath nodePath _) (Network def state@{ outlets }) = do
     outlet <- Map.lookup path outlets # note (UpdateError "")
     let outlets' = Map.insert path outlet outlets
