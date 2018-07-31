@@ -24,6 +24,8 @@ import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Class (liftEff)
 import Control.MonadZero (guard)
 import Data.Foldable (foldMap)
+import Data.Lens (Lens', lens, view, set, setJust, over)
+import Data.Lens.At (at)
 import Data.List (List(..), (:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head, length)
 import Data.List as List
 import Data.List.Lazy (Step(..))
@@ -31,8 +33,8 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe, maybe')
 import Data.Traversable (sequence, traverse)
+import Data.Tuple (curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Lens (Lens', lens, view, set, over)
 import FRP (FRP)
 import FRP.Event (Event, subscribe, create)
 
@@ -162,20 +164,52 @@ data Outlet d e =
 data Link = Link OutletPath InletPath
 
 
-_patch :: forall d e. Lens' (Network d e) (Maybe (Patch d))
-_patch = unsafeCoerce
+_patch :: forall d e. PatchId -> Lens' (Network d e) (Maybe (PatchDef d))
+_patch patchId =
+    lens getter setter
+    where
+        getter nw = (\(Patch _ def _) -> def) <$> view (_patch' patchId) nw
+        setter nw (Just patchDef) =
+            let
+                newPatch =
+                    Patch
+                        patchId
+                        patchDef
+                        { nodes : List.Nil
+                        , links : List.Nil
+                        }
+            in
+                setJust (_patch' patchId) newPatch nw
+        setter nw Nothing = set (_patch' patchId) Nothing nw
 
-_node :: forall d e. Lens' (Network d e) (Maybe (Node d))
+_patch' :: forall d e. PatchId -> Lens' (Network d e) (Maybe (Patch d))
+_patch' patchId =
+    lens getter setter
+    where
+        getter (Network _ { patches }) = Map.lookup patchId patches
+        setter (Network nwdef nwstate) (Just patch) =
+            Network
+                nwdef
+                nwstate { patches = Map.insert patchId patch nwstate.patches }
+        setter (Network nwdef nwstate) Nothing =
+            Network
+                nwdef
+                nwstate { patches = Map.delete patchId nwstate.patches }
+
+_node :: forall d e. NodePath -> Lens' (Network d e) (Maybe (NodeDef d))
 _node = unsafeCoerce
 
-_inlet :: forall d e. Lens' (Network d e) (Maybe (Inlet d e))
+_inlet :: forall d e. InletPath -> Lens' (Network d e) (Maybe (InletDef d))
 _inlet = unsafeCoerce
 
-_outlet :: forall d e. Lens' (Network d e) (Maybe (Outlet d e))
+_outlet :: forall d e. OutletPath -> Lens' (Network d e) (Maybe (OutletDef d))
 _outlet = unsafeCoerce
 
-_link :: forall d e. Lens' (Network d e) (Maybe Link)
+_link :: forall d e. LinkId -> Lens' (Network d e) (Maybe Link)
 _link = unsafeCoerce
+
+_source :: forall d e. InletPath /\ Int -> Lens' (Network d e) (Maybe (DataSource d))
+_source = unsafeCoerce
 
 
 -- data NormalizedNetwork d =
@@ -270,20 +304,8 @@ addPatch name =
 
 
 addPatch' :: forall d e. PatchDef d -> Network d e -> Network d e
-addPatch' pdef nw@(Network nwdef nwstate) =
-    Network
-        nwdef
-        nwstate
-        { patches = Map.insert patchId patch nwstate.patches }
-    where
-        patchId = nextPatchId nw
-        patch =
-            Patch
-                patchId
-                pdef
-                { nodes : List.Nil
-                , links : List.Nil
-                }
+addPatch' pdef nw =
+    setJust (_patch $ nextPatchId nw) pdef nw
 
 -- addPatch1 :: forall d e. PatchId -> String -> Network d -> Network d
 
@@ -406,7 +428,7 @@ connect outletPath inletPath network@(Network nwdef nwstate@{ nodes, outlets, in
     ePatchId :: Either UpdateError PatchId <-
         pure $ extractPatchId outletPath inletPath
     eFlows :: Either UpdateError (PushableFlow d e /\ PushableFlow d e) <-
-        pure $ extractFlows
+        pure $ extractFlows -- + TODO: `curry`` or do not return a tuple
             <$> (Map.lookup outletPath outlets # note (UpdateError ""))
             <*> (Map.lookup inletPath  inlets  # note (UpdateError ""))
 
@@ -420,7 +442,8 @@ connect outletPath inletPath network@(Network nwdef nwstate@{ nodes, outlets, in
             canceler :: Canceler e <- subscribe outletFlow pushToInlet
 
             network' :: Either UpdateError (Network d e) <- do
-                pure $ storeLinkInTheNetwork linkId newLink network
+                pure $ network
+                     # storeLinkInTheNetwork linkId newLink
                      # storeLinkInThePatch patchId linkId
                      # (either Left $ storeSourceInTheInlet inletPath newSource)
                     -- TODO: re-subscribe `process`` function of the target node to update values including this connection
