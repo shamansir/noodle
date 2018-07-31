@@ -131,7 +131,7 @@ data Patch d =
     Patch
         PatchId
         (PatchDef d)
-        { nodes :: List NodePath
+        { nodes :: List NodePath -- FIXME: all Lists should be sets
         , links :: List Int -- TODO: links partly duplicate Inlet: sources, aren't they?
         -- TODO: maybe store Connections: Map InletPath (Array DataSource)
         }
@@ -164,26 +164,8 @@ data Outlet d e =
 data Link = Link OutletPath InletPath
 
 
-_patch :: forall d e. PatchId -> Lens' (Network d e) (Maybe (PatchDef d))
+_patch :: forall d e. PatchId -> Lens' (Network d e) (Maybe (Patch d))
 _patch patchId =
-    lens getter setter
-    where
-        getter nw = (\(Patch _ def _) -> def) <$> view (_patch' patchId) nw
-        setter nw (Just patchDef) =
-            let
-                newPatch =
-                    Patch
-                        patchId
-                        patchDef
-                        { nodes : List.Nil
-                        , links : List.Nil
-                        }
-            in
-                setJust (_patch' patchId) newPatch nw
-        setter nw Nothing = set (_patch' patchId) Nothing nw
-
-_patch' :: forall d e. PatchId -> Lens' (Network d e) (Maybe (Patch d))
-_patch' patchId =
     lens getter setter
     where
         getter (Network _ { patches }) = Map.lookup patchId patches
@@ -196,13 +178,46 @@ _patch' patchId =
                 nwdef
                 nwstate { patches = Map.delete patchId nwstate.patches }
 
-_node :: forall d e. NodePath -> Lens' (Network d e) (Maybe (NodeDef d))
-_node = unsafeCoerce
+_patchNode :: forall d e. NodePath -> Lens' (Network d e) (Maybe Unit)
+_patchNode nodePath@(NodePath patchId _) =
+    lens getter setter
+    where
+        getter nw =
+            (\(Patch _ _ { nodes }) ->
+                const unit <$> List.elemIndex nodePath nodes)
+            <$> view (_patch patchId) nw
+        setter nw (Just _) =
+            over (_patch patchId)
+                (map $ \(Patch pid pdef pstate) ->
+                    Patch pid pdef $ pstate { nodes = nodePath : pstate.nodes }
+                ) nw
+        setter nw Nothing =
+            over (_patch patchId)
+                (map $ \(Patch pid pdef pstate) ->
+                    Patch pid pdef $ pstate { nodes = List.delete nodePath pstate.nodes }
+                ) nw
 
-_inlet :: forall d e. InletPath -> Lens' (Network d e) (Maybe (InletDef d))
+
+_node :: forall d e. NodePath -> Lens' (Network d e) (Maybe (Node d))
+_node nodePath@(NodePath patchId _) =
+    lens getter setter
+    where
+        getter (Network _ { nodes }) = Map.lookup nodePath nodes
+        setter (Network nwdef nwstate) (Just node) =
+            Network
+                nwdef
+                nwstate { nodes = Map.insert nodePath node nwstate.nodes }
+        setter (Network nwdef nwstate) Nothing =
+            Network
+                nwdef
+                nwstate { nodes = Map.delete nodePath nwstate.nodes }
+            # setJust (_patchNode nodePath) unit
+        --removeNode (Patch def @{ nodes })
+
+_inlet :: forall d e. InletPath -> Lens' (Network d e) (Maybe (Inlet d e))
 _inlet = unsafeCoerce
 
-_outlet :: forall d e. OutletPath -> Lens' (Network d e) (Maybe (OutletDef d))
+_outlet :: forall d e. OutletPath -> Lens' (Network d e) (Maybe (Outlet d e))
 _outlet = unsafeCoerce
 
 _link :: forall d e. LinkId -> Lens' (Network d e) (Maybe Link)
@@ -304,8 +319,17 @@ addPatch name =
 
 
 addPatch' :: forall d e. PatchDef d -> Network d e -> Network d e
-addPatch' pdef nw =
-    setJust (_patch $ nextPatchId nw) pdef nw
+addPatch' patchDef nw =
+    setJust (_patch patchId) newPatch nw
+    where
+        patchId = nextPatchId nw
+        newPatch =
+            Patch
+                patchId
+                patchDef
+                { nodes : List.Nil
+                , links : List.Nil
+                }
 
 -- addPatch1 :: forall d e. PatchId -> String -> Network d -> Network d
 
