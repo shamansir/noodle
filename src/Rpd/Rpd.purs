@@ -28,7 +28,8 @@ import Data.Lens (Lens', lens, view, set, setJust, over)
 import Data.Lens.At (at)
 import Data.List (List(..), (:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head, length)
 import Data.List as List
-import Data.List.Lazy (Step(..))
+import Data.Set (Set)
+import Data.Set as Set
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe, maybe')
@@ -131,16 +132,16 @@ data Patch d =
     Patch
         PatchId
         (PatchDef d)
-        { nodes :: List NodePath -- FIXME: all Lists should be sets
-        , links :: List Int -- TODO: links partly duplicate Inlet: sources, aren't they?
+        { nodes :: Set NodePath -- FIXME: all Lists should be sets
+        , links :: Set Int -- TODO: links partly duplicate Inlet: sources, aren't they?
         -- TODO: maybe store Connections: Map InletPath (Array DataSource)
         }
 data Node d =
     Node
         NodePath -- (NodeDef d)
         (NodeDef d)
-        { inlets :: List InletPath
-        , outlets :: List OutletPath
+        { inlets :: Set InletPath
+        , outlets :: Set OutletPath
         }
 -- S.constant is not able to send values afterwards, so we store the default value inside
 -- TODO: inlet sources should be a set of outletPaths, so outlet-inlet pairs would be unique
@@ -184,17 +185,17 @@ _patchNode nodePath@(NodePath patchId _) =
     where
         getter nw =
             (\(Patch _ _ { nodes }) ->
-                const unit <$> List.elemIndex nodePath nodes)
-            <$> view (_patch patchId) nw
+                view (at nodePath) nodes)
+            =<< view (_patch patchId) nw
         setter nw (Just _) =
             over (_patch patchId)
                 (map $ \(Patch pid pdef pstate) ->
-                    Patch pid pdef $ pstate { nodes = nodePath : pstate.nodes }
+                    Patch pid pdef $ pstate { nodes = Set.insert nodePath pstate.nodes }
                 ) nw
         setter nw Nothing =
             over (_patch patchId)
                 (map $ \(Patch pid pdef pstate) ->
-                    Patch pid pdef $ pstate { nodes = List.delete nodePath pstate.nodes }
+                    Patch pid pdef $ pstate { nodes = Set.delete nodePath pstate.nodes }
                 ) nw
 
 
@@ -293,21 +294,21 @@ nextNodePath :: forall d e. PatchId -> Network d e -> Either UpdateError NodePat
 nextNodePath patchId (Network _ { patches }) = do
     (Patch _ _ { nodes }) <- Map.lookup patchId patches
                                 # note (UpdateError "")
-    pure $ NodePath patchId $ length nodes
+    pure $ NodePath patchId $ Set.size nodes
 
 
 nextInletPath :: forall d e. NodePath -> Network d e -> Either UpdateError InletPath
 nextInletPath nodePath (Network _ { nodes }) = do
     (Node _ _ { inlets }) <- Map.lookup nodePath nodes
                                 # note (UpdateError "")
-    pure $ InletPath nodePath $ length inlets
+    pure $ InletPath nodePath $ Set.size inlets
 
 
 nextOutletPath :: forall d e. NodePath -> Network d e -> Either UpdateError OutletPath
 nextOutletPath nodePath (Network _ { nodes }) = do
     (Node _ _ { outlets }) <- Map.lookup nodePath nodes
                                 # note (UpdateError "")
-    pure $ OutletPath nodePath $ length outlets
+    pure $ OutletPath nodePath $ Set.size outlets
 
 
 addPatch :: forall d e. String -> Network d e -> Network d e
@@ -327,8 +328,8 @@ addPatch' patchDef nw =
             Patch
                 patchId
                 patchDef
-                { nodes : List.Nil
-                , links : List.Nil
+                { nodes : Set.empty
+                , links : Set.empty
                 }
 
 -- addPatch1 :: forall d e. PatchId -> String -> Network d -> Network d
@@ -359,12 +360,12 @@ addNode' patchId def nw = do
                 Node
                     nodePath
                     def
-                    { inlets : List.Nil, outlets : List.Nil }
+                    { inlets : Set.empty, outlets : Set.empty }
             updater (Patch _ pdef pstate@{ nodes }) =
                 Patch
                     patchId
                     pdef
-                    $ pstate { nodes = nodePath : nodes }
+                    $ pstate { nodes = Set.insert nodePath nodes }
         (Network nwdef nwstate@{ nodes }) <- updatePatch updater patchId nw
         pure $ Network
             nwdef
@@ -401,7 +402,7 @@ addInlet' nodePath def nw = do
                 Node
                     nodePath
                     ndef
-                    $ nstate { inlets = inletPath : inlets }
+                    $ nstate { inlets = Set.insert inletPath inlets }
         (Network nwdef nwstate@{ inlets }) <- updateNode updater nodePath nw
         pure $ Network
             nwdef
@@ -428,7 +429,7 @@ addOutlet' nodePath def nw = do
                 Node
                     nodePath
                     ndef
-                    $ nstate { outlets = outletPath : outlets }
+                    $ nstate { outlets = Set.insert outletPath outlets }
         (Network nwdef nwstate@{ outlets }) <- updateNode updater nodePath nw
         pure $ Network
             nwdef
@@ -479,7 +480,7 @@ connect outletPath inletPath network@(Network nwdef nwstate@{ nodes, outlets, in
                 storeLinkInThePatch patchId linkId network =
                     updatePatch
                             (\(Patch patchId def pstate@{ links }) ->
-                                Patch patchId def $ pstate { links = linkId : links })
+                                Patch patchId def $ pstate { links = Set.insert linkId links })
                             patchId network
                 storeSourceInTheInlet inletPath newSource network =
                     updateInlet
