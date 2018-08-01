@@ -125,15 +125,15 @@ data Network d e = Network -- (NetworkDef d)
     , nodes :: NodePath /-> Node d
     , inlets :: InletPath /-> Inlet d e
     , outlets :: OutletPath /-> Outlet d e
-    , links :: Int /-> Link
-    , linkCancelers :: Int /-> Canceler e
+    , links :: LinkId /-> Link
+    , linkCancelers :: LinkId /-> Canceler e
     }
 data Patch d =
     Patch
         PatchId
         (PatchDef d)
         { nodes :: Set NodePath -- FIXME: all Lists should be sets
-        , links :: Set Int -- TODO: links partly duplicate Inlet: sources, aren't they?
+        , links :: Set LinkId -- TODO: links partly duplicate Inlet: sources, aren't they?
         -- TODO: maybe store Connections: Map InletPath (Array DataSource)
         }
 data Node d =
@@ -169,63 +169,130 @@ _patch :: forall d e. PatchId -> Lens' (Network d e) (Maybe (Patch d))
 _patch patchId =
     lens getter setter
     where
-        getter (Network _ { patches }) = Map.lookup patchId patches
-        setter (Network nwdef nwstate) (Just patch) =
+        patchLens = at patchId
+        getter (Network _ { patches }) = view patchLens patches
+        setter (Network nwdef nwstate) val =
             Network
                 nwdef
-                nwstate { patches = Map.insert patchId patch nwstate.patches }
-        setter (Network nwdef nwstate) Nothing =
-            Network
-                nwdef
-                nwstate { patches = Map.delete patchId nwstate.patches }
+                nwstate { patches = set patchLens val nwstate.patches }
 
-_patchNode :: forall d e. NodePath -> Lens' (Network d e) (Maybe Unit)
-_patchNode nodePath@(NodePath patchId _) =
+_patchNode :: forall d e. PatchId -> NodePath -> Lens' (Network d e) (Maybe Unit)
+_patchNode patchId nodePath =
     lens getter setter
     where
+        patchLens = _patch patchId
+        nodeLens = at nodePath
         getter nw =
-            (\(Patch _ _ { nodes }) ->
-                view (at nodePath) nodes)
-            =<< view (_patch patchId) nw
-        setter nw (Just _) =
-            over (_patch patchId)
+            view patchLens nw
+            >>= \(Patch _ _ { nodes }) -> view nodeLens nodes
+        setter nw val =
+            over patchLens
                 (map $ \(Patch pid pdef pstate) ->
-                    Patch pid pdef $ pstate { nodes = Set.insert nodePath pstate.nodes }
+                    Patch
+                        pid
+                        pdef
+                        pstate { nodes = set nodeLens val pstate.nodes }
                 ) nw
-        setter nw Nothing =
-            over (_patch patchId)
-                (map $ \(Patch pid pdef pstate) ->
-                    Patch pid pdef $ pstate { nodes = Set.delete nodePath pstate.nodes }
-                ) nw
-
 
 _node :: forall d e. NodePath -> Lens' (Network d e) (Maybe (Node d))
 _node nodePath@(NodePath patchId _) =
     lens getter setter
     where
-        getter (Network _ { nodes }) = Map.lookup nodePath nodes
-        setter (Network nwdef nwstate) (Just node) =
+        nodeLens = at nodePath
+        getter (Network _ { nodes }) = view nodeLens nodes
+        setter (Network nwdef nwstate) val =
             Network
                 nwdef
-                nwstate { nodes = Map.insert nodePath node nwstate.nodes }
-        setter (Network nwdef nwstate) Nothing =
-            Network
-                nwdef
-                nwstate { nodes = Map.delete nodePath nwstate.nodes }
-            # setJust (_patchNode nodePath) unit
-        --removeNode (Patch def @{ nodes })
+                nwstate { nodes = set nodeLens val nwstate.nodes }
+            # set (_patchNode patchId nodePath) (const unit <$> val)
+
+_nodeInlet :: forall d e. NodePath -> InletPath -> Lens' (Network d e) (Maybe Unit)
+_nodeInlet nodePath inletPath =
+    lens getter setter
+    where
+        nodeLens = _node nodePath
+        inletLens = at inletPath
+        getter nw =
+            view nodeLens nw
+            >>= \(Node _ _ { inlets }) -> view inletLens inlets
+        setter nw val =
+            over nodeLens
+                (map $ \(Node nid ndef nstate) ->
+                    Node
+                        nid
+                        ndef
+                        nstate { inlets = set inletLens val nstate.inlets }
+                ) nw
 
 _inlet :: forall d e. InletPath -> Lens' (Network d e) (Maybe (Inlet d e))
-_inlet = unsafeCoerce
+_inlet inletPath@(InletPath nodePath _) =
+    lens getter setter
+    where
+        inletLens = at inletPath
+        getter (Network _ { inlets }) = view inletLens inlets
+        setter (Network nwdef nwstate) val =
+            Network
+                nwdef
+                nwstate { inlets = set inletLens val nwstate.inlets }
+            # set (_nodeInlet nodePath inletPath) (const unit <$> val)
+
+_nodeOutlet :: forall d e. NodePath -> OutletPath -> Lens' (Network d e) (Maybe Unit)
+_nodeOutlet nodePath outletPath =
+    lens getter setter
+    where
+        nodeLens = _node nodePath
+        outletLens = at outletPath
+        getter nw =
+            view nodeLens nw
+            >>= \(Node _ _ { outlets }) -> view outletLens outlets
+        setter nw val =
+            over nodeLens
+                (map $ \(Node nid ndef nstate) ->
+                    Node
+                        nid
+                        ndef
+                        nstate { outlets = set outletLens val nstate.outlets }
+                ) nw
 
 _outlet :: forall d e. OutletPath -> Lens' (Network d e) (Maybe (Outlet d e))
-_outlet = unsafeCoerce
+_outlet outletPath@(OutletPath nodePath _) =
+    lens getter setter
+    where
+        outletLens = at outletPath
+        getter (Network _ { outlets }) = view outletLens outlets
+        setter (Network nwdef nwstate) val =
+            Network
+                nwdef
+                nwstate { outlets = set outletLens val nwstate.outlets }
+            # set (_nodeOutlet nodePath outletPath) (const unit <$> val)
+
+_patchLink = unsafeCoerce
 
 _link :: forall d e. LinkId -> Lens' (Network d e) (Maybe Link)
-_link = unsafeCoerce
+_link linkId =
+    lens getter setter
+    where
+        linkLens = at linkId
+        getter (Network _ { links }) = view linkLens links
+        setter (Network nwdef nwstate) val =
+            Network
+                nwdef
+                nwstate { links = set linkLens val nwstate.links }
+            # set (_patchLink patchId linkId) (const unit <$> val)
 
-_source :: forall d e. InletPath /\ Int -> Lens' (Network d e) (Maybe (DataSource d))
-_source = unsafeCoerce
+_canceler :: forall d e. LinkId -> Lens' (Network d e) (Maybe (Canceler e))
+_canceler linkId =
+    lens getter setter
+    where
+        cancelerLens = at linkId
+        getter (Network _ { linkCancelers }) = view cancelerLens linkCancelers
+        setter (Network nwdef nwstate) val =
+            Network
+                nwdef
+                nwstate { linkCancelers = set cancelerLens val nwstate.linkCancelers }
+
+-- _source :: forall d e. InletPath /\ Int -> Lens' (Network d e) (Maybe (DataSource d))
+-- _source = unsafeCoerce
 
 
 -- data NormalizedNetwork d =
@@ -447,7 +514,7 @@ connect
     -> RpdEffOp d e
 connect outletPath inletPath network@(Network nwdef nwstate@{ nodes, outlets, inlets, links }) = do
     -- let patchId = extractPatchId outletPath inletPath
-    let linkId = Map.size links + 1
+    let linkId = LinkId (Map.size links + 1)
     let newLink = Link outletPath inletPath
 
     ePatchId :: Either UpdateError PatchId <-
@@ -925,7 +992,7 @@ instance showLinkId :: Show LinkId where
 
 
 instance eqPatchId :: Eq PatchId where
-    eq (PatchId a) (PatchId b) = (a == b)
+    eq (PatchId a) (PatchId b) = a == b
 
 instance eqNodePath :: Eq NodePath where
     eq (NodePath pa a) (NodePath pb b) = (pa == pb) && (a == b)
@@ -935,6 +1002,9 @@ instance eqInletPath :: Eq InletPath where
 
 instance eqOutletPath :: Eq OutletPath where
     eq (OutletPath na a) (OutletPath nb b) = (na == nb) && (a == b)
+
+instance eqLinkId :: Eq LinkId where
+    eq (LinkId a) (LinkId b) = a == b
 
 
 instance ordPatchId :: Ord PatchId where
@@ -950,7 +1020,11 @@ instance ordInletPath :: Ord InletPath where
 
 instance ordOutletPath :: Ord OutletPath where
     compare outletPath1 outletPath2 =
-        compare (unpackOutletPath outletPath1)  (unpackOutletPath outletPath2)
+        compare (unpackOutletPath outletPath1) (unpackOutletPath outletPath2)
+
+instance ordLinkId :: Ord LinkId where
+    compare (LinkId a) (LinkId b) =
+        compare a b
 
 
 -- TODO: create HasId / HasPath typeclass
