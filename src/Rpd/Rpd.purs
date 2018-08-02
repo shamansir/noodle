@@ -149,7 +149,7 @@ data Inlet d e =
     Inlet
         InletPath
         (InletDef d)
-        { sources :: List (DataSource d)
+        { sources :: Set (DataSource d)
         -- , accept :: d
         -- Maybe (AdaptF d)
         , flow :: PushableFlow d e
@@ -176,6 +176,7 @@ _patch patchId =
                 nwdef
                 nwstate { patches = set patchLens val nwstate.patches }
 
+
 _patchNode :: forall d e. PatchId -> NodePath -> Lens' (Network d e) (Maybe Unit)
 _patchNode patchId nodePath =
     lens getter setter
@@ -194,6 +195,7 @@ _patchNode patchId nodePath =
                         pstate { nodes = set nodeLens val pstate.nodes }
                 ) nw
 
+
 _node :: forall d e. NodePath -> Lens' (Network d e) (Maybe (Node d))
 _node nodePath@(NodePath patchId _) =
     lens getter setter
@@ -204,7 +206,8 @@ _node nodePath@(NodePath patchId _) =
             Network
                 nwdef
                 nwstate { nodes = set nodeLens val nwstate.nodes }
-            # set (_patchNode patchId nodePath) (const unit <$> val)
+            -- # set (_patchNode patchId nodePath) (const unit <$> val)
+
 
 _nodeInlet :: forall d e. NodePath -> InletPath -> Lens' (Network d e) (Maybe Unit)
 _nodeInlet nodePath inletPath =
@@ -224,6 +227,7 @@ _nodeInlet nodePath inletPath =
                         nstate { inlets = set inletLens val nstate.inlets }
                 ) nw
 
+
 _inlet :: forall d e. InletPath -> Lens' (Network d e) (Maybe (Inlet d e))
 _inlet inletPath@(InletPath nodePath _) =
     lens getter setter
@@ -234,7 +238,8 @@ _inlet inletPath@(InletPath nodePath _) =
             Network
                 nwdef
                 nwstate { inlets = set inletLens val nwstate.inlets }
-            # set (_nodeInlet nodePath inletPath) (const unit <$> val)
+            -- # set (_nodeInlet nodePath inletPath) (const unit <$> val)
+
 
 _nodeOutlet :: forall d e. NodePath -> OutletPath -> Lens' (Network d e) (Maybe Unit)
 _nodeOutlet nodePath outletPath =
@@ -254,6 +259,7 @@ _nodeOutlet nodePath outletPath =
                         nstate { outlets = set outletLens val nstate.outlets }
                 ) nw
 
+
 _outlet :: forall d e. OutletPath -> Lens' (Network d e) (Maybe (Outlet d e))
 _outlet outletPath@(OutletPath nodePath _) =
     lens getter setter
@@ -264,9 +270,27 @@ _outlet outletPath@(OutletPath nodePath _) =
             Network
                 nwdef
                 nwstate { outlets = set outletLens val nwstate.outlets }
-            # set (_nodeOutlet nodePath outletPath) (const unit <$> val)
+            -- # set (_nodeOutlet nodePath outletPath) (const unit <$> val)
 
-_patchLink = unsafeCoerce
+
+_patchLink :: forall d e. PatchId -> LinkId -> Lens' (Network d e) (Maybe Unit)
+_patchLink patchId linkId =
+    lens getter setter
+    where
+        patchLens = _patch patchId
+        linkLens = at linkId
+        getter nw =
+            view patchLens nw
+            >>= \(Patch _ _ { links }) -> view linkLens links
+        setter nw val =
+            over patchLens
+                (map $ \(Patch pid pdef pstate) ->
+                    Patch
+                        pid
+                        pdef
+                        pstate { links = set linkLens val pstate.links }
+                ) nw
+
 
 _link :: forall d e. LinkId -> Lens' (Network d e) (Maybe Link)
 _link linkId =
@@ -274,11 +298,11 @@ _link linkId =
     where
         linkLens = at linkId
         getter (Network _ { links }) = view linkLens links
-        setter (Network nwdef nwstate) val =
+        setter nw@(Network nwdef nwstate) val =
             Network
                 nwdef
                 nwstate { links = set linkLens val nwstate.links }
-            # set (_patchLink patchId linkId) (const unit <$> val)
+
 
 _canceler :: forall d e. LinkId -> Lens' (Network d e) (Maybe (Canceler e))
 _canceler linkId =
@@ -291,8 +315,24 @@ _canceler linkId =
                 nwdef
                 nwstate { linkCancelers = set cancelerLens val nwstate.linkCancelers }
 
--- _source :: forall d e. InletPath /\ Int -> Lens' (Network d e) (Maybe (DataSource d))
--- _source = unsafeCoerce
+
+_inletSource :: forall d e. InletPath -> DataSource d -> Lens' (Network d e) (Maybe Unit)
+_inletSource inletPath source =
+    lens getter setter
+    where
+        inletLens = _inlet inletPath
+        sourceLens = at source
+        getter nw =
+            view inletLens nw
+            >>= \(Inlet _ _ { sources }) -> view sourceLens sources
+        setter nw val =
+            over inletLens
+                (map $ \(Inlet iid idef istate) ->
+                    Inlet
+                        iid
+                        idef
+                        istate { sources = set sourceLens val istate.sources }
+                ) nw
 
 
 -- data NormalizedNetwork d =
@@ -352,6 +392,8 @@ emptyPatch id =
 --             (\idx lazyPatch -> lazyPatch $ PatchId idx) lazyPatches
 
 
+-- TODO: use lenses below
+
 nextPatchId :: forall d e. Network d e -> PatchId
 nextPatchId (Network _ { patches }) =
     PatchId (Map.size patches)
@@ -376,6 +418,11 @@ nextOutletPath nodePath (Network _ { nodes }) = do
     (Node _ _ { outlets }) <- Map.lookup nodePath nodes
                                 # note (UpdateError "")
     pure $ OutletPath nodePath $ Set.size outlets
+
+
+nextLinkId :: forall d e. Network d e -> LinkId
+nextLinkId (Network _ { links }) =
+    LinkId (Map.size links)
 
 
 addPatch :: forall d e. String -> Network d e -> Network d e
@@ -462,7 +509,7 @@ addInlet' nodePath def nw = do
                 Inlet
                     inletPath
                     def
-                    { sources : List.Nil
+                    { sources : Set.empty
                     , flow : pushableFlow
                     }
             updater (Node nodePath ndef nstate@{ inlets }) =
@@ -514,7 +561,7 @@ connect
     -> RpdEffOp d e
 connect outletPath inletPath network@(Network nwdef nwstate@{ nodes, outlets, inlets, links }) = do
     -- let patchId = extractPatchId outletPath inletPath
-    let linkId = LinkId (Map.size links + 1)
+    let linkId = nextLinkId network
     let newLink = Link outletPath inletPath
 
     ePatchId :: Either UpdateError PatchId <-
@@ -533,27 +580,15 @@ connect outletPath inletPath network@(Network nwdef nwstate@{ nodes, outlets, in
 
             canceler :: Canceler e <- subscribe outletFlow pushToInlet
 
-            network' :: Either UpdateError (Network d e) <- do
+            network' :: Network d e <-
                 pure $ network
-                     # storeLinkInTheNetwork linkId newLink
-                     # storeLinkInThePatch patchId linkId
-                     # (either Left $ storeSourceInTheInlet inletPath newSource)
+                     # setJust (_link linkId) newLink
+                     # setJust (_patchLink patchId linkId) unit
+                     # setJust (_inletSource inletPath newSource) unit
+                     -- # note (UpdateError "")
                     -- TODO: re-subscribe `process`` function of the target node to update values including this connection
-            pure network'
-            where
-                storeLinkInTheNetwork linkId newLink (Network nwdef nwstate@{ links }) =
-                    Network nwdef
-                        (nwstate { links = Map.insert linkId newLink links })
-                storeLinkInThePatch patchId linkId network =
-                    updatePatch
-                            (\(Patch patchId def pstate@{ links }) ->
-                                Patch patchId def $ pstate { links = Set.insert linkId links })
-                            patchId network
-                storeSourceInTheInlet inletPath newSource network =
-                    updateInlet
-                            (\(Inlet inletPath def istate@{ sources }) ->
-                                Inlet inletPath def $ istate { sources = newSource : sources })
-                            inletPath network
+
+            pure $ Right $ network'
 
         --(network' :: _) = subscribeAndSave <$> ePatchId <*> eFlows
 
@@ -1006,6 +1041,10 @@ instance eqOutletPath :: Eq OutletPath where
 instance eqLinkId :: Eq LinkId where
     eq (LinkId a) (LinkId b) = a == b
 
+instance eqDataSource :: Eq (DataSource d) where
+    eq (OutletSource oa a) (OutletSource ob b) = oa == ob
+    eq _ _ = false
+
 
 instance ordPatchId :: Ord PatchId where
     compare (PatchId a) (PatchId b) = compare a b
@@ -1025,6 +1064,10 @@ instance ordOutletPath :: Ord OutletPath where
 instance ordLinkId :: Ord LinkId where
     compare (LinkId a) (LinkId b) =
         compare a b
+
+instance ordDataSource :: Ord (DataSource d) where
+    compare (OutletSource oa a) (OutletSource ob b) = compare oa ob
+    compare _ _ = LT
 
 
 -- TODO: create HasId / HasPath typeclass
