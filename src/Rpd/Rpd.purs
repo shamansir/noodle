@@ -425,7 +425,7 @@ nextLinkId (Network _ { links }) =
     LinkId (Map.size links)
 
 
-addPatch :: forall d e. String -> Network d e -> Network d e
+addPatch :: forall d e. String -> Network d e -> RpdEffOp d e
 addPatch name =
     addPatch'
         { name
@@ -433,9 +433,9 @@ addPatch name =
         }
 
 
-addPatch' :: forall d e. PatchDef d -> Network d e -> Network d e
+addPatch' :: forall d e. PatchDef d -> Network d e -> RpdEffOp d e
 addPatch' patchDef nw =
-    setJust (_patch patchId) newPatch nw
+    pure $ pure $ setJust (_patch patchId) newPatch nw
     where
         patchId = nextPatchId nw
         newPatch =
@@ -537,7 +537,8 @@ connect
     -> InletPath
     -> Network d e
     -> RpdEffOp d e
-connect outletPath inletPath network@(Network nwdef nwstate@{ nodes, outlets, inlets, links }) = do
+connect outletPath inletPath
+    network@(Network nwdef nwstate@{ nodes, outlets, inlets, links }) = do
     -- let patchId = extractPatchId outletPath inletPath
     let linkId = nextLinkId network
     let newLink = Link outletPath inletPath
