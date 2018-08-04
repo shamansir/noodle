@@ -446,18 +446,20 @@ addPatch' patchDef nw =
                 , links : Set.empty
                 }
 
--- addPatch1 :: forall d e. PatchId -> String -> Network d -> Network d
-
--- addPatch' :: forall d e. String -> RunningNetwork d e -> RunningNetwork d e
-
 addNode
     :: forall d e
      . PatchId
     -> String
     -> Network d e
     -> RpdEffOp d e
-addNode patchId name nw =
-    addNode' patchId { name, inletDefs : List.Nil, outletDefs : List.Nil, process : id } nw
+addNode patchId name =
+    addNode'
+        patchId
+        { name
+        , inletDefs : List.Nil
+        , outletDefs : List.Nil
+        , process : id
+        }
 
 
 addNode'
@@ -466,32 +468,18 @@ addNode'
     -> NodeDef d
     -> Network d e
     -> RpdEffOp d e
-addNode' patchId def nw = do
+addNode' patchId def nw =
     pure $ do
         nodePath <- nextNodePath patchId nw
         let
-            node =
+            newNode =
                 Node
                     nodePath
                     def
                     { inlets : Set.empty, outlets : Set.empty }
-            updater (Patch _ pdef pstate@{ nodes }) =
-                Patch
-                    patchId
-                    pdef
-                    $ pstate { nodes = Set.insert nodePath nodes }
-        (Network nwdef nwstate@{ nodes }) <- updatePatch updater patchId nw
-        pure $ Network
-            nwdef
-            nwstate { nodes = Map.insert nodePath node nodes }
-    -- where
-    --     savePathInThePatch :: NodePath -> PatchId -> Network d e -> RpdEff e (Either UpdateError (Network d e))
-    --     savePathInThePatch nodePath patchId nw =
-    --         updatePatch (storeNodePath nodePath) patchId nw
-    --     storeNodePath :: NodePath -> Patch d -> Patch d
-    --     storeNodePath nodePath (Patch patchId pdef pstate@{ nodes }) =
-    --         Patch patchId pdef
-    --             pstate { nodes = nodePath : nodes }
+        pure $ nw
+             # setJust (_node nodePath) newNode
+             # setJust (_patchNode patchId nodePath) unit
 
 
 addInlet'
@@ -505,22 +493,16 @@ addInlet' nodePath def nw = do
     pure $ do
         inletPath <- nextInletPath nodePath nw
         let
-            inlet =
+            newInlet =
                 Inlet
                     inletPath
                     def
                     { sources : Set.empty
                     , flow : pushableFlow
                     }
-            updater (Node nodePath ndef nstate@{ inlets }) =
-                Node
-                    nodePath
-                    ndef
-                    $ nstate { inlets = Set.insert inletPath inlets }
-        (Network nwdef nwstate@{ inlets }) <- updateNode updater nodePath nw
-        pure $ Network
-            nwdef
-            nwstate { inlets = Map.insert inletPath inlet inlets }
+        pure $ nw
+             # setJust (_inlet inletPath) newInlet
+             # setJust (_nodeInlet nodePath inletPath) unit
 
 
 addOutlet'
@@ -534,24 +516,20 @@ addOutlet' nodePath def nw = do
     pure $ do
         outletPath <- nextOutletPath nodePath nw
         let
-            outlet =
+            newOutlet =
                 Outlet
                     outletPath
                     def
                     { flow : pushableFlow }
-            updater (Node _ ndef nstate@{ outlets }) =
-                Node
-                    nodePath
-                    ndef
-                    $ nstate { outlets = Set.insert outletPath outlets }
-        (Network nwdef nwstate@{ outlets }) <- updateNode updater nodePath nw
-        pure $ Network
-            nwdef
-            nwstate { outlets = Map.insert outletPath outlet outlets }
+        pure $ nw
+             # setJust (_outlet outletPath) newOutlet
+             # setJust (_nodeOutlet nodePath outletPath) unit
+
 
 guardE :: forall a. a -> Boolean -> String -> Either UpdateError a
 guardE v check errorText =
     if check then pure v else Left (UpdateError errorText)
+
 
 connect
     :: forall d e
