@@ -1,5 +1,5 @@
 module Rpd
-    ( Rpd, run, RpdEff, RpdEffE
+    ( Rpd, RpdEff, RpdEffE, UpdateError
     , DataSource(..), Flow, getFlowOf
     , Network, Patch, Node, Inlet, Outlet, Link
     , PatchDef, NodeDef, InletDef, OutletDef
@@ -19,6 +19,7 @@ module Rpd
 import Data.Either
 import Prelude
 import Unsafe.Coerce
+import Control.Monad.Cont.Trans (ContT(..))
 
 import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Class (liftEff)
@@ -42,9 +43,38 @@ import FRP.Event (Event, subscribe, create)
 
 --import Rpd.Flow as Flow
 
-type Rpd d e = Network d e
-type RpdOp d e = Either UpdateError (Rpd d e)
+-- foreign import data RPD :: Effect
+
+type RpdEffE e = ( frp :: FRP | e )
+type RpdEff e v = Eff (RpdEffE e) v
+
+-- data RunningNetwork d e = RpdEff e (Network d e)
+
+data UpdateError = UpdateError String
+
+
+type RpdOp d e = Either UpdateError (Network d e)
 type RpdEffOp d e = RpdEff e (RpdOp d e)
+type Rpd d e = ContT (Either UpdateError (Network d e)) (Eff (RpdEffE e)) (Network d e)
+-- newtype ContT r m a = ContT ((a -> m r) -> m r)
+type Rpda d e = ((Network d e -> Eff (RpdEffE e) (Either UpdateError (Network d e))) -> Eff (RpdEffE e) (Either UpdateError (Network d e)))
+
+--type Rpd d e = ContT (Either UpdateError (Network d e)) Eff (Network d e)
+-- ContT (Except err a) Eff a
+
+
+-- testFunc1 :: forall d e. PatchId -> String  -> Rpd d e
+-- testFunc1 v1 v2 =
+--     ContT $ addNode v1 v2
+
+addPatchCont :: forall d e. String -> Rpd d e
+addPatchCont name =
+    ContT $ (\f -> f $ emptyNetwork "aa")
+    where
+        network = emptyNetwork "aa"
+        (adada :: forall d e. (Network d e -> RpdEffOp d e)) = addPatch name
+        (g :: _) = \f -> f $ addPatch name network
+        (adada2) = ContT g
 
 
 -- instance functorRpdOp :: Functor (RpdOp d) where
@@ -117,17 +147,18 @@ infixr 6 type Map as /->
 --       they implement Eq anyway
 -- TODO: try to get rid of `e` by using `forall e.` where possible (`PushableFlow` has to have
 --       it in context of one call)
-data Network d e = Network -- (NetworkDef d)
-    { name :: String
-    , patchDefs :: List (PatchDef d)
-    }
-    { patches :: PatchId /-> Patch d
-    , nodes :: NodePath /-> Node d
-    , inlets :: InletPath /-> Inlet d e
-    , outlets :: OutletPath /-> Outlet d e
-    , links :: LinkId /-> Link
-    , linkCancelers :: LinkId /-> Canceler e
-    }
+data Network d e =
+    Network -- (NetworkDef d)
+        { name :: String
+        , patchDefs :: List (PatchDef d)
+        }
+        { patches :: PatchId /-> Patch d
+        , nodes :: NodePath /-> Node d
+        , inlets :: InletPath /-> Inlet d e
+        , outlets :: OutletPath /-> Outlet d e
+        , links :: LinkId /-> Link
+        , linkCancelers :: LinkId /-> Canceler e
+        }
 data Patch d =
     Patch
         PatchId
@@ -163,6 +194,22 @@ data Outlet d e =
         { flow :: PushableFlow d e
         }
 data Link = Link OutletPath InletPath
+
+
+emptyNetwork :: forall d e. String -> Network d e
+emptyNetwork name =
+    Network
+        { name
+        , patchDefs : List.Nil
+        }
+        { patches : Map.empty
+        , nodes : Map.empty
+        , inlets : Map.empty
+        , outlets : Map.empty
+        , links : Map.empty
+        , linkCancelers : Map.empty
+        }
+
 
 
 _patch :: forall d e. PatchId -> Lens' (Network d e) (Maybe (Patch d))
@@ -350,20 +397,11 @@ _inletSource inletPath source =
 --     = FromInlet InletPath d
 --     | FromOutlet OutletPath d
 
--- foreign import data RPD :: Effect
-
-type RpdEffE e = ( frp :: FRP | e )
-type RpdEff e v = Eff (RpdEffE e) v
-
--- data RunningNetwork d e = RpdEff e (Network d e)
-
-data UpdateError = UpdateError String
-
 -- may be it will make more sense when we'll do subscriptions before passing network to rederer
 -- also, may be change to ehm... `UnpreparedNetwork`` and then the subscriber gets the `Real` one?
 -- is it the place where RPD effect should be added to the result, like with subscriptions?
-run :: forall d e. (Rpd d e -> RpdEff e Unit) -> Rpd d e -> RpdEff e Unit
-run renderer nw = renderer nw
+-- run :: forall d e. (Rpd d e -> RpdEff e Unit) -> Rpd d e -> RpdEff e Unit
+-- run renderer nw = renderer nw
 
 
 makePushableFlow :: forall d e. RpdEff e (PushableFlow d e)

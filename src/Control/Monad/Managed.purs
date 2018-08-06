@@ -13,9 +13,11 @@ import Control.Monad.Reader (ReaderT)
 import Control.Monad.State (StateT)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Writer (WriterT)
-import Effect.Class (class MonadEffect, liftEffect)
+-- import Effect.Class (class MonadEffect, liftEffect)
+import Control.Monad.Eff (Eff, kind Effect)
+import Control.Monad.Eff.Class (liftEff)
 
-newtype Managed a = Managed(forall r e. MonadEffect e => (a -> e r) -> e r)
+newtype Managed a = Managed(forall r e. Eff e => (a -> e r) -> e r)
 
 unManaged :: forall a. Managed a -> (forall r e. MonadEffect e => (a -> e r) -> e r)
 unManaged (Managed a) = a
