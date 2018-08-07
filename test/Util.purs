@@ -12,15 +12,18 @@ import Control.Monad.Eff.Ref (REF, newRef, readRef, writeRef)
 
 import FRP (FRP)
 
-import Rpd (Network, empty, run) as Rpd
+import Rpd (Network) as Rpd
 
 type TestAffE e = (ref :: REF, frp :: FRP, console :: CONSOLE | e)
 type TestAff e = Aff (TestAffE e) Unit
 
-runWith :: forall e d. Rpd.Network d -> (Rpd.Network d -> TestAff e) -> TestAff e
-runWith initialNetwork f = do
-  newNetwork <- liftEff $ do
-    networkRef <- newRef Rpd.empty
-    Rpd.run (writeRef networkRef) initialNetwork
-    readRef networkRef
-  f newNetwork
+runWith :: forall e d. Rpd.Network d e -> (Rpd.Network d e -> TestAff e) -> TestAff e
+runWith initialNetwork f = f initialNetwork
+
+-- runWith :: forall e d. Rpd.Network d -> (Rpd.Network d -> TestAff e) -> TestAff e
+-- runWith initialNetwork f = do
+--   newNetwork <- liftEff $ do
+--     networkRef <- newRef Rpd.empty
+--     Rpd.run (writeRef networkRef) initialNetwork
+--     readRef networkRef
+--   f newNetwork

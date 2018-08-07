@@ -1,10 +1,10 @@
 module Rpd
-    ( Rpd, RpdEff, RpdEffE, UpdateError
+    ( Rpd, RpdEff, RpdEffE, RpdError, init
     , RpdOp, RpdEffOp
     , DataSource(..), Flow, getFlowOf
     , Network, Patch, Node, Inlet, Outlet, Link
     , PatchDef, NodeDef, InletDef, OutletDef
-    , Canceler, PushableFlow
+    , Canceler, Subscriber, PushableFlow
     --, emptyNetwork
     --, network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
     --, connect, connect', disconnect, disconnect', disconnectTop
@@ -26,7 +26,7 @@ import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Class (liftEff)
 import Control.MonadZero (guard)
 import Data.Foldable (foldMap)
-import Data.Lens (Lens', lens, view, set, setJust, over)
+import Data.Lens (Lens', Getter', lens, view, set, setJust, over, to)
 import Data.Lens.At (at)
 import Data.List (List(..), (:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head, length)
 import Data.List as List
@@ -51,13 +51,13 @@ type RpdEff e v = Eff (RpdEffE e) v
 
 -- data RunningNetwork d e = RpdEff e (Network d e)
 
-data UpdateError = UpdateError String
+data RpdError = RpdError String
 
 
-type RpdOp d e = Either UpdateError (Network d e)
+type RpdOp d e = Either RpdError (Network d e)
 type RpdEffOp d e = RpdEff e (RpdOp d e)
 type Rpd d e = RpdEffOp d e
--- type Rpd d e = ContT (Either UpdateError (Network d e)) (Eff (RpdEffE e)) (Network d e)
+-- type Rpd d e = ContT (Either RpdError (Network d e)) (Eff (RpdEffE e)) (Network d e)
 -- newtype ContT r m a = ContT ((a -> m r) -> m r)
 
 infixl 1 rpdAp as ~> -- FIXME: can be replaced with proper instances?
@@ -69,7 +69,7 @@ rpdAp eff f =
 
 someApiFunc :: forall d e. RpdEffOp d e
 someApiFunc =
-    emptyNetwork "t"
+    init "t"
         # addPatch "foo"
         ~> addNode (PatchId 0) "test1"
         ~> addNode (PatchId 0) "test2"
@@ -194,6 +194,10 @@ data Outlet d e =
 data Link = Link OutletPath InletPath
 
 
+init :: forall d e. String -> Network d e
+init = emptyNetwork
+
+
 emptyNetwork :: forall d e. String -> Network d e
 emptyNetwork name =
     Network
@@ -286,6 +290,36 @@ _inlet inletPath@(InletPath nodePath _) =
             -- # set (_nodeInlet nodePath inletPath) (const unit <$> val)
 
 
+_inletFlow :: forall d e. InletPath -> Getter' (Network d e) (Maybe (Flow d))
+_inletFlow inletPath =
+    to extractFlow
+    where
+        inletLens = _inlet inletPath
+        extractFlow nw = view inletLens nw >>=
+            (\(Inlet _ _ { flow }) ->
+                case flow of
+                    (PushableFlow _ fl) -> Just fl)
+
+
+_inletSource :: forall d e. InletPath -> DataSource d -> Lens' (Network d e) (Maybe Unit)
+_inletSource inletPath source =
+    lens getter setter
+    where
+        inletLens = _inlet inletPath
+        sourceLens = at source
+        getter nw =
+            view inletLens nw
+            >>= \(Inlet _ _ { sources }) -> view sourceLens sources
+        setter nw val =
+            over inletLens
+                (map $ \(Inlet iid idef istate) ->
+                    Inlet
+                        iid
+                        idef
+                        istate { sources = set sourceLens val istate.sources }
+                ) nw
+
+
 _nodeOutlet :: forall d e. NodePath -> OutletPath -> Lens' (Network d e) (Maybe Unit)
 _nodeOutlet nodePath outletPath =
     lens getter setter
@@ -361,24 +395,6 @@ _canceler linkId =
                 nwstate { linkCancelers = set cancelerLens val nwstate.linkCancelers }
 
 
-_inletSource :: forall d e. InletPath -> DataSource d -> Lens' (Network d e) (Maybe Unit)
-_inletSource inletPath source =
-    lens getter setter
-    where
-        inletLens = _inlet inletPath
-        sourceLens = at source
-        getter nw =
-            view inletLens nw
-            >>= \(Inlet _ _ { sources }) -> view sourceLens sources
-        setter nw val =
-            over inletLens
-                (map $ \(Inlet iid idef istate) ->
-                    Inlet
-                        iid
-                        idef
-                        istate { sources = set sourceLens val istate.sources }
-                ) nw
-
 
 -- data NormalizedNetwork d =
 --     NormalizedNetwork
@@ -435,24 +451,24 @@ nextPatchId (Network _ { patches }) =
     PatchId (Map.size patches)
 
 
-nextNodePath :: forall d e. PatchId -> Network d e -> Either UpdateError NodePath
+nextNodePath :: forall d e. PatchId -> Network d e -> Either RpdError NodePath
 nextNodePath patchId (Network _ { patches }) = do
     (Patch _ _ { nodes }) <- Map.lookup patchId patches
-                                # note (UpdateError "")
+                                # note (RpdError "")
     pure $ NodePath patchId $ Set.size nodes
 
 
-nextInletPath :: forall d e. NodePath -> Network d e -> Either UpdateError InletPath
+nextInletPath :: forall d e. NodePath -> Network d e -> Either RpdError InletPath
 nextInletPath nodePath (Network _ { nodes }) = do
     (Node _ _ { inlets }) <- Map.lookup nodePath nodes
-                                # note (UpdateError "")
+                                # note (RpdError "")
     pure $ InletPath nodePath $ Set.size inlets
 
 
-nextOutletPath :: forall d e. NodePath -> Network d e -> Either UpdateError OutletPath
+nextOutletPath :: forall d e. NodePath -> Network d e -> Either RpdError OutletPath
 nextOutletPath nodePath (Network _ { nodes }) = do
     (Node _ _ { outlets }) <- Map.lookup nodePath nodes
-                                # note (UpdateError "")
+                                # note (RpdError "")
     pure $ OutletPath nodePath $ Set.size outlets
 
 
@@ -562,9 +578,9 @@ addOutlet' nodePath def nw = do
              # setJust (_nodeOutlet nodePath outletPath) unit
 
 
-guardE :: forall a. a -> Boolean -> String -> Either UpdateError a
+guardE :: forall a. a -> Boolean -> String -> Either RpdError a
 guardE v check errorText =
-    if check then pure v else Left (UpdateError errorText)
+    if check then pure v else Left (RpdError errorText)
 
 
 connect
@@ -579,15 +595,15 @@ connect outletPath inletPath
     let linkId = nextLinkId network
     let newLink = Link outletPath inletPath
 
-    ePatchId :: Either UpdateError PatchId <-
+    ePatchId :: Either RpdError PatchId <-
         pure $ extractPatchId outletPath inletPath
-    eFlows :: Either UpdateError (PushableFlow d e /\ PushableFlow d e) <-
+    eFlows :: Either RpdError (PushableFlow d e /\ PushableFlow d e) <-
         pure $ extractFlows -- + TODO: `curry`` or do not return a tuple
-            <$> (Map.lookup outletPath outlets # note (UpdateError ""))
-            <*> (Map.lookup inletPath  inlets  # note (UpdateError ""))
+            <$> (Map.lookup outletPath outlets # note (RpdError ""))
+            <*> (Map.lookup inletPath  inlets  # note (RpdError ""))
 
     let
-        subscribeAndSave :: PatchId -> (PushableFlow d e /\ PushableFlow d e) -> RpdEff e (Either UpdateError (Network d e))
+        subscribeAndSave :: PatchId -> (PushableFlow d e /\ PushableFlow d e) -> RpdEff e (Either RpdError (Network d e))
         subscribeAndSave patchId (outletPFlow /\ inletPFlow) = do
             let (PushableFlow _ outletFlow) = outletPFlow
             let (PushableFlow pushToInlet inletFlow) = inletPFlow
@@ -600,7 +616,8 @@ connect outletPath inletPath
                      # setJust (_link linkId) newLink
                      # setJust (_patchLink patchId linkId) unit
                      # setJust (_inletSource inletPath newSource) unit
-                     -- # note (UpdateError "")
+                     -- # note (RpdError "")
+                    -- TODO: store canceler
                     -- TODO: re-subscribe `process`` function of the target node to update values including this connection
 
             pure $ Right $ network'
@@ -615,13 +632,28 @@ connect outletPath inletPath
         extractFlows :: Outlet d e -> Inlet d e -> (PushableFlow d e /\ PushableFlow d e)
         extractFlows (Outlet _ _ { flow : outletPFlow }) (Inlet _ _ { flow : inletPFlow }) =
             outletPFlow /\ inletPFlow
-        extractPatchId :: OutletPath -> InletPath -> Either UpdateError PatchId
+        extractPatchId :: OutletPath -> InletPath -> Either RpdError PatchId
         extractPatchId outletPath inletPath =
             let
                 outletPatch = getPatchOfOutlet outletPath
                 inletPatch = getPatchOfInlet inletPath
             in
                 guardE inletPatch (inletPatch == outletPatch) ""
+
+
+subscribeInlet
+    :: forall d e
+     . InletPath
+    -> (d -> RpdEff e Unit)
+    -> Network d e
+    -> RpdEff e (Either RpdError (Canceler e))
+subscribeInlet inletPath handler nw =
+    sequence subE
+        where
+            (flowE :: Either RpdError (Flow d)) =
+                view (_inletFlow inletPath) nw # note (RpdError "")
+            (subE :: Either RpdError (Subscriber e)) =
+                (handler # (flip $ subscribe)) <$> flowE
 
 {-
 node :: forall d. String -> Array (Inlet d) -> Array (Outlet d) -> Node d
@@ -788,7 +820,7 @@ updatePatch
     -> Network d e
     -> RpdOp d e
 updatePatch updater patchId nw@(Network def state@{ patches }) = do
-    patch <- Map.lookup patchId patches # note (UpdateError "")
+    patch <- Map.lookup patchId patches # note (RpdError "")
     pure $
         Network
             def
@@ -805,7 +837,7 @@ updateNode
     -> Network d e
     -> RpdOp d e
 updateNode updater path@(NodePath patchId _) (Network def state@{ nodes }) = do
-    node <- Map.lookup path nodes # note (UpdateError "")
+    node <- Map.lookup path nodes # note (RpdError "")
     pure $
         Network
             def
@@ -821,7 +853,7 @@ updateInlet
     -> Network d e
     -> RpdOp d e
 updateInlet updater path@(InletPath nodePath _) (Network def state@{ inlets }) = do
-    inlet <- Map.lookup path inlets # note (UpdateError "")
+    inlet <- Map.lookup path inlets # note (RpdError "")
     let inlets' = Map.insert path inlet inlets
     pure $
         Network
@@ -836,7 +868,7 @@ updateOutlet
     -> Network d e
     -> RpdOp d e
 updateOutlet updater path@(OutletPath nodePath _) (Network def state@{ outlets }) = do
-    outlet <- Map.lookup path outlets # note (UpdateError "")
+    outlet <- Map.lookup path outlets # note (RpdError "")
     let outlets' = Map.insert path outlet outlets
     pure $
         Network

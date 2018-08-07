@@ -24,11 +24,11 @@ import FRP.Event (fold) as Event
 import FRP.Event.Time (interval)
 
 import Rpd as R
-import Rpd.Flow
-  ( flow
-  , subscribeAll, subscribeTop
-  , Subscribers, Subscriber, Canceler
-  ) as R
+-- import Rpd.Flow
+--   ( flow
+--   , subscribeAll, subscribeTop
+--   , Subscribers, Subscriber, Canceler
+--   ) as R
 
 import Test.Spec (Spec, describe, it, pending, pending')
 import Test.Spec.Assertions (shouldEqual)

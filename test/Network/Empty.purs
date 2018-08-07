@@ -6,14 +6,14 @@ import Prelude
 import Test.Spec (Spec, describe, it)
 import Test.Util (runWith, TestAffE)
 
-import Rpd (empty, Network) as R
+import Rpd (Network, init) as R
 
 data MyData
   = Bang
 
-network :: R.Network MyData
+network :: forall e. R.Network MyData e
 network =
-  R.empty
+  R.init "f"
 
 spec :: forall e. Spec (TestAffE e) Unit
 spec =
