@@ -1,5 +1,6 @@
 module Rpd
     ( Rpd, RpdEff, RpdEffE, UpdateError
+    , RpdOp, RpdEffOp
     , DataSource(..), Flow, getFlowOf
     , Network, Patch, Node, Inlet, Outlet, Link
     , PatchDef, NodeDef, InletDef, OutletDef
@@ -55,26 +56,23 @@ data UpdateError = UpdateError String
 
 type RpdOp d e = Either UpdateError (Network d e)
 type RpdEffOp d e = RpdEff e (RpdOp d e)
-type Rpd d e = ContT (Either UpdateError (Network d e)) (Eff (RpdEffE e)) (Network d e)
+type Rpd d e = RpdEffOp d e
+-- type Rpd d e = ContT (Either UpdateError (Network d e)) (Eff (RpdEffE e)) (Network d e)
 -- newtype ContT r m a = ContT ((a -> m r) -> m r)
-type Rpda d e = ((Network d e -> Eff (RpdEffE e) (Either UpdateError (Network d e))) -> Eff (RpdEffE e) (Either UpdateError (Network d e)))
 
---type Rpd d e = ContT (Either UpdateError (Network d e)) Eff (Network d e)
--- ContT (Except err a) Eff a
+infixl 1 rpdAp as ~> -- FIXME: can be replaced with proper instances?
+
+rpdAp :: forall d e. RpdEffOp d e -> (Network d e -> RpdEffOp d e) -> RpdEffOp d e
+rpdAp eff f =
+    eff >>= either (pure <<< Left) f
 
 
--- testFunc1 :: forall d e. PatchId -> String  -> Rpd d e
--- testFunc1 v1 v2 =
---     ContT $ addNode v1 v2
-
-addPatchCont :: forall d e. String -> Rpd d e
-addPatchCont name =
-    ContT $ (\f -> f $ emptyNetwork "aa")
-    where
-        network = emptyNetwork "aa"
-        (adada :: forall d e. (Network d e -> RpdEffOp d e)) = addPatch name
-        (g :: _) = \f -> f $ addPatch name network
-        (adada2) = ContT g
+someApiFunc :: forall d e. RpdEffOp d e
+someApiFunc =
+    emptyNetwork "t"
+        # addPatch "foo"
+        ~> addNode (PatchId 0) "test1"
+        ~> addNode (PatchId 0) "test2"
 
 
 -- instance functorRpdOp :: Functor (RpdOp d) where
