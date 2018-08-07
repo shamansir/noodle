@@ -655,6 +655,16 @@ subscribeInlet inletPath handler nw =
             (subE :: Either RpdError (Subscriber e)) =
                 (handler # (flip $ subscribe)) <$> flowE
 
+
+subscribeAllInlets
+    :: forall d e
+     . (d -> RpdEff e Unit)
+    -> Network d e
+    -> RpdEff e (InletPath /-> Canceler e)
+subscribeAllInlets =
+    unsafeCoerce
+
+
 {-
 node :: forall d. String -> Array (Inlet d) -> Array (Outlet d) -> Node d
 node name lazyInlets lazyOutlets =
