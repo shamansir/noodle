@@ -20,8 +20,8 @@ module Rpd
 import Data.Either
 import Prelude
 import Unsafe.Coerce
-import Control.Monad.Cont.Trans (ContT(..))
 
+import Control.Monad.Cont.Trans (ContT(..))
 import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Class (liftEff)
 import Control.MonadZero (guard)
@@ -30,12 +30,13 @@ import Data.Lens (Lens', Getter', lens, view, set, setJust, over, to)
 import Data.Lens.At (at)
 import Data.List (List(..), (:), (!!), mapWithIndex, modifyAt, findMap, delete, filter, head, length)
 import Data.List as List
-import Data.Set (Set)
-import Data.Set as Set
-import Data.Map (Map)
+import Data.Map (Map, mapWithKey)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe, maybe')
+import Data.Set (Set)
+import Data.Set as Set
 import Data.Traversable (sequence, traverse)
+import Data.Bitraversable (bisequence)
 import Data.Tuple (curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import FRP (FRP)
@@ -649,20 +650,49 @@ subscribeInlet
     -> RpdEff e (Either RpdError (Canceler e))
 subscribeInlet inletPath handler nw =
     sequence subE
-        where
-            (flowE :: Either RpdError (Flow d)) =
-                view (_inletFlow inletPath) nw # note (RpdError "")
-            (subE :: Either RpdError (Subscriber e)) =
-                (handler # (flip $ subscribe)) <$> flowE
+    where
+        (flowE :: Either RpdError (Flow d)) =
+            view (_inletFlow inletPath) nw # note (RpdError "")
+        (subE :: Either RpdError (Subscriber e)) =
+            (handler # (flip $ subscribe)) <$> flowE
 
 
 subscribeAllInlets
     :: forall d e
-     . (d -> RpdEff e Unit)
+     . (InletPath -> d -> RpdEff e Unit)
     -> Network d e
     -> RpdEff e (InletPath /-> Canceler e)
-subscribeAllInlets =
-    unsafeCoerce
+subscribeAllInlets handler (Network _ { inlets }) =
+    traverse sub inlets
+    where
+        sub :: Inlet d e -> Subscriber e
+        sub (Inlet inletPath _ { flow }) =
+            case flow of
+                PushableFlow _ fl -> subscribe fl $ handler inletPath
+
+
+subscribeAllOutlets
+    :: forall d e
+     . (OutletPath -> d -> RpdEff e Unit)
+    -> Network d e
+    -> RpdEff e (OutletPath /-> Canceler e)
+subscribeAllOutlets handler (Network _ { outlets }) =
+    traverse sub outlets
+    where
+        sub :: Outlet d e -> Subscriber e
+        sub (Outlet outletPath _ { flow }) =
+            case flow of
+                PushableFlow _ fl -> subscribe fl $ handler outletPath
+
+
+subscribeAllData
+    :: forall d e
+     . (OutletPath -> d -> RpdEff e Unit)
+    -> (InletPath -> d -> RpdEff e Unit)
+    -> Network d e
+    -> RpdEff e ((OutletPath /-> Canceler e) /\ (InletPath /-> Canceler e))
+subscribeAllData oHandler iHandler nw =
+    bisequence $ subscribeAllOutlets oHandler nw /\ subscribeAllInlets iHandler nw
 
 
 {-
