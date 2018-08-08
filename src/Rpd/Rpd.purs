@@ -1,6 +1,7 @@
 module Rpd
     ( Rpd, RpdEff, RpdEffE, RpdError, init
-    , RpdOp, RpdEffOp
+    , (~>), rpdAp, run
+    --, RpdOp, RpdEffOp
     , DataSource(..), Flow, getFlowOf
     , Network, Patch, Node, Inlet, Outlet, Link
     , PatchDef, NodeDef, InletDef, OutletDef
@@ -8,6 +9,8 @@ module Rpd
     --, emptyNetwork
     --, network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
     --, connect, connect', disconnect, disconnect', disconnectTop
+    , addPatch, addPatch', addNode, addNode', addInlet, addInlet', addOutlet, addOutlet'
+    , subscribeInlet, {- subscribeOutlet, -} subscribeAllData, subscribeAllInlets, subscribeAllOutlets
     , ProcessF
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
@@ -57,18 +60,38 @@ data RpdError = RpdError String
 
 type RpdOp d e = Either RpdError (Network d e)
 type RpdEffOp d e = RpdEff e (RpdOp d e)
-type Rpd d e = RpdEffOp d e
+type Rpd d e = RpdEff e (Either RpdError (Network d e))
 -- type Rpd d e = ContT (Either RpdError (Network d e)) (Eff (RpdEffE e)) (Network d e)
 -- newtype ContT r m a = ContT ((a -> m r) -> m r)
 
+
+-- run :: forall d e. Rpd d e -> () -> RpdEff e (Network d e)
+-- run rpd =
+--     rpd >
+
+
 infixl 1 rpdAp as ~> -- FIXME: can be replaced with proper instances?
 
-rpdAp :: forall d e. RpdEffOp d e -> (Network d e -> RpdEffOp d e) -> RpdEffOp d e
+-- FIXME: looks like improper complicated implementation
+run :: forall d e. Rpd d e -> (RpdError -> RpdEff e Unit) -> RpdEff e (Network d e)
+run rpd onError = do
+    rpd' :: Either RpdError (Network d e) <- rpd
+    nw :: Network d e <- either handleError pure rpd'
+    pure nw
+    where
+        handleError :: RpdError -> RpdEff e (Network d e)
+        handleError error = do
+            _ <- onError error
+            pure (init "Error")
+
+
+
+rpdAp :: forall d e. Rpd d e -> (Network d e -> Rpd d e) -> Rpd d e
 rpdAp eff f =
     eff >>= either (pure <<< Left) f
 
 
-someApiFunc :: forall d e. RpdEffOp d e
+someApiFunc :: forall d e. Rpd d e
 someApiFunc =
     init "t"
         # addPatch "foo"
@@ -130,7 +153,7 @@ type NodeDef d =
 type InletDef d =
     { label :: String
     , default :: Maybe d
-    , accept :: d
+    , accept :: Maybe d
     -- , sources :: Array (DataSource d)
     -- Maybe (AdaptF d)
     }
@@ -478,7 +501,7 @@ nextLinkId (Network _ { links }) =
     LinkId (Map.size links)
 
 
-addPatch :: forall d e. String -> Network d e -> RpdEffOp d e
+addPatch :: forall d e. String -> Network d e -> Rpd d e
 addPatch name =
     addPatch'
         { name
@@ -486,7 +509,7 @@ addPatch name =
         }
 
 
-addPatch' :: forall d e. PatchDef d -> Network d e -> RpdEffOp d e
+addPatch' :: forall d e. PatchDef d -> Network d e -> Rpd d e
 addPatch' patchDef nw =
     pure $ pure $ setJust (_patch patchId) newPatch nw
     where
@@ -504,7 +527,7 @@ addNode
      . PatchId
     -> String
     -> Network d e
-    -> RpdEffOp d e
+    -> Rpd d e
 addNode patchId name =
     addNode'
         patchId
@@ -520,7 +543,7 @@ addNode'
      . PatchId
     -> NodeDef d
     -> Network d e
-    -> RpdEffOp d e
+    -> Rpd d e
 addNode' patchId def nw =
     pure $ do
         nodePath <- nextNodePath patchId nw
@@ -535,12 +558,27 @@ addNode' patchId def nw =
              # setJust (_patchNode patchId nodePath) unit
 
 
+addInlet
+    :: forall d e
+     . NodePath
+    -> String
+    -> Network d e
+    -> Rpd d e
+addInlet nodePath label =
+    addInlet'
+        nodePath
+        { label
+        , default : Nothing
+        , accept : Nothing
+        }
+
+
 addInlet'
     :: forall d e
      . NodePath
     -> InletDef d
     -> Network d e
-    -> RpdEffOp d e
+    -> Rpd d e
 addInlet' nodePath def nw = do
     pushableFlow <- makePushableFlow
     pure $ do
@@ -558,12 +596,25 @@ addInlet' nodePath def nw = do
              # setJust (_nodeInlet nodePath inletPath) unit
 
 
+addOutlet
+    :: forall d e
+     . NodePath
+    -> String
+    -> Network d e
+    -> Rpd d e
+addOutlet nodePath label =
+    addOutlet'
+        nodePath
+        { label
+        }
+
+
 addOutlet'
     :: forall d e
      . NodePath
     -> OutletDef d
     -> Network d e
-    -> RpdEffOp d e
+    -> Rpd d e
 addOutlet' nodePath def nw = do
     pushableFlow <- makePushableFlow
     pure $ do
@@ -589,7 +640,7 @@ connect
      . OutletPath
     -> InletPath
     -> Network d e
-    -> RpdEffOp d e
+    -> Rpd d e
 connect outletPath inletPath
     network@(Network nwdef nwstate@{ nodes, outlets, inlets, links }) = do
     -- let patchId = extractPatchId outletPath inletPath

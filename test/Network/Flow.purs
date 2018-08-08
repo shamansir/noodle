@@ -24,6 +24,7 @@ import FRP.Event (fold) as Event
 import FRP.Event.Time (interval)
 
 import Rpd as R
+import Rpd ((~>))
 -- import Rpd.Flow
 --   ( flow
 --   , subscribeAll, subscribeTop
@@ -71,22 +72,61 @@ spec = do
       pure unit
 
     it "we receive no data from the inlet when it has no flow or default value" $ do
-      "b" `shouldEqual` "b"
-      -- let
-      --   network :: R.Network Delivery
-      --   network =
-      --     R.network [
-      --       R.patch "Test 0001" [
-      --         R.node "Specimen"
-      --           [ R.inlet "foo" ]
-      --           [ ]
-      --       ]
-      --     ]
+      let
+        rpd :: R.Rpd Delivery e
+        rpd =
+          R.init "t"
+            # R.addPatch "foo"
+            ~> R.addNode (R.PatchId 0) "test1"
+            ~> R.addNode (R.PatchId 0) "test2"
 
-      -- runWith network
-      --   \nw ->
-      --     do
-      --       collectedData <- collectData nw (Milliseconds 100.0)
-      --       collectedData `shouldEqual` []
-      --       pure unit
+      nw <- R.run rpd
+      collectedData <- collectData nw (Milliseconds 100.0)
+      collectedData `shouldEqual` []
+      pure unit
 
+
+data TraceItem d
+  = InletData R.InletPath d
+  | OutletData R.OutletPath d
+
+type TracedFlow d = Array (TraceItem d)
+
+
+collectData
+  :: forall d e
+   . (Show d)
+  => R.Network d e
+  -> Milliseconds
+  -> Aff (TestAffE e) (TracedFlow d)
+collectData nw period = do
+  target /\ cancelers <- liftEff $ do
+    target <- newRef []
+    cancelers <- do
+      let
+        onInletData path {- source -} d = do
+          curData <- readRef target
+          _ <- writeRef target $ curData +> InletData path d
+          pure unit
+        onOutletData path d = do
+          curData <- readRef target
+          _ <- writeRef target $ curData +> OutletData path d
+          pure unit
+      cancelers <- R.subscribeAllData onOutletData onInletData nw
+      pure cancelers
+    pure $ target /\ cancelers
+  delay period
+  liftEff $ do
+    cancelSubs cancelers
+    readRef target
+
+
+cancelSub :: forall e. R.Canceler e -> Eff (frp :: FRP | e) Unit
+cancelSub canceler = do
+  _ <- canceler
+  pure unit
+
+
+cancelSubs :: forall e. Array (R.Canceler e) -> Eff (frp :: FRP | e) Unit
+cancelSubs cancelers =
+  foreachE cancelers cancelSub
