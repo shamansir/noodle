@@ -28,6 +28,7 @@ import Control.Monad.Cont.Trans (ContT(..))
 import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Class (liftEff)
 import Control.MonadZero (guard)
+import Control.Alternative ((<|>))
 import Data.Foldable (foldMap)
 import Data.Lens (Lens', Getter', lens, view, set, setJust, over, to)
 import Data.Lens.At (at)
@@ -304,15 +305,22 @@ _inlet inletPath@(InletPath nodePath _) =
             -- # set (_nodeInlet nodePath inletPath) (const unit <$> val)
 
 
+_inletPFlow :: forall d e. InletPath -> Getter' (Network d e) (Maybe (PushableFlow d e))
+_inletPFlow inletPath =
+    to extractPFlow
+    where
+        inletLens = _inlet inletPath
+        extractPFlow nw = view inletLens nw >>=
+            \(Inlet _ _ { flow }) -> pure flow
+
+
 _inletFlow :: forall d e. InletPath -> Getter' (Network d e) (Maybe (Flow d))
 _inletFlow inletPath =
     to extractFlow
     where
-        inletLens = _inlet inletPath
-        extractFlow nw = view inletLens nw >>=
-            (\(Inlet _ _ { flow }) ->
-                case flow of
-                    (PushableFlow _ fl) -> Just fl)
+        pFlowLens = _inletPFlow inletPath
+        extractFlow nw = view pFlowLens nw >>=
+            \(PushableFlow _ flow) -> pure flow
 
 
 _inletSource :: forall d e. InletPath -> DataSource d -> Lens' (Network d e) (Maybe Unit)
@@ -364,6 +372,25 @@ _outlet outletPath@(OutletPath nodePath _) =
                 nwdef
                 nwstate { outlets = set outletLens val nwstate.outlets }
             -- # set (_nodeOutlet nodePath outletPath) (const unit <$> val)
+
+
+_outletPFlow :: forall d e. OutletPath -> Getter' (Network d e) (Maybe (PushableFlow d e))
+_outletPFlow outletPath =
+    to extractPFlow
+    where
+        outletLens = _outlet outletPath
+        extractPFlow nw = view outletLens nw >>=
+            \(Outlet _ _ { flow }) -> pure flow
+
+
+_outletFlow :: forall d e. OutletPath -> Getter' (Network d e) (Maybe (Flow d))
+_outletFlow outletPath =
+    to extractFlow
+    where
+        pFlowLens = _outletPFlow outletPath
+        extractFlow nw = view pFlowLens nw >>=
+            \(PushableFlow _ flow) -> pure flow
+
 
 
 _patchLink :: forall d e. PatchId -> LinkId -> Lens' (Network d e) (Maybe Unit)
@@ -632,17 +659,17 @@ connect
     -> Network d e
     -> Rpd d e
 connect outletPath inletPath
-    network@(Network nwdef nwstate@{ nodes, outlets, inlets, links }) = do
+    nw@(Network nwdef nwstate@{ nodes, outlets, inlets, links }) = do
     -- let patchId = extractPatchId outletPath inletPath
-    let linkId = nextLinkId network
+    let linkId = nextLinkId nw
     let newLink = Link outletPath inletPath
 
     ePatchId :: Either RpdError PatchId <-
         pure $ extractPatchId outletPath inletPath
     eFlows :: Either RpdError (PushableFlow d e /\ PushableFlow d e) <-
-        pure $ extractFlows -- + TODO: `curry`` or do not return a tuple
-            <$> (Map.lookup outletPath outlets # note (RpdError ""))
-            <*> (Map.lookup inletPath  inlets  # note (RpdError ""))
+        pure $ (/\) -- + TODO: `curry`` or do not return a tuple
+            <$> (view (_outletPFlow outletPath) nw # note (RpdError ""))
+            <*> (view (_inletPFlow inletPath) nw # note (RpdError ""))
 
     let
         subscribeAndSave :: PatchId -> (PushableFlow d e /\ PushableFlow d e) -> RpdEff e (Either RpdError (Network d e))
@@ -654,7 +681,7 @@ connect outletPath inletPath
             canceler :: Canceler e <- subscribe outletFlow pushToInlet
 
             network' :: Network d e <-
-                pure $ network
+                pure $ nw
                      # setJust (_link linkId) newLink
                      # setJust (_patchLink patchId linkId) unit
                      # setJust (_inletSource inletPath newSource) unit
@@ -666,14 +693,11 @@ connect outletPath inletPath
 
         --(network' :: _) = subscribeAndSave <$> ePatchId <*> eFlows
 
-    either (const $ pure $ pure network) id $ subscribeAndSave <$> ePatchId <*> eFlows
+    either (const $ pure $ pure nw) id $ subscribeAndSave <$> ePatchId <*> eFlows
 
     -- subscribeAndSave <$> ePatchId <*> eFlows
 
     where
-        extractFlows :: Outlet d e -> Inlet d e -> (PushableFlow d e /\ PushableFlow d e)
-        extractFlows (Outlet _ _ { flow : outletPFlow }) (Inlet _ _ { flow : inletPFlow }) =
-            outletPFlow /\ inletPFlow
         extractPatchId :: OutletPath -> InletPath -> Either RpdError PatchId
         extractPatchId outletPath inletPath =
             let
@@ -681,6 +705,16 @@ connect outletPath inletPath
                 inletPatch = getPatchOfInlet inletPath
             in
                 guardE inletPatch (inletPatch == outletPatch) ""
+
+
+sendToInlet :: forall d e. InletPath -> d -> Network d e -> Rpd d e
+sendToInlet inletPath d nw = do
+    performPush >>= alwaysNetwork
+    where
+        alwaysNetwork = const $ pure $ pure nw
+        performPush = sequence
+            $ view (_inletPFlow inletPath) nw # note (RpdError "")
+                >>= \(PushableFlow push _) -> pure $ push d
 
 
 subscribeInlet
