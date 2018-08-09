@@ -35,7 +35,7 @@ import Rpd ((~>), type (/->))
 --   ) as R
 
 import Test.Spec (Spec, describe, it, pending, pending')
-import Test.Spec.Assertions (shouldEqual)
+import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
 import Test.Util (TestAffE, runWith)
 
 
@@ -90,8 +90,31 @@ spec = do
             ~> R.addInlet (nodePath 0 0) "label"
 
       _ <- rpd # withRpd \nw -> do
-          collectedData <- collectData nw (Milliseconds 100.0)
-          collectedData `shouldEqual` []
+                  collectedData <- collectData nw (Milliseconds 100.0)
+                  collectedData `shouldEqual` []
+                  pure unit
+
+      pure unit
+
+    it "we receive the data sent directly to the inlet" $ do
+      let
+        rpd :: R.Rpd Delivery e
+        rpd =
+          R.init "no-data"
+            ~> R.addPatch "foo"
+            ~> R.addNode (patchId 0) "test1"
+            ~> R.addNode (patchId 0) "test2"
+            ~> R.addInlet (nodePath 0 0) "label"
+
+      _ <- rpd # withRpd \nw -> do
+          collectedData <- (collectDataAfter
+            (\_ -> do
+              _ <- rpd ~> R.sendToInlet (inletPath 0 0 0) Pills
+              pure unit)
+            nw
+            (Milliseconds 100.0))
+          -- _ <- liftEff $ (rpd ~> R.sendToInlet (inletPath 0 0 0) Pills)
+          collectedData `shouldNotEqual` []
           pure unit
 
       pure unit
@@ -143,14 +166,23 @@ withRpd test rpd = do
       readRef nwTarget
 
 
-
 collectData
   :: forall d e
    . (Show d)
   => R.Network d e
   -> Milliseconds
   -> Aff (TestAffE e) (TracedFlow d)
-collectData nw period = do
+collectData = collectDataAfter (const $ pure unit)
+
+
+collectDataAfter
+  :: forall d e
+   . (Show d)
+  => (Unit -> R.RpdEff e Unit)
+  -> R.Network d e
+  -> Milliseconds
+  -> Aff (TestAffE e) (TracedFlow d)
+collectDataAfter afterF nw period = do
   target /\ cancelers <- liftEff $ do
     target <- newRef []
     cancelers <- do
@@ -166,6 +198,7 @@ collectData nw period = do
       cancelers <- R.subscribeAllData onOutletData onInletData nw
       pure $ foldCancelers cancelers
     pure $ target /\ cancelers
+  _ <- liftEff $ afterF unit
   delay period
   liftEff $ do
     cancelSubs cancelers

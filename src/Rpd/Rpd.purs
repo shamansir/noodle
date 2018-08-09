@@ -11,6 +11,7 @@ module Rpd
     --, connect, connect', disconnect, disconnect', disconnectTop
     , addPatch, addPatch', addNode, addNode', addInlet, addInlet', addOutlet, addOutlet'
     , subscribeInlet, {- subscribeOutlet, -} subscribeAllData, subscribeAllInlets, subscribeAllOutlets
+    , sendToInlet
     , ProcessF
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
