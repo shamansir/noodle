@@ -3,13 +3,15 @@ module RpdTest.Network.Flow
 
 import Prelude
 
-import Control.Monad.Aff (Aff, delay)
+import Control.Monad.Aff (Aff, delay, makeAff)
 import Control.Monad.Eff (Eff, foreachE)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (log, CONSOLE)
-import Control.Monad.Eff.Ref (newRef, readRef, writeRef)
+import Control.Monad.Eff.Ref (REF, newRef, readRef, writeRef)
 
 import Data.Array (fromFoldable, concatMap, snoc, replicate, concat)
+import Data.List (List)
+import Data.List as List
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
@@ -18,13 +20,14 @@ import Data.Time.Duration (Milliseconds(..))
 import Data.Traversable (traverse)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Foldable (fold)
 
 import FRP (FRP)
 import FRP.Event (fold) as Event
 import FRP.Event.Time (interval)
 
 import Rpd as R
-import Rpd ((~>))
+import Rpd ((~>), type (/->))
 -- import Rpd.Flow
 --   ( flow
 --   , subscribeAll, subscribeTop
@@ -80,9 +83,11 @@ spec = do
             ~> R.addNode (R.PatchId 0) "test1"
             ~> R.addNode (R.PatchId 0) "test2"
 
-      nw <- R.run rpd
-      collectedData <- collectData nw (Milliseconds 100.0)
-      collectedData `shouldEqual` []
+      _ <- rpd # (withRpd $ \nw -> do
+          collectedData <- collectData nw (Milliseconds 100.0)
+          collectedData `shouldEqual` []
+          pure unit)
+
       pure unit
 
 
@@ -91,6 +96,27 @@ data TraceItem d
   | OutletData R.OutletPath d
 
 type TracedFlow d = Array (TraceItem d)
+
+derive instance genericTraceItem :: Generic (TraceItem d) _
+
+instance showTraceItem :: Show d => Show (TraceItem d) where
+  show = genericShow
+
+instance eqTraceItem :: Eq d => Eq (TraceItem d) where
+  eq = genericEq
+
+
+withRpd :: forall d e. (R.Network d e -> Aff (TestAffE e) Unit) -> R.Rpd d e -> Aff (TestAffE e) Unit
+withRpd test rpd = do
+  nw <- liftEff $ getNetwork rpd
+  test nw
+  where
+    getNetwork :: R.Rpd d e -> R.RpdEff e (R.Network d e)
+    getNetwork rpd = do
+      nwTarget <- newRef $ R.init "empty"
+      _ <- R.run (log <<< show) (writeRef nwTarget) rpd
+      readRef nwTarget
+
 
 
 collectData
@@ -113,20 +139,23 @@ collectData nw period = do
           _ <- writeRef target $ curData +> OutletData path d
           pure unit
       cancelers <- R.subscribeAllData onOutletData onInletData nw
-      pure cancelers
+      pure $ foldCancelers cancelers
     pure $ target /\ cancelers
   delay period
   liftEff $ do
     cancelSubs cancelers
     readRef target
+  where
+    foldCancelers :: ((R.OutletPath /-> R.Canceler e) /\ (R.InletPath /-> R.Canceler e)) -> Array (R.Canceler e)
+    foldCancelers (outletsMap /\ inletsMap) =
+      List.toUnfoldable $ Map.values outletsMap <> Map.values inletsMap
 
-
-cancelSub :: forall e. R.Canceler e -> Eff (frp :: FRP | e) Unit
+cancelSub :: forall e. R.Canceler e -> R.RpdEff e Unit
 cancelSub canceler = do
   _ <- canceler
   pure unit
 
 
-cancelSubs :: forall e. Array (R.Canceler e) -> Eff (frp :: FRP | e) Unit
+cancelSubs :: forall e. Array (R.Canceler e) -> R.RpdEff e Unit
 cancelSubs cancelers =
   foreachE cancelers cancelSub

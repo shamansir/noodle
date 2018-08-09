@@ -1,6 +1,6 @@
 module Rpd
     ( Rpd, RpdEff, RpdEffE, RpdError, init
-    , (~>), rpdAp, run
+    , (~>), type (/->), rpdAp, run
     --, RpdOp, RpdEffOp
     , DataSource(..), Flow, getFlowOf
     , Network, Patch, Node, Inlet, Outlet, Link
@@ -44,13 +44,16 @@ import Data.Tuple (curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import FRP (FRP)
 import FRP.Event (Event, subscribe, create)
+import Control.Monad.Eff.Ref (REF)
+import Control.Monad.Eff.Console (CONSOLE)
 
 
 --import Rpd.Flow as Flow
 
 -- foreign import data RPD :: Effect
 
-type RpdEffE e = ( frp :: FRP | e )
+-- FIXME: remove REF
+type RpdEffE e = ( frp :: FRP, ref :: REF, console :: CONSOLE | e )
 type RpdEff e v = Eff (RpdEffE e) v
 
 -- data RunningNetwork d e = RpdEff e (Network d e)
@@ -65,25 +68,12 @@ type Rpd d e = RpdEff e (Either RpdError (Network d e))
 -- newtype ContT r m a = ContT ((a -> m r) -> m r)
 
 
--- run :: forall d e. Rpd d e -> () -> RpdEff e (Network d e)
--- run rpd =
---     rpd >
-
-
 infixl 1 rpdAp as ~> -- FIXME: can be replaced with proper instances?
 
--- FIXME: looks like improper complicated implementation
-run :: forall d e. Rpd d e -> (RpdError -> RpdEff e Unit) -> RpdEff e (Network d e)
-run rpd onError = do
-    rpd' :: Either RpdError (Network d e) <- rpd
-    nw :: Network d e <- either handleError pure rpd'
-    pure nw
-    where
-        handleError :: RpdError -> RpdEff e (Network d e)
-        handleError error = do
-            _ <- onError error
-            pure (init "Error")
 
+run :: forall d e. (RpdError -> RpdEff e Unit) -> (Network d e -> RpdEff e Unit) -> Rpd d e -> RpdEff e Unit
+run onError onSuccess rpd =
+    rpd >>= either onError onSuccess
 
 
 rpdAp :: forall d e. Rpd d e -> (Network d e -> Rpd d e) -> Rpd d e
@@ -1146,6 +1136,10 @@ unpackInletPath (InletPath nodePath id) = unpackNodePath nodePath <> [ id ]
 
 unpackOutletPath :: OutletPath -> Array Int
 unpackOutletPath (OutletPath nodePath id) = unpackNodePath nodePath <> [ id ]
+
+
+instance showRpdError :: Show RpdError where
+    show (RpdError text) = "Error: " <> text
 
 
 instance showPatchId :: Show PatchId where
