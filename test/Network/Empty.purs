@@ -3,21 +3,26 @@ module RpdTest.Network.Empty
 
 import Prelude
 
+import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Console (CONSOLE, log)
+
 import Test.Spec (Spec, describe, it)
+import Test.Spec.Assertions (fail)
 import Test.Util (runWith, TestAffE)
 
-import Rpd (Network, init) as R
+import Rpd (init, Rpd, run) as R
 
 data MyData
   = Bang
 
-network :: forall e. R.Network MyData e
-network =
+myRpd :: forall e. R.Rpd MyData e
+myRpd =
   R.init "f"
 
 spec :: forall e. Spec (TestAffE e) Unit
 spec =
   describe "empty network" do
     it "constructing the network works" do
-      runWith network
-        \nw -> pure unit
+      -- FIXME: fail on error
+      _ <- liftEff $ R.run (log <<< show) (const $ pure unit) myRpd
+      pure unit

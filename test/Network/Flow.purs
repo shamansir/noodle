@@ -71,22 +71,28 @@ spec = do
   describe "flow is defined before running the system" $ do
 
     it "we receive no data from the network when it's empty" $ do
-      "a" `shouldEqual` "a"
+      _ <- (R.init "no-data" :: R.Rpd Delivery e)
+           # withRpd \nw -> do
+                collectedData <- collectData nw (Milliseconds 100.0)
+                collectedData `shouldEqual` []
+                pure unit
+
       pure unit
 
     it "we receive no data from the inlet when it has no flow or default value" $ do
       let
         rpd :: R.Rpd Delivery e
         rpd =
-          R.init "t"
-            # R.addPatch "foo"
-            ~> R.addNode (R.PatchId 0) "test1"
-            ~> R.addNode (R.PatchId 0) "test2"
+          R.init "no-data"
+            ~> R.addPatch "foo"
+            ~> R.addNode (patchId 0) "test1"
+            ~> R.addNode (patchId 0) "test2"
+            ~> R.addInlet (nodePath 0 0) "label"
 
-      _ <- rpd # (withRpd $ \nw -> do
+      _ <- rpd # withRpd \nw -> do
           collectedData <- collectData nw (Milliseconds 100.0)
           collectedData `shouldEqual` []
-          pure unit)
+          pure unit
 
       pure unit
 
@@ -106,14 +112,33 @@ instance eqTraceItem :: Eq d => Eq (TraceItem d) where
   eq = genericEq
 
 
-withRpd :: forall d e. (R.Network d e -> Aff (TestAffE e) Unit) -> R.Rpd d e -> Aff (TestAffE e) Unit
+patchId :: Int -> R.PatchId
+patchId = R.PatchId
+
+nodePath :: Int -> Int -> R.NodePath
+nodePath = R.NodePath <<< R.PatchId
+
+inletPath :: Int -> Int -> Int -> R.InletPath
+inletPath patchId nodeId inletId = R.InletPath (nodePath patchId nodeId) inletId
+-- inletPath = R.InletPath ?_ nodePath
+
+outletPath :: Int -> Int -> Int -> R.OutletPath
+outletPath patchId nodeId outletId = R.OutletPath (nodePath patchId nodeId) outletId
+-- inletPath = R.InletPath ?_ nodePath
+
+
+withRpd
+  :: forall d e
+   . (R.Network d e -> Aff (TestAffE e) Unit)
+  -> R.Rpd d e
+  -> Aff (TestAffE e) Unit
 withRpd test rpd = do
   nw <- liftEff $ getNetwork rpd
   test nw
   where
     getNetwork :: R.Rpd d e -> R.RpdEff e (R.Network d e)
     getNetwork rpd = do
-      nwTarget <- newRef $ R.init "empty"
+      nwTarget <- newRef $ R.emptyNetwork "f"
       _ <- R.run (log <<< show) (writeRef nwTarget) rpd
       readRef nwTarget
 

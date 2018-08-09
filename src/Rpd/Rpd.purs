@@ -1,6 +1,6 @@
 module Rpd
     ( Rpd, RpdEff, RpdEffE, RpdError, init
-    , (~>), type (/->), rpdAp, run
+    , (~>), type (/->), rpdAp, run, emptyNetwork
     --, RpdOp, RpdEffOp
     , DataSource(..), Flow, getFlowOf
     , Network, Patch, Node, Inlet, Outlet, Link
@@ -52,7 +52,7 @@ import Control.Monad.Eff.Console (CONSOLE)
 
 -- foreign import data RPD :: Effect
 
--- FIXME: remove REF
+-- FIXME: !!! remove REF and CONSOLE
 type RpdEffE e = ( frp :: FRP, ref :: REF, console :: CONSOLE | e )
 type RpdEff e v = Eff (RpdEffE e) v
 
@@ -84,7 +84,7 @@ rpdAp eff f =
 someApiFunc :: forall d e. Rpd d e
 someApiFunc =
     init "t"
-        # addPatch "foo"
+        ~> addPatch "foo"
         ~> addNode (PatchId 0) "test1"
         ~> addNode (PatchId 0) "test2"
 
@@ -208,8 +208,8 @@ data Outlet d e =
 data Link = Link OutletPath InletPath
 
 
-init :: forall d e. String -> Network d e
-init = emptyNetwork
+init :: forall d e. String -> Rpd d e
+init = pure <<< pure <<< emptyNetwork
 
 
 emptyNetwork :: forall d e. String -> Network d e
