@@ -24,6 +24,7 @@ module Rpd
 import Data.Either
 import Prelude
 import Unsafe.Coerce
+import Control.Monad.Eff.Unsafe (unsafePerformEff)
 
 import Control.Monad.Cont.Trans (ContT(..))
 import Control.Monad.Eff (Eff, kind Effect)
@@ -47,7 +48,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import FRP (FRP)
 import FRP.Event (Event, subscribe, create)
 import Control.Monad.Eff.Ref (REF)
-import Control.Monad.Eff.Console (CONSOLE)
+import Control.Monad.Eff.Console (CONSOLE, log)
 
 
 --import Rpd.Flow as Flow
@@ -668,7 +669,7 @@ connect outletPath inletPath
     ePatchId :: Either RpdError PatchId <-
         pure $ extractPatchId outletPath inletPath
     eFlows :: Either RpdError (PushableFlow d e /\ PushableFlow d e) <-
-        pure $ (/\) -- + TODO: `curry`` or do not return a tuple
+        pure $ (/\)
             <$> (view (_outletPFlow outletPath) nw # note (RpdError ""))
             <*> (view (_inletPFlow inletPath) nw # note (RpdError ""))
 
@@ -692,11 +693,8 @@ connect outletPath inletPath
 
             pure $ Right $ network'
 
-        --(network' :: _) = subscribeAndSave <$> ePatchId <*> eFlows
-
-    either (const $ pure $ pure nw) id $ subscribeAndSave <$> ePatchId <*> eFlows
-
-    -- subscribeAndSave <$> ePatchId <*> eFlows
+    either (const $ pure $ pure nw) id
+        $ subscribeAndSave <$> ePatchId <*> eFlows
 
     where
         extractPatchId :: OutletPath -> InletPath -> Either RpdError PatchId

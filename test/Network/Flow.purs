@@ -39,6 +39,9 @@ import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
 import Test.Util (TestAffE, runWith)
 
 
+import Data.Either
+import Control.Monad.Eff.Unsafe (unsafePerformEff)
+
 infixl 6 snoc as +>
 
 
@@ -71,11 +74,11 @@ spec = do
   describe "flow is defined before running the system" $ do
 
     it "we receive no data from the network when it's empty" $ do
-      _ <- (R.init "no-data" :: R.Rpd Delivery e)
-           # withRpd \nw -> do
-                collectedData <- collectData nw (Milliseconds 100.0)
-                collectedData `shouldEqual` []
-                pure unit
+      (R.init "no-data" :: R.Rpd Delivery e)
+        # withRpd \nw -> do
+            collectedData <- nw # collectData (Milliseconds 100.0)
+            collectedData `shouldEqual` []
+            pure unit
 
       pure unit
 
@@ -86,13 +89,12 @@ spec = do
           R.init "no-data"
             ~> R.addPatch "foo"
             ~> R.addNode (patchId 0) "test1"
-            ~> R.addNode (patchId 0) "test2"
             ~> R.addInlet (nodePath 0 0) "label"
 
-      _ <- rpd # withRpd \nw -> do
-                  collectedData <- collectData nw (Milliseconds 100.0)
-                  collectedData `shouldEqual` []
-                  pure unit
+      rpd # withRpd \nw -> do
+              collectedData <- nw # collectData (Milliseconds 100.0)
+              collectedData `shouldEqual` []
+              pure unit
 
       pure unit
 
@@ -106,15 +108,18 @@ spec = do
             ~> R.addNode (patchId 0) "test2"
             ~> R.addInlet (nodePath 0 0) "label"
 
-      _ <- rpd # withRpd \nw -> do
-          collectedData <- (collectDataAfter
-            (\_ -> do
-              _ <- rpd ~> R.sendToInlet (inletPath 0 0 0) Pills
-              pure unit)
+      rpd # withRpd \nw -> do
+          collectedData <- collectDataAfter
+            (Milliseconds 100.0)
             nw
-            (Milliseconds 100.0))
-          -- _ <- liftEff $ (rpd ~> R.sendToInlet (inletPath 0 0 0) Pills)
-          collectedData `shouldNotEqual` []
+            $ do
+              _ <- nw # R.sendToInlet (inletPath 0 0 0) Pills
+                     ~> R.sendToInlet (inletPath 0 0 0) Pills
+              pure unit
+          collectedData `shouldEqual`
+              [ InletData (inletPath 0 0 0) Pills
+              , InletData (inletPath 0 0 0) Pills
+              ]
           pure unit
 
       pure unit
@@ -169,36 +174,36 @@ withRpd test rpd = do
 collectData
   :: forall d e
    . (Show d)
-  => R.Network d e
-  -> Milliseconds
+  => Milliseconds
+  -> R.Network d e
   -> Aff (TestAffE e) (TracedFlow d)
-collectData = collectDataAfter (const $ pure unit)
+collectData period nw = collectDataAfter period nw $ pure unit
 
 
 collectDataAfter
   :: forall d e
    . (Show d)
-  => (Unit -> R.RpdEff e Unit)
+  => Milliseconds
   -> R.Network d e
-  -> Milliseconds
+  -> R.RpdEff e Unit
   -> Aff (TestAffE e) (TracedFlow d)
-collectDataAfter afterF nw period = do
+collectDataAfter period nw afterF = do
   target /\ cancelers <- liftEff $ do
     target <- newRef []
     cancelers <- do
       let
         onInletData path {- source -} d = do
           curData <- readRef target
-          _ <- writeRef target $ curData +> InletData path d
+          writeRef target $ curData +> InletData path d
           pure unit
         onOutletData path d = do
           curData <- readRef target
-          _ <- writeRef target $ curData +> OutletData path d
+          writeRef target $ curData +> OutletData path d
           pure unit
       cancelers <- R.subscribeAllData onOutletData onInletData nw
       pure $ foldCancelers cancelers
     pure $ target /\ cancelers
-  _ <- liftEff $ afterF unit
+  liftEff $ afterF
   delay period
   liftEff $ do
     cancelSubs cancelers
