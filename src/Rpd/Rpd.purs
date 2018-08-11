@@ -2,7 +2,7 @@ module Rpd
     ( Rpd, RpdEff, RpdEffE, RpdError, init
     , (~>), type (/->), rpdAp, run, emptyNetwork
     --, RpdOp, RpdEffOp
-    , DataSource(..), Flow, getFlowOf
+    , DataSource(..), Flow, getFlowOf, flow
     , Network, Patch, Node, Inlet, Outlet, Link
     , PatchDef, NodeDef, InletDef, OutletDef
     , Canceler, Subscriber, PushableFlow
@@ -11,7 +11,7 @@ module Rpd
     --, connect, connect', disconnect, disconnect', disconnectTop
     , addPatch, addPatch', addNode, addNode', addInlet, addInlet', addOutlet, addOutlet'
     , subscribeInlet, {- subscribeOutlet, -} subscribeAllData, subscribeAllInlets, subscribeAllOutlets
-    , sendToInlet
+    , sendToInlet, streamToInlet
     , ProcessF
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
@@ -109,6 +109,10 @@ type Canceler e =
     RpdEff e Unit
 type Subscriber e =
     RpdEff e (Canceler e)
+
+
+flow :: forall d. Event d -> Flow d
+flow = id
 
 
 -- type ProcessF d = (Map InletPath d -> Map OutletPath d)
@@ -714,6 +718,16 @@ sendToInlet inletPath d nw = do
         performPush = sequence
             $ view (_inletPFlow inletPath) nw # note (RpdError "")
                 >>= \(PushableFlow push _) -> pure $ push d
+
+
+streamToInlet :: forall d e. InletPath -> Flow d -> Network d e -> Rpd d e
+streamToInlet inletPath flow nw = do
+    performPush >>= alwaysNetwork
+    where
+        alwaysNetwork = const $ pure $ pure nw
+        performPush = sequence
+            $ view (_inletPFlow inletPath) nw # note (RpdError "")
+                >>= \(PushableFlow push _) -> pure $ subscribe flow push
 
 
 subscribeInlet

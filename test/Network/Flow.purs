@@ -105,7 +105,6 @@ spec = do
           R.init "no-data"
             ~> R.addPatch "foo"
             ~> R.addNode (patchId 0) "test1"
-            ~> R.addNode (patchId 0) "test2"
             ~> R.addInlet (nodePath 0 0) "label"
 
       rpd # withRpd \nw -> do
@@ -113,13 +112,35 @@ spec = do
             (Milliseconds 100.0)
             nw
             $ do
-              _ <- nw # R.sendToInlet (inletPath 0 0 0) Pills
+              _ <- nw # R.sendToInlet (inletPath 0 0 0) Parcel
                      ~> R.sendToInlet (inletPath 0 0 0) Pills
+                     ~> R.sendToInlet (inletPath 0 0 0) (Curse 5)
               pure unit
           collectedData `shouldEqual`
-              [ InletData (inletPath 0 0 0) Pills
+              [ InletData (inletPath 0 0 0) Parcel
               , InletData (inletPath 0 0 0) Pills
+              , InletData (inletPath 0 0 0) (Curse 5)
               ]
+          pure unit
+
+    it "we receive the data streams sent to the inlet" $ do
+      let
+        rpd :: R.Rpd Delivery e
+        rpd =
+          R.init "no-data"
+            ~> R.addPatch "foo"
+            ~> R.addNode (patchId 0) "test1"
+            ~> R.addInlet (nodePath 0 0) "label"
+
+      rpd # withRpd \nw -> do
+          collectedData <- collectDataAfter
+            (Milliseconds 100.0)
+            nw
+            $ do
+              _ <- nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 30)
+              pure unit
+          collectedData `shouldEqual`
+              (replicate 3 $ InletData (inletPath 0 0 0) Pills)
           pure unit
 
       pure unit
