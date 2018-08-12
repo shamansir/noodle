@@ -27,13 +27,11 @@
   },
   "dependencies": {
     "lodash.difference": "^4.5.0",
-    "purescript": "^0.11.0",
-    "purescript-psa": "^0.5.0",
-    "purs-loader": "^3.1.1",
-    "react": "^15.3.2",
-    "react-dom": "^15.3.2",
-    "webpack": "^3.5.5",
-    "webpack-dev-server": "^2.7.1",
+    "purescript": "^0.12.0",
+    "purescript-psa": "^0.7.2",
+    "purs-loader": "^3.2.0",
+    "webpack": "^4.16.5",
+    "webpack-dev-server": "^3.1.5",
     "wrappy": "^1.0.2"
   }
 }
