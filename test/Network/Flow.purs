@@ -188,7 +188,33 @@ spec = do
 
     pending "when the stream itself was stopped, values are not sent to the inlet anymore"
 
-    pending "two different streams may work for different inlets"
+    it "two different streams may work for different inlets" $ do
+      let
+        rpd :: MyRpd e
+        rpd =
+          R.init "no-data"
+            </> R.addPatch "foo"
+            </> R.addNode (patchId 0) "test1"
+            </> R.addInlet (nodePath 0 0) "label1"
+            </> R.addInlet (nodePath 0 0) "label2"
+
+      rpd # withRpd \nw -> do
+          collectedData <- collectDataAfter
+            (Milliseconds 121.0)
+            nw
+            $ do
+              c1 <- nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 30)
+              c2 <- nw # R.streamToInlet (inletPath 0 0 1) (R.flow $ const Banana <$> interval 25)
+              pure $ postpone [ c1, c2 ]
+          collectedData `shouldEqual`
+              ((concat $ replicate 3 $
+                  [ InletData (inletPath 0 0 1) Banana
+                  , InletData (inletPath 0 0 0) Pills
+                  ]
+                ) +> InletData (inletPath 0 0 1) Banana)
+          pure unit
+
+      pure unit
 
     pending "same stream may work for several inlets"
 
