@@ -1,6 +1,6 @@
 module Rpd
     ( Rpd, RpdEff, RpdEffE, RpdError, init
-    , (~>), type (/->), rpdAp, run, emptyNetwork
+    , (└), type (/->), rpdAp, run, emptyNetwork
     --, RpdOp, RpdEffOp
     , DataSource(..), Flow, getFlowOf, flow
     , Network, Patch, Node, Inlet, Outlet, Link
@@ -71,7 +71,7 @@ type Rpd e a = RpdEff e (Either RpdError a)
 -- newtype ContT r m a = ContT ((a -> m r) -> m r)
 
 
-infixl 1 rpdAp as ~> -- FIXME: can be replaced with proper instances?
+infixl 1 rpdAp as └ -- FIXME: can be replaced with proper instances?
 
 
 run
@@ -84,6 +84,11 @@ run onError onSuccess rpd =
     rpd >>= either onError onSuccess
 
 
+-- FIXME: continuation monad
+-- (a -> r) -> r
+-- (a -> m r) -> m r
+-- (a -> Eff (Except err a)) -> Eff (Except err a)
+-- ContT (Except err a) Eff a
 rpdAp :: forall e a. Rpd e a -> (a -> Rpd e a) -> Rpd e a
 rpdAp eff f =
     eff >>= either (pure <<< Left) f
@@ -92,9 +97,9 @@ rpdAp eff f =
 someApiFunc :: forall d e. Rpd e (Network d e)
 someApiFunc =
     init "t"
-        ~> addPatch "foo"
-        ~> addNode (PatchId 0) "test1"
-        ~> addNode (PatchId 0) "test2"
+        └ addPatch "foo"
+        └ addNode (PatchId 0) "test1"
+        └ addNode (PatchId 0) "test2"
 
 
 -- instance functorRpdOp :: Functor (RpdOp d) where

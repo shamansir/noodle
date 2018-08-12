@@ -28,7 +28,7 @@ import FRP.Event (fold) as Event
 import FRP.Event.Time (interval)
 
 import Rpd as R
-import Rpd ((~>), type (/->))
+import Rpd ((└), type (/->))
 -- import Rpd.Flow
 --   ( flow
 --   , subscribeAll, subscribeTop
@@ -93,9 +93,9 @@ spec = do
         rpd :: MyRpd e
         rpd =
           R.init "no-data"
-            ~> R.addPatch "foo"
-            ~> R.addNode (patchId 0) "test1"
-            ~> R.addInlet (nodePath 0 0) "label"
+            └ R.addPatch "foo"
+            └ R.addNode (patchId 0) "test1"
+            └ R.addInlet (nodePath 0 0) "label"
 
       rpd # withRpd \nw -> do
               collectedData <- nw # collectData (Milliseconds 100.0)
@@ -111,18 +111,19 @@ spec = do
         rpd :: MyRpd e
         rpd =
           R.init "no-data"
-            ~> R.addPatch "foo"
-            ~> R.addNode (patchId 0) "test1"
-            ~> R.addInlet (nodePath 0 0) "label"
+            └ R.addPatch "foo"
+            └ R.addNode (patchId 0) "test1"
+            └ R.addInlet (nodePath 0 0) "label"
 
       rpd # withRpd \nw -> do
           collectedData <- collectDataAfter
             (Milliseconds 100.0)
             nw
             $ do
-              _ <- nw # R.sendToInlet (inletPath 0 0 0) Parcel
-                     ~> R.sendToInlet (inletPath 0 0 0) Pills
-                     ~> R.sendToInlet (inletPath 0 0 0) (Curse 5)
+              _ <- nw
+                    # R.sendToInlet (inletPath 0 0 0) Parcel
+                    └ R.sendToInlet (inletPath 0 0 0) Pills
+                    └ R.sendToInlet (inletPath 0 0 0) (Curse 5)
               pure []
           collectedData `shouldEqual`
               [ InletData (inletPath 0 0 0) Parcel
@@ -136,9 +137,9 @@ spec = do
         rpd :: MyRpd e
         rpd =
           R.init "no-data"
-            ~> R.addPatch "foo"
-            ~> R.addNode (patchId 0) "test1"
-            ~> R.addInlet (nodePath 0 0) "label"
+            └ R.addPatch "foo"
+            └ R.addNode (patchId 0) "test1"
+            └ R.addInlet (nodePath 0 0) "label"
 
       rpd # withRpd \nw -> do
           collectedData <- collectDataAfter
@@ -163,9 +164,9 @@ spec = do
         rpd :: MyRpd e
         rpd =
           R.init "no-data"
-            ~> R.addPatch "foo"
-            ~> R.addNode (patchId 0) "test1"
-            ~> R.addInlet (nodePath 0 0) "label"
+            └ R.addPatch "foo"
+            └ R.addNode (patchId 0) "test1"
+            └ R.addInlet (nodePath 0 0) "label"
 
       rpd # withRpd \nw -> do
           collectedData <- collectDataAfter
