@@ -1,6 +1,6 @@
 module Rpd
     ( Rpd, RpdEff, RpdEffE, RpdError, init
-    , (└), type (/->), rpdAp, run, emptyNetwork
+    , (</>), type (/->), rpdAp, run, emptyNetwork
     --, RpdOp, RpdEffOp
     , DataSource(..), Flow, getFlowOf, flow
     , Network, Patch, Node, Inlet, Outlet, Link
@@ -71,7 +71,8 @@ type Rpd e a = RpdEff e (Either RpdError a)
 -- newtype ContT r m a = ContT ((a -> m r) -> m r)
 
 
-infixl 1 rpdAp as └ -- FIXME: can be replaced with proper instances?
+infixl 1 rpdAp as </> -- FIXME: can be replaced with proper instances?
+-- other options: └, ~>, ...
 
 
 run
@@ -97,9 +98,9 @@ rpdAp eff f =
 someApiFunc :: forall d e. Rpd e (Network d e)
 someApiFunc =
     init "t"
-        └ addPatch "foo"
-        └ addNode (PatchId 0) "test1"
-        └ addNode (PatchId 0) "test2"
+        </> addPatch "foo"
+        </> addNode (PatchId 0) "test1"
+        </> addNode (PatchId 0) "test2"
 
 
 -- instance functorRpdOp :: Functor (RpdOp d) where
