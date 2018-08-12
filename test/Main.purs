@@ -2,18 +2,16 @@ module Test.Main where
 
 import Prelude
 
-import Control.Monad.Eff (Eff)
+import Effect (Effect)
 
 import Test.Spec (describe)
 import Test.Spec.Reporter.Console (consoleReporter)
-import Test.Spec.Runner (RunnerEffects, run)
-
-import Test.Util (TestAffE)
+import Test.Spec.Runner (run)
 
 import RpdTest.Network.Empty (spec) as TestEmpty
 import RpdTest.Network.Flow (spec) as TestFlow
 
-main :: forall e. Eff (RunnerEffects (TestAffE e)) Unit
+main :: Effect Unit
 main = run [consoleReporter] do
   describe "RPD" do
     TestEmpty.spec

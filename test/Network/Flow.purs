@@ -3,28 +3,22 @@ module RpdTest.Network.Flow
 
 import Prelude
 
-import Control.Monad.Aff (Aff, delay, makeAff)
-import Control.Monad.Eff (Eff, foreachE)
-import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (log, CONSOLE)
-import Control.Monad.Eff.Ref (REF, newRef, readRef, writeRef)
+import Effect (Effect, foreachE)
+import Effect.Class (liftEffect)
+import Effect.Ref as Ref
+import Effect.Aff (Aff, delay)
+import Effect.Class.Console (log)
 
-import Data.Array (fromFoldable, concatMap, snoc, replicate, concat)
-import Data.List (List)
+import Data.Either (Either, either)
+import Data.Array (snoc, replicate, concat)
 import Data.List as List
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Map as Map
 import Data.Time.Duration (Milliseconds(..))
-import Data.Traversable (traverse)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Foldable (fold)
-import Data.Traversable (sequence)
 
-import FRP (FRP)
-import FRP.Event (fold) as Event
 import FRP.Event.Time (interval)
 
 import Rpd as R
@@ -35,13 +29,9 @@ import Rpd ((</>), type (/->))
 --   , Subscribers, Subscriber, Canceler
 --   ) as R
 
-import Test.Spec (Spec, describe, it, pending, pending')
-import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
-import Test.Util (TestAffE, runWith)
+import Test.Spec (Spec, describe, it, pending)
+import Test.Spec.Assertions (shouldEqual)
 
-
-import Data.Either
-import Control.Monad.Eff.Unsafe (unsafePerformEff)
 
 infixl 6 snoc as +>
 
@@ -70,10 +60,10 @@ instance eqDelivery :: Eq Delivery where
   eq = genericEq
 
 
-type MyRpd e = R.Rpd e (R.Network Delivery e)
+type MyRpd e = R.Rpd (R.Network Delivery)
 
 
-spec :: forall e. Spec (TestAffE e) Unit
+spec :: forall e. Spec Unit
 spec = do
   describe "data flow is functioning as expected" $ do
 
@@ -236,71 +226,72 @@ outletPath patchId nodeId outletId = R.OutletPath (nodePath patchId nodeId) outl
 
 
 withRpd
-  :: forall d e
-   . (R.Network d e -> Aff (TestAffE e) Unit)
-  -> R.Rpd e (R.Network d e)
-  -> Aff (TestAffE e) Unit
+  :: forall d
+   . (R.Network d -> Aff Unit)
+  -> R.Rpd (R.Network d)
+  -> Aff Unit
 withRpd test rpd = do
-  nw <- liftEff $ getNetwork rpd
+  nw <- liftEffect $ getNetwork rpd
   test nw
   where
     --getNetwork :: R.Rpd d e -> R.RpdEff e (R.Network d e)
     getNetwork rpd = do
-      nwTarget <- newRef $ R.emptyNetwork "f"
-      _ <- R.run (log <<< show) (writeRef nwTarget) rpd
-      readRef nwTarget
+      nwTarget <- Ref.new $ R.emptyNetwork "f"
+      _ <- R.run (log <<< show) (flip Ref.write $ nwTarget) rpd
+      Ref.read nwTarget
 
 
 collectData
-  :: forall d e
+  :: forall d
    . (Show d)
   => Milliseconds
-  -> R.Network d e
-  -> Aff (TestAffE e) (TracedFlow d)
+  -> R.Network d
+  -> Aff (TracedFlow d)
 collectData period nw = collectDataAfter period nw $ pure []
 
 
 collectDataAfter
-  :: forall d e
+  :: forall d
    . (Show d)
   => Milliseconds
-  -> R.Network d e
-  -> R.RpdEff e (Array (R.Canceler e))
-  -> Aff (TestAffE e) (TracedFlow d)
+  -> R.Network d
+  -> Effect (Array R.Canceler)
+  -> Aff (TracedFlow d)
 collectDataAfter period nw afterF = do
-  target /\ cancelers <- liftEff $ do
-    target <- newRef []
+  target /\ cancelers <- liftEffect $ do
+    target <- Ref.new []
     cancelers <- do
       let
         onInletData path {- source -} d = do
-          curData <- readRef target
-          writeRef target $ curData +> InletData path d
+          curData <- Ref.read target
+          Ref.write (curData +> InletData path d) target
           pure unit
         onOutletData path d = do
-          curData <- readRef target
-          writeRef target $ curData +> OutletData path d
+          curData <- Ref.read target
+          Ref.write (curData +> OutletData path d) target
           pure unit
       cancelers <- R.subscribeAllData onOutletData onInletData nw
       pure $ foldCancelers cancelers
     pure $ target /\ cancelers
-  userEffects <- liftEff $ afterF
+  userEffects <- liftEffect $ afterF
   delay period
-  liftEff $ do
-    foreachE cancelers id
-    foreachE userEffects id
-    readRef target
+  liftEffect $ do
+    foreachE cancelers identity
+    foreachE userEffects identity
+    Ref.read target
   where
-    foldCancelers :: ((R.OutletPath /-> R.Canceler e) /\ (R.InletPath /-> R.Canceler e)) -> Array (R.Canceler e)
+    foldCancelers ::
+      (R.OutletPath /-> R.Canceler) /\ (R.InletPath /-> R.Canceler)
+      -> Array R.Canceler
     foldCancelers (outletsMap /\ inletsMap) =
       List.toUnfoldable $ Map.values outletsMap <> Map.values inletsMap
 
 
 postpone
-  :: forall e
-   . Array (Either R.RpdError (R.RpdEff e Unit))
-  -> Array (R.RpdEff e Unit)
+  :: Array (Either R.RpdError (Effect Unit))
+  -> Array (Effect Unit)
 postpone src =
   map logOrExec src
   where
     logOrExec cancelerE =
-      either (log <<< show) id cancelerE
+      either (log <<< show) identity cancelerE

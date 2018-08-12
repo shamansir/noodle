@@ -1,23 +1,15 @@
 module Test.Util
     ( runWith
-    , TestAffE, TestAff
     ) where
 
 import Prelude
 
-import Control.Monad.Aff (Aff)
-import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (CONSOLE)
-import Control.Monad.Eff.Ref (REF, newRef, readRef, writeRef)
-
-import FRP (FRP)
+import Effect.Aff (Aff)
+import Effect.Class (liftEffect)
 
 import Rpd (Network) as Rpd
 
-type TestAffE e = (ref :: REF, frp :: FRP, console :: CONSOLE | e)
-type TestAff e = Aff (TestAffE e) Unit
-
-runWith :: forall e d. Rpd.Network d e -> (Rpd.Network d e -> TestAff e) -> TestAff e
+runWith :: forall d. Rpd.Network d -> (Rpd.Network d -> Aff Unit) -> Aff Unit
 runWith initialNetwork f = f initialNetwork
 
 -- runWith :: forall e d. Rpd.Network d -> (Rpd.Network d -> TestAff e) -> TestAff e
