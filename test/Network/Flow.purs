@@ -69,12 +69,17 @@ instance eqDelivery :: Eq Delivery where
   eq = genericEq
 
 
+type MyRpd e = R.Rpd e (R.Network Delivery e)
+
+
 spec :: forall e. Spec (TestAffE e) Unit
 spec = do
-  describe "flow is defined before running the system" $ do
+  describe "data flow is functioning as expected" $ do
+
+    -- INLETS --
 
     it "we receive no data from the network when it's empty" $ do
-      (R.init "no-data" :: R.Rpd Delivery e)
+      (R.init "no-data" :: MyRpd e)
         # withRpd \nw -> do
             collectedData <- nw # collectData (Milliseconds 100.0)
             collectedData `shouldEqual` []
@@ -84,7 +89,7 @@ spec = do
 
     it "we receive no data from the inlet when it has no flow or default value" $ do
       let
-        rpd :: R.Rpd Delivery e
+        rpd :: MyRpd e
         rpd =
           R.init "no-data"
             ~> R.addPatch "foo"
@@ -98,9 +103,11 @@ spec = do
 
       pure unit
 
+    pending "we receive the default value of the inlet just when it was set"
+
     it "we receive the data sent directly to the inlet" $ do
       let
-        rpd :: R.Rpd Delivery e
+        rpd :: MyRpd e
         rpd =
           R.init "no-data"
             ~> R.addPatch "foo"
@@ -123,9 +130,9 @@ spec = do
               ]
           pure unit
 
-    it "we receive the data streams sent to the inlet" $ do
+    it "we receive the values from the data stream attached to the inlet" $ do
       let
-        rpd :: R.Rpd Delivery e
+        rpd :: MyRpd e
         rpd =
           R.init "no-data"
             ~> R.addPatch "foo"
@@ -144,6 +151,28 @@ spec = do
           pure unit
 
       pure unit
+
+    pending "it is possible to manually cancel the streaming-to-inlet procedure"
+
+    pending "attaching several simultaneous streams to the inlet allows them to overlap"
+
+    pending "when the stream itself was stopped, values are not sent to the inlet anymore"
+
+    pending "two different streams may work for different inlets"
+
+    pending "same stream may work for several inlets"
+
+    pending "sending data to the inlet triggers the processing function of the node"
+
+    pending "receiving data from the stream triggers the processing function of the node"
+
+    -- OULETS --
+
+    -- LINKS <-> NODES --
+
+    pending "connecting some outlet to some inlet makes data flow from this outlet to this inlet"
+
+    pending "disconnecting some outlet from some inlet makes data flow between them stop"
 
 
 data TraceItem d
@@ -179,13 +208,13 @@ outletPath patchId nodeId outletId = R.OutletPath (nodePath patchId nodeId) outl
 withRpd
   :: forall d e
    . (R.Network d e -> Aff (TestAffE e) Unit)
-  -> R.Rpd d e
+  -> R.Rpd e (R.Network d e)
   -> Aff (TestAffE e) Unit
 withRpd test rpd = do
   nw <- liftEff $ getNetwork rpd
   test nw
   where
-    getNetwork :: R.Rpd d e -> R.RpdEff e (R.Network d e)
+    --getNetwork :: R.Rpd d e -> R.RpdEff e (R.Network d e)
     getNetwork rpd = do
       nwTarget <- newRef $ R.emptyNetwork "f"
       _ <- R.run (log <<< show) (writeRef nwTarget) rpd

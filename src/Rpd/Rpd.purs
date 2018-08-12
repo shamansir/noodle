@@ -64,9 +64,9 @@ type RpdEff e v = Eff (RpdEffE e) v
 data RpdError = RpdError String
 
 
-type RpdOp d e = Either RpdError (Network d e)
-type RpdEffOp d e = RpdEff e (RpdOp d e)
-type Rpd d e = RpdEff e (Either RpdError (Network d e))
+type RpdOp a = Either RpdError a
+--type RpdEffOp e a = RpdEff e (RpdOp e a)
+type Rpd e a = RpdEff e (Either RpdError a)
 -- type Rpd d e = ContT (Either RpdError (Network d e)) (Eff (RpdEffE e)) (Network d e)
 -- newtype ContT r m a = ContT ((a -> m r) -> m r)
 
@@ -74,17 +74,22 @@ type Rpd d e = RpdEff e (Either RpdError (Network d e))
 infixl 1 rpdAp as ~> -- FIXME: can be replaced with proper instances?
 
 
-run :: forall d e. (RpdError -> RpdEff e Unit) -> (Network d e -> RpdEff e Unit) -> Rpd d e -> RpdEff e Unit
+run
+    :: forall d e
+     . (RpdError -> RpdEff e Unit)
+    -> (Network d e -> RpdEff e Unit)
+    -> Rpd e (Network d e)
+    -> RpdEff e Unit
 run onError onSuccess rpd =
     rpd >>= either onError onSuccess
 
 
-rpdAp :: forall d e. Rpd d e -> (Network d e -> Rpd d e) -> Rpd d e
+rpdAp :: forall e a. Rpd e a -> (a -> Rpd e a) -> Rpd e a
 rpdAp eff f =
     eff >>= either (pure <<< Left) f
 
 
-someApiFunc :: forall d e. Rpd d e
+someApiFunc :: forall d e. Rpd e (Network d e)
 someApiFunc =
     init "t"
         ~> addPatch "foo"
@@ -215,7 +220,7 @@ data Outlet d e =
 data Link = Link OutletPath InletPath
 
 
-init :: forall d e. String -> Rpd d e
+init :: forall d e. String -> Rpd e (Network d e)
 init = pure <<< pure <<< emptyNetwork
 
 
@@ -524,7 +529,7 @@ nextLinkId (Network _ { links }) =
     LinkId (Map.size links)
 
 
-addPatch :: forall d e. String -> Network d e -> Rpd d e
+addPatch :: forall d e. String -> Network d e -> Rpd e (Network d e)
 addPatch name =
     addPatch'
         { name
@@ -532,7 +537,11 @@ addPatch name =
         }
 
 
-addPatch' :: forall d e. PatchDef d -> Network d e -> Rpd d e
+addPatch'
+    :: forall d e
+     . PatchDef d
+    -> Network d e
+    -> Rpd e (Network d e)
 addPatch' patchDef nw =
     pure $ pure $ setJust (_patch patchId) newPatch nw
     where
@@ -550,7 +559,7 @@ addNode
      . PatchId
     -> String
     -> Network d e
-    -> Rpd d e
+    -> Rpd e (Network d e)
 addNode patchId name =
     addNode'
         patchId
@@ -566,7 +575,7 @@ addNode'
      . PatchId
     -> NodeDef d
     -> Network d e
-    -> Rpd d e
+    -> Rpd e (Network d e)
 addNode' patchId def nw =
     pure $ do
         nodePath <- nextNodePath patchId nw
@@ -586,7 +595,7 @@ addInlet
      . NodePath
     -> String
     -> Network d e
-    -> Rpd d e
+    -> Rpd e (Network d e)
 addInlet nodePath label =
     addInlet'
         nodePath
@@ -601,7 +610,7 @@ addInlet'
      . NodePath
     -> InletDef d
     -> Network d e
-    -> Rpd d e
+    -> Rpd e (Network d e)
 addInlet' nodePath def nw = do
     pushableFlow <- makePushableFlow
     pure $ do
@@ -624,7 +633,7 @@ addOutlet
      . NodePath
     -> String
     -> Network d e
-    -> Rpd d e
+    -> Rpd e (Network d e)
 addOutlet nodePath label =
     addOutlet'
         nodePath
@@ -637,7 +646,7 @@ addOutlet'
      . NodePath
     -> OutletDef d
     -> Network d e
-    -> Rpd d e
+    -> Rpd e (Network d e)
 addOutlet' nodePath def nw = do
     pushableFlow <- makePushableFlow
     pure $ do
@@ -663,7 +672,7 @@ connect
      . OutletPath
     -> InletPath
     -> Network d e
-    -> Rpd d e
+    -> Rpd e (Network d e)
 connect outletPath inletPath
     nw@(Network nwdef nwstate@{ nodes, outlets, inlets, links }) = do
     -- let patchId = extractPatchId outletPath inletPath
@@ -710,7 +719,12 @@ connect outletPath inletPath
                 guardE inletPatch (inletPatch == outletPatch) ""
 
 
-sendToInlet :: forall d e. InletPath -> d -> Network d e -> Rpd d e
+sendToInlet
+    :: forall d e
+     . InletPath
+    -> d
+    -> Network d e
+    -> Rpd e (Network d e)
 sendToInlet inletPath d nw = do
     performPush >>= alwaysNetwork
     where
@@ -720,7 +734,12 @@ sendToInlet inletPath d nw = do
                 >>= \(PushableFlow push _) -> pure $ push d
 
 
-streamToInlet :: forall d e. InletPath -> Flow d -> Network d e -> Rpd d e
+streamToInlet
+    :: forall d e
+     . InletPath
+    -> Flow d
+    -> Network d e
+    -> Rpd e (Network d e)
 streamToInlet inletPath flow nw = do
     performPush >>= alwaysNetwork
     where
@@ -946,7 +965,7 @@ updatePatch
      . (Patch d -> Patch d)
     -> PatchId
     -> Network d e
-    -> RpdOp d e
+    -> RpdOp (Network d e)
 updatePatch updater patchId nw@(Network def state@{ patches }) = do
     patch <- Map.lookup patchId patches # note (RpdError "")
     pure $
@@ -963,7 +982,7 @@ updateNode
      . (Node d -> Node d)
     -> NodePath
     -> Network d e
-    -> RpdOp d e
+    -> RpdOp (Network d e)
 updateNode updater path@(NodePath patchId _) (Network def state@{ nodes }) = do
     node <- Map.lookup path nodes # note (RpdError "")
     pure $
@@ -979,7 +998,7 @@ updateInlet
      . (Inlet d e -> Inlet d e)
     -> InletPath
     -> Network d e
-    -> RpdOp d e
+    -> RpdOp (Network d e)
 updateInlet updater path@(InletPath nodePath _) (Network def state@{ inlets }) = do
     inlet <- Map.lookup path inlets # note (RpdError "")
     let inlets' = Map.insert path inlet inlets
@@ -994,7 +1013,7 @@ updateOutlet
      . (Outlet d e -> Outlet d e)
     -> OutletPath
     -> Network d e
-    -> RpdOp d e
+    -> RpdOp (Network d e)
 updateOutlet updater path@(OutletPath nodePath _) (Network def state@{ outlets }) = do
     outlet <- Map.lookup path outlets # note (RpdError "")
     let outlets' = Map.insert path outlet outlets

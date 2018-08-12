@@ -10,12 +10,14 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (fail)
 import Test.Util (runWith, TestAffE)
 
-import Rpd (init, Rpd, run) as R
+import Rpd (init, Rpd, run, Network) as R
 
 data MyData
   = Bang
 
-myRpd :: forall e. R.Rpd MyData e
+type MyRpd e = R.Rpd e (R.Network MyData e)
+
+myRpd :: forall e. MyRpd e
 myRpd =
   R.init "f"
 
