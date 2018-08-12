@@ -1,31 +1,33 @@
 {
   "name": "rpd-purs",
   "ignore": [
+    "**/.*",
     "node_modules",
     "bower_components",
     "output"
   ],
   "dependencies": {
-    "purescript-prelude": "^4.1.0",
-    "purescript-console": "^4.1.0",
-    "purescript-effect": "^2.0.0",
-    "purescript-signal": "^10.1.0",
-    "purescript-arrays": "^5.0.0",
-    "purescript-tuples": "^5.0.0",
-    "purescript-smolder": "^11.0.0",
-    "purescript-foldable-traversable": "^4.0.0",
-    "purescript-behaviors": "^7.0.0",
-    "purescript-event": "^1.2.4",
-    "purescript-profunctor-lenses": "4.0.0",
     "purescript-aff": "^5.0.1",
-    "purescript-transformers": "^4.1.0",
-    "purescript-control": "^4.1.0"
+    "purescript-arrays": "^5.0.0",
+    "purescript-behaviors": "^7.0.0",
+    "purescript-console": "^4.1.0",
+    "purescript-control": "^4.1.0",
+    "purescript-coroutines": "^5.0.0",
+    "purescript-effect": "^2.0.0",
+    "purescript-event": "^1.2.4",
+    "purescript-foldable-traversable": "^4.0.0",
+    "purescript-prelude": "^4.1.0",
+    "purescript-profunctor-lenses": "4.0.0",
+    "purescript-refs": "^4.1.0",
+    "purescript-smolder": "^11.0.0",
+    "purescript-tuples": "^5.0.0",
+    "purescript-transformers": "^4.1.0"
+
   },
   "devDependencies": {
-    "purescript-psci-support": "^4.0.0",
-    "purescript-test-unit": "^14.0.0",
     "purescript-debug": "^4.0.0",
-    "purescript-coroutines": "^5.0.0",
-    "purescript-spec": "^3.0.0"
+    "purescript-psci-support": "^4.0.0",
+    "purescript-spec": "^3.0.0",
+    "purescript-test-unit": "^14.0.0"
   }
 }
