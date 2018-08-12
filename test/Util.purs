@@ -5,7 +5,6 @@ module Test.Util
 import Prelude
 
 import Effect.Aff (Aff)
-import Effect.Class (liftEffect)
 
 import Rpd (Network) as Rpd
 
