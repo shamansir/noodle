@@ -21,6 +21,7 @@ import Data.Traversable (traverse)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Foldable (fold)
+import Data.Traversable (sequence)
 
 import FRP (FRP)
 import FRP.Event (fold) as Event
@@ -122,7 +123,7 @@ spec = do
               _ <- nw # R.sendToInlet (inletPath 0 0 0) Parcel
                      ~> R.sendToInlet (inletPath 0 0 0) Pills
                      ~> R.sendToInlet (inletPath 0 0 0) (Curse 5)
-              pure unit
+              pure []
           collectedData `shouldEqual`
               [ InletData (inletPath 0 0 0) Parcel
               , InletData (inletPath 0 0 0) Pills
@@ -144,8 +145,11 @@ spec = do
             (Milliseconds 100.0)
             nw
             $ do
-              _ <- nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 30)
-              pure unit
+              cancel <-
+                nw # R.streamToInlet
+                    (inletPath 0 0 0)
+                    (R.flow $ const Pills <$> interval 30)
+              pure $ postpone [ cancel ]
           collectedData `shouldEqual`
               (replicate 3 $ InletData (inletPath 0 0 0) Pills)
           pure unit
@@ -154,7 +158,32 @@ spec = do
 
     pending "it is possible to manually cancel the streaming-to-inlet procedure"
 
-    pending "attaching several simultaneous streams to the inlet allows them to overlap"
+    it "attaching several simultaneous streams to the inlet allows them to overlap" $ do
+      let
+        rpd :: MyRpd e
+        rpd =
+          R.init "no-data"
+            ~> R.addPatch "foo"
+            ~> R.addNode (patchId 0) "test1"
+            ~> R.addInlet (nodePath 0 0) "label"
+
+      rpd # withRpd \nw -> do
+          collectedData <- collectDataAfter
+            (Milliseconds 121.0)
+            nw
+            $ do
+              c1 <- nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 30)
+              c2 <- nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Banana <$> interval 25)
+              pure $ postpone [ c1, c2 ]
+          collectedData `shouldEqual`
+              ((concat $ replicate 3 $
+                  [ InletData (inletPath 0 0 0) Banana
+                  , InletData (inletPath 0 0 0) Pills
+                  ]
+                ) +> InletData (inletPath 0 0 0) Banana)
+          pure unit
+
+      pure unit
 
     pending "when the stream itself was stopped, values are not sent to the inlet anymore"
 
@@ -227,7 +256,7 @@ collectData
   => Milliseconds
   -> R.Network d e
   -> Aff (TestAffE e) (TracedFlow d)
-collectData period nw = collectDataAfter period nw $ pure unit
+collectData period nw = collectDataAfter period nw $ pure []
 
 
 collectDataAfter
@@ -235,7 +264,7 @@ collectDataAfter
    . (Show d)
   => Milliseconds
   -> R.Network d e
-  -> R.RpdEff e Unit
+  -> R.RpdEff e (Array (R.Canceler e))
   -> Aff (TestAffE e) (TracedFlow d)
 collectDataAfter period nw afterF = do
   target /\ cancelers <- liftEff $ do
@@ -253,22 +282,24 @@ collectDataAfter period nw afterF = do
       cancelers <- R.subscribeAllData onOutletData onInletData nw
       pure $ foldCancelers cancelers
     pure $ target /\ cancelers
-  liftEff $ afterF
+  userEffects <- liftEff $ afterF
   delay period
   liftEff $ do
-    cancelSubs cancelers
+    foreachE cancelers id
+    foreachE userEffects id
     readRef target
   where
     foldCancelers :: ((R.OutletPath /-> R.Canceler e) /\ (R.InletPath /-> R.Canceler e)) -> Array (R.Canceler e)
     foldCancelers (outletsMap /\ inletsMap) =
       List.toUnfoldable $ Map.values outletsMap <> Map.values inletsMap
 
-cancelSub :: forall e. R.Canceler e -> R.RpdEff e Unit
-cancelSub canceler = do
-  _ <- canceler
-  pure unit
 
-
-cancelSubs :: forall e. Array (R.Canceler e) -> R.RpdEff e Unit
-cancelSubs cancelers =
-  foreachE cancelers cancelSub
+postpone
+  :: forall e
+   . Array (Either R.RpdError (R.RpdEff e Unit))
+  -> Array (R.RpdEff e Unit)
+postpone src =
+  map logOrExec src
+  where
+    logOrExec cancelerE =
+      either (log <<< show) id cancelerE

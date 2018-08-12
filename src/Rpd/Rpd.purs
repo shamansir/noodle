@@ -739,14 +739,11 @@ streamToInlet
      . InletPath
     -> Flow d
     -> Network d e
-    -> Rpd e (Network d e)
+    -> Rpd e (Canceler e)
 streamToInlet inletPath flow nw = do
-    performPush >>= alwaysNetwork
-    where
-        alwaysNetwork = const $ pure $ pure nw
-        performPush = sequence
-            $ view (_inletPFlow inletPath) nw # note (RpdError "")
-                >>= \(PushableFlow push _) -> pure $ subscribe flow push
+    sequence
+        $ view (_inletPFlow inletPath) nw # note (RpdError "")
+            >>= \(PushableFlow push _) -> pure $ subscribe flow push
 
 
 subscribeInlet
