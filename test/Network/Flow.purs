@@ -259,7 +259,7 @@ spec = do
 
     -- LINKS <-> NODES --
 
-    pending' "connecting some outlet to some inlet makes data flow from this outlet to this inlet" $ do
+    it "connecting some outlet to some inlet makes data flow from this outlet to this inlet" $ do
       let
         rpd :: MyRpd
         rpd =
@@ -268,7 +268,7 @@ spec = do
             </> R.addNode (patchId 0) "node1"
             </> R.addOutlet (nodePath 0 0) "outlet"
             </> R.addNode (patchId 0) "node2"
-            </> R.addInlet (nodePath 0 0) "inlet"
+            </> R.addInlet (nodePath 0 1) "inlet"
 
       rpd # withRpd \nw -> do
           collectedData <- collectDataAfter
