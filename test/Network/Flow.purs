@@ -24,7 +24,7 @@ import FRP.Event.Time (interval)
 import Rpd as R
 import Rpd ((</>), type (/->))
 
-import Test.Spec (Spec, describe, it, pending)
+import Test.Spec (Spec, describe, it, pending, pending')
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
 
@@ -78,9 +78,9 @@ spec = do
         rpd :: MyRpd
         rpd =
           R.init "no-data"
-            </> R.addPatch "foo"
-            </> R.addNode (patchId 0) "test1"
-            </> R.addInlet (nodePath 0 0) "label"
+            </> R.addPatch "patch"
+            </> R.addNode (patchId 0) "node"
+            </> R.addInlet (nodePath 0 0) "inlet"
 
       rpd # withRpd \nw -> do
               collectedData <- nw # collectData (Milliseconds 100.0)
@@ -95,10 +95,10 @@ spec = do
       let
         rpd :: MyRpd
         rpd =
-          R.init "no-data"
-            </> R.addPatch "foo"
-            </> R.addNode (patchId 0) "test1"
-            </> R.addInlet (nodePath 0 0) "label"
+          R.init "network"
+            </> R.addPatch "patch"
+            </> R.addNode (patchId 0) "node"
+            </> R.addInlet (nodePath 0 0) "inlet"
 
       rpd # withRpd \nw -> do
           collectedData <- collectDataAfter
@@ -121,10 +121,10 @@ spec = do
       let
         rpd :: MyRpd
         rpd =
-          R.init "no-data"
-            </> R.addPatch "foo"
-            </> R.addNode (patchId 0) "test1"
-            </> R.addInlet (nodePath 0 0) "label"
+          R.init "network"
+            </> R.addPatch "patch"
+            </> R.addNode (patchId 0) "node"
+            </> R.addInlet (nodePath 0 0) "inlet"
 
       rpd # withRpd \nw -> do
           collectedData <- collectDataAfter
@@ -148,10 +148,10 @@ spec = do
       let
         rpd :: MyRpd
         rpd =
-          R.init "no-data"
-            </> R.addPatch "foo"
-            </> R.addNode (patchId 0) "test1"
-            </> R.addInlet (nodePath 0 0) "label"
+          R.init "network"
+            </> R.addPatch "patch"
+            </> R.addNode (patchId 0) "node"
+            </> R.addInlet (nodePath 0 0) "inlet"
 
       rpd # withRpd \nw -> do
           collectedData <- collectDataAfter
@@ -173,10 +173,10 @@ spec = do
       let
         rpd :: MyRpd
         rpd =
-          R.init "no-data"
-            </> R.addPatch "foo"
-            </> R.addNode (patchId 0) "test1"
-            </> R.addInlet (nodePath 0 0) "label"
+          R.init "network"
+            </> R.addPatch "patch"
+            </> R.addNode (patchId 0) "node"
+            </> R.addInlet (nodePath 0 0) "inlet"
 
       rpd # withRpd \nw -> do
           collectedData <- collectDataAfter
@@ -200,11 +200,11 @@ spec = do
       let
         rpd :: MyRpd
         rpd =
-          R.init "no-data"
-            </> R.addPatch "foo"
-            </> R.addNode (patchId 0) "test1"
-            </> R.addInlet (nodePath 0 0) "label1"
-            </> R.addInlet (nodePath 0 0) "label2"
+          R.init "network"
+            </> R.addPatch "patch"
+            </> R.addNode (patchId 0) "node"
+            </> R.addInlet (nodePath 0 0) "inlet1"
+            </> R.addInlet (nodePath 0 0) "inlet2"
 
       rpd # withRpd \nw -> do
           collectedData <- collectDataAfter
@@ -222,7 +222,32 @@ spec = do
 
       pure unit
 
-    pending "same stream may work for several inlets"
+    it "same stream may produce values for several inlets" $ do
+      let
+        rpd :: MyRpd
+        rpd =
+          R.init "network"
+            </> R.addPatch "patch"
+            </> R.addNode (patchId 0) "node"
+            </> R.addInlet (nodePath 0 0) "inlet1"
+            </> R.addInlet (nodePath 0 0) "inlet2"
+
+      rpd # withRpd \nw -> do
+          collectedData <- collectDataAfter
+            (Milliseconds 100.0)
+            nw
+            $ do
+              let stream = R.flow $ const Banana <$> interval 25
+              c1 <- nw # R.streamToInlet (inletPath 0 0 0) stream
+              c2 <- nw # R.streamToInlet (inletPath 0 0 1) stream
+              pure $ postpone [ c1, c2 ]
+          collectedData `shouldContain`
+            (InletData (inletPath 0 0 0) Banana)
+          collectedData `shouldContain`
+            (InletData (inletPath 0 0 1) Banana)
+          pure unit
+
+      pure unit
 
     pending "sending data to the inlet triggers the processing function of the node"
 
@@ -230,11 +255,39 @@ spec = do
 
     pending "default value of the inlet is sent to its flow when it's added"
 
-    -- OULETS --
+    -- OULETS (same as for inlets) --
 
     -- LINKS <-> NODES --
 
-    pending "connecting some outlet to some inlet makes data flow from this outlet to this inlet"
+    pending' "connecting some outlet to some inlet makes data flow from this outlet to this inlet" $ do
+      let
+        rpd :: MyRpd
+        rpd =
+          R.init "network"
+            </> R.addPatch "patch"
+            </> R.addNode (patchId 0) "node1"
+            </> R.addOutlet (nodePath 0 0) "outlet"
+            </> R.addNode (patchId 0) "node2"
+            </> R.addInlet (nodePath 0 0) "inlet"
+
+      rpd # withRpd \nw -> do
+          collectedData <- collectDataAfter
+            (Milliseconds 100.0)
+            nw
+            $ do
+              -- nw' <- nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
+              -- cancel <- nw' # R.streamToOutlet (outletPath 0 0 0) (R.flow $ const Notebook <$> interval 30)
+              cancel <-
+                nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
+                 </> R.streamToOutlet (outletPath 0 0 0) (R.flow $ const Notebook <$> interval 30)
+              pure $ postpone [ cancel ]
+          collectedData `shouldContain`
+            (OutletData (outletPath 0 0 0) Notebook)
+          collectedData `shouldContain`
+            (InletData (inletPath 0 1 0) Notebook)
+          pure unit
+
+      pure unit
 
     pending "disconnecting some outlet from some inlet makes data flow between them stop"
 
@@ -343,3 +396,9 @@ postpone src =
   where
     logOrExec cancelerE =
       either (log <<< show) identity cancelerE
+
+
+-- logOrExec
+--   :: forall a. Either R.RpdError (Effect a) -> Effect a
+-- logOrExec effE =
+--   either (log <<< show) identity effE

@@ -8,10 +8,10 @@ module Rpd
     , Canceler, Subscriber, PushableFlow
     --, emptyNetwork
     --, network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
-    --, connect, connect', disconnect, disconnect', disconnectTop
+    , connect, disconnect --, disconnectTop
     , addPatch, addPatch', addNode, addNode', addInlet, addInlet', addOutlet, addOutlet'
     , subscribeInlet, {- subscribeOutlet, -} subscribeAllData, subscribeAllInlets, subscribeAllOutlets
-    , sendToInlet, streamToInlet
+    , sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
     , ProcessF
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
@@ -79,7 +79,7 @@ run onError onSuccess rpd =
 -- (a -> m r) -> m r
 -- (a -> Eff (Except err a)) -> Eff (Except err a)
 -- ContT (Except err a) Eff a
-rpdAp :: forall a. Rpd a -> (a -> Rpd a) -> Rpd a
+rpdAp :: forall a b. Rpd a -> (a -> Rpd b) -> Rpd b
 rpdAp eff f =
     eff >>= either (pure <<< Left) f
 
@@ -711,6 +711,11 @@ connect outletPath inletPath
                 outletPatch = getPatchOfOutlet outletPath
                 inletPatch = getPatchOfInlet inletPath
             in
+                -- FIXME: no need to check, maybe? we may show connections
+                --        to other patches as "projections" and just keep flowing;
+                --        on render, we may render the flow in the current patch
+                --        along with the data we received from other patches
+                --        intended for this patch
                 guardE inletPatch (inletPatch == outletPatch) ""
 
 
@@ -741,6 +746,33 @@ streamToInlet inletPath flow nw = do
             >>= \(PushableFlow push _) -> pure $ subscribe flow push
 
 
+sendToOutlet
+    :: forall d
+     . OutletPath
+    -> d
+    -> Network d
+    -> Rpd (Network d)
+sendToOutlet outletPath d nw = do
+    performPush >>= alwaysNetwork
+    where
+        alwaysNetwork = const $ pure $ pure nw
+        performPush = sequence
+            $ view (_outletPFlow outletPath) nw # note (RpdError "")
+                >>= \(PushableFlow push _) -> pure $ push d
+
+
+streamToOutlet
+    :: forall d
+     . OutletPath
+    -> Flow d
+    -> Network d
+    -> Rpd Canceler
+streamToOutlet outletPath flow nw = do
+    sequence
+        $ view (_outletPFlow outletPath) nw # note (RpdError "")
+            >>= \(PushableFlow push _) -> pure $ subscribe flow push
+
+
 subscribeInlet
     :: forall d
      . InletPath
@@ -752,6 +784,20 @@ subscribeInlet inletPath handler nw =
     where
         (flowE :: Either RpdError (Flow d)) =
             view (_inletFlow inletPath) nw # note (RpdError "")
+        (subE :: Either RpdError Subscriber) =
+            (handler # (flip $ subscribe)) <$> flowE
+
+subscribeOutlet
+    :: forall d
+     . OutletPath
+    -> (d -> Effect Unit)
+    -> Network d
+    -> Rpd Canceler
+subscribeOutlet outletPath handler nw =
+    sequence subE
+    where
+        (flowE :: Either RpdError (Flow d)) =
+            view (_outletFlow outletPath) nw # note (RpdError "")
         (subE :: Either RpdError Subscriber) =
             (handler # (flip $ subscribe)) <$> flowE
 
