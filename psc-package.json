@@ -21,6 +21,7 @@
         "strings",
         "test-unit",
         "transformers",
-        "tupples"
+        "tupples",
+        "web-html"
     ]
 }
