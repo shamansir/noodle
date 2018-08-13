@@ -23,14 +23,9 @@ import FRP.Event.Time (interval)
 
 import Rpd as R
 import Rpd ((</>), type (/->))
--- import Rpd.Flow
---   ( flow
---   , subscribeAll, subscribeTop
---   , Subscribers, Subscriber, Canceler
---   ) as R
 
 import Test.Spec (Spec, describe, it, pending)
-import Test.Spec.Assertions (shouldEqual)
+import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
 
 infixl 6 snoc as +>
@@ -60,17 +55,17 @@ instance eqDelivery :: Eq Delivery where
   eq = genericEq
 
 
-type MyRpd e = R.Rpd (R.Network Delivery)
+type MyRpd = R.Rpd (R.Network Delivery)
 
 
-spec :: forall e. Spec Unit
+spec :: Spec Unit
 spec = do
   describe "data flow is functioning as expected" $ do
 
     -- INLETS --
 
     it "we receive no data from the network when it's empty" $ do
-      (R.init "no-data" :: MyRpd e)
+      (R.init "no-data" :: MyRpd)
         # withRpd \nw -> do
             collectedData <- nw # collectData (Milliseconds 100.0)
             collectedData `shouldEqual` []
@@ -80,7 +75,7 @@ spec = do
 
     it "we receive no data from the inlet when it has no flow or default value" $ do
       let
-        rpd :: MyRpd e
+        rpd :: MyRpd
         rpd =
           R.init "no-data"
             </> R.addPatch "foo"
@@ -98,7 +93,7 @@ spec = do
 
     it "we receive the data sent directly to the inlet" $ do
       let
-        rpd :: MyRpd e
+        rpd :: MyRpd
         rpd =
           R.init "no-data"
             </> R.addPatch "foo"
@@ -124,7 +119,7 @@ spec = do
 
     it "we receive the values from the data stream attached to the inlet" $ do
       let
-        rpd :: MyRpd e
+        rpd :: MyRpd
         rpd =
           R.init "no-data"
             </> R.addPatch "foo"
@@ -141,8 +136,8 @@ spec = do
                     (inletPath 0 0 0)
                     (R.flow $ const Pills <$> interval 30)
               pure $ postpone [ cancel ]
-          collectedData `shouldEqual`
-              (replicate 3 $ InletData (inletPath 0 0 0) Pills)
+          collectedData `shouldContain`
+              (InletData (inletPath 0 0 0) Pills)
           pure unit
 
       pure unit
@@ -151,7 +146,7 @@ spec = do
 
     it "attaching several simultaneous streams to the inlet allows them to overlap" $ do
       let
-        rpd :: MyRpd e
+        rpd :: MyRpd
         rpd =
           R.init "no-data"
             </> R.addPatch "foo"
@@ -160,27 +155,50 @@ spec = do
 
       rpd # withRpd \nw -> do
           collectedData <- collectDataAfter
-            (Milliseconds 121.0)
+            (Milliseconds 100.0)
             nw
             $ do
-              c1 <- nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 30)
-              c2 <- nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Banana <$> interval 25)
+              c1 <- nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 20)
+              c2 <- nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Banana <$> interval 29)
               pure $ postpone [ c1, c2 ]
-          collectedData `shouldEqual`
-              ((concat $ replicate 3 $
-                  [ InletData (inletPath 0 0 0) Banana
-                  , InletData (inletPath 0 0 0) Pills
-                  ]
-                ) +> InletData (inletPath 0 0 0) Banana)
+          collectedData `shouldContain`
+            (InletData (inletPath 0 0 0) Pills)
+          collectedData `shouldContain`
+            (InletData (inletPath 0 0 0) Banana)
           pure unit
 
       pure unit
 
-    pending "when the stream itself was stopped, values are not sent to the inlet anymore"
+    it "when the stream itself was stopped, values are not sent to the inlet anymore" $ do
+      let
+        rpd :: MyRpd
+        rpd =
+          R.init "no-data"
+            </> R.addPatch "foo"
+            </> R.addNode (patchId 0) "test1"
+            </> R.addInlet (nodePath 0 0) "label"
+
+      rpd # withRpd \nw -> do
+          collectedData <- collectDataAfter
+            (Milliseconds 100.0)
+            nw
+            $ do
+              cancel <-
+                nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 20)
+              pure $ postpone [ cancel ] -- `cancel` is called by `collectDataAfter`
+          collectedData `shouldContain`
+            (InletData (inletPath 0 0 0) Pills)
+          collectedData' <- collectDataAfter
+            (Milliseconds 100.0)
+            nw
+            $ pure []
+          collectedData' `shouldNotContain`
+            (InletData (inletPath 0 0 0) Pills)
+          pure unit
 
     it "two different streams may work for different inlets" $ do
       let
-        rpd :: MyRpd e
+        rpd :: MyRpd
         rpd =
           R.init "no-data"
             </> R.addPatch "foo"
@@ -190,18 +208,16 @@ spec = do
 
       rpd # withRpd \nw -> do
           collectedData <- collectDataAfter
-            (Milliseconds 121.0)
+            (Milliseconds 100.0)
             nw
             $ do
               c1 <- nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 30)
               c2 <- nw # R.streamToInlet (inletPath 0 0 1) (R.flow $ const Banana <$> interval 25)
               pure $ postpone [ c1, c2 ]
-          collectedData `shouldEqual`
-              ((concat $ replicate 3 $
-                  [ InletData (inletPath 0 0 1) Banana
-                  , InletData (inletPath 0 0 0) Pills
-                  ]
-                ) +> InletData (inletPath 0 0 1) Banana)
+          collectedData `shouldContain`
+            (InletData (inletPath 0 0 0) Pills)
+          collectedData `shouldContain`
+            (InletData (inletPath 0 0 1) Banana)
           pure unit
 
       pure unit
@@ -212,6 +228,8 @@ spec = do
 
     pending "receiving data from the stream triggers the processing function of the node"
 
+    pending "default value of the inlet is sent to its flow when it's added"
+
     -- OULETS --
 
     -- LINKS <-> NODES --
@@ -219,6 +237,10 @@ spec = do
     pending "connecting some outlet to some inlet makes data flow from this outlet to this inlet"
 
     pending "disconnecting some outlet from some inlet makes data flow between them stop"
+
+    pending "default value of the inlet is sent on connection"
+
+    pending "default value for the inlet is sent on disconnection"
 
 
 data TraceItem d
