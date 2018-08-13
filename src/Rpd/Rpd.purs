@@ -72,6 +72,7 @@ run
     -> Effect Unit
 run onError onSuccess rpd =
     rpd >>= either onError onSuccess
+    -- FIXME: we should also call all the cancelers left in the network, before "exiting"
 
 
 -- FIXME: continuation monad

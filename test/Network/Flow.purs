@@ -275,11 +275,36 @@ spec = do
             (Milliseconds 100.0)
             nw
             $ do
-              -- nw' <- nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
-              -- cancel <- nw' # R.streamToOutlet (outletPath 0 0 0) (R.flow $ const Notebook <$> interval 30)
               cancel <-
                 nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
                  </> R.streamToOutlet (outletPath 0 0 0) (R.flow $ const Notebook <$> interval 30)
+              pure $ postpone [ cancel ]
+          collectedData `shouldContain`
+            (OutletData (outletPath 0 0 0) Notebook)
+          collectedData `shouldContain`
+            (InletData (inletPath 0 1 0) Notebook)
+          pure unit
+
+      pure unit
+
+    it "connecting some outlet having its flow to some inlet directs this existing flow to this inlet" $ do
+      let
+        rpd :: MyRpd
+        rpd =
+          R.init "network"
+            </> R.addPatch "patch"
+            </> R.addNode (patchId 0) "node1"
+            </> R.addOutlet (nodePath 0 0) "outlet"
+            </> R.addNode (patchId 0) "node2"
+            </> R.addInlet (nodePath 0 1) "inlet"
+
+      rpd # withRpd \nw -> do
+          collectedData <- collectDataAfter
+            (Milliseconds 100.0)
+            nw
+            $ do
+              cancel <- nw # R.streamToOutlet (outletPath 0 0 0) (R.flow $ const Notebook <$> interval 30)
+              _ <- nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
               pure $ postpone [ cancel ]
           collectedData `shouldContain`
             (OutletData (outletPath 0 0 0) Notebook)
