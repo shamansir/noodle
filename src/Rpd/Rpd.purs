@@ -2,7 +2,7 @@ module Rpd
     ( Rpd, RpdError, init
     , (</>), type (/->), rpdAp, run, emptyNetwork
     --, RpdOp, RpdEffOp
-    , DataSource(..), Flow, getFlowOf, flow
+    , Flow, flow
     , Network, Patch, Node, Inlet, Outlet, Link
     , PatchDef, NodeDef, InletDef, OutletDef
     , Canceler, Subscriber, PushableFlow
@@ -130,10 +130,9 @@ data OutletPath = OutletPath NodePath Int
 data LinkId = LinkId Int
 
 
-data DataSource d
-    = UserSource (Flow d)
-    | OutletSource OutletPath (Flow d)
-    -- | UISource (Flow d)
+-- data DataSource d
+--     = UserSource (Flow d)
+--     | OutletSource OutletPath (Flow d)
 
 type PatchDef d =
     { name :: String
@@ -200,10 +199,10 @@ data Inlet d =
     Inlet
         InletPath
         (InletDef d)
-        { sources :: Set (DataSource d)
+        { flow :: PushableFlow d
+        -- sources :: Set (DataSource d)
         -- , accept :: d
         -- Maybe (AdaptF d)
-        , flow :: PushableFlow d
         }
 
 --data Inlet d = Inlet String (Maybe (AdaptF d))
@@ -330,6 +329,7 @@ _inletFlow inletPath =
             \(PushableFlow _ flow) -> pure flow
 
 
+{-
 _inletSource :: forall d. InletPath -> DataSource d -> Lens' (Network d) (Maybe Unit)
 _inletSource inletPath source =
     lens getter setter
@@ -347,7 +347,7 @@ _inletSource inletPath source =
                         idef
                         istate { sources = set sourceLens val istate.sources }
                 ) nw
-
+-}
 
 _nodeOutlet :: forall d. NodePath -> OutletPath -> Lens' (Network d) (Maybe Unit)
 _nodeOutlet nodePath outletPath =
@@ -616,8 +616,8 @@ addInlet' nodePath def nw = do
                 Inlet
                     inletPath
                     def
-                    { sources : Set.empty
-                    , flow : pushableFlow
+                    { flow : pushableFlow
+                    --, sources : Set.empty
                     }
         pure $ nw
              # setJust (_inlet inletPath) newInlet
@@ -687,7 +687,7 @@ connect outletPath inletPath
         subscribeAndSave patchId (outletPFlow /\ inletPFlow) = do
             let (PushableFlow _ outletFlow) = outletPFlow
             let (PushableFlow pushToInlet inletFlow) = inletPFlow
-            let newSource = OutletSource outletPath outletFlow
+            --let newSource = OutletSource outletPath outletFlow
 
             canceler :: Canceler <- subscribe outletFlow pushToInlet
 
@@ -695,7 +695,7 @@ connect outletPath inletPath
                 pure $ nw
                      # setJust (_link linkId) newLink
                      # setJust (_patchLink patchId linkId) unit
-                     # setJust (_inletSource inletPath newSource) unit
+                     -- # setJust (_inletSource inletPath newSource) unit
                      -- # note (RpdError "")
                     -- TODO: store canceler
                     -- TODO: re-subscribe `process`` function of the target node to update values including this connection
@@ -1183,12 +1183,13 @@ removeLink outletPath inletPath network = do
 -}
 
 
+{-
 getFlowOf :: forall d. DataSource d -> Flow d
 getFlowOf dataSource =
     case dataSource of
         UserSource flow -> flow
         OutletSource _ flow -> flow
-
+-}
 
 patchId :: Int -> PatchId
 patchId = PatchId
@@ -1278,9 +1279,9 @@ instance eqOutletPath :: Eq OutletPath where
 instance eqLinkId :: Eq LinkId where
     eq (LinkId a) (LinkId b) = a == b
 
-instance eqDataSource :: Eq (DataSource d) where
-    eq (OutletSource oa a) (OutletSource ob b) = oa == ob
-    eq _ _ = false
+-- instance eqDataSource :: Eq (DataSource d) where
+--     eq (OutletSource oa a) (OutletSource ob b) = oa == ob
+--     eq _ _ = false
 
 
 instance ordPatchId :: Ord PatchId where
@@ -1302,9 +1303,9 @@ instance ordLinkId :: Ord LinkId where
     compare (LinkId a) (LinkId b) =
         compare a b
 
-instance ordDataSource :: Ord (DataSource d) where
-    compare (OutletSource oa a) (OutletSource ob b) = compare oa ob
-    compare _ _ = LT
+-- instance ordDataSource :: Ord (DataSource d) where
+--     compare (OutletSource oa a) (OutletSource ob b) = compare oa ob
+--     compare _ _ = LT
 
 
 -- TODO: create HasId / HasPath typeclass
