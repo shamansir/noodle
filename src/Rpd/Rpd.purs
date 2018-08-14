@@ -32,13 +32,14 @@ import Effect (Effect)
 import Data.Either (Either(..), either, note)
 import Data.Lens (Lens', Getter', lens, view, set, setJust, over, to)
 import Data.Lens.At (at)
-import Data.List (List)
+import Data.List (List, (:))
 import Data.List as List
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
 import Data.Set (Set)
 import Data.Set as Set
+import Data.Foldable (fold)
 import Data.Traversable (sequence, traverse)
 import Data.Bitraversable (bisequence)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -105,6 +106,9 @@ someApiFunc =
 type Flow d = Event d
 type PushF d = (d -> Effect Unit)
 data PushableFlow d = PushableFlow (PushF d) (Flow d)
+-- paths in connection duplicate what is stored in the link
+data InletConnection = InletConnection OutletPath LinkId
+data OutletConnection = OutletConnection InletPath LinkId
 
 type Canceler =
     Effect Unit
@@ -156,10 +160,7 @@ type OutletDef d =
 
 infixr 6 type Map as /->
 
--- TODO: normalize network, change to plain IDs maybe, or use paths as keys,
---       they implement Eq anyway
--- TODO: try to get rid of `e` by using `forall e.` where possible (`PushableFlow` has to have
---       it in context of one call)
+
 data Network d =
     Network
         { name :: String
@@ -191,6 +192,7 @@ data Inlet d =
         InletPath
         (InletDef d)
         { flow :: PushableFlow d
+        , connections :: List InletConnection
         -- sources :: Set (DataSource d)
         }
 data Outlet d =
@@ -198,6 +200,7 @@ data Outlet d =
         OutletPath
         (OutletDef d)
         { flow :: PushableFlow d
+        , connections :: List OutletConnection
         }
 data Link = Link OutletPath InletPath
 
@@ -316,25 +319,23 @@ _inletFlow inletPath =
             \(PushableFlow _ flow) -> pure flow
 
 
-{-
-_inletSource :: forall d. InletPath -> DataSource d -> Lens' (Network d) (Maybe Unit)
-_inletSource inletPath source =
+_inletConnections :: forall d. InletPath -> Lens' (Network d) (Maybe (List InletConnection))
+_inletConnections inletPath =
     lens getter setter
     where
         inletLens = _inlet inletPath
-        sourceLens = at source
         getter nw =
             view inletLens nw
-            >>= \(Inlet _ _ { sources }) -> view sourceLens sources
+            >>= \(Inlet _ _ { connections }) -> pure connections
         setter nw val =
             over inletLens
                 (map $ \(Inlet iid idef istate) ->
                     Inlet
                         iid
                         idef
-                        istate { sources = set sourceLens val istate.sources }
+                        istate { connections = fromMaybe' (const $ List.Nil) val }
                 ) nw
--}
+
 
 _nodeOutlet :: forall d. NodePath -> OutletPath -> Lens' (Network d) (Maybe Unit)
 _nodeOutlet nodePath outletPath =
@@ -385,6 +386,23 @@ _outletFlow outletPath =
         extractFlow nw = view pFlowLens nw >>=
             \(PushableFlow _ flow) -> pure flow
 
+
+_outletConnections :: forall d. OutletPath -> Lens' (Network d) (Maybe (List OutletConnection))
+_outletConnections outletPath =
+    lens getter setter
+    where
+        outletLens = _outlet outletPath
+        getter nw =
+            view outletLens nw
+            >>= \(Outlet _ _ { connections }) -> pure connections
+        setter nw val =
+            over outletLens
+                (map $ \(Outlet oid odef ostate) ->
+                    Outlet
+                        oid
+                        odef
+                        ostate { connections = fromMaybe' (const $ List.Nil) val }
+                ) nw
 
 
 _patchLink :: forall d. PatchId -> LinkId -> Lens' (Network d) (Maybe Unit)
@@ -559,7 +577,7 @@ addInlet' nodePath def nw = do
                     inletPath
                     def
                     { flow : pushableFlow
-                    --, sources : Set.empty
+                    , connections : List.Nil
                     }
         pure $ nw
              # setJust (_inlet inletPath) newInlet
@@ -594,7 +612,9 @@ addOutlet' nodePath def nw = do
                 Outlet
                     outletPath
                     def
-                    { flow : pushableFlow }
+                    { flow : pushableFlow
+                    , connections : List.Nil
+                    }
         pure $ nw
              # setJust (_outlet outletPath) newOutlet
              # setJust (_nodeOutlet nodePath outletPath) unit
@@ -627,8 +647,13 @@ connect outletPath inletPath
     let
         subscribeAndSave :: PatchId -> (PushableFlow d /\ PushableFlow d) -> Rpd (Network d)
         subscribeAndSave patchId (outletPFlow /\ inletPFlow) = do
-            let (PushableFlow _ outletFlow) = outletPFlow
-            let (PushableFlow pushToInlet inletFlow) = inletPFlow
+            let
+                (PushableFlow _ outletFlow) = outletPFlow
+                (PushableFlow pushToInlet inletFlow) = inletPFlow
+                inletConnection = InletConnection outletPath linkId
+                outletConnection = OutletConnection inletPath linkId
+                curInletConnections = fold $ view (_inletConnections inletPath) nw
+                curOutletConnections = fold $ view (_outletConnections outletPath) nw
 
             canceler :: Canceler <- subscribe outletFlow pushToInlet
 
@@ -636,6 +661,10 @@ connect outletPath inletPath
                 pure $ nw
                      # setJust (_link linkId) newLink
                      # setJust (_patchLink patchId linkId) unit
+                     # setJust (_inletConnections inletPath)
+                            (inletConnection : curInletConnections)
+                     # setJust (_outletConnections outletPath)
+                            (outletConnection : curOutletConnections)
                      -- # note (RpdError "")
                     -- TODO: store canceler
                     -- TODO: re-subscribe `process`` function of the target node to update values including this connection
