@@ -631,22 +631,24 @@ connect
     -> InletPath
     -> Network d
     -> Rpd (Network d)
+-- FIXME: rewrite for the case of different patches
 connect outletPath inletPath
     nw@(Network nwdef nwstate@{ nodes, outlets, inlets, links }) = do
     -- let patchId = extractPatchId outletPath inletPath
-    let linkId = nextLinkId nw
-    let newLink = Link outletPath inletPath
+    let
+        linkId = nextLinkId nw
+        newLink = Link outletPath inletPath
+        oPatchId = getPatchOfOutlet outletPath
+        iPatchId = getPatchOfInlet inletPath
 
-    ePatchId :: Either RpdError PatchId <-
-        pure $ extractPatchId outletPath inletPath
     eFlows :: Either RpdError (PushableFlow d /\ PushableFlow d) <-
         pure $ (/\)
             <$> (view (_outletPFlow outletPath) nw # note (RpdError ""))
             <*> (view (_inletPFlow inletPath) nw # note (RpdError ""))
 
     let
-        subscribeAndSave :: PatchId -> (PushableFlow d /\ PushableFlow d) -> Rpd (Network d)
-        subscribeAndSave patchId (outletPFlow /\ inletPFlow) = do
+        subscribeAndSave :: (PushableFlow d /\ PushableFlow d) -> Rpd (Network d)
+        subscribeAndSave (outletPFlow /\ inletPFlow) = do
             let
                 (PushableFlow _ outletFlow) = outletPFlow
                 (PushableFlow pushToInlet inletFlow) = inletPFlow
@@ -660,11 +662,13 @@ connect outletPath inletPath
             network' :: Network d <-
                 pure $ nw
                      # setJust (_link linkId) newLink
-                     # setJust (_patchLink patchId linkId) unit
+                     # setJust (_patchLink iPatchId linkId) unit
+                     # setJust (_patchLink oPatchId linkId) unit
                      # setJust (_inletConnections inletPath)
                             (inletConnection : curInletConnections)
                      # setJust (_outletConnections outletPath)
                             (outletConnection : curOutletConnections)
+                     # setJust (_canceler linkId) canceler
                      -- # note (RpdError "")
                     -- TODO: store canceler
                     -- TODO: re-subscribe `process`` function of the target node to update values including this connection
@@ -672,21 +676,7 @@ connect outletPath inletPath
             pure $ Right $ network'
 
     either (const $ pure $ pure nw) identity
-        $ subscribeAndSave <$> ePatchId <*> eFlows
-
-    where
-        extractPatchId :: OutletPath -> InletPath -> Either RpdError PatchId
-        extractPatchId outletPath inletPath =
-            let
-                outletPatch = getPatchOfOutlet outletPath
-                inletPatch = getPatchOfInlet inletPath
-            in
-                -- FIXME: no need to check, maybe? we may show connections
-                --        to other patches as "projections" and just keep flowing;
-                --        on render, we may render the flow in the current patch
-                --        along with the data we received from other patches
-                --        intended for this patch
-                guardE inletPatch (inletPatch == outletPatch) ""
+        $ subscribeAndSave <$> eFlows
 
 
 sendToInlet
@@ -924,6 +914,8 @@ outletPath :: Int -> Int -> Int -> OutletPath
 outletPath pId nId iId = OutletPath (NodePath (PatchId pId) nId) iId
 
 
+-- FIXME: below are Lenses/Prisms
+
 getPatchOfNode :: NodePath -> PatchId
 getPatchOfNode (NodePath pId _) = pId
 
@@ -942,13 +934,6 @@ getNodeOfInlet  (InletPath nPath _) = nPath
 
 getNodeOfOutlet :: OutletPath -> NodePath
 getNodeOfOutlet  (OutletPath nPath _) = nPath
-
-
--- connect inside a Patch??
--- connect :: forall d e. Inlet d -> Outlet d -> d -> Eff ( channel :: SC.CHANNEL | e ) (SC.Channel d)
--- connect inlet outlet defaultVal = do
---     channel <- SC.channel defaultVal
---     pure channel
 
 
 unpackNodePath :: NodePath -> Array Int
