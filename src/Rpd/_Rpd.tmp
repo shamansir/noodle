@@ -137,22 +137,28 @@ data LinkId = LinkId Int
 type PatchDef d =
     { name :: String
     , nodeDefs :: List (NodeDef d)
+    -- , linkDefs :: Array LinkDef -- TODO: links partly duplicate Inlet: sources, aren't they?
+    -- TODO: maybe store Connections: Map InletPath (Array DataSource)
     }
 type NodeDef d =
     { name :: String
     , inletDefs :: List (InletDef d)
     , outletDefs :: List (OutletDef d)
     , process :: ProcessF d
+    -- , flow :: Flow (Map (Inlet d) d /\ Map (Outlet d) d)
     }
 type InletDef d =
     { label :: String
     , default :: Maybe d
     , accept :: Maybe d
-    --, adapt ::
+    -- , sources :: Array (DataSource d)
+    -- Maybe (AdaptF d)
     }
 type OutletDef d =
     { label :: String
+    -- , flow :: Maybe (Flow d)
     }
+-- type LinkDef = (Int /\ Int) /\ (Int /\ Int)
 
 infixr 6 type Map as /->
 
@@ -161,7 +167,7 @@ infixr 6 type Map as /->
 -- TODO: try to get rid of `e` by using `forall e.` where possible (`PushableFlow` has to have
 --       it in context of one call)
 data Network d =
-    Network
+    Network -- (NetworkDef d)
         { name :: String
         , patchDefs :: List (PatchDef d)
         }
@@ -176,8 +182,9 @@ data Patch d =
     Patch
         PatchId
         (PatchDef d)
-        { nodes :: Set NodePath
-        , links :: Set LinkId
+        { nodes :: Set NodePath -- FIXME: all Lists should be sets
+        , links :: Set LinkId -- TODO: links partly duplicate Inlet: sources, aren't they?
+        -- TODO: maybe store Connections: Map InletPath (Array DataSource)
         }
 data Node d =
     Node
@@ -186,13 +193,19 @@ data Node d =
         { inlets :: Set InletPath
         , outlets :: Set OutletPath
         }
+-- S.constant is not able to send values afterwards, so we store the default value inside
+-- TODO: inlet sources should be a set of outletPaths, so outlet-inlet pairs would be unique
 data Inlet d =
     Inlet
         InletPath
         (InletDef d)
         { flow :: PushableFlow d
         -- sources :: Set (DataSource d)
+        -- , accept :: d
+        -- Maybe (AdaptF d)
         }
+
+--data Inlet d = Inlet String (Maybe (AdaptF d))
 data Outlet d =
     Outlet
         OutletPath
@@ -430,11 +443,56 @@ _canceler linkId =
                 nwstate { linkCancelers = set cancelerLens val nwstate.linkCancelers }
 
 
-makePushableFlow :: forall d. Effect (PushableFlow d)
+
+-- data NormalizedNetwork d =
+--     NormalizedNetwork
+--         (Array (Patch' d))
+--         (Array (Node' d))
+--         (Array (Inlet' d))
+--         (Array (Outlet' d))
+--         (Array (Link' d))
+
+-- type WithId e a = Eff ( random :: RANDOM | e ) a
+
+
+-- data DataMsg d
+--     = FromInlet InletPath d
+--     | FromOutlet OutletPath d
+
+-- may be it will make more sense when we'll do subscriptions before passing network to rederer
+-- also, may be change to ehm... `UnpreparedNetwork`` and then the subscriber gets the `Real` one?
+-- is it the place where RPD effect should be added to the result, like with subscriptions?
+-- run :: forall d e. (Rpd d e -> RpdEff e Unit) -> Rpd d e -> RpdEff e Unit
+-- run renderer nw = renderer nw
+
+
+makePushableFlow :: forall d e. Effect (PushableFlow d)
 makePushableFlow = do
     { push, event } <- create
     pure $ PushableFlow push event
 
+{-
+emptyNetwork :: forall d. Network d
+emptyNetwork = Network { patches : [] }
+
+
+emptyPatch :: forall d. PatchId -> Patch d
+emptyPatch id =
+    Patch id
+        { name : }
+        { patches : [] }
+-}
+
+
+-- network :: forall d. Array (Patch d) -> Network d
+-- network lazyPatches =
+--     Network { patches }
+--     where
+--         patches = mapWithIndex
+--             (\idx lazyPatch -> lazyPatch $ PatchId idx) lazyPatches
+
+
+-- TODO: use lenses below
 
 nextPatchId :: forall d. Network d -> PatchId
 nextPatchId (Network _ { patches }) =
@@ -629,6 +687,7 @@ connect outletPath inletPath
         subscribeAndSave patchId (outletPFlow /\ inletPFlow) = do
             let (PushableFlow _ outletFlow) = outletPFlow
             let (PushableFlow pushToInlet inletFlow) = inletPFlow
+            --let newSource = OutletSource outletPath outletFlow
 
             canceler :: Canceler <- subscribe outletFlow pushToInlet
 
@@ -636,6 +695,7 @@ connect outletPath inletPath
                 pure $ nw
                      # setJust (_link linkId) newLink
                      # setJust (_patchLink patchId linkId) unit
+                     -- # setJust (_inletSource inletPath newSource) unit
                      -- # note (RpdError "")
                     -- TODO: store canceler
                     -- TODO: re-subscribe `process`` function of the target node to update values including this connection
@@ -781,6 +841,113 @@ subscribeAllData oHandler iHandler nw =
     bisequence $ subscribeAllOutlets oHandler nw /\ subscribeAllInlets iHandler nw
 
 
+{-
+node :: forall d. String -> Array (Inlet d) -> Array (Outlet d) -> Node d
+node name lazyInlets lazyOutlets =
+    \nodePath ->
+        let
+            inlets = mapWithIndex
+                (\idx lazyInlet ->
+                    lazyInlet (InletPath nodePath idx)) lazyInlets
+            outlets = mapWithIndex
+                (\idx lazyOutlet ->
+                    lazyOutlet (OutletPath nodePath idx)) lazyOutlets
+        in
+            Node
+                { path : nodePath
+                , name
+                , inlets
+                , outlets
+                , process : const Map.empty
+                }
+
+inlet :: forall d. String -> Inlet d
+inlet label =
+    inlet_ label Nothing []
+
+
+inlet' :: forall d. String -> Flow d -> Inlet d
+inlet' label dataSource =
+    inlet_ label Nothing [ UserSource dataSource ]
+
+
+-- should not be exposed
+inlet_ :: forall d. String -> Maybe d -> Array (DataSource d) -> Inlet d
+inlet_ label maybeDefault sources =
+    \inletPath ->
+        Inlet
+            { path : inletPath
+            , label
+            , default : maybeDefault
+            , sources
+            }
+
+
+inletWithDefault :: forall d. String -> d -> Inlet d
+inletWithDefault label defaultVal =
+    -- inlet_ label defaultVal $ S.constant defaultVal
+    inlet_ label (Just defaultVal) [ ]
+
+
+inletWithDefault' :: forall d. String -> d -> Flow d -> Inlet d
+inletWithDefault' label defaultVal dataSource  =
+    inlet_ label (Just defaultVal) [ UserSource dataSource ]
+
+
+outlet :: forall d. String -> Outlet d
+outlet label =
+    \outletPath ->
+        Outlet
+            { path : outletPath
+            , label
+            , flow : Nothing
+            }
+
+
+-- TODO: remove, outlets should only produce values from `process` function
+outlet' :: forall d. String -> Flow d -> Outlet d
+outlet' label flow =
+    \outletPath ->
+        Outlet
+            { path : outletPath
+            , label
+            , flow : Just flow
+            }
+
+-}
+
+{-
+findTopConnection :: forall d. InletPath -> Network d -> Maybe OutletPath
+findTopConnection inletPath network =
+    findInlet inletPath network >>=
+        (\(Inlet { sources }) -> findMap (\src ->
+                case src of
+                    UserSource _ -> Nothing
+                    OutletSource outletPath _ -> Just outletPath
+            ) sources
+        )
+
+findTopSource :: forall d. InletPath -> Network d -> Maybe (DataSource d)
+findTopSource inletPath network =
+    findInlet inletPath network >>= \(Inlet { sources }) -> head sources
+
+
+findSource :: forall d. OutletPath -> InletPath -> Network d -> Maybe (DataSource d)
+findSource outletPath inletPath network =
+    findInlet inletPath network >>=
+        (\(Inlet { sources }) -> findMap (\src ->
+                -- OutletSource outletPath' _ <- src
+                -- pure $ if (outletPath' == outletPath) then src else unit
+                case src of
+                    UserSource _ -> Nothing
+                    OutletSource outletPath' _ ->
+                        if (outletPath' == outletPath) then Just src
+                        else Nothing
+            ) sources
+        )
+-}
+
+
 isNodeInPatch :: NodePath -> PatchId -> Boolean
 isNodeInPatch (NodePath patchId' _) patchId =
     patchId == patchId'
@@ -810,6 +977,27 @@ notInTheSameNode :: InletPath -> OutletPath -> Boolean
 notInTheSameNode (InletPath iNodePath _) (OutletPath oNodePath _) =
     iNodePath /= oNodePath
 
+
+{-
+findPatch :: forall d. PatchId -> Network d -> Maybe (Patch d)
+findPatch (PatchId index) (Network { patches }) =
+    patches !! index
+
+
+findNode :: forall d. NodePath -> Network d -> Maybe (Node d)
+findNode (NodePath patchId index) network =
+    findPatch patchId network >>= (\(Patch { nodes }) -> nodes !! index)
+
+
+findInlet :: forall d. InletPath -> Network d -> Maybe (Inlet d)
+findInlet (InletPath nodePath index) network =
+    findNode nodePath network >>= (\(Node { inlets }) -> inlets !! index)
+
+
+findOutlet :: forall d. OutletPath -> Network d -> Maybe (Outlet d)
+findOutlet (OutletPath nodePath index) network =
+    findNode nodePath network >>= (\(Node { outlets }) -> outlets !! index)
+-}
 
 updatePatch
     :: forall d
@@ -874,10 +1062,134 @@ updateOutlet updater path@(OutletPath nodePath _) (Network def state@{ outlets }
             state { outlets = outlets' }
 
 
+-- getInletLabel :: forall d. Node d -> InletPath -> Maybe String
+-- getInletLabel (Node { inlets }) path' =
+--     Array.filter (\(Inlet { path }) -> path == path') path inlets <#> \(Inlet { label }) -> label
+
+
+-- processWith' :: forall d. ProcessF' d -> LazyNode d -> LazyNode d
+-- processWith' processF =
+--     processWith f
+--     where
+--         f inputs = Map.mapWithKey processF inputs
+
+
+-- processWith'' :: forall d. ProcessF'' d -> d -> LazyNode d -> LazyNode d
+-- processWith'' processF default =
+--     processWith f
+--     where
+--         f inputs = map (fromMaybe default)
+--                     $ Map.filter isJust
+--                     $ Map.mapWithKey processF inputs
+
+
+-- processWith''' :: forall d. ProcessF''' d -> d -> LazyNode d -> LazyNode d
+-- processWith''' processF default =
+--     processWith f
+--     where
+--         f inputs = map (fromMaybe default)
+--                     $ Map.filter isJust
+--                     $ Map.mapWithKey processF inputs
+
+
+{-
+connect
+    :: forall d
+     . OutletPath
+    -> InletPath
+    -> Patch d
+    -> Patch d
+connect outletPath inletPath patchF =
+    -- TODO: implement
+    patchF
+-}
+
+{-
+connect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
+connect' outletPath inletPath network = do
+    outlet <- findOutlet outletPath network
+    let (Outlet { flow }) = outlet
+    flow' <- flow
+    let
+        -- flow' = fromMaybe' (\_ -> ) flow
+        patchId = getPatchOfInlet inletPath
+        newLink = Link outletPath inletPath
+        network' = updatePatch
+                    (\(Patch patch@{ links }) -> Patch patch { links = newLink : links })
+                    patchId
+                    network
+        newSource = OutletSource outletPath flow'
+    pure $ updateInlet
+                (\(Inlet inlet@{ sources }) ->
+                    Inlet inlet { sources = newSource : sources })
+                inletPath
+                network'
+-}
+
+
 disconnect :: forall d. Outlet d -> Inlet d -> Patch d -> Patch d
 disconnect outlet inlet patch =
     patch -- FIXME: implement
 
+{-
+disconnect' :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
+disconnect' outletPath inletPath network = do
+    network' <- removeLink outletPath inletPath network
+    outlet <- findOutlet outletPath network'
+    inlet <- findInlet inletPath network'
+    -- source <- findSource outletPath inletPath network'
+    let
+        isFromOutlet oPath1 (OutletSource oPath2 _) = oPath1 == oPath2
+        isFromOutlet _ _ = false
+    -- TODO: optimize, do not search through network several times
+    pure $ updateInlet
+                (\(Inlet inlet@{ sources }) ->
+                    -- Inlet inlet { sources = deleteBy cmpSources source sources })
+                    Inlet inlet { sources = filter (not $ isFromOutlet outletPath) sources })
+                inletPath
+                network'
+-}
+
+{-
+disconnectTop :: forall d. InletPath -> Network d -> Maybe (Network d)
+disconnectTop inletPath network =
+    -- TODO: optimize with searching last and updating simultaneously
+    findTopConnection inletPath network
+        >>= (\outletPath -> disconnect' outletPath inletPath network)
+-}
+
+-- disconnectLast' :: forall d. InletPath -> Network d -> Maybe (Network d)
+
+-- getConnections :: Node -> (Map OutletPath InletPath) or (Array Link)
+
+-- getConnections :: Patch -> (Map OutletPath InletPath) or (Array Link)
+
+-- TODO: findLink :: forall d. InletPath -> Network d -> Maybe (Link d)
+
+{-
+removeLink :: forall d. OutletPath -> InletPath -> Network d -> Maybe (Network d)
+removeLink outletPath inletPath network = do
+    let
+        oPatchId = getPatchOfOutlet outletPath
+        iPatchId = getPatchOfInlet inletPath
+    patchId <- if oPatchId == iPatchId then Just oPatchId else Nothing
+    let
+        network' = updatePatch
+                    (\(Patch patch@{ links }) ->
+                        Patch patch { links = delete (Link outletPath inletPath) links })
+                    patchId
+                    network
+    pure network'
+-}
+
+
+{-
+getFlowOf :: forall d. DataSource d -> Flow d
+getFlowOf dataSource =
+    case dataSource of
+        UserSource flow -> flow
+        OutletSource _ flow -> flow
+-}
 
 patchId :: Int -> PatchId
 patchId = PatchId
