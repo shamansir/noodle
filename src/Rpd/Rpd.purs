@@ -701,21 +701,21 @@ disconnectAll outletPath inletPath
         newInletConnections = curInletConnections # List.filter iConnectionForDeletion
         newOutletConnections = curOutletConnections # List.filter oConnectionForDeletion
 
-    network' :: Network d <-
-        pure $ foldr (\linkId nw ->
-                 nw # set (_link linkId) Nothing
-                    # set (_patchLink iPatchId linkId) Nothing
-                    # set (_patchLink oPatchId linkId) Nothing
-                    # set (_canceler linkId) Nothing
-               ) nw linksForDeletion
-                -- FIXME: execute cancelers
-
-                -- # note (RpdError "")
-            -- TODO: un-subscribe `process`` function of the target node to update values including this connection
-
-    pure $ (network'
+    pure $ Right $
+        (
+            foldr (\linkId nw ->
+                nw # set (_link linkId) Nothing
+                # set (_patchLink iPatchId linkId) Nothing
+                # set (_patchLink oPatchId linkId) Nothing
+                # set (_canceler linkId) Nothing
+            ) nw linksForDeletion
             # setJust (_inletConnections inletPath) newInletConnections
-            # setJust (_outletConnections outletPath) newOutletConnections)
+            # setJust (_outletConnections outletPath) newOutletConnections
+            -- # note (RpdError "")
+        )
+        -- FIXME: execute cancelers
+
+    -- TODO: un-subscribe `process`` function of the target node to update values including this connection
 
 -- TODO: disconnectTop
 
