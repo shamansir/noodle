@@ -8,7 +8,7 @@ module Rpd
     , Canceler, Subscriber, PushableFlow
     --, emptyNetwork
     --, network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
-    , connect, disconnect --, disconnectTop
+    , connect, disconnectAll --, disconnectTop
     , addPatch, addPatch', addNode, addNode', addInlet, addInlet', addOutlet, addOutlet'
     , subscribeInlet, {- subscribeOutlet, -} subscribeAllData, subscribeAllInlets, subscribeAllOutlets
     , sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
@@ -39,7 +39,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
 import Data.Set (Set)
 import Data.Set as Set
-import Data.Foldable (fold)
+import Data.Foldable (fold, foldr)
 import Data.Traversable (sequence, traverse)
 import Data.Bitraversable (bisequence)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -178,7 +178,7 @@ data Patch d =
         PatchId
         (PatchDef d)
         { nodes :: Set NodePath
-        , links :: Set LinkId
+        , links :: Set LinkId -- do we need them here? just filter network links by patch
         }
 data Node d =
     Node
@@ -633,7 +633,7 @@ connect
     -> Rpd (Network d)
 -- FIXME: rewrite for the case of different patches
 connect outletPath inletPath
-    nw@(Network nwdef nwstate@{ nodes, outlets, inlets, links }) = do
+    nw@(Network nwdef nwstate@{  }) = do
     -- let patchId = extractPatchId outletPath inletPath
     let
         linkId = nextLinkId nw
@@ -670,13 +670,56 @@ connect outletPath inletPath
                             (outletConnection : curOutletConnections)
                      # setJust (_canceler linkId) canceler
                      -- # note (RpdError "")
-                    -- TODO: store canceler
                     -- TODO: re-subscribe `process`` function of the target node to update values including this connection
 
             pure $ Right $ network'
 
     either (const $ pure $ pure nw) identity
         $ subscribeAndSave <$> eFlows
+
+
+disconnectAll
+    :: forall d
+     . OutletPath
+    -> InletPath
+    -> Network d
+    -> Rpd (Network d)
+disconnectAll outletPath inletPath
+    nw@(Network nwdef nwstate@{ links }) = do
+    -- let patchId = extractPatchId outletPath inletPath
+    let
+        linkForDeletion (Link outletPath' inletPath') =
+            (outletPath' == outletPath) && (inletPath' == inletPath)
+        iConnectionForDeletion (InletConnection outletPath' _) = outletPath' == outletPath
+        oConnectionForDeletion (OutletConnection inletPath' _) = inletPath' == inletPath
+        linksForDeletion = Map.keys $ links # Map.filter linkForDeletion
+        oPatchId = getPatchOfOutlet outletPath
+        iPatchId = getPatchOfInlet inletPath
+
+        curInletConnections = fold $ view (_inletConnections inletPath) nw
+        curOutletConnections = fold $ view (_outletConnections outletPath) nw
+        newInletConnections = curInletConnections # List.filter iConnectionForDeletion
+        newOutletConnections = curOutletConnections # List.filter oConnectionForDeletion
+
+    network' :: Network d <-
+        pure $ foldr (\linkId nw ->
+                 nw # set (_link linkId) Nothing
+                    # set (_patchLink iPatchId linkId) Nothing
+                    # set (_patchLink oPatchId linkId) Nothing
+                    # set (_canceler linkId) Nothing
+               ) nw linksForDeletion
+                -- FIXME: execute cancelers
+
+                -- # note (RpdError "")
+            -- TODO: un-subscribe `process`` function of the target node to update values including this connection
+
+    pure $ (network'
+            # setJust (_inletConnections inletPath) newInletConnections
+            # setJust (_outletConnections outletPath) newOutletConnections)
+
+-- TODO: disconnectTop
+
+-- TODO: disconnectTopOf (OutletPath /\ InletPath)
 
 
 sendToInlet
@@ -891,11 +934,6 @@ updateOutlet updater path@(OutletPath nodePath _) (Network def state@{ outlets }
         Network
             def
             state { outlets = outlets' }
-
-
-disconnect :: forall d. Outlet d -> Inlet d -> Patch d -> Patch d
-disconnect outlet inlet patch =
-    patch -- FIXME: implement
 
 
 patchId :: Int -> PatchId
