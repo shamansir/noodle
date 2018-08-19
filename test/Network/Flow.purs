@@ -9,13 +9,14 @@ import Effect.Ref as Ref
 import Effect.Aff (Aff, delay)
 import Effect.Class.Console (log)
 
-import Data.Either (Either, either)
+import Data.Either (Either, either, isRight)
 import Data.Array (snoc, replicate, concat)
 import Data.List as List
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Map as Map
+import Data.Traversable (sequence)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\), type (/\))
 
@@ -287,7 +288,7 @@ spec = do
 
       pure unit
 
-    it "connecting some outlet having its flow to some inlet directs this existing flow to this inlet" $ do
+    it "connecting some outlet having its own flow to some inlet directs this existing flow to this inlet" $ do
       let
         rpd :: MyRpd
         rpd =
@@ -314,7 +315,42 @@ spec = do
 
       pure unit
 
-    pending "disconnecting some outlet from some inlet makes data flow between them stop"
+    it "disconnecting some outlet from some inlet makes the data flow between them stop" $ do
+      let
+        rpd :: MyRpd
+        rpd =
+          R.init "network"
+            </> R.addPatch "patch"
+            </> R.addNode (patchId 0) "node1"
+            </> R.addOutlet (nodePath 0 0) "outlet"
+            </> R.addNode (patchId 0) "node2"
+            </> R.addInlet (nodePath 0 1) "inlet"
+
+      rpd # withRpd \nw -> do
+          nw' /\ collectedData <- collectDataAfter'
+            (Milliseconds 100.0)
+            nw
+            $ do
+              -- NB:we're not cancelling this data flow between checks
+              _ <- nw # R.streamToOutlet (outletPath 0 0 0) (R.flow $ const Notebook <$> interval 30)
+              nwE <- nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
+              -- if isRight nwE then log "NwE is Right" else log "NwE is Left"
+              let nw' = either (const nw) identity nwE
+              pure $ nw' /\ postpone [ ]
+          collectedData `shouldContain`
+            (InletData (inletPath 0 1 0) Notebook)
+          collectedData' <- collectDataAfter
+            (Milliseconds 100.0)
+            nw'
+            $ do
+              nwE <- nw' # R.disconnectAll (outletPath 0 0 0) (inletPath 0 1 0)
+              pure $ postpone [ ]
+          collectedData' `shouldContain`
+            (OutletData (outletPath 0 0 0) Notebook)
+          collectedData' `shouldNotContain`
+            (InletData (inletPath 0 1 0) Notebook)
+          pure unit
+
 
     pending "default value of the inlet is sent on connection"
 
@@ -384,6 +420,7 @@ collectDataAfter
   -> Effect (Array R.Canceler)
   -> Aff (TracedFlow d)
 collectDataAfter period nw afterF = do
+  -- snd $ collectDataAfter' period nw (unit /\ afterF)
   target /\ cancelers <- liftEffect $ do
     target <- Ref.new []
     cancelers <- do
@@ -405,6 +442,44 @@ collectDataAfter period nw afterF = do
     foreachE cancelers identity
     foreachE userEffects identity
     Ref.read target
+  where
+    foldCancelers ::
+      (R.OutletPath /-> R.Canceler) /\ (R.InletPath /-> R.Canceler)
+      -> Array R.Canceler
+    foldCancelers (outletsMap /\ inletsMap) =
+      List.toUnfoldable $ Map.values outletsMap <> Map.values inletsMap
+
+
+collectDataAfter'
+  :: forall d a
+   . (Show d)
+  => Milliseconds
+  -> R.Network d
+  -> Effect (a /\ Array R.Canceler)
+  -> Aff (a /\ TracedFlow d)
+collectDataAfter' period nw afterF = do
+  target /\ cancelers <- liftEffect $ do
+    target <- Ref.new []
+    cancelers <- do
+      let
+        onInletData path {- source -} d = do
+          curData <- Ref.read target
+          Ref.write (curData +> InletData path d) target
+          pure unit
+        onOutletData path d = do
+          curData <- Ref.read target
+          Ref.write (curData +> OutletData path d) target
+          pure unit
+      cancelers <- R.subscribeAllData onOutletData onInletData nw
+      pure $ foldCancelers cancelers
+    pure $ target /\ cancelers
+  nw' /\ userEffects <- liftEffect $ afterF
+  delay period
+  flow <- liftEffect $ do
+    foreachE cancelers identity
+    foreachE userEffects identity
+    Ref.read target
+  pure $ nw' /\ flow
   where
     foldCancelers ::
       (R.OutletPath /-> R.Canceler) /\ (R.InletPath /-> R.Canceler)

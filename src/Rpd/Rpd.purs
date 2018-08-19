@@ -36,13 +36,14 @@ import Data.List (List, (:))
 import Data.List as List
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
+import Data.Maybe (Maybe(..), fromMaybe, fromMaybe', maybe)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.Foldable (fold, foldr)
-import Data.Traversable (sequence, traverse)
+import Data.Traversable (sequence, traverse, traverse_)
 import Data.Bitraversable (bisequence)
 import Data.Tuple.Nested ((/\), type (/\))
+import Effect.Class.Console (log)
 
 import FRP.Event (Event, subscribe, create)
 
@@ -620,11 +621,6 @@ addOutlet' nodePath def nw = do
              # setJust (_nodeOutlet nodePath outletPath) unit
 
 
-guardE :: forall a. a -> Boolean -> String -> Either RpdError a
-guardE v check errorText =
-    if check then pure v else Left (RpdError errorText)
-
-
 connect
     :: forall d
      . OutletPath
@@ -690,9 +686,10 @@ disconnectAll outletPath inletPath
     let
         linkForDeletion (Link outletPath' inletPath') =
             (outletPath' == outletPath) && (inletPath' == inletPath)
+        linksForDeletion = Map.keys $ links # Map.filter linkForDeletion
+
         iConnectionForDeletion (InletConnection outletPath' _) = outletPath' == outletPath
         oConnectionForDeletion (OutletConnection inletPath' _) = inletPath' == inletPath
-        linksForDeletion = Map.keys $ links # Map.filter linkForDeletion
         oPatchId = getPatchOfOutlet outletPath
         iPatchId = getPatchOfInlet inletPath
 
@@ -701,19 +698,22 @@ disconnectAll outletPath inletPath
         newInletConnections = curInletConnections # List.filter iConnectionForDeletion
         newOutletConnections = curOutletConnections # List.filter oConnectionForDeletion
 
+    _ <- traverse_
+            (\linkId -> fromMaybe (pure unit) $ view (_canceler linkId) nw)
+            linksForDeletion
+
     pure $ Right $
         (
             foldr (\linkId nw ->
                 nw # set (_link linkId) Nothing
-                # set (_patchLink iPatchId linkId) Nothing
-                # set (_patchLink oPatchId linkId) Nothing
-                # set (_canceler linkId) Nothing
+                   # set (_patchLink iPatchId linkId) Nothing
+                   # set (_patchLink oPatchId linkId) Nothing
+                   # set (_canceler linkId) Nothing
             ) nw linksForDeletion
             # setJust (_inletConnections inletPath) newInletConnections
             # setJust (_outletConnections outletPath) newOutletConnections
             -- # note (RpdError "")
         )
-        -- FIXME: execute cancelers
 
     -- TODO: un-subscribe `process`` function of the target node to update values including this connection
 
@@ -1002,6 +1002,9 @@ instance showOutletPath :: Show OutletPath where
 
 instance showLinkId :: Show LinkId where
     show (LinkId id) = "L" <> show id
+
+instance showLink :: Show Link where
+    show (Link outletPath inletPath) = "Link " <> show outletPath <> " -> " <> show inletPath
 
 
 instance eqPatchId :: Eq PatchId where
