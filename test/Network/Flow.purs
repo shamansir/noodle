@@ -334,7 +334,6 @@ spec = do
               -- NB:we're not cancelling this data flow between checks
               _ <- nw # R.streamToOutlet (outletPath 0 0 0) (R.flow $ const Notebook <$> interval 30)
               nwE <- nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
-              -- if isRight nwE then log "NwE is Right" else log "NwE is Left"
               let nw' = either (const nw) identity nwE
               pure $ nw' /\ postpone [ ]
           collectedData `shouldContain`
@@ -343,7 +342,7 @@ spec = do
             (Milliseconds 100.0)
             nw'
             $ do
-              nwE <- nw' # R.disconnectAll (outletPath 0 0 0) (inletPath 0 1 0)
+              _ <- nw' # R.disconnectAll (outletPath 0 0 0) (inletPath 0 1 0)
               pure $ postpone [ ]
           collectedData' `shouldContain`
             (OutletData (outletPath 0 0 0) Notebook)

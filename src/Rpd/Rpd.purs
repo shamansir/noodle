@@ -42,10 +42,13 @@ import Data.Set as Set
 import Data.Foldable (fold, foldr)
 import Data.Traversable (sequence, traverse, traverse_)
 import Data.Bitraversable (bisequence)
+import Data.Tuple (curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
+
 import Effect.Class.Console (log)
 
-import FRP.Event (Event, subscribe, create)
+import FRP.Event (Event)
+import FRP.Event as E
 
 
 --import Rpd.Flow as Flow
@@ -173,6 +176,7 @@ data Network d =
         , outlets :: OutletPath /-> Outlet d
         , links :: LinkId /-> Link
         , linkCancelers :: LinkId /-> Canceler
+        , processCancelers :: InletPath /-> Canceler
         }
 data Patch d =
     Patch
@@ -187,6 +191,8 @@ data Node d =
         (NodeDef d)
         { inlets :: Set InletPath
         , outlets :: Set OutletPath
+        , flow :: PushableFlow (InletPath /\ d)
+        , processFlow :: Flow (InletPath /-> d)
         }
 data Inlet d =
     Inlet
@@ -222,6 +228,7 @@ emptyNetwork name =
         , outlets : Map.empty
         , links : Map.empty
         , linkCancelers : Map.empty
+        , processCancelers : Map.empty
         }
 
 
@@ -449,9 +456,21 @@ _canceler linkId =
                 nwstate { linkCancelers = set cancelerLens val nwstate.linkCancelers }
 
 
+_processCanceler :: forall d. InletPath -> Lens' (Network d) (Maybe Canceler)
+_processCanceler inletPath =
+    lens getter setter
+    where
+        cancelerLens = at inletPath
+        getter (Network _ { processCancelers }) = view cancelerLens processCancelers
+        setter (Network nwdef nwstate) val =
+            Network
+                nwdef
+                nwstate { processCancelers = set cancelerLens val nwstate.processCancelers }
+
+
 makePushableFlow :: forall d. Effect (PushableFlow d)
 makePushableFlow = do
-    { push, event } <- create
+    { push, event } <- E.create
     pure $ PushableFlow push event
 
 
@@ -533,7 +552,9 @@ addNode'
     -> NodeDef d
     -> Network d
     -> Rpd (Network d)
-addNode' patchId def nw =
+addNode' patchId def nw = do
+    dataPFlow@(PushableFlow _ dataFlow) <- makePushableFlow
+    let processFlow = makeProcessFlow dataFlow
     pure $ do
         nodePath <- nextNodePath patchId nw
         let
@@ -541,10 +562,19 @@ addNode' patchId def nw =
                 Node
                     nodePath
                     def
-                    { inlets : Set.empty, outlets : Set.empty }
+                    { inlets : Set.empty
+                    , outlets : Set.empty
+                    , flow : dataPFlow
+                    , processFlow : processFlow
+                    }
         pure $ nw
              # setJust (_node nodePath) newNode
              # setJust (_patchNode patchId nodePath) unit
+
+
+makeProcessFlow :: forall d. Flow (InletPath /\ d) -> Flow (InletPath /-> d)
+makeProcessFlow dataFlow =
+    E.fold (uncurry Map.insert) dataFlow Map.empty
 
 
 addInlet
@@ -634,6 +664,7 @@ connect outletPath inletPath
     let
         linkId = nextLinkId nw
         newLink = Link outletPath inletPath
+        iNodePath = getNodeOfInlet inletPath
         oPatchId = getPatchOfOutlet outletPath
         iPatchId = getPatchOfInlet inletPath
 
@@ -653,7 +684,9 @@ connect outletPath inletPath
                 curInletConnections = fold $ view (_inletConnections inletPath) nw
                 curOutletConnections = fold $ view (_outletConnections outletPath) nw
 
-            canceler :: Canceler <- subscribe outletFlow pushToInlet
+            linkCanceler :: Canceler <- E.subscribe outletFlow pushToInlet
+            -- FIXME: just do that when we add inlet to the node
+            iProcessCanceler :: Canceler <- E.subscribe inletFlow pushToNodeData
 
             network' :: Network d <-
                 pure $ nw
@@ -664,7 +697,8 @@ connect outletPath inletPath
                             (inletConnection : curInletConnections)
                      # setJust (_outletConnections outletPath)
                             (outletConnection : curOutletConnections)
-                     # setJust (_canceler linkId) canceler
+                     # setJust (_canceler linkId) linkCanceler
+                     # setJust (_processCanceler inletPath) iProcessCanceler
                      -- # note (RpdError "")
                     -- TODO: re-subscribe `process`` function of the target node to update values including this connection
 
@@ -746,7 +780,7 @@ streamToInlet
 streamToInlet inletPath flow nw = do
     sequence
         $ view (_inletPFlow inletPath) nw # note (RpdError "")
-            >>= \(PushableFlow push _) -> pure $ subscribe flow push
+            >>= \(PushableFlow push _) -> pure $ E.subscribe flow push
 
 
 sendToOutlet
@@ -773,7 +807,7 @@ streamToOutlet
 streamToOutlet outletPath flow nw = do
     sequence
         $ view (_outletPFlow outletPath) nw # note (RpdError "")
-            >>= \(PushableFlow push _) -> pure $ subscribe flow push
+            >>= \(PushableFlow push _) -> pure $ E.subscribe flow push
 
 
 subscribeInlet
@@ -788,7 +822,7 @@ subscribeInlet inletPath handler nw =
         (flowE :: Either RpdError (Flow d)) =
             view (_inletFlow inletPath) nw # note (RpdError "")
         (subE :: Either RpdError Subscriber) =
-            (handler # (flip $ subscribe)) <$> flowE
+            (handler # (flip $ E.subscribe)) <$> flowE
 
 subscribeOutlet
     :: forall d
@@ -802,7 +836,7 @@ subscribeOutlet outletPath handler nw =
         (flowE :: Either RpdError (Flow d)) =
             view (_outletFlow outletPath) nw # note (RpdError "")
         (subE :: Either RpdError Subscriber) =
-            (handler # (flip $ subscribe)) <$> flowE
+            (handler # (flip $ E.subscribe)) <$> flowE
 
 
 subscribeAllInlets
@@ -816,7 +850,7 @@ subscribeAllInlets handler (Network _ { inlets }) =
         sub :: Inlet d -> Subscriber
         sub (Inlet inletPath _ { flow }) =
             case flow of
-                PushableFlow _ fl -> subscribe fl $ handler inletPath
+                PushableFlow _ fl -> E.subscribe fl $ handler inletPath
 
 
 subscribeAllOutlets
@@ -830,7 +864,7 @@ subscribeAllOutlets handler (Network _ { outlets }) =
         sub :: Outlet d -> Subscriber
         sub (Outlet outletPath _ { flow }) =
             case flow of
-                PushableFlow _ fl -> subscribe fl $ handler outletPath
+                PushableFlow _ fl -> E.subscribe fl $ handler outletPath
 
 
 subscribeAllData
