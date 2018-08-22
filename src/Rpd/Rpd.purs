@@ -1,6 +1,6 @@
 module Rpd
     ( Rpd, RpdError, init
-    , (</>), type (/->), rpdAp, run, emptyNetwork
+    , {- (</>), -} type (/->), {- rpdAp, -} run, emptyNetwork
     --, RpdOp, RpdEffOp
     , Flow, flow
     , Network, Patch, Node, Inlet, Outlet, Link
@@ -48,6 +48,8 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Effect.Class.Console (log)
 
+import Control.Monad.Except.Trans (ExceptT, runExceptT)
+
 import FRP.Event (Event)
 import FRP.Event as E
 
@@ -61,12 +63,13 @@ data RpdError = RpdError String
 
 type RpdOp a = Either RpdError a
 --type RpdEffOp e a = RpdEff e (RpdOp e a)
-type Rpd a = Effect (Either RpdError a)
+type Rpd a = ExceptT RpdError Effect a
 -- type Rpd d e = ContT (Either RpdError (Network d e)) (Eff (RpdEffE e)) (Network d e)
 -- newtype ContT r m a = ContT ((a -> m r) -> m r)
 
 
-infixl 1 rpdAp as </> -- FIXME: can be replaced with proper instances?
+{- infixl 1 rpdAp as </> -}
+-- FIXME: can be replaced with proper instances?
 -- other options: └, ~>, ...
 
 
@@ -77,7 +80,7 @@ run
     -> Rpd (Network d)
     -> Effect Unit
 run onError onSuccess rpd =
-    rpd >>= either onError onSuccess
+    runExceptT rpd >>= either onError onSuccess
     -- FIXME: we should also call all the cancelers left in the network, before "exiting"
 
 
@@ -86,17 +89,17 @@ run onError onSuccess rpd =
 -- (a -> m r) -> m r
 -- (a -> Eff (Except err a)) -> Eff (Except err a)
 -- ContT (Except err a) Eff a
-rpdAp :: forall a b. Rpd a -> (a -> Rpd b) -> Rpd b
-rpdAp eff f =
-    eff >>= either (pure <<< Left) f
+-- rpdAp :: forall a b. Rpd a -> (a -> Rpd b) -> Rpd b
+-- rpdAp eff f =
+--     eff >>= either (pure <<< Left) f
 
 
-someApiFunc :: forall d. Rpd (Network d)
-someApiFunc =
-    init "t"
-        </> addPatch "foo"
-        </> addNode (PatchId 0) "test1"
-        </> addNode (PatchId 0) "test2"
+-- someApiFunc :: forall d. Rpd (Network d)
+-- someApiFunc =
+--     init "t"
+--         </> addPatch "foo"
+--         </> addNode (PatchId 0) "test1"
+--         </> addNode (PatchId 0) "test2"
 
 
 -- instance functorRpdOp :: Functor (RpdOp d) where
@@ -214,7 +217,7 @@ data Link = Link OutletPath InletPath
 
 
 init :: forall d. String -> Rpd (Network d)
-init = pure <<< pure <<< emptyNetwork
+init = pure <<< emptyNetwork
 
 
 emptyNetwork :: forall d. String -> Network d
@@ -520,7 +523,7 @@ addPatch'
     -> Network d
     -> Rpd (Network d)
 addPatch' patchDef nw =
-    pure $ pure $ setJust (_patch patchId) newPatch nw
+    pure $ setJust (_patch patchId) newPatch nw
     where
         patchId = nextPatchId nw
         newPatch =
@@ -843,6 +846,7 @@ subscribeOutlet outletPath handler nw =
             view (_outletFlow outletPath) nw # note (RpdError "")
         (subE :: Either RpdError Subscriber) =
             (handler # (flip $ E.subscribe)) <$> flowE
+        -- MonadTrans lift :: m a -> ExceptT e m a
 
 
 subscribeAllInlets
