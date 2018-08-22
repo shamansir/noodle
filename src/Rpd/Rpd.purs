@@ -616,12 +616,12 @@ addInlet' nodePath def nw = do
                     { flow : pushableFlow
                     , connections : List.Nil
                     }
-        iProcessCanceler :: Canceler <-
-            liftEffect $ E.subscribe dataFlow (\d -> pushNodeData (inletPath /\ d))
+        -- TODO: iProcessCanceler :: Canceler <-
+        --     liftEffect $ E.subscribe dataFlow (\d -> pushNodeData (inletPath /\ d))
         pure $ nw
              # setJust (_inlet inletPath) newInlet
              # setJust (_nodeInlet nodePath inletPath) unit
-             # setJust (_processCanceler inletPath) iProcessCanceler
+             -- # TODO: setJust (_processCanceler inletPath) iProcessCanceler
 
 
 addOutlet
