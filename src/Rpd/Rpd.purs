@@ -24,6 +24,7 @@ module Rpd
 import Prelude
 
 import Effect (Effect)
+import Effect.Class (liftEffect)
 
 --import Control.Monad.Cont.Trans (ContT(..))
 -- import Control.MonadZero (guard)
@@ -592,6 +593,9 @@ addInlet nodePath label =
         }
 
 
+
+
+
 addInlet'
     :: forall d
      . NodePath
@@ -599,8 +603,10 @@ addInlet'
     -> Network d
     -> Rpd (Network d)
 addInlet' nodePath def nw = do
-    pushableFlow <- makePushableFlow
+    pushableFlow@(PushableFlow pushData dataFlow) <- makePushableFlow
     pure $ do
+        (Node _ _ { flow }) :: Node d <- view (_node nodePath) nw # note (RpdError "")
+        let (PushableFlow pushNodeData _ ) = flow
         inletPath <- nextInletPath nodePath nw
         let
             newInlet =
@@ -610,9 +616,12 @@ addInlet' nodePath def nw = do
                     { flow : pushableFlow
                     , connections : List.Nil
                     }
+        iProcessCanceler :: Canceler <-
+            liftEffect $ E.subscribe dataFlow (\d -> pushNodeData (inletPath /\ d))
         pure $ nw
              # setJust (_inlet inletPath) newInlet
              # setJust (_nodeInlet nodePath inletPath) unit
+             # setJust (_processCanceler inletPath) iProcessCanceler
 
 
 addOutlet
@@ -659,7 +668,7 @@ connect
     -> Rpd (Network d)
 -- FIXME: rewrite for the case of different patches
 connect outletPath inletPath
-    nw@(Network nwdef nwstate@{  }) = do
+    nw@(Network nwdef nwstate) = do
     -- let patchId = extractPatchId outletPath inletPath
     let
         linkId = nextLinkId nw
@@ -668,12 +677,6 @@ connect outletPath inletPath
         oPatchId = getPatchOfOutlet outletPath
         iPatchId = getPatchOfInlet inletPath
 
-    eFlows :: Either RpdError (PushableFlow d /\ PushableFlow d) <-
-        pure $ (/\)
-            <$> (view (_outletPFlow outletPath) nw # note (RpdError ""))
-            <*> (view (_inletPFlow inletPath) nw # note (RpdError ""))
-
-    let
         subscribeAndSave :: (PushableFlow d /\ PushableFlow d) -> Rpd (Network d)
         subscribeAndSave (outletPFlow /\ inletPFlow) = do
             let
@@ -684,9 +687,8 @@ connect outletPath inletPath
                 curInletConnections = fold $ view (_inletConnections inletPath) nw
                 curOutletConnections = fold $ view (_outletConnections outletPath) nw
 
-            linkCanceler :: Canceler <- E.subscribe outletFlow pushToInlet
-            -- FIXME: just do that when we add inlet to the node
-            iProcessCanceler :: Canceler <- E.subscribe inletFlow pushToNodeData
+            linkCanceler :: Canceler <-
+                E.subscribe outletFlow pushToInlet
 
             network' :: Network d <-
                 pure $ nw
@@ -698,13 +700,17 @@ connect outletPath inletPath
                      # setJust (_outletConnections outletPath)
                             (outletConnection : curOutletConnections)
                      # setJust (_canceler linkId) linkCanceler
-                     # setJust (_processCanceler inletPath) iProcessCanceler
-                     -- # note (RpdError "")
-                    -- TODO: re-subscribe `process`` function of the target node to update values including this connection
 
             pure $ Right $ network'
 
-    either (const $ pure $ pure nw) identity
+    eFlows :: Either RpdError (PushableFlow d /\ PushableFlow d) <-
+        pure $ (/\)
+            <$> (view (_outletPFlow outletPath) nw # note (RpdError ""))
+            <*> (view (_inletPFlow inletPath) nw # note (RpdError ""))
+
+    either
+        (const $ pure $ pure nw)
+        identity
         $ subscribeAndSave <$> eFlows
 
 
