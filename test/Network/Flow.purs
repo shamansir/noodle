@@ -3,31 +3,22 @@ module RpdTest.Network.Flow
 
 import Prelude
 
-import Data.Array (snoc, replicate, concat)
-import Data.Either (Either, either, isRight)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
-import Data.List as List
-import Data.Map as Map
 import Data.Time.Duration (Milliseconds(..))
-import Data.Traversable (sequence)
-import Data.Tuple (snd)
 import Data.Tuple.Nested ((/\), type (/\))
-import Effect (Effect, foreachE)
-import Effect.Aff (Aff, delay)
+import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
 import Effect.Ref as Ref
 import FRP.Event.Time (interval)
-import Rpd ((</>), type (/->))
+import Rpd ((</>))
 import Rpd as R
+import Rpd.Log as RL
+import RpdTest.Network.CollectData (TraceItem(..))
+import RpdTest.Network.CollectData as CollectData
 import Test.Spec (Spec, describe, it, pending, pending')
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
-import Unsafe.Coerce (unsafeCoerce)
-
-
-infixl 6 snoc as +>
 
 
 data Delivery
@@ -67,7 +58,7 @@ spec = do
       (R.init "no-data" :: MyRpd)
         # withRpd \nw -> do
             collectedData <- nw #
-              collectChannelsData (Milliseconds 100.0)
+              CollectData.channels (Milliseconds 100.0)
             collectedData `shouldEqual` []
             pure unit
 
@@ -84,7 +75,7 @@ spec = do
 
       rpd # withRpd \nw -> do
               collectedData <- nw #
-                collectChannelsData (Milliseconds 100.0)
+                CollectData.channels (Milliseconds 100.0)
               collectedData `shouldEqual` []
               pure unit
 
@@ -102,7 +93,7 @@ spec = do
             </> R.addInlet (nodePath 0 0) "inlet"
 
       rpd # withRpd \nw -> do
-          collectedData <- collectChannelsDataAfter
+          collectedData <- CollectData.channelsAfter
             (Milliseconds 100.0)
             nw
             $ do
@@ -128,7 +119,7 @@ spec = do
             </> R.addInlet (nodePath 0 0) "inlet"
 
       rpd # withRpd \nw -> do
-          collectedData <- collectChannelsDataAfter
+          collectedData <- CollectData.channelsAfter
             (Milliseconds 100.0)
             nw
             $ do
@@ -155,7 +146,7 @@ spec = do
             </> R.addInlet (nodePath 0 0) "inlet"
 
       rpd # withRpd \nw -> do
-          collectedData <- collectChannelsDataAfter
+          collectedData <- CollectData.channelsAfter
             (Milliseconds 100.0)
             nw
             $ do
@@ -184,7 +175,7 @@ spec = do
             </> R.addInlet (nodePath 0 0) "inlet"
 
       rpd # withRpd \nw -> do
-          collectedData <- collectChannelsDataAfter
+          collectedData <- CollectData.channelsAfter
             (Milliseconds 100.0)
             nw
             $ do
@@ -194,7 +185,7 @@ spec = do
               pure [ cancel ] -- `cancel` is called by `collectDataAfter`
           collectedData `shouldContain`
             (InletData (inletPath 0 0 0) Pills)
-          collectedData' <- collectChannelsDataAfter
+          collectedData' <- CollectData.channelsAfter
             (Milliseconds 100.0)
             nw
             $ pure []
@@ -213,7 +204,7 @@ spec = do
             </> R.addInlet (nodePath 0 0) "inlet2"
 
       rpd # withRpd \nw -> do
-          collectedData <- collectChannelsDataAfter
+          collectedData <- CollectData.channelsAfter
             (Milliseconds 100.0)
             nw
             $ do
@@ -245,7 +236,7 @@ spec = do
             </> R.addInlet (nodePath 0 0) "inlet2"
 
       rpd # withRpd \nw -> do
-          collectedData <- collectChannelsDataAfter
+          collectedData <- CollectData.channelsAfter
             (Milliseconds 100.0)
             nw
             $ do
@@ -283,7 +274,7 @@ spec = do
             </> R.addInlet (nodePath 0 1) "inlet"
 
       rpd # withRpd \nw -> do
-          collectedData <- collectChannelsDataAfter
+          collectedData <- CollectData.channelsAfter
             (Milliseconds 100.0)
             nw
             $ do
@@ -313,7 +304,7 @@ spec = do
             </> R.addInlet (nodePath 0 1) "inlet"
 
       rpd # withRpd \nw -> do
-          collectedData <- collectChannelsDataAfter
+          collectedData <- CollectData.channelsAfter
             (Milliseconds 100.0)
             nw
             $ do
@@ -345,7 +336,7 @@ spec = do
             </> R.addInlet (nodePath 0 1) "inlet"
 
       rpd # withRpd \nw -> do
-          nw' /\ collectedData <- collectChannelsDataAfter'
+          nw' /\ collectedData <- CollectData.channelsAfter'
             (Milliseconds 100.0)
             nw
             $ do
@@ -359,7 +350,7 @@ spec = do
               pure $ nw' /\ []
           collectedData `shouldContain`
             (InletData (inletPath 0 1 0) Notebook)
-          collectedData' <- collectChannelsDataAfter
+          collectedData' <- CollectData.channelsAfter
             (Milliseconds 100.0)
             nw'
             $ do
@@ -378,21 +369,6 @@ spec = do
     pending "default value for the inlet is sent on disconnection"
 
 
-data TraceItem d
-  = InletData R.InletPath d
-  | OutletData R.OutletPath d
-
-type TracedFlow d = Array (TraceItem d)
-
-derive instance genericTraceItem :: Generic (TraceItem d) _
-
-instance showTraceItem :: Show d => Show (TraceItem d) where
-  show = genericShow
-
-instance eqTraceItem :: Eq d => Eq (TraceItem d) where
-  eq = genericEq
-
-
 patchId :: Int -> R.PatchId
 patchId = R.PatchId
 
@@ -408,25 +384,6 @@ outletPath patchId nodeId outletId = R.OutletPath (nodePath patchId nodeId) outl
 -- inletPath = R.InletPath ?_ nodePath
 
 
-reportError :: R.RpdError -> Effect Unit
-reportError = log <<< show
-
-
-reportAndReturn :: forall a. a -> R.RpdError -> Effect a
-reportAndReturn v err =
-  reportError err >>= \_ -> pure v
-
-
-runRpd :: forall a. (a -> Effect Unit) -> R.Rpd a -> Effect Unit
-runRpd onSuccess rpd =
-  R.run' reportError onSuccess rpd
-
-
-extract :: forall a. a -> R.Rpd a -> Effect a
-extract def rpd =
-  R.run' (reportAndReturn def) pure rpd
-
-
 withRpd
   :: forall d
    . (R.Network d -> Aff Unit)
@@ -439,135 +396,8 @@ withRpd test rpd = do
     --getNetwork :: R.Rpd d e -> R.RpdEff e (R.Network d e)
     getNetwork rpd = do
       nwTarget <- Ref.new $ R.emptyNetwork "f"
-      _ <- runRpd (flip Ref.write $ nwTarget) rpd
+      _ <- RL.runRpdLogging (flip Ref.write $ nwTarget) rpd
       Ref.read nwTarget
-
-
-
--- TODO: collect inlet data
--- TODO: collect outlet data
-
-
-collectChannelsData
-  :: forall d
-   . (Show d)
-  => Milliseconds
-  -> R.Network d
-  -> Aff (TracedFlow d)
-collectChannelsData period nw =
-  collectChannelsDataAfter period nw $ pure []
-
-
-collectChannelsDataAfter
-  :: forall d
-   . (Show d)
-  => Milliseconds
-  -> R.Network d
-  -> R.Rpd (Array R.Canceler)
-  -> Aff (TracedFlow d)
-collectChannelsDataAfter period nw afterF = do
-  collectChannelsDataAfter' period nw addNetwork >>= pure <<< snd
-  where
-    addNetwork = afterF >>= (\effs -> pure $ nw /\ effs)
-
-
-collectChannelsDataAfter'
-  :: forall d
-   . (Show d)
-  => Milliseconds
-  -> R.Network d
-  -> R.Rpd (R.Network d /\ Array R.Canceler)
-  -> Aff (R.Network d /\ TracedFlow d)
-collectChannelsDataAfter' period nw afterF =
-  collectHelper period nw collector afterF
-  where
-    collector target = do
-      let
-        onInletData path {- source -} d = do
-          curData <- Ref.read target
-          Ref.write (curData +> InletData path d) target
-          pure unit
-        onOutletData path d = do
-          curData <- Ref.read target
-          Ref.write (curData +> OutletData path d) target
-          pure unit
-      cancelers <- R.subscribeChannelsData onOutletData onInletData nw
-      pure $ foldCancelers cancelers
-
-
-collectNodeData
-  :: forall d
-   . (Show d)
-  => R.NodePath
-  -> Milliseconds
-  -> R.Network d
-  -> Aff (TracedFlow d)
-collectNodeData nodePath period nw =
-  collectNodeDataAfter nodePath period nw $ pure []
-
-
-collectNodeDataAfter
-  :: forall d
-   . (Show d)
-  => R.NodePath
-  -> Milliseconds
-  -> R.Network d
-  -> R.Rpd (Array R.Canceler)
-  -> Aff (TracedFlow d)
-collectNodeDataAfter nodePath period nw afterF = do
-  collectNodeDataAfter' nodePath period nw addNetwork >>= pure <<< snd
-  where
-    addNetwork = afterF >>= (\effs -> pure $ nw /\ effs)
-
-
-collectNodeDataAfter'
-  :: forall d
-   . (Show d)
-  => R.NodePath
-  -> Milliseconds
-  -> R.Network d
-  -> R.Rpd (R.Network d /\ Array R.Canceler)
-  -> Aff (R.Network d /\ TracedFlow d)
-collectNodeDataAfter' nodePath period nw afterF =
-  collectHelper period nw collector afterF
-  where
-    collector target = extract [] $ do
-      let
-        onNodeData (inletPath /\ d) = do
-          curData <- Ref.read target
-          Ref.write (curData +> InletData inletPath d) target
-          pure unit
-      canceler <- R.subscribeNode nodePath onNodeData nw
-      pure [ canceler ]
-
-
-collectHelper
-  :: forall d
-   . (Show d)
-  => Milliseconds
-  -> R.Network d
-  -> (Ref.Ref (Array (TraceItem d)) -> Effect (Array R.Canceler))
-  -> R.Rpd (R.Network d /\ Array R.Canceler)
-  -> Aff (R.Network d /\ TracedFlow d)
-collectHelper period nw collector afterF = do
-  target /\ cancelers <- liftEffect $ do
-    target <- Ref.new []
-    cancelers <- collector target
-    pure $ target /\ cancelers
-  nw' /\ userEffects <- liftEffect $ (extract (nw /\ [])) afterF
-  delay period
-  flow <- liftEffect $ do
-    foreachE cancelers identity
-    foreachE userEffects identity
-    Ref.read target
-  pure $ nw' /\ flow
-
-
-foldCancelers
-  :: (R.OutletPath /-> R.Canceler) /\ (R.InletPath /-> R.Canceler)
-  -> Array R.Canceler
-foldCancelers (outletsMap /\ inletsMap) =
-  List.toUnfoldable $ Map.values outletsMap <> Map.values inletsMap
 
 
 -- logOrExec
