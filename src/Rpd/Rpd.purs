@@ -1,6 +1,6 @@
 module Rpd
     ( Rpd, RpdError, init
-    , (</>), type (/->), rpdBind, rpdEx, run, emptyNetwork
+    , (</>), type (/->), rpdBind, run, run', emptyNetwork
     --, RpdOp, RpdEffOp
     , Flow, flow
     , Network, Patch, Node, Inlet, Outlet, Link
@@ -46,7 +46,7 @@ import Data.Bitraversable (bisequence)
 import Data.Tuple (curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Effect.Class.Console (log)
+-- import Effect.Class.Console (log)
 
 import Control.Monad.Except.Trans (ExceptT, runExceptT, mapExceptT, except)
 
@@ -79,18 +79,22 @@ run
     -> (Network d -> Effect Unit)
     -> Rpd (Network d)
     -> Effect Unit
-run onError onSuccess rpd =
-    runExceptT rpd >>= either onError onSuccess
-    -- FIXME: we should also call all the cancelers left in the network, before "exiting"
+run = run'
 
+
+run'
+    :: forall a r
+     . (RpdError -> Effect r)
+    -> (a -> Effect r)
+    -> Rpd a
+    -> Effect r
+run' onError onSuccess rpd =
+    -- FIXME: we should also call all the cancelers left in the network, before "exiting"
+    runExceptT rpd >>= either onError onSuccess
 
 
 rpdBind :: forall a b. Rpd a -> (a -> Rpd b) -> Rpd b
 rpdBind = (>>=)
-
-
-rpdEx :: forall a. Rpd a -> Effect (Either RpdError a)
-rpdEx = runExceptT
 
 
 someApiFunc :: forall d. Rpd (Network d)
