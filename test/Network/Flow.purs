@@ -106,7 +106,7 @@ spec = do
             (Milliseconds 100.0)
             nw
             $ do
-              _ <- nw
+              _ <- R.rpdEx $ nw
                     # R.sendToInlet (inletPath 0 0 0) Parcel
                     </> R.sendToInlet (inletPath 0 0 0) Pills
                     </> R.sendToInlet (inletPath 0 0 0) (Curse 5)
@@ -133,7 +133,8 @@ spec = do
             nw
             $ do
               cancel <-
-                nw # R.streamToInlet
+                R.rpdEx $
+                  nw # R.streamToInlet
                     (inletPath 0 0 0)
                     (R.flow $ const Pills <$> interval 30)
               pure $ postpone [ cancel ]
@@ -159,8 +160,10 @@ spec = do
             (Milliseconds 100.0)
             nw
             $ do
-              c1 <- nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 20)
-              c2 <- nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Banana <$> interval 29)
+              c1 <- R.rpdEx $
+                nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 20)
+              c2 <- R.rpdEx $
+                 nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Banana <$> interval 29)
               pure $ postpone [ c1, c2 ]
           collectedData `shouldContain`
             (InletData (inletPath 0 0 0) Pills)
@@ -185,7 +188,8 @@ spec = do
             nw
             $ do
               cancel <-
-                nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 20)
+                R.rpdEx $
+                  nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 20)
               pure $ postpone [ cancel ] -- `cancel` is called by `collectDataAfter`
           collectedData `shouldContain`
             (InletData (inletPath 0 0 0) Pills)
@@ -212,8 +216,12 @@ spec = do
             (Milliseconds 100.0)
             nw
             $ do
-              c1 <- nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 30)
-              c2 <- nw # R.streamToInlet (inletPath 0 0 1) (R.flow $ const Banana <$> interval 25)
+              c1 <-
+                R.rpdEx $
+                  nw # R.streamToInlet (inletPath 0 0 0) (R.flow $ const Pills <$> interval 30)
+              c2 <-
+                R.rpdEx $
+                  nw # R.streamToInlet (inletPath 0 0 1) (R.flow $ const Banana <$> interval 25)
               pure $ postpone [ c1, c2 ]
           collectedData `shouldContain`
             (InletData (inletPath 0 0 0) Pills)
@@ -239,8 +247,8 @@ spec = do
             nw
             $ do
               let stream = R.flow $ const Banana <$> interval 25
-              c1 <- nw # R.streamToInlet (inletPath 0 0 0) stream
-              c2 <- nw # R.streamToInlet (inletPath 0 0 1) stream
+              c1 <- R.rpdEx $ nw # R.streamToInlet (inletPath 0 0 0) stream
+              c2 <- R.rpdEx $ nw # R.streamToInlet (inletPath 0 0 1) stream
               pure $ postpone [ c1, c2 ]
           collectedData `shouldContain`
             (InletData (inletPath 0 0 0) Banana)
@@ -277,8 +285,9 @@ spec = do
             nw
             $ do
               cancel <-
-                nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
-                 </> R.streamToOutlet (outletPath 0 0 0) (R.flow $ const Notebook <$> interval 30)
+                R.rpdEx $
+                  nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
+                    </> R.streamToOutlet (outletPath 0 0 0) (R.flow $ const Notebook <$> interval 30)
               pure $ postpone [ cancel ]
           collectedData `shouldContain`
             (OutletData (outletPath 0 0 0) Notebook)
@@ -304,8 +313,8 @@ spec = do
             (Milliseconds 100.0)
             nw
             $ do
-              cancel <- nw # R.streamToOutlet (outletPath 0 0 0) (R.flow $ const Notebook <$> interval 30)
-              _ <- nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
+              cancel <- R.rpdEx $ nw # R.streamToOutlet (outletPath 0 0 0) (R.flow $ const Notebook <$> interval 30)
+              _ <- R.rpdEx $ nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
               pure $ postpone [ cancel ]
           collectedData `shouldContain`
             (OutletData (outletPath 0 0 0) Notebook)
@@ -332,8 +341,10 @@ spec = do
             nw
             $ do
               -- NB:we're not cancelling this data flow between checks
-              _ <- nw # R.streamToOutlet (outletPath 0 0 0) (R.flow $ const Notebook <$> interval 30)
-              nwE <- nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
+              _ <- R.rpdEx $
+                nw # R.streamToOutlet (outletPath 0 0 0) (R.flow $ const Notebook <$> interval 30)
+              nwE <-R.rpdEx $
+                nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
               let nw' = either (const nw) identity nwE
               pure $ nw' /\ postpone [ ]
           collectedData `shouldContain`
@@ -342,7 +353,8 @@ spec = do
             (Milliseconds 100.0)
             nw'
             $ do
-              _ <- nw' # R.disconnectAll (outletPath 0 0 0) (inletPath 0 1 0)
+              _ <-
+                R.rpdEx $ nw' # R.disconnectAll (outletPath 0 0 0) (inletPath 0 1 0)
               pure $ postpone [ ]
           collectedData' `shouldContain`
             (OutletData (outletPath 0 0 0) Notebook)

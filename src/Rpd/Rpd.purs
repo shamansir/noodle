@@ -1,6 +1,6 @@
 module Rpd
     ( Rpd, RpdError, init
-    , (</>), type (/->), rpdBind, run, emptyNetwork
+    , (</>), type (/->), rpdBind, rpdEx, run, emptyNetwork
     --, RpdOp, RpdEffOp
     , Flow, flow
     , Network, Patch, Node, Inlet, Outlet, Link
@@ -87,6 +87,10 @@ run onError onSuccess rpd =
 
 rpdBind :: forall a b. Rpd a -> (a -> Rpd b) -> Rpd b
 rpdBind = (>>=)
+
+
+rpdEx :: forall a. Rpd a -> Effect (Either RpdError a)
+rpdEx = runExceptT
 
 
 someApiFunc :: forall d. Rpd (Network d)
