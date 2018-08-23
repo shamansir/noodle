@@ -48,7 +48,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Effect.Class.Console (log)
 
-import Control.Monad.Except.Trans (ExceptT, runExceptT)
+import Control.Monad.Except.Trans (ExceptT, runExceptT, except)
 
 import FRP.Event (Event)
 import FRP.Event as E
@@ -648,19 +648,18 @@ addOutlet'
     -> Rpd (Network d)
 addOutlet' nodePath def nw = do
     pushableFlow <- makePushableFlow
-    pure $ do
-        outletPath <- nextOutletPath nodePath nw
-        let
-            newOutlet =
-                Outlet
-                    outletPath
-                    def
-                    { flow : pushableFlow
-                    , connections : List.Nil
-                    }
-        pure $ nw
-             # setJust (_outlet outletPath) newOutlet
-             # setJust (_nodeOutlet nodePath outletPath) unit
+    outletPath <- except $ nextOutletPath nodePath nw
+    let
+        newOutlet =
+            Outlet
+                outletPath
+                def
+                { flow : pushableFlow
+                , connections : List.Nil
+                }
+    pure $ nw
+        # setJust (_outlet outletPath) newOutlet
+        # setJust (_nodeOutlet nodePath outletPath) unit
 
 
 connect
@@ -799,12 +798,11 @@ sendToOutlet
     -> Network d
     -> Rpd (Network d)
 sendToOutlet outletPath d nw = do
-    performPush >>= alwaysNetwork
-    where
-        alwaysNetwork = const $ pure $ pure nw
-        performPush = sequence
-            $ view (_outletPFlow outletPath) nw # note (RpdError "")
-                >>= \(PushableFlow push _) -> pure $ push d
+    (PushableFlow push _) <-
+        except $ view (_outletPFlow outletPath) nw
+            # note (RpdError "")
+    _ <- liftEffect $ push d
+    pure nw
 
 
 streamToOutlet
@@ -814,9 +812,12 @@ streamToOutlet
     -> Network d
     -> Rpd Canceler
 streamToOutlet outletPath flow nw = do
-    sequence
-        $ view (_outletPFlow outletPath) nw # note (RpdError "")
-            >>= \(PushableFlow push _) -> pure $ E.subscribe flow push
+    (PushableFlow push _) <-
+        except $ view (_outletPFlow outletPath) nw
+            # note (RpdError "")
+    canceler :: Canceler <-
+        liftEffect $ E.subscribe flow push
+    pure canceler
 
 
 subscribeInlet
@@ -825,13 +826,12 @@ subscribeInlet
     -> (d -> Effect Unit)
     -> Network d
     -> Rpd Canceler
-subscribeInlet inletPath handler nw =
-    sequence subE
-    where
-        (flowE :: Either RpdError (Flow d)) =
-            view (_inletFlow inletPath) nw # note (RpdError "")
-        (subE :: Either RpdError Subscriber) =
-            (handler # (flip $ E.subscribe)) <$> flowE
+subscribeInlet inletPath handler nw = do
+    flow :: Flow d <-
+        except $ view (_inletFlow inletPath) nw
+            # note (RpdError "")
+    canceler :: Canceler <- liftEffect $ E.subscribe flow handler
+    pure canceler
 
 subscribeOutlet
     :: forall d
@@ -839,14 +839,13 @@ subscribeOutlet
     -> (d -> Effect Unit)
     -> Network d
     -> Rpd Canceler
-subscribeOutlet outletPath handler nw =
-    sequence subE
-    where
-        (flowE :: Either RpdError (Flow d)) =
-            view (_outletFlow outletPath) nw # note (RpdError "")
-        (subE :: Either RpdError Subscriber) =
-            (handler # (flip $ E.subscribe)) <$> flowE
-        -- MonadTrans lift :: m a -> ExceptT e m a
+subscribeOutlet outletPath handler nw = do
+    flow :: Flow d <-
+        except $ view (_outletFlow outletPath) nw
+            # note (RpdError "")
+    canceler :: Canceler <-
+        liftEffect $ E.subscribe flow handler
+    pure canceler
 
 
 subscribeAllInlets
