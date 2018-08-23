@@ -1,6 +1,6 @@
 module Rpd
     ( Rpd, RpdError, init
-    , {- (</>), -} type (/->), {- rpdAp, -} run, emptyNetwork
+    , (</>), type (/->), rpdBind, run, emptyNetwork
     --, RpdOp, RpdEffOp
     , Flow, flow
     , Network, Patch, Node, Inlet, Outlet, Link
@@ -48,7 +48,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Effect.Class.Console (log)
 
-import Control.Monad.Except.Trans (ExceptT, runExceptT, except)
+import Control.Monad.Except.Trans (ExceptT, runExceptT, mapExceptT, except)
 
 import FRP.Event (Event)
 import FRP.Event as E
@@ -68,7 +68,7 @@ type Rpd a = ExceptT RpdError Effect a
 -- newtype ContT r m a = ContT ((a -> m r) -> m r)
 
 
-{- infixl 1 rpdAp as </> -}
+infixl 1 rpdBind as </>
 -- FIXME: can be replaced with proper instances?
 -- other options: └, ~>, ...
 
@@ -84,22 +84,17 @@ run onError onSuccess rpd =
     -- FIXME: we should also call all the cancelers left in the network, before "exiting"
 
 
--- FIXME: continuation monad
--- (a -> r) -> r
--- (a -> m r) -> m r
--- (a -> Eff (Except err a)) -> Eff (Except err a)
--- ContT (Except err a) Eff a
--- rpdAp :: forall a b. Rpd a -> (a -> Rpd b) -> Rpd b
--- rpdAp eff f =
---     eff >>= either (pure <<< Left) f
+
+rpdBind :: forall a b. Rpd a -> (a -> Rpd b) -> Rpd b
+rpdBind = (>>=)
 
 
--- someApiFunc :: forall d. Rpd (Network d)
--- someApiFunc =
---     init "t"
---         </> addPatch "foo"
---         </> addNode (PatchId 0) "test1"
---         </> addNode (PatchId 0) "test2"
+someApiFunc :: forall d. Rpd (Network d)
+someApiFunc =
+    init "t"
+        </> addPatch "foo"
+        </> addNode (PatchId 0) "test1"
+        </> addNode (PatchId 0) "test2"
 
 
 -- instance functorRpdOp :: Functor (RpdOp d) where
