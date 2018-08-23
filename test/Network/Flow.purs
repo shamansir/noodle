@@ -23,6 +23,7 @@ import Rpd ((</>), type (/->))
 import Rpd as R
 import Test.Spec (Spec, describe, it, pending, pending')
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
+import Unsafe.Coerce (unsafeCoerce)
 
 
 infixl 6 snoc as +>
@@ -128,11 +129,11 @@ spec = do
             (Milliseconds 100.0)
             nw
             $ do
-              cancel <-
+              cancel :: R.Canceler <-
                 nw # R.streamToInlet
                     (inletPath 0 0 0)
                     (R.flow $ const Pills <$> interval 30)
-              pure $ postpone [ cancel ]
+              pure [ cancel ]
           collectedData `shouldContain`
               (InletData (inletPath 0 0 0) Pills)
           pure unit
@@ -161,7 +162,7 @@ spec = do
               c2 <- nw # R.streamToInlet
                     (inletPath 0 0 0)
                     (R.flow $ const Banana <$> interval 29)
-              pure $ postpone [ c1, c2 ]
+              pure [ c1, c2 ]
           collectedData `shouldContain`
             (InletData (inletPath 0 0 0) Pills)
           collectedData `shouldContain`
@@ -187,7 +188,7 @@ spec = do
               cancel <- nw # R.streamToInlet
                   (inletPath 0 0 0)
                   (R.flow $ const Pills <$> interval 20)
-              pure $ postpone [ cancel ] -- `cancel` is called by `collectDataAfter`
+              pure [ cancel ] -- `cancel` is called by `collectDataAfter`
           collectedData `shouldContain`
             (InletData (inletPath 0 0 0) Pills)
           collectedData' <- collectDataAfter
@@ -221,7 +222,7 @@ spec = do
                 nw # R.streamToInlet
                   (inletPath 0 0 1)
                   (R.flow $ const Banana <$> interval 25)
-              pure $ postpone [ c1, c2 ]
+              pure [ c1, c2 ]
           collectedData `shouldContain`
             (InletData (inletPath 0 0 0) Pills)
           collectedData `shouldContain`
@@ -248,7 +249,7 @@ spec = do
               let stream = R.flow $ const Banana <$> interval 25
               c1 <- nw # R.streamToInlet (inletPath 0 0 0) stream
               c2 <- nw # R.streamToInlet (inletPath 0 0 1) stream
-              pure $ postpone [ c1, c2 ]
+              pure [ c1, c2 ]
           collectedData `shouldContain`
             (InletData (inletPath 0 0 0) Banana)
           collectedData `shouldContain`
@@ -288,7 +289,7 @@ spec = do
                    </> R.streamToOutlet
                         (outletPath 0 0 0)
                         (R.flow $ const Notebook <$> interval 30)
-              pure $ postpone [ cancel ]
+              pure [ cancel ]
           collectedData `shouldContain`
             (OutletData (outletPath 0 0 0) Notebook)
           collectedData `shouldContain`
@@ -320,7 +321,7 @@ spec = do
               _ <- nw # R.connect
                   (outletPath 0 0 0)
                   (inletPath 0 1 0)
-              pure $ postpone [ cancel ]
+              pure [ cancel ]
           collectedData `shouldContain`
             (OutletData (outletPath 0 0 0) Notebook)
           collectedData `shouldContain`
@@ -349,11 +350,10 @@ spec = do
               _ <- nw # R.streamToOutlet
                    (outletPath 0 0 0)
                    (R.flow $ const Notebook <$> interval 30)
-              nwE <- nw # R.connect
+              nw' <- nw # R.connect
                    (outletPath 0 0 0)
                    (inletPath 0 1 0)
-              let nw' = either (const nw) identity nwE -- FIXME:
-              pure $ nw' /\ postpone [ ]
+              pure $ nw' /\ []
           collectedData `shouldContain`
             (InletData (inletPath 0 1 0) Notebook)
           collectedData' <- collectDataAfter
@@ -362,7 +362,7 @@ spec = do
             $ do
               _ <-
                 nw' # R.disconnectAll (outletPath 0 0 0) (inletPath 0 1 0)
-              pure $ postpone [ ]
+              pure [ ]
           collectedData' `shouldContain`
             (OutletData (outletPath 0 0 0) Notebook)
           collectedData' `shouldNotContain`
@@ -419,9 +419,9 @@ runRpd onSuccess rpd =
   R.run' reportError onSuccess rpd
 
 
--- runRpd' :: forall a b. (R.RpdError -> Effect b) -> (a -> Effect b) -> R.Rpd a -> Effect b
--- runRpd' onError onSuccess rpd =
---   R.run' onError onSuccess rpd
+extract :: forall a. a -> R.Rpd a -> Effect a
+extract def rpd =
+  R.run' (reportAndReturn def) pure rpd
 
 
 withRpd
@@ -473,27 +473,27 @@ collectDataAfter period nw afterF = do
       cancelers <- R.subscribeAllData onOutletData onInletData nw
       pure $ foldCancelers cancelers
     pure $ target /\ cancelers
-  userEffects <- liftEffect $ ?wh afterF
+  userEffects <- liftEffect $ (extract []) afterF
   delay period
   liftEffect $ do
     foreachE cancelers identity
     foreachE userEffects identity
     Ref.read target
   where
-    foldCancelers ::
-      (R.OutletPath /-> R.Canceler) /\ (R.InletPath /-> R.Canceler)
+    foldCancelers
+      :: (R.OutletPath /-> R.Canceler) /\ (R.InletPath /-> R.Canceler)
       -> Array R.Canceler
     foldCancelers (outletsMap /\ inletsMap) =
       List.toUnfoldable $ Map.values outletsMap <> Map.values inletsMap
 
 
 collectDataAfter'
-  :: forall d a
+  :: forall d
    . (Show d)
   => Milliseconds
   -> R.Network d
-  -> R.Rpd (a /\ Array R.Canceler)
-  -> Aff (a /\ TracedFlow d)
+  -> R.Rpd (R.Network d /\ Array R.Canceler)
+  -> Aff (R.Network d /\ TracedFlow d)
 collectDataAfter' period nw afterF = do
   target /\ cancelers <- liftEffect $ do
     target <- Ref.new []
@@ -510,7 +510,7 @@ collectDataAfter' period nw afterF = do
       cancelers <- R.subscribeAllData onOutletData onInletData nw
       pure $ foldCancelers cancelers
     pure $ target /\ cancelers
-  nw' /\ userEffects <- liftEffect $ ?wh afterF
+  nw' /\ userEffects <- liftEffect $ (extract (nw /\ [])) afterF
   delay period
   flow <- liftEffect $ do
     foreachE cancelers identity
@@ -518,21 +518,11 @@ collectDataAfter' period nw afterF = do
     Ref.read target
   pure $ nw' /\ flow
   where
-    foldCancelers ::
-      (R.OutletPath /-> R.Canceler) /\ (R.InletPath /-> R.Canceler)
+    foldCancelers
+      :: (R.OutletPath /-> R.Canceler) /\ (R.InletPath /-> R.Canceler)
       -> Array R.Canceler
     foldCancelers (outletsMap /\ inletsMap) =
       List.toUnfoldable $ Map.values outletsMap <> Map.values inletsMap
-
-
-postpone
-  :: Array (Either R.RpdError (Effect Unit))
-  -> Array (Effect Unit)
-postpone src =
-  map logOrExec src
-  where
-    logOrExec cancelerE =
-      either reportError identity cancelerE
 
 
 -- logOrExec
