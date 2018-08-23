@@ -509,6 +509,12 @@ nextLinkId (Network _ { links }) =
     LinkId (Map.size links)
 
 
+
+exceptMaybe :: forall a. RpdError -> Maybe a -> ExceptT RpdError Effect a
+exceptMaybe err maybe =
+    except (maybe # note err)
+
+
 addPatch :: forall d. String -> Network d -> Rpd (Network d)
 addPatch name =
     addPatch'
@@ -557,23 +563,22 @@ addNode'
     -> Network d
     -> Rpd (Network d)
 addNode' patchId def nw = do
-    dataPFlow@(PushableFlow _ dataFlow) <- makePushableFlow
+    dataPFlow@(PushableFlow _ dataFlow) <- liftEffect makePushableFlow
     let processFlow = makeProcessFlow dataFlow
-    pure $ do
-        nodePath <- nextNodePath patchId nw
-        let
-            newNode =
-                Node
-                    nodePath
-                    def
-                    { inlets : Set.empty
-                    , outlets : Set.empty
-                    , flow : dataPFlow
-                    , processFlow : processFlow
-                    }
-        pure $ nw
-             # setJust (_node nodePath) newNode
-             # setJust (_patchNode patchId nodePath) unit
+    nodePath <- except $ nextNodePath patchId nw
+    let
+        newNode =
+            Node
+                nodePath
+                def
+                { inlets : Set.empty
+                , outlets : Set.empty
+                , flow : dataPFlow
+                , processFlow : processFlow
+                }
+    pure $ nw
+        # setJust (_node nodePath) newNode
+        # setJust (_patchNode patchId nodePath) unit
 
 
 makeProcessFlow :: forall d. Flow (InletPath /\ d) -> Flow (InletPath /-> d)
@@ -606,25 +611,24 @@ addInlet'
     -> Network d
     -> Rpd (Network d)
 addInlet' nodePath def nw = do
-    pushableFlow@(PushableFlow pushData dataFlow) <- makePushableFlow
-    pure $ do
-        (Node _ _ { flow }) :: Node d <- view (_node nodePath) nw # note (RpdError "")
-        let (PushableFlow pushNodeData _ ) = flow
-        inletPath <- nextInletPath nodePath nw
-        let
-            newInlet =
-                Inlet
-                    inletPath
-                    def
-                    { flow : pushableFlow
-                    , connections : List.Nil
-                    }
-        -- TODO: iProcessCanceler :: Canceler <-
-        --     liftEffect $ E.subscribe dataFlow (\d -> pushNodeData (inletPath /\ d))
-        pure $ nw
-             # setJust (_inlet inletPath) newInlet
-             # setJust (_nodeInlet nodePath inletPath) unit
-             -- # TODO: setJust (_processCanceler inletPath) iProcessCanceler
+    pushableFlow@(PushableFlow pushData dataFlow) <- liftEffect makePushableFlow
+    (Node _ _ { flow }) :: Node d <- view (_node nodePath) nw # exceptMaybe (RpdError "")
+    let (PushableFlow pushNodeData _ ) = flow
+    inletPath <- except $ nextInletPath nodePath nw
+    let
+        newInlet =
+            Inlet
+                inletPath
+                def
+                { flow : pushableFlow
+                , connections : List.Nil
+                }
+    -- TODO: iProcessCanceler :: Canceler <-
+    --     liftEffect $ E.subscribe dataFlow (\d -> pushNodeData (inletPath /\ d))
+    pure $ nw
+            # setJust (_inlet inletPath) newInlet
+            # setJust (_nodeInlet nodePath inletPath) unit
+            -- # TODO: setJust (_processCanceler inletPath) iProcessCanceler
 
 
 addOutlet
@@ -647,7 +651,7 @@ addOutlet'
     -> Network d
     -> Rpd (Network d)
 addOutlet' nodePath def nw = do
-    pushableFlow <- makePushableFlow
+    pushableFlow <- liftEffect makePushableFlow
     outletPath <- except $ nextOutletPath nodePath nw
     let
         newOutlet =
@@ -707,8 +711,8 @@ connect outletPath inletPath
 
     eFlows :: Either RpdError (PushableFlow d /\ PushableFlow d) <-
         pure $ (/\)
-            <$> (view (_outletPFlow outletPath) nw # note (RpdError ""))
-            <*> (view (_inletPFlow inletPath) nw # note (RpdError ""))
+            <$> (view (_outletPFlow outletPath) nw # exceptMaybe (RpdError ""))
+            <*> (view (_inletPFlow inletPath) nw # exceptMaybe (RpdError ""))
 
     either
         (const $ pure $ pure nw)
@@ -771,12 +775,10 @@ sendToInlet
     -> Network d
     -> Rpd (Network d)
 sendToInlet inletPath d nw = do
-    performPush >>= alwaysNetwork
-    where
-        alwaysNetwork = const $ pure $ pure nw
-        performPush = sequence
-            $ view (_inletPFlow inletPath) nw # note (RpdError "")
-                >>= \(PushableFlow push _) -> pure $ push d
+    (PushableFlow push _) <-
+        view (_inletPFlow inletPath) nw # exceptMaybe (RpdError "")
+    _ <- liftEffect $ push d
+    pure nw
 
 
 streamToInlet
@@ -786,9 +788,12 @@ streamToInlet
     -> Network d
     -> Rpd Canceler
 streamToInlet inletPath flow nw = do
-    sequence
-        $ view (_inletPFlow inletPath) nw # note (RpdError "")
-            >>= \(PushableFlow push _) -> pure $ E.subscribe flow push
+    (PushableFlow push _) <-
+        view (_inletPFlow inletPath) nw
+            # exceptMaybe (RpdError "")
+    canceler :: Canceler <-
+        liftEffect $ E.subscribe flow push
+    pure canceler
 
 
 sendToOutlet
@@ -799,8 +804,7 @@ sendToOutlet
     -> Rpd (Network d)
 sendToOutlet outletPath d nw = do
     (PushableFlow push _) <-
-        except $ view (_outletPFlow outletPath) nw
-            # note (RpdError "")
+        view (_outletPFlow outletPath) nw # exceptMaybe (RpdError "")
     _ <- liftEffect $ push d
     pure nw
 
@@ -813,8 +817,8 @@ streamToOutlet
     -> Rpd Canceler
 streamToOutlet outletPath flow nw = do
     (PushableFlow push _) <-
-        except $ view (_outletPFlow outletPath) nw
-            # note (RpdError "")
+        view (_outletPFlow outletPath) nw
+            # exceptMaybe (RpdError "")
     canceler :: Canceler <-
         liftEffect $ E.subscribe flow push
     pure canceler
@@ -828,8 +832,8 @@ subscribeInlet
     -> Rpd Canceler
 subscribeInlet inletPath handler nw = do
     flow :: Flow d <-
-        except $ view (_inletFlow inletPath) nw
-            # note (RpdError "")
+        view (_inletFlow inletPath) nw
+            # exceptMaybe (RpdError "")
     canceler :: Canceler <- liftEffect $ E.subscribe flow handler
     pure canceler
 
@@ -841,8 +845,8 @@ subscribeOutlet
     -> Rpd Canceler
 subscribeOutlet outletPath handler nw = do
     flow :: Flow d <-
-        except $ view (_outletFlow outletPath) nw
-            # note (RpdError "")
+        view (_outletFlow outletPath) nw
+            # exceptMaybe (RpdError "")
     canceler :: Canceler <-
         liftEffect $ E.subscribe flow handler
     pure canceler
@@ -914,69 +918,6 @@ isOutletInNode (OutletPath nodePath' _) nodePath =
 notInTheSameNode :: InletPath -> OutletPath -> Boolean
 notInTheSameNode (InletPath iNodePath _) (OutletPath oNodePath _) =
     iNodePath /= oNodePath
-
-
-updatePatch
-    :: forall d
-     . (Patch d -> Patch d)
-    -> PatchId
-    -> Network d
-    -> RpdOp (Network d)
-updatePatch updater patchId nw@(Network def state@{ patches }) = do
-    patch <- Map.lookup patchId patches # note (RpdError "")
-    pure $
-        Network
-            def
-            state
-                { patches =
-                    Map.insert patchId (updater patch) patches
-                }
-
-
-updateNode
-    :: forall d
-     . (Node d -> Node d)
-    -> NodePath
-    -> Network d
-    -> RpdOp (Network d)
-updateNode updater path@(NodePath patchId _) (Network def state@{ nodes }) = do
-    node <- Map.lookup path nodes # note (RpdError "")
-    pure $
-        Network
-            def
-            state
-                { nodes =
-                    Map.insert path (updater node) nodes
-                }
-
-updateInlet
-    :: forall d
-     . (Inlet d -> Inlet d)
-    -> InletPath
-    -> Network d
-    -> RpdOp (Network d)
-updateInlet updater path@(InletPath nodePath _) (Network def state@{ inlets }) = do
-    inlet <- Map.lookup path inlets # note (RpdError "")
-    let inlets' = Map.insert path inlet inlets
-    pure $
-        Network
-            def
-            state { inlets = inlets' }
-
-
-updateOutlet
-    :: forall d
-     . (Outlet d -> Outlet d)
-    -> OutletPath
-    -> Network d
-    -> RpdOp (Network d)
-updateOutlet updater path@(OutletPath nodePath _) (Network def state@{ outlets }) = do
-    outlet <- Map.lookup path outlets # note (RpdError "")
-    let outlets' = Map.insert path outlet outlets
-    pure $
-        Network
-            def
-            state { outlets = outlets' }
 
 
 patchId :: Int -> PatchId
