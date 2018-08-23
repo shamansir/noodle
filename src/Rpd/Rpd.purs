@@ -10,7 +10,8 @@ module Rpd
     --, network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
     , connect, disconnectAll --, disconnectTop
     , addPatch, addPatch', addNode, addNode', addInlet, addInlet', addOutlet, addOutlet'
-    , subscribeInlet, {- subscribeOutlet, -} subscribeAllData, subscribeAllInlets, subscribeAllOutlets
+    , subscribeInlet, subscribeOutlet, subscribeAllInlets, subscribeAllOutlets
+    , subscribeChannelsData --, subscribeNodeData, subscribeAllData
     , sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
     , ProcessF
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
@@ -613,6 +614,8 @@ addInlet' nodePath def nw = do
     pushableFlow@(PushableFlow pushData dataFlow) <- liftEffect makePushableFlow
     (Node _ _ { flow }) :: Node d <- view (_node nodePath) nw # exceptMaybe (RpdError "")
     let (PushableFlow pushNodeData _ ) = flow
+    -- TODO: when there's already some inlet exists with the same path,
+    -- cancel its subscription before
     inletPath <- except $ nextInletPath nodePath nw
     let
         newInlet =
@@ -622,12 +625,12 @@ addInlet' nodePath def nw = do
                 { flow : pushableFlow
                 , connections : List.Nil
                 }
-    -- TODO: iProcessCanceler :: Canceler <-
-    --     liftEffect $ E.subscribe dataFlow (\d -> pushNodeData (inletPath /\ d))
+    iProcessCanceler :: Canceler <-
+        liftEffect $ E.subscribe dataFlow (\d -> pushNodeData (inletPath /\ d))
     pure $ nw
             # setJust (_inlet inletPath) newInlet
             # setJust (_nodeInlet nodePath inletPath) unit
-            -- # TODO: setJust (_processCanceler inletPath) iProcessCanceler
+            # setJust (_processCanceler inletPath) iProcessCanceler
 
 
 addOutlet
@@ -821,6 +824,7 @@ subscribeInlet inletPath handler nw = do
     canceler :: Canceler <- liftEffect $ E.subscribe flow handler
     pure canceler
 
+
 subscribeOutlet
     :: forall d
      . OutletPath
@@ -864,13 +868,13 @@ subscribeAllOutlets handler (Network _ { outlets }) =
                 PushableFlow _ fl -> E.subscribe fl $ handler outletPath
 
 
-subscribeAllData
+subscribeChannelsData
     :: forall d
      . (OutletPath -> d -> Effect Unit)
     -> (InletPath -> d -> Effect Unit)
     -> Network d
     -> Effect ((OutletPath /-> Canceler) /\ (InletPath /-> Canceler))
-subscribeAllData oHandler iHandler nw =
+subscribeChannelsData oHandler iHandler nw =
     bisequence $ subscribeAllOutlets oHandler nw /\ subscribeAllInlets iHandler nw
 
 
