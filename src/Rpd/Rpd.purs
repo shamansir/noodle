@@ -603,10 +603,6 @@ addInlet nodePath label =
         , accept : Nothing
         }
 
-
-
-
-
 addInlet'
     :: forall d
      . NodePath
