@@ -11,7 +11,7 @@ module Rpd
     , connect, disconnectAll --, disconnectTop
     , addPatch, addPatch', addNode, addNode', addInlet, addInlet', addOutlet, addOutlet'
     , subscribeInlet, subscribeOutlet, subscribeAllInlets, subscribeAllOutlets
-    , subscribeChannelsData --, subscribeNodeData, subscribeAllData
+    , subscribeChannelsData, subscribeNode  -- subscribeAllData
     , sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
     , ProcessF
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
@@ -283,6 +283,25 @@ _node nodePath@(NodePath patchId _) =
                 nwdef
                 nwstate { nodes = set nodeLens val nwstate.nodes }
             -- # set (_patchNode patchId nodePath) (const unit <$> val)
+
+
+_nodeFlow :: forall d. NodePath -> Getter' (Network d) (Maybe (Flow (InletPath /\ d)))
+_nodeFlow nodePath =
+    to extractFlow
+    where
+        pFlowLens = _nodePFlow nodePath
+        extractFlow nw = view pFlowLens nw >>=
+            \(PushableFlow _ flow) -> pure flow
+
+
+_nodePFlow :: forall d. NodePath -> Getter' (Network d) (Maybe (PushableFlow (InletPath /\ d)))
+_nodePFlow nodePath =
+    to extractPFlow
+    where
+        nodeLens = _node nodePath
+        extractPFlow nw = view nodeLens nw >>=
+            \(Node _ _ { flow }) -> pure flow
+
 
 
 _nodeInlet :: forall d. NodePath -> InletPath -> Lens' (Network d) (Maybe Unit)
@@ -876,6 +895,28 @@ subscribeChannelsData
     -> Effect ((OutletPath /-> Canceler) /\ (InletPath /-> Canceler))
 subscribeChannelsData oHandler iHandler nw =
     bisequence $ subscribeAllOutlets oHandler nw /\ subscribeAllInlets iHandler nw
+
+
+
+subscribeNode
+    :: forall d
+     . NodePath
+    -> (InletPath /\ d -> Effect Unit)
+    -> Network d
+    -> Rpd Canceler
+subscribeNode nodePath handler nw = do
+    flow :: Flow (InletPath /\ d) <-
+        view (_nodeFlow nodePath) nw
+            # exceptMaybe (RpdError "")
+    canceler :: Canceler <-
+        liftEffect $ E.subscribe flow handler
+    pure canceler
+
+
+-- TODO: subscribeAllNodes
+
+
+-- TODO: subscribeAllData
 
 
 isNodeInPatch :: NodePath -> PatchId -> Boolean

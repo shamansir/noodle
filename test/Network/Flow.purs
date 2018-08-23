@@ -443,6 +443,11 @@ withRpd test rpd = do
       Ref.read nwTarget
 
 
+
+-- TODO: collect inlet data
+-- TODO: collect outlet data
+
+
 collectChannelsData
   :: forall d
    . (Show d)
@@ -473,10 +478,10 @@ collectChannelsDataAfter'
   -> R.Network d
   -> R.Rpd (R.Network d /\ Array R.Canceler)
   -> Aff (R.Network d /\ TracedFlow d)
-collectChannelsDataAfter' period nw afterF = do
-  target /\ cancelers <- liftEffect $ do
-    target <- Ref.new []
-    cancelers <- do
+collectChannelsDataAfter' period nw afterF =
+  collectHelper period nw collector afterF
+  where
+    collector target = do
       let
         onInletData path {- source -} d = do
           curData <- Ref.read target
@@ -488,6 +493,66 @@ collectChannelsDataAfter' period nw afterF = do
           pure unit
       cancelers <- R.subscribeChannelsData onOutletData onInletData nw
       pure $ foldCancelers cancelers
+
+
+collectNodeData
+  :: forall d
+   . (Show d)
+  => R.NodePath
+  -> Milliseconds
+  -> R.Network d
+  -> Aff (TracedFlow d)
+collectNodeData nodePath period nw =
+  collectNodeDataAfter nodePath period nw $ pure []
+
+
+collectNodeDataAfter
+  :: forall d
+   . (Show d)
+  => R.NodePath
+  -> Milliseconds
+  -> R.Network d
+  -> R.Rpd (Array R.Canceler)
+  -> Aff (TracedFlow d)
+collectNodeDataAfter nodePath period nw afterF = do
+  collectNodeDataAfter' nodePath period nw addNetwork >>= pure <<< snd
+  where
+    addNetwork = afterF >>= (\effs -> pure $ nw /\ effs)
+
+
+collectNodeDataAfter'
+  :: forall d
+   . (Show d)
+  => R.NodePath
+  -> Milliseconds
+  -> R.Network d
+  -> R.Rpd (R.Network d /\ Array R.Canceler)
+  -> Aff (R.Network d /\ TracedFlow d)
+collectNodeDataAfter' nodePath period nw afterF =
+  collectHelper period nw collector afterF
+  where
+    collector target = extract [] $ do
+      let
+        onNodeData (inletPath /\ d) = do
+          curData <- Ref.read target
+          Ref.write (curData +> InletData inletPath d) target
+          pure unit
+      canceler <- R.subscribeNode nodePath onNodeData nw
+      pure [ canceler ]
+
+
+collectHelper
+  :: forall d
+   . (Show d)
+  => Milliseconds
+  -> R.Network d
+  -> (Ref.Ref (Array (TraceItem d)) -> Effect (Array R.Canceler))
+  -> R.Rpd (R.Network d /\ Array R.Canceler)
+  -> Aff (R.Network d /\ TracedFlow d)
+collectHelper period nw collector afterF = do
+  target /\ cancelers <- liftEffect $ do
+    target <- Ref.new []
+    cancelers <- collector target
     pure $ target /\ cancelers
   nw' /\ userEffects <- liftEffect $ (extract (nw /\ [])) afterF
   delay period
@@ -496,12 +561,13 @@ collectChannelsDataAfter' period nw afterF = do
     foreachE userEffects identity
     Ref.read target
   pure $ nw' /\ flow
-  where
-    foldCancelers
-      :: (R.OutletPath /-> R.Canceler) /\ (R.InletPath /-> R.Canceler)
-      -> Array R.Canceler
-    foldCancelers (outletsMap /\ inletsMap) =
-      List.toUnfoldable $ Map.values outletsMap <> Map.values inletsMap
+
+
+foldCancelers
+  :: (R.OutletPath /-> R.Canceler) /\ (R.InletPath /-> R.Canceler)
+  -> Array R.Canceler
+foldCancelers (outletsMap /\ inletsMap) =
+  List.toUnfoldable $ Map.values outletsMap <> Map.values inletsMap
 
 
 -- logOrExec
