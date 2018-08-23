@@ -675,7 +675,6 @@ connect
 -- FIXME: rewrite for the case of different patches
 connect outletPath inletPath
     nw@(Network nwdef nwstate) = do
-    -- let patchId = extractPatchId outletPath inletPath
     let
         linkId = nextLinkId nw
         newLink = Link outletPath inletPath
@@ -683,41 +682,29 @@ connect outletPath inletPath
         oPatchId = getPatchOfOutlet outletPath
         iPatchId = getPatchOfInlet inletPath
 
-        subscribeAndSave :: (PushableFlow d /\ PushableFlow d) -> Rpd (Network d)
-        subscribeAndSave (outletPFlow /\ inletPFlow) = do
-            let
-                (PushableFlow _ outletFlow) = outletPFlow
-                (PushableFlow pushToInlet inletFlow) = inletPFlow
-                inletConnection = InletConnection outletPath linkId
-                outletConnection = OutletConnection inletPath linkId
-                curInletConnections = fold $ view (_inletConnections inletPath) nw
-                curOutletConnections = fold $ view (_outletConnections outletPath) nw
+    outletPFlow <- view (_outletPFlow outletPath) nw # exceptMaybe (RpdError "")
+    inletPFlow <- view (_inletPFlow inletPath) nw # exceptMaybe (RpdError "")
 
-            linkCanceler :: Canceler <-
-                E.subscribe outletFlow pushToInlet
+    let
+        (PushableFlow _ outletFlow) = outletPFlow
+        (PushableFlow pushToInlet inletFlow) = inletPFlow
+        inletConnection = InletConnection outletPath linkId
+        outletConnection = OutletConnection inletPath linkId
+        curInletConnections = fold $ view (_inletConnections inletPath) nw
+        curOutletConnections = fold $ view (_outletConnections outletPath) nw
 
-            network' :: Network d <-
-                pure $ nw
-                     # setJust (_link linkId) newLink
-                     # setJust (_patchLink iPatchId linkId) unit
-                     # setJust (_patchLink oPatchId linkId) unit
-                     # setJust (_inletConnections inletPath)
-                            (inletConnection : curInletConnections)
-                     # setJust (_outletConnections outletPath)
-                            (outletConnection : curOutletConnections)
-                     # setJust (_canceler linkId) linkCanceler
+    linkCanceler :: Canceler <-
+            liftEffect $ E.subscribe outletFlow pushToInlet
 
-            pure $ Right $ network'
-
-    eFlows :: Either RpdError (PushableFlow d /\ PushableFlow d) <-
-        pure $ (/\)
-            <$> (view (_outletPFlow outletPath) nw # exceptMaybe (RpdError ""))
-            <*> (view (_inletPFlow inletPath) nw # exceptMaybe (RpdError ""))
-
-    either
-        (const $ pure $ pure nw)
-        identity
-        $ subscribeAndSave <$> eFlows
+    pure $ nw
+            # setJust (_link linkId) newLink
+            # setJust (_patchLink iPatchId linkId) unit
+            # setJust (_patchLink oPatchId linkId) unit
+            # setJust (_inletConnections inletPath)
+                (inletConnection : curInletConnections)
+            # setJust (_outletConnections outletPath)
+                (outletConnection : curOutletConnections)
+            # setJust (_canceler linkId) linkCanceler
 
 
 disconnectAll
@@ -728,7 +715,6 @@ disconnectAll
     -> Rpd (Network d)
 disconnectAll outletPath inletPath
     nw@(Network nwdef nwstate@{ links }) = do
-    -- let patchId = extractPatchId outletPath inletPath
     let
         linkForDeletion (Link outletPath' inletPath') =
             (outletPath' == outletPath) && (inletPath' == inletPath)
@@ -744,22 +730,21 @@ disconnectAll outletPath inletPath
         newInletConnections = curInletConnections # List.filter iConnectionForDeletion
         newOutletConnections = curOutletConnections # List.filter oConnectionForDeletion
 
-    _ <- traverse_
+    _ <- liftEffect $ traverse_
             (\linkId -> fromMaybe (pure unit) $ view (_canceler linkId) nw)
             linksForDeletion
 
-    pure $ Right $
-        (
-            foldr (\linkId nw ->
-                nw # set (_link linkId) Nothing
-                   # set (_patchLink iPatchId linkId) Nothing
-                   # set (_patchLink oPatchId linkId) Nothing
-                   # set (_canceler linkId) Nothing
-            ) nw linksForDeletion
-            # setJust (_inletConnections inletPath) newInletConnections
-            # setJust (_outletConnections outletPath) newOutletConnections
+    pure $ (
+        foldr (\linkId nw ->
+            nw # set (_link linkId) Nothing
+               # set (_patchLink iPatchId linkId) Nothing
+               # set (_patchLink oPatchId linkId) Nothing
+               # set (_canceler linkId) Nothing
+        ) nw linksForDeletion
+        # setJust (_inletConnections inletPath) newInletConnections
+        # setJust (_outletConnections outletPath) newOutletConnections
             -- # note (RpdError "")
-        )
+    )
 
     -- TODO: un-subscribe `process`` function of the target node to update values including this connection
 
