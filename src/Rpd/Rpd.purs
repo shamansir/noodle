@@ -24,14 +24,10 @@ module Rpd
 
 import Prelude
 
-import Effect (Effect)
-import Effect.Class (liftEffect)
-
---import Control.Monad.Cont.Trans (ContT(..))
--- import Control.MonadZero (guard)
--- import Control.Alternative ((<|>))
-
+import Control.Monad.Except.Trans (ExceptT, runExceptT, mapExceptT, except)
+import Data.Bitraversable (bisequence)
 import Data.Either (Either(..), either, note)
+import Data.Foldable (fold, foldr)
 import Data.Lens (Lens', Getter', lens, view, set, setJust, over, to)
 import Data.Lens.At (at)
 import Data.List (List, (:))
@@ -41,18 +37,14 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, fromMaybe', maybe)
 import Data.Set (Set)
 import Data.Set as Set
-import Data.Foldable (fold, foldr)
 import Data.Traversable (sequence, traverse, traverse_)
-import Data.Bitraversable (bisequence)
 import Data.Tuple (curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
-
--- import Effect.Class.Console (log)
-
-import Control.Monad.Except.Trans (ExceptT, runExceptT, mapExceptT, except)
-
+import Effect (Effect)
+import Effect.Class (liftEffect)
 import FRP.Event (Event)
 import FRP.Event as E
+import Unsafe.Coerce (unsafeCoerce)
 
 
 --import Rpd.Flow as Flow
@@ -132,12 +124,8 @@ flow :: forall d. Event d -> Flow d
 flow = identity
 
 
--- type ProcessF d = (Map InletPath d -> Map OutletPath d)
-type ProcessF d = (Map String d -> Map String d)
--- type DirectProcessF d = (String -> d -> String /\ d)
--- type DirectProcessF' d = (String -> d -> d)
--- type OptionalProcessF d = (String -> d -> Maybe d)
--- type OptionalProcessF' d = (String -> d -> String /\ Maybe d)
+type ProcessF d = ((InletPath /-> d) -> (OutletPath /-> d))
+-- TODO: type ProcessF d = (Map String d -> Map String d)
 
 data PatchId = PatchId Int
 data NodePath = NodePath PatchId Int
@@ -158,7 +146,7 @@ type NodeDef d =
     { name :: String
     , inletDefs :: List (InletDef d)
     , outletDefs :: List (OutletDef d)
-    , process :: ProcessF d
+    , process :: ProcessF d -- TODO: change to Maybe
     }
 type InletDef d =
     { label :: String
@@ -183,8 +171,11 @@ data Network d =
         , inlets :: InletPath /-> Inlet d
         , outlets :: OutletPath /-> Outlet d
         , links :: LinkId /-> Link
-        , linkCancelers :: LinkId /-> Canceler
-        , processCancelers :: InletPath /-> Canceler
+        , cancelers ::
+            { links :: LinkId /-> Canceler
+            , nodes :: NodePath /-> Canceler
+            , inlets :: InletPath /-> Canceler
+            }
         }
 data Patch d =
     Patch
@@ -232,10 +223,12 @@ emptyNetwork name =
         , inlets : Map.empty
         , outlets : Map.empty
         , links : Map.empty
-        , linkCancelers : Map.empty
-        , processCancelers : Map.empty
+        , cancelers :
+            { links : Map.empty
+            , inlets : Map.empty
+            , nodes : Map.empty
+            }
         }
-
 
 
 _patch :: forall d. PatchId -> Lens' (Network d) (Maybe (Patch d))
@@ -320,6 +313,41 @@ _nodeInlet nodePath inletPath =
                 ) nw
 
 
+_nodeOutlet :: forall d. NodePath -> OutletPath -> Lens' (Network d) (Maybe Unit)
+_nodeOutlet nodePath outletPath =
+    lens getter setter
+    where
+        nodeLens = _node nodePath
+        outletLens = at outletPath
+        getter nw =
+            view nodeLens nw
+            >>= \(Node _ _ { outlets }) -> view outletLens outlets
+        setter nw val =
+            over nodeLens
+                (map $ \(Node nid ndef nstate) ->
+                    Node
+                        nid
+                        ndef
+                        nstate { outlets = set outletLens val nstate.outlets }
+                ) nw
+
+
+_nodeCanceler :: forall d. NodePath -> Lens' (Network d) (Maybe Canceler)
+_nodeCanceler nodePath =
+    lens getter setter
+    where
+        cancelerLens = at nodePath
+        getter (Network _ { cancelers }) =
+            view cancelerLens cancelers.nodes
+        setter (Network nwdef nwstate@{ cancelers }) val =
+            Network
+                nwdef
+                nwstate {
+                    cancelers =
+                        cancelers { nodes = set cancelerLens val cancelers.nodes }
+                    }
+
+
 _inlet :: forall d. InletPath -> Lens' (Network d) (Maybe (Inlet d))
 _inlet inletPath@(InletPath nodePath _) =
     lens getter setter
@@ -351,26 +379,23 @@ _inletFlow inletPath =
             \(PushableFlow _ flow) -> pure flow
 
 
-_nodeOutlet :: forall d. NodePath -> OutletPath -> Lens' (Network d) (Maybe Unit)
-_nodeOutlet nodePath outletPath =
+_inletCanceler :: forall d. InletPath -> Lens' (Network d) (Maybe Canceler)
+_inletCanceler inletPath =
     lens getter setter
     where
-        nodeLens = _node nodePath
-        outletLens = at outletPath
-        getter nw =
-            view nodeLens nw
-            >>= \(Node _ _ { outlets }) -> view outletLens outlets
-        setter nw val =
-            over nodeLens
-                (map $ \(Node nid ndef nstate) ->
-                    Node
-                        nid
-                        ndef
-                        nstate { outlets = set outletLens val nstate.outlets }
-                ) nw
+        cancelerLens = at inletPath
+        getter (Network _ { cancelers }) =
+            view cancelerLens cancelers.inlets
+        setter (Network nwdef nwstate@{ cancelers }) val =
+            Network
+                nwdef
+                nwstate {
+                    cancelers =
+                        cancelers { inlets = set cancelerLens val cancelers.inlets }
+                    }
 
 
-_outlet :: forall d e. OutletPath -> Lens' (Network d) (Maybe (Outlet d))
+_outlet :: forall d. OutletPath -> Lens' (Network d) (Maybe (Outlet d))
 _outlet outletPath@(OutletPath nodePath _) =
     lens getter setter
     where
@@ -413,28 +438,20 @@ _link linkId =
                 nwstate { links = set linkLens val nwstate.links }
 
 
-_canceler :: forall d. LinkId -> Lens' (Network d) (Maybe Canceler)
-_canceler linkId =
+_linkCanceler :: forall d. LinkId -> Lens' (Network d) (Maybe Canceler)
+_linkCanceler linkId =
     lens getter setter
     where
         cancelerLens = at linkId
-        getter (Network _ { linkCancelers }) = view cancelerLens linkCancelers
-        setter (Network nwdef nwstate) val =
+        getter (Network _ { cancelers }) =
+            view cancelerLens cancelers.links
+        setter (Network nwdef nwstate@{ cancelers }) val =
             Network
                 nwdef
-                nwstate { linkCancelers = set cancelerLens val nwstate.linkCancelers }
-
-
-_processCanceler :: forall d. InletPath -> Lens' (Network d) (Maybe Canceler)
-_processCanceler inletPath =
-    lens getter setter
-    where
-        cancelerLens = at inletPath
-        getter (Network _ { processCancelers }) = view cancelerLens processCancelers
-        setter (Network nwdef nwstate) val =
-            Network
-                nwdef
-                nwstate { processCancelers = set cancelerLens val nwstate.processCancelers }
+                nwstate {
+                    cancelers =
+                        cancelers { links = set cancelerLens val cancelers.links }
+                    }
 
 
 makePushableFlow :: forall d. Effect (PushableFlow d)
@@ -519,7 +536,7 @@ addNode patchId name =
         { name
         , inletDefs : List.Nil
         , outletDefs : List.Nil
-        , process : identity
+        , process : const Map.empty -- const
         }
 
 
@@ -529,12 +546,13 @@ addNode'
     -> NodeDef d
     -> Network d
     -> Rpd (Network d)
-addNode' patchId def nw = do
+addNode' patchId def@{ process } nw = do
     nodePath <- except $ nextNodePath patchId nw
     dataPFlow@(PushableFlow _ dataFlow) <- liftEffect makePushableFlow
     let processFlow = makeProcessFlow dataFlow
-    -- TODO: subscribe to process flow and send to the outlets the data going through it
-    --       store the canceler
+    canceler :: Canceler
+        <- liftEffect
+            $ E.subscribe processFlow (makeProcessHandler process)
     let
         newNode =
             Node
@@ -548,6 +566,17 @@ addNode' patchId def nw = do
     pure $ nw
         # setJust (_node nodePath) newNode
         # setJust (_patchNode patchId nodePath) unit
+        # setJust (_nodeCanceler nodePath) canceler
+
+
+makeProcessHandler
+    :: forall d
+     . ((InletPath /-> d) -> (OutletPath /-> d))
+    -> (InletPath /-> d)
+    -> Effect Unit
+makeProcessHandler = -- processF inletVals =
+    unsafeCoerce
+    -- FIXME: implement
 
 
 -- TODO: removeNode
@@ -583,11 +612,11 @@ addInlet'
     -> Rpd (Network d)
 addInlet' nodePath def nw = do
     inletPath <- except $ nextInletPath nodePath nw
+    -- TODO: when there's already some inlet exists with the same path,
+    -- cancel its subscription before
     pushableFlow@(PushableFlow pushData dataFlow) <- liftEffect makePushableFlow
     (Node _ _ { flow }) :: Node d <- view (_node nodePath) nw # exceptMaybe (RpdError "")
     let (PushableFlow pushNodeData _ ) = flow
-    -- TODO: when there's already some inlet exists with the same path,
-    -- cancel its subscription before
     let
         newInlet =
             Inlet
@@ -595,12 +624,13 @@ addInlet' nodePath def nw = do
                 def
                 { flow : pushableFlow
                 }
-    iProcessCanceler :: Canceler <-
-        liftEffect $ E.subscribe dataFlow (\d -> pushNodeData (inletPath /\ d))
+    canceler :: Canceler <-
+        liftEffect $
+            E.subscribe dataFlow (\d -> pushNodeData (inletPath /\ d))
     pure $ nw
             # setJust (_inlet inletPath) newInlet
             # setJust (_nodeInlet nodePath inletPath) unit
-            # setJust (_processCanceler inletPath) iProcessCanceler
+            # setJust (_inletCanceler inletPath) canceler
 
 
 -- TODO: removeInlet
@@ -670,11 +700,12 @@ connect outletPath inletPath
         (PushableFlow pushToInlet inletFlow) = inletPFlow
 
     linkCanceler :: Canceler <-
-            liftEffect $ E.subscribe outletFlow pushToInlet
+            liftEffect $
+                E.subscribe outletFlow pushToInlet
 
     pure $ nw
             # setJust (_link linkId) newLink
-            # setJust (_canceler linkId) linkCanceler
+            # setJust (_linkCanceler linkId) linkCanceler
 
 
 disconnectAll
@@ -694,13 +725,13 @@ disconnectAll outletPath inletPath
         iPatchId = getPatchOfInlet inletPath
 
     _ <- liftEffect $ traverse_
-            (\linkId -> fromMaybe (pure unit) $ view (_canceler linkId) nw)
+            (\linkId -> fromMaybe (pure unit) $ view (_linkCanceler linkId) nw)
             linksForDeletion
 
     pure $ (
         foldr (\linkId nw ->
             nw # set (_link linkId) Nothing
-               # set (_canceler linkId) Nothing
+               # set (_linkCanceler linkId) Nothing
         ) nw linksForDeletion
         -- # setJust (_inletConnections inletPath) newInletConnections
         -- # setJust (_outletConnections outletPath) newOutletConnections
