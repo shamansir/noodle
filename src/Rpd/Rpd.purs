@@ -40,7 +40,7 @@ import Data.Set as Set
 import Data.Traversable (sequence, traverse, traverse_)
 import Data.Tuple (curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
-import Effect (Effect)
+import Effect (Effect, foreachE)
 import Effect.Class (liftEffect)
 import FRP.Event (Event)
 import FRP.Event as E
@@ -552,7 +552,7 @@ addNode' patchId def@{ process } nw = do
     let processFlow = makeProcessFlow dataFlow
     canceler :: Canceler
         <- liftEffect
-            $ E.subscribe processFlow (makeProcessHandler process)
+            $ E.subscribe processFlow (nw # makeProcessHandler process)
     let
         newNode =
             Node
@@ -572,10 +572,26 @@ addNode' patchId def@{ process } nw = do
 makeProcessHandler
     :: forall d
      . ((InletPath /-> d) -> (OutletPath /-> d))
+    -> Network d
     -> (InletPath /-> d)
     -> Effect Unit
-makeProcessHandler = -- processF inletVals =
-    unsafeCoerce
+makeProcessHandler processF nw inletVals = do -- processF inletVals =
+    let outletVals = processF inletVals
+    foreachE (Set.toUnfoldable $ Map.keys outletVals) (pushToOutlet outletVals)
+    pure unit
+    where
+        pushToOutlet outletVals outletPath =
+            case view (_outletPFlow outletPath) nw of
+                Just (PushableFlow push _) -> do
+                    maybe
+                        (pure unit)
+                        (\d -> do
+                            _ <- push d
+                            pure unit
+                        ) $ view (at outletPath) outletVals
+                Nothing -> pure unit
+
+
     -- FIXME: implement
 
 
