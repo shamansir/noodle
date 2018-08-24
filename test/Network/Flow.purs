@@ -52,17 +52,13 @@ spec :: Spec Unit
 spec = do
   describe "data flow is functioning as expected" $ do
 
+    pending "we are able to subscribe some specific inlet in the network"
+
+    pending "we are able to subscribe some specific outlet in the network"
+
+    pending "we are able to subscribe some specific node in the network"
+
     -- INLETS --
-
-    it "we receive no data from the network when it's empty" $ do
-      (R.init "no-data" :: MyRpd)
-        # withRpd \nw -> do
-            collectedData <- nw #
-              CollectData.channels (Milliseconds 100.0)
-            collectedData `shouldEqual` []
-            pure unit
-
-      pure unit
 
     it "we receive no data from the inlet when it has no flow or default value" $ do
       let
@@ -260,6 +256,12 @@ spec = do
 
     -- OULETS (same as for inlets) --
 
+    -- NODES --
+
+    pending "adding an inlet inludes its flow into processing"
+
+    pending "returning value from processing function actually sends values to the outlet"
+
     -- LINKS <-> NODES --
 
     it "connecting some outlet to some inlet makes data flow from this outlet to this inlet" $ do
@@ -367,6 +369,20 @@ spec = do
     pending "default value of the inlet is sent on connection"
 
     pending "default value for the inlet is sent on disconnection"
+
+    -- NETWORK --
+
+    it "we receive no data from the network when it's empty" $ do
+      (R.init "no-data" :: MyRpd)
+        # withRpd \nw -> do
+            collectedData <- nw #
+              CollectData.channels (Milliseconds 100.0)
+            collectedData `shouldEqual` []
+            pure unit
+
+      pure unit
+
+    pending "all the cancelers are called after running the system"
 
 
 patchId :: Int -> R.PatchId
