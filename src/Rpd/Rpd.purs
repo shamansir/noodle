@@ -547,13 +547,13 @@ addNode'
     -> NodeDef d
     -> Network d
     -> Rpd (Network d)
-addNode' patchId def@{ process } nw = do
+addNode' patchId def nw = do
     nodePath <- except $ nextNodePath patchId nw
     dataPFlow@(PushableFlow _ dataFlow) <- liftEffect makePushableFlow
     let processFlow = makeProcessFlow dataFlow
     canceler :: Canceler
         <- liftEffect
-            $ E.subscribe processFlow (nw # makeProcessHandler nodePath process)
+            $ E.subscribe processFlow (nw # makeProcessHandler nodePath def.process)
     let
         newNode =
             Node
@@ -564,65 +564,18 @@ addNode' patchId def@{ process } nw = do
                 , flow : dataPFlow
                 , processFlow : processFlow
                 }
-    pure $ nw
-        # setJust (_node nodePath) newNode
-        # setJust (_patchNode patchId nodePath) unit
-        # setJust (_nodeCanceler nodePath) canceler
-
-
-makeProcessHandler
-    :: forall d
-     . NodePath
-    -> ((Int /-> d) -> (Int /-> d))
-    -> Network d
-    -> (InletPath /-> d)
-    -> Effect Unit
-makeProcessHandler nodePath processF nw inletVals = do -- processF inletVals =
-    let outletVals = processF (convertKeysInMap getInletId inletVals)
-    foreachE (Set.toUnfoldable $ Map.keys outletVals) (pushToOutlet outletVals)
-    pure unit
-    where
-        getInletId (InletPath _ inletId) = inletId
-        pushToOutlet outletVals outletId =
-            let outletPath = OutletPath nodePath outletId
-            in case view (_outletPFlow outletPath) nw of
-                Just (PushableFlow push _) -> do
-                    maybe
-                        (pure unit)
-                        (\d -> do
-                            _ <- push d
-                            pure unit
-                        ) $ view (at outletId) outletVals
-                Nothing -> pure unit
-
-
-convertKeysInMap
-    :: forall k k' v
-     . Ord k => Ord k'
-    => (k -> k')
-    -> (k /-> v)
-    -> (k' /-> v)
-convertKeysInMap toNewKey =
-    -- foldr foldingF Map.empty $ Map.keys srcMap
-    -- where
-    --     foldingF oldKey resMap =
-    --         maybe resMap
-    --             (\v -> Map.insert (toNewKey oldKey) v resMap)
-    --             $ Map.lookup oldKey srcMap
-    Map.fromFoldable <<< amap (lmap toNewKey) <<< Map.toUnfoldable where
-        amap :: forall a b. (a -> b) -> (Array a -> Array b)
-        amap = map
+    nw
+         #  setJust (_node nodePath) newNode
+         #  setJust (_patchNode patchId nodePath) unit
+         #  setJust (_nodeCanceler nodePath) canceler
+         #  addInlets nodePath def.inletDefs
+        </> addOutlets nodePath def.outletDefs
 
 
 -- TODO: removeNode
     -- execute process canceler
     -- execute node' inlets cancelers
     -- execute cancelers for the links going into and out of the node
-
-
-makeProcessFlow :: forall d. Flow (InletPath /\ d) -> Flow (InletPath /-> d)
-makeProcessFlow dataFlow =
-    E.fold (uncurry Map.insert) dataFlow Map.empty
 
 
 addInlet
@@ -668,6 +621,16 @@ addInlet' nodePath def nw = do
             # setJust (_inletCanceler inletPath) canceler
 
 
+addInlets :: forall d. NodePath -> List (InletDef d) -> Network d -> Rpd (Network d)
+addInlets nodePath inletDefs nw =
+    -- FIXME: may appear not very optimal, since every `addInlet'`
+    --        call looks for the node again and again
+    foldr foldingF (pure nw) inletDefs
+    where
+        foldingF inletDef rpd =
+            rpd </> addInlet' nodePath inletDef
+
+
 -- TODO: removeInlet
     -- TODO: execute the corresponding process canceler
     -- TODO: cancel all the links going into this inlet
@@ -705,6 +668,16 @@ addOutlet' nodePath def nw = do
     pure $ nw
         # setJust (_outlet outletPath) newOutlet
         # setJust (_nodeOutlet nodePath outletPath) unit
+
+
+addOutlets :: forall d. NodePath -> List (OutletDef d) -> Network d -> Rpd (Network d)
+addOutlets nodePath outletDefs nw =
+    -- FIXME: may appear not very optimal, since every `addOutlet'`
+    --        call looks for the node again and again
+    foldr foldingF (pure nw) outletDefs
+    where
+        foldingF outletDef rpd =
+            rpd </> addOutlet' nodePath outletDef
 
 
 -- TODO: removeOutlet
@@ -923,6 +896,55 @@ disconnectAll outletPath inletPath
 -- TODO: subscribeAllData
 
 
+convertKeysInMap
+    :: forall k k' v
+     . Ord k => Ord k'
+    => (k -> k')
+    -> (k /-> v)
+    -> (k' /-> v)
+convertKeysInMap toNewKey =
+    -- foldr foldingF Map.empty $ Map.keys srcMap
+    -- where
+    --     foldingF oldKey resMap =
+    --         maybe resMap
+    --             (\v -> Map.insert (toNewKey oldKey) v resMap)
+    --             $ Map.lookup oldKey srcMap
+    Map.fromFoldable <<< amap (lmap toNewKey) <<< Map.toUnfoldable where
+        amap :: forall a b. (a -> b) -> (Array a -> Array b)
+        amap = map
+
+
+makeProcessFlow :: forall d. Flow (InletPath /\ d) -> Flow (InletPath /-> d)
+makeProcessFlow dataFlow =
+    E.fold (uncurry Map.insert) dataFlow Map.empty
+
+
+makeProcessHandler
+    :: forall d
+     . NodePath
+    -> ((Int /-> d) -> (Int /-> d))
+    -> Network d
+    -> (InletPath /-> d)
+    -> Effect Unit
+makeProcessHandler nodePath processF nw inletVals = do -- processF inletVals =
+    let outletVals = processF (convertKeysInMap getInletId inletVals)
+    foreachE (Set.toUnfoldable $ Map.keys outletVals) (pushToOutlet outletVals)
+    pure unit
+    where
+        getInletId (InletPath _ inletId) = inletId
+        pushToOutlet outletVals outletId =
+            let outletPath = OutletPath nodePath outletId
+            in case view (_outletPFlow outletPath) nw of
+                Just (PushableFlow push _) -> do
+                    maybe
+                        (pure unit)
+                        (\d -> do
+                            _ <- push d
+                            pure unit
+                        ) $ view (at outletId) outletVals
+                Nothing -> pure unit
+
+
 isNodeInPatch :: NodePath -> PatchId -> Boolean
 isNodeInPatch (NodePath patchId' _) patchId =
     patchId == patchId'
@@ -999,6 +1021,7 @@ unpackInletPath (InletPath nodePath id) = unpackNodePath nodePath <> [ id ]
 
 unpackOutletPath :: OutletPath -> Array Int
 unpackOutletPath (OutletPath nodePath id) = unpackNodePath nodePath <> [ id ]
+
 
 
 instance showRpdError :: Show RpdError where

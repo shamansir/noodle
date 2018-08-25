@@ -325,11 +325,11 @@ spec = do
                       </> R.sendToInlet (inletPath 0 0 1) (Curse 3)
               pure [ ]
           collectedData `shouldContain`
-            (InletData (inletPath 0 0 0) (Curse 4))
+            (InletData (inletPath 0 0 0) $ Curse 4)
           collectedData `shouldContain`
-            (InletData (inletPath 0 0 0) (Curse 3))
+            (InletData (inletPath 0 0 1) $ Curse 3)
           collectedData `shouldContain`
-            (OutletData (outletPath 0 0 0) (Apple 7))
+            (OutletData (outletPath 0 0 0) $ Apple 7)
           pure unit
 
       pure unit
