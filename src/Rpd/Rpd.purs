@@ -124,7 +124,7 @@ flow :: forall d. Event d -> Flow d
 flow = identity
 
 
-type ProcessF d = ((InletPath /-> d) -> (OutletPath /-> d))
+type ProcessF d = ((Int /-> d) -> (Int /-> d))
 -- TODO: type ProcessF d = (Map String d -> Map String d)
 
 data PatchId = PatchId Int
@@ -151,7 +151,7 @@ type NodeDef d =
 type InletDef d =
     { label :: String
     , default :: Maybe d
-    , accept :: Maybe d
+    , accept :: Maybe (d -> Boolean)
     --, adapt ::
     }
 type OutletDef d =
@@ -536,7 +536,7 @@ addNode patchId name =
         { name
         , inletDefs : List.Nil
         , outletDefs : List.Nil
-        , process : const Map.empty -- const
+        , process : const Map.empty
         }
 
 
@@ -552,7 +552,7 @@ addNode' patchId def@{ process } nw = do
     let processFlow = makeProcessFlow dataFlow
     canceler :: Canceler
         <- liftEffect
-            $ E.subscribe processFlow (nw # makeProcessHandler process)
+            $ E.subscribe processFlow (nw # makeProcessHandler nodePath process)
     let
         newNode =
             Node
@@ -571,28 +571,42 @@ addNode' patchId def@{ process } nw = do
 
 makeProcessHandler
     :: forall d
-     . ((InletPath /-> d) -> (OutletPath /-> d))
+     . NodePath
+    -> ((Int /-> d) -> (Int /-> d))
     -> Network d
     -> (InletPath /-> d)
     -> Effect Unit
-makeProcessHandler processF nw inletVals = do -- processF inletVals =
-    let outletVals = processF inletVals
+makeProcessHandler nodePath processF nw inletVals = do -- processF inletVals =
+    let outletVals = processF (convertKeysInMap getInletId inletVals)
     foreachE (Set.toUnfoldable $ Map.keys outletVals) (pushToOutlet outletVals)
     pure unit
     where
-        pushToOutlet outletVals outletPath =
-            case view (_outletPFlow outletPath) nw of
+        getInletId (InletPath _ inletId) = inletId
+        pushToOutlet outletVals outletId =
+            let outletPath = OutletPath nodePath outletId
+            in case view (_outletPFlow outletPath) nw of
                 Just (PushableFlow push _) -> do
                     maybe
                         (pure unit)
                         (\d -> do
                             _ <- push d
                             pure unit
-                        ) $ view (at outletPath) outletVals
+                        ) $ view (at outletId) outletVals
                 Nothing -> pure unit
 
 
-    -- FIXME: implement
+convertKeysInMap
+    :: forall k k' v
+     . Ord k => Ord k'
+    => (k -> k')
+    -> (k /-> v)
+    -> (k' /-> v)
+convertKeysInMap toNewKey srcMap =
+    foldr foldingF Map.empty $ Map.keys srcMap
+    where
+        foldingF oldKey resMap =
+            maybe resMap (\v -> Map.insert (toNewKey oldKey) v resMap)
+                $ Map.lookup oldKey srcMap
 
 
 -- TODO: removeNode
@@ -690,74 +704,6 @@ addOutlet' nodePath def nw = do
 
 -- TODO: removeOutlet
     -- TODO: cancel all the links going from this outlet
-
-
-connect
-    :: forall d
-     . OutletPath
-    -> InletPath
-    -> Network d
-    -> Rpd (Network d)
--- FIXME: rewrite for the case of different patches
-connect outletPath inletPath
-    nw@(Network nwdef nwstate) = do
-    let
-        linkId = nextLinkId nw
-        newLink = Link outletPath inletPath
-        iNodePath = getNodeOfInlet inletPath
-        oPatchId = getPatchOfOutlet outletPath
-        iPatchId = getPatchOfInlet inletPath
-
-    outletPFlow <- view (_outletPFlow outletPath) nw # exceptMaybe (RpdError "")
-    inletPFlow <- view (_inletPFlow inletPath) nw # exceptMaybe (RpdError "")
-
-    let
-        (PushableFlow _ outletFlow) = outletPFlow
-        (PushableFlow pushToInlet inletFlow) = inletPFlow
-
-    linkCanceler :: Canceler <-
-            liftEffect $
-                E.subscribe outletFlow pushToInlet
-
-    pure $ nw
-            # setJust (_link linkId) newLink
-            # setJust (_linkCanceler linkId) linkCanceler
-
-
-disconnectAll
-    :: forall d
-     . OutletPath
-    -> InletPath
-    -> Network d
-    -> Rpd (Network d)
-disconnectAll outletPath inletPath
-    nw@(Network nwdef nwstate@{ links }) = do
-    let
-        linkForDeletion (Link outletPath' inletPath') =
-            (outletPath' == outletPath) && (inletPath' == inletPath)
-        linksForDeletion = Map.keys $ links # Map.filter linkForDeletion
-
-        oPatchId = getPatchOfOutlet outletPath
-        iPatchId = getPatchOfInlet inletPath
-
-    _ <- liftEffect $ traverse_
-            (\linkId -> fromMaybe (pure unit) $ view (_linkCanceler linkId) nw)
-            linksForDeletion
-
-    pure $ (
-        foldr (\linkId nw ->
-            nw # set (_link linkId) Nothing
-               # set (_linkCanceler linkId) Nothing
-        ) nw linksForDeletion
-        -- # setJust (_inletConnections inletPath) newInletConnections
-        -- # setJust (_outletConnections outletPath) newOutletConnections
-    )
-
-    -- TODO: un-subscribe `process`` function of the target node to update values including this connection
-
--- TODO: disconnectTop
-
--- TODO: disconnectTopOf (OutletPath /\ InletPath)
 
 
 sendToInlet
@@ -883,7 +829,6 @@ subscribeChannelsData oHandler iHandler nw =
     bisequence $ subscribeAllOutlets oHandler nw /\ subscribeAllInlets iHandler nw
 
 
-
 subscribeNode
     :: forall d
      . NodePath
@@ -897,6 +842,74 @@ subscribeNode nodePath handler nw = do
     canceler :: Canceler <-
         liftEffect $ E.subscribe flow handler
     pure canceler
+
+
+connect
+    :: forall d
+     . OutletPath
+    -> InletPath
+    -> Network d
+    -> Rpd (Network d)
+-- FIXME: rewrite for the case of different patches
+connect outletPath inletPath
+    nw@(Network nwdef nwstate) = do
+    let
+        linkId = nextLinkId nw
+        newLink = Link outletPath inletPath
+        iNodePath = getNodeOfInlet inletPath
+        oPatchId = getPatchOfOutlet outletPath
+        iPatchId = getPatchOfInlet inletPath
+
+    outletPFlow <- view (_outletPFlow outletPath) nw # exceptMaybe (RpdError "")
+    inletPFlow <- view (_inletPFlow inletPath) nw # exceptMaybe (RpdError "")
+
+    let
+        (PushableFlow _ outletFlow) = outletPFlow
+        (PushableFlow pushToInlet inletFlow) = inletPFlow
+
+    linkCanceler :: Canceler <-
+            liftEffect $
+                E.subscribe outletFlow pushToInlet
+
+    pure $ nw
+            # setJust (_link linkId) newLink
+            # setJust (_linkCanceler linkId) linkCanceler
+
+
+disconnectAll
+    :: forall d
+     . OutletPath
+    -> InletPath
+    -> Network d
+    -> Rpd (Network d)
+disconnectAll outletPath inletPath
+    nw@(Network nwdef nwstate@{ links }) = do
+    let
+        linkForDeletion (Link outletPath' inletPath') =
+            (outletPath' == outletPath) && (inletPath' == inletPath)
+        linksForDeletion = Map.keys $ links # Map.filter linkForDeletion
+
+        oPatchId = getPatchOfOutlet outletPath
+        iPatchId = getPatchOfInlet inletPath
+
+    _ <- liftEffect $ traverse_
+            (\linkId -> fromMaybe (pure unit) $ view (_linkCanceler linkId) nw)
+            linksForDeletion
+
+    pure $ (
+        foldr (\linkId nw ->
+            nw # set (_link linkId) Nothing
+               # set (_linkCanceler linkId) Nothing
+        ) nw linksForDeletion
+        -- # setJust (_inletConnections inletPath) newInletConnections
+        -- # setJust (_outletConnections outletPath) newOutletConnections
+    )
+
+    -- TODO: un-subscribe `process`` function of the target node to update values including this connection
+
+-- TODO: disconnectTop
+
+-- TODO: disconnectTopOf (OutletPath /\ InletPath)
 
 
 -- TODO: subscribeAllNodes

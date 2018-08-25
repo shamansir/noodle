@@ -8,6 +8,8 @@ import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Map as Map
+import Data.List as List
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
@@ -46,6 +48,25 @@ instance eqDelivery :: Eq Delivery where
 
 
 type MyRpd = R.Rpd (R.Network Delivery)
+
+
+producingNothingNode :: R.NodeDef Delivery
+producingNothingNode =
+  { name : "Nothing"
+  , inletDefs : List.Nil
+  , outletDefs : List.Nil
+  , process : const Map.empty
+  }
+
+
+sumCursesToApplesNode :: R.NodeDef Delivery
+sumCursesToApplesNode =
+  -- TODO: implement
+  { name : "Sum Curses to Apples"
+  , inletDefs : List.Nil
+  , outletDefs : List.Nil
+  , process : const Map.empty
+  }
 
 
 spec :: Spec Unit
