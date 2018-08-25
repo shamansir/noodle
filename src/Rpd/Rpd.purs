@@ -39,6 +39,7 @@ import Data.Set (Set)
 import Data.Set as Set
 import Data.Traversable (sequence, traverse, traverse_)
 import Data.Tuple (curry, uncurry)
+import Data.Bifunctor (lmap)
 import Data.Tuple.Nested ((/\), type (/\))
 import Effect (Effect, foreachE)
 import Effect.Class (liftEffect)
@@ -558,8 +559,8 @@ addNode' patchId def@{ process } nw = do
             Node
                 nodePath
                 def
-                { inlets : Set.empty
-                , outlets : Set.empty
+                { inlets : Set.empty -- TODO: add inlets from the def
+                , outlets : Set.empty -- TODO: add outlets from the def
                 , flow : dataPFlow
                 , processFlow : processFlow
                 }
@@ -601,12 +602,16 @@ convertKeysInMap
     => (k -> k')
     -> (k /-> v)
     -> (k' /-> v)
-convertKeysInMap toNewKey srcMap =
-    foldr foldingF Map.empty $ Map.keys srcMap
-    where
-        foldingF oldKey resMap =
-            maybe resMap (\v -> Map.insert (toNewKey oldKey) v resMap)
-                $ Map.lookup oldKey srcMap
+convertKeysInMap toNewKey =
+    -- foldr foldingF Map.empty $ Map.keys srcMap
+    -- where
+    --     foldingF oldKey resMap =
+    --         maybe resMap
+    --             (\v -> Map.insert (toNewKey oldKey) v resMap)
+    --             $ Map.lookup oldKey srcMap
+    Map.fromFoldable <<< amap (lmap toNewKey) <<< Map.toUnfoldable where
+        amap :: forall a b. (a -> b) -> (Array a -> Array b)
+        amap = map
 
 
 -- TODO: removeNode

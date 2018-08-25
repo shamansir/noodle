@@ -6,10 +6,12 @@ import Prelude
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
+import Data.List ((:))
+import Data.List as List
+import Data.Map as Map
+import Data.Maybe (Maybe(..), maybe)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Map as Map
-import Data.List as List
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
@@ -50,23 +52,48 @@ instance eqDelivery :: Eq Delivery where
 type MyRpd = R.Rpd (R.Network Delivery)
 
 
-producingNothingNode :: R.NodeDef Delivery
-producingNothingNode =
-  { name : "Nothing"
-  , inletDefs : List.Nil
-  , outletDefs : List.Nil
-  , process : const Map.empty
-  }
+-- producingNothingNode :: R.NodeDef Delivery
+-- producingNothingNode =
+--   { name : "Nothing"
+--   , inletDefs : List.Nil
+--   , outletDefs : List.Nil
+--   , process : const Map.empty
+--   }
 
 
 sumCursesToApplesNode :: R.NodeDef Delivery
 sumCursesToApplesNode =
-  -- TODO: implement
   { name : "Sum Curses to Apples"
-  , inletDefs : List.Nil
-  , outletDefs : List.Nil
-  , process : const Map.empty
+  , inletDefs
+      : curseInlet "curse1"
+      : curseInlet "curse2"
+      : List.Nil
+  , outletDefs
+      : appleOutlet "apples"
+      : List.Nil
+  , process : process
   }
+  where
+    curseInlet label =
+      { label
+      , accept : Just onlyCurses
+      , default : Nothing
+      }
+    appleOutlet label =
+      { label
+      }
+    onlyCurses (Curse _) = true
+    onlyCurses _ = false
+    processHelper (Curse a) (Curse b) =
+      Map.insert 0 (Apple (a + b)) Map.empty
+    processHelper _ _ = Map.empty
+    process inletVals =
+      maybe
+        Map.empty
+        identity
+        $ processHelper
+          <$> Map.lookup 0 inletVals
+          <*> Map.lookup 1 inletVals
 
 
 spec :: Spec Unit
@@ -115,7 +142,7 @@ spec = do
             nw
             $ do
               _ <- nw
-                    # R.sendToInlet (inletPath 0 0 0) Parcel
+                     #  R.sendToInlet (inletPath 0 0 0) Parcel
                     </> R.sendToInlet (inletPath 0 0 0) Pills
                     </> R.sendToInlet (inletPath 0 0 0) (Curse 5)
               pure []
@@ -281,7 +308,32 @@ spec = do
 
     pending "adding an inlet inludes its flow into processing"
 
-    pending "returning value from processing function actually sends values to the outlet"
+    it "returning value from processing function actually sends values to the outlet" $ do
+      let
+        rpd :: MyRpd
+        rpd =
+          R.init "network"
+            </> R.addPatch "patch"
+            </> R.addNode' (patchId 0) sumCursesToApplesNode
+
+      rpd # withRpd \nw -> do
+          collectedData <- CollectData.channelsAfter
+            (Milliseconds 100.0)
+            nw
+            $ do
+              _ <- nw  #  R.sendToInlet (inletPath 0 0 0) (Curse 4)
+                      </> R.sendToInlet (inletPath 0 0 1) (Curse 3)
+              pure [ ]
+          collectedData `shouldContain`
+            (InletData (inletPath 0 0 0) (Curse 4))
+          collectedData `shouldContain`
+            (InletData (inletPath 0 0 0) (Curse 3))
+          collectedData `shouldContain`
+            (OutletData (outletPath 0 0 0) (Apple 7))
+          pure unit
+
+      pure unit
+
 
     -- LINKS <-> NODES --
 
