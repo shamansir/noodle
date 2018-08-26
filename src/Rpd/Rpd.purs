@@ -13,7 +13,6 @@ module Rpd
     , subscribeInlet, subscribeOutlet, subscribeAllInlets, subscribeAllOutlets
     , subscribeChannelsData, subscribeNode  -- subscribeAllData
     , sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
-    , ProcessF
     , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath
     , isNodeInPatch, isInletInPatch, isOutletInPatch, isInletInNode, isOutletInNode
@@ -112,9 +111,7 @@ someApiFunc =
 type Flow d = Event d
 type PushF d = (d -> Effect Unit)
 data PushableFlow d = PushableFlow (PushF d) (Flow d)
--- paths in connection duplicate what is stored in the link
-data InletConnection = InletConnection OutletPath LinkId
-data OutletConnection = OutletConnection InletPath LinkId
+
 
 type Canceler =
     Effect Unit
@@ -126,8 +123,11 @@ flow :: forall d. Event d -> Flow d
 flow = identity
 
 
-type ProcessF d = ((Int /-> d) -> (Int /-> d))
--- TODO: type ProcessF d = (Map String d -> Map String d)
+data ProcessF d
+    = FlowThrough
+    | IndexBased (Array d -> Array d)
+    | LabelBased (String /-> d -> String /-> d)
+
 
 data PatchId = PatchId Int
 data NodePath = NodePath PatchId Int
@@ -148,7 +148,7 @@ type NodeDef d =
     { name :: String
     , inletDefs :: List (InletDef d)
     , outletDefs :: List (OutletDef d)
-    , process :: ProcessF d -- FIXME: change to Maybe
+    , process :: ProcessF d
     }
 type InletDef d =
     { label :: String
@@ -274,7 +274,6 @@ _node nodePath@(NodePath patchId _) =
             Network
                 nwdef
                 nwstate { nodes = set nodeLens val nwstate.nodes }
-            -- # set (_patchNode patchId nodePath) (const unit <$> val)
 
 
 _nodeFlow :: forall d. NodePath -> Getter' (Network d) (Maybe (Flow (InletPath /\ d)))
@@ -538,7 +537,7 @@ addNode patchId name =
         { name
         , inletDefs : List.Nil
         , outletDefs : List.Nil
-        , process : const Map.empty
+        , process : FlowThrough
         }
 
 
@@ -576,15 +575,19 @@ updateNodeProcessFlow
     -> Network d
     -> Rpd (Network d)
 updateNodeProcessFlow nodePath nw = do
-    -- TODO: do nothing when there are no outlets and inlets in the node
-    (Node _ nodeDef { processFlow }) <- except $ view (_node nodePath) nw # note (RpdError "")
     -- cancel the previous subscription if it exists
     _ <- liftEffect $ fromMaybe (pure unit) $ view (_nodeCanceler nodePath) nw
-    (PushableFlow _ dataFlow) <- except $ view (_nodePFlow nodePath) nw # note (RpdError "")
-    canceler :: Canceler
-        <- liftEffect
-            $ E.subscribe processFlow (nw # makeProcessHandler nodePath nodeDef.process)
-    pure $ nw # setJust (_nodeCanceler nodePath) canceler
+    (Node _ nodeDef { processFlow, inlets, outlets }) <-
+        except $ view (_node nodePath) nw # note (RpdError "")
+    -- TODO: do nothing when there are no outlets and inlets in the node
+    if ((processFlow == FlowThrough)
+        || List.null inlets
+        || List.null outlets) then pure nw else do
+        (PushableFlow _ dataFlow) <- except $ view (_nodePFlow nodePath) nw # note (RpdError "")
+        canceler :: Canceler
+            <- liftEffect
+                $ E.subscribe processFlow (nw # makeProcessHandler nodePath nodeDef.process)
+        pure $ nw # setJust (_nodeCanceler nodePath) canceler
 
 
 -- TODO: removeNode
@@ -913,24 +916,6 @@ disconnectAll outletPath inletPath
 -- TODO: subscribeAllData
 
 
-convertKeysInMap
-    :: forall k k' v
-     . Ord k => Ord k'
-    => (k -> k')
-    -> (k /-> v)
-    -> (k' /-> v)
-convertKeysInMap toNewKey =
-    -- foldr foldingF Map.empty $ Map.keys srcMap
-    -- where
-    --     foldingF oldKey resMap =
-    --         maybe resMap
-    --             (\v -> Map.insert (toNewKey oldKey) v resMap)
-    --             $ Map.lookup oldKey srcMap
-    Map.fromFoldable <<< amap (lmap toNewKey) <<< Map.toUnfoldable where
-        amap :: forall a b. (a -> b) -> (Array a -> Array b)
-        amap = map
-
-
 makeProcessFlow :: forall d. Flow (InletPath /\ d) -> Flow (InletPath /-> d)
 makeProcessFlow dataFlow =
     E.fold (uncurry Map.insert) dataFlow Map.empty
@@ -938,29 +923,54 @@ makeProcessFlow dataFlow =
 
 makeProcessHandler
     :: forall d
-     . NodePath
-    -> ((Int /-> d) -> (Int /-> d))
+     . (String /-> d -> String /-> d)
+    -> (String /-> d)
+    -> (String /-> PushableFlow d)
     -> Network d
-    -> (InletPath /-> d)
     -> Effect Unit
-makeProcessHandler nodePath processF nw inletVals = do -- processF inletVals =
-    let outletVals = processF (convertKeysInMap getInletId inletVals)
+makeProcessHandler (LabelBased processF) inletVals outletFlows nw = do
+    let (outletVals :: String /-> d) = processF inletVals
     foreachE (Set.toUnfoldable $ Map.keys outletVals) (pushToOutlet outletVals)
     pure unit
     where
         getInletId (InletPath _ inletId) = inletId
-        pushToOutlet outletVals outletId = do
-            let outletPath = OutletPath nodePath outletId
-            case view (_outletPFlow outletPath) nw of
+        pushToOutlet outletVals outletLabel =
+            case view (at outletLabel) outletFlows of
                 Just (PushableFlow push _) -> do
                     maybe
                         (pure unit)
                         (\d -> do
                             _ <- push d
                             pure unit
-                        ) $ view (at outletId) outletVals
+                        ) $ view (at outletLabel) outletVals
                 Nothing -> do
                     pure unit
+
+makeProcessHandler'
+    :: forall d
+     . (Array d -> Array d)
+    -> (String /-> d)
+    -> (String /-> PushableFlow d)
+    -> Network d
+    -> Effect Unit
+makeProcessHandler' processF inletVals outletFlows nw = do
+    let (outletVals :: Array d) = processF $ List.toUnfoldable $ Map.values inletVals
+    foreachE outletVals (pushToOutlet outletVals)
+    pure unit
+    where
+        getInletId (InletPath _ inletId) = inletId
+        pushToOutlet outletVals outletLabel =
+            case view (at outletLabel) outletFlows of
+                Just (PushableFlow push _) -> do
+                    maybe
+                        (pure unit)
+                        (\d -> do
+                            _ <- push d
+                            pure unit
+                        ) $ view (at outletLabel) outletVals
+                Nothing -> do
+                    pure unit
+
 
 
 isNodeInPatch :: NodePath -> PatchId -> Boolean
