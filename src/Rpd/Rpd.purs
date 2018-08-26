@@ -576,6 +576,7 @@ updateNodeProcessFlow
     -> Network d
     -> Rpd (Network d)
 updateNodeProcessFlow nodePath nw = do
+    -- TODO: do nothing when there are no outlets and inlets in the node
     (Node _ nodeDef { processFlow }) <- except $ view (_node nodePath) nw # note (RpdError "")
     -- cancel the previous subscription if it exists
     _ <- liftEffect $ fromMaybe (pure unit) $ view (_nodeCanceler nodePath) nw
@@ -584,7 +585,6 @@ updateNodeProcessFlow nodePath nw = do
         <- liftEffect
             $ E.subscribe processFlow (nw # makeProcessHandler nodePath nodeDef.process)
     pure $ nw # setJust (_nodeCanceler nodePath) canceler
-
 
 
 -- TODO: removeNode
