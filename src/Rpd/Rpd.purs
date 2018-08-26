@@ -31,6 +31,8 @@ import Data.Lens (Lens', Getter', lens, view, set, setJust, over, to)
 import Data.Lens.At (at)
 import Data.List (List, (:))
 import Data.List as List
+import Data.Array ((!!))
+import Data.Array as Array
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, fromMaybe', maybe)
@@ -924,11 +926,11 @@ makeProcessFlow dataFlow =
 makeProcessHandler
     :: forall d
      . (String /-> d -> String /-> d)
-    -> (String /-> d)
     -> (String /-> PushableFlow d)
     -> Network d
+    -> (String /-> d)
     -> Effect Unit
-makeProcessHandler (LabelBased processF) inletVals outletFlows nw = do
+makeProcessHandler processF outletFlows nw inletVals = do
     let (outletVals :: String /-> d) = processF inletVals
     foreachE (Set.toUnfoldable $ Map.keys outletVals) (pushToOutlet outletVals)
     pure unit
@@ -949,25 +951,20 @@ makeProcessHandler (LabelBased processF) inletVals outletFlows nw = do
 makeProcessHandler'
     :: forall d
      . (Array d -> Array d)
-    -> (String /-> d)
-    -> (String /-> PushableFlow d)
+    -> Array (PushableFlow d)
     -> Network d
+    -> Array d
     -> Effect Unit
-makeProcessHandler' processF inletVals outletFlows nw = do
-    let (outletVals :: Array d) = processF $ List.toUnfoldable $ Map.values inletVals
-    foreachE outletVals (pushToOutlet outletVals)
+makeProcessHandler' processF outletFlows nw inletVals = do
+    let (outletVals :: Array d) = processF inletVals
+    _ <- sequence $ Array.mapWithIndex pushToOutlet outletVals
     pure unit
     where
-        getInletId (InletPath _ inletId) = inletId
-        pushToOutlet outletVals outletLabel =
-            case view (at outletLabel) outletFlows of
+        pushToOutlet outletIndex d =
+            case outletFlows !! outletIndex of
                 Just (PushableFlow push _) -> do
-                    maybe
-                        (pure unit)
-                        (\d -> do
-                            _ <- push d
-                            pure unit
-                        ) $ view (at outletLabel) outletVals
+                    _ <- push d
+                    pure unit
                 Nothing -> do
                     pure unit
 
