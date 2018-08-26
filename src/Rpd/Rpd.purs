@@ -46,7 +46,7 @@ import Effect.Class (liftEffect)
 import FRP.Event (Event)
 import FRP.Event as E
 -- import Unsafe.Coerce (unsafeCoerce)
-import Effect.Class.Console (log)
+-- import Effect.Class.Console (log)
 
 
 --import Rpd.Flow as Flow
@@ -630,11 +630,10 @@ addInlet' nodePath def nw = do
     canceler :: Canceler <-
         liftEffect $
             E.subscribe dataFlow (\d -> pushNodeData (inletPath /\ d))
-    pure $ nw
-        # setJust (_inlet inletPath) newInlet
-        # setJust (_nodeInlet nodePath inletPath) unit
-        # setJust (_inletCanceler inletPath) canceler
-       -- FIXME: </> updateNodeProcessFlow nodePath
+    nw # setJust (_inlet inletPath) newInlet
+       # setJust (_nodeInlet nodePath inletPath) unit
+       # setJust (_inletCanceler inletPath) canceler
+       # updateNodeProcessFlow nodePath
 
 
 addInlets :: forall d. NodePath -> List (InletDef d) -> Network d -> Rpd (Network d)
@@ -650,6 +649,7 @@ addInlets nodePath inletDefs nw =
 -- TODO: removeInlet
     -- TODO: execute the corresponding process canceler
     -- TODO: cancel all the links going into this inlet
+    -- TODO: updateNodeProcessFlow
 
 
 addOutlet
@@ -681,9 +681,9 @@ addOutlet' nodePath def nw = do
                 def
                 { flow : pushableFlow
                 }
-    pure $ nw
-        # setJust (_outlet outletPath) newOutlet
-        # setJust (_nodeOutlet nodePath outletPath) unit
+    nw # setJust (_outlet outletPath) newOutlet
+       # setJust (_nodeOutlet nodePath outletPath) unit
+       # updateNodeProcessFlow nodePath
 
 
 addOutlets :: forall d. NodePath -> List (OutletDef d) -> Network d -> Rpd (Network d)
@@ -698,6 +698,7 @@ addOutlets nodePath outletDefs nw =
 
 -- TODO: removeOutlet
     -- TODO: cancel all the links going from this outlet
+    -- TODO: updateNodeProcessFlow
 
 
 sendToInlet
@@ -944,28 +945,21 @@ makeProcessHandler
     -> Effect Unit
 makeProcessHandler nodePath processF nw inletVals = do -- processF inletVals =
     let outletVals = processF (convertKeysInMap getInletId inletVals)
-    -- _ <- log $ show (Map.keys outletVals)
     foreachE (Set.toUnfoldable $ Map.keys outletVals) (pushToOutlet outletVals)
     pure unit
     where
         getInletId (InletPath _ inletId) = inletId
         pushToOutlet outletVals outletId = do
             let outletPath = OutletPath nodePath outletId
-            log $ show outletPath
-            _ <- maybe (log "No outlet") (const $ log "Have outlet")
-                $ view (_outlet outletPath) nw
             case view (_outletPFlow outletPath) nw of
                 Just (PushableFlow push _) -> do
-                    log "Just flow"
                     maybe
                         (pure unit)
                         (\d -> do
-                            _ <- log "Got delivery"
                             _ <- push d
                             pure unit
                         ) $ view (at outletId) outletVals
                 Nothing -> do
-                    log "no flow"
                     pure unit
 
 
