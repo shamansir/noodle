@@ -45,7 +45,8 @@ import Effect (Effect, foreachE)
 import Effect.Class (liftEffect)
 import FRP.Event (Event)
 import FRP.Event as E
-import Unsafe.Coerce (unsafeCoerce)
+-- import Unsafe.Coerce (unsafeCoerce)
+import Effect.Class.Console (log)
 
 
 --import Rpd.Flow as Flow
@@ -147,7 +148,7 @@ type NodeDef d =
     { name :: String
     , inletDefs :: List (InletDef d)
     , outletDefs :: List (OutletDef d)
-    , process :: ProcessF d -- TODO: change to Maybe
+    , process :: ProcessF d -- FIXME: change to Maybe
     }
 type InletDef d =
     { label :: String
@@ -550,26 +551,40 @@ addNode'
 addNode' patchId def nw = do
     nodePath <- except $ nextNodePath patchId nw
     dataPFlow@(PushableFlow _ dataFlow) <- liftEffect makePushableFlow
-    let processFlow = makeProcessFlow dataFlow
-    canceler :: Canceler
-        <- liftEffect
-            $ E.subscribe processFlow (nw # makeProcessHandler nodePath def.process)
     let
+        processFlow = makeProcessFlow dataFlow
         newNode =
             Node
                 nodePath
                 def
-                { inlets : Set.empty -- TODO: add inlets from the def
-                , outlets : Set.empty -- TODO: add outlets from the def
+                { inlets : Set.empty
+                , outlets : Set.empty
                 , flow : dataPFlow
-                , processFlow : processFlow
+                , processFlow : processFlow -- must be an event doing nothing at first
                 }
     nw
          #  setJust (_node nodePath) newNode
          #  setJust (_patchNode patchId nodePath) unit
-         #  setJust (_nodeCanceler nodePath) canceler
          #  addInlets nodePath def.inletDefs
         </> addOutlets nodePath def.outletDefs
+        </> updateNodeProcessFlow nodePath
+
+
+updateNodeProcessFlow
+    :: forall d
+     . NodePath
+    -> Network d
+    -> Rpd (Network d)
+updateNodeProcessFlow nodePath nw = do
+    (Node _ nodeDef { processFlow }) <- except $ view (_node nodePath) nw # note (RpdError "")
+    -- cancel the previous subscription if it exists
+    _ <- liftEffect $ fromMaybe (pure unit) $ view (_nodeCanceler nodePath) nw
+    (PushableFlow _ dataFlow) <- except $ view (_nodePFlow nodePath) nw # note (RpdError "")
+    canceler :: Canceler
+        <- liftEffect
+            $ E.subscribe processFlow (nw # makeProcessHandler nodePath nodeDef.process)
+    pure $ nw # setJust (_nodeCanceler nodePath) canceler
+
 
 
 -- TODO: removeNode
@@ -616,9 +631,10 @@ addInlet' nodePath def nw = do
         liftEffect $
             E.subscribe dataFlow (\d -> pushNodeData (inletPath /\ d))
     pure $ nw
-            # setJust (_inlet inletPath) newInlet
-            # setJust (_nodeInlet nodePath inletPath) unit
-            # setJust (_inletCanceler inletPath) canceler
+        # setJust (_inlet inletPath) newInlet
+        # setJust (_nodeInlet nodePath inletPath) unit
+        # setJust (_inletCanceler inletPath) canceler
+       -- FIXME: </> updateNodeProcessFlow nodePath
 
 
 addInlets :: forall d. NodePath -> List (InletDef d) -> Network d -> Rpd (Network d)
@@ -928,21 +944,29 @@ makeProcessHandler
     -> Effect Unit
 makeProcessHandler nodePath processF nw inletVals = do -- processF inletVals =
     let outletVals = processF (convertKeysInMap getInletId inletVals)
+    -- _ <- log $ show (Map.keys outletVals)
     foreachE (Set.toUnfoldable $ Map.keys outletVals) (pushToOutlet outletVals)
     pure unit
     where
         getInletId (InletPath _ inletId) = inletId
-        pushToOutlet outletVals outletId =
+        pushToOutlet outletVals outletId = do
             let outletPath = OutletPath nodePath outletId
-            in case view (_outletPFlow outletPath) nw of
+            log $ show outletPath
+            _ <- maybe (log "No outlet") (const $ log "Have outlet")
+                $ view (_outlet outletPath) nw
+            case view (_outletPFlow outletPath) nw of
                 Just (PushableFlow push _) -> do
+                    log "Just flow"
                     maybe
                         (pure unit)
                         (\d -> do
+                            _ <- log "Got delivery"
                             _ <- push d
                             pure unit
                         ) $ view (at outletId) outletVals
-                Nothing -> pure unit
+                Nothing -> do
+                    log "no flow"
+                    pure unit
 
 
 isNodeInPatch :: NodePath -> PatchId -> Boolean
