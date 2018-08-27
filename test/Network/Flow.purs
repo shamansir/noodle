@@ -64,8 +64,8 @@ type MyRpd = R.Rpd (R.Network Delivery)
 --   }
 
 
-sumCursesToApplesNode :: R.NodeDef Delivery
-sumCursesToApplesNode =
+sumCursesToApplesNode :: R.ProcessF Delivery -> R.NodeDef Delivery
+sumCursesToApplesNode processF =
   { name : "Sum Curses to Apples"
   , inletDefs
       : curseInlet "curse1"
@@ -74,7 +74,7 @@ sumCursesToApplesNode =
   , outletDefs
       : appleOutlet "apples"
       : List.Nil
-  , process : R.IndexBased process
+  , process : processF
   }
   where
     curseInlet label =
@@ -87,49 +87,7 @@ sumCursesToApplesNode =
       }
     onlyCurses (Curse _) = true
     onlyCurses _ = false
-    process [ Curse a, Curse b ] =
-      [ Apple (a + b) ]
-    process _ = []
-    -- process inletVals =
-    --   maybe
-    --     Map.empty
-    --     identity
-    --     $ processHelper
-    --       <$> Map.lookup 0 inletVals
-    --       <*> Map.lookup 1 inletVals
 
-
-sumCursesToApplesNode' :: R.NodeDef Delivery
-sumCursesToApplesNode' =
-  { name : "Sum Curses to Apples"
-  , inletDefs
-      : curseInlet "curse1"
-      : curseInlet "curse2"
-      : List.Nil
-  , outletDefs
-      : appleOutlet "apples"
-      : List.Nil
-  , process : R.LabelBased process
-  }
-  where
-    curseInlet label =
-      { label
-      , accept : Just onlyCurses
-      , default : Nothing
-      }
-    appleOutlet label =
-      { label
-      }
-    onlyCurses (Curse _) = true
-    onlyCurses _ = false
-    processHelper (Curse a) (Curse b) =
-      Map.insert "apples" (Apple (a + b)) Map.empty
-    processHelper _ _ =
-      Map.empty
-    process m =
-      fromMaybe
-        Map.empty
-        $ processHelper <$> (m^.at "curse1") <*> (m^.at "curse2")
 
 
 spec :: Spec Unit
@@ -381,13 +339,50 @@ nodes :: Spec Unit
 nodes = do
   pending "adding an inlet inludes its flow into processing"
 
-  it "returning value from processing function actually sends values to the outlet" $ do
+  it "returning some value from processing function actually sends this value to the outlet (array way)" $ do
     let
       rpd :: MyRpd
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode' (patchId 0) sumCursesToApplesNode'
+          </> R.addNode' (patchId 0) (sumCursesToApplesNode (R.IndexBased process))
+      process [ Curse a, Curse b ] =
+        [ Apple (a + b) ]
+      process _ = []
+
+    rpd # withRpd \nw -> do
+        collectedData <- CollectData.channelsAfter
+          (Milliseconds 100.0)
+          nw
+          $ do
+            _ <- nw  #  R.sendToInlet (inletPath 0 0 0) (Curse 4)
+                    </> R.sendToInlet (inletPath 0 0 1) (Curse 3)
+            pure [ ]
+        collectedData `shouldContain`
+          (InletData (inletPath 0 0 0) $ Curse 4)
+        collectedData `shouldContain`
+          (InletData (inletPath 0 0 1) $ Curse 3)
+        collectedData `shouldContain`
+          (OutletData (outletPath 0 0 0) $ Apple 7)
+        pure unit
+
+    pure unit
+
+  it "returning some value from processing function actually sends this value to the outlet (labels way)" $ do
+    let
+      rpd :: MyRpd
+      rpd =
+        R.init "network"
+          </> R.addPatch "patch"
+          </> R.addNode' (patchId 0) (sumCursesToApplesNode (R.LabelBased process))
+      processHelper (Curse a) (Curse b) =
+        Map.insert "apples" (Apple (a + b)) Map.empty
+      processHelper _ _ =
+        Map.empty
+      process m =
+        fromMaybe
+          Map.empty
+          $ processHelper <$> (m^.at "curse1") <*> (m^.at "curse2")
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter
