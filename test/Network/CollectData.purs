@@ -18,7 +18,7 @@ import Data.Time.Duration (Milliseconds)
 import Effect (Effect, foreachE)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
-import Rpd (type (/->))
+import Rpd.Util (type (/->))
 import Rpd as R
 import Rpd.Log as RL
 import Effect.Aff (Aff, delay)

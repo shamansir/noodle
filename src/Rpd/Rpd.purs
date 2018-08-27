@@ -51,6 +51,7 @@ import Rpd.Util (type (/->))
 import Rpd.Util as RU
 import Unsafe.Coerce (unsafeCoerce)
 
+
 --import Rpd.Flow as Flow
 
 -- data RunningNetwork d e = RpdEff e (Network d e)
@@ -129,10 +130,15 @@ flow = identity
 -- TODO: may be find better ways to process these things in future
 --       I'd like to have something similar to JS-world
 --       function (inlets) { return { 'c': inlets.a + inlets.b } }
+-- variants:
+--  `Record.set` / `Record.get` etc.
+--  `Foreign.Object`` : https://github.com/purescript/purescript-foreign-object/blob/master/src/Foreign/Object.purs
+--  `liftA2 (+) (m^.at a) (m^.at b)` -- Map -> Map
+
 data ProcessF d
     = FlowThrough
     | IndexBased (Array d -> Array d)
-    | LabelBased (String /-> d -> String /-> d)
+    | LabelBased ((String /-> d) -> (String /-> d))
 
 
 data PatchId = PatchId Int

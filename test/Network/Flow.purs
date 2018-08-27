@@ -9,17 +9,19 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.List ((:))
 import Data.List as List
 import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Lens ((^.), (?~))
+import Data.Lens.At (at)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
 import FRP.Event.Time (interval)
 import Rpd ((</>))
 import Rpd as R
-import Rpd.Util (type (/->))
 import Rpd.Log as RL
+import Rpd.Util (type (/->))
 import RpdTest.Network.CollectData (TraceItem(..))
 import RpdTest.Network.CollectData as CollectData
 import Test.Spec (Spec, describe, it, pending, pending')
@@ -58,7 +60,7 @@ type MyRpd = R.Rpd (R.Network Delivery)
 --   { name : "Nothing"
 --   , inletDefs : List.Nil
 --   , outletDefs : List.Nil
---   , process : const Map.empty
+--   , process : R.FlowThrough
 --   }
 
 
@@ -72,7 +74,42 @@ sumCursesToApplesNode =
   , outletDefs
       : appleOutlet "apples"
       : List.Nil
-  , process : process
+  , process : R.IndexBased process
+  }
+  where
+    curseInlet label =
+      { label
+      , accept : Just onlyCurses
+      , default : Nothing
+      }
+    appleOutlet label =
+      { label
+      }
+    onlyCurses (Curse _) = true
+    onlyCurses _ = false
+    process [ Curse a, Curse b ] =
+      [ Apple (a + b) ]
+    process _ = []
+    -- process inletVals =
+    --   maybe
+    --     Map.empty
+    --     identity
+    --     $ processHelper
+    --       <$> Map.lookup 0 inletVals
+    --       <*> Map.lookup 1 inletVals
+
+
+sumCursesToApplesNode' :: R.NodeDef Delivery
+sumCursesToApplesNode' =
+  { name : "Sum Curses to Apples"
+  , inletDefs
+      : curseInlet "curse1"
+      : curseInlet "curse2"
+      : List.Nil
+  , outletDefs
+      : appleOutlet "apples"
+      : List.Nil
+  , process : R.LabelBased process
   }
   where
     curseInlet label =
@@ -86,15 +123,14 @@ sumCursesToApplesNode =
     onlyCurses (Curse _) = true
     onlyCurses _ = false
     processHelper (Curse a) (Curse b) =
-      Map.insert 0 (Apple (a + b)) Map.empty
-    processHelper _ _ = Map.empty
-    process inletVals =
-      maybe
+      Map.insert "c" (Apple (a + b)) Map.empty
+      -- Map.empty ?~ (at "c") (Apple (a + b))
+    processHelper _ _ =
+      Map.empty
+    process m =
+      fromMaybe
         Map.empty
-        identity
-        $ processHelper
-          <$> Map.lookup 0 inletVals
-          <*> Map.lookup 1 inletVals
+        $ processHelper <$> (m^.at "a") <*> (m^.at "b")
 
 
 spec :: Spec Unit
@@ -166,7 +202,7 @@ inlets = do
           nw
           $ do
             _ <- nw
-                    #  R.sendToInlet (inletPath 0 0 0) Parcel
+                   #  R.sendToInlet (inletPath 0 0 0) Parcel
                   </> R.sendToInlet (inletPath 0 0 0) Pills
                   </> R.sendToInlet (inletPath 0 0 0) (Curse 5)
             pure []
@@ -352,7 +388,7 @@ nodes = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode' (patchId 0) sumCursesToApplesNode
+          </> R.addNode' (patchId 0) sumCursesToApplesNode'
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter
