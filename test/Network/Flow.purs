@@ -123,14 +123,13 @@ sumCursesToApplesNode' =
     onlyCurses (Curse _) = true
     onlyCurses _ = false
     processHelper (Curse a) (Curse b) =
-      Map.insert "c" (Apple (a + b)) Map.empty
-      -- Map.empty ?~ (at "c") (Apple (a + b))
+      Map.insert "apples" (Apple (a + b)) Map.empty
     processHelper _ _ =
       Map.empty
     process m =
       fromMaybe
         Map.empty
-        $ processHelper <$> (m^.at "a") <*> (m^.at "b")
+        $ processHelper <$> (m^.at "curse1") <*> (m^.at "curse2")
 
 
 spec :: Spec Unit

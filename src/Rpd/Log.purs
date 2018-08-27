@@ -13,7 +13,7 @@ import Effect (Effect)
 import Effect.Class.Console (log)
 
 reportError :: R.RpdError -> Effect Unit
-reportError = log <<< show
+reportError = log <<< (<>) "RPD Error: " <<< show
 
 
 reportAndReturn :: forall a. a -> R.RpdError -> Effect a

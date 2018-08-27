@@ -45,6 +45,7 @@ import Data.Tuple (curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Effect (Effect, foreachE)
 import Effect.Class (liftEffect)
+import Effect.Console (log, logShow)
 import FRP.Event (Event, filterMap)
 import FRP.Event as E
 import Rpd.Util (type (/->))
@@ -607,7 +608,7 @@ updateNodeProcessFlow nodePath nw = do
     _ <- liftEffect $ fromMaybe (pure unit) $ view (_nodeCanceler nodePath) nw
     (Node _ nodeDef { processFlow, inlets, outlets }) <-
         except $ view (_node nodePath) nw # note (RpdError "")
-    if (isProcessNeeded nodeDef.process
+    if (noProcessNeeded nodeDef.process
         || Set.isEmpty inlets
         || Set.isEmpty outlets) then pure nw else do
         (PushableFlow _ dataFlow) <- except $ view (_nodePFlow nodePath) nw # note (RpdError "")
@@ -618,8 +619,8 @@ updateNodeProcessFlow nodePath nw = do
             <- liftEffect $ E.subscribe processFlow processHandler
         pure $ nw # setJust (_nodeCanceler nodePath) canceler
     where
-        isProcessNeeded FlowThrough = false
-        isProcessNeeded _ = true
+        noProcessNeeded FlowThrough = true
+        noProcessNeeded _ = false
 
 
 findFittingProcessHandler
@@ -1138,7 +1139,8 @@ unpackOutletPath (OutletPath nodePath id) = unpackNodePath nodePath <> [ id ]
 
 
 instance showRpdError :: Show RpdError where
-    show (RpdError text) = "Error: " <> text
+    -- show (RpdError text) = "(RpdError)" <> text
+    show (RpdError text) = text
 
 
 instance showPatchId :: Show PatchId where
