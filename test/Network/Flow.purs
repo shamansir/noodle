@@ -18,6 +18,7 @@ import Effect.Ref as Ref
 import FRP.Event.Time (interval)
 import Rpd ((</>))
 import Rpd as R
+import Rpd.Util (type (/->))
 import Rpd.Log as RL
 import RpdTest.Network.CollectData (TraceItem(..))
 import RpdTest.Network.CollectData as CollectData

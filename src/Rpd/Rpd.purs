@@ -1,10 +1,10 @@
 module Rpd
     ( Rpd, RpdError, init
-    , (</>), type (/->), rpdBind, run, run', emptyNetwork
+    , (</>), rpdBind, run, run', emptyNetwork
     --, RpdOp, RpdEffOp
     , Flow, flow
     , Network, Patch, Node, Inlet, Outlet, Link
-    , PatchDef, NodeDef, InletDef, OutletDef
+    , PatchDef, NodeDef, InletDef, OutletDef, ProcessF(..)
     , Canceler, Subscriber, PushableFlow
     --, emptyNetwork
     --, network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
@@ -24,15 +24,17 @@ module Rpd
 import Prelude
 
 import Control.Monad.Except.Trans (ExceptT, runExceptT, mapExceptT, except)
+import Data.Array ((!!))
+import Data.Array as Array
+import Data.Bifunctor (lmap, bimap)
 import Data.Bitraversable (bisequence)
 import Data.Either (Either(..), either, note)
 import Data.Foldable (fold, foldr)
+import Data.FunctorWithIndex (mapWithIndex)
 import Data.Lens (Lens', Getter', lens, view, set, setJust, over, to)
 import Data.Lens.At (at)
 import Data.List (List, (:))
 import Data.List as List
-import Data.Array ((!!))
-import Data.Array as Array
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, fromMaybe', maybe)
@@ -40,15 +42,14 @@ import Data.Set (Set)
 import Data.Set as Set
 import Data.Traversable (sequence, traverse, traverse_)
 import Data.Tuple (curry, uncurry)
-import Data.Bifunctor (lmap)
 import Data.Tuple.Nested ((/\), type (/\))
 import Effect (Effect, foreachE)
 import Effect.Class (liftEffect)
-import FRP.Event (Event)
+import FRP.Event (Event, filterMap)
 import FRP.Event as E
--- import Unsafe.Coerce (unsafeCoerce)
--- import Effect.Class.Console (log)
-
+import Rpd.Util (type (/->))
+import Rpd.Util as RU
+import Unsafe.Coerce (unsafeCoerce)
 
 --import Rpd.Flow as Flow
 
@@ -125,6 +126,9 @@ flow :: forall d. Event d -> Flow d
 flow = identity
 
 
+-- TODO: may be find better ways to process these things in future
+--       I'd like to have something similar to JS-world
+--       function (inlets) { return { 'c': inlets.a + inlets.b } }
 data ProcessF d
     = FlowThrough
     | IndexBased (Array d -> Array d)
@@ -161,8 +165,6 @@ type InletDef d =
 type OutletDef d =
     { label :: String
     }
-
-infixr 6 type Map as /->
 
 
 data Network d =
@@ -364,6 +366,15 @@ _inlet inletPath@(InletPath nodePath _) =
             -- # set (_nodeInlet nodePath inletPath) (const unit <$> val)
 
 
+_inletLabel :: forall d. InletPath -> Getter' (Network d) (Maybe String)
+_inletLabel inletPath =
+    to extractLabel
+    where
+        inletLens = _inlet inletPath
+        extractLabel nw = view inletLens nw >>=
+            \(Inlet _ { label } _) -> pure label
+
+
 _inletPFlow :: forall d. InletPath -> Getter' (Network d) (Maybe (PushableFlow d))
 _inletPFlow inletPath =
     to extractPFlow
@@ -411,13 +422,13 @@ _outlet outletPath@(OutletPath nodePath _) =
             -- # set (_nodeOutlet nodePath outletPath) (const unit <$> val)
 
 
-_outletPFlow :: forall d. OutletPath -> Getter' (Network d) (Maybe (PushableFlow d))
-_outletPFlow outletPath =
-    to extractPFlow
+_outletLabel :: forall d. OutletPath -> Getter' (Network d) (Maybe String)
+_outletLabel outletPath =
+    to extractLabel
     where
         outletLens = _outlet outletPath
-        extractPFlow nw = view outletLens nw >>=
-            \(Outlet _ _ { flow }) -> pure flow
+        extractLabel nw = view outletLens nw >>=
+            \(Outlet _ { label } _) -> pure label
 
 
 _outletFlow :: forall d. OutletPath -> Getter' (Network d) (Maybe (Flow d))
@@ -427,6 +438,15 @@ _outletFlow outletPath =
         pFlowLens = _outletPFlow outletPath
         extractFlow nw = view pFlowLens nw >>=
             \(PushableFlow _ flow) -> pure flow
+
+
+_outletPFlow :: forall d. OutletPath -> Getter' (Network d) (Maybe (PushableFlow d))
+_outletPFlow outletPath =
+    to extractPFlow
+    where
+        outletLens = _outlet outletPath
+        extractPFlow nw = view outletLens nw >>=
+            \(Outlet _ _ { flow }) -> pure flow
 
 
 _link :: forall d. LinkId -> Lens' (Network d) (Maybe Link)
@@ -581,15 +601,76 @@ updateNodeProcessFlow nodePath nw = do
     _ <- liftEffect $ fromMaybe (pure unit) $ view (_nodeCanceler nodePath) nw
     (Node _ nodeDef { processFlow, inlets, outlets }) <-
         except $ view (_node nodePath) nw # note (RpdError "")
-    -- TODO: do nothing when there are no outlets and inlets in the node
-    if ((processFlow == FlowThrough)
-        || List.null inlets
-        || List.null outlets) then pure nw else do
+    if (isProcessNeeded nodeDef.process
+        || Set.isEmpty inlets
+        || Set.isEmpty outlets) then pure nw else do
         (PushableFlow _ dataFlow) <- except $ view (_nodePFlow nodePath) nw # note (RpdError "")
+        let
+            (processHandler :: (InletPath /-> d) -> Effect Unit) =
+                nw # findFittingProcessHandler nodeDef.process outlets
         canceler :: Canceler
-            <- liftEffect
-                $ E.subscribe processFlow (nw # makeProcessHandler nodePath nodeDef.process)
+            <- liftEffect $ E.subscribe processFlow processHandler
         pure $ nw # setJust (_nodeCanceler nodePath) canceler
+    where
+        isProcessNeeded FlowThrough = false
+        isProcessNeeded _ = true
+
+
+findFittingProcessHandler
+    :: forall d
+     . ProcessF d
+    -> Set OutletPath
+    -> Network d
+    -> (InletPath /-> d)
+    -> Effect Unit
+findFittingProcessHandler (LabelBased processF) outlets nw =
+    let
+        (outletLabelToFlow :: String /-> PushableFlow d) =
+            outlets
+                # (Set.toUnfoldable :: forall a. Set a -> Array a)
+                # map (\outletPath ->
+                    view (_outlet outletPath) nw)
+                # filterMap (\maybeOutlet ->
+                    maybeOutlet >>= \(Outlet _ { label } { flow }) ->
+                        pure (label /\ flow))
+                # Map.fromFoldable
+        ph = nw # makeProcessHandler processF outletLabelToFlow
+        pathToLabel inletPath = -- FIXME
+            fromMaybe "<?>" $ view (_inletLabel inletPath) nw
+    in
+        ph <<< RU.convertKeysInMap pathToLabel
+findFittingProcessHandler (IndexBased processF) outlets nw =
+    let
+        (outletFlows :: Array (PushableFlow d)) =
+            outlets
+                # (Set.toUnfoldable :: forall a. Set a -> Array a)
+                # map (\outletPath -> view (_outletPFlow outletPath) nw)
+                # filterMap identity
+        ph = nw # makeProcessHandler' processF outletFlows
+    in
+        ph <<< List.toUnfoldable <<< Map.values
+findFittingProcessHandler FlowThrough outlets nw =
+    unsafeCoerce
+
+
+
+-- makeProcessHandler
+--     :: forall d
+--      . (String /-> d -> String /-> d)
+--     -> (String /-> PushableFlow d)
+--     -> Network d
+--     -> (String /-> d)
+--     -> Effect Unit
+-- makeProcessHandler processF outletFlows nw inletVals = do
+
+-- makeProcessHandler'
+--     :: forall d
+--      . (Array d -> Array d)
+--     -> Array (PushableFlow d)
+--     -> Network d
+--     -> Array d
+--     -> Effect Unit
+-- makeProcessHandler processF outletFlows nw inletVals = do
 
 
 -- TODO: removeNode
@@ -947,6 +1028,7 @@ makeProcessHandler processF outletFlows nw inletVals = do
                         ) $ view (at outletLabel) outletVals
                 Nothing -> do
                     pure unit
+
 
 makeProcessHandler'
     :: forall d
