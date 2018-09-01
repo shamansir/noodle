@@ -136,6 +136,9 @@ flow = identity
 --  `Foreign.Object`` : https://github.com/purescript/purescript-foreign-object/blob/master/src/Foreign/Object.purs
 --  `liftA2 (+) (m^.at a) (m^.at b)` -- Map -> Map
 
+-- may be ProcessF should also receive previous value
+-- TODO: add Process Behavior (a.k.a. event with function) it would be possible
+--       to subscribe/know outlets changes as well
 data ProcessF d
     = FlowThrough
     | IndexBased (Array d -> Array d)

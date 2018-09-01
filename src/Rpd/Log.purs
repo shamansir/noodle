@@ -2,6 +2,7 @@ module Rpd.Log
     ( reportError
     , reportAndReturn
     , runRpdLogging
+    , runRpdLogging'
     , extract
     ) where
 
@@ -11,6 +12,7 @@ import Prelude
 import Rpd as R
 import Effect (Effect)
 import Effect.Class.Console (log)
+
 
 reportError :: R.RpdError -> Effect Unit
 reportError = log <<< (<>) "RPD Error: " <<< show
@@ -24,6 +26,11 @@ reportAndReturn v err =
 runRpdLogging :: forall a. (a -> Effect Unit) -> R.Rpd a -> Effect Unit
 runRpdLogging onSuccess rpd =
   R.run' reportError onSuccess rpd
+
+
+runRpdLogging' :: forall a. R.Rpd a -> Effect Unit
+runRpdLogging' rpd =
+  R.run' reportError (const $ pure unit) rpd
 
 
 extract :: forall a. a -> R.Rpd a -> Effect a

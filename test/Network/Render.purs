@@ -1,18 +1,17 @@
-module RpdTest.Network.Empty
+module RpdTest.Network.Render
     ( spec ) where
 
 import Prelude
 
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
-
-import Test.Spec (Spec, describe, it)
-
 import Rpd (init, Rpd, run, Network) as R
 import Rpd.Log as RL
+import Test.Spec (Spec, describe, it)
 
 data MyData
   = Bang
+  | Value Int
 
 type MyRpd = R.Rpd (R.Network MyData)
 
@@ -22,8 +21,7 @@ myRpd =
 
 spec :: Spec Unit
 spec =
-  describe "empty network" do
+  describe "rendering" do
     it "constructing the network works" do
-      -- FIXME: fail on error
-      _ <- liftEffect $ R.run (log <<< show) (const $ pure unit) myRpd
+      _ <- liftEffect $ RL.runRpdLogging' myRpd
       pure unit

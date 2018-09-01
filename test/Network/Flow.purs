@@ -22,6 +22,7 @@ import Rpd ((</>))
 import Rpd as R
 import Rpd.Log as RL
 import Rpd.Util (type (/->))
+import RpdTest.Util (withRpd)
 import RpdTest.Network.CollectData (TraceItem(..))
 import RpdTest.Network.CollectData as CollectData
 import Test.Spec (Spec, describe, it, pending, pending')
@@ -516,6 +517,22 @@ links = do
 
   pending "default value for the inlet is sent on disconnection"
 
+    -- describe "processing the output from nodes" do
+    --   describe "with predefined function" do
+    --     pure unit
+    --   describe "with function defined after creation" do
+    --     pure unit
+    --   describe "after adding an outlet" do
+    --     pure unit
+    --   describe "after removing an outlet" do
+    --     pure unit
+    --   describe "after changing the node structure" do
+    --     pure unit
+    --   describe "after deleting the receiving node" do
+    --     pure unit
+    --   describe "after adding new node" do
+    --     pure unit
+
 
 {- ======================================= -}
 {- =============== NETWORK =============== -}
@@ -550,22 +567,6 @@ inletPath patchId nodeId inletId = R.InletPath (nodePath patchId nodeId) inletId
 outletPath :: Int -> Int -> Int -> R.OutletPath
 outletPath patchId nodeId outletId = R.OutletPath (nodePath patchId nodeId) outletId
 -- inletPath = R.InletPath ?_ nodePath
-
-
-withRpd
-  :: forall d
-   . (R.Network d -> Aff Unit)
-  -> R.Rpd (R.Network d)
-  -> Aff Unit
-withRpd test rpd = do
-  nw <- liftEffect $ getNetwork rpd
-  test nw
-  where
-    --getNetwork :: R.Rpd d e -> R.RpdEff e (R.Network d e)
-    getNetwork rpd = do
-      nwTarget <- Ref.new $ R.emptyNetwork "f"
-      _ <- RL.runRpdLogging (flip Ref.write $ nwTarget) rpd
-      Ref.read nwTarget
 
 
 -- logOrExec

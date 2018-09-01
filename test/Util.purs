@@ -1,12 +1,16 @@
-module Test.Util
+module RpdTest.Util
     ( runWith
+    , withRpd
     ) where
 
 import Prelude
 
 import Effect.Aff (Aff)
+import Effect.Class (liftEffect)
+import Effect.Ref as Ref
 
-import Rpd (Network) as Rpd
+import Rpd (Network, Rpd, emptyNetwork) as Rpd
+import Rpd.Log (runRpdLogging) as RL
 
 runWith :: forall d. Rpd.Network d -> (Rpd.Network d -> Aff Unit) -> Aff Unit
 runWith initialNetwork f = f initialNetwork
@@ -18,3 +22,17 @@ runWith initialNetwork f = f initialNetwork
 --     Rpd.run (writeRef networkRef) initialNetwork
 --     readRef networkRef
 --   f newNetwork
+
+withRpd
+  :: forall d
+   . (Rpd.Network d -> Aff Unit)
+  -> Rpd.Rpd (Rpd.Network d)
+  -> Aff Unit
+withRpd test rpd =
+  liftEffect (getNetwork rpd) >>= test
+  where
+    --getNetwork :: R.Rpd d e -> R.RpdEff e (R.Network d e)
+    getNetwork rpd = do
+      nwTarget <- Ref.new $ Rpd.emptyNetwork "f"
+      _ <- RL.runRpdLogging (flip Ref.write $ nwTarget) rpd
+      Ref.read nwTarget
