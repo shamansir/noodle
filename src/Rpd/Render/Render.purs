@@ -3,6 +3,8 @@ module Rpd.Render
     , PushMsg
     , UiMessage(..)
     , render
+    , runRender
+    , runRender'
     ) where
 
 import Prelude
@@ -35,8 +37,22 @@ data UiMessage d
 
 {- run rendering cycle -}
 runRender :: forall d r. R.Network d -> r -> Renderer d r -> Effect r
-runRender nw default (Renderer onError onSuccess) = do
-    { event : messages, push : pushMessage } <- Event.create
+runRender nw default renderer =
+    Event.create >>=
+        \{ event : messages, push : pushMessage }
+            -> runRender' messages pushMessage nw default renderer
+
+
+{- run rendering cycle with custom event producer -}
+runRender'
+    :: forall d r
+     . Event (UiMessage d)
+    -> PushMsg d
+    -> R.Network d
+    -> r
+    -> Renderer d r
+    -> Effect r
+runRender' messages pushMessage nw default (Renderer onError onSuccess) = do
     let uiFlow = Event.fold updater messages $ pure nw
     cancel <- Event.subscribe uiFlow $ viewer pushMessage
     pure default
