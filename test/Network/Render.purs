@@ -32,7 +32,7 @@ myRpd =
 spec :: Spec Unit
 spec =
   describe "rendering" do
-    it "constructing the network works" do
+    it "rendering the network works" do
       result <- liftEffect $ render myRenderer myRpd
       result `shouldEqual` "SUCC"
       pure unit
