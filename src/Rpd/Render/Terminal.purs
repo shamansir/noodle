@@ -13,44 +13,22 @@ import Effect.Class (liftEffect)
 import FRP.Event (Event, filterMap)
 import FRP.Event as Event
 import Rpd as R
+import Rpd.Render as RR
 import Unsafe.Coerce (unsafeCoerce)
 
 type TerminalRenderer d = Renderer d String
 
 
-data UiMessage d
-    = AddNode (R.NodeDef d)
-    | RemoveNode R.NodePath
-
-
 terminalRenderer :: forall d. TerminalRenderer d
 terminalRenderer =
-    Renderer renderError renderNetwork
+    Renderer reportError view
 
 
-renderNetwork :: forall d. R.Network d -> Effect String
-renderNetwork nw = do
-    { event : messages, push : pushMessage } <- Event.create
-    let uiFlow = Event.fold updater messages $ pure nw
-    cancel <- Event.subscribe uiFlow viewer
-    pure "SUCC"
-    where
-        updater :: UiMessage d -> R.Rpd (R.Network d) -> R.Rpd (R.Network d)
-        updater ui rpd = rpd >>= update ui
-        viewer :: R.Rpd (R.Network d) -> Effect String
-        viewer = unsafeCoerce
-
-
-update :: forall d. UiMessage d -> R.Network d -> R.Rpd (R.Network d)
-update ui nw = do
-    pure nw
-
-
-view :: forall d. R.Network d -> Effect String
-view nw =
+view :: forall d. (UiMessage d -> Effect Unit) -> R.Network d -> Effect String
+view pushMsg nw =
     pure "SUCC"
 
 
-renderError :: R.RpdError -> Effect String
-renderError err =
+reportError :: R.RpdError -> Effect String
+reportError err =
     pure "ERR"

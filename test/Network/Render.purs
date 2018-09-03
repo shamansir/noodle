@@ -20,6 +20,7 @@ type MyRpd = R.Rpd (R.Network MyData)
 
 type MyRenderer = TerminalRenderer MyData
 
+
 myRenderer :: MyRenderer
 myRenderer = terminalRenderer
 
