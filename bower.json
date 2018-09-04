@@ -21,8 +21,14 @@
     "purescript-refs": "^4.1.0",
     "purescript-smolder": "^11.0.0",
     "purescript-tuples": "^5.0.0",
-    "purescript-transformers": "^4.1.0"
-
+    "purescript-transformers": "^4.1.0",
+    "purescript-pairing": "^5.1.0",
+    "purescript-node-readline": "^4.0.0",
+    "purescript-parsing": "^5.0.1",
+    "purescript-spork": "^1.0.0",
+    "purescript-web-dom": "^1.0.0",
+    "purescript-canvas": "^4.0.0",
+    "purescript-web-events": "^1.0.0"
   },
   "devDependencies": {
     "purescript-debug": "^4.0.0",
