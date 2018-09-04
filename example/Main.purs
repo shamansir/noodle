@@ -1,4 +1,4 @@
-module Main where
+module Example.Main where
 
 import Prelude
 
@@ -22,9 +22,8 @@ render i =
   H.div []
     [ H.button
         [ H.onClick (H.always_ Bang) ]
-        [ H.text "+" ]
+        [ H.text "Hit me" ]
     ]
-
 
 app ∷ PureApp Model Action
 app = { update, render, init: {} }

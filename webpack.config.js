@@ -29,7 +29,7 @@ module.exports = {
     stats: 'errors-only'*/
   },
 
-  entry: './src/Main.purs',
+  entry: './example/Main.purs',
 
   output: {
     path: path.resolve(__dirname, 'output'),
@@ -49,7 +49,8 @@ module.exports = {
               exclude: /output/,
               src: [
                 'bower_components/purescript-*/src/**/*.purs',
-                'src/**/*.purs'
+                'src/**/*.purs',
+                'example/**/*.purs'
               ],
               // bundle: true,
               // pscBundleArgs: {

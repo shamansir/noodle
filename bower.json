@@ -1,5 +1,8 @@
 {
   "name": "rpd-purs",
+  "main": [
+    "example/Main.purs"
+  ],
   "ignore": [
     "**/.*",
     "node_modules",

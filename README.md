@@ -2,7 +2,7 @@
 
 1. `npm install`
 2. `bower install`
-3. `pulp server`
+3. `npm run purs:server`
 
 When bower packages fail to build:
 
