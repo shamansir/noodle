@@ -1,6 +1,8 @@
 module Rpd.Render.Terminal
     ( TerminalRenderer
     , terminalRenderer
+    , view
+    , reportError
     ) where
 
 import Control.Monad.Free
@@ -21,7 +23,7 @@ type TerminalRenderer d = Renderer d String
 
 terminalRenderer :: forall d. TerminalRenderer d
 terminalRenderer =
-    Renderer reportError view
+    Renderer "" reportError view
 
 
 view :: forall d. (UiMessage d -> Effect Unit) -> R.Network d -> Effect String
