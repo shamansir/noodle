@@ -8,7 +8,7 @@ import Effect.Class.Console (log)
 
 import Test.Spec (Spec, describe, it)
 
-import Rpd (init, Rpd, run, Network) as R
+import Rpd (init, Rpd, run', Network) as R
 import Rpd.Log as RL
 
 data MyData
@@ -25,5 +25,5 @@ spec =
   describe "empty network" do
     it "constructing the network works" do
       -- FIXME: fail on error
-      _ <- liftEffect $ R.run (log <<< show) (const $ pure unit) myRpd
+      _ <- liftEffect $ R.run' (log <<< show) (const $ pure unit) myRpd
       pure unit

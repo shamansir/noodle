@@ -73,12 +73,13 @@ infixl 1 rpdBind as </>
 
 
 run
-    :: forall d
-     . (RpdError -> Effect Unit)
-    -> (Network d -> Effect Unit)
-    -> Rpd (Network d)
-    -> Effect Unit
-run = run'
+    :: forall a r
+     . (RpdError -> r)
+    -> (a -> r)
+    -> Rpd a
+    -> Effect r
+run onError onSuccess =
+    run' (pure <<< onError) (pure <<< onSuccess)
 
 
 run'

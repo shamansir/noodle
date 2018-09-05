@@ -1,7 +1,7 @@
 module Rpd.Render.Terminal
     ( TerminalRenderer
     , terminalRenderer
-    , view
+    , view -- TODO: do not expose maybe?
     , reportError
     ) where
 
@@ -26,11 +26,11 @@ terminalRenderer =
     Renderer "" reportError view
 
 
-view :: forall d. (UiMessage d -> Effect Unit) -> R.Network d -> Effect String
+view :: forall d. PushMsg d -> R.Network d -> String
 view pushMsg nw =
-    pure "SUCC"
+    "SUCC"
 
 
-reportError :: R.RpdError -> Effect String
+reportError :: R.RpdError -> String
 reportError err =
-    pure "ERR"
+    "ERR"

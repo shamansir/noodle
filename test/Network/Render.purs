@@ -6,7 +6,7 @@ import Prelude
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Rpd (init, Rpd, run, Network) as R
-import Rpd.Render (Renderer(..), render)
+import Rpd.Render (Renderer(..), once) as Render
 import Rpd.Render.Terminal (TerminalRenderer, terminalRenderer)
 import Rpd.Log as RL
 import Test.Spec (Spec, describe, it)
@@ -34,6 +34,6 @@ spec :: Spec Unit
 spec =
   describe "rendering" do
     it "rendering the network works" do
-      result <- liftEffect $ render myRenderer myRpd
+      result <- liftEffect $ Render.once myRenderer myRpd
       result `shouldEqual` "SUCC"
       pure unit

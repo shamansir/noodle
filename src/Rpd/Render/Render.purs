@@ -1,36 +1,38 @@
 module Rpd.Render
     ( Renderer(..)
     , PushMsg
-    , UiMessage(..)
-    , render
-    , runRender
-    , runRender'
+    , Message(..)
+    , once
+    , run
+    , run'
     , proxy
-    , update
+    , proxy'
+    , update -- TODO: do not expose maybe?
     ) where
 
 import Prelude
+import Data.Tuple (uncurry)
 import Effect (Effect)
 import FRP.Event (Event, filterMap)
 import FRP.Event as Event
 import Rpd as R
 
 
-type PushMsg d = UiMessage d -> Effect Unit
+data PushMsg d = PushMsg (Message d -> Effect Unit)
 
 
 data Renderer d r
     = Renderer
         r -- initial view
-        (R.RpdError -> Effect r)
-        (PushMsg d -> R.Network d -> Effect r)
+        (R.RpdError -> r)
+        (PushMsg d -> R.Network d -> r)
         -- TODO: change to (PushMsg d -> Either R.RpdError (R.Network d) -> Effect r) maybe?
 
 
 proxy
     :: forall d r x
-     . (R.RpdError -> Effect x)
-    -> (r -> Effect x)
+     . (R.RpdError -> x)
+    -> (r -> x)
     -> x
     -> Renderer d r
     -> Renderer d x
@@ -38,47 +40,63 @@ proxy onError' convertView default' (Renderer default onError onSuccess) =
     Renderer
         default'
         onError'
-        (\push nw -> onSuccess push nw >>= convertView)
+        (\push nw -> convertView $ onSuccess push nw)
+
+
+proxy'
+    :: forall d r x
+     . (R.RpdError -> x)
+    -> ((Message d -> Effect Unit) -> r -> x)
+    -> x
+    -> Renderer d r
+    -> Renderer d x
+proxy' onError' convertView default' (Renderer default onError onSuccess) =
+    Renderer
+        default'
+        onError'
+        (\push@(PushMsg pushF) -> convertView pushF <<< onSuccess push)
 
 
 {- render once -}
-render :: forall d r. Renderer d r -> R.Rpd (R.Network d) -> Effect r
-render (Renderer _ onError onSuccess) =
-    R.run' onError $ onSuccess (const $ pure unit)
+once :: forall d r. Renderer d r -> R.Rpd (R.Network d) -> Effect r
+once (Renderer _ onError onSuccess) =
+    R.run onError $ onSuccess (PushMsg $ const $ pure unit)
 
 
-data UiMessage d
-    = AddNode (R.NodeDef d)
+data Message d
+    = Bang
+    | AddNode (R.NodeDef d)
     | RemoveNode R.NodePath
     | SelectNode R.NodePath
 
 
 {- run rendering cycle -}
-runRender :: forall d r. R.Network d -> Renderer d r -> Effect r
-runRender nw renderer =
+run :: forall d r. R.Network d -> Renderer d r -> Effect r
+run nw renderer =
     Event.create >>=
         \{ event : messages, push : pushMessage }
-            -> runRender' messages pushMessage nw renderer
+            -> run' messages (PushMsg pushMessage) nw renderer
+
 
 {- run rendering cycle with custom event producer -}
-runRender'
+run'
     :: forall d r
-     . Event (UiMessage d)
+     . Event (Message d)
     -> PushMsg d
     -> R.Network d
     -> Renderer d r
     -> Effect r
-runRender' messages pushMessage nw (Renderer initialView onError onSuccess) = do
+run' messages pushMessage nw (Renderer initialView onError onSuccess) = do
     let uiFlow = Event.fold updater messages $ pure nw
     cancel <- Event.subscribe uiFlow $ viewer pushMessage
     pure initialView
     where
-        updater :: UiMessage d -> R.Rpd (R.Network d) -> R.Rpd (R.Network d)
+        updater :: Message d -> R.Rpd (R.Network d) -> R.Rpd (R.Network d)
         updater ui rpd = rpd >>= update ui
         viewer :: PushMsg d -> R.Rpd (R.Network d) -> Effect r
-        viewer pushMessage = R.run' onError $ onSuccess pushMessage
+        viewer pushMessage = R.run onError $ onSuccess pushMessage
 
 
-update :: forall d. UiMessage d -> R.Network d -> R.Rpd (R.Network d)
+update :: forall d. Message d -> R.Network d -> R.Rpd (R.Network d)
 update ui nw = do
     pure nw
