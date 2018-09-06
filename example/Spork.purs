@@ -1,25 +1,23 @@
-module Example.Main where
+module Example.Spork where
 
 import Prelude
 
-import Effect (Effect)
 import Data.Const (Const)
-
-import Spork.Html (Html)
-import Spork.Html as H
-import Spork.App (App)
-import Spork.App as App
-
+import Effect (Effect)
 import Rpd (RpdError, Rpd, Network, emptyNetwork)
 import Rpd (init) as Rpd
-import Rpd.Render (update, once, Renderer, proxy') as Render
 import Rpd.Render (Message(..)) as Ui
-import Rpd.Render.Terminal (view) as TerminalRenderer
+import Rpd.Render (update, once, Renderer, proxy') as Render
 import Rpd.Render.Terminal (terminalRenderer)
+import Rpd.Render.Terminal (view) as TerminalRenderer
+import Spork.App (App)
+import Spork.App as App
+import Spork.Html (Html)
+import Spork.Html as H
 import Spork.Interpreter (never)
 
 
-type Model d = Rpd (Network d)
+type Model d = Network d
 type Action d = Ui.Message d
 
 
@@ -37,25 +35,26 @@ sporkRenderer =
 
 
 render ∷ forall d. Model d → Html (Action d)
-render rpd =
-  let (effHtml :: Effect (Html (Action d))) = Render.once sporkRenderer rpd
+render nw =
+  -- TODO: let view = TerminalRenderer.view nw
   -- TerminalRenderer.view
-  in H.div []
+  H.div []
     [ H.button
         [ H.onClick (H.always_ Ui.Bang) ]
         [ H.text "Hit me" ]
     ]
 
 update :: forall d. Model d -> Action d -> App.Transition Effect (Model d) (Action d)
-update model action =
-  { model: model >>= Render.update action
-  , effects: mempty
-  }
+update model action = do
+  -- FIXME: we need to name separate effects (like `Connect` / `Disconnect` etc.) if we want to support Spork
+  -- almost all of the actions on Rpd are effectful, but we're not marking them as such
+  App.purely model
+  -- Render.update action model >>= ...
 
 
 init :: forall d. App.Transition Effect (Model d) (Action d)
 init =
-  { model: Rpd.init "a"
+  { model: emptyNetwork "foo"
   , effects: mempty
   }
 

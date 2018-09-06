@@ -3,7 +3,7 @@ module Rpd
     , (</>), rpdBind, run, run', emptyNetwork
     --, RpdOp, RpdEffOp
     , Flow, flow
-    , Network, Patch, Node, Inlet, Outlet, Link
+    , Network(..), Patch, Node, Inlet, Outlet, Link
     , PatchDef, NodeDef, InletDef, OutletDef, ProcessF(..)
     , Canceler, Subscriber, PushableFlow
     --, emptyNetwork

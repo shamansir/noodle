@@ -11,3 +11,4 @@ import RpdTest.Main (spec)
 
 main :: Effect Unit
 main = run [consoleReporter] spec
+
