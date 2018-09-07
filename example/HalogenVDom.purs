@@ -71,16 +71,18 @@ runVDom sel render renderer initNw = do
                 vdomSpec = V.VDomSpec
                     { document : HTMLDocument.toDocument doc
                     , buildWidget: buildThunk unwrap
-                    , buildAttributes: P.buildProp (\a → push a)
+                    , buildAttributes: P.buildProp push
                     }
-            { first, next } <- Render.make {-event push-} initNw renderer
-            vdom ← EFn.runEffectFn1 (V.buildVDom vdomSpec) (unwrap $ render first)
-            void $ DOM.appendChild (Machine.extract vdom) (DOMElement.toNode el)
+            let { first, next } = Render.make' { event, push } initNw renderer
+            first_vdom ← EFn.runEffectFn1 (V.buildVDom vdomSpec) (unwrap $ render first)
+            vdom_ref <- Ref.new first_vdom -- use recursion istead of `Ref`?
+            void $ DOM.appendChild (Machine.extract first_vdom) (DOMElement.toNode el)
             cancel <- E.subscribe next $
                 \v -> do
-                    nextView <- v
-                    -- FIXME: push `vdom` to the Ref
-                    vdom ← EFn.runEffectFn2 Machine.step vdom (unwrap $ render nextView)
+                    next_view <- v
+                    prev_vdom <- Ref.read vdom_ref
+                    next_vdom ← EFn.runEffectFn2 Machine.step prev_vdom (unwrap $ render next_view)
+                    _ <- Ref.write next_vdom vdom_ref
                     pure unit
             pure unit
 
