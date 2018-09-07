@@ -4,13 +4,16 @@ module RpdTest.Network.Render
 import Prelude
 
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
-import Rpd (init, Rpd, run, Network) as R
-import Rpd.Render (Renderer(..), once) as Render
-import Rpd.Render.Terminal (TerminalRenderer, terminalRenderer)
-import Rpd.Log as RL
+
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
+
+import Rpd (init) as R
+import Rpd.API (Rpd) as R
+import Rpd.Network (Network) as R
+import Rpd.Render (once) as Render
+import Rpd.Render.Terminal (TerminalRenderer, terminalRenderer)
+
 
 data MyData
   = Bang

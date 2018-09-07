@@ -12,11 +12,17 @@ module Rpd.Render
 
 import Prelude
 
-import Data.Tuple (uncurry)
 import Effect (Effect)
-import FRP.Event (Event, filterMap)
+
+import FRP.Event (Event)
 import FRP.Event as Event
-import Rpd as R
+
+import Rpd (run) as R
+import Rpd.API as R
+import Rpd.Def as R
+import Rpd.Path as R
+import Rpd.Network (Network) as R
+import Rpd.Util (Canceler) as R
 
 
 data PushMsg d = PushMsg (Message d -> Effect Unit)

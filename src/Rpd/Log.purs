@@ -9,9 +9,11 @@ module Rpd.Log
 
 import Prelude
 
-import Rpd as R
 import Effect (Effect)
 import Effect.Class.Console (log)
+
+import Rpd (run') as R
+import Rpd.API (Rpd, RpdError) as R
 
 
 reportError :: R.RpdError -> Effect Unit

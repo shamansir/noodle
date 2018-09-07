@@ -6,15 +6,6 @@ import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, wrap, unwrap)
 import Data.List as List
 
-
-import Rpd (RpdError, Rpd, Network(..), emptyNetwork, ProcessF(..), PatchId(..))
-import Rpd (init, NodeDef(..), PatchDef(..)) as Rpd
-import Rpd.Render (Message(..), Renderer) as Ui
-import Rpd.Render (update, once, make, make') as Render
-import Rpd.Render.Terminal (terminalRenderer)
-import Rpd.Render.Terminal (view) as TerminalRenderer
-
-
 import FRP.Event as E
 
 import Spork.Html (Html)
@@ -26,7 +17,7 @@ import Halogen.VDom.DOM.Prop as P
 import Halogen.VDom.Machine as Machine
 import Halogen.VDom.Thunk (Thunk, buildThunk)
 
-import Effect (Effect, foreachE)
+import Effect (Effect)
 import Effect.Exception (throwException, error)
 import Effect.Ref as Ref
 import Effect.Uncurried as EFn
@@ -37,6 +28,16 @@ import Web.DOM.ParentNode (QuerySelector(..), querySelector) as DOM
 import Web.HTML (window) as DOM
 import Web.HTML.HTMLDocument (toDocument, toParentNode) as HTMLDocument
 import Web.HTML.Window (document) as DOM
+
+import Rpd.Def (ProcessF(..))
+import Rpd.Network (Network)
+import Rpd.Network (empty) as Network
+import Rpd.Path (PatchId(..))
+import Rpd.Def (NodeDef, PatchDef) as Rpd
+import Rpd.Render (Message(..), Renderer) as Ui
+import Rpd.Render (make') as Render
+import Rpd.Render.Terminal (terminalRenderer)
+
 
 
 type Model d = Network d
@@ -91,7 +92,6 @@ runVDom
     -> Network d -- initial network
     -> Effect Unit
 runVDom sel render renderer initNw = do
-    let sel = "#app"
     doc ← DOM.window >>= DOM.document
     mbEl ← DOM.querySelector (wrap sel) (HTMLDocument.toParentNode doc)
     case mbEl of
@@ -120,4 +120,4 @@ runVDom sel render renderer initNw = do
 
 main :: Effect Unit
 main =
-    runVDom "#app" render terminalRenderer $ emptyNetwork "foo"
+    runVDom "#app" render terminalRenderer $ Network.empty "foo"

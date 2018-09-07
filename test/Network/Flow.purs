@@ -9,24 +9,32 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.List ((:))
 import Data.List as List
 import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Time.Duration (Milliseconds(..))
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Lens ((^.), (?~))
+import Data.Tuple.Nested ((/\))
+{- import Data.Lens ((^.), (?~)) -}
+import Data.Lens ((^.))
 import Data.Lens.At (at)
-import Effect.Aff (Aff)
-import Effect.Class (liftEffect)
-import Effect.Ref as Ref
+
 import FRP.Event.Time (interval)
-import Rpd ((</>))
-import Rpd as R
-import Rpd.Log as RL
-import Rpd.Util (type (/->))
+
+import Test.Spec (Spec, describe, it, pending, pending')
+import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
+
+import Rpd.API ((</>))
+import Rpd.API as R
+import Rpd.Path
+import Rpd (init) as R
+import Rpd.Def (ProcessF(..), NodeDef) as R
+import Rpd.Network (Network) as R
+import Rpd.Util (flow, Canceler) as R
+-- import Rpd.Util (type (/->))
+--import Rpd.Log as RL
+
 import RpdTest.Util (withRpd)
 import RpdTest.Network.CollectData (TraceItem(..))
 import RpdTest.Network.CollectData as CollectData
-import Test.Spec (Spec, describe, it, pending, pending')
-import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
+
 
 
 data Delivery
@@ -553,20 +561,6 @@ network = do
 
   pending "all the cancelers are called after running the system"
 
-
-patchId :: Int -> R.PatchId
-patchId = R.PatchId
-
-nodePath :: Int -> Int -> R.NodePath
-nodePath = R.NodePath <<< R.PatchId
-
-inletPath :: Int -> Int -> Int -> R.InletPath
-inletPath patchId nodeId inletId = R.InletPath (nodePath patchId nodeId) inletId
--- inletPath = R.InletPath ?_ nodePath
-
-outletPath :: Int -> Int -> Int -> R.OutletPath
-outletPath patchId nodeId outletId = R.OutletPath (nodePath patchId nodeId) outletId
--- inletPath = R.InletPath ?_ nodePath
 
 
 -- logOrExec

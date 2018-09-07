@@ -5,22 +5,17 @@ module Rpd.Render.Terminal
     , reportError
     ) where
 
-import Control.Monad.Free
 import Prelude
-import Rpd.Render
 
 import Data.Map as Map
 import Data.List as List
 import Data.Set as Set
 import Data.String (joinWith)
-import Data.Traversable (sequence, traverse)
-import Effect (Effect, foreachE)
-import Effect.Class (liftEffect)
-import FRP.Event (Event, filterMap)
-import FRP.Event as Event
-import Rpd as R
-import Rpd.Render as RR
-import Unsafe.Coerce (unsafeCoerce)
+
+import Rpd.Network (Network(..), Patch(..)) as R
+import Rpd.API (RpdError) as R
+import Rpd.Render (PushMsg, Renderer(..))
+
 
 type TerminalRenderer d = Renderer d String
 

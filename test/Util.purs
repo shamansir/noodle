@@ -9,7 +9,9 @@ import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
 
-import Rpd (Network, Rpd, emptyNetwork) as Rpd
+import Rpd.API (Rpd) as Rpd
+import Rpd.Network (Network) as Rpd
+import Rpd.Network (empty) as Network
 import Rpd.Log (runRpdLogging) as RL
 
 runWith :: forall d. Rpd.Network d -> (Rpd.Network d -> Aff Unit) -> Aff Unit
@@ -33,6 +35,6 @@ withRpd test rpd =
   where
     --getNetwork :: R.Rpd d e -> R.RpdEff e (R.Network d e)
     getNetwork rpd = do
-      nwTarget <- Ref.new $ Rpd.emptyNetwork "f"
+      nwTarget <- Ref.new $ Network.empty "f"
       _ <- RL.runRpdLogging (flip Ref.write $ nwTarget) rpd
       Ref.read nwTarget

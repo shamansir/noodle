@@ -15,13 +15,19 @@ import Data.Map as Map
 import Data.Tuple (snd)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Time.Duration (Milliseconds)
+
 import Effect (Effect, foreachE)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
-import Rpd.Util (type (/->))
-import Rpd as R
-import Rpd.Log as RL
 import Effect.Aff (Aff, delay)
+
+import Rpd.Util (type (/->))
+import Rpd.Path as R
+import Rpd.Network (Network) as R
+import Rpd.Util (Canceler) as R
+import Rpd.API (Rpd, subscribeChannelsData, subscribeNode) as R
+import Rpd.Log as RL
+
 
 infixl 6 snoc as +>
 

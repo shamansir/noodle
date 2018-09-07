@@ -8,8 +8,10 @@ import Effect.Class.Console (log)
 
 import Test.Spec (Spec, describe, it)
 
-import Rpd (init, Rpd, run', Network) as R
-import Rpd.Log as RL
+import Rpd (init, run') as R
+import Rpd.API (Rpd) as R
+import Rpd.Network (Network) as R
+
 
 data MyData
   = Bang
