@@ -9,7 +9,7 @@ import Data.Newtype (wrap, unwrap)
 import Rpd (RpdError, Rpd, Network(..), emptyNetwork)
 import Rpd (init) as Rpd
 import Rpd.Render (Message(..)) as Ui
-import Rpd.Render (update, once, Renderer, proxy', run') as Render
+import Rpd.Render (update, once, Renderer, make', make) as Render
 import Rpd.Render.Terminal (terminalRenderer)
 import Rpd.Render.Terminal (view) as TerminalRenderer
 
@@ -41,28 +41,17 @@ import Web.HTML.Window (document) as DOM
 type Model d = Network d
 type Action d = Ui.Message d
 
-renderer :: forall d. Render.Renderer d (Html (Action d))
-renderer =
-  terminalRenderer
-    # Render.proxy'
-      (const $ H.div [] [ H.text "error"])
-      inject
-      (H.div [] [])
-  where
-    inject :: (Ui.Message d -> Effect Unit) -> String -> Html (Action d)
-    inject pushMsg strView =
-      H.div [] []
 
-
-render ∷ forall d. Model d → Html (Action d)
-render (Network def _) =
+render ∷ forall d. String → Html (Action d)
+render src =
   H.div
     []
     [ H.button
         [ H.onClick (H.always_ Ui.Bang) ]
-        [ H.text $ "Hit me (" <> def.name <> ")" ]
+        [ H.text $ src ]
     ]
 
+main :: Effect Unit
 main = do
     let sel = "#app"
     doc ← DOM.window >>= DOM.document
@@ -78,11 +67,13 @@ main = do
                     , buildAttributes: P.buildProp (\a → push a)
                     }
                 initNw = emptyNetwork "foo"
-            initRender <- Render.run' event push initNw renderer
-            vdom ← EFn.runEffectFn1 (V.buildVDom vdomSpec) (unwrap initRender)
+            { first, next } <- Render.make {-event push-} initNw terminalRenderer
+            vdom ← EFn.runEffectFn1 (V.buildVDom vdomSpec) (unwrap $ render first)
             void $ DOM.appendChild (Machine.extract vdom) (DOMElement.toNode el)
-
-            -- //// TODO: perform on every render result
-            vdom ← EFn.runEffectFn2 Machine.step vdom (unwrap initRender)
+            cancel <- E.subscribe next $
+                \v -> do
+                    view <- v
+                    vdom ← EFn.runEffectFn2 Machine.step vdom (unwrap $ render view)
+                    pure unit
             pure unit
             -- pure $ state { vdom = vdom, status = Flushed }

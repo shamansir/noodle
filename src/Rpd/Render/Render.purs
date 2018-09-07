@@ -5,8 +5,8 @@ module Rpd.Render
     , once
     , run
     , run'
-    , runProcess
-    , runProcess'
+    , make
+    , make'
     , update -- TODO: do not expose maybe?
     ) where
 
@@ -42,15 +42,15 @@ data Message d
     | SelectNode R.NodePath
 
 
-{- Prepare the rendering cycle with internal message producer,
-   returns the first view and the event flow with
+{- Prepare the rendering cycle with internal message producer.
+   Returns the first view and the event flow with
    all the next views.
 
    Actually the process starts just when user subscribes
    to the `next` views flow. `Event.subscribe` returns the
    canceler, so it is possible to stop the thing.
 -}
-run
+make
     :: forall d r
      . R.Network d
     -> Renderer d r
@@ -58,32 +58,34 @@ run
         { first :: r
         , next :: Event (Effect r)
         }
-run nw renderer =
+make nw renderer =
     Event.create >>=
-        \{ event : messages, push : pushMessage }
-            -> pure $ run' messages pushMessage nw renderer
+        \event -> pure $ make' event nw renderer
 
 
 {- Prepare the rendering cycle with custom message producer
    (so, the `Event` with the messages source and
-   the function which pushes them to this flow)
-   returns the first view and the event flow with
+   the function which pushes them to this flow).
+   Returns the first view and the event flow with
    all the next views.
 
    Actually the process starts just when user subscribes
    to the `next` views flow. `Event.subscribe` returns the
    canceler, so it is possible to stop the thing.
+
+   TODO: do not ask user for `event`, just pushing function.
 -}
-run'
+make'
     :: forall d r
-     . Event (Message d)
-    -> (Message d -> Effect Unit)
+     . { event :: Event (Message d)
+       , push :: (Message d -> Effect Unit)
+       }
     -> R.Network d
     -> Renderer d r
     -> { first :: r
        , next :: Event (Effect r)
        }
-run' messages pushMessage nw (Renderer initialView onError onSuccess) =
+make' { event : messages, push : pushMessage } nw (Renderer initialView onError onSuccess) =
     let
         updateFlow = Event.fold updater messages $ pure nw
         viewFlow = viewer (PushMsg pushMessage) <$> updateFlow
@@ -98,26 +100,38 @@ run' messages pushMessage nw (Renderer initialView onError onSuccess) =
         viewer pushMessage = R.run onError $ onSuccess pushMessage
 
 
-{- Run the rendering cycle without any special handling, returns the canceler -}
-runProcess
+{- Run the rendering cycle without any special handling
+   (so the rendering results are omitted).
+
+   Returns the canceler. -}
+run
     :: forall d r
      . R.Network d
     -> Renderer d r
     -> Effect R.Canceler
-runProcess nw renderer =
-    run nw renderer >>=
+run nw renderer =
+    make nw renderer >>=
         \{ first, next } -> Event.subscribe next (pure <<< identity)
 
 
-runProcess'
+{- Run the rendering cycle with custom message producer
+   (so, the `Event` with the messages source and
+   the function which pushes them to this flow).
+   Returns the first view and the event flow with
+   all the next views.
+
+   TODO: do not ask user for `event`, just pushing function.
+-}
+run'
     :: forall d r
-     . Event (Message d)
-    -> (Message d -> Effect Unit)
+     . { event :: Event (Message d)
+       , push :: (Message d -> Effect Unit)
+       }
     -> R.Network d
     -> Renderer d r
     -> Effect R.Canceler
-runProcess' messages pushMessage nw renderer =
-    case run' messages pushMessage nw renderer of
+run' event nw renderer =
+    case make' event nw renderer of
         { first, next } -> Event.subscribe next (pure <<< identity)
 
 
