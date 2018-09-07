@@ -5,8 +5,8 @@ module Rpd.Render
     , once
     , run
     , run'
-    , proxy
-    , proxy'
+    , runProcess
+    , runProcess'
     , update -- TODO: do not expose maybe?
     ) where
 
@@ -29,34 +29,6 @@ data Renderer d r
         -- TODO: change to (PushMsg d -> Either R.RpdError (R.Network d) -> Effect r) maybe?
 
 
-proxy
-    :: forall d r x
-     . (R.RpdError -> x)
-    -> (r -> x)
-    -> x
-    -> Renderer d r
-    -> Renderer d x
-proxy onError' convertView default' (Renderer default onError onSuccess) =
-    Renderer
-        default'
-        onError'
-        (\push nw -> convertView $ onSuccess push nw)
-
-
-proxy'
-    :: forall d r x
-     . (R.RpdError -> x)
-    -> ((Message d -> Effect Unit) -> r -> x)
-    -> x
-    -> Renderer d r
-    -> Renderer d x
-proxy' onError' convertView default' (Renderer default onError onSuccess) =
-    Renderer
-        default'
-        onError'
-        (\push@(PushMsg pushF) -> convertView pushF <<< onSuccess push)
-
-
 {- render once -}
 once :: forall d r. Renderer d r -> R.Rpd (R.Network d) -> Effect r
 once (Renderer _ onError onSuccess) =
@@ -70,31 +42,83 @@ data Message d
     | SelectNode R.NodePath
 
 
-{- run rendering cycle -}
-run :: forall d r. R.Network d -> Renderer d r -> Effect r
+{- Prepare the rendering cycle with internal message producer,
+   returns the first view and the event flow with
+   all the next views.
+
+   Actually the process starts just when user subscribes
+   to the `next` views flow. `Event.subscribe` returns the
+   canceler, so it is possible to stop the thing.
+-}
+run
+    :: forall d r
+     . R.Network d
+    -> Renderer d r
+    -> Effect
+        { first :: r
+        , next :: Event (Effect r)
+        }
 run nw renderer =
     Event.create >>=
         \{ event : messages, push : pushMessage }
-            -> run' messages (PushMsg pushMessage) nw renderer
+            -> pure $ run' messages pushMessage nw renderer
 
 
-{- run rendering cycle with custom event producer -}
+{- Prepare the rendering cycle with custom message producer
+   (so, the `Event` with the messages source and
+   the function which pushes them to this flow)
+   returns the first view and the event flow with
+   all the next views.
+
+   Actually the process starts just when user subscribes
+   to the `next` views flow. `Event.subscribe` returns the
+   canceler, so it is possible to stop the thing.
+-}
 run'
     :: forall d r
      . Event (Message d)
-    -> PushMsg d
+    -> (Message d -> Effect Unit)
     -> R.Network d
     -> Renderer d r
-    -> Effect r
-run' messages pushMessage nw (Renderer initialView onError onSuccess) = do
-    let uiFlow = Event.fold updater messages $ pure nw
-    cancel <- Event.subscribe uiFlow $ viewer pushMessage
-    pure initialView
+    -> { first :: r
+       , next :: Event (Effect r)
+       }
+run' messages pushMessage nw (Renderer initialView onError onSuccess) =
+    let
+        updateFlow = Event.fold updater messages $ pure nw
+        viewFlow = viewer (PushMsg pushMessage) <$> updateFlow
+    in
+        { first : initialView
+        , next : viewFlow
+        }
     where
         updater :: Message d -> R.Rpd (R.Network d) -> R.Rpd (R.Network d)
-        updater ui rpd = rpd >>= update ui
+        updater msg rpd = rpd >>= update msg
         viewer :: PushMsg d -> R.Rpd (R.Network d) -> Effect r
         viewer pushMessage = R.run onError $ onSuccess pushMessage
+
+
+{- Run the rendering cycle without any special handling, returns the canceler -}
+runProcess
+    :: forall d r
+     . R.Network d
+    -> Renderer d r
+    -> Effect R.Canceler
+runProcess nw renderer =
+    run nw renderer >>=
+        \{ first, next } -> Event.subscribe next (pure <<< identity)
+
+
+runProcess'
+    :: forall d r
+     . Event (Message d)
+    -> (Message d -> Effect Unit)
+    -> R.Network d
+    -> Renderer d r
+    -> Effect R.Canceler
+runProcess' messages pushMessage nw renderer =
+    case run' messages pushMessage nw renderer of
+        { first, next } -> Event.subscribe next (pure <<< identity)
 
 
 update :: forall d. Message d -> R.Network d -> R.Rpd (R.Network d)

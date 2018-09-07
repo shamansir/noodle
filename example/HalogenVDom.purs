@@ -3,13 +3,13 @@ module Example.HalogenVDom where
 import Prelude
 
 import Data.Maybe (Maybe(..))
-import Data.Newtype (unwrap)
+import Data.Newtype (wrap, unwrap)
 
 
 import Rpd (RpdError, Rpd, Network(..), emptyNetwork)
 import Rpd (init) as Rpd
 import Rpd.Render (Message(..)) as Ui
-import Rpd.Render (update, once, Renderer, proxy') as Render
+import Rpd.Render (update, once, Renderer, proxy', run') as Render
 import Rpd.Render.Terminal (terminalRenderer)
 import Rpd.Render.Terminal (view) as TerminalRenderer
 
@@ -41,17 +41,17 @@ import Web.HTML.Window (document) as DOM
 type Model d = Network d
 type Action d = Ui.Message d
 
--- sporkRenderer :: forall d. Render.Renderer d (Html (Action d))
--- sporkRenderer =
---   terminalRenderer
---     # Render.proxy'
---       (const $ H.div [] [])
---       inject
---       (H.div [] [])
---   where
---     inject :: (Ui.Message d -> Effect Unit) -> String -> Html (Action d)
---     inject pushMsg strView =
---       H.div [] []
+renderer :: forall d. Render.Renderer d (Html (Action d))
+renderer =
+  terminalRenderer
+    # Render.proxy'
+      (const $ H.div [] [ H.text "error"])
+      inject
+      (H.div [] [])
+  where
+    inject :: (Ui.Message d -> Effect Unit) -> String -> Html (Action d)
+    inject pushMsg strView =
+      H.div [] []
 
 
 render ∷ forall d. Model d → Html (Action d)
@@ -65,28 +65,24 @@ render (Network def _) =
 
 main = do
     let sel = "#app"
-    document <-
-        DOM.window
-        >>= DOM.document
-        >>> map HTMLDocument.toDocument
-    mbEl <-
-        DOM.window
-        >>= DOM.document
-        >>> map HTMLDocument.toParentNode
-        >>= DOM.querySelector (DOM.QuerySelector sel)
+    doc ← DOM.window >>= DOM.document
+    mbEl ← DOM.querySelector (wrap sel) (HTMLDocument.toParentNode doc)
     case mbEl of
         Nothing -> throwException (error ("Element does not exist: " <> sel))
         Just el -> do
             { event, push } <- E.create
             let
                 vdomSpec = V.VDomSpec
-                    { document
+                    { document : HTMLDocument.toDocument doc
                     , buildWidget: buildThunk unwrap
                     , buildAttributes: P.buildProp (\a → push a)
                     }
-            vdom ← EFn.runEffectFn1 (V.buildVDom vdomSpec) (unwrap (render $ emptyNetwork "foo"))
+                initNw = emptyNetwork "foo"
+            initRender <- Render.run' event push initNw renderer
+            vdom ← EFn.runEffectFn1 (V.buildVDom vdomSpec) (unwrap initRender)
             void $ DOM.appendChild (Machine.extract vdom) (DOMElement.toNode el)
-            -- ////
-            vdom ← EFn.runEffectFn2 Machine.step vdom (unwrap (render $ emptyNetwork "bar"))
+
+            -- //// TODO: perform on every render result
+            vdom ← EFn.runEffectFn2 Machine.step vdom (unwrap initRender)
             pure unit
             -- pure $ state { vdom = vdom, status = Flushed }
