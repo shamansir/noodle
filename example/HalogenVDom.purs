@@ -3,13 +3,13 @@ module Example.HalogenVDom where
 import Prelude
 
 import Data.Maybe (Maybe(..))
-import Data.Newtype (wrap, unwrap)
+import Data.Newtype (class Newtype, wrap, unwrap)
 
 
 import Rpd (RpdError, Rpd, Network(..), emptyNetwork)
 import Rpd (init) as Rpd
-import Rpd.Render (Message(..)) as Ui
-import Rpd.Render (update, once, Renderer, make', make) as Render
+import Rpd.Render (Message(..), Renderer) as Ui
+import Rpd.Render (update, once, make, make') as Render
 import Rpd.Render.Terminal (terminalRenderer)
 import Rpd.Render.Terminal (view) as TerminalRenderer
 
@@ -51,8 +51,15 @@ render src =
         [ H.text $ src ]
     ]
 
-main :: Effect Unit
-main = do
+
+runVDom
+    :: forall d r
+     . String -- selector
+    -> (r -> Html (Action d)) -- insert the rendering result
+    -> Ui.Renderer d r -- renderer
+    -> Network d -- initial network
+    -> Effect Unit
+runVDom sel render renderer initNw = do
     let sel = "#app"
     doc ← DOM.window >>= DOM.document
     mbEl ← DOM.querySelector (wrap sel) (HTMLDocument.toParentNode doc)
@@ -66,14 +73,18 @@ main = do
                     , buildWidget: buildThunk unwrap
                     , buildAttributes: P.buildProp (\a → push a)
                     }
-                initNw = emptyNetwork "foo"
-            { first, next } <- Render.make {-event push-} initNw terminalRenderer
+            { first, next } <- Render.make {-event push-} initNw renderer
             vdom ← EFn.runEffectFn1 (V.buildVDom vdomSpec) (unwrap $ render first)
             void $ DOM.appendChild (Machine.extract vdom) (DOMElement.toNode el)
             cancel <- E.subscribe next $
                 \v -> do
-                    view <- v
-                    vdom ← EFn.runEffectFn2 Machine.step vdom (unwrap $ render view)
+                    nextView <- v
+                    -- FIXME: push `vdom` to the Ref
+                    vdom ← EFn.runEffectFn2 Machine.step vdom (unwrap $ render nextView)
                     pure unit
             pure unit
-            -- pure $ state { vdom = vdom, status = Flushed }
+
+
+main :: Effect Unit
+main =
+    runVDom "#app" render terminalRenderer $ emptyNetwork "foo"
