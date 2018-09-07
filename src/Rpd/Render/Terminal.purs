@@ -9,6 +9,10 @@ import Control.Monad.Free
 import Prelude
 import Rpd.Render
 
+import Data.Map as Map
+import Data.List as List
+import Data.Set as Set
+import Data.String (joinWith)
 import Data.Traversable (sequence, traverse)
 import Effect (Effect, foreachE)
 import Effect.Class (liftEffect)
@@ -27,10 +31,14 @@ terminalRenderer =
 
 
 view :: forall d. PushMsg d -> R.Network d -> String
-view pushMsg nw =
-    "SUCC"
+view pushMsg (R.Network _ { patches }) =
+    "SUCC" <> patchesInfo
+    where
+        patchesInfo = joinWith "," $ (getNodesCount <$> Map.values patches) # List.toUnfoldable
+        getNodesCount (R.Patch _ _ { nodes }) =
+            show $ Set.size nodes
 
 
 reportError :: R.RpdError -> String
 reportError err =
-    "ERR"
+    "ERR: " <> show err

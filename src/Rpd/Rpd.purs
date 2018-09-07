@@ -3,7 +3,8 @@ module Rpd
     , (</>), rpdBind, run, run', emptyNetwork
     --, RpdOp, RpdEffOp
     , Flow, flow
-    , Network(..), Patch, Node, Inlet, Outlet, Link
+    -- FIXME: do not expose constructors, provide all the optics as getters
+    , Network(..), Patch(..), Node, Inlet, Outlet, Link
     , PatchDef, NodeDef, InletDef, OutletDef, ProcessF(..)
     , Canceler, Subscriber, PushableFlow
     --, emptyNetwork

@@ -11,6 +11,7 @@ module Rpd.Render
     ) where
 
 import Prelude
+
 import Data.Tuple (uncurry)
 import Effect (Effect)
 import FRP.Event (Event, filterMap)
@@ -37,7 +38,8 @@ once (Renderer _ onError onSuccess) =
 
 data Message d
     = Bang
-    | AddNode (R.NodeDef d)
+    | AddPatch (R.PatchDef d)
+    | AddNode R.PatchId (R.NodeDef d)
     | RemoveNode R.NodePath
     | SelectNode R.NodePath
 
@@ -136,5 +138,8 @@ run' event nw renderer =
 
 
 update :: forall d. Message d -> R.Network d -> R.Rpd (R.Network d)
-update ui nw = do
-    pure nw
+update (AddPatch patchDef) = R.addPatch' patchDef
+update (AddNode patchId nodeDef) = R.addNode' patchId nodeDef
+update _ = pure
+
+

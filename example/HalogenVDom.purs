@@ -4,10 +4,11 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, wrap, unwrap)
+import Data.List as List
 
 
-import Rpd (RpdError, Rpd, Network(..), emptyNetwork)
-import Rpd (init) as Rpd
+import Rpd (RpdError, Rpd, Network(..), emptyNetwork, ProcessF(..), PatchId(..))
+import Rpd (init, NodeDef(..), PatchDef(..)) as Rpd
 import Rpd.Render (Message(..), Renderer) as Ui
 import Rpd.Render (update, once, make, make') as Render
 import Rpd.Render.Terminal (terminalRenderer)
@@ -42,16 +43,46 @@ type Model d = Network d
 type Action d = Ui.Message d
 
 
+testPatch :: forall d. Rpd.PatchDef d
+testPatch =
+    { name : "foo"
+    , nodeDefs : List.Nil
+    }
+
+
+testNode :: forall d. Rpd.NodeDef d
+testNode =
+    { name : "a"
+    , inletDefs : List.Nil
+    , outletDefs : List.Nil
+    , process : FlowThrough
+    }
+
+
 render ∷ forall d. String → Html (Action d)
 render src =
   H.div
     []
     [ H.button
-        [ H.onClick (H.always_ Ui.Bang) ]
-        [ H.text $ src ]
+        [ H.onClick
+            (H.always_ $ Ui.AddNode (PatchId 0) testNode)
+        ]
+        [ H.text "Add Node" ]
+    , H.button
+        [ H.onClick
+            (H.always_ $ Ui.AddPatch testPatch)
+        ]
+        [ H.text "Add Patch" ]
+    , H.text src
     ]
 
 
+-- import Halogen.VDom.DOM.Prop as P
+-- import Halogen.VDom as V
+-- import Halogen.VDom.Thunk (Thunk, thunk1, thunk2, thunk3, thunked)
+-- type HtmlV i = V.VDom (Array (P.Prop i)) (Thunk Html i)
+-- newtype Html i = Html (HtmlV i)
+-- derive instance newtypeHtml ∷ Newtype (Html i) _
 runVDom
     :: forall d r
      . String -- selector
