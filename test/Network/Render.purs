@@ -4,6 +4,7 @@ module RpdTest.Network.Render
 import Prelude
 
 import Effect.Class (liftEffect)
+import Effect.Aff (Aff())
 
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -11,8 +12,10 @@ import Test.Spec.Assertions (shouldEqual)
 import Rpd (init) as R
 import Rpd.API (Rpd) as R
 import Rpd.Network (Network) as R
-import Rpd.RenderS (once) as Render
-import Rpd.Renderer.Terminal (TerminalRenderer, terminalRenderer)
+import Rpd.Render (once) as Render
+import Rpd.RenderS (once) as RenderS
+import Rpd.Renderer.Terminal (terminalRenderer)
+import Rpd.Renderer.String (stringRenderer)
 
 
 data MyData
@@ -21,23 +24,25 @@ data MyData
 
 type MyRpd = R.Rpd (R.Network MyData)
 
--- TODO: test both stated renderer (TerminalRenderer) and stateless renderer (StringRenderer)
-type MyRenderer = TerminalRenderer MyData --
-
-
-myRenderer :: MyRenderer
-myRenderer = terminalRenderer
-
 
 myRpd :: MyRpd
 myRpd =
-  R.init "f"
-
+  R.init "foo"
 
 spec :: Spec Unit
 spec =
   describe "rendering" do
-    it "rendering the network works" do
-      result <- liftEffect $ Render.once myRenderer myRpd
-      result `shouldEqual` "SUCC"
+    it "rendering the empty network works" do
+      expectToRenderOnceS terminalRenderer myRpd "SUCC"
+      expectToRenderOnce stringRenderer myRpd "Network foo:\r\nNo Patches"
       pure unit
+
+
+expectToRenderOnceS renderer rpd expectation = do
+  result <- liftEffect $ RenderS.once renderer rpd
+  result `shouldEqual` expectation
+
+
+expectToRenderOnce renderer rpd expectation = do
+  result <- liftEffect $ Render.once renderer rpd
+  result `shouldEqual` expectation

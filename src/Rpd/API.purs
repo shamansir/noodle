@@ -667,6 +667,8 @@ makeProcessHandler' processF outletFlows nw inletVals = do
                     pure unit
 
 
+-- TODO: rollback :: RpdError -> Network -> Network
+
 
 instance showRpdError :: Show RpdError where
     -- show (RpdError text) = "(RpdError)" <> text
