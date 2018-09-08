@@ -1,4 +1,4 @@
-module Rpd.Render.String
+module Rpd.Renderer.String
     ( StringRenderer
     , stringRenderer
     , view -- TODO: do not expose maybe?

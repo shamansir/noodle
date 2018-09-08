@@ -280,6 +280,7 @@ findFittingProcessHandler FlowThrough outlets nw =
 --     -> Effect Unit
 -- makeProcessHandler processF outletFlows nw inletVals = do
 
+
 -- makeProcessHandler'
 --     :: forall d
 --      . (Array d -> Array d)
@@ -609,9 +610,7 @@ disconnectAll outletPath inletPath
 
 -- TODO: disconnectTopOf (OutletPath /\ InletPath)
 
-
 -- TODO: subscribeAllNodes
-
 
 -- TODO: subscribeAllData
 

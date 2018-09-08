@@ -12,7 +12,7 @@ import Rpd (init) as R
 import Rpd.API (Rpd) as R
 import Rpd.Network (Network) as R
 import Rpd.RenderS (once) as Render
-import Rpd.Render.Terminal (TerminalRenderer, terminalRenderer)
+import Rpd.Renderer.Terminal (TerminalRenderer, terminalRenderer)
 
 
 data MyData

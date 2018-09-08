@@ -1,4 +1,4 @@
-module Rpd.Render.Terminal
+module Rpd.Renderer.Terminal
     ( TerminalRenderer
     , terminalRenderer
     , Ui

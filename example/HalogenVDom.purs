@@ -37,7 +37,7 @@ import Rpd.Def (NodeDef, PatchDef) as Rpd
 import Rpd.Render (Message(..)) as Ui
 import Rpd.RenderS (Renderer) as Ui
 import Rpd.RenderS (make') as Render
-import Rpd.Render.Terminal (terminalRenderer)
+import Rpd.Renderer.Terminal (terminalRenderer)
 
 
 
