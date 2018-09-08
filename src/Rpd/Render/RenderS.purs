@@ -1,19 +1,18 @@
-module Rpd.Render
+module Rpd.RenderS
     ( Renderer(..)
-    , RenderF
-    , PushMsg(..)
-    , Message(..)
+    , UpdateF
+    , ViewF
     , once
     , run
     , run'
     , make
     , make'
-    , update -- TODO: do not expose maybe?
     ) where
 
 import Prelude
 
-import Data.Either (Either(..))
+import Data.Either
+import Data.Tuple.Nested (type (/\), (/\))
 
 import Effect (Effect)
 
@@ -24,40 +23,44 @@ import Rpd (run) as R
 import Rpd.API as R
 import Rpd.Def as R
 import Rpd.Path as R
+import Rpd.Render (PushMsg(..), Message(..), update)
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
 
 
-data PushMsg d = PushMsg (Message d -> Effect Unit)
-type RenderF d r = PushMsg d -> Either R.RpdError (R.Network d) -> r
+type UpdateF d model = Message d -> model -> R.Network d -> model
+type ViewF d view model = PushMsg d -> Either R.RpdError (model /\ R.Network d) -> view
 
 
-data Renderer d r
+data Renderer d view model
     = Renderer
-        r -- initial view
-        (RenderF d r)
+        { from :: view -- initial view
+        , init :: model -- initial state
+        , update :: UpdateF d model
+        , view :: ViewF d view model
+        }
 
 
-extractRpd :: forall d r. RenderF d r -> PushMsg d -> R.Rpd (R.Network d) -> Effect r
-extractRpd handler pushMsg =
-    R.run onError onSuccess
+extractRpd
+    :: forall d view model
+     . ViewF d view model
+    -> PushMsg d
+    -> R.Rpd (model /\ R.Network d)
+    -> Effect view
+extractRpd view pushMsg rpd =
+    R.run onError onSuccess rpd
     where
-        onError err = handler pushMsg $ Left err
-        onSuccess res = handler pushMsg $ Right res
+        onError err = view pushMsg $ Left err
+        onSuccess res = view pushMsg $ Right res
 
 
 {- render once -}
-once :: forall d r. Renderer d r -> R.Rpd (R.Network d) -> Effect r
-once (Renderer _ handleResult) =
-    extractRpd handleResult (PushMsg $ const $ pure unit)
-
-
-data Message d
-    = Bang
-    | AddPatch (R.PatchDef d)
-    | AddNode R.PatchId (R.NodeDef d)
-    | RemoveNode R.NodePath
-    | SelectNode R.NodePath
+once :: forall d view model. Renderer d view model -> R.Rpd (R.Network d) -> Effect view
+once (Renderer { view, init }) rpd =
+    extractRpd view neverPush withModel
+    where
+        withModel = (/\) init <$> rpd
+        neverPush = PushMsg $ const $ pure unit
 
 
 {- Prepare the rendering cycle with internal message producer.
@@ -69,12 +72,12 @@ data Message d
    canceler, so it is possible to stop the thing.
 -}
 make
-    :: forall d r
+    :: forall d view model
      . R.Network d
-    -> Renderer d r
+    -> Renderer d view model
     -> Effect
-        { first :: r
-        , next :: Event (Effect r)
+        { first :: view
+        , next :: Event (Effect view)
         }
 make nw renderer =
     Event.create >>=
@@ -94,28 +97,35 @@ make nw renderer =
    TODO: do not ask user for `event`, just pushing function.
 -}
 make'
-    :: forall d r
+    :: forall d view model
      . { event :: Event (Message d)
        , push :: (Message d -> Effect Unit)
        }
     -> R.Network d
-    -> Renderer d r
-    -> { first :: r
-       , next :: Event (Effect r)
+    -> Renderer d view model
+    -> { first :: view
+       , next :: Event (Effect view)
        }
-make' { event : messages, push : pushMessage } nw (Renderer initialView handler) =
-    let
-        updateFlow = Event.fold updater messages $ pure nw
+make'
+    { event : messages, push : pushMessage }
+    nw
+    (Renderer { from, init, view, update : update' })
+    = let
+        updateFlow = Event.fold updater messages $ pure (init /\ nw)
         viewFlow = viewer (PushMsg pushMessage) <$> updateFlow
     in
-        { first : initialView
+        { first : from
         , next : viewFlow
         }
     where
-        updater :: Message d -> R.Rpd (R.Network d) -> R.Rpd (R.Network d)
-        updater msg rpd = rpd >>= update msg
-        viewer :: PushMsg d -> R.Rpd (R.Network d) -> Effect r
-        viewer pushMessage = extractRpd handler pushMessage
+        updater :: Message d -> R.Rpd (model /\ R.Network d) -> R.Rpd (model /\ R.Network d)
+        updater msg rpd = rpd >>=
+            \(model /\ nw) -> do
+                nw <- update msg nw
+                let model' = update' msg model nw
+                pure $ model' /\ nw
+        viewer :: PushMsg d -> R.Rpd (model /\ R.Network d) -> Effect view
+        viewer pushMessage = extractRpd view pushMessage
 
 
 {- Run the rendering cycle without any special handling
@@ -123,9 +133,9 @@ make' { event : messages, push : pushMessage } nw (Renderer initialView handler)
 
    Returns the canceler. -}
 run
-    :: forall d r
+    :: forall d view model
      . R.Network d
-    -> Renderer d r
+    -> Renderer d view model
     -> Effect R.Canceler
 run nw renderer =
     make nw renderer >>=
@@ -141,21 +151,15 @@ run nw renderer =
    TODO: do not ask user for `event`, just pushing function.
 -}
 run'
-    :: forall d r
+    :: forall d view model
      . { event :: Event (Message d)
        , push :: (Message d -> Effect Unit)
        }
     -> R.Network d
-    -> Renderer d r
+    -> Renderer d view model
     -> Effect R.Canceler
 run' event nw renderer =
     case make' event nw renderer of
         { first, next } -> Event.subscribe next (pure <<< identity)
-
-
-update :: forall d. Message d -> R.Network d -> R.Rpd (R.Network d)
-update (AddPatch patchDef) = R.addPatch' patchDef
-update (AddNode patchId nodeDef) = R.addNode' patchId nodeDef
-update _ = pure
 
 

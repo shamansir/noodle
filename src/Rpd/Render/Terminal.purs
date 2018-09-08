@@ -25,7 +25,7 @@ terminalRenderer =
     Renderer "" view
 
 
-view :: forall d. PushMsg d -> Either R.RpdError (R.Network d)  -> String
+view :: forall d. PushMsg d -> Either R.RpdError (R.Network d) -> String
 view pushMsg (Right (R.Network _ { patches })) =
     "SUCC" <> patchesInfo
     where
