@@ -8,13 +8,10 @@ import Prelude
 
 import Data.Map as Map
 import Data.Array as Array
-import Data.Maybe (Maybe)
 import Data.List as List
-import Data.List (List)
 import Data.Set as Set
 import Data.Set (Set)
 import Data.Lens as L
-import Data.Lens.At (at)
 import Data.Either (Either(..))
 import Data.String (joinWith)
 
@@ -27,7 +24,7 @@ import Rpd.Network
     , Link(..)
     ) as R
 import Rpd.API (RpdError) as R
-import Rpd.Optics (_node)
+import Rpd.Optics (_node, _inlet, _outlet)
 import Rpd.Render (PushMsg, Renderer(..))
 
 
@@ -38,7 +35,7 @@ data Single = Single String
 data Counter = Counter MultipleOrNone Single
 
 
-lineBreak = "\r\n" :: String
+lineBreak = "\n" :: String
 space = " " :: String
 
 
@@ -61,33 +58,77 @@ stringRenderer =
     Renderer "" view
 
 
-viewNode :: forall d. R.Node d -> String
-viewNode (R.Node _ _ { inlets, outlets }) =
-    show $ Set.size inlets
-
-
-viewPatch :: forall d. R.Network d -> R.Patch d -> String
-viewPatch nw (R.Patch id { name } { nodes }) =
-    "Patch " <> name <> " " <> show id <> ":" <> lineBreak
-        <> count nodeCounter (Set.size nodes) <> ""
-        <> nodesInfo
-    where
-        (allNodes :: Array (Maybe (R.Node d))) =
-            Set.toUnfoldable nodes # map (\path -> L.view (_node path) nw)
-        nodesInfo =
-            joinWith (lineBreak <> space)
-                $ (viewNode <$> Array.catMaybes allNodes)
-
 
 view :: forall d. PushMsg d -> Either R.RpdError (R.Network d) -> String
-view pushMsg (Right nw@(R.Network { name } { patches })) =
+view pushMsg (Right nw@(R.Network { name } { patches, links })) =
     "Network " <> name <> ":" <> lineBreak
-        <> count patchCounter (Map.size patches) <> ""
+        <> count patchCounter (Map.size patches) <> lineBreak
         <> patchesInfo
+        <> count linkCounter (Map.size links) <> lineBreak
+        <> linksInfo
     where
         patchesInfo =
             joinWith (lineBreak <> space)
                 $ (viewPatch nw <$> Map.values patches)
                     # List.toUnfoldable
+        linksInfo =
+            joinWith (lineBreak <> space)
+                $ (viewLink nw <$> Map.values links)
+                    # List.toUnfoldable
 view pushMsg (Left err) =
     "<" <> show err <> ">"
+
+
+viewPatch :: forall d. R.Network d -> R.Patch d -> String
+viewPatch nw (R.Patch id { name } { nodes }) =
+    "Patch " <> name <> " " <> show id <> ":" <> lineBreak
+        <> count nodeCounter (Set.size nodes) <> lineBreak
+        <> nodesInfo
+    where
+        allNodes =
+            Set.toUnfoldable nodes # map \path -> L.view (_node path) nw
+        nodesInfo =
+            joinWith (lineBreak <> space)
+                $ viewNode nw <$> Array.catMaybes allNodes
+
+
+viewNode :: forall d. R.Network d -> R.Node d -> String
+viewNode nw (R.Node path { name } { inlets, outlets }) =
+    "Node " <> name <> " " <> show path <> ":" <> lineBreak
+        <> count inletCounter (Set.size inlets) <> lineBreak
+        <> inletsInfo
+        <> count outletCounter (Set.size outlets) <> lineBreak
+        <> outletsInfo
+    where
+        allInlets =
+            Set.toUnfoldable inlets # map \path -> L.view (_inlet path) nw
+        inletsInfo =
+            joinWith (lineBreak <> space)
+                $ viewInlet nw <$> Array.catMaybes allInlets
+        allOutlets =
+            Set.toUnfoldable outlets # map \path -> L.view (_outlet path) nw
+        outletsInfo =
+            joinWith (lineBreak <> space)
+                $ viewOutlet nw <$> Array.catMaybes allOutlets
+
+
+viewInlet :: forall d. R.Network d -> R.Inlet d -> String
+viewInlet _ (R.Inlet path { label } _) =
+    "Inlet " <> label <> " " <> show path
+
+
+viewOutlet :: forall d. R.Network d -> R.Outlet d -> String
+viewOutlet _ (R.Outlet path { label } _) =
+    "Outlet " <> label <> " " <> show path
+
+
+viewLink :: forall d. R.Network d -> R.Link -> String
+viewLink _ (R.Link outletPath inletPath) =
+    "Link from " <> show outletPath <> " to " <> show inletPath
+
+
+-- collectSetInfo nw viewItem lens source =
+--     joinWith (lineBreak <> space)
+--         $ viewItem nw <$> Array.catMaybes allItems
+--     where
+--         allItems = Set.toUnfoldable source # map \path -> L.view (lens path) nw
