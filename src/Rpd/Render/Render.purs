@@ -1,5 +1,6 @@
 module Rpd.Render
     ( Renderer(..)
+    , RenderF
     , PushMsg
     , Message(..)
     , once
@@ -11,6 +12,8 @@ module Rpd.Render
     ) where
 
 import Prelude
+
+import Data.Either
 
 import Effect (Effect)
 
@@ -26,20 +29,27 @@ import Rpd.Util (Canceler) as R
 
 
 data PushMsg d = PushMsg (Message d -> Effect Unit)
+type RenderF d r = PushMsg d -> Either R.RpdError (R.Network d) -> r
 
 
 data Renderer d r
     = Renderer
         r -- initial view
-        (R.RpdError -> r)
-        (PushMsg d -> R.Network d -> r)
-        -- TODO: change to (PushMsg d -> Either R.RpdError (R.Network d) -> Effect r) maybe?
+        (RenderF d r)
+
+
+extractRpd :: forall d r. RenderF d r -> PushMsg d -> R.Rpd (R.Network d) -> Effect r
+extractRpd handler pushMsg =
+    R.run onError onSuccess
+    where
+        onError err = handler pushMsg $ Left err
+        onSuccess res = handler pushMsg $ Right res
 
 
 {- render once -}
 once :: forall d r. Renderer d r -> R.Rpd (R.Network d) -> Effect r
-once (Renderer _ onError onSuccess) =
-    R.run onError $ onSuccess (PushMsg $ const $ pure unit)
+once (Renderer _ handleResult) =
+    extractRpd handleResult (PushMsg $ const $ pure unit)
 
 
 data Message d
@@ -93,7 +103,7 @@ make'
     -> { first :: r
        , next :: Event (Effect r)
        }
-make' { event : messages, push : pushMessage } nw (Renderer initialView onError onSuccess) =
+make' { event : messages, push : pushMessage } nw (Renderer initialView handler) =
     let
         updateFlow = Event.fold updater messages $ pure nw
         viewFlow = viewer (PushMsg pushMessage) <$> updateFlow
@@ -105,7 +115,7 @@ make' { event : messages, push : pushMessage } nw (Renderer initialView onError 
         updater :: Message d -> R.Rpd (R.Network d) -> R.Rpd (R.Network d)
         updater msg rpd = rpd >>= update msg
         viewer :: PushMsg d -> R.Rpd (R.Network d) -> Effect r
-        viewer pushMessage = R.run onError $ onSuccess pushMessage
+        viewer pushMessage = extractRpd handler pushMessage
 
 
 {- Run the rendering cycle without any special handling
