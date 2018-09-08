@@ -11,7 +11,7 @@ import Test.Spec.Assertions (shouldEqual)
 import Rpd (init) as R
 import Rpd.API (Rpd) as R
 import Rpd.Network (Network) as R
-import Rpd.Render (once) as Render
+import Rpd.RenderS (once) as Render
 import Rpd.Render.Terminal (TerminalRenderer, terminalRenderer)
 
 
@@ -21,7 +21,8 @@ data MyData
 
 type MyRpd = R.Rpd (R.Network MyData)
 
-type MyRenderer = TerminalRenderer MyData
+-- TODO: test both stated renderer (TerminalRenderer) and stateless renderer (StringRenderer)
+type MyRenderer = TerminalRenderer MyData --
 
 
 myRenderer :: MyRenderer

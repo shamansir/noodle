@@ -23,27 +23,27 @@ import Rpd (run) as R
 import Rpd.API as R
 import Rpd.Def as R
 import Rpd.Path as R
-import Rpd.Render (PushMsg(..), Message(..), update)
+import Rpd.Render (PushMsg(..), Message, update)
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
 
 
 type UpdateF d model = Message d -> model -> R.Network d -> model
-type ViewF d view model = PushMsg d -> Either R.RpdError (model /\ R.Network d) -> view
+type ViewF d model view = PushMsg d -> Either R.RpdError (model /\ R.Network d) -> view
 
 
-data Renderer d view model
+data Renderer d model view
     = Renderer
         { from :: view -- initial view
         , init :: model -- initial state
         , update :: UpdateF d model
-        , view :: ViewF d view model
+        , view :: ViewF d model view
         }
 
 
 extractRpd
-    :: forall d view model
-     . ViewF d view model
+    :: forall d model view
+     . ViewF d model view
     -> PushMsg d
     -> R.Rpd (model /\ R.Network d)
     -> Effect view
@@ -55,7 +55,7 @@ extractRpd view pushMsg rpd =
 
 
 {- render once -}
-once :: forall d view model. Renderer d view model -> R.Rpd (R.Network d) -> Effect view
+once :: forall d model view. Renderer d model view -> R.Rpd (R.Network d) -> Effect view
 once (Renderer { view, init }) rpd =
     extractRpd view neverPush withModel
     where
@@ -72,9 +72,9 @@ once (Renderer { view, init }) rpd =
    canceler, so it is possible to stop the thing.
 -}
 make
-    :: forall d view model
+    :: forall d model view
      . R.Network d
-    -> Renderer d view model
+    -> Renderer d model view
     -> Effect
         { first :: view
         , next :: Event (Effect view)
@@ -97,12 +97,12 @@ make nw renderer =
    TODO: do not ask user for `event`, just pushing function.
 -}
 make'
-    :: forall d view model
+    :: forall d model view
      . { event :: Event (Message d)
        , push :: (Message d -> Effect Unit)
        }
     -> R.Network d
-    -> Renderer d view model
+    -> Renderer d model view
     -> { first :: view
        , next :: Event (Effect view)
        }

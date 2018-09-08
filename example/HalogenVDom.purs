@@ -34,8 +34,9 @@ import Rpd.Network (Network)
 import Rpd.Network (empty) as Network
 import Rpd.Path (PatchId(..))
 import Rpd.Def (NodeDef, PatchDef) as Rpd
-import Rpd.Render (Message(..), Renderer) as Ui
-import Rpd.Render (make') as Render
+import Rpd.Render (Message(..)) as Ui
+import Rpd.RenderS (Renderer) as Ui
+import Rpd.RenderS (make') as Render
 import Rpd.Render.Terminal (terminalRenderer)
 
 
@@ -85,10 +86,10 @@ render src =
 -- newtype Html i = Html (HtmlV i)
 -- derive instance newtypeHtml ∷ Newtype (Html i) _
 runVDom
-    :: forall d r
+    :: forall d model view
      . String -- selector
-    -> (r -> Html (Action d)) -- insert the rendering result
-    -> Ui.Renderer d r -- renderer
+    -> (view -> Html (Action d)) -- insert the rendering result
+    -> Ui.Renderer d model view -- renderer
     -> Network d -- initial network
     -> Effect Unit
 runVDom sel render renderer initNw = do
