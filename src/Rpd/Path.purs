@@ -2,11 +2,14 @@ module Rpd.Path
     ( PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath, linkId
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
+    , Path(..)
     )
     where
 
 
 import Prelude
+
+-- TODO: either Path typeclass or... Comonad? (paths look like breadcrumbs)
 
 
 data PatchId = PatchId Int
@@ -14,6 +17,14 @@ data NodePath = NodePath PatchId Int
 data InletPath = InletPath NodePath Int
 data OutletPath = OutletPath NodePath Int
 data LinkId = LinkId Int
+
+
+data Path
+    = ToPatch PatchId
+    | ToNode NodePath
+    | ToInlet InletPath
+    | ToOutlet OutletPath
+    | ToLink LinkId
 
 
 patchId :: Int -> PatchId
