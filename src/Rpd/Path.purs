@@ -20,7 +20,8 @@ data LinkId = LinkId Int
 
 
 data Path
-    = ToPatch PatchId
+    = ToNetwork
+    | ToPatch PatchId
     | ToNode NodePath
     | ToInlet InletPath
     | ToOutlet OutletPath

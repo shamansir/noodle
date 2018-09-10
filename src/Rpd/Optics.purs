@@ -1,22 +1,26 @@
 module Rpd.Optics
-    ( _patch, _patchNode
-    , _node, _nodeFlow, _nodePFlow, _nodeInlet, _nodeOutlet, _nodeCanceler
+    ( _patch, _patches, _patchNode, _patchNodes
+    , _node, _nodes
+    , _nodeFlow, _nodePFlow
+    , _nodeInlet, _nodeInlets
+    , _nodeOutlet, _nodeOutlets
+    , _nodeCanceler
     , _inlet, _inletLabel, _inletFlow, _inletPFlow, _inletCanceler
     , _outlet, _outletLabel, _outletFlow, _outletPFlow
     , _link, _linkCanceler
     )
     where
 
-import Prelude
-
 import Data.Maybe
-import Data.Lens (Lens', Getter', lens, view, set, setJust, over, to)
-import Data.Lens.At (at)
-import Data.Tuple.Nested (type (/\))
-
-
-import Rpd.Path
+import Prelude
 import Rpd.Network
+import Rpd.Path
+
+import Data.Lens (Lens', Getter', lens, view, set, over, to)
+import Data.Lens.At (at)
+import Data.List (List)
+import Data.List as List
+import Data.Tuple.Nested (type (/\))
 import Rpd.Util (Flow, PushableFlow(..), Canceler)
 
 
@@ -30,6 +34,11 @@ _patch patchId =
             Network
                 nwdef
                 nwstate { patches = set patchLens val nwstate.patches }
+
+
+_patches :: forall d. Getter' (Network d) (List (Patch d))
+_patches =
+    to \(Network _ { patches }) -> List.fromFoldable patches
 
 
 _patchNode :: forall d. PatchId -> NodePath -> Lens' (Network d) (Maybe Unit)
@@ -51,6 +60,21 @@ _patchNode patchId nodePath =
                 ) nw
 
 
+_patchNodes :: forall d. PatchId -> Getter' (Network d) (List (Node d))
+_patchNodes patchId =
+    to extractNodes
+    where
+        patchLens = _patch patchId
+        getNodePaths nw =
+            view patchLens nw >>=
+                \(Patch _ _ { nodes }) ->
+                    pure $ List.fromFoldable nodes
+        getNode nodePath = view (_node nodePath)
+        extractNodes nw@(Network _ { nodes }) =
+            let nodePaths = fromMaybe List.Nil $ getNodePaths nw
+            in map (flip getNode $ nw) nodePaths # List.catMaybes
+
+
 _node :: forall d. NodePath -> Lens' (Network d) (Maybe (Node d))
 _node nodePath@(NodePath patchId _) =
     lens getter setter
@@ -61,6 +85,11 @@ _node nodePath@(NodePath patchId _) =
             Network
                 nwdef
                 nwstate { nodes = set nodeLens val nwstate.nodes }
+
+
+_nodes :: forall d. Getter' (Network d) (List (Node d))
+_nodes =
+    to \(Network _ { nodes }) -> List.fromFoldable nodes
 
 
 _nodeFlow :: forall d. NodePath -> Getter' (Network d) (Maybe (Flow (InletPath /\ d)))
@@ -79,7 +108,6 @@ _nodePFlow nodePath =
         nodeLens = _node nodePath
         extractPFlow nw = view nodeLens nw >>=
             \(Node _ _ { flow }) -> pure flow
-
 
 
 _nodeInlet :: forall d. NodePath -> InletPath -> Lens' (Network d) (Maybe Unit)
@@ -101,6 +129,21 @@ _nodeInlet nodePath inletPath =
                 ) nw
 
 
+_nodeInlets :: forall d. NodePath -> Getter' (Network d) (List (Inlet d))
+_nodeInlets nodePath =
+    to extractInlets
+    where
+        nodeLens = _node nodePath
+        getNodeInlets nw =
+            view nodeLens nw >>=
+                \(Node _ _ { inlets }) ->
+                    pure $ List.fromFoldable inlets
+        getInlet inletPath = view (_inlet inletPath)
+        extractInlets nw@(Network _ { inlets }) =
+            let inletPaths = fromMaybe List.Nil $ getNodeInlets nw
+            in map (flip getInlet $ nw) inletPaths # List.catMaybes
+
+
 _nodeOutlet :: forall d. NodePath -> OutletPath -> Lens' (Network d) (Maybe Unit)
 _nodeOutlet nodePath outletPath =
     lens getter setter
@@ -118,6 +161,21 @@ _nodeOutlet nodePath outletPath =
                         ndef
                         nstate { outlets = set outletLens val nstate.outlets }
                 ) nw
+
+
+_nodeOutlets :: forall d. NodePath -> Getter' (Network d) (List (Outlet d))
+_nodeOutlets nodePath =
+    to extractOutlets
+    where
+        nodeLens = _node nodePath
+        getNodeOutlets nw =
+            view nodeLens nw >>=
+                \(Node _ _ { outlets }) ->
+                    pure $ List.fromFoldable outlets
+        getOutlet outletPath = view (_outlet outletPath)
+        extractOutlets nw =
+            let outletPaths = fromMaybe List.Nil $ getNodeOutlets nw
+            in map (flip getOutlet $ nw) outletPaths # List.catMaybes
 
 
 _nodeCanceler :: forall d. NodePath -> Lens' (Network d) (Maybe Canceler)
