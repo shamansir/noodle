@@ -11,7 +11,7 @@ import Prelude
 
 import Data.Map as Map
 import Data.List as List
-import Data.List (List)
+import Data.List (List, (:))
 import Data.Set as Set
 import Data.String as String
 import Data.Tuple (snd) as Tuple
@@ -29,7 +29,8 @@ import Rpd.RenderS (Renderer(..))
 
 
 type Coord = { x :: Int, y :: Int }
-type Rect = Coord /\ Coord
+type Size = { width :: Int, height :: Int }
+type Rect = Coord /\ Size
 
 
 data Block =
@@ -60,6 +61,16 @@ initUi =
     }
 
 
+emptyBlock :: Block
+emptyBlock =
+    Block
+        { target : R.Unknown
+        , rect : zeroRect
+        , content : ""
+        }
+        List.Nil
+
+
 type TerminalRenderer d = Renderer d Ui String
 
 
@@ -86,61 +97,80 @@ viewStatus :: Status -> String
 viewStatus _ = "> "
 
 
-blocksOfInlet :: forall d. R.Network d -> R.Inlet d -> List Block
-blocksOfInlet nw inlet = List.Nil
+blockOfInlet :: forall d. R.Network d -> R.Inlet d -> Block
+blockOfInlet nw inlet = emptyBlock
 
 
-blocksOfOutlet :: forall d. R.Network d -> R.Outlet d -> List Block
-blocksOfOutlet nw outlet = List.Nil
+blockOfOutlet :: forall d. R.Network d -> R.Outlet d -> Block
+blockOfOutlet nw outlet = emptyBlock
 
 
-blocksOfNode :: forall d. R.Network d -> R.Node d -> List Block
-blocksOfNode nw node = List.Nil
+blockOfNode :: forall d. R.Network d -> R.Node d -> Block
+blockOfNode nw node = emptyBlock
 
 
-blocksOfPatch :: forall d. Coord -> R.Network d -> R.Patch d -> List Block
-blocksOfPatch origin nw patch@(R.Patch patchId { name } { nodes }) =
-    List.singleton $
-        Block
-            { target : R.ToPatch patchId
-            , rect
-            , content
-            }
-            $ foldMap (blocksOfNode nw) (Lens.view (R._patchNodes patchId) nw)
-            -- $ foldr (\_ _ -> List.Nil) List.Nil Lens.view (R._patchNodes patchId) nw
-    where
-        shift = { x: String.length content, y: 1 }
-        rect = origin /\ move origin shift
-        content = "[" <> name <> "]"
-
-
-blocksOfNetwork :: forall d. Rect -> Coord -> R.Network d -> List Block
-blocksOfNetwork bounds origin nw@(R.Network { name } { patches }) =
-    List.singleton $
-        Block
-            { target : R.ToNetwork
-            , rect
-            , content
-            }
-            $ Tuple.snd
-            $ foldr
-                foldingF
-                (origin /\ List.Nil)
-                patches
+blockOfPatch :: forall d. Rect -> Coord -> R.Network d -> R.Patch d -> Block
+blockOfPatch bounds origin nw patch@(R.Patch patchId { name } { nodes }) =
+    Block
+        { target : R.ToPatch patchId
+        , rect
+        , content
+        }
+        $ Tuple.snd
+        $ foldr
+            foldingF
+            (origin /\ List.Nil)
+            nodes
     where
         content = "[" <> name <> "]"
-        shift = { x: String.length content, y: 1 }
-        rect = origin /\ move origin shift
+        size = { width: String.length content, height: 1 }
+        rect = getNextRect bounds origin size
+        (nodes :: (List (R.Node d))) = Lens.view (R._patchNodes patchId) nw
+        foldingF node (prevOrigin /\ blocks) =
+            (/\) nextOrigin $ nextBlock : blocks
+                where
+                    nextBlock = blockOfNode nw node
+                    (nextOrigin :: Coord) = getOriginFrom nextBlock
+
+
+
+blockOfNetwork :: forall d. Rect -> Coord -> R.Network d -> Block
+blockOfNetwork bounds origin nw@(R.Network { name } { patches }) =
+    Block
+        { target : R.ToNetwork
+        , rect
+        , content
+        }
+        $ Tuple.snd
+        $ foldr
+            foldingF
+            (origin /\ List.Nil)
+            patches
+    where
+        content = "[" <> name <> "]"
+        size = { width: String.length content, height: 1 }
+        rect = getNextRect bounds origin size
         foldingF patch (prevOrigin /\ blocks) =
-            (/\) prevOrigin $ blocks <> blocksOfPatch prevOrigin nw patch
+            (/\) nextOrigin $ nextBlock : blocks
+                where
+                    nextBlock = blockOfPatch bounds prevOrigin nw patch
+                    nextOrigin = getOriginFrom nextBlock
 
 
 coord :: Int -> Int -> Coord
-coord x y = { x: 0, y: 0 }
+coord x y = { x, y }
+
+
+size :: Int -> Int -> Size
+size width height = { width, height }
 
 
 zero :: Coord
 zero = coord 0 0
+
+
+zeroRect :: Rect
+zeroRect = coord 0 0 /\ size 0 0
 
 
 move :: Coord -> Coord -> Coord
@@ -148,9 +178,26 @@ move { x: fromX, y: fromY } { x: shiftX, y: shiftY } =
     coord (fromX + shiftX) (fromY + shiftY)
 
 
+getNextRect :: Rect -> Coord -> Size -> Rect
+getNextRect (_ /\ { width: bwidth }) { x, y } { width, height } =
+    if ((x + width) >= bwidth) then
+        coord 0 (y + height) /\ size width height
+    else
+        coord (x + width) y /\ size width height
+
+
+getOriginFrom :: Block -> Coord
+getOriginFrom (Block { rect } _) =
+    let ({ x, y } /\ { width, height }) = rect
+    in coord (x + width) (y + height)
+
+
 update :: forall d. R.Message d -> Ui -> R.Network d -> Ui
 update R.Bang _ nw =
-    { blocks : blocksOfNetwork (zero /\ coord 200 200) zero nw, status: Empty }
+    { blocks : List.singleton
+        $ blockOfNetwork (zero /\ size 200 200) zero nw
+    , status: Empty
+    }
 update _ ui _ =
     ui
 

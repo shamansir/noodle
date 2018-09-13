@@ -26,6 +26,7 @@ data Path
     | ToInlet InletPath
     | ToOutlet OutletPath
     | ToLink LinkId
+    | Unknown
 
 
 patchId :: Int -> PatchId
