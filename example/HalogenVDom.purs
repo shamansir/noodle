@@ -67,14 +67,19 @@ render src =
     []
     [ H.button
         [ H.onClick
-            (H.always_ $ Ui.AddNode (PatchId 0) testNode)
+            (H.always_ Ui.Bang)
         ]
-        [ H.text "Add Node" ]
+        [ H.text "Bang" ]
     , H.button
         [ H.onClick
             (H.always_ $ Ui.AddPatch testPatch)
         ]
         [ H.text "Add Patch" ]
+    , H.button
+        [ H.onClick
+            (H.always_ $ Ui.AddNode (PatchId 0) testNode)
+        ]
+        [ H.text "Add Node" ]
     , H.text src
     ]
 
