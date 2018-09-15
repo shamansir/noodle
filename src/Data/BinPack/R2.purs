@@ -15,18 +15,12 @@ where
 
 import Prelude
 
-import Control.Applicative
-import Data.Foldable (class Foldable, foldM, foldrDefault, foldlDefault)
-import Data.Foldable (foldMap) as F
--- import Data.Functor (fmap)
-import Data.Monoid
-import Control.Alt ((<|>))
-import Data.Semigroup ((<>))
+import Data.Foldable (foldM)
 import Data.Maybe (Maybe(..))
 import Data.List (List(..), (:), sortBy)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Ord (class Ord)
-import Data.Show (class Show)
+
+import Control.Alt ((<|>))
 
 data Bin2 n a
     = Node  { w :: n, h :: n
@@ -40,12 +34,12 @@ instance functorBin2 :: Functor (Bin2 n) where
     map f (Node { w, h, r, b, i }) = node w h (map f r) (map f b) (f i)
     map _ (Free { w, h })          = Free { w, h }
 
-instance foldableBin2 :: Foldable (Bin2 n) where
-    foldr = foldrDefault
-    foldl = foldlDefault
--- foldMap :: forall f n a. Semigroup f => (a -> f a) -> Bin2 n a -> f a
-    foldMap f (Node { r, b, i }) = f i <> F.foldMap f r <> F.foldMap f b
-    foldMap _ (Free _)           = mempty
+-- instance foldableBin2 :: Foldable (Bin2 n) where
+--     foldr = foldrDefault
+--     foldl = foldlDefault
+-- -- foldMap :: forall f n a. Semigroup f => (a -> f a) -> Bin2 n a -> f a
+--     foldMap f (Node { r, b, i }) = f i <> F.foldMap f r <> F.foldMap f b
+--     foldMap _ (Free _)           = mempty
 
 container :: forall n a. n -> n -> Bin2 n a
 container w h = Free { w, h }
@@ -70,7 +64,7 @@ pack' (Free { w : fw, h : fh }) (Item (w /\ h /\ i)) =
         pright = container (fw - w) h
         pbelow = container fw (fh - h)
     in
-        if fits then  Just $ node w h pright pbelow i else Nothing
+        if fits then Just $ node w h pright pbelow i else Nothing
 
 pack' (Node { w : nw, h : nh, r, b, i : ni }) i
     = pright i <|> pbelow i
@@ -83,8 +77,8 @@ pack c = foldM pack' c <<< sortBy (comparing area)
     where
         area (Item (w /\ h /\ _)) = w * h
 
--- toList :: forall n a. Ord n => Bin2 n a -> List (a /\ (n /\ n /\ n /\ n))
-toList = unpack' 0 0
+toList :: forall n a. Semiring n => Bin2 n a -> List (a /\ (n /\ n /\ n /\ n))
+toList = unpack' zero zero
     where
         unpack' _ _ (Free _)       = Nil
         unpack' x y (Node { w, h, r, b, i }) =
@@ -96,4 +90,4 @@ sample (Node { w, h, r, b, i }) x y =
     case (compare x w /\ compare y h) of
         (LT /\ LT) -> Just (i /\ x /\ y)
         (_  /\ LT) -> sample r (x - w) y
-        _        -> sample b x (y - h)
+        _          -> sample b x (y - h)
