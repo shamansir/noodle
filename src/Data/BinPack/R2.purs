@@ -15,12 +15,14 @@ where
 
 import Prelude
 
-import Data.Foldable (foldM)
-import Data.Maybe (Maybe(..))
+import Control.Alt ((<|>))
+
+import Data.Foldable (class Foldable, foldMap, foldr, foldl, foldM)
 import Data.List (List(..), (:), sortBy)
+import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Control.Alt ((<|>))
+import Unsafe.Coerce (unsafeCoerce)
 
 data Bin2 n a
     = Node  { w :: n, h :: n
@@ -34,12 +36,16 @@ instance functorBin2 :: Functor (Bin2 n) where
     map f (Node { w, h, r, b, i }) = node w h (map f r) (map f b) (f i)
     map _ (Free { w, h })          = Free { w, h }
 
--- instance foldableBin2 :: Foldable (Bin2 n) where
---     foldr = foldrDefault
---     foldl = foldlDefault
+instance foldableBin2 :: Foldable (Bin2 n) where
+    foldr f def (Node { r, b, i }) =
+        f i $ foldr f (foldr f def b) r
+    foldr _ def (Free _) = def
+    foldl f def (Node { r, b, i }) =
+        def -- FIXME
+    foldl f def (Free _) = def
 -- -- foldMap :: forall f n a. Semigroup f => (a -> f a) -> Bin2 n a -> f a
---     foldMap f (Node { r, b, i }) = f i <> F.foldMap f r <> F.foldMap f b
---     foldMap _ (Free _)           = mempty
+    foldMap f (Node { r, b, i }) = f i <> foldMap f r <> foldMap f b
+    foldMap _ (Free _)           = mempty
 
 container :: forall n a. n -> n -> Bin2 n a
 container w h = Free { w, h }

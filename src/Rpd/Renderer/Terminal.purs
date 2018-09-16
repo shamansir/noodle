@@ -20,6 +20,8 @@ import Data.Foldable (foldr, foldMap)
 import Data.Either (Either(..))
 import Data.Lens as Lens
 
+import Data.BinPack.R2 as R2
+
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.API (RpdError) as R
 import Rpd.Path (Path(..)) as R
@@ -34,12 +36,7 @@ type Rect = Coord /\ Size
 
 
 data Block =
-    Block
-        { target :: R.Path
-        , rect :: Rect
-        , content :: String
-        }
-        (List Block)
+    Block R.Path (R2.Bin2 Int String)
 
 
 data Status
@@ -49,26 +46,21 @@ data Status
 
 
 type Ui =
-    { blocks :: List Block
+    { blocks :: Block
     , status :: Status
     }
 
 
-initUi :: Ui
-initUi =
-    { blocks : List.Nil
+initUi :: { w :: Int, h :: Int } -> Ui
+initUi { w, h } =
+    { blocks : Block R.Unknown $ R2.container w h
     , status : Empty
     }
 
 
 emptyBlock :: Block
 emptyBlock =
-    Block
-        { target : R.Unknown
-        , rect : zeroRect
-        , content : ""
-        }
-        List.Nil
+    Block R.Unknown $ R2.container 0 0
 
 
 type TerminalRenderer d = Renderer d Ui String
@@ -85,7 +77,7 @@ terminalRenderer =
 
 
 -- TODO: implement Monoid + Foldable + ...
-foldBlocks :: List Block -> String
+foldBlocks :: Block -> String
 foldBlocks blocks =
     foldr foldBlock "" blocks
     where
