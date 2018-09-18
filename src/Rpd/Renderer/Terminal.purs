@@ -10,6 +10,7 @@ module Rpd.Renderer.Terminal
 import Prelude
 
 import Data.Map as Map
+import Data.Maybe (Maybe, fromMaybe)
 import Data.List as List
 import Data.List (List, (:))
 import Data.Set as Set
@@ -30,13 +31,10 @@ import Rpd.Render (PushMsg, Message(..)) as R
 import Rpd.RenderS (Renderer(..))
 
 
-type Coord = { x :: Int, y :: Int }
-type Size = { width :: Int, height :: Int }
-type Rect = Coord /\ Size
-
-
 data Block =
-    Block R.Path (R2.Bin2 Int String)
+    Block R.Path (List String)
+
+type Blocks = R2.Bin2 Int { value :: Block, blocks :: Maybe Blocks }
 
 
 data Status
@@ -46,21 +44,16 @@ data Status
 
 
 type Ui =
-    { blocks :: Block
+    { blocks :: Blocks
     , status :: Status
     }
 
 
 initUi :: { w :: Int, h :: Int } -> Ui
 initUi { w, h } =
-    { blocks : Block R.Unknown $ R2.container w h
+    { blocks : R2.container w h
     , status : Empty
     }
-
-
-emptyBlock :: Block
-emptyBlock =
-    Block R.Unknown $ R2.container 0 0
 
 
 type TerminalRenderer d = Renderer d Ui String
@@ -76,118 +69,67 @@ terminalRenderer =
         }
 
 
--- TODO: implement Monoid + Foldable + ...
-foldBlocks :: Block -> String
-foldBlocks blocks =
-    foldr foldBlock "" blocks
+foldBlocks :: Blocks -> String
+foldBlocks =
+    foldr foldF ""
     where
-        foldBlock (Block { content } blocks') prev =
-            prev <> content <> foldBlocks blocks'
+        foldF (Block _ content) = (<>) content
 
 
 viewStatus :: Status -> String
 viewStatus _ = "> "
 
 
-blockOfInlet :: forall d. R.Network d -> R.Inlet d -> Block
-blockOfInlet nw inlet = emptyBlock
+blockOfInlet :: forall d. R.Network d -> R.Inlet d -> Blocks
+blockOfInlet nw inlet = R2.container 0 0
 
 
-blockOfOutlet :: forall d. R.Network d -> R.Outlet d -> Block
-blockOfOutlet nw outlet = emptyBlock
+blockOfOutlet :: forall d. R.Network d -> R.Outlet d -> Blocks
+blockOfOutlet nw outlet = R2.container 0 0
 
 
-blockOfNode :: forall d. R.Network d -> R.Node d -> Block
-blockOfNode nw node = emptyBlock
+blockOfNode :: forall d. R.Network d -> R.Node d -> Blocks
+blockOfNode nw node = R2.container 0 0
 
 
-blockOfPatch :: forall d. Rect -> Coord -> R.Network d -> R.Patch d -> Block
-blockOfPatch bounds origin nw patch@(R.Patch patchId { name } { nodes }) =
-    Block
-        { target : R.ToPatch patchId
-        , rect
-        , content
-        }
-        $ Tuple.snd
-        $ foldr
-            foldingF
-            (origin /\ List.Nil)
-            nodes
+blocksOfPatch :: forall d. Blocks -> R.Network d -> R.Patch d -> Blocks
+blocksOfPatch root nw patch@(R.Patch patchId { name } { nodes }) =
+    R2.container 0 0
     where
         content = "[" <> name <> "]"
         size = { width: String.length content, height: 1 }
-        rect = getNextRect bounds origin size
         (nodes :: (List (R.Node d))) = Lens.view (R._patchNodes patchId) nw
-        foldingF node (prevOrigin /\ blocks) =
-            (/\) nextOrigin $ nextBlock : blocks
+        foldingF node (root /\ blocks) =
+            (/\) root $ nextBlocks : blocks
                 where
-                    nextBlock = blockOfNode nw node
-                    (nextOrigin :: Coord) = getOriginFrom nextBlock
+                    nextBlocks = blockOfNode nw node
 
-
-
-blockOfNetwork :: forall d. Rect -> Coord -> R.Network d -> Block
-blockOfNetwork bounds origin nw@(R.Network { name } { patches }) =
-    Block
-        { target : R.ToNetwork
-        , rect
-        , content
-        }
-        $ Tuple.snd
-        $ foldr
-            foldingF
-            (origin /\ List.Nil)
-            patches
+blocksOfNetwork :: forall d. { width :: Int, height :: Int } -> R.Network d -> Blocks
+blocksOfNetwork { width, height } origin nw@(R.Network { name } { patches }) =
+    R2.pack root $
+        List.singleton $
+            R2.item width height
+                { value : Block R.ToNetwork $ List.singleton content
+                , blocks
+                }
+    -- <|> R2.container width height
     where
         content = "[" <> name <> "]"
-        size = { width: String.length content, height: 1 }
-        rect = getNextRect bounds origin size
-        foldingF patch (prevOrigin /\ blocks) =
-            (/\) nextOrigin $ nextBlock : blocks
+        root = R2.container width height
+        blocks = Tuple.snd
+            $ foldr
+                foldingF
+                (origin /\ List.Nil)
+                root
+        foldingF patch (root /\ blocks) =
+            (/\) root $ nextBlocks : blocks
                 where
-                    nextBlock = blockOfPatch bounds prevOrigin nw patch
-                    nextOrigin = getOriginFrom nextBlock
-
-
-coord :: Int -> Int -> Coord
-coord x y = { x, y }
-
-
-size :: Int -> Int -> Size
-size width height = { width, height }
-
-
-zero :: Coord
-zero = coord 0 0
-
-
-zeroRect :: Rect
-zeroRect = coord 0 0 /\ size 0 0
-
-
-move :: Coord -> Coord -> Coord
-move { x: fromX, y: fromY } { x: shiftX, y: shiftY } =
-    coord (fromX + shiftX) (fromY + shiftY)
-
-
-getNextRect :: Rect -> Coord -> Size -> Rect
-getNextRect (_ /\ { width: bwidth }) { x, y } { width, height } =
-    if ((x + width) >= bwidth) then
-        coord 0 (y + height) /\ size width height
-    else
-        coord (x + width) y /\ size width height
-
-
-getOriginFrom :: Block -> Coord
-getOriginFrom (Block { rect } _) =
-    let ({ x, y } /\ { width, height }) = rect
-    in coord (x + width) (y + height)
+                    nextBlocks = blocksOfPatch root nw patch
 
 
 update :: forall d. R.Message d -> Ui -> R.Network d -> Ui
 update R.Bang _ nw =
-    { blocks : List.singleton
-        $ blockOfNetwork (zero /\ size 200 200) zero nw
+    { blocks : blocksOfNetwork { width : 200, height : 200 } nw
     , status: Empty
     }
 update _ ui _ =

@@ -8,6 +8,8 @@ module Data.BinPack.R2
 , sqContainer
 , item
 , sqItem
+, itemOf
+, size
 )
 where
 
@@ -22,13 +24,13 @@ import Data.List (List(..), (:), sortBy)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Unsafe.Coerce (unsafeCoerce)
-
 data Bin2 n a
     = Node  { w :: n, h :: n
             , r :: Bin2 n a, b :: Bin2 n a
             , i :: a }
     | Free  { w :: n, h :: n }
+
+-- type DeepBin2 n a = Bin2 n { value :: a, inner :: Maybe (DeepBin2 n a) }
 
 newtype Item n a = Item (n /\ n /\ a)
 
@@ -37,15 +39,20 @@ instance functorBin2 :: Functor (Bin2 n) where
     map _ (Free { w, h })          = Free { w, h }
 
 instance foldableBin2 :: Foldable (Bin2 n) where
-    foldr f def (Node { r, b, i }) =
-        f i $ foldr f (foldr f def b) r
-    foldr _ def (Free _) = def
-    foldl f def (Node { r, b, i }) =
-        def -- FIXME
-    foldl f def (Free _) = def
--- -- foldMap :: forall f n a. Semigroup f => (a -> f a) -> Bin2 n a -> f a
+    foldr f e (Node { r, b, i }) =
+        f i $ foldr f (foldr f e b) r
+    foldr _ e (Free _) = e
+    foldl f e (Node { r, b, i }) =
+        foldl f (foldl f (f e i) r) b
+    foldl f e (Free _) = e
     foldMap f (Node { r, b, i }) = f i <> foldMap f r <> foldMap f b
     foldMap _ (Free _)           = mempty
+
+-- instance functorDeepBin2 :: Functor (DeepBin2 n) where
+--     map f (DeepBin2 bin2) = ?wh
+--         where
+--             a = map f bin2
+
 
 container :: forall n a. n -> n -> Bin2 n a
 container w h = Free { w, h }
@@ -97,3 +104,14 @@ sample (Node { w, h, r, b, i }) x y =
         (LT /\ LT) -> Just (i /\ x /\ y)
         (_  /\ LT) -> sample r (x - w) y
         _          -> sample b x (y - h)
+
+valueOf :: forall a. Bin2 _ a -> Maybe a
+valueOf (Free _) = Nothing
+valueOf (Node { i }) = Just i
+
+itemOf :: forall n a. Bin2 n a -> Maybe (a /\ n /\ n)
+itemOf bin = valueOf bin >>= \v -> pure $ v /\ size bin
+
+size :: forall n. Bin2 n _ -> n /\ n
+size (Free { w, h }) = w /\ h
+size (Node { w, h }) = w /\ h
