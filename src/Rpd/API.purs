@@ -58,14 +58,14 @@ data RpdError = RpdError String
 
 
 type RpdOp a = Either RpdError a
---type RpdEffOp e a = RpdEff e (RpdOp e a)
+-- TODO: MonadEffect + MonadThrow
+--       https://www.fpcomplete.com/blog/2016/11/exceptions-best-practices-haskell
 type Rpd a = ExceptT RpdError Effect a
 -- type Rpd d e = ContT (Either RpdError (Network d e)) (Eff (RpdEffE e)) (Network d e)
 -- newtype ContT r m a = ContT ((a -> m r) -> m r)
 
 
 infixl 1 rpdBind as </>
--- FIXME: can be replaced with proper instances?
 -- other options: └, ~>, ...
 
 

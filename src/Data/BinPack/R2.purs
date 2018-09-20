@@ -9,6 +9,7 @@ module Data.BinPack.R2
 , item
 , sqItem
 , itemOf
+, valueOf
 , size
 )
 where
