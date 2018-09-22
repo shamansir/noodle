@@ -2,14 +2,15 @@ module Rpd.Renderer.Terminal
     ( TerminalRenderer
     , terminalRenderer
     , Ui
-    , Blocks -- TODO: do not expose maybe?
-    , Block -- TODO: do not expose maybe?
+    , Cell -- TODO: do not expose maybe?
+    , Packing -- TODO: do not expose maybe?
     , Status -- TODO: do not expose maybe?
     , view -- TODO: do not expose maybe?
     ) where
 
 import Prelude
 
+import Data.String (CodePoint, fromCodePointArray)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.List as List
@@ -32,11 +33,11 @@ import Rpd.Render (PushMsg, Message(..)) as R
 import Rpd.RenderS (Renderer(..))
 
 
-data Block =
-    Block R.Path (List String)
+data Cell =
+    Cell R.Path (Array (Array CodePoint))
 
 
-data Blocks = Blocks (R2.Bin2 Int { value :: Block, blocks :: Maybe Blocks })
+data Packing = Packing (R2.Bin2 Int { cell :: Cell, packing :: Maybe Packing })
 
 
 data Status
@@ -46,14 +47,14 @@ data Status
 
 
 type Ui =
-    { blocks :: Blocks
+    { packing :: Packing
     , status :: Status
     }
 
 
 initUi :: { w :: Int, h :: Int } -> Ui
 initUi { w, h } =
-    { blocks : Blocks $ R2.container w h
+    { packing : Packing $ R2.container w h
     , status : Empty
     }
 
@@ -71,37 +72,37 @@ terminalRenderer =
         }
 
 
-foldBlocks :: Blocks -> String
-foldBlocks (Blocks r2) =
+foldPacking :: Packing -> String
+foldPacking (Packing r2) =
     -- TODO: make Foldable instance
-    fromMaybe "[]" $ foldWith <$> R2.valueOf r2
+    fromMaybe "[]" $ foldConcat <$> R2.valueOf r2
     where
-        foldWith { value, blocks } =
-            case value of
-               (Block _ content) ->
-                    foldr (<>) "" content <>
-                        (blocks >>= pure <<< foldBlocks # fromMaybe "")
+        foldCell :: Cell -> String
+        foldCell (Cell _ content) = foldr (<>) "" $ fromCodePointArray <$> content
+        foldPacking' :: Maybe Packing -> String
+        foldPacking' packing = packing >>= pure <<< foldPacking # fromMaybe ""
+        foldConcat { cell, packing } = foldCell cell <> foldPacking' packing
 
 
 viewStatus :: Status -> String
 viewStatus _ = "> "
 
 
-blockOfInlet :: forall d. R.Network d -> R.Inlet d -> Blocks
-blockOfInlet nw inlet = Blocks $ R2.container 0 0
+blockOfInlet :: forall d. R.Network d -> R.Inlet d -> Packing
+blockOfInlet nw inlet = Packing $ R2.container 0 0
 
 
-blockOfOutlet :: forall d. R.Network d -> R.Outlet d -> Blocks
-blockOfOutlet nw outlet = Blocks $ R2.container 0 0
+blockOfOutlet :: forall d. R.Network d -> R.Outlet d -> Packing
+blockOfOutlet nw outlet = Packing $ R2.container 0 0
 
 
-blockOfNode :: forall d. R.Network d -> R.Node d -> Blocks
-blockOfNode nw node = Blocks $ R2.container 0 0
+blockOfNode :: forall d. R.Network d -> R.Node d -> Packing
+blockOfNode nw node = Packing $ R2.container 0 0
 
 
-blocksOfPatch :: forall d. Blocks -> R.Network d -> R.Patch d -> Blocks
+blocksOfPatch :: forall d. Packing -> R.Network d -> R.Patch d -> Packing
 blocksOfPatch root nw patch@(R.Patch patchId { name } { nodes }) =
-    Blocks $ R2.container 0 0
+    Packing $ R2.container 0 0
     -- where
     --     content = "[" <> name <> "]"
     --     size = { width: String.length content, height: 1 }
@@ -112,9 +113,9 @@ blocksOfPatch root nw patch@(R.Patch patchId { name } { nodes }) =
     --                 nextBlocks = blockOfNode nw node
 
 
-blocksOfNetwork :: forall d. { width :: Int, height :: Int } -> R.Network d -> Blocks
+blocksOfNetwork :: forall d. { width :: Int, height :: Int } -> R.Network d -> Packing
 blocksOfNetwork { width, height } nw@(R.Network { name } { patches }) =
-    Blocks $ R2.container 0 0
+    Packing $ R2.container 0 0
     -- R2.pack root $
     --     List.singleton $
     --         R2.item width height
@@ -145,6 +146,6 @@ update _ ui _ =
 
 view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> String
 view pushMsg (Right (ui /\ _)) =
-    foldBlocks ui.blocks <> viewStatus ui.status
+    foldPacking ui.packing <> viewStatus ui.status
 view pushMsg (Left err) =
     "ERR: " <> show err
