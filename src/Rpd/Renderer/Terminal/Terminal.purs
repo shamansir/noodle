@@ -29,7 +29,7 @@ import Control.Alt ((<|>))
 
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.API (RpdError) as R
-import Rpd.Path (Path(..)) as R
+import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchId) as R
 import Rpd.Optics (_patchNodes) as R
 import Rpd.Render (PushMsg, Message(..)) as R
 import Rpd.RenderS (Renderer(..))
@@ -43,7 +43,7 @@ data Cell =
 -- R2.Bin2 Stores information about width/height and x/y
 data Packing = Packing (R2.Bin2 Int { cell :: Cell, packing :: Maybe Packing })
 
---type PackItem = R2.Item Int { cell :: Cell, packing :: Maybe Packing }
+type Item = R2.Item Int { cell :: Cell, packing :: Maybe Packing }
 
 
 data Status
@@ -76,6 +76,10 @@ terminalRenderer =
         , update
         , view
         }
+
+
+noView :: View
+noView = [[]]
 
 
 toString :: View -> String
@@ -116,21 +120,31 @@ viewStatus :: Status -> View
 viewStatus _ = Array.singleton $ Array.singleton $ codePointFromChar '>'
 
 
-packInlet :: forall d. R.Network d -> R.Inlet d -> Packing
-packInlet nw inlet = Packing $ R2.container 0 0
+packInlet :: forall d. R.Network d -> R.InletPath -> R.Inlet d -> Item
+packInlet nw path inlet =
+    R2.item 0 0 { cell : Cell (R.ToInlet path) noView, packing : Nothing }
 
 
-packOutlet :: forall d. R.Network d -> R.Outlet d -> Packing
-packOutlet nw outlet = Packing $ R2.container 0 0
+packOutlet :: forall d. R.Network d -> R.OutletPath -> R.Outlet d -> Item
+packOutlet nw path outlet =
+    R2.item 0 0 { cell : Cell (R.ToOutlet path) noView, packing : Nothing }
 
 
-packNode :: forall d. R.Network d -> R.Node d -> Packing
-packNode nw node = Packing $ R2.container 0 0
+packNode :: forall d. R.Network d -> R.NodePath -> R.Node d -> Item
+packNode nw path node =
+    R2.item 0 0 { cell : Cell (R.ToNode path) noView, packing : Nothing }
 
 
-packPatch :: forall d. R.Network d -> R.Patch d -> Packing -> Packing
-packPatch nw patch@(R.Patch patchId { name } { nodes }) root =
-    Packing $ R2.container 0 0
+packPatch
+    :: forall d
+     . { width :: Int, height :: Int }
+    -> R.Network d
+    -> R.Patch d
+    -> Item
+packPatch { width, height } nw patch@(R.Patch patchId { name } { nodes }) =
+    -- foldr (packNode nw) $ Map.values nodes
+    R2.item 0 0 { cell : Cell (R.ToPatch patchId) noView, packing : Nothing }
+
     -- where
     --     content = "[" <> name <> "]"
     --     size = { width: String.length content, height: 1 }
@@ -144,9 +158,17 @@ packPatch nw patch@(R.Patch patchId { name } { nodes }) root =
 packNetwork :: forall d. { width :: Int, height :: Int } -> R.Network d -> Packing
 packNetwork { width, height } nw@(R.Network { name } { patches }) =
     let
-        container = Packing $ R2.container width height
+        container = R2.container width height
+        patchWidth = width / Map.size patches / 2
+        patchHeight = height / Map.size patches / 2
     in
-        foldr (packPatch nw) container $ Map.values patches
+        Map.values patches
+            # map
+                (\patch ->
+                    packPatch { width : patchWidth, height : patchHeight } nw patch)
+            # R2.pack container
+            # fromMaybe container
+            # Packing
 
     -- nwPacking = packNetwork size nw
     -- nwCell = viewPacking nwPacking
