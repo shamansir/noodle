@@ -10,6 +10,8 @@ module Rpd.Renderer.Terminal
 
 import Prelude
 
+import Math (ceil, sqrt, (%))
+import Data.Int (toNumber, floor)
 import Data.Array as Array
 import Data.String (CodePoint, fromCodePointArray, codePointFromChar)
 import Data.Map as Map
@@ -142,8 +144,12 @@ packPatch
     -> R.Patch d
     -> Item
 packPatch { width, height } nw patch@(R.Patch patchId { name } { nodes }) =
-    -- foldr (packNode nw) $ Map.values nodes
-    R2.item 0 0 { cell : Cell (R.ToPatch patchId) noView, packing : Nothing }
+    let
+        -- packing = Packing $ map ?wh nodes
+        packing = Packing $ R2.container width height
+    in
+        R2.item 0 0 { cell : Cell (R.ToPatch patchId) noView, packing : Just packing }
+    -- R2.item 0 0 { cell : Cell (R.ToPatch patchId) noView, packing : Nothing }
 
     -- where
     --     content = "[" <> name <> "]"
@@ -158,9 +164,14 @@ packPatch { width, height } nw patch@(R.Patch patchId { name } { nodes }) =
 packNetwork :: forall d. { width :: Int, height :: Int } -> R.Network d -> Packing
 packNetwork { width, height } nw@(R.Network { name } { patches }) =
     let
+        patchCount = toNumber $ Map.size patches
+        columns = ceil $ sqrt patchCount
+        rows = patchCount / columns
+        orphans = patchCount % columns
+
         container = R2.container width height
-        patchWidth = width / Map.size patches / 2
-        patchHeight = height / Map.size patches / 2
+        patchWidth = floor $ (toNumber width) / columns
+        patchHeight = floor $ (toNumber height) / if (orphans == 0.0) then rows else rows+1.0
     in
         Map.values patches
             # map
