@@ -33,7 +33,7 @@ import Control.Alt ((<|>))
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.API (RpdError) as R
 import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchId) as R
-import Rpd.Optics (_patchNodes) as R
+import Rpd.Optics (_patchNodes, _node) as R
 import Rpd.Render (PushMsg, Message(..)) as R
 import Rpd.RenderS (Renderer(..))
 
@@ -89,6 +89,14 @@ noView :: View
 noView = [[]]
 
 
+emptyView :: { width :: Int, height :: Int } -> View
+emptyView { width, height } =
+    Array.replicate height
+        $ Array.replicate width spaceCP
+    where
+        spaceCP = codePointFromChar ' '
+
+
 toString :: View -> String
 toString view =
     "" -- TODO
@@ -141,19 +149,34 @@ viewStatus :: Status -> View
 viewStatus _ = Array.singleton $ Array.singleton $ codePointFromChar '>'
 
 
-packInlet :: forall d. R.Network d -> R.InletPath -> R.Inlet d -> Item
-packInlet nw path inlet =
+packInlet :: forall d. R.Network d -> R.Inlet d -> Item
+packInlet nw (R.Inlet path _ _) =
     R2.item 0 0 { cell : Cell (R.ToInlet path) noView, packing : Nothing }
 
 
-packOutlet :: forall d. R.Network d -> R.OutletPath -> R.Outlet d -> Item
-packOutlet nw path outlet =
+packOutlet :: forall d. R.Network d -> R.Outlet d -> Item
+packOutlet nw (R.Outlet path _ _) =
     R2.item 0 0 { cell : Cell (R.ToOutlet path) noView, packing : Nothing }
 
 
-packNode :: forall d. R.Network d -> R.NodePath -> R.Node d -> Item
-packNode nw path node =
-    R2.item 0 0 { cell : Cell (R.ToNode path) noView, packing : Nothing }
+packNode :: forall d. R.Network d -> R.Node d -> Item
+packNode nw (R.Node path { name } { inlets, outlets }) =
+    let
+        width = String.length name + Set.size inlets + Set.size outlets + 4
+        inletsStr = String.fromCodePointArray
+            $ Array.replicate (Set.size inlets)
+            $ codePointFromChar 'i'
+        outletsStr = String.fromCodePointArray
+            $ Array.replicate (Set.size outlets)
+            $ codePointFromChar 'o'
+        nodeViewStr = "[" <> inletsStr <> "]" <> name <> "[" <> outletsStr <> "]"
+        nodeView = emptyView { width : width, height : 1 }
+            # place { x: 0, y: 0 } nodeViewStr
+    in
+        R2.item width 1
+            { cell : Cell (R.ToNode path) nodeView
+            , packing : Nothing
+            }
 
 
 packPatch
@@ -164,10 +187,32 @@ packPatch
     -> Item
 packPatch { width, height } nw patch@(R.Patch patchId { name } { nodes }) =
     let
-        -- packing = Packing $ map ?wh nodes
-        packing = Packing $ R2.container width height
+        container = R2.container width height
+        packing =
+            nodes
+                # Set.toUnfoldable
+                # map (\path -> Lens.view (R._node path) nw)
+                # Array.catMaybes
+                # map (packNode nw)
+                # List.fromFoldable
+                # R2.pack container
+                # fromMaybe container
+                # Packing
+        addToView { cell } =
+            case cell of
+                (Cell _ nodeView) -> inject { x: 0, y: 0 } nodeView
+        patchView =
+            case packing of
+                (Packing p) ->
+                    foldr addToView
+                        (emptyView { width : width, height : height }) p
+
+            -- # place { x: 0, y: 0 } "TEST"
     in
-        R2.item 0 0 { cell : Cell (R.ToPatch patchId) noView, packing : Just packing }
+        R2.item width height
+            { cell : Cell (R.ToPatch patchId) patchView
+            , packing : Just packing
+            }
     -- R2.item 0 0 { cell : Cell (R.ToPatch patchId) noView, packing : Nothing }
 
     -- where
