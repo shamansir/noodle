@@ -14,7 +14,7 @@ import Math (ceil, sqrt, (%))
 import Data.Int (toNumber, floor, round)
 import Data.Array as Array
 import Data.Array ((!!))
-import Data.String (CodePoint, fromCodePointArray, codePointFromChar)
+import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFromChar)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.List as List
@@ -97,9 +97,14 @@ emptyView { width, height } =
         spaceCP = codePointFromChar ' '
 
 
+viewFrom :: String -> View
+viewFrom str =
+    Array.singleton $ toCodePointArray str
+
+
 toString :: View -> String
 toString view =
-    "" -- TODO
+    fromCodePointArray $ Array.concat view
 
 
 place :: { x :: Int, y :: Int } -> String -> View -> View
@@ -128,12 +133,16 @@ place' pos char view =
 
 inject :: { x :: Int, y :: Int } -> View -> View -> View
 inject pos source into =
-    into -- TODO
+    source -- TODO
 
 
 viewPacking :: Packing -> View
 viewPacking (Packing r2) =
-    Array.singleton $ Array.singleton $ codePointFromChar '-'
+    fromMaybe noView $
+        R2.valueOf r2 >>=
+            \{ cell } ->
+                case cell of
+                    (Cell _ view) -> pure view
 
     -- TODO: make Foldable instance
     -- fromMaybe "[]" $ foldConcat <$> R2.valueOf r2
@@ -146,7 +155,7 @@ viewPacking (Packing r2) =
 
 
 viewStatus :: Status -> View
-viewStatus _ = Array.singleton $ Array.singleton $ codePointFromChar '>'
+viewStatus _ = viewFrom ">"
 
 
 packInlet :: forall d. R.Network d -> R.Inlet d -> Item
@@ -213,16 +222,6 @@ packPatch { width, height } nw patch@(R.Patch patchId { name } { nodes }) =
             { cell : Cell (R.ToPatch patchId) patchView
             , packing : Just packing
             }
-    -- R2.item 0 0 { cell : Cell (R.ToPatch patchId) noView, packing : Nothing }
-
-    -- where
-    --     content = "[" <> name <> "]"
-    --     size = { width: String.length content, height: 1 }
-    --     (nodes :: (List (R.Node d))) = Lens.view (R._patchNodes patchId) nw
-    --     foldingF node (root /\ blocks) =
-    --         (/\) root $ nextBlocks : blocks
-    --             where
-    --                 nextBlocks = blockOfNode nw node
 
 
 packNetwork :: forall d. { width :: Int, height :: Int } -> R.Network d -> Packing
@@ -232,7 +231,6 @@ packNetwork { width, height } nw@(R.Network { name } { patches }) =
         columns = ceil $ sqrt patchCount
         rows = round $ patchCount / columns
         orphans = round $ patchCount % columns
-
         container = R2.container width height
         patchWidth = round $ toNumber width / columns
         patchHeight = round $ toNumber height
@@ -245,49 +243,6 @@ packNetwork { width, height } nw@(R.Network { name } { patches }) =
             # R2.pack container
             # fromMaybe container
             # Packing
-
-    -- nwPacking = packNetwork size nw
-    -- nwCell = viewPacking nwPacking
-    -- packing' = case ui.packing of
-    --     Packing r2 ->
-    --         R2.pack r2
-    --             $ List.singleton
-    --             $ R2.item 200 200
-    --             $ { cell : Cell nwCell
-    --               , packing : Just nwPacking
-    --               }
-
-
-    -- let
-    --     patchContainer = R2.container width height
-    --     patchContainer' = map ?wh patches
-    --     patchesView = viewPacking patchContainer'
-    -- in
-    --     R2.item 0 0
-    --         { cell : Cell R.ToNetwork patchesView
-    --         , packing : patchContainer'
-    --         }
-
-
-    -- R2.pack root $
-    --     List.singleton $
-    --         R2.item width height
-    --             { value : Block R.ToNetwork $ List.singleton content
-    --             , blocks
-    --             }
-    -- -- <|> R2.container width height
-    -- where
-    --     content = "[" <> name <> "]"
-    --     root = R2.container width height
-    --     blocks = Tuple.snd
-    --         $ foldr
-    --             foldingF
-    --             (origin /\ List.Nil)
-    --             root
-    --     foldingF patch (root /\ blocks) =
-    --         (/\) root $ nextBlocks : blocks
-    --             where
-    --                 nextBlocks = blocksOfPatch root nw patch
 
 
 update :: forall d. R.Message d -> Ui -> R.Network d -> Ui
@@ -304,6 +259,6 @@ update _ ui _ =
 
 view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> String
 view pushMsg (Right (ui /\ _)) =
-    toString (viewPacking ui.packing) <> toString (viewStatus ui.status)
+    "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
 view pushMsg (Left err) =
     "ERR: " <> show err
