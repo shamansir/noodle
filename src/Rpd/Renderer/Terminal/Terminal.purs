@@ -11,8 +11,9 @@ module Rpd.Renderer.Terminal
 import Prelude
 
 import Math (ceil, sqrt, (%))
-import Data.Int (toNumber, floor)
+import Data.Int (toNumber, floor, round)
 import Data.Array as Array
+import Data.Array ((!!))
 import Data.String (CodePoint, fromCodePointArray, codePointFromChar)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -35,6 +36,10 @@ import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchId) as R
 import Rpd.Optics (_patchNodes) as R
 import Rpd.Render (PushMsg, Message(..)) as R
 import Rpd.RenderS (Renderer(..))
+
+
+
+infixl 8 Array.insertAt as >>
 
 
 type View = Array (Array CodePoint)
@@ -91,12 +96,26 @@ toString view =
 
 place :: { x :: Int, y :: Int } -> String -> View -> View
 place pos string view =
-    view -- TODO
+    fromMaybe view $ do
+        row <- view !! pos.y
+        let row' = Array.mapWithIndex mapF row
+        view # pos.y >> row'
+    where
+        strLen = String.length string
+        strCP = String.toCodePointArray string
+        startAt = pos.x
+        mapF index cpoint
+            | index < startAt = cpoint
+            | index > (startAt + strLen) = cpoint
+            | otherwise = fromMaybe cpoint $ strCP !! (index - startAt)
 
 
 place' :: { x :: Int, y :: Int } -> Char -> View -> View
 place' pos char view =
-    view -- TODO
+    fromMaybe view $ do
+        row <- view !! pos.y
+        row' <- row # pos.x >> codePointFromChar char
+        view # pos.y >> row'
 
 
 inject :: { x :: Int, y :: Int } -> View -> View -> View
@@ -166,12 +185,13 @@ packNetwork { width, height } nw@(R.Network { name } { patches }) =
     let
         patchCount = toNumber $ Map.size patches
         columns = ceil $ sqrt patchCount
-        rows = patchCount / columns
-        orphans = patchCount % columns
+        rows = round $ patchCount / columns
+        orphans = round $ patchCount % columns
 
         container = R2.container width height
-        patchWidth = floor $ (toNumber width) / columns
-        patchHeight = floor $ (toNumber height) / if (orphans == 0.0) then rows else rows+1.0
+        patchWidth = round $ toNumber width / columns
+        patchHeight = round $ toNumber height
+            / toNumber (if (orphans == 0) then rows else 1 + rows)
     in
         Map.values patches
             # map
