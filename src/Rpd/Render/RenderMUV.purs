@@ -59,7 +59,7 @@ once :: forall d model view. Renderer d model view -> R.Rpd (R.Network d) -> Eff
 once (Renderer { view, init, update }) rpd =
     extractRpd view neverPush withModel
     where
-        withModel = {- update Bang <$> -} (/\) init <$> rpd
+        withModel = (/\) init <$> rpd
         neverPush = PushMsg $ const $ pure unit
 
 

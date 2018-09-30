@@ -2,7 +2,6 @@ module Rpd.Renderer.Terminal
     ( TerminalRenderer
     , terminalRenderer
     , Ui
-    , Cell -- TODO: do not expose maybe?
     , Packing -- TODO: do not expose maybe?
     , Status -- TODO: do not expose maybe?
     , view -- TODO: do not expose maybe?
@@ -44,13 +43,13 @@ infixl 8 Array.insertAt as >>
 
 type View = Array (Array CodePoint)
 
-data Cell =
-    Cell R.Path View
+-- data Cell =
+--     Cell R.Path View
 
 -- R2.Bin2 Stores information about width/height and x/y
-data Packing = Packing (R2.Bin2 Int { cell :: Cell, packing :: Maybe Packing })
+data Packing = Packing (R2.Bin2 Int { subject :: R.Path, packing :: Maybe Packing })
 
-type Item = R2.Item Int { cell :: Cell, packing :: Maybe Packing }
+type Item = R2.Item Int { subject :: R.Path, packing :: Maybe Packing }
 
 
 data Status
@@ -60,15 +59,15 @@ data Status
 
 
 type Ui =
-    { packing :: Packing
-    , status :: Status
+    -- { packing : Packing
+    { status :: Status
     }
 
 
-initUi :: { width :: Int, height :: Int } -> Ui
-initUi { width, height } =
-    { packing : Packing $ R2.container width height
-    , status : Empty
+initUi :: Ui
+initUi =
+    -- { packing : Packing $ R2.container 200 200
+    { status : Empty
     }
 
 
@@ -79,7 +78,7 @@ terminalRenderer :: forall d. TerminalRenderer d
 terminalRenderer =
     Renderer
         { from : ""
-        , init : initUi { width: 200, height: 200 }
+        , init : initUi
         , update
         , view
         }
@@ -136,13 +135,13 @@ inject pos source into =
     source -- TODO
 
 
-viewPacking :: Packing -> View
-viewPacking (Packing r2) =
-    fromMaybe noView $
-        R2.valueOf r2 >>=
-            \{ cell } ->
-                case cell of
-                    (Cell _ view) -> pure view
+-- viewPacking :: Packing -> View
+-- viewPacking (Packing r2) =
+--     fromMaybe noView $
+--         R2.valueOf r2 >>=
+--             \{ cell } ->
+--                 case cell of
+--                     (Cell _ view) -> pure view
 
     -- TODO: make Foldable instance
     -- fromMaybe "[]" $ foldConcat <$> R2.valueOf r2
@@ -160,30 +159,30 @@ viewStatus _ = viewFrom ">"
 
 packInlet :: forall d. R.Network d -> R.Inlet d -> Item
 packInlet nw (R.Inlet path _ _) =
-    R2.item 0 0 { cell : Cell (R.ToInlet path) noView, packing : Nothing }
+    R2.item 0 0 { subject : R.ToInlet path, packing : Nothing }
 
 
 packOutlet :: forall d. R.Network d -> R.Outlet d -> Item
 packOutlet nw (R.Outlet path _ _) =
-    R2.item 0 0 { cell : Cell (R.ToOutlet path) noView, packing : Nothing }
+    R2.item 0 0 { subject : R.ToOutlet path, packing : Nothing }
 
 
 packNode :: forall d. R.Network d -> R.Node d -> Item
 packNode nw (R.Node path { name } { inlets, outlets }) =
     let
         width = String.length name + Set.size inlets + Set.size outlets + 4
-        inletsStr = String.fromCodePointArray
-            $ Array.replicate (Set.size inlets)
-            $ codePointFromChar 'i'
-        outletsStr = String.fromCodePointArray
-            $ Array.replicate (Set.size outlets)
-            $ codePointFromChar 'o'
-        nodeViewStr = "[" <> inletsStr <> "]" <> name <> "[" <> outletsStr <> "]"
-        nodeView = emptyView { width : width, height : 1 }
-            # place { x: 0, y: 0 } nodeViewStr
+        -- inletsStr = String.fromCodePointArray
+        --     $ Array.replicate (Set.size inlets)
+        --     $ codePointFromChar 'i'
+        -- outletsStr = String.fromCodePointArray
+        --     $ Array.replicate (Set.size outlets)
+        --     $ codePointFromChar 'o'
+        -- nodeViewStr = "[" <> inletsStr <> "]" <> name <> "[" <> outletsStr <> "]"
+        -- nodeView = emptyView { width : width, height : 1 }
+        --     # place { x: 0, y: 0 } nodeViewStr
     in
         R2.item width 1
-            { cell : Cell (R.ToNode path) nodeView
+            { subject : R.ToNode path
             , packing : Nothing
             }
 
@@ -207,33 +206,21 @@ packPatch { width, height } nw patch@(R.Patch patchId { name } { nodes }) =
                 # R2.pack container
                 # fromMaybe container
                 # Packing
-        addToView { cell } =
-            case cell of
-                (Cell _ nodeView) ->
-                    -- TODO place in proper position
-                    inject { x: 0, y: 0 } nodeView
-        patchView =
-            case packing of
-                (Packing p) ->
-                    foldr addToView
-                        (emptyView { width : width, height : height }) p
-            -- # place { x: 0, y: 0 } "TEST"
-        -- patchView' = viewFrom "aaa"
     in
         R2.item width height
-            { cell : Cell (R.ToPatch patchId) patchView
+            { subject : R.ToPatch patchId
             , packing : Just packing
             }
 
 
-packNetwork :: forall d. { width :: Int, height :: Int } -> R.Network d -> Packing
-packNetwork { width, height } nw@(R.Network { name } { patches }) =
+packNetwork :: forall d. R.Network d -> Packing -> Packing
+packNetwork nw@(R.Network { name } { patches }) (Packing container) =
     let
+        width /\ height = R2.size container
         patchCount = toNumber $ Map.size patches
         columns = ceil $ sqrt patchCount
         rows = round $ patchCount / columns
         orphans = round $ patchCount % columns
-        container = R2.container width height
         patchWidth = round $ toNumber width / columns
         patchHeight = round $ toNumber height
             / toNumber (if (orphans == 0) then rows else 1 + rows)
@@ -243,39 +230,24 @@ packNetwork { width, height } nw@(R.Network { name } { patches }) =
             # R2.pack container
             # fromMaybe container
             # Packing
-        -- R2.item 10 10
-        --     { cell : Cell R.Unknown noView
-        --     , packing : Nothing
-        --     }
-        --     # List.singleton
-        --     # R2.pack container
-        --     # fromMaybe (R2.container 70 70)
-        --     # Packing
-
 
 
 update :: forall d. R.Message d -> (Ui /\ R.Network d) -> Ui
-update R.Bang (_ /\ nw) =
-    let
-        size = { width : 200, height : 200 }
-        ui = initUi size
-    in
-        ui { packing = packNetwork size nw }
-
+-- update R.Bang (ui /\ nw) =
+--     ui { packing = packNetwork ui.packing nw }
 update _ (ui /\ _) =
     ui
 
 
 view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> String
-view pushMsg (Right (ui /\ _)) =
-    "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
-    -- "{" <> show ui.packing <> toString (viewStatus ui.status) <> "}"
+view pushMsg (Right (ui /\ nw)) =
+    -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
+    "{" <> show packing <> toString (viewStatus ui.status) <> "}"
+    where
+        -- FIXME: store the packing in UI and update it only on changes
+        packing = R2.container 200 200 # Packing # packNetwork nw
 view pushMsg (Left err) =
     "ERR: " <> show err
-
-
-instance showCell :: Show Cell where
-    show (Cell path _) = show path
 
 
 instance showPacking :: Show Packing where
