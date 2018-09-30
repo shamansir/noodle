@@ -133,6 +133,15 @@ instance showLinkId :: Show LinkId where
 
 
 
+instance showPath :: Show Path where
+    show ToNetwork = "<nw>"
+    show (ToPatch patchId) = "<p " <> show patchId <> ">"
+    show (ToNode nodePath) = "<n " <> show nodePath <> ">"
+    show (ToInlet inletPath) = "<i " <> show inletPath <> ">"
+    show (ToOutlet outletPath) = "<o " <> show outletPath <> ">"
+    show (ToLink linkId) = "<l " <> show linkId <> ">"
+    show Unknown = "<?>"
+
 
 instance eqPatchId :: Eq PatchId where
     eq (PatchId a) (PatchId b) = a == b

@@ -15,7 +15,7 @@ import Rpd.API ((</>))
 import Rpd.Path
 import Rpd.Network (Network) as R
 import Rpd.Render (once, Renderer) as Render
-import Rpd.RenderS (once, Renderer) as RenderS
+import Rpd.RenderMUV (once, Renderer) as RenderMUV
 import Rpd.Renderer.Terminal (terminalRenderer)
 import Rpd.Renderer.String (stringRenderer)
 
@@ -36,37 +36,30 @@ spec :: Spec Unit
 spec =
   describe "rendering" do
     it "rendering the empty network works" do
-      expectToRenderOnceS terminalRenderer myRpd "{>}"
       expectToRenderOnce stringRenderer myRpd
         "Network foo:\nNo Patches\nNo Links\n"
+      expectToRenderOnceMUV terminalRenderer myRpd "{>}"
       pure unit
     it "rendering the single node works" do
       let
         singleNodeNW = myRpd
           </> R.addPatch "foo"
           </> R.addNode (patchId 0) "bar"
-      expectToRenderOnceS terminalRenderer singleNodeNW "..."
-      expectToRenderOnce stringRenderer singleNodeNW "..."
+      expectToRenderOnce stringRenderer singleNodeNW $
+        "Network foo:\nOne Patch\nPatch foo P0:\n" <>
+          "One Node\nNode bar P0/N0:\n" <>
+            "No Inlets\nNo Outlets\nNo Links\n"
+      expectToRenderOnceMUV terminalRenderer singleNodeNW "..."
       pure unit
     it "rendering the erroneous network responds with the error" do
       let
         erroneousNW = myRpd
           -- add inlet to non-exising node
           </> R.addInlet (nodePath 0 0) "foo"
-      expectToRenderOnceS terminalRenderer erroneousNW "ERR: "
       expectToRenderOnce stringRenderer erroneousNW "<>"
+      expectToRenderOnceMUV terminalRenderer erroneousNW "ERR: "
       pure unit
 
-
-expectToRenderOnceS
-  :: forall d x
-   . RenderS.Renderer d x String
-  -> R.Rpd (R.Network d)
-  -> String
-  -> Aff Unit
-expectToRenderOnceS renderer rpd expectation = do
-  result <- liftEffect $ RenderS.once renderer rpd
-  result `shouldEqual` expectation
 
 expectToRenderOnce
   :: forall d
@@ -76,4 +69,15 @@ expectToRenderOnce
   -> Aff Unit
 expectToRenderOnce renderer rpd expectation = do
   result <- liftEffect $ Render.once renderer rpd
+  result `shouldEqual` expectation
+
+
+expectToRenderOnceMUV
+  :: forall d x
+   . RenderMUV.Renderer d x String
+  -> R.Rpd (R.Network d)
+  -> String
+  -> Aff Unit
+expectToRenderOnceMUV renderer rpd expectation = do
+  result <- liftEffect $ RenderMUV.once renderer rpd
   result `shouldEqual` expectation

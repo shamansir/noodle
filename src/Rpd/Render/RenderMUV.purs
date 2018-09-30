@@ -1,4 +1,4 @@
-module Rpd.RenderS
+module Rpd.RenderMUV
     ( Renderer(..)
     , UpdateF
     , ViewF
@@ -23,12 +23,12 @@ import Rpd (run) as R
 import Rpd.API as R
 import Rpd.Def as R
 import Rpd.Path as R
-import Rpd.Render (PushMsg(..), Message, update)
+import Rpd.Render (Message(..), PushMsg(..), Message, update)
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
 
 
-type UpdateF d model = Message d -> model -> R.Network d -> model
+type UpdateF d model = Message d -> (model /\ R.Network d) -> model
 type ViewF d model view = PushMsg d -> Either R.RpdError (model /\ R.Network d) -> view
 
 
@@ -56,10 +56,10 @@ extractRpd view pushMsg rpd =
 
 {- render once -}
 once :: forall d model view. Renderer d model view -> R.Rpd (R.Network d) -> Effect view
-once (Renderer { view, init }) rpd =
+once (Renderer { view, init, update }) rpd =
     extractRpd view neverPush withModel
     where
-        withModel = (/\) init <$> rpd
+        withModel = {- update Bang <$> -} (/\) init <$> rpd
         neverPush = PushMsg $ const $ pure unit
 
 
@@ -121,9 +121,9 @@ make'
         updater :: Message d -> R.Rpd (model /\ R.Network d) -> R.Rpd (model /\ R.Network d)
         updater msg rpd = rpd >>=
             \(model /\ nw) -> do
-                nw <- update msg nw
-                let model' = update' msg model nw
-                pure $ model' /\ nw
+                nw' <- update msg nw
+                let model' = update' msg $ model /\ nw'
+                pure $ model' /\ nw'
         viewer :: PushMsg d -> R.Rpd (model /\ R.Network d) -> Effect view
         viewer pushMessage = extractRpd view pushMessage
 

@@ -49,7 +49,9 @@ extractRpd handler pushMsg =
 {- render once -}
 once :: forall d r. Renderer d r -> R.Rpd (R.Network d) -> Effect r
 once (Renderer _ handleResult) =
-    extractRpd handleResult (PushMsg $ const $ pure unit)
+    extractRpd handleResult neverPush
+    where
+        neverPush = PushMsg $ const $ pure unit
 
 
 data Message d

@@ -49,10 +49,11 @@ instance foldableBin2 :: Foldable (Bin2 n) where
     foldMap f (Node { r, b, i }) = f i <> foldMap f r <> foldMap f b
     foldMap _ (Free _)           = mempty
 
--- instance functorDeepBin2 :: Functor (DeepBin2 n) where
---     map f (DeepBin2 bin2) = ?wh
---         where
---             a = map f bin2
+instance showBin2 :: (Show a, Show n) => Show (Bin2 n a) where
+    show (Node { r, b, i, w, h }) =
+        "{ Node: " <> show w <> "x" <> show h <> " -> "
+            <> show i <> " >> " <> show r <> "\n" <> show b <> " }"
+    show (Free { w, h }) = "{ Free: " <> show w <> "x" <> show h <> " }"
 
 
 container :: forall n a. n -> n -> Bin2 n a

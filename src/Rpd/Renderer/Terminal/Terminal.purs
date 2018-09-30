@@ -35,7 +35,7 @@ import Rpd.API (RpdError) as R
 import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchId) as R
 import Rpd.Optics (_patchNodes, _node) as R
 import Rpd.Render (PushMsg, Message(..)) as R
-import Rpd.RenderS (Renderer(..))
+import Rpd.RenderMUV (Renderer(..))
 
 
 
@@ -209,14 +209,16 @@ packPatch { width, height } nw patch@(R.Patch patchId { name } { nodes }) =
                 # Packing
         addToView { cell } =
             case cell of
-                (Cell _ nodeView) -> inject { x: 0, y: 0 } nodeView
+                (Cell _ nodeView) ->
+                    -- TODO place in proper position
+                    inject { x: 0, y: 0 } nodeView
         patchView =
             case packing of
                 (Packing p) ->
                     foldr addToView
                         (emptyView { width : width, height : height }) p
-
             -- # place { x: 0, y: 0 } "TEST"
+        -- patchView' = viewFrom "aaa"
     in
         R2.item width height
             { cell : Cell (R.ToPatch patchId) patchView
@@ -237,28 +239,44 @@ packNetwork { width, height } nw@(R.Network { name } { patches }) =
             / toNumber (if (orphans == 0) then rows else 1 + rows)
     in
         Map.values patches
-            # map
-                (\patch ->
-                    packPatch { width : patchWidth, height : patchHeight } nw patch)
+            # map (packPatch { width : patchWidth, height : patchHeight } nw)
             # R2.pack container
             # fromMaybe container
             # Packing
+        -- R2.item 10 10
+        --     { cell : Cell R.Unknown noView
+        --     , packing : Nothing
+        --     }
+        --     # List.singleton
+        --     # R2.pack container
+        --     # fromMaybe (R2.container 70 70)
+        --     # Packing
 
 
-update :: forall d. R.Message d -> Ui -> R.Network d -> Ui
-update R.Bang _ nw =
+
+update :: forall d. R.Message d -> (Ui /\ R.Network d) -> Ui
+update R.Bang (_ /\ nw) =
     let
         size = { width : 200, height : 200 }
         ui = initUi size
     in
         ui { packing = packNetwork size nw }
 
-update _ ui _ =
+update _ (ui /\ _) =
     ui
 
 
 view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> String
 view pushMsg (Right (ui /\ _)) =
     "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
+    -- "{" <> show ui.packing <> toString (viewStatus ui.status) <> "}"
 view pushMsg (Left err) =
     "ERR: " <> show err
+
+
+instance showCell :: Show Cell where
+    show (Cell path _) = show path
+
+
+instance showPacking :: Show Packing where
+    show (Packing r2) = show r2
