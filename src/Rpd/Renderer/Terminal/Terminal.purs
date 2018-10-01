@@ -138,10 +138,26 @@ place' pos char view =
         view # pos.y >> row'
 
 
-inject :: Pos -> View -> View -> View
-inject pos source into =
-    source -- TODO
+inject :: Pos -> Bounds -> View -> View -> View
+inject pos bounds into what =
+    Array.mapWithIndex mapRow into
+    where
+        startCol = pos.x
+        startRow = pos.y
+        width = bounds.width
+        height = bounds.height
+        mapRow rowIdx row = Array.mapWithIndex (mapCol rowIdx) row
+        mapCol rowIdx colIdx cpoint | rowIdx < startRow || colIdx < startCol = cpoint
+        mapCol rowIdx colIdx cpoint | rowIdx >= (startRow + height)
+                                      || colIdx >= (startCol + width) = cpoint
+        mapCol rowIdx colIdx cpoint | otherwise =
+            fromMaybe cpoint $ do
+                whatRow <- what !! (rowIdx - startRow)
+                whatCp <- whatRow !! (colIdx - startCol)
+                pure whatCp
 
+
+-- codePointAt :: Int -> Int -> View
 
 -- viewPacking :: Packing -> Network -> View
 -- viewPacking (Packing r2) nw =
@@ -209,8 +225,8 @@ packNode nw (R.Node path { name } { inlets, outlets }) =
             }
 
 
-viewPatch :: forall d. R.Network d -> Bounds -> View
-viewPatch nw bounds =
+viewPatch :: forall d. R.Network d -> Bounds -> R.Patch d -> View
+viewPatch nw patch bounds =
     emptyView initialBounds
 
 
@@ -240,10 +256,13 @@ packPatch { width, height } nw patch@(R.Patch patchId { name } { nodes }) =
             }
 
 
-viewNetwork :: forall d. R.Network d -> Bounds -> View
-viewNetwork nw bounds =
-    emptyView bounds
-        # place { x: 0, y: 0 } "AA"
+viewNetwork :: forall d. Bounds -> R.Network d -> View
+viewNetwork bounds nw@(R.Network { name } { patches })  =
+    Map.values patches
+        # map (viewPatch nw { width : 200, height : 200 })
+        # foldMap (inject { x: 10, y: 10 } { width: 200, height : 200 } startView)
+    where
+        startView = emptyView bounds
 
 
 packNetwork :: forall d. R.Network d -> Packing -> Packing
@@ -276,7 +295,7 @@ view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> String
 view pushMsg (Right (ui /\ nw)) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
     "{" <> show packing <> " :: "
-        <> toString (viewNetwork nw bounds) <> " :: "
+        <> toString (viewNetwork bounds nw) <> " :: "
         <> toString (viewStatus ui.status) <> "}"
     where
         -- FIXME: store the Maybe-Packing in UI and update it only on changes,
