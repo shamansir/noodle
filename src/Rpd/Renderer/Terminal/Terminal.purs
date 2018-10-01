@@ -64,6 +64,14 @@ type Ui =
     }
 
 
+type Bounds = { width :: Int, height :: Int }
+type Pos = { x :: Int, y :: Int }
+
+
+initialBounds :: Bounds
+initialBounds = { width: 20, height : 20 }
+
+
 initUi :: Ui
 initUi =
     -- { packing : Packing $ R2.container 200 200
@@ -88,7 +96,7 @@ noView :: View
 noView = [[]]
 
 
-emptyView :: { width :: Int, height :: Int } -> View
+emptyView :: Bounds -> View
 emptyView { width, height } =
     Array.replicate height
         $ Array.replicate width spaceCP
@@ -101,12 +109,12 @@ viewFrom str =
     Array.singleton $ toCodePointArray str
 
 
-toString :: View -> String
+toString :: View -> String -- a.k.a. Show
 toString view =
     fromCodePointArray $ Array.concat view
 
 
-place :: { x :: Int, y :: Int } -> String -> View -> View
+place :: Pos -> String -> View -> View
 place pos string view =
     fromMaybe view $ do
         row <- view !! pos.y
@@ -122,7 +130,7 @@ place pos string view =
             | otherwise = fromMaybe cpoint $ strCP !! (index - startAt)
 
 
-place' :: { x :: Int, y :: Int } -> Char -> View -> View
+place' :: Pos -> Char -> View -> View
 place' pos char view =
     fromMaybe view $ do
         row <- view !! pos.y
@@ -130,13 +138,13 @@ place' pos char view =
         view # pos.y >> row'
 
 
-inject :: { x :: Int, y :: Int } -> View -> View -> View
+inject :: Pos -> View -> View -> View
 inject pos source into =
     source -- TODO
 
 
--- viewPacking :: Packing -> View
--- viewPacking (Packing r2) =
+-- viewPacking :: Packing -> Network -> View
+-- viewPacking (Packing r2) nw =
 --     fromMaybe noView $
 --         R2.valueOf r2 >>=
 --             \{ cell } ->
@@ -167,6 +175,20 @@ packOutlet nw (R.Outlet path _ _) =
     R2.item 0 0 { subject : R.ToOutlet path, packing : Nothing }
 
 
+viewNode :: forall d. R.Network d -> R.Node d -> View
+viewNode nw (R.Node path { name } { inlets, outlets }) =
+    let
+        inletsStr = String.fromCodePointArray
+            $ Array.replicate (Set.size inlets)
+            $ codePointFromChar 'i'
+        outletsStr = String.fromCodePointArray
+            $ Array.replicate (Set.size outlets)
+            $ codePointFromChar 'o'
+        nodeViewStr = "[" <> inletsStr <> "]" <> name <> "[" <> outletsStr <> "]"
+    in emptyView { width : String.length nodeViewStr, height : 1 }
+        # place { x: 0, y: 0 } nodeViewStr
+
+
 packNode :: forall d. R.Network d -> R.Node d -> Item
 packNode nw (R.Node path { name } { inlets, outlets }) =
     let
@@ -187,9 +209,14 @@ packNode nw (R.Node path { name } { inlets, outlets }) =
             }
 
 
+viewPatch :: forall d. R.Network d -> Bounds -> View
+viewPatch nw bounds =
+    emptyView initialBounds
+
+
 packPatch
     :: forall d
-     . { width :: Int, height :: Int }
+     . Bounds
     -> R.Network d
     -> R.Patch d
     -> Item
@@ -213,6 +240,12 @@ packPatch { width, height } nw patch@(R.Patch patchId { name } { nodes }) =
             }
 
 
+viewNetwork :: forall d. R.Network d -> Bounds -> View
+viewNetwork nw bounds =
+    emptyView bounds
+        # place { x: 0, y: 0 } "AA"
+
+
 packNetwork :: forall d. R.Network d -> Packing -> Packing
 packNetwork nw@(R.Network { name } { patches }) (Packing container) =
     let
@@ -234,7 +267,7 @@ packNetwork nw@(R.Network { name } { patches }) (Packing container) =
 
 update :: forall d. R.Message d -> (Ui /\ R.Network d) -> Ui
 -- update R.Bang (ui /\ nw) =
---     ui { packing = packNetwork ui.packing nw }
+--     ui { packing = Just $ ui.packing # packNetwork nw }
 update _ (ui /\ _) =
     ui
 
@@ -242,10 +275,14 @@ update _ (ui /\ _) =
 view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> String
 view pushMsg (Right (ui /\ nw)) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
-    "{" <> show packing <> toString (viewStatus ui.status) <> "}"
+    "{" <> show packing <> " :: "
+        <> toString (viewNetwork nw bounds) <> " :: "
+        <> toString (viewStatus ui.status) <> "}"
     where
-        -- FIXME: store the packing in UI and update it only on changes
-        packing = R2.container 200 200 # Packing # packNetwork nw
+        -- FIXME: store the Maybe-Packing in UI and update it only on changes,
+        --        and if
+        bounds@{ width, height } = initialBounds
+        packing = R2.container width height # Packing # packNetwork nw
 view pushMsg (Left err) =
     "ERR: " <> show err
 
