@@ -25,6 +25,7 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Data.Foldable (foldr, foldMap)
 import Data.Either (Either(..))
 import Data.Lens as Lens
+import Data.Traversable (traverse)
 
 import Data.BinPack.R2 as R2
 import Control.Alt ((<|>))
@@ -111,7 +112,8 @@ viewFrom str =
 
 toString :: View -> String -- a.k.a. Show
 toString view =
-    fromCodePointArray $ Array.concat view
+    -- foldMap fromCodePointArray view
+    String.joinWith "\n" (map fromCodePointArray view)
 
 
 place :: Pos -> String -> View -> View
@@ -207,27 +209,26 @@ viewNode nw (R.Node path { name } { inlets, outlets }) =
 
 packNode :: forall d. R.Network d -> R.Node d -> Item
 packNode nw (R.Node path { name } { inlets, outlets }) =
-    let
+    R2.item width 1
+        { subject : R.ToNode path
+        , packing : Nothing
+        }
+    where
         width = String.length name + Set.size inlets + Set.size outlets + 4
-        -- inletsStr = String.fromCodePointArray
-        --     $ Array.replicate (Set.size inlets)
-        --     $ codePointFromChar 'i'
-        -- outletsStr = String.fromCodePointArray
-        --     $ Array.replicate (Set.size outlets)
-        --     $ codePointFromChar 'o'
-        -- nodeViewStr = "[" <> inletsStr <> "]" <> name <> "[" <> outletsStr <> "]"
-        -- nodeView = emptyView { width : width, height : 1 }
-        --     # place { x: 0, y: 0 } nodeViewStr
-    in
-        R2.item width 1
-            { subject : R.ToNode path
-            , packing : Nothing
-            }
 
 
 viewPatch :: forall d. R.Network d -> Bounds -> R.Patch d -> View
-viewPatch nw patch bounds =
-    emptyView initialBounds
+viewPatch nw bounds (R.Patch _ _ { nodes })  =
+    let
+        patchView = emptyView initialBounds
+        applyNodeView nodePath curPatchView =
+            fromMaybe curPatchView $
+                Lens.view (R._node nodePath) nw
+                    >>= viewNode nw
+                        >>> inject { x: 0, y: 0 } { width : 20, height : 20 } curPatchView
+                        >>> pure
+    in
+        foldr applyNodeView patchView $ Array.fromFoldable nodes
 
 
 packPatch
@@ -260,7 +261,7 @@ viewNetwork :: forall d. Bounds -> R.Network d -> View
 viewNetwork bounds nw@(R.Network { name } { patches })  =
     Map.values patches
         # map (viewPatch nw { width : 200, height : 200 })
-        # foldMap (inject { x: 10, y: 10 } { width: 200, height : 200 } startView)
+        # foldMap (inject { x: 0, y: 5 } { width: 200, height : 200 } startView)
     where
         startView = emptyView bounds
 
