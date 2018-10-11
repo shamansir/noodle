@@ -9,31 +9,35 @@ module Rpd.Renderer.Terminal
 
 import Prelude
 
-import Math (ceil, sqrt, (%))
-import Data.Int (toNumber, floor, round)
-import Data.Array as Array
+import Control.Alt ((<|>))
+
 import Data.Array ((!!))
-import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFromChar)
+import Data.Array as Array
+import Data.Int (toNumber, floor, round)
+import Data.List (List, (:))
+import Data.List as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.List as List
-import Data.List (List, (:))
 import Data.Set as Set
+import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFromChar)
 import Data.String as String
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
-import Data.Foldable (foldr, foldMap)
+
 import Data.Either (Either(..))
+
+import Data.Foldable (foldMap, foldr, sequence_)
 import Data.Lens as Lens
 import Data.Traversable (traverse)
 
 import Data.BinPack.R2 as R2
-import Control.Alt ((<|>))
 
-import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
+import Math (ceil, sqrt, (%))
+
 import Rpd.API (RpdError) as R
-import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchId) as R
+import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.Optics (_patchNodes, _node) as R
+import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchId) as R
 import Rpd.Render (PushMsg, Message(..)) as R
 import Rpd.RenderMUV (Renderer(..))
 
@@ -62,6 +66,7 @@ data Status
 type Ui =
     -- { packing : Packing
     { status :: Status
+    , invalidate :: Boolean
     }
 
 
@@ -77,6 +82,7 @@ initUi :: Ui
 initUi =
     -- { packing : Packing $ R2.container 200 200
     { status : Empty
+    , invalidate : true
     }
 
 
@@ -257,13 +263,17 @@ packPatch { width, height } nw patch@(R.Patch patchId { name } { nodes }) =
             }
 
 
-viewNetwork :: forall d. Bounds -> R.Network d -> View
-viewNetwork bounds nw@(R.Network { name } { patches })  =
-    Map.values patches
-        # map (viewPatch nw { width : 200, height : 200 })
-        # foldMap (inject { x: 0, y: 5 } { width: 200, height : 200 } startView)
+viewNetwork :: forall d. Packing -> R.Network d -> View
+viewNetwork (Packing b2) nw@(R.Network { name } { patches })  =
+    -- Map.values patches
+    --     # map (viewPatch nw { width : 200, height : 200 })
+    -- foldMap foldingF b2
+    --foldr ?wh startView b2
+    R2.unfold ?wh startView b2
     where
-        startView = emptyView bounds
+        startView = emptyView { width: 200, height : 200 }
+        --foldingF = ?wh -- (inject { x: 0, y: 0 } { width: 200, height : 200 })
+
 
 
 packNetwork :: forall d. R.Network d -> Packing -> Packing
@@ -296,7 +306,7 @@ view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> String
 view pushMsg (Right (ui /\ nw)) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
     "{" <> show packing <> " :: "
-        <> toString (viewNetwork bounds nw) <> " :: "
+        <> toString (viewNetwork packing bounds nw) <> " :: "
         <> toString (viewStatus ui.status) <> "}"
     where
         -- FIXME: store the Maybe-Packing in UI and update it only on changes,
