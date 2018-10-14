@@ -5,6 +5,16 @@ module RpdTest.Util
 
 import Prelude
 
+import Data.Tuple.Nested (type (/\), (/\))
+import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFromChar)
+import Data.String as String
+import Data.Array as Array
+import Data.Array ((!!))
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Foldable (foldr)
+import Data.TraversableWithIndex (traverseWithIndex)
+import Data.FoldableWithIndex (foldrWithIndex)
+
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
@@ -38,3 +48,34 @@ withRpd test rpd =
       nwTarget <- Ref.new $ Network.empty "f"
       _ <- RL.runRpdLogging (flip Ref.write $ nwTarget) rpd
       Ref.read nwTarget
+
+data CompareResult = Unknown | Match | DiffAt (Int /\ Int) | DiffSize (Int /\ Int) (Int /\ Int)
+
+compareMultiline :: Array (Array CodePoint) -> Array (Array CodePoint) -> CompareResult
+compareMultiline [] [] = Match
+compareMultiline [] _ = DiffSize (0 /\ 0) (0 /\ 0)
+compareMultiline _ [] = DiffSize (0 /\ 0) (0 /\ 0)
+compareMultiline left right | Array.length left /= Array.length right = DiffSize (0 /\ 0) (0 /\ 0)
+compareMultiline left right | otherwise =
+  foldrWithIndex compareML Unknown left
+  where
+    compareML :: Int -> Array CodePoint -> CompareResult -> CompareResult
+    compareML _ _ (DiffSize a b) = DiffSize a b
+    compareML _ _ (DiffAt pos) = DiffAt pos
+    compareML y leftLine _ =
+      case right !! y of
+        Just rightLine ->
+          compareLines y leftLine rightLine
+        Nothing -> DiffSize (0 /\ 0) (0 /\ 0)
+    compareLines :: Int -> Array CodePoint -> Array CodePoint -> CompareResult
+    compareLines y [] [] = Match
+    compareLines y [] _  = DiffSize (0 /\ 0) (0 /\ 0)
+    compareLines y _  [] = DiffSize (0 /\ 0) (0 /\ 0)
+    compareLines y leftLine rightLine =
+      Array.zip leftLine rightLine
+        # foldrWithIndex (compareCPs y) Unknown
+    compareCPs _ _ _ (DiffSize a b) = DiffSize a b
+    compareCPs _ _ _ (DiffAt pos) = DiffAt pos
+    compareCPs y x (l /\ r) _ =
+      if (l == r) then Match
+      else DiffAt (x /\ y)
