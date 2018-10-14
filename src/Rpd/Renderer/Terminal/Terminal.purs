@@ -17,7 +17,7 @@ import Data.Int (toNumber, floor, round)
 import Data.List (List, (:))
 import Data.List as List
 import Data.Map as Map
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Set as Set
 import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFromChar)
 import Data.String as String
@@ -36,7 +36,7 @@ import Math (ceil, sqrt, (%))
 
 import Rpd.API (RpdError) as R
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
-import Rpd.Optics (_patchNodes, _node) as R
+import Rpd.Optics (_patchNodes, _node, _patch) as R
 import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchId) as R
 import Rpd.Render (PushMsg, Message(..)) as R
 import Rpd.RenderMUV (Renderer(..))
@@ -147,7 +147,7 @@ place' pos char view =
 
 
 inject :: Pos -> Bounds -> View -> View -> View
-inject pos bounds into what =
+inject pos bounds what into =
     Array.mapWithIndex mapRow into
     where
         startCol = pos.x
@@ -265,14 +265,27 @@ packPatch { width, height } nw patch@(R.Patch patchId { name } { nodes }) =
 
 viewNetwork :: forall d. Packing -> R.Network d -> View
 viewNetwork (Packing b2) nw@(R.Network { name } { patches })  =
-    -- Map.values patches
-    --     # map (viewPatch nw { width : 200, height : 200 })
-    -- foldMap foldingF b2
-    --foldr ?wh startView b2
-    R2.unfold ?wh startView b2
+    R2.unfold foldingF startView b2
     where
         startView = emptyView { width: 200, height : 200 }
-        --foldingF = ?wh -- (inject { x: 0, y: 0 } { width: 200, height : 200 })
+        foldingF (item /\ (x /\ y /\ w /\ h)) v =
+            withSubjectView # withSubPacking
+            where
+                injectSubjView sView = inject { x, y } { width: w, height : h } sView v
+                injectSubPacking v' (Packing b2') =
+                    R2.unfold foldingF v' b2'
+                withSubjectView =
+                    viewSubject item.subject w h
+                        # maybe v injectSubjView
+                withSubPacking v' =
+                    maybe v' (injectSubPacking v') item.packing
+        viewSubject (R.ToPatch patchId) w h =
+            Lens.view (R._patch patchId) nw >>=
+                pure <<< viewPatch nw { width: w, height : h }
+        viewSubject (R.ToNode nodePath) w h =
+            Lens.view (R._node nodePath) nw >>=
+                pure <<< viewNode nw
+        viewSubject _ _ _ = Nothing
 
 
 
@@ -306,7 +319,7 @@ view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> String
 view pushMsg (Right (ui /\ nw)) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
     "{" <> show packing <> " :: "
-        <> toString (viewNetwork packing bounds nw) <> " :: "
+        <> toString (viewNetwork packing nw) <> " :: "
         <> toString (viewStatus ui.status) <> "}"
     where
         -- FIXME: store the Maybe-Packing in UI and update it only on changes,

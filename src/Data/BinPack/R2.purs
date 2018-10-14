@@ -106,13 +106,11 @@ unfold f =
     where
         unfold' _ _ v (Free _)       = v
         unfold' x y v (Node { w, h, r, b, i }) =
-            let
-                curitem = i /\ (x /\ y /\ w /\ h)
-            in
-                -- unfold everything below, then at right, then the current item
-                -- f curitem $ unfold' (x + w) y (unfold' x (y + h) v b) r
-                -- unfold everything at right, then below, then the current item
-                f curitem $ unfold' x (y + h) (unfold' (x + w) y v r) b
+            -- unfold everything below, then at right, then the current item
+            -- f (i /\ (x /\ y /\ w /\ h)) $ unfold' (x + w) y (unfold' x (y + h) v b) r
+            -- unfold everything at right, then below, then the current item
+            f (i /\ (x /\ y /\ w /\ h))
+                $ unfold' x (y + h) (unfold' (x + w) y v r) b
 
 sample :: forall n a. Ring n => Ord n => Bin2 n a -> n -> n -> Maybe (a /\ n /\ n)
 sample (Free _)       _ _ = Nothing
