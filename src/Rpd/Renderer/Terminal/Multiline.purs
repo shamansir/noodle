@@ -56,8 +56,8 @@ empty :: Multiline
 empty = Multiline [[]]
 
 
-empty' :: { width :: Int, height :: Int } -> Multiline
-empty' { width, height } =
+empty' :: (Int /\ Int)  -> Multiline
+empty' (width /\ height) =
     Multiline
         $ Array.replicate height
         $ Array.replicate width spaceCP
@@ -65,36 +65,86 @@ empty' { width, height } =
         spaceCP = codePointFromChar ' '
 
 
-from :: String -> Multiline
-from str =
-    Multiline $ Array.singleton $ toCodePointArray str
+from :: Array String -> Multiline
+from = Multiline <<< map toCodePointArray
 
 
-place :: { x :: Int, y :: Int } -> String -> Multiline -> Multiline
-place pos string (Multiline ml) =
-    Multiline $ fromMaybe ml $ do
-        row <- ml !! pos.y
+from' :: String -> Multiline
+from' = Multiline <<< Array.singleton <<< toCodePointArray
+
+
+clip :: (Int /\ Int) -> (Int /\ Int) -> Multiline -> Multiline
+clip (x /\ y) (w /\ h) ml@(Multiline lines) =
+    lines
+        # Array.slice y h
+        # map (Array.slice x w)
+        # Multiline
+
+
+clipWithMarker :: (Int /\ Int) -> (Int /\ Int) -> Multiline -> Multiline
+clipWithMarker pos@(x /\ y) size@(w /\ h) ml =
+    let
+        markerSize@(markerW /\ markerH) = 10 /\ 4
+        dstSize = (w + markerW) /\ (h + markerH)
+        dst = empty' dstSize
+    in
+        dst
+            # (place'' markerSize $ clip pos size ml)
+            # (place (0 /\ 0) $ show x <> ":" <> show y <> "|")
+            # (place (0 /\ 1) $ "------|")
+
+
+shift :: (Int /\ Int) -> Multiline -> Multiline
+shift (x /\ y) ml | x == 0 && y == 0 = ml
+shift (x /\ y) ml@(Multiline lines) | otherwise =
+    let
+        (w /\ h) = size ml
+        clipped = clip (x /\ y) ((w - x) /\ (y - h)) ml
+    in
+        empty' (w /\ h) # place'' (x /\ y) clipped
+
+
+place :: (Int /\ Int) -> String -> Multiline -> Multiline
+place (x /\ y) string (Multiline lines) =
+    Multiline $ fromMaybe lines $ do
+        row <- lines !! y
         let row' = Array.mapWithIndex mapF row
-        ml # pos.y >> row'
+        lines # y >> row'
     where
         strLen = String.length string
         strCP = String.toCodePointArray string
-        startAt = pos.x
         mapF index cpoint
-            | index < startAt = cpoint
-            | index > (startAt + strLen) = cpoint
-            | otherwise = fromMaybe cpoint $ strCP !! (index - startAt)
+            | index < x = cpoint
+            | index > (x + strLen) = cpoint
+            | otherwise = fromMaybe cpoint $ strCP !! (index - x)
 
 
-place' :: { x :: Int, y :: Int } -> Char -> Multiline -> Multiline
-place' pos char (Multiline ml) =
-    Multiline $ fromMaybe ml $ do
-        row <- ml !! pos.y
-        row' <- row # pos.x >> codePointFromChar char
-        ml # pos.y >> row'
+place' :: (Int /\ Int) -> Char -> Multiline -> Multiline
+place' (x /\ y) char (Multiline lines) =
+    Multiline $ fromMaybe lines $ do
+        row <- lines !! y
+        row' <- row # x >> codePointFromChar char
+        lines # y >> row'
 
 
--- codePointAt :: Int -> Int -> Multiline
+place'' :: (Int /\ Int) -> Multiline -> Multiline -> Multiline
+place'' (x /\ y) srcml@(Multiline srcLines) dstml@(Multiline destLines) =
+    Multiline $ Array.mapWithIndex rowMapF destLines
+    where
+        ( srcW /\ scrH ) = size srcml
+        rowMapF index dstLine | index < y = dstLine
+        rowMapF index dstLine | index > (y + scrH) = dstLine
+        rowMapF index dstLine | otherwise =
+            case srcLines !! (index - y) of
+                Just srcLine -> Array.mapWithIndex (lineMapF srcLine) dstLine
+                Nothing -> dstLine
+        lineMapF srcLine index dstCpoint | index < x = dstCpoint
+        lineMapF srcLine index dstCpoint | index > (x + srcW) = dstCpoint
+        lineMapF srcLine index dstCpoint | otherwise =
+            fromMaybe dstCpoint $ srcLine !! (index - x)
+
+
+-- codePointAt :: Int -> Int -> CodePoint
 
 
 compareMultiline :: Multiline -> Multiline -> CompareResult
@@ -136,14 +186,7 @@ compareMultiline'
 compareMultiline' left right =
   case compareMultiline left right of
     DiffAt pos -> DiffAt pos /\
-      Just (clip left pos (5 /\ 5) /\
-            clip right pos (5 /\ 5))
+      Just (clipWithMarker pos (5 /\ 5) left /\
+            clipWithMarker pos (5 /\ 5) right)
     status -> status /\ Nothing
-  where
-    clip :: Multiline -> (Int /\ Int) -> (Int /\ Int) -> Multiline
-    clip v (x /\ y) (w /\ h) =
-      let
-        status1 = show x <> ":" <> show y <> "|"
-        status2 = "-------+"
-      in
-        empty -- TODO
+
