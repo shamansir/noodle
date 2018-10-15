@@ -66,12 +66,12 @@ type Ui =
     }
 
 
-type Bounds = { width :: Int, height :: Int }
-type Pos = { x :: Int, y :: Int }
+type Bounds = Int /\ Int
+type Pos = Int /\ Int
 
 
 initialBounds :: Bounds
-initialBounds = { width: 20, height : 20 }
+initialBounds = 20 /\ 20
 
 
 initUi :: Ui
@@ -102,25 +102,6 @@ noView :: ML.Multiline
 noView = ML.empty
 
 
-inject :: Pos -> Bounds -> View -> View -> View
-inject pos bounds what into =
-    Array.mapWithIndex mapRow into
-    where
-        startCol = pos.x
-        startRow = pos.y
-        width = bounds.width
-        height = bounds.height
-        mapRow rowIdx row = Array.mapWithIndex (mapCol rowIdx) row
-        mapCol rowIdx colIdx cpoint | rowIdx < startRow || colIdx < startCol = cpoint
-        mapCol rowIdx colIdx cpoint | rowIdx >= (startRow + height)
-                                      || colIdx >= (startCol + width) = cpoint
-        mapCol rowIdx colIdx cpoint | otherwise =
-            fromMaybe cpoint $ do
-                whatRow <- what !! (rowIdx - startRow)
-                whatCp <- whatRow !! (colIdx - startCol)
-                pure whatCp
-
-
 -- viewPacking :: Packing -> Network -> View
 -- viewPacking (Packing r2) nw =
 --     fromMaybe noView $
@@ -140,7 +121,7 @@ inject pos bounds what into =
 
 
 viewStatus :: Status -> View
-viewStatus _ = ML.from ">"
+viewStatus _ = ML.from' ">"
 
 
 packInlet :: forall d. R.Network d -> R.Inlet d -> Item
@@ -163,8 +144,8 @@ viewNode nw (R.Node path { name } { inlets, outlets }) =
             $ Array.replicate (Set.size outlets)
             $ codePointFromChar 'o'
         nodeViewStr = "[" <> inletsStr <> "]" <> name <> "[" <> outletsStr <> "]"
-    in ML.empty' { width : String.length nodeViewStr, height : 1 }
-        # ML.place { x: 0, y: 0 } nodeViewStr
+    in ML.empty' (String.length nodeViewStr /\ 1 )
+        # ML.place (0 /\ 0) nodeViewStr
 
 
 packNode :: forall d. R.Network d -> R.Node d -> Item
@@ -185,7 +166,7 @@ viewPatch nw bounds (R.Patch _ _ { nodes })  =
             fromMaybe curPatchView $
                 Lens.view (R._node nodePath) nw
                     >>= viewNode nw
-                        >>> inject { x: 0, y: 0 } { width : 20, height : 20 } curPatchView
+                        >>> ML.inject (0 /\ 0) curPatchView
                         >>> pure
     in
         foldr applyNodeView patchView $ Array.fromFoldable nodes
@@ -197,7 +178,7 @@ packPatch
     -> R.Network d
     -> R.Patch d
     -> Item
-packPatch { width, height } nw patch@(R.Patch patchId { name } { nodes }) =
+packPatch (width /\ height) nw patch@(R.Patch patchId { name } { nodes }) =
     let
         container = R2.container width height
         packing =
@@ -221,11 +202,11 @@ viewNetwork :: forall d. Packing -> R.Network d -> View
 viewNetwork (Packing b2) nw@(R.Network { name } { patches })  =
     R2.unfold foldingF startView b2
     where
-        startView = ML.empty' { width: 200, height : 200 }
+        startView = ML.empty' (200 /\ 200)
         foldingF (item /\ (x /\ y /\ w /\ h)) v =
             withSubjectView # withSubPacking
             where
-                injectSubjView sView = inject { x, y } { width: w, height : h } sView v
+                injectSubjView sView = ML.inject (x /\ y) sView v
                 injectSubPacking v' (Packing b2') =
                     R2.unfold foldingF v' b2'
                 withSubjectView =
@@ -235,7 +216,7 @@ viewNetwork (Packing b2) nw@(R.Network { name } { patches })  =
                     maybe v' (injectSubPacking v') item.packing
         viewSubject (R.ToPatch patchId) w h =
             Lens.view (R._patch patchId) nw >>=
-                pure <<< viewPatch nw { width: w, height : h }
+                pure <<< viewPatch nw (w /\ h)
         viewSubject (R.ToNode nodePath) w h =
             Lens.view (R._node nodePath) nw >>=
                 pure <<< viewNode nw
@@ -256,7 +237,7 @@ packNetwork nw@(R.Network { name } { patches }) (Packing container) =
             / toNumber (if (orphans == 0) then rows else 1 + rows)
     in
         Map.values patches
-            # map (packPatch { width : patchWidth, height : patchHeight } nw)
+            # map (packPatch (patchWidth /\ patchHeight) nw)
             # R2.pack container
             # fromMaybe container
             # Packing
@@ -278,7 +259,7 @@ view pushMsg (Right (ui /\ nw)) =
     where
         -- FIXME: store the Maybe-Packing in UI and update it only on changes,
         --        and if
-        bounds@{ width, height } = initialBounds
+        bounds@(width /\ height) = initialBounds
         packing = R2.container width height # Packing # packNetwork nw
 view pushMsg (Left err) =
     "ERR: " <> show err

@@ -89,7 +89,7 @@ clipWithMarker pos@(x /\ y) size@(w /\ h) ml =
         dst = empty' dstSize
     in
         dst
-            # (place'' markerSize $ clip pos size ml)
+            # (inject markerSize $ clip pos size ml)
             # (place (0 /\ 0) $ show x <> ":" <> show y <> "|")
             # (place (0 /\ 1) $ "------|")
 
@@ -101,7 +101,7 @@ shift (x /\ y) ml@(Multiline lines) | otherwise =
         (w /\ h) = size ml
         clipped = clip (x /\ y) ((w - x) /\ (y - h)) ml
     in
-        empty' (w /\ h) # place'' (x /\ y) clipped
+        empty' (w /\ h) # inject (x /\ y) clipped
 
 
 place :: (Int /\ Int) -> String -> Multiline -> Multiline
@@ -127,8 +127,8 @@ place' (x /\ y) char (Multiline lines) =
         lines # y >> row'
 
 
-place'' :: (Int /\ Int) -> Multiline -> Multiline -> Multiline
-place'' (x /\ y) srcml@(Multiline srcLines) dstml@(Multiline destLines) =
+inject :: (Int /\ Int) -> Multiline -> Multiline -> Multiline
+inject (x /\ y) srcml@(Multiline srcLines) dstml@(Multiline destLines) =
     Multiline $ Array.mapWithIndex rowMapF destLines
     where
         ( srcW /\ scrH ) = size srcml
@@ -142,6 +142,26 @@ place'' (x /\ y) srcml@(Multiline srcLines) dstml@(Multiline destLines) =
         lineMapF srcLine index dstCpoint | index > (x + srcW) = dstCpoint
         lineMapF srcLine index dstCpoint | otherwise =
             fromMaybe dstCpoint $ srcLine !! (index - x)
+
+
+-- inject :: Pos -> Bounds -> Multiline -> Multiline -> Multiline
+-- inject pos bounds what into =
+--     Array.mapWithIndex mapRow into
+--     where
+--         startCol = pos.x
+--         startRow = pos.y
+--         width = bounds.width
+--         height = bounds.height
+--         mapRow rowIdx row = Array.mapWithIndex (mapCol rowIdx) row
+--         mapCol rowIdx colIdx cpoint | rowIdx < startRow || colIdx < startCol = cpoint
+--         mapCol rowIdx colIdx cpoint | rowIdx >= (startRow + height)
+--                                       || colIdx >= (startCol + width) = cpoint
+--         mapCol rowIdx colIdx cpoint | otherwise =
+--             fromMaybe cpoint $ do
+--                 whatRow <- what !! (rowIdx - startRow)
+--                 whatCp <- whatRow !! (colIdx - startCol)
+--                 pure whatCp
+
 
 
 -- codePointAt :: Int -> Int -> CodePoint
