@@ -82,13 +82,13 @@ initUi =
     }
 
 
-type TerminalRenderer d = Renderer d Ui String
+type TerminalRenderer d = Renderer d Ui ML.Multiline
 
 
 terminalRenderer :: forall d. TerminalRenderer d
 terminalRenderer =
     Renderer
-        { from : ""
+        { from : ML.empty
         , init : initUi
         , update
         , view
@@ -202,7 +202,7 @@ viewNetwork :: forall d. Packing -> R.Network d -> View
 viewNetwork (Packing b2) nw@(R.Network { name } { patches })  =
     R2.unfold foldingF startView b2
     where
-        startView = ML.empty' (200 /\ 200)
+        startView = ML.empty' (100 /\ 100)
         foldingF (item /\ (x /\ y /\ w /\ h)) v =
             withSubjectView # withSubPacking
             where
@@ -250,19 +250,20 @@ update _ (ui /\ _) =
     ui
 
 
-view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> String
+view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> ML.Multiline
 view pushMsg (Right (ui /\ nw)) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
-    "{" <> show packing <> " :: "
-        <> show (viewNetwork packing nw) <> " :: "
-        <> show (viewStatus ui.status) <> "}"
+    -- "{" <> show packing <> " :: "
+    --     <> show (viewNetwork packing nw) <> " :: "
+    --     <> show (viewStatus ui.status) <> "}"
+    viewNetwork packing nw
     where
         -- FIXME: store the Maybe-Packing in UI and update it only on changes,
         --        and if
         bounds@(width /\ height) = initialBounds
         packing = R2.container width height # Packing # packNetwork nw
 view pushMsg (Left err) =
-    "ERR: " <> show err
+    ML.from' $ "ERR: " <> show err
 
 
 instance showPacking :: Show Packing where

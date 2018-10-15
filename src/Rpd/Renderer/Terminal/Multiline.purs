@@ -19,9 +19,20 @@ newtype Multiline = Multiline (Array Line)
 type Line = Array CodePoint
 
 
+getLines :: Multiline -> Array Line
+getLines (Multiline ml) = ml
+
+
 instance showMultiline :: Show Multiline where
     show (Multiline ml) =
         String.joinWith "\n" (map fromCodePointArray ml)
+
+
+instance eqMultiline :: Eq Multiline where
+    eq mll mlr =
+        case compareMultiline mll mlr of
+            Match -> true
+            _ -> false
 
 
 -- TODO: Foldable etc.

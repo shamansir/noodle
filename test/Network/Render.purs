@@ -5,9 +5,10 @@ import Prelude
 
 import Effect.Class (liftEffect)
 import Effect.Aff (Aff())
+import Effect.Console (log)
 
 import Test.Spec (Spec, describe, it)
-import Test.Spec.Assertions (shouldEqual)
+import Test.Spec.Assertions (shouldEqual, fail)
 
 import Rpd (init) as R
 import Rpd.API as R
@@ -17,6 +18,7 @@ import Rpd.Network (Network) as R
 import Rpd.Render (once, Renderer) as Render
 import Rpd.RenderMUV (once, Renderer) as RenderMUV
 import Rpd.Renderer.Terminal (terminalRenderer)
+import Rpd.Renderer.Terminal.Multiline as ML
 import Rpd.Renderer.String (stringRenderer)
 
 
@@ -38,7 +40,7 @@ spec =
     it "rendering the empty network works" do
       expectToRenderOnce stringRenderer myRpd
         "Network foo:\nNo Patches\nNo Links\n"
-      expectToRenderOnceMUV terminalRenderer myRpd "{>}"
+      expectToRenderOnceMUV terminalRenderer myRpd $ ML.from' "{>}"
       pure unit
     it "rendering the single node works" do
       let
@@ -49,7 +51,7 @@ spec =
         "Network foo:\nOne Patch\nPatch foo P0:\n" <>
           "One Node\nNode bar P0/N0:\n" <>
             "No Inlets\nNo Outlets\nNo Links\n"
-      expectToRenderOnceMUV terminalRenderer singleNodeNW "..."
+      expectToRenderOnceMUV terminalRenderer singleNodeNW $ ML.from' "..."
       pure unit
     it "rendering the erroneous network responds with the error" do
       let
@@ -57,7 +59,7 @@ spec =
           -- add inlet to non-exising node
           </> R.addInlet (nodePath 0 0) "foo"
       expectToRenderOnce stringRenderer erroneousNW "<>"
-      expectToRenderOnceMUV terminalRenderer erroneousNW "ERR: "
+      expectToRenderOnceMUV terminalRenderer erroneousNW $ ML.from' "ERR: "
       pure unit
 
 
@@ -74,10 +76,17 @@ expectToRenderOnce renderer rpd expectation = do
 
 expectToRenderOnceMUV
   :: forall d x
-   . RenderMUV.Renderer d x String
+   . RenderMUV.Renderer d x ML.Multiline
   -> R.Rpd (R.Network d)
-  -> String
+  -> ML.Multiline
   -> Aff Unit
 expectToRenderOnceMUV renderer rpd expectation = do
   result <- liftEffect $ RenderMUV.once renderer rpd
-  result `shouldEqual` expectation
+  result `compareViews` expectation
+
+
+compareViews :: ML.Multiline -> ML.Multiline -> Aff Unit
+compareViews v1 v2 =
+  when (v1 /= v2) $ do
+    liftEffect $ log $ show "aaa"
+    fail $ show v1 <> " ≠ " <> show v2
