@@ -41,12 +41,8 @@ import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchId) as R
 import Rpd.Render (PushMsg, Message(..)) as R
 import Rpd.RenderMUV (Renderer(..))
 
+import Rpd.Renderer.Terminal.Multiline as ML
 
-
-infixl 8 Array.insertAt as >>
-
-
-type View = Array (Array CodePoint)
 
 -- data Cell =
 --     Cell R.Path View
@@ -99,51 +95,11 @@ terminalRenderer =
         }
 
 
-noView :: View
-noView = [[]]
+type View = ML.Multiline
 
 
-emptyView :: Bounds -> View
-emptyView { width, height } =
-    Array.replicate height
-        $ Array.replicate width spaceCP
-    where
-        spaceCP = codePointFromChar ' '
-
-
-viewFrom :: String -> View
-viewFrom str =
-    Array.singleton $ toCodePointArray str
-
-
-toString :: View -> String -- a.k.a. Show
-toString view =
-    -- foldMap fromCodePointArray view
-    String.joinWith "\n" (map fromCodePointArray view)
-
-
-place :: Pos -> String -> View -> View
-place pos string view =
-    fromMaybe view $ do
-        row <- view !! pos.y
-        let row' = Array.mapWithIndex mapF row
-        view # pos.y >> row'
-    where
-        strLen = String.length string
-        strCP = String.toCodePointArray string
-        startAt = pos.x
-        mapF index cpoint
-            | index < startAt = cpoint
-            | index > (startAt + strLen) = cpoint
-            | otherwise = fromMaybe cpoint $ strCP !! (index - startAt)
-
-
-place' :: Pos -> Char -> View -> View
-place' pos char view =
-    fromMaybe view $ do
-        row <- view !! pos.y
-        row' <- row # pos.x >> codePointFromChar char
-        view # pos.y >> row'
+noView :: ML.Multiline
+noView = ML.empty
 
 
 inject :: Pos -> Bounds -> View -> View -> View
@@ -165,8 +121,6 @@ inject pos bounds what into =
                 pure whatCp
 
 
--- codePointAt :: Int -> Int -> View
-
 -- viewPacking :: Packing -> Network -> View
 -- viewPacking (Packing r2) nw =
 --     fromMaybe noView $
@@ -186,7 +140,7 @@ inject pos bounds what into =
 
 
 viewStatus :: Status -> View
-viewStatus _ = viewFrom ">"
+viewStatus _ = ML.from ">"
 
 
 packInlet :: forall d. R.Network d -> R.Inlet d -> Item
@@ -209,8 +163,8 @@ viewNode nw (R.Node path { name } { inlets, outlets }) =
             $ Array.replicate (Set.size outlets)
             $ codePointFromChar 'o'
         nodeViewStr = "[" <> inletsStr <> "]" <> name <> "[" <> outletsStr <> "]"
-    in emptyView { width : String.length nodeViewStr, height : 1 }
-        # place { x: 0, y: 0 } nodeViewStr
+    in ML.empty' { width : String.length nodeViewStr, height : 1 }
+        # ML.place { x: 0, y: 0 } nodeViewStr
 
 
 packNode :: forall d. R.Network d -> R.Node d -> Item
@@ -226,7 +180,7 @@ packNode nw (R.Node path { name } { inlets, outlets }) =
 viewPatch :: forall d. R.Network d -> Bounds -> R.Patch d -> View
 viewPatch nw bounds (R.Patch _ _ { nodes })  =
     let
-        patchView = emptyView initialBounds
+        patchView = ML.empty' initialBounds
         applyNodeView nodePath curPatchView =
             fromMaybe curPatchView $
                 Lens.view (R._node nodePath) nw
@@ -267,7 +221,7 @@ viewNetwork :: forall d. Packing -> R.Network d -> View
 viewNetwork (Packing b2) nw@(R.Network { name } { patches })  =
     R2.unfold foldingF startView b2
     where
-        startView = emptyView { width: 200, height : 200 }
+        startView = ML.empty' { width: 200, height : 200 }
         foldingF (item /\ (x /\ y /\ w /\ h)) v =
             withSubjectView # withSubPacking
             where
@@ -319,8 +273,8 @@ view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> String
 view pushMsg (Right (ui /\ nw)) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
     "{" <> show packing <> " :: "
-        <> toString (viewNetwork packing nw) <> " :: "
-        <> toString (viewStatus ui.status) <> "}"
+        <> show (viewNetwork packing nw) <> " :: "
+        <> show (viewStatus ui.status) <> "}"
     where
         -- FIXME: store the Maybe-Packing in UI and update it only on changes,
         --        and if
