@@ -3,12 +3,16 @@ module RpdTest.Network.Render
 
 import Prelude
 
+import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested (type (/\), (/\))
+
 import Effect.Class (liftEffect)
 import Effect.Aff (Aff())
 import Effect.Console (log)
 
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, fail)
+import Test.Spec.Color (colored, Color(..))
 
 import Rpd (init) as R
 import Rpd.API as R
@@ -87,6 +91,18 @@ expectToRenderOnceMUV renderer rpd expectation = do
 
 compareViews :: ML.Multiline -> ML.Multiline -> Aff Unit
 compareViews v1 v2 =
-  when (v1 /= v2) $ do
-    liftEffect $ log $ show "aaa"
-    fail $ show v1 <> " ≠ " <> show v2
+  case v1 `ML.compare'` v2 of
+    ML.Match /\ _ -> pure unit
+    ML.Unknown /\ _ -> do
+      fail $ "Comparison failed, reason is unknown"
+    ML.DiffSize (wl /\ hl) (wr /\ hr) /\ _ -> do
+      fail $ "Sizes are different: " <>
+        show wl <> "x" <> show hl <> " (left) vs " <>
+        show wr <> "x" <> show hr <> " (right)"
+    ML.DiffAt (x /\ y) /\ Just (sampleLeft /\ sampleRight) -> do
+      fail $ "Views are different:\n\n" <> show sampleLeft <> "\n\n" <> show sampleRight
+    ML.DiffAt (x /\ y) /\ Nothing-> do
+      fail $ "Comparison failed"
+  -- when (v1 /= v2) $ do
+  --   --liftEffect $ log $ colored Fail "aaa"
+  --   fail $ show v1 <> " ≠ " <> show v2

@@ -30,7 +30,7 @@ instance showMultiline :: Show Multiline where
 
 instance eqMultiline :: Eq Multiline where
     eq mll mlr =
-        case compareMultiline mll mlr of
+        case compare mll mlr of
             Match -> true
             _ -> false
 
@@ -178,13 +178,13 @@ inject (x /\ y) srcml@(Multiline srcLines) dstml@(Multiline destLines) =
 -- codePointAt :: Int -> Int -> CodePoint
 
 
-compareMultiline :: Multiline -> Multiline -> CompareResult
-compareMultiline (Multiline []) (Multiline []) = Match
-compareMultiline (Multiline []) right = DiffSize (0 /\ 0) $ size right
-compareMultiline left (Multiline []) = DiffSize (size left) (0 /\ 0)
-compareMultiline left right
+compare :: Multiline -> Multiline -> CompareResult
+compare (Multiline []) (Multiline []) = Match
+compare (Multiline []) right = DiffSize (0 /\ 0) $ size right
+compare left (Multiline []) = DiffSize (size left) (0 /\ 0)
+compare left right
     | rows left /= rows right = DiffSize (size left) (size right)
-compareMultiline left@(Multiline leftLines) right@(Multiline rightLines)
+compare left@(Multiline leftLines) right@(Multiline rightLines)
     | otherwise =
   foldrWithIndex compareML Unknown leftLines
   where
@@ -210,12 +210,12 @@ compareMultiline left@(Multiline leftLines) right@(Multiline rightLines)
       else DiffAt (x /\ y)
 
 
-compareMultiline'
+compare'
   :: Multiline
   -> Multiline
   -> CompareResult /\ Maybe (Multiline /\ Multiline)
-compareMultiline' left right =
-  case compareMultiline left right of
+compare' left right =
+  case compare left right of
     DiffAt pos -> DiffAt pos /\
       Just (clipWithMarker pos (5 /\ 5) left /\
             clipWithMarker pos (5 /\ 5) right)

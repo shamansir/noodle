@@ -2,6 +2,7 @@ module Rpd.Renderer.Terminal
     ( TerminalRenderer
     , terminalRenderer
     , Ui
+    , View
     , Packing -- TODO: do not expose maybe?
     , Status -- TODO: do not expose maybe?
     , view -- TODO: do not expose maybe?
@@ -82,7 +83,7 @@ initUi =
     }
 
 
-type TerminalRenderer d = Renderer d Ui ML.Multiline
+type TerminalRenderer d = Renderer d Ui View
 
 
 terminalRenderer :: forall d. TerminalRenderer d
@@ -95,10 +96,11 @@ terminalRenderer =
         }
 
 
+-- type View = Packing /\ ML.Multiline
 type View = ML.Multiline
 
 
-noView :: ML.Multiline
+noView :: View
 noView = ML.empty
 
 
@@ -250,7 +252,7 @@ update _ (ui /\ _) =
     ui
 
 
-view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> ML.Multiline
+view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> View
 view pushMsg (Right (ui /\ nw)) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
     -- "{" <> show packing <> " :: "
