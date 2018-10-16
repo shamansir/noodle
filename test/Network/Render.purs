@@ -44,7 +44,9 @@ spec =
     it "rendering the empty network works" do
       expectToRenderOnce stringRenderer myRpd
         "Network foo:\nNo Patches\nNo Links\n"
-      expectToRenderOnceMUV terminalRenderer myRpd $ ML.from' "{>}"
+      expectToRenderOnceMUV terminalRenderer myRpd $
+        -- ML.from' "{>}"
+        ML.empty' (100 /\ 100)
       pure unit
     it "rendering the single node works" do
       let
@@ -55,7 +57,9 @@ spec =
         "Network foo:\nOne Patch\nPatch foo P0:\n" <>
           "One Node\nNode bar P0/N0:\n" <>
             "No Inlets\nNo Outlets\nNo Links\n"
-      expectToRenderOnceMUV terminalRenderer singleNodeNW $ ML.from' "..."
+      expectToRenderOnceMUV terminalRenderer singleNodeNW $
+        ML.empty' (100 /\ 100)
+           # ML.place (0 /\ 0) "[]bar[]"
       pure unit
     it "rendering the erroneous network responds with the error" do
       let
