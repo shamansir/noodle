@@ -95,14 +95,22 @@ compareViews v1 v2 =
     ML.Match /\ _ -> pure unit
     ML.Unknown /\ _ -> do
       fail $ "Comparison failed, reason is unknown"
-    ML.DiffSize (wl /\ hl) (wr /\ hr) /\ _ -> do
+    ML.DiffSize (wl /\ hl) (wr /\ hr)
+      /\ Just (sampleLeft /\ sampleRight) -> do
+      fail $ "Sizes are different: " <>
+        show wl <> "x" <> show hl <> " (left) vs " <>
+        show wr <> "x" <> show hr <> " (right)\n\n" <>
+        show sampleLeft <> "\n\n" <> show sampleRight
+    ML.DiffSize (wl /\ hl) (wr /\ hr)
+      /\ Nothing -> do
       fail $ "Sizes are different: " <>
         show wl <> "x" <> show hl <> " (left) vs " <>
         show wr <> "x" <> show hr <> " (right)"
     ML.DiffAt (x /\ y) /\ Just (sampleLeft /\ sampleRight) -> do
-      fail $ "Views are different:\n\n" <> show sampleLeft <> "\n\n" <> show sampleRight
+      fail $ "Views are different:\n\n" <>
+        show sampleLeft <> "\n\n" <> show sampleRight
     ML.DiffAt (x /\ y) /\ Nothing-> do
-      fail $ "Comparison failed"
+      fail $ "Views are different."
   -- when (v1 /= v2) $ do
   --   --liftEffect $ log $ colored Fail "aaa"
   --   fail $ show v1 <> " ≠ " <> show v2

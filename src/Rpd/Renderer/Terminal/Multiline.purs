@@ -2,17 +2,17 @@ module Rpd.Renderer.Terminal.Multiline where
 
 import Prelude
 
-import Data.Tuple.Nested (type (/\), (/\))
-import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFromChar)
-import Data.String as String
-import Data.Array as Array
 import Data.Array ((!!))
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Array as Array
 import Data.Foldable (foldr)
 import Data.FoldableWithIndex (foldrWithIndex)
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFromChar)
+import Data.String as String
+import Data.Tuple.Nested (type (/\), (/\))
 
 
-infixl 8 Array.insertAt as >>
+infixl 8 Array.updateAt as >>
 
 
 newtype Multiline = Multiline (Array Line)
@@ -92,19 +92,6 @@ clip (x /\ y) (w /\ h) ml@(Multiline lines) =
         # Multiline
 
 
-clipWithMarker :: (Int /\ Int) -> (Int /\ Int) -> Multiline -> Multiline
-clipWithMarker pos@(x /\ y) size@(w /\ h) ml =
-    let
-        markerSize@(markerW /\ markerH) = 10 /\ 4
-        dstSize = (w + markerW) /\ (h + markerH)
-        dst = empty' dstSize
-    in
-        dst
-            # (inject markerSize $ clip pos size ml)
-            # (place (0 /\ 0) $ show x <> ":" <> show y <> "|")
-            # (place (0 /\ 1) $ "------|")
-
-
 shift :: (Int /\ Int) -> Multiline -> Multiline
 shift (x /\ y) ml | x == 0 && y == 0 = ml
 shift (x /\ y) ml@(Multiline lines) | otherwise =
@@ -126,7 +113,7 @@ place (x /\ y) string (Multiline lines) =
         strCP = String.toCodePointArray string
         mapF index cpoint
             | index < x = cpoint
-            | index > (x + strLen) = cpoint
+            | index >= (x + strLen) = cpoint
             | otherwise = fromMaybe cpoint $ strCP !! (index - x)
 
 
@@ -144,34 +131,42 @@ inject (x /\ y) srcml@(Multiline srcLines) dstml@(Multiline destLines) =
     where
         ( srcW /\ scrH ) = size srcml
         rowMapF index dstLine | index < y = dstLine
-        rowMapF index dstLine | index > (y + scrH) = dstLine
+        rowMapF index dstLine | index >= (y + scrH) = dstLine
         rowMapF index dstLine | otherwise =
             case srcLines !! (index - y) of
                 Just srcLine -> Array.mapWithIndex (lineMapF srcLine) dstLine
                 Nothing -> dstLine
         lineMapF srcLine index dstCpoint | index < x = dstCpoint
-        lineMapF srcLine index dstCpoint | index > (x + srcW) = dstCpoint
+        lineMapF srcLine index dstCpoint | index >= (x + srcW) = dstCpoint
         lineMapF srcLine index dstCpoint | otherwise =
             fromMaybe dstCpoint $ srcLine !! (index - x)
 
 
--- inject :: Pos -> Bounds -> Multiline -> Multiline -> Multiline
--- inject pos bounds what into =
---     Array.mapWithIndex mapRow into
---     where
---         startCol = pos.x
---         startRow = pos.y
---         width = bounds.width
---         height = bounds.height
---         mapRow rowIdx row = Array.mapWithIndex (mapCol rowIdx) row
---         mapCol rowIdx colIdx cpoint | rowIdx < startRow || colIdx < startCol = cpoint
---         mapCol rowIdx colIdx cpoint | rowIdx >= (startRow + height)
---                                       || colIdx >= (startCol + width) = cpoint
---         mapCol rowIdx colIdx cpoint | otherwise =
---             fromMaybe cpoint $ do
---                 whatRow <- what !! (rowIdx - startRow)
---                 whatCp <- whatRow !! (colIdx - startCol)
---                 pure whatCp
+clipWithMarker :: (Int /\ Int) -> (Int /\ Int) -> Multiline -> Multiline
+clipWithMarker clipPos@(clipX /\ clipY) clipSize'@(clipW' /\ clipH') ml =
+    let
+        srcSize@(srcW /\ srcH) = size ml
+        clipSize@(clipW /\ clipH) =
+            (if srcW >= clipW' then clipW' else srcW) /\
+            (if srcH >= clipH' then clipH' else srcH)
+        bottomMarker =
+            if srcW < clipW' then
+                if srcH < clipH' then "⌟" else "|"
+            else
+                if srcH < clipH' then "-" else "+"
+        coordsLabel = show clipX <> ":" <> show clipY <> " "
+        topLeftX = String.length coordsLabel
+        lineBelow = String.joinWith "" $ Array.replicate topLeftX "-"
+        markerSize@(markerW /\ markerH) = (topLeftX + 1) /\ 2
+        dstSize@(dstW /\ dstH) = (markerW + clipW + 1) /\ (clipH + markerH + 1)
+        dst = empty' dstSize
+    in
+        dst
+            # (inject ((topLeftX + 1) /\ markerH) $ clip clipPos clipSize ml)
+            # (place (0 /\ 0) $ coordsLabel <> "|")
+            # (place (0 /\ 1) $ lineBelow <> "+-")
+            # place (topLeftX /\ 2) "|"
+            # place ((dstW - 1) /\ (dstH - 1)) bottomMarker
 
 
 
@@ -210,6 +205,10 @@ compare left@(Multiline leftLines) right@(Multiline rightLines)
       else DiffAt (x /\ y)
 
 
+diffBlockSize :: Int /\ Int
+diffBlockSize = 40 /\ 5
+
+
 compare'
   :: Multiline
   -> Multiline
@@ -217,7 +216,10 @@ compare'
 compare' left right =
   case compare left right of
     DiffAt pos -> DiffAt pos /\
-      Just (clipWithMarker pos (5 /\ 5) left /\
-            clipWithMarker pos (5 /\ 5) right)
+      Just (clipWithMarker pos diffBlockSize left /\
+            clipWithMarker pos diffBlockSize right)
+    DiffSize a b -> DiffSize a b /\
+      Just (clipWithMarker (0 /\ 0) diffBlockSize left /\
+            clipWithMarker (0 /\ 0) diffBlockSize right)
     status -> status /\ Nothing
 
