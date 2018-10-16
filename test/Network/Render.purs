@@ -4,8 +4,10 @@ module RpdTest.Network.Render
 import Prelude
 
 import Data.Maybe (Maybe(..))
+import Data.String as String
 import Data.Tuple.Nested (type (/\), (/\))
 
+import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Aff (Aff())
 import Effect.Console (log)
@@ -13,6 +15,9 @@ import Effect.Console (log)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, fail)
 import Test.Spec.Color (colored, Color(..))
+
+import Node.Encoding (Encoding(..))
+import Node.FS.Sync (readTextFile)
 
 import Rpd (init) as R
 import Rpd.API as R
@@ -42,8 +47,8 @@ spec :: Spec Unit
 spec =
   describe "rendering" do
     it "rendering the empty network works" do
-      expectToRenderOnce stringRenderer myRpd
-        "Network foo:\nNo Patches\nNo Links\n"
+      stringSample <- liftEffect $ loadSample "Empty.String"
+      expectToRenderOnce stringRenderer myRpd stringSample
       expectToRenderOnceMUV terminalRenderer myRpd $
         -- ML.from' "{>}"
         ML.empty' (100 /\ 100)
@@ -53,22 +58,40 @@ spec =
         singleNodeNW = myRpd
           </> R.addPatch "foo"
           </> R.addNode (patchId 0) "bar"
-      expectToRenderOnce stringRenderer singleNodeNW $
-        "Network foo:\nOne Patch\nPatch foo P0:\n" <>
-          "One Node\nNode bar P0/N0:\n" <>
-            "No Inlets\nNo Outlets\nNo Links\n"
+      stringSample <- liftEffect $ loadSample "SingleNode.String"
+      expectToRenderOnce stringRenderer singleNodeNW stringSample
       expectToRenderOnceMUV terminalRenderer singleNodeNW $
         ML.empty' (100 /\ 100)
            # ML.place (0 /\ 0) "[]bar[]"
+    it "rendering several nodes works" do
+      let
+        singleNodeNW = myRpd
+          </> R.addPatch "foo0"
+          </> R.addNode (patchId 0) "bar00"
+          </> R.addNode (patchId 0) "bar01"
+          </> R.addNode (patchId 0) "bar02"
+          </> R.addPatch "foo1"
+          </> R.addNode (patchId 1) "bar10"
+          </> R.addNode (patchId 1) "bar11"
+      stringSample <- liftEffect $ loadSample "SeveralNodes.String"
+      --terminalSample <- liftEffect $ loadSample "SeveralNodes.Terminal"
+      expectToRenderOnce stringRenderer singleNodeNW stringSample
+      -- TODO: expectToRenderOnceMUV terminalRenderer singleNodeNW $ ML.empty' (100 /\ 100)
       pure unit
     it "rendering the erroneous network responds with the error" do
       let
         erroneousNW = myRpd
           -- add inlet to non-exising node
           </> R.addInlet (nodePath 0 0) "foo"
-      expectToRenderOnce stringRenderer erroneousNW "<>"
+      stringSample <- liftEffect $ loadSample "Error.String"
+      expectToRenderOnce stringRenderer erroneousNW stringSample
       expectToRenderOnceMUV terminalRenderer erroneousNW $ ML.from' "ERR: "
       pure unit
+
+
+loadSample :: String -> Effect String
+loadSample name =
+  readTextFile UTF8 $ "test/Network/Samples/" <> name <> ".sample"
 
 
 expectToRenderOnce
@@ -79,7 +102,7 @@ expectToRenderOnce
   -> Aff Unit
 expectToRenderOnce renderer rpd expectation = do
   result <- liftEffect $ Render.once renderer rpd
-  result `shouldEqual` expectation
+  (result <> "\n") `compareStrings` expectation
 
 
 expectToRenderOnceMUV
@@ -91,6 +114,12 @@ expectToRenderOnceMUV
 expectToRenderOnceMUV renderer rpd expectation = do
   result <- liftEffect $ RenderMUV.once renderer rpd
   result `compareViews` expectation
+
+
+compareStrings :: String -> String -> Aff Unit
+compareStrings s1 s2 =
+  when (s1 /= s2) $
+    fail $ "\n-----\n" <> s1 <> "\n\n≠\n\n" <> s2 <> "\n-----"
 
 
 compareViews :: ML.Multiline -> ML.Multiline -> Aff Unit

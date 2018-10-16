@@ -1,0 +1,22 @@
+Network foo:
+2 Patches
+ Patch foo0 P0:
+ 3 Nodes
+  Node bar00 P0/N0:
+  No Inlets
+  No Outlets
+  Node bar01 P0/N1:
+  No Inlets
+  No Outlets
+  Node bar02 P0/N2:
+  No Inlets
+  No Outlets
+ Patch foo1 P1:
+ 2 Nodes
+  Node bar10 P1/N0:
+  No Inlets
+  No Outlets
+  Node bar11 P1/N1:
+  No Inlets
+  No Outlets
+No Links

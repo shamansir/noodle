@@ -62,17 +62,23 @@ stringRenderer =
 view :: forall d. PushMsg d -> Either R.RpdError (R.Network d) -> String
 view pushMsg (Right nw@(R.Network { name } { patches, links })) =
     "Network " <> name <> ":" <> lineBreak
-        <> count patchCounter (Map.size patches) <> lineBreak
-        <> patchesInfo
-        <> count linkCounter (Map.size links) <> lineBreak
-        <> linksInfo
+        <> count patchCounter patchCount
+        <> (if patchCount > 0 then
+                lineBreak <> space <> patchesInfo
+            else "")
+        <> lineBreak <> count linkCounter linkCount
+        <> (if linkCount > 0 then
+                lineBreak <> space <> linksInfo
+            else "")
     where
+        patchCount = Map.size patches
+        linkCount = Map.size links
         patchesInfo =
             joinWith (lineBreak <> space)
                 $ (viewPatch nw <$> Map.values patches)
                     # List.toUnfoldable
         linksInfo =
-            joinWith (lineBreak <> space)
+            joinWith lineBreak
                 $ (viewLink nw <$> Map.values links)
                     # List.toUnfoldable
 view pushMsg (Left err) =
@@ -81,34 +87,42 @@ view pushMsg (Left err) =
 
 viewPatch :: forall d. R.Network d -> R.Patch d -> String
 viewPatch nw (R.Patch id { name } { nodes }) =
-    "Patch " <> name <> " " <> show id <> ":" <> lineBreak
-        <> count nodeCounter (Set.size nodes) <> lineBreak
+    "Patch " <> name <> " " <> show id <> ":" <> lineBreak <> space
+        <> count nodeCounter (Set.size nodes) <> lineBreak <> space <> space
         <> nodesInfo
     where
         allNodes =
             Set.toUnfoldable nodes # map \path -> L.view (_node path) nw
         nodesInfo =
-            joinWith (lineBreak <> space)
+            joinWith (lineBreak <> space <> space)
                 $ viewNode nw <$> Array.catMaybes allNodes
 
 
 viewNode :: forall d. R.Network d -> R.Node d -> String
 viewNode nw (R.Node path { name } { inlets, outlets }) =
     "Node " <> name <> " " <> show path <> ":" <> lineBreak
-        <> count inletCounter (Set.size inlets) <> lineBreak
-        <> inletsInfo
-        <> count outletCounter (Set.size outlets) <> lineBreak
-        <> outletsInfo
+        <> twiceSpace <> count inletCounter inletCount
+        <> (if inletCount > 0 then
+                lineBreak <> tripleSpace <> inletsInfo
+            else "\n")
+        <> twiceSpace <> count outletCounter outletCount
+        <> (if outletCount > 0 then
+                lineBreak <> tripleSpace <> outletsInfo
+            else "")
     where
+        inletCount = Set.size inlets
+        outletCount = Set.size outlets
+        twiceSpace = space <> space
+        tripleSpace = space <> space <> space
         allInlets =
             Set.toUnfoldable inlets # map \path -> L.view (_inlet path) nw
         inletsInfo =
-            joinWith (lineBreak <> space)
+            joinWith (lineBreak <> tripleSpace)
                 $ viewInlet nw <$> Array.catMaybes allInlets
         allOutlets =
             Set.toUnfoldable outlets # map \path -> L.view (_outlet path) nw
         outletsInfo =
-            joinWith (lineBreak <> space)
+            joinWith (lineBreak <> tripleSpace)
                 $ viewOutlet nw <$> Array.catMaybes allOutlets
 
 
