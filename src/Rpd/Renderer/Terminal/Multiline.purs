@@ -5,9 +5,9 @@ import Prelude
 import Data.Array ((!!))
 import Data.Array as Array
 import Data.Foldable (foldr)
-import Data.FoldableWithIndex (foldrWithIndex)
+import Data.FoldableWithIndex (foldrWithIndex, foldlWithIndex)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFromChar)
+import Data.String (CodePoint, Pattern(..), codePointFromChar, fromCodePointArray, toCodePointArray)
 import Data.String as String
 import Data.Tuple.Nested (type (/\), (/\))
 
@@ -168,7 +168,11 @@ clipWithMarker clipPos@(clipX /\ clipY) clipSize'@(clipW' /\ clipH') ml =
             # place (topLeftX /\ 2) "|"
             # place ((dstW - 1) /\ (dstH - 1)) bottomMarker
 
-
+toMultiline :: String -> Multiline
+toMultiline source =
+    Multiline
+        $ map toCodePointArray
+        $ String.split (Pattern "\n") source
 
 -- codePointAt :: Int -> Int -> CodePoint
 
@@ -181,12 +185,12 @@ compare left right
     | rows left /= rows right = DiffSize (size left) (size right)
 compare left@(Multiline leftLines) right@(Multiline rightLines)
     | otherwise =
-  foldrWithIndex compareML Unknown leftLines
+  foldlWithIndex compareML Unknown leftLines
   where
-    compareML :: Int -> Line -> CompareResult -> CompareResult
-    compareML _ _ (DiffSize a b) = DiffSize a b
-    compareML _ _ (DiffAt pos) = DiffAt pos
-    compareML y leftLine _ =
+    compareML :: Int -> CompareResult -> Line -> CompareResult
+    compareML _ (DiffSize a b) _ = DiffSize a b
+    compareML _ (DiffAt pos) _ = DiffAt pos
+    compareML y _ leftLine =
       case rightLines !! y of
         Just rightLine ->
           compareLines y leftLine rightLine
@@ -197,10 +201,10 @@ compare left@(Multiline leftLines) right@(Multiline rightLines)
     compareLines y _ [] = DiffSize (size left) (size right)
     compareLines y leftLine rightLine =
       Array.zip leftLine rightLine
-        # foldrWithIndex (compareCPs y) Unknown
-    compareCPs _ _ _ (DiffSize a b) = DiffSize a b
-    compareCPs _ _ _ (DiffAt pos) = DiffAt pos
-    compareCPs y x (l /\ r) _ =
+        # foldlWithIndex (compareCPs y) Unknown
+    compareCPs _ _ (DiffSize a b) _ = DiffSize a b
+    compareCPs _ _ (DiffAt pos) _ = DiffAt pos
+    compareCPs y x _ (l /\ r) =
       if (l == r) then Match
       else DiffAt (x /\ y)
 

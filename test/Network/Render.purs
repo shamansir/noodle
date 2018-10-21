@@ -65,7 +65,7 @@ spec =
            # ML.place (0 /\ 0) "[]bar[]"
     it "rendering several nodes works" do
       let
-        singleNodeNW = myRpd
+        severalNodesNW = myRpd
           </> R.addPatch "foo0"
           </> R.addNode (patchId 0) "bar00"
           </> R.addNode (patchId 0) "bar01"
@@ -74,9 +74,11 @@ spec =
           </> R.addNode (patchId 1) "bar10"
           </> R.addNode (patchId 1) "bar11"
       stringSample <- liftEffect $ loadSample "SeveralNodes.String"
-      --terminalSample <- liftEffect $ loadSample "SeveralNodes.Terminal"
-      expectToRenderOnce stringRenderer singleNodeNW stringSample
-      -- TODO: expectToRenderOnceMUV terminalRenderer singleNodeNW $ ML.empty' (100 /\ 100)
+      terminalSample <- liftEffect $ loadSample "SeveralNodes.Terminal"
+      expectToRenderOnce stringRenderer severalNodesNW stringSample
+      expectToRenderOnceMUV terminalRenderer severalNodesNW
+        $ ML.empty' (100 /\ 100)
+          # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
     it "rendering the erroneous network responds with the error" do
       let
