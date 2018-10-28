@@ -145,8 +145,8 @@ expectToRenderOnce renderer rpd expectation = do
 
 
 expectToRenderOnceMUV
-  :: forall d x
-   . RenderMUV.Renderer d x ML.Multiline
+  :: forall d x c
+   . RenderMUV.Renderer d x ML.Multiline c
   -> R.Rpd (R.Network d)
   -> ML.Multiline
   -> Aff Unit

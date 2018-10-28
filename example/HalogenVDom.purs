@@ -2,26 +2,31 @@ module Example.HalogenVDom where
 
 import Prelude
 
+import Data.List as List
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, wrap, unwrap)
-import Data.List as List
-
-import FRP.Event as E
-
-import Spork.Html (Html)
-import Spork.Html as H
-
-
-import Halogen.VDom as V
-import Halogen.VDom.DOM.Prop as P
-import Halogen.VDom.Machine as Machine
-import Halogen.VDom.Thunk (Thunk, buildThunk)
-
 import Effect (Effect)
 import Effect.Exception (throwException, error)
 import Effect.Ref as Ref
 import Effect.Uncurried as EFn
-
+import FRP.Event as E
+import Halogen.VDom as V
+import Halogen.VDom.DOM.Prop as P
+import Halogen.VDom.Machine as Machine
+import Halogen.VDom.Thunk (Thunk, buildThunk)
+import Rpd.Def (NodeDef, PatchDef) as Rpd
+import Rpd.Def (ProcessF(..))
+import Rpd.Network (Network)
+import Rpd.Network (empty) as Network
+import Rpd.Path (PatchId(..))
+import Rpd.Render (Message(..)) as M
+import Rpd.RenderMUV (Renderer, Message) as Ui
+import Rpd.RenderMUV (core, custom)
+import Rpd.RenderMUV (make') as Render
+import Rpd.Renderer.Terminal (terminalRenderer, Msg)
+import Rpd.Renderer.Terminal.Multiline as ML
+import Spork.Html (Html)
+import Spork.Html as H
 import Web.DOM.Element (toNode) as DOMElement
 import Web.DOM.Node (Node, appendChild) as DOM
 import Web.DOM.ParentNode (QuerySelector(..), querySelector) as DOM
@@ -29,21 +34,10 @@ import Web.HTML (window) as DOM
 import Web.HTML.HTMLDocument (toDocument, toParentNode) as HTMLDocument
 import Web.HTML.Window (document) as DOM
 
-import Rpd.Def (ProcessF(..))
-import Rpd.Network (Network)
-import Rpd.Network (empty) as Network
-import Rpd.Path (PatchId(..))
-import Rpd.Def (NodeDef, PatchDef) as Rpd
-import Rpd.Render (Message(..)) as Ui
-import Rpd.RenderMUV (Renderer) as Ui
-import Rpd.RenderMUV (make') as Render
-import Rpd.Renderer.Terminal (terminalRenderer)
-import Rpd.Renderer.Terminal.Multiline as ML
-
 
 
 type Model d = Network d
-type Action d = Ui.Message d
+type Action d msg = Ui.Message d msg
 
 
 testPatch :: forall d. Rpd.PatchDef d
@@ -62,26 +56,33 @@ testNode =
     }
 
 
-render ∷ forall d. ML.Multiline → Html (Action d)
+render ∷ forall d msg. ML.Multiline → Html (Action d msg)
 render src =
   H.div
     []
-    [ H.button
+    [ H.textarea
+        [ H.style $
+            "width: 500px; height: 500px;" <>
+            "font-family: monospace; font-size: 14px;" <>
+            "outline: none; border: none;"
+        , H.value
+            $ show src
+        ]
+    , H.button
         [ H.onClick
-            (H.always_ Ui.Bang)
+            (H.always_ $ core M.Bang)
         ]
         [ H.text "Bang" ]
     , H.button
         [ H.onClick
-            (H.always_ $ Ui.AddPatch testPatch)
+            (H.always_ $ core $ M.AddPatch testPatch)
         ]
         [ H.text "Add Patch" ]
     , H.button
         [ H.onClick
-            (H.always_ $ Ui.AddNode (PatchId 0) testNode)
+            (H.always_ $ core $ M.AddNode (PatchId 0) testNode)
         ]
         [ H.text "Add Node" ]
-    , H.text $ show src
     ]
 
 
@@ -92,10 +93,10 @@ render src =
 -- newtype Html i = Html (HtmlV i)
 -- derive instance newtypeHtml ∷ Newtype (Html i) _
 runVDom
-    :: forall d model view
+    :: forall d model view msg
      . String -- selector
-    -> (view -> Html (Action d)) -- insert the rendering result
-    -> Ui.Renderer d model view -- renderer
+    -> (view -> Html (Action d msg)) -- insert the rendering result
+    -> Ui.Renderer d model view msg -- renderer
     -> Network d -- initial network
     -> Effect Unit
 runVDom sel render renderer initNw = do
@@ -127,4 +128,5 @@ runVDom sel render renderer initNw = do
 
 main :: Effect Unit
 main =
-    runVDom "#app" render terminalRenderer $ Network.empty "foo"
+    runVDom "#app" render terminalRenderer
+        $ Network.empty "foo"

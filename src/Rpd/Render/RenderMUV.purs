@@ -2,11 +2,15 @@ module Rpd.RenderMUV
     ( Renderer(..)
     , UpdateF
     , ViewF
+    , Message
+    , PushMsg
     , once
     , run
     , run'
     , make
     , make'
+    , core
+    , custom
     ) where
 
 import Prelude
@@ -23,28 +27,40 @@ import Rpd (run) as R
 import Rpd.API as R
 import Rpd.Def as R
 import Rpd.Path as R
-import Rpd.Render (Message(..), PushMsg(..), Message, update)
+import Rpd.Render (Message(..), PushMsg(..), Message, update) as Core
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
 
 
-type UpdateF d model = Message d -> (model /\ R.Network d) -> model
-type ViewF d model view = PushMsg d -> Either R.RpdError (model /\ R.Network d) -> view
+data Message d c = Core (Core.Message d) | Custom c
+data PushMsg d c = PushMsg (Message d c -> Effect Unit)
+type UpdateF d model msg
+    = Message d msg -> (model /\ R.Network d) -> model
+type ViewF d model view msg =
+    PushMsg d msg -> Either R.RpdError (model /\ R.Network d) -> view
 
 
-data Renderer d model view
+data Renderer d model view msg
     = Renderer
         { from :: view -- initial view
         , init :: model -- initial state
-        , update :: UpdateF d model
-        , view :: ViewF d model view
+        , update :: UpdateF d model msg
+        , view :: ViewF d model view msg
         }
 
 
+core :: forall d m. Core.Message d -> Message d m
+core = Core
+
+
+custom :: forall d m. m -> Message d m
+custom = Custom
+
+
 extractRpd
-    :: forall d model view
-     . ViewF d model view
-    -> PushMsg d
+    :: forall d model view msg
+     . ViewF d model view msg
+    -> PushMsg d msg
     -> R.Rpd (model /\ R.Network d)
     -> Effect view
 extractRpd view pushMsg rpd =
@@ -55,7 +71,11 @@ extractRpd view pushMsg rpd =
 
 
 {- render once -}
-once :: forall d model view. Renderer d model view -> R.Rpd (R.Network d) -> Effect view
+once
+    :: forall d model view msg
+     . Renderer d model view msg
+    -> R.Rpd (R.Network d)
+    -> Effect view
 once (Renderer { view, init, update }) rpd =
     extractRpd view neverPush withModel
     where
@@ -72,9 +92,9 @@ once (Renderer { view, init, update }) rpd =
    canceler, so it is possible to stop the thing.
 -}
 make
-    :: forall d model view
+    :: forall d model view msg
      . R.Network d
-    -> Renderer d model view
+    -> Renderer d model view msg
     -> Effect
         { first :: view
         , next :: Event (Effect view)
@@ -97,12 +117,12 @@ make nw renderer =
    TODO: do not ask user for `event`, just pushing function.
 -}
 make'
-    :: forall d model view
-     . { event :: Event (Message d)
-       , push :: (Message d -> Effect Unit)
+    :: forall d model view msg
+     . { event :: Event (Message d msg)
+       , push :: (Message d msg -> Effect Unit)
        }
     -> R.Network d
-    -> Renderer d model view
+    -> Renderer d model view msg
     -> { first :: view
        , next :: Event (Effect view)
        }
@@ -118,13 +138,21 @@ make'
         , next : viewFlow
         }
     where
-        updater :: Message d -> R.Rpd (model /\ R.Network d) -> R.Rpd (model /\ R.Network d)
+        updater
+            :: Message d msg
+            -> R.Rpd (model /\ R.Network d)
+            -> R.Rpd (model /\ R.Network d)
         updater msg rpd = rpd >>=
             \(model /\ nw) -> do
-                nw' <- update msg nw
+                nw' <- case msg of
+                    Core coreMsg -> Core.update coreMsg nw
+                    Custom _ -> pure nw
                 let model' = update' msg $ model /\ nw'
                 pure $ model' /\ nw'
-        viewer :: PushMsg d -> R.Rpd (model /\ R.Network d) -> Effect view
+        viewer
+            :: PushMsg d msg
+            -> R.Rpd (model /\ R.Network d)
+            -> Effect view
         viewer pushMessage = extractRpd view pushMessage
 
 
@@ -133,9 +161,9 @@ make'
 
    Returns the canceler. -}
 run
-    :: forall d view model
+    :: forall d view model msg
      . R.Network d
-    -> Renderer d view model
+    -> Renderer d view model msg
     -> Effect R.Canceler
 run nw renderer =
     make nw renderer >>=
@@ -151,12 +179,12 @@ run nw renderer =
    TODO: do not ask user for `event`, just pushing function.
 -}
 run'
-    :: forall d view model
-     . { event :: Event (Message d)
-       , push :: (Message d -> Effect Unit)
+    :: forall d view model msg
+     . { event :: Event (Message d msg)
+       , push :: (Message d msg -> Effect Unit)
        }
     -> R.Network d
-    -> Renderer d view model
+    -> Renderer d view model msg
     -> Effect R.Canceler
 run' event nw renderer =
     case make' event nw renderer of

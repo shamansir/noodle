@@ -3,6 +3,7 @@ module Rpd.Renderer.Terminal
     , terminalRenderer
     , Ui
     , View
+    , Msg
     , Packing -- TODO: do not expose maybe?
     , Status -- TODO: do not expose maybe?
     , view -- TODO: do not expose maybe?
@@ -39,8 +40,7 @@ import Rpd.API (RpdError) as R
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.Optics (_patchNodes, _node, _patch) as R
 import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchId) as R
-import Rpd.Render (PushMsg, Message(..)) as R
-import Rpd.RenderMUV (Renderer(..))
+import Rpd.RenderMUV (Renderer(..), PushMsg, Message(..)) as R
 
 import Rpd.Renderer.Terminal.Multiline as ML
 
@@ -67,6 +67,14 @@ type Ui =
     }
 
 
+data Msg
+    = Foo
+    | Bar
+
+
+type View = ML.Multiline
+
+
 type Bounds = Int /\ Int
 type Pos = Int /\ Int
 
@@ -83,21 +91,17 @@ initUi =
     }
 
 
-type TerminalRenderer d = Renderer d Ui View
+type TerminalRenderer d = R.Renderer d Ui View Msg
 
 
 terminalRenderer :: forall d. TerminalRenderer d
 terminalRenderer =
-    Renderer
+    R.Renderer
         { from : ML.empty
         , init : initUi
         , update
         , view
         }
-
-
--- type View = Packing /\ ML.Multiline
-type View = ML.Multiline
 
 
 noView :: View
@@ -245,14 +249,14 @@ packNetwork nw@(R.Network { name } { patches }) (Packing container) =
             # Packing
 
 
-update :: forall d. R.Message d -> (Ui /\ R.Network d) -> Ui
+update :: forall d. R.Message d Msg -> (Ui /\ R.Network d) -> Ui
 -- update R.Bang (ui /\ nw) =
 --     ui { packing = Just $ ui.packing # packNetwork nw }
 update _ (ui /\ _) =
     ui
 
 
-view :: forall d. R.PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> View
+view :: forall d. R.PushMsg d Msg -> Either R.RpdError (Ui /\ R.Network d) -> View
 view pushMsg (Right (ui /\ nw)) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
     -- "{" <> show packing <> " :: "
