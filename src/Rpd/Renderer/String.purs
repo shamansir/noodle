@@ -104,8 +104,8 @@ viewNode nw (R.Node path { name } { inlets, outlets }) =
         <> twiceSpace <> count inletCounter inletCount
         <> (if inletCount > 0 then
                 lineBreak <> tripleSpace <> inletsInfo
-            else "\n")
-        <> twiceSpace <> count outletCounter outletCount
+            else "")
+        <> lineBreak <> twiceSpace <> count outletCounter outletCount
         <> (if outletCount > 0 then
                 lineBreak <> tripleSpace <> outletsInfo
             else "")

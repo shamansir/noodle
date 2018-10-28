@@ -1,0 +1,12 @@
+Network foo:
+One Patch
+ Patch foo P0:
+ One Node
+  Node bar P0/N0:
+  2 Inlets
+   Inlet buz1 P0/N0/I0
+   Inlet buz2 P0/N0/I1
+  2 Outlets
+   Outlet abc1 P0/N0/O0
+   Outlet abc2 P0/N0/O1
+No Links

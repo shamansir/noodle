@@ -80,6 +80,37 @@ spec =
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
+    it "rendering a node with inelts and outlets works" do
+      let
+        nodeWithInletsAndOutletsNW = myRpd
+          </> R.addPatch "foo"
+          </> R.addNode (patchId 0) "bar"
+          </> R.addInlet (nodePath 0 0) "buz1"
+          </> R.addInlet (nodePath 0 0) "buz2"
+          </> R.addOutlet (nodePath 0 0) "abc1"
+          </> R.addOutlet (nodePath 0 0) "abc2"
+      stringSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.String"
+      terminalSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.Terminal"
+      expectToRenderOnce stringRenderer nodeWithInletsAndOutletsNW stringSample
+      expectToRenderOnceMUV terminalRenderer nodeWithInletsAndOutletsNW
+        $ ML.empty' (100 /\ 100)
+          # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
+      pure unit
+    it "rendering the connections works" do
+      let
+        withConnectionNW = myRpd
+          </> R.addPatch "foo"
+          </> R.addNode (patchId 0) "src"
+          </> R.addOutlet (nodePath 0 0) "srco"
+          </> R.addNode (patchId 0) "dst"
+          </> R.addInlet (nodePath 0 1) "dsti"
+          </> R.connect (outletPath 0 0 0) (inletPath 0 1 0)
+      stringSample <- liftEffect $ loadSample "WithConnection.String"
+      terminalSample <- liftEffect $ loadSample "WithConnection.Terminal"
+      expectToRenderOnce stringRenderer withConnectionNW stringSample
+      expectToRenderOnceMUV terminalRenderer withConnectionNW
+        $ ML.empty' (100 /\ 100)
+          # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
     it "rendering the erroneous network responds with the error" do
       let
         erroneousNW = myRpd
@@ -89,6 +120,12 @@ spec =
       expectToRenderOnce stringRenderer erroneousNW stringSample
       expectToRenderOnceMUV terminalRenderer erroneousNW $ ML.from' "ERR: "
       pure unit
+    -- TODO:
+    -- more connections
+    -- node with processF
+    -- selecting nodes
+    -- status: should store commands
+    -- should accept commands
 
 
 loadSample :: String -> Effect String

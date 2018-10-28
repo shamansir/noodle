@@ -525,6 +525,9 @@ links = do
 
   pending "default value for the inlet is sent on disconnection"
 
+  pending "looped connections should be disallowed"
+    -- (to the same node, etc.)
+
     -- describe "processing the output from nodes" do
     --   describe "with predefined function" do
     --     pure unit
