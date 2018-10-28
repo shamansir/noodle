@@ -35,9 +35,10 @@ import Rpd.Network (empty) as Network
 import Rpd.Path (PatchId(..))
 import Rpd.Def (NodeDef, PatchDef) as Rpd
 import Rpd.Render (Message(..)) as Ui
-import Rpd.RenderS (Renderer) as Ui
-import Rpd.RenderS (make') as Render
+import Rpd.RenderMUV (Renderer) as Ui
+import Rpd.RenderMUV (make') as Render
 import Rpd.Renderer.Terminal (terminalRenderer)
+import Rpd.Renderer.Terminal.Multiline as ML
 
 
 
@@ -61,7 +62,7 @@ testNode =
     }
 
 
-render ∷ forall d. String → Html (Action d)
+render ∷ forall d. ML.Multiline → Html (Action d)
 render src =
   H.div
     []
@@ -80,7 +81,7 @@ render src =
             (H.always_ $ Ui.AddNode (PatchId 0) testNode)
         ]
         [ H.text "Add Node" ]
-    , H.text src
+    , H.text $ show src
     ]
 
 
