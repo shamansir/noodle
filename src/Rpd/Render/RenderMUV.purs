@@ -15,8 +15,11 @@ module Rpd.RenderMUV
 
 import Prelude
 
+-- import Type.Eval.Function (type ($))
+
 import Data.Either
 import Data.Tuple.Nested (type (/\), (/\))
+import Data.Foldable (foldr)
 
 import Effect (Effect)
 
@@ -27,15 +30,29 @@ import Rpd (run) as R
 import Rpd.API as R
 import Rpd.Def as R
 import Rpd.Path as R
-import Rpd.Render (Message(..), PushMsg(..), Message, update) as Core
+import Rpd.Render (Message(..), PushMsg(..), update) as Core
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
 
 
-data Message d c = Core (Core.Message d) | Custom c
-data PushMsg d c = PushMsg (Message d c -> Effect Unit)
+data Message d msg
+    = Core (Core.Message d)
+    | Custom msg
+data PushMsg d msg = PushMsg (Message d msg -> Effect Unit)
+{- UpdateF:
+   - gets message: either core one from Rpd.Render, or the custom one used by user in the MUV loop;
+   - gets the latest MUV model paired with the latest network state;
+   - and returns new MUV model with an array of messages to execute in the next loop, when needed;
+-}
 type UpdateF d model msg
-    = Message d msg -> (model /\ R.Network d) -> model
+    =  Message d msg
+    -> (model /\ R.Network d)
+    -> (model /\ Array (Message d msg))
+{- ViewF:
+   - gets the function allowing to push messages to the flow (for use in view handlers);
+   - gets the latest MUV model paired with the latest network state;
+   - and returns new view built using these states;
+-}
 type ViewF d model view msg =
     PushMsg d msg -> Either R.RpdError (model /\ R.Network d) -> view
 
@@ -147,13 +164,16 @@ make'
                 nw' <- case msg of
                     Core coreMsg -> Core.update coreMsg nw
                     Custom _ -> pure nw
-                let model' = update' msg $ model /\ nw'
-                pure $ model' /\ nw'
+                let model' /\ msgs = update' msg $ model /\ nw'
+                model'' /\ nw'' <-
+                    foldr updater (pure $ model' /\ nw') msgs
+                pure $ model'' /\ nw''
         viewer
             :: PushMsg d msg
             -> R.Rpd (model /\ R.Network d)
             -> Effect view
-        viewer pushMessage = extractRpd view pushMessage
+        viewer pushMessage =
+            extractRpd view pushMessage
 
 
 {- Run the rendering cycle without any special handling

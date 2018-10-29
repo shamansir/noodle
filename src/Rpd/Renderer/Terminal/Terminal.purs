@@ -57,6 +57,7 @@ type Item = R2.Item Int { subject :: R.Path, packing :: Maybe Packing }
 data Status
     = Empty
     | Error (R.RpdError)
+    | WritingCommand String
     -- TODO : Selection
 
 
@@ -68,8 +69,14 @@ type Ui =
 
 
 data Msg
-    = Foo
-    | Bar
+    = ExecuteCommand String
+    | ClickAt (Int /\ Int)
+
+
+type Message d = R.Message d Msg
+
+
+type PushMsg d = R.PushMsg d Msg
 
 
 type View = ML.Multiline
@@ -249,14 +256,14 @@ packNetwork nw@(R.Network { name } { patches }) (Packing container) =
             # Packing
 
 
-update :: forall d. R.Message d Msg -> (Ui /\ R.Network d) -> Ui
+update :: forall d. Message d -> (Ui /\ R.Network d) -> (Ui /\ Array (Message d))
 -- update R.Bang (ui /\ nw) =
 --     ui { packing = Just $ ui.packing # packNetwork nw }
 update _ (ui /\ _) =
-    ui
+    ui /\ []
 
 
-view :: forall d. R.PushMsg d Msg -> Either R.RpdError (Ui /\ R.Network d) -> View
+view :: forall d. PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> View
 view pushMsg (Right (ui /\ nw)) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
     -- "{" <> show packing <> " :: "

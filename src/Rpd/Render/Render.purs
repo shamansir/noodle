@@ -28,6 +28,14 @@ import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
 
 
+data Message d
+    = Bang
+    | AddPatch (R.PatchDef d)
+    | AddNode R.PatchId (R.NodeDef d)
+    | RemoveNode R.NodePath
+    | SelectNode R.NodePath
+
+
 data PushMsg d = PushMsg (Message d -> Effect Unit)
 type RenderF d r = PushMsg d -> Either R.RpdError (R.Network d) -> r
 
@@ -52,14 +60,6 @@ once (Renderer _ handleResult) =
     extractRpd handleResult neverPush
     where
         neverPush = PushMsg $ const $ pure unit
-
-
-data Message d
-    = Bang
-    | AddPatch (R.PatchDef d)
-    | AddNode R.PatchId (R.NodeDef d)
-    | RemoveNode R.NodePath
-    | SelectNode R.NodePath
 
 
 {- Prepare the rendering cycle with internal message producer.
