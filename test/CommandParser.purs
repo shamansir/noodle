@@ -16,6 +16,8 @@ import Test.Spec.Assertions (shouldEqual, fail)
 import Rpd (init, run') as R
 import Rpd.API (Rpd) as R
 import Rpd.Network (Network) as R
+import Rpd.Command (Command)
+import Rpd.Command as Cmd
 
 import Rpd.Renderer.Terminal.CommandParser (parse)
 
@@ -23,11 +25,11 @@ spec :: Spec Unit
 spec =
   describe "parsing commands" do
     it "parses commands" do
-      _ <- "4" `parsesAs` 4
+      _ <- "4" `parsesAs` Cmd.Bang
       pure unit
 
 
-parsesAs :: String -> Int -> Aff Unit
+parsesAs :: String -> Command -> Aff Unit
 parsesAs input expected =
     parse input
         # either

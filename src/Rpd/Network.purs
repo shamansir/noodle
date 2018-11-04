@@ -87,7 +87,6 @@ empty name =
         }
 
 
--- TODO: create HasId / HasPath typeclass
 instance eqPatch :: Eq (Patch d) where
     eq (Patch idA _ _) (Patch idB _ _) = (idA == idB)
 
