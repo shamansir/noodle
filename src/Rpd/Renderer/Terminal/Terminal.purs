@@ -71,6 +71,7 @@ type Ui =
 data Msg
     = ExecuteCommand String
     | ClickAt (Int /\ Int)
+    | Receive Char
 
 
 type Message d = R.Message d Msg

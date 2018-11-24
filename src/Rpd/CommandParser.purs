@@ -1,4 +1,4 @@
-module Rpd.Renderer.Terminal.CommandParser where
+module Rpd.CommandParser where
 
 import Prelude
 
