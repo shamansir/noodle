@@ -16,6 +16,7 @@ import Rpd.Def as D
 
 type Toolkit d =
     { id :: String
+    , name :: String
     , nodeDefs :: String /-> D.NodeDef d
     , channelDefs :: String /-> D.ChannelDef d
     }

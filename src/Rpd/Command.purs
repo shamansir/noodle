@@ -6,9 +6,6 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq as GEq
 import Data.Generic.Rep.Show as GShow
 
-import Data.List as List
-import Data.Foldable (and)
-
 import Rpd.Path as P
 import Rpd.Def as D
 
