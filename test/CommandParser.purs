@@ -19,7 +19,6 @@ import Rpd.Path as R
 import Rpd.Network (Network) as R
 import Rpd.Command (Command)
 import Rpd.Command as Cmd
-
 import Rpd.CommandParser (parse)
 
 spec :: Spec Unit

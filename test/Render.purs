@@ -130,7 +130,7 @@ spec =
 
 loadSample :: String -> Effect String
 loadSample name =
-  readTextFile UTF8 $ "test/Network/Samples/" <> name <> ".sample"
+  readTextFile UTF8 $ "test/RenderSamples/" <> name <> ".sample"
 
 
 expectToRenderOnce
