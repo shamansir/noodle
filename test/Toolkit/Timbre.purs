@@ -11,7 +11,7 @@ import Data.List as List
 import Data.Map as Map
 import Data.Tuple.Nested ((/\))
 import Rpd.Def as R
-import Rpd.Toolkit (Toolkit(..)) as R
+import Rpd.Toolkit as T
 
 
 data WaveKind
@@ -28,23 +28,20 @@ data Data
     | Sound
 
 
-mapFrom = Map.fromFoldable
-
-
-toolkit :: R.Toolkit Data
+toolkit :: T.Toolkit Data
 toolkit =
     { id : "timbre"
-    , nodes :
-        mapFrom
+    , nodeDefs :
+        T.defs
             [ ( "num" /\ numNode )
             ]
-    , channels : Map.empty
+    , channelDefs : T.noDefs
     }
 
 
 numNode :: R.NodeDef Data
 numNode =
-    { name : "timbre"
+    { name : "num" -- TODO: add both `id`` and `name`` to nodes
     , inletDefs : List.Nil
     , outletDefs
         : numOutlet

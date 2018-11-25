@@ -11,7 +11,11 @@ import Data.Int (fromString)
 import Data.Maybe (Maybe(..), fromMaybe')
 import Data.List.NonEmpty (NonEmptyList(..))
 import Data.Char.Unicode (isSpace, isDigit)
+import Data.Lens ((^.))
+import Data.Lens.At (at)
+
 import Control.Monad.Trans.Class (class MonadTrans, lift)
+
 import Text.Parsing.StringParser (Parser, ParseError, runParser, fail)
 import Text.Parsing.StringParser.CodePoints
     (anyDigit, eof, string, anyChar, regex, satisfy, skipSpaces)
@@ -19,8 +23,9 @@ import Text.Parsing.StringParser.Combinators (many1, endBy1, sepBy1, optionMaybe
 import Text.Parsing.StringParser.Expr (Assoc(..), Operator(..), buildExprParser)
 import Text.Parsing.Parser.Token (space)
 
-import Rpd.Command (Command)
+import Rpd.Command (Command, StringCommand)
 import Rpd.Command as Cmd
+import Rpd.Toolkit as T
 import Rpd.Path as P
 
 
@@ -49,19 +54,44 @@ loadString list =
         $ fromFoldable list
 
 
-addNode :: Parser Command
-addNode = do
+addNode :: forall d. T.Toolkit d -> Parser (Maybe (Command d))
+addNode toolkit =
+    addNode' >>=
+        \command ->
+            pure $ case command of
+                (Cmd.AddNode' patchId name) ->
+                    T.findNodeDef name toolkit
+                        <#> Cmd.AddNode patchId
+                _ -> Nothing
+
+
+-- addNode toolkit = do
+    -- command <- addNode'
+    -- pure $ case command of
+    --     (Cmd.AddNode' patchId name) ->
+    --         let node = ?wh
+    --         in Just $ Cmd.AddNode patchId node
+    --     _ -> Nothing
+
+
+addNode' :: Parser StringCommand
+addNode' = do
     _ <- string "node"
     delim
     patchId <- number
     delim
     name <- nextChars
-    pure $ Cmd.AddNode (P.PatchId patchId) name
+    pure $ Cmd.AddNode' (P.PatchId patchId) name
 
 
-addPatch :: Parser Command
-addPatch
-    = string "patch" $> Cmd.Bang
+addPatch :: forall d. T.Toolkit d -> Parser (Maybe (Command d))
+addPatch toolkit
+    = string "patch" $> Just Cmd.Bang
+
+
+addPatch' :: Parser StringCommand
+addPatch'
+    = string "patch" $> Cmd.Bang'
 
 
 
@@ -77,10 +107,22 @@ addPatch
 --     <|> string "9" $> 9
 
 
-parser :: Parser Command
-parser = addNode
-    <|> addPatch
+parser :: forall d. T.Toolkit d -> Parser (Maybe (Command d))
+parser toolkit
+     =  addNode toolkit
+    <|> addPatch toolkit
 
 
-parse :: String -> Either ParseError Command
-parse = runParser parser
+parser' :: Parser StringCommand
+parser'
+     =  addNode'
+    <|> addPatch'
+
+
+-- TODO: merge Nothing with ParseError
+parse :: forall d. String -> T.Toolkit d -> Either ParseError (Maybe (Command d))
+parse = flip (runParser <<< parser)
+
+
+parse' :: String -> Either ParseError StringCommand
+parse' = runParser parser'

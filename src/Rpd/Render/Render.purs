@@ -24,16 +24,12 @@ import Rpd (run) as R
 import Rpd.API as R
 import Rpd.Def as R
 import Rpd.Path as R
+import Rpd.Command as C
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
 
 
-data Message d
-    = Bang
-    | AddPatch (R.PatchDef d)
-    | AddNode R.PatchId (R.NodeDef d)
-    | RemoveNode R.NodePath
-    | SelectNode R.NodePath
+type Message d = C.Command d
 
 
 data PushMsg d = PushMsg (Message d -> Effect Unit)
@@ -156,8 +152,8 @@ run' event nw renderer =
 
 
 update :: forall d. Message d -> R.Network d -> R.Rpd (R.Network d)
-update (AddPatch patchDef) = R.addPatch' patchDef
-update (AddNode patchId nodeDef) = R.addNode' patchId nodeDef
+update (C.AddPatch patchDef) = R.addPatch' patchDef
+update (C.AddNode patchId nodeDef) = R.addNode' patchId nodeDef
 update _ = pure
 
 
