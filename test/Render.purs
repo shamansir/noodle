@@ -35,6 +35,7 @@ data MyData
   = Bang
   | Value Int
 
+
 type MyRpd = R.Rpd (R.Network MyData)
 
 

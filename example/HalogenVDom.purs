@@ -9,24 +9,29 @@ import Effect (Effect)
 import Effect.Exception (throwException, error)
 import Effect.Ref as Ref
 import Effect.Uncurried as EFn
+
 import FRP.Event as E
+
 import Halogen.VDom as V
 import Halogen.VDom.DOM.Prop as P
 import Halogen.VDom.Machine as Machine
 import Halogen.VDom.Thunk (Thunk, buildThunk)
+
+import Spork.Html (Html)
+import Spork.Html as H
+
 import Rpd.Def (NodeDef, PatchDef) as Rpd
 import Rpd.Def (ProcessF(..))
 import Rpd.Network (Network)
 import Rpd.Network (empty) as Network
 import Rpd.Path (PatchId(..))
-import Rpd.Render (Message(..)) as M
+import Rpd.Command (Command(..)) as Cmd
 import Rpd.RenderMUV (Renderer, Message) as Ui
 import Rpd.RenderMUV (core, custom)
 import Rpd.RenderMUV (make') as Render
 import Rpd.Renderer.Terminal (terminalRenderer, Msg)
 import Rpd.Renderer.Terminal.Multiline as ML
-import Spork.Html (Html)
-import Spork.Html as H
+
 import Web.DOM.Element (toNode) as DOMElement
 import Web.DOM.Node (Node, appendChild) as DOM
 import Web.DOM.ParentNode (QuerySelector(..), querySelector) as DOM
@@ -70,17 +75,17 @@ render src =
         ]
     , H.button
         [ H.onClick
-            (H.always_ $ core M.Bang)
+            (H.always_ $ core Cmd.Bang)
         ]
         [ H.text "Bang" ]
     , H.button
         [ H.onClick
-            (H.always_ $ core $ M.AddPatch testPatch)
+            (H.always_ $ core $ Cmd.AddPatch testPatch)
         ]
         [ H.text "Add Patch" ]
     , H.button
         [ H.onClick
-            (H.always_ $ core $ M.AddNode (PatchId 0) testNode)
+            (H.always_ $ core $ Cmd.AddNode (PatchId 0) testNode)
         ]
         [ H.text "Add Node" ]
     ]

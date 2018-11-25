@@ -29,6 +29,17 @@ import Rpd.CommandParser (parse, parse')
 data Data = Foo | Bar
 
 
+instance showData :: Show Data where
+    show Foo = "Foo"
+    show Bar = "Bar"
+
+
+instance eqData :: Eq Data where
+    eq Foo Foo = true
+    eq Bar Bar = true
+    eq _ _ = false
+
+
 toolkit :: T.Toolkit Data
 toolkit =
     { id : "test"
@@ -49,23 +60,23 @@ fooDef =
 spec :: Spec Unit
 spec =
   describe "parsing commands" do
-    -- it "parses commands" do
-    --   _ <- "node 0 test/foo" `parsesAs` Cmd.AddNode (R.PatchId 0) fooDef
-    --   pure unit
+    it "parses commands" do
+      _ <- "node 0 test/foo" `parsesAs` Cmd.AddNode (R.PatchId 0) fooDef
+      pure unit
     it "parses string commands" do
       _ <- "node 0 foo" `parsesAs'` Cmd.AddNode' (R.PatchId 0) "foo"
       pure unit
 
 
--- parsesAs :: forall d. Show d => String -> Command Data -> Aff Unit
--- parsesAs input expected =
---     ?wh
---         # parse input
---         # either
---             (fail <<< show)
---             (maybe'
---                 (const $ fail "parsing failed")
---                 (shouldEqual expected))
+parsesAs :: String -> Command Data -> Aff Unit
+parsesAs input expected =
+    toolkit
+        # parse input
+        # either
+            (fail <<< show)
+            (maybe'
+                (const $ fail "parsing failed")
+                (shouldEqual expected))
 
 
 parsesAs' :: String -> StringCommand -> Aff Unit

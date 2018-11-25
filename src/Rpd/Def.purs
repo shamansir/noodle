@@ -3,11 +3,15 @@ module Rpd.Def
     ( noDefs
     , PatchDef(..), NodeDef(..), InletDef(..), OutletDef(..), ChannelDef(..)
     , ProcessF(..)
+    , comparePDefs, compareNDefs, compareIDefs, compareODefs
     )
     where
 
+import Prelude
+
 import Data.List (List(..))
 import Data.Maybe (Maybe)
+import Data.Foldable (and)
 
 import Rpd.Util (type (/->))
 
@@ -63,3 +67,41 @@ type OutletDef d =
 -- ChannelDef may be used both to describe inlets and outlets
 type ChannelDef d = InletDef d
 
+
+
+comparePDefs :: forall d. Eq d => PatchDef d -> PatchDef d -> Boolean
+comparePDefs lPDef rPDef =
+    (lPDef.name == rPDef.name)
+      && (and $ compareNDefs <$> lPDef.nodeDefs <*> rPDef.nodeDefs)
+
+
+compareNDefs :: forall d. Eq d => NodeDef d -> NodeDef d -> Boolean
+compareNDefs lNdef rNdef =
+    (lNdef.name == rNdef.name)
+      && (and $ compareIDefs <$> lNdef.inletDefs <*> rNdef.inletDefs)
+      && (and $ compareODefs <$> lNdef.outletDefs <*> rNdef.outletDefs)
+      && (lNdef.process == rNdef.process)
+
+
+compareIDefs :: forall d. Eq d => InletDef d -> InletDef d -> Boolean
+compareIDefs lIdef rIdef =
+    (lIdef.label == rIdef.label)
+      && (lIdef.default == rIdef.default)
+
+
+compareODefs :: forall d. OutletDef d -> OutletDef d -> Boolean
+compareODefs lOdef rOdef = lOdef.label == rOdef.label
+
+
+instance eqProcessF :: Eq (ProcessF d) where
+    eq FlowThrough FlowThrough = true
+    eq (IndexBased _) (IndexBased _) = true
+    eq (LabelBased _) (LabelBased _) = true
+    eq _ _ = false
+
+
+instance showProcessF :: Show (ProcessF d) where
+    -- show (RpdError text) = "(RpdError)" <> text
+    show FlowThrough = "FlowThrough"
+    show (IndexBased _) = "IndexBased"
+    show (LabelBased _) = "LabelBased"
