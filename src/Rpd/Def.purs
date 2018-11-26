@@ -34,7 +34,8 @@ data ProcessF d
     = FlowThrough
     | IndexBased (Array d -> Array d)
     | LabelBased ((String /-> d) -> (String /-> d))
-    -- TODO:
+    -- TODO: Effectful ProcessF
+    -- TODO: Other types
 
 
 -- data DataSource d
@@ -58,11 +59,18 @@ type NodeDef d =
 type InletDef d =
     { label :: String
     , default :: Maybe d
+    --, readonly :: Bool
+    --, hidden :: Bool
+    --, cold :: Bool
+    --, allow :: List String -- channel types. `allows :: InletDef d -> OutletDef d -> Bool`
     , accept :: Maybe (d -> Boolean)
-    --, adapt ::
+    --, adapt :: (d -> d)
+    --, tune :: (Event d -> Event d)
+    --, show :: (d -> String)
     }
 type OutletDef d =
     { label :: String
+    , accept :: Maybe (d -> Boolean)
     }
 -- ChannelDef may be used both to describe inlets and outlets
 type ChannelDef d = InletDef d

@@ -113,52 +113,57 @@ playNode =
 waveInlet :: R.InletDef Data
 waveInlet =
     { label : "wave"
-    , default : Just default
-    , accept : Just isWave
+    , default : pure $ Wave Sin
+    , accept : pure isWave
     }
-    where
-        default = Wave Sin
-        isWave (Wave _) = true
-        isWave _ = false
+
 
 
 freqInlet :: R.InletDef Data
 freqInlet =
     { label : "freq"
-    , default : Just default
-    , accept : Just isFreq
+    , default : pure $ Value 440.0
+    , accept : pure isNumber
     }
-    where
-        default = Value 440.0
-        isFreq (Value _) = true
-        isFreq _ = false
 
 
 soundInlet :: R.InletDef Data
 soundInlet =
     { label : "sound"
-    , default : Just default
-    , accept : Just isSound
+    , default : pure $ Sound Stopped
+    , accept : pure isSound
     }
-    where
-        default = Sound Stopped
-        isSound (Sound _) = true
-        isSound _ = false
+
 
 
 numOutlet :: R.OutletDef Data
 numOutlet =
-    { label : "num" -- TODO: check if output is number somehow
+    { label : "num"
+    , accept : pure isNumber
     }
 
 
 soundOutlet :: R.OutletDef Data
 soundOutlet =
-    { label : "sound" -- TODO: check if output is sound somehow
+    { label : "sound"
+    , accept : pure isSound
     }
 
 
 waveOutlet :: R.OutletDef Data
 waveOutlet =
-    { label : "wave" -- TODO: check if output is sound somehow
+    { label : "wave"
+    , accept : pure isWave
     }
+
+
+isWave (Wave _) = true
+isWave _ = false
+
+
+isNumber (Value _) = true
+isNumber _ = false
+
+
+isSound (Sound _) = true
+isSound _ = false
