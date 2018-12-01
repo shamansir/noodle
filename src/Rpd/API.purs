@@ -32,6 +32,7 @@ import Data.Traversable (sequence, traverse, traverse_)
 import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 
+import Control.MonadZero (empty)
 import Control.Monad.Except.Trans (ExceptT, except)
 
 import Effect (Effect, foreachE)
@@ -270,33 +271,6 @@ findFittingProcessHandler FlowThrough outlets nw =
     const $ pure unit
 
 
-
--- makeProcessHandler
---     :: forall d
---      . (String /-> d -> String /-> d)
---     -> (String /-> PushableFlow d)
---     -> Network d
---     -> (String /-> d)
---     -> Effect Unit
--- makeProcessHandler processF outletFlows nw inletVals = do
-
-
--- makeProcessHandler'
---     :: forall d
---      . (Array d -> Array d)
---     -> Array (PushableFlow d)
---     -> Network d
---     -> Array d
---     -> Effect Unit
--- makeProcessHandler processF outletFlows nw inletVals = do
-
-
--- TODO: removeNode
-    -- execute process canceler
-    -- execute node' inlets cancelers
-    -- execute cancelers for the links going into and out of the node
-
-
 addInlet
     :: forall d
      . NodePath
@@ -366,6 +340,7 @@ addOutlet nodePath label =
     addOutlet'
         nodePath
         { label
+        , accept : empty
         }
 
 
