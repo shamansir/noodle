@@ -1,6 +1,6 @@
 module Rpd.Def
     -- TODO: remove `-Def` from inner names
-    ( noDefs
+    ( noDefs, withhold
     , PatchDef(..), NodeDef(..), InletDef(..), OutletDef(..), ChannelDef(..)
     , ProcessF(..)
     , comparePDefs, compareNDefs, compareIDefs, compareODefs
@@ -9,11 +9,15 @@ module Rpd.Def
 
 import Prelude
 
+import Effect
+
 import Data.List (List(..))
 import Data.Maybe (Maybe)
 import Data.Foldable (and)
+import Data.Tuple.Nested (type (/\))
 
-import Rpd.Util (type (/->))
+import Rpd.Util (type (/->), Flow, PushF)
+import Rpd.Path (InletPath, OutletPath)
 
 -- TODO: may be find better ways to process these things in future
 --       I'd like to have something similar to JS-world
@@ -26,17 +30,30 @@ import Rpd.Util (type (/->))
 -- may be ProcessF should also receive previous value
 -- TODO: add Process Behavior (a.k.a. event with function) it would be possible
 --       to subscribe/know outlets changes as well
+-- TODO: generalize Process function to receiving something from incoming data stream and
+--       sending something to outgoing data stream, so all the types of `ProcessF`` could
+--       implement the same type. The question is — we need folds to store previous values,
+--       will we be able to apply them with this implementation?
 -- TODO: also there can be a `Pipe`d or `Direct` approach, i.e. a function
 --       of type (String -> d -> (String /\ d)), where there is no need in other inlet
 --       values except one, so it is called for each inlets one by one and so collects
 --       values for outputs
-data ProcessF d
-    = FlowThrough
-    | IndexBased (Array d -> Array d)
-    | LabelBased ((String /-> d) -> (String /-> d))
-    -- TODO: Effectful ProcessF
-    -- TODO: Other types
 
+-- data ProcessF d
+--     = ByLabel (Flow (String /\ d) -> PushF (String /\ d) -> Effect Unit)
+--     | ByPath (Flow (InletPath /\ d) -> PushF (OutletPath /\ d) -> Effect Unit)
+    -- | Full (Flow (InletPath /\ InletDef d /\ d) -> PushF (OutletPath /\ d) -> Effect Unit)
+
+type ProcessF d = Flow (InletPath /\ d) -> PushF (OutletPath /\ d) -> Effect Unit
+
+-- TODO: some "data flow" type class which provides functions like:
+-- `receive inletIndex -> Rpd/Effect d`,
+-- `send outletIndex data -> Rpd/Effect Unit`,
+-- `receive' inletLabel -> Rpd/Effect d`,
+-- `send' outletLabel data -> Rpd/Effect Unit`,
+-- and maybe... the `Rpd d`, `Network (Node d)` or the `Node d` should implement it,
+-- for the `Node` case — it can use `_nodeInlet'`/`_nodeOutlet'` lensed and so
+-- search only for the inlets inside, by label
 
 -- data DataSource d
 --     = UserSource (Flow d)
@@ -44,6 +61,10 @@ data ProcessF d
 
 noDefs :: forall d. List d
 noDefs = Nil
+
+
+withhold :: forall d. ProcessF d
+withhold = const $ const $ pure unit
 
 
 type PatchDef d =
@@ -71,10 +92,14 @@ type InletDef d =
 type OutletDef d =
     { label :: String
     , accept :: Maybe (d -> Boolean)
+        -- FIXME: `accept : Nothing` reads a bit weird, so I use `MonadZero.empty`
     }
 -- ChannelDef may be used both to describe inlets and outlets
 type ChannelDef d = InletDef d
 
+-- FIXME: there should always be a string ID, which can be different from name/label:
+--        for inlet or outlets it should be unique inside one node that has them
+--        for nodes — unique in one toolkit (patch?) etc.
 
 
 comparePDefs :: forall d. Eq d => PatchDef d -> PatchDef d -> Boolean
@@ -88,7 +113,6 @@ compareNDefs lNdef rNdef =
     (lNdef.name == rNdef.name)
       && (and $ compareIDefs <$> lNdef.inletDefs <*> rNdef.inletDefs)
       && (and $ compareODefs <$> lNdef.outletDefs <*> rNdef.outletDefs)
-      && (lNdef.process == rNdef.process)
 
 
 compareIDefs :: forall d. Eq d => InletDef d -> InletDef d -> Boolean
@@ -99,17 +123,3 @@ compareIDefs lIdef rIdef =
 
 compareODefs :: forall d. OutletDef d -> OutletDef d -> Boolean
 compareODefs lOdef rOdef = lOdef.label == rOdef.label
-
-
-instance eqProcessF :: Eq (ProcessF d) where
-    eq FlowThrough FlowThrough = true
-    eq (IndexBased _) (IndexBased _) = true
-    eq (LabelBased _) (LabelBased _) = true
-    eq _ _ = false
-
-
-instance showProcessF :: Show (ProcessF d) where
-    -- show (RpdError text) = "(RpdError)" <> text
-    show FlowThrough = "FlowThrough"
-    show (IndexBased _) = "IndexBased"
-    show (LabelBased _) = "LabelBased"
