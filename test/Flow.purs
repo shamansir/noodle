@@ -88,14 +88,17 @@ sumCursesToApplesNode processF =
   where
     curseInlet label =
       { label
-      , accept : Just onlyCurses
+      , accept : pure onlyCurses
       , default : Nothing
       }
     appleOutlet label =
       { label
+      , accept : pure onlyApples
       }
     onlyCurses (Curse _) = true
     onlyCurses _ = false
+    onlyApples (Apple _) = true
+    onlyApples _ = false
 
 
 

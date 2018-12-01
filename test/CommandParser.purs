@@ -43,6 +43,7 @@ instance eqData :: Eq Data where
 toolkit :: T.Toolkit Data
 toolkit =
     { id : "test"
+    , name : "Test"
     , nodeDefs : T.singleDef "foo" fooDef
     , channelDefs : T.noDefs
     }
