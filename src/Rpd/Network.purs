@@ -5,6 +5,8 @@ module Rpd.Network
     , Inlet(..)
     , Outlet(..)
     , Link(..)
+    , InletFlow(..), OutletFlow(..)
+    , InletsFlow(..), OutletsFlow(..)
     -- FIXME: do not expose constructors, provide all the optics as getters
     , empty
     ) where
@@ -19,7 +21,19 @@ import Data.Tuple.Nested (type (/\))
 
 import Rpd.Def
 import Rpd.Path
-import Rpd.Util (type (/->), Canceler, Flow, PushableFlow)
+import Rpd.Util (type (/->), Canceler, Flow, PushableFlow, PushF)
+
+
+data InletFlow d = InletFlow (PushableFlow d)
+data OutletFlow d = OutletFlow (PushableFlow d)
+
+
+data InletsFlow d = InletsFlow (PushableFlow (Int /\ d))
+data OutletsFlow d = OutletsFlow (PushableFlow (Int /\ d))
+
+
+--data ProcessFlow d = ProcessFlow (PushableFlow (Int /\ d))
+
 
 data Network d =
     Network
@@ -49,21 +63,23 @@ data Node d =
         (NodeDef d)
         { inlets :: Set InletPath
         , outlets :: Set OutletPath
-        , flow :: PushableFlow (InletPath /\ d)
-        , processFlow :: Flow (InletPath /-> d)
+        , inletsFlow :: InletsFlow d
+        , outletsFlow :: OutletsFlow d
         }
 data Inlet d =
     Inlet
         InletPath
         (InletDef d)
-        { flow :: PushableFlow d
+        { flow :: InletFlow d
+        -- flow :: PushableFlow d
         -- sources :: Set (DataSource d)
         }
 data Outlet d =
     Outlet
         OutletPath
         (OutletDef d)
-        { flow :: PushableFlow d
+        { flow :: OutletFlow d
+        -- flow :: PushableFlow d
         }
 data Link = Link OutletPath InletPath
 

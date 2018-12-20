@@ -44,9 +44,9 @@ import Rpd.Path (InletPath, OutletPath)
 --     | ByPath (Flow (InletPath /\ d) -> PushF (OutletPath /\ d) -> Effect Unit)
     -- | Full (Flow (InletPath /\ InletDef d /\ d) -> PushF (OutletPath /\ d) -> Effect Unit)
 
-type ProcessF d = Flow (InletPath /\ d) -> PushF (OutletPath /\ d) -> Effect Unit
+type ProcessF d = Flow (Int /\ d) -> PushF (Int /\ d) -> Effect Unit
 
--- TODO: some "data flow" type class which provides functions like:
+-- TODO: some "data flow" typeclass which provides functions like:
 -- `receive inletIndex -> Rpd/Effect d`,
 -- `send outletIndex data -> Rpd/Effect Unit`,
 -- `receive' inletLabel -> Rpd/Effect d`,
@@ -58,6 +58,7 @@ type ProcessF d = Flow (InletPath /\ d) -> PushF (OutletPath /\ d) -> Effect Uni
 -- data DataSource d
 --     = UserSource (Flow d)
 --     | OutletSource OutletPath (Flow d)
+
 
 noDefs :: forall d. List d
 noDefs = Nil
@@ -75,7 +76,7 @@ type NodeDef d =
     { name :: String
     , inletDefs :: List (InletDef d)
     , outletDefs :: List (OutletDef d)
-    , process :: ProcessF d
+    , process :: Maybe (ProcessF d)
     }
 type InletDef d =
     { label :: String

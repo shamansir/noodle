@@ -25,7 +25,7 @@ import Data.Lens.At (at)
 import Data.List (List)
 import Data.List as List
 import Data.Map as Map
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe, isJust)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.Traversable (sequence, traverse, traverse_)
@@ -207,68 +207,6 @@ addNode' patchId def nw = do
          #  addInlets nodePath def.inletDefs
         </> addOutlets nodePath def.outletDefs
         </> updateNodeProcessFlow nodePath
-
-
-updateNodeProcessFlow
-    :: forall d
-     . NodePath
-    -> Network d
-    -> Rpd (Network d)
-updateNodeProcessFlow nodePath nw = do
-    -- cancel the previous subscription if it exists
-    _ <- liftEffect $ fromMaybe (pure unit) $ view (_nodeCanceler nodePath) nw
-    (Node _ nodeDef { processFlow, inlets, outlets }) <-
-        except $ view (_node nodePath) nw # note (RpdError "")
-    if (noProcessNeeded nodeDef.process
-        || Set.isEmpty inlets
-        || Set.isEmpty outlets) then pure nw else do
-        (PushableFlow _ dataFlow) <- except $ view (_nodePFlow nodePath) nw # note (RpdError "")
-        let
-            (processHandler :: (InletPath /-> d) -> Effect Unit) =
-                nw # findFittingProcessHandler nodeDef.process outlets
-        canceler :: Canceler
-            <- liftEffect $ E.subscribe processFlow processHandler
-        pure $ nw # setJust (_nodeCanceler nodePath) canceler
-    where
-        noProcessNeeded FlowThrough = true
-        noProcessNeeded _ = false
-
-
-findFittingProcessHandler
-    :: forall d
-     . ProcessF d
-    -> Set OutletPath
-    -> Network d
-    -> (InletPath /-> d)
-    -> Effect Unit
-findFittingProcessHandler (LabelBased processF) outlets nw =
-    let
-        (outletLabelToFlow :: String /-> PushableFlow d) =
-            outlets
-                # (Set.toUnfoldable :: forall a. Set a -> Array a)
-                # map (\outletPath ->
-                    view (_outlet outletPath) nw)
-                # filterMap (\maybeOutlet ->
-                    maybeOutlet >>= \(Outlet _ { label } { flow }) ->
-                        pure (label /\ flow))
-                # Map.fromFoldable
-        ph = nw # makeProcessHandler processF outletLabelToFlow
-        pathToLabel inletPath = -- FIXME
-            fromMaybe "<?>" $ view (_inletLabel inletPath) nw
-    in
-        ph <<< RU.convertKeysInMap pathToLabel
-findFittingProcessHandler (IndexBased processF) outlets nw =
-    let
-        (outletFlows :: Array (PushableFlow d)) =
-            outlets
-                # (Set.toUnfoldable :: forall a. Set a -> Array a)
-                # map (\outletPath -> view (_outletPFlow outletPath) nw)
-                # filterMap identity
-        ph = nw # makeProcessHandler' processF outletFlows
-    in
-        ph <<< List.toUnfoldable <<< Map.values
-findFittingProcessHandler FlowThrough outlets nw =
-    const $ pure unit
 
 
 addInlet
@@ -588,6 +526,74 @@ disconnectAll outletPath inletPath
 -- TODO: subscribeAllNodes
 
 -- TODO: subscribeAllData
+
+updateNodeProcessFlow
+    :: forall d
+     . NodePath
+    -> Network d
+    -> Rpd (Network d)
+updateNodeProcessFlow nodePath nw = do
+    -- cancel the previous subscription if it exists
+    _ <- view (_nodeCanceler nodePath) nw
+            # fromMaybe (pure unit)
+            # liftEffect
+    (Node _ nodeDef { processFlow, inlets, outlets }) <-
+        except $ view (_node nodePath) nw # note (RpdError "")
+    if (isJust nodeDef.process
+        || Set.isEmpty inlets
+        || Set.isEmpty outlets) then pure nw else do
+        (PushableFlow _ dataFlow) <-
+            except $ view (_nodePFlow nodePath) nw # note (RpdError "")
+        let
+            (processHandler
+                :: (InletPath /-> d)
+                -> RU.PushF (OutletPath /-> d)
+                -> Effect Unit) =
+                nw # ?wh nodeDef.process outlets
+        canceler :: Canceler
+            <- liftEffect $ E.subscribe processFlow processHandler
+        pure $ nw # setJust (_nodeCanceler nodePath) canceler
+    -- where
+    --     noProcessNeeded FlowThrough = true
+    --     noProcessNeeded _ = false
+
+
+
+-- findFittingProcessHandler
+--     :: forall d
+--      . ProcessF d
+--     -> Set OutletPath
+--     -> Network d
+--     -> (InletPath /-> d)
+--     -> Effect Unit
+-- findFittingProcessHandler (LabelBased processF) outlets nw =
+--     let
+--         (outletLabelToFlow :: String /-> PushableFlow d) =
+--             outlets
+--                 # (Set.toUnfoldable :: forall a. Set a -> Array a)
+--                 # map (\outletPath ->
+--                     view (_outlet outletPath) nw)
+--                 # filterMap (\maybeOutlet ->
+--                     maybeOutlet >>= \(Outlet _ { label } { flow }) ->
+--                         pure (label /\ flow))
+--                 # Map.fromFoldable
+--         ph = nw # makeProcessHandler processF outletLabelToFlow
+--         pathToLabel inletPath = -- FIXME
+--             fromMaybe "<?>" $ view (_inletLabel inletPath) nw
+--     in
+--         ph <<< RU.convertKeysInMap pathToLabel
+-- findFittingProcessHandler (IndexBased processF) outlets nw =
+--     let
+--         (outletFlows :: Array (PushableFlow d)) =
+--             outlets
+--                 # (Set.toUnfoldable :: forall a. Set a -> Array a)
+--                 # map (\outletPath -> view (_outletPFlow outletPath) nw)
+--                 # filterMap identity
+--         ph = nw # makeProcessHandler' processF outletFlows
+--     in
+--         ph <<< List.toUnfoldable <<< Map.values
+-- findFittingProcessHandler FlowThrough outlets nw =
+--     const $ pure unit
 
 
 makeProcessFlow :: forall d. Flow (InletPath /\ d) -> Flow (InletPath /-> d)

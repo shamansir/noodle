@@ -50,7 +50,7 @@ type Subscriber =
 
 type Flow d = Event d
 type PushF d = (d -> Effect Unit)
-data PushableFlow d = PushableFlow (PushF d) (Event d)
+data PushableFlow d = PushableFlow (PushF d) (Flow d)
 
 
 flow :: forall d. Event d -> Flow d
