@@ -63,8 +63,9 @@ data Node d =
         (NodeDef d)
         { inlets :: Set InletPath
         , outlets :: Set OutletPath
-        , inletsFlow :: InletsFlow d
-        , outletsFlow :: OutletsFlow d
+        , processFlow :: PushableFlow (Int /\ d) -- TODO: can it be just Flow?
+        --, inletsFlow :: InletsFlow d
+        --, outletsFlow :: OutletsFlow d
         }
 data Inlet d =
     Inlet
