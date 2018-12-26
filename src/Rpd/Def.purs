@@ -1,8 +1,8 @@
 module Rpd.Def
     -- TODO: remove `-Def` from inner names
-    ( noDefs, withhold
+    ( noDefs
     , PatchDef(..), NodeDef(..), InletDef(..), OutletDef(..), ChannelDef(..)
-    , ProcessF(..)
+    , ProcessF, InletsFlow(..), OutletsFlow(..)
     , comparePDefs, compareNDefs, compareIDefs, compareODefs
     )
     where
@@ -44,7 +44,10 @@ import Rpd.Path (InletPath, OutletPath)
 --     | ByPath (Flow (InletPath /\ d) -> PushF (OutletPath /\ d) -> Effect Unit)
     -- | Full (Flow (InletPath /\ InletDef d /\ d) -> PushF (OutletPath /\ d) -> Effect Unit)
 
-type ProcessF d = Flow (Int /\ d) -> PushF (Int /\ d) -> Effect Unit
+
+data InletsFlow d = InletsFlow (Flow (Int /\ d))
+data OutletsFlow d = OutletsFlow (Flow (Int /\ d))
+type ProcessF d = InletsFlow d -> OutletsFlow d
 
 -- TODO: some "data flow" typeclass which provides functions like:
 -- `receive inletIndex -> Rpd/Effect d`,
@@ -62,10 +65,6 @@ type ProcessF d = Flow (Int /\ d) -> PushF (Int /\ d) -> Effect Unit
 
 noDefs :: forall d. List d
 noDefs = Nil
-
-
-withhold :: forall d. ProcessF d
-withhold = const $ const $ pure unit
 
 
 type PatchDef d =

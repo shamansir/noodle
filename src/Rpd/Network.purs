@@ -6,7 +6,6 @@ module Rpd.Network
     , Outlet(..)
     , Link(..)
     , InletFlow(..), OutletFlow(..)
-    , InletsFlow(..), OutletsFlow(..)
     -- FIXME: do not expose constructors, provide all the optics as getters
     , empty
     ) where
@@ -26,10 +25,6 @@ import Rpd.Util (type (/->), Canceler, Flow, PushableFlow, PushF)
 
 data InletFlow d = InletFlow (PushableFlow d)
 data OutletFlow d = OutletFlow (PushableFlow d)
-
-
-data InletsFlow d = InletsFlow (PushableFlow (Int /\ d))
-data OutletsFlow d = OutletsFlow (PushableFlow (Int /\ d))
 
 
 --data ProcessFlow d = ProcessFlow (PushableFlow (Int /\ d))

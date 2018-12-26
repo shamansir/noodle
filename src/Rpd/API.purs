@@ -530,14 +530,6 @@ disconnectAll outletPath inletPath
 -- TODO: subscribeAllData
 
 
-resolve
-    :: forall a
-     . (a -> Effect Unit)
-    -> Rpd Unit
-resolve f =
-    pure unit
-
-
 updateNodeProcessFlow
     :: forall d
      . NodePath
@@ -550,123 +542,27 @@ updateNodeProcessFlow nodePath nw = do
             # liftEffect
     (Node _ nodeDef { processFlow, inlets, outlets }) <-
         except $ view (_node nodePath) nw # note (RpdError "")
-    if (isJust nodeDef.process
-        || Set.isEmpty inlets
-        || Set.isEmpty outlets) then pure nw else do
-        pure nw
-        -- (PushableFlow _ dataFlow) <-
-        --     except $ view (_nodePFlow nodePath) nw # note (RpdError "")
-        -- let
-        --     (processHandler
-        --         :: (InletPath /-> d)
-        --         -> RU.PushF (OutletPath /-> d)
-        --         -> Effect Unit) =
-        --         nw # ?wh nodeDef.process outlets
-        -- canceler :: Canceler
-        --     <- liftEffect $ E.subscribe processFlow processHandler
-        -- pure $ nw # setJust (_nodeCanceler nodePath) canceler
-    -- where
-    --     noProcessNeeded FlowThrough = true
-    --     noProcessNeeded _ = false
+    case nodeDef.process of
+        Just processF ->
+            if (Set.isEmpty inlets || Set.isEmpty outlets) then pure nw else do
+                let
+                    (PushableFlow _ processFlowEvt) = processFlow
+                    (outletFlows :: Array (PushableFlow d)) =
+                        outlets
+                            # (Set.toUnfoldable :: forall a. Set a -> Array a)
+                            # map (\outletPath -> view (_outletPFlow outletPath) nw)
+                            # filterMap identity -- FIXME: raise an error if outlet wasn't found
+                    (OutletsFlow outletsFlow) =
+                        processF (InletsFlow processFlowEvt)
+                    pushToOutletFlow (outletIdx /\ val) =
+                        case outletFlows !! outletIdx of
+                            Just (PushableFlow pushF _) -> pushF val
+                            _ -> pure unit
+                canceler :: Canceler
+                    <- liftEffect $ E.subscribe outletsFlow pushToOutletFlow
 
-
-makeProcessHandler
-    :: forall d
-     . Set InletPath
-    -> Set OutletPath
-    -> Network d
-    -> ProcessF d
-makeProcessHandler inlets outlets nw
-    = \_ _ -> pure unit
-
-
--- findFittingProcessHandler
---     :: forall d
---      . ProcessF d
---     -> Set OutletPath
---     -> Network d
---     -> (InletPath /-> d)
---     -> Effect Unit
--- findFittingProcessHandler (LabelBased processF) outlets nw =
---     let
---         (outletLabelToFlow :: String /-> PushableFlow d) =
---             outlets
---                 # (Set.toUnfoldable :: forall a. Set a -> Array a)
---                 # map (\outletPath ->
---                     view (_outlet outletPath) nw)
---                 # filterMap (\maybeOutlet ->
---                     maybeOutlet >>= \(Outlet _ { label } { flow }) ->
---                         pure (label /\ flow))
---                 # Map.fromFoldable
---         ph = nw # makeProcessHandler processF outletLabelToFlow
---         pathToLabel inletPath = -- FIXME
---             fromMaybe "<?>" $ view (_inletLabel inletPath) nw
---     in
---         ph <<< RU.convertKeysInMap pathToLabel
--- findFittingProcessHandler (IndexBased processF) outlets nw =
---     let
---         (outletFlows :: Array (PushableFlow d)) =
---             outlets
---                 # (Set.toUnfoldable :: forall a. Set a -> Array a)
---                 # map (\outletPath -> view (_outletPFlow outletPath) nw)
---                 # filterMap identity
---         ph = nw # makeProcessHandler' processF outletFlows
---     in
---         ph <<< List.toUnfoldable <<< Map.values
--- findFittingProcessHandler FlowThrough outlets nw =
---     const $ pure unit
-
-
--- makeProcessFlow :: forall d. Flow (InletPath /\ d) -> Flow (InletPath /-> d)
--- makeProcessFlow dataFlow =
---     E.fold (uncurry Map.insert) dataFlow Map.empty
-
-
--- makeProcessHandler
---     :: forall d
---      . (String /-> d -> String /-> d)
---     -> (String /-> PushableFlow d)
---     -> Network d
---     -> (String /-> d)
---     -> Effect Unit
--- makeProcessHandler processF outletFlows nw inletVals = do
---     let (outletVals :: String /-> d) = processF inletVals
---     foreachE (Set.toUnfoldable $ Map.keys outletVals) (pushToOutlet outletVals)
---     pure unit
---     where
---         getInletId (InletPath _ inletId) = inletId
---         pushToOutlet outletVals outletLabel =
---             case view (at outletLabel) outletFlows of
---                 Just (PushableFlow push _) -> do
---                     maybe
---                         (pure unit)
---                         (\d -> do
---                             _ <- push d
---                             pure unit
---                         ) $ view (at outletLabel) outletVals
---                 Nothing -> do
---                     pure unit
-
-
--- makeProcessHandler'
---     :: forall d
---      . (Array d -> Array d)
---     -> Array (PushableFlow d)
---     -> Network d
---     -> Array d
---     -> Effect Unit
--- makeProcessHandler' processF outletFlows nw inletVals = do
---     let (outletVals :: Array d) = processF inletVals
---     _ <- sequence $ Array.mapWithIndex pushToOutlet outletVals
---     pure unit
---     where
---         pushToOutlet outletIndex d =
---             case outletFlows !! outletIndex of
---                 Just (PushableFlow push _) -> do
---                     _ <- push d
---                     pure unit
---                 Nothing -> do
---                     pure unit
+                pure $ nw # setJust (_nodeCanceler nodePath) canceler
+        Nothing -> pure nw
 
 
 -- TODO: rollback :: RpdError -> Network -> Network
