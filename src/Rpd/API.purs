@@ -198,7 +198,7 @@ addNode' patchId def nw = do
                 def
                 { inlets : Set.empty
                 , outlets : Set.empty
-                , processFlow : ProcessPFlow processPFlow
+                , flow : ProcessPFlow processPFlow
                 --, processFlow : processFlow -- must be an event doing nothing at first
                 }
     nw
@@ -446,11 +446,11 @@ subscribeChannelsData oHandler iHandler nw =
 subscribeNode
     :: forall d
      . NodePath
-    -> (InletPath /\ d -> Effect Unit)
+    -> (Int /\ d -> Effect Unit)
     -> Network d
     -> Rpd Canceler
 subscribeNode nodePath handler nw = do
-    flow :: Flow (InletPath /\ d) <-
+    flow :: Flow (Int /\ d) <-
         view (_nodeFlow nodePath) nw
             # exceptMaybe (RpdError "")
     canceler :: Canceler <-
