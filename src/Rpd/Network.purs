@@ -5,7 +5,7 @@ module Rpd.Network
     , Inlet(..)
     , Outlet(..)
     , Link(..)
-    , InletFlow(..), OutletFlow(..)
+    , InletPFlow(..), OutletPFlow(..), ProcessPFlow(..)
     -- FIXME: do not expose constructors, provide all the optics as getters
     , empty
     ) where
@@ -23,11 +23,9 @@ import Rpd.Path
 import Rpd.Util (type (/->), Canceler, Flow, PushableFlow, PushF)
 
 
-data InletFlow d = InletFlow (PushableFlow d)
-data OutletFlow d = OutletFlow (PushableFlow d)
-
-
---data ProcessFlow d = ProcessFlow (PushableFlow (Int /\ d))
+data InletPFlow d = InletPFlow (PushableFlow d)
+data OutletPFlow d = OutletPFlow (PushableFlow d)
+data ProcessPFlow d = ProcessPFlow (PushableFlow (Int /\ d))
 
 
 data Network d =
@@ -58,7 +56,7 @@ data Node d =
         (NodeDef d)
         { inlets :: Set InletPath
         , outlets :: Set OutletPath
-        , processFlow :: PushableFlow (Int /\ d) -- TODO: can it be just Flow?
+        , flow :: ProcessPFlow d -- could it be just Flow, not a pushable one?
         --, inletsFlow :: InletsFlow d
         --, outletsFlow :: OutletsFlow d
         }
@@ -66,7 +64,7 @@ data Inlet d =
     Inlet
         InletPath
         (InletDef d)
-        { flow :: InletFlow d
+        { flow :: InletPFlow d
         -- flow :: PushableFlow d
         -- sources :: Set (DataSource d)
         }
@@ -74,7 +72,7 @@ data Outlet d =
     Outlet
         OutletPath
         (OutletDef d)
-        { flow :: OutletFlow d
+        { flow :: OutletPFlow d
         -- flow :: PushableFlow d
         }
 data Link = Link OutletPath InletPath

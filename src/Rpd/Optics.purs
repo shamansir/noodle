@@ -92,7 +92,7 @@ _nodes =
     to \(Network _ { nodes }) -> List.fromFoldable nodes
 
 
-_nodeFlow :: forall d. NodePath -> Getter' (Network d) (Maybe (Flow (InletPath /\ d)))
+_nodeFlow :: forall d. NodePath -> Getter' (Network d) (Maybe (Flow (Int /\ d)))
 _nodeFlow nodePath =
     to extractFlow
     where
@@ -101,13 +101,15 @@ _nodeFlow nodePath =
             \(PushableFlow _ flow) -> pure flow
 
 
-_nodePFlow :: forall d. NodePath -> Getter' (Network d) (Maybe (PushableFlow (InletPath /\ d)))
+_nodePFlow :: forall d. NodePath -> Getter' (Network d) (Maybe (PushableFlow (Int /\ d)))
 _nodePFlow nodePath =
     to extractPFlow
     where
         nodeLens = _node nodePath
         extractPFlow nw = view nodeLens nw >>=
-            \(Node _ _ { flow }) -> pure flow
+            \(Node _ _ { flow }) ->
+                case flow of
+                    (ProcessPFlow pFlow) -> pure pFlow
 
 
 _nodeInlet :: forall d. NodePath -> InletPath -> Lens' (Network d) (Maybe Unit)
@@ -231,7 +233,9 @@ _inletPFlow inletPath =
     where
         inletLens = _inlet inletPath
         extractPFlow nw = view inletLens nw >>=
-            \(Inlet _ _ { flow }) -> pure flow
+            \(Inlet _ _ { flow }) ->
+                case flow of
+                    (InletPFlow pFlow) -> pure pFlow
 
 
 _inletCanceler :: forall d. InletPath -> Lens' (Network d) (Maybe Canceler)
@@ -286,8 +290,11 @@ _outletPFlow outletPath =
     to extractPFlow
     where
         outletLens = _outlet outletPath
-        extractPFlow nw = view outletLens nw >>=
-            \(Outlet _ _ { flow }) -> pure flow
+        extractPFlow nw =
+            view outletLens nw >>=
+                \(Outlet _ _ { flow }) ->
+                    case flow of
+                        (OutletPFlow pFlow) -> pure pFlow
 
 
 _link :: forall d. LinkId -> Lens' (Network d) (Maybe Link)
