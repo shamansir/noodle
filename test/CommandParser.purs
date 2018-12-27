@@ -54,7 +54,7 @@ fooDef =
     { name : "foo"
     , inletDefs : R.noDefs
     , outletDefs : R.noDefs
-    , process : R.FlowThrough
+    , process : Nothing
     }
 
 

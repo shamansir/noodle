@@ -56,7 +56,7 @@ numNode =
     , outletDefs
         : numOutlet
         : List.Nil
-    , process : R.FlowThrough -- TODO
+    , process : Nothing -- TODO
     }
 
 
@@ -68,7 +68,7 @@ waveNode =
     , outletDefs
         : waveOutlet
         : List.Nil
-    , process : R.FlowThrough -- TODO
+    , process : Nothing -- TODO
     }
 
 
@@ -82,7 +82,7 @@ oscNode =
     , outletDefs
         : soundOutlet
         : List.Nil
-    , process : R.FlowThrough -- TODO
+    , process : Nothing -- TODO
     }
 
 
@@ -94,7 +94,7 @@ plotNode =
         : List.Nil
     , outletDefs
         : List.Nil
-    , process : R.FlowThrough -- TODO
+    , process : Nothing -- TODO
     }
 
 
@@ -106,7 +106,7 @@ playNode =
         : List.Nil
     , outletDefs
         : List.Nil
-    , process : R.FlowThrough -- TODO
+    , process : Nothing -- TODO
     }
 
 

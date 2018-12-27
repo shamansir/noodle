@@ -69,7 +69,7 @@ type MyRpd = R.Rpd (R.Network Delivery)
 --   { name : "Nothing"
 --   , inletDefs : List.Nil
 --   , outletDefs : List.Nil
---   , process : R.FlowThrough
+--   , process : Nothing
 --   }
 
 
