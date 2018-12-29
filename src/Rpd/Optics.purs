@@ -13,14 +13,16 @@ module Rpd.Optics
 
 import Data.Maybe
 import Prelude
-import Rpd.Network
-import Rpd.Path
 
 import Data.Lens (Lens', Getter', lens, view, set, over, to)
 import Data.Lens.At (at)
 import Data.List (List)
 import Data.List as List
 import Data.Tuple.Nested (type (/\))
+
+import Rpd.Network
+import Rpd.Path
+import Rpd.Def
 import Rpd.Util (Flow, PushableFlow(..), Canceler)
 
 

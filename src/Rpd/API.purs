@@ -209,6 +209,28 @@ addNode' patchId def nw = do
         </> updateNodeProcessFlow nodePath
 
 
+processWith
+    :: forall d
+     . NodePath
+    -> ProcessF d
+    -> Network d
+    -> Rpd (Network d)
+processWith nodePath processF nw = do
+    (Node _ def state) :: Node d <-
+        view (_node nodePath) nw
+            # exceptMaybe (RpdError "")
+    let
+        newNode =
+            Node
+                nodePath
+                (def { process = Just processF })
+                state
+    nw
+        #  setJust (_node nodePath) newNode
+        #  pure -- FIXME: why `pure` is needed here while in other functions it doesn't?
+       </> updateNodeProcessFlow nodePath
+
+
 addInlet
     :: forall d
      . NodePath

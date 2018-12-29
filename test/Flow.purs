@@ -536,6 +536,10 @@ links = do
     --     pure unit
     --   describe "with function defined after creation" do
     --     pure unit
+    --   describe "after adding an inlet" do
+    --     pure unit
+    --   describe "after removing an inlet" do
+    --     pure unit
     --   describe "after adding an outlet" do
     --     pure unit
     --   describe "after removing an outlet" do
