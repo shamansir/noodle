@@ -45,6 +45,7 @@ import FRP.Event as E
 import Rpd.Path
 import Rpd.Def
 import Rpd.Optics
+import Rpd.Process
 import Rpd.Network
 import Rpd.Network (empty) as Network
 import Rpd.Util (type (/->), PushableFlow(..), Subscriber, Canceler, Flow)
@@ -177,7 +178,7 @@ addNode patchId name =
         { name
         , inletDefs : List.Nil
         , outletDefs : List.Nil
-        , process : Nothing
+        , process : Withhold
         }
 
 
@@ -189,9 +190,8 @@ addNode'
     -> Rpd (Network d)
 addNode' patchId def nw = do
     nodePath <- except $ nextNodePath patchId nw
-    processPFlow@(PushableFlow _ dataFlow) <- liftEffect makePushableFlow
+    processPFlow <- liftEffect makePushableFlow
     let
-        --processFlow = makeProcessFlow dataFlow
         newNode =
             Node
                 nodePath
@@ -199,7 +199,6 @@ addNode' patchId def nw = do
                 { inlets : Set.empty
                 , outlets : Set.empty
                 , flow : ProcessPFlow processPFlow
-                --, processFlow : processFlow -- must be an event doing nothing at first
                 }
     nw
          #  setJust (_node nodePath) newNode
@@ -223,12 +222,11 @@ processWith nodePath processF nw = do
         newNode =
             Node
                 nodePath
-                (def { process = Just processF })
+                (def { process = processF })
                 state
     nw
-        #  setJust (_node nodePath) newNode
-        #  pure -- FIXME: why `pure` is needed here while in other functions it doesn't?
-       </> updateNodeProcessFlow nodePath
+        # setJust (_node nodePath) newNode
+        # updateNodeProcessFlow nodePath
 
 
 addInlet
@@ -565,7 +563,8 @@ updateNodeProcessFlow nodePath nw = do
     (Node _ nodeDef { flow, inlets, outlets }) <-
         except $ view (_node nodePath) nw # note (RpdError "")
     case nodeDef.process of
-        Just processF ->
+        Withhold -> pure nw
+        processF ->
             if (Set.isEmpty inlets || Set.isEmpty outlets) then pure nw else do
                 let
                     (ProcessPFlow (PushableFlow _ processFlow)) = flow
@@ -574,16 +573,29 @@ updateNodeProcessFlow nodePath nw = do
                             # (Set.toUnfoldable :: forall a. Set a -> Array a)
                             # map (\outletPath -> view (_outletPFlow outletPath) nw)
                             # filterMap identity -- FIXME: raise an error if outlet wasn't found
-                    (OutletsFlow outletsFlow) =
-                        processF (InletsFlow processFlow)
                     pushToOutletFlow (outletIdx /\ val) =
                         case outletFlows !! outletIdx of
                             Just (PushableFlow pushF _) -> pushF val
                             _ -> pure unit
+                (OutletsFlow outletsFlow) <-
+                    buildOutletsFlow processF processFlow inlets outlets nw
                 canceler :: Canceler
                     <- liftEffect $ E.subscribe outletsFlow pushToOutletFlow
                 pure $ nw # setJust (_nodeCanceler nodePath) canceler
-        Nothing -> pure nw
+
+
+buildOutletsFlow
+    :: forall d
+     . ProcessF d
+    -> Flow (Int /\ d)
+    -> Set InletPath
+    -> Set OutletPath
+    -> Network d
+    -> Rpd (OutletsFlow d)
+buildOutletsFlow Withhold processFlow _ _ _ =
+    pure (OutletsFlow processFlow)
+buildOutletsFlow processF processFlow inlets outlets nw =
+    pure (OutletsFlow processFlow)
 
 
 -- TODO: rollback :: RpdError -> Network -> Network

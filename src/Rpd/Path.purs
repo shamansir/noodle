@@ -10,7 +10,23 @@ module Rpd.Path
 
 import Prelude
 
+
 -- TODO: either Path typeclass or... Comonad? (paths look like breadcrumbs)
+
+-- FIXME: consider moving to random hashes, since adding/removing the things
+--        based on IDs breaks, for example, processing (new IDs are assigned
+--        following the current number of nodes/inlets/outlets, which is wrong)
+
+-- import Effect (Effect, forE)
+-- import Effect.Random (randomInt)
+
+
+-- uniqueId :: Int -> Effect String
+-- uniqueId len =
+--     forE 0 len (\_ -> do
+--         nextChar <- randomInt 0 96
+--         pure unit)
+
 
 
 data PatchId = PatchId Int

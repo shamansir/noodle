@@ -2,7 +2,6 @@ module Rpd.Def
     -- TODO: remove `-Def` from inner names
     ( noDefs
     , PatchDef(..), NodeDef(..), InletDef(..), OutletDef(..), ChannelDef(..)
-    , ProcessF, InletsFlow(..), OutletsFlow(..)
     , comparePDefs, compareNDefs, compareIDefs, compareODefs
     )
     where
@@ -18,6 +17,7 @@ import Data.Tuple.Nested (type (/\))
 
 import Rpd.Util (type (/->), Flow, PushF)
 import Rpd.Path (InletPath, OutletPath)
+import Rpd.Process (ProcessF(..))
 
 -- TODO: may be find better ways to process these things in future
 --       I'd like to have something similar to JS-world
@@ -45,10 +45,6 @@ import Rpd.Path (InletPath, OutletPath)
     -- | Full (Flow (InletPath /\ InletDef d /\ d) -> PushF (OutletPath /\ d) -> Effect Unit)
 
 
-data InletsFlow d = InletsFlow (Flow (Int /\ d))
-data OutletsFlow d = OutletsFlow (Flow (Int /\ d))
-type ProcessF d = InletsFlow d -> OutletsFlow d
-
 -- TODO: some "data flow" typeclass which provides functions like:
 -- `receive inletIndex -> Rpd/Effect d`,
 -- `send outletIndex data -> Rpd/Effect Unit`,
@@ -75,7 +71,7 @@ type NodeDef d =
     { name :: String
     , inletDefs :: List (InletDef d)
     , outletDefs :: List (OutletDef d)
-    , process :: Maybe (ProcessF d)
+    , process :: ProcessF d
     }
 type InletDef d =
     { label :: String
