@@ -600,7 +600,30 @@ buildOutletsFlow (ByIndex processF) processFlow inlets outlets nw =
     case processF $ InletsByIndexFlow processFlow of
         OutletsByIndexFlow outletsByIndex -> pure $ OutletsFlow outletsByIndex
 buildOutletsFlow (ByLabel processF) processFlow inlets outlets nw =
-    pure $ OutletsFlow processFlow
+    let
+        (inletsLabels :: Array String) =
+            inlets
+                # (Set.toUnfoldable :: forall a. Set a -> Array a)
+                # map (\inletPath -> view (_inletLabel inletPath) nw)
+                # filterMap identity -- FIXME: raise an error if outlet wasn't found
+        (outletLabels :: Array String) =
+            outlets
+                # (Set.toUnfoldable :: forall a. Set a -> Array a)
+                # map (\outletPath -> view (_outletLabel outletPath) nw)
+                # filterMap identity -- FIXME: raise an error if outlet wasn't found
+        mapInletFlow (inletIdx /\ d) =
+            case inletsLabels !! inletIdx of
+                Just label -> (Just label /\ d)
+                _ -> Nothing /\ d
+        mapOutletFlow (maybeOutletLabel /\ d) =
+            case maybeOutletLabel of
+                Just label -> (0 /\ d)
+                 -- FIXME: send actual id, change OutletFlow to (Maybe Int /\ d)
+                _ -> 0 /\ d
+        labeledInletsFlow = mapInletFlow <$> processFlow
+        OutletsByLabelFlow labeledOutletsFlow =
+            processF $ InletsByLabelFlow labeledInletsFlow
+    in pure $ OutletsFlow $ mapOutletFlow <$> labeledOutletsFlow
 buildOutletsFlow (ByPath processF) processFlow inlets outlets nw =
     pure $ OutletsFlow processFlow
 
