@@ -27,6 +27,7 @@ data OutletsFlow d = OutletsFlow (Flow (Int /\ d))
 
 data ProcessF d
     = Withhold
+    | PassThrough
     | ByIndex (InletsByIndexFlow d -> OutletsByIndexFlow d)
     | ByLabel (InletsByLabelFlow d -> OutletsByLabelFlow d)
     | ByPath (InletsByPathFlow d -> OutletsByPathFlow d)

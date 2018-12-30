@@ -48,7 +48,7 @@ import Rpd.Optics
 import Rpd.Process
 import Rpd.Network
 import Rpd.Network (empty) as Network
-import Rpd.Util (type (/->), PushableFlow(..), Subscriber, Canceler, Flow)
+import Rpd.Util (type (/->), PushableFlow(..), Subscriber, Canceler, Flow, never)
 import Rpd.Util as RU
 
 
@@ -593,9 +593,16 @@ buildOutletsFlow
     -> Network d
     -> Rpd (OutletsFlow d)
 buildOutletsFlow Withhold processFlow _ _ _ =
-    pure (OutletsFlow processFlow)
-buildOutletsFlow processF processFlow inlets outlets nw =
-    pure (OutletsFlow processFlow)
+    liftEffect never >>= pure <<< OutletsFlow
+buildOutletsFlow PassThrough processFlow _ _ _ =
+    pure $ OutletsFlow processFlow
+buildOutletsFlow (ByIndex processF) processFlow inlets outlets nw =
+    case processF $ InletsByIndexFlow processFlow of
+        OutletsByIndexFlow outletsByIndex -> pure $ OutletsFlow outletsByIndex
+buildOutletsFlow (ByLabel processF) processFlow inlets outlets nw =
+    pure $ OutletsFlow processFlow
+buildOutletsFlow (ByPath processF) processFlow inlets outlets nw =
+    pure $ OutletsFlow processFlow
 
 
 -- TODO: rollback :: RpdError -> Network -> Network
