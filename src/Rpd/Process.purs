@@ -14,12 +14,17 @@ import Rpd.Util (Flow)
 import Rpd.Path
 
 
+-- TODO:
+
+-- data FlowMsg = Skip | Pass v | Decline v | Error x ...
+
+
 data InletsByIndexFlow d = InletsByIndexFlow (Flow (Int /\ d))
 data OutletsByIndexFlow d = OutletsByIndexFlow (Flow (Int /\ d))
 data InletsByLabelFlow d = InletsByLabelFlow (Flow (Maybe String /\ d))
-data OutletsByLabelFlow d = OutletsByLabelFlow (Flow (Maybe String /\ d))
+data OutletsByLabelFlow d = OutletsByLabelFlow (Flow (Maybe (String /\ d)))
 type InletsByPathFlow d = Flow (Maybe InletPath /\ d)
-type OutletsByPathFlow d = Flow (Maybe OutletPath /\ d)
+type OutletsByPathFlow d = Flow (Maybe (OutletPath /\ d))
 
 
 data InletsFlow d = InletsFlow (Flow (Int /\ d))

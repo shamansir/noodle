@@ -615,15 +615,16 @@ buildOutletsFlow (ByLabel processF) processFlow inlets outlets nw =
             case inletsLabels !! inletIdx of
                 Just label -> (Just label /\ d)
                 _ -> Nothing /\ d
-        mapOutletFlow (maybeOutletLabel /\ d) =
-            case maybeOutletLabel of
-                Just label -> (0 /\ d)
-                 -- FIXME: send actual id, change OutletFlow to (Maybe Int /\ d)
-                _ -> 0 /\ d
+        -- mapOutletFlow (maybeOutletLabel /\ d) =
+        --     (\label -> 0 /\ d) <$> maybeOutletLabel
+            -- case maybeOutletLabel of
+            --     Just label -> Just (0 /\ d)
+            --      -- FIXME: send actual id, change OutletsFlow to (Maybe Int /\ d)
+            --     _ -> Nothing
         labeledInletsFlow = mapInletFlow <$> processFlow
         OutletsByLabelFlow labeledOutletsFlow =
             processF $ InletsByLabelFlow labeledInletsFlow
-    in pure $ OutletsFlow $ mapOutletFlow <$> labeledOutletsFlow
+    in pure $ OutletsFlow $ ?wh <$> labeledOutletsFlow
 buildOutletsFlow (ByPath processF) processFlow inlets outlets nw =
     pure $ OutletsFlow processFlow
 
