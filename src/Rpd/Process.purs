@@ -16,7 +16,7 @@ import Rpd.Path
 
 -- TODO:
 
--- data FlowMsg = Skip | Pass v | Decline v | Error x ...
+-- data FlowMsg = Bang | Skip | Pass v | Decline v | Error x ...
 
 
 data InletsByIndexFlow d = InletsByIndexFlow (Flow (Int /\ d))
@@ -28,7 +28,7 @@ type OutletsByPathFlow d = Flow (Maybe (OutletPath /\ d))
 
 
 data InletsFlow d = InletsFlow (Flow (Int /\ d))
-data OutletsFlow d = OutletsFlow (Flow (Int /\ d))
+data OutletsFlow d = OutletsFlow (Flow (Maybe (Int /\ d)))
 
 
 data ProcessF d

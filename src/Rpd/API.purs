@@ -573,9 +573,13 @@ updateNodeProcessFlow nodePath nw = do
                             # (Set.toUnfoldable :: forall a. Set a -> Array a)
                             # map (\outletPath -> view (_outletPFlow outletPath) nw)
                             # filterMap identity -- FIXME: raise an error if outlet wasn't found
-                    pushToOutletFlow (outletIdx /\ val) =
-                        case outletFlows !! outletIdx of
-                            Just (PushableFlow pushF _) -> pushF val
+                    pushToOutletFlow :: Maybe (Int /\ d) -> Effect Unit
+                    pushToOutletFlow maybeData =
+                        case maybeData of
+                            Just (outletIdx /\ d) ->
+                                case outletFlows !! outletIdx of
+                                    Just (PushableFlow pushF _) -> pushF d
+                                    _ -> pure unit
                             _ -> pure unit
                 (OutletsFlow outletsFlow) <-
                     buildOutletsFlow processF processFlow inlets outlets nw
@@ -595,10 +599,11 @@ buildOutletsFlow
 buildOutletsFlow Withhold processFlow _ _ _ =
     liftEffect never >>= pure <<< OutletsFlow
 buildOutletsFlow PassThrough processFlow _ _ _ =
-    pure $ OutletsFlow processFlow
+    pure $ OutletsFlow $ Just <$> processFlow
 buildOutletsFlow (ByIndex processF) processFlow inlets outlets nw =
     case processF $ InletsByIndexFlow processFlow of
-        OutletsByIndexFlow outletsByIndex -> pure $ OutletsFlow outletsByIndex
+        OutletsByIndexFlow outletsByIndex ->
+            pure $ OutletsFlow $ Just <$> outletsByIndex
 buildOutletsFlow (ByLabel processF) processFlow inlets outlets nw =
     let
         (inletsLabels :: Array String) =
@@ -615,18 +620,16 @@ buildOutletsFlow (ByLabel processF) processFlow inlets outlets nw =
             case inletsLabels !! inletIdx of
                 Just label -> (Just label /\ d)
                 _ -> Nothing /\ d
-        -- mapOutletFlow (maybeOutletLabel /\ d) =
-        --     (\label -> 0 /\ d) <$> maybeOutletLabel
-            -- case maybeOutletLabel of
-            --     Just label -> Just (0 /\ d)
-            --      -- FIXME: send actual id, change OutletsFlow to (Maybe Int /\ d)
-            --     _ -> Nothing
+        mapOutletFlow maybeData =
+            maybeData
+                >>= \(label /\ d) -> outletLabels # Array.elemIndex label
+                <#> \idx -> idx /\ d
         labeledInletsFlow = mapInletFlow <$> processFlow
         OutletsByLabelFlow labeledOutletsFlow =
             processF $ InletsByLabelFlow labeledInletsFlow
-    in pure $ OutletsFlow $ ?wh <$> labeledOutletsFlow
+    in pure $ OutletsFlow $ mapOutletFlow <$> labeledOutletsFlow
 buildOutletsFlow (ByPath processF) processFlow inlets outlets nw =
-    pure $ OutletsFlow processFlow
+    pure $ OutletsFlow $ Just <$> processFlow
 
 
 -- TODO: rollback :: RpdError -> Network -> Network
