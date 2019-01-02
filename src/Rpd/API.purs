@@ -582,7 +582,7 @@ updateNodeProcessFlow nodePath nw = do
                                     _ -> pure unit
                             _ -> pure unit
                 (OutletsFlow outletsFlow) <-
-                    buildOutletsFlow processF processFlow inlets outlets nw
+                    buildOutletsFlow nodePath processF processFlow inlets outlets nw
                 canceler :: Canceler
                     <- liftEffect $ E.subscribe outletsFlow pushToOutletFlow
                 pure $ nw # setJust (_nodeCanceler nodePath) canceler
@@ -590,21 +590,22 @@ updateNodeProcessFlow nodePath nw = do
 
 buildOutletsFlow
     :: forall d
-     . ProcessF d
+     . NodePath
+    -> ProcessF d
     -> Flow (Int /\ d)
     -> Set InletPath
     -> Set OutletPath
     -> Network d
     -> Rpd (OutletsFlow d)
-buildOutletsFlow Withhold processFlow _ _ _ =
+buildOutletsFlow _ Withhold processFlow _ _ _ =
     liftEffect never >>= pure <<< OutletsFlow
-buildOutletsFlow PassThrough processFlow _ _ _ =
+buildOutletsFlow _ PassThrough processFlow _ _ _ =
     pure $ OutletsFlow $ Just <$> processFlow
-buildOutletsFlow (ByIndex processF) processFlow inlets outlets nw =
+buildOutletsFlow _ (ByIndex processF) processFlow inlets outlets _ =
     case processF $ InletsByIndexFlow processFlow of
         OutletsByIndexFlow outletsByIndex ->
             pure $ OutletsFlow $ Just <$> outletsByIndex
-buildOutletsFlow (ByLabel processF) processFlow inlets outlets nw =
+buildOutletsFlow _ (ByLabel processF) processFlow inlets outlets nw =
     let
         (inletsLabels :: Array String) =
             inlets
@@ -628,8 +629,17 @@ buildOutletsFlow (ByLabel processF) processFlow inlets outlets nw =
         OutletsByLabelFlow labeledOutletsFlow =
             processF $ InletsByLabelFlow labeledInletsFlow
     in pure $ OutletsFlow $ mapOutletFlow <$> labeledOutletsFlow
-buildOutletsFlow (ByPath processF) processFlow inlets outlets nw =
-    pure $ OutletsFlow $ Just <$> processFlow
+buildOutletsFlow nodePath (ByPath processF) processFlow inlets outlets _ =
+    let
+        mapInletFlow (inletIdx /\ d) =
+            (Just (InletPath nodePath inletIdx) /\ d)
+        inletsWithPathFlow = mapInletFlow <$> processFlow
+        outletsWithPathFlow = processF inletsWithPathFlow
+        mapOutletFlow maybeData =
+            maybeData
+                <#> \((OutletPath _ outletIdx) /\ d) ->
+                    outletIdx /\ d
+    in pure $ OutletsFlow $ mapOutletFlow <$> outletsWithPathFlow
 
 
 -- TODO: rollback :: RpdError -> Network -> Network

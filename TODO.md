@@ -39,6 +39,8 @@ Actually some data flow could duplicate each other.
 
 Make Network normalized after creation (not a tree, but a collection of Patches, Nodes, Inlets, Outlets, Links arrays, may be paths may still stay as keys, may be paths or subjects could contain both global indices and nested paths).
 
+Think on special `d` data format, like `Bang | Skip | Pass d | Decline d | Adapt (d -> d) | Error x | ...`. It could be different for node processing functions and inlet/outlet flows, or can be not. In general, it would be cool if data status would be encoded in the flow (see `Process.purs`). On the other hand, it will require API user to specify her own error type... if we don't use API errors for that. If we do use API errors, then if user data type will contain custom errors by itself, user will be required to still handle this kind of errors — starts to be complicated.
+
 Secondary:
 ==========
 
