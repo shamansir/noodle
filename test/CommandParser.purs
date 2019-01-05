@@ -19,6 +19,7 @@ import Rpd (init, run') as R
 import Rpd.API (Rpd) as R
 import Rpd.Def as R
 import Rpd.Path as R
+import Rpd.Process as R
 import Rpd.Network (Network) as R
 import Rpd.Command (Command, StringCommand)
 import Rpd.Command as Cmd
@@ -54,7 +55,7 @@ fooDef =
     { name : "foo"
     , inletDefs : R.noDefs
     , outletDefs : R.noDefs
-    , process : Nothing
+    , process : R.Withhold
     }
 
 

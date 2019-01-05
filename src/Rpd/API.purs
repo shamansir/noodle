@@ -28,8 +28,9 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe, isJust)
 import Data.Set (Set)
 import Data.Set as Set
-import Data.Traversable (sequence, traverse, traverse_)
-import Data.Tuple (uncurry)
+import Data.Traversable (for, sequence, traverse, traverse_)
+import Data.TraversableWithIndex (forWithIndex)
+import Data.Tuple (uncurry, fst)
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Control.MonadZero (empty)
@@ -38,7 +39,6 @@ import Control.Monad.Except.Trans (ExceptT, except)
 import Effect (Effect, foreachE)
 import Effect.Class (liftEffect)
 
-import FRP.Event (filterMap)
 import FRP.Event as E
 
 
@@ -572,7 +572,7 @@ updateNodeProcessFlow nodePath nw = do
                         outlets
                             # (Set.toUnfoldable :: forall a. Set a -> Array a)
                             # map (\outletPath -> view (_outletPFlow outletPath) nw)
-                            # filterMap identity -- FIXME: raise an error if outlet wasn't found
+                            # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
                     pushToOutletFlow :: Maybe (Int /\ d) -> Effect Unit
                     pushToOutletFlow maybeData =
                         case maybeData of
@@ -596,7 +596,7 @@ buildOutletsFlow
     -> Set InletPath
     -> Set OutletPath
     -> Network d
-    -> Rpd (OutletsFlow d)
+    -> Rpd (OutletsFlow d) -- FIXME: for now, we only need Rpd to handle the
 buildOutletsFlow _ Withhold processFlow _ _ _ =
     liftEffect never >>= pure <<< OutletsFlow
 buildOutletsFlow _ PassThrough processFlow _ _ _ =
@@ -611,12 +611,12 @@ buildOutletsFlow _ (ByLabel processF) processFlow inlets outlets nw =
             inlets
                 # (Set.toUnfoldable :: forall a. Set a -> Array a)
                 # map (\inletPath -> view (_inletLabel inletPath) nw)
-                # filterMap identity -- FIXME: raise an error if outlet wasn't found
+                # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
         (outletLabels :: Array String) =
             outlets
                 # (Set.toUnfoldable :: forall a. Set a -> Array a)
                 # map (\outletPath -> view (_outletLabel outletPath) nw)
-                # filterMap identity -- FIXME: raise an error if outlet wasn't found
+                # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
         mapInletFlow (inletIdx /\ d) =
             case inletsLabels !! inletIdx of
                 Just label -> (Just label /\ d)
@@ -632,7 +632,7 @@ buildOutletsFlow _ (ByLabel processF) processFlow inlets outlets nw =
 buildOutletsFlow nodePath (ByPath processF) processFlow inlets outlets _ =
     let
         mapInletFlow (inletIdx /\ d) =
-            (Just (InletPath nodePath inletIdx) /\ d)
+            Just (InletPath nodePath inletIdx) /\ d
         inletsWithPathFlow = mapInletFlow <$> processFlow
         outletsWithPathFlow = processF inletsWithPathFlow
         mapOutletFlow maybeData =
@@ -640,7 +640,22 @@ buildOutletsFlow nodePath (ByPath processF) processFlow inlets outlets _ =
                 <#> \((OutletPath _ outletIdx) /\ d) ->
                     outletIdx /\ d
     in pure $ OutletsFlow $ mapOutletFlow <$> outletsWithPathFlow
+buildOutletsFlow _ (FoldedToArray processF) processFlow _ _ _ = do
+    { event, push } <- liftEffect E.create
+    let
+        foldingF (curInletIdx /\ curD) inletVals =
+            Array.updateAt curInletIdx curD inletVals
+                # fromMaybe inletVals
+        inletsFlow = E.fold foldingF processFlow []
+    cancel <- liftEffect $ E.subscribe inletsFlow $ \inletsVals ->
+        let (OutletsData outletVals) = processF $ InletsData inletsVals
+        in forWithIndex outletVals \idx val ->
+            push $ Just $ idx /\ val
+    pure $ OutletsFlow event
 
+
+joinCancelers :: Canceler -> Canceler -> Canceler
+joinCancelers = (<>)
 
 -- TODO: rollback :: RpdError -> Network -> Network
 

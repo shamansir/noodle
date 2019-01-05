@@ -12,6 +12,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Rpd.Def as R
+import Rpd.Process as R
 import Rpd.Toolkit as T
 
 
@@ -56,7 +57,7 @@ numNode =
     , outletDefs
         : numOutlet
         : List.Nil
-    , process : Nothing -- TODO
+    , process : R.Withhold -- TODO
     }
 
 
@@ -68,7 +69,7 @@ waveNode =
     , outletDefs
         : waveOutlet
         : List.Nil
-    , process : Nothing -- TODO
+    , process : R.Withhold -- TODO
     }
 
 
@@ -82,7 +83,7 @@ oscNode =
     , outletDefs
         : soundOutlet
         : List.Nil
-    , process : Nothing -- TODO
+    , process : R.Withhold -- TODO
     }
 
 
@@ -94,7 +95,7 @@ plotNode =
         : List.Nil
     , outletDefs
         : List.Nil
-    , process : Nothing -- TODO
+    , process : R.Withhold -- TODO
     }
 
 
@@ -106,7 +107,7 @@ playNode =
         : List.Nil
     , outletDefs
         : List.Nil
-    , process : Nothing -- TODO
+    , process : R.Withhold -- TODO
     }
 
 

@@ -25,7 +25,8 @@ import Rpd.API ((</>))
 import Rpd.API as R
 import Rpd.Path
 import Rpd (init) as R
-import Rpd.Def (ProcessF(..), NodeDef) as R
+import Rpd.Def (NodeDef) as R
+import Rpd.Process (ProcessF(..)) as R
 import Rpd.Network (Network) as R
 import Rpd.Util (flow, Canceler) as R
 -- import Rpd.Util (type (/->))
