@@ -51,4 +51,4 @@ data ProcessF d
     | ByIndex (InletsByIndexFlow d -> OutletsByIndexFlow d)
     | ByLabel (InletsByLabelFlow d -> OutletsByLabelFlow d)
     | ByPath (InletsByPathFlow d -> OutletsByPathFlow d)
-    | FoldedToArray (InletsData d -> OutletsData d)
+    | FoldedToArray (InletsData d -> OutletsData d) -- TODO: generalize to FoldableWithIndex

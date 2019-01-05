@@ -581,11 +581,16 @@ updateNodeProcessFlow nodePath nw = do
                                     Just (PushableFlow pushF _) -> pushF d
                                     _ -> pure unit
                             _ -> pure unit
-                (OutletsFlow outletsFlow) <-
+                OutletsFlow outletsFlow /\ maybeCancelBuild <-
                     buildOutletsFlow nodePath processF processFlow inlets outlets nw
                 canceler :: Canceler
                     <- liftEffect $ E.subscribe outletsFlow pushToOutletFlow
-                pure $ nw # setJust (_nodeCanceler nodePath) canceler
+                let
+                    canceler' =
+                        case maybeCancelBuild of
+                            Just buildCanceler -> canceler `joinCancelers` buildCanceler
+                            Nothing -> canceler
+                pure $ nw # setJust (_nodeCanceler nodePath) canceler'
 
 
 buildOutletsFlow
@@ -596,15 +601,19 @@ buildOutletsFlow
     -> Set InletPath
     -> Set OutletPath
     -> Network d
-    -> Rpd (OutletsFlow d) -- FIXME: for now, we only need Rpd to handle the
+    -> Rpd (OutletsFlow d /\ Maybe Canceler) -- FIXME: for now, we only need Rpd to handle the
 buildOutletsFlow _ Withhold processFlow _ _ _ =
-    liftEffect never >>= pure <<< OutletsFlow
+    -- liftEffect never >>= pure <<< OutletsFlow
+    liftEffect never >>= \flow ->
+        pure $ OutletsFlow flow /\ Nothing
 buildOutletsFlow _ PassThrough processFlow _ _ _ =
-    pure $ OutletsFlow $ Just <$> processFlow
+    pure $ (OutletsFlow $ Just <$> processFlow)
+           /\ Nothing
 buildOutletsFlow _ (ByIndex processF) processFlow inlets outlets _ =
     case processF $ InletsByIndexFlow processFlow of
         OutletsByIndexFlow outletsByIndex ->
-            pure $ OutletsFlow $ Just <$> outletsByIndex
+            pure $ (OutletsFlow $ Just <$> outletsByIndex)
+                   /\ Nothing
 buildOutletsFlow _ (ByLabel processF) processFlow inlets outlets nw =
     let
         (inletsLabels :: Array String) =
@@ -628,7 +637,8 @@ buildOutletsFlow _ (ByLabel processF) processFlow inlets outlets nw =
         labeledInletsFlow = mapInletFlow <$> processFlow
         OutletsByLabelFlow labeledOutletsFlow =
             processF $ InletsByLabelFlow labeledInletsFlow
-    in pure $ OutletsFlow $ mapOutletFlow <$> labeledOutletsFlow
+    in pure $ (OutletsFlow $ mapOutletFlow <$> labeledOutletsFlow)
+              /\ Nothing
 buildOutletsFlow nodePath (ByPath processF) processFlow inlets outlets _ =
     let
         mapInletFlow (inletIdx /\ d) =
@@ -639,8 +649,10 @@ buildOutletsFlow nodePath (ByPath processF) processFlow inlets outlets _ =
             maybeData
                 <#> \((OutletPath _ outletIdx) /\ d) ->
                     outletIdx /\ d
-    in pure $ OutletsFlow $ mapOutletFlow <$> outletsWithPathFlow
+    in pure $ (OutletsFlow $ mapOutletFlow <$> outletsWithPathFlow)
+              /\ Nothing
 buildOutletsFlow _ (FoldedToArray processF) processFlow _ _ _ = do
+    -- TODO: generalize to FoldableWithIndex
     { event, push } <- liftEffect E.create
     let
         foldingF (curInletIdx /\ curD) inletVals =
@@ -652,6 +664,7 @@ buildOutletsFlow _ (FoldedToArray processF) processFlow _ _ _ = do
         in forWithIndex outletVals \idx val ->
             push $ Just $ idx /\ val
     pure $ OutletsFlow event
+           /\ Just cancel
 
 
 joinCancelers :: Canceler -> Canceler -> Canceler
