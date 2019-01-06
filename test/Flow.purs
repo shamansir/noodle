@@ -6,6 +6,7 @@ import Prelude
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
+import Data.Tuple as Tuple
 import Data.List ((:))
 import Data.List as List
 import Data.Map as Map
@@ -16,6 +17,7 @@ import Data.Tuple.Nested ((/\))
 import Data.Lens ((^.))
 import Data.Lens.At (at)
 
+import FRP.Event (fold) as Event
 import FRP.Event.Time (interval)
 
 import Test.Spec (Spec, describe, it, pending, pending')
@@ -26,7 +28,7 @@ import Rpd.API as R
 import Rpd.Path
 import Rpd (init) as R
 import Rpd.Def (NodeDef) as R
-import Rpd.Process (ProcessF(..)) as R
+import Rpd.Process as R
 import Rpd.Network (Network) as R
 import Rpd.Util (flow, Canceler) as R
 -- import Rpd.Util (type (/->))
@@ -358,10 +360,11 @@ nodes = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode' (patchId 0) (sumCursesToApplesNode (R.IndexBased process))
-      process [ Curse a, Curse b ] =
-        [ Apple (a + b) ]
-      process _ = []
+          </> R.addNode' (patchId 0)
+                (sumCursesToApplesNode (R.FoldedToArray process))
+      process (R.InletsData [ Curse a, Curse b ]) =
+        R.OutletsData [ Apple (a + b) ]
+      process _ = R.OutletsData []
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter
@@ -387,15 +390,18 @@ nodes = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode' (patchId 0) (sumCursesToApplesNode (R.LabelBased process))
-      processHelper (Curse a) (Curse b) =
-        Map.insert "apples" (Apple (a + b)) Map.empty
-      processHelper _ _ =
-        Map.empty
-      process m =
-        fromMaybe
-          Map.empty
-          $ processHelper <$> (m^.at "curse1") <*> (m^.at "curse2")
+          </> R.addNode' (patchId 0) (sumCursesToApplesNode (R.ByLabel process))
+      -- processHelper (Curse a) (Curse b) =
+      --   Map.insert "apples" (Apple (a + b)) Map.empty
+      -- processHelper _ _ =
+      --   Map.empty
+      foldingF = ?wh
+      process (R.InletsByLabelFlow inletsFlow) =
+        R.OutletsByLabelFlow $ Tuple.fst
+          <$> Event.fold foldingF inletsFlow (Nothing /\ Map.empty)
+        -- fromMaybe
+        --   Map.empty
+        --   $ processHelper <$> (m^.at "curse1") <*> (m^.at "curse2")
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter

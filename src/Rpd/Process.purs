@@ -5,13 +5,14 @@ module Rpd.Process
     , InletsByLabelFlow(..), OutletsByLabelFlow(..)
     , InletsByPathFlow(..), OutletsByPathFlow(..)
     , InletsData(..), OutletsData(..)
+    , InletsMapData(..), OutletsMapData(..)
     )
     where
 
 import Data.Maybe
 import Data.Tuple.Nested (type (/\))
 
-import Rpd.Util (Flow)
+import Rpd.Util (Flow, type (/->))
 import Rpd.Path
 
 
@@ -45,10 +46,16 @@ data InletsFlow d = InletsFlow (Flow (Int /\ d))
 data OutletsFlow d = OutletsFlow (Flow (Maybe (Int /\ d)))
 
 
+data InletsMapData key d = InletsMapData (key /-> d)
+data OutletsMapData key d = OutletsMapData (key /-> d)
+
+
 data ProcessF d
     = Withhold
     | PassThrough
     | ByIndex (InletsByIndexFlow d -> OutletsByIndexFlow d)
     | ByLabel (InletsByLabelFlow d -> OutletsByLabelFlow d)
     | ByPath (InletsByPathFlow d -> OutletsByPathFlow d)
-    | FoldedToArray (InletsData d -> OutletsData d) -- TODO: generalize to FoldableWithIndex
+     -- TODO: generalize to Foldable?
+    | FoldedToArray (InletsData d -> OutletsData d)
+    | FoldedToMap (forall key. InletsMapData key d -> OutletsMapData key d)

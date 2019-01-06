@@ -616,16 +616,8 @@ buildOutletsFlow _ (ByIndex processF) processFlow inlets outlets _ =
                    /\ Nothing
 buildOutletsFlow _ (ByLabel processF) processFlow inlets outlets nw =
     let
-        (inletsLabels :: Array String) =
-            inlets
-                # (Set.toUnfoldable :: forall a. Set a -> Array a)
-                # map (\inletPath -> view (_inletLabel inletPath) nw)
-                # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
-        (outletLabels :: Array String) =
-            outlets
-                # (Set.toUnfoldable :: forall a. Set a -> Array a)
-                # map (\outletPath -> view (_outletLabel outletPath) nw)
-                # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
+        (inletsLabels :: Array String) = extractInletLabels inlets nw
+        (outletLabels :: Array String) = extractOutletLabels outlets nw
         mapInletFlow (inletIdx /\ d) =
             case inletsLabels !! inletIdx of
                 Just label -> (Just label /\ d)
@@ -652,7 +644,7 @@ buildOutletsFlow nodePath (ByPath processF) processFlow inlets outlets _ =
     in pure $ (OutletsFlow $ mapOutletFlow <$> outletsWithPathFlow)
               /\ Nothing
 buildOutletsFlow _ (FoldedToArray processF) processFlow _ _ _ = do
-    -- TODO: generalize to FoldableWithIndex
+    -- TODO: generalize to Foldable
     { event, push } <- liftEffect E.create
     let
         foldingF (curInletIdx /\ curD) inletVals =
@@ -665,10 +657,50 @@ buildOutletsFlow _ (FoldedToArray processF) processFlow _ _ _ = do
             push $ Just $ idx /\ val
     pure $ OutletsFlow event
            /\ Just cancel
+buildOutletsFlow _ (FoldedToMap processF) processFlow _ _ _ =
+    pure $ (OutletsFlow $ Just <$> processFlow)
+           /\ Nothing
+
+    -- TODO: may be, request these functions from user:
+    --   for given inlet (path?), get its map key
+    --   for given outlet (path?), get its map key
+    --   for given key, get the corresponding inlet path
+    --   for given key, get the corresponding outlet path
+
+    -- -- TODO: generalize to Foldable
+    -- { event, push } <- liftEffect E.create
+    -- let
+    --     foldingF (curInletIdx /\ curD) inletVals =
+    --         Map.updateAt curInletIdx curD inletVals
+    --             # fromMaybe inletVals
+    --     inletsFlow = E.fold foldingF processFlow Map.empty
+    -- cancel <- liftEffect $ E.subscribe inletsFlow $ \inletsVals ->
+    --     let (OutletsMapData outletVals) = processF $ InletsMapData inletsVals
+    --     in forWithIndex outletVals \idx val ->
+    --         push $ Just $ idx /\ val
+    -- pure $ OutletsFlow event
+    --        /\ Just cancel
 
 
 joinCancelers :: Canceler -> Canceler -> Canceler
 joinCancelers = (<>)
+
+
+extractInletLabels :: forall d. Set InletPath → Network d → Array String
+extractInletLabels inlets nw =
+    inlets
+        # (Set.toUnfoldable :: forall a. Set a -> Array a)
+        # map (\inletPath -> view (_inletLabel inletPath) nw)
+        # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
+
+
+extractOutletLabels :: forall d. Set OutletPath → Network d → Array String
+extractOutletLabels outlets nw =
+    outlets
+        # (Set.toUnfoldable :: forall a. Set a -> Array a)
+        # map (\outletPath -> view (_outletLabel outletPath) nw)
+        # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
+
 
 -- TODO: rollback :: RpdError -> Network -> Network
 
