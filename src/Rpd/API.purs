@@ -616,10 +616,10 @@ buildOutletsFlow _ (ByIndex processF) processFlow inlets outlets _ =
                    /\ Nothing
 buildOutletsFlow _ (ByLabel processF) processFlow inlets outlets nw =
     let
-        (inletsLabels :: Array String) = extractInletLabels inlets nw
-        (outletLabels :: Array String) = extractOutletLabels outlets nw
+        inletLabels = extractInletLabels inlets nw
+        outletLabels = extractOutletLabels outlets nw
         mapInletFlow (inletIdx /\ d) =
-            case inletsLabels !! inletIdx of
+            case inletLabels !! inletIdx of
                 Just label -> (Just label /\ d)
                 _ -> Nothing /\ d
         mapOutletFlow maybeData =
@@ -643,7 +643,7 @@ buildOutletsFlow nodePath (ByPath processF) processFlow inlets outlets _ =
                     outletIdx /\ d
     in pure $ (OutletsFlow $ mapOutletFlow <$> outletsWithPathFlow)
               /\ Nothing
-buildOutletsFlow _ (FoldedToArray processF) processFlow _ _ _ = do
+buildOutletsFlow _ (FoldedByIndex processF) processFlow _ _ _ = do
     -- TODO: generalize to Foldable
     { event, push } <- liftEffect E.create
     let
@@ -657,29 +657,34 @@ buildOutletsFlow _ (FoldedToArray processF) processFlow _ _ _ = do
             push $ Just $ idx /\ val
     pure $ OutletsFlow event
            /\ Just cancel
-buildOutletsFlow _ (FoldedToMap processF) processFlow _ _ _ =
-    pure $ (OutletsFlow $ Just <$> processFlow)
-           /\ Nothing
+buildOutletsFlow _ (FoldedByLabel processF) processFlow inlets outlets nw = do
+    -- TODO: generalize to Foldable
+    { event, push } <- liftEffect E.create
+    let
+        inletLabels = extractInletLabels inlets nw
+        outletLabels = extractOutletLabels outlets nw
+        foldingF (curInletIdx /\ curD) inletVals =
+            case inletLabels !! curInletIdx of
+                Just label -> Map.insert label curD inletVals
+                _ -> inletVals
+        inletsFlow = E.fold foldingF processFlow Map.empty
+        adaptOutletVals :: (String /-> d) -> Array (Maybe (Int /\ d))
+        adaptOutletVals ouletVals =
+            Map.toUnfoldable ouletVals
+                <#> \(label /\ d) ->
+                    outletLabels # Array.elemIndex label
+                <#> flip (/\) d
+    cancel <- liftEffect $ E.subscribe inletsFlow $ \inletsVals ->
+        let (OutletsMapData outletVals) = processF $ InletsMapData inletsVals
+        in traverse push $ adaptOutletVals outletVals
+    pure $ OutletsFlow event
+           /\ Just cancel
 
     -- TODO: may be, request these functions from user:
     --   for given inlet (path?), get its map key
     --   for given outlet (path?), get its map key
     --   for given key, get the corresponding inlet path
     --   for given key, get the corresponding outlet path
-
-    -- -- TODO: generalize to Foldable
-    -- { event, push } <- liftEffect E.create
-    -- let
-    --     foldingF (curInletIdx /\ curD) inletVals =
-    --         Map.updateAt curInletIdx curD inletVals
-    --             # fromMaybe inletVals
-    --     inletsFlow = E.fold foldingF processFlow Map.empty
-    -- cancel <- liftEffect $ E.subscribe inletsFlow $ \inletsVals ->
-    --     let (OutletsMapData outletVals) = processF $ InletsMapData inletsVals
-    --     in forWithIndex outletVals \idx val ->
-    --         push $ Just $ idx /\ val
-    -- pure $ OutletsFlow event
-    --        /\ Just cancel
 
 
 joinCancelers :: Canceler -> Canceler -> Canceler

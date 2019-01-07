@@ -57,5 +57,5 @@ data ProcessF d
     | ByLabel (InletsByLabelFlow d -> OutletsByLabelFlow d)
     | ByPath (InletsByPathFlow d -> OutletsByPathFlow d)
      -- TODO: generalize to Foldable?
-    | FoldedToArray (InletsData d -> OutletsData d)
-    | FoldedToMap (forall key. InletsMapData key d -> OutletsMapData key d)
+    | FoldedByIndex (InletsData d -> OutletsData d)
+    | FoldedByLabel (InletsMapData String d -> OutletsMapData String d)
