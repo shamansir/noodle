@@ -2,6 +2,7 @@ module Rpd.Path
     ( PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath, linkId
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
+    , getNodeId, getInletId, getOutletId
     , Path(..)
     )
     where
@@ -9,7 +10,23 @@ module Rpd.Path
 
 import Prelude
 
+
 -- TODO: either Path typeclass or... Comonad? (paths look like breadcrumbs)
+
+-- FIXME: consider moving to random hashes, since adding/removing the things
+--        based on IDs breaks, for example, processing (new IDs are assigned
+--        following the current number of nodes/inlets/outlets, which is wrong)
+
+-- import Effect (Effect, forE)
+-- import Effect.Random (randomInt)
+
+
+-- uniqueId :: Int -> Effect String
+-- uniqueId len =
+--     forE 0 len (\_ -> do
+--         nextChar <- randomInt 0 96
+--         pure unit)
+
 
 
 data PatchId = PatchId Int
@@ -48,6 +65,17 @@ outletPath pId nId iId = OutletPath (NodePath (PatchId pId) nId) iId
 linkId :: Int -> LinkId
 linkId = LinkId
 
+
+getNodeId :: NodePath -> Int
+getNodeId (NodePath _ id) = id
+
+
+getInletId :: InletPath -> Int
+getInletId (InletPath _ id) = id
+
+
+getOutletId :: OutletPath -> Int
+getOutletId (OutletPath _ id) = id
 
 
 unpackNodePath :: NodePath -> Array Int

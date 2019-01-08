@@ -6,6 +6,7 @@ import Prelude
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
+import Data.Tuple as Tuple
 import Data.List ((:))
 import Data.List as List
 import Data.Map as Map
@@ -16,6 +17,7 @@ import Data.Tuple.Nested ((/\))
 import Data.Lens ((^.))
 import Data.Lens.At (at)
 
+import FRP.Event (fold) as Event
 import FRP.Event.Time (interval)
 
 import Test.Spec (Spec, describe, it, pending, pending')
@@ -25,7 +27,8 @@ import Rpd.API ((</>))
 import Rpd.API as R
 import Rpd.Path
 import Rpd (init) as R
-import Rpd.Def (ProcessF(..), NodeDef) as R
+import Rpd.Def (NodeDef) as R
+import Rpd.Process as R
 import Rpd.Network (Network) as R
 import Rpd.Util (flow, Canceler) as R
 -- import Rpd.Util (type (/->))
@@ -69,7 +72,7 @@ type MyRpd = R.Rpd (R.Network Delivery)
 --   { name : "Nothing"
 --   , inletDefs : List.Nil
 --   , outletDefs : List.Nil
---   , process : R.FlowThrough
+--   , process : Nothing
 --   }
 
 
@@ -357,10 +360,12 @@ nodes = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode' (patchId 0) (sumCursesToApplesNode (R.IndexBased process))
-      process [ Curse a, Curse b ] =
-        [ Apple (a + b) ]
-      process _ = []
+          </> R.addNode' (patchId 0)
+                (sumCursesToApplesNode (R.FoldedByIndex process))
+      process (R.InletsData [ Just (Curse a), Just (Curse b) ]) =
+        R.OutletsData [ Apple (a + b) ]
+      -- process _ = R.OutletsData [ Apple 6, Apple 12 ]
+      process _ = R.OutletsData [ Apple 9 ]
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter
@@ -386,14 +391,14 @@ nodes = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode' (patchId 0) (sumCursesToApplesNode (R.LabelBased process))
+          </> R.addNode' (patchId 0) (sumCursesToApplesNode (R.FoldedByLabel process))
       processHelper (Curse a) (Curse b) =
         Map.insert "apples" (Apple (a + b)) Map.empty
       processHelper _ _ =
         Map.empty
-      process m =
-        fromMaybe
-          Map.empty
+      process (R.InletsMapData m) =
+        R.OutletsMapData
+          $ fromMaybe Map.empty
           $ processHelper <$> (m^.at "curse1") <*> (m^.at "curse2")
 
     rpd # withRpd \nw -> do
@@ -413,6 +418,41 @@ nodes = do
         pure unit
 
     pure unit
+
+
+  it "returning multiple values from processing function actually sends these values to the outlet (array way)" $ do
+    let
+      rpd :: MyRpd
+      rpd =
+        R.init "network"
+          </> R.addPatch "patch"
+          </> R.addNode' (patchId 0)
+                (sumCursesToApplesNode (R.FoldedByIndex process))
+      process (R.InletsData [ Just (Curse a), Just (Curse b) ]) =
+        R.OutletsData [ Apple (a + b), Apple (a - b) ]
+      -- process _ = R.OutletsData [ Apple 6, Apple 12 ]
+      process _ = R.OutletsData [ ]
+
+    rpd # withRpd \nw -> do
+        collectedData <- CollectData.channelsAfter
+          (Milliseconds 100.0)
+          nw
+          $ do
+            _ <- nw  #  R.sendToInlet (inletPath 0 0 0) (Curse 4)
+                    </> R.sendToInlet (inletPath 0 0 1) (Curse 3)
+            pure [ ]
+        collectedData `shouldContain`
+          (InletData (inletPath 0 0 0) $ Curse 4)
+        collectedData `shouldContain`
+          (InletData (inletPath 0 0 1) $ Curse 3)
+        collectedData `shouldContain`
+          (OutletData (outletPath 0 0 0) $ Apple 7)
+        pure unit
+
+    pure unit
+
+
+  pending "returning multiple values from processing function actually sends these values to the outlet (label way)"
 
 
 {- ======================================= -}
@@ -535,6 +575,10 @@ links = do
     --   describe "with predefined function" do
     --     pure unit
     --   describe "with function defined after creation" do
+    --     pure unit
+    --   describe "after adding an inlet" do
+    --     pure unit
+    --   describe "after removing an inlet" do
     --     pure unit
     --   describe "after adding an outlet" do
     --     pure unit

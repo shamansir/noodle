@@ -4,17 +4,17 @@ module Rpd.Util
     , type (/->)
     , Subscriber, Canceler
     , Flow, PushF, PushableFlow(..)
-    , flow
+    , flow, never
     ) where
 
-import Prelude (class Ord, map, (>>>), Unit, identity)
+import Prelude
 
 import Effect (Effect)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Bifunctor (lmap, bimap)
 
-import FRP.Event (Event)
+import FRP.Event (Event, create)
 
 infixr 6 type Map as /->
 
@@ -50,8 +50,15 @@ type Subscriber =
 
 type Flow d = Event d
 type PushF d = (d -> Effect Unit)
-data PushableFlow d = PushableFlow (PushF d) (Event d)
+data PushableFlow d = PushableFlow (PushF d) (Flow d)
 
 
 flow :: forall d. Event d -> Flow d
 flow = identity
+
+
+never :: forall d. Effect (Flow d)
+never =
+    create >>=
+        \{ event } -> pure event
+

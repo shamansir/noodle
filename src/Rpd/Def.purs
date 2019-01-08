@@ -2,7 +2,6 @@ module Rpd.Def
     -- TODO: remove `-Def` from inner names
     ( noDefs
     , PatchDef(..), NodeDef(..), InletDef(..), OutletDef(..), ChannelDef(..)
-    , ProcessF(..)
     , comparePDefs, compareNDefs, compareIDefs, compareODefs
     )
     where
@@ -17,6 +16,8 @@ import Data.Foldable (and)
 import Data.Tuple.Nested (type (/\))
 
 import Rpd.Util (type (/->), Flow, PushF)
+import Rpd.Path (InletPath, OutletPath)
+import Rpd.Process (ProcessF(..))
 
 -- TODO: may be find better ways to process these things in future
 --       I'd like to have something similar to JS-world
@@ -43,15 +44,23 @@ import Rpd.Util (type (/->), Flow, PushF)
 --     | ByPath (Flow (InletPath /\ d) -> PushF (OutletPath /\ d) -> Effect Unit)
     -- | Full (Flow (InletPath /\ InletDef d /\ d) -> PushF (OutletPath /\ d) -> Effect Unit)
 
-type ProcessF d = Flow (String /\ d) -> PushF (String /\ d) -> Effect Unit
-
     -- TODO: Effectful ProcessF
     -- TODO: Other types
 
 
+-- TODO: some "data flow" typeclass which provides functions like:
+-- `receive inletIndex -> Rpd/Effect d`,
+-- `send outletIndex data -> Rpd/Effect Unit`,
+-- `receive' inletLabel -> Rpd/Effect d`,
+-- `send' outletLabel data -> Rpd/Effect Unit`,
+-- and maybe... the `Rpd d`, `Network (Node d)` or the `Node d` should implement it,
+-- for the `Node` case — it can use `_nodeInlet'`/`_nodeOutlet'` lensed and so
+-- search only for the inlets inside, by label
+
 -- data DataSource d
 --     = UserSource (Flow d)
 --     | OutletSource OutletPath (Flow d)
+
 
 noDefs :: forall d. List d
 noDefs = Nil
@@ -103,7 +112,6 @@ compareNDefs lNdef rNdef =
     (lNdef.name == rNdef.name)
       && (and $ compareIDefs <$> lNdef.inletDefs <*> rNdef.inletDefs)
       && (and $ compareODefs <$> lNdef.outletDefs <*> rNdef.outletDefs)
-      && (lNdef.process == rNdef.process)
 
 
 compareIDefs :: forall d. Eq d => InletDef d -> InletDef d -> Boolean
@@ -114,17 +122,3 @@ compareIDefs lIdef rIdef =
 
 compareODefs :: forall d. OutletDef d -> OutletDef d -> Boolean
 compareODefs lOdef rOdef = lOdef.label == rOdef.label
-
-
-instance eqProcessF :: Eq (ProcessF d) where
-    eq FlowThrough FlowThrough = true
-    eq (IndexBased _) (IndexBased _) = true
-    eq (LabelBased _) (LabelBased _) = true
-    eq _ _ = false
-
-
-instance showProcessF :: Show (ProcessF d) where
-    -- show (RpdError text) = "(RpdError)" <> text
-    show FlowThrough = "FlowThrough"
-    show (IndexBased _) = "IndexBased"
-    show (LabelBased _) = "LabelBased"
