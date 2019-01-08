@@ -38,7 +38,7 @@ type InletsByPathFlow d = Flow (Maybe InletPath /\ d)
 type OutletsByPathFlow d = Flow (Maybe (OutletPath /\ d))
 
 
-data InletsData d = InletsData (Array d)
+data InletsData d = InletsData (Array (Maybe d))
 data OutletsData d = OutletsData (Array d)
 
 
@@ -59,3 +59,4 @@ data ProcessF d
      -- TODO: generalize to Foldable?
     | FoldedByIndex (InletsData d -> OutletsData d)
     | FoldedByLabel (InletsMapData String d -> OutletsMapData String d)
+    -- | WithEffect (ProcessF d)

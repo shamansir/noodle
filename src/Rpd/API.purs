@@ -643,14 +643,15 @@ buildOutletsFlow nodePath (ByPath processF) processFlow inlets outlets _ =
                     outletIdx /\ d
     in pure $ (OutletsFlow $ mapOutletFlow <$> outletsWithPathFlow)
               /\ Nothing
-buildOutletsFlow _ (FoldedByIndex processF) processFlow _ _ _ = do
+buildOutletsFlow _ (FoldedByIndex processF) processFlow inlets _ _ = do
     -- TODO: generalize to Foldable
     { event, push } <- liftEffect E.create
     let
         foldingF (curInletIdx /\ curD) inletVals =
-            Array.updateAt curInletIdx curD inletVals
+            Array.updateAt curInletIdx (Just curD) inletVals
                 # fromMaybe inletVals
-        inletsFlow = E.fold foldingF processFlow []
+        inletsFlow = E.fold foldingF processFlow
+            $ Array.replicate (Set.size inlets) Nothing
     cancel <- liftEffect $ E.subscribe inletsFlow $ \inletsVals ->
         let (OutletsData outletVals) = processF $ InletsData inletsVals
         in forWithIndex outletVals \idx val ->
