@@ -19,7 +19,7 @@
     "purs:compile-all": "purs compile 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs' 'test/**/*.purs' 'example/**/*.purs'",
     "purs:bundle": "purs bundle output/**/*.js",
     "purs:build": "pulp build",
-    "purs:server": "pulp --watch server -I ./example --main Example.Terminal",
+    "purs:server": "pulp --watch server -I ./example --main Example.Html",
     "purs:repl": "purs repl 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs'",
     "purs:mod-repl": "purs repl 'bower_components/purescript-*/src/**/*.purs'",
     "purs:test": "pulp test --no-check-main",
