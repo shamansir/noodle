@@ -1,5 +1,5 @@
 module Rpd.Renderer.Html.VDom
-    (embed) where
+    (embed, embed') where
 
 import Prelude
 
@@ -30,6 +30,7 @@ import Web.HTML.Window (document) as DOM
 import Spork.Html (Html)
 
 import Rpd.Network (Network)
+import Rpd.RenderMUV (custom)
 import Rpd.RenderMUV (make') as Render
 
 
@@ -65,3 +66,13 @@ embed sel render renderer initNw = do
                     _ <- Ref.write next_vdom vdom_ref
                     pure unit
             pure unit
+
+
+embed'
+    :: forall d model msg
+     . String -- selector
+    -> Ui.Renderer d model (Html msg) msg -- renderer
+    -> Network d -- initial network
+    -> Effect Unit
+embed'  sel renderer initNw =
+    embed sel ((<$>) custom) renderer initNw

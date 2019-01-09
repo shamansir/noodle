@@ -38,10 +38,14 @@ init =
 type HtmlRenderer d = R.Renderer d Model View Msg
 
 
+emptyView :: View
+emptyView = H.div [ H.id_ "network" ] []
+
+
 htmlRenderer :: forall d. HtmlRenderer d
 htmlRenderer =
     R.Renderer
-        { from : H.div [] []
+        { from : emptyView
         , init : init
         , update
         , view
@@ -49,7 +53,7 @@ htmlRenderer =
 
 
 view :: forall d. PushMsg d -> Either R.RpdError (Model /\ R.Network d) -> View
-view _ _ = H.div [] []
+view _ _ = emptyView
 
 
 update :: forall d. Message d -> (Model /\ R.Network d) -> (Model /\ Array (Message d))
