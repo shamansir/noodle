@@ -17,6 +17,7 @@ import Rpd.Renderer.Terminal (terminalRenderer)
 import Rpd.Renderer.Terminal.Multiline as ML
 import Rpd.Renderer.Html.VDom as VDom
 
+import Example.Network (network)
 import Example.Toolkit (testPatch, testNode)
 
 
@@ -56,5 +57,4 @@ render src =
 
 main :: Effect Unit
 main =
-    VDom.embed "#app" render terminalRenderer
-        $ pure $ Network.empty "foo"
+    VDom.embed "#app" render terminalRenderer network

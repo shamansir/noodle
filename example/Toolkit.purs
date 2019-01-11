@@ -1,4 +1,4 @@
-module Example.Patch
+module Example.Toolkit
     ( testPatch
     , testNode
     ) where
