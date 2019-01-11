@@ -31,7 +31,8 @@ import Spork.Html (Html)
 
 import Rpd.API (Rpd) as R
 import Rpd.Network (Network)
-import Rpd.RenderMUV (custom)
+import Rpd.Command (Command(..)) as C
+import Rpd.RenderMUV (custom, core)
 import Rpd.RenderMUV (make') as Render
 
 
@@ -66,6 +67,7 @@ embed sel render renderer initNw = do
                     next_vdom ← EFn.runEffectFn2 Machine.step prev_vdom (unwrap $ render next_view)
                     _ <- Ref.write next_vdom vdom_ref
                     pure unit
+            push $ core C.Bang
             pure unit
 
 
