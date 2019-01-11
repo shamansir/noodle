@@ -29,6 +29,7 @@ import Web.HTML.Window (document) as DOM
 
 import Spork.Html (Html)
 
+import Rpd.API (Rpd) as R
 import Rpd.Network (Network)
 import Rpd.RenderMUV (custom)
 import Rpd.RenderMUV (make') as Render
@@ -39,7 +40,7 @@ embed
      . String -- selector
     -> (view -> Html (Ui.Message d msg)) -- insert the rendering result
     -> Ui.Renderer d model view msg -- renderer
-    -> Network d -- initial network
+    -> R.Rpd (Network d) -- initial network
     -> Effect Unit
 embed sel render renderer initNw = do
     doc ← DOM.window >>= DOM.document
@@ -72,7 +73,7 @@ embed'
     :: forall d model msg
      . String -- selector
     -> Ui.Renderer d model (Html msg) msg -- renderer
-    -> Network d -- initial network
+    -> R.Rpd (Network d) -- initial network
     -> Effect Unit
 embed'  sel renderer initNw =
     embed sel ((<$>) custom) renderer initNw

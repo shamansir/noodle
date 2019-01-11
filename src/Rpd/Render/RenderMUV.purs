@@ -2,7 +2,7 @@ module Rpd.RenderMUV
     ( Renderer(..)
     , UpdateF
     , ViewF
-    , Message
+    , Message(..)
     , PushMsg
     , once
     , run
@@ -17,7 +17,7 @@ import Prelude
 
 -- import Type.Eval.Function (type ($))
 
-import Data.Either
+import Data.Either (Either(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Foldable (foldr)
 
@@ -27,10 +27,8 @@ import FRP.Event (Event)
 import FRP.Event as Event
 
 import Rpd (run) as R
-import Rpd.API as R
-import Rpd.Def as R
-import Rpd.Path as R
-import Rpd.Render (Message(..), PushMsg(..), update) as Core
+import Rpd.API (Rpd, RpdError) as R
+import Rpd.Render (Message, update) as Core
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
 
@@ -110,7 +108,7 @@ once (Renderer { view, init, update }) rpd =
 -}
 make
     :: forall d model view msg
-     . R.Network d
+     . R.Rpd (R.Network d)
     -> Renderer d model view msg
     -> Effect
         { first :: view
@@ -138,17 +136,17 @@ make'
      . { event :: Event (Message d msg)
        , push :: (Message d msg -> Effect Unit)
        }
-    -> R.Network d
+    -> R.Rpd (R.Network d)
     -> Renderer d model view msg
     -> { first :: view
        , next :: Event (Effect view)
        }
 make'
     { event : messages, push : pushMessage }
-    nw
+    rpd
     (Renderer { from, init, view, update : update' })
     = let
-        updateFlow = Event.fold updater messages $ pure (init /\ nw)
+        updateFlow = Event.fold updater messages $ (/\) init <$> rpd
         viewFlow = viewer (PushMsg pushMessage) <$> updateFlow
     in
         { first : from
@@ -182,7 +180,7 @@ make'
    Returns the canceler. -}
 run
     :: forall d view model msg
-     . R.Network d
+     . R.Rpd (R.Network d)
     -> Renderer d view model msg
     -> Effect R.Canceler
 run nw renderer =
@@ -203,7 +201,7 @@ run'
      . { event :: Event (Message d msg)
        , push :: (Message d msg -> Effect Unit)
        }
-    -> R.Network d
+    -> R.Rpd (R.Network d)
     -> Renderer d view model msg
     -> Effect R.Canceler
 run' event nw renderer =

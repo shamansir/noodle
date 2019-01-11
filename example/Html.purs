@@ -11,4 +11,4 @@ import Rpd.Renderer.Html.VDom as VDom
 main :: Effect Unit
 main =
     VDom.embed' "#app" htmlRenderer
-        $ Network.empty "foo"
+        $ pure $ Network.empty "foo"
