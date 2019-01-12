@@ -11,10 +11,10 @@ import Rpd.API (Rpd) as R
 import Rpd.API as Rpd
 import Rpd.API ((</>))
 
-import Example.Toolkit (testPatch, testNode)
+import Example.Toolkit (patch, colorNode, Value)
 
-network :: forall d. R.Rpd (R.Network d)
+network :: R.Rpd (R.Network Value)
 network =
     Rpd.init "foo"
-        </> Rpd.addPatch' testPatch
-        </> Rpd.addNode' (R.patchId 0) testNode
+        </> Rpd.addPatch' patch
+        </> Rpd.addNode' (R.patchId 0) colorNode

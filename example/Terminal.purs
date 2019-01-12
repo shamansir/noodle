@@ -2,6 +2,7 @@ module Example.Terminal where
 
 import Prelude
 
+import Data.List (List(..)) as List
 import Effect (Effect)
 
 import Spork.Html (Html)
@@ -9,6 +10,8 @@ import Spork.Html as H
 
 import Rpd.Network (Network)
 import Rpd.Network (empty) as Network
+import Rpd.Def as R
+import Rpd.Process as R
 import Rpd.Path (PatchId(..))
 import Rpd.Command (Command(..)) as Cmd
 import Rpd.RenderMUV (Message) as Ui
@@ -17,12 +20,25 @@ import Rpd.Renderer.Terminal (terminalRenderer)
 import Rpd.Renderer.Terminal.Multiline as ML
 import Rpd.Renderer.Html.VDom as VDom
 
-import Example.Network (network)
-import Example.Toolkit (testPatch, testNode)
-
 
 type Model d = Network d
 type Action d msg = Ui.Message d msg
+
+
+patch :: forall d. R.PatchDef d
+patch =
+    { name : "patch"
+    , nodeDefs : List.Nil
+    }
+
+
+node :: forall d. R.NodeDef d
+node =
+    { name : "node"
+    , inletDefs : List.Nil
+    , outletDefs : List.Nil
+    , process : R.Withhold
+    }
 
 
 render ∷ forall d msg. ML.Multiline → Html (Action d msg)
@@ -44,12 +60,12 @@ render src =
         [ H.text "Bang" ]
     , H.button
         [ H.onClick
-            (H.always_ $ core $ Cmd.AddPatch testPatch)
+            (H.always_ $ core $ Cmd.AddPatch patch)
         ]
         [ H.text "Add Patch" ]
     , H.button
         [ H.onClick
-            (H.always_ $ core $ Cmd.AddNode (PatchId 0) testNode)
+            (H.always_ $ core $ Cmd.AddNode (PatchId 0) node)
         ]
         [ H.text "Add Node" ]
     ]
@@ -57,4 +73,4 @@ render src =
 
 main :: Effect Unit
 main =
-    VDom.embed "#app" render terminalRenderer network
+    VDom.embed "#app" render terminalRenderer $ pure $ Network.empty "foo"
