@@ -50,6 +50,14 @@ data InletsMapData key d = InletsMapData (key /-> d)
 data OutletsMapData key d = OutletsMapData (key /-> d)
 
 
+-- TODO: is it possible to achieve the `ProcessF function like this one?:
+-- process = do
+--    (Number' r) <- receive "r"
+--    (Number' g) <- receive "g"
+--    (Number' b) <- receive "b"
+--    send "color" $ Color r g b
+
+
 data ProcessF d
     = Withhold
     | PassThrough

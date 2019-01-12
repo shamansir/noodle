@@ -83,7 +83,7 @@ type InletDef d =
     --, hidden :: Bool
     --, cold :: Bool
     --, allow :: List String -- channel types. `allows :: InletDef d -> OutletDef d -> Bool`
-    , accept :: Maybe (d -> Boolean)
+    , accept :: Maybe (d -> Boolean) -- FIXME: `const true` by default?
     --, adapt :: (d -> d)
     --, tune :: (Event d -> Event d)
     --, show :: (d -> String)
