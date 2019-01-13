@@ -9,8 +9,11 @@ module Rpd.Process
     )
     where
 
+import Prelude
+
 import Data.Maybe
 import Data.Tuple.Nested (type (/\))
+import Effect (Effect)
 
 import Rpd.Util (Flow, type (/->))
 import Rpd.Path
@@ -67,4 +70,5 @@ data ProcessF d
      -- TODO: generalize to Foldable?
     | FoldedByIndex (InletsData d -> OutletsData d)
     | FoldedByLabel (InletsMapData String d -> OutletsMapData String d)
-    -- | WithEffect (ProcessF d)
+    -- | EffectfulByIndex (InletsData d -> Effect Unit)
+    -- | EffectfulByLabel (InletsMapData String d -> Effect Unit)

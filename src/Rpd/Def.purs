@@ -91,9 +91,9 @@ type InletDef d =
 type OutletDef d =
     { label :: String
     , accept :: Maybe (d -> Boolean)
-        -- FIXME: `accept : Nothing` reads a bit weird, so I use `MonadZero.empty`
+        -- FIXME: `accept : Nothing` reads a bit weird, so I'd use `MonadZero.empty`
     }
--- ChannelDef may be used both to describe inlets and outlets
+-- TODO: ChannelDef may be used both to describe inlets and outlets
 type ChannelDef d = InletDef d
 
 -- FIXME: there should always be a string ID, which can be different from name/label:
