@@ -15,7 +15,7 @@ module Rpd.API
 
 import Prelude
 
-import Data.Array ((!!))
+import Data.Array ((!!), snoc)
 import Data.Array as Array
 import Data.Bitraversable (bisequence)
 import Data.Either (Either, note)
@@ -51,6 +51,7 @@ import Rpd.Network (empty) as Network
 import Rpd.Util (type (/->), PushableFlow(..), Subscriber, Canceler, Flow, never)
 import Rpd.Util as RU
 
+infixl 6 snoc as +>
 
 --import Rpd.Flow as Flow
 
@@ -249,7 +250,18 @@ addInlet'
     -> InletDef d
     -> Network d
     -> Rpd (Network d)
-addInlet' nodePath def nw = do
+addInlet' nodePath def nw =
+    addInlet'' nodePath def [] nw
+
+
+addInlet''
+    :: forall d
+     . NodePath
+    -> InletDef d
+    -> Array (d -> Effect Unit) -- TODO: -> Rpd Unit
+    -> Network d
+    -> Rpd (Network d)
+addInlet'' nodePath def subs nw = do
     inletPath <- except $ nextInletPath nodePath nw
     -- TODO: when there's already some inlet exists with the same path,
     -- cancel its subscription before
@@ -268,9 +280,11 @@ addInlet' nodePath def nw = do
     canceler :: Canceler <-
         liftEffect $
             E.subscribe dataFlow (\d -> informNode (inletId /\ d))
+    userCancelers :: Array Canceler <-
+        liftEffect $ traverse (E.subscribe dataFlow) subs
     nw # setJust (_inlet inletPath) newInlet
        # setJust (_nodeInlet nodePath inletPath) unit
-       # setJust (_inletCanceler inletPath) canceler
+       # setJust (_inletCancelers inletPath) (userCancelers +> canceler)
        # updateNodeProcessFlow nodePath
 
 
@@ -507,7 +521,7 @@ connect outletPath inletPath
 
     pure $ nw
             # setJust (_link linkId) newLink
-            # setJust (_linkCanceler linkId) linkCanceler
+            # setJust (_linkCancelers linkId) [ linkCanceler ]
 
 
 disconnectAll
@@ -527,13 +541,16 @@ disconnectAll outletPath inletPath
         iPatchId = getPatchOfInlet inletPath
 
     _ <- liftEffect $ traverse_
-            (\linkId -> fromMaybe (pure unit) $ view (_linkCanceler linkId) nw)
+            (\linkId ->
+                view (_linkCancelers linkId) nw
+                    # fromMaybe []
+                    # traverse_ liftEffect)
             linksForDeletion
 
     pure $ (
         foldr (\linkId nw ->
             nw # set (_link linkId) Nothing
-               # set (_linkCanceler linkId) Nothing
+               # set (_linkCancelers linkId) Nothing
         ) nw linksForDeletion
         -- # setJust (_inletConnections inletPath) newInletConnections
         -- # setJust (_outletConnections outletPath) newOutletConnections
@@ -557,9 +574,9 @@ updateNodeProcessFlow
     -> Rpd (Network d)
 updateNodeProcessFlow nodePath nw = do
     -- cancel the previous subscription if it exists
-    _ <- view (_nodeCanceler nodePath) nw
-            # fromMaybe (pure unit)
-            # liftEffect
+    _ <- view (_nodeCancelers nodePath) nw
+            # fromMaybe []
+            # traverse_ liftEffect
     (Node _ nodeDef { flow, inlets, outlets }) <-
         except $ view (_node nodePath) nw # note (RpdError "")
     case nodeDef.process of
@@ -590,7 +607,7 @@ updateNodeProcessFlow nodePath nw = do
                         case maybeCancelBuild of
                             Just buildCanceler -> canceler `joinCancelers` buildCanceler
                             Nothing -> canceler
-                pure $ nw # setJust (_nodeCanceler nodePath) canceler'
+                pure $ nw # setJust (_nodeCancelers nodePath) [ canceler' ]
 
 
 buildOutletsFlow

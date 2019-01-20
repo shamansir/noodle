@@ -4,10 +4,10 @@ module Rpd.Optics
     , _nodeFlow, _nodePFlow
     , _nodeInlet, _nodeInlets
     , _nodeOutlet, _nodeOutlets
-    , _nodeCanceler
-    , _inlet, _inletLabel, _inletFlow, _inletPFlow, _inletCanceler
+    , _nodeCancelers
+    , _inlet, _inletLabel, _inletFlow, _inletPFlow, _inletCancelers
     , _outlet, _outletLabel, _outletFlow, _outletPFlow
-    , _link, _linkCanceler
+    , _link, _linkCancelers
     )
     where
 
@@ -182,19 +182,19 @@ _nodeOutlets nodePath =
             in map (flip getOutlet $ nw) outletPaths # List.catMaybes
 
 
-_nodeCanceler :: forall d. NodePath -> Lens' (Network d) (Maybe Canceler)
-_nodeCanceler nodePath =
+_nodeCancelers :: forall d. NodePath -> Lens' (Network d) (Maybe (Array Canceler))
+_nodeCancelers nodePath =
     lens getter setter
     where
-        cancelerLens = at nodePath
+        cancelersLens = at nodePath
         getter (Network _ { cancelers }) =
-            view cancelerLens cancelers.nodes
+            view cancelersLens cancelers.nodes
         setter (Network nwdef nwstate@{ cancelers }) val =
             Network
                 nwdef
                 nwstate {
                     cancelers =
-                        cancelers { nodes = set cancelerLens val cancelers.nodes }
+                        cancelers { nodes = set cancelersLens val cancelers.nodes }
                     }
 
 
@@ -240,19 +240,19 @@ _inletPFlow inletPath =
                     (InletPFlow pFlow) -> pure pFlow
 
 
-_inletCanceler :: forall d. InletPath -> Lens' (Network d) (Maybe Canceler)
-_inletCanceler inletPath =
+_inletCancelers :: forall d. InletPath -> Lens' (Network d) (Maybe (Array Canceler))
+_inletCancelers inletPath =
     lens getter setter
     where
-        cancelerLens = at inletPath
+        cancelersLens = at inletPath
         getter (Network _ { cancelers }) =
-            view cancelerLens cancelers.inlets
+            view cancelersLens cancelers.inlets
         setter (Network nwdef nwstate@{ cancelers }) val =
             Network
                 nwdef
                 nwstate {
                     cancelers =
-                        cancelers { inlets = set cancelerLens val cancelers.inlets }
+                        cancelers { inlets = set cancelersLens val cancelers.inlets }
                     }
 
 
@@ -311,17 +311,17 @@ _link linkId =
                 nwstate { links = set linkLens val nwstate.links }
 
 
-_linkCanceler :: forall d. LinkId -> Lens' (Network d) (Maybe Canceler)
-_linkCanceler linkId =
+_linkCancelers :: forall d. LinkId -> Lens' (Network d) (Maybe (Array Canceler))
+_linkCancelers linkId =
     lens getter setter
     where
-        cancelerLens = at linkId
+        cancelersLens = at linkId
         getter (Network _ { cancelers }) =
-            view cancelerLens cancelers.links
+            view cancelersLens cancelers.links
         setter (Network nwdef nwstate@{ cancelers }) val =
             Network
                 nwdef
                 nwstate {
                     cancelers =
-                        cancelers { links = set cancelerLens val cancelers.links }
+                        cancelers { links = set cancelersLens val cancelers.links }
                     }

@@ -39,9 +39,9 @@ data Network d =
         , outlets :: OutletPath /-> Outlet d
         , links :: LinkId /-> Link
         , cancelers ::
-            { links :: LinkId /-> Canceler
-            , nodes :: NodePath /-> Canceler
-            , inlets :: InletPath /-> Canceler
+            { links :: LinkId /-> Array Canceler
+            , nodes :: NodePath /-> Array Canceler
+            , inlets :: InletPath /-> Array Canceler
             }
         }
 data Patch d =

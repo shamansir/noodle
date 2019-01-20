@@ -30,6 +30,11 @@ import Rpd.Util (Canceler) as R
 type Message d = C.Command d
 
 
+-- type RendererOptions =
+--     { subscribeFlow :: Boolean
+--     }
+
+
 data PushMsg d = PushMsg (Message d -> Effect Unit)
 type RenderF d r = PushMsg d -> Either R.RpdError (R.Network d) -> r
 
@@ -131,8 +136,7 @@ run nw renderer =
 {- Run the rendering cycle with custom message producer
    (so, the `Event` with the messages source and
    the function which pushes them to this flow).
-   Returns the first view and the event flow with
-   all the next views.
+   Returns the canceler.
 
    TODO: do not ask user for `event`, just pushing function.
 -}
