@@ -189,18 +189,7 @@ addNode'
     -> NodeDef d
     -> Network d
     -> Rpd (Network d)
-addNode' patchId def =
-    addNode'' patchId def []
-
-
-addNode''
-    :: forall d
-     . PatchId
-    -> NodeDef d
-    -> NodeHandlers d
-    -> Network d
-    -> Rpd (Network d)
-addNode'' patchId def handlers nw = do
+addNode' patchId def nw = do
     nodePath <- except $ nextNodePath patchId nw
     processPFlow <- liftEffect makePushableFlow
     let
@@ -224,10 +213,9 @@ processWith
     :: forall d
      . NodePath
     -> ProcessF d
-    -> NodeHandlers d
     -> Network d
     -> Rpd (Network d)
-processWith nodePath processF handlers nw = do
+processWith nodePath processF nw = do
     (Node _ def state) :: Node d <-
         view (_node nodePath) nw
             # exceptMaybe (RpdError "")
@@ -239,7 +227,7 @@ processWith nodePath processF handlers nw = do
                 state
     nw
         # setJust (_node nodePath) newNode
-        # updateNodeProcessFlow nodePath handlers
+        # updateNodeProcessFlow nodePath
 
 
 addInlet
@@ -263,18 +251,7 @@ addInlet'
     -> InletDef d
     -> Network d
     -> Rpd (Network d)
-addInlet' nodePath def nw =
-    addInlet'' nodePath def [] nw
-
-
-addInlet''
-    :: forall d
-     . NodePath
-    -> InletDef d
-    -> InletHandlers d
-    -> Network d
-    -> Rpd (Network d)
-addInlet'' nodePath def subs nw = do
+addInlet' nodePath def nw = do
     inletPath <- except $ nextInletPath nodePath nw
     -- TODO: when there's already some inlet exists with the same path,
     -- cancel its subscription before
@@ -293,12 +270,12 @@ addInlet'' nodePath def subs nw = do
     canceler :: Canceler <-
         liftEffect $
             E.subscribe dataFlow (\d -> informNode (inletId /\ d))
-    userCancelers :: Array Canceler <-
-        liftEffect $ traverse (E.subscribe dataFlow) subs
+    -- userCancelers :: Array Canceler <-
+    --     liftEffect $ traverse (E.subscribe dataFlow) subs
     nw # setJust (_inlet inletPath) newInlet
        # setJust (_nodeInlet nodePath inletPath) unit
-       # setJust (_inletCancelers inletPath) (userCancelers +> canceler)
-       # updateNodeProcessFlow nodePath []
+       # setJust (_inletCancelers inletPath) [ canceler ]
+       # updateNodeProcessFlow nodePath
 
 
 addInlets :: forall d. NodePath -> List (InletDef d) -> Network d -> Rpd (Network d)
@@ -337,18 +314,7 @@ addOutlet'
     -> OutletDef d
     -> Network d
     -> Rpd (Network d)
-addOutlet' nodePath def =
-    addOutlet'' nodePath def []
-
-
-addOutlet''
-    :: forall d
-     . NodePath
-    -> OutletDef d
-    -> OutletHandlers d
-    -> Network d
-    -> Rpd (Network d)
-addOutlet'' nodePath def handlers nw = do
+addOutlet' nodePath def nw = do
     outletPath <- except $ nextOutletPath nodePath nw
     pushableFlow <- liftEffect makePushableFlow
     let
@@ -361,7 +327,7 @@ addOutlet'' nodePath def handlers nw = do
         outletId = getOutletId outletPath
     nw # setJust (_outlet outletPath) newOutlet
        # setJust (_nodeOutlet nodePath outletPath) unit
-       # updateNodeProcessFlow nodePath handlers
+       # updateNodeProcessFlow nodePath
 
 
 addOutlets :: forall d. NodePath -> List (OutletDef d) -> Network d -> Rpd (Network d)
@@ -595,10 +561,9 @@ disconnectAll outletPath inletPath
 updateNodeProcessFlow
     :: forall d
      . NodePath
-    -> NodeHandlers d
     -> Network d
     -> Rpd (Network d)
-updateNodeProcessFlow nodePath handlers nw = do
+updateNodeProcessFlow nodePath nw = do
     -- cancel the previous subscription if it exists
     _ <- view (_nodeCancelers nodePath) nw
             # fromMaybe []
