@@ -27,7 +27,7 @@ import Rpd.API ((</>))
 import Rpd.API as R
 import Rpd.Path
 import Rpd (init) as R
-import Rpd.Def (NodeDef) as R
+import Rpd.Def (NodeDef, OutletDef) as R
 import Rpd.Process as R
 import Rpd.Network (Network) as R
 import Rpd.Util (flow, Canceler) as R
@@ -76,6 +76,18 @@ type MyRpd = R.Rpd (R.Network Delivery)
 --   }
 
 
+appleOutlet :: String -> R.OutletDef Delivery
+appleOutlet label =
+  { label
+  , accept : pure onlyApples
+  }
+
+
+onlyApples :: Delivery -> Boolean
+onlyApples (Apple _) = true
+onlyApples _ = false
+
+
 sumCursesToApplesNode :: R.ProcessF Delivery -> R.NodeDef Delivery
 sumCursesToApplesNode processF =
   { name : "Sum Curses to Apples"
@@ -94,14 +106,20 @@ sumCursesToApplesNode processF =
       , accept : pure onlyCurses
       , default : Nothing
       }
-    appleOutlet label =
-      { label
-      , accept : pure onlyApples
-      }
     onlyCurses (Curse _) = true
     onlyCurses _ = false
-    onlyApples (Apple _) = true
-    onlyApples _ = false
+
+
+sumCursesToApplesNode' :: R.ProcessF Delivery -> R.NodeDef Delivery
+sumCursesToApplesNode' processF =
+  let singleOutletNode = sumCursesToApplesNode processF
+  in singleOutletNode
+      { name = "Sum Curses to Apples'"
+      , outletDefs
+          = appleOutlet "apples1"
+          : appleOutlet "apples2"
+          : List.Nil
+      }
 
 
 
@@ -364,7 +382,6 @@ nodes = do
                 (sumCursesToApplesNode (R.FoldedByIndex process))
       process (R.InletsData [ Just (Curse a), Just (Curse b) ]) =
         R.OutletsData [ Apple (a + b) ]
-      -- process _ = R.OutletsData [ Apple 6, Apple 12 ]
       process _ = R.OutletsData [ Apple 9 ]
 
     rpd # withRpd \nw -> do
@@ -420,17 +437,16 @@ nodes = do
     pure unit
 
 
-  it "returning multiple values from processing function actually sends these values to the outlet (array way)" $ do
+  it "returning multiple values from processing function actually sends these values to the outlets (array way)" $ do
     let
       rpd :: MyRpd
       rpd =
         R.init "network"
           </> R.addPatch "patch"
           </> R.addNode' (patchId 0)
-                (sumCursesToApplesNode (R.FoldedByIndex process))
+                (sumCursesToApplesNode' (R.FoldedByIndex process))
       process (R.InletsData [ Just (Curse a), Just (Curse b) ]) =
         R.OutletsData [ Apple (a + b), Apple (a - b) ]
-      -- process _ = R.OutletsData [ Apple 6, Apple 12 ]
       process _ = R.OutletsData [ ]
 
     rpd # withRpd \nw -> do
@@ -447,12 +463,51 @@ nodes = do
           (InletData (inletPath 0 0 1) $ Curse 3)
         collectedData `shouldContain`
           (OutletData (outletPath 0 0 0) $ Apple 7)
+        collectedData `shouldContain`
+          (OutletData (outletPath 0 0 1) $ Apple 1)
         pure unit
 
     pure unit
 
 
-  pending "returning multiple values from processing function actually sends these values to the outlet (label way)"
+  it "returning multiple values from processing function actually sends these values to the outlet (label way)" $ do
+    let
+      rpd :: MyRpd
+      rpd =
+        R.init "network"
+          </> R.addPatch "patch"
+          </> R.addNode' (patchId 0)
+                (sumCursesToApplesNode' (R.FoldedByLabel process))
+      processHelper (Curse a) (Curse b) =
+        Map.empty
+          # Map.insert "apples2" (Apple (a - b))
+          # Map.insert "apples1" (Apple (a + b))
+      processHelper _ _ =
+        Map.empty
+      process (R.InletsMapData m) =
+        R.OutletsMapData
+          $ fromMaybe Map.empty
+          $ processHelper <$> (m^.at "curse1") <*> (m^.at "curse2")
+
+    rpd # withRpd \nw -> do
+        collectedData <- CollectData.channelsAfter
+          (Milliseconds 100.0)
+          nw
+          $ do
+            _ <- nw  #  R.sendToInlet (inletPath 0 0 0) (Curse 4)
+                    </> R.sendToInlet (inletPath 0 0 1) (Curse 3)
+            pure [ ]
+        collectedData `shouldContain`
+          (InletData (inletPath 0 0 0) $ Curse 4)
+        collectedData `shouldContain`
+          (InletData (inletPath 0 0 1) $ Curse 3)
+        collectedData `shouldContain`
+          (OutletData (outletPath 0 0 0) $ Apple 7)
+        collectedData `shouldContain`
+          (OutletData (outletPath 0 0 1) $ Apple 1)
+        pure unit
+
+    pure unit
 
 
 {- ======================================= -}
@@ -590,6 +645,11 @@ links = do
     --     pure unit
     --   describe "after adding new node" do
     --     pure unit
+
+
+{- ======================================= -}
+{- ============ SUBSCRIPTIONS ============ -}
+{- ======================================= -}
 
 
 {- ======================================= -}
