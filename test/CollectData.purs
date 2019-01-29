@@ -25,7 +25,7 @@ import Rpd.Util (type (/->))
 import Rpd.Path as R
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
-import Rpd.API (Rpd, subscribeChannelsData, subscribeNode) as R
+import Rpd.API (Rpd, subscribeChannelsData', subscribeNode') as R
 import Rpd.Log as RL
 
 
@@ -93,7 +93,7 @@ channelsAfter' period nw afterF =
           curData <- Ref.read target
           Ref.write (curData +> OutletData path d) target
           pure unit
-      cancelers <- R.subscribeChannelsData onOutletData onInletData nw
+      cancelers <- R.subscribeChannelsData' onOutletData onInletData nw
       pure $ foldCancelers cancelers
 
 
@@ -140,7 +140,7 @@ nodeAfter' nodePath period nw afterF =
           curData <- Ref.read target
           Ref.write (curData +> InletData inletPath d) target
           pure unit
-      canceler <- R.subscribeNode nodePath onNodeData nw
+      canceler <- R.subscribeNode' nodePath onNodeData nw
       pure [ canceler ]
 
 

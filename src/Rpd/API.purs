@@ -9,13 +9,15 @@ module Rpd.API
     , addPatch, addPatch', addNode, addNode', addInlet, addInlet', addOutlet, addOutlet'
     , subscribeInlet, subscribeOutlet, subscribeAllInlets, subscribeAllOutlets
     , subscribeChannelsData, subscribeNode  -- subscribeAllData
+    , subscribeInlet', subscribeOutlet', subscribeAllInlets', subscribeAllOutlets'
+    , subscribeChannelsData', subscribeNode'  -- subscribeAllData'
     , sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
     --, findPatch, findNode, findOutlet, findInlet
     ) where
 
 import Prelude
 
-import Data.Array ((!!), snoc)
+import Data.Array ((!!), (:), snoc)
 import Data.Array as Array
 import Data.Bitraversable (bisequence)
 import Data.Either (Either, note)
@@ -408,8 +410,23 @@ subscribeInlet
      . InletPath
     -> InletHandler d
     -> Network d
-    -> Rpd Canceler
+    -> Rpd (Network d)
 subscribeInlet inletPath (InletHandler handler) nw = do
+    canceler <- subscribeInlet' inletPath (InletHandler handler) nw
+    curCancelers <-
+        view (_inletCancelers inletPath) nw
+            # exceptMaybe (RpdError "")
+    pure $
+        nw # setJust (_inletCancelers inletPath) (curCancelers +> canceler)
+
+
+subscribeInlet'
+    :: forall d
+     . InletPath
+    -> InletHandler d
+    -> Network d
+    -> Rpd Canceler
+subscribeInlet' inletPath (InletHandler handler) nw = do
     flow :: Flow d <-
         view (_inletFlow inletPath) nw
             # exceptMaybe (RpdError "")
@@ -422,8 +439,20 @@ subscribeOutlet
      . OutletPath
     -> OutletHandler d
     -> Network d
+    -> Rpd (Network d)
+subscribeOutlet outletPath handler nw = do
+    _ <- subscribeOutlet' outletPath handler nw
+    -- FIXME: implement
+    pure nw
+
+
+subscribeOutlet'
+    :: forall d
+     . OutletPath
+    -> OutletHandler d
+    -> Network d
     -> Rpd Canceler
-subscribeOutlet outletPath (OutletHandler handler) nw = do
+subscribeOutlet' outletPath (OutletHandler handler) nw = do
     flow :: Flow d <-
         view (_outletFlow outletPath) nw
             # exceptMaybe (RpdError "")
@@ -436,8 +465,19 @@ subscribeAllInlets
     :: forall d
      . (InletPath -> d -> Effect Unit)
     -> Network d
+    -> Rpd (Network d)
+subscribeAllInlets handler nw = do
+    _ <- liftEffect $ subscribeAllInlets' handler nw
+    -- FIXME: implement
+    pure nw
+
+
+subscribeAllInlets'
+    :: forall d
+     . (InletPath -> d -> Effect Unit)
+    -> Network d
     -> Effect (InletPath /-> Canceler)
-subscribeAllInlets handler (Network _ { inlets }) =
+subscribeAllInlets' handler (Network _ { inlets }) =
     traverse sub inlets
     where
         sub :: Inlet d -> Subscriber
@@ -450,8 +490,19 @@ subscribeAllOutlets
     :: forall d
      . (OutletPath -> d -> Effect Unit)
     -> Network d
+    -> Rpd (Network d)
+subscribeAllOutlets handler nw = do
+    _ <- liftEffect $ subscribeAllOutlets' handler nw
+    -- FIXME: implement
+    pure nw
+
+
+subscribeAllOutlets'
+    :: forall d
+     . (OutletPath -> d -> Effect Unit)
+    -> Network d
     -> Effect (OutletPath /-> Canceler)
-subscribeAllOutlets handler (Network _ { outlets }) =
+subscribeAllOutlets' handler (Network _ { outlets }) =
     traverse sub outlets
     where
         sub :: Outlet d -> Subscriber
@@ -465,9 +516,21 @@ subscribeChannelsData
      . (OutletPath -> d -> Effect Unit)
     -> (InletPath -> d -> Effect Unit)
     -> Network d
+    -> Rpd (Network d)
+subscribeChannelsData oHandler iHandler nw = do
+    _ <- liftEffect $ subscribeChannelsData' oHandler iHandler nw
+    -- FIXME: implement
+    pure nw
+
+
+subscribeChannelsData'
+    :: forall d
+     . (OutletPath -> d -> Effect Unit)
+    -> (InletPath -> d -> Effect Unit)
+    -> Network d
     -> Effect ((OutletPath /-> Canceler) /\ (InletPath /-> Canceler))
-subscribeChannelsData oHandler iHandler nw =
-    bisequence $ subscribeAllOutlets oHandler nw /\ subscribeAllInlets iHandler nw
+subscribeChannelsData' oHandler iHandler nw =
+    bisequence $ subscribeAllOutlets' oHandler nw /\ subscribeAllInlets' iHandler nw
 
 
 subscribeNode
@@ -475,8 +538,20 @@ subscribeNode
      . NodePath
     -> (Int /\ d -> Effect Unit)
     -> Network d
-    -> Rpd Canceler
+    -> Rpd (Network d)
 subscribeNode nodePath handler nw = do
+    _ <- subscribeNode' nodePath handler nw
+    -- FIXME: implement
+    pure nw
+
+
+subscribeNode'
+    :: forall d
+     . NodePath
+    -> (Int /\ d -> Effect Unit)
+    -> Network d
+    -> Rpd Canceler
+subscribeNode' nodePath handler nw = do
     flow :: Flow (Int /\ d) <-
         view (_nodeFlow nodePath) nw
             # exceptMaybe (RpdError "")
@@ -596,11 +671,11 @@ updateNodeProcessFlow nodePath nw = do
                 canceler :: Canceler
                     <- liftEffect $ E.subscribe outletsFlow pushToOutletFlow
                 let
-                    canceler' =
+                    cancelers =
                         case maybeCancelBuild of
-                            Just buildCanceler -> canceler `joinCancelers` buildCanceler
-                            Nothing -> canceler
-                pure $ nw # setJust (_nodeCancelers nodePath) [ canceler' ]
+                            Just buildCanceler -> [ canceler, buildCanceler ]
+                            Nothing -> [ canceler ]
+                pure $ nw # setJust (_nodeCancelers nodePath) cancelers
 
 
 buildOutletsFlow
