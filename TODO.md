@@ -109,7 +109,7 @@ Pass outlet source for inlets with data signal / data flow listeners? Think on r
 
 Fix `unsafePerformEff` with collecting the effects to be performed in folding function and executing them on `Event.subscribe`, which actually calls effects. The question is — we need Cancelers before the `subscribe` function will be triggered, to pass them as the next value to the `fold`, but they are wrapped in the effect to be performed. Is it possible to create another event with cancelers and push them from `subscribe` handler?
 
-Some terminal renderer, like `ncurses`. Text-rendered nodes should be moveable anyway.
+Some terminal renderer, like `ncurses`. Text-rendered nodes should be moveable anyway. See `blessed`
 
 Try [Incremental DOM](https://pursuit.purescript.org/packages/purescript-smolder-idom/0.1.3/docs/Text.Smolder.Renderer.IncrementalDom).
 
@@ -118,3 +118,17 @@ Try VDOM from `use-vdom` branch. It fails, since Smolder is no more with Smolder
 See https://github.com/bodil/purescript-vdom/blob/master/test/Main.purs for a reference.
 
 Think on the ways for user to implement custom node types. Are they just functions to create custom nodes?
+
+If we introduce GUID-paths, we either need to return them to the user on every entity creation so that this user will be able to adress the newly created entities (i.e. nodes), or we should store the Num-Path /-> GUID map inside the Network, and update it on every structure change. Another way (since with `addNode`/`addInlet`/etc. methods we should both modify the `Network` _and_ return the GUID, if we want user to know it): always keep the `Network` inside the `Rpd` monad (using `StateT` or continuation monad?) and still let user get the GUID with `do` like:
+
+```purescript
+buildNetwork = do
+    -- network is empty here
+    nodePath <- addNode _ _ -- no network would be needed here
+    inletPath <- addInlet nodePath _ _
+    -- some code
+    pure unit
+```
+
+
+All the `subscribe___` functions returning cancellers to the user should have the default implementation which stores those cancelers inside the `Network` and calls them when the corresponding entity (Node/Inlet/etc.) is removed

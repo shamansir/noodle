@@ -33,6 +33,8 @@ import Data.TraversableWithIndex (forWithIndex)
 import Data.Tuple (uncurry, fst)
 import Data.Tuple.Nested ((/\), type (/\))
 
+import Debug.Trace
+
 import Control.MonadZero (empty)
 import Control.Monad.Except.Trans (ExceptT, except)
 
@@ -674,7 +676,7 @@ buildOutletsFlow _ (FoldedByLabel processF) processFlow inlets outlets nw = do
         outletLabels = extractOutletLabels outlets nw
         foldingF (curInletIdx /\ curD) inletVals =
             case inletLabels !! curInletIdx of
-                Just label -> Map.insert label curD inletVals
+                Just label -> inletVals # Map.insert label curD
                 _ -> inletVals
         inletsFlow = E.fold foldingF processFlow Map.empty
         adaptOutletVals :: (String /-> d) -> Array (Maybe (Int /\ d))

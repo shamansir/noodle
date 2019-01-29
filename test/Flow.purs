@@ -92,8 +92,8 @@ sumCursesToApplesNode :: R.ProcessF Delivery -> R.NodeDef Delivery
 sumCursesToApplesNode processF =
   { name : "Sum Curses to Apples"
   , inletDefs
-      : curseInlet "curse1"
       : curseInlet "curse2"
+      : curseInlet "curse1"
       : List.Nil
   , outletDefs
       : appleOutlet "apples"
@@ -116,8 +116,8 @@ sumCursesToApplesNode' processF =
   in singleOutletNode
       { name = "Sum Curses to Apples'"
       , outletDefs
-          = appleOutlet "apples1"
-          : appleOutlet "apples2"
+          = appleOutlet "apples2"
+          : appleOutlet "apples1"
           : List.Nil
       }
 
@@ -470,7 +470,7 @@ nodes = do
     pure unit
 
 
-  it "returning multiple values from processing function actually sends these values to the outlet (label way)" $ do
+  it "returning multiple values from processing function actually sends these values to the outlets (label way)" $ do
     let
       rpd :: MyRpd
       rpd =
@@ -480,8 +480,8 @@ nodes = do
                 (sumCursesToApplesNode' (R.FoldedByLabel process))
       processHelper (Curse a) (Curse b) =
         Map.empty
-          # Map.insert "apples2" (Apple (a - b))
           # Map.insert "apples1" (Apple (a + b))
+          # Map.insert "apples2" (Apple (a - b))
       processHelper _ _ =
         Map.empty
       process (R.InletsMapData m) =
