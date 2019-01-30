@@ -16,6 +16,8 @@ import Rpd (run') as R
 import Rpd.API (Rpd, RpdError) as R
 
 
+-- FIXME: add examples
+
 reportError :: R.RpdError -> Effect Unit
 reportError = log <<< (<>) "RPD Error: " <<< show
 

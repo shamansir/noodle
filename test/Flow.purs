@@ -21,7 +21,7 @@ import Control.Monad.Writer (tell)
 
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
-import Effect.Aff (delay)
+import Effect.Aff (delay, throwError)
 
 import FRP.Event (fold) as Event
 import FRP.Event.Time (interval)
@@ -687,9 +687,8 @@ subscriptions = do
     ref <- liftEffect $ Ref.new []
     let
       handler :: R.InletHandler Delivery
-      handler = R.InletHandler $ \v -> do
-        _ <- Ref.modify (A.(:) v) ref
-        pure unit
+      handler = R.InletHandler $ \v ->
+        Ref.modify (A.(:) v) ref >>= pure <<< const unit
       rpd :: MyRpd
       rpd =
         R.init "network"
@@ -707,6 +706,45 @@ subscriptions = do
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Ref.read ref
       vals `shouldContain` Notebook
+      pure unit
+
+    pure unit
+
+  it "when the inlet was removed after subscription, the subscriber stops receiving data" $ do
+    ref <- liftEffect $ Ref.new []
+    let
+      handler :: R.InletHandler Delivery
+      handler = R.InletHandler $ \v ->
+        Ref.modify (A.(:) v) ref >>= pure <<< const unit
+      rpd :: MyRpd
+      rpd =
+        R.init "network"
+          </> R.addPatch "patch"
+          </> R.addNode (patchId 0) "node"
+          </> R.addInlet (nodePath 0 0) "inlet"
+          </> R.subscribeInlet (inletPath 0 0 0) handler
+
+    rpd # withRpd \nw -> do
+      _ <- liftEffect
+              $ R.run (const unit) (const unit) -- FIXME: report the error as `Aff.throwError`
+              $ nw # R.streamToInlet
+                        (inletPath 0 0 0)
+                        (R.flow $ const Notebook <$> interval 30)
+      delay (Milliseconds 100.0)
+      vals <- liftEffect $ Ref.read ref
+      vals `shouldContain` Notebook
+      _ <- liftEffect $ Ref.write [] ref
+      vals' <- liftEffect $ Ref.read ref
+      _ <- liftEffect
+              $ R.run (const unit) (const unit)
+              $ nw  #  R.removeInlet (inletPath 0 0 0)
+                   </> R.streamToInlet
+                          (inletPath 0 0 0)
+                          (R.flow $ const Liver <$> interval 30)
+      delay (Milliseconds 100.0)
+      vals'' <- liftEffect $ Ref.read ref
+      vals'' `shouldNotContain` Liver
+      vals'' `shouldEqual` []
       pure unit
 
     pure unit

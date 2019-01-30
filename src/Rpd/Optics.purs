@@ -198,6 +198,8 @@ _nodeCancelers nodePath =
                     }
 
 
+-- FIXME: when user sets it to `Nothing`, it is not removing the inlet from nodes,
+--        there's `_nodeInlet` though, but may be change to only Getter?
 _inlet :: forall d. InletPath -> Lens' (Network d) (Maybe (Inlet d))
 _inlet inletPath@(InletPath nodePath _) =
     lens getter setter
@@ -256,6 +258,8 @@ _inletCancelers inletPath =
                     }
 
 
+-- FIXME: when user sets it to `Nothing`, it is not removing the outlet from nodes,
+--        there's `_nodeOutlet` though, but may be change to only Getter?
 _outlet :: forall d. OutletPath -> Lens' (Network d) (Maybe (Outlet d))
 _outlet outletPath@(OutletPath nodePath _) =
     lens getter setter

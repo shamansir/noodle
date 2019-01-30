@@ -7,6 +7,7 @@ module Rpd.API
     --, network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
     , connect, disconnectAll --, disconnectTop
     , addPatch, addPatch', addNode, addNode', addInlet, addInlet', addOutlet, addOutlet'
+    , removeInlet
     , subscribeInlet, subscribeOutlet, subscribeAllInlets, subscribeAllOutlets
     , subscribeChannelsData, subscribeNode  -- subscribeAllData
     , subscribeInlet', subscribeOutlet', subscribeAllInlets', subscribeAllOutlets'
@@ -292,10 +293,22 @@ addInlets nodePath inletDefs nw =
             rpd </> addInlet' nodePath inletDef
 
 
--- TODO: removeInlet
-    -- TODO: execute the corresponding process canceler
-    -- TODO: cancel all the links going into this inlet
-    -- TODO: updateNodeProcessFlow
+removeInlet
+    :: forall d
+     . InletPath
+    -> Network d
+    -> Rpd (Network d)
+removeInlet inletPath nw = do
+    _ <- view (_inlet inletPath) nw # exceptMaybe (RpdError "")
+    let (InletPath nodePath inletIdx) = inletPath
+    view (_inletCancelers inletPath) nw
+        # fromMaybe []
+        # traverse_ liftEffect
+    nw  #  set (_inlet inletPath) Nothing
+        #  set (_nodeInlet nodePath inletPath) Nothing
+        #  setJust (_inletCancelers inletPath) [ ]
+        #  disconnectAllComingTo inletPath
+       </> updateNodeProcessFlow nodePath
 
 
 addOutlet
@@ -592,22 +605,12 @@ connect outletPath inletPath
             # setJust (_linkCancelers linkId) [ linkCanceler ]
 
 
-disconnectAll
+removeLinks
     :: forall d
-     . OutletPath
-    -> InletPath
+     . Set LinkId
     -> Network d
     -> Rpd (Network d)
-disconnectAll outletPath inletPath
-    nw@(Network nwdef nwstate@{ links }) = do
-    let
-        linkForDeletion (Link outletPath' inletPath') =
-            (outletPath' == outletPath) && (inletPath' == inletPath)
-        linksForDeletion = Map.keys $ links # Map.filter linkForDeletion
-
-        oPatchId = getPatchOfOutlet outletPath
-        iPatchId = getPatchOfInlet inletPath
-
+removeLinks linksForDeletion nw = do
     _ <- liftEffect $ traverse_
             (\linkId ->
                 view (_linkCancelers linkId) nw
@@ -616,15 +619,59 @@ disconnectAll outletPath inletPath
             linksForDeletion
 
     pure $ (
-        foldr (\linkId nw ->
-            nw # set (_link linkId) Nothing
-               # set (_linkCancelers linkId) Nothing
+        foldr (\linkId nw' ->
+            nw' # set (_link linkId) Nothing
+                # set (_linkCancelers linkId) Nothing
         ) nw linksForDeletion
         -- # setJust (_inletConnections inletPath) newInletConnections
         -- # setJust (_outletConnections outletPath) newOutletConnections
     )
-
     -- TODO: un-subscribe `process`` function of the target node to update values including this connection
+
+
+disconnectAll
+    :: forall d
+     . OutletPath
+    -> InletPath
+    -> Network d
+    -> Rpd (Network d)
+disconnectAll outletPath inletPath
+    nw@(Network _ { links }) =
+    let
+        linkForDeletion (Link outletPath' inletPath') =
+            (outletPath' == outletPath) && (inletPath' == inletPath)
+        linksForDeletion = Map.keys $ links # Map.filter linkForDeletion
+    in
+        removeLinks linksForDeletion nw
+
+
+disconnectAllComingFrom
+    :: forall d
+     . OutletPath
+    -> Network d
+    -> Rpd (Network d)
+disconnectAllComingFrom outletPath
+    nw@(Network _ { links }) =
+    let
+        linkForDeletion (Link outletPath' _) = (outletPath' == outletPath)
+        linksForDeletion = Map.keys $ links # Map.filter linkForDeletion
+    in
+        removeLinks linksForDeletion nw
+
+
+disconnectAllComingTo
+    :: forall d
+     . InletPath
+    -> Network d
+    -> Rpd (Network d)
+disconnectAllComingTo inletPath
+    nw@(Network _ { links }) =
+    let
+        linkForDeletion (Link _ inletPath') = (inletPath' == inletPath)
+        linksForDeletion = Map.keys $ links # Map.filter linkForDeletion
+    in
+        removeLinks linksForDeletion nw
+
 
 -- TODO: disconnectTop
 
