@@ -1,4 +1,4 @@
-module RpdTest.Network.Structure
+module RpdTest.Structure
     ( spec ) where
 
 import Prelude

@@ -1,4 +1,4 @@
-module RpdTest.Network.Render
+module RpdTest.Render
     ( spec ) where
 
 import Prelude
@@ -131,7 +131,7 @@ spec =
 
 loadSample :: String -> Effect String
 loadSample name =
-  readTextFile UTF8 $ "test/samples/" <> name <> ".sample"
+  readTextFile UTF8 $ "test/_samples/" <> name <> ".sample"
 
 
 expectToRenderOnce

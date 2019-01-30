@@ -1,4 +1,4 @@
-module RpdTest.Network.CollectData
+module RpdTest.CollectData
     ( channels, channelsAfter, channelsAfter'
     , node, nodeAfter, nodeAfter'
     , TraceItem(..)

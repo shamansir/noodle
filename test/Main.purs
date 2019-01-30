@@ -8,9 +8,9 @@ import Test.Spec (Spec, describe)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (run)
 
-import RpdTest.Network.Structure (spec) as TestStructure
-import RpdTest.Network.Flow (spec) as TestFlow
-import RpdTest.Network.Render (spec) as TestRender
+import RpdTest.Structure (spec) as TestStructure
+import RpdTest.Flow (spec) as TestFlow
+import RpdTest.Render (spec) as TestRender
 import RpdTest.CommandParser (spec) as TestCommandParser
 
 spec :: Spec Unit
