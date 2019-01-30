@@ -710,7 +710,10 @@ subscriptions = do
 
     pure unit
 
-  it "when the inlet was removed after subscription, the subscriber stops receiving data" $ do
+  -- TODO: test values come in order they were sent (i.e. send folded stream with IDs or
+  --       stream different values after a delay)
+
+  it "when the inlet was removed after the subscription, the subscriber stops receiving data" $ do
     ref <- liftEffect $ Ref.new []
     let
       handler :: R.InletHandler Delivery
@@ -738,6 +741,44 @@ subscriptions = do
       _ <- liftEffect
               $ R.run (const unit) (const unit)
               $ nw  #  R.removeInlet (inletPath 0 0 0)
+                   </> R.streamToInlet
+                          (inletPath 0 0 0)
+                          (R.flow $ const Liver <$> interval 30)
+      delay (Milliseconds 100.0)
+      vals'' <- liftEffect $ Ref.read ref
+      vals'' `shouldNotContain` Liver
+      vals'' `shouldEqual` []
+      pure unit
+
+  it "when the inlet was removed and again added after the subscription, the subscriber still doesn't receive anything" $ do
+    ref <- liftEffect $ Ref.new []
+    let
+      handler :: R.InletHandler Delivery
+      handler = R.InletHandler $ \v ->
+        Ref.modify (A.(:) v) ref >>= pure <<< const unit
+      rpd :: MyRpd
+      rpd =
+        R.init "network"
+          </> R.addPatch "patch"
+          </> R.addNode (patchId 0) "node"
+          </> R.addInlet (nodePath 0 0) "inlet"
+          </> R.subscribeInlet (inletPath 0 0 0) handler
+
+    rpd # withRpd \nw -> do
+      _ <- liftEffect
+              $ R.run (const unit) (const unit) -- FIXME: report the error as `Aff.throwError`
+              $ nw # R.streamToInlet
+                        (inletPath 0 0 0)
+                        (R.flow $ const Notebook <$> interval 30)
+      delay (Milliseconds 100.0)
+      vals <- liftEffect $ Ref.read ref
+      vals `shouldContain` Notebook
+      _ <- liftEffect $ Ref.write [] ref
+      vals' <- liftEffect $ Ref.read ref
+      _ <- liftEffect
+              $ R.run (const unit) (const unit)
+              $ nw  #  R.removeInlet (inletPath 0 0 0)
+                   </> R.addInlet (nodePath 0 0) "inlet" -- notice the inlet is added back
                    </> R.streamToInlet
                           (inletPath 0 0 0)
                           (R.flow $ const Liver <$> interval 30)
