@@ -9,6 +9,7 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Tuple as Tuple
 import Data.List ((:))
 import Data.List as List
+import Data.Array ((:)) as A
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Time.Duration (Milliseconds(..))
@@ -16,17 +17,22 @@ import Data.Tuple.Nested ((/\))
 {- import Data.Lens ((^.), (?~)) -}
 import Data.Lens ((^.))
 import Data.Lens.At (at)
+import Control.Monad.Writer (tell)
+
+import Effect.Class (liftEffect)
+import Effect.Ref as Ref
+import Effect.Aff (delay)
 
 import FRP.Event (fold) as Event
 import FRP.Event.Time (interval)
 
 import Test.Spec (Spec, describe, it, pending, pending')
-import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
+import Test.Spec.Assertions (shouldEqual, shouldNotEqual, shouldContain, shouldNotContain)
 
 import Rpd.API ((</>))
 import Rpd.API as R
 import Rpd.Path
-import Rpd (init) as R
+import Rpd (init, run) as R
 import Rpd.Def (NodeDef, OutletDef) as R
 import Rpd.Process as R
 import Rpd.Network (Network) as R
@@ -141,6 +147,9 @@ spec = do
 
     describe "for network"
       network
+
+    describe "on subscriptions"
+      subscriptions
 
 
 {- ======================================= -}
@@ -648,11 +657,6 @@ links = do
 
 
 {- ======================================= -}
-{- ============ SUBSCRIPTIONS ============ -}
-{- ======================================= -}
-
-
-{- ======================================= -}
 {- =============== NETWORK =============== -}
 {- ======================================= -}
 
@@ -670,6 +674,42 @@ network = do
     pure unit
 
   pending "all the cancelers are called after running the system"
+
+
+{- ======================================= -}
+{- ============ SUBSCRIPTIONS ============ -}
+{- ======================================= -}
+
+
+subscriptions :: Spec Unit
+subscriptions = do
+  it "subscribing to inlet passes the inlet data to the subscriber" $ do
+    ref <- liftEffect $ Ref.new []
+    let
+      handler :: R.InletHandler Delivery
+      handler = R.InletHandler $ \v -> do
+        _ <- Ref.modify (A.(:) v) ref
+        pure unit
+      rpd :: MyRpd
+      rpd =
+        R.init "network"
+          </> R.addPatch "patch"
+          </> R.addNode (patchId 0) "node"
+          </> R.addInlet (nodePath 0 0) "inlet"
+          </> R.subscribeInlet (inletPath 0 0 0) handler
+
+    rpd # withRpd \nw -> do
+      _ <- liftEffect
+              $ R.run (const unit) (const unit)
+              $ nw # R.streamToInlet
+                (inletPath 0 0 0)
+                (R.flow $ const Notebook <$> interval 30)
+      delay (Milliseconds 100.0)
+      vals <- liftEffect $ Ref.read ref
+      vals `shouldContain` Notebook
+      pure unit
+
+    pure unit
 
 
 

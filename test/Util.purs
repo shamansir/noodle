@@ -37,9 +37,9 @@ withRpd test rpd =
   liftEffect (getNetwork rpd) >>= test
   where
     --getNetwork :: R.Rpd d e -> R.RpdEff e (R.Network d e)
-    getNetwork rpd = do
-      nwTarget <- Ref.new $ Network.empty "f"
-      _ <- RL.runRpdLogging (flip Ref.write $ nwTarget) rpd
+    getNetwork rpd' = do
+      nwTarget <- Ref.new $ Network.empty "foo"
+      _ <- RL.runRpdLogging (flip Ref.write $ nwTarget) rpd'
       Ref.read nwTarget
 
 
