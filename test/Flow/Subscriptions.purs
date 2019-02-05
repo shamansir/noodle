@@ -34,6 +34,35 @@ import RpdTest.Flow.Base (MyRpd, Delivery(..))
 
 spec :: Spec Unit
 spec = do
+  -- TODO:
+  -- it "subscribing to node passes the node data to the subscriber" $ do
+  --   ref <- liftEffect $ Ref.new []
+  --   let
+  --     handler :: R.InletHandler Delivery
+  --     handler = R.InletHandler $ \v ->
+  --       Ref.modify ((:) v) ref >>= pure <<< const unit
+  --     rpd :: MyRpd
+  --     rpd =
+  --       R.init "network"
+  --         </> R.addPatch "patch"
+  --         </> R.addNode (patchId 0) "node"
+  --         </> R.addInlet (nodePath 0 0) "inlet"
+  --         </> R.subscribeNode (inletPath 0 0 0) handler
+
+  --   rpd # withRpd \nw -> do
+  --     _ <- liftEffect
+  --             $ R.run (const unit) (const unit)
+  --             $ nw # R.streamToInlet
+  --               (inletPath 0 0 0)
+  --               (R.flow $ const Notebook <$> interval 30)
+  --     delay (Milliseconds 100.0)
+  --     vals <- liftEffect $ Ref.read ref
+  --     vals `shouldContain` Notebook
+  --     pure unit
+
+  --   pure unit
+
+
   it "subscribing to inlet passes the inlet data to the subscriber" $ do
     ref <- liftEffect $ Ref.new []
     let
