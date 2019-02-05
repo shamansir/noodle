@@ -5,7 +5,10 @@ module Rpd.Network
     , Inlet(..)
     , Outlet(..)
     , Link(..)
-    , InletPFlow(..), OutletPFlow(..), ProcessPFlow(..)
+    , InletFlow(..), OutletFlow(..)
+    , InletsFlow(..), OutletsFlow(..)
+    , PushToInlet(..), PushToOutlet(..)
+    , PushToProcess(..)
     -- FIXME: do not expose constructors, provide all the optics as getters
     , empty
     ) where
@@ -23,9 +26,17 @@ import Rpd.Path
 import Rpd.Util (type (/->), Canceler, Flow, PushableFlow, PushF)
 
 
-data InletPFlow d = InletPFlow (PushableFlow d)
-data OutletPFlow d = OutletPFlow (PushableFlow d)
-data ProcessPFlow d = ProcessPFlow (PushableFlow (Int /\ d))
+-- data InletPFlow d = InletPFlow (PushableFlow d)
+-- data OutletPFlow d = OutletPFlow (PushableFlow d)
+-- data ProcessPFlow d = ProcessPFlow (PushableFlow (Int /\ d))
+
+data InletFlow d = InletFlow (Flow d)
+data InletsFlow d = InletsFlow (Flow (Int /\ d))
+data PushToInlet d = PushToInlet (PushF d)
+data PushToProcess d = PushToProcess (PushF (Int /\ d))
+data OutletFlow d = OutletFlow (Flow d)
+data OutletsFlow d = OutletsFlow (Flow (Int /\ d))
+data PushToOutlet d = PushToOutlet (PushF d)
 
 
 data Network d =
@@ -56,15 +67,16 @@ data Node d =
         (NodeDef d)
         { inlets :: Set InletPath
         , outlets :: Set OutletPath
-        , flow :: ProcessPFlow d -- could it be just Flow, not a pushable one?
-        --, inletsFlow :: InletsFlow d
-        --, outletsFlow :: OutletsFlow d
+        , inletsFlow :: InletsFlow d
+        , outletsFlow :: OutletsFlow d
+        , process :: PushToProcess d
         }
 data Inlet d =
     Inlet
         InletPath
         (InletDef d)
-        { flow :: InletPFlow d
+        { flow :: InletFlow d
+        , push :: PushToInlet d
         -- flow :: PushableFlow d
         -- sources :: Set (DataSource d)
         }
@@ -72,7 +84,8 @@ data Outlet d =
     Outlet
         OutletPath
         (OutletDef d)
-        { flow :: OutletPFlow d
+        { flow :: OutletFlow d
+        , push :: PushToOutlet d
         -- flow :: PushableFlow d
         }
 data Link = Link OutletPath InletPath
