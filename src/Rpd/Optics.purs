@@ -1,12 +1,12 @@
 module Rpd.Optics
     ( _patch, _patches, _patchNode, _patchNodes
     , _node, _nodes
-    , _nodeFlow, _nodePFlow
+    , _nodeInletsFlow, _nodeOutletsFlow, _nodeProcess
     , _nodeInlet, _nodeInlets
     , _nodeOutlet, _nodeOutlets
     , _nodeCancelers
-    , _inlet, _inletLabel, _inletFlow, _inletPFlow, _inletCancelers
-    , _outlet, _outletLabel, _outletFlow, _outletPFlow
+    , _inlet, _inletLabel, _inletFlow, _inletPush, _inletCancelers
+    , _outlet, _outletLabel, _outletFlow
     , _link, _linkCancelers
     )
     where
@@ -94,24 +94,31 @@ _nodes =
     to \(Network _ { nodes }) -> List.fromFoldable nodes
 
 
-_nodeFlow :: forall d. NodePath -> Getter' (Network d) (Maybe (Flow (Int /\ d)))
-_nodeFlow nodePath =
+_nodeInletsFlow :: forall d. NodePath -> Getter' (Network d) (Maybe (InletsFlow d))
+_nodeInletsFlow nodePath =
     to extractFlow
     where
-        pFlowLens = _nodePFlow nodePath
-        extractFlow nw = view pFlowLens nw >>=
-            \(PushableFlow _ flow) -> pure flow
+        nodeLens = _node nodePath
+        extractFlow nw = view nodeLens nw >>=
+            \(Node _ _ { inletsFlow }) -> pure inletsFlow
 
 
-_nodePFlow :: forall d. NodePath -> Getter' (Network d) (Maybe (PushableFlow (Int /\ d)))
-_nodePFlow nodePath =
-    to extractPFlow
+_nodeOutletsFlow :: forall d. NodePath -> Getter' (Network d) (Maybe (OutletsFlow d))
+_nodeOutletsFlow nodePath =
+    to extractFlow
     where
         nodeLens = _node nodePath
-        extractPFlow nw = view nodeLens nw >>=
-            \(Node _ _ { flow }) ->
-                case flow of
-                    (ProcessPFlow pFlow) -> pure pFlow
+        extractFlow nw = view nodeLens nw >>=
+            \(Node _ _ { outletsFlow }) -> pure outletsFlow
+
+
+_nodeProcess :: forall d. NodePath -> Getter' (Network d) (Maybe (PushToProcess d))
+_nodeProcess nodePath =
+    to extractProcess
+    where
+        nodeLens = _node nodePath
+        extractProcess nw = view nodeLens nw >>=
+            \(Node _ _ { process }) -> pure process
 
 
 _nodeInlet :: forall d. NodePath -> InletPath -> Lens' (Network d) (Maybe Unit)
@@ -222,24 +229,22 @@ _inletLabel inletPath =
             \(Inlet _ { label } _) -> pure label
 
 
-_inletFlow :: forall d. InletPath -> Getter' (Network d) (Maybe (Flow d))
+_inletFlow :: forall d. InletPath -> Getter' (Network d) (Maybe (InletFlow d))
 _inletFlow inletPath =
     to extractFlow
     where
-        pFlowLens = _inletPFlow inletPath
-        extractFlow nw = view pFlowLens nw >>=
-            \(PushableFlow _ flow) -> pure flow
+        inletLens = _inlet inletPath
+        extractFlow nw = view inletLens nw >>=
+            \(Inlet _ _ { flow }) -> pure flow
 
 
-_inletPFlow :: forall d. InletPath -> Getter' (Network d) (Maybe (PushableFlow d))
-_inletPFlow inletPath =
+_inletPush :: forall d. InletPath -> Getter' (Network d) (Maybe (PushToInlet d))
+_inletPush inletPath =
     to extractPFlow
     where
         inletLens = _inlet inletPath
         extractPFlow nw = view inletLens nw >>=
-            \(Inlet _ _ { flow }) ->
-                case flow of
-                    (InletPFlow pFlow) -> pure pFlow
+            \(Inlet _ _ { push }) -> pure push
 
 
 _inletCancelers :: forall d. InletPath -> Lens' (Network d) (Maybe (Array Canceler))
@@ -282,25 +287,13 @@ _outletLabel outletPath =
             \(Outlet _ { label } _) -> pure label
 
 
-_outletFlow :: forall d. OutletPath -> Getter' (Network d) (Maybe (Flow d))
+_outletFlow :: forall d. OutletPath -> Getter' (Network d) (Maybe (OutletFlow d))
 _outletFlow outletPath =
     to extractFlow
     where
-        pFlowLens = _outletPFlow outletPath
-        extractFlow nw = view pFlowLens nw >>=
-            \(PushableFlow _ flow) -> pure flow
-
-
-_outletPFlow :: forall d. OutletPath -> Getter' (Network d) (Maybe (PushableFlow d))
-_outletPFlow outletPath =
-    to extractPFlow
-    where
         outletLens = _outlet outletPath
-        extractPFlow nw =
-            view outletLens nw >>=
-                \(Outlet _ _ { flow }) ->
-                    case flow of
-                        (OutletPFlow pFlow) -> pure pFlow
+        extractFlow nw = view outletLens nw >>=
+            \(Outlet _ _ { flow }) -> pure flow
 
 
 _link :: forall d. LinkId -> Lens' (Network d) (Maybe Link)
