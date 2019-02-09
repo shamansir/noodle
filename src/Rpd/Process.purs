@@ -3,7 +3,6 @@ module Rpd.Process
     , TracedItem(..)
     , InletHandler(..), OutletHandler(..)
     , NodeHandlers(..), InletHandlers(..), OutletHandlers(..)
-    , InletsFlow(..), OutletsFlow(..)
     , InletsByIndexFlow(..), OutletsByIndexFlow(..)
     , InletsByLabelFlow(..), OutletsByLabelFlow(..)
     , InletsByPathFlow(..), OutletsByPathFlow(..)
@@ -58,10 +57,6 @@ data OutletHandler d = OutletHandler (d -> Effect Unit)
 data NodeHandlers d = NodeHandlers (Array (TracedItem d -> Effect Unit)) -- TODO: -> Rpd Unit
 data InletHandlers d = Inletandlers (Array (d -> Effect Unit)) -- TODO: -> Rpd Unit
 data OutletHandlers d = OutletHandlers (Array (d -> Effect Unit)) -- TODO: -> Rpd Unit
-
-
-data InletsFlow d = InletsFlow (Flow (Int /\ d))
-data OutletsFlow d = OutletsFlow (Flow (Maybe (Int /\ d)))
 
 
 data InletsMapData key d = InletsMapData (key /-> d)

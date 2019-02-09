@@ -196,7 +196,7 @@ addNode'
     -> Rpd (Network d)
 addNode' patchId def nw = do
     nodePath <- except $ nextNodePath patchId nw
-    processPFlow <- liftEffect makePushableFlow
+    (PushableFlow inletsFlow pushToInlet) <- liftEffect makePushableFlow
     let
         newNode =
             Node
@@ -204,7 +204,8 @@ addNode' patchId def nw = do
                 def
                 { inlets : Set.empty
                 , outlets : Set.empty
-                , flow : ProcessPFlow processPFlow
+                , process : PushToProcess pushToInlet
+                , inletsFlow : InletsFlow inletsFlow
                 }
     nw
          #  setJust (_node nodePath) newNode
@@ -260,21 +261,22 @@ addInlet' nodePath def nw = do
     inletPath <- except $ nextInletPath nodePath nw
     -- TODO: when there's already some inlet exists with the same path,
     -- cancel its subscription before
-    pushableFlow@(PushableFlow pushData dataFlow) <- liftEffect makePushableFlow
-    (Node _ _ { flow }) :: Node d
+    PushableFlow pushToInlet inletFlow <- liftEffect makePushableFlow
+    (Node _ _ { process }) :: Node d
         <- view (_node nodePath) nw # exceptMaybe (RpdError "")
     let
         inletId = getInletId inletPath
-        (ProcessPFlow (PushableFlow informNode _ )) = flow
+        (PushToProcess informNode) = process
         newInlet =
             Inlet
                 inletPath
                 def
-                { flow : InletPFlow pushableFlow
+                { flow : InletFlow inletFlow
+                , push : PushToInlet pushToInlet
                 }
     canceler :: Canceler <-
         liftEffect $
-            E.subscribe dataFlow (\d -> informNode (inletId /\ d))
+            E.subscribe inletFlow (\d -> informNode (inletId /\ d))
     -- userCancelers :: Array Canceler <-
     --     liftEffect $ traverse (E.subscribe dataFlow) subs
     nw # setJust (_inlet inletPath) newInlet
@@ -333,13 +335,14 @@ addOutlet'
     -> Rpd (Network d)
 addOutlet' nodePath def nw = do
     outletPath <- except $ nextOutletPath nodePath nw
-    pushableFlow <- liftEffect makePushableFlow
+    PushableFlow outletFlow pushToOutlet <- liftEffect makePushableFlow
     let
         newOutlet =
             Outlet
                 outletPath
                 def
-                { flow : OutletPFlow pushableFlow
+                { flow : OutletFlow outletFlow
+                , push : PushToOutlet pushToOutlet
                 }
         outletId = getOutletId outletPath
     nw # setJust (_outlet outletPath) newOutlet
@@ -496,7 +499,7 @@ subscribeAllInlets' handler (Network _ { inlets }) =
         sub :: Inlet d -> Subscriber
         sub (Inlet inletPath _ { flow }) =
             case flow of
-                InletPFlow (PushableFlow _ fl) -> E.subscribe fl $ handler inletPath
+                InletFlow inletFlow -> E.subscribe inletFlow $ handler inletPath
 
 
 subscribeAllOutlets
@@ -521,7 +524,7 @@ subscribeAllOutlets' handler (Network _ { outlets }) =
         sub :: Outlet d -> Subscriber
         sub (Outlet outletPath _ { flow }) =
             case flow of
-                OutletPFlow (PushableFlow _ fl) -> E.subscribe fl $ handler outletPath
+                OutletFlow outletFlow -> E.subscribe outletFlow $ handler outletPath
 
 
 subscribeChannelsData
@@ -692,14 +695,13 @@ updateNodeProcessFlow nodePath nw = do
     _ <- view (_nodeCancelers nodePath) nw
             # fromMaybe []
             # traverse_ liftEffect
-    (Node _ nodeDef { flow, inlets, outlets }) <-
+    (Node _ nodeDef { inletsFlow, inlets, outlets }) <-
         except $ view (_node nodePath) nw # note (RpdError "")
     case nodeDef.process of
         Withhold -> pure nw
         processF ->
             if (Set.isEmpty inlets || Set.isEmpty outlets) then pure nw else do
                 let
-                    (ProcessPFlow (PushableFlow _ processFlow)) = flow
                     (outletFlows :: Array (PushableFlow d)) =
                         outlets
                             # (Set.toUnfoldable :: forall a. Set a -> Array a)
@@ -714,7 +716,7 @@ updateNodeProcessFlow nodePath nw = do
                                     _ -> pure unit
                             _ -> pure unit
                 OutletsFlow outletsFlow /\ maybeCancelBuild <-
-                    buildOutletsFlow nodePath processF processFlow inlets outlets nw
+                    buildOutletsFlow nodePath processF inletsFlow inlets outlets nw
                 canceler :: Canceler
                     <- liftEffect $ E.subscribe outletsFlow pushToOutletFlow
                 let

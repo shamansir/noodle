@@ -131,4 +131,11 @@ buildNetwork = do
 ```
 
 
-All the `subscribe___` functions returning cancellers to the user should have the default implementation which stores those cancelers inside the `Network` and calls them when the corresponding entity (Node/Inlet/etc.) is removed
+All the `subscribe___` functions returning cancellers to the user should have the default implementation which stores those cancelers inside the `Network` and calls them when the corresponding entity (Node/Inlet/etc.) is removed —— _that's covered with tests and partly done_.
+
+
+Now every Inlet and Outlet has its "flow" and its own "push" function — to send the value in. While it is pretty clear what to do with inlets on processing: what flows in from the inlets connected to the node also goes directly into the `process` handler and actually triggers it, but with outlets, it's not that clear — their values may both be produced by the `process` function and as well may be sent by the user who uses their own `push` function (if we allow it, of course — should we?). Should the outlet flow contain both? Should the node contain the different `outlets` flow, which is a sum of `process` results and direct values? —— _I decided to restrict pushing to outlets since node processing should be the only source of their data_.
+
+
+
+
