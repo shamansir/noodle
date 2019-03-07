@@ -12,7 +12,7 @@ module Rpd.API
     , subscribeChannelsData, subscribeNode  -- subscribeAllData
     , subscribeInlet', subscribeOutlet', subscribeAllInlets', subscribeAllOutlets'
     , subscribeChannelsData', subscribeNode'  -- subscribeAllData'
-    , sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
+    , sendToInlet, streamToInlet --, sendToOutlet, streamToOutlet
     --, findPatch, findNode, findOutlet, findInlet
     ) where
 
@@ -372,8 +372,8 @@ sendToInlet
     -> Network d
     -> Rpd (Network d)
 sendToInlet inletPath d nw = do
-    (PushableFlow push _) <-
-        view (_inletPFlow inletPath) nw # exceptMaybe (RpdError "")
+    (PushToInlet push) <-
+        view (_inletPush inletPath) nw # exceptMaybe (RpdError "")
     _ <- liftEffect $ push d
     pure nw
 
@@ -385,36 +385,36 @@ streamToInlet
     -> Network d
     -> Rpd Canceler
 streamToInlet inletPath flow nw = do
-    (PushableFlow push _) <-
-        view (_inletPFlow inletPath) nw
+    (PushToInlet push) <-
+        view (_inletPush inletPath) nw
             # exceptMaybe (RpdError "")
     canceler :: Canceler <-
         liftEffect $ E.subscribe flow push
     pure canceler
 
 
-sendToOutlet
+sendToOutlet -- TODO: consider removing?
     :: forall d
      . OutletPath
     -> d
     -> Network d
     -> Rpd (Network d)
 sendToOutlet outletPath d nw = do
-    (PushableFlow push _) <-
-        view (_outletPFlow outletPath) nw # exceptMaybe (RpdError "")
+    (PushToOutlet push) <-
+        view (_outletPush outletPath) nw # exceptMaybe (RpdError "")
     _ <- liftEffect $ push d
     pure nw
 
 
-streamToOutlet
+streamToOutlet -- TODO: consider removing?
     :: forall d
      . OutletPath
     -> Flow d
     -> Network d
     -> Rpd Canceler
 streamToOutlet outletPath flow nw = do
-    (PushableFlow push _) <-
-        view (_outletPFlow outletPath) nw
+    (PushToOutlet push) <-
+        view (_outletPush outletPath) nw
             # exceptMaybe (RpdError "")
     canceler :: Canceler <-
         liftEffect $ E.subscribe flow push
@@ -443,7 +443,7 @@ subscribeInlet'
     -> Network d
     -> Rpd Canceler
 subscribeInlet' inletPath (InletHandler handler) nw = do
-    flow :: Flow d <-
+    (InletFlow flow) <-
         view (_inletFlow inletPath) nw
             # exceptMaybe (RpdError "")
     canceler :: Canceler <- liftEffect $ E.subscribe flow handler
@@ -553,11 +553,12 @@ subscribeNode
     :: forall d
      . NodePath
     -> (Int /\ d -> Effect Unit)
+    -> (Int /\ d -> Effect Unit)
     -> Network d
     -> Rpd (Network d)
-subscribeNode nodePath handler nw = do
-    _ <- subscribeNode' nodePath handler nw
-    -- FIXME: implement
+subscribeNode nodePath inletsHandler outletsHandler nw = do
+    _ <- subscribeNode' nodePath inletsHandler outletsHandler nw
+    -- FIXME: implement !!!!
     pure nw
 
 
@@ -565,15 +566,21 @@ subscribeNode'
     :: forall d
      . NodePath
     -> (Int /\ d -> Effect Unit)
+    -> (Int /\ d -> Effect Unit)
     -> Network d
     -> Rpd Canceler
-subscribeNode' nodePath handler nw = do
-    flow :: Flow (Int /\ d) <-
-        view (_nodeFlow nodePath) nw
+subscribeNode' nodePath inletsHandler outletsHandler nw = do
+    (InletsFlow inletsFlow) :: InletsFlow d <-
+        view (_nodeInletsFlow nodePath) nw
             # exceptMaybe (RpdError "")
-    canceler :: Canceler <-
-        liftEffect $ E.subscribe flow handler
-    pure canceler
+    inletsCanceler :: Canceler <-
+        liftEffect $ E.subscribe inletsFlow inletsHandler
+    (OutletsFlow outletsFlow) :: OutletsFlow d <-
+        view (_nodeOutletsFlow nodePath) nw
+            # exceptMaybe (RpdError "")
+    outletsCanceler :: Canceler <-
+        liftEffect $ E.subscribe outletsFlow outletsHandler
+    pure $ inletsCanceler <> outletsCanceler
 
 
 connect
@@ -592,12 +599,9 @@ connect outletPath inletPath
         oPatchId = getPatchOfOutlet outletPath
         iPatchId = getPatchOfInlet inletPath
 
-    outletPFlow <- view (_outletPFlow outletPath) nw # exceptMaybe (RpdError "")
-    inletPFlow <- view (_inletPFlow inletPath) nw # exceptMaybe (RpdError "")
-
-    let
-        (PushableFlow _ outletFlow) = outletPFlow
-        (PushableFlow pushToInlet inletFlow) = inletPFlow
+    outletFlow <- view (_outletFlow outletPath) nw # exceptMaybe (RpdError "")
+    inletFlow <- view (_inletFlow inletPath) nw # exceptMaybe (RpdError "")
+    pushToInlet <- view (_inletPush inletPath) nw # exceptMaybe (RpdError "")
 
     linkCanceler :: Canceler <-
             liftEffect $
@@ -705,7 +709,7 @@ updateNodeProcessFlow nodePath nw = do
                     (outletFlows :: Array (PushableFlow d)) =
                         outlets
                             # (Set.toUnfoldable :: forall a. Set a -> Array a)
-                            # map (\outletPath -> view (_outletPFlow outletPath) nw)
+                            # map (\outletPath -> view (_outletPush outletPath) nw)
                             # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
                     pushToOutletFlow :: Maybe (Int /\ d) -> Effect Unit
                     pushToOutletFlow maybeData =

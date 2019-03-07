@@ -6,7 +6,7 @@ module Rpd.Optics
     , _nodeOutlet, _nodeOutlets
     , _nodeCancelers
     , _inlet, _inletLabel, _inletFlow, _inletPush, _inletCancelers
-    , _outlet, _outletLabel, _outletFlow
+    , _outlet, _outletLabel, _outletFlow, _outletPush --, _outletCancelers
     , _link, _linkCancelers
     )
     where
@@ -294,6 +294,15 @@ _outletFlow outletPath =
         outletLens = _outlet outletPath
         extractFlow nw = view outletLens nw >>=
             \(Outlet _ _ { flow }) -> pure flow
+
+
+_outletPush :: forall d. OutletPath -> Getter' (Network d) (Maybe (PushToOutlet d))
+_outletPush outletPath =
+    to extractPFlow
+    where
+        outletLens = _outlet outletPath
+        extractPFlow nw = view outletLens nw >>=
+            \(Outlet _ _ { push }) -> pure push
 
 
 _link :: forall d. LinkId -> Lens' (Network d) (Maybe Link)
