@@ -119,7 +119,7 @@ See https://github.com/bodil/purescript-vdom/blob/master/test/Main.purs for a re
 
 Think on the ways for user to implement custom node types. Are they just functions to create custom nodes?
 
-If we introduce GUID-paths, we either need to return them to the user on every entity creation so that this user will be able to adress the newly created entities (i.e. nodes), or we should store the Num-Path /-> GUID map inside the Network, and update it on every structure change. Another way (since with `addNode`/`addInlet`/etc. methods we should both modify the `Network` _and_ return the GUID, if we want user to know it): always keep the `Network` inside the `Rpd` monad (using `StateT` or continuation monad?) and still let user get the GUID with `do` like:
+If we introduce GUID-paths, we either need to return them to the user on every entity creation so that this user will be able to address the newly created entities (i.e. nodes), or we should store the Num-Path /-> GUID map inside the Network, and update it on every structure change. Another way (since with `addNode`/`addInlet`/etc. methods we should both modify the `Network` _and_ return the GUID, if we want user to know it): always keep the `Network` inside the `Rpd` monad (using `StateT` or continuation monad?) and still let user get the GUID with `do` like:
 
 ```purescript
 buildNetwork = do
@@ -129,6 +129,8 @@ buildNetwork = do
     -- some code
     pure unit
 ```
+
+See [_Implicit Lifting_](https://stepik.org/lesson/38581/step/2?unit=20506) on Stepik.
 
 
 All the `subscribe___` functions returning cancellers to the user should have the default implementation which stores those cancelers inside the `Network` and calls them when the corresponding entity (Node/Inlet/etc.) is removed —— _that's covered with tests and partly done_.

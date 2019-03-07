@@ -77,13 +77,13 @@ data Inlet d =
         (InletDef d)
         { flow :: InletFlow d
         , push :: PushToInlet d
-        -- sources :: Set (DataSource d)
         }
 data Outlet d =
     Outlet
         OutletPath
         (OutletDef d)
         { flow :: OutletFlow d
+        , push :: PushToOutlet d
         }
 data Link = Link OutletPath InletPath
 
