@@ -1,7 +1,7 @@
 module Rpd.Optics
     ( _patch, _patches, _patchNode, _patchNodes
     , _node, _nodes
-    , _nodeInletsFlow, _nodeOutletsFlow, _nodeProcess
+    , _nodeInletsFlow, _nodeOutletsFlow, _nodeInletsPush
     , _nodeInlet, _nodeInlets
     , _nodeOutlet, _nodeOutlets
     , _nodeCancelers
@@ -112,13 +112,13 @@ _nodeOutletsFlow nodePath =
             \(Node _ _ { outletsFlow }) -> pure outletsFlow
 
 
-_nodeProcess :: forall d. NodePath -> Getter' (Network d) (Maybe (PushToProcess d))
-_nodeProcess nodePath =
+_nodeInletsPush:: forall d. NodePath -> Getter' (Network d) (Maybe (PushToInlets d))
+_nodeInletsPush nodePath =
     to extractProcess
     where
         nodeLens = _node nodePath
         extractProcess nw = view nodeLens nw >>=
-            \(Node _ _ { process }) -> pure process
+            \(Node _ _ { pushToInlets }) -> pure pushToInlets
 
 
 _nodeInlet :: forall d. NodePath -> InletPath -> Lens' (Network d) (Maybe Unit)

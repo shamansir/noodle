@@ -8,7 +8,7 @@ module Rpd.Network
     , InletFlow(..), OutletFlow(..)
     , InletsFlow(..), OutletsFlow(..)
     , PushToInlet(..), PushToOutlet(..)
-    , PushToProcess(..)
+    , PushToInlets(..), PushToOutlets(..)
     -- FIXME: do not expose constructors, provide all the optics as getters
     , empty
     ) where
@@ -31,11 +31,13 @@ import Rpd.Util (type (/->), Canceler, Flow, PushableFlow, PushF)
 data InletFlow d = InletFlow (Flow d)
 data InletsFlow d = InletsFlow (Flow (InletInNode /\ d))
 data PushToInlet d = PushToInlet (PushF d)
-data PushToProcess d = PushToProcess (PushF (InletInNode /\ d))
+data PushToInlets d = PushToInlets (PushF (InletInNode /\ d))
 data OutletFlow d = OutletFlow (Flow d)
 data OutletsFlow d = OutletsFlow (Flow (Maybe (OutletInNode /\ d)))
-        -- FIXME: Maybe (Flow (Maybe OutletInNode /\ d))
+        -- FIXME: Flow (Maybe OutletInNode /\ d)
 data PushToOutlet d = PushToOutlet (PushF d)
+data PushToOutlets d = PushToOutlets (PushF (Maybe (OutletInNode /\ d)))
+        -- FIXME: PushF (Maybe OutletInNode /\ d)
 
 
 data Network d =
@@ -68,7 +70,8 @@ data Node d =
         , outlets :: Set OutletPath
         , inletsFlow :: InletsFlow d
         , outletsFlow :: OutletsFlow d
-        , process :: PushToProcess d
+        , pushToInlets :: PushToInlets d
+        , pushToOutlets :: PushToOutlets d
         }
 data Inlet d =
     Inlet

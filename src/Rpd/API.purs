@@ -196,7 +196,9 @@ addNode'
     -> Rpd (Network d)
 addNode' patchId def nw = do
     nodePath <- except $ nextNodePath patchId nw
-    (PushableFlow pushToInlet inletsFlow) <- liftEffect makePushableFlow
+    PushableFlow pushToInlets inletsFlow <- liftEffect makePushableFlow
+    PushableFlow pushToOutlets outletsFlow <- liftEffect makePushableFlow
+    -- TODO: change `PushToProcess` to `PushToInlets` and add `PushToOutlets`
     let
         newNode =
             Node
@@ -204,9 +206,10 @@ addNode' patchId def nw = do
                 def
                 { inlets : Set.empty
                 , outlets : Set.empty
-                , process : PushToProcess pushToInlet
                 , inletsFlow : InletsFlow inletsFlow
                 , outletsFlow : OutletsFlow outletsFlow
+                , pushToInlets : PushToInlets pushToInlets
+                , pushToOutlets : PushToOutlets pushToOutlets
                 }
     nw
          #  setJust (_node nodePath) newNode
@@ -263,11 +266,11 @@ addInlet' nodePath def nw = do
     -- TODO: when there's already some inlet exists with the same path,
     -- cancel its subscription before
     PushableFlow pushToInlet inletFlow <- liftEffect makePushableFlow
-    (Node _ _ { process }) :: Node d
+    (Node _ _ { pushToInlets }) :: Node d
         <- view (_node nodePath) nw # exceptMaybe (RpdError "")
     let
         inletId = getInletId inletPath
-        (PushToProcess informNode) = process
+        (PushToInlets informNode) = pushToInlets
         newInlet =
             Inlet
                 inletPath
