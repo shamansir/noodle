@@ -140,4 +140,60 @@ Now every Inlet and Outlet has its "flow" and its own "push" function — to sen
 
 
 
+`data FlowMsg = Bang | Skip | Pass v | Decline v | Error x ...`
+
+```purescript
+data Incoming x d
+    = Identified x d
+    | Unidentified d
+
+data Outgoing x d
+    = Send x d
+    | Skip
+```
+
+
+```purescript
+-- TODO: may be find better ways to process these things in future
+--       I'd like to have something similar to JS-world
+--       function (inlets) { return { 'c': inlets.a + inlets.b } }
+-- variants:
+--  `Record.set` / `Record.get` etc.
+--  `Foreign.Object`` : https://github.com/purescript/purescript-foreign-object/blob/master/src/Foreign/Object.purs
+--  `liftA2 (+) (m^.at a) (m^.at b)` -- Map -> Map
+
+-- may be ProcessF should also receive previous value
+-- TODO: add Process Behavior (a.k.a. event with function) it would be possible
+--       to subscribe/know outlets changes as well
+-- TODO: generalize Process function to receiving something from incoming data stream and
+--       sending something to outgoing data stream, so all the types of `ProcessF`` could
+--       implement the same type. The question is — we need folds to store previous values,
+--       will we be able to apply them with this implementation?
+-- TODO: also there can be a `Pipe`d or `Direct` approach, i.e. a function
+--       of type (String -> d -> (String /\ d)), where there is no need in other inlet
+--       values except one, so it is called for each inlets one by one and so collects
+--       values for outputs
+
+-- data ProcessF d
+--     = ByLabel (Flow (String /\ d) -> PushF (String /\ d) -> Effect Unit)
+--     | ByPath (Flow (InletPath /\ d) -> PushF (OutletPath /\ d) -> Effect Unit)
+    -- | Full (Flow (InletPath /\ InletDef d /\ d) -> PushF (OutletPath /\ d) -> Effect Unit)
+
+    -- TODO: Effectful ProcessF
+    -- TODO: Other types
+
+
+-- TODO: some "data flow" typeclass which provides functions like:
+-- `receive inletIndex -> Rpd/Effect d`,
+-- `send outletIndex data -> Rpd/Effect Unit`,
+-- `receive' inletLabel -> Rpd/Effect d`,
+-- `send' outletLabel data -> Rpd/Effect Unit`,
+-- and maybe... the `Rpd d`, `Network (Node d)` or the `Node d` should implement it,
+-- for the `Node` case — it can use `_nodeInlet'`/`_nodeOutlet'` lensed and so
+-- search only for the inlets inside, by label
+
+-- data DataSource d
+--     = UserSource (Flow d)
+--     | OutletSource OutletPath (Flow d)
+```
 
