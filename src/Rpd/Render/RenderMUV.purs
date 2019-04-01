@@ -41,6 +41,8 @@ data PushMsg d msg = PushMsg (Message d msg -> Effect Unit)
    - gets message: either core one from Rpd.Render, or the custom one used by user in the MUV loop;
    - gets the latest MUV model paired with the latest network state;
    - and returns new MUV model with an array of messages to execute in the next loop, when needed;
+
+   TODO: let user do effects in `UpdateF`
 -}
 type UpdateF d model msg
     =  Message d msg
@@ -159,13 +161,15 @@ make'
             -> R.Rpd (model /\ R.Network d)
         updater msg rpd = rpd >>=
             \(model /\ nw) -> do
-                nw' <- case msg of
-                    Core coreMsg -> Core.update coreMsg nw
-                    Custom _ -> pure nw
-                let model' /\ msgs = update' msg $ model /\ nw'
-                model'' /\ nw'' <-
-                    foldr updater (pure $ model' /\ nw') msgs
-                pure $ model'' /\ nw''
+                -- perform update using core/simple Renderer and do some our things e.g. subscriptions
+                (model' /\ nw') <- update msg (model /\ nw) Core.update
+                -- perform user update function, collect user messages
+                let model'' /\ msgs = update' msg $ model' /\ nw'
+                -- apply user messages returned from previous line to the models
+                model''' /\ nw'' <-
+                    foldr updater (pure $ model'' /\ nw') msgs
+                -- return all the latest states
+                pure $ model''' /\ nw''
         viewer
             :: PushMsg d msg
             -> R.Rpd (model /\ R.Network d)
@@ -208,4 +212,18 @@ run' event nw renderer =
     case make' event nw renderer of
         { first, next } -> Event.subscribe next (pure <<< identity)
 
+
+
+update
+    :: forall d model msg
+     . Message d msg
+    -> (model /\ R.Network d)
+    -> (Core.Message d -> R.Network d -> R.Rpd (R.Network d))
+    -> R.Rpd (model /\ R.Network d)
+update msg (model /\ nw) userUpdate =
+    case msg of
+        Core coreMsg ->
+            userUpdate coreMsg nw
+                >>= pure <<< ((/\) model)
+        Custom _ -> pure ( model /\ nw )
 

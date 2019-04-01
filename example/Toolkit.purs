@@ -40,11 +40,10 @@ data Value
 patch :: Rpd.PatchDef Value
 patch =
     { name : "particles"
-    , nodeDefs :
-        ( colorNode
+    , nodeDefs
+        : colorNode
         : metroNode
         : List.Nil
-        )
     }
 
 
@@ -117,12 +116,11 @@ triggerInlet label =
 colorNode :: Rpd.NodeDef Value
 colorNode =
     { name : "color"
-    , inletDefs :
-        ( numberInlet "r"
+    , inletDefs
+        : numberInlet "r"
         : numberInlet "g"
         : numberInlet "b"
         : List.Nil
-        )
     , outletDefs :
         List.singleton $ colorOutlet "color"
     , process : R.FoldedByLabel foldToColor
@@ -142,11 +140,10 @@ colorNode =
 metroNode :: Rpd.NodeDef Value
 metroNode =
     { name : "metro"
-    , inletDefs :
-        ( triggerInlet "enabled"
+    , inletDefs
+        : triggerInlet "enabled"
         : periodInlet "period"
         : List.Nil
-        )
     , outletDefs :
         List.singleton $ bangOutlet "bang"
     , process : R.FoldedByLabel foldToBang
