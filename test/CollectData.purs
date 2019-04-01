@@ -135,12 +135,12 @@ nodeAfter' nodePath period nw afterF =
   where
     collector target = RL.extract [] $ do
       let
-        onNodeData (inletId /\ d) = do
+        onInletData (inletId /\ d) = do
           let inletPath = R.InletPath nodePath inletId
           curData <- Ref.read target
           Ref.write (curData +> InletData inletPath d) target
           pure unit
-      canceler <- R.subscribeNode' nodePath onNodeData nw
+      canceler <- R.subscribeNode' nodePath onInletData (const $ pure unit) nw
       pure [ canceler ]
 
 

@@ -1,5 +1,7 @@
 module Rpd.Process
     ( ProcessF(..)
+    , InletInNode, OutletInNode
+    , InletLabel, OutletLabel
     , TracedItem(..)
     , InletHandler(..), OutletHandler(..)
     , NodeHandlers(..), InletHandlers(..), OutletHandlers(..)
@@ -21,29 +23,23 @@ import Rpd.Util (Flow, type (/->))
 import Rpd.Path
 
 
--- TODO:
-
--- data FlowMsg = Bang | Skip | Pass v | Decline v | Error x ...
-
-data Incoming x d
-    = Identified x d
-    | Unidentified d
+type InletInNode = Int
+type OutletInNode = Int
 
 
-data Outgoing x d
-    = Send x d
-    | Skip
+type InletLabel = String
+type OutletLabel = String
 
 
 data TracedItem d
-    = FromInlet Int d
-    | FromOutlet Int d
+    = FromInlet InletInNode d
+    | FromOutlet OutletInNode d
 
 
-data InletsByIndexFlow d = InletsByIndexFlow (Flow (Int /\ d))
-data OutletsByIndexFlow d = OutletsByIndexFlow (Flow (Int /\ d))
-data InletsByLabelFlow d = InletsByLabelFlow (Flow (Maybe String /\ d))
-data OutletsByLabelFlow d = OutletsByLabelFlow (Flow (Maybe (String /\ d)))
+data InletsByIndexFlow d = InletsByIndexFlow (Flow (InletInNode /\ d))
+data OutletsByIndexFlow d = OutletsByIndexFlow (Flow (OutletInNode /\ d))
+data InletsByLabelFlow d = InletsByLabelFlow (Flow (Maybe InletLabel /\ d))
+data OutletsByLabelFlow d = OutletsByLabelFlow (Flow (Maybe (OutletLabel /\ d)))
 type InletsByPathFlow d = Flow (Maybe InletPath /\ d)
 type OutletsByPathFlow d = Flow (Maybe (OutletPath /\ d))
 

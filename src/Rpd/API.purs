@@ -12,7 +12,7 @@ module Rpd.API
     , subscribeChannelsData, subscribeNode  -- subscribeAllData
     , subscribeInlet', subscribeOutlet', subscribeAllInlets', subscribeAllOutlets'
     , subscribeChannelsData', subscribeNode'  -- subscribeAllData'
-    , sendToInlet, streamToInlet --, sendToOutlet, streamToOutlet
+    , sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
     --, findPatch, findNode, findOutlet, findInlet
     ) where
 
@@ -196,7 +196,9 @@ addNode'
     -> Rpd (Network d)
 addNode' patchId def nw = do
     nodePath <- except $ nextNodePath patchId nw
-    (PushableFlow inletsFlow pushToInlet) <- liftEffect makePushableFlow
+    PushableFlow pushToInlets inletsFlow <- liftEffect makePushableFlow
+    PushableFlow pushToOutlets outletsFlow <- liftEffect makePushableFlow
+    -- TODO: change `PushToProcess` to `PushToInlets` and add `PushToOutlets`
     let
         newNode =
             Node
@@ -204,8 +206,10 @@ addNode' patchId def nw = do
                 def
                 { inlets : Set.empty
                 , outlets : Set.empty
-                , process : PushToProcess pushToInlet
                 , inletsFlow : InletsFlow inletsFlow
+                , outletsFlow : OutletsFlow outletsFlow
+                , pushToInlets : PushToInlets pushToInlets
+                , pushToOutlets : PushToOutlets pushToOutlets
                 }
     nw
          #  setJust (_node nodePath) newNode
@@ -262,11 +266,11 @@ addInlet' nodePath def nw = do
     -- TODO: when there's already some inlet exists with the same path,
     -- cancel its subscription before
     PushableFlow pushToInlet inletFlow <- liftEffect makePushableFlow
-    (Node _ _ { process }) :: Node d
+    (Node _ _ { pushToInlets }) :: Node d
         <- view (_node nodePath) nw # exceptMaybe (RpdError "")
     let
         inletId = getInletId inletPath
-        (PushToProcess informNode) = process
+        (PushToInlets informNode) = pushToInlets
         newInlet =
             Inlet
                 inletPath
@@ -335,7 +339,7 @@ addOutlet'
     -> Rpd (Network d)
 addOutlet' nodePath def nw = do
     outletPath <- except $ nextOutletPath nodePath nw
-    PushableFlow outletFlow pushToOutlet <- liftEffect makePushableFlow
+    PushableFlow pushToOutlet outletFlow <- liftEffect makePushableFlow
     let
         newOutlet =
             Outlet
@@ -469,7 +473,7 @@ subscribeOutlet'
     -> Network d
     -> Rpd Canceler
 subscribeOutlet' outletPath (OutletHandler handler) nw = do
-    flow :: Flow d <-
+    (OutletFlow flow) <-
         view (_outletFlow outletPath) nw
             # exceptMaybe (RpdError "")
     canceler :: Canceler <-
@@ -552,8 +556,8 @@ subscribeChannelsData' oHandler iHandler nw =
 subscribeNode
     :: forall d
      . NodePath
-    -> (Int /\ d -> Effect Unit)
-    -> (Int /\ d -> Effect Unit)
+    -> (InletInNode /\ d -> Effect Unit)
+    -> (Maybe (OutletInNode /\ d) -> Effect Unit)
     -> Network d
     -> Rpd (Network d)
 subscribeNode nodePath inletsHandler outletsHandler nw = do
@@ -565,8 +569,8 @@ subscribeNode nodePath inletsHandler outletsHandler nw = do
 subscribeNode'
     :: forall d
      . NodePath
-    -> (Int /\ d -> Effect Unit)
-    -> (Int /\ d -> Effect Unit)
+    -> (InletInNode /\ d -> Effect Unit)
+    -> (Maybe (OutletInNode /\ d) -> Effect Unit)
     -> Network d
     -> Rpd Canceler
 subscribeNode' nodePath inletsHandler outletsHandler nw = do
@@ -589,7 +593,7 @@ connect
     -> InletPath
     -> Network d
     -> Rpd (Network d)
--- FIXME: rewrite for the case of different patches
+-- TODO: rewrite for the case of different patches
 connect outletPath inletPath
     nw@(Network nwdef nwstate) = do
     let
@@ -599,9 +603,12 @@ connect outletPath inletPath
         oPatchId = getPatchOfOutlet outletPath
         iPatchId = getPatchOfInlet inletPath
 
-    outletFlow <- view (_outletFlow outletPath) nw # exceptMaybe (RpdError "")
-    inletFlow <- view (_inletFlow inletPath) nw # exceptMaybe (RpdError "")
-    pushToInlet <- view (_inletPush inletPath) nw # exceptMaybe (RpdError "")
+    (OutletFlow outletFlow) <-
+        view (_outletFlow outletPath) nw # exceptMaybe (RpdError "")
+    (InletFlow inletFlow) <-
+        view (_inletFlow inletPath) nw # exceptMaybe (RpdError "")
+    (PushToInlet pushToInlet) <-
+        view (_inletPush inletPath) nw # exceptMaybe (RpdError "")
 
     linkCanceler :: Canceler <-
             liftEffect $
@@ -706,17 +713,17 @@ updateNodeProcessFlow nodePath nw = do
         processF ->
             if (Set.isEmpty inlets || Set.isEmpty outlets) then pure nw else do
                 let
-                    (outletFlows :: Array (PushableFlow d)) =
+                    (outletFlows :: Array (PushToOutlet d)) =
                         outlets
                             # (Set.toUnfoldable :: forall a. Set a -> Array a)
                             # map (\outletPath -> view (_outletPush outletPath) nw)
                             # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
-                    pushToOutletFlow :: Maybe (Int /\ d) -> Effect Unit
+                    pushToOutletFlow :: Maybe (OutletInNode /\ d) -> Effect Unit
                     pushToOutletFlow maybeData =
                         case maybeData of
                             Just (outletIdx /\ d) ->
                                 case outletFlows !! outletIdx of
-                                    Just (PushableFlow pushF _) -> pushF d
+                                    Just (PushToOutlet pushF) -> pushF d
                                     _ -> pure unit
                             _ -> pure unit
                 OutletsFlow outletsFlow /\ maybeCancelBuild <-
@@ -735,24 +742,24 @@ buildOutletsFlow
     :: forall d
      . NodePath
     -> ProcessF d
-    -> Flow (Int /\ d)
+    -> InletsFlow d
     -> Set InletPath
     -> Set OutletPath
     -> Network d
     -> Rpd (OutletsFlow d /\ Maybe Canceler) -- FIXME: for now, we only need Rpd to handle the
-buildOutletsFlow _ Withhold processFlow _ _ _ =
+buildOutletsFlow _ Withhold _ _ _ _ =
     -- liftEffect never >>= pure <<< OutletsFlow
     liftEffect never >>= \flow ->
         pure $ OutletsFlow flow /\ Nothing
-buildOutletsFlow _ PassThrough processFlow _ _ _ =
-    pure $ (OutletsFlow $ Just <$> processFlow)
+buildOutletsFlow _ PassThrough (InletsFlow inletsFlow) _ _ _ =
+    pure $ (OutletsFlow $ Just <$> inletsFlow)
            /\ Nothing
-buildOutletsFlow _ (ByIndex processF) processFlow inlets outlets _ =
-    case processF $ InletsByIndexFlow processFlow of
+buildOutletsFlow _ (ByIndex processF) (InletsFlow inletsFlow) inlets outlets _ =
+    case processF $ InletsByIndexFlow inletsFlow of
         OutletsByIndexFlow outletsByIndex ->
             pure $ (OutletsFlow $ Just <$> outletsByIndex)
                    /\ Nothing
-buildOutletsFlow _ (ByLabel processF) processFlow inlets outlets nw =
+buildOutletsFlow _ (ByLabel processF) (InletsFlow inletsFlow) inlets outlets nw =
     let
         inletLabels = extractInletLabels inlets nw
         outletLabels = extractOutletLabels outlets nw
@@ -763,17 +770,17 @@ buildOutletsFlow _ (ByLabel processF) processFlow inlets outlets nw =
         mapOutletFlow maybeData =
             maybeData
                 >>= \(label /\ d) -> outletLabels # Array.elemIndex label
-                <#> \idx -> idx /\ d
-        labeledInletsFlow = mapInletFlow <$> processFlow
+                <#> \maybeIdx -> maybeIdx /\ d
+        labeledInletsFlow = mapInletFlow <$> inletsFlow
         OutletsByLabelFlow labeledOutletsFlow =
             processF $ InletsByLabelFlow labeledInletsFlow
     in pure $ (OutletsFlow $ mapOutletFlow <$> labeledOutletsFlow)
               /\ Nothing
-buildOutletsFlow nodePath (ByPath processF) processFlow inlets outlets _ =
+buildOutletsFlow nodePath (ByPath processF) (InletsFlow inletsFlow) inlets outlets _ =
     let
         mapInletFlow (inletIdx /\ d) =
             Just (InletPath nodePath inletIdx) /\ d
-        inletsWithPathFlow = mapInletFlow <$> processFlow
+        inletsWithPathFlow = mapInletFlow <$> inletsFlow
         outletsWithPathFlow = processF inletsWithPathFlow
         mapOutletFlow maybeData =
             maybeData
@@ -781,22 +788,22 @@ buildOutletsFlow nodePath (ByPath processF) processFlow inlets outlets _ =
                     outletIdx /\ d
     in pure $ (OutletsFlow $ mapOutletFlow <$> outletsWithPathFlow)
               /\ Nothing
-buildOutletsFlow _ (FoldedByIndex processF) processFlow inlets _ _ = do
+buildOutletsFlow _ (FoldedByIndex processF) (InletsFlow inletsFlow) inlets _ _ = do
     -- TODO: generalize to Foldable
     { event, push } <- liftEffect E.create
     let
         foldingF (curInletIdx /\ curD) inletVals =
             Array.updateAt curInletIdx (Just curD) inletVals
                 # fromMaybe inletVals
-        inletsFlow = E.fold foldingF processFlow
+        inletsFlow' = E.fold foldingF inletsFlow
             $ Array.replicate (Set.size inlets) Nothing
-    cancel <- liftEffect $ E.subscribe inletsFlow $ \inletsVals ->
+    cancel <- liftEffect $ E.subscribe inletsFlow' $ \inletsVals ->
         let (OutletsData outletVals) = processF $ InletsData inletsVals
         in forWithIndex outletVals \idx val ->
             push $ Just $ idx /\ val
     pure $ OutletsFlow event
            /\ Just cancel
-buildOutletsFlow _ (FoldedByLabel processF) processFlow inlets outlets nw = do
+buildOutletsFlow _ (FoldedByLabel processF) (InletsFlow inletsFlow) inlets outlets nw = do
     -- TODO: generalize to Foldable
     { event, push } <- liftEffect E.create
     let
@@ -806,14 +813,14 @@ buildOutletsFlow _ (FoldedByLabel processF) processFlow inlets outlets nw = do
             case inletLabels !! curInletIdx of
                 Just label -> inletVals # Map.insert label curD
                 _ -> inletVals
-        inletsFlow = E.fold foldingF processFlow Map.empty
-        adaptOutletVals :: (String /-> d) -> Array (Maybe (Int /\ d))
+        inletsFlow' = E.fold foldingF inletsFlow Map.empty
+        adaptOutletVals :: (String /-> d) -> Array (Maybe (OutletInNode /\ d))
         adaptOutletVals ouletVals =
             Map.toUnfoldable ouletVals
                 <#> \(label /\ d) ->
                     outletLabels # Array.elemIndex label
                 <#> flip (/\) d
-    cancel <- liftEffect $ E.subscribe inletsFlow $ \inletsVals ->
+    cancel <- liftEffect $ E.subscribe inletsFlow' $ \inletsVals ->
         let (OutletsMapData outletVals) = processF $ InletsMapData inletsVals
         in traverse push $ adaptOutletVals outletVals
     pure $ OutletsFlow event
