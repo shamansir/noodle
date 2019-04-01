@@ -197,3 +197,49 @@ data Outgoing x d
 --     | OutletSource OutletPath (Flow d)
 ```
 
+Use Free Monads for the different command interpreters or even RPD API itself, see Haskell Notes for Professionals: Chapter 8.
+
+
+We can ask the data argument `a` in `Rpd a` to implement some typeclass like `IsData a` (`MayFlow a`) and to have `accept` and `adapt` methods there. Or, since `accept` should also get the type of a channel to compare data items with allowance rules, `IsData c a` where `c` is the channel type. Also we may have `IsRenderableData a` typeclass (`Renders a`) which contains the functions to convert data to the format of the renderer's `view`.
+
+At first, we may get the `type` string from `InletDef`/`OutletDef` to determine the inlet's/outlet's type.
+
+If there `Rpd d c` exists, where `d` — is the data type and `c` is the channel type, then: `accept :: c -> d -> Bool`.
+
+The `IsData d` may only exist for the functions which require it, like `addInlet`, `addOutlet`, `connect` (just `connect`?).
+
+Or, the best option is:  `connect :: IsChannel c d => c -> Outlet d -> Inlet d -> ...`.
+
+
+Spreads??? Enum typeclass? Monoid? Anything what is implemented by `List`? Just `List` itself? Though it doesn't fit matrices/tables then. zipWith etc. As the type class? Free implementation, like Lazy Lists? Shoud it be in the standart library or is a way to pack/prepare `data` for `Rpd data`.
+
+
+Rendering:
+
+For the every data package between outlet and inlet, and any message, the `update` is triggered (not `RAF`) — then we would be able to control all the unsubscriptions in one application cycle. If `RAF` comes in, then we need to, like for the first examples, store the `Map` containing the latest data package came through this particular outlet/intlet, and render this exact package.
+
+
+Maybe, just maybe, ensure that all the methods which are not doing any side-effects are not forced by `Rpd d` to be `Eff / Aff` thanks to the `ExceptT _ Effect _`. Maybe `</>` uses `pure/lift` for those functions in chaining?
+
+
+Create the `Alias x` type, let it be `Alias String` at first. It will serve as the manually created inlet/oultet ID _inside_ the node, _not_ the part of the `Inlet`/`Outlet` instance. Gets received by `addInlet`/`addOutlet`. Then, every node should be able to introduce the lenses/functions such as `Alias -> Maybe Inlet` and `Alias -> Maybe Outlet` to the processing function, which guarantee the uniqueness of the inlet/outlet inside this node using the alias. Could be split in two: `IAlias`/`OAlias`. Processin functions gets `Map Alias data` with inlets dara and returns the processed data as the similar `Map Alias data`, but for outlets....
+
+Or just gets the `Alias -> data` function and returns it??!! The one we got lets getting the current (latest) value from the inlet, the one which is returned gives back the requested/calculated outlet value.
+
+It is useful since this function could be `Map.lookup` as well, but it seems to be more generic. And so users may use pattern-matching in theirs `process` handlers (or even `do`-notation?), e.g.:
+
+```
+getInletVal "foo" = 2
+getInletVal "bar" = 4
+produceOutletVal "out" = 6
+```
+
+We could start with replacing `Path` with `Alias`.
+
+And then use the same mechanics to guarantee "uniqueness" for the node in the patch. This uniqueness is guaranteed by the API user though, not us, and so the user is responsible. We may replace the paths with the chains of aliases, like as in file system. I'd like to have friendly path and still have unique hash somewhere inside.
+
+
+Since `Event` a.k.a. `Flow` implements different typeclasees, we may use the similarities to implement `IsData`, `Spread` etc. Section 29, Reactive Banana.
+
+
+Toolkits we cool in JS-RPD, like `anm/player` & s.o. Do we need `ToolkitName -> NodeTitle -> NodeDef` function for that? `IsToolkit` typeclass?
