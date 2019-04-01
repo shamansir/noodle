@@ -12,7 +12,7 @@ module Rpd.API
     , subscribeChannelsData, subscribeNode  -- subscribeAllData
     , subscribeInlet', subscribeOutlet', subscribeAllInlets', subscribeAllOutlets'
     , subscribeChannelsData', subscribeNode'  -- subscribeAllData'
-    , sendToInlet, streamToInlet --, sendToOutlet, streamToOutlet
+    , sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
     --, findPatch, findNode, findOutlet, findInlet
     ) where
 
