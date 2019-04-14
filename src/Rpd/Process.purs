@@ -67,6 +67,9 @@ data OutletsMapData key d = OutletsMapData (key /-> d)
 --    send "color" $ Color r g b
 
 
+-- TODO: use IAlias -> data / OAlias -> data functions instead, see TODO.md for more info
+
+
 data ProcessF d
     = Withhold
     | PassThrough

@@ -222,7 +222,7 @@ For the every data package between outlet and inlet, and any message, the `updat
 Maybe, just maybe, ensure that all the methods which are not doing any side-effects are not forced by `Rpd d` to be `Eff / Aff` thanks to the `ExceptT _ Effect _`. Maybe `</>` uses `pure/lift` for those functions in chaining?
 
 
-Create the `Alias x` type, let it be `Alias String` at first. It will serve as the manually created inlet/oultet ID _inside_ the node, _not_ the part of the `Inlet`/`Outlet` instance. Gets received by `addInlet`/`addOutlet`. Then, every node should be able to introduce the lenses/functions such as `Alias -> Maybe Inlet` and `Alias -> Maybe Outlet` to the processing function, which guarantee the uniqueness of the inlet/outlet inside this node using the alias. Could be split in two: `IAlias`/`OAlias`. Processin functions gets `Map Alias data` with inlets dara and returns the processed data as the similar `Map Alias data`, but for outlets....
+Create the `Alias x` type, let it be `Alias String` at first. It will serve as the manually created inlet/oultet ID _inside_ the node, _not_ the part of the `Inlet`/`Outlet` instance. Gets received by `addInlet`/`addOutlet`. Then, every node should be able to introduce the lenses/functions such as `Alias -> Maybe Inlet` and `Alias -> Maybe Outlet` to the processing function, which guarantee the uniqueness of the inlet/outlet inside this node using the alias. Could be split in two: `IAlias`/`OAlias`. Processing functions gets `Map Alias data` with inlets data and returns the processed data as the similar `Map Alias data`, but for outlets....
 
 Or just gets the `Alias -> data` function and returns it??!! The one we got lets getting the current (latest) value from the inlet, the one which is returned gives back the requested/calculated outlet value.
 
@@ -243,3 +243,6 @@ Since `Event` a.k.a. `Flow` implements different typeclasees, we may use the sim
 
 
 Toolkits we cool in JS-RPD, like `anm/player` & s.o. Do we need `ToolkitName -> NodeTitle -> NodeDef` function for that? `IsToolkit` typeclass?
+
+
+Allow user's `update` functions in renderers to be Effectful

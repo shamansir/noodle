@@ -15,8 +15,6 @@ module Rpd.RenderMUV
 
 import Prelude
 
--- import Type.Eval.Function (type ($))
-
 import Data.Either (Either(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Foldable (foldr)
@@ -27,9 +25,13 @@ import FRP.Event (Event)
 import FRP.Event as Event
 
 import Rpd (run) as R
+import Rpd.API ((</>))
 import Rpd.API (Rpd, RpdError) as R
-import Rpd.Render (Message, update) as Core
+import Rpd.API as Rpd
+import Rpd.Path (nodePath) as R
+import Rpd.Command as C
 import Rpd.Network (Network) as R
+import Rpd.Render (Message, update) as Core
 import Rpd.Util (Canceler) as R
 
 
@@ -146,7 +148,7 @@ make'
 make'
     { event : messages, push : pushMessage }
     rpd
-    (Renderer { from, init, view, update : update' })
+    (Renderer { from, init, view, update : userUpdate })
     = let
         updateFlow = Event.fold updater messages $ (/\) init <$> rpd
         viewFlow = viewer (PushMsg pushMessage) <$> updateFlow
@@ -162,9 +164,10 @@ make'
         updater msg rpd = rpd >>=
             \(model /\ nw) -> do
                 -- perform update using core/simple Renderer and do some our things e.g. subscriptions
-                (model' /\ nw') <- update msg (model /\ nw) Core.update
+                model' /\ nw' <- update msg (model /\ nw) Core.update
                 -- perform user update function, collect user messages
-                let model'' /\ msgs = update' msg $ model' /\ nw'
+                -- TODO: allow `userUpdate` to be effectful
+                let model'' /\ msgs = userUpdate msg $ model' /\ nw'
                 -- apply user messages returned from previous line to the models
                 model''' /\ nw'' <-
                     foldr updater (pure $ model'' /\ nw') msgs
@@ -213,17 +216,27 @@ run' event nw renderer =
         { first, next } -> Event.subscribe next (pure <<< identity)
 
 
-
 update
     :: forall d model msg
      . Message d msg
     -> (model /\ R.Network d)
     -> (Core.Message d -> R.Network d -> R.Rpd (R.Network d))
     -> R.Rpd (model /\ R.Network d)
-update msg (model /\ nw) userUpdate =
-    case msg of
-        Core coreMsg ->
-            userUpdate coreMsg nw
-                >>= pure <<< ((/\) model)
-        Custom _ -> pure ( model /\ nw )
+update (Custom _) (model /\ nw) coreUpdate = pure ( model /\ nw )
+update (Core coreMsg) (model /\ nw) coreUpdate =
+    case coreMsg of
+        C.AddNode patchId nodeDef ->
+            Rpd.addNode' patchId nodeDef nw
+                -- FIXME: `nodePath` should be real or/and just add `subscribeLastNode` method etc.
+                -- FIXME: `onInletData`/`onOutletData` do not receive the proper state
+                --        of the network this way, but they should (pass the current network
+                --        state in the Process function?)
+                </> Rpd.subscribeNode (R.nodePath 0 0) onInletData onOutletData
+                    >>= addModel
+        _ -> coreUpdate coreMsg nw
+                >>= addModel
+    where
+        addModel = pure <<< ((/\) model)
+        onInletData _ = pure unit -- FIXME: perform actual update with GotInletData
+        onOutletData _ = pure unit -- FIXME: perform actual update with GotOutletData
 
