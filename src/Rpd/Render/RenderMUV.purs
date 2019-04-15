@@ -15,6 +15,7 @@ module Rpd.RenderMUV
 
 import Prelude
 
+import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Foldable (foldr)
@@ -28,7 +29,7 @@ import Rpd (run) as R
 import Rpd.API ((</>))
 import Rpd.API (Rpd, RpdError) as R
 import Rpd.API as Rpd
-import Rpd.Path (nodePath, InletPath, OutletPath) as R
+import Rpd.Path (nodePath, InletPath(..), OutletPath(..)) as R
 import Rpd.Command as C
 import Rpd.Network (Network) as R
 import Rpd.Render (Message, update) as Core
@@ -152,27 +153,27 @@ make'
     rpd
     (Renderer { from, init, view, update : userUpdate })
     = let
-        updateFlow = Event.fold updater messages $ (/\) init <$> rpd
+        updateFlow = Event.fold updatePipeline messages $ (/\) init <$> rpd
         viewFlow = viewer (PushMsg pushMessage) <$> updateFlow
     in
         { first : from
         , next : viewFlow
         }
     where
-        updater
+        updatePipeline
             :: Message d msg
             -> R.Rpd (model /\ R.Network d)
             -> R.Rpd (model /\ R.Network d)
-        updater msg rpd = rpd >>=
+        updatePipeline msg rpd = rpd >>=
             \(model /\ nw) -> do
                 -- perform update using core/simple Renderer and do some our things e.g. subscriptions
-                model' /\ nw' <- update msg (model /\ nw) Core.update
+                model' /\ nw' <- update msg (model /\ nw) (PushMsg pushMessage) Core.update
                 -- perform user update function, collect user messages
                 -- TODO: allow `userUpdate` to be effectful
                 let model'' /\ msgs = userUpdate msg $ model' /\ nw'
                 -- apply user messages returned from previous line to the models
                 model''' /\ nw'' <-
-                    foldr updater (pure $ model'' /\ nw') msgs
+                    foldr updatePipeline (pure $ model'' /\ nw') msgs
                 -- return all the latest states
                 pure $ model''' /\ nw''
         viewer
@@ -222,25 +223,31 @@ update
     :: forall d model msg
      . Message d msg
     -> (model /\ R.Network d)
+    -> PushMsg d msg
     -> (Core.Message d -> R.Network d -> R.Rpd (R.Network d))
     -> R.Rpd (model /\ R.Network d)
-update (Custom _) (model /\ nw) coreUpdate = pure ( model /\ nw )
-update (GotInletData inletPath d) (model /\ nw) _ = pure ( model /\ nw )
-update (GotOutletData outletPath d) (model /\ nw) _ = pure ( model /\ nw )
-update (Core coreMsg) (model /\ nw) coreUpdate =
+update (Core coreMsg) (model /\ nw) (PushMsg pushMessage) coreUpdate =
     case coreMsg of
         C.AddNode patchId nodeDef ->
-            Rpd.addNode' patchId nodeDef nw
-                -- FIXME: `nodePath` should be real or/and just add `subscribeLastNode` method etc.
-                -- FIXME: `onInletData`/`onOutletData` do not receive the proper state
-                --        of the network this way, but they should (pass the current network
-                --        state in the Process function?)
-                </> Rpd.subscribeNode (R.nodePath 0 0) onInletData onOutletData
-                    >>= addModel
+            let nodePath = R.nodePath 0 0
+            in
+                Rpd.addNode' patchId nodeDef nw
+                    -- FIXME: `nodePath` should be real or/and just add `subscribeLastNode` method etc.
+                    -- FIXME: `onInletData`/`onOutletData` do not receive the proper state
+                    --        of the network this way, but they should (pass the current network
+                    --        state in the Process function?)
+                    </> Rpd.subscribeNode nodePath (onInletData nodePath) (onOutletData nodePath)
+                        >>= addModel
         _ -> coreUpdate coreMsg nw
                 >>= addModel
     where
         addModel = pure <<< ((/\) model)
-        onInletData _ = pure unit -- FIXME: perform actual update with GotInletData
-        onOutletData _ = pure unit -- FIXME: perform actual update with GotOutletData
+        onInletData nodePath (inletId /\ d) =
+            pushMessage $ Core $ C.GotInletData (R.InletPath nodePath inletId) d
+        onOutletData nodePath maybeData =
+            case maybeData of
+                Just (outletId /\ d) ->
+                    pushMessage $ Core $ C.GotOutletData (R.OutletPath nodePath outletId) d
+                Nothing -> pure unit
+update _ (model /\ nw) pushMessage coreUpdate = pure ( model /\ nw )
 

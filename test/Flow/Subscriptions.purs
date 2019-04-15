@@ -47,7 +47,7 @@ spec = do
   --         </> R.addPatch "patch"
   --         </> R.addNode (patchId 0) "node"
   --         </> R.addInlet (nodePath 0 0) "inlet"
-  --         </> R.subscribeNode (inletPath 0 0 0) handler
+  --         </> R.subscribeNode (nodePath 0 0) handler
 
   --   rpd # withRpd \nw -> do
   --     _ <- liftEffect
