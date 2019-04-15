@@ -2,12 +2,14 @@ module TryAPI where
 
 import Prelude
 
-import Data.Boolean
+-- import Data.Boolean (Boolean(..))
 import Control.Monad.Cont (ContT(..))
 import Control.Monad.Except (ExceptT)
 import Data.Traversable (traverse)
 import Data.Tuple.Nested ((/\), type (/\))
 import Effect (Effect)
+
+import Rpd.Util (Flow)
 
 data Network = Network Unit
 data Patch = Patch Unit
@@ -71,16 +73,71 @@ data Msg a
     | AddInlet Node (Inlet -> Context Inlet)
 
 
-class DataOf c where
-    accept :: forall a. a -> c -> Boolean
-    adapt :: forall a. a -> c -> a
-    allow :: c -> c -> Boolean
+-- class Renderable a where
+--     render :: a -> String
+
+
+-- class ChannelRestriction c d where
+--     accept :: d -> c -> Boolean
+--     adapt :: d -> c -> d
+--     allow :: c -> c -> Boolean
+--     default :: c -> d
+--     show :: forall x. (Renderable x) => d -> c -> x
+
+
+-- data Values
+--     = Number Int
+--     | Triple Int Int Int
+--     | Hex String
+--     | WaveValue
+
+
+
+-- data Channels
+--     = Color
+--     | Wave
+
+
+-- instance channelsModifier :: DataModifier Channels Values where
+--     accept Color (Number _) = true
+--     adapt Color ()
+
+
+-- class Channel d where
+--     accept :: d -> Boolean
+--     adapt :: d -> d
+--     tune :: Flow d -> Flow d
+--     show :: d -> String
+--     -- allow :: d -> Boolean -- same as accept?
+--     -- adapt v = v
+--     -- allow ::
+
+-- class ChannelGroup c where
+--     allow :: c -> c -> Boolean
+
+
+data Channel d =
+    Channel
+        { accept :: d -> Boolean
+        , adapt :: d -> d
+        , tune :: Flow d -> Flow d
+        , show :: d -> String
+        , allow :: Channel d -> Boolean
+        }
+
+
+-- class Channel_ c d where
+--     accept_ :: d -> c -> Boolean
+--     adapt_ :: d -> c -> d
+--     allow_ :: c -> c -> Boolean
+--     default_ ::c -> d
+
 
 
 -- connect'' :: forall c. DataOf c => String -> String -> c -> Network -> Network
 -- connect'' outlet inlet channel nw = nw
 
-addInlet'' :: forall c. DataOf c => String -> String -> c -> Network -> Network
+addInlet'' :: forall d. String -> String -> Channel d -> Network -> Network
 addInlet'' node id channel nw = nw
 
 
