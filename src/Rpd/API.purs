@@ -461,9 +461,12 @@ subscribeOutlet
     -> Network d
     -> Rpd (Network d)
 subscribeOutlet outletPath handler nw = do
-    _ <- subscribeOutlet' outletPath handler nw
-    -- FIXME: implement
-    pure nw
+    canceler <- subscribeOutlet' outletPath handler nw
+    curCancelers <-
+        view (_outletCancelers outletPath) nw
+            # exceptMaybe (RpdError "")
+    pure $
+        nw # setJust (_outletCancelers outletPath) (curCancelers +> canceler)
 
 
 subscribeOutlet'
@@ -488,7 +491,7 @@ subscribeAllInlets
     -> Rpd (Network d)
 subscribeAllInlets handler nw = do
     _ <- liftEffect $ subscribeAllInlets' handler nw
-    -- FIXME: implement
+    -- FIXME: implement storing the cancellers to execute them on remove
     pure nw
 
 
@@ -513,7 +516,7 @@ subscribeAllOutlets
     -> Rpd (Network d)
 subscribeAllOutlets handler nw = do
     _ <- liftEffect $ subscribeAllOutlets' handler nw
-    -- FIXME: implement
+    -- FIXME: implement storing the cancellers to execute them on remove
     pure nw
 
 
@@ -539,7 +542,7 @@ subscribeChannelsData
     -> Rpd (Network d)
 subscribeChannelsData oHandler iHandler nw = do
     _ <- liftEffect $ subscribeChannelsData' oHandler iHandler nw
-    -- FIXME: implement
+    -- FIXME: implement storing the cancellers to execute them on remove
     pure nw
 
 
@@ -563,6 +566,7 @@ subscribeNode
 subscribeNode nodePath inletsHandler outletsHandler nw = do
     _ <- subscribeNode' nodePath inletsHandler outletsHandler nw
     -- FIXME: implement !!!!
+    -- FIXME: implement storing the cancellers to execute them on remove
     pure nw
 
 

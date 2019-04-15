@@ -51,9 +51,10 @@ data Network d =
         , outlets :: OutletPath /-> Outlet d
         , links :: LinkId /-> Link
         , cancelers ::
-            { links :: LinkId /-> Array Canceler
-            , nodes :: NodePath /-> Array Canceler
+            { nodes :: NodePath /-> Array Canceler
             , inlets :: InletPath /-> Array Canceler
+            , outlets :: OutletPath /-> Array Canceler
+            , links :: LinkId /-> Array Canceler
             }
         }
 data Patch d =
@@ -102,9 +103,10 @@ empty name =
         , outlets : Map.empty
         , links : Map.empty
         , cancelers :
-            { links : Map.empty
+            { nodes : Map.empty
             , inlets : Map.empty
-            , nodes : Map.empty
+            , outlets : Map.empty
+            , links : Map.empty
             }
         }
 

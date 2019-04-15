@@ -28,7 +28,7 @@ import Rpd (run) as R
 import Rpd.API ((</>))
 import Rpd.API (Rpd, RpdError) as R
 import Rpd.API as Rpd
-import Rpd.Path (nodePath) as R
+import Rpd.Path (nodePath, InletPath, OutletPath) as R
 import Rpd.Command as C
 import Rpd.Network (Network) as R
 import Rpd.Render (Message, update) as Core
@@ -37,6 +37,8 @@ import Rpd.Util (Canceler) as R
 
 data Message d msg
     = Core (Core.Message d)
+    | GotInletData R.InletPath d
+    | GotOutletData R.OutletPath d
     | Custom msg
 data PushMsg d msg = PushMsg (Message d msg -> Effect Unit)
 {- UpdateF:
@@ -223,6 +225,8 @@ update
     -> (Core.Message d -> R.Network d -> R.Rpd (R.Network d))
     -> R.Rpd (model /\ R.Network d)
 update (Custom _) (model /\ nw) coreUpdate = pure ( model /\ nw )
+update (GotInletData inletPath d) (model /\ nw) _ = pure ( model /\ nw )
+update (GotOutletData outletPath d) (model /\ nw) _ = pure ( model /\ nw )
 update (Core coreMsg) (model /\ nw) coreUpdate =
     case coreMsg of
         C.AddNode patchId nodeDef ->
