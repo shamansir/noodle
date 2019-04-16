@@ -18,8 +18,8 @@ data Command d
     | AddOutlet P.NodePath (D.OutletDef d)
     | Connect P.OutletPath P.InletPath
     | Disconnect P.OutletPath P.InletPath
-    | GotInletData P.InletPath d
-    | GotOutletData P.OutletPath d
+    -- | GotInletData P.InletPath d
+    -- | GotOutletData P.OutletPath d
     -- | DeleteNode
     -- | DeleteInlet
     -- | DeleteOutlet
@@ -42,7 +42,8 @@ instance showStringCommand :: Show StringCommand where
   show = GShow.genericShow
 
 
-instance showCommand :: Show d => Show (Command d) where
+-- instance showCommand :: Show d => Show (Command d) where
+instance showCommand :: Show (Command d) where
     show Bang = "Bang"
     show (AddPatch { name }) = "AddPatch " <> name
     show (AddNode path { name }) = "AddNode " <> show path <> " " <> name
@@ -50,8 +51,8 @@ instance showCommand :: Show d => Show (Command d) where
     show (AddOutlet path { label }) = "AddOutlet " <> show path <> " " <> label
     show (Connect oPath iPath) = "Connect " <> show oPath <> " " <> show iPath
     show (Disconnect oPath iPath) = "Disconnect " <> show oPath <> " " <> show iPath
-    show (GotInletData iPath d) = "GotInletData " <> show iPath <> " " <> show d
-    show (GotOutletData oPath d) = "GotOutletData " <> show oPath <> " " <> show d
+    -- show (GotInletData iPath d) = "GotInletData " <> show iPath <> " " <> show d
+    -- show (GotOutletData oPath d) = "GotOutletData " <> show oPath <> " " <> show d
 
 
 instance eqCommand :: Eq d => Eq (Command d) where
