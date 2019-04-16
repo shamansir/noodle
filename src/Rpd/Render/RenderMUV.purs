@@ -243,11 +243,11 @@ update (Core coreMsg) (model /\ nw) (PushMsg pushMessage) coreUpdate =
     where
         addModel = pure <<< ((/\) model)
         onInletData nodePath (inletId /\ d) =
-            pushMessage $ Core $ C.GotInletData (R.InletPath nodePath inletId) d
+            pushMessage $ GotInletData (R.InletPath nodePath inletId) d
         onOutletData nodePath maybeData =
             case maybeData of
                 Just (outletId /\ d) ->
-                    pushMessage $ Core $ C.GotOutletData (R.OutletPath nodePath outletId) d
+                    pushMessage $ GotOutletData (R.OutletPath nodePath outletId) d
                 Nothing -> pure unit
 update _ (model /\ nw) pushMessage coreUpdate = pure ( model /\ nw )
 
