@@ -228,6 +228,10 @@ update
     -> R.Rpd (model /\ R.Network d)
 update (Core coreMsg) (model /\ nw) (PushMsg pushMessage) coreUpdate =
     case coreMsg of
+        C.Bang ->
+            Rpd.subscribeAllInlets onInletData nw
+                </> Rpd.subscribeAllOutlets onOutletData
+                    >>= addModel
         C.AddNode patchId nodeDef ->
             let nodePath = R.nodePath 0 0
             in
@@ -236,15 +240,21 @@ update (Core coreMsg) (model /\ nw) (PushMsg pushMessage) coreUpdate =
                     -- FIXME: `onInletData`/`onOutletData` do not receive the proper state
                     --        of the network this way, but they should (pass the current network
                     --        state in the Process function?)
-                    </> Rpd.subscribeNode nodePath (onInletData nodePath) (onOutletData nodePath)
+                    </> Rpd.subscribeNode nodePath
+                            (onNodeInletData nodePath)
+                            (onNodeOutletData nodePath)
                         >>= addModel
         _ -> coreUpdate coreMsg nw
                 >>= addModel
     where
         addModel = pure <<< ((/\) model)
-        onInletData nodePath (inletId /\ d) =
+        onInletData inletPath d =
+            pushMessage $ GotInletData inletPath d
+        onOutletData outletPath d =
+            pushMessage $ GotOutletData outletPath d
+        onNodeInletData nodePath (inletId /\ d) =
             pushMessage $ GotInletData (R.InletPath nodePath inletId) d
-        onOutletData nodePath maybeData =
+        onNodeOutletData nodePath maybeData =
             case maybeData of
                 Just (outletId /\ d) ->
                     pushMessage $ GotOutletData (R.OutletPath nodePath outletId) d

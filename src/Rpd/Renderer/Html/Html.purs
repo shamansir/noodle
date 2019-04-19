@@ -99,7 +99,11 @@ viewInlet ui nw inletPath =
         Just (R.Inlet _ { label } { flow }) ->
             H.div
                 [ H.classes [ "inlet" ] ]
-                $ [ H.text label ]
+                [ H.text label
+                , case Map.lookup inletPath ui.lastInletData of
+                    Just d -> H.text "data"
+                    _ -> H.text ""
+                ]
         _ -> H.div
                 [ H.classes [ "inlet" ] ]
                 [ H.text $ "inlet " <> show inletPath <> " was not found" ]

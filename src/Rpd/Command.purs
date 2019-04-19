@@ -18,8 +18,8 @@ data Command d
     | AddOutlet P.NodePath (D.OutletDef d)
     | Connect P.OutletPath P.InletPath
     | Disconnect P.OutletPath P.InletPath
-    -- | GotInletData P.InletPath d
-    -- | GotOutletData P.OutletPath d
+    -- | SendToInlet P.InletPath d
+    -- | SendToOutlet P.OutletPath d
     -- | DeleteNode
     -- | DeleteInlet
     -- | DeleteOutlet
