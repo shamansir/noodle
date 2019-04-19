@@ -19,7 +19,7 @@ import Rpd.API (RpdError) as R
 import Rpd.Network as R
 import Rpd.Render as R
 import Rpd.Command (Command(..)) as C
-import Rpd.RenderMUV (Renderer(..), PushMsg, Message(..)) as R
+import Rpd.Render.MUV (Renderer(..), PushMsg, Message(..)) as R
 
 import Spork.Html (Html)
 import Spork.Html as H

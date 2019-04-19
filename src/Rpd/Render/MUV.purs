@@ -1,4 +1,4 @@
-module Rpd.RenderMUV
+module Rpd.Render.MUV
     ( Renderer(..)
     , UpdateF
     , ViewF

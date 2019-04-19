@@ -18,8 +18,6 @@ import Halogen.VDom.DOM.Prop as P
 import Halogen.VDom.Machine as Machine
 import Halogen.VDom.Thunk (buildThunk)
 
-import Rpd.RenderMUV (Renderer, Message) as Ui
-
 import Web.DOM.Element (toNode) as DOMElement
 import Web.DOM.Node (appendChild) as DOM
 import Web.DOM.ParentNode (querySelector) as DOM
@@ -32,8 +30,9 @@ import Spork.Html (Html)
 import Rpd.API (Rpd) as R
 import Rpd.Network (Network)
 import Rpd.Command (Command(..)) as C
-import Rpd.RenderMUV (custom, core)
-import Rpd.RenderMUV (make') as Render
+import Rpd.Render.MUV (Renderer, Message) as Ui
+import Rpd.Render.MUV (custom, core)
+import Rpd.Render.MUV (make') as Render
 
 
 embed

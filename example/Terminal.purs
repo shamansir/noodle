@@ -14,8 +14,8 @@ import Rpd.Def as R
 import Rpd.Process as R
 import Rpd.Path (PatchId(..))
 import Rpd.Command (Command(..)) as Cmd
-import Rpd.RenderMUV (Message) as Ui
-import Rpd.RenderMUV (core, custom)
+import Rpd.Render.MUV (Message) as Ui
+import Rpd.Render.MUV (core, custom)
 import Rpd.Renderer.Terminal (terminalRenderer)
 import Rpd.Renderer.Terminal.Multiline as ML
 import Rpd.Renderer.Html.VDom as VDom
