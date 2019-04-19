@@ -40,7 +40,7 @@ import Rpd.API (RpdError) as R
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.Optics (_patchNodes, _node, _patch) as R
 import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchId) as R
-import Rpd.RenderMUV (Renderer(..), PushMsg, Message(..)) as R
+import Rpd.Render.MUV (Renderer(..), PushMsg, Message(..)) as R
 
 import Rpd.Renderer.Terminal.Multiline as ML
 
