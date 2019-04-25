@@ -31,17 +31,17 @@ type Model d =
     }
 
 
-data Msg
+data HtmlMsg
     = ClickAt (Int /\ Int)
 
 
-type Message d = R.Message d Msg
+type AnyMessage d = R.Message d HtmlMsg
 
 
-type PushMsg d = R.PushMsg d Msg
+type PushAnyMsg d = R.PushMsg d HtmlMsg
 
 
-type View = Html Msg
+type View d = Html (AnyMessage d)
 
 
 init :: forall d. Model d
@@ -51,19 +51,19 @@ init =
     }
 
 
-type HtmlRenderer d = R.Renderer d (Model d) View Msg
+type HtmlRenderer d = R.Renderer d (Model d) (View d) (AnyMessage d)
 
 
-emptyView :: View
+emptyView :: forall d. View d
 emptyView = H.div [ H.id_ "network" ] [ H.text "empty" ]
 
 
-viewError :: R.RpdError -> View
+viewError :: forall d. R.RpdError -> View d
 viewError error =
     H.div [ H.id_ "error" ] [ H.text $ show error ]
 
 
-viewNetwork :: forall d. Model d -> R.Network d -> View
+viewNetwork :: forall d. Model d -> R.Network d -> View d
 viewNetwork ui nw@(R.Network { name } { patches }) =
     H.div
         [ H.id_ "network" ]
@@ -71,7 +71,7 @@ viewNetwork ui nw@(R.Network { name } { patches }) =
             (toUnfoldable $ viewPatch ui nw <$> Map.values patches)
 
 
-viewPatch :: forall d. Model d -> R.Network d -> R.Patch d ->  View
+viewPatch :: forall d. Model d -> R.Network d -> R.Patch d ->  View d
 viewPatch ui nw (R.Patch patchId { name } { nodes }) =
     H.div
         [ H.classes [ "patch" ] ]
@@ -79,7 +79,7 @@ viewPatch ui nw (R.Patch patchId { name } { nodes }) =
             (viewNode ui nw <$> (nodes # Set.toUnfoldable))
 
 
-viewNode :: forall d. Model d -> R.Network d -> R.NodePath -> View
+viewNode :: forall d. Model d -> R.Network d -> R.NodePath -> View d
 viewNode ui nw nodePath =
     case L.view (R._node nodePath) nw of
         Just (R.Node _ { name } { inlets, outlets }) ->
@@ -93,7 +93,7 @@ viewNode ui nw nodePath =
                 [ H.text $ "node " <> show nodePath <> " was not found" ]
 
 
-viewInlet :: forall d. Model d -> R.Network d -> R.InletPath -> View
+viewInlet :: forall d. Model d -> R.Network d -> R.InletPath -> View d
 viewInlet ui nw inletPath =
     case L.view (R._inlet inletPath) nw of
         Just (R.Inlet _ { label } { flow }) ->
@@ -109,7 +109,7 @@ viewInlet ui nw inletPath =
                 [ H.text $ "inlet " <> show inletPath <> " was not found" ]
 
 
-viewOutlet :: forall d. Model d -> R.Network d -> R.OutletPath -> View
+viewOutlet :: forall d. Model d -> R.Network d -> R.OutletPath -> View d
 viewOutlet ui nw outletPath =
     case L.view (R._outlet outletPath) nw of
         Just (R.Outlet _ { label } { flow }) ->
@@ -125,20 +125,28 @@ htmlRenderer :: forall d. HtmlRenderer d
 htmlRenderer =
     R.Renderer
         { from : emptyView
-        , init : init
-        , update
-        , view
+        , init
+        , update : ?wh
+        , view : ?wh
         }
 
 
-view :: forall d. PushMsg d -> Either R.RpdError (Model d /\ R.Network d) -> View
+view
+    :: forall d
+     . R.PushMsg d (R.Message d HtmlMsg)
+    -> Either R.RpdError (Model d /\ R.Network d)
+    -> Html (R.Message d HtmlMsg)
 view pushMsg (Right (ui /\ nw)) =
     viewNetwork ui nw
 view pushMsg (Left err) =
     viewError err
 
 
-update :: forall d. Message d -> (Model d /\ R.Network d) -> (Model d /\ Array (Message d))
+update
+    :: forall d
+     . R.Message d HtmlMsg
+    -> (Model d /\ R.Network d)
+    -> (Model d /\ Array (R.Message d HtmlMsg))
 update (R.Core C.Bang) (ui /\ _) = ui /\ []
 update (R.GotInletData inletPath d) (ui /\ _) =
     (ui { lastInletData = ui.lastInletData # Map.insert inletPath d })
@@ -147,3 +155,13 @@ update (R.GotOutletData outletPath d) (ui /\ _) =
     (ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d })
     /\ []
 update _ (ui /\ _) = ui /\ []
+
+
+class Monoid m <= Action m a where
+  act :: m -> a -> a
+
+newtype Self m = Self m
+
+instance selfAction :: Monoid m => Action m (Self m) where
+  act m (Self a) = Self (m <> a)
+
