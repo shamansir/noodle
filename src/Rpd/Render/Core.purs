@@ -27,7 +27,9 @@ import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
 
 
-type Message d = C.Command d
+data Message d umsg
+    = Core (C.Command d)
+    | User umsg
 
 
 -- type RendererOptions =
@@ -35,14 +37,14 @@ type Message d = C.Command d
 --     }
 
 
-data PushMsg d = PushMsg (Message d -> Effect Unit)
-type RenderF d r = PushMsg d -> Either R.RpdError (R.Network d) -> r
+data PushMsg d msg = PushMsg (Message d msg -> Effect Unit)
+type RenderF d r msg = PushMsg d msg -> Either R.RpdError (R.Network d) -> r
 
 
-data Renderer d r
+data Renderer d r umsg
     = Renderer
         r -- initial view
-        (RenderF d r)
+        (RenderF d r umsg)
 
 
 extractRpd :: forall d r. RenderF d r -> PushMsg d -> R.Rpd (R.Network d) -> Effect r
