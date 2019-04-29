@@ -25,6 +25,11 @@ data Command d
     -- | DeleteOutlet
 
 
+data CommandEffect d
+  = GotInletData P.InletPath d
+  | GotOutletData P.OutletPath d
+
+
 data StringCommand
     = Bang'
     | AddPatch' String
