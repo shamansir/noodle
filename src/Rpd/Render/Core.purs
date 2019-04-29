@@ -1,14 +1,12 @@
 module Rpd.Render
     ( Renderer(..)
     , RenderF
-    , PushMsg(..)
-    , Message(..)
+    , PushCmd(..)
     , once
     , run
     , run'
     , make
     , make'
-    , update -- TODO: do not expose maybe?
     ) where
 
 import Prelude
@@ -23,13 +21,9 @@ import FRP.Event as Event
 import Rpd (run) as R
 import Rpd.API as R
 import Rpd.Command as C
+import Rpd.CommandApply as C
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
-
-
-data Message d umsg
-    = Core (C.Command d)
-    | User umsg
 
 
 -- type RendererOptions =
@@ -37,22 +31,28 @@ data Message d umsg
 --     }
 
 
-data PushMsg d msg = PushMsg (Message d msg -> Effect Unit)
-type RenderF d r msg = PushMsg d msg -> Either R.RpdError (R.Network d) -> r
+data PushCmd d = PushCmd (C.Command d -> Effect Unit)
+-- data PushCmdEff d = PushCmdEff (C.CommandEffect d -> Effect Unit)
+type RenderF d r = PushCmd d -> Either R.RpdError (R.Network d) -> r
 
 
-data Renderer d r umsg
+data Renderer d r
     = Renderer
         r -- initial view
-        (RenderF d r umsg)
+        (RenderF d r)
 
 
-extractRpd :: forall d r. RenderF d r -> PushMsg d -> R.Rpd (R.Network d) -> Effect r
-extractRpd handler pushMsg =
+extractRpd
+    :: forall d r
+     . RenderF d r
+    -> PushCmd d
+    -> R.Rpd (R.Network d)
+    -> Effect r
+extractRpd handler pushCmd pushCmdEff =
     R.run onError onSuccess
     where
-        onError err = handler pushMsg $ Left err
-        onSuccess res = handler pushMsg $ Right res
+        onError err = handler pushCmd pushCmdEff $ Left err
+        onSuccess res = handler pushCmd pushCmdEff $ Right res
 
 
 {- render once -}
@@ -60,7 +60,7 @@ once :: forall d r. Renderer d r -> R.Rpd (R.Network d) -> Effect r
 once (Renderer _ handleResult) =
     extractRpd handleResult neverPush
     where
-        neverPush = PushMsg $ const $ pure unit
+        neverPush = PushCmd $ const $ pure unit
 
 
 {- Prepare the rendering cycle with internal message producer.
@@ -98,27 +98,31 @@ make nw renderer =
 -}
 make'
     :: forall d r
-     . { event :: Event (Message d)
-       , push :: (Message d -> Effect Unit)
+     . { event :: Event (C.Command d)
+       , push :: (C.Command d -> Effect Unit)
        }
     -> R.Rpd (R.Network d)
     -> Renderer d r
     -> { first :: r
        , next :: Event (Effect r)
        }
-make' { event : messages, push : pushMessage } rpd (Renderer initialView handler) =
+make'
+    { event : commands, push : pushCommand }
+    pushEffect
+    rpd
+    (Renderer initialView handler) =
     let
-        updateFlow = Event.fold updater messages rpd
-        viewFlow = viewer (PushMsg pushMessage) <$> updateFlow
+        updateFlow = Event.fold updater commands rpd
+        viewFlow = viewer <$> updateFlow
     in
         { first : initialView
         , next : viewFlow
         }
     where
-        updater :: Message d -> R.Rpd (R.Network d) -> R.Rpd (R.Network d)
-        updater msg rpd' = rpd' >>= update msg
-        viewer :: PushMsg d -> R.Rpd (R.Network d) -> Effect r
-        viewer pushMessage' = extractRpd handler pushMessage'
+        updater :: C.Command d -> R.Rpd (R.Network d) -> R.Rpd (R.Network d)
+        updater cmd rpd' = rpd' >>= C.apply cmd cmdEffHandler
+        viewer :: R.Rpd (R.Network d) -> Effect r
+        viewer = extractRpd handler (PushCmd pushCommand)
 
 
 {- Run the rendering cycle without any special handling
@@ -144,8 +148,8 @@ run nw renderer =
 -}
 run'
     :: forall d r
-     . { event :: Event (Message d)
-       , push :: (Message d -> Effect Unit)
+     . { event :: Event (C.Command d)
+       , push :: (C.Command d -> Effect Unit)
        }
     -> R.Rpd (R.Network d)
     -> Renderer d r
@@ -153,11 +157,5 @@ run'
 run' event nw renderer =
     case make' event nw renderer of
         { first, next } -> Event.subscribe next (pure <<< identity)
-
-
-update :: forall d. Message d -> R.Network d -> R.Rpd (R.Network d)
-update (C.AddPatch patchDef) = R.addPatch' patchDef
-update (C.AddNode patchId nodeDef) = R.addNode' patchId nodeDef
-update _ = pure
 
 
