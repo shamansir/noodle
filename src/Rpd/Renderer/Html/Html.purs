@@ -19,7 +19,7 @@ import Rpd.API (RpdError) as R
 import Rpd.Network as R
 import Rpd.Render as R
 import Rpd.Command (Command(..)) as C
-import Rpd.Render.MUV (Renderer(..), PushMsg, Message(..)) as R
+import Rpd.Render.MUV (Renderer(..), PushMsg(..)) as R
 
 import Spork.Html (Html)
 import Spork.Html as H
@@ -31,17 +31,12 @@ type Model d =
     }
 
 
-data HtmlMsg
-    = ClickAt (Int /\ Int)
+data Message d
+    = Core (C.Command d)
+    | ClickAt (Int /\ Int)
 
 
-type AnyMessage d = R.Message d HtmlMsg
-
-
-type PushAnyMsg d = R.PushMsg d HtmlMsg
-
-
-type View d = Html (AnyMessage d)
+type View d = Html (Message d)
 
 
 init :: forall d. Model d
@@ -51,7 +46,7 @@ init =
     }
 
 
-type HtmlRenderer d = R.Renderer d (Model d) (View d) (AnyMessage d)
+type HtmlRenderer d = R.Renderer d (Model d) (View d) (Message d)
 
 
 emptyView :: forall d. View d
@@ -126,16 +121,17 @@ htmlRenderer =
     R.Renderer
         { from : emptyView
         , init
-        , update : ?wh
-        , view : ?wh
+        , update
+        , view
+        , mapMessage : Core
         }
 
 
 view
     :: forall d
-     . R.PushMsg d (R.Message d HtmlMsg)
+     . R.PushMsg (Message d)
     -> Either R.RpdError (Model d /\ R.Network d)
-    -> Html (R.Message d HtmlMsg)
+    -> View d
 view pushMsg (Right (ui /\ nw)) =
     viewNetwork ui nw
 view pushMsg (Left err) =
@@ -144,14 +140,14 @@ view pushMsg (Left err) =
 
 update
     :: forall d
-     . R.Message d HtmlMsg
+     . Message d
     -> (Model d /\ R.Network d)
-    -> (Model d /\ Array (R.Message d HtmlMsg))
-update (R.Core C.Bang) (ui /\ _) = ui /\ []
-update (R.GotInletData inletPath d) (ui /\ _) =
+    -> (Model d /\ Array (Message d))
+update (Core C.Bang) (ui /\ _) = ui /\ []
+update (Core (C.GotInletData inletPath d)) (ui /\ _) =
     (ui { lastInletData = ui.lastInletData # Map.insert inletPath d })
     /\ []
-update (R.GotOutletData outletPath d) (ui /\ _) =
+update (Core (C.GotOutletData outletPath d)) (ui /\ _) =
     (ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d })
     /\ []
 update _ (ui /\ _) = ui /\ []

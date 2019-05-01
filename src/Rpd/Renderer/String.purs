@@ -25,7 +25,7 @@ import Rpd.Network
     ) as R
 import Rpd.API (RpdError) as R
 import Rpd.Optics (_node, _inlet, _outlet)
-import Rpd.Render (PushMsg, Renderer(..))
+import Rpd.Render (PushCmd, Renderer(..))
 
 
 type StringRenderer d = Renderer d String
@@ -59,7 +59,7 @@ stringRenderer =
 
 
 
-view :: forall d. PushMsg d -> Either R.RpdError (R.Network d) -> String
+view :: forall d. PushCmd d -> Either R.RpdError (R.Network d) -> String
 view pushMsg (Right nw@(R.Network { name } { patches, links })) =
     "Network " <> name <> ":" <> lineBreak
         <> count patchCounter patchCount

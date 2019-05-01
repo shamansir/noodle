@@ -2,7 +2,7 @@ module Rpd.Render.MUV
     ( Renderer(..)
     , UpdateF
     , ViewF
-    , PushMsg
+    , PushMsg(..)
     , once
     , run
     , run'
@@ -61,6 +61,7 @@ data Renderer d model view msg
         , init :: model -- initial state
         , update :: UpdateF d model msg
         , view :: ViewF d model view msg
+        , mapMessage :: C.Command d -> msg -- maps core command to the user messages if user want to handle both / TODO: get rid of
         }
 
 

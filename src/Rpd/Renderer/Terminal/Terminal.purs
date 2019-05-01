@@ -40,7 +40,7 @@ import Rpd.API (RpdError) as R
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.Optics (_patchNodes, _node, _patch) as R
 import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchId) as R
-import Rpd.Render.MUV (Renderer(..), PushMsg, Message(..)) as R
+import Rpd.Render.MUV (Renderer(..), PushMsg(..)) as R
 
 import Rpd.Renderer.Terminal.Multiline as ML
 
@@ -69,15 +69,10 @@ type Ui =
 
 
 data Msg
-    = ExecuteCommand String
+    = Skip
+    | ExecuteCommand String
     | ClickAt (Int /\ Int)
     | Receive Char
-
-
-type Message d = R.Message d Msg
-
-
-type PushMsg d = R.PushMsg d Msg
 
 
 type View = ML.Multiline
@@ -109,6 +104,7 @@ terminalRenderer =
         , init : initUi
         , update
         , view
+        , mapMessage : const Skip
         }
 
 
@@ -257,14 +253,14 @@ packNetwork nw@(R.Network { name } { patches }) (Packing container) =
             # Packing
 
 
-update :: forall d. Message d -> (Ui /\ R.Network d) -> (Ui /\ Array (Message d))
+update :: forall d. Msg -> (Ui /\ R.Network d) -> (Ui /\ Array Msg)
 -- update R.Bang (ui /\ nw) =
 --     ui { packing = Just $ ui.packing # packNetwork nw }
 update _ (ui /\ _) =
     ui /\ []
 
 
-view :: forall d. PushMsg d -> Either R.RpdError (Ui /\ R.Network d) -> View
+view :: forall d. R.PushMsg Msg -> Either R.RpdError (Ui /\ R.Network d) -> View
 view pushMsg (Right (ui /\ nw)) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
     -- "{" <> show packing <> " :: "
