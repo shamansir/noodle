@@ -30,19 +30,18 @@ import Spork.Html (Html)
 import Rpd.API (Rpd) as R
 import Rpd.Network (Network)
 import Rpd.Command (Command(..)) as C
-import Rpd.Render.MUV (Renderer, Message) as Ui
-import Rpd.Render.MUV (custom, core)
+import Rpd.Render.MUV (Renderer(..)) as Ui
 import Rpd.Render.MUV (make') as Render
 
 
 embed
     :: forall d model view msg
      . String -- selector
-    -> (view -> Html (Ui.Message d msg)) -- insert the rendering result
+    -> (view -> Html msg) -- insert the rendering result
     -> Ui.Renderer d model view msg -- renderer
     -> R.Rpd (Network d) -- initial network
     -> Effect Unit
-embed sel render renderer initNw = do
+embed sel render renderer@(Ui.Renderer { mapMessage }) initNw = do
     doc ← DOM.window >>= DOM.document
     mbEl ← DOM.querySelector (wrap sel) (HTMLDocument.toParentNode doc)
     case mbEl of
@@ -66,7 +65,7 @@ embed sel render renderer initNw = do
                     next_vdom ← EFn.runEffectFn2 Machine.step prev_vdom (unwrap $ render next_view)
                     _ <- Ref.write next_vdom vdom_ref
                     pure unit
-            push $ core C.Bang
+            push $ mapMessage C.Bang
             pure unit
 
 
@@ -77,4 +76,4 @@ embed'
     -> R.Rpd (Network d) -- initial network
     -> Effect Unit
 embed'  sel renderer initNw =
-    embed sel ((<$>) custom) renderer initNw
+    embed sel identity renderer initNw

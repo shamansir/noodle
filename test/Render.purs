@@ -25,7 +25,7 @@ import Rpd.API ((</>))
 import Rpd.Path
 import Rpd.Network (Network) as R
 import Rpd.Render (once, Renderer) as Render
-import Rpd.RenderMUV (once, Renderer) as RenderMUV
+import Rpd.Render.MUV (once, Renderer) as RenderMUV
 import Rpd.Renderer.Terminal (terminalRenderer)
 import Rpd.Renderer.Terminal.Multiline as ML
 import Rpd.Renderer.String (stringRenderer)
