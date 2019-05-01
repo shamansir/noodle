@@ -7,7 +7,9 @@ module Rpd.Render
     , run'
     , make
     , make'
+    , neverPush
     ) where
+
 
 import Prelude
 
@@ -26,37 +28,55 @@ import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
 
 
--- type RendererOptions =
---     { subscribeFlow :: Boolean
---     }
+-- data RendererCommand d rcmd
+--     = Core (C.Command d)
+--     | Renderer rcmd
 
 
-data PushCmd d = PushCmd (C.Command d -> Effect Unit)
--- data PushCmdEff d = PushCmdEff (C.CommandEffect d -> Effect Unit)
-type RenderF d r = PushCmd d -> Either R.RpdError (R.Network d) -> r
+-- data PushCmd d rcmd =
+--     PushCmd (RendererCommand d rcmd -> Effect Unit)
 
 
-data Renderer d r
+-- type RenderF d rcmd view
+--     =  PushCmd (RendererCommand d rcmd -> Effect Unit)
+--     -> Either R.RpdError (R.Network d)
+--     -> view
+
+data PushCmd d =
+    PushCmd (C.Command d -> Effect Unit)
+
+
+type RenderF d view
+    =  PushCmd d
+    -> Either R.RpdError (R.Network d)
+    -> view
+
+
+data Renderer d view
     = Renderer
-        r -- initial view
-        (RenderF d r)
+        view -- initial view
+        (RenderF d view)
+
+
+neverPush :: forall d. PushCmd d
+neverPush = PushCmd $ const $ pure unit
 
 
 extractRpd
-    :: forall d r
-     . RenderF d r
+    :: forall d view
+     . RenderF d view
     -> PushCmd d
     -> R.Rpd (R.Network d)
-    -> Effect r
-extractRpd handler pushCmd pushCmdEff =
+    -> Effect view
+extractRpd handler pushCmd =
     R.run onError onSuccess
     where
-        onError err = handler pushCmd pushCmdEff $ Left err
-        onSuccess res = handler pushCmd pushCmdEff $ Right res
+        onError err = handler pushCmd $ Left err
+        onSuccess res = handler pushCmd $ Right res
 
 
 {- render once -}
-once :: forall d r. Renderer d r -> R.Rpd (R.Network d) -> Effect r
+once :: forall d view. Renderer d view -> R.Rpd (R.Network d) -> Effect view
 once (Renderer _ handleResult) =
     extractRpd handleResult neverPush
     where
@@ -108,7 +128,6 @@ make'
        }
 make'
     { event : commands, push : pushCommand }
-    pushEffect
     rpd
     (Renderer initialView handler) =
     let
@@ -120,7 +139,7 @@ make'
         }
     where
         updater :: C.Command d -> R.Rpd (R.Network d) -> R.Rpd (R.Network d)
-        updater cmd rpd' = rpd' >>= C.apply cmd cmdEffHandler
+        updater cmd rpd' = rpd' >>= C.apply cmd pushCommand
         viewer :: R.Rpd (R.Network d) -> Effect r
         viewer = extractRpd handler (PushCmd pushCommand)
 

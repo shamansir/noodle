@@ -18,16 +18,13 @@ data Command d
     | AddOutlet P.NodePath (D.OutletDef d)
     | Connect P.OutletPath P.InletPath
     | Disconnect P.OutletPath P.InletPath
+    | GotInletData P.InletPath d
+    | GotOutletData P.OutletPath d
     -- | SendToInlet P.InletPath d
     -- | SendToOutlet P.OutletPath d
     -- | DeleteNode
     -- | DeleteInlet
     -- | DeleteOutlet
-
-
-data CommandEffect d
-  = GotInletData P.InletPath d
-  | GotOutletData P.OutletPath d
 
 
 data StringCommand
@@ -56,6 +53,8 @@ instance showCommand :: Show (Command d) where
     show (AddOutlet path { label }) = "AddOutlet " <> show path <> " " <> label
     show (Connect oPath iPath) = "Connect " <> show oPath <> " " <> show iPath
     show (Disconnect oPath iPath) = "Disconnect " <> show oPath <> " " <> show iPath
+    show (GotInletData iPath _) = "GotInletData " <> show iPath <> " TODO"
+    show (GotOutletData oPath _) = "GotutletData " <> show oPath <> " TODO"
     -- show (GotInletData iPath d) = "GotInletData " <> show iPath <> " " <> show d
     -- show (GotOutletData oPath d) = "GotOutletData " <> show oPath <> " " <> show d
 

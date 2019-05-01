@@ -31,6 +31,7 @@ import Rpd.Command as C
 import Rpd.CommandApply as C
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
+import Rpd.Render as R
 
 
 data PushMsg msg = PushMsg (msg -> Effect Unit)
@@ -51,7 +52,7 @@ type UpdateF d model msg
    - and returns new view built using these states;
 -}
 type ViewF d model view msg =
-    PushMsg d msg -> Either R.RpdError (model /\ R.Network d) -> view
+    PushMsg msg -> Either R.RpdError (model /\ R.Network d) -> view
 
 
 data Renderer d model view msg
@@ -74,7 +75,7 @@ data Renderer d model view msg
 extractRpd
     :: forall d model view msg
      . ViewF d model view msg
-    -> PushMsg d msg
+    -> PushMsg msg
     -> R.Rpd (model /\ R.Network d)
     -> Effect view
 extractRpd view pushMsg rpd =
@@ -152,6 +153,9 @@ make'
         , next : viewFlow
         }
     where
+        -- C.apply
+        update :: msg -> (model /\ R.Network d) -> PushMsg msg -> R.PushCmd d -> R.Rpd (model /\ R.Network d)
+        update _ ( model /\ nw ) _ _ = pure (model /\ nw)
         updatePipeline
             :: msg
             -> R.Rpd (model /\ R.Network d)
@@ -159,7 +163,7 @@ make'
         updatePipeline msg rpd = rpd >>=
             \(model /\ nw) -> do
                 -- perform update using core/simple Renderer and do some our things e.g. subscriptions
-                model' /\ nw' <- update msg (model /\ nw) (PushMsg pushMessage) Core.update
+                model' /\ nw' <- update msg (model /\ nw) (PushMsg pushMessage) R.neverPush
                 -- perform user update function, collect user messages
                 -- TODO: allow `userUpdate` to be effectful
                 let model'' /\ msgs = userUpdate msg $ model' /\ nw'
@@ -169,7 +173,7 @@ make'
                 -- return all the latest states
                 pure $ model''' /\ nw''
         viewer
-            :: PushMsg d msg
+            :: PushMsg msg
             -> R.Rpd (model /\ R.Network d)
             -> Effect view
         viewer pushMessage =
