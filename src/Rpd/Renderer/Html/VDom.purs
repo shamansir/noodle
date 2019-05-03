@@ -5,6 +5,7 @@ import Prelude
 
 import Effect (Effect)
 
+import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (wrap, unwrap)
 import Effect.Exception (throwException, error)
@@ -34,14 +35,17 @@ import Rpd.Render.MUV (Renderer(..)) as Ui
 import Rpd.Render.MUV (make') as Render
 
 
+type HtmlView msg d = Html (Either msg (C.Command d))
+
+
 embed
     :: forall d model view msg
      . String -- selector
-    -> (view -> Html msg) -- insert the rendering result
+    -> (view -> HtmlView msg d) -- insert the rendering result
     -> Ui.Renderer d model view msg -- renderer
     -> R.Rpd (Network d) -- initial network
     -> Effect Unit
-embed sel render renderer@(Ui.Renderer { mapMessage }) initNw = do
+embed sel render renderer initNw = do
     doc ← DOM.window >>= DOM.document
     mbEl ← DOM.querySelector (wrap sel) (HTMLDocument.toParentNode doc)
     case mbEl of
@@ -65,14 +69,14 @@ embed sel render renderer@(Ui.Renderer { mapMessage }) initNw = do
                     next_vdom ← EFn.runEffectFn2 Machine.step prev_vdom (unwrap $ render next_view)
                     _ <- Ref.write next_vdom vdom_ref
                     pure unit
-            push $ mapMessage C.Bang
+            push $ Right C.Bang
             pure unit
 
 
 embed'
     :: forall d model msg
      . String -- selector
-    -> Ui.Renderer d model (Html msg) msg -- renderer
+    -> Ui.Renderer d model (HtmlView msg d) msg -- renderer
     -> R.Rpd (Network d) -- initial network
     -> Effect Unit
 embed'  sel renderer initNw =
