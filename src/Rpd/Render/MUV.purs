@@ -2,7 +2,7 @@ module Rpd.Render.MUV
     ( Renderer(..)
     , UpdateF
     , ViewF
-    , PushMsg(..)
+    , PushF(..)
     , once
     , run
     , run'
@@ -34,7 +34,7 @@ import Rpd.Util (Canceler) as R
 import Rpd.Render as R
 
 
-data PushMsg msg = PushMsg (msg -> Effect Unit)
+data PushF msg d = PushF (Either msg (C.Command d) -> Effect Unit)
 {- UpdateF:
    - gets message: either core one from Rpd.Render, or the custom one used by user in the MUV loop;
    - gets the latest MUV model paired with the latest network state;
@@ -43,7 +43,7 @@ data PushMsg msg = PushMsg (msg -> Effect Unit)
    TODO: let user do effects in `UpdateF`
 -}
 type UpdateF d model msg
-    =  msg
+    = Either msg (C.Command d)
     -> (model /\ R.Network d)
     -> (model /\ Array msg)
 {- ViewF:
@@ -52,7 +52,7 @@ type UpdateF d model msg
    - and returns new view built using these states;
 -}
 type ViewF d model view msg =
-    PushMsg msg -> Either R.RpdError (model /\ R.Network d) -> view
+    PushF msg d -> Either R.RpdError (model /\ R.Network d) -> view
 
 
 data Renderer d model view msg
@@ -61,7 +61,8 @@ data Renderer d model view msg
         , init :: model -- initial state
         , update :: UpdateF d model msg
         , view :: ViewF d model view msg
-        , mapMessage :: C.Command d -> msg -- maps core command to the user messages if user want to handle both / TODO: get rid of
+        -- , mapMessage :: C.Command d -> msg -- maps core command to the user messages if user want to handle both / TODO: get rid of
+        -- , mapCommand :: msg -> C.Command d
         }
 
 
@@ -76,14 +77,14 @@ data Renderer d model view msg
 extractRpd
     :: forall d model view msg
      . ViewF d model view msg
-    -> PushMsg msg
+    -> PushF msg d
     -> R.Rpd (model /\ R.Network d)
     -> Effect view
-extractRpd view pushMsg rpd =
+extractRpd view push rpd =
     R.run onError onSuccess rpd
     where
-        onError err = view pushMsg $ Left err
-        onSuccess res = view pushMsg $ Right res
+        onError err = view push $ Left err
+        onSuccess res = view push $ Right res
 
 
 {- render once -}
@@ -95,8 +96,8 @@ once
 once (Renderer { view, init, update }) rpd =
     extractRpd view neverPush withModel
     where
+        neverPush = PushF $ const $ pure unit
         withModel = (/\) init <$> rpd
-        neverPush = PushMsg $ const $ pure unit
 
 
 {- Prepare the rendering cycle with internal message producer.
@@ -134,8 +135,8 @@ make nw renderer =
 -}
 make'
     :: forall d model view msg
-     . { event :: Event msg
-       , push :: (msg -> Effect Unit)
+     . { event :: Event (Either msg (C.Command d))
+       , push :: Either msg (C.Command d) -> Effect Unit
        }
     -> R.Rpd (R.Network d)
     -> Renderer d model view msg
@@ -143,42 +144,46 @@ make'
        , next :: Event (Effect view)
        }
 make'
-    { event : messages, push : pushMessage }
+    { event, push }
     rpd
-    (Renderer { from, init, view, update : userUpdate })
+    (Renderer { from, init, view, update })
     = let
-        updateFlow = Event.fold updatePipeline messages $ (/\) init <$> rpd
-        viewFlow = viewer (PushMsg pushMessage) <$> updateFlow
+        updateFlow = Event.fold updatePipeline event $ (/\) init <$> rpd
+        viewFlow = viewer <$> updateFlow
     in
         { first : from
         , next : viewFlow
         }
     where
         -- C.apply
-        update :: msg -> (model /\ R.Network d) -> PushMsg msg -> R.PushCmd d -> R.Rpd (model /\ R.Network d)
-        update _ ( model /\ nw ) _ _ = pure (model /\ nw)
+        -- Event.folded :: forall event a. IsEvent event => Monoid a => event a -> event a
+        pushCommand
+            = R.neverPush
+        -- update :: msg -> (model /\ R.Network d) -> PushMsg msg -> R.PushCmd d -> R.Rpd (model /\ R.Network d)
         updatePipeline
-            :: msg
+            :: Either msg (C.Command d)
             -> R.Rpd (model /\ R.Network d)
             -> R.Rpd (model /\ R.Network d)
-        updatePipeline msg rpd = rpd >>=
-            \(model /\ nw) -> do
-                -- perform update using core/simple Renderer and do some our things e.g. subscriptions
-                model' /\ nw' <- update msg (model /\ nw) (PushMsg pushMessage) R.neverPush
-                -- perform user update function, collect user messages
-                -- TODO: allow `userUpdate` to be effectful
-                let model'' /\ msgs = userUpdate msg $ model' /\ nw'
-                -- apply user messages returned from previous line to the models
-                model''' /\ nw'' <-
-                    foldr updatePipeline (pure $ model'' /\ nw') msgs
-                -- return all the latest states
-                pure $ model''' /\ nw''
+        updatePipeline msgOrCmd rpd = rpd >>=
+            \(model /\ nw) ->
+                case msgOrCmd of
+                    Left msg -> do
+                        -- perform user update function, collect user messages
+                        let model' /\ msgs = update (Left msg) $ model /\ nw
+                        -- apply user messages returned from previous line to the model
+                        foldr updatePipeline (pure $ model' /\ nw) (Left <$> msgs)
+                    Right cmd -> do
+                        -- apply the core command to the network
+                        nw' <- C.apply cmd (push <<< Right) nw
+                        -- perform the user update function with this core command, collect the returned messages
+                        let model' /\ msgs = update (Right cmd) $ model /\ nw'
+                        -- apply user messages returned from previous line to the model
+                        foldr updatePipeline (pure $ model' /\ nw') (Left <$> msgs)
         viewer
-            :: PushMsg msg
-            -> R.Rpd (model /\ R.Network d)
+            :: R.Rpd (model /\ R.Network d)
             -> Effect view
-        viewer pushMessage =
-            extractRpd view pushMessage
+        viewer =
+            extractRpd view (PushF push)
 
 
 {- Run the rendering cycle without any special handling
@@ -205,8 +210,8 @@ run nw renderer =
 -}
 run'
     :: forall d view model msg
-     . { event :: Event msg
-       , push :: (msg -> Effect Unit)
+     . { event :: Event (Either msg (C.Command d))
+       , push :: Either msg (C.Command d) -> Effect Unit
        }
     -> R.Rpd (R.Network d)
     -> Renderer d view model msg

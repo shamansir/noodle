@@ -152,12 +152,3 @@ update (Core (C.GotOutletData outletPath d)) (ui /\ _) =
     /\ []
 update _ (ui /\ _) = ui /\ []
 
-
-class Monoid m <= Action m a where
-  act :: m -> a -> a
-
-newtype Self m = Self m
-
-instance selfAction :: Monoid m => Action m (Self m) where
-  act m (Self a) = Self (m <> a)
-
