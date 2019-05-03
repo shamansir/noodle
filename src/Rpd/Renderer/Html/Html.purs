@@ -11,11 +11,13 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Set as Set
 import Data.Tuple.Nested (type (/\), (/\))
+import Debug.Trace (spy)
 import Rpd.API (RpdError) as R
-import Rpd.IsData (class IsData, default) as R
 import Rpd.Command (Command(..)) as C
+import Rpd.IsData (class IsData, default) as R
 import Rpd.Network as R
 import Rpd.Optics as R
+import Rpd.Def as R
 import Rpd.Path as R
 import Rpd.Render as R
 import Rpd.Render.MUV (Renderer(..), PushF(..)) as R
@@ -72,6 +74,14 @@ viewPatch pushMsg ui nw (R.Patch patchId { name } { nodes }) =
             (viewNode pushMsg ui nw <$> (nodes # Set.toUnfoldable))
 
 
+testInlet :: forall d. R.IsData d => R.InletDef d
+testInlet =
+    { accept : Just $ const true
+    , default : Just R.default
+    , label : "test"
+    }
+
+
 viewNode
     :: forall d
      . R.IsData d
@@ -85,20 +95,29 @@ viewNode pushMsg ui nw nodePath =
         Just (R.Node _ { name } { inlets, outlets }) ->
             H.div
                 [ H.classes [ "node" ] ]
-                ([ H.text name ]
-                    <>
-                        [ H.div
-                            [ H.onClick $ H.always_ $ Right $ C.SendToInlet (R.inletPath 0 0 0) R.default ]
-                            [ H.text "Send" ]
-                        ]
+                [ H.text name
+                , H.div
+                    [ H.onClick $ H.always_ $ Right $ C.SendToInlet (R.inletPath 0 0 0) R.default ]
+                    [ H.text "Send" ]
+                , H.div
+                    [ H.onClick $ H.always_ $ Right $ C.AddInlet (R.nodePath 0 0) testInlet]
+                    [ H.text "Add Inlet" ]
+                ]
                     <> (viewInlet pushMsg ui nw <$> (inlets # Set.toUnfoldable))
-                    <> (viewOutlet pushMsg ui nw <$> (outlets # Set.toUnfoldable)))
+                    <> (viewOutlet pushMsg ui nw <$> (outlets # Set.toUnfoldable))
         _ -> H.div
                 [ H.classes [ "node" ] ]
                 [ H.text $ "node " <> show nodePath <> " was not found" ]
 
 
-viewInlet :: forall d. R.IsData d => R.PushF Message d -> Model d -> R.Network d -> R.InletPath -> View d
+viewInlet
+    :: forall d
+     . R.IsData d
+    => R.PushF Message d
+    -> Model d
+    -> R.Network d
+    -> R.InletPath
+    -> View d
 viewInlet pushMsg ui nw inletPath =
     case L.view (R._inlet inletPath) nw of
         Just (R.Inlet _ { label } { flow }) ->
@@ -114,7 +133,14 @@ viewInlet pushMsg ui nw inletPath =
                 [ H.text $ "inlet " <> show inletPath <> " was not found" ]
 
 
-viewOutlet :: forall d. R.IsData d => R.PushF Message d -> Model d -> R.Network d -> R.OutletPath -> View d
+viewOutlet
+    :: forall d
+     . R.IsData d
+    => R.PushF Message d
+    -> Model d
+    -> R.Network d
+    -> R.OutletPath
+    -> View d
 viewOutlet pushMsg ui nw outletPath =
     case L.view (R._outlet outletPath) nw of
         Just (R.Outlet _ { label } { flow }) ->
