@@ -31,11 +31,11 @@ type Model d =
     }
 
 
-data Message d
+data Message
     = ClickAt (Int /\ Int)
 
 
-type View d = Html (Message d)
+type View d = Html (Either Message (C.Command d))
 
 
 init :: forall d. Model d
@@ -45,7 +45,7 @@ init =
     }
 
 
-type HtmlRenderer d = R.Renderer d (Model d) (View d) (Message d)
+type HtmlRenderer d = R.Renderer d (Model d) (View d) Message
 
 
 emptyView :: forall d. View d
@@ -127,7 +127,7 @@ htmlRenderer =
 
 view
     :: forall d
-     . R.PushF (Message d) d
+     . R.PushF Message d
     -> Either R.RpdError (Model d /\ R.Network d)
     -> View d
 view pushMsg (Right (ui /\ nw)) =
@@ -138,9 +138,9 @@ view pushMsg (Left err) =
 
 update
     :: forall d
-     . Either (Message d) (C.Command d)
+     . Either Message (C.Command d)
     -> Model d /\ R.Network d
-    -> Model d /\ Array (Either (Message d) (C.Command d))
+    -> Model d /\ Array (Either Message (C.Command d))
 update (Right C.Bang) (ui /\ _) = ui /\ []
 update (Right (C.GotInletData inletPath d)) (ui /\ _) =
     (ui { lastInletData = ui.lastInletData # Map.insert inletPath d })
