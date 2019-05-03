@@ -19,7 +19,7 @@ import Rpd.API (RpdError) as R
 import Rpd.Network as R
 import Rpd.Render as R
 import Rpd.Command (Command(..)) as C
-import Rpd.Render.MUV (Renderer(..), PushMsg(..)) as R
+import Rpd.Render.MUV (Renderer(..), PushF(..)) as R
 
 import Spork.Html (Html)
 import Spork.Html as H
@@ -32,8 +32,7 @@ type Model d =
 
 
 data Message d
-    = Core (C.Command d)
-    | ClickAt (Int /\ Int)
+    = ClickAt (Int /\ Int)
 
 
 type View d = Html (Message d)
@@ -123,13 +122,12 @@ htmlRenderer =
         , init
         , update
         , view
-        , mapMessage : Core
         }
 
 
 view
     :: forall d
-     . R.PushMsg (Message d)
+     . R.PushF (Message d) d
     -> Either R.RpdError (Model d /\ R.Network d)
     -> View d
 view pushMsg (Right (ui /\ nw)) =
@@ -140,14 +138,14 @@ view pushMsg (Left err) =
 
 update
     :: forall d
-     . Message d
-    -> (Model d /\ R.Network d)
-    -> (Model d /\ Array (Message d))
-update (Core C.Bang) (ui /\ _) = ui /\ []
-update (Core (C.GotInletData inletPath d)) (ui /\ _) =
+     . Either (Message d) (C.Command d)
+    -> Model d /\ R.Network d
+    -> Model d /\ Array (Either (Message d) (C.Command d))
+update (Right C.Bang) (ui /\ _) = ui /\ []
+update (Right (C.GotInletData inletPath d)) (ui /\ _) =
     (ui { lastInletData = ui.lastInletData # Map.insert inletPath d })
     /\ []
-update (Core (C.GotOutletData outletPath d)) (ui /\ _) =
+update (Right (C.GotOutletData outletPath d)) (ui /\ _) =
     (ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d })
     /\ []
 update _ (ui /\ _) = ui /\ []

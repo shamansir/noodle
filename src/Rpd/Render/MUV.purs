@@ -34,6 +34,13 @@ import Rpd.Util (Canceler) as R
 import Rpd.Render as R
 
 
+-- "Action" is either core "command" or user "message"
+-- the naming is too confusing though
+-- type Action msg d = Either msg (C.Command d)
+    -- = Core (C.Command d)
+    -- | User msg
+
+
 data PushF msg d = PushF (Either msg (C.Command d) -> Effect Unit)
 {- UpdateF:
    - gets message: either core one from Rpd.Render, or the custom one used by user in the MUV loop;
@@ -45,7 +52,7 @@ data PushF msg d = PushF (Either msg (C.Command d) -> Effect Unit)
 type UpdateF d model msg
     = Either msg (C.Command d)
     -> (model /\ R.Network d)
-    -> (model /\ Array msg)
+    -> (model /\ Array (Either msg (C.Command d)))
 {- ViewF:
    - gets the function allowing to push messages to the flow (for use in view handlers);
    - gets the latest MUV model paired with the latest network state;
@@ -169,16 +176,16 @@ make'
                 case msgOrCmd of
                     Left msg -> do
                         -- perform user update function, collect user messages
-                        let model' /\ msgs = update (Left msg) $ model /\ nw
+                        let model' /\ actions = update (Left msg) $ model /\ nw
                         -- apply user messages returned from previous line to the model
-                        foldr updatePipeline (pure $ model' /\ nw) (Left <$> msgs)
+                        foldr updatePipeline (pure $ model' /\ nw) actions
                     Right cmd -> do
                         -- apply the core command to the network
                         nw' <- C.apply cmd (push <<< Right) nw
                         -- perform the user update function with this core command, collect the returned messages
-                        let model' /\ msgs = update (Right cmd) $ model /\ nw'
+                        let model' /\ actions = update (Right cmd) $ model /\ nw'
                         -- apply user messages returned from previous line to the model
-                        foldr updatePipeline (pure $ model' /\ nw') (Left <$> msgs)
+                        foldr updatePipeline (pure $ model' /\ nw') actions
         viewer
             :: R.Rpd (model /\ R.Network d)
             -> Effect view
