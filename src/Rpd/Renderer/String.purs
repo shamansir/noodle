@@ -60,7 +60,7 @@ stringRenderer =
 
 
 view :: forall d. PushCmd d -> Either R.RpdError (R.Network d) -> String
-view pushMsg (Right nw@(R.Network { name } { patches, links })) =
+view _ (Right nw@(R.Network { name } { patches, links })) =
     "Network " <> name <> ":" <> lineBreak
         <> count patchCounter patchCount
         <> (if patchCount > 0 then
@@ -81,7 +81,7 @@ view pushMsg (Right nw@(R.Network { name } { patches, links })) =
             joinWith lineBreak
                 $ (viewLink nw <$> Map.values links)
                     # List.toUnfoldable
-view pushMsg (Left err) =
+view _ (Left err) =
     "<" <> show err <> ">"
 
 

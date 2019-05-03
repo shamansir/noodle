@@ -79,8 +79,6 @@ extractRpd handler pushCmd =
 once :: forall d view. Renderer d view -> R.Rpd (R.Network d) -> Effect view
 once (Renderer _ handleResult) =
     extractRpd handleResult neverPush
-    where
-        neverPush = PushCmd $ const $ pure unit
 
 
 {- Prepare the rendering cycle with internal message producer.
