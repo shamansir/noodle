@@ -2,6 +2,8 @@ module Example.Terminal where
 
 import Prelude
 
+
+import Data.Either (Either(..))
 import Data.List (List(..)) as List
 import Effect (Effect)
 
@@ -13,16 +15,14 @@ import Rpd.Network (empty) as Network
 import Rpd.Def as R
 import Rpd.Process as R
 import Rpd.Path (PatchId(..))
+import Rpd.Command as C
 import Rpd.Command (Command(..)) as Cmd
-import Rpd.Render.MUV (Message) as Ui
-import Rpd.Render.MUV (core, custom)
-import Rpd.Renderer.Terminal (terminalRenderer)
+import Rpd.Renderer.Terminal (terminalRenderer, Msg)
 import Rpd.Renderer.Terminal.Multiline as ML
 import Rpd.Renderer.Html.VDom as VDom
 
 
 type Model d = Network d
-type Action d msg = Ui.Message d msg
 
 
 patch :: forall d. R.PatchDef d
@@ -41,7 +41,7 @@ node =
     }
 
 
-render ∷ forall d msg. ML.Multiline → Html (Action d msg)
+render ∷ forall d. ML.Multiline → Html (Either Msg (C.Command d))
 render src =
   H.div
     []
@@ -55,17 +55,17 @@ render src =
         ]
     , H.button
         [ H.onClick
-            (H.always_ $ core Cmd.Bang)
+            (H.always_ $ Right Cmd.Bang)
         ]
         [ H.text "Bang" ]
     , H.button
         [ H.onClick
-            (H.always_ $ core $ Cmd.AddPatch patch)
+            (H.always_ $ Right $ Cmd.AddPatch patch)
         ]
         [ H.text "Add Patch" ]
     , H.button
         [ H.onClick
-            (H.always_ $ core $ Cmd.AddNode (PatchId 0) node)
+            (H.always_ $ Right $ Cmd.AddNode (PatchId 0) node)
         ]
         [ H.text "Add Node" ]
     ]
