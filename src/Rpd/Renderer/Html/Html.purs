@@ -2,25 +2,24 @@ module Rpd.Renderer.Html.Html where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
-import Data.Map as Map
-import Data.Set as Set
 import Data.Foldable (foldr)
-import Data.List (toUnfoldable)
-import Data.Tuple.Nested (type (/\), (/\))
 import Data.Lens (view) as L
 import Data.Lens.At (at) as L
-
-import Rpd.Util (type (/->))
-import Rpd.Path as R
-import Rpd.Optics as R
+import Data.List (toUnfoldable)
+import Data.Map as Map
+import Data.Maybe (Maybe(..))
+import Data.Set as Set
+import Data.Tuple.Nested (type (/\), (/\))
 import Rpd.API (RpdError) as R
-import Rpd.Network as R
-import Rpd.Render as R
+import Rpd.IsData (class IsData, default) as R
 import Rpd.Command (Command(..)) as C
+import Rpd.Network as R
+import Rpd.Optics as R
+import Rpd.Path as R
+import Rpd.Render as R
 import Rpd.Render.MUV (Renderer(..), PushF(..)) as R
-
+import Rpd.Util (type (/->))
 import Spork.Html (Html)
 import Spork.Html as H
 
@@ -45,7 +44,7 @@ init =
     }
 
 
-type HtmlRenderer d = R.Renderer d (Model d) (View d) Message
+type HtmlRenderer d = R.IsData d => R.Renderer d (Model d) (View d) Message
 
 
 emptyView :: forall d. View d
@@ -57,38 +56,50 @@ viewError error =
     H.div [ H.id_ "error" ] [ H.text $ show error ]
 
 
-viewNetwork :: forall d. Model d -> R.Network d -> View d
-viewNetwork ui nw@(R.Network { name } { patches }) =
+viewNetwork :: forall d. R.IsData d => R.PushF Message d -> Model d -> R.Network d -> View d
+viewNetwork pushMsg ui nw@(R.Network { name } { patches }) =
     H.div
         [ H.id_ "network" ]
         $ [ H.text name ] <>
-            (toUnfoldable $ viewPatch ui nw <$> Map.values patches)
+            (toUnfoldable $ viewPatch pushMsg ui nw <$> Map.values patches)
 
 
-viewPatch :: forall d. Model d -> R.Network d -> R.Patch d ->  View d
-viewPatch ui nw (R.Patch patchId { name } { nodes }) =
+viewPatch :: forall d. R.IsData d => R.PushF Message d -> Model d -> R.Network d -> R.Patch d ->  View d
+viewPatch pushMsg ui nw (R.Patch patchId { name } { nodes }) =
     H.div
         [ H.classes [ "patch" ] ]
         $ [ H.text name ] <>
-            (viewNode ui nw <$> (nodes # Set.toUnfoldable))
+            (viewNode pushMsg ui nw <$> (nodes # Set.toUnfoldable))
 
 
-viewNode :: forall d. Model d -> R.Network d -> R.NodePath -> View d
-viewNode ui nw nodePath =
+viewNode
+    :: forall d
+     . R.IsData d
+    => R.PushF Message d
+    -> Model d
+    -> R.Network d
+    -> R.NodePath
+    -> View d
+viewNode pushMsg ui nw nodePath =
     case L.view (R._node nodePath) nw of
         Just (R.Node _ { name } { inlets, outlets }) ->
             H.div
                 [ H.classes [ "node" ] ]
-                $ [ H.text name ]
-                    <> (viewInlet ui nw <$> (inlets # Set.toUnfoldable))
-                    <> (viewOutlet ui nw <$> (outlets # Set.toUnfoldable))
+                ([ H.text name ]
+                    <>
+                        [ H.div
+                            [ H.onClick $ H.always_ $ Right $ C.SendToInlet (R.inletPath 0 0 0) R.default ]
+                            [ H.text "Send" ]
+                        ]
+                    <> (viewInlet pushMsg ui nw <$> (inlets # Set.toUnfoldable))
+                    <> (viewOutlet pushMsg ui nw <$> (outlets # Set.toUnfoldable)))
         _ -> H.div
                 [ H.classes [ "node" ] ]
                 [ H.text $ "node " <> show nodePath <> " was not found" ]
 
 
-viewInlet :: forall d. Model d -> R.Network d -> R.InletPath -> View d
-viewInlet ui nw inletPath =
+viewInlet :: forall d. R.IsData d => R.PushF Message d -> Model d -> R.Network d -> R.InletPath -> View d
+viewInlet pushMsg ui nw inletPath =
     case L.view (R._inlet inletPath) nw of
         Just (R.Inlet _ { label } { flow }) ->
             H.div
@@ -103,8 +114,8 @@ viewInlet ui nw inletPath =
                 [ H.text $ "inlet " <> show inletPath <> " was not found" ]
 
 
-viewOutlet :: forall d. Model d -> R.Network d -> R.OutletPath -> View d
-viewOutlet ui nw outletPath =
+viewOutlet :: forall d. R.IsData d => R.PushF Message d -> Model d -> R.Network d -> R.OutletPath -> View d
+viewOutlet pushMsg ui nw outletPath =
     case L.view (R._outlet outletPath) nw of
         Just (R.Outlet _ { label } { flow }) ->
             H.div
@@ -115,7 +126,7 @@ viewOutlet ui nw outletPath =
                 [ H.text $ "outlet " <> show outletPath <> " was not found" ]
 
 
-htmlRenderer :: forall d. HtmlRenderer d
+htmlRenderer :: forall d. R.IsData d => HtmlRenderer d
 htmlRenderer =
     R.Renderer
         { from : emptyView
@@ -127,18 +138,20 @@ htmlRenderer =
 
 view
     :: forall d
-     . R.PushF Message d
+     . R.IsData d
+    => R.PushF Message d
     -> Either R.RpdError (Model d /\ R.Network d)
     -> View d
 view pushMsg (Right (ui /\ nw)) =
-    viewNetwork ui nw
+    viewNetwork pushMsg ui nw
 view pushMsg (Left err) =
     viewError err
 
 
 update
     :: forall d
-     . Either Message (C.Command d)
+     . R.IsData d
+    => Either Message (C.Command d)
     -> Model d /\ R.Network d
     -> Model d /\ Array (Either Message (C.Command d))
 update (Right C.Bang) (ui /\ _) = ui /\ []

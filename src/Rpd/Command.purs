@@ -20,8 +20,8 @@ data Command d
     | Disconnect P.OutletPath P.InletPath
     | GotInletData P.InletPath d
     | GotOutletData P.OutletPath d
-    -- | SendToInlet P.InletPath d
-    -- | SendToOutlet P.OutletPath d
+    | SendToInlet P.InletPath d
+    | SendToOutlet P.OutletPath d
     -- | DeleteNode
     -- | DeleteInlet
     -- | DeleteOutlet
@@ -55,6 +55,8 @@ instance showCommand :: Show (Command d) where
     show (Disconnect oPath iPath) = "Disconnect " <> show oPath <> " " <> show iPath
     show (GotInletData iPath _) = "GotInletData " <> show iPath <> " TODO"
     show (GotOutletData oPath _) = "GotutletData " <> show oPath <> " TODO"
+    show (SendToInlet iPath _) = "SendToInlet " <> show iPath <> " TODO"
+    show (SendToOutlet oPath _) = "SendToOutlet " <> show oPath <> " TODO"
     -- show (GotInletData iPath d) = "GotInletData " <> show iPath <> " " <> show d
     -- show (GotOutletData oPath d) = "GotOutletData " <> show oPath <> " " <> show d
 

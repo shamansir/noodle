@@ -17,6 +17,7 @@ import Data.Lens.At (at)
 
 import Rpd.Def as Rpd
 import Rpd.Process (ProcessF(..), InletsMapData(..), OutletsMapData(..)) as R
+import Rpd.IsData as Rpd
 
 
 data ParticleShape
@@ -163,3 +164,7 @@ metroNode =
 
 
 -- TODO: metro, color, random, shape, magic, wind...
+
+
+instance isDataValue :: Rpd.IsData Value where
+  default = Period 5.0
