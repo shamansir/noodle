@@ -95,16 +95,18 @@ viewNode pushMsg ui nw nodePath =
         Just (R.Node _ { name } { inlets, outlets }) ->
             H.div
                 [ H.classes [ "node" ] ]
-                [ H.text name
-                , H.div
-                    [ H.onClick $ H.always_ $ Right $ C.SendToInlet (R.inletPath 0 0 0) R.default ]
-                    [ H.text "Send" ]
-                , H.div
-                    [ H.onClick $ H.always_ $ Right $ C.AddInlet (R.nodePath 0 0) testInlet]
-                    [ H.text "Add Inlet" ]
-                ]
+                (
+                    [ H.text name
+                    , H.div
+                        [ H.onClick $ H.always_ $ Right $ C.SendToInlet (R.inletPath 0 0 0) R.default ]
+                        [ H.text "Send" ]
+                    , H.div
+                        [ H.onClick $ H.always_ $ Right $ C.AddInlet (R.nodePath 0 0) testInlet ]
+                        [ H.text "Add Inlet" ]
+                    ]
                     <> (viewInlet pushMsg ui nw <$> (inlets # Set.toUnfoldable))
                     <> (viewOutlet pushMsg ui nw <$> (outlets # Set.toUnfoldable))
+                )
         _ -> H.div
                 [ H.classes [ "node" ] ]
                 [ H.text $ "node " <> show nodePath <> " was not found" ]

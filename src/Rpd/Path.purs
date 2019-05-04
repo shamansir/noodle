@@ -2,7 +2,8 @@ module Rpd.Path
     ( PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath, linkId
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
-    , getNodeId, getInletId, getOutletId
+    , getPatchId, getNodeId, getInletId, getOutletId -- TODO: rename to ...Idx
+    , nodeInPatch, inletInNode, outletInNode
     , Path(..)
     )
     where
@@ -66,6 +67,10 @@ linkId :: Int -> LinkId
 linkId = LinkId
 
 
+getPatchId :: PatchId -> Int
+getPatchId (PatchId id) = id
+
+
 getNodeId :: NodePath -> Int
 getNodeId (NodePath _ id) = id
 
@@ -76,6 +81,18 @@ getInletId (InletPath _ id) = id
 
 getOutletId :: OutletPath -> Int
 getOutletId (OutletPath _ id) = id
+
+
+nodeInPatch :: PatchId -> Int -> NodePath
+nodeInPatch = NodePath
+
+
+inletInNode :: NodePath -> Int -> InletPath
+inletInNode = InletPath
+
+
+outletInNode :: NodePath -> Int -> OutletPath
+outletInNode = OutletPath
 
 
 unpackNodePath :: NodePath -> Array Int

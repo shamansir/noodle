@@ -5,7 +5,7 @@ module Rpd.API
     --, RpdOp, RpdEffOp
         --, emptyNetwork
     --, network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
-    , connect, disconnectAll --, disconnectTop
+    , connect, disconnectAll, disconnectTop
     , addPatch, addPatch', addNode, addNode', addInlet, addInlet', addOutlet, addOutlet'
     , removeInlet
     , subscribeInlet, subscribeOutlet, subscribeAllInlets, subscribeAllOutlets
@@ -691,7 +691,16 @@ disconnectAllComingTo inletPath
         removeLinks linksForDeletion nw
 
 
--- TODO: disconnectTop
+disconnectTop
+    :: forall d
+     . OutletPath
+    -> InletPath
+    -> Network d
+    -> Rpd (Network d)
+disconnectTop outletPath inletPath
+    nw@(Network _ { links }) =
+        pure nw -- FIXME: implement
+
 
 -- TODO: disconnectTopOf (OutletPath /\ InletPath)
 
