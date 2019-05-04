@@ -1,6 +1,7 @@
 module RpdTest.Util
     ( runWith
     , withRpd
+    , spec
     ) where
 
 import Prelude
@@ -9,10 +10,16 @@ import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
 
+import Data.String as String
+
+import Test.Spec (Spec, describe, it)
+import Test.Spec.Assertions (shouldEqual, fail)
+
 import Rpd.API (Rpd) as Rpd
 import Rpd.Network (Network) as Rpd
 import Rpd.Network (empty) as Network
 import Rpd.Log (runRpdLogging) as RL
+import Rpd.UUID as UUID
 
 
 runWith :: forall d. Rpd.Network d -> (Rpd.Network d -> Aff Unit) -> Aff Unit
@@ -43,3 +50,10 @@ withRpd test rpd =
       Ref.read nwTarget
 
 
+spec :: Spec Unit
+spec =
+  describe "UUID generation" do
+    it "does what it says" do
+      uuid <- liftEffect $ UUID.new
+      _ <- 36 `shouldEqual` String.length uuid
+      pure unit

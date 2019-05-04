@@ -12,6 +12,8 @@ import RpdTest.Structure (spec) as TestStructure
 import RpdTest.Flow (spec) as TestFlow
 import RpdTest.Render (spec) as TestRender
 import RpdTest.CommandParser (spec) as TestCommandParser
+import RpdTest.Util (spec) as TestUtils
+
 
 spec :: Spec Unit
 spec =
@@ -20,6 +22,8 @@ spec =
     TestFlow.spec
     TestRender.spec
     TestCommandParser.spec
+    TestUtils.spec
+
 
 main :: Effect Unit
 main = run [consoleReporter] spec
