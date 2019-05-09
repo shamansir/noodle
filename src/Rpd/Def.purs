@@ -2,7 +2,7 @@ module Rpd.Def
     -- TODO: remove `-Def` from inner names
     ( noDefs
     , PatchDef(..), NodeDef(..), InletDef(..), OutletDef(..), ChannelDef(..)
-    , comparePDefs, compareNDefs, compareIDefs, compareODefs
+    --, comparePDefs, compareNDefs, compareIDefs, compareODefs
     )
     where
 
@@ -16,7 +16,7 @@ import Data.Foldable (and)
 import Data.Tuple.Nested (type (/\))
 
 import Rpd.Util (type (/->), Flow, PushF)
-import Rpd.Path (InletPath, OutletPath)
+import Rpd.Path (InletPath, OutletPath, Alias)
 import Rpd.Process (ProcessF(..))
 
 
@@ -25,17 +25,17 @@ noDefs = Nil
 
 
 type PatchDef d =
-    { name :: String
+    { alias :: Alias
     , nodeDefs :: List (NodeDef d)
     }
 type NodeDef d =
-    { name :: String
+    { alias :: Alias
     , inletDefs :: List (InletDef d)
     , outletDefs :: List (OutletDef d)
     , process :: ProcessF d
     }
 type InletDef d =
-    { label :: String
+    { alias :: Alias
     , default :: Maybe d
     --, readonly :: Bool
     --, hidden :: Bool
@@ -47,11 +47,12 @@ type InletDef d =
     --, show :: (d -> String)
     }
 type OutletDef d =
-    { label :: String
+    { alias :: Alias
     , accept :: Maybe (d -> Boolean)
         -- FIXME: `accept : Nothing` reads a bit weird, so I'd try to use `MonadZero.empty`
     }
--- TODO: ChannelDef may be used both to describe inlets and outlets
+-- TODO: ChannelDef may be used both to describe inlets and outlets, defaults,
+--       accept/decline methods, etc.
 type ChannelDef d = InletDef d
 
 -- FIXME: there should always be a string ID, which can be different from name/label:
@@ -59,24 +60,24 @@ type ChannelDef d = InletDef d
 --        for nodes — unique in one toolkit (patch?) etc.
 
 
-comparePDefs :: forall d. Eq d => PatchDef d -> PatchDef d -> Boolean
-comparePDefs lPDef rPDef =
-    (lPDef.name == rPDef.name)
-      && (and $ compareNDefs <$> lPDef.nodeDefs <*> rPDef.nodeDefs)
+-- comparePDefs :: forall d. Eq d => PatchDef d -> PatchDef d -> Boolean
+-- comparePDefs lPDef rPDef =
+--     (lPDef.name == rPDef.name)
+--       && (and $ compareNDefs <$> lPDef.nodeDefs <*> rPDef.nodeDefs)
 
 
-compareNDefs :: forall d. Eq d => NodeDef d -> NodeDef d -> Boolean
-compareNDefs lNdef rNdef =
-    (lNdef.name == rNdef.name)
-      && (and $ compareIDefs <$> lNdef.inletDefs <*> rNdef.inletDefs)
-      && (and $ compareODefs <$> lNdef.outletDefs <*> rNdef.outletDefs)
+-- compareNDefs :: forall d. Eq d => NodeDef d -> NodeDef d -> Boolean
+-- compareNDefs lNdef rNdef =
+--     (lNdef.name == rNdef.name)
+--       && (and $ compareIDefs <$> lNdef.inletDefs <*> rNdef.inletDefs)
+--       && (and $ compareODefs <$> lNdef.outletDefs <*> rNdef.outletDefs)
 
 
-compareIDefs :: forall d. Eq d => InletDef d -> InletDef d -> Boolean
-compareIDefs lIdef rIdef =
-    (lIdef.label == rIdef.label)
-      && (lIdef.default == rIdef.default)
+-- compareIDefs :: forall d. Eq d => InletDef d -> InletDef d -> Boolean
+-- compareIDefs lIdef rIdef =
+--     (lIdef.label == rIdef.label)
+--       && (lIdef.default == rIdef.default)
 
 
-compareODefs :: forall d. OutletDef d -> OutletDef d -> Boolean
-compareODefs lOdef rOdef = lOdef.label == rOdef.label
+-- compareODefs :: forall d. OutletDef d -> OutletDef d -> Boolean
+-- compareODefs lOdef rOdef = lOdef.label == rOdef.label

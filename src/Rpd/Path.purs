@@ -1,5 +1,6 @@
 module Rpd.Path
-    ( PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
+    ( mkAlias, getAlias, Alias
+    , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
     , patchId, nodePath, inletPath, outletPath, linkId
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
     , getPatchId, getNodeId, getInletId, getOutletId -- TODO: rename to ...Idx
@@ -11,6 +12,7 @@ module Rpd.Path
 
 import Prelude
 
+import Data.String as String
 
 -- TODO: either Path typeclass or... Comonad? (paths look like breadcrumbs)
 
@@ -30,11 +32,30 @@ import Prelude
 
 
 
-data PatchId = PatchId Int
-data NodePath = NodePath PatchId Int
-data InletPath = InletPath NodePath Int
-data OutletPath = OutletPath NodePath Int
-data LinkId = LinkId Int
+-- class IsAlias
+
+
+-- Alias is the default or custom name for the entity (patch, node, inlet, outlet, etc.)
+-- which is recommended to be unique in this context, but has no guarantees to be so —
+-- uniqueness, unlike with UUID, is provided by user.
+-- This way the nice-looking paths may be created, like `my-patch/my-node/my-inlet`
+-- and so the particular inlet can be referenced with this path
+-- after the creation.
+
+-- If there was no Alias specified on entity creation, the alias from the correspoding
+-- `Def` is taken and the index in current context is added to it.
+
+-- Still, in the internal
+
+
+newtype Alias = Alias String
+
+
+data PatchId = PatchId Alias
+data NodePath = NodePath PatchId Alias
+data InletPath = InletPath NodePath Alias
+data OutletPath = OutletPath NodePath Alias
+data LinkId = LinkId Alias
 
 
 data Path
@@ -47,61 +68,69 @@ data Path
     | Unknown
 
 
-patchId :: Int -> PatchId
+mkAlias :: String -> Alias
+mkAlias = String.toLower >>> Alias -- TODO: trim spaces, symbols etc.
+
+
+getAlias :: Alias -> String
+getAlias (Alias v) = v
+
+
+patchId :: Alias -> PatchId
 patchId = PatchId
 
 
-nodePath :: Int -> Int -> NodePath
+nodePath :: Alias -> Alias -> NodePath
 nodePath pId nId = NodePath (PatchId pId) nId
 
 
-inletPath :: Int -> Int -> Int -> InletPath
+inletPath :: Alias -> Alias -> Alias -> InletPath
 inletPath pId nId iId = InletPath (NodePath (PatchId pId) nId) iId
 
 
-outletPath :: Int -> Int -> Int -> OutletPath
+outletPath :: Alias -> Alias -> Alias -> OutletPath
 outletPath pId nId iId = OutletPath (NodePath (PatchId pId) nId) iId
 
 
-linkId :: Int -> LinkId
+linkId :: Alias -> LinkId
 linkId = LinkId
 
 
-getPatchId :: PatchId -> Int
+getPatchId :: PatchId -> Alias
 getPatchId (PatchId id) = id
 
 
-getNodeId :: NodePath -> Int
+getNodeId :: NodePath -> Alias
 getNodeId (NodePath _ id) = id
 
 
-getInletId :: InletPath -> Int
+getInletId :: InletPath -> Alias
 getInletId (InletPath _ id) = id
 
 
-getOutletId :: OutletPath -> Int
+getOutletId :: OutletPath -> Alias
 getOutletId (OutletPath _ id) = id
 
 
-nodeInPatch :: PatchId -> Int -> NodePath
+nodeInPatch :: PatchId -> Alias -> NodePath
 nodeInPatch = NodePath
 
 
-inletInNode :: NodePath -> Int -> InletPath
+inletInNode :: NodePath -> Alias -> InletPath
 inletInNode = InletPath
 
 
-outletInNode :: NodePath -> Int -> OutletPath
+outletInNode :: NodePath -> Alias -> OutletPath
 outletInNode = OutletPath
 
 
-unpackNodePath :: NodePath -> Array Int
+unpackNodePath :: NodePath -> Array Alias
 unpackNodePath (NodePath (PatchId patchId) id) = [ patchId, id ]
 
-unpackInletPath :: InletPath -> Array Int
+unpackInletPath :: InletPath -> Array Alias
 unpackInletPath (InletPath nodePath id) = unpackNodePath nodePath <> [ id ]
 
-unpackOutletPath :: OutletPath -> Array Int
+unpackOutletPath :: OutletPath -> Array Alias
 unpackOutletPath (OutletPath nodePath id) = unpackNodePath nodePath <> [ id ]
 
 
@@ -160,6 +189,9 @@ getNodeOfOutlet :: OutletPath -> NodePath
 getNodeOfOutlet  (OutletPath nPath _) = nPath
 
 
+instance showAlias :: Show Alias where
+    show (Alias alias) = ":" <> alias <> ":"
+
 
 instance showPatchId :: Show PatchId where
     show (PatchId id) = "P" <> show id
@@ -188,6 +220,10 @@ instance showPath :: Show Path where
     show Unknown = "<?>"
 
 
+instance eqAlias :: Eq Alias where
+    eq (Alias a) (Alias b) = a == b
+
+
 instance eqPatchId :: Eq PatchId where
     eq (PatchId a) (PatchId b) = a == b
 
@@ -203,6 +239,9 @@ instance eqOutletPath :: Eq OutletPath where
 instance eqLinkId :: Eq LinkId where
     eq (LinkId a) (LinkId b) = a == b
 
+
+instance ordAlias :: Ord Alias where
+    compare (Alias a) (Alias b) = compare a b
 
 
 instance ordPatchId :: Ord PatchId where

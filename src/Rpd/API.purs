@@ -46,7 +46,6 @@ import Effect.Class (liftEffect)
 
 import FRP.Event as E
 
-
 import Rpd.Path
 import Rpd.Def
 import Rpd.Optics
@@ -58,11 +57,12 @@ import Rpd.Util as RU
 
 infixl 6 snoc as +>
 
+
 --import Rpd.Flow as Flow
 
 -- data RunningNetwork d e = RpdEff e (Network d e)
 
-data RpdError = RpdError String
+newtype RpdError = RpdError String
 
 
 type RpdOp a = Either RpdError a
@@ -108,9 +108,9 @@ makePushableFlow = do
     pure $ PushableFlow push event
 
 
-nextPatchId :: forall d. Network d -> PatchId
-nextPatchId (Network _ { patches }) =
-    PatchId (Map.size patches)
+nextPatchId :: forall d. Network d -> Alias -> PatchId
+nextPatchId (Network _ { patches }) alias =
+    PatchId $ getAlias alias <> "-" <> (Set.size patches)
 
 
 nextNodePath :: forall d. PatchId -> Network d -> Either RpdError NodePath

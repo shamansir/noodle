@@ -13,6 +13,7 @@ module Rpd.Network
     , empty
     ) where
 
+
 import Prelude (class Eq, (==), (&&), class Show, show, (<>))
 
 import Data.Maybe (Maybe)
@@ -20,10 +21,13 @@ import Data.List as List
 import Data.List (List)
 import Data.Map as Map
 import Data.Set (Set)
+import Data.Set (empty) as Set
 import Data.Tuple.Nested (type (/\))
 
 import Rpd.Def
 import Rpd.Path
+import Rpd.UUID (UUID)
+import Rpd.UUID (ToPatch, ToNode, ToInlet, ToOutlet, ToLink) as UUID
 import Rpd.Process (InletInNode, OutletInNode)
 import Rpd.Util (type (/->), Canceler, Flow, PushableFlow, PushF)
 
@@ -40,35 +44,44 @@ data PushToOutlets d = PushToOutlets (PushF (Maybe (OutletInNode /\ d)))
         -- FIXME: PushF (Maybe OutletInNode /\ d)
 
 
+data Entity d
+    = PatchEntity (Patch d)
+    | NodeEntity (Node d)
+    | InletEntity (Inlet d)
+    | OutletEntity (Outlet d)
+    | LinkEntity Link
+
+
 data Network d =
     Network
         { name :: String
         , patchDefs :: List (PatchDef d)
         }
-        { patches :: PatchId /-> Patch d
-        , nodes :: NodePath /-> Node d
-        , inlets :: InletPath /-> Inlet d
-        , outlets :: OutletPath /-> Outlet d
-        , links :: LinkId /-> Link
+        { patches :: Set UUID.ToPatch
+        , registry :: UUID /-> Entity d
+        , pathToId :: Path /-> List UUID
         , cancelers ::
-            { nodes :: NodePath /-> Array Canceler
-            , inlets :: InletPath /-> Array Canceler
-            , outlets :: OutletPath /-> Array Canceler
-            , links :: LinkId /-> Array Canceler
+            -- UUID /-> Array Canceler
+            { nodes :: UUID.ToNode /-> Array Canceler
+            , inlets :: UUID.ToInlet /-> Array Canceler
+            , outlets :: UUID.ToOutlet /-> Array Canceler
+            , links :: UUID.ToLink /-> Array Canceler
             }
         }
 data Patch d =
     Patch
+        UUID
         PatchId
         (PatchDef d)
-        { nodes :: Set NodePath
+        { nodes :: Set UUID.ToNode
         }
 data Node d =
     Node
-        NodePath -- (NodeDef d)
+        UUID
+        NodePath
         (NodeDef d)
-        { inlets :: Set InletPath
-        , outlets :: Set OutletPath
+        { inlets :: Set UUID.ToInlet
+        , outlets :: Set UUID.ToOutlet
         , inletsFlow :: InletsFlow d
         , outletsFlow :: OutletsFlow d
         , pushToInlets :: PushToInlets d
@@ -76,6 +89,7 @@ data Node d =
         }
 data Inlet d =
     Inlet
+        UUID
         InletPath
         (InletDef d)
         { flow :: InletFlow d
@@ -83,12 +97,13 @@ data Inlet d =
         }
 data Outlet d =
     Outlet
+        UUID
         OutletPath
         (OutletDef d)
         { flow :: OutletFlow d
         , push :: PushToOutlet d
         }
-data Link = Link OutletPath InletPath
+data Link = Link UUID (UUID.ToOutlet /\ UUID.ToInlet)
 
 
 empty :: forall d. String -> Network d
@@ -97,11 +112,8 @@ empty name =
         { name
         , patchDefs : List.Nil
         }
-        { patches : Map.empty
-        , nodes : Map.empty
-        , inlets : Map.empty
-        , outlets : Map.empty
-        , links : Map.empty
+        { patches : Set.empty
+        , registry: Map.empty
         , cancelers :
             { nodes : Map.empty
             , inlets : Map.empty
@@ -112,20 +124,19 @@ empty name =
 
 
 instance eqPatch :: Eq (Patch d) where
-    eq (Patch idA _ _) (Patch idB _ _) = (idA == idB)
+    eq (Patch idA _ _ _) (Patch idB _ _ _) = (idA == idB)
 
 instance eqNode :: Eq (Node d) where
-    eq (Node pathA _ _) (Node pathB _ _) = (pathA == pathB)
+    eq (Node pathA _ _ _) (Node pathB _ _ _) = (pathA == pathB)
 
 instance eqInlet :: Eq (Inlet d) where
-    eq (Inlet pathA _ _) (Inlet pathB _ _) = (pathA == pathB)
+    eq (Inlet pathA _ _ _) (Inlet pathB _ _ _) = (pathA == pathB)
 
 instance eqOutlet :: Eq (Outlet d) where
-    eq (Outlet pathA _ _) (Outlet pathB _ _) = (pathA == pathB)
+    eq (Outlet pathA _ _ _) (Outlet pathB _ _ _) = (pathA == pathB)
 
 instance eqLink :: Eq Link where
     eq (Link outletA inletA) (Link outletB inletB) = (outletA == outletB) && (inletA == inletB)
-
 
 instance showLink :: Show Link where
     show (Link outletPath inletPath) = "Link " <> show outletPath <> " -> " <> show inletPath

@@ -6,7 +6,7 @@ module Rpd.UUID
     ) where
 
 
-import Prelude ((<#>), (<>), class Show)
+import Prelude ((==), (<#>), (<>), class Show, show, class Eq, eq)
 import Effect (Effect)
 
 
@@ -35,3 +35,24 @@ toString (UUID uuid) = uuid
 
 instance showUUID :: Show UUID where
     show (UUID uuid) = "{" <> uuid <> "}"
+
+
+instance eqUUID :: Eq UUID where
+    eq (UUID uuidA) (UUID uuidB) = uuidA == uuidB
+
+
+
+instance showToPatch :: Show ToPatch where
+    show (ToPatch uuid) = "{P@" <> show uuid <> "}"
+
+instance showToNode :: Show ToNode where
+    show (ToNode uuid) = "{N@" <> show uuid <> "}"
+
+instance showToInlet :: Show ToInlet where
+    show (ToInlet uuid) = "{I@" <> show uuid <> "}"
+
+instance showToOutlet :: Show ToOutlet where
+    show (ToOutlet uuid) = "{O@" <> show uuid <> "}"
+
+instance showToLink :: Show ToLink where
+    show (ToLink uuid) = "{L@" <> show uuid <> "}"
