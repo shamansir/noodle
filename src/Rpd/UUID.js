@@ -22,6 +22,6 @@ var UUID = (function() {
     return self;
 })();
 
-exports.new = function() {
+exports.newAsString = function() {
     return UUID.generate();
 }
