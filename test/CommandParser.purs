@@ -63,10 +63,10 @@ spec :: Spec Unit
 spec =
   describe "parsing commands" do
     it "parses commands" do
-      _ <- "node 0 test/foo" `parsesAs` Cmd.AddNode (R.PatchId 0) fooDef
+      _ <- "node 0 test/foo" `parsesAs` Cmd.AddNode (R.PatchPath 0) fooDef
       pure unit
     it "parses string commands" do
-      _ <- "node 0 foo" `parsesAs'` Cmd.AddNode' (R.PatchId 0) "foo"
+      _ <- "node 0 foo" `parsesAs'` Cmd.AddNode' (R.PatchPath 0) "foo"
       pure unit
 
 

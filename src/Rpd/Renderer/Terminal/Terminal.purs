@@ -40,7 +40,7 @@ import Rpd.API (RpdError) as R
 import Rpd.Command as C
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.Optics (_patchNodes, _node, _patch) as R
-import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchId) as R
+import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchPath) as R
 import Rpd.Render.MUV (Renderer(..), PushF(..)) as R
 
 import Rpd.Renderer.Terminal.Multiline as ML
@@ -188,7 +188,7 @@ packPatch
     -> R.Network d
     -> R.Patch d
     -> Item
-packPatch (width /\ height) nw patch@(R.Patch patchId { name } { nodes }) =
+packPatch (width /\ height) nw patch@(R.Patch patchPath { name } { nodes }) =
     let
         container = R2.container width height
         packing =
@@ -203,7 +203,7 @@ packPatch (width /\ height) nw patch@(R.Patch patchId { name } { nodes }) =
                 # Packing
     in
         R2.item width height
-            { subject : R.ToPatch patchId
+            { subject : R.ToPatch patchPath
             , packing : Just packing
             }
 
@@ -224,8 +224,8 @@ viewNetwork (Packing b2) nw@(R.Network { name } { patches })  =
                         # maybe v injectSubjView
                 withSubPacking v' =
                     maybe v' (injectSubPacking v') item.packing
-        viewSubject (R.ToPatch patchId) w h =
-            Lens.view (R._patch patchId) nw >>=
+        viewSubject (R.ToPatch patchPath) w h =
+            Lens.view (R._patch patchPath) nw >>=
                 pure <<< viewPatch nw (w /\ h)
         viewSubject (R.ToNode nodePath) w h =
             Lens.view (R._node nodePath) nw >>=

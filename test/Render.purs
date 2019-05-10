@@ -58,7 +58,7 @@ spec =
       let
         singleNodeNW = myRpd
           </> R.addPatch "foo"
-          </> R.addNode (patchId 0) "bar"
+          </> R.addNode (patchPath 0) "bar"
       stringSample <- liftEffect $ loadSample "SingleNode.String"
       expectToRenderOnce stringRenderer singleNodeNW stringSample
       expectToRenderOnceMUV terminalRenderer singleNodeNW $
@@ -68,12 +68,12 @@ spec =
       let
         severalNodesNW = myRpd
           </> R.addPatch "foo0"
-          </> R.addNode (patchId 0) "bar00"
-          </> R.addNode (patchId 0) "bar01"
-          </> R.addNode (patchId 0) "bar02"
+          </> R.addNode (patchPath 0) "bar00"
+          </> R.addNode (patchPath 0) "bar01"
+          </> R.addNode (patchPath 0) "bar02"
           </> R.addPatch "foo1"
-          </> R.addNode (patchId 1) "bar10"
-          </> R.addNode (patchId 1) "bar11"
+          </> R.addNode (patchPath 1) "bar10"
+          </> R.addNode (patchPath 1) "bar11"
       stringSample <- liftEffect $ loadSample "SeveralNodes.String"
       terminalSample <- liftEffect $ loadSample "SeveralNodes.Terminal"
       expectToRenderOnce stringRenderer severalNodesNW stringSample
@@ -85,7 +85,7 @@ spec =
       let
         nodeWithInletsAndOutletsNW = myRpd
           </> R.addPatch "foo"
-          </> R.addNode (patchId 0) "bar"
+          </> R.addNode (patchPath 0) "bar"
           </> R.addInlet (nodePath 0 0) "buz1"
           </> R.addInlet (nodePath 0 0) "buz2"
           </> R.addOutlet (nodePath 0 0) "abc1"
@@ -101,9 +101,9 @@ spec =
       let
         withConnectionNW = myRpd
           </> R.addPatch "foo"
-          </> R.addNode (patchId 0) "src"
+          </> R.addNode (patchPath 0) "src"
           </> R.addOutlet (nodePath 0 0) "srco"
-          </> R.addNode (patchId 0) "dst"
+          </> R.addNode (patchPath 0) "dst"
           </> R.addInlet (nodePath 0 1) "dsti"
           </> R.connect (outletPath 0 0 0) (inletPath 0 1 0)
       stringSample <- liftEffect $ loadSample "WithConnection.String"

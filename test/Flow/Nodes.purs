@@ -43,7 +43,7 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode' (patchId 0)
+          </> R.addNode' (patchPath 0)
                 (sumCursesToApplesNode (R.FoldedByIndex process))
       process (R.InletsData [ Just (Curse a), Just (Curse b) ]) =
         R.OutletsData [ Apple (a + b) ]
@@ -73,7 +73,7 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode' (patchId 0) (sumCursesToApplesNode (R.FoldedByLabel process))
+          </> R.addNode' (patchPath 0) (sumCursesToApplesNode (R.FoldedByLabel process))
       processHelper (Curse a) (Curse b) =
         Map.insert "apples" (Apple (a + b)) Map.empty
       processHelper _ _ =
@@ -108,7 +108,7 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode' (patchId 0)
+          </> R.addNode' (patchPath 0)
                 (sumCursesToApplesNode' (R.FoldedByIndex process))
       process (R.InletsData [ Just (Curse a), Just (Curse b) ]) =
         R.OutletsData [ Apple (a + b), Apple (a - b) ]
@@ -141,7 +141,7 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode' (patchId 0)
+          </> R.addNode' (patchPath 0)
                 (sumCursesToApplesNode' (R.FoldedByLabel process))
       processHelper (Curse a) (Curse b) =
         Map.empty

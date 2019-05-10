@@ -1,9 +1,9 @@
 module Rpd.Path
     ( mkAlias, getAlias, Alias
-    , PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
-    , patchId, nodePath, inletPath, outletPath, linkId
+    , PatchPath(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
+    , patchPath, nodePath, inletPath, outletPath, linkId
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
-    , getPatchId, getNodeId, getInletId, getOutletId -- TODO: rename to ...Idx
+    , getPatchPath, getNodeId, getInletId, getOutletId -- TODO: rename to ...Idx
     , nodeInPatch, inletInNode, outletInNode
     , Path(..)
     )
@@ -51,8 +51,8 @@ import Data.String as String
 newtype Alias = Alias String
 
 
-data PatchId = PatchId Alias
-data NodePath = NodePath PatchId Alias
+data PatchPath = PatchPath Alias
+data NodePath = NodePath PatchPath Alias
 data InletPath = InletPath NodePath Alias
 data OutletPath = OutletPath NodePath Alias
 data LinkId = LinkId Alias
@@ -60,7 +60,7 @@ data LinkId = LinkId Alias
 
 data Path
     = ToNetwork
-    | ToPatch PatchId
+    | ToPatch PatchPath
     | ToNode NodePath
     | ToInlet InletPath
     | ToOutlet OutletPath
@@ -68,36 +68,37 @@ data Path
     | Unknown
 
 
-mkAlias :: String -> Alias
-mkAlias = String.toLower >>> Alias -- TODO: trim spaces, symbols etc.
+mkAlias :: String -> Alias -- TODO: could produce an error
+-- mkAlias = String.toLower >>> Alias -- TODO: trim spaces, symbols etc.
+mkAlias = Alias
 
 
 getAlias :: Alias -> String
 getAlias (Alias v) = v
 
 
-patchId :: Alias -> PatchId
-patchId = PatchId
+patchPath :: Alias -> PatchPath
+patchPath = PatchPath
 
 
 nodePath :: Alias -> Alias -> NodePath
-nodePath pId nId = NodePath (PatchId pId) nId
+nodePath pId nId = NodePath (PatchPath pId) nId
 
 
 inletPath :: Alias -> Alias -> Alias -> InletPath
-inletPath pId nId iId = InletPath (NodePath (PatchId pId) nId) iId
+inletPath pId nId iId = InletPath (NodePath (PatchPath pId) nId) iId
 
 
 outletPath :: Alias -> Alias -> Alias -> OutletPath
-outletPath pId nId iId = OutletPath (NodePath (PatchId pId) nId) iId
+outletPath pId nId iId = OutletPath (NodePath (PatchPath pId) nId) iId
 
 
 linkId :: Alias -> LinkId
 linkId = LinkId
 
 
-getPatchId :: PatchId -> Alias
-getPatchId (PatchId id) = id
+getPatchPath :: PatchPath -> Alias
+getPatchPath (PatchPath id) = id
 
 
 getNodeId :: NodePath -> Alias
@@ -112,7 +113,7 @@ getOutletId :: OutletPath -> Alias
 getOutletId (OutletPath _ id) = id
 
 
-nodeInPatch :: PatchId -> Alias -> NodePath
+nodeInPatch :: PatchPath -> Alias -> NodePath
 nodeInPatch = NodePath
 
 
@@ -125,7 +126,7 @@ outletInNode = OutletPath
 
 
 unpackNodePath :: NodePath -> Array Alias
-unpackNodePath (NodePath (PatchId patchId) id) = [ patchId, id ]
+unpackNodePath (NodePath (PatchPath patchPath) id) = [ patchPath, id ]
 
 unpackInletPath :: InletPath -> Array Alias
 unpackInletPath (InletPath nodePath id) = unpackNodePath nodePath <> [ id ]
@@ -135,19 +136,19 @@ unpackOutletPath (OutletPath nodePath id) = unpackNodePath nodePath <> [ id ]
 
 
 {-
-isNodeInPatch :: NodePath -> PatchId -> Boolean
-isNodeInPatch (NodePath patchId' _) patchId =
-    patchId == patchId'
+isNodeInPatch :: NodePath -> PatchPath -> Boolean
+isNodeInPatch (NodePath patchPath' _) patchPath =
+    patchPath == patchPath'
 
 
-isInletInPatch :: InletPath -> PatchId -> Boolean
-isInletInPatch (InletPath nodePath _) patchId =
-    isNodeInPatch nodePath patchId
+isInletInPatch :: InletPath -> PatchPath -> Boolean
+isInletInPatch (InletPath nodePath _) patchPath =
+    isNodeInPatch nodePath patchPath
 
 
-isOutletInPatch :: OutletPath -> PatchId -> Boolean
-isOutletInPatch (OutletPath nodePath _) patchId =
-    isNodeInPatch nodePath patchId
+isOutletInPatch :: OutletPath -> PatchPath -> Boolean
+isOutletInPatch (OutletPath nodePath _) patchPath =
+    isNodeInPatch nodePath patchPath
 
 
 isInletInNode :: InletPath -> NodePath -> Boolean
@@ -169,15 +170,15 @@ notInTheSameNode (InletPath iNodePath _) (OutletPath oNodePath _) =
 
 -- FIXME: below are Prisms
 
-getPatchOfNode :: NodePath -> PatchId
+getPatchOfNode :: NodePath -> PatchPath
 getPatchOfNode (NodePath pId _) = pId
 
 
-getPatchOfInlet :: InletPath -> PatchId
+getPatchOfInlet :: InletPath -> PatchPath
 getPatchOfInlet inlet = getPatchOfNode $ getNodeOfInlet inlet
 
 
-getPatchOfOutlet :: OutletPath -> PatchId
+getPatchOfOutlet :: OutletPath -> PatchPath
 getPatchOfOutlet outlet = getPatchOfNode $ getNodeOfOutlet outlet
 
 
@@ -193,11 +194,11 @@ instance showAlias :: Show Alias where
     show (Alias alias) = ":" <> alias <> ":"
 
 
-instance showPatchId :: Show PatchId where
-    show (PatchId id) = "P" <> show id
+instance showPatchPath :: Show PatchPath where
+    show (PatchPath id) = "P" <> show id
 
 instance showNodePath :: Show NodePath where
-    show (NodePath patchId id) = show patchId <> "/N" <> show id
+    show (NodePath patchPath id) = show patchPath <> "/N" <> show id
 
 instance showInletPath :: Show InletPath where
     show (InletPath nodePath id) = show nodePath <> "/I" <> show id
@@ -212,7 +213,7 @@ instance showLinkId :: Show LinkId where
 
 instance showPath :: Show Path where
     show ToNetwork = "<nw>"
-    show (ToPatch patchId) = "<p " <> show patchId <> ">"
+    show (ToPatch patchPath) = "<p " <> show patchPath <> ">"
     show (ToNode nodePath) = "<n " <> show nodePath <> ">"
     show (ToInlet inletPath) = "<i " <> show inletPath <> ">"
     show (ToOutlet outletPath) = "<o " <> show outletPath <> ">"
@@ -224,8 +225,8 @@ instance eqAlias :: Eq Alias where
     eq (Alias a) (Alias b) = a == b
 
 
-instance eqPatchId :: Eq PatchId where
-    eq (PatchId a) (PatchId b) = a == b
+instance eqPatchPath :: Eq PatchPath where
+    eq (PatchPath a) (PatchPath b) = a == b
 
 instance eqNodePath :: Eq NodePath where
     eq (NodePath pa a) (NodePath pb b) = (pa == pb) && (a == b)
@@ -244,8 +245,8 @@ instance ordAlias :: Ord Alias where
     compare (Alias a) (Alias b) = compare a b
 
 
-instance ordPatchId :: Ord PatchId where
-    compare (PatchId a) (PatchId b) = compare a b
+instance ordPatchPath :: Ord PatchPath where
+    compare (PatchPath a) (PatchPath b) = compare a b
 
 instance ordNodePath :: Ord NodePath where
     compare nodePath1 nodePath2 =

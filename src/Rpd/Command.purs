@@ -14,7 +14,7 @@ import Rpd.Def as D
 data Command d
     = Bang
     | AddPatch P.Alias (D.PatchDef d)
-    | AddNode P.PatchId P.Alias (D.NodeDef d)
+    | AddNode P.PatchPath P.Alias (D.NodeDef d)
     | AddInlet P.NodePath P.Alias (D.InletDef d)
     | AddOutlet P.NodePath P.Alias (D.OutletDef d)
     | Connect P.OutletPath P.InletPath
@@ -31,9 +31,9 @@ data Command d
 data StringCommand
     = Bang'
     | AddPatch' String
-    | AddNode' P.PatchId String
-    | AddInlet' P.NodePath String
-    | AddOutlet' P.NodePath String
+    | AddNode' P.PatchPath String -- TODO: alias of the node in toolkit
+    | AddInlet' P.NodePath String -- TODO: alias of the channel in toolkit
+    | AddOutlet' P.NodePath String -- TODO: alias of the channel in toolkit
     | Connect' P.OutletPath P.InletPath
     | Disconnect' P.OutletPath P.InletPath
 

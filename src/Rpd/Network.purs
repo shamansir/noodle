@@ -5,6 +5,7 @@ module Rpd.Network
     , Inlet(..)
     , Outlet(..)
     , Link(..)
+    , Entity(..)
     , InletFlow(..), OutletFlow(..)
     , InletsFlow(..), OutletsFlow(..)
     , PushToInlet(..), PushToOutlet(..)
@@ -22,12 +23,12 @@ import Data.List (List)
 import Data.Map as Map
 import Data.Set (Set)
 import Data.Set (empty) as Set
-import Data.Tuple.Nested (type (/\))
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Rpd.Def
 import Rpd.Path
 import Rpd.UUID (UUID)
-import Rpd.UUID (ToPatch, ToNode, ToInlet, ToOutlet, ToLink) as UUID
+import Rpd.UUID (ToPatch(..), ToNode(..), ToInlet(..), ToOutlet(..), ToLink(..)) as UUID
 import Rpd.Process (InletInNode, OutletInNode)
 import Rpd.Util (type (/->), Canceler, Flow, PushableFlow, PushF)
 
@@ -71,7 +72,7 @@ data Network d =
 data Patch d =
     Patch
         UUID
-        PatchId
+        PatchPath
         (PatchDef d)
         { nodes :: Set UUID.ToNode
         }
@@ -113,7 +114,8 @@ empty name =
         , patchDefs : List.Nil
         }
         { patches : Set.empty
-        , registry: Map.empty
+        , registry : Map.empty
+        , pathToId : Map.empty
         , cancelers :
             { nodes : Map.empty
             , inlets : Map.empty
@@ -136,7 +138,10 @@ instance eqOutlet :: Eq (Outlet d) where
     eq (Outlet pathA _ _ _) (Outlet pathB _ _ _) = (pathA == pathB)
 
 instance eqLink :: Eq Link where
-    eq (Link outletA inletA) (Link outletB inletB) = (outletA == outletB) && (inletA == inletB)
+    eq
+        (Link _ (UUID.ToOutlet outletA /\ UUID.ToInlet inletA))
+        (Link _ (UUID.ToOutlet outletB /\ UUID.ToInlet inletB))
+        = (outletA == outletB) && (inletA == inletB)
 
 instance showLink :: Show Link where
     show (Link outletPath inletPath) = "Link " <> show outletPath <> " -> " <> show inletPath

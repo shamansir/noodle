@@ -42,7 +42,7 @@ spec = do
       rpd =
         R.init "no-data"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
+          </> R.addNode (patchPath 0) "node"
           </> R.addInlet (nodePath 0 0) "inlet"
 
     rpd # withRpd \nw -> do
@@ -61,7 +61,7 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
+          </> R.addNode (patchPath 0) "node"
           </> R.addInlet (nodePath 0 0) "inlet"
 
     rpd # withRpd \nw -> do
@@ -87,7 +87,7 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
+          </> R.addNode (patchPath 0) "node"
           </> R.addInlet (nodePath 0 0) "inlet"
 
     rpd # withRpd \nw -> do
@@ -114,7 +114,7 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
+          </> R.addNode (patchPath 0) "node"
           </> R.addInlet (nodePath 0 0) "inlet"
 
     rpd # withRpd \nw -> do
@@ -143,7 +143,7 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
+          </> R.addNode (patchPath 0) "node"
           </> R.addInlet (nodePath 0 0) "inlet"
 
     rpd # withRpd \nw -> do
@@ -171,7 +171,7 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
+          </> R.addNode (patchPath 0) "node"
           </> R.addInlet (nodePath 0 0) "inlet1"
           </> R.addInlet (nodePath 0 0) "inlet2"
 
@@ -203,7 +203,7 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
+          </> R.addNode (patchPath 0) "node"
           </> R.addInlet (nodePath 0 0) "inlet1"
           </> R.addInlet (nodePath 0 0) "inlet2"
 

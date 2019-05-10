@@ -32,10 +32,10 @@ apply Bang pushCmd nw =
 apply (AddPatch patchDef) pushCmd nw =
     R.addPatch' patchDef nw
         -- FIXME: subscribe the nodes in the patch
-apply (AddNode patchId nodeDef) pushCmd nw =
-    let nodePath = P.nodeInPatch patchId 0 -- FIXME
+apply (AddNode patchPath nodeDef) pushCmd nw =
+    let nodePath = P.nodeInPatch patchPath 0 -- FIXME
     in
-        Rpd.addNode' patchId nodeDef nw
+        Rpd.addNode' patchPath nodeDef nw
             -- FIXME: `nodePath` should be real or/and just add `subscribeLastNode` method etc.
             -- FIXME: `onInletData`/`onOutletData` do not receive the proper state
             --        of the network this way (do they need it?), but they should

@@ -85,8 +85,8 @@ someApiFunc :: forall d. Rpd (Network d)
 someApiFunc =
     init "t"
         </> addPatch "foo"
-        </> addNode (PatchId 0) "test1"
-        </> addNode (PatchId 0) "test2"
+        </> addNode (PatchPath 0) "test1"
+        </> addNode (PatchPath 0) "test2"
 
 
 -- instance functorRpdOp :: Functor (RpdOp d) where
@@ -108,16 +108,16 @@ makePushableFlow = do
     pure $ PushableFlow push event
 
 
-nextPatchId :: forall d. Network d -> Alias -> PatchId
-nextPatchId (Network _ { patches }) alias =
-    PatchId $ getAlias alias <> "-" <> (Set.size patches)
+nextPatchPath :: forall d. Network d -> Alias -> PatchPath
+nextPatchPath (Network _ { patches }) alias =
+    PatchPath $ getAlias alias <> "-" <> (Set.size patches)
 
 
-nextNodePath :: forall d. PatchId -> Network d -> Either RpdError NodePath
-nextNodePath patchId (Network _ { patches }) = do
-    (Patch _ _ { nodes }) <- Map.lookup patchId patches
+nextNodePath :: forall d. PatchPath -> Network d -> Either RpdError NodePath
+nextNodePath patchPath (Network _ { patches }) = do
+    (Patch _ _ { nodes }) <- Map.lookup patchPath patches
                                 # note (RpdError "")
-    pure $ NodePath patchId $ Set.size nodes
+    pure $ NodePath patchPath $ Set.size nodes
 
 
 nextInletPath :: forall d. NodePath -> Network d -> Either RpdError InletPath
@@ -159,12 +159,12 @@ addPatch'
     -> Network d
     -> Rpd (Network d)
 addPatch' patchDef nw =
-    pure $ setJust (_patch patchId) newPatch nw
+    pure $ setJust (_patch patchPath) newPatch nw
     where
-        patchId = nextPatchId nw
+        patchPath = nextPatchPath nw
         newPatch =
             Patch
-                patchId
+                patchPath
                 patchDef
                 { nodes : Set.empty
                 }
@@ -174,13 +174,13 @@ addPatch' patchDef nw =
 
 addNode
     :: forall d
-     . PatchId
+     . PatchPath
     -> String
     -> Network d
     -> Rpd (Network d)
-addNode patchId name =
+addNode patchPath name =
     addNode'
-        patchId
+        patchPath
         { name
         , inletDefs : List.Nil
         , outletDefs : List.Nil
@@ -190,12 +190,12 @@ addNode patchId name =
 
 addNode'
     :: forall d
-     . PatchId
+     . PatchPath
     -> NodeDef d
     -> Network d
     -> Rpd (Network d)
-addNode' patchId def nw = do
-    nodePath <- except $ nextNodePath patchId nw
+addNode' patchPath def nw = do
+    nodePath <- except $ nextNodePath patchPath nw
     PushableFlow pushToInlets inletsFlow <- liftEffect makePushableFlow
     PushableFlow pushToOutlets outletsFlow <- liftEffect makePushableFlow
     -- TODO: change `PushToProcess` to `PushToInlets` and add `PushToOutlets`
@@ -213,7 +213,7 @@ addNode' patchId def nw = do
                 }
     nw
          #  setJust (_node nodePath) newNode
-         #  setJust (_patchNode patchId nodePath) unit
+         #  setJust (_patchNode patchPath nodePath) unit
          #  addInlets nodePath def.inletDefs
         </> addOutlets nodePath def.outletDefs
         </> updateNodeProcessFlow nodePath
@@ -604,8 +604,8 @@ connect outletPath inletPath
         linkId = nextLinkId nw
         newLink = Link outletPath inletPath
         iNodePath = getNodeOfInlet inletPath
-        oPatchId = getPatchOfOutlet outletPath
-        iPatchId = getPatchOfInlet inletPath
+        oPatchPath = getPatchOfOutlet outletPath
+        iPatchPath = getPatchOfInlet inletPath
 
     (OutletFlow outletFlow) <-
         view (_outletFlow outletPath) nw # exceptMaybe (RpdError "")

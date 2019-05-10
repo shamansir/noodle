@@ -17,7 +17,7 @@ import Rpd (run) as R
 import Rpd.API ((</>))
 import Rpd.API as R
 import Rpd.Process (InletHandler(..)) as R
-import Rpd.Path (inletPath, nodePath, patchId)
+import Rpd.Path (inletPath, nodePath, patchPath)
 import Rpd.Util (flow) as R
 
 import Test.Spec (Spec, it)
@@ -45,7 +45,7 @@ spec = do
   --     rpd =
   --       R.init "network"
   --         </> R.addPatch "patch"
-  --         </> R.addNode (patchId 0) "node"
+  --         </> R.addNode (patchPath 0) "node"
   --         </> R.addInlet (nodePath 0 0) "inlet"
   --         </> R.subscribeNode (nodePath 0 0) handler
 
@@ -73,7 +73,7 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
+          </> R.addNode (patchPath 0) "node"
           </> R.addInlet (nodePath 0 0) "inlet"
           </> R.subscribeInlet (inletPath 0 0 0) handler
 
@@ -103,7 +103,7 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
+          </> R.addNode (patchPath 0) "node"
           </> R.addInlet (nodePath 0 0) "inlet"
           </> R.subscribeInlet (inletPath 0 0 0) handler
 
@@ -140,7 +140,7 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
+          </> R.addNode (patchPath 0) "node"
           </> R.addInlet (nodePath 0 0) "inlet"
           </> R.subscribeInlet (inletPath 0 0 0) handler
 

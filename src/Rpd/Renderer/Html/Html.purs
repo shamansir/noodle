@@ -67,7 +67,7 @@ viewNetwork pushMsg ui nw@(R.Network { name } { patches }) =
 
 
 viewPatch :: forall d. R.IsData d => R.PushF Message d -> Model d -> R.Network d -> R.Patch d ->  View d
-viewPatch pushMsg ui nw (R.Patch patchId { name } { nodes }) =
+viewPatch pushMsg ui nw (R.Patch patchPath { name } { nodes }) =
     H.div
         [ H.classes [ "patch" ] ]
         $ [ H.text name ] <>

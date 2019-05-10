@@ -14,7 +14,7 @@ import Rpd.Network (Network)
 import Rpd.Network (empty) as Network
 import Rpd.Def as R
 import Rpd.Process as R
-import Rpd.Path (PatchId(..))
+import Rpd.Path (PatchPath(..))
 import Rpd.Command as C
 import Rpd.Command (Command(..)) as Cmd
 import Rpd.Renderer.Terminal (terminalRenderer, Msg)
@@ -65,7 +65,7 @@ render src =
         [ H.text "Add Patch" ]
     , H.button
         [ H.onClick
-            (H.always_ $ Right $ Cmd.AddNode (PatchId 0) node)
+            (H.always_ $ Right $ Cmd.AddNode (PatchPath 0) node)
         ]
         [ H.text "Add Node" ]
     ]

@@ -2,11 +2,11 @@ module Rpd.UUID
     ( UUID
     , new
     , toString
-    , ToPatch, ToNode, ToInlet, ToOutlet, ToLink
+    , ToPatch(..), ToNode(..), ToInlet(..), ToOutlet(..), ToLink(..)
     ) where
 
 
-import Prelude ((==), (<#>), (<>), class Show, show, class Eq, eq)
+import Prelude ((==), (<#>), (<>), class Show, show, class Eq)
 import Effect (Effect)
 
 

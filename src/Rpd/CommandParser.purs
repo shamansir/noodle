@@ -59,18 +59,18 @@ addNode toolkit =
     addNode' >>=
         \command ->
             pure $ case command of
-                (Cmd.AddNode' patchId name) ->
+                (Cmd.AddNode' patchPath name) ->
                     T.findNodeDef name toolkit
-                        <#> Cmd.AddNode patchId
+                        <#> Cmd.AddNode patchPath (P.mkAlias name)
                 _ -> Nothing
 
 
 -- addNode toolkit = do
     -- command <- addNode'
     -- pure $ case command of
-    --     (Cmd.AddNode' patchId name) ->
+    --     (Cmd.AddNode' patchPath name) ->
     --         let node = ?wh
-    --         in Just $ Cmd.AddNode patchId node
+    --         in Just $ Cmd.AddNode patchPath node
     --     _ -> Nothing
 
 
@@ -78,10 +78,10 @@ addNode' :: Parser StringCommand
 addNode' = do
     _ <- string "node"
     delim
-    patchId <- number
+    patchAlias <- nextChars
     delim
-    name <- nextChars
-    pure $ Cmd.AddNode' (P.PatchId patchId) name
+    nodeDefAlias <- nextChars
+    pure $ Cmd.AddNode' (P.PatchPath $ P.mkAlias patchAlias) nodeDefAlias
 
 
 addPatch :: forall d. T.Toolkit d -> Parser (Maybe (Command d))

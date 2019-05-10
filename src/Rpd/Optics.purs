@@ -26,11 +26,11 @@ import Rpd.Def
 import Rpd.Util (Flow, PushableFlow(..), Canceler)
 
 
-_patch :: forall d. PatchId -> Lens' (Network d) (Maybe (Patch d))
-_patch patchId =
+_patch :: forall d. PatchPath -> Lens' (Network d) (Maybe (Patch d))
+_patch patchPath =
     lens getter setter
     where
-        patchLens = at patchId
+        patchLens = at patchPath
         getter (Network _ { patches }) = view patchLens patches
         setter (Network nwdef nwstate) val =
             Network
@@ -43,11 +43,11 @@ _patches =
     to \(Network _ { patches }) -> List.fromFoldable patches
 
 
-_patchNode :: forall d. PatchId -> NodePath -> Lens' (Network d) (Maybe Unit)
-_patchNode patchId nodePath =
+_patchNode :: forall d. PatchPath -> NodePath -> Lens' (Network d) (Maybe Unit)
+_patchNode patchPath nodePath =
     lens getter setter
     where
-        patchLens = _patch patchId
+        patchLens = _patch patchPath
         nodeLens = at nodePath
         getter nw =
             view patchLens nw
@@ -62,11 +62,11 @@ _patchNode patchId nodePath =
                 ) nw
 
 
-_patchNodes :: forall d. PatchId -> Getter' (Network d) (List (Node d))
-_patchNodes patchId =
+_patchNodes :: forall d. PatchPath -> Getter' (Network d) (List (Node d))
+_patchNodes patchPath =
     to extractNodes
     where
-        patchLens = _patch patchId
+        patchLens = _patch patchPath
         getNodePaths nw =
             view patchLens nw >>=
                 \(Patch _ _ { nodes }) ->
@@ -78,7 +78,7 @@ _patchNodes patchId =
 
 
 _node :: forall d. NodePath -> Lens' (Network d) (Maybe (Node d))
-_node nodePath@(NodePath patchId _) =
+_node nodePath@(NodePath patchPath _) =
     lens getter setter
     where
         nodeLens = at nodePath
