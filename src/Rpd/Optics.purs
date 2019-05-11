@@ -11,17 +11,21 @@ module Rpd.Optics
     )
     where
 
-import Data.Maybe
 import Prelude
 
 import Data.Lens (Lens', Getter', lens, view, set, over, to)
 import Data.Lens.At (at)
+
+import Data.Maybe
 import Data.List (List)
 import Data.List as List
+import Data.Set (Set)
+import Data.Set as Set
 import Data.Tuple.Nested (type (/\))
 
 import Rpd.Network
 import Rpd.Path
+import Rpd.UUID as UUID
 import Rpd.Def
 import Rpd.Util (Flow, PushableFlow(..), Canceler)
 
@@ -30,17 +34,50 @@ _patch :: forall d. PatchPath -> Lens' (Network d) (Maybe (Patch d))
 _patch patchPath =
     lens getter setter
     where
-        patchLens = at patchPath
-        getter (Network _ { patches }) = view patchLens patches
+        --patchPathLens = at patchPath
+        getter nw@(Network _ { pathToId }) =
+            view (at $ ToPatch patchPath) pathToId
+                >>= \uuid -> view (_patchById uuid) nw
+        setter (Network nwdef nwstate) val =
+            case val of
+                Just patch@(Patch uuid patchPath _ _) ->
+                    Network
+                        nwdef
+                        nwstate
+                            { patches = set ?wh (Just uuid) nwstate.patches
+                            -- , registry =
+                            --     nwstate.registry # set (at uuid) (PatchEntity <$> val)
+                            }
+
+
+
+
+_patchById :: forall d. UUID.ToPatch -> Lens' (Network d) (Maybe (Patch d))
+_patchById (UUID.ToPatch patchId) =
+    lens getter setter
+    where
+        patchIdLens = at patchId
+        getter (Network _ { registry }) =
+            view patchIdLens registry
+                >>= \maybePatch ->
+                    case maybePatch of
+                        PatchEntity patch -> Just patch
+                        _ -> Nothing
         setter (Network nwdef nwstate) val =
             Network
                 nwdef
-                nwstate { patches = set patchLens val nwstate.patches }
+                nwstate
+                    { registry =
+                        nwstate.registry # set patchIdLens (PatchEntity <$> val)
+                    }
 
 
 _patches :: forall d. Getter' (Network d) (List (Patch d))
 _patches =
-    to \(Network _ { patches }) -> List.fromFoldable patches
+    to \nw@(Network _ { patches }) ->
+        (\uuid -> view (_patchById uuid) nw)
+            <$> List.fromFoldable patches
+            # List.catMaybes
 
 
 _patchNode :: forall d. PatchPath -> NodePath -> Lens' (Network d) (Maybe Unit)

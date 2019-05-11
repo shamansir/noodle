@@ -6,7 +6,7 @@ module Rpd.UUID
     ) where
 
 
-import Prelude ((==), (<#>), (<>), class Show, show, class Eq)
+import Prelude ((==), (<#>), (<>), class Show, show, class Eq, class Ord, compare)
 import Effect (Effect)
 
 
@@ -39,6 +39,10 @@ instance showUUID :: Show UUID where
 
 instance eqUUID :: Eq UUID where
     eq (UUID uuidA) (UUID uuidB) = uuidA == uuidB
+
+
+instance ordUUID :: Ord UUID where
+    compare (UUID uuidA) (UUID uuidB) = uuidA `compare` uuidB
 
 
 
