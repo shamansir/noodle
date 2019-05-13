@@ -1,13 +1,16 @@
 module Rpd.Optics
-    ( _patch, _patches, _patchNode, _patchNodes
-    , _node, _nodes
-    , _nodeInletsFlow, _nodeOutletsFlow, _nodeInletsPush
-    , _nodeInlet, _nodeInlets
-    , _nodeOutlet, _nodeOutlets
-    , _nodeCancelers
-    , _inlet, _inletLabel, _inletFlow, _inletPush, _inletCancelers
-    , _outlet, _outletLabel, _outletFlow, _outletPush, _outletCancelers
-    , _link, _linkCancelers
+    ( _entity, _pathToId, _cancelers
+    , _networkPatches
+    -- , _patch, _patchById, _patchNode, _patchNodes
+    -- , _node, _nodes
+    -- , _nodeInletsFlow, _nodeOutletsFlow, _nodeInletsPush
+    -- , _nodeInlet, _nodeInlets
+    -- , _nodeOutlet, _nodeOutlets
+    -- , _nodeCancelers
+    -- , _inlet, _inletLabel, _inletFlow, _inletPush, _inletCancelers
+    -- , _outlet, _outletLabel, _outletFlow, _outletPush, _outletCancelers
+    -- , _link, _linkCancelers
+    , extractPatch, extractNode, extractInlet, extractOutlet, extractLink
     )
     where
 
@@ -48,385 +51,86 @@ _entity uuid =
                 nwstate { registry = set entityLens val nwstate.registry }
 
 
-_idForPath :: forall d. Path -> Lens' (Network d) (Maybe UUID)
-_idForPath path =
+_pathToId :: forall d. Path -> Lens' (Network d) (Maybe UUID)
+_pathToId path =
     lens getter setter
     where
         pathLens = at path
         getter (Network _ { pathToId }) =
-            view pathLens pathToId >>= List.head
+            view pathLens pathToId
         setter (Network nwdef nwstate) val =
             Network
                 nwdef
                 nwstate { pathToId = set pathLens val nwstate.pathToId }
 
 
-_patch :: forall d. Path.PatchPath -> Lens' (Network d) (Maybe (Patch d))
+_patch :: forall d. Path.PatchPath -> Getter' (Network d) (Maybe (Patch d))
 _patch patchPath =
-    lens getter setter
-    where
-        -- patchPathLens = at $ Path.ToPatch patchPath
-        -- uuIdLens uuid = at $ UUID.ToPatch uuid
-        getter nw@(Network _ { pathToId }) =
-            view (at $ Path.ToPatch patchPath) pathToId
-                >>= List.head
-                >>= \uuid -> view (_patchById $ UUID.ToPatch uuid) nw
-        setter nw@(Network nwdef nwstate@{ pathToId }) val =
-            case val of
-                Just patch@(Patch uuid patchPath _ _) ->
-                    Network
-                        nwdef
-                        nwstate
-                            { patches = set (at $ UUID.ToPatch uuid) (Just unit) nwstate.patches
-                            -- , registry =
-                            --     nwstate.registry # set (at uuid) (PatchEntity <$> val)
-                            }
-                Nothing ->
-                    (view (at $ Path.ToPatch patchPath) pathToId
-                        >>= List.head
-                        <#> \uuid ->
-                                Network
-                                    nwdef
-                                    nwstate
-                                        { patches =
-                                            set (at $ UUID.ToPatch uuid) Nothing nwstate.patches
-                                        -- , registry =
-                                        --     nwstate.registry # set (at uuid) Nothing
-                                        })
-                        # fromMaybe nw
-
+    to \nw@(Network _ { patches }) ->
+        view (_pathToId $ Path.ToPatch patchPath) nw
+            >>= \uuid -> view (_entity uuid) nw
+            >>= extractPatch
 
 
 _patchById :: forall d. UUID.ToPatch -> Lens' (Network d) (Maybe (Patch d))
 _patchById (UUID.ToPatch patchId) =
     lens getter setter
     where
-        patchIdLens = at patchId
-        getter (Network _ { registry }) =
-            view patchIdLens registry
-                >>= \maybePatch ->
-                    case maybePatch of
-                        PatchEntity patch -> Just patch
-                        _ -> Nothing
-        setter (Network nwdef nwstate) val =
-            Network
-                nwdef
-                nwstate
-                    { registry =
-                        nwstate.registry # set patchIdLens (PatchEntity <$> val)
-                    }
+        getter nw =
+            view (_entity patchId) nw
+                >>= extractPatch
+        setter nw@(Network nwdef nwstate) val =
+            set (_entity patchId) (PatchEntity <$> val) nw
+
+-- _networkPatch ::
 
 
-_patches :: forall d. Getter' (Network d) (List (Patch d))
-_patches =
+_networkPatches :: forall d. Getter' (Network d) (List (Patch d))
+_networkPatches =
     to \nw@(Network _ { patches }) ->
         (\uuid -> view (_patchById uuid) nw)
             <$> List.fromFoldable patches
-            # List.catMaybes
+             #  List.catMaybes
 
 
-_patchNode :: forall d. Path.PatchPath -> Path.NodePath -> Lens' (Network d) (Maybe Unit)
-_patchNode patchPath nodePath =
+_cancelers :: forall d. UUID -> Lens' (Network d) (Maybe (Array Canceler))
+_cancelers uuid =
     lens getter setter
     where
-        patchLens = _patch patchPath
-        nodeLens = at nodePath
-        getter nw =
-            view patchLens nw
-            >>= \(Patch _ _ _ { nodes }) -> view nodeLens nodes
-        setter nw val =
-            over patchLens
-                (map $ \(Patch uuid pid pdef pstate) ->
-                    Patch
-                        uuid
-                        pid
-                        pdef
-                        pstate { nodes = set nodeLens val pstate.nodes }
-                ) nw
-
-
-_patchNodes :: forall d. Path.PatchPath -> Getter' (Network d) (List (Node d))
-_patchNodes patchPath =
-    to extractNodes
-    where
-        patchLens = _patch patchPath
-        getNodePaths nw =
-            view patchLens nw >>=
-                \(Patch _ _ { nodes }) ->
-                    pure $ List.fromFoldable nodes
-        getNode nodePath = view (_node nodePath)
-        extractNodes nw@(Network _ { nodes }) =
-            let nodePaths = fromMaybe List.Nil $ getNodePaths nw
-            in map (flip getNode $ nw) nodePaths # List.catMaybes
-
-
-_node :: forall d. Path.NodePath -> Lens' (Network d) (Maybe (Node d))
-_node nodePath@(Path.NodePath patchPath _) =
-    lens getter setter
-    where
-        nodeLens = at nodePath
-        getter (Network _ { nodes }) = view nodeLens nodes
-        setter (Network nwdef nwstate) val =
-            Network
-                nwdef
-                nwstate { nodes = set nodeLens val nwstate.nodes }
-
-
-_nodes :: forall d. Getter' (Network d) (List (Node d))
-_nodes =
-    to \(Network _ { nodes }) -> List.fromFoldable nodes
-
-
-_nodeInletsFlow :: forall d. Path.NodePath -> Getter' (Network d) (Maybe (InletsFlow d))
-_nodeInletsFlow nodePath =
-    to extractFlow
-    where
-        nodeLens = _node nodePath
-        extractFlow nw = view nodeLens nw >>=
-            \(Node _ _ { inletsFlow }) -> pure inletsFlow
-
-
-_nodeOutletsFlow :: forall d. Path.NodePath -> Getter' (Network d) (Maybe (OutletsFlow d))
-_nodeOutletsFlow nodePath =
-    to extractFlow
-    where
-        nodeLens = _node nodePath
-        extractFlow nw = view nodeLens nw >>=
-            \(Node _ _ { outletsFlow }) -> pure outletsFlow
-
-
-_nodeInletsPush:: forall d. Path.NodePath -> Getter' (Network d) (Maybe (PushToInlets d))
-_nodeInletsPush nodePath =
-    to extractProcess
-    where
-        nodeLens = _node nodePath
-        extractProcess nw = view nodeLens nw >>=
-            \(Node _ _ { pushToInlets }) -> pure pushToInlets
-
-
-_nodeInlet :: forall d. Path.NodePath -> Path.InletPath -> Lens' (Network d) (Maybe Unit)
-_nodeInlet nodePath inletPath =
-    lens getter setter
-    where
-        nodeLens = _node nodePath
-        inletLens = at inletPath
-        getter nw =
-            view nodeLens nw
-            >>= \(Node _ _ { inlets }) -> view inletLens inlets
-        setter nw val =
-            over nodeLens
-                (map $ \(Node nid ndef nstate) ->
-                    Node
-                        nid
-                        ndef
-                        nstate { inlets = set inletLens val nstate.inlets }
-                ) nw
-
-
-_nodeInlets :: forall d. Path.NodePath -> Getter' (Network d) (List (Inlet d))
-_nodeInlets nodePath =
-    to extractInlets
-    where
-        nodeLens = _node nodePath
-        getNodeInlets nw =
-            view nodeLens nw >>=
-                \(Node _ _ { inlets }) ->
-                    pure $ List.fromFoldable inlets
-        getInlet inletPath = view (_inlet inletPath)
-        extractInlets nw@(Network _ { inlets }) =
-            let inletPaths = fromMaybe List.Nil $ getNodeInlets nw
-            in map (flip getInlet $ nw) inletPaths # List.catMaybes
-
-
-_nodeOutlet :: forall d. Path.NodePath -> Path.OutletPath -> Lens' (Network d) (Maybe Unit)
-_nodeOutlet nodePath outletPath =
-    lens getter setter
-    where
-        nodeLens = _node nodePath
-        outletLens = at outletPath
-        getter nw =
-            view nodeLens nw
-            >>= \(Node _ _ { outlets }) -> view outletLens outlets
-        setter nw val =
-            over nodeLens
-                (map $ \(Node nid ndef nstate) ->
-                    Node
-                        nid
-                        ndef
-                        nstate { outlets = set outletLens val nstate.outlets }
-                ) nw
-
-
-_nodeOutlets :: forall d. Path.NodePath -> Getter' (Network d) (List (Outlet d))
-_nodeOutlets nodePath =
-    to extractOutlets
-    where
-        nodeLens = _node nodePath
-        getNodeOutlets nw =
-            view nodeLens nw >>=
-                \(Node _ _ { outlets }) ->
-                    pure $ List.fromFoldable outlets
-        getOutlet outletPath = view (_outlet outletPath)
-        extractOutlets nw =
-            let outletPaths = fromMaybe List.Nil $ getNodeOutlets nw
-            in map (flip getOutlet $ nw) outletPaths # List.catMaybes
-
-
-_nodeCancelers :: forall d. Path.NodePath -> Lens' (Network d) (Maybe (Array Canceler))
-_nodeCancelers nodePath =
-    lens getter setter
-    where
-        cancelersLens = at nodePath
+        cancelersLens = at uuid
         getter (Network _ { cancelers }) =
-            view cancelersLens cancelers.nodes
+            view cancelersLens cancelers
         setter (Network nwdef nwstate@{ cancelers }) val =
             Network
                 nwdef
-                nwstate {
-                    cancelers =
-                        cancelers { nodes = set cancelersLens val cancelers.nodes }
+                nwstate
+                    { cancelers = set cancelersLens val cancelers
                     }
 
 
--- FIXME: when user sets it to `Nothing`, it is not removing the inlet from nodes,
---        there's `_nodeInlet` though, but may be change to only Getter?
-_inlet :: forall d. Path.InletPath -> Lens' (Network d) (Maybe (Inlet d))
-_inlet inletPath@(Path.InletPath nodePath _) =
-    lens getter setter
-    where
-        inletLens = at inletPath
-        getter (Network _ { inlets }) = view inletLens inlets
-        setter (Network nwdef nwstate) val =
-            Network
-                nwdef
-                nwstate { inlets = set inletLens val nwstate.inlets }
-            -- # set (_nodeInlet nodePath inletPath) (const unit <$> val)
+-- FIXME: These below are Prisms: https://github.com/purescript-contrib/purescript-profunctor-lenses/blob/master/examples/src/PrismsForSumTypes.purs
 
 
-_inletLabel :: forall d. Path.InletPath -> Getter' (Network d) (Maybe String)
-_inletLabel inletPath =
-    to extractLabel
-    where
-        inletLens = _inlet inletPath
-        extractLabel nw = view inletLens nw >>=
-            \(Inlet _ { label } _) -> pure label
+extractPatch :: forall d. Entity d -> Maybe (Patch d)
+extractPatch (PatchEntity pEntity) = Just pEntity
+extractPatch _ = Nothing
 
 
-_inletFlow :: forall d. Path.InletPath -> Getter' (Network d) (Maybe (InletFlow d))
-_inletFlow inletPath =
-    to extractFlow
-    where
-        inletLens = _inlet inletPath
-        extractFlow nw = view inletLens nw >>=
-            \(Inlet _ _ { flow }) -> pure flow
+extractNode :: forall d. Entity d -> Maybe (Node d)
+extractNode (NodeEntity nEntity) = Just nEntity
+extractNode _ = Nothing
 
 
-_inletPush :: forall d. Path.InletPath -> Getter' (Network d) (Maybe (PushToInlet d))
-_inletPush inletPath =
-    to extractPFlow
-    where
-        inletLens = _inlet inletPath
-        extractPFlow nw = view inletLens nw >>=
-            \(Inlet _ _ { push }) -> pure push
+extractInlet :: forall d. Entity d -> Maybe (Inlet d)
+extractInlet (InletEntity iEntity) = Just iEntity
+extractInlet _ = Nothing
 
 
-_inletCancelers :: forall d. Path.InletPath -> Lens' (Network d) (Maybe (Array Canceler))
-_inletCancelers inletPath =
-    lens getter setter
-    where
-        cancelersLens = at inletPath
-        getter (Network _ { cancelers }) =
-            view cancelersLens cancelers.inlets
-        setter (Network nwdef nwstate@{ cancelers }) val =
-            Network
-                nwdef
-                nwstate {
-                    cancelers =
-                        cancelers { inlets = set cancelersLens val cancelers.inlets }
-                    }
+extractOutlet :: forall d. Entity d -> Maybe (Outlet d)
+extractOutlet (OutletEntity oEntity) = Just oEntity
+extractOutlet _ = Nothing
 
 
--- FIXME: when user sets it to `Nothing`, it is not removing the outlet from nodes,
---        there's `_nodeOutlet` though, but may be change to only Getter?
-_outlet :: forall d. Path.OutletPath -> Lens' (Network d) (Maybe (Outlet d))
-_outlet outletPath@(Path.OutletPath nodePath _) =
-    lens getter setter
-    where
-        outletLens = at outletPath
-        getter (Network _ { outlets }) = view outletLens outlets
-        setter (Network nwdef nwstate) val =
-            Network
-                nwdef
-                nwstate { outlets = set outletLens val nwstate.outlets }
-            -- # set (_nodeOutlet nodePath outletPath) (const unit <$> val)
-
-
-_outletLabel :: forall d. Path.OutletPath -> Getter' (Network d) (Maybe String)
-_outletLabel outletPath =
-    to extractLabel
-    where
-        outletLens = _outlet outletPath
-        extractLabel nw = view outletLens nw >>=
-            \(Outlet _ { label } _) -> pure label
-
-
-_outletFlow :: forall d. Path.OutletPath -> Getter' (Network d) (Maybe (OutletFlow d))
-_outletFlow outletPath =
-    to extractFlow
-    where
-        outletLens = _outlet outletPath
-        extractFlow nw = view outletLens nw >>=
-            \(Outlet _ _ { flow }) -> pure flow
-
-
-_outletPush :: forall d. Path.OutletPath -> Getter' (Network d) (Maybe (PushToOutlet d))
-_outletPush outletPath =
-    to extractPFlow
-    where
-        outletLens = _outlet outletPath
-        extractPFlow nw = view outletLens nw >>=
-            \(Outlet _ _ { push }) -> pure push
-
-
-_outletCancelers :: forall d. Path.OutletPath -> Lens' (Network d) (Maybe (Array Canceler))
-_outletCancelers outletPath =
-    lens getter setter
-    where
-        cancelersLens = at outletPath
-        getter (Network _ { cancelers }) =
-            view cancelersLens cancelers.outlets
-        setter (Network nwdef nwstate@{ cancelers }) val =
-            Network
-                nwdef
-                nwstate {
-                    cancelers =
-                        cancelers { outlets = set cancelersLens val cancelers.outlets }
-                    }
-
-
-_link :: forall d. Path.LinkId -> Lens' (Network d) (Maybe Link)
-_link linkId =
-    lens getter setter
-    where
-        linkLens = at linkId
-        getter (Network _ { links }) = view linkLens links
-        setter nw@(Network nwdef nwstate) val =
-            Network
-                nwdef
-                nwstate { links = set linkLens val nwstate.links }
-
-
-_linkCancelers :: forall d. Path.LinkId -> Lens' (Network d) (Maybe (Array Canceler))
-_linkCancelers linkId =
-    lens getter setter
-    where
-        cancelersLens = at linkId
-        getter (Network _ { cancelers }) =
-            view cancelersLens cancelers.links
-        setter (Network nwdef nwstate@{ cancelers }) val =
-            Network
-                nwdef
-                nwstate {
-                    cancelers =
-                        cancelers { links = set cancelersLens val cancelers.links }
-                    }
+extractLink :: forall d. Entity d -> Maybe Link
+extractLink (LinkEntity lEntity) = Just lEntity
+extractLink _ = Nothing

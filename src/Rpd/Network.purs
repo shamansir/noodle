@@ -17,7 +17,7 @@ module Rpd.Network
 
 import Prelude (class Eq, (==), (&&), class Show, show, (<>))
 
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.List as List
 import Data.List (List)
 import Data.Map as Map
@@ -60,7 +60,8 @@ data Network d =
         }
         { patches :: Set UUID.ToPatch
         , registry :: UUID /-> Entity d
-        , pathToId :: Path /-> List UUID
+        -- , pathToId :: Path /-> Set UUID
+        , pathToId :: Path /-> UUID
         , cancelers :: UUID /-> Array Canceler
             -- { nodes :: UUID.ToNode /-> Array Canceler
             -- , inlets :: UUID.ToInlet /-> Array Canceler
