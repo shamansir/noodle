@@ -6,8 +6,12 @@ module Rpd.UUID
     ) where
 
 
-import Prelude ((==), (<#>), (<>), class Show, show, class Eq, class Ord, compare)
+import Prelude ((<#>), (<>), class Show, show, class Eq, class Ord)
 import Effect (Effect)
+
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Eq as GEq
+import Data.Generic.Rep.Ord as GOrd
 
 
 newtype UUID = UUID String
@@ -37,15 +41,6 @@ instance showUUID :: Show UUID where
     show (UUID uuid) = "{" <> uuid <> "}"
 
 
-instance eqUUID :: Eq UUID where
-    eq (UUID uuidA) (UUID uuidB) = uuidA == uuidB
-
-
-instance ordUUID :: Ord UUID where
-    compare (UUID uuidA) (UUID uuidB) = uuidA `compare` uuidB
-
-
-
 instance showToPatch :: Show ToPatch where
     show (ToPatch uuid) = "{P@" <> show uuid <> "}"
 
@@ -60,3 +55,45 @@ instance showToOutlet :: Show ToOutlet where
 
 instance showToLink :: Show ToLink where
     show (ToLink uuid) = "{L@" <> show uuid <> "}"
+
+
+derive instance genericUUID :: Generic UUID _
+instance eqUUID :: Eq UUID where
+  eq = GEq.genericEq
+instance ordUUID :: Ord UUID where
+  compare = GOrd.genericCompare
+
+
+derive instance genericToPatch :: Generic ToPatch _
+instance eqToPatch :: Eq ToPatch where
+  eq = GEq.genericEq
+instance ordToPatch :: Ord ToPatch where
+  compare = GOrd.genericCompare
+
+
+derive instance genericToNode :: Generic ToNode _
+instance eqToNode :: Eq ToNode where
+  eq = GEq.genericEq
+instance ordToNode :: Ord ToNode where
+  compare = GOrd.genericCompare
+
+
+derive instance genericToInlet :: Generic ToInlet _
+instance eqToInlet :: Eq ToInlet where
+  eq = GEq.genericEq
+instance ordToInlet :: Ord ToInlet where
+  compare = GOrd.genericCompare
+
+
+derive instance genericToOutlet :: Generic ToOutlet _
+instance eqToOutlet :: Eq ToOutlet where
+  eq = GEq.genericEq
+instance ordToIutlet :: Ord ToOutlet where
+  compare = GOrd.genericCompare
+
+
+derive instance genericToLink :: Generic ToLink _
+instance eqToLink :: Eq ToLink where
+  eq = GEq.genericEq
+instance ordToLink :: Ord ToLink where
+  compare = GOrd.genericCompare

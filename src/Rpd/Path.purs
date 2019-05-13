@@ -12,7 +12,9 @@ module Rpd.Path
 
 import Prelude
 
-import Data.String as String
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Eq as GEq
+import Data.Generic.Rep.Ord as GOrd
 
 -- TODO: either Path typeclass or... Comonad? (paths look like breadcrumbs)
 
@@ -190,6 +192,7 @@ getNodeOfOutlet :: OutletPath -> NodePath
 getNodeOfOutlet  (OutletPath nPath _) = nPath
 
 
+
 instance showAlias :: Show Alias where
     show (Alias alias) = ":" <> alias <> ":"
 
@@ -221,8 +224,18 @@ instance showPath :: Show Path where
     show Unknown = "<?>"
 
 
+derive instance genericAlias :: Generic Alias _
 instance eqAlias :: Eq Alias where
-    eq (Alias a) (Alias b) = a == b
+  eq = GEq.genericEq
+instance ordAlias :: Ord Alias where
+  compare = GOrd.genericCompare
+
+
+derive instance genericPath :: Generic Path _
+instance eqPath :: Eq Path where
+  eq = GEq.genericEq
+instance ordPath :: Ord Path where
+  compare = GOrd.genericCompare
 
 
 instance eqPatchPath :: Eq PatchPath where
@@ -239,10 +252,6 @@ instance eqOutletPath :: Eq OutletPath where
 
 instance eqLinkId :: Eq LinkId where
     eq (LinkId a) (LinkId b) = a == b
-
-
-instance ordAlias :: Ord Alias where
-    compare (Alias a) (Alias b) = compare a b
 
 
 instance ordPatchPath :: Ord PatchPath where

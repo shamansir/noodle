@@ -61,13 +61,12 @@ data Network d =
         { patches :: Set UUID.ToPatch
         , registry :: UUID /-> Entity d
         , pathToId :: Path /-> List UUID
-        , cancelers ::
-            -- UUID /-> Array Canceler
-            { nodes :: UUID.ToNode /-> Array Canceler
-            , inlets :: UUID.ToInlet /-> Array Canceler
-            , outlets :: UUID.ToOutlet /-> Array Canceler
-            , links :: UUID.ToLink /-> Array Canceler
-            }
+        , cancelers :: UUID /-> Array Canceler
+            -- { nodes :: UUID.ToNode /-> Array Canceler
+            -- , inlets :: UUID.ToInlet /-> Array Canceler
+            -- , outlets :: UUID.ToOutlet /-> Array Canceler
+            -- , links :: UUID.ToLink /-> Array Canceler
+            -- }
         }
 data Patch d =
     Patch
@@ -116,12 +115,12 @@ empty name =
         { patches : Set.empty
         , registry : Map.empty
         , pathToId : Map.empty
-        , cancelers :
-            { nodes : Map.empty
-            , inlets : Map.empty
-            , outlets : Map.empty
-            , links : Map.empty
-            }
+        , cancelers : Map.empty
+            -- { nodes : Map.empty
+            -- , inlets : Map.empty
+            -- , outlets : Map.empty
+            -- , links : Map.empty
+            -- }
         }
 
 
