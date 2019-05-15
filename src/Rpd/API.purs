@@ -46,6 +46,7 @@ import Effect.Class (liftEffect)
 
 import FRP.Event as E
 
+import Rpd.UUID as UUID
 import Rpd.Path
 import Rpd.Def
 import Rpd.Optics
@@ -108,64 +109,35 @@ makePushableFlow = do
     pure $ PushableFlow push event
 
 
-nextPatchPath :: forall d. Network d -> Alias -> PatchPath
-nextPatchPath (Network _ { patches }) alias =
-    PatchPath $ getAlias alias <> "-" <> (Set.size patches)
-
-
-nextNodePath :: forall d. PatchPath -> Network d -> Either RpdError NodePath
-nextNodePath patchPath (Network _ { patches }) = do
-    (Patch _ _ { nodes }) <- Map.lookup patchPath patches
-                                # note (RpdError "")
-    pure $ NodePath patchPath $ Set.size nodes
-
-
-nextInletPath :: forall d. NodePath -> Network d -> Either RpdError InletPath
-nextInletPath nodePath (Network _ { nodes }) = do
-    (Node _ _ { inlets }) <- Map.lookup nodePath nodes
-                                # note (RpdError "")
-    pure $ InletPath nodePath $ Set.size inlets
-
-
-nextOutletPath :: forall d. NodePath -> Network d -> Either RpdError OutletPath
-nextOutletPath nodePath (Network _ { nodes }) = do
-    (Node _ _ { outlets }) <- Map.lookup nodePath nodes
-                                # note (RpdError "")
-    pure $ OutletPath nodePath $ Set.size outlets
-
-
-nextLinkPath :: forall d. Network d -> LinkPath
-nextLinkPath (Network _ { links }) =
-    LinkPath (Map.size links)
-
-
 exceptMaybe :: forall a. RpdError -> Maybe a -> ExceptT RpdError Effect a
 exceptMaybe err maybe =
     except (maybe # note err)
 
 
-addPatch :: forall d. String -> Network d -> Rpd (Network d)
-addPatch name =
+addPatch :: forall d. Alias -> Network d -> Rpd (Network d)
+addPatch alias =
     addPatch'
-        { name
-        , nodeDefs : List.Nil
+        (PatchPath alias)
+        { nodeDefs : List.Nil
         }
 
 
 addPatch'
     :: forall d
-     . PatchDef d
+     . PatchPath
+    -> PatchDef d
     -> Network d
     -> Rpd (Network d)
-addPatch' patchDef nw =
-    pure $ setJust (_patch patchPath) newPatch nw
+addPatch' patchPath patchDef nw = do
+    uuid <- UUID.new
+    pure $ setJust (_patch uuid) (newPatch uuid) nw
     where
-        patchPath = nextPatchPath nw
-        newPatch =
+        newPatch uuid =
             Patch
+                uuid
                 patchPath
                 patchDef
-                { nodes : Set.empty
+                { nodes : Set.empty -- FIXME: init nodes from patchDef
                 }
 
 -- TODO: removePatch
