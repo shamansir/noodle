@@ -64,23 +64,65 @@ _pathToId path =
                 nwstate { pathToId = set pathLens val nwstate.pathToId }
 
 
-_patch :: forall d. Path.PatchPath -> Getter' (Network d) (Maybe (Patch d))
-_patch patchPath =
-    to \nw@(Network _ { patches }) ->
-        view (_pathToId $ Path.ToPatch patchPath) nw
+_pathGetter :: forall d x spath. (spath -> Path) -> (Entity d -> Maybe x) -> spath -> Getter' (Network d) (Maybe x)
+_pathGetter adaptPath extractEntity spath =
+    to \nw ->
+        view (_pathToId $ adaptPath spath) nw
             >>= \uuid -> view (_entity uuid) nw
-            >>= extractPatch
+            >>= extractEntity
 
 
-_patchById :: forall d. UUID.ToPatch -> Lens' (Network d) (Maybe (Patch d))
-_patchById (UUID.ToPatch patchId) =
+_uuidLens :: forall d x. (x -> Entity d) -> (Entity d -> Maybe x) -> UUID -> Lens' (Network d) (Maybe x)
+_uuidLens adaptEntity extractEntity uuid =
     lens getter setter
     where
         getter nw =
-            view (_entity patchId) nw
-                >>= extractPatch
+            view (_entity uuid) nw
+                >>= extractEntity
         setter nw@(Network nwdef nwstate) val =
-            set (_entity patchId) (PatchEntity <$> val) nw
+            set (_entity uuid) (adaptEntity <$> val) nw
+
+
+
+_patch :: forall d. Path.PatchPath -> Getter' (Network d) (Maybe (Patch d))
+_patch = _pathGetter Path.ToPatch extractPatch
+
+
+_patchById :: forall d. UUID.ToPatch -> Lens' (Network d) (Maybe (Patch d))
+_patchById (UUID.ToPatch patchId) = _uuidLens PatchEntity extractPatch patchId
+
+
+_node :: forall d. Path.NodePath -> Getter' (Network d) (Maybe (Node d))
+_node = _pathGetter Path.ToNode extractNode
+
+
+_nodeById :: forall d. UUID.ToNode -> Lens' (Network d) (Maybe (Node d))
+_nodeById (UUID.ToNode nodeId) = _uuidLens NodeEntity extractNode nodeId
+
+
+_inlet :: forall d. Path.InletPath -> Getter' (Network d) (Maybe (Inlet d))
+_inlet = _pathGetter Path.ToInlet extractInlet
+
+
+_inletById :: forall d. UUID.ToInlet -> Lens' (Network d) (Maybe (Inlet d))
+_inletById (UUID.ToInlet inletId) = _uuidLens InletEntity extractInlet inletId
+
+
+_outlet :: forall d. Path.OutletPath -> Getter' (Network d) (Maybe (Outlet d))
+_outlet = _pathGetter Path.ToOutlet extractOutlet
+
+
+_outletById :: forall d. UUID.ToOutlet -> Lens' (Network d) (Maybe (Outlet d))
+_outletById (UUID.ToOutlet outletId) = _uuidLens OutletEntity extractOutlet outletId
+
+
+_link :: forall d. Path.LinkPath -> Getter' (Network d) (Maybe Link)
+_link = _pathGetter Path.ToLink extractLink
+
+
+_linkById :: forall d. UUID.ToOutlet -> Lens' (Network d) (Maybe Link)
+_linkById (UUID.ToOutlet linkId) = _uuidLens LinkEntity extractLink linkId
+
 
 -- _networkPatch ::
 

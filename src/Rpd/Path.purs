@@ -1,7 +1,7 @@
 module Rpd.Path
     ( mkAlias, getAlias, Alias
-    , PatchPath(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
-    , patchPath, nodePath, inletPath, outletPath, linkId
+    , PatchPath(..), NodePath(..), InletPath(..), OutletPath(..), LinkPath(..)
+    , patchPath, nodePath, inletPath, outletPath, linkPath
     , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
     , getPatchPath, getNodeId, getInletId, getOutletId -- TODO: rename to ...Idx
     , nodeInPatch, inletInNode, outletInNode
@@ -57,7 +57,7 @@ data PatchPath = PatchPath Alias
 data NodePath = NodePath PatchPath Alias
 data InletPath = InletPath NodePath Alias
 data OutletPath = OutletPath NodePath Alias
-data LinkId = LinkId Alias
+data LinkPath = LinkPath Alias
 
 
 data Path
@@ -66,7 +66,7 @@ data Path
     | ToNode NodePath
     | ToInlet InletPath
     | ToOutlet OutletPath
-    | ToLink LinkId
+    | ToLink LinkPath
     | Unknown
 
 
@@ -95,8 +95,8 @@ outletPath :: Alias -> Alias -> Alias -> OutletPath
 outletPath pId nId iId = OutletPath (NodePath (PatchPath pId) nId) iId
 
 
-linkId :: Alias -> LinkId
-linkId = LinkId
+linkPath :: Alias -> LinkPath
+linkPath = LinkPath
 
 
 getPatchPath :: PatchPath -> Alias
@@ -209,8 +209,8 @@ instance showInletPath :: Show InletPath where
 instance showOutletPath :: Show OutletPath where
     show (OutletPath nodePath id) = show nodePath <> "/O" <> show id
 
-instance showLinkId :: Show LinkId where
-    show (LinkId id) = "L" <> show id
+instance showLinkPath :: Show LinkPath where
+    show (LinkPath id) = "L" <> show id
 
 
 
@@ -220,7 +220,7 @@ instance showPath :: Show Path where
     show (ToNode nodePath) = "<n " <> show nodePath <> ">"
     show (ToInlet inletPath) = "<i " <> show inletPath <> ">"
     show (ToOutlet outletPath) = "<o " <> show outletPath <> ">"
-    show (ToLink linkId) = "<l " <> show linkId <> ">"
+    show (ToLink linkPath) = "<l " <> show linkPath <> ">"
     show Unknown = "<?>"
 
 
@@ -250,8 +250,8 @@ instance eqInletPath :: Eq InletPath where
 instance eqOutletPath :: Eq OutletPath where
     eq (OutletPath na a) (OutletPath nb b) = (na == nb) && (a == b)
 
-instance eqLinkId :: Eq LinkId where
-    eq (LinkId a) (LinkId b) = a == b
+instance eqLinkPath :: Eq LinkPath where
+    eq (LinkPath a) (LinkPath b) = a == b
 
 
 instance ordPatchPath :: Ord PatchPath where
@@ -269,6 +269,6 @@ instance ordOutletPath :: Ord OutletPath where
     compare outletPath1 outletPath2 =
         compare (unpackOutletPath outletPath1) (unpackOutletPath outletPath2)
 
-instance ordLinkId :: Ord LinkId where
-    compare (LinkId a) (LinkId b) =
+instance ordLinkPath :: Ord LinkPath where
+    compare (LinkPath a) (LinkPath b) =
         compare a b

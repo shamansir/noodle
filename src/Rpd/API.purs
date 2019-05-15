@@ -162,7 +162,7 @@ addPatch' patchDef nw =
     pure $ setJust (_patch patchPath) newPatch nw
     where
         patchPath = nextPatchPath nw
-        newPatch =
+        newPatch = 
             Patch
                 patchPath
                 patchDef
