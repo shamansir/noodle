@@ -134,10 +134,9 @@ nextOutletPath nodePath (Network _ { nodes }) = do
     pure $ OutletPath nodePath $ Set.size outlets
 
 
-nextLinkId :: forall d. Network d -> LinkId
-nextLinkId (Network _ { links }) =
-    LinkId (Map.size links)
-
+nextLinkPath :: forall d. Network d -> LinkPath
+nextLinkPath (Network _ { links }) =
+    LinkPath (Map.size links)
 
 
 exceptMaybe :: forall a. RpdError -> Maybe a -> ExceptT RpdError Effect a
@@ -162,7 +161,7 @@ addPatch' patchDef nw =
     pure $ setJust (_patch patchPath) newPatch nw
     where
         patchPath = nextPatchPath nw
-        newPatch = 
+        newPatch =
             Patch
                 patchPath
                 patchDef
@@ -307,7 +306,7 @@ removeInlet
 removeInlet inletPath nw = do
     _ <- view (_inlet inletPath) nw # exceptMaybe (RpdError "")
     let (InletPath nodePath inletIdx) = inletPath
-    view (_inletCancelers inletPath) nw
+    view (_cancelers inletPath) nw
         # fromMaybe []
         # traverse_ liftEffect
     nw  #  set (_inlet inletPath) Nothing
@@ -601,7 +600,7 @@ connect
 connect outletPath inletPath
     nw@(Network nwdef nwstate) = do
     let
-        linkId = nextLinkId nw
+        linkPath = nextLinkPath nw
         newLink = Link outletPath inletPath
         iNodePath = getNodeOfInlet inletPath
         oPatchPath = getPatchOfOutlet outletPath
@@ -619,27 +618,27 @@ connect outletPath inletPath
                 E.subscribe outletFlow pushToInlet
 
     pure $ nw
-            # setJust (_link linkId) newLink
-            # setJust (_linkCancelers linkId) [ linkCanceler ]
+            # setJust (_link linkPath) newLink
+            # setJust (_linkCancelers linkPath) [ linkCanceler ]
 
 
 removeLinks
     :: forall d
-     . Set LinkId
+     . Set LinkPath
     -> Network d
     -> Rpd (Network d)
 removeLinks linksForDeletion nw = do
     _ <- liftEffect $ traverse_
-            (\linkId ->
-                view (_linkCancelers linkId) nw
+            (\linkPath ->
+                view (_cancelers linkPath) nw
                     # fromMaybe []
                     # traverse_ liftEffect)
             linksForDeletion
 
     pure $ (
-        foldr (\linkId nw' ->
-            nw' # set (_link linkId) Nothing
-                # set (_linkCancelers linkId) Nothing
+        foldr (\linkPath nw' ->
+            nw' # set (_link linkPath) Nothing
+                # set (_cancelers linkPath) Nothing
         ) nw linksForDeletion
         -- # setJust (_inletConnections inletPath) newInletConnections
         -- # setJust (_outletConnections outletPath) newOutletConnections
@@ -716,7 +715,7 @@ updateNodeProcessFlow
     -> Rpd (Network d)
 updateNodeProcessFlow nodePath nw = do
     -- cancel the previous subscription if it exists
-    _ <- view (_nodeCancelers nodePath) nw
+    _ <- view (_cancelers nodePath) nw
             # fromMaybe []
             # traverse_ liftEffect
     (Node _ nodeDef { inletsFlow, inlets, outlets }) <-
