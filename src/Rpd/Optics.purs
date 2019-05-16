@@ -1,8 +1,8 @@
 module Rpd.Optics
-    ( _entity, _pathToId, _cancelers
+    ( _entity, _pathToId
     , _networkPatches
-    , _patch, _patchByPath
-    , _node, _nodeByPath
+    , _patch, _patchByPath, _patchNode
+    , _node, _nodeByPath, _nodeInlet, _nodeOutlet
     , _inlet, _inletByPath, _inletFlow, _inletPush
     , _outlet, _outletByPath, _outletFlow, _outletPush
     , _link, _linkByPath
@@ -41,10 +41,9 @@ _entity uuid =
     lens getter setter
     where
         entityLens = at uuid
-        getter (Network _ { registry }) = view entityLens registry
-        setter (Network nwdef nwstate) val =
+        getter (Network { registry }) = view entityLens registry
+        setter (Network nwstate) val =
             Network
-                nwdef
                 nwstate { registry = set entityLens val nwstate.registry }
 
 
@@ -53,11 +52,10 @@ _pathToId path =
     lens getter setter
     where
         pathLens = at path
-        getter (Network _ { pathToId }) =
+        getter (Network { pathToId }) =
             view pathLens pathToId
-        setter (Network nwdef nwstate) val =
+        setter (Network nwstate) val =
             Network
-                nwdef
                 nwstate { pathToId = set pathLens val nwstate.pathToId }
 
 
@@ -76,7 +74,7 @@ _uuidLens adaptEntity extractEntity uuid =
         getter nw =
             view (_entity uuid) nw
                 >>= extractEntity
-        setter nw@(Network nwdef nwstate) val =
+        setter nw@(Network nwstate) val =
             set (_entity uuid) (adaptEntity <$> val) nw
 
 
@@ -88,11 +86,71 @@ _patchByPath :: forall d. Path.PatchPath -> Getter' (Network d) (Maybe (Patch d)
 _patchByPath = _pathGetter Path.ToPatch extractPatch
 
 
+_patchNode :: forall d. UUID.ToPatch -> UUID.ToNode -> Lens' (Network d) (Maybe Unit)
+_patchNode patchUuid nodeUuid =
+    lens getter setter
+    where
+        patchLens = _patch patchUuid
+        nodeLens = at nodeUuid
+        getter nw =
+            view patchLens nw
+                >>= \(Patch _ _ nodes) -> view nodeLens nodes
+        setter nw val =
+            over patchLens
+                (map $ \(Patch puuid ppath nodes) ->
+                    Patch
+                        puuid
+                        ppath
+                        (set nodeLens val nodes)
+                ) nw
+
+
 _node :: forall d. UUID.ToNode -> Lens' (Network d) (Maybe (Node d))
 _node (UUID.ToNode nodeId) = _uuidLens NodeEntity extractNode nodeId
 
+
 _nodeByPath :: forall d. Path.NodePath -> Getter' (Network d) (Maybe (Node d))
 _nodeByPath = _pathGetter Path.ToNode extractNode
+
+
+_nodeInlet :: forall d. UUID.ToNode -> UUID.ToInlet -> Lens' (Network d) (Maybe Unit)
+_nodeInlet nodeUuid inletUuid =
+    lens getter setter
+    where
+        nodeLens = _node nodeUuid
+        inletLens = at inletUuid
+        getter nw =
+            view nodeLens nw
+                >>= \(Node _ _ _ { inlets }) -> view inletLens inlets
+        setter nw val =
+            over nodeLens
+                (map $ \(Node nuuid npath process nstate@{ inlets }) ->
+                    Node
+                        nuuid
+                        npath
+                        process
+                        nstate { inlets = set inletLens val inlets }
+                ) nw
+
+
+_nodeOutlet :: forall d. UUID.ToNode -> UUID.ToOutlet -> Lens' (Network d) (Maybe Unit)
+_nodeOutlet nodeUuid outletUuid =
+    lens getter setter
+    where
+        nodeLens = _node nodeUuid
+        outletLens = at outletUuid
+        getter nw =
+            view nodeLens nw
+                >>= \(Node _ _ _ { outlets }) -> view outletLens outlets
+        setter nw val =
+            over nodeLens
+                (map $ \(Node nuuid npath process nstate@{ outlets }) ->
+                    Node
+                        nuuid
+                        npath
+                        process
+                        nstate { outlets = set outletLens val outlets }
+                ) nw
 
 
 _inlet :: forall d. UUID.ToInlet -> Lens' (Network d) (Maybe (Inlet d))
@@ -124,7 +182,7 @@ _linkByPath = _pathGetter Path.ToLink extractLink
 
 _networkPatches :: forall d. Getter' (Network d) (List (Patch d))
 _networkPatches =
-    to \nw@(Network _ { patches }) ->
+    to \nw@(Network { patches }) ->
         (\uuid -> view (_patch uuid) nw)
             <$> List.fromFoldable patches
              #  List.catMaybes
@@ -135,11 +193,10 @@ _cancelers uuid =
     lens getter setter
     where
         cancelersLens = at uuid
-        getter (Network _ { cancelers }) =
+        getter (Network { cancelers }) =
             view cancelersLens cancelers
-        setter (Network nwdef nwstate@{ cancelers }) val =
+        setter (Network nwstate@{ cancelers }) val =
             Network
-                nwdef
                 nwstate
                     { cancelers = set cancelersLens val cancelers
                     }
@@ -158,7 +215,7 @@ _inletFlow inletId =
     where
         inletLens = _inlet inletId
         extractFlow nw = view inletLens nw >>=
-            \(Inlet _ _ _ { flow }) -> pure flow
+            \(Inlet _ _ { flow }) -> pure flow
 
 
 _outletFlow :: forall d. UUID.ToOutlet -> Getter' (Network d) (Maybe (OutletFlow d))
@@ -167,7 +224,7 @@ _outletFlow outletId =
     where
         inletLens = _outlet outletId
         extractFlow nw = view inletLens nw >>=
-            \(Outlet _ _ _ { flow }) -> pure flow
+            \(Outlet _ _ { flow }) -> pure flow
 
 
 _inletPush :: forall d. UUID.ToInlet -> Getter' (Network d) (Maybe (PushToInlet d))
@@ -176,7 +233,7 @@ _inletPush inletId =
     where
         inletLens = _inlet inletId
         extractPFlow nw = view inletLens nw >>=
-            \(Inlet _ _ _ { push }) -> pure push
+            \(Inlet _ _ { push }) -> pure push
 
 
 _outletPush :: forall d. UUID.ToOutlet -> Getter' (Network d) (Maybe (PushToOutlet d))
@@ -185,7 +242,7 @@ _outletPush outletId =
     where
         outletLens = _outlet outletId
         extractPFlow nw = view outletLens nw >>=
-            \(Outlet _ _ _ { push }) -> pure push
+            \(Outlet _ _ { push }) -> pure push
 
 
 -- FIXME: These below are Prisms: https://github.com/purescript-contrib/purescript-profunctor-lenses/blob/master/examples/src/PrismsForSumTypes.purs
