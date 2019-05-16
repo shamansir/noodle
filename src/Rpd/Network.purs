@@ -57,7 +57,8 @@ data Entity d
 
 data Network d =
     Network
-        { patches :: Set UUID.ToPatch
+        { name :: String
+        , patches :: Set UUID.ToPatch
         , registry :: UUID /-> Entity d
         -- , pathToId :: Path /-> Set UUID
         , pathToId :: Path /-> UUID
@@ -107,7 +108,8 @@ data Link = Link UUID (UUID.ToOutlet /\ UUID.ToInlet)
 empty :: forall d. Network d
 empty  =
     Network
-        { patches : Set.empty
+        { name : "My Network"
+        , patches : Set.empty
         , registry : Map.empty
         , pathToId : Map.empty
         , cancelers : Map.empty

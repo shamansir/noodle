@@ -8,7 +8,6 @@ import Data.Generic.Rep.Show as GShow
 
 import Rpd.Path as P
 import Rpd.UUID as UUID
-import Rpd.Def as D
 
 
 data Command d

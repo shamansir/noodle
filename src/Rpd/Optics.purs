@@ -29,7 +29,6 @@ import Rpd.Path (Path)
 import Rpd.Path as Path
 import Rpd.UUID (UUID)
 import Rpd.UUID as UUID
-import Rpd.Def
 import Rpd.Util (Flow, PushableFlow(..), Canceler)
 
 
@@ -160,11 +159,11 @@ _nodeInletsFlow nodeUuid =
             >>= \(Node _ _ _ { inletsFlow }) -> pure inletsFlow
 
 
-_nodeOutletsFlow :: forall d. UUID.ToNode -> Getter' (Network d) (Maybe (InletsFlow d))
+_nodeOutletsFlow :: forall d. UUID.ToNode -> Getter' (Network d) (Maybe (OutletsFlow d))
 _nodeOutletsFlow nodeUuid =
     to \nw ->
         view (_node nodeUuid) nw
-            >>= \(Node _ _ _ { inletsFlow }) -> pure inletsFlow
+            >>= \(Node _ _ _ { outletsFlow }) -> pure outletsFlow
 
 
 _inlet :: forall d. UUID.ToInlet -> Lens' (Network d) (Maybe (Inlet d))
@@ -183,8 +182,8 @@ _outletByPath :: forall d. Path.OutletPath -> Getter' (Network d) (Maybe (Outlet
 _outletByPath = _pathGetter Path.ToOutlet extractOutlet
 
 
-_link :: forall d. UUID.ToOutlet -> Lens' (Network d) (Maybe Link)
-_link (UUID.ToOutlet linkId) = _uuidLens LinkEntity extractLink linkId
+_link :: forall d. UUID.ToLink -> Lens' (Network d) (Maybe Link)
+_link (UUID.ToLink linkId) = _uuidLens LinkEntity extractLink linkId
 
 
 _linkByPath :: forall d. Path.LinkPath -> Getter' (Network d) (Maybe Link)
