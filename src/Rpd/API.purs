@@ -450,11 +450,13 @@ subscribeAllInlets'
      . (InletPath -> d -> Effect Unit)
     -> Network d
     -> Effect (InletPath /-> Canceler)
-subscribeAllInlets' handler (Network _ { inlets }) =
-    traverse sub inlets
+subscribeAllInlets' handler nw = do
+    inlets :: List (Inlet d) <- view _networkOutlets nw # exceptMaybe (RpdError "")
+    cancelers :: List Canceler <- traverse sub inlets
+    pure $ Map.fromFoldable $ uncurry <$> inlets <*> cancelers
     where
         sub :: Inlet d -> Subscriber
-        sub (Inlet inletPath _ { flow }) =
+        sub (Inlet _ inletPath { flow }) =
             case flow of
                 InletFlow inletFlow -> E.subscribe inletFlow $ handler inletPath
 
@@ -475,11 +477,13 @@ subscribeAllOutlets'
      . (OutletPath -> d -> Effect Unit)
     -> Network d
     -> Effect (OutletPath /-> Canceler)
-subscribeAllOutlets' handler (Network _ { outlets }) =
-    traverse sub outlets
+subscribeAllOutlets' handler nw = do
+    outlets :: List (Outlet d) <- view _networkOutlets nw # exceptMaybe (RpdError "")
+    cancelers :: List Canceler  <- traverse sub outlets
+    pure $ Map.fromFoldable $ uncurry <$> outlets <*> cancelers
     where
         sub :: Outlet d -> Subscriber
-        sub (Outlet outletPath _ { flow }) =
+        sub (Outlet _ outletPath { flow }) =
             case flow of
                 OutletFlow outletFlow -> E.subscribe outletFlow $ handler outletPath
 
@@ -550,9 +554,9 @@ connect
 -- TODO: rewrite for the case of different patches
 connect outletPath inletPath
     nw@(Network nwdef nwstate) = do
+    uuid <- UUID.new
     let
-        linkPath = nextLinkPath nw
-        newLink = Link outletPath inletPath
+        newLink = Link uuid outletPath inletPath
         iNodePath = getNodeOfInlet inletPath
         oPatchPath = getPatchOfOutlet outletPath
         iPatchPath = getPatchOfInlet inletPath
@@ -569,8 +573,8 @@ connect outletPath inletPath
                 E.subscribe outletFlow pushToInlet
 
     pure $ nw
-            # setJust (_link linkPath) newLink
-            # setJust (_linkCancelers linkPath) [ linkCanceler ]
+            # setJust (_link uuid) newLink
+            # setJust (_cancelers uuid) [ linkCanceler ]
 
 
 removeLinks
@@ -698,7 +702,7 @@ updateNodeProcessFlow nodePath nw = do
                         case maybeCancelBuild of
                             Just buildCanceler -> [ canceler, buildCanceler ]
                             Nothing -> [ canceler ]
-                pure $ nw # setJust (_nodeCancelers nodePath) cancelers
+                pure $ nw # setJust (_cancelers nodePath) cancelers
 
 
 buildOutletsFlow
@@ -800,19 +804,19 @@ joinCancelers :: Canceler -> Canceler -> Canceler
 joinCancelers = (<>)
 
 
-extractInletLabels :: forall d. Set InletPath → Network d → Array String
+extractInletLabels :: forall d. Set InletPath → Network d → Array Alias
 extractInletLabels inlets nw =
     inlets
         # (Set.toUnfoldable :: forall a. Set a -> Array a)
-        # map (\inletPath -> view (_inletLabel inletPath) nw)
+        # map (\inletPath -> view (_inletByPath inletPath) nw)
         # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
 
 
-extractOutletLabels :: forall d. Set OutletPath → Network d → Array String
+extractOutletLabels :: forall d. Set OutletPath → Network d → Array Alias
 extractOutletLabels outlets nw =
     outlets
         # (Set.toUnfoldable :: forall a. Set a -> Array a)
-        # map (\outletPath -> view (_outletLabel outletPath) nw)
+        # map (\outletPath -> view (_outletByPath outletPath) nw)
         # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
 
 

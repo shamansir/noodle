@@ -1,8 +1,8 @@
 module Rpd.Optics
     ( _entity, _pathToId
-    , _networkPatches
+    , _networkPatches, _networkInlets, _networkOutlets
     , _patch, _patchByPath, _patchNode
-    , _node, _nodeByPath, _nodeInlet, _nodeOutlet
+    , _node, _nodeByPath, _nodeInlet, _nodeOutlet, _nodeInletsFlow, _nodeOutletsFlow
     , _inlet, _inletByPath, _inletFlow, _inletPush
     , _outlet, _outletByPath, _outletFlow, _outletPush
     , _link, _linkByPath
@@ -21,6 +21,7 @@ import Data.List (List)
 import Data.List as List
 import Data.Set (Set)
 import Data.Set as Set
+import Data.Map as Map
 import Data.Tuple.Nested (type (/\))
 
 import Rpd.Network
@@ -152,6 +153,19 @@ _nodeOutlet nodeUuid outletUuid =
                         nstate { outlets = set outletLens val outlets }
                 ) nw
 
+_nodeInletsFlow :: forall d. UUID.ToNode -> Getter' (Network d) (Maybe (InletsFlow d))
+_nodeInletsFlow nodeUuid =
+    to \nw ->
+        view (_node nodeUuid) nw
+            >>= \(Node _ _ _ { inletsFlow }) -> pure inletsFlow
+
+
+_nodeOutletsFlow :: forall d. UUID.ToNode -> Getter' (Network d) (Maybe (InletsFlow d))
+_nodeOutletsFlow nodeUuid =
+    to \nw ->
+        view (_node nodeUuid) nw
+            >>= \(Node _ _ _ { inletsFlow }) -> pure inletsFlow
+
 
 _inlet :: forall d. UUID.ToInlet -> Lens' (Network d) (Maybe (Inlet d))
 _inlet (UUID.ToInlet inletId) = _uuidLens InletEntity extractInlet inletId
@@ -186,6 +200,18 @@ _networkPatches =
         (\uuid -> view (_patch uuid) nw)
             <$> List.fromFoldable patches
              #  List.catMaybes
+
+
+_networkInlets :: forall d. Getter' (Network d) (List (Inlet d))
+_networkInlets =
+    to \nw@(Network { registry }) ->
+        List.mapMaybe extractInlet $ Map.values registry
+
+
+_networkOutlets :: forall d. Getter' (Network d) (List (Outlet d))
+_networkOutlets =
+    to \nw@(Network { registry }) ->
+        List.mapMaybe extractOutlet $ Map.values registry
 
 
 _cancelers :: forall d. UUID -> Lens' (Network d) (Maybe (Array Canceler))
