@@ -27,8 +27,8 @@ type InletInNode = Int
 type OutletInNode = Int
 
 
-type InletLabel = String
-type OutletLabel = String
+type InletLabel = Alias
+type OutletLabel = Alias
 
 
 data TracedItem d
