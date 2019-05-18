@@ -13,8 +13,15 @@ module Rpd.API
     --, findPatch, findNode, findOutlet, findInlet
     ) where
 
+import Debug.Trace
 import Prelude
+import Rpd.Network
+import Rpd.Optics
+import Rpd.Path
+import Rpd.Process
 
+import Control.Monad.Except.Trans (ExceptT, except)
+import Control.MonadZero (empty)
 import Data.Array ((!!), (:), snoc)
 import Data.Array as Array
 import Data.Bitraversable (bisequence)
@@ -32,25 +39,14 @@ import Data.Traversable (for, sequence, traverse, traverse_)
 import Data.TraversableWithIndex (forWithIndex)
 import Data.Tuple (uncurry, fst)
 import Data.Tuple.Nested ((/\), type (/\))
-
-import Debug.Trace
-
-import Control.MonadZero (empty)
-import Control.Monad.Except.Trans (ExceptT, except)
-
 import Effect (Effect, foreachE)
 import Effect.Class (liftEffect)
-
 import FRP.Event as E
-
-import Rpd.UUID as UUID
-import Rpd.Path
-import Rpd.Optics
-import Rpd.Process
-import Rpd.Network
 import Rpd.Network (empty) as Network
+import Rpd.UUID as UUID
 import Rpd.Util (type (/->), PushableFlow(..), Subscriber, Canceler, Flow, never)
 import Rpd.Util as RU
+import Text.Smolder.SVG.Attributes (y)
 
 infixl 6 snoc as +>
 
@@ -528,8 +524,8 @@ subscribeChannelsData' oHandler iHandler nw =
 subscribeNode
     :: forall d
      . NodePath
-    -> (InletInNode /\ d -> Effect Unit)
-    -> (Maybe (OutletInNode /\ d) -> Effect Unit)
+    -> (InletAlias /\ UUID.UUID /\ d -> Effect Unit)
+    -> (OutletAlias /\ UUID.UUID /\ d -> Effect Unit)
     -> Network d
     -> Rpd (Network d)
 subscribeNode nodePath inletsHandler outletsHandler nw = do
@@ -542,8 +538,8 @@ subscribeNode nodePath inletsHandler outletsHandler nw = do
 subscribeNode'
     :: forall d
      . NodePath
-    -> (InletInNode /\ d -> Effect Unit)
-    -> (Maybe (OutletInNode /\ d) -> Effect Unit)
+    -> (InletAlias /\ UUID.UUID /\ d -> Effect Unit)
+    -> (OutletAlias /\ UUID.UUID /\ d -> Effect Unit)
     -> Network d
     -> Rpd Canceler
 subscribeNode' nodePath inletsHandler outletsHandler nw = do
@@ -760,7 +756,7 @@ updateNodeProcessFlow nodePath nw = do
                             # (Set.toUnfoldable :: forall a. Set a -> Array a)
                             # map (\outletPath -> view (_outletPush outletPath) nw)
                             # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
-                    pushToOutletFlow :: Maybe (OutletInNode /\ d) -> Effect Unit
+                    pushToOutletFlow :: (OutletAlias /\ UUID.UUID /\ d) -> Effect Unit
                     pushToOutletFlow maybeData =
                         case maybeData of
                             Just (outletIdx /\ d) ->
@@ -796,77 +792,81 @@ buildOutletsFlow _ Withhold _ _ _ _ =
 buildOutletsFlow _ PassThrough (InletsFlow inletsFlow) _ _ _ =
     pure $ (OutletsFlow $ Just <$> inletsFlow)
            /\ Nothing
-buildOutletsFlow _ (ByIndex processF) (InletsFlow inletsFlow) inlets outlets _ =
-    case processF $ InletsByIndexFlow inletsFlow of
-        OutletsByIndexFlow outletsByIndex ->
-            pure $ (OutletsFlow $ Just <$> outletsByIndex)
-                   /\ Nothing
-buildOutletsFlow _ (ByLabel processF) (InletsFlow inletsFlow) inlets outlets nw =
-    let
-        inletLabels = extractInletLabels inlets nw
-        outletLabels = extractOutletLabels outlets nw
-        mapInletFlow (inletIdx /\ d) =
-            case inletLabels !! inletIdx of
-                Just label -> (Just label /\ d)
-                _ -> Nothing /\ d
-        mapOutletFlow maybeData =
-            maybeData
-                >>= \(label /\ d) -> outletLabels # Array.elemIndex label
-                <#> \maybeIdx -> maybeIdx /\ d
-        labeledInletsFlow = mapInletFlow <$> inletsFlow
-        OutletsByLabelFlow labeledOutletsFlow =
-            processF $ InletsByLabelFlow labeledInletsFlow
-    in pure $ (OutletsFlow $ mapOutletFlow <$> labeledOutletsFlow)
-              /\ Nothing
-buildOutletsFlow nodePath (ByPath processF) (InletsFlow inletsFlow) inlets outlets _ =
-    let
-        mapInletFlow (inletIdx /\ d) =
-            Just (InletPath nodePath inletIdx) /\ d
-        inletsWithPathFlow = mapInletFlow <$> inletsFlow
-        outletsWithPathFlow = processF inletsWithPathFlow
-        mapOutletFlow maybeData =
-            maybeData
-                <#> \((OutletPath _ outletIdx) /\ d) ->
-                    outletIdx /\ d
-    in pure $ (OutletsFlow $ mapOutletFlow <$> outletsWithPathFlow)
-              /\ Nothing
-buildOutletsFlow _ (FoldedByIndex processF) (InletsFlow inletsFlow) inlets _ _ = do
-    -- TODO: generalize to Foldable
-    { event, push } <- liftEffect E.create
-    let
-        foldingF (curInletIdx /\ curD) inletVals =
-            Array.updateAt curInletIdx (Just curD) inletVals
-                # fromMaybe inletVals
-        inletsFlow' = E.fold foldingF inletsFlow
-            $ Array.replicate (Set.size inlets) Nothing
-    cancel <- liftEffect $ E.subscribe inletsFlow' $ \inletsVals ->
-        let (OutletsData outletVals) = processF $ InletsData inletsVals
-        in forWithIndex outletVals \idx val ->
-            push $ Just $ idx /\ val
-    pure $ OutletsFlow event
-           /\ Just cancel
-buildOutletsFlow _ (FoldedByLabel processF) (InletsFlow inletsFlow) inlets outlets nw = do
-    -- TODO: generalize to Foldable
-    { event, push } <- liftEffect E.create
-    let
-        inletLabels = extractInletLabels inlets nw
-        outletLabels = extractOutletLabels outlets nw
-        foldingF (curInletIdx /\ curD) inletVals =
-            case inletLabels !! curInletIdx of
-                Just label -> inletVals # Map.insert label curD
-                _ -> inletVals
-        inletsFlow' = E.fold foldingF inletsFlow Map.empty
-        adaptOutletVals :: (String /-> d) -> Array (Maybe (OutletInNode /\ d))
-        adaptOutletVals ouletVals =
-            Map.toUnfoldable ouletVals
-                <#> \(label /\ d) ->
-                    outletLabels # Array.elemIndex label
-                <#> flip (/\) d
-    cancel <- liftEffect $ E.subscribe inletsFlow' $ \inletsVals ->
-        let (OutletsMapData outletVals) = processF $ InletsMapData inletsVals
-        in traverse push $ adaptOutletVals outletVals
-    pure $ OutletsFlow event
-           /\ Just cancel
+buildOutletsFlow nodePath (Process receive send) (InletsFlow inletsFlow) inlets outlets _ =
+    pure $ (OutletsFlow $ Just <$> inletsFlow)
+           /\ Nothing
+    -- case processF $ InletsByIndexFlow inletsFlow of
+    --     OutletsByIndexFlow outletsByIndex ->
+    --         pure $ (OutletsFlow $ Just <$> outletsByIndex)
+    --                /\ Nothing
+
+
+-- buildOutletsFlow _ (ByLabel processF) (InletsFlow inletsFlow) inlets outlets nw =
+--     let
+--         inletLabels = extractInletLabels inlets nw
+--         outletLabels = extractOutletLabels outlets nw
+--         mapInletFlow (inletIdx /\ d) =
+--             case inletLabels !! inletIdx of
+--                 Just label -> (Just label /\ d)
+--                 _ -> Nothing /\ d
+--         mapOutletFlow maybeData =
+--             maybeData
+--                 >>= \(label /\ d) -> outletLabels # Array.elemIndex label
+--                 <#> \maybeIdx -> maybeIdx /\ d
+--         labeledInletsFlow = mapInletFlow <$> inletsFlow
+--         OutletsByLabelFlow labeledOutletsFlow =
+--             processF $ InletsByLabelFlow labeledInletsFlow
+--     in pure $ (OutletsFlow $ mapOutletFlow <$> labeledOutletsFlow)
+--               /\ Nothing
+-- buildOutletsFlow nodePath (ByPath processF) (InletsFlow inletsFlow) inlets outlets _ =
+--     let
+--         mapInletFlow (inletIdx /\ d) =
+--             Just (InletPath nodePath inletIdx) /\ d
+--         inletsWithPathFlow = mapInletFlow <$> inletsFlow
+--         outletsWithPathFlow = processF inletsWithPathFlow
+--         mapOutletFlow maybeData =
+--             maybeData
+--                 <#> \((OutletPath _ outletIdx) /\ d) ->
+--                     outletIdx /\ d
+--     in pure $ (OutletsFlow $ mapOutletFlow <$> outletsWithPathFlow)
+--               /\ Nothing
+-- buildOutletsFlow _ (FoldedByIndex processF) (InletsFlow inletsFlow) inlets _ _ = do
+--     -- TODO: generalize to Foldable
+--     { event, push } <- liftEffect E.create
+--     let
+--         foldingF (curInletIdx /\ curD) inletVals =
+--             Array.updateAt curInletIdx (Just curD) inletVals
+--                 # fromMaybe inletVals
+--         inletsFlow' = E.fold foldingF inletsFlow
+--             $ Array.replicate (Set.size inlets) Nothing
+--     cancel <- liftEffect $ E.subscribe inletsFlow' $ \inletsVals ->
+--         let (OutletsData outletVals) = processF $ InletsData inletsVals
+--         in forWithIndex outletVals \idx val ->
+--             push $ Just $ idx /\ val
+--     pure $ OutletsFlow event
+--            /\ Just cancel
+-- buildOutletsFlow _ (FoldedByLabel processF) (InletsFlow inletsFlow) inlets outlets nw = do
+--     -- TODO: generalize to Foldable
+--     { event, push } <- liftEffect E.create
+--     let
+--         inletLabels = extractInletLabels inlets nw
+--         outletLabels = extractOutletLabels outlets nw
+--         foldingF (curInletIdx /\ curD) inletVals =
+--             case inletLabels !! curInletIdx of
+--                 Just label -> inletVals # Map.insert label curD
+--                 _ -> inletVals
+--         inletsFlow' = E.fold foldingF inletsFlow Map.empty
+--         adaptOutletVals :: (String /-> d) -> Array (Maybe (OutletInNode /\ d))
+--         adaptOutletVals ouletVals =
+--             Map.toUnfoldable ouletVals
+--                 <#> \(label /\ d) ->
+--                     outletLabels # Array.elemIndex label
+--                 <#> flip (/\) d
+--     cancel <- liftEffect $ E.subscribe inletsFlow' $ \inletsVals ->
+--         let (OutletsMapData outletVals) = processF $ InletsMapData inletsVals
+--         in traverse push $ adaptOutletVals outletVals
+--     pure $ OutletsFlow event
+--            /\ Just cancel
 
     -- TODO: may be, request these functions from user:
     --   for given inlet (path?), get its map key

@@ -30,20 +30,21 @@ import Rpd.Channel as Channel
 import Rpd.Path
 import Rpd.UUID (UUID)
 import Rpd.UUID (ToPatch(..), ToNode(..), ToInlet(..), ToOutlet(..), ToLink(..)) as UUID
-import Rpd.Process (InletInNode, OutletInNode)
 import Rpd.Util (type (/->), Canceler, Flow, PushableFlow, PushF)
 import Rpd.Process (ProcessF(..))
 
 
+-- FIXME: UUID is internal and so should not be passed, I suppose.
+--        I'll leave it here temporarily just for the debug purpose.
 data InletFlow d = InletFlow (Flow d)
-data InletsFlow d = InletsFlow (Flow (InletInNode /\ d))
+data InletsFlow d = InletsFlow (Flow (InletPath /\ UUID /\ d))
 data PushToInlet d = PushToInlet (PushF d)
-data PushToInlets d = PushToInlets (PushF (InletInNode /\ d))
+data PushToInlets d = PushToInlets (PushF (InletPath /\ UUID /\ d))
 data OutletFlow d = OutletFlow (Flow d)
-data OutletsFlow d = OutletsFlow (Flow (Maybe (OutletInNode /\ d)))
+data OutletsFlow d = OutletsFlow (Flow (Maybe (OutletPath /\ UUID /\ d)))
         -- FIXME: Flow (Maybe OutletInNode /\ d)
 data PushToOutlet d = PushToOutlet (PushF d)
-data PushToOutlets d = PushToOutlets (PushF (Maybe (OutletInNode /\ d)))
+data PushToOutlets d = PushToOutlets (PushF (Maybe (OutletPath /\ UUID /\ d)))
         -- FIXME: PushF (Maybe OutletInNode /\ d)
 
 
