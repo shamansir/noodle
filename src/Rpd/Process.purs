@@ -75,8 +75,12 @@ data OutletHandlers d = OutletHandlers (Array (d -> Effect Unit)) -- TODO: -> Rp
 -- TODO: use IAlias -> data / OAlias -> data functions instead, see TODO.md for more info
 
 
+-- type Receive d = InletAlias -> Maybe d
+-- type Send d = OutletAlias -> Maybe d
+
+
 data ProcessF d
     = Withhold
-    | PassThrough
-    -- | Process ((Alias -> d) -> (Alias -> d))
-    | Process ((InletAlias -> d) -> Effect (OutletAlias -> d))
+    -- | PassThrough -- TODO
+    -- | Process (Receive d -> Effect (Send d))
+    | Process ((InletAlias -> Maybe d) -> Effect (OutletAlias -> Maybe d))

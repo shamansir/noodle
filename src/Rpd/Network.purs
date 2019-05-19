@@ -41,10 +41,10 @@ data InletsFlow d = InletsFlow (Flow (InletPath /\ UUID /\ d))
 data PushToInlet d = PushToInlet (PushF d)
 data PushToInlets d = PushToInlets (PushF (InletPath /\ UUID /\ d))
 data OutletFlow d = OutletFlow (Flow d)
-data OutletsFlow d = OutletsFlow (Flow (Maybe (OutletPath /\ UUID /\ d)))
+data OutletsFlow d = OutletsFlow (Flow (OutletPath /\ UUID /\ d))
         -- FIXME: Flow (Maybe OutletInNode /\ d)
 data PushToOutlet d = PushToOutlet (PushF d)
-data PushToOutlets d = PushToOutlets (PushF (Maybe (OutletPath /\ UUID /\ d)))
+data PushToOutlets d = PushToOutlets (PushF (OutletPath /\ UUID /\ d))
         -- FIXME: PushF (Maybe OutletInNode /\ d)
 
 

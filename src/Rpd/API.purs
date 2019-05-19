@@ -38,7 +38,7 @@ import Data.Set as Set
 import Data.Traversable (for, sequence, traverse, traverse_)
 import Data.TraversableWithIndex (forWithIndex)
 import Data.Tuple (uncurry, fst)
-import Data.Tuple.Nested ((/\), type (/\))
+import Data.Tuple.Nested ((/\), type (/\), over1)
 import Effect (Effect, foreachE)
 import Effect.Class (liftEffect)
 import FRP.Event as E
@@ -550,12 +550,14 @@ subscribeNode' nodePath inletsHandler outletsHandler nw = do
         view (_nodeInletsFlow $ UUID.ToNode nodeUuid) nw
             # exceptMaybe (RpdError "")
     inletsCanceler :: Canceler <-
-        liftEffect $ E.subscribe inletsFlow inletsHandler
+        liftEffect $ E.subscribe inletsFlow
+            (inletsHandler <<< over1 \(InletPath _ alias) -> alias)
     OutletsFlow outletsFlow <-
         view (_nodeOutletsFlow $ UUID.ToNode nodeUuid) nw
             # exceptMaybe (RpdError "")
     outletsCanceler :: Canceler <-
-        liftEffect $ E.subscribe outletsFlow outletsHandler
+        liftEffect $ E.subscribe outletsFlow
+            (outletsHandler <<< over1 \(OutletPath _ alias) -> alias)
     pure $ inletsCanceler <> inletsCanceler
 
 
@@ -781,20 +783,66 @@ buildOutletsFlow
      . NodePath
     -> ProcessF d
     -> InletsFlow d
-    -> Set InletPath
-    -> Set OutletPath
+    -> Set UUID.ToInlet
+    -> Set UUID.ToOutlet
     -> Network d
     -> Rpd (OutletsFlow d /\ Maybe Canceler) -- FIXME: for now, we only need Rpd to handle the
 buildOutletsFlow _ Withhold _ _ _ _ =
     -- liftEffect never >>= pure <<< OutletsFlow
     liftEffect never >>= \flow ->
         pure $ OutletsFlow flow /\ Nothing
-buildOutletsFlow _ PassThrough (InletsFlow inletsFlow) _ _ _ =
-    pure $ (OutletsFlow $ Just <$> inletsFlow)
-           /\ Nothing
-buildOutletsFlow nodePath (Process receive send) (InletsFlow inletsFlow) inlets outlets _ =
-    pure $ (OutletsFlow $ Just <$> inletsFlow)
-           /\ Nothing
+-- buildOutletsFlow nodePath PassThrough inletsFlow inlets outlets nw =
+--     -- collect aliases for all inlets and outlets in the node, subscribe to inlets flow
+--     -- every call to `receive`
+--     buildOutletsFlow
+--         nodePath
+--         (Process ?wh ?wh)
+--         inletsFlow
+--         inlets
+--         outlets
+--         nw
+buildOutletsFlow nodePath (Process processNode) (InletsFlow inletsFlow) inlets outlets nw = do
+    -- collect data from inletsFlow into the Map (Alias /-> d) and pass Map.lookup to the `processF` handler.
+    { push, event } <- liftEffect E.create
+    let
+        -- receive = ?wh
+        -- send = ?wh
+        outletsAliases :: List (OutletPath /\ UUID.UUID)
+        outletsAliases =
+            (outlets
+                 # List.fromFoldable
+                <#> \uuid ->
+                    view (_outlet uuid) nw
+                        <#> \(Outlet uuid' path _) -> path /\ uuid')
+                 # List.catMaybes
+                -- FIXME: if outlet wasn't found, raise an error?
+                --  # Map.fromFoldable
+        foldingF ((InletPath nodePath inletAlias) /\ uuid /\ curD) inletVals =
+            inletVals # Map.insert inletAlias curD
+            -- case view (_inlet $ UUID.ToInlet uuid) nw of
+            --     Just (Inlet _ (InletPath nodePath' inletAlias') _) ->
+                    -- TODO: check, if we really need to check the alias and path once again
+                    --       may be we just may take alias and insert it into map
+                --     if (nodePath' == nodePath) && (inletAlias' == inletAlias)
+                --         then inletVals # Map.insert inletAlias curD
+                --         else inletVals
+                -- _ -> inletVals
+        processFlow = E.fold foldingF inletsFlow Map.empty
+        processHandler inletsValues = do
+            let receive = flip Map.lookup $ inletsValues
+            (send :: Alias -> Maybe d) <- processNode receive
+            _ <- traverse
+                    (\(path@(OutletPath _ alias) /\ uuid) ->
+                        case send alias of
+                            Just v -> push $ path /\ uuid /\ v
+                            Nothing -> pure unit
+                    )
+                    outletsAliases
+            pure unit
+    -- TODO
+    canceler <- liftEffect $ E.subscribe processFlow processHandler
+    pure $ (OutletsFlow event)
+           /\ Just canceler
     -- case processF $ InletsByIndexFlow inletsFlow of
     --     OutletsByIndexFlow outletsByIndex ->
     --         pure $ (OutletsFlow $ Just <$> outletsByIndex)
