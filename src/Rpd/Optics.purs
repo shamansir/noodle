@@ -59,10 +59,10 @@ _pathToId path =
                 nwstate { pathToId = set pathLens val nwstate.pathToId }
 
 
-_pathGetter :: forall d x spath. (spath -> Path) -> (Entity d -> Maybe x) -> spath -> Getter' (Network d) (Maybe x)
-_pathGetter adaptPath extractEntity spath =
+_pathGetter :: forall d x. (Entity d -> Maybe x) -> Path -> Getter' (Network d) (Maybe x)
+_pathGetter extractEntity path =
     to \nw ->
-        view (_pathToId $ adaptPath spath) nw
+        view (_pathToId path) nw
             >>= \uuid -> view (_entity uuid) nw
             >>= extractEntity
 
@@ -78,15 +78,15 @@ _uuidLens adaptEntity extractEntity uuid =
             set (_entity uuid) (adaptEntity <$> val) nw
 
 
-_patch :: forall d. UUID.ToPatch -> Lens' (Network d) (Maybe (Patch d))
-_patch (UUID.ToPatch patchId) = _uuidLens PatchEntity extractPatch patchId
+_patch :: forall d. UUID -> Lens' (Network d) (Maybe (Patch d))
+_patch uuid = _uuidLens PatchEntity extractPatch uuid
 
 
-_patchByPath :: forall d. Path.PatchPath -> Getter' (Network d) (Maybe (Patch d))
-_patchByPath = _pathGetter Path.ToPatch extractPatch
+_patchByPath :: forall d. Path -> Getter' (Network d) (Maybe (Patch d))
+_patchByPath = _pathGetter extractPatch
 
 
-_patchNode :: forall d. UUID.ToPatch -> UUID.ToNode -> Lens' (Network d) (Maybe Unit)
+_patchNode :: forall d. UUID -> UUID -> Lens' (Network d) (Maybe Unit)
 _patchNode patchUuid nodeUuid =
     lens getter setter
     where
@@ -105,15 +105,15 @@ _patchNode patchUuid nodeUuid =
                 ) nw
 
 
-_node :: forall d. UUID.ToNode -> Lens' (Network d) (Maybe (Node d))
-_node (UUID.ToNode nodeId) = _uuidLens NodeEntity extractNode nodeId
+_node :: forall d. UUID -> Lens' (Network d) (Maybe (Node d))
+_node uuid = _uuidLens NodeEntity extractNode uuid
 
 
-_nodeByPath :: forall d. Path.NodePath -> Getter' (Network d) (Maybe (Node d))
-_nodeByPath = _pathGetter Path.ToNode extractNode
+_nodeByPath :: forall d. Path -> Getter' (Network d) (Maybe (Node d))
+_nodeByPath = _pathGetter extractNode
 
 
-_nodeInlet :: forall d. UUID.ToNode -> UUID.ToInlet -> Lens' (Network d) (Maybe Unit)
+_nodeInlet :: forall d. UUID -> UUID -> Lens' (Network d) (Maybe Unit)
 _nodeInlet nodeUuid inletUuid =
     lens getter setter
     where
@@ -133,7 +133,7 @@ _nodeInlet nodeUuid inletUuid =
                 ) nw
 
 
-_nodeOutlet :: forall d. UUID.ToNode -> UUID.ToOutlet -> Lens' (Network d) (Maybe Unit)
+_nodeOutlet :: forall d. UUID -> UUID -> Lens' (Network d) (Maybe Unit)
 _nodeOutlet nodeUuid outletUuid =
     lens getter setter
     where
@@ -152,42 +152,42 @@ _nodeOutlet nodeUuid outletUuid =
                         nstate { outlets = set outletLens val outlets }
                 ) nw
 
-_nodeInletsFlow :: forall d. UUID.ToNode -> Getter' (Network d) (Maybe (InletsFlow d))
+_nodeInletsFlow :: forall d. UUID -> Getter' (Network d) (Maybe (InletsFlow d))
 _nodeInletsFlow nodeUuid =
     to \nw ->
         view (_node nodeUuid) nw
             >>= \(Node _ _ _ { inletsFlow }) -> pure inletsFlow
 
 
-_nodeOutletsFlow :: forall d. UUID.ToNode -> Getter' (Network d) (Maybe (OutletsFlow d))
+_nodeOutletsFlow :: forall d. UUID -> Getter' (Network d) (Maybe (OutletsFlow d))
 _nodeOutletsFlow nodeUuid =
     to \nw ->
         view (_node nodeUuid) nw
             >>= \(Node _ _ _ { outletsFlow }) -> pure outletsFlow
 
 
-_inlet :: forall d. UUID.ToInlet -> Lens' (Network d) (Maybe (Inlet d))
-_inlet (UUID.ToInlet inletId) = _uuidLens InletEntity extractInlet inletId
+_inlet :: forall d. UUID -> Lens' (Network d) (Maybe (Inlet d))
+_inlet uuid = _uuidLens InletEntity extractInlet uuid
 
 
-_inletByPath :: forall d. Path.InletPath -> Getter' (Network d) (Maybe (Inlet d))
-_inletByPath = _pathGetter Path.ToInlet extractInlet
+_inletByPath :: forall d. Path -> Getter' (Network d) (Maybe (Inlet d))
+_inletByPath = _pathGetter extractInlet
 
 
-_outlet :: forall d. UUID.ToOutlet -> Lens' (Network d) (Maybe (Outlet d))
-_outlet (UUID.ToOutlet outletId) = _uuidLens OutletEntity extractOutlet outletId
+_outlet :: forall d. UUID -> Lens' (Network d) (Maybe (Outlet d))
+_outlet uuid = _uuidLens OutletEntity extractOutlet uuid
 
 
-_outletByPath :: forall d. Path.OutletPath -> Getter' (Network d) (Maybe (Outlet d))
-_outletByPath = _pathGetter Path.ToOutlet extractOutlet
+_outletByPath :: forall d. Path -> Getter' (Network d) (Maybe (Outlet d))
+_outletByPath = _pathGetter extractOutlet
 
 
-_link :: forall d. UUID.ToLink -> Lens' (Network d) (Maybe Link)
-_link (UUID.ToLink linkId) = _uuidLens LinkEntity extractLink linkId
+_link :: forall d. UUID -> Lens' (Network d) (Maybe Link)
+_link uuid = _uuidLens LinkEntity extractLink uuid
 
 
-_linkByPath :: forall d. Path.LinkPath -> Getter' (Network d) (Maybe Link)
-_linkByPath = _pathGetter Path.ToLink extractLink
+_linkByPath :: forall d. Path -> Getter' (Network d) (Maybe Link)
+_linkByPath = _pathGetter extractLink
 
 
 -- _networkPatch ::
@@ -234,7 +234,7 @@ _cancelersByPath path =
             >>= \uuid -> view (_cancelers uuid) nw
 
 
-_inletFlow :: forall d. UUID.ToInlet -> Getter' (Network d) (Maybe (InletFlow d))
+_inletFlow :: forall d. UUID -> Getter' (Network d) (Maybe (InletFlow d))
 _inletFlow inletId =
     to extractFlow
     where
@@ -243,7 +243,7 @@ _inletFlow inletId =
             \(Inlet _ _ { flow }) -> pure flow
 
 
-_outletFlow :: forall d. UUID.ToOutlet -> Getter' (Network d) (Maybe (OutletFlow d))
+_outletFlow :: forall d. UUID -> Getter' (Network d) (Maybe (OutletFlow d))
 _outletFlow outletId =
     to extractFlow
     where
@@ -252,7 +252,7 @@ _outletFlow outletId =
             \(Outlet _ _ { flow }) -> pure flow
 
 
-_inletPush :: forall d. UUID.ToInlet -> Getter' (Network d) (Maybe (PushToInlet d))
+_inletPush :: forall d. UUID -> Getter' (Network d) (Maybe (PushToInlet d))
 _inletPush inletId =
     to extractPFlow
     where
@@ -261,7 +261,7 @@ _inletPush inletId =
             \(Inlet _ _ { push }) -> pure push
 
 
-_outletPush :: forall d. UUID.ToOutlet -> Getter' (Network d) (Maybe (PushToOutlet d))
+_outletPush :: forall d. UUID -> Getter' (Network d) (Maybe (PushToOutlet d))
 _outletPush outletId =
     to extractPFlow
     where

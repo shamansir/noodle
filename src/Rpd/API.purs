@@ -14,18 +14,16 @@ module Rpd.API
     ) where
 
 import Debug.Trace
+
 import Prelude
-import Rpd.Network
-import Rpd.Optics
-import Rpd.Path
-import Rpd.Process
 
 import Control.Monad.Except.Trans (ExceptT, except)
 import Control.MonadZero (empty)
+
 import Data.Array ((!!), (:), snoc)
 import Data.Array as Array
 import Data.Bitraversable (bisequence)
-import Data.Either (Either, note)
+import Data.Either (Either(..), note)
 import Data.Foldable (foldr)
 import Data.Lens (view, set, setJust)
 import Data.Lens.At (at)
@@ -39,14 +37,22 @@ import Data.Traversable (for, sequence, traverse, traverse_)
 import Data.TraversableWithIndex (forWithIndex)
 import Data.Tuple (uncurry, fst)
 import Data.Tuple.Nested ((/\), type (/\), over1)
+
 import Effect (Effect, foreachE)
 import Effect.Class (liftEffect)
+
 import FRP.Event as E
+
+import Rpd.Network
 import Rpd.Network (empty) as Network
 import Rpd.UUID as UUID
 import Rpd.Util (type (/->), PushableFlow(..), Subscriber, Canceler, Flow, never)
 import Rpd.Util as RU
-import Text.Smolder.SVG.Attributes (y)
+import Rpd.Optics
+import Rpd.Path (Path)
+import Rpd.Path as Path
+import Rpd.Process
+
 
 infixl 6 snoc as +>
 
@@ -82,9 +88,9 @@ andThen = (>>=)
 someApiFunc :: forall d. Rpd (Network d)
 someApiFunc =
     init
-        </> addPatch (mkAlias "foo")
-        </> addNode (PatchPath (mkAlias "foo")) (mkAlias "test1")
-        </> addNode (PatchPath (mkAlias "foo")) (mkAlias "test2")
+        </> addPatch $ Path.toPatch "foo"
+        </> addNode $ Path.toNode "foo" "test1"
+        </> addNode $ Path.toNode "foo" "test2"
 
 
 -- instance functorRpdOp :: Functor (RpdOp d) where
@@ -115,17 +121,25 @@ exceptMaybe err maybe =
     except (maybe # note err)
 
 
-addPatch :: forall d. Alias -> Network d -> Rpd (Network d)
-addPatch alias nw = do
+exceptNotFail :: RpdError -> Boolean -> ExceptT RpdError Effect Unit
+exceptNotFail err bool =
+    if bool then except $ Right unit else Left err
+
+
+addPatch :: forall d. Path -> Network d -> Rpd (Network d)
+addPatch path nw = do
+    _ <- Path.mayLeadToPatch path
+            # exceptNotFail (RpdError "")
     uuid <- liftEffect UUID.new
     let
         newPatch =
             Patch
                 uuid
-                (PatchPath alias)
+                path
                 Set.empty
-    -- pure $ newPatch /\ setJust (_patch $ UUID.ToPatch uuid) newPatch nw
-    pure $ setJust (_patch $ UUID.ToPatch uuid) newPatch nw
+    pure $ nw
+        # setJust (_patch uuid) newPatch
+        # setJust (_pathToId path) uuid
 
 
 -- TODO: removePatch
@@ -134,22 +148,26 @@ addPatch alias nw = do
 
 addNode
     :: forall d
-     . PatchPath
-    -> Alias
+     . Path
     -> Network d
     -> Rpd (Network d)
-addNode patchPath alias nw = do
+addNode path nw = do
+    _ <- Path.mayLeadToNode path
+            # exceptNotFail (RpdError "")
+    patchPath <- Path.getPatchPath path
+            # exceptMaybe (RpdError "")
     patchUuid
-        <- view (_pathToId $ ToPatch patchPath) nw
+        <- view (_pathToId patchPath) nw
             # exceptMaybe (RpdError "")
     uuid <- liftEffect UUID.new
     PushableFlow pushToInlets inletsFlow <- liftEffect makePushableFlow
     PushableFlow pushToOutlets outletsFlow <- liftEffect makePushableFlow
     let
+        nodePath = NodePath patchPath alias
         newNode =
             Node
                 uuid
-                (NodePath patchPath alias)
+                nodePath
                 Withhold
                 { inlets : Set.empty
                 , outlets : Set.empty
@@ -159,12 +177,12 @@ addNode patchPath alias nw = do
                 , pushToOutlets : PushToOutlets pushToOutlets
                 }
     nw
-        -- FIXME: save ID /-> Path
-         #  setJust (_node $ UUID.ToNode uuid) newNode
-         #  setJust (_patchNode (UUID.ToPatch patchUuid) (UUID.ToNode uuid)) unit
+         #  setJust (_node uuid) newNode
+         #  setJust (_pathToId nodePath) uuid
+         #  setJust (_patchNode patchUuid uuid) unit
         --  #  addInlets nodePath def.inletDefs
         -- </> addOutlets nodePath def.outletDefs
-        # updateNodeProcessFlow (UUID.ToNode uuid)
+        # updateNodeProcessFlow uuid
 
 
 processWith
@@ -222,8 +240,8 @@ addInlet nodePath alias nw = do
             E.subscribe inletFlow (\d -> informNode (inletPath /\ uuid /\ d))
     -- userCancelers :: Array Canceler <-
     --     liftEffect $ traverse (E.subscribe dataFlow) subs
-    -- FIXME: save ID /-> Path
     nw # setJust (_inlet $ UUID.ToInlet uuid) newInlet
+       # setJust (_pathToId $ ToInlet inletPath) uuid
        # setJust (_nodeInlet (UUID.ToNode nodeUuid) (UUID.ToInlet uuid)) unit
        # setJust (_cancelers uuid) [ canceler ]
        # updateNodeProcessFlow (UUID.ToNode nodeUuid)
@@ -257,6 +275,7 @@ removeInlet inletPath@(InletPath nodePath _) nw = do
         # fromMaybe []
         # traverse_ liftEffect
     nw  #  set (_inlet $ UUID.ToInlet inletUuid) Nothing
+        #  set (_pathToId $ ToInlet inletPath) Nothing
         #  set (_nodeInlet (UUID.ToNode nodeUuid) (UUID.ToInlet inletUuid)) Nothing
         #  setJust (_cancelers inletUuid) [ ]
         #  disconnectAllComingTo inletPath
@@ -290,8 +309,8 @@ addOutlet nodePath alias nw = do
     canceler :: Canceler <-
         liftEffect $
             E.subscribe outletFlow (\d -> informNode (outletPath /\ uuid /\ d))
-    -- FIXME: save ID /-> Path
     nw # setJust (_outlet $ UUID.ToOutlet uuid) newOutlet
+       # setJust (_pathToId $ ToOutlet outletPath) uuid
        # setJust (_nodeOutlet (UUID.ToNode nodeUuid) (UUID.ToOutlet uuid)) unit
        # setJust (_cancelers uuid) [ canceler ]
        # updateNodeProcessFlow (UUID.ToNode nodeUuid)

@@ -1,22 +1,22 @@
 module Rpd.Path
-    ( mkAlias, getAlias, Alias
-    , PatchPath(..), NodePath(..), InletPath(..), OutletPath(..), LinkPath(..)
-    , patchPath, nodePath, inletPath, outletPath, linkPath
-    , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
-    , getPatchPath, getNodeId, getInletId, getOutletId -- TODO: rename to ...Idx
-    , nodeInPatch, inletInNode, outletInNode
-    , Path(..)
+    ( Path(..), Alias
+    , empty, toPatch, toNode, toInlet, toOutlet
+    , length
+    , mayLeadToPatch, mayLeadToNode, mayLeadToInlet, mayLeadToOutlet
+    , getPatchPath, getNodePath
     )
     where
 
 
 import Prelude
 
+import Data.List
+import Data.Maybe
+
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq as GEq
 import Data.Generic.Rep.Ord as GOrd
 
--- TODO: either Path typeclass or... Comonad? (paths look like breadcrumbs)
 
 -- FIXME: consider moving to random hashes, since adding/removing the things
 --        based on IDs breaks, for example, processing (new IDs are assigned
@@ -33,6 +33,7 @@ import Data.Generic.Rep.Ord as GOrd
 --         pure unit)
 
 
+-- TODO: either Path typeclass or... Comonad? (paths look like breadcrumbs)
 
 -- class IsAlias
 
@@ -50,225 +51,117 @@ import Data.Generic.Rep.Ord as GOrd
 -- Still, in the internal
 
 
-newtype Alias = Alias String
+-- infixl 1 joinPaths as @
 
 
-data PatchPath = PatchPath Alias
-data NodePath = NodePath PatchPath Alias
-data InletPath = InletPath NodePath Alias
-data OutletPath = OutletPath NodePath Alias
-data LinkPath = LinkPath Alias
+-- joinPaths :: Path -> Path -> Path
+-- joinPaths End End = End
+-- joinPaths End (Deeper _ _) = End
+-- joinPaths (Deeper alias End) other = Deeper alias other
+-- joinPaths (Deeper alias first) second =
+    -- where
+    --     findLast :: Path -> Path -> Path Path
+
+
+type Alias = String -- TODO: newtype Alias = Alias String
 
 
 data Path
-    = ToNetwork
-    | ToPatch PatchPath
-    | ToNode NodePath
-    | ToInlet InletPath
-    | ToOutlet OutletPath
-    | ToLink LinkPath
-    | Unknown
+    = End
+    | Deeper Alias Path
 
 
-mkAlias :: String -> Alias -- TODO: could produce an error
--- mkAlias = String.toLower >>> Alias -- TODO: trim spaces, symbols etc.
-mkAlias = Alias
+empty :: Path
+empty = End
 
 
-getAlias :: Alias -> String
-getAlias (Alias v) = v
+toPatch :: Alias -> Path
+toPatch palias =
+    Deeper palias End
 
 
-patchPath :: Alias -> PatchPath
-patchPath = PatchPath
+toNode :: Alias -> Alias -> Path
+toNode palias nalias =
+    Deeper palias $ Deeper nalias End
 
 
-nodePath :: Alias -> Alias -> NodePath
-nodePath pId nId = NodePath (PatchPath pId) nId
+toInlet :: Alias -> Alias -> Alias -> Path
+toInlet palias nalias ialias =
+    Deeper palias $ Deeper nalias $ Deeper ialias End
 
 
-inletPath :: Alias -> Alias -> Alias -> InletPath
-inletPath pId nId iId = InletPath (NodePath (PatchPath pId) nId) iId
+toOutlet :: Alias -> Alias -> Alias -> Path
+toOutlet = toInlet
 
 
-outletPath :: Alias -> Alias -> Alias -> OutletPath
-outletPath pId nId iId = OutletPath (NodePath (PatchPath pId) nId) iId
+-- flatten :: Path -> List Alias
+-- flatten End = []
+-- flatten (Deeper alias p) = alias :: flatten p
 
 
-linkPath :: Alias -> LinkPath
-linkPath = LinkPath
+length :: Path -> Int
+length End = 0
+length (Deeper alias p) = 1 + length p
 
 
-getPatchPath :: PatchPath -> Alias
-getPatchPath (PatchPath id) = id
+mayLeadToPatch :: Path -> Boolean
+mayLeadToPatch p = length p == 1
 
 
-getNodeId :: NodePath -> Alias
-getNodeId (NodePath _ id) = id
+mayLeadToNode :: Path -> Boolean
+mayLeadToNode p = length p == 2
 
 
-getInletId :: InletPath -> Alias
-getInletId (InletPath _ id) = id
+mayLeadToInlet :: Path -> Boolean
+mayLeadToInlet p = length p == 3
 
 
-getOutletId :: OutletPath -> Alias
-getOutletId (OutletPath _ id) = id
+mayLeadToOutlet :: Path -> Boolean
+mayLeadToOutlet p = length p == 3
 
 
-nodeInPatch :: PatchPath -> Alias -> NodePath
-nodeInPatch = NodePath
+getPatchPath :: Path -> Maybe Path
+getPatchPath End = Nothing
+getPatchPath (Deeper alias _) = Just $ Deeper alias End
 
 
-inletInNode :: NodePath -> Alias -> InletPath
-inletInNode = InletPath
-
-
-outletInNode :: NodePath -> Alias -> OutletPath
-outletInNode = OutletPath
-
-
-unpackNodePath :: NodePath -> Array Alias
-unpackNodePath (NodePath (PatchPath patchPath) id) = [ patchPath, id ]
-
-unpackInletPath :: InletPath -> Array Alias
-unpackInletPath (InletPath nodePath id) = unpackNodePath nodePath <> [ id ]
-
-unpackOutletPath :: OutletPath -> Array Alias
-unpackOutletPath (OutletPath nodePath id) = unpackNodePath nodePath <> [ id ]
-
-
-{-
-isNodeInPatch :: NodePath -> PatchPath -> Boolean
-isNodeInPatch (NodePath patchPath' _) patchPath =
-    patchPath == patchPath'
-
-
-isInletInPatch :: InletPath -> PatchPath -> Boolean
-isInletInPatch (InletPath nodePath _) patchPath =
-    isNodeInPatch nodePath patchPath
-
-
-isOutletInPatch :: OutletPath -> PatchPath -> Boolean
-isOutletInPatch (OutletPath nodePath _) patchPath =
-    isNodeInPatch nodePath patchPath
-
-
-isInletInNode :: InletPath -> NodePath -> Boolean
-isInletInNode (InletPath nodePath' _) nodePath =
-    nodePath == nodePath'
-
-
-isOutletInNode :: OutletPath -> NodePath -> Boolean
-isOutletInNode (OutletPath nodePath' _) nodePath =
-    nodePath == nodePath'
-
-
-notInTheSameNode :: InletPath -> OutletPath -> Boolean
-notInTheSameNode (InletPath iNodePath _) (OutletPath oNodePath _) =
-    iNodePath /= oNodePath
--}
-
-
-
--- FIXME: below are Prisms
-
-getPatchOfNode :: NodePath -> PatchPath
-getPatchOfNode (NodePath pId _) = pId
-
-
-getPatchOfInlet :: InletPath -> PatchPath
-getPatchOfInlet inlet = getPatchOfNode $ getNodeOfInlet inlet
-
-
-getPatchOfOutlet :: OutletPath -> PatchPath
-getPatchOfOutlet outlet = getPatchOfNode $ getNodeOfOutlet outlet
-
-
-getNodeOfInlet :: InletPath -> NodePath
-getNodeOfInlet  (InletPath nPath _) = nPath
-
-
-getNodeOfOutlet :: OutletPath -> NodePath
-getNodeOfOutlet  (OutletPath nPath _) = nPath
-
-
-
-instance showAlias :: Show Alias where
-    show (Alias alias) = ":" <> alias <> ":"
-
-
-instance showPatchPath :: Show PatchPath where
-    show (PatchPath id) = "P" <> show id
-
-instance showNodePath :: Show NodePath where
-    show (NodePath patchPath id) = show patchPath <> "/N" <> show id
-
-instance showInletPath :: Show InletPath where
-    show (InletPath nodePath id) = show nodePath <> "/I" <> show id
-
-instance showOutletPath :: Show OutletPath where
-    show (OutletPath nodePath id) = show nodePath <> "/O" <> show id
-
-instance showLinkPath :: Show LinkPath where
-    show (LinkPath id) = "L" <> show id
-
+getNodePath :: Path -> Maybe Path
+getNodePath (Deeper pAlias (Deeper nAlias _)) =
+    Just $ Deeper pAlias (Deeper nAlias End)
+getNodePath _ = Nothing
 
 
 instance showPath :: Show Path where
-    show ToNetwork = "<nw>"
-    show (ToPatch patchPath) = "<p " <> show patchPath <> ">"
-    show (ToNode nodePath) = "<n " <> show nodePath <> ">"
-    show (ToInlet inletPath) = "<i " <> show inletPath <> ">"
-    show (ToOutlet outletPath) = "<o " <> show outletPath <> ">"
-    show (ToLink linkPath) = "<l " <> show linkPath <> ">"
-    show Unknown = "<?>"
+    show End = ""
+    show (Deeper alias End) = alias
+    show (Deeper alias p) = alias <> "/" <> show p
 
 
-derive instance genericAlias :: Generic Alias _
-instance eqAlias :: Eq Alias where
-  eq = GEq.genericEq
-instance ordAlias :: Ord Alias where
-  compare = GOrd.genericCompare
-
-
-derive instance genericPath :: Generic Path _
 instance eqPath :: Eq Path where
-  eq = GEq.genericEq
+    eq End End = true
+    eq (Deeper aliasL pL) (Deeper aliasR pR) = aliasL == aliasR && pL == pR
+    eq _ _ = false
+
+
 instance ordPath :: Ord Path where
-  compare = GOrd.genericCompare
+    compare End End = EQ
+    compare End (Deeper _ _) = LT
+    compare (Deeper _ _) End = GT
+    compare (Deeper aliasL pL) (Deeper aliasR pR) | compare pL pR == EQ = compare aliasL aliasR
+    compare (Deeper aliasL pL) (Deeper aliasR pR) | otherwise = compare pL pR
+        -- case compare pL pR of
+        --     EQ -> compare aliasL aliasR
+        --     _ -> compare pL pR
 
 
-instance eqPatchPath :: Eq PatchPath where
-    eq (PatchPath a) (PatchPath b) = a == b
-
-instance eqNodePath :: Eq NodePath where
-    eq (NodePath pa a) (NodePath pb b) = (pa == pb) && (a == b)
-
-instance eqInletPath :: Eq InletPath where
-    eq (InletPath na a) (InletPath nb b) = (na == nb) && (a == b)
-
-instance eqOutletPath :: Eq OutletPath where
-    eq (OutletPath na a) (OutletPath nb b) = (na == nb) && (a == b)
-
-instance eqLinkPath :: Eq LinkPath where
-    eq (LinkPath a) (LinkPath b) = a == b
+-- -- derive instance genericAlias :: Generic Alias _
+-- -- instance eqAlias :: Eq Alias where
+-- --   eq = GEq.genericEq
+-- -- instance ordAlias :: Ord Alias where
+-- --   compare = GOrd.genericCompare
 
 
-instance ordPatchPath :: Ord PatchPath where
-    compare (PatchPath a) (PatchPath b) = compare a b
+-- -- derive instance genericPath :: Generic Path _
+-- -- instance eqPath :: Eq Path where
+-- --   eq = GEq.genericEq
 
-instance ordNodePath :: Ord NodePath where
-    compare nodePath1 nodePath2 =
-        compare (unpackNodePath nodePath1)  (unpackNodePath nodePath2)
-
-instance ordInletPath :: Ord InletPath where
-    compare inletPath1 inletPath2 =
-        compare (unpackInletPath inletPath1)  (unpackInletPath inletPath2)
-
-instance ordOutletPath :: Ord OutletPath where
-    compare outletPath1 outletPath2 =
-        compare (unpackOutletPath outletPath1) (unpackOutletPath outletPath2)
-
-instance ordLinkPath :: Ord LinkPath where
-    compare (LinkPath a) (LinkPath b) =
-        compare a b

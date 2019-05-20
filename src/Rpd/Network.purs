@@ -29,7 +29,6 @@ import Rpd.Channel (class Channel)
 import Rpd.Channel as Channel
 import Rpd.Path
 import Rpd.UUID (UUID)
-import Rpd.UUID (ToPatch(..), ToNode(..), ToInlet(..), ToOutlet(..), ToLink(..)) as UUID
 import Rpd.Util (type (/->), Canceler, Flow, PushableFlow, PushF)
 import Rpd.Process (ProcessF(..))
 
@@ -37,14 +36,14 @@ import Rpd.Process (ProcessF(..))
 -- FIXME: UUID is internal and so should not be passed, I suppose.
 --        I'll leave it here temporarily just for the debug purpose.
 data InletFlow d = InletFlow (Flow d)
-data InletsFlow d = InletsFlow (Flow (InletPath /\ UUID /\ d))
+data InletsFlow d = InletsFlow (Flow (Path /\ UUID /\ d))
 data PushToInlet d = PushToInlet (PushF d)
-data PushToInlets d = PushToInlets (PushF (InletPath /\ UUID /\ d))
+data PushToInlets d = PushToInlets (PushF (Path /\ UUID /\ d))
 data OutletFlow d = OutletFlow (Flow d)
-data OutletsFlow d = OutletsFlow (Flow (OutletPath /\ UUID /\ d))
+data OutletsFlow d = OutletsFlow (Flow (Path /\ UUID /\ d))
         -- FIXME: Flow (Maybe OutletInNode /\ d)
 data PushToOutlet d = PushToOutlet (PushF d)
-data PushToOutlets d = PushToOutlets (PushF (OutletPath /\ UUID /\ d))
+data PushToOutlets d = PushToOutlets (PushF (Path /\ UUID /\ d))
         -- FIXME: PushF (Maybe OutletInNode /\ d)
 
 
@@ -59,7 +58,7 @@ data Entity d
 data Network d =
     Network
         { name :: String
-        , patches :: Set UUID.ToPatch
+        , patches :: Set UUID
         , registry :: UUID /-> Entity d
         -- , pathToId :: Path /-> Set UUID
         , pathToId :: Path /-> UUID
@@ -73,15 +72,15 @@ data Network d =
 data Patch d =
     Patch
         UUID
-        PatchPath
-        (Set UUID.ToNode)
+        Path
+        (Set UUID) -- nodes
 data Node d =
     Node
         UUID
-        NodePath
+        Path
         (ProcessF d)
-        { inlets :: Set UUID.ToInlet
-        , outlets :: Set UUID.ToOutlet
+        { inlets :: Set UUID
+        , outlets :: Set UUID
         , inletsFlow :: InletsFlow d
         , outletsFlow :: OutletsFlow d
         , pushToInlets :: PushToInlets d
@@ -90,20 +89,25 @@ data Node d =
 data Inlet d =
     Inlet
         UUID
-        InletPath
-        -- (Channel c d => c)
+        Path
+        -- (forall c. Channel c d => c)
         { flow :: InletFlow d
         , push :: PushToInlet d
         }
 data Outlet d =
     Outlet
         UUID
-        OutletPath
-        -- (Channel c d => c)
+        Path
+        -- (forall c. Channel c d => c)
         { flow :: OutletFlow d
         , push :: PushToOutlet d
         }
-data Link = Link UUID (UUID.ToOutlet /\ UUID.ToInlet)
+data Link =
+    Link
+        UUID
+        { outlet :: UUID
+        , inlet :: UUID
+        }
 
 
 empty :: forall d. Network d

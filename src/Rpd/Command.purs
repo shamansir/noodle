@@ -6,53 +6,49 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq as GEq
 import Data.Generic.Rep.Show as GShow
 
-import Rpd.Path as P
-import Rpd.UUID as UUID
+import Rpd.Channel (class Channel)
+import Rpd.Path
+import Rpd.UUID
 
 
-data Command d
+
+data Command d c
     = Bang
-    | AddPatch P.Alias (D.PatchDef d)
-    | AddNode P.PatchPath P.Alias (D.NodeDef d)
-    | AddInlet P.NodePath P.Alias (D.InletDef d)
-    | AddOutlet P.NodePath P.Alias (D.OutletDef d)
-    | Connect P.OutletPath P.InletPath
-    | Disconnect P.OutletPath P.InletPath
-    | GotInletData P.InletPath d
-    | GotOutletData P.OutletPath d
-    | SendToInlet P.InletPath d
-    | SendToOutlet P.OutletPath d
+    | AddPatch Path
+    | AddNode Path
+    | AddInlet Path (Channel c d => c)
+    | AddOutlet Path (Channel c d => c)
+    -- | AddInlet Path (forall c. Show c => Channel c d => c)
+    -- | AddOutlet Path (forall c. Show c => Channel c d => c)
+    | Connect { outlet :: Path, inlet :: Path }
+    | Disconnect { outlet :: Path, inlet :: Path }
+    | GotInletData Path d
+    | GotOutletData Path d
+    | SendToInlet Path d
+    | SendToOutlet Path d
     -- | DeleteNode
     -- | DeleteInlet
     -- | DeleteOutlet
 
 
-data StringCommand
-    = Bang'
-    | AddPatch' String
-    | AddNode' P.PatchPath String -- TODO: alias of the node in toolkit
-    | AddInlet' P.NodePath String -- TODO: alias of the channel in toolkit
-    | AddOutlet' P.NodePath String -- TODO: alias of the channel in toolkit
-    | Connect' P.OutletPath P.InletPath
-    | Disconnect' P.OutletPath P.InletPath
-
-
-derive instance genericStringCommand :: Generic StringCommand _
-instance eqStringCommand :: Eq StringCommand where
-  eq = GEq.genericEq
-instance showStringCommand :: Show StringCommand where
-  show = GShow.genericShow
+-- derive instance genericStringCommand :: Generic StringCommand _
+-- instance eqStringCommand :: Eq StringCommand where
+--   eq = GEq.genericEq
+-- instance showStringCommand :: Show StringCommand where
+--   show = GShow.genericShow
 
 
 -- instance showCommand :: Show d => Show (Command d) where
-instance showCommand :: Show (Command d) where
+instance showCommand :: Channel c d => Show (Command d c) where
     show Bang = "Bang"
-    show (AddPatch alias _) = "AddPatch " <> show alias
-    show (AddNode path alias _) = "AddNode " <> show path <> " " <> show alias
-    show (AddInlet path alias _) = "AddInlet " <> show path <> " " <> show alias
-    show (AddOutlet path alias _) = "AddOutlet " <> show path <> " " <> show alias
-    show (Connect oPath iPath) = "Connect " <> show oPath <> " " <> show iPath
-    show (Disconnect oPath iPath) = "Disconnect " <> show oPath <> " " <> show iPath
+    show (AddPatch path) = "AddPatch " <> show path
+    show (AddNode path) = "AddNode " <> show path
+    show (AddInlet path channel) = "AddInlet " <> show path
+    show (AddOutlet path channel) = "AddOutlet " <> show path <> " " <> show channel
+    show (Connect { outlet : oPath, inlet : iPath }) =
+        "Connect " <> show oPath <> " " <> show iPath
+    show (Disconnect { outlet : oPath, inlet : iPath }) =
+        "Disconnect " <> show oPath <> " " <> show iPath
     show (GotInletData iPath _) = "GotInletData " <> show iPath <> " TODO"
     show (GotOutletData oPath _) = "GotutletData " <> show oPath <> " TODO"
     show (SendToInlet iPath _) = "SendToInlet " <> show iPath <> " TODO"

@@ -14,10 +14,9 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Debug.Trace (spy)
 import Rpd.API (RpdError) as R
 import Rpd.Command (Command(..)) as C
-import Rpd.IsData (class IsData, default) as R
+import Rpd.Channel (class Channel, default) as R
 import Rpd.Network as R
 import Rpd.Optics as R
-import Rpd.Def as R
 import Rpd.Path as R
 import Rpd.Render as R
 import Rpd.Render.MUV (Renderer(..), PushF(..)) as R
