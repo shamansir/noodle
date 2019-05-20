@@ -5,7 +5,7 @@ module Rpd.Channel
 
 import Prelude (class Show)
 
-class Channel c d where
+class (Show c) <= Channel c d where
     default :: c -> d
     accept :: c -> d -> Boolean
     adapt :: c -> d -> d
