@@ -1,7 +1,10 @@
 module Rpd.Path
-    ( Path(..), Alias
+    ( Path, Alias
     , toPatch, toNode, toInlet, toOutlet
     , getPatchPath, getNodePath
+    , getPatchPath', getNodePath'
+    , ToPatch, ToNode, ToInlet, ToOutlet
+    , class MarksPath, test
     )
     where
 
@@ -10,10 +13,6 @@ import Prelude
 
 import Data.List
 import Data.Maybe
-
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Eq as GEq
-import Data.Generic.Rep.Ord as GOrd
 
 
 -- FIXME: consider moving to random hashes, since adding/removing the things
@@ -69,112 +68,108 @@ type Alias = String -- TODO: newtype Alias = Alias String
 --     | Deeper Alias Path
 
 
+class MarksPath a where
+    test :: a -> Maybe Path
+
+
 data Path
-    = ToPatch Alias
-    | ToNode { patch :: Alias, node :: Alias }
-    | ToInlet { patch :: Alias, node :: Alias, inlet :: Alias }
-    | ToOutlet { patch :: Alias, node :: Alias, outlet :: Alias }
+    = ToPatch' Alias
+    | ToNode' { patch :: Alias, node :: Alias }
+    | ToInlet' { patch :: Alias, node :: Alias, inlet :: Alias }
+    | ToOutlet' { patch :: Alias, node :: Alias, outlet :: Alias }
+
+
+-- class HasPath a where
+--     extractPath :: a -> Path
+
+
+-- TODO: find the general approach as in UUID
+newtype ToPatch = ToPatch Path
+newtype ToNode = ToNode Path
+newtype ToInlet = ToInlet Path
+newtype ToOutlet = ToOutlet Path
+
+
+instance marksPathToPatch ∷ MarksPath ToPatch where
+    test (ToPatch p@(ToPatch' _)) = Just p
+    test _ = Nothing
+
+instance marksPathToNode ∷ MarksPath ToNode where
+    test (ToNode p@(ToNode' _)) = Just p
+    test _ = Nothing
+
+instance marksPathToInlet ∷ MarksPath ToInlet where
+    test (ToInlet p@(ToInlet' _)) = Just p
+    test _ = Nothing
+
+instance marksPathToOutlet ∷ MarksPath ToOutlet where
+    test (ToOutlet p@(ToOutlet' _)) = Just p
+    test _ = Nothing
 
 
 -- empty :: Path
 -- empty = End
 
 
-toPatch :: Alias -> Path
+toPatch :: Alias -> ToPatch
 toPatch palias =
-    ToPatch palias
+    ToPatch $ ToPatch' palias
 
 
-toNode :: Alias -> Alias -> Path
+toNode :: Alias -> Alias -> ToNode
 toNode palias nalias =
-    ToNode { patch : palias, node : nalias }
+    ToNode $ ToNode' { patch : palias, node : nalias }
 
 
-toInlet :: Alias -> Alias -> Alias -> Path
+toInlet :: Alias -> Alias -> Alias -> ToInlet
 toInlet palias nalias ialias =
-    ToInlet { patch : palias, node : nalias, inlet : ialias }
+    ToInlet $ ToInlet' { patch : palias, node : nalias, inlet : ialias }
 
 
-toOutlet :: Alias -> Alias -> Alias -> Path
+toOutlet :: Alias -> Alias -> Alias -> ToOutlet
 toOutlet palias nalias oalias =
-    ToOutlet { patch : palias, node : nalias, outlet : oalias }
+    ToOutlet $ ToOutlet' { patch : palias, node : nalias, outlet : oalias }
 
 
--- flatten :: Path -> List Alias
--- flatten End = []
--- flatten (Deeper alias p) = alias :: flatten p
+getPatchPath :: Path -> ToPatch
+getPatchPath (ToPatch' alias) = toPatch alias
+getPatchPath (ToNode' { patch }) = toPatch patch
+getPatchPath (ToInlet' { patch }) = toPatch patch
+getPatchPath (ToOutlet' { patch }) = toPatch patch
 
 
--- length :: Path -> Int
--- length = accLength 0
---     where
---         accLength acc End = acc
---         accLength acc (Deeper _ p) = accLength (acc+1) p
+getPatchPath' :: Path -> Path
+getPatchPath' (ToPatch' alias) = ToPatch' alias
+getPatchPath' (ToNode' { patch }) = ToPatch' patch
+getPatchPath' (ToInlet' { patch }) = ToPatch' patch
+getPatchPath' (ToOutlet' { patch }) = ToPatch' patch
 
 
--- mayLeadToPatch :: Path -> Boolean
--- mayLeadToPatch p = length p == 1
+getNodePath :: Path -> Maybe ToNode
+getNodePath (ToPatch' _) = Nothing
+getNodePath (ToNode' { patch, node }) = Just $ toNode patch node
+getNodePath (ToInlet' { patch, node }) = Just $ toNode patch node
+getNodePath (ToOutlet' { patch, node }) = Just $ toNode patch node
 
 
--- mayLeadToNode :: Path -> Boolean
--- mayLeadToNode p = length p == 2
-
-
--- mayLeadToInlet :: Path -> Boolean
--- mayLeadToInlet p = length p == 3
-
-
--- mayLeadToOutlet :: Path -> Boolean
--- mayLeadToOutlet p = length p == 3
-
-
-getPatchPath :: Path -> Path
-getPatchPath (ToPatch alias) = ToPatch alias
-getPatchPath (ToNode { patch }) = ToPatch patch
-getPatchPath (ToInlet { patch }) = ToPatch patch
-getPatchPath (ToOutlet { patch }) = ToPatch patch
-
-
-getNodePath :: Path -> Maybe Path
-getNodePath (ToPatch _) = Nothing
-getNodePath (ToNode { patch, node }) = Just $ ToNode { patch, node }
-getNodePath (ToInlet { patch, node }) = Just $ ToNode { patch, node }
-getNodePath (ToOutlet { patch, node }) = Just $ ToNode { patch, node }
+getNodePath' :: Path -> Maybe Path
+getNodePath' (ToPatch' _) = Nothing
+getNodePath' (ToNode' { patch, node }) = Just $ ToNode' { patch, node }
+getNodePath' (ToInlet' { patch, node }) = Just $ ToNode' { patch, node }
+getNodePath' (ToOutlet' { patch, node }) = Just $ ToNode' { patch, node }
 
 
 instance showPath :: Show Path where
-    show (ToPatch alias) =
+    show (ToPatch' alias) =
         "<P@" <> alias <> ">"
-    show (ToNode { patch, node }) =
+    show (ToNode' { patch, node }) =
         "<P@" <> patch <> "/N@" <> node <> ">"
-    show (ToInlet { patch, node, inlet }) =
+    show (ToInlet' { patch, node, inlet }) =
         "<P@" <> patch <> "/N@" <> node <> "/@I" <> inlet <> ">"
-    show (ToOutlet { patch, node, outlet }) =
+    show (ToOutlet' { patch, node, outlet }) =
         "<P@" <> patch <> "/N@" <> node <> "/@O" <> outlet <> ">"
-
-
--- instance eqPath :: Eq Path where
---     eq End End = true
---     eq (Deeper aliasL pL) (Deeper aliasR pR) = aliasL == aliasR && pL == pR
---     eq _ _ = false
-
-
--- instance ordPath :: Ord Path where
---     compare (ToPatch aliasL) (ToPatch aliasR) = compare aliasL aliasR
---     compare (ToPatch aliasL) _ = LT
---     compare End (Deeper _ _) = LT
---     compare (Deeper _ _) End = GT
---     compare (Deeper aliasL pL) (Deeper aliasR pR) | compare pL pR == EQ = compare aliasL aliasR
---     compare (Deeper aliasL pL) (Deeper aliasR pR) | otherwise = compare pL pR
-        -- case compare pL pR of
-        --     EQ -> compare aliasL aliasR
-        --     _ -> compare pL pR
 
 
 derive instance eqPath :: Eq Path
 derive instance ordPath :: Ord Path
-
--- -- derive instance genericPath :: Generic Path _
--- -- instance eqPath :: Eq Path where
--- --   eq = GEq.genericEq
 

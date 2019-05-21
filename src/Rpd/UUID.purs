@@ -12,10 +12,6 @@ import Prelude
 import Effect (Effect)
 
 
-import Data.Foldable (fold)
-import Data.Map
-
-
 foreign import newAsString :: Effect String
 
 

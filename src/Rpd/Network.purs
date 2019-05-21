@@ -24,6 +24,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 -- import Rpd.Channel (class Channel)
 -- import Rpd.Channel as Channel
+import Rpd.Path as Path
 import Rpd.Path (Path)
 import Rpd.UUID (UUID)
 import Rpd.UUID as UUID
@@ -34,14 +35,14 @@ import Rpd.Process (ProcessF)
 -- FIXME: UUID is internal and so should not be passed, I suppose.
 --        I'll leave it here temporarily just for the debug purpose.
 data InletFlow d = InletFlow (Flow d)
-data InletsFlow d = InletsFlow (Flow (Path /\ UUID.ToInlet /\ d))
+data InletsFlow d = InletsFlow (Flow (Path.ToInlet /\ UUID.ToInlet /\ d))
 data PushToInlet d = PushToInlet (PushF d)
-data PushToInlets d = PushToInlets (PushF (Path /\ UUID.ToInlet /\ d))
+data PushToInlets d = PushToInlets (PushF (Path.ToInlet /\ UUID.ToInlet /\ d))
 data OutletFlow d = OutletFlow (Flow d)
-data OutletsFlow d = OutletsFlow (Flow (Path /\ UUID.ToOutlet /\ d))
+data OutletsFlow d = OutletsFlow (Flow (Path.ToOutlet /\ UUID.ToOutlet /\ d))
         -- FIXME: Flow (Maybe OutletInNode /\ d)
 data PushToOutlet d = PushToOutlet (PushF d)
-data PushToOutlets d = PushToOutlets (PushF (Path /\ UUID.ToOutlet /\ d))
+data PushToOutlets d = PushToOutlets (PushF (Path.ToOutlet /\ UUID.ToOutlet /\ d))
         -- FIXME: PushF (Maybe OutletInNode /\ d)
 
 
