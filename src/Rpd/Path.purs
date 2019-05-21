@@ -4,7 +4,7 @@ module Rpd.Path
     , getPatchPath, getNodePath
     , getPatchPath', getNodePath'
     , ToPatch, ToNode, ToInlet, ToOutlet
-    , class MarksPath, test
+    , class MarksPath, lift
     )
     where
 
@@ -69,14 +69,14 @@ type Alias = String -- TODO: newtype Alias = Alias String
 
 
 class MarksPath a where
-    test :: a -> Maybe Path
+    lift :: a -> Path
 
 
 data Path
-    = ToPatch' Alias
-    | ToNode' { patch :: Alias, node :: Alias }
-    | ToInlet' { patch :: Alias, node :: Alias, inlet :: Alias }
-    | ToOutlet' { patch :: Alias, node :: Alias, outlet :: Alias }
+    = ToPatch' ToPatch
+    | ToNode' ToNode
+    | ToInlet' ToInlet
+    | ToOutlet' ToOutlet
 
 
 -- class HasPath a where
@@ -84,27 +84,26 @@ data Path
 
 
 -- TODO: find the general approach as in UUID
-newtype ToPatch = ToPatch Path
-newtype ToNode = ToNode Path
-newtype ToInlet = ToInlet Path
-newtype ToOutlet = ToOutlet Path
+newtype ToPatch = ToPatch Alias
+newtype ToNode = ToNode { patch :: Alias, node :: Alias }
+newtype ToInlet = ToInlet { patch :: Alias, node :: Alias, inlet :: Alias }
+newtype ToOutlet = ToOutlet { patch :: Alias, node :: Alias, outlet :: Alias }
 
 
-instance marksPathToPatch ∷ MarksPath ToPatch where
-    test (ToPatch p@(ToPatch' _)) = Just p
-    test _ = Nothing
+derive instance eqToPatch :: Eq ToPatch
+derive instance ordToPatch :: Ord ToPatch
+derive instance eqToNode :: Eq ToNode
+derive instance ordToNode :: Ord ToNode
+derive instance eqToInlet :: Eq ToInlet
+derive instance ordToInlet :: Ord ToInlet
+derive instance eqToOutlet :: Eq ToOutlet
+derive instance ordToOutlet :: Ord ToOutlet
 
-instance marksPathToNode ∷ MarksPath ToNode where
-    test (ToNode p@(ToNode' _)) = Just p
-    test _ = Nothing
 
-instance marksPathToInlet ∷ MarksPath ToInlet where
-    test (ToInlet p@(ToInlet' _)) = Just p
-    test _ = Nothing
-
-instance marksPathToOutlet ∷ MarksPath ToOutlet where
-    test (ToOutlet p@(ToOutlet' _)) = Just p
-    test _ = Nothing
+instance marksPathToPatch ∷ MarksPath ToPatch where lift = ToPatch'
+instance marksPathToNode ∷ MarksPath ToNode where lift = ToNode'
+instance marksPathToInlet ∷ MarksPath ToInlet where lift = ToInlet'
+instance marksPathToOutlet ∷ MarksPath ToOutlet where lift = ToOutlet'
 
 
 -- empty :: Path
@@ -112,61 +111,51 @@ instance marksPathToOutlet ∷ MarksPath ToOutlet where
 
 
 toPatch :: Alias -> ToPatch
-toPatch palias =
-    ToPatch $ ToPatch' palias
+toPatch = ToPatch
 
 
 toNode :: Alias -> Alias -> ToNode
-toNode palias nalias =
-    ToNode $ ToNode' { patch : palias, node : nalias }
+toNode patch node = ToNode { patch, node }
 
 
 toInlet :: Alias -> Alias -> Alias -> ToInlet
-toInlet palias nalias ialias =
-    ToInlet $ ToInlet' { patch : palias, node : nalias, inlet : ialias }
+toInlet patch node inlet = ToInlet { patch, node, inlet }
 
 
 toOutlet :: Alias -> Alias -> Alias -> ToOutlet
-toOutlet palias nalias oalias =
-    ToOutlet $ ToOutlet' { patch : palias, node : nalias, outlet : oalias }
+toOutlet patch node outlet = ToOutlet { patch, node, outlet }
 
 
 getPatchPath :: Path -> ToPatch
-getPatchPath (ToPatch' alias) = toPatch alias
-getPatchPath (ToNode' { patch }) = toPatch patch
-getPatchPath (ToInlet' { patch }) = toPatch patch
-getPatchPath (ToOutlet' { patch }) = toPatch patch
+getPatchPath (ToPatch' (ToPatch alias)) = toPatch alias
+getPatchPath (ToNode' (ToNode { patch })) = toPatch patch
+getPatchPath (ToInlet' (ToInlet { patch })) = toPatch patch
+getPatchPath (ToOutlet' (ToOutlet { patch })) = toPatch patch
 
 
 getPatchPath' :: Path -> Path
-getPatchPath' (ToPatch' alias) = ToPatch' alias
-getPatchPath' (ToNode' { patch }) = ToPatch' patch
-getPatchPath' (ToInlet' { patch }) = ToPatch' patch
-getPatchPath' (ToOutlet' { patch }) = ToPatch' patch
+getPatchPath' = ToPatch' <<< getPatchPath
 
 
 getNodePath :: Path -> Maybe ToNode
 getNodePath (ToPatch' _) = Nothing
-getNodePath (ToNode' { patch, node }) = Just $ toNode patch node
-getNodePath (ToInlet' { patch, node }) = Just $ toNode patch node
-getNodePath (ToOutlet' { patch, node }) = Just $ toNode patch node
+getNodePath (ToNode' (ToNode { patch, node })) = Just $ toNode patch node
+getNodePath (ToInlet' (ToInlet { patch, node })) = Just $ toNode patch node
+getNodePath (ToOutlet' (ToOutlet { patch, node })) = Just $ toNode patch node
 
 
 getNodePath' :: Path -> Maybe Path
-getNodePath' (ToPatch' _) = Nothing
-getNodePath' (ToNode' { patch, node }) = Just $ ToNode' { patch, node }
-getNodePath' (ToInlet' { patch, node }) = Just $ ToNode' { patch, node }
-getNodePath' (ToOutlet' { patch, node }) = Just $ ToNode' { patch, node }
+getNodePath' p = ToNode' <$> getNodePath p
 
 
 instance showPath :: Show Path where
-    show (ToPatch' alias) =
+    show (ToPatch' (ToPatch alias)) =
         "<P@" <> alias <> ">"
-    show (ToNode' { patch, node }) =
+    show (ToNode' (ToNode { patch, node })) =
         "<P@" <> patch <> "/N@" <> node <> ">"
-    show (ToInlet' { patch, node, inlet }) =
+    show (ToInlet' (ToInlet { patch, node, inlet })) =
         "<P@" <> patch <> "/N@" <> node <> "/@I" <> inlet <> ">"
-    show (ToOutlet' { patch, node, outlet }) =
+    show (ToOutlet' (ToOutlet { patch, node, outlet })) =
         "<P@" <> patch <> "/N@" <> node <> "/@O" <> outlet <> ">"
 
 

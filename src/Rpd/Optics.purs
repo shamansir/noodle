@@ -80,7 +80,7 @@ _patch :: forall d. UUID.ToPatch -> Lens' (Network d) (Maybe (Patch d))
 _patch uuid = _uuidLens PatchEntity extractPatch $ UUID.liftTagged uuid
 
 
-_patchByPath :: forall d. Path -> Getter' (Network d) (Maybe (Patch d))
+_patchByPath :: forall d. Path.ToPatch -> Getter' (Network d) (Maybe (Patch d))
 _patchByPath = _pathGetter extractPatch
 
 
@@ -168,7 +168,7 @@ _inlet :: forall d. UUID.ToInlet -> Lens' (Network d) (Maybe (Inlet d))
 _inlet uuid = _uuidLens InletEntity extractInlet $ UUID.liftTagged uuid
 
 
-_inletByPath :: forall d. Path -> Getter' (Network d) (Maybe (Inlet d))
+_inletByPath :: forall d. Path.ToInlet -> Getter' (Network d) (Maybe (Inlet d))
 _inletByPath = _pathGetter extractInlet
 
 
@@ -176,7 +176,7 @@ _outlet :: forall d. UUID.ToOutlet -> Lens' (Network d) (Maybe (Outlet d))
 _outlet uuid = _uuidLens OutletEntity extractOutlet $ UUID.liftTagged uuid
 
 
-_outletByPath :: forall d. Path -> Getter' (Network d) (Maybe (Outlet d))
+_outletByPath :: forall d. Path.ToOutlet -> Getter' (Network d) (Maybe (Outlet d))
 _outletByPath = _pathGetter extractOutlet
 
 
@@ -184,7 +184,7 @@ _link :: forall d. UUID.ToLink -> Lens' (Network d) (Maybe Link)
 _link uuid = _uuidLens LinkEntity extractLink $ UUID.liftTagged uuid
 
 
-_linkByPath :: forall d. Path -> Getter' (Network d) (Maybe Link)
+_linkByPath :: forall d. Path.ToLink -> Getter' (Network d) (Maybe Link)
 _linkByPath = _pathGetter extractLink
 
 
