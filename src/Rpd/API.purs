@@ -126,7 +126,7 @@ exceptNotFail err bool =
     if bool then except $ Right unit else Left err
 
 
-addPatch :: forall d. Path -> Network d -> Rpd (Network d)
+addPatch :: forall d. PatchPath -> Network d -> Rpd (Network d)
 addPatch path nw = do
     _ <- Path.mayLeadToPatch path
             # exceptNotFail (RpdError "")
@@ -138,8 +138,8 @@ addPatch path nw = do
                 path
                 Set.empty
     pure $ nw
-        # setJust (_patch uuid) newPatch
-        # setJust (_pathToId path) uuid
+        # setJust (_patch $ UUID.ToPatch uuid) newPatch
+        # setJust (_pathToId $ Path.ToPatch path) uuid
 
 
 -- TODO: removePatch
@@ -148,7 +148,7 @@ addPatch path nw = do
 
 addNode
     :: forall d
-     . Path
+     . NodePath
     -> Network d
     -> Rpd (Network d)
 addNode path nw = do
@@ -193,7 +193,7 @@ processWith
     -> Rpd (Network d)
 processWith nodePath processF nw = do
     uuid
-        <- view (_pathToId $ ToNode nodePath) nw
+        <- view (_pathToId $ Path.ToNode nodePath) nw
             # exceptMaybe (RpdError "")
     (Node _ path _ state) :: Node d <-
         view (_node $ UUID.ToNode uuid) nw
@@ -218,7 +218,7 @@ addInlet
     -> Rpd (Network d)
 addInlet nodePath alias nw = do
     nodeUuid
-        <- view (_pathToId $ ToNode nodePath) nw
+        <- view (_pathToId $ Path.ToNode nodePath) nw
            # exceptMaybe (RpdError "")
     uuid <- liftEffect UUID.new
     PushableFlow pushToInlet inletFlow <- liftEffect makePushableFlow
@@ -262,7 +262,7 @@ removeInlet
      . InletPath
     -> Network d
     -> Rpd (Network d)
-removeInlet inletPath@(InletPath nodePath _) nw = do
+removeInlet (InletPath inletPath) nw = do
     nodeUuid
         <- view (_pathToId $ ToNode nodePath) nw
             # exceptMaybe (RpdError "")
@@ -278,7 +278,7 @@ removeInlet inletPath@(InletPath nodePath _) nw = do
         #  set (_pathToId $ ToInlet inletPath) Nothing
         #  set (_nodeInlet (UUID.ToNode nodeUuid) (UUID.ToInlet inletUuid)) Nothing
         #  setJust (_cancelers inletUuid) [ ]
-        #  disconnectAllComingTo inletPath
+        #  disconnectAllComingTo (Path.ToInlet inletPath)
        </> updateNodeProcessFlow (UUID.ToNode nodeUuid)
 
 

@@ -15,35 +15,33 @@ module Rpd.Network
     ) where
 
 
-import Prelude (class Eq, (==), (&&), class Show, show, (<>))
+import Prelude (class Eq, (==))
 
-import Data.Maybe (Maybe(..))
-import Data.List as List
-import Data.List (List)
 import Data.Map as Map
 import Data.Set (Set)
 import Data.Set (empty) as Set
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Rpd.Channel (class Channel)
-import Rpd.Channel as Channel
-import Rpd.Path
+-- import Rpd.Channel (class Channel)
+-- import Rpd.Channel as Channel
+import Rpd.Path (Path)
 import Rpd.UUID (UUID)
-import Rpd.Util (type (/->), Canceler, Flow, PushableFlow, PushF)
-import Rpd.Process (ProcessF(..))
+import Rpd.UUID as UUID
+import Rpd.Util (type (/->), Canceler, Flow, PushF)
+import Rpd.Process (ProcessF)
 
 
 -- FIXME: UUID is internal and so should not be passed, I suppose.
 --        I'll leave it here temporarily just for the debug purpose.
 data InletFlow d = InletFlow (Flow d)
-data InletsFlow d = InletsFlow (Flow (Path /\ UUID /\ d))
+data InletsFlow d = InletsFlow (Flow (Path /\ UUID.ToInlet /\ d))
 data PushToInlet d = PushToInlet (PushF d)
-data PushToInlets d = PushToInlets (PushF (Path /\ UUID /\ d))
+data PushToInlets d = PushToInlets (PushF (Path /\ UUID.ToInlet /\ d))
 data OutletFlow d = OutletFlow (Flow d)
-data OutletsFlow d = OutletsFlow (Flow (Path /\ UUID /\ d))
+data OutletsFlow d = OutletsFlow (Flow (Path /\ UUID.ToOutlet /\ d))
         -- FIXME: Flow (Maybe OutletInNode /\ d)
 data PushToOutlet d = PushToOutlet (PushF d)
-data PushToOutlets d = PushToOutlets (PushF (Path /\ UUID /\ d))
+data PushToOutlets d = PushToOutlets (PushF (Path /\ UUID.ToOutlet /\ d))
         -- FIXME: PushF (Maybe OutletInNode /\ d)
 
 
@@ -58,10 +56,10 @@ data Entity d
 data Network d =
     Network
         { name :: String
-        , patches :: Set UUID
-        , registry :: UUID /-> Entity d
+        , patches :: Set UUID.ToPatch
+        , registry :: UUID.Tagged /-> Entity d
         -- , pathToId :: Path /-> Set UUID
-        , pathToId :: Path /-> UUID
+        , pathToId :: Path /-> UUID.Tagged
         , cancelers :: UUID /-> Array Canceler
             -- { nodes :: UUID.ToNode /-> Array Canceler
             -- , inlets :: UUID.ToInlet /-> Array Canceler
@@ -73,14 +71,14 @@ data Patch d =
     Patch
         UUID
         Path
-        (Set UUID) -- nodes
+        (Set UUID.ToNode)
 data Node d =
     Node
         UUID
         Path
         (ProcessF d)
-        { inlets :: Set UUID
-        , outlets :: Set UUID
+        { inlets :: Set UUID.ToInlet
+        , outlets :: Set UUID.ToOutlet
         , inletsFlow :: InletsFlow d
         , outletsFlow :: OutletsFlow d
         , pushToInlets :: PushToInlets d
@@ -105,8 +103,8 @@ data Outlet d =
 data Link =
     Link
         UUID
-        { outlet :: UUID
-        , inlet :: UUID
+        { outlet :: UUID.ToOutlet
+        , inlet :: UUID.ToInlet
         }
 
 
@@ -140,6 +138,3 @@ instance eqOutlet :: Eq (Outlet d) where
 
 instance eqLink :: Eq Link where
     eq (Link lidA _) (Link lidB _) = (lidA == lidB)
-
-instance showLink :: Show Link where
-    show (Link outletPath inletPath) = "Link " <> show outletPath <> " -> " <> show inletPath
