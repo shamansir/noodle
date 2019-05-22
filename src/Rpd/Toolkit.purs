@@ -1,5 +1,8 @@
 module Rpd.Toolkit
-    ( Toolkit
+    ( Toolkit, ToolkitName
+    , NodeDefAlias(..), ChannelDefAlias(..)
+    , InletAlias(..), OutletAlias(..)
+    , NodeDef
     ) where
 
 import Prelude
@@ -15,21 +18,25 @@ import Rpd.Process (ProcessF)
 import Rpd.Channel (class Channel)
 
 
--- newtype NodeAlias = NodeAlias String
--- newtype ChannelAlias = ChannelAlias String
--- newtype InletAlias = InletAlias String
--- newtype OutletAlias = OutletAlias String
+newtype ToolkitName = ToolkitName String
+newtype NodeDefAlias = NodeDefAlias String
+newtype ChannelDefAlias = ChannelDefAlias String
+newtype InletAlias = InletAlias String
+newtype OutletAlias = OutletAlias String
 
 
-type Toolkit d c =
+type NodeDef d =
+    { process :: ProcessF d
+    , inlets :: List (InletAlias /\ ChannelDefAlias)
+    , outlets :: List (OutletAlias /\ ChannelDefAlias)
+    }
+
+
+type Toolkit c d =
     Channel c d =>
-        { name :: String
-        , nodes :: String /->
-            { name :: String
-            , process :: ProcessF d
-            , inlets :: List (String /\ c)
-            , outlets :: List (String /\ c)
-            }
+        { name :: ToolkitName
+        , nodes :: NodeDefAlias /-> NodeDef d
+        , channels :: ChannelDefAlias /-> c
         }
 
 
