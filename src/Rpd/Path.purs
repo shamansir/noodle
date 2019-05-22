@@ -3,7 +3,7 @@ module Rpd.Path
     , toPatch, toNode, toInlet, toOutlet
     , getPatchPath, getNodePath
     , getPatchPath', getNodePath'
-    , ToPatch, ToNode, ToInlet, ToOutlet
+    , ToPatch(..), ToNode(..), ToInlet(..), ToOutlet(..)
     , class MarksPath, lift
     )
     where

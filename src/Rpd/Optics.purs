@@ -5,7 +5,7 @@ module Rpd.Optics
     , _node, _nodeByPath, _nodeInlet, _nodeOutlet, _nodeInletsFlow, _nodeOutletsFlow
     , _inlet, _inletByPath, _inletFlow, _inletPush
     , _outlet, _outletByPath, _outletFlow, _outletPush
-    , _link, _linkByPath
+    , _link--, _linkByPath
     , _cancelers, _cancelersByPath
     , extractPatch, extractNode, extractInlet, extractOutlet, extractLink
     )
@@ -81,7 +81,7 @@ _patch uuid = _uuidLens PatchEntity extractPatch $ UUID.liftTagged uuid
 
 
 _patchByPath :: forall d. Path.ToPatch -> Getter' (Network d) (Maybe (Patch d))
-_patchByPath = _pathGetter extractPatch
+_patchByPath = Path.lift >>> _pathGetter extractPatch
 
 
 _patchNode :: forall d. UUID.ToPatch -> UUID.ToNode -> Lens' (Network d) (Maybe Unit)
@@ -107,8 +107,8 @@ _node :: forall d. UUID.ToNode -> Lens' (Network d) (Maybe (Node d))
 _node uuid = _uuidLens NodeEntity extractNode $ UUID.liftTagged uuid
 
 
-_nodeByPath :: forall d. Path -> Getter' (Network d) (Maybe (Node d))
-_nodeByPath = _pathGetter extractNode
+_nodeByPath :: forall d. Path.ToNode -> Getter' (Network d) (Maybe (Node d))
+_nodeByPath = Path.lift >>> _pathGetter extractNode
 
 
 _nodeInlet :: forall d. UUID.ToNode -> UUID.ToInlet -> Lens' (Network d) (Maybe Unit)
@@ -169,7 +169,7 @@ _inlet uuid = _uuidLens InletEntity extractInlet $ UUID.liftTagged uuid
 
 
 _inletByPath :: forall d. Path.ToInlet -> Getter' (Network d) (Maybe (Inlet d))
-_inletByPath = _pathGetter extractInlet
+_inletByPath = Path.lift >>> _pathGetter extractInlet
 
 
 _outlet :: forall d. UUID.ToOutlet -> Lens' (Network d) (Maybe (Outlet d))
@@ -177,15 +177,15 @@ _outlet uuid = _uuidLens OutletEntity extractOutlet $ UUID.liftTagged uuid
 
 
 _outletByPath :: forall d. Path.ToOutlet -> Getter' (Network d) (Maybe (Outlet d))
-_outletByPath = _pathGetter extractOutlet
+_outletByPath = Path.lift >>> _pathGetter extractOutlet
 
 
 _link :: forall d. UUID.ToLink -> Lens' (Network d) (Maybe Link)
 _link uuid = _uuidLens LinkEntity extractLink $ UUID.liftTagged uuid
 
 
-_linkByPath :: forall d. Path.ToLink -> Getter' (Network d) (Maybe Link)
-_linkByPath = _pathGetter extractLink
+-- _linkByPath :: forall d. Path.ToLink -> Getter' (Network d) (Maybe Link)
+-- _linkByPath = _pathGetter extractLink
 
 
 -- _networkPatch ::

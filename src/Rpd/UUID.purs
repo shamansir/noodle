@@ -5,10 +5,12 @@ module Rpd.UUID
     , Tagged
     , ToPatch(..), ToNode(..), ToInlet(..), ToOutlet(..), ToLink(..)
     , Tag, liftTagged, class IsTagged, tag, uuid
+    , toPatch, toNode, toInlet, toOutlet, toLink
     ) where
 
 
 import Prelude
+import Data.Maybe
 import Effect (Effect)
 
 
@@ -112,6 +114,31 @@ instance ordEntity :: Ord Tagged where
     GT -> GT
     LT -> LT
     EQ -> compare ( uuid a ) ( uuid b )
+
+
+toPatch :: Tagged -> Maybe ToPatch
+toPatch x | tag x == ToPatchT = Just $ ToPatch $ uuid x
+toPatch x | otherwise = Nothing
+
+
+toNode :: Tagged -> Maybe ToNode
+toNode x | tag x == ToNodeT = Just $ ToNode $ uuid x
+toNode x | otherwise = Nothing
+
+
+toInlet :: Tagged -> Maybe ToInlet
+toInlet x | tag x == ToInletT = Just $ ToInlet $ uuid x
+toInlet x | otherwise = Nothing
+
+
+toOutlet :: Tagged -> Maybe ToOutlet
+toOutlet x | tag x == ToOutletT = Just $ ToOutlet $ uuid x
+toOutlet x | otherwise = Nothing
+
+
+toLink :: Tagged -> Maybe ToLink
+toLink x | tag x == ToLinkT = Just $ ToLink $ uuid x
+toLink x | otherwise = Nothing
 
 
 -- mymap =

@@ -46,6 +46,7 @@ data PushToOutlets d = PushToOutlets (PushF (Path.ToOutlet /\ UUID.ToOutlet /\ d
         -- FIXME: PushF (Maybe OutletInNode /\ d)
 
 
+-- TODO: Make `Entity` a type kind?
 data Entity d
     = PatchEntity (Patch d)
     | NodeEntity (Node d)
@@ -70,13 +71,13 @@ data Network d =
         }
 data Patch d =
     Patch
-        UUID
-        Path
+        UUID.ToPatch
+        Path.ToPatch
         (Set UUID.ToNode)
 data Node d =
     Node
-        UUID
-        Path
+        UUID.ToNode
+        Path.ToNode
         (ProcessF d)
         { inlets :: Set UUID.ToInlet
         , outlets :: Set UUID.ToOutlet
@@ -88,22 +89,22 @@ data Node d =
 data Inlet d =
     Inlet
         UUID
-        Path
+        Path.ToInlet
         -- (forall c. Channel c d => c)
         { flow :: InletFlow d
         , push :: PushToInlet d
         }
 data Outlet d =
     Outlet
-        UUID
-        Path
+        UUID.ToOutlet
+        Path.ToOutlet
         -- (forall c. Channel c d => c)
         { flow :: OutletFlow d
         , push :: PushToOutlet d
         }
 data Link =
     Link
-        UUID
+        UUID.ToLink
         { outlet :: UUID.ToOutlet
         , inlet :: UUID.ToInlet
         }
