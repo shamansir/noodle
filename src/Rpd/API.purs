@@ -2,15 +2,15 @@
 module Rpd.API
     ( Rpd, RpdError, init
     , (</>), andThen
-    -- , connect, disconnectAll, disconnectTop
-    -- , addPatch, addPatch', addNode, addNode', addInlet, addInlet', addOutlet, addOutlet'
-    -- , removeInlet
-    -- , subscribeInlet, subscribeOutlet, subscribeAllInlets, subscribeAllOutlets
-    -- , subscribeChannelsData, subscribeNode  -- subscribeAllData
-    -- , subscribeInlet', subscribeOutlet', subscribeAllInlets', subscribeAllOutlets'
-    -- , subscribeChannelsData', subscribeNode'  -- subscribeAllData'
-    -- , sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
-    --, findPatch, findNode, findOutlet, findInlet
+    , connect, disconnectAll, disconnectTop
+    , addPatch, addNode, addInlet, addOutlet
+    , removeInlet
+    , subscribeInlet, subscribeOutlet, subscribeAllInlets, subscribeAllOutlets
+    , subscribeChannelsData, subscribeNode  -- subscribeAllData
+    , subscribeInlet', subscribeOutlet', subscribeAllInlets', subscribeAllOutlets'
+    , subscribeChannelsData', subscribeNode'  -- subscribeAllData'
+    , sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
+    -- , findPatch, findNode, findOutlet, findInlet
     ) where
 
 import Debug.Trace
@@ -18,27 +18,27 @@ import Debug.Trace
 import Prelude
 
 import Control.Monad.Except.Trans (ExceptT, except)
-import Control.MonadZero (empty)
 
-import Data.Array ((!!), (:), snoc)
-import Data.Array as Array
+--import Data.Array ((!!), (:), snoc)
+import Data.Array (snoc)
+-- import Data.Array as Array
 import Data.Bitraversable (bisequence)
 import Data.Either (Either(..), note)
 import Data.Foldable (foldr)
 import Data.Lens (view, set, setJust)
-import Data.Lens.At (at)
 import Data.List (List)
 import Data.List as List
 import Data.Map as Map
-import Data.Maybe (Maybe(..), fromMaybe, maybe, isJust)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set (Set)
 import Data.Set as Set
-import Data.Traversable (for, sequence, traverse, traverse_)
-import Data.TraversableWithIndex (forWithIndex)
-import Data.Tuple (uncurry, fst)
+--import Data.Traversable (for, sequence, traverse, traverse_)
+import Data.Traversable (traverse, traverse_)
+-- import Data.TraversableWithIndex (forWithIndex)
 import Data.Tuple.Nested ((/\), type (/\), over1)
 
-import Effect (Effect, foreachE)
+--import Effect (Effect, foreachE)
+import Effect (Effect)
 import Effect.Class (liftEffect)
 
 import FRP.Event as E
@@ -46,13 +46,13 @@ import FRP.Event as E
 import Rpd.Network
 import Rpd.Network (empty) as Network
 import Rpd.UUID as UUID
-import Rpd.UUID (UUID)
+-- import Rpd.UUID (UUID)
 import Rpd.Util (type (/->), PushableFlow(..), Subscriber, Canceler, Flow, never)
-import Rpd.Util as RU
+-- import Rpd.Util as RU
 import Rpd.Optics
-import Rpd.Path (Path)
+-- import Rpd.Path (Path)
 import Rpd.Path as Path
-import Rpd.Process
+import Rpd.Process (InletAlias, InletHandler(..), OutletAlias, OutletHandler(..), ProcessF(..))
 
 
 infixl 6 snoc as +>

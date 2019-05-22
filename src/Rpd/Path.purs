@@ -148,16 +148,28 @@ getNodePath' :: Path -> Maybe Path
 getNodePath' p = ToNode' <$> getNodePath p
 
 
-instance showPath :: Show Path where
-    show (ToPatch' (ToPatch alias)) =
+instance showToPatch :: Show ToPatch where
+    show (ToPatch alias) =
         "<P@" <> alias <> ">"
-    show (ToNode' (ToNode { patch, node })) =
+
+instance showToNode :: Show ToNode where
+    show (ToNode { patch, node }) =
         "<P@" <> patch <> "/N@" <> node <> ">"
-    show (ToInlet' (ToInlet { patch, node, inlet })) =
+
+instance showToInlet :: Show ToInlet where
+    show (ToInlet { patch, node, inlet }) =
         "<P@" <> patch <> "/N@" <> node <> "/@I" <> inlet <> ">"
-    show (ToOutlet' (ToOutlet { patch, node, outlet })) =
+
+instance showToOutlet :: Show ToOutlet where
+    show (ToOutlet { patch, node, outlet }) =
         "<P@" <> patch <> "/N@" <> node <> "/@O" <> outlet <> ">"
 
+
+instance showPath :: Show Path where
+    show (ToPatch' p)  = "<" <> show p <> ">"
+    show (ToNode' n)   = "<" <> show n <> ">"
+    show (ToInlet' i)  = "<" <> show i <> ">"
+    show (ToOutlet' o) = "<" <> show o <> ">"
 
 derive instance eqPath :: Eq Path
 derive instance ordPath :: Ord Path
