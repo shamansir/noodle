@@ -1,4 +1,4 @@
-module Rpd.CommandParser where
+module Rpd.Parser.RpdFile where
 
 import Prelude
 
@@ -9,6 +9,9 @@ import Data.Array (fromFoldable)
 import Data.String as String
 import Data.Int (fromString)
 import Data.Maybe (Maybe(..), fromMaybe')
+import Data.Either (Either(..))
+import Data.List (List(..))
+import Data.List.NonEmpty as NEL
 import Data.List.NonEmpty (NonEmptyList(..))
 import Data.Char.Unicode (isSpace, isDigit)
 import Data.Lens ((^.))
@@ -23,10 +26,22 @@ import Text.Parsing.StringParser.Combinators (many1, endBy1, sepBy1, optionMaybe
 import Text.Parsing.StringParser.Expr (Assoc(..), Operator(..), buildExprParser)
 import Text.Parsing.Parser.Token (space)
 
-import Rpd.Command (Command, StringCommand)
-import Rpd.Command as Cmd
+-- import Rpd.Command (Command)
+-- import Rpd.Command as Cmd
 import Rpd.Toolkit as T
 import Rpd.Path as P
+
+
+type RpdFile = List RpdFileCommand
+
+
+data RpdFileCommand
+    = AddPatch P.ToPatch
+    | AddNode P.ToNode T.NodeDefAlias
+    | AddInlet P.ToInlet T.ChannelDefAlias
+    | AddOutlet P.ToOutlet T.ChannelDefAlias
+    | Connect P.ToOutlet P.ToInlet
+    -- Send P.ToInlet (CanParse d => d)
 
 
 nextChars :: Parser String
@@ -36,6 +51,14 @@ nextChars =
 
 delim :: Parser Unit
 delim = (many1 $ satisfy isSpace) $> unit
+
+
+newline :: Parser Unit
+newline = (many1 $ satisfy ((==) '\n')) $> unit
+
+
+slash :: Parser Unit
+slash = satisfy ((==) '/') $> unit
 
 
 number :: Parser Int
@@ -54,44 +77,24 @@ loadString list =
         $ fromFoldable list
 
 
-addNode :: forall d. T.Toolkit d -> Parser (Maybe (Command d))
-addNode toolkit =
-    addNode' >>=
-        \command ->
-            pure $ case command of
-                (Cmd.AddNode' patchPath name) ->
-                    T.findNodeDef name toolkit
-                        <#> Cmd.AddNode patchPath (P.mkAlias name)
-                _ -> Nothing
-
-
--- addNode toolkit = do
-    -- command <- addNode'
-    -- pure $ case command of
-    --     (Cmd.AddNode' patchPath name) ->
-    --         let node = ?wh
-    --         in Just $ Cmd.AddNode patchPath node
-    --     _ -> Nothing
-
-
-addNode' :: Parser StringCommand
-addNode' = do
+addNode :: Parser RpdFileCommand
+addNode = do
     _ <- string "node"
     delim
     patchAlias <- nextChars
+    slash
+    nodeAlias <- nextChars
     delim
     nodeDefAlias <- nextChars
-    pure $ Cmd.AddNode' (P.PatchPath $ P.mkAlias patchAlias) nodeDefAlias
+    pure $ AddNode (P.toNode patchAlias nodeAlias) (T.NodeDefAlias nodeDefAlias)
 
 
-addPatch :: forall d. T.Toolkit d -> Parser (Maybe (Command d))
-addPatch toolkit
-    = string "patch" $> Just Cmd.Bang
-
-
-addPatch' :: Parser StringCommand
-addPatch'
-    = string "patch" $> Cmd.Bang'
+addPatch :: forall d. Parser RpdFileCommand
+addPatch = do
+    _ <- string "patch"
+    delim
+    patchAlias <- nextChars
+    pure $ AddPatch (P.toPatch patchAlias)
 
 
 
@@ -107,22 +110,30 @@ addPatch'
 --     <|> string "9" $> 9
 
 
-parser :: forall d. T.Toolkit d -> Parser (Maybe (Command d))
-parser toolkit
-     =  addNode toolkit
-    <|> addPatch toolkit
+-- parser :: forall d. T.Toolkit d -> Parser RpdFileCommand
+-- parser toolkit
+--      =  addNode toolkit
+--     <|> addPatch toolkit
 
 
-parser' :: Parser StringCommand
-parser'
-     =  addNode'
-    <|> addPatch'
+cmdParser :: Parser RpdFileCommand
+cmdParser
+     =  addNode
+    <|> addPatch
 
 
--- TODO: merge Nothing with ParseError
-parse :: forall d. String -> T.Toolkit d -> Either ParseError (Maybe (Command d))
-parse = flip (runParser <<< parser)
+fileParser :: Parser RpdFile
+fileParser =
+    NEL.toList <$> (many1 $ do
+        cmd <- cmdParser
+        newline
+        pure cmd)
 
 
-parse' :: String -> Either ParseError StringCommand
-parse' = runParser parser'
+-- TODO: use toolkit to load the appropriate node etc.
+parse :: forall d c. String -> T.Toolkit d c -> Either ParseError RpdFile
+parse src _ = runParser fileParser src
+
+
+-- parse' :: String -> Either ParseError StringCommand
+-- parse' = runParser parser'

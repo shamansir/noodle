@@ -8,7 +8,7 @@ import Data.Tuple.Nested ((/\))
 
 import Rpd.Command (Command(..))
 import Rpd.API as Rpd
-import Rpd.API (Rpd, addPatch') as R
+import Rpd.API (Rpd, addPatch) as R
 import Rpd.API ((</>))
 import Rpd.Network (Network) as R
 import Rpd.Process (InletHandler(..), OutletHandler(..)) as R
@@ -30,27 +30,24 @@ apply Bang pushCmd nw =
         onOutletData outletPath d =
             pushCmd $ GotOutletData outletPath d
 apply (AddPatch patchDef) pushCmd nw =
-    R.addPatch' patchDef nw
+    R.addPatch patchDef nw
         -- FIXME: subscribe the nodes in the patch
-apply (AddNode patchPath nodeDef) pushCmd nw =
-    let nodePath = P.nodeInPatch patchPath 0 -- FIXME
-    in
-        Rpd.addNode' patchPath nodeDef nw
-            -- FIXME: `nodePath` should be real or/and just add `subscribeLastNode` method etc.
-            -- FIXME: `onInletData`/`onOutletData` do not receive the proper state
-            --        of the network this way (do they need it?), but they should
-            --        (pass the current network state in the Process function?)
-            </> Rpd.subscribeNode nodePath
-                    (onNodeInletData nodePath)
-                    (onNodeOutletData nodePath)
+apply (AddNode nodePath) pushCmd nw =
+    Rpd.addNode nodePath nw
+        -- FIXME: `onInletData`/`onOutletData` do not receive the proper state
+        --        of the network this way (do they need it?), but they should
+        --        (pass the current network state in the Process function?)
+        </> Rpd.subscribeNode nodePath
+                (onNodeInletData nodePath)
+                (onNodeOutletData nodePath)
     where
         -- addModel = pure <<< ((/\) model)
         onNodeInletData nodePath (inletId /\ d) =
-            pushCmd $ GotInletData (P.inletInNode nodePath inletId) d
+            pushCmd $ GotInletData (P.toInlet nodePath inletId) d
         onNodeOutletData nodePath maybeData =
             case maybeData of
                 Just (outletId /\ d) ->
-                    pushCmd $ GotOutletData (P.outletInNode nodePath outletId) d
+                    pushCmd $ GotOutletData (P.toOutlet nodePath outletId) d
                 Nothing -> pure unit
 apply (AddInlet nodePath inletDef) pushCmd nw =
     let

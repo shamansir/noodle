@@ -7,25 +7,28 @@ import Data.Generic.Rep.Eq as GEq
 import Data.Generic.Rep.Show as GShow
 
 import Rpd.Channel (class Channel)
-import Rpd.Path
+import Rpd.Channel as Channel
+import Rpd.Path as Path
 import Rpd.UUID
 
 
 
-data Command d c
+data Command d
     = Bang
-    | AddPatch Path
-    | AddNode Path
-    | AddInlet Path (Channel c d => c)
-    | AddOutlet Path (Channel c d => c)
+    | AddPatch Path.ToPatch
+    | AddNode Path.ToNode
+    | AddInlet Path.ToInlet
+    | AddOutlet Path.ToOutlet
+    | AddInlet' Path.ToInlet (forall c. Channel c d => c)
+    | AddOutlet' Path.ToOutlet (forall c. Channel c d => c)
     -- | AddInlet Path (forall c. Show c => Channel c d => c)
     -- | AddOutlet Path (forall c. Show c => Channel c d => c)
-    | Connect { outlet :: Path, inlet :: Path }
-    | Disconnect { outlet :: Path, inlet :: Path }
-    | GotInletData Path d
-    | GotOutletData Path d
-    | SendToInlet Path d
-    | SendToOutlet Path d
+    | Connect { outlet :: Path.ToOutlet, inlet :: Path.ToInlet }
+    | Disconnect { outlet :: Path.ToOutlet, inlet :: Path.ToInlet }
+    | GotInletData Path.ToInlet d
+    | GotOutletData Path.ToOutlet d
+    | SendToInlet Path.ToInlet d
+    | SendToOutlet Path.ToOutlet d
     -- | DeleteNode
     -- | DeleteInlet
     -- | DeleteOutlet
@@ -39,12 +42,14 @@ data Command d c
 
 
 -- instance showCommand :: Show d => Show (Command d) where
-instance showCommand :: Channel c d => Show (Command d c) where
+instance showCommand :: Show d => Show (Command d) where
     show Bang = "Bang"
     show (AddPatch path) = "AddPatch " <> show path
     show (AddNode path) = "AddNode " <> show path
-    show (AddInlet path channel) = "AddInlet " <> show path
-    show (AddOutlet path channel) = "AddOutlet " <> show path <> " " <> show channel
+    show (AddInlet path) = "AddInlet " <> show path
+    show (AddOutlet path) = "AddOutlet " <> show path
+    show (AddInlet' path channel) = "AddInlet' " <> show path -- TODO: <> show channel
+    show (AddOutlet' path channel) = "AddOutlet' " <> show path -- TODO: <> show channel
     show (Connect { outlet : oPath, inlet : iPath }) =
         "Connect " <> show oPath <> " " <> show iPath
     show (Disconnect { outlet : oPath, inlet : iPath }) =
