@@ -35,5 +35,5 @@ run' onError onSuccess rpd =
     -- FIXME: we should also call all the cancelers left in the network, before "exiting"
 
 
-init :: forall d. String -> API.Rpd (Network d)
+init :: forall d. API.Rpd (Network d)
 init = API.init

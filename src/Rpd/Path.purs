@@ -5,6 +5,7 @@ module Rpd.Path
     , getPatchPath', getNodePath'
     , ToPatch(..), ToNode(..), ToInlet(..), ToOutlet(..)
     , class MarksPath, lift
+    , explodePatchPath, explodeNodePath, explodeInletPath, explodeOutletPath
     )
     where
 
@@ -13,6 +14,7 @@ import Prelude
 
 import Data.List
 import Data.Maybe
+import Data.Tuple.Nested (type (/\), (/\))
 
 
 -- FIXME: consider moving to random hashes, since adding/removing the things
@@ -146,6 +148,22 @@ getNodePath (ToOutlet' (ToOutlet { patch, node })) = Just $ toNode patch node
 
 getNodePath' :: Path -> Maybe Path
 getNodePath' p = ToNode' <$> getNodePath p
+
+
+explodePatchPath :: ToPatch -> Alias
+explodePatchPath (ToPatch alias) = alias
+
+
+explodeNodePath :: ToNode -> Alias /\ Alias
+explodeNodePath (ToNode { patch, node }) = patch /\ node
+
+
+explodeInletPath :: ToInlet -> Alias /\ Alias /\ Alias
+explodeInletPath (ToInlet { patch, node, inlet }) = patch /\ node /\ inlet
+
+
+explodeOutletPath :: ToOutlet -> Alias /\ Alias /\ Alias
+explodeOutletPath (ToOutlet { patch, node, outlet }) = patch /\ node /\ outlet
 
 
 instance showToPatch :: Show ToPatch where

@@ -11,7 +11,7 @@ import Rpd.API as Rpd
 import Rpd.API (Rpd, addPatch) as R
 import Rpd.API ((</>))
 import Rpd.Network (Network) as R
-import Rpd.Process (InletHandler(..), OutletHandler(..)) as R
+import Rpd.Process (InletHandler(..), OutletHandler(..), InletAlias) as R
 import Rpd.Path as P
 
 
@@ -41,37 +41,30 @@ apply (AddNode nodePath) pushCmd nw =
                 (onNodeInletData nodePath)
                 (onNodeOutletData nodePath)
     where
+        (patchAlias /\ nodeAlias) = P.explodeNodePath nodePath
         -- addModel = pure <<< ((/\) model)
-        onNodeInletData nodePath (inletId /\ d) =
-            pushCmd $ GotInletData (P.toInlet nodePath inletId) d
-        onNodeOutletData nodePath maybeData =
-            case maybeData of
-                Just (outletId /\ d) ->
-                    pushCmd $ GotOutletData (P.toOutlet nodePath outletId) d
-                Nothing -> pure unit
-apply (AddInlet nodePath inletDef) pushCmd nw =
+        onNodeInletData nodePath (inletAlias /\ _ /\ d) =
+            pushCmd $ GotInletData (P.toInlet patchAlias nodeAlias inletAlias) d
+        onNodeOutletData nodePath (outletAlias /\ _ /\ d) =
+            pushCmd $ GotOutletData (P.toOutlet patchAlias nodeAlias outletAlias) d
+apply (AddInlet inletPath) pushCmd nw =
     let
-        inletId = 0
-        inletPath = P.inletInNode nodePath inletId
         onInletData d =
-            pushCmd $ GotInletData (P.inletInNode nodePath inletId) d
+            pushCmd $ GotInletData inletPath d
     in
-        -- Rpd.makeId -> Effect String ??
-        Rpd.addInlet' nodePath inletDef nw
+        Rpd.addInlet inletPath nw
             </> Rpd.subscribeInlet inletPath (R.InletHandler onInletData)
-apply (AddOutlet nodePath outletDef) pushCmd nw =
+apply (AddOutlet outletPath) pushCmd nw =
     let
-        outletId = 0
-        outletPath = P.outletInNode nodePath outletId
         onOutletData d =
-            pushCmd $ GotOutletData (P.outletInNode nodePath outletId) d
+            pushCmd $ GotOutletData outletPath d
     in
-        Rpd.addOutlet' nodePath outletDef nw
+        Rpd.addOutlet outletPath nw
             </> Rpd.subscribeOutlet outletPath (R.OutletHandler onOutletData)
-apply (Connect inletPath outletPath) _ nw =
-    Rpd.connect inletPath outletPath nw
-apply (Disconnect inletPath outletPath) _ nw =
-    Rpd.disconnectTop inletPath outletPath nw
+apply (Connect { inlet : inletPath, outlet : outletPath }) _ nw =
+    Rpd.connect outletPath inletPath nw
+apply (Disconnect { inlet : inletPath, outlet : outletPath }) _ nw =
+    Rpd.disconnectTop outletPath inletPath nw
 -- TODO: Connect etc.
 apply _ _ nw = pure nw
 
