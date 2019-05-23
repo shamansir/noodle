@@ -43,6 +43,22 @@ newtype ToOutlet = ToOutlet UUID
 newtype ToLink = ToLink UUID
 
 
+instance showToPatch :: Show ToPatch where
+  show (ToPatch (UUID uuid))  = "{P@" <> uuid <> "}"
+
+instance showToNode :: Show ToNode where
+  show (ToNode (UUID uuid))   = "{N@" <> uuid <> "}"
+
+instance showToInlet :: Show ToInlet where
+  show (ToInlet (UUID uuid))  = "{I@" <> uuid <> "}"
+
+instance showToOutlet :: Show ToOutlet where
+  show (ToOutlet (UUID uuid)) = "{O@" <> uuid <> "}"
+
+instance showToLink :: Show ToLink where
+  show (ToLink (UUID uuid))   = "{L@" <> uuid <> "}"
+
+
 derive instance eqToPatch :: Eq ToPatch
 derive instance ordToPatch :: Ord ToPatch
 derive instance eqToNode :: Eq ToNode

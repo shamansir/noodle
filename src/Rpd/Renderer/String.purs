@@ -11,9 +11,11 @@ import Data.Array as Array
 import Data.List as List
 import Data.Set as Set
 import Data.Set (Set)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Lens as L
 import Data.Either (Either(..))
 import Data.String (joinWith)
+import Data.Tuple.Nested ((/\))
 
 import Rpd.Network
     ( Network(..)
@@ -24,8 +26,9 @@ import Rpd.Network
     , Link(..)
     ) as R
 import Rpd.API (RpdError) as R
-import Rpd.Optics (_node, _inlet, _outlet)
+import Rpd.Optics (_node, _inlet, _outlet, _networkPatches, _networkLinks)
 import Rpd.Render (PushCmd, Renderer(..))
+import Rpd.Path as P
 
 
 type StringRenderer d = Renderer d String
@@ -60,7 +63,7 @@ stringRenderer =
 
 
 view :: forall d. PushCmd d -> Either R.RpdError (R.Network d) -> String
-view _ (Right nw@(R.Network { name } { patches, links })) =
+view _ (Right nw@(R.Network { name, patches })) =
     "Network " <> name <> ":" <> lineBreak
         <> count patchCounter patchCount
         <> (if patchCount > 0 then
@@ -71,22 +74,24 @@ view _ (Right nw@(R.Network { name } { patches, links })) =
                 lineBreak <> space <> linksInfo
             else "")
     where
-        patchCount = Map.size patches
-        linkCount = Map.size links
+        allLinks = L.view _networkLinks nw
+        allPatches = L.view _networkPatches nw
+        patchCount = List.length allPatches
+        linkCount = List.length allLinks
         patchesInfo =
             joinWith (lineBreak <> space)
-                $ (viewPatch nw <$> Map.values patches)
+                $ (viewPatch nw <$> allPatches)
                     # List.toUnfoldable
         linksInfo =
             joinWith lineBreak
-                $ (viewLink nw <$> Map.values links)
+                $ (viewLink nw <$> allLinks)
                     # List.toUnfoldable
 view _ (Left err) =
     "<" <> show err <> ">"
 
 
 viewPatch :: forall d. R.Network d -> R.Patch d -> String
-viewPatch nw (R.Patch id { name } { nodes }) =
+viewPatch nw (R.Patch id path@(P.ToPatch name) nodes) =
     "Patch " <> name <> " " <> show id <> ":" <> lineBreak <> space
         <> count nodeCounter (Set.size nodes) <> lineBreak <> space <> space
         <> nodesInfo
@@ -99,8 +104,8 @@ viewPatch nw (R.Patch id { name } { nodes }) =
 
 
 viewNode :: forall d. R.Network d -> R.Node d -> String
-viewNode nw (R.Node path { name } { inlets, outlets }) =
-    "Node " <> name <> " " <> show path <> ":" <> lineBreak
+viewNode nw (R.Node _ path@(P.ToNode { node }) _ { inlets, outlets }) =
+    "Node " <> node <> " " <> show path <> ":" <> lineBreak
         <> twiceSpace <> count inletCounter inletCount
         <> (if inletCount > 0 then
                 lineBreak <> tripleSpace <> inletsInfo
@@ -127,18 +132,23 @@ viewNode nw (R.Node path { name } { inlets, outlets }) =
 
 
 viewInlet :: forall d. R.Network d -> R.Inlet d -> String
-viewInlet _ (R.Inlet path { label } _) =
-    "Inlet " <> label <> " " <> show path
+viewInlet _ (R.Inlet _ path@(P.ToInlet { inlet }) _) =
+    "Inlet " <> inlet <> " " <> show path
 
 
 viewOutlet :: forall d. R.Network d -> R.Outlet d -> String
-viewOutlet _ (R.Outlet path { label } _) =
-    "Outlet " <> label <> " " <> show path
+viewOutlet _ (R.Outlet _ path@(P.ToOutlet { outlet }) _) =
+    "Outlet " <> outlet <> " " <> show path
 
 
 viewLink :: forall d. R.Network d -> R.Link -> String
-viewLink _ (R.Link outletPath inletPath) =
-    "Link from " <> show outletPath <> " to " <> show inletPath
+viewLink nw (R.Link _ { outlet : outletUuid, inlet : inletUuid }) =
+    case L.view (_outlet outletUuid) nw /\ L.view (_inlet inletUuid) nw of
+        Just (R.Outlet _ outletPath _) /\ Just (R.Inlet _ inletPath _) ->
+            "Link from " <> show (outletPath :: P.ToOutlet) <> " to " <> show inletPath
+        _ ->
+            "Link, which is detached or lost in space"
+
 
 
 -- collectSetInfo nw viewItem lens source =

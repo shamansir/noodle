@@ -88,7 +88,7 @@ andThen = (>>=)
 
 someApiFunc :: forall d. Rpd (Network d)
 someApiFunc =
-    init
+    init "test"
         </> addPatch (Path.toPatch "foo")
         </> addNode (Path.toNode "foo" "test1")
         </> addNode (Path.toNode "foo" "test2")
@@ -103,8 +103,8 @@ someApiFunc =
 -- instance applicativeRpdEffOp :: Applicative (RpdEffOp d) where
 
 
-init :: forall d. Rpd (Network d)
-init = pure Network.empty
+init :: forall d. String -> Rpd (Network d)
+init = pure <<< Network.empty
 
 
 -- makeUuid :: forall d. Rpd UUID.UUID
@@ -663,6 +663,8 @@ disconnectAll
     -> Rpd (Network d)
 disconnectAll outletPath inletPath
     nw@(Network { registry }) = do
+    -- FIXME: delete links not from all the network but inside the specific patch
+    --        (so even don't use the new `_networkLinks` lens)
     ouuid <- uuidByPath UUID.toOutlet outletPath nw
     iuuid <- uuidByPath UUID.toInlet inletPath nw
     let
@@ -684,6 +686,8 @@ disconnectAllComingFrom
     -> Rpd (Network d)
 disconnectAllComingFrom path
     nw@(Network { registry }) = do
+    -- FIXME: delete links not from all the network but inside the specific patch
+    --        (so even don't use the new `_networkLinks` lens)
     uuid <- uuidByPath UUID.toOutlet path nw
     let
         linkForDeletion (Link _ { outlet : uuid' }) = (uuid' == uuid)
@@ -703,6 +707,8 @@ disconnectAllComingTo
     -> Rpd (Network d)
 disconnectAllComingTo path
     nw@(Network { registry }) = do
+    -- FIXME: delete links not from all the network but inside the specific patch
+    --        (so even don't use the new `_networkLinks` lens)
     uuid <- uuidByPath UUID.toInlet path nw
     let
         linkForDeletion (Link _ { inlet : uuid' }) = (uuid' == uuid)

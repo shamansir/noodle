@@ -73,7 +73,7 @@ data Patch d =
     Patch
         UUID.ToPatch
         Path.ToPatch
-        (Set UUID.ToNode)
+        (Set UUID.ToNode) -- TODO: links also should be stored in a patch
 data Node d =
     Node
         UUID.ToNode
@@ -110,10 +110,10 @@ data Link =
         }
 
 
-empty :: forall d. Network d
-empty  =
+empty :: forall d. String -> Network d
+empty networkName =
     Network
-        { name : "My Network"
+        { name : networkName
         , patches : Set.empty
         , registry : Map.empty
         , pathToId : Map.empty

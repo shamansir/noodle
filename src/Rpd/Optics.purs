@@ -1,6 +1,6 @@
 module Rpd.Optics
     ( _entity, _pathToId
-    , _networkPatches, _networkInlets, _networkOutlets
+    , _networkPatches, _networkInlets, _networkOutlets, _networkLinks
     , _patch, _patchByPath, _patchNode
     , _node, _nodeByPath, _nodeInlet, _nodeOutlet, _nodeInletsFlow, _nodeOutletsFlow
     , _inlet, _inletByPath, _inletFlow, _inletPush
@@ -209,6 +209,12 @@ _networkOutlets :: forall d. Getter' (Network d) (List (Outlet d))
 _networkOutlets =
     to \nw@(Network { registry }) ->
         List.mapMaybe extractOutlet $ Map.values registry
+
+
+_networkLinks :: forall d. Getter' (Network d) (List Link)
+_networkLinks =
+    to \nw@(Network { registry }) ->
+        List.mapMaybe extractLink $ Map.values registry
 
 
 _cancelers :: forall d. UUID -> Lens' (Network d) (Maybe (Array Canceler))
