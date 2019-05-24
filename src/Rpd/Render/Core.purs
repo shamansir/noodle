@@ -21,9 +21,9 @@ import FRP.Event (Event)
 import FRP.Event as Event
 
 import Rpd (run) as R
-import Rpd.API as R
-import Rpd.Command as C
-import Rpd.CommandApply as C
+import Rpd.API (Rpd, RpdError) as R
+import Rpd.Command (Command) as C
+import Rpd.CommandApply (apply) as C
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
 

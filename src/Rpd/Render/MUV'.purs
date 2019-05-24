@@ -25,7 +25,7 @@ import Rpd (run) as R
 import Rpd.API ((</>))
 import Rpd.API (Rpd, RpdError) as R
 import Rpd.API as Rpd
-import Rpd.Path (nodePath, InletPath(..), OutletPath(..)) as R
+import Rpd.Path (toNode, ToNode(..), ToOutlet(..)) as R
 import Rpd.Command as C
 import Rpd.CommandApply as C
 import Rpd.Network (Network) as R
