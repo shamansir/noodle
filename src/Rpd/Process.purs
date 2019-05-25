@@ -83,4 +83,5 @@ data ProcessF d
     = Withhold
     -- | PassThrough -- TODO
     -- | Process (Receive d -> Effect (Send d))
+    -- TODO: one more option to produce Aff (and then cancel it on next iteration)
     | Process ((InletAlias -> Maybe d) -> Effect (OutletAlias -> Maybe d))

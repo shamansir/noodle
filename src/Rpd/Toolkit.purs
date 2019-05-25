@@ -3,6 +3,8 @@ module Rpd.Toolkit
     , NodeDefAlias(..), ChannelDefAlias(..)
     , InletAlias(..), OutletAlias(..)
     , NodeDef
+    , class Channel
+    , default, adapt, accept--, show
     ) where
 
 import Prelude
@@ -15,7 +17,6 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Rpd.Util (type (/->))
 import Rpd.Process (ProcessF)
-import Rpd.Channel (class Channel)
 
 
 newtype ToolkitName = ToolkitName String
@@ -25,18 +26,27 @@ newtype InletAlias = InletAlias String
 newtype OutletAlias = OutletAlias String
 
 
-type NodeDef d =
-    { process :: ProcessF d
-    , inlets :: List (InletAlias /\ ChannelDefAlias)
-    , outlets :: List (OutletAlias /\ ChannelDefAlias)
-    }
+-- FIXME: the name "Channel" is not right, it's rather Channels system... `ChannelDef`?
+class (Show c) <= Channel c d where
+    default :: c -> d
+    accept :: c -> d -> Boolean
+    adapt :: c -> d -> d
+    -- -- repr :: forall x. Show x => c -> d -> x
+    -- show :: c -> d -> String
+
+
+type NodeDef c d =
+    Channel c d =>
+        { process :: ProcessF d
+        , inlets :: List (InletAlias /\ c)
+        , outlets :: List (OutletAlias /\ c)
+        }
 
 
 type Toolkit c d =
     Channel c d =>
         { name :: ToolkitName
-        , nodes :: NodeDefAlias /-> NodeDef d
-        , channels :: ChannelDefAlias /-> c
+        , nodes :: NodeDefAlias /-> NodeDef c d
         }
 
 

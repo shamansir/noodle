@@ -53,6 +53,8 @@ import Rpd.Optics
 -- import Rpd.Path (Path)
 import Rpd.Path as Path
 import Rpd.Process (InletAlias, InletHandler(..), OutletAlias, OutletHandler(..), ProcessF(..))
+import Rpd.Toolkit (Toolkit)
+import Rpd.Toolkit as Toolkit
 
 
 infixl 6 snoc as +>
@@ -188,7 +190,37 @@ addNode path nw = do
          #  setJust (_patchNode patchUuid $ UUID.ToNode uuid) unit
         --  #  addInlets nodePath def.inletDefs
         -- </> addOutlets nodePath def.outletDefs
-        # updateNodeProcessFlow (UUID.ToNode uuid)
+         # updateNodeProcessFlow (UUID.ToNode uuid)
+
+
+addToolkitNode
+    :: forall c d
+     . Toolkit.Channel c d
+    => Path.ToNode
+    -> Toolkit.NodeDefAlias
+    -> Toolkit c d
+    -> Network d
+    -> Rpd (Network d)
+addToolkitNode path nodeAlias toolkit nw = do
+    nodeDef <- Map.lookup nodeAlias toolkit.nodes
+                    # exceptMaybe (RpdError "")
+    nw
+         # addNode path
+        </> addInlets nodeDef.inlets
+        </> addOutlets nodeDef.outlets
+        </> processWith path nodeDef.process
+    where
+        Path.ToNode { patch : patchAlias', node : nodeAlias' } = path
+        addInlets inlets nw
+            = foldr addInlet (pure nw) inlets
+        addOutlets outlets nw
+            = foldr addOutlet (pure nw) outlets
+        addInlet (Toolkit.InletAlias inletAlias /\ channel) rpd =
+            rpd </>
+                addChanelledInlet (Path.toInlet patchAlias' nodeAlias' inletAlias) channel
+        addOutlet (Toolkit.OutletAlias outletAlias /\ channel) rpd =
+            rpd </>
+                addChanelledOutlet (Path.toOutlet patchAlias' nodeAlias' outletAlias) channel
 
 
 processWith
@@ -249,14 +281,26 @@ addInlet path nw = do
        # updateNodeProcessFlow nodeUuid
 
 
--- addInlets :: forall d. NodePath -> List (InletDef d) -> Network d -> Rpd (Network d)
+-- addInlets :: forall d. List Path.ToInlet -> Network d -> Rpd (Network d)
 -- addInlets nodePath inletDefs nw =
-    -- FIXME: may appear not very optimal, since every `addInlet'`
-    --        call looks for the node again and again
-    -- foldr foldingF (pure nw) inletDefs
-    -- where
-    --     foldingF inletDef rpd =
-    --         rpd </> addInlet' nodePath inletDef
+--     -- FIXME: may appear not very optimal, since every `addInlet'`
+--     --        call looks for the node again and again
+--     foldr foldingF (pure nw) inletDefs
+--     where
+--         foldingF inletDef rpd =
+--             rpd </> addInlet' nodePath inletDef
+
+
+addChanelledInlet
+    :: forall c d
+     . Toolkit.Channel c d
+    => Path.ToInlet
+    -> c
+    -> Network d
+    -> Rpd (Network d)
+addChanelledInlet path channel nw =
+    -- FIXME: implement
+    nw # addInlet path
 
 
 removeInlet
@@ -322,6 +366,18 @@ addOutlet path nw = do
 --     where
 --         foldingF outletDef rpd =
 --             rpd </> addOutlet' nodePath outletDef
+
+
+addChanelledOutlet
+    :: forall c d
+     . Toolkit.Channel c d
+    => Path.ToOutlet
+    -> c
+    -> Network d
+    -> Rpd (Network d)
+addChanelledOutlet path channel nw =
+    -- FIXME: implement
+    nw # addOutlet path
 
 
 -- TODO: removeOutlet
@@ -837,6 +893,7 @@ buildOutletsFlow _ (Process processNode) (InletsFlow inletsFlow) inlets outlets 
                 -- _ -> inletVals
         processFlow = E.fold foldingF inletsFlow Map.empty
         processHandler inletsValues = do
+            -- TODO: could even produce Aff (and then cancel it on next iteration)
             let receive = flip Map.lookup $ inletsValues
             (send :: Path.Alias -> Maybe d) <- processNode receive
             _ <- traverse
