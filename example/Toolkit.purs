@@ -1,23 +1,27 @@
 module Example.Toolkit
-    ( patch
-    , colorNode
-    , Value(..)
+    ( Value(..)
     , ParticleShape(..)
     ) where
 
-
 import Prelude
 
+import Effect (Effect)
+import Effect.Random (randomRange)
+
+import Data.Bifunctor (bimap)
 import Data.Maybe
-import Data.List as List
-import Data.List ((:))
-import Data.Map as Map
 import Data.Lens ((^.))
 import Data.Lens.At (at)
+import Data.List ((:))
+import Data.List as List
+import Data.List.Lazy (List(..))
+import Data.Map as Map
+import Data.Tuple as Tuple
+import Data.Tuple.Nested ((/\))
 
-import Rpd.Def as Rpd
-import Rpd.Process (ProcessF(..), InletsMapData(..), OutletsMapData(..)) as R
-import Rpd.IsData as Rpd
+import Rpd.Channel as Rpd
+import Rpd.Process (ProcessF(..)) as R
+import Rpd.Toolkit as Rpd
 
 
 data ParticleShape
@@ -38,133 +42,211 @@ data Value
     | Magic Number Number
 
 
-patch :: Rpd.PatchDef Value
-patch =
-    { name : "particles"
-    , nodeDefs
-        : colorNode
-        : metroNode
-        : List.Nil
-    }
+data Channel
+    = CColor
+    | CShape
+    | CNumber
+    | CTime
+    | CTrigger
 
 
-numberInlet :: String -> Rpd.InletDef Value
-numberInlet label =
-    { label : label
-    , default : Just (Number' 0.0)
-    , accept : Just acceptF
-    }
-    where
-        acceptF (Number' _) = true
-        acceptF _ = false
+instance showChannel :: Show Channel where
+    show CColor = "color"
+    show CShape = "shape"
+    show CNumber = "number"
+    show CTime = "time"
+    show CTrigger = "trigger"
 
 
-
-colorInlet :: String -> Rpd.InletDef Value
-colorInlet label =
-    { label : label
-    , default : Just (Color 0.0 0.0 0.0)
-    , accept : Just acceptF
-    }
-    where
-        acceptF (Color _ _ _) = true
-        acceptF _ = false
+instance exampleChannel :: Rpd.Channel Channel Value where
+    default _ = Bang
+    accept _ _ = true
+    adapt _ = identity
+    show _ _ = ""
 
 
-colorOutlet :: String -> Rpd.OutletDef Value
-colorOutlet label =
-    { label : label
-    , accept : Just acceptF
+toolkit :: Rpd.Toolkit Channel Value
+toolkit =
+    { name : Rpd.ToolkitName "example"
+    , nodes
+    , channels
     }
     where
-        acceptF (Color _ _ _) = true
-        acceptF _ = false
+        nodes =
+            [ "random" /\ randomNode
+            ]
+            # map (bimap Rpd.NodeDefAlias identity)
+            # Map.fromFoldable
+        channels =
+            [ CColor
+            , CShape
+            , CNumber
+            , CTime
+            , CTrigger
+            ]
+            # map (\v -> Rpd.ChannelDefAlias (show v) /\ v)
+            # Map.fromFoldable
 
 
-bangOutlet :: String -> Rpd.OutletDef Value
-bangOutlet label =
-    { label : label
-    , accept : Just acceptF
+
+randomNode :: Rpd.NodeDef Value
+randomNode =
+    { inlets :
+        [ "bang" /\ "trigger"
+        , "min" /\ "number"
+        , "max" /\ "number"
+        ]
+        # map (bimap Rpd.InletAlias Rpd.ChannelDefAlias)
+        # List.fromFoldable
+    , outlets :
+        [ "random" /\ "number" ]
+        # map (bimap Rpd.OutletAlias Rpd.ChannelDefAlias)
+        # List.fromFoldable
+    , process : R.Process processF
     }
     where
-        acceptF Bang = true
-        acceptF _ = false
+        processF :: (String -> Maybe Value) -> Effect (String -> Maybe Value)
+        processF receive = do
+            let
+                min = receive "min" # fromMaybe (Number' 0.0)
+                max = receive "max" # fromMaybe (Number' 0.0)
+            random <-
+                case min /\ max of
+                    (Number' min' /\ Number' max') ->
+                        randomRange min' max'
+                    _ -> pure 0.0
+            let send "random" = Just $ Number' random
+                send _ = Nothing
+            pure send
 
 
-periodInlet :: String -> Rpd.InletDef Value
-periodInlet label =
-    { label : label
-    , default : Just (Period 0.0)
-    , accept : Just acceptF
-    }
-    where
-        acceptF (Period _) = true
-        acceptF _ = false
+-- patch :: Rpd.PatchDef Value
+-- patch =
+--     { name : "particles"
+--     , nodeDefs
+--         : colorNode
+--         : metroNode
+--         : List.Nil
+--     }
 
 
-triggerInlet :: String -> Rpd.InletDef Value
-triggerInlet label =
-    { label : label
-    , default : Just $ Trigger false
-    , accept : Just acceptF
-    }
-    where
-        acceptF (Trigger _) = true
-        acceptF _ = false
-
-
-
-colorNode :: Rpd.NodeDef Value
-colorNode =
-    { name : "color"
-    , inletDefs
-        : numberInlet "r"
-        : numberInlet "g"
-        : numberInlet "b"
-        : List.Nil
-    , outletDefs :
-        List.singleton $ colorOutlet "color"
-    , process : R.FoldedByLabel foldToColor
-    }
-    where
-        foldToColor (R.InletsMapData m) =
-            R.OutletsMapData
-                $ fromMaybe Map.empty
-                $ buildColor <$> (m^.at "r") <*> (m^.at "g") <*> (m^.at "b")
-        buildColor (Number' r) (Number' g) (Number' b) =
-            Map.empty # Map.insert "color" (Color r g b)
-        buildColor _ _ _ =
-            Map.empty
+-- numberInlet :: String -> Rpd.InletDef Value
+-- numberInlet label =
+--     { label : label
+--     , default : Just (Number' 0.0)
+--     , accept : Just acceptF
+--     }
+--     where
+--         acceptF (Number' _) = true
+--         acceptF _ = false
 
 
 
-metroNode :: Rpd.NodeDef Value
-metroNode =
-    { name : "metro"
-    , inletDefs
-        : triggerInlet "enabled"
-        : periodInlet "period"
-        : List.Nil
-    , outletDefs :
-        List.singleton $ bangOutlet "bang"
-    , process : R.FoldedByLabel foldToBang
-    }
-    where
-        foldToBang (R.InletsMapData m) =
-            R.OutletsMapData
-                $ fromMaybe Map.empty
-                $ sendBang <$> (m^.at "enabled") <*> (m^.at "period")
-        sendBang (Trigger isEnabled) (Period period) =
-            if isEnabled then
-                Map.empty # Map.insert "bang" Bang
-            else Map.empty
-        sendBang _ _ =
-            Map.empty
+-- colorInlet :: String -> Rpd.InletDef Value
+-- colorInlet label =
+--     { label : label
+--     , default : Just (Color 0.0 0.0 0.0)
+--     , accept : Just acceptF
+--     }
+--     where
+--         acceptF (Color _ _ _) = true
+--         acceptF _ = false
+
+
+-- colorOutlet :: String -> Rpd.OutletDef Value
+-- colorOutlet label =
+--     { label : label
+--     , accept : Just acceptF
+--     }
+--     where
+--         acceptF (Color _ _ _) = true
+--         acceptF _ = false
+
+
+-- bangOutlet :: String -> Rpd.OutletDef Value
+-- bangOutlet label =
+--     { label : label
+--     , accept : Just acceptF
+--     }
+--     where
+--         acceptF Bang = true
+--         acceptF _ = false
+
+
+-- periodInlet :: String -> Rpd.InletDef Value
+-- periodInlet label =
+--     { label : label
+--     , default : Just (Period 0.0)
+--     , accept : Just acceptF
+--     }
+--     where
+--         acceptF (Period _) = true
+--         acceptF _ = false
+
+
+-- triggerInlet :: String -> Rpd.InletDef Value
+-- triggerInlet label =
+--     { label : label
+--     , default : Just $ Trigger false
+--     , accept : Just acceptF
+--     }
+--     where
+--         acceptF (Trigger _) = true
+--         acceptF _ = false
 
 
 
--- TODO: metro, color, random, shape, magic, wind...
+-- colorNode :: Rpd.NodeDef Value
+-- colorNode =
+--     { name : "color"
+--     , inletDefs
+--         : numberInlet "r"
+--         : numberInlet "g"
+--         : numberInlet "b"
+--         : List.Nil
+--     , outletDefs :
+--         List.singleton $ colorOutlet "color"
+--     , process : R.FoldedByLabel foldToColor
+--     }
+--     where
+--         foldToColor (R.InletsMapData m) =
+--             R.OutletsMapData
+--                 $ fromMaybe Map.empty
+--                 $ buildColor <$> (m^.at "r") <*> (m^.at "g") <*> (m^.at "b")
+--         buildColor (Number' r) (Number' g) (Number' b) =
+--             Map.empty # Map.insert "color" (Color r g b)
+--         buildColor _ _ _ =
+--             Map.empty
 
 
-instance isDataValue :: Rpd.IsData Value where
-  default = Period 5.0
+
+-- metroNode :: Rpd.NodeDef Value
+-- metroNode =
+--     { name : "metro"
+--     , inletDefs
+--         : triggerInlet "enabled"
+--         : periodInlet "period"
+--         : List.Nil
+--     , outletDefs :
+--         List.singleton $ bangOutlet "bang"
+--     , process : R.FoldedByLabel foldToBang
+--     }
+--     where
+--         foldToBang (R.InletsMapData m) =
+--             R.OutletsMapData
+--                 $ fromMaybe Map.empty
+--                 $ sendBang <$> (m^.at "enabled") <*> (m^.at "period")
+--         sendBang (Trigger isEnabled) (Period period) =
+--             if isEnabled then
+--                 Map.empty # Map.insert "bang" Bang
+--             else Map.empty
+--         sendBang _ _ =
+--             Map.empty
+
+
+
+-- -- TODO: metro, color, random, shape, magic, wind...
+
+
+-- instance isDataValue :: Rpd.IsData Value where
+--   default = Period 5.0

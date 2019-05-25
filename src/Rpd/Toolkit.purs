@@ -1,5 +1,5 @@
 module Rpd.Toolkit
-    ( Toolkit, ToolkitName
+    ( Toolkit, ToolkitName(..)
     , NodeDefAlias(..), ChannelDefAlias(..)
     , InletAlias(..), OutletAlias(..)
     , NodeDef
@@ -39,6 +39,19 @@ type Toolkit c d =
         , channels :: ChannelDefAlias /-> c
         }
 
+
+-- TODO: Toolkit w/o a Channel restriction should also be an option
+-- type PlainToolkit d =
+--     { name :: ToolkitName
+--     , nodes :: NodeDefAlias /-> ...
+--     }
+
+
+derive instance eqChannelDefAlias :: Eq ChannelDefAlias
+derive instance ordChannelDefAlias :: Ord ChannelDefAlias
+
+derive instance eqNodeDefAlias :: Eq NodeDefAlias
+derive instance ordNodeDefAlias :: Ord NodeDefAlias
 
 -- noDefs = Map.empty
 -- defs = Map.fromFoldable
