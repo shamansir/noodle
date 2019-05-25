@@ -5,6 +5,7 @@ module Rpd.API
     , connect, disconnectAll, disconnectTop
     , addPatch, addNode, addInlet, addOutlet
     , removeInlet
+    , addToolkitNode, addChanelledInlet, addChanelledOutlet
     , subscribeInlet, subscribeOutlet, subscribeAllInlets, subscribeAllOutlets
     , subscribeChannelsData, subscribeNode  -- subscribeAllData
     , subscribeInlet', subscribeOutlet', subscribeAllInlets', subscribeAllOutlets'

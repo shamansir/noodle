@@ -1,6 +1,8 @@
 module Example.Toolkit
     ( Value(..)
+    , Channel(..)
     , ParticleShape(..)
+    , toolkit
     ) where
 
 import Prelude
@@ -9,7 +11,7 @@ import Effect (Effect)
 import Effect.Random (randomRange)
 
 import Data.Bifunctor (bimap)
-import Data.Maybe
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Lens ((^.))
 import Data.Lens.At (at)
 import Data.List ((:))
@@ -19,9 +21,9 @@ import Data.Map as Map
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
 
-import Rpd.Channel as Rpd
 import Rpd.Process (ProcessF(..)) as R
 import Rpd.Toolkit as Rpd
+import Rpd.Util (type (/->))
 
 
 data ParticleShape
@@ -43,64 +45,53 @@ data Value
 
 
 data Channel
-    = CColor
-    | CShape
-    | CNumber
-    | CTime
-    | CTrigger
+    = ColorChannel
+    | ShapeChannel
+    | NumberChannel
+    | TimeChannel
+    | TriggerChannel
 
 
 instance showChannel :: Show Channel where
-    show CColor = "color"
-    show CShape = "shape"
-    show CNumber = "number"
-    show CTime = "time"
-    show CTrigger = "trigger"
+    show ColorChannel = "color"
+    show ShapeChannel = "shape"
+    show NumberChannel = "number"
+    show TimeChannel = "time"
+    show TriggerChannel = "trigger"
 
 
 instance exampleChannel :: Rpd.Channel Channel Value where
     default _ = Bang
     accept _ _ = true
     adapt _ = identity
-    show _ _ = ""
 
 
 toolkit :: Rpd.Toolkit Channel Value
 toolkit =
     { name : Rpd.ToolkitName "example"
     , nodes
-    , channels
     }
     where
+        nodes :: Rpd.NodeDefAlias /-> Rpd.NodeDef Channel Value
         nodes =
             [ "random" /\ randomNode
             ]
             # map (bimap Rpd.NodeDefAlias identity)
             # Map.fromFoldable
-        channels =
-            [ CColor
-            , CShape
-            , CNumber
-            , CTime
-            , CTrigger
-            ]
-            # map (\v -> Rpd.ChannelDefAlias (show v) /\ v)
-            # Map.fromFoldable
 
 
-
-randomNode :: Rpd.NodeDef Value
+randomNode :: Rpd.NodeDef Channel Value
 randomNode =
     { inlets :
-        [ "bang" /\ "trigger"
-        , "min" /\ "number"
-        , "max" /\ "number"
+        [ "bang" /\ TriggerChannel
+        , "min" /\ NumberChannel
+        , "max" /\ NumberChannel
         ]
-        # map (bimap Rpd.InletAlias Rpd.ChannelDefAlias)
+        # map (bimap Rpd.InletAlias identity)
         # List.fromFoldable
     , outlets :
-        [ "random" /\ "number" ]
-        # map (bimap Rpd.OutletAlias Rpd.ChannelDefAlias)
+        [ "random" /\ NumberChannel ]
+        # map (bimap Rpd.OutletAlias identity)
         # List.fromFoldable
     , process : R.Process processF
     }

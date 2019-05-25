@@ -6,11 +6,9 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq as GEq
 import Data.Generic.Rep.Show as GShow
 
-import Rpd.Channel (class Channel)
-import Rpd.Channel as Channel
+import Rpd.Toolkit (class Channel)
 import Rpd.Path as Path
 import Rpd.UUID
-
 
 
 data Command d

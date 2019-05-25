@@ -15,7 +15,6 @@ import Debug.Trace (spy)
 
 import Rpd.API (RpdError) as R
 import Rpd.Command (Command(..)) as C
-import Rpd.Channel (class Channel, default) as R
 import Rpd.Network as R
 import Rpd.Optics as L
 import Rpd.Path as P

@@ -35,12 +35,11 @@ class (Show c) <= Channel c d where
     -- show :: c -> d -> String
 
 
-type NodeDef c d =
-    Channel c d =>
-        { process :: ProcessF d
-        , inlets :: List (InletAlias /\ c)
-        , outlets :: List (OutletAlias /\ c)
-        }
+type NodeDef c d = -- TODO: Should also require `Channel c d` restriction?
+    { process :: ProcessF d
+    , inlets :: List (InletAlias /\ c)
+    , outlets :: List (OutletAlias /\ c)
+    }
 
 
 type Toolkit c d =
