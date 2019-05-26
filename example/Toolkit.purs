@@ -52,6 +52,15 @@ data Channel
     | TriggerChannel
 
 
+instance showValue :: Show Value where
+    show _ = "DATA"
+    -- show Bang = "bang"
+    -- show (Color r g b) = "color"
+    -- show (Shape shape) = "shape"
+    -- show (Random n) = "random"
+    -- show (Number' n) = "number"
+
+
 instance showChannel :: Show Channel where
     show ColorChannel = "color"
     show ShapeChannel = "shape"

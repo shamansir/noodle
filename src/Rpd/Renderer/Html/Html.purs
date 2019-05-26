@@ -56,7 +56,7 @@ init =
     }
 
 
-type HtmlRenderer d = R.Renderer d (Model d) (View d) Message
+type HtmlRenderer d = Show d => R.Renderer d (Model d) (View d) Message
 
 
 emptyView :: forall d. View d
@@ -169,7 +169,8 @@ viewOutlet pushMsg ui nw outletUuid =
 
 viewDebugWindow
     :: forall d
-     . R.PushF Message d
+     . Show d
+    => R.PushF Message d
     -> Model d
     -> R.Network d
     -> View d
@@ -203,6 +204,14 @@ htmlRenderer =
                                 ui'
                                     { debug = Just $ DebugBox.update cmd nw debug
                                     }
+                            ( _ /\ Left EnableDebug ) ->
+                                ui'
+                                    { debug = Just $ DebugBox.init
+                                    }
+                            ( _ /\ Left DisableDebug ) ->
+                                ui'
+                                    { debug = Nothing
+                                    }
                             _ -> ui'
                 in (ui'' /\ cmds)
         , view
@@ -211,7 +220,8 @@ htmlRenderer =
 
 view
     :: forall d
-     . R.PushF Message d
+     . Show d
+    => R.PushF Message d
     -> Either R.RpdError (Model d /\ R.Network d)
     -> View d
 view pushMsg (Right (ui /\ nw)) =
