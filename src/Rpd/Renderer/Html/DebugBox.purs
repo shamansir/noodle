@@ -18,6 +18,7 @@ import Rpd.Command as C
 import Rpd.Network as R
 import Rpd.Optics as L
 import Rpd.UUID as R
+import Rpd.Process as R
 
 
 type Model d =
@@ -87,26 +88,61 @@ viewNetwork nw@(R.Network { patches }) =
         viewPatch :: Maybe (R.Patch d) -> Html Unit
         viewPatch (Just (R.Patch uuid path nodes)) =
             H.li [ H.classes [ "patch-debug" ] ]
-                [ H.ul []
-                    $ viewNode
-                        <$> (\nodeUuid -> L.view (L._node nodeUuid) nw)
-                        <$> Set.toUnfoldable nodes
+                [ H.div []
+                    [ H.span [] [ H.text $ show uuid ]
+                    , H.span [] [ H.text $ show path ]
+                    , H.ul [] $ viewNodes nodes
+                    ]
                 ]
         viewPatch _ =
             H.li [ H.classes [ "patch-debug" ] ]
                 [ H.text "Unknown patch" ]
         viewNode :: Maybe (R.Node d) -> Html Unit
-        viewNode (Just node) = H.div [] []
-        viewNode _ = H.div [] []
+        viewNode (Just (R.Node uuid path processF { inlets, outlets })) =
+            H.li [ H.classes [ "node-debug" ] ]
+                [ H.div []
+                    [ H.span [] [ H.text $ show uuid ]
+                    , H.span [] [ H.text $ show path ]
+                    , H.span []
+                        [ H.text $ case processF of
+                            R.Withhold -> "withhold"
+                            R.Process _ -> "process"
+                        ]
+                    , H.ul [] $ viewInlets inlets
+                    , H.ul [] $ viewOutlets outlets
+                    ]
+                ]
+        viewNode _ =
+            H.li [ H.classes [ "node-debug" ] ]
+                [ H.text "Unknown node" ]
         viewInlet :: Maybe (R.Inlet d) -> Html Unit
-        viewInlet (Just inlet) = H.div [] []
-        viewInlet _ = H.div [] []
+        viewInlet (Just (R.Inlet uuid path _)) =
+            H.li  [ H.classes [ "inlet-debug" ] ]
+                [ H.span [] [ H.text $ show uuid ]
+                , H.span [] [ H.text $ show path ]
+                ]
+        viewInlet _ =
+            H.li [ H.classes [ "inlet-debug" ] ]
+                [ H.text "Unknown inlet" ]
         viewOutlet :: Maybe (R.Outlet d) -> Html Unit
-        viewOutlet (Just outlet) = H.div [] []
-        viewOutlet _ = H.div [] []
+        viewOutlet (Just (R.Outlet uuid path _)) =
+            H.li  [ H.classes [ "outlet-debug" ] ]
+                [ H.span [] [ H.text $ show uuid ]
+                , H.span [] [ H.text $ show path ]
+                ]
+        viewOutlet _ =
+            H.li [ H.classes [ "outlet-debug" ] ]
+                [ H.text "Unknown outlet" ]
         viewLink :: Maybe R.Link -> Html Unit
-        viewLink (Just link) = H.div [] []
-        viewLink _ = H.div [] []
+        viewLink (Just (R.Link uuid { outlet, inlet })) =
+            H.li  [ H.classes [ "link-debug" ] ]
+                [ H.span [] [ H.text $ show uuid ]
+                , H.span [] [ H.text $ show outlet ]
+                , H.span [] [ H.text $ show inlet ]
+                ]
+        viewLink _ =
+            H.li [ H.classes [ "link-debug" ] ]
+                [ H.text "Unknown link" ]
 
 
 viewModel :: forall d. Show d => Model d -> Html Unit

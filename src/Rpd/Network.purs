@@ -88,7 +88,7 @@ data Node d =
         }
 data Inlet d =
     Inlet
-        UUID
+        UUID.ToInlet
         Path.ToInlet
         -- (forall c. Channel c d => c)
         { flow :: InletFlow d
