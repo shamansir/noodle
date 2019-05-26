@@ -8,7 +8,7 @@ import Data.Lens (view) as L
 import Data.Lens.At (at) as L
 import Data.List (toUnfoldable)
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust)
 import Data.Set as Set
 import Data.Tuple.Nested (type (/\), (/\))
 import Debug.Trace (spy)
@@ -38,7 +38,10 @@ type Model d =
 
 
 data Message
-    = ClickAt (Int /\ Int)
+    = NoOp
+    | ClickAt (Int /\ Int)
+    | EnableDebug
+    | DisableDebug
 
 
 type View d = Html (Either Message (C.Command d))
@@ -163,6 +166,27 @@ viewOutlet pushMsg ui nw outletUuid =
                 [ H.text $ "outlet " <> show outletUuid <> " was not found" ]
 
 
+viewDebugWindow
+    :: forall d
+     . R.PushF Message d
+    -> Model d
+    -> R.Network d
+    -> View d
+viewDebugWindow pushMsg ui nw =
+    H.div [ H.id_ "debug" ]
+        [ H.input
+            [ H.type_ H.InputCheckbox
+            , H.checked (isJust ui.debug)
+            , H.onChecked
+                (H.always_ $ Left
+                    $ if isJust ui.debug then DisableDebug else EnableDebug)
+            ]
+        , case ui.debug of
+            Just debug -> (const $ Left NoOp) <$> DebugBox.view nw debug
+            _ -> H.div [] []
+        ]
+
+
 htmlRenderer :: forall d. HtmlRenderer d
 htmlRenderer =
     R.Renderer
@@ -179,7 +203,10 @@ view
     -> Either R.RpdError (Model d /\ R.Network d)
     -> View d
 view pushMsg (Right (ui /\ nw)) =
-    viewNetwork pushMsg ui nw
+    H.div [ ]
+        [ viewDebugWindow pushMsg ui nw
+        , viewNetwork pushMsg ui nw
+        ]
 view pushMsg (Left err) =
     viewError err
 
@@ -189,12 +216,29 @@ update
      . Either Message (C.Command d)
     -> Model d /\ R.Network d
     -> Model d /\ Array (Either Message (C.Command d))
-update (Right C.Bang) (ui /\ _) = ui /\ []
-update (Right (C.GotInletData inletPath d)) (ui /\ _) =
+update cmdOrMsg (ui /\ nw) =
+    let
+        ui' =
+            case ( ui.debug /\ cmdOrMsg ) of
+                ( Just debug /\ Right cmd ) ->
+                    ui
+                        { debug = Just $ DebugBox.update cmd nw debug
+                        }
+                _ -> ui
+    in update' cmdOrMsg (ui /\ nw)
+
+
+update'
+    :: forall d
+     . Either Message (C.Command d)
+    -> Model d /\ R.Network d
+    -> Model d /\ Array (Either Message (C.Command d))
+update' (Right C.Bang) (ui /\ _) = ui /\ []
+update' (Right (C.GotInletData inletPath d)) (ui /\ _) =
     (ui { lastInletData = ui.lastInletData # Map.insert inletPath d })
     /\ []
-update (Right (C.GotOutletData outletPath d)) (ui /\ _) =
+update' (Right (C.GotOutletData outletPath d)) (ui /\ _) =
     (ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d })
     /\ []
-update _ (ui /\ _) = ui /\ []
+update' _ (ui /\ _) = ui /\ []
 
