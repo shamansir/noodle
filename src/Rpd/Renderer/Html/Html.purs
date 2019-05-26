@@ -192,7 +192,18 @@ htmlRenderer =
     R.Renderer
         { from : emptyView
         , init
-        , update
+        , update :
+            \cmdOrMsg (ui /\ nw) ->
+                let
+                    (ui' /\ cmds) = update cmdOrMsg (ui /\ nw)
+                    ui'' =
+                        case ( ui'.debug /\ cmdOrMsg ) of
+                            ( Just debug /\ Right cmd ) ->
+                                ui'
+                                    { debug = Just $ DebugBox.update cmd nw debug
+                                    }
+                            _ -> ui'
+                in (ui'' /\ cmds)
         , view
         }
 
@@ -216,29 +227,12 @@ update
      . Either Message (C.Command d)
     -> Model d /\ R.Network d
     -> Model d /\ Array (Either Message (C.Command d))
-update cmdOrMsg (ui /\ nw) =
-    let
-        ui' =
-            case ( ui.debug /\ cmdOrMsg ) of
-                ( Just debug /\ Right cmd ) ->
-                    ui
-                        { debug = Just $ DebugBox.update cmd nw debug
-                        }
-                _ -> ui
-    in update' cmdOrMsg (ui /\ nw)
-
-
-update'
-    :: forall d
-     . Either Message (C.Command d)
-    -> Model d /\ R.Network d
-    -> Model d /\ Array (Either Message (C.Command d))
-update' (Right C.Bang) (ui /\ _) = ui /\ []
-update' (Right (C.GotInletData inletPath d)) (ui /\ _) =
+update (Right C.Bang) (ui /\ _) = ui /\ []
+update (Right (C.GotInletData inletPath d)) (ui /\ _) =
     (ui { lastInletData = ui.lastInletData # Map.insert inletPath d })
     /\ []
-update' (Right (C.GotOutletData outletPath d)) (ui /\ _) =
+update (Right (C.GotOutletData outletPath d)) (ui /\ _) =
     (ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d })
     /\ []
-update' _ (ui /\ _) = ui /\ []
+update _ (ui /\ _) = ui /\ []
 
