@@ -33,7 +33,7 @@ type Model d =
     -- TODO: use UUID to store inlets?
     { lastInletData :: P.ToInlet /-> d
     , lastOutletData :: P.ToOutlet /-> d
-    , debug :: Maybe DebugBox.Model
+    , debug :: Maybe (DebugBox.Model d)
     }
 
 
@@ -51,7 +51,8 @@ init :: forall d. Model d
 init =
     { lastInletData : Map.empty
     , lastOutletData : Map.empty
-    , debug : Nothing
+    -- , debug : Nothing
+    , debug : Just DebugBox.init
     }
 
 
