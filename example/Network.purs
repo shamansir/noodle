@@ -19,6 +19,11 @@ network :: R.Rpd (R.Network Value)
 network =
     Rpd.init "foo"
         </> Rpd.addPatch (R.toPatch "test")
+        -- </> Rpd.addNode (R.toNode "test" "random")
+        -- </> Rpd.addInlet (R.toInlet "test" "random" "min")
+        -- </> Rpd.addInlet (R.toInlet "test" "random" "max")
+        -- </> Rpd.addInlet (R.toInlet "test" "random" "bang")
+        -- </> Rpd.addOutlet (R.toOutlet "test" "random" "random")
         </> Rpd.addToolkitNode (R.toNode "test" "random") (R.NodeDefAlias "random") toolkit
         </> Rpd.sendToInlet (R.toInlet "test" "random" "min") (Number' 10.0)
         </> Rpd.sendToInlet (R.toInlet "test" "random" "max") (Number' 20.0)

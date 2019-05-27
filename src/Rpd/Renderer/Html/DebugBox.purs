@@ -157,9 +157,7 @@ viewModel model =
 
 view :: forall d. Show d => R.Network d -> Model d -> Html Unit
 view nw model =
-    H.div [ H.id_ "debug" ]
-        [ H.div [ H.classes [ "network-debug" ] ]
-            [ viewNetwork nw
-            , viewModel model
-            ]
+    H.div [ ]
+        [ viewNetwork nw
+        , viewModel model
         ]

@@ -155,6 +155,7 @@ addPatch path nw = do
     pure $ nw
         # setJust (_patch $ UUID.ToPatch uuid) newPatch
         # setJust (_pathToId $ Path.lift path) (UUID.liftTagged $ UUID.ToPatch uuid)
+        # setJust (_networkPatch $ UUID.ToPatch uuid) unit
 
 
 -- TODO: removePatch
@@ -265,7 +266,7 @@ addInlet path nw = do
         (PushToInlets informNode) = pushToInlets
         newInlet =
             Inlet
-                uuid
+                (UUID.ToInlet uuid)
                 path
                 { flow : InletFlow inletFlow
                 , push : PushToInlet pushToInlet

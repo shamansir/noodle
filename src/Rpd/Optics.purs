@@ -1,6 +1,6 @@
 module Rpd.Optics
     ( _entity, _pathToId
-    , _networkPatches, _networkInlets, _networkOutlets, _networkLinks
+    , _networkPatch, _networkPatches, _networkInlets, _networkOutlets, _networkLinks
     , _patch, _patchByPath, _patchNode
     , _node, _nodeByPath, _nodeInlet, _nodeOutlet, _nodeInletsFlow, _nodeOutletsFlow
     , _inlet, _inletByPath, _inletFlow, _inletPush
@@ -187,8 +187,18 @@ _link uuid = _uuidLens LinkEntity extractLink $ UUID.liftTagged uuid
 -- _linkByPath :: forall d. Path.ToLink -> Getter' (Network d) (Maybe Link)
 -- _linkByPath = _pathGetter extractLink
 
-
--- _networkPatch ::
+_networkPatch :: forall d. UUID.ToPatch -> Lens' (Network d) (Maybe Unit)
+_networkPatch uuid =
+    lens getter setter
+    where
+        patchLens = at uuid
+        getter (Network { patches }) =
+            view patchLens patches
+        setter (Network nwstate) val =
+            Network
+                nwstate
+                    { patches = nwstate.patches # set patchLens val
+                    }
 
 
 _networkPatches :: forall d. Getter' (Network d) (List (Patch d))

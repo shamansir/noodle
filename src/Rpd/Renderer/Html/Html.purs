@@ -225,7 +225,7 @@ view
     -> Either R.RpdError (Model d /\ R.Network d)
     -> View d
 view pushMsg (Right (ui /\ nw)) =
-    H.div [ ]
+    H.div [ H.id_ "html" ]
         [ viewDebugWindow pushMsg ui nw
         , viewNetwork pushMsg ui nw
         ]
