@@ -22,7 +22,8 @@ import Effect.Ref as Ref
 import Effect.Aff (Aff, delay)
 
 import Rpd.Util (type (/->))
-import Rpd.Path as R
+import Rpd.Path as P
+import Rpd.UUID as UUID
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
 import Rpd.API (Rpd, subscribeChannelsData', subscribeNode') as R
@@ -33,8 +34,8 @@ infixl 6 snoc as +>
 
 
 data TraceItem d
-  = InletData R.InletPath d
-  | OutletData R.OutletPath d
+  = InletData P.ToInlet d
+  | OutletData P.ToOutlet d
 
 type TracedFlow d = Array (TraceItem d)
 
@@ -100,7 +101,7 @@ channelsAfter' period nw afterF =
 node
   :: forall d
    . (Show d)
-  => R.NodePath
+  => P.ToNode
   -> Milliseconds
   -> R.Network d
   -> Aff (TracedFlow d)
@@ -111,7 +112,7 @@ node nodePath period nw =
 nodeAfter
   :: forall d
    . (Show d)
-  => R.NodePath
+  => P.ToNode
   -> Milliseconds
   -> R.Network d
   -> R.Rpd (Array R.Canceler)
@@ -125,7 +126,7 @@ nodeAfter nodePath period nw afterF = do
 nodeAfter'
   :: forall d
    . (Show d)
-  => R.NodePath
+  => P.ToNode
   -> Milliseconds
   -> R.Network d
   -> R.Rpd (R.Network d /\ Array R.Canceler)
@@ -135,8 +136,8 @@ nodeAfter' nodePath period nw afterF =
   where
     collector target = RL.extract [] $ do
       let
-        onInletData (inletId /\ d) = do
-          let inletPath = R.InletPath nodePath inletId
+        onInletData (inletAlias /\ inletUuid /\ d) = do
+          let inletPath = P.inletInNode nodePath inletAlias
           curData <- Ref.read target
           Ref.write (curData +> InletData inletPath d) target
           pure unit
@@ -167,7 +168,7 @@ collectHelper period nw collector afterF = do
 
 
 foldCancelers
-  :: (R.OutletPath /-> R.Canceler) /\ (R.InletPath /-> R.Canceler)
+  :: (P.ToOutlet /-> R.Canceler) /\ (P.ToInlet /-> R.Canceler)
   -> Array R.Canceler
 foldCancelers (outletsMap /\ inletsMap) =
   List.toUnfoldable $ Map.values outletsMap <> Map.values inletsMap

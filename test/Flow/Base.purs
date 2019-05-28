@@ -15,7 +15,6 @@ import Data.List as List
 
 import Rpd.API (Rpd) as R
 import Rpd.Network (Network) as R
-import Rpd.Def (NodeDef, OutletDef) as R
 import Rpd.Process (ProcessF) as R
 
 

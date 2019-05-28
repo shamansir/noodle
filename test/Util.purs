@@ -19,7 +19,7 @@ import Rpd.API (Rpd) as Rpd
 import Rpd.Network (Network) as Rpd
 import Rpd.Network (empty) as Network
 import Rpd.Log (runRpdLogging) as RL
-import Rpd.UUID as UUID
+import Rpd.UUID as UUIDnp
 
 
 runWith :: forall d. Rpd.Network d -> (Rpd.Network d -> Aff Unit) -> Aff Unit
@@ -55,5 +55,5 @@ spec =
   describe "UUID generation" do
     it "does what it says" do
       uuid <- liftEffect $ UUID.new
-      _ <- 36 `shouldEqual` String.length uuid
+      _ <- 36 `shouldEqual` String.length (UUID.toString uuid)
       pure unit
