@@ -22,6 +22,7 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
 
 import Rpd.Process (ProcessF(..)) as R
+import Rpd.Toolkit (nodes, inlets, outlets) as Toolkit
 import Rpd.Toolkit as Rpd
 import Rpd.Util (type (/->))
 
@@ -77,33 +78,32 @@ instance exampleChannel :: Rpd.Channel Channel Value where
 
 toolkit :: Rpd.Toolkit Channel Value
 toolkit =
-    { name : Rpd.ToolkitName "example"
-    , nodes
-    }
+    Rpd.Toolkit
+        { name : Rpd.ToolkitName "example"
+        , nodes
+        }
     where
         nodes :: Rpd.NodeDefAlias /-> Rpd.NodeDef Channel Value
         nodes =
-            [ "random" /\ randomNode
-            ]
-            # map (bimap Rpd.NodeDefAlias identity)
-            # Map.fromFoldable
+            Toolkit.nodes
+                [ "random" /\ randomNode
+                ]
 
 
 randomNode :: Rpd.NodeDef Channel Value
 randomNode =
-    { inlets :
-        [ "bang" /\ TriggerChannel
-        , "min" /\ NumberChannel
-        , "max" /\ NumberChannel
-        ]
-        # map (bimap Rpd.InletAlias identity)
-        # List.fromFoldable
-    , outlets :
-        [ "random" /\ NumberChannel ]
-        # map (bimap Rpd.OutletAlias identity)
-        # List.fromFoldable
-    , process : R.Process processF
-    }
+    Rpd.NodeDef
+        { inlets :
+            Toolkit.inlets
+                [ "bang" /\ TriggerChannel
+                , "min" /\ NumberChannel
+                , "max" /\ NumberChannel
+                ]
+        , outlets :
+            Toolkit.outlets
+                [ "random" /\ NumberChannel ]
+        , process : R.Process processF
+        }
     where
         processF :: (String -> Maybe Value) -> Effect (String -> Maybe Value)
         processF receive = do

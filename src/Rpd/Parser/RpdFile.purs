@@ -44,6 +44,15 @@ data RpdFileCommand
     -- Send P.ToInlet (CanParse d => d)
 
 
+instance rpdCommandEq :: Eq RpdFileCommand where
+    eq _ _ = true
+
+
+instance rpdCommandShow :: Show RpdFileCommand where
+    show (AddPatch patchPath) = "Add Patch: " <> show patchPath
+    show _ = "COMMAND"
+
+
 nextChars :: Parser String
 nextChars =
     loadString <$> many1 anyChar

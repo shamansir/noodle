@@ -54,7 +54,7 @@ import Rpd.Optics
 -- import Rpd.Path (Path)
 import Rpd.Path as Path
 import Rpd.Process (InletAlias, InletHandler(..), OutletAlias, OutletHandler(..), ProcessF(..))
-import Rpd.Toolkit (Toolkit)
+import Rpd.Toolkit (Toolkit(..))
 import Rpd.Toolkit as Toolkit
 
 
@@ -203,9 +203,10 @@ addToolkitNode
     -> Toolkit c d
     -> Network d
     -> Rpd (Network d)
-addToolkitNode path nodeAlias toolkit nw = do
-    nodeDef <- Map.lookup nodeAlias toolkit.nodes
-                    # exceptMaybe (RpdError "")
+addToolkitNode path nodeAlias (Toolkit toolkit) nw = do
+    (Toolkit.NodeDef nodeDef)
+        <- Map.lookup nodeAlias toolkit.nodes
+                # exceptMaybe (RpdError "")
     nw
          # addNode path
         </> addInlets nodeDef.inlets

@@ -73,12 +73,16 @@ data Patch d =
     Patch
         UUID.ToPatch
         Path.ToPatch
+        -- FIXME: order in all of the sets may change, because we compare UUIDs using `Ord`
+        --        we need to ensure they added in the order of `addNode` calls
         (Set UUID.ToNode) -- TODO: links also should be stored in a patch
 data Node d =
     Node
         UUID.ToNode
         Path.ToNode
         (ProcessF d)
+        -- FIXME: order in all of the sets may change, because we compare UUIDs using `Ord`
+        --        we need to ensure they added in the order of `addInlet`/`addOutlet` calls
         { inlets :: Set UUID.ToInlet
         , outlets :: Set UUID.ToOutlet
         , inletsFlow :: InletsFlow d

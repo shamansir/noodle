@@ -6,6 +6,7 @@ module Rpd.Path
     , ToPatch(..), ToNode(..), ToInlet(..), ToOutlet(..)
     , class MarksPath, lift
     , explodePatchPath, explodeNodePath, explodeInletPath, explodeOutletPath
+    , nodeInPatch, inletInNode, outletInNode
     )
     where
 
@@ -164,6 +165,24 @@ explodeInletPath (ToInlet { patch, node, inlet }) = patch /\ node /\ inlet
 
 explodeOutletPath :: ToOutlet -> Alias /\ Alias /\ Alias
 explodeOutletPath (ToOutlet { patch, node, outlet }) = patch /\ node /\ outlet
+
+
+nodeInPatch :: ToPatch -> Alias -> ToNode
+nodeInPatch (ToPatch patch) node =
+    ToNode
+        { patch, node }
+
+
+inletInNode :: ToNode -> Alias -> ToInlet
+inletInNode (ToNode { patch, node }) inlet =
+    ToInlet
+        { patch, node, inlet }
+
+
+outletInNode :: ToNode -> Alias -> ToOutlet
+outletInNode (ToNode { patch, node }) outlet =
+    ToOutlet
+        { patch, node, outlet }
 
 
 instance showToPatch :: Show ToPatch where
