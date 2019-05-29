@@ -81,7 +81,7 @@ spec =
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
-    it "rendering a node with inelts and outlets works" do
+    it "rendering a node with inlets and outlets works" do
       let
         nodeWithInletsAndOutletsNW = myRpd
           </> R.addPatch "foo"

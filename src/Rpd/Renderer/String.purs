@@ -92,7 +92,7 @@ view _ (Left err) =
 
 viewPatch :: forall d. R.Network d -> R.Patch d -> String
 viewPatch nw (R.Patch id path@(P.ToPatch name) nodes) =
-    "Patch " <> name <> " " <> show id <> ":" <> lineBreak <> space
+    "Patch " <> name <> " " <> show path <> ":" <> lineBreak <> space
         <> count nodeCounter (Set.size nodes) <> lineBreak <> space <> space
         <> nodesInfo
     where
