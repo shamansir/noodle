@@ -1,6 +1,7 @@
 module Rpd.Test.Toolkit.Timbre
     ( toolkit
     , Data
+    , Channel
     )
     where
 
@@ -11,7 +12,6 @@ import Data.List as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
-import Rpd.Def as R
 import Rpd.Process as R
 import Rpd.Toolkit as T
 
@@ -35,136 +35,99 @@ data Data
     | Sound SoundState
 
 
-toolkit :: T.Toolkit Data
+data Channel
+    = CValue
+    | CWave
+    | CSound
+
+
+instance timbreChannel :: T.Channel Channel Data where
+    default CValue = Value 0.0
+    default CWave = Wave Sin
+    default CSound = Sound Stopped
+    accept _ _ = true
+    adapt _ = identity
+
+
+toolkit :: T.Toolkit Channel Data
 toolkit =
-    { id : "timbre"
-    , name : "Timbre"
-    , nodeDefs :
-        T.defs
-            $ ("number" /\ numNode)
-            : ("osc" /\ oscNode)
-            : ("plot" /\ plotNode)
-            : ("play" /\ playNode)
-            : List.Nil
-    , channelDefs : T.noDefs
-    }
+    T.Toolkit
+        { name : T.ToolkitName "Timbre"
+        , nodes :
+            T.nodes
+                [ "number" /\ numNode
+                , "osc" /\ oscNode
+                , "plot" /\ plotNode
+                , "play" /\ playNode
+                ]
+                -- $ ("number" /\ numNode)
+                -- : ("osc" /\ oscNode)
+                -- : ("plot" /\ plotNode)
+                -- : ("play" /\ playNode)
+                -- : List.Nil
+        }
 
 
-numNode :: R.NodeDef Data
+numNode :: T.NodeDef Channel Data
 numNode =
-    { name : "Number"
-    , inletDefs : List.Nil
-    , outletDefs
-        : numOutlet
-        : List.Nil
-    , process : R.Withhold -- TODO
-    }
+    T.NodeDef
+        { inlets : T.inlets []
+        , outlets
+            : T.outlets
+                [ ( "num" /\ CValue )
+                ]
+        , process : R.Withhold -- TODO
+        }
 
 
-waveNode :: R.NodeDef Data
+waveNode :: T.NodeDef Channel Data
 waveNode =
-    { name : "Wave"
-    , inletDefs
-        : List.Nil
-    , outletDefs
-        : waveOutlet
-        : List.Nil
-    , process : R.Withhold -- TODO
-    }
+    T.NodeDef
+        { inlets
+            : T.inlets []
+        , outlets
+            : T.outlets
+                [ ( "wave" /\ CWave )
+                ]
+        , process : R.Withhold -- TODO
+        }
 
 
-oscNode :: R.NodeDef Data
+oscNode :: T.NodeDef Channel Data
 oscNode =
-    { name : "Oscillator"
-    , inletDefs
-        : waveInlet
-        : freqInlet
-        : List.Nil
-    , outletDefs
-        : soundOutlet
-        : List.Nil
-    , process : R.Withhold -- TODO
-    }
+    T.NodeDef
+        { inlets
+            : T.inlets
+                [ "freq" /\ CValue
+                , "wave" /\ CWave
+                ]
+        , outlets
+            : T.outlets
+                [ "sound" /\ CSound
+                ]
+        , process : R.Withhold -- TODO
+        }
 
 
-plotNode :: R.NodeDef Data
+plotNode :: T.NodeDef Channel Data
 plotNode =
-    { name : "Plot"
-    , inletDefs
-        : soundInlet
-        : List.Nil
-    , outletDefs
-        : List.Nil
-    , process : R.Withhold -- TODO
-    }
+    T.NodeDef
+        { inlets
+            : T.inlets
+                [ "sound" /\ CSound ]
+        , outlets
+            : T.outlets []
+        , process : R.Withhold -- TODO
+        }
 
 
-playNode :: R.NodeDef Data
+playNode :: T.NodeDef Channel Data
 playNode =
-    { name : "Play"
-    , inletDefs
-        : soundInlet
-        : List.Nil
-    , outletDefs
-        : List.Nil
-    , process : R.Withhold -- TODO
-    }
-
-
-waveInlet :: R.InletDef Data
-waveInlet =
-    { label : "wave"
-    , default : pure $ Wave Sin
-    , accept : pure isWave
-    }
-
-
-
-freqInlet :: R.InletDef Data
-freqInlet =
-    { label : "freq"
-    , default : pure $ Value 440.0
-    , accept : pure isNumber
-    }
-
-
-soundInlet :: R.InletDef Data
-soundInlet =
-    { label : "sound"
-    , default : pure $ Sound Stopped
-    , accept : pure isSound
-    }
-
-
-
-numOutlet :: R.OutletDef Data
-numOutlet =
-    { label : "num"
-    , accept : pure isNumber
-    }
-
-
-soundOutlet :: R.OutletDef Data
-soundOutlet =
-    { label : "sound"
-    , accept : pure isSound
-    }
-
-
-waveOutlet :: R.OutletDef Data
-waveOutlet =
-    { label : "wave"
-    , accept : pure isWave
-    }
-
-
-isWave (Wave _) = true
-isWave _ = false
-
-
-isNumber (Value _) = true
-isNumber _ = false
-
-
-isSound (Sound _) = true
-isSound _ = false
+    T.NodeDef
+        { inlets
+            : T.inlets
+                [ "sound" /\ CSound ]
+        , outlets
+            : T.outlets []
+        , process : R.Withhold -- TODO
+        }

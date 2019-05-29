@@ -116,7 +116,7 @@ viewNode pushMsg ui nw nodeUuid =
                         [ H.text "Send" ]
                     , H.div
                         [ H.onClick $ H.always_ $ Right
-                            $ C.AddInlet (P.toInlet "0" "0" "0") ]
+                            $ C.AddInlet (P.toNode "0" "0") "0" ]
                         [ H.text "Add Inlet" ]
                     ]
                     <> (viewInlet pushMsg ui nw <$> (inlets # Set.toUnfoldable))

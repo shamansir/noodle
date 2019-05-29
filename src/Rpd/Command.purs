@@ -13,12 +13,12 @@ import Rpd.UUID
 
 data Command d
     = Bang
-    | AddPatch Path.ToPatch
-    | AddNode Path.ToNode
-    | AddInlet Path.ToInlet
-    | AddOutlet Path.ToOutlet
-    | AddInlet' Path.ToInlet (forall c. Channel c d => c)
-    | AddOutlet' Path.ToOutlet (forall c. Channel c d => c)
+    | AddPatch Path.Alias
+    | AddNode Path.ToPatch Path.Alias
+    | AddInlet Path.ToNode Path.Alias
+    | AddOutlet Path.ToNode Path.Alias
+    | AddInlet' Path.ToNode Path.Alias (forall c. Channel c d => c)
+    | AddOutlet' Path.ToNode Path.Alias (forall c. Channel c d => c)
     -- | AddInlet Path (forall c. Show c => Channel c d => c)
     -- | AddOutlet Path (forall c. Show c => Channel c d => c)
     | Connect { outlet :: Path.ToOutlet, inlet :: Path.ToInlet }
@@ -42,12 +42,14 @@ data Command d
 -- instance showCommand :: Show d => Show (Command d) where
 instance showCommand :: Show d => Show (Command d) where
     show Bang = "Bang"
-    show (AddPatch path) = "AddPatch " <> show path
-    show (AddNode path) = "AddNode " <> show path
-    show (AddInlet path) = "AddInlet " <> show path
-    show (AddOutlet path) = "AddOutlet " <> show path
-    show (AddInlet' path channel) = "AddInlet' " <> show path -- TODO: <> show channel
-    show (AddOutlet' path channel) = "AddOutlet' " <> show path -- TODO: <> show channel
+    show (AddPatch alias) = "AddPatch " <> show (Path.toPatch alias)
+    show (AddNode patchPath alias) = "AddNode " <> show (Path.nodeInPatch patchPath alias)
+    show (AddInlet nodePath alias) = "AddInlet " <> show (Path.inletInNode nodePath alias)
+    show (AddOutlet nodePath alias)  = "AddOutlet " <> show (Path.outletInNode nodePath alias)
+    show (AddInlet' nodePath alias channel) =
+        "AddInlet' " <> show (Path.inletInNode nodePath alias) -- TODO: <> show channel
+    show (AddOutlet' nodePath alias channel) =
+        "AddOutlet' " <> show (Path.outletInNode nodePath alias) -- TODO: <> show channel
     show (Connect { outlet : oPath, inlet : iPath }) =
         "Connect " <> show oPath <> " " <> show iPath
     show (Disconnect { outlet : oPath, inlet : iPath }) =

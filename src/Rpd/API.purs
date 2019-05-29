@@ -5,7 +5,7 @@ module Rpd.API
     , connect, disconnectAll, disconnectTop
     , addPatch, addNode, addInlet, addOutlet
     , removeInlet
-    , addToolkitNode, addChanelledInlet, addChanelledOutlet
+    , addToolkitNode, addDefNode, addChanelledInlet, addChanelledOutlet
     , subscribeInlet, subscribeOutlet, subscribeAllInlets, subscribeAllOutlets
     , subscribeChannelsData, subscribeNode  -- subscribeAllData
     , subscribeInlet', subscribeOutlet', subscribeAllInlets', subscribeAllOutlets'
@@ -92,9 +92,9 @@ andThen = (>>=)
 someApiFunc :: forall d. Rpd (Network d)
 someApiFunc =
     init "test"
-        </> addPatch (Path.toPatch "foo")
-        </> addNode (Path.toNode "foo" "test1")
-        </> addNode (Path.toNode "foo" "test2")
+        </> addPatch "foo"
+        </> addNode (Path.toPatch "foo") "test1"
+        </> addNode (Path.toPatch "foo") "test2"
 
 
 -- instance functorRpdOp :: Functor (RpdOp d) where
@@ -143,10 +143,11 @@ uuidByPath f path nw = do
     pure uuid
 
 
-addPatch :: forall d. Path.ToPatch -> Network d -> Rpd (Network d)
-addPatch path nw = do
+addPatch :: forall d. Path.Alias -> Network d -> Rpd (Network d)
+addPatch alias nw = do
     uuid <- liftEffect UUID.new
     let
+        path = Path.toPatch alias
         newPatch =
             Patch
                 (UUID.ToPatch uuid)
@@ -164,16 +165,17 @@ addPatch path nw = do
 
 addNode
     :: forall d
-     . Path.ToNode
+     . Path.ToPatch
+    -> Path.Alias
     -> Network d
     -> Rpd (Network d)
-addNode path nw = do
-    let patchPath = Path.getPatchPath $ Path.lift path
+addNode patchPath nodeAlias nw = do
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     uuid <- liftEffect UUID.new
     PushableFlow pushToInlets inletsFlow <- liftEffect makePushableFlow
     PushableFlow pushToOutlets outletsFlow <- liftEffect makePushableFlow
     let
+        path = Path.nodeInPatch patchPath nodeAlias
         newNode =
             Node
                 (UUID.ToNode uuid)
@@ -198,32 +200,46 @@ addNode path nw = do
 addToolkitNode
     :: forall c d
      . Toolkit.Channel c d
-    => Path.ToNode
+    => Path.ToPatch
+    -> Path.Alias
     -> Toolkit.NodeDefAlias
     -> Toolkit c d
     -> Network d
     -> Rpd (Network d)
-addToolkitNode path nodeAlias (Toolkit toolkit) nw = do
-    (Toolkit.NodeDef nodeDef)
-        <- Map.lookup nodeAlias toolkit.nodes
+addToolkitNode patchPath nodeAlias nodeDefAlias (Toolkit toolkit) nw = do
+    nodeDef
+        <- Map.lookup nodeDefAlias toolkit.nodes
                 # exceptMaybe (RpdError "")
+    nw # addDefNode patchPath nodeAlias nodeDef
+
+
+addDefNode
+    :: forall c d
+     . Toolkit.Channel c d
+    => Path.ToPatch
+    -> Path.Alias
+    -> Toolkit.NodeDef c d
+    -> Network d
+    -> Rpd (Network d)
+addDefNode patchPath nodeAlias (Toolkit.NodeDef nodeDef) nw = do
     nw
-         # addNode path
+         #  addNode patchPath nodeAlias
         </> addInlets nodeDef.inlets
         </> addOutlets nodeDef.outlets
         </> processWith path nodeDef.process
     where
-        Path.ToNode { patch : patchAlias', node : nodeAlias' } = path
+        path = Path.nodeInPatch patchPath nodeAlias
+        Path.ToPatch patchAlias = patchPath
         addInlets inlets nw
             = foldr addInlet (pure nw) inlets
         addOutlets outlets nw
             = foldr addOutlet (pure nw) outlets
         addInlet (Toolkit.InletAlias inletAlias /\ channel) rpd =
             rpd </>
-                addChanelledInlet (Path.toInlet patchAlias' nodeAlias' inletAlias) channel
+                addChanelledInlet path inletAlias channel
         addOutlet (Toolkit.OutletAlias outletAlias /\ channel) rpd =
             rpd </>
-                addChanelledOutlet (Path.toOutlet patchAlias' nodeAlias' outletAlias) channel
+                addChanelledOutlet path outletAlias channel
 
 
 processWith
@@ -251,12 +267,11 @@ processWith path processF nw = do
 
 addInlet
     :: forall d
-     . Path.ToInlet
+     . Path.ToNode
+    -> Path.Alias
     -> Network d
     -> Rpd (Network d)
-addInlet path nw = do
-    nodePath <- Path.getNodePath (Path.lift path)
-        # exceptMaybe (RpdError "")
+addInlet nodePath alias nw = do
     nodeUuid <- nw # uuidByPath UUID.toNode nodePath
     uuid <- liftEffect UUID.new
     PushableFlow pushToInlet inletFlow <- liftEffect makePushableFlow
@@ -264,6 +279,7 @@ addInlet path nw = do
         <- view (_node nodeUuid) nw
             # exceptMaybe (RpdError "")
     let
+        path = Path.inletInNode nodePath alias
         (PushToInlets informNode) = pushToInlets
         newInlet =
             Inlet
@@ -297,13 +313,14 @@ addInlet path nw = do
 addChanelledInlet
     :: forall c d
      . Toolkit.Channel c d
-    => Path.ToInlet
+    => Path.ToNode
+    -> Path.Alias
     -> c
     -> Network d
     -> Rpd (Network d)
-addChanelledInlet path channel nw =
+addChanelledInlet nodePath alias channel nw =
     -- FIXME: implement
-    nw # addInlet path
+    nw # addInlet nodePath alias
 
 
 removeInlet
@@ -331,18 +348,18 @@ removeInlet path nw = do
 
 addOutlet
     :: forall d
-     . Path.ToOutlet
+     . Path.ToNode
+    -> Path.Alias
     -> Network d
     -> Rpd (Network d)
-addOutlet path nw = do
-    nodePath <- Path.getNodePath (Path.lift path)
-        # exceptMaybe (RpdError "")
+addOutlet nodePath alias nw = do
     nodeUuid <- nw # uuidByPath UUID.toNode nodePath
     uuid <- liftEffect UUID.new
     PushableFlow pushToOutlet outletFlow <- liftEffect makePushableFlow
     (Node _ _ _ { pushToOutlets }) :: Node d
         <- view (_node nodeUuid) nw # exceptMaybe (RpdError "")
     let
+        path = Path.outletInNode nodePath alias
         (PushToOutlets informNode) = pushToOutlets
         newOutlet =
             Outlet
@@ -374,13 +391,14 @@ addOutlet path nw = do
 addChanelledOutlet
     :: forall c d
      . Toolkit.Channel c d
-    => Path.ToOutlet
+    => Path.ToNode
+    -> Path.Alias
     -> c
     -> Network d
     -> Rpd (Network d)
-addChanelledOutlet path channel nw =
+addChanelledOutlet nodePath alias channel nw =
     -- FIXME: implement
-    nw # addOutlet path
+    nw # addOutlet nodePath alias
 
 
 -- TODO: removeOutlet

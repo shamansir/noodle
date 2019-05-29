@@ -84,4 +84,9 @@ data ProcessF d
     -- | PassThrough -- TODO
     -- | Process (Receive d -> Effect (Send d))
     -- TODO: one more option to produce Aff (and then cancel it on next iteration)
+    -- TODO: one more option to return (OutletAlias -> Maybe (Flow d))
+    -- TODO: one more option to be able to cancel effect on the next process iteration (i.e. playing a sound or stop some event flow?)
+    -- TODO: one more option to fold with some state (i.e. receive the previous state in the process call)
+    -- TODO: one more option w/o any effects
+    -- TODO: and so, test them all
     | Process ((InletAlias -> Maybe d) -> Effect (OutletAlias -> Maybe d))

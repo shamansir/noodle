@@ -1,6 +1,7 @@
 module RpdTest.Flow.Base
     ( MyRpd
-    , Delivery(..)
+    , Delivery(..), Pipe(..)
+    , myToolkit
     , sumCursesToApplesNode, sumCursesToApplesNode'
     ) where
 
@@ -12,10 +13,12 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
 import Data.List ((:))
 import Data.List as List
+import Data.Tuple.Nested ((/\))
 
 import Rpd.API (Rpd) as R
 import Rpd.Network (Network) as R
 import Rpd.Process (ProcessF) as R
+import Rpd.Toolkit as R
 
 
 data Delivery
@@ -33,16 +36,56 @@ data Delivery
   | Apple Int
   | Pills
 
-derive instance genericDelivery :: Generic Delivery _
-
 instance showDelivery :: Show Delivery where
-  show = genericShow
+  show Damaged = "Damaged"
+  show Email = "Email"
+  show Letter = "Letter"
+  show Parcel = "Parcel"
+  show TV = "TV"
+  show IKEAFurniture = "IKEA Furniture"
+  show Car = "Car"
+  show Notebook = "Notebook"
+  show (Curse n) = "Curses: " <> show n
+  show Liver = "Liver"
+  show Banana = "Banana"
+  show (Apple n) = "Apples: " <> show n
+  show Pills = "Pills"
 
-instance eqDelivery :: Eq Delivery where
-  eq = genericEq
+
+derive instance eqDelivery :: Eq Delivery
 
 
 type MyRpd = R.Rpd (R.Network Delivery)
+
+
+data Pipe
+  = Pass
+  -- | OnlyApples
+  -- | OnlyCurses
+
+
+instance myChannel :: R.Channel Pipe Delivery where
+  default _ = Damaged
+
+  accept _ _ = true
+  -- accept OnlyApples (Apple _) = true
+  -- accept OnlyCurses (Curse _) = true
+  -- accept Pass _ = true
+  -- accept _ _ = false
+
+  adapt _ = identity
+
+
+myToolkit ::  R.Toolkit Pipe Delivery
+myToolkit =
+  R.Toolkit
+    { name : R.ToolkitName "delivery"
+    , nodes : R.nodes []
+        -- (R.nodes
+        --   [ "sumCursesToApples" /\ sumCursesToApplesNode
+        --   , "sumCursesToApples'" /\ sumCursesToApplesNode'
+        --   ])
+    }
 
 
 -- producingNothingNode :: R.NodeDef Delivery
@@ -54,50 +97,33 @@ type MyRpd = R.Rpd (R.Network Delivery)
 --   }
 
 
-appleOutlet :: String -> R.OutletDef Delivery
-appleOutlet label =
-  { label
-  , accept : pure onlyApples
-  }
-
-
-onlyApples :: Delivery -> Boolean
-onlyApples (Apple _) = true
-onlyApples _ = false
-
-
-sumCursesToApplesNode :: R.ProcessF Delivery -> R.NodeDef Delivery
+sumCursesToApplesNode :: R.ProcessF Delivery -> R.NodeDef Pipe Delivery
 sumCursesToApplesNode processF =
-  { name : "Sum Curses to Apples"
-  , inletDefs
-      : curseInlet "curse2"
-      : curseInlet "curse1"
-      : List.Nil
-  , outletDefs
-      : appleOutlet "apples"
-      : List.Nil
-  , process : processF
-  }
-  where
-    curseInlet label =
-      { label
-      , accept : pure onlyCurses
-      , default : Nothing
-      }
-    onlyCurses (Curse _) = true
-    onlyCurses _ = false
+  R.NodeDef
+    { inlets :
+        [ "curse1" /\ Pass
+        , "curse2" /\ Pass
+        ] # R.inlets
+    , outlets :
+        [ "apples" /\ Pass
+        ] # R.outlets
+    , process : processF
+    }
 
 
-sumCursesToApplesNode' :: R.ProcessF Delivery -> R.NodeDef Delivery
+sumCursesToApplesNode' :: R.ProcessF Delivery -> R.NodeDef Pipe Delivery
 sumCursesToApplesNode' processF =
-  let singleOutletNode = sumCursesToApplesNode processF
-  in singleOutletNode
-      { name = "Sum Curses to Apples'"
-      , outletDefs
-          = appleOutlet "apples2"
-          : appleOutlet "apples1"
-          : List.Nil
-      }
+  R.NodeDef
+    { inlets :
+        [ "curse1" /\ Pass
+        , "curse2" /\ Pass
+        ] # R.inlets
+    , outlets :
+        [ "apples1" /\ Pass
+        , "apples2" /\ Pass
+        ] # R.outlets
+    , process : processF
+    }
 
 
 -- logOrExec

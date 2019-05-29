@@ -17,7 +17,7 @@ import Rpd (run) as R
 import Rpd.API ((</>))
 import Rpd.API as R
 import Rpd.Process (InletHandler(..)) as R
-import Rpd.Path (inletPath, nodePath, patchPath)
+import Rpd.Path (toPatch, toNode, toInlet)
 import Rpd.Util (flow) as R
 
 import Test.Spec (Spec, it)
@@ -73,15 +73,15 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchPath 0) "node"
-          </> R.addInlet (nodePath 0 0) "inlet"
-          </> R.subscribeInlet (inletPath 0 0 0) handler
+          </> R.addNode (toPatch "patch") "node"
+          </> R.addInlet (toNode "patch" "node") "inlet"
+          </> R.subscribeInlet (toInlet "patch" "node" "inlet") handler
 
     rpd # withRpd \nw -> do
       _ <- liftEffect
               $ R.run (const unit) (const unit)
               $ nw # R.streamToInlet
-                (inletPath 0 0 0)
+                (toInlet "patch" "node" "inlet")
                 (R.flow $ const Notebook <$> interval 30)
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Ref.read ref
@@ -103,15 +103,15 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchPath 0) "node"
-          </> R.addInlet (nodePath 0 0) "inlet"
-          </> R.subscribeInlet (inletPath 0 0 0) handler
+          </> R.addNode (toPatch "patch") "node"
+          </> R.addInlet (toNode "patch" "node") "inlet"
+          </> R.subscribeInlet (toInlet "patch" "node" "inlet") handler
 
     rpd # withRpd \nw -> do
       _ <- liftEffect
               $ R.run (const unit) (const unit) -- FIXME: report the error as `Aff.throwError`
               $ nw # R.streamToInlet
-                        (inletPath 0 0 0)
+                        (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Ref.read ref
@@ -120,9 +120,9 @@ spec = do
       vals' <- liftEffect $ Ref.read ref
       _ <- liftEffect
               $ R.run (const unit) (const unit)
-              $ nw  #  R.removeInlet (inletPath 0 0 0)
+              $ nw  #  R.removeInlet (toInlet "patch" "node" "inlet")
                    </> R.streamToInlet
-                          (inletPath 0 0 0)
+                          (toInlet "patch" "node" "inlet")
                           (R.flow $ const Liver <$> interval 30)
       delay (Milliseconds 100.0)
       vals'' <- liftEffect $ Ref.read ref
@@ -140,15 +140,15 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchPath 0) "node"
-          </> R.addInlet (nodePath 0 0) "inlet"
-          </> R.subscribeInlet (inletPath 0 0 0) handler
+          </> R.addNode (toPatch "patch") "node"
+          </> R.addInlet (toNode "patch" "node") "inlet"
+          </> R.subscribeInlet (toInlet "patch" "node" "inlet") handler
 
     rpd # withRpd \nw -> do
       _ <- liftEffect
               $ R.run (const unit) (const unit) -- FIXME: report the error as `Aff.throwError`
               $ nw # R.streamToInlet
-                        (inletPath 0 0 0)
+                        (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Ref.read ref
@@ -157,10 +157,10 @@ spec = do
       vals' <- liftEffect $ Ref.read ref
       _ <- liftEffect
               $ R.run (const unit) (const unit)
-              $ nw  #  R.removeInlet (inletPath 0 0 0)
-                   </> R.addInlet (nodePath 0 0) "inlet" -- notice the inlet is added back
+              $ nw  #  R.removeInlet (toInlet "patch" "node" "inlet")
+                   </> R.addInlet (toNode "patch" "node") "inlet" -- notice the inlet is added back
                    </> R.streamToInlet
-                          (inletPath 0 0 0)
+                          (toInlet "patch" "node" "inlet")
                           (R.flow $ const Liver <$> interval 30)
       delay (Milliseconds 100.0)
       vals'' <- liftEffect $ Ref.read ref
