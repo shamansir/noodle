@@ -25,6 +25,7 @@ import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFr
 import Data.String as String
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
+import Data.Newtype (unwrap)
 
 import Data.Either (Either(..))
 
@@ -39,20 +40,33 @@ import Math (ceil, sqrt, (%))
 import Rpd.API (RpdError) as R
 import Rpd.Command as C
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
-import Rpd.Optics (_patchNodes, _node, _patch) as R
-import Rpd.Path (Path(..), InletPath, OutletPath, NodePath, PatchPath) as R
+import Rpd.Optics as R
+import Rpd.Path as R
 import Rpd.Render.MUV (Renderer(..), PushF(..)) as R
 
 import Rpd.Renderer.Terminal.Multiline as ML
 
 
+data Subject
+    = PatchSubj R.ToPatch
+    | NodeSubj R.ToNode
+    | InletSubj R.ToInlet
+    | OutletSubj R.ToOutlet
+
+
+instance showSubject :: Show Subject where
+    show (PatchSubj patchPath) = show patchPath
+    show (NodeSubj nodePath) = show nodePath
+    show (InletSubj inletPath) = show inletPath
+    show (OutletSubj outletPath) = show outletPath
+
 -- data Cell =
 --     Cell R.Path View
 
 -- R2.Bin2 Stores information about width/height and x/y
-data Packing = Packing (R2.Bin2 Int { subject :: R.Path, packing :: Maybe Packing })
+data Packing = Packing (R2.Bin2 Int { subject :: Subject, packing :: Maybe Packing })
 
-type Item = R2.Item Int { subject :: R.Path, packing :: Maybe Packing }
+type Item = R2.Item Int { subject :: Subject, packing :: Maybe Packing }
 
 
 data Status
@@ -135,17 +149,17 @@ viewStatus _ = ML.from' ">"
 
 
 packInlet :: forall d. R.Network d -> R.Inlet d -> Item
-packInlet nw (R.Inlet path _ _) =
-    R2.item 0 0 { subject : R.ToInlet path, packing : Nothing }
+packInlet nw (R.Inlet _ path _) =
+    R2.item 0 0 { subject : InletSubj path, packing : Nothing }
 
 
 packOutlet :: forall d. R.Network d -> R.Outlet d -> Item
-packOutlet nw (R.Outlet path _ _) =
-    R2.item 0 0 { subject : R.ToOutlet path, packing : Nothing }
+packOutlet nw (R.Outlet _ path _) =
+    R2.item 0 0 { subject : OutletSubj path, packing : Nothing }
 
 
 viewNode :: forall d. R.Network d -> R.Node d -> View
-viewNode nw (R.Node path { name } { inlets, outlets }) =
+viewNode nw (R.Node uuid path@(R.ToNode { node : name }) _ { inlets, outlets }) =
     let
         inletsStr = String.fromCodePointArray
             $ Array.replicate (Set.size inlets)
@@ -159,9 +173,9 @@ viewNode nw (R.Node path { name } { inlets, outlets }) =
 
 
 packNode :: forall d. R.Network d -> R.Node d -> Item
-packNode nw (R.Node path { name } { inlets, outlets }) =
+packNode nw (R.Node uuid path@(R.ToNode { node : name }) _ { inlets, outlets }) =
     R2.item width 1
-        { subject : R.ToNode path
+        { subject : NodeSubj path
         , packing : Nothing
         }
     where
@@ -169,7 +183,7 @@ packNode nw (R.Node path { name } { inlets, outlets }) =
 
 
 viewPatch :: forall d. R.Network d -> Bounds -> R.Patch d -> View
-viewPatch nw bounds (R.Patch _ _ { nodes })  =
+viewPatch nw bounds (R.Patch _ _ nodes)  =
     let
         patchView = ML.empty' initialBounds
         applyNodeView nodePath curPatchView =
@@ -188,7 +202,7 @@ packPatch
     -> R.Network d
     -> R.Patch d
     -> Item
-packPatch (width /\ height) nw patch@(R.Patch patchPath { name } { nodes }) =
+packPatch (width /\ height) nw patch@(R.Patch _ (R.ToPatch name) nodes) =
     let
         container = R2.container width height
         packing =
@@ -203,13 +217,13 @@ packPatch (width /\ height) nw patch@(R.Patch patchPath { name } { nodes }) =
                 # Packing
     in
         R2.item width height
-            { subject : R.ToPatch patchPath
+            { subject : PatchSubj $ R.ToPatch name
             , packing : Just packing
             }
 
 
 viewNetwork :: forall d. Packing -> R.Network d -> View
-viewNetwork (Packing b2) nw@(R.Network { name } { patches })  =
+viewNetwork (Packing b2) nw@(R.Network { name, patches })  =
     R2.unfold foldingF startView b2
     where
         startView = ML.empty' (100 /\ 100)
@@ -224,29 +238,30 @@ viewNetwork (Packing b2) nw@(R.Network { name } { patches })  =
                         # maybe v injectSubjView
                 withSubPacking v' =
                     maybe v' (injectSubPacking v') item.packing
-        viewSubject (R.ToPatch patchPath) w h =
-            Lens.view (R._patch patchPath) nw >>=
+        viewSubject (PatchSubj patchPath) w h =
+            Lens.view (R._patchByPath patchPath) nw >>=
                 pure <<< viewPatch nw (w /\ h)
-        viewSubject (R.ToNode nodePath) w h =
-            Lens.view (R._node nodePath) nw >>=
+        viewSubject (NodeSubj nodePath) w h =
+            Lens.view (R._nodeByPath nodePath) nw >>=
                 pure <<< viewNode nw
         viewSubject _ _ _ = Nothing
 
 
 
 packNetwork :: forall d. R.Network d -> Packing -> Packing
-packNetwork nw@(R.Network { name } { patches }) (Packing container) =
+packNetwork nw@(R.Network { name, patches }) (Packing container) =
     let
         width /\ height = R2.size container
-        patchCount = toNumber $ Map.size patches
+        patchCount = toNumber $ Set.size patches
         columns = ceil $ sqrt patchCount
         rows = round $ patchCount / columns
         orphans = round $ patchCount % columns
         patchWidth = round $ toNumber width / columns
         patchHeight = round $ toNumber height
             / toNumber (if (orphans == 0) then rows else 1 + rows)
+        actualPatches = Lens.view R._networkPatches nw
     in
-        Map.values patches
+        actualPatches
             # map (packPatch (patchWidth /\ patchHeight) nw)
             # R2.pack container
             # fromMaybe container

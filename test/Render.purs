@@ -58,7 +58,7 @@ spec =
       let
         singleNodeNW = myRpd
           </> R.addPatch "foo"
-          </> R.addNode (patchPath 0) "bar"
+          </> R.addNode (toPatch "foo") "bar"
       stringSample <- liftEffect $ loadSample "SingleNode.String"
       expectToRenderOnce stringRenderer singleNodeNW stringSample
       expectToRenderOnceMUV terminalRenderer singleNodeNW $
@@ -68,12 +68,12 @@ spec =
       let
         severalNodesNW = myRpd
           </> R.addPatch "foo0"
-          </> R.addNode (patchPath 0) "bar00"
-          </> R.addNode (patchPath 0) "bar01"
-          </> R.addNode (patchPath 0) "bar02"
+          </> R.addNode (toPatch "foo0") "bar00"
+          </> R.addNode (toPatch "foo0") "bar01"
+          </> R.addNode (toPatch "foo0") "bar02"
           </> R.addPatch "foo1"
-          </> R.addNode (patchPath 1) "bar10"
-          </> R.addNode (patchPath 1) "bar11"
+          </> R.addNode (toPatch "foo1") "bar10"
+          </> R.addNode (toPatch "foo1") "bar11"
       stringSample <- liftEffect $ loadSample "SeveralNodes.String"
       terminalSample <- liftEffect $ loadSample "SeveralNodes.Terminal"
       expectToRenderOnce stringRenderer severalNodesNW stringSample
@@ -85,11 +85,11 @@ spec =
       let
         nodeWithInletsAndOutletsNW = myRpd
           </> R.addPatch "foo"
-          </> R.addNode (patchPath 0) "bar"
-          </> R.addInlet (nodePath 0 0) "buz1"
-          </> R.addInlet (nodePath 0 0) "buz2"
-          </> R.addOutlet (nodePath 0 0) "abc1"
-          </> R.addOutlet (nodePath 0 0) "abc2"
+          </> R.addNode (toPatch "foo") "bar"
+          </> R.addInlet (toNode "foo" "bar") "buz1"
+          </> R.addInlet (toNode "foo" "bar") "buz2"
+          </> R.addOutlet (toNode "foo" "bar") "abc1"
+          </> R.addOutlet (toNode "foo" "bar") "abc2"
       stringSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.String"
       terminalSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.Terminal"
       expectToRenderOnce stringRenderer nodeWithInletsAndOutletsNW stringSample
@@ -101,11 +101,11 @@ spec =
       let
         withConnectionNW = myRpd
           </> R.addPatch "foo"
-          </> R.addNode (patchPath 0) "src"
-          </> R.addOutlet (nodePath 0 0) "srco"
-          </> R.addNode (patchPath 0) "dst"
-          </> R.addInlet (nodePath 0 1) "dsti"
-          </> R.connect (outletPath 0 0 0) (inletPath 0 1 0)
+          </> R.addNode (toPatch "foo") "src"
+          </> R.addOutlet (toNode "foo" "src") "srco"
+          </> R.addNode (toPatch "foo") "dst"
+          </> R.addInlet (toNode "foo" "dst") "dsti"
+          </> R.connect (toOutlet "foo" "src" "srco") (toInlet "foo" "dst" "dsti")
       stringSample <- liftEffect $ loadSample "WithConnection.String"
       terminalSample <- liftEffect $ loadSample "WithConnection.Terminal"
       expectToRenderOnce stringRenderer withConnectionNW stringSample
@@ -116,7 +116,7 @@ spec =
       let
         erroneousNW = myRpd
           -- add inlet to non-exising node
-          </> R.addInlet (nodePath 0 0) "foo"
+          </> R.addInlet (toNode "idont" "exist") "foo"
       stringSample <- liftEffect $ loadSample "Error.String"
       expectToRenderOnce stringRenderer erroneousNW stringSample
       expectToRenderOnceMUV terminalRenderer erroneousNW $ ML.from' "ERR: "

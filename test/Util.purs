@@ -19,7 +19,7 @@ import Rpd.API (Rpd) as Rpd
 import Rpd.Network (Network) as Rpd
 import Rpd.Network (empty) as Network
 import Rpd.Log (runRpdLogging) as RL
-import Rpd.UUID as UUIDnp
+import Rpd.UUID as UUID
 
 
 runWith :: forall d. Rpd.Network d -> (Rpd.Network d -> Aff Unit) -> Aff Unit
