@@ -1,12 +1,12 @@
 Network foo:
 One Patch
- Patch foo <P@foo>:
+·Patch foo <P@foo>:
  One Node
-  Node bar <P@foo/N@bar>:
+ ·Node bar <P@foo/N@bar>:
   2 Inlets
-   Inlet buz1 <P@foo/N@bar/@Ibuz1>
-   Inlet buz2 <P@foo/N@bar/@Ibuz2>
+  ·Inlet buz1 <P@foo/N@bar/@Ibuz1>
+  ·Inlet buz2 <P@foo/N@bar/@Ibuz2>
   2 Outlets
-   Outlet abc1 <P@foo/N@bar/@Oabc1>
-   Outlet abc2 <P@foo/N@bar/@Oabc2>
+  ·Outlet abc1 <P@foo/N@bar/@Oabc1>
+  ·Outlet abc2 <P@foo/N@bar/@Oabc2>
  No Links

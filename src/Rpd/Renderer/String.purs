@@ -39,7 +39,9 @@ data Counter = Counter MultipleOrNone Single
 
 
 lineBreak = "\n" :: String
-space = " " :: String
+vertLine = " " :: String
+corner = "·" :: String
+semicolon = ":" :: String
 
 
 patchCounter = Counter (MultipleOrNone "Patches") (Single "Patch") :: Counter
@@ -61,19 +63,19 @@ stringRenderer =
     Renderer "" view
 
 
-
 view :: forall d. PushCmd d -> Either R.RpdError (R.Network d) -> String
 view _ (Right nw@(R.Network { name, patches })) =
-    "Network " <> name <> ":" <> lineBreak
+    "Network " <> name <> semicolon
+        <> lineBreak
         <> count patchCounter patchCount
         <> (if patchCount > 0 then
-                lineBreak <> space <> patchesInfo
+                lineBreak <> corner <> patchesInfo
             else "")
     where
         allPatches = L.view _networkPatches nw
         patchCount = List.length allPatches
         patchesInfo =
-            joinWith (lineBreak <> space)
+            joinWith (lineBreak <> corner)
                 $ (viewPatch nw <$> allPatches)
                     # List.toUnfoldable
 view _ (Left err) =
@@ -82,14 +84,16 @@ view _ (Left err) =
 
 viewPatch :: forall d. R.Network d -> R.Patch d -> String
 viewPatch nw (R.Patch id path@(P.ToPatch name) { nodes, links }) =
-    "Patch " <> name <> " " <> show path <> ":" <> lineBreak <> space
+    "Patch " <> name <> " " <> show path <> semicolon
+        <> lineBreak <> vertLine
         <> count nodeCounter nodeCount
         <> (if nodeCount > 0 then
-               lineBreak <> space <> space <> nodesInfo
+               lineBreak <> vertLine <> corner <> nodesInfo
             else "")
-        <> lineBreak <> space <> count linkCounter linkCount
+        <> lineBreak <> vertLine
+        <> count linkCounter linkCount
         <> (if linkCount > 0 then
-               lineBreak <> space <> space <> linksInfo
+               lineBreak <> vertLine <> corner <> linksInfo
             else "")
     where
         nodeCount = Seq.length nodes
@@ -97,40 +101,40 @@ viewPatch nw (R.Patch id path@(P.ToPatch name) { nodes, links }) =
         allNodes =
             Seq.toUnfoldable nodes # map \path -> L.view (_node path) nw
         nodesInfo =
-            joinWith (lineBreak <> space <> space)
+            joinWith (lineBreak <> vertLine <> corner)
                 $ viewNode nw <$> Array.catMaybes allNodes
         allLinks =
             Seq.toUnfoldable links # map \path -> L.view (_link path) nw
         linksInfo =
-            joinWith (lineBreak <> space <> space)
+            joinWith (lineBreak <> vertLine <> corner)
                 $ viewLink nw <$> Array.catMaybes allLinks
 
 
 viewNode :: forall d. R.Network d -> R.Node d -> String
 viewNode nw (R.Node _ path@(P.ToNode { node }) _ { inlets, outlets }) =
-    "Node " <> node <> " " <> show path <> ":" <> lineBreak
-        <> twiceSpace <> count inletCounter inletCount
+    "Node " <> node <> " " <> show path <> semicolon
+        <> lineBreak <> vertLine <> vertLine
+        <> count inletCounter inletCount
         <> (if inletCount > 0 then
-                lineBreak <> tripleSpace <> inletsInfo
+                lineBreak <> vertLine <> vertLine <> corner <> inletsInfo
             else "")
-        <> lineBreak <> twiceSpace <> count outletCounter outletCount
+        <> lineBreak <> vertLine <> vertLine
+        <> count outletCounter outletCount
         <> (if outletCount > 0 then
-                lineBreak <> tripleSpace <> outletsInfo
+                lineBreak <> vertLine <> vertLine <> corner <> outletsInfo
             else "")
     where
         inletCount = Seq.length inlets
         outletCount = Seq.length outlets
-        twiceSpace = space <> space
-        tripleSpace = space <> space <> space
         allInlets =
             Seq.toUnfoldable inlets # map \path -> L.view (_inlet path) nw
         inletsInfo =
-            joinWith (lineBreak <> tripleSpace)
+            joinWith (lineBreak <> vertLine <> vertLine <> corner)
                 $ viewInlet nw <$> Array.catMaybes allInlets
         allOutlets =
             Seq.toUnfoldable outlets # map \path -> L.view (_outlet path) nw
         outletsInfo =
-            joinWith (lineBreak <> tripleSpace)
+            joinWith (lineBreak <> vertLine <> vertLine <> corner)
                 $ viewOutlet nw <$> Array.catMaybes allOutlets
 
 

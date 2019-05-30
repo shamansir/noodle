@@ -1,22 +1,23 @@
 Network foo:
 2 Patches
- Patch foo0 <P@foo0>:
+·Patch foo0 <P@foo0>:
  3 Nodes
-  Node bar00 <P@foo0/N@bar00>:
+ ·Node bar00 <P@foo0/N@bar00>:
   No Inlets
   No Outlets
-  Node bar01 <P@foo0/N@bar01>:
+ ·Node bar01 <P@foo0/N@bar01>:
   No Inlets
   No Outlets
-  Node bar02 <P@foo0/N@bar02>:
+ ·Node bar02 <P@foo0/N@bar02>:
   No Inlets
   No Outlets
- Patch foo1 <P@foo1>:
+ No Links
+·Patch foo1 <P@foo1>:
  2 Nodes
-  Node bar10 <P@foo1/N@bar10>:
+ ·Node bar10 <P@foo1/N@bar10>:
   No Inlets
   No Outlets
-  Node bar11 <P@foo1/N@bar11>:
+ ·Node bar11 <P@foo1/N@bar11>:
   No Inlets
   No Outlets
  No Links

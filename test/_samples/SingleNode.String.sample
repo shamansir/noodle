@@ -1,8 +1,8 @@
 Network foo:
 One Patch
- Patch foo <P@foo>:
+·Patch foo <P@foo>:
  One Node
-  Node bar <P@foo/N@bar>:
+ ·Node bar <P@foo/N@bar>:
   No Inlets
   No Outlets
  No Links
