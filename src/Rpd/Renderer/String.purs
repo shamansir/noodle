@@ -9,8 +9,8 @@ import Prelude
 import Data.Map as Map
 import Data.Array as Array
 import Data.List as List
-import Data.Set as Set
-import Data.Set (Set)
+import Data.Sequence as Seq
+import Data.Sequence (Seq)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Lens as L
 import Data.Either (Either(..))
@@ -26,7 +26,7 @@ import Rpd.Network
     , Link(..)
     ) as R
 import Rpd.API (RpdError) as R
-import Rpd.Optics (_node, _inlet, _outlet, _networkPatches, _networkLinks)
+import Rpd.Optics (_node, _inlet, _outlet, _link, _networkPatches, _networkLinks)
 import Rpd.Render (PushCmd, Renderer(..))
 import Rpd.Path as P
 
@@ -69,38 +69,41 @@ view _ (Right nw@(R.Network { name, patches })) =
         <> (if patchCount > 0 then
                 lineBreak <> space <> patchesInfo
             else "")
-        <> lineBreak <> count linkCounter linkCount
-        <> (if linkCount > 0 then
-                lineBreak <> space <> linksInfo
-            else "")
     where
-        allLinks = L.view _networkLinks nw
         allPatches = L.view _networkPatches nw
         patchCount = List.length allPatches
-        linkCount = List.length allLinks
         patchesInfo =
             joinWith (lineBreak <> space)
                 $ (viewPatch nw <$> allPatches)
-                    # List.toUnfoldable
-        linksInfo =
-            joinWith lineBreak
-                $ (viewLink nw <$> allLinks)
                     # List.toUnfoldable
 view _ (Left err) =
     "<" <> show err <> ">"
 
 
 viewPatch :: forall d. R.Network d -> R.Patch d -> String
-viewPatch nw (R.Patch id path@(P.ToPatch name) nodes) =
+viewPatch nw (R.Patch id path@(P.ToPatch name) { nodes, links }) =
     "Patch " <> name <> " " <> show path <> ":" <> lineBreak <> space
-        <> count nodeCounter (Set.size nodes) <> lineBreak <> space <> space
-        <> nodesInfo
+        <> count nodeCounter nodeCount
+        <> (if nodeCount > 0 then
+               lineBreak <> space <> space <> nodesInfo
+            else "")
+        <> lineBreak <> space <> count linkCounter linkCount
+        <> (if linkCount > 0 then
+               lineBreak <> space <> space <> linksInfo
+            else "")
     where
+        nodeCount = Seq.length nodes
+        linkCount = Seq.length links
         allNodes =
-            Set.toUnfoldable nodes # map \path -> L.view (_node path) nw
+            Seq.toUnfoldable nodes # map \path -> L.view (_node path) nw
         nodesInfo =
             joinWith (lineBreak <> space <> space)
                 $ viewNode nw <$> Array.catMaybes allNodes
+        allLinks =
+            Seq.toUnfoldable links # map \path -> L.view (_link path) nw
+        linksInfo =
+            joinWith (lineBreak <> space <> space)
+                $ viewLink nw <$> Array.catMaybes allLinks
 
 
 viewNode :: forall d. R.Network d -> R.Node d -> String
@@ -115,17 +118,17 @@ viewNode nw (R.Node _ path@(P.ToNode { node }) _ { inlets, outlets }) =
                 lineBreak <> tripleSpace <> outletsInfo
             else "")
     where
-        inletCount = Set.size inlets
-        outletCount = Set.size outlets
+        inletCount = Seq.length inlets
+        outletCount = Seq.length outlets
         twiceSpace = space <> space
         tripleSpace = space <> space <> space
         allInlets =
-            Set.toUnfoldable inlets # map \path -> L.view (_inlet path) nw
+            Seq.toUnfoldable inlets # map \path -> L.view (_inlet path) nw
         inletsInfo =
             joinWith (lineBreak <> tripleSpace)
                 $ viewInlet nw <$> Array.catMaybes allInlets
         allOutlets =
-            Set.toUnfoldable outlets # map \path -> L.view (_outlet path) nw
+            Seq.toUnfoldable outlets # map \path -> L.view (_outlet path) nw
         outletsInfo =
             joinWith (lineBreak <> tripleSpace)
                 $ viewOutlet nw <$> Array.catMaybes allOutlets

@@ -10,5 +10,5 @@ One Patch
   One Inlet
    Inlet dsti <P@foo/N@dst/@Idsti>
   No Outlets
-One Link
- Link from <P@foo/N@src/@Osrco> to <P@foo/N@dst/@Idsti>
+ One Link
+  Link from <P@foo/N@src/@Osrco> to <P@foo/N@dst/@Idsti>

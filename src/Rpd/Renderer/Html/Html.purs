@@ -9,7 +9,7 @@ import Data.Lens.At (at) as L
 import Data.List (toUnfoldable)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), isJust)
-import Data.Set as Set
+import Data.Sequence as Seq
 import Data.Tuple.Nested (type (/\), (/\))
 import Debug.Trace (spy)
 
@@ -73,7 +73,7 @@ viewNetwork pushMsg ui nw@(R.Network { name, patches }) =
     H.div
         [ H.id_ "network" ]
         $ [ H.text name ] <>
-            (toUnfoldable $ viewPatch pushMsg ui nw <$> (patches  # Set.toUnfoldable))
+            (toUnfoldable $ viewPatch pushMsg ui nw <$> (patches # Seq.toUnfoldable))
 
 
 viewPatch
@@ -85,11 +85,11 @@ viewPatch
     -> View d
 viewPatch pushMsg ui nw patchUuid =
     case L.view (L._patch patchUuid) nw of
-        Just (R.Patch _ (P.ToPatch name) nodes) ->
+        Just (R.Patch _ (P.ToPatch name) { nodes }) ->
             H.div
                 [ H.classes [ "patch" ] ]
                 $ [ H.text name ] <>
-                    (viewNode pushMsg ui nw <$> (nodes # Set.toUnfoldable))
+                    (viewNode pushMsg ui nw <$> (nodes # Seq.toUnfoldable))
         _ ->
             H.div
                 [ H.classes [ "patch" ] ]
@@ -119,8 +119,8 @@ viewNode pushMsg ui nw nodeUuid =
                             $ C.AddInlet (P.toNode "0" "0") "0" ]
                         [ H.text "Add Inlet" ]
                     ]
-                    <> (viewInlet pushMsg ui nw <$> (inlets # Set.toUnfoldable))
-                    <> (viewOutlet pushMsg ui nw <$> (outlets # Set.toUnfoldable))
+                    <> (viewInlet pushMsg ui nw <$> (inlets # Seq.toUnfoldable))
+                    <> (viewOutlet pushMsg ui nw <$> (outlets # Seq.toUnfoldable))
                 )
         _ -> H.div
                 [ H.classes [ "node" ] ]

@@ -20,7 +20,7 @@ import Data.List (List, (:))
 import Data.List as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Set as Set
+import Data.Sequence as Seq
 import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFromChar)
 import Data.String as String
 import Data.Tuple (snd) as Tuple
@@ -162,10 +162,10 @@ viewNode :: forall d. R.Network d -> R.Node d -> View
 viewNode nw (R.Node uuid path@(R.ToNode { node : name }) _ { inlets, outlets }) =
     let
         inletsStr = String.fromCodePointArray
-            $ Array.replicate (Set.size inlets)
+            $ Array.replicate (Seq.length inlets)
             $ codePointFromChar 'i'
         outletsStr = String.fromCodePointArray
-            $ Array.replicate (Set.size outlets)
+            $ Array.replicate (Seq.length outlets)
             $ codePointFromChar 'o'
         nodeViewStr = "[" <> inletsStr <> "]" <> name <> "[" <> outletsStr <> "]"
     in ML.empty' (String.length nodeViewStr /\ 1 )
@@ -179,11 +179,11 @@ packNode nw (R.Node uuid path@(R.ToNode { node : name }) _ { inlets, outlets }) 
         , packing : Nothing
         }
     where
-        width = String.length name + Set.size inlets + Set.size outlets + 4
+        width = String.length name + Seq.length inlets + Seq.length outlets + 4
 
 
 viewPatch :: forall d. R.Network d -> Bounds -> R.Patch d -> View
-viewPatch nw bounds (R.Patch _ _ nodes)  =
+viewPatch nw bounds (R.Patch _ _ { nodes })  =
     let
         patchView = ML.empty' initialBounds
         applyNodeView nodePath curPatchView =
@@ -202,12 +202,12 @@ packPatch
     -> R.Network d
     -> R.Patch d
     -> Item
-packPatch (width /\ height) nw patch@(R.Patch _ (R.ToPatch name) nodes) =
+packPatch (width /\ height) nw patch@(R.Patch _ (R.ToPatch name) { nodes }) =
     let
         container = R2.container width height
         packing =
             nodes
-                # Set.toUnfoldable
+                # Seq.toUnfoldable
                 # map (\path -> Lens.view (R._node path) nw)
                 # Array.catMaybes
                 # map (packNode nw)
@@ -252,7 +252,7 @@ packNetwork :: forall d. R.Network d -> Packing -> Packing
 packNetwork nw@(R.Network { name, patches }) (Packing container) =
     let
         width /\ height = R2.size container
-        patchCount = toNumber $ Set.size patches
+        patchCount = toNumber $ Seq.length patches
         columns = ceil $ sqrt patchCount
         rows = round $ patchCount / columns
         orphans = round $ patchCount % columns

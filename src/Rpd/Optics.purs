@@ -1,7 +1,7 @@
 module Rpd.Optics
     ( _entity, _pathToId
     , _networkPatch, _networkPatches, _networkInlets, _networkOutlets, _networkLinks
-    , _patch, _patchByPath, _patchNode
+    , _patch, _patchByPath, _patchNode, _patchLink
     , _node, _nodeByPath, _nodeInlet, _nodeOutlet, _nodeInletsFlow, _nodeOutletsFlow
     , _inlet, _inletByPath, _inletFlow, _inletPush
     , _outlet, _outletByPath, _outletFlow, _outletPush
@@ -20,6 +20,8 @@ import Data.Maybe (Maybe(..))
 import Data.List (List)
 import Data.List as List
 import Data.Map as Map
+import Data.Sequence as Seq
+import Data.Sequence (Seq)
 import Data.Tuple.Nested (type (/\))
 
 import Rpd.Network
@@ -28,6 +30,7 @@ import Rpd.Path as Path
 import Rpd.UUID (UUID)
 import Rpd.UUID as UUID
 import Rpd.Util (Flow, PushableFlow(..), Canceler)
+import Rpd.Util (seqMember', seqDelete) as Util
 
 
 -- make separate lenses to access the entities registry by uuid,
@@ -76,6 +79,17 @@ _uuidLens adaptEntity extractEntity uuid =
             set (_entity uuid) (adaptEntity <$> val) nw
 
 
+_seq :: forall a. Eq a => a -> Lens' (Seq a) (Maybe Unit)
+_seq v =
+    lens getter setter
+    where
+        getter = Util.seqMember' v
+        setter seq maybeVal =
+            case maybeVal of
+                Just val -> v # Seq.snoc seq
+                Nothing -> seq # Util.seqDelete v
+
+
 _patch :: forall d. UUID.ToPatch -> Lens' (Network d) (Maybe (Patch d))
 _patch uuid = _uuidLens PatchEntity extractPatch $ UUID.liftTagged uuid
 
@@ -89,17 +103,40 @@ _patchNode patchUuid nodeUuid =
     lens getter setter
     where
         patchLens = _patch patchUuid
-        nodeLens = at nodeUuid
+        nodeLens = _seq nodeUuid
         getter nw =
             view patchLens nw
-                >>= \(Patch _ _ nodes) -> view nodeLens nodes
+                >>= \(Patch _ _ { nodes }) -> view nodeLens nodes
         setter nw val =
             over patchLens
-                (map $ \(Patch puuid ppath nodes) ->
+                (map $ \(Patch puuid ppath pstate@{ nodes }) ->
                     Patch
                         puuid
                         ppath
-                        (set nodeLens val nodes)
+                        (pstate
+                            { nodes = set nodeLens val nodes
+                            })
+                ) nw
+
+
+_patchLink :: forall d. UUID.ToPatch -> UUID.ToLink -> Lens' (Network d) (Maybe Unit)
+_patchLink patchUuid linkUuid =
+    lens getter setter
+    where
+        patchLens = _patch patchUuid
+        linkLens = _seq linkUuid
+        getter nw =
+            view patchLens nw
+                >>= \(Patch _ _ { links }) -> view linkLens links
+        setter nw val =
+            over patchLens
+                (map $ \(Patch puuid ppath pstate@{ links }) ->
+                    Patch
+                        puuid
+                        ppath
+                        (pstate
+                            { links = set linkLens val links
+                            })
                 ) nw
 
 
@@ -116,7 +153,7 @@ _nodeInlet nodeUuid inletUuid =
     lens getter setter
     where
         nodeLens = _node nodeUuid
-        inletLens = at inletUuid
+        inletLens = _seq inletUuid
         getter nw =
             view nodeLens nw
                 >>= \(Node _ _ _ { inlets }) -> view inletLens inlets
@@ -136,7 +173,7 @@ _nodeOutlet nodeUuid outletUuid =
     lens getter setter
     where
         nodeLens = _node nodeUuid
-        outletLens = at outletUuid
+        outletLens = _seq outletUuid
         getter nw =
             view nodeLens nw
                 >>= \(Node _ _ _ { outlets }) -> view outletLens outlets
@@ -187,11 +224,12 @@ _link uuid = _uuidLens LinkEntity extractLink $ UUID.liftTagged uuid
 -- _linkByPath :: forall d. Path.ToLink -> Getter' (Network d) (Maybe Link)
 -- _linkByPath = _pathGetter extractLink
 
+-- TODO: only getter for Sequence?
 _networkPatch :: forall d. UUID.ToPatch -> Lens' (Network d) (Maybe Unit)
 _networkPatch uuid =
     lens getter setter
     where
-        patchLens = at uuid
+        patchLens = _seq uuid
         getter (Network { patches }) =
             view patchLens patches
         setter (Network nwstate) val =

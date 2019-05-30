@@ -18,8 +18,9 @@ module Rpd.Network
 import Prelude (class Eq, (==))
 
 import Data.Map as Map
-import Data.Set (Set)
-import Data.Set (empty) as Set
+import Data.Sequence as Seq
+import Data.Sequence (Seq)
+
 import Data.Tuple.Nested ((/\), type (/\))
 
 -- import Rpd.Channel (class Channel)
@@ -58,7 +59,7 @@ data Entity d
 data Network d =
     Network
         { name :: String
-        , patches :: Set UUID.ToPatch
+        , patches :: Seq UUID.ToPatch
         , registry :: UUID.Tagged /-> Entity d
         -- , pathToId :: Path /-> Set UUID
         , pathToId :: Path /-> UUID.Tagged
@@ -75,7 +76,9 @@ data Patch d =
         Path.ToPatch
         -- FIXME: order in all of the sets may change, because we compare UUIDs using `Ord`
         --        we need to ensure they added in the order of `addNode` calls
-        (Set UUID.ToNode) -- TODO: links also should be stored in a patch
+        { nodes :: Seq UUID.ToNode -- TODO: links also should be stored in a patch
+        , links :: Seq UUID.ToLink
+        }
 data Node d =
     Node
         UUID.ToNode
@@ -83,8 +86,8 @@ data Node d =
         (ProcessF d)
         -- FIXME: order in all of the sets may change, because we compare UUIDs using `Ord`
         --        we need to ensure they added in the order of `addInlet`/`addOutlet` calls
-        { inlets :: Set UUID.ToInlet
-        , outlets :: Set UUID.ToOutlet
+        { inlets :: Seq UUID.ToInlet
+        , outlets :: Seq UUID.ToOutlet
         , inletsFlow :: InletsFlow d
         , outletsFlow :: OutletsFlow d
         , pushToInlets :: PushToInlets d
@@ -118,7 +121,7 @@ empty :: forall d. String -> Network d
 empty networkName =
     Network
         { name : networkName
-        , patches : Set.empty
+        , patches : Seq.empty
         , registry : Map.empty
         , pathToId : Map.empty
         , cancelers : Map.empty

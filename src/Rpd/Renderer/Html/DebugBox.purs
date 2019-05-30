@@ -7,8 +7,8 @@ import Prelude
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.List (List, (:))
 import Data.List as List
-import Data.Set (Set)
-import Data.Set as Set
+import Data.Sequence (Seq)
+import Data.Sequence as Seq
 import Data.Lens (view, Lens') as L
 
 import Spork.Html (Html)
@@ -68,30 +68,31 @@ viewNetwork nw@(R.Network { patches }) =
         viewPatches =
             viewPatch
                 <$> (\patchUuid -> L.view (L._patch patchUuid) nw)
-                <$>  (Set.toUnfoldable patches :: Array R.ToPatch)
+                <$>  (Seq.toUnfoldable patches :: Array R.ToPatch)
         viewNodes nodes =
             viewNode
                 <$> (\nodeUuid -> L.view (L._node nodeUuid) nw)
-                <$> (Set.toUnfoldable nodes :: Array R.ToNode)
-        viewInlets nodes =
+                <$> (Seq.toUnfoldable nodes :: Array R.ToNode)
+        viewInlets inlets =
             viewInlet
                 <$> (\inletUuid -> L.view (L._inlet inletUuid) nw)
-                <$> (Set.toUnfoldable nodes :: Array R.ToInlet)
-        viewOutlets nodes =
+                <$> (Seq.toUnfoldable inlets :: Array R.ToInlet)
+        viewOutlets outlets =
             viewOutlet
                 <$> (\outletUuid -> L.view (L._outlet outletUuid) nw)
-                <$> (Set.toUnfoldable nodes :: Array R.ToOutlet)
-        viewLinks nodes =
+                <$> (Seq.toUnfoldable outlets :: Array R.ToOutlet)
+        viewLinks links =
             viewLink
                 <$> (\linkUuid -> L.view (L._link linkUuid) nw)
-                <$> (Set.toUnfoldable nodes :: Array R.ToLink)
+                <$> (Seq.toUnfoldable links :: Array R.ToLink)
         viewPatch :: Maybe (R.Patch d) -> Html Unit
-        viewPatch (Just (R.Patch uuid path nodes)) =
+        viewPatch (Just (R.Patch uuid path { nodes, links })) =
             H.li [ H.classes [ "patch-debug" ] ]
                 [ H.div []
                     [ H.span [] [ H.text $ show uuid ]
                     , H.span [] [ H.text $ show path ]
                     , H.ul [] $ viewNodes nodes
+                    , H.ul [] $ viewLinks links
                     ]
                 ]
         viewPatch _ =
