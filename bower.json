@@ -34,7 +34,8 @@
     "purescript-web-events": "^1.0.0",
     "purescript-string-parsers": "^5.0.0",
     "purescript-random": "^4.0.0",
-    "purescript-drawing": "^4.0.0"
+    "purescript-drawing": "^4.0.0",
+    "purescript-sequences": "^2.1.0"
   },
   "devDependencies": {
     "purescript-debug": "^4.0.0",
