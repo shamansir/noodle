@@ -18,6 +18,7 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Data.Foldable (foldr)
 
 import Effect (Effect)
+import Effect.Class (liftEffect)
 
 import FRP.Event (Event)
 import FRP.Event as Event
@@ -26,7 +27,7 @@ import Rpd (run) as R
 import Rpd.API ((</>))
 import Rpd.API (Rpd, RpdError) as R
 import Rpd.API as Rpd
-import Rpd.Path (nodePath, InletPath(..), OutletPath(..)) as R
+import Rpd.Path (toNode, ToInlet(..), ToOutlet(..)) as R
 import Rpd.Command as C
 import Rpd.CommandApply as C
 import Rpd.Network (Network) as R
@@ -166,8 +167,8 @@ make'
     where
         -- C.apply
         -- Event.folded :: forall event a. IsEvent event => Monoid a => event a -> event a
-        pushCommand
-            = R.neverPush
+        -- pushCommand
+        --     = R.neverPush
         -- update :: msg -> (model /\ R.Network d) -> PushMsg msg -> R.PushCmd d -> R.Rpd (model /\ R.Network d)
         updatePipeline
             :: Either msg (C.Command d)

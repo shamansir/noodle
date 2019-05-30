@@ -8,32 +8,40 @@ import Data.Lens (view) as L
 import Data.Lens.At (at) as L
 import Data.List (toUnfoldable)
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
-import Data.Set as Set
+import Data.Maybe (Maybe(..), isJust)
+import Data.Sequence as Seq
 import Data.Tuple.Nested (type (/\), (/\))
 import Debug.Trace (spy)
+
 import Rpd.API (RpdError) as R
 import Rpd.Command (Command(..)) as C
-import Rpd.IsData (class IsData, default) as R
 import Rpd.Network as R
-import Rpd.Optics as R
-import Rpd.Def as R
-import Rpd.Path as R
+import Rpd.Optics as L
+import Rpd.Path as P
+import Rpd.UUID as UUID
 import Rpd.Render as R
 import Rpd.Render.MUV (Renderer(..), PushF(..)) as R
 import Rpd.Util (type (/->))
+
+import Rpd.Renderer.Html.DebugBox as DebugBox
+
 import Spork.Html (Html)
 import Spork.Html as H
 
 
 type Model d =
-    { lastInletData :: R.InletPath /-> d
-    , lastOutletData :: R.OutletPath /-> d
+    -- TODO: use UUID to store inlets?
+    { lastInletData :: P.ToInlet /-> d
+    , lastOutletData :: P.ToOutlet /-> d
+    , debug :: Maybe (DebugBox.Model d)
     }
 
 
 data Message
-    = ClickAt (Int /\ Int)
+    = NoOp
+    | ClickAt (Int /\ Int)
+    | EnableDebug
+    | DisableDebug
 
 
 type View d = Html (Either Message (C.Command d))
@@ -43,10 +51,12 @@ init :: forall d. Model d
 init =
     { lastInletData : Map.empty
     , lastOutletData : Map.empty
+    -- , debug : Nothing
+    , debug : Just DebugBox.init
     }
 
 
-type HtmlRenderer d = R.IsData d => R.Renderer d (Model d) (View d) Message
+type HtmlRenderer d = Show d => R.Renderer d (Model d) (View d) Message
 
 
 emptyView :: forall d. View d
@@ -58,126 +68,174 @@ viewError error =
     H.div [ H.id_ "error" ] [ H.text $ show error ]
 
 
-viewNetwork :: forall d. R.IsData d => R.PushF Message d -> Model d -> R.Network d -> View d
-viewNetwork pushMsg ui nw@(R.Network { name } { patches }) =
+viewNetwork :: forall d. R.PushF Message d -> Model d -> R.Network d -> View d
+viewNetwork pushMsg ui nw@(R.Network { name, patches }) =
     H.div
         [ H.id_ "network" ]
         $ [ H.text name ] <>
-            (toUnfoldable $ viewPatch pushMsg ui nw <$> Map.values patches)
+            (toUnfoldable $ viewPatch pushMsg ui nw <$> (patches # Seq.toUnfoldable))
 
 
-viewPatch :: forall d. R.IsData d => R.PushF Message d -> Model d -> R.Network d -> R.Patch d ->  View d
-viewPatch pushMsg ui nw (R.Patch patchId { name } { nodes }) =
-    H.div
-        [ H.classes [ "patch" ] ]
-        $ [ H.text name ] <>
-            (viewNode pushMsg ui nw <$> (nodes # Set.toUnfoldable))
-
-
-testInlet :: forall d. R.IsData d => R.InletDef d
-testInlet =
-    { accept : Just $ const true
-    , default : Just R.default
-    , label : "test"
-    }
-
+viewPatch
+    :: forall d
+     . R.PushF Message d
+    -> Model d
+    -> R.Network d
+    -> UUID.ToPatch
+    -> View d
+viewPatch pushMsg ui nw patchUuid =
+    case L.view (L._patch patchUuid) nw of
+        Just (R.Patch _ (P.ToPatch name) { nodes }) ->
+            H.div
+                [ H.classes [ "patch" ] ]
+                $ [ H.text name ] <>
+                    (viewNode pushMsg ui nw <$> (nodes # Seq.toUnfoldable))
+        _ ->
+            H.div
+                [ H.classes [ "patch" ] ]
+                [ H.text $ "patch " <> show patchUuid <> " was not found" ]
 
 viewNode
     :: forall d
-     . R.IsData d
-    => R.PushF Message d
+     . R.PushF Message d
     -> Model d
     -> R.Network d
-    -> R.NodePath
+    -> UUID.ToNode
     -> View d
-viewNode pushMsg ui nw nodePath =
-    case L.view (R._node nodePath) nw of
-        Just (R.Node _ { name } { inlets, outlets }) ->
+viewNode pushMsg ui nw nodeUuid =
+    case L.view (L._node nodeUuid) nw of
+        Just (R.Node _ (P.ToNode { node : name }) _ { inlets, outlets }) ->
             H.div
                 [ H.classes [ "node" ] ]
-                [ H.text name
-                , H.div
-                    [ H.onClick $ H.always_ $ Right $ C.SendToInlet (R.inletPath 0 0 0) R.default ]
-                    [ H.text "Send" ]
-                , H.div
-                    [ H.onClick $ H.always_ $ Right $ C.AddInlet (R.nodePath 0 0) testInlet]
-                    [ H.text "Add Inlet" ]
-                ]
-                    <> (viewInlet pushMsg ui nw <$> (inlets # Set.toUnfoldable))
-                    <> (viewOutlet pushMsg ui nw <$> (outlets # Set.toUnfoldable))
+                (
+                    [ H.text name
+                    , H.div
+                        [ H.onClick $ H.always_ $ Right
+                            -- $ FIXME: C.SendToInlet (P.toInlet "0" "0" "0") R.default ]
+                            $ C.Bang ]
+                        [ H.text "Send" ]
+                    , H.div
+                        [ H.onClick $ H.always_ $ Right
+                            $ C.AddInlet (P.toNode "0" "0") "0" ]
+                        [ H.text "Add Inlet" ]
+                    ]
+                    <> (viewInlet pushMsg ui nw <$> (inlets # Seq.toUnfoldable))
+                    <> (viewOutlet pushMsg ui nw <$> (outlets # Seq.toUnfoldable))
+                )
         _ -> H.div
                 [ H.classes [ "node" ] ]
-                [ H.text $ "node " <> show nodePath <> " was not found" ]
+                [ H.text $ "node " <> show nodeUuid <> " was not found" ]
 
 
 viewInlet
     :: forall d
-     . R.IsData d
-    => R.PushF Message d
+     . R.PushF Message d
     -> Model d
     -> R.Network d
-    -> R.InletPath
+    -> UUID.ToInlet
     -> View d
-viewInlet pushMsg ui nw inletPath =
-    case L.view (R._inlet inletPath) nw of
-        Just (R.Inlet _ { label } { flow }) ->
+viewInlet pushMsg ui nw inletUuid =
+    case L.view (L._inlet inletUuid) nw of
+        Just (R.Inlet _ path@(P.ToInlet { inlet : label }) { flow }) ->
             H.div
                 [ H.classes [ "inlet" ] ]
                 [ H.text label
-                , case Map.lookup inletPath ui.lastInletData of
+                , case Map.lookup path ui.lastInletData of
                     Just d -> H.text "data"
                     _ -> H.text ""
                 ]
         _ -> H.div
                 [ H.classes [ "inlet" ] ]
-                [ H.text $ "inlet " <> show inletPath <> " was not found" ]
+                [ H.text $ "inlet " <> show inletUuid <> " was not found" ]
 
 
 viewOutlet
     :: forall d
-     . R.IsData d
-    => R.PushF Message d
+     . R.PushF Message d
     -> Model d
     -> R.Network d
-    -> R.OutletPath
+    -> UUID.ToOutlet
     -> View d
-viewOutlet pushMsg ui nw outletPath =
-    case L.view (R._outlet outletPath) nw of
-        Just (R.Outlet _ { label } { flow }) ->
+viewOutlet pushMsg ui nw outletUuid =
+    case L.view (L._outlet outletUuid) nw of
+        Just (R.Outlet _ path@(P.ToOutlet { outlet : label }) { flow }) ->
             H.div
                 [ H.classes [ "outlet" ] ]
                 $ [ H.text label ]
         _ -> H.div
                 [ H.classes [ "outlet" ] ]
-                [ H.text $ "outlet " <> show outletPath <> " was not found" ]
+                [ H.text $ "outlet " <> show outletUuid <> " was not found" ]
 
 
-htmlRenderer :: forall d. R.IsData d => HtmlRenderer d
+viewDebugWindow
+    :: forall d
+     . Show d
+    => R.PushF Message d
+    -> Model d
+    -> R.Network d
+    -> View d
+viewDebugWindow pushMsg ui nw =
+    H.div [ H.id_ "debug" ]
+        [ H.input
+            [ H.type_ H.InputCheckbox
+            , H.checked (isJust ui.debug)
+            , H.onChecked
+                (H.always_ $ Left
+                    $ if isJust ui.debug then DisableDebug else EnableDebug)
+            ]
+        , case ui.debug of
+            Just debug -> (const $ Left NoOp) <$> DebugBox.view nw debug
+            _ -> H.div [] []
+        ]
+
+
+htmlRenderer :: forall d. HtmlRenderer d
 htmlRenderer =
     R.Renderer
         { from : emptyView
         , init
-        , update
+        , update :
+            \cmdOrMsg (ui /\ nw) ->
+                let
+                    (ui' /\ cmds) = update cmdOrMsg (ui /\ nw)
+                    ui'' =
+                        case ( ui'.debug /\ cmdOrMsg ) of
+                            ( Just debug /\ Right cmd ) ->
+                                ui'
+                                    { debug = Just $ DebugBox.update cmd nw debug
+                                    }
+                            ( _ /\ Left EnableDebug ) ->
+                                ui'
+                                    { debug = Just $ DebugBox.init
+                                    }
+                            ( _ /\ Left DisableDebug ) ->
+                                ui'
+                                    { debug = Nothing
+                                    }
+                            _ -> ui'
+                in (ui'' /\ cmds)
         , view
         }
 
 
 view
     :: forall d
-     . R.IsData d
+     . Show d
     => R.PushF Message d
     -> Either R.RpdError (Model d /\ R.Network d)
     -> View d
 view pushMsg (Right (ui /\ nw)) =
-    viewNetwork pushMsg ui nw
+    H.div [ H.id_ "html" ]
+        [ viewDebugWindow pushMsg ui nw
+        , viewNetwork pushMsg ui nw
+        ]
 view pushMsg (Left err) =
     viewError err
 
 
 update
     :: forall d
-     . R.IsData d
-    => Either Message (C.Command d)
+     . Either Message (C.Command d)
     -> Model d /\ R.Network d
     -> Model d /\ Array (Either Message (C.Command d))
 update (Right C.Bang) (ui /\ _) = ui /\ []

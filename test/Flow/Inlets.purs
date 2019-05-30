@@ -10,7 +10,7 @@ import FRP.Event.Time (interval)
 
 import Rpd.API ((</>))
 import Rpd.API as R
-import Rpd.Path
+import Rpd.Path (toPatch, toNode, toInlet)
 import Rpd.Util (flow, Canceler) as R
 
 import Test.Spec (Spec, it, pending)
@@ -42,8 +42,8 @@ spec = do
       rpd =
         R.init "no-data"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
-          </> R.addInlet (nodePath 0 0) "inlet"
+          </> R.addNode (toPatch "patch") "node"
+          </> R.addInlet (toNode "patch" "node") "inlet"
 
     rpd # withRpd \nw -> do
             collectedData <- nw #
@@ -61,23 +61,24 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
-          </> R.addInlet (nodePath 0 0) "inlet"
+          </> R.addNode (toPatch "patch") "node"
+          </> R.addInlet (toNode "patch" "node") "inlet"
 
     rpd # withRpd \nw -> do
+        let firstInlet = toInlet "patch" "node" "inlet"
         collectedData <- CollectData.channelsAfter
           (Milliseconds 100.0)
           nw
           $ do
             _ <- nw
-                   #  R.sendToInlet (inletPath 0 0 0) Parcel
-                  </> R.sendToInlet (inletPath 0 0 0) Pills
-                  </> R.sendToInlet (inletPath 0 0 0) (Curse 5)
+                   #  R.sendToInlet firstInlet Parcel
+                  </> R.sendToInlet firstInlet Pills
+                  </> R.sendToInlet firstInlet (Curse 5)
             pure []
         collectedData `shouldEqual`
-            [ InletData (inletPath 0 0 0) Parcel
-            , InletData (inletPath 0 0 0) Pills
-            , InletData (inletPath 0 0 0) (Curse 5)
+            [ InletData firstInlet Parcel
+            , InletData firstInlet Pills
+            , InletData firstInlet (Curse 5)
             ]
         pure unit
 
@@ -87,8 +88,8 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
-          </> R.addInlet (nodePath 0 0) "inlet"
+          </> R.addNode (toPatch "patch") "node"
+          </> R.addInlet (toNode "patch" "node") "inlet"
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter
@@ -97,11 +98,11 @@ spec = do
           $ do
             cancel :: R.Canceler <-
               nw # R.streamToInlet
-                  (inletPath 0 0 0)
+                  (toInlet "patch" "node" "inlet")
                   (R.flow $ const Pills <$> interval 30)
             pure [ cancel ]
         collectedData `shouldContain`
-            (InletData (inletPath 0 0 0) Pills)
+            (InletData (toInlet "patch" "node" "inlet") Pills)
         pure unit
 
     pure unit
@@ -114,25 +115,26 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
-          </> R.addInlet (nodePath 0 0) "inlet"
+          </> R.addNode (toPatch "patch") "node"
+          </> R.addInlet (toNode "patch" "node") "inlet"
 
     rpd # withRpd \nw -> do
+        let firstInlet = toInlet "patch" "node" "inlet"
         collectedData <- CollectData.channelsAfter
           (Milliseconds 100.0)
           nw
           $ do
             c1 <- nw # R.streamToInlet
-                  (inletPath 0 0 0)
+                  (toInlet "patch" "node" "inlet")
                   (R.flow $ const Pills <$> interval 20)
             c2 <- nw # R.streamToInlet
-                  (inletPath 0 0 0)
+                  (toInlet "patch" "node" "inlet")
                   (R.flow $ const Banana <$> interval 29)
             pure [ c1, c2 ]
         collectedData `shouldContain`
-          (InletData (inletPath 0 0 0) Pills)
+          (InletData (toInlet "patch" "node" "inlet") Pills)
         collectedData `shouldContain`
-          (InletData (inletPath 0 0 0) Banana)
+          (InletData (toInlet "patch" "node" "inlet") Banana)
         pure unit
 
     pure unit
@@ -143,8 +145,8 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
-          </> R.addInlet (nodePath 0 0) "inlet"
+          </> R.addNode (toPatch "patch") "node"
+          </> R.addInlet (toNode "patch" "node") "inlet"
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter
@@ -152,17 +154,17 @@ spec = do
           nw
           $ do
             cancel <- nw # R.streamToInlet
-                (inletPath 0 0 0)
+                (toInlet "patch" "node" "inlet")
                 (R.flow $ const Pills <$> interval 20)
             pure [ cancel ] -- `cancel` is called by `collectDataAfter`
         collectedData `shouldContain`
-          (InletData (inletPath 0 0 0) Pills)
+          (InletData (toInlet "patch" "node" "inlet") Pills)
         collectedData' <- CollectData.channelsAfter
           (Milliseconds 100.0)
           nw
           $ pure []
         collectedData' `shouldNotContain`
-          (InletData (inletPath 0 0 0) Pills)
+          (InletData (toInlet "patch" "node" "inlet") Pills)
         pure unit
 
   it "two different streams may work for different inlets" $ do
@@ -171,9 +173,9 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
-          </> R.addInlet (nodePath 0 0) "inlet1"
-          </> R.addInlet (nodePath 0 0) "inlet2"
+          </> R.addNode (toPatch "patch") "node"
+          </> R.addInlet (toNode "patch" "node") "for-pills"
+          </> R.addInlet (toNode "patch" "node") "for-bananas"
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter
@@ -182,17 +184,17 @@ spec = do
           $ do
             c1 <-
               nw # R.streamToInlet
-                (inletPath 0 0 0)
+                (toInlet "patch" "node" "for-pills")
                 (R.flow $ const Pills <$> interval 30)
             c2 <-
               nw # R.streamToInlet
-                (inletPath 0 0 1)
+                (toInlet "patch" "node" "for-bananas")
                 (R.flow $ const Banana <$> interval 25)
             pure [ c1, c2 ]
         collectedData `shouldContain`
-          (InletData (inletPath 0 0 0) Pills)
+          (InletData (toInlet "patch" "node" "for-pills") Pills)
         collectedData `shouldContain`
-          (InletData (inletPath 0 0 1) Banana)
+          (InletData (toInlet "patch" "node" "for-bananas") Banana)
         pure unit
 
     pure unit
@@ -203,9 +205,9 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node"
-          </> R.addInlet (nodePath 0 0) "inlet1"
-          </> R.addInlet (nodePath 0 0) "inlet2"
+          </> R.addNode (toPatch "patch") "node"
+          </> R.addInlet (toNode "patch" "node") "inlet1"
+          </> R.addInlet (toNode "patch" "node") "inlet2"
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter
@@ -213,13 +215,13 @@ spec = do
           nw
           $ do
             let stream = R.flow $ const Banana <$> interval 25
-            c1 <- nw # R.streamToInlet (inletPath 0 0 0) stream
-            c2 <- nw # R.streamToInlet (inletPath 0 0 1) stream
+            c1 <- nw # R.streamToInlet (toInlet "patch" "node" "inlet1") stream
+            c2 <- nw # R.streamToInlet (toInlet "patch" "node" "inlet2") stream
             pure [ c1, c2 ]
         collectedData `shouldContain`
-          (InletData (inletPath 0 0 0) Banana)
+          (InletData (toInlet "patch" "node" "inlet1") Banana)
         collectedData `shouldContain`
-          (InletData (inletPath 0 0 1) Banana)
+          (InletData (toInlet "patch" "node" "inlet2") Banana)
         pure unit
 
     pure unit

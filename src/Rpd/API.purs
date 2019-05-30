@@ -1,68 +1,71 @@
 
 module Rpd.API
     ( Rpd, RpdError, init
-    , (</>), rpdBind
-    --, RpdOp, RpdEffOp
-        --, emptyNetwork
-    --, network, patch, node, inlet, inlet', inletWithDefault, inletWithDefault', outlet, outlet'
-    , connect, disconnectAll --, disconnectTop
-    , addPatch, addPatch', addNode, addNode', addInlet, addInlet', addOutlet, addOutlet'
+    , (</>), andThen
+    , connect, disconnectAll, disconnectTop
+    , addPatch, addNode, addInlet, addOutlet
     , removeInlet
+    , addToolkitNode, addDefNode, addChanelledInlet, addChanelledOutlet
     , subscribeInlet, subscribeOutlet, subscribeAllInlets, subscribeAllOutlets
     , subscribeChannelsData, subscribeNode  -- subscribeAllData
     , subscribeInlet', subscribeOutlet', subscribeAllInlets', subscribeAllOutlets'
     , subscribeChannelsData', subscribeNode'  -- subscribeAllData'
     , sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
-    --, findPatch, findNode, findOutlet, findInlet
+    -- , findPatch, findNode, findOutlet, findInlet
     ) where
-
-import Prelude
-
-import Data.Array ((!!), (:), snoc)
-import Data.Array as Array
-import Data.Bitraversable (bisequence)
-import Data.Either (Either, note)
-import Data.Foldable (foldr)
-import Data.Lens (view, set, setJust)
-import Data.Lens.At (at)
-import Data.List (List)
-import Data.List as List
-import Data.Map as Map
-import Data.Maybe (Maybe(..), fromMaybe, maybe, isJust)
-import Data.Set (Set)
-import Data.Set as Set
-import Data.Traversable (for, sequence, traverse, traverse_)
-import Data.TraversableWithIndex (forWithIndex)
-import Data.Tuple (uncurry, fst)
-import Data.Tuple.Nested ((/\), type (/\))
 
 import Debug.Trace
 
-import Control.MonadZero (empty)
+import Prelude
+
 import Control.Monad.Except.Trans (ExceptT, except)
 
-import Effect (Effect, foreachE)
+--import Data.Array ((!!), (:), snoc)
+import Data.Array (snoc)
+-- import Data.Array as Array
+import Data.Bitraversable (bisequence)
+import Data.Either (Either(..), note)
+import Data.Foldable (foldr)
+import Data.Lens (view, set, setJust)
+import Data.List (List)
+import Data.List as List
+import Data.Map as Map
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Sequence (Seq)
+import Data.Sequence as Seq
+--import Data.Traversable (for, sequence, traverse, traverse_)
+import Data.Traversable (traverse, traverse_)
+-- import Data.TraversableWithIndex (forWithIndex)
+import Data.Tuple.Nested ((/\), type (/\), over1)
+
+--import Effect (Effect, foreachE)
+import Effect (Effect)
 import Effect.Class (liftEffect)
 
 import FRP.Event as E
 
-
-import Rpd.Path
-import Rpd.Def
-import Rpd.Optics
-import Rpd.Process
 import Rpd.Network
 import Rpd.Network (empty) as Network
+import Rpd.UUID as UUID
+-- import Rpd.UUID (UUID)
 import Rpd.Util (type (/->), PushableFlow(..), Subscriber, Canceler, Flow, never)
-import Rpd.Util as RU
+-- import Rpd.Util as RU
+import Rpd.Optics
+-- import Rpd.Path (Path)
+import Rpd.Path as Path
+import Rpd.Process (InletAlias, InletHandler(..), OutletAlias, OutletHandler(..), ProcessF(..))
+import Rpd.Toolkit (Toolkit(..))
+import Rpd.Toolkit as Toolkit
+
 
 infixl 6 snoc as +>
+
 
 --import Rpd.Flow as Flow
 
 -- data RunningNetwork d e = RpdEff e (Network d e)
 
-data RpdError = RpdError String
+newtype RpdError = RpdError String
 
 
 type RpdOp a = Either RpdError a
@@ -73,20 +76,25 @@ type Rpd a = ExceptT RpdError Effect a
 -- newtype ContT r m a = ContT ((a -> m r) -> m r)
 
 
-infixl 1 rpdBind as </>
+infixl 1 andThen as </>
 -- other options: └, ~>, ...
 
 
-rpdBind :: forall a b. Rpd a -> (a -> Rpd b) -> Rpd b
-rpdBind = (>>=)
+andThen :: forall a b. Rpd a -> (a -> Rpd b) -> Rpd b
+andThen = (>>=)
+
+
+-- TODO:
+-- skipAndThen :: forall a b. Rpd (_ /\ a) -> (a -> Rpd b) -> Rpd b
+-- skipAndThen = (>>=)
 
 
 someApiFunc :: forall d. Rpd (Network d)
 someApiFunc =
-    init "t"
+    init "test"
         </> addPatch "foo"
-        </> addNode (PatchId 0) "test1"
-        </> addNode (PatchId 0) "test2"
+        </> addNode (Path.toPatch "foo") "test1"
+        </> addNode (Path.toPatch "foo") "test2"
 
 
 -- instance functorRpdOp :: Functor (RpdOp d) where
@@ -102,42 +110,14 @@ init :: forall d. String -> Rpd (Network d)
 init = pure <<< Network.empty
 
 
+-- makeUuid :: forall d. Rpd UUID.UUID
+-- makeUuid = liftEffect liftEffect UUID.new
+
+
 makePushableFlow :: forall d. Effect (PushableFlow d)
 makePushableFlow = do
     { push, event } <- E.create
     pure $ PushableFlow push event
-
-
-nextPatchId :: forall d. Network d -> PatchId
-nextPatchId (Network _ { patches }) =
-    PatchId (Map.size patches)
-
-
-nextNodePath :: forall d. PatchId -> Network d -> Either RpdError NodePath
-nextNodePath patchId (Network _ { patches }) = do
-    (Patch _ _ { nodes }) <- Map.lookup patchId patches
-                                # note (RpdError "")
-    pure $ NodePath patchId $ Set.size nodes
-
-
-nextInletPath :: forall d. NodePath -> Network d -> Either RpdError InletPath
-nextInletPath nodePath (Network _ { nodes }) = do
-    (Node _ _ { inlets }) <- Map.lookup nodePath nodes
-                                # note (RpdError "")
-    pure $ InletPath nodePath $ Set.size inlets
-
-
-nextOutletPath :: forall d. NodePath -> Network d -> Either RpdError OutletPath
-nextOutletPath nodePath (Network _ { nodes }) = do
-    (Node _ _ { outlets }) <- Map.lookup nodePath nodes
-                                # note (RpdError "")
-    pure $ OutletPath nodePath $ Set.size outlets
-
-
-nextLinkId :: forall d. Network d -> LinkId
-nextLinkId (Network _ { links }) =
-    LinkId (Map.size links)
-
 
 
 exceptMaybe :: forall a. RpdError -> Maybe a -> ExceptT RpdError Effect a
@@ -145,223 +125,282 @@ exceptMaybe err maybe =
     except (maybe # note err)
 
 
-addPatch :: forall d. String -> Network d -> Rpd (Network d)
-addPatch name =
-    addPatch'
-        { name
-        , nodeDefs : List.Nil
-        }
+exceptNotFail :: RpdError -> Boolean -> ExceptT RpdError Effect Unit
+exceptNotFail err bool =
+    except $ if bool then Right unit else Left err
 
 
-addPatch'
-    :: forall d
-     . PatchDef d
+uuidByPath
+    :: forall p x d
+     . Path.MarksPath p
+    => (UUID.Tagged -> Maybe x)
+    -> p
     -> Network d
-    -> Rpd (Network d)
-addPatch' patchDef nw =
-    pure $ setJust (_patch patchId) newPatch nw
-    where
-        patchId = nextPatchId nw
+    -> Rpd x
+uuidByPath f path nw = do
+    (uuid' :: UUID.Tagged) <- view (_pathToId $ Path.lift path) nw # exceptMaybe (RpdError "")
+    (uuid :: x) <- f uuid' # exceptMaybe (RpdError "")
+    pure uuid
+
+
+addPatch :: forall d. Path.Alias -> Network d -> Rpd (Network d)
+addPatch alias nw = do
+    uuid <- liftEffect UUID.new
+    let
+        path = Path.toPatch alias
         newPatch =
             Patch
-                patchId
-                patchDef
-                { nodes : Set.empty
+                (UUID.ToPatch uuid)
+                path
+                { nodes : Seq.empty
+                , links : Seq.empty
                 }
+    pure $ nw
+        # setJust (_patch $ UUID.ToPatch uuid) newPatch
+        # setJust (_pathToId $ Path.lift path) (UUID.liftTagged $ UUID.ToPatch uuid)
+        # setJust (_networkPatch $ UUID.ToPatch uuid) unit
+
 
 -- TODO: removePatch
     -- TODO: cancel all the cancelers related to the patch
 
+
 addNode
     :: forall d
-     . PatchId
-    -> String
+     . Path.ToPatch
+    -> Path.Alias
     -> Network d
     -> Rpd (Network d)
-addNode patchId name =
-    addNode'
-        patchId
-        { name
-        , inletDefs : List.Nil
-        , outletDefs : List.Nil
-        , process : Withhold
-        }
-
-
-addNode'
-    :: forall d
-     . PatchId
-    -> NodeDef d
-    -> Network d
-    -> Rpd (Network d)
-addNode' patchId def nw = do
-    nodePath <- except $ nextNodePath patchId nw
+addNode patchPath nodeAlias nw = do
+    patchUuid <- nw # uuidByPath UUID.toPatch patchPath
+    uuid <- liftEffect UUID.new
     PushableFlow pushToInlets inletsFlow <- liftEffect makePushableFlow
     PushableFlow pushToOutlets outletsFlow <- liftEffect makePushableFlow
-    -- TODO: change `PushToProcess` to `PushToInlets` and add `PushToOutlets`
     let
+        path = Path.nodeInPatch patchPath nodeAlias
         newNode =
             Node
-                nodePath
-                def
-                { inlets : Set.empty
-                , outlets : Set.empty
+                (UUID.ToNode uuid)
+                path
+                Withhold
+                { inlets : Seq.empty
+                , outlets : Seq.empty
                 , inletsFlow : InletsFlow inletsFlow
                 , outletsFlow : OutletsFlow outletsFlow
                 , pushToInlets : PushToInlets pushToInlets
                 , pushToOutlets : PushToOutlets pushToOutlets
                 }
     nw
-         #  setJust (_node nodePath) newNode
-         #  setJust (_patchNode patchId nodePath) unit
-         #  addInlets nodePath def.inletDefs
-        </> addOutlets nodePath def.outletDefs
-        </> updateNodeProcessFlow nodePath
+         #  setJust (_node $ UUID.ToNode uuid) newNode
+         #  setJust (_pathToId $ Path.lift path) (UUID.liftTagged $ UUID.ToNode uuid)
+         #  setJust (_patchNode patchUuid $ UUID.ToNode uuid) unit
+        --  #  addInlets nodePath def.inletDefs
+        -- </> addOutlets nodePath def.outletDefs
+         # updateNodeProcessFlow (UUID.ToNode uuid)
+
+
+addToolkitNode
+    :: forall c d
+     . Toolkit.Channel c d
+    => Path.ToPatch
+    -> Path.Alias
+    -> Toolkit.NodeDefAlias
+    -> Toolkit c d
+    -> Network d
+    -> Rpd (Network d)
+addToolkitNode patchPath nodeAlias nodeDefAlias (Toolkit toolkit) nw = do
+    nodeDef
+        <- Map.lookup nodeDefAlias toolkit.nodes
+                # exceptMaybe (RpdError "")
+    nw # addDefNode patchPath nodeAlias nodeDef
+
+
+addDefNode
+    :: forall c d
+     . Toolkit.Channel c d
+    => Path.ToPatch
+    -> Path.Alias
+    -> Toolkit.NodeDef c d
+    -> Network d
+    -> Rpd (Network d)
+addDefNode patchPath nodeAlias (Toolkit.NodeDef nodeDef) nw = do
+    nw
+         #  addNode patchPath nodeAlias
+        </> addInlets nodeDef.inlets
+        </> addOutlets nodeDef.outlets
+        </> processWith path nodeDef.process
+    where
+        path = Path.nodeInPatch patchPath nodeAlias
+        Path.ToPatch patchAlias = patchPath
+        addInlets inlets nw
+            = foldr addInlet (pure nw) inlets
+        addOutlets outlets nw
+            = foldr addOutlet (pure nw) outlets
+        addInlet (Toolkit.InletAlias inletAlias /\ channel) rpd =
+            rpd </>
+                addChanelledInlet path inletAlias channel
+        addOutlet (Toolkit.OutletAlias outletAlias /\ channel) rpd =
+            rpd </>
+                addChanelledOutlet path outletAlias channel
 
 
 processWith
     :: forall d
-     . NodePath
+     . Path.ToNode
     -> ProcessF d
     -> Network d
     -> Rpd (Network d)
-processWith nodePath processF nw = do
-    (Node _ def state) :: Node d <-
-        view (_node nodePath) nw
+processWith path processF nw = do
+    uuid <- nw # uuidByPath UUID.toNode path
+    (Node _ path _ state) :: Node d <-
+        view (_node uuid) nw
             # exceptMaybe (RpdError "")
     let
         newNode =
             Node
-                nodePath
-                (def { process = processF })
+                uuid
+                path
+                processF
                 state
     nw
-        # setJust (_node nodePath) newNode
-        # updateNodeProcessFlow nodePath
+        # setJust (_node uuid) newNode
+        # updateNodeProcessFlow uuid
 
 
 addInlet
     :: forall d
-     . NodePath
-    -> String
+     . Path.ToNode
+    -> Path.Alias
     -> Network d
     -> Rpd (Network d)
-addInlet nodePath label =
-    addInlet'
-        nodePath
-        { label
-        , default : Nothing
-        , accept : Nothing
-        }
-
-
-addInlet'
-    :: forall d
-     . NodePath
-    -> InletDef d
-    -> Network d
-    -> Rpd (Network d)
-addInlet' nodePath def nw = do
-    inletPath <- except $ nextInletPath nodePath nw
-    -- TODO: when there's already some inlet exists with the same path,
-    -- cancel its subscription before
+addInlet nodePath alias nw = do
+    nodeUuid <- nw # uuidByPath UUID.toNode nodePath
+    uuid <- liftEffect UUID.new
     PushableFlow pushToInlet inletFlow <- liftEffect makePushableFlow
-    (Node _ _ { pushToInlets }) :: Node d
-        <- view (_node nodePath) nw # exceptMaybe (RpdError "")
+    (Node _ _ _ { pushToInlets }) :: Node d
+        <- view (_node nodeUuid) nw
+            # exceptMaybe (RpdError "")
     let
-        inletId = getInletId inletPath
+        path = Path.inletInNode nodePath alias
         (PushToInlets informNode) = pushToInlets
         newInlet =
             Inlet
-                inletPath
-                def
+                (UUID.ToInlet uuid)
+                path
                 { flow : InletFlow inletFlow
                 , push : PushToInlet pushToInlet
                 }
     canceler :: Canceler <-
         liftEffect $
-            E.subscribe inletFlow (\d -> informNode (inletId /\ d))
+            E.subscribe inletFlow (\d -> informNode (path /\ (UUID.ToInlet uuid) /\ d))
     -- userCancelers :: Array Canceler <-
     --     liftEffect $ traverse (E.subscribe dataFlow) subs
-    nw # setJust (_inlet inletPath) newInlet
-       # setJust (_nodeInlet nodePath inletPath) unit
-       # setJust (_inletCancelers inletPath) [ canceler ]
-       # updateNodeProcessFlow nodePath
+    nw # setJust (_inlet $ UUID.ToInlet uuid) newInlet
+       # setJust (_pathToId $ Path.lift path) (UUID.liftTagged $ UUID.ToInlet uuid)
+       # setJust (_nodeInlet nodeUuid (UUID.ToInlet uuid)) unit
+       # setJust (_cancelers uuid) [ canceler ]
+       # updateNodeProcessFlow nodeUuid
 
 
-addInlets :: forall d. NodePath -> List (InletDef d) -> Network d -> Rpd (Network d)
-addInlets nodePath inletDefs nw =
-    -- FIXME: may appear not very optimal, since every `addInlet'`
-    --        call looks for the node again and again
-    foldr foldingF (pure nw) inletDefs
-    where
-        foldingF inletDef rpd =
-            rpd </> addInlet' nodePath inletDef
+-- addInlets :: forall d. List Path.ToInlet -> Network d -> Rpd (Network d)
+-- addInlets nodePath inletDefs nw =
+--     -- FIXME: may appear not very optimal, since every `addInlet'`
+--     --        call looks for the node again and again
+--     foldr foldingF (pure nw) inletDefs
+--     where
+--         foldingF inletDef rpd =
+--             rpd </> addInlet' nodePath inletDef
+
+
+addChanelledInlet
+    :: forall c d
+     . Toolkit.Channel c d
+    => Path.ToNode
+    -> Path.Alias
+    -> c
+    -> Network d
+    -> Rpd (Network d)
+addChanelledInlet nodePath alias channel nw =
+    -- FIXME: implement
+    nw # addInlet nodePath alias
 
 
 removeInlet
     :: forall d
-     . InletPath
+     . Path.ToInlet
     -> Network d
     -> Rpd (Network d)
-removeInlet inletPath nw = do
-    _ <- view (_inlet inletPath) nw # exceptMaybe (RpdError "")
-    let (InletPath nodePath inletIdx) = inletPath
-    view (_inletCancelers inletPath) nw
+removeInlet path nw = do
+    nodePath <- Path.getNodePath (Path.lift path)
+        # exceptMaybe (RpdError "")
+    nodeUuid <- nw # uuidByPath UUID.toNode nodePath
+    uuid <- nw # uuidByPath UUID.toInlet path
+    -- _ <- view (_inlet inletPath) nw # exceptMaybe (RpdError "")
+    -- let (InletPath nodePath inletIdx) = inletPath
+    view (_cancelers $ UUID.uuid uuid) nw
         # fromMaybe []
         # traverse_ liftEffect
-    nw  #  set (_inlet inletPath) Nothing
-        #  set (_nodeInlet nodePath inletPath) Nothing
-        #  setJust (_inletCancelers inletPath) [ ]
-        #  disconnectAllComingTo inletPath
-       </> updateNodeProcessFlow nodePath
+    nw  #  set (_inlet uuid) Nothing
+        #  set (_pathToId $ Path.lift path) Nothing
+        #  set (_nodeInlet nodeUuid uuid) Nothing
+        #  setJust (_cancelers $ UUID.uuid uuid) [ ]
+        #  disconnectAllComingTo path
+       </> updateNodeProcessFlow nodeUuid
 
 
 addOutlet
     :: forall d
-     . NodePath
-    -> String
+     . Path.ToNode
+    -> Path.Alias
     -> Network d
     -> Rpd (Network d)
-addOutlet nodePath label =
-    addOutlet'
-        nodePath
-        { label
-        , accept : empty
-        }
-
-
-addOutlet'
-    :: forall d
-     . NodePath
-    -> OutletDef d
-    -> Network d
-    -> Rpd (Network d)
-addOutlet' nodePath def nw = do
-    outletPath <- except $ nextOutletPath nodePath nw
+addOutlet nodePath alias nw = do
+    nodeUuid <- nw # uuidByPath UUID.toNode nodePath
+    uuid <- liftEffect UUID.new
     PushableFlow pushToOutlet outletFlow <- liftEffect makePushableFlow
+    (Node _ _ _ { pushToOutlets }) :: Node d
+        <- view (_node nodeUuid) nw # exceptMaybe (RpdError "")
     let
+        path = Path.outletInNode nodePath alias
+        (PushToOutlets informNode) = pushToOutlets
         newOutlet =
             Outlet
-                outletPath
-                def
+                (UUID.ToOutlet uuid)
+                path
                 { flow : OutletFlow outletFlow
                 , push : PushToOutlet pushToOutlet
                 }
-        outletId = getOutletId outletPath
-    nw # setJust (_outlet outletPath) newOutlet
-       # setJust (_nodeOutlet nodePath outletPath) unit
-       # updateNodeProcessFlow nodePath
+    canceler :: Canceler <-
+        liftEffect $
+            E.subscribe outletFlow (\d -> informNode (path /\ (UUID.ToOutlet uuid) /\ d))
+    nw # setJust (_outlet $ UUID.ToOutlet uuid) newOutlet
+       # setJust (_pathToId $ Path.lift path) (UUID.liftTagged $ UUID.ToOutlet uuid)
+       # setJust (_nodeOutlet nodeUuid $ UUID.ToOutlet uuid) unit
+       # setJust (_cancelers uuid) [ canceler ]
+       # updateNodeProcessFlow nodeUuid
 
 
-addOutlets :: forall d. NodePath -> List (OutletDef d) -> Network d -> Rpd (Network d)
-addOutlets nodePath outletDefs nw =
-    -- FIXME: may appear not very optimal, since every `addOutlet'`
-    --        call looks for the node again and again
-    foldr foldingF (pure nw) outletDefs
-    where
-        foldingF outletDef rpd =
-            rpd </> addOutlet' nodePath outletDef
+-- addOutlets :: forall d. NodePath -> List (OutletDef d) -> Network d -> Rpd (Network d)
+-- addOutlets nodePath outletDefs nw =
+--     -- FIXME: may appear not very optimal, since every `addOutlet'`
+--     --        call looks for the node again and again
+--     foldr foldingF (pure nw) outletDefs
+--     where
+--         foldingF outletDef rpd =
+--             rpd </> addOutlet' nodePath outletDef
+
+
+addChanelledOutlet
+    :: forall c d
+     . Toolkit.Channel c d
+    => Path.ToNode
+    -> Path.Alias
+    -> c
+    -> Network d
+    -> Rpd (Network d)
+addChanelledOutlet nodePath alias channel nw =
+    -- FIXME: implement
+    nw # addOutlet nodePath alias
 
 
 -- TODO: removeOutlet
@@ -371,27 +410,28 @@ addOutlets nodePath outletDefs nw =
 
 sendToInlet
     :: forall d
-     . InletPath
+     . Path.ToInlet
     -> d
     -> Network d
     -> Rpd (Network d)
-sendToInlet inletPath d nw = do
+sendToInlet path d nw = do
+    uuid <- nw # uuidByPath UUID.toInlet path
     (PushToInlet push) <-
-        view (_inletPush inletPath) nw # exceptMaybe (RpdError "")
+        view (_inletPush uuid) nw # exceptMaybe (RpdError "")
     _ <- liftEffect $ push d
     pure nw
 
 
 streamToInlet
     :: forall d
-     . InletPath
+     . Path.ToInlet
     -> Flow d
     -> Network d
     -> Rpd Canceler
-streamToInlet inletPath flow nw = do
+streamToInlet path flow nw = do
+    uuid <- nw # uuidByPath UUID.toInlet path
     (PushToInlet push) <-
-        view (_inletPush inletPath) nw
-            # exceptMaybe (RpdError "")
+        view (_inletPush uuid) nw # exceptMaybe (RpdError "")
     canceler :: Canceler <-
         liftEffect $ E.subscribe flow push
     pure canceler
@@ -399,27 +439,28 @@ streamToInlet inletPath flow nw = do
 
 sendToOutlet -- TODO: consider removing?
     :: forall d
-     . OutletPath
+     . Path.ToOutlet
     -> d
     -> Network d
     -> Rpd (Network d)
-sendToOutlet outletPath d nw = do
+sendToOutlet path d nw = do
+    uuid <- nw # uuidByPath UUID.toOutlet path
     (PushToOutlet push) <-
-        view (_outletPush outletPath) nw # exceptMaybe (RpdError "")
+        view (_outletPush uuid) nw # exceptMaybe (RpdError "")
     _ <- liftEffect $ push d
     pure nw
 
 
 streamToOutlet -- TODO: consider removing?
     :: forall d
-     . OutletPath
+     . Path.ToOutlet
     -> Flow d
     -> Network d
     -> Rpd Canceler
-streamToOutlet outletPath flow nw = do
+streamToOutlet path flow nw = do
+    uuid <- nw # uuidByPath UUID.toOutlet path
     (PushToOutlet push) <-
-        view (_outletPush outletPath) nw
-            # exceptMaybe (RpdError "")
+        view (_outletPush uuid) nw # exceptMaybe (RpdError "")
     canceler :: Canceler <-
         liftEffect $ E.subscribe flow push
     pure canceler
@@ -427,28 +468,33 @@ streamToOutlet outletPath flow nw = do
 
 subscribeInlet
     :: forall d
-     . InletPath
+     . Path.ToInlet
     -> InletHandler d
     -> Network d
     -> Rpd (Network d)
-subscribeInlet inletPath (InletHandler handler) nw = do
-    canceler <- subscribeInlet' inletPath (InletHandler handler) nw
+subscribeInlet path (InletHandler handler) nw = do
+    uuid <- nw # uuidByPath UUID.toInlet path
+    (InletFlow flow) <-
+        view (_inletFlow uuid) nw
+            # exceptMaybe (RpdError "")
+    canceler :: Canceler <- liftEffect $ E.subscribe flow handler
     curCancelers <-
-        view (_inletCancelers inletPath) nw
+        view (_cancelers $ UUID.uuid uuid) nw
             # exceptMaybe (RpdError "")
     pure $
-        nw # setJust (_inletCancelers inletPath) (curCancelers +> canceler)
+        nw # setJust (_cancelers $ UUID.uuid uuid) (curCancelers +> canceler)
 
 
 subscribeInlet'
     :: forall d
-     . InletPath
+     . Path.ToInlet
     -> InletHandler d
     -> Network d
     -> Rpd Canceler
-subscribeInlet' inletPath (InletHandler handler) nw = do
+subscribeInlet' path (InletHandler handler) nw = do
+    uuid <- nw # uuidByPath UUID.toInlet path
     (InletFlow flow) <-
-        view (_inletFlow inletPath) nw
+        view (_inletFlow uuid) nw
             # exceptMaybe (RpdError "")
     canceler :: Canceler <- liftEffect $ E.subscribe flow handler
     pure canceler
@@ -456,37 +502,41 @@ subscribeInlet' inletPath (InletHandler handler) nw = do
 
 subscribeOutlet
     :: forall d
-     . OutletPath
+     . Path.ToOutlet
     -> OutletHandler d
     -> Network d
     -> Rpd (Network d)
-subscribeOutlet outletPath handler nw = do
-    canceler <- subscribeOutlet' outletPath handler nw
+subscribeOutlet path (OutletHandler handler) nw = do
+    uuid <- nw # uuidByPath UUID.toOutlet path
+    (OutletFlow flow) <-
+        view (_outletFlow uuid) nw
+            # exceptMaybe (RpdError "")
+    canceler :: Canceler <- liftEffect $ E.subscribe flow handler
     curCancelers <-
-        view (_outletCancelers outletPath) nw
+        view (_cancelers $ UUID.uuid uuid) nw
             # exceptMaybe (RpdError "")
     pure $
-        nw # setJust (_outletCancelers outletPath) (curCancelers +> canceler)
+        nw # setJust (_cancelers $ UUID.uuid uuid) (curCancelers +> canceler)
 
 
 subscribeOutlet'
     :: forall d
-     . OutletPath
+     . Path.ToOutlet
     -> OutletHandler d
     -> Network d
     -> Rpd Canceler
-subscribeOutlet' outletPath (OutletHandler handler) nw = do
+subscribeOutlet' path (OutletHandler handler) nw = do
+    uuid <- nw # uuidByPath UUID.toOutlet path
     (OutletFlow flow) <-
-        view (_outletFlow outletPath) nw
+        view (_outletFlow uuid) nw
             # exceptMaybe (RpdError "")
-    canceler :: Canceler <-
-        liftEffect $ E.subscribe flow handler
+    canceler :: Canceler <- liftEffect $ E.subscribe flow handler
     pure canceler
 
 
 subscribeAllInlets
     :: forall d
-     . (InletPath -> d -> Effect Unit)
+     . (Path.ToInlet -> d -> Effect Unit)
     -> Network d
     -> Rpd (Network d)
 subscribeAllInlets handler nw = do
@@ -497,21 +547,28 @@ subscribeAllInlets handler nw = do
 
 subscribeAllInlets'
     :: forall d
-     . (InletPath -> d -> Effect Unit)
+     . (Path.ToInlet -> d -> Effect Unit)
     -> Network d
-    -> Effect (InletPath /-> Canceler)
-subscribeAllInlets' handler (Network _ { inlets }) =
-    traverse sub inlets
+    -> Effect (Path.ToInlet /-> Canceler)
+subscribeAllInlets' handler nw = do
+    let
+        inlets :: List (Inlet d)
+        inlets = view _networkInlets nw
+        pathOfInlet (Inlet _ inletPath _) = inletPath
+        inletsPaths :: List Path.ToInlet
+        inletsPaths = pathOfInlet <$> inlets
+    cancelers :: List Canceler <- traverse sub inlets
+    pure $ Map.fromFoldable $ (/\) <$> inletsPaths <*> cancelers
     where
         sub :: Inlet d -> Subscriber
-        sub (Inlet inletPath _ { flow }) =
+        sub (Inlet _ inletPath { flow }) =
             case flow of
                 InletFlow inletFlow -> E.subscribe inletFlow $ handler inletPath
 
 
 subscribeAllOutlets
     :: forall d
-     . (OutletPath -> d -> Effect Unit)
+     . (Path.ToOutlet -> d -> Effect Unit)
     -> Network d
     -> Rpd (Network d)
 subscribeAllOutlets handler nw = do
@@ -522,22 +579,29 @@ subscribeAllOutlets handler nw = do
 
 subscribeAllOutlets'
     :: forall d
-     . (OutletPath -> d -> Effect Unit)
+     . (Path.ToOutlet -> d -> Effect Unit)
     -> Network d
-    -> Effect (OutletPath /-> Canceler)
-subscribeAllOutlets' handler (Network _ { outlets }) =
-    traverse sub outlets
+    -> Effect (Path.ToOutlet /-> Canceler)
+subscribeAllOutlets' handler nw = do
+    let
+        outlets :: List (Outlet d)
+        outlets = view _networkOutlets nw
+        pathOfOutlet (Outlet _ outletPath _) = outletPath
+        outletsPaths :: List Path.ToOutlet
+        outletsPaths = pathOfOutlet <$> outlets
+    cancelers :: List Canceler  <- traverse sub outlets
+    pure $ Map.fromFoldable $ (/\) <$> outletsPaths <*> cancelers
     where
         sub :: Outlet d -> Subscriber
-        sub (Outlet outletPath _ { flow }) =
+        sub (Outlet _ outletPath { flow }) =
             case flow of
                 OutletFlow outletFlow -> E.subscribe outletFlow $ handler outletPath
 
 
 subscribeChannelsData
     :: forall d
-     . (OutletPath -> d -> Effect Unit)
-    -> (InletPath -> d -> Effect Unit)
+     . (Path.ToOutlet -> d -> Effect Unit)
+    -> (Path.ToInlet -> d -> Effect Unit)
     -> Network d
     -> Rpd (Network d)
 subscribeChannelsData oHandler iHandler nw = do
@@ -548,19 +612,19 @@ subscribeChannelsData oHandler iHandler nw = do
 
 subscribeChannelsData'
     :: forall d
-     . (OutletPath -> d -> Effect Unit)
-    -> (InletPath -> d -> Effect Unit)
+     . (Path.ToOutlet -> d -> Effect Unit)
+    -> (Path.ToInlet -> d -> Effect Unit)
     -> Network d
-    -> Effect ((OutletPath /-> Canceler) /\ (InletPath /-> Canceler))
+    -> Effect ((Path.ToOutlet /-> Canceler) /\ (Path.ToInlet /-> Canceler))
 subscribeChannelsData' oHandler iHandler nw =
     bisequence $ subscribeAllOutlets' oHandler nw /\ subscribeAllInlets' iHandler nw
 
 
 subscribeNode
     :: forall d
-     . NodePath
-    -> (InletInNode /\ d -> Effect Unit)
-    -> (Maybe (OutletInNode /\ d) -> Effect Unit)
+     . Path.ToNode
+    -> (InletAlias /\ UUID.ToInlet /\ d -> Effect Unit)
+    -> (OutletAlias /\ UUID.ToOutlet /\ d -> Effect Unit)
     -> Network d
     -> Rpd (Network d)
 subscribeNode nodePath inletsHandler outletsHandler nw = do
@@ -572,74 +636,101 @@ subscribeNode nodePath inletsHandler outletsHandler nw = do
 
 subscribeNode'
     :: forall d
-     . NodePath
-    -> (InletInNode /\ d -> Effect Unit)
-    -> (Maybe (OutletInNode /\ d) -> Effect Unit)
+     . Path.ToNode
+    -> (InletAlias /\ UUID.ToInlet /\ d -> Effect Unit)
+    -> (OutletAlias /\ UUID.ToOutlet /\ d -> Effect Unit)
     -> Network d
     -> Rpd Canceler
-subscribeNode' nodePath inletsHandler outletsHandler nw = do
-    (InletsFlow inletsFlow) :: InletsFlow d <-
-        view (_nodeInletsFlow nodePath) nw
+subscribeNode' path inletsHandler outletsHandler nw = do
+    uuid <- uuidByPath UUID.toNode path nw
+    InletsFlow inletsFlow <-
+        view (_nodeInletsFlow uuid) nw
             # exceptMaybe (RpdError "")
     inletsCanceler :: Canceler <-
-        liftEffect $ E.subscribe inletsFlow inletsHandler
-    (OutletsFlow outletsFlow) :: OutletsFlow d <-
-        view (_nodeOutletsFlow nodePath) nw
+        liftEffect $ E.subscribe inletsFlow
+            (inletsHandler <<< over1 \(Path.ToInlet { inlet }) -> inlet)
+    OutletsFlow outletsFlow <-
+        view (_nodeOutletsFlow uuid) nw
             # exceptMaybe (RpdError "")
     outletsCanceler :: Canceler <-
-        liftEffect $ E.subscribe outletsFlow outletsHandler
-    pure $ inletsCanceler <> outletsCanceler
+        liftEffect $ E.subscribe outletsFlow
+            (outletsHandler <<< over1 \(Path.ToOutlet { outlet }) -> outlet)
+    pure $ inletsCanceler <> inletsCanceler
 
 
 connect
     :: forall d
-     . OutletPath
-    -> InletPath
+     . Path.ToOutlet
+    -> Path.ToInlet
     -> Network d
     -> Rpd (Network d)
 -- TODO: rewrite for the case of different patches
-connect outletPath inletPath
-    nw@(Network nwdef nwstate) = do
-    let
-        linkId = nextLinkId nw
-        newLink = Link outletPath inletPath
-        iNodePath = getNodeOfInlet inletPath
-        oPatchId = getPatchOfOutlet outletPath
-        iPatchId = getPatchOfInlet inletPath
+connect outletPath inletPath nw = do
+    (uuid :: UUID.UUID) <- liftEffect $ liftEffect UUID.new
+    ouuid <- uuidByPath UUID.toOutlet outletPath nw
+    iuuid <- uuidByPath UUID.toInlet inletPath nw
+    -- FIXME: ensure that inlet and outlet are from the same patch
 
     (OutletFlow outletFlow) <-
-        view (_outletFlow outletPath) nw # exceptMaybe (RpdError "")
+        view (_outletFlow ouuid) nw # exceptMaybe (RpdError "")
     (InletFlow inletFlow) <-
-        view (_inletFlow inletPath) nw # exceptMaybe (RpdError "")
+        view (_inletFlow iuuid) nw # exceptMaybe (RpdError "")
     (PushToInlet pushToInlet) <-
-        view (_inletPush inletPath) nw # exceptMaybe (RpdError "")
+        view (_inletPush iuuid) nw # exceptMaybe (RpdError "")
 
+    let
+        newLink = Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid }
+        patchPath = Path.getPatchPath $ Path.lift outletPath
+        -- iNodePath = getNodeOfInlet inletPath
+        -- oPatchPath = getPatchOfOutlet outletPath
+        -- iPatchPath = getPatchOfInlet inletPath
+
+    patchUuid <- uuidByPath UUID.toPatch patchPath nw
     linkCanceler :: Canceler <-
             liftEffect $
                 E.subscribe outletFlow pushToInlet
 
     pure $ nw
-            # setJust (_link linkId) newLink
-            # setJust (_linkCancelers linkId) [ linkCanceler ]
+            # setJust (_link $ UUID.ToLink uuid) newLink
+            # setJust (_patchLink patchUuid $ UUID.ToLink uuid) unit
+            # setJust (_cancelers uuid) [ linkCanceler ]
 
 
-removeLinks
+-- removeLinks
+--     :: forall d
+--      . Set UUID.ToLink
+--     -> Network d
+--     -> Rpd (Network d)
+-- removeLinks linksForDeletion nw =
+--     let
+--         linksIdsForDeletion :: List UUID.UUID
+--         linksIdsForDeletion =
+--             Set.toUnfoldable linksForDeletion
+--                 <#> ToLink
+--                 <#> (\linkPath -> view (_pathToId linkPath) nw)
+--                  #  List.catMaybes
+--             -- FIXME: every `catMaybes` occurence is skipping the error, we                          -- shouldn't skip!
+--     in
+--         removeLinks' (Set.fromFoldable linksIdsForDeletion) nw
+
+
+removeLinks'
     :: forall d
-     . Set LinkId
+     . Seq UUID.ToLink
     -> Network d
     -> Rpd (Network d)
-removeLinks linksForDeletion nw = do
+removeLinks' linksForDeletion nw = do
     _ <- liftEffect $ traverse_
-            (\linkId ->
-                view (_linkCancelers linkId) nw
+            (\uuid ->
+                view (_cancelers $ UUID.uuid uuid) nw
                     # fromMaybe []
-                    # traverse_ liftEffect)
+                    # traverse_ liftEffect
+            )
             linksForDeletion
-
     pure $ (
-        foldr (\linkId nw' ->
-            nw' # set (_link linkId) Nothing
-                # set (_linkCancelers linkId) Nothing
+        foldr (\linkUuid nw' ->
+            nw' # set (_link linkUuid) Nothing
+                # set (_cancelers $ UUID.uuid linkUuid) Nothing
         ) nw linksForDeletion
         -- # setJust (_inletConnections inletPath) newInletConnections
         -- # setJust (_outletConnections outletPath) newOutletConnections
@@ -649,49 +740,80 @@ removeLinks linksForDeletion nw = do
 
 disconnectAll
     :: forall d
-     . OutletPath
-    -> InletPath
+     . Path.ToOutlet
+    -> Path.ToInlet
     -> Network d
     -> Rpd (Network d)
 disconnectAll outletPath inletPath
-    nw@(Network _ { links }) =
+    nw@(Network { registry }) = do
+    -- FIXME: delete links not from all the network but inside the specific patch
+    --        (so even don't use the new `_networkLinks` lens)
+    ouuid <- uuidByPath UUID.toOutlet outletPath nw
+    iuuid <- uuidByPath UUID.toInlet inletPath nw
     let
-        linkForDeletion (Link outletPath' inletPath') =
-            (outletPath' == outletPath) && (inletPath' == inletPath)
-        linksForDeletion = Map.keys $ links # Map.filter linkForDeletion
-    in
-        removeLinks linksForDeletion nw
+        linkForDeletion (Link _ { outlet : ouuid', inlet : iuuid' }) =
+            (ouuid' == ouuid) && (iuuid' == iuuid)
+        linksForDeletion :: List UUID.ToLink
+        linksForDeletion =
+            Map.values registry
+                # List.mapMaybe extractLink
+                # List.filter linkForDeletion
+                # map \(Link linkUuid _) -> linkUuid
+    removeLinks' (Seq.fromFoldable linksForDeletion) nw
 
 
 disconnectAllComingFrom
     :: forall d
-     . OutletPath
+     . Path.ToOutlet
     -> Network d
     -> Rpd (Network d)
-disconnectAllComingFrom outletPath
-    nw@(Network _ { links }) =
+disconnectAllComingFrom path
+    nw@(Network { registry }) = do
+    -- FIXME: delete links not from all the network but inside the specific patch
+    --        (so even don't use the new `_networkLinks` lens)
+    uuid <- uuidByPath UUID.toOutlet path nw
     let
-        linkForDeletion (Link outletPath' _) = (outletPath' == outletPath)
-        linksForDeletion = Map.keys $ links # Map.filter linkForDeletion
-    in
-        removeLinks linksForDeletion nw
+        linkForDeletion (Link _ { outlet : uuid' }) = (uuid' == uuid)
+        linksForDeletion :: List UUID.ToLink
+        linksForDeletion =
+            Map.values registry
+                # List.mapMaybe extractLink
+                # List.filter linkForDeletion
+                # map \(Link linkUuid _) -> linkUuid
+    removeLinks' (Seq.fromFoldable linksForDeletion) nw
 
 
 disconnectAllComingTo
     :: forall d
-     . InletPath
+     . Path.ToInlet
     -> Network d
     -> Rpd (Network d)
-disconnectAllComingTo inletPath
-    nw@(Network _ { links }) =
+disconnectAllComingTo path
+    nw@(Network { registry }) = do
+    -- FIXME: delete links not from all the network but inside the specific patch
+    --        (so even don't use the new `_networkLinks` lens)
+    uuid <- uuidByPath UUID.toInlet path nw
     let
-        linkForDeletion (Link _ inletPath') = (inletPath' == inletPath)
-        linksForDeletion = Map.keys $ links # Map.filter linkForDeletion
-    in
-        removeLinks linksForDeletion nw
+        linkForDeletion (Link _ { inlet : uuid' }) = (uuid' == uuid)
+        linksForDeletion :: List UUID.ToLink
+        linksForDeletion =
+            Map.values registry
+                # List.mapMaybe extractLink
+                # List.filter linkForDeletion
+                # map \(Link linkUuid _) -> linkUuid
+    removeLinks' (Seq.fromFoldable linksForDeletion) nw
 
 
--- TODO: disconnectTop
+disconnectTop
+    :: forall d
+     . Path.ToOutlet
+    -> Path.ToInlet
+    -> Network d
+    -> Rpd (Network d)
+disconnectTop outletPath inletPath nw
+    -- FIXME: implement
+    = pure nw
+
 
 -- TODO: disconnectTopOf (OutletPath /\ InletPath)
 
@@ -702,36 +824,37 @@ disconnectAllComingTo inletPath
 
 updateNodeProcessFlow
     :: forall d
-     . NodePath
+     . UUID.ToNode
     -> Network d
     -> Rpd (Network d)
-updateNodeProcessFlow nodePath nw = do
+updateNodeProcessFlow (UUID.ToNode uuid) nw = do
     -- cancel the previous subscription if it exists
-    _ <- view (_nodeCancelers nodePath) nw
+    _ <- view (_cancelers uuid) nw
             # fromMaybe []
             # traverse_ liftEffect
-    (Node _ nodeDef { inletsFlow, inlets, outlets }) <-
-        except $ view (_node nodePath) nw # note (RpdError "")
-    case nodeDef.process of
+    (Node _ _ process { inletsFlow, inlets, outlets }) <-
+        except $ view (_node $ UUID.ToNode uuid) nw # note (RpdError "")
+    case process of
         Withhold -> pure nw
+        -- TODO: it is OK now to join this handler and `buildOutletsFlow` in one function
         processF ->
-            if (Set.isEmpty inlets || Set.isEmpty outlets) then pure nw else do
+            if (Seq.null inlets || Seq.null outlets) then pure nw else do
                 let
-                    (outletFlows :: Array (PushToOutlet d)) =
+                    (outletFlows :: UUID.ToOutlet /-> PushToOutlet d) =
                         outlets
-                            # (Set.toUnfoldable :: forall a. Set a -> Array a)
-                            # map (\outletPath -> view (_outletPush outletPath) nw)
-                            # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
-                    pushToOutletFlow :: Maybe (OutletInNode /\ d) -> Effect Unit
-                    pushToOutletFlow maybeData =
-                        case maybeData of
-                            Just (outletIdx /\ d) ->
-                                case outletFlows !! outletIdx of
-                                    Just (PushToOutlet pushF) -> pushF d
-                                    _ -> pure unit
-                            _ -> pure unit
+                            # (Seq.toUnfoldable :: forall a. Seq a -> List a)
+                            # map (\ouuid ->
+                                view (_outletPush ouuid) nw
+                                    <#> \push -> ouuid /\ push)
+                            # List.catMaybes -- FIXME: raise an error if outlet wasn't found
+                            # Map.fromFoldable
+                    pushToOutletFlow :: (Path.ToOutlet /\ UUID.ToOutlet /\ d) -> Effect Unit
+                    pushToOutletFlow (_ /\ ouuid /\ d) =
+                        case Map.lookup ouuid outletFlows of
+                            Just (PushToOutlet push) -> push d
+                            Nothing -> pure unit
                 OutletsFlow outletsFlow /\ maybeCancelBuild <-
-                    buildOutletsFlow nodePath processF inletsFlow inlets outlets nw
+                    buildOutletsFlow (UUID.ToNode uuid) processF inletsFlow inlets outlets nw
                 canceler :: Canceler
                     <- liftEffect $ E.subscribe outletsFlow pushToOutletFlow
                 let
@@ -739,96 +862,151 @@ updateNodeProcessFlow nodePath nw = do
                         case maybeCancelBuild of
                             Just buildCanceler -> [ canceler, buildCanceler ]
                             Nothing -> [ canceler ]
-                pure $ nw # setJust (_nodeCancelers nodePath) cancelers
+                pure $ nw # setJust (_cancelers uuid) cancelers
 
 
 buildOutletsFlow
     :: forall d
-     . NodePath
+     . UUID.ToNode -- FIXME: we don't use UUID here
     -> ProcessF d
     -> InletsFlow d
-    -> Set InletPath
-    -> Set OutletPath
+    -> Seq UUID.ToInlet
+    -> Seq UUID.ToOutlet
     -> Network d
     -> Rpd (OutletsFlow d /\ Maybe Canceler) -- FIXME: for now, we only need Rpd to handle the
 buildOutletsFlow _ Withhold _ _ _ _ =
     -- liftEffect never >>= pure <<< OutletsFlow
     liftEffect never >>= \flow ->
         pure $ OutletsFlow flow /\ Nothing
-buildOutletsFlow _ PassThrough (InletsFlow inletsFlow) _ _ _ =
-    pure $ (OutletsFlow $ Just <$> inletsFlow)
-           /\ Nothing
-buildOutletsFlow _ (ByIndex processF) (InletsFlow inletsFlow) inlets outlets _ =
-    case processF $ InletsByIndexFlow inletsFlow of
-        OutletsByIndexFlow outletsByIndex ->
-            pure $ (OutletsFlow $ Just <$> outletsByIndex)
-                   /\ Nothing
-buildOutletsFlow _ (ByLabel processF) (InletsFlow inletsFlow) inlets outlets nw =
+-- buildOutletsFlow nodePath PassThrough inletsFlow inlets outlets nw =
+--     -- collect aliases for all inlets and outlets in the node, subscribe to inlets flow
+--     -- every call to `receive`
+--     buildOutletsFlow
+--         nodePath
+--         (Process ?wh ?wh)
+--         inletsFlow
+--         inlets
+--         outlets
+--         nw
+buildOutletsFlow _ (Process processNode) (InletsFlow inletsFlow) inlets outlets nw = do
+    -- collect data from inletsFlow into the Map (Alias /-> d) and pass Map.lookup to the `processF` handler.
+    { push, event } <- liftEffect E.create
     let
-        inletLabels = extractInletLabels inlets nw
-        outletLabels = extractOutletLabels outlets nw
-        mapInletFlow (inletIdx /\ d) =
-            case inletLabels !! inletIdx of
-                Just label -> (Just label /\ d)
-                _ -> Nothing /\ d
-        mapOutletFlow maybeData =
-            maybeData
-                >>= \(label /\ d) -> outletLabels # Array.elemIndex label
-                <#> \maybeIdx -> maybeIdx /\ d
-        labeledInletsFlow = mapInletFlow <$> inletsFlow
-        OutletsByLabelFlow labeledOutletsFlow =
-            processF $ InletsByLabelFlow labeledInletsFlow
-    in pure $ (OutletsFlow $ mapOutletFlow <$> labeledOutletsFlow)
-              /\ Nothing
-buildOutletsFlow nodePath (ByPath processF) (InletsFlow inletsFlow) inlets outlets _ =
-    let
-        mapInletFlow (inletIdx /\ d) =
-            Just (InletPath nodePath inletIdx) /\ d
-        inletsWithPathFlow = mapInletFlow <$> inletsFlow
-        outletsWithPathFlow = processF inletsWithPathFlow
-        mapOutletFlow maybeData =
-            maybeData
-                <#> \((OutletPath _ outletIdx) /\ d) ->
-                    outletIdx /\ d
-    in pure $ (OutletsFlow $ mapOutletFlow <$> outletsWithPathFlow)
-              /\ Nothing
-buildOutletsFlow _ (FoldedByIndex processF) (InletsFlow inletsFlow) inlets _ _ = do
-    -- TODO: generalize to Foldable
-    { event, push } <- liftEffect E.create
-    let
-        foldingF (curInletIdx /\ curD) inletVals =
-            Array.updateAt curInletIdx (Just curD) inletVals
-                # fromMaybe inletVals
-        inletsFlow' = E.fold foldingF inletsFlow
-            $ Array.replicate (Set.size inlets) Nothing
-    cancel <- liftEffect $ E.subscribe inletsFlow' $ \inletsVals ->
-        let (OutletsData outletVals) = processF $ InletsData inletsVals
-        in forWithIndex outletVals \idx val ->
-            push $ Just $ idx /\ val
-    pure $ OutletsFlow event
-           /\ Just cancel
-buildOutletsFlow _ (FoldedByLabel processF) (InletsFlow inletsFlow) inlets outlets nw = do
-    -- TODO: generalize to Foldable
-    { event, push } <- liftEffect E.create
-    let
-        inletLabels = extractInletLabels inlets nw
-        outletLabels = extractOutletLabels outlets nw
-        foldingF (curInletIdx /\ curD) inletVals =
-            case inletLabels !! curInletIdx of
-                Just label -> inletVals # Map.insert label curD
-                _ -> inletVals
-        inletsFlow' = E.fold foldingF inletsFlow Map.empty
-        adaptOutletVals :: (String /-> d) -> Array (Maybe (OutletInNode /\ d))
-        adaptOutletVals ouletVals =
-            Map.toUnfoldable ouletVals
-                <#> \(label /\ d) ->
-                    outletLabels # Array.elemIndex label
-                <#> flip (/\) d
-    cancel <- liftEffect $ E.subscribe inletsFlow' $ \inletsVals ->
-        let (OutletsMapData outletVals) = processF $ InletsMapData inletsVals
-        in traverse push $ adaptOutletVals outletVals
-    pure $ OutletsFlow event
-           /\ Just cancel
+        -- receive = ?wh
+        -- send = ?wh
+        outletsAliases :: List (Path.ToOutlet /\ UUID.ToOutlet)
+        outletsAliases =
+            (outlets
+                 # List.fromFoldable
+                <#> \uuid ->
+                    view (_outlet uuid) nw
+                        <#> \(Outlet uuid' path _) -> path /\ uuid')
+                 # List.catMaybes
+                -- FIXME: if outlet wasn't found, raise an error?
+                --  # Map.fromFoldable
+        foldingF
+            ((Path.ToInlet { node : nodePath, inlet : inletAlias })
+            /\ uuid
+            /\ curD)
+            inletVals =
+            inletVals # Map.insert inletAlias curD
+            -- case view (_inlet $ UUID.ToInlet uuid) nw of
+            --     Just (Inlet _ (InletPath nodePath' inletAlias') _) ->
+                    -- TODO: check, if we really need to check the alias and path once again
+                    --       may be we just may take alias and insert it into map
+                --     if (nodePath' == nodePath) && (inletAlias' == inletAlias)
+                --         then inletVals # Map.insert inletAlias curD
+                --         else inletVals
+                -- _ -> inletVals
+        processFlow = E.fold foldingF inletsFlow Map.empty
+        processHandler inletsValues = do
+            -- TODO: could even produce Aff (and then cancel it on next iteration)
+            let receive = flip Map.lookup $ inletsValues
+            (send :: Path.Alias -> Maybe d) <- processNode receive
+            _ <- traverse
+                    (\(path@(Path.ToOutlet { outlet : alias }) /\ uuid) ->
+                        case send alias of
+                            Just v -> push $ path /\ uuid /\ v
+                            Nothing -> pure unit
+                    )
+                    outletsAliases
+            pure unit
+    -- TODO
+    canceler <- liftEffect $ E.subscribe processFlow processHandler
+    pure $ (OutletsFlow event)
+           /\ Just canceler
+    -- case processF $ InletsByIndexFlow inletsFlow of
+    --     OutletsByIndexFlow outletsByIndex ->
+    --         pure $ (OutletsFlow $ Just <$> outletsByIndex)
+    --                /\ Nothing
+
+
+-- buildOutletsFlow _ (ByLabel processF) (InletsFlow inletsFlow) inlets outlets nw =
+--     let
+--         inletLabels = extractInletLabels inlets nw
+--         outletLabels = extractOutletLabels outlets nw
+--         mapInletFlow (inletIdx /\ d) =
+--             case inletLabels !! inletIdx of
+--                 Just label -> (Just label /\ d)
+--                 _ -> Nothing /\ d
+--         mapOutletFlow maybeData =
+--             maybeData
+--                 >>= \(label /\ d) -> outletLabels # Array.elemIndex label
+--                 <#> \maybeIdx -> maybeIdx /\ d
+--         labeledInletsFlow = mapInletFlow <$> inletsFlow
+--         OutletsByLabelFlow labeledOutletsFlow =
+--             processF $ InletsByLabelFlow labeledInletsFlow
+--     in pure $ (OutletsFlow $ mapOutletFlow <$> labeledOutletsFlow)
+--               /\ Nothing
+-- buildOutletsFlow nodePath (ByPath processF) (InletsFlow inletsFlow) inlets outlets _ =
+--     let
+--         mapInletFlow (inletIdx /\ d) =
+--             Just (InletPath nodePath inletIdx) /\ d
+--         inletsWithPathFlow = mapInletFlow <$> inletsFlow
+--         outletsWithPathFlow = processF inletsWithPathFlow
+--         mapOutletFlow maybeData =
+--             maybeData
+--                 <#> \((OutletPath _ outletIdx) /\ d) ->
+--                     outletIdx /\ d
+--     in pure $ (OutletsFlow $ mapOutletFlow <$> outletsWithPathFlow)
+--               /\ Nothing
+-- buildOutletsFlow _ (FoldedByIndex processF) (InletsFlow inletsFlow) inlets _ _ = do
+--     -- TODO: generalize to Foldable
+--     { event, push } <- liftEffect E.create
+--     let
+--         foldingF (curInletIdx /\ curD) inletVals =
+--             Array.updateAt curInletIdx (Just curD) inletVals
+--                 # fromMaybe inletVals
+--         inletsFlow' = E.fold foldingF inletsFlow
+--             $ Array.replicate (Set.size inlets) Nothing
+--     cancel <- liftEffect $ E.subscribe inletsFlow' $ \inletsVals ->
+--         let (OutletsData outletVals) = processF $ InletsData inletsVals
+--         in forWithIndex outletVals \idx val ->
+--             push $ Just $ idx /\ val
+--     pure $ OutletsFlow event
+--            /\ Just cancel
+-- buildOutletsFlow _ (FoldedByLabel processF) (InletsFlow inletsFlow) inlets outlets nw = do
+--     -- TODO: generalize to Foldable
+--     { event, push } <- liftEffect E.create
+--     let
+--         inletLabels = extractInletLabels inlets nw
+--         outletLabels = extractOutletLabels outlets nw
+--         foldingF (curInletIdx /\ curD) inletVals =
+--             case inletLabels !! curInletIdx of
+--                 Just label -> inletVals # Map.insert label curD
+--                 _ -> inletVals
+--         inletsFlow' = E.fold foldingF inletsFlow Map.empty
+--         adaptOutletVals :: (String /-> d) -> Array (Maybe (OutletInNode /\ d))
+--         adaptOutletVals ouletVals =
+--             Map.toUnfoldable ouletVals
+--                 <#> \(label /\ d) ->
+--                     outletLabels # Array.elemIndex label
+--                 <#> flip (/\) d
+--     cancel <- liftEffect $ E.subscribe inletsFlow' $ \inletsVals ->
+--         let (OutletsMapData outletVals) = processF $ InletsMapData inletsVals
+--         in traverse push $ adaptOutletVals outletVals
+--     pure $ OutletsFlow event
+--            /\ Just cancel
 
     -- TODO: may be, request these functions from user:
     --   for given inlet (path?), get its map key
@@ -841,20 +1019,22 @@ joinCancelers :: Canceler -> Canceler -> Canceler
 joinCancelers = (<>)
 
 
-extractInletLabels :: forall d. Set InletPath → Network d → Array String
+extractInletLabels :: forall d. Seq Path.ToInlet → Network d → Array Path.Alias
 extractInletLabels inlets nw =
     inlets
-        # (Set.toUnfoldable :: forall a. Set a -> Array a)
-        # map (\inletPath -> view (_inletLabel inletPath) nw)
+        # (Seq.toUnfoldable :: forall a. Seq a -> Array a)
+        # map (\inletPath -> view (_inletByPath inletPath) nw)
         # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
+        # map (\(Inlet _ (Path.ToInlet { inlet }) _) -> inlet) -- FIXME: real alias
 
 
-extractOutletLabels :: forall d. Set OutletPath → Network d → Array String
+extractOutletLabels :: forall d. Seq Path.ToOutlet → Network d → Array Path.Alias
 extractOutletLabels outlets nw =
     outlets
-        # (Set.toUnfoldable :: forall a. Set a -> Array a)
-        # map (\outletPath -> view (_outletLabel outletPath) nw)
+        # (Seq.toUnfoldable :: forall a. Seq a -> Array a)
+        # map (\outletPath -> view (_outletByPath outletPath) nw)
         # E.filterMap identity -- FIXME: raise an error if outlet wasn't found
+        # map (\(Outlet _ (Path.ToOutlet { outlet }) _) -> outlet)
 
 
 -- TODO: rollback :: RpdError -> Network -> Network

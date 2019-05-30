@@ -5,6 +5,7 @@ module Rpd.Network
     , Inlet(..)
     , Outlet(..)
     , Link(..)
+    , Entity(..)
     , InletFlow(..), OutletFlow(..)
     , InletsFlow(..), OutletsFlow(..)
     , PushToInlet(..), PushToOutlet(..)
@@ -13,62 +14,80 @@ module Rpd.Network
     , empty
     ) where
 
-import Prelude (class Eq, (==), (&&), class Show, show, (<>))
 
-import Data.Maybe (Maybe)
-import Data.List as List
-import Data.List (List)
+import Prelude (class Eq, (==))
+
 import Data.Map as Map
-import Data.Set (Set)
-import Data.Tuple.Nested (type (/\))
+import Data.Sequence as Seq
+import Data.Sequence (Seq)
 
-import Rpd.Def
-import Rpd.Path
-import Rpd.Process (InletInNode, OutletInNode)
-import Rpd.Util (type (/->), Canceler, Flow, PushableFlow, PushF)
+import Data.Tuple.Nested ((/\), type (/\))
+
+-- import Rpd.Channel (class Channel)
+-- import Rpd.Channel as Channel
+import Rpd.Path as Path
+import Rpd.Path (Path)
+import Rpd.UUID (UUID)
+import Rpd.UUID as UUID
+import Rpd.Util (type (/->), Canceler, Flow, PushF)
+import Rpd.Process (ProcessF)
 
 
+-- FIXME: UUID is internal and so should not be passed, I suppose.
+--        I'll leave it here temporarily just for the debug purpose.
 data InletFlow d = InletFlow (Flow d)
-data InletsFlow d = InletsFlow (Flow (InletInNode /\ d))
+data InletsFlow d = InletsFlow (Flow (Path.ToInlet /\ UUID.ToInlet /\ d))
 data PushToInlet d = PushToInlet (PushF d)
-data PushToInlets d = PushToInlets (PushF (InletInNode /\ d))
+data PushToInlets d = PushToInlets (PushF (Path.ToInlet /\ UUID.ToInlet /\ d))
 data OutletFlow d = OutletFlow (Flow d)
-data OutletsFlow d = OutletsFlow (Flow (Maybe (OutletInNode /\ d)))
+data OutletsFlow d = OutletsFlow (Flow (Path.ToOutlet /\ UUID.ToOutlet /\ d))
         -- FIXME: Flow (Maybe OutletInNode /\ d)
 data PushToOutlet d = PushToOutlet (PushF d)
-data PushToOutlets d = PushToOutlets (PushF (Maybe (OutletInNode /\ d)))
+data PushToOutlets d = PushToOutlets (PushF (Path.ToOutlet /\ UUID.ToOutlet /\ d))
         -- FIXME: PushF (Maybe OutletInNode /\ d)
+
+
+-- TODO: Make `Entity` a type kind?
+data Entity d
+    = PatchEntity (Patch d)
+    | NodeEntity (Node d)
+    | InletEntity (Inlet d)
+    | OutletEntity (Outlet d)
+    | LinkEntity Link
 
 
 data Network d =
     Network
         { name :: String
-        , patchDefs :: List (PatchDef d)
-        }
-        { patches :: PatchId /-> Patch d
-        , nodes :: NodePath /-> Node d
-        , inlets :: InletPath /-> Inlet d
-        , outlets :: OutletPath /-> Outlet d
-        , links :: LinkId /-> Link
-        , cancelers ::
-            { nodes :: NodePath /-> Array Canceler
-            , inlets :: InletPath /-> Array Canceler
-            , outlets :: OutletPath /-> Array Canceler
-            , links :: LinkId /-> Array Canceler
-            }
+        , patches :: Seq UUID.ToPatch
+        , registry :: UUID.Tagged /-> Entity d
+        -- , pathToId :: Path /-> Set UUID
+        , pathToId :: Path /-> UUID.Tagged
+        , cancelers :: UUID /-> Array Canceler
+            -- { nodes :: UUID.ToNode /-> Array Canceler
+            -- , inlets :: UUID.ToInlet /-> Array Canceler
+            -- , outlets :: UUID.ToOutlet /-> Array Canceler
+            -- , links :: UUID.ToLink /-> Array Canceler
+            -- }
         }
 data Patch d =
     Patch
-        PatchId
-        (PatchDef d)
-        { nodes :: Set NodePath
+        UUID.ToPatch
+        Path.ToPatch
+        -- FIXME: order in all of the sets may change, because we compare UUIDs using `Ord`
+        --        we need to ensure they added in the order of `addNode` calls
+        { nodes :: Seq UUID.ToNode -- TODO: links also should be stored in a patch
+        , links :: Seq UUID.ToLink
         }
 data Node d =
     Node
-        NodePath -- (NodeDef d)
-        (NodeDef d)
-        { inlets :: Set InletPath
-        , outlets :: Set OutletPath
+        UUID.ToNode
+        Path.ToNode
+        (ProcessF d)
+        -- FIXME: order in all of the sets may change, because we compare UUIDs using `Ord`
+        --        we need to ensure they added in the order of `addInlet`/`addOutlet` calls
+        { inlets :: Seq UUID.ToInlet
+        , outlets :: Seq UUID.ToOutlet
         , inletsFlow :: InletsFlow d
         , outletsFlow :: OutletsFlow d
         , pushToInlets :: PushToInlets d
@@ -76,56 +95,55 @@ data Node d =
         }
 data Inlet d =
     Inlet
-        InletPath
-        (InletDef d)
+        UUID.ToInlet
+        Path.ToInlet
+        -- (forall c. Channel c d => c)
         { flow :: InletFlow d
         , push :: PushToInlet d
         }
 data Outlet d =
     Outlet
-        OutletPath
-        (OutletDef d)
+        UUID.ToOutlet
+        Path.ToOutlet
+        -- (forall c. Channel c d => c)
         { flow :: OutletFlow d
         , push :: PushToOutlet d
         }
-data Link = Link OutletPath InletPath
+data Link =
+    Link
+        UUID.ToLink
+        { outlet :: UUID.ToOutlet
+        , inlet :: UUID.ToInlet
+        }
 
 
 empty :: forall d. String -> Network d
-empty name =
+empty networkName =
     Network
-        { name
-        , patchDefs : List.Nil
-        }
-        { patches : Map.empty
-        , nodes : Map.empty
-        , inlets : Map.empty
-        , outlets : Map.empty
-        , links : Map.empty
-        , cancelers :
-            { nodes : Map.empty
-            , inlets : Map.empty
-            , outlets : Map.empty
-            , links : Map.empty
-            }
+        { name : networkName
+        , patches : Seq.empty
+        , registry : Map.empty
+        , pathToId : Map.empty
+        , cancelers : Map.empty
+            -- { nodes : Map.empty
+            -- , inlets : Map.empty
+            -- , outlets : Map.empty
+            -- , links : Map.empty
+            -- }
         }
 
 
 instance eqPatch :: Eq (Patch d) where
-    eq (Patch idA _ _) (Patch idB _ _) = (idA == idB)
+    eq (Patch pidA _ _) (Patch pidB _ _) = (pidA == pidB)
 
 instance eqNode :: Eq (Node d) where
-    eq (Node pathA _ _) (Node pathB _ _) = (pathA == pathB)
+    eq (Node nidA _ _ _) (Node nidB _ _ _) = (nidA == nidB)
 
 instance eqInlet :: Eq (Inlet d) where
-    eq (Inlet pathA _ _) (Inlet pathB _ _) = (pathA == pathB)
+    eq (Inlet iidA _ _) (Inlet iidB _ _) = (iidA == iidB)
 
 instance eqOutlet :: Eq (Outlet d) where
-    eq (Outlet pathA _ _) (Outlet pathB _ _) = (pathA == pathB)
+    eq (Outlet oidA _ _) (Outlet oidB _ _) = (oidA == oidB)
 
 instance eqLink :: Eq Link where
-    eq (Link outletA inletA) (Link outletB inletB) = (outletA == outletB) && (inletA == inletB)
-
-
-instance showLink :: Show Link where
-    show (Link outletPath inletPath) = "Link " <> show outletPath <> " -> " <> show inletPath
+    eq (Link lidA _) (Link lidB _) = (lidA == lidB)

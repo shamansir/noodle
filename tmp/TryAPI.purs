@@ -20,7 +20,7 @@ data Link = Link Unit
 
 type Rpd a = ExceptT String Effect a
 
-data PatchId = PatchId String
+data PatchPath = PatchPath String
 data NodePath = NodePath String
 data InletPath = InletPath String
 data OutletPath = OutletPath String

@@ -1,17 +1,22 @@
 module Rpd.Path
-    ( PatchId(..), NodePath(..), InletPath(..), OutletPath(..), LinkId(..)
-    , patchId, nodePath, inletPath, outletPath, linkId
-    , getPatchOfNode, getPatchOfInlet, getPatchOfOutlet, getNodeOfInlet, getNodeOfOutlet
-    , getNodeId, getInletId, getOutletId
-    , Path(..)
+    ( Path, Alias
+    , toPatch, toNode, toInlet, toOutlet
+    , getPatchPath, getNodePath
+    , getPatchPath', getNodePath'
+    , ToPatch(..), ToNode(..), ToInlet(..), ToOutlet(..)
+    , class MarksPath, lift
+    , explodePatchPath, explodeNodePath, explodeInletPath, explodeOutletPath
+    , nodeInPatch, inletInNode, outletInNode
     )
     where
 
 
 import Prelude
 
+import Data.List
+import Data.Maybe
+import Data.Tuple.Nested (type (/\), (/\))
 
--- TODO: either Path typeclass or... Comonad? (paths look like breadcrumbs)
 
 -- FIXME: consider moving to random hashes, since adding/removing the things
 --        based on IDs breaks, for example, processing (new IDs are assigned
@@ -28,181 +33,181 @@ import Prelude
 --         pure unit)
 
 
+-- TODO: either Path typeclass or... Comonad? (paths look like breadcrumbs)
 
-data PatchId = PatchId Int
-data NodePath = NodePath PatchId Int
-data InletPath = InletPath NodePath Int
-data OutletPath = OutletPath NodePath Int
-data LinkId = LinkId Int
+-- class IsAlias
+
+
+-- Alias is the default or custom name for the entity (patch, node, inlet, outlet, etc.)
+-- which is recommended to be unique in this context, but has no guarantees to be so —
+-- uniqueness, unlike with UUID, is provided by user.
+-- This way the nice-looking paths may be created, like `my-patch/my-node/my-inlet`
+-- and so the particular inlet can be referenced with this path
+-- after the creation.
+
+-- If there was no Alias specified on entity creation, the alias from the correspoding
+-- `Def` is taken and the index in current context is added to it.
+
+-- Still, in the internal
+
+
+-- infixl 1 joinPaths as @
+
+
+-- joinPaths :: Path -> Path -> Path
+-- joinPaths End End = End
+-- joinPaths End (Deeper _ _) = End
+-- joinPaths (Deeper alias End) other = Deeper alias other
+-- joinPaths (Deeper alias first) second =
+    -- where
+    --     findLast :: Path -> Path -> Path Path
+
+
+type Alias = String -- TODO: newtype Alias = Alias String
+
+
+-- data Path
+--     = End
+--     | Deeper Alias Path
+
+
+class MarksPath a where
+    lift :: a -> Path
 
 
 data Path
-    = ToNetwork
-    | ToPatch PatchId
-    | ToNode NodePath
-    | ToInlet InletPath
-    | ToOutlet OutletPath
-    | ToLink LinkId
-    | Unknown
+    = ToPatch' ToPatch
+    | ToNode' ToNode
+    | ToInlet' ToInlet
+    | ToOutlet' ToOutlet
 
 
-patchId :: Int -> PatchId
-patchId = PatchId
+-- class HasPath a where
+--     extractPath :: a -> Path
 
 
-nodePath :: Int -> Int -> NodePath
-nodePath pId nId = NodePath (PatchId pId) nId
+-- TODO: find the general approach as in UUID
+newtype ToPatch = ToPatch Alias
+newtype ToNode = ToNode { patch :: Alias, node :: Alias }
+newtype ToInlet = ToInlet { patch :: Alias, node :: Alias, inlet :: Alias }
+newtype ToOutlet = ToOutlet { patch :: Alias, node :: Alias, outlet :: Alias }
 
 
-inletPath :: Int -> Int -> Int -> InletPath
-inletPath pId nId iId = InletPath (NodePath (PatchId pId) nId) iId
+derive instance eqToPatch :: Eq ToPatch
+derive instance ordToPatch :: Ord ToPatch
+derive instance eqToNode :: Eq ToNode
+derive instance ordToNode :: Ord ToNode
+derive instance eqToInlet :: Eq ToInlet
+derive instance ordToInlet :: Ord ToInlet
+derive instance eqToOutlet :: Eq ToOutlet
+derive instance ordToOutlet :: Ord ToOutlet
 
 
-outletPath :: Int -> Int -> Int -> OutletPath
-outletPath pId nId iId = OutletPath (NodePath (PatchId pId) nId) iId
+instance marksPathToPatch ∷ MarksPath ToPatch where lift = ToPatch'
+instance marksPathToNode ∷ MarksPath ToNode where lift = ToNode'
+instance marksPathToInlet ∷ MarksPath ToInlet where lift = ToInlet'
+instance marksPathToOutlet ∷ MarksPath ToOutlet where lift = ToOutlet'
 
 
-linkId :: Int -> LinkId
-linkId = LinkId
+-- empty :: Path
+-- empty = End
 
 
-getNodeId :: NodePath -> Int
-getNodeId (NodePath _ id) = id
+toPatch :: Alias -> ToPatch
+toPatch = ToPatch
 
 
-getInletId :: InletPath -> Int
-getInletId (InletPath _ id) = id
+toNode :: Alias -> Alias -> ToNode
+toNode patch node = ToNode { patch, node }
 
 
-getOutletId :: OutletPath -> Int
-getOutletId (OutletPath _ id) = id
+toInlet :: Alias -> Alias -> Alias -> ToInlet
+toInlet patch node inlet = ToInlet { patch, node, inlet }
 
 
-unpackNodePath :: NodePath -> Array Int
-unpackNodePath (NodePath (PatchId patchId) id) = [ patchId, id ]
-
-unpackInletPath :: InletPath -> Array Int
-unpackInletPath (InletPath nodePath id) = unpackNodePath nodePath <> [ id ]
-
-unpackOutletPath :: OutletPath -> Array Int
-unpackOutletPath (OutletPath nodePath id) = unpackNodePath nodePath <> [ id ]
+toOutlet :: Alias -> Alias -> Alias -> ToOutlet
+toOutlet patch node outlet = ToOutlet { patch, node, outlet }
 
 
-{-
-isNodeInPatch :: NodePath -> PatchId -> Boolean
-isNodeInPatch (NodePath patchId' _) patchId =
-    patchId == patchId'
+getPatchPath :: Path -> ToPatch
+getPatchPath (ToPatch' (ToPatch alias)) = toPatch alias
+getPatchPath (ToNode' (ToNode { patch })) = toPatch patch
+getPatchPath (ToInlet' (ToInlet { patch })) = toPatch patch
+getPatchPath (ToOutlet' (ToOutlet { patch })) = toPatch patch
 
 
-isInletInPatch :: InletPath -> PatchId -> Boolean
-isInletInPatch (InletPath nodePath _) patchId =
-    isNodeInPatch nodePath patchId
+getPatchPath' :: Path -> Path
+getPatchPath' = ToPatch' <<< getPatchPath
 
 
-isOutletInPatch :: OutletPath -> PatchId -> Boolean
-isOutletInPatch (OutletPath nodePath _) patchId =
-    isNodeInPatch nodePath patchId
+getNodePath :: Path -> Maybe ToNode
+getNodePath (ToPatch' _) = Nothing
+getNodePath (ToNode' (ToNode { patch, node })) = Just $ toNode patch node
+getNodePath (ToInlet' (ToInlet { patch, node })) = Just $ toNode patch node
+getNodePath (ToOutlet' (ToOutlet { patch, node })) = Just $ toNode patch node
 
 
-isInletInNode :: InletPath -> NodePath -> Boolean
-isInletInNode (InletPath nodePath' _) nodePath =
-    nodePath == nodePath'
+getNodePath' :: Path -> Maybe Path
+getNodePath' p = ToNode' <$> getNodePath p
 
 
-isOutletInNode :: OutletPath -> NodePath -> Boolean
-isOutletInNode (OutletPath nodePath' _) nodePath =
-    nodePath == nodePath'
+explodePatchPath :: ToPatch -> Alias
+explodePatchPath (ToPatch alias) = alias
 
 
-notInTheSameNode :: InletPath -> OutletPath -> Boolean
-notInTheSameNode (InletPath iNodePath _) (OutletPath oNodePath _) =
-    iNodePath /= oNodePath
--}
+explodeNodePath :: ToNode -> Alias /\ Alias
+explodeNodePath (ToNode { patch, node }) = patch /\ node
 
 
-
--- FIXME: below are Prisms
-
-getPatchOfNode :: NodePath -> PatchId
-getPatchOfNode (NodePath pId _) = pId
+explodeInletPath :: ToInlet -> Alias /\ Alias /\ Alias
+explodeInletPath (ToInlet { patch, node, inlet }) = patch /\ node /\ inlet
 
 
-getPatchOfInlet :: InletPath -> PatchId
-getPatchOfInlet inlet = getPatchOfNode $ getNodeOfInlet inlet
+explodeOutletPath :: ToOutlet -> Alias /\ Alias /\ Alias
+explodeOutletPath (ToOutlet { patch, node, outlet }) = patch /\ node /\ outlet
 
 
-getPatchOfOutlet :: OutletPath -> PatchId
-getPatchOfOutlet outlet = getPatchOfNode $ getNodeOfOutlet outlet
+nodeInPatch :: ToPatch -> Alias -> ToNode
+nodeInPatch (ToPatch patch) node =
+    ToNode
+        { patch, node }
 
 
-getNodeOfInlet :: InletPath -> NodePath
-getNodeOfInlet  (InletPath nPath _) = nPath
+inletInNode :: ToNode -> Alias -> ToInlet
+inletInNode (ToNode { patch, node }) inlet =
+    ToInlet
+        { patch, node, inlet }
 
 
-getNodeOfOutlet :: OutletPath -> NodePath
-getNodeOfOutlet  (OutletPath nPath _) = nPath
+outletInNode :: ToNode -> Alias -> ToOutlet
+outletInNode (ToNode { patch, node }) outlet =
+    ToOutlet
+        { patch, node, outlet }
 
 
+instance showToPatch :: Show ToPatch where
+    show (ToPatch alias) =
+        "<P@" <> alias <> ">"
 
-instance showPatchId :: Show PatchId where
-    show (PatchId id) = "P" <> show id
+instance showToNode :: Show ToNode where
+    show (ToNode { patch, node }) =
+        "<P@" <> patch <> "/N@" <> node <> ">"
 
-instance showNodePath :: Show NodePath where
-    show (NodePath patchId id) = show patchId <> "/N" <> show id
+instance showToInlet :: Show ToInlet where
+    show (ToInlet { patch, node, inlet }) =
+        "<P@" <> patch <> "/N@" <> node <> "/@I" <> inlet <> ">"
 
-instance showInletPath :: Show InletPath where
-    show (InletPath nodePath id) = show nodePath <> "/I" <> show id
-
-instance showOutletPath :: Show OutletPath where
-    show (OutletPath nodePath id) = show nodePath <> "/O" <> show id
-
-instance showLinkId :: Show LinkId where
-    show (LinkId id) = "L" <> show id
-
+instance showToOutlet :: Show ToOutlet where
+    show (ToOutlet { patch, node, outlet }) =
+        "<P@" <> patch <> "/N@" <> node <> "/@O" <> outlet <> ">"
 
 
 instance showPath :: Show Path where
-    show ToNetwork = "<nw>"
-    show (ToPatch patchId) = "<p " <> show patchId <> ">"
-    show (ToNode nodePath) = "<n " <> show nodePath <> ">"
-    show (ToInlet inletPath) = "<i " <> show inletPath <> ">"
-    show (ToOutlet outletPath) = "<o " <> show outletPath <> ">"
-    show (ToLink linkId) = "<l " <> show linkId <> ">"
-    show Unknown = "<?>"
+    show (ToPatch' p)  = "<" <> show p <> ">"
+    show (ToNode' n)   = "<" <> show n <> ">"
+    show (ToInlet' i)  = "<" <> show i <> ">"
+    show (ToOutlet' o) = "<" <> show o <> ">"
 
+derive instance eqPath :: Eq Path
+derive instance ordPath :: Ord Path
 
-instance eqPatchId :: Eq PatchId where
-    eq (PatchId a) (PatchId b) = a == b
-
-instance eqNodePath :: Eq NodePath where
-    eq (NodePath pa a) (NodePath pb b) = (pa == pb) && (a == b)
-
-instance eqInletPath :: Eq InletPath where
-    eq (InletPath na a) (InletPath nb b) = (na == nb) && (a == b)
-
-instance eqOutletPath :: Eq OutletPath where
-    eq (OutletPath na a) (OutletPath nb b) = (na == nb) && (a == b)
-
-instance eqLinkId :: Eq LinkId where
-    eq (LinkId a) (LinkId b) = a == b
-
-
-
-instance ordPatchId :: Ord PatchId where
-    compare (PatchId a) (PatchId b) = compare a b
-
-instance ordNodePath :: Ord NodePath where
-    compare nodePath1 nodePath2 =
-        compare (unpackNodePath nodePath1)  (unpackNodePath nodePath2)
-
-instance ordInletPath :: Ord InletPath where
-    compare inletPath1 inletPath2 =
-        compare (unpackInletPath inletPath1)  (unpackInletPath inletPath2)
-
-instance ordOutletPath :: Ord OutletPath where
-    compare outletPath1 outletPath2 =
-        compare (unpackOutletPath outletPath1) (unpackOutletPath outletPath2)
-
-instance ordLinkId :: Ord LinkId where
-    compare (LinkId a) (LinkId b) =
-        compare a b

@@ -38,10 +38,10 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node1"
-          </> R.addOutlet (nodePath 0 0) "outlet"
-          </> R.addNode (patchId 0) "node2"
-          </> R.addInlet (nodePath 0 1) "inlet"
+          </> R.addNode (toPatch "patch") "node1"
+          </> R.addOutlet (toNode "patch" "node1") "outlet"
+          </> R.addNode (toPatch "patch") "node2"
+          </> R.addInlet (toNode "patch" "node2") "inlet"
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter
@@ -49,15 +49,18 @@ spec = do
           nw
           $ do
             cancel <-
-              nw # R.connect (outletPath 0 0 0) (inletPath 0 1 0)
+              -- first connect, then stream
+              nw # R.connect
+                      (toOutlet "patch" "node1" "outlet")
+                      (toInlet "patch" "node2" "inlet")
                   </> R.streamToOutlet
-                      (outletPath 0 0 0)
+                      (toOutlet "patch" "node1" "outlet")
                       (R.flow $ const Notebook <$> interval 30)
             pure [ cancel ]
         collectedData `shouldContain`
-          (OutletData (outletPath 0 0 0) Notebook)
+          (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
         collectedData `shouldContain`
-          (InletData (inletPath 0 1 0) Notebook)
+          (InletData (toInlet "patch" "node2" "inlet") Notebook)
         pure unit
 
     pure unit
@@ -68,10 +71,10 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node1"
-          </> R.addOutlet (nodePath 0 0) "outlet"
-          </> R.addNode (patchId 0) "node2"
-          </> R.addInlet (nodePath 0 1) "inlet"
+          </> R.addNode (toPatch "patch") "node1"
+          </> R.addOutlet (toNode "patch" "node1") "outlet"
+          </> R.addNode (toPatch "patch") "node2"
+          </> R.addInlet (toNode "patch" "node2") "inlet"
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter
@@ -79,17 +82,18 @@ spec = do
           nw
           $ do
             cancel <-
+              -- first stream, then connect
               nw # R.streamToOutlet
-                (outletPath 0 0 0)
-                (R.flow $ const Notebook <$> interval 30)
+                      (toOutlet "patch" "node1" "outlet")
+                      (R.flow $ const Notebook <$> interval 30)
             _ <- nw # R.connect
-                (outletPath 0 0 0)
-                (inletPath 0 1 0)
+                      (toOutlet "patch" "node1" "outlet")
+                      (toInlet "patch" "node2" "inlet")
             pure [ cancel ]
         collectedData `shouldContain`
-          (OutletData (outletPath 0 0 0) Notebook)
+          (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
         collectedData `shouldContain`
-          (InletData (inletPath 0 1 0) Notebook)
+          (InletData (toInlet "patch" "node2" "inlet") Notebook)
         pure unit
 
     pure unit
@@ -100,37 +104,39 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (patchId 0) "node1"
-          </> R.addOutlet (nodePath 0 0) "outlet"
-          </> R.addNode (patchId 0) "node2"
-          </> R.addInlet (nodePath 0 1) "inlet"
+          </> R.addNode (toPatch "patch") "node1"
+          </> R.addOutlet (toNode "patch" "node1") "outlet"
+          </> R.addNode (toPatch "patch") "node2"
+          </> R.addInlet (toNode "patch" "node2") "inlet"
 
     rpd # withRpd \nw -> do
         nw' /\ collectedData <- CollectData.channelsAfter'
           (Milliseconds 100.0)
           nw
           $ do
-            -- NB:we're not cancelling this data flow between checks
+            -- NB: ensure we're really cancelling this data flow between checks
             _ <- nw # R.streamToOutlet
-                  (outletPath 0 0 0)
+                  (toOutlet "patch" "node1" "outlet")
                   (R.flow $ const Notebook <$> interval 30)
             nw' <- nw # R.connect
-                  (outletPath 0 0 0)
-                  (inletPath 0 1 0)
+                  (toOutlet "patch" "node1" "outlet")
+                  (toInlet "patch" "node2" "inlet")
             pure $ nw' /\ []
         collectedData `shouldContain`
-          (InletData (inletPath 0 1 0) Notebook)
+          (InletData (toInlet "patch" "node2" "inlet") Notebook)
         collectedData' <- CollectData.channelsAfter
           (Milliseconds 100.0)
           nw'
           $ do
             _ <-
-              nw' # R.disconnectAll (outletPath 0 0 0) (inletPath 0 1 0)
+              nw' # R.disconnectAll
+                      (toOutlet "patch" "node1" "outlet")
+                      (toInlet "patch" "node2" "inlet")
             pure [ ]
         collectedData' `shouldContain`
-          (OutletData (outletPath 0 0 0) Notebook)
+          (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
         collectedData' `shouldNotContain`
-          (InletData (inletPath 0 1 0) Notebook)
+          (InletData (toInlet "patch" "node2" "inlet") Notebook)
         pure unit
 
 

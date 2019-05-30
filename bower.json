@@ -34,12 +34,13 @@
     "purescript-web-events": "^1.0.0",
     "purescript-string-parsers": "^5.0.0",
     "purescript-random": "^4.0.0",
-    "purescript-drawing": "^4.0.0"
+    "purescript-drawing": "^4.0.0",
+    "purescript-sequences": "^2.1.0"
   },
   "devDependencies": {
     "purescript-debug": "^4.0.0",
     "purescript-psci-support": "^4.0.0",
-    "purescript-spec": "^3.0.0",
+    "purescript-spec": "^3.1.0",
     "purescript-test-unit": "^14.0.0",
     "purescript-node-fs-aff": "^6.0.0"
   }

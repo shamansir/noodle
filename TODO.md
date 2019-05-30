@@ -1,6 +1,8 @@
 Primary:
 ========
 
+Move to (`spago`)[https://github.com/spacchetti/spago].
+
 Tests for connecting and disconneting.
 
 Implement processing data in the nodes. + Tests. Think on the fact that connecting nodes or even just adding an inlet to the node should produce the effect, since we should subscribe processing function to a new data source (even if it's not a function, but `Flow`). When node was added or removed, or patch structure was changed in any way, renderer should react correspondingly — trigger the updates to subscriptions etc.

@@ -5,6 +5,7 @@ module Rpd.Util
     , Subscriber, Canceler
     , Flow, PushF, PushableFlow(..)
     , flow, never
+    , seqMember, seqMember', seqDelete, (:), (+>)
     ) where
 
 import Prelude
@@ -13,6 +14,9 @@ import Effect (Effect)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Bifunctor (lmap, bimap)
+import Data.Sequence as Seq
+import Data.Sequence (Seq)
+import Data.Maybe (Maybe(..))
 
 import FRP.Event (Event, create)
 
@@ -62,3 +66,23 @@ never =
     create >>=
         \{ event } -> pure event
 
+
+-- TODO: place in Data.Seq
+seqMember :: forall a. Eq a => a -> Seq a -> Boolean
+seqMember v seq =
+    Seq.length (Seq.filter ((==) v) seq) > 0
+
+
+seqMember' :: forall a. Eq a => a -> Seq a -> Maybe Unit
+seqMember' v seq =
+    if seqMember v seq then Just unit else Nothing
+
+
+seqDelete :: forall a. Eq a => a -> Seq a -> Seq a
+seqDelete v seq =
+    Seq.filter ((/=) v) seq
+
+
+-- TODO: place in Data.Seq
+infixr 6 Seq.cons as :
+infixl 6 Seq.snoc as +>

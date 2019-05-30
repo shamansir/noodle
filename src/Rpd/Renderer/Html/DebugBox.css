@@ -1,0 +1,8 @@
+#debug {
+    position: absolute;
+    right: 0;
+}
+
+.network-debug, .commands-debug {
+    border: 2px solid black;
+}

@@ -8,6 +8,7 @@ import Effect (Effect)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (wrap, unwrap)
+
 import Effect.Exception (throwException, error)
 import Effect.Ref as Ref
 import Effect.Uncurried as EFn
