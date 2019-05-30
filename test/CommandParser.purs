@@ -73,7 +73,7 @@ spec :: Spec Unit
 spec =
   describe "parsing commands" do
     it "parses commands" do
-      _ <- "node 0 test/foo" `parsesAs`
+      _ <- "node test/foo a\n" `parsesAs`
                 [ Cmd.AddNode (R.toNode "test" "foo") (T.NodeDefAlias "a")
                 ]
       pure unit

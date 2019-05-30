@@ -11,9 +11,10 @@ import Data.Int (fromString)
 import Data.Maybe (Maybe(..), fromMaybe')
 import Data.Either (Either(..))
 import Data.List (List(..))
+import Data.List (singleton) as List
 import Data.List.NonEmpty as NEL
 import Data.List.NonEmpty (NonEmptyList(..))
-import Data.Char.Unicode (isSpace, isDigit)
+import Data.Char.Unicode (isSpace, isDigit, isAlphaNum)
 import Data.Lens ((^.))
 import Data.Lens.At (at)
 
@@ -53,9 +54,16 @@ instance rpdCommandShow :: Show RpdFileCommand where
     show _ = "COMMAND"
 
 
-nextChars :: Parser String
-nextChars =
-    loadString <$> many1 anyChar
+isTokenChar :: Char -> Boolean
+isTokenChar c | isAlphaNum c = true
+isTokenChar c | c == '_'     = true
+isTokenChar c | c == '-'     = true
+isTokenChar c | otherwise    = false
+
+
+nextToken :: Parser String
+nextToken =
+    loadString <$> (many1 $ satisfy isTokenChar)
 
 
 delim :: Parser Unit
@@ -67,7 +75,7 @@ newline = (many1 $ satisfy ((==) '\n')) $> unit
 
 
 slash :: Parser Unit
-slash = satisfy ((==) '/') $> unit
+slash = (satisfy ((==) '/')) $> unit
 
 
 number :: Parser Int
@@ -90,19 +98,19 @@ addNode :: Parser RpdFileCommand
 addNode = do
     _ <- string "node"
     delim
-    patchAlias <- nextChars
+    patchAlias <- nextToken
     slash
-    nodeAlias <- nextChars
+    nodeAlias <- nextToken
     delim
-    nodeDefAlias <- nextChars
+    nodeDefAlias <- nextToken
     pure $ AddNode (P.toNode patchAlias nodeAlias) (T.NodeDefAlias nodeDefAlias)
 
 
-addPatch :: forall d. Parser RpdFileCommand
+addPatch :: Parser RpdFileCommand
 addPatch = do
     _ <- string "patch"
     delim
-    patchAlias <- nextChars
+    patchAlias <- nextToken
     pure $ AddPatch (P.toPatch patchAlias)
 
 
@@ -132,7 +140,7 @@ cmdParser
 
 
 fileParser :: Parser RpdFile
-fileParser =
+fileParser = do
     NEL.toList <$> (many1 $ do
         cmd <- cmdParser
         newline
