@@ -1,4 +1,4 @@
-module RpdTest.CommandParser
+module RpdTest.RpdFileParser
     ( spec ) where
 
 
