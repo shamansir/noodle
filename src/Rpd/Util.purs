@@ -5,7 +5,7 @@ module Rpd.Util
     , Subscriber, Canceler
     , Flow, PushF, PushableFlow(..)
     , flow, never
-    , seqMember, seqMember', seqDelete, (:), (+>)
+    , seqMember, seqMember', seqDelete, seqCatMaybes, (:), (+>)
     ) where
 
 import Prelude
@@ -17,6 +17,7 @@ import Data.Bifunctor (lmap, bimap)
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
 import Data.Maybe (Maybe(..))
+import Data.Foldable (foldr)
 
 import FRP.Event (Event, create)
 
@@ -81,6 +82,15 @@ seqMember' v seq =
 seqDelete :: forall a. Eq a => a -> Seq a -> Seq a
 seqDelete v seq =
     Seq.filter ((/=) v) seq
+
+
+seqCatMaybes :: forall a. Seq (Maybe a) -> Seq a
+seqCatMaybes seq =
+    foldr eliminateMaybe Seq.empty seq
+    where
+        eliminateMaybe (Just val) seq' = Seq.cons val seq'
+        eliminateMaybe Nothing seq' = seq'
+
 
 
 -- TODO: place in Data.Seq

@@ -62,7 +62,6 @@ spec = do
 
   --   pure unit
 
-
   it "subscribing to inlet passes the inlet data to the subscriber" $ do
     ref <- liftEffect $ Ref.new []
     let

@@ -6,14 +6,11 @@ import Prelude
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Time.Duration (Milliseconds(..))
-import Data.Map as Map
-import Data.Lens ((^.))
-import Data.Lens.At (at)
 import Data.Tuple.Nested ((/\))
 
 import Rpd.API ((</>))
 import Rpd.API as R
-import Rpd.Process as R
+import Rpd.Process (ProcessF(..)) as R
 import Rpd.Path
 
 import Test.Spec (Spec, it, pending)
@@ -36,6 +33,7 @@ import RpdTest.Flow.Base
 
 spec :: Spec Unit
 spec = do
+
   pending "adding an inlet inludes its flow into processing"
 
   it "returning some value from processing function actually sends this value to the outlet" $ do

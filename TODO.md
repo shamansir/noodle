@@ -7,6 +7,14 @@ Tests for connecting and disconneting.
 
 Implement processing data in the nodes. + Tests. Think on the fact that connecting nodes or even just adding an inlet to the node should produce the effect, since we should subscribe processing function to a new data source (even if it's not a function, but `Flow`). When node was added or removed, or patch structure was changed in any way, renderer should react correspondingly — trigger the updates to subscriptions etc.
 
+If the network where some data was sent to the inlets/outlets is passed to the `init` function of the renderer, of course it has no effect on the rendered result. It is because subscriptions are not made at the moment data is sent. But may be we could find a way to give user the ability to perform some initial actions with something like `renderAnd $ do ... <send data here>`. Also, it could be needed to load files which support sending something before initialization (Pure Data does not).
+
+Node processing functions are now quite easy to use — but:
+
+   - there's no ability to return data flows for specific outlets or some effects which should stop be in effect on the next call to the function, next time it's triggered;
+   - also, there's a need in keeping some state between the processing function calls — something like `fold` or `traverse`;
+   - in JS version, the hidden inlets were used to trigger the process function when something was updated in the node body using controls, it is unclear for now how we may do the similar thing in current PureScript model — pass a function to a process to trigger the corresponding message? A special version of `send`?
+
 Add abitity to collapse nodes by clicking their title.
 
 Implement creating links with dragging..
