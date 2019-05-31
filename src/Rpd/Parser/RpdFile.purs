@@ -2,30 +2,25 @@ module Rpd.Parser.RpdFile where
 
 import Prelude
 
-import Data.Either (Either(..))
 import Control.Alt ((<|>))
 
 import Data.Array (fromFoldable)
 import Data.String as String
 import Data.Int (fromString)
-import Data.Maybe (Maybe(..), fromMaybe')
-import Data.Either (Either(..))
-import Data.List (List(..))
-import Data.List (singleton) as List
+import Data.Maybe (Maybe(..))
+import Data.Either (Either)
+import Data.List (List)
 import Data.List.NonEmpty as NEL
-import Data.List.NonEmpty (NonEmptyList(..))
+import Data.List.NonEmpty (NonEmptyList)
 import Data.Char.Unicode (isSpace, isDigit, isAlphaNum)
-import Data.Lens ((^.))
-import Data.Lens.At (at)
-
-import Control.Monad.Trans.Class (class MonadTrans, lift)
 
 import Text.Parsing.StringParser (Parser, ParseError, runParser, fail)
-import Text.Parsing.StringParser.CodePoints
-    (anyDigit, eof, string, anyChar, regex, satisfy, skipSpaces)
-import Text.Parsing.StringParser.Combinators (many1, endBy1, sepBy1, optionMaybe, many, manyTill, many1Till, chainl, fix, between)
-import Text.Parsing.StringParser.Expr (Assoc(..), Operator(..), buildExprParser)
-import Text.Parsing.Parser.Token (space)
+import Text.Parsing.StringParser.CodePoints (satisfy, string)
+    -- (anyDigit, eof, string, anyChar, regex, satisfy, skipSpaces)
+import Text.Parsing.StringParser.Combinators (many1)
+    -- (many1, endBy1, sepBy1, optionMaybe, many, manyTill, many1Till, chainl, fix, between)
+-- import Text.Parsing.StringParser.Expr (Assoc(..), Operator(..), buildExprParser)
+-- import Text.Parsing.Parser.Token (space)
 
 -- import Rpd.Command (Command)
 -- import Rpd.Command as Cmd
@@ -51,7 +46,13 @@ instance rpdCommandEq :: Eq RpdFileCommand where
 
 instance rpdCommandShow :: Show RpdFileCommand where
     show (AddPatch patchPath) = "Add Patch: " <> show patchPath
-    show _ = "COMMAND"
+    show (AddNode nodePath nodeDef) = "Add Node " <> show nodeDef <> ": " <> show nodePath
+    show (AddInlet inletPath channelDef) =
+        "Add Inlet " <> show channelDef <> ": " <> show inletPath
+    show (AddOutlet outletPath channelDef) =
+        "Add Outlet " <> show channelDef <> ": " <> show outletPath
+    show (Connect outletPath inletPath) =
+        "Connect: " <> show outletPath <> " to " <> show inletPath
 
 
 isTokenChar :: Char -> Boolean
@@ -94,6 +95,14 @@ loadString list =
         $ fromFoldable list
 
 
+addPatch :: Parser RpdFileCommand
+addPatch = do
+    _ <- string "patch"
+    delim
+    patchAlias <- nextToken
+    pure $ AddPatch (P.toPatch patchAlias)
+
+
 addNode :: Parser RpdFileCommand
 addNode = do
     _ <- string "node"
@@ -106,13 +115,56 @@ addNode = do
     pure $ AddNode (P.toNode patchAlias nodeAlias) (T.NodeDefAlias nodeDefAlias)
 
 
-addPatch :: Parser RpdFileCommand
-addPatch = do
-    _ <- string "patch"
+addInlet :: Parser RpdFileCommand
+addInlet = do
+    _ <- string "inlet"
     delim
     patchAlias <- nextToken
-    pure $ AddPatch (P.toPatch patchAlias)
+    slash
+    nodeAlias <- nextToken
+    slash
+    inletAlias <- nextToken
+    delim
+    channelDefAlias <- nextToken
+    pure $ AddInlet
+        (P.toInlet patchAlias nodeAlias inletAlias)
+        (T.ChannelDefAlias channelDefAlias)
 
+
+addOutlet :: Parser RpdFileCommand
+addOutlet = do
+    _ <- string "outlet"
+    delim
+    patchAlias <- nextToken
+    slash
+    nodeAlias <- nextToken
+    slash
+    outletAlias <- nextToken
+    delim
+    channelDefAlias <- nextToken
+    pure $ AddOutlet
+        (P.toOutlet patchAlias nodeAlias outletAlias)
+        (T.ChannelDefAlias channelDefAlias)
+
+
+connect :: Parser RpdFileCommand
+connect = do
+    _ <- string "connect"
+    delim
+    outetPatchAlias <- nextToken
+    slash
+    outletNodeAlias <- nextToken
+    slash
+    outletAlias <- nextToken
+    delim
+    inletPatchAlias <- nextToken
+    slash
+    inletNodeAlias <- nextToken
+    slash
+    inletAlias <- nextToken
+    pure $ Connect
+        (P.toOutlet outetPatchAlias outletNodeAlias outletAlias)
+        (P.toInlet inletPatchAlias inletNodeAlias inletAlias)
 
 
 -- digit = string "0" $> 0
@@ -135,8 +187,11 @@ addPatch = do
 
 cmdParser :: Parser RpdFileCommand
 cmdParser
-     =  addNode
-    <|> addPatch
+     =  addPatch
+    <|> addNode
+    <|> addInlet
+    <|> addOutlet
+    <|> connect
 
 
 fileParser :: Parser RpdFile

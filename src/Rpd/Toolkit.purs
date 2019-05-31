@@ -11,12 +11,10 @@ module Rpd.Toolkit
 import Prelude
 
 import Data.Bifunctor (bimap)
-import Data.String
-import Data.Maybe
 import Data.Map as Map
 import Data.List (List)
 import Data.List as List
-import Data.Tuple.Nested ((/\), type (/\))
+import Data.Tuple.Nested (type (/\))
 
 import Rpd.Util (type (/->))
 import Rpd.Process (ProcessF)
@@ -27,6 +25,14 @@ newtype NodeDefAlias = NodeDefAlias String
 newtype ChannelDefAlias = ChannelDefAlias String
 newtype InletAlias = InletAlias String
 newtype OutletAlias = OutletAlias String
+
+
+instance showToolkitName :: Show ToolkitName where
+    show (ToolkitName name) = "[" <> name <> "]"
+instance showNodeDefAlias :: Show NodeDefAlias where
+    show (NodeDefAlias alias) = "[" <> alias <> "]"
+instance showChannelDefAlias :: Show ChannelDefAlias where
+    show (ChannelDefAlias alias) = "[" <> alias <> "]"
 
 
 -- FIXME: the name "Channel" is not right, it's rather Channels system... `ChannelDef`?
