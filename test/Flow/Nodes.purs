@@ -83,7 +83,7 @@ spec = do
     pure unit
 
 
-  it "returning multiple values from processing function actually sends these values to the outlets (array way)" $ do
+  it "returning multiple values from processing function actually sends these values to the outlets" $ do
     let
       curse1Inlet = toInlet "patch" "node" "curse1"
       curse2Inlet = toInlet "patch" "node" "curse2"

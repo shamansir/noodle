@@ -28,11 +28,6 @@ import RpdTest.Flow.Base (MyRpd, Delivery(..))
 
 spec :: Spec Unit
 spec = do
-  pending "we are able to subscribe some specific inlet in the network"
-
-  pending "we are able to subscribe some specific outlet in the network"
-
-  pending "we are able to subscribe some specific node in the network"
 
   -- INLETS --
 
