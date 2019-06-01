@@ -81,48 +81,48 @@ once (Renderer _ handleResult) =
     extractRpd handleResult neverPush
 
 
-{- Prepare the rendering cycle with internal message producer.
+{- Prepare the rendering cycle with the internal command producer.
    Returns the first view and the event flow with
    all the next views.
 
    Actually the process starts just when user subscribes
-   to the `next` views flow. `Event.subscribe` returns the
-   canceler, so it is possible to stop the thing.
+   to the `next` views flow. `Event.subscribe`, in this case,
+   returns the canceler, so it is possible to stop the thing.
 -}
 make
-    :: forall d r
+    :: forall d view
      . R.Rpd (R.Network d)
-    -> Renderer d r
+    -> Renderer d view
     -> Effect
-        { first :: r
-        , next :: Event (Effect r)
+        { first :: view
+        , next :: Event (Effect view)
         }
 make nw renderer =
     Event.create >>=
         \event -> pure $ make' event nw renderer
 
 
-{- Prepare the rendering cycle with custom message producer
-   (so, the `Event` with the messages source and
+{- Prepare the rendering cycle with the custom command producer
+   (so, the `Event` with the commands source and
    the function which pushes them to this flow).
    Returns the first view and the event flow with
    all the next views.
 
    Actually the process starts just when user subscribes
-   to the `next` views flow. `Event.subscribe` returns the
-   canceler, so it is possible to stop the thing.
+   to the `next` views flow. `Event.subscribe`, in this case,
+   returns the canceler, so it is possible to stop the process.
 
    TODO: do not ask user for `event`, just pushing function.
 -}
 make'
-    :: forall d r
+    :: forall d view
      . { event :: Event (C.Command d)
        , push :: (C.Command d -> Effect Unit)
        }
     -> R.Rpd (R.Network d)
-    -> Renderer d r
-    -> { first :: r
-       , next :: Event (Effect r)
+    -> Renderer d view
+    -> { first :: view
+       , next :: Event (Effect view)
        }
 make'
     { event : commands, push : pushCommand }
@@ -138,7 +138,7 @@ make'
     where
         updater :: C.Command d -> R.Rpd (R.Network d) -> R.Rpd (R.Network d)
         updater cmd rpd' = rpd' >>= C.apply cmd pushCommand
-        viewer :: R.Rpd (R.Network d) -> Effect r
+        viewer :: R.Rpd (R.Network d) -> Effect view
         viewer = extractRpd handler (PushCmd pushCommand)
 
 
@@ -147,29 +147,29 @@ make'
 
    Returns the canceler. -}
 run
-    :: forall d r
+    :: forall d view
      . R.Rpd (R.Network d)
-    -> Renderer d r
+    -> Renderer d view
     -> Effect R.Canceler
 run nw renderer =
     make nw renderer >>=
         \{ first, next } -> Event.subscribe next (pure <<< identity)
 
 
-{- Run the rendering cycle with custom message producer
-   (so, the `Event` with the messages source and
+{- Run the rendering cycle with custom command producer
+   (so, the `Event` with the commands source and
    the function which pushes them to this flow).
    Returns the canceler.
 
    TODO: do not ask user for `event`, just pushing function.
 -}
 run'
-    :: forall d r
+    :: forall d view
      . { event :: Event (C.Command d)
        , push :: (C.Command d -> Effect Unit)
        }
     -> R.Rpd (R.Network d)
-    -> Renderer d r
+    -> Renderer d view
     -> Effect R.Canceler
 run' event nw renderer =
     case make' event nw renderer of

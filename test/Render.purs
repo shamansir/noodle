@@ -124,6 +124,8 @@ spec =
     -- TODO:
     -- more connections
     -- node with processF
+    -- shows data in the inlets/outlets
+    -- toolkits and channels renderers
     -- selecting nodes
     -- status: should store commands
     -- should accept commands

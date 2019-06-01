@@ -33,12 +33,9 @@ import Rpd.Util (Canceler) as R
 import Rpd.Render as R
 
 
--- "Action" is either core "command" or user "message"
--- the naming is too confusing though
--- type Action msg d = Either msg (C.Command d)
-    -- = Core (C.Command d)
-    -- | User msg
-
+{- The difference with `MUV` is that this kind of renderers just operates the internal
+   `Commands`, without any custom `Message`s.
+-}
 
 {- UpdateF:
    - gets message: either core one from Rpd.Render, or the custom one used by user in the MUV loop;
@@ -66,8 +63,6 @@ data Renderer d model view
         , init :: model -- initial state
         , update :: UpdateF d model
         , view :: ViewF d model view
-        -- , mapMessage :: C.Command d -> msg -- maps core command to the user messages if user want to handle both / TODO: get rid of
-        -- , mapCommand :: msg -> C.Command d
         }
 
 
@@ -104,13 +99,13 @@ once (Renderer { view, init, update }) rpd =
         withModel = (/\) init <$> rpd
 
 
-{- Prepare the rendering cycle with internal message producer.
+{- Prepare the rendering cycle with internal command producer.
    Returns the first view and the event flow with
    all the next views.
 
    Actually the process starts just when user subscribes
-   to the `next` views flow. `Event.subscribe` returns the
-   canceler, so it is possible to stop the thing.
+   to the `next` views flow. `Event.subscribe`, in this case,
+   returns the canceler, so it is possible to stop the process.
 -}
 make
     :: forall d model view
@@ -125,15 +120,15 @@ make nw renderer =
         \event -> pure $ make' event nw renderer
 
 
-{- Prepare the rendering cycle with custom message producer
-   (so, the `Event` with the messages source and
+{- Prepare the rendering cycle with custom command producer
+   (so, the `Event` with the commands source and
    the function which pushes them to this flow).
    Returns the first view and the event flow with
    all the next views.
 
    Actually the process starts just when user subscribes
-   to the `next` views flow. `Event.subscribe` returns the
-   canceler, so it is possible to stop the thing.
+   to the `next` views flow. `Event.subscribe`, in this case,
+   returns the canceler, so it is possible to stop the process.
 
    TODO: do not ask user for `event`, just pushing function.
 -}
@@ -196,8 +191,8 @@ run nw renderer =
         \{ first, next } -> Event.subscribe next (pure <<< identity)
 
 
-{- Run the rendering cycle with custom message producer
-   (so, the `Event` with the messages source and
+{- Run the rendering cycle with custom command producer
+   (so, the `Event` with the commands source and
    the function which pushes them to this flow).
    Returns the first view and the event flow with
    all the next views.

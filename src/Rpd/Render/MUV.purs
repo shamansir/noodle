@@ -37,13 +37,6 @@ import Rpd.Render as R
 import Debug.Trace as DT
 
 
--- "Action" is either core "command" or user "message"
--- the naming is too confusing though
--- type Action msg d = Either msg (C.Command d)
-    -- = Core (C.Command d)
-    -- | User msg
-
-
 data PushF msg d = PushF (Either msg (C.Command d) -> Effect Unit)
 {- UpdateF:
    - gets message: either core one from Rpd.Render, or the custom one used by user in the MUV loop;
@@ -71,8 +64,6 @@ data Renderer d model view msg
         , init :: model -- initial state
         , update :: UpdateF d model msg
         , view :: ViewF d model view msg
-        -- , mapMessage :: C.Command d -> msg -- maps core command to the user messages if user want to handle both / TODO: get rid of
-        -- , mapCommand :: msg -> C.Command d
         }
 
 
@@ -110,13 +101,13 @@ once (Renderer { view, init, update }) rpd =
         withModel = (/\) init <$> rpd
 
 
-{- Prepare the rendering cycle with internal message producer.
+{- Prepare the rendering cycle with the internal message producer.
    Returns the first view and the event flow with
    all the next views.
 
    Actually the process starts just when user subscribes
-   to the `next` views flow. `Event.subscribe` returns the
-   canceler, so it is possible to stop the thing.
+   to the `next` views flow. `Event.subscribe`, in this case,
+   returns the canceler, so it is possible to stop the process.
 -}
 make
     :: forall d model view msg
@@ -131,15 +122,15 @@ make nw renderer =
         \event -> pure $ make' event nw renderer
 
 
-{- Prepare the rendering cycle with custom message producer
+{- Prepare the rendering cycle with the custom message producer
    (so, the `Event` with the messages source and
    the function which pushes them to this flow).
    Returns the first view and the event flow with
    all the next views.
 
    Actually the process starts just when user subscribes
-   to the `next` views flow. `Event.subscribe` returns the
-   canceler, so it is possible to stop the thing.
+   to the `next` views flow. `Event.subscribe`, in this case,
+   returns the canceler, so it is possible to stop the process.
 
    TODO: do not ask user for `event`, just pushing function.
 -}
