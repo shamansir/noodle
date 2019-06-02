@@ -20,17 +20,17 @@ import Prelude (class Eq, (==))
 import Data.Map as Map
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
+import Data.Maybe (Maybe)
 
 import Data.Tuple.Nested ((/\), type (/\))
 
--- import Rpd.Channel (class Channel)
--- import Rpd.Channel as Channel
 import Rpd.Path as Path
 import Rpd.Path (Path)
 import Rpd.UUID (UUID)
 import Rpd.UUID as UUID
 import Rpd.Util (type (/->), Canceler, Flow, PushF)
 import Rpd.Process (ProcessF)
+import Rpd.Toolkit (class Channels)
 
 
 -- FIXME: UUID is internal and so should not be passed, I suppose.
@@ -74,9 +74,7 @@ data Patch d =
     Patch
         UUID.ToPatch
         Path.ToPatch
-        -- FIXME: order in all of the sets may change, because we compare UUIDs using `Ord`
-        --        we need to ensure they added in the order of `addNode` calls
-        { nodes :: Seq UUID.ToNode -- TODO: links also should be stored in a patch
+        { nodes :: Seq UUID.ToNode
         , links :: Seq UUID.ToLink
         }
 data Node d =
@@ -84,8 +82,6 @@ data Node d =
         UUID.ToNode
         Path.ToNode
         (ProcessF d)
-        -- FIXME: order in all of the sets may change, because we compare UUIDs using `Ord`
-        --        we need to ensure they added in the order of `addInlet`/`addOutlet` calls
         { inlets :: Seq UUID.ToInlet
         , outlets :: Seq UUID.ToOutlet
         , inletsFlow :: InletsFlow d
@@ -97,7 +93,6 @@ data Inlet d =
     Inlet
         UUID.ToInlet
         Path.ToInlet
-        -- (forall c. Channel c d => c)
         { flow :: InletFlow d
         , push :: PushToInlet d
         }
@@ -105,7 +100,6 @@ data Outlet d =
     Outlet
         UUID.ToOutlet
         Path.ToOutlet
-        -- (forall c. Channel c d => c)
         { flow :: OutletFlow d
         , push :: PushToOutlet d
         }

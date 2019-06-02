@@ -3,7 +3,7 @@ module Rpd.Toolkit
     , NodeDefAlias(..), ChannelDefAlias(..)
     , InletAlias(..), OutletAlias(..)
     , NodeDef(..)
-    , class Channel
+    , class Channels
     , default, adapt, accept--, show
     , nodes, inlets, outlets
     ) where
@@ -35,9 +35,9 @@ instance showChannelDefAlias :: Show ChannelDefAlias where
     show (ChannelDefAlias alias) = "[" <> alias <> "]"
 
 
--- FIXME: the name "Channel" is not right, it's rather Channels system... `ChannelDef`?
+-- FIXME: the name "Channel" is not right, it's rather Channels system... `ChannelDef`, `Transponder`?
 -- class (Show c) <= Channel c d where
-class Channel c d where
+class Channels c d where
     default :: c -> d
     accept :: c -> d -> Boolean
     adapt :: c -> d -> d
@@ -47,7 +47,7 @@ class Channel c d where
 
 data NodeDef c d =
     NodeDef
-        (Channel c d =>
+        (Channels c d =>
             { process :: ProcessF d
             , inlets :: List (InletAlias /\ c)
             , outlets :: List (OutletAlias /\ c)
@@ -64,7 +64,7 @@ data NodeDef c d =
 
 data Toolkit c d =
     Toolkit
-        (Channel c d =>
+        (Channels c d =>
             { name :: ToolkitName
             , nodes :: NodeDefAlias /-> NodeDef c d
             })

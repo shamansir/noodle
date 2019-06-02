@@ -201,7 +201,7 @@ addNode patchPath nodeAlias nw = do
 
 addToolkitNode
     :: forall c d
-     . Toolkit.Channel c d
+     . Toolkit.Channels c d
     => Path.ToPatch
     -> Path.Alias
     -> Toolkit.NodeDefAlias
@@ -217,7 +217,7 @@ addToolkitNode patchPath nodeAlias nodeDefAlias (Toolkit toolkit) nw = do
 
 addDefNode
     :: forall c d
-     . Toolkit.Channel c d
+     . Toolkit.Channels c d
     => Path.ToPatch
     -> Path.Alias
     -> Toolkit.NodeDef c d
@@ -314,7 +314,7 @@ addInlet nodePath alias nw = do
 
 addChanelledInlet
     :: forall c d
-     . Toolkit.Channel c d
+     . Toolkit.Channels c d
     => Path.ToNode
     -> Path.Alias
     -> c
@@ -392,7 +392,7 @@ addOutlet nodePath alias nw = do
 
 addChanelledOutlet
     :: forall c d
-     . Toolkit.Channel c d
+     . Toolkit.Channels c d
     => Path.ToNode
     -> Path.Alias
     -> c

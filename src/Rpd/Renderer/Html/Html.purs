@@ -8,7 +8,7 @@ import Data.Lens (view) as L
 import Data.Lens.At (at) as L
 import Data.List (toUnfoldable)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), isJust)
+import Data.Maybe (Maybe(..), isJust, maybe)
 import Data.Sequence as Seq
 import Data.Tuple.Nested (type (/\), (/\))
 import Debug.Trace (spy)
@@ -22,6 +22,7 @@ import Rpd.UUID as UUID
 import Rpd.Render as R
 import Rpd.Render.MUV (Renderer(..), PushF(..)) as R
 import Rpd.Util (type (/->))
+import Rpd.Toolkit as T
 
 import Rpd.Renderer.Html.DebugBox as DebugBox
 
@@ -34,6 +35,7 @@ type Model d =
     { lastInletData :: P.ToInlet /-> d
     , lastOutletData :: P.ToOutlet /-> d
     , debug :: Maybe (DebugBox.Model d)
+    , toolkits :: T.ToolkitName /-> (forall c. T.Toolkit c d)
     }
 
 
@@ -53,10 +55,19 @@ init =
     , lastOutletData : Map.empty
     -- , debug : Nothing
     , debug : Just DebugBox.init
+    , toolkits: Map.empty
     }
 
 
 type HtmlRenderer d = Show d => R.Renderer d (Model d) (View d) Message
+
+
+core :: forall d. C.Command d -> Either Message (C.Command d)
+core = Right
+
+
+my :: forall d. Message -> Either Message (C.Command d)
+my = Left
 
 
 emptyView :: forall d. View d
@@ -72,7 +83,17 @@ viewNetwork :: forall d. R.PushF Message d -> Model d -> R.Network d -> View d
 viewNetwork pushMsg ui nw@(R.Network { name, patches }) =
     H.div
         [ H.id_ "network" ]
-        $ [ H.text name ] <>
+        $
+            [ H.text name
+            , H.div
+                [ H.onClick $ H.always_ $ core C.Bang
+                ]
+                [ H.text "Send" ]
+            , H.div
+                [ H.onClick $ H.always_ $ core
+                    $ C.AddInlet (P.toNode "test" "random") "test" ]
+                [ H.text "Add Inlet" ]
+            ] <>
             (toUnfoldable $ viewPatch pushMsg ui nw <$> (patches # Seq.toUnfoldable))
 
 
@@ -109,15 +130,6 @@ viewNode pushMsg ui nw nodeUuid =
                 [ H.classes [ "node" ] ]
                 (
                     [ H.text name
-                    , H.div
-                        [ H.onClick $ H.always_ $ Right
-                            -- $ FIXME: C.SendToInlet (P.toInlet "0" "0" "0") R.default ]
-                            $ C.Bang ]
-                        [ H.text "Send" ]
-                    , H.div
-                        [ H.onClick $ H.always_ $ Right
-                            $ C.AddInlet (P.toNode "0" "0") "0" ]
-                        [ H.text "Add Inlet" ]
                     ]
                     <> (viewInlet pushMsg ui nw <$> (inlets # Seq.toUnfoldable))
                     <> (viewOutlet pushMsg ui nw <$> (outlets # Seq.toUnfoldable))

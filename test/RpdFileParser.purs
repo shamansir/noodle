@@ -31,7 +31,7 @@ data Data = Foo | Bar
 data Channel = Whatever
 
 
-instance exampleChannel :: T.Channel Channel Data where
+instance exampleChannels :: T.Channels Channel Data where
     default _ = Foo
     accept _ _ = true
     adapt _ = identity

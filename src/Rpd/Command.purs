@@ -6,7 +6,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq as GEq
 import Data.Generic.Rep.Show as GShow
 
-import Rpd.Toolkit (class Channel)
+import Rpd.Toolkit (class Channels)
 import Rpd.Path as Path
 import Rpd.UUID
 
@@ -17,10 +17,10 @@ data Command d
     | AddNode Path.ToPatch Path.Alias
     | AddInlet Path.ToNode Path.Alias
     | AddOutlet Path.ToNode Path.Alias
-    | AddInlet' Path.ToNode Path.Alias (forall c. Channel c d => c)
-    | AddOutlet' Path.ToNode Path.Alias (forall c. Channel c d => c)
-    -- | AddInlet Path (forall c. Show c => Channel c d => c)
-    -- | AddOutlet Path (forall c. Show c => Channel c d => c)
+    | AddInlet' Path.ToNode Path.Alias (forall c. Channels c d => c)
+    | AddOutlet' Path.ToNode Path.Alias (forall c. Channels c d => c)
+    -- | AddInlet Path (forall c. Show c => Channels c d => c)
+    -- | AddOutlet Path (forall c. Show c => Channels c d => c)
     | Connect { outlet :: Path.ToOutlet, inlet :: Path.ToInlet }
     | Disconnect { outlet :: Path.ToOutlet, inlet :: Path.ToInlet }
     | GotInletData Path.ToInlet d

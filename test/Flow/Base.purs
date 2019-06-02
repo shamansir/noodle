@@ -64,7 +64,7 @@ data Pipe
   -- | OnlyCurses
 
 
-instance myChannel :: R.Channel Pipe Delivery where
+instance myChannels :: R.Channels Pipe Delivery where
   default _ = Damaged
 
   accept _ _ = true

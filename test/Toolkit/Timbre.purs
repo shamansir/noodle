@@ -41,7 +41,7 @@ data Channel
     | CSound
 
 
-instance timbreChannel :: T.Channel Channel Data where
+instance timbreChannel :: T.Channels Channel Data where
     default CValue = Value 0.0
     default CWave = Wave Sin
     default CSound = Sound Stopped
