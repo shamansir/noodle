@@ -34,7 +34,7 @@ import Rpd.Render as R
 
 
 {- The difference with `MUV` is that this kind of renderers just operates the internal
-   `Commands`, without any custom `Message`s.
+   `Commands`, without any custom `Message`s, but still has Model-Update-View cycle.
 -}
 
 {- UpdateF:

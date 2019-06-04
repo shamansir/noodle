@@ -1,15 +1,17 @@
 module Rpd.Toolkit
-    ( Toolkit(..), ToolkitName(..)
+    ( Toolkit(..), ToolkitName(..), Toolkits(..)
     , NodeDefAlias(..), ChannelDefAlias(..)
     , InletAlias(..), OutletAlias(..)
     , NodeDef(..)
     , class Channels
     , default, adapt, accept--, show
     , nodes, inlets, outlets
+    , Renderer, RendererAlias, RenderNode, RenderInlet, RenderOutlet
     ) where
 
 import Prelude
 
+import Effect (Effect)
 import Data.Bifunctor (bimap)
 import Data.Map as Map
 import Data.List (List)
@@ -18,6 +20,7 @@ import Data.Tuple.Nested (type (/\))
 
 import Rpd.Util (type (/->))
 import Rpd.Process (ProcessF)
+import Rpd.Network (Node, Inlet, Outlet) as R
 
 
 newtype ToolkitName = ToolkitName String
@@ -25,6 +28,7 @@ newtype NodeDefAlias = NodeDefAlias String
 newtype ChannelDefAlias = ChannelDefAlias String
 newtype InletAlias = InletAlias String
 newtype OutletAlias = OutletAlias String
+newtype RendererAlias = RendererAlias String
 
 
 instance showToolkitName :: Show ToolkitName where
@@ -33,6 +37,18 @@ instance showNodeDefAlias :: Show NodeDefAlias where
     show (NodeDefAlias alias) = "[" <> alias <> "]"
 instance showChannelDefAlias :: Show ChannelDefAlias where
     show (ChannelDefAlias alias) = "[" <> alias <> "]"
+
+
+type RenderNode msg d view = R.Node d -> (msg -> Effect Unit) -> view
+type RenderInlet c msg d view = Channels c d => (R.Inlet d -> c -> (msg -> Effect Unit) -> view)
+type RenderOutlet c msg d view = Channels c d => (R.Outlet d -> c -> (msg -> Effect Unit) -> view)
+
+
+data Renderer msg c d view = Renderer
+    { node :: NodeDefAlias /-> RenderNode msg d view
+    , inlet :: ChannelDefAlias /-> RenderInlet c msg d view
+    , outlet :: ChannelDefAlias /-> RenderOutlet c msg d view
+    }
 
 
 -- FIXME: the name "Channel" is not right, it's rather Channels system... `ChannelDef`, `Transponder`?
@@ -67,7 +83,13 @@ data Toolkit c d =
         (Channels c d =>
             { name :: ToolkitName
             , nodes :: NodeDefAlias /-> NodeDef c d
+            , render ::
+                RendererAlias /->
+                    (forall msg view. Renderer msg c d view)
             })
+
+
+data Toolkits d = Toolkits (ToolkitName /-> (forall c. Toolkit c d))
 
 
 nodes

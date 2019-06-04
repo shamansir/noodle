@@ -13,15 +13,17 @@ import Rpd.API ((</>))
 import Rpd.Network (Network) as R
 import Rpd.Process (InletHandler(..), OutletHandler(..), InletAlias) as R
 import Rpd.Path as P
+import Rpd.Toolkit as T
 
 
 apply
     :: forall d
      . Command d
     -> (Command d -> Effect Unit)
+    -> T.Toolkits d
     -> R.Network d
     -> R.Rpd (R.Network d)
-apply Bang pushCmd nw =
+apply Bang pushCmd _ nw =
     Rpd.subscribeAllInlets onInletData nw
         </> Rpd.subscribeAllOutlets onOutletData
     where
@@ -29,10 +31,10 @@ apply Bang pushCmd nw =
             pushCmd $ GotInletData inletPath d
         onOutletData outletPath d =
             pushCmd $ GotOutletData outletPath d
-apply (AddPatch alias) pushCmd nw =
+apply (AddPatch alias) pushCmd _ nw =
     R.addPatch alias nw
         -- FIXME: subscribe the nodes in the patch
-apply (AddNode patchPath alias) pushCmd nw =
+apply (AddNode patchPath alias) pushCmd _ nw =
     Rpd.addNode patchPath alias nw
         -- FIXME: `onInletData`/`onOutletData` do not receive the proper state
         --        of the network this way (do they need it?), but they should
@@ -48,7 +50,7 @@ apply (AddNode patchPath alias) pushCmd nw =
             pushCmd $ GotInletData (P.toInlet patchAlias nodeAlias inletAlias) d
         onNodeOutletData nodePath (outletAlias /\ _ /\ d) =
             pushCmd $ GotOutletData (P.toOutlet patchAlias nodeAlias outletAlias) d
-apply (AddInlet nodePath alias) pushCmd nw =
+apply (AddInlet nodePath alias) pushCmd _ nw =
     let
         inletPath = P.inletInNode nodePath alias
         onInletData d =
@@ -56,7 +58,7 @@ apply (AddInlet nodePath alias) pushCmd nw =
     in
         Rpd.addInlet nodePath alias nw
             </> Rpd.subscribeInlet inletPath (R.InletHandler onInletData)
-apply (AddOutlet nodePath alias) pushCmd nw =
+apply (AddOutlet nodePath alias) pushCmd _ nw =
     let
         outletPath = P.outletInNode nodePath alias
         onOutletData d =
@@ -64,10 +66,10 @@ apply (AddOutlet nodePath alias) pushCmd nw =
     in
         Rpd.addOutlet nodePath alias nw
             </> Rpd.subscribeOutlet outletPath (R.OutletHandler onOutletData)
-apply (Connect { inlet : inletPath, outlet : outletPath }) _ nw =
+apply (Connect { inlet : inletPath, outlet : outletPath }) _ _ nw =
     Rpd.connect outletPath inletPath nw
-apply (Disconnect { inlet : inletPath, outlet : outletPath }) _ nw =
+apply (Disconnect { inlet : inletPath, outlet : outletPath }) _ _ nw =
     Rpd.disconnectTop outletPath inletPath nw
 -- TODO: Connect etc.
-apply _ _ nw = pure nw
+apply _ _ _ nw = pure nw
 

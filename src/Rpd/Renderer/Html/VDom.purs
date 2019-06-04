@@ -32,6 +32,7 @@ import Spork.Html (Html)
 import Rpd.API (Rpd) as R
 import Rpd.Network (Network)
 import Rpd.Command (Command(..)) as C
+import Rpd.Toolkit (Toolkits) as T
 import Rpd.Render.MUV (Renderer(..)) as Ui
 import Rpd.Render.MUV (make') as Render
 
@@ -44,9 +45,10 @@ embed
      . String -- selector
     -> (view -> HtmlView msg d) -- insert the rendering result
     -> Ui.Renderer d model view msg -- renderer
+    -> T.Toolkits d
     -> R.Rpd (Network d) -- initial network
     -> Effect Unit
-embed sel render renderer initNw = do
+embed sel render renderer toolkits initRpd = do
     doc ← DOM.window >>= DOM.document
     mbEl ← DOM.querySelector (wrap sel) (HTMLDocument.toParentNode doc)
     case mbEl of
@@ -59,7 +61,7 @@ embed sel render renderer initNw = do
                     , buildWidget: buildThunk unwrap
                     , buildAttributes: P.buildProp push
                     }
-            let { first, next } = Render.make' { event, push } initNw renderer
+            let { first, next } = Render.make' { event, push } toolkits initRpd renderer
             first_vdom ← EFn.runEffectFn1 (V.buildVDom vdomSpec) (unwrap $ render first)
             vdom_ref <- Ref.new first_vdom -- use recursion istead of `Ref`?
             void $ DOM.appendChild (Machine.extract first_vdom) (DOMElement.toNode el)
@@ -78,7 +80,7 @@ embed'
     :: forall d model msg
      . String -- selector
     -> Ui.Renderer d model (HtmlView msg d) msg -- renderer
+    -> T.Toolkits d -- toolkits
     -> R.Rpd (Network d) -- initial network
     -> Effect Unit
-embed'  sel renderer initNw =
-    embed sel identity renderer initNw
+embed' sel = embed sel identity

@@ -26,6 +26,7 @@ import Rpd.Command (Command) as C
 import Rpd.CommandApply (apply) as C
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
+import Rpd.Toolkit (Toolkits) as T
 
 
 -- data RendererCommand d rcmd
@@ -91,15 +92,16 @@ once (Renderer _ handleResult) =
 -}
 make
     :: forall d view
-     . R.Rpd (R.Network d)
+     . T.Toolkits d
+    -> R.Rpd (R.Network d)
     -> Renderer d view
     -> Effect
         { first :: view
         , next :: Event (Effect view)
         }
-make nw renderer =
+make toolkits rpd renderer =
     Event.create >>=
-        \event -> pure $ make' event nw renderer
+        \event -> pure $ make' event toolkits rpd renderer
 
 
 {- Prepare the rendering cycle with the custom command producer
@@ -119,6 +121,7 @@ make'
      . { event :: Event (C.Command d)
        , push :: (C.Command d -> Effect Unit)
        }
+    -> T.Toolkits d
     -> R.Rpd (R.Network d)
     -> Renderer d view
     -> { first :: view
@@ -126,6 +129,7 @@ make'
        }
 make'
     { event : commands, push : pushCommand }
+    toolkits
     rpd
     (Renderer initialView handler) =
     let
@@ -137,7 +141,7 @@ make'
         }
     where
         updater :: C.Command d -> R.Rpd (R.Network d) -> R.Rpd (R.Network d)
-        updater cmd rpd' = rpd' >>= C.apply cmd pushCommand
+        updater cmd rpd' = rpd' >>= C.apply cmd pushCommand toolkits
         viewer :: R.Rpd (R.Network d) -> Effect view
         viewer = extractRpd handler (PushCmd pushCommand)
 
@@ -148,11 +152,12 @@ make'
    Returns the canceler. -}
 run
     :: forall d view
-     . R.Rpd (R.Network d)
+     . T.Toolkits d
+    -> R.Rpd (R.Network d)
     -> Renderer d view
     -> Effect R.Canceler
-run nw renderer =
-    make nw renderer >>=
+run toolkits rpd renderer =
+    make toolkits rpd renderer >>=
         \{ first, next } -> Event.subscribe next (pure <<< identity)
 
 
@@ -168,11 +173,12 @@ run'
      . { event :: Event (C.Command d)
        , push :: (C.Command d -> Effect Unit)
        }
+    -> T.Toolkits d
     -> R.Rpd (R.Network d)
     -> Renderer d view
     -> Effect R.Canceler
-run' event nw renderer =
-    case make' event nw renderer of
+run' toolkits event nw renderer =
+    case make' toolkits event nw renderer of
         { first, next } -> Event.subscribe next (pure <<< identity)
 
 

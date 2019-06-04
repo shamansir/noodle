@@ -30,7 +30,6 @@ import Rpd.UUID (UUID)
 import Rpd.UUID as UUID
 import Rpd.Util (type (/->), Canceler, Flow, PushF)
 import Rpd.Process (ProcessF)
-import Rpd.Toolkit (class Channels)
 
 
 -- FIXME: UUID is internal and so should not be passed, I suppose.

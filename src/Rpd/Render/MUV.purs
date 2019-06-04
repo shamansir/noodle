@@ -30,9 +30,11 @@ import Rpd.API as Rpd
 import Rpd.Path (toNode, ToInlet(..), ToOutlet(..)) as R
 import Rpd.Command as C
 import Rpd.CommandApply as C
-import Rpd.Network (Network) as R
+import Rpd.Network (Network, Node, Inlet, Outlet) as R
 import Rpd.Util (Canceler) as R
 import Rpd.Render as R
+import Rpd.Toolkit as T
+-- import Rpd.Util (type (/->))
 
 import Debug.Trace as DT
 
@@ -57,6 +59,7 @@ type UpdateF d model msg
 type ViewF d model view msg =
     PushF msg d -> Either R.RpdError (model /\ R.Network d) -> view
 
+-- type RenderNode
 
 data Renderer d model view msg
     = Renderer
@@ -65,6 +68,10 @@ data Renderer d model view msg
         , update :: UpdateF d model msg
         , view :: ViewF d model view msg
         }
+
+
+-- type RendererWithToolkits d model view msg
+--     = Renderer d model view msg /\ T.Toolkits d
 
 
 -- core :: forall d m. Core.Message d -> Message d m
@@ -111,15 +118,16 @@ once (Renderer { view, init, update }) rpd =
 -}
 make
     :: forall d model view msg
-     . R.Rpd (R.Network d)
+     . T.Toolkits d
+    -> R.Rpd (R.Network d)
     -> Renderer d model view msg
     -> Effect
         { first :: view
         , next :: Event (Effect view)
         }
-make nw renderer =
+make toolkits rpd renderer =
     Event.create >>=
-        \event -> pure $ make' event nw renderer
+        \event -> pure $ make' event toolkits rpd renderer
 
 
 {- Prepare the rendering cycle with the custom message producer
@@ -139,6 +147,7 @@ make'
      . { event :: Event (Either msg (C.Command d))
        , push :: Either msg (C.Command d) -> Effect Unit
        }
+    -> T.Toolkits d
     -> R.Rpd (R.Network d)
     -> Renderer d model view msg
     -> { first :: view
@@ -146,6 +155,7 @@ make'
        }
 make'
     { event, push }
+    toolkits
     rpd
     (Renderer { from, init, view, update })
     = let
@@ -169,18 +179,18 @@ make'
             \(model /\ nw) ->
                 case msgOrCmd of
                     Left msg -> do
-                        let _ = DT.spy "msg" msg
+                        -- let _ = DT.spy "msg" msg
                         -- perform user update function, collect user messages
                         let model' /\ actions = update (Left msg) $ model /\ nw
-                        -- apply user messages returned from previous line to the model
+                        -- apply user messages returned from the previous line to the model
                         foldr updatePipeline (pure $ model' /\ nw) actions
                     Right cmd -> do
-                        let _ = DT.spy "cmd" cmd
+                        -- let _ = DT.spy "cmd" cmd
                         -- apply the core command to the network
-                        nw' <- C.apply cmd (push <<< Right) nw
+                        nw' <- C.apply cmd (push <<< Right) toolkits nw
                         -- perform the user update function with this core command, collect the returned messages
                         let model' /\ actions = update (Right cmd) $ model /\ nw'
-                        -- apply user messages returned from previous line to the model
+                        -- apply user messages returned from the previous line to the model
                         foldr updatePipeline (pure $ model' /\ nw') actions
         viewer
             :: R.Rpd (model /\ R.Network d)
@@ -195,11 +205,12 @@ make'
    Returns the canceler. -}
 run
     :: forall d view model msg
-     . R.Rpd (R.Network d)
+     . T.Toolkits d
+    -> R.Rpd (R.Network d)
     -> Renderer d view model msg
     -> Effect R.Canceler
-run nw renderer =
-    make nw renderer >>=
+run toolkits rpd renderer =
+    make toolkits rpd renderer >>=
         \{ first, next } -> Event.subscribe next (pure <<< identity)
 
 
@@ -216,10 +227,11 @@ run'
      . { event :: Event (Either msg (C.Command d))
        , push :: Either msg (C.Command d) -> Effect Unit
        }
+    -> T.Toolkits d
     -> R.Rpd (R.Network d)
     -> Renderer d view model msg
     -> Effect R.Canceler
-run' event nw renderer =
-    case make' event nw renderer of
+run' event toolkits rpd renderer =
+    case make' event toolkits rpd renderer of
         { first, next } -> Event.subscribe next (pure <<< identity)
 
