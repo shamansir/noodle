@@ -10,7 +10,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Exists
 
 import Rpd.Network (empty) as Network
-import Rpd.Renderer.Html.Html (htmlRenderer)
+import Rpd.Renderer.Html (htmlRenderer)
 import Rpd.Renderer.Html.VDom as VDom
 import Rpd.Toolkit (Toolkits(..), ToolkitName(..), mkToolkitE) as T
 

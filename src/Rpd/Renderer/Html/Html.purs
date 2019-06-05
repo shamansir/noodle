@@ -1,4 +1,4 @@
-module Rpd.Renderer.Html.Html where
+module Rpd.Renderer.Html where
 
 import Prelude
 

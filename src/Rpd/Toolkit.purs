@@ -7,7 +7,8 @@ module Rpd.Toolkit
     , default, adapt, accept--, show
     , nodes, inlets, outlets
     , mkToolkitE
-    , Renderer, RendererAlias, RenderNode, RenderInlet, RenderOutlet
+    , Renderer(..), RendererAlias(..)
+    , RenderNode, RenderInlet, RenderOutlet
     ) where
 
 import Prelude
@@ -23,6 +24,7 @@ import Data.Exists (Exists, mkExists)
 import Rpd.Util (type (/->))
 import Rpd.Process (ProcessF)
 import Rpd.Network (Node, Inlet, Outlet) as R
+-- import Rpd.Command (Command) as R
 
 
 newtype ToolkitName = ToolkitName String
@@ -41,15 +43,16 @@ instance showChannelDefAlias :: Show ChannelDefAlias where
     show (ChannelDefAlias alias) = "[" <> alias <> "]"
 
 
-type RenderNode msg d view = R.Node d -> (msg -> Effect Unit) -> view
-type RenderInlet c msg d view = Channels d c => (R.Inlet d -> c -> (msg -> Effect Unit) -> view)
-type RenderOutlet c msg d view = Channels d c => (R.Outlet d -> c -> (msg -> Effect Unit) -> view)
+-- FIXME: `msg` should always be equal to `Rpd.Command`
+type RenderNode d msg view = forall msg. R.Node d -> (msg -> Effect Unit) -> view
+type RenderInlet c d msg view = Channels d c => (R.Inlet d -> c -> (msg -> Effect Unit) -> view)
+type RenderOutlet c d msg view = Channels d c => (R.Outlet d -> c -> (msg -> Effect Unit) -> view)
 
 
-data Renderer msg d c view = Renderer
-    { node :: NodeDefAlias /-> RenderNode msg d view
-    , inlet :: ChannelDefAlias /-> RenderInlet c msg d view
-    , outlet :: ChannelDefAlias /-> RenderOutlet c msg d view
+data Renderer d c msg view = Renderer
+    { node :: NodeDefAlias /-> RenderNode d msg view
+    , inlet :: ChannelDefAlias /-> RenderInlet c d msg view
+    , outlet :: ChannelDefAlias /-> RenderOutlet c d msg view
     }
 
 
