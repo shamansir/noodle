@@ -13,7 +13,8 @@ import Rpd.API (Rpd) as R
 import Rpd.API as Rpd
 import Rpd.API ((</>))
 
-import Example.Toolkit (toolkit, Value(..))
+import Example.Toolkit.Value (Value(..))
+import Example.Toolkit (toolkit)
 
 network :: R.Rpd (R.Network Value)
 network =

@@ -1,107 +1,31 @@
-module Example.Toolkit
-    ( Value(..)
-    , Channel(..)
-    , ParticleShape(..)
-    , toolkit
-    ) where
+module Example.Toolkit.Nodes where
 
 import Prelude
 
 import Effect (Effect)
 import Effect.Random (randomRange)
 
-import Data.Bifunctor (bimap)
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Lens ((^.))
-import Data.Lens.At (at)
-import Data.List ((:))
-import Data.List as List
-import Data.List.Lazy (List(..))
-import Data.Map as Map
-import Data.Tuple as Tuple
-import Data.Tuple.Nested ((/\))
+import Data.Maybe
+import Data.Tuple.Nested ((/\), type (/\))
 
-import Rpd.Process (ProcessF(..)) as R
-import Rpd.Toolkit (nodes, inlets, outlets) as Toolkit
-import Rpd.Toolkit as Rpd
-import Rpd.Util (type (/->))
+import Rpd.Process as R
+import Rpd.Toolkit as T
+
+import Example.Toolkit.Value
+import Example.Toolkit.Channel
 
 
-data ParticleShape
-    = Circle
-    | Cross
-    | Square
-    | Diamond
-
-
-data Value
-    = Bang
-    | Color Number Number Number
-    | Shape ParticleShape
-    | Random Number
-    | Number' Number
-    | Trigger Boolean
-    | Period Number
-    | Magic Number Number
-
-
-data Channel
-    = ColorChannel
-    | ShapeChannel
-    | NumberChannel
-    | TimeChannel
-    | TriggerChannel
-
-
-instance showValue :: Show Value where
-    show _ = "DATA"
-    -- show Bang = "bang"
-    -- show (Color r g b) = "color"
-    -- show (Shape shape) = "shape"
-    -- show (Random n) = "random"
-    -- show (Number' n) = "number"
-
-
-instance showChannel :: Show Channel where
-    show ColorChannel = "color"
-    show ShapeChannel = "shape"
-    show NumberChannel = "number"
-    show TimeChannel = "time"
-    show TriggerChannel = "trigger"
-
-
-instance exampleChannel :: Rpd.Channels Value Channel where
-    default _ = Bang
-    accept _ _ = true
-    adapt _ = identity
-
-
-toolkit :: Rpd.Toolkit Value Channel
-toolkit =
-    Rpd.Toolkit
-        { name : Rpd.ToolkitName "example"
-        , nodes
-        , render : Map.empty
-        }
-    where
-        nodes :: Rpd.NodeDefAlias /-> Rpd.NodeDef Value Channel
-        nodes =
-            Toolkit.nodes
-                [ "random" /\ randomNode
-                ]
-
-
-randomNode :: Rpd.NodeDef Value Channel
+randomNode :: T.NodeDef Value Channel
 randomNode =
-    Rpd.NodeDef
+    T.NodeDef
         { inlets :
-            Toolkit.inlets
+            T.inlets
                 [ "bang" /\ TriggerChannel
                 , "min" /\ NumberChannel
                 , "max" /\ NumberChannel
                 ]
         , outlets :
-            Toolkit.outlets
+            T.outlets
                 [ "random" /\ NumberChannel ]
         , process : R.Process processF
         }
