@@ -1,11 +1,12 @@
 module Rpd.Toolkit
-    ( Toolkit(..), ToolkitName(..), Toolkits(..)
+    ( Toolkit(..), ToolkitName(..), Toolkits(..), ToolkitE
     , NodeDefAlias(..), ChannelDefAlias(..)
     , InletAlias(..), OutletAlias(..)
     , NodeDef(..)
     , class Channels
     , default, adapt, accept--, show
     , nodes, inlets, outlets
+    , mkToolkitE
     , Renderer, RendererAlias, RenderNode, RenderInlet, RenderOutlet
     ) where
 
@@ -17,6 +18,7 @@ import Data.Map as Map
 import Data.List (List)
 import Data.List as List
 import Data.Tuple.Nested (type (/\))
+import Data.Exists (Exists, mkExists)
 
 import Rpd.Util (type (/->))
 import Rpd.Process (ProcessF)
@@ -40,11 +42,11 @@ instance showChannelDefAlias :: Show ChannelDefAlias where
 
 
 type RenderNode msg d view = R.Node d -> (msg -> Effect Unit) -> view
-type RenderInlet c msg d view = Channels c d => (R.Inlet d -> c -> (msg -> Effect Unit) -> view)
-type RenderOutlet c msg d view = Channels c d => (R.Outlet d -> c -> (msg -> Effect Unit) -> view)
+type RenderInlet c msg d view = Channels d c => (R.Inlet d -> c -> (msg -> Effect Unit) -> view)
+type RenderOutlet c msg d view = Channels d c => (R.Outlet d -> c -> (msg -> Effect Unit) -> view)
 
 
-data Renderer msg c d view = Renderer
+data Renderer msg d c view = Renderer
     { node :: NodeDefAlias /-> RenderNode msg d view
     , inlet :: ChannelDefAlias /-> RenderInlet c msg d view
     , outlet :: ChannelDefAlias /-> RenderOutlet c msg d view
@@ -53,7 +55,7 @@ data Renderer msg c d view = Renderer
 
 -- FIXME: the name "Channel" is not right, it's rather Channels system... `ChannelDef`, `Transponder`?
 -- class (Show c) <= Channel c d where
-class Channels c d where
+class Channels d c where
     default :: c -> d
     accept :: c -> d -> Boolean
     adapt :: c -> d -> d
@@ -61,9 +63,9 @@ class Channels c d where
     -- show :: c -> d -> String
 
 
-data NodeDef c d =
+data NodeDef d c =
     NodeDef
-        (Channels c d =>
+        (Channels d c =>
             { process :: ProcessF d
             , inlets :: List (InletAlias /\ c)
             , outlets :: List (OutletAlias /\ c)
@@ -78,24 +80,32 @@ data NodeDef c d =
 --             })
 
 
-data Toolkit c d =
+type ToolkitE d = Exists (Toolkit d)
+
+mkToolkitE :: forall d c. (Channels d c) => Toolkit d c -> ToolkitE d
+mkToolkitE = mkExists
+
+newtype Toolkits d = Toolkits (ToolkitName /-> ToolkitE d)
+
+
+data Toolkit d c =
     Toolkit
-        (Channels c d =>
+        (Channels d c =>
             { name :: ToolkitName
-            , nodes :: NodeDefAlias /-> NodeDef c d
+            , nodes :: NodeDefAlias /-> NodeDef d c
             , render ::
                 RendererAlias /->
-                    (forall msg view. Renderer msg c d view)
+                    (forall msg view. Renderer msg d c view)
             })
 
 
-data Toolkits d = Toolkits (ToolkitName /-> (forall c. Toolkit c d))
+-- data Toolkits d = Toolkits (ToolkitName /-> (forall c. Toolkit c d))
 
 
 nodes
-    :: forall c d
-     . Array (String /\ NodeDef c d)
-    -> (NodeDefAlias /-> NodeDef c d)
+    :: forall d c
+     . Array (String /\ NodeDef d c)
+    -> (NodeDefAlias /-> NodeDef d c)
 nodes nodeArray =
     nodeArray
     # map (bimap NodeDefAlias identity)

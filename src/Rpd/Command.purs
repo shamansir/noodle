@@ -18,10 +18,10 @@ data Command d
     | AddToolkitNode Path.ToPatch Path.Alias NodeDefAlias
     | AddInlet Path.ToNode Path.Alias
     | AddOutlet Path.ToNode Path.Alias
-    | AddChanneledInlet Path.ToNode Path.Alias (forall c. Channels c d => c)
-    | AddChanneledOutlet Path.ToNode Path.Alias (forall c. Channels c d => c)
-    -- | AddInlet Path (forall c. Show c => Channels c d => c)
-    -- | AddOutlet Path (forall c. Show c => Channels c d => c)
+    | AddChanneledInlet Path.ToNode Path.Alias (forall c. Channels d c => c)
+    | AddChanneledOutlet Path.ToNode Path.Alias (forall c. Channels d c => c)
+    -- | AddInlet Path (forall c. Show c => Channels d c => c)
+    -- | AddOutlet Path (forall c. Show c => Channels d c => c)
     | Connect { outlet :: Path.ToOutlet, inlet :: Path.ToInlet }
     | Disconnect { outlet :: Path.ToOutlet, inlet :: Path.ToInlet }
     | GotInletData Path.ToInlet d

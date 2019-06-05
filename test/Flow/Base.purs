@@ -7,12 +7,7 @@ module RpdTest.Flow.Base
 
 import Prelude
 
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Eq (genericEq)
-import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe(..))
-import Data.List ((:))
-import Data.List as List
+import Data.Map (empty) as Map
 import Data.Tuple.Nested ((/\))
 
 import Rpd.API (Rpd) as R
@@ -64,7 +59,7 @@ data Pipe
   -- | OnlyCurses
 
 
-instance myChannels :: R.Channels Pipe Delivery where
+instance myChannels :: R.Channels Delivery Pipe where
   default _ = Damaged
 
   accept _ _ = true
@@ -76,11 +71,12 @@ instance myChannels :: R.Channels Pipe Delivery where
   adapt _ = identity
 
 
-myToolkit ::  R.Toolkit Pipe Delivery
+myToolkit ::  R.Toolkit Delivery Pipe
 myToolkit =
   R.Toolkit
     { name : R.ToolkitName "delivery"
     , nodes : R.nodes []
+    , render : Map.empty
         -- (R.nodes
         --   [ "sumCursesToApples" /\ sumCursesToApplesNode
         --   , "sumCursesToApples'" /\ sumCursesToApplesNode'
@@ -97,7 +93,7 @@ myToolkit =
 --   }
 
 
-sumCursesToApplesNode :: R.ProcessF Delivery -> R.NodeDef Pipe Delivery
+sumCursesToApplesNode :: R.ProcessF Delivery -> R.NodeDef Delivery Pipe
 sumCursesToApplesNode processF =
   R.NodeDef
     { inlets :
@@ -111,7 +107,7 @@ sumCursesToApplesNode processF =
     }
 
 
-sumCursesToApplesNode' :: R.ProcessF Delivery -> R.NodeDef Pipe Delivery
+sumCursesToApplesNode' :: R.ProcessF Delivery -> R.NodeDef Delivery Pipe
 sumCursesToApplesNode' processF =
   R.NodeDef
     { inlets :

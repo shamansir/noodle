@@ -200,12 +200,12 @@ addNode patchPath nodeAlias nw = do
 
 
 addToolkitNode
-    :: forall c d
-     . Toolkit.Channels c d
+    :: forall d c
+     . Toolkit.Channels d c
     => Path.ToPatch
     -> Path.Alias
     -> Toolkit.NodeDefAlias
-    -> Toolkit c d
+    -> Toolkit d c
     -> Network d
     -> Rpd (Network d)
 addToolkitNode patchPath nodeAlias nodeDefAlias (Toolkit toolkit) nw = do
@@ -216,11 +216,11 @@ addToolkitNode patchPath nodeAlias nodeDefAlias (Toolkit toolkit) nw = do
 
 
 addDefNode
-    :: forall c d
-     . Toolkit.Channels c d
+    :: forall d c
+     . Toolkit.Channels d c
     => Path.ToPatch
     -> Path.Alias
-    -> Toolkit.NodeDef c d
+    -> Toolkit.NodeDef d c
     -> Network d
     -> Rpd (Network d)
 addDefNode patchPath nodeAlias (Toolkit.NodeDef nodeDef) nw = do
@@ -313,8 +313,8 @@ addInlet nodePath alias nw = do
 
 
 addChanelledInlet
-    :: forall c d
-     . Toolkit.Channels c d
+    :: forall d c
+     . Toolkit.Channels d c
     => Path.ToNode
     -> Path.Alias
     -> c
@@ -391,8 +391,8 @@ addOutlet nodePath alias nw = do
 
 
 addChanelledOutlet
-    :: forall c d
-     . Toolkit.Channels c d
+    :: forall d c
+     . Toolkit.Channels d c
     => Path.ToNode
     -> Path.Alias
     -> c

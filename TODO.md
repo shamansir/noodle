@@ -218,7 +218,7 @@ If there `Rpd d c` exists, where `d` — is the data type and `c` is the channel
 
 The `IsData d` may only exist for the functions which require it, like `addInlet`, `addOutlet`, `connect` (just `connect`?).
 
-Or, the best option is:  `connect :: IsChannel c d => c -> Outlet d -> Inlet d -> ...`.
+Or, the best option is:  `connect :: IsChannel d c => c -> Outlet d -> Inlet d -> ...`.
 
 
 Spreads??? Enum typeclass? Monoid? Anything what is implemented by `List`? Just `List` itself? Though it doesn't fit matrices/tables then. zipWith etc. As the type class? Free implementation, like Lazy Lists? Shoud it be in the standart library or is a way to pack/prepare `data` for `Rpd data`.

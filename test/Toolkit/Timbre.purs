@@ -41,7 +41,7 @@ data Channel
     | CSound
 
 
-instance timbreChannel :: T.Channels Channel Data where
+instance timbreChannel :: T.Channels Data Channel where
     default CValue = Value 0.0
     default CWave = Wave Sin
     default CSound = Sound Stopped
@@ -49,7 +49,7 @@ instance timbreChannel :: T.Channels Channel Data where
     adapt _ = identity
 
 
-toolkit :: T.Toolkit Channel Data
+toolkit :: T.Toolkit Data Channel
 toolkit =
     T.Toolkit
         { name : T.ToolkitName "Timbre"
@@ -65,10 +65,11 @@ toolkit =
                 -- : ("plot" /\ plotNode)
                 -- : ("play" /\ playNode)
                 -- : List.Nil
+        , render : Map.empty
         }
 
 
-numNode :: T.NodeDef Channel Data
+numNode :: T.NodeDef Data Channel
 numNode =
     T.NodeDef
         { inlets : T.inlets []
@@ -80,7 +81,7 @@ numNode =
         }
 
 
-waveNode :: T.NodeDef Channel Data
+waveNode :: T.NodeDef Data Channel
 waveNode =
     T.NodeDef
         { inlets
@@ -93,7 +94,7 @@ waveNode =
         }
 
 
-oscNode :: T.NodeDef Channel Data
+oscNode :: T.NodeDef Data Channel
 oscNode =
     T.NodeDef
         { inlets
@@ -109,7 +110,7 @@ oscNode =
         }
 
 
-plotNode :: T.NodeDef Channel Data
+plotNode :: T.NodeDef Data Channel
 plotNode =
     T.NodeDef
         { inlets
@@ -121,7 +122,7 @@ plotNode =
         }
 
 
-playNode :: T.NodeDef Channel Data
+playNode :: T.NodeDef Data Channel
 playNode =
     T.NodeDef
         { inlets

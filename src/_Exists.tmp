@@ -1,0 +1,68 @@
+module Exists where
+
+import Prelude (($))
+
+import Data.Map (Map)
+import Data.Map (empty, insert, singleton) as Map
+import Data.List
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Exists (Exists, mkExists)
+
+import Rpd.Process (ProcessF(..))
+
+data Renderer msg c d view = Renderer
+
+data NodeDef c d =
+    NodeDef
+        (Channels c d =>
+            { process :: ProcessF d
+            , inlets :: List (String /\ c)
+            , outlets :: List (String /\ c)
+            })
+
+class Channels c d where
+    default :: c -> d
+    accept :: c -> d -> Boolean
+    adapt :: c -> d -> d
+
+data Toolkit d c =
+    Toolkit
+        { name :: String
+        , nodes :: Map String (NodeDef c d)
+        , render ::
+            Map String (forall msg view. Renderer msg c d view)
+        }
+
+data ChannelX = Z | W
+data ChannelY = Q | U
+
+data F = G | H
+
+instance channelsXF ∷ Channels ChannelX F where
+    default _ = G
+    accept _ _ = true
+    adapt _ _ = H
+
+instance channelsYF ∷ Channels ChannelY F where
+    default _ = G
+    accept _ _ = true
+    adapt _ _ = H
+
+newtype Toolkits d = Toolkits (Map String (ToolkitE d))
+
+type ToolkitE d = Exists (Toolkit d)
+
+mkToolkitE :: forall c d. (Channels c d) => Toolkit d c -> ToolkitE d
+mkToolkitE = mkExists
+
+foos' ∷ Toolkits F
+foos' =
+    let
+        toolkitA ::Toolkit F ChannelX
+        toolkitA = Toolkit { name : "aaa", nodes : Map.empty, render : Map.empty }
+        toolkitB ::Toolkit F ChannelY
+        toolkitB = Toolkit { name : "xxx", nodes : Map.empty, render : Map.empty }
+    in
+        Toolkits
+            $ Map.insert "y" (mkToolkitE toolkitA)
+            $ Map.singleton "x" (mkToolkitE toolkitB)

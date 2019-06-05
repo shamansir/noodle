@@ -70,13 +70,13 @@ instance showChannel :: Show Channel where
     show TriggerChannel = "trigger"
 
 
-instance exampleChannel :: Rpd.Channels Channel Value where
+instance exampleChannel :: Rpd.Channels Value Channel where
     default _ = Bang
     accept _ _ = true
     adapt _ = identity
 
 
-toolkit :: Rpd.Toolkit Channel Value
+toolkit :: Rpd.Toolkit Value Channel
 toolkit =
     Rpd.Toolkit
         { name : Rpd.ToolkitName "example"
@@ -84,14 +84,14 @@ toolkit =
         , render : Map.empty
         }
     where
-        nodes :: Rpd.NodeDefAlias /-> Rpd.NodeDef Channel Value
+        nodes :: Rpd.NodeDefAlias /-> Rpd.NodeDef Value Channel
         nodes =
             Toolkit.nodes
                 [ "random" /\ randomNode
                 ]
 
 
-randomNode :: Rpd.NodeDef Channel Value
+randomNode :: Rpd.NodeDef Value Channel
 randomNode =
     Rpd.NodeDef
         { inlets :

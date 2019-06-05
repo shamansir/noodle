@@ -35,7 +35,7 @@ type Model d =
     { lastInletData :: P.ToInlet /-> d
     , lastOutletData :: P.ToOutlet /-> d
     , debug :: Maybe (DebugBox.Model d)
-    , toolkits :: T.ToolkitName /-> (forall c. T.Toolkit c d)
+    , toolkits :: T.ToolkitName /-> (forall c. T.Toolkit d c)
     }
 
 

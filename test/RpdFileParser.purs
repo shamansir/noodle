@@ -6,6 +6,7 @@ import Prelude
 
 import Data.Either (either)
 import Data.List as List
+import Data.Map (empty) as Map
 import Data.String as String
 import Data.Tuple.Nested ((/\))
 
@@ -31,7 +32,7 @@ data Data = Foo | Bar
 data Channel = Whatever
 
 
-instance exampleChannels :: T.Channels Channel Data where
+instance exampleChannels :: T.Channels Data Channel where
     default _ = Foo
     accept _ _ = true
     adapt _ = identity
@@ -48,15 +49,16 @@ instance eqData :: Eq Data where
     eq _ _ = false
 
 
-toolkit :: T.Toolkit Channel Data
+toolkit :: T.Toolkit Data Channel
 toolkit =
     T.Toolkit
         { name : T.ToolkitName "test"
         , nodes : T.nodes [ "foo" /\ fooDef ]
+        , render : Map.empty
         }
 
 
-fooDef :: T.NodeDef Channel Data
+fooDef :: T.NodeDef Data Channel
 fooDef =
     T.NodeDef
         { inlets : T.inlets [ "test" /\ Whatever ]
