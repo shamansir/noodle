@@ -35,7 +35,7 @@ type Model d =
     { lastInletData :: P.ToInlet /-> d
     , lastOutletData :: P.ToOutlet /-> d
     , debug :: Maybe (DebugBox.Model d)
-    , toolkits :: T.ToolkitName /-> (forall c. T.Toolkit d c)
+    , toolkits :: T.Toolkits d
     }
 
 
@@ -49,13 +49,13 @@ data Message
 type View d = Html (Either Message (C.Command d))
 
 
-init :: forall d. Model d
-init =
+init :: forall d. T.Toolkits d -> Model d
+init toolkits =
     { lastInletData : Map.empty
     , lastOutletData : Map.empty
     -- , debug : Nothing
     , debug : Just DebugBox.init
-    , toolkits: Map.empty
+    , toolkits: toolkits
     }
 
 
@@ -201,30 +201,29 @@ viewDebugWindow pushMsg ui nw =
         ]
 
 
-htmlRenderer :: forall d. HtmlRenderer d
-htmlRenderer =
+updateDebugBox
+    :: forall d
+     . R.Network d
+    -> Either Message (C.Command d)
+    -> Maybe (DebugBox.Model d)
+    -> Maybe (DebugBox.Model d)
+updateDebugBox nw (Right cmd) (Just debug) = Just $ DebugBox.update cmd nw debug
+updateDebugBox _ (Left EnableDebug) _ = Just $ DebugBox.init
+updateDebugBox _ (Left DisableDebug) _ = Nothing
+updateDebugBox _ _ v = v
+
+
+htmlRenderer :: forall d. T.Toolkits d -> HtmlRenderer d
+htmlRenderer toolkits =
     R.Renderer
         { from : emptyView
-        , init
+        , init : init toolkits
         , update :
             \cmdOrMsg (ui /\ nw) ->
                 let
                     (ui' /\ cmds) = update cmdOrMsg (ui /\ nw)
                     ui'' =
-                        case ( ui'.debug /\ cmdOrMsg ) of
-                            ( Just debug /\ Right cmd ) ->
-                                ui'
-                                    { debug = Just $ DebugBox.update cmd nw debug
-                                    }
-                            ( _ /\ Left EnableDebug ) ->
-                                ui'
-                                    { debug = Just $ DebugBox.init
-                                    }
-                            ( _ /\ Left DisableDebug ) ->
-                                ui'
-                                    { debug = Nothing
-                                    }
-                            _ -> ui'
+                        ui' { debug = ui'.debug # updateDebugBox nw cmdOrMsg }
                 in (ui'' /\ cmds)
         , view
         }

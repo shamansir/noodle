@@ -20,6 +20,7 @@ import Example.Toolkit.Channel
 --     , outlet :: ChannelDefAlias /-> RenderOutlet c msg d view
 --     }
 
+
 renderer :: Renderer Value Channel (Command Value) (View Value)
 renderer =
     Renderer

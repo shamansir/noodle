@@ -6,7 +6,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq as GEq
 import Data.Generic.Rep.Show as GShow
 
-import Rpd.Toolkit (class Channels, NodeDefAlias)
+import Rpd.Toolkit (class Channels, NodeDefAlias, ChannelDefAlias)
 import Rpd.Path as Path
 import Rpd.UUID
 
@@ -18,8 +18,8 @@ data Command d
     | AddToolkitNode Path.ToPatch Path.Alias NodeDefAlias
     | AddInlet Path.ToNode Path.Alias
     | AddOutlet Path.ToNode Path.Alias
-    | AddChanneledInlet Path.ToNode Path.Alias (forall c. Channels d c => c)
-    | AddChanneledOutlet Path.ToNode Path.Alias (forall c. Channels d c => c)
+    | AddChanneledInlet Path.ToNode Path.Alias ChannelDefAlias (forall c. Channels d c => c)
+    | AddChanneledOutlet Path.ToNode Path.Alias ChannelDefAlias (forall c. Channels d c => c)
     -- | AddInlet Path (forall c. Show c => Channels d c => c)
     -- | AddOutlet Path (forall c. Show c => Channels d c => c)
     | Connect { outlet :: Path.ToOutlet, inlet :: Path.ToInlet }
@@ -46,13 +46,21 @@ instance showCommand :: Show d => Show (Command d) where
     show (AddPatch alias) = "AddPatch " <> show (Path.toPatch alias)
     show (AddNode patchPath alias) = "AddNode " <> show (Path.nodeInPatch patchPath alias)
     show (AddToolkitNode patchPath alias nodeDefAlias) =
-        "AddToolkitNode " <> show (Path.nodeInPatch patchPath alias)
+        "AddToolkitNode "
+            <> show (Path.nodeInPatch patchPath alias) <> " "
+            <> show nodeDefAlias
     show (AddInlet nodePath alias) = "AddInlet " <> show (Path.inletInNode nodePath alias)
     show (AddOutlet nodePath alias)  = "AddOutlet " <> show (Path.outletInNode nodePath alias)
-    show (AddChanneledInlet nodePath alias channel) =
-        "AddChanneledInlet' " <> show (Path.inletInNode nodePath alias) -- TODO: <> show channel
-    show (AddChanneledOutlet nodePath alias channel) =
-        "AddChanneledOutlet' " <> show (Path.outletInNode nodePath alias) -- TODO: <> show channel
+    show (AddChanneledInlet nodePath alias chanelAlias channel) =
+        "AddChanneledInlet' "
+            <> show (Path.inletInNode nodePath alias) <> " "
+            <> show chanelAlias
+            -- TODO: <> show channel
+    show (AddChanneledOutlet nodePath alias chanelAlias channel) =
+        "AddChanneledOutlet' "
+            <> show (Path.outletInNode nodePath alias) <> " "
+            <> show chanelAlias
+            -- TODO: <> show channel
     show (Connect { outlet : oPath, inlet : iPath }) =
         "Connect " <> show oPath <> " " <> show iPath
     show (Disconnect { outlet : oPath, inlet : iPath }) =

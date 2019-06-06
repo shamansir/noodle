@@ -6,10 +6,11 @@ module Rpd.Toolkit
     , class Channels
     , default, adapt, accept--, show
     , nodes, inlets, outlets
-    , mkToolkitE
-    , Renderer(..), RendererAlias(..)
+    , mkToolkitE, mkRendererEE
+    , Renderer(..), RendererAlias(..), RendererEE
     , RenderNode, RenderInlet, RenderOutlet
     ) where
+
 
 import Prelude
 
@@ -74,18 +75,17 @@ data NodeDef d c =
             , outlets :: List (OutletAlias /\ c)
             })
 
--- data NodeDef d =
---     NodeDef
---         (forall c. Channel c d =>
---             { process :: ProcessF d
---             , inlets :: List (InletAlias /\ c)
---             , outlets :: List (OutletAlias /\ c)
---             })
+
+newtype RendererE d c msg = RendererE (Exists (Renderer d c msg))
+newtype RendererEE d c = RendererEE (Exists (RendererE d c))
+
+mkRendererEE :: forall d c msg view. Renderer d c msg view -> RendererEE d c
+mkRendererEE = RendererEE <<< mkExists <<< RendererE <<< mkExists
 
 
 type ToolkitE d = Exists (Toolkit d)
 
-mkToolkitE :: forall d c. (Channels d c) => Toolkit d c -> ToolkitE d
+mkToolkitE :: forall d c. Channels d c => Toolkit d c -> ToolkitE d
 mkToolkitE = mkExists
 
 newtype Toolkits d = Toolkits (ToolkitName /-> ToolkitE d)
@@ -96,9 +96,7 @@ data Toolkit d c =
         (Channels d c =>
             { name :: ToolkitName
             , nodes :: NodeDefAlias /-> NodeDef d c
-            , render ::
-                RendererAlias /->
-                    (forall msg view. Renderer msg d c view)
+            , render :: RendererAlias /-> RendererEE d c
             })
 
 
