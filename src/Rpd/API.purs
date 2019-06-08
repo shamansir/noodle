@@ -54,7 +54,7 @@ import Rpd.Optics
 -- import Rpd.Path (Path)
 import Rpd.Path as Path
 import Rpd.Process (InletAlias, InletHandler(..), OutletAlias, OutletHandler(..), ProcessF(..))
-import Rpd.Toolkit (Toolkit(..))
+import Rpd.Toolkit (Toolkit)
 import Rpd.Toolkit as Toolkit
 
 
@@ -208,11 +208,11 @@ addToolkitNode
     -> Toolkit d c
     -> Network d
     -> Rpd (Network d)
-addToolkitNode patchPath nodeAlias nodeDefAlias (Toolkit toolkit) nw = do
-    nodeDef
-        <- Map.lookup nodeDefAlias toolkit.nodes
-                # exceptMaybe (RpdError "")
-    nw # addDefNode patchPath nodeAlias nodeDef
+addToolkitNode patchPath nodeAlias nodeDefAlias toolkit nw = do
+    case toolkit nodeDefAlias of
+        Just nodeDef ->
+            nw # addDefNode patchPath nodeAlias nodeDef
+        _ -> pure nw
 
 
 addDefNode

@@ -1,10 +1,16 @@
 module Example.Toolkit.Render.Html where
 
-import Data.Map as Map
+import Prelude (const)
 
-import Rpd.Toolkit (Renderer(..))
+import Data.Map as Map
+import Data.Maybe (Maybe(..))
+
+import Rpd.Toolkit (ToolkitRenderer)
 import Rpd.Command (Command)
 import Rpd.Renderer.Html (View)
+
+import Spork.Html (Html)
+import Spork.Html as H
 
 import Example.Toolkit.Value
 import Example.Toolkit.Channel
@@ -21,10 +27,9 @@ import Example.Toolkit.Channel
 --     }
 
 
-renderer :: Renderer Value Channel (Command Value) (View Value)
+renderer :: ToolkitRenderer Value Channel (View Value) (Command Value)
 renderer =
-    Renderer
-        { node : Map.empty
-        , inlet : Map.empty
-        , outlet : Map.empty
-        }
+    { renderNode : \_ _ _ -> H.div [] []
+    , renderInlet : \_ _ _ _ -> H.div [] []
+    , renderOutlet : \_ _ _ _ -> H.div [] []
+    }

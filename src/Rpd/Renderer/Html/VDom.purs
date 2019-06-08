@@ -33,13 +33,15 @@ import Rpd.API (Rpd) as R
 import Rpd.Network (Network)
 import Rpd.Command (Command(..)) as C
 import Rpd.Toolkit (Toolkits) as T
-import Rpd.Render.MUV (Renderer(..)) as Ui
+import Rpd.Render.MUV (Renderer) as Ui
 import Rpd.Render.MUV (make') as Render
 
 
 type HtmlView msg d = Html (Either msg (C.Command d))
 
 
+-- TODO: it looks confusing, why embedding needs toolkits,
+--       renderer indeed needs toolkits (which also looks confusing, but at least true)
 embed
     :: forall d model view msg
      . String -- selector

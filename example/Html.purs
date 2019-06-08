@@ -4,6 +4,7 @@ import Prelude
 
 import Effect (Effect)
 
+import Data.Maybe (Maybe(..))
 import Data.Map (Map)
 import Data.Map (singleton, insert, empty, lookup) as Map
 import Data.Tuple.Nested ((/\), type (/\))
@@ -15,18 +16,19 @@ import Rpd.Renderer.Html.VDom as VDom
 import Rpd.Toolkit as T
 
 import Example.Network (network)
-import Example.Toolkit (toolkit)
+import Example.Toolkit (toolkit, htmlRenderer) as ExampleToolkit
 
 
 main :: Effect Unit
 main =
     let
-        toolkits = T.Toolkits
-            $ Map.singleton (T.ToolkitName "example")
-            $ T.mkToolkitE toolkit
-        renderer =
-            case toolkit of
-                (T.Toolkit t) -> Map.lookup (T.RendererAlias "html") t.render
+        -- lookupFlipped :: forall k v. Ord k => Map k v -> k -> Maybe v
+        -- lookupFlipped = flip Map.lookup
+        toolkits =
+            flip Map.lookup $ Map.singleton (T.ToolkitName "example") ExampleToolkit.toolkit
+                --  T.mkToolkitE ExampleToolkit.toolkit
+        toolkitsRenderer (T.ToolkitName "example") = Just ExampleToolkit.htmlRenderer
+        toolkitsRenderer _ = Nothing
     in
         -- FIXME: toolkits are passed to the rendering engine twice, that should be separated
-        VDom.embed' "#app" (htmlRenderer toolkits) toolkits network
+        VDom.embed' "#app" (htmlRenderer toolkitsRenderer) toolkits network

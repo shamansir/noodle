@@ -1,14 +1,16 @@
 module Rpd.Toolkit
-    ( Toolkit(..), ToolkitName(..), Toolkits(..), ToolkitE
+    ( Toolkit, ToolkitName(..), Toolkits(..)--, ToolkitE
     , NodeDefAlias(..), ChannelDefAlias(..)
     , InletAlias(..), OutletAlias(..)
     , NodeDef(..)
     , class Channels
     , default, adapt, accept--, show
     , nodes, inlets, outlets
-    , mkToolkitE, mkRendererEE
-    , Renderer(..), RendererAlias(..), RendererEE
-    , RenderNode, RenderInlet, RenderOutlet
+    --, mkToolkitE
+    , ToolkitRenderer, ToolkitsRenderer, RendererAlias(..)
+    -- , class NodeRenderer, class ChannelRenderer
+    --, renderNode, renderInlet, renderOutlet
+    -- , RenderNode, RenderInlet, RenderOutlet
     ) where
 
 
@@ -16,6 +18,7 @@ import Prelude
 
 import Effect (Effect)
 import Data.Bifunctor (bimap)
+import Data.Maybe (Maybe)
 import Data.Map as Map
 import Data.List (List)
 import Data.List as List
@@ -23,7 +26,7 @@ import Data.Tuple.Nested (type (/\))
 import Data.Exists (Exists, mkExists)
 
 import Rpd.Util (type (/->))
-import Rpd.Process (ProcessF)
+import Rpd.Process (ProcessF(..))
 import Rpd.Network (Node, Inlet, Outlet) as R
 -- import Rpd.Command (Command) as R
 
@@ -45,16 +48,24 @@ instance showChannelDefAlias :: Show ChannelDefAlias where
 
 
 -- FIXME: `msg` should always be equal to `Rpd.Command`
-type RenderNode d msg view = forall msg. R.Node d -> (msg -> Effect Unit) -> view
-type RenderInlet c d msg view = Channels d c => (R.Inlet d -> c -> (msg -> Effect Unit) -> view)
-type RenderOutlet c d msg view = Channels d c => (R.Outlet d -> c -> (msg -> Effect Unit) -> view)
+-- type RenderNode d msg view = forall msg. R.Node d -> (msg -> Effect Unit) -> view
+-- type RenderInlet c d msg view = Channels d c => (R.Inlet d -> c -> (msg -> Effect Unit) -> view)
+-- type RenderOutlet c d msg view = Channels d c => (R.Outlet d -> c -> (msg -> Effect Unit) -> view)
 
 
-data Renderer d c msg view = Renderer
-    { node :: NodeDefAlias /-> RenderNode d msg view
-    , inlet :: ChannelDefAlias /-> RenderInlet c d msg view
-    , outlet :: ChannelDefAlias /-> RenderOutlet c d msg view
-    }
+-- class NodeRenderer msg view d where
+--     renderNode :: NodeDefAlias -> R.Node d -> (msg -> Effect Unit) -> view
+
+
+-- class Channels d c <= ChannelRenderer msg view d c where
+--     renderInlet :: ChannelDefAlias -> R.Inlet d -> c -> (msg -> Effect Unit) -> view
+--     renderOutlet :: ChannelDefAlias -> R.Outlet d -> c -> (msg -> Effect Unit) -> view
+
+-- data Renderer d c msg view = Renderer
+--     { node :: NodeDefAlias /-> RenderNode d msg view
+--     , inlet :: ChannelDefAlias /-> RenderInlet c d msg view
+--     , outlet :: ChannelDefAlias /-> RenderOutlet c d msg view
+--     }
 
 
 -- FIXME: the name "Channel" is not right, it's rather Channels system... `ChannelDef`, `Transponder`?
@@ -76,28 +87,29 @@ data NodeDef d c =
             })
 
 
-newtype RendererE d c msg = RendererE (Exists (Renderer d c msg))
-newtype RendererEE d c = RendererEE (Exists (RendererE d c))
-
-mkRendererEE :: forall d c msg view. Renderer d c msg view -> RendererEE d c
-mkRendererEE = RendererEE <<< mkExists <<< RendererE <<< mkExists
+-- class Channels d c <= Toolkit d c where
+--     getNode :: NodeDefAlias -> NodeDef d c
 
 
-type ToolkitE d = Exists (Toolkit d)
+type Toolkit d c = NodeDefAlias -> Maybe (NodeDef d c)
 
-mkToolkitE :: forall d c. Channels d c => Toolkit d c -> ToolkitE d
-mkToolkitE = mkExists
+-- type ToolkitE d = Exists (Toolkit d)
 
-newtype Toolkits d = Toolkits (ToolkitName /-> ToolkitE d)
+-- mkToolkitE :: forall d c. Channels d c => Toolkit d c -> ToolkitE d
+-- mkToolkitE = mkExists
 
+-- type Toolkits d = forall toolkit. ToolkitName -> (forall c. Toolkit d c => toolkit)
+type Toolkits d = ToolkitName -> Maybe (forall c. NodeDefAlias -> Maybe (NodeDef d c))
 
-data Toolkit d c =
-    Toolkit
-        (Channels d c =>
-            { name :: ToolkitName
-            , nodes :: NodeDefAlias /-> NodeDef d c
-            , render :: RendererAlias /-> RendererEE d c
-            })
+type ToolkitRenderer d c view msg =
+    { renderNode :: NodeDefAlias -> R.Node d -> (msg -> Effect Unit) -> view
+    , renderInlet :: ChannelDefAlias -> R.Inlet d -> c -> (msg -> Effect Unit) -> view
+    , renderOutlet :: ChannelDefAlias -> R.Inlet d -> c -> (msg -> Effect Unit) -> view
+    }
+
+type ToolkitsRenderer d view msg =
+    ToolkitName ->
+        Maybe (forall c. ToolkitRenderer d c view msg)
 
 
 -- data Toolkits d = Toolkits (ToolkitName /-> (forall c. Toolkit c d))

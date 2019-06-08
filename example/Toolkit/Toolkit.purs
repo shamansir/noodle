@@ -2,6 +2,7 @@ module Example.Toolkit where
 
 import Prelude (($))
 
+import Data.Maybe (Maybe(..))
 import Data.Map (singleton) as Map
 import Data.Tuple.Nested ((/\))
 
@@ -21,18 +22,23 @@ import Example.Toolkit.Render.Html as RenderHtml
     -- in
     --     VDom.embed' "#app" htmlRenderer toolkits network
 
+htmlRenderer = RenderHtml.renderer
+
+
 toolkit :: T.Toolkit Value Channel
 toolkit =
-    T.Toolkit
-        { name : T.ToolkitName "example"
-        , nodes
-        , render :
-            Map.singleton (T.RendererAlias "html")
-            $ T.mkRendererEE RenderHtml.renderer
-        }
-    where
-        nodes :: T.NodeDefAlias /-> T.NodeDef Value Channel
-        nodes =
-            T.nodes
-                [ "random" /\ randomNode
-                ]
+    \nodeName ->
+        case nodeName of
+            T.NodeDefAlias "random" -> Just randomNode
+            _ -> Nothing
+
+    -- T.Toolkit
+    --     { name : T.ToolkitName "example"
+    --     , nodes
+    --     }
+    -- where
+    --     nodes :: T.NodeDefAlias /-> T.NodeDef Value Channel
+    --     nodes =
+    --         T.nodes
+    --             [ "random" /\ randomNode
+    --             ]
