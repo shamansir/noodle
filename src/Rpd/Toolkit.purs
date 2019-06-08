@@ -1,5 +1,5 @@
 module Rpd.Toolkit
-    ( Toolkit, ToolkitName(..), Toolkits(..)--, ToolkitE
+    ( Toolkit(..), ToolkitName(..)
     , NodeDefAlias(..), ChannelDefAlias(..)
     , InletAlias(..), OutletAlias(..)
     , NodeDef(..)
@@ -7,7 +7,7 @@ module Rpd.Toolkit
     , default, adapt, accept--, show
     , nodes, inlets, outlets
     --, mkToolkitE
-    , ToolkitRenderer, ToolkitsRenderer, RendererAlias(..)
+    , ToolkitRenderer, RendererAlias(..)
     -- , class NodeRenderer, class ChannelRenderer
     --, renderNode, renderInlet, renderOutlet
     -- , RenderNode, RenderInlet, RenderOutlet
@@ -87,32 +87,14 @@ data NodeDef d c =
             })
 
 
--- class Channels d c <= Toolkit d c where
---     getNode :: NodeDefAlias -> NodeDef d c
+data Toolkit d c = Toolkit ToolkitName (NodeDefAlias -> Maybe (NodeDef d c))
 
-
-type Toolkit d c = NodeDefAlias -> Maybe (NodeDef d c)
-
--- type ToolkitE d = Exists (Toolkit d)
-
--- mkToolkitE :: forall d c. Channels d c => Toolkit d c -> ToolkitE d
--- mkToolkitE = mkExists
-
--- type Toolkits d = forall toolkit. ToolkitName -> (forall c. Toolkit d c => toolkit)
-type Toolkits d = ToolkitName -> Maybe (forall c. NodeDefAlias -> Maybe (NodeDef d c))
 
 type ToolkitRenderer d c view msg =
     { renderNode :: NodeDefAlias -> R.Node d -> (msg -> Effect Unit) -> view
     , renderInlet :: ChannelDefAlias -> R.Inlet d -> c -> (msg -> Effect Unit) -> view
     , renderOutlet :: ChannelDefAlias -> R.Inlet d -> c -> (msg -> Effect Unit) -> view
     }
-
-type ToolkitsRenderer d view msg =
-    ToolkitName ->
-        Maybe (forall c. ToolkitRenderer d c view msg)
-
-
--- data Toolkits d = Toolkits (ToolkitName /-> (forall c. Toolkit c d))
 
 
 nodes

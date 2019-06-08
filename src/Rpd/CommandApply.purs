@@ -17,10 +17,10 @@ import Rpd.Toolkit as T
 
 
 apply
-    :: forall d
+    :: forall d c
      . Command d
     -> (Command d -> Effect Unit)
-    -> T.Toolkits d
+    -> T.Toolkit d c
     -> R.Network d
     -> R.Rpd (R.Network d)
 apply Bang pushCmd _ nw =

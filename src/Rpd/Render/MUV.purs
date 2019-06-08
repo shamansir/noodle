@@ -117,17 +117,17 @@ once (Renderer { view, init, update }) rpd =
    returns the canceler, so it is possible to stop the process.
 -}
 make
-    :: forall d model view msg
-     . T.Toolkits d
+    :: forall d c model view msg
+     . T.Toolkit d c
     -> R.Rpd (R.Network d)
     -> Renderer d model view msg
     -> Effect
         { first :: view
         , next :: Event (Effect view)
         }
-make toolkits rpd renderer =
+make toolkit rpd renderer =
     Event.create >>=
-        \event -> pure $ make' event toolkits rpd renderer
+        \event -> pure $ make' event toolkit rpd renderer
 
 
 {- Prepare the rendering cycle with the custom message producer
@@ -143,11 +143,11 @@ make toolkits rpd renderer =
    TODO: do not ask user for `event`, just pushing function.
 -}
 make'
-    :: forall d model view msg
+    :: forall d c model view msg
      . { event :: Event (Either msg (C.Command d))
        , push :: Either msg (C.Command d) -> Effect Unit
        }
-    -> T.Toolkits d
+    -> T.Toolkit d c
     -> R.Rpd (R.Network d)
     -> Renderer d model view msg
     -> { first :: view
@@ -155,7 +155,7 @@ make'
        }
 make'
     { event, push }
-    toolkits
+    toolkit
     rpd
     (Renderer { from, init, view, update })
     = let
@@ -187,7 +187,7 @@ make'
                     Right cmd -> do
                         -- let _ = DT.spy "cmd" cmd
                         -- apply the core command to the network
-                        nw' <- C.apply cmd (push <<< Right) toolkits nw
+                        nw' <- C.apply cmd (push <<< Right) toolkit nw
                         -- perform the user update function with this core command, collect the returned messages
                         let model' /\ actions = update (Right cmd) $ model /\ nw'
                         -- apply user messages returned from the previous line to the model
@@ -204,13 +204,13 @@ make'
 
    Returns the canceler. -}
 run
-    :: forall d view model msg
-     . T.Toolkits d
+    :: forall d c view model msg
+     . T.Toolkit d c
     -> R.Rpd (R.Network d)
     -> Renderer d view model msg
     -> Effect R.Canceler
-run toolkits rpd renderer =
-    make toolkits rpd renderer >>=
+run toolkit rpd renderer =
+    make toolkit rpd renderer >>=
         \{ first, next } -> Event.subscribe next (pure <<< identity)
 
 
@@ -223,15 +223,15 @@ run toolkits rpd renderer =
    TODO: do not ask user for `event`, just pushing function.
 -}
 run'
-    :: forall d view model msg
+    :: forall d c view model msg
      . { event :: Event (Either msg (C.Command d))
        , push :: Either msg (C.Command d) -> Effect Unit
        }
-    -> T.Toolkits d
+    -> T.Toolkit d c
     -> R.Rpd (R.Network d)
     -> Renderer d view model msg
     -> Effect R.Canceler
-run' event toolkits rpd renderer =
-    case make' event toolkits rpd renderer of
+run' event toolkit rpd renderer =
+    case make' event toolkit rpd renderer of
         { first, next } -> Event.subscribe next (pure <<< identity)
 

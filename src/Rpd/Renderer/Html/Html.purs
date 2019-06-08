@@ -35,7 +35,7 @@ type Model d =
     { lastInletData :: P.ToInlet /-> d
     , lastOutletData :: P.ToOutlet /-> d
     , debug :: Maybe (DebugBox.Model d)
-    , toolkitsRender :: ToolkitsHtmlRenderer d
+    , toolkitRenderer :: ToolkitRenderer d c
     }
 
 
@@ -49,18 +49,18 @@ data Message
 type View d = Html (Either Message (C.Command d))
 
 
-init :: forall d c. ToolkitsHtmlRenderer d -> Model d
-init toolkitsRender =
+init :: forall d c. ToolkitRenderer d c -> Model d
+init toolkitRenderer =
     { lastInletData : Map.empty
     , lastOutletData : Map.empty
     -- , debug : Nothing
     , debug : Just DebugBox.init
-    , toolkitsRender
+    , toolkitRenderer
     }
 
 
 type HtmlRenderer d = Show d => R.Renderer d (Model d) (View d) Message
-type ToolkitsHtmlRenderer d = T.ToolkitsRenderer d (View d) Message
+type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
 
 
 core :: forall d. C.Command d -> Either Message (C.Command d)
@@ -214,7 +214,7 @@ updateDebugBox _ (Left DisableDebug) _ = Nothing
 updateDebugBox _ _ v = v
 
 
-htmlRenderer :: forall d. ToolkitsHtmlRenderer d -> HtmlRenderer d
+htmlRenderer :: forall d с. T.ToolkitRenderer d с -> HtmlRenderer d
 htmlRenderer toolkitsRender =
     R.Renderer
         { from : emptyView

@@ -32,7 +32,7 @@ import Spork.Html (Html)
 import Rpd.API (Rpd) as R
 import Rpd.Network (Network)
 import Rpd.Command (Command(..)) as C
-import Rpd.Toolkit (Toolkits) as T
+import Rpd.Toolkit (Toolkit) as T
 import Rpd.Render.MUV (Renderer) as Ui
 import Rpd.Render.MUV (make') as Render
 
@@ -43,14 +43,14 @@ type HtmlView msg d = Html (Either msg (C.Command d))
 -- TODO: it looks confusing, why embedding needs toolkits,
 --       renderer indeed needs toolkits (which also looks confusing, but at least true)
 embed
-    :: forall d model view msg
+    :: forall d c model view msg
      . String -- selector
     -> (view -> HtmlView msg d) -- insert the rendering result
     -> Ui.Renderer d model view msg -- renderer
-    -> T.Toolkits d
+    -> T.Toolkit d c
     -> R.Rpd (Network d) -- initial network
     -> Effect Unit
-embed sel render renderer toolkits initRpd = do
+embed sel render renderer toolkit initRpd = do
     doc ← DOM.window >>= DOM.document
     mbEl ← DOM.querySelector (wrap sel) (HTMLDocument.toParentNode doc)
     case mbEl of
@@ -63,7 +63,7 @@ embed sel render renderer toolkits initRpd = do
                     , buildWidget: buildThunk unwrap
                     , buildAttributes: P.buildProp push
                     }
-            let { first, next } = Render.make' { event, push } toolkits initRpd renderer
+            let { first, next } = Render.make' { event, push } toolkit initRpd renderer
             first_vdom ← EFn.runEffectFn1 (V.buildVDom vdomSpec) (unwrap $ render first)
             vdom_ref <- Ref.new first_vdom -- use recursion istead of `Ref`?
             void $ DOM.appendChild (Machine.extract first_vdom) (DOMElement.toNode el)
@@ -79,10 +79,10 @@ embed sel render renderer toolkits initRpd = do
 
 
 embed'
-    :: forall d model msg
+    :: forall d c model msg
      . String -- selector
     -> Ui.Renderer d model (HtmlView msg d) msg -- renderer
-    -> T.Toolkits d -- toolkits
+    -> T.Toolkit d c -- toolkits
     -> R.Rpd (Network d) -- initial network
     -> Effect Unit
 embed' sel = embed sel identity
