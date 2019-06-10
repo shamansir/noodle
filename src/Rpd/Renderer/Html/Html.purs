@@ -11,6 +11,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), isJust, maybe)
 import Data.Sequence as Seq
 import Data.Tuple.Nested (type (/\), (/\))
+import Data.Exists (Exists, mkExists)
 import Debug.Trace (spy)
 
 import Rpd.API (RpdError) as R
@@ -35,7 +36,7 @@ type Model d =
     { lastInletData :: P.ToInlet /-> d
     , lastOutletData :: P.ToOutlet /-> d
     , debug :: Maybe (DebugBox.Model d)
-    , toolkitRenderer :: ToolkitRenderer d c
+    , toolkitRenderer :: ToolkitRendererE d
     }
 
 
@@ -49,7 +50,7 @@ data Message
 type View d = Html (Either Message (C.Command d))
 
 
-init :: forall d c. ToolkitRenderer d c -> Model d
+init :: forall d. ToolkitRendererE d -> Model d
 init toolkitRenderer =
     { lastInletData : Map.empty
     , lastOutletData : Map.empty
@@ -60,7 +61,13 @@ init toolkitRenderer =
 
 
 type HtmlRenderer d = Show d => R.Renderer d (Model d) (View d) Message
-type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
+-- type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
+data ToolkitRenderer d c = ToolkitRenderer (T.ToolkitRenderer d c (View d) Message)
+type ToolkitRendererE d = Exists (ToolkitRenderer d)
+
+
+mkToolkitRendererE :: forall d c. T.Channels d c => ToolkitRenderer d c -> ToolkitRendererE d
+mkToolkitRendererE = mkExists
 
 
 core :: forall d. C.Command d -> Either Message (C.Command d)
