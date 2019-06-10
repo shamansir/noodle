@@ -63,7 +63,7 @@ init =
 
 type HtmlRenderer d = Show d => R.Renderer d (Model d) (View d) Message
 -- type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
-type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
+type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) (MsgOrCmd d)
 
 
 core :: forall d. C.Command d -> MsgOrCmd d
