@@ -46,7 +46,10 @@ data Message
     | DisableDebug
 
 
-type View d = Html (Either Message (C.Command d))
+type MsgOrCmd d = Either Message (C.Command d)
+
+
+type View d = Html (MsgOrCmd d)
 
 
 init :: forall d. Model d
@@ -58,16 +61,16 @@ init =
     }
 
 
-type HtmlRenderer d = Show d => R.Renderer d (Model d) (View d) (Either Message (C.Command d))
+type HtmlRenderer d = Show d => R.Renderer d (Model d) (View d) Message
 -- type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
-type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) (Either Message (C.Command d))
+type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
 
 
-core :: forall d. C.Command d -> Either Message (C.Command d)
+core :: forall d. C.Command d -> MsgOrCmd d
 core = Right
 
 
-my :: forall d. Message -> Either Message (C.Command d)
+my :: forall d. Message -> MsgOrCmd d
 my = Left
 
 
@@ -205,7 +208,7 @@ viewDebugWindow pushMsg ui nw =
 updateDebugBox
     :: forall d
      . R.Network d
-    -> Either Message (C.Command d)
+    -> MsgOrCmd d
     -> Maybe (DebugBox.Model d)
     -> Maybe (DebugBox.Model d)
 updateDebugBox nw (Right cmd) (Just debug) = Just $ DebugBox.update cmd nw debug
@@ -248,7 +251,7 @@ view _ pushMsg (Left err) =
 
 update
     :: forall d
-     . Either Message (C.Command d)
+     . MsgOrCmd d
     -> Model d /\ R.Network d
     -> Model d /\ Array (Either Message (C.Command d))
 update (Right C.Bang) (ui /\ _) = ui /\ []

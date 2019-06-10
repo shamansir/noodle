@@ -7,7 +7,7 @@ import Data.Maybe (Maybe(..))
 
 import Rpd.Toolkit (ToolkitRenderer)
 import Rpd.Command (Command)
-import Rpd.Renderer.Html (View)
+import Rpd.Renderer.Html (View, Message)
 
 import Spork.Html (Html)
 import Spork.Html as H
@@ -27,7 +27,7 @@ import Example.Toolkit.Channel
 --     }
 
 
-renderer :: ToolkitRenderer Value Channel (View Value) (Command Value)
+renderer :: ToolkitRenderer Value Channel (View Value) Message
 renderer =
     { renderNode : \_ _ _ -> H.div [] []
     , renderInlet : \_ _ _ _ -> H.div [] []
