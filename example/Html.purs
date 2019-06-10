@@ -27,8 +27,6 @@ main =
         toolkits =
             flip Map.lookup $ Map.singleton (T.ToolkitName "example") ExampleToolkit.toolkit
                 --  T.mkToolkitE ExampleToolkit.toolkit
-        toolkitsRenderer (T.ToolkitName "example") = Just ExampleToolkit.htmlRenderer
-        toolkitsRenderer _ = Nothing
     in
         -- FIXME: toolkits are passed to the rendering engine twice, that should be separated
-        VDom.embed' "#app" (htmlRenderer toolkitsRenderer) toolkits network
+        VDom.embed' "#app" (htmlRenderer ExampleToolkit.htmlRenderer) toolkits network

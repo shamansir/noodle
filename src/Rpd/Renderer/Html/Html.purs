@@ -36,7 +36,6 @@ type Model d =
     { lastInletData :: P.ToInlet /-> d
     , lastOutletData :: P.ToOutlet /-> d
     , debug :: Maybe (DebugBox.Model d)
-    , toolkitRenderer :: ToolkitRendererE d
     }
 
 
@@ -50,24 +49,18 @@ data Message
 type View d = Html (Either Message (C.Command d))
 
 
-init :: forall d. ToolkitRendererE d -> Model d
-init toolkitRenderer =
+init :: forall d. Model d
+init =
     { lastInletData : Map.empty
     , lastOutletData : Map.empty
     -- , debug : Nothing
     , debug : Just DebugBox.init
-    , toolkitRenderer
     }
 
 
-type HtmlRenderer d = Show d => R.Renderer d (Model d) (View d) Message
+type HtmlRenderer d = Show d => R.Renderer d (Model d) (View d) (Either Message (C.Command d))
 -- type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
-data ToolkitRenderer d c = ToolkitRenderer (T.ToolkitRenderer d c (View d) Message)
-type ToolkitRendererE d = Exists (ToolkitRenderer d)
-
-
-mkToolkitRendererE :: forall d c. T.Channels d c => ToolkitRenderer d c -> ToolkitRendererE d
-mkToolkitRendererE = mkExists
+type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) (Either Message (C.Command d))
 
 
 core :: forall d. C.Command d -> Either Message (C.Command d)
@@ -221,11 +214,11 @@ updateDebugBox _ (Left DisableDebug) _ = Nothing
 updateDebugBox _ _ v = v
 
 
-htmlRenderer :: forall d с. T.ToolkitRenderer d с -> HtmlRenderer d
-htmlRenderer toolkitsRender =
+htmlRenderer :: forall d с. ToolkitRenderer d с -> HtmlRenderer d
+htmlRenderer toolkitRenderer =
     R.Renderer
         { from : emptyView
-        , init : init toolkitsRender
+        , init : init
         , update :
             \cmdOrMsg (ui /\ nw) ->
                 let
@@ -233,22 +226,23 @@ htmlRenderer toolkitsRender =
                     ui'' =
                         ui' { debug = ui'.debug # updateDebugBox nw cmdOrMsg }
                 in (ui'' /\ cmds)
-        , view
+        , view : view toolkitRenderer
         }
 
 
 view
-    :: forall d
+    :: forall d c
      . Show d
-    => R.PushF Message d
+    => ToolkitRenderer d c
+    -> R.PushF Message d
     -> Either R.RpdError (Model d /\ R.Network d)
     -> View d
-view pushMsg (Right (ui /\ nw)) =
+view toolkitRenderer pushMsg (Right (ui /\ nw)) =
     H.div [ H.id_ "html" ]
         [ viewDebugWindow pushMsg ui nw
         , viewNetwork pushMsg ui nw
         ]
-view pushMsg (Left err) =
+view _ pushMsg (Left err) =
     viewError err
 
 

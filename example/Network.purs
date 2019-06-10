@@ -28,7 +28,7 @@ network =
         -- </> Rpd.addInlet (R.toNode "test" "random") "bang"
         -- </> Rpd.addOutlet (R.toNode "test" "random") "random"
 
-        </> Rpd.addToolkitNode (R.toPatch "test") "random" (R.NodeDefAlias "random") toolkit
+        </> Rpd.addToolkitNode (R.toPatch "test") "random" toolkit (R.NodeDefAlias "random")
 
         </> Rpd.sendToInlet (R.toInlet "test" "random" "min") (Number' 10.0)
         </> Rpd.sendToInlet (R.toInlet "test" "random" "max") (Number' 20.0)

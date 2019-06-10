@@ -22,23 +22,13 @@ import Example.Toolkit.Render.Html as RenderHtml
     -- in
     --     VDom.embed' "#app" htmlRenderer toolkits network
 
+--htmlRenderer :: T.ToolkitRenderer Value Channel (View Value) (Command Value)
 htmlRenderer = RenderHtml.renderer
 
 
 toolkit :: T.Toolkit Value Channel
 toolkit =
-    \nodeName ->
-        case nodeName of
-            T.NodeDefAlias "random" -> Just randomNode
-            _ -> Nothing
-
-    -- T.Toolkit
-    --     { name : T.ToolkitName "example"
-    --     , nodes
-    --     }
-    -- where
-    --     nodes :: T.NodeDefAlias /-> T.NodeDef Value Channel
-    --     nodes =
-    --         T.nodes
-    --             [ "random" /\ randomNode
-    --             ]
+    T.Toolkit (T.ToolkitName "example") nodes
+    where
+        nodes (T.NodeDefAlias "random") = Just randomNode
+        nodes _ = Nothing
