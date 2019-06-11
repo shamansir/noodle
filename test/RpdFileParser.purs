@@ -6,6 +6,7 @@ import Prelude
 
 import Data.Either (either)
 import Data.List as List
+import Data.Maybe (Maybe(..))
 import Data.Map (empty) as Map
 import Data.String as String
 import Data.Tuple.Nested ((/\))
@@ -52,10 +53,12 @@ instance eqData :: Eq Data where
 toolkit :: T.Toolkit Data Channel
 toolkit =
     T.Toolkit
-        { name : T.ToolkitName "test"
-        , nodes : T.nodes [ "foo" /\ fooDef ]
-        , render : Map.empty
-        }
+        (T.ToolkitName "test")
+        nodes
+    where
+        nodes (T.NodeDefAlias "foo") = Just fooDef
+        nodes _ = Nothing
+
 
 
 fooDef :: T.NodeDef Data Channel

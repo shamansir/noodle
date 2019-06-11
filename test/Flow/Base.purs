@@ -8,6 +8,7 @@ module RpdTest.Flow.Base
 import Prelude
 
 import Data.Map (empty) as Map
+import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 
 import Rpd.API (Rpd) as R
@@ -74,14 +75,12 @@ instance myChannels :: R.Channels Delivery Pipe where
 myToolkit ::  R.Toolkit Delivery Pipe
 myToolkit =
   R.Toolkit
-    { name : R.ToolkitName "delivery"
-    , nodes : R.nodes []
-    , render : Map.empty
+    (R.ToolkitName "delivery")
+    (const Nothing)
         -- (R.nodes
         --   [ "sumCursesToApples" /\ sumCursesToApplesNode
         --   , "sumCursesToApples'" /\ sumCursesToApplesNode'
         --   ])
-    }
 
 
 -- producingNothingNode :: R.NodeDef Delivery

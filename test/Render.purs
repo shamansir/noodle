@@ -184,7 +184,7 @@ compareViews v1 v2 =
     ML.DiffAt (x /\ y) /\ Just (sampleLeft /\ sampleRight) -> do
       fail $ "Views are different:\n\n" <>
         show sampleLeft <> "\n\n" <> show sampleRight
-    ML.DiffAt (x /\ y) /\ Nothing-> do
+    ML.DiffAt (x /\ y) /\ Nothing -> do
       fail $ "Views are different."
   -- when (v1 /= v2) $ do
   --   --liftEffect $ log $ colored Fail "aaa"

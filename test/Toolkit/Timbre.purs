@@ -51,22 +51,16 @@ instance timbreChannel :: T.Channels Data Channel where
 
 toolkit :: T.Toolkit Data Channel
 toolkit =
-    T.Toolkit
-        { name : T.ToolkitName "Timbre"
-        , nodes :
-            T.nodes
-                [ "number" /\ numNode
-                , "osc" /\ oscNode
-                , "plot" /\ plotNode
-                , "play" /\ playNode
-                ]
-                -- $ ("number" /\ numNode)
-                -- : ("osc" /\ oscNode)
-                -- : ("plot" /\ plotNode)
-                -- : ("play" /\ playNode)
-                -- : List.Nil
-        , render : Map.empty
-        }
+    T.Toolkit (T.ToolkitName "Timbre") nodes
+    where
+        nodes =
+            [ T.NodeDefAlias "number" /\ numNode
+            , T.NodeDefAlias "osc" /\ oscNode
+            , T.NodeDefAlias "plot" /\ plotNode
+            , T.NodeDefAlias "play" /\ playNode
+            ]
+            # Map.fromFoldable
+            # flip Map.lookup
 
 
 numNode :: T.NodeDef Data Channel
