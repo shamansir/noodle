@@ -3,6 +3,7 @@ module Rpd.Render.MUV
     , UpdateF
     , ViewF
     , PushF(..)
+    , MsgOrCmd
     , once
     , run
     , run'
@@ -39,7 +40,8 @@ import Rpd.Toolkit as T
 import Debug.Trace as DT
 
 
-data PushF msg d = PushF (Either msg (C.Command d) -> Effect Unit)
+type MsgOrCmd msg d = Either msg (C.Command d)
+data PushF msg d = PushF (MsgOrCmd msg d -> Effect Unit)
 {- UpdateF:
    - gets message: either core one from Rpd.Render, or the custom one used by user in the MUV loop;
    - gets the latest MUV model paired with the latest network state;
@@ -48,9 +50,9 @@ data PushF msg d = PushF (Either msg (C.Command d) -> Effect Unit)
    TODO: let user do effects in `UpdateF` or consider returning messages as providing the way to return such effects.
 -}
 type UpdateF d model msg
-    = Either msg (C.Command d)
+    = MsgOrCmd msg d
     -> model /\ R.Network d
-    -> model /\ Array (Either msg (C.Command d))
+    -> model /\ Array (MsgOrCmd msg d)
 {- ViewF:
    - gets the function allowing to push messages to the flow (for use in view handlers);
    - gets the latest MUV model paired with the latest network state;
@@ -144,8 +146,8 @@ make toolkit rpd renderer =
 -}
 make'
     :: forall d c model view msg
-     . { event :: Event (Either msg (C.Command d))
-       , push :: Either msg (C.Command d) -> Effect Unit
+     . { event :: Event (MsgOrCmd msg d)
+       , push :: MsgOrCmd msg d -> Effect Unit
        }
     -> T.Toolkit d c
     -> R.Rpd (R.Network d)
@@ -172,7 +174,7 @@ make'
         --     = R.neverPush
         -- update :: msg -> (model /\ R.Network d) -> PushMsg msg -> R.PushCmd d -> R.Rpd (model /\ R.Network d)
         updatePipeline
-            :: Either msg (C.Command d)
+            :: MsgOrCmd msg d
             -> R.Rpd (model /\ R.Network d)
             -> R.Rpd (model /\ R.Network d)
         updatePipeline msgOrCmd rpd = rpd >>=
@@ -224,8 +226,8 @@ run toolkit rpd renderer =
 -}
 run'
     :: forall d c view model msg
-     . { event :: Event (Either msg (C.Command d))
-       , push :: Either msg (C.Command d) -> Effect Unit
+     . { event :: Event (MsgOrCmd msg d)
+       , push :: MsgOrCmd msg d -> Effect Unit
        }
     -> T.Toolkit d c
     -> R.Rpd (R.Network d)

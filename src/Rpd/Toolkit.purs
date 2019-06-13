@@ -93,7 +93,7 @@ data Toolkit d c = Toolkit ToolkitName (NodeDefAlias -> Maybe (NodeDef d c))
 type ToolkitRenderer d c view msg =
     { renderNode :: NodeDefAlias -> R.Node d -> (msg -> Effect Unit) -> view
     , renderInlet :: ChannelDefAlias -> R.Inlet d -> c -> (msg -> Effect Unit) -> view
-    , renderOutlet :: ChannelDefAlias -> R.Inlet d -> c -> (msg -> Effect Unit) -> view
+    , renderOutlet :: ChannelDefAlias -> R.Outlet d -> c -> (msg -> Effect Unit) -> view
     }
 
 

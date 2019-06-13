@@ -29,7 +29,7 @@ import Example.Toolkit.Channel
 
 renderer :: ToolkitRenderer Value Channel (View Value) (MsgOrCmd Value)
 renderer =
-    { renderNode : \_ _ _ -> H.div [] []
-    , renderInlet : \_ _ _ _ -> H.div [] []
-    , renderOutlet : \_ _ _ _ -> H.div [] []
+    { renderNode : \_ _ _ -> H.div [ H.classes [ "tk-node" ] ] []
+    , renderInlet : \_ _ _ _ -> H.div [ H.classes [ "tk-inlet" ] ] []
+    , renderOutlet : \_ _ _ _ -> H.div [ H.classes [ "tk-outlet" ] ] []
     }
