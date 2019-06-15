@@ -3,8 +3,11 @@ module RpdTest.Render
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String as String
+import Data.List (List)
+import Data.List as List
+import Data.Either (Either(..))
 import Data.Tuple.Nested (type (/\), (/\))
 
 import Effect (Effect)
@@ -19,13 +22,18 @@ import Test.Spec.Color (colored, Color(..))
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
 
+import FRP.Event as Event
+
 import Rpd (init) as R
 import Rpd.API as R
 import Rpd.API ((</>))
 import Rpd.Path
 import Rpd.Network (Network) as R
+import Rpd.Toolkit as R
+import Rpd.Command as C
+
 import Rpd.Render (once, Renderer) as Render
-import Rpd.Render.MUV (once, Renderer) as RenderMUV
+import Rpd.Render.MUV (once, Renderer, make', PushF) as RenderMUV
 import Rpd.Renderer.Terminal (terminalRenderer)
 import Rpd.Renderer.Terminal.Multiline as ML
 import Rpd.Renderer.String (stringRenderer)
@@ -55,7 +63,7 @@ myRpd =
 
 spec :: Spec Unit
 spec =
-  describe "rendering" do
+  describe "static rendering" do
     it "rendering the empty network works" do
       stringSample <- liftEffect $ loadSample "Empty.String"
       expectToRenderOnce stringRenderer compareStrings myRpd
@@ -137,6 +145,8 @@ spec =
       expectToRenderOnceMUV terminalRenderer compareML erroneousNW
         $ ML.from' "ERR: "
       pure unit
+    describe "dynamic rendering" do
+      pure unit
     -- TODO:
     -- be able to send messages from the insides
     -- more connections
@@ -178,26 +188,45 @@ expectToRenderOnceMUV renderer compareViews rpd expectation = do
   result `compareViews` expectation
 
 
--- expectToRenderSeqMUV
---   :: forall d c n model msg
---    . RenderMUV.Renderer d c n model String msg
---   -> R.Rpd (R.Network d c n)
---   -> String
---   -> Aff Unit
--- expectToRenderSeqMUV renderer rpd expectation = do
---   result <- liftEffect $ RenderMUV.make renderer rpd
---   result `compareViews` expectation
+data NoMsg = NoMsg
 
 
--- expectToRenderSeqMUV'
---   :: forall d c n model msg
---    . RenderMUV.Renderer d c n model ML.Multiline msg
---   -> R.Rpd (R.Network d c n)
---   -> String
---   -> Aff Unit
--- expectToRenderSeqMUV renderer rpd expectation = do
---   result <- liftEffect $ RenderMUV.make renderer rpd
---   result `compareViews` expectation
+expectToRenderSeqMUV
+  :: forall d c n model view
+   . RenderMUV.Renderer d c n model view NoMsg
+  -> CompareViews view
+  -> R.Toolkit d c n
+  -> R.Rpd (R.Network d c n)
+  -> view
+  -> List (C.Command d c n /\ view)
+  -> Aff Unit
+expectToRenderSeqMUV renderer compareViews toolkit rpd firstExpectation nextExpectations = do
+  { event, push } :: _ <- liftEffect Event.create
+  let
+    { first : firstView, next : nextViews }
+        = RenderMUV.make' { event, push } toolkit rpd renderer
+  firstView `compareViews` firstExpectation
+  let
+    checkNextViews
+        = Event.fold (foldingF $ push <<< Right) nextViews
+            $ pure nextExpectations
+  _ <- liftEffect $ Event.subscribe checkNextViews $ \nextView -> pure unit
+  pure unit
+  where
+    foldingF
+      :: (C.Command d c n -> Effect Unit)
+      -> Effect view
+      -> Effect (List (C.Command d c n /\ view))
+      -> Effect (List (C.Command d c n /\ view))
+    foldingF push nextView nextExpectations
+      = do
+          v <- nextView
+          x <- nextExpectations
+          case List.head x of
+            Just (msg /\ nextExpectation) -> do
+              push msg
+            Nothing -> pure unit
+          pure $ fromMaybe List.Nil $ List.tail x
 
 
 compareStrings :: CompareViews String

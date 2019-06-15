@@ -118,6 +118,8 @@ once (Renderer { view, init, update }) rpd =
    to the `next` views flow. `Event.subscribe`, in this case,
    returns the canceler, so it is possible to stop the process.
 -}
+-- FIXME: why the order of the `rpd` and `renderer` is flipped in
+--        comparison to `once`?
 make
     :: forall d c n model view msg
      . T.Toolkit d c n
@@ -141,9 +143,10 @@ make toolkit rpd renderer =
    Actually the process starts just when user subscribes
    to the `next` views flow. `Event.subscribe`, in this case,
    returns the canceler, so it is possible to stop the process.
-
-   TODO: do not ask user for `event`, just pushing function.
 -}
+-- TODO: do not ask user for `event`, just pushing function.
+-- FIXME: why the order of the `rpd` and `renderer` is flipped in
+--        comparison to `once`?
 make'
     :: forall d c n model view msg
      . { event :: Event (Either msg (C.Command d c n))
@@ -219,8 +222,7 @@ run toolkit rpd renderer =
 {- Run the rendering cycle with custom message producer
    (so, the `Event` with the messages source and
    the function which pushes them to this flow).
-   Returns the first view and the event flow with
-   all the next views.
+   Returns the canceler.
 
    TODO: do not ask user for `event`, just pushing function.
 -}
