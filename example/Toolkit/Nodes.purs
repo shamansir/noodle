@@ -15,6 +15,14 @@ import Example.Toolkit.Value
 import Example.Toolkit.Channel
 
 
+data Node =
+    RandomNode
+
+
+instance showNode :: Show Node where
+    show RandomNode = "random"
+
+
 randomNode :: T.NodeDef Value Channel
 randomNode =
     T.NodeDef

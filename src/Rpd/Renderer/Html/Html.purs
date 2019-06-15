@@ -71,6 +71,7 @@ init =
 type HtmlRenderer d c n = R.Renderer d c n (Model d c n) (View d c n) Message
 -- type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
 type ToolkitRenderer d c n = T.ToolkitRenderer d c n (View d c n) (Either Message (C.Command d c n))
+-- FIXME: user could want to use custom messages in the renderer
 
 
 core :: forall d c n. C.Command d c n -> Either Message (C.Command d c n)
@@ -320,16 +321,16 @@ update (Right (C.GotOutletData outletPath d)) (ui /\ _) =
     (ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d })
     /\ []
 update (Right (C.AddInlet nodePath alias c)) ( ui /\ nw ) =
-    let outletPath = P.outletInNode nodePath alias
+    let inletPath = P.inletInNode nodePath alias
     in
         -- ( case (L.view (L._pathToId $ P.lift outletPath) nw) of
         --     Just outletUuid ->
         --         ui { uuidToChannel = ui.uuidToChannel # Map.insert (UUID.uuid outletUuid) c }
         --     Nothing -> ui
         -- /\ [] )
-        ( case (L.view (L._pathToId $ P.lift outletPath) nw) of
-            Just outletUuid ->
-                ui { uuidToChannel = ui.uuidToChannel # Map.insert (UUID.uuid outletUuid) c }
+        ( case (L.view (L._pathToId $ P.lift inletPath) nw) of
+            Just inletUuid ->
+                ui { uuidToChannel = ui.uuidToChannel # Map.insert (UUID.uuid inletUuid) c }
             Nothing -> ui
         /\ [] )
 update _ (ui /\ _) = ui /\ []

@@ -26,9 +26,8 @@ import Example.Toolkit.Render.Html as RenderHtml
 htmlRenderer = RenderHtml.renderer
 
 
-toolkit :: T.Toolkit Value Channel
+toolkit :: T.Toolkit Value Channel Node
 toolkit =
     T.Toolkit (T.ToolkitName "example") nodes
     where
-        nodes (T.NodeDefAlias "random") = Just randomNode
-        nodes _ = Nothing
+        nodes RandomNode = randomNode
