@@ -3,16 +3,21 @@ module RpdTest.Render
 
 import Prelude
 
+import Data.Time.Duration (Milliseconds(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String as String
-import Data.List (List)
+import Data.List (List, (:))
 import Data.List as List
 import Data.Either (Either(..))
 import Data.Tuple.Nested (type (/\), (/\))
+import Data.Traversable (traverse)
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Aff (Aff())
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
+import Effect.Aff (delay)
 import Effect.Console (log)
 
 import Test.Spec (Spec, describe, it)
@@ -53,7 +58,8 @@ data Node = Node
 type MyRpd = R.Rpd (R.Network MyData Channel Node)
 
 
-type CompareViews view = view -> view -> Aff Unit
+type CompareViews view = view -> view -> Either String Unit
+type CompareViewsAff view = view -> view -> Aff Unit
 
 
 myRpd :: MyRpd
@@ -167,7 +173,7 @@ loadSample name =
 expectToRenderOnce
   :: forall d c n view
    . Render.Renderer d c n view
-  -> CompareViews view
+  -> CompareViewsAff view
   -> R.Rpd (R.Network d c n)
   -> view
   -> Aff Unit
@@ -179,7 +185,7 @@ expectToRenderOnce renderer compareViews rpd expectation = do
 expectToRenderOnceMUV
   :: forall d c n model view msg
    . RenderMUV.Renderer d c n model view msg
-  -> CompareViews view
+  -> CompareViewsAff view
   -> R.Rpd (R.Network d c n)
   -> view
   -> Aff Unit
@@ -201,41 +207,65 @@ expectToRenderSeqMUV
   -> List (C.Command d c n /\ view)
   -> Aff Unit
 expectToRenderSeqMUV renderer compareViews toolkit rpd firstExpectation nextExpectations = do
-  { event, push } :: _ <- liftEffect Event.create
+  { event, push } <- liftEffect Event.create
   let
     { first : firstView, next : nextViews }
         = RenderMUV.make' { event, push } toolkit rpd renderer
-  firstView `compareViews` firstExpectation
+  firstView `compareViewsAff` firstExpectation
+  failuresRef <- liftEffect $ Ref.new List.Nil
   let
     checkNextViews
-        = Event.fold (foldingF $ push <<< Right) nextViews
+        = Event.fold (foldingF (push <<< Right) failuresRef) nextViews
             $ pure nextExpectations
-  _ <- liftEffect $ Event.subscribe checkNextViews $ \nextView -> pure unit
+  -- TODO: Write failures to the Ref and then read it after the timeout
+  cancel <- liftEffect $ Event.subscribe checkNextViews liftEffect
+  -- _ <- traverse liftEffect checkNextViews
+  delay (Milliseconds 100.0)
+  failures <- liftEffect $ Ref.read failuresRef
+  failures `shouldEqual` List.Nil
+  _ <- liftEffect cancel
   pure unit
   where
+    compareViewsAff :: CompareViewsAff view
+    compareViewsAff = toAffCompare compareViews
     foldingF
       :: (C.Command d c n -> Effect Unit)
+      -> Ref (List String)
       -> Effect view
       -> Effect (List (C.Command d c n /\ view))
       -> Effect (List (C.Command d c n /\ view))
-    foldingF push nextView nextExpectations
-      = do
+    foldingF push failuresRef nextView chain = do
           v <- nextView
-          x <- nextExpectations
-          case List.head x of
+          nextExpectations' <- chain
+          let expectationsLeft = fromMaybe List.Nil $ List.tail nextExpectations'
+          case List.head nextExpectations' of
             Just (msg /\ nextExpectation) -> do
               push msg
-            Nothing -> pure unit
-          pure $ fromMaybe List.Nil $ List.tail x
+              (case nextExpectation `compareViews` v of
+                  Left failure -> do
+                    _ <- Ref.modify ((:) failure) failuresRef
+                    pure expectationsLeft
+                  Right _ ->
+                    pure expectationsLeft
+              )
+            Nothing ->
+              pure expectationsLeft
+
+toAffCompare :: forall v. CompareViews v -> CompareViewsAff v
+toAffCompare compareViews =
+  \vL vR ->
+    case vL `compareViews` vR of
+      Left failure -> fail failure
+      _ -> pure unit
 
 
-compareStrings :: CompareViews String
+compareStrings :: CompareViewsAff String
 compareStrings s1 s2 =
   when (s1 /= s2) $
     fail $ "\n-----\n" <> s1 <> "\n\n≠\n\n" <> s2 <> "\n-----"
 
 
-compareML :: CompareViews ML.Multiline
+compareML :: CompareViewsAff ML.Multiline
 compareML v1 v2 =
   case v1 `ML.compare'` v2 of
     ML.Match /\ _ -> pure unit
