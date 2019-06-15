@@ -31,7 +31,7 @@ import Rpd.Render (PushCmd, Renderer(..))
 import Rpd.Path as P
 
 
-type StringRenderer d = Renderer d String
+type StringRenderer d c n = Renderer d c n String
 
 data MultipleOrNone = MultipleOrNone String
 data Single = Single String
@@ -58,12 +58,12 @@ count (Counter (MultipleOrNone multiple) _) size | size > 1  = show size <> " " 
 count (Counter (MultipleOrNone multiple) _) _    | otherwise = "? " <> show multiple
 
 
-stringRenderer :: forall d. StringRenderer d
+stringRenderer :: forall d c n. StringRenderer d c n
 stringRenderer =
     Renderer "" view
 
 
-view :: forall d. PushCmd d -> Either R.RpdError (R.Network d) -> String
+view :: forall d c n. PushCmd d c n -> Either R.RpdError (R.Network d c n) -> String
 view _ (Right nw@(R.Network { name, patches })) =
     "Network " <> name <> semicolon
         <> lineBreak
@@ -82,7 +82,7 @@ view _ (Left err) =
     "<" <> show err <> ">"
 
 
-viewPatch :: forall d. R.Network d -> R.Patch d -> String
+viewPatch :: forall d c n. R.Network d c n -> R.Patch d c n -> String
 viewPatch nw (R.Patch id path@(P.ToPatch name) { nodes, links }) =
     "Patch " <> name <> " " <> show path <> semicolon
         <> lineBreak <> vertLine
@@ -110,8 +110,8 @@ viewPatch nw (R.Patch id path@(P.ToPatch name) { nodes, links }) =
                 $ viewLink nw <$> Array.catMaybes allLinks
 
 
-viewNode :: forall d. R.Network d -> R.Node d -> String
-viewNode nw (R.Node _ path@(P.ToNode { node }) _ { inlets, outlets }) =
+viewNode :: forall d c n. R.Network d c n -> R.Node d n -> String
+viewNode nw (R.Node _ path@(P.ToNode { node }) _ _ { inlets, outlets }) =
     "Node " <> node <> " " <> show path <> semicolon
         <> lineBreak <> vertLine <> vertLine
         <> count inletCounter inletCount
@@ -138,20 +138,20 @@ viewNode nw (R.Node _ path@(P.ToNode { node }) _ { inlets, outlets }) =
                 $ viewOutlet nw <$> Array.catMaybes allOutlets
 
 
-viewInlet :: forall d. R.Network d -> R.Inlet d -> String
-viewInlet _ (R.Inlet _ path@(P.ToInlet { inlet }) _) =
+viewInlet :: forall d c n. R.Network d c n -> R.Inlet d c -> String
+viewInlet _ (R.Inlet _ path@(P.ToInlet { inlet }) _ _) =
     "Inlet " <> inlet <> " " <> show path
 
 
-viewOutlet :: forall d. R.Network d -> R.Outlet d -> String
-viewOutlet _ (R.Outlet _ path@(P.ToOutlet { outlet }) _) =
+viewOutlet :: forall d c n. R.Network d c n -> R.Outlet d c -> String
+viewOutlet _ (R.Outlet _ path@(P.ToOutlet { outlet }) _ _) =
     "Outlet " <> outlet <> " " <> show path
 
 
-viewLink :: forall d. R.Network d -> R.Link -> String
+viewLink :: forall d c n. R.Network d c n -> R.Link -> String
 viewLink nw (R.Link _ { outlet : outletUuid, inlet : inletUuid }) =
     case L.view (_outlet outletUuid) nw /\ L.view (_inlet inletUuid) nw of
-        Just (R.Outlet _ outletPath _) /\ Just (R.Inlet _ inletPath _) ->
+        Just (R.Outlet _ outletPath _ _) /\ Just (R.Inlet _ inletPath _ _) ->
             "Link from " <> show (outletPath :: P.ToOutlet) <> " to " <> show inletPath
         _ ->
             "Link, which is detached or lost in space"

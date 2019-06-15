@@ -8,7 +8,7 @@ import Data.Lens (view) as L
 import Data.Lens.At (at) as L
 import Data.List (toUnfoldable)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), isJust, maybe)
+import Data.Maybe (Maybe(..), isJust, maybe, fromMaybe)
 import Data.Sequence as Seq
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Exists (Exists, mkExists)
@@ -19,9 +19,10 @@ import Rpd.Command (Command(..)) as C
 import Rpd.Network as R
 import Rpd.Optics as L
 import Rpd.Path as P
+import Rpd.UUID (UUID)
 import Rpd.UUID as UUID
 import Rpd.Render as R
-import Rpd.Render.MUV (Renderer(..), PushF(..), MsgOrCmd) as R
+import Rpd.Render.MUV (Renderer(..), PushF(..)) as R
 import Rpd.Util (type (/->))
 import Rpd.Toolkit as T
 
@@ -31,11 +32,14 @@ import Spork.Html (Html)
 import Spork.Html as H
 
 
-type Model d =
+type Model d c n =
     -- TODO: use UUID to store inlets?
     { lastInletData :: P.ToInlet /-> d
     , lastOutletData :: P.ToOutlet /-> d
-    , debug :: Maybe (DebugBox.Model d)
+    , debug :: Maybe (DebugBox.Model d c n)
+    -- , uuidToChannelDef :: UUID /-> T.ChannelDefAlias
+    -- , uuidToNodeDef :: UUID /-> T.NodeDefAlias
+    , uuidToChannel :: UUID /-> c
     }
 
 
@@ -46,52 +50,54 @@ data Message
     | DisableDebug
 
 
-type MsgOrCmd d = R.MsgOrCmd Message d
-type PushF d = R.PushF Message d
+type PushF d c n = R.PushF Message (C.Command d c n)
 
 
-type View d = Html (MsgOrCmd d)
+type View d c n = Html (Either Message (C.Command d c n))
 
 
-init :: forall d. Model d
+init :: forall d c n. Model d c n
 init =
     { lastInletData : Map.empty
     , lastOutletData : Map.empty
     -- , debug : Nothing
     , debug : Just DebugBox.init
+    -- , uuidToChannelDef : Map.empty
+    -- , uuidToNodeDef : Map.empty
+    , uuidToChannel : Map.empty
     }
 
 
-type HtmlRenderer d = Show d => R.Renderer d (Model d) (View d) Message
+type HtmlRenderer d c n = R.Renderer d c n (Model d c n) (View d c n) Message
 -- type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
-type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) (MsgOrCmd d)
+type ToolkitRenderer d c n = T.ToolkitRenderer d c n (View d c n) (Either Message (C.Command d c n))
 
 
-core :: forall d. C.Command d -> MsgOrCmd d
+core :: forall d c n. C.Command d c n -> Either Message (C.Command d c n)
 core = Right
 
 
-my :: forall d. Message -> MsgOrCmd d
+my :: forall d c n. Message -> Either Message (C.Command d c n)
 my = Left
 
 
-emptyView :: forall d. View d
+emptyView :: forall d c n. View d c n
 emptyView = H.div [ H.id_ "network" ] [ H.text "empty" ]
 
 
-viewError :: forall d. R.RpdError -> View d
+viewError :: forall d c n. R.RpdError -> View d c n
 viewError error =
     H.div [ H.id_ "error" ] [ H.text $ show error ]
 
 
 viewNetwork
-    :: forall d c
+    :: forall d c n
      . T.Channels d c
-    => ToolkitRenderer d c
-    -> PushF d
-    -> Model d
-    -> R.Network d
-    -> View d
+    => ToolkitRenderer d c n
+    -> PushF d c n
+    -> Model d c n
+    -> R.Network d c n
+    -> View d c n
 viewNetwork toolkitRenderer pushMsg ui nw@(R.Network { name, patches }) =
     H.div
         [ H.id_ "network" ]
@@ -102,8 +108,9 @@ viewNetwork toolkitRenderer pushMsg ui nw@(R.Network { name, patches }) =
                 ]
                 [ H.text "Send" ]
             , H.div
-                [ H.onClick $ H.always_ $ core
-                    $ C.AddInlet (P.toNode "test" "random") "test" ]
+                [ ]
+                -- [ H.onClick $ H.always_ $ core
+                --     $ C.AddInlet (P.toNode "test" "random") "test" ]
                 [ H.text "Add Inlet" ]
             ] <>
             (toUnfoldable $ viewPatch toolkitRenderer pushMsg ui nw
@@ -111,14 +118,14 @@ viewNetwork toolkitRenderer pushMsg ui nw@(R.Network { name, patches }) =
 
 
 viewPatch
-    :: forall d c
+    :: forall d c n
      . T.Channels d c
-    => ToolkitRenderer d c
-    -> PushF d
-    -> Model d
-    -> R.Network d
+    => ToolkitRenderer d c n
+    -> PushF d c n
+    -> Model d c n
+    -> R.Network d c n
     -> UUID.ToPatch
-    -> View d
+    -> View d c n
 viewPatch toolkitRenderer pushMsg ui nw patchUuid =
     case L.view (L._patch patchUuid) nw of
         Just (R.Patch _ (P.ToPatch name) { nodes }) ->
@@ -133,23 +140,23 @@ viewPatch toolkitRenderer pushMsg ui nw patchUuid =
                 [ H.text $ "patch " <> show patchUuid <> " was not found" ]
 
 viewNode
-    :: forall d c
+    :: forall d c n
      . T.Channels d c
-    => ToolkitRenderer d c
-    -> R.PushF Message d
-    -> Model d
-    -> R.Network d
+    => ToolkitRenderer d c n
+    -> PushF d c n
+    -> Model d c n
+    -> R.Network d c n
     -> UUID.ToNode
-    -> View d
+    -> View d c n
 viewNode toolkitRenderer pushMsg ui nw nodeUuid =
     case L.view (L._node nodeUuid) nw of
-        Just node@(R.Node _ (P.ToNode { node : name }) _ { inlets, outlets }) ->
+        Just node@(R.Node _ (P.ToNode { node : name }) n _ { inlets, outlets }) ->
             H.div
                 [ H.classes [ "node" ] ]
                 (
                     [ H.text name
                     , toolkitRenderer.renderNode
-                            (T.NodeDefAlias "random")
+                            n
                             node
                             (case pushMsg of R.PushF f -> f)
                     ]
@@ -164,25 +171,21 @@ viewNode toolkitRenderer pushMsg ui nw nodeUuid =
 
 
 viewInlet
-    :: forall d c
+    :: forall d c n
      . T.Channels d c
-    => ToolkitRenderer d c
-    -> PushF d
-    -> Model d
-    -> R.Network d
+    => ToolkitRenderer d c n
+    -> PushF d c n
+    -> Model d c n
+    -> R.Network d c n
     -> UUID.ToInlet
-    -> View d
+    -> View d c n
 viewInlet toolkitRenderer pushMsg ui nw inletUuid =
     case L.view (L._inlet inletUuid) nw of
-        Just inlet@(R.Inlet _ path@(P.ToInlet { inlet : label }) { flow }) ->
+        Just inlet@(R.Inlet _ path@(P.ToInlet { inlet : label }) _ { flow }) ->
             H.div
                 [ H.classes [ "inlet" ] ]
                 [ H.text label
-                , toolkitRenderer.renderInlet
-                        (T.ChannelDefAlias "bang")
-                        inlet
-                        ?wh
-                        (case pushMsg of R.PushF f -> f)
+                , toolkitResult inlet # fromMaybe (H.div [] [])
                 , case Map.lookup path ui.lastInletData of
                     Just d -> H.text "data"
                     _ -> H.text ""
@@ -190,42 +193,55 @@ viewInlet toolkitRenderer pushMsg ui nw inletUuid =
         _ -> H.div
                 [ H.classes [ "inlet" ] ]
                 [ H.text $ "inlet " <> show inletUuid <> " was not found" ]
+    where
+        toolkitResult inlet =
+            Map.lookup (UUID.uuid inletUuid) ui.uuidToChannel
+                >>= \channel ->
+                        Just $ toolkitRenderer.renderInlet
+                            channel
+                            inlet
+                            (case pushMsg of R.PushF f -> f)
+
 
 
 viewOutlet
-    :: forall d c
+    :: forall d c n
      . T.Channels d c
-    => ToolkitRenderer d c
-    -> PushF d
-    -> Model d
-    -> R.Network d
+    => ToolkitRenderer d c n
+    -> PushF d c n
+    -> Model d c n
+    -> R.Network d c n
     -> UUID.ToOutlet
-    -> View d
+    -> View d c n
 viewOutlet toolkitRenderer pushMsg ui nw outletUuid =
     case L.view (L._outlet outletUuid) nw of
-        Just outlet@(R.Outlet _ path@(P.ToOutlet { outlet : label }) { flow }) ->
+        Just outlet@(R.Outlet _ path@(P.ToOutlet { outlet : label }) _ { flow }) ->
             H.div
                 [ H.classes [ "outlet" ]
                 ]
                 [ H.text label
-                , toolkitRenderer.renderOutlet
-                        (T.ChannelDefAlias "bang")
-                        outlet
-                        ?wh
-                        (case pushMsg of R.PushF f -> f)
+                , toolkitResult outlet # fromMaybe (H.div [] [])
                 ]
         _ -> H.div
                 [ H.classes [ "outlet" ] ]
                 [ H.text $ "outlet " <> show outletUuid <> " was not found" ]
+    where
+        toolkitResult outlet =
+            Map.lookup (UUID.uuid outletUuid) ui.uuidToChannel
+                >>= \channel ->
+                        Just $ toolkitRenderer.renderOutlet
+                            channel
+                            outlet
+                            (case pushMsg of R.PushF f -> f)
 
 
 viewDebugWindow
-    :: forall d
-     . Show d
-    => PushF d
-    -> Model d
-    -> R.Network d
-    -> View d
+    :: forall d c n
+     . Show d => Show c => Show n
+    => PushF d c n
+    -> Model d c n
+    -> R.Network d c n
+    -> View d c n
 viewDebugWindow pushMsg ui nw =
     H.div [ H.id_ "debug" ]
         [ H.input
@@ -242,18 +258,23 @@ viewDebugWindow pushMsg ui nw =
 
 
 updateDebugBox
-    :: forall d
-     . R.Network d
-    -> MsgOrCmd d
-    -> Maybe (DebugBox.Model d)
-    -> Maybe (DebugBox.Model d)
+    :: forall d c n
+     . R.Network d c n
+    -> Either Message (C.Command d c n)
+    -> Maybe (DebugBox.Model d c n)
+    -> Maybe (DebugBox.Model d c n)
 updateDebugBox nw (Right cmd) (Just debug) = Just $ DebugBox.update cmd nw debug
 updateDebugBox _ (Left EnableDebug) _ = Just $ DebugBox.init
 updateDebugBox _ (Left DisableDebug) _ = Nothing
 updateDebugBox _ _ v = v
 
 
-htmlRenderer :: forall d c. T.Channels d c => ToolkitRenderer d c -> HtmlRenderer d
+htmlRenderer
+    :: forall d c n
+     . T.Channels d c
+    => Show d => Show c => Show n
+    => ToolkitRenderer d c n
+    -> HtmlRenderer d c n
 htmlRenderer toolkitRenderer =
     R.Renderer
         { from : emptyView
@@ -270,13 +291,13 @@ htmlRenderer toolkitRenderer =
 
 
 view
-    :: forall d c
-     . Show d
+    :: forall d c n
+     . Show d => Show c => Show n
     => T.Channels d c
-    => ToolkitRenderer d c
-    -> PushF d
-    -> Either R.RpdError (Model d /\ R.Network d)
-    -> View d
+    => ToolkitRenderer d c n
+    -> PushF d c n
+    -> Either R.RpdError (Model d c n /\ R.Network d c n)
+    -> View d c n
 view toolkitRenderer pushMsg (Right (ui /\ nw)) =
     H.div [ H.id_ "html" ]
         [ viewDebugWindow pushMsg ui nw
@@ -287,10 +308,10 @@ view _ pushMsg (Left err) =
 
 
 update
-    :: forall d
-     . MsgOrCmd d
-    -> Model d /\ R.Network d
-    -> Model d /\ Array (MsgOrCmd d)
+    :: forall d c n
+     . Either Message (C.Command d c n)
+    -> Model d c n /\ R.Network d c n
+    -> Model d c n /\ Array (Either Message (C.Command d c n))
 update (Right C.Bang) (ui /\ _) = ui /\ []
 update (Right (C.GotInletData inletPath d)) (ui /\ _) =
     (ui { lastInletData = ui.lastInletData # Map.insert inletPath d })
@@ -298,5 +319,18 @@ update (Right (C.GotInletData inletPath d)) (ui /\ _) =
 update (Right (C.GotOutletData outletPath d)) (ui /\ _) =
     (ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d })
     /\ []
+update (Right (C.AddInlet nodePath alias c)) ( ui /\ nw ) =
+    let outletPath = P.outletInNode nodePath alias
+    in
+        -- ( case (L.view (L._pathToId $ P.lift outletPath) nw) of
+        --     Just outletUuid ->
+        --         ui { uuidToChannel = ui.uuidToChannel # Map.insert (UUID.uuid outletUuid) c }
+        --     Nothing -> ui
+        -- /\ [] )
+        ( case (L.view (L._pathToId $ P.lift outletPath) nw) of
+            Just outletUuid ->
+                ui { uuidToChannel = ui.uuidToChannel # Map.insert (UUID.uuid outletUuid) c }
+            Nothing -> ui
+        /\ [] )
 update _ (ui /\ _) = ui /\ []
 

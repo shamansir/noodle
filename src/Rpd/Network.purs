@@ -47,19 +47,19 @@ data PushToOutlets d = PushToOutlets (PushF (Path.ToOutlet /\ UUID.ToOutlet /\ d
 
 
 -- TODO: Make `Entity` a type kind?
-data Entity d
-    = PatchEntity (Patch d)
-    | NodeEntity (Node d)
-    | InletEntity (Inlet d)
-    | OutletEntity (Outlet d)
+data Entity d c n
+    = PatchEntity (Patch d c n)
+    | NodeEntity (Node d n)
+    | InletEntity (Inlet d c)
+    | OutletEntity (Outlet d c)
     | LinkEntity Link
 
 
-data Network d =
+data Network d c n =
     Network
         { name :: String
         , patches :: Seq UUID.ToPatch
-        , registry :: UUID.Tagged /-> Entity d
+        , registry :: UUID.Tagged /-> Entity d c n
         -- , pathToId :: Path /-> Set UUID
         , pathToId :: Path /-> UUID.Tagged
         , cancelers :: UUID /-> Array Canceler
@@ -69,17 +69,18 @@ data Network d =
             -- , links :: UUID.ToLink /-> Array Canceler
             -- }
         }
-data Patch d =
+data Patch d c n =
     Patch
         UUID.ToPatch
         Path.ToPatch
         { nodes :: Seq UUID.ToNode
         , links :: Seq UUID.ToLink
         }
-data Node d =
+data Node d n =
     Node
         UUID.ToNode
         Path.ToNode
+        n
         (ProcessF d)
         { inlets :: Seq UUID.ToInlet
         , outlets :: Seq UUID.ToOutlet
@@ -88,17 +89,19 @@ data Node d =
         , pushToInlets :: PushToInlets d
         , pushToOutlets :: PushToOutlets d
         }
-data Inlet d =
+data Inlet d c =
     Inlet
         UUID.ToInlet
         Path.ToInlet
+        c
         { flow :: InletFlow d
         , push :: PushToInlet d
         }
-data Outlet d =
+data Outlet d c =
     Outlet
         UUID.ToOutlet
         Path.ToOutlet
+        c
         { flow :: OutletFlow d
         , push :: PushToOutlet d
         }
@@ -110,7 +113,7 @@ data Link =
         }
 
 
-empty :: forall d. String -> Network d
+empty :: forall d c n. String -> Network d c n
 empty networkName =
     Network
         { name : networkName
@@ -126,17 +129,17 @@ empty networkName =
         }
 
 
-instance eqPatch :: Eq (Patch d) where
+instance eqPatch :: Eq (Patch d c n) where
     eq (Patch pidA _ _) (Patch pidB _ _) = (pidA == pidB)
 
-instance eqNode :: Eq (Node d) where
-    eq (Node nidA _ _ _) (Node nidB _ _ _) = (nidA == nidB)
+instance eqNode :: Eq (Node d n) where
+    eq (Node nidA _ _ _ _) (Node nidB _ _ _ _) = (nidA == nidB)
 
-instance eqInlet :: Eq (Inlet d) where
-    eq (Inlet iidA _ _) (Inlet iidB _ _) = (iidA == iidB)
+instance eqInlet :: Eq (Inlet d c) where
+    eq (Inlet iidA _ _ _) (Inlet iidB _ _ _) = (iidA == iidB)
 
-instance eqOutlet :: Eq (Outlet d) where
-    eq (Outlet oidA _ _) (Outlet oidB _ _) = (oidA == oidB)
+instance eqOutlet :: Eq (Outlet d c) where
+    eq (Outlet oidA _ _ _) (Outlet oidB _ _ _) = (oidA == oidB)
 
 instance eqLink :: Eq Link where
     eq (Link lidA _) (Link lidB _) = (lidA == lidB)

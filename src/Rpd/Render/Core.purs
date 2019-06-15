@@ -43,31 +43,31 @@ import Rpd.Toolkit (Toolkit) as T
 --     -> Either R.RpdError (R.Network d)
 --     -> view
 
-data PushCmd d =
-    PushCmd (C.Command d -> Effect Unit)
+data PushCmd d c n =
+    PushCmd (C.Command d c n -> Effect Unit)
 
 
-type RenderF d view
-    =  PushCmd d
-    -> Either R.RpdError (R.Network d)
+type RenderF d c n view
+    =  PushCmd d c n
+    -> Either R.RpdError (R.Network d c n)
     -> view
 
 
-data Renderer d view
+data Renderer d c n view
     = Renderer
         view -- initial view
-        (RenderF d view)
+        (RenderF d c n view)
 
 
-neverPush :: forall d. PushCmd d
+neverPush :: forall d c n. PushCmd d c n
 neverPush = PushCmd $ const $ pure unit
 
 
 extractRpd
-    :: forall d view
-     . RenderF d view
-    -> PushCmd d
-    -> R.Rpd (R.Network d)
+    :: forall d c n view
+     . RenderF d c n view
+    -> PushCmd d c n
+    -> R.Rpd (R.Network d c n)
     -> Effect view
 extractRpd handler pushCmd =
     R.run onError onSuccess
@@ -77,7 +77,7 @@ extractRpd handler pushCmd =
 
 
 {- render once -}
-once :: forall d view. Renderer d view -> R.Rpd (R.Network d) -> Effect view
+once :: forall d c n view. Renderer d c n view -> R.Rpd (R.Network d c n) -> Effect view
 once (Renderer _ handleResult) =
     extractRpd handleResult neverPush
 
@@ -91,10 +91,10 @@ once (Renderer _ handleResult) =
    returns the canceler, so it is possible to stop the thing.
 -}
 make
-    :: forall d c view
-     . T.Toolkit d c
-    -> R.Rpd (R.Network d)
-    -> Renderer d view
+    :: forall d c n view
+     . T.Toolkit d c n
+    -> R.Rpd (R.Network d c n)
+    -> Renderer d c n view
     -> Effect
         { first :: view
         , next :: Event (Effect view)
@@ -117,13 +117,13 @@ make toolkit rpd renderer =
    TODO: do not ask user for `event`, just pushing function.
 -}
 make'
-    :: forall d c view
-     . { event :: Event (C.Command d)
-       , push :: (C.Command d -> Effect Unit)
+    :: forall d c n view
+     . { event :: Event (C.Command d c n)
+       , push :: (C.Command d c n -> Effect Unit)
        }
-    -> T.Toolkit d c
-    -> R.Rpd (R.Network d)
-    -> Renderer d view
+    -> T.Toolkit d c n
+    -> R.Rpd (R.Network d c n)
+    -> Renderer d c n view
     -> { first :: view
        , next :: Event (Effect view)
        }
@@ -140,9 +140,9 @@ make'
         , next : viewFlow
         }
     where
-        updater :: C.Command d -> R.Rpd (R.Network d) -> R.Rpd (R.Network d)
+        updater :: C.Command d c n -> R.Rpd (R.Network d c n) -> R.Rpd (R.Network d c n)
         updater cmd rpd' = rpd' >>= C.apply cmd pushCommand toolkit
-        viewer :: R.Rpd (R.Network d) -> Effect view
+        viewer :: R.Rpd (R.Network d c n) -> Effect view
         viewer = extractRpd handler (PushCmd pushCommand)
 
 
@@ -151,10 +151,10 @@ make'
 
    Returns the canceler. -}
 run
-    :: forall d c view
-     . T.Toolkit d c
-    -> R.Rpd (R.Network d)
-    -> Renderer d view
+    :: forall d c n view
+     . T.Toolkit d c n
+    -> R.Rpd (R.Network d c n)
+    -> Renderer d c n view
     -> Effect R.Canceler
 run toolkit rpd renderer =
     make toolkit rpd renderer >>=
@@ -169,13 +169,13 @@ run toolkit rpd renderer =
    TODO: do not ask user for `event`, just pushing function.
 -}
 run'
-    :: forall d c view
-     . { event :: Event (C.Command d)
-       , push :: (C.Command d -> Effect Unit)
+    :: forall d c n view
+     . { event :: Event (C.Command d c n)
+       , push :: (C.Command d c n -> Effect Unit)
        }
-    -> T.Toolkit d c
-    -> R.Rpd (R.Network d)
-    -> Renderer d view
+    -> T.Toolkit d c n
+    -> R.Rpd (R.Network d c n)
+    -> Renderer d c n view
     -> Effect R.Canceler
 run' toolkit event nw renderer =
     case make' toolkit event nw renderer of

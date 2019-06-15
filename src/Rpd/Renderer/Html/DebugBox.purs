@@ -21,18 +21,23 @@ import Rpd.UUID as R
 import Rpd.Process as R
 
 
-type Model d =
-    { lastCommands :: List (C.Command d)
+type Model d c n =
+    { lastCommands :: List (C.Command d c n)
     }
 
 
-init :: forall d. Model d
+init :: forall d c n. Model d c n
 init =
     { lastCommands : List.Nil
     }
 
 
-update :: forall d. C.Command d -> R.Network d -> Model d -> Model d
+update
+    :: forall d c n
+     . C.Command d c n
+    -> R.Network d c n
+    -> Model d c n
+    -> Model d c n
 update cmd nw model =
     model
         { lastCommands =
@@ -58,7 +63,7 @@ update cmd nw model =
 --         <$> (Set.toUnfoldable items :: Array uuid)
 
 
-viewNetwork :: forall d. R.Network d -> Html Unit
+viewNetwork :: forall d c n. R.Network d c n -> Html Unit
 viewNetwork nw@(R.Network { patches }) =
     H.div [ H.classes [ "network-debug" ] ]
         [ H.ul [] viewPatches
@@ -85,7 +90,7 @@ viewNetwork nw@(R.Network { patches }) =
             viewLink
                 <$> (\linkUuid -> L.view (L._link linkUuid) nw)
                 <$> (Seq.toUnfoldable links :: Array R.ToLink)
-        viewPatch :: Maybe (R.Patch d) -> Html Unit
+        viewPatch :: Maybe (R.Patch d c n) -> Html Unit
         viewPatch (Just (R.Patch uuid path { nodes, links })) =
             H.li [ H.classes [ "patch-debug" ] ]
                 [ H.div []
@@ -98,8 +103,8 @@ viewNetwork nw@(R.Network { patches }) =
         viewPatch _ =
             H.li [ H.classes [ "patch-debug" ] ]
                 [ H.text "Unknown patch" ]
-        viewNode :: Maybe (R.Node d) -> Html Unit
-        viewNode (Just (R.Node uuid path processF { inlets, outlets })) =
+        viewNode :: Maybe (R.Node d n) -> Html Unit
+        viewNode (Just (R.Node uuid path n processF { inlets, outlets })) =
             H.li [ H.classes [ "node-debug" ] ]
                 [ H.div []
                     [ H.span [] [ H.text $ show uuid ]
@@ -116,8 +121,8 @@ viewNetwork nw@(R.Network { patches }) =
         viewNode _ =
             H.li [ H.classes [ "node-debug" ] ]
                 [ H.text "Unknown node" ]
-        viewInlet :: Maybe (R.Inlet d) -> Html Unit
-        viewInlet (Just (R.Inlet uuid path _)) =
+        viewInlet :: Maybe (R.Inlet d c) -> Html Unit
+        viewInlet (Just (R.Inlet uuid path c _)) =
             H.li  [ H.classes [ "inlet-debug" ] ]
                 [ H.span [] [ H.text $ show uuid ]
                 , H.span [] [ H.text $ show path ]
@@ -125,8 +130,8 @@ viewNetwork nw@(R.Network { patches }) =
         viewInlet _ =
             H.li [ H.classes [ "inlet-debug" ] ]
                 [ H.text "Unknown inlet" ]
-        viewOutlet :: Maybe (R.Outlet d) -> Html Unit
-        viewOutlet (Just (R.Outlet uuid path _)) =
+        viewOutlet :: Maybe (R.Outlet d c) -> Html Unit
+        viewOutlet (Just (R.Outlet uuid path c _)) =
             H.li  [ H.classes [ "outlet-debug" ] ]
                 [ H.span [] [ H.text $ show uuid ]
                 , H.span [] [ H.text $ show path ]
@@ -146,17 +151,25 @@ viewNetwork nw@(R.Network { patches }) =
                 [ H.text "Unknown link" ]
 
 
-viewModel :: forall d. Show d => Model d -> Html Unit
+viewModel
+    :: forall d c n
+     . Show d => Show c => Show n
+    => Model d c n
+    -> Html Unit
 viewModel model =
     H.ul [ H.classes [ "commands-debug" ] ]
         $ List.toUnfoldable (viewCommand <$> model.lastCommands)
     where
-        viewCommand :: C.Command d -> Html Unit
+        viewCommand :: C.Command d c n -> Html Unit
         viewCommand cmd =
             H.li [] [ H.text $ show cmd ]
 
-
-view :: forall d. Show d => R.Network d -> Model d -> Html Unit
+view
+    :: forall d c n
+     . Show d => Show c => Show n
+    => R.Network d c n
+    -> Model d c n
+    -> Html Unit
 view nw model =
     H.div [ ]
         [ viewNetwork nw

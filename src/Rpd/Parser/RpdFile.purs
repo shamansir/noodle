@@ -203,7 +203,7 @@ fileParser = do
 
 
 -- TODO: use toolkit to load the appropriate node etc.
-parse :: forall d c. String -> T.Toolkit d c -> Either ParseError RpdFile
+parse :: forall d c n. String -> T.Toolkit d c n -> Either ParseError RpdFile
 parse src _ = runParser fileParser src
 
 

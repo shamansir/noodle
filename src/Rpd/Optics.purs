@@ -39,7 +39,7 @@ import Rpd.Util (seqMember', seqDelete, seqCatMaybes) as Util
 -- then to read/write the first UUIDs from/to `pathToId`
 -- and then combine/compose them to do everything else
 
-_entity :: forall d. UUID.Tagged -> Lens' (Network d) (Maybe (Entity d))
+_entity :: forall d c n. UUID.Tagged -> Lens' (Network d c n) (Maybe (Entity d c n))
 _entity uuid =
     lens getter setter
     where
@@ -50,7 +50,7 @@ _entity uuid =
                 nwstate { registry = set entityLens val nwstate.registry }
 
 
-_pathToId :: forall d. Path -> Lens' (Network d) (Maybe UUID.Tagged)
+_pathToId :: forall d c n. Path -> Lens' (Network d c n) (Maybe UUID.Tagged)
 _pathToId path =
     lens getter setter
     where
@@ -62,7 +62,11 @@ _pathToId path =
                 nwstate { pathToId = set pathLens val nwstate.pathToId }
 
 
-_pathGetter :: forall d x. (Entity d -> Maybe x) -> Path -> Getter' (Network d) (Maybe x)
+_pathGetter
+    :: forall d c n x
+     . (Entity d c n -> Maybe x)
+    -> Path
+    -> Getter' (Network d c n) (Maybe x)
 _pathGetter extractEntity path =
     to \nw ->
         view (_pathToId path) nw
@@ -70,7 +74,12 @@ _pathGetter extractEntity path =
             >>= extractEntity
 
 
-_uuidLens :: forall d x. (x -> Entity d) -> (Entity d -> Maybe x) -> UUID.Tagged -> Lens' (Network d) (Maybe x)
+_uuidLens
+    :: forall d c n x
+     . (x -> Entity d c n)
+    -> (Entity d c n -> Maybe x)
+    -> UUID.Tagged
+    -> Lens' (Network d c n) (Maybe x)
 _uuidLens adaptEntity extractEntity uuid =
     lens getter setter
     where
@@ -92,15 +101,15 @@ _seq v =
                 Nothing -> seq # Util.seqDelete v
 
 
-_patch :: forall d. UUID.ToPatch -> Lens' (Network d) (Maybe (Patch d))
+_patch :: forall d c n. UUID.ToPatch -> Lens' (Network d c n) (Maybe (Patch d c n))
 _patch uuid = _uuidLens PatchEntity extractPatch $ UUID.liftTagged uuid
 
 
-_patchByPath :: forall d. Path.ToPatch -> Getter' (Network d) (Maybe (Patch d))
+_patchByPath :: forall d c n. Path.ToPatch -> Getter' (Network d c n) (Maybe (Patch d c n))
 _patchByPath = Path.lift >>> _pathGetter extractPatch
 
 
-_patchNode :: forall d. UUID.ToPatch -> UUID.ToNode -> Lens' (Network d) (Maybe Unit)
+_patchNode :: forall d c n. UUID.ToPatch -> UUID.ToNode -> Lens' (Network d c n) (Maybe Unit)
 _patchNode patchUuid nodeUuid =
     lens getter setter
     where
@@ -121,7 +130,7 @@ _patchNode patchUuid nodeUuid =
                 ) nw
 
 
-_patchNodes :: forall d. UUID.ToPatch -> Getter' (Network d) (Maybe (Seq (Node d)))
+_patchNodes :: forall d c n. UUID.ToPatch -> Getter' (Network d c n) (Maybe (Seq (Node d n)))
 _patchNodes patchUuid =
     to \nw ->
         view (_patch patchUuid) nw
@@ -131,7 +140,7 @@ _patchNodes patchUuid =
         viewNode nw nodeUiid = view (_node nodeUiid) nw
 
 
-_patchNodesByPath :: forall d. Path.ToPatch -> Getter' (Network d) (Maybe (Seq (Node d)))
+_patchNodesByPath :: forall d c n. Path.ToPatch -> Getter' (Network d c n) (Maybe (Seq (Node d n)))
 _patchNodesByPath patchUuid =
     to \nw ->
         view (_pathToId $ Path.lift patchUuid) nw
@@ -139,7 +148,7 @@ _patchNodesByPath patchUuid =
             >>= \uuid -> view (_patchNodes uuid) nw
 
 
-_patchLink :: forall d. UUID.ToPatch -> UUID.ToLink -> Lens' (Network d) (Maybe Unit)
+_patchLink :: forall d c n. UUID.ToPatch -> UUID.ToLink -> Lens' (Network d c n) (Maybe Unit)
 _patchLink patchUuid linkUuid =
     lens getter setter
     where
@@ -160,7 +169,7 @@ _patchLink patchUuid linkUuid =
                 ) nw
 
 
-_patchLinks :: forall d. UUID.ToPatch -> Getter' (Network d) (Maybe (Seq Link))
+_patchLinks :: forall d c n. UUID.ToPatch -> Getter' (Network d c n) (Maybe (Seq Link))
 _patchLinks patchUuid =
     to \nw ->
         view (_patch patchUuid) nw
@@ -170,7 +179,7 @@ _patchLinks patchUuid =
         viewLink nw linkUuid = view (_link linkUuid) nw
 
 
-_patchLinksByPath :: forall d. Path.ToPatch -> Getter' (Network d) (Maybe (Seq Link))
+_patchLinksByPath :: forall d c n. Path.ToPatch -> Getter' (Network d c n) (Maybe (Seq Link))
 _patchLinksByPath patchUuid =
     to \nw ->
         view (_pathToId $ Path.lift patchUuid) nw
@@ -179,29 +188,29 @@ _patchLinksByPath patchUuid =
 
 
 
-_node :: forall d. UUID.ToNode -> Lens' (Network d) (Maybe (Node d))
+_node :: forall d c n. UUID.ToNode -> Lens' (Network d c n) (Maybe (Node d n))
 _node uuid = _uuidLens NodeEntity extractNode $ UUID.liftTagged uuid
 
 
-_nodeByPath :: forall d. Path.ToNode -> Getter' (Network d) (Maybe (Node d))
+_nodeByPath :: forall d c n. Path.ToNode -> Getter' (Network d c n) (Maybe (Node d n))
 _nodeByPath = Path.lift >>> _pathGetter extractNode
 
 
-_nodeInletsFlow :: forall d. UUID.ToNode -> Getter' (Network d) (Maybe (InletsFlow d))
+_nodeInletsFlow :: forall d c n. UUID.ToNode -> Getter' (Network d c n) (Maybe (InletsFlow d))
 _nodeInletsFlow nodeUuid =
     to \nw ->
         view (_node nodeUuid) nw
-            >>= \(Node _ _ _ { inletsFlow }) -> pure inletsFlow
+            >>= \(Node _ _ _ _ { inletsFlow }) -> pure inletsFlow
 
 
-_nodeOutletsFlow :: forall d. UUID.ToNode -> Getter' (Network d) (Maybe (OutletsFlow d))
+_nodeOutletsFlow :: forall d c n. UUID.ToNode -> Getter' (Network d c n) (Maybe (OutletsFlow d))
 _nodeOutletsFlow nodeUuid =
     to \nw ->
         view (_node nodeUuid) nw
-            >>= \(Node _ _ _ { outletsFlow }) -> pure outletsFlow
+            >>= \(Node _ _ _ _ { outletsFlow }) -> pure outletsFlow
 
 
-_nodeInlet :: forall d. UUID.ToNode -> UUID.ToInlet -> Lens' (Network d) (Maybe Unit)
+_nodeInlet :: forall d c n. UUID.ToNode -> UUID.ToInlet -> Lens' (Network d c n) (Maybe Unit)
 _nodeInlet nodeUuid inletUuid =
     lens getter setter
     where
@@ -209,29 +218,30 @@ _nodeInlet nodeUuid inletUuid =
         inletLens = _seq inletUuid
         getter nw =
             view nodeLens nw
-                >>= \(Node _ _ _ { inlets }) -> view inletLens inlets
+                >>= \(Node _ _ _ _ { inlets }) -> view inletLens inlets
         setter nw val =
             over nodeLens
-                (map $ \(Node nuuid npath process nstate@{ inlets }) ->
+                (map $ \(Node nuuid npath n process nstate@{ inlets }) ->
                     Node
                         nuuid
                         npath
+                        n
                         process
                         nstate { inlets = set inletLens val inlets }
                 ) nw
 
 
-_nodeInlets :: forall d. UUID.ToNode -> Getter' (Network d) (Maybe (Seq (Inlet d)))
+_nodeInlets :: forall d c n. UUID.ToNode -> Getter' (Network d c n) (Maybe (Seq (Inlet d c)))
 _nodeInlets nodeUuid =
     to \nw ->
         view (_node nodeUuid) nw
-            >>= \(Node _ _ _ { inlets }) ->
+            >>= \(Node _ _ _ _ { inlets }) ->
                 pure $ viewInlet nw <$> inlets # Util.seqCatMaybes
     where
         viewInlet nw inletUiid = view (_inlet inletUiid) nw
 
 
-_nodeInletsByPath :: forall d. Path.ToNode -> Getter' (Network d) (Maybe (Seq (Inlet d)))
+_nodeInletsByPath :: forall d c n. Path.ToNode -> Getter' (Network d c n) (Maybe (Seq (Inlet d c)))
 _nodeInletsByPath nodePath =
     to \nw ->
         view (_pathToId $ Path.lift nodePath) nw
@@ -239,7 +249,7 @@ _nodeInletsByPath nodePath =
             >>= \uuid -> view (_nodeInlets uuid) nw
 
 
-_nodeOutlet :: forall d. UUID.ToNode -> UUID.ToOutlet -> Lens' (Network d) (Maybe Unit)
+_nodeOutlet :: forall d c n. UUID.ToNode -> UUID.ToOutlet -> Lens' (Network d c n) (Maybe Unit)
 _nodeOutlet nodeUuid outletUuid =
     lens getter setter
     where
@@ -247,28 +257,32 @@ _nodeOutlet nodeUuid outletUuid =
         outletLens = _seq outletUuid
         getter nw =
             view nodeLens nw
-                >>= \(Node _ _ _ { outlets }) -> view outletLens outlets
+                >>= \(Node _ _ _ _ { outlets }) -> view outletLens outlets
         setter nw val =
             over nodeLens
-                (map $ \(Node nuuid npath process nstate@{ outlets }) ->
+                (map $ \(Node nuuid npath n process nstate@{ outlets }) ->
                     Node
                         nuuid
                         npath
+                        n
                         process
                         nstate { outlets = set outletLens val outlets }
                 ) nw
 
-_nodeOutlets :: forall d. UUID.ToNode -> Getter' (Network d) (Maybe (Seq (Outlet d)))
+_nodeOutlets :: forall d c n. UUID.ToNode -> Getter' (Network d c n) (Maybe (Seq (Outlet d c)))
 _nodeOutlets nodeUuid =
     to \nw ->
         view (_node nodeUuid) nw
-            >>= \(Node _ _ _ { outlets }) ->
+            >>= \(Node _ _ _ _ { outlets }) ->
                 pure $ viewOutlet nw <$> outlets # Util.seqCatMaybes
     where
         viewOutlet nw outletUuid = view (_outlet outletUuid) nw
 
 
-_nodeOutletsByPath :: forall d. Path.ToNode -> Getter' (Network d) (Maybe (Seq (Outlet d)))
+_nodeOutletsByPath
+    :: forall d c n
+     . Path.ToNode
+    -> Getter' (Network d c n) (Maybe (Seq (Outlet d c)))
 _nodeOutletsByPath nodePath =
     to \nw ->
         view (_pathToId $ Path.lift nodePath) nw
@@ -276,23 +290,23 @@ _nodeOutletsByPath nodePath =
             >>= \uuid -> view (_nodeOutlets uuid) nw
 
 
-_inlet :: forall d. UUID.ToInlet -> Lens' (Network d) (Maybe (Inlet d))
+_inlet :: forall d c n. UUID.ToInlet -> Lens' (Network d c n) (Maybe (Inlet d c))
 _inlet uuid = _uuidLens InletEntity extractInlet $ UUID.liftTagged uuid
 
 
-_inletByPath :: forall d. Path.ToInlet -> Getter' (Network d) (Maybe (Inlet d))
+_inletByPath :: forall d c n. Path.ToInlet -> Getter' (Network d c n) (Maybe (Inlet d c))
 _inletByPath = Path.lift >>> _pathGetter extractInlet
 
 
-_outlet :: forall d. UUID.ToOutlet -> Lens' (Network d) (Maybe (Outlet d))
+_outlet :: forall d c n. UUID.ToOutlet -> Lens' (Network d c n) (Maybe (Outlet d c))
 _outlet uuid = _uuidLens OutletEntity extractOutlet $ UUID.liftTagged uuid
 
 
-_outletByPath :: forall d. Path.ToOutlet -> Getter' (Network d) (Maybe (Outlet d))
+_outletByPath :: forall d c n. Path.ToOutlet -> Getter' (Network d c n) (Maybe (Outlet d c))
 _outletByPath = Path.lift >>> _pathGetter extractOutlet
 
 
-_link :: forall d. UUID.ToLink -> Lens' (Network d) (Maybe Link)
+_link :: forall d c n. UUID.ToLink -> Lens' (Network d c n) (Maybe Link)
 _link uuid = _uuidLens LinkEntity extractLink $ UUID.liftTagged uuid
 
 
@@ -300,7 +314,7 @@ _link uuid = _uuidLens LinkEntity extractLink $ UUID.liftTagged uuid
 -- _linkByPath = _pathGetter extractLink
 
 -- TODO: only getter for Sequence?
-_networkPatch :: forall d. UUID.ToPatch -> Lens' (Network d) (Maybe Unit)
+_networkPatch :: forall d c n. UUID.ToPatch -> Lens' (Network d c n) (Maybe Unit)
 _networkPatch uuid =
     lens getter setter
     where
@@ -314,7 +328,7 @@ _networkPatch uuid =
                     }
 
 
-_networkPatches :: forall d. Getter' (Network d) (List (Patch d))
+_networkPatches :: forall d c n. Getter' (Network d c n) (List (Patch d c n))
 _networkPatches =
     to \nw@(Network { patches }) ->
         (\uuid -> view (_patch uuid) nw)
@@ -322,25 +336,25 @@ _networkPatches =
              #  List.catMaybes
 
 
-_networkInlets :: forall d. Getter' (Network d) (List (Inlet d))
+_networkInlets :: forall d c n. Getter' (Network d c n) (List (Inlet d c))
 _networkInlets =
     to \nw@(Network { registry }) ->
         List.mapMaybe extractInlet $ Map.values registry
 
 
-_networkOutlets :: forall d. Getter' (Network d) (List (Outlet d))
+_networkOutlets :: forall d c n. Getter' (Network d c n) (List (Outlet d c))
 _networkOutlets =
     to \nw@(Network { registry }) ->
         List.mapMaybe extractOutlet $ Map.values registry
 
 
-_networkLinks :: forall d. Getter' (Network d) (List Link)
+_networkLinks :: forall d c n. Getter' (Network d c n) (List Link)
 _networkLinks =
     to \nw@(Network { registry }) ->
         List.mapMaybe extractLink $ Map.values registry
 
 
-_cancelers :: forall d. UUID -> Lens' (Network d) (Maybe (Array Canceler))
+_cancelers :: forall d c n. UUID -> Lens' (Network d c n) (Maybe (Array Canceler))
 _cancelers uuid =
     lens getter setter
     where
@@ -354,72 +368,72 @@ _cancelers uuid =
                     }
 
 
-_cancelersByPath :: forall d. Path -> Getter' (Network d) (Maybe (Array Canceler))
+_cancelersByPath :: forall d c n. Path -> Getter' (Network d c n) (Maybe (Array Canceler))
 _cancelersByPath path =
     to \nw ->
         view (_pathToId path) nw
             >>= \uuid -> view (_cancelers $ UUID.uuid uuid) nw
 
 
-_inletFlow :: forall d. UUID.ToInlet -> Getter' (Network d) (Maybe (InletFlow d))
+_inletFlow :: forall d c n. UUID.ToInlet -> Getter' (Network d c n) (Maybe (InletFlow d))
 _inletFlow inletId =
     to extractFlow
     where
         inletLens = _inlet inletId
         extractFlow nw = view inletLens nw >>=
-            \(Inlet _ _ { flow }) -> pure flow
+            \(Inlet _ _ _ { flow }) -> pure flow
 
 
-_outletFlow :: forall d. UUID.ToOutlet -> Getter' (Network d) (Maybe (OutletFlow d))
+_outletFlow :: forall d c n. UUID.ToOutlet -> Getter' (Network d c n) (Maybe (OutletFlow d))
 _outletFlow outletId =
     to extractFlow
     where
         inletLens = _outlet outletId
         extractFlow nw = view inletLens nw >>=
-            \(Outlet _ _ { flow }) -> pure flow
+            \(Outlet _ _ _ { flow }) -> pure flow
 
 
-_inletPush :: forall d. UUID.ToInlet -> Getter' (Network d) (Maybe (PushToInlet d))
+_inletPush :: forall d c n. UUID.ToInlet -> Getter' (Network d c n) (Maybe (PushToInlet d))
 _inletPush inletId =
     to extractPFlow
     where
         inletLens = _inlet inletId
         extractPFlow nw = view inletLens nw >>=
-            \(Inlet _ _ { push }) -> pure push
+            \(Inlet _ _ _ { push }) -> pure push
 
 
-_outletPush :: forall d. UUID.ToOutlet -> Getter' (Network d) (Maybe (PushToOutlet d))
+_outletPush :: forall d c n. UUID.ToOutlet -> Getter' (Network d c n) (Maybe (PushToOutlet d))
 _outletPush outletId =
     to extractPFlow
     where
         outletLens = _outlet outletId
         extractPFlow nw = view outletLens nw >>=
-            \(Outlet _ _ { push }) -> pure push
+            \(Outlet _ _ _ { push }) -> pure push
 
 
 -- FIXME: These below are Prisms: https://github.com/purescript-contrib/purescript-profunctor-lenses/blob/master/examples/src/PrismsForSumTypes.purs
 
 
-extractPatch :: forall d. Entity d -> Maybe (Patch d)
+extractPatch :: forall d c n. Entity d c n -> Maybe (Patch d c n)
 extractPatch (PatchEntity pEntity) = Just pEntity
 extractPatch _ = Nothing
 
 
-extractNode :: forall d. Entity d -> Maybe (Node d)
+extractNode :: forall d c n. Entity d c n -> Maybe (Node d n)
 extractNode (NodeEntity nEntity) = Just nEntity
 extractNode _ = Nothing
 
 
-extractInlet :: forall d. Entity d -> Maybe (Inlet d)
+extractInlet :: forall d c n. Entity d c n -> Maybe (Inlet d c)
 extractInlet (InletEntity iEntity) = Just iEntity
 extractInlet _ = Nothing
 
 
-extractOutlet :: forall d. Entity d -> Maybe (Outlet d)
+extractOutlet :: forall d c n. Entity d c n -> Maybe (Outlet d c)
 extractOutlet (OutletEntity oEntity) = Just oEntity
 extractOutlet _ = Nothing
 
 
-extractLink :: forall d. Entity d -> Maybe Link
+extractLink :: forall d c n. Entity d c n-> Maybe Link
 extractLink (LinkEntity lEntity) = Just lEntity
 extractLink _ = Nothing

@@ -5,7 +5,8 @@ module Rpd.Toolkit
     , NodeDef(..)
     , class Channels
     , default, adapt, accept--, show
-    , nodes, inlets, outlets
+    -- , nodes, inlets, outlets
+    , inlets, outlets
     --, mkToolkitE
     , ToolkitRenderer, RendererAlias(..)
     -- , class NodeRenderer, class ChannelRenderer
@@ -80,31 +81,37 @@ class Channels d c where
 
 data NodeDef d c =
     NodeDef
-        (Channels d c =>
-            { process :: ProcessF d
-            , inlets :: List (InletAlias /\ c)
-            , outlets :: List (OutletAlias /\ c)
-            })
+        { process :: ProcessF d
+        , inlets :: List (InletAlias /\ c)
+        , outlets :: List (OutletAlias /\ c)
+        }
+        -- (Channels d c =>
+        --     { process :: ProcessF d
+        --     , inlets :: List (InletAlias /\ c)
+        --     , outlets :: List (OutletAlias /\ c)
+        --     })
 
 
-data Toolkit d c = Toolkit ToolkitName (NodeDefAlias -> Maybe (NodeDef d c))
+data Toolkit d c n = Toolkit ToolkitName (n -> NodeDef d c)
 
 
-type ToolkitRenderer d c view msg =
-    { renderNode :: NodeDefAlias -> R.Node d -> (msg -> Effect Unit) -> view
-    , renderInlet :: ChannelDefAlias -> R.Inlet d -> c -> (msg -> Effect Unit) -> view
-    , renderOutlet :: ChannelDefAlias -> R.Outlet d -> c -> (msg -> Effect Unit) -> view
+type ToolkitRenderer d c n view msg =
+    { renderNode :: n -> R.Node d n -> (msg -> Effect Unit) -> view
+    -- , renderInlet :: ChannelDefAlias -> R.Inlet d -> c -> (msg -> Effect Unit) -> view
+    , renderInlet :: c -> R.Inlet d c -> (msg -> Effect Unit) -> view
+    -- , renderOutlet :: ChannelDefAlias -> R.Outlet d -> c -> (msg -> Effect Unit) -> view
+    , renderOutlet :: c -> R.Outlet d c -> (msg -> Effect Unit) -> view
     }
 
 
-nodes
-    :: forall d c
-     . Array (String /\ NodeDef d c)
-    -> (NodeDefAlias /-> NodeDef d c)
-nodes nodeArray =
-    nodeArray
-    # map (bimap NodeDefAlias identity)
-    # Map.fromFoldable
+-- nodes
+--     :: forall d c
+--      . Array (String /\ NodeDef d c)
+--     -> (NodeDefAlias /-> NodeDef d c)
+-- nodes nodeArray =
+--     nodeArray
+--     # map (bimap NodeDefAlias identity)
+--     # Map.fromFoldable
 
 
 inlets

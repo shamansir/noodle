@@ -109,10 +109,10 @@ initUi =
     }
 
 
-type TerminalRenderer d = R.Renderer d Ui View Msg
+type TerminalRenderer d c n  = R.Renderer d c n Ui View Msg
 
 
-terminalRenderer :: forall d. TerminalRenderer d
+terminalRenderer :: forall d c n. TerminalRenderer d c n
 terminalRenderer =
     R.Renderer
         { from : ML.empty
@@ -148,18 +148,18 @@ viewStatus :: Status -> View
 viewStatus _ = ML.from' ">"
 
 
-packInlet :: forall d. R.Network d -> R.Inlet d -> Item
-packInlet nw (R.Inlet _ path _) =
+packInlet :: forall d c n. R.Network d c n -> R.Inlet d c -> Item
+packInlet nw (R.Inlet _ path _ _) =
     R2.item 0 0 { subject : InletSubj path, packing : Nothing }
 
 
-packOutlet :: forall d. R.Network d -> R.Outlet d -> Item
-packOutlet nw (R.Outlet _ path _) =
+packOutlet :: forall d c n. R.Network d c n -> R.Outlet d c -> Item
+packOutlet nw (R.Outlet _ path _ _) =
     R2.item 0 0 { subject : OutletSubj path, packing : Nothing }
 
 
-viewNode :: forall d. R.Network d -> R.Node d -> View
-viewNode nw (R.Node uuid path@(R.ToNode { node : name }) _ { inlets, outlets }) =
+viewNode :: forall d c n. R.Network d c n -> R.Node d n -> View
+viewNode nw (R.Node uuid path@(R.ToNode { node : name }) _ _ { inlets, outlets }) =
     let
         inletsStr = String.fromCodePointArray
             $ Array.replicate (Seq.length inlets)
@@ -172,8 +172,8 @@ viewNode nw (R.Node uuid path@(R.ToNode { node : name }) _ { inlets, outlets }) 
         # ML.place (0 /\ 0) nodeViewStr
 
 
-packNode :: forall d. R.Network d -> R.Node d -> Item
-packNode nw (R.Node uuid path@(R.ToNode { node : name }) _ { inlets, outlets }) =
+packNode :: forall d c n. R.Network d c n -> R.Node d n -> Item
+packNode nw (R.Node uuid path@(R.ToNode { node : name }) _ _ { inlets, outlets }) =
     R2.item width 1
         { subject : NodeSubj path
         , packing : Nothing
@@ -182,7 +182,7 @@ packNode nw (R.Node uuid path@(R.ToNode { node : name }) _ { inlets, outlets }) 
         width = String.length name + Seq.length inlets + Seq.length outlets + 4
 
 
-viewPatch :: forall d. R.Network d -> Bounds -> R.Patch d -> View
+viewPatch :: forall d c n. R.Network d c n -> Bounds -> R.Patch d c n -> View
 viewPatch nw bounds (R.Patch _ _ { nodes })  =
     let
         patchView = ML.empty' initialBounds
@@ -197,10 +197,10 @@ viewPatch nw bounds (R.Patch _ _ { nodes })  =
 
 
 packPatch
-    :: forall d
+    :: forall d c n
      . Bounds
-    -> R.Network d
-    -> R.Patch d
+    -> R.Network d c n
+    -> R.Patch d c n
     -> Item
 packPatch (width /\ height) nw patch@(R.Patch _ (R.ToPatch name) { nodes }) =
     let
@@ -222,7 +222,7 @@ packPatch (width /\ height) nw patch@(R.Patch _ (R.ToPatch name) { nodes }) =
             }
 
 
-viewNetwork :: forall d. Packing -> R.Network d -> View
+viewNetwork :: forall d c n. Packing -> R.Network d c n -> View
 viewNetwork (Packing b2) nw@(R.Network { name, patches })  =
     R2.unfold foldingF startView b2
     where
@@ -248,7 +248,7 @@ viewNetwork (Packing b2) nw@(R.Network { name, patches })  =
 
 
 
-packNetwork :: forall d. R.Network d -> Packing -> Packing
+packNetwork :: forall d c n. R.Network d c n -> Packing -> Packing
 packNetwork nw@(R.Network { name, patches }) (Packing container) =
     let
         width /\ height = R2.size container
@@ -269,17 +269,21 @@ packNetwork nw@(R.Network { name, patches }) (Packing container) =
 
 
 update
-    :: forall d
-     . Either Msg (C.Command d)
-    -> Ui /\ R.Network d
-    -> Ui /\ Array (Either Msg (C.Command d))
+    :: forall d c n
+     . Either Msg (C.Command d c n)
+    -> Ui /\ R.Network d c n
+    -> Ui /\ Array (Either Msg (C.Command d c n))
 -- update R.Bang (ui /\ nw) =
 --     ui { packing = Just $ ui.packing # packNetwork nw }
 update _ (ui /\ _) =
     ui /\ []
 
 
-view :: forall d. R.PushF Msg d -> Either R.RpdError (Ui /\ R.Network d) -> View
+view
+    :: forall d c n
+     . R.PushF Msg (C.Command d c n)
+    -> Either R.RpdError (Ui /\ R.Network d c n)
+    -> View
 view _ (Right (ui /\ nw)) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
     -- "{" <> show packing <> " :: "

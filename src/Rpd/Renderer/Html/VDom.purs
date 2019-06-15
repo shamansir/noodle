@@ -37,18 +37,18 @@ import Rpd.Render.MUV (Renderer) as Ui
 import Rpd.Render.MUV (make') as Render
 
 
-type HtmlView msg d = Html (Either msg (C.Command d))
+type HtmlView msg cmd = Html (Either msg cmd)
 
 
 -- TODO: it looks confusing, why embedding needs toolkits,
 --       renderer indeed needs toolkits (which also looks confusing, but at least true)
 embed
-    :: forall d c model view msg
+    :: forall d c n model view msg
      . String -- selector
-    -> (view -> HtmlView msg d) -- insert the rendering result
-    -> Ui.Renderer d model view msg -- renderer
-    -> T.Toolkit d c
-    -> R.Rpd (Network d) -- initial network
+    -> (view -> HtmlView msg (C.Command d c n)) -- insert the rendering result
+    -> Ui.Renderer d c n model view msg -- renderer
+    -> T.Toolkit d c n
+    -> R.Rpd (Network d c n) -- initial network
     -> Effect Unit
 embed sel render renderer toolkit initRpd = do
     doc ← DOM.window >>= DOM.document
@@ -79,10 +79,10 @@ embed sel render renderer toolkit initRpd = do
 
 
 embed'
-    :: forall d c model msg
+    :: forall d c n model msg
      . String -- selector
-    -> Ui.Renderer d model (HtmlView msg d) msg -- renderer
-    -> T.Toolkit d c -- toolkits
-    -> R.Rpd (Network d) -- initial network
+    -> Ui.Renderer d c n model (HtmlView msg (C.Command d c n)) msg -- renderer
+    -> T.Toolkit d c n -- toolkits
+    -> R.Rpd (Network d c n) -- initial network
     -> Effect Unit
 embed' sel = embed sel identity
