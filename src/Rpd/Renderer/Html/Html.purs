@@ -182,11 +182,11 @@ viewInlet
     -> View d c n
 viewInlet toolkitRenderer pushMsg ui nw inletUuid =
     case L.view (L._inlet inletUuid) nw of
-        Just inlet@(R.Inlet _ path@(P.ToInlet { inlet : label }) _ { flow }) ->
+        Just inlet@(R.Inlet _ path@(P.ToInlet { inlet : label }) channel { flow }) ->
             H.div
                 [ H.classes [ "inlet" ] ]
                 [ H.text label
-                , toolkitResult inlet # fromMaybe (H.div [] [])
+                , toolkitResult inlet channel
                 , case Map.lookup path ui.lastInletData of
                     Just d -> H.text "data"
                     _ -> H.text ""
@@ -195,13 +195,11 @@ viewInlet toolkitRenderer pushMsg ui nw inletUuid =
                 [ H.classes [ "inlet" ] ]
                 [ H.text $ "inlet " <> show inletUuid <> " was not found" ]
     where
-        toolkitResult inlet =
-            Map.lookup (UUID.uuid inletUuid) ui.uuidToChannel
-                >>= \channel ->
-                        Just $ toolkitRenderer.renderInlet
-                            channel
-                            inlet
-                            (case pushMsg of R.PushF f -> f)
+        toolkitResult inlet channel =
+            toolkitRenderer.renderInlet
+                channel
+                inlet
+                (case pushMsg of R.PushF f -> f)
 
 
 
@@ -216,24 +214,22 @@ viewOutlet
     -> View d c n
 viewOutlet toolkitRenderer pushMsg ui nw outletUuid =
     case L.view (L._outlet outletUuid) nw of
-        Just outlet@(R.Outlet _ path@(P.ToOutlet { outlet : label }) _ { flow }) ->
+        Just outlet@(R.Outlet _ path@(P.ToOutlet { outlet : label }) channel { flow }) ->
             H.div
                 [ H.classes [ "outlet" ]
                 ]
                 [ H.text label
-                , toolkitResult outlet # fromMaybe (H.div [] [])
+                , toolkitResult outlet channel
                 ]
         _ -> H.div
                 [ H.classes [ "outlet" ] ]
                 [ H.text $ "outlet " <> show outletUuid <> " was not found" ]
     where
-        toolkitResult outlet =
-            Map.lookup (UUID.uuid outletUuid) ui.uuidToChannel
-                >>= \channel ->
-                        Just $ toolkitRenderer.renderOutlet
-                            channel
-                            outlet
-                            (case pushMsg of R.PushF f -> f)
+        toolkitResult outlet channel =
+            toolkitRenderer.renderOutlet
+                channel
+                outlet
+                (case pushMsg of R.PushF f -> f)
 
 
 viewDebugWindow
@@ -321,17 +317,6 @@ update (Right (C.GotOutletData outletPath d)) (ui /\ _) =
     (ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d })
     /\ []
 update (Right (C.AddInlet nodePath alias c)) ( ui /\ nw ) =
-    let inletPath = P.inletInNode nodePath alias
-    in
-        -- ( case (L.view (L._pathToId $ P.lift outletPath) nw) of
-        --     Just outletUuid ->
-        --         ui { uuidToChannel = ui.uuidToChannel # Map.insert (UUID.uuid outletUuid) c }
-        --     Nothing -> ui
-        -- /\ [] )
-        ( case (L.view (L._pathToId $ P.lift inletPath) nw) of
-            Just inletUuid ->
-                ui { uuidToChannel = ui.uuidToChannel # Map.insert (UUID.uuid inletUuid) c }
-            Nothing -> ui
-        /\ [] )
+    ( ui /\ [] )
 update _ (ui /\ _) = ui /\ []
 
