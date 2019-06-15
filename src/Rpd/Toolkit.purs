@@ -97,6 +97,8 @@ data Toolkit d c n = Toolkit ToolkitName (n -> NodeDef d c)
 
 
 type ToolkitRenderer d c n view msg =
+    -- FIXME: now any node, inlet and outlet are containing the corresponding `n` or 'c' instance
+    --        so it's a duplication to use them as a separate parameters in these functions
     { renderNode :: n -> R.Node d n -> (msg -> Effect Unit) -> view
     -- , renderInlet :: ChannelDefAlias -> R.Inlet d -> c -> (msg -> Effect Unit) -> view
     , renderInlet :: c -> R.Inlet d c -> (msg -> Effect Unit) -> view

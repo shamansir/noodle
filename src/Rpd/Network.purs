@@ -63,6 +63,7 @@ data Network d c n =
         -- , pathToId :: Path /-> Set UUID
         , pathToId :: Path /-> UUID.Tagged
         , cancelers :: UUID /-> Array Canceler
+        -- TODO: store the toolkit here
             -- { nodes :: UUID.ToNode /-> Array Canceler
             -- , inlets :: UUID.ToInlet /-> Array Canceler
             -- , outlets :: UUID.ToOutlet /-> Array Canceler

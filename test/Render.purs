@@ -128,6 +128,7 @@ spec =
       expectToRenderOnceMUV terminalRenderer erroneousNW $ ML.from' "ERR: "
       pure unit
     -- TODO:
+    -- be able to send messages from the insides
     -- more connections
     -- node with processF
     -- shows data in the inlets/outlets
@@ -135,6 +136,7 @@ spec =
     -- selecting nodes
     -- status: should store commands
     -- should accept commands
+
 
 
 loadSample :: String -> Effect String
