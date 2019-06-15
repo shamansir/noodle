@@ -9,6 +9,7 @@ module Rpd.Toolkit
     , inlets, outlets
     --, mkToolkitE
     , ToolkitRenderer, RendererAlias(..)
+    , emptyNode
     -- , class NodeRenderer, class ChannelRenderer
     --, renderNode, renderInlet, renderOutlet
     -- , RenderNode, RenderInlet, RenderOutlet
@@ -112,6 +113,15 @@ type ToolkitRenderer d c n view msg =
 --     nodeArray
 --     # map (bimap NodeDefAlias identity)
 --     # Map.fromFoldable
+
+
+emptyNode :: forall d c. NodeDef d c
+emptyNode =
+    NodeDef
+        { process : Withhold
+        , inlets : List.Nil
+        , outlets : List.Nil
+        }
 
 
 inlets

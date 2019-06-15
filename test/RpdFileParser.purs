@@ -33,6 +33,9 @@ data Data = Foo | Bar
 data Channel = Whatever
 
 
+data Node = FooNode
+
+
 instance exampleChannels :: T.Channels Data Channel where
     default _ = Foo
     accept _ _ = true
@@ -50,14 +53,13 @@ instance eqData :: Eq Data where
     eq _ _ = false
 
 
-toolkit :: T.Toolkit Data Channel
+toolkit :: T.Toolkit Data Channel Node
 toolkit =
     T.Toolkit
         (T.ToolkitName "test")
         nodes
     where
-        nodes (T.NodeDefAlias "foo") = Just fooDef
-        nodes _ = Nothing
+        nodes FooNode = fooDef
 
 
 

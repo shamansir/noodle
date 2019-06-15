@@ -52,20 +52,20 @@ instance eqTraceItem :: Eq d => Eq (TraceItem d) where
 
 
 channels
-  :: forall d
+  :: forall d c n
    . (Show d)
   => Milliseconds
-  -> R.Network d
+  -> R.Network d c n
   -> Aff (TracedFlow d)
 channels period nw =
   channelsAfter period nw $ pure []
 
 
 channelsAfter
-  :: forall d
+  :: forall d c n
    . (Show d)
   => Milliseconds
-  -> R.Network d
+  -> R.Network d c n
   -> R.Rpd (Array R.Canceler)
   -> Aff (TracedFlow d)
 channelsAfter period nw afterF = do
@@ -75,12 +75,12 @@ channelsAfter period nw afterF = do
 
 
 channelsAfter'
-  :: forall d
+  :: forall d c n
    . (Show d)
   => Milliseconds
-  -> R.Network d
-  -> R.Rpd (R.Network d /\ Array R.Canceler)
-  -> Aff (R.Network d /\ TracedFlow d)
+  -> R.Network d c n
+  -> R.Rpd (R.Network d c n /\ Array R.Canceler)
+  -> Aff (R.Network d c n /\ TracedFlow d)
 channelsAfter' period nw afterF =
   collectHelper period nw collector afterF
   where
@@ -99,22 +99,22 @@ channelsAfter' period nw afterF =
 
 
 node
-  :: forall d
+  :: forall d c n
    . (Show d)
   => P.ToNode
   -> Milliseconds
-  -> R.Network d
+  -> R.Network d c n
   -> Aff (TracedFlow d)
 node nodePath period nw =
   nodeAfter nodePath period nw $ pure []
 
 
 nodeAfter
-  :: forall d
+  :: forall d c n
    . (Show d)
   => P.ToNode
   -> Milliseconds
-  -> R.Network d
+  -> R.Network d c n
   -> R.Rpd (Array R.Canceler)
   -> Aff (TracedFlow d)
 nodeAfter nodePath period nw afterF = do
@@ -124,13 +124,13 @@ nodeAfter nodePath period nw afterF = do
 
 
 nodeAfter'
-  :: forall d
+  :: forall d c n
    . (Show d)
   => P.ToNode
   -> Milliseconds
-  -> R.Network d
-  -> R.Rpd (R.Network d /\ Array R.Canceler)
-  -> Aff (R.Network d /\ TracedFlow d)
+  -> R.Network d c n
+  -> R.Rpd (R.Network d c n /\ Array R.Canceler)
+  -> Aff (R.Network d c n /\ TracedFlow d)
 nodeAfter' nodePath period nw afterF =
   collectHelper period nw collector afterF
   where
@@ -146,13 +146,13 @@ nodeAfter' nodePath period nw afterF =
 
 
 collectHelper
-  :: forall d
+  :: forall d c n
    . (Show d)
   => Milliseconds
-  -> R.Network d
+  -> R.Network d c n
   -> (Ref.Ref (Array (TraceItem d)) -> Effect (Array R.Canceler))
-  -> R.Rpd (R.Network d /\ Array R.Canceler)
-  -> Aff (R.Network d /\ TracedFlow d)
+  -> R.Rpd (R.Network d c n /\ Array R.Canceler)
+  -> Aff (R.Network d c n /\ TracedFlow d)
 collectHelper period nw collector afterF = do
   target /\ cancelers <- liftEffect $ do
     target <- Ref.new []

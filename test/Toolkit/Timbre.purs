@@ -2,6 +2,7 @@ module Rpd.Test.Toolkit.Timbre
     ( toolkit
     , Data
     , Channel
+    , Node
     )
     where
 
@@ -41,6 +42,13 @@ data Channel
     | CSound
 
 
+data Node
+    = Number
+    | Osc
+    | Plot
+    | Play
+
+
 instance timbreChannel :: T.Channels Data Channel where
     default CValue = Value 0.0
     default CWave = Wave Sin
@@ -49,18 +57,14 @@ instance timbreChannel :: T.Channels Data Channel where
     adapt _ = identity
 
 
-toolkit :: T.Toolkit Data Channel
+toolkit :: T.Toolkit Data Channel Node
 toolkit =
     T.Toolkit (T.ToolkitName "Timbre") nodes
     where
-        nodes =
-            [ T.NodeDefAlias "number" /\ numNode
-            , T.NodeDefAlias "osc" /\ oscNode
-            , T.NodeDefAlias "plot" /\ plotNode
-            , T.NodeDefAlias "play" /\ playNode
-            ]
-            # Map.fromFoldable
-            # flip Map.lookup
+        nodes Number = numNode
+        nodes Osc = oscNode
+        nodes Plot = plotNode
+        nodes Play = playNode
 
 
 numNode :: T.NodeDef Data Channel

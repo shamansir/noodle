@@ -20,7 +20,7 @@ import RpdTest.Util (withRpd)
 import RpdTest.CollectData (TraceItem(..))
 import RpdTest.CollectData as CollectData
 import RpdTest.Flow.Base
-    ( MyRpd, Delivery(..)
+    ( MyRpd, Delivery(..), Pipe(..), Node(..)
     , sumCursesToApplesNode
     , sumCursesToApplesNode'
     )
@@ -46,7 +46,7 @@ spec = do
         R.init "network"
           </> R.addPatch "patch"
           </> R.addDefNode (toPatch "patch") "node"
-                (sumCursesToApplesNode $ R.Process processF)
+                (sumCursesToApplesNode $ R.Process processF) SumCursesToApples
       processF receive = do
           let
               curse1 = receive "curse1" # fromMaybe Damaged
@@ -95,7 +95,7 @@ spec = do
         R.init "network"
           </> R.addPatch "patch"
           </> R.addDefNode (toPatch "patch") "node"
-                (sumCursesToApplesNode' $ R.Process processF)
+                (sumCursesToApplesNode' $ R.Process processF) SumCursesToApples'
       processF receive = do
           let
               curse1 = receive "curse1" # fromMaybe Damaged

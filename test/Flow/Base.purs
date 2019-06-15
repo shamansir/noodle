@@ -1,6 +1,6 @@
 module RpdTest.Flow.Base
     ( MyRpd
-    , Delivery(..), Pipe(..)
+    , Delivery(..), Pipe(..), Node(..)
     , myToolkit
     , sumCursesToApplesNode, sumCursesToApplesNode'
     ) where
@@ -10,10 +10,10 @@ import Prelude
 import Data.Map (empty) as Map
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
-
 import Rpd.API (Rpd) as R
 import Rpd.Network (Network) as R
-import Rpd.Process (ProcessF) as R
+import Rpd.Process (ProcessF(..))
+import Rpd.Process (ProcessF(..)) as R
 import Rpd.Toolkit as R
 
 
@@ -51,13 +51,19 @@ instance showDelivery :: Show Delivery where
 derive instance eqDelivery :: Eq Delivery
 
 
-type MyRpd = R.Rpd (R.Network Delivery)
+type MyRpd = R.Rpd (R.Network Delivery Pipe Node)
 
 
 data Pipe
   = Pass
   -- | OnlyApples
   -- | OnlyCurses
+
+
+data Node
+  = Empty
+  | SumCursesToApples
+  | SumCursesToApples'
 
 
 instance myChannels :: R.Channels Delivery Pipe where
@@ -72,15 +78,15 @@ instance myChannels :: R.Channels Delivery Pipe where
   adapt _ = identity
 
 
-myToolkit ::  R.Toolkit Delivery Pipe
+myToolkit ::  R.Toolkit Delivery Pipe Node
 myToolkit =
   R.Toolkit
     (R.ToolkitName "delivery")
-    (const Nothing)
-        -- (R.nodes
-        --   [ "sumCursesToApples" /\ sumCursesToApplesNode
-        --   , "sumCursesToApples'" /\ sumCursesToApplesNode'
-        --   ])
+    nodes
+  where
+    nodes Empty = R.emptyNode
+    nodes SumCursesToApples = sumCursesToApplesNode Withhold
+    nodes SumCursesToApples' = sumCursesToApplesNode' Withhold
 
 
 -- producingNothingNode :: R.NodeDef Delivery

@@ -36,7 +36,13 @@ data MyData
   | Value Int
 
 
-type MyRpd = R.Rpd (R.Network MyData)
+data Channel = Channel
+
+
+data Node = Node
+
+
+type MyRpd = R.Rpd (R.Network MyData Channel Node)
 
 
 myRpd :: MyRpd
@@ -58,7 +64,7 @@ spec =
       let
         singleNodeNW = myRpd
           </> R.addPatch "foo"
-          </> R.addNode (toPatch "foo") "bar"
+          </> R.addNode (toPatch "foo") "bar" Node
       stringSample <- liftEffect $ loadSample "SingleNode.String"
       expectToRenderOnce stringRenderer singleNodeNW stringSample
       expectToRenderOnceMUV terminalRenderer singleNodeNW $
@@ -68,12 +74,12 @@ spec =
       let
         severalNodesNW = myRpd
           </> R.addPatch "foo0"
-          </> R.addNode (toPatch "foo0") "bar00"
-          </> R.addNode (toPatch "foo0") "bar01"
-          </> R.addNode (toPatch "foo0") "bar02"
+          </> R.addNode (toPatch "foo0") "bar00" Node
+          </> R.addNode (toPatch "foo0") "bar01" Node
+          </> R.addNode (toPatch "foo0") "bar02" Node
           </> R.addPatch "foo1"
-          </> R.addNode (toPatch "foo1") "bar10"
-          </> R.addNode (toPatch "foo1") "bar11"
+          </> R.addNode (toPatch "foo1") "bar10" Node
+          </> R.addNode (toPatch "foo1") "bar11" Node
       stringSample <- liftEffect $ loadSample "SeveralNodes.String"
       terminalSample <- liftEffect $ loadSample "SeveralNodes.Terminal"
       expectToRenderOnce stringRenderer severalNodesNW stringSample
@@ -85,11 +91,11 @@ spec =
       let
         nodeWithInletsAndOutletsNW = myRpd
           </> R.addPatch "foo"
-          </> R.addNode (toPatch "foo") "bar"
-          </> R.addInlet (toNode "foo" "bar") "buz1"
-          </> R.addInlet (toNode "foo" "bar") "buz2"
-          </> R.addOutlet (toNode "foo" "bar") "abc1"
-          </> R.addOutlet (toNode "foo" "bar") "abc2"
+          </> R.addNode (toPatch "foo") "bar" Node
+          </> R.addInlet (toNode "foo" "bar") "buz1" Channel
+          </> R.addInlet (toNode "foo" "bar") "buz2" Channel
+          </> R.addOutlet (toNode "foo" "bar") "abc1" Channel
+          </> R.addOutlet (toNode "foo" "bar") "abc2" Channel
       stringSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.String"
       terminalSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.Terminal"
       expectToRenderOnce stringRenderer nodeWithInletsAndOutletsNW stringSample
@@ -101,10 +107,10 @@ spec =
       let
         withConnectionNW = myRpd
           </> R.addPatch "foo"
-          </> R.addNode (toPatch "foo") "src"
-          </> R.addOutlet (toNode "foo" "src") "srco"
-          </> R.addNode (toPatch "foo") "dst"
-          </> R.addInlet (toNode "foo" "dst") "dsti"
+          </> R.addNode (toPatch "foo") "src" Node
+          </> R.addOutlet (toNode "foo" "src") "srco" Channel
+          </> R.addNode (toPatch "foo") "dst" Node
+          </> R.addInlet (toNode "foo" "dst") "dsti" Channel
           </> R.connect (toOutlet "foo" "src" "srco") (toInlet "foo" "dst" "dsti")
       stringSample <- liftEffect $ loadSample "WithConnection.String"
       terminalSample <- liftEffect $ loadSample "WithConnection.Terminal"
@@ -116,7 +122,7 @@ spec =
       let
         erroneousNW = myRpd
           -- add inlet to non-exising node
-          </> R.addInlet (toNode "idont" "exist") "foo"
+          </> R.addInlet (toNode "idont" "exist") "foo" Channel
       stringSample <- liftEffect $ loadSample "Error.String"
       expectToRenderOnce stringRenderer erroneousNW stringSample
       expectToRenderOnceMUV terminalRenderer erroneousNW $ ML.from' "ERR: "
@@ -137,9 +143,9 @@ loadSample name =
 
 
 expectToRenderOnce
-  :: forall d
-   . Render.Renderer d String
-  -> R.Rpd (R.Network d)
+  :: forall d c n
+   . Render.Renderer d c n String
+  -> R.Rpd (R.Network d c n)
   -> String
   -> Aff Unit
 expectToRenderOnce renderer rpd expectation = do
@@ -148,9 +154,9 @@ expectToRenderOnce renderer rpd expectation = do
 
 
 expectToRenderOnceMUV
-  :: forall d x c
-   . RenderMUV.Renderer d x ML.Multiline c
-  -> R.Rpd (R.Network d)
+  :: forall d c n model msg
+   . RenderMUV.Renderer d c n model ML.Multiline msg
+  -> R.Rpd (R.Network d c n)
   -> ML.Multiline
   -> Aff Unit
 expectToRenderOnceMUV renderer rpd expectation = do

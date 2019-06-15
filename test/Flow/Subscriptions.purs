@@ -27,7 +27,7 @@ import Test.Spec (Spec, it, describe, pending)
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
 import RpdTest.Util (withRpd)
-import RpdTest.Flow.Base (MyRpd, Delivery(..))
+import RpdTest.Flow.Base (MyRpd, Delivery(..), Pipe(..), Node(..))
 
 
 {- ======================================= -}
@@ -52,8 +52,8 @@ spec = do
         rpd =
           R.init "network"
             </> R.addPatch "patch"
-            </> R.addNode (toPatch "patch") "node"
-            </> R.addInlet (toNode "patch" "node") "inlet"
+            </> R.addNode (toPatch "patch") "node" Empty
+            </> R.addInlet (toNode "patch" "node") "inlet" Pass
             </> R.subscribeNode (toNode "patch" "node") inletHandler outletHandler
 
       rpd # withRpd \nw -> do
@@ -85,8 +85,8 @@ spec = do
         rpd =
           R.init "network"
             </> R.addPatch "patch"
-            </> R.addNode (toPatch "patch") "node"
-            </> R.addInlet (toNode "patch" "node") "inlet"
+            </> R.addNode (toPatch "patch") "node" Empty
+            </> R.addInlet (toNode "patch" "node") "inlet" Pass
             </> R.subscribeInlet (toInlet "patch" "node" "inlet") handler
 
       rpd # withRpd \nw -> do
@@ -115,8 +115,8 @@ spec = do
         rpd =
           R.init "network"
             </> R.addPatch "patch"
-            </> R.addNode (toPatch "patch") "node"
-            </> R.addInlet (toNode "patch" "node") "inlet"
+            </> R.addNode (toPatch "patch") "node" Empty
+            </> R.addInlet (toNode "patch" "node") "inlet" Pass
             </> R.subscribeInlet (toInlet "patch" "node" "inlet") handler
 
       rpd # withRpd \nw -> do
@@ -152,8 +152,8 @@ spec = do
         rpd =
           R.init "network"
             </> R.addPatch "patch"
-            </> R.addNode (toPatch "patch") "node"
-            </> R.addInlet (toNode "patch" "node") "inlet"
+            </> R.addNode (toPatch "patch") "node" Empty
+            </> R.addInlet (toNode "patch" "node") "inlet" Pass
             </> R.subscribeInlet (toInlet "patch" "node" "inlet") handler
 
       rpd # withRpd \nw -> do
@@ -170,7 +170,8 @@ spec = do
         _ <- liftEffect
                 $ R.run (const unit) (const unit)
                 $ nw  #  R.removeInlet (toInlet "patch" "node" "inlet")
-                    </> R.addInlet (toNode "patch" "node") "inlet" -- notice the inlet is added back
+                    </> R.addInlet (toNode "patch" "node") "inlet" Pass
+                      -- notice the inlet is added back
                     </> R.streamToInlet
                             (toInlet "patch" "node" "inlet")
                             (R.flow $ const Liver <$> interval 30)

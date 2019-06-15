@@ -22,7 +22,7 @@ import Rpd.Log (runRpdLogging) as RL
 import Rpd.UUID as UUID
 
 
-runWith :: forall d. Rpd.Network d -> (Rpd.Network d -> Aff Unit) -> Aff Unit
+runWith :: forall d c n. Rpd.Network d c n -> (Rpd.Network d c n -> Aff Unit) -> Aff Unit
 runWith initialNetwork f = f initialNetwork
 
 
@@ -36,9 +36,9 @@ runWith initialNetwork f = f initialNetwork
 
 
 withRpd
-  :: forall d
-   . (Rpd.Network d -> Aff Unit)
-  -> Rpd.Rpd (Rpd.Network d)
+  :: forall d c n
+   . (Rpd.Network d c n -> Aff Unit)
+  -> Rpd.Rpd (Rpd.Network d c n)
   -> Aff Unit
 withRpd test rpd =
   liftEffect (getNetwork rpd) >>= test

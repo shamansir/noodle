@@ -19,7 +19,7 @@ import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 import RpdTest.Util (withRpd)
 import RpdTest.CollectData (TraceItem(..))
 import RpdTest.CollectData as CollectData
-import RpdTest.Flow.Base (MyRpd, Delivery(..))
+import RpdTest.Flow.Base (MyRpd, Delivery(..), Pipe(..), Node(..))
 
 
 {- ======================================= -}
@@ -37,8 +37,8 @@ spec = do
       rpd =
         R.init "no-data"
           </> R.addPatch "patch"
-          </> R.addNode (toPatch "patch") "node"
-          </> R.addInlet (toNode "patch" "node") "inlet"
+          </> R.addNode (toPatch "patch") "node" Empty
+          </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
     rpd # withRpd \nw -> do
             collectedData <- nw #
@@ -56,8 +56,8 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (toPatch "patch") "node"
-          </> R.addInlet (toNode "patch" "node") "inlet"
+          </> R.addNode (toPatch "patch") "node" Empty
+          </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
     rpd # withRpd \nw -> do
         let firstInlet = toInlet "patch" "node" "inlet"
@@ -83,8 +83,8 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (toPatch "patch") "node"
-          </> R.addInlet (toNode "patch" "node") "inlet"
+          </> R.addNode (toPatch "patch") "node" Empty
+          </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter
@@ -110,8 +110,8 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (toPatch "patch") "node"
-          </> R.addInlet (toNode "patch" "node") "inlet"
+          </> R.addNode (toPatch "patch") "node" Empty
+          </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
     rpd # withRpd \nw -> do
         let firstInlet = toInlet "patch" "node" "inlet"
@@ -140,8 +140,8 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (toPatch "patch") "node"
-          </> R.addInlet (toNode "patch" "node") "inlet"
+          </> R.addNode (toPatch "patch") "node" Empty
+          </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter
@@ -168,9 +168,9 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (toPatch "patch") "node"
-          </> R.addInlet (toNode "patch" "node") "for-pills"
-          </> R.addInlet (toNode "patch" "node") "for-bananas"
+          </> R.addNode (toPatch "patch") "node" Empty
+          </> R.addInlet (toNode "patch" "node") "for-pills" Pass
+          </> R.addInlet (toNode "patch" "node") "for-bananas" Pass
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter
@@ -200,9 +200,9 @@ spec = do
       rpd =
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (toPatch "patch") "node"
-          </> R.addInlet (toNode "patch" "node") "inlet1"
-          </> R.addInlet (toNode "patch" "node") "inlet2"
+          </> R.addNode (toPatch "patch") "node" Empty
+          </> R.addInlet (toNode "patch" "node") "inlet1" Pass
+          </> R.addInlet (toNode "patch" "node") "inlet2" Pass
 
     rpd # withRpd \nw -> do
         collectedData <- CollectData.channelsAfter

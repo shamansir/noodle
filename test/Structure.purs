@@ -26,7 +26,11 @@ import RpdTest.Util (withRpd)
 data MyData
   = Bang
 
-type MyRpd = R.Rpd (R.Network MyData)
+data Channel = Channel
+
+data Node = Node
+
+type MyRpd = R.Rpd (R.Network MyData Channel Node)
 
 myRpd :: MyRpd
 myRpd =
@@ -46,14 +50,14 @@ spec =
       it "adding nodes to the patch preserves the order of addition" $ do
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (toPatch "patch") "one"
-          </> R.addNode (toPatch "patch") "two"
-          </> R.addNode (toPatch "patch") "three"
+          </> R.addNode (toPatch "patch") "one" Node
+          </> R.addNode (toPatch "patch") "two" Node
+          </> R.addNode (toPatch "patch") "three" Node
            #  withRpd \nw -> do
                 case L.view (L._patchNodesByPath $ toPatch "patch") nw of
                   Just nodes ->
                     (nodes
-                      <#> \(R.Node _ (ToNode { node }) _ _) -> node)
+                      <#> \(R.Node _ (ToNode { node }) _ _ _) -> node)
                       # Seq.toUnfoldable
                       # shouldEqual [ "one", "two", "three" ]
                   Nothing -> fail "patch wasn't found"
@@ -61,15 +65,15 @@ spec =
       it "adding inlets to the node preserves the order of addition" $ do
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (toPatch "patch") "node"
-          </> R.addInlet (toNode "patch" "node") "one"
-          </> R.addInlet (toNode "patch" "node") "two"
-          </> R.addInlet (toNode "patch" "node") "three"
+          </> R.addNode (toPatch "patch") "node" Node
+          </> R.addInlet (toNode "patch" "node") "one" Channel
+          </> R.addInlet (toNode "patch" "node") "two" Channel
+          </> R.addInlet (toNode "patch" "node") "three" Channel
            #  withRpd \nw -> do
                 case L.view (L._nodeInletsByPath $ toNode "patch" "node") nw of
                   Just inlets ->
                     (inlets
-                      <#> \(R.Inlet _ (ToInlet { inlet }) _) -> inlet)
+                      <#> \(R.Inlet _ (ToInlet { inlet }) _ _) -> inlet)
                       # Seq.toUnfoldable
                       # shouldEqual [ "one", "two", "three" ]
                   Nothing -> fail "node wasn't found"
@@ -77,15 +81,17 @@ spec =
       it "adding outlets to the node preserves the order of addition" $ do
         R.init "network"
           </> R.addPatch "patch"
-          </> R.addNode (toPatch "patch") "node"
-          </> R.addOutlet (toNode "patch" "node") "one"
-          </> R.addOutlet (toNode "patch" "node") "two"
-          </> R.addOutlet (toNode "patch" "node") "three"
+          </> R.addNode (toPatch "patch") "node" Node
+          </> R.addOutlet (toNode "patch" "node") "one" Channel
+          </> R.addOutlet (toNode "patch" "node") "two" Channel
+          </> R.addOutlet (toNode "patch" "node") "three" Channel
            #  withRpd \nw -> do
                 case L.view (L._nodeOutletsByPath $ toNode "patch" "node") nw of
                   Just inlets ->
                     (inlets
-                      <#> \(R.Outlet _ (ToOutlet { outlet }) _) -> outlet)
+                      <#> \(R.Outlet _ (ToOutlet { outlet }) _ _) -> outlet)
                       # Seq.toUnfoldable
                       # shouldEqual [ "one", "two", "three" ]
                   Nothing -> fail "node wasn't found"
+
+      -- TODO: subPatches

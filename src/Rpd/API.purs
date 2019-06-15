@@ -4,6 +4,7 @@ module Rpd.API
     , (</>), andThen
     , connect, disconnectAll, disconnectTop
     , addPatch, addNode, addInlet, addOutlet
+    , addToolkitNode, addDefNode
     , removeInlet
     , subscribeInlet, subscribeOutlet, subscribeAllInlets, subscribeAllOutlets
     , subscribeChannelsData, subscribeNode  -- subscribeAllData
@@ -210,6 +211,10 @@ addToolkitNode
     -> Network d c n
     -> Rpd (Network d c n)
 addToolkitNode patchPath nodeAlias (Toolkit name toolkitF) n nw = do
+    -- FIXME: may be it should be default, so we always require toolkit?
+    --        since it may confuse the user that when she has toolkit defined
+    --        somewhere then adding the node of the type is not enough
+    -- ... Or the Toolkit should always be the part of the Network --> Then remove this function
     nw # addDefNode patchPath nodeAlias (toolkitF n) n
 
 
