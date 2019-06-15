@@ -45,6 +45,9 @@ data Node = Node
 type MyRpd = R.Rpd (R.Network MyData Channel Node)
 
 
+type CompareViews view = view -> view -> Aff Unit
+
+
 myRpd :: MyRpd
 myRpd =
   R.init "foo"
@@ -55,8 +58,9 @@ spec =
   describe "rendering" do
     it "rendering the empty network works" do
       stringSample <- liftEffect $ loadSample "Empty.String"
-      expectToRenderOnce stringRenderer myRpd stringSample
-      expectToRenderOnceMUV terminalRenderer myRpd $
+      expectToRenderOnce stringRenderer compareStrings myRpd
+        $ String.trim stringSample
+      expectToRenderOnceMUV terminalRenderer compareML myRpd $
         -- ML.from' "{>}"
         ML.empty' (100 /\ 100)
       pure unit
@@ -66,8 +70,9 @@ spec =
           </> R.addPatch "foo"
           </> R.addNode (toPatch "foo") "bar" Node
       stringSample <- liftEffect $ loadSample "SingleNode.String"
-      expectToRenderOnce stringRenderer singleNodeNW stringSample
-      expectToRenderOnceMUV terminalRenderer singleNodeNW $
+      expectToRenderOnce stringRenderer compareStrings singleNodeNW
+        $ String.trim stringSample
+      expectToRenderOnceMUV terminalRenderer compareML singleNodeNW $
         ML.empty' (100 /\ 100)
            # ML.place (0 /\ 0) "[]bar[]"
     it "rendering several nodes works" do
@@ -82,8 +87,9 @@ spec =
           </> R.addNode (toPatch "foo1") "bar11" Node
       stringSample <- liftEffect $ loadSample "SeveralNodes.String"
       terminalSample <- liftEffect $ loadSample "SeveralNodes.Terminal"
-      expectToRenderOnce stringRenderer severalNodesNW stringSample
-      expectToRenderOnceMUV terminalRenderer severalNodesNW
+      expectToRenderOnce stringRenderer compareStrings severalNodesNW
+        $ String.trim stringSample
+      expectToRenderOnceMUV terminalRenderer compareML severalNodesNW
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
@@ -98,8 +104,9 @@ spec =
           </> R.addOutlet (toNode "foo" "bar") "abc2" Channel
       stringSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.String"
       terminalSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.Terminal"
-      expectToRenderOnce stringRenderer nodeWithInletsAndOutletsNW stringSample
-      expectToRenderOnceMUV terminalRenderer nodeWithInletsAndOutletsNW
+      expectToRenderOnce stringRenderer compareStrings nodeWithInletsAndOutletsNW
+        $ String.trim stringSample
+      expectToRenderOnceMUV terminalRenderer compareML nodeWithInletsAndOutletsNW
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
@@ -114,8 +121,9 @@ spec =
           </> R.connect (toOutlet "foo" "src" "srco") (toInlet "foo" "dst" "dsti")
       stringSample <- liftEffect $ loadSample "WithConnection.String"
       terminalSample <- liftEffect $ loadSample "WithConnection.Terminal"
-      expectToRenderOnce stringRenderer withConnectionNW stringSample
-      expectToRenderOnceMUV terminalRenderer withConnectionNW
+      expectToRenderOnce stringRenderer compareStrings withConnectionNW
+        $ String.trim stringSample
+      expectToRenderOnceMUV terminalRenderer compareML withConnectionNW
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
     it "rendering the erroneous network responds with the error" do
@@ -124,8 +132,10 @@ spec =
           -- add inlet to non-exising node
           </> R.addInlet (toNode "idont" "exist") "foo" Channel
       stringSample <- liftEffect $ loadSample "Error.String"
-      expectToRenderOnce stringRenderer erroneousNW stringSample
-      expectToRenderOnceMUV terminalRenderer erroneousNW $ ML.from' "ERR: "
+      expectToRenderOnce stringRenderer compareStrings erroneousNW
+        $ String.trim stringSample
+      expectToRenderOnceMUV terminalRenderer compareML erroneousNW
+        $ ML.from' "ERR: "
       pure unit
     -- TODO:
     -- be able to send messages from the insides
@@ -145,35 +155,59 @@ loadSample name =
 
 
 expectToRenderOnce
-  :: forall d c n
-   . Render.Renderer d c n String
+  :: forall d c n view
+   . Render.Renderer d c n view
+  -> CompareViews view
   -> R.Rpd (R.Network d c n)
-  -> String
+  -> view
   -> Aff Unit
-expectToRenderOnce renderer rpd expectation = do
+expectToRenderOnce renderer compareViews rpd expectation = do
   result <- liftEffect $ Render.once renderer rpd
-  (result <> "\n") `compareStrings` expectation
+  result `compareViews` expectation
 
 
 expectToRenderOnceMUV
-  :: forall d c n model msg
-   . RenderMUV.Renderer d c n model ML.Multiline msg
+  :: forall d c n model view msg
+   . RenderMUV.Renderer d c n model view msg
+  -> CompareViews view
   -> R.Rpd (R.Network d c n)
-  -> ML.Multiline
+  -> view
   -> Aff Unit
-expectToRenderOnceMUV renderer rpd expectation = do
+expectToRenderOnceMUV renderer compareViews rpd expectation = do
   result <- liftEffect $ RenderMUV.once renderer rpd
   result `compareViews` expectation
 
 
-compareStrings :: String -> String -> Aff Unit
+-- expectToRenderSeqMUV
+--   :: forall d c n model msg
+--    . RenderMUV.Renderer d c n model String msg
+--   -> R.Rpd (R.Network d c n)
+--   -> String
+--   -> Aff Unit
+-- expectToRenderSeqMUV renderer rpd expectation = do
+--   result <- liftEffect $ RenderMUV.make renderer rpd
+--   result `compareViews` expectation
+
+
+-- expectToRenderSeqMUV'
+--   :: forall d c n model msg
+--    . RenderMUV.Renderer d c n model ML.Multiline msg
+--   -> R.Rpd (R.Network d c n)
+--   -> String
+--   -> Aff Unit
+-- expectToRenderSeqMUV renderer rpd expectation = do
+--   result <- liftEffect $ RenderMUV.make renderer rpd
+--   result `compareViews` expectation
+
+
+compareStrings :: CompareViews String
 compareStrings s1 s2 =
   when (s1 /= s2) $
     fail $ "\n-----\n" <> s1 <> "\n\n≠\n\n" <> s2 <> "\n-----"
 
 
-compareViews :: ML.Multiline -> ML.Multiline -> Aff Unit
-compareViews v1 v2 =
+compareML :: CompareViews ML.Multiline
+compareML v1 v2 =
   case v1 `ML.compare'` v2 of
     ML.Match /\ _ -> pure unit
     ML.Unknown /\ _ -> do
