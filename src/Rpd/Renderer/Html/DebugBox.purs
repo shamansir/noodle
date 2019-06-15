@@ -45,7 +45,7 @@ update cmd nw model =
                 (if List.length model.lastCommands < 5 then
                     model.lastCommands
                 else
-                    List.tail model.lastCommands # fromMaybe List.Nil
+                    List.take 4 model.lastCommands
                 )
         }
 
