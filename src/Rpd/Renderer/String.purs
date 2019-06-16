@@ -1,6 +1,7 @@
 module Rpd.Renderer.String
     ( StringRenderer
     , stringRenderer
+    , stringRendererWithOptions
     , view -- TODO: do not expose maybe?
     ) where
 
@@ -31,17 +32,23 @@ import Rpd.Render (PushCmd, Renderer(..))
 import Rpd.Path as P
 
 
-type StringRenderer d c n = Renderer d c n String
+type Options =
+    { showUuid :: Boolean
+    }
 
-data MultipleOrNone = MultipleOrNone String
-data Single = Single String
-data Counter = Counter MultipleOrNone Single
+
+type StringRenderer d c n = Renderer d c n String
 
 
 lineBreak = "\n" :: String
 vertLine = " " :: String
 corner = "·" :: String
 semicolon = ":" :: String
+
+
+data MultipleOrNone = MultipleOrNone String
+data Single = Single String
+data Counter = Counter MultipleOrNone Single
 
 
 patchCounter = Counter (MultipleOrNone "Patches") (Single "Patch") :: Counter
@@ -58,13 +65,23 @@ count (Counter (MultipleOrNone multiple) _) size | size > 1  = show size <> " " 
 count (Counter (MultipleOrNone multiple) _) _    | otherwise = "? " <> show multiple
 
 
+defaultOptions :: Options
+defaultOptions =
+    { showUuid : false }
+
+
 stringRenderer :: forall d c n. StringRenderer d c n
 stringRenderer =
-    Renderer "" view
+    stringRendererWithOptions defaultOptions
 
 
-view :: forall d c n. PushCmd d c n -> Either R.RpdError (R.Network d c n) -> String
-view _ (Right nw@(R.Network { name, patches })) =
+stringRendererWithOptions :: forall d c n. Options -> StringRenderer d c n
+stringRendererWithOptions options =
+    Renderer "" $ view options
+
+
+view :: forall d c n. Options -> PushCmd d c n -> Either R.RpdError (R.Network d c n) -> String
+view options _ (Right nw@(R.Network { name, patches })) =
     "Network " <> name <> semicolon
         <> lineBreak
         <> count patchCounter patchCount
@@ -76,14 +93,14 @@ view _ (Right nw@(R.Network { name, patches })) =
         patchCount = List.length allPatches
         patchesInfo =
             joinWith (lineBreak <> corner)
-                $ (viewPatch nw <$> allPatches)
+                $ (viewPatch options nw <$> allPatches)
                     # List.toUnfoldable
-view _ (Left err) =
+view _ _ (Left err) =
     "<" <> show err <> ">"
 
 
-viewPatch :: forall d c n. R.Network d c n -> R.Patch d c n -> String
-viewPatch nw (R.Patch id path@(P.ToPatch name) { nodes, links }) =
+viewPatch :: forall d c n. Options -> R.Network d c n -> R.Patch d c n -> String
+viewPatch options nw (R.Patch id path@(P.ToPatch name) { nodes, links }) =
     "Patch " <> name <> " " <> show path <> semicolon
         <> lineBreak <> vertLine
         <> count nodeCounter nodeCount
@@ -102,16 +119,16 @@ viewPatch nw (R.Patch id path@(P.ToPatch name) { nodes, links }) =
             Seq.toUnfoldable nodes # map \path -> L.view (_node path) nw
         nodesInfo =
             joinWith (lineBreak <> vertLine <> corner)
-                $ viewNode nw <$> Array.catMaybes allNodes
+                $ viewNode options nw <$> Array.catMaybes allNodes
         allLinks =
             Seq.toUnfoldable links # map \path -> L.view (_link path) nw
         linksInfo =
             joinWith (lineBreak <> vertLine <> corner)
-                $ viewLink nw <$> Array.catMaybes allLinks
+                $ viewLink options nw <$> Array.catMaybes allLinks
 
 
-viewNode :: forall d c n. R.Network d c n -> R.Node d n -> String
-viewNode nw (R.Node _ path@(P.ToNode { node }) _ _ { inlets, outlets }) =
+viewNode :: forall d c n. Options -> R.Network d c n -> R.Node d n -> String
+viewNode options nw (R.Node _ path@(P.ToNode { node }) _ _ { inlets, outlets }) =
     "Node " <> node <> " " <> show path <> semicolon
         <> lineBreak <> vertLine <> vertLine
         <> count inletCounter inletCount
@@ -130,36 +147,28 @@ viewNode nw (R.Node _ path@(P.ToNode { node }) _ _ { inlets, outlets }) =
             Seq.toUnfoldable inlets # map \path -> L.view (_inlet path) nw
         inletsInfo =
             joinWith (lineBreak <> vertLine <> vertLine <> corner)
-                $ viewInlet nw <$> Array.catMaybes allInlets
+                $ viewInlet options nw <$> Array.catMaybes allInlets
         allOutlets =
             Seq.toUnfoldable outlets # map \path -> L.view (_outlet path) nw
         outletsInfo =
             joinWith (lineBreak <> vertLine <> vertLine <> corner)
-                $ viewOutlet nw <$> Array.catMaybes allOutlets
+                $ viewOutlet options nw <$> Array.catMaybes allOutlets
 
 
-viewInlet :: forall d c n. R.Network d c n -> R.Inlet d c -> String
-viewInlet _ (R.Inlet _ path@(P.ToInlet { inlet }) _ _) =
+viewInlet :: forall d c n. Options -> R.Network d c n -> R.Inlet d c -> String
+viewInlet options _ (R.Inlet _ path@(P.ToInlet { inlet }) _ _) =
     "Inlet " <> inlet <> " " <> show path
 
 
-viewOutlet :: forall d c n. R.Network d c n -> R.Outlet d c -> String
-viewOutlet _ (R.Outlet _ path@(P.ToOutlet { outlet }) _ _) =
+viewOutlet :: forall d c n. Options -> R.Network d c n -> R.Outlet d c -> String
+viewOutlet options _ (R.Outlet _ path@(P.ToOutlet { outlet }) _ _) =
     "Outlet " <> outlet <> " " <> show path
 
 
-viewLink :: forall d c n. R.Network d c n -> R.Link -> String
-viewLink nw (R.Link _ { outlet : outletUuid, inlet : inletUuid }) =
+viewLink :: forall d c n. Options -> R.Network d c n -> R.Link -> String
+viewLink options nw (R.Link _ { outlet : outletUuid, inlet : inletUuid }) =
     case L.view (_outlet outletUuid) nw /\ L.view (_inlet inletUuid) nw of
         Just (R.Outlet _ outletPath _ _) /\ Just (R.Inlet _ inletPath _ _) ->
             "Link from " <> show (outletPath :: P.ToOutlet) <> " to " <> show inletPath
         _ ->
             "Link, which is detached or lost in space"
-
-
-
--- collectSetInfo nw viewItem lens source =
---     joinWith (lineBreak <> space)
---         $ viewItem nw <$> Array.catMaybes allItems
---     where
---         allItems = Set.toUnfoldable source # map \path -> L.view (lens path) nw

@@ -8,12 +8,14 @@ module Rpd.Render.MUV
     , run'
     , make
     , make'
+    , fromCore
     ) where
 
 import Prelude
 
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
+import Data.Tuple (snd)
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Foldable (foldr)
 
@@ -239,3 +241,15 @@ run' event toolkit rpd renderer =
     case make' event toolkit rpd renderer of
         { first, next } -> Event.subscribe next (pure <<< identity)
 
+
+fromCore :: forall d c n view. R.Renderer d c n view -> Renderer d c n Unit view Unit
+fromCore (R.Renderer initialView viewF) =
+    Renderer
+        { from : initialView
+        , init : unit
+        , update
+        , view : view
+        }
+    where
+        update _ ( model /\ _ ) = ( model /\ [] )
+        view (PushF push) v = viewF (R.PushCmd $ push <<< Right) (snd <$> v)

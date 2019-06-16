@@ -38,10 +38,10 @@ import Rpd.Toolkit as R
 import Rpd.Command as C
 
 import Rpd.Render (once, Renderer) as Render
-import Rpd.Render.MUV (once, Renderer, make', PushF) as RenderMUV
+import Rpd.Render.MUV (once, Renderer, make', PushF, fromCore) as RenderMUV
 import Rpd.Renderer.Terminal (terminalRenderer)
 import Rpd.Renderer.Terminal.Multiline as ML
-import Rpd.Renderer.String (stringRenderer)
+import Rpd.Renderer.String (stringRenderer, stringRendererWithOptions)
 
 
 data MyData
@@ -68,13 +68,15 @@ myRpd =
 
 
 spec :: Spec Unit
-spec =
+spec = do
+
   describe "static rendering" do
+
     it "rendering the empty network works" do
       stringSample <- liftEffect $ loadSample "Empty.String"
-      expectToRenderOnce stringRenderer compareStrings myRpd
+      expectToRenderOnce stringRenderer compareStrings' myRpd
         $ String.trim stringSample
-      expectToRenderOnceMUV terminalRenderer compareML myRpd $
+      expectToRenderOnceMUV terminalRenderer compareMultiline' myRpd $
         -- ML.from' "{>}"
         ML.empty' (100 /\ 100)
       pure unit
@@ -84,9 +86,9 @@ spec =
           </> R.addPatch "foo"
           </> R.addNode (toPatch "foo") "bar" Node
       stringSample <- liftEffect $ loadSample "SingleNode.String"
-      expectToRenderOnce stringRenderer compareStrings singleNodeNW
+      expectToRenderOnce stringRenderer compareStrings' singleNodeNW
         $ String.trim stringSample
-      expectToRenderOnceMUV terminalRenderer compareML singleNodeNW $
+      expectToRenderOnceMUV terminalRenderer compareMultiline' singleNodeNW $
         ML.empty' (100 /\ 100)
            # ML.place (0 /\ 0) "[]bar[]"
     it "rendering several nodes works" do
@@ -101,9 +103,9 @@ spec =
           </> R.addNode (toPatch "foo1") "bar11" Node
       stringSample <- liftEffect $ loadSample "SeveralNodes.String"
       terminalSample <- liftEffect $ loadSample "SeveralNodes.Terminal"
-      expectToRenderOnce stringRenderer compareStrings severalNodesNW
+      expectToRenderOnce stringRenderer compareStrings' severalNodesNW
         $ String.trim stringSample
-      expectToRenderOnceMUV terminalRenderer compareML severalNodesNW
+      expectToRenderOnceMUV terminalRenderer compareMultiline' severalNodesNW
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
@@ -118,9 +120,9 @@ spec =
           </> R.addOutlet (toNode "foo" "bar") "abc2" Channel
       stringSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.String"
       terminalSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.Terminal"
-      expectToRenderOnce stringRenderer compareStrings nodeWithInletsAndOutletsNW
+      expectToRenderOnce stringRenderer compareStrings' nodeWithInletsAndOutletsNW
         $ String.trim stringSample
-      expectToRenderOnceMUV terminalRenderer compareML nodeWithInletsAndOutletsNW
+      expectToRenderOnceMUV terminalRenderer compareMultiline' nodeWithInletsAndOutletsNW
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
@@ -135,9 +137,9 @@ spec =
           </> R.connect (toOutlet "foo" "src" "srco") (toInlet "foo" "dst" "dsti")
       stringSample <- liftEffect $ loadSample "WithConnection.String"
       terminalSample <- liftEffect $ loadSample "WithConnection.Terminal"
-      expectToRenderOnce stringRenderer compareStrings withConnectionNW
+      expectToRenderOnce stringRenderer compareStrings' withConnectionNW
         $ String.trim stringSample
-      expectToRenderOnceMUV terminalRenderer compareML withConnectionNW
+      expectToRenderOnceMUV terminalRenderer compareMultiline' withConnectionNW
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
     it "rendering the erroneous network responds with the error" do
@@ -146,13 +148,25 @@ spec =
           -- add inlet to non-exising node
           </> R.addInlet (toNode "idont" "exist") "foo" Channel
       stringSample <- liftEffect $ loadSample "Error.String"
-      expectToRenderOnce stringRenderer compareStrings erroneousNW
+      expectToRenderOnce stringRenderer compareStrings' erroneousNW
         $ String.trim stringSample
-      expectToRenderOnceMUV terminalRenderer compareML erroneousNW
+      expectToRenderOnceMUV terminalRenderer compareMultiline' erroneousNW
         $ ML.from' "ERR: "
       pure unit
-    describe "dynamic rendering" do
-      pure unit
+
+  describe "dynamic rendering" do
+    it "aaa" do
+      let
+        renderer = RenderMUV.fromCore $ stringRendererWithOptions { showUuid : true }
+        toolkit =
+          R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
+        singleNodeNW = myRpd
+          </> R.addPatch "foo"
+          </> R.addNode (toPatch "foo") "bar" Node
+      stringSample <- liftEffect $ loadSample "SingleNode.String"
+      expectToRenderSeqMUV renderer compareStrings toolkit singleNodeNW
+        (String.trim stringSample) List.Nil
+
     -- TODO:
     -- be able to send messages from the insides
     -- more connections
@@ -198,8 +212,8 @@ data NoMsg = NoMsg
 
 
 expectToRenderSeqMUV
-  :: forall d c n model view
-   . RenderMUV.Renderer d c n model view NoMsg
+  :: forall d c n model view msg
+   . RenderMUV.Renderer d c n model view msg
   -> CompareViews view
   -> R.Toolkit d c n
   -> R.Rpd (R.Network d c n)
@@ -217,9 +231,7 @@ expectToRenderSeqMUV renderer compareViews toolkit rpd firstExpectation nextExpe
     checkNextViews
         = Event.fold (foldingF (push <<< Right) failuresRef) nextViews
             $ pure nextExpectations
-  -- TODO: Write failures to the Ref and then read it after the timeout
   cancel <- liftEffect $ Event.subscribe checkNextViews liftEffect
-  -- _ <- traverse liftEffect checkNextViews
   delay (Milliseconds 100.0)
   failures <- liftEffect $ Ref.read failuresRef
   failures `shouldEqual` List.Nil
@@ -251,6 +263,7 @@ expectToRenderSeqMUV renderer compareViews toolkit rpd firstExpectation nextExpe
             Nothing ->
               pure expectationsLeft
 
+
 toAffCompare :: forall v. CompareViews v -> CompareViewsAff v
 toAffCompare compareViews =
   \vL vR ->
@@ -259,14 +272,24 @@ toAffCompare compareViews =
       _ -> pure unit
 
 
-compareStrings :: CompareViewsAff String
+compareStrings' :: CompareViewsAff String
+-- compareStrings' s1 s2 =
+compareStrings' =
+  toAffCompare compareStrings
+  -- when (s1 /= s2) $
+  --   fail $ "\n-----\n" <> s1 <> "\n\n≠\n\n" <> s2 <> "\n-----"
+
+
+compareStrings :: CompareViews String
 compareStrings s1 s2 =
-  when (s1 /= s2) $
-    fail $ "\n-----\n" <> s1 <> "\n\n≠\n\n" <> s2 <> "\n-----"
+  if (s1 /= s2) then
+    Left $ "\n-----\n" <> s1 <> "\n\n≠\n\n" <> s2 <> "\n-----"
+  else
+    Right unit
 
 
-compareML :: CompareViewsAff ML.Multiline
-compareML v1 v2 =
+compareMultiline' :: CompareViewsAff ML.Multiline
+compareMultiline' v1 v2 =
   case v1 `ML.compare'` v2 of
     ML.Match /\ _ -> pure unit
     ML.Unknown /\ _ -> do
