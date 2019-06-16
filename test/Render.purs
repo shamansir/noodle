@@ -20,7 +20,7 @@ import Effect.Ref as Ref
 import Effect.Aff (delay)
 import Effect.Console (log)
 
-import Test.Spec (Spec, describe, it)
+import Test.Spec (Spec, describe, it, pending')
 import Test.Spec.Assertions (shouldEqual, fail)
 import Test.Spec.Color (colored, Color(..))
 
@@ -37,7 +37,7 @@ import Rpd.Network (Network) as R
 import Rpd.Toolkit as R
 import Rpd.Command as C
 
-import Rpd.Render (once, Renderer) as Render
+import Rpd.Render (once, Renderer, make') as Render
 import Rpd.Render.MUV (once, Renderer, make', PushF, fromCore) as RenderMUV
 import Rpd.Renderer.Terminal (terminalRenderer)
 import Rpd.Renderer.Terminal.Multiline as ML
@@ -155,17 +155,33 @@ spec = do
       pure unit
 
   describe "dynamic rendering" do
-    it "aaa" do
-      let
-        renderer = RenderMUV.fromCore $ stringRendererWithOptions { showUuid : true }
-        toolkit =
-          R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
-        singleNodeNW = myRpd
-          </> R.addPatch "foo"
-          </> R.addNode (toPatch "foo") "bar" Node
-      stringSample <- liftEffect $ loadSample "SingleNode.String"
-      expectToRenderSeqMUV renderer compareStrings toolkit singleNodeNW
-        (String.trim stringSample) List.Nil
+    describe "core renderer" do
+      pending' "applies commands to the network" do
+        let
+          renderer = stringRendererWithOptions { showUuid : true }
+          toolkit =
+            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
+          emptyNW = myRpd
+        stringSample <- liftEffect $ loadSample "SingleNode.String"
+        expectToRenderSeq renderer compareStrings toolkit emptyNW ""
+          $ List.fromFoldable
+              [ C.Bang /\ ""
+              , C.AddNode (toPatch "foo") "bar" Node /\ ""
+              ]
+    describe "MUV renderer" do
+      pending' "applies commands to the network" do
+        let
+          renderer = RenderMUV.fromCore $ stringRendererWithOptions { showUuid : true }
+          toolkit =
+            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
+          emptyNW = myRpd
+        stringSample <- liftEffect $ loadSample "SingleNode.String"
+        expectToRenderSeqMUV renderer compareStrings toolkit emptyNW ""
+          $ List.fromFoldable
+              [ C.Bang /\ ""
+              , C.AddNode (toPatch "foo") "bar" Node /\ ""
+              ]
+
 
     -- TODO:
     -- be able to send messages from the insides
@@ -208,7 +224,42 @@ expectToRenderOnceMUV renderer compareViews rpd expectation = do
   result `compareViews` expectation
 
 
-data NoMsg = NoMsg
+expectToRenderSeq
+  :: forall d c n view
+   . Render.Renderer d c n view
+  -> CompareViews view
+  -> R.Toolkit d c n
+  -> R.Rpd (R.Network d c n)
+  -> view
+  -> List (C.Command d c n /\ view)
+  -> Aff Unit
+expectToRenderSeq renderer compareViews toolkit rpd firstExpectation nextExpectations = do
+  { event, push } <- liftEffect Event.create
+  let
+    { first : firstView, next : nextViews }
+        = Render.make' { event, push } toolkit rpd renderer
+  firstView `compareViewsAff` firstExpectation
+  failuresRef <- liftEffect $ Ref.new List.Nil
+  let
+    checkNextViews
+        = Event.fold (foldingF push failuresRef) nextViews
+            $ pure nextExpectations
+  cancel <- liftEffect $ Event.subscribe checkNextViews liftEffect
+  delay (Milliseconds 100.0)
+  failures <- liftEffect $ Ref.read failuresRef
+  failures `shouldEqual` List.Nil
+  _ <- liftEffect cancel
+  pure unit
+  where
+    compareViewsAff :: CompareViewsAff view
+    compareViewsAff = toAffCompare compareViews
+    foldingF
+      :: (C.Command d c n -> Effect Unit)
+      -> Ref (List String)
+      -> Effect view
+      -> Effect (List (C.Command d c n /\ view))
+      -> Effect (List (C.Command d c n /\ view))
+    foldingF = foldExpectations compareViews
 
 
 expectToRenderSeqMUV
@@ -246,22 +297,34 @@ expectToRenderSeqMUV renderer compareViews toolkit rpd firstExpectation nextExpe
       -> Effect view
       -> Effect (List (C.Command d c n /\ view))
       -> Effect (List (C.Command d c n /\ view))
-    foldingF push failuresRef nextView chain = do
-          v <- nextView
-          nextExpectations' <- chain
-          let expectationsLeft = fromMaybe List.Nil $ List.tail nextExpectations'
-          case List.head nextExpectations' of
-            Just (msg /\ nextExpectation) -> do
-              push msg
-              (case nextExpectation `compareViews` v of
-                  Left failure -> do
-                    _ <- Ref.modify ((:) failure) failuresRef
-                    pure expectationsLeft
-                  Right _ ->
-                    pure expectationsLeft
-              )
-            Nothing ->
-              pure expectationsLeft
+    foldingF = foldExpectations compareViews
+
+
+foldExpectations
+  :: forall d c n view
+   . CompareViews view
+  -> (C.Command d c n -> Effect Unit)
+  -> Ref (List String)
+  -> Effect view
+  -> Effect (List (C.Command d c n /\ view))
+  -> Effect (List (C.Command d c n /\ view))
+foldExpectations compareViews push failuresRef nextView chain = do
+      v <- nextView
+      nextExpectations' <- chain
+      let expectationsLeft = fromMaybe List.Nil $ List.tail nextExpectations'
+      case List.head nextExpectations' of
+        Just (msg /\ nextExpectation) -> do
+          push msg
+          (case nextExpectation `compareViews` v of
+              Left failure -> do
+                _ <- Ref.modify ((:) failure) failuresRef
+                pure expectationsLeft
+              Right _ ->
+                pure expectationsLeft
+          )
+        Nothing ->
+          pure expectationsLeft
+
 
 
 toAffCompare :: forall v. CompareViews v -> CompareViewsAff v
