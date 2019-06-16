@@ -36,6 +36,7 @@ import Rpd.Toolkit (Toolkit) as T
 import Rpd.Render.MUV (Renderer) as Ui
 import Rpd.Render.MUV (make') as Render
 
+import Debug.Trace as DT
 
 type HtmlView msg cmd = Html (Either msg cmd)
 

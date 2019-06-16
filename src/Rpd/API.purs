@@ -1,6 +1,6 @@
 
 module Rpd.API
-    ( Rpd, RpdError, init
+    ( Rpd, RpdError(..), init
     , (</>), andThen
     , connect, disconnectAll, disconnectTop
     , addPatch, addNode, addInlet, addOutlet
@@ -66,6 +66,9 @@ infixl 6 snoc as +>
 -- data RunningNetwork d e = RpdEff e (Network d e)
 
 newtype RpdError = RpdError String
+
+instance showRpdError :: Show RpdError where show (RpdError err) = err
+derive instance eqRpdError :: Eq RpdError
 
 
 type RpdOp a = Either RpdError a
@@ -1021,11 +1024,6 @@ extractOutletLabels outlets nw =
 
 
 -- TODO: rollback :: RpdError -> Network -> Network
-
-
-instance showRpdError :: Show RpdError where
-    -- show (RpdError text) = "(RpdError)" <> text
-    show (RpdError text) = text
 
 
 

@@ -29,7 +29,7 @@ import Node.FS.Sync (readTextFile)
 
 import FRP.Event as Event
 
-import Rpd (init) as R
+import Rpd (init, run) as R
 import Rpd.API as R
 import Rpd.API ((</>))
 import Rpd.Path
@@ -38,7 +38,7 @@ import Rpd.Toolkit as R
 import Rpd.Command as C
 
 import Rpd.Render (once, Renderer, make') as Render
-import Rpd.Render.MUV (once, Renderer, make', PushF, fromCore) as RenderMUV
+import Rpd.Render.MUV (once, Renderer(..), make', PushF(..), fromCore) as RenderMUV
 import Rpd.Renderer.Terminal (terminalRenderer)
 import Rpd.Renderer.Terminal.Multiline as ML
 import Rpd.Renderer.String (stringRenderer, stringRendererWithOptions)
@@ -56,6 +56,23 @@ data Node = Node
 
 
 type MyRpd = R.Rpd (R.Network MyData Channel Node)
+
+
+derive instance eqChannel ∷ Eq Channel
+derive instance eqNode ∷ Eq Node
+
+
+instance showMyData :: Show MyData where
+  show Bang = "Bang"
+  show (Value n) = "Value " <> show n
+
+
+instance showChannel :: Show Channel where
+  show Channel = "Channel"
+
+
+instance showNode :: Show Node where
+  show Node = "Node"
 
 
 type CompareViews view = view -> view -> Either String Unit
@@ -193,6 +210,83 @@ spec = do
     -- status: should store commands
     -- should accept commands
 
+  describe "possible rendering issues" $ do
+    it "MUV: calls view updates only required number of times" $ do
+      let toolkit =
+            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
+      { event, push } <- liftEffect Event.create
+      let
+        { first : firstView, next : nextViews }
+          = RenderMUV.make' { event, push } toolkit myRpd renderUnit
+      callCount <- liftEffect $ Ref.new 0
+      stop <- liftEffect $ Event.subscribe nextViews \v -> do
+                  v >>= \v' -> Ref.modify ((+) 1) callCount
+      currentCalls <- liftEffect $ Ref.read callCount
+      currentCalls `shouldEqual` 0
+      liftEffect $ push $ Right C.Bang
+      currentCalls' <- liftEffect $ Ref.read callCount
+      currentCalls' `shouldEqual` 1
+      liftEffect $ push $ Right C.Bang
+      currentCalls'' <- liftEffect $ Ref.read callCount
+      currentCalls'' `shouldEqual` 2
+      liftEffect $ push $ Right $ C.AddPatch "foo"
+      currentCalls''' <- liftEffect $ Ref.read callCount
+      currentCalls''' `shouldEqual` 3
+      liftEffect stop
+    it "MUV: calls model updates only required number of times" $ do
+      let
+        adaptToTrack :: forall d c n. Array (C.Command d c n) -> TrackedCommands d c n
+        adaptToTrack cmdArr = Right <$> List.fromFoldable cmdArr
+      let toolkit =
+            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
+      { event, push } <- liftEffect Event.create
+      let
+        { first : firstView, next : nextViews }
+          = RenderMUV.make' { event, push } toolkit myRpd renderTrackUpdates
+      commandsTrack <- liftEffect $ Ref.new List.Nil
+      stop <- liftEffect $ Event.subscribe nextViews \v -> do
+                  v >>= \commands -> Ref.modify (const commands) commandsTrack
+      currentCommands <- liftEffect $ Ref.read commandsTrack
+      currentCommands `shouldEqual` List.Nil
+      -- FIXME: why commands are sent with `Right` here and with `Left` above?
+      liftEffect $ push $ Right C.Bang
+      currentCommands' <- liftEffect $ Ref.read commandsTrack
+      currentCommands' `shouldEqual` (adaptToTrack [ C.Bang ])
+      liftEffect $ push $ Right C.Bang
+      currentCommands'' <- liftEffect $ Ref.read commandsTrack
+      currentCommands'' `shouldEqual` (adaptToTrack [ C.Bang, C.Bang ])
+      liftEffect $ push $ Right $ C.AddPatch "foo"
+      currentCommands''' <- liftEffect $ Ref.read commandsTrack
+      currentCommands''' `shouldEqual`
+          (adaptToTrack [ C.AddPatch "foo", C.Bang, C.Bang ])
+      liftEffect stop
+    it "MUV: errors are passed to the view" $ do
+      let toolkit =
+            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
+      { event, push } <- liftEffect Event.create
+      let
+        { first : firstView, next : nextViews }
+          = RenderMUV.make' { event, push } toolkit myRpd renderTrackErrors
+      errorsTrack <- liftEffect $ Ref.new Nothing
+      stop <- liftEffect $ Event.subscribe nextViews \v -> do
+                  v >>= \error -> Ref.modify (const error) errorsTrack
+      currentError <- liftEffect $ Ref.read errorsTrack
+      currentError `shouldEqual` Nothing
+      -- FIXME: why commands are sent with `Right` here and with `Left` above?
+      liftEffect $ push $ Right C.Bang
+      currentError' <- liftEffect $ Ref.read errorsTrack
+      currentError' `shouldEqual` Nothing
+      liftEffect $ push $ Right $ C.AddPatch "foo"
+      currentError'' <- liftEffect $ Ref.read errorsTrack
+      currentError'' `shouldEqual` Nothing
+      liftEffect $ push $ Right $ C.AddNode (toPatch "foo") "bar" Node
+      currentError''' <- liftEffect $ Ref.read errorsTrack
+      currentError''' `shouldEqual` Nothing
+      liftEffect $ push $ Right $ C.AddNode (toPatch "bar") "bar" Node -- patch does not exists
+      currentError4 <- liftEffect $ Ref.read errorsTrack
+      currentError4 `shouldEqual` (Just (R.RpdError ""))
+      liftEffect stop
+
 
 
 loadSample :: String -> Effect String
@@ -325,6 +419,72 @@ foldExpectations compareViews push failuresRef nextView chain = do
         Nothing ->
           pure expectationsLeft
 
+
+renderUnit :: forall d c n. RenderMUV.Renderer d c n Unit Unit Unit
+renderUnit =
+  RenderMUV.Renderer
+    { from : unit
+    , init : unit
+    , update
+    , view
+    }
+  where
+    update _ ( model /\ _ ) = ( model /\ [] )
+    view (RenderMUV.PushF push) v = unit
+
+
+type TrackedCommands d c n = List (Either Unit (C.Command d c n))
+
+
+-- renderTrackUpdates
+--   :: forall d c n
+--    . RenderMUV.Renderer d c n (TrackedCommands d c n) Unit Unit
+-- renderTrackUpdates =
+--   RenderMUV.Renderer
+--     { from : unit
+--     , init : List.Nil
+--     , update
+--     , view
+--     }
+--   where
+--     update msgOrCmd ( model /\ _ ) = ( (msgOrCmd : model) /\ [] )
+--     view (RenderMUV.PushF push) v = unit
+
+
+renderTrackUpdates
+  :: forall d c n
+   . RenderMUV.Renderer d c n (TrackedCommands d c n) (TrackedCommands d c n) Unit
+renderTrackUpdates =
+  RenderMUV.Renderer
+    { from : List.Nil
+    , init : List.Nil
+    , update
+    , view
+    }
+  where
+    update msgOrCmd ( model /\ _ ) = ( (msgOrCmd : model) /\ [] )
+    view _ errOrModel =
+      case errOrModel of
+        Left err -> List.Nil
+        Right ( model /\ _ ) -> model
+
+
+renderTrackErrors
+  :: forall d c n
+   . RenderMUV.Renderer d c n Unit (Maybe R.RpdError) Unit
+renderTrackErrors =
+  RenderMUV.Renderer
+    { from : Nothing
+    , init : unit
+    , update
+    , view
+    }
+  where
+    update msgOrCmd ( model /\ _ ) = ( model /\ [] )
+    view _ errOrModel =
+      case errOrModel of
+        Left err -> Just err
+        Right _ -> Nothing
 
 
 toAffCompare :: forall v. CompareViews v -> CompareViewsAff v

@@ -59,17 +59,19 @@ instance showCommand :: (Show d, Show c, Show n) => Show (Command d c n) where
     -- show (GotOutletData oPath d) = "GotOutletData " <> show oPath <> " " <> show d
 
 
--- instance eqCommand :: Eq d => Eq (Command d) where
---     eq Bang Bang = true
---     eq (AddPatch lDef) (AddPatch rDef) = D.comparePDefs lDef rDef
---     eq (AddNode lId lDef) (AddNode rId rDef) =
---       (lId == rId) && D.compareNDefs lDef rDef
---     eq (AddInlet lPath lDef) (AddInlet rPath rDef) =
---       (lPath == rPath) && D.compareIDefs lDef rDef
---     eq (AddOutlet lPath lDef) (AddOutlet rPath rDef) =
---       (lPath == rPath) && D.compareODefs lDef rDef
---     eq (Connect lOPath lIPath) (Connect rOPath rIpath) =
---       (lOPath == rOPath) && (lIPath == rIpath)
---     eq (Disconnect lOPath lIPath) (Disconnect rOPath rIpath) =
---       (lOPath == rOPath) && (lIPath == rIpath)
---     eq _ _ = false
+instance eqCommand :: (Eq c, Eq n) => Eq (Command d c n) where
+    eq Bang Bang = true
+    eq (AddPatch lAlias) (AddPatch rAlias) = lAlias == rAlias
+    eq (AddNode lPatch lNode lNodeType) (AddNode rPath rNode rNodeType) =
+      (lPatch == rPath) && (lNode == lNode) && (lNodeType == rNodeType)
+    eq (AddInlet lNode lInlet lChannel) (AddInlet rNode rInlet rChannel) =
+      (lNode == rNode) && (lInlet == rInlet) && (lChannel == rChannel)
+    eq (AddOutlet lNode lOutlet lChannel) (AddOutlet rNode rOutlet rChannel) =
+      (lNode == rNode) && (lOutlet == rOutlet) && (lChannel == rChannel)
+    eq (Connect { outlet : lOutlet, inlet : lInlet })
+       (Connect { outlet : rOutlet, inlet : rInlet }) =
+      (lOutlet == rOutlet) && (lInlet == rInlet)
+    eq (Disconnect { outlet : lOutlet, inlet : lInlet })
+       (Disconnect { outlet : rOutlet, inlet : rInlet }) =
+      (lOutlet == rOutlet) && (lInlet == rInlet)
+    eq _ _ = false

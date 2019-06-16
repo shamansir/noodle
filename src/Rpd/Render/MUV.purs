@@ -186,13 +186,11 @@ make'
             \(model /\ nw) ->
                 case msgOrCmd of
                     Left msg -> do
-                        -- let _ = DT.spy "msg" msg
                         -- perform user update function, collect user messages
                         let model' /\ actions = update (Left msg) $ model /\ nw
                         -- apply user messages returned from the previous line to the model
                         foldr updatePipeline (pure $ model' /\ nw) actions
                     Right cmd -> do
-                        -- let _ = DT.spy "cmd" cmd
                         -- apply the core command to the network
                         nw' <- C.apply cmd (push <<< Right) toolkit nw
                         -- perform the user update function with this core command, collect the returned messages
