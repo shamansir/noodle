@@ -33,8 +33,8 @@ runMUV
      . Event Msg
     -> Program model
     -> (Msg -> Program model -> Program model)
-    -> (model -> view)
-    -> Event (Program view)
+    -> (Either Error model -> view)
+    -> Event (Effect view)
 runMUV messages init userUpdate userView =
     let
         updates = Event.fold update messages init
@@ -45,17 +45,16 @@ runMUV messages init userUpdate userView =
         update msg model =
             let _ = DT.spy "msg" msg
             in userUpdate msg model
-        view :: Program model -> Program view
+        view :: Program model -> Effect view
         view program =
-            userView <$> program
+            userView <$> runExceptT program
 
 
 main :: Effect Unit
 main = do
     { event : messages, push } <- Event.create
     let views = runMUV messages (pure "|") update view
-    _ <- Event.subscribe views \pview ->
-        runExceptT pview >>= either (const $ log "ERR") log
+    _ <- Event.subscribe views \effV -> effV >>= log
     push MsgOne
     push MsgTwo
     push MsgTwo
@@ -66,7 +65,6 @@ main = do
                 uuid <- liftEffect UUID.new
                 let _ = DT.spy "uuid" uuid
                 pure $ "(" <> show msg <> ":" <> UUID.toString uuid <> ")-" <> prev
-        view = identity
-        -- view model =
-            -- either (const "ERR") identity errOrModel
+        view errOrModel =
+            either (const "ERR") identity errOrModel
 
