@@ -211,28 +211,6 @@ spec = do
     -- should accept commands
 
   describe "possible rendering issues" $ do
-    it "MUV: calls view updates only required number of times" $ do
-      let toolkit =
-            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
-      { event, push } <- liftEffect Event.create
-      let
-        { first : firstView, next : nextViews }
-          = RenderMUV.make' { event, push } toolkit myRpd renderUnit
-      callCount <- liftEffect $ Ref.new 0
-      stop <- liftEffect $ Event.subscribe nextViews \v -> do
-                  v >>= \v' -> Ref.modify ((+) 1) callCount
-      currentCalls <- liftEffect $ Ref.read callCount
-      currentCalls `shouldEqual` 0
-      liftEffect $ push $ Right C.Bang
-      currentCalls' <- liftEffect $ Ref.read callCount
-      currentCalls' `shouldEqual` 1
-      liftEffect $ push $ Right C.Bang
-      currentCalls'' <- liftEffect $ Ref.read callCount
-      currentCalls'' `shouldEqual` 2
-      liftEffect $ push $ Right $ C.AddPatch "foo"
-      currentCalls''' <- liftEffect $ Ref.read callCount
-      currentCalls''' `shouldEqual` 3
-      liftEffect stop
     it "MUV: calls model updates only required number of times" $ do
       let
         adaptToTrack :: forall d c n. Array (C.Command d c n) -> TrackedCommands d c n
@@ -259,6 +237,28 @@ spec = do
       currentCommands''' <- liftEffect $ Ref.read commandsTrack
       currentCommands''' `shouldEqual`
           (adaptToTrack [ C.AddPatch "foo", C.Bang, C.Bang ])
+      liftEffect stop
+    it "MUV: calls view updates only required number of times" $ do
+      let toolkit =
+            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
+      { event, push } <- liftEffect Event.create
+      let
+        { first : firstView, next : nextViews }
+          = RenderMUV.make' { event, push } toolkit myRpd renderUnit
+      callCount <- liftEffect $ Ref.new 0
+      stop <- liftEffect $ Event.subscribe nextViews \v -> do
+                  v >>= \v' -> Ref.modify ((+) 1) callCount
+      currentCalls <- liftEffect $ Ref.read callCount
+      currentCalls `shouldEqual` 0
+      liftEffect $ push $ Right C.Bang
+      currentCalls' <- liftEffect $ Ref.read callCount
+      currentCalls' `shouldEqual` 1
+      liftEffect $ push $ Right C.Bang
+      currentCalls'' <- liftEffect $ Ref.read callCount
+      currentCalls'' `shouldEqual` 2
+      liftEffect $ push $ Right $ C.AddPatch "foo"
+      currentCalls''' <- liftEffect $ Ref.read callCount
+      currentCalls''' `shouldEqual` 3
       liftEffect stop
     it "MUV: errors are passed to the view" $ do
       let toolkit =
