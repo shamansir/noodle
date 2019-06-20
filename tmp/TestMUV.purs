@@ -6,6 +6,7 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
 
+import Data.String (take)
 import Data.Either (Either(..), either)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_)
@@ -20,7 +21,7 @@ import Debug.Trace as DT
 import UUID (UUID)
 import UUID as UUID
 
-data Error = Error String
+newtype Error = Error String
 
 type Program a = Either Error a
 
@@ -34,11 +35,13 @@ data Msg
 
 
 
+derive newtype instance showError :: Show Error
+
 instance showMsg :: Show Msg where
     show MsgOne = "MSG-ONE"
     show MsgTwo = "MSG-TWO"
     show Start = "START"
-    show (Store uuid) = "STORE-UUID: " <> show uuid
+    show (Store uuid) = "STORE-UUID: " <> (take 5 $ show uuid)
     show (MakeUUID _) = "MAKE-UUID"
 
 
@@ -49,14 +52,17 @@ runMUV
     :: forall model view
      . { event :: Event Msg, push :: Msg -> Effect Unit }
     -> Program model
-    -> (Msg -> Program model -> Program model /\ EffectsToPerform)
+    -> (Msg -> model -> Program model /\ EffectsToPerform)
     -> (Program model -> view)
     -> Effect (Event view)
 runMUV { event : messages, push : pushMessage } init userUpdate userView = do
     let
         updates =
             Event.fold
-                (\msg (model /\ _) -> userUpdate msg model)
+                (\msg ( prog /\ _ ) ->
+                    case prog of
+                        Left err -> prog /\ []
+                        Right model -> userUpdate msg model)
                 messages
                 (init /\ [])
     { event : views, push : pushView } <- Event.create
@@ -84,24 +90,25 @@ main = do
     pushMessage Start
     pure unit
     where
-        update msg (Right model) =
-            case update' msg (Right model) of
-                (Right model' /\ effects) ->
-                    Right ("(" <> show msg <> ")-" <> model')
-                    /\ effects
-                v -> v
-        update msg prog = update' msg prog
-        update' (MakeUUID f) prog = prog /\ [ f <$> UUID.new ]
-        update' MsgTwo prog = prog /\ [ pure MsgOne ]
-        update' Start prog = prog /\
+        update :: Msg -> String -> Program String /\ EffectsToPerform
+        update msg model =
+            case update' msg model of
+                ( Left err /\ effects ) ->
+                    pure ("(" <> show msg <> ")-" <> show err) /\ effects
+                ( Right model' /\ effects ) ->
+                    pure ("(" <> show msg <> ")-" <> model') /\ effects
+        update' :: Msg -> String -> Program String /\ EffectsToPerform
+        update' (MakeUUID f) model = pure model /\ [ f <$> UUID.new ]
+        update' MsgTwo model = pure model /\ [ pure MsgOne ]
+        update' Start model = pure model /\
             [ pure $ MakeUUID Store
             , pure $ MakeUUID Store
             , pure $ MakeUUID Store
             ]
-        update' (Store uuid) (Right model) =
-            Right ("<" <> show uuid <> ">-" <> model)
+        update' (Store uuid) model =
+            pure ("<" <> show uuid <> ">-" <> model)
             /\ []
-        update' _ prog = prog /\ []
+        update' _ model = pure model /\ []
         -- update msg m = m
         --     case model of
         --     model >>= \prev -> do
