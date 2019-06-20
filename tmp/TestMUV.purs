@@ -66,17 +66,18 @@ runMUV { event : messages, push : pushMessage } init userUpdate userView = do
                 messages
                 (init /\ [])
     { event : views, push : pushView } <- Event.create
-    _ <- Event.subscribe updates \progAndEffects ->
-        performEffects pushMessage progAndEffects >>= pushView <<< userView
+    _ <- Event.subscribe updates \(_ /\ effects) ->
+        performEffects pushMessage effects
+    _ <- Event.subscribe updates \(prog /\ _) ->
+        pushView $ userView prog
     pure views
     where
         performEffects
             :: (Msg -> Effect Unit)
-            -> Program model /\ EffectsToPerform
-            -> Effect (Program model)
-        performEffects pushMsg (prog /\ effects) = do
+            -> EffectsToPerform
+            -> Effect Unit
+        performEffects pushMsg effects = do
             traverse_ ((=<<) pushMsg) effects
-            pure prog
 
 
 main :: Effect Unit
@@ -92,11 +93,11 @@ main = do
     where
         update :: Msg -> String -> Program String /\ EffectsToPerform
         update msg model =
-            case update' msg model of
-                ( Left err /\ effects ) ->
-                    pure ("(" <> show msg <> ")-" <> show err) /\ effects
-                ( Right model' /\ effects ) ->
-                    pure ("(" <> show msg <> ")-" <> model') /\ effects
+            let (prog /\ effects ) = update' msg model
+            in ( case prog of
+                    Left err -> pure ("(" <> show msg <> ")-" <> show err)
+                    Right model' -> pure ("(" <> show msg <> ")-" <> model')
+               ) /\ effects
         update' :: Msg -> String -> Program String /\ EffectsToPerform
         update' (MakeUUID f) model = pure model /\ [ f <$> UUID.new ]
         update' MsgTwo model = pure model /\ [ pure MsgOne ]
