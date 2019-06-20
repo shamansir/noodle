@@ -66,10 +66,10 @@ runMUV { event : messages, push : pushMessage } init userUpdate userView = do
                 messages
                 (init /\ [])
     { event : views, push : pushView } <- Event.create
-    _ <- Event.subscribe updates \(_ /\ effects) ->
-        performEffects pushMessage effects
     _ <- Event.subscribe updates \(prog /\ _) ->
         pushView $ userView prog
+    _ <- Event.subscribe updates \(_ /\ effects) ->
+        performEffects pushMessage effects
     pure views
     where
         performEffects
@@ -85,22 +85,22 @@ main = do
     { event : messages, push : pushMessage } <- Event.create
     views <- runMUV { event : messages, push : pushMessage } (pure "|") update view
     _ <- Event.subscribe views log
+    pushMessage MsgTwo
     pushMessage MsgOne
-    pushMessage MsgTwo
-    pushMessage MsgTwo
+    pushMessage MsgOne
     pushMessage Start
     pure unit
     where
         update :: Msg -> String -> Program String /\ EffectsToPerform
         update msg model =
-            let (prog /\ effects ) = update' msg model
+            let ( prog /\ effects ) = update' msg model
             in ( case prog of
                     Left err -> pure ("(" <> show msg <> ")-" <> show err)
                     Right model' -> pure ("(" <> show msg <> ")-" <> model')
                ) /\ effects
         update' :: Msg -> String -> Program String /\ EffectsToPerform
         update' (MakeUUID f) model = pure model /\ [ f <$> UUID.new ]
-        update' MsgTwo model = pure model /\ [ pure MsgOne ]
+        update' MsgOne model = pure model /\ [ pure MsgTwo ]
         update' Start model = pure model /\
             [ pure $ MakeUUID Store
             , pure $ MakeUUID Store
