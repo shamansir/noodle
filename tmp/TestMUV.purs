@@ -34,6 +34,11 @@ data Msg
     | Store UUID
 
 
+-- FIXME:
+-- data MyEffect
+--     = MsgTwo
+--     | MakeUUID (UUID -> Msg)
+
 
 derive newtype instance showError :: Show Error
 
