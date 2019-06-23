@@ -77,7 +77,8 @@ derive instance eqRpdError :: Eq RpdError
 
 -- TODO: MonadEffect + MonadThrow
 --       https://www.fpcomplete.com/blog/2016/11/exceptions-best-practices-haskell
-type Rpd a = Either RpdError a
+type Rpd a = ExceptT RpdError Effect a
+-- type Rpd a = Either RpdError a
 -- type RpdEffect a = ExceptT RpdError Effect a
 -- type Rpd d e = ContT (Either RpdError (Network d e)) (Eff (RpdEffE e)) (Network d e)
 -- newtype ContT r m a = ContT ((a -> m r) -> m r)
@@ -259,12 +260,11 @@ processWith
      . Path.ToNode
     -> ProcessF d
     -> Network d c n
-    -> Rpd (Network d c n)
+    -> Either RpdError (Effect (Network d c n))
 processWith path processF nw = do
     uuid <- nw # uuidByPath UUID.toNode path
     (Node _ path n _ state) :: Node d n <-
-        view (_node uuid) nw
-            # exceptMaybe (RpdError "")
+        view (_node uuid) nw # note (RpdError "")
     let
         newNode =
             Node
@@ -609,12 +609,12 @@ subscribeNode
     -> (InletAlias /\ UUID.ToInlet /\ d -> Effect Unit)
     -> (OutletAlias /\ UUID.ToOutlet /\ d -> Effect Unit)
     -> Network d c n
-    -> Rpd (Network d c n)
+    -> Either RpdError (Effect (Network d c n))
 subscribeNode nodePath inletsHandler outletsHandler nw = do
     _ <- subscribeNode' nodePath inletsHandler outletsHandler nw
     -- FIXME: implement !!!!
     -- FIXME: implement storing the cancellers to execute them on remove
-    pure nw
+    pure $ pure nw
 
 
 subscribeNode'
@@ -623,7 +623,7 @@ subscribeNode'
     -> (InletAlias /\ UUID.ToInlet /\ d -> Effect Unit)
     -> (OutletAlias /\ UUID.ToOutlet /\ d -> Effect Unit)
     -> Network d c n
-    -> Rpd Canceler
+    -> Either RpdError (Effect Canceler)
 subscribeNode' path inletsHandler outletsHandler nw = do
     uuid <- uuidByPath UUID.toNode path nw
     InletsFlow inletsFlow <-
@@ -639,7 +639,7 @@ subscribeNode' path inletsHandler outletsHandler nw = do
         outletsCanceler :: Canceler <-
             E.subscribe outletsFlow
                 (outletsHandler <<< over1 \(Path.ToOutlet { outlet }) -> outlet)
-        inletsCanceler <> inletsCanceler
+        pure $ inletsCanceler <> inletsCanceler
 
 
 connect
@@ -813,16 +813,16 @@ updateNodeProcessFlow
     -> Network d c n
     -> Either RpdError (Effect (Network d c n))
 updateNodeProcessFlow (UUID.ToNode uuid) nw = do
-    -- cancel the previous subscription if it exists
-    _ <- view (_cancelers uuid) nw
-            # fromMaybe []
-            # traverse_ liftEffect
     (Node _ _ _ process { inletsFlow, inlets, outlets }) <-
         view (_node $ UUID.ToNode uuid) nw # note (RpdError "")
+    -- cancel the previous subscription if it exists
     case process of
-        Withhold -> pure nw
+        Withhold -> pure $ pure nw
         -- TODO: it is OK now to join this handler and `buildOutletsFlow` in one function
-        processF ->
+        processF -> pure $ do
+            _ <- view (_cancelers uuid) nw
+                    # fromMaybe []
+                    # traverse_ liftEffect
             if (Seq.null inlets || Seq.null outlets) then pure nw else do
                 let
                     (outletFlows :: UUID.ToOutlet /-> PushToOutlet d) =
