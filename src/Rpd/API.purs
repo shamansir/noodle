@@ -11,6 +11,7 @@ import Prelude
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Sequence (Seq)
 import Data.Sequence as Seq
+import Data.Array ((:))
 import Data.List (List)
 import Data.List (fromFoldable, catMaybes) as List
 import Data.Map (Map)
@@ -53,7 +54,10 @@ data Msg d c n
     | RequestToAddNode Path.ToPatch Path.Alias n
     | AddNode UUID.ToNode Path.ToPatch Path.Alias n (InletsAndOutletsFlows d)
     | ProcessWith UUID.ToNode (ProcessF d)
-    | StoreNodeCancelers UUID.ToNode (Array Canceler)
+    | StoreNodeCanceler UUID.ToNode Canceler
+    | RequestToAddInlet Path.ToNode Path.Alias c
+    | AddInlet UUID.ToInlet Path.ToNode Path.Alias c (PushableFlow d)
+    | StoreInletCanceler UUID.ToInlet Canceler
     -- | CancelNodeSubscriptions
     -- | NodeReady UUID.ToNode -- (Node d n)
 
@@ -91,28 +95,47 @@ update (ProcessWith nodeUuid processF) nw =
     case saveProcessAndGetTrigger of
         Right (nw' /\ trigger) ->
             pure nw' /\
-                [ trigger <#> \canceler -> StoreNodeCancelers nodeUuid [ canceler ] ]
+                [ trigger <#> \canceler -> StoreNodeCanceler nodeUuid canceler ]
         Left err -> Left err /\ []
     where
+        -- TODO: join in one function `processWith`?
         saveProcessAndGetTrigger :: Either RpdError (Network d c n /\ Effect Canceler)
         saveProcessAndGetTrigger = do
             nw' <- processWith nodeUuid processF nw
             trigger <- setupNodeProcessFlow nodeUuid nw'
             pure $ nw' /\ trigger
-update (StoreNodeCancelers uuid cancelers) nw =
-    (pure $ storeNodeCancelers uuid cancelers nw) /\ []
-    -- pure nw /\ triggerProcessFlow
-    -- pure nw' /\
-    --     [ do
-    --         canceler <- triggerProcessFlow
-    --         pure $ StoreNodeCancelers nodeUuid [ canceler ]
-    --     ]
-
-
--- NB:
--- `addNode`:
---     `makeInletsOutletsFlow` before
---     `updateNodeProcessFlow` after
+update (StoreNodeCanceler uuid canceler) nw =
+    let
+        curNodeCancelers = getNodeCancelers uuid nw
+        newCancelers = canceler : curNodeCancelers
+    in
+        (pure $ storeNodeCancelers uuid newCancelers nw) /\ []
+update (RequestToAddInlet nodePath alias c) nw =
+    pure nw /\
+        [ do
+           uuid <- UUID.new
+           flow <- makePushableFlow
+           pure $ AddInlet (UUID.ToInlet uuid) nodePath alias c flow
+        ]
+update (AddInlet uuid nodePath alias c iFlow) nw =
+    case addInletAndGetInformTrigger of
+        Right (nw' /\ trigger) ->
+            pure nw' /\
+                [ trigger <#> \canceler -> StoreInletCanceler uuid canceler ]
+        Left err -> Left err /\ []
+    where
+        addInletAndGetInformTrigger :: Either RpdError (Network d c n /\ Effect Canceler)
+        addInletAndGetInformTrigger = do
+            nw' <- addInlet uuid nodePath alias c iFlow nw
+            nodeUuid <- nw' # uuidByPath UUID.toNode nodePath
+            informParentTrigger <- informParentNodeOnData uuid nodeUuid nw'
+            pure $ nw' /\ informParentTrigger
+update (StoreInletCanceler uuid canceler) nw =
+    let
+        curInletCancelers = getInletCancelers uuid nw
+        newCancelers = canceler : curInletCancelers
+    in
+        (pure $ storeInletCancelers uuid newCancelers nw) /\ []
 
 
 
@@ -282,8 +305,20 @@ storeCancelers :: forall d c n. UUID -> Array Canceler -> Network d c n -> Netwo
 storeCancelers uuid = setJust (_cancelers uuid)
 
 
+getCancelers :: forall d c n. UUID -> Network d c n -> Array Canceler
+getCancelers uuid nw = nw # view (_cancelers uuid) # fromMaybe []
+
+
 storeNodeCancelers :: forall d c n. UUID.ToNode -> Array Canceler -> Network d c n -> Network d c n
 storeNodeCancelers uuid = storeCancelers $ UUID.uuid uuid
+storeInletCancelers :: forall d c n. UUID.ToInlet -> Array Canceler -> Network d c n -> Network d c n
+storeInletCancelers uuid = storeCancelers $ UUID.uuid uuid
+
+
+getNodeCancelers :: forall d c n. UUID.ToNode -> Network d c n -> Array Canceler
+getNodeCancelers uuid = getCancelers $ UUID.uuid uuid
+getInletCancelers :: forall d c n. UUID.ToInlet -> Network d c n -> Array Canceler
+getInletCancelers uuid = getCancelers $ UUID.uuid uuid
 
 
 setupNodeProcessFlow
@@ -354,8 +389,6 @@ buildOutletsFlow _ (Process processNode) (InletsFlow inletsFlow) inlets outlets 
     -- collect data from inletsFlow into the Map (Alias /-> d) and pass Map.lookup to the `processF` handler.
     { push, event } <- E.create
     let
-        -- receive = ?wh
-        -- send = ?wh
         outletsAliases :: List (Path.ToOutlet /\ UUID.ToOutlet)
         outletsAliases =
             (outlets
@@ -372,14 +405,6 @@ buildOutletsFlow _ (Process processNode) (InletsFlow inletsFlow) inlets outlets 
             /\ curD)
             inletVals =
             inletVals # Map.insert inletAlias curD
-            -- case view (_inlet $ UUID.ToInlet uuid) nw of
-            --     Just (Inlet _ (InletPath nodePath' inletAlias') _) ->
-                    -- TODO: check, if we really need to check the alias and path once again
-                    --       may be we just may take alias and insert it into map
-                --     if (nodePath' == nodePath) && (inletAlias' == inletAlias)
-                --         then inletVals # Map.insert inletAlias curD
-                --         else inletVals
-                -- _ -> inletVals
         processFlow = E.fold foldingF inletsFlow Map.empty
         processHandler inletsValues = do
             -- TODO: could even produce Aff (and then cancel it on next iteration)
@@ -397,3 +422,55 @@ buildOutletsFlow _ (Process processNode) (InletsFlow inletsFlow) inlets outlets 
     canceler <- liftEffect $ E.subscribe processFlow processHandler
     pure $ (OutletsFlow event)
            /\ Just canceler
+
+
+addInlet
+    :: forall d c n
+     . UUID.ToInlet
+    -> Path.ToNode
+    -> Path.Alias
+    -> c
+    -> PushableFlow d
+    -> Network d c n
+    -> Either RpdError (Network d c n)
+addInlet uuid nodePath alias c (PushableFlow pushToInlet inletFlow) nw = do
+    nodeUuid <- nw # uuidByPath UUID.toNode nodePath
+    -- uuid <- liftEffect UUID.new
+    -- PushableFlow pushToInlet inletFlow <- liftEffect makePushableFlow
+    let
+        path = Path.inletInNode nodePath alias
+        newInlet =
+            Inlet
+                uuid
+                path
+                c
+                { flow : InletFlow inletFlow
+                , push : PushToInlet pushToInlet
+                }
+    -- userCancelers :: Array Canceler <-
+    --     liftEffect $ traverse (E.subscribe dataFlow) subs
+    pure $ nw
+        # setJust (_inlet uuid) newInlet
+        # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
+        # setJust (_nodeInlet nodeUuid uuid) unit
+    --    # setJust (_cancelers uuid) [ canceler ]
+    --    # updateNodeProcessFlow nodeUuid
+
+
+informParentNodeOnData
+    :: forall d c n
+     . UUID.ToInlet
+    -> UUID.ToNode
+    -> Network d c n
+    -> Either RpdError (Effect Canceler)
+informParentNodeOnData inletUuid nodeUuid nw = do
+    (Inlet _ path _ { flow }) :: Inlet d c
+        <- view (_inlet inletUuid) nw
+            # note (RpdError "")
+    (Node _ _ _ _ { pushToInlets }) :: Node d n
+        <- view (_node nodeUuid) nw
+            # note (RpdError "")
+    let
+        (PushToInlets informNode) = pushToInlets
+        (InletFlow inletFlow) = flow
+    pure $ E.subscribe inletFlow (\d -> informNode (path /\ inletUuid /\ d))
