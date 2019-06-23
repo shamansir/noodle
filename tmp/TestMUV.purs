@@ -38,6 +38,7 @@ data Msg
 -- data MyEffect
 --     = MsgTwo
 --     | MakeUUID (UUID -> Msg)
+-- cut them out of the `Msg` and perform separately from `update`
 
 
 derive newtype instance showError :: Show Error
@@ -51,6 +52,8 @@ instance showMsg :: Show Msg where
 
 
 type EffectsToPerform = Array (Effect Msg)
+
+--type EffectsToPerform' x = Array (Effect (x -> Msg))
 
 
 runMUV
