@@ -53,10 +53,14 @@ data Msg d c n
     -- | PatchReady UUID.ToPatch -- (Patch d c n)
     | RequestToAddNode Path.ToPatch Path.Alias n
     | AddNode UUID.ToNode Path.ToPatch Path.Alias n (InletsAndOutletsFlows d)
+    -- TODO: Toolkit nodes
     | ProcessWith UUID.ToNode (ProcessF d)
     | StoreNodeCanceler UUID.ToNode Canceler
+    | CancelNodeSubscriptions UUID.ToNode
+    | ClearNodeCancelers UUID.ToNode
     | RequestToAddInlet Path.ToNode Path.Alias c
     | AddInlet UUID.ToInlet Path.ToNode Path.Alias c (PushableFlow d)
+    -- | InformParentNode UUID.ToNode UUID.ToInlet
     | StoreInletCanceler UUID.ToInlet Canceler
     -- | CancelNodeSubscriptions
     -- | NodeReady UUID.ToNode -- (Node d n)
@@ -110,6 +114,11 @@ update (StoreNodeCanceler uuid canceler) nw =
         newCancelers = canceler : curNodeCancelers
     in
         (pure $ storeNodeCancelers uuid newCancelers nw) /\ []
+update (ClearNodeCancelers uuid) nw =
+    (pure $ clearNodeCancelers uuid nw) /\ []
+update (CancelNodeSubscriptions uuid) nw =
+    pure nw /\
+        [ cancelNodeSubscriptions uuid nw <#> const NoOp ]
 update (RequestToAddInlet nodePath alias c) nw =
     pure nw /\
         [ do
@@ -119,24 +128,39 @@ update (RequestToAddInlet nodePath alias c) nw =
         ]
 update (AddInlet uuid nodePath alias c iFlow) nw =
     case addInletAndGetInformTrigger of
-        Right (nw' /\ trigger) ->
+        Right { network : nw', informParent, process, nodeUuid } ->
             pure nw' /\
-                [ trigger <#> \canceler -> StoreInletCanceler uuid canceler ]
+                [ pure $ CancelNodeSubscriptions nodeUuid
+                , pure $ ClearNodeCancelers nodeUuid
+                , process <#> StoreNodeCanceler nodeUuid
+                , informParent <#> StoreInletCanceler uuid
+                ]
         Left err -> Left err /\ []
     where
-        addInletAndGetInformTrigger :: Either RpdError (Network d c n /\ Effect Canceler)
+        addInletAndGetInformTrigger
+            :: Either RpdError
+                    { network :: Network d c n
+                    , nodeUuid :: UUID.ToNode
+                    , informParent :: Effect Canceler
+                    , process :: Effect Canceler
+                    }
         addInletAndGetInformTrigger = do
             nw' <- addInlet uuid nodePath alias c iFlow nw
             nodeUuid <- nw' # uuidByPath UUID.toNode nodePath
-            informParentTrigger <- informParentNodeOnData uuid nodeUuid nw'
-            pure $ nw' /\ informParentTrigger
+            informParentTrigger <- informInletParentNodeOnData uuid nodeUuid nw'
+            processTrigger <- setupNodeProcessFlow nodeUuid nw'
+            pure
+                { network : nw'
+                , nodeUuid
+                , informParent : informParentTrigger
+                , process : processTrigger
+                }
 update (StoreInletCanceler uuid canceler) nw =
     let
         curInletCancelers = getInletCancelers uuid nw
         newCancelers = canceler : curInletCancelers
     in
         (pure $ storeInletCancelers uuid newCancelers nw) /\ []
-
 
 
 makePushableFlow :: forall d. Effect (PushableFlow d)
@@ -224,9 +248,9 @@ addNode uuid patchPath nodeAlias n { inlets : iFlow, outlets : oFlow } nw = do
                 , pushToOutlets : PushToOutlets pushToOutlets
                 }
     pure $ nw
-         #  setJust (_node uuid) newNode
-         #  setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-         #  setJust (_patchNode patchUuid uuid) unit
+         # setJust (_node uuid) newNode
+         # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
+         # setJust (_patchNode patchUuid uuid) unit
         --  #  addInlets nodePath def.inletDefs
         -- </> addOutlets nodePath def.outletDefs
         -- # updateNodeProcessFlow (UUID.ToNode uuid)
@@ -309,16 +333,40 @@ getCancelers :: forall d c n. UUID -> Network d c n -> Array Canceler
 getCancelers uuid nw = nw # view (_cancelers uuid) # fromMaybe []
 
 
+clearCancelers :: forall d c n. UUID -> Network d c n -> Network d c n
+clearCancelers uuid nw = nw # set (_cancelers uuid) Nothing
+
+
+cancelSubscriptions :: forall d c n. UUID -> Network d c n -> Effect Unit
+cancelSubscriptions uuid nw =
+    traverse_ identity $ getCancelers uuid nw
+
+
 storeNodeCancelers :: forall d c n. UUID.ToNode -> Array Canceler -> Network d c n -> Network d c n
-storeNodeCancelers uuid = storeCancelers $ UUID.uuid uuid
+storeNodeCancelers = storeCancelers <<< UUID.uuid
 storeInletCancelers :: forall d c n. UUID.ToInlet -> Array Canceler -> Network d c n -> Network d c n
-storeInletCancelers uuid = storeCancelers $ UUID.uuid uuid
+storeInletCancelers = storeCancelers <<< UUID.uuid
 
 
 getNodeCancelers :: forall d c n. UUID.ToNode -> Network d c n -> Array Canceler
-getNodeCancelers uuid = getCancelers $ UUID.uuid uuid
+getNodeCancelers = getCancelers <<< UUID.uuid
 getInletCancelers :: forall d c n. UUID.ToInlet -> Network d c n -> Array Canceler
-getInletCancelers uuid = getCancelers $ UUID.uuid uuid
+getInletCancelers = getCancelers <<< UUID.uuid
+
+
+clearNodeCancelers :: forall d c n. UUID.ToNode -> Network d c n -> Network d c n
+clearNodeCancelers = clearCancelers <<< UUID.uuid
+
+
+cancelNodeSubscriptions :: forall d c n. UUID.ToNode -> Network d c n -> Effect Unit
+cancelNodeSubscriptions = cancelSubscriptions <<< UUID.uuid
+
+
+-- TODO:
+-- addOutlet
+-- connect, disconnect
+-- sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
+-- add toolkit node, toolkit inlet/outlet
 
 
 setupNodeProcessFlow
@@ -457,13 +505,13 @@ addInlet uuid nodePath alias c (PushableFlow pushToInlet inletFlow) nw = do
     --    # updateNodeProcessFlow nodeUuid
 
 
-informParentNodeOnData
+informInletParentNodeOnData
     :: forall d c n
      . UUID.ToInlet
     -> UUID.ToNode
     -> Network d c n
     -> Either RpdError (Effect Canceler)
-informParentNodeOnData inletUuid nodeUuid nw = do
+informInletParentNodeOnData inletUuid nodeUuid nw = do
     (Inlet _ path _ { flow }) :: Inlet d c
         <- view (_inlet inletUuid) nw
             # note (RpdError "")
