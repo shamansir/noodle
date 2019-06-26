@@ -23,6 +23,7 @@
     "purs:repl": "purs repl 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs'",
     "purs:mod-repl": "purs repl 'bower_components/purescript-*/src/**/*.purs'",
     "purs:test": "pulp test --no-check-main",
+    "purs:sandbox": "pulp run --main TestMUV2 --src-path tmp",
     "start": "npm run purs:server"
   },
   "dependencies": {
