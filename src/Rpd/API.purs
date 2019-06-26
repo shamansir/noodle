@@ -50,7 +50,6 @@ data Msg d c n
     = NoOp
     | RequestToAddPatch Path.Alias
     | AddPatch (Patch d c n)
-    -- | PatchReady UUID.ToPatch -- (Patch d c n)
     | RequestToAddNode Path.ToPatch Path.Alias n
     | AddNode (Node d n)
     -- TODO: Toolkit nodes
@@ -59,17 +58,16 @@ data Msg d c n
     | ClearNodeCancelers UUID.ToNode
     | RequestToAddInlet Path.ToNode Path.Alias c
     | AddInlet (Inlet d c)
-    -- | InformParentNode UUID.ToNode UUID.ToInlet
     | StoreInletCanceler UUID.ToInlet Canceler
-    -- | CancelNodeSubscriptions
-    -- | NodeReady UUID.ToNode -- (Node d n)
 
 
 data RpdEffect d c n
     = AddPatchE Path.Alias
     | AddNodeE Path.ToPatch Path.Alias n
     | AddInletE Path.ToNode Path.Alias c
-    | PerformSubAnd (Effect Canceler) (Canceler -> Msg d c n)
+    -- FIXME: make separate Effect for every case
+    | SubscribeNodeProcess UUID.ToNode Subscriber
+    | InformNodeOnInletUpdates UUID.ToNode UUID.ToInlet Subscriber
     | CancelNodeSubscriptions UUID.ToNode
 
 
@@ -91,7 +89,7 @@ update (AddNode node) nw = do
 update (ProcessWith nodeUuid processF) nw = do
     nw' <- processWith nodeUuid processF nw
     trigger <- setupNodeProcessFlow nodeUuid nw'
-    pure $ nw' /\ [ PerformSubAnd trigger $ StoreNodeCanceler nodeUuid ]
+    pure $ nw' /\ [ SubscribeNodeProcess nodeUuid trigger ]
 update (StoreNodeCanceler uuid canceler) nw =
     let
         curNodeCancelers = getNodeCancelers uuid nw
@@ -111,9 +109,8 @@ update (AddInlet inlet@(Inlet uuid path _ _)) nw = do
     let nw'' = clearNodeCancelers nodeUuid nw'
     pure $ nw'' /\
         [ CancelNodeSubscriptions nodeUuid
-        -- FIXME: , pure $ ClearNodeCancelers nodeUuid
-        , PerformSubAnd processTrigger $ StoreNodeCanceler nodeUuid
-        , PerformSubAnd informParentTrigger $ StoreInletCanceler uuid
+        , SubscribeNodeProcess nodeUuid processTrigger
+        , InformNodeOnInletUpdates nodeUuid uuid informParentTrigger
         -- TODO: subscribe for data updates
         ]
 update (StoreInletCanceler uuid canceler) nw =
@@ -176,12 +173,15 @@ performEffect (AddInletE nodePath inletAlias c) pushMsg _ = do
                 , push : PushToInlet pushToInlet
                 }
     pushMsg $ AddInlet newInlet
-performEffect (PerformSubAnd sub f) pushMsg _ = do
+performEffect (SubscribeNodeProcess uuid sub) pushMsg _ = do
     canceler <- sub
-    pushMsg $ f canceler
-performEffect (CancelNodeSubscriptions uuid) _ nw = do
+    pushMsg $ StoreNodeCanceler uuid canceler
+performEffect (InformNodeOnInletUpdates _ uuid sub) pushMsg _ = do
+    canceler <- sub
+    pushMsg $ StoreInletCanceler uuid canceler
+performEffect (CancelNodeSubscriptions uuid) pushMsg nw = do
     _ <- cancelNodeSubscriptions uuid nw
-    pure unit
+    pushMsg $ ClearNodeCancelers uuid
 
 
 
@@ -366,7 +366,7 @@ setupNodeProcessFlow
     :: forall d c n
      . UUID.ToNode
     -> Network d c n
-    -> Either RpdError (Effect Canceler)
+    -> Either RpdError Subscriber
 setupNodeProcessFlow uuid nw = do
     (Node _ _ _ process { inletsFlow, inlets, outlets }) <-
         view (_node uuid) nw # note (RpdError "")
@@ -490,7 +490,7 @@ informInletParentNodeOnData
      . UUID.ToInlet
     -> UUID.ToNode
     -> Network d c n
-    -> Either RpdError (Effect Canceler)
+    -> Either RpdError Subscriber
 informInletParentNodeOnData inletUuid nodeUuid nw = do
     (Inlet _ path _ { flow }) :: Inlet d c
         <- view (_inlet inletUuid) nw
