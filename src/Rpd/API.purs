@@ -59,15 +59,19 @@ data Msg d c n
     | RequestToAddInlet Path.ToNode Path.Alias c
     | AddInlet (Inlet d c)
     | StoreInletCanceler UUID.ToInlet Canceler
+    | RequestToAddOutlet Path.ToNode Path.Alias c
+    | AddOutlet (Outlet d c)
+    | StoreOutletCanceler UUID.ToOutlet Canceler
 
 
 data RpdEffect d c n
     = AddPatchE Path.Alias
     | AddNodeE Path.ToPatch Path.Alias n
     | AddInletE Path.ToNode Path.Alias c
-    -- FIXME: make separate Effect for every case
+    | AddOutletE Path.ToNode Path.Alias c
     | SubscribeNodeProcess UUID.ToNode Subscriber
     | InformNodeOnInletUpdates UUID.ToNode UUID.ToInlet Subscriber
+    | InformNodeOnOutletUpdates UUID.ToNode UUID.ToOutlet Subscriber
     | CancelNodeSubscriptions UUID.ToNode
 
 
@@ -104,9 +108,9 @@ update (AddInlet inlet@(Inlet uuid path _ _)) nw = do
     nw' <- addInlet inlet nw
     nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
-    informParentTrigger <- informInletParentNodeOnData uuid nodeUuid nw'
-    processTrigger <- setupNodeProcessFlow nodeUuid nw'
-    let nw'' = clearNodeCancelers nodeUuid nw'
+    let nw'' = clearNodeCancelers nodeUuid nw' -- FIXME: they need to be called before being cleared
+    processTrigger <- setupNodeProcessFlow nodeUuid nw''
+    informParentTrigger <- informInletParentNodeOnData uuid nodeUuid nw''
     pure $ nw'' /\
         [ CancelNodeSubscriptions nodeUuid
         , SubscribeNodeProcess nodeUuid processTrigger
@@ -119,6 +123,27 @@ update (StoreInletCanceler uuid canceler) nw =
         newCancelers = canceler : curInletCancelers
     in
         pure $ storeInletCancelers uuid newCancelers nw /\ []
+update (RequestToAddOutlet nodePath alias c) nw =
+    pure $ nw /\ [ AddOutletE nodePath alias c ]
+update (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
+    nw' <- addOutlet outlet nw
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
+    nodeUuid <- uuidByPath UUID.toNode nodePath nw
+    let nw'' = clearNodeCancelers nodeUuid nw' -- FIXME: they need to be called before being cleared
+    processTrigger <- setupNodeProcessFlow nodeUuid nw''
+    informParentTrigger <- informOutletParentNodeOnData uuid nodeUuid nw''
+    pure $ nw'' /\
+        [ CancelNodeSubscriptions nodeUuid
+        , SubscribeNodeProcess nodeUuid processTrigger
+        , InformNodeOnOutletUpdates nodeUuid uuid informParentTrigger
+        -- TODO: subscribe for data updates
+        ]
+update (StoreOutletCanceler uuid canceler) nw =
+    let
+        curOutletCancelers = getOutletCancelers uuid nw
+        newCancelers = canceler : curOutletCancelers
+    in
+        pure $ storeOutletCancelers uuid newCancelers nw /\ []
 
 
 performEffect
@@ -158,6 +183,12 @@ performEffect (AddNodeE patchPath nodeAlias n) pushMsg _ = do
                 , pushToOutlets : PushToOutlets pushToOutlets
                 }
     pushMsg $ AddNode newNode
+performEffect (SubscribeNodeProcess uuid sub) pushMsg _ = do
+    canceler <- sub
+    pushMsg $ StoreNodeCanceler uuid canceler
+performEffect (CancelNodeSubscriptions uuid) pushMsg nw = do
+    _ <- cancelNodeSubscriptions uuid nw
+    pushMsg $ ClearNodeCancelers uuid
 performEffect (AddInletE nodePath inletAlias c) pushMsg _ = do
     uuid <- UUID.new
     flow <- makePushableFlow
@@ -173,15 +204,29 @@ performEffect (AddInletE nodePath inletAlias c) pushMsg _ = do
                 , push : PushToInlet pushToInlet
                 }
     pushMsg $ AddInlet newInlet
-performEffect (SubscribeNodeProcess uuid sub) pushMsg _ = do
-    canceler <- sub
-    pushMsg $ StoreNodeCanceler uuid canceler
+    -- FIXME: pushMsg $ CancelNodeSubscriptions
 performEffect (InformNodeOnInletUpdates _ uuid sub) pushMsg _ = do
     canceler <- sub
     pushMsg $ StoreInletCanceler uuid canceler
-performEffect (CancelNodeSubscriptions uuid) pushMsg nw = do
-    _ <- cancelNodeSubscriptions uuid nw
-    pushMsg $ ClearNodeCancelers uuid
+performEffect (AddOutletE nodePath outletAlias c) pushMsg _ = do
+    uuid <- UUID.new
+    flow <- makePushableFlow
+    let
+        path = Path.outletInNode nodePath outletAlias
+        PushableFlow pushToOutlet outletFlow = flow
+        newOutlet =
+            Outlet
+                (UUID.ToOutlet uuid)
+                path
+                c
+                { flow : OutletFlow outletFlow
+                , push : PushToOutlet pushToOutlet
+                }
+    pushMsg $ AddOutlet newOutlet
+    -- FIXME: pushMsg $ CancelNodeSubscriptions
+performEffect (InformNodeOnOutletUpdates _ uuid sub) pushMsg _ = do
+    canceler <- sub
+    pushMsg $ StoreOutletCanceler uuid canceler
 
 
 
@@ -339,12 +384,16 @@ storeNodeCancelers :: forall d c n. UUID.ToNode -> Array Canceler -> Network d c
 storeNodeCancelers = storeCancelers <<< UUID.uuid
 storeInletCancelers :: forall d c n. UUID.ToInlet -> Array Canceler -> Network d c n -> Network d c n
 storeInletCancelers = storeCancelers <<< UUID.uuid
+storeOutletCancelers :: forall d c n. UUID.ToOutlet -> Array Canceler -> Network d c n -> Network d c n
+storeOutletCancelers = storeCancelers <<< UUID.uuid
 
 
 getNodeCancelers :: forall d c n. UUID.ToNode -> Network d c n -> Array Canceler
 getNodeCancelers = getCancelers <<< UUID.uuid
 getInletCancelers :: forall d c n. UUID.ToInlet -> Network d c n -> Array Canceler
 getInletCancelers = getCancelers <<< UUID.uuid
+getOutletCancelers :: forall d c n. UUID.ToOutlet -> Network d c n -> Array Canceler
+getOutletCancelers = getCancelers <<< UUID.uuid
 
 
 clearNodeCancelers :: forall d c n. UUID.ToNode -> Network d c n -> Network d c n
@@ -356,7 +405,6 @@ cancelNodeSubscriptions = cancelSubscriptions <<< UUID.uuid
 
 
 -- TODO:
--- addOutlet
 -- connect, disconnect
 -- sendToInlet, streamToInlet, sendToOutlet, streamToOutlet
 -- add toolkit node, toolkit inlet/outlet
@@ -473,16 +521,10 @@ addInlet
 addInlet inlet@(Inlet uuid path _ _) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
     nodeUuid <- nw # uuidByPath UUID.toNode nodePath
-    -- uuid <- liftEffect UUID.new
-    -- PushableFlow pushToInlet inletFlow <- liftEffect makePushableFlow
-    -- userCancelers :: Array Canceler <-
-    --     liftEffect $ traverse (E.subscribe dataFlow) subs
     pure $ nw
         # setJust (_inlet uuid) inlet
         # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
         # setJust (_nodeInlet nodeUuid uuid) unit
-    --    # setJust (_cancelers uuid) [ canceler ]
-    --    # updateNodeProcessFlow nodeUuid
 
 
 informInletParentNodeOnData
@@ -502,3 +544,36 @@ informInletParentNodeOnData inletUuid nodeUuid nw = do
         (PushToInlets informNode) = pushToInlets
         (InletFlow inletFlow) = flow
     pure $ E.subscribe inletFlow (\d -> informNode (path /\ inletUuid /\ d))
+
+
+addOutlet
+    :: forall d c n
+     . Outlet d c
+    -> Network d c n
+    -> Either RpdError (Network d c n)
+addOutlet outlet@(Outlet uuid path _ _) nw = do
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
+    nodeUuid <- nw # uuidByPath UUID.toNode nodePath
+    pure $ nw
+        # setJust (_outlet uuid) outlet
+        # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
+        # setJust (_nodeOutlet nodeUuid uuid) unit
+
+
+informOutletParentNodeOnData
+    :: forall d c n
+     . UUID.ToOutlet
+    -> UUID.ToNode
+    -> Network d c n
+    -> Either RpdError Subscriber
+informOutletParentNodeOnData outletUuid nodeUuid nw = do
+    (Outlet _ path _ { flow }) :: Outlet d c
+        <- view (_outlet outletUuid) nw
+            # note (RpdError "")
+    (Node _ _ _ _ { pushToOutlets }) :: Node d n
+        <- view (_node nodeUuid) nw
+            # note (RpdError "")
+    let
+        (PushToOutlets informNode) = pushToOutlets
+        (OutletFlow outletFlow) = flow
+    pure $ E.subscribe outletFlow (\d -> informNode (path /\ outletUuid /\ d))
