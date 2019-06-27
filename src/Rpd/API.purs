@@ -18,7 +18,7 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Either (Either(..), note)
 import Data.Lens (view, set, setJust)
-import Data.Tuple.Nested ((/\), type (/\))
+import Data.Tuple.Nested ((/\), type (/\), over1)
 import Data.Foldable (foldr)
 import Data.Traversable (traverse, traverse_)
 
@@ -74,8 +74,8 @@ data RpdEffect d c n
     -- FIXME: don't pass the `Subscriber`, but do the corresponding action in `performEffect`
     -- (needs to handle `Either` this way)
     | SubscribeNodeProcess (Node d n)
-    | InformNodeOnInletUpdates (Node d n) (Inlet d c)
-    | InformNodeOnOutletUpdates (Node d n) (Outlet d c)
+    | InformNodeOnInletUpdates (Inlet d c) (Node d n)
+    | InformNodeOnOutletUpdates (Outlet d c) (Node d n)
     | CancelNodeSubscriptions (Node d n)
     | SubscribeNodeUpdates (Node d n)
 
@@ -95,17 +95,17 @@ update (RequestToAddNode patchPath alias n) nw =
 update (AddNode node) nw = do
     nw' <- addNode node nw
     pure $ nw' /\ [ ]
-update (ProcessWith nodeUuid processF) nw = do
-    nw' <- processWith nodeUuid processF nw
-    trigger <- setupNodeProcessFlow nodeUuid nw'
-    pure $ nw' /\ [ SubscribeNodeProcess nodeUuid trigger ]
-update (StoreNodeCanceler uuid canceler) nw =
+update (ProcessWith node@(Node uuid _ _ _ _) processF) nw = do
+    let newNode = processWith processF node
+        nw' = nw # setJust (_node uuid) newNode
+    pure $ nw' /\ [ SubscribeNodeProcess newNode ]
+update (StoreNodeCanceler (Node uuid _ _ _ _) canceler) nw =
     let
         curNodeCancelers = getNodeCancelers uuid nw
         newCancelers = canceler : curNodeCancelers
     in
         pure $ storeNodeCancelers uuid newCancelers nw /\ []
-update (ClearNodeCancelers uuid) nw =
+update (ClearNodeCancelers (Node uuid _ _ _ _)) nw =
     pure $ clearNodeCancelers uuid nw /\ []
 update (RequestToAddInlet nodePath alias c) nw =
     pure $ nw /\ [ AddInletE nodePath alias c ]
@@ -113,16 +113,14 @@ update (AddInlet inlet@(Inlet uuid path _ _)) nw = do
     nw' <- addInlet inlet nw
     nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
     nodeUuid <- uuidByPath UUID.toNode nodePath nw'
-    processTrigger <- setupNodeProcessFlow nodeUuid nw'
-    informParentTrigger <- informNodeOnInletUpdates uuid nodeUuid nw'
-    subscribeNodeTrigger <- subscribeNode
+    node <- view (_node nodeUuid) nw # note (RpdError "")
     pure $ nw' /\
-        [ CancelNodeSubscriptions nodeUuid
-        , SubscribeNodeProcess nodeUuid processTrigger
-        , InformNodeOnInletUpdates nodeUuid uuid informParentTrigger
-        , SubscribeNodeUpdates nodeUuid
+        [ CancelNodeSubscriptions node
+        , SubscribeNodeProcess node
+        , InformNodeOnInletUpdates inlet node
+        , SubscribeNodeUpdates node
         ]
-update (StoreInletCanceler uuid canceler) nw =
+update (StoreInletCanceler (Inlet uuid _ _ _) canceler) nw =
     let
         curInletCancelers = getInletCancelers uuid nw
         newCancelers = canceler : curInletCancelers
@@ -134,20 +132,24 @@ update (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
     nw' <- addOutlet outlet nw
     nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
     nodeUuid <- uuidByPath UUID.toNode nodePath nw'
-    processTrigger <- setupNodeProcessFlow nodeUuid nw'
-    informParentTrigger <- informNodeOnOutletUpdates uuid nodeUuid nw'
+    node <- view (_node nodeUuid) nw # note (RpdError "")
+    outlet <- view (_outlet uuid) nw # note (RpdError "")
     pure $ nw' /\
-        [ CancelNodeSubscriptions nodeUuid
-        , SubscribeNodeProcess nodeUuid processTrigger
-        , InformNodeOnOutletUpdates nodeUuid uuid informParentTrigger
-        , SubscribeNodeUpdates nodeUuid
+        [ CancelNodeSubscriptions node
+        , SubscribeNodeProcess node
+        , InformNodeOnOutletUpdates outlet node
+        , SubscribeNodeUpdates node
         ]
-update (StoreOutletCanceler uuid canceler) nw =
+update (StoreOutletCanceler (Outlet uuid _ _ _) canceler) nw =
     let
         curOutletCancelers = getOutletCancelers uuid nw
         newCancelers = canceler : curOutletCancelers
     in
         pure $ storeOutletCancelers uuid newCancelers nw /\ []
+update (ReceiveInletData _ _) nw =
+    pure $ nw /\ []
+update (ReceiveOutletData _ _) nw =
+    pure $ nw /\ []
 
 
 performEffect
@@ -187,12 +189,12 @@ performEffect (AddNodeE patchPath nodeAlias n) pushMsg _ = do
                 , pushToOutlets : PushToOutlets pushToOutlets
                 }
     pushMsg $ AddNode newNode
-performEffect (SubscribeNodeProcess uuid sub) pushMsg _ = do
-    canceler <- sub
-    pushMsg $ StoreNodeCanceler uuid canceler
-performEffect (CancelNodeSubscriptions uuid) pushMsg nw = do
+performEffect (SubscribeNodeProcess node) pushMsg nw = do
+    canceler <- setupNodeProcessFlow node nw
+    pushMsg $ StoreNodeCanceler node canceler
+performEffect (CancelNodeSubscriptions node@(Node uuid _ _ _ _)) pushMsg nw = do
     _ <- cancelNodeSubscriptions uuid nw
-    pushMsg $ ClearNodeCancelers uuid
+    pushMsg $ ClearNodeCancelers node
 performEffect (AddInletE nodePath inletAlias c) pushMsg _ = do
     uuid <- UUID.new
     flow <- makePushableFlow
@@ -209,9 +211,9 @@ performEffect (AddInletE nodePath inletAlias c) pushMsg _ = do
                 }
     pushMsg $ AddInlet newInlet
     -- FIXME: pushMsg $ CancelNodeSubscriptions
-performEffect (InformNodeOnInletUpdates _ uuid sub) pushMsg _ = do
-    canceler <- sub
-    pushMsg $ StoreInletCanceler uuid canceler
+performEffect (InformNodeOnInletUpdates inlet node) pushMsg _ = do
+    canceler <- informNodeOnInletUpdates inlet node
+    pushMsg $ StoreInletCanceler inlet canceler
 performEffect (AddOutletE nodePath outletAlias c) pushMsg _ = do
     uuid <- UUID.new
     flow <- makePushableFlow
@@ -228,11 +230,11 @@ performEffect (AddOutletE nodePath outletAlias c) pushMsg _ = do
                 }
     pushMsg $ AddOutlet newOutlet
     -- FIXME: pushMsg $ CancelNodeSubscriptions
-performEffect (InformNodeOnOutletUpdates _ uuid sub) pushMsg _ = do
-    canceler <- sub
-    pushMsg $ StoreOutletCanceler uuid canceler
-performEffect (SubscribeNodeUpdates node) pushMsg nw = do
-    canceler <- subscribeNode node
+performEffect (InformNodeOnOutletUpdates outlet node) pushMsg _ = do
+    canceler <- informNodeOnOutletUpdates outlet node
+    pushMsg $ StoreOutletCanceler outlet canceler
+performEffect (SubscribeNodeUpdates node) pushMsg _ = do
+    canceler <- subscribeNode node (const $ pure unit) (const $ pure unit)
     pushMsg $ StoreNodeCanceler node canceler
 
 
@@ -351,24 +353,18 @@ addNode node@(Node uuid path _ _ _) nw = do
 
 processWith
     :: forall d c n
-     . UUID.ToNode
-    -> ProcessF d
-    -> Network d c n
-    -> Either RpdError (Network d c n)
-processWith uuid processF nw = do
+     . ProcessF d
+    -> Node d n
+    -> Node d n
+processWith processF node =
     -- uuid <- nw # uuidByPath UUID.toNode path
-    (Node _ path n _ state) :: Node d n <-
-        view (_node uuid) nw # note (RpdError "")
-    let
-        newNode =
-            Node
-                uuid
-                path
-                n
-                processF
-                state
-    pure $ nw
-        # setJust (_node uuid) newNode
+    let (Node uuid path n _ state) = node
+    in Node
+        uuid
+        path
+        n
+        processF
+        state
 
 
 storeCancelers :: forall d c n. UUID -> Array Canceler -> Network d c n -> Network d c n
@@ -420,43 +416,41 @@ cancelNodeSubscriptions = cancelSubscriptions <<< UUID.uuid
 
 setupNodeProcessFlow
     :: forall d c n
-     . UUID.ToNode
-    -> Network d c n
-    -> Either RpdError Subscriber
-setupNodeProcessFlow uuid nw = do
-    (Node _ _ _ process { inletsFlow, inlets, outlets }) <-
-        view (_node uuid) nw # note (RpdError "")
-    pure $
-        if (Seq.null inlets || Seq.null outlets)
-            then pure $ pure unit
-        else case process of
-            Withhold -> pure $ pure unit
-            processF -> do
-                _ <- view (_cancelers $ UUID.uuid uuid) nw
-                        # fromMaybe []
-                        # traverse_ liftEffect
-                if (Seq.null inlets || Seq.null outlets) then pure $ pure unit else do
-                    let
-                        (outletFlows :: UUID.ToOutlet /-> PushToOutlet d) =
-                            outlets
-                                # (Seq.toUnfoldable :: forall a. Seq a -> List a)
-                                # map (\ouuid ->
-                                    view (_outletPush ouuid) nw
-                                        <#> \push -> ouuid /\ push)
-                                # List.catMaybes -- FIXME: raise an error if outlet wasn't found
-                                # Map.fromFoldable
-                        pushToOutletFlow :: (Path.ToOutlet /\ UUID.ToOutlet /\ d) -> Effect Unit
-                        pushToOutletFlow (_ /\ ouuid /\ d) =
-                            case Map.lookup ouuid outletFlows of
-                                Just (PushToOutlet push) -> push d
-                                Nothing -> pure unit
-                    OutletsFlow outletsFlow /\ maybeCancelBuild <-
-                        buildOutletsFlow uuid process inletsFlow inlets outlets nw
-                    canceler :: Canceler
-                        <- E.subscribe outletsFlow pushToOutletFlow
-                    pure $ case maybeCancelBuild of
-                                Just buildCanceler -> canceler <> buildCanceler
-                                Nothing -> canceler
+     . Node d n
+    -> Network d c n -- FIXME: get rid of the network usage here as well?
+    -> Subscriber
+setupNodeProcessFlow node nw =
+    let (Node uuid _ _ process { inletsFlow, inlets, outlets }) = node
+    in if (Seq.null inlets || Seq.null outlets)
+        then pure $ pure unit
+    else case process of
+        Withhold -> pure $ pure unit
+        processF -> do
+            _ <- view (_cancelers $ UUID.uuid uuid) nw
+                    # fromMaybe []
+                    # traverse_ liftEffect
+            if (Seq.null inlets || Seq.null outlets) then pure $ pure unit else do
+                let
+                    (outletFlows :: UUID.ToOutlet /-> PushToOutlet d) =
+                        outlets
+                            # (Seq.toUnfoldable :: forall a. Seq a -> List a)
+                            # map (\ouuid ->
+                                view (_outletPush ouuid) nw
+                                    <#> \push -> ouuid /\ push)
+                            # List.catMaybes -- FIXME: raise an error if outlet wasn't found
+                            # Map.fromFoldable
+                    pushToOutletFlow :: (Path.ToOutlet /\ UUID.ToOutlet /\ d) -> Effect Unit
+                    pushToOutletFlow (_ /\ ouuid /\ d) =
+                        case Map.lookup ouuid outletFlows of
+                            Just (PushToOutlet push) -> push d
+                            Nothing -> pure unit
+                OutletsFlow outletsFlow /\ maybeCancelBuild <-
+                    buildOutletsFlow uuid process inletsFlow inlets outlets nw
+                canceler :: Canceler
+                    <- E.subscribe outletsFlow pushToOutletFlow
+                pure $ case maybeCancelBuild of
+                            Just buildCanceler -> canceler <> buildCanceler
+                            Nothing -> canceler
 
 
 buildOutletsFlow
@@ -537,21 +531,15 @@ addInlet inlet@(Inlet uuid path _ _) nw = do
 
 informNodeOnInletUpdates
     :: forall d c n
-     . UUID.ToInlet
-    -> UUID.ToNode
-    -> Network d c n
-    -> Either RpdError Subscriber
-informNodeOnInletUpdates inletUuid nodeUuid nw = do
-    (Inlet _ path _ { flow }) :: Inlet d c
-        <- view (_inlet inletUuid) nw
-            # note (RpdError "")
-    (Node _ _ _ _ { pushToInlets }) :: Node d n
-        <- view (_node nodeUuid) nw
-            # note (RpdError "")
-    let
+     . Inlet d c
+    -> Node d n
+    -> Subscriber
+informNodeOnInletUpdates inlet node = do
+    let Inlet uuid path _ { flow } = inlet
+        Node _ _ _ _ { pushToInlets } = node
         (PushToInlets informNode) = pushToInlets
         (InletFlow inletFlow) = flow
-    pure $ E.subscribe inletFlow (\d -> informNode (path /\ inletUuid /\ d))
+    E.subscribe inletFlow (\d -> informNode (path /\ uuid /\ d))
 
 
 addOutlet
@@ -570,21 +558,15 @@ addOutlet outlet@(Outlet uuid path _ _) nw = do
 
 informNodeOnOutletUpdates
     :: forall d c n
-     . UUID.ToOutlet
-    -> UUID.ToNode
-    -> Network d c n
-    -> Either RpdError Subscriber
-informNodeOnOutletUpdates outletUuid nodeUuid nw = do
-    (Outlet _ path _ { flow }) :: Outlet d c
-        <- view (_outlet outletUuid) nw
-            # note (RpdError "")
-    (Node _ _ _ _ { pushToOutlets }) :: Node d n
-        <- view (_node nodeUuid) nw
-            # note (RpdError "")
-    let
+     . Outlet d c
+    -> Node d n
+    -> Subscriber
+informNodeOnOutletUpdates outlet node = do
+    let (Outlet uuid path _ { flow }) = outlet
+        (Node _ _ _ _ { pushToOutlets }) = node
         (PushToOutlets informNode) = pushToOutlets
         (OutletFlow outletFlow) = flow
-    pure $ E.subscribe outletFlow (\d -> informNode (path /\ outletUuid /\ d))
+    E.subscribe outletFlow (\d -> informNode (path /\ uuid /\ d))
 
 
 subscribeNode
@@ -592,21 +574,14 @@ subscribeNode
      . Node d n
     -> (InletAlias /\ UUID.ToInlet /\ d -> Effect Unit)
     -> (OutletAlias /\ UUID.ToOutlet /\ d -> Effect Unit)
-    -> Network d c n
     -> Effect Canceler
-subscribeNode node inletsHandler outletsHandler = do
-    -- uuid <- uuidByPath UUID.toNode path nw
-    -- InletsFlow inletsFlow <-
-    --     view (_nodeInletsFlow uuid) nw
-    --         # note (RpdError "")
-    -- OutletsFlow outletsFlow <-
-    --     view (_nodeOutletsFlow uuid) nw
-    --         # note (RpdError "")
-    pure $ do
-        inletsCanceler :: Canceler <-
-            E.subscribe inletsFlow
-                (inletsHandler <<< over1 \(Path.ToInlet { inlet }) -> inlet)
-        outletsCanceler :: Canceler <-
-            E.subscribe outletsFlow
-                (outletsHandler <<< over1 \(Path.ToOutlet { outlet }) -> outlet)
-        pure $ inletsCanceler <> inletsCanceler
+subscribeNode (Node _ _ _ _ { inletsFlow, outletsFlow }) inletsHandler outletsHandler = do
+    let InletsFlow inletsFlow' = inletsFlow
+    let OutletsFlow outletsFlow' = outletsFlow
+    inletsCanceler :: Canceler <-
+        E.subscribe inletsFlow'
+            (inletsHandler <<< over1 \(Path.ToInlet { inlet }) -> inlet)
+    outletsCanceler :: Canceler <-
+        E.subscribe outletsFlow'
+            (outletsHandler <<< over1 \(Path.ToOutlet { outlet }) -> outlet)
+    pure $ inletsCanceler <> outletsCanceler
