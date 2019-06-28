@@ -52,6 +52,7 @@ instance showMsg :: Show Msg where
 --     show (MakeUUID _) = "MAKE-UUID"
 
 
+-- type EffectsToPerform myEff msg = Array (myEff msg)
 type EffectsToPerform msg = Array (MyEffect msg)
 type PerformEffectF model msg = MyEffect msg -> (msg -> Effect Unit) -> Program model -> Effect Unit
 type UpdateF model msg = msg -> model -> Program model /\ EffectsToPerform msg
@@ -102,6 +103,73 @@ performEffect (MakeUUID f) pushMsg program = do
 performEffect MsgTwo _ program = pure unit
 
 
+doNoOp :: Unit -> Unit -> String -> Program String /\ EffectsToPerform Msg
+doNoOp _ _ = update NoOp
+
+
+doMsgOne :: Unit -> String -> Program String /\ EffectsToPerform Msg
+doMsgOne _ = update MsgOne
+
+
+doStart :: Unit -> String -> Program String /\ EffectsToPerform Msg
+doStart _ = update Start
+
+
+-- doStoreUUID :: UUID -> String -> Program String /\ EffectsToPerform Msg
+-- doStoreUUID uuid = update $ Store uuid
+
+
+runSequence :: PushF Msg -> PerformEffectF String Msg -> Effect (Program String)
+runSequence pushMsg userPerformEff =
+    (pure $ pure "")
+        `op` doNoOp unit unit
+        `op` doMsgOne unit
+        `op` doStart unit
+        `op` doNoOp unit unit
+    where
+        -- op :: String -> (String -> Either Error String /\ Array (MyEffect Msg)) -> String
+        -- op :: Effect String -> (String -> Either Error String /\ Array (MyEffect Msg)) -> Effect String
+        op
+            :: Effect (Program String)
+            -> (String -> Program String /\ EffectsToPerform Msg)
+            -> Effect (Program String)
+        -- op = ?wh
+        op effV f = do
+            eitherV :: Program String <- effV
+            case eitherV of
+                Left err -> pure $ Left err
+                Right v -> do
+                    let nextVal /\ effects = f v
+                    _ <- performEffects pushMsg userPerformEff eitherV effects
+                    pure nextVal
+
+
+update :: Msg -> String -> Program String /\ EffectsToPerform Msg
+update msg model =
+    let ( prog /\ effects ) = update' msg model
+    in ( case prog of
+            Left err -> pure ("(" <> show msg <> ")-" <> show err)
+            Right model' -> pure ("(" <> show msg <> ")-" <> model')
+        ) /\ effects
+update' :: Msg -> String -> Program String /\ EffectsToPerform Msg
+-- update' (MakeUUID f) model = pure model /\ [ f <$> UUID.new ]
+update' NoOp model = pure model /\ [ ]
+update' MsgOne model = pure model /\ [ MsgTwo ]
+update' Start model = pure model /\
+    [ MakeUUID Store
+    , MakeUUID Store
+    , MakeUUID Store
+    ]
+update' (Store uuid) model =
+    pure ("<" <> show uuid <> ">-" <> model)
+    /\ []
+
+
+view :: ViewF String String
+view errOrModel =
+    either (const "ERR") identity errOrModel
+
+
 main :: Effect Unit
 main = do
     { event : messages, push : pushMessage } <- Event.create
@@ -113,33 +181,13 @@ main = do
     pushMessage MsgOne
     pushMessage MsgOne
     pushMessage Start
+    log "-----"
+    log "-----"
+    log "-----"
+    prog <- runSequence pushMessage performEffect
+    case prog of
+        Right v -> log ("success: " <> v)
+        Left err -> log ("error: " <> show err)
     pure unit
-    where
-        update :: Msg -> String -> Program String /\ EffectsToPerform Msg
-        update msg model =
-            let ( prog /\ effects ) = update' msg model
-            in ( case prog of
-                    Left err -> pure ("(" <> show msg <> ")-" <> show err)
-                    Right model' -> pure ("(" <> show msg <> ")-" <> model')
-               ) /\ effects
-        update' :: Msg -> String -> Program String /\ EffectsToPerform Msg
-        -- update' (MakeUUID f) model = pure model /\ [ f <$> UUID.new ]
-        update' NoOp model = pure model /\ [ ]
-        update' MsgOne model = pure model /\ [ MsgTwo ]
-        update' Start model = pure model /\
-            [ MakeUUID Store
-            , MakeUUID Store
-            , MakeUUID Store
-            ]
-        update' (Store uuid) model =
-            pure ("<" <> show uuid <> ">-" <> model)
-            /\ []
-        -- update msg m = m
-        --     case model of
-        --     model >>= \prev -> do
-        --         uuid <- liftEffect UUID.new
-        --         -- let _ = DT.spy "uuid" uuid
-        --         pure $ "(" <> show msg <> ":" <> UUID.toString uuid <> ")-" <> prev
-        view errOrModel =
-            either (const "ERR") identity errOrModel
+
 
