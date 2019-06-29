@@ -46,6 +46,28 @@ instance showRpdError :: Show RpdError where show (RpdError err) = err
 derive instance eqRpdError :: Eq RpdError
 
 
+-- infixl 1 andThen as </>
+-- other options: └, ~>, ...
+
+type Step d c n = Either RpdError (Network d c n /\ Array (RpdEffect d c n))
+
+
+-- andThen :: forall a b. Rpd a -> (a -> Rpd b) -> Rpd b
+-- andThen = (>>=)
+
+-- TODO:
+-- myOp :: forall d c n.
+--     Step d c n ->
+--     (Network d c n -> Step d c n) ->
+--     Effect (Step d c n)
+-- myOp v f =
+--     pure $ v >>= \(nw /\ effects) -> f nw
+    -- v >>= \(nw /\ effects) ->
+    --     pure $ do
+    --         _ <- traverse_ identity effects
+    --         pure $ f nw
+
+
 data Msg d c n
     = NoOp
     | RequestToAddPatch Path.Alias
@@ -133,7 +155,6 @@ update (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
     nodeUuid <- uuidByPath UUID.toNode nodePath nw'
     node <- view (_node nodeUuid) nw # note (RpdError "")
-    outlet <- view (_outlet uuid) nw # note (RpdError "")
     pure $ nw' /\
         [ CancelNodeSubscriptions node
         , SubscribeNodeProcess node
@@ -236,8 +257,6 @@ performEffect (InformNodeOnOutletUpdates outlet node) pushMsg _ = do
 performEffect (SubscribeNodeUpdates node) pushMsg _ = do
     canceler <- subscribeNode node (const $ pure unit) (const $ pure unit)
     pushMsg $ StoreNodeCanceler node canceler
-
-
 
 
 makePushableFlow :: forall d. Effect (PushableFlow d)
@@ -352,7 +371,7 @@ addNode node@(Node uuid path _ _ _) nw = do
 
 
 processWith
-    :: forall d c n
+    :: forall d n
      . ProcessF d
     -> Node d n
     -> Node d n
@@ -509,7 +528,6 @@ buildOutletsFlow _ (Process processNode) (InletsFlow inletsFlow) inlets outlets 
                     )
                     outletsAliases
             pure unit
-    -- TODO
     canceler <- liftEffect $ E.subscribe processFlow processHandler
     pure $ (OutletsFlow event)
            /\ Just canceler
@@ -570,10 +588,10 @@ informNodeOnOutletUpdates outlet node = do
 
 
 subscribeNode
-    :: forall d c n
+    :: forall d n
      . Node d n
-    -> (InletAlias /\ UUID.ToInlet /\ d -> Effect Unit)
-    -> (OutletAlias /\ UUID.ToOutlet /\ d -> Effect Unit)
+    -> (InletAlias /\ UUID.ToInlet /\ d -> Effect Unit) -- FIXME: change to (Inlet d c)
+    -> (OutletAlias /\ UUID.ToOutlet /\ d -> Effect Unit) -- FIXME: change to (Outlet d c)
     -> Effect Canceler
 subscribeNode (Node _ _ _ _ { inletsFlow, outletsFlow }) inletsHandler outletsHandler = do
     let InletsFlow inletsFlow' = inletsFlow

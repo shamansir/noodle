@@ -103,47 +103,6 @@ performEffect (MakeUUID f) pushMsg program = do
 performEffect MsgTwo _ program = pure unit
 
 
-doNoOp :: Unit -> Unit -> String -> Program String /\ EffectsToPerform Msg
-doNoOp _ _ = update NoOp
-
-
-doMsgOne :: Unit -> String -> Program String /\ EffectsToPerform Msg
-doMsgOne _ = update MsgOne
-
-
-doStart :: Unit -> String -> Program String /\ EffectsToPerform Msg
-doStart _ = update Start
-
-
--- doStoreUUID :: UUID -> String -> Program String /\ EffectsToPerform Msg
--- doStoreUUID uuid = update $ Store uuid
-
-
-runSequence :: PushF Msg -> PerformEffectF String Msg -> Effect (Program String)
-runSequence pushMsg userPerformEff =
-    (pure $ pure "")
-        `op` doNoOp unit unit
-        `op` doMsgOne unit
-        `op` doStart unit
-        `op` doNoOp unit unit
-    where
-        -- op :: String -> (String -> Either Error String /\ Array (MyEffect Msg)) -> String
-        -- op :: Effect String -> (String -> Either Error String /\ Array (MyEffect Msg)) -> Effect String
-        op
-            :: Effect (Program String)
-            -> (String -> Program String /\ EffectsToPerform Msg)
-            -> Effect (Program String)
-        -- op = ?wh
-        op effV f = do
-            eitherV :: Program String <- effV
-            case eitherV of
-                Left err -> pure $ Left err
-                Right v -> do
-                    let nextVal /\ effects = f v
-                    _ <- performEffects pushMsg userPerformEff eitherV effects
-                    pure nextVal
-
-
 update :: Msg -> String -> Program String /\ EffectsToPerform Msg
 update msg model =
     let ( prog /\ effects ) = update' msg model
@@ -170,6 +129,55 @@ view errOrModel =
     either (const "ERR") identity errOrModel
 
 
+doNoOp :: Unit -> Unit -> String -> Program String /\ EffectsToPerform Msg
+doNoOp _ _ = update NoOp
+
+
+doMsgOne :: Unit -> String -> Program String /\ EffectsToPerform Msg
+doMsgOne _ = update MsgOne
+
+
+doStart :: Unit -> String -> Program String /\ EffectsToPerform Msg
+doStart _ = update Start
+
+
+-- doStoreUUID :: UUID -> String -> Program String /\ EffectsToPerform Msg
+-- doStoreUUID uuid = update $ Store uuid
+
+
+runSequence
+    :: PushF Msg
+    -> PerformEffectF String Msg
+    -> ViewF String String
+    -> Effect (Program String)
+    -- -> Effect (Event String)
+runSequence pushMsg userPerformEff userView = do
+    --let views = Event.fold foldingF
+    (pure $ pure "")
+        `op` doNoOp unit unit
+        `op` doMsgOne unit
+        `op` doStart unit
+        `op` doNoOp unit unit
+    where
+        makeView model =
+            model
+        -- op :: String -> (String -> Either Error String /\ Array (MyEffect Msg)) -> String
+        -- op :: Effect String -> (String -> Either Error String /\ Array (MyEffect Msg)) -> Effect String
+        op
+            :: Effect (Program String)
+            -> (String -> Program String /\ EffectsToPerform Msg)
+            -> Effect (Program String)
+        -- op = ?wh
+        op effV f = do
+            eitherV :: Program String <- effV
+            case eitherV of
+                Left err -> pure $ Left err
+                Right v -> do
+                    let nextVal /\ effects = f v
+                    _ <- performEffects pushMsg userPerformEff eitherV effects
+                    pure nextVal
+
+
 main :: Effect Unit
 main = do
     { event : messages, push : pushMessage } <- Event.create
@@ -184,7 +192,9 @@ main = do
     log "-----"
     log "-----"
     log "-----"
-    prog <- runSequence pushMessage performEffect
+    { event : messages', push : pushMessage' } <- Event.create
+    _ <- Event.subscribe messages' $ log <<< show
+    prog <- runSequence pushMessage' performEffect view
     case prog of
         Right v -> log ("success: " <> v)
         Left err -> log ("error: " <> show err)
