@@ -144,38 +144,39 @@ doStart _ = update Start
 -- doStoreUUID :: UUID -> String -> Program String /\ EffectsToPerform Msg
 -- doStoreUUID uuid = update $ Store uuid
 
+-- op
+--     :: Effect (Program String)
+--     -> (String -> Program String /\ EffectsToPerform Msg)
+--     -> Effect (Program String)
+-- op = ?wh
+op :: (PushF Msg -> Effect (Program String)) -> (String -> Program String /\ EffectsToPerform Msg) -> PushF Msg -> Effect (Program String)
+op effV f = \pushF -> do
+    eitherV :: Program String <- effV pushF
+    case eitherV of
+        Left err -> pure $ Left err
+        Right v -> do
+            let nextVal /\ effects = f v
+            _ <- performEffects pushF performEffect eitherV effects
+            pure nextVal
+    -- pure $ pure ""
+    -- eitherV :: Program String <- effV
 
-runSequence
-    :: PushF Msg
-    -> PerformEffectF String Msg
-    -> ViewF String String
-    -> Effect (Program String)
-    -- -> Effect (Event String)
-runSequence pushMsg userPerformEff userView = do
-    --let views = Event.fold foldingF
-    (pure $ pure "")
-        `op` doNoOp unit unit
-        `op` doMsgOne unit
-        `op` doStart unit
-        `op` doNoOp unit unit
-    where
-        makeView model =
-            model
+
+
+runSequence :: PushF Msg -> Effect (Program String)
+runSequence pushMsg =
+--    initialModel <-
+        ((pure $ pure $ pure "")
+            `op` doNoOp unit unit
+            `op` doMsgOne unit
+            `op` doStart unit
+            `op` doNoOp unit unit) (pushMsg :: PushF Msg)
+    -- let views = Event.fold ?wh messages initialModel
+    --pure views
+    --where
         -- op :: String -> (String -> Either Error String /\ Array (MyEffect Msg)) -> String
         -- op :: Effect String -> (String -> Either Error String /\ Array (MyEffect Msg)) -> Effect String
-        op
-            :: Effect (Program String)
-            -> (String -> Program String /\ EffectsToPerform Msg)
-            -> Effect (Program String)
-        -- op = ?wh
-        op effV f = do
-            eitherV :: Program String <- effV
-            case eitherV of
-                Left err -> pure $ Left err
-                Right v -> do
-                    let nextVal /\ effects = f v
-                    _ <- performEffects pushMsg userPerformEff eitherV effects
-                    pure nextVal
+
 
 
 main :: Effect Unit
@@ -194,7 +195,7 @@ main = do
     log "-----"
     { event : messages', push : pushMessage' } <- Event.create
     _ <- Event.subscribe messages' $ log <<< show
-    prog <- runSequence pushMessage' performEffect view
+    prog <- runSequence pushMessage'
     case prog of
         Right v -> log ("success: " <> v)
         Left err -> log ("error: " <> show err)
