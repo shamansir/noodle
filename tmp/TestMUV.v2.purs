@@ -6,7 +6,7 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
 
-import Data.Array ((:))
+import Data.Array (snoc)
 import Data.String (take)
 import Data.Either (Either(..), either)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -153,7 +153,7 @@ data MsgList msg = MsgList (Array msg)
 --     -> Effect (Program String)
 -- op = ?wh
 op :: MsgList Msg -> Msg -> MsgList Msg
-op (MsgList arr) msg = MsgList (msg : arr)
+op (MsgList arr) msg = MsgList (arr `snoc` msg)
     -- eitherV :: Program String <- effV
 
 
