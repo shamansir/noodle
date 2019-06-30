@@ -162,15 +162,19 @@ op effV f = \pushF -> do
     -- eitherV :: Program String <- effV
 
 
+initSeq ::  String -> PushF Msg -> Effect (Program String)
+initSeq = pure <<< pure <<< pure
 
-runSequence :: PushF Msg -> Effect (Program String)
-runSequence pushMsg =
---    initialModel <-
-        ((pure $ pure $ pure "")
-            `op` doNoOp unit unit
-            `op` doMsgOne unit
-            `op` doStart unit
-            `op` doNoOp unit unit) (pushMsg :: PushF Msg)
+
+runSequence
+    :: (PushF Msg -> Effect (Program String))
+    -> Effect (Event String)
+runSequence f = do
+    { event : messages, push : pushMsg } <- Event.create
+    let (models :: Event (Program String)) = Event.fold foldingF messages $ pure ""
+    prog <- f pushMsg
+    pure (view <$> models)
+    where foldingF = ?wh
     -- let views = Event.fold ?wh messages initialModel
     --pure views
     --where
@@ -193,9 +197,13 @@ main = do
     log "-----"
     log "-----"
     log "-----"
-    { event : messages', push : pushMessage' } <- Event.create
-    _ <- Event.subscribe messages' $ log <<< show
-    prog <- runSequence pushMessage'
+    -- { event : messages', push : pushMessage' } <- Event.create
+    -- _ <- Event.subscribe messages' $ log <<< show
+    prog <- runSequence $ initSeq ""
+            `op` doNoOp unit unit
+            `op` doMsgOne unit
+            `op` doStart unit
+            `op` doNoOp unit unit
     case prog of
         Right v -> log ("success: " <> v)
         Left err -> log ("error: " <> show err)
