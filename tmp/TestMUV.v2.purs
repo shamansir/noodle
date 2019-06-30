@@ -6,6 +6,7 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
 
+import Data.Array ((:))
 import Data.String (take)
 import Data.Either (Either(..), either)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -129,17 +130,19 @@ view errOrModel =
     either (const "ERR") identity errOrModel
 
 
-doNoOp :: Unit -> Unit -> String -> Program String /\ EffectsToPerform Msg
-doNoOp _ _ = update NoOp
+doNoOp :: Unit -> Unit -> Msg
+doNoOp _ _ = NoOp
 
 
-doMsgOne :: Unit -> String -> Program String /\ EffectsToPerform Msg
-doMsgOne _ = update MsgOne
+doMsgOne :: Unit -> Msg
+doMsgOne _ = MsgOne
 
 
-doStart :: Unit -> String -> Program String /\ EffectsToPerform Msg
-doStart _ = update Start
+doStart :: Unit -> Msg
+doStart _ = Start
 
+
+data MsgList msg = MsgList (Array msg)
 
 -- doStoreUUID :: UUID -> String -> Program String /\ EffectsToPerform Msg
 -- doStoreUUID uuid = update $ Store uuid
@@ -149,32 +152,31 @@ doStart _ = update Start
 --     -> (String -> Program String /\ EffectsToPerform Msg)
 --     -> Effect (Program String)
 -- op = ?wh
-op :: (PushF Msg -> Effect (Program String)) -> (String -> Program String /\ EffectsToPerform Msg) -> PushF Msg -> Effect (Program String)
-op effV f = \pushF -> do
-    eitherV :: Program String <- effV pushF
-    case eitherV of
-        Left err -> pure $ Left err
-        Right v -> do
-            let nextVal /\ effects = f v
-            _ <- performEffects pushF performEffect eitherV effects
-            pure nextVal
-    -- pure $ pure ""
+op :: MsgList Msg -> Msg -> MsgList Msg
+op (MsgList arr) msg = MsgList (msg : arr)
     -- eitherV :: Program String <- effV
 
 
-initSeq ::  String -> PushF Msg -> Effect (Program String)
-initSeq = pure <<< pure <<< pure
+initSeq :: MsgList Msg
+initSeq = MsgList []
 
 
 runSequence
-    :: (PushF Msg -> Effect (Program String))
-    -> Effect (Event String)
-runSequence f = do
+    :: (String -> Effect Unit)
+    -> MsgList Msg
+    -> Effect Unit
+runSequence sub (MsgList msgList) = do
     { event : messages, push : pushMsg } <- Event.create
-    let (models :: Event (Program String)) = Event.fold foldingF messages $ pure ""
-    prog <- f pushMsg
-    pure (view <$> models)
-    where foldingF = ?wh
+    views <-
+        runMUV
+            { event : messages, push : pushMsg }
+            (pure "")
+            { update, view, performEffect }
+    cancel <- Event.subscribe views sub
+    _ <- traverse_ pushMsg msgList
+    --pushMsg Start
+    _ <- cancel
+    pure unit
     -- let views = Event.fold ?wh messages initialModel
     --pure views
     --where
@@ -189,24 +191,22 @@ main = do
     views <- runMUV { event : messages, push : pushMessage }
                     (pure "|")
                     { update, view, performEffect }
-    _ <- Event.subscribe views log
+    stop <- Event.subscribe views log
     -- pushMessage MsgTwo
     pushMessage MsgOne
     pushMessage MsgOne
     pushMessage Start
+    _ <- stop
     log "-----"
     log "-----"
     log "-----"
-    -- { event : messages', push : pushMessage' } <- Event.create
-    -- _ <- Event.subscribe messages' $ log <<< show
-    prog <- runSequence $ initSeq ""
+    _ <- runSequence log
+        $ initSeq
             `op` doNoOp unit unit
             `op` doMsgOne unit
             `op` doStart unit
             `op` doNoOp unit unit
-    case prog of
-        Right v -> log ("success: " <> v)
-        Left err -> log ("error: " <> show err)
+    log "DONE"
     pure unit
 
 
