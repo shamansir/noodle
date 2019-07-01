@@ -45,7 +45,7 @@ instance showMsg :: Show Msg where
     show NoOp = "NO-OP"
     show MsgOne = "MSG-ONE"
     show Start = "START"
-    show (Store uuid) = "STORE-UUID: " <> (take 5 $ show uuid)
+    show (Store uuid) = "STORE-UUID: " <> (take 5 $ show uuid) <> "...}"
 
 
 -- instance showMyEffect :: Show MyEffect where
@@ -108,8 +108,8 @@ update :: Msg -> String -> Program String /\ EffectsToPerform Msg
 update msg model =
     let ( prog /\ effects ) = update' msg model
     in ( case prog of
-            Left err -> pure ("(" <> show msg <> ")-" <> show err)
-            Right model' -> pure ("(" <> show msg <> ")-" <> model')
+            Left err -> pure (show err <> "-/" <> show msg <> "/")
+            Right model' -> pure (model' <> "-(" <> show msg <> ")")
         ) /\ effects
 update' :: Msg -> String -> Program String /\ EffectsToPerform Msg
 -- update' (MakeUUID f) model = pure model /\ [ f <$> UUID.new ]
@@ -121,7 +121,7 @@ update' Start model = pure model /\
     , MakeUUID Store
     ]
 update' (Store uuid) model =
-    pure ("<" <> show uuid <> ">-" <> model)
+    pure (model <> "-<" <> show uuid <> ">")
     /\ []
 
 

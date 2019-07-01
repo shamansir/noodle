@@ -84,8 +84,11 @@ data Msg d c n
     | RequestToAddOutlet Path.ToNode Path.Alias c
     | AddOutlet (Outlet d c)
     | StoreOutletCanceler (Outlet d c) Canceler
-    | ReceiveInletData (Inlet d c) d
-    | ReceiveOutletData (Outlet d c) d
+    | RequestToConnect Path.ToOutlet Path.ToInlet
+    | Connect (Outlet d c) (Inlet d c) Link
+    | StoreLinkCanceler Link Canceler
+    | ReceiveInletData (Inlet d c) d -- TODO: implement and use
+    | ReceiveOutletData (Outlet d c) d -- TODO: implement and use
 
 
 data RpdEffect d c n
@@ -93,8 +96,7 @@ data RpdEffect d c n
     | AddNodeE Path.ToPatch Path.Alias n
     | AddInletE Path.ToNode Path.Alias c
     | AddOutletE Path.ToNode Path.Alias c
-    -- FIXME: don't pass the `Subscriber`, but do the corresponding action in `performEffect`
-    -- (needs to handle `Either` this way)
+    | AddLinkE (Outlet d c) (Inlet d c)
     | SubscribeNodeProcess (Node d n)
     | InformNodeOnInletUpdates (Inlet d c) (Node d n)
     | InformNodeOnOutletUpdates (Outlet d c) (Node d n)
@@ -167,6 +169,21 @@ update (StoreOutletCanceler (Outlet uuid _ _ _) canceler) nw =
         newCancelers = canceler : curOutletCancelers
     in
         pure $ storeOutletCancelers uuid newCancelers nw /\ []
+update (StoreLinkCanceler (Link uuid _) canceler) nw =
+    let
+        curLinkCancelers = getLinkCancelers uuid nw
+        newCancelers = canceler : curLinkCancelers
+    in
+        pure $ storeLinkCancelers uuid newCancelers nw /\ []
+update (RequestToConnect outletPath inletPath) nw = do
+    outletUuid <- uuidByPath UUID.toOutlet outletPath nw
+    inletUuid <- uuidByPath UUID.toInlet inletPath nw
+    outlet <- view (_outlet outletUuid) nw # note (RpdError "")
+    inlet <- view (_inlet inletUuid) nw # note (RpdError "")
+    pure $ nw /\ [ AddLinkE outlet inlet ]
+update (Connect _ _ link) nw = do
+    nw' <- addLink link nw
+    pure $ nw' /\ []
 update (ReceiveInletData _ _) nw =
     pure $ nw /\ []
 update (ReceiveOutletData _ _) nw =
@@ -210,6 +227,17 @@ performEffect (AddNodeE patchPath nodeAlias n) pushMsg _ = do
                 , pushToOutlets : PushToOutlets pushToOutlets
                 }
     pushMsg $ AddNode newNode
+performEffect (AddLinkE outlet inlet) pushMsg nw = do
+    uuid <- UUID.new
+    let
+        (Outlet ouuid _ _ { flow : outletFlow' }) = outlet
+        (Inlet iuuid _ _ { push : pushToInlet' }) = inlet
+        (OutletFlow outletFlow) = outletFlow'
+        (PushToInlet pushToInlet) = pushToInlet'
+        newLink = Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid }
+    canceler :: Canceler <- E.subscribe outletFlow pushToInlet
+    pushMsg $ Connect outlet inlet newLink
+    pushMsg $ StoreLinkCanceler newLink canceler
 performEffect (SubscribeNodeProcess node) pushMsg nw = do
     canceler <- setupNodeProcessFlow node nw
     pushMsg $ StoreNodeCanceler node canceler
@@ -409,6 +437,8 @@ storeInletCancelers :: forall d c n. UUID.ToInlet -> Array Canceler -> Network d
 storeInletCancelers = storeCancelers <<< UUID.uuid
 storeOutletCancelers :: forall d c n. UUID.ToOutlet -> Array Canceler -> Network d c n -> Network d c n
 storeOutletCancelers = storeCancelers <<< UUID.uuid
+storeLinkCancelers :: forall d c n. UUID.ToLink -> Array Canceler -> Network d c n -> Network d c n
+storeLinkCancelers = storeCancelers <<< UUID.uuid
 
 
 getNodeCancelers :: forall d c n. UUID.ToNode -> Network d c n -> Array Canceler
@@ -417,6 +447,8 @@ getInletCancelers :: forall d c n. UUID.ToInlet -> Network d c n -> Array Cancel
 getInletCancelers = getCancelers <<< UUID.uuid
 getOutletCancelers :: forall d c n. UUID.ToOutlet -> Network d c n -> Array Canceler
 getOutletCancelers = getCancelers <<< UUID.uuid
+getLinkCancelers :: forall d c n. UUID.ToLink -> Network d c n -> Array Canceler
+getLinkCancelers = getCancelers <<< UUID.uuid
 
 
 clearNodeCancelers :: forall d c n. UUID.ToNode -> Network d c n -> Network d c n
@@ -603,3 +635,16 @@ subscribeNode (Node _ _ _ _ { inletsFlow, outletsFlow }) inletsHandler outletsHa
         E.subscribe outletsFlow'
             (outletsHandler <<< over1 \(Path.ToOutlet { outlet }) -> outlet)
     pure $ inletsCanceler <> outletsCanceler
+
+
+addLink :: forall d c n
+     . Link
+    -> Network d c n
+    -> Either RpdError (Network d c n)
+addLink link@(Link uuid { outlet, inlet }) nw = do
+    (Outlet _ opath _ _) <- view (_outlet outlet) nw # note (RpdError "")
+    let patchPath = Path.getPatchPath $ Path.lift opath
+    patchUuid <- nw # uuidByPath UUID.toPatch patchPath
+    pure $ nw
+            # setJust (_link uuid) link
+            # setJust (_patchLink patchUuid uuid) unit
