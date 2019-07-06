@@ -38,8 +38,12 @@ apply
      . Command d c n
     -> Network d c n
     -> Step d c n
-apply cmd nw =
+apply NoOp nw =
     pure $ nw /\ []
+apply (Inner innerCmd) nw = applyInnerCommand innerCmd nw
+apply (Request requestCmd) nw = applyRequestCommand requestCmd nw
+apply (Build buildCmd) nw = applyBuildCommand buildCmd nw
+apply (Data dataCmd) nw = applyDataCommand dataCmd nw
 
 
 applyDataCommand

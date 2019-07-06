@@ -161,11 +161,11 @@ initSeq :: MsgList Msg
 initSeq = MsgList []
 
 
-runSequence
+runMUVSequence
     :: (String -> Effect Unit)
     -> MsgList Msg
     -> Effect Unit
-runSequence sub (MsgList msgList) = do
+runMUVSequence sub (MsgList msgList) = do
     { event : messages, push : pushMsg } <- Event.create
     views <-
         runMUV
@@ -184,6 +184,33 @@ runSequence sub (MsgList msgList) = do
         -- op :: Effect String -> (String -> Either Error String /\ Array (MyEffect Msg)) -> Effect String
 
 
+runSequence
+    :: String
+    -> MsgList Msg
+    -> (Program String -> Effect Unit)
+    -> Effect Unit
+runSequence init (MsgList msgList) sub = do
+    { event : messages, push : pushMsg } <- Event.create
+    let
+        updates =
+            Event.fold
+                (\msg ( prog /\ _ ) ->
+                    case prog of
+                        Left err -> prog /\ []
+                        Right model -> update msg model)
+                messages
+                (pure init /\ [])
+    { event : progs, push : pushProg } <- Event.create
+    _ <- Event.subscribe updates \(prog /\ _) ->
+        pushProg prog
+    _ <- Event.subscribe updates \(prog /\ effects) ->
+        performEffects pushMsg performEffect prog effects
+    cancel <- Event.subscribe progs sub
+    _ <- traverse_ pushMsg msgList
+    --pushMsg Start
+    _ <- cancel
+    pure unit
+
 
 main :: Effect Unit
 main = do
@@ -200,7 +227,7 @@ main = do
     log "-----"
     log "-----"
     log "-----"
-    _ <- runSequence log
+    _ <- runMUVSequence log
         $ initSeq
             `op` doNoOp unit unit
             `op` doMsgOne unit
