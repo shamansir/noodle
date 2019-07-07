@@ -13,7 +13,8 @@ import Data.Array ((:))
 import FRP.Event as E
 
 import Rpd.Util (PushableFlow(..), Canceler)
-import Rpd.Command
+import Rpd.API
+import Rpd.API.Command
     ( Command(..)
     , InnerCommand(..)
     , RequestCommand(..)
@@ -21,7 +22,6 @@ import Rpd.Command
     , DataCommand(..)
     , RpdEffect(..)
     )
-import Rpd.API
 import Rpd.Network
 import Rpd.Process
 import Rpd.Optics
@@ -164,17 +164,17 @@ performEffect
     -> (Command d c n -> Effect Unit)
     -> Network d c n
     -> Effect Unit
-performEffect (AddPatchE alias) pushMsg _ = do
+performEffect (AddPatchE alias) pushСmd _ = do
     uuid <- UUID.new
     let path = Path.toPatch alias
-    pushMsg $ Build $ AddPatch $
+    pushСmd $ Build $ AddPatch $
         Patch
             (UUID.ToPatch uuid)
             path
             { nodes : Seq.empty
             , links : Seq.empty
             }
-performEffect (AddNodeE patchPath nodeAlias n) pushMsg _ = do
+performEffect (AddNodeE patchPath nodeAlias n) pushСmd _ = do
     uuid <- UUID.new
     flows <- makeInletOutletsFlows
     let
@@ -194,8 +194,8 @@ performEffect (AddNodeE patchPath nodeAlias n) pushMsg _ = do
                 , pushToInlets : PushToInlets pushToInlets
                 , pushToOutlets : PushToOutlets pushToOutlets
                 }
-    pushMsg $ Build $ AddNode newNode
-performEffect (AddLinkE outlet inlet) pushMsg nw = do
+    pushСmd $ Build $ AddNode newNode
+performEffect (AddLinkE outlet inlet) pushСmd nw = do
     uuid <- UUID.new
     let
         (Outlet ouuid _ _ { flow : outletFlow' }) = outlet
@@ -204,15 +204,15 @@ performEffect (AddLinkE outlet inlet) pushMsg nw = do
         (PushToInlet pushToInlet) = pushToInlet'
         newLink = Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid }
     canceler :: Canceler <- E.subscribe outletFlow pushToInlet
-    pushMsg $ Build $ AddLink newLink
-    pushMsg $ Inner $ StoreLinkCanceler newLink canceler
-performEffect (SubscribeNodeProcess node) pushMsg nw = do
+    pushСmd $ Build $ AddLink newLink
+    pushСmd $ Inner $ StoreLinkCanceler newLink canceler
+performEffect (SubscribeNodeProcess node) pushСmd nw = do
     canceler <- setupNodeProcessFlow node nw
-    pushMsg $ Inner $ StoreNodeCanceler node canceler
-performEffect (CancelNodeSubscriptions node@(Node uuid _ _ _ _)) pushMsg nw = do
+    pushСmd $ Inner $ StoreNodeCanceler node canceler
+performEffect (CancelNodeSubscriptions node@(Node uuid _ _ _ _)) pushСmd nw = do
     _ <- cancelNodeSubscriptions uuid nw
-    pushMsg $ Inner $ ClearNodeCancelers node
-performEffect (AddInletE nodePath inletAlias c) pushMsg _ = do
+    pushСmd $ Inner $ ClearNodeCancelers node
+performEffect (AddInletE nodePath inletAlias c) pushСmd _ = do
     uuid <- UUID.new
     flow <- makePushableFlow
     let
@@ -226,12 +226,12 @@ performEffect (AddInletE nodePath inletAlias c) pushMsg _ = do
                 { flow : InletFlow inletFlow
                 , push : PushToInlet pushToInlet
                 }
-    pushMsg $ Build $ AddInlet newInlet
-    -- FIXME: pushMsg $ CancelNodeSubscriptions
-performEffect (InformNodeOnInletUpdates inlet node) pushMsg _ = do
+    pushСmd $ Build $ AddInlet newInlet
+    -- FIXME: pushСmd $ CancelNodeSubscriptions
+performEffect (InformNodeOnInletUpdates inlet node) pushСmd _ = do
     canceler <- informNodeOnInletUpdates inlet node
-    pushMsg $ Inner $ StoreInletCanceler inlet canceler
-performEffect (AddOutletE nodePath outletAlias c) pushMsg _ = do
+    pushСmd $ Inner $ StoreInletCanceler inlet canceler
+performEffect (AddOutletE nodePath outletAlias c) pushСmd _ = do
     uuid <- UUID.new
     flow <- makePushableFlow
     let
@@ -245,14 +245,14 @@ performEffect (AddOutletE nodePath outletAlias c) pushMsg _ = do
                 { flow : OutletFlow outletFlow
                 , push : PushToOutlet pushToOutlet
                 }
-    pushMsg $ Build $ AddOutlet newOutlet
-    -- FIXME: pushMsg $ CancelNodeSubscriptions
-performEffect (InformNodeOnOutletUpdates outlet node) pushMsg _ = do
+    pushСmd $ Build $ AddOutlet newOutlet
+    -- FIXME: pushСmd $ CancelNodeSubscriptions
+performEffect (InformNodeOnOutletUpdates outlet node) pushСmd _ = do
     canceler <- informNodeOnOutletUpdates outlet node
-    pushMsg $ Inner $ StoreOutletCanceler outlet canceler
-performEffect (SubscribeNodeUpdates node) pushMsg _ = do
+    pushСmd $ Inner $ StoreOutletCanceler outlet canceler
+performEffect (SubscribeNodeUpdates node) pushСmd _ = do
     canceler <- subscribeNode node (const $ pure unit) (const $ pure unit)
-    pushMsg $ Inner $ StoreNodeCanceler node canceler
+    pushСmd $ Inner $ StoreNodeCanceler node canceler
 
 
 -- apply'

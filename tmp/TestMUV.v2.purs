@@ -9,6 +9,7 @@ import Effect.Console (log)
 import Data.Array (snoc)
 import Data.String (take)
 import Data.Either (Either(..), either)
+import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_)
 
@@ -83,9 +84,7 @@ runMUV
                         Right model -> userUpdate msg model)
                 messages
                 (init /\ [])
-    { event : views, push : pushView } <- Event.create
-    _ <- Event.subscribe updates \(prog /\ _) ->
-        pushView $ userView prog
+        views = fst >>> userView <$> updates
     _ <- Event.subscribe updates \(prog /\ effects) ->
         performEffects pushMessage userPerformEff prog effects
     pure views
@@ -200,9 +199,7 @@ runSequence init (MsgList msgList) sub = do
                         Right model -> update msg model)
                 messages
                 (pure init /\ [])
-    { event : progs, push : pushProg } <- Event.create
-    _ <- Event.subscribe updates \(prog /\ _) ->
-        pushProg prog
+        progs = fst <$> updates
     _ <- Event.subscribe updates \(prog /\ effects) ->
         performEffects pushMsg performEffect prog effects
     cancel <- Event.subscribe progs sub
