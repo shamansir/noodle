@@ -1,6 +1,6 @@
 module Rpd.API.CommandSequence where
 
-import Prelude ((<<<), (<$>), unit, Unit, bind, pure)
+import Prelude
 
 import Effect (Effect)
 import Data.Array (snoc)
@@ -9,6 +9,7 @@ import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\))
 import Data.Traversable (traverse_)
 
+import FRP.Event (Event)
 import FRP.Event as Event
 
 import Rpd.Network
@@ -42,20 +43,24 @@ run
     -> CmdList d c n
     -> (Either RpdError (Network d c n) -> Effect Unit)
     -> Effect Unit
-run init (CmdList cmdList) sub = do
+run initialNW (CmdList cmdList) sub = do
     { event : commands, push : pushCmd } <- Event.create
     let
-        updates =
+        (updates :: Event (Step d c n)) =
             Event.fold
-                (\cmd ( prog /\ _ ) ->
-                    case prog of
-                        Left err -> prog /\ []
-                        Right model -> apply cmd model)
+                (\cmd step ->
+                    case step of
+                        Left err -> Left err
+                        Right ( model /\ _ ) -> apply cmd model)
                 commands
-                (pure init /\ [])
-        progs = fst <$> updates
-    _ <- Event.subscribe updates \(prog /\ effects) ->
-        traverse_ (\eff -> performEffect eff pushCmd prog) effects
+                (pure $ initialNW /\ [])
+        (progs :: Event (Either RpdError (Network d c n)))
+            = ((<$>) fst) <$> updates
+    _ <- Event.subscribe updates \step ->
+        case step of
+            Left err -> pure unit
+            Right (model /\ effects) ->
+                traverse_ (\eff -> performEffect eff pushCmd model) effects
     cancel <- Event.subscribe progs sub
     _ <- traverse_ pushCmd cmdList
     --pushCmd Start
