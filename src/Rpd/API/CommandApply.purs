@@ -37,6 +37,7 @@ apply
     :: forall d c n
      . Command d c n
     -> Network d c n
+    -- TODO: -> T.Toolkit
     -> Step d c n
 apply NoOp nw =
     pure $ nw /\ []
