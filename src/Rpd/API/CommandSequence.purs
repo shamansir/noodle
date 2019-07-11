@@ -25,10 +25,6 @@ data CmdList d c n = CmdList (Array (Command d c n))
 infixl 1 andThen as </>
 
 
-andThen :: forall d c n. CmdList d c n -> Command d c n -> CmdList d c n
-andThen (CmdList arr) msg = CmdList (arr `snoc` msg)
-
-
 init :: forall d c n. CmdList d c n
 init = CmdList []
 
@@ -54,15 +50,19 @@ run initialNW (CmdList cmdList) sub = do
                         Right ( model /\ _ ) -> apply cmd model)
                 commands
                 (pure $ initialNW /\ [])
-        (progs :: Event (Either RpdError (Network d c n)))
+        (models :: Event (Either RpdError (Network d c n)))
             = ((<$>) fst) <$> updates
-    _ <- Event.subscribe updates \step ->
+    stopEffects <- Event.subscribe updates \step ->
         case step of
             Left err -> pure unit
             Right (model /\ effects) ->
                 traverse_ (\eff -> performEffect eff pushCmd model) effects
-    cancel <- Event.subscribe progs sub
+    stopSubscriptions <- Event.subscribe models sub
     _ <- traverse_ pushCmd cmdList
     --pushCmd Start
-    _ <- cancel
+    _ <- stopEffects <> stopSubscriptions
     pure unit
+
+
+andThen :: forall d c n. CmdList d c n -> Command d c n -> CmdList d c n
+andThen (CmdList arr) msg = CmdList (arr `snoc` msg)

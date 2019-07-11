@@ -30,8 +30,8 @@ import Rpd.API ((</>))
 import Rpd.API (Rpd, RpdError) as R
 import Rpd.API as Rpd
 import Rpd.Path (toNode, ToInlet(..), ToOutlet(..)) as R
-import Rpd.Command as C
-import Rpd.CommandApply as C
+import Rpd.API.Command as C
+import Rpd.API.CommandApply as C
 import Rpd.Network (Network, Node, Inlet, Outlet) as R
 import Rpd.Util (Canceler) as R
 import Rpd.Render as R

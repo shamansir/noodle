@@ -20,10 +20,9 @@ import Effect (Effect)
 import FRP.Event (Event)
 import FRP.Event as Event
 
-import Rpd (run) as R
-import Rpd.API (Rpd, RpdError) as R
-import Rpd.Command (Command) as C
-import Rpd.CommandApply (apply) as C
+import Rpd.API (RpdError) as R
+import Rpd.API.Command (Command) as C
+import Rpd.API.CommandApply (apply) as C
 import Rpd.Network (Network) as R
 import Rpd.Util (Canceler) as R
 import Rpd.Toolkit (Toolkit) as T
@@ -61,6 +60,43 @@ data Renderer d c n view
 
 neverPush :: forall d c n. PushCmd d c n
 neverPush = PushCmd $ const $ pure unit
+
+
+prepare
+    :: forall d c n view
+     . R.Network d c n
+    -> (R.RpdError -> view)
+    -> (R.Network d c n -> view)
+    -> Effect
+            { pushCmd :: C.Command d c n -> Effect Unit
+            , views :: Event view
+            -- , stop :: Effect Unit
+            }
+prepare initialNW onError onValue = do
+    { event : commands, push : pushCmd } <- Event.create
+    { event : views, push : pushView } <- Event.create
+    let
+        (updates :: Event (Step d c n)) =
+            Event.fold
+                (\cmd step ->
+                    case step of
+                        Left err -> Left err
+                        Right ( model /\ _ ) -> apply cmd model)
+                commands
+                (pure $ initialNW /\ [])
+        (models :: Event (Either RpdError (Network d c n)))
+            = ((<$>) fst) <$> updates
+    _ <- Event.subscribe updates \step ->
+        case step of
+            Left err -> pure unit
+            Right (model /\ effects) ->
+                traverse_ (\eff -> performEffect eff pushCmd model) effects
+    _ <- Event.subscribe models (pushView <<< either onError onValue)
+    -- stopping is not needed since user just could stop pushing commands
+    -- with this particular `pushCmd`
+    -- let stopAll = stopEffects <> stopViews
+    -- pure { pushCmd, views, stop : stopAll }
+    pure { pushCmd, views }
 
 
 extractRpd
