@@ -22,7 +22,6 @@ import Rpd.API.Command (Command) as C
 import Rpd.API.CommandApply (apply, Step) as C
 import Rpd.API.CommandApply (performEffect) as R
 import Rpd.Network (Network) as R
-import Rpd.Util (Canceler) as R
 import Rpd.Toolkit (Toolkit) as T
 
 
@@ -58,10 +57,11 @@ neverPush = PushCmd $ const $ pure unit
 
 make
     :: forall d c n view
-     . R.Network d c n
-    -> Renderer d c n view
+     . Renderer d c n view
+    -> T.Toolkit d c n
+    -> R.Network d c n
     -> Effect { first :: view, next :: Event view }
-make initialNW (Renderer { first, viewError, viewValue }) = do
+make (Renderer { first, viewError, viewValue }) toolkit initialNW = do
     { event : commands, push : pushCmd } <- Event.create
     { event : views, push : pushView } <- Event.create
     let
@@ -70,7 +70,7 @@ make initialNW (Renderer { first, viewError, viewValue }) = do
                 (\cmd step ->
                     case step of
                         Left err -> Left err
-                        Right ( model /\ _ ) -> C.apply cmd model)
+                        Right ( model /\ _ ) -> C.apply toolkit cmd model)
                 commands
                 (pure $ initialNW /\ [])
         (models :: Event (Either R.RpdError (R.Network d c n)))
@@ -79,7 +79,7 @@ make initialNW (Renderer { first, viewError, viewValue }) = do
         case step of
             Left err -> pure unit
             Right (model /\ effects) ->
-                traverse_ (\eff -> R.performEffect eff pushCmd model) effects
+                traverse_ (\eff -> R.performEffect toolkit pushCmd eff model) effects
     _ <- Event.subscribe models (pushView <<< either viewError (viewValue $ PushCmd pushCmd))
     pure { first, next : views }
 

@@ -26,7 +26,7 @@ import Rpd.Network
 import Rpd.Process
 import Rpd.Optics
 import Rpd.Path as Path
-import Rpd.Toolkit as T
+import Rpd.Toolkit
 import Rpd.UUID as UUID
 
 
@@ -35,49 +35,51 @@ type Step d c n = Either RpdError (Network d c n /\ Array (RpdEffect d c n))
 
 apply
     :: forall d c n
-     . Command d c n
+     . Toolkit d c n
+    -> Command d c n
     -> Network d c n
-    -- TODO: -> T.Toolkit
     -> Step d c n
-apply NoOp nw =
+apply _ NoOp nw =
     pure $ nw /\ []
-apply (Inner innerCmd) nw = applyInnerCommand innerCmd nw
-apply (Request requestCmd) nw = applyRequestCommand requestCmd nw
-apply (Build buildCmd) nw = applyBuildCommand buildCmd nw
-apply (Data dataCmd) nw = applyDataCommand dataCmd nw
+apply toolkit (Inner innerCmd) nw = applyInnerCommand toolkit innerCmd nw
+apply toolkit (Request requestCmd) nw = applyRequestCommand toolkit requestCmd nw
+apply toolkit (Build buildCmd) nw = applyBuildCommand toolkit buildCmd nw
+apply toolkit (Data dataCmd) nw = applyDataCommand toolkit dataCmd nw
 
 
 applyDataCommand
     :: forall d c n
-     . DataCommand d c
+     . Toolkit d c n
+    -> DataCommand d c
     -> Network d c n
     -> Step d c n
-applyDataCommand Bang nw =
+applyDataCommand _ Bang nw =
     pure $ nw /\ []
-applyDataCommand (GotInletData _ _) nw =
+applyDataCommand _ (GotInletData _ _) nw =
     pure $ nw /\ []
-applyDataCommand (GotOutletData _ _) nw =
+applyDataCommand _ (GotOutletData _ _) nw =
     pure $ nw /\ []
-applyDataCommand (SendToInlet _ _) nw =
+applyDataCommand _ (SendToInlet _ _) nw =
     pure $ nw /\ []
-applyDataCommand (SendToOutlet _ _) nw =
+applyDataCommand _ (SendToOutlet _ _) nw =
     pure $ nw /\ []
 
 
 applyRequestCommand
     :: forall d c n
-     . RequestCommand d c n
+     . Toolkit d c n
+    -> RequestCommand d c n
     -> Network d c n
     -> Step d c n
-applyRequestCommand (ToAddPatch alias) nw =
+applyRequestCommand _ (ToAddPatch alias) nw =
     pure $ nw /\ [ AddPatchE alias ]
-applyRequestCommand (ToAddNode patchPath alias n) nw =
+applyRequestCommand _ (ToAddNode patchPath alias n) nw =
     pure $ nw /\ [ AddNodeE patchPath alias n ]
-applyRequestCommand (ToAddInlet nodePath alias c) nw =
+applyRequestCommand _ (ToAddInlet nodePath alias c) nw =
     pure $ nw /\ [ AddInletE nodePath alias c ]
-applyRequestCommand (ToAddOutlet nodePath alias c) nw =
+applyRequestCommand _ (ToAddOutlet nodePath alias c) nw =
     pure $ nw /\ [ AddOutletE nodePath alias c ]
-applyRequestCommand (ToConnect outletPath inletPath) nw = do
+applyRequestCommand _ (ToConnect outletPath inletPath) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
     outlet <- view (_outlet outletUuid) nw # note (RpdError "")
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
@@ -87,19 +89,20 @@ applyRequestCommand (ToConnect outletPath inletPath) nw = do
 
 applyBuildCommand
     :: forall d c n
-     . BuildCommand d c n
+     . Toolkit d c n
+    -> BuildCommand d c n
     -> Network d c n
     -> Step d c n
-applyBuildCommand (AddPatch p) nw = do
+applyBuildCommand _ (AddPatch p) nw = do
     pure $ addPatch p nw /\ [ ]
-applyBuildCommand (AddNode node) nw = do
+applyBuildCommand _ (AddNode node) nw = do
     nw' <- addNode node nw
     pure $ nw' /\ [ ]
-applyBuildCommand (ProcessWith node@(Node uuid _ _ _ _) processF) nw = do
+applyBuildCommand _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw = do
     let newNode = processWith processF node
         nw' = nw # setJust (_node uuid) newNode
     pure $ nw' /\ [ SubscribeNodeProcess newNode ]
-applyBuildCommand (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
+applyBuildCommand _ (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (RpdError "")
@@ -110,7 +113,7 @@ applyBuildCommand (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
         , InformNodeOnOutletUpdates outlet node
         , SubscribeNodeUpdates node
         ]
-applyBuildCommand (AddInlet inlet@(Inlet uuid path _ _)) nw = do
+applyBuildCommand _ (AddInlet inlet@(Inlet uuid path _ _)) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (RpdError "")
@@ -121,37 +124,38 @@ applyBuildCommand (AddInlet inlet@(Inlet uuid path _ _)) nw = do
         , InformNodeOnInletUpdates inlet node
         , SubscribeNodeUpdates node
         ]
-applyBuildCommand (AddLink link) nw = do
+applyBuildCommand _ (AddLink link) nw = do
     nw' <- addLink link nw
     pure $ nw' /\ []
 
 
 applyInnerCommand
     :: forall d c n
-     . InnerCommand d c n
+     . Toolkit d c n
+    -> InnerCommand d c n
     -> Network d c n
     -> Step d c n
-applyInnerCommand (StoreNodeCanceler (Node uuid _ _ _ _) canceler) nw =
+applyInnerCommand _ (StoreNodeCanceler (Node uuid _ _ _ _) canceler) nw =
     let
         curNodeCancelers = getNodeCancelers uuid nw
         newNodeCancelers = canceler : curNodeCancelers
     in
         pure $ storeNodeCancelers uuid newNodeCancelers nw /\ []
-applyInnerCommand (ClearNodeCancelers (Node uuid _ _ _ _)) nw =
+applyInnerCommand _ (ClearNodeCancelers (Node uuid _ _ _ _)) nw =
     pure $ clearNodeCancelers uuid nw /\ []
-applyInnerCommand (StoreOutletCanceler (Outlet uuid _ _ _) canceler) nw =
+applyInnerCommand _ (StoreOutletCanceler (Outlet uuid _ _ _) canceler) nw =
     let
         curOutletCancelers = getOutletCancelers uuid nw
         newOutletCancelers = canceler : curOutletCancelers
     in
         pure $ storeOutletCancelers uuid newOutletCancelers nw /\ []
-applyInnerCommand (StoreInletCanceler (Inlet uuid _ _ _) canceler) nw =
+applyInnerCommand _ (StoreInletCanceler (Inlet uuid _ _ _) canceler) nw =
     let
         curInletCancelers = getInletCancelers uuid nw
         newInletCancelers = canceler : curInletCancelers
     in
         pure $ storeInletCancelers uuid newInletCancelers nw /\ []
-applyInnerCommand (StoreLinkCanceler (Link uuid _) canceler) nw =
+applyInnerCommand _ (StoreLinkCanceler (Link uuid _) canceler) nw =
     let
         curLinkCancelers = getLinkCancelers uuid nw
         newLinkCancelers = canceler : curLinkCancelers
@@ -161,11 +165,12 @@ applyInnerCommand (StoreLinkCanceler (Link uuid _) canceler) nw =
 
 performEffect
     :: forall d c n
-     . RpdEffect d c n
+     . Toolkit d c n
     -> (Command d c n -> Effect Unit)
+    -> RpdEffect d c n
     -> Network d c n
     -> Effect Unit
-performEffect (AddPatchE alias) pushСmd _ = do
+performEffect _ pushСmd (AddPatchE alias) _ = do
     uuid <- UUID.new
     let path = Path.toPatch alias
     pushСmd $ Build $ AddPatch $
@@ -175,7 +180,7 @@ performEffect (AddPatchE alias) pushСmd _ = do
             { nodes : Seq.empty
             , links : Seq.empty
             }
-performEffect (AddNodeE patchPath nodeAlias n) pushСmd _ = do
+performEffect _ pushСmd (AddNodeE patchPath nodeAlias n) _ = do
     uuid <- UUID.new
     flows <- makeInletOutletsFlows
     let
@@ -196,7 +201,7 @@ performEffect (AddNodeE patchPath nodeAlias n) pushСmd _ = do
                 , pushToOutlets : PushToOutlets pushToOutlets
                 }
     pushСmd $ Build $ AddNode newNode
-performEffect (AddLinkE outlet inlet) pushСmd nw = do
+performEffect _ pushСmd (AddLinkE outlet inlet) nw = do
     uuid <- UUID.new
     let
         (Outlet ouuid _ _ { flow : outletFlow' }) = outlet
@@ -207,13 +212,13 @@ performEffect (AddLinkE outlet inlet) pushСmd nw = do
     canceler :: Canceler <- E.subscribe outletFlow pushToInlet
     pushСmd $ Build $ AddLink newLink
     pushСmd $ Inner $ StoreLinkCanceler newLink canceler
-performEffect (SubscribeNodeProcess node) pushСmd nw = do
+performEffect _ pushСmd (SubscribeNodeProcess node) nw = do
     canceler <- setupNodeProcessFlow node nw
     pushСmd $ Inner $ StoreNodeCanceler node canceler
-performEffect (CancelNodeSubscriptions node@(Node uuid _ _ _ _)) pushСmd nw = do
+performEffect _ pushСmd (CancelNodeSubscriptions node@(Node uuid _ _ _ _)) nw = do
     _ <- cancelNodeSubscriptions uuid nw
     pushСmd $ Inner $ ClearNodeCancelers node
-performEffect (AddInletE nodePath inletAlias c) pushСmd _ = do
+performEffect _ pushСmd (AddInletE nodePath inletAlias c) _ = do
     uuid <- UUID.new
     flow <- makePushableFlow
     let
@@ -229,10 +234,10 @@ performEffect (AddInletE nodePath inletAlias c) pushСmd _ = do
                 }
     pushСmd $ Build $ AddInlet newInlet
     -- FIXME: pushСmd $ CancelNodeSubscriptions
-performEffect (InformNodeOnInletUpdates inlet node) pushСmd _ = do
+performEffect _ pushСmd (InformNodeOnInletUpdates inlet node) _ = do
     canceler <- informNodeOnInletUpdates inlet node
     pushСmd $ Inner $ StoreInletCanceler inlet canceler
-performEffect (AddOutletE nodePath outletAlias c) pushСmd _ = do
+performEffect _ pushСmd (AddOutletE nodePath outletAlias c) _ = do
     uuid <- UUID.new
     flow <- makePushableFlow
     let
@@ -248,10 +253,10 @@ performEffect (AddOutletE nodePath outletAlias c) pushСmd _ = do
                 }
     pushСmd $ Build $ AddOutlet newOutlet
     -- FIXME: pushСmd $ CancelNodeSubscriptions
-performEffect (InformNodeOnOutletUpdates outlet node) pushСmd _ = do
+performEffect _ pushСmd (InformNodeOnOutletUpdates outlet node) _ = do
     canceler <- informNodeOnOutletUpdates outlet node
     pushСmd $ Inner $ StoreOutletCanceler outlet canceler
-performEffect (SubscribeNodeUpdates node) pushСmd _ = do
+performEffect _ pushСmd (SubscribeNodeUpdates node) _ = do
     canceler <- subscribeNode node (const $ pure unit) (const $ pure unit)
     pushСmd $ Inner $ StoreNodeCanceler node canceler
 
@@ -260,7 +265,7 @@ performEffect (SubscribeNodeUpdates node) pushСmd _ = do
 --     :: forall d c n
 --      . Command d c n
 --     -> (Command d c n -> Effect Unit)
---     -> T.Toolkit d c n
+--     -> Toolkit d c n
 --     -> R.Network d c n
 --     -> R.Rpd (R.Network d c n)
 -- apply' Bang pushCmd _ nw =
