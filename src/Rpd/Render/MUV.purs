@@ -83,16 +83,26 @@ make
      . Renderer d c n model view action effect
     -> T.Toolkit d c n
     -> R.Network d c n
-    -> Effect { first :: view, next :: Event view }
+    -> Effect
+        { first :: view
+        , next :: Event view
+        , push :: PushF d c n action
+        , stop :: Effect Unit
+        }
 make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = do
-    { models, pushAction } <-
+    { models, pushAction, stop } <-
         ActionSeq.prepare_
             (init /\ initialNW)
             myApply
             myPerformEff
     { event : views, push : pushView } <- Event.create
-    _ <- Event.subscribe models (pushView <<< (view $ PushF pushAction))
-    pure { first : from, next : views }
+    stopViews <- Event.subscribe models (pushView <<< (view $ PushF pushAction))
+    pure
+        { first : from
+        , next : views
+        , push : PushF pushAction
+        , stop : stop <> stopViews
+        }
     where
         myApply (Right coreAction) (model /\ nw) = do
             nw' /\ coreEffects <- Core.apply toolkit coreAction nw

@@ -14,7 +14,7 @@ import Data.Lens (view, Lens') as L
 import Spork.Html (Html)
 import Spork.Html as H
 
-import Rpd.Command as C
+import Rpd.API.Action as A
 import Rpd.Network as R
 import Rpd.Optics as L
 import Rpd.UUID as R
@@ -22,7 +22,7 @@ import Rpd.Process as R
 
 
 type Model d c n =
-    { lastCommands :: List (C.Command d c n)
+    { lastCommands :: List (A.Action d c n)
     }
 
 
@@ -34,7 +34,7 @@ init =
 
 update
     :: forall d c n
-     . C.Command d c n
+     . A.Action d c n
     -> R.Network d c n
     -> Model d c n
     -> Model d c n
@@ -73,7 +73,7 @@ viewNetwork nw@(R.Network { patches }) =
         viewPatches =
             viewPatch
                 <$> (\patchUuid -> L.view (L._patch patchUuid) nw)
-                <$>  (Seq.toUnfoldable patches :: Array R.ToPatch)
+                <$> (Seq.toUnfoldable patches :: Array R.ToPatch)
         viewNodes nodes =
             viewNode
                 <$> (\nodeUuid -> L.view (L._node nodeUuid) nw)
@@ -160,7 +160,7 @@ viewModel model =
     H.ul [ H.classes [ "commands-debug" ] ]
         $ List.toUnfoldable (viewCommand <$> model.lastCommands)
     where
-        viewCommand :: C.Command d c n -> Html Unit
+        viewCommand :: A.Action d c n -> Html Unit
         viewCommand cmd =
             H.li [] [ H.text $ show cmd ]
 

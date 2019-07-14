@@ -29,12 +29,11 @@ import Web.HTML.Window (document) as DOM
 
 import Spork.Html (Html)
 
-import Rpd.API (Rpd) as R
 import Rpd.Network (Network)
-import Rpd.Command (Command(..)) as C
+import Rpd.API.Action (Action(..), DataAction(Bang)) as A
 import Rpd.Toolkit (Toolkit) as T
 import Rpd.Render.MUV (Renderer) as Ui
-import Rpd.Render.MUV (make') as Render
+import Rpd.Render.MUV (make, PushF(..)) as Render
 
 import Debug.Trace as DT
 
@@ -44,27 +43,27 @@ type HtmlView msg cmd = Html (Either msg cmd)
 -- TODO: it looks confusing, why embedding needs toolkits,
 --       renderer indeed needs toolkits (which also looks confusing, but at least true)
 embed
-    :: forall d c n model view msg
+    :: forall d c n model view msg effect
      . String -- selector
-    -> (view -> HtmlView msg (C.Command d c n)) -- insert the rendering result
-    -> Ui.Renderer d c n model view msg -- renderer
+    -> (view -> HtmlView msg (A.Action d c n)) -- insert the rendering result
+    -> Ui.Renderer d c n model view msg effect -- renderer
     -> T.Toolkit d c n
-    -> R.Rpd (Network d c n) -- initial network
+    -> Network d c n -- initial network
     -> Effect Unit
-embed sel render renderer toolkit initRpd = do
+embed sel render renderer toolkit nw = do
     doc ← DOM.window >>= DOM.document
     mbEl ← DOM.querySelector (wrap sel) (HTMLDocument.toParentNode doc)
     case mbEl of
         Nothing -> throwException (error ("Element does not exist: " <> sel))
         Just el -> do
-            { event, push } <- E.create
+            { first, next, push } <- Render.make renderer toolkit nw
             let
+                Render.PushF pushProp = push
                 vdomSpec = V.VDomSpec
                     { document : HTMLDocument.toDocument doc
                     , buildWidget: buildThunk unwrap
-                    , buildAttributes: P.buildProp push
+                    , buildAttributes: P.buildProp pushProp
                     }
-            let { first, next } = Render.make' { event, push } toolkit initRpd renderer
             first_vdom ← EFn.runEffectFn1 (V.buildVDom vdomSpec) (unwrap $ render first)
             vdom_ref <- Ref.new first_vdom -- use recursion istead of `Ref`?
             void $ DOM.appendChild (Machine.extract first_vdom) (DOMElement.toNode el)
@@ -75,15 +74,15 @@ embed sel render renderer toolkit initRpd = do
                     next_vdom ← EFn.runEffectFn2 Machine.step prev_vdom (unwrap $ render next_view)
                     _ <- Ref.write next_vdom vdom_ref
                     pure unit
-            push $ Right C.Bang
+            push $ Right $ A.Data A.Bang
             pure unit
 
 
 embed'
     :: forall d c n model msg
      . String -- selector
-    -> Ui.Renderer d c n model (HtmlView msg (C.Command d c n)) msg -- renderer
+    -> Ui.Renderer d c n model (HtmlView msg (A.Action d c n)) msg -- renderer
     -> T.Toolkit d c n -- toolkits
-    -> R.Rpd (Network d c n) -- initial network
+    -> Network d c n -- initial network
     -> Effect Unit
 embed' sel = embed sel identity
