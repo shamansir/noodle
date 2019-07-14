@@ -5,6 +5,7 @@ module Rpd.Render.MUV
     , UpdateF
     , PerformEffectF
     , make
+    , skipEffects
     ) where
 
 
@@ -71,6 +72,10 @@ data Renderer d c n model view action effect
         , view :: ViewF d c n model view action
         , performEffect :: PerformEffectF d c n model action effect
         }
+
+
+skipEffects :: forall d c n model action effect. PerformEffectF d c n model action effect
+skipEffects = const $ const $ const $ const $ pure unit
 
 
 make

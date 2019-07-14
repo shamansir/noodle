@@ -38,11 +38,12 @@ import Data.BinPack.R2 as R2
 import Math (ceil, sqrt, (%))
 
 import Rpd.API (RpdError) as R
-import Rpd.Command as C
+import Rpd.API.Action as C
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.Optics as R
 import Rpd.Path as R
-import Rpd.Render.MUV (Renderer(..), PushF(..)) as R
+import Rpd.Render.MUV (Renderer(..), PushF(..), skipEffects) as R
+import Rpd.Toolkit as T
 
 import Rpd.Renderer.Terminal.Multiline as ML
 
@@ -109,7 +110,7 @@ initUi =
     }
 
 
-type TerminalRenderer d c n  = R.Renderer d c n Ui View Msg
+type TerminalRenderer d c n  = R.Renderer d c n Ui View Msg Unit
 
 
 terminalRenderer :: forall d c n. TerminalRenderer d c n
@@ -117,8 +118,9 @@ terminalRenderer =
     R.Renderer
         { from : ML.empty
         , init : initUi
-        , update
+        , update : const update
         , view
+        , performEffect : R.skipEffects
         }
 
 
@@ -270,9 +272,9 @@ packNetwork nw@(R.Network { name, patches }) (Packing container) =
 
 update
     :: forall d c n
-     . Either Msg (C.Command d c n)
+     . Either Msg (C.Action d c n)
     -> Ui /\ R.Network d c n
-    -> Ui /\ Array (Either Msg (C.Command d c n))
+    -> Ui /\ Array Unit
 -- update R.Bang (ui /\ nw) =
 --     ui { packing = Just $ ui.packing # packNetwork nw }
 update _ (ui /\ _) =
@@ -281,7 +283,7 @@ update _ (ui /\ _) =
 
 view
     :: forall d c n
-     . R.PushF Msg (C.Command d c n)
+     . R.PushF d c n Msg
     -> Either R.RpdError (Ui /\ R.Network d c n)
     -> View
 view _ (Right (ui /\ nw)) =
