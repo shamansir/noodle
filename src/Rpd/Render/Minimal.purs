@@ -54,6 +54,7 @@ neverPush :: forall d c n. PushAction d c n
 neverPush = PushAction $ const $ pure unit
 
 
+-- FIXME: in many things duplicates API.Action.Sequence.run
 make
     :: forall d c n view
      . Renderer d c n view
@@ -66,10 +67,10 @@ make (Renderer { first, viewError, viewValue }) toolkit initialNW = do
     let
         (updates :: Event (C.Step d c n)) =
             Event.fold
-                (\cmd step ->
+                (\action step ->
                     case step of
                         Left err -> Left err
-                        Right ( model /\ _ ) -> C.apply toolkit cmd model)
+                        Right ( nw /\ _ ) -> C.apply toolkit action nw)
                 actions
                 (pure $ initialNW /\ [])
         (models :: Event (Either R.RpdError (R.Network d c n)))

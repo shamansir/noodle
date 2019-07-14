@@ -49,7 +49,8 @@ run toolkit initialNW (ActionList actionList) sub = do
                 (\action step ->
                     case step of
                         Left err -> Left err
-                        Right ( model /\ _ ) -> apply toolkit action model)
+                        Right ( nw /\ _ ) -> apply toolkit action nw
+                )
                 actions
                 (pure $ initialNW /\ [])
         (models :: Event (Either RpdError (Network d c n)))
