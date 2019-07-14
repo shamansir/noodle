@@ -23,6 +23,7 @@ import Rpd.Network as R
 import Rpd.API as R
 import Rpd.API.Action as Core
 import Rpd.API.Action.Apply as Core
+import Rpd.API.Action.Sequence (prepare_) as ActionSeq
 import Rpd.Toolkit as T
 
 
@@ -72,7 +73,6 @@ data Renderer d c n model view action effect
         }
 
 
--- FIXME: in many things duplicates API.Action.Sequence.run
 make
     :: forall d c n model view action effect
      . Renderer d c n model view action effect
@@ -80,54 +80,27 @@ make
     -> R.Network d c n
     -> Effect { first :: view, next :: Event view }
 make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = do
-    { event : actions, push : pushAction } <- Event.create
+    { models, pushAction } <-
+        ActionSeq.prepare_
+            (init /\ initialNW)
+            myApply
+            myPerformEff
     { event : views, push : pushView } <- Event.create
-    let
-        (updates
-            :: Event
-                (Either R.RpdError
-                    { model :: model
-                    , network :: R.Network d c n
-                    , coreEffects :: Array (Core.RpdEffect d c n)
-                    , userEffects :: Array effect
-                    }
-                )
-        ) =
-            Event.fold
-                (\action step ->
-                    case step of
-                        Left err -> Left err
-                        Right { model, network } -> do
-                            network' /\ effects <-
-                                case action of
-                                    Right coreAction -> Core.apply toolkit coreAction network
-                                    Left _ -> pure $ network /\ []
-                            let model /\ userEffects = update toolkit action $ model /\ network'
-                            pure
-                                { model
-                                , network : network'
-                                , coreEffects : effects
-                                , userEffects
-                                }
-                )
-                actions
-                (pure { model : init, network : initialNW, coreEffects : [], userEffects : []})
-        (models :: Event (Either R.RpdError (model /\ R.Network d c n)))
-            = ((<$>) \{ model, network } -> model /\ network) <$> updates
-    _ <- Event.subscribe updates \step ->
-        case step of
-            Left err -> pure unit
-            Right { model, network, coreEffects, userEffects } -> do
-                coreEffects #
-                    traverse_ (\eff ->
-                        Core.performEffect toolkit (pushAction <<< Right) eff network
-                    )
-                userEffects #
-                    traverse_ (\eff ->
-                        performEffect toolkit (pushAction <<< Left) eff model
-                    )
     _ <- Event.subscribe models (pushView <<< (view $ PushF pushAction))
     pure { first : from, next : views }
+    where
+        myApply (Right coreAction) (model /\ nw) = do
+            nw' /\ coreEffects <- Core.apply toolkit coreAction nw
+            let model' /\ userEffects = update toolkit (Right coreAction) $ model /\ nw'
+            let allEffects = (Right <$> coreEffects) <> (Left <$> userEffects)
+            pure $ (model' /\ nw) /\ allEffects
+        myApply (Left userAction) (model /\ nw) = do
+            let model' /\ userEffects = update toolkit (Left userAction) $ model /\ nw
+            pure $ (model' /\ nw) /\ (Left <$> userEffects)
+        myPerformEff pushAction (Right coreEffect) (_ /\ nw) =
+            Core.performEffect toolkit (pushAction <<< Right) coreEffect nw
+        myPerformEff pushAction (Left userEffect) (model /\ _) =
+            performEffect toolkit (pushAction <<< Left) userEffect model
 
 
 data MyData = A | B

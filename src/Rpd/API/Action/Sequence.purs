@@ -6,7 +6,7 @@ import Effect (Effect)
 import Data.Array (snoc)
 import Data.Either
 import Data.Tuple (fst)
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_)
 
 import FRP.Event (Event)
@@ -34,6 +34,50 @@ addPatch :: forall d c n. Path.Alias -> Action d c n
 addPatch = Request <<< ToAddPatch
 
 
+prepare_
+    :: forall model action effect
+     . model
+    -> (action -> model -> Either RpdError (model /\ Array effect))
+    -> ((action -> Effect Unit) -> effect -> model -> Effect Unit)
+    -> Effect
+        { models :: Event (Either RpdError model)
+        , pushAction :: action -> Effect Unit
+        , stop :: Effect Unit
+        }
+prepare_ initialModel apply performEff = do
+    { event : actions, push : pushAction } <- Event.create
+    let
+        (updates :: Event (Either RpdError (model /\ Array effect))) =
+            Event.fold
+                (\action step ->
+                    case step of
+                        Left err -> Left err
+                        Right ( model /\ _ ) -> apply action model
+                )
+                actions
+                (pure $ initialModel /\ [])
+        (models :: Event (Either RpdError model))
+            = ((<$>) fst) <$> updates
+    stop <- Event.subscribe updates \step ->
+        case step of
+            Left err -> pure unit
+            Right (model /\ effects) ->
+                traverse_ (\eff -> performEff pushAction eff model) effects
+    pure { models, pushAction, stop }
+
+
+prepare
+    :: forall d c n
+     . Network d c n
+    -> Toolkit d c n
+    -> Effect
+        { models :: Event (Either RpdError (Network d c n))
+        , pushAction :: Action d c n -> Effect Unit
+        , stop :: Effect Unit
+        }
+prepare nw toolkit = prepare_ nw (apply toolkit) (performEffect toolkit)
+
+
 run
     :: forall d c n
      . Toolkit d c n
@@ -42,28 +86,8 @@ run
     -> (Either RpdError (Network d c n) -> Effect Unit)
     -> Effect Unit
 run toolkit initialNW (ActionList actionList) sub = do
-    { event : actions, push : pushAction } <- Event.create
-    let
-        (updates :: Event (Step d c n)) =
-            Event.fold
-                (\action step ->
-                    case step of
-                        Left err -> Left err
-                        Right ( nw /\ _ ) -> apply toolkit action nw
-                )
-                actions
-                (pure $ initialNW /\ [])
-        (models :: Event (Either RpdError (Network d c n)))
-            = ((<$>) fst) <$> updates
-    stopEffects <- Event.subscribe updates \step ->
-        case step of
-            Left err -> pure unit
-            Right (model /\ effects) ->
-                traverse_ (\eff -> performEffect toolkit pushAction eff model) effects
-    stopSubscriptions <- Event.subscribe models sub
+    { models, pushAction } <- prepare initialNW toolkit
     _ <- traverse_ pushAction actionList
-    --pushAction Start
-    _ <- stopEffects <> stopSubscriptions
     pure unit
 
 

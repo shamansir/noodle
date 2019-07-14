@@ -19,7 +19,7 @@ import FRP.Event as Event
 
 import Rpd.API (RpdError) as R
 import Rpd.API.Action (Action) as C
-import Rpd.API.Action.Apply (Step, apply, performEffect) as C
+import Rpd.API.Action.Sequence (prepare) as ActionSeq
 import Rpd.Network (Network) as R
 import Rpd.Toolkit (Toolkit) as T
 
@@ -54,7 +54,6 @@ neverPush :: forall d c n. PushAction d c n
 neverPush = PushAction $ const $ pure unit
 
 
--- FIXME: in many things duplicates API.Action.Sequence.run
 make
     :: forall d c n view
      . Renderer d c n view
@@ -62,24 +61,8 @@ make
     -> R.Network d c n
     -> Effect { first :: view, next :: Event view }
 make (Renderer { first, viewError, viewValue }) toolkit initialNW = do
-    { event : actions, push : pushAction } <- Event.create
     { event : views, push : pushView } <- Event.create
-    let
-        (updates :: Event (C.Step d c n)) =
-            Event.fold
-                (\action step ->
-                    case step of
-                        Left err -> Left err
-                        Right ( nw /\ _ ) -> C.apply toolkit action nw)
-                actions
-                (pure $ initialNW /\ [])
-        (models :: Event (Either R.RpdError (R.Network d c n)))
-            = ((<$>) fst) <$> updates
-    _ <- Event.subscribe updates \step ->
-        case step of
-            Left err -> pure unit
-            Right (model /\ effects) ->
-                traverse_ (\eff -> C.performEffect toolkit pushAction eff model) effects
+    { models, pushAction } <- ActionSeq.prepare initialNW toolkit
     _ <- Event.subscribe models (pushView <<< either viewError (viewValue $ PushAction pushAction))
     pure { first, next : views }
 
