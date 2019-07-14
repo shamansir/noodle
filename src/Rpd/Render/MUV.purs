@@ -18,12 +18,13 @@ import FRP.Event as Event
 
 import Rpd.API as R
 import Rpd.Network as R
-import Rpd.API.Command as Core
-import Rpd.API.CommandApply as Core
+import Rpd.API.Action as Core
+import Rpd.API.Action.Apply as Core
 import Rpd.Toolkit as T
 
-data PushF d c n cmd  =
-    PushF (Either cmd (Core.Command d c n) -> Effect Unit)
+
+data PushF d c n action  =
+    PushF (Either action (Core.Action d c n) -> Effect Unit)
 
 
 {- UpdateF:
@@ -33,8 +34,8 @@ data PushF d c n cmd  =
 
    TODO: let user do effects in `UpdateF` or consider returning messages as providing the way to return such effects.
 -}
-type UpdateF d c n model cmd effect
-     = Either cmd (Core.Command d c n)
+type UpdateF d c n model action effect
+     = Either action (Core.Action d c n)
     -> model /\ R.Network d c n
     -> model /\ Array effect
 
@@ -43,18 +44,18 @@ type UpdateF d c n model cmd effect
    - gets the latest MUV model paired with the latest network state;
    - and returns new view built using these states;
 -}
-type ViewF d c n model view cmd
-     = PushF d c n cmd
+type ViewF d c n model view action
+     = PushF d c n action
     -> Either R.RpdError (model /\ R.Network d c n)
     -> view
 
 
-data Renderer d c n model view cmd effect
+data Renderer d c n model view action effect
     = Renderer
         { from :: view -- initial view
         , init :: model -- initial state
-        , update :: UpdateF d c n model cmd effect
-        , view :: ViewF d c n model view cmd
+        , update :: UpdateF d c n model action effect
+        , view :: ViewF d c n model view action
         }
 
 
@@ -65,15 +66,15 @@ make
     -> R.Network d c n
     -> Effect { first :: view, next :: Event view }
 make (Renderer { first, viewError, viewValue }) toolkit initialNW = do
-    { event : commands, push : pushCmd } <- Event.create
+    { event : commands, push : pushAction } <- Event.create
     { event : views, push : pushView } <- Event.create
     let
         (updates :: Event (Core.Step d c n)) =
             Event.fold
-                (\cmd step ->
+                (\action step ->
                     case step of
                         Left err -> Left err
-                        Right ( model /\ _ ) -> Core.apply toolkit cmd model)
+                        Right ( model /\ _ ) -> Core.apply toolkit action model)
                 commands
                 (pure $ initialNW /\ [])
         (models :: Event (Either R.RpdError (R.Network d c n)))
@@ -82,8 +83,8 @@ make (Renderer { first, viewError, viewValue }) toolkit initialNW = do
         case step of
             Left err -> pure unit
             Right (model /\ effects) ->
-                traverse_ (\eff -> Core.performEffect toolkit pushCmd eff model) effects
-    _ <- Event.subscribe models (pushView <<< either viewError (viewValue $ PushF pushCmd))
+                traverse_ (\eff -> Core.performEffect toolkit pushAction eff model) effects
+    _ <- Event.subscribe models (pushView <<< either viewError (viewValue $ PushF pushAction))
     pure { first, next : views }
 
 

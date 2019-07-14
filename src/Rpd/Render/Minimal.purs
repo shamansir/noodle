@@ -1,6 +1,6 @@
 module Rpd.Render.Minimal
     ( Renderer(..)
-    , PushCmd(..)
+    , PushAction(..)
     , make
     ) where
 
@@ -18,41 +18,40 @@ import FRP.Event (Event)
 import FRP.Event as Event
 
 import Rpd.API (RpdError) as R
-import Rpd.API.Command (Command) as C
-import Rpd.API.CommandApply (apply, Step) as C
-import Rpd.API.CommandApply (performEffect) as R
+import Rpd.API.Action (Action) as C
+import Rpd.API.Action.Apply (Step, apply, performEffect) as C
 import Rpd.Network (Network) as R
 import Rpd.Toolkit (Toolkit) as T
 
 
--- data RendererCommand d rcmd
---     = Core (C.Command d)
+-- data RendererAction d rcmd
+--     = Core (C.Action d)
 --     | Renderer rcmd
 
 
--- data PushCmd d rcmd =
---     PushCmd (RendererCommand d rcmd -> Effect Unit)
+-- data PushAction d rcmd =
+--     PushAction (RendererAction d rcmd -> Effect Unit)
 
 
 -- type RenderF d rcmd view
---     =  PushCmd (RendererCommand d rcmd -> Effect Unit)
+--     =  PushAction (RendererAction d rcmd -> Effect Unit)
 --     -> Either R.RpdError (R.Network d)
 --     -> view
 
-data PushCmd d c n =
-    PushCmd (C.Command d c n -> Effect Unit)
+data PushAction d c n =
+    PushAction (C.Action d c n -> Effect Unit)
 
 
 data Renderer d c n view
     = Renderer
         { first :: view
         , viewError :: R.RpdError -> view
-        , viewValue :: PushCmd d c n -> R.Network d c n -> view
+        , viewValue :: PushAction d c n -> R.Network d c n -> view
         }
 
 
-neverPush :: forall d c n. PushCmd d c n
-neverPush = PushCmd $ const $ pure unit
+neverPush :: forall d c n. PushAction d c n
+neverPush = PushAction $ const $ pure unit
 
 
 make
@@ -62,7 +61,7 @@ make
     -> R.Network d c n
     -> Effect { first :: view, next :: Event view }
 make (Renderer { first, viewError, viewValue }) toolkit initialNW = do
-    { event : commands, push : pushCmd } <- Event.create
+    { event : actions, push : pushAction } <- Event.create
     { event : views, push : pushView } <- Event.create
     let
         (updates :: Event (C.Step d c n)) =
@@ -71,7 +70,7 @@ make (Renderer { first, viewError, viewValue }) toolkit initialNW = do
                     case step of
                         Left err -> Left err
                         Right ( model /\ _ ) -> C.apply toolkit cmd model)
-                commands
+                actions
                 (pure $ initialNW /\ [])
         (models :: Event (Either R.RpdError (R.Network d c n)))
             = ((<$>) fst) <$> updates
@@ -79,8 +78,8 @@ make (Renderer { first, viewError, viewValue }) toolkit initialNW = do
         case step of
             Left err -> pure unit
             Right (model /\ effects) ->
-                traverse_ (\eff -> R.performEffect toolkit pushCmd eff model) effects
-    _ <- Event.subscribe models (pushView <<< either viewError (viewValue $ PushCmd pushCmd))
+                traverse_ (\eff -> C.performEffect toolkit pushAction eff model) effects
+    _ <- Event.subscribe models (pushView <<< either viewError (viewValue $ PushAction pushAction))
     pure { first, next : views }
 
 

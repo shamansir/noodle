@@ -1,21 +1,24 @@
-module Rpd.API.Command where
+module Rpd.API.Action where
 
-import Prelude
+-- import Data.Generic.Rep (class Generic)
+-- import Data.Generic.Rep.Eq as GEq
+-- import Data.Generic.Rep.Show as GShow
 
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Eq as GEq
-import Data.Generic.Rep.Show as GShow
-
-import Rpd.Toolkit (class Channels, NodeDefAlias, ChannelDefAlias)
 import Rpd.Path as Path
-import Rpd.Network
-import Rpd.Process
+import Rpd.Network (Patch, Node, Outlet, Inlet, Link)
+import Rpd.Process (ProcessF)
 import Rpd.Util (Canceler)
-import Rpd.UUID
 
 
+data Action d c n
+    = NoOp
+    | Inner (InnerAction d c n)
+    | Request (RequestAction d c n)
+    | Build (BuildAction d c n)
+    | Data (DataAction d c)
 
-data RequestCommand d c n
+
+data RequestAction d c n
     = ToAddPatch Path.Alias
     | ToAddNode Path.ToPatch Path.Alias n
     | ToAddOutlet Path.ToNode Path.Alias c
@@ -23,7 +26,7 @@ data RequestCommand d c n
     | ToConnect Path.ToOutlet Path.ToInlet
 
 
-data BuildCommand d c n
+data BuildAction d c n
     = AddPatch (Patch d c n)
     | AddNode (Node d n)
     -- TODO: Toolkit nodes
@@ -33,7 +36,7 @@ data BuildCommand d c n
     | ProcessWith (Node d n) (ProcessF d)
 
 
-data InnerCommand d c n
+data InnerAction d c n
     = StoreNodeCanceler (Node d n) Canceler
     | ClearNodeCancelers (Node d n)
     | StoreInletCanceler (Inlet d c) Canceler
@@ -41,20 +44,12 @@ data InnerCommand d c n
     | StoreLinkCanceler Link Canceler
 
 
-data DataCommand d c
+data DataAction d c
     = Bang
     | GotInletData (Inlet d c) d -- TODO: implement and use
     | GotOutletData (Outlet d c) d -- TODO: implement and use
     | SendToInlet Path.ToInlet d
     | SendToOutlet Path.ToOutlet d
-
-
-data Command d c n
-    = NoOp
-    | Inner (InnerCommand d c n)
-    | Request (RequestCommand d c n)
-    | Build (BuildCommand d c n)
-    | Data (DataCommand d c)
 
 
 data RpdEffect d c n
@@ -70,15 +65,15 @@ data RpdEffect d c n
     | SubscribeNodeUpdates (Node d n)
 
 
--- derive instance genericStringCommand :: Generic StringCommand _
--- instance eqStringCommand :: Eq StringCommand where
+-- derive instance genericStringAction :: Generic StringAction _
+-- instance eqStringAction :: Eq StringAction where
 --   eq = GEq.genericEq
--- instance showStringCommand :: Show StringCommand where
+-- instance showStringAction :: Show StringAction where
 --   show = GShow.genericShow
 
 
--- instance showCommand :: Show d => Show (Command d) where
--- instance showCommand :: (Show d, Show c, Show n) => Show (Command d c n) where
+-- instance showAction :: Show d => Show (Action d) where
+-- instance showAction :: (Show d, Show c, Show n) => Show (Action d c n) where
 --     show Bang = "Bang"
 --     show (AddPatch alias) = "AddPatch " <> show (Path.toPatch alias)
 --     show (AddNode patchPath alias n) =
@@ -99,7 +94,7 @@ data RpdEffect d c n
     -- show (GotOutletData oPath d) = "GotOutletData " <> show oPath <> " " <> show d
 
 
--- instance eqCommand :: (Eq c, Eq n) => Eq (Command d c n) where
+-- instance eqAction :: (Eq c, Eq n) => Eq (Action d c n) where
 --     eq Bang Bang = true
 --     eq (AddPatch lAlias) (AddPatch rAlias) = lAlias == rAlias
 --     eq (AddNode lPatch lNode lNodeType) (AddNode rPath rNode rNodeType) =
