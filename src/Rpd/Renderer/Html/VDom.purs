@@ -58,30 +58,29 @@ embed sel render renderer toolkit nw = do
         Just el -> do
             { first, next, push } <- Render.make renderer toolkit nw
             let
-                Render.PushF pushProp = push
+                Render.PushF pushF = push
                 vdomSpec = V.VDomSpec
                     { document : HTMLDocument.toDocument doc
                     , buildWidget: buildThunk unwrap
-                    , buildAttributes: P.buildProp pushProp
+                    , buildAttributes: P.buildProp pushF
                     }
             first_vdom ← EFn.runEffectFn1 (V.buildVDom vdomSpec) (unwrap $ render first)
             vdom_ref <- Ref.new first_vdom -- use recursion istead of `Ref`?
             void $ DOM.appendChild (Machine.extract first_vdom) (DOMElement.toNode el)
             cancel <- E.subscribe next $
-                \v -> do
-                    next_view <- v
+                \next_view -> do
                     prev_vdom <- Ref.read vdom_ref
                     next_vdom ← EFn.runEffectFn2 Machine.step prev_vdom (unwrap $ render next_view)
                     _ <- Ref.write next_vdom vdom_ref
                     pure unit
-            push $ Right $ A.Data A.Bang
+            pushF $ Right $ A.Data A.Bang
             pure unit
 
 
 embed'
-    :: forall d c n model msg
+    :: forall d c n model action effect
      . String -- selector
-    -> Ui.Renderer d c n model (HtmlView msg (A.Action d c n)) msg -- renderer
+    -> Ui.Renderer d c n model (HtmlView action (A.Action d c n)) action effect -- renderer
     -> T.Toolkit d c n -- toolkits
     -> Network d c n -- initial network
     -> Effect Unit

@@ -22,13 +22,13 @@ import Rpd.Process as R
 
 
 type Model d c n =
-    { lastCommands :: List (A.Action d c n)
+    { lastActions :: List (A.Action d c n)
     }
 
 
 init :: forall d c n. Model d c n
 init =
-    { lastCommands : List.Nil
+    { lastActions : List.Nil
     }
 
 
@@ -40,12 +40,12 @@ update
     -> Model d c n
 update cmd nw model =
     model
-        { lastCommands =
+        { lastActions =
             cmd :
-                (if List.length model.lastCommands < 5 then
-                    model.lastCommands
+                (if List.length model.lastActions < 5 then
+                    model.lastActions
                 else
-                    List.take 4 model.lastCommands
+                    List.take 4 model.lastActions
                 )
         }
 
@@ -158,11 +158,11 @@ viewModel
     -> Html Unit
 viewModel model =
     H.ul [ H.classes [ "commands-debug" ] ]
-        $ List.toUnfoldable (viewCommand <$> model.lastCommands)
+        $ List.toUnfoldable (viewAction <$> model.lastActions)
     where
-        viewCommand :: A.Action d c n -> Html Unit
-        viewCommand cmd =
-            H.li [] [ H.text $ show cmd ]
+        viewAction :: A.Action d c n -> Html Unit
+        viewAction action =
+            H.li [] [ H.text $ show action ]
 
 view
     :: forall d c n

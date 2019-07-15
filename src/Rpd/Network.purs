@@ -15,12 +15,11 @@ module Rpd.Network
     ) where
 
 
-import Prelude (class Eq, (==))
+import Prelude (class Eq, (==), class Show, show, (<>))
 
 import Data.Map as Map
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
-import Data.Maybe (Maybe)
 
 import Data.Tuple.Nested ((/\), type (/\))
 
@@ -144,3 +143,22 @@ instance eqOutlet :: Eq (Outlet d c) where
 
 instance eqLink :: Eq Link where
     eq (Link lidA _) (Link lidB _) = (lidA == lidB)
+
+
+instance showNetwork :: Show (Network d c n) where
+    show (Network { name }) = "Network " <> name
+
+instance showPatch :: Show (Patch d c n) where
+    show (Patch uuid path _) = "Patch " <> show uuid <> " " <> show path
+
+instance showNode :: Show n => Show (Node d n) where
+    show (Node uuid path n _ _) = "Node " <> show n <> " " <> show uuid <> " " <> show path
+
+instance showInlet :: Show c => Show (Inlet d c) where
+    show (Inlet uuid path c _) = "Inlet " <> show c <> " " <> show uuid <> " " <> show path
+
+instance showOutlet :: Show c => Show (Outlet d c) where
+    show (Outlet uuid path c _) = "Outlet " <> show c <> " " <> show uuid <> " " <> show path
+
+instance showLink :: Show c => Show Link where
+    show (Link uuid _) = "Link " <> show uuid

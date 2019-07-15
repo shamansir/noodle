@@ -4,6 +4,8 @@ module Rpd.API.Action where
 -- import Data.Generic.Rep.Eq as GEq
 -- import Data.Generic.Rep.Show as GShow
 
+import Prelude (class Show, show, (<>))
+
 import Rpd.Path as Path
 import Rpd.Network (Patch, Node, Outlet, Inlet, Link)
 import Rpd.Process (ProcessF)
@@ -31,8 +33,8 @@ data BuildAction d c n
     | AddNode (Node d n)
     -- TODO: Toolkit nodes
     | AddInlet (Inlet d c)
-    | AddLink Link
     | AddOutlet (Outlet d c)
+    | AddLink Link
     | ProcessWith (Node d n) (ProcessF d)
 
 
@@ -48,8 +50,8 @@ data DataAction d c
     = Bang
     | GotInletData (Inlet d c) d -- TODO: implement and use
     | GotOutletData (Outlet d c) d -- TODO: implement and use
-    | SendToInlet Path.ToInlet d
-    | SendToOutlet Path.ToOutlet d
+    | SendToInlet Path.ToInlet d -- FIXME: use Inlet instance instead of path
+    | SendToOutlet Path.ToOutlet d -- FIXME: use Outlet instance instead of path
 
 
 data RpdEffect d c n
@@ -70,6 +72,38 @@ data RpdEffect d c n
 --   eq = GEq.genericEq
 -- instance showStringAction :: Show StringAction where
 --   show = GShow.genericShow
+
+instance showAction :: (Show d, Show c, Show n) => Show (Action d c n) where
+    show NoOp = "NoOp"
+    show (Inner innerAction) = "I: " <> show innerAction
+    show (Request requestAction) = "R: " <> show requestAction
+    show (Build buildAction) = "B: " <> show buildAction
+    show (Data dataAction) = "D: " <> show dataAction
+
+
+instance showDataAction :: (Show d, Show c) => Show (DataAction d c) where
+    show Bang = "Bang"
+    show (GotInletData inlet d) = "GotInletData " <> show inlet <> " " <> show d
+    show (GotOutletData outlet d) = "GotOutletData " <> show outlet <> " " <> show d
+    show (SendToInlet iPath d) = "SendToInlet " <> show iPath <> " " <> show d
+    show (SendToOutlet oPath d) = "SendToOutlet " <> show oPath <> " " <> show d
+
+
+instance showInnerAction :: Show (InnerAction d c n) where
+    show _ = "<Inner>"
+
+
+instance showBuildAction :: (Show d, Show c, Show n) => Show (BuildAction d c n) where
+    show (AddPatch patch) = "AddPatch " <> show patch
+    show (AddNode node) = "AddNode " <> show node
+    show (AddOutlet outlet) = "AddOutlet " <> show outlet
+    show (AddInlet inlet) = "AddInlet " <> show inlet
+    show (AddLink link) = "AddLink "
+    show (ProcessWith node _) = "ProcessWith " <> show node
+
+
+instance showRequestAction :: Show (RequestAction d c n) where
+    show _ = "<Request>"
 
 
 -- instance showAction :: Show d => Show (Action d) where
