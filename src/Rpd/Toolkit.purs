@@ -96,14 +96,14 @@ data NodeDef d c =
 data Toolkit d c n = Toolkit ToolkitName (n -> NodeDef d c)
 
 
-type ToolkitRenderer d c n view msg =
+type ToolkitRenderer d c n view action =
     -- FIXME: now any node, inlet and outlet are containing the corresponding `n` or 'c' instance
     --        so it's a duplication to use them as a separate parameters in these functions
-    { renderNode :: n -> R.Node d n -> (msg -> Effect Unit) -> view
+    { renderNode :: n -> R.Node d n -> (action -> Effect Unit) -> view
     -- , renderInlet :: ChannelDefAlias -> R.Inlet d -> c -> (msg -> Effect Unit) -> view
-    , renderInlet :: c -> R.Inlet d c -> (msg -> Effect Unit) -> view
+    , renderInlet :: c -> R.Inlet d c -> (action -> Effect Unit) -> view
     -- , renderOutlet :: ChannelDefAlias -> R.Outlet d -> c -> (msg -> Effect Unit) -> view
-    , renderOutlet :: c -> R.Outlet d c -> (msg -> Effect Unit) -> view
+    , renderOutlet :: c -> R.Outlet d c -> (action -> Effect Unit) -> view
     }
 
 

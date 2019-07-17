@@ -170,17 +170,17 @@ performEffect
     -> RpdEffect d c n
     -> Network d c n
     -> Effect Unit
-performEffect _ pushСmd (AddPatchE alias) _ = do
+performEffect _ pushCmd (AddPatchE alias) _ = do
     uuid <- UUID.new
     let path = Path.toPatch alias
-    pushСmd $ Build $ AddPatch $
+    pushCmd $ Build $ AddPatch $
         Patch
             (UUID.ToPatch uuid)
             path
             { nodes : Seq.empty
             , links : Seq.empty
             }
-performEffect _ pushСmd (AddNodeE patchPath nodeAlias n) _ = do
+performEffect _ pushCmd (AddNodeE patchPath nodeAlias n) _ = do
     uuid <- UUID.new
     flows <- makeInletOutletsFlows
     let
@@ -200,8 +200,8 @@ performEffect _ pushСmd (AddNodeE patchPath nodeAlias n) _ = do
                 , pushToInlets : PushToInlets pushToInlets
                 , pushToOutlets : PushToOutlets pushToOutlets
                 }
-    pushСmd $ Build $ AddNode newNode
-performEffect _ pushСmd (AddLinkE outlet inlet) nw = do
+    pushCmd $ Build $ AddNode newNode
+performEffect _ pushCmd (AddLinkE outlet inlet) nw = do
     uuid <- UUID.new
     let
         (Outlet ouuid _ _ { flow : outletFlow' }) = outlet
@@ -210,15 +210,15 @@ performEffect _ pushСmd (AddLinkE outlet inlet) nw = do
         (PushToInlet pushToInlet) = pushToInlet'
         newLink = Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid }
     canceler :: Canceler <- E.subscribe outletFlow pushToInlet
-    pushСmd $ Build $ AddLink newLink
-    pushСmd $ Inner $ StoreLinkCanceler newLink canceler
-performEffect _ pushСmd (SubscribeNodeProcess node) nw = do
+    pushCmd $ Build $ AddLink newLink
+    pushCmd $ Inner $ StoreLinkCanceler newLink canceler
+performEffect _ pushCmd (SubscribeNodeProcess node) nw = do
     canceler <- setupNodeProcessFlow node nw
-    pushСmd $ Inner $ StoreNodeCanceler node canceler
-performEffect _ pushСmd (CancelNodeSubscriptions node@(Node uuid _ _ _ _)) nw = do
+    pushCmd $ Inner $ StoreNodeCanceler node canceler
+performEffect _ pushCmd (CancelNodeSubscriptions node@(Node uuid _ _ _ _)) nw = do
     _ <- cancelNodeSubscriptions uuid nw
-    pushСmd $ Inner $ ClearNodeCancelers node
-performEffect _ pushСmd (AddInletE nodePath inletAlias c) _ = do
+    pushCmd $ Inner $ ClearNodeCancelers node
+performEffect _ pushCmd (AddInletE nodePath inletAlias c) _ = do
     uuid <- UUID.new
     flow <- makePushableFlow
     let
@@ -232,12 +232,12 @@ performEffect _ pushСmd (AddInletE nodePath inletAlias c) _ = do
                 { flow : InletFlow inletFlow
                 , push : PushToInlet pushToInlet
                 }
-    pushСmd $ Build $ AddInlet newInlet
-    -- FIXME: pushСmd $ CancelNodeSubscriptions
-performEffect _ pushСmd (InformNodeOnInletUpdates inlet node) _ = do
+    pushCmd $ Build $ AddInlet newInlet
+    -- FIXME: pushCmd $ CancelNodeSubscriptions
+performEffect _ pushCmd (InformNodeOnInletUpdates inlet node) _ = do
     canceler <- informNodeOnInletUpdates inlet node
-    pushСmd $ Inner $ StoreInletCanceler inlet canceler
-performEffect _ pushСmd (AddOutletE nodePath outletAlias c) _ = do
+    pushCmd $ Inner $ StoreInletCanceler inlet canceler
+performEffect _ pushCmd (AddOutletE nodePath outletAlias c) _ = do
     uuid <- UUID.new
     flow <- makePushableFlow
     let
@@ -251,14 +251,14 @@ performEffect _ pushСmd (AddOutletE nodePath outletAlias c) _ = do
                 { flow : OutletFlow outletFlow
                 , push : PushToOutlet pushToOutlet
                 }
-    pushСmd $ Build $ AddOutlet newOutlet
-    -- FIXME: pushСmd $ CancelNodeSubscriptions
-performEffect _ pushСmd (InformNodeOnOutletUpdates outlet node) _ = do
+    pushCmd $ Build $ AddOutlet newOutlet
+    -- FIXME: pushCmd $ CancelNodeSubscriptions
+performEffect _ pushCmd (InformNodeOnOutletUpdates outlet node) _ = do
     canceler <- informNodeOnOutletUpdates outlet node
-    pushСmd $ Inner $ StoreOutletCanceler outlet canceler
-performEffect _ pushСmd (SubscribeNodeUpdates node) _ = do
+    pushCmd $ Inner $ StoreOutletCanceler outlet canceler
+performEffect _ pushCmd (SubscribeNodeUpdates node) _ = do
     canceler <- subscribeNode node (const $ pure unit) (const $ pure unit)
-    pushСmd $ Inner $ StoreNodeCanceler node canceler
+    pushCmd $ Inner $ StoreNodeCanceler node canceler
 
 
 -- apply'
