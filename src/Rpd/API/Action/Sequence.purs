@@ -87,7 +87,21 @@ run
     -> Effect Unit
 run toolkit initialNW (ActionList actionList) sub = do
     { models, pushAction } <- prepare initialNW toolkit
+    _ <- Event.subscribe models sub
     _ <- traverse_ pushAction actionList
+    pure unit
+
+runAnd
+    :: forall d c n
+     . Toolkit d c n
+    -> Network d c n
+    -> ActionList d c n
+    -> (Network d c n -> Effect Unit)
+    -> Effect Unit
+runAnd toolkit initialNW (ActionList actionList) toPerform = do
+    { models, pushAction } <- prepare initialNW toolkit
+    _ <- traverse_ pushAction actionList
+    pushAction $ Inner $ Do toPerform
     pure unit
 
 

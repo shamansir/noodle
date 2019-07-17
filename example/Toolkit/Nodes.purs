@@ -29,8 +29,8 @@ randomNode =
         { inlets :
             T.inlets
                 [ "bang" /\ TriggerChannel
-                , "min" /\ NumberChannel
-                , "max" /\ NumberChannel
+                , "min"  /\ NumberChannel
+                , "max"  /\ NumberChannel
                 ]
         , outlets :
             T.outlets

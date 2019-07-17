@@ -106,12 +106,12 @@ viewNetwork toolkitRenderer pushMsg ui nw@(R.Network { name, patches }) =
             , H.div
                 [ H.onClick $ H.always_ $ core $ Core.Data Core.Bang
                 ]
-                [ H.text "Send" ]
+                [ H.text "Bang" ]
             , H.div
                 [ ]
                 -- [ H.onClick $ H.always_ $ core
                 --     $ C.AddInlet (P.toNode "test" "random") "test" ]
-                [ H.text "Add Inlet" ]
+                [ H.text "Add Inlet (no action)" ]
             ] <>
             (toUnfoldable $ viewPatch toolkitRenderer pushMsg ui nw
                 <$> (patches # Seq.toUnfoldable))

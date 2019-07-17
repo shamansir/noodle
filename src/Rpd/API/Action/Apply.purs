@@ -135,6 +135,8 @@ applyInnerAction
     -> InnerAction d c n
     -> Network d c n
     -> Step d c n
+applyInnerAction _ (Do effectful) nw =
+    pure $ nw /\ [ DoE effectful ]
 applyInnerAction _ (StoreNodeCanceler (Node uuid _ _ _ _) canceler) nw =
     let
         curNodeCancelers = getNodeCancelers uuid nw
@@ -170,6 +172,7 @@ performEffect
     -> RpdEffect d c n
     -> Network d c n
     -> Effect Unit
+performEffect _ pushCmd (DoE effectful) nw = effectful nw
 performEffect _ pushCmd (AddPatchE alias) _ = do
     uuid <- UUID.new
     let path = Path.toPatch alias

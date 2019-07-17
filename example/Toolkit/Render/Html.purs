@@ -43,6 +43,14 @@ renderer =
             [ H.text "tk-node"
             , H.div
                 [ H.onClick $ H.always_ $ R.core
+                    $ A.Request $ A.ToAddPatch "test" ]
+                [ H.text "ADD PATCH" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
+                    $ A.Request $ A.ToAddNode (P.toPatch "test") "random" RandomNode ]
+                [ H.text "ADD NODE" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
                     $ A.Request $ A.ToAddInlet (P.toNode "test" "random") "test" ColorChannel ]
                 [ H.text "ADD INLET" ]
             , H.div

@@ -4,10 +4,12 @@ module Rpd.API.Action where
 -- import Data.Generic.Rep.Eq as GEq
 -- import Data.Generic.Rep.Show as GShow
 
-import Prelude (class Show, show, (<>))
+import Prelude (class Show, show, (<>), Unit)
+
+import Effect (Effect)
 
 import Rpd.Path as Path
-import Rpd.Network (Patch, Node, Outlet, Inlet, Link)
+import Rpd.Network (Network, Patch, Node, Outlet, Inlet, Link)
 import Rpd.Process (ProcessF)
 import Rpd.Util (Canceler)
 
@@ -39,7 +41,8 @@ data BuildAction d c n
 
 
 data InnerAction d c n
-    = StoreNodeCanceler (Node d n) Canceler
+    = Do (Network d c n -> Effect Unit)
+    | StoreNodeCanceler (Node d n) Canceler
     | ClearNodeCancelers (Node d n)
     | StoreInletCanceler (Inlet d c) Canceler
     | StoreOutletCanceler (Outlet d c) Canceler
@@ -55,7 +58,8 @@ data DataAction d c
 
 
 data RpdEffect d c n
-    = AddPatchE Path.Alias
+    = DoE (Network d c n -> Effect Unit)
+    | AddPatchE Path.Alias
     | AddNodeE Path.ToPatch Path.Alias n
     | AddInletE Path.ToNode Path.Alias c
     | AddOutletE Path.ToNode Path.Alias c
