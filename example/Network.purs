@@ -1,5 +1,5 @@
 module Example.Network
-    ( network
+    ( recipe
     ) where
 
 import Prelude
@@ -9,7 +9,10 @@ import Rpd.Network as R
 import Rpd.Path as R
 import Rpd.Toolkit as R
 
-import Rpd.API as Rpd
+-- import Rpd.API as Rpd
+import Rpd.API.Action.Apply as Rpd
+import Rpd.API.Action.Sequence as Actions
+import Rpd.API.Action.Sequence ((</>))
 -- import Rpd.API ((</>))
 
 import Example.Toolkit.Nodes (Node(..))
@@ -18,10 +21,10 @@ import Example.Toolkit.Channel (Channel(..))
 import Example.Toolkit (toolkit)
 
 
-network :: R.Network Value Channel Node
-network =
-    Network.empty "foo"
-        -- </> Rpd.addPatch "test"
+recipe :: Actions.ActionList Value Channel Node
+recipe =
+    Actions.init
+        </> Actions.addPatch "test"
 
         -- FIXME: this block produces an error
         -- </> Rpd.addNode (R.toPatch "test") "random"

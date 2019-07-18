@@ -40,7 +40,7 @@ data BuildAction d c n
     | ProcessWith (Node d n) (ProcessF d)
 
 
-data InnerAction d c n
+data InnerAction d c n -- FIXME: InnerActions should not be exposed
     = Do (Network d c n -> Effect Unit)
     | StoreNodeCanceler (Node d n) Canceler
     | ClearNodeCancelers (Node d n)

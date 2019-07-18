@@ -21,6 +21,8 @@ import Rpd.Toolkit (Toolkit)
 
 
 data ActionList d c n = ActionList (Array (Action d c n))
+data EveryStep d c n = EveryStep (Either RpdError (Network d c n) -> Effect Unit)
+data LastStep d c n = LastStep (Network d c n -> Effect Unit)
 
 
 infixl 1 andThen as </>
@@ -83,25 +85,26 @@ run
      . Toolkit d c n
     -> Network d c n
     -> ActionList d c n
-    -> (Either RpdError (Network d c n) -> Effect Unit)
+    -> EveryStep d c n
     -> Effect Unit
-run toolkit initialNW (ActionList actionList) sub = do
+run toolkit initialNW (ActionList actionList) (EveryStep sub) = do
     { models, pushAction } <- prepare initialNW toolkit
     _ <- Event.subscribe models sub
     _ <- traverse_ pushAction actionList
     pure unit
 
-runAnd
+
+run'
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
     -> ActionList d c n
-    -> (Network d c n -> Effect Unit)
+    -> LastStep d c n
     -> Effect Unit
-runAnd toolkit initialNW (ActionList actionList) toPerform = do
+run' toolkit initialNW (ActionList actionList) (LastStep lastStep) = do
     { models, pushAction } <- prepare initialNW toolkit
     _ <- traverse_ pushAction actionList
-    pushAction $ Inner $ Do toPerform
+    pushAction $ Inner $ Do lastStep
     pure unit
 
 
