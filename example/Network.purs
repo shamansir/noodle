@@ -25,6 +25,8 @@ recipe :: Actions.ActionList Value Channel Node
 recipe =
     Actions.init
         </> Actions.addPatch "test"
+        </> Actions.addNode (R.toPatch "test") "random" RandomNode
+        </> Actions.addInlet (R.toNode "test" "random") "min" NumberChannel
 
         -- FIXME: this block produces an error
         -- </> Rpd.addNode (R.toPatch "test") "random"

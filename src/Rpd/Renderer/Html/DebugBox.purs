@@ -21,6 +21,10 @@ import Rpd.UUID as R
 import Rpd.Process as R
 
 
+actionStackSize :: Int
+actionStackSize = 10
+
+
 type Model d c n =
     { lastActions :: List (A.Action d c n)
     }
@@ -42,10 +46,10 @@ update cmd nw model =
     model
         { lastActions =
             cmd :
-                (if List.length model.lastActions < 5 then
+                (if List.length model.lastActions < actionStackSize then
                     model.lastActions
                 else
-                    List.take 4 model.lastActions
+                    List.take actionStackSize model.lastActions
                 )
         }
 

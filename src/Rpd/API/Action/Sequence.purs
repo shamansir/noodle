@@ -36,6 +36,18 @@ addPatch :: forall d c n. Path.Alias -> Action d c n
 addPatch = Request <<< ToAddPatch
 
 
+addNode :: forall d c n. Path.ToPatch -> Path.Alias -> n -> Action d c n
+addNode patch alias n = Request $ ToAddNode patch alias n
+
+
+addInlet :: forall d c n. Path.ToNode -> Path.Alias -> c -> Action d c n
+addInlet node alias c = Request $ ToAddInlet node alias c
+
+
+addOutlet :: forall d c n. Path.ToNode -> Path.Alias -> c -> Action d c n
+addOutlet node alias c = Request $ ToAddOutlet node alias c
+
+
 prepare_
     :: forall model action effect
      . model
