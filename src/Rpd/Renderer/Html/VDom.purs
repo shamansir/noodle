@@ -30,23 +30,23 @@ import Web.HTML.Window (document) as DOM
 import Spork.Html (Html)
 
 import Rpd.Network (Network)
-import Rpd.API.Action (Action(..), DataAction(Bang)) as A
+import Rpd.API.Action (Action(..), DataAction(Bang), RequestAction(ToAddPatch)) as A
 import Rpd.Toolkit (Toolkit) as T
 import Rpd.Render.MUV (Renderer) as Ui
 import Rpd.Render.MUV (make, PushF(..)) as Render
 
 import Debug.Trace as DT
 
-type HtmlView msg cmd = Html (Either msg cmd)
+type HtmlView d c n action = Html (Either action (A.Action d c n))
 
 
 -- TODO: it looks confusing, why embedding needs toolkits,
 --       renderer indeed needs toolkits (which also looks confusing, but at least true)
 embed
-    :: forall d c n model view msg effect
+    :: forall d c n model view action effect
      . String -- selector
-    -> (view -> HtmlView msg (A.Action d c n)) -- insert the rendering result
-    -> Ui.Renderer d c n model view msg effect -- renderer
+    -> (view -> HtmlView d c n action) -- insert the rendering result
+    -> Ui.Renderer d c n model view action effect -- renderer
     -> T.Toolkit d c n
     -> Network d c n -- initial network
     -> Effect Unit
@@ -73,14 +73,15 @@ embed sel render renderer toolkit nw = do
                     next_vdom ← EFn.runEffectFn2 Machine.step prev_vdom (unwrap $ render next_view)
                     _ <- Ref.write next_vdom vdom_ref
                     pure unit
-            pushF $ Right $ A.Data A.Bang
+            _ <- pushF $ Right $ A.Data A.Bang
+            _ <- pushF $ Right $ A.Request $ A.ToAddPatch "bar"
             pure unit
 
 
 embed'
     :: forall d c n model action effect
      . String -- selector
-    -> Ui.Renderer d c n model (HtmlView action (A.Action d c n)) action effect -- renderer
+    -> Ui.Renderer d c n model (HtmlView d c n action) action effect -- renderer
     -> T.Toolkit d c n -- toolkits
     -> Network d c n -- initial network
     -> Effect Unit

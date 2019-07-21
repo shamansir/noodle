@@ -118,12 +118,6 @@ main = do
             pure ("<" <> show uuid <> ">-" <> model)
             /\ []
         update' _ model = pure model /\ []
-        -- update msg m = m
-        --     case model of
-        --     model >>= \prev -> do
-        --         uuid <- liftEffect UUID.new
-        --         -- let _ = DT.spy "uuid" uuid
-        --         pure $ "(" <> show msg <> ":" <> UUID.toString uuid <> ")-" <> prev
         view errOrModel =
             either (const "ERR") identity errOrModel
 

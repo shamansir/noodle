@@ -68,9 +68,10 @@ update cmd nw model =
 
 
 viewNetwork :: forall d c n. R.Network d c n -> Html Unit
-viewNetwork nw@(R.Network { patches }) =
+viewNetwork nw@(R.Network { patches, name }) =
     H.div [ H.classes [ "network-debug" ] ]
-        [ H.ul [] viewPatches
+        [ H.div [] [ H.text name ]
+        , H.ul [] viewPatches
         -- [ H.ul [] (viewItems viewPatch ?wh patches nw)
         ]
     where

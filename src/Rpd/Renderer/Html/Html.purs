@@ -6,13 +6,12 @@ import Data.Either (Either(..))
 import Data.Foldable (foldr)
 import Data.Lens (view) as L
 import Data.Lens.At (at) as L
-import Data.List (toUnfoldable)
+import Data.List (toUnfoldable, length)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), isJust, maybe, fromMaybe)
 import Data.Sequence as Seq
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Exists (Exists, mkExists)
-import Debug.Trace (spy)
 
 import Rpd.API (RpdError) as R
 import Rpd.API.Action (Action(..), DataAction(..), BuildAction(..)) as Core
@@ -276,12 +275,12 @@ htmlRenderer toolkitRenderer =
         { from : emptyView
         , init : init
         , update :
-            \toolkit cmdOrMsg (ui /\ nw) ->
+            \toolkit action (ui /\ nw) ->
                 let
-                    (ui' /\ cmds) = update cmdOrMsg (ui /\ nw)
+                    (ui' /\ effects) = update action (ui /\ nw)
                     ui'' =
-                        ui' { debug = ui'.debug # updateDebugBox nw cmdOrMsg }
-                in (ui'' /\ cmds)
+                        ui' { debug = ui'.debug # updateDebugBox nw action }
+                in (ui'' /\ effects)
         , view : view toolkitRenderer
         , performEffect : R.skipEffects
         }

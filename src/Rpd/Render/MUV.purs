@@ -108,7 +108,7 @@ make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = 
             nw' /\ coreEffects <- Core.apply toolkit coreAction nw
             let model' /\ userEffects = update toolkit (Right coreAction) $ model /\ nw'
             let allEffects = (Right <$> coreEffects) <> (Left <$> userEffects)
-            pure $ (model' /\ nw) /\ allEffects
+            pure $ (model' /\ nw') /\ allEffects
         myApply (Left userAction) (model /\ nw) = do
             let model' /\ userEffects = update toolkit (Left userAction) $ model /\ nw
             pure $ (model' /\ nw) /\ (Left <$> userEffects)
