@@ -9,7 +9,7 @@ import Prelude (class Show, show, (<>), Unit)
 import Effect (Effect)
 
 import Rpd.Path as Path
-import Rpd.Network (Network, Patch, Node, Outlet, Inlet, Link)
+import Rpd.Network
 import Rpd.Process (ProcessF)
 import Rpd.Util (Canceler)
 
@@ -28,6 +28,8 @@ data RequestAction d c n
     | ToAddOutlet Path.ToNode Path.Alias c
     | ToAddInlet Path.ToNode Path.Alias c
     | ToConnect Path.ToOutlet Path.ToInlet
+    | ToSendToInlet Path.ToInlet d
+    | ToSendToOutlet Path.ToOutlet d
 
 
 data BuildAction d c n
@@ -51,13 +53,13 @@ data InnerAction d c n -- FIXME: InnerActions should not be exposed
 
 data DataAction d c
     = Bang
+    | SendToInlet (Inlet d c) d
+    | SendToOutlet (Outlet d c) d
     | GotInletData (Inlet d c) d -- TODO: implement and use
     | GotOutletData (Outlet d c) d -- TODO: implement and use
-    | SendToInlet Path.ToInlet d -- FIXME: use Inlet instance instead of path
-    | SendToOutlet Path.ToOutlet d -- FIXME: use Outlet instance instead of path
 
 
-data RpdEffect d c n
+data RpdEffect d c n -- TODO: move to a separate module
     = DoE (Network d c n -> Effect Unit)
     | AddPatchE Path.Alias
     | AddNodeE Path.ToPatch Path.Alias n
@@ -69,6 +71,10 @@ data RpdEffect d c n
     | InformNodeOnOutletUpdates (Outlet d c) (Node d n)
     | CancelNodeSubscriptions (Node d n)
     | SubscribeNodeUpdates (Node d n)
+    | SendToInletE (PushToInlet d) d
+    | SendToOutletE (PushToOutlet d) d
+    | SendActionOnInletUpdatesE (Inlet d c)
+    | SendActionOnOutletUpdatesE (Outlet d c)
 
 
 -- derive instance genericStringAction :: Generic StringAction _

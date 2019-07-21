@@ -186,8 +186,8 @@ viewInlet toolkitRenderer pushMsg ui nw inletUuid =
                 [ H.text label
                 , toolkitResult inlet channel
                 , case Map.lookup path ui.lastInletData of
-                    Just d -> H.text "data"
-                    _ -> H.text ""
+                    Just d -> H.text "<data>"
+                    _ -> H.text "<x>"
                 ]
         _ -> H.div
                 [ H.classes [ "inlet" ] ]
@@ -198,7 +198,6 @@ viewInlet toolkitRenderer pushMsg ui nw inletUuid =
                 channel
                 inlet
                 (case pushMsg of R.PushF f -> f)
-
 
 
 viewOutlet

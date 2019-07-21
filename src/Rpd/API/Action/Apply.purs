@@ -85,6 +85,16 @@ applyRequestAction _ (ToConnect outletPath inletPath) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
     inlet <- view (_inlet inletUuid) nw # note (RpdError "")
     pure $ nw /\ [ AddLinkE outlet inlet ]
+applyRequestAction _ (ToSendToInlet inletPath d) nw = do
+    inletUuid <- uuidByPath UUID.toInlet inletPath nw
+    (Inlet _ _ _ { push }) <- view (_inlet inletUuid) nw # note (RpdError "")
+    -- TODO: adapt / check the data with the channel instance? or do it in the caller?
+    pure $ nw /\ [ SendToInletE push d ]
+applyRequestAction _ (ToSendToOutlet outletPath d) nw = do
+    outletUuid <- uuidByPath UUID.toOutlet outletPath nw
+    (Outlet _ _ _ { push }) <- view (_outlet outletUuid) nw # note (RpdError "")
+    -- TODO: adapt / check the data with the channel instance? or do it in the caller?
+    pure $ nw /\ [ SendToOutletE push d ]
 
 
 applyBuildAction
@@ -102,17 +112,6 @@ applyBuildAction _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw = do
     let newNode = processWith processF node
         nw' = nw # setJust (_node uuid) newNode
     pure $ nw' /\ [ SubscribeNodeProcess newNode ]
-applyBuildAction _ (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
-    nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
-    nodeUuid <- uuidByPath UUID.toNode nodePath nw
-    node <- view (_node nodeUuid) nw # note (RpdError "")
-    nw' <- addOutlet outlet nw
-    pure $ nw' /\
-        [ CancelNodeSubscriptions node
-        , SubscribeNodeProcess node
-        , InformNodeOnOutletUpdates outlet node
-        , SubscribeNodeUpdates node
-        ]
 applyBuildAction _ (AddInlet inlet@(Inlet uuid path _ _)) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
@@ -123,6 +122,19 @@ applyBuildAction _ (AddInlet inlet@(Inlet uuid path _ _)) nw = do
         , SubscribeNodeProcess node
         , InformNodeOnInletUpdates inlet node
         , SubscribeNodeUpdates node
+        , SendActionOnInletUpdatesE inlet
+        ]
+applyBuildAction _ (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
+    nodeUuid <- uuidByPath UUID.toNode nodePath nw
+    node <- view (_node nodeUuid) nw # note (RpdError "")
+    nw' <- addOutlet outlet nw
+    pure $ nw' /\
+        [ CancelNodeSubscriptions node
+        , SubscribeNodeProcess node
+        , InformNodeOnOutletUpdates outlet node
+        , SubscribeNodeUpdates node
+        , SendActionOnOutletUpdatesE outlet
         ]
 applyBuildAction _ (AddLink link) nw = do
     nw' <- addLink link nw
@@ -165,25 +177,25 @@ applyInnerAction _ (StoreLinkCanceler (Link uuid _) canceler) nw =
         pure $ storeLinkCancelers uuid newLinkCancelers nw /\ []
 
 
-performEffect
+performEffect -- TODO: move to a separate module
     :: forall d c n
      . Toolkit d c n
     -> (Action d c n -> Effect Unit)
     -> RpdEffect d c n
     -> Network d c n
     -> Effect Unit
-performEffect _ pushCmd (DoE effectful) nw = effectful nw
-performEffect _ pushCmd (AddPatchE alias) _ = do
+performEffect _ pushAction (DoE effectful) nw = effectful nw
+performEffect _ pushAction (AddPatchE alias) _ = do
     uuid <- UUID.new
     let path = Path.toPatch alias
-    pushCmd $ Build $ AddPatch $
+    pushAction $ Build $ AddPatch $
         Patch
             (UUID.ToPatch uuid)
             path
             { nodes : Seq.empty
             , links : Seq.empty
             }
-performEffect _ pushCmd (AddNodeE patchPath nodeAlias n) _ = do
+performEffect _ pushAction (AddNodeE patchPath nodeAlias n) _ = do
     uuid <- UUID.new
     flows <- makeInletOutletsFlows
     let
@@ -203,8 +215,8 @@ performEffect _ pushCmd (AddNodeE patchPath nodeAlias n) _ = do
                 , pushToInlets : PushToInlets pushToInlets
                 , pushToOutlets : PushToOutlets pushToOutlets
                 }
-    pushCmd $ Build $ AddNode newNode
-performEffect _ pushCmd (AddLinkE outlet inlet) nw = do
+    pushAction $ Build $ AddNode newNode
+performEffect _ pushAction (AddLinkE outlet inlet) nw = do
     uuid <- UUID.new
     let
         (Outlet ouuid _ _ { flow : outletFlow' }) = outlet
@@ -213,15 +225,15 @@ performEffect _ pushCmd (AddLinkE outlet inlet) nw = do
         (PushToInlet pushToInlet) = pushToInlet'
         newLink = Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid }
     canceler :: Canceler <- E.subscribe outletFlow pushToInlet
-    pushCmd $ Build $ AddLink newLink
-    pushCmd $ Inner $ StoreLinkCanceler newLink canceler
-performEffect _ pushCmd (SubscribeNodeProcess node) nw = do
+    pushAction $ Build $ AddLink newLink
+    pushAction $ Inner $ StoreLinkCanceler newLink canceler
+performEffect _ pushAction (SubscribeNodeProcess node) nw = do
     canceler <- setupNodeProcessFlow node nw
-    pushCmd $ Inner $ StoreNodeCanceler node canceler
-performEffect _ pushCmd (CancelNodeSubscriptions node@(Node uuid _ _ _ _)) nw = do
+    pushAction $ Inner $ StoreNodeCanceler node canceler
+performEffect _ pushAction (CancelNodeSubscriptions node@(Node uuid _ _ _ _)) nw = do
     _ <- cancelNodeSubscriptions uuid nw
-    pushCmd $ Inner $ ClearNodeCancelers node
-performEffect _ pushCmd (AddInletE nodePath inletAlias c) _ = do
+    pushAction $ Inner $ ClearNodeCancelers node
+performEffect _ pushAction (AddInletE nodePath inletAlias c) _ = do
     uuid <- UUID.new
     flow <- makePushableFlow
     let
@@ -235,12 +247,12 @@ performEffect _ pushCmd (AddInletE nodePath inletAlias c) _ = do
                 { flow : InletFlow inletFlow
                 , push : PushToInlet pushToInlet
                 }
-    pushCmd $ Build $ AddInlet newInlet
-    -- FIXME: pushCmd $ CancelNodeSubscriptions
-performEffect _ pushCmd (InformNodeOnInletUpdates inlet node) _ = do
+    pushAction $ Build $ AddInlet newInlet
+    -- FIXME: pushAction $ CancelNodeSubscriptions
+performEffect _ pushAction (InformNodeOnInletUpdates inlet node) _ = do
     canceler <- informNodeOnInletUpdates inlet node
-    pushCmd $ Inner $ StoreInletCanceler inlet canceler
-performEffect _ pushCmd (AddOutletE nodePath outletAlias c) _ = do
+    pushAction $ Inner $ StoreInletCanceler inlet canceler
+performEffect _ pushAction (AddOutletE nodePath outletAlias c) _ = do
     uuid <- UUID.new
     flow <- makePushableFlow
     let
@@ -254,14 +266,27 @@ performEffect _ pushCmd (AddOutletE nodePath outletAlias c) _ = do
                 { flow : OutletFlow outletFlow
                 , push : PushToOutlet pushToOutlet
                 }
-    pushCmd $ Build $ AddOutlet newOutlet
-    -- FIXME: pushCmd $ CancelNodeSubscriptions
-performEffect _ pushCmd (InformNodeOnOutletUpdates outlet node) _ = do
-    canceler <- informNodeOnOutletUpdates outlet node
-    pushCmd $ Inner $ StoreOutletCanceler outlet canceler
-performEffect _ pushCmd (SubscribeNodeUpdates node) _ = do
-    canceler <- subscribeNode node (const $ pure unit) (const $ pure unit)
-    pushCmd $ Inner $ StoreNodeCanceler node canceler
+    pushAction $ Build $ AddOutlet newOutlet
+    -- FIXME: pushAction $ CancelNodeSubscriptions
+performEffect _ pushAction (InformNodeOnOutletUpdates outlet node) _ = do
+    canceler :: Canceler <- informNodeOnOutletUpdates outlet node
+    pushAction $ Inner $ StoreOutletCanceler outlet canceler
+performEffect _ pushAction (SubscribeNodeUpdates node) _ = do
+    canceler :: Canceler <- subscribeNode node (const $ pure unit) (const $ pure unit)
+    pushAction $ Inner $ StoreNodeCanceler node canceler
+performEffect _ pushAction (SendToInletE (PushToInlet push) d) _ = do
+    push d -- TODO: consider pushing `GotInletData` action instead?
+performEffect _ pushAction (SendToOutletE (PushToOutlet push) d) _ =
+    push d -- TODO: consider pushing `GotOutletData` action instead?
+performEffect _ pushAction (SendActionOnInletUpdatesE inlet@(Inlet _ path _ { flow })) _ = do
+    let (InletFlow flow') = flow
+    canceler :: Canceler <- E.subscribe flow' (pushAction <<< Data <<< GotInletData inlet)
+    pushAction $ Inner $ StoreInletCanceler inlet canceler
+performEffect _ pushAction (SendActionOnOutletUpdatesE outlet@(Outlet _ path _ { flow })) _ = do
+    let (OutletFlow flow') = flow
+    canceler :: Canceler <- E.subscribe flow' (pushAction <<< Data <<< GotOutletData outlet)
+    pushAction $ Inner $ StoreOutletCanceler outlet canceler
+
 
 
 -- apply'

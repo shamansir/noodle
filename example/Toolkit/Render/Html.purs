@@ -55,8 +55,12 @@ renderer =
                 [ H.text "ADD INLET" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
-                    $ A.Data $ A.SendToInlet (P.toInlet "test" "random" "min") $ Shape Cross ]
-                [ H.text "SEND DATA" ]
+                    $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random" "min") $ Shape Cross ]
+                [ H.text "SEND DATA TO MIN" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
+                    $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random" "test") $ Shape Diamond ]
+                [ H.text "SEND DATA TO TEST" ]
             ]
     , renderInlet : \_ _ _ -> H.div [ H.classes [ "tk-inlet" ] ] [ H.text "tk-inlet" ]
     , renderOutlet : \_ _ _ -> H.div [ H.classes [ "tk-outlet" ] ] [ H.text "tk-outlet" ]
