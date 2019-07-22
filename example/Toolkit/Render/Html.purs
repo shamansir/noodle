@@ -61,6 +61,13 @@ renderer =
                 [ H.onClick $ H.always_ $ R.core
                     $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random" "test") $ Shape Diamond ]
                 [ H.text "SEND DATA TO TEST" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
+                    $ A.Request
+                    $ A.ToSendPeriodicallyToInlet (P.toInlet "test" "random" "test") 500
+                    $ const
+                    $ Shape Diamond ]
+                [ H.text "SEND DATA TO TEST PERIOD" ]
             ]
     , renderInlet : \_ _ _ -> H.div [ H.classes [ "tk-inlet" ] ] [ H.text "tk-inlet" ]
     , renderOutlet : \_ _ _ -> H.div [ H.classes [ "tk-outlet" ] ] [ H.text "tk-outlet" ]

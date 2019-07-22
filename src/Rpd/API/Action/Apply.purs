@@ -11,6 +11,8 @@ import Data.Lens (view, setJust)
 import Data.Array ((:))
 
 import FRP.Event as E
+import FRP.Event.Class (count) as E
+import FRP.Event.Time as E
 
 import Rpd.Util (PushableFlow(..), Canceler)
 import Rpd.API
@@ -59,9 +61,9 @@ applyDataAction _ (GotInletData _ _) nw =
     pure $ nw /\ []
 applyDataAction _ (GotOutletData _ _) nw =
     pure $ nw /\ []
-applyDataAction _ (SendToInlet _ _) nw =
+applyDataAction _ (SendToInlet _ _) nw = -- FIXME: either implement or get rid of
     pure $ nw /\ []
-applyDataAction _ (SendToOutlet _ _) nw =
+applyDataAction _ (SendToOutlet _ _) nw = -- FIXME: either implement or get rid of
     pure $ nw /\ []
 
 
@@ -95,6 +97,11 @@ applyRequestAction _ (ToSendToOutlet outletPath d) nw = do
     (Outlet _ _ _ { push }) <- view (_outlet outletUuid) nw # note (RpdError "")
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ [ SendToOutletE push d ]
+applyRequestAction _ (ToSendPeriodicallyToInlet inletPath period fn) nw = do
+    inletUuid <- uuidByPath UUID.toInlet inletPath nw
+    (Inlet _ _ _ { push }) <- view (_inlet inletUuid) nw # note (RpdError "")
+    -- TODO: adapt / check the data with the channel instance? or do it in the caller?
+    pure $ nw /\ [ SendPeriodicallyToInletE push period fn ]
 
 
 applyBuildAction
@@ -286,6 +293,16 @@ performEffect _ pushAction (SendActionOnOutletUpdatesE outlet@(Outlet _ path _ {
     let (OutletFlow flow') = flow
     canceler :: Canceler <- E.subscribe flow' (pushAction <<< Data <<< GotOutletData outlet)
     pushAction $ Inner $ StoreOutletCanceler outlet canceler
+performEffect _ pushAction (SendPeriodicallyToInletE (PushToInlet push) period fn) _ = do
+    let intervalEvent = E.count $ E.interval period
+    canceler :: Canceler <- E.subscribe intervalEvent $ push <<< fn
+    pure unit
+    -- FIXME: pushAction $ Inner $ StoreInletCanceler outlet canceler
+performEffect _ pushAction (SendPeriodicallyToOutletE (PushToOutlet push) period fn) _ = do
+    let intervalEvent = E.count $ E.interval period
+    canceler :: Canceler <- E.subscribe intervalEvent $ push <<< fn
+    pure unit
+    -- FIXME: pushAction $ Inner $ StoreOutletCanceler outlet canceler
 
 
 

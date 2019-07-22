@@ -30,6 +30,8 @@ data RequestAction d c n
     | ToConnect Path.ToOutlet Path.ToInlet
     | ToSendToInlet Path.ToInlet d
     | ToSendToOutlet Path.ToOutlet d
+    | ToSendPeriodicallyToInlet Path.ToInlet Int (Int -> d)
+    -- | ToSendPeriodicallyToInlet Path.ToInlet Int (Int -> d)
 
 
 data BuildAction d c n
@@ -53,9 +55,10 @@ data InnerAction d c n -- FIXME: InnerActions should not be exposed
 
 data DataAction d c
     = Bang
-    | SendToInlet (Inlet d c) d
-    | SendToOutlet (Outlet d c) d
-    | GotInletData (Inlet d c) d -- TODO: implement and use
+    | SendToInlet (Inlet d c) d -- FIXME: either implement or get rid of
+    | SendToOutlet (Outlet d c) d -- FIXME: either implement or get rid of
+    -- | SendPeriodicallyToInlet (Inlet d c) Int (Int -> d)
+    | GotInletData (Inlet d c) d
     | GotOutletData (Outlet d c) d -- TODO: implement and use
 
 
@@ -75,6 +78,8 @@ data RpdEffect d c n -- TODO: move to a separate module
     | SendToOutletE (PushToOutlet d) d
     | SendActionOnInletUpdatesE (Inlet d c)
     | SendActionOnOutletUpdatesE (Outlet d c)
+    | SendPeriodicallyToInletE (PushToInlet d) Int (Int -> d)
+    | SendPeriodicallyToOutletE (PushToOutlet d) Int (Int -> d)
 
 
 -- derive instance genericStringAction :: Generic StringAction _
@@ -95,8 +100,8 @@ instance showDataAction :: (Show d, Show c) => Show (DataAction d c) where
     show Bang = "Bang"
     show (GotInletData inlet d) = "GotInletData " <> show inlet <> " " <> show d
     show (GotOutletData outlet d) = "GotOutletData " <> show outlet <> " " <> show d
-    show (SendToInlet iPath d) = "SendToInlet " <> show iPath <> " " <> show d
-    show (SendToOutlet oPath d) = "SendToOutlet " <> show oPath <> " " <> show d
+    show (SendToInlet inlet d) = "SendToInlet " <> show inlet <> " " <> show d
+    show (SendToOutlet outlet d) = "SendToOutlet " <> show outlet <> " " <> show d
 
 
 instance showInnerAction :: Show (InnerAction d c n) where
