@@ -1,47 +1,37 @@
 module Rpd.Render.MUV
     ( Renderer(..)
-    , UpdateF
-    , ViewF
     , PushF(..)
-    , once
-    , run
-    , run'
+    , ViewF
+    , UpdateF
+    , PerformEffectF
     , make
-    , make'
-    , fromCore
+    , skipEffects
     ) where
 
+
 import Prelude
+import Effect
 
-import Data.Maybe (Maybe(..))
-import Data.Either (Either(..))
-import Data.Tuple (snd)
-import Data.Tuple.Nested (type (/\), (/\))
-import Data.Foldable (foldr)
-
-import Effect (Effect)
-import Effect.Class (liftEffect)
+import Data.Either (Either(..), either)
+import Data.Tuple (fst)
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Traversable (traverse_)
 
 import FRP.Event (Event)
 import FRP.Event as Event
 
-import Rpd (run) as R
-import Rpd.API ((</>))
-import Rpd.API (Rpd, RpdError) as R
-import Rpd.API as Rpd
-import Rpd.Path (toNode, ToInlet(..), ToOutlet(..)) as R
-import Rpd.Command as C
-import Rpd.CommandApply as C
-import Rpd.Network (Network, Node, Inlet, Outlet) as R
-import Rpd.Util (Canceler) as R
-import Rpd.Render as R
+import Rpd.Network as R
+import Rpd.API as R
+import Rpd.API.Action as Core
+import Rpd.API.Action.Apply as Core
+import Rpd.API.Action.Sequence (prepare_) as ActionSeq
 import Rpd.Toolkit as T
--- import Rpd.Util (type (/->))
-
-import Debug.Trace as DT
 
 
-data PushF msg cmd = PushF (Either msg cmd -> Effect Unit)
+data PushF d c n action  =
+    PushF (Either action (Core.Action d c n) -> Effect Unit)
+
+
 {- UpdateF:
    - gets message: either core one from Rpd.Render, or the custom one used by user in the MUV loop;
    - gets the latest MUV model paired with the latest network state;
@@ -49,205 +39,102 @@ data PushF msg cmd = PushF (Either msg cmd -> Effect Unit)
 
    TODO: let user do effects in `UpdateF` or consider returning messages as providing the way to return such effects.
 -}
-type UpdateF d c n model msg
-     = Either msg (C.Command d c n)
+type UpdateF d c n model action effect
+     = T.Toolkit d c n
+    -> Either action (Core.Action d c n)
     -> model /\ R.Network d c n
-    -> model /\ Array (Either msg (C.Command d c n))
+    -> model /\ Array effect
+
 {- ViewF:
    - gets the function allowing to push messages to the flow (for use in view handlers);
    - gets the latest MUV model paired with the latest network state;
    - and returns new view built using these states;
 -}
-type ViewF d c n model view msg
-     = PushF msg (C.Command d c n)
+type ViewF d c n model view action
+     = PushF d c n action
     -> Either R.RpdError (model /\ R.Network d c n)
     -> view
 
--- type RenderNode
 
-data Renderer d c n model view msg
+type PerformEffectF d c n model action effect
+     = T.Toolkit d c n
+    -> (action -> Effect Unit)
+    -> effect
+    -> model
+    -> Effect Unit
+
+
+data Renderer d c n model view action effect
     = Renderer
         { from :: view -- initial view
         , init :: model -- initial state
-        , update :: UpdateF d c n model msg
-        , view :: ViewF d c n model view msg
+        , update :: UpdateF d c n model action effect
+        , view :: ViewF d c n model view action
+        , performEffect :: PerformEffectF d c n model action effect
         }
 
 
--- type RendererWithToolkits d model view msg
---     = Renderer d model view msg /\ T.Toolkits d
+skipEffects :: forall d c n model action effect. PerformEffectF d c n model action effect
+skipEffects = const $ const $ const $ const $ pure unit
 
 
--- core :: forall d m. Core.Message d -> Message d m
--- core = Core
-
-
--- custom :: forall d m. m -> Message d m
--- custom = Custom
-
-
-extractRpd
-    :: forall d c n model view msg
-     . ViewF d c n model view msg
-    -> PushF msg (C.Command d c n)
-    -> R.Rpd (model /\ R.Network d c n)
-    -> Effect view
-extractRpd view push rpd =
-    R.run onError onSuccess rpd
-    where
-        onError err = view push $ Left err
-        onSuccess res = view push $ Right res
-
-
-{- render once -}
-once
-    :: forall d c n model view msg
-     . Renderer d c n model view msg
-    -> R.Rpd (R.Network d c n)
-    -> Effect view
-once (Renderer { view, init, update }) rpd =
-    extractRpd view neverPush withModel
-    where
-        neverPush = PushF $ const $ pure unit
-        withModel = (/\) init <$> rpd
-
-
-{- Prepare the rendering cycle with the internal message producer.
-   Returns the first view and the event flow with
-   all the next views.
-
-   Actually the process starts just when user subscribes
-   to the `next` views flow. `Event.subscribe`, in this case,
-   returns the canceler, so it is possible to stop the process.
--}
--- FIXME: why the order of the `rpd` and `renderer` is flipped in
---        comparison to `once`?
 make
-    :: forall d c n model view msg
-     . T.Toolkit d c n
-    -> R.Rpd (R.Network d c n)
-    -> Renderer d c n model view msg
+    :: forall d c n model view action effect
+     . Renderer d c n model view action effect
+    -> T.Toolkit d c n
+    -> R.Network d c n
     -> Effect
         { first :: view
-        , next :: Event (Effect view)
+        , next :: Event view
+        , push :: PushF d c n action
+        , stop :: Effect Unit
         }
-make toolkit rpd renderer =
-    Event.create >>=
-        \event -> pure $ make' event toolkit rpd renderer
-
-
-{- Prepare the rendering cycle with the custom message producer
-   (so, the `Event` with the messages source and
-   the function which pushes them to this flow).
-   Returns the first view and the event flow with
-   all the next views.
-
-   Actually the process starts just when user subscribes
-   to the `next` views flow. `Event.subscribe`, in this case,
-   returns the canceler, so it is possible to stop the process.
--}
--- TODO: do not ask user for `event`, just pushing function.
--- FIXME: why the order of the `rpd` and `renderer` is flipped in
---        comparison to `once`?
-make'
-    :: forall d c n model view msg
-     . { event :: Event (Either msg (C.Command d c n))
-       , push :: Either msg (C.Command d c n) -> Effect Unit
-       }
-    -> T.Toolkit d c n
-    -> R.Rpd (R.Network d c n)
-    -> Renderer d c n model view msg
-    -> { first :: view
-       , next :: Event (Effect view)
-       }
-make'
-    { event, push }
-    toolkit
-    rpd
-    (Renderer { from, init, view, update })
-    = let
-        updateFlow = Event.fold updatePipeline event $ (/\) init <$> rpd
-        viewFlow = viewer <$> updateFlow
-    in
+make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = do
+    { models, pushAction, stop } <-
+        ActionSeq.prepare_
+            (init /\ initialNW)
+            myApply
+            myPerformEff
+    { event : views, push : pushView } <- Event.create
+    stopViews <- Event.subscribe models (pushView <<< (view $ PushF pushAction))
+    pure
         { first : from
-        , next : viewFlow
+        , next : views
+        , push : PushF pushAction
+        , stop : stop <> stopViews
         }
     where
-        -- C.apply
-        -- Event.folded :: forall event a. IsEvent event => Monoid a => event a -> event a
-        -- pushCommand
-        --     = R.neverPush
-        -- update :: msg -> (model /\ R.Network d) -> PushMsg msg -> R.PushCmd d -> R.Rpd (model /\ R.Network d)
-        updatePipeline
-            :: Either msg (C.Command d c n)
-            -> R.Rpd (model /\ R.Network d c n)
-            -> R.Rpd (model /\ R.Network d c n)
-        updatePipeline msgOrCmd rpd = rpd >>=
-            \(model /\ nw) ->
-                case msgOrCmd of
-                    Left msg -> do
-                        -- perform user update function, collect user messages
-                        let model' /\ actions = update (Left msg) $ model /\ nw
-                        -- apply user messages returned from the previous line to the model
-                        foldr updatePipeline (pure $ model' /\ nw) actions
-                    Right cmd -> do
-                        -- apply the core command to the network
-                        nw' <- C.apply cmd (push <<< Right) toolkit nw
-                        -- perform the user update function with this core command, collect the returned messages
-                        let model' /\ actions = update (Right cmd) $ model /\ nw'
-                        -- apply user messages returned from the previous line to the model
-                        foldr updatePipeline (pure $ model' /\ nw') actions
-        viewer
-            :: R.Rpd (model /\ R.Network d c n)
-            -> Effect view
-        viewer =
-            extractRpd view (PushF push)
+        myApply (Right coreAction) (model /\ nw) = do
+            nw' /\ coreEffects <- Core.apply toolkit coreAction nw
+            let model' /\ userEffects = update toolkit (Right coreAction) $ model /\ nw'
+            let allEffects = (Right <$> coreEffects) <> (Left <$> userEffects)
+            pure $ (model' /\ nw') /\ allEffects
+        myApply (Left userAction) (model /\ nw) = do
+            let model' /\ userEffects = update toolkit (Left userAction) $ model /\ nw
+            pure $ (model' /\ nw) /\ (Left <$> userEffects)
+        myPerformEff pushAction (Right coreEffect) (_ /\ nw) =
+            Core.performEffect toolkit (pushAction <<< Right) coreEffect nw
+        myPerformEff pushAction (Left userEffect) (model /\ _) =
+            performEffect toolkit (pushAction <<< Left) userEffect model
 
 
-{- Run the rendering cycle without any special handling
-   (so the rendering results are omitted).
+data MyData = A | B
+data MyChannel = P | Q
+data MyNode = X | Z
 
-   Returns the canceler. -}
-run
-    :: forall d c n view model msg
-     . T.Toolkit d c n
-    -> R.Rpd (R.Network d c n)
-    -> Renderer d c n view model msg
-    -> Effect R.Canceler
-run toolkit rpd renderer =
-    make toolkit rpd renderer >>=
-        \{ first, next } -> Event.subscribe next (pure <<< identity)
+type MyModel = { v :: Boolean /\ String }
+type MyView = String
+data MyAction = T | U
+data MyEffect = S | Y
 
 
-{- Run the rendering cycle with custom message producer
-   (so, the `Event` with the messages source and
-   the function which pushes them to this flow).
-   Returns the canceler.
-
-   TODO: do not ask user for `event`, just pushing function.
--}
-run'
-    :: forall d c n view model msg
-     . { event :: Event (Either msg (C.Command d c n))
-       , push :: Either msg (C.Command d c n) -> Effect Unit
-       }
-    -> T.Toolkit d c n
-    -> R.Rpd (R.Network d c n)
-    -> Renderer d c n view model msg
-    -> Effect R.Canceler
-run' event toolkit rpd renderer =
-    case make' event toolkit rpd renderer of
-        { first, next } -> Event.subscribe next (pure <<< identity)
-
-
-fromCore :: forall d c n view. R.Renderer d c n view -> Renderer d c n Unit view Unit
-fromCore (R.Renderer initialView viewF) =
+sampleRenderer ::
+    Renderer MyData MyChannel MyNode MyModel MyView MyAction MyEffect
+sampleRenderer =
     Renderer
-        { from : initialView
-        , init : unit
-        , update
-        , view : view
+        { from : ""
+        , init : { v : true /\ "AAA" }
+        , update : \_ _ _ -> { v : true /\ "BBB" } /\ []
+        , view : \_ _ -> "VIEW"
+        , performEffect : \_ _ _ _ -> pure unit
         }
-    where
-        update _ ( model /\ _ ) = ( model /\ [] )
-        view (PushF push) v = viewF (R.PushCmd $ push <<< Right) (snd <$> v)

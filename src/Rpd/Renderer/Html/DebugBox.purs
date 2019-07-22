@@ -14,38 +14,42 @@ import Data.Lens (view, Lens') as L
 import Spork.Html (Html)
 import Spork.Html as H
 
-import Rpd.Command as C
+import Rpd.API.Action as A
 import Rpd.Network as R
 import Rpd.Optics as L
 import Rpd.UUID as R
 import Rpd.Process as R
 
 
+actionStackSize :: Int
+actionStackSize = 10
+
+
 type Model d c n =
-    { lastCommands :: List (C.Command d c n)
+    { lastActions :: List (A.Action d c n)
     }
 
 
 init :: forall d c n. Model d c n
 init =
-    { lastCommands : List.Nil
+    { lastActions : List.Nil
     }
 
 
 update
     :: forall d c n
-     . C.Command d c n
+     . A.Action d c n
     -> R.Network d c n
     -> Model d c n
     -> Model d c n
 update cmd nw model =
     model
-        { lastCommands =
+        { lastActions =
             cmd :
-                (if List.length model.lastCommands < 5 then
-                    model.lastCommands
+                (if List.length model.lastActions < actionStackSize then
+                    model.lastActions
                 else
-                    List.take 4 model.lastCommands
+                    List.take actionStackSize model.lastActions
                 )
         }
 
@@ -64,16 +68,17 @@ update cmd nw model =
 
 
 viewNetwork :: forall d c n. R.Network d c n -> Html Unit
-viewNetwork nw@(R.Network { patches }) =
+viewNetwork nw@(R.Network { patches, name }) =
     H.div [ H.classes [ "network-debug" ] ]
-        [ H.ul [] viewPatches
+        [ H.div [] [ H.text name ]
+        , H.ul [] viewPatches
         -- [ H.ul [] (viewItems viewPatch ?wh patches nw)
         ]
     where
         viewPatches =
             viewPatch
                 <$> (\patchUuid -> L.view (L._patch patchUuid) nw)
-                <$>  (Seq.toUnfoldable patches :: Array R.ToPatch)
+                <$> (Seq.toUnfoldable patches :: Array R.ToPatch)
         viewNodes nodes =
             viewNode
                 <$> (\nodeUuid -> L.view (L._node nodeUuid) nw)
@@ -158,11 +163,11 @@ viewModel
     -> Html Unit
 viewModel model =
     H.ul [ H.classes [ "commands-debug" ] ]
-        $ List.toUnfoldable (viewCommand <$> model.lastCommands)
+        $ List.toUnfoldable (viewAction <$> model.lastActions)
     where
-        viewCommand :: C.Command d c n -> Html Unit
-        viewCommand cmd =
-            H.li [] [ H.text $ show cmd ]
+        viewAction :: A.Action d c n -> Html Unit
+        viewAction action =
+            H.li [] [ H.text $ show action ]
 
 view
     :: forall d c n

@@ -28,7 +28,7 @@ import Rpd.Network
     ) as R
 import Rpd.API (RpdError) as R
 import Rpd.Optics (_node, _inlet, _outlet, _link, _networkPatches, _networkLinks)
-import Rpd.Render (PushCmd, Renderer(..))
+import Rpd.Render.Minimal (PushAction, Renderer(..))
 import Rpd.Path as P
 
 
@@ -77,11 +77,15 @@ stringRenderer =
 
 stringRendererWithOptions :: forall d c n. Options -> StringRenderer d c n
 stringRendererWithOptions options =
-    Renderer "" $ view options
+    Renderer
+        { first : ""
+        , viewError : \err -> "<" <> show err <> ">"
+        , viewValue : view options
+        }
 
 
-view :: forall d c n. Options -> PushCmd d c n -> Either R.RpdError (R.Network d c n) -> String
-view options _ (Right nw@(R.Network { name, patches })) =
+view :: forall d c n. Options -> PushAction d c n -> R.Network d c n -> String
+view options _ nw@(R.Network { name, patches }) =
     "Network " <> name <> semicolon
         <> lineBreak
         <> count patchCounter patchCount
@@ -95,8 +99,7 @@ view options _ (Right nw@(R.Network { name, patches })) =
             joinWith (lineBreak <> corner)
                 $ (viewPatch options nw <$> allPatches)
                     # List.toUnfoldable
-view _ _ (Left err) =
-    "<" <> show err <> ">"
+
 
 
 viewPatch :: forall d c n. Options -> R.Network d c n -> R.Patch d c n -> String

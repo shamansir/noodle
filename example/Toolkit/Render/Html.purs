@@ -7,8 +7,8 @@ import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 
 -- import Rpd.Toolkit (ToolkitRenderer)
-import Rpd.Command (Command(..)) as C
-import Rpd.Renderer.Html (View, Message, ToolkitRenderer, core) as R
+import Rpd.API.Action (Action(..), RequestAction(..), DataAction(..)) as A
+import Rpd.Renderer.Html (View, ToolkitRenderer, core) as R
 import Rpd.Path as P
 
 import Spork.Html (Html)
@@ -17,6 +17,7 @@ import Spork.Html as H
 import Example.Toolkit.Nodes
 import Example.Toolkit.Value
 import Example.Toolkit.Channel
+
 
 -- type RenderNode d msg view = forall msg. R.Node d -> (msg -> Effect Unit) -> view
 -- type RenderInlet c d msg view = Channels d c => (R.Inlet d -> c -> (msg -> Effect Unit) -> view)
@@ -42,12 +43,24 @@ renderer =
             [ H.text "tk-node"
             , H.div
                 [ H.onClick $ H.always_ $ R.core
-                    $ C.AddInlet (P.toNode "test" "random") "test" ColorChannel ]
+                    $ A.Request $ A.ToAddPatch "test" ]
+                [ H.text "ADD PATCH" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
+                    $ A.Request $ A.ToAddNode (P.toPatch "test") "random" RandomNode ]
+                [ H.text "ADD NODE" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
+                    $ A.Request $ A.ToAddInlet (P.toNode "test" "random") "test" ColorChannel ]
                 [ H.text "ADD INLET" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
-                    $ C.SendToInlet (P.toInlet "test" "random" "min") $ Shape Cross ]
-                [ H.text "SEND DATA" ]
+                    $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random" "min") $ Shape Cross ]
+                [ H.text "SEND DATA TO MIN" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
+                    $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random" "test") $ Shape Diamond ]
+                [ H.text "SEND DATA TO TEST" ]
             ]
     , renderInlet : \_ _ _ -> H.div [ H.classes [ "tk-inlet" ] ] [ H.text "tk-inlet" ]
     , renderOutlet : \_ _ _ -> H.div [ H.classes [ "tk-outlet" ] ] [ H.text "tk-outlet" ]

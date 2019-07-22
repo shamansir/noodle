@@ -6,23 +6,21 @@ import Data.Either (Either(..))
 import Data.Foldable (foldr)
 import Data.Lens (view) as L
 import Data.Lens.At (at) as L
-import Data.List (toUnfoldable)
+import Data.List (toUnfoldable, length)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), isJust, maybe, fromMaybe)
 import Data.Sequence as Seq
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Exists (Exists, mkExists)
-import Debug.Trace (spy)
 
 import Rpd.API (RpdError) as R
-import Rpd.Command (Command(..)) as C
+import Rpd.API.Action (Action(..), DataAction(..), BuildAction(..)) as Core
 import Rpd.Network as R
 import Rpd.Optics as L
 import Rpd.Path as P
 import Rpd.UUID (UUID)
 import Rpd.UUID as UUID
-import Rpd.Render as R
-import Rpd.Render.MUV (Renderer(..), PushF(..)) as R
+import Rpd.Render.MUV (Renderer(..), PushF(..), skipEffects) as R
 import Rpd.Util (type (/->))
 import Rpd.Toolkit as T
 
@@ -43,17 +41,17 @@ type Model d c n =
     }
 
 
-data Message
+data Action
     = NoOp
     | ClickAt (Int /\ Int)
     | EnableDebug
     | DisableDebug
 
 
-type PushF d c n = R.PushF Message (C.Command d c n)
+type PushF d c n = R.PushF d c n Action
 
 
-type View d c n = Html (Either Message (C.Command d c n))
+type View d c n = Html (Either Action (Core.Action d c n))
 
 
 init :: forall d c n. Model d c n
@@ -68,17 +66,17 @@ init =
     }
 
 
-type HtmlRenderer d c n = R.Renderer d c n (Model d c n) (View d c n) Message
+type HtmlRenderer d c n = R.Renderer d c n (Model d c n) (View d c n) Action Unit
 -- type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
-type ToolkitRenderer d c n = T.ToolkitRenderer d c n (View d c n) (Either Message (C.Command d c n))
--- FIXME: user could want to use custom messages in the renderer
+type ToolkitRenderer d c n = T.ToolkitRenderer d c n (View d c n) (Either Action (Core.Action d c n))
+-- FIXME: user might want to use custom messages in the renderer
 
 
-core :: forall d c n. C.Command d c n -> Either Message (C.Command d c n)
+core :: forall d c n. Core.Action d c n -> Either Action (Core.Action d c n)
 core = Right
 
 
-my :: forall d c n. Message -> Either Message (C.Command d c n)
+my :: forall d c n. Action -> Either Action (Core.Action d c n)
 my = Left
 
 
@@ -105,14 +103,14 @@ viewNetwork toolkitRenderer pushMsg ui nw@(R.Network { name, patches }) =
         $
             [ H.text name
             , H.div
-                [ H.onClick $ H.always_ $ core C.Bang
+                [ H.onClick $ H.always_ $ core $ Core.Data Core.Bang
                 ]
-                [ H.text "Send" ]
+                [ H.text "Bang" ]
             , H.div
                 [ ]
                 -- [ H.onClick $ H.always_ $ core
                 --     $ C.AddInlet (P.toNode "test" "random") "test" ]
-                [ H.text "Add Inlet" ]
+                [ H.text "Add Inlet (no action)" ]
             ] <>
             (toUnfoldable $ viewPatch toolkitRenderer pushMsg ui nw
                 <$> (patches # Seq.toUnfoldable))
@@ -188,8 +186,8 @@ viewInlet toolkitRenderer pushMsg ui nw inletUuid =
                 [ H.text label
                 , toolkitResult inlet channel
                 , case Map.lookup path ui.lastInletData of
-                    Just d -> H.text "data"
-                    _ -> H.text ""
+                    Just d -> H.text "<data>"
+                    _ -> H.text "<x>"
                 ]
         _ -> H.div
                 [ H.classes [ "inlet" ] ]
@@ -200,7 +198,6 @@ viewInlet toolkitRenderer pushMsg ui nw inletUuid =
                 channel
                 inlet
                 (case pushMsg of R.PushF f -> f)
-
 
 
 viewOutlet
@@ -257,10 +254,10 @@ viewDebugWindow pushMsg ui nw =
 updateDebugBox
     :: forall d c n
      . R.Network d c n
-    -> Either Message (C.Command d c n)
+    -> Either Action (Core.Action d c n)
     -> Maybe (DebugBox.Model d c n)
     -> Maybe (DebugBox.Model d c n)
-updateDebugBox nw (Right cmd) (Just debug) = Just $ DebugBox.update cmd nw debug
+updateDebugBox nw (Right action) (Just debug) = Just $ DebugBox.update action nw debug
 updateDebugBox _ (Left EnableDebug) _ = Just $ DebugBox.init
 updateDebugBox _ (Left DisableDebug) _ = Nothing
 updateDebugBox _ _ v = v
@@ -277,13 +274,14 @@ htmlRenderer toolkitRenderer =
         { from : emptyView
         , init : init
         , update :
-            \cmdOrMsg (ui /\ nw) ->
+            \toolkit action (ui /\ nw) ->
                 let
-                    (ui' /\ cmds) = update cmdOrMsg (ui /\ nw)
+                    (ui' /\ effects) = update action (ui /\ nw)
                     ui'' =
-                        ui' { debug = ui'.debug # updateDebugBox nw cmdOrMsg }
-                in (ui'' /\ cmds)
+                        ui' { debug = ui'.debug # updateDebugBox nw action }
+                in (ui'' /\ effects)
         , view : view toolkitRenderer
+        , performEffect : R.skipEffects
         }
 
 
@@ -306,17 +304,17 @@ view _ pushMsg (Left err) =
 
 update
     :: forall d c n
-     . Either Message (C.Command d c n)
+     . Either Action (Core.Action d c n)
     -> Model d c n /\ R.Network d c n
-    -> Model d c n /\ Array (Either Message (C.Command d c n))
-update (Right C.Bang) (ui /\ _) = ui /\ []
-update (Right (C.GotInletData inletPath d)) (ui /\ _) =
+    -> Model d c n /\ Array Unit
+update (Right (Core.Data Core.Bang)) (ui /\ _) = ui /\ []
+update (Right (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ _) =
     (ui { lastInletData = ui.lastInletData # Map.insert inletPath d })
     /\ []
-update (Right (C.GotOutletData outletPath d)) (ui /\ _) =
+update (Right (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (ui /\ _) =
     (ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d })
     /\ []
-update (Right (C.AddInlet nodePath alias c)) ( ui /\ nw ) =
+update (Right (Core.Build (Core.AddInlet inlet))) ( ui /\ nw ) =
     ( ui /\ [] )
 update _ (ui /\ _) = ui /\ []
 
