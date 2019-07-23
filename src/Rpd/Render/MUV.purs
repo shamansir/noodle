@@ -21,10 +21,12 @@ import FRP.Event (Event)
 import FRP.Event as Event
 
 import Rpd.Network as R
+import Rpd.Network (empty) as Network
 import Rpd.API as R
 import Rpd.API.Action as Core
 import Rpd.API.Action.Apply as Core
-import Rpd.API.Action.Sequence (prepare_) as ActionSeq
+import Rpd.API.Action.Sequence (prepare_, run) as ActionSeq
+import Rpd.API.Action.Sequence (ActionList)
 import Rpd.Toolkit as T
 
 
@@ -82,17 +84,18 @@ make
     :: forall d c n model view action effect
      . Renderer d c n model view action effect
     -> T.Toolkit d c n
-    -> R.Network d c n
+    -> String
+    -> ActionList d c n
     -> Effect
         { first :: view
         , next :: Event view
         , push :: PushF d c n action
         , stop :: Effect Unit
         }
-make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = do
+make (Renderer { from, init, update, view, performEffect }) toolkit networkName actions = do
     { models, pushAction, stop } <-
-        ActionSeq.prepare_
-            (init /\ initialNW)
+        ActionSeq.run_
+            (init /\ Network.empty networkName)
             myApply
             myPerformEff
     { event : views, push : pushView } <- Event.create

@@ -31,6 +31,7 @@ import Spork.Html (Html)
 
 import Rpd.Network (Network)
 import Rpd.API.Action (Action(..), DataAction(Bang), RequestAction(ToAddPatch)) as A
+import Rpd.API.Action.Sequence (ActionList(..))
 import Rpd.Toolkit (Toolkit) as T
 import Rpd.Render.MUV (Renderer) as Ui
 import Rpd.Render.MUV (make, PushF(..)) as Render
@@ -48,9 +49,9 @@ embed
     -> (view -> HtmlView d c n action) -- insert the rendering result
     -> Ui.Renderer d c n model view action effect -- renderer
     -> T.Toolkit d c n
-    -> Network d c n -- initial network
-    -> Effect Unit
-embed sel render renderer toolkit nw = do
+    -> ActionList d c n -- actions to do
+    -> Effect { push :: action -> Effect Unit, stop :: Effect Unit }
+embed sel render renderer toolkit actions = do
     doc ← DOM.window >>= DOM.document
     mbEl ← DOM.querySelector (wrap sel) (HTMLDocument.toParentNode doc)
     case mbEl of
@@ -75,7 +76,7 @@ embed sel render renderer toolkit nw = do
                     pure unit
             _ <- pushF $ Right $ A.Data A.Bang
             _ <- pushF $ Right $ A.Request $ A.ToAddPatch "bar"
-            pure unit
+            pure { push = pushF, stop = cancel }
 
 
 embed'
@@ -83,6 +84,6 @@ embed'
      . String -- selector
     -> Ui.Renderer d c n model (HtmlView d c n action) action effect -- renderer
     -> T.Toolkit d c n -- toolkits
-    -> Network d c n -- initial network
+    -> ActionList d c n -- actions to do
     -> Effect Unit
 embed' sel = embed sel identity

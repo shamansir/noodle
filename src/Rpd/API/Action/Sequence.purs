@@ -5,6 +5,7 @@ import Prelude
 import Effect (Effect)
 import Data.Array (snoc)
 import Data.Either
+import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_)
@@ -30,6 +31,10 @@ infixl 1 andThen as </>
 
 init :: forall d c n. ActionList d c n
 init = ActionList []
+
+
+none :: forall d c n. ActionList d c n
+none = init
 
 
 addPatch :: forall d c n. Path.Alias -> Action d c n
@@ -92,18 +97,60 @@ prepare
 prepare nw toolkit = prepare_ nw (apply toolkit) (performEffect toolkit)
 
 
+run_
+    :: forall model action effect
+     . model
+    -> (action -> model -> Either RpdError (model /\ Array effect))
+    -> ((action -> Effect Unit) -> effect -> model -> Effect Unit)
+    -> Array action
+    -> (Either RpdError model -> Effect Unit)
+    -> Effect
+        { models :: Event (Either RpdError model)
+        , pushAction :: action -> Effect Unit
+        , stop :: Effect Unit
+        }
+run_ model apply performEff actions everyStep = do
+    { models, pushAction, stop } <- prepare_ model apply performEff
+    cancelSubscription <- Event.subscribe models everyStep
+    _ <- traverse_ pushAction actions
+    pure { models, pushAction, stop : stop <> cancelSubscription }
+
+
+run__
+    :: forall model action effect
+     . model
+    -> (action -> model -> Either RpdError (model /\ Array effect))
+    -> ((action -> Effect Unit) -> effect -> model -> Effect Unit)
+    -> Array action
+    -> Effect
+        { models :: Event (Either RpdError model)
+        , pushAction :: action -> Effect Unit
+        , stop :: Effect Unit
+        }
+run__ model apply performEff actions = do
+    { models, pushAction, stop } <- prepare_ model apply performEff
+    _ <- traverse_ pushAction actions
+    pure { models, pushAction, stop }
+
+
 run
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
     -> ActionList d c n
     -> EveryStep d c n
-    -> Effect Unit
-run toolkit initialNW (ActionList actionList) (EveryStep sub) = do
-    { models, pushAction } <- prepare initialNW toolkit
-    _ <- Event.subscribe models sub
-    _ <- traverse_ pushAction actionList
-    pure unit
+    -> Effect
+            { models :: Event (Either RpdError (Network d c n))
+            , pushAction :: (Action d c n) -> Effect Unit
+            , stop :: Effect Unit
+            }
+run toolkit initialNW (ActionList actionList) (EveryStep sub) =
+    run_
+        initialNW
+        (apply toolkit)
+        (performEffect toolkit)
+        actionList
+        sub
 
 
 run'
@@ -112,12 +159,17 @@ run'
     -> Network d c n
     -> ActionList d c n
     -> LastStep d c n
-    -> Effect Unit
+    -> Effect
+            { models :: Event (Either RpdError (Network d c n))
+            , pushAction :: (Action d c n) -> Effect Unit
+            , stop :: Effect Unit
+            }
 run' toolkit initialNW (ActionList actionList) (LastStep lastStep) = do
-    { models, pushAction } <- prepare initialNW toolkit
-    _ <- traverse_ pushAction actionList
-    pushAction $ Inner $ Do lastStep
-    pure unit
+    run__
+        initialNW
+        (apply toolkit)
+        (performEffect toolkit)
+        (actionList `snoc` (Inner $ Do lastStep))
 
 
 andThen :: forall d c n. ActionList d c n -> Action d c n -> ActionList d c n
