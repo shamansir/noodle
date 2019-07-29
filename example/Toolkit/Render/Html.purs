@@ -47,27 +47,39 @@ renderer =
                 [ H.text "ADD PATCH" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
-                    $ A.Request $ A.ToAddNode (P.toPatch "test") "random" RandomNode ]
-                [ H.text "ADD NODE" ]
+                    $ A.Request $ A.ToAddNode (P.toPatch "test") "random1" RandomNode ]
+                [ H.text "ADD RANDOM1 NODE" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
-                    $ A.Request $ A.ToAddInlet (P.toNode "test" "random") "test" ColorChannel ]
-                [ H.text "ADD INLET" ]
+                    $ A.Request $ A.ToAddNode (P.toPatch "test") "random2" RandomNode ]
+                [ H.text "ADD RANDOM2 NODE" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
-                    $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random" "min") $ Shape Cross ]
-                [ H.text "SEND DATA TO MIN" ]
+                    $ A.Request $ A.ToAddInlet (P.toNode "test" "random1") "test" NumberChannel ]
+                [ H.text "ADD INLET TEST TO RANDOM1" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
-                    $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random" "test") $ Shape Diamond ]
-                [ H.text "SEND DATA TO TEST" ]
+                    $ A.Request $ A.ToAddInlet (P.toNode "test" "random2") "test" NumberChannel ]
+                [ H.text "ADD INLET TEST TO RANDOM2" ]
+            -- , H.div
+            --     [ H.onClick $ H.always_ $ R.core
+            --         $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random1" "min") $ Shape Cross ]
+            --     [ H.text "SEND DATA TO MIN" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
+                    $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random1" "test") $ Shape Diamond ]
+                [ H.text "SEND DATA TO RANDOM1/TEST" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
+                    $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random2" "test") $ Shape Diamond ]
+                [ H.text "SEND DATA TO RANDOM2/TEST" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
                     $ A.Request
-                    $ A.ToSendPeriodicallyToInlet (P.toInlet "test" "random" "test") 500
+                    $ A.ToSendPeriodicallyToInlet (P.toInlet "test" "random1" "test") 500
                     $ const
                     $ Shape Diamond ]
-                [ H.text "SEND DATA TO TEST PERIOD" ]
+                [ H.text "SEND DATA TO RANDOM1/TEST PERIOD" ]
             ]
     , renderInlet : \_ _ _ -> H.div [ H.classes [ "tk-inlet" ] ] [ H.text "tk-inlet" ]
     , renderOutlet : \_ _ _ -> H.div [ H.classes [ "tk-outlet" ] ] [ H.text "tk-outlet" ]
