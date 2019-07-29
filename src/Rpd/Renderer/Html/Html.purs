@@ -99,18 +99,11 @@ viewNetwork
     -> View d c n
 viewNetwork toolkitRenderer pushMsg ui nw@(R.Network { name, patches }) =
     H.div
-        [ H.id_ "network" ]
+        [ H.id_ "network", H.classes [ "rpd-network" ] ]
         $
-            [ H.text name
-            , H.div
-                [ H.onClick $ H.always_ $ core $ Core.Data Core.Bang
-                ]
-                [ H.text "Bang" ]
-            , H.div
-                [ ]
-                -- [ H.onClick $ H.always_ $ core
-                --     $ C.AddInlet (P.toNode "test" "random") "test" ]
-                [ H.text "Add Inlet (no action)" ]
+            [ H.div
+                [ H.classes [ "rpd-network-name" ] ]
+                [ H.text name ]
             ] <>
             (toUnfoldable $ viewPatch toolkitRenderer pushMsg ui nw
                 <$> (patches # Seq.toUnfoldable))
@@ -129,13 +122,16 @@ viewPatch toolkitRenderer pushMsg ui nw patchUuid =
     case L.view (L._patch patchUuid) nw of
         Just (R.Patch _ (P.ToPatch name) { nodes }) ->
             H.div
-                [ H.classes [ "patch" ] ]
-                $ [ H.text name ] <>
+                [ H.classes [ "rpd-patch" ] ]
+                $ [ H.div
+                    [ H.classes [ "rpd-patch-name" ] ]
+                    [ H.text name ]
+                ] <>
                     (viewNode toolkitRenderer pushMsg ui nw
                                 <$> (nodes # Seq.toUnfoldable))
         _ ->
             H.div
-                [ H.classes [ "patch" ] ]
+                [ H.classes [ "rpd-missing-patch" ] ]
                 [ H.text $ "patch " <> show patchUuid <> " was not found" ]
 
 viewNode
@@ -151,21 +147,31 @@ viewNode toolkitRenderer pushMsg ui nw nodeUuid =
     case L.view (L._node nodeUuid) nw of
         Just node@(R.Node _ (P.ToNode { node : name }) n _ { inlets, outlets }) ->
             H.div
-                [ H.classes [ "node" ] ]
+                [ H.classes [ "rpd-node" ] -- TODO: toolkit name, node name
+                , H.style "" ]
                 (
-                    [ H.text name
-                    , toolkitRenderer.renderNode
+                    [ H.div [ H.classes [ "rpd-title" ] ] [ H.text name ]
+                    , H.div
+                        [ H.classes [ "rpd-inlets" ] ]
+                        $ (viewInlet toolkitRenderer pushMsg ui nw
+                                <$> (inlets # Seq.toUnfoldable))
+                    , H.div
+                        [ H.classes [ "rpd-remove-button" ] ]
+                        [ H.text "x" ]
+                    , H.div
+                        [ H.classes [ "rpd-body" ] ]
+                        [ toolkitRenderer.renderNode
                             n
                             node
-                            (case pushMsg of R.PushF f -> f)
-                    ]
-                    <> (viewInlet toolkitRenderer pushMsg ui nw
-                                <$> (inlets # Seq.toUnfoldable))
-                    <> (viewOutlet toolkitRenderer pushMsg ui nw
+                            (case pushMsg of R.PushF f -> f) ]
+                    , H.div
+                        [ H.classes [ "rpd-outlets" ] ]
+                        $ (viewOutlet toolkitRenderer pushMsg ui nw
                                 <$> (outlets # Seq.toUnfoldable))
+                    ]
                 )
         _ -> H.div
-                [ H.classes [ "node" ] ]
+                [ H.classes [ "rpd-missing-node" ] ]
                 [ H.text $ "node " <> show nodeUuid <> " was not found" ]
 
 
@@ -182,15 +188,18 @@ viewInlet toolkitRenderer pushMsg ui nw inletUuid =
     case L.view (L._inlet inletUuid) nw of
         Just inlet@(R.Inlet _ path@(P.ToInlet { inlet : label }) channel { flow }) ->
             H.div
-                [ H.classes [ "inlet" ] ]
-                [ H.text label
-                , toolkitResult inlet channel
-                , case Map.lookup path ui.lastInletData of
-                    Just d -> H.text "<data>"
-                    _ -> H.text "<x>"
+                [ H.classes [ "rpd-inlet" ] ] -- TODO: channel name, state
+                [ H.div [ H.classes [ "rpd-connector" ] ] [ H.text "o" ]
+                , H.div [ H.classes [ "rpd-name" ] ] [ H.text label ]
+                , H.div [ H.classes [ "rpd-value" ] ]
+                    [ case Map.lookup path ui.lastInletData of
+                        Just d -> H.text "<data>"
+                        _ -> H.text "<x>"
+                    ]
+                , H.div [] [ toolkitResult inlet channel ]
                 ]
         _ -> H.div
-                [ H.classes [ "inlet" ] ]
+                [ H.classes [ "rpd-missing-inlet" ] ]
                 [ H.text $ "inlet " <> show inletUuid <> " was not found" ]
     where
         toolkitResult inlet channel =
@@ -213,10 +222,15 @@ viewOutlet toolkitRenderer pushMsg ui nw outletUuid =
     case L.view (L._outlet outletUuid) nw of
         Just outlet@(R.Outlet _ path@(P.ToOutlet { outlet : label }) channel { flow }) ->
             H.div
-                [ H.classes [ "outlet" ]
-                ]
-                [ H.text label
-                , toolkitResult outlet channel
+                [ H.classes [ "rpd-outlet" ] ] -- TODO: channel name, state
+                [ H.div [ H.classes [ "rpd-connector" ] ] [ H.text "o" ]
+                , H.div [ H.classes [ "rpd-name" ] ] [ H.text label ]
+                , H.div [ H.classes [ "rpd-value" ] ]
+                    [ case Map.lookup path ui.lastOutletData of
+                        Just d -> H.text "<data>"
+                        _ -> H.text "<x>"
+                    ]
+                , H.div [] [ toolkitResult outlet channel ]
                 ]
         _ -> H.div
                 [ H.classes [ "outlet" ] ]
@@ -299,7 +313,7 @@ view toolkitRenderer pushMsg (Right (ui /\ nw)) =
         , viewNetwork toolkitRenderer pushMsg ui nw
         ]
 view _ pushMsg (Left err) =
-    viewError err
+    viewError err -- FIXME: show last working network state along with the error
 
 
 update
