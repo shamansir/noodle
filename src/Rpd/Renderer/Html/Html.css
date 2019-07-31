@@ -15,114 +15,60 @@ body {
     width: 15%;
 }
 
-.network {
+.rpd-network {
     font-family: monospace;
 }
 
-.patches, .nodes {
+.rpd-node {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    grid-template-rows: 100px 1fr 100px;
+    grid-template-areas: "rpd-node-title rpd-node-inlets" "rpd-node-title rpd-node-body" "rpd-node-title rpd-node-outlets";
+}
+
+.rpd-node-remove-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.rpd-node-title { grid-area: rpd-node-title; }
+
+.rpd-node-body {
+    min-height: 100px;
+    grid-area: rpd-node-body;
+}
+
+.rpd-node-inlets {
+    grid-area: rpd-node-inlets;
     display: flex;
-    align-items: flex-start;
+    justify-content: space-between;
 }
 
-.patch, .node {
-    margin-right: 40px;
-    display: inline-block;
+.rpd-inlet, .rpd-outlet {
+    min-width: 200px;
 }
 
-.patch > .handle {
-    cursor: pointer;
-}
-
-.patch._selected > .handle {
-    color: red;
-}
-
-.node {
-    border: 1px double black;
-}
-
-.node > .handle {
-    cursor: pointer;
-    text-align: center;
-    vertical-align: baseline;
-    line-height: 20px;
-}
-
-.node._selected > .handle {
-    color: red;
-}
-
-.node > .body {
+.rpd-inlet {
     display: flex;
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column-reverse;
+    justify-content: space-between;
 }
 
-.node > .body > .inlets {
-    margin-right: 10px;
-    margin-bottom: 10px;
-    display: grid;
+.rpd-outlet {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
-.node >  .body > .outlets {
-    margin-left: 10px;
-    margin-bottom: 10px;
-    display: grid;
+.rpd-inlet-name, .rpd-outlet-name {
+    min-height: 50px;
 }
 
-.inlet {
-    overflow: hidden;
-    display: grid;
-    grid-template-columns: 28px auto 110px;
-}
-
-.inlet > .connector,
-.inlet > .handle {
-    cursor: pointer;
-}
-
-.inlet._selected > .connector,
-.inlet._selected > .handle {
-    color: red;
-}
-
-.inlet._waiting .connector {
-    color: blue;
-    cursor: cell;
-}
-
-.outlet {
-    display: grid;
-    grid-template-columns: 110px auto 28px;
-}
-
-.outlet > .connector,
-.outlet > .handle {
-    cursor: pointer;
-}
-
-.outlet._selected > .connector,
-.outlet._selected > .handle {
-    color: red;
-}
-
-.outlet._waiting .connector {
-    color: red;
-}
-
-.outlet._connecting .connector {
-    color: blue;
-    cursor: cell;
-}
-
-.inlet .connector,
-.outlet .connector {
-    min-width: 20px;
-}
-
-.inlet .value,
-.outlet .value {
-    max-width: 100px;
+.rpd-node-outlets {
+    grid-area: rpd-node-outlets;
+    display: flex;
+    justify-content: space-between;
 }
 
 #error {

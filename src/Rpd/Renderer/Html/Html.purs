@@ -150,28 +150,28 @@ viewNode toolkitRenderer pushMsg ui nw nodeUuid =
                 [ H.classes [ "rpd-node" ] -- TODO: toolkit name, node name
                 , H.style "" ]
                 (
-                    [ H.div [ H.classes [ "rpd-title" ] ] [ H.text name ]
+                    [ H.div [ H.classes [ "rpd-node-title" ] ] [ H.text name ]
                     , H.div
-                        [ H.classes [ "rpd-inlets" ] ]
+                        [ H.classes [ "rpd-node-remove-button" ] ]
+                        [ H.text "x" ]
+                    , H.div
+                        [ H.classes [ "rpd-node-inlets" ] ]
                         $ (viewInlet toolkitRenderer pushMsg ui nw
                                 <$> (inlets # Seq.toUnfoldable))
                     , H.div
-                        [ H.classes [ "rpd-remove-button" ] ]
-                        [ H.text "x" ]
-                    , H.div
-                        [ H.classes [ "rpd-body" ] ]
+                        [ H.classes [ "rpd-node-body" ] ]
                         [ toolkitRenderer.renderNode
                             n
                             node
                             (case pushMsg of R.PushF f -> f) ]
                     , H.div
-                        [ H.classes [ "rpd-outlets" ] ]
+                        [ H.classes [ "rpd-node-outlets" ] ]
                         $ (viewOutlet toolkitRenderer pushMsg ui nw
                                 <$> (outlets # Seq.toUnfoldable))
                     ]
                 )
         _ -> H.div
-                [ H.classes [ "rpd-missing-node" ] ]
+                [ H.classes [ "rpd-node", "missing" ] ]
                 [ H.text $ "node " <> show nodeUuid <> " was not found" ]
 
 
