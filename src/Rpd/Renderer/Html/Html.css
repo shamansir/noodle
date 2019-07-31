@@ -20,8 +20,9 @@ body {
 }
 
 .rpd-node {
+    position: relative;
     display: grid;
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 20px 1fr;
     grid-template-rows: 100px 1fr 100px;
     grid-template-areas: "rpd-node-title rpd-node-inlets" "rpd-node-title rpd-node-body" "rpd-node-title rpd-node-outlets";
 }

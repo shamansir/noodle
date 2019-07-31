@@ -332,3 +332,10 @@ update (Right (Core.Build (Core.AddInlet inlet))) ( ui /\ nw ) =
     ( ui /\ [] )
 update _ (ui /\ _) = ui /\ []
 
+
+foreign import collectLinksPositions
+    :: Array String
+    -> Array
+        { link :: String
+        , pos :: { x :: Int, y :: Int }
+        }
