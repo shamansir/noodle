@@ -8,6 +8,7 @@ import Data.Either (Either(..))
 
 -- import Rpd.Toolkit (ToolkitRenderer)
 import Rpd.API.Action (Action(..), RequestAction(..), DataAction(..)) as A
+import Rpd.API.Action.Sequence as A
 import Rpd.Renderer.Html (View, ToolkitRenderer, core) as R
 import Rpd.Path as P
 
@@ -47,19 +48,23 @@ renderer =
                 [ H.text "ADD PATCH" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
-                    $ A.Request $ A.ToAddNode (P.toPatch "test") "random1" RandomNode ]
+                    $ A.addNode (P.toPatch "test") "random1" RandomNode ]
                 [ H.text "ADD RANDOM1 NODE" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
-                    $ A.Request $ A.ToAddNode (P.toPatch "test") "random2" RandomNode ]
+                    $ A.addNode (P.toPatch "test") "random2" RandomNode ]
                 [ H.text "ADD RANDOM2 NODE" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
-                    $ A.Request $ A.ToAddInlet (P.toNode "test" "random1") "test" NumberChannel ]
+                    $ A.addInlet (P.toNode "test" "random1") "test" NumberChannel ]
                 [ H.text "ADD INLET TEST TO RANDOM1" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
-                    $ A.Request $ A.ToAddInlet (P.toNode "test" "random2") "test" NumberChannel ]
+                    $ A.addInlet (P.toNode "test" "random1") "foo" NumberChannel ]
+                [ H.text "ADD INLET FOO TO RANDOM1" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
+                    $ A.addInlet (P.toNode "test" "random2") "test" NumberChannel ]
                 [ H.text "ADD INLET TEST TO RANDOM2" ]
             -- , H.div
             --     [ H.onClick $ H.always_ $ R.core
@@ -69,6 +74,10 @@ renderer =
                 [ H.onClick $ H.always_ $ R.core
                     $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random1" "test") $ Shape Diamond ]
                 [ H.text "SEND DATA TO RANDOM1/TEST" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
+                    $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random1" "foo") $ Shape Diamond ]
+                [ H.text "SEND DATA TO RANDOM1/FOO" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
                     $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random2" "test") $ Shape Diamond ]
