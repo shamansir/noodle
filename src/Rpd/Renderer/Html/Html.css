@@ -16,15 +16,23 @@ body {
 }
 
 .rpd-network {
-    font-family: monospace;
+    font-family: 'PT Mono', 'Andale Mono', 'Fira mono', 'Menlo', monospace;
+    font-size: 10px;
+}
+
+.rpd-patch {
+    background-color: #22222a;
 }
 
 .rpd-node {
     position: relative;
     display: grid;
-    grid-template-columns: 20px 1fr;
-    grid-template-rows: 100px 1fr 100px;
-    grid-template-areas: "rpd-node-title rpd-node-inlets" "rpd-node-title rpd-node-body" "rpd-node-title rpd-node-outlets";
+    grid-template-columns: 1.1em 1fr 0px;
+    grid-template-rows: 50px 1fr 50px;
+    grid-template-areas:
+        ". rpd-node-inlets ."
+        "rpd-node-title rpd-node-body rpd-node-remove-button"
+        ". rpd-node-outlets .";
 }
 
 .rpd-node-remove-button {
@@ -33,11 +41,41 @@ body {
     right: 0;
 }
 
-.rpd-node-title { grid-area: rpd-node-title; }
+.rpd-node-title {
+    grid-area: rpd-node-title;
+    transform: rotate(-180deg);
+    display: block;
+    bottom: 0;
+    height: 100%;
+    writing-mode: vertical-lr;
+    font-size: 0.8em;
+    background-color: rgba(33,33,99,0.5);
+    color: #eee;
+    box-shadow: 3px 3px 14px 1px rgba(33,33,33,0.7);
+    border: 1px solid rgba(250,250,250,0.4);
+    border-right-width: 0;
+    padding: 0;
+    /* max-width: 1.1em;
+    width: 1.1em; */
+    width: 100%;
+    right: 0;
+    /* vertical-align: bottom; */
+    overflow: hidden;
+    white-space: nowrap;
+    z-index: 0;
+}
 
 .rpd-node-body {
     min-height: 100px;
     grid-area: rpd-node-body;
+    max-width: 250px;
+    background-color: #617b79;
+    color: #eee;
+    box-shadow: 3px 3px 14px 1px rgba(33,33,33,0.7);
+    border: 1px solid rgba(250,250,250,0.4);
+    border-left-width: 0;
+    z-index: 1;
+    height: 100%;
 }
 
 .rpd-node-inlets {
@@ -47,7 +85,8 @@ body {
 }
 
 .rpd-inlet, .rpd-outlet {
-    min-width: 200px;
+    min-width: 50px;
+    color: #eee;
 }
 
 .rpd-inlet {
@@ -70,6 +109,10 @@ body {
     grid-area: rpd-node-outlets;
     display: flex;
     justify-content: space-between;
+}
+
+.rpd-node-remove-button {
+    grid-area: rpd-node-remove-button;
 }
 
 #error {
