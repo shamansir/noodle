@@ -28,6 +28,7 @@ import Rpd.Renderer.Html.DebugBox as DebugBox
 
 import Spork.Html (Html)
 import Spork.Html as H
+import Web.UIEvent.MouseEvent as ME
 
 
 type Model d c n =
@@ -38,12 +39,14 @@ type Model d c n =
     -- , uuidToChannelDef :: UUID /-> T.ChannelDefAlias
     -- , uuidToNodeDef :: UUID /-> T.NodeDefAlias
     , uuidToChannel :: UUID /-> c
+    , mousePos :: Int /\ Int
     }
 
 
 data Action
     = NoOp
     | ClickAt (Int /\ Int)
+    | MouseMove (Int /\ Int)
     | EnableDebug
     | DisableDebug
 
@@ -63,6 +66,7 @@ init =
     -- , uuidToChannelDef : Map.empty
     -- , uuidToNodeDef : Map.empty
     , uuidToChannel : Map.empty
+    , mousePos : -1 /\ -1
     }
 
 
@@ -305,6 +309,14 @@ htmlRenderer toolkitRenderer =
         }
 
 
+viewMousePos :: forall d c n. Int /\ Int -> View d c n
+viewMousePos ( x /\ y ) =
+    H.span [ H.classes [ "rpd-mouse-pos" ] ] [ H.text $ show x <> ":" <> show y ]
+
+
+
+
+
 view
     :: forall d c n
      . Show d => Show c => Show n
@@ -314,9 +326,13 @@ view
     -> Either R.RpdError (Model d c n /\ R.Network d c n)
     -> View d c n
 view toolkitRenderer pushMsg (Right (ui /\ nw)) =
-    H.div [ H.id_ "html" ]
+    H.div
+        [ H.id_ "html"
+        , H.onMouseMove \e -> Just $ my $ MouseMove $ ME.clientX e /\ ME.clientY e
+        ]
         [ viewDebugWindow pushMsg ui nw
         , viewNetwork toolkitRenderer pushMsg ui nw
+        , viewMousePos ui.mousePos
         ]
 view _ pushMsg (Left err) =
     viewError err -- FIXME: show last working network state along with the error
@@ -336,6 +352,9 @@ update (Right (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (u
     /\ []
 update (Right (Core.Build (Core.AddInlet inlet))) ( ui /\ nw ) =
     ( ui /\ [] )
+update (Left (MouseMove mousePos)) ( ui /\ nw ) =
+    (ui { mousePos = mousePos })
+    /\ []
 update _ (ui /\ _) = ui /\ []
 
 
