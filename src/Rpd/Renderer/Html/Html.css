@@ -51,7 +51,7 @@ body {
     font-size: 0.8em;
     background-color: rgba(33,33,99,0.5);
     color: #eee;
-    box-shadow: 3px 3px 14px 1px rgba(33,33,33,0.7);
+    /* box-shadow: 3px 3px 14px 1px rgba(33,33,33,0.7); */
     border: 1px solid rgba(250,250,250,0.4);
     border-right-width: 0;
     padding: 0;
@@ -62,7 +62,7 @@ body {
     /* vertical-align: bottom; */
     overflow: hidden;
     white-space: nowrap;
-    z-index: 0;
+    z-index: 1;
 }
 
 .rpd-node-body {
@@ -73,8 +73,11 @@ body {
     color: #eee;
     box-shadow: 3px 3px 14px 1px rgba(33,33,33,0.7);
     border: 1px solid rgba(250,250,250,0.4);
-    border-left-width: 0;
-    z-index: 1;
+    border-left: 1.1em solid #22222a;
+    position: relative;
+    left: -1.1em;
+
+    z-index: 0;
     height: 100%;
 }
 
