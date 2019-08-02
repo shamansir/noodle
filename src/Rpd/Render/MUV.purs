@@ -55,12 +55,13 @@ type ViewF d c n model view action
     -> Either R.RpdError (model /\ R.Network d c n)
     -> view
 
-
+-- TODO: rename `effect` to `perform` (so users could tend to name it `Perform`/`Do`)
+-- and `performEffect` to just `perform`?
 type PerformEffectF d c n model action effect
      = T.Toolkit d c n
     -> (action -> Effect Unit)
     -> effect
-    -> model
+    -> (model /\ R.Network d c n)
     -> Effect Unit
 
 
@@ -114,8 +115,8 @@ make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = 
             pure $ (model' /\ nw) /\ (Left <$> userEffects)
         myPerformEff pushAction (Right coreEffect) (_ /\ nw) =
             Core.performEffect toolkit (pushAction <<< Right) coreEffect nw
-        myPerformEff pushAction (Left userEffect) (model /\ _) =
-            performEffect toolkit (pushAction <<< Left) userEffect model
+        myPerformEff pushAction (Left userEffect) (model /\ nw) =
+            performEffect toolkit (pushAction <<< Left) userEffect (model /\ nw)
 
 
 data MyData = A | B

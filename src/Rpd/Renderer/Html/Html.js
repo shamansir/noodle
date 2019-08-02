@@ -1,5 +1,8 @@
 "use strict";
 
 exports.collectLinksPositions = function(links) {
-    return [];
+    return function() {
+        console.log('collect', links);
+        return [];
+    };
 }

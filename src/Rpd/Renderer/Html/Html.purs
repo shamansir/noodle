@@ -13,6 +13,8 @@ import Data.Sequence as Seq
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Exists (Exists, mkExists)
 
+import Effect (Effect)
+
 import Rpd.API (RpdError) as R
 import Rpd.API.Action (Action(..), DataAction(..), BuildAction(..)) as Core
 import Rpd.Network as R
@@ -49,6 +51,11 @@ data Action
     | MouseMove (Int /\ Int)
     | EnableDebug
     | DisableDebug
+    | StoreLinkPositions (Array Unit)
+
+
+data Perform
+    = UpdateLinksPositions
 
 
 type PushF d c n = R.PushF d c n Action
@@ -70,7 +77,7 @@ init =
     }
 
 
-type HtmlRenderer d c n = R.Renderer d c n (Model d c n) (View d c n) Action Unit
+type HtmlRenderer d c n = R.Renderer d c n (Model d c n) (View d c n) Action Perform
 -- type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
 type ToolkitRenderer d c n = T.ToolkitRenderer d c n (View d c n) (Either Action (Core.Action d c n))
 -- FIXME: user might want to use custom messages in the renderer
@@ -305,16 +312,13 @@ htmlRenderer toolkitRenderer =
                         ui' { debug = ui'.debug # updateDebugBox nw action }
                 in (ui'' /\ effects)
         , view : view toolkitRenderer
-        , performEffect : R.skipEffects
+        , performEffect
         }
 
 
 viewMousePos :: forall d c n. Int /\ Int -> View d c n
 viewMousePos ( x /\ y ) =
     H.span [ H.classes [ "rpd-mouse-pos" ] ] [ H.text $ show x <> ":" <> show y ]
-
-
-
 
 
 view
@@ -342,7 +346,7 @@ update
     :: forall d c n
      . Either Action (Core.Action d c n)
     -> Model d c n /\ R.Network d c n
-    -> Model d c n /\ Array Unit
+    -> Model d c n /\ Array Perform
 update (Right (Core.Data Core.Bang)) (ui /\ _) = ui /\ []
 update (Right (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ _) =
     (ui { lastInletData = ui.lastInletData # Map.insert inletPath d })
@@ -351,16 +355,32 @@ update (Right (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (u
     (ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d })
     /\ []
 update (Right (Core.Build (Core.AddInlet inlet))) ( ui /\ nw ) =
-    ( ui /\ [] )
+    ( ui /\ [ UpdateLinksPositions ] )
+update (Right (Core.Build (Core.AddNode node))) ( ui /\ nw ) =
+    ( ui /\ [ UpdateLinksPositions ] )
 update (Left (MouseMove mousePos)) ( ui /\ nw ) =
     (ui { mousePos = mousePos })
     /\ []
 update _ (ui /\ _) = ui /\ []
 
 
+performEffect
+    :: forall d c n
+     . T.Toolkit d c n
+    -> (Action -> Effect Unit)
+    -> Perform
+    -> (Model d c n /\ R.Network d c n)
+    -> Effect Unit
+performEffect _ pushAction UpdateLinksPositions ( ui /\ nw ) = do
+    links <- collectLinksPositions []
+    pushAction $ StoreLinkPositions []
+
+
 foreign import collectLinksPositions
     :: Array String
-    -> Array
-        { link :: String
-        , pos :: { x :: Int, y :: Int }
-        }
+    -> Effect
+            (Array
+                { link :: String
+                , pos :: { x :: Int, y :: Int }
+                }
+            )
