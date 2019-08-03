@@ -1,9 +1,9 @@
 module Example.Toolkit.Render.Html where
 
-import Prelude (const, ($))
+import Prelude (const, ($), (<>))
 
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Either (Either(..))
 
 -- import Rpd.Toolkit (ToolkitRenderer)
@@ -64,6 +64,14 @@ renderer =
                 [ H.text "ADD INLET FOO TO RANDOM1" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
+                    $ A.addOutlet (P.toNode "test" "random1") "test" NumberChannel ]
+                [ H.text "ADD OUTLET TEST TO RANDOM1" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
+                    $ A.addOutlet (P.toNode "test" "random1") "foo" NumberChannel ]
+                [ H.text "ADD OUTLET FOO TO RANDOM1" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
                     $ A.addInlet (P.toNode "test" "random2") "test" NumberChannel ]
                 [ H.text "ADD INLET TEST TO RANDOM2" ]
             -- , H.div
@@ -90,6 +98,12 @@ renderer =
                     $ Shape Diamond ]
                 [ H.text "SEND DATA TO RANDOM1/TEST PERIOD" ]
             ]
-    , renderInlet : \_ _ _ -> H.div [ H.classes [ "tk-inlet" ] ] [ H.text "tk-inlet" ]
-    , renderOutlet : \_ _ _ -> H.div [ H.classes [ "tk-outlet" ] ] [ H.text "tk-outlet" ]
+    , renderInlet : \_ _ _ d ->
+        H.div
+            [ H.classes [ "tk-inlet" ] ]
+            [ H.text $ "tk-inlet : " <> (maybe "?" (const "data") d) ]
+    , renderOutlet : \_ _ _ d ->
+        H.div
+            [ H.classes [ "tk-outlet" ] ]
+            [ H.text $ "tk-inlet : " <> (maybe "?" (const "data") d) ]
     }

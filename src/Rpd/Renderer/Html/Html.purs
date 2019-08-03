@@ -201,27 +201,20 @@ viewInlet toolkitRenderer pushMsg ui nw inletUuid =
         Just inlet@(R.Inlet _ path@(P.ToInlet { inlet : label }) channel { flow }) ->
             H.div
                 [ H.classes [ "rpd-inlet" ] ] -- TODO: channel name, state
-                [ H.div [ H.classes [ "rpd-connector" ] ] [ H.text "o" ]
-                , H.div [ H.classes [ "rpd-name" ] ]
+                [ H.div [ H.classes [ "rpd-inlet-connector" ] ] [ H.text "o" ]
+                , H.div [ H.classes [ "rpd-inlet-name" ] ]
                     [ H.span [] [ H.text label ] ]
-                , H.div [ H.classes [ "rpd-value" ] ]
-                    [ H.span []
-                        [ case Map.lookup path ui.lastInletData of
-                            Just d -> H.text "<data>"
-                            _ -> H.text "<x>"
-                        ]
+                , H.div [ H.classes [ "rpd-inlet-value" ] ]
+                    [ toolkitRenderer.renderInlet
+                        channel
+                        inlet
+                        (case pushMsg of R.PushF f -> f)
+                        $ Map.lookup path ui.lastInletData
                     ]
-                , H.div [] [ toolkitResult inlet channel ]
                 ]
         _ -> H.div
                 [ H.classes [ "rpd-missing-inlet" ] ]
                 [ H.text $ "inlet " <> show inletUuid <> " was not found" ]
-    where
-        toolkitResult inlet channel =
-            toolkitRenderer.renderInlet
-                channel
-                inlet
-                (case pushMsg of R.PushF f -> f)
 
 
 viewOutlet
@@ -238,26 +231,20 @@ viewOutlet toolkitRenderer pushMsg ui nw outletUuid =
         Just outlet@(R.Outlet _ path@(P.ToOutlet { outlet : label }) channel { flow }) ->
             H.div
                 [ H.classes [ "rpd-outlet" ] ] -- TODO: channel name, state
-                [ H.div [ H.classes [ "rpd-connector" ] ] [ H.text "o" ]
-                , H.div [ H.classes [ "rpd-name" ] ]
+                [ H.div [ H.classes [ "rpd-outlet-connector" ] ] [ H.text "o" ]
+                , H.div [ H.classes [ "rpd-outlet-name" ] ]
                     [ H.span [] [ H.text label ] ]
-                , H.div [ H.classes [ "rpd-value" ] ]
-                    [ H.span []
-                        [ case Map.lookup path ui.lastOutletData of
-                            Just d -> H.text "<data>"
-                            _ -> H.text "<x>"
-                        ]
+                , H.div [ H.classes [ "rpd-outlet-value" ] ]
+                    [ toolkitRenderer.renderOutlet
+                        channel
+                        outlet
+                        (case pushMsg of R.PushF f -> f)
+                        $ Map.lookup path ui.lastOutletData
                     ]
                 ]
         _ -> H.div
                 [ H.classes [ "rpd-missing-outlet" ] ]
                 [ H.text $ "outlet " <> show outletUuid <> " was not found" ]
-    where
-        toolkitResult outlet channel =
-            toolkitRenderer.renderOutlet
-                channel
-                outlet
-                (case pushMsg of R.PushF f -> f)
 
 
 viewDebugWindow

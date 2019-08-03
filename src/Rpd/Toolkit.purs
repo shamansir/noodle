@@ -101,9 +101,9 @@ type ToolkitRenderer d c n view action =
     --        so it's a duplication to use them as a separate parameters in these functions
     { renderNode :: n -> R.Node d n -> (action -> Effect Unit) -> view
     -- , renderInlet :: ChannelDefAlias -> R.Inlet d -> c -> (msg -> Effect Unit) -> view
-    , renderInlet :: c -> R.Inlet d c -> (action -> Effect Unit) -> view
+    , renderInlet :: c -> R.Inlet d c -> (action -> Effect Unit) -> Maybe d -> view
     -- , renderOutlet :: ChannelDefAlias -> R.Outlet d -> c -> (msg -> Effect Unit) -> view
-    , renderOutlet :: c -> R.Outlet d c -> (action -> Effect Unit) -> view
+    , renderOutlet :: c -> R.Outlet d c -> (action -> Effect Unit) -> Maybe d -> view
     }
 
 

@@ -3,6 +3,24 @@
     right: 0;
 }
 
-.network-debug, .commands-debug {
-    border: 2px solid black;
+#debug {
+    width: 500px;
+    font-size: 0.6em;
+    font-family: 'PT Mono', 'Andale Mono', 'Fira mono', 'Menlo', monospace;
+    margin-right: 5px;
+    color: #eee;
+    background: rgba(250,250,250,0.4);
+    padding: 5px;
+}
+
+#debug .network-debug {
+    padding: 5px;
+}
+
+#debug .commands-debug {
+    padding: 5px 5px 5px 30px;
+}
+
+#debug .network-debug, #debug .commands-debug {
+    border: 1px dashed rgba(255,255,255,0.3);
 }
