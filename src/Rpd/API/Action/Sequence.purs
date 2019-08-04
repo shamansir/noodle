@@ -51,6 +51,10 @@ addOutlet :: forall d c n. Path.ToNode -> Path.Alias -> c -> Action d c n
 addOutlet node alias c = Request $ ToAddOutlet node alias c
 
 
+pass :: forall d c n. EveryStep d c n
+pass = EveryStep $ const $ pure unit
+
+
 prepare_
     :: forall model action effect
      . model
@@ -101,11 +105,11 @@ run
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
-    -> EveryStep d c n
     -> ErrorHandler
+    -> EveryStep d c n
     -> ActionList d c n
     -> Effect Unit
-run toolkit initialNW (EveryStep everyStep) (ErrorHandler onError) (ActionList actionList) = do
+run toolkit initialNW (ErrorHandler onError)  (EveryStep everyStep) (ActionList actionList) = do
     { models, pushAction } <- prepare initialNW toolkit
     _ <- Event.subscribe models $ either onError everyStep
     _ <- traverse_ pushAction actionList
