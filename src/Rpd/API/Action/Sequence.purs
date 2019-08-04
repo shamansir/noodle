@@ -20,9 +20,12 @@ import Rpd.Path as Path
 import Rpd.Toolkit (Toolkit)
 
 
-data ActionList d c n = ActionList (Array (Action d c n))
-data EveryStep d c n = EveryStep (Either RpdError (Network d c n) -> Effect Unit)
-data LastStep d c n = LastStep (Network d c n -> Effect Unit)
+newtype ActionList d c n = ActionList (Array (Action d c n))
+newtype EveryStep d c n = EveryStep (Network d c n -> Effect Unit)
+newtype EveryStep' d c n = EveryStep' (Either RpdError (Network d c n) -> Effect Unit)
+newtype ErrorHandler = ErrorHandler (RpdError -> Effect Unit)
+newtype LastStep d c n = LastStep (Network d c n -> Effect Unit)
+newtype EveryAction d c n = EveryAction (Action d c n -> Effect Unit)
 
 
 infixl 1 andThen as </>
@@ -55,6 +58,7 @@ prepare_
     -> ((action -> Effect Unit) -> effect -> model -> Effect Unit)
     -> Effect
         { models :: Event (Either RpdError model)
+        , actions :: Event action
         , pushAction :: action -> Effect Unit
         , stop :: Effect Unit
         }
@@ -77,7 +81,7 @@ prepare_ initialModel apply performEff = do
             Left err -> pure unit
             Right (model /\ effects) ->
                 traverse_ (\eff -> performEff pushAction eff model) effects
-    pure { models, pushAction, stop }
+    pure { models, pushAction, stop, actions }
 
 
 prepare
@@ -86,6 +90,7 @@ prepare
     -> Toolkit d c n
     -> Effect
         { models :: Event (Either RpdError (Network d c n))
+        , actions :: Event (Action d c n)
         , pushAction :: Action d c n -> Effect Unit
         , stop :: Effect Unit
         }
@@ -96,12 +101,13 @@ run
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
-    -> ActionList d c n
     -> EveryStep d c n
+    -> ErrorHandler
+    -> ActionList d c n
     -> Effect Unit
-run toolkit initialNW (ActionList actionList) (EveryStep sub) = do
+run toolkit initialNW (EveryStep everyStep) (ErrorHandler onError) (ActionList actionList) = do
     { models, pushAction } <- prepare initialNW toolkit
-    _ <- Event.subscribe models sub
+    _ <- Event.subscribe models $ either onError everyStep
     _ <- traverse_ pushAction actionList
     pure unit
 
@@ -110,13 +116,41 @@ run'
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
-    -> ActionList d c n
     -> LastStep d c n
+    -> ActionList d c n
     -> Effect Unit
-run' toolkit initialNW (ActionList actionList) (LastStep lastStep) = do
+run' toolkit initialNW (LastStep lastStep) (ActionList actionList) = do
     { models, pushAction } <- prepare initialNW toolkit
     _ <- traverse_ pushAction actionList
     pushAction $ Inner $ Do lastStep
+    pure unit
+
+
+run''
+    :: forall d c n
+     . Toolkit d c n
+    -> Network d c n
+    -> EveryStep' d c n
+    -> ActionList d c n
+    -> Effect Unit
+run'' toolkit initialNW (EveryStep' everyStep) (ActionList actionList) = do
+    { models, pushAction } <- prepare initialNW toolkit
+    _ <- Event.subscribe models everyStep
+    _ <- traverse_ pushAction actionList
+    pure unit
+
+
+runAndTrace
+    :: forall d c n
+     . Toolkit d c n
+    -> Network d c n
+    -> EveryAction d c n
+    -> ActionList d c n
+    -> Effect Unit
+runAndTrace toolkit initialNW (EveryAction everyAction) (ActionList actionList) = do
+    { pushAction, actions } <- prepare initialNW toolkit
+    _ <- Event.subscribe actions everyAction
+    _ <- traverse_ pushAction actionList
     pure unit
 
 

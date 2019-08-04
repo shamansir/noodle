@@ -54,6 +54,15 @@ data Entity d c n
     | LinkEntity Link
 
 
+-- TODO:
+-- data TaggedCanceler
+--     = PatchCanceler Canceler
+--     | NodeCanceler Canceler
+--     | NodeProcessCanceler Canceler
+--     | InletCanceler Canceler
+--     | OutletCanceler Canceler
+
+
 data Network d c n =
     Network
         { name :: String

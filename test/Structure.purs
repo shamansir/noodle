@@ -13,14 +13,14 @@ import Effect.Class.Console (log)
 import Test.Spec (Spec, describe, it, pending)
 import Test.Spec.Assertions (shouldEqual, fail)
 
-import Rpd (init, run') as R
 import Rpd.API as R
-import Rpd.API ((</>))
+import Rpd.API.Action.Sequence ((</>), ErrorHandler(..), EveryStep(..))
+import Rpd.API.Action.Sequence as Actions
+import Rpd.API.Action.Sequence (init, addPatch, addNode) as R
 import Rpd.Path
 import Rpd.Optics as L
-import Rpd.Network as R
-
-import RpdTest.Util (withRpd)
+import Rpd.Network as N
+import Rpd.Toolkit as T
 
 
 data MyData
@@ -30,37 +30,50 @@ data Channel = Channel
 
 data Node = Node
 
-type MyRpd = R.Rpd (R.Network MyData Channel Node)
-
-myRpd :: MyRpd
-myRpd =
-  R.init "f"
 
 spec :: Spec Unit
 spec =
   describe "structure" do
 
     it "constructing the empty network works" do
-      -- FIXME: fail on error
-      _ <- liftEffect $ R.run' (log <<< show) (const $ pure unit) myRpd
+      _ <- liftEffect $
+              Actions.run
+                (T.empty "foo")
+                (N.empty "foo")
+                (ErrorHandler $ log <<< show) -- FIXME: fail here
+                (EveryStep $ const $ pure unit)
+                R.init
       pure unit
 
     describe "order of addition" do
 
       it "adding nodes to the patch preserves the order of addition" $ do
-        R.init "network"
-          </> R.addPatch "patch"
-          </> R.addNode (toPatch "patch") "one" Node
-          </> R.addNode (toPatch "patch") "two" Node
-          </> R.addNode (toPatch "patch") "three" Node
-           #  withRpd \nw -> do
-                case L.view (L._patchNodesByPath $ toPatch "patch") nw of
-                  Just nodes ->
-                    (nodes
-                      <#> \(R.Node _ (ToNode { node }) _ _ _) -> node)
-                      # Seq.toUnfoldable
-                      # shouldEqual [ "one", "two", "three" ]
-                  Nothing -> fail "patch wasn't found"
+        _ <- liftEffect $
+                Actions.run
+                  (T.empty "foo")
+                  (N.empty "foo")
+                  (ErrorHandler $ log <<< show) -- FIXME: fail here
+                  (EveryStep $ const $ pure unit) -- FIXME: check the actual order
+                  $ R.init "network"
+                    </> R.addPatch "patch"
+                    </> R.addNode (toPatch "patch") "one" Node
+                    </> R.addNode (toPatch "patch") "two" Node
+                    </> R.addNode (toPatch "patch") "three" Node
+        pure unit
+
+        -- R.init "network"
+        --   </> R.addPatch "patch"
+        --   </> R.addNode (toPatch "patch") "one" Node
+        --   </> R.addNode (toPatch "patch") "two" Node
+        --   </> R.addNode (toPatch "patch") "three" Node
+        --    #  withRpd \nw -> do
+        --         case L.view (L._patchNodesByPath $ toPatch "patch") nw of
+        --           Just nodes ->
+        --             (nodes
+        --               <#> \(R.Node _ (ToNode { node }) _ _ _) -> node)
+        --               # Seq.toUnfoldable
+        --               # shouldEqual [ "one", "two", "three" ]
+        --           Nothing -> fail "patch wasn't found"
 
       it "adding inlets to the node preserves the order of addition" $ do
         R.init "network"

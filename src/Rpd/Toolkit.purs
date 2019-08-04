@@ -9,6 +9,7 @@ module Rpd.Toolkit
     , inlets, outlets
     --, mkToolkitE
     , ToolkitRenderer, RendererAlias(..)
+    , empty
     , emptyNode
     -- , class NodeRenderer, class ChannelRenderer
     --, renderNode, renderInlet, renderOutlet
@@ -105,6 +106,12 @@ type ToolkitRenderer d c n view action =
     -- , renderOutlet :: ChannelDefAlias -> R.Outlet d -> c -> (msg -> Effect Unit) -> view
     , renderOutlet :: c -> R.Outlet d c -> (action -> Effect Unit) -> Maybe d -> view
     }
+
+
+
+empty :: forall d c n. String -> Toolkit d c n
+empty tkName =
+    Toolkit (ToolkitName tkName) $ const emptyNode
 
 
 -- nodes
