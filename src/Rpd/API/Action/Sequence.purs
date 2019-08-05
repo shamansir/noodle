@@ -109,7 +109,7 @@ run
     -> EveryStep d c n
     -> ActionList d c n
     -> Effect Unit
-run toolkit initialNW (ErrorHandler onError)  (EveryStep everyStep) (ActionList actionList) = do
+run toolkit initialNW (ErrorHandler onError) (EveryStep everyStep) (ActionList actionList) = do
     { models, pushAction } <- prepare initialNW toolkit
     _ <- Event.subscribe models $ either onError everyStep
     _ <- traverse_ pushAction actionList
@@ -120,39 +120,43 @@ run'
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
-    -> LastStep d c n
-    -> ActionList d c n
-    -> Effect Unit
-run' toolkit initialNW (LastStep lastStep) (ActionList actionList) = do
-    { models, pushAction } <- prepare initialNW toolkit
-    _ <- traverse_ pushAction actionList
-    pushAction $ Inner $ Do lastStep
-    pure unit
-
-
-run''
-    :: forall d c n
-     . Toolkit d c n
-    -> Network d c n
     -> EveryStep' d c n
     -> ActionList d c n
     -> Effect Unit
-run'' toolkit initialNW (EveryStep' everyStep) (ActionList actionList) = do
+run' toolkit initialNW (EveryStep' everyStep) (ActionList actionList) = do
     { models, pushAction } <- prepare initialNW toolkit
     _ <- Event.subscribe models everyStep
     _ <- traverse_ pushAction actionList
     pure unit
 
 
-runAndTrace
+run_
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
+    -> ErrorHandler
+    -> LastStep d c n
+    -> ActionList d c n
+    -> Effect Unit
+run_ toolkit initialNW (ErrorHandler onError) (LastStep lastStep) (ActionList actionList) = do
+    { models, pushAction } <- prepare initialNW toolkit
+    _ <- Event.subscribe models $ either onError $ const $ pure unit
+    _ <- traverse_ pushAction actionList
+    pushAction $ Inner $ Do lastStep
+    pure unit
+
+
+runTracing
+    :: forall d c n
+     . Toolkit d c n
+    -> Network d c n
+    -> ErrorHandler
     -> EveryAction d c n
     -> ActionList d c n
     -> Effect Unit
-runAndTrace toolkit initialNW (EveryAction everyAction) (ActionList actionList) = do
-    { pushAction, actions } <- prepare initialNW toolkit
+runTracing toolkit initialNW (ErrorHandler onError) (EveryAction everyAction) (ActionList actionList) = do
+    { pushAction, actions, models } <- prepare initialNW toolkit
+    _ <- Event.subscribe models $ either onError $ const $ pure unit
     _ <- Event.subscribe actions everyAction
     _ <- traverse_ pushAction actionList
     pure unit
