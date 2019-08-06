@@ -3,7 +3,8 @@ module Rpd.API.Action.Sequence where
 import Prelude
 
 import Effect (Effect)
-import Data.Array (snoc)
+
+import Data.List (List(..), snoc)
 import Data.Either
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -20,7 +21,7 @@ import Rpd.Path as Path
 import Rpd.Toolkit (Toolkit)
 
 
-newtype ActionList d c n = ActionList (Array (Action d c n))
+newtype ActionList d c n = ActionList (List (Action d c n))
 newtype EveryStep d c n = EveryStep (Network d c n -> Effect Unit)
 newtype EveryStep' d c n = EveryStep' (Either RpdError (Network d c n) -> Effect Unit)
 newtype ErrorHandler = ErrorHandler (RpdError -> Effect Unit)
@@ -32,7 +33,7 @@ infixl 1 andThen as </>
 
 
 init :: forall d c n. ActionList d c n
-init = ActionList []
+init = ActionList $ Nil
 
 
 addPatch :: forall d c n. Path.Alias -> Action d c n
@@ -49,6 +50,10 @@ addInlet node alias c = Request $ ToAddInlet node alias c
 
 addOutlet :: forall d c n. Path.ToNode -> Path.Alias -> c -> Action d c n
 addOutlet node alias c = Request $ ToAddOutlet node alias c
+
+
+connect :: forall d c n. Path.ToOutlet -> Path.ToInlet -> Action d c n
+connect outlet inlet = Request $ ToConnect outlet inlet
 
 
 pass :: forall d c n. EveryStep d c n

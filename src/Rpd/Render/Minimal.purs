@@ -2,6 +2,7 @@ module Rpd.Render.Minimal
     ( Renderer(..)
     , PushAction(..)
     , make
+    , once
     ) where
 
 
@@ -65,6 +66,16 @@ make (Renderer { first, viewError, viewValue }) toolkit initialNW = do
     { models, pushAction } <- ActionSeq.prepare initialNW toolkit
     _ <- Event.subscribe models (pushView <<< either viewError (viewValue $ PushAction pushAction))
     pure { first, next : views }
+
+
+once
+    :: forall d c n view
+     . Renderer d c n view
+    -> T.Toolkit d c n
+    -> R.Network d c n
+    -> view
+once (Renderer { first, viewError, viewValue }) _ nw =
+    viewValue neverPush nw
 
 
 

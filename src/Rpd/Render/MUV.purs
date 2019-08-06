@@ -5,6 +5,7 @@ module Rpd.Render.MUV
     , UpdateF
     , PerformEffectF
     , make
+    , once
     , skipEffects
     ) where
 
@@ -45,15 +46,18 @@ type UpdateF d c n model action effect
     -> model /\ R.Network d c n
     -> model /\ Array effect
 
+
 {- ViewF:
    - gets the function allowing to push messages to the flow (for use in view handlers);
    - gets the latest MUV model paired with the latest network state;
    - and returns new view built using these states;
 -}
+ -- FIXME: toolkit renderer should be present among the arguments
 type ViewF d c n model view action
      = PushF d c n action
     -> Either R.RpdError (model /\ R.Network d c n)
     -> view
+
 
 -- TODO: rename `effect` to `perform` (so users could tend to name it `Perform`/`Do`)
 -- and `performEffect` to just `perform`?
@@ -77,6 +81,10 @@ data Renderer d c n model view action effect
 
 skipEffects :: forall d c n model action effect. PerformEffectF d c n model action effect
 skipEffects = const $ const $ const $ const $ pure unit
+
+
+neverPush :: forall d c n action. PushF d c n action
+neverPush = PushF $ const $ pure unit
 
 
 make
@@ -119,23 +127,33 @@ make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = 
             performEffect toolkit (pushAction <<< Left) userEffect (model /\ nw)
 
 
-data MyData = A | B
-data MyChannel = P | Q
-data MyNode = X | Z
+once
+    :: forall d c n model view action effect
+     . Renderer d c n model view action effect
+    -> T.Toolkit d c n
+    -> R.Network d c n
+    -> view
+once (Renderer { init, view }) _ nw =
+    view neverPush $ Right $ init /\ nw
 
-type MyModel = { v :: Boolean /\ String }
-type MyView = String
-data MyAction = T | U
-data MyEffect = S | Y
+
+-- data MyData = A | B
+-- data MyChannel = P | Q
+-- data MyNode = X | Z
+
+-- type MyModel = { v :: Boolean /\ String }
+-- type MyView = String
+-- data MyAction = T | U
+-- data MyEffect = S | Y
 
 
-sampleRenderer ::
-    Renderer MyData MyChannel MyNode MyModel MyView MyAction MyEffect
-sampleRenderer =
-    Renderer
-        { from : ""
-        , init : { v : true /\ "AAA" }
-        , update : \_ _ _ -> { v : true /\ "BBB" } /\ []
-        , view : \_ _ -> "VIEW"
-        , performEffect : \_ _ _ _ -> pure unit
-        }
+-- sampleRenderer ::
+--     Renderer MyData MyChannel MyNode MyModel MyView MyAction MyEffect
+-- sampleRenderer =
+--     Renderer
+--         { from : ""
+--         , init : { v : true /\ "AAA" }
+--         , update : \_ _ _ -> { v : true /\ "BBB" } /\ []
+--         , view : \_ _ -> "VIEW"
+--         , performEffect : \_ _ _ _ -> pure unit
+--         }

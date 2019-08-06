@@ -29,16 +29,18 @@ import Node.FS.Sync (readTextFile)
 
 import FRP.Event as Event
 
-import Rpd (init, run) as R
-import Rpd.API as R
-import Rpd.API ((</>))
+-- import Rpd.API as R
 import Rpd.Path
 import Rpd.Network (Network) as R
+import Rpd.Network (empty) as Network
 import Rpd.Toolkit as R
-import Rpd.Command as C
+import Rpd.Toolkit (empty) as Toolkit
+import Rpd.API.Action.Sequence ((</>))
+import Rpd.API.Action.Sequence as Actions
+import Rpd.API.Action.Sequence as R
 
-import Rpd.Render (once, Renderer, make') as Render
-import Rpd.Render.MUV (once, Renderer(..), make', PushF(..), fromCore) as RenderMUV
+import Rpd.Render.Minimal (Renderer(..), make, once) as Render
+import Rpd.Render.MUV (Renderer(..), make, once, PushF(..)) as RenderMUV
 import Rpd.Renderer.Terminal (terminalRenderer)
 import Rpd.Renderer.Terminal.Multiline as ML
 import Rpd.Renderer.String (stringRenderer, stringRendererWithOptions)
@@ -55,7 +57,12 @@ data Channel = Channel
 data Node = Node
 
 
-type MyRpd = R.Rpd (R.Network MyData Channel Node)
+toolkit :: R.Toolkit MyData Channel Node
+toolkit = Toolkit.empty "foo"
+
+
+network :: R.Network MyData Channel Node
+network = Network.empty "foo"
 
 
 derive instance eqChannel ∷ Eq Channel
@@ -79,11 +86,6 @@ type CompareViews view = view -> view -> Either String Unit
 type CompareViewsAff view = view -> view -> Aff Unit
 
 
-myRpd :: MyRpd
-myRpd =
-  R.init "foo"
-
-
 spec :: Spec Unit
 spec = do
 
@@ -91,26 +93,25 @@ spec = do
 
     it "rendering the empty network works" do
       stringSample <- liftEffect $ loadSample "Empty.String"
-      expectToRenderOnce stringRenderer compareStrings' myRpd
-        $ String.trim stringSample
-      expectToRenderOnceMUV terminalRenderer compareMultiline' myRpd $
-        -- ML.from' "{>}"
-        ML.empty' (100 /\ 100)
+      expectToRender stringRenderer compareStrings' network $ List.singleton
+          $ String.trim stringSample
+      expectToRenderMUV terminalRenderer compareMultiline' network $ List.singleton
+          -- ML.from' "{>}"
+          $ ML.empty' (100 /\ 100)
       pure unit
     it "rendering the single node works" do
       let
-        singleNodeNW = myRpd
+        singleNodeNW = Actions.init
           </> R.addPatch "foo"
           </> R.addNode (toPatch "foo") "bar" Node
       stringSample <- liftEffect $ loadSample "SingleNode.String"
-      expectToRenderOnce stringRenderer compareStrings' singleNodeNW
-        $ String.trim stringSample
-      expectToRenderOnceMUV terminalRenderer compareMultiline' singleNodeNW $
-        ML.empty' (100 /\ 100)
-           # ML.place (0 /\ 0) "[]bar[]"
+      expectToRender stringRenderer compareStrings' singleNodeNW $ List.singleton
+          $ String.trim stringSample
+      expectToRenderMUV terminalRenderer compareMultiline' singleNodeNW $ List.singleton
+          $ ML.empty' (100 /\ 100) # ML.place (0 /\ 0) "[]bar[]"
     it "rendering several nodes works" do
       let
-        severalNodesNW = myRpd
+        severalNodesNW = Actions.init
           </> R.addPatch "foo0"
           </> R.addNode (toPatch "foo0") "bar00" Node
           </> R.addNode (toPatch "foo0") "bar01" Node
@@ -120,15 +121,15 @@ spec = do
           </> R.addNode (toPatch "foo1") "bar11" Node
       stringSample <- liftEffect $ loadSample "SeveralNodes.String"
       terminalSample <- liftEffect $ loadSample "SeveralNodes.Terminal"
-      expectToRenderOnce stringRenderer compareStrings' severalNodesNW
-        $ String.trim stringSample
-      expectToRenderOnceMUV terminalRenderer compareMultiline' severalNodesNW
-        $ ML.empty' (100 /\ 100)
-          # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
+      expectToRender stringRenderer compareStrings' severalNodesNW $ List.singleton
+          $ String.trim stringSample
+      expectToRenderMUV terminalRenderer compareMultiline' severalNodesNW $ List.singleton
+          $ ML.empty' (100 /\ 100)
+              # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
     it "rendering a node with inlets and outlets works" do
       let
-        nodeWithInletsAndOutletsNW = myRpd
+        nodeWithInletsAndOutletsNW = Actions.init
           </> R.addPatch "foo"
           </> R.addNode (toPatch "foo") "bar" Node
           </> R.addInlet (toNode "foo" "bar") "buz1" Channel
@@ -137,15 +138,16 @@ spec = do
           </> R.addOutlet (toNode "foo" "bar") "abc2" Channel
       stringSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.String"
       terminalSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.Terminal"
-      expectToRenderOnce stringRenderer compareStrings' nodeWithInletsAndOutletsNW
+      expectToRender stringRenderer compareStrings' nodeWithInletsAndOutletsNW $ List.singleton
         $ String.trim stringSample
-      expectToRenderOnceMUV terminalRenderer compareMultiline' nodeWithInletsAndOutletsNW
+      expectToRenderMUV
+        terminalRenderer compareMultiline' nodeWithInletsAndOutletsNW $ List.singleton
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
     it "rendering the connections works" do
       let
-        withConnectionNW = myRpd
+        withConnectionNW = Actions.init
           </> R.addPatch "foo"
           </> R.addNode (toPatch "foo") "src" Node
           </> R.addOutlet (toNode "foo" "src") "srco" Channel
@@ -154,20 +156,20 @@ spec = do
           </> R.connect (toOutlet "foo" "src" "srco") (toInlet "foo" "dst" "dsti")
       stringSample <- liftEffect $ loadSample "WithConnection.String"
       terminalSample <- liftEffect $ loadSample "WithConnection.Terminal"
-      expectToRenderOnce stringRenderer compareStrings' withConnectionNW
+      expectToRender stringRenderer compareStrings' withConnectionNW $ List.singleton
         $ String.trim stringSample
-      expectToRenderOnceMUV terminalRenderer compareMultiline' withConnectionNW
+      expectToRenderMUV terminalRenderer compareMultiline' withConnectionNW $ List.singleton
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
     it "rendering the erroneous network responds with the error" do
       let
-        erroneousNW = myRpd
+        erroneousNW = Actions.init
           -- add inlet to non-exising node
           </> R.addInlet (toNode "idont" "exist") "foo" Channel
       stringSample <- liftEffect $ loadSample "Error.String"
-      expectToRenderOnce stringRenderer compareStrings' erroneousNW
+      expectToRender stringRenderer compareStrings' erroneousNW $ List.singleton
         $ String.trim stringSample
-      expectToRenderOnceMUV terminalRenderer compareMultiline' erroneousNW
+      expectToRenderMUV terminalRenderer compareMultiline' erroneousNW $ List.singleton
         $ ML.from' "ERR: "
       pure unit
 
@@ -178,7 +180,7 @@ spec = do
           renderer = stringRendererWithOptions { showUuid : true }
           toolkit =
             R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
-          emptyNW = myRpd
+          emptyNW = Actions.init
         stringSample <- liftEffect $ loadSample "SingleNode.String"
         expectToRenderSeq renderer compareStrings toolkit emptyNW ""
           $ List.fromFoldable
@@ -294,26 +296,26 @@ loadSample name =
   readTextFile UTF8 $ "test/_samples/" <> name <> ".sample"
 
 
-expectToRenderOnce
+expectToRender
   :: forall d c n view
    . Render.Renderer d c n view
   -> CompareViewsAff view
-  -> R.Rpd (R.Network d c n)
+  -> R.ActionList d c n
   -> view
   -> Aff Unit
-expectToRenderOnce renderer compareViews rpd expectation = do
+expectToRender renderer compareViews rpd expectation = do
   result <- liftEffect $ Render.once renderer rpd
   result `compareViews` expectation
 
 
-expectToRenderOnceMUV
-  :: forall d c n model view msg
-   . RenderMUV.Renderer d c n model view msg
+expectToRenderMUV
+  :: forall d c n model view action effect
+   . RenderMUV.Renderer d c n model view action effect
   -> CompareViewsAff view
   -> R.Rpd (R.Network d c n)
   -> view
   -> Aff Unit
-expectToRenderOnceMUV renderer compareViews rpd expectation = do
+expectToRenderMUV renderer compareViews rpd expectation = do
   result <- liftEffect $ RenderMUV.once renderer rpd
   result `compareViews` expectation
 
@@ -323,7 +325,7 @@ expectToRenderSeq
    . Render.Renderer d c n view
   -> CompareViews view
   -> R.Toolkit d c n
-  -> R.Rpd (R.Network d c n)
+  -> R.ActionList d c n
   -> view
   -> List (C.Command d c n /\ view)
   -> Aff Unit
