@@ -40,7 +40,7 @@ import Rpd.API.Action.Sequence as Actions
 import Rpd.API.Action.Sequence as R
 
 import Rpd.Render.Minimal (Renderer(..), make, once, PushF(..)) as Render
-import Rpd.Render.MUV (Renderer(..), make, once, PushF(..)) as RenderMUV
+import Rpd.Render.MUV (Renderer(..), make, once, PushF(..), fromMinimal) as RenderMUV
 import Rpd.Renderer.Terminal (terminalRenderer)
 import Rpd.Renderer.Terminal.Multiline as ML
 import Rpd.Renderer.String (stringRenderer, stringRendererWithOptions)
@@ -187,23 +187,20 @@ spec = do
             -- </> R.Bang
             </> R.addNode (toPatch "foo") "bar" Node)
           stringSample
-        -- expectToRenderSeq renderer compareStrings toolkit emptyNW ""
-        --   $ List.fromFoldable
-        --       [ C.Bang /\ ""
-        --       , C.AddNode (toPatch "foo") "bar" Node /\ ""
-        --       ]
-    -- describe "MUV renderer" do
-    --   pending' "applies commands to the network" do
-    --     let
-    --       renderer = RenderMUV.make (stringRendererWithOptions { showUuid : true })
-    --       toolkit =
-    --         R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
-    --     stringSample <- liftEffect $ loadSample "SingleNode.String"
-    --     expectToRender renderer compareStrings toolkit
-    --       (Actions.init
-    --         -- </> R.Bang
-    --         </> R.addNode (toPatch "foo") "bar" Node)
-    --       stringSample
+    describe "MUV renderer" do
+      pending' "applies commands to the network" do
+        let
+          renderer =
+              RenderMUV.fromMinimal
+                $ stringRendererWithOptions { showUuid : true }
+          toolkit' =
+            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
+        stringSample <- liftEffect $ loadSample "SingleNode.String"
+        expectToRenderMUV renderer toolkit' compareStrings'
+          (Actions.init
+            -- </> R.Bang
+            </> R.addNode (toPatch "foo") "bar" Node)
+          stringSample
 
 
     -- TODO:

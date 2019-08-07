@@ -7,6 +7,7 @@ module Rpd.Render.MUV
     , make
     , once
     , skipEffects
+    , fromMinimal
     ) where
 
 
@@ -14,7 +15,7 @@ import Prelude
 import Effect
 
 import Data.Either (Either(..), either)
-import Data.Tuple (fst)
+import Data.Tuple (fst, snd)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_)
 
@@ -27,6 +28,7 @@ import Rpd.API.Action as Core
 import Rpd.API.Action.Apply as Core
 import Rpd.API.Action.Sequence (prepare_) as ActionSeq
 import Rpd.Toolkit as T
+import Rpd.Render.Minimal as Minimal
 
 
 data PushF d c n action  =
@@ -83,6 +85,10 @@ skipEffects :: forall d c n model action effect. PerformEffectF d c n model acti
 skipEffects = const $ const $ const $ const $ pure unit
 
 
+noUpdates :: forall d c n model action effect. model -> UpdateF d c n model action effect
+noUpdates defaultModel = const $ const $ const $ defaultModel /\ []
+
+
 neverPush :: forall d c n action. PushF d c n action
 neverPush = PushF $ const $ pure unit
 
@@ -135,6 +141,27 @@ once
     -> view
 once (Renderer { init, view }) _ nw =
     view neverPush $ Right $ init /\ nw
+
+
+
+fromMinimal
+    :: forall d c n view
+     . Minimal.Renderer d c n view
+    -> Renderer d c n Unit view Unit Unit
+fromMinimal (Minimal.Renderer minimal) =
+    Renderer
+        { from : minimal.first -- initial view
+        , init : unit -- initial state
+        , update : noUpdates unit
+        , view : minimalView
+        , performEffect : skipEffects
+        }
+    where
+        minimalView (PushF push) valueE =
+            either
+                minimal.viewError
+                (minimal.viewValue (Minimal.PushF $ push <<< Right) <<< snd)
+                valueE
 
 
 -- data MyData = A | B
