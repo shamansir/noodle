@@ -1,6 +1,6 @@
 module Rpd.Render.Minimal
     ( Renderer(..)
-    , PushAction(..)
+    , PushF(..)
     , make
     , once
     ) where
@@ -39,20 +39,20 @@ import Rpd.Toolkit (Toolkit) as T
 --     -> Either R.RpdError (R.Network d)
 --     -> view
 
-data PushAction d c n =
-    PushAction (C.Action d c n -> Effect Unit)
+data PushF d c n =
+    PushF (C.Action d c n -> Effect Unit)
 
 
 data Renderer d c n view
     = Renderer
         { first :: view
         , viewError :: R.RpdError -> view
-        , viewValue :: PushAction d c n -> R.Network d c n -> view
+        , viewValue :: PushF d c n -> R.Network d c n -> view
         }
 
 
-neverPush :: forall d c n. PushAction d c n
-neverPush = PushAction $ const $ pure unit
+neverPush :: forall d c n. PushF d c n
+neverPush = PushF $ const $ pure unit
 
 
 make
@@ -60,12 +60,22 @@ make
      . Renderer d c n view
     -> T.Toolkit d c n
     -> R.Network d c n
-    -> Effect { first :: view, next :: Event view }
+    -> Effect
+        { first :: view
+        , next :: Event view
+        , push :: PushF d c n
+        , stop :: Effect Unit
+        }
 make (Renderer { first, viewError, viewValue }) toolkit initialNW = do
     { event : views, push : pushView } <- Event.create
     { models, pushAction } <- ActionSeq.prepare initialNW toolkit
-    _ <- Event.subscribe models (pushView <<< either viewError (viewValue $ PushAction pushAction))
-    pure { first, next : views }
+    stop <- Event.subscribe models (pushView <<< either viewError (viewValue $ PushF pushAction))
+    pure
+        { first
+        , next : views
+        , push : PushF pushAction
+        , stop
+        }
 
 
 once

@@ -4,13 +4,13 @@ module RpdTest.Render
 import Prelude
 
 import Data.Time.Duration (Milliseconds(..))
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.String as String
 import Data.List (List, (:))
 import Data.List as List
 import Data.Either (Either(..))
 import Data.Tuple.Nested (type (/\), (/\))
-import Data.Traversable (traverse)
+import Data.Traversable (traverse, traverse_)
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
@@ -35,11 +35,11 @@ import Rpd.Network (Network) as R
 import Rpd.Network (empty) as Network
 import Rpd.Toolkit as R
 import Rpd.Toolkit (empty) as Toolkit
-import Rpd.API.Action.Sequence ((</>))
+import Rpd.API.Action.Sequence ((</>), ActionList(..))
 import Rpd.API.Action.Sequence as Actions
 import Rpd.API.Action.Sequence as R
 
-import Rpd.Render.Minimal (Renderer(..), make, once) as Render
+import Rpd.Render.Minimal (Renderer(..), make, once, PushF(..)) as Render
 import Rpd.Render.MUV (Renderer(..), make, once, PushF(..)) as RenderMUV
 import Rpd.Renderer.Terminal (terminalRenderer)
 import Rpd.Renderer.Terminal.Multiline as ML
@@ -93,9 +93,9 @@ spec = do
 
     it "rendering the empty network works" do
       stringSample <- liftEffect $ loadSample "Empty.String"
-      expectToRender stringRenderer compareStrings' network $ List.singleton
+      expectToRender stringRenderer compareStrings' network
           $ String.trim stringSample
-      expectToRenderMUV terminalRenderer compareMultiline' network $ List.singleton
+      expectToRenderMUV terminalRenderer compareMultiline' network
           -- ML.from' "{>}"
           $ ML.empty' (100 /\ 100)
       pure unit
@@ -105,9 +105,9 @@ spec = do
           </> R.addPatch "foo"
           </> R.addNode (toPatch "foo") "bar" Node
       stringSample <- liftEffect $ loadSample "SingleNode.String"
-      expectToRender stringRenderer compareStrings' singleNodeNW $ List.singleton
+      expectToRender stringRenderer compareStrings' singleNodeNW
           $ String.trim stringSample
-      expectToRenderMUV terminalRenderer compareMultiline' singleNodeNW $ List.singleton
+      expectToRenderMUV terminalRenderer compareMultiline' singleNodeNW
           $ ML.empty' (100 /\ 100) # ML.place (0 /\ 0) "[]bar[]"
     it "rendering several nodes works" do
       let
@@ -121,9 +121,9 @@ spec = do
           </> R.addNode (toPatch "foo1") "bar11" Node
       stringSample <- liftEffect $ loadSample "SeveralNodes.String"
       terminalSample <- liftEffect $ loadSample "SeveralNodes.Terminal"
-      expectToRender stringRenderer compareStrings' severalNodesNW $ List.singleton
+      expectToRender stringRenderer compareStrings' severalNodesNW
           $ String.trim stringSample
-      expectToRenderMUV terminalRenderer compareMultiline' severalNodesNW $ List.singleton
+      expectToRenderMUV terminalRenderer compareMultiline' severalNodesNW
           $ ML.empty' (100 /\ 100)
               # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
@@ -175,31 +175,35 @@ spec = do
 
   describe "dynamic rendering" do
     describe "core renderer" do
-      pending' "applies commands to the network" do
+      pending' "applies actions to the network" do
         let
           renderer = stringRendererWithOptions { showUuid : true }
           toolkit =
             R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
           emptyNW = Actions.init
         stringSample <- liftEffect $ loadSample "SingleNode.String"
-        expectToRenderSeq renderer compareStrings toolkit emptyNW ""
-          $ List.fromFoldable
-              [ C.Bang /\ ""
-              , C.AddNode (toPatch "foo") "bar" Node /\ ""
-              ]
+        expectToRender renderer compareStrings toolkit
+          (Actions.init
+            -- </> R.Bang
+            </> R.addNode (toPatch "foo") "bar" Node)
+          stringSample
+        -- expectToRenderSeq renderer compareStrings toolkit emptyNW ""
+        --   $ List.fromFoldable
+        --       [ C.Bang /\ ""
+        --       , C.AddNode (toPatch "foo") "bar" Node /\ ""
+        --       ]
     describe "MUV renderer" do
       pending' "applies commands to the network" do
         let
-          renderer = RenderMUV.fromCore $ stringRendererWithOptions { showUuid : true }
+          renderer = RenderMUV.make (stringRendererWithOptions { showUuid : true })
           toolkit =
             R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
-          emptyNW = myRpd
         stringSample <- liftEffect $ loadSample "SingleNode.String"
-        expectToRenderSeqMUV renderer compareStrings toolkit emptyNW ""
-          $ List.fromFoldable
-              [ C.Bang /\ ""
-              , C.AddNode (toPatch "foo") "bar" Node /\ ""
-              ]
+        expectToRender renderer compareStrings toolkit
+          (Actions.init
+            -- </> R.Bang
+            </> R.addNode (toPatch "foo") "bar" Node)
+          stringSample
 
 
     -- TODO:
@@ -209,85 +213,12 @@ spec = do
     -- shows data in the inlets/outlets
     -- toolkits and channels renderers
     -- selecting nodes
-    -- status: should store commands
-    -- should accept commands
+    -- status: should store actions
+    -- should accept actions
 
   describe "possible rendering issues" $ do
-    it "MUV: calls model updates only required number of times" $ do
-      let
-        adaptToTrack :: forall d c n. Array (C.Command d c n) -> TrackedCommands d c n
-        adaptToTrack cmdArr = Right <$> List.fromFoldable cmdArr
-      let toolkit =
-            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
-      { event, push } <- liftEffect Event.create
-      let
-        { first : firstView, next : nextViews }
-          = RenderMUV.make' { event, push } toolkit myRpd renderTrackUpdates
-      commandsTrack <- liftEffect $ Ref.new List.Nil
-      stop <- liftEffect $ Event.subscribe nextViews \v -> do
-                  v >>= \commands -> Ref.modify (const commands) commandsTrack
-      currentCommands <- liftEffect $ Ref.read commandsTrack
-      currentCommands `shouldEqual` List.Nil
-      -- FIXME: why commands are sent with `Right` here and with `Left` above?
-      liftEffect $ push $ Right C.Bang
-      currentCommands' <- liftEffect $ Ref.read commandsTrack
-      currentCommands' `shouldEqual` (adaptToTrack [ C.Bang ])
-      liftEffect $ push $ Right C.Bang
-      currentCommands'' <- liftEffect $ Ref.read commandsTrack
-      currentCommands'' `shouldEqual` (adaptToTrack [ C.Bang, C.Bang ])
-      liftEffect $ push $ Right $ C.AddPatch "foo"
-      currentCommands''' <- liftEffect $ Ref.read commandsTrack
-      currentCommands''' `shouldEqual`
-          (adaptToTrack [ C.AddPatch "foo", C.Bang, C.Bang ])
-      liftEffect stop
-    it "MUV: calls view updates only required number of times" $ do
-      let toolkit =
-            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
-      { event, push } <- liftEffect Event.create
-      let
-        { first : firstView, next : nextViews }
-          = RenderMUV.make' { event, push } toolkit myRpd renderUnit
-      callCount <- liftEffect $ Ref.new 0
-      stop <- liftEffect $ Event.subscribe nextViews \v -> do
-                  v >>= \v' -> Ref.modify ((+) 1) callCount
-      currentCalls <- liftEffect $ Ref.read callCount
-      currentCalls `shouldEqual` 0
-      liftEffect $ push $ Right C.Bang
-      currentCalls' <- liftEffect $ Ref.read callCount
-      currentCalls' `shouldEqual` 1
-      liftEffect $ push $ Right C.Bang
-      currentCalls'' <- liftEffect $ Ref.read callCount
-      currentCalls'' `shouldEqual` 2
-      liftEffect $ push $ Right $ C.AddPatch "foo"
-      currentCalls''' <- liftEffect $ Ref.read callCount
-      currentCalls''' `shouldEqual` 3
-      liftEffect stop
-    it "MUV: errors are passed to the view" $ do
-      let toolkit =
-            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
-      { event, push } <- liftEffect Event.create
-      let
-        { first : firstView, next : nextViews }
-          = RenderMUV.make' { event, push } toolkit myRpd renderTrackErrors
-      errorsTrack <- liftEffect $ Ref.new Nothing
-      stop <- liftEffect $ Event.subscribe nextViews \v -> do
-                  v >>= \error -> Ref.modify (const error) errorsTrack
-      currentError <- liftEffect $ Ref.read errorsTrack
-      currentError `shouldEqual` Nothing
-      -- FIXME: why commands are sent with `Right` here and with `Left` above?
-      liftEffect $ push $ Right C.Bang
-      currentError' <- liftEffect $ Ref.read errorsTrack
-      currentError' `shouldEqual` Nothing
-      liftEffect $ push $ Right $ C.AddPatch "foo"
-      currentError'' <- liftEffect $ Ref.read errorsTrack
-      currentError'' `shouldEqual` Nothing
-      liftEffect $ push $ Right $ C.AddNode (toPatch "foo") "bar" Node
-      currentError''' <- liftEffect $ Ref.read errorsTrack
-      currentError''' `shouldEqual` Nothing
-      liftEffect $ push $ Right $ C.AddNode (toPatch "bar") "bar" Node -- patch does not exists
-      currentError4 <- liftEffect $ Ref.read errorsTrack
-      currentError4 `shouldEqual` (Just (R.RpdError ""))
-      liftEffect stop
+    pending' "MUV: errors are passed to the view" $ do
+      pure unit
 
 
 
@@ -303,190 +234,50 @@ expectToRender
   -> R.ActionList d c n
   -> view
   -> Aff Unit
-expectToRender renderer compareViews rpd expectation = do
-  result <- liftEffect $ Render.once renderer rpd
-  result `compareViews` expectation
+expectToRender renderer compareViews (ActionList actions) expectation = do
+  maybeLastView <- liftEffect $ do
+    lastView <- Ref.new Nothing
+    { push, next : views, stop }
+          <- Render.make renderer toolkit $ Network.empty "foo"
+    _ <- Event.subscribe (flip Ref.write lastView <<< Just) views
+    _ <- case push of
+          Render.PushF pushAction -> traverse_ $ pushAction <$> actions
+    _ <- stop
+    Ref.read lastView
+  maybe (fail "no views were recevied") (compareViews expectation)
 
 
 expectToRenderMUV
   :: forall d c n model view action effect
    . RenderMUV.Renderer d c n model view action effect
   -> CompareViewsAff view
-  -> R.Rpd (R.Network d c n)
-  -> view
-  -> Aff Unit
-expectToRenderMUV renderer compareViews rpd expectation = do
-  result <- liftEffect $ RenderMUV.once renderer rpd
-  result `compareViews` expectation
-
-
-expectToRenderSeq
-  :: forall d c n view
-   . Render.Renderer d c n view
-  -> CompareViews view
-  -> R.Toolkit d c n
   -> R.ActionList d c n
   -> view
-  -> List (C.Command d c n /\ view)
   -> Aff Unit
-expectToRenderSeq renderer compareViews toolkit rpd firstExpectation nextExpectations = do
-  { event, push } <- liftEffect Event.create
-  let
-    { first : firstView, next : nextViews }
-        = Render.make' { event, push } toolkit rpd renderer
-  firstView `compareViewsAff` firstExpectation
-  failuresRef <- liftEffect $ Ref.new List.Nil
-  let
-    checkNextViews
-        = Event.fold (foldingF push failuresRef) nextViews
-            $ pure nextExpectations
-  cancel <- liftEffect $ Event.subscribe checkNextViews liftEffect
-  delay (Milliseconds 100.0)
-  failures <- liftEffect $ Ref.read failuresRef
-  failures `shouldEqual` List.Nil
-  _ <- liftEffect cancel
-  pure unit
-  where
-    compareViewsAff :: CompareViewsAff view
-    compareViewsAff = toAffCompare compareViews
-    foldingF
-      :: (C.Command d c n -> Effect Unit)
-      -> Ref (List String)
-      -> Effect view
-      -> Effect (List (C.Command d c n /\ view))
-      -> Effect (List (C.Command d c n /\ view))
-    foldingF = foldExpectations compareViews
+expectToRenderMUV renderer compareViews (ActionList actions) expectation = do
+  maybeLastView <- liftEffect $ do
+    lastView <- Ref.new Nothing
+    { push, next : views, stop }
+          <- RenderMUV.make renderer toolkit $ Network.empty "foo"
+    _ <- Event.subscribe (flip Ref.write lastView <<< Just) views
+    _ <- case push of
+          RenderMUV.PushF pushAction -> traverse_ $ pushAction <$> actions
+    _ <- stop
+    Ref.read lastView
+  maybe (fail "no views were recevied") (compareViews expectation)
 
 
-expectToRenderSeqMUV
-  :: forall d c n model view msg
-   . RenderMUV.Renderer d c n model view msg
-  -> CompareViews view
-  -> R.Toolkit d c n
-  -> R.Rpd (R.Network d c n)
-  -> view
-  -> List (C.Command d c n /\ view)
-  -> Aff Unit
-expectToRenderSeqMUV renderer compareViews toolkit rpd firstExpectation nextExpectations = do
-  { event, push } <- liftEffect Event.create
-  let
-    { first : firstView, next : nextViews }
-        = RenderMUV.make' { event, push } toolkit rpd renderer
-  firstView `compareViewsAff` firstExpectation
-  failuresRef <- liftEffect $ Ref.new List.Nil
-  let
-    checkNextViews
-        = Event.fold (foldingF (push <<< Right) failuresRef) nextViews
-            $ pure nextExpectations
-  cancel <- liftEffect $ Event.subscribe checkNextViews liftEffect
-  delay (Milliseconds 100.0)
-  failures <- liftEffect $ Ref.read failuresRef
-  failures `shouldEqual` List.Nil
-  _ <- liftEffect cancel
-  pure unit
-  where
-    compareViewsAff :: CompareViewsAff view
-    compareViewsAff = toAffCompare compareViews
-    foldingF
-      :: (C.Command d c n -> Effect Unit)
-      -> Ref (List String)
-      -> Effect view
-      -> Effect (List (C.Command d c n /\ view))
-      -> Effect (List (C.Command d c n /\ view))
-    foldingF = foldExpectations compareViews
-
-
-foldExpectations
-  :: forall d c n view
-   . CompareViews view
-  -> (C.Command d c n -> Effect Unit)
-  -> Ref (List String)
-  -> Effect view
-  -> Effect (List (C.Command d c n /\ view))
-  -> Effect (List (C.Command d c n /\ view))
-foldExpectations compareViews push failuresRef nextView chain = do
-      v <- nextView
-      nextExpectations' <- chain
-      let expectationsLeft = fromMaybe List.Nil $ List.tail nextExpectations'
-      case List.head nextExpectations' of
-        Just (msg /\ nextExpectation) -> do
-          push msg
-          (case nextExpectation `compareViews` v of
-              Left failure -> do
-                _ <- Ref.modify ((:) failure) failuresRef
-                pure expectationsLeft
-              Right _ ->
-                pure expectationsLeft
-          )
-        Nothing ->
-          pure expectationsLeft
-
-
-renderUnit :: forall d c n. RenderMUV.Renderer d c n Unit Unit Unit
-renderUnit =
-  RenderMUV.Renderer
-    { from : unit
-    , init : unit
-    , update
-    , view
-    }
-  where
-    update _ ( model /\ _ ) = ( model /\ [] )
-    view (RenderMUV.PushF push) v = unit
-
-
-type TrackedCommands d c n = List (Either Unit (C.Command d c n))
-
-
--- renderTrackUpdates
---   :: forall d c n
---    . RenderMUV.Renderer d c n (TrackedCommands d c n) Unit Unit
--- renderTrackUpdates =
+-- renderUnit :: forall d c n. RenderMUV.Renderer d c n Unit Unit Unit Unit
+-- renderUnit =
 --   RenderMUV.Renderer
 --     { from : unit
---     , init : List.Nil
+--     , init : unit
 --     , update
 --     , view
 --     }
 --   where
---     update msgOrCmd ( model /\ _ ) = ( (msgOrCmd : model) /\ [] )
+--     update _ ( model /\ _ ) = ( model /\ [] )
 --     view (RenderMUV.PushF push) v = unit
-
-
-renderTrackUpdates
-  :: forall d c n
-   . RenderMUV.Renderer d c n (TrackedCommands d c n) (TrackedCommands d c n) Unit
-renderTrackUpdates =
-  RenderMUV.Renderer
-    { from : List.Nil
-    , init : List.Nil
-    , update
-    , view
-    }
-  where
-    update msgOrCmd ( model /\ _ ) = ( (msgOrCmd : model) /\ [] )
-    view _ errOrModel =
-      case errOrModel of
-        Left err -> List.Nil
-        Right ( model /\ _ ) -> model
-
-
-renderTrackErrors
-  :: forall d c n
-   . RenderMUV.Renderer d c n Unit (Maybe R.RpdError) Unit
-renderTrackErrors =
-  RenderMUV.Renderer
-    { from : Nothing
-    , init : unit
-    , update
-    , view
-    }
-  where
-    update msgOrCmd ( model /\ _ ) = ( model /\ [] )
-    view _ errOrModel =
-      case errOrModel of
-        Left err -> Just err
-        Right _ -> Nothing
 
 
 toAffCompare :: forall v. CompareViews v -> CompareViewsAff v

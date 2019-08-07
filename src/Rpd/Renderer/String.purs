@@ -28,7 +28,7 @@ import Rpd.Network
     ) as R
 import Rpd.API (RpdError) as R
 import Rpd.Optics (_node, _inlet, _outlet, _link, _networkPatches, _networkLinks)
-import Rpd.Render.Minimal (PushAction, Renderer(..))
+import Rpd.Render.Minimal (PushF, Renderer(..))
 import Rpd.Path as P
 
 
@@ -84,7 +84,7 @@ stringRendererWithOptions options =
         }
 
 
-view :: forall d c n. Options -> PushAction d c n -> R.Network d c n -> String
+view :: forall d c n. Options -> PushF d c n -> R.Network d c n -> String
 view options _ nw@(R.Network { name, patches }) =
     "Network " <> name <> semicolon
         <> lineBreak
