@@ -16,8 +16,6 @@ import Effect.Aff (Aff)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, fail)
 
-import Rpd (init, run') as R
-import Rpd.API (Rpd) as R
 import Rpd.Path as R
 import Rpd.Process (ProcessF(..)) as R
 -- import Rpd.Command (Command)

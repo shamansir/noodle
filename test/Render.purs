@@ -188,7 +188,7 @@ spec = do
             </> R.addNode (toPatch "foo") "bar" Node)
           stringSample
     describe "MUV renderer" do
-      pending' "applies commands to the network" do
+      pending' "applies actions to the network" do
         let
           renderer =
               RenderMUV.fromMinimal

@@ -4,25 +4,26 @@ module RpdTest.Flow.Links
 
 import Prelude
 
+import Effect.Ref as Ref
+
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\))
 
 import FRP.Event.Time (interval)
 
-import Rpd.API ((</>))
-import Rpd.API as R
+import Rpd.API.Action.Sequence ((</>))
+import Rpd.API.Action.Sequence (init) as Actions
+import Rpd.API.Action.Sequence as R
 import Rpd.Path
 import Rpd.Util (flow) as R
 
 import Test.Spec (Spec, it, pending)
 import Test.Spec.Assertions (shouldContain, shouldNotContain)
 
-import RpdTest.Util (withRpd)
-import RpdTest.CollectData (TraceItem(..))
-import RpdTest.CollectData as CollectData
-import RpdTest.Flow.Base (MyRpd, Delivery(..), Pipe(..), Node(..))
-
-
+-- import RpdTest.CollectData (TraceItem(..))
+import RpdTest.Helper (channelsAfter) as CollectData
+import RpdTest.Helper (TraceItem(..))
+import RpdTest.Flow.Base (Actions, Network, Delivery(..), Pipe(..), Node(..))
 
 
 {- ======================================= -}
@@ -34,74 +35,63 @@ spec :: Spec Unit
 spec = do
   it "connecting some outlet to some inlet makes data flow from this outlet to this inlet" $ do
     let
-      rpd :: MyRpd
-      rpd =
-        R.init "network"
+      structure :: Actions
+      structure =
+        Actions.init
           </> R.addPatch "patch"
           </> R.addNode (toPatch "patch") "node1" Empty
           </> R.addOutlet (toNode "patch" "node1") "outlet" Pass
           </> R.addNode (toPatch "patch") "node2" Empty
           </> R.addInlet (toNode "patch" "node2") "inlet" Pass
 
-    rpd # withRpd \nw -> do
-        collectedData <- CollectData.channelsAfter
-          (Milliseconds 100.0)
-          nw
-          $ do
-            cancel <-
-              -- first connect, then stream
-              nw # R.connect
-                      (toOutlet "patch" "node1" "outlet")
-                      (toInlet "patch" "node2" "inlet")
-                  </> R.streamToOutlet
-                      (toOutlet "patch" "node1" "outlet")
-                      (R.flow $ const Notebook <$> interval 30)
-            pure [ cancel ]
-        collectedData `shouldContain`
-          (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
-        collectedData `shouldContain`
-          (InletData (toInlet "patch" "node2" "inlet") Notebook)
-        pure unit
-
+    collectedData <- CollectData.channelsAfter
+      (Milliseconds 100.0)
+      $ structure
+          -- first connect, then stream
+          </> R.connect
+              (toOutlet "patch" "node1" "outlet")
+              (toInlet "patch" "node2" "inlet")
+          </> R.streamToOutlet
+              (toOutlet "patch" "node1" "outlet")
+              (R.flow $ const Notebook <$> interval 30)
+    collectedData `shouldContain`
+      (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
+    collectedData `shouldContain`
+      (InletData (toInlet "patch" "node2" "inlet") Notebook)
     pure unit
 
   it "connecting some outlet having its own flow to some inlet directs this existing flow to this inlet" $ do
     let
-      rpd :: MyRpd
-      rpd =
-        R.init "network"
+      structure :: Actions
+      structure =
+        Actions.init
           </> R.addPatch "patch"
           </> R.addNode (toPatch "patch") "node1" Empty
           </> R.addOutlet (toNode "patch" "node1") "outlet" Pass
           </> R.addNode (toPatch "patch") "node2" Empty
           </> R.addInlet (toNode "patch" "node2") "inlet" Pass
 
-    rpd # withRpd \nw -> do
-        collectedData <- CollectData.channelsAfter
-          (Milliseconds 100.0)
-          nw
-          $ do
-            cancel <-
+    collectedData <- CollectData.channelsAfter
+      (Milliseconds 100.0)
+      $ structure
               -- first stream, then connect
-              nw # R.streamToOutlet
+            </> R.streamToOutlet
                       (toOutlet "patch" "node1" "outlet")
                       (R.flow $ const Notebook <$> interval 30)
-            _ <- nw # R.connect
+            </> R.connect
                       (toOutlet "patch" "node1" "outlet")
                       (toInlet "patch" "node2" "inlet")
-            pure [ cancel ]
-        collectedData `shouldContain`
-          (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
-        collectedData `shouldContain`
-          (InletData (toInlet "patch" "node2" "inlet") Notebook)
-        pure unit
+    collectedData `shouldContain`
+      (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
+    collectedData `shouldContain`
+      (InletData (toInlet "patch" "node2" "inlet") Notebook)
 
     pure unit
 
   it "disconnecting some outlet from some inlet makes the data flow between them stop" $ do
     let
-      rpd :: MyRpd
-      rpd =
+      structure :: Actions
+      structure =
         R.init "network"
           </> R.addPatch "patch"
           </> R.addNode (toPatch "patch") "node1" Empty

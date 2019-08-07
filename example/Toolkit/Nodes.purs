@@ -10,6 +10,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Rpd.Process as R
 import Rpd.Toolkit as T
+import Rpd.Toolkit (withInlets, withOutlets, (~<), (>~))
 
 import Example.Toolkit.Value
 import Example.Toolkit.Channel
@@ -27,14 +28,13 @@ randomNode :: T.NodeDef Value Channel
 randomNode =
     T.NodeDef
         { inlets :
-            T.inlets
-                [ "bang" /\ TriggerChannel
-                , "min"  /\ NumberChannel
-                , "max"  /\ NumberChannel
-                ]
+            withInlets
+            ~< "bang" /\ TriggerChannel
+            ~< "min"  /\ NumberChannel
+            ~< "max"  /\ NumberChannel
         , outlets :
-            T.outlets
-                [ "random" /\ NumberChannel ]
+            withOutlets
+            >~ "random" /\ NumberChannel
         , process : R.Process processF
         }
     where

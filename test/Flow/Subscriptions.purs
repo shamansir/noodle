@@ -15,7 +15,6 @@ import Effect.Aff (delay) --, throwError
 
 import FRP.Event.Time (interval)
 
-import Rpd (run) as R
 import Rpd.API ((</>))
 import Rpd.API as R
 import Rpd.Process (InletHandler(..), InletAlias, OutletAlias) as R
@@ -55,7 +54,6 @@ spec = do
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addInlet (toNode "patch" "node") "inlet" Pass
             </> R.subscribeNode (toNode "patch" "node") inletHandler outletHandler
-
       rpd # withRpd \nw -> do
         _ <- liftEffect
                 $ R.run (const unit) (const unit)

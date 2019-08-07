@@ -6,6 +6,8 @@ module Rpd.API.Action where
 
 import Prelude (class Show, show, (<>), Unit)
 
+import FRP.Event (Event)
+
 import Effect (Effect)
 
 import Rpd.Path as Path
@@ -31,6 +33,8 @@ data RequestAction d c n
     | ToSendToInlet Path.ToInlet d
     | ToSendToOutlet Path.ToOutlet d
     | ToSendPeriodicallyToInlet Path.ToInlet Int (Int -> d)
+    | ToStreamToInlet Path.ToInlet (Event d)
+    | ToStreamToOutlet Path.ToOutlet (Event d)
     -- | ToSendPeriodicallyToInlet Path.ToInlet Int (Int -> d)
 
 

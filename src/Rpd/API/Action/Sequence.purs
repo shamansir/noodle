@@ -56,6 +56,14 @@ connect :: forall d c n. Path.ToOutlet -> Path.ToInlet -> Action d c n
 connect outlet inlet = Request $ ToConnect outlet inlet
 
 
+streamToInlet :: forall d c n. Path.ToInlet -> (Event d) -> Action d c n
+streamToInlet inlet event = Request $ ToStreamToInlet inlet event
+
+
+streamToOutlet :: forall d c n. Path.ToOutlet -> (Event d) -> Action d c n
+streamToOutlet outlet event = Request $ ToStreamToOutlet outlet event
+
+
 pass :: forall d c n. EveryStep d c n
 pass = EveryStep $ const $ pure unit
 

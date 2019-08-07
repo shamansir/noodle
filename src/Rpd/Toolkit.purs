@@ -11,6 +11,7 @@ module Rpd.Toolkit
     , ToolkitRenderer, RendererAlias(..)
     , empty
     , emptyNode
+    , (>~), (~<), andInlet, andOutlet, withInlets, withOutlets
     -- , class NodeRenderer, class ChannelRenderer
     --, renderNode, renderInlet, renderOutlet
     -- , RenderNode, RenderInlet, RenderOutlet
@@ -25,7 +26,7 @@ import Data.Maybe (Maybe)
 import Data.Map as Map
 import Data.List (List)
 import Data.List as List
-import Data.Tuple.Nested (type (/\))
+import Data.Tuple.Nested ((/\), type (/\))
 import Data.Exists (Exists, mkExists)
 
 import Rpd.Util (type (/->))
@@ -131,6 +132,38 @@ emptyNode =
         , inlets : List.Nil
         , outlets : List.Nil
         }
+
+
+infixl 1 andInlet as ~<
+
+infixl 1 andOutlet as >~
+
+
+andInlet
+    :: forall c
+     . List (InletAlias /\ c)
+    -> String /\ c
+    -> List (InletAlias /\ c)
+andInlet list (name /\ channel) =
+    list `List.snoc` (InletAlias name /\ channel)
+
+
+
+andOutlet
+    :: forall c
+     . List (OutletAlias /\ c)
+    ->  String /\ c
+    -> List (OutletAlias /\ c)
+andOutlet list (name /\ channel) =
+    list `List.snoc` (OutletAlias name /\ channel)
+
+
+withInlets :: forall c. List (InletAlias /\ c)
+withInlets = List.Nil
+
+
+withOutlets :: forall c. List (OutletAlias /\ c)
+withOutlets = List.Nil
 
 
 inlets
