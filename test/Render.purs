@@ -93,9 +93,9 @@ spec = do
 
     it "rendering the empty network works" do
       stringSample <- liftEffect $ loadSample "Empty.String"
-      expectToRender stringRenderer compareStrings' network
+      expectToRender stringRenderer toolkit compareStrings' Actions.init
           $ String.trim stringSample
-      expectToRenderMUV terminalRenderer compareMultiline' network
+      expectToRenderMUV terminalRenderer toolkit compareMultiline' Actions.init
           -- ML.from' "{>}"
           $ ML.empty' (100 /\ 100)
       pure unit
@@ -105,9 +105,9 @@ spec = do
           </> R.addPatch "foo"
           </> R.addNode (toPatch "foo") "bar" Node
       stringSample <- liftEffect $ loadSample "SingleNode.String"
-      expectToRender stringRenderer compareStrings' singleNodeNW
+      expectToRender stringRenderer toolkit compareStrings' singleNodeNW
           $ String.trim stringSample
-      expectToRenderMUV terminalRenderer compareMultiline' singleNodeNW
+      expectToRenderMUV terminalRenderer toolkit compareMultiline' singleNodeNW
           $ ML.empty' (100 /\ 100) # ML.place (0 /\ 0) "[]bar[]"
     it "rendering several nodes works" do
       let
@@ -121,9 +121,9 @@ spec = do
           </> R.addNode (toPatch "foo1") "bar11" Node
       stringSample <- liftEffect $ loadSample "SeveralNodes.String"
       terminalSample <- liftEffect $ loadSample "SeveralNodes.Terminal"
-      expectToRender stringRenderer compareStrings' severalNodesNW
+      expectToRender stringRenderer toolkit compareStrings' severalNodesNW
           $ String.trim stringSample
-      expectToRenderMUV terminalRenderer compareMultiline' severalNodesNW
+      expectToRenderMUV terminalRenderer toolkit compareMultiline' severalNodesNW
           $ ML.empty' (100 /\ 100)
               # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
@@ -138,12 +138,12 @@ spec = do
           </> R.addOutlet (toNode "foo" "bar") "abc2" Channel
       stringSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.String"
       terminalSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.Terminal"
-      expectToRender stringRenderer compareStrings' nodeWithInletsAndOutletsNW $ List.singleton
+      expectToRender stringRenderer toolkit compareStrings' nodeWithInletsAndOutletsNW
         $ String.trim stringSample
       expectToRenderMUV
-        terminalRenderer compareMultiline' nodeWithInletsAndOutletsNW $ List.singleton
-        $ ML.empty' (100 /\ 100)
-          # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
+        terminalRenderer toolkit compareMultiline' nodeWithInletsAndOutletsNW
+          $ ML.empty' (100 /\ 100)
+            # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
     it "rendering the connections works" do
       let
@@ -156,9 +156,9 @@ spec = do
           </> R.connect (toOutlet "foo" "src" "srco") (toInlet "foo" "dst" "dsti")
       stringSample <- liftEffect $ loadSample "WithConnection.String"
       terminalSample <- liftEffect $ loadSample "WithConnection.Terminal"
-      expectToRender stringRenderer compareStrings' withConnectionNW $ List.singleton
+      expectToRender stringRenderer toolkit compareStrings' withConnectionNW
         $ String.trim stringSample
-      expectToRenderMUV terminalRenderer compareMultiline' withConnectionNW $ List.singleton
+      expectToRenderMUV terminalRenderer toolkit compareMultiline' withConnectionNW
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
     it "rendering the erroneous network responds with the error" do
@@ -167,9 +167,9 @@ spec = do
           -- add inlet to non-exising node
           </> R.addInlet (toNode "idont" "exist") "foo" Channel
       stringSample <- liftEffect $ loadSample "Error.String"
-      expectToRender stringRenderer compareStrings' erroneousNW $ List.singleton
+      expectToRender stringRenderer toolkit compareStrings' erroneousNW
         $ String.trim stringSample
-      expectToRenderMUV terminalRenderer compareMultiline' erroneousNW $ List.singleton
+      expectToRenderMUV terminalRenderer toolkit compareMultiline' erroneousNW
         $ ML.from' "ERR: "
       pure unit
 
@@ -178,11 +178,11 @@ spec = do
       pending' "applies actions to the network" do
         let
           renderer = stringRendererWithOptions { showUuid : true }
-          toolkit =
+          toolkit' =
             R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
           emptyNW = Actions.init
         stringSample <- liftEffect $ loadSample "SingleNode.String"
-        expectToRender renderer compareStrings toolkit
+        expectToRender renderer toolkit' compareStrings'
           (Actions.init
             -- </> R.Bang
             </> R.addNode (toPatch "foo") "bar" Node)
@@ -192,18 +192,18 @@ spec = do
         --       [ C.Bang /\ ""
         --       , C.AddNode (toPatch "foo") "bar" Node /\ ""
         --       ]
-    describe "MUV renderer" do
-      pending' "applies commands to the network" do
-        let
-          renderer = RenderMUV.make (stringRendererWithOptions { showUuid : true })
-          toolkit =
-            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
-        stringSample <- liftEffect $ loadSample "SingleNode.String"
-        expectToRender renderer compareStrings toolkit
-          (Actions.init
-            -- </> R.Bang
-            </> R.addNode (toPatch "foo") "bar" Node)
-          stringSample
+    -- describe "MUV renderer" do
+    --   pending' "applies commands to the network" do
+    --     let
+    --       renderer = RenderMUV.make (stringRendererWithOptions { showUuid : true })
+    --       toolkit =
+    --         R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
+    --     stringSample <- liftEffect $ loadSample "SingleNode.String"
+    --     expectToRender renderer compareStrings toolkit
+    --       (Actions.init
+    --         -- </> R.Bang
+    --         </> R.addNode (toPatch "foo") "bar" Node)
+    --       stringSample
 
 
     -- TODO:
@@ -230,41 +230,45 @@ loadSample name =
 expectToRender
   :: forall d c n view
    . Render.Renderer d c n view
+  -> R.Toolkit d c n
   -> CompareViewsAff view
   -> R.ActionList d c n
   -> view
   -> Aff Unit
-expectToRender renderer compareViews (ActionList actions) expectation = do
+expectToRender renderer toolkit compareViews (ActionList actions) expectation = do
   maybeLastView <- liftEffect $ do
     lastView <- Ref.new Nothing
     { push, next : views, stop }
           <- Render.make renderer toolkit $ Network.empty "foo"
-    _ <- Event.subscribe (flip Ref.write lastView <<< Just) views
+    _ <- Event.subscribe views (flip Ref.write lastView <<< Just)
     _ <- case push of
-          Render.PushF pushAction -> traverse_ $ pushAction <$> actions
+          Render.PushF pushAction ->
+              traverse_ pushAction actions
     _ <- stop
     Ref.read lastView
-  maybe (fail "no views were recevied") (compareViews expectation)
+  maybeLastView # maybe (fail "no views were recevied") (compareViews expectation)
 
 
 expectToRenderMUV
   :: forall d c n model view action effect
    . RenderMUV.Renderer d c n model view action effect
+  -> R.Toolkit d c n
   -> CompareViewsAff view
   -> R.ActionList d c n
   -> view
   -> Aff Unit
-expectToRenderMUV renderer compareViews (ActionList actions) expectation = do
+expectToRenderMUV renderer toolkit compareViews (ActionList actions) expectation = do
   maybeLastView <- liftEffect $ do
     lastView <- Ref.new Nothing
     { push, next : views, stop }
           <- RenderMUV.make renderer toolkit $ Network.empty "foo"
-    _ <- Event.subscribe (flip Ref.write lastView <<< Just) views
+    _ <- Event.subscribe views (flip Ref.write lastView <<< Just)
     _ <- case push of
-          RenderMUV.PushF pushAction -> traverse_ $ pushAction <$> actions
+          RenderMUV.PushF pushAction ->
+              traverse_ (pushAction <<< Right) actions
     _ <- stop
     Ref.read lastView
-  maybe (fail "no views were recevied") (compareViews expectation)
+  maybeLastView # maybe (fail "no views were recevied") (compareViews expectation)
 
 
 -- renderUnit :: forall d c n. RenderMUV.Renderer d c n Unit Unit Unit Unit
