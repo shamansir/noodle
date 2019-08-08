@@ -22,7 +22,7 @@ import Test.Spec.Assertions (shouldContain, shouldNotContain)
 
 -- import RpdTest.CollectData (TraceItem(..))
 import RpdTest.Helper (channelsAfter) as CollectData
-import RpdTest.Helper (TraceItem(..))
+import RpdTest.Helper (TraceItem(..), withRpd')
 import RpdTest.Flow.Base (Actions, Network, Delivery(..), Pipe(..), Node(..))
 
 
@@ -99,35 +99,77 @@ spec = do
           </> R.addNode (toPatch "patch") "node2" Empty
           </> R.addInlet (toNode "patch" "node2") "inlet" Pass
 
-    rpd # withRpd \nw -> do
-        nw' /\ collectedData <- CollectData.channelsAfter'
-          (Milliseconds 100.0)
-          nw
-          $ do
-            -- NB: ensure we're really cancelling this data flow between checks
-            _ <- nw # R.streamToOutlet
+    -- collectedData <- CollectData.channelsAfter
+    --   (Milliseconds 100.0)
+    --   $ structure
+    --           -- first stream, then connect
+    --         </> R.streamToOutlet
+    --                   (toOutlet "patch" "node1" "outlet")
+    --                   (R.flow $ const Notebook <$> interval 30)
+    --         </> R.connect
+    --                   (toOutlet "patch" "node1" "outlet")
+    --                   (toInlet "patch" "node2" "inlet")
+
+    -- collectedData `shouldContain`
+    --   (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
+    -- collectedData `shouldContain`
+    --   (InletData (toInlet "patch" "node2" "inlet") Notebook)
+    collectedData <- Ref.new []
+    withRpd' $ structure
+      </> R.streamToOutlet
                   (toOutlet "patch" "node1" "outlet")
                   (R.flow $ const Notebook <$> interval 30)
-            nw' <- nw # R.connect
+      </> R.connect
                   (toOutlet "patch" "node1" "outlet")
                   (toInlet "patch" "node2" "inlet")
-            pure $ nw' /\ []
-        collectedData `shouldContain`
-          (InletData (toInlet "patch" "node2" "inlet") Notebook)
-        collectedData' <- CollectData.channelsAfter
-          (Milliseconds 100.0)
-          nw'
-          $ do
-            _ <-
-              nw' # R.disconnectAll
-                      (toOutlet "patch" "node1" "outlet")
-                      (toInlet "patch" "node2" "inlet")
-            pure [ ]
-        collectedData' `shouldContain`
-          (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
-        collectedData' `shouldNotContain`
-          (InletData (toInlet "patch" "node2" "inlet") Notebook)
-        pure unit
+      </> R.subscribeInlet (toInlet "patch" "node2" "inlet")
+            (\d -> Ref.write d collectedData)
+      </> R.do_
+            (\_ -> do
+              delay (Milliseconds 100.0)
+              collectedData `shouldContain` Notebook
+              Ref.write [] collectedData
+            )
+      </> R.disconnect
+                  (toOutlet "patch" "node1" "outlet")
+                  (toInlet "patch" "node2" "inlet")
+      </> R.do_
+            (\_ -> do
+              delay (Milliseconds 100.0)
+              collectedData `shouldNotContain` Notebook
+              Ref.write [] collectedData
+            )
+
+
+    -- rpd # withRpd \nw -> do
+    --     nw' /\ collectedData <- CollectData.channelsAfter'
+    --       (Milliseconds 100.0)
+    --       nw
+    --       $ do
+    --         -- NB: ensure we're really cancelling this data flow between checks
+    --         _ <- nw # R.streamToOutlet
+    --               (toOutlet "patch" "node1" "outlet")
+    --               (R.flow $ const Notebook <$> interval 30)
+    --         nw' <- nw # R.connect
+    --               (toOutlet "patch" "node1" "outlet")
+    --               (toInlet "patch" "node2" "inlet")
+    --         pure $ nw' /\ []
+    --     collectedData `shouldContain`
+    --       (InletData (toInlet "patch" "node2" "inlet") Notebook)
+    --     collectedData' <- CollectData.channelsAfter
+    --       (Milliseconds 100.0)
+    --       nw'
+    --       $ do
+    --         _ <-
+    --           nw' # R.disconnectAll
+    --                   (toOutlet "patch" "node1" "outlet")
+    --                   (toInlet "patch" "node2" "inlet")
+    --         pure [ ]
+    --     collectedData' `shouldContain`
+    --       (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
+    --     collectedData' `shouldNotContain`
+    --       (InletData (toInlet "patch" "node2" "inlet") Notebook)
+    --     pure unit
 
 
   pending "default value of the inlet is sent on connection"

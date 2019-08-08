@@ -35,6 +35,8 @@ data RequestAction d c n
     | ToSendPeriodicallyToInlet Path.ToInlet Int (Int -> d)
     | ToStreamToInlet Path.ToInlet (Event d)
     | ToStreamToOutlet Path.ToOutlet (Event d)
+    | ToSubscribeToInlet Path.ToInlet (d -> Effect Unit)
+    | ToSubscribeToOutlet Path.ToOutlet (d -> Effect Unit)
     -- | ToSendPeriodicallyToInlet Path.ToInlet Int (Int -> d)
 
 
@@ -50,6 +52,8 @@ data BuildAction d c n
 
 data InnerAction d c n -- FIXME: InnerActions should not be exposed
     = Do (Network d c n -> Effect Unit)
+    | SubscribeInlet (Inlet d c) (d -> Effect Unit)
+    | SubscribeOutlet (Outlet d c) (d -> Effect Unit)
     | StoreNodeCanceler (Node d n) Canceler
     | ClearNodeCancelers (Node d n)
     | StoreInletCanceler (Inlet d c) Canceler
@@ -84,6 +88,8 @@ data RpdEffect d c n -- TODO: move to a separate module
     | SendActionOnOutletUpdatesE (Outlet d c)
     | SendPeriodicallyToInletE (PushToInlet d) Int (Int -> d)
     | SendPeriodicallyToOutletE (PushToOutlet d) Int (Int -> d)
+    | SubscribeToInletE (Inlet d c) (d -> Effect Unit)
+    | SubscribeToOutletE (Outlet d c) (d -> Effect Unit)
 
 
 -- derive instance genericStringAction :: Generic StringAction _

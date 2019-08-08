@@ -1,5 +1,6 @@
 module RpdTest.Helper
     ( withRpd
+    , withRpd'
     , withRpd_
     , channelsAfter
     , TraceItem(..)
@@ -17,7 +18,7 @@ import Effect.Aff (Aff, launchAff_, delay)
 import Test.Spec.Assertions (fail)
 
 import Rpd.API.Action (Action(..), DataAction(..))
-import Rpd.API.Action.Sequence (ActionList, ErrorHandler(..), EveryAction(..), EveryStep, LastStep)
+import Rpd.API.Action.Sequence (ActionList, ErrorHandler(..), EveryAction(..), EveryStep(..), LastStep)
 import Rpd.API.Action.Sequence (run, run_, runTracing) as Actions
 import Rpd.Path as P
 import Rpd.Toolkit as T
@@ -45,6 +46,22 @@ withRpd toolkit network actions everyStep =
         network
         failOnError
         everyStep
+        actions
+
+
+withRpd'
+    :: forall d c n
+     . T.Toolkit d c n
+    -> R.Network d c n
+    -> ActionList d c n
+    -> Aff Unit
+withRpd' toolkit network actions =
+  liftEffect $
+     Actions.run
+        toolkit
+        network
+        failOnError
+        (EveryStep $ const $ pure unit)
         actions
 
 
@@ -111,3 +128,4 @@ channelsAfter period toolkit network actions = do
         Ref.write (curData +> OutletData path d) target
         pure unit
     handleAction _ _ = pure unit
+

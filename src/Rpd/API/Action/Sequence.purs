@@ -64,6 +64,10 @@ streamToOutlet :: forall d c n. Path.ToOutlet -> (Event d) -> Action d c n
 streamToOutlet outlet event = Request $ ToStreamToOutlet outlet event
 
 
+do_ :: forall d c n. (Network d c n -> Effect Unit) -> Action d c n
+do_ f = Inner $ Do f
+
+
 pass :: forall d c n. EveryStep d c n
 pass = EveryStep $ const $ pure unit
 
