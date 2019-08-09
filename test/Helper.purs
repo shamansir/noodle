@@ -4,6 +4,7 @@ module RpdTest.Helper
     , withRpd_
     , channelsAfter
     , TraceItem(..)
+    , (+>)
     ) where
 
 import Prelude

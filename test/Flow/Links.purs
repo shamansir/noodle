@@ -5,6 +5,7 @@ module RpdTest.Flow.Links
 import Prelude
 
 import Effect.Ref as Ref
+import Effect.Aff (delay)
 
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\))
@@ -16,14 +17,15 @@ import Rpd.API.Action.Sequence (init) as Actions
 import Rpd.API.Action.Sequence as R
 import Rpd.Path
 import Rpd.Util (flow) as R
+import Rpd.Network (empty) as Network
 
 import Test.Spec (Spec, it, pending)
 import Test.Spec.Assertions (shouldContain, shouldNotContain)
 
 -- import RpdTest.CollectData (TraceItem(..))
 import RpdTest.Helper (channelsAfter) as CollectData
-import RpdTest.Helper (TraceItem(..), withRpd')
-import RpdTest.Flow.Base (Actions, Network, Delivery(..), Pipe(..), Node(..))
+import RpdTest.Helper (TraceItem(..), withRpd', (+>))
+import RpdTest.Flow.Base (Actions, Network, Delivery(..), Pipe(..), Node(..), myToolkit)
 
 
 {- ======================================= -}
@@ -46,6 +48,8 @@ spec = do
 
     collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
+      myToolkit
+      (Network.empty "foo")
       $ structure
           -- first connect, then stream
           </> R.connect
@@ -73,6 +77,8 @@ spec = do
 
     collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
+      myToolkit
+      (Network.empty "foo")
       $ structure
               -- first stream, then connect
             </> R.streamToOutlet
@@ -92,7 +98,7 @@ spec = do
     let
       structure :: Actions
       structure =
-        R.init "network"
+        Actions.init
           </> R.addPatch "patch"
           </> R.addNode (toPatch "patch") "node1" Empty
           </> R.addOutlet (toNode "patch" "node1") "outlet" Pass
@@ -115,7 +121,7 @@ spec = do
     -- collectedData `shouldContain`
     --   (InletData (toInlet "patch" "node2" "inlet") Notebook)
     collectedData <- Ref.new []
-    withRpd' $ structure
+    withRpd' myToolkit (Network.empty "foo") $ structure
       </> R.streamToOutlet
                   (toOutlet "patch" "node1" "outlet")
                   (R.flow $ const Notebook <$> interval 30)
@@ -123,7 +129,9 @@ spec = do
                   (toOutlet "patch" "node1" "outlet")
                   (toInlet "patch" "node2" "inlet")
       </> R.subscribeToInlet (toInlet "patch" "node2" "inlet")
-            (\d -> Ref.write d collectedData)
+            (\d -> do
+              curData <- Ref.read collectedData
+              Ref.write (d +> curData) collectedData)
       </> R.do_
             (\_ -> do
               delay (Milliseconds 100.0)

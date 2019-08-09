@@ -88,7 +88,7 @@ applyRequestAction _ (ToConnect outletPath inletPath) nw = do
     inlet <- view (_inlet inletUuid) nw # note (RpdError "")
     pure $ nw /\ [ AddLinkE outlet inlet ]
 applyRequestAction _ (ToDisconnect outletPath inletPath) nw = do
-    pure unit
+    pure  $ nw /\ [ ]
     -- pure $ nw /\ [ Disconnect link ]
     -- pure $ TODO: perform and remove cancelers
 applyRequestAction _ (ToSendToInlet inletPath d) nw = do
