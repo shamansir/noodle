@@ -122,7 +122,7 @@ spec = do
       </> R.connect
                   (toOutlet "patch" "node1" "outlet")
                   (toInlet "patch" "node2" "inlet")
-      </> R.subscribeInlet (toInlet "patch" "node2" "inlet")
+      </> R.subscribeToInlet (toInlet "patch" "node2" "inlet")
             (\d -> Ref.write d collectedData)
       </> R.do_
             (\_ -> do

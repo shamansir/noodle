@@ -56,12 +56,24 @@ connect :: forall d c n. Path.ToOutlet -> Path.ToInlet -> Action d c n
 connect outlet inlet = Request $ ToConnect outlet inlet
 
 
+disconnect :: forall d c n. Path.ToOutlet -> Path.ToInlet -> Action d c n
+disconnect outlet inlet = Request $ ToDisconnect outlet inlet
+
+
 streamToInlet :: forall d c n. Path.ToInlet -> (Event d) -> Action d c n
 streamToInlet inlet event = Request $ ToStreamToInlet inlet event
 
 
 streamToOutlet :: forall d c n. Path.ToOutlet -> (Event d) -> Action d c n
 streamToOutlet outlet event = Request $ ToStreamToOutlet outlet event
+
+
+subscribeToInlet :: forall d c n. Path.ToInlet -> (d -> Effect Unit) -> Action d c n
+subscribeToInlet inlet handler = Request $ ToSubscribeToInlet inlet handler
+
+
+subscribeToOutlet :: forall d c n. Path.ToOutlet -> (d -> Effect Unit) -> Action d c n
+subscribeToOutlet outlet handler = Request $ ToSubscribeToOutlet outlet handler
 
 
 do_ :: forall d c n. (Network d c n -> Effect Unit) -> Action d c n

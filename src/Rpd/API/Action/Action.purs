@@ -30,6 +30,7 @@ data RequestAction d c n
     | ToAddOutlet Path.ToNode Path.Alias c
     | ToAddInlet Path.ToNode Path.Alias c
     | ToConnect Path.ToOutlet Path.ToInlet
+    | ToDisconnect Path.ToOutlet Path.ToInlet
     | ToSendToInlet Path.ToInlet d
     | ToSendToOutlet Path.ToOutlet d
     | ToSendPeriodicallyToInlet Path.ToInlet Int (Int -> d)
@@ -52,8 +53,6 @@ data BuildAction d c n
 
 data InnerAction d c n -- FIXME: InnerActions should not be exposed
     = Do (Network d c n -> Effect Unit)
-    | SubscribeInlet (Inlet d c) (d -> Effect Unit)
-    | SubscribeOutlet (Outlet d c) (d -> Effect Unit)
     | StoreNodeCanceler (Node d n) Canceler
     | ClearNodeCancelers (Node d n)
     | StoreInletCanceler (Inlet d c) Canceler
@@ -88,8 +87,10 @@ data RpdEffect d c n -- TODO: move to a separate module
     | SendActionOnOutletUpdatesE (Outlet d c)
     | SendPeriodicallyToInletE (PushToInlet d) Int (Int -> d)
     | SendPeriodicallyToOutletE (PushToOutlet d) Int (Int -> d)
-    | SubscribeToInletE (Inlet d c) (d -> Effect Unit)
-    | SubscribeToOutletE (Outlet d c) (d -> Effect Unit)
+    | StreamToInletE (PushToInlet d) (Event d)
+    | StreamToOutletE (PushToOutlet d) (Event d)
+    | SubscribeToInletE (InletFlow d) (d -> Effect Unit) -- FIXME: should pass the canceler to the user
+    | SubscribeToOutletE (OutletFlow d) (d -> Effect Unit) -- FIXME: should pass the canceler to the user
 
 
 -- derive instance genericStringAction :: Generic StringAction _

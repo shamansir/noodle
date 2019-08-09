@@ -87,6 +87,10 @@ applyRequestAction _ (ToConnect outletPath inletPath) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
     inlet <- view (_inlet inletUuid) nw # note (RpdError "")
     pure $ nw /\ [ AddLinkE outlet inlet ]
+applyRequestAction _ (ToDisconnect outletPath inletPath) nw = do
+    pure unit
+    -- pure $ nw /\ [ Disconnect link ]
+    -- pure $ TODO: perform and remove cancelers
 applyRequestAction _ (ToSendToInlet inletPath d) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
     (Inlet _ _ _ { push }) <- view (_inlet inletUuid) nw # note (RpdError "")
@@ -102,6 +106,26 @@ applyRequestAction _ (ToSendPeriodicallyToInlet inletPath period fn) nw = do
     (Inlet _ _ _ { push }) <- view (_inlet inletUuid) nw # note (RpdError "")
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ [ SendPeriodicallyToInletE push period fn ]
+applyRequestAction _ (ToStreamToInlet inletPath event) nw = do
+    inletUuid <- uuidByPath UUID.toInlet inletPath nw
+    (Inlet _ _ _ { push }) <- view (_inlet inletUuid) nw # note (RpdError "")
+    -- TODO: adapt / check the data with the channel instance? or do it in the caller?
+    pure $ nw /\ [ StreamToInletE push event ]
+applyRequestAction _ (ToStreamToOutlet outletPath event) nw = do
+    outletUuid <- uuidByPath UUID.toOutlet outletPath nw
+    (Outlet _ _ _ { push }) <- view (_outlet outletUuid) nw # note (RpdError "")
+    -- TODO: adapt / check the data with the channel instance? or do it in the caller?
+    pure $ nw /\ [ StreamToOutletE push event ]
+applyRequestAction _ (ToSubscribeToInlet inletPath handler) nw = do
+    inletUuid <- uuidByPath UUID.toInlet inletPath nw
+    (Inlet _ _ _ { flow }) <- view (_inlet inletUuid) nw # note (RpdError "")
+    -- TODO: adapt / check the data with the channel instance? or do it in the caller?
+    pure $ nw /\ [ SubscribeToInletE flow handler ]
+applyRequestAction _ (ToSubscribeToOutlet outletPath handler) nw = do
+    outletUuid <- uuidByPath UUID.toOutlet outletPath nw
+    (Outlet _ _ _ { flow }) <- view (_outlet outletUuid) nw # note (RpdError "")
+    -- TODO: adapt / check the data with the channel instance? or do it in the caller?
+    pure $ nw /\ [ SubscribeToOutletE flow handler ]
 
 
 applyBuildAction
@@ -285,6 +309,22 @@ performEffect _ pushAction (SendToInletE (PushToInlet push) d) _ = do
     push d -- TODO: consider pushing `GotInletData` action instead?
 performEffect _ pushAction (SendToOutletE (PushToOutlet push) d) _ =
     push d -- TODO: consider pushing `GotOutletData` action instead?
+performEffect _ pushAction (StreamToInletE (PushToInlet push) flow) _ = do
+    canceler :: Canceler <- E.subscribe flow push
+    pure unit
+    -- TODO: pushAction $ Inner $ StoreInletCanceler inlet canceler
+performEffect _ pushAction (StreamToOutletE (PushToOutlet push) flow) _ = do
+    canceler :: Canceler <- E.subscribe flow push
+    pure unit
+    -- TODO: pushAction $ Inner $ StoreOutletCanceler outlet canceler
+performEffect _ pushAction (SubscribeToInletE (InletFlow flow) handler) _ = do
+    canceler :: Canceler <- E.subscribe flow handler
+    pure unit
+    -- TODO: pushAction $ Inner $ StoreInletCanceler inlet canceler
+performEffect _ pushAction (SubscribeToOutletE (OutletFlow flow) handler) _ = do
+    canceler :: Canceler <- E.subscribe flow handler
+    pure unit
+    -- TODO: pushAction $ Inner $ StoreOutletCanceler outlet canceler
 performEffect _ pushAction (SendActionOnInletUpdatesE inlet@(Inlet _ path _ { flow })) _ = do
     let (InletFlow flow') = flow
     canceler :: Canceler <- E.subscribe flow' (pushAction <<< Data <<< GotInletData inlet)
