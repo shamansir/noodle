@@ -8,21 +8,22 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\))
 
-import Rpd.API ((</>))
-import Rpd.API as R
+import Rpd.API.Action.Sequence ((</>))
+import Rpd.API.Action.Sequence (init) as Actions
+import Rpd.API.Action.Sequence as R
 import Rpd.Process (ProcessF(..)) as R
 import Rpd.Path
+import Rpd.Toolkit ((>~), (~<), withInlets, withOutlets)
 
 import Test.Spec (Spec, it, pending)
 import Test.Spec.Assertions (shouldContain)
 
-import RpdTest.Util (withRpd)
-import RpdTest.CollectData (TraceItem(..))
-import RpdTest.CollectData as CollectData
+import RpdTest.Helper (withRpd, TraceItem(..))
+import RpdTest.Helper (channelsAfter) as CollectData
+import Rpd.Process (ProcessF(..)) as R
 import RpdTest.Flow.Base
-    ( MyRpd, Delivery(..), Pipe(..), Node(..)
-    , sumCursesToApplesNode
-    , sumCursesToApplesNode'
+    ( Actions
+    , Delivery(..), Pipe(..), Node(..)
     )
 
 
@@ -41,12 +42,23 @@ spec = do
       curse1Inlet = toInlet "patch" "node" "curse1"
       curse2Inlet = toInlet "patch" "node" "curse2"
       applesOutlet = toOutlet "patch" "node" "apples"
-      rpd :: MyRpd
+      rpd :: Actions
       rpd =
-        R.init "network"
+        Actions.init
           </> R.addPatch "patch"
-          </> R.addDefNode (toPatch "patch") "node"
-                (sumCursesToApplesNode $ R.Process processF) SumCursesToApples
+          </> R.addNodeByDef (toPatch "patch") "node"
+                (R.NodeDef
+                    { inlets :
+                        withInlets
+                        ~< "curse1" /\ Pass
+                        ~< "curse2" /\ Pass
+                    , outlets :
+                        withOutlets
+                        >~ "apples" /\ Pass
+                    , process : processF
+                    }
+                )
+                SumCursesToApples
       processF receive = do
           let
               curse1 = receive "curse1" # fromMaybe Damaged

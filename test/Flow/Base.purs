@@ -2,19 +2,12 @@ module RpdTest.Flow.Base
     ( Network, Actions
     , Delivery(..), Pipe(..), Node(..)
     , myToolkit
-    , sumCursesToApplesNode, sumCursesToApplesNode'
     ) where
 
 import Prelude
 
-import Data.Map (empty) as Map
-import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested ((/\))
 import Rpd.Network (Network) as R
-import Rpd.Process (ProcessF(..))
-import Rpd.Process (ProcessF(..)) as R
 import Rpd.Toolkit as R
-import Rpd.Toolkit ((>~), (~<), withInlets, withOutlets)
 import Rpd.API.Action.Sequence (ActionList) as R
 
 
@@ -65,8 +58,7 @@ data Pipe
 
 data Node
   = Empty
-  | SumCursesToApples
-  | SumCursesToApples'
+  | Custom
 
 
 instance myChannels :: R.Channels Delivery Pipe where
@@ -88,8 +80,7 @@ myToolkit =
     nodes
   where
     nodes Empty = R.emptyNode
-    nodes SumCursesToApples = sumCursesToApplesNode Withhold
-    nodes SumCursesToApples' = sumCursesToApplesNode' Withhold
+    nodes Custom = R.emptyNode
 
 
 -- producingNothingNode :: R.NodeDef Delivery
@@ -99,35 +90,6 @@ myToolkit =
 --   , outletDefs : List.Nil
 --   , process : Nothing
 --   }
-
-
-sumCursesToApplesNode :: R.ProcessF Delivery -> R.NodeDef Delivery Pipe
-sumCursesToApplesNode processF =
-  R.NodeDef
-    { inlets :
-        withInlets
-        ~< "curse1" /\ Pass
-        ~< "curse2" /\ Pass
-    , outlets :
-        withOutlets
-        >~ "apples" /\ Pass
-    , process : processF
-    }
-
-
-sumCursesToApplesNode' :: R.ProcessF Delivery -> R.NodeDef Delivery Pipe
-sumCursesToApplesNode' processF =
-  R.NodeDef
-    { inlets :
-        withInlets
-        ~< "curse1" /\ Pass
-        ~< "curse2" /\ Pass
-    , outlets :
-        withOutlets
-        >~ "apples1" /\ Pass
-        >~ "apples2" /\ Pass
-    , process : processF
-    }
 
 
 -- logOrExec

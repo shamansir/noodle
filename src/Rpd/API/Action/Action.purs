@@ -14,6 +14,7 @@ import Rpd.Path as Path
 import Rpd.Network
 import Rpd.Process (ProcessF)
 import Rpd.Util (Canceler)
+import Rpd.Toolkit (NodeDef)
 
 
 data Action d c n
@@ -27,6 +28,7 @@ data Action d c n
 data RequestAction d c n
     = ToAddPatch Path.Alias
     | ToAddNode Path.ToPatch Path.Alias n
+    | ToAddNodeByDef Path.ToPatch Path.Alias n (NodeDef d c)
     | ToAddOutlet Path.ToNode Path.Alias c
     | ToAddInlet Path.ToNode Path.Alias c
     | ToConnect Path.ToOutlet Path.ToInlet
@@ -72,7 +74,7 @@ data DataAction d c
 data RpdEffect d c n -- TODO: move to a separate module
     = DoE (Network d c n -> Effect Unit)
     | AddPatchE Path.Alias
-    | AddNodeE Path.ToPatch Path.Alias n
+    | AddNodeE Path.ToPatch Path.Alias n (NodeDef d c)
     | AddInletE Path.ToNode Path.Alias c
     | AddOutletE Path.ToNode Path.Alias c
     | AddLinkE (Outlet d c) (Inlet d c)

@@ -18,7 +18,7 @@ import Rpd.API (RpdError)
 import Rpd.API.Action
 import Rpd.API.Action.Apply (Step, apply, performEffect)
 import Rpd.Path as Path
-import Rpd.Toolkit (Toolkit)
+import Rpd.Toolkit (Toolkit, NodeDef)
 
 
 newtype ActionList d c n = ActionList (List (Action d c n))
@@ -42,6 +42,10 @@ addPatch = Request <<< ToAddPatch
 
 addNode :: forall d c n. Path.ToPatch -> Path.Alias -> n -> Action d c n
 addNode patch alias n = Request $ ToAddNode patch alias n
+
+
+addNodeByDef :: forall d c n. Path.ToPatch -> Path.Alias -> n -> NodeDef d c -> Action d c n
+addNodeByDef patch alias n def = Request $ ToAddNodeByDef patch alias n def
 
 
 addInlet :: forall d c n. Path.ToNode -> Path.Alias -> c -> Action d c n

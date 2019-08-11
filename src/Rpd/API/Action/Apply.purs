@@ -75,8 +75,10 @@ applyRequestAction
     -> Step d c n
 applyRequestAction _ (ToAddPatch alias) nw =
     pure $ nw /\ [ AddPatchE alias ]
-applyRequestAction _ (ToAddNode patchPath alias n) nw =
-    pure $ nw /\ [ AddNodeE patchPath alias n ]
+applyRequestAction (Toolkit _ getDef) (ToAddNode patchPath alias n) nw =
+    pure $ nw /\ [ AddNodeE patchPath alias n $ getDef n ]
+applyRequestAction _ (ToAddNodeByDef patchPath alias n def) nw =
+    pure $ nw /\ [ AddNodeE patchPath alias n def ]
 applyRequestAction _ (ToAddInlet nodePath alias c) nw =
     pure $ nw /\ [ AddInletE nodePath alias c ]
 applyRequestAction _ (ToAddOutlet nodePath alias c) nw =
@@ -210,7 +212,7 @@ applyInnerAction _ (StoreLinkCanceler (Link uuid _) canceler) nw =
 
 performEffect -- TODO: move to a separate module
     :: forall d c n
-     . Toolkit d c n
+     . Toolkit d c n -- TODO: check if it really needs toolkit
     -> (Action d c n -> Effect Unit)
     -> RpdEffect d c n
     -> Network d c n
@@ -226,7 +228,7 @@ performEffect _ pushAction (AddPatchE alias) _ = do
             { nodes : Seq.empty
             , links : Seq.empty
             }
-performEffect _ pushAction (AddNodeE patchPath nodeAlias n) _ = do
+performEffect _ pushAction (AddNodeE patchPath nodeAlias n def) nw = do
     uuid <- UUID.new
     flows <- makeInletOutletsFlows
     let
@@ -239,8 +241,8 @@ performEffect _ pushAction (AddNodeE patchPath nodeAlias n) _ = do
                 path
                 n
                 Withhold
-                { inlets : Seq.empty
-                , outlets : Seq.empty
+                { inlets : Seq.empty -- FIXME: load inlets / outlets from the `def`
+                , outlets : Seq.empty -- FIXME: load inlets / outlets from the `def`
                 , inletsFlow : InletsFlow inletsFlow
                 , outletsFlow : OutletsFlow outletsFlow
                 , pushToInlets : PushToInlets pushToInlets
