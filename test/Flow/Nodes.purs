@@ -13,17 +13,18 @@ import Rpd.API.Action.Sequence (init) as Actions
 import Rpd.API.Action.Sequence as R
 import Rpd.Process (ProcessF(..)) as R
 import Rpd.Path
-import Rpd.Toolkit ((>~), (~<), withInlets, withOutlets)
+import Rpd.Network (empty) as Network
+import Rpd.Toolkit ((>~), (~<), withInlets, withOutlets, NodeDef(..))
 
 import Test.Spec (Spec, it, pending)
 import Test.Spec.Assertions (shouldContain)
 
 import RpdTest.Helper (withRpd, TraceItem(..))
 import RpdTest.Helper (channelsAfter) as CollectData
-import Rpd.Process (ProcessF(..)) as R
 import RpdTest.Flow.Base
     ( Actions
     , Delivery(..), Pipe(..), Node(..)
+    , myToolkit
     )
 
 
@@ -42,23 +43,27 @@ spec = do
       curse1Inlet = toInlet "patch" "node" "curse1"
       curse2Inlet = toInlet "patch" "node" "curse2"
       applesOutlet = toOutlet "patch" "node" "apples"
-      rpd :: Actions
-      rpd =
+      structure :: Actions
+      structure =
         Actions.init
           </> R.addPatch "patch"
-          </> R.addNodeByDef (toPatch "patch") "node"
-                (R.NodeDef
-                    { inlets :
-                        withInlets
-                        ~< "curse1" /\ Pass
-                        ~< "curse2" /\ Pass
-                    , outlets :
-                        withOutlets
-                        >~ "apples" /\ Pass
-                    , process : processF
-                    }
-                )
-                SumCursesToApples
+          </> R.addNodeByDef
+                  (toPatch "patch")
+                  "node"
+                  Custom
+                  nodeDef
+      nodeDef :: NodeDef Delivery Pipe
+      nodeDef =
+          NodeDef
+            { inlets :
+                withInlets
+                ~< "curse1" /\ Pass
+                ~< "curse2" /\ Pass
+            , outlets :
+                withOutlets
+                >~ "apples" /\ Pass
+            , process : R.ProcessF processF
+            }
       processF receive = do
           let
               curse1 = receive "curse1" # fromMaybe Damaged
@@ -71,27 +76,20 @@ spec = do
           let send "apples" = Just sumOrDamage
               send _ = Nothing
           pure send
-
-      -- process (R.InletsData [ Just (Curse a), Just (Curse b) ]) =
-      --   R.OutletsData [ Apple (a + b) ]
-      -- process _ = R.OutletsData [ Apple 9 ]
-
-    rpd # withRpd \nw -> do
-        collectedData <- CollectData.channelsAfter
+    collectedData <-
+      CollectData.channelsAfter
           (Milliseconds 100.0)
-          nw
-          $ do
-            _ <- nw  #  R.sendToInlet curse1Inlet (Curse 4)
-                    </> R.sendToInlet curse2Inlet (Curse 3)
-            pure [ ]
-        collectedData `shouldContain`
-          (InletData curse1Inlet $ Curse 4)
-        collectedData `shouldContain`
-          (InletData curse2Inlet $ Curse 3)
-        collectedData `shouldContain`
-          (OutletData applesOutlet $ Apple 7)
-        pure unit
-
+          myToolkit
+          (Network.empty "foo")
+          $ structure
+              </> R.sendToInlet curse1Inlet (Curse 4)
+              </> R.sendToInlet curse2Inlet (Curse 3)
+    collectedData `shouldContain`
+      (InletData curse1Inlet $ Curse 4)
+    collectedData `shouldContain`
+      (InletData curse2Inlet $ Curse 3)
+    collectedData `shouldContain`
+      (OutletData applesOutlet $ Apple 7)
     pure unit
 
 
@@ -102,12 +100,28 @@ spec = do
       apples1Outlet = toOutlet "patch" "node" "apples1"
       apples2Outlet = toOutlet "patch" "node" "apples2"
 
-      rpd :: MyRpd
-      rpd =
-        R.init "network"
+      structure :: Actions
+      structure =
+        Actions.init
           </> R.addPatch "patch"
-          </> R.addDefNode (toPatch "patch") "node"
-                (sumCursesToApplesNode' $ R.Process processF) SumCursesToApples'
+          </> R.addNodeByDef
+                  (toPatch "patch")
+                  "node"
+                  Custom
+                  nodeDef
+      nodeDef :: NodeDef Delivery Pipe
+      nodeDef =
+          NodeDef
+            { inlets :
+                withInlets
+                ~< "curse1" /\ Pass
+                ~< "curse2" /\ Pass
+            , outlets :
+                withOutlets
+                >~ "apples1" /\ Pass
+                >~ "apples2" /\ Pass
+            , process : processF
+            }
       processF receive = do
           let
               curse1 = receive "curse1" # fromMaybe Damaged
@@ -120,22 +134,19 @@ spec = do
                   in pure send
               _ -> pure $ const Nothing
 
-    rpd # withRpd \nw -> do
-        collectedData <- CollectData.channelsAfter
-          (Milliseconds 100.0)
-          nw
-          $ do
-            _ <- nw  #  R.sendToInlet curse1Inlet (Curse 4)
-                    </> R.sendToInlet curse2Inlet (Curse 3)
-            pure [ ]
-        collectedData `shouldContain`
-          (InletData curse1Inlet $ Curse 4)
-        collectedData `shouldContain`
-          (InletData curse2Inlet $ Curse 3)
-        collectedData `shouldContain`
-          (OutletData apples1Outlet $ Apple 7)
-        collectedData `shouldContain`
-          (OutletData apples2Outlet $ Apple 1)
-        pure unit
-
+    collectedData <- CollectData.channelsAfter
+      (Milliseconds 100.0)
+      myToolkit
+      (Network.empty "foo")
+      $ structure
+          </> R.sendToInlet curse1Inlet (Curse 4)
+          </> R.sendToInlet curse2Inlet (Curse 3)
+    collectedData `shouldContain`
+      (InletData curse1Inlet $ Curse 4)
+    collectedData `shouldContain`
+      (InletData curse2Inlet $ Curse 3)
+    collectedData `shouldContain`
+      (OutletData apples1Outlet $ Apple 7)
+    collectedData `shouldContain`
+      (OutletData apples2Outlet $ Apple 1)
     pure unit

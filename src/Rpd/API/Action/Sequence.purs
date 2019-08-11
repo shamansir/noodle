@@ -64,6 +64,14 @@ disconnect :: forall d c n. Path.ToOutlet -> Path.ToInlet -> Action d c n
 disconnect outlet inlet = Request $ ToDisconnect outlet inlet
 
 
+sendToInlet :: forall d c n. Path.ToInlet -> d -> Action d c n
+sendToInlet inlet d = Request $ ToSendToInlet inlet d
+
+
+sendToOutlet :: forall d c n. Path.ToOutlet -> d -> Action d c n
+sendToOutlet outlet d = Request $ ToSendToOutlet outlet d
+
+
 streamToInlet :: forall d c n. Path.ToInlet -> (Event d) -> Action d c n
 streamToInlet inlet event = Request $ ToStreamToInlet inlet event
 
