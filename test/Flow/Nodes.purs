@@ -62,7 +62,7 @@ spec = do
             , outlets :
                 withOutlets
                 >~ "apples" /\ Pass
-            , process : R.ProcessF processF
+            , process : R.Process processF
             }
       processF receive = do
           let
@@ -120,7 +120,7 @@ spec = do
                 withOutlets
                 >~ "apples1" /\ Pass
                 >~ "apples2" /\ Pass
-            , process : processF
+            , process : R.Process processF
             }
       processF receive = do
           let

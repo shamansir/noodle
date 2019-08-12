@@ -5,7 +5,9 @@ module RpdTest.Flow.Links
 import Prelude
 
 import Effect.Ref as Ref
-import Effect.Aff (delay)
+import Effect.Ref (Ref)
+import Effect.Aff (delay, launchAff_)
+import Effect.Class (liftEffect)
 
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\))
@@ -120,7 +122,7 @@ spec = do
     --   (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
     -- collectedData `shouldContain`
     --   (InletData (toInlet "patch" "node2" "inlet") Notebook)
-    collectedData <- Ref.new []
+    collectedData :: Ref (Array Delivery) <- liftEffect $ Ref.new []
     withRpd' myToolkit (Network.empty "network") $ structure
       </> R.streamToOutlet
                   (toOutlet "patch" "node1" "outlet")
@@ -131,20 +133,22 @@ spec = do
       </> R.subscribeToInlet (toInlet "patch" "node2" "inlet")
             (\d -> do
               curData <- Ref.read collectedData
-              Ref.write (d +> curData) collectedData)
+              Ref.write (curData +> d) collectedData)
       </> R.do_
             (\_ -> do
-              delay (Milliseconds 100.0)
-              collectedData `shouldContain` Notebook
+              launchAff_ $ delay (Milliseconds 100.0)
+              curData <- Ref.read collectedData
+              launchAff_ $ curData `shouldContain` Notebook
               Ref.write [] collectedData
             )
       </> R.disconnect
-                  (toOutlet "patch" "node1" "outlet")
-                  (toInlet "patch" "node2" "inlet")
+            (toOutlet "patch" "node1" "outlet")
+            (toInlet "patch" "node2" "inlet")
       </> R.do_
             (\_ -> do
-              delay (Milliseconds 100.0)
-              collectedData `shouldNotContain` Notebook
+              launchAff_ $ delay (Milliseconds 100.0)
+              curData <- Ref.read collectedData
+              launchAff_ $ curData `shouldNotContain` Notebook
               Ref.write [] collectedData
             )
 
