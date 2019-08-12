@@ -3,6 +3,7 @@ module Example.Html where
 import Prelude
 
 import Effect (Effect)
+import Effect.Console (log)
 
 import Data.Maybe (Maybe(..))
 import Data.Map (Map)
@@ -14,7 +15,7 @@ import Data.Exists
 import Rpd.Network (empty) as Network
 import Rpd.API.Action as Action
 import Rpd.API.Action.Apply (apply) as Action
-import Rpd.API.Action.Sequence (run', LastStep(..)) as Actions
+import Rpd.API.Action.Sequence (run', run_, LastStep(..), ErrorHandler(..)) as Actions
 import Rpd.Renderer.Html (htmlRenderer)
 import Rpd.Renderer.Html.VDom as VDom
 import Rpd.Toolkit as T
@@ -31,10 +32,10 @@ main =
     --     (htmlRenderer ExampleToolkit.htmlRenderer)
     --     ExampleToolkit.toolkit
     --     (Network.empty "aaa")
-    Actions.run'
+    Actions.run_
         ExampleToolkit.toolkit
         (Network.empty "network")
-        Network.recipe
+        (Actions.ErrorHandler $ log <<< show)
         (Actions.LastStep
             \nw ->
                 VDom.embed'
@@ -43,3 +44,4 @@ main =
                     ExampleToolkit.toolkit
                     nw
         )
+        Network.recipe
