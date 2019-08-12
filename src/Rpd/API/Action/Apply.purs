@@ -7,7 +7,7 @@ import Data.Maybe
 import Data.Either
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Sequence (empty) as Seq
-import Data.Lens (view, setJust)
+import Data.Lens (view, setJust, set)
 import Data.Array ((:))
 
 import FRP.Event as E
@@ -83,6 +83,18 @@ applyRequestAction _ (ToAddInlet nodePath alias c) nw =
     pure $ nw /\ [ AddInletE nodePath alias c ]
 applyRequestAction _ (ToAddOutlet nodePath alias c) nw =
     pure $ nw /\ [ AddOutletE nodePath alias c ]
+applyRequestAction _ (ToRemoveInlet inletPath) nw = do
+    inletUuid <- uuidByPath UUID.toInlet inletPath nw
+    -- FIXME: should call core API function
+    -- FIXME: join with `RemoveIntlet` build action
+    nw' <- Right $ set (_inlet inletUuid) Nothing nw
+    pure $ nw' /\ [ ] -- FIXME: cancel all subscriptions
+applyRequestAction _ (ToRemoveOutlet outletPath) nw = do
+    outletUuid <- uuidByPath UUID.toOutlet outletPath nw
+    -- FIXME: should call core API function
+    -- FIXME: join with `RemoveOutlet` build action
+    nw' <- Right $ set (_outlet outletUuid) Nothing nw
+    pure $ nw' /\ [ ] -- FIXME: cancel all subscriptions
 applyRequestAction _ (ToConnect outletPath inletPath) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
     outlet <- view (_outlet outletUuid) nw # note (RpdError "")
@@ -128,6 +140,11 @@ applyRequestAction _ (ToSubscribeToOutlet outletPath handler) nw = do
     (Outlet _ _ _ { flow }) <- view (_outlet outletUuid) nw # note (RpdError "")
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ [ SubscribeToOutletE flow handler ]
+applyRequestAction _ (ToSubscribeToNode nodePath inletsHandler outletsHandler) nw = do
+    nodeUuid <- uuidByPath UUID.toNode nodePath nw
+    (Node _ _ _ _ { inletsFlow, outletsFlow }) <- view (_node nodeUuid) nw # note (RpdError "")
+    -- TODO: adapt / check the data with the channel instance? or do it in the caller?
+    pure $ nw /\ [ SubscribeToNodeE inletsFlow outletsFlow inletsHandler outletsHandler ]
 
 
 applyBuildAction
@@ -141,6 +158,14 @@ applyBuildAction _ (AddPatch p) nw = do
 applyBuildAction _ (AddNode node) nw = do
     nw' <- addNode node nw
     pure $ nw' /\ [ ]
+applyBuildAction _ (RemoveInlet (Inlet inletUuid _ _ _)) nw = do
+    -- FIXME: should call core API function
+    nw' <- Right $ set (_inlet inletUuid) Nothing nw
+    pure $ nw' /\ [ ] -- FIXME: cancel all subscriptions
+applyBuildAction _ (RemoveOutlet (Outlet outletUuid _ _ _)) nw = do
+    -- FIXME: should call core API function
+    nw' <- Right $ set (_outlet outletUuid) Nothing nw
+    pure $ nw' /\ [ ] -- FIXME: cancel all subscriptions
 applyBuildAction _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw = do
     let newNode = processWith processF node
         nw' = nw # setJust (_node uuid) newNode
@@ -331,6 +356,17 @@ performEffect _ pushAction (SubscribeToOutletE (OutletFlow flow) handler) _ = do
     canceler :: Canceler <- E.subscribe flow handler
     pure unit
     -- TODO: pushAction $ Inner $ StoreOutletCanceler outlet canceler
+performEffect _ pushAction
+    (SubscribeToNodeE
+        (InletsFlow inletsFlow) (OutletsFlow outletsFlow)
+        inletsHandler outletsHandler
+    ) _ = do
+    iCanceler :: Canceler <- E.subscribe inletsFlow $
+        (\((Path.ToInlet { inlet }) /\ uuid /\ d) -> inletsHandler inlet uuid d)
+    oCanceler :: Canceler <- E.subscribe outletsFlow  $
+        (\((Path.ToOutlet { outlet }) /\ uuid /\ d) -> outletsHandler outlet uuid d)
+    pure unit
+    -- FIXME: pushAction $ Inner $ StoreNodeCanceler node canceler
 performEffect _ pushAction (SendActionOnInletUpdatesE inlet@(Inlet _ path _ { flow })) _ = do
     let (InletFlow flow') = flow
     canceler :: Canceler <- E.subscribe flow' (pushAction <<< Data <<< GotInletData inlet)

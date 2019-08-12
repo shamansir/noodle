@@ -6,15 +6,27 @@ module Rpd.API.Action where
 
 import Prelude (class Show, show, (<>), Unit)
 
+import Data.Tuple.Nested ((/\), type (/\))
+
 import FRP.Event (Event)
 
 import Effect (Effect)
 
 import Rpd.Path as Path
 import Rpd.Network
-import Rpd.Process (ProcessF)
+import Rpd.Process (ProcessF, InletAlias, OutletAlias)
 import Rpd.Util (Canceler)
 import Rpd.Toolkit (NodeDef)
+import Rpd.UUID as UUID
+
+
+type InletSubscription d = (d -> Effect Unit)
+type OutletSubscription d = (d -> Effect Unit)
+type InletPeriodSubscription d = (Int -> d)
+type OutletPeriodSubscription d = (Int -> d)
+type NodeInletsSubscription d = (InletAlias -> UUID.ToInlet -> d -> Effect Unit)
+type NodeOutletsSubscription d = (OutletAlias -> UUID.ToOutlet -> d -> Effect Unit)
+type Perform d c n = (Network d c n -> Effect Unit)
 
 
 data Action d c n
@@ -29,18 +41,20 @@ data RequestAction d c n
     = ToAddPatch Path.Alias
     | ToAddNode Path.ToPatch Path.Alias n
     | ToAddNodeByDef Path.ToPatch Path.Alias n (NodeDef d c)
-    | ToAddOutlet Path.ToNode Path.Alias c
     | ToAddInlet Path.ToNode Path.Alias c
+    | ToAddOutlet Path.ToNode Path.Alias c
+    | ToRemoveInlet Path.ToInlet
+    | ToRemoveOutlet Path.ToOutlet
     | ToConnect Path.ToOutlet Path.ToInlet
     | ToDisconnect Path.ToOutlet Path.ToInlet
     | ToSendToInlet Path.ToInlet d
     | ToSendToOutlet Path.ToOutlet d
-    | ToSendPeriodicallyToInlet Path.ToInlet Int (Int -> d)
+    | ToSendPeriodicallyToInlet Path.ToInlet Int (InletPeriodSubscription d)
     | ToStreamToInlet Path.ToInlet (Event d)
     | ToStreamToOutlet Path.ToOutlet (Event d)
-    | ToSubscribeToInlet Path.ToInlet (d -> Effect Unit)
-    | ToSubscribeToOutlet Path.ToOutlet (d -> Effect Unit)
-    -- | ToSendPeriodicallyToInlet Path.ToInlet Int (Int -> d)
+    | ToSubscribeToInlet Path.ToInlet (InletSubscription d)
+    | ToSubscribeToOutlet Path.ToOutlet (OutletSubscription d)
+    | ToSubscribeToNode Path.ToNode (NodeInletsSubscription d) (NodeOutletsSubscription d)
 
 
 data BuildAction d c n
@@ -49,12 +63,14 @@ data BuildAction d c n
     -- TODO: Toolkit nodes
     | AddInlet (Inlet d c)
     | AddOutlet (Outlet d c)
+    | RemoveInlet (Inlet d c)
+    | RemoveOutlet (Outlet d c)
     | AddLink Link
     | ProcessWith (Node d n) (ProcessF d)
 
 
 data InnerAction d c n -- FIXME: InnerActions should not be exposed
-    = Do (Network d c n -> Effect Unit)
+    = Do (Perform d c n)
     | StoreNodeCanceler (Node d n) Canceler
     | ClearNodeCancelers (Node d n)
     | StoreInletCanceler (Inlet d c) Canceler
@@ -72,7 +88,7 @@ data DataAction d c
 
 
 data RpdEffect d c n -- TODO: move to a separate module
-    = DoE (Network d c n -> Effect Unit)
+    = DoE (Perform d c n)
     | AddPatchE Path.Alias
     | AddNodeE Path.ToPatch Path.Alias n (NodeDef d c)
     | AddInletE Path.ToNode Path.Alias c
@@ -87,12 +103,17 @@ data RpdEffect d c n -- TODO: move to a separate module
     | SendToOutletE (PushToOutlet d) d
     | SendActionOnInletUpdatesE (Inlet d c)
     | SendActionOnOutletUpdatesE (Outlet d c)
-    | SendPeriodicallyToInletE (PushToInlet d) Int (Int -> d)
-    | SendPeriodicallyToOutletE (PushToOutlet d) Int (Int -> d)
+    | SendPeriodicallyToInletE (PushToInlet d) Int (InletPeriodSubscription d)
+    | SendPeriodicallyToOutletE (PushToOutlet d) Int (OutletPeriodSubscription d)
     | StreamToInletE (PushToInlet d) (Event d)
     | StreamToOutletE (PushToOutlet d) (Event d)
-    | SubscribeToInletE (InletFlow d) (d -> Effect Unit) -- FIXME: should pass the canceler to the user
-    | SubscribeToOutletE (OutletFlow d) (d -> Effect Unit) -- FIXME: should pass the canceler to the user
+    | SubscribeToInletE (InletFlow d) (InletSubscription d) -- TODO: should pass the canceler to the user
+    | SubscribeToOutletE (OutletFlow d) (OutletSubscription d) -- TODO: should pass the canceler to the user
+    | SubscribeToNodeE
+            (InletsFlow d) (OutletsFlow d)
+            (NodeInletsSubscription d)
+            (NodeOutletsSubscription d)
+
 
 
 -- derive instance genericStringAction :: Generic StringAction _
@@ -124,8 +145,10 @@ instance showInnerAction :: Show (InnerAction d c n) where
 instance showBuildAction :: (Show d, Show c, Show n) => Show (BuildAction d c n) where
     show (AddPatch patch) = "AddPatch " <> show patch
     show (AddNode node) = "AddNode " <> show node
-    show (AddOutlet outlet) = "AddOutlet " <> show outlet
     show (AddInlet inlet) = "AddInlet " <> show inlet
+    show (AddOutlet outlet) = "AddOutlet " <> show outlet
+    show (RemoveInlet inlet) = "RemoveInlet " <> show inlet
+    show (RemoveOutlet outlet) = "RemoveOutlet " <> show outlet
     show (AddLink link) = "AddLink "
     show (ProcessWith node _) = "ProcessWith " <> show node
 

@@ -56,6 +56,14 @@ addOutlet :: forall d c n. Path.ToNode -> Path.Alias -> c -> Action d c n
 addOutlet node alias c = Request $ ToAddOutlet node alias c
 
 
+removeInlet :: forall d c n. Path.ToInlet -> Action d c n
+removeInlet inlet = Request $ ToRemoveInlet inlet
+
+
+removeOutlet :: forall d c n. Path.ToOutlet -> Action d c n
+removeOutlet outlet = Request $ ToRemoveOutlet outlet
+
+
 connect :: forall d c n. Path.ToOutlet -> Path.ToInlet -> Action d c n
 connect outlet inlet = Request $ ToConnect outlet inlet
 
@@ -80,15 +88,25 @@ streamToOutlet :: forall d c n. Path.ToOutlet -> (Event d) -> Action d c n
 streamToOutlet outlet event = Request $ ToStreamToOutlet outlet event
 
 
-subscribeToInlet :: forall d c n. Path.ToInlet -> (d -> Effect Unit) -> Action d c n
+subscribeToInlet :: forall d c n. Path.ToInlet -> InletSubscription d -> Action d c n
 subscribeToInlet inlet handler = Request $ ToSubscribeToInlet inlet handler
 
 
-subscribeToOutlet :: forall d c n. Path.ToOutlet -> (d -> Effect Unit) -> Action d c n
+subscribeToOutlet :: forall d c n. Path.ToOutlet -> OutletSubscription d -> Action d c n
 subscribeToOutlet outlet handler = Request $ ToSubscribeToOutlet outlet handler
 
 
-do_ :: forall d c n. (Network d c n -> Effect Unit) -> Action d c n
+subscribeToNode
+    :: forall d c n
+     . Path.ToNode
+    -> NodeInletsSubscription d
+    -> NodeOutletsSubscription d
+    -> Action d c n
+subscribeToNode node inletsHandler outletsHandler =
+    Request $ ToSubscribeToNode node inletsHandler outletsHandler
+
+
+do_ :: forall d c n. (Perform d c n) -> Action d c n
 do_ f = Inner $ Do f
 
 
