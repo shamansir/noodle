@@ -42,13 +42,18 @@ type Model d c n =
     -- , uuidToNodeDef :: UUID /-> T.NodeDefAlias
     , uuidToChannel :: UUID /-> c
     , mousePos :: Int /\ Int
+    , dragging :: DragState
     }
+
+
+type MousePos = (Int /\ Int)
 
 
 data Action
     = NoOp
-    | ClickAt (Int /\ Int)
-    | MouseMove (Int /\ Int)
+    | StartDrag MousePos DragSubject
+    | StopDrag MousePos
+    | MouseMove MousePos
     | EnableDebug
     | DisableDebug
     | StoreLinkPositions (Array Unit)
@@ -56,6 +61,16 @@ data Action
 
 data Perform
     = UpdateLinksPositions
+
+
+data DragSubject
+    = DragNode UUID.ToNode
+    | DragLink UUID.ToLink
+
+
+data DragState
+    = NotDragging
+    | Dragging MousePos DragSubject
 
 
 type PushF d c n = R.PushF d c n Action
@@ -74,6 +89,7 @@ init =
     -- , uuidToNodeDef : Map.empty
     , uuidToChannel : Map.empty
     , mousePos : -1 /\ -1
+    , dragging : NotDragging
     }
 
 
