@@ -62,7 +62,7 @@ toolkit = Toolkit.empty "foo"
 
 
 network :: R.Network MyData Channel Node
-network = Network.empty "foo"
+network = Network.empty "network"
 
 
 derive instance eqChannel ∷ Eq Channel
@@ -236,7 +236,7 @@ expectToRender renderer toolkit compareViews (ActionList actions) expectation = 
   maybeLastView <- liftEffect $ do
     lastView <- Ref.new Nothing
     { push, next : views, stop }
-          <- Render.make renderer toolkit $ Network.empty "foo"
+          <- Render.make renderer toolkit $ Network.empty "network"
     _ <- Event.subscribe views (flip Ref.write lastView <<< Just)
     _ <- case push of
           Render.PushF pushAction ->
@@ -258,7 +258,7 @@ expectToRenderMUV renderer toolkit compareViews (ActionList actions) expectation
   maybeLastView <- liftEffect $ do
     lastView <- Ref.new Nothing
     { push, next : views, stop }
-          <- RenderMUV.make renderer toolkit $ Network.empty "foo"
+          <- RenderMUV.make renderer toolkit $ Network.empty "network"
     _ <- Event.subscribe views (flip Ref.write lastView <<< Just)
     _ <- case push of
           RenderMUV.PushF pushAction ->

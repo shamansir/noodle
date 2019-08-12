@@ -308,14 +308,18 @@ performEffect _ pushAction (SubscribeNodeUpdates node) _ = do
     canceler :: Canceler <- subscribeNode node (const $ pure unit) (const $ pure unit)
     pushAction $ Inner $ StoreNodeCanceler node canceler
 performEffect _ pushAction (SendToInletE (PushToInlet push) d) _ = do
+    -- FIXME: should be the core `API` function
     push d -- TODO: consider pushing `GotInletData` action instead?
 performEffect _ pushAction (SendToOutletE (PushToOutlet push) d) _ =
+    -- FIXME: should be the core `API` function
     push d -- TODO: consider pushing `GotOutletData` action instead?
 performEffect _ pushAction (StreamToInletE (PushToInlet push) flow) _ = do
+    -- FIXME: should be the core `API` function
     canceler :: Canceler <- E.subscribe flow push
     pure unit
     -- TODO: pushAction $ Inner $ StoreInletCanceler inlet canceler
 performEffect _ pushAction (StreamToOutletE (PushToOutlet push) flow) _ = do
+    -- FIXME: should be the core `API` function
     canceler :: Canceler <- E.subscribe flow push
     pure unit
     -- TODO: pushAction $ Inner $ StoreOutletCanceler outlet canceler

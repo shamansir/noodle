@@ -73,4 +73,4 @@ render src =
 
 main :: Effect Unit
 main =
-    VDom.embed "#app" render terminalRenderer $ pure $ Network.empty "foo"
+    VDom.embed "#app" render terminalRenderer $ pure $ Network.empty "network"

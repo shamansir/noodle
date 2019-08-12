@@ -80,7 +80,7 @@ spec = do
       CollectData.channelsAfter
           (Milliseconds 100.0)
           myToolkit
-          (Network.empty "foo")
+          (Network.empty "network")
           $ structure
               </> R.sendToInlet curse1Inlet (Curse 4)
               </> R.sendToInlet curse2Inlet (Curse 3)
@@ -137,7 +137,7 @@ spec = do
     collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
-      (Network.empty "foo")
+      (Network.empty "network")
       $ structure
           </> R.sendToInlet curse1Inlet (Curse 4)
           </> R.sendToInlet curse2Inlet (Curse 3)

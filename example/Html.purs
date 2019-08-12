@@ -33,7 +33,7 @@ main =
     --     (Network.empty "aaa")
     Actions.run'
         ExampleToolkit.toolkit
-        (Network.empty "foo")
+        (Network.empty "network")
         Network.recipe
         (Actions.LastStep
             \nw ->

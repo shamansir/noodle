@@ -49,7 +49,7 @@ spec = do
     collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
-      (Network.empty "foo")
+      (Network.empty "network")
       $ structure
           -- first connect, then stream
           </> R.connect
@@ -78,7 +78,7 @@ spec = do
     collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
-      (Network.empty "foo")
+      (Network.empty "network")
       $ structure
               -- first stream, then connect
             </> R.streamToOutlet
@@ -121,7 +121,7 @@ spec = do
     -- collectedData `shouldContain`
     --   (InletData (toInlet "patch" "node2" "inlet") Notebook)
     collectedData <- Ref.new []
-    withRpd' myToolkit (Network.empty "foo") $ structure
+    withRpd' myToolkit (Network.empty "network") $ structure
       </> R.streamToOutlet
                   (toOutlet "patch" "node1" "outlet")
                   (R.flow $ const Notebook <$> interval 30)
