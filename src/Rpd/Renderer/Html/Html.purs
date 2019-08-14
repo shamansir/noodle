@@ -16,7 +16,7 @@ import Data.Exists (Exists, mkExists)
 import Effect (Effect)
 
 import Rpd.API (RpdError) as R
-import Rpd.API.Action (Action(..), DataAction(..), BuildAction(..)) as Core
+import Rpd.API.Action (Action(..), DataAction(..), BuildAction(..), RequestAction(..)) as Core
 import Rpd.Network as R
 import Rpd.Optics as L
 import Rpd.Path as P
@@ -30,6 +30,9 @@ import Rpd.Renderer.Html.DebugBox as DebugBox
 
 import Spork.Html (Html)
 import Spork.Html as H
+-- import Web.UIEvent.Event as ME
+import Web.Event.Event (stopPropagation) as Event
+import Web.Event.Event (Event)
 import Web.UIEvent.MouseEvent as ME
 
 
@@ -51,8 +54,10 @@ type MousePos = Int /\ Int
 
 data Action
     = NoOp
-    | StartDrag DragSubject
-    | StopDrag
+    | ClickInlet P.ToInlet ME.MouseEvent
+    | ClickOutlet P.ToOutlet ME.MouseEvent
+    | ClickNodeTitle P.ToNode ME.MouseEvent
+    | ClickBackground ME.MouseEvent
     | MouseMove MousePos
     | EnableDebug
     | DisableDebug
@@ -61,16 +66,24 @@ data Action
 
 data Perform
     = UpdateLinksPositions
+    | TryConnecting P.ToOutlet P.ToInlet
+    | StopPropagation Event
 
 
 data DragSubject
-    = DragNode UUID.ToNode
-    | DragLink UUID.ToOutlet
+    = DragNode P.ToNode
+    | DragLink P.ToOutlet
 
 
 data DragState
     = NotDragging
     | Dragging DragSubject
+
+
+instance showDragState :: Show DragState where
+    show NotDragging = "not dragging"
+    show (Dragging (DragNode nPath)) = "dragging node " <> show nPath
+    show (Dragging (DragLink oPath)) = "dragging link from " <> show oPath
 
 
 type PushF d c n = R.PushF d c n Action
@@ -170,14 +183,14 @@ viewNode
     -> View d c n
 viewNode toolkitRenderer ui nw nodeUuid =
     case L.view (L._node nodeUuid) nw of
-        Just node@(R.Node _ (P.ToNode { node : name }) n _ { inlets, outlets }) ->
+        Just node@(R.Node _ path@(P.ToNode { node : name }) n _ { inlets, outlets }) ->
             H.div
                 [ H.classes [ "rpd-node" ] -- TODO: toolkit name, node name
                 , H.style "" ]
                 (
                     [ H.div
                         [ H.classes [ "rpd-node-title" ]
-                        , H.onClick handleNodeTitleClick
+                        , H.onClick $ handleNodeTitleClick path
                         ]
                         [ H.span [ ] [ H.text name ] ]
                     , H.div
@@ -202,13 +215,7 @@ viewNode toolkitRenderer ui nw nodeUuid =
                 [ H.classes [ "rpd-node", "missing" ] ]
                 [ H.text $ "node " <> show nodeUuid <> " was not found" ]
     where
-        handleNodeTitleClick e =
-            case ui.dragging of
-                NotDragging ->
-                    Just $ my $ StartDrag {-(ME.clientX e /\ ME.clientY e)-} $ DragNode nodeUuid
-                Dragging _ ->
-                    Just $ my $ StopDrag {-(ME.clientX e /\ ME.clientY e)-}
-
+        handleNodeTitleClick nodePath e = Just $ my $ ClickNodeTitle nodePath e
 
 viewInlet
     :: forall d c n
@@ -225,7 +232,7 @@ viewInlet toolkitRenderer ui nw inletUuid =
                 [ H.classes [ "rpd-inlet" ] ] -- TODO: channel name, state
                 [ H.div
                     [ H.classes [ "rpd-inlet-connector" ]
-                    , H.onClick handleInletConnectorClick
+                    , H.onClick $ handleInletConnectorClick path
                     ]
                     [ H.text "o" ]
                 , H.div [ H.classes [ "rpd-inlet-name" ] ]
@@ -241,8 +248,7 @@ viewInlet toolkitRenderer ui nw inletUuid =
                 [ H.classes [ "rpd-missing-inlet" ] ]
                 [ H.text $ "inlet " <> show inletUuid <> " was not found" ]
     where
-        handleInletConnectorClick e
-            = Nothing
+        handleInletConnectorClick inletPath e = Just $ my $ ClickInlet inletPath e
 
 
 viewOutlet
@@ -260,7 +266,7 @@ viewOutlet toolkitRenderer ui nw outletUuid =
                 [ H.classes [ "rpd-outlet" ] ] -- TODO: channel name, state
                 [ H.div
                     [ H.classes [ "rpd-outlet-connector" ]
-                    , H.onClick handleOutletConnectorClick
+                    , H.onClick $ handleOutletConnectorClick path
                     ]
                     [ H.text "o"
                     ]
@@ -277,10 +283,7 @@ viewOutlet toolkitRenderer ui nw outletUuid =
                 [ H.classes [ "rpd-missing-outlet" ] ]
                 [ H.text $ "outlet " <> show outletUuid <> " was not found" ]
     where
-        handleOutletConnectorClick e
-            = case ui.dragging of
-                NotDragging -> Nothing
-                Dragging _ -> Just $ my $ StopDrag
+        handleOutletConnectorClick outletPath e = Just $ my $ ClickOutlet outletPath e
 
 
 viewDebugWindow
@@ -338,9 +341,16 @@ htmlRenderer toolkitRenderer =
         }
 
 
+-- FIXME: show in DebugBox
 viewMousePos :: forall d c n. Int /\ Int -> View d c n
 viewMousePos ( x /\ y ) =
     H.span [ H.classes [ "rpd-mouse-pos" ] ] [ H.text $ show x <> ":" <> show y ]
+
+
+-- FIXME: show in DebugBox
+viewDragState :: forall d c n. DragState -> View d c n
+viewDragState dragState =
+    H.span [ H.classes [ "rpd-drag-state" ] ] [ H.text $ show dragState ]
 
 
 view
@@ -359,13 +369,11 @@ view toolkitRenderer (Right (ui /\ nw)) =
         [ viewDebugWindow ui nw
         , viewNetwork toolkitRenderer ui nw
         , viewMousePos ui.mousePos
+        , viewDragState ui.dragging
         ]
     where
         handleMouseMove e = Just $ my $ MouseMove $ ME.clientX e /\ ME.clientY e
-        handleClick e =
-            case ui.dragging of
-                NotDragging -> Nothing
-                Dragging _ -> Just $ my $ StopDrag
+        handleClick e = Just $ my $ ClickBackground e
 view _ (Left err) =
     viewError err -- FIXME: show last working network state along with the error
 
@@ -375,6 +383,7 @@ update
      . Either Action (Core.Action d c n)
     -> Model d c n /\ R.Network d c n
     -> Model d c n /\ Array Perform
+
 update (Right (Core.Data Core.Bang)) (ui /\ _) = ui /\ []
 update (Right (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ _) =
     (ui { lastInletData = ui.lastInletData # Map.insert inletPath d })
@@ -386,10 +395,38 @@ update (Right (Core.Build (Core.AddInlet inlet))) ( ui /\ nw ) =
     ( ui /\ [ UpdateLinksPositions ] )
 update (Right (Core.Build (Core.AddNode node))) ( ui /\ nw ) =
     ( ui /\ [ UpdateLinksPositions ] )
+update (Right _) (ui /\ _) = ui /\ []
 update (Left (MouseMove mousePos)) ( ui /\ nw ) =
     (ui { mousePos = mousePos })
     /\ []
-update _ (ui /\ _) = ui /\ []
+update (Left (ClickBackground e)) ( ui /\ nw ) =
+    (ui { dragging = NotDragging })
+    /\ []
+update (Left (ClickNodeTitle nodePath e)) ( ui /\ nw ) =
+    (ui
+        { dragging = Dragging $ DragNode nodePath
+        -- TODO: if node was dragged before, place it at the mouse point
+        }
+    ) /\ [ StopPropagation $ ME.toEvent e ]
+update (Left (ClickInlet inletPath e)) ( ui /\ nw ) =
+    (ui
+        { dragging = NotDragging
+        -- TODO: if node was dragged before, place it at the mouse point
+        }
+    )
+    /\ (case ui.dragging of
+        Dragging (DragLink outletPath) ->
+            [ StopPropagation $ ME.toEvent e
+            , TryConnecting outletPath inletPath
+            ]
+        _ -> [ StopPropagation $ ME.toEvent e ])
+update (Left (ClickOutlet outletPath e)) ( ui /\ nw ) =
+    (ui
+        { dragging = Dragging $ DragLink outletPath
+        -- TODO: if node was dragged before, place it at the mouse point
+        }
+    ) /\ [ StopPropagation $ ME.toEvent e ]
+update (Left _) (ui /\ _) = ui /\ []
 
 
 performEffect
@@ -402,6 +439,11 @@ performEffect
 performEffect _ pushAction UpdateLinksPositions ( ui /\ nw ) = do
     links <- collectLinksPositions []
     pushAction $ my $ StoreLinkPositions []
+performEffect _ pushAction (TryConnecting outletPath inletPath) ( ui /\ nw ) = do
+    pushAction $ core $ Core.Request $ Core.ToConnect outletPath inletPath
+performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
+    _ <- Event.stopPropagation e
+    pure unit
 
 
 foreign import collectLinksPositions
