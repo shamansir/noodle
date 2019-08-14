@@ -41,18 +41,18 @@ type Model d c n =
     -- , uuidToChannelDef :: UUID /-> T.ChannelDefAlias
     -- , uuidToNodeDef :: UUID /-> T.NodeDefAlias
     , uuidToChannel :: UUID /-> c
-    , mousePos :: Int /\ Int
+    , mousePos :: MousePos
     , dragging :: DragState
     }
 
 
-type MousePos = (Int /\ Int)
+type MousePos = Int /\ Int
 
 
 data Action
     = NoOp
-    | StartDrag MousePos DragSubject
-    | StopDrag MousePos
+    | StartDrag DragSubject
+    | StopDrag
     | MouseMove MousePos
     | EnableDebug
     | DisableDebug
@@ -65,12 +65,12 @@ data Perform
 
 data DragSubject
     = DragNode UUID.ToNode
-    | DragLink UUID.ToLink
+    | DragLink UUID.ToOutlet
 
 
 data DragState
     = NotDragging
-    | Dragging MousePos DragSubject
+    | Dragging DragSubject
 
 
 type PushF d c n = R.PushF d c n Action
@@ -124,7 +124,7 @@ viewNetwork
     -> Model d c n
     -> R.Network d c n
     -> View d c n
-viewNetwork toolkitRenderer pushMsg ui nw@(R.Network { name, patches }) =
+viewNetwork toolkitRenderer pushF ui nw@(R.Network { name, patches }) =
     H.div
         [ H.id_ "network", H.classes [ "rpd-network" ] ]
         $
@@ -132,7 +132,7 @@ viewNetwork toolkitRenderer pushMsg ui nw@(R.Network { name, patches }) =
                 [ H.classes [ "rpd-network-name" ] ]
                 [ H.span [] [ H.text name ] ]
             ] <>
-            (toUnfoldable $ viewPatch toolkitRenderer pushMsg ui nw
+            (toUnfoldable $ viewPatch toolkitRenderer pushF ui nw
                 <$> (patches # Seq.toUnfoldable))
 
 
@@ -145,7 +145,7 @@ viewPatch
     -> R.Network d c n
     -> UUID.ToPatch
     -> View d c n
-viewPatch toolkitRenderer pushMsg ui nw patchUuid =
+viewPatch toolkitRenderer pushF ui nw patchUuid =
     case L.view (L._patch patchUuid) nw of
         Just (R.Patch _ (P.ToPatch name) { nodes }) ->
             H.div
@@ -154,12 +154,13 @@ viewPatch toolkitRenderer pushMsg ui nw patchUuid =
                     [ H.classes [ "rpd-patch-name" ] ]
                     [ H.span [] [ H.text name ] ]
                 ] <>
-                    (viewNode toolkitRenderer pushMsg ui nw
+                    (viewNode toolkitRenderer pushF ui nw
                                 <$> (nodes # Seq.toUnfoldable))
         _ ->
             H.div
                 [ H.classes [ "rpd-missing-patch" ] ]
                 [ H.text $ "patch " <> show patchUuid <> " was not found" ]
+
 
 viewNode
     :: forall d c n
@@ -170,37 +171,47 @@ viewNode
     -> R.Network d c n
     -> UUID.ToNode
     -> View d c n
-viewNode toolkitRenderer pushMsg ui nw nodeUuid =
+viewNode toolkitRenderer pushF ui nw nodeUuid =
     case L.view (L._node nodeUuid) nw of
         Just node@(R.Node _ (P.ToNode { node : name }) n _ { inlets, outlets }) ->
             H.div
                 [ H.classes [ "rpd-node" ] -- TODO: toolkit name, node name
                 , H.style "" ]
                 (
-                    [ H.div [ H.classes [ "rpd-node-title" ] ]
-                        [ H.span [] [ H.text name ] ]
+                    [ H.div
+                        [ H.classes [ "rpd-node-title" ]
+                        , H.onClick handleNodeTitleClick
+                        ]
+                        [ H.span [ ] [ H.text name ] ]
                     , H.div
                         [ H.classes [ "rpd-node-remove-button" ] ]
                         [ H.text "x" ]
                     , H.div
                         [ H.classes [ "rpd-node-inlets" ] ]
-                        $ (viewInlet toolkitRenderer pushMsg ui nw
+                        $ (viewInlet toolkitRenderer pushF ui nw
                                 <$> (inlets # Seq.toUnfoldable))
                     , H.div
                         [ H.classes [ "rpd-node-body" ] ]
                         [ toolkitRenderer.renderNode
                             n
                             node
-                            (case pushMsg of R.PushF f -> f) ]
+                            (case pushF of R.PushF f -> f) ]
                     , H.div
                         [ H.classes [ "rpd-node-outlets" ] ]
-                        $ (viewOutlet toolkitRenderer pushMsg ui nw
+                        $ (viewOutlet toolkitRenderer pushF ui nw
                                 <$> (outlets # Seq.toUnfoldable))
                     ]
                 )
         _ -> H.div
                 [ H.classes [ "rpd-node", "missing" ] ]
                 [ H.text $ "node " <> show nodeUuid <> " was not found" ]
+    where
+        handleNodeTitleClick e =
+            case ui.dragging of
+                NotDragging ->
+                    Just $ my $ StartDrag {-(ME.clientX e /\ ME.clientY e)-} $ DragNode nodeUuid
+                Dragging _ ->
+                    Just $ my $ StopDrag {-(ME.clientX e /\ ME.clientY e)-}
 
 
 viewInlet
@@ -212,25 +223,32 @@ viewInlet
     -> R.Network d c n
     -> UUID.ToInlet
     -> View d c n
-viewInlet toolkitRenderer pushMsg ui nw inletUuid =
+viewInlet toolkitRenderer pushF ui nw inletUuid =
     case L.view (L._inlet inletUuid) nw of
         Just inlet@(R.Inlet _ path@(P.ToInlet { inlet : label }) channel { flow }) ->
             H.div
                 [ H.classes [ "rpd-inlet" ] ] -- TODO: channel name, state
-                [ H.div [ H.classes [ "rpd-inlet-connector" ] ] [ H.text "o" ]
+                [ H.div
+                    [ H.classes [ "rpd-inlet-connector" ]
+                    , H.onClick handleInletConnectorClick
+                    ]
+                    [ H.text "o" ]
                 , H.div [ H.classes [ "rpd-inlet-name" ] ]
                     [ H.span [] [ H.text label ] ]
                 , H.div [ H.classes [ "rpd-inlet-value" ] ]
                     [ toolkitRenderer.renderInlet
                         channel
                         inlet
-                        (case pushMsg of R.PushF f -> f)
+                        (case pushF of R.PushF f -> f)
                         $ Map.lookup path ui.lastInletData
                     ]
                 ]
         _ -> H.div
                 [ H.classes [ "rpd-missing-inlet" ] ]
                 [ H.text $ "inlet " <> show inletUuid <> " was not found" ]
+    where
+        handleInletConnectorClick e
+            = Nothing
 
 
 viewOutlet
@@ -242,25 +260,35 @@ viewOutlet
     -> R.Network d c n
     -> UUID.ToOutlet
     -> View d c n
-viewOutlet toolkitRenderer pushMsg ui nw outletUuid =
+viewOutlet toolkitRenderer pushF ui nw outletUuid =
     case L.view (L._outlet outletUuid) nw of
         Just outlet@(R.Outlet _ path@(P.ToOutlet { outlet : label }) channel { flow }) ->
             H.div
                 [ H.classes [ "rpd-outlet" ] ] -- TODO: channel name, state
-                [ H.div [ H.classes [ "rpd-outlet-connector" ] ] [ H.text "o" ]
+                [ H.div
+                    [ H.classes [ "rpd-outlet-connector" ]
+                    , H.onClick handleOutletConnectorClick
+                    ]
+                    [ H.text "o"
+                    ]
                 , H.div [ H.classes [ "rpd-outlet-name" ] ]
                     [ H.span [] [ H.text label ] ]
                 , H.div [ H.classes [ "rpd-outlet-value" ] ]
                     [ toolkitRenderer.renderOutlet
                         channel
                         outlet
-                        (case pushMsg of R.PushF f -> f)
+                        (case pushF of R.PushF f -> f)
                         $ Map.lookup path ui.lastOutletData
                     ]
                 ]
         _ -> H.div
                 [ H.classes [ "rpd-missing-outlet" ] ]
                 [ H.text $ "outlet " <> show outletUuid <> " was not found" ]
+    where
+        handleOutletConnectorClick e
+            = case ui.dragging of
+                NotDragging -> Nothing
+                Dragging _ -> Just $ my $ StopDrag
 
 
 viewDebugWindow
@@ -270,7 +298,7 @@ viewDebugWindow
     -> Model d c n
     -> R.Network d c n
     -> View d c n
-viewDebugWindow pushMsg ui nw =
+viewDebugWindow pushF ui nw =
     H.div [ H.id_ "debug" ]
         [ H.input
             [ H.type_ H.InputCheckbox
@@ -332,16 +360,23 @@ view
     -> PushF d c n
     -> Either R.RpdError (Model d c n /\ R.Network d c n)
     -> View d c n
-view toolkitRenderer pushMsg (Right (ui /\ nw)) =
+view toolkitRenderer pushF (Right (ui /\ nw)) =
     H.div
         [ H.id_ "html"
-        , H.onMouseMove \e -> Just $ my $ MouseMove $ ME.clientX e /\ ME.clientY e
+        , H.onMouseMove handleMouseMove
+        , H.onClick handleClick
         ]
-        [ viewDebugWindow pushMsg ui nw
-        , viewNetwork toolkitRenderer pushMsg ui nw
+        [ viewDebugWindow pushF ui nw
+        , viewNetwork toolkitRenderer pushF ui nw
         , viewMousePos ui.mousePos
         ]
-view _ pushMsg (Left err) =
+    where
+        handleMouseMove e = Just $ my $ MouseMove $ ME.clientX e /\ ME.clientY e
+        handleClick e =
+            case ui.dragging of
+                NotDragging -> Nothing
+                Dragging _ -> Just $ my $ StopDrag
+view _ pushF (Left err) =
     viewError err -- FIXME: show last working network state along with the error
 
 
