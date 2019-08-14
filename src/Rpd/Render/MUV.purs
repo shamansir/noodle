@@ -56,8 +56,7 @@ type UpdateF d c n model action effect
 -}
  -- FIXME: toolkit renderer should be present among the arguments
 type ViewF d c n model view action
-     = PushF d c n action
-    -> Either R.RpdError (model /\ R.Network d c n)
+     = Either R.RpdError (model /\ R.Network d c n)
     -> view
 
 
@@ -65,7 +64,7 @@ type ViewF d c n model view action
 -- and `performEffect` to just `perform`?
 type PerformEffectF d c n model action effect
      = T.Toolkit d c n
-    -> (action -> Effect Unit)
+    -> (Either action (Core.Action d c n) -> Effect Unit)
     -> effect
     -> (model /\ R.Network d c n)
     -> Effect Unit
@@ -111,7 +110,7 @@ make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = 
             myApply
             myPerformEff
     { event : views, push : pushView } <- Event.create
-    stopViews <- Event.subscribe models (pushView <<< (view $ PushF pushAction))
+    stopViews <- Event.subscribe models $ pushView <<< view
     pure
         { first : from
         , next : views
@@ -130,7 +129,7 @@ make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = 
         myPerformEff pushAction (Right coreEffect) (_ /\ nw) =
             Core.performEffect toolkit (pushAction <<< Right) coreEffect nw
         myPerformEff pushAction (Left userEffect) (model /\ nw) =
-            performEffect toolkit (pushAction <<< Left) userEffect (model /\ nw)
+            performEffect toolkit pushAction userEffect (model /\ nw)
 
 
 once
@@ -140,7 +139,7 @@ once
     -> R.Network d c n
     -> view
 once (Renderer { init, view }) _ nw =
-    view neverPush $ Right $ init /\ nw
+    view $ Right $ init /\ nw
 
 
 
@@ -157,10 +156,10 @@ fromMinimal (Minimal.Renderer minimal) =
         , performEffect : skipEffects
         }
     where
-        minimalView (PushF push) valueE =
+        minimalView valueE =
             either
                 minimal.viewError
-                (minimal.viewValue (Minimal.PushF $ push <<< Right) <<< snd)
+                (minimal.viewValue <<< snd)
                 valueE
 
 

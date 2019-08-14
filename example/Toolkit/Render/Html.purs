@@ -38,7 +38,7 @@ import Example.Toolkit.Channel
 
 renderer :: R.ToolkitRenderer Value Channel Node
 renderer =
-    { renderNode : \_ _ _ ->
+    { renderNode : \_ _ ->
         H.div
             [ H.classes [ "tk-node" ] ]
             [ H.text "tk-node"
@@ -98,11 +98,11 @@ renderer =
                     $ Shape Diamond ]
                 [ H.text "SEND DATA TO RANDOM1/TEST PERIOD" ]
             ]
-    , renderInlet : \_ _ _ d ->
+    , renderInlet : \_ _ d ->
         H.div
             [ H.classes [ "tk-inlet" ] ]
             [ H.text $ "tk-inlet : " <> (maybe "?" (const "data") d) ]
-    , renderOutlet : \_ _ _ d ->
+    , renderOutlet : \_ _ d ->
         H.div
             [ H.classes [ "tk-outlet" ] ]
             [ H.text $ "tk-inlet : " <> (maybe "?" (const "data") d) ]

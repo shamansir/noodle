@@ -120,11 +120,10 @@ viewNetwork
     :: forall d c n
      . T.Channels d c
     => ToolkitRenderer d c n
-    -> PushF d c n
     -> Model d c n
     -> R.Network d c n
     -> View d c n
-viewNetwork toolkitRenderer pushF ui nw@(R.Network { name, patches }) =
+viewNetwork toolkitRenderer ui nw@(R.Network { name, patches }) =
     H.div
         [ H.id_ "network", H.classes [ "rpd-network" ] ]
         $
@@ -132,7 +131,7 @@ viewNetwork toolkitRenderer pushF ui nw@(R.Network { name, patches }) =
                 [ H.classes [ "rpd-network-name" ] ]
                 [ H.span [] [ H.text name ] ]
             ] <>
-            (toUnfoldable $ viewPatch toolkitRenderer pushF ui nw
+            (toUnfoldable $ viewPatch toolkitRenderer ui nw
                 <$> (patches # Seq.toUnfoldable))
 
 
@@ -140,12 +139,11 @@ viewPatch
     :: forall d c n
      . T.Channels d c
     => ToolkitRenderer d c n
-    -> PushF d c n
     -> Model d c n
     -> R.Network d c n
     -> UUID.ToPatch
     -> View d c n
-viewPatch toolkitRenderer pushF ui nw patchUuid =
+viewPatch toolkitRenderer ui nw patchUuid =
     case L.view (L._patch patchUuid) nw of
         Just (R.Patch _ (P.ToPatch name) { nodes }) ->
             H.div
@@ -154,7 +152,7 @@ viewPatch toolkitRenderer pushF ui nw patchUuid =
                     [ H.classes [ "rpd-patch-name" ] ]
                     [ H.span [] [ H.text name ] ]
                 ] <>
-                    (viewNode toolkitRenderer pushF ui nw
+                    (viewNode toolkitRenderer ui nw
                                 <$> (nodes # Seq.toUnfoldable))
         _ ->
             H.div
@@ -166,12 +164,11 @@ viewNode
     :: forall d c n
      . T.Channels d c
     => ToolkitRenderer d c n
-    -> PushF d c n
     -> Model d c n
     -> R.Network d c n
     -> UUID.ToNode
     -> View d c n
-viewNode toolkitRenderer pushF ui nw nodeUuid =
+viewNode toolkitRenderer ui nw nodeUuid =
     case L.view (L._node nodeUuid) nw of
         Just node@(R.Node _ (P.ToNode { node : name }) n _ { inlets, outlets }) ->
             H.div
@@ -188,17 +185,16 @@ viewNode toolkitRenderer pushF ui nw nodeUuid =
                         [ H.text "x" ]
                     , H.div
                         [ H.classes [ "rpd-node-inlets" ] ]
-                        $ (viewInlet toolkitRenderer pushF ui nw
+                        $ (viewInlet toolkitRenderer ui nw
                                 <$> (inlets # Seq.toUnfoldable))
                     , H.div
                         [ H.classes [ "rpd-node-body" ] ]
                         [ toolkitRenderer.renderNode
                             n
-                            node
-                            (case pushF of R.PushF f -> f) ]
+                            node ]
                     , H.div
                         [ H.classes [ "rpd-node-outlets" ] ]
-                        $ (viewOutlet toolkitRenderer pushF ui nw
+                        $ (viewOutlet toolkitRenderer ui nw
                                 <$> (outlets # Seq.toUnfoldable))
                     ]
                 )
@@ -218,12 +214,11 @@ viewInlet
     :: forall d c n
      . T.Channels d c
     => ToolkitRenderer d c n
-    -> PushF d c n
     -> Model d c n
     -> R.Network d c n
     -> UUID.ToInlet
     -> View d c n
-viewInlet toolkitRenderer pushF ui nw inletUuid =
+viewInlet toolkitRenderer ui nw inletUuid =
     case L.view (L._inlet inletUuid) nw of
         Just inlet@(R.Inlet _ path@(P.ToInlet { inlet : label }) channel { flow }) ->
             H.div
@@ -239,7 +234,6 @@ viewInlet toolkitRenderer pushF ui nw inletUuid =
                     [ toolkitRenderer.renderInlet
                         channel
                         inlet
-                        (case pushF of R.PushF f -> f)
                         $ Map.lookup path ui.lastInletData
                     ]
                 ]
@@ -255,12 +249,11 @@ viewOutlet
     :: forall d c n
      . T.Channels d c
     => ToolkitRenderer d c n
-    -> PushF d c n
     -> Model d c n
     -> R.Network d c n
     -> UUID.ToOutlet
     -> View d c n
-viewOutlet toolkitRenderer pushF ui nw outletUuid =
+viewOutlet toolkitRenderer ui nw outletUuid =
     case L.view (L._outlet outletUuid) nw of
         Just outlet@(R.Outlet _ path@(P.ToOutlet { outlet : label }) channel { flow }) ->
             H.div
@@ -277,7 +270,6 @@ viewOutlet toolkitRenderer pushF ui nw outletUuid =
                     [ toolkitRenderer.renderOutlet
                         channel
                         outlet
-                        (case pushF of R.PushF f -> f)
                         $ Map.lookup path ui.lastOutletData
                     ]
                 ]
@@ -294,11 +286,10 @@ viewOutlet toolkitRenderer pushF ui nw outletUuid =
 viewDebugWindow
     :: forall d c n
      . Show d => Show c => Show n
-    => PushF d c n
-    -> Model d c n
+    => Model d c n
     -> R.Network d c n
     -> View d c n
-viewDebugWindow pushF ui nw =
+viewDebugWindow ui nw =
     H.div [ H.id_ "debug" ]
         [ H.input
             [ H.type_ H.InputCheckbox
@@ -357,17 +348,16 @@ view
      . Show d => Show c => Show n
     => T.Channels d c
     => ToolkitRenderer d c n
-    -> PushF d c n
     -> Either R.RpdError (Model d c n /\ R.Network d c n)
     -> View d c n
-view toolkitRenderer pushF (Right (ui /\ nw)) =
+view toolkitRenderer (Right (ui /\ nw)) =
     H.div
         [ H.id_ "html"
         , H.onMouseMove handleMouseMove
         , H.onClick handleClick
         ]
-        [ viewDebugWindow pushF ui nw
-        , viewNetwork toolkitRenderer pushF ui nw
+        [ viewDebugWindow ui nw
+        , viewNetwork toolkitRenderer ui nw
         , viewMousePos ui.mousePos
         ]
     where
@@ -376,7 +366,7 @@ view toolkitRenderer pushF (Right (ui /\ nw)) =
             case ui.dragging of
                 NotDragging -> Nothing
                 Dragging _ -> Just $ my $ StopDrag
-view _ pushF (Left err) =
+view _ (Left err) =
     viewError err -- FIXME: show last working network state along with the error
 
 
@@ -405,13 +395,13 @@ update _ (ui /\ _) = ui /\ []
 performEffect
     :: forall d c n
      . T.Toolkit d c n
-    -> (Action -> Effect Unit)
+    -> (Either Action (Core.Action d c n) -> Effect Unit)
     -> Perform
     -> (Model d c n /\ R.Network d c n)
     -> Effect Unit
 performEffect _ pushAction UpdateLinksPositions ( ui /\ nw ) = do
     links <- collectLinksPositions []
-    pushAction $ StoreLinkPositions []
+    pushAction $ my $ StoreLinkPositions []
 
 
 foreign import collectLinksPositions

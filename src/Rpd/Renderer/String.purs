@@ -84,8 +84,8 @@ stringRendererWithOptions options =
         }
 
 
-view :: forall d c n. Options -> PushF d c n -> R.Network d c n -> String
-view options _ nw@(R.Network { name, patches }) =
+view :: forall d c n. Options -> R.Network d c n -> String
+view options nw@(R.Network { name, patches }) =
     "Network " <> name <> semicolon
         <> lineBreak
         <> count patchCounter patchCount

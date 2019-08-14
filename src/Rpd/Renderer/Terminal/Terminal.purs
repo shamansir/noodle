@@ -283,10 +283,9 @@ update _ (ui /\ _) =
 
 view
     :: forall d c n
-     . R.PushF d c n Msg
-    -> Either R.RpdError (Ui /\ R.Network d c n)
+     . Either R.RpdError (Ui /\ R.Network d c n)
     -> View
-view _ (Right (ui /\ nw)) =
+view (Right (ui /\ nw)) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
     -- "{" <> show packing <> " :: "
     --     <> show (viewNetwork packing nw) <> " :: "
@@ -297,7 +296,7 @@ view _ (Right (ui /\ nw)) =
         --        and if
         bounds@(width /\ height) = initialBounds
         packing = R2.container width height # Packing # packNetwork nw
-view _ (Left err) =
+view (Left err) =
     ML.from' $ "ERR: " <> show err
 
 
