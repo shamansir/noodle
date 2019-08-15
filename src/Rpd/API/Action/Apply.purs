@@ -404,7 +404,6 @@ performEffect _ pushAction (SendPeriodicallyToOutletE (PushToOutlet push) period
     -- FIXME: pushAction $ Inner $ StoreOutletCanceler outlet canceler
 
 
-
 -- apply'
 --     :: forall d c n
 --      . Action d c n

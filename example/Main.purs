@@ -1,4 +1,4 @@
-module Example.Html where
+module Example.Main where
 
 import Prelude
 

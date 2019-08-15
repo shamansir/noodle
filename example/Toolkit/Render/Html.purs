@@ -1,7 +1,8 @@
 module Example.Toolkit.Render.Html where
 
-import Prelude (const, ($), (<>), show)
+import Prelude (const, ($), (<>), show, (<<<))
 
+import Data.Int (toNumber)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
 import Data.Either (Either(..))
@@ -97,10 +98,10 @@ renderer =
             , H.div
                 [ H.onClick $ H.always_ $ R.core
                     $ A.Request
-                    $ A.ToSendPeriodicallyToInlet (P.toInlet "test" "random1" "test") 500
-                    $ const
-                    $ Shape Diamond ]
-                [ H.text "SEND DATA TO RANDOM1/TEST PERIOD" ]
+                    $ A.ToSendPeriodicallyToInlet (P.toInlet "test" "random1" "max") 500
+                    $ Number' <<< toNumber
+                ]
+                [ H.text "SEND DATA TO RANDOM1/MAX PERIOD" ]
             ]
     , renderInlet : \_ _ d ->
         H.div
