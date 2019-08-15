@@ -1,11 +1,12 @@
 module Rpd.UUID
     ( UUID
     , new
-    , toString
+    , toRawString, taggedToRawString
     , Tagged
     , ToPatch(..), ToNode(..), ToInlet(..), ToOutlet(..), ToLink(..)
     , Tag, liftTagged, class IsTagged, tag, uuid
     , toPatch, toNode, toInlet, toOutlet, toLink
+    , encode, decode
     ) where
 
 
@@ -27,13 +28,16 @@ new :: Effect UUID
 new = newAsString <#> UUID
 
 
-toString :: UUID -> String
-toString (UUID uuid) = uuid
+toRawString :: UUID -> String
+toRawString (UUID uuid) = uuid
+
+
+taggedToRawString :: forall a. IsTagged a => a -> String
+taggedToRawString tagged = toRawString $ uuid tagged
 
 
 instance showUUID :: Show UUID where
   show (UUID uuid) = "{" <> uuid <> "}"
-
 
 
 newtype ToPatch  = ToPatch UUID
@@ -114,7 +118,7 @@ newtype Tagged = Tagged ( forall r . ( forall a . IsTagged a => a -> r ) -> r )
 
 runTagged ( Tagged f ) = f
 
-liftTagged :: forall a . IsTagged a => a -> Tagged
+liftTagged :: forall a. IsTagged a => a -> Tagged
 liftTagged v = Tagged \ f -> f v
 
 
@@ -157,17 +161,25 @@ toLink x | tag x == ToLinkT = Just $ ToLink $ uuid x
 toLink x | otherwise = Nothing
 
 
--- mymap =
---   insert    ( liftTagged $ ToNode "node1" ) "node1Val" $
---   insert    ( liftTagged $ ToNode "node2" ) "node2Val" $
---   singleton ( liftTagged $ ToPatch "patch1" ) "patch1Val"
+encode :: Tagged -> { uuid :: String, type :: String }
+encode tagged
+  = { uuid : toRawString $ uuid tagged
+    , type :
+        case tag tagged of
+          ToPatchT -> "patch"
+          ToNodeT -> "node"
+          ToInletT -> "inlet"
+          ToOutletT -> "outlet"
+          ToLinkT -> "link"
+    }
 
 
--- main :: Eff (dom :: DOM) Unit
--- main =
---     render $ fold
---       [ h1 ( text $ show $ lookup ( liftTagged $ ToNode "node1" ) mymap )
---       , h1 ( text $ show $ lookup ( liftTagged $ ToNode "node2" ) mymap )
---       , h1 ( text $ show $ lookup ( liftTagged $ ToPatch "node2" ) mymap )
---       , h1 ( text $ show $ lookup ( liftTagged $ ToPatch "patch1" ) mymap )
---       ]
+decode :: { uuid :: String, type :: String } -> Maybe Tagged
+decode v =
+  case v.type of
+    "patch"  -> Just $ liftTagged $ ToPatch  $ UUID v.uuid
+    "node"   -> Just $ liftTagged $ ToNode   $ UUID v.uuid
+    "inlet"  -> Just $ liftTagged $ ToInlet  $ UUID v.uuid
+    "outlet" -> Just $ liftTagged $ ToOutlet $ UUID v.uuid
+    "link"   -> Just $ liftTagged $ ToLink   $ UUID v.uuid
+    _ -> Nothing

@@ -75,10 +75,10 @@ renderer =
                 [ H.onClick $ H.always_ $ R.core
                     $ A.addInlet (P.toNode "test" "random2") "test" NumberChannel ]
                 [ H.text "ADD INLET TEST TO RANDOM2" ]
-            -- , H.div
-            --     [ H.onClick $ H.always_ $ R.core
-            --         $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random1" "min") $ Shape Cross ]
-            --     [ H.text "SEND DATA TO MIN" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
+                    $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random" "min") $ Number' 10.0 ]
+                [ H.text "SEND DATA TO RANDOM/MIN" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
                     $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random1" "min") $ Number' 20.0 ]
@@ -98,7 +98,7 @@ renderer =
             , H.div
                 [ H.onClick $ H.always_ $ R.core
                     $ A.Request
-                    $ A.ToSendPeriodicallyToInlet (P.toInlet "test" "random1" "max") 500
+                    $ A.ToSendPeriodicallyToInlet (P.toInlet "test" "random1" "max") 1
                     $ Number' <<< toNumber
                 ]
                 [ H.text "SEND DATA TO RANDOM1/MAX PERIOD" ]

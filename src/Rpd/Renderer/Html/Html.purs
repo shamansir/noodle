@@ -6,12 +6,17 @@ import Data.Either (Either(..))
 import Data.Foldable (foldr)
 import Data.Lens (view) as L
 import Data.Lens.At (at) as L
-import Data.List (toUnfoldable, length)
+import Data.List (List, toUnfoldable, length)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), isJust, maybe, fromMaybe)
+import Data.Set as Set
+import Data.Set (Set)
+import Data.Array as Array
 import Data.Sequence as Seq
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Exists (Exists, mkExists)
+
+import Debug.Trace as DT
 
 import Effect (Effect)
 
@@ -46,6 +51,7 @@ type Model d c n =
     , uuidToChannel :: UUID /-> c
     , mousePos :: MousePos
     , dragging :: DragState
+    , positions :: UUID.Tagged /-> (Int /\ Int)
     }
 
 
@@ -61,11 +67,11 @@ data Action
     | MouseMove MousePos
     | EnableDebug
     | DisableDebug
-    | StoreLinkPositions (Array Unit)
+    | StorePositions (UUID.Tagged /-> (Int /\ Int))
 
 
 data Perform
-    = UpdateLinksPositions
+    = UpdatePositions
     | TryConnecting P.ToOutlet P.ToInlet
     | StopPropagation Event
 
@@ -103,6 +109,7 @@ init =
     , uuidToChannel : Map.empty
     , mousePos : -1 /\ -1
     , dragging : NotDragging
+    , positions : Map.empty
     }
 
 
@@ -183,9 +190,10 @@ viewNode
     -> View d c n
 viewNode toolkitRenderer ui nw nodeUuid =
     case L.view (L._node nodeUuid) nw of
-        Just node@(R.Node _ path@(P.ToNode { node : name }) n _ { inlets, outlets }) ->
+        Just node@(R.Node uuid path@(P.ToNode { node : name }) n _ { inlets, outlets }) ->
             H.div
                 [ H.classes [ "rpd-node" ] -- TODO: toolkit name, node name
+                , uuidToAttr uuid
                 , H.style "" ]
                 (
                     [ H.div
@@ -227,9 +235,11 @@ viewInlet
     -> View d c n
 viewInlet toolkitRenderer ui nw inletUuid =
     case L.view (L._inlet inletUuid) nw of
-        Just inlet@(R.Inlet _ path@(P.ToInlet { inlet : label }) channel { flow }) ->
+        Just inlet@(R.Inlet uuid path@(P.ToInlet { inlet : label }) channel { flow }) ->
             H.div
-                [ H.classes [ "rpd-inlet" ] ] -- TODO: channel name, state
+                [ H.classes [ "rpd-inlet" ]
+                , uuidToAttr uuid
+                ] -- TODO: channel name, state
                 [ H.div
                     [ H.classes [ "rpd-inlet-connector" ]
                     , H.onClick $ handleInletConnectorClick path
@@ -261,9 +271,11 @@ viewOutlet
     -> View d c n
 viewOutlet toolkitRenderer ui nw outletUuid =
     case L.view (L._outlet outletUuid) nw of
-        Just outlet@(R.Outlet _ path@(P.ToOutlet { outlet : label }) channel { flow }) ->
+        Just outlet@(R.Outlet uuid path@(P.ToOutlet { outlet : label }) channel { flow }) ->
             H.div
-                [ H.classes [ "rpd-outlet" ] ] -- TODO: channel name, state
+                [ H.classes [ "rpd-outlet" ]
+                , uuidToAttr uuid
+                ] -- TODO: channel name, state
                 [ H.div
                     [ H.classes [ "rpd-outlet-connector" ]
                     , H.onClick $ handleOutletConnectorClick path
@@ -293,7 +305,8 @@ viewDebugWindow
     -> R.Network d c n
     -> View d c n
 viewDebugWindow ui nw =
-    H.div [ H.id_ "debug" ]
+    H.div
+        [ H.id_ "debug" ]
         [ H.input
             [ H.type_ H.InputCheckbox
             , H.checked (isJust ui.debug)
@@ -392,9 +405,9 @@ update (Right (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (u
     (ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d })
     /\ []
 update (Right (Core.Build (Core.AddInlet inlet))) ( ui /\ nw ) =
-    ( ui /\ [ UpdateLinksPositions ] )
+    ( ui /\ [ UpdatePositions ] )
 update (Right (Core.Build (Core.AddNode node))) ( ui /\ nw ) =
-    ( ui /\ [ UpdateLinksPositions ] )
+    ( ui /\ [ UpdatePositions ] )
 update (Right _) (ui /\ _) = ui /\ []
 update (Left (MouseMove mousePos)) ( ui /\ nw ) =
     (ui { mousePos = mousePos })
@@ -436,9 +449,10 @@ performEffect
     -> Perform
     -> (Model d c n /\ R.Network d c n)
     -> Effect Unit
-performEffect _ pushAction UpdateLinksPositions ( ui /\ nw ) = do
-    links <- collectLinksPositions []
-    pushAction $ my $ StoreLinkPositions []
+performEffect _ pushAction UpdatePositions ( ui /\ (R.Network nw) ) = do
+    positions <- collectPositions $ loadUUIDs $ Map.keys nw.registry
+    -- let _ = DT.spy "positions" $ convertPositions positions
+    pushAction $ my $ StorePositions $ convertPositions positions
 performEffect _ pushAction (TryConnecting outletPath inletPath) ( ui /\ nw ) = do
     pushAction $ core $ Core.Request $ Core.ToConnect outletPath inletPath
 performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
@@ -446,11 +460,42 @@ performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
     pure unit
 
 
-foreign import collectLinksPositions
-    :: Array String
+uuidToAttr :: forall a r i. UUID.IsTagged a => a -> H.IProp (id ∷ String | r) i
+-- uuidToAttr uuid  = H.prop "uuid" $ UUID.taggedToRawString uuid
+uuidToAttr = H.id_ <<< UUID.taggedToRawString
+
+
+loadUUIDs :: Set UUID.Tagged -> Array { uuid :: String, type :: String }
+loadUUIDs uuids = UUID.encode <$> Set.toUnfoldable uuids
+
+
+convertPositions
+    :: Array
+            { uuid :: String
+            , type :: String
+            , pos :: { x :: Int, y :: Int }
+            }
+    -> UUID.Tagged /-> (Int /\ Int)
+convertPositions srcPositions =
+    Map.fromFoldable $ Array.catMaybes $ decodePos <$> srcPositions
+    where
+        decodePos
+            ::
+                { uuid :: String
+                , type :: String
+                , pos :: { x :: Int, y :: Int }
+                }
+            -> Maybe (UUID.Tagged /\ (Int /\ Int))
+        decodePos { type, uuid, pos } =
+            (\tagged -> tagged /\ ( pos.x /\ pos.y)) <$> UUID.decode { uuid, type }
+
+
+foreign import collectPositions
+    :: Array { uuid :: String, type :: String }
     -> Effect
             (Array
-                { link :: String
+                { uuid :: String
+                , type :: String
                 , pos :: { x :: Int, y :: Int }
                 }
             )
