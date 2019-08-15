@@ -1,6 +1,6 @@
 module Example.Toolkit.Render.Html where
 
-import Prelude (const, ($), (<>))
+import Prelude (const, ($), (<>), show)
 
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
@@ -80,6 +80,10 @@ renderer =
             --     [ H.text "SEND DATA TO MIN" ]
             , H.div
                 [ H.onClick $ H.always_ $ R.core
+                    $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random1" "min") $ Number' 20.0 ]
+                [ H.text "SEND DATA TO RANDOM1/MIN" ]
+            , H.div
+                [ H.onClick $ H.always_ $ R.core
                     $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random1" "test") $ Shape Diamond ]
                 [ H.text "SEND DATA TO RANDOM1/TEST" ]
             , H.div
@@ -101,9 +105,9 @@ renderer =
     , renderInlet : \_ _ d ->
         H.div
             [ H.classes [ "tk-inlet" ] ]
-            [ H.text $ "tk-inlet : " <> (maybe "?" (const "data") d) ]
+            [ H.text $ "tk-inlet : " <> (maybe "?" show d) ]
     , renderOutlet : \_ _ d ->
         H.div
             [ H.classes [ "tk-outlet" ] ]
-            [ H.text $ "tk-inlet : " <> (maybe "?" (const "data") d) ]
+            [ H.text $ "tk-inlet : " <> (maybe "?" show d) ]
     }
