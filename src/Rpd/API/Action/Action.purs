@@ -45,6 +45,7 @@ data RequestAction d c n
     | ToAddOutlet Path.ToNode Path.Alias c
     | ToRemoveInlet Path.ToInlet
     | ToRemoveOutlet Path.ToOutlet
+    | ToProcessWith Path.ToNode (ProcessF d)
     | ToConnect Path.ToOutlet Path.ToInlet
     | ToDisconnect Path.ToOutlet Path.ToInlet
     | ToSendToInlet Path.ToInlet d
@@ -94,6 +95,7 @@ data RpdEffect d c n -- TODO: move to a separate module
     | AddInletE Path.ToNode Path.Alias c
     | AddOutletE Path.ToNode Path.Alias c
     | AddLinkE (Outlet d c) (Inlet d c)
+    | ProcessWithE (Node d n) (ProcessF d)
     | SubscribeNodeProcess (Node d n)
     | InformNodeOnInletUpdates (Inlet d c) (Node d n)
     | InformNodeOnOutletUpdates (Outlet d c) (Node d n)

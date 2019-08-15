@@ -9,6 +9,9 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Sequence (empty) as Seq
 import Data.Lens (view, setJust, set)
 import Data.Array ((:))
+import Data.Traversable (traverse_)
+
+import Debug.Trace as DT
 
 import FRP.Event as E
 import FRP.Event.Class (count) as E
@@ -95,6 +98,10 @@ applyRequestAction _ (ToRemoveOutlet outletPath) nw = do
     -- FIXME: join with `RemoveOutlet` build action
     nw' <- Right $ set (_outlet outletUuid) Nothing nw
     pure $ nw' /\ [ ] -- FIXME: cancel all subscriptions
+applyRequestAction _ (ToProcessWith nodePath processF) nw = do
+    nodeUuid <- uuidByPath UUID.toNode nodePath nw
+    node <- view (_node nodeUuid) nw # note (RpdError "")
+    pure $ nw /\ [ ProcessWithE node processF ]
 applyRequestAction _ (ToConnect outletPath inletPath) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
     outlet <- view (_outlet outletUuid) nw # note (RpdError "")
@@ -253,7 +260,7 @@ performEffect _ pushAction (AddPatchE alias) _ = do
             { nodes : Seq.empty
             , links : Seq.empty
             }
-performEffect _ pushAction (AddNodeE patchPath nodeAlias n def) nw = do
+performEffect _ pushAction (AddNodeE patchPath nodeAlias n (NodeDef def)) nw = do
     uuid <- UUID.new
     flows <- makeInletOutletsFlows
     let
@@ -266,14 +273,24 @@ performEffect _ pushAction (AddNodeE patchPath nodeAlias n def) nw = do
                 path
                 n
                 Withhold
-                { inlets : Seq.empty -- FIXME: load inlets / outlets from the `def`
-                , outlets : Seq.empty -- FIXME: load inlets / outlets from the `def`
+                { inlets : Seq.empty
+                , outlets : Seq.empty
                 , inletsFlow : InletsFlow inletsFlow
                 , outletsFlow : OutletsFlow outletsFlow
                 , pushToInlets : PushToInlets pushToInlets
                 , pushToOutlets : PushToOutlets pushToOutlets
                 }
     pushAction $ Build $ AddNode newNode
+    traverse_ (addInlet path) def.inlets
+    traverse_ (addOutlet path) def.outlets
+    pushAction $ Request $ ToProcessWith path def.process
+    where
+        addInlet path (InletAlias alias /\ c) =
+            pushAction $ Request $ ToAddInlet path alias c
+        addOutlet path (OutletAlias alias /\ c) =
+            pushAction $ Request $ ToAddOutlet path alias c
+performEffect _ pushAction (ProcessWithE node processF) nw = do
+    pushAction $ Build $ ProcessWith node processF
 performEffect _ pushAction (AddLinkE outlet inlet) nw = do
     uuid <- UUID.new
     let

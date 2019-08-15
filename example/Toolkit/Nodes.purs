@@ -42,7 +42,7 @@ randomNode =
         processF receive = do
             let
                 min = receive "min" # fromMaybe (Number' 0.0)
-                max = receive "max" # fromMaybe (Number' 0.0)
+                max = receive "max" # fromMaybe (Number' 100.0)
             random <-
                 case min /\ max of
                     (Number' min' /\ Number' max') ->
