@@ -172,6 +172,24 @@ body {
     left: 0;
 }
 
+.rpd-links * { /* TODO: remove */
+    background-color: red;
+}
+
+.rpd-mouse-pos, .rpd-drag-state { /* TODO: remove */
+    position: fixed;
+    top: 0;
+    background-color: lightblue;
+}
+
+.rpd-mouse-pos { /* TODO: remove */
+    left: 50px;
+}
+
+.rpd-drag-state { /* TODO: remove */
+    left: 250px;
+}
+
 #error {
     border: 2px solid red;
     padding: 5px;

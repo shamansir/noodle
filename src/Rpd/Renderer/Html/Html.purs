@@ -2,6 +2,8 @@ module Rpd.Renderer.Html where
 
 import Prelude
 
+import Math (atan2, sqrt, pow)
+
 import Data.Int (toNumber)
 import Data.Either (Either(..))
 import Data.Foldable (foldr)
@@ -339,10 +341,17 @@ viewLink
     -> View d c n
 viewLink _ (uuid /\ { inletPos, outletPos }) =
     H.div [
-        H.style $ "transform: translate(" <> outletPosStr <> ")"
+        H.style
+            $ "transform: translate(" <> outletPosStr <> ") rotate(" <> angleStr <> "); "
+           <> "width: " <> lengthStr <> "; "
     ] [ H.text "LINK" ]
     where
         outletPosStr = show outletPos.x <> "px, " <> show outletPos.y <> "px"
+        vector = { x: inletPos.x - outletPos.x, y : inletPos.y - outletPos.y }
+        angle = atan2 vector.y vector.x
+        length = sqrt $ pow vector.x 2.0 + pow vector.y 2.0
+        angleStr = show angle <> "rad"
+        lengthStr = show length <> "px"
 
 
 viewDebugWindow
