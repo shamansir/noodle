@@ -51,11 +51,17 @@ type Model d c n =
     , uuidToChannel :: UUID /-> c
     , mousePos :: MousePos
     , dragging :: DragState
-    , positions :: UUID.Tagged /-> (Int /\ Int)
+    , positions :: UUID.Tagged /-> Position
     }
 
 
-type MousePos = Int /\ Int
+type Position = { x :: Int, y :: Int }
+
+
+type LinkPosition = { inletPos :: Position, outletPos :: Position }
+
+
+type MousePos = Position
 
 
 data Action
@@ -67,7 +73,7 @@ data Action
     | MouseMove MousePos
     | EnableDebug
     | DisableDebug
-    | StorePositions (UUID.Tagged /-> (Int /\ Int))
+    | StorePositions (UUID.Tagged /-> Position)
 
 
 data Perform
@@ -107,7 +113,7 @@ init =
     -- , uuidToChannelDef : Map.empty
     -- , uuidToNodeDef : Map.empty
     , uuidToChannel : Map.empty
-    , mousePos : -1 /\ -1
+    , mousePos : { x : -1, y : -1 }
     , dragging : NotDragging
     , positions : Map.empty
     }
@@ -152,7 +158,33 @@ viewNetwork toolkitRenderer ui nw@(R.Network { name, patches }) =
                 [ H.span [] [ H.text name ] ]
             ] <>
             (toUnfoldable $ viewPatch toolkitRenderer ui nw
-                <$> (patches # Seq.toUnfoldable))
+                <$> (patches # Seq.toUnfoldable)) <>
+            [ H.div
+                [ H.classes [ "rpd-links" ] ]
+                (viewLink ui <$> allLinks)
+            ]
+    where
+        allLinks :: Array (UUID.ToLink /\ LinkPosition)
+        allLinks = Array.catMaybes $ Array.concatMap (loadLinks >>> getPositions) patches'
+        loadLinks :: UUID.ToPatch -> Array UUID.ToLink
+        loadLinks patchUuid =
+            L.view (L._patch patchUuid) nw
+                 <#> (\(R.Patch _ _ { links }) -> links # Seq.toUnfoldable)
+                  #  fromMaybe []
+        getPositions
+            :: Array UUID.ToLink
+            -> Array (Maybe (UUID.ToLink /\ LinkPosition))
+        getPositions links =
+            (\linkUuid ->
+                case L.view (L._link linkUuid) nw of
+                    Just (R.Link _ { inlet, outlet }) ->
+                        (\inletPos outletPos -> linkUuid /\ { inletPos, outletPos })
+                            <$> Map.lookup (UUID.liftTagged inlet) ui.positions
+                            <*> Map.lookup (UUID.liftTagged outlet) ui.positions
+                    Nothing -> Nothing
+            ) <$> links
+        patches' :: Array UUID.ToPatch
+        patches' = patches # Seq.toUnfoldable
 
 
 viewPatch
@@ -224,6 +256,7 @@ viewNode toolkitRenderer ui nw nodeUuid =
                 [ H.text $ "node " <> show nodeUuid <> " was not found" ]
     where
         handleNodeTitleClick nodePath e = Just $ my $ ClickNodeTitle nodePath e
+
 
 viewInlet
     :: forall d c n
@@ -298,6 +331,14 @@ viewOutlet toolkitRenderer ui nw outletUuid =
         handleOutletConnectorClick outletPath e = Just $ my $ ClickOutlet outletPath e
 
 
+viewLink
+    :: forall d c n
+     . Model d c n
+    -> UUID.ToLink /\ LinkPosition
+    -> View d c n
+viewLink _ _ = H.div [] []
+
+
 viewDebugWindow
     :: forall d c n
      . Show d => Show c => Show n
@@ -355,8 +396,8 @@ htmlRenderer toolkitRenderer =
 
 
 -- FIXME: show in DebugBox
-viewMousePos :: forall d c n. Int /\ Int -> View d c n
-viewMousePos ( x /\ y ) =
+viewMousePos :: forall d c n. Position -> View d c n
+viewMousePos { x, y } =
     H.span [ H.classes [ "rpd-mouse-pos" ] ] [ H.text $ show x <> ":" <> show y ]
 
 
@@ -385,7 +426,7 @@ view toolkitRenderer (Right (ui /\ nw)) =
         , viewDragState ui.dragging
         ]
     where
-        handleMouseMove e = Just $ my $ MouseMove $ ME.clientX e /\ ME.clientY e
+        handleMouseMove e = Just $ my $ MouseMove $ { x : ME.clientX e, y : ME.clientY e }
         handleClick e = Just $ my $ ClickBackground e
 view _ (Left err) =
     viewError err -- FIXME: show last working network state along with the error
@@ -473,9 +514,9 @@ convertPositions
     :: Array
             { uuid :: String
             , type :: String
-            , pos :: { x :: Int, y :: Int }
+            , pos :: Position
             }
-    -> UUID.Tagged /-> (Int /\ Int)
+    -> UUID.Tagged /-> Position
 convertPositions srcPositions =
     Map.fromFoldable $ Array.catMaybes $ decodePos <$> srcPositions
     where
@@ -483,11 +524,11 @@ convertPositions srcPositions =
             ::
                 { uuid :: String
                 , type :: String
-                , pos :: { x :: Int, y :: Int }
+                , pos :: Position
                 }
-            -> Maybe (UUID.Tagged /\ (Int /\ Int))
+            -> Maybe (UUID.Tagged /\ Position)
         decodePos { type, uuid, pos } =
-            (\tagged -> tagged /\ ( pos.x /\ pos.y)) <$> UUID.decode { uuid, type }
+            (\tagged -> tagged /\ pos) <$> UUID.decode { uuid, type }
 
 
 foreign import collectPositions
@@ -496,6 +537,6 @@ foreign import collectPositions
             (Array
                 { uuid :: String
                 , type :: String
-                , pos :: { x :: Int, y :: Int }
+                , pos :: Position
                 }
             )
