@@ -2,7 +2,6 @@
 
 exports.collectPositions = function(uuids) {
     return function() {
-        console.log('collect', uuids);
         const vals = uuids.filter(
             function(v) { return v.type == 'node' || v.type == 'inlet' || v.type == 'outlet' }
         ).map(
@@ -12,11 +11,10 @@ exports.collectPositions = function(uuids) {
                 return {
                     type : v.type,
                     uuid: v.uuid,
-                    pos: { x: elRect.left, y: elRect.top }
+                    pos: { x: window.scrollX + elRect.left, y: window.scrollY + elRect.top }
                 };
             }
         );
-        console.log(vals);
         return vals;
     };
 }

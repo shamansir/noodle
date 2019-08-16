@@ -2,6 +2,7 @@ module Rpd.Renderer.Html where
 
 import Prelude
 
+import Data.Int (toNumber)
 import Data.Either (Either(..))
 import Data.Foldable (foldr)
 import Data.Lens (view) as L
@@ -16,7 +17,7 @@ import Data.Sequence as Seq
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Exists (Exists, mkExists)
 
-import Debug.Trace as DT
+-- import Debug.Trace as DT
 
 import Effect (Effect)
 
@@ -55,7 +56,7 @@ type Model d c n =
     }
 
 
-type Position = { x :: Int, y :: Int }
+type Position = { x :: Number, y :: Number }
 
 
 type LinkPosition = { inletPos :: Position, outletPos :: Position }
@@ -113,7 +114,7 @@ init =
     -- , uuidToChannelDef : Map.empty
     -- , uuidToNodeDef : Map.empty
     , uuidToChannel : Map.empty
-    , mousePos : { x : -1, y : -1 }
+    , mousePos : { x : -1.0, y : -1.0 }
     , dragging : NotDragging
     , positions : Map.empty
     }
@@ -336,7 +337,12 @@ viewLink
      . Model d c n
     -> UUID.ToLink /\ LinkPosition
     -> View d c n
-viewLink _ _ = H.div [] []
+viewLink _ (uuid /\ { inletPos, outletPos }) =
+    H.div [
+        H.style $ "transform: translate(" <> outletPosStr <> ")"
+    ] [ H.text "LINK" ]
+    where
+        outletPosStr = show outletPos.x <> "px, " <> show outletPos.y <> "px"
 
 
 viewDebugWindow
@@ -426,7 +432,8 @@ view toolkitRenderer (Right (ui /\ nw)) =
         , viewDragState ui.dragging
         ]
     where
-        handleMouseMove e = Just $ my $ MouseMove $ { x : ME.clientX e, y : ME.clientY e }
+        handleMouseMove e = Just $ my $ MouseMove
+            $ { x : toNumber $ ME.clientX e, y :toNumber $ ME.clientY e }
         handleClick e = Just $ my $ ClickBackground e
 view _ (Left err) =
     viewError err -- FIXME: show last working network state along with the error
@@ -440,34 +447,35 @@ update
 
 update (Right (Core.Data Core.Bang)) (ui /\ _) = ui /\ []
 update (Right (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ _) =
-    (ui { lastInletData = ui.lastInletData # Map.insert inletPath d })
+    ui { lastInletData = ui.lastInletData # Map.insert inletPath d }
     /\ []
 update (Right (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (ui /\ _) =
-    (ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d })
+    ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d }
     /\ []
-update (Right (Core.Build (Core.AddInlet inlet))) ( ui /\ nw ) =
-    ( ui /\ [ UpdatePositions ] )
-update (Right (Core.Build (Core.AddNode node))) ( ui /\ nw ) =
-    ( ui /\ [ UpdatePositions ] )
+update (Right (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
+    ui /\ [ UpdatePositions ]
+update (Right (Core.Build (Core.AddNode _))) ( ui /\ nw ) =
+    ui /\ [ UpdatePositions ]
+update (Right (Core.Build (Core.AddLink _))) ( ui /\ nw ) =
+    ui /\ [ UpdatePositions ]
 update (Right _) (ui /\ _) = ui /\ []
+
+update (Left NoOp) (ui /\ _) = ui /\ []
 update (Left (MouseMove mousePos)) ( ui /\ nw ) =
-    (ui { mousePos = mousePos })
-    /\ []
+    ui { mousePos = mousePos } /\ []
 update (Left (ClickBackground e)) ( ui /\ nw ) =
-    (ui { dragging = NotDragging })
-    /\ []
+    ui { dragging = NotDragging } /\ []
 update (Left (ClickNodeTitle nodePath e)) ( ui /\ nw ) =
-    (ui
+    ui
         { dragging = Dragging $ DragNode nodePath
         -- TODO: if node was dragged before, place it at the mouse point
         }
-    ) /\ [ StopPropagation $ ME.toEvent e ]
+    /\ [ StopPropagation $ ME.toEvent e ]
 update (Left (ClickInlet inletPath e)) ( ui /\ nw ) =
-    (ui
+    ui
         { dragging = NotDragging
         -- TODO: if node was dragged before, place it at the mouse point
         }
-    )
     /\ (case ui.dragging of
         Dragging (DragLink outletPath) ->
             [ StopPropagation $ ME.toEvent e
@@ -475,12 +483,15 @@ update (Left (ClickInlet inletPath e)) ( ui /\ nw ) =
             ]
         _ -> [ StopPropagation $ ME.toEvent e ])
 update (Left (ClickOutlet outletPath e)) ( ui /\ nw ) =
-    (ui
+    ui
         { dragging = Dragging $ DragLink outletPath
         -- TODO: if node was dragged before, place it at the mouse point
         }
-    ) /\ [ StopPropagation $ ME.toEvent e ]
-update (Left _) (ui /\ _) = ui /\ []
+    /\ [ StopPropagation $ ME.toEvent e ]
+update (Left EnableDebug) (ui /\ _) = ui /\ [] -- TODO: why do nothing?
+update (Left DisableDebug) (ui /\ _) = ui /\ [] -- TODO: why do nothing?
+update (Left (StorePositions positions)) (ui /\ _) =
+    ui { positions = positions } /\ []
 
 
 performEffect

@@ -166,6 +166,12 @@ body {
     grid-area: rpd-node-remove-button;
 }
 
+.rpd-links {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
 #error {
     border: 2px solid red;
     padding: 5px;
