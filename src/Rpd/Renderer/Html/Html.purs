@@ -6,6 +6,7 @@ import Math (atan2, sqrt, pow)
 
 import Data.Int (toNumber)
 import Data.Either (Either(..))
+import Data.Either (hush) as Either
 import Data.Foldable (foldr)
 import Data.Lens (view) as L
 import Data.Lens.At (at) as L
@@ -23,7 +24,7 @@ import Data.Exists (Exists, mkExists)
 
 import Effect (Effect)
 
-import Rpd.API (RpdError) as R
+import Rpd.API (RpdError, uuidByPath) as R
 import Rpd.API.Action (Action(..), DataAction(..), BuildAction(..), RequestAction(..)) as Core
 import Rpd.Network as R
 import Rpd.Optics as L
@@ -61,7 +62,8 @@ type Model d c n =
 type Position = { x :: Number, y :: Number }
 
 
-type LinkPosition = { inletPos :: Position, outletPos :: Position }
+type LinkPosition = { from :: Position, to :: Position }
+type LinkTransform = { from :: Position, angle :: Number, length :: Number }
 
 
 type MousePos = Position
@@ -86,8 +88,8 @@ data Perform
 
 
 data DragSubject
-    = DragNode P.ToNode
-    | DragLink P.ToOutlet
+    = DragNode P.ToNode -- FIXME: store the node itself
+    | DragLink P.ToOutlet -- FIXME: store the outlet itself
 
 
 data DragState
@@ -161,14 +163,27 @@ viewNetwork toolkitRenderer ui nw@(R.Network { name, patches }) =
                 [ H.span [] [ H.text name ] ]
             ] <>
             (toUnfoldable $ viewPatch toolkitRenderer ui nw
-                <$> (patches # Seq.toUnfoldable)) <>
+                <$> patches # Seq.toUnfoldable) <>
             [ H.div
                 [ H.classes [ "rpd-links" ] ]
-                (viewLink ui <$> allLinks)
+                $ (viewLink ui <$> allLinks)
+                    <> maybe [] (viewDraggingLink ui >>> Array.singleton) currentlyDraggingLink
+
+
             ]
     where
+        currentlyDraggingLink :: Maybe LinkPosition
+        currentlyDraggingLink =
+            case ui.dragging of
+                NotDragging -> Nothing
+                Dragging (DragNode _) -> Nothing
+                Dragging (DragLink outletPath) ->
+                    (R.uuidByPath UUID.toOutlet outletPath nw # Either.hush)
+                        >>= \outletUuid -> Map.lookup (UUID.liftTagged outletUuid) ui.positions
+                        <#> \outletPos -> { from : outletPos, to : ui.mousePos }
         allLinks :: Array (UUID.ToLink /\ LinkPosition)
-        allLinks = Array.catMaybes $ Array.concatMap (loadLinks >>> getPositions) patches'
+        allLinks = Array.catMaybes
+            $ Array.concatMap (loadLinks >>> getPositions) (patches # Seq.toUnfoldable)
         loadLinks :: UUID.ToPatch -> Array UUID.ToLink
         loadLinks patchUuid =
             L.view (L._patch patchUuid) nw
@@ -181,13 +196,11 @@ viewNetwork toolkitRenderer ui nw@(R.Network { name, patches }) =
             (\linkUuid ->
                 case L.view (L._link linkUuid) nw of
                     Just (R.Link _ { inlet, outlet }) ->
-                        (\inletPos outletPos -> linkUuid /\ { inletPos, outletPos })
+                        (\inletPos outletPos -> linkUuid /\ { from : outletPos, to : inletPos })
                             <$> Map.lookup (UUID.liftTagged inlet) ui.positions
                             <*> Map.lookup (UUID.liftTagged outlet) ui.positions
                     Nothing -> Nothing
             ) <$> links
-        patches' :: Array UUID.ToPatch
-        patches' = patches # Seq.toUnfoldable
 
 
 viewPatch
@@ -339,19 +352,25 @@ viewLink
      . Model d c n
     -> UUID.ToLink /\ LinkPosition
     -> View d c n
-viewLink _ (uuid /\ { inletPos, outletPos }) =
+viewLink _ (uuid /\ linkPosition) =
     H.div [
         H.style
-            $ "transform: translate(" <> outletPosStr <> ") rotate(" <> angleStr <> "); "
-           <> "width: " <> lengthStr <> "; "
+            $ getLinkTransformStyle
+                $ getLinkTransform linkPosition
     ] [ H.text "LINK" ]
-    where
-        outletPosStr = show outletPos.x <> "px, " <> show outletPos.y <> "px"
-        vector = { x: inletPos.x - outletPos.x, y : inletPos.y - outletPos.y }
-        angle = atan2 vector.y vector.x
-        length = sqrt $ pow vector.x 2.0 + pow vector.y 2.0
-        angleStr = show angle <> "rad"
-        lengthStr = show length <> "px"
+
+
+viewDraggingLink
+    :: forall d c n
+     . Model d c n
+    -> LinkPosition
+    -> View d c n
+viewDraggingLink _ linkPosition =
+    H.div [
+        H.style
+            $ getLinkTransformStyle
+                $ getLinkTransform linkPosition
+    ] [ H.text "LINK" ]
 
 
 viewDebugWindow
@@ -549,6 +568,26 @@ convertPositions srcPositions =
             -> Maybe (UUID.Tagged /\ Position)
         decodePos { type, uuid, pos } =
             (\tagged -> tagged /\ pos) <$> UUID.decode { uuid, type }
+
+
+getLinkTransform :: { from :: Position, to :: Position } -> LinkTransform
+getLinkTransform { from, to } =
+    let
+        vector = { x: to.x - from.x, y : to.y - from.y }
+        angle = atan2 vector.y vector.x
+        length = sqrt $ pow vector.x 2.0 + pow vector.y 2.0
+    in
+        { from, angle, length }
+
+
+getLinkTransformStyle :: LinkTransform -> String
+getLinkTransformStyle { from, angle, length } =
+    "transform: translate(" <> fromPosStr <> ") rotate(" <> angleStr <> ");"
+        <> " width: " <> lengthStr <> ";"
+    where
+        fromPosStr = show from.x <> "px, " <> show from.y <> "px"
+        angleStr = show angle <> "rad"
+        lengthStr = show length <> "px"
 
 
 foreign import collectPositions
