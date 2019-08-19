@@ -16,8 +16,9 @@ import Example.Toolkit.Value
 import Example.Toolkit.Channel
 
 
-data Node =
-    RandomNode
+data Node
+    = RandomNode
+    -- | CanvasNode
 
 
 instance showNode :: Show Node where

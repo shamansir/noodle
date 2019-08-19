@@ -17,6 +17,7 @@ module Rpd.Process
 import Prelude
 
 import Data.Maybe
+import FRP.Event
 import Data.Tuple.Nested (type (/\))
 import Effect (Effect)
 
@@ -90,3 +91,4 @@ data ProcessF d
     -- TODO: one more option w/o any effects
     -- TODO: and so, test them all
     | Process ((InletAlias -> Maybe d) -> Effect (OutletAlias -> Maybe d))
+    | Process' ((InletAlias -> Maybe d) -> Effect (OutletAlias -> Maybe (Event d)))

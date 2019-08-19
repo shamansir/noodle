@@ -378,6 +378,42 @@ buildOutletsFlow _ (Process processNode) (InletsFlow inletsFlow) inlets outlets 
     canceler <- liftEffect $ E.subscribe processFlow processHandler
     pure $ (OutletsFlow event)
            /\ Just canceler
+buildOutletsFlow _ (Process' processNode) (InletsFlow inletsFlow) inlets outlets nw = do
+    -- collect data from inletsFlow into the Map (Alias /-> d) and pass Map.lookup to the `processF` handler.
+    { push, event } <- E.create
+    let
+        outletsAliases :: List (Path.ToOutlet /\ UUID.ToOutlet)
+        outletsAliases =
+            (outlets
+                 # List.fromFoldable
+                <#> \uuid ->
+                    view (_outlet uuid) nw
+                        <#> \(Outlet uuid' path _ _) -> path /\ uuid')
+                 # List.catMaybes
+                -- FIXME: if outlet wasn't found, raise an error?
+                --  # Map.fromFoldable
+        foldingF
+            ((Path.ToInlet { node : nodePath, inlet : inletAlias })
+            /\ uuid
+            /\ curD)
+            inletVals =
+            inletVals # Map.insert inletAlias curD
+        processFlow = E.fold foldingF inletsFlow Map.empty
+        processHandler inletsValues = do
+            -- TODO: could even produce Aff (and then cancel it on next iteration)
+            let receive = flip Map.lookup $ inletsValues
+            (send :: Path.Alias -> Maybe (E.Event d)) <- processNode receive
+            _ <- traverse
+                    (\(path@(Path.ToOutlet { outlet : alias }) /\ uuid) ->
+                        case send alias of
+                            Just event -> push $ path /\ uuid /\ v
+                            Nothing -> pure unit
+                    )
+                    outletsAliases
+            pure unit
+    canceler <- liftEffect $ E.subscribe processFlow processHandler
+    pure $ (OutletsFlow event)
+           /\ Just canceler
 
 
 informNodeOnInletUpdates
