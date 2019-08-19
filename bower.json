@@ -1,7 +1,7 @@
 {
   "name": "rpd-purs",
   "main": [
-    "example/HalogenVDom.purs"
+    "examples/HalogenVDom.purs"
   ],
   "ignore": [
     "**/.*",

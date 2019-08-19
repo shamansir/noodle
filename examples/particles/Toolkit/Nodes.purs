@@ -16,8 +16,8 @@ import Example.Toolkit.Value
 import Example.Toolkit.Channel
 
 
-data Node =
-    RandomNode
+data Node
+    = RandomNode
 
 
 instance showNode :: Show Node where
@@ -26,6 +26,35 @@ instance showNode :: Show Node where
 
 randomNode :: T.NodeDef Value Channel
 randomNode =
+    T.NodeDef
+        { inlets :
+            withInlets
+            ~< "bang" /\ TriggerChannel
+            ~< "min"  /\ NumberChannel
+            ~< "max"  /\ NumberChannel
+        , outlets :
+            withOutlets
+            >~ "random" /\ NumberChannel
+        , process : R.Process processF
+        }
+    where
+        processF :: (String -> Maybe Value) -> Effect (String -> Maybe Value)
+        processF receive = do
+            let
+                min = receive "min" # fromMaybe (Number' 0.0)
+                max = receive "max" # fromMaybe (Number' 100.0)
+            random <-
+                case min /\ max of
+                    (Number' min' /\ Number' max') ->
+                        randomRange min' max'
+                    _ -> pure 0.0
+            let send "random" = Just $ Number' random
+                send _ = Nothing
+            pure send
+
+
+sineNode :: T.NodeDef Value Channel
+sineNode =
     T.NodeDef
         { inlets :
             withInlets
