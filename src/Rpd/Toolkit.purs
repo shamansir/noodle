@@ -11,7 +11,7 @@ module Rpd.Toolkit
     , ToolkitRenderer, RendererAlias(..)
     , empty
     , emptyNode
-    , (>~), (~<), andInlet, andOutlet, withInlets, withOutlets
+    , (>~), (~<), andInlet, andOutlet, withInlets, withOutlets, noInlets, noOutlets
     -- , class NodeRenderer, class ChannelRenderer
     --, renderNode, renderInlet, renderOutlet
     -- , RenderNode, RenderInlet, RenderOutlet
@@ -72,7 +72,7 @@ instance showChannelDefAlias :: Show ChannelDefAlias where
 --     }
 
 
--- FIXME: the name "Channel" is not right, it's rather Channels system... `ChannelDef`, `Transponder`?
+-- FIXME: the name "Channel" is not right, it's rather Channels system... `Routing`, `ChannelDef`, `Transponder`?
 -- class (Show c) <= Channel c d where
 class Channels d c where
     default :: c -> d
@@ -162,8 +162,16 @@ withInlets :: forall c. List (InletAlias /\ c)
 withInlets = List.Nil
 
 
+noInlets :: forall c. List (InletAlias /\ c)
+noInlets = List.Nil
+
+
 withOutlets :: forall c. List (OutletAlias /\ c)
 withOutlets = List.Nil
+
+
+noOutlets :: forall c. List (OutletAlias /\ c)
+noOutlets = List.Nil
 
 
 inlets
