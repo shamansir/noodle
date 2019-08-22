@@ -11,7 +11,9 @@ module Rpd.Toolkit
     , ToolkitRenderer, RendererAlias(..)
     , empty
     , emptyNode
-    , (>~), (~<), andInlet, andOutlet, withInlets, withOutlets, noInlets, noOutlets
+    , (>~), (~<), andInlet, andOutlet
+    , (>>~), (~<<), andInlets, andOutlets
+    , withInlets, withOutlets, noInlets, noOutlets
     -- , class NodeRenderer, class ChannelRenderer
     --, renderNode, renderInlet, renderOutlet
     -- , RenderNode, RenderInlet, RenderOutlet
@@ -24,10 +26,11 @@ import Effect (Effect)
 import Data.Bifunctor (bimap)
 import Data.Maybe (Maybe)
 import Data.Map as Map
-import Data.List (List)
+import Data.List (List, (:))
 import Data.List as List
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Exists (Exists, mkExists)
+import Data.Foldable (foldl, foldr)
 
 import Rpd.Util (type (/->))
 import Rpd.Process (ProcessF(..))
@@ -136,7 +139,11 @@ emptyNode =
 
 infixl 1 andInlet as ~<
 
+infixl 1 andInlets as ~<<
+
 infixl 1 andOutlet as >~
+
+infixl 1 andOutlets as >>~
 
 
 andInlet
@@ -148,14 +155,37 @@ andInlet list (name /\ channel) =
     list `List.snoc` (InletAlias name /\ channel)
 
 
+andInlets
+    :: forall c
+     . List (InletAlias /\ c)
+    -> List (String /\ c)
+    -> List (InletAlias /\ c)
+andInlets list source =
+    foldr
+        (:)
+        (source <#> (\(name /\ channel) -> InletAlias name /\ channel))
+        list
+
 
 andOutlet
     :: forall c
      . List (OutletAlias /\ c)
-    ->  String /\ c
+    -> String /\ c
     -> List (OutletAlias /\ c)
 andOutlet list (name /\ channel) =
     list `List.snoc` (OutletAlias name /\ channel)
+
+
+andOutlets
+    :: forall c
+     . List (OutletAlias /\ c)
+    -> List (String /\ c)
+    -> List (OutletAlias /\ c)
+andOutlets list source =
+    foldr
+        (:)
+        (source <#> (\(name /\ channel) -> OutletAlias name /\ channel))
+        list
 
 
 withInlets :: forall c. List (InletAlias /\ c)

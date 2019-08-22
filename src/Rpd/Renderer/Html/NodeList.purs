@@ -20,4 +20,4 @@ render patchPath nodes =
                     , H.onClick $ H.always_ $ R.core
                         $ A.Request $ A.ToAddNode patchPath (show n) n
                     ]
-                    [ H.text $ show n ] -- TODO: add toolkit name
+                    [ H.text $ show n ] -- TODO: add toolkit name. may be use `n -> String`

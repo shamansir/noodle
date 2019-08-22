@@ -110,5 +110,5 @@ renderer =
     , renderOutlet : \_ _ d ->
         H.div
             [ H.classes [ "tk-outlet" ] ]
-            [ H.text $ "tk-inlet : " <> (maybe "?" show d) ]
+            [ H.text $ "tk-outlet : " <> (maybe "?" show d) ]
     }
