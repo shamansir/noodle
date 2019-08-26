@@ -3,9 +3,11 @@ module Rpd.API.Action.Sequence where
 import Prelude
 
 import Effect (Effect)
+import Effect.Ref as Ref
 
 import Data.List (List(..), snoc)
 import Data.Either
+import Data.Maybe
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_)
@@ -27,6 +29,7 @@ newtype EveryStep' d c n = EveryStep' (Either RpdError (Network d c n) -> Effect
 newtype ErrorHandler = ErrorHandler (RpdError -> Effect Unit)
 newtype LastStep d c n = LastStep (Network d c n -> Effect Unit)
 newtype EveryAction d c n = EveryAction (Action d c n -> Effect Unit)
+newtype Result d c n = Result (Either RpdError (Network d c n))
 
 
 infixl 1 andThen as </>
@@ -160,6 +163,50 @@ prepare
 prepare nw toolkit = prepare_ nw (apply toolkit) (performEffect toolkit)
 
 
+-- FIXME: Do not expose!
+_run
+    :: forall d c n
+     . Toolkit d c n
+    -> Network d c n
+    -> EveryStep' d c n
+    -> Maybe (EveryAction d c n)
+    -> ActionList d c n
+    -> Effect (Result d c n)
+_run
+    toolkit
+    initialNW
+    (EveryStep' modelHandler)
+    (Just (EveryAction actionsHandler))
+    (ActionList actionList) = do
+    { models, actions, pushAction } <- prepare initialNW toolkit
+    lastValRef <- Ref.new $ Right initialNW
+    stopInforming <- Event.subscribe models modelHandler
+    stopCollectingLastValue <- Event.subscribe models (flip Ref.write lastValRef)
+    stopListeningActions <- Event.subscribe actions actionsHandler
+    _ <- traverse_ pushAction actionList
+    -- _ <- stopInforming
+    -- _ <- stopCollectingLastValue
+    -- _ <- stopListeningActions
+    lastVal <- Ref.read lastValRef
+    pure $ Result lastVal
+_run
+    toolkit
+    initialNW
+    (EveryStep' modelHandler)
+    Nothing
+    (ActionList actionList) = do
+    { models, pushAction, actions } <- prepare initialNW toolkit
+    lastValRef <- Ref.new $ Right initialNW
+    stopInforming <- Event.subscribe models modelHandler
+    stopCollectingLastValue <- Event.subscribe models (flip Ref.write lastValRef)
+    _ <- traverse_ pushAction actionList
+    -- _ <- stopInforming
+    -- _ <- stopCollectingLastValue
+    lastVal <- Ref.read lastValRef
+    pure $ Result lastVal
+
+
+
 run
     :: forall d c n
      . Toolkit d c n
@@ -167,12 +214,9 @@ run
     -> ErrorHandler
     -> EveryStep d c n
     -> ActionList d c n
-    -> Effect Unit
-run toolkit initialNW (ErrorHandler onError) (EveryStep everyStep) (ActionList actionList) = do
-    { models, pushAction } <- prepare initialNW toolkit
-    _ <- Event.subscribe models $ either onError everyStep
-    _ <- traverse_ pushAction actionList
-    pure unit
+    -> Effect (Result d c n)
+run toolkit initialNW (ErrorHandler onError) (EveryStep everyStep) actionList = do
+    _run toolkit initialNW (EveryStep' $ either onError everyStep) Nothing actionList
 
 
 run'
@@ -181,12 +225,9 @@ run'
     -> Network d c n
     -> EveryStep' d c n
     -> ActionList d c n
-    -> Effect Unit
-run' toolkit initialNW (EveryStep' everyStep) (ActionList actionList) = do
-    { models, pushAction } <- prepare initialNW toolkit
-    _ <- Event.subscribe models everyStep
-    _ <- traverse_ pushAction actionList
-    pure unit
+    -> Effect (Result d c n)
+run' toolkit initialNW everyStep actionList = do
+    _run toolkit initialNW everyStep Nothing actionList
 
 
 run_
@@ -196,13 +237,12 @@ run_
     -> ErrorHandler
     -> LastStep d c n
     -> ActionList d c n
-    -> Effect Unit
-run_ toolkit initialNW (ErrorHandler onError) (LastStep lastStep) (ActionList actionList) = do
-    { models, pushAction } <- prepare initialNW toolkit
-    _ <- Event.subscribe models $ either onError $ const $ pure unit
-    _ <- traverse_ pushAction actionList
-    pushAction $ Inner $ Do lastStep
-    pure unit
+    -> Effect (Result d c n)
+run_ toolkit initialNW (ErrorHandler onError) (LastStep lastStep) actionList = do
+    _run toolkit initialNW
+        (EveryStep' $ either onError $ const $ pure unit)
+        Nothing
+        $ actionList </> (Inner $ Do lastStep)
 
 
 runTracing
@@ -212,13 +252,12 @@ runTracing
     -> ErrorHandler
     -> EveryAction d c n
     -> ActionList d c n
-    -> Effect Unit
-runTracing toolkit initialNW (ErrorHandler onError) (EveryAction everyAction) (ActionList actionList) = do
-    { pushAction, actions, models } <- prepare initialNW toolkit
-    _ <- Event.subscribe models $ either onError $ const $ pure unit
-    _ <- Event.subscribe actions everyAction
-    _ <- traverse_ pushAction actionList
-    pure unit
+    -> Effect (Result d c n)
+runTracing toolkit initialNW (ErrorHandler onError) everyAction actionList = do
+    _run toolkit initialNW
+        (EveryStep' $ either onError $ const $ pure unit)
+        (Just everyAction)
+        actionList
 
 
 andThen :: forall d c n. ActionList d c n -> Action d c n -> ActionList d c n
