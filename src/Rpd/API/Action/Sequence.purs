@@ -3,7 +3,9 @@ module Rpd.API.Action.Sequence where
 import Prelude
 
 import Effect (Effect)
+import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Ref as Ref
+import Control.Monad.Error.Class
 
 import Data.List (List(..), snoc)
 import Data.Either
@@ -23,20 +25,17 @@ import Rpd.Path as Path
 import Rpd.Toolkit (Toolkit, NodeDef)
 
 
-newtype ActionList d c n = ActionList (List (Action d c n))
-newtype EveryStep d c n = EveryStep (Network d c n -> Effect Unit)
-newtype EveryStep' d c n = EveryStep' (Either RpdError (Network d c n) -> Effect Unit)
-newtype ErrorHandler = ErrorHandler (RpdError -> Effect Unit)
-newtype LastStep d c n = LastStep (Network d c n -> Effect Unit)
-newtype EveryAction d c n = EveryAction (Action d c n -> Effect Unit)
-newtype Result d c n = Result (Either RpdError (Network d c n))
+type ActionList d c n = List (Action d c n) -- TODO: or newtype?
+type EveryStep d c n = Either RpdError (Network d c n) -> Effect Unit
+type EveryAction d c n = Action d c n -> Effect Unit
+type Result d c n = Either RpdError (Network d c n)
 
 
 infixl 1 andThen as </>
 
 
 init :: forall d c n. ActionList d c n
-init = ActionList $ Nil
+init = Nil
 
 
 addPatch :: forall d c n. Path.Alias -> Action d c n
@@ -114,9 +113,10 @@ do_ f = Inner $ Do f
 
 
 pass :: forall d c n. EveryStep d c n
-pass = EveryStep $ const $ pure unit
+pass = const $ pure unit
 
 
+-- FIXME: Do not expose!
 prepare_
     :: forall model action effect
      . model
@@ -163,102 +163,99 @@ prepare
 prepare nw toolkit = prepare_ nw (apply toolkit) (performEffect toolkit)
 
 
--- FIXME: Do not expose!
-_run
-    :: forall d c n
-     . Toolkit d c n
-    -> Network d c n
-    -> EveryStep' d c n
-    -> Maybe (EveryAction d c n)
-    -> ActionList d c n
-    -> Effect (Result d c n)
-_run
-    toolkit
-    initialNW
-    (EveryStep' modelHandler)
-    (Just (EveryAction actionsHandler))
-    (ActionList actionList) = do
-    { models, actions, pushAction } <- prepare initialNW toolkit
-    lastValRef <- Ref.new $ Right initialNW
-    stopInforming <- Event.subscribe models modelHandler
-    stopCollectingLastValue <- Event.subscribe models (flip Ref.write lastValRef)
-    stopListeningActions <- Event.subscribe actions actionsHandler
-    _ <- traverse_ pushAction actionList
-    -- _ <- stopInforming
-    -- _ <- stopCollectingLastValue
-    -- _ <- stopListeningActions
-    lastVal <- Ref.read lastValRef
-    pure $ Result lastVal
-_run
-    toolkit
-    initialNW
-    (EveryStep' modelHandler)
-    Nothing
-    (ActionList actionList) = do
-    { models, pushAction, actions } <- prepare initialNW toolkit
-    lastValRef <- Ref.new $ Right initialNW
-    stopInforming <- Event.subscribe models modelHandler
-    stopCollectingLastValue <- Event.subscribe models (flip Ref.write lastValRef)
-    _ <- traverse_ pushAction actionList
-    -- _ <- stopInforming
-    -- _ <- stopCollectingLastValue
-    lastVal <- Ref.read lastValRef
-    pure $ Result lastVal
-
-
-
 run
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
-    -> ErrorHandler
     -> EveryStep d c n
     -> ActionList d c n
-    -> Effect (Result d c n)
-run toolkit initialNW (ErrorHandler onError) (EveryStep everyStep) actionList = do
-    _run toolkit initialNW (EveryStep' $ either onError everyStep) Nothing actionList
+    -> Effect Unit
+run toolkit initialNW stepHandler actions = do
+    { models, pushAction } <- prepare initialNW toolkit
+    lastValRef <- Ref.new $ Right initialNW
+    stopInforming <- Event.subscribe models stepHandler
+    _ <- traverse_ pushAction actions
+    -- _ <- stopInforming
+    pure unit
 
 
-run'
+-- TODO: Think about laziness, so that if some error occurs,
+--       skip execution of the tail of the action list
+runFolding
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
-    -> EveryStep' d c n
     -> ActionList d c n
     -> Effect (Result d c n)
-run' toolkit initialNW everyStep actionList = do
-    _run toolkit initialNW everyStep Nothing actionList
+runFolding toolkit initialNW actions = do
+    { models, pushAction } <- prepare initialNW toolkit
+    lastValRef <- Ref.new $ Right initialNW
+    let modelsFolded = Event.fold foldByError models $ Right initialNW
+    stopCollectingLastValue <-
+        Event.subscribe modelsFolded (flip Ref.write lastValRef)
+    _ <- traverse_ pushAction actions
+    -- _ <- stopCollectingLastValue
+    lastVal <- Ref.read lastValRef
+    pure lastVal
 
 
-run_
-    :: forall d c n
-     . Toolkit d c n
+{-
+TODO: implement, so could work with `Aff` and replace `failOrGet` in RpdTest.Helper
+TODO: Think about laziness, so that if some error occurs,
+      skip execution of the tail of the action list
+
+runM
+    :: forall m d c n
+     . MonadError RpdError m
+    => MonadEffect m
+    => Toolkit d c n
     -> Network d c n
-    -> ErrorHandler
-    -> LastStep d c n
     -> ActionList d c n
-    -> Effect (Result d c n)
-run_ toolkit initialNW (ErrorHandler onError) (LastStep lastStep) actionList = do
-    _run toolkit initialNW
-        (EveryStep' $ either onError $ const $ pure unit)
-        Nothing
-        $ actionList </> (Inner $ Do lastStep)
+    -> m (Network d c n)
+runM toolkit initialNW actions =
+    liftEffect $ do
+        { models, pushAction } <- liftEffect $ prepare initialNW toolkit
+        lastValRef <- Ref.new $ Right initialNW
+        stopInforming <- Event.subscribe models ?wh
+        stopCollectingLastValue <- Event.subscribe models (flip Ref.write lastValRef)
+        _ <- traverse_ pushAction actions
+        -- _ <- stopInforming
+        -- _ <- stopCollectingLastValue
+        lastVal <- Ref.read lastValRef
+        pure $ initialNW
+-}
 
 
 runTracing
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
-    -> ErrorHandler
     -> EveryAction d c n
     -> ActionList d c n
     -> Effect (Result d c n)
-runTracing toolkit initialNW (ErrorHandler onError) everyAction actionList = do
-    _run toolkit initialNW
-        (EveryStep' $ either onError $ const $ pure unit)
-        (Just everyAction)
-        actionList
+runTracing toolkit initialNW everyAction actionList = do
+    { models, pushAction, actions } <- prepare initialNW toolkit
+    lastValRef <- Ref.new $ Right initialNW
+    let modelsFolded = Event.fold foldByError models $ Right initialNW
+    stopCollectingLastValue <-
+        Event.subscribe modelsFolded (flip Ref.write lastValRef)
+    _ <- traverse_ pushAction actionList
+    -- _ <- stopInforming
+    -- _ <- stopCollectingLastValue
+    lastVal <- Ref.read lastValRef
+    pure lastVal
 
 
 andThen :: forall d c n. ActionList d c n -> Action d c n -> ActionList d c n
-andThen (ActionList arr) msg = ActionList (arr `snoc` msg)
+andThen = snoc
+
+
+-- FIXME: do not expose!
+-- TODO: may be there is some core function which lets to do it, i.e. `fold (<|>) models`
+foldByError
+    :: forall d c n
+     . Either RpdError (Network d c n)
+    -> Either RpdError (Network d c n)
+    -> Either RpdError (Network d c n)
+foldByError _ (Left err) = Left err
+foldByError v _ = v

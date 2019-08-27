@@ -20,5 +20,5 @@ spec =
   describe "UUID generation" do
     it "does what it says" do
       uuid <- liftEffect $ UUID.new
-      _ <- 36 `shouldEqual` String.length (UUID.toString uuid)
+      _ <- 36 `shouldEqual` String.length (UUID.toRawString uuid)
       pure unit

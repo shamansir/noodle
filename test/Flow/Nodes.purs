@@ -19,7 +19,7 @@ import Rpd.Toolkit ((>~), (~<), withInlets, withOutlets, NodeDef(..))
 import Test.Spec (Spec, it, pending)
 import Test.Spec.Assertions (shouldContain)
 
-import RpdTest.Helper (withRpd, TraceItem(..))
+import RpdTest.Helper (TraceItem(..))
 import RpdTest.Helper (channelsAfter) as CollectData
 import RpdTest.Flow.Base
     ( Actions
@@ -40,9 +40,11 @@ spec = do
 
   it "returning some value from processing function actually sends this value to the outlet" $ do
     let
+
       curse1Inlet = toInlet "patch" "node" "curse1"
       curse2Inlet = toInlet "patch" "node" "curse2"
       applesOutlet = toOutlet "patch" "node" "apples"
+
       structure :: Actions
       structure =
         Actions.init
@@ -52,6 +54,7 @@ spec = do
                   "node"
                   Custom
                   nodeDef
+
       nodeDef :: NodeDef Delivery Pipe
       nodeDef =
           NodeDef
@@ -64,7 +67,9 @@ spec = do
                 >~ "apples" /\ Pass
             , process : R.Process processF
             }
+
       processF receive = do
+          -- FIXME: rewrite using `<$>`
           let
               curse1 = receive "curse1" # fromMaybe Damaged
               curse2 = receive "curse2" # fromMaybe Damaged
@@ -76,7 +81,8 @@ spec = do
           let send "apples" = Just sumOrDamage
               send _ = Nothing
           pure send
-    collectedData <-
+
+    _ /\ collectedData <-
       CollectData.channelsAfter
           (Milliseconds 100.0)
           myToolkit
@@ -84,17 +90,20 @@ spec = do
           $ structure
               </> R.sendToInlet curse1Inlet (Curse 4)
               </> R.sendToInlet curse2Inlet (Curse 3)
+
     collectedData `shouldContain`
       (InletData curse1Inlet $ Curse 4)
     collectedData `shouldContain`
       (InletData curse2Inlet $ Curse 3)
     collectedData `shouldContain`
       (OutletData applesOutlet $ Apple 7)
+
     pure unit
 
 
   it "returning multiple values from processing function actually sends these values to the outlets" $ do
     let
+
       curse1Inlet = toInlet "patch" "node" "curse1"
       curse2Inlet = toInlet "patch" "node" "curse2"
       apples1Outlet = toOutlet "patch" "node" "apples1"
@@ -109,6 +118,7 @@ spec = do
                   "node"
                   Custom
                   nodeDef
+
       nodeDef :: NodeDef Delivery Pipe
       nodeDef =
           NodeDef
@@ -122,7 +132,9 @@ spec = do
                 >~ "apples2" /\ Pass
             , process : R.Process processF
             }
+
       processF receive = do
+          -- FIXME: rewrite using `<$>`
           let
               curse1 = receive "curse1" # fromMaybe Damaged
               curse2 = receive "curse2" # fromMaybe Damaged
@@ -134,13 +146,14 @@ spec = do
                   in pure send
               _ -> pure $ const Nothing
 
-    collectedData <- CollectData.channelsAfter
+    _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
       $ structure
           </> R.sendToInlet curse1Inlet (Curse 4)
           </> R.sendToInlet curse2Inlet (Curse 3)
+
     collectedData `shouldContain`
       (InletData curse1Inlet $ Curse 4)
     collectedData `shouldContain`
@@ -149,4 +162,5 @@ spec = do
       (OutletData apples1Outlet $ Apple 7)
     collectedData `shouldContain`
       (OutletData apples2Outlet $ Apple 1)
+
     pure unit

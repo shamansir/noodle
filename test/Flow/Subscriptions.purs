@@ -17,7 +17,7 @@ import FRP.Event.Time (interval)
 
 import Rpd.API.Action as R
 import Rpd.API.Action.Sequence ((</>))
-import Rpd.API.Action.Sequence (init, run, run_, ErrorHandler(..), LastStep(..)) as Actions
+import Rpd.API.Action.Sequence (init, run, runFolding) as Actions
 import Rpd.API.Action.Sequence as R
 import Rpd.Process (InletHandler(..), InletAlias, OutletAlias) as R
 import Rpd.Path (toPatch, toNode, toInlet)
@@ -25,10 +25,10 @@ import Rpd.UUID as UUID
 import Rpd.Util (flow) as R
 import Rpd.Network (empty) as Network
 
-import Test.Spec (Spec, it, describe, pending)
+import Test.Spec (Spec, it, describe, pending, pending')
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
-import RpdTest.Helper (withRpd)
+-- import RpdTest.Helper (withRpd)
 import RpdTest.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, myToolkit)
 
 
@@ -44,6 +44,7 @@ spec = do
 
     it "subscribing to node passes the node data to the inlet subscriber" $ do
       ref <- liftEffect $ Ref.new []
+
       let
         -- inletHandler :: R.InletAlias -> UUID.ToInlet -> Delivery -> Effect Unit
         inletHandler :: R.NodeInletsSubscription Delivery
@@ -59,22 +60,24 @@ spec = do
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-      liftEffect
-        $ Actions.run_
+      _ <- liftEffect
+        $ Actions.runFolding
             myToolkit
             (Network.empty "network")
-            (Actions.ErrorHandler $ const $ pure unit)
-            (Actions.LastStep $ const $ pure unit)
             $ structure
                  </> R.subscribeToNode (toNode "patch" "node") inletHandler outletHandler
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
+
                 --  </> R.do_ $ \nw -> do
                 --         _ <- launchAff_ $ delay (Milliseconds 100.0)
+
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Ref.read ref
       vals `shouldContain` ("inlet" /\ Notebook)
+
+      pure unit
 
     pending "when the node was removed after the subscription, the subscriber stops receiving data"
 
@@ -95,12 +98,10 @@ spec = do
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-      liftEffect
-        $ Actions.run_
+      _ <- liftEffect
+        $ Actions.runFolding
             myToolkit
             (Network.empty "network")
-            (Actions.ErrorHandler $ const $ pure unit)
-            (Actions.LastStep $ const $ pure unit)
             $ structure
                  </> R.subscribeToInlet (toInlet "patch" "node" "inlet") handler
                  </> R.streamToInlet
@@ -111,6 +112,7 @@ spec = do
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Ref.read ref
       vals `shouldContain` Notebook
+
       pure unit
 
     -- TODO: test values come in order they were sent (i.e. send folded stream with IDs or
@@ -129,12 +131,10 @@ spec = do
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-      liftEffect
-        $ Actions.run_
+      _ <- liftEffect
+        $ Actions.runFolding
             myToolkit
             (Network.empty "network")
-            (Actions.ErrorHandler $ const $ pure unit)
-            (Actions.LastStep $ const $ pure unit)
             $ structure
                  </> R.subscribeToInlet (toInlet "patch" "node" "inlet") handler
                  </> R.streamToInlet
@@ -157,6 +157,8 @@ spec = do
                         launchAff_ $ vals `shouldEqual` []
                         Ref.write [] ref)
 
+      pure unit
+
     it "when the inlet was removed and again added after the subscription, the subscriber still doesn't receive anything" $ do
       ref <- liftEffect $ Ref.new []
       let
@@ -170,12 +172,10 @@ spec = do
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-      liftEffect
-        $ Actions.run_
+      _ <- liftEffect
+        $ Actions.runFolding
             myToolkit
             (Network.empty "network")
-            (Actions.ErrorHandler $ const $ pure unit)
-            (Actions.LastStep $ const $ pure unit)
             $ structure
                  </> R.subscribeToInlet (toInlet "patch" "node" "inlet") handler
                  </> R.streamToInlet
@@ -198,6 +198,8 @@ spec = do
                         launchAff_ $ vals `shouldNotContain` Notebook
                         launchAff_ $ vals `shouldEqual` []
                         Ref.write [] ref)
+
+      pure unit
 
 
   describe "subscribing outlet" $ do

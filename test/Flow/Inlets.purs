@@ -5,6 +5,7 @@ module RpdTest.Flow.Inlets
 import Prelude
 
 import Data.Time.Duration (Milliseconds(..))
+import Data.Tuple.Nested ((/\))
 
 import FRP.Event.Time (interval)
 
@@ -13,7 +14,7 @@ import Rpd.API.Action.Sequence (init) as Actions
 import Rpd.API.Action.Sequence as R
 import Rpd.Network (empty) as Network
 import Rpd.Path (toPatch, toNode, toInlet)
-import Rpd.Util (flow, Canceler) as R
+import Rpd.Util (flow) as R
 
 import Test.Spec (Spec, it, pending, pending')
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
@@ -41,7 +42,7 @@ spec = do
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-    collectedData <-
+    _ /\ collectedData <-
         CollectData.channelsAfter
           (Milliseconds 100.0)
           myToolkit
@@ -62,7 +63,7 @@ spec = do
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
       firstInlet = toInlet "patch" "node" "inlet"
 
-    collectedData <-
+    _ /\ collectedData <-
       CollectData.channelsAfter
           (Milliseconds 100.0)
           myToolkit
@@ -86,7 +87,7 @@ spec = do
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-    collectedData <- CollectData.channelsAfter
+    _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -110,7 +111,7 @@ spec = do
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
       firstInlet = toInlet "patch" "node" "inlet"
 
-    collectedData <- CollectData.channelsAfter
+    _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -138,7 +139,7 @@ spec = do
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-    collectedData <- CollectData.channelsAfter
+    _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -166,7 +167,7 @@ spec = do
           </> R.addInlet (toNode "patch" "node") "for-pills" Pass
           </> R.addInlet (toNode "patch" "node") "for-bananas" Pass
 
-    collectedData <- CollectData.channelsAfter
+    _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -194,7 +195,7 @@ spec = do
           </> R.addInlet (toNode "patch" "node") "inlet2" Pass
       stream = R.flow $ const Banana <$> interval 25
 
-    collectedData <- CollectData.channelsAfter
+    _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")

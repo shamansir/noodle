@@ -35,7 +35,7 @@ import Rpd.Network (Network) as R
 import Rpd.Network (empty) as Network
 import Rpd.Toolkit as R
 import Rpd.Toolkit (empty) as Toolkit
-import Rpd.API.Action.Sequence ((</>), ActionList(..))
+import Rpd.API.Action.Sequence ((</>), ActionList)
 import Rpd.API.Action.Sequence as Actions
 import Rpd.API.Action.Sequence as R
 
@@ -232,7 +232,7 @@ expectToRender
   -> R.ActionList d c n
   -> view
   -> Aff Unit
-expectToRender renderer toolkit compareViews (ActionList actions) expectation = do
+expectToRender renderer toolkit compareViews actions expectation = do
   maybeLastView <- liftEffect $ do
     lastView <- Ref.new Nothing
     { push, next : views, stop }
@@ -254,7 +254,7 @@ expectToRenderMUV
   -> R.ActionList d c n
   -> view
   -> Aff Unit
-expectToRenderMUV renderer toolkit compareViews (ActionList actions) expectation = do
+expectToRenderMUV renderer toolkit compareViews actions expectation = do
   maybeLastView <- liftEffect $ do
     lastView <- Ref.new Nothing
     { push, next : views, stop }
