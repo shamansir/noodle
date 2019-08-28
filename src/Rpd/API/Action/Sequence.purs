@@ -174,7 +174,7 @@ run toolkit initialNW stepHandler actions = do
     { models, pushAction } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
     stopInforming <- Event.subscribe models stepHandler
-    _ <- traverse_ pushAction actions
+    _ <- pushAll pushAction actions
     -- _ <- stopInforming
     pure unit
 
@@ -193,7 +193,7 @@ runFolding toolkit initialNW actions = do
     let modelsFolded = Event.fold foldByError models $ Right initialNW
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
-    _ <- traverse_ pushAction actions
+    _ <- pushAll pushAction actions
     -- _ <- stopCollectingLastValue
     lastVal <- Ref.read lastValRef
     pure lastVal
@@ -218,7 +218,7 @@ runM toolkit initialNW actions =
         lastValRef <- Ref.new $ Right initialNW
         stopInforming <- Event.subscribe models ?wh
         stopCollectingLastValue <- Event.subscribe models (flip Ref.write lastValRef)
-        _ <- traverse_ pushAction actions
+        _ <- pushAll pushAction actions
         -- _ <- stopInforming
         -- _ <- stopCollectingLastValue
         lastVal <- Ref.read lastValRef
@@ -239,7 +239,7 @@ runTracing toolkit initialNW everyAction actionList = do
     let modelsFolded = Event.fold foldByError models $ Right initialNW
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
-    _ <- traverse_ pushAction actionList
+    _ <- pushAll pushAction actionList
     -- _ <- stopInforming
     -- _ <- stopCollectingLastValue
     lastVal <- Ref.read lastValRef
@@ -248,6 +248,10 @@ runTracing toolkit initialNW everyAction actionList = do
 
 andThen :: forall d c n. ActionList d c n -> Action d c n -> ActionList d c n
 andThen = snoc
+
+
+pushAll :: forall d c n. (Action d c n -> Effect Unit) -> ActionList d c n -> Effect Unit
+pushAll = traverse_
 
 
 -- FIXME: do not expose!

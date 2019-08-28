@@ -17,7 +17,6 @@ import Effect
 import Data.Either (Either(..), either)
 import Data.Tuple (fst, snd)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Traversable (traverse_)
 
 import FRP.Event (Event)
 import FRP.Event as Event

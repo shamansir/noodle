@@ -78,6 +78,7 @@ embed sel render renderer toolkit nw = do
             pure unit
 
 
+-- TODO: let specifying actions to start with
 embed'
     :: forall d c n model action effect
      . String -- selector

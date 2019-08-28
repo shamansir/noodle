@@ -15,7 +15,7 @@ import Data.Exists
 import Rpd.Network (empty) as Network
 import Rpd.API.Action as Action
 import Rpd.API.Action.Apply (apply) as Action
-import Rpd.API.Action.Sequence (run', run_, LastStep(..), ErrorHandler(..)) as Actions
+import Rpd.API.Action.Sequence (runFolding) as Actions
 import Rpd.Renderer.Html (htmlRenderer)
 import Rpd.Renderer.Html.VDom as VDom
 import Rpd.Toolkit as T
@@ -26,22 +26,23 @@ import Example.Toolkit (toolkit, htmlRenderer) as ExampleToolkit
 
 
 main :: Effect Unit
-main =
+main = do
     -- VDom.embed'
     --     "#app"
     --     (htmlRenderer ExampleToolkit.htmlRenderer)
     --     ExampleToolkit.toolkit
     --     (Network.empty "aaa")
-    Actions.run_
-        ExampleToolkit.toolkit
-        (Network.empty "network")
-        (Actions.ErrorHandler $ log <<< show)
-        (Actions.LastStep
-            \nw ->
-                VDom.embed'
-                    "#app"
-                    (htmlRenderer ExampleToolkit.htmlRenderer)
-                    ExampleToolkit.toolkit
-                    nw
-        )
-        Network.recipe
+
+    _ <-
+        Actions.runFolding
+            ExampleToolkit.toolkit
+            (Network.empty "network")
+            $ Network.recipe
+                </> Actions.do_
+                    \nw ->
+                    VDom.embed'
+                        "#app"
+                        (htmlRenderer ExampleToolkit.htmlRenderer)
+                        ExampleToolkit.toolkit
+                        nw
+    pure unit
