@@ -1,4 +1,4 @@
-Network foo:
+Network network:
 One Patch
 ·Patch foo <P@foo>:
  One Node

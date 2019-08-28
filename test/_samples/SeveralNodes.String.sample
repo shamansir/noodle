@@ -1,4 +1,4 @@
-Network foo:
+Network network:
 2 Patches
 ·Patch foo0 <P@foo0>:
  3 Nodes
