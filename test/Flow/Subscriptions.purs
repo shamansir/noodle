@@ -24,11 +24,12 @@ import Rpd.Path (toPatch, toNode, toInlet)
 import Rpd.UUID as UUID
 import Rpd.Util (flow) as R
 import Rpd.Network (empty) as Network
+import Rpd.Network (Network) as R
 
 import Test.Spec (Spec, it, describe, pending, pending')
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
--- import RpdTest.Helper (withRpd)
+import RpdTest.Helper (getOrFail)
 import RpdTest.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, myToolkit)
 
 
@@ -107,8 +108,7 @@ spec = do
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
-                --  </> R.do_ $ \nw -> do
-                --         _ <- launchAff_ $ delay (Milliseconds 100.0)
+
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Ref.read ref
       vals `shouldContain` Notebook
@@ -120,6 +120,7 @@ spec = do
 
     it "when the inlet was removed after the subscription, the subscriber stops receiving data" $ do
       ref <- liftEffect $ Ref.new []
+
       let
         handler :: R.InletSubscription Delivery
         handler = \v ->
@@ -130,37 +131,48 @@ spec = do
             </> R.addPatch "patch"
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addInlet (toNode "patch" "node") "inlet" Pass
+        network :: R.Network Delivery Pipe Node
+        network = Network.empty "network"
 
-      _ <- liftEffect
+      result <- liftEffect
         $ Actions.runFolding
             myToolkit
-            (Network.empty "network")
+            network
             $ structure
                  </> R.subscribeToInlet (toInlet "patch" "node" "inlet") handler
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
-                 </> R.do_ (\_ -> do
-                        launchAff_ $ delay (Milliseconds 100.0)
-                        vals <- Ref.read ref
-                        launchAff_ $ vals `shouldContain` Notebook
-                        Ref.write [] ref)
+      network' <- getOrFail result network
+
+      delay (Milliseconds 100.0)
+      vals <- liftEffect $ Ref.read ref
+      vals `shouldContain` Notebook
+      liftEffect $ Ref.write [] ref
+
+      result' <- liftEffect
+        $ Actions.runFolding
+            myToolkit
+            network'
+            $ Actions.init
                  </> R.removeInlet (toInlet "patch" "node" "inlet")
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Liver <$> interval 30)
-                 </> R.do_ (\_ -> do
-                        launchAff_ $ delay (Milliseconds 100.0)
-                        vals <- Ref.read ref
-                        launchAff_ $ vals `shouldNotContain` Liver
-                        launchAff_ $ vals `shouldNotContain` Notebook
-                        launchAff_ $ vals `shouldEqual` []
-                        Ref.write [] ref)
+      _ <- getOrFail result' network'
+
+      delay (Milliseconds 100.0)
+      vals' <- liftEffect $ Ref.read ref
+      vals' `shouldNotContain` Liver
+      vals' `shouldNotContain` Notebook
+      vals' `shouldEqual` []
+      liftEffect $ Ref.write [] ref
 
       pure unit
 
     it "when the inlet was removed and again added after the subscription, the subscriber still doesn't receive anything" $ do
       ref <- liftEffect $ Ref.new []
+
       let
         handler :: R.InletSubscription Delivery
         handler = \v ->
@@ -171,33 +183,43 @@ spec = do
             </> R.addPatch "patch"
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addInlet (toNode "patch" "node") "inlet" Pass
+        network :: R.Network Delivery Pipe Node
+        network = Network.empty "network"
 
-      _ <- liftEffect
+      result <- liftEffect
         $ Actions.runFolding
             myToolkit
-            (Network.empty "network")
+            network
             $ structure
                  </> R.subscribeToInlet (toInlet "patch" "node" "inlet") handler
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
-                 </> R.do_ (\_ -> do
-                        launchAff_ $ delay (Milliseconds 100.0)
-                        vals <- Ref.read ref
-                        launchAff_ $ vals `shouldContain` Notebook
-                        Ref.write [] ref)
+      network' <- getOrFail result network
+
+      delay (Milliseconds 100.0)
+      vals <- liftEffect $ Ref.read ref
+      vals `shouldContain` Notebook
+      liftEffect $ Ref.write [] ref
+
+      result' <- liftEffect
+        $ Actions.runFolding
+            myToolkit
+            network'
+            $ Actions.init
                  </> R.removeInlet (toInlet "patch" "node" "inlet")
                  </> R.addInlet (toNode "patch" "node") "inlet" Pass
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Liver <$> interval 30)
-                 </> R.do_ (\_ -> do
-                        launchAff_ $ delay (Milliseconds 100.0)
-                        vals <- Ref.read ref
-                        launchAff_ $ vals `shouldNotContain` Liver
-                        launchAff_ $ vals `shouldNotContain` Notebook
-                        launchAff_ $ vals `shouldEqual` []
-                        Ref.write [] ref)
+      _ <- getOrFail result' network'
+
+      delay (Milliseconds 100.0)
+      vals' <- liftEffect $ Ref.read ref
+      vals' `shouldNotContain` Liver
+      vals' `shouldNotContain` Notebook
+      vals' `shouldEqual` []
+      liftEffect $ Ref.write [] ref
 
       pure unit
 

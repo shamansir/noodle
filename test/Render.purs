@@ -93,12 +93,14 @@ spec = do
 
     it "rendering the empty network works" do
       stringSample <- liftEffect $ loadSample "Empty.String"
-      expectToRender stringRenderer toolkit compareStrings' Actions.init
+      let doNothing = Actions.init </> (R.do_ $ const $ pure unit)
+      expectToRender stringRenderer toolkit compareStrings' doNothing
           $ String.trim stringSample
-      expectToRenderMUV terminalRenderer toolkit compareMultiline' Actions.init
+      expectToRenderMUV terminalRenderer toolkit compareMultiline' doNothing
           -- ML.from' "{>}"
           $ ML.empty' (100 /\ 100)
       pure unit
+
     it "rendering the single node works" do
       let
         singleNodeNW = Actions.init
@@ -109,6 +111,7 @@ spec = do
           $ String.trim stringSample
       expectToRenderMUV terminalRenderer toolkit compareMultiline' singleNodeNW
           $ ML.empty' (100 /\ 100) # ML.place (0 /\ 0) "[]bar[]"
+
     it "rendering several nodes works" do
       let
         severalNodesNW = Actions.init
@@ -127,6 +130,7 @@ spec = do
           $ ML.empty' (100 /\ 100)
               # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
+
     it "rendering a node with inlets and outlets works" do
       let
         nodeWithInletsAndOutletsNW = Actions.init
@@ -145,6 +149,7 @@ spec = do
           $ ML.empty' (100 /\ 100)
             # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
+
     it "rendering the connections works" do
       let
         withConnectionNW = Actions.init
@@ -161,6 +166,7 @@ spec = do
       expectToRenderMUV terminalRenderer toolkit compareMultiline' withConnectionNW
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
+
     it "rendering the erroneous network responds with the error" do
       let
         erroneousNW = Actions.init
@@ -174,7 +180,9 @@ spec = do
       pure unit
 
   describe "dynamic rendering" do
+
     describe "core renderer" do
+
       pending' "applies actions to the network" do
         let
           renderer = stringRendererWithOptions { showUuid : true }
@@ -187,7 +195,9 @@ spec = do
             -- </> R.Bang
             </> R.addNode (toPatch "foo") "bar" Node)
           stringSample
+
     describe "MUV renderer" do
+
       pending' "applies actions to the network" do
         let
           renderer =

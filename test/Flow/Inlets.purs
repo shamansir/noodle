@@ -72,6 +72,7 @@ spec = do
               </> R.sendToInlet firstInlet Parcel
               </> R.sendToInlet firstInlet Pills
               </> R.sendToInlet firstInlet (Curse 5)
+
     collectedData `shouldEqual`
         [ InletData firstInlet Parcel
         , InletData firstInlet Pills
@@ -95,6 +96,7 @@ spec = do
          </> R.streamToInlet
                 (toInlet "patch" "node" "inlet")
                 (R.flow $ const Pills <$> interval 30)
+
     collectedData `shouldContain`
         (InletData (toInlet "patch" "node" "inlet") Pills)
     pure unit
@@ -122,6 +124,7 @@ spec = do
             </> R.streamToInlet
                   (toInlet "patch" "node" "inlet")
                   (R.flow $ const Banana <$> interval 29)
+
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "inlet") Pills)
     collectedData `shouldContain`
@@ -147,6 +150,7 @@ spec = do
           </> R.streamToInlet
                 (toInlet "patch" "node" "inlet")
                 (R.flow $ const Pills <$> interval 20)
+
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "inlet") Pills)
     -- collectedData' <- CollectData.channelsAfter
@@ -178,6 +182,7 @@ spec = do
           </> R.streamToInlet
                 (toInlet "patch" "node" "for-bananas")
                 (R.flow $ const Banana <$> interval 25)
+                
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "for-pills") Pills)
     collectedData `shouldContain`
