@@ -17,7 +17,7 @@ import FRP.Event.Time (interval)
 
 import Rpd.API.Action as R
 import Rpd.API.Action.Sequence ((</>))
-import Rpd.API.Action.Sequence (init, run, runFolding) as Actions
+import Rpd.API.Action.Sequence (init, run, runFolding, runFolding', pushAll) as Actions
 import Rpd.API.Action.Sequence as R
 import Rpd.Process (InletHandler(..), InletAlias, OutletAlias) as R
 import Rpd.Path (toPatch, toNode, toInlet)
@@ -134,8 +134,8 @@ spec = do
         network :: R.Network Delivery Pipe Node
         network = Network.empty "network"
 
-      result <- liftEffect
-        $ Actions.runFolding
+      result /\ { pushAction } <- liftEffect
+        $ Actions.runFolding'
             myToolkit
             network
             $ structure
@@ -150,16 +150,24 @@ spec = do
       vals `shouldContain` Notebook
       liftEffect $ Ref.write [] ref
 
-      result' <- liftEffect
-        $ Actions.runFolding
-            myToolkit
-            network'
-            $ Actions.init
-                 </> R.removeInlet (toInlet "patch" "node" "inlet")
-                 </> R.streamToInlet
-                        (toInlet "patch" "node" "inlet")
-                        (R.flow $ const Liver <$> interval 30)
-      _ <- getOrFail result' network'
+      _ <- liftEffect
+        $ Actions.pushAll pushAction
+        $ Actions.init
+            </> R.removeInlet (toInlet "patch" "node" "inlet")
+            </> R.streamToInlet
+                  (toInlet "patch" "node" "inlet")
+                  (R.flow $ const Liver <$> interval 30)
+
+      -- result' <- liftEffect
+      --   $ Actions.runFolding
+      --       myToolkit
+      --       network'
+      --       $ Actions.init
+      --            </> R.removeInlet (toInlet "patch" "node" "inlet")
+      --            </> R.streamToInlet
+      --                   (toInlet "patch" "node" "inlet")
+      --                   (R.flow $ const Liver <$> interval 30)
+      -- _ <- getOrFail result' network'
 
       delay (Milliseconds 100.0)
       vals' <- liftEffect $ Ref.read ref

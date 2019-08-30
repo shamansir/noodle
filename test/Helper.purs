@@ -11,6 +11,7 @@ import Data.Array (snoc)
 import Data.Time.Duration (Milliseconds)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Either (Either(..))
+import Data.Foldable (traverse_)
 
 import Effect.Ref as Ref
 import Effect.Class (liftEffect)
@@ -20,7 +21,7 @@ import Test.Spec.Assertions (fail)
 
 import Rpd.API.Action (Action(..), DataAction(..))
 import Rpd.API.Action.Sequence (ActionList)
-import Rpd.API.Action.Sequence (runTracing) as Actions
+import Rpd.API.Action.Sequence (runTracing, runTracing', init) as Actions
 import Rpd.Path as P
 import Rpd.Toolkit as T
 import Rpd.Network as R
