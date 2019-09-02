@@ -22,6 +22,8 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 
 import FRP.Event as E
+import FRP.Event.Class (count) as E
+import FRP.Event.Time as E
 
 import Rpd.Util (type (/->), PushableFlow(..), Subscriber, Canceler, Flow, never)
 import Rpd.Path as Path
@@ -47,6 +49,12 @@ derive instance eqRpdError :: Eq RpdError
 -- other options: └, ~>, ...
 
 
+type InletSubscription d = (d -> Effect Unit)
+type OutletSubscription d = (d -> Effect Unit)
+type InletPeriodSubscription d = (Int -> d)
+type OutletPeriodSubscription d = (Int -> d)
+type NodeInletsSubscription d = (InletAlias -> UUID.ToInlet -> d -> Effect Unit) -- FIXME: change to (Inlet d c)
+type NodeOutletsSubscription d = (OutletAlias -> UUID.ToOutlet -> d -> Effect Unit) -- FIXME: change to (Outlet d c)
 
 
 -- andThen :: forall a b. Rpd a -> (a -> Rpd b) -> Rpd b
@@ -409,16 +417,104 @@ informNodeOnOutletUpdates outlet node = do
 subscribeNode
     :: forall d n
      . Node d n
-    -> (InletAlias /\ UUID.ToInlet /\ d -> Effect Unit) -- FIXME: change to (Inlet d c)
-    -> (OutletAlias /\ UUID.ToOutlet /\ d -> Effect Unit) -- FIXME: change to (Outlet d c)
+    -> NodeInletsSubscription d
+    -> NodeOutletsSubscription d
     -> Effect Canceler
 subscribeNode (Node _ _ _ _ { inletsFlow, outletsFlow }) inletsHandler outletsHandler = do
     let InletsFlow inletsFlow' = inletsFlow
     let OutletsFlow outletsFlow' = outletsFlow
     inletsCanceler :: Canceler <-
-        E.subscribe inletsFlow'
-            (inletsHandler <<< over1 \(Path.ToInlet { inlet }) -> inlet)
+        E.subscribe inletsFlow' $
+            (\((Path.ToInlet { inlet }) /\ uuid /\ d) -> inletsHandler inlet uuid d)
+            -- (inletsHandler <<< over1 \(Path.ToInlet { inlet }) -> inlet)
     outletsCanceler :: Canceler <-
-        E.subscribe outletsFlow'
-            (outletsHandler <<< over1 \(Path.ToOutlet { outlet }) -> outlet)
+        E.subscribe outletsFlow' $
+            (\((Path.ToOutlet { outlet }) /\ uuid /\ d) -> outletsHandler outlet uuid d)
+            -- (outletsHandler <<< over1 \(Path.ToOutlet { outlet }) -> outlet)
     pure $ inletsCanceler <> outletsCanceler
+
+
+sendToInlet
+    :: forall d c
+     . Inlet d c
+    -> d
+    -> Effect Unit
+sendToInlet (Inlet _ _ _ { push }) d =
+    let (PushToInlet push') = push
+    in push' d
+
+
+sendToOutlet
+    :: forall d c
+     . Outlet d c
+    -> d
+    -> Effect Unit
+sendToOutlet (Outlet _ _ _ { push }) d =
+    let (PushToOutlet push') = push
+    in push' d
+
+
+streamToInlet
+    :: forall d c
+     . Inlet d c
+    -> E.Event d
+    -> Effect Canceler
+streamToInlet (Inlet _ _ _ { push }) flow =
+    let (PushToInlet push') = push
+    in E.subscribe flow push'
+
+
+streamToOutlet
+    :: forall d c
+     . Outlet d c
+    -> E.Event d
+    -> Effect Canceler
+streamToOutlet (Outlet _ _ _ { push }) flow =
+    let (PushToOutlet push') = push
+    in E.subscribe flow push'
+
+
+subscribeToInlet
+    :: forall d c
+     . Inlet d c
+    -> InletSubscription d
+    -> Effect Canceler
+subscribeToInlet (Inlet _ _ _ { flow }) handler =
+    let (InletFlow flow') = flow
+    in E.subscribe flow' handler
+
+
+subscribeToOutlet
+    :: forall d c
+     . Outlet d c
+    -> OutletSubscription d
+    -> Effect Canceler
+subscribeToOutlet (Outlet _ _ _ { flow }) handler =
+    let (OutletFlow flow') = flow
+    in E.subscribe flow' handler
+
+
+sendPeriodicallyToInlet
+    :: forall d c
+     . Inlet d c
+    -> Int
+    -> InletPeriodSubscription d
+    -> Effect Canceler
+sendPeriodicallyToInlet (Inlet _ _ _ { push }) period fn =
+    let
+        (PushToInlet push') = push
+        intervalEvent = E.count $ E.interval period
+    in E.subscribe intervalEvent $ push' <<< fn
+
+
+sendPeriodicallyToOutlet
+    :: forall d c
+     . Outlet d c
+    -> Int
+    -> OutletPeriodSubscription d
+    -> Effect Canceler
+sendPeriodicallyToOutlet (Outlet _ _ _ { push }) period fn =
+    let
+        (PushToOutlet push') = push
+        intervalEvent = E.count $ E.interval period
+    in E.subscribe intervalEvent $ push' <<< fn

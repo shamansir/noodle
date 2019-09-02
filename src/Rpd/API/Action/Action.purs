@@ -12,6 +12,14 @@ import FRP.Event (Event)
 
 import Effect (Effect)
 
+import Rpd.API
+    ( InletSubscription
+    , OutletSubscription
+    , InletPeriodSubscription
+    , OutletPeriodSubscription
+    , NodeInletsSubscription
+    , NodeOutletsSubscription
+    )
 import Rpd.Path as Path
 import Rpd.Network
 import Rpd.Process (ProcessF, InletAlias, OutletAlias)
@@ -20,12 +28,6 @@ import Rpd.Toolkit (NodeDef)
 import Rpd.UUID as UUID
 
 
-type InletSubscription d = (d -> Effect Unit)
-type OutletSubscription d = (d -> Effect Unit)
-type InletPeriodSubscription d = (Int -> d)
-type OutletPeriodSubscription d = (Int -> d)
-type NodeInletsSubscription d = (InletAlias -> UUID.ToInlet -> d -> Effect Unit)
-type NodeOutletsSubscription d = (OutletAlias -> UUID.ToOutlet -> d -> Effect Unit)
 type Perform d c n = (Network d c n -> Effect Unit)
 
 
@@ -101,18 +103,18 @@ data RpdEffect d c n -- TODO: move to a separate module
     | InformNodeOnOutletUpdates (Outlet d c) (Node d n)
     | CancelNodeSubscriptions (Node d n)
     | SubscribeNodeUpdates (Node d n)
-    | SendToInletE (PushToInlet d) d
-    | SendToOutletE (PushToOutlet d) d
+    | SendToInletE (Inlet d c) d
+    | SendToOutletE (Outlet d c) d
     | SendActionOnInletUpdatesE (Inlet d c)
     | SendActionOnOutletUpdatesE (Outlet d c)
-    | SendPeriodicallyToInletE (PushToInlet d) Int (InletPeriodSubscription d)
-    | SendPeriodicallyToOutletE (PushToOutlet d) Int (OutletPeriodSubscription d)
-    | StreamToInletE (PushToInlet d) (Event d)
-    | StreamToOutletE (PushToOutlet d) (Event d)
-    | SubscribeToInletE (InletFlow d) (InletSubscription d) -- TODO: should pass the canceler to the user
-    | SubscribeToOutletE (OutletFlow d) (OutletSubscription d) -- TODO: should pass the canceler to the user
+    | SendPeriodicallyToInletE (Inlet d c) Int (InletPeriodSubscription d)
+    | SendPeriodicallyToOutletE (Outlet d c) Int (OutletPeriodSubscription d)
+    | StreamToInletE (Inlet d c) (Event d)
+    | StreamToOutletE (Outlet d c) (Event d)
+    | SubscribeToInletE (Inlet d c) (InletSubscription d) -- TODO: should pass the canceler to the user
+    | SubscribeToOutletE (Outlet d c) (OutletSubscription d) -- TODO: should pass the canceler to the user
     | SubscribeToNodeE
-            (InletsFlow d) (OutletsFlow d)
+            (Node d n)
             (NodeInletsSubscription d)
             (NodeOutletsSubscription d)
 

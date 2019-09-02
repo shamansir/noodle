@@ -18,7 +18,11 @@ import FRP.Event (Event)
 import FRP.Event as Event
 
 import Rpd.Network
-import Rpd.API (RpdError)
+import Rpd.API
+    ( RpdError
+    , NodeInletsSubscription, NodeOutletsSubscription
+    , InletSubscription, OutletSubscription
+    )
 import Rpd.API.Action
 import Rpd.API.Action.Apply (Step, apply, performEffect)
 import Rpd.Path as Path
