@@ -89,15 +89,23 @@ applyRequestAction _ (ToAddOutlet nodePath alias c) nw =
     pure $ nw /\ [ AddOutletE nodePath alias c ]
 applyRequestAction _ (ToRemoveInlet inletPath) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    -- FIXME: should call core API function
     -- FIXME: join with `RemoveIntlet` build action
-    nw' <- Right $ set (_inlet inletUuid) Nothing nw
-    pure $ nw' /\ [ ] -- FIXME: cancel all subscriptions
+    inlet <- view (_inlet inletUuid) nw # note (RpdError "")
+    nw' <- Api.removeInlet inlet nw
+    pure $ nw' /\
+        [ CancelInletSubscriptions inlet
+        -- , ClearInletCancelers inlet
+        -- , CancelNodeSubscriptions node
+        -- , SubscribeNodeProcess node
+        -- , InformNodeOnInletUpdates inlet node
+        -- , SubscribeNodeUpdates node
+        -- , SendActionOnInletUpdatesE inlet
+        ]
 applyRequestAction _ (ToRemoveOutlet outletPath) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
-    -- FIXME: should call core API function
     -- FIXME: join with `RemoveOutlet` build action
-    nw' <- Right $ set (_outlet outletUuid) Nothing nw
+    outlet <- view (_outlet outletUuid) nw # note (RpdError "")
+    nw' <- Api.removeOutlet outlet nw
     pure $ nw' /\ [ ] -- FIXME: cancel all subscriptions
 applyRequestAction _ (ToProcessWith nodePath processF) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
@@ -223,24 +231,30 @@ applyInnerAction _ (StoreNodeCanceler (Node uuid _ _ _ _) canceler) nw =
         pure $ Api.storeNodeCancelers uuid newNodeCancelers nw /\ []
 applyInnerAction _ (ClearNodeCancelers (Node uuid _ _ _ _)) nw =
     pure $ Api.clearNodeCancelers uuid nw /\ []
-applyInnerAction _ (StoreOutletCanceler (Outlet uuid _ _ _) canceler) nw =
-    let
-        curOutletCancelers = Api.getOutletCancelers uuid nw
-        newOutletCancelers = canceler : curOutletCancelers
-    in
-        pure $ Api.storeOutletCancelers uuid newOutletCancelers nw /\ []
 applyInnerAction _ (StoreInletCanceler (Inlet uuid _ _ _) canceler) nw =
     let
         curInletCancelers = Api.getInletCancelers uuid nw
         newInletCancelers = canceler : curInletCancelers
     in
         pure $ Api.storeInletCancelers uuid newInletCancelers nw /\ []
+applyInnerAction _ (ClearInletCancelers (Inlet uuid _ _ _)) nw =
+    pure $ Api.clearInletCancelers uuid nw /\ []
+applyInnerAction _ (StoreOutletCanceler (Outlet uuid _ _ _) canceler) nw =
+    let
+        curOutletCancelers = Api.getOutletCancelers uuid nw
+        newOutletCancelers = canceler : curOutletCancelers
+    in
+        pure $ Api.storeOutletCancelers uuid newOutletCancelers nw /\ []
+applyInnerAction _ (ClearOutletCancelers (Outlet uuid _ _ _)) nw =
+    pure $ Api.clearOutletCancelers uuid nw /\ []
 applyInnerAction _ (StoreLinkCanceler (Link uuid _) canceler) nw =
     let
         curLinkCancelers = Api.getLinkCancelers uuid nw
         newLinkCancelers = canceler : curLinkCancelers
     in
         pure $ Api.storeLinkCancelers uuid newLinkCancelers nw /\ []
+applyInnerAction _ (ClearLinkCancelers (Link uuid _)) nw =
+    pure $ Api.clearLinkCancelers uuid nw /\ []
 
 
 performEffect -- TODO: move to a separate module
@@ -309,6 +323,15 @@ performEffect _ pushAction (SubscribeNodeProcess node) nw = do
 performEffect _ pushAction (CancelNodeSubscriptions node@(Node uuid _ _ _ _)) nw = do
     _ <- Api.cancelNodeSubscriptions uuid nw
     pushAction $ Inner $ ClearNodeCancelers node
+performEffect _ pushAction (CancelInletSubscriptions inlet@(Inlet uuid _ _ _ )) nw = do
+    _ <- Api.cancelInletSubscriptions uuid nw
+    pushAction $ Inner $ ClearInletCancelers inlet
+performEffect _ pushAction (CancelOutletSubscriptions outlet@(Outlet uuid _ _ _ )) nw = do
+    _ <- Api.cancelOutletSubscriptions uuid nw
+    pushAction $ Inner $ ClearOutletCancelers outlet
+performEffect _ pushAction (CancelLinkSubscriptions link@(Link uuid _)) nw = do
+    _ <- Api.cancelLinkSubscriptions uuid nw
+    pushAction $ Inner $ ClearLinkCancelers link
 performEffect _ pushAction (AddInletE nodePath inletAlias c) _ = do
     uuid <- UUID.new
     flow <- makePushableFlow
@@ -350,8 +373,8 @@ performEffect _ pushAction (InformNodeOnOutletUpdates outlet node) _ = do
 performEffect _ pushAction (SubscribeNodeUpdates node) _ = do
     canceler :: Canceler <-
         Api.subscribeNode node
-            (const $ const $ const $ pure unit) -- FIXME: implemenet
-            (const $ const $ const $ pure unit) -- FIXME: implemenet
+            (const $ const $ const $ pure unit) -- FIXME: implement
+            (const $ const $ const $ pure unit) -- FIXME: implement
     pushAction $ Inner $ StoreNodeCanceler node canceler
 performEffect _ pushAction (SendToInletE inlet d) _ = do
     Api.sendToInlet inlet d

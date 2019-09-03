@@ -130,12 +130,24 @@ getLinkCancelers :: forall d c n. UUID.ToLink -> Network d c n -> Array Canceler
 getLinkCancelers = getCancelers <<< UUID.uuid
 
 
-clearNodeCancelers :: forall d c n. UUID.ToNode -> Network d c n -> Network d c n
-clearNodeCancelers = clearCancelers <<< UUID.uuid
-
-
 cancelNodeSubscriptions :: forall d c n. UUID.ToNode -> Network d c n -> Effect Unit
 cancelNodeSubscriptions = cancelSubscriptions <<< UUID.uuid
+cancelInletSubscriptions :: forall d c n. UUID.ToInlet -> Network d c n -> Effect Unit
+cancelInletSubscriptions = cancelSubscriptions <<< UUID.uuid
+cancelOutletSubscriptions :: forall d c n. UUID.ToOutlet -> Network d c n -> Effect Unit
+cancelOutletSubscriptions = cancelSubscriptions <<< UUID.uuid
+cancelLinkSubscriptions :: forall d c n. UUID.ToLink -> Network d c n -> Effect Unit
+cancelLinkSubscriptions = cancelSubscriptions <<< UUID.uuid
+
+
+clearNodeCancelers :: forall d c n. UUID.ToNode -> Network d c n -> Network d c n
+clearNodeCancelers = clearCancelers <<< UUID.uuid
+clearInletCancelers :: forall d c n. UUID.ToInlet -> Network d c n -> Network d c n
+clearInletCancelers = clearCancelers <<< UUID.uuid
+clearOutletCancelers :: forall d c n. UUID.ToOutlet -> Network d c n -> Network d c n
+clearOutletCancelers = clearCancelers <<< UUID.uuid
+clearLinkCancelers :: forall d c n. UUID.ToLink -> Network d c n -> Network d c n
+clearLinkCancelers = clearCancelers <<< UUID.uuid
 
 
 addPatch
@@ -241,6 +253,34 @@ addInlet inlet@(Inlet uuid path _ _) nw = do
         # setJust (_inlet uuid) inlet
         # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
         # setJust (_nodeInlet nodeUuid uuid) unit
+
+
+removeInlet
+    :: forall d c n
+     . Inlet d c
+    -> Network d c n
+    -> Either RpdError (Network d c n)
+removeInlet inlet@(Inlet uuid path _ _) nw = do
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
+    nodeUuid <- nw # uuidByPath UUID.toNode nodePath
+    pure $ nw
+        # set (_inlet uuid) Nothing
+        # set (_pathToId $ Path.lift path) Nothing
+        # set (_nodeInlet nodeUuid uuid) Nothing
+
+
+removeOutlet
+    :: forall d c n
+     . Outlet d c
+    -> Network d c n
+    -> Either RpdError (Network d c n)
+removeOutlet outlet@(Outlet uuid path _ _) nw = do
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
+    nodeUuid <- nw # uuidByPath UUID.toNode nodePath
+    pure $ nw
+        # set (_outlet uuid) Nothing
+        # set (_pathToId $ Path.lift path) Nothing
+        # set (_nodeOutlet nodeUuid uuid) Nothing
 
 
 addLink :: forall d c n

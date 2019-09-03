@@ -77,8 +77,11 @@ data InnerAction d c n -- FIXME: InnerActions should not be exposed
     | StoreNodeCanceler (Node d n) Canceler
     | ClearNodeCancelers (Node d n)
     | StoreInletCanceler (Inlet d c) Canceler
+    | ClearInletCancelers (Inlet d c)
     | StoreOutletCanceler (Outlet d c) Canceler
+    | ClearOutletCancelers (Outlet d c)
     | StoreLinkCanceler Link Canceler
+    | ClearLinkCancelers Link
 
 
 data DataAction d c
@@ -102,6 +105,9 @@ data RpdEffect d c n -- TODO: move to a separate module
     | InformNodeOnInletUpdates (Inlet d c) (Node d n)
     | InformNodeOnOutletUpdates (Outlet d c) (Node d n)
     | CancelNodeSubscriptions (Node d n)
+    | CancelInletSubscriptions (Inlet d c)
+    | CancelOutletSubscriptions (Outlet d c)
+    | CancelLinkSubscriptions Link
     | SubscribeNodeUpdates (Node d n)
     | SendToInletE (Inlet d c) d
     | SendToOutletE (Outlet d c) d

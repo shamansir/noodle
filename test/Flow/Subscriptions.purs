@@ -15,6 +15,10 @@ import Effect.Aff (delay, launchAff_) --, throwError
 
 import FRP.Event.Time (interval)
 
+import Rpd.API
+    ( NodeInletsSubscription, NodeOutletsSubscription
+    , InletSubscription
+    ) as R
 import Rpd.API.Action as R
 import Rpd.API.Action.Sequence ((</>))
 import Rpd.API.Action.Sequence (init, run, runFolding, runFolding', pushAll) as Actions
