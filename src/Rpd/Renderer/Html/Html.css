@@ -2,6 +2,7 @@
 body {
     margin: 0;
     padding: 0;
+    overflow: hidden;
 }
 
 #app {
@@ -13,9 +14,17 @@ body {
     background: #22222a;
 }
 
+#html {
+    width: 100%;
+    height: 100%;
+}
+
 .rpd-network {
     font-family: 'PT Mono', 'Andale Mono', 'Fira mono', 'Menlo', monospace;
     font-size: 10px;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
 .rpd-network-name {
@@ -43,6 +52,7 @@ body {
         ". rpd-node-inlets ."
         "rpd-node-title rpd-node-body rpd-node-remove-button"
         ". rpd-node-outlets .";
+    max-width: 300px;
 }
 
 .rpd-node-remove-button {
