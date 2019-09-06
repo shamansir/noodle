@@ -173,8 +173,14 @@ body {
     left: 0;
 }
 
-.rpd-links * { /* TODO: remove */
-    background-color: red;
+.rpd-link {
+    position: absolute;
+    transform-origin: 0 0;
+    background-color: red;  /* TODO: remove */
+}
+
+.rpd-link.rpd-dragging {
+    background-color: aqua;  /* TODO: remove */
 }
 
 .rpd-mouse-pos, .rpd-drag-state { /* TODO: remove */

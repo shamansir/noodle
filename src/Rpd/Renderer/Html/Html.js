@@ -6,7 +6,10 @@ exports.collectPositions = function(uuids) {
             function(v) { return v.type == 'node' || v.type == 'inlet' || v.type == 'outlet' }
         ).map(
             function(v) {
-                const el = document.querySelector('[id="' + v.uuid + '"]');
+                var selector = '[id="' + v.uuid + '"]';
+                if (v.type == 'inlet') { selector += ' .rpd-inlet-connector' };
+                if (v.type == 'outlet') { selector += ' .rpd-outlet-connector' };
+                const el = document.querySelector(selector);
                 const elRect = el ? el.getBoundingClientRect() : { top: -1, left: -1, bottom: -1, right: -1 };
                 return {
                     type : v.type,

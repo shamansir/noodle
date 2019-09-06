@@ -20,6 +20,8 @@ import Data.Sequence as Seq
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Exists (Exists, mkExists)
 
+import Debug.Trace as DT
+
 -- import Debug.Trace as DT
 
 import Effect (Effect)
@@ -353,11 +355,13 @@ viewLink
     -> UUID.ToLink /\ LinkPosition
     -> View d c n
 viewLink _ (uuid /\ linkPosition) =
-    H.div [
-        H.style
+    H.div
+        [ H.classes [ "rpd-link" ]
+        , H.style
             $ getLinkTransformStyle
                 $ getLinkTransform linkPosition
-    ] [ H.text "LINK" ]
+        ]
+        [ H.text "LINK" ]
 
 
 viewDraggingLink
@@ -366,11 +370,13 @@ viewDraggingLink
     -> LinkPosition
     -> View d c n
 viewDraggingLink _ linkPosition =
-    H.div [
-        H.style
+    H.div
+        [ H.classes [ "rpd-link", "rpd-dragging" ]
+        , H.style
             $ getLinkTransformStyle
                 $ getLinkTransform linkPosition
-    ] [ H.text "LINK" ]
+        ]
+        [ H.text "LINK" ]
 
 
 viewDebugWindow
