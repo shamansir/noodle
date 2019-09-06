@@ -22,8 +22,6 @@ import Data.Exists (Exists, mkExists)
 
 import Debug.Trace as DT
 
-import Data.BinPack.R2 as R2
-
 -- import Debug.Trace as DT
 
 import Effect (Effect)

@@ -58,8 +58,16 @@ addNode :: forall d c n. Path.ToPatch -> Path.Alias -> n -> Action d c n
 addNode patch alias n = Request $ ToAddNode patch alias n
 
 
+addNextNode :: forall d c n. Path.ToPatch -> n -> Action d c n
+addNextNode patch n = Request $ ToAddNextNode patch n
+
+
 addNodeByDef :: forall d c n. Path.ToPatch -> Path.Alias -> n -> NodeDef d c -> Action d c n
 addNodeByDef patch alias n def = Request $ ToAddNodeByDef patch alias n def
+
+
+addNextNodeByDef :: forall d c n. Path.ToPatch -> n -> NodeDef d c -> Action d c n
+addNextNodeByDef patch n def = Request $ ToAddNextNodeByDef patch n def
 
 
 addInlet :: forall d c n. Path.ToNode -> Path.Alias -> c -> Action d c n

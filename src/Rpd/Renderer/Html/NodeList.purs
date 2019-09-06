@@ -18,6 +18,6 @@ render patchPath nodes =
                 H.div
                     [ H.classes [ "rpd-node-list" ]
                     , H.onClick $ H.always_ $ R.core
-                        $ A.Request $ A.ToAddNode patchPath (show n) n
+                        $ A.Request $ A.ToAddNextNode patchPath n
                     ]
                     [ H.text $ show n ] -- TODO: add toolkit name. may be use `n -> String`

@@ -4,6 +4,7 @@ import Prelude
 import Effect (Effect)
 
 import Data.Maybe
+import Data.String (take) as String
 import Data.Either
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Sequence (empty) as Seq
@@ -81,8 +82,13 @@ applyRequestAction _ (ToAddPatch alias) nw =
     pure $ nw /\ [ AddPatchE alias ]
 applyRequestAction (Toolkit _ getDef) (ToAddNode patchPath alias n) nw =
     pure $ nw /\ [ AddNodeE patchPath alias n $ getDef n ]
+applyRequestAction (Toolkit _ getDef) (ToAddNextNode patchPath n) nw = do
+    pure $ nw /\ [ AddNextNodeE patchPath n $ getDef n ]
 applyRequestAction _ (ToAddNodeByDef patchPath alias n def) nw =
     pure $ nw /\ [ AddNodeE patchPath alias n def ]
+applyRequestAction _ (ToAddNextNodeByDef patchPath n def) nw = do
+    pure $ nw /\ [ AddNextNodeE patchPath n def ]
+    -- | AddNodeE Path.ToPatch Path.Alias n (NodeDef d c)
 applyRequestAction _ (ToAddInlet nodePath alias c) nw =
     pure $ nw /\ [ AddInletE nodePath alias c ]
 applyRequestAction _ (ToAddOutlet nodePath alias c) nw =
@@ -304,6 +310,11 @@ performEffect _ pushAction (AddNodeE patchPath nodeAlias n (NodeDef def)) nw = d
             pushAction $ Request $ ToAddInlet path alias c
         addOutlet path (OutletAlias alias /\ c) =
             pushAction $ Request $ ToAddOutlet path alias c
+performEffect toolkit pushAction (AddNextNodeE patchPath n (NodeDef def)) nw = do
+    uuid <- UUID.new
+    -- FIXME: use `show n`, maybe, or just take the part of the newly created node UUID?
+    let shortHash = String.take 6 $ UUID.toRawString uuid
+    performEffect toolkit pushAction (AddNodeE patchPath shortHash n (NodeDef def)) nw
 performEffect _ pushAction (ProcessWithE node processF) nw = do
     pushAction $ Build $ ProcessWith node processF
 performEffect _ pushAction (AddLinkE outlet inlet) nw = do

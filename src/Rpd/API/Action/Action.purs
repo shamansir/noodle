@@ -42,7 +42,9 @@ data Action d c n
 data RequestAction d c n
     = ToAddPatch Path.Alias
     | ToAddNode Path.ToPatch Path.Alias n
+    | ToAddNextNode Path.ToPatch n
     | ToAddNodeByDef Path.ToPatch Path.Alias n (NodeDef d c)
+    | ToAddNextNodeByDef Path.ToPatch n (NodeDef d c)
     | ToAddInlet Path.ToNode Path.Alias c
     | ToAddOutlet Path.ToNode Path.Alias c
     | ToRemoveInlet Path.ToInlet
@@ -97,6 +99,7 @@ data RpdEffect d c n -- TODO: move to a separate module
     = DoE (Perform d c n)
     | AddPatchE Path.Alias
     | AddNodeE Path.ToPatch Path.Alias n (NodeDef d c)
+    | AddNextNodeE Path.ToPatch n (NodeDef d c)
     | AddInletE Path.ToNode Path.Alias c
     | AddOutletE Path.ToNode Path.Alias c
     | AddLinkE (Outlet d c) (Inlet d c)
