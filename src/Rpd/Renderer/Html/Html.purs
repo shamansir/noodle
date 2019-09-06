@@ -22,6 +22,8 @@ import Data.Exists (Exists, mkExists)
 
 import Debug.Trace as DT
 
+import Data.BinPack.R2 as R2
+
 -- import Debug.Trace as DT
 
 import Effect (Effect)
@@ -218,12 +220,14 @@ viewPatch toolkitRenderer ui nw patchUuid =
         Just (R.Patch _ (P.ToPatch name) { nodes }) ->
             H.div
                 [ H.classes [ "rpd-patch" ] ]
-                $ [ H.div
+                [ H.div
                     [ H.classes [ "rpd-patch-name" ] ]
                     [ H.span [] [ H.text name ] ]
-                ] <>
-                    (viewNode toolkitRenderer ui nw
+                , H.div
+                    [ H.classes [ "rpd-nodes" ] ]
+                    $ (viewNode toolkitRenderer ui nw
                                 <$> (nodes # Seq.toUnfoldable))
+                ]
         _ ->
             H.div
                 [ H.classes [ "rpd-missing-patch" ] ]

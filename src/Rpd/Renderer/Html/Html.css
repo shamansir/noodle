@@ -43,6 +43,11 @@ body {
     margin: 20px 3px 30px 1.1em;
 }
 
+.rpd-nodes {
+    display: flex;
+    flex-wrap: wrap;
+}
+
 .rpd-node {
     position: relative;
     display: grid;
@@ -53,6 +58,7 @@ body {
         "rpd-node-title rpd-node-body rpd-node-remove-button"
         ". rpd-node-outlets .";
     max-width: 300px;
+    max-height: 250px;
 }
 
 .rpd-node-remove-button {

@@ -1,6 +1,7 @@
 #debug {
     position: absolute;
     right: 0;
+    z-index: 100000;
 }
 
 #debug {
