@@ -61,6 +61,10 @@ body {
     max-height: 250px;
 }
 
+.rpd-node-moved {
+    position: absolute;
+}
+
 .rpd-node-remove-button {
     position: absolute;
     top: 0;
