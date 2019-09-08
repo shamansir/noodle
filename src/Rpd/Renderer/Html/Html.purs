@@ -10,15 +10,18 @@ import Data.Either (hush) as Either
 import Data.Foldable (foldr)
 import Data.Lens (view) as L
 import Data.Lens.At (at) as L
-import Data.List (List, toUnfoldable, length)
+import Data.List (List)
+import Data.List (List(..), toUnfoldable, length) as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..), isJust, maybe, fromMaybe)
 import Data.Set as Set
 import Data.Set (Set)
 import Data.Array as Array
 import Data.Sequence as Seq
+import Data.Sequence (Seq)
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Exists (Exists, mkExists)
+import Control.Alternative ((<|>))
 
 import Debug.Trace as DT
 
@@ -58,6 +61,7 @@ type Model d c n =
     , mousePos :: MousePos
     , dragging :: DragState
     , positions :: UUID.Tagged /-> Position
+    , nodesMoved :: Set UUID.ToNode
     }
 
 
@@ -123,6 +127,7 @@ init =
     , mousePos : { x : -1.0, y : -1.0 }
     , dragging : NotDragging
     , positions : Map.empty
+    , nodesMoved : Set.empty
     }
 
 
@@ -164,14 +169,12 @@ viewNetwork toolkitRenderer ui nw@(R.Network { name, patches }) =
                 [ H.classes [ "rpd-network-name" ] ]
                 [ H.span [] [ H.text name ] ]
             ] <>
-            (toUnfoldable $ viewPatch toolkitRenderer ui nw
+            (List.toUnfoldable $ viewPatch toolkitRenderer ui nw
                 <$> patches # Seq.toUnfoldable) <>
             [ H.div
                 [ H.classes [ "rpd-links" ] ]
                 $ (viewLink ui <$> allLinks)
                     <> maybe [] (viewDraggingLink ui >>> Array.singleton) currentlyDraggingLink
-
-
             ]
     where
         currentlyDraggingLink :: Maybe LinkPosition
@@ -244,9 +247,7 @@ viewNode toolkitRenderer ui nw nodeUuid =
     case L.view (L._node nodeUuid) nw of
         Just node@(R.Node uuid path@(P.ToNode { node : name }) n _ { inlets, outlets }) ->
             H.div
-                [ H.classes [ "rpd-node" ] -- TODO: toolkit name, node name
-                , uuidToAttr uuid
-                , H.style "" ]
+                (getAttrs maybePosition)
                 (
                     [ H.div
                         [ H.classes [ "rpd-node-title" ]
@@ -276,6 +277,27 @@ viewNode toolkitRenderer ui nw nodeUuid =
                 [ H.text $ "node " <> show nodeUuid <> " was not found" ]
     where
         handleNodeTitleClick nodePath e = Just $ my $ ClickNodeTitle nodePath e
+        maybePosition :: Maybe Position
+        maybePosition =
+            let
+                -- FIXME: apply position in the `update` function
+                maybeDragging (Dragging (DragNode node)) = Just ui.mousePos
+                maybeDragging _ = Nothing
+                maybeMoved nodesMoved
+                    | nodeUuid `Set.member` nodesMoved
+                        = Map.lookup (UUID.liftTagged nodeUuid) ui.positions
+                maybeMoved nodesMoved
+                    | otherwise = Nothing
+            in maybeDragging ui.dragging <|> maybeMoved ui.nodesMoved
+        getAttrs (Just { x, y }) =
+            [ H.classes [ "rpd-node", "rpd-node-moved" ] -- TODO: toolkit name, node name
+            , uuidToAttr nodeUuid
+            , H.style $ "transform: translate(" <> show x <> "px, " <> show y <> "px)"
+            ]
+        getAttrs Nothing =
+            [ H.classes [ "rpd-node" ] -- TODO: toolkit name, node name
+            , uuidToAttr nodeUuid
+            ]
 
 
 viewInlet
