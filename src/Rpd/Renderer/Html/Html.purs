@@ -23,6 +23,8 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Data.Exists (Exists, mkExists)
 import Control.Alternative ((<|>))
 
+import Data.BinPack.R2 as R2
+
 import Debug.Trace as DT
 
 -- import Debug.Trace as DT
@@ -61,8 +63,11 @@ type Model d c n =
     , mousePos :: MousePos
     , dragging :: DragState
     , positions :: UUID.Tagged /-> Position
-    , nodesMoved :: Set UUID.ToNode
+    , packing :: Packing d n -- TODO: List of `Packing`, for layers
     }
+
+
+type Packing d n = R2.Bin2 Number (R.Node d n)
 
 
 type Position = { x :: Number, y :: Number }
@@ -126,8 +131,8 @@ init =
     , uuidToChannel : Map.empty
     , mousePos : { x : -1.0, y : -1.0 }
     , dragging : NotDragging
-    , positions : Map.empty
-    , nodesMoved : Set.empty
+    , positions : Map.empty -- FIXME: exclude nodes (they are stored in the `packing`)
+    , packing : R2.container 1000.0 1000.0
     }
 
 
@@ -283,12 +288,8 @@ viewNode toolkitRenderer ui nw nodeUuid =
                 -- FIXME: apply position in the `update` function
                 maybeDragging (Dragging (DragNode node)) = Just ui.mousePos
                 maybeDragging _ = Nothing
-                maybeMoved nodesMoved
-                    | nodeUuid `Set.member` nodesMoved
-                        = Map.lookup (UUID.liftTagged nodeUuid) ui.positions
-                maybeMoved nodesMoved
-                    | otherwise = Nothing
-            in maybeDragging ui.dragging <|> maybeMoved ui.nodesMoved
+                maybeStoredPosition = Map.lookup (UUID.liftTagged nodeUuid) ui.positions
+            in maybeDragging ui.dragging <|> maybeStoredPosition
         getAttrs (Just { x, y }) =
             [ H.classes [ "rpd-node", "rpd-node-moved" ] -- TODO: toolkit name, node name
             , uuidToAttr nodeUuid
@@ -512,8 +513,15 @@ update (Right (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (u
     /\ []
 update (Right (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
     ui /\ [ UpdatePositions ]
-update (Right (Core.Build (Core.AddNode _))) ( ui /\ nw ) =
-    ui /\ [ UpdatePositions ]
+update (Right (Core.Build (Core.AddNode node))) ( ui /\ nw ) =
+    let w /\ h = getNodeSize node
+    in
+        ui
+            { packing = fromMaybe ui.packing
+                $ R2.packOne ui.packing
+                $ R2.item w h node
+            }
+        /\ [ UpdatePositions ]
 update (Right (Core.Build (Core.AddLink _))) ( ui /\ nw ) =
     ui /\ [ UpdatePositions ]
 update (Right _) (ui /\ _) = ui /\ []
@@ -568,6 +576,10 @@ performEffect _ pushAction (TryConnecting outletPath inletPath) ( ui /\ nw ) = d
 performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
     _ <- Event.stopPropagation e
     pure unit
+
+
+getNodeSize :: forall d n. R.Node d n -> Number /\ Number
+getNodeSize _ = 100.0 /\ 100.0
 
 
 uuidToAttr :: forall a r i. UUID.IsTagged a => a -> H.IProp (id ∷ String | r) i

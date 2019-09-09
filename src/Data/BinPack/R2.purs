@@ -2,6 +2,7 @@ module Data.BinPack.R2
 ( Bin2
 , Item
 , pack
+, packOne
 , toList
 , sample
 , container
@@ -22,7 +23,7 @@ import Prelude
 import Control.Alt ((<|>))
 
 import Data.Foldable (class Foldable, foldMap, foldr, foldl, foldM)
-import Data.List (List(..), (:), sortBy)
+import Data.List (List(..), (:), sortBy, singleton)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 
@@ -93,6 +94,9 @@ pack c = foldM pack' c <<< sortBy (comparing area)
     where
         area (Item (w /\ h /\ _)) = w * h
 
+packOne :: forall n a. Ring n => Ord n => Bin2 n a -> Item n a -> Maybe (Bin2 n a)
+packOne c = pack c <<< singleton
+
 toList :: forall n a. Semiring n => Bin2 n a -> List (a /\ (n /\ n /\ n /\ n))
 toList = unpack' zero zero
     where
@@ -130,3 +134,6 @@ itemOf bin = valueOf bin >>= \v -> pure $ v /\ size bin
 size :: forall n. Bin2 n _ -> n /\ n
 size (Free { w, h }) = w /\ h
 size (Node { w, h }) = w /\ h
+
+repack :: forall n a. n -> n -> Bin2 n a -> Bin2 n a
+repack newWidth newHeight bin = bin -- FIXME: implement
