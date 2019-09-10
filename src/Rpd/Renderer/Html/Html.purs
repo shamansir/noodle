@@ -278,22 +278,8 @@ viewPatch toolkitRenderer ui nw patchUuid =
                     Tuple.fst <$> Map.lookup nodeUuid nodesBounds
             in maybeDragging ui.dragging <|> maybePositionFromPacking <|> maybeStoredPosition
         -}
-        getEmplacement :: UUID.ToNode -> Emplacement
-        getEmplacement nodeUuid =
-            case ui.dragging of
-                Dragging (DragNode nodeUuid') ->
-                    if nodeUuid' == nodeUuid then Floating ui.mousePos
-                    else case Map.lookup nodeUuid nodesBounds of
-                        Just pos /\ size ->
-                            Packed pos size
-                        _ -> NotDetermined
-                _ ->
-                    case Map.lookup nodeUuid nodesBounds of
-                        Just pos /\ size ->
-                            Packed pos size
-                        _ -> NotDetermined
         renderPositionedNode nodeUuid =
-            viewNode toolkitRenderer ui nw (getEmplacement nodeUuid) nodeUuid
+            viewNode toolkitRenderer ui nw (flip Map.lookup nodesBounds) nodeUuid
         showPackedNode (nodeUuid /\ x /\ y /\ w /\ h) _ =
             let bounds = quickBounds x y w h in []
 
@@ -310,14 +296,14 @@ viewNode
     => ToolkitRenderer d c n
     -> Model d c n
     -> R.Network d c n
-    -> Emplacement
+    -> (UUID.ToNode -> Maybe Bounds)
     -> UUID.ToNode
     -> View d c n
-viewNode toolkitRenderer ui nw emplacement nodeUuid =
+viewNode toolkitRenderer ui nw findBounds nodeUuid =
     case L.view (L._node nodeUuid) nw of
         Just node@(R.Node uuid path@(P.ToNode { node : name }) n _ { inlets, outlets }) ->
             H.div
-                (getAttrs emplacement node)
+                (getAttrs (getEmplacement uuid path) node)
                 (
                     [ H.div
                         [ H.classes [ "rpd-node-title" ]
@@ -347,6 +333,20 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                 [ H.text $ "node " <> show nodeUuid <> " was not found" ]
     where
         handleNodeTitleClick nodePath e = Just $ my $ ClickNodeTitle nodePath e
+        getEmplacement :: UUID.ToNode -> P.ToNode -> Emplacement
+        getEmplacement nodeUuid nodePath =
+            case ui.dragging of
+                Dragging (DragNode nodePath') ->
+                    if nodePath' == nodePath then Floating ui.mousePos
+                    else case findBounds nodeUuid of
+                        Just (pos /\ size) ->
+                            Packed pos size
+                        _ -> NotDetermined
+                _ ->
+                    case findBounds nodeUuid of
+                        Just (pos /\ size) ->
+                            Packed pos size
+                        _ -> NotDetermined
         getAttrs (Floating { x, y }) node =
             let
                 width /\ height = getNodeSize node
