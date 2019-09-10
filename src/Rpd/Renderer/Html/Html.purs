@@ -19,6 +19,7 @@ import Data.Set (Set)
 import Data.Array as Array
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Exists (Exists, mkExists)
 import Control.Alternative ((<|>))
@@ -63,14 +64,16 @@ type Model d c n =
     , mousePos :: MousePos
     , dragging :: DragState
     , positions :: UUID.Tagged /-> Position
-    , packing :: Packing d n -- TODO: List of `Packing`, for layers
+    , packing :: Packing -- TODO: List of `Packing`, for layers
     }
 
 
-type Packing d n = R2.Bin2 Number (R.Node d n)
+type Packing = R2.Bin2 Number UUID.ToNode
 
 
 type Position = { x :: Number, y :: Number }
+type Rect = { width :: Number, height :: Number }
+type Bounds = Position /\ Rect
 
 
 type LinkPosition = { from :: Position, to :: Position }
@@ -120,7 +123,7 @@ type PushF d c n = R.PushF d c n Action
 type View d c n = Html (Either Action (Core.Action d c n))
 
 
-init :: forall d c n. Model d c n
+init :: forall d c n. {-- TODO: R.Network d c n -> --} Model d c n
 init =
     { lastInletData : Map.empty
     , lastOutletData : Map.empty
@@ -158,6 +161,17 @@ viewError :: forall d c n. R.RpdError -> View d c n
 viewError error =
     H.div [ H.id_ "error" ] [ H.text $ show error ]
 
+
+quickBounds :: Number -> Number -> Number -> Number -> Bounds
+quickBounds x y width height =
+    -- { pos : { x, y }, rect : { width, height }}
+    { x, y } /\ { width, height }
+
+
+quickBounds' :: Number /\ Number /\ Number /\ Number -> Bounds
+quickBounds' (x /\ y /\ width /\ height) =
+    -- { pos : { x, y }, rect : { width, height }}
+    { x, y } /\ { width, height }
 
 viewNetwork
     :: forall d c n
@@ -231,13 +245,41 @@ viewPatch toolkitRenderer ui nw patchUuid =
                     [ H.span [] [ H.text name ] ]
                 , H.div
                     [ H.classes [ "rpd-nodes" ] ]
-                    $ (viewNode toolkitRenderer ui nw
-                                <$> (nodes # Seq.toUnfoldable))
+                    $ renderPositionedNode <$> (nodes # Seq.toUnfoldable)
+                -- $ R2.unfold showPackedNode [] ui.packing
                 ]
         _ ->
             H.div
                 [ H.classes [ "rpd-missing-patch" ] ]
                 [ H.text $ "patch " <> show patchUuid <> " was not found" ]
+    where
+        -- TODO: when all the nodes will be stored in `packing`, `nodeBounds` won't be needed,
+        --       just `R2.unfold` them all
+        nodesBounds = unpack ui.packing
+        maybePosition :: UUID.ToNode -> Maybe Position
+        maybePosition nodeUuid =
+            let
+                -- FIXME: apply position in the `update` function
+                maybeDragging (Dragging (DragNode _)) = Just ui.mousePos
+                maybeDragging _ = Nothing
+                maybeStoredPosition = Map.lookup (UUID.liftTagged nodeUuid) ui.positions
+                maybePositionFromPacking =
+                    Tuple.fst <$> Map.lookup nodeUuid nodesBounds
+            in maybeDragging ui.dragging <|> maybePositionFromPacking <|> maybeStoredPosition
+        renderPositionedNode nodeUuid =
+            let
+                maybePos = maybePosition nodeUuid
+                maybeRect = Tuple.snd <$> Map.lookup nodeUuid nodesBounds
+            in
+                viewNode toolkitRenderer ui nw maybePos maybeRect nodeUuid
+        showPackedNode (nodeUuid /\ x /\ y /\ w /\ h) _ =
+            let bounds = quickBounds x y w h in []
+
+
+unpack :: Packing -> (UUID.ToNode /-> Bounds)
+unpack packing =
+    Map.fromFoldable $ ((<$>) quickBounds') <$> R2.toList packing
+    -- R2.unfold (\tuple map -> ) Map.empty packing
 
 
 viewNode
@@ -246,13 +288,15 @@ viewNode
     => ToolkitRenderer d c n
     -> Model d c n
     -> R.Network d c n
+    -> Maybe Position -- TODO: add data type: NowDragging / BoundsUnknown / PositionKnown / RectKnown
+    -> Maybe Rect
     -> UUID.ToNode
     -> View d c n
-viewNode toolkitRenderer ui nw nodeUuid =
+viewNode toolkitRenderer ui nw maybePos maybeRect nodeUuid =
     case L.view (L._node nodeUuid) nw of
         Just node@(R.Node uuid path@(P.ToNode { node : name }) n _ { inlets, outlets }) ->
             H.div
-                (getAttrs maybePosition)
+                (getAttrs maybePos maybeRect)
                 (
                     [ H.div
                         [ H.classes [ "rpd-node-title" ]
@@ -282,20 +326,23 @@ viewNode toolkitRenderer ui nw nodeUuid =
                 [ H.text $ "node " <> show nodeUuid <> " was not found" ]
     where
         handleNodeTitleClick nodePath e = Just $ my $ ClickNodeTitle nodePath e
-        maybePosition :: Maybe Position
-        maybePosition =
-            let
-                -- FIXME: apply position in the `update` function
-                maybeDragging (Dragging (DragNode node)) = Just ui.mousePos
-                maybeDragging _ = Nothing
-                maybeStoredPosition = Map.lookup (UUID.liftTagged nodeUuid) ui.positions
-            in maybeDragging ui.dragging <|> maybeStoredPosition
-        getAttrs (Just { x, y }) =
+        getAttrs (Just { x, y }) (Just { width, height }) =
             [ H.classes [ "rpd-node", "rpd-node-moved" ] -- TODO: toolkit name, node name
             , uuidToAttr nodeUuid
-            , H.style $ "transform: translate(" <> show x <> "px, " <> show y <> "px)"
+            , H.style $ "transform: translate(" <> show x <> "px, " <> show y <> "px); " <>
+                        "min-width: " <> show width <> "px; " <> "min-height: " <> show height <> "px;"
             ]
-        getAttrs Nothing =
+        getAttrs (Just { x, y }) _ =
+            [ H.classes [ "rpd-node", "rpd-node-moved" ] -- TODO: toolkit name, node name
+            , uuidToAttr nodeUuid
+            , H.style $ "transform: translate(" <> show x <> "px, " <> show y <> "px);"
+            ]
+        getAttrs _ (Just { width, height }) =
+            [ H.classes [ "rpd-node", "rpd-node-moved" ] -- TODO: toolkit name, node name
+            , uuidToAttr nodeUuid
+            , H.style $ "min-width: " <> show width <> "px; " <> "min-height: " <> show height <> "px;"
+            ]
+        getAttrs _ _ =
             [ H.classes [ "rpd-node" ] -- TODO: toolkit name, node name
             , uuidToAttr nodeUuid
             ]
@@ -513,14 +560,15 @@ update (Right (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (u
     /\ []
 update (Right (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
     ui /\ [ UpdatePositions ]
-update (Right (Core.Build (Core.AddNode node))) ( ui /\ nw ) =
+update (Right (Core.Build (Core.AddNode node@(R.Node nodeUuid _ _ _ _)))) ( ui /\ nw ) =
     let w /\ h = getNodeSize node
     in
         ui
             { packing = fromMaybe ui.packing
                 $ R2.packOne ui.packing
-                $ R2.item w h node
+                $ R2.item w h nodeUuid
             }
+            -- TODO: remove from packing when node was removed
         /\ [ UpdatePositions ]
 update (Right (Core.Build (Core.AddLink _))) ( ui /\ nw ) =
     ui /\ [ UpdatePositions ]
