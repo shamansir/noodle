@@ -98,7 +98,7 @@ packOne :: forall n a. Ring n => Ord n => Bin2 n a -> Item n a -> Maybe (Bin2 n 
 packOne c = pack c <<< singleton
 
 toList :: forall n a. Semiring n => Bin2 n a -> List (a /\ (n /\ n /\ n /\ n))
-toList = unpack' zero zero
+toList = unpack' zero zero -- FIXME: use unfold for that
     where
         unpack' _ _ (Free _)       = Nil
         unpack' x y (Node { w, h, r, b, i }) =
