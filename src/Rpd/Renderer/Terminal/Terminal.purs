@@ -117,7 +117,7 @@ terminalRenderer :: forall d c n. TerminalRenderer d c n
 terminalRenderer =
     R.Renderer
         { from : ML.empty
-        , init : initUi
+        , init : const initUi
         , update : const update
         , view
         , performEffect : R.skipEffects
