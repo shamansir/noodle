@@ -7,7 +7,7 @@ import Math (atan2, sqrt, pow)
 import Data.Int (toNumber)
 import Data.Either (Either(..))
 import Data.Either (hush) as Either
-import Data.Foldable (foldr)
+import Data.Foldable (fold, foldr)
 import Data.Lens (view) as L
 import Data.Lens.At (at) as L
 import Data.List (List)
@@ -17,6 +17,7 @@ import Data.Maybe (Maybe(..), isJust, maybe, fromMaybe)
 import Data.Set as Set
 import Data.Set (Set)
 import Data.Array as Array
+import Data.Array ((:))
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
 import Data.Tuple (fst, snd) as Tuple
@@ -63,17 +64,20 @@ type Model d c n =
     , uuidToChannel :: UUID /-> c
     , mousePos :: MousePos
     , dragging :: DragState
-    , positions :: UUID.Tagged /-> Position -- FIXME: split to inletPositions / outletPositions
-    -- , nodeLayout :: NodeLayout
-    , packing :: NodePacking
+    , positions :: UUID.Tagged /-> Position
+    -- , positions ::
+    --     { inlets :: UUID.ToInlet /-> Position
+    --     , outlets :: UUID.ToOutlet /-> Position
+    --     }
+    , nodesLayout :: NodesLayout
     }
 
 
--- type NodeLayout =
---     { packing :: List NodePacking
---     , pinned :: UUID.ToNode /-> Position
---     --, floating :: UUID.ToNode /-> Position
---     }
+type NodesLayout =
+    { packing :: Array NodePacking -- List NodePacking
+    , pinned :: UUID.ToNode /-> Position
+    --, floating :: UUID.ToNode /-> Position
+    }
 
 
 type NodePacking = R2.Bin2 Number UUID.ToNode
@@ -89,7 +93,7 @@ type Bounds = Position /\ Rect
 
 data Emplacement
     = NotDetermined
-    | Floating Position -- when dragged
+    | Pinned Position
     | Packed Position Rect
 
 
@@ -152,7 +156,10 @@ init =
     , mousePos : { x : -1.0, y : -1.0 }
     , dragging : NotDragging
     , positions : Map.empty -- FIXME: exclude nodes (they are stored in the `packing`)
-    , packing : R2.container 1000.0 1000.0
+    , nodesLayout :
+        { packing : []
+        , pinned : Map.empty
+        }
     }
 
 
@@ -260,20 +267,20 @@ viewPatch toolkitRenderer ui nw patchUuid =
                 [ H.div
                     [ H.classes [ "rpd-patch-name" ] ]
                     [ H.span [] [ H.text name ] ]
-                , H.div
-                    [ H.classes [ "rpd-nodes" ] ]
-                    $ renderPositionedNode <$> (nodes # Seq.toUnfoldable)
-                -- $ R2.unfold showPackedNode [] ui.packing
+                , renderNodesLayout ui.nodesLayout
                 ]
         _ ->
             H.div
                 [ H.classes [ "rpd-missing-patch" ] ]
                 [ H.text $ "patch " <> show patchUuid <> " was not found" ]
     where
-        -- TODO: when all the nodes will be stored in `packing`, `nodeBounds` won't be needed,
-        --       just `R2.unfold` them all
-        nodesBounds :: UUID.ToNode /-> Bounds
-        nodesBounds = unpack ui.packing
+        renderNodesLayout :: NodesLayout -> View d c n
+        renderNodesLayout layout =
+            H.div
+                [ H.classes [ "rpd-nodes" ] ]
+                $ (fold $ R2.unfold ((:) <<< showPackedNode) [] <$> layout.packing)
+                    <> (showPinnedNode <$> Map.toUnfoldable layout.pinned)
+    -- where
         {-
         maybePosition :: UUID.ToNode -> Maybe Position
         maybePosition nodeUuid =
@@ -286,10 +293,12 @@ viewPatch toolkitRenderer ui nw patchUuid =
                     Tuple.fst <$> Map.lookup nodeUuid nodesBounds
             in maybeDragging ui.dragging <|> maybePositionFromPacking <|> maybeStoredPosition
         -}
-        renderPositionedNode nodeUuid =
-            viewNode toolkitRenderer ui nw (flip Map.lookup nodesBounds) nodeUuid
-        showPackedNode (nodeUuid /\ x /\ y /\ w /\ h) _ =
-            let bounds = quickBounds x y w h in []
+        -- renderPositionedNode nodeUuid =
+        --     viewNode toolkitRenderer ui nw (flip Map.lookup nodesBounds) nodeUuid
+        showPinnedNode (nodeUuid /\ pos) =
+            viewNode toolkitRenderer ui nw (Pinned pos) nodeUuid
+        showPackedNode (nodeUuid /\ x /\ y /\ width /\ height) =
+            viewNode toolkitRenderer ui nw (Packed { x, y } { width, height }) nodeUuid
 
 
 unpack :: NodePacking -> (UUID.ToNode /-> Bounds)
@@ -304,14 +313,14 @@ viewNode
     => ToolkitRenderer d c n
     -> Model d c n
     -> R.Network d c n
-    -> (UUID.ToNode -> Maybe Bounds)
+    -> Emplacement
     -> UUID.ToNode
     -> View d c n
-viewNode toolkitRenderer ui nw findBounds nodeUuid =
+viewNode toolkitRenderer ui nw emplacement nodeUuid =
     case L.view (L._node nodeUuid) nw of
         Just node@(R.Node uuid path@(P.ToNode { node : name }) n _ { inlets, outlets }) ->
             H.div
-                (getAttrs (getEmplacement uuid path) node)
+                (getAttrs emplacement node)
                 (
                     [ H.div
                         [ H.classes [ "rpd-node-title" ]
@@ -341,21 +350,21 @@ viewNode toolkitRenderer ui nw findBounds nodeUuid =
                 [ H.text $ "node " <> show nodeUuid <> " was not found" ]
     where
         handleNodeTitleClick nodePath e = Just $ my $ ClickNodeTitle nodePath e
-        getEmplacement :: UUID.ToNode -> P.ToNode -> Emplacement
-        getEmplacement nodeUuid nodePath =
-            case ui.dragging of
-                Dragging (DragNode nodePath') ->
-                    if nodePath' == nodePath then Floating ui.mousePos
-                    else case findBounds nodeUuid of
-                        Just (pos /\ size) ->
-                            Packed pos size
-                        _ -> NotDetermined
-                _ ->
-                    case findBounds nodeUuid of
-                        Just (pos /\ size) ->
-                            Packed pos size
-                        _ -> NotDetermined
-        getAttrs (Floating { x, y }) node =
+        -- getEmplacement :: UUID.ToNode -> P.ToNode -> Emplacement
+        -- getEmplacement nodeUuid nodePath =
+        --     case ui.dragging of
+        --         Dragging (DragNode nodePath') ->
+        --             if nodePath' == nodePath then Floating ui.mousePos
+        --             else case findBounds nodeUuid of
+        --                 Just (pos /\ size) ->
+        --                     Packed pos size
+        --                 _ -> NotDetermined
+        --         _ ->
+        --             case findBounds nodeUuid of
+        --                 Just (pos /\ size) ->
+        --                     Packed pos size
+        --                 _ -> NotDetermined
+        getAttrs (Pinned { x, y }) node =
             let
                 width /\ height = getNodeSize node
             in
@@ -594,15 +603,12 @@ update (Right (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (u
 update (Right (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
     ui /\ [ UpdatePositions ]
 update (Right (Core.Build (Core.AddNode node@(R.Node nodeUuid _ _ _ _)))) ( ui /\ nw ) =
-    let w /\ h = getNodeSize node
-    in
-        ui
-            { packing = fromMaybe ui.packing
-                $ R2.packOne ui.packing
-                $ R2.item w h nodeUuid
-            }
-            -- TODO: remove from packing when node was removed
-        /\ [ UpdatePositions ]
+    ui
+        { nodesLayout =
+            ui.nodesLayout # packInLayout (getNodeSize node) node
+        }
+        -- TODO: remove from packing when node was removed
+    /\ [ UpdatePositions ]
 update (Right (Core.Build (Core.AddLink _))) ( ui /\ nw ) =
     ui /\ [ UpdatePositions ]
 update (Right _) (ui /\ _) = ui /\ []
@@ -661,6 +667,19 @@ performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
 
 getNodeSize :: forall d n. R.Node d n -> Number /\ Number
 getNodeSize _ = 100.0 /\ 100.0
+
+
+packInLayout :: forall d n. Number /\ Number -> R.Node d n -> NodesLayout -> NodesLayout
+packInLayout (w /\ h) node@(R.Node nodeUuid _ _ _ _) layout =
+    layout -- FIXME: implement
+    -- fromMaybe ui.packing
+                -- $ R2.packOne ui.packing
+                -- $ R2.item w h nodeUuid
+
+
+pinAtLayout :: Number /\ Number -> Position -> UUID.ToNode -> NodesLayout -> NodesLayout
+pinAtLayout (w /\ h) position nodeUuid layout =
+    layout -- FIXME: implement
 
 
 uuidToAttr :: forall a r i. UUID.IsTagged a => a -> H.IProp (id ∷ String | r) i
