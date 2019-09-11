@@ -1,6 +1,7 @@
 module Rpd.Render.MUV
     ( Renderer(..)
     , PushF(..)
+    , InitF
     , ViewF
     , UpdateF
     , PerformEffectF
@@ -32,6 +33,10 @@ import Rpd.Render.Minimal as Minimal
 
 data PushF d c n action  =
     PushF (Either action (Core.Action d c n) -> Effect Unit)
+
+
+type InitF d c n model
+    = R.Network d c n -> model
 
 
 {- UpdateF:
@@ -72,7 +77,7 @@ type PerformEffectF d c n model action effect
 data Renderer d c n model view action effect
     = Renderer
         { from :: view -- initial view
-        , init :: model -- initial state
+        , init :: InitF d c n model -- initial state
         , update :: UpdateF d c n model action effect
         , view :: ViewF d c n model view action
         , performEffect :: PerformEffectF d c n model action effect
@@ -105,7 +110,7 @@ make
 make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = do
     { models, pushAction, stop } <-
         ActionSeq.prepare_
-            (init /\ initialNW)
+            (init initialNW /\ initialNW)
             myApply
             myPerformEff
     { event : views, push : pushView } <- Event.create
@@ -138,7 +143,7 @@ once
     -> R.Network d c n
     -> view
 once (Renderer { init, view }) _ nw =
-    view $ Right $ init /\ nw
+    view $ Right $ init nw /\ nw
 
 
 
@@ -149,7 +154,7 @@ fromMinimal
 fromMinimal (Minimal.Renderer minimal) =
     Renderer
         { from : minimal.first -- initial view
-        , init : unit -- initial state
+        , init : const unit -- initial state
         , update : noUpdates unit
         , view : minimalView
         , performEffect : skipEffects

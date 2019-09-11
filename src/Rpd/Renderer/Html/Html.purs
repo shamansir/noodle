@@ -63,12 +63,20 @@ type Model d c n =
     , uuidToChannel :: UUID /-> c
     , mousePos :: MousePos
     , dragging :: DragState
-    , positions :: UUID.Tagged /-> Position
-    , packing :: Packing -- TODO: List of `Packing`, for layers
+    , positions :: UUID.Tagged /-> Position -- FIXME: split to inletPositions / outletPositions
+    -- , nodeLayout :: NodeLayout
+    , packing :: NodePacking
     }
 
 
-type Packing = R2.Bin2 Number UUID.ToNode
+-- type NodeLayout =
+--     { packing :: List NodePacking
+--     , pinned :: UUID.ToNode /-> Position
+--     --, floating :: UUID.ToNode /-> Position
+--     }
+
+
+type NodePacking = R2.Bin2 Number UUID.ToNode
 
 
 type Position = { x :: Number, y :: Number }
@@ -284,7 +292,7 @@ viewPatch toolkitRenderer ui nw patchUuid =
             let bounds = quickBounds x y w h in []
 
 
-unpack :: Packing -> (UUID.ToNode /-> Bounds)
+unpack :: NodePacking -> (UUID.ToNode /-> Bounds)
 unpack packing =
     Map.fromFoldable $ ((<$>) quickBounds') <$> R2.toList packing
     -- R2.unfold (\tuple map -> ) Map.empty packing
@@ -351,13 +359,13 @@ viewNode toolkitRenderer ui nw findBounds nodeUuid =
             let
                 width /\ height = getNodeSize node
             in
-                [ H.classes [ "rpd-node", "rpd-node-moved" ] -- TODO: toolkit name, node name
+                [ H.classes [ "rpd-node", "rpd-floating" ] -- TODO: toolkit name, node name
                 , uuidToAttr nodeUuid
                 , H.style $ "transform: translate(" <> show x <> "px, " <> show y <> "px); " <>
                             "min-width: " <> show width <> "px; " <> "min-height: " <> show height <> "px;"
                 ]
         getAttrs (Packed { x, y } { width, height }) node =
-            [ H.classes [ "rpd-node", "rpd-node-moved" ] -- TODO: toolkit name, node name
+            [ H.classes [ "rpd-node", "rpd-packed" ] -- TODO: toolkit name, node name
             , uuidToAttr nodeUuid
             , H.style $ "transform: translate(" <> show x <> "px, " <> show y <> "px); " <>
                         "min-width: " <> show width <> "px; " <> "min-height: " <> show height <> "px;"
@@ -519,7 +527,7 @@ htmlRenderer
 htmlRenderer toolkitRenderer =
     R.Renderer
         { from : emptyView
-        , init : init
+        , init : const init
         , update :
             \toolkit action (ui /\ nw) ->
                 let

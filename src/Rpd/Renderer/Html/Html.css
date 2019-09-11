@@ -61,7 +61,7 @@ body {
     max-height: 250px;
 }
 
-.rpd-node-moved {
+.rpd-node.rpd-floating {
     position: absolute;
 }
 
@@ -93,6 +93,7 @@ body {
     overflow: hidden;
     white-space: nowrap;
     z-index: 1;
+    cursor: pointer;
 }
 
 .rpd-node-title span {
