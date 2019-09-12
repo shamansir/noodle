@@ -63,7 +63,7 @@ type Model d c n =
     -- , uuidToNodeDef :: UUID /-> T.NodeDefAlias
     , uuidToChannel :: UUID /-> c
     , mousePos :: MousePos
-    , dragging :: DragState
+    , dragging :: DragState d c n
     , positions :: UUID.Tagged /-> Position
     -- , positions ::
     --     { inlets :: UUID.ToInlet /-> Position
@@ -104,11 +104,11 @@ type LinkTransform = { from :: Position, angle :: Number, length :: Number }
 type MousePos = Position
 
 
-data Action
+data Action d c n
     = NoOp
-    | ClickInlet P.ToInlet ME.MouseEvent
-    | ClickOutlet P.ToOutlet ME.MouseEvent
-    | ClickNodeTitle P.ToNode ME.MouseEvent
+    | ClickInlet (R.Inlet d c) ME.MouseEvent
+    | ClickOutlet (R.Outlet d c) ME.MouseEvent
+    | ClickNodeTitle (R.Node d n) ME.MouseEvent
     | ClickBackground ME.MouseEvent
     | MouseMove MousePos
     | EnableDebug
@@ -116,36 +116,36 @@ data Action
     | StorePositions (UUID.Tagged /-> Position)
 
 
-data Perform
+data Perform d c n
     = UpdatePositions
-    | TryConnecting P.ToOutlet P.ToInlet
+    | TryConnecting (R.Outlet d c) (R.Inlet d c)
     | StopPropagation Event
 
 
-data DragSubject
-    = DragNode P.ToNode -- FIXME: store the node itself
-    | DragLink P.ToOutlet -- FIXME: store the outlet itself
+data DragSubject d c n
+    = DragNode (R.Node d n)
+    | DragLink (R.Outlet d c)
 
 
-data DragState
+data DragState d c n
     = NotDragging
-    | Dragging DragSubject
+    | Dragging (DragSubject d c n)
 
 
-instance showDragState :: Show DragState where
+instance showDragState :: Show (DragState d c n) where
     show NotDragging = "not dragging"
-    show (Dragging (DragNode nPath)) = "dragging node " <> show nPath
-    show (Dragging (DragLink oPath)) = "dragging link from " <> show oPath
+    show (Dragging (DragNode (R.Node _ nPath _ _ _))) = "dragging node " <> show nPath
+    show (Dragging (DragLink (R.Outlet _ oPath _ _))) = "dragging link from " <> show oPath
 
 
-type PushF d c n = R.PushF d c n Action
+type PushF d c n = R.PushF d c n (Action d c n)
 
 
-type View d c n = Html (Either Action (Core.Action d c n))
+type View d c n = Html (Either (Action d c n) (Core.Action d c n))
 
 
-init :: forall d c n. {-- TODO: R.Network d c n -> --} Model d c n
-init =
+init :: forall d c n. R.Network d c n -> Model d c n
+init nw =
     { lastInletData : Map.empty
     , lastOutletData : Map.empty
     -- , debug : Nothing
@@ -157,23 +157,26 @@ init =
     , dragging : NotDragging
     , positions : Map.empty -- FIXME: exclude nodes (they are stored in the `packing`)
     , nodesLayout :
-        { packing : []
+        { packing : loadToPacking nw
         , pinned : Map.empty
         }
     }
 
 
-type HtmlRenderer d c n = R.Renderer d c n (Model d c n) (View d c n) Action Perform
+type HtmlRenderer d c n = R.Renderer d c n (Model d c n) (View d c n) (Action d c n) (Perform d c n)
 -- type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
-type ToolkitRenderer d c n = T.ToolkitRenderer d c n (View d c n) (Either Action (Core.Action d c n))
+type ToolkitRenderer d c n =
+    T.ToolkitRenderer d c n
+        (View d c n)
+        (Either (Action d c n) (Core.Action d c n))
 -- FIXME: user might want to use custom messages in the renderer
 
 
-core :: forall d c n. Core.Action d c n -> Either Action (Core.Action d c n)
+core :: forall d c n. Core.Action d c n -> Either (Action d c n) (Core.Action d c n)
 core = Right
 
 
-my :: forall d c n. Action -> Either Action (Core.Action d c n)
+my :: forall d c n. Action d c n -> Either (Action d c n) (Core.Action d c n)
 my = Left
 
 
@@ -225,9 +228,8 @@ viewNetwork toolkitRenderer ui nw@(R.Network { name, patches }) =
             case ui.dragging of
                 NotDragging -> Nothing
                 Dragging (DragNode _) -> Nothing
-                Dragging (DragLink outletPath) ->
-                    (R.uuidByPath UUID.toOutlet outletPath nw # Either.hush)
-                        >>= \outletUuid -> Map.lookup (UUID.liftTagged outletUuid) ui.positions
+                Dragging (DragLink (R.Outlet outletUuid _ _ _)) ->
+                        Map.lookup (UUID.liftTagged outletUuid) ui.positions
                         <#> \outletPos -> { from : outletPos, to : ui.mousePos }
         allLinks :: Array (UUID.ToLink /\ LinkEnds)
         allLinks = Array.catMaybes
@@ -280,6 +282,7 @@ viewPatch toolkitRenderer ui nw patchUuid =
                 [ H.classes [ "rpd-nodes" ] ]
                 $ (fold $ R2.unfold ((:) <<< showPackedNode) [] <$> layout.packing)
                     <> (showPinnedNode <$> Map.toUnfoldable layout.pinned)
+
     -- where
         {-
         maybePosition :: UUID.ToNode -> Maybe Position
@@ -324,7 +327,7 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                 (
                     [ H.div
                         [ H.classes [ "rpd-node-title" ]
-                        , H.onClick $ handleNodeTitleClick path
+                        , H.onClick $ handleNodeTitleClick node
                         ]
                         [ H.span [ ] [ H.text name ] ]
                     , H.div
@@ -407,7 +410,7 @@ viewInlet toolkitRenderer ui nw inletUuid =
                 ] -- TODO: channel name, state
                 [ H.div
                     [ H.classes [ "rpd-inlet-connector" ]
-                    , H.onClick $ handleInletConnectorClick path
+                    , H.onClick $ handleInletConnectorClick inlet
                     ]
                     [ H.text "o" ]
                 , H.div [ H.classes [ "rpd-inlet-name" ] ]
@@ -443,7 +446,7 @@ viewOutlet toolkitRenderer ui nw outletUuid =
                 ] -- TODO: channel name, state
                 [ H.div
                     [ H.classes [ "rpd-outlet-connector" ]
-                    , H.onClick $ handleOutletConnectorClick path
+                    , H.onClick $ handleOutletConnectorClick outlet
                     ]
                     [ H.text "o"
                     ]
@@ -518,7 +521,7 @@ viewDebugWindow ui nw =
 updateDebugBox
     :: forall d c n
      . R.Network d c n
-    -> Either Action (Core.Action d c n)
+    -> Either (Action d c n) (Core.Action d c n)
     -> Maybe (DebugBox.Model d c n)
     -> Maybe (DebugBox.Model d c n)
 updateDebugBox nw (Right action) (Just debug) = Just $ DebugBox.update action nw debug
@@ -536,7 +539,7 @@ htmlRenderer
 htmlRenderer toolkitRenderer =
     R.Renderer
         { from : emptyView
-        , init : const init
+        , init : init
         , update :
             \toolkit action (ui /\ nw) ->
                 let
@@ -556,7 +559,7 @@ viewMousePos { x, y } =
 
 
 -- FIXME: show in DebugBox
-viewDragState :: forall d c n. DragState -> View d c n
+viewDragState :: forall d c n. DragState d c n -> View d c n
 viewDragState dragState =
     H.span [ H.classes [ "rpd-drag-state" ] ] [ H.text $ show dragState ]
 
@@ -589,9 +592,9 @@ view _ (Left err) =
 
 update
     :: forall d c n
-     . Either Action (Core.Action d c n)
+     . Either (Action d c n) (Core.Action d c n)
     -> Model d c n /\ R.Network d c n
-    -> Model d c n /\ Array Perform
+    -> Model d c n /\ Array (Perform d c n)
 
 update (Right (Core.Data Core.Bang)) (ui /\ _) = ui /\ []
 update (Right (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ _) =
@@ -650,15 +653,17 @@ update (Left (StorePositions positions)) (ui /\ _) =
 performEffect
     :: forall d c n
      . T.Toolkit d c n
-    -> (Either Action (Core.Action d c n) -> Effect Unit)
-    -> Perform
+    -> (Either (Action d c n) (Core.Action d c n) -> Effect Unit)
+    -> Perform d c n
     -> (Model d c n /\ R.Network d c n)
     -> Effect Unit
 performEffect _ pushAction UpdatePositions ( ui /\ (R.Network nw) ) = do
     positions <- collectPositions $ loadUUIDs $ Map.keys nw.registry
     -- let _ = DT.spy "positions" $ convertPositions positions
     pushAction $ my $ StorePositions $ convertPositions positions
-performEffect _ pushAction (TryConnecting outletPath inletPath) ( ui /\ nw ) = do
+performEffect _ pushAction
+    (TryConnecting (R.Outlet _ outletPath _ _) (R.Inlet _ inletPath _ _))
+    ( ui /\ nw ) = do
     pushAction $ core $ Core.Request $ Core.ToConnect outletPath inletPath
 performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
     _ <- Event.stopPropagation e
@@ -680,6 +685,11 @@ packInLayout (w /\ h) node@(R.Node nodeUuid _ _ _ _) layout =
 pinAtLayout :: Number /\ Number -> Position -> UUID.ToNode -> NodesLayout -> NodesLayout
 pinAtLayout (w /\ h) position nodeUuid layout =
     layout -- FIXME: implement
+
+
+loadToPacking :: forall d c n. R.Network d c n -> Array NodePacking
+loadToPacking nw = -- FIXME: implement
+    [] -- nw.registry -> UUID.ToNode -> _view -> ...
 
 
 uuidToAttr :: forall a r i. UUID.IsTagged a => a -> H.IProp (id ∷ String | r) i
