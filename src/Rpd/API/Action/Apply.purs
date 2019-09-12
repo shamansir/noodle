@@ -216,6 +216,8 @@ applyBuildAction _ (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
         , SubscribeNodeUpdates node
         , SendActionOnOutletUpdatesE outlet
         ]
+applyBuildAction _ (Connect outlet inlet) nw = do
+    pure $ nw /\ [ AddLinkE outlet inlet ]
 applyBuildAction _ (AddLink link) nw = do
     nw' <- Api.addLink link nw
     pure $ nw' /\ []
