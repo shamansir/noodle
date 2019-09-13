@@ -11,7 +11,7 @@ import Data.Foldable (fold, foldr)
 import Data.Lens (view) as L
 import Data.Lens.At (at) as L
 import Data.List (List)
-import Data.List (List(..), toUnfoldable, length) as List
+import Data.List (List(..), toUnfoldable, length, head) as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..), isJust, maybe, fromMaybe)
 import Data.Set as Set
@@ -41,7 +41,7 @@ import Rpd.Path as P
 import Rpd.UUID (UUID)
 import Rpd.UUID as UUID
 import Rpd.Render.MUV (Renderer(..), PushF(..), skipEffects) as R
-import Rpd.Util (type (/->))
+import Rpd.Util (type (/->), (+>))
 import Rpd.Toolkit as T
 
 import Rpd.Renderer.Html.DebugBox as DebugBox
@@ -74,13 +74,15 @@ type Model d c n =
 
 
 type NodesLayout =
-    { packing :: Array NodePacking -- List NodePacking
-    , pinned :: UUID.ToNode /-> Position
+    { stack :: NodesStack
+    , pinned :: PinnedNodes
     --, floating :: UUID.ToNode /-> Position
     }
 
 
-type NodePacking = R2.Bin2 Number UUID.ToNode
+type NodesLayer = R2.Bin2 Number UUID.ToNode
+type NodesStack = Seq NodesLayer -- Shelving, may be?
+type PinnedNodes = UUID.ToNode /-> Position
 
 
 type Position = { x :: Number, y :: Number }
@@ -157,7 +159,7 @@ init nw =
     , dragging : NotDragging
     , positions : Map.empty -- FIXME: exclude nodes (they are stored in the `packing`)
     , nodesLayout :
-        { packing : loadToPacking nw
+        { stack : loadIntoStack nw
         , pinned : Map.empty
         }
     }
@@ -280,10 +282,19 @@ viewPatch toolkitRenderer ui nw patchUuid =
         renderNodesLayout layout =
             H.div
                 [ H.classes [ "rpd-nodes" ] ]
-                $ (fold $ R2.unfold ((:) <<< showPackedNode) [] <$> layout.packing)
-                    <> (showPinnedNode <$> Map.toUnfoldable layout.pinned)
-
-    -- where
+                [ H.div
+                    [ H.classes [ "rpd-packed-nodes" ] ]
+                    $ (fold $ R2.unfold ((:) <<< showPackedNode) [] <$> layout.stack)
+                , H.div
+                    [ H.classes [ "rpd-pinned-nodes" ] ]
+                    $ (showPinnedNode <$> Map.toUnfoldable layout.pinned)
+                , H.div
+                    [ H.classes [ "rpd-dragged-nodes" ] ]
+                    $ maybe [] Array.singleton (maybeDragging ui.dragging)
+                ]
+        maybeDragging (Dragging (DragNode (R.Node nodeUuid _ _ _ _))) =
+            Just $ viewNode toolkitRenderer ui nw (Pinned ui.mousePos) nodeUuid
+        maybeDragging _ = Nothing
         {-
         maybePosition :: UUID.ToNode -> Maybe Position
         maybePosition nodeUuid =
@@ -304,7 +315,7 @@ viewPatch toolkitRenderer ui nw patchUuid =
             viewNode toolkitRenderer ui nw (Packed { x, y } { width, height }) nodeUuid
 
 
-unpack :: NodePacking -> (UUID.ToNode /-> Bounds)
+unpack :: NodesLayer -> (UUID.ToNode /-> Bounds)
 unpack packing =
     Map.fromFoldable $ ((<$>) quickBounds') <$> R2.toList packing
     -- R2.unfold (\tuple map -> ) Map.empty packing
@@ -369,7 +380,7 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
         --                 _ -> NotDetermined
         getAttrs (Pinned { x, y }) node =
             let
-                width /\ height = getNodeSize node
+                { width, height } = getNodeSize node
             in
                 [ H.classes [ "rpd-node", "rpd-floating" ] -- TODO: toolkit name, node name
                 , uuidToAttr nodeUuid
@@ -384,7 +395,7 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
             ]
         getAttrs NotDetermined node =
             let
-                width /\ height = getNodeSize node
+                { width, height } = getNodeSize node
             in
                 [ H.classes [ "rpd-node" ] -- TODO: toolkit name, node name
                 , uuidToAttr nodeUuid
@@ -608,7 +619,10 @@ update (Right (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
 update (Right (Core.Build (Core.AddNode node@(R.Node nodeUuid _ _ _ _)))) ( ui /\ nw ) =
     ui
         { nodesLayout =
-            ui.nodesLayout # packInLayout (getNodeSize node) node
+            ui.nodesLayout
+            { stack =
+                packInStack (getNodeSize node) node ui.nodesLayout.stack
+            }
         }
         -- TODO: remove from packing when node was removed
     /\ [ UpdatePositions ]
@@ -670,26 +684,45 @@ performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
     pure unit
 
 
-getNodeSize :: forall d n. R.Node d n -> Number /\ Number
-getNodeSize _ = 100.0 /\ 100.0
+getNodeSize :: forall d n. R.Node d n -> Rect
+getNodeSize _ = { width : 100.0, height : 100.0 }
 
 
-packInLayout :: forall d n. Number /\ Number -> R.Node d n -> NodesLayout -> NodesLayout
-packInLayout (w /\ h) node@(R.Node nodeUuid _ _ _ _) layout =
-    layout -- FIXME: implement
-    -- fromMaybe ui.packing
-                -- $ R2.packOne ui.packing
-                -- $ R2.item w h nodeUuid
+packInStack :: forall d n. Rect -> R.Node d n -> NodesStack -> NodesStack
+packInStack { width, height } node@(R.Node nodeUuid _ _ _ _) stack =
+    case Seq.head stack of
+        Just topLayer ->
+            case packNode topLayer of
+                Just topLayerWithNode ->
+                    (fromMaybe Seq.empty $ Seq.tail stack)
+                        +> topLayerWithNode
+                Nothing ->
+                    -- failed to fit on the top layer
+                    stack +> nodeOnNewLayer
+        Nothing ->
+            stack +> nodeOnNewLayer
+    where
+        packNode :: NodesLayer -> Maybe NodesLayer
+        packNode layer =
+            R2.packOne layer $ R2.item width height nodeUuid
+        emptyLayer = R2.container 1000.0 1000.0
+        nodeOnNewLayer
+            = emptyLayer # packNode # fromMaybe emptyLayer
 
 
-pinAtLayout :: Number /\ Number -> Position -> UUID.ToNode -> NodesLayout -> NodesLayout
-pinAtLayout (w /\ h) position nodeUuid layout =
-    layout -- FIXME: implement
+pinNode :: Number /\ Number -> Position -> UUID.ToNode -> PinnedNodes -> PinnedNodes
+pinNode (w /\ h) position nodeUuid pinned =
+    pinned # Map.insert nodeUuid position
 
 
-loadToPacking :: forall d c n. R.Network d c n -> Array NodePacking
-loadToPacking nw = -- FIXME: implement
-    [] -- nw.registry -> UUID.ToNode -> _view -> ...
+loadIntoStack :: forall d c n. R.Network d c n -> NodesStack
+loadIntoStack nw =
+    foldr packNode initialStack $ R.allNodes nw
+    where
+        packNode node stack =
+            packInStack (getNodeSize node) node stack
+        initialStack =
+            Seq.singleton $ R2.container 1000.0 1000.0
 
 
 uuidToAttr :: forall a r i. UUID.IsTagged a => a -> H.IProp (id ∷ String | r) i
