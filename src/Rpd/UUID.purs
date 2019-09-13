@@ -6,6 +6,7 @@ module Rpd.UUID
     , ToPatch(..), ToNode(..), ToInlet(..), ToOutlet(..), ToLink(..)
     , Tag, liftTagged, class IsTagged, tag, uuid
     , toPatch, toNode, toInlet, toOutlet, toLink
+    , isToPatch, isToNode, isToInlet, isToOutlet, isToLink
     , encode, decode
     ) where
 
@@ -113,7 +114,6 @@ instance isTaggedToLink :: IsTagged ToLink where
   uuid ( ToLink u ) = u
 
 
-
 newtype Tagged = Tagged ( forall r . ( forall a . IsTagged a => a -> r ) -> r )
 
 runTagged ( Tagged f ) = f
@@ -159,6 +159,26 @@ toOutlet x | otherwise = Nothing
 toLink :: Tagged -> Maybe ToLink
 toLink x | tag x == ToLinkT = Just $ ToLink $ uuid x
 toLink x | otherwise = Nothing
+
+
+isToPatch :: Tagged -> Boolean
+isToPatch = toPatch >>> isJust
+
+
+isToNode :: Tagged -> Boolean
+isToNode = toNode >>> isJust
+
+
+isToInlet :: Tagged -> Boolean
+isToInlet = toNode >>> isJust
+
+
+isToOutlet :: Tagged -> Boolean
+isToOutlet = toOutlet >>> isJust
+
+
+isToLink :: Tagged -> Boolean
+isToLink = toLink >>> isJust
 
 
 encode :: Tagged -> { uuid :: String, type :: String }
