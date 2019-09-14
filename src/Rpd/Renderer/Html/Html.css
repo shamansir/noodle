@@ -44,12 +44,12 @@ body {
 }
 
 .rpd-nodes {
-    display: flex;
-    flex-wrap: wrap;
+    /* display: flex;
+    flex-wrap: wrap; */
 }
 
 .rpd-node {
-    position: relative;
+    position: absolute;
     display: grid;
     grid-template-columns: 1.1em 1fr 0px;
     grid-template-rows: 30px 1fr 30px;
@@ -61,7 +61,8 @@ body {
     max-height: 250px;
 }
 
-.rpd-node.rpd-floating {
+.rpd-dragged-nodes .rpd-node,
+.rpd-pinned-nodes .rpd-node {
     position: absolute;
 }
 
