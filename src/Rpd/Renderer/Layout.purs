@@ -7,6 +7,7 @@ import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
 import Data.Map as Map
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
+import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Foldable (fold, foldr)
 import Data.Lens (view) as L
@@ -49,20 +50,24 @@ layoutOf = Map.lookup
 
 withStackOf
     :: forall x
-     . (UUID.ToNode /\ Number /\ Number /\ Number /\ Number -> x) -- TODO: use Rect and position
+     . (UUID.ToNode -> Position -> Rect -> x)
     -> PatchLayout
     -> Array x
 withStackOf fn patchLayout =
-    fold $ R2.unfold ((:) <<< fn) [] <$> patchLayout.stack
+    fold $ R2.unfold ((:) <<< fn') [] <$> patchLayout.stack
+    where
+        fn' :: (UUID.ToNode /\ Number /\ Number /\ Number /\ Number) -> x
+        fn' (uuid /\ x /\ y /\ width /\ height ) =
+            fn uuid { x, y } { width, height }
 
 
 withPinnedOf
     :: forall x
-     . (UUID.ToNode /\ Position -> x) -- TODO: use Rect and position
+     . (UUID.ToNode -> Position -> x)
     -> PatchLayout
-    -> Array x -- FIXME: if patch is not found, do nothing
+    -> Array x
 withPinnedOf fn patchLayout =
-    fn <$> Map.toUnfoldable patchLayout.pinned
+    uncurry fn <$> Map.toUnfoldable patchLayout.pinned
 
 
 -- TODO: generic function : layoutOf + withStackOf + withPinnedOf
