@@ -287,10 +287,10 @@ viewPatch toolkitRenderer ui nw patchUuid =
         -}
         -- renderPositionedNode nodeUuid =
         --     viewNode toolkitRenderer ui nw (flip Map.lookup nodesBounds) nodeUuid
-        showPinnedNode (nodeUuid /\ pos) =
+        showPinnedNode nodeUuid pos =
             viewNode toolkitRenderer ui nw (Pinned pos) nodeUuid
-        showPackedNode (nodeUuid /\ x /\ y /\ width /\ height) =
-            viewNode toolkitRenderer ui nw (Packed { x, y } { width, height }) nodeUuid
+        showPackedNode nodeUuid pos rect =
+            viewNode toolkitRenderer ui nw (Packed pos rect) nodeUuid
 
 
 viewNode
@@ -336,20 +336,6 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                 [ H.text $ "node " <> show nodeUuid <> " was not found" ]
     where
         handleNodeTitleClick nodePath e = Just $ my $ ClickNodeTitle nodePath e
-        -- getEmplacement :: UUID.ToNode -> P.ToNode -> Emplacement
-        -- getEmplacement nodeUuid nodePath =
-        --     case ui.dragging of
-        --         Dragging (DragNode nodePath') ->
-        --             if nodePath' == nodePath then Floating ui.mousePos
-        --             else case findBounds nodeUuid of
-        --                 Just (pos /\ size) ->
-        --                     Packed pos size
-        --                 _ -> NotDetermined
-        --         _ ->
-        --             case findBounds nodeUuid of
-        --                 Just (pos /\ size) ->
-        --                     Packed pos size
-        --                 _ -> NotDetermined
         getAttrs (Pinned { x, y }) node =
             let
                 (Layout.NodeSize { width, height }) = getNodeSize node
