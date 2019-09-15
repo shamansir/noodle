@@ -12,7 +12,6 @@ module Rpd.Network
     , PushToInlets(..), PushToOutlets(..)
     -- FIXME: do not expose constructors, provide all the optics as getters
     , empty
-    , allNodes, allInlets, allOutlets, allLinks
     ) where
 
 
@@ -174,62 +173,3 @@ instance showOutlet :: Show c => Show (Outlet d c) where
 
 instance showLink :: Show c => Show Link where
     show (Link uuid _) = "Link " <> show uuid
-
-
-extractPatchEntity :: forall d c n. Entity d c n -> Maybe (Patch d c n)
-extractPatchEntity (PatchEntity patch) = Just patch
-extractPatchEntity _ = Nothing
-
-
-extractNodeEntity :: forall d c n. Entity d c n -> Maybe (Node d n)
-extractNodeEntity (NodeEntity node) = Just node
-extractNodeEntity _ = Nothing
-
-
-extractInletEntity :: forall d c n. Entity d c n -> Maybe (Inlet d c)
-extractInletEntity (InletEntity inlet) = Just inlet
-extractInletEntity _ = Nothing
-
-
-extractOutletEntity :: forall d c n. Entity d c n -> Maybe (Outlet d c)
-extractOutletEntity (OutletEntity outlet) = Just outlet
-extractOutletEntity _ = Nothing
-
-
-extractLinkEntity :: forall d c n. Entity d c n -> Maybe Link
-extractLinkEntity (LinkEntity link) = Just link
-extractLinkEntity _ = Nothing
-
-
-allFromRegistry
-    :: forall d c n x
-     . (UUID.Tagged -> Boolean)
-    -> (Entity d c n -> Maybe x)
-    -> Network d c n
-    -> Seq x
-allFromRegistry
-    checkUUID
-    extractEntity
-    (Network { registry })
-    =
-    Map.toUnfoldable registry
-        # Seq.filter (Tuple.fst >>> checkUUID)
-        # map Tuple.snd
-        # map extractEntity
-        # seqCatMaybes
-
-
-allNodes :: forall d c n. Network d c n -> Seq (Node d n)
-allNodes = allFromRegistry UUID.isToNode extractNodeEntity
-
-
-allInlets :: forall d c n. Network d c n -> Seq (Inlet d c)
-allInlets = allFromRegistry UUID.isToInlet extractInletEntity
-
-
-allOutlets :: forall d c n. Network d c n -> Seq (Outlet d c)
-allOutlets = allFromRegistry UUID.isToOutlet extractOutletEntity
-
-
-allLinks :: forall d c n. Network d c n -> Seq Link
-allLinks = allFromRegistry UUID.isToLink extractLinkEntity
