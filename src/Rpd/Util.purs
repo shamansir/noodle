@@ -6,7 +6,9 @@ module Rpd.Util
     , Flow, PushF, PushableFlow(..)
     , flow, never
     , seqMember, seqMember', seqDelete, seqCatMaybes, (:), (+>)
+    , Position, Rect, Bounds, quickBounds, quickBounds'
     ) where
+
 
 import Prelude
 
@@ -18,10 +20,30 @@ import Data.Sequence as Seq
 import Data.Sequence (Seq)
 import Data.Maybe (Maybe(..))
 import Data.Foldable (foldr)
+import Data.Tuple.Nested ((/\), type (/\))
 
 import FRP.Event (Event, create)
 
+
 infixr 6 type Map as /->
+
+
+type Position = { x :: Number, y :: Number }
+type Rect = { width :: Number, height :: Number }
+type Bounds = Position /\ Rect
+
+
+quickBounds :: Number -> Number -> Number -> Number -> Bounds
+quickBounds x y width height =
+    -- { pos : { x, y }, rect : { width, height }}
+    { x, y } /\ { width, height }
+
+
+quickBounds' :: Number /\ Number /\ Number /\ Number -> Bounds
+quickBounds' (x /\ y /\ width /\ height) =
+    -- { pos : { x, y }, rect : { width, height }}
+    { x, y } /\ { width, height }
+
 
 convertKeysInMap
     :: forall k k' v
