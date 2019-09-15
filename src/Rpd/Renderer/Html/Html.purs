@@ -74,7 +74,12 @@ type Model d c n =
 
 
 type NodesLayout =
-    { stack :: NodesStack
+    UUID.ToPatch /-> PatchLayout
+
+
+type PatchLayout =
+    { offset :: Position
+    , stack :: NodesStack
     , pinned :: PinnedNodes
     --, floating :: UUID.ToNode /-> Position
     }
@@ -159,9 +164,7 @@ init nw =
     , dragging : NotDragging
     , positions : Map.empty -- FIXME: exclude nodes (they are stored in the `packing`)
     , nodesLayout :
-        { stack : loadIntoStack nw
-        , pinned : Map.empty
-        }
+            loadIntoStacks nw # initWithStacks
     }
 
 
@@ -271,14 +274,16 @@ viewPatch toolkitRenderer ui nw patchUuid =
                 [ H.div
                     [ H.classes [ "rpd-patch-name" ] ]
                     [ H.span [] [ H.text name ] ]
-                , renderNodesLayout ui.nodesLayout
+                , case Map.lookup patchUuid ui.nodesLayout of
+                    Just patchLayout -> renderNodesLayout patchLayout
+                    Nothing -> H.div [] []
                 ]
         _ ->
             H.div
                 [ H.classes [ "rpd-missing-patch" ] ]
                 [ H.text $ "patch " <> show patchUuid <> " was not found" ]
     where
-        renderNodesLayout :: NodesLayout -> View d c n
+        renderNodesLayout :: PatchLayout -> View d c n
         renderNodesLayout layout =
             H.div
                 [ H.classes [ "rpd-nodes" ] ]
@@ -616,16 +621,20 @@ update (Right (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (u
     /\ []
 update (Right (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
     ui /\ [ UpdatePositions ]
-update (Right (Core.Build (Core.AddNode node@(R.Node nodeUuid _ _ _ _)))) ( ui /\ nw ) =
-    ui
-        { nodesLayout =
-            ui.nodesLayout
-            { stack =
-                packInStack (getNodeSize node) node ui.nodesLayout.stack
-            }
-        }
-        -- TODO: remove from packing when node was removed
-    /\ [ UpdatePositions ]
+update (Right (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)))) ( ui /\ nw ) =
+    case L.view (L._pathToId patchPath) nw >>= UUID.toPatch of
+        -- FIXME: Raise the error if patch wasn't found
+        Just patchUuid ->
+            ui
+                { nodesLayout =
+                    packInLayout (getNodeSize node) (patchUuid) node ui.nodesLayout
+                }
+                -- TODO: remove from packing when node was removed
+            /\ [ UpdatePositions ]
+        _ ->
+            ui /\ []
+    where
+        patchPath = P.lift $ P.getPatchPath $ P.lift nodePath
 update (Right (Core.Build (Core.AddLink _))) ( ui /\ nw ) =
     ui /\ [ UpdatePositions ]
 update (Right _) (ui /\ _) = ui /\ []
@@ -710,19 +719,66 @@ packInStack { width, height } node@(R.Node nodeUuid _ _ _ _) stack =
             = emptyLayer # packNode # fromMaybe emptyLayer
 
 
+newPatchLayout :: Unit -> PatchLayout
+newPatchLayout _ =
+    { offset : { x : 0.0, y : 0.0 }
+    , pinned : Map.empty
+    , stack : Seq.empty
+    }
+
+
+packInLayout :: forall d n. Rect -> UUID.ToPatch -> R.Node d n -> NodesLayout -> NodesLayout
+packInLayout rect patchUuid node layout =
+    case Map.lookup patchUuid layout of
+        Just patchLayout ->
+            Map.insert patchUuid
+                (patchLayout
+                    { stack = packInStack rect node patchLayout.stack
+                    }
+                )
+                layout
+        Nothing ->
+            let
+                newLayout = newPatchLayout unit
+            in
+                Map.insert patchUuid
+                    (newLayout
+                        { stack = packInStack rect node newLayout.stack
+                        }
+                    )
+                    layout
+
+
 pinNode :: Number /\ Number -> Position -> UUID.ToNode -> PinnedNodes -> PinnedNodes
 pinNode (w /\ h) position nodeUuid pinned =
     pinned # Map.insert nodeUuid position
 
 
-loadIntoStack :: forall d c n. R.Network d c n -> NodesStack
-loadIntoStack nw =
-    foldr packNode initialStack $ R.allNodes nw
+loadIntoStacks :: forall d c n. R.Network d c n -> (UUID.ToPatch /-> NodesStack)
+loadIntoStacks nw =
+    L.view L._networkPatches nw
+        # map pairWithStack
+        # Map.fromFoldable
     where
+        pairWithStack (R.Patch patchUuid _ _) =
+            patchUuid /\
+            (foldr packNode initialStack
+                $ fromMaybe Seq.empty
+                $ L.view (L._patchNodes patchUuid) nw
+            )
         packNode node stack =
             packInStack (getNodeSize node) node stack
         initialStack =
             Seq.singleton $ R2.container 1000.0 1000.0
+
+
+initWithStacks :: (UUID.ToPatch /-> NodesStack) -> NodesLayout
+initWithStacks patchToStack =
+    patchToStack <#> \stack ->
+        { offset : { x : 0.0, y : 0.0 }
+        , pinned : Map.empty
+        , stack
+        }
 
 
 uuidToAttr :: forall a r i. UUID.IsTagged a => a -> H.IProp (id ∷ String | r) i

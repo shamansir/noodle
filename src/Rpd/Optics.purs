@@ -1,6 +1,7 @@
 module Rpd.Optics
     ( _entity, _pathToId
-    , _networkPatch, _networkPatches, _networkInlets, _networkOutlets, _networkLinks
+    , _networkPatch
+    , _networkPatches, _networkNodes, _networkInlets, _networkOutlets, _networkLinks
     , _patch, _patchByPath, _patchNode, _patchLink
     , _patchNodes, _patchNodesByPath, _patchLinks, _patchLinksByPath
     , _node, _nodeByPath, _nodeInlet, _nodeOutlet, _nodeInletsFlow, _nodeOutletsFlow
@@ -24,6 +25,7 @@ import Data.List as List
 import Data.Map as Map
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
+import Data.Tuple (fst) as Tuple
 import Data.Tuple.Nested (type (/\))
 
 import Rpd.Network
@@ -335,6 +337,11 @@ _networkPatches =
             <$> List.fromFoldable patches
              #  List.catMaybes
 
+_networkNodes :: forall d c n. Getter' (Network d c n) (List (Node d n))
+_networkNodes =
+    to \nw@(Network { registry }) ->
+        List.mapMaybe extractNode $ Map.values registry
+
 
 _networkInlets :: forall d c n. Getter' (Network d c n) (List (Inlet d c))
 _networkInlets =
@@ -434,6 +441,44 @@ extractOutlet (OutletEntity oEntity) = Just oEntity
 extractOutlet _ = Nothing
 
 
-extractLink :: forall d c n. Entity d c n-> Maybe Link
+extractLink :: forall d c n. Entity d c n -> Maybe Link
 extractLink (LinkEntity lEntity) = Just lEntity
 extractLink _ = Nothing
+
+
+-- allFromRegistry
+--     :: forall d c n x
+--      . (UUID.Tagged -> Boolean)
+--     -> (Entity d c n -> Maybe x)
+--     -> Network d c n
+--     -> Seq x
+-- allFromRegistry
+--     checkUUID
+--     extractEntity
+--     (Network { registry })
+--     =
+--     Map.toUnfoldable registry
+--         # Seq.filter (Tuple.fst >>> checkUUID)
+--         # map Tuple.snd
+--         # map extractEntity
+--         # seqCatMaybes
+
+
+-- same as `_networkNodes`
+-- allNodes :: forall d c n. Network d c n -> Seq (Node d n)
+-- allNodes = allFromRegistry UUID.isToNode extractNodeEntity
+
+
+-- same as `_networkInlets`
+-- allInlets :: forall d c n. Network d c n -> Seq (Inlet d c)
+-- allInlets = allFromRegistry UUID.isToInlet extractInletEntity
+
+
+-- same as `_networkOutlets`
+-- allOutlets :: forall d c n. Network d c n -> Seq (Outlet d c)
+-- allOutlets = allFromRegistry UUID.isToOutlet extractOutletEntity
+
+
+-- same as `_networkLinks`
+-- allLinks :: forall d c n. Network d c n -> Seq Link
+-- allLinks = allFromRegistry UUID.isToLink extractLinkEntity
