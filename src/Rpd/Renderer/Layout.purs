@@ -14,8 +14,9 @@ import Data.Lens (view) as L
 
 import Data.BinPack.R2 as R2
 
+import Rpd.Path as P
 import Rpd.Util (Position, Rect, Bounds, type (/->), quickBounds', (+>))
-import Rpd.UUID as UUID
+import Rpd.UUID as UUID -- FIXME: use paths instead of UUIDs
 import Rpd.Network as R
 import Rpd.Optics (_networkPatches, _patchNodes) as L
 
@@ -143,7 +144,12 @@ newPatchLayout _ =
 
 
 -- TODO: internal, do not expose
-modifyStack :: UUID.ToPatch -> (NodesStack -> NodesStack) -> Maybe PatchLayout -> Layout -> Layout
+modifyStack
+    :: UUID.ToPatch
+    -> (NodesStack -> NodesStack)
+    -> Maybe PatchLayout
+    -> Layout
+    -> Layout
 modifyStack patchUuid updateStack (Just patchLayout) layout =
     Map.insert patchUuid
         (patchLayout
@@ -178,10 +184,26 @@ pack layerSize nodeSize patchUuid node layout =
         (Map.lookup patchUuid layout)
         layout
 
+resize
+    :: LayerSize
+    -> Layout
+    -> Layout
+resize newSize layout =
+    layout -- FIXME: implement, use R2.repack
 
-pinNode :: Number /\ Number -> Position -> UUID.ToNode -> PinnedNodes -> PinnedNodes
-pinNode (w /\ h) position nodeUuid pinned =
-    pinned # Map.insert nodeUuid position
+
+pinAt :: forall d c n. R.Patch d c n -> R.Node d n -> Position -> Layout -> Layout
+pinAt (R.Patch patchUuid _ _) (R.Node nodeUuid nodePath _ _ _) position layout =
+    case layout # layoutOf patchUuid of
+        Just patchLayout ->
+            Map.insert patchUuid (pinAtPatchLayout patchLayout) layout
+        Nothing -> layout
+    where
+        pinAtPatchLayout patchLayout =
+            patchLayout
+                { pinned =
+                    Map.insert nodeUuid position patchLayout.pinned
+                }
 
 
 initWithStacks :: (UUID.ToPatch /-> NodesStack) -> Layout

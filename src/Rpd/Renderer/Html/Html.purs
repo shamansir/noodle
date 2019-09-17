@@ -92,19 +92,22 @@ type MousePos = Position
 
 data Action d c n
     = NoOp
+    | EnableDebug
+    | DisableDebug
+    | ClickBackground ME.MouseEvent
+    | MouseMove MousePos
+    | MouseUp MousePos
     | ClickInlet (R.Inlet d c) ME.MouseEvent
     | ClickOutlet (R.Outlet d c) ME.MouseEvent
     | ClickNodeTitle (R.Node d n) ME.MouseEvent
-    | ClickBackground ME.MouseEvent
-    | MouseMove MousePos
-    | EnableDebug
-    | DisableDebug
+    | PinNode (R.Node d n) Position
     | StorePositions (UUID.Tagged /-> Position)
 
 
 data Perform d c n
     = UpdatePositions
     | TryConnecting (R.Outlet d c) (R.Inlet d c)
+    | TryToPinNode (R.Node d n) Position
     | StopPropagation Event
 
 
@@ -273,20 +276,6 @@ viewPatch toolkitRenderer ui nw patchUuid =
         maybeDragging (Dragging (DragNode (R.Node nodeUuid _ _ _ _))) =
             Just $ viewNode toolkitRenderer ui nw (Pinned ui.mousePos) nodeUuid
         maybeDragging _ = Nothing
-        {-
-        maybePosition :: UUID.ToNode -> Maybe Position
-        maybePosition nodeUuid =
-            let
-                -- FIXME: apply position in the `update` function
-                maybeDragging (Dragging (DragNode _)) = Just ui.mousePos
-                maybeDragging _ = Nothing
-                maybeStoredPosition = Map.lookup (UUID.liftTagged nodeUuid) ui.positions
-                maybePositionFromPacking =
-                    Tuple.fst <$> Map.lookup nodeUuid nodesBounds
-            in maybeDragging ui.dragging <|> maybePositionFromPacking <|> maybeStoredPosition
-        -}
-        -- renderPositionedNode nodeUuid =
-        --     viewNode toolkitRenderer ui nw (flip Map.lookup nodesBounds) nodeUuid
         showPinnedNode nodeUuid pos =
             viewNode toolkitRenderer ui nw (Pinned pos) nodeUuid
         showPackedNode nodeUuid pos rect =
@@ -544,6 +533,7 @@ view toolkitRenderer (Right (ui /\ nw)) =
     H.div
         [ H.id_ "html"
         , H.onMouseMove handleMouseMove
+        , H.onMouseUp handleMouseUp
         , H.onClick handleClick
         ]
         [ viewDebugWindow ui nw
@@ -553,7 +543,9 @@ view toolkitRenderer (Right (ui /\ nw)) =
         ]
     where
         handleMouseMove e = Just $ my $ MouseMove
-            $ { x : toNumber $ ME.clientX e, y :toNumber $ ME.clientY e }
+            $ { x : toNumber $ ME.clientX e, y : toNumber $ ME.clientY e }
+        handleMouseUp e = Just $ my $ MouseUp
+            $ { x : toNumber $ ME.clientX e, y : toNumber $ ME.clientY e }
         handleClick e = Just $ my $ ClickBackground e
 view _ (Left err) =
     viewError err -- FIXME: show last working network state along with the error
@@ -600,6 +592,27 @@ update (Right _) (ui /\ _) = ui /\ []
 update (Left NoOp) (ui /\ _) = ui /\ []
 update (Left (MouseMove mousePos)) ( ui /\ nw ) =
     ui { mousePos = mousePos } /\ []
+update (Left (MouseUp mousePos)) ( ui /\ nw ) =
+    ui { mousePos = mousePos }
+    /\ pinNodeIfDragging ui.dragging
+    where
+        pinNodeIfDragging (Dragging (DragNode node)) =
+            [ TryToPinNode node mousePos ]
+        pinNodeIfDragging _ = [] -- discard link if dragging it
+update (Left (PinNode node position)) ( ui /\ nw ) =
+    let
+        (R.Node _ nodePath _ _ _) = node
+        patchPath = P.getPatchPath $ P.lift nodePath
+        maybePatch = L.view (L._patchByPath patchPath) nw
+    in
+        case maybePatch of
+            Just patch ->
+                ui
+                    { layout =
+                        ui.layout # Layout.pinAt patch node position
+                    }
+            Nothing -> ui
+        /\ []
 update (Left (ClickBackground e)) ( ui /\ nw ) =
     ui { dragging = NotDragging } /\ []
 update (Left (ClickNodeTitle nodePath e)) ( ui /\ nw ) =
@@ -646,6 +659,11 @@ performEffect _ pushAction
     (TryConnecting (R.Outlet _ outletPath _ _) (R.Inlet _ inletPath _ _))
     ( ui /\ nw ) = do
     pushAction $ core $ Core.Request $ Core.ToConnect outletPath inletPath
+performEffect _ pushAction
+    (TryToPinNode node position)
+    ( ui /\ nw ) = do
+    -- FIXME: it's not an effect, actually
+    pushAction $ my $ PinNode node position
 performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
     _ <- Event.stopPropagation e
     pure unit
