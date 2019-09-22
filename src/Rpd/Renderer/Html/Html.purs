@@ -615,12 +615,23 @@ update (Left (PinNode node position)) ( ui /\ nw ) =
         /\ []
 update (Left (ClickBackground e)) ( ui /\ nw ) =
     ui { dragging = NotDragging } /\ []
-update (Left (ClickNodeTitle nodePath e)) ( ui /\ nw ) =
-    ui
-        { dragging = Dragging $ DragNode nodePath
-        -- TODO: if node was dragged before, place it at the mouse point
-        }
-    /\ [ StopPropagation $ ME.toEvent e ]
+update (Left (ClickNodeTitle node e)) ( ui /\ nw ) =
+    let
+        (R.Node _ nodePath _ _ _) = node
+        patchPath = P.getPatchPath $ P.lift nodePath
+        maybePatch = L.view (L._patchByPath patchPath) nw
+    in
+        case maybePatch of
+            Just patch ->
+                ui
+                    { dragging = Dragging $ DragNode node
+                    , layout =
+                        ui.layout # Layout.freeUp patch node
+                    }
+            Nothing ->
+                ui
+                { dragging = Dragging $ DragNode node }
+        /\ [ StopPropagation $ ME.toEvent e ]
 update (Left (ClickInlet inletPath e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging
@@ -667,6 +678,7 @@ performEffect _ pushAction
 performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
     _ <- Event.stopPropagation e
     pure unit
+
 
 
 getNodeSize :: forall d n. R.Node d n -> Layout.NodeSize
