@@ -69,6 +69,7 @@ data Network d c n =
     Network
         { name :: String
         , patches :: Seq UUID.ToPatch
+        -- TODO: get rid of `registry` by storing actual instances everywhere
         , registry :: UUID.Tagged /-> Entity d c n
         -- , pathToId :: Path /-> Set UUID
         , pathToId :: Path /-> UUID.Tagged
@@ -154,6 +155,26 @@ instance eqOutlet :: Eq (Outlet d c) where
 
 instance eqLink :: Eq Link where
     eq (Link lidA _) (Link lidB _) = (lidA == lidB)
+
+
+-- TODO: is it right to add `Ord` instances to all of these? May be it's OK,
+--       since we may replace it later with something actually sortable,
+--       but don't change the structure.
+
+instance ordPatch :: Ord (Patch d c n) where
+    compare (Patch pidA _ _) (Patch pidB _ _) = compare pidA pidB
+
+instance ordNode :: Ord (Node d n) where
+    compare (Node nidA _ _ _ _) (Node nidB _ _ _ _)  = compare nidA nidB
+
+instance ordInlet :: Ord (Inlet d c) where
+    compare (Inlet iidA _ _ _) (Inlet iidB _ _ _) = compare iidA iidB
+
+instance ordOutlet :: Ord (Outlet d c) where
+    compare (Outlet oidA _ _ _) (Outlet oidB _ _ _)  = compare oidA oidB
+
+instance ordLink :: Ord Link where
+    compare (Link lidA _) (Link lidB _)  = compare lidA lidB
 
 
 instance showNetwork :: Show (Network d c n) where
