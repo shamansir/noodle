@@ -70,7 +70,7 @@ type Model d c n =
     --     { inlets :: UUID.ToInlet /-> Position
     --     , outlets :: UUID.ToOutlet /-> Position
     --     }
-    , layout :: Layout
+    , layout :: Layout d n
     }
 
 
@@ -240,24 +240,24 @@ viewPatch
     => ToolkitRenderer d c n
     -> Model d c n
     -> R.Network d c n
-    -> UUID.ToPatch
+    -> UUID.ToPatch -- FIXME : make all the views receive the actual instance
     -> View d c n
 viewPatch toolkitRenderer ui nw patchUuid =
     case L.view (L._patch patchUuid) nw of
-        Just (R.Patch _ (P.ToPatch name) { nodes }) ->
+        Just (R.Patch _ patchPath@(P.ToPatch name) { nodes }) ->
             H.div
                 [ H.classes [ "rpd-patch" ] ]
                 [ H.div
                     [ H.classes [ "rpd-patch-name" ] ]
                     [ H.span [] [ H.text name ] ]
-                , renderLayout $ Layout.layoutOf patchUuid ui.layout
+                , renderLayout $ Layout.layoutOf patchPath ui.layout
                 ]
         _ ->
             H.div
                 [ H.classes [ "rpd-missing-patch" ] ]
                 [ H.text $ "patch " <> show patchUuid <> " was not found" ]
     where
-        renderLayout :: Maybe PatchLayout -> View d c n
+        renderLayout :: Maybe (PatchLayout d n) -> View d c n
         renderLayout (Just patchLayout) =
             H.div
                 [ H.classes [ "rpd-nodes" ] ]
@@ -276,9 +276,9 @@ viewPatch toolkitRenderer ui nw patchUuid =
         maybeDragging (Dragging (DragNode (R.Node nodeUuid _ _ _ _))) =
             Just $ viewNode toolkitRenderer ui nw (Pinned ui.mousePos) nodeUuid
         maybeDragging _ = Nothing
-        showPinnedNode nodeUuid pos =
+        showPinnedNode (R.Node nodeUuid _ _ _ _) pos =
             viewNode toolkitRenderer ui nw (Pinned pos) nodeUuid
-        showPackedNode nodeUuid pos rect =
+        showPackedNode (R.Node nodeUuid _ _ _ _) pos rect =
             viewNode toolkitRenderer ui nw (Packed pos rect) nodeUuid
 
 
@@ -289,7 +289,7 @@ viewNode
     -> Model d c n
     -> R.Network d c n
     -> Emplacement
-    -> UUID.ToNode
+    -> UUID.ToNode -- FIXME : make all the views receive the actual instance
     -> View d c n
 viewNode toolkitRenderer ui nw emplacement nodeUuid =
     case L.view (L._node nodeUuid) nw of
@@ -357,7 +357,7 @@ viewInlet
     => ToolkitRenderer d c n
     -> Model d c n
     -> R.Network d c n
-    -> UUID.ToInlet
+    -> UUID.ToInlet -- FIXME : make all the views receive the actual instance
     -> View d c n
 viewInlet toolkitRenderer ui nw inletUuid =
     case L.view (L._inlet inletUuid) nw of
@@ -393,7 +393,7 @@ viewOutlet
     => ToolkitRenderer d c n
     -> Model d c n
     -> R.Network d c n
-    -> UUID.ToOutlet
+    -> UUID.ToOutlet -- FIXME : make all the views receive the actual instance
     -> View d c n
 viewOutlet toolkitRenderer ui nw outletUuid =
     case L.view (L._outlet outletUuid) nw of
@@ -567,15 +567,15 @@ update (Right (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (u
 update (Right (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
     ui /\ [ UpdatePositions ]
 update (Right (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)))) ( ui /\ nw ) =
-    case L.view (L._pathToId patchPath) nw >>= UUID.toPatch of
+    case L.view (L._patchByPath patchPath) nw of
         -- FIXME: Raise the error if patch wasn't found
-        Just patchUuid ->
+        Just patch ->
             ui
                 { layout =
                     Layout.pack
                         defaultLayerSize
                         (getNodeSize node)
-                        patchUuid
+                        patch
                         node
                         ui.layout
                 }
@@ -584,7 +584,7 @@ update (Right (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _))))
         _ ->
             ui /\ []
     where
-        patchPath = P.lift $ P.getPatchPath $ P.lift nodePath
+        patchPath = P.getPatchPath $ P.lift nodePath
 update (Right (Core.Build (Core.AddLink _))) ( ui /\ nw ) =
     ui /\ [ UpdatePositions ]
 update (Right _) (ui /\ _) = ui /\ []
