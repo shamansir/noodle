@@ -13,7 +13,6 @@ module Data.BinPack.R2
 , valueOf
 , size
 , unfold
-, free
 )
 where
 
@@ -139,6 +138,10 @@ size (Node { w, h }) = w /\ h
 repack :: forall n a. n -> n -> Bin2 n a -> Bin2 n a
 repack newWidth newHeight bin = bin -- FIXME: implement
 
+{-
+has no sense since it frees not only the exact cell,
+but all the area to the rignt and below
+
 free :: forall n a. Eq a => a -> Bin2 n a -> Bin2 n a
 free item (Node { i, w, h })
     | i == item = Free { w, h }
@@ -146,3 +149,4 @@ free item (Node { i, w, h, r, b })
     | otherwise =
         Node { i, w, h, r : free item r, b : free item b }
 free _    f@(Free _) = f
+-}
