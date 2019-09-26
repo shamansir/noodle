@@ -591,7 +591,11 @@ update (Right _) (ui /\ _) = ui /\ []
 
 update (Left NoOp) (ui /\ _) = ui /\ []
 update (Left (MouseMove mousePos)) ( ui /\ nw ) =
-    ui { mousePos = mousePos } /\ []
+    ui { mousePos = mousePos } /\
+        (case ui.dragging of
+            Dragging (DragNode _) -> [ UpdatePositions ]
+            _ -> []
+        )
 update (Left (MouseUp mousePos)) ( ui /\ nw ) =
     ui { mousePos = mousePos }
     /\ pinNodeIfDragging ui.dragging
@@ -630,8 +634,11 @@ update (Left (ClickNodeTitle node e)) ( ui /\ nw ) =
                     }
             Nothing ->
                 ui
-                { dragging = Dragging $ DragNode node }
-        /\ [ StopPropagation $ ME.toEvent e ]
+                    { dragging = Dragging $ DragNode node }
+        /\
+            [ StopPropagation $ ME.toEvent e
+            , UpdatePositions
+            ]
 update (Left (ClickInlet inletPath e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging
