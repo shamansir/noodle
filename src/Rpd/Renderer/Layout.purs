@@ -32,9 +32,14 @@ type PatchLayout d n =
     }
 
 
-type NodesLayer d n = R2.Bin2 Number (R.Node d n) -- Store the nodes themselves
+data Cell d n
+    = Empty
+    | Taken (R.Node d n)
+
+
+type NodesLayer d n = R2.Bin2 Number (Cell d n)
 type NodesStack d n = Seq (NodesLayer d n) -- Shelving, may be?
-type PinnedNodes d n = (R.Node d n) /-> Position
+type PinnedNodes d n = R.Node d n /-> Position
 
 
 data LayerSize = LayerSize Rect
@@ -52,15 +57,15 @@ layoutOf = Map.lookup
 -- may be used to render the Stacks, where `x` is the `view`, then
 withStackOf
     :: forall x d n
-     . (R.Node d n -> Position -> Rect -> x)
+     . (Cell d n -> Position -> Rect -> x)
     -> PatchLayout d n
     -> Array x
 withStackOf fn patchLayout =
     fold $ R2.unfold ((:) <<< fn') [] <$> patchLayout.stack
     where
-        fn' :: (R.Node d n /\ Number /\ Number /\ Number /\ Number) -> x
-        fn' (uuid /\ x /\ y /\ width /\ height ) =
-            fn uuid { x, y } { width, height }
+        fn' :: (Cell d n /\ Number /\ Number /\ Number /\ Number) -> x
+        fn' (cell /\ x /\ y /\ width /\ height ) =
+            fn cell { x, y } { width, height }
 
 
 -- execute the function with the pinned nodes of the PatchLayout,
@@ -106,9 +111,10 @@ loadIntoStacks layerSize getNodeSize nw =
             Seq.singleton $ newLayer layerSize
 
 
-unpackLayer :: forall d n. NodesLayer d n -> (R.Node d n /-> Bounds)
-unpackLayer packing =
-    Map.fromFoldable $ ((<$>) quickBounds') <$> R2.toList packing
+-- seems not to be used
+-- unpackLayer :: forall d n. NodesLayer d n -> (R.Node d n /-> Bounds)
+-- unpackLayer packing =
+    -- Map.fromFoldable $ ((<$>) quickBounds') <$> R2.toList packing
     -- R2.unfold (\tuple map -> ) Map.empty packing
 
 
@@ -134,7 +140,7 @@ packInStack layerSize (NodeSize { width, height }) node stack =
     where
         packNode :: NodesLayer d n -> Maybe (NodesLayer d n)
         packNode layer =
-            R2.packOne layer $ R2.item width height node
+            R2.packOne layer $ R2.item width height $ Taken node
         nodeOnNewLayer
             = newLayer layerSize # packNode # fromMaybe' (const $ newLayer layerSize)
 
@@ -232,12 +238,16 @@ freeUp (R.Patch _ patchPath _) node layout =
             Map.insert patchPath (removeFromPatchLayout patchLayout) layout
         Nothing -> layout
     where
+        freeNode (Taken n) | n == node = Empty
+        freeNode (Taken n) | otherwise = Taken n
+        freeNode v = v
         removeFromPatchLayout patchLayout =
             patchLayout
                 { stack =
-                    R2.free node <$> patchLayout.stack
+                    (<$>) freeNode <$> patchLayout.stack
                 , pinned =
                     Map.delete node patchLayout.pinned
                 }
+
 
 

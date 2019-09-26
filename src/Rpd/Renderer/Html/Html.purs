@@ -44,7 +44,7 @@ import Rpd.Util (type (/->), (+>), Bounds, Rect, Position)
 import Rpd.Toolkit as T
 
 import Rpd.Renderer.Layout as Layout
-import Rpd.Renderer.Layout (Layout, PatchLayout)
+import Rpd.Renderer.Layout (Layout, PatchLayout, Cell(..))
 import Rpd.Renderer.Html.DebugBox as DebugBox
 
 import Spork.Html (Html)
@@ -278,8 +278,10 @@ viewPatch toolkitRenderer ui nw patchUuid =
         maybeDragging _ = Nothing
         showPinnedNode (R.Node nodeUuid _ _ _ _) pos =
             viewNode toolkitRenderer ui nw (Pinned pos) nodeUuid
-        showPackedNode (R.Node nodeUuid _ _ _ _) pos rect =
+        showPackedNode (Taken (R.Node nodeUuid _ _ _ _)) pos rect =
             viewNode toolkitRenderer ui nw (Packed pos rect) nodeUuid
+        showPackedNode Empty pos rect =
+            H.div [] []
 
 
 viewNode
