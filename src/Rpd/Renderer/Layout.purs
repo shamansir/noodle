@@ -33,17 +33,19 @@ type PatchLayout d n =
 
 
 data Cell d n
-    = Empty
+    = Abandoned
     | Taken (R.Node d n)
 
 
 type NodesLayer d n = R2.Bin2 Number (Cell d n)
 type NodesStack d n = Seq (NodesLayer d n) -- Shelving, may be?
-type PinnedNodes d n = R.Node d n /-> Position
+type PinnedNodes d n = R.Node d n /-> ZIndex /\ Position
 
 
 data LayerSize = LayerSize Rect
 data NodeSize = NodeSize Rect
+data Offset = Offset Position
+data ZIndex = ZIndex Int
 
 
 type GetNodeSize d n = R.Node d n -> NodeSize
@@ -72,7 +74,7 @@ withStackOf fn patchLayout =
 -- may be used to render the pinned nodes, where `x` is the `view`, then
 withPinnedOf
     :: forall x d n
-     . (R.Node d n -> Position -> x)
+     . (R.Node d n -> ZIndex /\ Position -> x)
     -> PatchLayout d n
     -> Array x
 withPinnedOf fn patchLayout =
@@ -218,10 +220,13 @@ pinAt (R.Patch _ patchPath _) node position layout =
         Nothing -> layout
     where
         pinAtPatchLayout patchLayout =
-            patchLayout
-                { pinned =
-                    Map.insert node position patchLayout.pinned
-                }
+            let
+                zIndex = ZIndex $ Map.size patchLayout.pinned
+            in
+                patchLayout
+                    { pinned =
+                        Map.insert node (zIndex /\ position) patchLayout.pinned
+                    }
 
 
 initWithStacks :: forall d n. (Path.ToPatch /-> NodesStack d n) -> Layout d n
@@ -231,14 +236,14 @@ initWithStacks patchToStack =
         in patchLayout { stack = stack } -- TODO: _.stack
 
 
-freeUp :: forall d c n. R.Patch d c n -> R.Node d n -> Layout d n -> Layout d n
-freeUp (R.Patch _ patchPath _) node layout =
+abandon :: forall d c n. R.Patch d c n -> R.Node d n -> Layout d n -> Layout d n
+abandon (R.Patch _ patchPath _) node layout =
     case layout # layoutOf patchPath of
         Just patchLayout ->
             Map.insert patchPath (removeFromPatchLayout patchLayout) layout
         Nothing -> layout
     where
-        freeNode (Taken n) | n == node = Empty
+        freeNode (Taken n) | n == node = Abandoned
         freeNode (Taken n) | otherwise = Taken n
         freeNode v = v
         removeFromPatchLayout patchLayout =
