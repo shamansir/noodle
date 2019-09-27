@@ -44,7 +44,7 @@ import Rpd.Util (type (/->), (+>), Bounds, Rect, Position)
 import Rpd.Toolkit as T
 
 import Rpd.Renderer.Layout as Layout
-import Rpd.Renderer.Layout (Layout, PatchLayout, Cell(..))
+import Rpd.Renderer.Layout (Layout, PatchLayout, Cell(..), ZIndex(..))
 import Rpd.Renderer.Html.DebugBox as DebugBox
 
 import Spork.Html (Html)
@@ -79,7 +79,7 @@ type Model d c n =
 
 data Emplacement
     = NotDetermined
-    | Pinned Position
+    | Pinned ZIndex Position
     | Packed Position Rect
 
 
@@ -170,6 +170,10 @@ my = Left
 
 defaultLayerSize :: Layout.LayerSize
 defaultLayerSize = Layout.LayerSize { width : 1000.0, height : 1000.0 }
+
+
+dragZIndex :: ZIndex
+dragZIndex = ZIndex 1000
 
 
 emptyView :: forall d c n. View d c n
@@ -274,13 +278,13 @@ viewPatch toolkitRenderer ui nw patchUuid =
         renderLayout Nothing =
             H.div [] []
         maybeDragging (Dragging (DragNode (R.Node nodeUuid _ _ _ _))) =
-            Just $ viewNode toolkitRenderer ui nw (Pinned ui.mousePos) nodeUuid
+            Just $ viewNode toolkitRenderer ui nw (Pinned dragZIndex ui.mousePos) nodeUuid
         maybeDragging _ = Nothing
-        showPinnedNode (R.Node nodeUuid _ _ _ _) pos =
-            viewNode toolkitRenderer ui nw (Pinned pos) nodeUuid
+        showPinnedNode (R.Node nodeUuid _ _ _ _) (zIndex /\ pos) =
+            viewNode toolkitRenderer ui nw (Pinned zIndex pos) nodeUuid
         showPackedNode (Taken (R.Node nodeUuid _ _ _ _)) pos rect =
             viewNode toolkitRenderer ui nw (Packed pos rect) nodeUuid
-        showPackedNode Empty pos rect =
+        showPackedNode Abandoned pos rect =
             H.div [] []
 
 
@@ -327,14 +331,14 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                 [ H.text $ "node " <> show nodeUuid <> " was not found" ]
     where
         handleNodeTitleClick nodePath e = Just $ my $ ClickNodeTitle nodePath e
-        getAttrs (Pinned { x, y }) node =
+        getAttrs (Pinned (ZIndex zIndex) { x, y }) node =
             let
                 (Layout.NodeSize { width, height }) = getNodeSize node
             in
                 [ H.classes [ "rpd-node", "rpd-floating" ] -- TODO: toolkit name, node name
                 , uuidToAttr nodeUuid
                 , H.style $ "transform: translate(" <> show x <> "px, " <> show y <> "px); " <>
-                            "min-width: " <> show width <> "px; " <> "min-height: " <> show height <> "px;"
+                            "min-width: " <> show width <> "px; " <> "min-height: " <> show height <> "px;" <> " z-index: " <> show zIndex <> "; "
                 ]
         getAttrs (Packed { x, y } { width, height }) node =
             [ H.classes [ "rpd-node", "rpd-packed" ] -- TODO: toolkit name, node name
@@ -632,7 +636,7 @@ update (Left (ClickNodeTitle node e)) ( ui /\ nw ) =
                 ui
                     { dragging = Dragging $ DragNode node
                     , layout =
-                        ui.layout # Layout.freeUp patch node
+                        ui.layout # Layout.abandon patch node
                     }
             Nothing ->
                 ui
