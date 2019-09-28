@@ -22,7 +22,6 @@ import Effect.Console (log)
 
 import Test.Spec (Spec, describe, it, pending')
 import Test.Spec.Assertions (shouldEqual, fail)
-import Test.Spec.Color (colored, Color(..))
 
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
