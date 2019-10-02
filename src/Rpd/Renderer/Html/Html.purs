@@ -703,7 +703,7 @@ uuidToAttr :: forall a r i. UUID.IsTagged a => a -> H.IProp (id ∷ String | r) 
 uuidToAttr = H.id_ <<< UUID.taggedToRawString
 
 
-loadUUIDs :: Set UUID.Tagged -> Array { uuid :: String, type :: String }
+loadUUIDs :: Set UUID.Tagged -> Array { uuid :: String, kind :: String }
 loadUUIDs uuids = UUID.encode <$> Set.toUnfoldable uuids
 
 
@@ -711,7 +711,7 @@ loadUUIDs uuids = UUID.encode <$> Set.toUnfoldable uuids
 convertPositions
     :: Array
             { uuid :: String
-            , type :: String
+            , kind :: String
             , pos :: Position
             }
     -> UUID.Tagged /-> Position
@@ -721,12 +721,12 @@ convertPositions srcPositions =
         decodePos
             ::
                 { uuid :: String
-                , type :: String
+                , kind :: String
                 , pos :: Position
                 }
             -> Maybe (UUID.Tagged /\ Position)
-        decodePos { type, uuid, pos } =
-            (\tagged -> tagged /\ pos) <$> UUID.decode { uuid, type }
+        decodePos { kind, uuid, pos } =
+            (\tagged -> tagged /\ pos) <$> UUID.decode { uuid, kind }
 
 
 getLinkTransform :: { from :: Position, to :: Position } -> LinkTransform
@@ -750,11 +750,11 @@ getLinkTransformStyle { from, angle, length } =
 
 
 foreign import collectPositions
-    :: Array { uuid :: String, type :: String }
+    :: Array { uuid :: String, kind :: String }
     -> Effect
             (Array
                 { uuid :: String
-                , type :: String
+                , kind :: String
                 , pos :: Position
                 }
             )

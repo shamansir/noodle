@@ -181,10 +181,10 @@ isToLink :: Tagged -> Boolean
 isToLink = toLink >>> isJust
 
 
-encode :: Tagged -> { uuid :: String, type :: String }
+encode :: Tagged -> { uuid :: String, kind :: String }
 encode tagged
   = { uuid : toRawString $ uuid tagged
-    , type :
+    , kind :
         case tag tagged of
           ToPatchT -> "patch"
           ToNodeT -> "node"
@@ -194,9 +194,9 @@ encode tagged
     }
 
 
-decode :: { uuid :: String, type :: String } -> Maybe Tagged
+decode :: { uuid :: String, kind :: String } -> Maybe Tagged
 decode v =
-  case v.type of
+  case v.kind of
     "patch"  -> Just $ liftTagged $ ToPatch  $ UUID v.uuid
     "node"   -> Just $ liftTagged $ ToNode   $ UUID v.uuid
     "inlet"  -> Just $ liftTagged $ ToInlet  $ UUID v.uuid

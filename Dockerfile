@@ -20,7 +20,6 @@ ENV SPAGO_DIR /home/spago
 RUN mkdir -p $SPAGO_DIR
 RUN chown -R user:user $SPAGO_DIR && chmod -R 755 $SPAGO_DIR
 
-
 ENV NODE_VERSION 12.11.0
 # ENV NPM_CONFIG_PREFIX=/home/node/.npm-global
 # ENV PATH=$PATH:/home/node/.npm-global/bin
@@ -35,8 +34,6 @@ RUN apt-get -yqq install curl && \
     apt-get -yqq install ghc ghc-prof ghc-doc
 
 RUN ldd --version
-
-
 
 ENV NVM_DIR /home/node/.nvm
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash \
@@ -63,29 +60,11 @@ WORKDIR /usr/src/rpd-purs
 
 COPY . .
 
-# RUN curl -sSL https://get.haskellstack.org/ | sh -s - -d $STACK_DIR
-
-# ENV STACK_VERSION 2.1.3
-# ENV STACK_SOURCE linux-x86_64-static
-
-# RUN curl -sSL https://get.haskellstack.org/stable/$STACK_SOURCE.tar.gz --output stack.tar.gz \
-#     && tar -xvzf ./stack.tar.gz \
-#     && mv ./stack-$STACK_VERSION-$STACK_SOURCE/stack $STACK_DIR \
-#     && rm ./stack.tar.gz \
-#     && rm -R ./stack-$STACK_VERSION-$STACK_SOURCE \
-#     && chmod +x $STACK_DIR/stack
-
-# RUN ls -laF $STACK_DIR
-
-# ENV PATH $STACK_DIR:$PATH
-
-# RUN stack --version
-
-# RUN stack setup
-
 ENV PURESCRIPT_DOWNLOAD_SHA1 1969df7783f1e95b897f5b36ab1e12ab9cbc9166
 
-RUN curl -sSL https://github.com/purescript/purescript/releases/download/v0.12.5/linux64.tar.gz --output purescript.tar.gz \
+ENV PURESCRIPT_VERSION 0.12.5
+
+RUN curl -sSL https://github.com/purescript/purescript/releases/download/v$PURESCRIPT_VERSION/linux64.tar.gz --output purescript.tar.gz \
     && echo "$PURESCRIPT_DOWNLOAD_SHA1 purescript.tar.gz" | sha1sum -c - \
     && tar -xvzf ./purescript.tar.gz \
     && mv ./purescript/* $PS_DIR \
@@ -94,7 +73,9 @@ RUN curl -sSL https://github.com/purescript/purescript/releases/download/v0.12.5
 
 ENV PATH $PS_DIR:$PATH
 
-RUN curl -sSL https://github.com/spacchetti/spago/releases/download/0.10.0.0/linux.tar.gz --output spago.tar.gz \
+ENV SPAGO_VERSION 0.10.0.0
+
+RUN curl -sSL https://github.com/spacchetti/spago/releases/download/$SPAGO_VERSION/linux.tar.gz --output spago.tar.gz \
     && tar -xvzf ./spago.tar.gz \
     && mv ./spago $SPAGO_DIR \
     && rm ./spago.tar.gz
@@ -104,7 +85,8 @@ ENV PATH $SPAGO_DIR:$PATH
 USER node
 
 RUN npm cache clean --force && \
-    npm install -g pulp
+    npm install -g pulp && \
+    npm install -g bower
 
 USER root
 
@@ -114,8 +96,8 @@ USER user
 
 RUN pwd && \
     ls -laF . && \
-    spago install && \
-    spago build
+    bower install -F && \
+    bower build
 
 EXPOSE 1337
 
