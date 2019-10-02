@@ -8,17 +8,17 @@ RUN mkdir -p /home/node
 RUN mkdir -p /home/node/.nvm
 RUN chown -R node:node /home/node && chmod -R 755 /home/node
 
-ENV STACK_DIR /home/stack
-RUN mkdir -p $STACK_DIR
-RUN chown -R user:user $STACK_DIR && chmod -R 755 $STACK_DIR
+# ENV STACK_DIR /home/stack
+# RUN mkdir -p $STACK_DIR
+# RUN chown -R user:user $STACK_DIR && chmod -R 755 $STACK_DIR
 
 ENV PS_DIR /home/purescript
 RUN mkdir -p $PS_DIR
 RUN chown -R user:user $PS_DIR && chmod -R 755 $PS_DIR
 
-ENV SPAGO_DIR /home/spago
-RUN mkdir -p $SPAGO_DIR
-RUN chown -R user:user $SPAGO_DIR && chmod -R 755 $SPAGO_DIR
+# ENV SPAGO_DIR /home/spago
+# RUN mkdir -p $SPAGO_DIR
+# RUN chown -R user:user $SPAGO_DIR && chmod -R 755 $SPAGO_DIR
 
 ENV NODE_VERSION 12.11.0
 # ENV NPM_CONFIG_PREFIX=/home/node/.npm-global
@@ -29,7 +29,7 @@ RUN apt-get update -yqq
 RUN apt-get -yqq install curl && \
     apt-get -yqq install g++ gcc libc6 libc6-dev libffi-dev libgmp-dev make && \
     apt-get -yqq install xz-utils zlib1g-dev git gnupg && \
-    apt-get -yqq install libncurses5-dev libncursesw5-dev && \
+    # apt-get -yqq install libncurses5-dev libncursesw5-dev && \
     apt-get -yqq install libtinfo5 && \
     apt-get -yqq install ghc ghc-prof ghc-doc
 
@@ -60,9 +60,9 @@ WORKDIR /usr/src/rpd-purs
 
 COPY . .
 
-ENV PURESCRIPT_DOWNLOAD_SHA1 1969df7783f1e95b897f5b36ab1e12ab9cbc9166
+ENV PURESCRIPT_DOWNLOAD_SHA1 6838ae5972a6130608c04002e46e96915e05f256
 
-ENV PURESCRIPT_VERSION 0.12.5
+ENV PURESCRIPT_VERSION 0.13.3
 
 RUN curl -sSL https://github.com/purescript/purescript/releases/download/v$PURESCRIPT_VERSION/linux64.tar.gz --output purescript.tar.gz \
     && echo "$PURESCRIPT_DOWNLOAD_SHA1 purescript.tar.gz" | sha1sum -c - \
@@ -73,14 +73,14 @@ RUN curl -sSL https://github.com/purescript/purescript/releases/download/v$PURES
 
 ENV PATH $PS_DIR:$PATH
 
-ENV SPAGO_VERSION 0.10.0.0
+# ENV SPAGO_VERSION 0.10.0.0
 
-RUN curl -sSL https://github.com/spacchetti/spago/releases/download/$SPAGO_VERSION/linux.tar.gz --output spago.tar.gz \
-    && tar -xvzf ./spago.tar.gz \
-    && mv ./spago $SPAGO_DIR \
-    && rm ./spago.tar.gz
+# RUN curl -sSL https://github.com/spacchetti/spago/releases/download/$SPAGO_VERSION/linux.tar.gz --output spago.tar.gz \
+#     && tar -xvzf ./spago.tar.gz \
+#     && mv ./spago $SPAGO_DIR \
+#     && rm ./spago.tar.gz
 
-ENV PATH $SPAGO_DIR:$PATH
+# ENV PATH $SPAGO_DIR:$PATH
 
 USER node
 
@@ -97,7 +97,9 @@ USER user
 RUN pwd && \
     ls -laF . && \
     bower install -F && \
-    bower build
+    pulp build
+    # spago install && \
+    # spago build
 
 EXPOSE 1337
 
