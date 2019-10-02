@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:19.04
 # 19.04 fails for `spago`, see https://github.com/spacchetti/spago/issues/104
 
 RUN addgroup --system user && adduser --system --group user
@@ -16,6 +16,10 @@ ENV PS_DIR /home/purescript
 RUN mkdir -p $PS_DIR
 RUN chown -R user:user $PS_DIR && chmod -R 755 $PS_DIR
 
+ENV SPAGO_DIR /home/spago
+RUN mkdir -p $SPAGO_DIR
+RUN chown -R user:user $SPAGO_DIR && chmod -R 755 $SPAGO_DIR
+
 
 ENV NODE_VERSION 12.11.0
 # ENV NPM_CONFIG_PREFIX=/home/node/.npm-global
@@ -27,6 +31,7 @@ RUN apt-get -yqq install curl && \
     apt-get -yqq install g++ gcc libc6 libc6-dev libffi-dev libgmp-dev make && \
     apt-get -yqq install xz-utils zlib1g-dev git gnupg && \
     apt-get -yqq install libncurses5-dev libncursesw5-dev && \
+    apt-get -yqq install libtinfo5 && \
     apt-get -yqq install ghc ghc-prof ghc-doc
 
 RUN ldd --version
@@ -87,25 +92,30 @@ RUN curl -sSL https://github.com/purescript/purescript/releases/download/v0.12.5
     && rm -R ./purescript \
     && rm ./purescript.tar.gz
 
-ENV PATH $PS_DIR/purescript:$PATH
+ENV PATH $PS_DIR:$PATH
 
-USER root
+RUN curl -sSL https://github.com/spacchetti/spago/releases/download/0.10.0.0/linux.tar.gz --output spago.tar.gz \
+    && tar -xvzf ./spago.tar.gz \
+    && mv ./spago $SPAGO_DIR \
+    && rm ./spago.tar.gz
 
-RUN find / -name "libtinfo"
-RUN ln -s /path/to/libtinfo.so.6 /path/to/libtinfo.so.5
+ENV PATH $SPAGO_DIR:$PATH
 
 USER node
 
-# TODO: move to parcel / psc-package
 RUN npm cache clean --force && \
-    npm install -g pulp && \
-    npm install -g spago --unsafe-perm
+    npm install -g pulp
 
-# USER user
+USER root
 
-RUN spago install && \
-    npm run purs:build && \
-    npm run purs:test
+RUN chown -R user:user /usr/src/rpd-purs && chmod -R 755 /usr/src/rpd-purs
+
+USER user
+
+RUN pwd && \
+    ls -laF . && \
+    spago install && \
+    spago build
 
 EXPOSE 1337
 
