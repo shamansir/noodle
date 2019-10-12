@@ -1,6 +1,6 @@
 module Example.Toolkit where
 
-import Prelude (($))
+import Prelude (($), identity)
 
 import Data.Maybe (Maybe(..))
 import Data.Map (singleton) as Map
@@ -28,6 +28,17 @@ htmlRenderer = RenderHtml.renderer
 
 toolkit :: T.Toolkit Value Channel Node
 toolkit =
-    T.Toolkit (T.ToolkitName "example") nodes
+    T.Toolkit (T.ToolkitName "particles") nodes
     where
         nodes RandomNode = randomNode
+        nodes NodeListNode = T.emptyNode
+        nodes SineNode = sineNode
+        nodes TimeNode = timeNode
+        nodes CanvasNode = canvasNode
+        nodes ButtonsNode = T.emptyNode
+
+
+-- instance exampleChannel :: T.Channels Value Channel where
+--     default _ = Bang
+--     accept _ _ = true
+--     adapt _ = identity

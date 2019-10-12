@@ -7,6 +7,7 @@ import Effect.Random (randomRange)
 
 import Data.Maybe
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Traversable (traverse_)
 
 import Rpd.Process as R
 import Rpd.Toolkit as T
@@ -18,10 +19,25 @@ import Example.Toolkit.Channel
 
 data Node
     = RandomNode
+    | NodeListNode
+    | TimeNode
+    | SineNode
+    | CanvasNode
+    | ButtonsNode
 
 
 instance showNode :: Show Node where
     show RandomNode = "random"
+    show NodeListNode = "node list"
+    show TimeNode = "time"
+    show SineNode = "sine"
+    show CanvasNode = "time"
+    show ButtonsNode = "buttons"
+
+
+nodesForTheList :: Array Node
+nodesForTheList =
+    [ RandomNode, CanvasNode, SineNode, TimeNode ]
 
 
 randomNode :: T.NodeDef Value Channel
@@ -30,25 +46,24 @@ randomNode =
         { inlets :
             withInlets
             ~< "bang" /\ TriggerChannel
-            ~< "min"  /\ NumberChannel
-            ~< "max"  /\ NumberChannel
+            ~< "min"  /\ NumericChannel
+            ~< "max"  /\ NumericChannel
         , outlets :
             withOutlets
-            >~ "random" /\ NumberChannel
+            >~ "random" /\ NumericChannel
         , process : R.Process processF
         }
     where
         processF :: (String -> Maybe Value) -> Effect (String -> Maybe Value)
         processF receive = do
             let
-                min = receive "min" # fromMaybe (Number' 0.0)
-                max = receive "max" # fromMaybe (Number' 100.0)
-            random <-
-                case min /\ max of
-                    (Number' min' /\ Number' max') ->
-                        randomRange min' max'
-                    _ -> pure 0.0
-            let send "random" = Just $ Number' random
+                getRandom (Numeric min) (Numeric max) =
+                    randomRange min max
+                getRandom _ _ =
+                    randomRange 0.0 100.0
+            random <- (getRandom <$> receive "min" <*> receive "max")
+                            # fromMaybe (pure 0.0)
+            let send "random" = Just $ Numeric random
                 send _ = Nothing
             pure send
 
@@ -59,156 +74,71 @@ sineNode =
         { inlets :
             withInlets
             ~< "bang" /\ TriggerChannel
-            ~< "min"  /\ NumberChannel
-            ~< "max"  /\ NumberChannel
+            ~< "min"  /\ NumericChannel
+            ~< "max"  /\ NumericChannel
         , outlets :
             withOutlets
-            >~ "random" /\ NumberChannel
+            >~ "random" /\ NumericChannel
         , process : R.Process processF
         }
     where
         processF :: (String -> Maybe Value) -> Effect (String -> Maybe Value)
         processF receive = do
             let
-                min = receive "min" # fromMaybe (Number' 0.0)
-                max = receive "max" # fromMaybe (Number' 100.0)
+                min = receive "min" # fromMaybe (Numeric 0.0)
+                max = receive "max" # fromMaybe (Numeric 100.0)
             random <-
                 case min /\ max of
-                    (Number' min' /\ Number' max') ->
+                    (Numeric min' /\ Numeric max') ->
                         randomRange min' max'
                     _ -> pure 0.0
-            let send "random" = Just $ Number' random
+            let send "random" = Just $ Numeric random
                 send _ = Nothing
             pure send
 
 
--- patch :: Rpd.PatchDef Value
--- patch =
---     { name : "particles"
---     , nodeDefs
---         : colorNode
---         : metroNode
---         : List.Nil
---     }
+timeNode :: T.NodeDef Value Channel
+timeNode =
+    T.NodeDef
+        { inlets :
+            T.withInlets
+            ~< "time" /\ NumericChannel
+        , outlets :
+            T.withOutlets
+            >~ "time" /\ NumericChannel
+        , process : R.Process pure  -- FIXME: use `PassThrough`
+        }
 
 
--- numberInlet :: String -> Rpd.InletDef Value
--- numberInlet label =
---     { label : label
---     , default : Just (Number' 0.0)
---     , accept : Just acceptF
---     }
---     where
---         acceptF (Number' _) = true
---         acceptF _ = false
-
-
-
--- colorInlet :: String -> Rpd.InletDef Value
--- colorInlet label =
---     { label : label
---     , default : Just (Color 0.0 0.0 0.0)
---     , accept : Just acceptF
---     }
---     where
---         acceptF (Color _ _ _) = true
---         acceptF _ = false
-
-
--- colorOutlet :: String -> Rpd.OutletDef Value
--- colorOutlet label =
---     { label : label
---     , accept : Just acceptF
---     }
---     where
---         acceptF (Color _ _ _) = true
---         acceptF _ = false
-
-
--- bangOutlet :: String -> Rpd.OutletDef Value
--- bangOutlet label =
---     { label : label
---     , accept : Just acceptF
---     }
---     where
---         acceptF Bang = true
---         acceptF _ = false
-
-
--- periodInlet :: String -> Rpd.InletDef Value
--- periodInlet label =
---     { label : label
---     , default : Just (Period 0.0)
---     , accept : Just acceptF
---     }
---     where
---         acceptF (Period _) = true
---         acceptF _ = false
-
-
--- triggerInlet :: String -> Rpd.InletDef Value
--- triggerInlet label =
---     { label : label
---     , default : Just $ Trigger false
---     , accept : Just acceptF
---     }
---     where
---         acceptF (Trigger _) = true
---         acceptF _ = false
-
-
-
--- colorNode :: Rpd.NodeDef Value
--- colorNode =
---     { name : "color"
---     , inletDefs
---         : numberInlet "r"
---         : numberInlet "g"
---         : numberInlet "b"
---         : List.Nil
---     , outletDefs :
---         List.singleton $ colorOutlet "color"
---     , process : R.FoldedByLabel foldToColor
---     }
---     where
---         foldToColor (R.InletsMapData m) =
---             R.OutletsMapData
---                 $ fromMaybe Map.empty
---                 $ buildColor <$> (m^.at "r") <*> (m^.at "g") <*> (m^.at "b")
---         buildColor (Number' r) (Number' g) (Number' b) =
---             Map.empty # Map.insert "color" (Color r g b)
---         buildColor _ _ _ =
---             Map.empty
-
-
-
--- metroNode :: Rpd.NodeDef Value
--- metroNode =
---     { name : "metro"
---     , inletDefs
---         : triggerInlet "enabled"
---         : periodInlet "period"
---         : List.Nil
---     , outletDefs :
---         List.singleton $ bangOutlet "bang"
---     , process : R.FoldedByLabel foldToBang
---     }
---     where
---         foldToBang (R.InletsMapData m) =
---             R.OutletsMapData
---                 $ fromMaybe Map.empty
---                 $ sendBang <$> (m^.at "enabled") <*> (m^.at "period")
---         sendBang (Trigger isEnabled) (Period period) =
---             if isEnabled then
---                 Map.empty # Map.insert "bang" Bang
---             else Map.empty
---         sendBang _ _ =
---             Map.empty
-
-
-
--- -- TODO: metro, color, random, shape, magic, wind...
-
-
--- instance isDataValue :: Rpd.IsData Value where
---   default = Period 5.0
+canvasNode :: T.NodeDef Value Channel
+canvasNode =
+    T.NodeDef
+        { inlets :
+            T.withInlets
+            ~< "time" /\ TimeChannel
+            -- ~<< (fromFoldable $ animationInlet <$> allManParts)
+        , outlets :
+            -- T.noOutlets
+            T.withOutlets
+            >~ "x" /\ NumericChannel
+        , process : R.Process processF
+        }
+    where
+        -- animationInlet :: AnimPart -> String /\ Channel
+        -- animationInlet animPart =
+        --     show animPart /\ AnimationChannel
+        processF :: (String -> Maybe Value) -> Effect (String -> Maybe Value)
+        processF receive = do
+            let (maybeTime :: Maybe Value) = receive "time"
+            -- _ <- drawScene
+            --     $ Animation.export
+            --     $ Animation.Scene
+            --         { initial : Animation.assets
+            --         , transforms : unit
+            --         , time : case maybeTime of
+            --             Just (Time t) -> Just t
+            --             _ -> instant $ Milliseconds 0.0
+            --         }
+            let send "x" = Just $ Numeric 1.0
+                send _ = Nothing
+            pure send

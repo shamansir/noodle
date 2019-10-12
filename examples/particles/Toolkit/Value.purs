@@ -2,6 +2,8 @@ module Example.Toolkit.Value where
 
 import Prelude (class Show, (<>), show)
 
+import Data.DateTime.Instant (Instant)
+
 
 data ParticleShape
     = Circle
@@ -15,10 +17,11 @@ data Value
     | Color Number Number Number
     | Shape ParticleShape
     | Random Number
-    | Number' Number
+    | Numeric Number
     | Trigger Boolean
     | Period Number
     | Magic Number Number
+    | Time Instant
 
 
 instance showValue :: Show Value where
@@ -26,10 +29,11 @@ instance showValue :: Show Value where
     show (Color r g b) = "color: (" <> show r <> ", " <> show g <> ", " <> show b <> ")"
     show (Shape shape) = "shape: " <> show shape
     show (Random n) = "random: " <> show n
-    show (Number' n) = "number: " <> show n
+    show (Numeric n) = "number: " <> show n
     show (Trigger state) = "trigger: " <> if state then "on" else "off"
     show (Period n) = "period: " <> show n
     show (Magic n1 n2) = "magin: " <> show n1 <> ", " <> show n2
+    show (Time t) = "time: " <> show t
 
 
 instance showParticleShape :: Show ParticleShape where

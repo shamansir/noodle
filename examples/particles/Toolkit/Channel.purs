@@ -10,7 +10,7 @@ import Example.Toolkit.Value
 data Channel
     = ColorChannel
     | ShapeChannel
-    | NumberChannel
+    | NumericChannel
     | TimeChannel
     | TriggerChannel
 
@@ -18,7 +18,7 @@ data Channel
 instance showChannel :: Show Channel where
     show ColorChannel = "color"
     show ShapeChannel = "shape"
-    show NumberChannel = "number"
+    show NumericChannel = "number"
     show TimeChannel = "time"
     show TriggerChannel = "trigger"
 
