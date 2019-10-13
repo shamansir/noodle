@@ -335,7 +335,7 @@ setupNodeProcessFlow
     -> Subscriber
 setupNodeProcessFlow node nw =
     let (Node uuid _ _ process { inletsFlow, inlets, outlets }) = node
-    in if (Seq.null inlets || Seq.null outlets)
+    in if (Seq.null inlets)
         then pure $ pure unit
     else case process of
         Withhold -> pure $ pure unit
@@ -343,7 +343,7 @@ setupNodeProcessFlow node nw =
             _ <- view (_cancelers $ UUID.uuid uuid) nw
                     # fromMaybe []
                     # traverse_ liftEffect
-            if (Seq.null inlets || Seq.null outlets) then pure $ pure unit else do
+            if (Seq.null inlets) then pure $ pure unit else do
                 let
                     (outletFlows :: UUID.ToOutlet /-> PushToOutlet d) =
                         outlets

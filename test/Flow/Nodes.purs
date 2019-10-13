@@ -8,16 +8,25 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\))
 
+import Effect.Class (liftEffect)
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
+
 import Rpd.API.Action.Sequence ((</>))
 import Rpd.API.Action.Sequence (init) as Actions
 import Rpd.API.Action.Sequence as R
 import Rpd.Process (ProcessF(..)) as R
 import Rpd.Path
 import Rpd.Network (empty) as Network
-import Rpd.Toolkit ((>~), (~<), withInlets, withOutlets, NodeDef(..))
+import Rpd.Toolkit
+    ( (>~), (~<)
+    , withInlets, withOutlets
+    , noInlets, noOutlets
+    , NodeDef(..)
+    )
 
 import Test.Spec (Spec, it, pending)
-import Test.Spec.Assertions (shouldContain)
+import Test.Spec.Assertions (shouldContain, shouldEqual)
 
 import RpdTest.Helper (TraceItem(..))
 import RpdTest.Helper (channelsAfter) as CollectData
@@ -164,3 +173,98 @@ spec = do
       (OutletData apples2Outlet $ Apple 1)
 
     pure unit
+
+
+  it "when node has no outlets, but has some inlets, processing is still performed" $ do
+    valueRef <- liftEffect $ Ref.new Damaged
+
+    let
+      curseInlet = toInlet "patch" "node" "curse"
+
+      structure :: Actions
+      structure =
+        Actions.init
+          </> R.addPatch "patch"
+          </> R.addNodeByDef
+                  (toPatch "patch")
+                  "node"
+                  Custom
+                  nodeDef
+
+      nodeDef :: NodeDef Delivery Pipe
+      nodeDef =
+          NodeDef
+            { inlets :
+                withInlets
+                ~< "curse" /\ Pass
+            , outlets :
+                noOutlets
+            , process : R.Process processF
+            }
+
+      processF receive = do
+          -- FIXME: rewrite using `<$>`
+          let
+              curse = receive "curse" # fromMaybe Damaged
+          _ <- valueRef # Ref.write curse
+          pure $ const Nothing
+
+    _ /\ collectedData <- CollectData.channelsAfter
+      (Milliseconds 100.0)
+      myToolkit
+      (Network.empty "network")
+      $ structure
+          </> R.sendToInlet curseInlet (Curse 4)
+
+    storedValue <- liftEffect $ Ref.read valueRef
+
+    collectedData `shouldContain`
+      (InletData curseInlet $ Curse 4)
+
+    storedValue `shouldEqual` (Curse 4)
+
+    pure unit
+
+  it "when node has both no outlets and inlets, processing is not performed" $ do
+    wasCalledRef <- liftEffect $ Ref.new false
+
+    let
+      structure :: Actions
+      structure =
+        Actions.init
+          </> R.addPatch "patch"
+          </> R.addNodeByDef
+                  (toPatch "patch")
+                  "node"
+                  Custom
+                  nodeDef
+
+      nodeDef :: NodeDef Delivery Pipe
+      nodeDef =
+          NodeDef
+            { inlets :
+                noInlets
+            , outlets :
+                noOutlets
+            , process : R.Process processF
+            }
+
+      processF receive = do
+          -- FIXME: rewrite using `<$>`
+          _ <- wasCalledRef # Ref.write true
+          pure $ const Nothing
+
+    _ /\ collectedData <- CollectData.channelsAfter
+      (Milliseconds 100.0)
+      myToolkit
+      (Network.empty "network")
+      structure
+
+    wasCalled <- liftEffect $ Ref.read wasCalledRef
+
+    collectedData `shouldEqual` []
+
+    wasCalled `shouldEqual` false
+
+    pure unit
+
