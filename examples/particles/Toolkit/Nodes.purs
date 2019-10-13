@@ -46,24 +46,24 @@ randomNode =
         { inlets :
             withInlets
             ~< "bang" /\ TriggerChannel
-            ~< "min"  /\ NumericChannel
-            ~< "max"  /\ NumericChannel
+            ~< "min"  /\ NumericalChannel
+            ~< "max"  /\ NumericalChannel
         , outlets :
             withOutlets
-            >~ "random" /\ NumericChannel
+            >~ "random" /\ NumericalChannel
         , process : R.Process processF
         }
     where
         processF :: (String -> Maybe Value) -> Effect (String -> Maybe Value)
         processF receive = do
             let
-                getRandom (Numeric min) (Numeric max) =
+                getRandom (Numerical min) (Numerical max) =
                     randomRange min max
                 getRandom _ _ =
                     randomRange 0.0 100.0
             random <- (getRandom <$> receive "min" <*> receive "max")
                             # fromMaybe (pure 0.0)
-            let send "random" = Just $ Numeric random
+            let send "random" = Just $ Numerical random
                 send _ = Nothing
             pure send
 
@@ -74,25 +74,25 @@ sineNode =
         { inlets :
             withInlets
             ~< "bang" /\ TriggerChannel
-            ~< "min"  /\ NumericChannel
-            ~< "max"  /\ NumericChannel
+            ~< "min"  /\ NumericalChannel
+            ~< "max"  /\ NumericalChannel
         , outlets :
             withOutlets
-            >~ "random" /\ NumericChannel
+            >~ "random" /\ NumericalChannel
         , process : R.Process processF
         }
     where
         processF :: (String -> Maybe Value) -> Effect (String -> Maybe Value)
         processF receive = do
             let
-                min = receive "min" # fromMaybe (Numeric 0.0)
-                max = receive "max" # fromMaybe (Numeric 100.0)
+                min = receive "min" # fromMaybe (Numerical 0.0)
+                max = receive "max" # fromMaybe (Numerical 100.0)
             random <-
                 case min /\ max of
-                    (Numeric min' /\ Numeric max') ->
+                    (Numerical min' /\ Numerical max') ->
                         randomRange min' max'
                     _ -> pure 0.0
-            let send "random" = Just $ Numeric random
+            let send "random" = Just $ Numerical random
                 send _ = Nothing
             pure send
 
@@ -102,10 +102,10 @@ timeNode =
     T.NodeDef
         { inlets :
             T.withInlets
-            ~< "time" /\ NumericChannel
+            ~< "time" /\ NumericalChannel
         , outlets :
             T.withOutlets
-            >~ "time" /\ NumericChannel
+            >~ "time" /\ NumericalChannel
         , process : R.Process pure  -- FIXME: use `PassThrough`
         }
 
@@ -120,7 +120,7 @@ canvasNode =
         , outlets :
             -- T.noOutlets
             T.withOutlets
-            >~ "x" /\ NumericChannel
+            >~ "x" /\ NumericalChannel
         , process : R.Process processF
         }
     where
@@ -139,6 +139,6 @@ canvasNode =
             --             Just (Time t) -> Just t
             --             _ -> instant $ Milliseconds 0.0
             --         }
-            let send "x" = Just $ Numeric 1.0
+            let send "x" = Just $ Numerical 1.0
                 send _ = Nothing
             pure send

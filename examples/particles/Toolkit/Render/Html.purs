@@ -76,7 +76,9 @@ renderNode TimeNode (R.Node uuid path _ _ _) =
 renderNode CanvasNode (R.Node uuid path _ _ _) =
     H.div
         [ H.classes [ "tk-node" ] ]
-        [ H.canvas [ H.id_ "the-man-canvas", H.width 300, H.height 300 ] ]
+        [ H.canvas
+            [ H.id_ "the-canvas", H.width 300, H.height 300 ]
+        ]
 renderNode ButtonsNode _ =
     H.div
         [ H.classes [ "tk-node" ] ]
@@ -99,31 +101,31 @@ renderNode ButtonsNode _ =
             [ H.text "ADD RANDOM2 NODE" ]
         , H.div
             [ H.onClick $ H.always_ $ R.core
-                $ A.addInlet (P.toNode "test" "random1") "test" NumericChannel ]
+                $ A.addInlet (P.toNode "test" "random1") "test" NumericalChannel ]
             [ H.text "ADD INLET TEST TO RANDOM1" ]
         , H.div
             [ H.onClick $ H.always_ $ R.core
-                $ A.addInlet (P.toNode "test" "random1") "foo" NumericChannel ]
+                $ A.addInlet (P.toNode "test" "random1") "foo" NumericalChannel ]
             [ H.text "ADD INLET FOO TO RANDOM1" ]
         , H.div
             [ H.onClick $ H.always_ $ R.core
-                $ A.addOutlet (P.toNode "test" "random1") "test" NumericChannel ]
+                $ A.addOutlet (P.toNode "test" "random1") "test" NumericalChannel ]
             [ H.text "ADD OUTLET TEST TO RANDOM1" ]
         , H.div
             [ H.onClick $ H.always_ $ R.core
-                $ A.addOutlet (P.toNode "test" "random1") "foo" NumericChannel ]
+                $ A.addOutlet (P.toNode "test" "random1") "foo" NumericalChannel ]
             [ H.text "ADD OUTLET FOO TO RANDOM1" ]
         , H.div
             [ H.onClick $ H.always_ $ R.core
-                $ A.addInlet (P.toNode "test" "random2") "test" NumericChannel ]
+                $ A.addInlet (P.toNode "test" "random2") "test" NumericalChannel ]
             [ H.text "ADD INLET TEST TO RANDOM2" ]
         , H.div
             [ H.onClick $ H.always_ $ R.core
-                $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random" "min") $ Numeric 10.0 ]
+                $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random" "min") $ Numerical 10.0 ]
             [ H.text "SEND DATA TO RANDOM/MIN" ]
         , H.div
             [ H.onClick $ H.always_ $ R.core
-                $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random1" "min") $ Numeric 20.0 ]
+                $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random1" "min") $ Numerical 20.0 ]
             [ H.text "SEND DATA TO RANDOM1/MIN" ]
         , H.div
             [ H.onClick $ H.always_ $ R.core
@@ -141,12 +143,12 @@ renderNode ButtonsNode _ =
             [ H.onClick $ H.always_ $ R.core
                 $ A.Request
                 $ A.ToSendPeriodicallyToInlet (P.toInlet "test" "random1" "max") 1
-                $ Numeric <<< toNumber
+                $ Numerical <<< toNumber
             ]
             [ H.text "SEND DATA TO RANDOM1/MAX PERIOD" ]
         ]
 renderNode _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
-        [ H.text "tk-node" ]
+        [ H.text "tk-node (no renderer)" ]
 

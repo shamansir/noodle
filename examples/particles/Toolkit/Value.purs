@@ -17,7 +17,7 @@ data Value
     | Color Number Number Number
     | Shape ParticleShape
     | Random Number
-    | Numeric Number
+    | Numerical Number
     | Trigger Boolean
     | Period Number
     | Magic Number Number
@@ -29,7 +29,7 @@ instance showValue :: Show Value where
     show (Color r g b) = "color: (" <> show r <> ", " <> show g <> ", " <> show b <> ")"
     show (Shape shape) = "shape: " <> show shape
     show (Random n) = "random: " <> show n
-    show (Numeric n) = "number: " <> show n
+    show (Numerical n) = "number: " <> show n
     show (Trigger state) = "trigger: " <> if state then "on" else "off"
     show (Period n) = "period: " <> show n
     show (Magic n1 n2) = "magin: " <> show n1 <> ", " <> show n2
