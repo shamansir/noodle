@@ -5,6 +5,8 @@ import Prelude
 import Effect (Effect)
 import Effect.Random (randomRange)
 
+import Graphics.Canvas
+
 import Data.Maybe
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_)
@@ -31,7 +33,7 @@ instance showNode :: Show Node where
     show NodeListNode = "node list"
     show TimeNode = "time"
     show SineNode = "sine"
-    show CanvasNode = "time"
+    show CanvasNode = "canvas"
     show ButtonsNode = "buttons"
 
 
@@ -129,7 +131,22 @@ canvasNode =
         --     show animPart /\ AnimationChannel
         processF :: (String -> Maybe Value) -> Effect (String -> Maybe Value)
         processF receive = do
-            let (maybeTime :: Maybe Value) = receive "time"
+            let
+                (maybeTime :: Maybe Value) = receive "time"
+            maybeCanvas :: Maybe CanvasElement <- getCanvasElementById "the-canvas"
+            case maybeCanvas of
+                Just canvas -> do
+                    -- TODO: requestAnimationFrame $ do
+                    ctx <- getContext2D canvas
+                    setFillStyle ctx "#0000FF"
+                    fillPath ctx $ do
+                        moveTo ctx 10.0 10.0
+                        lineTo ctx 20.0 20.0
+                        lineTo ctx 10.0 20.0
+                        closePath ctx
+                    pure unit
+                Nothing -> pure unit
+
             -- _ <- drawScene
             --     $ Animation.export
             --     $ Animation.Scene
