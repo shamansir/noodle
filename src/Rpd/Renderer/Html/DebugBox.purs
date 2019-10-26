@@ -118,6 +118,7 @@ viewNetwork nw@(R.Network { patches, name }) =
                         [ H.text $ case processF of
                             R.Withhold -> "withhold"
                             R.Process _ -> "process"
+                            R.ProcessST _ -> "process-w/state"
                         ]
                     , H.ul [] $ viewInlets inlets
                     , H.ul [] $ viewOutlets outlets

@@ -27,7 +27,7 @@ recipe =
         </> Actions.addPatch "test"
         </> Actions.addNode (R.toPatch "test") "random" RandomNode
         </> Actions.addInlet (R.toNode "test" "random") "min" NumericalChannel
-        </> Actions.addNode (R.toPatch "test") "buttons" ButtonsNode
+        </> Actions.addNode (R.toPatch "test") "list" NodeListNode
 
         -- FIXME: this block produces an error
         -- </> Rpd.addNode (R.toPatch "test") "random"

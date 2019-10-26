@@ -17,9 +17,12 @@ import Data.Lens (view, set, setJust)
 import Data.Tuple.Nested ((/\), type (/\), over1)
 import Data.Foldable (foldr)
 import Data.Traversable (traverse, traverse_)
+import Data.Exists (mkExists, runExists)
+import Data.Newtype (unwrap)
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
+import Effect.Ref as Ref
 
 import FRP.Event as E
 import FRP.Event.Class (count) as E
@@ -31,7 +34,11 @@ import Rpd.UUID (UUID)
 import Rpd.UUID as UUID
 import Rpd.Network
 import Rpd.Optics
-import Rpd.Process (InletAlias, InletHandler(..), OutletAlias, OutletHandler(..), ProcessF(..))
+import Rpd.Process
+    ( InletAlias, InletHandler(..)
+    , OutletAlias, OutletHandler(..)
+    , ProcessF(..), ProcessST'(..)
+    )
 import Rpd.Toolkit (Toolkit(..))
 import Rpd.Toolkit as Toolkit
 
@@ -426,6 +433,50 @@ buildOutletsFlow _ (Process processNode) (InletsFlow inletsFlow) inlets outlets 
     canceler <- liftEffect $ E.subscribe processFlow processHandler
     pure $ (OutletsFlow event)
            /\ Just canceler
+buildOutletsFlow _ (ProcessST processSt) (InletsFlow inletsFlow) inlets outlets nw = do
+    -- collect data from inletsFlow into the Map (Alias /-> d) and pass Map.lookup to the `processF` handler.
+    { push, event } <- E.create
+    let
+        outletsAliases :: List (Path.ToOutlet /\ UUID.ToOutlet)
+        outletsAliases =
+            (outlets
+                    # List.fromFoldable
+                <#> \uuid ->
+                    view (_outlet uuid) nw
+                        <#> \(Outlet uuid' path _ _) -> path /\ uuid')
+                    # List.catMaybes
+                -- FIXME: if outlet wasn't found, raise an error?
+                --  # Map.fromFoldable
+        foldingF
+            ((Path.ToInlet { node : nodePath, inlet : inletAlias })
+            /\ uuid
+            /\ curD)
+            inletVals =
+            inletVals # Map.insert inletAlias curD
+        processFlow = E.fold foldingF inletsFlow Map.empty
+
+    processHandler <- runExists
+        (\(ProcessST' (initialState /\ processNode)) -> do
+            stateRef <- Ref.new initialState
+            pure (\inletsValues -> do
+                let receive = flip Map.lookup $ inletsValues
+                curState <- Ref.read stateRef
+                nextState /\ send <- processNode (curState /\ receive)
+                _ <- Ref.write nextState stateRef
+                _ <- traverse
+                        (\(path@(Path.ToOutlet { outlet : alias }) /\ uuid) ->
+                            case send alias of
+                                Just v -> push $ path /\ uuid /\ v
+                                Nothing -> pure unit
+                        )
+                        outletsAliases
+                pure unit
+            )
+        )
+        processSt
+    canceler <- liftEffect $ E.subscribe processFlow processHandler
+    pure $ (OutletsFlow event)
+            /\ Just canceler
 
 
 informNodeOnInletUpdates

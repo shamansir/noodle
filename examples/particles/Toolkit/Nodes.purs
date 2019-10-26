@@ -126,9 +126,6 @@ canvasNode =
         , process : R.Process processF
         }
     where
-        -- animationInlet :: AnimPart -> String /\ Channel
-        -- animationInlet animPart =
-        --     show animPart /\ AnimationChannel
         processF :: (String -> Maybe Value) -> Effect (String -> Maybe Value)
         processF receive = do
             let
@@ -146,16 +143,6 @@ canvasNode =
                         closePath ctx
                     pure unit
                 Nothing -> pure unit
-
-            -- _ <- drawScene
-            --     $ Animation.export
-            --     $ Animation.Scene
-            --         { initial : Animation.assets
-            --         , transforms : unit
-            --         , time : case maybeTime of
-            --             Just (Time t) -> Just t
-            --             _ -> instant $ Milliseconds 0.0
-            --         }
             let send "x" = Just $ Numerical 1.0
                 send _ = Nothing
             pure send

@@ -25,6 +25,7 @@
     "purescript-profunctor-lenses": "4.0.0",
     "purescript-refs": "^4.1.0",
     "purescript-smolder": "^12.2.0",
+    "purescript-st": "^4.0.0",
     "purescript-tuples": "^5.0.0",
     "purescript-transformers": "^4.1.0",
     "purescript-pairing": "^5.1.0",
@@ -49,7 +50,6 @@
   },
   "resolutions": {
     "purescript-foreign-object": "^2.0.1",
-    "purescript-typelevel-prelude": ">= 4.0.0 < 6.0.0",
     "purescript-record": "^2.0.1"
   }
 }

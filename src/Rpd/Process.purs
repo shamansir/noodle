@@ -1,5 +1,6 @@
 module Rpd.Process
-    ( ProcessF(..)
+    ( ProcessF(..), ProcessST'(..)
+    , Receive, Send
     -- , InletInNode, OutletInNode
     -- , InletLabel, OutletLabel
     , InletAlias, OutletAlias
@@ -17,11 +18,17 @@ module Rpd.Process
 import Prelude
 
 import Data.Maybe
+import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested (type (/\))
-import Effect (Effect)
+import Data.Exists (Exists, mkExists, runExists)
+import Effect (Effect(..))
+import Effect.Class (liftEffect)
 
 import Rpd.Util (Flow, type (/->))
 import Rpd.Path
+
+import Control.Monad.ST as ST
+import Control.Monad.ST.Ref as STRef
 
 
 -- type InletInNode = Int
@@ -74,9 +81,50 @@ data OutletHandlers d = OutletHandlers (Array (d -> Effect Unit)) -- TODO: -> Rp
 
 -- TODO: use IAlias -> data / OAlias -> data functions instead, see TODO.md for more info
 
+{-
+newtype StateF st = StateF (Tuple st (st -> Effect st))
 
--- type Receive d = InletAlias -> Maybe d
--- type Send d = OutletAlias -> Maybe d
+data X
+    = Var1 (Int -> Effect Unit)
+    | Var2 (String -> Effect Unit)
+    | Var3 (Exists StateF)
+
+handler :: X -> Effect Unit
+handler (Var1 f) = f 1
+handler (Var2 f) = f ""
+handler (Var3 f') = do
+    _ <- runExists
+                (\(StateF (Tuple initialState f)) -> do
+                    _ <- f initialState
+                    pure unit
+                )
+                f'
+    pure unit
+-}
+
+{-
+newtype StateF st = StateF (Tuple st (st -> Effect st))
+
+data X
+    = Var1 (Int -> Effect Unit)
+    | Var2 (String -> Effect Unit)
+    | Var3 (forall st. (Tuple st (st -> Effect st)))
+
+handler :: X -> Effect Unit
+handler (Var1 f) = f 1
+handler (Var2 f) = f ""
+handler (Var3 (Tuple init f)) =
+    pure $ ST.run do
+        _ <- liftEffect $ f init
+        pure unit
+-}
+
+
+type Receive d = InletAlias -> Maybe d
+type Send d = OutletAlias -> Maybe d
+
+
+newtype ProcessST' d st = ProcessST' (st /\ ((st /\ Receive d) -> Effect (st /\ Send d)))
 
 
 data ProcessF d
@@ -89,4 +137,19 @@ data ProcessF d
     -- TODO: one more option to fold with some state (i.e. receive the previous state in the process call)
     -- TODO: one more option w/o any effects
     -- TODO: and so, test them all
-    | Process ((InletAlias -> Maybe d) -> Effect (OutletAlias -> Maybe d))
+    | Process (Receive d -> Effect (Send d))
+    | ProcessST (Exists (ProcessST' d))
+
+
+    {-
+runProcessST :: forall d. Exists (ProcessST' d) -> Receive d -> Effect Unit
+runProcessST f' receive =
+    do
+        _ <- runExists
+                    (\(ProcessST' (Tuple initialState f)) -> do
+                        _ <- f (Tuple initialState receive)
+                        pure unit
+                    )
+                    f'
+        pure unit
+        -}
