@@ -15,7 +15,7 @@ import Effect.Ref as Ref
 import Rpd.API.Action.Sequence ((</>))
 import Rpd.API.Action.Sequence (init) as Actions
 import Rpd.API.Action.Sequence as R
-import Rpd.Process (ProcessF(..)) as R
+import Rpd.Process (ProcessF(..), makeProcessST) as R
 import Rpd.Path
 import Rpd.Network (empty) as Network
 import Rpd.Toolkit
@@ -268,3 +268,61 @@ spec = do
 
     pure unit
 
+
+  it "processing with state works" $ do
+      let
+
+        curseInlet = toInlet "patch" "node" "curse"
+        applesOutlet = toOutlet "patch" "node" "apples"
+
+        structure :: Actions
+        structure =
+          Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "node"
+                    Custom
+                    nodeDef
+
+        nodeDef :: NodeDef Delivery Pipe
+        nodeDef =
+            NodeDef
+              { inlets :
+                  withInlets
+                  ~< "curse" /\ Pass
+              , outlets :
+                  withOutlets
+                  >~ "apples" /\ Pass
+              , process : R.ProcessST $ R.makeProcessST 10 processF
+              }
+
+        processF (prevState /\ receive) = do
+            -- FIXME: rewrite using `<$>`
+            let
+                curse = receive "curse" # fromMaybe Damaged
+            pure $ case curse of
+                (Curse c) ->
+                    let send "apples" = Just $ Apple (prevState + c)
+                        send _ = Nothing
+                    in (prevState + c) /\ send
+                _ -> prevState /\ const Nothing
+
+      _ /\ collectedData <- CollectData.channelsAfter
+        (Milliseconds 100.0)
+        myToolkit
+        (Network.empty "network")
+        $ structure
+            </> R.sendToInlet curseInlet (Curse 4)
+            </> R.sendToInlet curseInlet (Curse 3)
+
+      collectedData `shouldContain`
+        (InletData curseInlet $ Curse 4)
+      collectedData `shouldContain`
+        (InletData curseInlet $ Curse 3)
+      collectedData `shouldContain`
+        (OutletData applesOutlet $ Apple 14)
+      collectedData `shouldContain`
+        (OutletData applesOutlet $ Apple 17)
+
+      pure unit

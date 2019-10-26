@@ -12,6 +12,7 @@ module Rpd.Process
     -- , InletsByPathFlow(..), OutletsByPathFlow(..)
     , InletsData(..), OutletsData(..)
     -- , InletsMapData(..), OutletsMapData(..)
+    , makeProcessST
     )
     where
 
@@ -19,7 +20,7 @@ import Prelude
 
 import Data.Maybe
 import Data.Tuple (Tuple(..))
-import Data.Tuple.Nested (type (/\))
+import Data.Tuple.Nested ((/\), type (/\))
 import Data.Exists (Exists, mkExists, runExists)
 import Effect (Effect(..))
 import Effect.Class (liftEffect)
@@ -139,6 +140,22 @@ data ProcessF d
     -- TODO: and so, test them all
     | Process (Receive d -> Effect (Send d))
     | ProcessST (Exists (ProcessST' d))
+
+
+{-
+makeProcessST
+    :: forall d st
+     . (st /\ ((st /\ Receive d) -> Effect (st /\ Send d)))
+    -> Exists (ProcessST' d)
+makeProcessST = mkExists <<< ProcessST'
+-}
+
+makeProcessST
+    :: forall d st
+     . st
+    -> ((st /\ Receive d) -> Effect (st /\ Send d))
+    -> Exists (ProcessST' d)
+makeProcessST st process = mkExists $ ProcessST' $ st /\ process
 
 
     {-
