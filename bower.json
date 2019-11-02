@@ -39,7 +39,8 @@
     "purescript-random": "^4.0.0",
     "purescript-record": "^2.0.1",
     "purescript-drawing": "^4.0.0",
-    "purescript-sequences": "^2.1.0"
+    "purescript-sequences": "^2.1.0",
+    "purescript-now": "^4.0.0"
   },
   "devDependencies": {
     "purescript-debug": "^4.0.0",

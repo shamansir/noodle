@@ -4,12 +4,16 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Random (randomRange)
+import Effect.Now (now)
 
 import Graphics.Canvas
 
 import Data.Maybe
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_)
+
+import Data.Time.Duration (Milliseconds(..))
+import Data.DateTime.Instant (unInstant)
 
 import Rpd.Process as R
 import Rpd.Toolkit as T
@@ -112,6 +116,19 @@ timeNode =
         }
 
 
+type CanvasState =
+    { start :: Number
+    , last :: Number
+    }
+
+
+initialCanvasState :: CanvasState
+initialCanvasState =
+    { start : -1.0
+    , last : 0.0
+    }
+
+
 canvasNode :: T.NodeDef Value Channel
 canvasNode =
     T.NodeDef
@@ -123,18 +140,33 @@ canvasNode =
             -- T.noOutlets
             T.withOutlets
             >~ "x" /\ NumericalChannel
-        , process : R.Process processF
+        , process : R.ProcessST $ R.makeProcessST initialCanvasState processF
         }
     where
-        processF :: (String -> Maybe Value) -> Effect (String -> Maybe Value)
-        processF receive = do
+        processF :: CanvasState /\ R.Receive Value -> Effect (CanvasState /\ R.Send Value)
+        processF (prev /\ receive) = do
+            (Milliseconds curTime) <- unInstant <$> now
             let
                 (maybeTime :: Maybe Value) = receive "time"
+                next =
+                    if prev.start < 0.0 then
+                        { start : curTime
+                        , last : curTime
+                        }
+                    else
+                        prev
+                        { last = curTime
+                        }
             maybeCanvas :: Maybe CanvasElement <- getCanvasElementById "the-canvas"
             case maybeCanvas of
                 Just canvas -> do
                     -- TODO: requestAnimationFrame $ do
                     ctx <- getContext2D canvas
+                    clearRect ctx { x : 0.0, y : 0.0, width : 100.0, height : 100.0 }
+                    translate ctx
+                        { translateX : 0.0
+                        , translateY : (next.last - next.start) / 1000.0
+                        }
                     setFillStyle ctx "#0000FF"
                     fillPath ctx $ do
                         moveTo ctx 10.0 10.0
@@ -145,4 +177,4 @@ canvasNode =
                 Nothing -> pure unit
             let send "x" = Just $ Numerical 1.0
                 send _ = Nothing
-            pure send
+            pure $ next /\ send

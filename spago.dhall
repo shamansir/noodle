@@ -18,6 +18,7 @@ You can edit this file as you like.
     , "event"
     , "foldable-traversable"
     , "node-fs"
+    , "now"
     , "parsing"
     , "prelude"
     , "profunctor-lenses"
