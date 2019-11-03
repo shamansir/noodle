@@ -148,6 +148,8 @@ canvasNode =
             (Milliseconds curTime) <- unInstant <$> now
             let
                 (maybeTime :: Maybe Value) = receive "time"
+                dt = curTime - prev.last
+                posX = (prev.last - prev.start + dt) / 1000.0
                 next =
                     if prev.start < 0.0 then
                         { start : curTime
@@ -155,24 +157,29 @@ canvasNode =
                         }
                     else
                         prev
-                        { last = curTime
-                        }
+                            { last = curTime
+                            }
             maybeCanvas :: Maybe CanvasElement <- getCanvasElementById "the-canvas"
             case maybeCanvas of
                 Just canvas -> do
                     -- TODO: requestAnimationFrame $ do
                     ctx <- getContext2D canvas
-                    clearRect ctx { x : 0.0, y : 0.0, width : 100.0, height : 100.0 }
-                    translate ctx
-                        { translateX : 0.0
-                        , translateY : (next.last - next.start) / 1000.0
-                        }
-                    setFillStyle ctx "#0000FF"
-                    fillPath ctx $ do
-                        moveTo ctx 10.0 10.0
-                        lineTo ctx 20.0 20.0
-                        lineTo ctx 10.0 20.0
-                        closePath ctx
+                    withContext ctx $ do
+                        clearRect ctx { x : 0.0, y : 0.0, width : 500.0, height : 500.0 }
+                        fillText ctx ("start:" <> show prev.start) 40.0 20.0
+                        fillText ctx ("curTime:" <> show curTime) 40.0 40.0
+                        fillText ctx ("prev.last:" <> show prev.last) 40.0 60.0
+                        fillText ctx ("dt:" <> show dt) 40.0 100.0
+                        translate ctx
+                            { translateX : posX
+                            , translateY : 0.0
+                            }
+                        setFillStyle ctx "#0000FF"
+                        fillPath ctx $ do
+                            moveTo ctx 10.0 10.0
+                            lineTo ctx 20.0 20.0
+                            lineTo ctx 10.0 20.0
+                            closePath ctx
                     pure unit
                 Nothing -> pure unit
             let send "x" = Just $ Numerical 1.0

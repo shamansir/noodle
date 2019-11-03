@@ -20,6 +20,7 @@ import Spork.Html as H
 
 import FRP.Event as E
 import FRP.Event.Time as E
+import FRP.Event.AnimationFrame as E
 
 import Example.Toolkit.Nodes
 import Example.Toolkit.Value
@@ -69,7 +70,7 @@ renderNode TimeNode (R.Node uuid path _ _ _) =
                 $ A.ToStreamToInlet (P.inletInNode path "time")
                 $ map (Time <<< _.time)
                 $ E.withTime
-                $ E.interval 1
+                $ E.animationFrame
             ]
             [ H.text "SEND" ]
          ]
