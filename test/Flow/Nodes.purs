@@ -225,6 +225,7 @@ spec = do
 
     pure unit
 
+
   it "when node has both no outlets and inlets, processing is not performed" $ do
     wasCalledRef <- liftEffect $ Ref.new false
 

@@ -46,7 +46,7 @@ data Value
     | Numerical Number
     | Drawing DrawOp
     | Color RgbaColor
-    | Instructions (Array Instruction)
+    | Instructions Instruction
 
 
 instance showValue :: Show Value where

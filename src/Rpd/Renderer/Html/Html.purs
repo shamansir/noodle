@@ -187,7 +187,8 @@ viewError error =
 
 viewNetwork
     :: forall d c n
-     . T.Channels d c
+     . Show n
+    => T.Channels d c
     => ToolkitRenderer d c n
     -> Model d c n
     -> R.Network d c n
@@ -240,7 +241,8 @@ viewNetwork toolkitRenderer ui nw@(R.Network { name, patches }) =
 
 viewPatch
     :: forall d c n
-     . T.Channels d c
+     . Show n
+    => T.Channels d c
     => ToolkitRenderer d c n
     -> Model d c n
     -> R.Network d c n
@@ -290,7 +292,8 @@ viewPatch toolkitRenderer ui nw patchUuid =
 
 viewNode
     :: forall d c n
-     . T.Channels d c
+     . Show n
+    => T.Channels d c
     => ToolkitRenderer d c n
     -> Model d c n
     -> R.Network d c n
@@ -307,7 +310,7 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                         [ H.classes [ "rpd-node-title" ]
                         , H.onClick $ handleNodeTitleClick node
                         ]
-                        [ H.span [ ] [ H.text name ] ]
+                        [ H.span [ ] [ H.text $ name <> " (" <> show n <> ")" ] ]
                     , H.div
                         [ H.classes [ "rpd-node-remove-button" ] ]
                         [ H.text "x" ]

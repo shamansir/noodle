@@ -9,10 +9,7 @@ import Example.Toolkit.Value
 
 data Channel
     = TriggerChannel
-    | ColorChannel
-    | DrawingsChannel
     | NumericalChannel
-    | TimeChannel
     | InstructionsChannel
 
 

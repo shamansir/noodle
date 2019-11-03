@@ -8,6 +8,7 @@ import Effect.Now (now)
 
 import Graphics.Canvas
 
+import Data.Int (round)
 import Data.Maybe
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_)
@@ -20,33 +21,103 @@ import Rpd.Toolkit as T
 import Rpd.Toolkit (withInlets, withOutlets, (~<), (>~))
 
 import Example.Toolkit.Value
+import Example.Toolkit.Value (Value(..)) as V
 import Example.Toolkit.Channel
 
 
+type ProcessF = R.Receive Value -> Effect (R.Send Value)
+
+type ProcessST s = s /\ R.Receive Value -> Effect (s /\ R.Send Value)
+
+type NodeDef = T.NodeDef Value Channel
+
+
 data Node
-    = RandomNode
-    | NodeListNode
+    = NumberNode
+    | RandomNode
+    | FillNode
     | TimeNode
-    | SineNode
+    -- | SineNode
     | CanvasNode
-    | ButtonsNode
+    | ShapeNode
+    | SpreadNode
+    | PairNode
+    | NodeListNode
+
 
 
 instance showNode :: Show Node where
-    show RandomNode = "random"
     show NodeListNode = "node list"
+    show RandomNode = "random"
+    show NumberNode = "number"
     show TimeNode = "time"
-    show SineNode = "sine"
+    -- show SineNode = "sine"
+    show FillNode = "fill"
+    show ShapeNode = "shape"
+    show SpreadNode = "spread"
+    show PairNode = "pair"
     show CanvasNode = "canvas"
-    show ButtonsNode = "buttons"
 
 
 nodesForTheList :: Array Node
 nodesForTheList =
-    [ RandomNode, CanvasNode, SineNode, TimeNode ]
+    [ NumberNode
+    , RandomNode
+    , FillNode
+    , TimeNode
+    -- , SineNode
+    , ShapeNode
+    , SpreadNode
+    , PairNode
+    , CanvasNode
+    ]
 
 
-randomNode :: T.NodeDef Value Channel
+numberNode :: NodeDef
+numberNode =
+    T.NodeDef
+        { inlets :
+            T.withInlets
+            ~< "num" /\ NumericalChannel
+        , outlets :
+            T.withOutlets
+            >~ "num" /\ NumericalChannel
+        , process : R.Process pure  -- FIXME: use `PassThrough`
+        }
+
+
+fillNode :: NodeDef
+fillNode =
+    T.NodeDef
+    { inlets :
+        withInlets
+        ~< "r" /\ NumericalChannel
+        ~< "g" /\ NumericalChannel
+        ~< "b" /\ NumericalChannel
+    , outlets :
+        withOutlets
+        >~ "fill" /\ InstructionsChannel -- FIXME: Some other channel
+    , process : R.Process processF
+    }
+    where
+        processF :: ProcessF
+        processF receive = do
+            let
+                getColor (Numerical r) (Numerical g) (Numerical b) =
+                    Just $ V.Color $ RgbaColor { r : r, g : g, b : b, a : 1.0 }
+                getColor _ _ _ =
+                    Nothing
+                send "color" =
+                    getColor
+                        <$> receive "r"
+                        <*> receive "g"
+                        <*> receive "b"
+                        >>= identity
+                send _ = Nothing
+            pure send
+
+
+randomNode :: NodeDef
 randomNode =
     T.NodeDef
         { inlets :
@@ -60,101 +131,153 @@ randomNode =
         , process : R.Process processF
         }
     where
-        processF :: (String -> Maybe Value) -> Effect (String -> Maybe Value)
+        processF :: ProcessF
         processF receive = do
             let
+                getRandom :: Value -> Value -> Effect Number
                 getRandom (Numerical min) (Numerical max) =
                     randomRange min max
-                getRandom _ _ =
-                    randomRange 0.0 100.0
-            random <- (getRandom <$> receive "min" <*> receive "max")
-                            # fromMaybe (pure 0.0)
+                getRandom _ _ = pure 0.0
+            random :: Number <-
+                getRandom
+                    <$> receive "min"
+                    <*> receive "max"
+                     #  fromMaybe (pure 0.0)
             let send "random" = Just $ Numerical random
                 send _ = Nothing
             pure send
 
 
-sineNode :: T.NodeDef Value Channel
-sineNode =
-    T.NodeDef
-        { inlets :
-            withInlets
-            ~< "bang" /\ TriggerChannel
-            ~< "min"  /\ NumericalChannel
-            ~< "max"  /\ NumericalChannel
-        , outlets :
-            withOutlets
-            >~ "random" /\ NumericalChannel
-        , process : R.Process processF
-        }
-    where
-        processF :: (String -> Maybe Value) -> Effect (String -> Maybe Value)
-        processF receive = do
-            let
-                min = receive "min" # fromMaybe (Numerical 0.0)
-                max = receive "max" # fromMaybe (Numerical 100.0)
-            random <-
-                case min /\ max of
-                    (Numerical min' /\ Numerical max') ->
-                        randomRange min' max'
-                    _ -> pure 0.0
-            let send "random" = Just $ Numerical random
-                send _ = Nothing
-            pure send
 
-
-timeNode :: T.NodeDef Value Channel
+timeNode :: NodeDef
 timeNode =
     T.NodeDef
         { inlets :
             T.withInlets
-            ~< "time" /\ NumericalChannel
+            ~< "time" /\ TriggerChannel
         , outlets :
             T.withOutlets
-            >~ "time" /\ NumericalChannel
+            >~ "time" /\ TriggerChannel
         , process : R.Process pure  -- FIXME: use `PassThrough`
         }
 
 
+shapeNode :: NodeDef
+shapeNode =
+    T.NodeDef
+        { inlets :
+            T.withInlets
+            ~< "shape" /\ InstructionsChannel -- FIXME: Some other channel
+        , outlets :
+            T.withOutlets
+            >~ "shape" /\ InstructionsChannel -- FIXME: Some other channel
+        , process : R.Process pure  -- FIXME: use `PassThrough`
+        }
+
+
+spreadNode :: NodeDef
+spreadNode =
+    T.NodeDef
+        { inlets :
+            T.withInlets
+            ~< "from" /\ InstructionsChannel -- FIXME: Some other channel
+            ~< "to" /\ InstructionsChannel -- FIXME: Some other channel
+            ~< "count" /\ NumericalChannel
+        , outlets :
+            T.withOutlets
+            >~ "spread" /\ InstructionsChannel -- FIXME: Only-spread channel?
+        , process : R.Process processF
+        }
+    where
+        processF :: ProcessF
+        processF receive = do
+            let
+                spread :: Value -> Value -> Value -> Maybe Value
+                spread (Instructions from) (Instructions to) (Numerical count) =
+                    Just $ Instructions $ Spread $ Interpolation
+                        { from : from, to : to, count : round count }
+                spread _ _ _ = Nothing
+            let send "pair" =
+                    spread
+                    <$> receive "from"
+                    <*> receive "to"
+                    <*> receive "count"
+                    >>= identity
+                send _ = Nothing
+            pure send
+
+
+pairNode :: NodeDef
+pairNode =
+    T.NodeDef
+        { inlets :
+            T.withInlets
+            ~< "spread1" /\ InstructionsChannel -- FIXME: Only-spread channel?
+            ~< "spread2" /\ InstructionsChannel -- FIXME: Only-spread channel?
+        , outlets :
+            T.withOutlets
+            >~ "pair" /\ InstructionsChannel -- FIXME: Some other channel?
+        , process : R.Process processF
+        }
+    where
+        processF :: ProcessF
+        processF receive = do
+            let
+                pair :: Value -> Value -> Maybe Value
+                pair (Instructions a) (Instructions b) =
+                    Just $ Instructions $ Pair a b
+                pair _ _ = Nothing
+            let send "pair" =
+                    pair
+                    <$> receive "spread1"
+                    <*> receive "spread2"
+                    >>= identity
+                send _ = Nothing
+            pure send
+
+
 type CanvasState =
-    { start :: Number
+    { id :: Maybe String
+    , start :: Number
     , last :: Number
     }
 
 
 initialCanvasState :: CanvasState
 initialCanvasState =
-    { start : -1.0
+    { id : Nothing
+    , start : -1.0
     , last : 0.0
     }
 
 
-canvasNode :: T.NodeDef Value Channel
+canvasNode :: NodeDef
 canvasNode =
     T.NodeDef
         { inlets :
             T.withInlets
-            ~< "time" /\ TimeChannel
-            -- ~<< (fromFoldable $ animationInlet <$> allManParts)
+            ~< "frame" /\ TriggerChannel
+            ~< "scene" /\ InstructionsChannel
         , outlets :
-            -- T.noOutlets
-            T.withOutlets
-            >~ "x" /\ NumericalChannel
+            T.noOutlets
+            -- T.withOutlets
+            -- >~ "x" /\ NumericalChannel
         , process : R.ProcessST $ R.makeProcessST initialCanvasState processF
         }
     where
-        processF :: CanvasState /\ R.Receive Value -> Effect (CanvasState /\ R.Send Value)
+        processF :: ProcessST CanvasState
         processF (prev /\ receive) = do
             (Milliseconds curTime) <- unInstant <$> now
             let
-                (maybeTime :: Maybe Value) = receive "time"
+                -- (maybeTime :: Maybe Value) = receive "frame"
                 dt = curTime - prev.last
                 posX = (prev.last - prev.start + dt) / 1000.0
                 next =
                     if prev.start < 0.0 then
-                        { start : curTime
-                        , last : curTime
-                        }
+                        prev
+                            { start = curTime
+                            , last = curTime
+                            }
                     else
                         prev
                             { last = curTime

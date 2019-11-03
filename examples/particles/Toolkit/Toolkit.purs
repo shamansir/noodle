@@ -30,12 +30,15 @@ toolkit :: T.Toolkit Value Channel Node
 toolkit =
     T.Toolkit (T.ToolkitName "particles") nodes
     where
-        nodes RandomNode = randomNode
         nodes NodeListNode = T.emptyNode
-        nodes SineNode = sineNode
+        nodes RandomNode = randomNode
+        nodes FillNode = fillNode
         nodes TimeNode = timeNode
         nodes CanvasNode = canvasNode
-        nodes ButtonsNode = T.emptyNode
+        nodes ShapeNode = shapeNode
+        nodes SpreadNode = spreadNode
+        nodes PairNode = pairNode
+        nodes _ = T.emptyNode
 
 
 -- instance exampleChannel :: T.Channels Value Channel where

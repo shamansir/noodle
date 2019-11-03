@@ -80,7 +80,7 @@ renderNode CanvasNode (R.Node uuid path _ _ _) =
         [ H.canvas
             [ H.id_ "the-canvas", H.width 300, H.height 300 ]
         ]
-renderNode ButtonsNode _ = H.div [] []
+-- renderNode ButtonsNode _ = H.div [] []
     {-
     H.div
         [ H.classes [ "tk-node" ] ]
