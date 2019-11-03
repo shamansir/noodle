@@ -32,13 +32,13 @@ toolkit =
     where
         nodes NodeListNode = T.emptyNode
         nodes RandomNode = randomNode
+        nodes NumberNode = numberNode
         nodes FillNode = fillNode
         nodes TimeNode = timeNode
         nodes CanvasNode = canvasNode
         nodes ShapeNode = shapeNode
         nodes SpreadNode = spreadNode
         nodes PairNode = pairNode
-        nodes _ = T.emptyNode
 
 
 -- instance exampleChannel :: T.Channels Value Channel where

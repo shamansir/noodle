@@ -19,6 +19,7 @@ You can edit this file as you like.
     , "foldable-traversable"
     , "node-fs"
     , "now"
+    , "numbers"
     , "parsing"
     , "prelude"
     , "profunctor-lenses"

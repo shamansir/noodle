@@ -1,11 +1,12 @@
 module Example.Toolkit.Render.Html where
 
-import Prelude (const, ($), (<>), show, (<<<), map)
+import Prelude
 
 import Data.Int (toNumber)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
 import Data.Either (Either(..))
+import Data.Number (fromString) as Number
 
 -- import Rpd.Toolkit (ToolkitRenderer)
 import Rpd.Network as R
@@ -80,75 +81,19 @@ renderNode CanvasNode (R.Node uuid path _ _ _) =
         [ H.canvas
             [ H.id_ "the-canvas", H.width 300, H.height 300 ]
         ]
--- renderNode ButtonsNode _ = H.div [] []
-    {-
+renderNode NumberNode (R.Node uuid path _ _ _) =
     H.div
         [ H.classes [ "tk-node" ] ]
-        [ H.text "tk-node"
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.Request $ A.ToAddPatch "test" ]
-            [ H.text "ADD PATCH" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.addNode (P.toPatch "test") "nodelist0" NodeListNode ]
-            [ H.text "ADD NODELIST" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.addNode (P.toPatch "test") "random1" RandomNode ]
-            [ H.text "ADD RANDOM1 NODE" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.addNode (P.toPatch "test") "random2" RandomNode ]
-            [ H.text "ADD RANDOM2 NODE" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.addInlet (P.toNode "test" "random1") "test" NumericalChannel ]
-            [ H.text "ADD INLET TEST TO RANDOM1" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.addInlet (P.toNode "test" "random1") "foo" NumericalChannel ]
-            [ H.text "ADD INLET FOO TO RANDOM1" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.addOutlet (P.toNode "test" "random1") "test" NumericalChannel ]
-            [ H.text "ADD OUTLET TEST TO RANDOM1" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.addOutlet (P.toNode "test" "random1") "foo" NumericalChannel ]
-            [ H.text "ADD OUTLET FOO TO RANDOM1" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.addInlet (P.toNode "test" "random2") "test" NumericalChannel ]
-            [ H.text "ADD INLET TEST TO RANDOM2" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random" "min") $ Numerical 10.0 ]
-            [ H.text "SEND DATA TO RANDOM/MIN" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random1" "min") $ Numerical 20.0 ]
-            [ H.text "SEND DATA TO RANDOM1/MIN" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random1" "test") $ Shape Diamond ]
-            [ H.text "SEND DATA TO RANDOM1/TEST" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random1" "foo") $ Shape Diamond ]
-            [ H.text "SEND DATA TO RANDOM1/FOO" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.Request $ A.ToSendToInlet (P.toInlet "test" "random2" "test") $ Shape Diamond ]
-            [ H.text "SEND DATA TO RANDOM2/TEST" ]
-        , H.div
-            [ H.onClick $ H.always_ $ R.core
-                $ A.Request
-                $ A.ToSendPeriodicallyToInlet (P.toInlet "test" "random1" "max") 1
-                $ Numerical <<< toNumber
+        [ H.input
+            [ H.type_ H.InputNumber
+            , H.onValueChange \v ->
+                Number.fromString v
+                    <#> R.core
+                    <<< A.Request
+                    <<< A.ToSendToInlet (P.inletInNode path "num")
+                    <<< Numerical
             ]
-            [ H.text "SEND DATA TO RANDOM1/MAX PERIOD" ]
-        ] -}
+        ]
 renderNode _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
