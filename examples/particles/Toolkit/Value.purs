@@ -5,40 +5,50 @@ import Prelude (class Show, (<>), show)
 import Data.DateTime.Instant (Instant)
 
 
-data ParticleShape
+newtype RgbaColor = RgbaColor { r :: Number, g :: Number, b :: Number, a :: Number }
+
+
+class Lerp x where
+    lerp :: Number -> { from :: x, to :: x } -> x
+
+
+data Interpolation x =
+    Interpolation
+        (Lerp x => { from :: x, to :: x, count :: Int })
+
+
+data DrawOp
     = Circle
-    | Cross
-    | Square
-    | Diamond
+    | Rect
+
+
+data StyleOp
+    = Fill RgbaColor
+    | Stroke RgbaColor Number
+
+
+data TransformOp
+    = Move Number Number
+    | Scale Number Number
+
+
+data Instruction
+    = NoOp
+    | Draw DrawOp
+    | Transform TransformOp
+    | Style StyleOp
+    | Spread (Interpolation Instruction)
+    | Pair Instruction Instruction
 
 
 data Value
     = Bang
-    | Color Number Number Number
-    | Shape ParticleShape
-    | Random Number
     | Numerical Number
-    | Trigger Boolean
-    | Period Number
-    | Magic Number Number
-    | Time Instant
+    | Drawing DrawOp
+    | Color RgbaColor
+    | Instructions (Array Instruction)
 
 
 instance showValue :: Show Value where
-    show Bang = "bang"
-    show (Color r g b) = "color: (" <> show r <> ", " <> show g <> ", " <> show b <> ")"
-    show (Shape shape) = "shape: " <> show shape
-    show (Random n) = "random: " <> show n
-    show (Numerical n) = "number: " <> show n
-    show (Trigger state) = "trigger: " <> if state then "on" else "off"
-    show (Period n) = "period: " <> show n
-    show (Magic n1 n2) = "magin: " <> show n1 <> ", " <> show n2
-    show (Time t) = "time: " <> show t
-
-
-instance showParticleShape :: Show ParticleShape where
-    show Circle = "circle"
-    show Cross = "cross"
-    show Square = "square"
-    show Diamond = "diamond"
+    show _ = "v"
 

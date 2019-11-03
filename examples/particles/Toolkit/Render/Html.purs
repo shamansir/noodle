@@ -58,6 +58,7 @@ renderer =
 
 
 
+
 renderNode :: Node -> R.Node Value Node -> R.View Value Channel Node
 renderNode NodeListNode (R.Node _ (P.ToNode { patch }) _ _ _) =
     NodeList.render (P.ToPatch patch) nodesForTheList
@@ -68,8 +69,7 @@ renderNode TimeNode (R.Node uuid path _ _ _) =
             [ H.onClick $ H.always_ $ R.core
                 $ A.Request
                 $ A.ToStreamToInlet (P.inletInNode path "time")
-                $ map (Time <<< _.time)
-                $ E.withTime
+                $ map (const Bang)
                 $ E.animationFrame
             ]
             [ H.text "SEND" ]
@@ -80,7 +80,8 @@ renderNode CanvasNode (R.Node uuid path _ _ _) =
         [ H.canvas
             [ H.id_ "the-canvas", H.width 300, H.height 300 ]
         ]
-renderNode ButtonsNode _ =
+renderNode ButtonsNode _ = H.div [] []
+    {-
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.text "tk-node"
@@ -147,7 +148,7 @@ renderNode ButtonsNode _ =
                 $ Numerical <<< toNumber
             ]
             [ H.text "SEND DATA TO RANDOM1/MAX PERIOD" ]
-        ]
+        ] -}
 renderNode _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]

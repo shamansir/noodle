@@ -8,19 +8,16 @@ import Example.Toolkit.Value
 
 
 data Channel
-    = ColorChannel
-    | ShapeChannel
+    = TriggerChannel
+    | ColorChannel
+    | DrawingsChannel
     | NumericalChannel
     | TimeChannel
-    | TriggerChannel
+    | InstructionsChannel
 
 
 instance showChannel :: Show Channel where
-    show ColorChannel = "color"
-    show ShapeChannel = "shape"
-    show NumericalChannel = "number"
-    show TimeChannel = "time"
-    show TriggerChannel = "trigger"
+    show _ = "c"
 
 
 instance exampleChannel :: T.Channels Value Channel where
