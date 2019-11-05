@@ -74,7 +74,7 @@ renderNode TimeNode (R.Node uuid path _ _ _) =
                 $ E.animationFrame
             ]
             [ H.text "SEND" ]
-         ]
+        ]
 renderNode CanvasNode (R.Node uuid path _ _ _) =
     H.div
         [ H.classes [ "tk-node" ] ]
@@ -93,6 +93,17 @@ renderNode NumberNode (R.Node uuid path _ _ _) =
                     <<< A.ToSendToInlet (P.inletInNode path "num")
                     <<< Numerical
             ]
+        ]
+renderNode ShapeNode (R.Node uuid path _ _ _) =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ H.div
+            [ H.onClick $ H.always_ $ R.core
+                $ A.Request
+                $ A.ToSendToInlet (P.inletInNode path "shape")
+                $ Instructions $ Draw $ Ellipse 20.0 20.0
+            ]
+            [ H.text "CIRCLE" ]
         ]
 renderNode _ _ =
     H.div

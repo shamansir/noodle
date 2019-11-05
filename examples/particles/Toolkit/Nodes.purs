@@ -5,6 +5,8 @@ import Prelude
 import Effect (Effect)
 import Effect.Random (randomRange)
 import Effect.Now (now)
+import Control.Alt ((<|>))
+import Control.Monad.Maybe.Trans (runMaybeT, MaybeT(..), lift)
 
 import Graphics.Canvas
 
@@ -16,6 +18,7 @@ import Data.Traversable (traverse_)
 import Data.Time.Duration (Milliseconds(..))
 import Data.DateTime.Instant (unInstant)
 
+import Rpd.UUID as UUID
 import Rpd.Process as R
 import Rpd.Toolkit as T
 import Rpd.Toolkit (withInlets, withOutlets, (~<), (>~))
@@ -237,7 +240,7 @@ pairNode =
 
 
 type CanvasState =
-    { id :: Maybe String
+    { ctx :: Maybe Context2D
     , start :: Number
     , last :: Number
     }
@@ -245,10 +248,20 @@ type CanvasState =
 
 initialCanvasState :: CanvasState
 initialCanvasState =
-    { id : Nothing
+    { ctx : Nothing
     , start : -1.0
     , last : 0.0
     }
+
+
+class OnCanvas x where
+    apply :: x -> Context2D -> Effect Unit
+
+
+instance instructionOnCanvas :: OnCanvas Instruction where
+    apply _ _ = do
+        --let i = lerp 0.0 { from : NoOp, to : NoOp }
+        pure unit
 
 
 canvasNode :: NodeDef
@@ -282,12 +295,14 @@ canvasNode =
                         prev
                             { last = curTime
                             }
-            maybeCanvas :: Maybe CanvasElement <- getCanvasElementById "the-canvas"
-            case maybeCanvas of
-                Just canvas -> do
-                    -- TODO: requestAnimationFrame $ do
-                    ctx <- getContext2D canvas
+            maybeContext :: Maybe Context2D <- getContext
+            _ <- case maybeContext of
+                Just ctx ->
                     withContext ctx $ do
+                        case receive "scene" of
+                            Just (Instructions instruction) ->
+                                apply instruction ctx
+                            _ -> pure unit
                         clearRect ctx { x : 0.0, y : 0.0, width : 500.0, height : 500.0 }
                         fillText ctx ("start:" <> show prev.start) 40.0 20.0
                         fillText ctx ("curTime:" <> show curTime) 40.0 40.0
@@ -303,8 +318,17 @@ canvasNode =
                             lineTo ctx 20.0 20.0
                             lineTo ctx 10.0 20.0
                             closePath ctx
+                    -- pure unit
+                Nothing ->
                     pure unit
-                Nothing -> pure unit
             let send "x" = Just $ Numerical 1.0
                 send _ = Nothing
-            pure $ next /\ send
+            pure $ next { ctx = maybeContext } /\ send
+            where
+                getContext :: Effect (Maybe Context2D)
+                getContext = case prev.ctx of
+                    Just ctx -> pure $ pure ctx
+                    Nothing ->
+                        runMaybeT $ do
+                            canvas <- MaybeT $ getCanvasElementById "the-canvas"
+                            lift $ getContext2D canvas
