@@ -260,7 +260,7 @@ class OnCanvas x where
 
 instance instructionOnCanvas :: OnCanvas Instruction where
     apply _ _ = do
-        --let i = lerp 0.0 { from : NoOp, to : NoOp }
+        let i = lerp (NoOp /\ NoOp) 1.0
         pure unit
 
 

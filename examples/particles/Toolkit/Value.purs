@@ -2,8 +2,12 @@ module Example.Toolkit.Value where
 
 import Prelude
 
+import Data.Int (toNumber)
+import Data.Array ((!!))
+import Data.Array (range, catMaybes, length, mapWithIndex, zip) as Array
 import Data.Maybe (Maybe(..))
 import Data.DateTime.Instant (Instant)
+import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 
 
@@ -15,9 +19,8 @@ class Lerp x where
     lerp :: x /\ x -> Number -> Maybe x
 
 
-data Interpolation x =
-    Interpolation
-        (Lerp x => { from :: x, to :: x, count :: Int })
+-- newtype Interpolation =
+--     Interpolation (Lerp x => { from :: x, to :: x, count : Int })
 
 
 data DrawOp
@@ -40,17 +43,50 @@ data Instruction
     | Draw DrawOp
     | Transform TransformOp
     | Style StyleOp
-    | Spread (Interpolation Instruction)
     | Pair Instruction Instruction
 
 
 data Value
     = Bang
     | Numerical Number
-    | Drawing DrawOp
     | Color RgbaColor
-    | Instructions Instruction
+    | Apply Instruction
+    | Spread (Array Instruction)
 
+
+spread :: Instruction /\ Instruction -> Int -> Array Instruction
+spread range count =
+    Array.catMaybes
+         $  (\step -> lerp range (toNumber step / toNumber count))
+        <$> Array.range 0 (count - 1)
+
+
+join
+    :: Array Instruction
+    -> Array Instruction
+    -> Array Instruction
+join spreadA spreadB =
+    let
+        lenA = Array.length spreadA
+        lenB = Array.length spreadB
+        merge | lenA > lenB =
+            Array.mapWithIndex
+                (\index instA ->
+                    Pair instA <$> spreadB !! (index `mod` lenB)
+                )
+                spreadA
+        merge | lenA == lenB =
+            Just <$> (Pair <$> spreadA <*> spreadB)
+        merge | lenA < lenB =
+            Array.mapWithIndex
+                (\index instB ->
+                    flip Pair instB <$> spreadA !! (index `mod` lenA)
+                )
+                spreadB
+        merge | otherwise =
+            Just <$> (uncurry Pair <$> Array.zip spreadA spreadB)
+    in
+        Array.catMaybes merge
 
 -- drawEllipse :: Number -> Number -> Instruction
 -- drawEllipse a b = Draw $ Ellipse a b
@@ -95,6 +131,10 @@ instance lerpTransformOp :: Lerp TransformOp where
     lerp _ _ = Nothing
 
 
+-- instance lerpInterpolation :: Lerp (Interpolation Instruction) where
+--     lerp _ _ = Nothing
+
+
 instance lerpInstruction :: Lerp Instruction where
     lerp (Draw drawFrom /\ Draw drawTo) amount =
         Draw <$> lerp (drawFrom /\ drawTo) amount
@@ -102,9 +142,6 @@ instance lerpInstruction :: Lerp Instruction where
         Style <$> lerp (styleFrom /\ styleTo) amount
     lerp (Transform transformFrom /\ Transform transformTo) amount =
         Transform <$> lerp (transformFrom /\ transformTo) amount
-    lerp (Spread fromSpread /\ Spread toSpread) amount =
-        Nothing
-        -- ?
     lerp (Pair fromA fromB /\ Pair toA toB) amount =
         Pair
             <$> lerp (fromA /\ toA) amount

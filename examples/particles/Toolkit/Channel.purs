@@ -10,7 +10,7 @@ import Example.Toolkit.Value
 data Channel
     = TriggerChannel
     | NumericalChannel
-    | InstructionsChannel
+    | AnimationChannel -- TODO: accept both `Spread` and `Apply`
 
 
 instance showChannel :: Show Channel where
