@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Int (toNumber)
 import Data.Array ((!!))
+import Data.String (joinWith)
 import Data.Array (range, catMaybes, length, mapWithIndex, zip) as Array
 import Data.Maybe (Maybe(..))
 import Data.DateTime.Instant (Instant)
@@ -52,6 +53,9 @@ data Value
     | Color RgbaColor
     | Apply Instruction
     | Spread (Array Instruction)
+
+
+-- TODO: Spread is actually the array of the already-caclulated atomic values (i.e. colors / numbers / vectors)... or pairs of such (so color may be paired to number and so on))
 
 
 spread :: Instruction /\ Instruction -> Int -> Array Instruction
@@ -149,6 +153,41 @@ instance lerpInstruction :: Lerp Instruction where
     lerp _ _ = Nothing
 
 
+instance showRgbaColor :: Show RgbaColor where
+    show (RgbaColor { r, g, b, a }) =
+        "rgba(" <> show r <> ","
+                <> show g <> ","
+                <> show b <> ","
+                <> show a <> ")"
+
+
+instance showDrawOp :: Show DrawOp where
+    show (Ellipse a b) = "ellipse: " <> show a <> "x" <> show b
+    show (Rect w h) = "rect: " <> show w <> "x" <> show h
+
+
+instance showStyleOp :: Show StyleOp where
+    show (Fill color) = "fill: " <> show color
+    show (Stroke color width) = "stroke: " <> show color <> "; " <> show width
+
+
+instance showTransformOp :: Show TransformOp where
+    show (Move x y) = "move: " <> show x <> ":" <> show y
+    show (Scale x y) = "scale: " <> show x <> ":" <> show y
+
+
+instance showInstruction :: Show Instruction where
+    show NoOp = "no-op"
+    show (Draw draw) = "draw: " <> show draw
+    show (Style style) = "style: " <> show style
+    show (Transform transform) = "transform: " <> show transform
+    show (Pair instA instB) = "pair: ( " <> show instA <> " /\\ " <> show instB <> " )"
+
+
 instance showValue :: Show Value where
-    show _ = "v"
+    show Bang = "bang"
+    show (Numerical n) = "num: " <> show n
+    show (Color color) = "color: " <> show color
+    show (Apply inst) = "apply: " <> show inst
+    show (Spread instructions) = "spread: " <> joinWith "," (show <$> instructions)
 

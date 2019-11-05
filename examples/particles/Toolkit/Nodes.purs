@@ -2,6 +2,8 @@ module Example.Toolkit.Nodes where
 
 import Prelude
 
+import Math (pi) as Math
+
 import Effect (Effect)
 import Effect.Random (randomRange)
 import Effect.Now (now)
@@ -10,10 +12,10 @@ import Control.Monad.Maybe.Trans (runMaybeT, MaybeT(..), lift)
 
 import Graphics.Canvas
 
-import Data.Int (round)
+import Data.Int (round, floor)
 import Data.Maybe
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Traversable (traverse_)
+import Data.Traversable (traverse_, for_)
 
 import Data.Time.Duration (Milliseconds(..))
 import Data.DateTime.Instant (unInstant)
@@ -24,7 +26,7 @@ import Rpd.Toolkit as T
 import Rpd.Toolkit (withInlets, withOutlets, (~<), (>~))
 
 import Example.Toolkit.Value
-import Example.Toolkit.Value (Value(..)) as V
+import Example.Toolkit.Value (Value(..), join, spread) as V
 import Example.Toolkit.Channel
 
 
@@ -99,7 +101,7 @@ fillNode =
         ~< "b" /\ NumericalChannel
     , outlets :
         withOutlets
-        >~ "fill" /\ InstructionsChannel -- FIXME: Some other channel
+        >~ "fill" /\ AnimationChannel -- FIXME: Some other channel
     , process : R.Process processF
     }
     where
@@ -170,10 +172,10 @@ shapeNode =
     T.NodeDef
         { inlets :
             T.withInlets
-            ~< "shape" /\ InstructionsChannel -- FIXME: Some other channel
+            ~< "shape" /\ AnimationChannel -- FIXME: Some other channel
         , outlets :
             T.withOutlets
-            >~ "shape" /\ InstructionsChannel -- FIXME: Some other channel
+            >~ "shape" /\ AnimationChannel -- FIXME: Some other channel
         , process : R.Process pure  -- FIXME: use `PassThrough`
         }
 
@@ -183,12 +185,12 @@ spreadNode =
     T.NodeDef
         { inlets :
             T.withInlets
-            ~< "from" /\ InstructionsChannel -- FIXME: Some other channel
-            ~< "to" /\ InstructionsChannel -- FIXME: Some other channel
+            ~< "from" /\ AnimationChannel -- FIXME: Some other channel
+            ~< "to" /\ AnimationChannel -- FIXME: Some other channel
             ~< "count" /\ NumericalChannel
         , outlets :
             T.withOutlets
-            >~ "spread" /\ InstructionsChannel -- FIXME: Only-spread channel?
+            >~ "spread" /\ AnimationChannel -- FIXME: Only-spread channel?
         , process : R.Process processF
         }
     where
@@ -196,9 +198,8 @@ spreadNode =
         processF receive = do
             let
                 spread :: Value -> Value -> Value -> Maybe Value
-                spread (Instructions from) (Instructions to) (Numerical count) =
-                    Just $ Instructions $ Spread $ Interpolation
-                        { from : from, to : to, count : round count }
+                spread (Apply from) (Apply to) (Numerical count) =
+                    Just $ Spread (V.spread (from /\ to) (floor count))
                 spread _ _ _ = Nothing
             let send "pair" =
                     spread
@@ -215,11 +216,11 @@ pairNode =
     T.NodeDef
         { inlets :
             T.withInlets
-            ~< "spread1" /\ InstructionsChannel -- FIXME: Only-spread channel?
-            ~< "spread2" /\ InstructionsChannel -- FIXME: Only-spread channel?
+            ~< "spread1" /\ AnimationChannel -- FIXME: Only-spread channel?
+            ~< "spread2" /\ AnimationChannel -- FIXME: Only-spread channel?
         , outlets :
             T.withOutlets
-            >~ "pair" /\ InstructionsChannel -- FIXME: Some other channel?
+            >~ "pair" /\ AnimationChannel -- FIXME: Some other channel?
         , process : R.Process processF
         }
     where
@@ -227,8 +228,12 @@ pairNode =
         processF receive = do
             let
                 pair :: Value -> Value -> Maybe Value
-                pair (Instructions a) (Instructions b) =
-                    Just $ Instructions $ Pair a b
+                pair (Spread spreadA) (Spread spreadB) =
+                    Just $ Spread $ V.join spreadA spreadB
+                pair (Spread spread) (Apply inst) =
+                    Just $ Spread $ V.join spread [ inst ]
+                pair (Spread spread) (Apply inst) =
+                    Just $ Spread $ V.join spread [ inst ]
                 pair _ _ = Nothing
             let send "pair" =
                     pair
@@ -258,10 +263,48 @@ class OnCanvas x where
     apply :: x -> Context2D -> Effect Unit
 
 
+instance drawOnCanvas :: OnCanvas DrawOp where
+    apply (Ellipse a b) ctx = do
+        withContext ctx $ do
+            scale ctx { scaleX : 1.0, scaleY : b / a }
+            beginPath ctx
+            arc ctx
+                { x : 0.0, y : 0.0
+                , radius : a
+                , start : 0.0
+                , end : 2.0 * Math.pi
+                }
+        fill ctx
+        stroke ctx
+    apply (Rect w h) ctx = do
+        rect ctx { x : 0.0, y : 0.0, width : w, height : h }
+        fill ctx
+        stroke ctx
+
+
+instance styleOnCanvas :: OnCanvas StyleOp where
+    apply (Fill fill) ctx =
+        setFillStyle ctx $ show fill
+    apply (Stroke color w) ctx = do
+        setStrokeStyle ctx $ show color
+        setLineWidth ctx w
+
+
+instance transformOnCanvas :: OnCanvas TransformOp where
+    apply (Move x y) ctx =
+        translate ctx { translateX : x, translateY : y }
+    apply (Scale x y) ctx = do
+        scale ctx { scaleX : x, scaleY : y }
+
+
 instance instructionOnCanvas :: OnCanvas Instruction where
-    apply _ _ = do
-        let i = lerp (NoOp /\ NoOp) 1.0
-        pure unit
+    apply NoOp _ = pure unit
+    apply (Draw draw) ctx = apply draw ctx
+    apply (Style style) ctx = apply style ctx
+    apply (Transform transform) ctx = apply transform ctx
+    apply (Pair instA instB) ctx = do
+        apply instA ctx
+        apply instB ctx
 
 
 canvasNode :: NodeDef
@@ -270,7 +313,7 @@ canvasNode =
         { inlets :
             T.withInlets
             ~< "frame" /\ TriggerChannel
-            ~< "scene" /\ InstructionsChannel
+            ~< "scene" /\ AnimationChannel
         , outlets :
             T.noOutlets
             -- T.withOutlets
@@ -300,8 +343,11 @@ canvasNode =
                 Just ctx ->
                     withContext ctx $ do
                         case receive "scene" of
-                            Just (Instructions instruction) ->
+                            Just (Apply instruction) ->
                                 apply instruction ctx
+                            Just (Spread instructions) ->
+                                for_ instructions $ flip apply ctx
+                                --flip apply ctx <*> instructions
                             _ -> pure unit
                         clearRect ctx { x : 0.0, y : 0.0, width : 500.0, height : 500.0 }
                         fillText ctx ("start:" <> show prev.start) 40.0 20.0

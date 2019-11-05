@@ -58,8 +58,6 @@ renderer =
     }
 
 
-
-
 renderNode :: Node -> R.Node Value Node -> R.View Value Channel Node
 renderNode NodeListNode (R.Node _ (P.ToNode { patch }) _ _ _) =
     NodeList.render (P.ToPatch patch) nodesForTheList
@@ -101,7 +99,7 @@ renderNode ShapeNode (R.Node uuid path _ _ _) =
             [ H.onClick $ H.always_ $ R.core
                 $ A.Request
                 $ A.ToSendToInlet (P.inletInNode path "shape")
-                $ Instructions $ Draw $ Ellipse 20.0 20.0
+                $ Apply $ Draw $ Ellipse 20.0 20.0
             ]
             [ H.text "CIRCLE" ]
         ]
