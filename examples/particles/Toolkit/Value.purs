@@ -11,7 +11,8 @@ import Data.DateTime.Instant (Instant)
 import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Lerp (class Lerp, lerp)
-import Data.Spread (Spread, unwrap) as S
+import Data.Spread (Spread) as S
+import Data.Spread (run) as Spread
 
 
 newtype RgbaColor = RgbaColor { r :: Number, g :: Number, b :: Number, a :: Number }
@@ -145,5 +146,5 @@ instance showValue :: Show Value where
     show (Numerical n) = "num: " <> show n
     show (Color color) = "color: " <> show color
     show (Apply inst) = "apply: " <> show inst
-    show (Spread s) = "spread: " <> joinWith "," (show <$> S.unwrap s)
+    show (Spread spread) = "spread: " <> joinWith "," (show <$> Spread.run spread)
 
