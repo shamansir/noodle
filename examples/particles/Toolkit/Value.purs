@@ -10,14 +10,10 @@ import Data.Maybe (Maybe(..))
 import Data.DateTime.Instant (Instant)
 import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Lerp (class Lerp, lerp)
 
 
 newtype RgbaColor = RgbaColor { r :: Number, g :: Number, b :: Number, a :: Number }
-
-
-class Lerp x where
-    -- lerp :: { from :: x, to :: x } -> Number -> x
-    lerp :: x /\ x -> Number -> Maybe x
 
 
 -- newtype Interpolation =
@@ -94,10 +90,6 @@ join spreadA spreadB =
 
 -- drawEllipse :: Number -> Number -> Instruction
 -- drawEllipse a b = Draw $ Ellipse a b
-
-
-instance lerpNumber :: Lerp Number where
-    lerp (from /\ to) amount = Just $ from + ((to - from) * amount)
 
 
 instance lerpRgbaColor :: Lerp RgbaColor where

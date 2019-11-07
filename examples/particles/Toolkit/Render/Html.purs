@@ -98,7 +98,8 @@ renderNode ShapeNode (R.Node uuid path _ _ _) _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
-            [ H.onClick $ H.always_ $ R.core
+            [ H.onClick
+                $ H.always_ $ R.core
                 $ A.Request
                 $ A.ToSendToInlet (P.inletInNode path "shape")
                 $ Apply $ Draw $ Ellipse 100.0 100.0
