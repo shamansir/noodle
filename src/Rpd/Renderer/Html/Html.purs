@@ -322,7 +322,9 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                         [ H.classes [ "rpd-node-body" ] ]
                         [ toolkitRenderer.renderNode
                             n
-                            node ]
+                            node
+                            $ receiveInletValue path
+                        ]
                     , H.div
                         [ H.classes [ "rpd-node-outlets" ] ]
                         $ (viewOutlet toolkitRenderer ui nw
@@ -358,6 +360,8 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                 , H.style $ "min-width: " <> show width <> "px; "
                         <> "min-height: " <> show height <> "px;"
                 ]
+        receiveInletValue path inletAlias =
+            Map.lookup (P.inletInNode path inletAlias) ui.lastInletData
 
 
 viewInlet

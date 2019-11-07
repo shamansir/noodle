@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Int (toNumber)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Either (Either(..))
 import Data.Number (fromString) as Number
 
@@ -15,6 +15,7 @@ import Rpd.API.Action.Sequence as A
 import Rpd.Renderer.Html (View, ToolkitRenderer, core) as R
 import Rpd.Renderer.Html.NodeList (render) as NodeList
 import Rpd.Path as P
+import Rpd.Process as R
 
 import Spork.Html (Html)
 import Spork.Html as H
@@ -58,10 +59,10 @@ renderer =
     }
 
 
-renderNode :: Node -> R.Node Value Node -> R.View Value Channel Node
-renderNode NodeListNode (R.Node _ (P.ToNode { patch }) _ _ _) =
+renderNode :: Node -> R.Node Value Node -> R.Receive Value -> R.View Value Channel Node
+renderNode NodeListNode (R.Node _ (P.ToNode { patch }) _ _ _) _ =
     NodeList.render (P.ToPatch patch) nodesForTheList
-renderNode TimeNode (R.Node uuid path _ _ _) =
+renderNode TimeNode (R.Node uuid path _ _ _) _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
@@ -73,13 +74,13 @@ renderNode TimeNode (R.Node uuid path _ _ _) =
             ]
             [ H.text "SEND" ]
         ]
-renderNode CanvasNode (R.Node uuid path _ _ _) =
+renderNode CanvasNode (R.Node uuid path _ _ _) _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.canvas
             [ H.id_ "the-canvas", H.width 300, H.height 300 ]
         ]
-renderNode NumberNode (R.Node uuid path _ _ _) =
+renderNode NumberNode (R.Node uuid path _ _ _) receive =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.input
@@ -91,19 +92,20 @@ renderNode NumberNode (R.Node uuid path _ _ _) =
                     <<< A.ToSendToInlet (P.inletInNode path "num")
                     <<< Numerical
             ]
+        , H.text (receive "num" # maybe "?" show)
         ]
-renderNode ShapeNode (R.Node uuid path _ _ _) =
+renderNode ShapeNode (R.Node uuid path _ _ _) _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
             [ H.onClick $ H.always_ $ R.core
                 $ A.Request
                 $ A.ToSendToInlet (P.inletInNode path "shape")
-                $ Apply $ Draw $ Ellipse 20.0 20.0
+                $ Apply $ Draw $ Ellipse 100.0 100.0
             ]
             [ H.text "CIRCLE" ]
         ]
-renderNode _ _ =
+renderNode _ _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.text "tk-node (no renderer)" ]

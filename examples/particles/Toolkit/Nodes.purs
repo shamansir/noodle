@@ -19,6 +19,7 @@ import Data.Traversable (traverse_, for_)
 
 import Data.Time.Duration (Milliseconds(..))
 import Data.DateTime.Instant (unInstant)
+import Debug.Trace as DT
 
 import Rpd.UUID as UUID
 import Rpd.Process as R
@@ -232,8 +233,8 @@ pairNode =
                     Just $ Spread $ V.join spreadA spreadB
                 pair (Spread spread) (Apply inst) =
                     Just $ Spread $ V.join spread [ inst ]
-                pair (Spread spread) (Apply inst) =
-                    Just $ Spread $ V.join spread [ inst ]
+                pair (Apply inst) (Spread spread) =
+                    Just $ Spread $ V.join [ inst ] spread
                 pair _ _ = Nothing
             let send "pair" =
                     pair
@@ -266,7 +267,10 @@ class OnCanvas x where
 instance drawOnCanvas :: OnCanvas DrawOp where
     apply (Ellipse a b) ctx = do
         withContext ctx $ do
-            scale ctx { scaleX : 1.0, scaleY : b / a }
+            -- -- scale ctx { scaleX : 1.0, scaleY : b / a }
+            -- _ <- DT.spy "drawing" $ pure unit
+            -- setFillStyle ctx "#000000"
+            -- fillText ctx ("AAAAAAA") 40.0 20.0
             beginPath ctx
             arc ctx
                 { x : 0.0, y : 0.0
@@ -274,6 +278,7 @@ instance drawOnCanvas :: OnCanvas DrawOp where
                 , start : 0.0
                 , end : 2.0 * Math.pi
                 }
+            closePath ctx
         fill ctx
         stroke ctx
     apply (Rect w h) ctx = do
@@ -342,6 +347,12 @@ canvasNode =
             _ <- case maybeContext of
                 Just ctx ->
                     withContext ctx $ do
+                        clearRect ctx { x : 0.0, y : 0.0, width : 500.0, height : 500.0 }
+                        fillText ctx ("start:" <> show prev.start) 40.0 20.0
+                        fillText ctx ("curTime:" <> show curTime) 40.0 40.0
+                        fillText ctx ("prev.last:" <> show prev.last) 40.0 60.0
+                        fillText ctx ("dt:" <> show dt) 40.0 100.0
+                        setFillStyle ctx "#000000"
                         case receive "scene" of
                             Just (Apply instruction) ->
                                 apply instruction ctx
@@ -349,11 +360,6 @@ canvasNode =
                                 for_ instructions $ flip apply ctx
                                 --flip apply ctx <*> instructions
                             _ -> pure unit
-                        clearRect ctx { x : 0.0, y : 0.0, width : 500.0, height : 500.0 }
-                        fillText ctx ("start:" <> show prev.start) 40.0 20.0
-                        fillText ctx ("curTime:" <> show curTime) 40.0 40.0
-                        fillText ctx ("prev.last:" <> show prev.last) 40.0 60.0
-                        fillText ctx ("dt:" <> show dt) 40.0 100.0
                         translate ctx
                             { translateX : posX
                             , translateY : 0.0
