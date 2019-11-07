@@ -11,6 +11,7 @@ import Data.DateTime.Instant (Instant)
 import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Lerp (class Lerp, lerp)
+import Data.Spread (Spread, unwrap) as S
 
 
 newtype RgbaColor = RgbaColor { r :: Number, g :: Number, b :: Number, a :: Number }
@@ -48,45 +49,8 @@ data Value
     | Numerical Number
     | Color RgbaColor
     | Apply Instruction
-    | Spread (Array Instruction)
+    | Spread (S.Spread Instruction)
 
-
--- TODO: Spread is actually the array of the already-caclulated atomic values (i.e. colors / numbers / vectors)... or pairs of such (so color may be paired to number and so on))
-
-
-spread :: Instruction /\ Instruction -> Int -> Array Instruction
-spread range count =
-    Array.catMaybes
-         $  (\step -> lerp range (toNumber step / toNumber count))
-        <$> Array.range 0 (count - 1)
-
-
-join
-    :: Array Instruction
-    -> Array Instruction
-    -> Array Instruction
-join spreadA spreadB =
-    let
-        lenA = Array.length spreadA
-        lenB = Array.length spreadB
-        merge | lenA > lenB =
-            Array.mapWithIndex
-                (\index instA ->
-                    Pair instA <$> spreadB !! (index `mod` lenB)
-                )
-                spreadA
-        merge | lenA == lenB =
-            Just <$> (Pair <$> spreadA <*> spreadB)
-        merge | lenA < lenB =
-            Array.mapWithIndex
-                (\index instB ->
-                    flip Pair instB <$> spreadA !! (index `mod` lenA)
-                )
-                spreadB
-        merge | otherwise =
-            Just <$> (uncurry Pair <$> Array.zip spreadA spreadB)
-    in
-        Array.catMaybes merge
 
 -- drawEllipse :: Number -> Number -> Instruction
 -- drawEllipse a b = Draw $ Ellipse a b
@@ -181,5 +145,5 @@ instance showValue :: Show Value where
     show (Numerical n) = "num: " <> show n
     show (Color color) = "color: " <> show color
     show (Apply inst) = "apply: " <> show inst
-    show (Spread instructions) = "spread: " <> joinWith "," (show <$> instructions)
+    show (Spread s) = "spread: " <> joinWith "," (show <$> S.unwrap s)
 
