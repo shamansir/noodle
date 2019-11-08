@@ -323,7 +323,8 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                         [ toolkitRenderer.renderNode
                             n
                             node
-                            $ receiveInletValue path
+                            (receiveInletValue path)
+                            (receiveOutletValue path)
                         ]
                     , H.div
                         [ H.classes [ "rpd-node-outlets" ] ]
@@ -362,6 +363,8 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                 ]
         receiveInletValue path inletAlias =
             Map.lookup (P.inletInNode path inletAlias) ui.lastInletData
+        receiveOutletValue path outletAlias =
+            Map.lookup (P.outletInNode path outletAlias) ui.lastOutletData
 
 
 viewInlet

@@ -207,7 +207,7 @@ spreadNode =
                 spread valueFrom valueTo (Numerical count) =
                     Just $ Spread (Spread.make (valueFrom /\ valueTo) (floor count))
                 spread _ _ _ = Nothing
-            let send "pair" =
+            let send "spread" =
                     spread
                     <$> receive "from"
                     <*> receive "to"
@@ -316,7 +316,7 @@ canvasNode =
                             _ -> pure unit
                         translate ctx
                             { translateX : posX
-                            , translateY : 0.0
+                            , translateY : 20.0
                             }
                         setFillStyle ctx "#0000FF"
                         fillPath ctx $ do

@@ -2,11 +2,17 @@ module Example.Toolkit.Render.Html where
 
 import Prelude
 
-import Data.Int (toNumber)
+import Data.Int (toNumber, floor)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Either (Either(..))
 import Data.Number (fromString) as Number
+import Data.Array (catMaybes, length, mapWithIndex) as Array
+import Data.Tuple (curry, uncurry)
+import Data.Tuple.Nested ((/\), type (/\))
+
+import Data.Spread (run) as Spread
+import Data.Spread (Spread) as S
 
 -- import Rpd.Toolkit (ToolkitRenderer)
 import Rpd.Network as R
@@ -59,10 +65,10 @@ renderer =
     }
 
 
-renderNode :: Node -> R.Node Value Node -> R.Receive Value -> R.View Value Channel Node
-renderNode NodeListNode (R.Node _ (P.ToNode { patch }) _ _ _) _ =
+renderNode :: Node -> R.Node Value Node -> R.Receive Value -> R.Send Value -> R.View Value Channel Node
+renderNode NodeListNode (R.Node _ (P.ToNode { patch }) _ _ _) _ _ =
     NodeList.render (P.ToPatch patch) nodesForTheList
-renderNode TimeNode (R.Node _ path _ _ _) _ =
+renderNode TimeNode (R.Node _ path _ _ _) _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
@@ -74,13 +80,13 @@ renderNode TimeNode (R.Node _ path _ _ _) _ =
             ]
             [ H.text "SEND" ]
         ]
-renderNode CanvasNode _ _ =
+renderNode CanvasNode _ _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.canvas
             [ H.id_ "the-canvas", H.width 300, H.height 300 ]
         ]
-renderNode NumberNode (R.Node _ path _ _ _) receive =
+renderNode NumberNode (R.Node _ path _ _ _) lastAtInlet _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.input
@@ -92,9 +98,9 @@ renderNode NumberNode (R.Node _ path _ _ _) receive =
                     <<< A.ToSendToInlet (P.inletInNode path "num")
                     <<< Numerical
             ]
-        , H.text (receive "num" # maybe "?" show)
+        , H.text (lastAtInlet "num" # maybe "?" show)
         ]
-renderNode ShapeNode (R.Node _ path _ _ _) _ =
+renderNode ShapeNode (R.Node _ path _ _ _) _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
@@ -106,27 +112,51 @@ renderNode ShapeNode (R.Node _ path _ _ _) _ =
             ]
             [ H.text "CIRCLE" ]
         ]
-renderNode SpreadNode (R.Node uuid path _ _ _) receive =
+renderNode SpreadNode (R.Node uuid path _ _ _) lastAtInlet lastAtOutlet =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ case lastAtOutlet "spread" of
+            Just (Spread spread) ->
+                renderSpread spread
+            _ ->
+                H.text "Empty"
+        ]
+renderNode PairNode (R.Node uuid path _ _ _) lastAtInlet _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
             []
-            [ H.text $ "from" <> (show $ receive "from")
-            , H.text $ "to" <> (show $ receive "to")
-            , H.text $ "count" <> (show $ receive "count")
+            [ H.text $ "spread1" <> (show $ lastAtInlet "spread1")
+            , H.text $ "spread2" <> (show $ lastAtInlet "spread2")
             ]
         ]
-renderNode PairNode (R.Node uuid path _ _ _) receive =
-    H.div
-        [ H.classes [ "tk-node" ] ]
-        [ H.div
-            []
-            [ H.text $ "spread1" <> (show $ receive "spread1")
-            , H.text $ "spread2" <> (show $ receive "spread2")
-            ]
-        ]
-renderNode _ _ _ =
+renderNode _ _ _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.text "tk-node (no renderer)" ]
+
+
+renderSpread :: S.Spread Value -> R.View Value Channel Node
+renderSpread spread =
+    let
+        maxItems = 10
+        arr = Array.catMaybes $ Spread.run spread
+        len = Array.length arr
+    in case arr of
+        [] -> H.div [] []
+        items | len <= maxItems ->
+            Array.mapWithIndex (/\) items
+                # map (uncurry renderItem)
+                # H.div []
+        aLotOfItems ->
+            Array.mapWithIndex (\idx item ->
+                if idx `mod` (floor (toNumber len / toNumber maxItems)) == 0 then
+                    Just $ idx /\ item
+                else Nothing
+            ) arr
+                # Array.catMaybes
+                # map (uncurry renderItem)
+                # H.div []
+    where
+        renderItem _ _ = H.div [] []
 

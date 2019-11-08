@@ -33,7 +33,7 @@ import Data.Exists (Exists, mkExists)
 import Data.Foldable (foldl, foldr)
 
 import Rpd.Util (type (/->))
-import Rpd.Process (ProcessF(..), Receive)
+import Rpd.Process (ProcessF(..), Receive, Send)
 import Rpd.Network (Node, Inlet, Outlet) as R
 -- import Rpd.Command (Command) as R
 
@@ -104,7 +104,7 @@ data Toolkit d c n = Toolkit ToolkitName (n -> NodeDef d c)
 type ToolkitRenderer d c n view action =
     -- FIXME: now any node, inlet and outlet are containing the corresponding `n` or 'c' instance
     --        so it's a duplication to use them as a separate parameters in these functions
-    { renderNode :: n -> R.Node d n -> Receive d -> view
+    { renderNode :: n -> R.Node d n -> Receive d -> Send d -> view
     -- , renderInlet :: ChannelDefAlias -> R.Inlet d -> c -> (msg -> Effect Unit) -> view
     , renderInlet :: c -> R.Inlet d c -> Maybe d -> view
     -- , renderOutlet :: ChannelDefAlias -> R.Outlet d -> c -> (msg -> Effect Unit) -> view
