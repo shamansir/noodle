@@ -29,7 +29,7 @@ get (Spread _ f) idx = f idx
 make :: forall x. Lerp x => x /\ x -> Int -> Spread x
 make range count =
     Spread count \idx ->
-        lerp range $ toNumber (idx `mod` count) / toNumber count
+        lerp range $ toNumber (idx `mod` count) / toNumber (count - 1)
 
 
 run :: forall x. Spread x -> Array (Maybe x)

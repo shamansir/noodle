@@ -13,6 +13,7 @@ import RpdTest.Flow (spec) as TestFlow
 import RpdTest.Render (spec) as TestRender
 import RpdTest.RpdFileParser (spec) as TestRpdFileParser
 import RpdTest.Util (spec) as TestUtils
+import RpdTest.Spread (spec) as TestSpreads
 
 
 spec :: Spec Unit
@@ -23,6 +24,7 @@ spec =
     TestRender.spec
     TestRpdFileParser.spec
     TestUtils.spec
+    TestSpreads.spec
 
 
 main :: Effect Unit

@@ -12,4 +12,5 @@ class Lerp x where
 
 
 instance lerpNumber :: Lerp Number where
-    lerp (from /\ to) amount = Just $ from + ((to - from) * amount)
+    lerp (from /\ to) amount =
+        Just $ from + (to - from) * amount
