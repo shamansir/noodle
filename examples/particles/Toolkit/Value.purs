@@ -42,7 +42,6 @@ data Instruction
     | Draw DrawOp
     | Transform TransformOp
     | Style StyleOp
-    | Pair Instruction Instruction
 
 
 data Value
@@ -50,7 +49,8 @@ data Value
     | Numerical Number
     | Color RgbaColor
     | Apply Instruction
-    | Spread (S.Spread Instruction)
+    | Pair Value Value
+    | Spread (S.Spread Value)
 
 
 -- drawEllipse :: Number -> Number -> Instruction
@@ -103,6 +103,17 @@ instance lerpInstruction :: Lerp Instruction where
         Style <$> lerp (styleFrom /\ styleTo) amount
     lerp (Transform transformFrom /\ Transform transformTo) amount =
         Transform <$> lerp (transformFrom /\ transformTo) amount
+    lerp _ _ = Nothing
+
+
+instance lerpValue :: Lerp Value where
+    lerp (Bang /\ Bang) _ = Just Bang
+    lerp (Numerical from /\ Numerical to) amount =
+        Numerical <$> lerp (from /\ to) amount
+    lerp (Color from /\ Color to) amount =
+        Color <$> lerp (from /\ to) amount
+    lerp (Apply from /\ Apply to) amount =
+        Apply <$> lerp (from /\ to) amount
     lerp (Pair fromA fromB /\ Pair toA toB) amount =
         Pair
             <$> lerp (fromA /\ toA) amount
@@ -138,7 +149,6 @@ instance showInstruction :: Show Instruction where
     show (Draw draw) = "draw: " <> show draw
     show (Style style) = "style: " <> show style
     show (Transform transform) = "transform: " <> show transform
-    show (Pair instA instB) = "pair: ( " <> show instA <> " /\\ " <> show instB <> " )"
 
 
 instance showValue :: Show Value where
@@ -146,5 +156,6 @@ instance showValue :: Show Value where
     show (Numerical n) = "num: " <> show n
     show (Color color) = "color: " <> show color
     show (Apply inst) = "apply: " <> show inst
+    show (Pair valA valB) = "pair: ( " <> show valA <> " /\\ " <> show valB <> " )"
     show (Spread spread) = "spread: " <> joinWith "," (show <$> Spread.run spread)
 

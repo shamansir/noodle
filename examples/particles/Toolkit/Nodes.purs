@@ -33,6 +33,7 @@ import Rpd.Toolkit (withInlets, withOutlets, (~<), (>~))
 import Example.Toolkit.Value
 import Example.Toolkit.Value (Value(..)) as V
 import Example.Toolkit.Channel
+import Example.Toolkit.OnCanvas (apply) as Canvas
 
 
 type ProcessF = R.Receive Value -> Effect (R.Send Value)
@@ -106,7 +107,7 @@ fillNode =
         ~< "b" /\ NumericalChannel
     , outlets :
         withOutlets
-        >~ "fill" /\ AnimationChannel -- FIXME: Some other channel
+        >~ "fill" /\ AnyValueChannel -- FIXME: Some other channel
     , process : R.Process processF
     }
     where
@@ -177,10 +178,10 @@ shapeNode =
     T.NodeDef
         { inlets :
             T.withInlets
-            ~< "shape" /\ AnimationChannel -- FIXME: Some other channel
+            ~< "shape" /\ AnyValueChannel -- FIXME: Some other channel
         , outlets :
             T.withOutlets
-            >~ "shape" /\ AnimationChannel -- FIXME: Some other channel
+            >~ "shape" /\ AnyValueChannel -- FIXME: Some other channel
         , process : R.Process pure  -- FIXME: use `PassThrough`
         }
 
@@ -190,12 +191,12 @@ spreadNode =
     T.NodeDef
         { inlets :
             T.withInlets
-            ~< "from" /\ AnimationChannel -- FIXME: Some other channel
-            ~< "to" /\ AnimationChannel -- FIXME: Some other channel
+            ~< "from" /\ AnyValueChannel
+            ~< "to" /\ AnyValueChannel
             ~< "count" /\ NumericalChannel
         , outlets :
             T.withOutlets
-            >~ "spread" /\ AnimationChannel -- FIXME: Only-spread channel?
+            >~ "spread" /\ SpreadChannel -- FIXME: Only-spread channel?
         , process : R.Process processF
         }
     where
@@ -203,8 +204,8 @@ spreadNode =
         processF receive = do
             let
                 spread :: Value -> Value -> Value -> Maybe Value
-                spread (Apply from) (Apply to) (Numerical count) =
-                    Just $ Spread (Spread.make (from /\ to) (floor count))
+                spread valueFrom valueTo (Numerical count) =
+                    Just $ Spread (Spread.make (valueFrom /\ valueTo) (floor count))
                 spread _ _ _ = Nothing
             let send "pair" =
                     spread
@@ -222,11 +223,11 @@ pairNode =
     T.NodeDef
         { inlets :
             T.withInlets
-            ~< "spread1" /\ AnimationChannel -- FIXME: Only-spread channel?
-            ~< "spread2" /\ AnimationChannel -- FIXME: Only-spread channel?
+            ~< "spread1" /\ AnyValueChannel -- FIXME: Only-spread channel?
+            ~< "spread2" /\ AnyValueChannel -- FIXME: Only-spread channel?
         , outlets :
             T.withOutlets
-            >~ "pair" /\ AnimationChannel -- FIXME: Some other channel?
+            >~ "pair" /\ AnyValueChannel -- FIXME: Some other channel?
         , process : R.Process processF
         }
     where
@@ -236,10 +237,10 @@ pairNode =
                 pair :: Value -> Value -> Maybe Value
                 pair (Spread spreadA) (Spread spreadB) =
                     Just $ Spread (uncurry Pair <$> Spread.join spreadA spreadB)
-                pair (Spread spread) (Apply inst) =
-                    Just $ Spread (uncurry Pair <$> Spread.join spread (Spread.singleton inst))
-                pair (Apply inst) (Spread spread) =
-                    Just $ Spread (uncurry Pair <$> Spread.join (Spread.singleton inst) spread)
+                pair (Spread spread) val =
+                    Just $ Spread (uncurry Pair <$> Spread.join spread (Spread.singleton val))
+                pair val (Spread spread) =
+                    Just $ Spread (uncurry Pair <$> Spread.join (Spread.singleton val) spread)
                 pair _ _ = Nothing
             let send "pair" =
                     pair
@@ -265,65 +266,13 @@ initialCanvasState =
     }
 
 
-class OnCanvas x where
-    apply :: x -> Context2D -> Effect Unit
-
-
-instance drawOnCanvas :: OnCanvas DrawOp where
-    apply (Ellipse a b) ctx = do
-        withContext ctx $ do
-            -- -- scale ctx { scaleX : 1.0, scaleY : b / a }
-            -- _ <- DT.spy "drawing" $ pure unit
-            -- setFillStyle ctx "#000000"
-            -- fillText ctx ("AAAAAAA") 40.0 20.0
-            beginPath ctx
-            arc ctx
-                { x : 0.0, y : 0.0
-                , radius : a
-                , start : 0.0
-                , end : 2.0 * Math.pi
-                }
-            closePath ctx
-        fill ctx
-        stroke ctx
-    apply (Rect w h) ctx = do
-        rect ctx { x : 0.0, y : 0.0, width : w, height : h }
-        fill ctx
-        stroke ctx
-
-
-instance styleOnCanvas :: OnCanvas StyleOp where
-    apply (Fill fill) ctx =
-        setFillStyle ctx $ show fill
-    apply (Stroke color w) ctx = do
-        setStrokeStyle ctx $ show color
-        setLineWidth ctx w
-
-
-instance transformOnCanvas :: OnCanvas TransformOp where
-    apply (Move x y) ctx =
-        translate ctx { translateX : x, translateY : y }
-    apply (Scale x y) ctx = do
-        scale ctx { scaleX : x, scaleY : y }
-
-
-instance instructionOnCanvas :: OnCanvas Instruction where
-    apply NoOp _ = pure unit
-    apply (Draw draw) ctx = apply draw ctx
-    apply (Style style) ctx = apply style ctx
-    apply (Transform transform) ctx = apply transform ctx
-    apply (Pair instA instB) ctx = do
-        apply instA ctx
-        apply instB ctx
-
-
 canvasNode :: NodeDef
 canvasNode =
     T.NodeDef
         { inlets :
             T.withInlets
             ~< "frame" /\ TriggerChannel
-            ~< "scene" /\ AnimationChannel
+            ~< "scene" /\ AnyValueChannel
         , outlets :
             T.noOutlets
             -- T.withOutlets
@@ -359,11 +308,11 @@ canvasNode =
                         fillText ctx ("dt:" <> show dt) 40.0 100.0
                         setFillStyle ctx "#000000"
                         case receive "scene" of
-                            Just (Apply instruction) ->
-                                apply instruction ctx
-                            Just (Spread instructions) ->
-                                for_ (Array.catMaybes $ Spread.run instructions) $ flip apply ctx
+                            Just (Spread spread) ->
+                                for_ (Array.catMaybes $ Spread.run spread) $ flip Canvas.apply ctx
                                 --flip apply ctx <*> instructions
+                            Just value ->
+                                Canvas.apply value ctx
                             _ -> pure unit
                         translate ctx
                             { translateX : posX

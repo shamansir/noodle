@@ -8,9 +8,10 @@ import Example.Toolkit.Value
 
 
 data Channel
-    = TriggerChannel
-    | NumericalChannel
-    | AnimationChannel -- TODO: accept both `Spread` and `Apply`
+    = TriggerChannel -- OnlyTriggers
+    | NumericalChannel -- OnlyNumbers
+    | SpreadChannel -- OnlySpreads
+    | AnyValueChannel --
 
 
 instance showChannel :: Show Channel where
