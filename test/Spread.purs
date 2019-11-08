@@ -38,7 +38,9 @@ instance eqMyChar :: Eq MyChar where
 
 instance lerpMyChar :: Lerp MyChar where
     lerp (MyChar from /\ MyChar to) pos =
-        MyChar <$> (fromCharCode $ floor (toNumber (toCharCode from) + pos * toNumber ((toCharCode to - toCharCode from))))
+        let from' = toNumber (toCharCode from)
+            to' = toNumber (toCharCode to)
+        in MyChar <$> (fromCharCode $ floor $ from' + pos * (to' - from'))
 
 
 spec :: Spec Unit

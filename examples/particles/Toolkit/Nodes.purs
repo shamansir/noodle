@@ -14,6 +14,7 @@ import Graphics.Canvas
 
 import Data.Int (round, floor)
 import Data.Maybe
+import Data.Tuple (curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_, for_)
 import Data.Array (catMaybes) as Array
@@ -234,11 +235,11 @@ pairNode =
             let
                 pair :: Value -> Value -> Maybe Value
                 pair (Spread spreadA) (Spread spreadB) =
-                    Just $ Spread $ Spread.join' Pair spreadA spreadB
+                    Just $ Spread (uncurry Pair <$> Spread.join spreadA spreadB)
                 pair (Spread spread) (Apply inst) =
-                    Just $ Spread $ Spread.join' Pair spread $ Spread.singleton inst
+                    Just $ Spread (uncurry Pair <$> Spread.join spread (Spread.singleton inst))
                 pair (Apply inst) (Spread spread) =
-                    Just $ Spread $ Spread.join' Pair (Spread.singleton inst) spread
+                    Just $ Spread (uncurry Pair <$> Spread.join (Spread.singleton inst) spread)
                 pair _ _ = Nothing
             let send "pair" =
                     pair

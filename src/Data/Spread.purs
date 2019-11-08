@@ -12,7 +12,19 @@ import Data.Tuple.Nested ((/\), type (/\))
 data Spread a = Spread Int (Int -> Maybe a)
 
 
--- TODO: Functor etc.
+instance functorSpread :: Functor Spread where
+    map f (Spread count sf) =
+        Spread count \idx -> f <$> sf idx
+
+
+-- FIXME: expensive to run
+instance showSpread :: Show a => Show (Spread a) where
+    show = show <<< catMaybes <<< run
+
+
+-- FIXME: expensive to run
+instance eqSpread :: Eq a => Eq (Spread a) where
+    eq a b = eq (run a) (run b)
 
 
 infixl 8 get as !!
@@ -43,9 +55,3 @@ run (Spread count f) = f <$> range 0 (count - 1)
 join :: forall a b. Spread a -> Spread b -> Spread (a /\ b)
 join (Spread countA fA) (Spread countB fB) =
     Spread (max countA countB) \idx -> (/\) <$> fA idx <*> fB idx
-
-
--- FIXME: `fmap`?
-join' :: forall a b c. (a -> b -> c) -> Spread a -> Spread b -> Spread c
-join' cnv (Spread countA fA) (Spread countB fB) =
-    Spread (max countA countB) \idx -> cnv <$> fA idx <*> fB idx

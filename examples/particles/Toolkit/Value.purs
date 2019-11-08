@@ -57,10 +57,6 @@ data Value
 -- drawEllipse a b = Draw $ Ellipse a b
 
 
-pair :: Instruction -> Instruction -> Instruction
-pair = Pair
-
-
 instance lerpRgbaColor :: Lerp RgbaColor where
     lerp (RgbaColor from /\ RgbaColor to) amount =
         (\r g b a -> RgbaColor { r, g, b, a })

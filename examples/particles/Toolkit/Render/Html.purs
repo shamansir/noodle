@@ -62,7 +62,7 @@ renderer =
 renderNode :: Node -> R.Node Value Node -> R.Receive Value -> R.View Value Channel Node
 renderNode NodeListNode (R.Node _ (P.ToNode { patch }) _ _ _) _ =
     NodeList.render (P.ToPatch patch) nodesForTheList
-renderNode TimeNode (R.Node uuid path _ _ _) _ =
+renderNode TimeNode (R.Node _ path _ _ _) _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
@@ -74,13 +74,13 @@ renderNode TimeNode (R.Node uuid path _ _ _) _ =
             ]
             [ H.text "SEND" ]
         ]
-renderNode CanvasNode (R.Node uuid path _ _ _) _ =
+renderNode CanvasNode _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.canvas
             [ H.id_ "the-canvas", H.width 300, H.height 300 ]
         ]
-renderNode NumberNode (R.Node uuid path _ _ _) receive =
+renderNode NumberNode (R.Node _ path _ _ _) receive =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.input
@@ -94,7 +94,7 @@ renderNode NumberNode (R.Node uuid path _ _ _) receive =
             ]
         , H.text (receive "num" # maybe "?" show)
         ]
-renderNode ShapeNode (R.Node uuid path _ _ _) _ =
+renderNode ShapeNode (R.Node _ path _ _ _) _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
@@ -105,6 +105,25 @@ renderNode ShapeNode (R.Node uuid path _ _ _) _ =
                 $ Apply $ Draw $ Ellipse 100.0 100.0
             ]
             [ H.text "CIRCLE" ]
+        ]
+renderNode SpreadNode (R.Node uuid path _ _ _) receive =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ H.div
+            []
+            [ H.text $ "from" <> (show $ receive "from")
+            , H.text $ "to" <> (show $ receive "to")
+            , H.text $ "count" <> (show $ receive "count")
+            ]
+        ]
+renderNode PairNode (R.Node uuid path _ _ _) receive =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ H.div
+            []
+            [ H.text $ "spread1" <> (show $ receive "spread1")
+            , H.text $ "spread2" <> (show $ receive "spread2")
+            ]
         ]
 renderNode _ _ _ =
     H.div
