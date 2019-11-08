@@ -22,6 +22,10 @@ nil :: forall a. Spread a
 nil = Spread 0 $ const Nothing
 
 
+singleton :: forall a. a -> Spread a
+singleton v = Spread 1 $ const $ Just v
+
+
 get :: forall a. Spread a -> Int -> Maybe a
 get (Spread _ f) idx = f idx
 
@@ -39,3 +43,9 @@ run (Spread count f) = f <$> range 0 (count - 1)
 join :: forall a b. Spread a -> Spread b -> Spread (a /\ b)
 join (Spread countA fA) (Spread countB fB) =
     Spread (max countA countB) \idx -> (/\) <$> fA idx <*> fB idx
+
+
+-- FIXME: `fmap`?
+join' :: forall a b c. (a -> b -> c) -> Spread a -> Spread b -> Spread c
+join' cnv (Spread countA fA) (Spread countB fB) =
+    Spread (max countA countB) \idx -> cnv <$> fA idx <*> fB idx

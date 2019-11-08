@@ -16,6 +16,9 @@ import Data.Int (round, floor)
 import Data.Maybe
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_, for_)
+import Data.Array (catMaybes) as Array
+
+import Data.Spread as Spread
 
 import Data.Time.Duration (Milliseconds(..))
 import Data.DateTime.Instant (unInstant)
@@ -27,7 +30,7 @@ import Rpd.Toolkit as T
 import Rpd.Toolkit (withInlets, withOutlets, (~<), (>~))
 
 import Example.Toolkit.Value
-import Example.Toolkit.Value (Value(..), join, spread) as V
+import Example.Toolkit.Value (Value(..)) as V
 import Example.Toolkit.Channel
 
 
@@ -200,7 +203,7 @@ spreadNode =
             let
                 spread :: Value -> Value -> Value -> Maybe Value
                 spread (Apply from) (Apply to) (Numerical count) =
-                    Just $ Spread (V.spread (from /\ to) (floor count))
+                    Just $ Spread (Spread.make (from /\ to) (floor count))
                 spread _ _ _ = Nothing
             let send "pair" =
                     spread
@@ -210,6 +213,7 @@ spreadNode =
                     >>= identity
                 send _ = Nothing
             pure send
+
 
 
 pairNode :: NodeDef
@@ -230,11 +234,11 @@ pairNode =
             let
                 pair :: Value -> Value -> Maybe Value
                 pair (Spread spreadA) (Spread spreadB) =
-                    Just $ Spread $ V.join spreadA spreadB
+                    Just $ Spread $ Spread.join' Pair spreadA spreadB
                 pair (Spread spread) (Apply inst) =
-                    Just $ Spread $ V.join spread [ inst ]
+                    Just $ Spread $ Spread.join' Pair spread $ Spread.singleton inst
                 pair (Apply inst) (Spread spread) =
-                    Just $ Spread $ V.join [ inst ] spread
+                    Just $ Spread $ Spread.join' Pair (Spread.singleton inst) spread
                 pair _ _ = Nothing
             let send "pair" =
                     pair
@@ -357,7 +361,7 @@ canvasNode =
                             Just (Apply instruction) ->
                                 apply instruction ctx
                             Just (Spread instructions) ->
-                                for_ instructions $ flip apply ctx
+                                for_ (Array.catMaybes $ Spread.run instructions) $ flip apply ctx
                                 --flip apply ctx <*> instructions
                             _ -> pure unit
                         translate ctx
