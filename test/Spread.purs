@@ -60,6 +60,25 @@ spec =
         ] `shouldEqual` (catMaybes $ Spread.run spread)
         Just 1.5 `shouldEqual` (spread !! 3)
 
+    it "index is wrapped when it exceeds count" $ do
+        let spread = Spread.make (0.0 /\ 3.5) 8
+        Just 0.0 `shouldEqual` (spread !! 8)
+        Just 1.5 `shouldEqual` (spread !! 11)
+        Just 1.5 `shouldEqual` (spread !! 19)
+
+    it "negative index is to count from end" $ do
+        let spread = Spread.make (0.0 /\ 3.5) 8
+        Just 2.5 `shouldEqual` (spread !! -3)
+
+    it "negative index is to count from end, even after \"overflow\"" $ do
+        let spread = Spread.make (0.0 /\ 3.5) 8
+        Just 2.5 `shouldEqual` (spread !! -11)
+
+    it "zero-sized spread is always empty" $ do
+        let spread = Spread.make (0.1 /\ 3.5) 0
+        [ ] `shouldEqual` (catMaybes $ Spread.run spread)
+        Nothing `shouldEqual` (spread !! 5)
+
     it "creating singleton spread" $ do
         let spread = Spread.singleton unit
         [ unit
@@ -87,13 +106,13 @@ spec =
 
     it "works for custom types" $ do
         let spread = Spread.make (MyChar 'A' /\ MyChar 'F') 6
-        [ 'A'
-        , 'B'
-        , 'C'
-        , 'D'
-        , 'E'
-        , 'F'
-        ] `shouldEqual` ((\(MyChar c) -> c) <$> (catMaybes $ Spread.run spread))
+        [ MyChar 'A'
+        , MyChar 'B'
+        , MyChar 'C'
+        , MyChar 'D'
+        , MyChar 'E'
+        , MyChar 'F'
+        ] `shouldEqual` (catMaybes $ Spread.run spread)
         Just (MyChar 'C') `shouldEqual` (spread !! 2)
 
     it "joins spreads properly" $ do
@@ -102,13 +121,13 @@ spec =
                 Spread.join
                     (Spread.make (0.0 /\ 4.0) 6)
                     (Spread.make (MyChar 'A' /\ MyChar 'F') 2)
-        [ 0.0 /\ 'A'
-        , 0.8 /\ 'F'
-        , 1.6 /\ 'A'
-        , 2.4 /\ 'F'
-        , 3.2 /\ 'A'
-        , 4.0 /\ 'F'
-        ] `shouldEqual` ((\(n /\ MyChar c) -> n /\ c) <$> (catMaybes $ Spread.run spread1))
+        [ 0.0 /\ MyChar 'A'
+        , 0.8 /\ MyChar 'F'
+        , 1.6 /\ MyChar 'A'
+        , 2.4 /\ MyChar 'F'
+        , 3.2 /\ MyChar 'A'
+        , 4.0 /\ MyChar 'F'
+        ] `shouldEqual` (catMaybes $ Spread.run spread1)
         Just (1.6 /\ MyChar 'A') `shouldEqual` (spread1 !! 2)
 
         let
@@ -116,11 +135,38 @@ spec =
                 Spread.join
                     (Spread.make (0.0 /\ 3.0) 2)
                     (Spread.make (MyChar 'A' /\ MyChar 'F') 6)
-        [ 0.0 /\ 'A'
-        , 3.0 /\ 'B'
-        , 0.0 /\ 'C'
-        , 3.0 /\ 'D'
-        , 0.0 /\ 'E'
-        , 3.0 /\ 'F'
-        ] `shouldEqual` ((\(n /\ MyChar c) -> n /\ c) <$> (catMaybes $ Spread.run spread2))
+        [ 0.0 /\ MyChar 'A'
+        , 3.0 /\ MyChar 'B'
+        , 0.0 /\ MyChar 'C'
+        , 3.0 /\ MyChar 'D'
+        , 0.0 /\ MyChar 'E'
+        , 3.0 /\ MyChar 'F'
+        ] `shouldEqual` (catMaybes $ Spread.run spread2)
         Just (3.0 /\ MyChar 'D') `shouldEqual` (spread2 !! 3)
+
+    it "repeating works" $ do
+        let spread = Spread.repeat 5 $ MyChar 'F'
+        [ MyChar 'F'
+        , MyChar 'F'
+        , MyChar 'F'
+        , MyChar 'F'
+        , MyChar 'F'
+        ] `shouldEqual` (catMaybes $ Spread.run spread)
+        Just (MyChar 'F') `shouldEqual` (spread !! 2)
+
+    it "concatenating works" $ do
+        let
+            spreadA = Spread.repeat 5 $ MyChar 'F'
+            spreadB = Spread.repeat 3 $ MyChar 'A'
+            spreadC = Spread.concat spreadA spreadB
+        [ MyChar 'F'
+        , MyChar 'F'
+        , MyChar 'F'
+        , MyChar 'F'
+        , MyChar 'F'
+        , MyChar 'A'
+        , MyChar 'A'
+        , MyChar 'A'
+        ] `shouldEqual` (catMaybes $ Spread.run spreadC)
+        Just (MyChar 'F') `shouldEqual` (spreadC !! 2)
+        Just (MyChar 'A') `shouldEqual` (spreadC !! 5)
