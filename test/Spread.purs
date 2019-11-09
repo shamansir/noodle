@@ -60,6 +60,31 @@ spec =
         ] `shouldEqual` (catMaybes $ Spread.run spread)
         Just 1.5 `shouldEqual` (spread !! 3)
 
+    it "creating singleton spread" $ do
+        let spread = Spread.singleton unit
+        [ unit
+        ] `shouldEqual` (catMaybes $ Spread.run spread)
+        Just unit `shouldEqual` (spread !! 0)
+
+    it "one-element spread for numbers is not NaN" $ do
+        let spread = Spread.make (0.1 /\ 3.5) 1
+        [ 0.1
+        ] `shouldEqual` (catMaybes $ Spread.run spread)
+        Just 0.1 `shouldEqual` (spread !! 0)
+
+    it "backwards spread is when count is negative" $ do
+        let spread = Spread.make (0.0 /\ 3.5) (-8)
+        [ 3.5
+        , 3.0
+        , 2.5
+        , 2.0
+        , 1.5
+        , 1.0
+        , 0.5
+        , 0.0
+        ] `shouldEqual` (catMaybes $ Spread.run spread)
+        Just 2.0 `shouldEqual` (spread !! 3)
+
     it "works for custom types" $ do
         let spread = Spread.make (MyChar 'A' /\ MyChar 'F') 6
         [ 'A'

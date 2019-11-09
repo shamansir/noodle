@@ -2,8 +2,9 @@ module Data.Spread where
 
 import Prelude
 
+import Math (abs)
 import Data.Lerp (class Lerp, lerp)
-import Data.Int (toNumber)
+import Data.Int (toNumber, floor)
 import Data.Maybe (Maybe(..))
 import Data.Array (range, catMaybes)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -44,9 +45,16 @@ get (Spread _ f) idx = f idx
 
 
 make :: forall x. Lerp x => x /\ x -> Int -> Spread x
-make range count =
-    Spread count \idx ->
-        lerp range $ toNumber (idx `mod` count) / toNumber (count - 1)
+make (from /\ to) count | count < 0 =
+    make (to /\ from) $ floor $ abs $ toNumber count
+make range count | count > 1 =
+    Spread count
+        \idx -> lerp range $ toNumber (idx `mod` count) / toNumber (count - 1)
+make (from /\ _) count | count == 1 =
+    Spread count $ const $ Just from
+make _ count | otherwise = -- 0, for example
+    Spread count $ const Nothing
+
 
 
 run :: forall x. Spread x -> Array (Maybe x)
