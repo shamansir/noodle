@@ -46,7 +46,7 @@ type NodeDef = T.NodeDef Value Channel
 data Node
     = NumberNode
     | RandomNode
-    | FillNode
+    | ColorNode
     | TimeNode
     -- | SineNode
     | CanvasNode
@@ -63,7 +63,7 @@ instance showNode :: Show Node where
     show NumberNode = "number"
     show TimeNode = "time"
     -- show SineNode = "sine"
-    show FillNode = "fill"
+    show ColorNode = "color"
     show ShapeNode = "shape"
     show SpreadNode = "spread"
     show PairNode = "pair"
@@ -74,7 +74,7 @@ nodesForTheList :: Array Node
 nodesForTheList =
     [ NumberNode
     , RandomNode
-    , FillNode
+    , ColorNode
     , TimeNode
     -- , SineNode
     , ShapeNode
@@ -97,8 +97,8 @@ numberNode =
         }
 
 
-fillNode :: NodeDef
-fillNode =
+colorNode :: NodeDef
+colorNode =
     T.NodeDef
     { inlets :
         withInlets
@@ -107,7 +107,7 @@ fillNode =
         ~< "b" /\ NumericalChannel
     , outlets :
         withOutlets
-        >~ "fill" /\ AnyValueChannel -- FIXME: Some other channel
+        >~ "color" /\ AnyValueChannel -- FIXME: Some other channel
     , process : R.Process processF
     }
     where

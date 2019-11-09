@@ -311,6 +311,7 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                         , H.onClick $ handleNodeTitleClick node
                         ]
                         [ H.span [ ] [ H.text $ name <> " (" <> show n <> ")" ] ]
+                        -- FIXME use special "node title" and "node ID" for classes etc."
                     , H.div
                         [ H.classes [ "rpd-node-remove-button" ] ]
                         [ H.text "x" ]

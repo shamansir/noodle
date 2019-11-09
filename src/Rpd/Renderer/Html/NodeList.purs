@@ -11,12 +11,12 @@ import Spork.Html as H
 
 render :: forall d c n. Show n => P.ToPatch -> Array n -> View d c n
 render patchPath nodes =
-    H.div []
+    H.div [ H.classes [ "rpd-node-list" ] ]
         $ createNodeButton <$> nodes
         where
             createNodeButton n =
                 H.div
-                    [ H.classes [ "rpd-node-list" ]
+                    [ H.classes [ "rpd-node-list-button" ]
                     , H.onClick $ H.always_ $ R.core
                         $ A.Request $ A.ToAddNextNode patchPath n
                     ]

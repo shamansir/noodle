@@ -1,0 +1,36 @@
+.tk-node {
+    margin: 5px;
+}
+
+.tk-node input {
+    border: 1px solid gray;
+    background-color: rgba(255,255,255,0.8);
+    margin-bottom: 5px;
+    max-width: 60px;
+}
+
+.tk-color-value {
+    border: 1px solid gray;
+    border-radius: 2px;
+    width: 15px;
+    height: 15px;
+    display: inline-block;
+    margin: 2px 0;
+}
+
+.tk-trigger {
+    color: blue;
+}
+
+.tk-number {
+    color: green;
+}
+
+.tk-spread {
+    color: aqua;
+}
+
+.tk-any {
+    color: white;
+}
+

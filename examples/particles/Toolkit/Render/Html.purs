@@ -54,15 +54,20 @@ import Example.Toolkit.Channel
 renderer :: R.ToolkitRenderer Value Channel Node
 renderer =
     { renderNode : renderNode
-    , renderInlet : \_ _ d ->
+    , renderInlet : \c _ d ->
         H.div
-            [ H.classes [ "tk-inlet" ] ]
-            [ H.text $ "tk-inlet : " <> (maybe "?" show d) ]
-    , renderOutlet : \_ _ d ->
+            [ H.classes [ "tk-inlet", classFor c ] ]
+            [ H.text $ maybe "?" show d ]
+    , renderOutlet : \c _ d ->
         H.div
-            [ H.classes [ "tk-outlet" ] ]
-            [ H.text $ "tk-outlet : " <> (maybe "?" show d) ]
+            [ H.classes [ "tk-outlet", classFor c ] ]
+            [ H.text $ maybe "?" show d ]
     }
+    where
+        classFor TriggerChannel = "tk-trigger"
+        classFor NumericalChannel = "tk-number"
+        classFor SpreadChannel = "tk-spread"
+        classFor AnyValueChannel = "tk-any"
 
 
 renderNode :: Node -> R.Node Value Node -> R.Receive Value -> R.Send Value -> R.View Value Channel Node
@@ -88,7 +93,7 @@ renderNode CanvasNode _ _ _ =
         ]
 renderNode NumberNode (R.Node _ path _ _ _) lastAtInlet _ =
     H.div
-        [ H.classes [ "tk-node" ] ]
+        [ H.classes [ "tk-node" ], H.style "display: flex; flex-direction: column;" ]
         [ H.input
             [ H.type_ H.InputNumber
             , H.onValueChange \v ->
@@ -100,6 +105,24 @@ renderNode NumberNode (R.Node _ path _ _ _) lastAtInlet _ =
             ]
         , H.text (lastAtInlet "num" # maybe "?" show)
         ]
+renderNode ColorNode _ lastAtInlet lastAtOutlet =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ renderIfColor $ lastAtInlet "r" <#> rNumToColor >>= identity <#> Color
+        , H.text "+"
+        , renderIfColor $ lastAtInlet "g" <#> gNumToColor >>= identity <#> Color
+        , H.text "+"
+        , renderIfColor $ lastAtInlet "b" <#> bNumToColor >>= identity <#> Color
+        , H.text "="
+        , renderIfColor $ lastAtOutlet "color"
+        ]
+    where
+        rNumToColor (Numerical r) = Just $ RgbaColor { r, g : 0.0, b : 0.0, a : 1.0 }
+        rNumToColor _ = Nothing
+        gNumToColor (Numerical g) = Just $ RgbaColor { r : 0.0, g, b : 0.0, a : 1.0 }
+        gNumToColor _ = Nothing
+        bNumToColor (Numerical b) = Just $ RgbaColor { r : 0.0, g : 0.0, b, a : 1.0 }
+        bNumToColor _ = Nothing
 renderNode ShapeNode (R.Node _ path _ _ _) _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
@@ -112,16 +135,16 @@ renderNode ShapeNode (R.Node _ path _ _ _) _ _ =
             ]
             [ H.text "CIRCLE" ]
         ]
-renderNode SpreadNode (R.Node uuid path _ _ _) lastAtInlet lastAtOutlet =
+renderNode SpreadNode _ lastAtInlet lastAtOutlet =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ case lastAtOutlet "spread" of
             Just (Spread spread) ->
                 renderSpread spread
             _ ->
-                H.text "Empty"
+                H.text "(None)"
         ]
-renderNode PairNode (R.Node uuid path _ _ _) lastAtInlet _ =
+renderNode PairNode _ lastAtInlet _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
@@ -133,7 +156,7 @@ renderNode PairNode (R.Node uuid path _ _ _) lastAtInlet _ =
 renderNode _ _ _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
-        [ H.text "tk-node (no renderer)" ]
+        [ ]
 
 
 renderSpread :: S.Spread Value -> R.View Value Channel Node
@@ -147,7 +170,7 @@ renderSpread spread =
         items | len <= maxItems ->
             Array.mapWithIndex (/\) items
                 # map (uncurry renderItem)
-                # H.div []
+                # H.div [ H.classes [ "tk-spread-value" ] ]
         aLotOfItems ->
             Array.mapWithIndex (\idx item ->
                 if idx `mod` (floor (toNumber len / toNumber maxItems)) == 0 then
@@ -156,7 +179,34 @@ renderSpread spread =
             ) arr
                 # Array.catMaybes
                 # map (uncurry renderItem)
-                # H.div []
+                # H.div [ H.classes [ "tk-spread-value" ] ]
     where
-        renderItem _ _ = H.div [] []
+        renderItem index (Numerical num) = H.div [] [ H.text $ show index <> ":" <> show num ]
+        renderItem index (Color color) =
+            H.div []
+                [ H.text $ show index <> ":"
+                , renderColor color
+                ]
+        renderItem index _ = H.div [] []
 
+
+renderIfColor :: Maybe Value -> R.View Value Channel Node
+renderIfColor (Just (Color color)) = renderColor color
+renderIfColor _ = renderNoColor
+
+
+renderColor :: RgbaColor -> R.View Value Channel Node
+renderColor color =
+    H.div
+        [ H.classes [ "tk-color-value" ]
+        , H.style $ "background-color: " <> colorToCss color <> ";"
+        ]
+        [ ]
+
+
+renderNoColor :: R.View Value Channel Node
+renderNoColor =
+    H.div
+        [ H.classes [ "tk-color-value" ]
+        ]
+        [ H.text "?" ]

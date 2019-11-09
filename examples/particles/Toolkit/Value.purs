@@ -159,3 +159,11 @@ instance showValue :: Show Value where
     show (Pair valA valB) = "pair: ( " <> show valA <> " /\\ " <> show valB <> " )"
     show (Spread spread) = "spread: " <> joinWith "," (show <$> Spread.run spread)
 
+
+colorToCss :: RgbaColor -> String
+colorToCss (RgbaColor { r, g, b, a }) =
+    "rgba(" <> show (r * 255.0) <> ","
+            <> show (g * 255.0) <> ","
+            <> show (b * 255.0) <> ","
+            <> show a <> ")"
+

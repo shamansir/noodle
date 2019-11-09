@@ -20,8 +20,8 @@ instance functorSpread :: Functor Spread where
 
 -- FIXME: expensive to run
 instance showSpread :: Show a => Show (Spread a) where
-    show = show <<< catMaybes <<< run
-    -- show (Spread n _) = "Spread (" <> show n <> ")"
+    -- show = show <<< catMaybes <<< run
+    show (Spread n _) = "Spread (" <> show n <> ")"
 
 
 -- FIXME: expensive to run
