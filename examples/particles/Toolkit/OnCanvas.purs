@@ -20,7 +20,7 @@ class OnCanvas x where
 
 
 instance drawOnCanvas :: OnCanvas DrawOp where
-    apply (Ellipse a b) ctx = do
+    apply (Ellipse (Vec2 a b)) ctx = do
         withContext ctx $ do
             -- -- scale ctx { scaleX : 1.0, scaleY : b / a }
             -- _ <- DT.spy "drawing" $ pure unit
@@ -36,7 +36,7 @@ instance drawOnCanvas :: OnCanvas DrawOp where
             closePath ctx
         fill ctx
         stroke ctx
-    apply (Rect w h) ctx = do
+    apply (Rect (Vec2 w h)) ctx = do
         rect ctx { x : 0.0, y : 0.0, width : w, height : h }
         fill ctx
         stroke ctx
@@ -51,9 +51,9 @@ instance styleOnCanvas :: OnCanvas StyleOp where
 
 
 instance transformOnCanvas :: OnCanvas TransformOp where
-    apply (Move x y) ctx =
+    apply (Move (Vec2 x y)) ctx =
         translate ctx { translateX : x, translateY : y }
-    apply (Scale x y) ctx = do
+    apply (Scale (Vec2 x y)) ctx = do
         scale ctx { scaleX : x, scaleY : y }
 
 
@@ -69,6 +69,9 @@ instance valueOnCanvas :: OnCanvas Value where
         fillText ctx "●" 0.0 0.0
     apply (Numerical n) ctx =
         fillText ctx (show n) 0.0 0.0
+    apply (Vector (Vec2 x y)) ctx =
+        -- FIXME: draw an arrow
+        fillText ctx (show x <> ";" <> show y) 0.0 0.0
     apply (V.Color color) ctx = do
         fillText ctx (show color) 0.0 0.0
         setFillStyle ctx (show color)

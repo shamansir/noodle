@@ -17,24 +17,26 @@ import Data.Spread (run) as Spread
 
 newtype RgbaColor = RgbaColor { r :: Number, g :: Number, b :: Number, a :: Number }
 
+data Vec2 = Vec2 Number Number
+
 
 -- newtype Interpolation =
 --     Interpolation (Lerp x => { from :: x, to :: x, count : Int })
 
 
 data DrawOp
-    = Ellipse Number Number
-    | Rect Number Number
+    = Ellipse Vec2 -- axes
+    | Rect Vec2 -- dimensions
 
 
 data StyleOp
     = Fill RgbaColor
-    | Stroke RgbaColor Number
+    | Stroke RgbaColor Number -- color, width
 
 
 data TransformOp
-    = Move Number Number
-    | Scale Number Number
+    = Move Vec2 -- position
+    | Scale Vec2 -- axes
 
 
 data Instruction
@@ -47,6 +49,7 @@ data Instruction
 data Value
     = Bang
     | Numerical Number
+    | Vector Vec2
     | Color RgbaColor
     | Apply Instruction
     | Pair Value Value
@@ -55,6 +58,13 @@ data Value
 
 -- drawEllipse :: Number -> Number -> Instruction
 -- drawEllipse a b = Draw $ Ellipse a b
+
+
+instance lerpVec2 :: Lerp Vec2 where
+    lerp (Vec2 fromX fromY /\ Vec2 toX toY) amount =
+        Vec2
+            <$> lerp (fromX /\ toX) amount
+            <*> lerp (fromY /\ toY) amount
 
 
 instance lerpRgbaColor :: Lerp RgbaColor where
@@ -67,10 +77,10 @@ instance lerpRgbaColor :: Lerp RgbaColor where
 
 
 instance lerpDrawOp :: Lerp DrawOp where
-    lerp (Ellipse fromA fromB /\ Ellipse toA toB) amount =
-        Ellipse <$> lerp (fromA /\ toA) amount <*> lerp (fromB /\ toB) amount
-    lerp (Rect fromW fromH /\ Rect toW toH) amount =
-        Rect <$> lerp (fromW /\ toW) amount <*> lerp (fromH /\ toH) amount
+    lerp (Ellipse from /\ Ellipse to) amount =
+        Ellipse <$> lerp (from /\ to) amount
+    lerp (Rect from /\ Rect to) amount =
+        Rect <$> lerp (from /\ to) amount
     lerp _ _ = Nothing
 
 
@@ -85,10 +95,10 @@ instance lerpStyleOp :: Lerp StyleOp where
 
 
 instance lerpTransformOp :: Lerp TransformOp where
-    lerp (Move fromX fromY /\ Move toX toY) amount =
-        Move <$> lerp (fromX /\ toX) amount <*> lerp (fromY /\ toY) amount
-    lerp (Scale fromX fromY /\ Scale toX toY) amount =
-        Scale <$> lerp (fromX /\ toX) amount <*> lerp (fromY /\ toY) amount
+    lerp (Move from /\ Move to) amount =
+        Move <$> lerp (from /\ to) amount
+    lerp (Scale from /\ Scale to) amount =
+        Scale <$> lerp (from /\ to) amount
     lerp _ _ = Nothing
 
 
@@ -110,6 +120,8 @@ instance lerpValue :: Lerp Value where
     lerp (Bang /\ Bang) _ = Just Bang
     lerp (Numerical from /\ Numerical to) amount =
         Numerical <$> lerp (from /\ to) amount
+    lerp (Vector from /\ Vector to) amount =
+        Vector <$> lerp (from /\ to) amount
     lerp (Color from /\ Color to) amount =
         Color <$> lerp (from /\ to) amount
     lerp (Apply from /\ Apply to) amount =
@@ -129,9 +141,13 @@ instance showRgbaColor :: Show RgbaColor where
                 <> show a <> ")"
 
 
+instance showVec2 :: Show Vec2 where
+    show (Vec2 x y) = "vec(" <> show x <> "," <> show y <> ")"
+
+
 instance showDrawOp :: Show DrawOp where
-    show (Ellipse a b) = "ellipse: " <> show a <> "x" <> show b
-    show (Rect w h) = "rect: " <> show w <> "x" <> show h
+    show (Ellipse axes) = "ellipse: " <> show axes
+    show (Rect dimensions) = "rect: " <> show dimensions
 
 
 instance showStyleOp :: Show StyleOp where
@@ -140,8 +156,8 @@ instance showStyleOp :: Show StyleOp where
 
 
 instance showTransformOp :: Show TransformOp where
-    show (Move x y) = "move: " <> show x <> ":" <> show y
-    show (Scale x y) = "scale: " <> show x <> ":" <> show y
+    show (Move position) = "move: " <> show position
+    show (Scale axes) = "scale: " <> show axes
 
 
 instance showInstruction :: Show Instruction where
@@ -155,6 +171,7 @@ instance showValue :: Show Value where
     show Bang = "bang"
     show (Numerical n) = "num: " <> show n
     show (Color color) = "color: " <> show color
+    show (Vector vec) = "vec: " <> show vec
     show (Apply inst) = "apply: " <> show inst
     show (Pair valA valB) = "pair: ( " <> show valA <> " /\\ " <> show valB <> " )"
     show (Spread spread) = "spread: " <> joinWith "," (show <$> Spread.run spread)

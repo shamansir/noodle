@@ -131,7 +131,7 @@ renderNode ShapeNode (R.Node _ path _ _ _) _ _ =
                 $ H.always_ $ R.core
                 $ A.Request
                 $ A.ToSendToInlet (P.inletInNode path "shape")
-                $ Apply $ Draw $ Ellipse 100.0 100.0
+                $ Apply $ Draw $ Ellipse $ Vec2 100.0 100.0
             ]
             [ H.text "CIRCLE" ]
         ]
@@ -157,6 +157,7 @@ renderNode _ _ _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ ]
+
 
 
 renderSpread :: S.Spread Value -> R.View Value Channel Node
