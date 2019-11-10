@@ -13,6 +13,8 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Data.Spread (run) as Spread
 import Data.Spread (Spread) as S
+import Data.Vec2 (Vec2(..))
+import Data.Vec2 (arrow) as Vec2
 
 -- import Rpd.Toolkit (ToolkitRenderer)
 import Rpd.Network as R
@@ -123,6 +125,20 @@ renderNode ColorNode _ lastAtInlet lastAtOutlet =
         gNumToColor _ = Nothing
         bNumToColor (Numerical b) = Just $ RgbaColor { r : 0.0, g : 0.0, b, a : 1.0 }
         bNumToColor _ = Nothing
+renderNode VectorNode _ _ lastAtOutlet =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ case lastAtOutlet "vector" of
+            Just (Vector vec2) -> renderVector vec2
+            _ -> H.div [] []
+        ]
+    where
+        rNumToColor (Numerical r) = Just $ RgbaColor { r, g : 0.0, b : 0.0, a : 1.0 }
+        rNumToColor _ = Nothing
+        gNumToColor (Numerical g) = Just $ RgbaColor { r : 0.0, g, b : 0.0, a : 1.0 }
+        gNumToColor _ = Nothing
+        bNumToColor (Numerical b) = Just $ RgbaColor { r : 0.0, g : 0.0, b, a : 1.0 }
+        bNumToColor _ = Nothing
 renderNode ShapeNode (R.Node _ path _ _ _) _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
@@ -159,7 +175,6 @@ renderNode _ _ _ _ =
         [ ]
 
 
-
 renderSpread :: S.Spread Value -> R.View Value Channel Node
 renderSpread spread =
     let
@@ -188,6 +203,11 @@ renderSpread spread =
                 [ H.text $ show index <> ":"
                 , renderColor color
                 ]
+        renderItem index (Vector vec) =
+            H.div []
+                [ H.text $ show index <> ":"
+                , renderVector vec
+                ]
         renderItem index _ = H.div [] []
 
 
@@ -211,3 +231,24 @@ renderNoColor =
         [ H.classes [ "tk-color-value" ]
         ]
         [ H.text "?" ]
+
+
+renderVector :: Vec2 -> R.View Value Channel Node
+renderVector vec =
+    H.div
+        [ H.classes [ "tk-vector-value" ]
+        , H.style $ "transform: rotate(" <> (Vec2.arrow (Vec2 0.0 0.0 /\ vec) # _.angle # show) <> "rad);"
+        ]
+        [ H.text "⟶" ]
+
+
+{-
+getLinkTransformStyle :: LinkTransform -> String
+getLinkTransformStyle { from, angle, length } =
+    "transform: translate(" <> fromPosStr <> ") rotate(" <> angleStr <> ");"
+        <> " width: " <> lengthStr <> ";"
+    where
+        fromPosStr = show from.x <> "px, " <> show from.y <> "px"
+        angleStr = show angle <> "rad"
+        lengthStr = show length <> "px"
+-}

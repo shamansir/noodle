@@ -33,6 +33,7 @@ toolkit =
         nodes NodeListNode = T.emptyNode
         nodes RandomNode = randomNode
         nodes NumberNode = numberNode
+        nodes VectorNode = vectorNode
         nodes ColorNode = colorNode
         nodes TimeNode = timeNode
         nodes CanvasNode = canvasNode

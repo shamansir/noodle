@@ -19,6 +19,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (traverse_, for_)
 import Data.Array (catMaybes) as Array
 
+import Data.Vec2 (Vec2(..))
 import Data.Spread as Spread
 
 import Data.Time.Duration (Milliseconds(..))
@@ -46,6 +47,7 @@ type NodeDef = T.NodeDef Value Channel
 data Node
     = NumberNode
     | RandomNode
+    | VectorNode
     | ColorNode
     | TimeNode
     -- | SineNode
@@ -61,6 +63,7 @@ instance showNode :: Show Node where
     show NodeListNode = "node list"
     show RandomNode = "random"
     show NumberNode = "number"
+    show VectorNode = "vector"
     show TimeNode = "time"
     -- show SineNode = "sine"
     show ColorNode = "color"
@@ -73,6 +76,7 @@ instance showNode :: Show Node where
 nodesForTheList :: Array Node
 nodesForTheList =
     [ NumberNode
+    , VectorNode
     , RandomNode
     , ColorNode
     , TimeNode
@@ -95,6 +99,35 @@ numberNode =
             >~ "num" /\ NumericalChannel
         , process : R.Process pure  -- FIXME: use `PassThrough`
         }
+
+
+vectorNode :: NodeDef
+vectorNode =
+    T.NodeDef
+    { inlets :
+        withInlets
+        ~< "x" /\ NumericalChannel
+        ~< "y" /\ NumericalChannel
+    , outlets :
+        withOutlets
+        >~ "vector" /\ AnyValueChannel -- FIXME: Some other channel
+    , process : R.Process processF
+    }
+    where
+        processF :: ProcessF
+        processF receive = do
+            let
+                getVector (Numerical x) (Numerical y) =
+                    Just $ Vector $ Vec2 x y
+                getVector _ _ =
+                    Nothing
+                send "vector" =
+                    getVector
+                        <$> receive "x"
+                        <*> receive "y"
+                        >>= identity
+                send _ = Nothing
+            pure send
 
 
 colorNode :: NodeDef

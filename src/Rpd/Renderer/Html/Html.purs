@@ -22,6 +22,8 @@ import Data.Sequence as Seq
 import Data.Sequence (Seq)
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
+import Data.Vec2 (Vec2(..))
+import Data.Vec2 as Vec2
 import Data.Exists (Exists, mkExists)
 import Control.Alternative ((<|>))
 
@@ -742,12 +744,8 @@ convertPositions srcPositions =
 
 getLinkTransform :: { from :: Position, to :: Position } -> LinkTransform
 getLinkTransform { from, to } =
-    let
-        vector = { x: to.x - from.x, y : to.y - from.y }
-        angle = atan2 vector.y vector.x
-        length = sqrt $ pow vector.x 2.0 + pow vector.y 2.0
-    in
-        { from, angle, length }
+    let { angle, length } = Vec2.arrow (Vec2 from.x from.y /\ Vec2 to.x to.y)
+    in { from, angle, length }
 
 
 getLinkTransformStyle :: LinkTransform -> String

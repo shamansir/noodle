@@ -13,11 +13,10 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Lerp (class Lerp, lerp)
 import Data.Spread (Spread) as S
 import Data.Spread (run) as Spread
+import Data.Vec2
 
 
 newtype RgbaColor = RgbaColor { r :: Number, g :: Number, b :: Number, a :: Number }
-
-data Vec2 = Vec2 Number Number
 
 
 -- newtype Interpolation =
@@ -58,13 +57,6 @@ data Value
 
 -- drawEllipse :: Number -> Number -> Instruction
 -- drawEllipse a b = Draw $ Ellipse a b
-
-
-instance lerpVec2 :: Lerp Vec2 where
-    lerp (Vec2 fromX fromY /\ Vec2 toX toY) amount =
-        Vec2
-            <$> lerp (fromX /\ toX) amount
-            <*> lerp (fromY /\ toY) amount
 
 
 instance lerpRgbaColor :: Lerp RgbaColor where
@@ -141,10 +133,6 @@ instance showRgbaColor :: Show RgbaColor where
                 <> show a <> ")"
 
 
-instance showVec2 :: Show Vec2 where
-    show (Vec2 x y) = "vec(" <> show x <> "," <> show y <> ")"
-
-
 instance showDrawOp :: Show DrawOp where
     show (Ellipse axes) = "ellipse: " <> show axes
     show (Rect dimensions) = "rect: " <> show dimensions
@@ -183,4 +171,3 @@ colorToCss (RgbaColor { r, g, b, a }) =
             <> show (g * 255.0) <> ","
             <> show (b * 255.0) <> ","
             <> show a <> ")"
-

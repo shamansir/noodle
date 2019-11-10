@@ -14,6 +14,7 @@ import Example.Toolkit.Value (Value(..)) as V
 
 import Data.Traversable (traverse_, for_)
 import Data.Spread (run) as Spread
+import Data.Vec2 (Vec2(..))
 
 class OnCanvas x where
     apply :: x -> Context2D -> Effect Unit
