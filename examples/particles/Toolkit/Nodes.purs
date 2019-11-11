@@ -52,6 +52,8 @@ data Node
     | VectorNode
     | ColorNode
     | TimeNode
+    | FillNode
+    | MoveNode
     -- | SineNode
     | CanvasNode
     | ShapeNode
@@ -66,6 +68,8 @@ instance showNode :: Show Node where
     show RandomNode = "random"
     show NumberNode = "number"
     show VectorNode = "vector"
+    show FillNode = "fill"
+    show MoveNode = "move"
     show TimeNode = "time"
     -- show SineNode = "sine"
     show ColorNode = "color"
@@ -81,6 +85,8 @@ nodesForTheList =
     , VectorNode
     , RandomNode
     , ColorNode
+    , FillNode
+    , MoveNode
     , TimeNode
     -- , SineNode
     , ShapeNode
@@ -100,6 +106,50 @@ numberNode =
             T.withOutlets
             >~ "num" /\ NumericalChannel
         , process : R.Process pure  -- FIXME: use `PassThrough`
+        }
+
+
+fillNode :: NodeDef
+fillNode =
+    T.NodeDef
+        { inlets :
+            T.withInlets
+            ~< "color" /\ ColorChannel
+        , outlets :
+            T.withOutlets
+            >~ "fill" /\ AnyValueChannel
+        , process : R.Process
+            $ \receive -> let
+                send "fill" =
+                    case receive "color" of
+                        Just (V.Color color) ->
+                            Just $ Apply $ Style $ Fill $ color
+                        _ -> Nothing
+                send _ =
+                    Nothing
+            in pure send
+        }
+
+
+moveNode :: NodeDef
+moveNode =
+    T.NodeDef
+        { inlets :
+            T.withInlets
+            ~< "vec" /\ VectorChannel
+        , outlets :
+            T.withOutlets
+            >~ "move" /\ AnyValueChannel
+        , process : R.Process
+            $ \receive -> let
+                send "move" =
+                    case receive "vec" of
+                        Just (Vector vec) ->
+                            Just $ Apply $ Transform $ Move $ vec
+                        _ -> Nothing
+                send _ =
+                    Nothing
+            in pure send
         }
 
 

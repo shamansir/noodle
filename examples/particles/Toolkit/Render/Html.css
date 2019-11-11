@@ -9,19 +9,25 @@
     max-width: 60px;
 }
 
-.tk-color-value,
-.tk-vector-value {
+.tk-color-value {
     border: 1px solid gray;
-    border-radius: 2px;
+    border-radius: 4px;
     width: 15px;
     height: 15px;
     display: inline-block;
     margin: 2px 0;
 }
 
-.tk-vector-value {
+.tk-direction-value {
+    border: 1px solid gray;
     /* content: "⟶"; */
     color: black;
+    border-radius: 8px;
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    margin: 2px 0;
+    line-height: 16px;
 }
 
 .tk-trigger {

@@ -10,6 +10,8 @@ import Example.Toolkit.Value
 data Channel
     = TriggerChannel -- OnlyTriggers
     | NumericalChannel -- OnlyNumbers
+    | ColorChannel -- OnlyColors
+    | VectorChannel -- OnlyVectors
     | SpreadChannel -- OnlySpreads
     | AnyValueChannel --
 

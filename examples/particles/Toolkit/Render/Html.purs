@@ -37,6 +37,7 @@ import FRP.Event.AnimationFrame as E
 import Example.Toolkit.Nodes
 import Example.Toolkit.Value
 import Example.Toolkit.Channel
+import Example.Toolkit.Html.OnHtml
 
 
 -- type RenderNode d msg view = forall msg. R.Node d -> (msg -> Effect Unit) -> view
@@ -72,6 +73,7 @@ renderer =
         classFor NumericalChannel = "tk-number"
         classFor SpreadChannel = "tk-spread"
         classFor AnyValueChannel = "tk-any"
+        classFor _ = "tk-any"
 
 
 renderNode :: Node -> R.Node Value Node -> R.Receive Value -> R.Send Value -> R.View Value Channel Node
@@ -131,7 +133,12 @@ renderNode VectorNode _ _ lastAtOutlet =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ case lastAtOutlet "vector" of
-            Just (Vector vec2) -> renderVector vec2
+            Just (Vector vec2) ->
+                H.div
+                    []
+                    [ renderCoords vec2
+                    , renderDirection vec2
+                    ]
             _ -> H.div [] []
         ]
     where
@@ -149,7 +156,7 @@ renderNode ShapeNode (R.Node _ path _ _ _) _ _ =
                 $ H.always_ $ R.core
                 $ A.Request
                 $ A.ToSendToInlet (P.inletInNode path "shape")
-                $ Apply $ Draw $ Ellipse $ Vec2 100.0 100.0
+                $ Apply $ Draw $ Ellipse $ Vec2 20.0 20.0
             ]
             [ H.text "CIRCLE" ]
         ]
@@ -178,82 +185,3 @@ renderNode _ _ _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ ]
-
-
-renderSpread :: S.Spread Value -> R.View Value Channel Node
-renderSpread spread =
-    let
-        maxItems = 10
-        arr = Array.catMaybes $ Spread.run spread
-        len = Array.length arr
-    in case arr of
-        [] -> H.div [] []
-        items | len <= maxItems ->
-            Array.mapWithIndex (/\) items
-                # map (uncurry renderItem)
-                # H.div [ H.classes [ "tk-spread-value" ] ]
-        aLotOfItems ->
-            Array.mapWithIndex (\idx item ->
-                if idx `mod` (floor (toNumber len / toNumber maxItems)) == 0 then
-                    Just $ idx /\ item
-                else Nothing
-            ) arr
-                # Array.catMaybes
-                # map (uncurry renderItem)
-                # H.div [ H.classes [ "tk-spread-value" ] ]
-    where
-        renderItem index (Numerical num) = H.div [] [ H.text $ show index <> ":" <> show num ]
-        renderItem index (Color color) =
-            H.div []
-                [ H.text $ show index <> ":"
-                , renderColor color
-                ]
-        renderItem index (Vector vec) =
-            H.div []
-                [ H.text $ show index <> ":"
-                , renderVector vec
-                ]
-        renderItem index _ = H.div [] []
-
-
-renderIfColor :: Maybe Value -> R.View Value Channel Node
-renderIfColor (Just (Color color)) = renderColor color
-renderIfColor _ = renderNoColor
-
-
-renderColor :: RgbaColor -> R.View Value Channel Node
-renderColor color =
-    H.div
-        [ H.classes [ "tk-color-value" ]
-        , H.style $ "background-color: " <> colorToCss color <> ";"
-        ]
-        [ ]
-
-
-renderNoColor :: R.View Value Channel Node
-renderNoColor =
-    H.div
-        [ H.classes [ "tk-color-value" ]
-        ]
-        [ H.text "?" ]
-
-
-renderVector :: Vec2 -> R.View Value Channel Node
-renderVector vec =
-    H.div
-        [ H.classes [ "tk-vector-value" ]
-        , H.style $ "transform: rotate(" <> (Vec2.arrow (Vec2 0.0 0.0 /\ vec) # _.angle # show) <> "rad);"
-        ]
-        [ H.text "⟶" ]
-
-
-{-
-getLinkTransformStyle :: LinkTransform -> String
-getLinkTransformStyle { from, angle, length } =
-    "transform: translate(" <> fromPosStr <> ") rotate(" <> angleStr <> ");"
-        <> " width: " <> lengthStr <> ";"
-    where
-        fromPosStr = show from.x <> "px, " <> show from.y <> "px"
-        angleStr = show angle <> "rad"
-        lengthStr = show length <> "px"
--}
