@@ -31,6 +31,8 @@ import Rpd.Process as R
 import Rpd.Toolkit as T
 import Rpd.Toolkit (withInlets, withOutlets, (~<), (>~))
 
+import Rpd.Render.Atom as R -- FIXME: shouldn't require `Render` module
+
 import Example.Toolkit.Value
 import Example.Toolkit.Value (Value(..)) as V
 import Example.Toolkit.Channel
@@ -54,7 +56,7 @@ data Node
     | CanvasNode
     | ShapeNode
     | SpreadNode
-    | PairNode
+    | JoinNode
     | NodeListNode
 
 
@@ -69,7 +71,7 @@ instance showNode :: Show Node where
     show ColorNode = "color"
     show ShapeNode = "shape"
     show SpreadNode = "spread"
-    show PairNode = "pair"
+    show JoinNode = "join"
     show CanvasNode = "canvas"
 
 
@@ -83,7 +85,7 @@ nodesForTheList =
     -- , SineNode
     , ShapeNode
     , SpreadNode
-    , PairNode
+    , JoinNode
     , CanvasNode
     ]
 
@@ -236,23 +238,29 @@ spreadNode =
         processF :: ProcessF
         processF receive = do
             let
-                spread :: Value -> Value -> Value -> Maybe Value
-                spread valueFrom valueTo (Numerical count) =
-                    Just $ Spread (Spread.make (valueFrom /\ valueTo) (floor count))
+                spread :: Maybe Value -> Maybe Value -> Maybe Value -> Maybe Value
+                spread (Just valueFrom) (Just valueTo) (Just (Numerical count)) =
+                    Just $ Spread $ Spread.make (valueFrom /\ valueTo) (floor count)
+                spread (Just valueFrom) Nothing (Just (Numerical count)) =
+                    Just $ Spread $ Spread.repeat (floor count) valueFrom
+                spread Nothing (Just valueTo) (Just (Numerical count)) =
+                    Just $ Spread $ Spread.repeat (floor count) valueTo
+                spread (Just valueFrom) (Just valueTo) Nothing =
+                    Just $ Spread $ Spread.make (valueFrom /\ valueTo) 1
+                spread (Just valueFrom) Nothing Nothing =
+                    Just $ Spread $ Spread.singleton valueFrom
+                spread Nothing (Just valueTo) Nothing =
+                    Just $ Spread $ Spread.singleton valueTo
                 spread _ _ _ = Nothing
             let send "spread" =
-                    spread
-                    <$> receive "from"
-                    <*> receive "to"
-                    <*> receive "count"
-                    >>= identity
+                    spread (receive "from") (receive "to") (receive "count")
                 send _ = Nothing
             pure send
 
 
 
-pairNode :: NodeDef
-pairNode =
+joinNode :: NodeDef
+joinNode =
     T.NodeDef
         { inlets :
             T.withInlets
@@ -260,26 +268,26 @@ pairNode =
             ~< "spread2" /\ AnyValueChannel -- FIXME: Only-spread channel?
         , outlets :
             T.withOutlets
-            >~ "pair" /\ AnyValueChannel -- FIXME: Some other channel?
+            >~ "join" /\ AnyValueChannel -- FIXME: Some other channel?
         , process : R.Process processF
         }
     where
         processF :: ProcessF
         processF receive = do
             let
-                pair :: Value -> Value -> Maybe Value
-                pair (Spread spreadA) (Spread spreadB) =
+                join :: Maybe Value -> Maybe Value -> Maybe Value
+                join (Just (Spread spreadA)) (Just (Spread spreadB)) =
                     Just $ Spread (uncurry Pair <$> Spread.join spreadA spreadB)
-                pair (Spread spread) val =
+                join (Just (Spread spread)) (Just val) =
                     Just $ Spread (uncurry Pair <$> Spread.join spread (Spread.singleton val))
-                pair val (Spread spread) =
+                join (Just val) (Just (Spread spread)) =
                     Just $ Spread (uncurry Pair <$> Spread.join (Spread.singleton val) spread)
-                pair _ _ = Nothing
-            let send "pair" =
-                    pair
-                    <$> receive "spread1"
-                    <*> receive "spread2"
-                    >>= identity
+                join (Just (Spread spread)) Nothing =
+                    Just $ Spread spread
+                join Nothing (Just (Spread spread)) =
+                    Just $ Spread spread
+                join _ _ = Nothing
+            let send "join" = join (receive "spread1") (receive "spread2")
                 send _ = Nothing
             pure send
 
@@ -319,7 +327,7 @@ canvasNode =
             let
                 -- (maybeTime :: Maybe Value) = receive "frame"
                 dt = curTime - prev.last
-                posX = (prev.last - prev.start + dt) / 1000.0
+                posX = (prev.last - prev.start + dt) / 500.0
                 next =
                     if prev.start < 0.0 then
                         prev
@@ -371,3 +379,9 @@ canvasNode =
                         runMaybeT $ do
                             canvas <- MaybeT $ getCanvasElementById "the-canvas"
                             lift $ getContext2D canvas
+
+
+instance nodeAtom :: R.Atom Node where
+    labelOf = show
+    uniqueIdOf = show
+    debugInfoOf = show

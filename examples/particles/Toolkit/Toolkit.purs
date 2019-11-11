@@ -39,7 +39,7 @@ toolkit =
         nodes CanvasNode = canvasNode
         nodes ShapeNode = shapeNode
         nodes SpreadNode = spreadNode
-        nodes PairNode = pairNode
+        nodes JoinNode = joinNode
 
 
 -- instance exampleChannel :: T.Channels Value Channel where

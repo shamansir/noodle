@@ -25,6 +25,8 @@ import Rpd.Renderer.Html.NodeList (render) as NodeList
 import Rpd.Path as P
 import Rpd.Process as R
 
+import Rpd.Render.Atom as R
+
 import Spork.Html (Html)
 import Spork.Html as H
 
@@ -160,13 +162,16 @@ renderNode SpreadNode _ lastAtInlet lastAtOutlet =
             _ ->
                 H.text "(None)"
         ]
-renderNode PairNode _ lastAtInlet _ =
+renderNode JoinNode _ _ lastAtOutlet =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
             []
-            [ H.text $ "spread1" <> (show $ lastAtInlet "spread1")
-            , H.text $ "spread2" <> (show $ lastAtInlet "spread2")
+            [ case lastAtOutlet "join" of
+                Just (Spread spread) ->
+                    renderSpread spread
+                _ ->
+                    H.text "(None)"
             ]
         ]
 renderNode _ _ _ _ =
