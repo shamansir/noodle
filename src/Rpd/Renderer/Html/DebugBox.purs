@@ -20,6 +20,8 @@ import Rpd.Optics as L
 import Rpd.UUID as R
 import Rpd.Process as R
 
+import Rpd.Render.Atom as R
+
 
 actionStackSize :: Int
 actionStackSize = 10

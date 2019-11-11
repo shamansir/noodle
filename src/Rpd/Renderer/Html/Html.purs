@@ -45,6 +45,7 @@ import Rpd.Render.MUV (Renderer(..), PushF(..), skipEffects) as R
 import Rpd.Util (type (/->), (+>), Bounds, Rect, Position)
 import Rpd.Toolkit as T
 
+import Rpd.Render.Atom as R
 import Rpd.Renderer.Layout as Layout
 import Rpd.Renderer.Layout (Layout, PatchLayout, Cell(..), ZIndex(..))
 import Rpd.Renderer.Html.DebugBox as DebugBox
@@ -189,7 +190,7 @@ viewError error =
 
 viewNetwork
     :: forall d c n
-     . Show n
+     . R.Atom n
     => T.Channels d c
     => ToolkitRenderer d c n
     -> Model d c n
@@ -243,7 +244,7 @@ viewNetwork toolkitRenderer ui nw@(R.Network { name, patches }) =
 
 viewPatch
     :: forall d c n
-     . Show n
+     . R.Atom n
     => T.Channels d c
     => ToolkitRenderer d c n
     -> Model d c n
@@ -294,7 +295,7 @@ viewPatch toolkitRenderer ui nw patchUuid =
 
 viewNode
     :: forall d c n
-     . Show n
+     . R.Atom n
     => T.Channels d c
     => ToolkitRenderer d c n
     -> Model d c n
@@ -312,7 +313,7 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                         [ H.classes [ "rpd-node-title" ]
                         , H.onClick $ handleNodeTitleClick node
                         ]
-                        [ H.span [ ] [ H.text $ name <> " (" <> show n <> ")" ] ]
+                        [ H.span [ ] [ H.text $ name <> " (" <> R.labelOf n <> ")" ] ]
                         -- FIXME use special "node title" and "node ID" for classes etc."
                     , H.div
                         [ H.classes [ "rpd-node-remove-button" ] ]
@@ -511,6 +512,7 @@ htmlRenderer
     :: forall d c n
      . T.Channels d c
     => Show d => Show c => Show n
+    => R.Atom n
     => ToolkitRenderer d c n
     -> HtmlRenderer d c n
 htmlRenderer toolkitRenderer =
@@ -544,6 +546,7 @@ viewDragState dragState =
 view
     :: forall d c n
      . Show d => Show c => Show n
+    => R.Atom n
     => T.Channels d c
     => ToolkitRenderer d c n
     -> Either R.RpdError (Model d c n /\ R.Network d c n)
