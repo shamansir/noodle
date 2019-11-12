@@ -9,12 +9,14 @@ import Graphics.Canvas
 
 import Effect (Effect)
 
-import Example.Toolkit.Value
-import Example.Toolkit.Value (Value(..)) as V
+import Example.Toolkit.Value (Value(..), Instruction(..), DrawOp(..), StyleOp(..), TransformOp(..))
+import Example.Toolkit.Value as V
 
 import Data.Traversable (traverse_, for_)
 import Data.Spread (run) as Spread
 import Data.Vec2 (Vec2(..))
+
+import Debug.Trace as DT
 
 
 class OnCanvas x where
@@ -24,10 +26,6 @@ class OnCanvas x where
 instance drawOnCanvas :: OnCanvas DrawOp where
     apply (Ellipse (Vec2 a b)) ctx = do
         withContext ctx $ do
-            -- -- scale ctx { scaleX : 1.0, scaleY : b / a }
-            -- _ <- DT.spy "drawing" $ pure unit
-            -- setFillStyle ctx "#000000"
-            -- fillText ctx ("AAAAAAA") 40.0 20.0
             beginPath ctx
             arc ctx
                 { x : 0.0, y : 0.0
@@ -44,26 +42,29 @@ instance drawOnCanvas :: OnCanvas DrawOp where
         stroke ctx
 
 
-instance styleOnCanvas :: OnCanvas StyleOp where
+instance styleOnCanvas :: OnCanvas V.StyleOp where
     apply (Fill fill) ctx =
-        setFillStyle ctx $ show fill
+        setFillStyle ctx $ V.colorToCss fill
     apply (Stroke color w) ctx = do
-        setStrokeStyle ctx $ show color
+        setStrokeStyle ctx $ V.colorToCss color
         setLineWidth ctx w
 
 
-instance transformOnCanvas :: OnCanvas TransformOp where
+instance transformOnCanvas :: OnCanvas V.TransformOp where
     apply (Move (Vec2 x y)) ctx =
         translate ctx { translateX : x, translateY : y }
-    apply (Scale (Vec2 x y)) ctx = do
+    apply (Scale (Vec2 x y)) ctx =
         scale ctx { scaleX : x, scaleY : y }
 
 
-instance instructionOnCanvas :: OnCanvas Instruction where
+instance instructionOnCanvas :: OnCanvas V.Instruction where
     apply NoOp _ = pure unit
-    apply (Draw draw) ctx = apply draw ctx
-    apply (Style style) ctx = apply style ctx
-    apply (Transform transform) ctx = apply transform ctx
+    apply (Draw draw) ctx =
+        apply draw ctx
+    apply (Style style) ctx =
+        apply style ctx
+    apply (Transform transform) ctx =
+        apply transform ctx
 
 
 instance valueOnCanvas :: OnCanvas Value where
@@ -74,7 +75,7 @@ instance valueOnCanvas :: OnCanvas Value where
     apply (Vector (Vec2 x y)) ctx =
         -- FIXME: draw an arrow
         fillText ctx (show x <> ";" <> show y) 0.0 0.0
-    apply (V.Color color) ctx = do
+    apply (Color color) ctx = do
         fillText ctx (show color) 0.0 0.0
         setFillStyle ctx (show color)
         fillPath ctx $ do

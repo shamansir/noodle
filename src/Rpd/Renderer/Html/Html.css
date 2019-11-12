@@ -58,7 +58,7 @@ body {
         "rpd-node-title rpd-node-body rpd-node-remove-button"
         ". rpd-node-outlets .";
     max-width: 300px;
-    max-height: 250px;
+    /* max-height: 250px; */
 }
 
 .rpd-dragged-nodes .rpd-node,
@@ -104,10 +104,10 @@ body {
 }
 
 .rpd-node-body {
-    min-height: 60px;
+    /* min-height: 60px; */
     grid-area: rpd-node-body;
     /* max-width: 250px; */
-    min-width: 80px;
+    /* min-width: 80px; */
     background-color: #617b79;
     color: #eee;
     box-shadow: 3px 3px 14px 1px rgba(33,33,33,0.7);
@@ -126,7 +126,8 @@ body {
 }
 
 .rpd-inlet, .rpd-outlet {
-    min-width: 50px;
+    /* min-width: 30px; */
+    margin-right: 5px;
     color: #eee;
 }
 

@@ -127,6 +127,22 @@ instance valueOnHtml :: OnHtml Value where
             $ html <$> (Array.catMaybes $ Spread.run spread)
 
 
+renderIfSet :: forall msg. String -> Maybe Value -> Html msg
+renderIfSet _ (Just value) = html value
+renderIfSet defaultText Nothing = H.text defaultText
+
+
+renderIfSetAnd :: forall msg. (Value -> Boolean) -> String -> Maybe Value -> Html msg
+renderIfSetAnd check _ (Just value) | check value = html value
+renderIfSetAnd _ defaultText (Just value) | otherwise = H.text defaultText
+renderIfSetAnd _ defaultText _ = H.text defaultText
+
+
+isSpread :: Value -> Boolean
+isSpread (Spread _) = true
+isSpread _ = false
+
+
 renderIfColor :: forall msg. Maybe Value -> Html msg
 renderIfColor (Just (Color color)) = renderColor color
 renderIfColor _ = renderNoColor

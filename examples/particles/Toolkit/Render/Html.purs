@@ -76,9 +76,26 @@ renderer =
         classFor _ = "tk-any"
 
 
-renderNode :: Node -> R.Node Value Node -> R.Receive Value -> R.Send Value -> R.View Value Channel Node
+renderNode
+    :: Node
+    -> R.Node Value Node
+    -> R.Receive Value
+    -> R.Send Value
+    -> R.View Value Channel Node
 renderNode NodeListNode (R.Node _ (P.ToNode { patch }) _ _ _) _ _ =
     NodeList.render (P.ToPatch patch) nodesForTheList
+renderNode BangNode (R.Node _ path _ _ _) _ _ =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ H.div
+            [ H.onClick
+                $ H.always_ $ R.core
+                $ A.Request
+                $ A.ToSendToInlet (P.inletInNode path "bang")
+                $ Bang
+            ]
+            [ H.text "◌" ]
+        ]
 renderNode TimeNode (R.Node _ path _ _ _) _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
@@ -163,23 +180,22 @@ renderNode ShapeNode (R.Node _ path _ _ _) _ _ =
 renderNode SpreadNode _ lastAtInlet lastAtOutlet =
     H.div
         [ H.classes [ "tk-node" ] ]
-        [ case lastAtOutlet "spread" of
-            Just (Spread spread) ->
-                renderSpread spread
-            _ ->
-                H.text "(None)"
+        [ renderIfSetAnd isSpread "(None)" $ lastAtOutlet "join"
         ]
 renderNode JoinNode _ _ lastAtOutlet =
     H.div
         [ H.classes [ "tk-node" ] ]
-        [ H.div
-            []
-            [ case lastAtOutlet "join" of
-                Just (Spread spread) ->
-                    renderSpread spread
-                _ ->
-                    H.text "(None)"
-            ]
+        [ renderIfSetAnd isSpread "(None)" $ lastAtOutlet "join"
+        ]
+renderNode MoveNode _ _ lastAtOutlet =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ renderIfSet "(None)" $ lastAtOutlet "move"
+        ]
+renderNode FillNode _ _ lastAtOutlet =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ renderIfSet "(None)" $ lastAtOutlet "fill"
         ]
 renderNode _ _ _ _ =
     H.div

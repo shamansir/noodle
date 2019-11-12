@@ -50,3 +50,12 @@
     color: white;
 }
 
+.tk-value-instruction,
+.tk-value-shape,
+.tk-value-transform,
+.tk-value-pair,
+.tk-value-fill,
+.tk-value-style,
+.tk-value-stroke {
+    display: inline-block;
+}

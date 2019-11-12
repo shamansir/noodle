@@ -31,6 +31,7 @@ toolkit =
     T.Toolkit (T.ToolkitName "particles") nodes
     where
         nodes NodeListNode = T.emptyNode
+        nodes BangNode = bangNode
         nodes RandomNode = randomNode
         nodes NumberNode = numberNode
         nodes VectorNode = vectorNode

@@ -313,7 +313,7 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                         [ H.classes [ "rpd-node-title" ]
                         , H.onClick $ handleNodeTitleClick node
                         ]
-                        [ H.span [ ] [ H.text $ name <> " (" <> R.labelOf n <> ")" ] ]
+                        [ H.span [ ] [ H.text $ R.labelOf n <> " (" <> name <> ")" ] ]
                         -- FIXME use special "node title" and "node ID" for classes etc."
                     , H.div
                         [ H.classes [ "rpd-node-remove-button" ] ]
@@ -348,13 +348,13 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                 [ H.classes [ "rpd-node", "rpd-floating" ] -- TODO: toolkit name, node name
                 , uuidToAttr nodeUuid
                 , H.style $ "transform: translate(" <> show x <> "px, " <> show y <> "px); " <>
-                            "min-width: " <> show width <> "px; " <> "min-height: " <> show height <> "px;" <> " z-index: " <> show zIndex <> "; "
+                            "min-width: " <> show width <> "px; " <> "height: " <> show height <> "px;" <> " z-index: " <> show zIndex <> "; "
                 ]
         getAttrs (Packed { x, y } { width, height }) node =
             [ H.classes [ "rpd-node", "rpd-packed" ] -- TODO: toolkit name, node name
             , uuidToAttr nodeUuid
             , H.style $ "transform: translate(" <> show x <> "px, " <> show y <> "px); " <>
-                        "min-width: " <> show width <> "px; " <> "min-height: " <> show height <> "px;"
+                        "min-width: " <> show width <> "px; " <> "height: " <> show height <> "px;"
             ]
         getAttrs NotDetermined node =
             let
@@ -363,7 +363,7 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                 [ H.classes [ "rpd-node" ] -- TODO: toolkit name, node name
                 , uuidToAttr nodeUuid
                 , H.style $ "min-width: " <> show width <> "px; "
-                        <> "min-height: " <> show height <> "px;"
+                         <> "height: " <> show height <> "px;"
                 ]
         receiveInletValue path inletAlias =
             Map.lookup (P.inletInNode path inletAlias) ui.lastInletData
@@ -711,7 +711,7 @@ performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
 
 
 getNodeSize :: forall d n. R.Node d n -> Layout.NodeSize
-getNodeSize _ = Layout.NodeSize { width : 100.0, height : 100.0 }
+getNodeSize _ = Layout.NodeSize { width : 100.0, height : 40.0 }
 
 
 uuidToAttr :: forall a r i. UUID.IsTagged a => a -> H.IProp (id ∷ String | r) i

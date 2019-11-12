@@ -33,8 +33,8 @@ import Rpd.Toolkit (withInlets, withOutlets, (~<), (>~))
 
 import Rpd.Render.Atom as R -- FIXME: shouldn't require `Render` module
 
-import Example.Toolkit.Value
-import Example.Toolkit.Value (Value(..)) as V
+import Example.Toolkit.Value (RgbaColor(..), Value)
+import Example.Toolkit.Value (Value(..), fill, move) as V
 import Example.Toolkit.Channel
 import Example.Toolkit.OnCanvas (apply) as Canvas
 
@@ -47,7 +47,8 @@ type NodeDef = T.NodeDef Value Channel
 
 
 data Node
-    = NumberNode
+    = BangNode
+    | NumberNode
     | RandomNode
     | VectorNode
     | ColorNode
@@ -65,6 +66,7 @@ data Node
 
 instance showNode :: Show Node where
     show NodeListNode = "node list"
+    show BangNode = "bang"
     show RandomNode = "random"
     show NumberNode = "number"
     show VectorNode = "vector"
@@ -81,7 +83,8 @@ instance showNode :: Show Node where
 
 nodesForTheList :: Array Node
 nodesForTheList =
-    [ NumberNode
+    [ BangNode
+    , NumberNode
     , VectorNode
     , RandomNode
     , ColorNode
@@ -94,6 +97,19 @@ nodesForTheList =
     , JoinNode
     , CanvasNode
     ]
+
+
+bangNode :: NodeDef
+bangNode =
+    T.NodeDef
+        { inlets :
+            T.withInlets
+            ~< "bang" /\ TriggerChannel
+        , outlets :
+            T.withOutlets
+            >~ "bang" /\ TriggerChannel
+        , process : R.Process pure  -- FIXME: use `PassThrough`
+        }
 
 
 numberNode :: NodeDef
@@ -123,7 +139,13 @@ fillNode =
                 send "fill" =
                     case receive "color" of
                         Just (V.Color color) ->
-                            Just $ Apply $ Style $ Fill $ color
+                            Just $ V.fill color
+                        Just (V.Spread spread) ->
+                            Just $ V.Spread $
+                                (\val -> case val of
+                                    (V.Color color) -> V.fill color
+                                    _ -> val
+                                ) <$> spread
                         _ -> Nothing
                 send _ =
                     Nothing
@@ -144,8 +166,14 @@ moveNode =
             $ \receive -> let
                 send "move" =
                     case receive "vec" of
-                        Just (Vector vec) ->
-                            Just $ Apply $ Transform $ Move $ vec
+                        Just (V.Vector vec) ->
+                            Just $ V.move vec
+                        Just (V.Spread spread) ->
+                            Just $ V.Spread $
+                                (\val -> case val of
+                                    (V.Vector vec) -> V.move vec
+                                    _ -> val
+                                ) <$> spread
                         _ -> Nothing
                 send _ =
                     Nothing
@@ -169,8 +197,8 @@ vectorNode =
         processF :: ProcessF
         processF receive = do
             let
-                getVector (Numerical x) (Numerical y) =
-                    Just $ Vector $ Vec2 x y
+                getVector (V.Numerical x) (V.Numerical y) =
+                    Just $ V.Vector $ Vec2 x y
                 getVector _ _ =
                     Nothing
                 send "vector" =
@@ -199,7 +227,7 @@ colorNode =
         processF :: ProcessF
         processF receive = do
             let
-                getColor (Numerical r) (Numerical g) (Numerical b) =
+                getColor (V.Numerical r) (V.Numerical g) (V.Numerical b) =
                     Just $ V.Color $ RgbaColor { r : r, g : g, b : b, a : 1.0 }
                 getColor _ _ _ =
                     Nothing
@@ -231,7 +259,7 @@ randomNode =
         processF receive = do
             let
                 getRandom :: Value -> Value -> Effect Number
-                getRandom (Numerical min) (Numerical max) =
+                getRandom (V.Numerical min) (V.Numerical max) =
                     randomRange min max
                 getRandom _ _ = pure 0.0
             random :: Number <-
@@ -239,7 +267,7 @@ randomNode =
                     <$> receive "min"
                     <*> receive "max"
                      #  fromMaybe (pure 0.0)
-            let send "random" = Just $ Numerical random
+            let send "random" = Just $ V.Numerical random
                 send _ = Nothing
             pure send
 
@@ -289,18 +317,18 @@ spreadNode =
         processF receive = do
             let
                 spread :: Maybe Value -> Maybe Value -> Maybe Value -> Maybe Value
-                spread (Just valueFrom) (Just valueTo) (Just (Numerical count)) =
-                    Just $ Spread $ Spread.make (valueFrom /\ valueTo) (floor count)
-                spread (Just valueFrom) Nothing (Just (Numerical count)) =
-                    Just $ Spread $ Spread.repeat (floor count) valueFrom
-                spread Nothing (Just valueTo) (Just (Numerical count)) =
-                    Just $ Spread $ Spread.repeat (floor count) valueTo
+                spread (Just valueFrom) (Just valueTo) (Just (V.Numerical count)) =
+                    Just $ V.Spread $ Spread.make (valueFrom /\ valueTo) (floor count)
+                spread (Just valueFrom) Nothing (Just (V.Numerical count)) =
+                    Just $ V.Spread $ Spread.repeat (floor count) valueFrom
+                spread Nothing (Just valueTo) (Just (V.Numerical count)) =
+                    Just $ V.Spread $ Spread.repeat (floor count) valueTo
                 spread (Just valueFrom) (Just valueTo) Nothing =
-                    Just $ Spread $ Spread.make (valueFrom /\ valueTo) 1
+                    Just $ V.Spread $ Spread.make (valueFrom /\ valueTo) 1
                 spread (Just valueFrom) Nothing Nothing =
-                    Just $ Spread $ Spread.singleton valueFrom
+                    Just $ V.Spread $ Spread.singleton valueFrom
                 spread Nothing (Just valueTo) Nothing =
-                    Just $ Spread $ Spread.singleton valueTo
+                    Just $ V.Spread $ Spread.singleton valueTo
                 spread _ _ _ = Nothing
             let send "spread" =
                     spread (receive "from") (receive "to") (receive "count")
@@ -326,16 +354,16 @@ joinNode =
         processF receive = do
             let
                 join :: Maybe Value -> Maybe Value -> Maybe Value
-                join (Just (Spread spreadA)) (Just (Spread spreadB)) =
-                    Just $ Spread (uncurry Pair <$> Spread.join spreadA spreadB)
-                join (Just (Spread spread)) (Just val) =
-                    Just $ Spread (uncurry Pair <$> Spread.join spread (Spread.singleton val))
-                join (Just val) (Just (Spread spread)) =
-                    Just $ Spread (uncurry Pair <$> Spread.join (Spread.singleton val) spread)
-                join (Just (Spread spread)) Nothing =
-                    Just $ Spread spread
-                join Nothing (Just (Spread spread)) =
-                    Just $ Spread spread
+                join (Just (V.Spread spreadA)) (Just (V.Spread spreadB)) =
+                    Just $ V.Spread (uncurry V.Pair <$> Spread.join spreadA spreadB)
+                join (Just (V.Spread spread)) (Just val) =
+                    Just $ V.Spread (uncurry V.Pair <$> Spread.join spread (Spread.singleton val))
+                join (Just val) (Just (V.Spread spread)) =
+                    Just $ V.Spread (uncurry V.Pair <$> Spread.join (Spread.singleton val) spread)
+                join (Just (V.Spread spread)) Nothing =
+                    Just $ V.Spread spread
+                join Nothing (Just (V.Spread spread)) =
+                    Just $ V.Spread spread
                 join _ _ = Nothing
             let send "join" = join (receive "spread1") (receive "spread2")
                 send _ = Nothing
@@ -393,23 +421,19 @@ canvasNode =
                 Just ctx ->
                     withContext ctx $ do
                         clearRect ctx { x : 0.0, y : 0.0, width : 500.0, height : 500.0 }
+                        -- translate ctx
+                        --     { translateX : posX
+                        --     , translateY : 20.0
+                        --     }
+                        setFillStyle ctx "#000000"
                         fillText ctx ("start:" <> show prev.start) 40.0 20.0
                         fillText ctx ("curTime:" <> show curTime) 40.0 40.0
                         fillText ctx ("prev.last:" <> show prev.last) 40.0 60.0
                         fillText ctx ("dt:" <> show dt) 40.0 100.0
-                        setFillStyle ctx "#000000"
                         case receive "scene" of
-                            Just (Spread spread) ->
-                                for_ (Array.catMaybes $ Spread.run spread) $ flip Canvas.apply ctx
-                                --flip apply ctx <*> instructions
                             Just value ->
                                 Canvas.apply value ctx
                             _ -> pure unit
-                        translate ctx
-                            { translateX : posX
-                            , translateY : 20.0
-                            }
-                        setFillStyle ctx "#0000FF"
                         fillPath ctx $ do
                             moveTo ctx 10.0 10.0
                             lineTo ctx 20.0 20.0
@@ -418,17 +442,26 @@ canvasNode =
                     -- pure unit
                 Nothing ->
                     pure unit
-            let send "x" = Just $ Numerical 1.0
+            let send "x" = Just $ V.Numerical 1.0
                 send _ = Nothing
             pure $ next { ctx = maybeContext } /\ send
             where
                 getContext :: Effect (Maybe Context2D)
-                getContext = case prev.ctx of
-                    Just ctx -> pure $ pure ctx
-                    Nothing ->
-                        runMaybeT $ do
-                            canvas <- MaybeT $ getCanvasElementById "the-canvas"
-                            lift $ getContext2D canvas
+                getContext = do
+                    maybeCanvas <- getCanvasElementById "the-canvas"
+                    case maybeCanvas of
+                        Just canvas -> do
+                            ctx <- getContext2D canvas
+                            pure $ pure ctx
+                        Nothing -> pure Nothing
+                    {-
+                    case prev.ctx of
+                        Just ctx -> pure $ pure ctx
+                        Nothing ->
+                            runMaybeT $ do
+                                canvas <- MaybeT $ getCanvasElementById "the-canvas"
+                                lift $ getContext2D canvas
+                    -}
 
 
 instance nodeAtom :: R.Atom Node where

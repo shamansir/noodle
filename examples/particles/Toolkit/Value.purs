@@ -2,7 +2,7 @@ module Example.Toolkit.Value where
 
 import Prelude
 
-import Data.Int (toNumber)
+import Data.Int (toNumber, floor)
 import Data.Array ((!!))
 import Data.String (joinWith)
 import Data.Array (range, catMaybes, length, mapWithIndex, zip) as Array
@@ -162,12 +162,36 @@ instance showValue :: Show Value where
     show (Vector vec) = "vec: " <> show vec
     show (Apply inst) = "apply: " <> show inst
     show (Pair valA valB) = "pair: ( " <> show valA <> " /\\ " <> show valB <> " )"
-    show (Spread spread) = "spread: " <> joinWith "," (show <$> Spread.run spread)
+    show (Spread spread) = "spread: " <> show spread -- joinWith "," (show <$> Spread.run spread)
 
 
 colorToCss :: RgbaColor -> String
 colorToCss (RgbaColor { r, g, b, a }) =
-    "rgba(" <> show (r * 255.0) <> ","
-            <> show (g * 255.0) <> ","
-            <> show (b * 255.0) <> ","
+    "rgba(" <> (show $ floor $ r * 255.0) <> ","
+            <> (show $ floor $ g * 255.0) <> ","
+            <> (show $ floor $ b * 255.0) <> ","
             <> show a <> ")"
+
+
+ellipse :: Vec2 -> Value
+ellipse = Apply <<< Draw <<< Ellipse
+
+
+rect :: Vec2 -> Value
+rect = Apply <<< Draw <<< Rect
+
+
+move :: Vec2 -> Value
+move = Apply <<< Transform <<< Move
+
+
+scale :: Vec2 -> Value
+scale = Apply <<< Transform <<< Scale
+
+
+stroke :: RgbaColor -> Number -> Value
+stroke color width = Apply $ Style $ Stroke color width
+
+
+fill :: RgbaColor -> Value
+fill = Apply <<< Style <<< Fill
