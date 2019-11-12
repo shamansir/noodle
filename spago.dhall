@@ -9,6 +9,7 @@ You can edit this file as you like.
     , "arrays"
     , "behaviors"
     , "canvas"
+    , "colors"
     , "console"
     , "control"
     , "coroutines"
@@ -35,6 +36,7 @@ You can edit this file as you like.
     , "test-unit"
     , "transformers"
     , "tuples"
+    , "vector"
     ]
 , packages =
     ./packages.dhall

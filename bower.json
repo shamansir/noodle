@@ -41,7 +41,8 @@
     "purescript-drawing": "^4.0.0",
     "purescript-sequences": "^2.1.0",
     "purescript-now": "^4.0.0",
-    "purescript-numbers": "^7.0.0"
+    "purescript-numbers": "^7.0.0",
+    "purescript-colors": "^5.0.0"
   },
   "devDependencies": {
     "purescript-debug": "^4.0.0",
@@ -51,7 +52,8 @@
     "purescript-node-fs-aff": "^6.0.0"
   },
   "resolutions": {
-    "purescript-foreign-object": "^2.0.1",
-    "purescript-record": "^2.0.1"
+    "purescript-record": "^2.0.1",
+    "purescript-typelevel-prelude": ">= 4.0.0 < 6.0.0",
+    "purescript-foreign-object": "^2.0.1"
   }
 }
