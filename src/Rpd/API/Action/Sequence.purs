@@ -70,6 +70,10 @@ addNextNodeByDef :: forall d c n. Path.ToPatch -> n -> NodeDef d c -> Action d c
 addNextNodeByDef patch n def = Request $ ToAddNextNodeByDef patch n def
 
 
+removeNode :: forall d c n. Path.ToNode -> Action d c n
+removeNode = Request <<< ToRemoveNode
+
+
 addInlet :: forall d c n. Path.ToNode -> Path.Alias -> c -> Action d c n
 addInlet node alias c = Request $ ToAddInlet node alias c
 

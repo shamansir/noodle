@@ -182,56 +182,52 @@ addNode node@(Node uuid path _ _ _) nw = do
          # setJust (_node uuid) node
          # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
          # setJust (_patchNode patchUuid uuid) unit
-        --  #  addInlets nodePath def.inletDefs
-        -- </> addOutlets nodePath def.outletDefs
-        -- # updateNodeProcessFlow (UUID.ToNode uuid)
 
 
--- addToolkitNode
---     :: forall d c n
---      . Toolkit.Channels d c
---     => Path.ToPatch
---     -> Path.Alias
---     -> Toolkit d c n
---     -> n
---     -> Network d c n
---     -> Network d c n
--- addToolkitNode patchPath nodeAlias (Toolkit name toolkitF) n nw = do
-    -- FIXME: may be it should be default, so we always require toolkit?
-    --        since it may confuse the user that when she has toolkit defined
-    --        somewhere then adding the node of the type is not enough
-    -- ... Or the Toolkit should always be the part of the Network --> Then remove this function
-    -- nw # addDefNode patchPath nodeAlias (toolkitF n) n
+removeNode
+    :: forall d c n
+     . Node d n
+    -> Network d c n
+    -> Either RpdError (Network d c n)
+removeNode node@(Node uuid path _ _ _) nw = do
+    let patchPath = Path.getPatchPath $ Path.lift path
+    patchUuid <- nw # uuidByPath UUID.toPatch patchPath
+    pure $ nw
+        # set (_node uuid) Nothing
+        # set (_pathToId $ Path.lift path) Nothing
+        # set (_patchNode patchUuid uuid) Nothing
 
 
--- addDefNode
---     :: forall d c n
---      . Toolkit.Channels d c
---     => Path.ToPatch
---     -> Path.Alias
---     -> Toolkit.NodeDef d c
---     -> n
---     -> Network d c n
---     -> Network d c n
--- addDefNode patchPath nodeAlias (Toolkit.NodeDef nodeDef) n nw = do
---     nw
---          #  addNode patchPath nodeAlias n
---         </> addInlets nodeDef.inlets
---         </> addOutlets nodeDef.outlets
---         </> processWith path nodeDef.process
---     where
---         path = Path.nodeInPatch patchPath nodeAlias
---         Path.ToPatch patchAlias = patchPath
---         addInlets inlets nw
---             = foldr addInlet' (pure nw) inlets
---         addOutlets outlets nw
---             = foldr addOutlet' (pure nw) outlets
---         addInlet' (Toolkit.InletAlias inletAlias /\ channel) rpd =
---             rpd </>
---                 addInlet path inletAlias channel
---         addOutlet' (Toolkit.OutletAlias outletAlias /\ channel) rpd =
---             rpd </>
---                 addOutlet path outletAlias channel
+{-
+addDefNode
+    :: forall d c n
+     . Toolkit.Channels d c
+    => Path.ToPatch
+    -> Path.Alias
+    -> Toolkit.NodeDef d c
+    -> n
+    -> Network d c n
+    -> Network d c n
+addDefNode patchPath nodeAlias (Toolkit.NodeDef nodeDef) n nw = do
+    nw
+         #  addNode patchPath nodeAlias n
+        </> addInlets nodeDef.inlets
+        </> addOutlets nodeDef.outlets
+        </> processWith path nodeDef.process
+    where
+        path = Path.nodeInPatch patchPath nodeAlias
+        Path.ToPatch patchAlias = patchPath
+        addInlets inlets nw
+            = foldr addInlet' (pure nw) inlets
+        addOutlets outlets nw
+            = foldr addOutlet' (pure nw) outlets
+        addInlet' (Toolkit.InletAlias inletAlias /\ channel) rpd =
+            rpd </>
+                addInlet path inletAlias channel
+        addOutlet' (Toolkit.OutletAlias outletAlias /\ channel) rpd =
+            rpd </>
+                addOutlet path outletAlias channel
+-}
 
 
 addOutlet

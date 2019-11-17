@@ -45,6 +45,7 @@ data RequestAction d c n
     | ToAddNextNode Path.ToPatch n
     | ToAddNodeByDef Path.ToPatch Path.Alias n (NodeDef d c)
     | ToAddNextNodeByDef Path.ToPatch n (NodeDef d c)
+    | ToRemoveNode Path.ToNode
     | ToAddInlet Path.ToNode Path.Alias c
     | ToAddOutlet Path.ToNode Path.Alias c
     | ToRemoveInlet Path.ToInlet
@@ -65,6 +66,7 @@ data RequestAction d c n
 data BuildAction d c n
     = AddPatch (Patch d c n)
     | AddNode (Node d n)
+    | RemoveNode (Node d n)
     -- TODO: Toolkit nodes
     | AddInlet (Inlet d c)
     | AddOutlet (Outlet d c)
@@ -159,6 +161,7 @@ instance showInnerAction :: Show (InnerAction d c n) where
 instance showBuildAction :: (Show d, Show c, Show n) => Show (BuildAction d c n) where
     show (AddPatch patch) = "AddPatch " <> show patch
     show (AddNode node) = "AddNode " <> show node
+    show (RemoveNode node) = "RemoveNode " <> show node
     show (AddInlet inlet) = "AddInlet " <> show inlet
     show (AddOutlet outlet) = "AddOutlet " <> show outlet
     show (RemoveInlet inlet) = "RemoveInlet " <> show inlet

@@ -89,30 +89,22 @@ applyRequestAction _ (ToAddNodeByDef patchPath alias n def) nw =
 applyRequestAction _ (ToAddNextNodeByDef patchPath n def) nw = do
     pure $ nw /\ [ AddNextNodeE patchPath n def ]
     -- | AddNodeE Path.ToPatch Path.Alias n (NodeDef d c)
+applyRequestAction tk (ToRemoveNode nodePath) nw = do
+    nodeUuid <- uuidByPath UUID.toNode nodePath nw
+    node <- view (_node nodeUuid) nw # note (RpdError "")
+    applyBuildAction tk (RemoveNode node) nw
 applyRequestAction _ (ToAddInlet nodePath alias c) nw =
     pure $ nw /\ [ AddInletE nodePath alias c ]
 applyRequestAction _ (ToAddOutlet nodePath alias c) nw =
     pure $ nw /\ [ AddOutletE nodePath alias c ]
-applyRequestAction _ (ToRemoveInlet inletPath) nw = do
+applyRequestAction tk (ToRemoveInlet inletPath) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    -- FIXME: join with `RemoveIntlet` build action
     inlet <- view (_inlet inletUuid) nw # note (RpdError "")
-    nw' <- Api.removeInlet inlet nw
-    pure $ nw' /\
-        [ CancelInletSubscriptions inlet
-        -- , ClearInletCancelers inlet
-        -- , CancelNodeSubscriptions node
-        -- , SubscribeNodeProcess node
-        -- , InformNodeOnInletUpdates inlet node
-        -- , SubscribeNodeUpdates node
-        -- , SendActionOnInletUpdatesE inlet
-        ]
-applyRequestAction _ (ToRemoveOutlet outletPath) nw = do
+    applyBuildAction tk (RemoveInlet inlet) nw
+applyRequestAction tk (ToRemoveOutlet outletPath) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
-    -- FIXME: join with `RemoveOutlet` build action
     outlet <- view (_outlet outletUuid) nw # note (RpdError "")
-    nw' <- Api.removeOutlet outlet nw
-    pure $ nw' /\ [ ] -- FIXME: cancel all subscriptions
+    applyBuildAction tk (RemoveOutlet outlet) nw
 applyRequestAction _ (ToProcessWith nodePath processF) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (RpdError "")
@@ -180,13 +172,26 @@ applyBuildAction _ (AddPatch p) nw = do
 applyBuildAction _ (AddNode node) nw = do
     nw' <- Api.addNode node nw
     pure $ nw' /\ [ ]
-applyBuildAction _ (RemoveInlet (Inlet inletUuid _ _ _)) nw = do
+applyBuildAction _ (RemoveNode node) nw = do
+    nw' <- Api.removeNode node nw
+    pure $ nw' /\
+        [ CancelNodeSubscriptions node
+        ] -- FIXME: cancel all subscriptions
+applyBuildAction _ (RemoveInlet inlet) nw = do
     -- FIXME: should call core API function
-    nw' <- Right $ set (_inlet inletUuid) Nothing nw
-    pure $ nw' /\ [ ] -- FIXME: cancel all subscriptions
-applyBuildAction _ (RemoveOutlet (Outlet outletUuid _ _ _)) nw = do
+    nw' <- Api.removeInlet inlet nw
+    pure $ nw' /\
+        [ CancelInletSubscriptions inlet
+        -- , ClearInletCancelers inlet
+        -- , CancelNodeSubscriptions node
+        -- , SubscribeNodeProcess node
+        -- , InformNodeOnInletUpdates inlet node
+        -- , SubscribeNodeUpdates node
+        -- , SendActionOnInletUpdatesE inlet
+        ] -- FIXME: cancel all subscriptions
+applyBuildAction _ (RemoveOutlet outlet) nw = do
     -- FIXME: should call core API function
-    nw' <- Right $ set (_outlet outletUuid) Nothing nw
+    nw' <- Api.removeOutlet outlet nw
     pure $ nw' /\ [ ] -- FIXME: cancel all subscriptions
 applyBuildAction _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw = do
     let newNode = Api.processWith processF node

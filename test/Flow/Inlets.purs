@@ -182,7 +182,7 @@ spec = do
           </> R.streamToInlet
                 (toInlet "patch" "node" "for-bananas")
                 (R.flow $ const Banana <$> interval 25)
-                
+
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "for-pills") Pills)
     collectedData `shouldContain`
@@ -217,4 +217,8 @@ spec = do
 
   pending "receiving data from the stream triggers the processing function of the node"
 
-  pending "default value of the inlet is sent to its flow when it's added"
+  pending "on connection, latest value of the outlet is sent to the inlet's flow"
+
+  pending "if default value of the inlet is specified, then it is sent to its flow when node was created"
+
+
