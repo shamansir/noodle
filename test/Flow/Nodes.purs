@@ -362,8 +362,8 @@ spec = do
           myToolkit
           (Network.empty "network")
           $ structure
-              </> R.removeNode (toNode "patch" "node")
               </> R.sendToInlet curseInlet (Curse 4)
+              </> R.removeNode (toNode "patch" "node")
 
         collectedData `shouldNotContain`
           (InletData curseInlet $ Curse 4)

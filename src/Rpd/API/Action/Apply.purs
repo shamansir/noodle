@@ -7,10 +7,11 @@ import Data.Maybe
 import Data.String (take) as String
 import Data.Either
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Sequence (empty) as Seq
+import Data.Sequence (empty, toUnfoldable) as Seq
 import Data.Lens (view, setJust, set)
 import Data.Array ((:))
-import Data.Traversable (traverse_)
+import Data.Foldable (class Foldable, foldr)
+import Data.Traversable (traverse, traverse_)
 
 import Debug.Trace as DT
 
@@ -38,6 +39,32 @@ import Rpd.UUID as UUID
 
 
 type Step d c n = Either RpdError (Network d c n /\ Array (RpdEffect d c n))
+
+
+infixl 1 next as <∞>
+
+
+-- TODO: make an operator?
+-- TODO: close to Actions sequensing?
+next :: forall d c n. Step d c n -> (Network d c n -> Step d c n) -> Step d c n
+next stepA stepB = do  -- FIXME: `WriterT`?
+    (nw /\ effs) <- stepA
+    (nw' /\ effs') <- stepB nw
+    pure $ nw' /\ (effs <> effs')
+
+
+foldSteps
+    :: forall d c n x f
+     . Foldable f
+    => Network d c n
+    -> f x
+    -> (x -> Network d c n -> Step d c n)
+    -> Step d c n
+foldSteps initNW foldable foldF =
+    foldr
+        (\x step -> step <∞> foldF x)
+        (pure $ initNW /\ [])
+        foldable
 
 
 apply
@@ -172,11 +199,24 @@ applyBuildAction _ (AddPatch p) nw = do
 applyBuildAction _ (AddNode node) nw = do
     nw' <- Api.addNode node nw
     pure $ nw' /\ [ ]
-applyBuildAction _ (RemoveNode node) nw = do
-    nw' <- Api.removeNode node nw
-    pure $ nw' /\
-        [ CancelNodeSubscriptions node
-        ] -- FIXME: cancel all subscriptions
+applyBuildAction tk (RemoveNode node) nw = do
+    let (Node uuid _ _ _ _) = node
+    inlets <- view (_nodeInlets uuid) nw # note (RpdError "")
+    outlets <- view (_nodeOutlets uuid) nw # note (RpdError "")
+    nw' /\ effs
+        <- removeInlets inlets nw <∞> removeOutlets outlets
+    nw'' <- Api.removeNode node nw'
+    pure $ nw'' /\
+        (effs <>
+            [ CancelNodeSubscriptions node
+            ]) -- FIXME: cancel all subscriptions
+    where
+        removeInlets :: forall f. Foldable f => f (Inlet d c) -> Network d c n -> Step d c n
+        removeInlets inlets inNW =
+            foldSteps inNW inlets $ applyBuildAction tk <<< RemoveInlet
+        removeOutlets :: forall f. Foldable f => f (Outlet d c) -> Network d c n -> Step d c n
+        removeOutlets outlets inNW =
+            foldSteps inNW outlets $ applyBuildAction tk <<< RemoveOutlet
 applyBuildAction _ (RemoveInlet inlet) nw = do
     -- FIXME: should call core API function
     nw' <- Api.removeInlet inlet nw
