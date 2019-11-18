@@ -9,9 +9,11 @@ import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\))
 
 import Effect.Class (liftEffect)
+import Effect.Class.Console (log)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
+import FRP.Event as Event
 import FRP.Event.Time (interval)
 
 import Rpd.Util (flow) as R
@@ -29,7 +31,7 @@ import Rpd.Toolkit
     )
 
 import Test.Spec (Spec, it, pending, describe)
-import Test.Spec.Assertions (shouldContain, shouldNotContain, shouldEqual)
+import Test.Spec.Assertions (shouldContain, shouldNotContain, shouldEqual, shouldNotEqual)
 
 import RpdTest.Helper (TraceItem(..))
 import RpdTest.Helper (channelsAfter) as CollectData
@@ -377,8 +379,8 @@ spec = do
         _ /\ collectedData' <- CollectData.channelsAfter
           (Milliseconds 100.0)
           myToolkit
-          nw'
-          $ Actions.init </> R.removeNode (toNode "patch" "node")
+          (Network.empty "network")
+          $ nwWithFlow </> R.removeInlet curseInlet
 
         collectedData' `shouldNotContain`
           (InletData curseInlet $ Curse 4)
