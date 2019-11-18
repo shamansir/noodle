@@ -199,12 +199,12 @@ run'
     -> ActionList d c n
     -> Effect (ContinuationResult d c n)
 run' toolkit initialNW stepHandler actions = do
-    res@{ models, pushAction } <- prepare initialNW toolkit
+    res@{ models, pushAction, stop } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
     stopInforming <- Event.subscribe models stepHandler
     _ <- pushAll pushAction actions
     -- _ <- stopInforming
-    pure res
+    pure res { stop = stop <> stopInforming }
 
 
 -- TODO: Think about laziness, so that if some error occurs,
@@ -227,15 +227,14 @@ runFolding'
     -> ActionList d c n
     -> Effect (FoldResult d c n /\ ContinuationResult d c n)
 runFolding' toolkit initialNW actions = do
-    res@{ models, pushAction } <- prepare initialNW toolkit
+    res@{ models, pushAction, stop } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
     let modelsFolded = Event.fold (<|>) models $ Right initialNW
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
     _ <- pushAll pushAction actions
-    -- _ <- stopCollectingLastValue
     lastVal <- Ref.read lastValRef
-    pure $ lastVal /\ res
+    pure $ lastVal /\ res { stop = stop <> stopCollectingLastValue }
 
 
 {-
@@ -285,19 +284,15 @@ runTracing'
     -> ActionList d c n
     -> Effect (FoldResult d c n /\ ContinuationResult d c n)
 runTracing' toolkit initialNW everyAction actionList = do
-    res@{ models, pushAction, actions } <- prepare initialNW toolkit
+    res@{ models, pushAction, actions, stop } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
     let modelsFolded = Event.fold (<|>) models $ Right initialNW
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
     stopListeningActions <-
         Event.subscribe actions everyAction
-    _ <- pushAll pushAction actionList
-    -- _ <- stopInforming
-    -- _ <- stopCollectingLastValue
-    -- _ <- stopListeningActions
     lastVal <- Ref.read lastValRef
-    pure $ lastVal /\ res
+    pure $ lastVal /\ res { stop = stop <> stopCollectingLastValue <> stopListeningActions }
 
 
 andThen :: forall d c n. ActionList d c n -> Action d c n -> ActionList d c n
