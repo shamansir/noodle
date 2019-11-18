@@ -16,6 +16,8 @@ import Rpd.Network (empty) as Network
 import Rpd.Path (toPatch, toNode, toInlet)
 import Rpd.Util (flow) as R
 
+import Effect.Class (liftEffect)
+
 import Test.Spec (Spec, it, pending, pending')
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
@@ -42,13 +44,18 @@ spec = do
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-    _ /\ collectedData <-
+    _ /\ collectedData /\ stop <-
         CollectData.channelsAfter
           (Milliseconds 100.0)
           myToolkit
           (Network.empty "network")
           structure
+
+    _ <- liftEffect stop
+
     collectedData `shouldEqual` []
+
+
     pure unit
 
   pending "we receive the default value of the inlet just when it was set"
@@ -63,7 +70,7 @@ spec = do
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
       firstInlet = toInlet "patch" "node" "inlet"
 
-    _ /\ collectedData <-
+    _ /\ collectedData /\ stop <-
       CollectData.channelsAfter
           (Milliseconds 100.0)
           myToolkit
@@ -72,6 +79,8 @@ spec = do
               </> R.sendToInlet firstInlet Parcel
               </> R.sendToInlet firstInlet Pills
               </> R.sendToInlet firstInlet (Curse 5)
+
+    _ <- liftEffect stop
 
     collectedData `shouldEqual`
         [ InletData firstInlet Parcel
@@ -88,7 +97,7 @@ spec = do
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-    _ /\ collectedData <- CollectData.channelsAfter
+    _ /\ collectedData /\ stop <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -96,6 +105,8 @@ spec = do
          </> R.streamToInlet
                 (toInlet "patch" "node" "inlet")
                 (R.flow $ const Pills <$> interval 30)
+
+    _ <- liftEffect stop
 
     collectedData `shouldContain`
         (InletData (toInlet "patch" "node" "inlet") Pills)
@@ -113,7 +124,7 @@ spec = do
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
       firstInlet = toInlet "patch" "node" "inlet"
 
-    _ /\ collectedData <- CollectData.channelsAfter
+    _ /\ collectedData /\ stop <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -124,6 +135,8 @@ spec = do
             </> R.streamToInlet
                   (toInlet "patch" "node" "inlet")
                   (R.flow $ const Banana <$> interval 29)
+
+    _ <- liftEffect stop
 
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "inlet") Pills)
@@ -142,7 +155,7 @@ spec = do
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-    _ /\ collectedData <- CollectData.channelsAfter
+    _ /\ collectedData /\ stop <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -150,6 +163,8 @@ spec = do
           </> R.streamToInlet
                 (toInlet "patch" "node" "inlet")
                 (R.flow $ const Pills <$> interval 20)
+
+    _ <- liftEffect stop
 
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "inlet") Pills)
@@ -171,7 +186,7 @@ spec = do
           </> R.addInlet (toNode "patch" "node") "for-pills" Pass
           </> R.addInlet (toNode "patch" "node") "for-bananas" Pass
 
-    _ /\ collectedData <- CollectData.channelsAfter
+    _ /\ collectedData /\ stop <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -182,6 +197,8 @@ spec = do
           </> R.streamToInlet
                 (toInlet "patch" "node" "for-bananas")
                 (R.flow $ const Banana <$> interval 25)
+
+    _ <- liftEffect stop
 
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "for-pills") Pills)
@@ -200,13 +217,16 @@ spec = do
           </> R.addInlet (toNode "patch" "node") "inlet2" Pass
       stream = R.flow $ const Banana <$> interval 25
 
-    _ /\ collectedData <- CollectData.channelsAfter
+    _ /\ collectedData /\ stop <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
       $ structure
           </> R.streamToInlet (toInlet "patch" "node" "inlet1") stream
           </> R.streamToInlet (toInlet "patch" "node" "inlet2") stream
+
+    _ <- liftEffect stop
+
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "inlet1") Banana)
     collectedData `shouldContain`

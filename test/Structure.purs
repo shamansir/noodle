@@ -6,6 +6,7 @@ import Prelude
 import Data.Lens (view) as L
 import Data.Maybe (Maybe(..))
 import Data.Sequence as Seq
+import Data.Tuple.Nested ((/\))
 
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
@@ -47,7 +48,7 @@ spec =
   describe "structure" do
 
     it "constructing the empty network works" do
-      result <- liftEffect
+      result /\ _ <- liftEffect
         $ Actions.runFolding toolkit network Actions.init
       _ <- getOrFail result network
       pure unit
@@ -55,7 +56,7 @@ spec =
     describe "order of addition" do
 
       it "adding nodes to the patch preserves the order of addition" $ do
-        result <-
+        result /\ _ <-
             liftEffect
             $ Actions.runFolding toolkit network
             $ Actions.init
@@ -74,7 +75,7 @@ spec =
         pure unit
 
       it "adding inlets to the node preserves the order of addition" $ do
-        result <-
+        result /\ _<-
             liftEffect
             $ Actions.runFolding toolkit network
             $ Actions.init
@@ -93,8 +94,9 @@ spec =
           Nothing -> fail "node wasn't found"
         pure unit
 
+
       it "adding outlets to the node preserves the order of addition" $ do
-        result <-
+        result /\ _ <-
             liftEffect
             $ Actions.runFolding toolkit network
             $ Actions.init

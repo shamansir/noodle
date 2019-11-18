@@ -7,6 +7,8 @@ import Prelude
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\))
 
+import Effect.Class (liftEffect)
+
 import Test.Spec (Spec, it, pending)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -25,12 +27,15 @@ import RpdTest.Helper (channelsAfter)
 spec :: Spec Unit
 spec = do
   it "we receive no data from the network when it's empty" $ do
-    _ /\ collectedData <-
+    _ /\ collectedData /\ stop <-
       channelsAfter
           (Milliseconds 100.0)
           myToolkit
           (Network.empty "no-data")
           Actions.init
+
+    _ <- liftEffect stop
+
     collectedData `shouldEqual` []
 
   pending "all the cancelers are called after running the system"

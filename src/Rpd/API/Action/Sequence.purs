@@ -179,6 +179,7 @@ prepare
 prepare nw toolkit = prepare_ nw (apply toolkit) (performEffect toolkit)
 
 
+{-
 run
     :: forall d c n
      . Toolkit d c n
@@ -189,16 +190,17 @@ run
 run toolkit initialNW stepHandler actions =
     run' toolkit initialNW stepHandler actions
         *> pure unit
+-}
 
 
-run'
+run
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
     -> EveryStep d c n
     -> ActionList d c n
     -> Effect (ContinuationResult d c n)
-run' toolkit initialNW stepHandler actions = do
+run toolkit initialNW stepHandler actions = do
     res@{ models, pushAction, stop } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
     stopInforming <- Event.subscribe models stepHandler
@@ -206,26 +208,13 @@ run' toolkit initialNW stepHandler actions = do
     pure res { stop = stop <> stopInforming }
 
 
--- TODO: Think about laziness, so that if some error occurs,
---       skip execution of the tail of the action list
 runFolding
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
     -> ActionList d c n
-    -> Effect (FoldResult d c n)
-runFolding toolkit initialNW actions = do
-    runFolding' toolkit initialNW actions
-        <#> fst
-
-
-runFolding'
-    :: forall d c n
-     . Toolkit d c n
-    -> Network d c n
-    -> ActionList d c n
     -> Effect (FoldResult d c n /\ ContinuationResult d c n)
-runFolding' toolkit initialNW actions = do
+runFolding toolkit initialNW actions = do
     res@{ models, pushAction, stop } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
     let modelsFolded = Event.fold (<|>) models $ Right initialNW
@@ -269,20 +258,8 @@ runTracing
     -> Network d c n
     -> EveryAction d c n
     -> ActionList d c n
-    -> Effect (FoldResult d c n)
-runTracing toolkit initialNW everyAction actions = do
-    runTracing' toolkit initialNW everyAction actions
-        <#> fst
-
-
-runTracing'
-    :: forall d c n
-     . Toolkit d c n
-    -> Network d c n
-    -> EveryAction d c n
-    -> ActionList d c n
     -> Effect (FoldResult d c n /\ ContinuationResult d c n)
-runTracing' toolkit initialNW everyAction actionList = do
+runTracing toolkit initialNW everyAction actionList = do
     res@{ models, pushAction, actions, stop } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
     let modelsFolded = Event.fold (<|>) models $ Right initialNW

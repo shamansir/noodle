@@ -21,7 +21,7 @@ import Rpd.API
     ) as R
 import Rpd.API.Action as R
 import Rpd.API.Action.Sequence ((</>))
-import Rpd.API.Action.Sequence (init, run, runFolding, runFolding', pushAll) as Actions
+import Rpd.API.Action.Sequence (init, run, runFolding, pushAll) as Actions
 import Rpd.API.Action.Sequence as R
 import Rpd.Process (InletHandler(..), InletAlias, OutletAlias) as R
 import Rpd.Path (toPatch, toNode, toInlet)
@@ -138,8 +138,8 @@ spec = do
         network :: R.Network Delivery Pipe Node
         network = Network.empty "network"
 
-      result /\ { pushAction } <- liftEffect
-        $ Actions.runFolding'
+      result /\ { pushAction, stop } <- liftEffect
+        $ Actions.runFolding
             myToolkit
             network
             $ structure
@@ -150,6 +150,7 @@ spec = do
       network' <- getOrFail result network
 
       delay (Milliseconds 100.0)
+      _ <- liftEffect stop
       vals <- liftEffect $ Ref.read ref
       vals `shouldContain` Notebook
       liftEffect $ Ref.write [] ref
@@ -198,7 +199,7 @@ spec = do
         network :: R.Network Delivery Pipe Node
         network = Network.empty "network"
 
-      result <- liftEffect
+      result /\ { stop } <- liftEffect
         $ Actions.runFolding
             myToolkit
             network
@@ -210,11 +211,12 @@ spec = do
       network' <- getOrFail result network
 
       delay (Milliseconds 100.0)
+      _ <- liftEffect stop
       vals <- liftEffect $ Ref.read ref
       vals `shouldContain` Notebook
       liftEffect $ Ref.write [] ref
 
-      result' <- liftEffect
+      result' /\ { stop : stop' } <- liftEffect
         $ Actions.runFolding
             myToolkit
             network'
@@ -227,6 +229,7 @@ spec = do
       _ <- getOrFail result' network'
 
       delay (Milliseconds 100.0)
+      _ <- liftEffect stop
       vals' <- liftEffect $ Ref.read ref
       vals' `shouldNotContain` Liver
       vals' `shouldNotContain` Notebook

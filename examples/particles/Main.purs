@@ -34,7 +34,7 @@ main = do
     --     ExampleToolkit.toolkit
     --     (Network.empty "aaa")
 
-    _ <-
+    _ /\ { stop } <-
         Actions.runFolding
             ExampleToolkit.toolkit
             (Network.empty "network")
@@ -46,4 +46,5 @@ main = do
                         (htmlRenderer ExampleToolkit.htmlRenderer)
                         ExampleToolkit.toolkit
                         nw
+    _ <- stop
     pure unit
