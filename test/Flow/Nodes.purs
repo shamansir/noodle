@@ -12,6 +12,9 @@ import Effect.Class (liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
+import FRP.Event.Time (interval)
+
+import Rpd.Util (flow) as R
 import Rpd.API.Action.Sequence ((</>))
 import Rpd.API.Action.Sequence (init) as Actions
 import Rpd.API.Action.Sequence as R
@@ -357,17 +360,29 @@ spec = do
                 , process : R.Withhold
                 }
 
-        _ /\ collectedData <- CollectData.channelsAfter
+        let
+          nwWithFlow =
+            structure </>
+              R.streamToInlet curseInlet (R.flow $ const (Curse 4) <$> interval 30)
+
+        nw' /\ collectedData <- CollectData.channelsAfter
           (Milliseconds 100.0)
           myToolkit
           (Network.empty "network")
-          $ structure
-              </> R.sendToInlet curseInlet (Curse 4)
-              </> R.removeNode (toNode "patch" "node")
+          nwWithFlow
 
-        collectedData `shouldNotContain`
+        collectedData `shouldContain`
           (InletData curseInlet $ Curse 4)
 
-        collectedData `shouldEqual` []
+        _ /\ collectedData' <- CollectData.channelsAfter
+          (Milliseconds 100.0)
+          myToolkit
+          nw'
+          $ Actions.init </> R.removeNode (toNode "patch" "node")
+
+        collectedData' `shouldNotContain`
+          (InletData curseInlet $ Curse 4)
+
+        collectedData' `shouldEqual` []
 
         pure unit

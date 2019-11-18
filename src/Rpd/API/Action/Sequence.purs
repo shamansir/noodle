@@ -203,7 +203,6 @@ run' toolkit initialNW stepHandler actions = do
     lastValRef <- Ref.new $ Right initialNW
     stopInforming <- Event.subscribe models stepHandler
     _ <- pushAll pushAction actions
-    -- _ <- stopInforming
     pure res { stop = stop <> stopInforming }
 
 
