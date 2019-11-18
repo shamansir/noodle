@@ -5,7 +5,9 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Ref as Ref
+
 import Control.Monad.Error.Class
+import Control.Alternative ((<|>))
 
 import Data.List (List(..), snoc)
 import Data.Either
@@ -227,7 +229,7 @@ runFolding'
 runFolding' toolkit initialNW actions = do
     res@{ models, pushAction } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
-    let modelsFolded = Event.fold foldByError models $ Right initialNW
+    let modelsFolded = Event.fold (<|>) models $ Right initialNW
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
     _ <- pushAll pushAction actions
@@ -285,7 +287,7 @@ runTracing'
 runTracing' toolkit initialNW everyAction actionList = do
     res@{ models, pushAction, actions } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
-    let modelsFolded = Event.fold foldByError models $ Right initialNW
+    let modelsFolded = Event.fold (<|>) models $ Right initialNW
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
     stopListeningActions <-
@@ -304,14 +306,3 @@ andThen = snoc
 
 pushAll :: forall d c n. (Action d c n -> Effect Unit) -> ActionList d c n -> Effect Unit
 pushAll = traverse_
-
-
--- FIXME: do not expose!
--- TODO: may be there is some core function which lets to do it, i.e. `fold (<|>) models`
-foldByError
-    :: forall d c n
-     . Either RpdError (Network d c n)
-    -> Either RpdError (Network d c n)
-    -> Either RpdError (Network d c n)
-foldByError _ (Left err) = Left err
-foldByError v _ = v
