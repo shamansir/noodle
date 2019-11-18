@@ -12,6 +12,7 @@ module Rpd.Render.MUV
     ) where
 
 
+
 import Prelude
 import Effect
 
@@ -105,7 +106,6 @@ make
         { first :: view
         , next :: Event view
         , push :: PushF d c n action
-        , stop :: Effect Unit
         }
 make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = do
     { models, pushAction, stop } <-
@@ -119,7 +119,6 @@ make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = 
         { first : from
         , next : views
         , push : PushF pushAction
-        , stop : stop <> stopViews
         }
     where
         myApply (Right coreAction) (model /\ nw) = do

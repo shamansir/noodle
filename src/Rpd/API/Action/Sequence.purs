@@ -39,7 +39,6 @@ type BasicContinuationResult model action =
     { models :: Event (Either RpdError model)
     , actions :: Event action
     , pushAction :: action -> Effect Unit
-    , stop :: Effect Unit
     }
 type ContinuationResult d c n =
     BasicContinuationResult (Network d c n) (Action d c n)
@@ -163,12 +162,12 @@ prepare_ initialModel apply performEff = do
                 (pure $ initialModel /\ [])
         (models :: Event (Either RpdError model))
             = ((<$>) fst) <$> updates
-    stop <- Event.subscribe updates \step ->
+    _ <- Event.subscribe updates \step ->
         case step of
             Left err -> pure unit
             Right (model /\ effects) ->
                 traverse_ (\eff -> performEff pushAction eff model) effects
-    pure { models, pushAction, stop, actions }
+    pure { models, pushAction, actions }
 
 
 prepare

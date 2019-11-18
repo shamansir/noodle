@@ -244,13 +244,12 @@ expectToRender
 expectToRender renderer toolkit compareViews actions expectation = do
   maybeLastView <- liftEffect $ do
     lastView <- Ref.new Nothing
-    { push, next : views, stop }
+    { push, next : views }
           <- Render.make renderer toolkit $ Network.empty "network"
     _ <- Event.subscribe views (flip Ref.write lastView <<< Just)
     _ <- case push of
           Render.PushF pushAction ->
               traverse_ pushAction actions
-    _ <- stop
     Ref.read lastView
   maybeLastView # maybe (fail "no views were recevied") (compareViews expectation)
 
@@ -266,13 +265,12 @@ expectToRenderMUV
 expectToRenderMUV renderer toolkit compareViews actions expectation = do
   maybeLastView <- liftEffect $ do
     lastView <- Ref.new Nothing
-    { push, next : views, stop }
+    { push, next : views }
           <- RenderMUV.make renderer toolkit $ Network.empty "network"
     _ <- Event.subscribe views (flip Ref.write lastView <<< Just)
     _ <- case push of
           RenderMUV.PushF pushAction ->
               traverse_ (pushAction <<< Right) actions
-    _ <- stop
     Ref.read lastView
   maybeLastView # maybe (fail "no views were recevied") (compareViews expectation)
 
