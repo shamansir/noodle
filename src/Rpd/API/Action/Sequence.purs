@@ -29,6 +29,7 @@ import Rpd.API.Action
 import Rpd.API.Action.Apply (Step, apply, performEffect)
 import Rpd.Path as Path
 import Rpd.Toolkit (Toolkit, NodeDef)
+import Rpd.Util (Canceler)
 
 
 type ActionList d c n = List (Action d c n) -- TODO: or newtype?
@@ -39,6 +40,7 @@ type BasicContinuationResult model action =
     { models :: Event (Either RpdError model)
     , actions :: Event action
     , pushAction :: action -> Effect Unit
+    , stop :: Canceler
     }
 type ContinuationResult d c n =
     BasicContinuationResult (Network d c n) (Action d c n)
@@ -162,12 +164,12 @@ prepare_ initialModel apply performEff = do
                 (pure $ initialModel /\ [])
         (models :: Event (Either RpdError model))
             = ((<$>) fst) <$> updates
-    _ <- Event.subscribe updates \step ->
+    stop <- Event.subscribe updates \step ->
         case step of
             Left err -> pure unit
             Right (model /\ effects) ->
                 traverse_ (\eff -> performEff pushAction eff model) effects
-    pure { models, pushAction, actions }
+    pure { models, pushAction, actions, stop }
 
 
 prepare
@@ -178,6 +180,7 @@ prepare
 prepare nw toolkit = prepare_ nw (apply toolkit) (performEffect toolkit)
 
 
+{-
 run
     :: forall d c n
      . Toolkit d c n
@@ -188,45 +191,33 @@ run
 run toolkit initialNW stepHandler actions =
     run' toolkit initialNW stepHandler actions
         *> pure unit
+-}
 
 
-run'
+run
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
     -> EveryStep d c n
     -> ActionList d c n
     -> Effect (ContinuationResult d c n)
-run' toolkit initialNW stepHandler actions = do
-    res@{ models, pushAction } <- prepare initialNW toolkit
+run toolkit initialNW stepHandler actions = do
+    res@{ models, pushAction, stop } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
     stopInforming <- Event.subscribe models stepHandler
     _ <- pushAll pushAction actions
     -- _ <- stopInforming
-    pure res
+    pure res { stop = stop <> stopInforming }
 
 
--- TODO: Think about laziness, so that if some error occurs,
---       skip execution of the tail of the action list
 runFolding
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
     -> ActionList d c n
-    -> Effect (FoldResult d c n)
-runFolding toolkit initialNW actions = do
-    runFolding' toolkit initialNW actions
-        <#> fst
-
-
-runFolding'
-    :: forall d c n
-     . Toolkit d c n
-    -> Network d c n
-    -> ActionList d c n
     -> Effect (FoldResult d c n /\ ContinuationResult d c n)
-runFolding' toolkit initialNW actions = do
-    res@{ models, pushAction } <- prepare initialNW toolkit
+runFolding toolkit initialNW actions = do
+    res@{ models, pushAction, stop } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
     let modelsFolded = Event.fold (<|>) models $ Right initialNW
     stopCollectingLastValue <-
@@ -234,7 +225,7 @@ runFolding' toolkit initialNW actions = do
     _ <- pushAll pushAction actions
     -- _ <- stopCollectingLastValue
     lastVal <- Ref.read lastValRef
-    pure $ lastVal /\ res
+    pure $ lastVal /\ res { stop = stop <> stopCollectingLastValue }
 
 
 {-
@@ -270,21 +261,9 @@ runTracing
     -> Network d c n
     -> EveryAction d c n
     -> ActionList d c n
-    -> Effect (FoldResult d c n)
-runTracing toolkit initialNW everyAction actions = do
-    runTracing' toolkit initialNW everyAction actions
-        <#> fst
-
-
-runTracing'
-    :: forall d c n
-     . Toolkit d c n
-    -> Network d c n
-    -> EveryAction d c n
-    -> ActionList d c n
     -> Effect (FoldResult d c n /\ ContinuationResult d c n)
-runTracing' toolkit initialNW everyAction actionList = do
-    res@{ models, pushAction, actions } <- prepare initialNW toolkit
+runTracing toolkit initialNW everyAction actionList = do
+    res@{ models, pushAction, actions, stop } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
     let modelsFolded = Event.fold (<|>) models $ Right initialNW
     stopCollectingLastValue <-
@@ -296,7 +275,7 @@ runTracing' toolkit initialNW everyAction actionList = do
     -- _ <- stopCollectingLastValue
     -- _ <- stopListeningActions
     lastVal <- Ref.read lastValRef
-    pure $ lastVal /\ res
+    pure $ lastVal /\ res { stop = stop <> stopCollectingLastValue <> stopListeningActions }
 
 
 andThen :: forall d c n. ActionList d c n -> Action d c n -> ActionList d c n

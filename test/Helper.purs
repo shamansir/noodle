@@ -11,7 +11,6 @@ import Data.Array (snoc)
 import Data.Time.Duration (Milliseconds)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Either (Either(..))
-import Data.Foldable (traverse_)
 
 import Effect.Ref as Ref
 import Effect.Class (liftEffect)
@@ -21,10 +20,11 @@ import Test.Spec.Assertions (fail)
 
 import Rpd.API.Action (Action(..), DataAction(..))
 import Rpd.API.Action.Sequence (ActionList)
-import Rpd.API.Action.Sequence (runTracing, runTracing', init) as Actions
+import Rpd.API.Action.Sequence (runTracing) as Actions
 import Rpd.Path as P
 import Rpd.Toolkit as T
 import Rpd.Network as R
+import Rpd.Util (Canceler)
 
 
 infixl 6 snoc as +>
@@ -65,10 +65,10 @@ channelsAfter
   -> T.Toolkit d c n
   -> R.Network d c n
   -> ActionList d c n
-  -> Aff (R.Network d c n /\ TracedFlow d)
+  -> Aff (R.Network d c n /\ TracedFlow d /\ Canceler)
 channelsAfter period toolkit network actions = do
   target <- liftEffect $ Ref.new []
-  result <- liftEffect $
+  result /\ { stop } <- liftEffect $
     Actions.runTracing
         toolkit
         network
@@ -76,8 +76,9 @@ channelsAfter period toolkit network actions = do
         actions
   network' <- getOrFail result network
   delay period
+  _ <- liftEffect stop
   vals <- liftEffect $ Ref.read target
-  pure $ network' /\ vals
+  pure $ network' /\ vals /\ stop
   where
     handleAction target (Data (GotInletData (R.Inlet _ path _ _) d)) = do
         curData <- Ref.read target
