@@ -8,28 +8,24 @@ import Data.Lens (view) as L
 import Data.Maybe (Maybe(..))
 import Data.Sequence as Seq
 import Data.Tuple.Nested ((/\))
-
+import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
-import Effect.Aff (Aff, launchAff_)
-import Effect.Ref as Ref
 import Effect.Console (log) as Console
-
+import Effect.Ref as Ref
 import FRP.Event as E
-
-import Test.Spec (Spec, describe, it, pending, pending')
-import Test.Spec.Assertions (shouldEqual, fail)
-
-import Rpd.Test.Util.Either (getOrFail)
-
 import Rpd.API.Action.Sequence ((</>))
-import Rpd.API.Action.Sequence as Actions
 import Rpd.API.Action.Sequence (addPatch, addNode, addInlet, addOutlet) as R
-import Rpd.Path as P
-import Rpd.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath) as L
+import Rpd.API.Action.Sequence as Actions
 import Rpd.Network (Inlet(..), Network, Node(..), Outlet(..)) as R
 import Rpd.Network (empty) as N
+import Rpd.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath) as L
+import Rpd.Path as P
+import Rpd.Test.Util.Either (getOrFail)
+import Rpd.Test.Util.Spy as Spy
 import Rpd.Toolkit as T
+import Test.Spec (Spec, describe, it, pending, pending')
+import Test.Spec.Assertions (shouldEqual, fail)
 
 
 data MyData
@@ -58,110 +54,241 @@ spec =
       _ <- getOrFail result network
       pure unit
 
-    it "prepare" do
-      pure unit
+    -- it "prepare" do
+    --   pure unit
 
     describe "running" do
 
-        it "handler is called with the model on performed actions" do
-            handlerCalledRef <- liftEffect $ Ref.new false
+      it "handler is called with the model on performed actions" do
+          handlerSpy <- liftEffect $ Spy.wasCalled
 
-            let
+          let
 
-                actions =
-                    Actions.init
-                        </> R.addPatch "foo"
-                everyStep _ = Ref.write true handlerCalledRef
+              actionsList =
+                  Actions.init
+                      </> R.addPatch "foo"
 
-            _ <- liftEffect
-                $ Actions.run toolkit network everyStep actions
+          { stop } <- liftEffect
+              $ Actions.run toolkit network (Spy.with' handlerSpy) actionsList
 
-            handlerCalled <- liftEffect $ Ref.read handlerCalledRef
-            handlerCalled `shouldEqual` true
+          handlerCalled <- liftEffect $ Spy.get handlerSpy
+          handlerCalled `shouldEqual` true
 
-            pure unit
+          liftEffect stop
 
-        it "handler receives error when it happened" do
-            errHandlerCalledRef <- liftEffect $ Ref.new false
+      it "handler receives error when it happened" do
+          handlerSpy <- liftEffect $ Spy.ifError
 
-            let
+          let
 
-                actions =
-                    Actions.init
-                        </> R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
-                everyStep (Left error) = Ref.write true errHandlerCalledRef
-                everyStep (Right model) = pure unit
+              actionsList =
+                  Actions.init
+                      </> R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
-            _ <- liftEffect
-                $ Actions.run toolkit network everyStep actions
+          { stop } <- liftEffect
+              $ Actions.run toolkit network (Spy.with' handlerSpy) actionsList
 
-            handlerCalled <- liftEffect $ Ref.read errHandlerCalledRef
-            handlerCalled `shouldEqual` true
+          handlerCalled <- liftEffect $  Spy.get handlerSpy
+          handlerCalled `shouldEqual` true
 
-            pure unit
+          liftEffect stop
 
-        pending' "when error happened, next models still arrive" do
-            errHandlerCalledRef <- liftEffect $ Ref.new false
-            modelHandlerCalledRef <- liftEffect $ Ref.new false
+      pending' "when error happened, next models still arrive" do
+          modelHandlerSpy <- liftEffect $ Spy.ifSuccess
+          errHandlerSpy <- liftEffect $ Spy.ifError
 
-            let
+          let
 
-                actions = Actions.init
-                everyStep (Left error) = Ref.write true errHandlerCalledRef
-                everyStep (Right model) = Ref.write true modelHandlerCalledRef
+              actionsList = Actions.init
+              everyStep v =
+                      Spy.consider modelHandlerSpy v
+                  <> Spy.consider errHandlerSpy v
 
-            { pushAction, stop } <- liftEffect
-                $ Actions.run toolkit network everyStep actions
+          { pushAction, stop } <- liftEffect
+              $ Actions.run toolkit network everyStep actionsList
 
-            liftEffect $ pushAction
-                $ R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
+          liftEffect $ pushAction
+              $ R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
-            errHandlerCalled <- liftEffect $ Ref.read errHandlerCalledRef
-            errHandlerCalled `shouldEqual` true
+          errHandlerCalled <- liftEffect $ Spy.get errHandlerSpy
+          errHandlerCalled `shouldEqual` true
 
-            liftEffect $ Ref.write false modelHandlerCalledRef
-            liftEffect $ pushAction $ R.addPatch "foo"
-            modelHandlerCalled <- liftEffect $ Ref.read modelHandlerCalledRef
-            modelHandlerCalled `shouldEqual` true
+          liftEffect $ Spy.reset modelHandlerSpy
+          liftEffect $ pushAction $ R.addPatch "foo"
+          modelHandlerCalled <- liftEffect $ Spy.get modelHandlerSpy
+          modelHandlerCalled `shouldEqual` true
 
-            pure unit
+          liftEffect stop
 
-        it "stopping stops sending model updates" do
-            handlerCalledRef <- liftEffect $ Ref.new false
+      it "stopping stops sending model updates" do
+          handlerSpy <- liftEffect $ Spy.wasCalled
 
-            let
+          let
 
-                actions =
-                    Actions.init
-                       </> R.addPatch "foo"
-                everyStep _ = Ref.modify_ (const true) handlerCalledRef
+            actionsList =
+                  Actions.init
+                      </> R.addPatch "foo"
 
-            { pushAction, stop } <- liftEffect
-                $ Actions.run toolkit network everyStep actions
+          { pushAction, stop } <- liftEffect
+              $ Actions.run toolkit network (Spy.with' handlerSpy) actionsList
 
-            liftEffect $ Ref.write false handlerCalledRef
-            liftEffect $ pushAction $ R.addPatch "bar"
-            handlerCalled <- liftEffect $ Ref.read handlerCalledRef
-            handlerCalled `shouldEqual` true
+          liftEffect $ Spy.reset handlerSpy
+          liftEffect $ pushAction $ R.addPatch "bar"
+          handlerCalled <- liftEffect $ Spy.get handlerSpy
+          handlerCalled `shouldEqual` true
 
-            liftEffect stop
-            liftEffect $ Ref.write false handlerCalledRef
-            liftEffect $ pushAction $ R.addPatch "buz"
-            handlerCalled' <- liftEffect $ Ref.read handlerCalledRef
-            handlerCalled' `shouldEqual` false
+          liftEffect stop
+          liftEffect $ Spy.reset handlerSpy
+          liftEffect $ pushAction $ R.addPatch "buz"
+          handlerCalled' <- liftEffect $ Spy.get handlerSpy
+          handlerCalled' `shouldEqual` false
 
-            pure unit
+          pure unit
 
-        pending' "it is possible to subscribe to `actions` flow" do
-            pure unit
+      it "it is possible to subscribe to `actions` flow" do
+        handlerSpy <- liftEffect $ Spy.wasCalled
+
+        let
+
+            actionsList =
+                Actions.init
+                    </> R.addPatch "foo"
+
+        { actions, pushAction, stop } <- liftEffect
+            $ Actions.run toolkit network (const $ pure unit) actionsList
+
+        stopListeningActions <- liftEffect $ E.subscribe actions $ Spy.with' handlerSpy
+        liftEffect $ pushAction $ R.addPatch "bar"
+        handlerCalled <- liftEffect $ Spy.get handlerSpy
+        handlerCalled `shouldEqual` true
+
+        liftEffect stop
+        liftEffect stopListeningActions
 
     describe "folding" do
 
-        it "aaa" do
-            pure unit
+      it "`models` events are fired with the model on performed actions" do
+        handlerSpy <- liftEffect $ Spy.wasCalled
 
-        it "bbb" do
-            pure unit
+        let
+
+            actionsList =
+                Actions.init
+                    </> R.addPatch "foo"
+
+        _ /\ { models, stop }  <- liftEffect
+            $ Actions.runFolding toolkit network actionsList
+
+        stopListeningModels
+          <- liftEffect $ E.subscribe models $ Spy.with' handlerSpy
+
+        handlerCalled <- liftEffect $ Spy.get handlerSpy
+        handlerCalled `shouldEqual` true
+
+        liftEffect stop
+        liftEffect stopListeningModels
+
+      it "`models` receive the error when it happened" do
+        handlerSpy <- liftEffect $ Spy.ifError
+
+        let
+
+            actionsList =
+                Actions.init
+                    </> R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
+
+        _ /\ { models, stop } <- liftEffect
+            $ Actions.runFolding toolkit network actionsList
+
+        stopListeningModels
+            <- liftEffect $ E.subscribe models $ Spy.with' handlerSpy
+
+        handlerCalled <- liftEffect $  Spy.get handlerSpy
+        handlerCalled `shouldEqual` true
+
+        liftEffect stop
+        liftEffect stopListeningModels
+
+      pending' "when error happened, next models still arrive" do
+        modelHandlerSpy <- liftEffect $ Spy.ifSuccess
+        errHandlerSpy <- liftEffect $ Spy.ifError
+
+        let
+
+            actionsList = Actions.init
+            everyStep v =
+                    Spy.consider modelHandlerSpy v
+                <> Spy.consider errHandlerSpy v
+
+        _ /\ { pushAction, stop, models } <- liftEffect
+            $ Actions.runFolding toolkit network actionsList
+
+        stopListeningModels
+            <- liftEffect $ E.subscribe models everyStep
+
+        liftEffect $ pushAction
+            $ R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
+
+        errHandlerCalled <- liftEffect $ Spy.get errHandlerSpy
+        errHandlerCalled `shouldEqual` true
+
+        liftEffect $ Spy.reset modelHandlerSpy
+        liftEffect $ pushAction $ R.addPatch "foo"
+        modelHandlerCalled <- liftEffect $ Spy.get modelHandlerSpy
+        modelHandlerCalled `shouldEqual` true
+
+        liftEffect stop
+        liftEffect stopListeningModels
+
+        pure unit
+
+      it "stopping stops sending model updates" do
+        handlerSpy <- liftEffect $ Spy.wasCalled
+
+        let
+
+          actionsList =
+                Actions.init
+                    </> R.addPatch "foo"
+
+        _ /\ { pushAction, stop, models } <- liftEffect
+            $ Actions.runFolding toolkit network actionsList
+
+        stopListeningModels
+            <- liftEffect $ E.subscribe models $ Spy.with' handlerSpy
+
+        liftEffect $ Spy.reset handlerSpy
+        liftEffect $ pushAction $ R.addPatch "bar"
+        handlerCalled <- liftEffect $ Spy.get handlerSpy
+        handlerCalled `shouldEqual` true
+
+        liftEffect stop
+        liftEffect $ Spy.reset handlerSpy
+        liftEffect $ pushAction $ R.addPatch "buz"
+        handlerCalled' <- liftEffect $ Spy.get handlerSpy
+        handlerCalled' `shouldEqual` false
+
+        liftEffect stopListeningModels
+
+      it "it is possible to subscribe to `actions` flow" do
+        handlerSpy <- liftEffect $ Spy.wasCalled
+
+        let
+
+            actionsList =
+                Actions.init
+                  </> R.addPatch "foo"
+
+        _ /\{ actions, pushAction, stop } <- liftEffect
+            $ Actions.runFolding toolkit network actionsList
+
+        stopListeningActions <- liftEffect $ E.subscribe actions $ Spy.with' handlerSpy
+        liftEffect $ pushAction $ R.addPatch "bar"
+        handlerCalled <- liftEffect $ Spy.get handlerSpy
+        handlerCalled `shouldEqual` true
+
+        liftEffect stop
+        liftEffect stopListeningActions
 
     describe "tracing" do
 
@@ -170,69 +297,3 @@ spec =
 
         it "bbb" do
             pure unit
-
-    {-
-    describe "order of addition" do
-
-      it "adding nodes to the patch preserves the order of addition" $ do
-        result /\ _ <-
-            liftEffect
-            $ Actions.runFolding toolkit network
-            $ Actions.init
-                </> R.addPatch "patch"
-                </> R.addNode (P.toPatch "patch") "one" Node
-                </> R.addNode (P.toPatch "patch") "two" Node
-                </> R.addNode (P.toPatch "patch") "three" Node
-        network' <- getOrFail result network
-        case L.view (L._patchNodesByPath $ P.toPatch "patch") network' of
-          Just nodes ->
-            (nodes
-              <#> \(R.Node _ (P.ToNode { node }) _ _ _) -> node)
-              # Seq.toUnfoldable
-              # shouldEqual [ "one", "two", "three" ]
-          Nothing -> fail "patch wasn't found"
-        pure unit
-
-      it "adding inlets to the node preserves the order of addition" $ do
-        result /\ _<-
-            liftEffect
-            $ Actions.runFolding toolkit network
-            $ Actions.init
-              </> R.addPatch "patch"
-              </> R.addNode (P.toPatch "patch") "node" Node
-              </> R.addInlet (P.toNode "patch" "node") "one" Channel
-              </> R.addInlet (P.toNode "patch" "node") "two" Channel
-              </> R.addInlet (P.toNode "patch" "node") "three" Channel
-        network' <- getOrFail result network
-        case L.view (L._nodeInletsByPath $ P.toNode "patch" "node") network' of
-          Just inlets ->
-            (inlets
-              <#> \(R.Inlet _ (P.ToInlet { inlet }) _ _) -> inlet)
-              # Seq.toUnfoldable
-              # shouldEqual [ "one", "two", "three" ]
-          Nothing -> fail "node wasn't found"
-        pure unit
-
-
-      it "adding outlets to the node preserves the order of addition" $ do
-        result /\ _ <-
-            liftEffect
-            $ Actions.runFolding toolkit network
-            $ Actions.init
-              </> R.addPatch "patch"
-              </> R.addNode (P.toPatch "patch") "node" Node
-              </> R.addOutlet (P.toNode "patch" "node") "one" Channel
-              </> R.addOutlet (P.toNode "patch" "node") "two" Channel
-              </> R.addOutlet (P.toNode "patch" "node") "three" Channel
-        network' <- getOrFail result network
-        case L.view (L._nodeOutletsByPath $ P.toNode "patch" "node") network' of
-          Just inlets ->
-            (inlets
-              <#> \(R.Outlet _ (P.ToOutlet { outlet }) _ _) -> outlet)
-              # Seq.toUnfoldable
-              # shouldEqual [ "one", "two", "three" ]
-          Nothing -> fail "node wasn't found"
-        pure unit
-
-      -- TODO: subPatches
-    -}
