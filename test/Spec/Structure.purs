@@ -1,4 +1,4 @@
-module RpdTest.Structure
+module Rpd.Test.Spec.Structure
     ( spec ) where
 
 import Prelude
@@ -15,7 +15,7 @@ import Effect.Aff (Aff, launchAff_)
 import Test.Spec (Spec, describe, it, pending')
 import Test.Spec.Assertions (shouldEqual, fail)
 
-import RpdTest.Helper (getOrFail)
+import Rpd.Test.Util.Either (getOrFail)
 
 import Rpd.API.Action.Sequence ((</>))
 import Rpd.API.Action.Sequence as Actions

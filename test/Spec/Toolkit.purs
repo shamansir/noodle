@@ -1,4 +1,4 @@
-module RpdTest.Toolkit
+module Rpd.Test.Spec.Toolkit
     ( spec ) where
 
 import Prelude (Unit, pure, unit, ($))

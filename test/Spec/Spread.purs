@@ -1,4 +1,4 @@
-module RpdTest.Spread
+module Rpd.Test.Spec.Spread
     ( spec
     ) where
 

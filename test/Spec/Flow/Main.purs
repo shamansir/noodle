@@ -1,16 +1,16 @@
-module RpdTest.Flow
+module Rpd.Test.Spec.Flow
     ( spec ) where
 
 
 import Prelude (Unit, ($), discard)
 import Test.Spec (Spec, describe)
 
-import RpdTest.Flow.Inlets (spec) as Inlets
-import RpdTest.Flow.Outlets (spec) as Outlets
-import RpdTest.Flow.Links (spec) as Links
-import RpdTest.Flow.Nodes (spec) as Nodes
-import RpdTest.Flow.Network (spec) as Network
-import RpdTest.Flow.Subscriptions (spec) as Subscriptions
+import Rpd.Test.Spec.Flow.Inlets (spec) as Inlets
+import Rpd.Test.Spec.Flow.Outlets (spec) as Outlets
+import Rpd.Test.Spec.Flow.Links (spec) as Links
+import Rpd.Test.Spec.Flow.Nodes (spec) as Nodes
+import Rpd.Test.Spec.Flow.Network (spec) as Network
+import Rpd.Test.Spec.Flow.Subscriptions (spec) as Subscriptions
 
 
 spec :: Spec Unit

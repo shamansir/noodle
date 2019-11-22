@@ -1,4 +1,4 @@
-module RpdTest.Flow.Links
+module Rpd.Test.Spec.Flow.Links
     ( spec
     ) where
 
@@ -24,10 +24,10 @@ import Rpd.Network (empty) as Network
 import Test.Spec (Spec, it, pending, pending')
 import Test.Spec.Assertions (shouldContain, shouldNotContain)
 
--- import RpdTest.CollectData (TraceItem(..))
-import RpdTest.Helper (channelsAfter) as CollectData
-import RpdTest.Helper (TraceItem(..), (+>))
-import RpdTest.Flow.Base (Actions, Network, Delivery(..), Pipe(..), Node(..), myToolkit)
+-- import Rpd.Test.CollectData (TraceItem(..))
+import Rpd.Test.Util.Trace (channelsAfter) as CollectData
+import Rpd.Test.Util.Trace (TraceItem(..), (+>))
+import Rpd.Test.Spec.Flow.Base (Actions, Network, Delivery(..), Pipe(..), Node(..), myToolkit)
 
 
 {- ======================================= -}

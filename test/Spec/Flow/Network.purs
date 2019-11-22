@@ -1,4 +1,4 @@
-module RpdTest.Flow.Network
+module Rpd.Test.Spec.Flow.Network
     ( spec
     ) where
 
@@ -15,8 +15,8 @@ import Test.Spec.Assertions (shouldEqual)
 import Rpd.Network as Network
 import Rpd.API.Action.Sequence as Actions
 
-import RpdTest.Flow.Base (myToolkit)
-import RpdTest.Helper (channelsAfter)
+import Rpd.Test.Util.Trace (channelsAfter)
+import Rpd.Test.Spec.Flow.Base (myToolkit)
 
 
 {- ======================================= -}

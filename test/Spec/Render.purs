@@ -1,4 +1,4 @@
-module RpdTest.Render
+module Rpd.Test.Spec.Render
     ( spec ) where
 
 import Prelude

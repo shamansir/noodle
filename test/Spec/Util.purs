@@ -1,4 +1,4 @@
-module RpdTest.Util
+module Rpd.Test.Spec.Util
     ( spec
     ) where
 

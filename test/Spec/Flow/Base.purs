@@ -1,4 +1,4 @@
-module RpdTest.Flow.Base
+module Rpd.Test.Spec.Flow.Base
     ( Network, Actions
     , Delivery(..), Pipe(..), Node(..)
     , myToolkit

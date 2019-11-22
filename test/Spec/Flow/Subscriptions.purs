@@ -1,4 +1,4 @@
-module RpdTest.Flow.Subscriptions
+module Rpd.Test.Spec.Flow.Subscriptions
     ( spec
     ) where
 
@@ -33,8 +33,8 @@ import Rpd.Network (Network) as R
 import Test.Spec (Spec, it, describe, pending, pending')
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
-import RpdTest.Helper (getOrFail)
-import RpdTest.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, myToolkit)
+import Rpd.Test.Util.Either (getOrFail)
+import Rpd.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, myToolkit)
 
 
 {- ======================================= -}

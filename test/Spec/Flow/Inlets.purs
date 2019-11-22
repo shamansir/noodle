@@ -1,4 +1,4 @@
-module RpdTest.Flow.Inlets
+module Rpd.Test.Spec.Flow.Inlets
     ( spec
     ) where
 
@@ -21,9 +21,9 @@ import Effect.Class (liftEffect)
 import Test.Spec (Spec, it, pending, pending')
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
-import RpdTest.Helper (TraceItem(..))
-import RpdTest.Helper (channelsAfter) as CollectData
-import RpdTest.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, myToolkit)
+import Rpd.Test.Util.Trace (TraceItem(..))
+import Rpd.Test.Util.Trace (channelsAfter) as CollectData
+import Rpd.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, myToolkit)
 
 
 {- ======================================= -}

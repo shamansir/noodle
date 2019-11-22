@@ -1,4 +1,4 @@
-module RpdTest.Flow.Nodes
+module Rpd.Test.Spec.Flow.Nodes
     ( spec
     ) where
 
@@ -33,9 +33,9 @@ import Rpd.Toolkit
 import Test.Spec (Spec, it, pending, describe)
 import Test.Spec.Assertions (shouldContain, shouldNotContain, shouldEqual, shouldNotEqual)
 
-import RpdTest.Helper (TraceItem(..))
-import RpdTest.Helper (channelsAfter) as CollectData
-import RpdTest.Flow.Base
+import Rpd.Test.Util.Trace (TraceItem(..))
+import Rpd.Test.Util.Trace (channelsAfter) as CollectData
+import Rpd.Test.Spec.Flow.Base
     ( Actions
     , Delivery(..), Pipe(..), Node(..)
     , myToolkit
