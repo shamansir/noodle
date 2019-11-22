@@ -30,6 +30,7 @@ import Rpd.API.Action.Apply as Core
 import Rpd.API.Action.Sequence (prepare_) as ActionSeq
 import Rpd.Toolkit as T
 import Rpd.Render.Minimal as Minimal
+import Rpd.Util (Canceler)
 
 
 data PushF d c n action  =
@@ -106,6 +107,7 @@ make
         { first :: view
         , next :: Event view
         , push :: PushF d c n action
+        , stop :: Canceler
         }
 make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = do
     { models, pushAction, stop } <-
@@ -119,6 +121,7 @@ make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = 
         { first : from
         , next : views
         , push : PushF pushAction
+        , stop : stop <> stopViews
         }
     where
         myApply (Right coreAction) (model /\ nw) = do

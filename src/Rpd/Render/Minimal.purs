@@ -65,13 +65,13 @@ make
         }
 make (Renderer { first, viewError, viewValue }) toolkit initialNW = do
     { event : views, push : pushView } <- Event.create
-    { models, pushAction } <- ActionSeq.prepare initialNW toolkit
-    stop <- Event.subscribe models (pushView <<< either viewError viewValue)
+    { models, pushAction, stop } <- ActionSeq.prepare initialNW toolkit
+    stopViews <- Event.subscribe models (pushView <<< either viewError viewValue)
     pure
         { first
         , next : views
         , push : PushF pushAction
-        , stop
+        , stop : stop <> stopViews
         }
 
 
