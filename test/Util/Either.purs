@@ -1,9 +1,10 @@
 module Rpd.Test.Util.Either
     ( getOrFail
+    , failIfNoError
     ) where
 
 
-import Prelude (show, const, pure, class Show, (>>=), ($))
+import Prelude
 import Data.Either (Either(..))
 import Effect.Aff (Aff)
 
@@ -20,3 +21,12 @@ getOrFail
 getOrFail (Left err) default =
   (fail $ show err) >>= (const $ pure default)
 getOrFail (Right v) _ = pure v
+
+
+failIfNoError
+  :: forall err x
+   . String
+  -> Either err x
+  -> Aff Unit
+failIfNoError _ (Left _) = pure unit
+failIfNoError message (Right _) = fail message

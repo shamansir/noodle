@@ -206,6 +206,9 @@ run toolkit initialNW stepHandler actions =
 -}
 
 
+-- `stop` only stops the `stepHandler` to be called,
+-- and effects to be performed, not the `actions`
+-- or `models` events
 run
     :: forall d c n
      . Toolkit d c n
@@ -225,6 +228,8 @@ run toolkit initialNW stepHandler actionList = do
     pure { actions, pushAction, stop : stopInforming <> stop }
 
 
+-- `stop` only stops the folding (combining the sequence in one value),
+-- not the `actions` or `models` events
 runFolding
     :: forall d c n
      . Toolkit d c n

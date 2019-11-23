@@ -3,29 +3,36 @@ module Rpd.Test.Spec.Actions
 
 import Prelude
 
+import Debug.Trace as DT
+
 import Data.Either (Either(..))
 import Data.Lens (view) as L
 import Data.Maybe (Maybe(..))
 import Data.Sequence as Seq
 import Data.Tuple.Nested ((/\))
+
 import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Console (log) as Console
 import Effect.Ref as Ref
+
 import FRP.Event as E
+
+import Test.Spec (Spec, describe, it, itOnly, pending, pending')
+import Test.Spec.Assertions (shouldEqual, fail)
+
 import Rpd.API.Action.Sequence ((</>))
 import Rpd.API.Action.Sequence (addPatch, addNode, addInlet, addOutlet) as R
 import Rpd.API.Action.Sequence as Actions
+
 import Rpd.Network (Inlet(..), Network, Node(..), Outlet(..)) as R
 import Rpd.Network (empty) as N
 import Rpd.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath) as L
 import Rpd.Path as P
-import Rpd.Test.Util.Either (getOrFail)
+import Rpd.Test.Util.Either (getOrFail, failIfNoError)
 import Rpd.Test.Util.Spy as Spy
 import Rpd.Toolkit as T
-import Test.Spec (Spec, describe, it, pending, pending')
-import Test.Spec.Assertions (shouldEqual, fail)
 
 
 data MyData
@@ -167,20 +174,46 @@ spec =
 
     describe "folding" do
 
-      it "`models` events are fired with the model on performed actions" do
-        handlerSpy <- liftEffect $ Spy.wasCalled
-
+      it "result is containing the network when actions are successful" do
         let
-
-            actionsList =
+          actionsList =
                 Actions.init
                     </> R.addPatch "foo"
 
-        _ /\ { models, stop }  <- liftEffect
+        result /\ { stop } <- liftEffect
+            $ Actions.runFolding toolkit network actionsList
+
+        _ <- getOrFail result network
+
+        liftEffect stop -- needed?
+
+      it "result is containing the error when it happened" do
+        let
+          actionsList =
+                Actions.init
+                    </> R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
+
+        result /\ { stop } <- liftEffect
+            $ Actions.runFolding toolkit network actionsList
+
+        failIfNoError "no error" $ DT.spy "wh" result
+
+        liftEffect stop -- needed?
+
+      pending "result contains the error happened last, even if there were successes after"
+
+      it "`models` events are fired with the model on performed actions" do
+        handlerSpy <- liftEffect $ Spy.wasCalled
+
+        let actionsList = Actions.init
+
+        _ /\ { models, stop, pushAction }  <- liftEffect
             $ Actions.runFolding toolkit network actionsList
 
         stopListeningModels
           <- liftEffect $ E.subscribe models $ Spy.with' handlerSpy
+
+        liftEffect $ pushAction $ R.addPatch "foo"
 
         handlerCalled <- liftEffect $ Spy.get handlerSpy
         handlerCalled `shouldEqual` true
@@ -191,17 +224,15 @@ spec =
       it "`models` receive the error when it happened" do
         handlerSpy <- liftEffect $ Spy.ifError
 
-        let
+        let actionsList = Actions.init
 
-            actionsList =
-                Actions.init
-                    </> R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
-
-        _ /\ { models, stop } <- liftEffect
+        _ /\ { models, stop, pushAction } <- liftEffect
             $ Actions.runFolding toolkit network actionsList
 
         stopListeningModels
             <- liftEffect $ E.subscribe models $ Spy.with' handlerSpy
+
+        liftEffect $ pushAction $ R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
         handlerCalled <- liftEffect $  Spy.get handlerSpy
         handlerCalled `shouldEqual` true
@@ -242,35 +273,23 @@ spec =
 
         pure unit
 
-      it "stopping stops sending model updates" do
+      it "it is possible to subscribe to `actions` flow" do
         handlerSpy <- liftEffect $ Spy.wasCalled
 
-        let
+        let actionsList = Actions.init
 
-          actionsList =
-                Actions.init
-                    </> R.addPatch "foo"
-
-        _ /\ { pushAction, stop, models } <- liftEffect
+        _ /\{ actions, pushAction, stop } <- liftEffect
             $ Actions.runFolding toolkit network actionsList
 
-        stopListeningModels
-            <- liftEffect $ E.subscribe models $ Spy.with' handlerSpy
-
-        liftEffect $ Spy.reset handlerSpy
-        liftEffect $ pushAction $ R.addPatch "bar"
+        stopListeningActions <- liftEffect $ E.subscribe actions $ Spy.with' handlerSpy
+        liftEffect $ pushAction $ R.addPatch "foo"
         handlerCalled <- liftEffect $ Spy.get handlerSpy
         handlerCalled `shouldEqual` true
 
         liftEffect stop
-        liftEffect $ Spy.reset handlerSpy
-        liftEffect $ pushAction $ R.addPatch "buz"
-        handlerCalled' <- liftEffect $ Spy.get handlerSpy
-        handlerCalled' `shouldEqual` false
+        liftEffect stopListeningActions
 
-        liftEffect stopListeningModels
-
-      it "it is possible to subscribe to `actions` flow" do
+      pending' "`actions` are not received anymore after thd stop was called" do
         handlerSpy <- liftEffect $ Spy.wasCalled
 
         let
@@ -283,11 +302,11 @@ spec =
             $ Actions.runFolding toolkit network actionsList
 
         stopListeningActions <- liftEffect $ E.subscribe actions $ Spy.with' handlerSpy
+        liftEffect stop
         liftEffect $ pushAction $ R.addPatch "bar"
         handlerCalled <- liftEffect $ Spy.get handlerSpy
-        handlerCalled `shouldEqual` true
+        handlerCalled `shouldEqual` false
 
-        liftEffect stop
         liftEffect stopListeningActions
 
     describe "tracing" do
