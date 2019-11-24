@@ -213,16 +213,15 @@ run
     -> (Either RpdError (Network d c n) -> Effect Unit)
     -> ActionList d c n
     -> Effect
-            { actions :: Event (Action d c n)
-            , pushAction :: Action d c n -> Effect Unit
+            { pushAction :: Action d c n -> Effect Unit
             , stop :: Canceler
             }
 run toolkit initialNW stepHandler actionList = do
-    { models, actions, pushAction, stop } <- prepare initialNW toolkit
+    { models, pushAction, stop } <- prepare initialNW toolkit
     stopInforming <- Event.subscribe models stepHandler
     _ <- pushAll pushAction actionList
     -- _ <- stopInforming
-    pure { actions, pushAction, stop : stopInforming <> stop }
+    pure { pushAction, stop : stopInforming <> stop }
 
 
 runFolding
@@ -232,9 +231,7 @@ runFolding
     -> ActionList d c n
     -> Effect
             (Either RpdError (Network d c n) /\
-            { models :: Event (Either RpdError (Network d c n))
-            , actions :: Event (Action d c n)
-            , pushAction :: Action d c n -> Effect Unit
+            { pushAction :: Action d c n -> Effect Unit
             , stop :: Canceler
             })
 runFolding toolkit initialNW actionList = do
@@ -246,7 +243,7 @@ runFolding toolkit initialNW actionList = do
     _ <- pushAll pushAction actionList
     -- _ <- stopCollectingLastValue
     lastVal <- Ref.read lastValRef
-    pure $ lastVal /\ res { stop = stop <> stopCollectingLastValue }
+    pure $ lastVal /\ { pushAction, stop : stop <> stopCollectingLastValue }
 
 
 {-
@@ -284,8 +281,7 @@ runTracing
     -> ActionList d c n
     -> Effect
         (Either RpdError (Network d c n) /\
-            { models :: Event (Either RpdError (Network d c n))
-            , pushAction :: Action d c n -> Effect Unit
+            { pushAction :: Action d c n -> Effect Unit
             , stop :: Canceler
             })
 runTracing toolkit initialNW everyAction actionList = do
@@ -302,7 +298,7 @@ runTracing toolkit initialNW everyAction actionList = do
     -- _ <- stopListeningActions
     lastVal <- Ref.read lastValRef
     pure $ lastVal /\
-        { models, pushAction, stop : stop <> stopCollectingLastValue <> stopListeningActions }
+        { pushAction, stop : stop <> stopCollectingLastValue <> stopListeningActions }
 
 
 andThen :: forall d c n. ActionList d c n -> Action d c n -> ActionList d c n
