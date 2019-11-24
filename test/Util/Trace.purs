@@ -55,7 +55,7 @@ channelsAfter
   -> T.Toolkit d c n
   -> R.Network d c n
   -> ActionList d c n
-  -> Aff (R.Network d c n /\ TracedFlow d /\ Canceler)
+  -> Aff (R.Network d c n /\ TracedFlow d)
 channelsAfter period toolkit network actions = do
   target <- liftEffect $ Ref.new []
   result /\ { stop } <- liftEffect $
@@ -68,7 +68,7 @@ channelsAfter period toolkit network actions = do
   delay period
   _ <- liftEffect stop
   vals <- liftEffect $ Ref.read target
-  pure $ network' /\ vals /\ stop
+  pure $ network' /\ vals
   where
     handleAction target (Data (GotInletData (R.Inlet _ path _ _) d)) = do
         curData <- Ref.read target

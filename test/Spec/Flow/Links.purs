@@ -49,7 +49,7 @@ spec = do
           </> R.addNode (toPatch "patch") "node2" Empty
           </> R.addInlet (toNode "patch" "node2") "inlet" Pass
 
-    _ /\ collectedData /\ stop <- CollectData.channelsAfter
+    _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -61,8 +61,6 @@ spec = do
           </> R.streamToOutlet
               (toOutlet "patch" "node1" "outlet")
               (R.flow $ const Notebook <$> interval 30)
-
-    _ <- liftEffect stop
 
     collectedData `shouldContain`
       (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
@@ -82,7 +80,7 @@ spec = do
           </> R.addNode (toPatch "patch") "node2" Empty
           </> R.addInlet (toNode "patch" "node2") "inlet" Pass
 
-    _ /\ collectedData /\ stop <- CollectData.channelsAfter
+    _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -94,8 +92,6 @@ spec = do
             </> R.connect
                       (toOutlet "patch" "node1" "outlet")
                       (toInlet "patch" "node2" "inlet")
-
-    _ <- liftEffect stop
 
     collectedData `shouldContain`
       (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
@@ -131,7 +127,7 @@ spec = do
     -- collectedData `shouldContain`
     --   (InletData (toInlet "patch" "node2" "inlet") Notebook)
 
-    network /\ collectedData /\ stop <- CollectData.channelsAfter
+    network /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -143,14 +139,12 @@ spec = do
                   (toOutlet "patch" "node1" "outlet")
                   (toInlet "patch" "node2" "inlet")
 
-    _ <- liftEffect stop
-
     collectedData `shouldContain`
       (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node2" "inlet") Notebook)
 
-    _ /\ collectedData' /\ stop' <- CollectData.channelsAfter
+    _ /\ collectedData' <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       network -- notice the use of the previous network result here
@@ -158,8 +152,6 @@ spec = do
         </> R.disconnect
             (toOutlet "patch" "node1" "outlet")
             (toInlet "patch" "node2" "inlet")
-
-    _ <- liftEffect stop'
 
     collectedData' `shouldNotContain`
       (OutletData (toOutlet "patch" "node1" "outlet") Notebook)

@@ -98,7 +98,7 @@ spec = do
                 send _ = Nothing
             pure send
 
-      _ /\ collectedData /\ stop <-
+      _ /\ collectedData <-
         CollectData.channelsAfter
             (Milliseconds 100.0)
             myToolkit
@@ -106,8 +106,6 @@ spec = do
             $ structure
                 </> R.sendToInlet curse1Inlet (Curse 4)
                 </> R.sendToInlet curse2Inlet (Curse 3)
-
-      _ <- liftEffect stop
 
       collectedData `shouldContain`
         (InletData curse1Inlet $ Curse 4)
@@ -164,15 +162,13 @@ spec = do
                     in pure send
                 _ -> pure $ const Nothing
 
-      _ /\ collectedData /\ stop <- CollectData.channelsAfter
+      _ /\ collectedData <- CollectData.channelsAfter
         (Milliseconds 100.0)
         myToolkit
         (Network.empty "network")
         $ structure
             </> R.sendToInlet curse1Inlet (Curse 4)
             </> R.sendToInlet curse2Inlet (Curse 3)
-
-      _ <- liftEffect stop
 
       collectedData `shouldContain`
         (InletData curse1Inlet $ Curse 4)
@@ -220,14 +216,12 @@ spec = do
             _ <- valueRef # Ref.write curse
             pure $ const Nothing
 
-      _ /\ collectedData /\ stop <- CollectData.channelsAfter
+      _ /\ collectedData <- CollectData.channelsAfter
         (Milliseconds 100.0)
         myToolkit
         (Network.empty "network")
         $ structure
             </> R.sendToInlet curseInlet (Curse 4)
-
-      _ <- liftEffect stop
 
       storedValue <- liftEffect $ Ref.read valueRef
 
@@ -268,13 +262,11 @@ spec = do
             _ <- wasCalledRef # Ref.write true
             pure $ const Nothing
 
-      _ /\ collectedData /\ stop <- CollectData.channelsAfter
+      _ /\ collectedData <- CollectData.channelsAfter
         (Milliseconds 100.0)
         myToolkit
         (Network.empty "network")
         structure
-
-      _ <- liftEffect stop
 
       wasCalled <- liftEffect $ Ref.read wasCalledRef
 
@@ -324,15 +316,13 @@ spec = do
                       in (prevState + c) /\ send
                   _ -> prevState /\ const Nothing
 
-        _ /\ collectedData /\ stop <- CollectData.channelsAfter
+        _ /\ collectedData <- CollectData.channelsAfter
           (Milliseconds 100.0)
           myToolkit
           (Network.empty "network")
           $ structure
               </> R.sendToInlet curseInlet (Curse 4)
               </> R.sendToInlet curseInlet (Curse 3)
-
-        _ <- liftEffect stop
 
         collectedData `shouldContain`
           (InletData curseInlet $ Curse 4)
@@ -377,24 +367,20 @@ spec = do
             structure </>
               R.streamToInlet curseInlet (R.flow $ const (Curse 4) <$> interval 30)
 
-        nw' /\ collectedData /\ stop <- CollectData.channelsAfter
+        nw' /\ collectedData <- CollectData.channelsAfter
           (Milliseconds 100.0)
           myToolkit
           (Network.empty "network")
           nwWithFlow
 
-        _ <- liftEffect stop
-
         collectedData `shouldContain`
           (InletData curseInlet $ Curse 4)
 
-        _ /\ collectedData' /\ stop' <- CollectData.channelsAfter
+        _ /\ collectedData' <- CollectData.channelsAfter
           (Milliseconds 100.0)
           myToolkit
           (Network.empty "network")
           $ nwWithFlow </> R.removeInlet curseInlet
-
-        _ <- liftEffect stop'
 
         collectedData' `shouldNotContain`
           (InletData curseInlet $ Curse 4)

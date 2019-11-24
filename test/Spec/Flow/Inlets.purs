@@ -44,17 +44,14 @@ spec = do
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-    _ /\ collectedData /\ stop <-
+    _ /\ collectedData <-
         CollectData.channelsAfter
           (Milliseconds 100.0)
           myToolkit
           (Network.empty "network")
           structure
 
-    _ <- liftEffect stop
-
     collectedData `shouldEqual` []
-
 
     pure unit
 
@@ -70,7 +67,7 @@ spec = do
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
       firstInlet = toInlet "patch" "node" "inlet"
 
-    _ /\ collectedData /\ stop <-
+    _ /\ collectedData <-
       CollectData.channelsAfter
           (Milliseconds 100.0)
           myToolkit
@@ -79,8 +76,6 @@ spec = do
               </> R.sendToInlet firstInlet Parcel
               </> R.sendToInlet firstInlet Pills
               </> R.sendToInlet firstInlet (Curse 5)
-
-    _ <- liftEffect stop
 
     collectedData `shouldEqual`
         [ InletData firstInlet Parcel
@@ -97,7 +92,7 @@ spec = do
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-    _ /\ collectedData /\ stop <- CollectData.channelsAfter
+    _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -105,8 +100,6 @@ spec = do
          </> R.streamToInlet
                 (toInlet "patch" "node" "inlet")
                 (R.flow $ const Pills <$> interval 30)
-
-    _ <- liftEffect stop
 
     collectedData `shouldContain`
         (InletData (toInlet "patch" "node" "inlet") Pills)
@@ -124,7 +117,7 @@ spec = do
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
       firstInlet = toInlet "patch" "node" "inlet"
 
-    _ /\ collectedData /\ stop <- CollectData.channelsAfter
+    _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -135,8 +128,6 @@ spec = do
             </> R.streamToInlet
                   (toInlet "patch" "node" "inlet")
                   (R.flow $ const Banana <$> interval 29)
-
-    _ <- liftEffect stop
 
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "inlet") Pills)
@@ -155,7 +146,7 @@ spec = do
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-    _ /\ collectedData /\ stop <- CollectData.channelsAfter
+    _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -163,8 +154,6 @@ spec = do
           </> R.streamToInlet
                 (toInlet "patch" "node" "inlet")
                 (R.flow $ const Pills <$> interval 20)
-
-    _ <- liftEffect stop
 
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "inlet") Pills)
@@ -186,7 +175,7 @@ spec = do
           </> R.addInlet (toNode "patch" "node") "for-pills" Pass
           </> R.addInlet (toNode "patch" "node") "for-bananas" Pass
 
-    _ /\ collectedData /\ stop <- CollectData.channelsAfter
+    _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
@@ -197,8 +186,6 @@ spec = do
           </> R.streamToInlet
                 (toInlet "patch" "node" "for-bananas")
                 (R.flow $ const Banana <$> interval 25)
-
-    _ <- liftEffect stop
 
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "for-pills") Pills)
@@ -217,15 +204,13 @@ spec = do
           </> R.addInlet (toNode "patch" "node") "inlet2" Pass
       stream = R.flow $ const Banana <$> interval 25
 
-    _ /\ collectedData /\ stop <- CollectData.channelsAfter
+    _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
       myToolkit
       (Network.empty "network")
       $ structure
           </> R.streamToInlet (toInlet "patch" "node" "inlet1") stream
           </> R.streamToInlet (toInlet "patch" "node" "inlet2") stream
-
-    _ <- liftEffect stop
 
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "inlet1") Banana)

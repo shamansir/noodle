@@ -27,14 +27,12 @@ import Rpd.Test.Spec.Flow.Base (myToolkit)
 spec :: Spec Unit
 spec = do
   it "we receive no data from the network when it's empty" $ do
-    _ /\ collectedData /\ stop <-
+    _ /\ collectedData <-
       channelsAfter
           (Milliseconds 100.0)
           myToolkit
           (Network.empty "no-data")
           Actions.init
-
-    _ <- liftEffect stop
 
     collectedData `shouldEqual` []
 

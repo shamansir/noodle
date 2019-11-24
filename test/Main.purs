@@ -21,12 +21,12 @@ spec :: Spec Unit
 spec =
   describe "RPD" do
     TestActions.spec
-    -- TestStructure.spec
-    -- TestFlow.spec
-    -- TestRender.spec
-    -- TestRpdFileParser.spec
-    -- TestUtils.spec
-    -- TestSpreads.spec
+    TestStructure.spec
+    TestFlow.spec
+    TestRender.spec
+    TestRpdFileParser.spec
+    TestUtils.spec
+    TestSpreads.spec
 
 
 main :: Effect Unit
