@@ -206,9 +206,6 @@ run toolkit initialNW stepHandler actions =
 -}
 
 
--- `stop` only stops the `stepHandler` to be called,
--- and effects to be performed, not the `actions`
--- or `models` events
 run
     :: forall d c n
      . Toolkit d c n
@@ -228,8 +225,6 @@ run toolkit initialNW stepHandler actionList = do
     pure { actions, pushAction, stop : stopInforming <> stop }
 
 
--- `stop` only stops the folding (combining the sequence in one value),
--- not the `actions` or `models` events
 runFolding
     :: forall d c n
      . Toolkit d c n
@@ -245,7 +240,7 @@ runFolding
 runFolding toolkit initialNW actionList = do
     res@{ models, pushAction, stop } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
-    let modelsFolded = Event.fold (<|>) models $ Right initialNW
+    let modelsFolded = models -- TODO: collect errors. Event.fold (<|>) models $ Right initialNW
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
     _ <- pushAll pushAction actionList
@@ -296,7 +291,7 @@ runTracing
 runTracing toolkit initialNW everyAction actionList = do
     { models, pushAction, actions, stop } <- prepare initialNW toolkit
     lastValRef <- Ref.new $ Right initialNW
-    let modelsFolded = Event.fold (<|>) models $ Right initialNW
+    let modelsFolded = models -- TODO: collect errors. Event.fold (<|>) models $ Right initialNW
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
     stopListeningActions <-
