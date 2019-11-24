@@ -44,6 +44,8 @@ import Rpd.Renderer.Terminal (terminalRenderer)
 import Rpd.Renderer.Terminal.Multiline as ML
 import Rpd.Renderer.String (stringRenderer, stringRendererWithOptions)
 
+import Rpd.Test.Util.Spy as Spy
+
 
 data MyData
   = Bang
@@ -243,14 +245,14 @@ expectToRender
   -> Aff Unit
 expectToRender renderer toolkit compareViews actions expectation = do
   maybeLastView <- liftEffect $ do
-    lastView <- Ref.new Nothing
+    lastViewSpy <- Spy.last
     { push, next : views }
           <- Render.make renderer toolkit $ Network.empty "network"
-    _ <- Event.subscribe views (flip Ref.write lastView <<< Just)
+    _ <- Event.subscribe views $ Spy.with lastViewSpy
     _ <- case push of
           Render.PushF pushAction ->
               traverse_ pushAction actions
-    Ref.read lastView
+    Spy.get lastViewSpy
   maybeLastView # maybe (fail "no views were recevied") (compareViews expectation)
 
 
@@ -264,14 +266,14 @@ expectToRenderMUV
   -> Aff Unit
 expectToRenderMUV renderer toolkit compareViews actions expectation = do
   maybeLastView <- liftEffect $ do
-    lastView <- Ref.new Nothing
+    lastViewSpy <- Spy.last
     { push, next : views }
           <- RenderMUV.make renderer toolkit $ Network.empty "network"
-    _ <- Event.subscribe views (flip Ref.write lastView <<< Just)
+    _ <- Event.subscribe views $ Spy.with lastViewSpy
     _ <- case push of
           RenderMUV.PushF pushAction ->
               traverse_ (pushAction <<< Right) actions
-    Ref.read lastView
+    Spy.get lastViewSpy
   maybeLastView # maybe (fail "no views were recevied") (compareViews expectation)
 
 

@@ -77,7 +77,7 @@ spec =
                       </> R.addPatch "foo"
 
           { stop } <- liftEffect
-              $ Actions.run toolkit network (Spy.with' handlerSpy) actionsList
+              $ Actions.run toolkit network (Spy.with handlerSpy) actionsList
 
           handlerCalled <- liftEffect $ Spy.get handlerSpy
           handlerCalled `shouldEqual` true
@@ -94,7 +94,7 @@ spec =
                       </> R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
           { stop } <- liftEffect
-              $ Actions.run toolkit network (Spy.with' handlerSpy) actionsList
+              $ Actions.run toolkit network (Spy.with handlerSpy) actionsList
 
           handlerCalled <- liftEffect $  Spy.get handlerSpy
           handlerCalled `shouldEqual` true
@@ -138,7 +138,7 @@ spec =
                       </> R.addPatch "foo"
 
           { pushAction, stop } <- liftEffect
-              $ Actions.run toolkit network (Spy.with' handlerSpy) actionsList
+              $ Actions.run toolkit network (Spy.with handlerSpy) actionsList
 
           liftEffect $ Spy.reset handlerSpy
           liftEffect $ pushAction $ R.addPatch "bar"
@@ -222,7 +222,7 @@ spec =
                   </> R.addPatch "foo"
 
         _ /\{ pushAction, stop } <- liftEffect
-            $ Actions.runTracing toolkit network (Spy.with' handlerSpy) actionsList
+            $ Actions.runTracing toolkit network (Spy.with handlerSpy) actionsList
 
         handlerCalled <- liftEffect $ Spy.get handlerSpy
         handlerCalled `shouldEqual` true
@@ -235,7 +235,7 @@ spec =
         let actionsList = Actions.init
 
         _ /\{ pushAction, stop } <- liftEffect
-            $ Actions.runTracing toolkit network (Spy.with' handlerSpy) actionsList
+            $ Actions.runTracing toolkit network (Spy.with handlerSpy) actionsList
 
         liftEffect $ Spy.reset handlerSpy
         liftEffect $ pushAction $ R.addPatch "foo"

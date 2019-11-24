@@ -57,7 +57,7 @@ channelsAfter
   -> ActionList d c n
   -> Aff (R.Network d c n /\ TracedFlow d)
 channelsAfter period toolkit network actions = do
-  target <- liftEffect $ Ref.new []
+  target <- liftEffect $ Ref.new [] -- FIXME: rewrite with spies
   result /\ { stop } <- liftEffect $
     Actions.runTracing
         toolkit

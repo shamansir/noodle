@@ -5,7 +5,8 @@ module Rpd.Test.Spec.Flow.Subscriptions
 import Prelude
 
 import Data.Time.Duration (Milliseconds(..))
-import Data.Array ((:))
+import Data.Array ((:), snoc)
+import Data.Tuple (curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Effect (Effect)
@@ -34,6 +35,7 @@ import Test.Spec (Spec, it, describe, pending, pending')
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
 import Rpd.Test.Util.Either (getOrFail)
+import Rpd.Test.Util.Spy as Spy
 import Rpd.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, myToolkit)
 
 
@@ -48,13 +50,13 @@ spec = do
   describe "subscribing node" $ do
 
     it "subscribing to node passes the node data to the inlet subscriber" $ do
-      ref <- liftEffect $ Ref.new []
+      traceSpy <- liftEffect Spy.trace
 
       let
         -- inletHandler :: R.InletAlias -> UUID.ToInlet -> Delivery -> Effect Unit
         inletHandler :: R.NodeInletsSubscription Delivery
-        inletHandler alias _ v =
-          Ref.modify ((:) $ alias /\ v) ref >>= pure <<< const unit
+        inletHandler alias _ v = Spy.consider traceSpy $ alias /\ v
+          -- Ref.modify ((:) $ alias /\ v) ref >>= pure <<< const unit
         -- outletHandler :: R.OutletAlias -> UUID.ToOutlet -> Delivery -> Effect Unit
         outletHandler :: R.NodeOutletsSubscription Delivery
         outletHandler alias _ v = pure unit
@@ -79,7 +81,7 @@ spec = do
                 --         _ <- launchAff_ $ delay (Milliseconds 100.0)
 
       delay (Milliseconds 100.0)
-      vals <- liftEffect $ Ref.read ref
+      vals <- liftEffect $ Spy.get traceSpy
       vals `shouldContain` ("inlet" /\ Notebook)
 
       pure unit
@@ -91,11 +93,8 @@ spec = do
   describe "subscribing inlet" $ do
 
     it "subscribing to inlet passes the inlet data to the subscriber" $ do
-      ref <- liftEffect $ Ref.new []
+      traceSpy <- liftEffect Spy.trace
       let
-        handler :: R.InletSubscription Delivery
-        handler = \v ->
-          Ref.modify ((:) v) ref >>= pure <<< const unit
         structure :: Actions
         structure =
           Actions.init
@@ -108,13 +107,13 @@ spec = do
             myToolkit
             (Network.empty "network")
             $ structure
-                 </> R.subscribeToInlet (toInlet "patch" "node" "inlet") handler
+                 </> R.subscribeToInlet (toInlet "patch" "node" "inlet") (Spy.with traceSpy)
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
 
       delay (Milliseconds 100.0)
-      vals <- liftEffect $ Ref.read ref
+      vals <- liftEffect $ Spy.get traceSpy
       vals `shouldContain` Notebook
 
       pure unit
@@ -123,12 +122,9 @@ spec = do
     --       stream different values after a delay)
 
     it "when the inlet was removed after the subscription, the subscriber stops receiving data" $ do
-      ref <- liftEffect $ Ref.new []
+      traceSpy <- liftEffect Spy.trace
 
       let
-        handler :: R.InletSubscription Delivery
-        handler = \v ->
-          Ref.modify ((:) v) ref >>= pure <<< const unit
         structure :: Actions
         structure =
           Actions.init
@@ -143,7 +139,7 @@ spec = do
             myToolkit
             network
             $ structure
-                 </> R.subscribeToInlet (toInlet "patch" "node" "inlet") handler
+                 </> R.subscribeToInlet (toInlet "patch" "node" "inlet") (Spy.with traceSpy)
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
@@ -151,9 +147,9 @@ spec = do
 
       delay (Milliseconds 100.0)
       _ <- liftEffect stop
-      vals <- liftEffect $ Ref.read ref
+      vals <- liftEffect $ Spy.get traceSpy
       vals `shouldContain` Notebook
-      liftEffect $ Ref.write [] ref
+      liftEffect $ Spy.reset traceSpy
 
       _ <- liftEffect
         $ Actions.pushAll pushAction
@@ -175,21 +171,17 @@ spec = do
       -- _ <- getOrFail result' network'
 
       delay (Milliseconds 100.0)
-      vals' <- liftEffect $ Ref.read ref
+      vals' <- liftEffect $ Spy.get traceSpy
       vals' `shouldNotContain` Liver
       vals' `shouldNotContain` Notebook
       vals' `shouldEqual` []
-      liftEffect $ Ref.write [] ref
 
       pure unit
 
     it "when the inlet was removed and again added after the subscription, the subscriber still doesn't receive anything" $ do
-      ref <- liftEffect $ Ref.new []
+      traceSpy <- liftEffect Spy.trace
 
       let
-        handler :: R.InletSubscription Delivery
-        handler = \v ->
-          Ref.modify ((:) v) ref >>= pure <<< const unit
         structure :: Actions
         structure =
           Actions.init
@@ -204,7 +196,7 @@ spec = do
             myToolkit
             network
             $ structure
-                 </> R.subscribeToInlet (toInlet "patch" "node" "inlet") handler
+                 </> R.subscribeToInlet (toInlet "patch" "node" "inlet") (Spy.with traceSpy)
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
@@ -212,9 +204,9 @@ spec = do
 
       delay (Milliseconds 100.0)
       _ <- liftEffect stop
-      vals <- liftEffect $ Ref.read ref
+      vals <- liftEffect $ Spy.get traceSpy
       vals `shouldContain` Notebook
-      liftEffect $ Ref.write [] ref
+      liftEffect $ Spy.reset traceSpy
 
       result' /\ { stop : stop' } <- liftEffect
         $ Actions.runFolding
@@ -230,11 +222,10 @@ spec = do
 
       delay (Milliseconds 100.0)
       _ <- liftEffect stop
-      vals' <- liftEffect $ Ref.read ref
+      vals' <- liftEffect $ Spy.get traceSpy
       vals' `shouldNotContain` Liver
       vals' `shouldNotContain` Notebook
       vals' `shouldEqual` []
-      liftEffect $ Ref.write [] ref
 
       pure unit
 
