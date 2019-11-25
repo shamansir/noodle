@@ -31,7 +31,7 @@ import Rpd.Util (flow) as R
 import Rpd.Network (empty) as Network
 import Rpd.Network (Network) as R
 
-import Test.Spec (Spec, it, describe, pending, pending')
+import Test.Spec (Spec, it, describe, pending, pending', itOnly)
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
 import Rpd.Test.Util.Either (getOrFail)
@@ -121,7 +121,7 @@ spec = do
     -- TODO: test values come in order they were sent (i.e. send folded stream with IDs or
     --       stream different values after a delay)
 
-    it "when the inlet was removed after the subscription, the subscriber stops receiving data" $ do
+    itOnly "when the inlet was removed after the subscription, the subscriber stops receiving data" $ do
       traceSpy <- liftEffect Spy.trace
 
       let
@@ -146,7 +146,6 @@ spec = do
       network' <- getOrFail result network
 
       delay (Milliseconds 100.0)
-      _ <- liftEffect stop
       vals <- liftEffect $ Spy.get traceSpy
       vals `shouldContain` Notebook
       liftEffect $ Spy.reset traceSpy
@@ -159,24 +158,13 @@ spec = do
                   (toInlet "patch" "node" "inlet")
                   (R.flow $ const Liver <$> interval 30)
 
-      -- result' <- liftEffect
-      --   $ Actions.runFolding
-      --       myToolkit
-      --       network'
-      --       $ Actions.init
-      --            </> R.removeInlet (toInlet "patch" "node" "inlet")
-      --            </> R.streamToInlet
-      --                   (toInlet "patch" "node" "inlet")
-      --                   (R.flow $ const Liver <$> interval 30)
-      -- _ <- getOrFail result' network'
-
       delay (Milliseconds 100.0)
       vals' <- liftEffect $ Spy.get traceSpy
       vals' `shouldNotContain` Liver
       vals' `shouldNotContain` Notebook
       vals' `shouldEqual` []
 
-      pure unit
+      liftEffect stop
 
     it "when the inlet was removed and again added after the subscription, the subscriber still doesn't receive anything" $ do
       traceSpy <- liftEffect Spy.trace

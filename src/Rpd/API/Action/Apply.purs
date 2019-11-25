@@ -218,7 +218,6 @@ applyBuildAction tk (RemoveNode node) nw = do
         removeOutlets outlets inNW =
             foldSteps inNW outlets $ applyBuildAction tk <<< RemoveOutlet
 applyBuildAction _ (RemoveInlet inlet) nw = do
-    -- FIXME: should call core API function
     nw' <- Api.removeInlet inlet nw
     pure $ nw' /\
         [ CancelInletSubscriptions inlet

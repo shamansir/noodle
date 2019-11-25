@@ -101,6 +101,25 @@ spec =
 
           liftEffect stop
 
+      it "pushing actions works propetly" do
+          handlerSpy <- liftEffect $ Spy.wasCalled
+
+          let
+
+            actionsList =
+                  Actions.init
+                      </> R.addPatch "foo"
+
+          { pushAction, stop } <- liftEffect
+              $ Actions.run toolkit network (Spy.with handlerSpy) actionsList
+
+          liftEffect $ Spy.reset handlerSpy
+          liftEffect $ pushAction $ R.addPatch "bar"
+          handlerCalled <- liftEffect $ Spy.get handlerSpy
+          handlerCalled `shouldEqual` true
+
+          liftEffect stop
+
       pending' "when error happened, next models still arrive" do
           modelHandlerSpy <- liftEffect $ Spy.ifSuccess
           errHandlerSpy <- liftEffect $ Spy.ifError
@@ -211,6 +230,27 @@ spec =
 
       pending "result contains all the errors happened"
 
+      pending' "pushing actions works propetly" do
+        handlerSpy <- liftEffect $ Spy.wasCalled
+
+        let
+
+          actionsList =
+                Actions.init
+                    </> R.addPatch "foo"
+
+        -- nothing to listen for
+
+        _ /\ { pushAction, stop } <- liftEffect
+            $ Actions.runFolding toolkit network actionsList
+
+        liftEffect $ Spy.reset handlerSpy
+        liftEffect $ pushAction $ R.addPatch "bar"
+        handlerCalled <- liftEffect $ Spy.get handlerSpy
+        handlerCalled `shouldEqual` true
+
+        liftEffect stop
+
     describe "tracing" do
 
       it "it is possible to handle actions from the given actions list" do
@@ -299,3 +339,29 @@ spec =
         liftEffect stop
 
       pending "result contains all the errors happened"
+
+    describe "pushing several actions" do
+
+      it "pushing several actions performs them" do
+        handlerSpy <- liftEffect $ Spy.wasCalled
+        pushAllSpy <- liftEffect $ Spy.wasCalled
+
+        let
+
+          actionsList =
+                Actions.init
+
+        { pushAction, stop } <- liftEffect
+            $ Actions.run toolkit network (Spy.with handlerSpy) actionsList
+
+        liftEffect $ Spy.reset handlerSpy
+        liftEffect $ Actions.pushAll (Spy.with pushAllSpy)
+            $ Actions.init
+                </> R.addPatch "foo"
+                </> R.addPatch "bar"
+        handlerCalled <- liftEffect $ Spy.get handlerSpy
+        handlerCalled `shouldEqual` false
+        pushHandlerCalled <- liftEffect $ Spy.get pushAllSpy
+        pushHandlerCalled `shouldEqual` true
+
+        liftEffect stop

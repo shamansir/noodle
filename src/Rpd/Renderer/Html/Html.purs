@@ -693,7 +693,6 @@ performEffect
     -> Effect Unit
 performEffect _ pushAction UpdatePositions ( ui /\ (R.Network nw) ) = do
     positions <- collectPositions $ loadUUIDs $ Map.keys nw.registry
-    -- let _ = DT.spy "positions" $ convertPositions positions
     pushAction $ my $ StorePositions $ convertPositions positions
 performEffect _ pushAction
     (TryConnecting (R.Outlet _ outletPath _ _) (R.Inlet _ inletPath _ _))
