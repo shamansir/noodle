@@ -121,7 +121,7 @@ spec = do
     -- TODO: test values come in order they were sent (i.e. send folded stream with IDs or
     --       stream different values after a delay)
 
-    itOnly "when the inlet was removed after the subscription, the subscriber stops receiving data" $ do
+    it "when the inlet was removed after the subscription, the subscriber stops receiving data" $ do
       traceSpy <- liftEffect Spy.trace
 
       let
