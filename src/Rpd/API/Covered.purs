@@ -6,40 +6,83 @@ import Prelude
 import Data.Maybe
 import Data.Either
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Bifunctor (class Bifunctor)
 
 {- inspired by http://hackage.haskell.org/package/hexpr-0.0.0.0/docs/Control-Monad-Errors.html -}
 
 
--- newtype Covered errors state =
---     CoveredT (Monad m => Monoid errors => m (errors -> (Maybe state /\ errors)))
+data Covered errors state =
+    Covered (Maybe errors) (Maybe state)
 
 
-newtype Covered errors m state =
-    Covered (m (Maybe errors -> (Maybe state /\ Maybe errors)))
-
-
-nothing :: forall errors m state. Monad m => Covered errors m state
+nothing :: forall errors state. Covered errors state
 nothing =
-    Covered $ pure $ const (Nothing /\ Nothing)
+    Covered Nothing Nothing
 
 
-cover :: forall m error state. Monad m => error -> Covered error m state
-cover error = nothing
+uncover :: forall errors state. Covered errors state -> Maybe errors /\ Maybe state
+uncover (Covered maybeErrors maybeState) = maybeErrors /\ maybeState
 
 
-cover' :: forall m errors state error. Monad m => Semigroup errors => error -> Covered errors m state
-cover' errors = nothing
+notice :: forall error state. error -> Covered error state
+notice error = Covered (Just error) Nothing
 
 
-coverAll :: forall m errors state. Monad m => Semigroup errors => errors -> Covered errors m state
-coverAll = cover
+cover :: forall error state. state -> Covered error state
+cover state = Covered Nothing $ Just state
 
 
-recover :: forall errors m state. Monad m => Covered errors m state -> m (Maybe state /\ Maybe errors)
-recover (Covered action) = do
-    innerAction <- action
-    pure $ innerAction Nothing
+-- covered :: forall error state. state -> Covered error state
 
+
+hoist
+    :: forall errors state
+     . Semigroup errors
+    => errors
+    -> Covered errors state
+    -> Covered errors state
+hoist errors (Covered (Just prevErrors) maybeState) =
+    Covered (Just $ errors <> prevErrors) maybeState
+hoist errors (Covered Nothing maybeState) =
+    Covered (Just errors) maybeState
+
+
+hoistOne :: forall error state. error -> Covered error state -> Covered error state
+hoistOne error (Covered _ maybeState) = Covered (Just error) maybeState
+
+
+coverIn :: forall error state. state -> Covered error state -> Covered error state
+coverIn state (Covered maybeErrors _) = Covered maybeErrors $ Just state
+
+
+instance functorCovered :: Functor (Covered errors) where
+    map f (Covered maybeErrors maybeState) = Covered maybeErrors $ f <$> maybeState
+
+
+instance bifunctorCovered :: Bifunctor Covered where
+  bimap f g (Covered maybeErrors maybeState) = Covered (f <$> maybeErrors) (g <$> maybeState)
+
+
+instance applyCovered :: Apply (Covered errors) where
+  apply (Covered maybeErrors maybeF) (Covered maybeOtherErrors maybeState) =
+    Covered maybeErrors (maybeF <*> maybeState) -- FIXME: wrong, does not satisfy the law
+
+
+-- instance applicativeCovered :: Applicative (Covered errors) where
+--   pure = cover
+
+
+instance bindEither :: Bind (Covered errors) where
+  bind (Covered maybeErrors Nothing) _ = Covered maybeErrors Nothing
+  bind (Covered maybeErrors (Just state)) f = f state
+
+
+fromEither :: forall error state. Either error state -> Covered error state
+fromEither = either notice cover
+
+
+fromMaybe :: forall error state. Maybe state -> Covered error state
+fromMaybe = maybe nothing cover
 
 -- coverEither :: forall m errors state error. Monad m => Semigroup errors => Either error state -> Covered errors m state
 -- coverEither (Left error) =
