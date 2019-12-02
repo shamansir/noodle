@@ -144,14 +144,24 @@ instance applyErrorsT :: (Monad m, Monoid e) => Apply (ErrorsT e m) where
     apply = ap
 
 instance applicativeErrorsT :: (Monad m, Monoid e) => Applicative (ErrorsT e m) where
-    pure v = ErrorsT $ \e -> (Just v /\ e)
+    pure v = ErrorsT $ pure $ \e -> (Just v /\ e)
 
 instance bindErrorsT :: (Monad m, Monoid e) => Bind (ErrorsT e m) where
-    bind x@(ErrorsT unErrors) k = ErrorsT $ do
-        eRes <- runErrorsT x
-        case eRes of
+    bind x k = ErrorsT $ do
+        xRes <- runErrorsT x
+        case xRes of
             Left err -> pure $ \e -> (Nothing /\ (e <> Just err))
-            Right val -> unErrors $ k val
+            Right val -> let (ErrorsT unErrorsY) = k val in unErrorsY
+                -- pure $ \e -> yVal
+            -- Right val ->  unErrors $ k val
+            -- Right val ->  pure $ (\y err -> ?wh $ runErrorsT y) $ k val
+            {-
+            Right val -> pure $ \e -> do
+                yRes <- runErrorsT $ k val
+                pure $ case yRes of
+                    Left err' -> \e -> (val /\ (e <> Just err'))
+                    Right val' -> \e -> (val' /\ e)
+            -}
 
 instance monadErrorsT :: (Monad m, Monoid e) => Monad (ErrorsT e m)
 
