@@ -152,7 +152,7 @@ prepare_
     -> (action -> model -> Either RpdError (model /\ Array effect))
     -> ((action -> Effect Unit) -> effect -> model -> Effect Unit)
     -> Effect
-            { models :: Event (Either RpdError model)
+            { models :: Event (Array RpdError /\ model)
             , actions :: Event action
             , pushAction :: action -> Effect Unit
             , stop :: Canceler
@@ -169,8 +169,15 @@ prepare_ initialModel apply performEff = do
                 )
                 actions
                 (pure $ initialModel /\ [])
-        (models :: Event (Either RpdError model))
-            = ((<$>) fst) <$> updates
+        (models :: Event (Array RpdError /\ model))
+            = Event.fold
+                (\step (errors /\ lastModel) ->
+                    case step of
+                        Left err -> (errors <> [err]) /\ lastModel
+                        Right model -> errors /\ model
+                )
+                (((<$>) fst) <$> updates)
+                ([] /\ initialModel)
     stopPerformingEffects <- Event.subscribe updates \step ->
         case step of
             Left err -> pure unit
@@ -184,7 +191,7 @@ prepare
      . Network d c n
     -> Toolkit d c n
     -> Effect
-            { models :: Event (Either RpdError (Network d c n))
+            { models :: Event (Array RpdError /\ Network d c n)
             , actions :: Event (Action d c n)
             , pushAction :: Action d c n -> Effect Unit
             , stop :: Canceler
@@ -210,7 +217,7 @@ run
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
-    -> (Either RpdError (Network d c n) -> Effect Unit)
+    -> (Array RpdError /\ Network d c n -> Effect Unit)
     -> ActionList d c n
     -> Effect
             { pushAction :: Action d c n -> Effect Unit
@@ -230,7 +237,7 @@ runFolding
     -> Network d c n
     -> ActionList d c n
     -> Effect
-            (Either RpdError (Network d c n) /\
+            ((Array RpdError /\ Network d c n) /\
             { pushAction :: Action d c n -> Effect Unit
             , stop :: Canceler
             })

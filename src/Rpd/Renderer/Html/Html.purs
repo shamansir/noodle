@@ -708,7 +708,6 @@ performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
     pure unit
 
 
-
 getNodeSize :: forall d n. R.Node d n -> Layout.NodeSize
 getNodeSize _ = Layout.NodeSize { width : 100.0, height : 40.0 }
 
