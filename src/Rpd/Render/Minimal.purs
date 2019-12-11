@@ -41,7 +41,7 @@ data PushF d c n =
 
 
 data Renderer d c n view
-    = Renderer view (Array R.RpdError /\ (R.Network d c n) -> view)
+    = Renderer view (Array R.RpdError /\ R.Network d c n -> view)
 
 
 neverPush :: forall d c n. PushF d c n

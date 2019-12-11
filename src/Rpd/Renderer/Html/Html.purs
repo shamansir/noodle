@@ -554,9 +554,9 @@ view
     => R.Atom n
     => T.Channels d c
     => ToolkitRenderer d c n
-    -> Either R.RpdError (Model d c n /\ R.Network d c n)
+    -> Array R.RpdError /\ Model d c n /\ R.Network d c n
     -> View d c n
-view toolkitRenderer (Right (ui /\ nw)) =
+view toolkitRenderer (errors /\ ui /\ nw) =
     H.div
         [ H.id_ "html"
         , H.onMouseMove handleMouseMove
@@ -564,6 +564,9 @@ view toolkitRenderer (Right (ui /\ nw)) =
         , H.onClick handleClick
         ]
         [ viewDebugWindow ui nw
+        , case errors of
+            [] -> H.div [] []
+            _  -> H.div [] (viewError <$> errors)
         , viewNetwork toolkitRenderer ui nw
         , viewMousePos ui.mousePos
         , viewDragState ui.dragging
@@ -574,8 +577,6 @@ view toolkitRenderer (Right (ui /\ nw)) =
         handleMouseUp e = Just $ my $ MouseUp
             $ { x : toNumber $ ME.clientX e, y : toNumber $ ME.clientY e }
         handleClick e = Just $ my $ ClickBackground e
-view _ (Left err) =
-    viewError err -- FIXME: show last working network state along with the error
 
 
 update

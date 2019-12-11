@@ -21,7 +21,7 @@ import Data.List as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Sequence as Seq
-import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFromChar)
+import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFromChar, joinWith)
 import Data.String as String
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
@@ -283,21 +283,22 @@ update _ (ui /\ _) =
 
 view
     :: forall d c n
-     . Either R.RpdError (Ui /\ R.Network d c n)
+     . Array R.RpdError /\ Ui /\ R.Network d c n
     -> View
-view (Right (ui /\ nw)) =
+view (errors /\ ui /\ nw) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
     -- "{" <> show packing <> " :: "
     --     <> show (viewNetwork packing nw) <> " :: "
     --     <> show (viewStatus ui.status) <> "}"
     viewNetwork packing nw
+        # ML.inject (0 /\ 0) (viewErrors errors)
     where
+        viewErrors [] = ML.from' ""
+        viewErrors _ = ML.from' $ "<ERR: " <> joinWith "/" (show <$> errors) <> ">"
         -- FIXME: store the Maybe-Packing in UI and update it only on changes,
         --        and if
         bounds@(width /\ height) = initialBounds
         packing = R2.container width height # Packing # packNetwork nw
-view (Left err) =
-    ML.from' $ "ERR: " <> show err
 
 
 instance showPacking :: Show Packing where

@@ -16,7 +16,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Lens as L
 import Data.Either (Either(..))
 import Data.String (joinWith)
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Rpd.Network
     ( Network(..)
@@ -77,11 +77,11 @@ stringRenderer =
 
 stringRendererWithOptions :: forall d c n. Options -> StringRenderer d c n
 stringRendererWithOptions options =
-    Renderer
-        { first : ""
-        , viewError : \err -> "<" <> show err <> ">"
-        , viewValue : view options
-        }
+    Renderer "" \(errors /\ nw) ->
+        (case errors of
+            [] -> ""
+            _ -> "<" <> joinWith "," (show <$> errors) <> ">" <> "/")
+        <> view options nw
 
 
 view :: forall d c n. Options -> R.Network d c n -> String
