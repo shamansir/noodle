@@ -6,17 +6,15 @@ import Prelude
 
 import Effect.Class (liftEffect)
 
-import Data.Maybe
 import Data.String as String
-import Data.Tuple.Nested ((/\))
 
-import Test.Spec (Spec, describe, describeOnly, it)
+import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
 
 import Rpd.UUID as UUID
-import Rpd.API.Covered (Covered(..))
-import Rpd.API.Covered as Covered
+-- import Rpd.API.Covered (Covered(..))
+-- import Rpd.API.Covered as Covered
 
 
 spec :: Spec Unit
@@ -27,6 +25,7 @@ spec = do
       _ <- 36 `shouldEqual` String.length (UUID.toRawString uuid)
       pure unit
 
+  {-
   describeOnly "covered" do
 
     it "covers the state" do
@@ -110,3 +109,4 @@ spec = do
           pure b
 
       Covered.uncover covered `shouldEqual` (["err1", "err2"] /\ Just "c")
+    -}

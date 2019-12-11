@@ -8,7 +8,7 @@ module Rpd.Render.Minimal
 
 import Prelude
 
-import Data.Either (either)
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Effect (Effect)
 
@@ -41,11 +41,7 @@ data PushF d c n =
 
 
 data Renderer d c n view
-    = Renderer
-        { first :: view
-        , viewError :: R.RpdError -> view
-        , viewValue :: R.Network d c n -> view
-        }
+    = Renderer view (Array R.RpdError /\ (R.Network d c n) -> view)
 
 
 neverPush :: forall d c n. PushF d c n
@@ -63,10 +59,10 @@ make
         , push :: PushF d c n
         , stop :: Effect Unit
         }
-make (Renderer { first, viewError, viewValue }) toolkit initialNW = do
+make (Renderer first view) toolkit initialNW = do
     { event : views, push : pushView } <- Event.create
     { models, pushAction, stop } <- ActionSeq.prepare initialNW toolkit
-    stopViews <- Event.subscribe models (pushView <<< either viewError viewValue)
+    stopViews <- Event.subscribe models (pushView <<< view)
     pure
         { first
         , next : views
@@ -81,8 +77,8 @@ once
     -> T.Toolkit d c n
     -> R.Network d c n
     -> view
-once (Renderer { viewValue }) _ nw =
-    viewValue nw
+once (Renderer _ view) _ nw =
+    view ([] /\ nw)
 
 
 

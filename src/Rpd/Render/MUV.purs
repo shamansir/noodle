@@ -62,7 +62,7 @@ type UpdateF d c n model action effect
 -}
  -- FIXME: toolkit renderer should be present among the arguments
 type ViewF d c n model view action
-     = Either R.RpdError (model /\ R.Network d c n)
+     = Array R.RpdError /\ model /\ R.Network d c n
     -> view
 
 
@@ -145,7 +145,7 @@ once
     -> R.Network d c n
     -> view
 once (Renderer { init, view }) _ nw =
-    view $ Right $ init nw /\ nw
+    view $ [] /\ init nw /\ nw
 
 
 
@@ -153,20 +153,14 @@ fromMinimal
     :: forall d c n view
      . Minimal.Renderer d c n view
     -> Renderer d c n Unit view Unit Unit
-fromMinimal (Minimal.Renderer minimal) =
+fromMinimal (Minimal.Renderer first view) =
     Renderer
-        { from : minimal.first -- initial view
+        { from : first -- initial view
         , init : const unit -- initial state
         , update : noUpdates unit
-        , view : minimalView
+        , view : \(errs /\ _ /\ nw) -> view $ errs /\ nw
         , performEffect : skipEffects
         }
-    where
-        minimalView valueE =
-            either
-                minimal.viewError
-                (minimal.viewValue <<< snd)
-                valueE
 
 
 -- data MyData = A | B

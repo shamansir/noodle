@@ -154,7 +154,12 @@ init nw =
     }
 
 
-type HtmlRenderer d c n = R.Renderer d c n (Model d c n) (View d c n) (Action d c n) (Perform d c n)
+type HtmlRenderer d c n =
+    R.Renderer d c n
+        (Model d c n)
+        (View d c n)
+        (Action d c n)
+        (Perform d c n)
 -- type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
 type ToolkitRenderer d c n =
     T.ToolkitRenderer d c n

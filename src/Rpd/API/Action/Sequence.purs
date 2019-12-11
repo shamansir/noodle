@@ -243,7 +243,7 @@ runFolding
             })
 runFolding toolkit initialNW actionList = do
     res@{ models, pushAction, stop } <- prepare initialNW toolkit
-    lastValRef <- Ref.new $ Right initialNW
+    lastValRef <- Ref.new $ [] /\ initialNW
     let modelsFolded = models -- TODO: collect errors. Event.fold (<|>) models $ Right initialNW
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
@@ -287,13 +287,13 @@ runTracing
     -> (Action d c n -> Effect Unit)
     -> ActionList d c n
     -> Effect
-        (Either RpdError (Network d c n) /\
+        ((Array RpdError /\ Network d c n) /\
             { pushAction :: Action d c n -> Effect Unit
             , stop :: Canceler
             })
 runTracing toolkit initialNW everyAction actionList = do
     { models, pushAction, actions, stop } <- prepare initialNW toolkit
-    lastValRef <- Ref.new $ Right initialNW
+    lastValRef <- Ref.new $ [] /\ initialNW
     let modelsFolded = models -- TODO: collect errors. Event.fold (<|>) models $ Right initialNW
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
