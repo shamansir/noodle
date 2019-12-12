@@ -120,15 +120,35 @@ spec =
 
           liftEffect stop
 
+      it "test either" do
+          liftEffect $ do
+            { event, push } <- E.create
+            _ <- E.subscribe event (show >>> log)
+            let
+              folded =
+                E.fold
+                  (\either (errors /\ prev) ->
+                    case either of
+                      Right val -> (errors /\ val)
+                      Left err -> (([ err ] <> errors) /\ prev)
+                  )
+                  event
+                  ([] /\ "x")
+            _ <- E.subscribe folded (show >>> log)
+            push $ Right "a"
+            push $ Left "err"
+            push $ Right "b"
+          pure unit
+
       it "when error happened, next models still arrive" do
-          modelHandlerSpy <- liftEffect $ Spy.ifNoErrors
+          handlerSpy <- liftEffect $ Spy.wasCalled
           errHandlerSpy <- liftEffect $ Spy.ifErrors
 
           let
 
               actionsList = Actions.init
-              everyStep v =
-                     Spy.consider modelHandlerSpy v
+              everyStep v
+                  =  Spy.consider handlerSpy v
                   <> Spy.consider errHandlerSpy v
 
           { pushAction, stop } <- liftEffect
@@ -140,10 +160,10 @@ spec =
           errHandlerCalled <- liftEffect $ Spy.get errHandlerSpy
           errHandlerCalled `shouldEqual` true
 
-          liftEffect $ Spy.reset modelHandlerSpy
+          liftEffect $ Spy.reset handlerSpy
           liftEffect $ pushAction $ R.addPatch "foo"
-          modelHandlerCalled <- liftEffect $ Spy.get modelHandlerSpy
-          modelHandlerCalled `shouldEqual` true
+          handlerCalled <- liftEffect $ Spy.get handlerSpy
+          handlerCalled `shouldEqual` true
 
           liftEffect stop
 

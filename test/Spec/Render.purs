@@ -174,10 +174,12 @@ spec = do
           -- add inlet to non-exising node
           </> R.addInlet (toNode "idont" "exist") "foo" Channel
       stringSample <- liftEffect $ loadSample "Error.String"
+      terminalSample <- liftEffect $ loadSample "Error.Terminal"
       expectToRender stringRenderer toolkit compareStrings' erroneousNW
         $ String.trim stringSample
       expectToRenderMUV terminalRenderer toolkit compareMultiline' erroneousNW
-        $ ML.from' "ERR: "
+        $ ML.empty' (100 /\ 100)
+          # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
 
   describe "dynamic rendering" do
