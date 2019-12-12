@@ -15,7 +15,7 @@ import Effect (Effect)
 import FRP.Event (Event)
 import FRP.Event as Event
 
-import Rpd.API (RpdError) as R
+import Rpd.API.Errors (RpdError) as R
 import Rpd.API.Action (Action) as C
 import Rpd.API.Action.Sequence (prepare) as ActionSeq
 import Rpd.Network (Network) as R

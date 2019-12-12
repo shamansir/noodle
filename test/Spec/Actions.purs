@@ -9,6 +9,8 @@ import Data.Either (Either(..))
 import Data.Lens (view) as L
 import Data.Maybe (Maybe(..))
 import Data.Sequence as Seq
+import Data.Array (length)
+import Data.Tuple (fst) as Tuple
 import Data.Tuple.Nested ((/\))
 import Control.Alt ((<|>))
 
@@ -120,26 +122,6 @@ spec =
 
           liftEffect stop
 
-      it "test either" do
-          liftEffect $ do
-            { event, push } <- E.create
-            _ <- E.subscribe event (show >>> log)
-            let
-              folded =
-                E.fold
-                  (\either (errors /\ prev) ->
-                    case either of
-                      Right val -> (errors /\ val)
-                      Left err -> (([ err ] <> errors) /\ prev)
-                  )
-                  event
-                  ([] /\ "x")
-            _ <- E.subscribe folded (show >>> log)
-            push $ Right "a"
-            push $ Left "err"
-            push $ Right "b"
-          pure unit
-
       it "when error happened, next models still arrive" do
           handlerSpy <- liftEffect $ Spy.wasCalled
           errHandlerSpy <- liftEffect $ Spy.ifErrors
@@ -164,6 +146,28 @@ spec =
           liftEffect $ pushAction $ R.addPatch "foo"
           handlerCalled <- liftEffect $ Spy.get handlerSpy
           handlerCalled `shouldEqual` true
+
+          liftEffect stop
+
+      it "when some error happened, it is reported only once" do
+          traceSpy <- liftEffect Spy.trace
+
+          let
+              actionsList = Actions.init
+              collectErrorsSpy = Spy.contramap Tuple.fst traceSpy
+
+          { pushAction, stop } <- liftEffect
+              $ Actions.run toolkit network (Spy.consider collectErrorsSpy) actionsList
+
+          liftEffect $ pushAction
+              $ R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
+
+          errors <- liftEffect $ Spy.get collectErrorsSpy
+          length errors `shouldEqual` 1
+
+          liftEffect $ pushAction $ R.addPatch "foo"
+          errors' <- liftEffect $ Spy.get collectErrorsSpy
+          length errors' `shouldEqual` 1
 
           liftEffect stop
 

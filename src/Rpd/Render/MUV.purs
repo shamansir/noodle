@@ -28,6 +28,7 @@ import Rpd.API as R
 import Rpd.API.Action as Core
 import Rpd.API.Action.Apply as Core
 import Rpd.API.Action.Sequence (prepare_) as ActionSeq
+import Rpd.API.Errors (RpdError) as R
 import Rpd.Toolkit as T
 import Rpd.Render.Minimal as Minimal
 import Rpd.Util (Canceler)

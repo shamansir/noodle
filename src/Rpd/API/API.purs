@@ -42,14 +42,10 @@ import Rpd.Process
 import Rpd.Toolkit (Toolkit(..))
 import Rpd.Toolkit as Toolkit
 
+import Rpd.API.Errors (RpdError)
+import Rpd.API.Errors as Err
 
 -- type Rpd d e = ContT ...
-
-newtype RpdError = RpdError String
-
-
-instance showRpdError :: Show RpdError where show (RpdError err) = err
-derive instance eqRpdError :: Eq RpdError
 
 
 -- infixl 1 andThen as </>
@@ -95,8 +91,9 @@ uuidByPath
     -> Network d c n
     -> Either RpdError x
 uuidByPath f path nw = do
-    (uuid' :: UUID.Tagged) <- view (_pathToId $ Path.lift path) nw # note (RpdError "")
-    (uuid :: x) <- f uuid' # note (RpdError "")
+    (uuid' :: UUID.Tagged)
+        <- view (_pathToId $ Path.lift path) nw # note (Err.ftfu $ Path.lift path)
+    (uuid :: x) <- f uuid' # note (Err.ftfu $ Path.lift path)
     pure uuid
 
 
@@ -236,7 +233,7 @@ addOutlet
     -> Network d c n
     -> Either RpdError (Network d c n)
 addOutlet outlet@(Outlet uuid path _ _) nw = do
-    nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- nw # uuidByPath UUID.toNode nodePath
     pure $ nw
         # setJust (_outlet uuid) outlet
@@ -250,7 +247,7 @@ addInlet
     -> Network d c n
     -> Either RpdError (Network d c n)
 addInlet inlet@(Inlet uuid path _ _) nw = do
-    nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- nw # uuidByPath UUID.toNode nodePath
     pure $ nw
         # setJust (_inlet uuid) inlet
@@ -264,7 +261,7 @@ removeInlet
     -> Network d c n
     -> Either RpdError (Network d c n)
 removeInlet inlet@(Inlet uuid path _ _) nw = do
-    nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- nw # uuidByPath UUID.toNode nodePath
     pure $ nw
         # set (_inlet uuid) Nothing
@@ -278,7 +275,7 @@ removeOutlet
     -> Network d c n
     -> Either RpdError (Network d c n)
 removeOutlet outlet@(Outlet uuid path _ _) nw = do
-    nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- nw # uuidByPath UUID.toNode nodePath
     pure $ nw
         # set (_outlet uuid) Nothing
@@ -291,7 +288,7 @@ addLink :: forall d c n
     -> Network d c n
     -> Either RpdError (Network d c n)
 addLink link@(Link uuid { outlet, inlet }) nw = do
-    (Outlet _ opath _ _) <- view (_outlet outlet) nw # note (RpdError "")
+    (Outlet _ opath _ _) <- view (_outlet outlet) nw # note (Err.ftfs $ UUID.uuid outlet)
     let patchPath = Path.getPatchPath $ Path.lift opath
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw

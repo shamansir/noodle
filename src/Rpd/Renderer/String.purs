@@ -26,7 +26,7 @@ import Rpd.Network
     , Outlet(..)
     , Link(..)
     ) as R
-import Rpd.API (RpdError) as R
+import Rpd.API.Errors (RpdError) as R
 import Rpd.Optics (_node, _inlet, _outlet, _link, _networkPatches, _networkLinks)
 import Rpd.Render.Minimal (PushF, Renderer(..))
 import Rpd.Path as P

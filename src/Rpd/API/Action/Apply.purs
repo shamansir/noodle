@@ -21,7 +21,9 @@ import FRP.Event.Time as E
 
 import Rpd.Util (PushableFlow(..), Canceler)
 import Rpd.API as Api
-import Rpd.API (RpdError(..), uuidByPath, makePushableFlow)
+import Rpd.API (uuidByPath, makePushableFlow)
+import Rpd.API.Errors (RpdError)
+import Rpd.API.Errors as Err
 import Rpd.API.Action
     ( Action(..)
     , InnerAction(..)
@@ -118,7 +120,7 @@ applyRequestAction _ (ToAddNextNodeByDef patchPath n def) nw = do
     -- | AddNodeE Path.ToPatch Path.Alias n (NodeDef d c)
 applyRequestAction tk (ToRemoveNode nodePath) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
-    node <- view (_node nodeUuid) nw # note (RpdError "")
+    node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     applyBuildAction tk (RemoveNode node) nw
 applyRequestAction _ (ToAddInlet nodePath alias c) nw =
     pure $ nw /\ [ AddInletE nodePath alias c ]
@@ -126,21 +128,21 @@ applyRequestAction _ (ToAddOutlet nodePath alias c) nw =
     pure $ nw /\ [ AddOutletE nodePath alias c ]
 applyRequestAction tk (ToRemoveInlet inletPath) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    inlet <- view (_inlet inletUuid) nw # note (RpdError "")
+    inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     applyBuildAction tk (RemoveInlet inlet) nw
 applyRequestAction tk (ToRemoveOutlet outletPath) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
-    outlet <- view (_outlet outletUuid) nw # note (RpdError "")
+    outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     applyBuildAction tk (RemoveOutlet outlet) nw
 applyRequestAction _ (ToProcessWith nodePath processF) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
-    node <- view (_node nodeUuid) nw # note (RpdError "")
+    node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     pure $ nw /\ [ ProcessWithE node processF ]
 applyRequestAction _ (ToConnect outletPath inletPath) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
-    outlet <- view (_outlet outletUuid) nw # note (RpdError "")
+    outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    inlet <- view (_inlet inletUuid) nw # note (RpdError "")
+    inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     pure $ nw /\ [ AddLinkE outlet inlet ]
 applyRequestAction _ (ToDisconnect outletPath inletPath) nw = do
     pure  $ nw /\ [ ]
@@ -148,42 +150,42 @@ applyRequestAction _ (ToDisconnect outletPath inletPath) nw = do
     -- pure $ TODO: perform and remove cancelers
 applyRequestAction _ (ToSendToInlet inletPath d) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    inlet <- view (_inlet inletUuid) nw # note (RpdError "")
+    inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ [ SendToInletE inlet d ]
 applyRequestAction _ (ToSendToOutlet outletPath d) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
-    outlet <- view (_outlet outletUuid) nw # note (RpdError "")
+    outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ [ SendToOutletE outlet d ]
 applyRequestAction _ (ToSendPeriodicallyToInlet inletPath period fn) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    inlet <- view (_inlet inletUuid) nw # note (RpdError "")
+    inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ [ SendPeriodicallyToInletE inlet period fn ]
 applyRequestAction _ (ToStreamToInlet inletPath event) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    inlet <- view (_inlet inletUuid) nw # note (RpdError "")
+    inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ [ StreamToInletE inlet event ]
 applyRequestAction _ (ToStreamToOutlet outletPath event) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
-    outlet <- view (_outlet outletUuid) nw # note (RpdError "")
+    outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ [ StreamToOutletE outlet event ]
 applyRequestAction _ (ToSubscribeToInlet inletPath handler) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    inlet <- view (_inlet inletUuid) nw # note (RpdError "")
+    inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ [ SubscribeToInletE inlet handler ]
 applyRequestAction _ (ToSubscribeToOutlet outletPath handler) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
-    outlet <- view (_outlet outletUuid) nw # note (RpdError "")
+    outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ [ SubscribeToOutletE outlet handler ]
 applyRequestAction _ (ToSubscribeToNode nodePath inletsHandler outletsHandler) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
-    node <- view (_node nodeUuid) nw # note (RpdError "")
+    node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ [ SubscribeToNodeE node inletsHandler outletsHandler ]
 
@@ -201,8 +203,8 @@ applyBuildAction _ (AddNode node) nw = do
     pure $ nw' /\ [ ]
 applyBuildAction tk (RemoveNode node) nw = do
     let (Node uuid _ _ _ _) = node
-    inlets <- view (_nodeInlets uuid) nw # note (RpdError "")
-    outlets <- view (_nodeOutlets uuid) nw # note (RpdError "")
+    inlets <- view (_nodeInlets uuid) nw # note (Err.ftfs $ UUID.uuid uuid)
+    outlets <- view (_nodeOutlets uuid) nw # note (Err.ftfs $ UUID.uuid uuid)
     nw' /\ effs
         <- removeInlets inlets nw <∞> removeOutlets outlets
     nw'' <- Api.removeNode node nw'
@@ -237,9 +239,9 @@ applyBuildAction _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw = do
         nw' = nw # setJust (_node uuid) newNode
     pure $ nw' /\ [ SubscribeNodeProcess newNode ]
 applyBuildAction _ (AddInlet inlet@(Inlet uuid path _ _)) nw = do
-    nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
-    node <- view (_node nodeUuid) nw # note (RpdError "")
+    node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     nw' <- Api.addInlet inlet nw
     pure $ nw' /\
         [ CancelNodeSubscriptions node
@@ -249,9 +251,9 @@ applyBuildAction _ (AddInlet inlet@(Inlet uuid path _ _)) nw = do
         , SendActionOnInletUpdatesE inlet
         ]
 applyBuildAction _ (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
-    nodePath <- (Path.getNodePath $ Path.lift path) # note (RpdError "")
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
-    node <- view (_node nodeUuid) nw # note (RpdError "")
+    node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     nw' <- Api.addOutlet outlet nw
     pure $ nw' /\
         [ CancelNodeSubscriptions node

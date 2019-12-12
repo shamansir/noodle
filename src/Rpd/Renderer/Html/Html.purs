@@ -34,7 +34,8 @@ import Debug.Trace as DT
 
 import Effect (Effect)
 
-import Rpd.API (RpdError, uuidByPath) as R
+import Rpd.API (uuidByPath) as R
+import Rpd.API.Errors (RpdError) as R
 import Rpd.API.Action (Action(..), DataAction(..), BuildAction(..), RequestAction(..)) as Core
 import Rpd.Network as R
 import Rpd.Optics as L
