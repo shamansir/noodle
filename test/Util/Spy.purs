@@ -2,6 +2,7 @@ module Rpd.Test.Util.Spy
     ( Spy, create, with, reset, get, consider
     , wasCalled, callCount, trace, last
     , ifError, ifSuccess
+    , ifErrors, ifNoErrors
     , contramap
     ) where
 
@@ -9,6 +10,7 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
+import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (snoc)
 
 import Effect.Ref (Ref)
@@ -100,3 +102,16 @@ ifSuccess = create false handler
     handler prev (Left _) = prev
     handler _ (Right _) = true
 
+
+ifErrors :: forall x a. Effect (Spy Boolean (Array x /\ a))
+ifErrors = create false handler
+  where
+    handler prev ([] /\ _) = prev
+    handler _ _ = true
+
+
+ifNoErrors :: forall x a. Effect (Spy Boolean (Array x /\ a))
+ifNoErrors = create false handler
+  where
+    handler _ ([] /\ _) = true
+    handler prev _ = prev

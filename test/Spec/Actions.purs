@@ -31,7 +31,7 @@ import Rpd.Network (Inlet(..), Network, Node(..), Outlet(..)) as R
 import Rpd.Network (empty) as N
 import Rpd.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath) as L
 import Rpd.Path as P
-import Rpd.Test.Util.Either (getOrFail, failIfNoError)
+import Rpd.Test.Util.Actions (getOrFail, failIfNoErrors)
 import Rpd.Test.Util.Spy as Spy
 import Rpd.Toolkit as T
 
@@ -85,7 +85,7 @@ spec =
           liftEffect stop
 
       it "handler receives error when it happened" do
-          handlerSpy <- liftEffect $ Spy.ifError
+          handlerSpy <- liftEffect $ Spy.ifErrors
 
           let
 
@@ -120,9 +120,9 @@ spec =
 
           liftEffect stop
 
-      pending' "when error happened, next models still arrive" do
-          modelHandlerSpy <- liftEffect $ Spy.ifSuccess
-          errHandlerSpy <- liftEffect $ Spy.ifError
+      it "when error happened, next models still arrive" do
+          modelHandlerSpy <- liftEffect $ Spy.ifNoErrors
+          errHandlerSpy <- liftEffect $ Spy.ifErrors
 
           let
 
@@ -196,7 +196,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runFolding toolkit network actionsList
 
-        failIfNoError "no error" result
+        failIfNoErrors "no error" result
 
         liftEffect stop
 
@@ -224,7 +224,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runFolding toolkit network actionsList
 
-        failIfNoError "no error" result
+        failIfNoErrors "no error" result
 
         liftEffect stop
 
@@ -306,7 +306,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runTracing toolkit network (const $ pure unit) actionsList
 
-        failIfNoError "no error" result
+        failIfNoErrors "no error" result
 
         liftEffect stop
 
@@ -334,7 +334,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runTracing toolkit network (const $ pure unit) actionsList
 
-        failIfNoError "no error" result
+        failIfNoErrors "no error" result
 
         liftEffect stop
 

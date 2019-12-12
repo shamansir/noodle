@@ -34,7 +34,7 @@ import Rpd.Network (Network) as R
 import Test.Spec (Spec, it, describe, pending, pending', itOnly)
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
-import Rpd.Test.Util.Either (getOrFail)
+import Rpd.Test.Util.Actions (getOrFail)
 import Rpd.Test.Util.Spy as Spy
 import Rpd.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, myToolkit)
 
