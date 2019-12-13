@@ -59,7 +59,7 @@ maxLineLength (Multiline ml) =
 data CompareResult
   = Unknown
   | Match
-  | DiffAt (Int /\ Int)
+  | DiffAt (Int /\ Int) (CodePoint /\ CodePoint)
   | DiffSize (Int /\ Int) (Int /\ Int)
 
 
@@ -189,7 +189,7 @@ compare left@(Multiline leftLines) right@(Multiline rightLines)
   where
     compareML :: Int -> CompareResult -> Line -> CompareResult
     compareML _ (DiffSize a b) _ = DiffSize a b
-    compareML _ (DiffAt pos) _ = DiffAt pos
+    compareML _ (DiffAt pos cps) _ = DiffAt pos cps
     compareML y _ leftLine =
       case rightLines !! y of
         Just rightLine ->
@@ -202,11 +202,16 @@ compare left@(Multiline leftLines) right@(Multiline rightLines)
     compareLines y leftLine rightLine =
       Array.zip leftLine rightLine
         # foldlWithIndex (compareCPs y) Unknown
+    compareCPs
+        :: Int -> Int
+        -> CompareResult
+        -> CodePoint /\ CodePoint
+        -> CompareResult
     compareCPs _ _ (DiffSize a b) _ = DiffSize a b
-    compareCPs _ _ (DiffAt pos) _ = DiffAt pos
+    compareCPs _ _ (DiffAt pos cps) _ = DiffAt pos cps
     compareCPs y x _ (l /\ r) =
       if (l == r) then Match
-      else DiffAt (x /\ y)
+      else DiffAt (x /\ y) (l /\ r)
 
 
 diffBlockSize :: Int /\ Int
@@ -219,7 +224,7 @@ compare'
   -> CompareResult /\ Maybe (Multiline /\ Multiline)
 compare' left right =
   case compare left right of
-    DiffAt pos -> DiffAt pos /\
+    DiffAt pos cps -> DiffAt pos cps /\
       Just (clipWithMarker pos diffBlockSize left /\
             clipWithMarker pos diffBlockSize right)
     DiffSize a b -> DiffSize a b /\

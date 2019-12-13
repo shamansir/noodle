@@ -316,6 +316,11 @@ compareStrings s1 s2 =
     Right unit
 
 
+showCpsInequality :: String.CodePoint /\ String.CodePoint -> String
+showCpsInequality (lcp /\ rcp) =
+  "<" <> show lcp <> "> /= <" <> show rcp <> ">"
+
+
 compareMultiline' :: CompareViewsAff ML.Multiline
 compareMultiline' v1 v2 =
   case v1 `ML.compare'` v2 of
@@ -333,11 +338,12 @@ compareMultiline' v1 v2 =
       fail $ "Sizes are different: " <>
         show wl <> "x" <> show hl <> " (left) vs " <>
         show wr <> "x" <> show hr <> " (right)"
-    ML.DiffAt (x /\ y) /\ Just (sampleLeft /\ sampleRight) -> do
+    ML.DiffAt (x /\ y) (lcp /\ rcp) /\ Just (sampleLeft /\ sampleRight) -> do
       fail $ "Views are different:\n\n" <>
         show sampleLeft <> "\n\n" <> show sampleRight
-    ML.DiffAt (x /\ y) /\ Nothing -> do
-      fail $ "Views are different."
+          <> "\n\n" <> showCpsInequality (lcp /\ rcp)
+    ML.DiffAt (x /\ y) (lcp /\ rcp) /\ Nothing -> do
+      fail $ "Views are different. " <> showCpsInequality (lcp /\ rcp)
   -- when (v1 /= v2) $ do
   --   --liftEffect $ log $ colored Fail "aaa"
   --   fail $ show v1 <> " ≠ " <> show v2
