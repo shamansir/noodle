@@ -10,6 +10,8 @@ import Effect.Console (log) as Console
 import Control.Monad.Error.Class
 import Control.Alternative ((<|>))
 
+import Data.Array ((:))
+import Data.Array (snoc) as Array
 import Data.List (List(..), snoc)
 import Data.Either
 import Data.Maybe
@@ -162,7 +164,7 @@ prepare_
 prepare_ initialModel apply performEff = do
     { event : actions, push : pushAction } <- Event.create
     let
-        (updates :: Event (Covered (model /\ Array effect))) =
+        (updates :: Event (Covered RpdError (model /\ Array effect))) =
             Event.fold
                 (\action prevCovered ->
                     let (lastModel /\ _) = recover prevCovered
@@ -173,10 +175,11 @@ prepare_ initialModel apply performEff = do
                 actions
                 (carry $ initialModel /\ [])
         (models :: Event (Array RpdError /\ model))
+        -- TODO: consider using `Covered` here as well, just w/o effects
             = Event.fold
                 (\step (prevErrors /\ _) ->
                     case uncover step of
-                        Just err /\ lastModel -> (prevErrors <> [err]) /\ lastModel
+                        Just err /\ lastModel -> (prevErrors `Array.snoc` err) /\ lastModel
                         Nothing /\ model -> prevErrors /\ model
                 )
                 (((<$>) fst) <$> updates)

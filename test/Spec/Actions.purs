@@ -35,6 +35,7 @@ import Rpd.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath, _pa
 import Rpd.Path as P
 import Rpd.Test.Util.Actions (getOrFail, failIfNoErrors)
 import Rpd.Test.Util.Spy as Spy
+import Rpd.Test.Util.Assertions
 import Rpd.Toolkit as T
 
 
@@ -150,25 +151,25 @@ spec =
           liftEffect stop
 
       it "when some error happened, it is reported only once" do
-          traceSpy <- liftEffect Spy.trace
+          traceSpy <- liftEffect Spy.last
 
           let
               actionsList = Actions.init
               collectErrorsSpy = Spy.contramap Tuple.fst traceSpy
 
           { pushAction, stop } <- liftEffect
-              $ Actions.run toolkit network (Spy.consider collectErrorsSpy) actionsList
+              $ Actions.run toolkit network (Spy.with collectErrorsSpy) actionsList
 
           liftEffect $ pushAction
               $ R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
-          liftEffect $ Spy.reset collectErrorsSpy
+          errorsBefore <- liftEffect $ Spy.get collectErrorsSpy
+          shouldHaveValue errorsBefore
+          --liftEffect $ Spy.reset collectErrorsSpy
+          -- liftEffect $ pushAction $ R.addNode (P.toPatch "foo") "fail" Node
           liftEffect $ pushAction $ R.addPatch "foo"
-          errors <- liftEffect $ Spy.get collectErrorsSpy
-          errors `shouldEqual` []
-          -- liftEffect $ pushAction $ R.addPatch "bar"
-          -- errors'' <- liftEffect $ Spy.get collectErrorsSpy
-          -- length errors'' `shouldEqual` prevErrorsCount
+          errorsNow <- liftEffect $ Spy.get collectErrorsSpy
+          errorsNow `shouldEqual` errorsBefore
 
           liftEffect stop
 
@@ -180,19 +181,19 @@ spec =
               lastNetworkSpy = Spy.contramap Tuple.snd lastSpy
 
           { pushAction, stop } <- liftEffect
-              $ Actions.run toolkit network (Spy.consider lastNetworkSpy) actionsList
+              $ Actions.run toolkit network (Spy.with lastNetworkSpy) actionsList
 
           liftEffect $ pushAction
               $ R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
           liftEffect $ pushAction $ R.addPatch "foo"
           maybeLastNetwork <- liftEffect $ Spy.get lastNetworkSpy
-          isJust maybeLastNetwork `shouldEqual` true
-          isJust
+          shouldHaveValue maybeLastNetwork
+          shouldHaveValue
               (
-                L.view (L._patchByPath $ P.toPatch "foo")
-                  =<< maybeLastNetwork
-              ) `shouldEqual` true
+                maybeLastNetwork
+                  >>= L.view (L._patchByPath $ P.toPatch "foo")
+              )
 
           liftEffect stop
 
