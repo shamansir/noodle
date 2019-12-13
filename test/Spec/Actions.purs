@@ -7,10 +7,10 @@ import Debug.Trace as DT
 
 import Data.Either (Either(..))
 import Data.Lens (view) as L
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust)
 import Data.Sequence as Seq
 import Data.Array (length)
-import Data.Tuple (fst) as Tuple
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\))
 import Control.Alt ((<|>))
 
@@ -31,7 +31,7 @@ import Rpd.API.Action.Sequence as Actions
 
 import Rpd.Network (Inlet(..), Network, Node(..), Outlet(..)) as R
 import Rpd.Network (empty) as N
-import Rpd.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath) as L
+import Rpd.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath, _patchByPath) as L
 import Rpd.Path as P
 import Rpd.Test.Util.Actions (getOrFail, failIfNoErrors)
 import Rpd.Test.Util.Spy as Spy
@@ -162,12 +162,37 @@ spec =
           liftEffect $ pushAction
               $ R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
+          liftEffect $ Spy.reset collectErrorsSpy
+          liftEffect $ pushAction $ R.addPatch "foo"
           errors <- liftEffect $ Spy.get collectErrorsSpy
-          length errors `shouldEqual` 1
+          errors `shouldEqual` []
+          -- liftEffect $ pushAction $ R.addPatch "bar"
+          -- errors'' <- liftEffect $ Spy.get collectErrorsSpy
+          -- length errors'' `shouldEqual` prevErrorsCount
+
+          liftEffect stop
+
+      it "the system recovers from errors" do
+          lastSpy <- liftEffect Spy.last
+
+          let
+              actionsList = Actions.init
+              lastNetworkSpy = Spy.contramap Tuple.snd lastSpy
+
+          { pushAction, stop } <- liftEffect
+              $ Actions.run toolkit network (Spy.consider lastNetworkSpy) actionsList
+
+          liftEffect $ pushAction
+              $ R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
           liftEffect $ pushAction $ R.addPatch "foo"
-          errors' <- liftEffect $ Spy.get collectErrorsSpy
-          length errors' `shouldEqual` 1
+          maybeLastNetwork <- liftEffect $ Spy.get lastNetworkSpy
+          isJust maybeLastNetwork `shouldEqual` true
+          isJust
+              (
+                L.view (L._patchByPath $ P.toPatch "foo")
+                  =<< maybeLastNetwork
+              ) `shouldEqual` true
 
           liftEffect stop
 

@@ -26,6 +26,8 @@ import Rpd.API
     , InletSubscription, OutletSubscription
     )
 import Rpd.API.Errors (RpdError)
+import Rpd.API.Covered (Covered, carry, recover, uncover)
+import Rpd.API.Covered (fromEither) as Cover
 import Rpd.API.Action
 import Rpd.API.Action.Apply (Step, apply, performEffect)
 import Rpd.Path as Path
@@ -160,28 +162,29 @@ prepare_
 prepare_ initialModel apply performEff = do
     { event : actions, push : pushAction } <- Event.create
     let
-        (updates :: Event (Either RpdError (model /\ Array effect))) =
+        (updates :: Event (Covered (model /\ Array effect))) =
             Event.fold
-                (\action step ->
-                    case step of
-                        Left err -> Left err
-                        Right ( model /\ _ ) -> apply action model
+                (\action prevCovered ->
+                    let (lastModel /\ _) = recover prevCovered
+                    in Cover.fromEither
+                        (apply action lastModel)
+                        (lastModel /\ [])
                 )
                 actions
-                (pure $ initialModel /\ [])
+                (carry $ initialModel /\ [])
         (models :: Event (Array RpdError /\ model))
             = Event.fold
-                (\step (errors /\ lastModel) ->
-                    case step of
-                        Left err -> (errors <> [err]) /\ lastModel
-                        Right model -> errors /\ model
+                (\step (prevErrors /\ _) ->
+                    case uncover step of
+                        Just err /\ lastModel -> (prevErrors <> [err]) /\ lastModel
+                        Nothing /\ model -> prevErrors /\ model
                 )
                 (((<$>) fst) <$> updates)
                 ([] /\ initialModel)
     stopPerformingEffects <- Event.subscribe updates \step ->
-        case step of
-            Left err -> pure unit
-            Right (model /\ effects) ->
+        case recover step of
+            model /\ [] -> pure unit
+            model /\ effects ->
                 traverse_ (flip (performEff pushAction) model) effects
     pure { models, pushAction, actions, stop : stopPerformingEffects }
 
@@ -224,7 +227,7 @@ run
             , stop :: Canceler
             }
 run toolkit initialNW stepHandler actionList = do
-    { models, pushAction, stop } <- prepare initialNW toolkit
+    { models, actions, pushAction, stop } <- prepare initialNW toolkit
     stopInforming <- Event.subscribe models stepHandler
     _ <- pushAll pushAction actionList
     -- _ <- stopInforming

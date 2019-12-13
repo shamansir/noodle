@@ -138,6 +138,15 @@ data RpdEffect d c n -- TODO: move to a separate module
 -- instance showStringAction :: Show StringAction where
 --   show = GShow.genericShow
 
+
+showKind :: forall d c n. Action d c n -> String
+showKind NoOp = "NoOp"
+showKind (Inner _) = "Inner"
+showKind (Request _) = "Request"
+showKind (Build _) = "Build"
+showKind (Data _) = "Data"
+
+
 instance showAction :: (Show d, Show c, Show n) => Show (Action d c n) where
     show NoOp = "NoOp"
     show (Inner innerAction) = "I: " <> show innerAction

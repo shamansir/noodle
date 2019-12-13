@@ -39,7 +39,7 @@ derive instance eqRpdError :: Eq RpdError
 
 
 failedToFindUuid :: Path -> RpdError
-failedToFindUuid path = RpdError $ "failed to find UUID for " <> show path
+failedToFindUuid path = RpdError $ "No item with path " <> show path <> " was found in registry"
 
 
 ftfu = failedToFindUuid
