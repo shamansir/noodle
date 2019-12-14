@@ -34,7 +34,7 @@ import Rpd.Network (Network) as R
 import Test.Spec (Spec, it, describe, pending, pending', itOnly)
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
-import Rpd.Test.Util.Actions (getOrFail)
+import Rpd.Test.Util.Actions (getOrFail, getOrFail')
 import Rpd.Test.Util.Spy as Spy
 import Rpd.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, myToolkit)
 
@@ -143,7 +143,7 @@ spec = do
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
-      network' <- getOrFail result network
+      network' <- getOrFail' result network
 
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Spy.get traceSpy
@@ -188,7 +188,7 @@ spec = do
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
-      network' <- getOrFail result network
+      network' <- getOrFail' result network
 
       delay (Milliseconds 100.0)
       _ <- liftEffect stop
@@ -206,7 +206,7 @@ spec = do
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Liver <$> interval 30)
-      _ <- getOrFail result' network'
+      _ <- getOrFail' result' network'
 
       delay (Milliseconds 100.0)
       _ <- liftEffect stop

@@ -15,7 +15,7 @@ import Effect.Aff (Aff, launchAff_)
 import Test.Spec (Spec, describe, it, pending')
 import Test.Spec.Assertions (shouldEqual, fail)
 
-import Rpd.Test.Util.Actions (getOrFail)
+import Rpd.Test.Util.Actions (getOrFail')
 
 import Rpd.API.Action.Sequence ((</>))
 import Rpd.API.Action.Sequence as Actions
@@ -50,7 +50,7 @@ spec =
     it "constructing the empty network works" do
       result /\ _ <- liftEffect
         $ Actions.runFolding toolkit network Actions.init
-      _ <- getOrFail result network
+      _ <- getOrFail' result network
       pure unit
 
     describe "order of addition" do
@@ -64,7 +64,7 @@ spec =
                 </> R.addNode (P.toPatch "patch") "one" Node
                 </> R.addNode (P.toPatch "patch") "two" Node
                 </> R.addNode (P.toPatch "patch") "three" Node
-        network' <- getOrFail result network
+        network' <- getOrFail' result network
         case L.view (L._patchNodesByPath $ P.toPatch "patch") network' of
           Just nodes ->
             (nodes
@@ -84,7 +84,7 @@ spec =
               </> R.addInlet (P.toNode "patch" "node") "one" Channel
               </> R.addInlet (P.toNode "patch" "node") "two" Channel
               </> R.addInlet (P.toNode "patch" "node") "three" Channel
-        network' <- getOrFail result network
+        network' <- getOrFail' result network
         case L.view (L._nodeInletsByPath $ P.toNode "patch" "node") network' of
           Just inlets ->
             (inlets
@@ -105,7 +105,7 @@ spec =
               </> R.addOutlet (P.toNode "patch" "node") "one" Channel
               </> R.addOutlet (P.toNode "patch" "node") "two" Channel
               </> R.addOutlet (P.toNode "patch" "node") "three" Channel
-        network' <- getOrFail result network
+        network' <- getOrFail' result network
         case L.view (L._nodeOutletsByPath $ P.toNode "patch" "node") network' of
           Just inlets ->
             (inlets

@@ -1,12 +1,15 @@
 module Rpd.Test.Util.Actions
     ( getOrFail
+    , getOrFail'
     , failIfNoError
-    -- , failWith
+    , failIfNoErrors
+    , failWith
     ) where
 
 
 import Prelude
--- import Data.String (joinWith)
+import Data.Tuple.Nested (type (/\), (/\))
+import Data.String (joinWith)
 import Effect.Aff (Aff)
 
 import Rpd.API.Covered (Covered(..))
@@ -14,7 +17,6 @@ import Rpd.API.Covered (Covered(..))
 import Test.Spec.Assertions (fail)
 
 
--- TODO: some core function?
 getOrFail
   :: forall err x
    . Show err
@@ -26,6 +28,17 @@ getOrFail (Carried x) =
   pure x
 
 
+getOrFail'
+  :: forall err x
+   . Show err
+  => Array err /\ x
+  -> x
+  -> Aff x
+getOrFail' ([] /\ v) _ = pure v
+getOrFail' (errors /\ _) default =
+  failWith errors >>= (const $ pure default)
+
+
 failIfNoError
   :: forall err x
    . String
@@ -35,5 +48,14 @@ failIfNoError message (Carried _) = fail message
 failIfNoError _ _ = pure unit
 
 
--- failWith :: forall err. Show err => Array err -> Aff Unit
--- failWith errors = fail $ joinWith "," $ show <$> errors
+failIfNoErrors
+  :: forall err x
+   . String
+  -> Array err /\ x
+  -> Aff Unit
+failIfNoErrors message ([] /\ _) = fail message
+failIfNoErrors _ _ = pure unit
+
+
+failWith :: forall err. Show err => Array err -> Aff Unit
+failWith errors = fail $ joinWith "," $ show <$> errors

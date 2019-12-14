@@ -108,8 +108,8 @@ ifSuccess = create false handler
 ifErrorC :: forall x a. Effect (Spy Boolean (Covered x a))
 ifErrorC = create false handler
   where
-    handler prev (Recovered _ _) = prev
-    handler _ _ = true
+    handler prev (Carried _) = prev
+    handler _ (Recovered _ _) = true
 
 
 ifNoErrorC :: forall x a. Effect (Spy Boolean (Covered x a))

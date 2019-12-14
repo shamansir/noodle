@@ -25,6 +25,7 @@ import FRP.Event as E
 import Test.Spec (Spec, describe, it, itOnly, pending, pending')
 import Test.Spec.Assertions (shouldEqual, fail)
 
+import Rpd.API.Covered (recover)
 import Rpd.API.Action.Sequence ((</>))
 import Rpd.API.Action.Sequence (addPatch, addNode, addInlet, addOutlet) as R
 import Rpd.API.Action.Sequence as Actions
@@ -33,7 +34,7 @@ import Rpd.Network (Inlet(..), Network, Node(..), Outlet(..)) as R
 import Rpd.Network (empty) as N
 import Rpd.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath, _patchByPath) as L
 import Rpd.Path as P
-import Rpd.Test.Util.Actions (getOrFail, failIfNoError)
+import Rpd.Test.Util.Actions (getOrFail, getOrFail', failIfNoError, failIfNoErrors)
 import Rpd.Test.Util.Spy as Spy
 import Rpd.Test.Util.Assertions
 import Rpd.Toolkit as T
@@ -62,7 +63,7 @@ spec =
     it "init" do
       result /\ _ <- liftEffect
         $ Actions.runFolding toolkit network Actions.init
-      _ <- getOrFail result
+      _ <- getOrFail' result network
       pure unit
 
     -- it "prepare" do
@@ -176,7 +177,7 @@ spec =
 
           let
               actionsList = Actions.init
-              lastNetworkSpy = Spy.contramap Tuple.snd lastSpy
+              lastNetworkSpy = Spy.contramap recover lastSpy
 
           { pushAction, stop } <- liftEffect
               $ Actions.run toolkit network (Spy.with lastNetworkSpy) actionsList
@@ -231,7 +232,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runFolding toolkit network actionsList
 
-        _ <- getOrFail result network
+        _ <- getOrFail' result network
 
         liftEffect stop
 
@@ -244,7 +245,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runFolding toolkit network actionsList
 
-        failIfNoError "no error" result
+        failIfNoErrors "no error" result
 
         liftEffect stop
 
@@ -258,7 +259,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runFolding toolkit network actionsList
 
-        _ <- getOrFail result network
+        _ <- getOrFail' result network
 
         liftEffect stop
 
@@ -272,7 +273,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runFolding toolkit network actionsList
 
-        failIfNoError "no error" result
+        failIfNoErrors "no error" result
 
         liftEffect stop
 
@@ -341,7 +342,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runTracing toolkit network (const $ pure unit) actionsList
 
-        _ <- getOrFail result network
+        _ <- getOrFail' result network
 
         liftEffect stop
 
@@ -354,7 +355,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runTracing toolkit network (const $ pure unit) actionsList
 
-        failIfNoError "no error" result
+        failIfNoErrors "no error" result
 
         liftEffect stop
 
@@ -368,7 +369,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runTracing toolkit network (const $ pure unit) actionsList
 
-        _ <- getOrFail result network
+        _ <- getOrFail' result network
 
         liftEffect stop
 
@@ -382,7 +383,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runTracing toolkit network (const $ pure unit) actionsList
 
-        failIfNoError "no error" result
+        failIfNoErrors "no error" result
 
         liftEffect stop
 

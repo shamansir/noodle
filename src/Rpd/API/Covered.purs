@@ -60,6 +60,16 @@ fromEither' (Right v) _ = Carried v
 fromEither' (Left err) fallback = Recovered err $ fallback unit
 
 
+toEither :: forall e a. Covered e a -> Either e a
+toEither (Recovered err _) = Left err
+toEither (Carried x) = Right x
+
+
+toMaybe :: forall e a. Covered e a -> Maybe a
+toMaybe (Recovered _ _) = Nothing
+toMaybe (Carried x) = Just x
+
+
 recover :: forall e a. Covered e a -> a
 recover (Recovered _ x) = x
 recover (Carried x) = x

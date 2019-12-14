@@ -18,7 +18,7 @@ import Effect.Class (liftEffect)
 import Effect.Aff (Aff, delay)
 
 import Test.Spec.Assertions (fail)
-import Rpd.Test.Util.Actions (getOrFail)
+import Rpd.Test.Util.Actions (getOrFail')
 
 import Rpd.API.Action (Action(..), DataAction(..))
 import Rpd.API.Action.Sequence (ActionList)
@@ -64,7 +64,7 @@ channelsAfter period toolkit network actions = do
         network
         (handleAction target)
         actions
-  network' <- getOrFail result network
+  network' <- getOrFail' result network
   delay period
   _ <- liftEffect stop
   vals <- liftEffect $ Ref.read target
