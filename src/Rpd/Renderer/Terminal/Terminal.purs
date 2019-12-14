@@ -23,7 +23,7 @@ import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Sequence as Seq
 import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFromChar, joinWith)
 import Data.String as String
-import Data.Tuple (snd) as Tuple
+import Data.Tuple (snd, fst) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Newtype (unwrap)
 
@@ -39,6 +39,7 @@ import Math (ceil, sqrt, (%))
 
 import Rpd.API.Errors (RpdError) as R
 import Rpd.API.Action as C
+import Rpd.API.Covered
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.Optics as R
 import Rpd.Path as R
@@ -81,6 +82,7 @@ type Ui =
     -- { packing : Packing
     { status :: Status
     , invalidate :: Boolean
+    , lastErrors :: Array R.RpdError
     }
 
 
@@ -107,6 +109,7 @@ initUi =
     -- { packing : Packing $ R2.container 200 200
     { status : Empty
     , invalidate : true
+    , lastErrors : []
     }
 
 
@@ -273,28 +276,35 @@ packNetwork nw@(R.Network { name, patches }) (Packing container) =
 update
     :: forall d c n
      . Either Msg (C.Action d c n)
-    -> Ui /\ R.Network d c n
+    -> Covered R.RpdError (Ui /\ R.Network d c n)
     -> Ui /\ Array Unit
 -- update R.Bang (ui /\ nw) =
 --     ui { packing = Just $ ui.packing # packNetwork nw }
-update _ (ui /\ _) =
-    ui /\ []
+update _ covered =
+    let (ui /\ _) = recover covered
+    in (covered # withError addError ui) /\ []
+
+
+addError :: R.RpdError -> Ui  -> Ui
+addError error ui =
+    ui { lastErrors = ui.lastErrors <> [ error ]}
 
 
 view
     :: forall d c n
-     . Array R.RpdError /\ Ui /\ R.Network d c n
+     . Ui /\ R.Network d c n
     -> View
-view (errors /\ ui /\ nw) =
+view (ui /\ nw) =
     -- "{" <> toString (viewPacking ui.packing) <> toString (viewStatus ui.status) <> "}"
     -- "{" <> show packing <> " :: "
     --     <> show (viewNetwork packing nw) <> " :: "
     --     <> show (viewStatus ui.status) <> "}"
     viewNetwork packing nw
-        # ML.inject (0 /\ 0) (viewErrors errors)
+        # ML.inject (0 /\ 0) (viewErrors ui.lastErrors)
     where
+        viewErrors :: Array R.RpdError -> View
         viewErrors [] = ML.from' ""
-        viewErrors _ = ML.from' $ "<ERR: " <> joinWith "/" (show <$> errors) <> ">"
+        viewErrors errors = ML.from' $ "<ERR: " <> joinWith "/" (show <$> errors) <> ">"
         -- FIXME: store the Maybe-Packing in UI and update it only on changes,
         --        and if
         bounds@(width /\ height) = initialBounds

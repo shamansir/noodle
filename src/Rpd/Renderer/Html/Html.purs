@@ -37,6 +37,7 @@ import Effect (Effect)
 import Rpd.API (uuidByPath) as R
 import Rpd.API.Errors (RpdError) as R
 import Rpd.API.Action (Action(..), DataAction(..), BuildAction(..), RequestAction(..)) as Core
+import Rpd.API.Covered (uncover)
 import Rpd.Network as R
 import Rpd.Optics as L
 import Rpd.Path as P
@@ -526,8 +527,9 @@ htmlRenderer toolkitRenderer =
         { from : emptyView
         , init : init
         , update :
-            \toolkit action (ui /\ nw) ->
+            \toolkit action covered ->
                 let
+                    maybeError /\ (ui /\ nw) = uncover covered
                     (ui' /\ effects) = update action (ui /\ nw)
                     ui'' =
                         ui' { debug = ui'.debug # updateDebugBox nw action }
@@ -555,9 +557,9 @@ view
     => R.Atom n
     => T.Channels d c
     => ToolkitRenderer d c n
-    -> Array R.RpdError /\ Model d c n /\ R.Network d c n
+    -> Model d c n /\ R.Network d c n
     -> View d c n
-view toolkitRenderer (errors /\ ui /\ nw) =
+view toolkitRenderer (ui /\ nw) =
     H.div
         [ H.id_ "html"
         , H.onMouseMove handleMouseMove
@@ -565,9 +567,9 @@ view toolkitRenderer (errors /\ ui /\ nw) =
         , H.onClick handleClick
         ]
         [ viewDebugWindow ui nw
-        , case errors of
-            [] -> H.div [] []
-            _  -> H.div [] (viewError <$> errors)
+        -- , case errors of
+        --     [] -> H.div [] []
+        --     _  -> H.div [] (viewError <$> errors)
         , viewNetwork toolkitRenderer ui nw
         , viewMousePos ui.mousePos
         , viewDragState ui.dragging

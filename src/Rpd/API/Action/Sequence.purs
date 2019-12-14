@@ -28,8 +28,8 @@ import Rpd.API
     , InletSubscription, OutletSubscription
     )
 import Rpd.API.Errors (RpdError)
-import Rpd.API.Covered (Covered, carry, recover, uncover)
-import Rpd.API.Covered (fromEither) as Cover
+import Rpd.API.Covered (Covered, cover, carry, recover, uncover, uncover')
+import Rpd.API.Covered (fromEither, fromEither', appendError) as Cover
 import Rpd.API.Action
 import Rpd.API.Action.Apply (Step, apply, performEffect)
 import Rpd.Path as Path
@@ -153,10 +153,10 @@ pass = const $ pure unit
 prepare_
     :: forall model action effect
      . model
-    -> (action -> model -> Either RpdError (model /\ Array effect))
+    -> (action -> Covered RpdError model -> Either RpdError (model /\ Array effect))
     -> ((action -> Effect Unit) -> effect -> model -> Effect Unit)
     -> Effect
-            { models :: Event (Array RpdError /\ model)
+            { models :: Event (Covered RpdError model)
             , actions :: Event action
             , pushAction :: action -> Effect Unit
             , stop :: Canceler
@@ -167,23 +167,14 @@ prepare_ initialModel apply performEff = do
         (updates :: Event (Covered RpdError (model /\ Array effect))) =
             Event.fold
                 (\action prevCovered ->
-                    let (lastModel /\ _) = recover prevCovered
-                    in Cover.fromEither
-                        (apply action lastModel)
-                        (lastModel /\ [])
+                    Cover.fromEither'
+                        (apply action (fst <$> prevCovered))
+                        (\_ -> (fst $ recover prevCovered) /\ [])
                 )
                 actions
                 (carry $ initialModel /\ [])
-        (models :: Event (Array RpdError /\ model))
-        -- TODO: consider using `Covered` here as well, just w/o effects
-            = Event.fold
-                (\step (prevErrors /\ _) ->
-                    case uncover step of
-                        Just err /\ lastModel -> (prevErrors `Array.snoc` err) /\ lastModel
-                        Nothing /\ model -> prevErrors /\ model
-                )
-                (((<$>) fst) <$> updates)
-                ([] /\ initialModel)
+        (models :: Event (Covered RpdError model))
+            = (((<$>) fst) <$> updates)
     stopPerformingEffects <- Event.subscribe updates \step ->
         case recover step of
             model /\ [] -> pure unit
@@ -197,12 +188,15 @@ prepare
      . Network d c n
     -> Toolkit d c n
     -> Effect
-            { models :: Event (Array RpdError /\ Network d c n)
+            { models :: Event (Covered RpdError (Network d c n))
             , actions :: Event (Action d c n)
             , pushAction :: Action d c n -> Effect Unit
             , stop :: Canceler
             }
-prepare nw toolkit = prepare_ nw (apply toolkit) (performEffect toolkit)
+prepare nw toolkit =
+    prepare_ nw
+        (\action covered -> apply toolkit action $ recover covered)
+        (performEffect toolkit)
 
 
 {-
@@ -223,7 +217,7 @@ run
     :: forall d c n
      . Toolkit d c n
     -> Network d c n
-    -> (Array RpdError /\ Network d c n -> Effect Unit)
+    -> (Covered RpdError (Network d c n) -> Effect Unit)
     -> ActionList d c n
     -> Effect
             { pushAction :: Action d c n -> Effect Unit
@@ -249,14 +243,15 @@ runFolding
             })
 runFolding toolkit initialNW actionList = do
     res@{ models, pushAction, stop } <- prepare initialNW toolkit
-    lastValRef <- Ref.new $ [] /\ initialNW
-    let modelsFolded = models -- TODO: collect errors. Event.fold (<|>) models $ Right initialNW
+    lastValRef <- Ref.new $ carry initialNW
+    let modelsFolded =
+            Event.fold Cover.appendError models $ cover initialNW []
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
     _ <- pushAll pushAction actionList
     -- _ <- stopCollectingLastValue
     lastVal <- Ref.read lastValRef
-    pure $ lastVal /\ { pushAction, stop : stop <> stopCollectingLastValue }
+    pure $ uncover' lastVal /\ { pushAction, stop : stop <> stopCollectingLastValue }
 
 
 {-
@@ -299,8 +294,9 @@ runTracing
             })
 runTracing toolkit initialNW everyAction actionList = do
     { models, pushAction, actions, stop } <- prepare initialNW toolkit
-    lastValRef <- Ref.new $ [] /\ initialNW
-    let modelsFolded = models -- TODO: collect errors. Event.fold (<|>) models $ Right initialNW
+    lastValRef <- Ref.new $ carry initialNW
+    let modelsFolded =
+            Event.fold Cover.appendError models $ cover initialNW []
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
     stopListeningActions <-
@@ -310,7 +306,7 @@ runTracing toolkit initialNW everyAction actionList = do
     -- _ <- stopCollectingLastValue
     -- _ <- stopListeningActions
     lastVal <- Ref.read lastValRef
-    pure $ lastVal /\
+    pure $ uncover' lastVal /\
         { pushAction, stop : stop <> stopCollectingLastValue <> stopListeningActions }
 
 

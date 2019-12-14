@@ -14,21 +14,23 @@ module Rpd.Render.MUV
 
 
 import Prelude
-import Effect
 
-import Data.Either (Either(..), either)
-import Data.Tuple (fst, snd)
+import Effect (Effect)
+
+import Data.Either (Either(..))
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Maybe (Maybe(..))
 
 import FRP.Event (Event)
 import FRP.Event as Event
 
-import Rpd.Network as R
-import Rpd.API as R
-import Rpd.API.Action as Core
-import Rpd.API.Action.Apply as Core
+import Rpd.Network (Network) as R
+-- import Rpd.API as R
+import Rpd.API.Action (Action) as Core
+import Rpd.API.Action.Apply (apply, performEffect) as Core
 import Rpd.API.Action.Sequence (prepare_) as ActionSeq
 import Rpd.API.Errors (RpdError) as R
+import Rpd.API.Covered (Covered, recover, inject, hasError, cover')
 import Rpd.Toolkit as T
 import Rpd.Render.Minimal as Minimal
 import Rpd.Util (Canceler)
@@ -52,7 +54,7 @@ type InitF d c n model
 type UpdateF d c n model action effect
      = T.Toolkit d c n
     -> Either action (Core.Action d c n)
-    -> model /\ R.Network d c n
+    -> Covered R.RpdError (model /\ R.Network d c n)
     -> model /\ Array effect
 
 
@@ -63,7 +65,7 @@ type UpdateF d c n model action effect
 -}
  -- FIXME: toolkit renderer should be present among the arguments
 type ViewF d c n model view action
-     = Array R.RpdError /\ model /\ R.Network d c n
+     = model /\ R.Network d c n
     -> view
 
 
@@ -117,7 +119,7 @@ make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = 
             myApply
             myPerformEff
     { event : views, push : pushView } <- Event.create
-    stopViews <- Event.subscribe models $ pushView <<< view
+    stopViews <- Event.subscribe models $ recover >>> view >>> pushView
     pure
         { first : from
         , next : views
@@ -125,13 +127,24 @@ make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = 
         , stop : stop <> stopViews
         }
     where
-        myApply (Right coreAction) (model /\ nw) = do
+        myApply (Right coreAction) covered = do
+            let model /\ nw = recover covered
             nw' /\ coreEffects <- Core.apply toolkit coreAction nw
-            let model' /\ userEffects = update toolkit (Right coreAction) $ model /\ nw'
+            let model' /\ userEffects =
+                    update
+                        toolkit
+                        (Right coreAction)
+                        (inject (model /\ nw') covered)
             let allEffects = (Right <$> coreEffects) <> (Left <$> userEffects)
             pure $ (model' /\ nw') /\ allEffects
-        myApply (Left userAction) (model /\ nw) = do
-            let model' /\ userEffects = update toolkit (Left userAction) $ model /\ nw
+        myApply (Left userAction) covered = do
+            let
+                _ /\ nw = recover covered
+                model' /\ userEffects =
+                    update
+                        toolkit
+                        (Left userAction)
+                        covered
             pure $ (model' /\ nw) /\ (Left <$> userEffects)
         myPerformEff pushAction (Right coreEffect) (_ /\ nw) =
             Core.performEffect toolkit (pushAction <<< Right) coreEffect nw
@@ -146,20 +159,20 @@ once
     -> R.Network d c n
     -> view
 once (Renderer { init, view }) _ nw =
-    view $ [] /\ init nw /\ nw
+    view $ init nw /\ nw
 
 
 
 fromMinimal
     :: forall d c n view
      . Minimal.Renderer d c n view
-    -> Renderer d c n Unit view Unit Unit
+    -> Renderer d c n (Maybe R.RpdError) view Unit Unit
 fromMinimal (Minimal.Renderer first view) =
     Renderer
         { from : first -- initial view
-        , init : const unit -- initial state
-        , update : noUpdates unit
-        , view : \(errs /\ _ /\ nw) -> view $ errs /\ nw
+        , init : const Nothing -- initial state
+        , update : \_ _ covered -> hasError covered /\ []
+        , view : \(maybeErr /\ nw) -> view $ cover' nw maybeErr
         , performEffect : skipEffects
         }
 

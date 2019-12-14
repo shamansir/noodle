@@ -2,7 +2,7 @@ module Rpd.Test.Util.Spy
     ( Spy, create, with, reset, get, consider
     , wasCalled, callCount, trace, last
     , ifError, ifSuccess
-    , ifErrors, ifNoErrors
+    , ifErrorC, ifNoErrorC
     , contramap
     ) where
 
@@ -16,6 +16,8 @@ import Data.Array (snoc)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Effect (Effect)
+
+import Rpd.API.Covered
 
 
 data Spy x a = Spy x (Ref x) (x -> a -> x)
@@ -103,15 +105,15 @@ ifSuccess = create false handler
     handler _ (Right _) = true
 
 
-ifErrors :: forall x a. Effect (Spy Boolean (Array x /\ a))
-ifErrors = create false handler
+ifErrorC :: forall x a. Effect (Spy Boolean (Covered x a))
+ifErrorC = create false handler
   where
-    handler prev ([] /\ _) = prev
+    handler prev (Recovered _ _) = prev
     handler _ _ = true
 
 
-ifNoErrors :: forall x a. Effect (Spy Boolean (Array x /\ a))
-ifNoErrors = create false handler
+ifNoErrorC :: forall x a. Effect (Spy Boolean (Covered x a))
+ifNoErrorC = create false handler
   where
-    handler _ ([] /\ _) = true
+    handler _ (Carried _) = true
     handler prev _ = prev

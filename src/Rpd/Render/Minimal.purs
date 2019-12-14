@@ -8,14 +8,13 @@ module Rpd.Render.Minimal
 
 import Prelude
 
-import Data.Tuple.Nested ((/\), type (/\))
-
 import Effect (Effect)
 
 import FRP.Event (Event)
 import FRP.Event as Event
 
 import Rpd.API.Errors (RpdError) as R
+import Rpd.API.Covered (Covered, carry)
 import Rpd.API.Action (Action) as C
 import Rpd.API.Action.Sequence (prepare) as ActionSeq
 import Rpd.Network (Network) as R
@@ -41,7 +40,7 @@ data PushF d c n =
 
 
 data Renderer d c n view
-    = Renderer view (Array R.RpdError /\ R.Network d c n -> view)
+    = Renderer view (Covered R.RpdError (R.Network d c n) -> view)
 
 
 neverPush :: forall d c n. PushF d c n
@@ -78,7 +77,7 @@ once
     -> R.Network d c n
     -> view
 once (Renderer _ view) _ nw =
-    view ([] /\ nw)
+    view $ carry nw
 
 
 

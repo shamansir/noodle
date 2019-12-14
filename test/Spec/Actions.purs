@@ -33,7 +33,7 @@ import Rpd.Network (Inlet(..), Network, Node(..), Outlet(..)) as R
 import Rpd.Network (empty) as N
 import Rpd.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath, _patchByPath) as L
 import Rpd.Path as P
-import Rpd.Test.Util.Actions (getOrFail, failIfNoErrors)
+import Rpd.Test.Util.Actions (getOrFail, failIfNoError)
 import Rpd.Test.Util.Spy as Spy
 import Rpd.Test.Util.Assertions
 import Rpd.Toolkit as T
@@ -62,7 +62,7 @@ spec =
     it "init" do
       result /\ _ <- liftEffect
         $ Actions.runFolding toolkit network Actions.init
-      _ <- getOrFail result network
+      _ <- getOrFail result
       pure unit
 
     -- it "prepare" do
@@ -88,7 +88,7 @@ spec =
           liftEffect stop
 
       it "handler receives error when it happened" do
-          handlerSpy <- liftEffect $ Spy.ifErrors
+          handlerSpy <- liftEffect $ Spy.ifErrorC
 
           let
 
@@ -125,7 +125,7 @@ spec =
 
       it "when error happened, next models still arrive" do
           handlerSpy <- liftEffect $ Spy.wasCalled
-          errHandlerSpy <- liftEffect $ Spy.ifErrors
+          errHandlerSpy <- liftEffect $ Spy.ifErrorC
 
           let
 
@@ -151,25 +151,23 @@ spec =
           liftEffect stop
 
       it "when some error happened, it is reported only once" do
-          traceSpy <- liftEffect Spy.last
+          errHandlerSpy <- liftEffect Spy.ifErrorC
 
           let
               actionsList = Actions.init
-              collectErrorsSpy = Spy.contramap Tuple.fst traceSpy
 
           { pushAction, stop } <- liftEffect
-              $ Actions.run toolkit network (Spy.with collectErrorsSpy) actionsList
+              $ Actions.run toolkit network (Spy.with errHandlerSpy) actionsList
 
           liftEffect $ pushAction
               $ R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
-          errorsBefore <- liftEffect $ Spy.get collectErrorsSpy
-          shouldHaveValue errorsBefore
+          liftEffect $ Spy.reset errHandlerSpy
           --liftEffect $ Spy.reset collectErrorsSpy
           -- liftEffect $ pushAction $ R.addNode (P.toPatch "foo") "fail" Node
           liftEffect $ pushAction $ R.addPatch "foo"
-          errorsNow <- liftEffect $ Spy.get collectErrorsSpy
-          errorsNow `shouldEqual` errorsBefore
+          hadError <- liftEffect $ Spy.get errHandlerSpy
+          hadError `shouldEqual` false
 
           liftEffect stop
 
@@ -246,7 +244,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runFolding toolkit network actionsList
 
-        failIfNoErrors "no error" result
+        failIfNoError "no error" result
 
         liftEffect stop
 
@@ -274,7 +272,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runFolding toolkit network actionsList
 
-        failIfNoErrors "no error" result
+        failIfNoError "no error" result
 
         liftEffect stop
 
@@ -356,7 +354,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runTracing toolkit network (const $ pure unit) actionsList
 
-        failIfNoErrors "no error" result
+        failIfNoError "no error" result
 
         liftEffect stop
 
@@ -384,7 +382,7 @@ spec =
         result /\ { stop } <- liftEffect
             $ Actions.runTracing toolkit network (const $ pure unit) actionsList
 
-        failIfNoErrors "no error" result
+        failIfNoError "no error" result
 
         liftEffect stop
 
