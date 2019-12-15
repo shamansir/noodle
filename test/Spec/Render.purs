@@ -20,7 +20,7 @@ import Effect.Ref as Ref
 import Effect.Aff (delay)
 import Effect.Console (log)
 
-import Test.Spec (Spec, describe, it, pending')
+import Test.Spec (Spec, describe, it, pending', itOnly)
 import Test.Spec.Assertions (shouldEqual, fail)
 
 import Node.Encoding (Encoding(..))
@@ -175,7 +175,7 @@ spec = do
           </> R.addInlet (toNode "idont" "exist") "foo" Channel
       stringSample <- liftEffect $ loadSample "Error.String"
       terminalSample <- liftEffect $ loadSample "Error.Terminal"
-      expectToRender stringRenderer toolkit compareStrings' erroneousNW
+      expectToRenderFirst stringRenderer toolkit compareStrings' erroneousNW
         $ String.trim stringSample
       expectToRenderMUV terminalRenderer toolkit compareMultiline' erroneousNW
         $ ML.empty' (100 /\ 100)
@@ -256,6 +256,27 @@ expectToRender renderer toolkit compareViews actions expectation = do
               traverse_ pushAction actions
     Spy.get lastViewSpy
   maybeLastView # maybe (fail "no views were recevied") (compareViews expectation)
+
+
+expectToRenderFirst
+  :: forall d c n view
+   . Render.Renderer d c n view
+  -> R.Toolkit d c n
+  -> CompareViewsAff view
+  -> R.ActionList d c n
+  -> view
+  -> Aff Unit
+expectToRenderFirst renderer toolkit compareViews actions expectation = do
+  maybeFirstView <- liftEffect $ do
+    firstViewSpy <- Spy.first -- the only difference with `expectToRender`
+    { push, next : views }
+          <- Render.make renderer toolkit $ Network.empty "network"
+    _ <- Event.subscribe views $ Spy.with firstViewSpy
+    _ <- case push of
+          Render.PushF pushAction ->
+              traverse_ pushAction actions
+    Spy.get firstViewSpy
+  maybeFirstView # maybe (fail "no views were recevied") (compareViews expectation)
 
 
 expectToRenderMUV

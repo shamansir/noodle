@@ -18,6 +18,8 @@ import Data.Either (Either(..))
 import Data.String (joinWith)
 import Data.Tuple.Nested ((/\), type (/\))
 
+import Debug.Trace as DT
+
 import Rpd.Network
     ( Network(..)
     , Patch(..)
@@ -79,7 +81,10 @@ stringRenderer =
 
 stringRendererWithOptions :: forall d c n. Options -> StringRenderer d c n
 stringRendererWithOptions options =
-    Renderer "" $ Covered.run (\error -> "<" <> show error <> ">" <> "/") (view options)
+    Renderer ""
+        $ Covered.run
+            (\error -> "<" <> show error <> ">" <> "/")
+            (view options)
                  -- "<" <> joinWith "," (show <$> errors) <> ">" <> "/")
 
 

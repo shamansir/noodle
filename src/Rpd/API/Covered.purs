@@ -34,6 +34,9 @@ instance coveredBind :: Bind (Covered e) where
 instance coveredMonad :: Monad (Covered e)
 
 
+-- TODO: Comonad
+
+
 carry :: forall e a. a -> Covered e a
 carry = Carried
 

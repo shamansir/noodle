@@ -1,6 +1,6 @@
 module Rpd.Test.Util.Spy
     ( Spy, create, with, reset, get, consider
-    , wasCalled, callCount, trace, last
+    , wasCalled, callCount, trace, first, last
     , ifError, ifSuccess
     , ifErrorC, ifNoErrorC
     , contramap
@@ -77,6 +77,13 @@ wasCalled = create false $ const $ const $ true
 
 callCount :: forall a. Effect (Spy Int a)
 callCount = create 0 \prev _ -> prev + 1
+
+
+first :: forall a. Effect (Spy (Maybe a) a)
+first = create Nothing f
+  where
+    f Nothing x = Just x
+    f prev _ = prev
 
 
 last :: forall a. Effect (Spy (Maybe a) a)
