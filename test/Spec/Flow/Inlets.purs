@@ -35,7 +35,7 @@ spec = do
 
   -- INLETS --
 
-  it "we receive no data from the inlet when it has no flow or default value" $ do
+  it "we receive no data from the inlet when it has no flow" $ do
     let
       structure :: Actions
       structure =
@@ -137,7 +137,7 @@ spec = do
     pure unit
 
   -- TODO: could be replaced, since for now user has no control over stopping the stream
-  pending' "when the stream itself was stopped, values are not sent to the inlet anymore" $ do
+  pending' "when there are no incoming streams anymore, values are not sent to the inlet" $ do
     let
       structure :: Actions
       structure =
@@ -226,4 +226,9 @@ spec = do
 
   pending "if default value of the inlet is specified, then it is sent to its flow when node was created"
 
+  pending "if default value of the inlet is specified, the inlet switches back to this value when everyone is diconnected"
+
+  pending "when we connect several streams to the inlet (and it allows such connections), the data is received in parallel from all of them"
+
+  pending "when we connect new stream to the inlet and it is already connected (and in 'one-connection-only' mode), the data from the newly-connected stream replaces the data from the previous one"
 

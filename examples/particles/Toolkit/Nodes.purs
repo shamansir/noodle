@@ -220,7 +220,7 @@ colorNode =
         ~< "b" /\ NumericalChannel
     , outlets :
         withOutlets
-        >~ "color" /\ AnyValueChannel -- FIXME: Some other channel
+        >~ "color" /\ AnyValueChannel
     , process : R.Process processF
     }
     where
@@ -270,7 +270,6 @@ randomNode =
             let send "random" = Just $ V.Numerical random
                 send _ = Nothing
             pure send
-
 
 
 timeNode :: NodeDef
