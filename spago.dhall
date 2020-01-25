@@ -36,7 +36,6 @@ You can edit this file as you like.
     , "test-unit"
     , "transformers"
     , "tuples"
-    , "vector"
     ]
 , packages =
     ./packages.dhall

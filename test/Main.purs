@@ -2,11 +2,11 @@ module Test.Main where
 
 import Prelude
 
-import Effect (Effect)
+import Effect.Aff (Aff)
 
 import Test.Spec (Spec, describe)
 import Test.Spec.Reporter.Console (consoleReporter)
-import Test.Spec.Runner (run)
+import Test.Spec.Runner (runSpec)
 
 import Rpd.Test.Spec.Actions (spec) as TestActions
 import Rpd.Test.Spec.Structure (spec) as TestStructure
@@ -29,6 +29,6 @@ spec =
     TestSpreads.spec
 
 
-main :: Effect Unit
-main = run [consoleReporter] spec
+main :: Aff Unit
+main = runSpec [consoleReporter] spec
 

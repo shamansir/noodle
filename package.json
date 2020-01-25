@@ -24,16 +24,22 @@
     "purs:mod-repl": "purs repl 'bower_components/purescript-*/src/**/*.purs'",
     "purs:test": "pulp test --no-check-main",
     "purs:sandbox": "pulp run --main TestMUV2 --src-path tmp",
+    "spago:build": "spago build --path './examples/particles/**/*.purs'",
+    "docker:build": "docker build . -t rpd-purs",
+    "docker:run": "docker run -p 1337:1337 rpd-purs .",
     "start": "npm run purs:server"
   },
   "dependencies": {
     "lodash.difference": "^4.5.0",
-    "purescript": "^0.12.0",
-    "pulp": "^12.3.0",
+    "purescript": "^0.13.6",
+    "pulp": "^13.0.0",
     "purescript-psa": "^0.7.3",
-    "purs-loader": "^3.2.0",
-    "webpack": "^4.16.5",
-    "webpack-dev-server": "^3.1.5",
     "wrappy": "^1.0.2"
+  },
+  "devDependencies": {
+    "webpack": "^4.41.5",
+    "webpack-dev-server": "^3.10.1",
+    "purs-loader": "^3.7.1",
+    "spago": "^0.13.1"
   }
 }
