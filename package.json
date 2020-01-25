@@ -11,10 +11,15 @@
   },
   "files": [],
   "scripts": {
-    "webpack": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack --progress --bail",
-    "webpack:watch": "PATH=$PATH:../releases/psc-package DEBUG=purs-loader* DEBUG_DEPTH=100 webpack --progress --display-error-details --display verbose --watch",
-    "webpack:server": "webpack-dev-server --progress --inline --hot",
-    "webpack:server:debug": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack-dev-server --progress --inline --hot",
+    "webpack": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack --mode development --progress --bail",
+    "webpack:watch": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack --mode development --progress --display-error-details --display verbose --watch",
+    "webpack:server": "webpack-dev-server --mode development --progress --inline --hot",
+    "webpack:server:debug": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack-dev-server --mode development --progress --inline --hot",
+    "spago:build": "spago build --path './examples/particles/**/*.purs'",
+    "spago:test": "spago test",
+    "spago:bundle": "spago bundle-app  --path './examples/particles/**/*.purs' --main Example.Main --to dist/app.js",
+    "docker:build": "docker build . -t rpd-purs",
+    "docker:run": "docker run -p 1337:1337 rpd-purs .",
     "purs:compile": "purs compile 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs'",
     "purs:compile-all": "purs compile 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs' 'test/**/*.purs' 'example/**/*.purs'",
     "purs:bundle": "purs bundle output/**/*.js",
@@ -24,22 +29,21 @@
     "purs:mod-repl": "purs repl 'bower_components/purescript-*/src/**/*.purs'",
     "purs:test": "pulp test --no-check-main",
     "purs:sandbox": "pulp run --main TestMUV2 --src-path tmp",
-    "spago:build": "spago build --path './examples/particles/**/*.purs'",
-    "docker:build": "docker build . -t rpd-purs",
-    "docker:run": "docker run -p 1337:1337 rpd-purs .",
     "start": "npm run purs:server"
   },
   "dependencies": {
+    "html-webpack-plugin": "^3.2.0",
     "lodash.difference": "^4.5.0",
-    "purescript": "^0.13.6",
-    "pulp": "^13.0.0",
     "purescript-psa": "^0.7.3",
+    "purs-loader": "^3.7.1",
+    "webpack": "^4.41.5",
     "wrappy": "^1.0.2"
   },
   "devDependencies": {
-    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10",
     "webpack-dev-server": "^3.10.1",
-    "purs-loader": "^3.7.1",
+    "parcel-bundler": "^1.12.4",
+    "purescript": "^0.13.6",
     "spago": "^0.13.1"
   }
 }

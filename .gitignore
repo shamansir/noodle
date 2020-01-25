@@ -9,4 +9,5 @@
 /.psc*
 /.purs*
 /.psa*
+/dist
 /examples/private

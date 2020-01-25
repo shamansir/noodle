@@ -194,7 +194,7 @@ let additions =
     , repo =
         "https://github.com/purescript/purescript-prelude.git"
     , version =
-        "v4.1.0"
+        "v4.1.1"
     }
   }
 

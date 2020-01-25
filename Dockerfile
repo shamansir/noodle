@@ -15,9 +15,9 @@ RUN npm cache clean --force && \
 
 COPY . .
 
-RUN npm install
+RUN yarn install
 
-RUN npm run spago:build
+RUN yarn spago:build
 
 EXPOSE 8080
-CMD [ "npm", "run", "purs:server" ]
+CMD [ "yarn", "purs:server" ]

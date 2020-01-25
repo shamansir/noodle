@@ -2,11 +2,13 @@
 
 const path = require('path');
 
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
 const webpack = require('webpack');
 
-const isWebpackDevServer = process.argv.filter(a => path.basename(a) === 'webpack-dev-server').length;
+const isWebpackDevServer = process.argv.some(a => path.basename(a) === 'webpack-dev-server');
 
-const isWatch = process.argv.filter(a => a === '--watch').length
+const isWatch = process.argv.some(a => a === '--watch');
 
 const plugins =
   isWebpackDevServer || !isWatch ? [] : [
@@ -18,24 +20,20 @@ const plugins =
   ]
 ;
 
-console.log('DIRNAME', __dirname);
-
 module.exports = {
-  // devtool: 'eval-source-map',
+  devtool: 'eval-source-map',
 
   devServer: {
-    contentBase: '.',
-    port: 4008/*,
-    stats: 'errors-only'*/
+    contentBase: path.resolve(__dirname, 'dist'),
+    port: 4008,
+    stats: 'errors-only'
   },
 
-  entry: './examples/particles/Main.purs',
+  entry: './src/entrypoint.js',
 
   output: {
-    path: path.resolve(__dirname, 'output'),
-    publicPath: '/output/',
-    pathinfo: true,
-    filename: 'app.js'
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'bundle.js'
   },
 
   module: {
@@ -46,39 +44,42 @@ module.exports = {
           {
             loader: 'purs-loader',
             options: {
-              exclude: /output/,
               src: [
-                'bower_components/purescript-*/src/**/*.purs',
-                'src/**/*.purs',
-                'examples/**/*.purs'
+                'src/**/*.purs'
               ],
-              // bundle: true,
-              // pscBundleArgs: {
-              //   main: "Main"
-              // },
-              psc: 'psa',
+              spago: true,
               watch: isWebpackDevServer || isWatch,
-              pscIde: false
+              pscIde: true
             }
           }
         ]
+      },
+      {
+        test: /\.(png|jpg|gif)$/i,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 8192,
+            },
+          },
+        ],
       },
     ]
   },
 
   resolve: {
-    modules: [ 'node_modules', 'bower_components' ],
-    //root: [ path.resolve('./src') ],
+    modules: [ 'node_modules' ],
     extensions: [ '.purs', '.js']
   },
-
-  // devServer : {
-  //   contentBase : './output'
-  // },
 
   plugins: [
     new webpack.LoaderOptionsPlugin({
       debug: true
+    }),
+    new HtmlWebpackPlugin({
+      title: 'purescript-webpack-example',
+      template: 'index.html'
     })
   ].concat(plugins)
 };

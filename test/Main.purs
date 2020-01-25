@@ -2,7 +2,8 @@ module Test.Main where
 
 import Prelude
 
-import Effect.Aff (Aff)
+import Effect (Effect)
+import Effect.Aff (launchAff_)
 
 import Test.Spec (Spec, describe)
 import Test.Spec.Reporter.Console (consoleReporter)
@@ -29,6 +30,6 @@ spec =
     TestSpreads.spec
 
 
-main :: Aff Unit
-main = runSpec [consoleReporter] spec
+main :: Effect Unit
+main = launchAff_ $ runSpec [consoleReporter] spec
 
