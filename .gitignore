@@ -4,10 +4,11 @@
 /.pulp-cache/
 /.idea/
 /output/
+/dist/
 /generated-docs/
 /.psc-package/
 /.psc*
 /.purs*
 /.psa*
-/dist
 /examples/private
+/.cache

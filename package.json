@@ -11,15 +11,21 @@
   },
   "files": [],
   "scripts": {
+    "postinstall": "spago install",
+    "clean": "rm -rf node_modules output .spago dist/* *.lock",
     "webpack": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack --mode development --progress --bail",
     "webpack:watch": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack --mode development --progress --display-error-details --display verbose --watch",
     "webpack:server": "webpack-dev-server --mode development --progress --inline --hot",
     "webpack:server:debug": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack-dev-server --mode development --progress --inline --hot",
-    "spago:build": "spago build --path './examples/particles/**/*.purs'",
+    "spago:build": "spago build --path './examples/particles/**/*.purs' --purs-args '-o dist/'",
+    "spago:watch": "spago build --watch --path './examples/particles/**/*.purs' --purs-args '-o dist/'",
     "spago:test": "spago test",
-    "spago:bundle": "spago bundle-app  --path './examples/particles/**/*.purs' --main Example.Main --to dist/app.js",
+    "spago:bundle": "spago bundle-app --path './examples/particles/**/*.purs' --main Example.Main --to dist/app.js --purs-args '-o dist/'",
     "docker:build": "docker build . -t rpd-purs",
     "docker:run": "docker run -p 1337:1337 rpd-purs .",
+    "parcel:build": "~/.yarn/bin/parcel build ./index.html",
+    "parcel:serve": "~/.yarn/bin/parcel serve ./index.html -d dist",
+    "parcel:watch": "~/.yarn/bin/parcel ./index.html",
     "purs:compile": "purs compile 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs'",
     "purs:compile-all": "purs compile 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs' 'test/**/*.purs' 'example/**/*.purs'",
     "purs:bundle": "purs bundle output/**/*.js",
@@ -34,16 +40,17 @@
   "dependencies": {
     "html-webpack-plugin": "^3.2.0",
     "lodash.difference": "^4.5.0",
+    "parcel": "^1.12.4",
     "purescript-psa": "^0.7.3",
     "purs-loader": "^3.7.1",
     "webpack": "^4.41.5",
     "wrappy": "^1.0.2"
   },
   "devDependencies": {
-    "webpack-cli": "^3.3.10",
-    "webpack-dev-server": "^3.10.1",
     "parcel-bundler": "^1.12.4",
     "purescript": "^0.13.6",
-    "spago": "^0.13.1"
+    "spago": "^0.13.1",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.10.1"
   }
 }
