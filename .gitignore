@@ -4,7 +4,6 @@
 /.pulp-cache/
 /.idea/
 /output/
-/dist/
 /generated-docs/
 /.psc-package/
 /.psc*

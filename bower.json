@@ -9,8 +9,7 @@
     "bower_components",
     ".spago",
     ".psc-package",
-    "output",
-    "dist"
+    "output"
   ],
   "dependencies": {
     "purescript-aff": "^5.0.1",

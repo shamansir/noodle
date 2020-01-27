@@ -24,7 +24,7 @@ module.exports = {
   devtool: 'eval-source-map',
 
   devServer: {
-    contentBase: path.resolve(__dirname, 'dist'),
+    contentBase: path.resolve(__dirname, 'output'),
     port: 4008,
     stats: 'errors-only'
   },
@@ -32,7 +32,7 @@ module.exports = {
   entry: './src/entrypoint.js',
 
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'output'),
     filename: 'bundle.js'
   },
 
