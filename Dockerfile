@@ -17,7 +17,7 @@ COPY . .
 
 RUN yarn install
 
-RUN yarn spago:build
+RUN yarn spago:bundle
 
-EXPOSE 8080
-CMD [ "yarn", "purs:server" ]
+EXPOSE 1234
+CMD [ "yarn", "parcel:serve" ]

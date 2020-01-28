@@ -13,45 +13,27 @@
   "scripts": {
     "postinstall": "spago install",
     "clean": "rm -rf node_modules output .spago output/* *.lock",
-    "webpack": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack --mode development --progress --bail",
-    "webpack:watch": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack --mode development --progress --display-error-details --display verbose --watch",
-    "webpack:server": "webpack-dev-server --mode development --progress --inline --hot",
-    "webpack:server:debug": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack-dev-server --mode development --progress --inline --hot",
     "spago:build": "spago build --path './examples/particles/**/*.purs' --purs-args '-o output/'",
     "spago:watch": "spago bundle-app --watch --path './examples/particles/**/*.purs' --main Example.Main --to ./output/app.js --purs-args '--output ./output'",
     "spago:test": "spago test",
     "spago:bundle": "spago bundle-app --path './examples/particles/**/*.purs' --main Example.Main --to ./output/app.js --purs-args '--output ./output'",
     "docker:build": "docker build . -t rpd-purs",
-    "docker:run": "docker run -p 1337:1337 rpd-purs .",
+    "docker:run": "docker run -p 1234:1234 rpd-purs .",
     "parcel:build": "~/.yarn/bin/parcel build ./index.html -d ./output",
     "parcel:serve": "~/.yarn/bin/parcel serve ./index.html -d ./output",
     "parcel:watch": "~/.yarn/bin/parcel ./index.html -d ./output",
-    "purs:compile": "purs compile 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs'",
-    "purs:compile-all": "purs compile 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs' 'test/**/*.purs' 'example/**/*.purs'",
-    "purs:bundle": "purs bundle output/**/*.js",
-    "purs:build": "pulp build",
-    "purs:server": "pulp --watch server -I ./examples/particles --main Example.Main",
-    "purs:repl": "purs repl 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs'",
-    "purs:mod-repl": "purs repl 'bower_components/purescript-*/src/**/*.purs'",
-    "purs:test": "pulp test --no-check-main",
-    "purs:sandbox": "pulp run --main TestMUV2 --src-path tmp",
     "start": "npm run purs:server",
     "dev": "npm run spago:watch & npm run parcel:watch"
   },
   "dependencies": {
-    "html-webpack-plugin": "^3.2.0",
     "lodash.difference": "^4.5.0",
     "parcel": "^1.12.4",
     "purescript-psa": "^0.7.3",
-    "purs-loader": "^3.7.1",
-    "webpack": "^4.41.5",
     "wrappy": "^1.0.2"
   },
   "devDependencies": {
     "parcel-bundler": "^1.12.4",
     "purescript": "^0.13.6",
-    "spago": "^0.13.1",
-    "webpack-cli": "^3.3.10",
-    "webpack-dev-server": "^3.10.1"
+    "spago": "^0.13.1"
   }
 }
