@@ -30,5 +30,12 @@ WORKDIR /usr/share/nginx/html
 COPY --from=0 /app/output ./output
 COPY --from=0 /app/index.html .
 
+RUN mkdir ./css
+RUN mkdir ./example-css
+
+COPY --from=0 /app/src/Rpd/Renderer/Html/*.css ./css/
+COPY --from=0 /app/examples/particles/Toolkit/Render/*.css ./example-css/
+COPY --from=0 /app/index.docker.css ./index.css
+
 EXPOSE 80
-# CMD [ "yarn", "parcel:serve" ]
+
