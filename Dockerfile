@@ -15,9 +15,20 @@ RUN npm cache clean --force && \
 
 COPY . .
 
+RUN yarn clean
+
 RUN yarn install
 
 RUN yarn spago:bundle
 
-EXPOSE 1234
-CMD [ "yarn", "parcel:serve" ]
+FROM nginx:alpine
+
+WORKDIR /usr/share/nginx/html
+
+# RUN mkdir output
+
+COPY --from=0 /app/output ./output
+COPY --from=0 /app/index.html .
+
+EXPOSE 80
+# CMD [ "yarn", "parcel:serve" ]
