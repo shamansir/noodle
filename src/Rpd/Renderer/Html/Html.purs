@@ -468,7 +468,7 @@ viewLink _ (uuid /\ linkPosition) =
             $ getLinkTransformStyle
                 $ getLinkTransform linkPosition
         ]
-        [ H.text "LINK" ]
+        [ ]
 
 
 viewDraggingLink
@@ -483,7 +483,7 @@ viewDraggingLink _ linkPosition =
             $ getLinkTransformStyle
                 $ getLinkTransform linkPosition
         ]
-        [ H.text "LINK" ]
+        [ ]
 
 
 viewDebugWindow

@@ -199,11 +199,15 @@ body {
 .rpd-link {
     position: absolute;
     transform-origin: 0 0;
-    background-color: red;  /* TODO: remove */
+    background-color: white;  /* TODO: remove */
+    height: 3px;
+    min-height: 3px;
 }
 
 .rpd-link.rpd-dragging {
     background-color: aqua;  /* TODO: remove */
+    height: 3px;
+    min-height: 3px;
 }
 
 .rpd-mouse-pos, .rpd-drag-state { /* TODO: remove */
