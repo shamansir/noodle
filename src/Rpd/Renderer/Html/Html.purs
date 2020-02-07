@@ -105,7 +105,7 @@ data Action d c n
     | ClickInlet (R.Inlet d c) ME.MouseEvent
     | ClickOutlet (R.Outlet d c) ME.MouseEvent
     | ClickNodeTitle (R.Node d n) ME.MouseEvent
-    -- | ClickRemoveButton (R.Node d n) ME.MouseEvent
+    | ClickRemoveButton (R.Node d n) ME.MouseEvent
     | PinNode (R.Node d n) Position
     | StorePositions (UUID.Tagged /-> Position)
 
@@ -114,6 +114,7 @@ data Perform d c n
     = UpdatePositions
     | TryConnecting (R.Outlet d c) (R.Inlet d c)
     | TryToPinNode (R.Node d n) Position
+    | TryRemovingNode (R.Node d n)
     | StopPropagation Event
 
 
@@ -351,8 +352,7 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                 [ H.text $ "node " <> show nodeUuid <> " was not found" ]
     where
         handleNodeTitleClick node e = Just $ my $ ClickNodeTitle node e
-        handleNodeRemoveButtonClick node e =
-            Just $ core $ Core.Build $ Core.RemoveNode node
+        handleNodeRemoveButtonClick node e = Just $ my $ ClickRemoveButton node e
         getAttrs (Pinned (ZIndex zIndex) { x, y }) node =
             let
                 (Layout.NodeSize { width, height }) = getNodeSize node
@@ -656,25 +656,42 @@ update (Left (PinNode node position)) ( ui /\ nw ) =
 update (Left (ClickBackground e)) ( ui /\ nw ) =
     ui { dragging = NotDragging } /\ []
 update (Left (ClickNodeTitle node e)) ( ui /\ nw ) =
-    let
-        (R.Node _ nodePath _ _ _) = node
-        patchPath = P.getPatchPath $ P.lift nodePath
-        maybePatch = L.view (L._patchByPath patchPath) nw
-    in
-        case maybePatch of
-            Just patch ->
-                ui
-                    { dragging = Dragging $ DragNode node
-                    , layout =
+    ui
+        { dragging = Dragging $ DragNode node
+        , layout =
+            let
+                (R.Node _ nodePath _ _ _) = node
+                patchPath = P.getPatchPath $ P.lift nodePath
+                maybePatch = L.view (L._patchByPath patchPath) nw
+            in
+                case maybePatch of
+                    Just patch ->
                         ui.layout # Layout.abandon patch node
-                    }
-            Nothing ->
-                ui
-                    { dragging = Dragging $ DragNode node }
-        /\
-            [ StopPropagation $ ME.toEvent e
-            , UpdatePositions
-            ]
+                    Nothing -> ui.layout
+        }
+    /\
+        [ StopPropagation $ ME.toEvent e
+        , UpdatePositions
+        ]
+update (Left (ClickRemoveButton node e)) ( ui /\ nw ) =
+    ui
+        { dragging = NotDragging
+        , layout =
+            let
+                (R.Node _ nodePath _ _ _) = node
+                patchPath = P.getPatchPath $ P.lift nodePath
+                maybePatch = L.view (L._patchByPath patchPath) nw
+            in
+                case maybePatch of
+                    Just patch ->
+                        ui.layout # Layout.remove patch node
+                    Nothing -> ui.layout
+        }
+    /\
+        [ StopPropagation $ ME.toEvent e
+        , UpdatePositions
+        , TryRemovingNode node
+        ]
 update (Left (ClickInlet inletPath e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging
@@ -717,6 +734,11 @@ performEffect _ pushAction
     ( ui /\ nw ) = do
     -- FIXME: it's not an effect, actually
     pushAction $ my $ PinNode node position
+performEffect _ pushAction
+    (TryRemovingNode node)
+    ( ui /\ nw ) = do
+    -- FIXME: it's not an effect, actually
+    pushAction $ core $ Core.Build $ Core.RemoveNode node
 performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
     _ <- Event.stopPropagation e
     pure unit

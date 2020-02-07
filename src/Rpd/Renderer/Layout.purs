@@ -251,8 +251,12 @@ abandon (R.Patch _ patchPath _) node layout =
                 { stack =
                     (<$>) freeNode <$> patchLayout.stack
                 , pinned =
-                    Map.delete node patchLayout.pinned
+                    patchLayout.pinned # Map.delete node
                 }
+
+
+remove :: forall d c n. R.Patch d c n -> R.Node d n -> Layout d n -> Layout d n
+remove = abandon
 
 
 
