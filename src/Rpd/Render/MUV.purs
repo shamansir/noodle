@@ -162,7 +162,6 @@ once (Renderer { init, view }) _ nw =
     view $ init nw /\ nw
 
 
-
 fromMinimal
     :: forall d c n view
      . Minimal.Renderer d c n view

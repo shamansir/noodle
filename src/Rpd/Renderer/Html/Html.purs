@@ -105,6 +105,7 @@ data Action d c n
     | ClickInlet (R.Inlet d c) ME.MouseEvent
     | ClickOutlet (R.Outlet d c) ME.MouseEvent
     | ClickNodeTitle (R.Node d n) ME.MouseEvent
+    -- | ClickRemoveButton (R.Node d n) ME.MouseEvent
     | PinNode (R.Node d n) Position
     | StorePositions (UUID.Tagged /-> Position)
 
@@ -323,7 +324,9 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                         [ H.span [ ] [ H.text $ R.labelOf n <> " (" <> name <> ")" ] ]
                         -- FIXME use special "node title" and "node ID" for classes etc."
                     , H.div
-                        [ H.classes [ "rpd-node-remove-button" ] ]
+                        [ H.classes [ "rpd-node-remove-button" ]
+                        , H.onClick $ handleNodeRemoveButtonClick node
+                        ]
                         [ H.text "x" ]
                     , H.div
                         [ H.classes [ "rpd-node-inlets" ] ]
@@ -347,7 +350,9 @@ viewNode toolkitRenderer ui nw emplacement nodeUuid =
                 [ H.classes [ "rpd-node", "missing" ] ]
                 [ H.text $ "node " <> show nodeUuid <> " was not found" ]
     where
-        handleNodeTitleClick nodePath e = Just $ my $ ClickNodeTitle nodePath e
+        handleNodeTitleClick node e = Just $ my $ ClickNodeTitle node e
+        handleNodeRemoveButtonClick node e =
+            Just $ core $ Core.Build $ Core.RemoveNode node
         getAttrs (Pinned (ZIndex zIndex) { x, y }) node =
             let
                 (Layout.NodeSize { width, height }) = getNodeSize node

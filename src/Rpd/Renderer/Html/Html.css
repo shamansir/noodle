@@ -220,6 +220,10 @@ body {
     left: 250px;
 }
 
+.rpd-node-remove-button {
+    cursor: pointer;
+}
+
 #error {
     border: 2px solid red;
     padding: 5px;

@@ -12,7 +12,7 @@
   "files": [],
   "scripts": {
     "postinstall": "spago install",
-    "clean": "rm -rf node_modules output .spago output/* *.lock",
+    "clean": "rm -rf node_modules output .spago output/* *.lock && mkdir ./output",
     "spago:build": "spago build --path './examples/particles/**/*.purs' --purs-args '-o output/'",
     "spago:watch": "spago bundle-app --watch --path './examples/particles/**/*.purs' --main Example.Main --to ./output/app.js --purs-args '--output ./output'",
     "spago:test": "spago test",
@@ -22,7 +22,7 @@
     "parcel:build": "~/.yarn/bin/parcel build ./index.html -d ./output",
     "parcel:serve": "~/.yarn/bin/parcel serve ./index.html -d ./output",
     "parcel:watch": "~/.yarn/bin/parcel ./index.html -d ./output",
-    "start": "npm run purs:server",
+    "start": "npm run clean && npm run spago:bundle && npm run parcel:serve",
     "dev": "npm run spago:watch & npm run parcel:watch"
   },
   "dependencies": {
