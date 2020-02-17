@@ -22,7 +22,7 @@
     "parcel:build": "~/.yarn/bin/parcel build ./index.html -d ./output",
     "parcel:serve": "~/.yarn/bin/parcel serve ./index.html -d ./output",
     "parcel:watch": "~/.yarn/bin/parcel ./index.html -d ./output",
-    "now:build": "npm run spago:bundle && rm -Rf ./public && mkdir ./public && cp -R ./output ./public && cp ./index.html ./public && mkdir ./public/css ./public/example-css/ && cp ./src/Rpd/Renderer/Html/*.css ./public/css/ && cp ./examples/particles/Toolkit/Render/*.css ./public/example-css/ && cp ./index.docker.css ./public/index.css",
+    "now:build": "(npm run spago:bundle &> log) && rm -Rf ./public && mkdir ./public && cp -R ./output ./public && cp ./index.html ./public && mkdir ./public/css ./public/example-css/ && cp ./src/Rpd/Renderer/Html/*.css ./public/css/ && cp ./examples/particles/Toolkit/Render/*.css ./public/example-css/ && cp ./index.docker.css ./public/index.css",
     "start": "npm run clean && npm run spago:bundle && npm run parcel:serve",
     "dev": "npm run spago:watch & npm run parcel:watch"
   },
