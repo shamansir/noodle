@@ -1,10 +1,10 @@
 {
-  "name": "rpd-purs",
+  "name": "noodle",
   "version": "0.1.0",
   "private": true,
   "description": "Reactive Patch Development with PureScript",
   "license": "MIT",
-  "repository": "shamansir/rpd-purs",
+  "repository": "shamansir/noodle",
   "author": {
     "name": "Ulric Wilfred",
     "email": "shaman.sir@gmail.com"
@@ -17,8 +17,8 @@
     "spago:watch": "spago bundle-app --watch --path './examples/particles/**/*.purs' --main Example.Main --to ./output/app.js --purs-args '--output ./output'",
     "spago:test": "spago test",
     "spago:bundle": "spago bundle-app --path './examples/particles/**/*.purs' --main Example.Main --to ./output/app.js --purs-args '--output ./output'",
-    "docker:build": "docker build . -t rpd-purs",
-    "docker:run": "docker run -p 8080:80 rpd-purs",
+    "docker:build": "docker build . -t noodle",
+    "docker:run": "docker run -p 8080:80 noodle",
     "parcel:build": "~/.yarn/bin/parcel build ./index.html -d ./output",
     "parcel:serve": "~/.yarn/bin/parcel serve ./index.html -d ./output",
     "parcel:watch": "~/.yarn/bin/parcel ./index.html -d ./output",
