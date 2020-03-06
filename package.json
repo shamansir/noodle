@@ -18,7 +18,7 @@
     "spago:test": "spago test",
     "spago:bundle": "spago bundle-app --path './examples/particles/**/*.purs' --main Example.Main --to ./output/app.js --purs-args '--output ./output'",
     "docker:build": "docker build . -t noodle",
-    "docker:run": "docker run -p 8080:80 noodle",
+    "docker:run": "docker run -p 8080:8080 noodle",
     "parcel:build": "~/.yarn/bin/parcel build ./index.html -d ./output",
     "parcel:serve": "~/.yarn/bin/parcel serve ./index.html -d ./output",
     "parcel:watch": "~/.yarn/bin/parcel ./index.html -d ./output",

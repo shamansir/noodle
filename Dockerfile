@@ -37,4 +37,6 @@ COPY --from=0 /app/src/Rpd/Renderer/Html/*.css ./css/
 COPY --from=0 /app/examples/particles/Toolkit/Render/*.css ./example-css/
 COPY --from=0 /app/index.docker.css ./index.css
 
-COPY nginx/default.conf /etc/nginx/conf.d/
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 8080
