@@ -129,6 +129,8 @@ body {
     /* min-width: 30px; */
     margin-right: 5px;
     color: #eee;
+    cursor: pointer;
+    pointer-events: all;
 }
 
 .rpd-inlet {

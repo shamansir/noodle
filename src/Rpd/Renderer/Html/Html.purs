@@ -396,11 +396,13 @@ viewInlet toolkitRenderer ui nw inletUuid =
         Just inlet@(R.Inlet uuid path@(P.ToInlet { inlet : label }) channel { flow }) ->
             H.div
                 [ H.classes [ "rpd-inlet" ]
+                -- so the whole inlet area is clickable
+                , H.onClick $ handleInletConnectorClick inlet
                 , uuidToAttr uuid
                 ] -- TODO: channel name, state
                 [ H.div
                     [ H.classes [ "rpd-inlet-connector" ]
-                    , H.onClick $ handleInletConnectorClick inlet
+                    -- , H.onClick $ handleInletConnectorClick inlet
                     ]
                     [ H.text "o" ]
                 , H.div [ H.classes [ "rpd-inlet-name" ] ]
@@ -432,11 +434,13 @@ viewOutlet toolkitRenderer ui nw outletUuid =
         Just outlet@(R.Outlet uuid path@(P.ToOutlet { outlet : label }) channel { flow }) ->
             H.div
                 [ H.classes [ "rpd-outlet" ]
+                -- so the whole inlet area is clickable
+                , H.onClick $ handleOutletConnectorClick outlet
                 , uuidToAttr uuid
                 ] -- TODO: channel name, state
                 [ H.div
                     [ H.classes [ "rpd-outlet-connector" ]
-                    , H.onClick $ handleOutletConnectorClick outlet
+                    --, H.onClick $ handleOutletConnectorClick outlet
                     ]
                     [ H.text "o"
                     ]
@@ -744,8 +748,9 @@ performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
     pure unit
 
 
+-- FIXME: move to the Toolkit renderer
 getNodeSize :: forall d n. R.Node d n -> Layout.NodeSize
-getNodeSize _ = Layout.NodeSize { width : 100.0, height : 40.0 }
+getNodeSize _ = Layout.NodeSize { width : 100.0, height : 70.0 }
 
 
 uuidToAttr :: forall a r i. UUID.IsTagged a => a -> H.IProp (id ∷ String | r) i
