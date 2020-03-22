@@ -1,6 +1,28 @@
 Primary:
 ========
 
+When the node is created, its links are not visible at first. Fix links issues.
+
+Save the latest data received into outlet (maybe inlet as well) to re-send it on connection.
+
+Implement SVG and Canvas renderers.
+
+Let the toolkit renderer determine the size of the node for the specific output. In the best case scenario, size of the node should be determined automatically.
+
+In DebugBox, be able to filter the events by type.
+
+Change the way links are updating the position: The layout should rather track the position of node when dragging and distribute the links by knowing/calculating the inlets and outlets positions using the dimensions of the Node. (SVG renderer would help with that).
+
+`PerformEffect` could be incorporated into the `update`, using the Elm-like mechanics a.k.a. `Cmd Msg` or see [_Finite State Machines in Haskell_](https://wickstrom.tech/finite-state-machines/2017/11/10/finite-state-machines-part-1-modeling-with-haskell.html).
+
+Rename `RPD` -> `Noodle`.
+
+Canvas as the background.
+
+Some special node which acts as a renderer for any input connected (can also be transferred to canvas).
+
+Hosting different parts of the network at different locations and communicating between them using some special protocol.
+
 Move to (`spago`)[https://github.com/spacchetti/spago].
 
 Tests for connecting and disconneting.
@@ -53,6 +75,8 @@ Think on special `d` data format, like `Bang | Skip | Pass d | Decline d | Adapt
 
 Secondary:
 ==========
+
+Some generic layouting engine
 
 How may user specify the types for the nodes or channels if user wants to render them differently depending on type? Should the Node/Channel renderer be stored in definition structure instead? For channels, `data` type may be the marker for a renderer, but for Node, what should be the marker. The Node, however, may store some complex type as marker (i.e. data type == `Color | String | NamedColor Color String` and so the Node, having the inputs of `Color` and `String` types, in the body operates with this `NamedColor` structure). Maybe `data` is what should be rendered and node body renderer belongs to the node? How to search for the nodes if they have no readable type? May be all the definitions should be extensible records, so user will be able to add `type` field manually and so determine the type in the renderer when some Node/Channel has its time to render? Phantom Types!? https://frigoeu.github.io/phantomtypes.html, https://stepik.org/lesson/31555/step/7?unit=11808.
 
