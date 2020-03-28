@@ -24,13 +24,14 @@ import Data.Maybe (Maybe(..))
 import FRP.Event (Event)
 import FRP.Event as Event
 
+import FSM.Covered (Covered, recover, inject, hasError, cover')
+
 import Rpd.Network (Network) as R
 -- import Rpd.API as R
 import Rpd.API.Action (Action) as Core
 import Rpd.API.Action.Apply (apply, performEffect) as Core
 import Rpd.API.Action.Sequence (prepare_) as ActionSeq
 import Rpd.API.Errors (RpdError) as R
-import Rpd.API.Covered (Covered, recover, inject, hasError, cover')
 import Rpd.Toolkit as T
 import Rpd.Render.Minimal as Minimal
 import Rpd.Util (Canceler)

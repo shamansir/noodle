@@ -34,10 +34,11 @@ import Debug.Trace as DT
 
 import Effect (Effect)
 
+import FSM.Covered (uncover)
+
 import Rpd.API (uuidByPath) as R
 import Rpd.API.Errors (RpdError) as R
 import Rpd.API.Action (Action(..), DataAction(..), BuildAction(..), RequestAction(..)) as Core
-import Rpd.API.Covered (uncover)
 import Rpd.Network as R
 import Rpd.Optics as L
 import Rpd.Path as P

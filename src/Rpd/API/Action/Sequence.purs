@@ -22,14 +22,15 @@ import Data.Traversable (traverse_)
 import FRP.Event (Event)
 import FRP.Event as Event
 
+import FSM.Covered (Covered, cover, carry, recover, uncover, uncover')
+import FSM.Covered (fromEither, fromEither', appendError) as Cover
+
 import Rpd.Network
 import Rpd.API
     ( NodeInletsSubscription, NodeOutletsSubscription
     , InletSubscription, OutletSubscription
     )
 import Rpd.API.Errors (RpdError)
-import Rpd.API.Covered (Covered, cover, carry, recover, uncover, uncover')
-import Rpd.API.Covered (fromEither, fromEither', appendError) as Cover
 import Rpd.API.Action
 import Rpd.API.Action.Apply (Step, apply, performEffect)
 import Rpd.Path as Path

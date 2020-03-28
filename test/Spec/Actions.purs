@@ -25,7 +25,8 @@ import FRP.Event as E
 import Test.Spec (Spec, describe, it, itOnly, pending, pending')
 import Test.Spec.Assertions (shouldEqual, fail)
 
-import Rpd.API.Covered (recover)
+import FSM.Covered (recover)
+
 import Rpd.API.Action.Sequence ((</>))
 import Rpd.API.Action.Sequence (addPatch, addNode, addInlet, addOutlet) as R
 import Rpd.API.Action.Sequence as Actions

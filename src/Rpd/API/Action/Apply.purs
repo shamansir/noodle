@@ -329,7 +329,7 @@ performEffect _ pushAction (AddPatchE alias) _ = do
             { nodes : Seq.empty
             , links : Seq.empty
             }
-performEffect _ pushAction (AddNodeE patchPath nodeAlias n (NodeDef def)) nw = do
+performEffect _ pushAction (AddNodeE patchPath nodeAlias n (NodeDef def)) _ = do
     uuid <- UUID.new
     flows <- Api.makeInletOutletsFlows
     let
@@ -363,9 +363,9 @@ performEffect toolkit pushAction (AddNextNodeE patchPath n (NodeDef def)) nw = d
     -- FIXME: use `show n`, maybe, or just take the part of the newly created node UUID?
     let shortHash = String.take 6 $ UUID.toRawString uuid
     performEffect toolkit pushAction (AddNodeE patchPath shortHash n (NodeDef def)) nw
-performEffect _ pushAction (ProcessWithE node processF) nw = do
+performEffect _ pushAction (ProcessWithE node processF) _ = do
     pushAction $ Build $ ProcessWith node processF
-performEffect _ pushAction (AddLinkE outlet inlet) nw = do
+performEffect _ pushAction (AddLinkE outlet inlet) _ = do
     uuid <- UUID.new
     let
         (Outlet ouuid _ _ { flow : outletFlow' }) = outlet

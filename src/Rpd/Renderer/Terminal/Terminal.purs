@@ -37,9 +37,10 @@ import Data.BinPack.R2 as R2
 
 import Math (ceil, sqrt, (%))
 
+import FSM.Covered
+
 import Rpd.API.Errors (RpdError) as R
 import Rpd.API.Action as C
-import Rpd.API.Covered
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.Optics as R
 import Rpd.Path as R

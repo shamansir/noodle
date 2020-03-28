@@ -20,6 +20,9 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Debug.Trace as DT
 
+import FSM.Covered
+import FSM.Covered (run) as Covered
+
 import Rpd.Network
     ( Network(..)
     , Patch(..)
@@ -29,8 +32,6 @@ import Rpd.Network
     , Link(..)
     ) as R
 import Rpd.API.Errors (RpdError) as R
-import Rpd.API.Covered
-import Rpd.API.Covered (run) as Covered
 import Rpd.Optics (_node, _inlet, _outlet, _link, _networkPatches, _networkLinks)
 import Rpd.Render.Minimal (PushF, Renderer(..))
 import Rpd.Path as P

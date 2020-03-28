@@ -1,4 +1,4 @@
-module Rpd.API.Covered where
+module FSM.Covered where
 
 
 import Prelude
