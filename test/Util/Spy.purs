@@ -17,7 +17,7 @@ import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Effect (Effect)
 
-import Rpd.API.Covered
+import FSM.Covered
 
 
 data Spy x a = Spy x (Ref x) (x -> a -> x)

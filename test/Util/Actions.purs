@@ -12,7 +12,7 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Data.String (joinWith)
 import Effect.Aff (Aff)
 
-import Rpd.API.Covered (Covered(..))
+import FSM.Covered (Covered(..))
 
 import Test.Spec.Assertions (fail)
 

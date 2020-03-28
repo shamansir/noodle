@@ -1,5 +1,5 @@
 module Rpd.Renderer.Html.DebugBox
-    ( Model, init, update, view )
+    ( Model, Filter, init, update, view )
     where
 
 import Prelude
@@ -27,14 +27,34 @@ actionStackSize :: Int
 actionStackSize = 10
 
 
+data FilterState = On | Off
+
+
+data Filter =
+    Filter
+        { build :: FilterState
+        , data_ :: FilterState
+        , inner :: FilterState
+        , request :: FilterState
+        -- TODO: effects
+        }
+
+
 type Model d c n =
     { lastActions :: List (A.Action d c n)
+    , filter :: Filter
     }
 
 
 init :: forall d c n. Model d c n
 init =
     { lastActions : List.Nil
+    , filter : Filter
+        { build : Off
+        , data_ : Off
+        , inner : Off
+        , request : Off
+        }
     }
 
 
