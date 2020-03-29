@@ -22,8 +22,8 @@ import Data.Traversable (traverse_)
 import FRP.Event (Event)
 import FRP.Event as Event
 
--- import FSM.Covered (Covered, cover, carry, recover, uncover, uncover')
-import FSM.Covered (fromEither, fromEither', carry, appendError, recover) as Covered
+import FSM.Covered (Covered)
+import FSM.Covered (fromEither, fromEither', carry, appendError, recover, cover) as Covered
 
 import FSM (CoveredFSM)
 import FSM (make) as FSM
@@ -159,9 +159,18 @@ type Sequence d c n = CoveredFSM RpdError (Action d c n) (Network d c n)
 make :: forall d c n. Toolkit d c n -> Network d c n -> Sequence d c n
 make toolkit network =
     FSM.make (Covered.carry network)
-        $ \action model ->
-            -- (Covered RpdError (Network d0 c1 n2)) /\ (Array (Effect (Action d0 c1 n2))
-            Covered.fromEither' (apply toolkit action $ Covered.recover model) (\_ -> (Covered.recover model) /\ []) /\ []
+        $ \action coveredModel ->
+            let
+                (nextCoveredModel /\ rpdEffects) =
+                    -- TODO: make apply return `Covered`.
+                    -- also effects should not be under error control
+                    case apply toolkit action recovered of
+                        Left err -> Covered.cover recovered err /\ []
+                        Right (nextModel /\ effects) ->
+                            Covered.carry nextModel /\ effects
+                    where recovered = Covered.recover coveredModel
+            in
+                nextCoveredModel /\ [] -- FIXME: convert RpdEffect to `Effect (Action d c n)`
 
 
 andThen :: forall d c n. ActionList d c n -> Action d c n -> ActionList d c n
