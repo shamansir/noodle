@@ -1,5 +1,8 @@
 module FSM
-    ( FSM(..)
+    ( FSM
+    , CoveredFSM
+    , make, makePassing
+    , run, runAndSubscribe, runFolding
     ) where
 
 import Prelude
@@ -27,6 +30,21 @@ data FSM action model =
 
 
 type CoveredFSM error action model = FSM action (Covered error model)
+
+
+make
+    :: forall action model
+     . model
+    -> (action -> model -> model /\ Array (Effect action))
+    -> FSM action model
+make = FSM
+
+
+makePassing
+    :: forall action model
+     . model
+    -> FSM action model
+makePassing model = FSM model (\_ m -> m /\ [])
 
 
 prepare

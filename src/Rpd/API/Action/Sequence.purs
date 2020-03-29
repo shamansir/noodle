@@ -22,8 +22,11 @@ import Data.Traversable (traverse_)
 import FRP.Event (Event)
 import FRP.Event as Event
 
-import FSM.Covered (Covered, cover, carry, recover, uncover, uncover')
-import FSM.Covered (fromEither, fromEither', appendError) as Cover
+-- import FSM.Covered (Covered, cover, carry, recover, uncover, uncover')
+import FSM.Covered (fromEither, fromEither', carry, appendError, recover) as Covered
+
+import FSM (CoveredFSM)
+import FSM (make) as FSM
 
 import Rpd.Network
 import Rpd.API
@@ -150,165 +153,15 @@ pass :: forall d c n. Either RpdError (Network d c n) -> Effect Unit
 pass = const $ pure unit
 
 
--- FIXME: Do not expose!
-prepare_
-    :: forall model action effect
-     . model
-    -> (action -> Covered RpdError model -> Either RpdError (model /\ Array effect))
-    -> ((action -> Effect Unit) -> effect -> model -> Effect Unit)
-    -> Effect
-            { models :: Event (Covered RpdError model)
-            , actions :: Event action
-            , pushAction :: action -> Effect Unit
-            , stop :: Canceler
-            }
-prepare_ initialModel apply performEff = do
-    { event : actions, push : pushAction } <- Event.create
-    let
-        (updates :: Event (Covered RpdError (model /\ Array effect))) =
-            Event.fold
-                (\action prevCovered ->
-                    Cover.fromEither'
-                        (apply action (fst <$> prevCovered))
-                        (\_ -> (fst $ recover prevCovered) /\ [])
-                )
-                actions
-                (carry $ initialModel /\ [])
-        (models :: Event (Covered RpdError model))
-            = (((<$>) fst) <$> updates)
-    stopPerformingEffects <- Event.subscribe updates \step ->
-        case recover step of
-            model /\ [] -> pure unit
-            model /\ effects ->
-                traverse_ (flip (performEff pushAction) model) effects
-    pure { models, pushAction, actions, stop : stopPerformingEffects }
+type Sequence d c n = CoveredFSM RpdError (Action d c n) (Network d c n)
 
 
-prepare
-    :: forall d c n
-     . Network d c n
-    -> Toolkit d c n
-    -> Effect
-            { models :: Event (Covered RpdError (Network d c n))
-            , actions :: Event (Action d c n)
-            , pushAction :: Action d c n -> Effect Unit
-            , stop :: Canceler
-            }
-prepare nw toolkit =
-    prepare_ nw
-        (\action covered -> apply toolkit action $ recover covered)
-        (performEffect toolkit)
-
-
-{-
-run
-    :: forall d c n
-     . Toolkit d c n
-    -> Network d c n
-    -> EveryStep d c n
-    -> ActionList d c n
-    -> Effect Unit
-run toolkit initialNW stepHandler actions =
-    run' toolkit initialNW stepHandler actions
-        *> pure unit
--}
-
-
-run
-    :: forall d c n
-     . Toolkit d c n
-    -> Network d c n
-    -> (Covered RpdError (Network d c n) -> Effect Unit)
-    -> ActionList d c n
-    -> Effect
-            { pushAction :: Action d c n -> Effect Unit
-            , stop :: Canceler
-            }
-run toolkit initialNW stepHandler actionList = do
-    { models, actions, pushAction, stop } <- prepare initialNW toolkit
-    stopInforming <- Event.subscribe models stepHandler
-    _ <- pushAll pushAction actionList
-    -- _ <- stopInforming
-    pure { pushAction, stop : stopInforming <> stop }
-
-
-runFolding
-    :: forall d c n
-     . Toolkit d c n
-    -> Network d c n
-    -> ActionList d c n
-    -> Effect
-            ((Array RpdError /\ Network d c n) /\
-            { pushAction :: Action d c n -> Effect Unit
-            , stop :: Canceler
-            })
-runFolding toolkit initialNW actionList = do
-    res@{ models, pushAction, stop } <- prepare initialNW toolkit
-    lastValRef <- Ref.new $ carry initialNW
-    let modelsFolded =
-            Event.fold Cover.appendError models $ cover initialNW []
-    stopCollectingLastValue <-
-        Event.subscribe modelsFolded (flip Ref.write lastValRef)
-    _ <- pushAll pushAction actionList
-    -- _ <- stopCollectingLastValue
-    lastVal <- Ref.read lastValRef
-    pure $ uncover' lastVal /\ { pushAction, stop : stop <> stopCollectingLastValue }
-
-
-{-
-TODO: implement, so could work with `Aff` and replace `failOrGet` in Rpd.Test.Helper
-TODO: Think about laziness, so that if some error occurs,
-      skip execution of the tail of the action list
-
-runM
-    :: forall m d c n
-     . MonadError RpdError m
-    => MonadEffect m
-    => Toolkit d c n
-    -> Network d c n
-    -> ActionList d c n
-    -> m (Network d c n)
-runM toolkit initialNW actions =
-    liftEffect $ do
-        { models, pushAction } <- liftEffect $ prepare initialNW toolkit
-        lastValRef <- Ref.new $ Right initialNW
-        stopInforming <- Event.subscribe models ?wh
-        stopCollectingLastValue <- Event.subscribe models (flip Ref.write lastValRef)
-        _ <- pushAll pushAction actions
-        -- _ <- stopInforming
-        -- _ <- stopCollectingLastValue
-        lastVal <- Ref.read lastValRef
-        pure $ initialNW
--}
-
-
-runTracing
-    :: forall d c n
-     . Toolkit d c n
-    -> Network d c n
-    -> (Action d c n -> Effect Unit)
-    -> ActionList d c n
-    -> Effect
-        ((Array RpdError /\ Network d c n) /\
-            { pushAction :: Action d c n -> Effect Unit
-            , stop :: Canceler
-            })
-runTracing toolkit initialNW everyAction actionList = do
-    { models, pushAction, actions, stop } <- prepare initialNW toolkit
-    lastValRef <- Ref.new $ carry initialNW
-    let modelsFolded =
-            Event.fold Cover.appendError models $ cover initialNW []
-    stopCollectingLastValue <-
-        Event.subscribe modelsFolded (flip Ref.write lastValRef)
-    stopListeningActions <-
-        Event.subscribe actions everyAction
-    _ <- pushAll pushAction actionList
-    -- _ <- stopInforming
-    -- _ <- stopCollectingLastValue
-    -- _ <- stopListeningActions
-    lastVal <- Ref.read lastValRef
-    pure $ uncover' lastVal /\
-        { pushAction, stop : stop <> stopCollectingLastValue <> stopListeningActions }
+make :: forall d c n. Toolkit d c n -> Network d c n -> Sequence d c n
+make toolkit network =
+    FSM.make (Covered.carry network)
+        $ \action model ->
+            -- (Covered RpdError (Network d0 c1 n2)) /\ (Array (Effect (Action d0 c1 n2))
+            Covered.fromEither' (apply toolkit action $ Covered.recover model) (\_ -> (Covered.recover model) /\ []) /\ []
 
 
 andThen :: forall d c n. ActionList d c n -> Action d c n -> ActionList d c n
