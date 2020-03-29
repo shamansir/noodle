@@ -5,6 +5,8 @@ import Prelude
 
 import Data.Either
 import Data.Maybe
+import Data.List (List)
+import Data.List as List
 import Data.Tuple.Nested ((/\), type (/\))
 
 
@@ -16,6 +18,11 @@ data Covered e a
 instance coveredFunctor :: Functor (Covered e) where
     map f (Recovered err a) = Recovered err $ f a
     map f (Carried a) = Carried $ f a
+
+
+-- instance coveredBifunctor :: Bifunctor Covered where
+--     bimap g f (Recovered err a) = Recovered (g err) (f a)
+--     bimap _ f (Carried a) = Carried a -- hides the error type
 
 
 instance coveredApply :: Apply (Covered e) where
@@ -82,8 +89,13 @@ uncover :: forall e a. Covered e a -> Maybe e /\ a
 uncover covered = hasError covered /\ recover covered
 
 
-uncover' :: forall e a. Covered (Array e) a -> Array e /\ a
-uncover' covered = (hasError covered # fromMaybe []) /\ recover covered
+uncover' :: forall e a. Covered (List e) a -> List e /\ a
+uncover' covered = (hasError covered # fromMaybe List.Nil) /\ recover covered
+
+
+mapError :: forall ea eb a. (ea -> eb) -> Covered ea a -> Covered eb a
+mapError f (Recovered err v) = Recovered (f err) v
+mapError _ (Carried v) = Carried v
 
 
 hasError :: forall e a. Covered e a -> Maybe e
@@ -101,8 +113,8 @@ run errF subjF (Recovered err x) = errF err <> subjF x
 run errF subjF (Carried x) = subjF x
 
 
-appendError :: forall e x. Covered e x -> Covered (Array e) x -> Covered (Array e) x
-appendError (Recovered err x) (Recovered errors _) = Recovered (errors <> [err]) x
-appendError (Recovered err x) (Carried _) = Recovered [err] x
-appendError (Carried x) (Carried _) = Recovered [] x
+appendError :: forall e x. Covered e x -> Covered (List e) x -> Covered (List e) x
+appendError (Recovered err x) (Recovered errors _) = Recovered (errors <> List.singleton err) x
+appendError (Recovered err x) (Carried _) = Recovered (List.singleton err) x
+appendError (Carried x) (Carried _) = Recovered List.Nil x
 appendError (Carried x) (Recovered errors _) = Recovered errors x
