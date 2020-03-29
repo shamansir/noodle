@@ -18,11 +18,13 @@ import Effect.Class (liftEffect)
 import Effect.Aff (Aff, delay)
 
 import Test.Spec.Assertions (fail)
-import Rpd.Test.Util.Actions (getOrFail')
 
+import FSM (runAndSubscribe) as Actions
+
+import Rpd.Test.Util.Actions (getOrFail')
 import Rpd.API.Action (Action(..), DataAction(..))
 import Rpd.API.Action.Sequence (ActionList)
-import Rpd.API.Action.Sequence (runTracing) as Actions
+import Rpd.API.Action.Sequence (make) as Actions
 import Rpd.Path as P
 import Rpd.Toolkit as T
 import Rpd.Network as R
@@ -59,9 +61,9 @@ channelsAfter
 channelsAfter period toolkit network actions = do
   target <- liftEffect $ Ref.new [] -- FIXME: rewrite with spies
   result /\ { stop } <- liftEffect $
-    Actions.runTracing
+    Actions.runAndSubscribe
         toolkit
-        network
+        (\_ -> network)
         (handleAction target)
         actions
   network' <- getOrFail' result network
