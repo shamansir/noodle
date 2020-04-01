@@ -19,6 +19,9 @@ import FRP.Event as E
 import FRP.Event.Class (count) as E
 import FRP.Event.Time as E
 
+import FSM.Covered (Covered)
+import FSM.Covered (carry, follow, followJoin) as Covered
+
 import Rpd.Util (PushableFlow(..), Canceler)
 import Rpd.API as Api
 import Rpd.API (uuidByPath, makePushableFlow)
@@ -40,7 +43,7 @@ import Rpd.Toolkit
 import Rpd.UUID as UUID
 
 
-type Step d c n = Either RpdError (Network d c n /\ Array (RpdEffect d c n))
+type Step d c n = Covered RpdError (Network d c n) /\ Array (Effect (Action d c n))
 
 
 infixl 1 next as <∞>
@@ -49,10 +52,10 @@ infixl 1 next as <∞>
 -- TODO: make an operator?
 -- TODO: close to Actions sequensing?
 next :: forall d c n. Step d c n -> (Network d c n -> Step d c n) -> Step d c n
-next stepA stepB = do  -- FIXME: `WriterT`?
-    (nw /\ effs) <- stepA
-    (nw' /\ effs') <- stepB nw
-    pure $ nw' /\ (effs <> effs')
+next = Covered.followJoin
+    -- (nw /\ effs) <- stepA
+    -- (nw' /\ effs') <- stepB nw
+    -- pure $ nw' /\ (effs <> effs')
 
 
 foldSteps
@@ -65,7 +68,7 @@ foldSteps
 foldSteps initNW foldable foldF =
     foldr
         (\x step -> step <∞> foldF x)
-        (pure $ initNW /\ [])
+        ((Covered.carry $ initNW) /\ [])
         foldable
 
 

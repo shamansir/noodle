@@ -78,7 +78,7 @@ data BuildAction d c n
 
 
 data InnerAction d c n -- FIXME: InnerActions should not be exposed
-    = Do (Perform d c n)
+    = Do (Perform d c n) -- FIXME: We don't need it nowadays
     | StoreNodeCanceler (Node d n) Canceler
     | ClearNodeCancelers (Node d n)
     | StoreInletCanceler (Inlet d c) Canceler

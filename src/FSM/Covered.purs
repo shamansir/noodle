@@ -113,8 +113,44 @@ run errF subjF (Recovered err x) = errF err <> subjF x
 run errF subjF (Carried x) = subjF x
 
 
+-- FIXME: change to Monoid
 appendError :: forall e x. Covered e x -> Covered (List e) x -> Covered (List e) x
 appendError (Recovered err x) (Recovered errors _) = Recovered (errors <> List.singleton err) x
 appendError (Recovered err x) (Carried _) = Recovered (List.singleton err) x
 appendError (Carried x) (Carried _) = Recovered List.Nil x
 appendError (Carried x) (Recovered errors _) = Recovered errors x
+
+
+-- is it some combination of bind and mapping?
+-- since it's `m a -> (a -> m a) -> m a`
+follow
+    :: forall a e x
+     . Semigroup x
+    => Covered e a /\ x
+    -> (a -> Covered e a /\ x)
+    -> Covered e a /\ x
+follow (Recovered err v /\ x) f =
+    case f v of
+        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <> x')
+        Carried v' /\ x' -> Recovered err v' /\ (x <> x')
+follow (Carried v /\ x) f =
+    case f v of
+        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <> x')
+        Carried v' /\ x' -> Carried v' /\ (x <> x')
+
+
+followJoin
+    :: forall a e x
+     . Semigroup x
+    => Semigroup e
+    => Covered e a /\ x
+    -> (a -> Covered e a /\ x)
+    -> Covered e a /\ x
+followJoin (Recovered err v /\ x) f =
+    case f v of
+        Recovered err' v' /\ x' -> Recovered (err <> err') v' /\ (x <> x')
+        Carried v' /\ x' -> Recovered err v' /\ (x <> x')
+followJoin (Carried v /\ x) f =
+    case f v of
+        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <> x')
+        Carried v' /\ x' -> Carried v' /\ (x <> x')
