@@ -22,6 +22,10 @@ data Kind
 newtype RpdError = RpdError String
 
 
+instance semigroupRpdError :: Semigroup RpdError where
+    append (RpdError one) (RpdError two) = RpdError $ one <> ". " <> two
+
+
 -- instance showKind :: Show Kind where
 --     show Global = "global"
 --     show _ = "<kind>"
