@@ -77,7 +77,7 @@ prepare (FSM init f) = do
 run
     :: forall action model
      . FSM action model
-    -> List action
+    -> List action -- FIXME: use foldable
     -> Effect
             { pushAction :: action -> Effect Unit
             , stop :: Canceler

@@ -16,6 +16,7 @@ import Rpd.Test.Spec.Render (spec) as TestRender
 import Rpd.Test.Spec.RpdFileParser (spec) as TestRpdFileParser
 import Rpd.Test.Spec.Util (spec) as TestUtils
 import Rpd.Test.Spec.Spread (spec) as TestSpreads
+import Rpd.Test.Spec.FSM (spec) as TestFSM
 
 
 spec :: Spec Unit
@@ -28,6 +29,7 @@ spec =
     TestRpdFileParser.spec
     TestUtils.spec
     TestSpreads.spec
+    TestFSM.spec
 
 
 main :: Effect Unit
