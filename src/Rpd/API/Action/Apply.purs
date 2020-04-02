@@ -19,8 +19,10 @@ import FRP.Event as E
 import FRP.Event.Class (count) as E
 import FRP.Event.Time as E
 
+import FSM (fine, fineDo)
+import FSM (follow, followJoin) as Covered
 import FSM.Covered (Covered)
-import FSM.Covered (carry, follow, followJoin) as Covered
+import FSM.Covered (carry, fromEither) as Covered
 
 import Rpd.Util (PushableFlow(..), Canceler)
 import Rpd.API as Api
@@ -78,8 +80,7 @@ apply
     -> Action d c n
     -> Network d c n
     -> Step d c n
-apply _ NoOp nw =
-    pure $ nw /\ []
+apply _ NoOp nw = fine nw
 apply toolkit (Inner innerAction) nw = applyInnerAction toolkit innerAction nw
 apply toolkit (Request requestAction) nw = applyRequestAction toolkit requestAction nw
 apply toolkit (Build buildAction) nw = applyBuildAction toolkit buildAction nw
@@ -93,15 +94,15 @@ applyDataAction
     -> Network d c n
     -> Step d c n
 applyDataAction _ Bang nw =
-    pure $ nw /\ []
+    fine nw
 applyDataAction _ (GotInletData _ _) nw =
-    pure $ nw /\ []
+    fine nw
 applyDataAction _ (GotOutletData _ _) nw =
-    pure $ nw /\ []
+    fine nw
 applyDataAction _ (SendToInlet _ _) nw = -- FIXME: either implement or get rid of
-    pure $ nw /\ []
+    fine nw
 applyDataAction _ (SendToOutlet _ _) nw = -- FIXME: either implement or get rid of
-    pure $ nw /\ []
+    fine nw
 
 
 applyRequestAction
@@ -199,11 +200,10 @@ applyBuildAction
     -> BuildAction d c n
     -> Network d c n
     -> Step d c n
-applyBuildAction _ (AddPatch p) nw = do
-    pure $ Api.addPatch p nw /\ [ ]
+applyBuildAction _ (AddPatch p) nw =
+    fine $ Api.addPatch p nw
 applyBuildAction _ (AddNode node) nw = do
-    nw' <- Api.addNode node nw
-    pure $ nw' /\ [ ]
+    (Covered.fromEither nw $ Api.addNode node nw) /\ []
 applyBuildAction tk (RemoveNode node) nw = do
     let (Node uuid _ _ _ _) = node
     inlets <- view (_nodeInlets uuid) nw # note (Err.ftfs $ UUID.uuid uuid)
@@ -279,39 +279,39 @@ applyInnerAction
     -> Network d c n
     -> Step d c n
 applyInnerAction _ (Do effectful) nw =
-    pure $ nw /\ [ DoE effectful ]
+    fineDo nw $ effectful nw *> pure NoOp
 applyInnerAction _ (StoreNodeCanceler (Node uuid _ _ _ _) canceler) nw =
     let
         curNodeCancelers = Api.getNodeCancelers uuid nw
         newNodeCancelers = canceler : curNodeCancelers
     in
-        pure $ Api.storeNodeCancelers uuid newNodeCancelers nw /\ []
+        fine $ Api.storeNodeCancelers uuid newNodeCancelers nw
 applyInnerAction _ (ClearNodeCancelers (Node uuid _ _ _ _)) nw =
-    pure $ Api.clearNodeCancelers uuid nw /\ []
+    fine $ Api.clearNodeCancelers uuid nw
 applyInnerAction _ (StoreInletCanceler (Inlet uuid _ _ _) canceler) nw =
     let
         curInletCancelers = Api.getInletCancelers uuid nw
         newInletCancelers = canceler : curInletCancelers
     in
-        pure $ Api.storeInletCancelers uuid newInletCancelers nw /\ []
+        fine $ Api.storeInletCancelers uuid newInletCancelers nw
 applyInnerAction _ (ClearInletCancelers (Inlet uuid _ _ _)) nw =
-    pure $ Api.clearInletCancelers uuid nw /\ []
+    fine $ Api.clearInletCancelers uuid nw
 applyInnerAction _ (StoreOutletCanceler (Outlet uuid _ _ _) canceler) nw =
     let
         curOutletCancelers = Api.getOutletCancelers uuid nw
         newOutletCancelers = canceler : curOutletCancelers
     in
-        pure $ Api.storeOutletCancelers uuid newOutletCancelers nw /\ []
+        fine $ Api.storeOutletCancelers uuid newOutletCancelers nw
 applyInnerAction _ (ClearOutletCancelers (Outlet uuid _ _ _)) nw =
-    pure $ Api.clearOutletCancelers uuid nw /\ []
+    fine $ Api.clearOutletCancelers uuid nw
 applyInnerAction _ (StoreLinkCanceler (Link uuid _) canceler) nw =
     let
         curLinkCancelers = Api.getLinkCancelers uuid nw
         newLinkCancelers = canceler : curLinkCancelers
     in
-        pure $ Api.storeLinkCancelers uuid newLinkCancelers nw /\ []
+        fine $ Api.storeLinkCancelers uuid newLinkCancelers nw
 applyInnerAction _ (ClearLinkCancelers (Link uuid _)) nw =
-    pure $ Api.clearLinkCancelers uuid nw /\ []
+    fine $ Api.clearLinkCancelers uuid nw
 
 
 performEffect -- TODO: move to a separate module

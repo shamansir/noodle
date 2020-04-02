@@ -3,6 +3,8 @@ module FSM
     , CoveredFSM
     , make, makePassing
     , run, runAndSubscribe, runFolding
+    , fine, fineDo
+    , follow, followJoin
     ) where
 
 import Prelude
@@ -17,7 +19,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Either (Either)
 import Data.Traversable (traverse_)
 
-import FSM.Covered (Covered, carry, appendError, cover, uncover', recover, mapError)
+import FSM.Covered (Covered(..), carry, appendError, cover, uncover', recover, mapError)
 
 import FRP.Event (Event)
 import FRP.Event as Event
@@ -27,6 +29,7 @@ import Rpd.Util (Canceler)
 
 data FSM action model =
     FSM model (action -> model -> model /\ Array (Effect action))
+    -- FIXME: we don't need an `Array` if there's an `action` Like `Batch (Array action)`
 
 
 type CoveredFSM error action model = FSM action (Covered error model)
@@ -135,3 +138,51 @@ pushAll = traverse_
 -- TODO: run collection errors to array (CoveredFSM)
 
 -- TODO: covered FSM: stop at first error?
+
+
+fine :: forall error action model. model -> Covered error model /\ Array (Effect action)
+fine nw = pure nw /\ []
+
+
+fineDo
+    :: forall error action model
+     . model
+    -> Effect action
+    -> Covered error model /\ Array (Effect action)
+fineDo nw eff = pure nw /\ [ eff ]
+-- TODO: make an operator out of it
+
+
+-- is it some combination of bind and mapping?
+-- since it's `m a -> (a -> m a) -> m a`
+follow
+    :: forall a e x
+     . Semigroup x
+    => Covered e a /\ x
+    -> (a -> Covered e a /\ x)
+    -> Covered e a /\ x
+follow (Recovered err v /\ x) f =
+    case f v of
+        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <> x')
+        Carried v' /\ x' -> Recovered err v' /\ (x <> x')
+follow (Carried v /\ x) f =
+    case f v of
+        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <> x')
+        Carried v' /\ x' -> Carried v' /\ (x <> x')
+
+
+followJoin
+    :: forall a e x
+     . Semigroup x
+    => Semigroup e
+    => Covered e a /\ x
+    -> (a -> Covered e a /\ x)
+    -> Covered e a /\ x
+followJoin (Recovered err v /\ x) f =
+    case f v of
+        Recovered err' v' /\ x' -> Recovered (err <> err') v' /\ (x <> x')
+        Carried v' /\ x' -> Recovered err v' /\ (x <> x')
+followJoin (Carried v /\ x) f =
+    case f v of
+        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <> x')
+        Carried v' /\ x' -> Carried v' /\ (x <> x')

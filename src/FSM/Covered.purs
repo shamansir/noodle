@@ -61,13 +61,13 @@ inject :: forall e a b. b -> Covered e a -> Covered e b
 inject b covered = const b <$> covered
 
 
-fromEither :: forall e a. Either e a -> a -> Covered e a
-fromEither covered v = fromEither' covered $ const v
+fromEither :: forall e a. a -> Either e a -> Covered e a
+fromEither v either = fromEither' (const v) either
 
 
-fromEither' :: forall e a. Either e a -> (Unit -> a) -> Covered e a
-fromEither' (Right v) _ = Carried v
-fromEither' (Left err) fallback = Recovered err $ fallback unit
+fromEither' :: forall e a.  (Unit -> a) -> Either e a ->Covered e a
+fromEither' _ (Right v) = Carried v
+fromEither' fallback (Left err)  = Recovered err $ fallback unit
 
 
 toEither :: forall e a. Covered e a -> Either e a
@@ -119,38 +119,3 @@ appendError (Recovered err x) (Recovered errors _) = Recovered (errors <> List.s
 appendError (Recovered err x) (Carried _) = Recovered (List.singleton err) x
 appendError (Carried x) (Carried _) = Recovered List.Nil x
 appendError (Carried x) (Recovered errors _) = Recovered errors x
-
-
--- is it some combination of bind and mapping?
--- since it's `m a -> (a -> m a) -> m a`
-follow
-    :: forall a e x
-     . Semigroup x
-    => Covered e a /\ x
-    -> (a -> Covered e a /\ x)
-    -> Covered e a /\ x
-follow (Recovered err v /\ x) f =
-    case f v of
-        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <> x')
-        Carried v' /\ x' -> Recovered err v' /\ (x <> x')
-follow (Carried v /\ x) f =
-    case f v of
-        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <> x')
-        Carried v' /\ x' -> Carried v' /\ (x <> x')
-
-
-followJoin
-    :: forall a e x
-     . Semigroup x
-    => Semigroup e
-    => Covered e a /\ x
-    -> (a -> Covered e a /\ x)
-    -> Covered e a /\ x
-followJoin (Recovered err v /\ x) f =
-    case f v of
-        Recovered err' v' /\ x' -> Recovered (err <> err') v' /\ (x <> x')
-        Carried v' /\ x' -> Recovered err v' /\ (x <> x')
-followJoin (Carried v /\ x) f =
-    case f v of
-        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <> x')
-        Carried v' /\ x' -> Carried v' /\ (x <> x')

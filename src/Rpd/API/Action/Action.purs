@@ -98,6 +98,7 @@ data DataAction d c
     | GotOutletData (Outlet d c) d -- TODO: implement and use
 
 
+{-
 data RpdEffect d c n -- TODO: move to a separate module
     = DoE (Perform d c n)
     | AddPatchE Path.Alias
@@ -129,7 +130,7 @@ data RpdEffect d c n -- TODO: move to a separate module
             (Node d n)
             (NodeInletsSubscription d)
             (NodeOutletsSubscription d)
-
+-}
 
 
 -- derive instance genericStringAction :: Generic StringAction _
