@@ -89,8 +89,8 @@ uncover :: forall e a. Covered e a -> Maybe e /\ a
 uncover covered = hasError covered /\ recover covered
 
 
-uncover' :: forall e a. Covered (List e) a -> List e /\ a
-uncover' covered = (hasError covered # fromMaybe List.Nil) /\ recover covered
+uncover' :: forall m e a. Monoid (m e) => Covered (m e) a -> m e /\ a
+uncover' covered = (hasError covered # fromMaybe mempty) /\ recover covered
 
 
 mapError :: forall ea eb a. (ea -> eb) -> Covered ea a -> Covered eb a
@@ -114,8 +114,8 @@ run errF subjF (Carried x) = subjF x
 
 
 -- FIXME: change to Monoid
-appendError :: forall e x. Covered e x -> Covered (List e) x -> Covered (List e) x
-appendError (Recovered err x) (Recovered errors _) = Recovered (errors <> List.singleton err) x
-appendError (Recovered err x) (Carried _) = Recovered (List.singleton err) x
-appendError (Carried x) (Carried _) = Recovered List.Nil x
+appendError :: forall m e a. Monoid (m e) => Applicative m => Covered e a -> Covered (m e) a -> Covered (m e) a
+appendError (Recovered err x) (Recovered errors _) = Recovered (errors <> pure err <> mempty) x
+appendError (Recovered err x) (Carried _) = Recovered (pure err) x
+appendError (Carried x) (Carried _) = Recovered mempty x
 appendError (Carried x) (Recovered errors _) = Recovered errors x
