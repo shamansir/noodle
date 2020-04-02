@@ -29,7 +29,7 @@ import Rpd.Util (Canceler)
 
 data FSM action model =
     FSM model (action -> model -> model /\ Array (Effect action))
-    -- FIXME: we don't need an `Array` if there's an `action` Like `Batch (Array action)`
+    -- FIXME: we don't need an `Array` if there's an `action` Like `Batch (Array (Effect action))`
 
 
 type CoveredFSM error action model = FSM action (Covered error model)
