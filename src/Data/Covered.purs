@@ -1,4 +1,4 @@
-module FSM.Covered where
+module Data.Covered where
 
 
 import Prelude

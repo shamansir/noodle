@@ -22,8 +22,8 @@ import Data.Traversable (traverse_)
 import FRP.Event (Event)
 import FRP.Event as Event
 
-import FSM.Covered (Covered)
-import FSM.Covered (fromEither, fromEither', carry, appendError, recover, cover) as Covered
+import Data.Covered (Covered)
+import Data.Covered (fromEither, fromEither', carry, appendError, recover, cover) as Covered
 
 import FSM (CoveredFSM)
 import FSM (make) as FSM

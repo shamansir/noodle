@@ -37,7 +37,7 @@ import Data.BinPack.R2 as R2
 
 import Math (ceil, sqrt, (%))
 
-import FSM.Covered
+import Data.Covered
 
 import Rpd.API.Errors (RpdError) as R
 import Rpd.API.Action as C

@@ -34,7 +34,7 @@ import Debug.Trace as DT
 
 import Effect (Effect)
 
-import FSM.Covered (uncover)
+import Data.Covered (uncover)
 
 import Rpd.API (uuidByPath) as R
 import Rpd.API.Errors (RpdError) as R

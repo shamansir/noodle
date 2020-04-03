@@ -24,7 +24,7 @@ import Data.Maybe (Maybe(..))
 import FRP.Event (Event)
 import FRP.Event as Event
 
-import FSM.Covered (Covered, recover, inject, hasError, cover')
+import Data.Covered (Covered, recover, inject, hasError, cover')
 
 import Rpd.Network (Network) as R
 -- import Rpd.API as R
