@@ -21,8 +21,8 @@ import FRP.Event.Time as E
 
 import FSM (fine, fineDo)
 import FSM (follow, followJoin) as Covered
-import FSM.Covered (Covered)
-import FSM.Covered (carry, fromEither) as Covered
+import Data.Covered (Covered)
+import Data.Covered (carry, fromEither) as Covered
 
 import Rpd.Util (PushableFlow(..), Canceler)
 import Rpd.API as Api

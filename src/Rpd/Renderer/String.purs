@@ -20,8 +20,8 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Debug.Trace as DT
 
-import FSM.Covered
-import FSM.Covered (run) as Covered
+import Data.Covered
+import Data.Covered (run) as Covered
 
 import Rpd.Network
     ( Network(..)

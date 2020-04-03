@@ -13,7 +13,7 @@ import Effect (Effect)
 import FRP.Event (Event)
 import FRP.Event as Event
 
-import FSM.Covered (Covered, carry)
+import Data.Covered (Covered, carry)
 
 import Rpd.API.Errors (RpdError) as R
 import Rpd.API.Action (Action) as C

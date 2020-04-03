@@ -28,8 +28,8 @@ import Rpd.API
     , InletSubscription, OutletSubscription
     )
 import Rpd.API.Errors (RpdError)
-import FSM.Covered (Covered, cover, carry, recover, uncover, uncover')
-import FSM.Covered (fromEither, fromEither', appendError) as Cover
+import Data.Covered (Covered, cover, carry, recover, uncover, uncover')
+import Data.Covered (fromEither, fromEither', appendError) as Cover
 import Rpd.API.Action
 import Rpd.API.Action.Apply (Step, apply, performEffect)
 import Rpd.Path as Path
