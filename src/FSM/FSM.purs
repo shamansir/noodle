@@ -2,7 +2,7 @@ module FSM
     ( FSM(..) -- FIXME: do not expose constructor
     , prepare -- FIXME: do not expose
     , make, makePassing
-    , run, runAndSubscribe--, runFolding
+    , run, runAndSubscribe, fold
     , pushAll
     ) where
 
@@ -101,28 +101,25 @@ runAndSubscribe fsm subscription actionList = do
     pure { pushAction, stop : stopInforming <> stop }
 
 
-{-
-runFolding
-    :: forall error action model
-     . FSM error action model
+fold
+    :: forall action model
+     . FSM action model
     -> List action
     -> Effect
-            ((List error /\ model) /\
+            (model /\
             { pushAction :: action -> Effect Unit
             , stop :: Canceler
             })
-runFolding fsm@(FSM initial _) actionList = do
+fold fsm@(FSM initial _) actionList = do
     res@{ models, pushAction, stop } <- prepare fsm
-    lastValRef <- Ref.new initialCovered
+    lastValRef <- Ref.new initial
     let modelsFolded =
-            Event.fold appendError models initialCovered
+            Event.fold (\next _ -> next) models initial
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
     _ <- pushAll pushAction actionList
     lastVal <- Ref.read lastValRef
-    pure $ uncover' lastVal /\ { pushAction, stop : stop <> stopCollectingLastValue }
-    where initialCovered = mapError List.singleton initial
--}
+    pure $ lastVal /\ { pushAction, stop : stop <> stopCollectingLastValue }
 
 
 pushAll :: forall action. (action -> Effect Unit) -> List action -> Effect Unit

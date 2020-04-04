@@ -15,7 +15,7 @@ import Data.Tuple.Nested ((/\))
 import Rpd.UUID (UUID)
 import Rpd.UUID as UUID
 
-import Test.Spec (Spec, describe, it, pending', itOnly, describeOnly)
+import Test.Spec (Spec, describe, it, pending', itOnly, describeOnly, pending)
 import Test.Spec.Assertions (shouldEqual, fail)
 
 import FSM as FSM
@@ -68,32 +68,32 @@ spec = do
       it "calls the update function" do
         let
           myFsm = FSM.make emptyModel (\_ _ -> HoldsString "foo" /\ [])
-        val <- liftEffect $ do
+        lastModel <- liftEffect $ do
           ref <- Ref.new Empty
           _ <- FSM.runAndSubscribe myFsm (flip Ref.write ref)
                   $ List.singleton NoOp
           Ref.read ref
-        val `shouldEqual` (HoldsString "foo")
+        lastModel `shouldEqual` (HoldsString "foo")
 
       it "the action is actually sent" do
         let
           myFsm = FSM.make emptyModel (\action _ -> HoldsAction action /\ [])
-        val <- liftEffect $ do
+        lastModel <- liftEffect $ do
           ref <- Ref.new Empty
           _ <- FSM.runAndSubscribe myFsm (flip Ref.write ref)
                   $ List.singleton ActionOne
           Ref.read ref
-        val `shouldEqual` (HoldsAction ActionOne)
+        lastModel `shouldEqual` (HoldsAction ActionOne)
 
       it "receives all the actions which were sent" do
         let
           myFsm = FSM.make emptyModel (\action _ -> HoldsAction action /\ [])
-        val <- liftEffect $ do
+        lastModel <- liftEffect $ do
           ref <- Ref.new Empty
           _ <- FSM.runAndSubscribe myFsm (flip Ref.write ref)
                   $ (ActionOne : NoOp : List.Nil)
           Ref.read ref
-        val `shouldEqual` (HoldsAction NoOp)
+        lastModel `shouldEqual` (HoldsAction NoOp)
 
     describe "effects" do
 
@@ -103,14 +103,41 @@ spec = do
           updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ []
           updateF _ model = model /\ []
           myFsm = FSM.make emptyModel updateF
-        val <- liftEffect $ do
+        lastModel <- liftEffect $ do
           ref <- Ref.new Empty
           _ <- FSM.runAndSubscribe myFsm (flip Ref.write ref)
                   $ List.singleton NoOp
           Ref.read ref
-        case val of
+        case lastModel of
           (HoldsUUID _) -> pure unit
           _ -> fail "should contain UUID in the model"
+
+    describe "folding" do
+
+      it "folds the models to the very last state" do
+        let
+          updateF NoOp _ = HoldsString "NoOp" /\ [ ]
+          updateF ActionOne _ = HoldsString "ActionOne" /\ []
+          updateF _ model = model /\ []
+          myFsm = FSM.make emptyModel updateF
+        (lastModel /\ _) <- liftEffect $ FSM.fold myFsm $ (NoOp : ActionOne : List.Nil)
+        lastModel `shouldEqual` HoldsString "ActionOne"
+
+      it "folds the models to the very last state with effects as well" do
+        let
+          updateF NoOp model = model /\ [ UUID.new >>= pure <<< StoreUUID ]
+          updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ []
+          updateF _ model = model /\ []
+          myFsm = FSM.make emptyModel updateF
+        (lastModel /\ _) <- liftEffect $ FSM.fold myFsm $ (NoOp : ActionOne : List.Nil)
+        case lastModel of
+          (HoldsUUID _) -> pure unit
+          _ -> fail "should contain UUID in the model"
+
+    describe "pushing actions" do
+
+      pending "TODO"
+
 
 
 instance showAction :: Show Action where

@@ -71,7 +71,7 @@ followJoin (Carried v /\ x) f =
         Carried v' /\ x' -> Carried v' /\ (x <> x')
 
 
-runFolding
+fold
     :: forall error action model
      . CoveredFSM error action model
     -> List action
@@ -80,7 +80,7 @@ runFolding
             { pushAction :: action -> Effect Unit
             , stop :: Effect Unit
             })
-runFolding fsm@(FSM initial _) actionList = do
+fold fsm@(FSM initial _) actionList = do
     res@{ models, pushAction, stop } <- prepare fsm
     lastValRef <- Ref.new initialCovered
     let modelsFolded =
