@@ -30,7 +30,7 @@ import Rpd.Util (Canceler)
 data FSM action model =
     -- FIXME: try: (action -> model -> Effect (model /\ Array action))
     FSM (action -> model -> model /\ Effect (Array action))
-    -- Array -> Foldable & Applicative
+    -- Array -> Foldable & Applicative & Monoid
     -- FIXME: we don't need an `Array` if there's an `action` Like `Batch (Array (Effect action))`
 
 

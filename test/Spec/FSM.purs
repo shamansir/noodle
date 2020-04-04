@@ -110,7 +110,23 @@ spec = do
           Ref.read ref
         case lastModel of
           (HoldsUUID _) -> pure unit
-          _ -> fail "should contain UUID in the model"
+          _ -> fail $ "should contain UUID in the model, but " <> show lastModel
+
+      it "asking to perform several actions from effectful part of `update`" do
+        let
+          updateF ActionOne model =
+            model /\ (UUID.new >>= \uuid -> pure [ NoOp, StoreUUID uuid ])
+          updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ pure []
+          updateF _ model = model /\ pure []
+          myFsm = FSM.make updateF
+        lastModel <- liftEffect $ do
+          ref <- Ref.new Empty
+          _ <- FSM.runAndSubscribe myFsm emptyModel (flip Ref.write ref)
+                  $ (ActionOne : List.Nil)
+          Ref.read ref
+        case lastModel of
+          (HoldsUUID _) -> pure unit
+          _ -> fail $ "should contain UUID in the model, but " <> show lastModel
 
     describe "folding" do
 
@@ -132,7 +148,7 @@ spec = do
         (lastModel /\ _) <- liftEffect $ FSM.fold myFsm emptyModel  $ (NoOp : ActionOne : List.Nil)
         case lastModel of
           (HoldsUUID _) -> pure unit
-          _ -> fail "should contain UUID in the model"
+          _ -> fail $ "should contain UUID in the model, but " <> show lastModel
 
     describe "pushing actions" do
 
