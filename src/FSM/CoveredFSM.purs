@@ -71,6 +71,7 @@ followJoin (Carried v /\ x) f =
         Carried v' /\ x' -> Carried v' /\ (x <> x')
 
 
+{-
 fold
     :: forall error action model
      . CoveredFSM error action model
@@ -91,3 +92,4 @@ fold fsm@(FSM initial _) actionList = do
     lastVal <- Ref.read lastValRef
     pure $ uncover' lastVal /\ { pushAction, stop : stop <> stopCollectingLastValue }
     where initialCovered = mapError List.singleton initial
+-}
