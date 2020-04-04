@@ -50,47 +50,47 @@ spec = do
     describe "creating" do
 
       it "is easy to create" do
-        let fsm = FSM.make unit (\_ _ -> unit /\ [])
+        let fsm = FSM.make (\_ _ -> unit /\ pure [])
         pure unit
 
       it "is easy to run" do
-        let fsm = FSM.make unit (\_ _ -> unit /\ [])
-        _ <- liftEffect $ FSM.run fsm List.Nil
+        let fsm = FSM.make (\_ _ -> unit /\ pure [])
+        _ <- liftEffect $ FSM.run fsm unit List.Nil
         pure unit
 
       it "is easy to run with some actions" do
-        let fsm = FSM.make unit (\_ _ -> unit /\ [])
-        _ <- liftEffect $ FSM.run fsm $ List.singleton NoOp
+        let fsm = FSM.make (\_ _ -> unit /\ pure [])
+        _ <- liftEffect $ FSM.run fsm unit $ List.singleton NoOp
         pure unit
 
     describe "updating" do
 
       it "calls the update function" do
         let
-          myFsm = FSM.make emptyModel (\_ _ -> HoldsString "foo" /\ [])
+          myFsm = FSM.make (\_ _ -> HoldsString "foo" /\ pure [])
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.runAndSubscribe myFsm (flip Ref.write ref)
+          _ <- FSM.runAndSubscribe myFsm emptyModel (flip Ref.write ref)
                   $ List.singleton NoOp
           Ref.read ref
         lastModel `shouldEqual` (HoldsString "foo")
 
       it "the action is actually sent" do
         let
-          myFsm = FSM.make emptyModel (\action _ -> HoldsAction action /\ [])
+          myFsm = FSM.make (\action _ -> HoldsAction action /\ pure [])
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.runAndSubscribe myFsm (flip Ref.write ref)
+          _ <- FSM.runAndSubscribe myFsm emptyModel (flip Ref.write ref)
                   $ List.singleton ActionOne
           Ref.read ref
         lastModel `shouldEqual` (HoldsAction ActionOne)
 
       it "receives all the actions which were sent" do
         let
-          myFsm = FSM.make emptyModel (\action _ -> HoldsAction action /\ [])
+          myFsm = FSM.make (\action _ -> HoldsAction action /\ pure [])
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.runAndSubscribe myFsm (flip Ref.write ref)
+          _ <- FSM.runAndSubscribe myFsm emptyModel (flip Ref.write ref)
                   $ (ActionOne : NoOp : List.Nil)
           Ref.read ref
         lastModel `shouldEqual` (HoldsAction NoOp)
@@ -99,13 +99,13 @@ spec = do
 
       it "performs the effect from the update function" do
         let
-          updateF NoOp model = model /\ [ UUID.new >>= pure <<< StoreUUID ]
-          updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ []
-          updateF _ model = model /\ []
-          myFsm = FSM.make emptyModel updateF
+          updateF NoOp model = model /\ (UUID.new >>= pure <<< pure <<< StoreUUID)
+          updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ pure []
+          updateF _ model = model /\ pure []
+          myFsm = FSM.make updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.runAndSubscribe myFsm (flip Ref.write ref)
+          _ <- FSM.runAndSubscribe myFsm emptyModel (flip Ref.write ref)
                   $ List.singleton NoOp
           Ref.read ref
         case lastModel of
@@ -116,20 +116,20 @@ spec = do
 
       it "folds the models to the very last state" do
         let
-          updateF NoOp _ = HoldsString "NoOp" /\ [ ]
-          updateF ActionOne _ = HoldsString "ActionOne" /\ []
-          updateF _ model = model /\ []
-          myFsm = FSM.make emptyModel updateF
-        (lastModel /\ _) <- liftEffect $ FSM.fold myFsm $ (NoOp : ActionOne : List.Nil)
+          updateF NoOp _ = HoldsString "NoOp" /\ pure []
+          updateF ActionOne _ = HoldsString "ActionOne" /\ pure []
+          updateF _ model = model /\ pure []
+          myFsm = FSM.make updateF
+        (lastModel /\ _) <- liftEffect $ FSM.fold myFsm emptyModel $ (NoOp : ActionOne : List.Nil)
         lastModel `shouldEqual` HoldsString "ActionOne"
 
       it "folds the models to the very last state with effects as well" do
         let
-          updateF NoOp model = model /\ [ UUID.new >>= pure <<< StoreUUID ]
-          updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ []
-          updateF _ model = model /\ []
-          myFsm = FSM.make emptyModel updateF
-        (lastModel /\ _) <- liftEffect $ FSM.fold myFsm $ (NoOp : ActionOne : List.Nil)
+          updateF NoOp model = model /\ (UUID.new >>= pure <<< pure <<< StoreUUID)
+          updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ pure []
+          updateF _ model = model /\ pure []
+          myFsm = FSM.make updateF
+        (lastModel /\ _) <- liftEffect $ FSM.fold myFsm emptyModel  $ (NoOp : ActionOne : List.Nil)
         case lastModel of
           (HoldsUUID _) -> pure unit
           _ -> fail "should contain UUID in the model"

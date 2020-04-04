@@ -14,6 +14,7 @@ import Effect.Ref as Ref
 
 import Data.List (List)
 import Data.List as List
+import Data.Foldable (class Foldable)
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Either (Either)
@@ -27,59 +28,61 @@ import Rpd.Util (Canceler)
 
 
 data FSM action model =
-    FSM model (action -> model -> model /\ Array (Effect action))
+    -- FIXME: try: (action -> model -> Effect (model /\ Array action))
+    FSM (action -> model -> model /\ Effect (Array action))
+    -- Array -> Foldable & Applicative
     -- FIXME: we don't need an `Array` if there's an `action` Like `Batch (Array (Effect action))`
 
 
 make
     :: forall action model
-     . model
-    -> (action -> model -> model /\ Array (Effect action))
+     . (action -> model -> model /\ Effect (Array action))
     -> FSM action model
 make = FSM
 
 
 makePassing
     :: forall action model
-     . model
-    -> FSM action model
-makePassing model = FSM model (\_ m -> m /\ [])
+     . FSM action model
+makePassing = FSM (\_ m -> m /\ pure [])
 
 
 prepare
     :: forall action model
      . FSM action model
+    -> model
     -> Effect
             { models :: Event model
             , actions :: Event action
             , pushAction :: action -> Effect Unit
             , stop :: Canceler
             }
-prepare (FSM init f) = do
+prepare (FSM f) init = do
     { event : actions, push : pushAction } <- Event.create
     let
-        (updates :: Event (model /\ Array (Effect action))) =
+        (updates :: Event (model /\ Effect (Array action))) =
             Event.fold
                 (\action prev -> f action (fst prev))
                 actions
-                (init /\ [])
+                (init /\ pure [])
         (models :: Event model)
             = fst <$> updates
-    stopPerformingEffects <- Event.subscribe updates \(_ /\ effects) ->
-        traverse_ (\eff -> eff >>= pushAction) effects
+    stopPerformingEffects <- Event.subscribe updates
+        \(_ /\ eff) -> eff >>= traverse_ pushAction
     pure { models, pushAction, actions, stop : stopPerformingEffects }
 
 
 run
     :: forall action model
      . FSM action model
+    -> model
     -> List action -- FIXME: use foldable
     -> Effect
             { pushAction :: action -> Effect Unit
             , stop :: Canceler
             }
-run fsm actionList = do
-    { models, actions, pushAction, stop } <- prepare fsm
+run fsm init actionList = do
+    { models, actions, pushAction, stop } <- prepare fsm init
     _ <- traverse_ pushAction actionList
     pure { pushAction, stop : stop }
 
@@ -87,14 +90,15 @@ run fsm actionList = do
 runAndSubscribe
     :: forall action model
      . FSM action model
+    -> model
     -> (model -> Effect Unit)
     -> List action
     -> Effect
             { pushAction :: action -> Effect Unit
             , stop :: Canceler
             }
-runAndSubscribe fsm subscription actionList = do
-    { models, actions, pushAction, stop } <- prepare fsm
+runAndSubscribe fsm init subscription actionList = do
+    { models, actions, pushAction, stop } <- prepare fsm init
     stopInforming <- Event.subscribe models subscription
     _ <- traverse_ pushAction actionList
     -- _ <- stopInforming
@@ -104,17 +108,18 @@ runAndSubscribe fsm subscription actionList = do
 fold
     :: forall action model
      . FSM action model
+    -> model
     -> List action
     -> Effect
             (model /\
             { pushAction :: action -> Effect Unit
             , stop :: Canceler
             })
-fold fsm@(FSM initial _) actionList = do
-    res@{ models, pushAction, stop } <- prepare fsm
-    lastValRef <- Ref.new initial
+fold fsm init actionList = do
+    res@{ models, pushAction, stop } <- prepare fsm init
+    lastValRef <- Ref.new init
     let modelsFolded =
-            Event.fold (\next _ -> next) models initial
+            Event.fold (\next _ -> next) models init
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
     _ <- pushAll pushAction actionList
