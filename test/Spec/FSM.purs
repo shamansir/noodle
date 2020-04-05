@@ -6,6 +6,7 @@ import Prelude
 import Effect.Class (liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
+import Effect.Console as Console
 
 import Data.List as List
 import Data.List ((:))
@@ -19,6 +20,7 @@ import Test.Spec (Spec, describe, it, pending', itOnly, describeOnly, pending)
 import Test.Spec.Assertions (shouldEqual, fail)
 
 import FSM as FSM
+import FSM (FSM)
 
 data Error
   = ErrorOne
@@ -50,11 +52,11 @@ spec = do
     describe "creating" do
 
       it "is easy to create" do
-        let fsm = FSM.make (\_ _ -> unit /\ pure [])
+        let (fsm ::FSM Action Unit) = FSM.make (\_ _ -> unit /\ pure [])
         pure unit
 
       it "is easy to run" do
-        let fsm = FSM.make (\_ _ -> unit /\ pure [])
+        let (fsm ::FSM Action Unit) = FSM.make (\_ _ -> unit /\ pure [])
         _ <- liftEffect $ FSM.run fsm unit List.Nil
         pure unit
 
@@ -67,7 +69,7 @@ spec = do
 
       it "calls the update function" do
         let
-          myFsm = FSM.make (\_ _ -> HoldsString "foo" /\ pure [])
+          (myFsm ::FSM Action Model) = FSM.make (\_ _ -> HoldsString "foo" /\ pure [])
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
           _ <- FSM.runAndSubscribe myFsm emptyModel (flip Ref.write ref)
@@ -112,12 +114,31 @@ spec = do
           (HoldsUUID _) -> pure unit
           _ -> fail $ "should contain UUID in the model, but " <> show lastModel
 
-      it "asking to perform several actions from effectful part of `update`" do
+      it "works when asking to perform several actions from effectful part of `update`" do
         let
           updateF ActionOne model =
             model /\ (UUID.new >>= \uuid -> pure [ NoOp, StoreUUID uuid ])
           updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ pure []
           updateF _ model = model /\ pure []
+          myFsm = FSM.make updateF
+        lastModel <- liftEffect $ do
+          ref <- Ref.new Empty
+          _ <- FSM.runAndSubscribe myFsm emptyModel (flip Ref.write ref)
+                  $ (ActionOne : List.Nil)
+          Ref.read ref
+        case lastModel of
+          (HoldsUUID _) -> pure unit
+          _ -> fail $ "should contain UUID in the model, but " <> show lastModel
+
+      it "effectful actions should rule over the model" do
+        let
+          updateF ActionOne model =
+            HoldsString "fail" /\
+              (UUID.new >>= \uuid -> pure [ StoreUUID uuid ])
+          updateF (StoreUUID uuid) model =
+            HoldsUUID uuid /\ pure []
+          updateF _ model =
+            model /\ pure []
           myFsm = FSM.make updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
@@ -146,6 +167,21 @@ spec = do
           updateF _ model = model /\ pure []
           myFsm = FSM.make updateF
         (lastModel /\ _) <- liftEffect $ FSM.fold myFsm emptyModel  $ (NoOp : ActionOne : List.Nil)
+        case lastModel of
+          (HoldsUUID _) -> pure unit
+          _ -> fail $ "should contain UUID in the model, but " <> show lastModel
+
+      it "effectful actions should rule over the model" do
+        let
+          updateF ActionOne model =
+            HoldsString "fail" /\
+              (UUID.new >>= \uuid -> pure [ StoreUUID uuid ])
+          updateF (StoreUUID uuid) model =
+            HoldsUUID uuid /\ pure []
+          updateF _ model =
+            model /\ pure []
+          myFsm = FSM.make updateF
+        (lastModel /\ _) <- liftEffect $ FSM.fold myFsm emptyModel $ (ActionOne : List.Nil)
         case lastModel of
           (HoldsUUID _) -> pure unit
           _ -> fail $ "should contain UUID in the model, but " <> show lastModel

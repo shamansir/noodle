@@ -11,6 +11,7 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Ref as Ref
+import Effect.Console as Console
 
 import Data.List (List)
 import Data.List as List
@@ -49,32 +50,36 @@ makePassing = FSM (\_ m -> m /\ pure [])
 
 prepare
     :: forall action model
-     . FSM action model
+     . Show action
+    => Show model
+    => FSM action model
     -> model
+    -> (model -> Effect Unit)
     -> Effect
-            { models :: Event model
-            , actions :: Event action
-            , pushAction :: action -> Effect Unit
+            { pushAction :: action -> Effect Unit
             , stop :: Canceler
             }
-prepare (FSM f) init = do
+prepare (FSM f) init subscription = do
     { event : actions, push : pushAction } <- Event.create
     let
         (updates :: Event (model /\ Effect (Array action))) =
             Event.fold
-                (\action prev -> f action (fst prev))
+                (\action prev -> f action $ fst prev)
                 actions
                 (init /\ pure [])
         (models :: Event model)
             = fst <$> updates
+    stopSubscription <- Event.subscribe models subscription
     stopPerformingEffects <- Event.subscribe updates
         \(_ /\ eff) -> eff >>= traverse_ pushAction
-    pure { models, pushAction, actions, stop : stopPerformingEffects }
+    pure { pushAction, stop : stopSubscription <> stopPerformingEffects }
 
 
 run
     :: forall action model
-     . FSM action model
+     . Show action
+    => Show model
+    => FSM action model
     -> model
     -> List action -- FIXME: use foldable
     -> Effect
@@ -82,14 +87,16 @@ run
             , stop :: Canceler
             }
 run fsm init actionList = do
-    { models, actions, pushAction, stop } <- prepare fsm init
+    { pushAction, stop } <- prepare fsm init $ const $ pure unit
     _ <- traverse_ pushAction actionList
     pure { pushAction, stop : stop }
 
 
 runAndSubscribe
     :: forall action model
-     . FSM action model
+     . Show action
+    => Show model
+    => FSM action model
     -> model
     -> (model -> Effect Unit)
     -> List action
@@ -98,16 +105,16 @@ runAndSubscribe
             , stop :: Canceler
             }
 runAndSubscribe fsm init subscription actionList = do
-    { models, actions, pushAction, stop } <- prepare fsm init
-    stopInforming <- Event.subscribe models subscription
+    { pushAction, stop } <- prepare fsm init subscription
     _ <- traverse_ pushAction actionList
-    -- _ <- stopInforming
-    pure { pushAction, stop : stopInforming <> stop }
+    pure { pushAction, stop }
 
 
 fold
     :: forall action model
-     . FSM action model
+     . Show action
+    => Show model
+    => FSM action model
     -> model
     -> List action
     -> Effect
@@ -116,15 +123,11 @@ fold
             , stop :: Canceler
             })
 fold fsm init actionList = do
-    res@{ models, pushAction, stop } <- prepare fsm init
     lastValRef <- Ref.new init
-    let modelsFolded =
-            Event.fold (\next _ -> next) models init
-    stopCollectingLastValue <-
-        Event.subscribe modelsFolded (flip Ref.write lastValRef)
-    _ <- pushAll pushAction actionList
+    { pushAction, stop } <- prepare fsm init $ flip Ref.write lastValRef
+    _ <- traverse_ pushAction actionList
     lastVal <- Ref.read lastValRef
-    pure $ lastVal /\ { pushAction, stop : stop <> stopCollectingLastValue }
+    pure $ lastVal /\ { pushAction, stop }
 
 
 pushAll :: forall action. (action -> Effect Unit) -> List action -> Effect Unit
