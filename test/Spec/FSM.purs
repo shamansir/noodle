@@ -12,6 +12,8 @@ import Data.List as List
 import Data.List ((:))
 import Data.Maybe
 import Data.Tuple.Nested ((/\))
+import Data.Covered as Covered
+import Data.Covered (Covered(..))
 
 import Rpd.UUID (UUID)
 import Rpd.UUID as UUID
@@ -21,6 +23,8 @@ import Test.Spec.Assertions (shouldEqual, fail)
 
 import FSM as FSM
 import FSM (FSM)
+import FSM.Covered (CoveredFSM)
+
 
 data Error
   = ErrorOne
@@ -32,6 +36,7 @@ data Model
   | HoldsString String
   | HoldsAction Action
   | HoldsUUID UUID
+  | HoldsError Error
 
 
 emptyModel :: Model
@@ -52,11 +57,11 @@ spec = do
     describe "creating" do
 
       it "is easy to create" do
-        let (fsm ::FSM Action Unit) = FSM.make (\_ _ -> unit /\ pure [])
+        let (fsm :: FSM Action Unit) = FSM.make (\_ _ -> unit /\ pure [])
         pure unit
 
       it "is easy to run" do
-        let (fsm ::FSM Action Unit) = FSM.make (\_ _ -> unit /\ pure [])
+        let (fsm :: FSM Action Unit) = FSM.make (\_ _ -> unit /\ pure [])
         _ <- liftEffect $ FSM.run fsm unit List.Nil
         pure unit
 
@@ -72,7 +77,7 @@ spec = do
           (myFsm ::FSM Action Model) = FSM.make (\_ _ -> HoldsString "foo" /\ pure [])
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.runAndSubscribe myFsm emptyModel (flip Ref.write ref)
+          _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
                   $ List.singleton NoOp
           Ref.read ref
         lastModel `shouldEqual` (HoldsString "foo")
@@ -82,7 +87,7 @@ spec = do
           myFsm = FSM.make (\action _ -> HoldsAction action /\ pure [])
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.runAndSubscribe myFsm emptyModel (flip Ref.write ref)
+          _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
                   $ List.singleton ActionOne
           Ref.read ref
         lastModel `shouldEqual` (HoldsAction ActionOne)
@@ -92,7 +97,7 @@ spec = do
           myFsm = FSM.make (\action _ -> HoldsAction action /\ pure [])
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.runAndSubscribe myFsm emptyModel (flip Ref.write ref)
+          _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
                   $ (ActionOne : NoOp : List.Nil)
           Ref.read ref
         lastModel `shouldEqual` (HoldsAction NoOp)
@@ -107,7 +112,7 @@ spec = do
           myFsm = FSM.make updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.runAndSubscribe myFsm emptyModel (flip Ref.write ref)
+          _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
                   $ List.singleton NoOp
           Ref.read ref
         case lastModel of
@@ -123,7 +128,7 @@ spec = do
           myFsm = FSM.make updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.runAndSubscribe myFsm emptyModel (flip Ref.write ref)
+          _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
                   $ (ActionOne : List.Nil)
           Ref.read ref
         case lastModel of
@@ -142,7 +147,7 @@ spec = do
           myFsm = FSM.make updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.runAndSubscribe myFsm emptyModel (flip Ref.write ref)
+          _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
                   $ (ActionOne : List.Nil)
           Ref.read ref
         case lastModel of
@@ -188,8 +193,70 @@ spec = do
 
     describe "pushing actions" do
 
+      it "works after running the FSM" do
+        let
+          (myFsm :: FSM Action Model) = FSM.make (\_ _ -> HoldsString "foo" /\ pure [])
+        lastModel <- liftEffect $ do
+          ref <- Ref.new Empty
+          { pushAction } <- FSM.run' myFsm emptyModel (flip Ref.write ref)
+                  $ List.Nil
+          pushAction NoOp
+          Ref.read ref
+        lastModel `shouldEqual` (HoldsString "foo")
+
+    describe "stopping" do
+
       pending "TODO"
 
+  describeOnly "CoveredFSM" do
+
+    it "passes error through update cycle" do
+        let
+          (myCovererdFsm :: CoveredFSM Error Action Model) =
+              FSM.make (\_ _ -> Covered.cover Empty ErrorOne /\ pure [])
+        lastModel <- liftEffect $ do
+          ref <- Ref.new $ Covered.carry Empty
+          _ <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
+                  $ NoOp : List.Nil
+          Ref.read ref
+        case lastModel of
+          Recovered ErrorOne _ -> pure unit
+          _ -> fail $ "does not contain ErrorOne, but " <> show lastModel
+
+    it "keeps the latest error" do
+        let
+          updateF NoOp _ = Covered.cover Empty ErrorOne /\ pure []
+          updateF ActionOne _ = Covered.cover Empty ErrorTwo /\ pure []
+          updateF _ _ = Covered.carry Empty /\ pure []
+          (myCovererdFsm :: CoveredFSM Error Action Model) = FSM.make updateF
+        lastModel <- liftEffect $ do
+          ref <- Ref.new $ Covered.carry Empty
+          _ <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
+                  $ NoOp : ActionOne : List.Nil
+          Ref.read ref
+        case lastModel of
+          Recovered ErrorTwo _ -> pure unit
+          _ -> fail $ "does not contain ErrorTwo, but " <> show lastModel
+
+    it "provides the way to collect errors" do
+        let
+          updateF' NoOp c = Covered.cover Empty [ ErrorOne ] /\ pure []
+          updateF' ActionOne _ = Covered.cover Empty [ ErrorTwo ] /\ pure []
+          updateF' _ _ = Covered.carry Empty /\ pure []
+          updateF action prevModel =
+            let
+              nextModel /\ effects = updateF' action prevModel
+            in
+              prevModel `Covered.joinErrors` nextModel /\ effects
+          (myCovererdFsm :: CoveredFSM (Array Error) Action Model) = FSM.make updateF
+        lastModel <- liftEffect $ do
+          ref <- Ref.new $ Covered.carry Empty
+          _ <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
+                  $ NoOp : ActionOne : List.Nil
+          Ref.read ref
+        case lastModel of
+          Recovered [ ErrorOne, ErrorTwo ] _ -> pure unit
+          _ -> fail $ "does not contain [ ErrorOne, ErrorTwo ], but " <> show lastModel
 
 
 instance showAction :: Show Action where
@@ -203,6 +270,12 @@ instance showModel :: Show Model where
     show (HoldsString s) = "HoldsString: " <> s
     show (HoldsAction a) = "HoldsAction: " <> show a
     show (HoldsUUID u) = "HoldsUUID: " <> show u
+    show (HoldsError e) = "HoldsError: " <> show e
+
+
+instance showError :: Show Error where
+    show ErrorOne = "ErrorOne"
+    show ErrorTwo = "ErrorTwo"
 
 
 instance eqAction :: Eq Action where
@@ -217,4 +290,8 @@ instance eqModel :: Eq Model where
     eq (HoldsString sA) (HoldsString sB) = sA == sB
     eq (HoldsAction aA) (HoldsAction aB) = aA == aB
     eq (HoldsUUID uA) (HoldsUUID uB) = uA == uB
+    eq (HoldsError eA) (HoldsError eB) = eA == eB
     eq _ _ = false
+
+
+derive instance eqError :: Eq Error

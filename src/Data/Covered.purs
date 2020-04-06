@@ -25,6 +25,8 @@ instance coveredFunctor :: Functor (Covered e) where
 --     bimap _ f (Carried a) = Carried a -- hides the error type
 
 
+-- see Tuple Apply
+
 instance coveredApply :: Apply (Covered e) where
     apply (Recovered _ f) covered = f <$> covered
     apply (Carried f) covered = f <$> covered
@@ -108,14 +110,42 @@ withError f a (Recovered err _) = f err a
 withError _ a _ = a
 
 
+containsError :: forall e a. Eq e => e -> Covered e a -> Boolean
+containsError err (Recovered errInside _) = err == errInside
+containsError _ _ = false
+
+
 run :: forall a e x. Semigroup a => (e -> a) -> (x -> a) -> Covered e x -> a
-run errF subjF (Recovered err x) = errF err <> subjF x
-run errF subjF (Carried x) = subjF x
+run errF subjF (Recovered err v) = errF err <> subjF v
+run errF subjF (Carried v) = subjF v
 
 
--- FIXME: change to Monoid
-appendError :: forall m e a. Monoid (m e) => Applicative m => Covered e a -> Covered (m e) a -> Covered (m e) a
-appendError (Recovered err x) (Recovered errors _) = Recovered (errors <> pure err <> mempty) x
-appendError (Recovered err x) (Carried _) = Recovered (pure err) x
-appendError (Carried x) (Carried _) = Recovered mempty x
-appendError (Carried x) (Recovered errors _) = Recovered errors x
+appendError
+    :: forall m e a
+     . Monoid (m e)
+    => Applicative m
+    => Covered e a
+    -> Covered (m e) a
+    -> Covered (m e) a
+appendError (Recovered err val) (Recovered errors _) = Recovered (errors <> pure err <> mempty) val
+appendError (Recovered err val) (Carried _) = Recovered (pure err) val
+appendError (Carried val) (Carried _) = Recovered mempty val
+appendError (Carried val) (Recovered errors _) = Recovered errors val
+
+
+joinErrors :: forall e a. Semigroup e => Covered e a -> Covered e a -> Covered e a
+joinErrors (Recovered errorsA _) (Recovered errorsB val) = Recovered (errorsA <> errorsB) val
+joinErrors (Recovered errors _) (Carried val) = Recovered errors val
+joinErrors (Carried _) (Carried val) = Carried val
+joinErrors (Carried _) (Recovered errors val) = Recovered errors val
+
+
+instance showCovered :: (Show e, Show a) => Show (Covered e a) where
+    show (Recovered e a) = "Recovered " <> show e <> " " <> show a
+    show (Carried a) = "Carried " <> show a
+
+
+instance eqCovered :: (Eq e, Eq a) => Eq (Covered e a) where
+    eq (Recovered errA valA) (Recovered errB valB) = errA == errB && valA == valB
+    eq (Carried valA) (Carried valB) = valA == valB
+    eq _ _ = false

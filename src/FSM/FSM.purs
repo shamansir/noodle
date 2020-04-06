@@ -2,7 +2,7 @@ module FSM
     ( FSM(..) -- FIXME: do not expose constructor
     , prepare -- FIXME: do not expose
     , make, makePassing
-    , run, runAndSubscribe, fold
+    , run, run', fold
     , pushAll
     ) where
 
@@ -50,9 +50,7 @@ makePassing = FSM (\_ m -> m /\ pure [])
 
 prepare
     :: forall action model
-     . Show action
-    => Show model
-    => FSM action model
+     . FSM action model
     -> model
     -> (model -> Effect Unit)
     -> Effect
@@ -77,67 +75,46 @@ prepare (FSM f) init subscription = do
 
 run
     :: forall action model
-     . Show action
-    => Show model
-    => FSM action model
+     . FSM action model
     -> model
     -> List action -- FIXME: use foldable
     -> Effect
             { pushAction :: action -> Effect Unit
             , stop :: Canceler
             }
-run fsm init actionList = do
-    { pushAction, stop } <- prepare fsm init $ const $ pure unit
-    _ <- traverse_ pushAction actionList
-    pure { pushAction, stop : stop }
+run fsm init = do
+    run' fsm init $ const $ pure unit
 
 
-runAndSubscribe
+run'
     :: forall action model
-     . Show action
-    => Show model
-    => FSM action model
+     . FSM action model
     -> model
     -> (model -> Effect Unit)
-    -> List action
+    -> List action -- FIXME: use foldable
     -> Effect
             { pushAction :: action -> Effect Unit
             , stop :: Canceler
             }
-runAndSubscribe fsm init subscription actionList = do
+run' fsm init subscription actionList = do
     { pushAction, stop } <- prepare fsm init subscription
     _ <- traverse_ pushAction actionList
-    pure { pushAction, stop }
+    pure { pushAction, stop : stop }
 
 
 fold
     :: forall action model
-     . Show action
-    => Show model
-    => FSM action model
+     . FSM action model
     -> model
     -> List action
-    -> Effect
-            (model /\
-            { pushAction :: action -> Effect Unit
-            , stop :: Canceler
-            })
+    -> Effect (model /\ Canceler)
 fold fsm init actionList = do
     lastValRef <- Ref.new init
     { pushAction, stop } <- prepare fsm init $ flip Ref.write lastValRef
     _ <- traverse_ pushAction actionList
     lastVal <- Ref.read lastValRef
-    pure $ lastVal /\ { pushAction, stop }
+    pure $ lastVal /\ stop
 
 
 pushAll :: forall action. (action -> Effect Unit) -> List action -> Effect Unit
 pushAll = traverse_
-
-
--- TODO: run tracing actions
-
----TODO: run tracing errors (CoveredFSM)
-
--- TODO: run collection errors to array (CoveredFSM)
-
--- TODO: covered FSM: stop at first error?

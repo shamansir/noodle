@@ -20,7 +20,8 @@ import FRP.Event as Event
 import FSM
 
 
-type CoveredFSM error action model = FSM action (Covered error model)
+type CoveredFSM error action model =
+    FSM action (Covered error model)
 
 
 fine :: forall error action model. model -> Covered error model /\ Array (Effect action)
