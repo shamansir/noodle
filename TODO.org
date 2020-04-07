@@ -4,6 +4,10 @@
 
 * Primary
 
+    ** Lists, Arrays and Sequences are all messed up; Prefer `List`s everywhere, except for unique stuff, there prefer `Sequence`;
+
+    ** For `FSM`, use `Effect action`, not an array of Actions; However, this way you'll have to know what is "empty" action; Maybe make it a `Monoid`?
+
     ** Save the latest data received into outlet (maybe inlet as well) to re-send it on connection. :api:test:
 
     ** In DebugBox, be able to filter the events by type. :debug:
