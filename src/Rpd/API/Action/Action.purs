@@ -95,11 +95,15 @@ data InnerAction d c n -- FIXME: InnerActions should not be exposed
 
 data DataAction d c
     = Bang
-    | SendToInlet (Inlet d c) d -- FIXME: either implement or get rid of
-    | SendToOutlet (Outlet d c) d -- FIXME: either implement or get rid of
+    | SendToInlet (Inlet d c) d
+    | SendToOutlet (Outlet d c) d
     -- | SendPeriodicallyToInlet (Inlet d c) Int (Int -> d)
     | GotInletData (Inlet d c) d
-    | GotOutletData (Outlet d c) d -- TODO: implement and use
+    | GotOutletData (Outlet d c) d
+    | StreamToInlet (Inlet d c) (Event d)
+    | StreamToOutlet (Outlet d c) (Event d)
+    | SendPeriodicallyToInlet (Inlet d c) Int (InletPeriodSubscription d)
+
 
 {-
 data RpdEffect d c n -- TODO: move to a separate module
@@ -167,6 +171,10 @@ instance showDataAction :: (Show d, Show c) => Show (DataAction d c) where
     show (GotOutletData outlet d) = "GotOutletData " <> show outlet <> " " <> show d
     show (SendToInlet inlet d) = "SendToInlet " <> show inlet <> " " <> show d
     show (SendToOutlet outlet d) = "SendToOutlet " <> show outlet <> " " <> show d
+    show (StreamToInlet inlet _) = "StreamToInlet " <> show inlet
+    show (StreamToOutlet outlet _) = "StreamToOutlet " <> show outlet
+    show (SendPeriodicallyToInlet inlet period _) =
+        "SendPeriodicallyToInlet " <> show inlet <> " " <> show period
 
 
 instance showInnerAction :: Show (InnerAction d c n) where
