@@ -46,6 +46,11 @@ instance coveredMonad :: Monad (Covered e)
 -- TODO: Comonad
 
 
+run :: forall a e x. Semigroup a => (e -> a) -> (x -> a) -> Covered e x -> a
+run errF subjF (Recovered err v) = errF err <> subjF v
+run errF subjF (Carried v) = subjF v
+
+
 carry :: forall e a. a -> Covered e a
 carry = Carried
 
@@ -67,7 +72,7 @@ fromEither :: forall e a. a -> Either e a -> Covered e a
 fromEither v either = fromEither' (const v) either
 
 
-fromEither' :: forall e a.  (Unit -> a) -> Either e a ->Covered e a
+fromEither' :: forall e a. (Unit -> a) -> Either e a -> Covered e a
 fromEither' _ (Right v) = Carried v
 fromEither' fallback (Left err)  = Recovered err $ fallback unit
 
@@ -115,9 +120,15 @@ containsError err (Recovered errInside _) = err == errInside
 containsError _ _ = false
 
 
-run :: forall a e x. Semigroup a => (e -> a) -> (x -> a) -> Covered e x -> a
-run errF subjF (Recovered err v) = errF err <> subjF v
-run errF subjF (Carried v) = subjF v
+whenC :: forall e a x. (a -> x) -> Covered e a -> Covered e a /\ x
+whenC f (Recovered err v) = Recovered err v /\ f v
+whenC f (Carried v) = Carried v /\ f v
+
+
+-- traverse?
+unpack :: forall e a x. Covered e (a /\ x) -> Covered e a /\ x
+unpack (Recovered err (v /\ x)) = Recovered err v /\ x
+unpack (Carried (v /\ x)) = Carried v /\ x
 
 
 appendError
