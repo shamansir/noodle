@@ -99,10 +99,25 @@ applyDataAction _ (GotInletData _ _) nw =
     fine nw
 applyDataAction _ (GotOutletData _ _) nw =
     fine nw
-applyDataAction _ (SendToInlet inlet d) nw = -- FIXME: either implement or get rid of
-    pure nw /\ [ Api.sendToInlet inlet d >>= const $ pure NoOp ]
-applyDataAction _ (SendToOutlet outlet d) nw = -- FIXME: either implement or get rid of
-    pure nw /\ [ Api.sendToOutlet outlet d >>= const $ pure NoOp ]
+applyDataAction _ (SendToInlet inlet d) nw =
+    pure nw /\ [ Api.sendToInlet inlet d >>= (const $ pure NoOp) ]
+applyDataAction _ (SendToOutlet outlet d) nw =
+    pure nw /\ [ Api.sendToOutlet outlet d >>= (const $ pure NoOp) ]
+applyDataAction _ (StreamToInlet inlet flow) nw =
+    pure nw /\ [ do
+        canceler :: Canceler <- Api.streamToInlet inlet flow
+        pure $ Inner $ StoreInletCanceler inlet canceler
+    ]
+applyDataAction _ (StreamToOutlet outlet flow) nw =
+    pure nw /\ [ do
+        canceler :: Canceler <- Api.streamToOutlet outlet flow
+        pure $ Inner $ StoreOutletCanceler outlet canceler
+    ]
+applyDataAction _ (SendPeriodicallyToInlet inlet period fn) nw =
+    pure nw /\ [ do
+        canceler :: Canceler <- Api.sendPeriodicallyToInlet inlet period fn
+        pure $ Inner $ StoreInletCanceler inlet canceler
+    ]
 
 
 applyRequestAction
@@ -125,10 +140,10 @@ applyRequestAction _ (ToAddPatch alias) nw =
                     }
         ]
 applyRequestAction tk@(Toolkit _ getDef) (ToAddNode patchPath alias n) nw =
-    applyRequestAction tk (ToAddNodeByDef patchPath n $ getDef n) nw
+    applyRequestAction tk (ToAddNodeByDef patchPath alias n $ getDef n) nw
 applyRequestAction tk@(Toolkit _ getDef) (ToAddNextNode patchPath n) nw = do
     applyRequestAction tk (ToAddNextNodeByDef patchPath n $ getDef n) nw
-applyRequestAction _ (ToAddNodeByDef patchPath alias n def) nw =
+applyRequestAction _ (ToAddNodeByDef patchPath alias n (NodeDef def)) nw =
     pure nw /\
         let
             path = Path.nodeInPatch patchPath alias
@@ -252,7 +267,7 @@ applyRequestAction _ (ToConnect outletPath inletPath) nw = do
             ]
     ]
 applyRequestAction _ (ToDisconnect outletPath inletPath) nw = do
-    pure  $ nw /\ [ ]
+    fine nw
     -- pure $ nw /\ [ Disconnect link ]
     -- pure $ TODO: perform and remove cancelers
 applyRequestAction _ (ToSendToInlet inletPath d) nw = do
@@ -270,32 +285,43 @@ applyRequestAction _ (ToSendPeriodicallyToInlet inletPath period fn) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
     inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
-    pure $ nw /\ [ SendPeriodicallyToInletE inlet period fn ]
+    pure nw /\ [ pure $ Data $ SendPeriodicallyToInlet inlet period fn ]
 applyRequestAction _ (ToStreamToInlet inletPath event) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
     inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
-    pure $ nw /\ [ StreamToInletE inlet event ]
+    pure nw /\ [ pure $ Data $ StreamToInlet inlet event ]
 applyRequestAction _ (ToStreamToOutlet outletPath event) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
     outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
-    pure $ nw /\ [ StreamToOutletE outlet event ]
+    pure nw /\ [ pure $ Data $ StreamToOutlet outlet event ]
 applyRequestAction _ (ToSubscribeToInlet inletPath handler) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
     inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
-    pure $ nw /\ [ SubscribeToInletE inlet handler ]
+    pure nw /\
+        [ do
+            canceler :: Canceler <- Api.subscribeToInlet inlet handler
+            pure $ Inner $ StoreInletCanceler inlet canceler
+        ]
 applyRequestAction _ (ToSubscribeToOutlet outletPath handler) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
     outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
-    pure $ nw /\ [ SubscribeToOutletE outlet handler ]
+    pure nw /\
+        [ do
+            canceler :: Canceler <- Api.subscribeToOutlet outlet handler
+            pure $ Inner $ StoreOutletCanceler outlet canceler
+        ]
 applyRequestAction _ (ToSubscribeToNode nodePath inletsHandler outletsHandler) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
-    pure $ nw /\ [ SubscribeToNodeE node inletsHandler outletsHandler ]
+    pure nw /\ [ do
+        canceler :: Canceler <- Api.subscribeNode node inletsHandler outletsHandler
+        pure $ Inner $ StoreNodeCanceler node canceler
+    ]
 
 
 applyBuildAction
@@ -468,26 +494,14 @@ performEffect _ pushAction (SubscribeNodeUpdates node) _ = do
             (const $ const $ const $ pure unit) -- FIXME: implement
             (const $ const $ const $ pure unit) -- FIXME: implement
     pushAction $ Inner $ StoreNodeCanceler node canceler
-performEffect _ pushAction (SendToInletE inlet d) _ = do
-    Api.sendToInlet inlet d
-performEffect _ pushAction (SendToOutletE outlet d) _ =
-    Api.sendToOutlet outlet d
-performEffect _ pushAction (StreamToInletE inlet flow) _ = do
-    canceler :: Canceler <- Api.streamToInlet inlet flow
-    pushAction $ Inner $ StoreInletCanceler inlet canceler
-performEffect _ pushAction (StreamToOutletE outlet flow) _ = do
-    canceler :: Canceler <- Api.streamToOutlet outlet flow
-    pushAction $ Inner $ StoreOutletCanceler outlet canceler
-performEffect _ pushAction (SubscribeToInletE inlet handler) _ = do
-    canceler :: Canceler <- Api.subscribeToInlet inlet handler
-    pushAction $ Inner $ StoreInletCanceler inlet canceler
-performEffect _ pushAction (SubscribeToOutletE outlet handler) _ = do
-    canceler :: Canceler <- Api.subscribeToOutlet outlet handler
-    pushAction $ Inner $ StoreOutletCanceler outlet canceler
+performEffect _ pushAction (SendToInletE inlet d) _ = MOVED
+performEffect _ pushAction (SendToOutletE outlet d) _ = MOVED
+performEffect _ pushAction (StreamToInletE inlet flow) _ = MOVED
+performEffect _ pushAction (StreamToOutletE outlet flow) _ = MOVED
+performEffect _ pushAction (SubscribeToInletE inlet handler) _ = MOVED
+performEffect _ pushAction (SubscribeToOutletE outlet handler) _ = MOVED
 performEffect _ pushAction
-    (SubscribeToNodeE node inletsHandler outletsHandler) _ = do
-    canceler :: Canceler <- Api.subscribeNode node inletsHandler outletsHandler
-    pushAction $ Inner $ StoreNodeCanceler node canceler
+    (SubscribeToNodeE node inletsHandler outletsHandler) _ = MOVED
 performEffect _ pushAction (SendActionOnInletUpdatesE inlet@(Inlet _ path _ { flow })) _ = do
     let (InletFlow flow') = flow
     canceler :: Canceler <- E.subscribe flow' (pushAction <<< Data <<< GotInletData inlet)
@@ -496,12 +510,8 @@ performEffect _ pushAction (SendActionOnOutletUpdatesE outlet@(Outlet _ path _ {
     let (OutletFlow flow') = flow
     canceler :: Canceler <- E.subscribe flow' (pushAction <<< Data <<< GotOutletData outlet)
     pushAction $ Inner $ StoreOutletCanceler outlet canceler
-performEffect _ pushAction (SendPeriodicallyToInletE inlet period fn) _ = do
-    canceler :: Canceler <- Api.sendPeriodicallyToInlet inlet period fn
-    pushAction $ Inner $ StoreInletCanceler inlet canceler
-performEffect _ pushAction (SendPeriodicallyToOutletE outlet period fn) _ = do
-    canceler :: Canceler <- Api.sendPeriodicallyToOutlet outlet period fn
-    pushAction $ Inner $ StoreOutletCanceler outlet canceler
+performEffect _ pushAction (SendPeriodicallyToInletE inlet period fn) _ = MOVED
+performEffect _ pushAction (SendPeriodicallyToOutletE outlet period fn) _ = MOVED
 -}
 
 
