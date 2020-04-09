@@ -36,7 +36,7 @@ type Perform d c n = (Network d c n -> Effect Unit)
 
 data Action d c n
     = NoOp
-    | Batch (List (Action d c n))
+    | Join (Action d c n) (Action d c n)
     | Inner (InnerAction d c n)
     | Request (RequestAction d c n)
     | Build (BuildAction d c n)
@@ -146,9 +146,17 @@ data RpdEffect d c n -- TODO: move to a separate module
 --   show = GShow.genericShow
 
 
+instance semigroupAction :: Semigroup (Action d c n) where
+    append = Join
+
+
+instance monoidAction :: Monoid (Action d c n) where
+    mempty = NoOp
+
+
 showKind :: forall d c n. Action d c n -> String
 showKind NoOp = "NoOp"
-showKind (Batch _) = "Batch"
+showKind (Join _ _) = "Join"
 showKind (Inner _) = "Inner"
 showKind (Request _) = "Request"
 showKind (Build _) = "Build"
@@ -157,8 +165,8 @@ showKind (Data _) = "Data"
 
 instance showAction :: (Show d, Show c, Show n) => Show (Action d c n) where
     show NoOp = "NoOp"
-    show (Batch batched) =
-        "B: [" <> (Str.joinWith ", " $ List.toUnfoldable $ show <$> batched) <> "]"
+    show (Join actionA actionB) =
+        "J: {" <> show actionA <> "," <> show actionB <> " }"
     show (Inner innerAction) = "I: " <> show innerAction
     show (Request requestAction) = "R: " <> show requestAction
     show (Build buildAction) = "B: " <> show buildAction

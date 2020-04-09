@@ -153,6 +153,7 @@ pass :: forall d c n. Either RpdError (Network d c n) -> Effect Unit
 pass = const $ pure unit
 
 
+-- FIXME: change `Array Action` to `Action`
 type Sequence d c n = CoveredFSM RpdError (Action d c n) (Network d c n)
 
 
@@ -160,20 +161,7 @@ make :: forall d c n. Toolkit d c n -> Sequence d c n
 make toolkit =
     FSM.make
         $ \action coveredModel ->
-            ((<$>) sequence) <$> apply toolkit action $ Covered.recover coveredModel
-            {-
-            let
-                (nextCoveredModel /\ rpdEffects) =
-                    -- TODO: make apply return `Covered`.
-                    -- also effects should not be under error control
-                    case apply toolkit action recovered of
-                        Left err -> Covered.cover recovered err /\ []
-                        Right (nextModel /\ effects) ->
-                            Covered.carry nextModel /\ effects
-                    where recovered = Covered.recover coveredModel
-            in
-                nextCoveredModel /\ [] -- FIXME: convert RpdEffect to `Effect (Action d c n)`
-            -}
+            apply toolkit action $ Covered.recover coveredModel
 
 
 andThen :: forall d c n. ActionList d c n -> Action d c n -> ActionList d c n

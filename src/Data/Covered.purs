@@ -15,6 +15,10 @@ data Covered e a
     | Carried a
 
 
+-- instance coveredSemigroup :: Semigroup (Covered e) where
+--     append (Covered err a)
+
+
 instance coveredFunctor :: Functor (Covered e) where
     map f (Recovered err a) = Recovered err $ f a
     map f (Carried a) = Carried $ f a
@@ -25,8 +29,6 @@ instance coveredFunctor :: Functor (Covered e) where
 --     bimap _ f (Carried a) = Carried a -- hides the error type
 
 
--- see Tuple Apply
-
 instance coveredApply :: Apply (Covered e) where
     apply (Recovered _ f) covered = f <$> covered
     apply (Carried f) covered = f <$> covered
@@ -36,11 +38,23 @@ instance coveredApplicative :: Applicative (Covered e) where
     pure = Carried
 
 
-instance coveredBind :: Bind (Covered e) where
-    bind covered k = k $ recover covered
+instance coveredBind :: Semigroup e => Bind (Covered e) where
+    -- bind covered k = k $ recover covered
+    -- Above breaks the second law: Recovered err x >>= pure != Recovered err x, but Carried x
+    bind covered k = joinErrors covered $ k $ recover covered
 
 
-instance coveredMonad :: Monad (Covered e)
+instance coveredSemigroup :: (Semigroup e, Semigroup a) => Semigroup (Covered e a) where
+    append (Recovered errorsA valA) (Recovered errorsB valB) =
+        Recovered (errorsA <> errorsB) (valA <> valB)
+    append (Recovered errorsA valA) (Carried valB) =
+        Recovered errorsA (valA <> valB)
+    append (Carried valA) (Recovered errorsB valB) =
+        Recovered errorsB (valA <> valB)
+    append (Carried valA) (Carried valB) =
+        Carried (valA <> valB)
+
+-- TODO: Semigroup, + like Tuple has, see Tuple Apply, but that would join data, not errors
 
 
 -- TODO: Comonad
@@ -144,7 +158,7 @@ appendError (Carried val) (Carried _) = Recovered mempty val
 appendError (Carried val) (Recovered errors _) = Recovered errors val
 
 
-joinErrors :: forall e a. Semigroup e => Covered e a -> Covered e a -> Covered e a
+joinErrors :: forall e a b. Semigroup e => Covered e a -> Covered e b -> Covered e b
 joinErrors (Recovered errorsA _) (Recovered errorsB val) = Recovered (errorsA <> errorsB) val
 joinErrors (Recovered errors _) (Carried val) = Recovered errors val
 joinErrors (Carried _) (Carried val) = Carried val
