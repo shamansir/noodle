@@ -119,6 +119,26 @@ fold fsm init actionList = do
     _ <- traverse_ pushAction actionList
     lastVal <- Ref.read lastValRef
     pure $ lastVal /\ stop
+    -- fold' fsm init (const $ pure unit) actionList
+
+
+{- fold'
+    :: forall action model
+     . Monoid action
+    => FSM action model
+    -> model
+    -> (model -> Effect Unit)
+    -> List action
+    -> Effect (model /\ Canceler)
+fold' fsm init subscription actionList = do
+    lastValRef <- Ref.new init
+    { pushAction, stop } <- prepare fsm init $ \model -> do
+        _ <- lastValRef # Ref.write model
+        _ <- subscription model
+        pure unit
+    _ <- traverse_ pushAction actionList
+    lastVal <- Ref.read lastValRef
+    pure $ lastVal /\ stop -}
 
 
 pushAll :: forall action. (action -> Effect Unit) -> List action -> Effect Unit
