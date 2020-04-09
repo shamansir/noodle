@@ -17,7 +17,7 @@ import Data.Either
 import Data.Maybe
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Traversable (traverse_)
+import Data.Traversable (sequence, traverse_)
 
 import FRP.Event (Event)
 import FRP.Event as Event
@@ -35,7 +35,7 @@ import Rpd.API
     )
 import Rpd.API.Errors (RpdError)
 import Rpd.API.Action
-import Rpd.API.Action.Apply (Step, apply, performEffect)
+import Rpd.API.Action.Apply (Step, apply)
 import Rpd.Path as Path
 import Rpd.Toolkit (Toolkit, NodeDef)
 import Rpd.Util (Canceler)
@@ -156,10 +156,12 @@ pass = const $ pure unit
 type Sequence d c n = CoveredFSM RpdError (Action d c n) (Network d c n)
 
 
-make :: forall d c n. Toolkit d c n -> Network d c n -> Sequence d c n
-make toolkit network =
-    FSM.make (Covered.carry network)
+make :: forall d c n. Toolkit d c n -> Sequence d c n
+make toolkit =
+    FSM.make
         $ \action coveredModel ->
+            ((<$>) sequence) <$> apply toolkit action $ Covered.recover coveredModel
+            {-
             let
                 (nextCoveredModel /\ rpdEffects) =
                     -- TODO: make apply return `Covered`.
@@ -171,6 +173,7 @@ make toolkit network =
                     where recovered = Covered.recover coveredModel
             in
                 nextCoveredModel /\ [] -- FIXME: convert RpdEffect to `Effect (Action d c n)`
+            -}
 
 
 andThen :: forall d c n. ActionList d c n -> Action d c n -> ActionList d c n
