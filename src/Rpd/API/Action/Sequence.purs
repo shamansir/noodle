@@ -26,7 +26,7 @@ import Data.Covered (Covered)
 import Data.Covered (fromEither, fromEither', carry, appendError, recover, cover) as Covered
 
 import FSM.Covered (CoveredFSM)
-import FSM (make) as FSM
+import FSM (make, fold) as FSM
 
 import Rpd.Network
 import Rpd.API
@@ -154,14 +154,24 @@ pass = const $ pure unit
 
 
 -- FIXME: change `Array Action` to `Action`
-type Sequence d c n = CoveredFSM RpdError (Action d c n) (Network d c n)
+type Sequencer d c n = CoveredFSM RpdError (Action d c n) (Network d c n)
 
 
-make :: forall d c n. Toolkit d c n -> Sequence d c n
+make :: forall d c n. Toolkit d c n -> Sequencer d c n
 make toolkit =
     FSM.make
         $ \action coveredModel ->
             apply toolkit action $ Covered.recover coveredModel
+
+
+-- fold
+--     :: forall d c n
+--      . Toolkit d c n
+--     -> Network d c n
+--     -> ActionList d c n
+--     -> Effect (Covered RpdError (Network d c n) /\ Canceler)
+-- fold toolkit network actions =
+--     FSM.fold (make toolkit) (pure network) actions
 
 
 andThen :: forall d c n. ActionList d c n -> Action d c n -> ActionList d c n
