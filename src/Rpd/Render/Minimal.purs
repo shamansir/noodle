@@ -15,9 +15,12 @@ import FRP.Event as Event
 
 import Data.Covered (Covered, carry)
 
+import FSM (prepare) as ActionSeq
+import FSM (noSubscription) as FSM
+
 import Rpd.API.Errors (RpdError) as R
 import Rpd.API.Action (Action) as C
-import Rpd.API.Action.Sequence (prepare) as ActionSeq
+import Rpd.API.Action.Sequence (make) as ActionSeq
 import Rpd.Network (Network) as R
 import Rpd.Toolkit (Toolkit) as T
 
@@ -61,13 +64,14 @@ make
         }
 make (Renderer first view) toolkit initialNW = do
     { event : views, push : pushView } <- Event.create
-    { models, pushAction, stop } <- ActionSeq.prepare initialNW toolkit
-    stopViews <- Event.subscribe models (pushView <<< view)
+    let sequencer = ActionSeq.make toolkit
+    { pushAction, stop } <-
+        ActionSeq.prepare sequencer (pure initialNW) (pushView <<< view) FSM.noSubscription
     pure
         { first
         , next : views
         , push : PushF pushAction
-        , stop : stop <> stopViews
+        , stop : stop
         }
 
 

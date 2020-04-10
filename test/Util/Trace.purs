@@ -12,6 +12,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Covered as Covered
+import Data.Array as Array
 
 import Effect.Ref (Ref(..))
 import Effect.Ref as Ref
@@ -60,30 +61,26 @@ channelsAfter
   -> ActionList d c n
   -> Aff (R.Network d c n /\ TracedFlow d)
 channelsAfter period sequencer network actions = do
-  lastModelSpy <- liftEffect Spy.last
-  actionTraceSpy <- liftEffect Spy.trace
-  target <- liftEffect $ Ref.new []
+  lastModelSpy <- liftEffect $ Spy.last' $ pure network
+  actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap handleAction
   { stop } <- liftEffect $
     Actions.run''
         sequencer
         (pure network)
         (Spy.with lastModelSpy)
-        (Spy.with' (handleAction target) actionTraceSpy) -- FIXME: this is the wrong use of spies!
+        (Spy.with actionTraceSpy)
         actions
+  {-
   maybeNw <- liftEffect $ Spy.get lastModelSpy
   coveredNw <- getOrFail (Covered.fromMaybe "not called" (pure network) maybeNw)
+  -}
+  coveredNw <- liftEffect $ Spy.get lastModelSpy
   network' <- getOrFail coveredNw
   delay period
   _ <- liftEffect stop
-  vals <- liftEffect $ Ref.read target
-  pure $ network' /\ vals
+  vals <- liftEffect $ Spy.get actionTraceSpy
+  pure $ network' /\ Array.catMaybes vals
   where
-    handleAction target (Data (GotInletData (R.Inlet _ path _ _) d)) = do
-        curData <- Ref.read target
-        Ref.write (curData +> InletData path d) target
-        pure unit
-    handleAction target (Data (GotOutletData (R.Outlet _ path _ _) d)) = do
-        curData <- Ref.read target
-        Ref.write (curData +> OutletData path d) target
-        pure unit
-    handleAction _ _ = pure unit
+    handleAction (Data (GotInletData (R.Inlet _ path _ _) d)) = Just $ InletData path d
+    handleAction (Data (GotOutletData (R.Outlet _ path _ _) d)) = Just $ OutletData path d
+    handleAction _ = Nothing

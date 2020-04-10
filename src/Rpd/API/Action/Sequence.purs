@@ -26,7 +26,7 @@ import Data.Covered (Covered)
 import Data.Covered (fromEither, fromEither', carry, appendError, recover, cover) as Covered
 
 import FSM.Covered (CoveredFSM)
-import FSM (make, fold) as FSM
+import FSM (make, fold, pushAll) as FSM
 
 import Rpd.Network
 import Rpd.API
@@ -179,4 +179,4 @@ andThen = snoc
 
 
 pushAll :: forall d c n. (Action d c n -> Effect Unit) -> ActionList d c n -> Effect Unit
-pushAll = traverse_
+pushAll = FSM.pushAll

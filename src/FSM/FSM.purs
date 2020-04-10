@@ -3,7 +3,7 @@ module FSM
     , prepare -- FIXME: do not expose
     , make, makePassing
     , run, run', run'', fold
-    , pushAll
+    , pushAll, noSubscription
     ) where
 
 
@@ -54,8 +54,13 @@ noSubscription = const $ pure unit
 
 -- FIXME: change `Monoid` requirement to some custom typeclass (`IsAction`?)
 --        since we break monoid laws: `mempty <> action != mempty.
---        maybe something like `Batch` and `DoNothing`, also could depend on
---        `Foldable` or be able to fold itself (Traverse?)
+--        maybe to something like `DoNothing` typeclass.
+
+
+-- TODO: optionally, add `Batch` typeclass to work with returning multiple actions
+--       it will require not only to allow joining two (or more?) actions but also
+--       `Foldable` or be able to fold itself (Traverse?) using sequential calls
+--       to `update`
 
 
 {-
@@ -66,6 +71,10 @@ updateF (Pair actionA actionB) model =
     in
         model'' /\ (effects' <> effects'')
 -}
+
+
+-- TODO: add `NestFSM` to support placing actions inside other actions, like we do for GUI
+
 
 prepare
     :: forall action model
@@ -157,13 +166,20 @@ fold
     => FSM action model
     -> model
     -> f action
-    -> Effect (model /\ Canceler)
+    -> Effect
+            (model /\
+                { pushAction :: action -> Effect Unit
+                 -- FIXME: not a lot of sense in returning `pushAction` here
+                 ---       and may be `stop` as well
+                , stop :: Canceler
+            })
+    -- -> Effect (model /\ Canceler)
 fold fsm init actionList = do
     lastValRef <- Ref.new init
     { pushAction, stop } <- prepare fsm init (flip Ref.write lastValRef) noSubscription
     _ <- traverse_ pushAction actionList
     lastVal <- Ref.read lastValRef
-    pure $ lastVal /\ stop
+    pure $ lastVal /\ { pushAction, stop }
     -- fold' fsm init (const $ pure unit) actionList
 
 

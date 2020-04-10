@@ -16,7 +16,7 @@ import Rpd.Network as Network
 import Rpd.API.Action.Sequence as Actions
 
 import Rpd.Test.Util.Trace (channelsAfter)
-import Rpd.Test.Spec.Flow.Base (myToolkit)
+import Rpd.Test.Spec.Flow.Base (mySequencer)
 
 
 {- ======================================= -}
@@ -30,7 +30,7 @@ spec = do
     _ /\ collectedData <-
       channelsAfter
           (Milliseconds 100.0)
-          myToolkit
+          mySequencer
           (Network.empty "no-data")
           Actions.init
 
