@@ -2,7 +2,7 @@ module FSM
     ( FSM(..) -- FIXME: do not expose constructor
     , prepare -- FIXME: do not expose
     , make, makePassing
-    , run, run', fold
+    , run, run', run'', fold
     , pushAll
     ) where
 
@@ -48,6 +48,10 @@ makePassing
 makePassing = FSM (\_ m -> m /\ pure mempty)
 
 
+noSubscription :: forall a. a -> Effect Unit
+noSubscription = const $ pure unit
+
+
 -- FIXME: change `Monoid` requirement to some custom typeclass (`IsAction`?)
 --        since we break monoid laws: `mempty <> action != mempty.
 --        maybe something like `Batch` and `DoNothing`, also could depend on
@@ -68,12 +72,13 @@ prepare
      . Monoid action -- FIXME: we only use `mempty`, not `append`
     => FSM action model
     -> model
-    -> (model -> Effect Unit)
+    -> (model -> Effect Unit) -- FIXME: use `update` itself for that?
+    -> (action -> Effect Unit) -- FIXME: use `update` itself for that?
     -> Effect
             { pushAction :: action -> Effect Unit
             , stop :: Canceler
             }
-prepare (FSM f) init subscription = do
+prepare (FSM f) init subModels subActions = do
     { event : actions, push : pushAction } <- Event.create
     let
         (updates :: Event (model /\ Effect action)) =
@@ -83,10 +88,16 @@ prepare (FSM f) init subscription = do
                 (init /\ pure mempty)
         (models :: Event model)
             = fst <$> updates
-    stopSubscription <- Event.subscribe models subscription
+    stopModelSubscription <- Event.subscribe models subModels
+    stopActionSubscription <- Event.subscribe actions subActions
     stopPerformingEffects <- Event.subscribe updates
         \(_ /\ eff) -> eff >>= pushAction
-    pure { pushAction, stop : stopSubscription <> stopPerformingEffects }
+    pure
+        { pushAction
+        , stop : stopModelSubscription
+              <> stopActionSubscription
+              <> stopPerformingEffects
+        }
 
 
 run
@@ -101,7 +112,7 @@ run
             , stop :: Canceler
             }
 run fsm init = do
-    run' fsm init $ const $ pure unit
+    run' fsm init noSubscription
 
 
 run'
@@ -116,8 +127,25 @@ run'
             { pushAction :: action -> Effect Unit
             , stop :: Canceler
             }
-run' fsm init subscription actionList = do
-    { pushAction, stop } <- prepare fsm init subscription
+run' fsm init subscription = do
+    run'' fsm init subscription noSubscription
+
+
+run''
+    :: forall action model f
+     . Monoid action
+    => Foldable f
+    => FSM action model
+    -> model
+    -> (model -> Effect Unit)
+    -> (action -> Effect Unit)
+    -> f action
+    -> Effect
+            { pushAction :: action -> Effect Unit
+            , stop :: Canceler
+            }
+run'' fsm init subModels subActions actionList = do
+    { pushAction, stop } <- prepare fsm init subModels subActions
     _ <- traverse_ pushAction actionList
     pure { pushAction, stop : stop }
 
@@ -132,7 +160,7 @@ fold
     -> Effect (model /\ Canceler)
 fold fsm init actionList = do
     lastValRef <- Ref.new init
-    { pushAction, stop } <- prepare fsm init $ flip Ref.write lastValRef
+    { pushAction, stop } <- prepare fsm init (flip Ref.write lastValRef) noSubscription
     _ <- traverse_ pushAction actionList
     lastVal <- Ref.read lastValRef
     pure $ lastVal /\ stop

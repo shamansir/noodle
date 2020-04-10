@@ -5,6 +5,7 @@ import Prelude
 
 import Data.Either
 import Data.Maybe
+import Data.Maybe (fromMaybe) as Maybe
 import Data.List (List)
 import Data.List as List
 import Data.Tuple.Nested ((/\), type (/\))
@@ -82,6 +83,11 @@ inject :: forall e a b. b -> Covered e a -> Covered e b
 inject b covered = const b <$> covered
 
 
+fromMaybe :: forall e a. e -> a -> Maybe a -> Covered e a
+fromMaybe _ _ (Just v)  = Carried v
+fromMaybe e v Nothing  = Recovered e v
+
+
 fromEither :: forall e a. a -> Either e a -> Covered e a
 fromEither v either = fromEither' (const v) either
 
@@ -111,7 +117,7 @@ uncover covered = hasError covered /\ recover covered
 
 
 uncover' :: forall m e a. Monoid (m e) => Covered (m e) a -> m e /\ a
-uncover' covered = (hasError covered # fromMaybe mempty) /\ recover covered
+uncover' covered = (hasError covered # Maybe.fromMaybe mempty) /\ recover covered
 
 
 mapError :: forall ea eb a. (ea -> eb) -> Covered ea a -> Covered eb a
