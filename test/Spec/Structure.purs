@@ -15,8 +15,9 @@ import Effect.Aff (Aff, launchAff_)
 import Test.Spec (Spec, describe, it, pending')
 import Test.Spec.Assertions (shouldEqual, fail)
 
-import Rpd.Test.Util.Actions (getOrFail')
+import Rpd.Test.Util.Actions (getOrFail)
 
+import FSM (fold) as Actions
 import Rpd.API.Action.Sequence ((</>))
 import Rpd.API.Action.Sequence as Actions
 import Rpd.API.Action.Sequence (addPatch, addNode, addInlet, addOutlet) as R
@@ -43,14 +44,18 @@ network :: R.Network MyData Channel Node
 network = N.empty "foo"
 
 
+sequencer :: Actions.Sequencer MyData Channel Node
+sequencer = Actions.make toolkit
+
+
 spec :: Spec Unit
 spec =
   describe "structure" do
 
     it "constructing the empty network works" do
       result /\ _ <- liftEffect
-        $ Actions.runFolding toolkit network Actions.init
-      _ <- getOrFail' result network
+        $ Actions.fold sequencer (pure network) Actions.init
+      _ <- getOrFail result
       pure unit
 
     describe "order of addition" do
@@ -58,13 +63,13 @@ spec =
       it "adding nodes to the patch preserves the order of addition" $ do
         result /\ _ <-
             liftEffect
-            $ Actions.runFolding toolkit network
+            $ Actions.fold sequencer (pure network)
             $ Actions.init
                 </> R.addPatch "patch"
                 </> R.addNode (P.toPatch "patch") "one" Node
                 </> R.addNode (P.toPatch "patch") "two" Node
                 </> R.addNode (P.toPatch "patch") "three" Node
-        network' <- getOrFail' result network
+        network' <- getOrFail result
         case L.view (L._patchNodesByPath $ P.toPatch "patch") network' of
           Just nodes ->
             (nodes
@@ -77,14 +82,14 @@ spec =
       it "adding inlets to the node preserves the order of addition" $ do
         result /\ _<-
             liftEffect
-            $ Actions.runFolding toolkit network
+            $ Actions.fold sequencer (pure network)
             $ Actions.init
               </> R.addPatch "patch"
               </> R.addNode (P.toPatch "patch") "node" Node
               </> R.addInlet (P.toNode "patch" "node") "one" Channel
               </> R.addInlet (P.toNode "patch" "node") "two" Channel
               </> R.addInlet (P.toNode "patch" "node") "three" Channel
-        network' <- getOrFail' result network
+        network' <- getOrFail result
         case L.view (L._nodeInletsByPath $ P.toNode "patch" "node") network' of
           Just inlets ->
             (inlets
@@ -98,14 +103,14 @@ spec =
       it "adding outlets to the node preserves the order of addition" $ do
         result /\ _ <-
             liftEffect
-            $ Actions.runFolding toolkit network
+            $ Actions.fold sequencer (pure network)
             $ Actions.init
               </> R.addPatch "patch"
               </> R.addNode (P.toPatch "patch") "node" Node
               </> R.addOutlet (P.toNode "patch" "node") "one" Channel
               </> R.addOutlet (P.toNode "patch" "node") "two" Channel
               </> R.addOutlet (P.toNode "patch" "node") "three" Channel
-        network' <- getOrFail' result network
+        network' <- getOrFail result
         case L.view (L._nodeOutletsByPath $ P.toNode "patch" "node") network' of
           Just inlets ->
             (inlets

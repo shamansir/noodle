@@ -1,5 +1,5 @@
 module Rpd.Test.Util.Spy
-    ( Spy, create, with, reset, get, consider
+    ( Spy, create, with, with', reset, get, consider
     , wasCalled, callCount, trace, first, last
     , ifError, ifSuccess
     , ifErrorC, ifNoErrorC
@@ -20,9 +20,14 @@ import Effect (Effect)
 import Data.Covered
 
 
+-- `a` is the type of values being traced
+-- `x` is the type of value you get as a result of the spy
+--     and the type of value being stored and updated after considering each `a`
+-- TODO: maybe swap?
 data Spy x a = Spy x (Ref x) (x -> a -> x)
 
 
+-- TODO: rename to `make`
 create :: forall a x. x -> (x -> a -> x) -> Effect (Spy x a)
 create default f =
   Ref.new default >>= \ref -> pure $ Spy default ref f

@@ -10,6 +10,8 @@ import Data.Array (snoc)
 import Data.Time.Duration (Milliseconds)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Either (Either(..))
+import Data.Maybe (Maybe(..))
+import Data.Covered as Covered
 
 import Effect.Ref (Ref(..))
 import Effect.Ref as Ref
@@ -18,15 +20,16 @@ import Effect.Class (liftEffect)
 import Effect.Aff (Aff, delay)
 
 import Test.Spec.Assertions (fail)
-import Rpd.Test.Util.Actions (getOrFail')
+import Rpd.Test.Util.Actions (getOrFail)
 
+import FSM (run'') as Actions
 import Rpd.API.Action (Action(..), DataAction(..))
-import Rpd.API.Action.Sequence (ActionList)
-import Rpd.API.Action.Sequence (runTracing) as Actions
+import Rpd.API.Action.Sequence (ActionList, Sequencer)
 import Rpd.Path as P
 import Rpd.Toolkit as T
 import Rpd.Network as R
 import Rpd.Util (Canceler)
+import Rpd.Test.Util.Spy as Spy
 
 
 infixl 6 snoc as +>
@@ -52,19 +55,24 @@ channelsAfter
   :: forall d c n
    . (Show d)
   => Milliseconds
-  -> T.Toolkit d c n
+  -> Sequencer d c n
   -> R.Network d c n
   -> ActionList d c n
   -> Aff (R.Network d c n /\ TracedFlow d)
-channelsAfter period toolkit network actions = do
-  target <- liftEffect $ Ref.new [] -- FIXME: rewrite with spies
-  result /\ { stop } <- liftEffect $
-    Actions.runTracing
-        toolkit
-        network
-        (handleAction target)
+channelsAfter period sequencer network actions = do
+  lastModelSpy <- liftEffect Spy.last
+  actionTraceSpy <- liftEffect Spy.trace
+  target <- liftEffect $ Ref.new []
+  { stop } <- liftEffect $
+    Actions.run''
+        sequencer
+        (pure network)
+        (Spy.with lastModelSpy)
+        (Spy.with' (handleAction target) actionTraceSpy) -- FIXME: this is the wrong use of spies!
         actions
-  network' <- getOrFail' result network
+  maybeNw <- liftEffect $ Spy.get lastModelSpy
+  coveredNw <- getOrFail (Covered.fromMaybe "not called" (pure network) maybeNw)
+  network' <- getOrFail coveredNw
   delay period
   _ <- liftEffect stop
   vals <- liftEffect $ Ref.read target

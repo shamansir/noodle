@@ -10,6 +10,7 @@ module Rpd.Test.Util.Actions
 import Prelude
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.String (joinWith)
+import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
 
 import Data.Covered (Covered(..))
@@ -37,6 +38,19 @@ getOrFail'
 getOrFail' ([] /\ v) _ = pure v
 getOrFail' (errors /\ _) default =
   failWith errors >>= (const $ pure default)
+
+
+getOrFail''
+  :: forall err x
+   . Show err
+  => err
+  -> x
+  -> Maybe x
+  -> Aff x
+getOrFail'' err x Nothing =
+  (fail $ show err) >>= (const $ pure x)
+getOrFail'' _ _ (Just x) =
+  pure x
 
 
 failIfNoError
