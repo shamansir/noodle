@@ -46,7 +46,16 @@ emptyModel = Empty
 data Action
   = NoOp
   | ActionOne
+  | Pair Action Action
   | StoreUUID UUID
+
+
+instance semigroupAction :: Semigroup Action where
+  append = Pair
+
+
+instance monoidAction :: Monoid Action where
+  mempty = NoOp
 
 
 spec :: Spec Unit
@@ -57,16 +66,16 @@ spec = do
     describe "creating" do
 
       it "is easy to create" do
-        let (fsm :: FSM Action Unit) = FSM.make (\_ _ -> unit /\ pure [])
+        let (fsm :: FSM Action Unit) = FSM.make (\_ _ -> unit /\ pure NoOp)
         pure unit
 
       it "is easy to run" do
-        let (fsm :: FSM Action Unit) = FSM.make (\_ _ -> unit /\ pure [])
+        let (fsm :: FSM Action Unit) = FSM.make (\_ _ -> unit /\ pure NoOp)
         _ <- liftEffect $ FSM.run fsm unit List.Nil
         pure unit
 
       it "is easy to run with some actions" do
-        let fsm = FSM.make (\_ _ -> unit /\ pure [])
+        let fsm = FSM.make (\_ _ -> unit /\ pure NoOp)
         _ <- liftEffect $ FSM.run fsm unit $ List.singleton NoOp
         pure unit
 
@@ -74,7 +83,7 @@ spec = do
 
       it "calls the update function" do
         let
-          (myFsm ::FSM Action Model) = FSM.make (\_ _ -> HoldsString "foo" /\ pure [])
+          (myFsm ::FSM Action Model) = FSM.make (\_ _ -> HoldsString "foo" /\ pure NoOp)
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
           _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
@@ -84,7 +93,7 @@ spec = do
 
       it "the action is actually sent" do
         let
-          myFsm = FSM.make (\action _ -> HoldsAction action /\ pure [])
+          myFsm = FSM.make (\action _ -> HoldsAction action /\ pure NoOp)
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
           _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
@@ -94,7 +103,7 @@ spec = do
 
       it "receives all the actions which were sent" do
         let
-          myFsm = FSM.make (\action _ -> HoldsAction action /\ pure [])
+          myFsm = FSM.make (\action _ -> HoldsAction action /\ pure NoOp)
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
           _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
@@ -106,9 +115,9 @@ spec = do
 
       it "performs the effect from the update function" do
         let
-          updateF NoOp model = model /\ (UUID.new >>= pure <<< pure <<< StoreUUID)
-          updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ pure []
-          updateF _ model = model /\ pure []
+          updateF NoOp model = model /\ (UUID.new >>= pure <<< StoreUUID)
+          updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ pure NoOp
+          updateF _ model = model /\ pure NoOp
           myFsm = FSM.make updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
@@ -122,9 +131,16 @@ spec = do
       it "works when asking to perform several actions from effectful part of `update`" do
         let
           updateF ActionOne model =
-            model /\ (UUID.new >>= \uuid -> pure [ NoOp, StoreUUID uuid ])
-          updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ pure []
-          updateF _ model = model /\ pure []
+            model /\ (UUID.new >>= \uuid -> pure $ Pair NoOp $ StoreUUID uuid)
+          -- FIXME: implement update for `Pair`
+          updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ pure NoOp
+          updateF (Pair actionA actionB) model =
+            let
+              model' /\ effects' = updateF actionA model
+              model'' /\ effects'' = updateF actionB model'
+            in
+              model'' /\ (effects' <> effects'')
+          updateF _ model = model /\ pure NoOp
           myFsm = FSM.make updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
@@ -139,11 +155,11 @@ spec = do
         let
           updateF ActionOne model =
             HoldsString "fail" /\
-              (UUID.new >>= \uuid -> pure [ StoreUUID uuid ])
+              (UUID.new >>= \uuid -> pure $ StoreUUID uuid)
           updateF (StoreUUID uuid) model =
-            HoldsUUID uuid /\ pure []
+            HoldsUUID uuid /\ pure NoOp
           updateF _ model =
-            model /\ pure []
+            model /\ pure NoOp
           myFsm = FSM.make updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
@@ -158,18 +174,18 @@ spec = do
 
       it "folds the models to the very last state" do
         let
-          updateF NoOp _ = HoldsString "NoOp" /\ pure []
-          updateF ActionOne _ = HoldsString "ActionOne" /\ pure []
-          updateF _ model = model /\ pure []
+          updateF NoOp _ = HoldsString "NoOp" /\ pure NoOp
+          updateF ActionOne _ = HoldsString "ActionOne" /\ pure NoOp
+          updateF _ model = model /\ pure NoOp
           myFsm = FSM.make updateF
         (lastModel /\ _) <- liftEffect $ FSM.fold myFsm emptyModel $ (NoOp : ActionOne : List.Nil)
         lastModel `shouldEqual` HoldsString "ActionOne"
 
       it "folds the models to the very last state with effects as well" do
         let
-          updateF NoOp model = model /\ (UUID.new >>= pure <<< pure <<< StoreUUID)
-          updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ pure []
-          updateF _ model = model /\ pure []
+          updateF NoOp model = model /\ (UUID.new >>= pure <<< StoreUUID)
+          updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ pure NoOp
+          updateF _ model = model /\ pure NoOp
           myFsm = FSM.make updateF
         (lastModel /\ _) <- liftEffect $ FSM.fold myFsm emptyModel  $ (NoOp : ActionOne : List.Nil)
         case lastModel of
@@ -180,11 +196,11 @@ spec = do
         let
           updateF ActionOne model =
             HoldsString "fail" /\
-              (UUID.new >>= \uuid -> pure [ StoreUUID uuid ])
+              (UUID.new >>= \uuid -> pure $ StoreUUID uuid)
           updateF (StoreUUID uuid) model =
-            HoldsUUID uuid /\ pure []
+            HoldsUUID uuid /\ pure NoOp
           updateF _ model =
-            model /\ pure []
+            model /\ pure NoOp
           myFsm = FSM.make updateF
         (lastModel /\ _) <- liftEffect $ FSM.fold myFsm emptyModel $ (ActionOne : List.Nil)
         case lastModel of
@@ -195,7 +211,7 @@ spec = do
 
       it "works after running the FSM" do
         let
-          (myFsm :: FSM Action Model) = FSM.make (\_ _ -> HoldsString "foo" /\ pure [])
+          (myFsm :: FSM Action Model) = FSM.make (\_ _ -> HoldsString "foo" /\ pure NoOp)
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
           { pushAction } <- FSM.run' myFsm emptyModel (flip Ref.write ref)
@@ -213,7 +229,7 @@ spec = do
     it "passes error through update cycle" do
         let
           (myCovererdFsm :: CoveredFSM Error Action Model) =
-              FSM.make (\_ _ -> Covered.cover Empty ErrorOne /\ pure [])
+              FSM.make (\_ _ -> Covered.cover Empty ErrorOne /\ pure NoOp)
         lastModel <- liftEffect $ do
           ref <- Ref.new $ Covered.carry Empty
           _ <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
@@ -225,9 +241,9 @@ spec = do
 
     it "keeps the latest error" do
         let
-          updateF NoOp _ = Covered.cover Empty ErrorOne /\ pure []
-          updateF ActionOne _ = Covered.cover Empty ErrorTwo /\ pure []
-          updateF _ _ = Covered.carry Empty /\ pure []
+          updateF NoOp _ = Covered.cover Empty ErrorOne /\ pure NoOp
+          updateF ActionOne _ = Covered.cover Empty ErrorTwo /\ pure NoOp
+          updateF _ _ = Covered.carry Empty /\ pure NoOp
           (myCovererdFsm :: CoveredFSM Error Action Model) = FSM.make updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new $ Covered.carry Empty
@@ -240,9 +256,9 @@ spec = do
 
     it "provides the way to collect errors" do
         let
-          updateF' NoOp c = Covered.cover Empty [ ErrorOne ] /\ pure []
-          updateF' ActionOne _ = Covered.cover Empty [ ErrorTwo ] /\ pure []
-          updateF' _ _ = Covered.carry Empty /\ pure []
+          updateF' NoOp c = Covered.cover Empty [ ErrorOne ] /\ pure NoOp
+          updateF' ActionOne _ = Covered.cover Empty [ ErrorTwo ] /\ pure NoOp
+          updateF' _ _ = Covered.carry Empty /\ pure NoOp
           updateF action prevModel =
             let
               nextModel /\ effects = updateF' action prevModel
@@ -261,6 +277,7 @@ spec = do
 
 instance showAction :: Show Action where
     show NoOp = "NoOp"
+    show (Pair actionA actionB) = "Pair " <> show actionA <> " " <> show actionB
     show ActionOne = "ActionOne"
     show (StoreUUID u) = "Store UUID" <> show u
 
@@ -280,6 +297,8 @@ instance showError :: Show Error where
 
 instance eqAction :: Eq Action where
     eq NoOp NoOp = true
+    eq (Pair actionAA actionAB) (Pair actionBA actionBB) =
+      actionAA == actionBA && actionAB == actionBB
     eq ActionOne ActionOne = true
     eq (StoreUUID uuidA) (StoreUUID uuidB) = uuidA == uuidB
     eq _ _ = false

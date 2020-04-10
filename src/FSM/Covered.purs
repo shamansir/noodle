@@ -24,6 +24,9 @@ type CoveredFSM error action model =
     FSM action (Covered error model)
 
 
+-- TODO: try `Semigroup error`
+
+
 fine :: forall error action model. model -> Covered error model /\ Array (Effect action)
 fine nw = pure nw /\ []
 

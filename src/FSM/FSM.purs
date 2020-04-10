@@ -29,10 +29,9 @@ import Rpd.Util (Canceler)
 
 
 data FSM action model =
-    -- FIXME: try: (action -> model -> Effect (model /\ Array action))
+    -- TODO: try: (action -> model -> Effect (model /\ Array action))
     FSM (action -> model -> model /\ Effect action)
     -- Array -> Foldable & Applicative & Monoid
-    -- FIXME: we don't need an `Array` if there's an `action` Like `Batch (Array (Effect action))`
 
 
 make
@@ -49,9 +48,24 @@ makePassing
 makePassing = FSM (\_ m -> m /\ pure mempty)
 
 
+-- FIXME: change `Monoid` requirement to some custom typeclass (`IsAction`?)
+--        since we break monoid laws: `mempty <> action != mempty.
+--        maybe something like `Batch` and `DoNothing`, also could depend on
+--        `Foldable` or be able to fold itself (Traverse?)
+
+
+{-
+updateF (Pair actionA actionB) model =
+    let
+        model' /\ effects' = updateF actionA model
+        model'' /\ effects'' = updateF actionB model'
+    in
+        model'' /\ (effects' <> effects'')
+-}
+
 prepare
     :: forall action model
-     . Monoid action
+     . Monoid action -- FIXME: we only use `mempty`, not `append`
     => FSM action model
     -> model
     -> (model -> Effect Unit)
@@ -76,11 +90,12 @@ prepare (FSM f) init subscription = do
 
 
 run
-    :: forall action model
+    :: forall action model f
      . Monoid action
+    => Foldable f
     => FSM action model
     -> model
-    -> List action -- FIXME: use foldable
+    -> f action
     -> Effect
             { pushAction :: action -> Effect Unit
             , stop :: Canceler
@@ -90,12 +105,13 @@ run fsm init = do
 
 
 run'
-    :: forall action model
+    :: forall action model f
      . Monoid action
+    => Foldable f
     => FSM action model
     -> model
     -> (model -> Effect Unit)
-    -> List action -- FIXME: use foldable
+    -> f action
     -> Effect
             { pushAction :: action -> Effect Unit
             , stop :: Canceler
@@ -107,11 +123,12 @@ run' fsm init subscription actionList = do
 
 
 fold
-    :: forall action model
+    :: forall action model f
      . Monoid action
+    => Foldable f
     => FSM action model
     -> model
-    -> List action
+    -> f action
     -> Effect (model /\ Canceler)
 fold fsm init actionList = do
     lastValRef <- Ref.new init
