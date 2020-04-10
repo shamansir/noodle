@@ -1,6 +1,6 @@
 module Rpd.Test.Util.Spy
     ( Spy, create, with, with', reset, get, consider
-    , wasCalled, callCount, trace, first, last
+    , wasCalled, callCount, trace, first, last, last'
     , ifError, ifSuccess
     , ifErrorC, ifNoErrorC
     , contramap
@@ -9,6 +9,7 @@ module Rpd.Test.Util.Spy
 import Prelude
 
 import Data.Maybe (Maybe(..))
+import Data.Maybe (fromMaybe) as M
 import Data.Either (Either(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (snoc)
@@ -66,7 +67,12 @@ reset (Spy default ref _) =
 --   reset spy >>= (const $ pure spy)
 
 
--- TODO: Contravariant instance
+-- mapValue :: forall a x y. (x -> y) -> Spy x a -> Spy y a
+-- mapValue f (Spy default ref spyF) =
+--   Spy (f default) ref spyF
+
+
+-- TODO: Contravariant instance + Bifunctor?
 contramap :: forall a b x. (b -> a) -> Spy x a -> Spy x b
 contramap f (Spy default ref spyF) =
   Spy default ref \x b -> spyF x $ f b
@@ -93,6 +99,10 @@ first = create Nothing f
 
 last :: forall a. Effect (Spy (Maybe a) a)
 last = create Nothing $ const Just
+
+
+last' :: forall a. a -> Effect (Spy a a)
+last' default = create default $ const identity
 
 
 -- trace :: forall a. Effect (Spy (Seq a) a)

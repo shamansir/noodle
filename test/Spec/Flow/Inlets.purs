@@ -23,7 +23,7 @@ import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
 import Rpd.Test.Util.Trace (TraceItem(..))
 import Rpd.Test.Util.Trace (channelsAfter) as CollectData
-import Rpd.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, myToolkit)
+import Rpd.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, mySequencer)
 
 
 {- ======================================= -}
@@ -47,7 +47,7 @@ spec = do
     _ /\ collectedData <-
         CollectData.channelsAfter
           (Milliseconds 100.0)
-          myToolkit
+          mySequencer
           (Network.empty "network")
           structure
 
@@ -70,7 +70,7 @@ spec = do
     _ /\ collectedData <-
       CollectData.channelsAfter
           (Milliseconds 100.0)
-          myToolkit
+          mySequencer
           (Network.empty "network")
           $ structure
               </> R.sendToInlet firstInlet Parcel
@@ -94,7 +94,7 @@ spec = do
 
     _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
-      myToolkit
+      mySequencer
       (Network.empty "network")
       $ structure
          </> R.streamToInlet
@@ -119,7 +119,7 @@ spec = do
 
     _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
-      myToolkit
+      mySequencer
       (Network.empty "network")
       $ structure
             </> R.streamToInlet
@@ -148,7 +148,7 @@ spec = do
 
     _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
-      myToolkit
+      mySequencer
       (Network.empty "network")
       $ structure
           </> R.streamToInlet
@@ -177,7 +177,7 @@ spec = do
 
     _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
-      myToolkit
+      mySequencer
       (Network.empty "network")
       $ structure
           </> R.streamToInlet
@@ -206,7 +206,7 @@ spec = do
 
     _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
-      myToolkit
+      mySequencer
       (Network.empty "network")
       $ structure
           </> R.streamToInlet (toInlet "patch" "node" "inlet1") stream

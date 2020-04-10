@@ -1,14 +1,15 @@
 module Rpd.Test.Spec.Flow.Base
     ( Network, Actions
     , Delivery(..), Pipe(..), Node(..)
-    , myToolkit
+    , myToolkit, mySequencer
     ) where
 
 import Prelude
 
+import FSM
 import Rpd.Network (Network) as R
 import Rpd.Toolkit as R
-import Rpd.API.Action.Sequence (ActionList) as R
+import Rpd.API.Action.Sequence (ActionList, Sequencer, make) as R
 
 
 data Delivery
@@ -73,7 +74,7 @@ instance myChannels :: R.Channels Delivery Pipe where
   adapt _ = identity
 
 
-myToolkit ::  R.Toolkit Delivery Pipe Node
+myToolkit :: R.Toolkit Delivery Pipe Node
 myToolkit =
   R.Toolkit
     (R.ToolkitName "delivery")
@@ -81,6 +82,11 @@ myToolkit =
   where
     nodes Empty = R.emptyNode
     nodes Custom = R.emptyNode
+
+
+mySequencer :: R.Sequencer Delivery Pipe Node
+mySequencer = R.make myToolkit
+
 
 
 -- TODO:

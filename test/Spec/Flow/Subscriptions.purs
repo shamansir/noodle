@@ -16,13 +16,15 @@ import Effect.Aff (delay, launchAff_) --, throwError
 
 import FRP.Event.Time (interval)
 
+import FSM (fold, run) as Actions
+
 import Rpd.API
     ( NodeInletsSubscription, NodeOutletsSubscription
     , InletSubscription
     ) as R
 import Rpd.API.Action as R
 import Rpd.API.Action.Sequence ((</>))
-import Rpd.API.Action.Sequence (init, run, runFolding, pushAll) as Actions
+import Rpd.API.Action.Sequence (init, pushAll) as Actions
 import Rpd.API.Action.Sequence as R
 import Rpd.Process (InletHandler(..), InletAlias, OutletAlias) as R
 import Rpd.Path (toPatch, toNode, toInlet)
@@ -36,7 +38,7 @@ import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
 import Rpd.Test.Util.Actions (getOrFail, getOrFail')
 import Rpd.Test.Util.Spy as Spy
-import Rpd.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, myToolkit)
+import Rpd.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, mySequencer)
 
 
 {- ======================================= -}
@@ -68,9 +70,9 @@ spec = do
             </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
       _ <- liftEffect
-        $ Actions.runFolding
-            myToolkit
-            (Network.empty "network")
+        $ Actions.fold
+            mySequencer
+            (pure $ Network.empty "network")
             $ structure
                  </> R.subscribeToNode (toNode "patch" "node") inletHandler outletHandler
                  </> R.streamToInlet
@@ -103,9 +105,9 @@ spec = do
             </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
       _ <- liftEffect
-        $ Actions.runFolding
-            myToolkit
-            (Network.empty "network")
+        $ Actions.fold
+            mySequencer
+            (pure $ Network.empty "network")
             $ structure
                  </> R.subscribeToInlet (toInlet "patch" "node" "inlet") (Spy.with traceSpy)
                  </> R.streamToInlet
@@ -135,15 +137,15 @@ spec = do
         network = Network.empty "network"
 
       result /\ { pushAction, stop } <- liftEffect
-        $ Actions.runFolding
-            myToolkit
-            network
+        $ Actions.fold
+            mySequencer
+            (pure network)
             $ structure
                  </> R.subscribeToInlet (toInlet "patch" "node" "inlet") (Spy.with traceSpy)
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
-      network' <- getOrFail' result network
+      network' <- getOrFail result
 
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Spy.get traceSpy
@@ -180,15 +182,15 @@ spec = do
         network = Network.empty "network"
 
       result /\ { stop } <- liftEffect
-        $ Actions.runFolding
-            myToolkit
-            network
+        $ Actions.fold
+            mySequencer
+            (pure network)
             $ structure
                  </> R.subscribeToInlet (toInlet "patch" "node" "inlet") (Spy.with traceSpy)
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
-      network' <- getOrFail' result network
+      network' <- getOrFail result
 
       delay (Milliseconds 100.0)
       _ <- liftEffect stop
@@ -197,16 +199,16 @@ spec = do
       liftEffect $ Spy.reset traceSpy
 
       result' /\ { stop : stop' } <- liftEffect
-        $ Actions.runFolding
-            myToolkit
-            network'
+        $ Actions.fold
+            mySequencer
+            (pure network')
             $ Actions.init
                  </> R.removeInlet (toInlet "patch" "node" "inlet")
                  </> R.addInlet (toNode "patch" "node") "inlet" Pass
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Liver <$> interval 30)
-      _ <- getOrFail' result' network'
+      _ <- getOrFail result
 
       delay (Milliseconds 100.0)
       _ <- liftEffect stop

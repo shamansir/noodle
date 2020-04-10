@@ -234,7 +234,7 @@ spec =
                 Actions.init
                     </> R.addPatch "foo"
 
-        result /\ stop <- liftEffect
+        result /\ { stop } <- liftEffect
             $ FSM.fold sequencer (pure network) actionsList
 
         _ <- getOrFail result
@@ -247,7 +247,7 @@ spec =
                 Actions.init
                     </> R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
-        result /\ stop <- liftEffect
+        result /\ { stop } <- liftEffect
             $ FSM.fold sequencer (pure network) actionsList
 
         failIfNoError "no error" result
@@ -261,7 +261,7 @@ spec =
                     </> R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
                     </> R.addPatch "bar"
 
-        result /\ stop <- liftEffect
+        result /\ { stop } <- liftEffect
             $ FSM.fold sequencer (pure network) actionsList
 
         _ <- getOrFail result
@@ -275,7 +275,7 @@ spec =
                     </> R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
                     </> R.addPatch "bar"
 
-        result /\ stop <- liftEffect
+        result /\ { stop } <- liftEffect
             $ FSM.fold sequencer (pure network) actionsList
 
         failIfNoError "no error" result
@@ -344,7 +344,7 @@ spec =
                 Actions.init
                     </> R.addPatch "foo"
 
-        result /\ stop <- liftEffect
+        result /\ { stop } <- liftEffect
             $ FSM.fold sequencer (pure network) actionsList
 
         _ <- getOrFail result
@@ -357,7 +357,7 @@ spec =
                 Actions.init
                     </> R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
-        result /\ stop <- liftEffect
+        result /\ { stop } <- liftEffect
             $ FSM.fold sequencer (pure network) actionsList
 
         failIfNoError "no error" result
@@ -371,7 +371,7 @@ spec =
                     </> R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
                     </> R.addPatch "bar"
 
-        result /\ stop <- liftEffect
+        result /\ { stop } <- liftEffect
             -- $ FSM.runTracing toolkit network (Spy.with handlerSpy) actionsList
             $ FSM.fold sequencer (pure network) actionsList
 
@@ -386,7 +386,7 @@ spec =
                     </> R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
                     </> R.addPatch "bar"
 
-        result /\ stop <- liftEffect
+        result /\ { stop } <- liftEffect
             -- $ FSM.runTracing toolkit network (Spy.with handlerSpy) actionsList
             $ FSM.fold sequencer (pure network) actionsList
 

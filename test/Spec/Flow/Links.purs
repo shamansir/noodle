@@ -27,7 +27,7 @@ import Test.Spec.Assertions (shouldContain, shouldNotContain)
 -- import Rpd.Test.CollectData (TraceItem(..))
 import Rpd.Test.Util.Trace (channelsAfter) as CollectData
 import Rpd.Test.Util.Trace (TraceItem(..), (+>))
-import Rpd.Test.Spec.Flow.Base (Actions, Network, Delivery(..), Pipe(..), Node(..), myToolkit)
+import Rpd.Test.Spec.Flow.Base (Actions, Network, Delivery(..), Pipe(..), Node(..), mySequencer)
 
 
 {- ======================================= -}
@@ -51,7 +51,7 @@ spec = do
 
     _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
-      myToolkit
+      mySequencer
       (Network.empty "network")
       $ structure
           -- first connect, then stream
@@ -82,7 +82,7 @@ spec = do
 
     _ /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
-      myToolkit
+      mySequencer
       (Network.empty "network")
       $ structure
               -- first stream, then connect
@@ -129,7 +129,7 @@ spec = do
 
     network /\ collectedData <- CollectData.channelsAfter
       (Milliseconds 100.0)
-      myToolkit
+      mySequencer
       (Network.empty "network")
       $ structure
         </> R.streamToOutlet
@@ -146,7 +146,7 @@ spec = do
 
     _ /\ collectedData' <- CollectData.channelsAfter
       (Milliseconds 100.0)
-      myToolkit
+      mySequencer
       network -- notice the use of the previous network result here
       $ Actions.init
         </> R.disconnect

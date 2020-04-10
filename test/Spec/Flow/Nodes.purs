@@ -38,7 +38,7 @@ import Rpd.Test.Util.Trace (channelsAfter) as CollectData
 import Rpd.Test.Spec.Flow.Base
     ( Actions
     , Delivery(..), Pipe(..), Node(..)
-    , myToolkit
+    , mySequencer
     )
 
 
@@ -101,7 +101,7 @@ spec = do
       _ /\ collectedData <-
         CollectData.channelsAfter
             (Milliseconds 100.0)
-            myToolkit
+            mySequencer
             (Network.empty "network")
             $ structure
                 </> R.sendToInlet curse1Inlet (Curse 4)
@@ -164,7 +164,7 @@ spec = do
 
       _ /\ collectedData <- CollectData.channelsAfter
         (Milliseconds 100.0)
-        myToolkit
+        mySequencer
         (Network.empty "network")
         $ structure
             </> R.sendToInlet curse1Inlet (Curse 4)
@@ -218,7 +218,7 @@ spec = do
 
       _ /\ collectedData <- CollectData.channelsAfter
         (Milliseconds 100.0)
-        myToolkit
+        mySequencer
         (Network.empty "network")
         $ structure
             </> R.sendToInlet curseInlet (Curse 4)
@@ -264,7 +264,7 @@ spec = do
 
       _ /\ collectedData <- CollectData.channelsAfter
         (Milliseconds 100.0)
-        myToolkit
+        mySequencer
         (Network.empty "network")
         structure
 
@@ -318,7 +318,7 @@ spec = do
 
         _ /\ collectedData <- CollectData.channelsAfter
           (Milliseconds 100.0)
-          myToolkit
+          mySequencer
           (Network.empty "network")
           $ structure
               </> R.sendToInlet curseInlet (Curse 4)
@@ -369,7 +369,7 @@ spec = do
 
         nw' /\ collectedData <- CollectData.channelsAfter
           (Milliseconds 100.0)
-          myToolkit
+          mySequencer
           (Network.empty "network")
           nwWithFlow
 
@@ -378,7 +378,7 @@ spec = do
 
         _ /\ collectedData' <- CollectData.channelsAfter
           (Milliseconds 100.0)
-          myToolkit
+          mySequencer
           (Network.empty "network")
           $ nwWithFlow </> R.removeInlet curseInlet
 
