@@ -81,7 +81,6 @@ apply
     -> Action d c n
     -> Network d c n
     -> Step d c n
-    -- FIXME: Action as a `Monoid`
 apply toolkit (Join actionA actionB) nw =
     case apply toolkit actionA nw of
         coveredNw /\ effects ->
