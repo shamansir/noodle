@@ -79,6 +79,8 @@ type PerformEffectF d c n model action effect
     -> (model /\ R.Network d c n)
     -> Effect Unit
 
+-- CoveredFSM RpdError (Either action (Core.Action d c n)) ((model /\ Network d c n) /\ view)
+
 
 data Renderer d c n model view action effect
     = Renderer

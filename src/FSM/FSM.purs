@@ -73,6 +73,17 @@ updateF (Pair actionA actionB) model =
 -}
 
 
+{-
+apply toolkit (Join actionA actionB) nw =
+    case apply toolkit actionA nw of
+        coveredNw /\ effects ->
+            let
+                coveredNw' /\ effects' = apply toolkit actionB $ Covered.recover coveredNw
+            in
+                Covered.joinErrors coveredNw coveredNw' /\ (effects <> effects')
+-}
+
+
 -- TODO: add `NestFSM` to support placing actions inside other actions, like we do for GUI
 
 
