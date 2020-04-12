@@ -4,6 +4,7 @@ module FSM
     , make, makePassing
     , run, run', run'', fold
     , pushAll, noSubscription
+    , imapModel, imapAction
     ) where
 
 
@@ -20,6 +21,8 @@ import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Either (Either)
 import Data.Traversable (traverse_)
+import Data.Bifunctor (bimap)
+import Data.Functor.Invariant (class Invariant, imap)
 
 
 import FRP.Event (Event)
@@ -32,6 +35,10 @@ data FSM action model =
     -- TODO: try: (action -> model -> Effect (model /\ Array action))
     FSM (action -> model -> model /\ Effect action)
     -- Array -> Foldable & Applicative & Monoid
+
+
+instance invariantFSM :: Invariant (FSM action) where
+    imap = imapModel
 
 
 make
@@ -215,3 +222,25 @@ fold' fsm init subscription actionList = do
 
 pushAll :: forall action. (action -> Effect Unit) -> List action -> Effect Unit
 pushAll = traverse_
+
+
+imapAction
+    :: forall actionA actionB model
+     . (actionA -> actionB)
+    -> (actionB -> actionA)
+    -> FSM actionA model
+    -> FSM actionB model
+imapAction mapAToB mapBToA (FSM updateF) =
+    FSM \actionB model ->
+        map (map mapAToB) $ updateF (mapBToA actionB) model
+
+
+imapModel
+    :: forall action modelA modelB
+     . (modelA -> modelB)
+    -> (modelB -> modelA)
+    -> FSM action modelA
+    -> FSM action modelB
+imapModel mapAToB mapBToA (FSM updateF) =
+    FSM \action modelB ->
+        bimap mapAToB identity $ updateF action $ mapBToA modelB
