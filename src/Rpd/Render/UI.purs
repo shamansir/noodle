@@ -35,17 +35,17 @@ import Rpd.Util (Canceler)
 
 
 
-data UI action model view = UI view (model -> view) (FSM action model)
+data UI action model view = UI (FSM action model) (model -> view)
 -- TODO: make it CoveredFSM
 
 
 make
     :: forall action model view
      . (action -> model -> model /\ Effect action)
-    -> view
-    -> UI model action view
-make updateF view =
-    FSM.make
+    -> (model -> view)
+    -> UI action model view
+make updateF viewF =
+    UI (FSM.make updateF) viewF
 
 
 run
@@ -53,20 +53,19 @@ run
      . Monoid action
     => Foldable f
     => UI action model view
+    -> view
     -> model
     -> f action
     -> Effect
-        { first :: view
-        , next :: Event view
+        { next :: Event view
         , push :: action -> Effect Unit
         , stop :: Canceler
         }
-run (UI firstView view fsm) model actions = do
+run (UI fsm viewF) view model actions = do
     { event : views, push : pushView } <- Event.create
-    { pushAction, stop } <- FSM.run' fsm model (pushView <<< view) actions
+    { pushAction, stop } <- FSM.run' fsm model (pushView <<< viewF) actions
     pure
-        { first : firstView
-        , next : views
+        { next : views
         , push : pushAction
         , stop
         }
