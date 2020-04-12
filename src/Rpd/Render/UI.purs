@@ -1,9 +1,8 @@
 module Rpd.Render.UI
-    ( UI
+    ( UI, CoveredUI
     , make, run
+    , imapModel, imapAction, imapError
     ) where
-
-
 
 import Prelude
 
@@ -16,10 +15,10 @@ import Data.Maybe (Maybe(..))
 import FRP.Event (Event)
 import FRP.Event as Event
 
-import Data.Covered (Covered, recover, inject, hasError, cover')
+import Data.Covered (Covered, recover, inject, hasError, cover', mapError)
 
 import FSM (FSM)
-import FSM (run, run', make) as FSM
+import FSM (run, run', make, imapModel, imapAction) as FSM
 import Data.Foldable (class Foldable)
 
 
@@ -36,7 +35,9 @@ import Rpd.Util (Canceler)
 
 
 data UI action model view = UI (FSM action model) (model -> view)
--- TODO: make it CoveredFSM
+
+
+type CoveredUI error action model view = UI action (Covered error model) view
 
 
 make
@@ -69,3 +70,37 @@ run (UI fsm viewF) view model actions = do
         , push : pushAction
         , stop
         }
+
+
+imapModel
+    :: forall action modelA modelB view
+     . (modelA -> modelB)
+    -> (modelB -> modelA)
+    -> UI action modelA view
+    -> UI action modelB view
+imapModel mapAToB mapBToA (UI fsm viewF) =
+    UI
+        (fsm # FSM.imapModel mapAToB mapBToA)
+        (viewF <<< mapBToA)
+
+
+imapAction
+    :: forall actionA actionB model view
+     . (actionA -> actionB)
+    -> (actionB -> actionA)
+    -> UI actionA model view
+    -> UI actionB model view
+imapAction mapAToB mapBToA (UI fsm viewF) =
+    UI
+        (fsm # FSM.imapAction mapAToB mapBToA)
+        viewF
+
+
+imapError
+    :: forall errorA errorB action model view
+     . (errorA -> errorB)
+    -> (errorB -> errorA)
+    -> CoveredUI errorA action model view
+    -> CoveredUI errorB action model view
+imapError mapAToB mapBToA =
+    imapModel (mapError mapAToB) (mapError mapBToA)
