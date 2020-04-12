@@ -1,9 +1,9 @@
-module Rpd.Renderer.Html.NodeList where
+module Rpd.Render.Html.NodeList where
 
 import Prelude (($), (<$>))
 
-import Rpd.Renderer.Html (View)
-import Rpd.Renderer.Html (core) as R
+import Rpd.Render.Html (View)
+import Rpd.Render.Html (core) as R
 import Rpd.Render.Atom (class Atom, labelOf)
 import Rpd.API.Action (Action(..), RequestAction(..)) as A
 import Rpd.Path (ToPatch) as P

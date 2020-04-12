@@ -1,4 +1,4 @@
-module Rpd.Renderer.Html where
+module Rpd.Render.Html where
 
 import Prelude
 
@@ -49,9 +49,9 @@ import Rpd.Util (type (/->), (+>), Bounds, Rect, Position)
 import Rpd.Toolkit as T
 
 import Rpd.Render.Atom as R
-import Rpd.Renderer.Layout as Layout
-import Rpd.Renderer.Layout (Layout, PatchLayout, Cell(..), ZIndex(..))
-import Rpd.Renderer.Html.DebugBox as DebugBox
+import Rpd.Render.Layout as Layout
+import Rpd.Render.Layout (Layout, PatchLayout, Cell(..), ZIndex(..))
+import Rpd.Render.Html.DebugBox as DebugBox
 
 import Spork.Html (Html)
 import Spork.Html as H
