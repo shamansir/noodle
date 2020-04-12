@@ -1,4 +1,4 @@
-module Rpd.Renderer.Terminal
+module Rpd.Render.Terminal
     ( TerminalRenderer
     , terminalRenderer
     , Ui
@@ -47,7 +47,7 @@ import Rpd.Path as R
 import Rpd.Render.MUV (Renderer(..), PushF(..), skipEffects) as R
 import Rpd.Toolkit as T
 
-import Rpd.Renderer.Terminal.Multiline as ML
+import Rpd.Render.Terminal.Multiline as ML
 
 
 data Subject

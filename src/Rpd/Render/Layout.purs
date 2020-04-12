@@ -1,4 +1,4 @@
-module Rpd.Renderer.Layout where
+module Rpd.Render.Layout where
 
 import Prelude
 

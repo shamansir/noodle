@@ -1,4 +1,4 @@
-module Rpd.Renderer.Html.DebugBox
+module Rpd.Render.Html.DebugBox
     ( Model, Filter, init, update, view )
     where
 

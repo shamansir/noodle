@@ -20,8 +20,8 @@ import Data.Vec2 (arrow) as Vec2
 import Rpd.Network as R
 import Rpd.API.Action (Action(..), RequestAction(..), DataAction(..)) as A
 import Rpd.API.Action.Sequence as A
-import Rpd.Renderer.Html (View, ToolkitRenderer, core) as R
-import Rpd.Renderer.Html.NodeList (render) as NodeList
+import Rpd.Render.Html (View, ToolkitRenderer, core) as R
+import Rpd.Render.Html.NodeList (render) as NodeList
 import Rpd.Path as P
 import Rpd.Process as R
 

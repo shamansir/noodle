@@ -1,4 +1,4 @@
-module Rpd.Renderer.Terminal.Multiline where
+module Rpd.Render.Terminal.Multiline where
 
 import Prelude
 

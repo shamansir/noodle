@@ -1,4 +1,4 @@
-module Rpd.Renderer.String
+module Rpd.Render.String
     ( StringRenderer
     , stringRenderer
     , stringRendererWithOptions

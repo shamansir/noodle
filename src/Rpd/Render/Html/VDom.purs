@@ -1,4 +1,4 @@
-module Rpd.Renderer.Html.VDom
+module Rpd.Render.Html.VDom
     (embed, embed') where
 
 import Prelude
