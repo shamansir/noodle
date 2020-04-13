@@ -29,7 +29,6 @@ import Rpd.API.Action.Apply (apply) as Core
 import Rpd.API.Action.Sequence (make) as ActionSeq
 import Rpd.API.Errors (RpdError) as R
 import Rpd.Toolkit as T
-import Rpd.Render.Minimal as Minimal
 import Rpd.Util (Canceler)
 
 
@@ -104,3 +103,11 @@ imapError
     -> CoveredUI errorB action model view
 imapError mapAToB mapBToA =
     imapModel (mapError mapAToB) (mapError mapBToA)
+
+
+once
+    :: forall action model view
+     . UI action model view
+    -> model
+    -> view
+once (UI _ viewF) model = viewF model

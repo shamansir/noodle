@@ -32,10 +32,11 @@ import Spork.Html (Html)
 import Rpd.Network (Network)
 import Rpd.API.Action (Action(..), DataAction(Bang), RequestAction(ToAddPatch)) as A
 import Rpd.Toolkit (Toolkit) as T
-import Rpd.Render.MUV (Renderer) as Ui
-import Rpd.Render.MUV (make, PushF(..)) as Render
+import Rpd.Render.Renderer (Renderer) as UI
+import Rpd.Render.UI (make) as UI
 
 import Debug.Trace as DT
+
 
 type HtmlView d c n action = Html (Either action (A.Action d c n))
 
