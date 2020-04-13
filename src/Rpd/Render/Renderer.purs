@@ -15,5 +15,5 @@ type Renderer d c n action model view
     = CoveredUI RpdError (Either action (C.Action d c n)) (model /\ Network d c n) view
 
 
-type MinimalRenderer d c n view
+type Minimal d c n view
     = UI (C.Action d c n) (Network d c n) view

@@ -34,7 +34,7 @@ import Debug.Trace as DT
 
 import Effect (Effect)
 
-import Data.Covered (uncover)
+import Data.Covered (carry, uncover, recover)
 
 import Rpd.API (uuidByPath) as R
 import Rpd.API.Errors (RpdError) as R
@@ -44,13 +44,14 @@ import Rpd.Optics as L
 import Rpd.Path as P
 import Rpd.UUID (UUID)
 import Rpd.UUID as UUID
-import Rpd.Render.MUV (Renderer(..), PushF(..), skipEffects) as R
 import Rpd.Util (type (/->), (+>), Bounds, Rect, Position)
-import Rpd.Toolkit as T
+import Rpd.Toolkit (Toolkit, class Channels, ToolkitRenderer) as T
 
 import Rpd.Render.Atom as R
+import Rpd.Render.UI as UI
 import Rpd.Render.Layout as Layout
 import Rpd.Render.Layout (Layout, PatchLayout, Cell(..), ZIndex(..))
+import Rpd.Render.Renderer (Renderer)
 import Rpd.Render.Html.DebugBox as DebugBox
 
 import Spork.Html (Html)
@@ -135,10 +136,13 @@ instance showDragState :: Show (DragState d c n) where
     show (Dragging (DragLink (R.Outlet _ oPath _ _))) = "dragging link from " <> show oPath
 
 
-type PushF d c n = R.PushF d c n (Action d c n)
+type PushF d c n = Action d c n -> Effect Unit
 
 
 type View d c n = Html (Either (Action d c n) (Core.Action d c n))
+
+
+type HtmlRenderer d c n = Renderer d c n (Action d c n) (Model d c n) (View d c n)
 
 
 init :: forall d c n. R.Network d c n -> Model d c n
@@ -159,12 +163,6 @@ init nw =
     }
 
 
-type HtmlRenderer d c n =
-    R.Renderer d c n
-        (Model d c n)
-        (View d c n)
-        (Action d c n)
-        (Perform d c n)
 -- type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
 type ToolkitRenderer d c n =
     T.ToolkitRenderer d c n
@@ -525,14 +523,26 @@ updateDebugBox _ (Left DisableDebug) _ = Nothing
 updateDebugBox _ _ v = v
 
 
-htmlRenderer
+make
     :: forall d c n
      . T.Channels d c
     => Show d => Show c => Show n
     => R.Atom n
     => ToolkitRenderer d c n
+    -> T.Toolkit d c n
     -> HtmlRenderer d c n
-htmlRenderer toolkitRenderer =
+make toolkitRenderer toolkit =
+    UI.make
+        (\action covered ->
+            let
+                maybeError /\ (ui /\ nw) = uncover covered
+                (ui' /\ effects) = update action (ui /\ nw)
+                ui'' =
+                    ui' { debug = ui'.debug # updateDebugBox nw action }
+            in (carry $ ui'' /\ nw) /\ effects)
+        (view toolkitRenderer <<< recover)
+        --(\covered -> view toolkitRenderer $ recover covered)
+    {-
     R.Renderer
         { from : emptyView
         , init : init
@@ -547,6 +557,7 @@ htmlRenderer toolkitRenderer =
         , view : view toolkitRenderer
         , performEffect
         }
+    -}
 
 
 -- FIXME: show in DebugBox
@@ -596,17 +607,17 @@ update
     :: forall d c n
      . Either (Action d c n) (Core.Action d c n)
     -> Model d c n /\ R.Network d c n
-    -> Model d c n /\ Array (Perform d c n)
+    -> Model d c n /\ Effect (Either (Action d c n) (Core.Action d c n))
 
-update (Right (Core.Data Core.Bang)) (ui /\ _) = ui /\ []
+update (Right (Core.Data Core.Bang)) (ui /\ _) = ui /\ pure mempty
 update (Right (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ _) =
     ui { lastInletData = ui.lastInletData # Map.insert inletPath d }
-    /\ []
+    /\ pure mempty
 update (Right (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (ui /\ _) =
     ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d }
-    /\ []
+    /\ pure mempty
 update (Right (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
-    ui /\ [ UpdatePositions ]
+    ui /\ updatePositions (my <<< StorePositions) nw
 update (Right (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)))) ( ui /\ nw ) =
     case L.view (L._patchByPath patchPath) nw of
         -- FIXME: Raise the error if patch wasn't found
@@ -621,29 +632,31 @@ update (Right (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _))))
                         ui.layout
                 }
                 -- TODO: remove from packing when node was removed
-            /\ [ UpdatePositions ]
+            /\ updatePositions (my <<< StorePositions) nw
         _ ->
-            ui /\ []
+            ui /\ pure mempty
     where
         patchPath = P.getPatchPath $ P.lift nodePath
 update (Right (Core.Build (Core.AddLink _))) ( ui /\ nw ) =
-    ui /\ [ UpdatePositions ]
-update (Right _) (ui /\ _) = ui /\ []
+    ui /\ updatePositions (my <<< StorePositions) nw
+update (Right _) (ui /\ _) = ui /\ pure mempty
 
-update (Left NoOp) (ui /\ _) = ui /\ []
+update (Left NoOp) (ui /\ _) = ui /\ pure mempty
+--update (Left (Batch actions)) (ui /\ _) = ui /\ pure mempty -- FIXME: implement
 update (Left (MouseMove mousePos)) ( ui /\ nw ) =
     ui { mousePos = mousePos } /\
         (case ui.dragging of
-            Dragging (DragNode _) -> [ UpdatePositions ]
-            _ -> []
+            Dragging (DragNode _) ->
+                updatePositions (my <<< StorePositions) nw
+            _ -> pure mempty
         )
 update (Left (MouseUp mousePos)) ( ui /\ nw ) =
     ui { mousePos = mousePos }
     /\ pinNodeIfDragging ui.dragging
     where
         pinNodeIfDragging (Dragging (DragNode node)) =
-            [ TryToPinNode node mousePos ]
-        pinNodeIfDragging _ = [] -- discard link if dragging it
+            pure $ my $ PinNode node mousePos
+        pinNodeIfDragging _ = pure mempty -- discard link if dragging it
 update (Left (PinNode node position)) ( ui /\ nw ) =
     let
         (R.Node _ nodePath _ _ _) = node
@@ -657,9 +670,9 @@ update (Left (PinNode node position)) ( ui /\ nw ) =
                         ui.layout # Layout.pinAt patch node position
                     }
             Nothing -> ui
-        /\ []
+        /\ pure mempty
 update (Left (ClickBackground e)) ( ui /\ nw ) =
-    ui { dragging = NotDragging } /\ []
+    ui { dragging = NotDragging } /\ pure mempty
 update (Left (ClickNodeTitle node e)) ( ui /\ nw ) =
     ui
         { dragging = Dragging $ DragNode node
@@ -674,10 +687,9 @@ update (Left (ClickNodeTitle node e)) ( ui /\ nw ) =
                         ui.layout # Layout.abandon patch node
                     Nothing -> ui.layout
         }
-    /\
-        [ StopPropagation $ ME.toEvent e
-        , UpdatePositions
-        ]
+    /\ do
+        _ <- Event.stopPropagation $ ME.toEvent e
+        updatePositions (my <<< StorePositions) nw
 update (Left (ClickRemoveButton node e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging
@@ -692,32 +704,47 @@ update (Left (ClickRemoveButton node e)) ( ui /\ nw ) =
                         ui.layout # Layout.remove patch node
                     Nothing -> ui.layout
         }
-    /\
-        [ StopPropagation $ ME.toEvent e
-        , UpdatePositions
-        , TryRemovingNode node
-        ]
-update (Left (ClickInlet inletPath e)) ( ui /\ nw ) =
+    /\ do
+        _ <- Event.stopPropagation $ ME.toEvent e
+        updatePositions (\positions ->
+            my $ StorePositions positions
+            {- FIXME: Batch
+                [ my $ StorePositions positions
+                , core $ Core.Build $ Core.RemoveNode node
+                ] -}
+            ) nw
+update (Left (ClickInlet (R.Inlet _ inletPath _ _) e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging
         -- TODO: if node was dragged before, place it at the mouse point
         }
-    /\ (case ui.dragging of
-        Dragging (DragLink outletPath) ->
-            [ StopPropagation $ ME.toEvent e
-            , TryConnecting outletPath inletPath
-            ]
-        _ -> [ StopPropagation $ ME.toEvent e ])
+    /\ (do
+        _ <- Event.stopPropagation $ ME.toEvent e
+        case ui.dragging of
+            Dragging (DragLink (R.Outlet _ outletPath _ _)) ->
+                pure $ core $ Core.Request $ Core.ToConnect outletPath inletPath
+            _ -> pure mempty
+    )
 update (Left (ClickOutlet outletPath e)) ( ui /\ nw ) =
     ui
         { dragging = Dragging $ DragLink outletPath
         -- TODO: if node was dragged before, place it at the mouse point
         }
-    /\ [ StopPropagation $ ME.toEvent e ]
-update (Left EnableDebug) (ui /\ _) = ui /\ [] -- TODO: why do nothing?
-update (Left DisableDebug) (ui /\ _) = ui /\ [] -- TODO: why do nothing?
+    /\ (Event.stopPropagation (ME.toEvent e) >>= (const $ pure mempty))
+update (Left EnableDebug) (ui /\ _) = ui /\ pure mempty -- TODO: why do nothing?
+update (Left DisableDebug) (ui /\ _) = ui /\ pure mempty -- TODO: why do nothing?
 update (Left (StorePositions positions)) (ui /\ _) =
-    ui { positions = positions } /\ []
+    ui { positions = positions } /\ pure mempty
+
+
+updatePositions
+    :: forall d c n x
+     . ((UUID.Tagged /-> Position) -> x)
+    -> R.Network d c n
+    -> Effect x
+updatePositions ack (R.Network nw) = do
+    positions <- collectPositions $ loadUUIDs $ Map.keys nw.registry
+    pure $ ack $ convertPositions positions
 
 
 performEffect

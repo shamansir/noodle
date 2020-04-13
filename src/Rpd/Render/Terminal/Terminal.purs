@@ -44,7 +44,7 @@ import Rpd.API.Action as C
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.Optics as R
 import Rpd.Path as R
-import Rpd.Render.MUV (Renderer(..), PushF(..), skipEffects) as R
+import Rpd.Render.Renderer (Renderer) as R
 import Rpd.Toolkit as T
 
 
