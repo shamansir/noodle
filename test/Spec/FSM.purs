@@ -22,7 +22,7 @@ import Test.Spec (Spec, describe, it, pending', itOnly, describeOnly, pending)
 import Test.Spec.Assertions (shouldEqual, fail)
 
 import FSM as FSM
-import FSM (FSM)
+import FSM (FSM, class DoNothing, doNothing)
 import FSM.Covered (CoveredFSM)
 
 
@@ -54,8 +54,8 @@ instance semigroupAction :: Semigroup Action where
   append = Pair
 
 
-instance monoidAction :: Monoid Action where
-  mempty = NoOp
+instance doNothingAction :: DoNothing Action where
+  doNothing = NoOp
 
 
 spec :: Spec Unit

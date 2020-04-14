@@ -5,6 +5,11 @@ module FSM
     , run, run', run'', fold
     , pushAll, noSubscription
     , imapModel, imapAction
+    , class DoNothing, doNothing
+    , class Batch, batch, break
+    , append, (<+>)
+    , appendEffects, (<:>)
+    , foldUpdate
     ) where
 
 
@@ -14,7 +19,7 @@ import Effect (Effect)
 import Effect.Ref as Ref
 import Effect.Console as Console
 
-import Data.List (List)
+import Data.List (List, (:))
 import Data.List as List
 import Data.Foldable (class Foldable)
 import Data.Tuple (fst)
@@ -34,11 +39,29 @@ import Rpd.Util (Canceler)
 data FSM action model =
     -- TODO: try: (action -> model -> Effect (model /\ Array action))
     FSM (action -> model -> model /\ Effect action)
-    -- Array -> Foldable & Applicative & Monoid
+    -- Array -> Foldable & Applicative & DoNothing
 
 
 instance invariantFSM :: Invariant (FSM action) where
     imap = imapModel
+
+
+class DoNothing action where -- a.k.a. `Monoid`?
+    doNothing :: action
+
+
+class Batch action where -- a.k.a. `Semigroup`?
+    batch :: List action -> action
+    break :: action -> List action
+
+
+infixl 1 append as <+>
+infixl 1 appendEffects as <:>
+
+
+-- instance effectActionSemigroup :: Batch action => Semigroup (Effect action) where
+--     append effectA effectB =
+--         \actionA actionB -> batch $ List.Cons actionA $ List.singleton actionB
 
 
 make
@@ -50,45 +73,13 @@ make = FSM
 
 makePassing
     :: forall action model
-     . Monoid action
+     . DoNothing action
     => FSM action model
-makePassing = FSM (\_ m -> m /\ pure mempty)
+makePassing = FSM (\_ m -> m /\ pure doNothing)
 
 
 noSubscription :: forall a. a -> Effect Unit
 noSubscription = const $ pure unit
-
-
--- FIXME: change `Monoid` requirement to some custom typeclass (`IsAction`?)
---        since we break monoid laws: `mempty <> action != mempty.
---        maybe to something like `DoNothing` typeclass.
-
-
--- TODO: optionally, add `Batch` typeclass to work with returning multiple actions
---       it will require not only to allow joining two (or more?) actions but also
---       `Foldable` or be able to fold itself (Traverse?) using sequential calls
---       to `update`
-
-
-{-
-updateF (Pair actionA actionB) model =
-    let
-        model' /\ effects' = updateF actionA model
-        model'' /\ effects'' = updateF actionB model'
-    in
-        model'' /\ (effects' <> effects'')
--}
-
-
-{-
-apply toolkit (Join actionA actionB) nw =
-    case apply toolkit actionA nw of
-        coveredNw /\ effects ->
-            let
-                coveredNw' /\ effects' = apply toolkit actionB $ Covered.recover coveredNw
-            in
-                Covered.joinErrors coveredNw coveredNw' /\ (effects <> effects')
--}
 
 
 -- TODO: add `NestFSM` to support placing actions inside other actions, like we do for GUI
@@ -96,7 +87,7 @@ apply toolkit (Join actionA actionB) nw =
 
 prepare
     :: forall action model
-     . Monoid action -- FIXME: we only use `mempty`, not `append`
+     . DoNothing action
     => FSM action model
     -> model
     -> (model -> Effect Unit) -- FIXME: use `update` itself for that?
@@ -112,7 +103,7 @@ prepare (FSM f) init subModels subActions = do
             Event.fold
                 (\action prev -> f action $ fst prev)
                 actions
-                (init /\ pure mempty)
+                (init /\ pure doNothing)
         (models :: Event model)
             = fst <$> updates
     stopModelSubscription <- Event.subscribe models subModels
@@ -129,7 +120,7 @@ prepare (FSM f) init subModels subActions = do
 
 run
     :: forall action model f
-     . Monoid action
+     . DoNothing action
     => Foldable f
     => FSM action model
     -> model
@@ -144,7 +135,7 @@ run fsm init = do
 
 run'
     :: forall action model f
-     . Monoid action
+     . DoNothing action
     => Foldable f
     => FSM action model
     -> model
@@ -160,7 +151,7 @@ run' fsm init subscription = do
 
 run''
     :: forall action model f
-     . Monoid action
+     . DoNothing action
     => Foldable f
     => FSM action model
     -> model
@@ -179,7 +170,7 @@ run'' fsm init subModels subActions actionList = do
 
 fold
     :: forall action model f
-     . Monoid action
+     . DoNothing action
     => Foldable f
     => FSM action model
     -> model
@@ -203,7 +194,7 @@ fold fsm init actionList = do
 
 {- fold'
     :: forall action model
-     . Monoid action
+     . DoNothing action
     => FSM action model
     -> model
     -> (model -> Effect Unit)
@@ -244,3 +235,28 @@ imapModel
 imapModel mapAToB mapBToA (FSM updateF) =
     FSM \action modelB ->
         bimap mapAToB identity $ updateF action $ mapBToA modelB
+
+
+append :: forall action. Batch action => action -> action -> action
+append actionA actionB = batch $ actionA : List.singleton actionB
+
+
+appendEffects :: forall action. Batch action => Effect action -> Effect action -> Effect action
+appendEffects effectA effectB =
+    append <$> effectA <*> effectB
+
+
+foldUpdate
+    :: forall action model
+     . Batch action
+    => (action -> model ->  model /\ Effect action)
+    -- => FSM action model
+    -> model
+    -> ( action /\ action )
+    -> model /\ Effect action
+foldUpdate updateF model ( actionA /\ actionB ) =
+    let
+        model' /\ effects' = updateF actionA model
+        model'' /\ effects'' = updateF actionB model'
+    in
+        model'' /\ (effects' <:> effects'')

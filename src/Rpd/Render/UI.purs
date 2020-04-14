@@ -50,7 +50,7 @@ make updateF viewF =
 
 run
     :: forall action model view f
-     . Monoid action
+     . DoNothing action
     => Foldable f
     => UI action model view
     -> view

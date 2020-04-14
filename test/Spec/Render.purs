@@ -38,8 +38,8 @@ import Rpd.API.Action.Sequence ((</>), ActionList)
 import Rpd.API.Action.Sequence as Actions
 import Rpd.API.Action.Sequence as R
 
-import Rpd.Render.Minimal (Renderer(..), make, once, PushF(..)) as Render
-import Rpd.Render.MUV (Renderer(..), make, once, PushF(..), fromMinimal) as RenderMUV
+import Rpd.Render.Renderer (Renderer, Minimal) as Render
+import Rpd.Render.UI (make, once) as UI
 import Rpd.Render.Terminal (terminalRenderer)
 import Rpd.Render.Terminal.Multiline as ML
 import Rpd.Render.String (stringRenderer, stringRendererWithOptions)
