@@ -17,7 +17,7 @@ import FRP.Event as Event
 
 import Data.Covered (Covered, recover, inject, hasError, cover', mapError)
 
-import FSM (FSM)
+import FSM (FSM, class DoNothing)
 import FSM (run, run', make, imapModel, imapAction) as FSM
 import Data.Foldable (class Foldable)
 

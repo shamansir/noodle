@@ -6,7 +6,6 @@ import Math (atan2, sqrt, pow)
 
 import Data.Int (toNumber)
 import Data.Either (Either(..))
-import Data.Either (hush) as Either
 import Data.Foldable (fold, foldr)
 import Data.Lens (view) as L
 import Data.Lens.At (at) as L
@@ -53,7 +52,7 @@ import Rpd.Render.Atom as R
 import Rpd.Render.UI as UI
 import Rpd.Render.Layout as Layout
 import Rpd.Render.Layout (Layout, PatchLayout, Cell(..), ZIndex(..))
-import Rpd.Render.Renderer (Renderer)
+import Rpd.Render.Renderer (Renderer, Routed(..))
 import Rpd.Render.Html.DebugBox as DebugBox
 
 import Spork.Html (Html)
@@ -141,7 +140,7 @@ instance showDragState :: Show (DragState d c n) where
 type PushF d c n = Action d c n -> Effect Unit
 
 
-type View d c n = Html (Either (Action d c n) (Core.Action d c n))
+type View d c n = Html (Routed (Action d c n) (Core.Action d c n))
 
 
 type HtmlRenderer d c n = Renderer d c n (Action d c n) (Model d c n) (View d c n)
@@ -169,16 +168,16 @@ init nw =
 type ToolkitRenderer d c n =
     T.ToolkitRenderer d c n
         (View d c n)
-        (Either (Action d c n) (Core.Action d c n))
+        (Routed (Action d c n) (Core.Action d c n))
 -- FIXME: user might want to use custom messages in the renderer
 
 
-core :: forall d c n. Core.Action d c n -> Either (Action d c n) (Core.Action d c n)
-core = Right
+core :: forall d c n. Core.Action d c n -> Routed (Action d c n) (Core.Action d c n)
+core = FromCore
 
 
-my :: forall d c n. Action d c n -> Either (Action d c n) (Core.Action d c n)
-my = Left
+my :: forall d c n. Action d c n -> Routed (Action d c n) (Core.Action d c n)
+my = FromUI
 
 
 defaultLayerSize :: Layout.LayerSize
@@ -504,11 +503,11 @@ viewDebugWindow ui nw =
             [ H.type_ H.InputCheckbox
             , H.checked (isJust ui.debug)
             , H.onChecked
-                (H.always_ $ Left
+                (H.always_ $ FromUI
                     $ if isJust ui.debug then DisableDebug else EnableDebug)
             ]
         , case ui.debug of
-            Just debug -> (const $ Left NoOp) <$> DebugBox.view nw debug
+            Just debug -> (const $ FromUI NoOp) <$> DebugBox.view nw debug
             _ -> H.div [] []
         ]
 
@@ -516,12 +515,12 @@ viewDebugWindow ui nw =
 updateDebugBox
     :: forall d c n
      . R.Network d c n
-    -> Either (Action d c n) (Core.Action d c n)
+    -> Routed (Action d c n) (Core.Action d c n)
     -> Maybe (DebugBox.Model d c n)
     -> Maybe (DebugBox.Model d c n)
-updateDebugBox nw (Right action) (Just debug) = Just $ DebugBox.update action nw debug
-updateDebugBox _ (Left EnableDebug) _ = Just $ DebugBox.init
-updateDebugBox _ (Left DisableDebug) _ = Nothing
+updateDebugBox nw (FromCore action) (Just debug) = Just $ DebugBox.update action nw debug
+updateDebugBox _ (FromUI EnableDebug) _ = Just $ DebugBox.init
+updateDebugBox _ (FromUI DisableDebug) _ = Nothing
 updateDebugBox _ _ v = v
 
 
@@ -539,7 +538,7 @@ make toolkitRenderer toolkit =
             let
                 maybeError /\ (ui /\ nw) = uncover covered
                 (ui' /\ effects) = update action (ui /\ nw)
-                ui'' =
+                ui'' = -- FIXME: use <$> over model to update debug box and skip errors
                     ui' { debug = ui'.debug # updateDebugBox nw action }
             in (carry $ ui'' /\ nw) /\ effects)
         (view toolkitRenderer <<< recover)
@@ -607,20 +606,20 @@ view toolkitRenderer (ui /\ nw) =
 
 update
     :: forall d c n
-     . Either (Action d c n) (Core.Action d c n)
+     . Routed (Action d c n) (Core.Action d c n)
     -> Model d c n /\ R.Network d c n
-    -> Model d c n /\ Effect (Either (Action d c n) (Core.Action d c n))
+    -> Model d c n /\ Effect (Routed (Action d c n) (Core.Action d c n))
 
-update (Right (Core.Data Core.Bang)) (ui /\ _) = ui /\ pure doNothing
-update (Right (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ _) =
+update (FromCore (Core.Data Core.Bang)) (ui /\ _) = ui /\ pure doNothing
+update (FromCore (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ _) =
     ui { lastInletData = ui.lastInletData # Map.insert inletPath d }
     /\ pure doNothing
-update (Right (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (ui /\ _) =
+update (FromCore (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (ui /\ _) =
     ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d }
     /\ pure doNothing
-update (Right (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
+update (FromCore (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
     ui /\ updatePositions (my <<< StorePositions) nw
-update (Right (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)))) ( ui /\ nw ) =
+update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)))) ( ui /\ nw ) =
     case L.view (L._patchByPath patchPath) nw of
         -- FIXME: Raise the error if patch wasn't found
         Just patch ->
@@ -639,27 +638,27 @@ update (Right (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _))))
             ui /\ pure doNothing
     where
         patchPath = P.getPatchPath $ P.lift nodePath
-update (Right (Core.Build (Core.AddLink _))) ( ui /\ nw ) =
+update (FromCore (Core.Build (Core.AddLink _))) ( ui /\ nw ) =
     ui /\ updatePositions (my <<< StorePositions) nw
-update (Right _) (ui /\ _) = ui /\ pure doNothing
+update (FromCore _) (ui /\ _) = ui /\ pure doNothing
 
-update (Left NoOp) (ui /\ _) = ui /\ pure doNothing
---update (Left (Batch actions)) (ui /\ _) = ui /\ pure doNothing -- FIXME: implement
-update (Left (MouseMove mousePos)) ( ui /\ nw ) =
+update (FromUI NoOp) (ui /\ _) = ui /\ pure doNothing
+--update (FromUI (Batch actions)) (ui /\ _) = ui /\ pure doNothing -- FIXME: implement
+update (FromUI (MouseMove mousePos)) ( ui /\ nw ) =
     ui { mousePos = mousePos } /\
         (case ui.dragging of
             Dragging (DragNode _) ->
                 updatePositions (my <<< StorePositions) nw
             _ -> pure doNothing
         )
-update (Left (MouseUp mousePos)) ( ui /\ nw ) =
+update (FromUI (MouseUp mousePos)) ( ui /\ nw ) =
     ui { mousePos = mousePos }
     /\ pinNodeIfDragging ui.dragging
     where
         pinNodeIfDragging (Dragging (DragNode node)) =
             pure $ my $ PinNode node mousePos
         pinNodeIfDragging _ = pure doNothing -- discard link if dragging it
-update (Left (PinNode node position)) ( ui /\ nw ) =
+update (FromUI (PinNode node position)) ( ui /\ nw ) =
     let
         (R.Node _ nodePath _ _ _) = node
         patchPath = P.getPatchPath $ P.lift nodePath
@@ -673,9 +672,9 @@ update (Left (PinNode node position)) ( ui /\ nw ) =
                     }
             Nothing -> ui
         /\ pure doNothing
-update (Left (ClickBackground e)) ( ui /\ nw ) =
+update (FromUI (ClickBackground e)) ( ui /\ nw ) =
     ui { dragging = NotDragging } /\ pure doNothing
-update (Left (ClickNodeTitle node e)) ( ui /\ nw ) =
+update (FromUI (ClickNodeTitle node e)) ( ui /\ nw ) =
     ui
         { dragging = Dragging $ DragNode node
         , layout =
@@ -692,7 +691,7 @@ update (Left (ClickNodeTitle node e)) ( ui /\ nw ) =
     /\ do
         _ <- Event.stopPropagation $ ME.toEvent e
         updatePositions (my <<< StorePositions) nw
-update (Left (ClickRemoveButton node e)) ( ui /\ nw ) =
+update (FromUI (ClickRemoveButton node e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging
         , layout =
@@ -715,7 +714,7 @@ update (Left (ClickRemoveButton node e)) ( ui /\ nw ) =
                 , core $ Core.Build $ Core.RemoveNode node
                 ] -}
             ) nw
-update (Left (ClickInlet (R.Inlet _ inletPath _ _) e)) ( ui /\ nw ) =
+update (FromUI (ClickInlet (R.Inlet _ inletPath _ _) e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging
         -- TODO: if node was dragged before, place it at the mouse point
@@ -727,15 +726,15 @@ update (Left (ClickInlet (R.Inlet _ inletPath _ _) e)) ( ui /\ nw ) =
                 pure $ core $ Core.Request $ Core.ToConnect outletPath inletPath
             _ -> pure doNothing
     )
-update (Left (ClickOutlet outletPath e)) ( ui /\ nw ) =
+update (FromUI (ClickOutlet outletPath e)) ( ui /\ nw ) =
     ui
         { dragging = Dragging $ DragLink outletPath
         -- TODO: if node was dragged before, place it at the mouse point
         }
     /\ (Event.stopPropagation (ME.toEvent e) >>= (const $ pure doNothing))
-update (Left EnableDebug) (ui /\ _) = ui /\ pure doNothing -- TODO: why do nothing?
-update (Left DisableDebug) (ui /\ _) = ui /\ pure doNothing -- TODO: why do nothing?
-update (Left (StorePositions positions)) (ui /\ _) =
+update (FromUI EnableDebug) (ui /\ _) = ui /\ pure doNothing -- TODO: why do nothing?
+update (FromUI DisableDebug) (ui /\ _) = ui /\ pure doNothing -- TODO: why do nothing?
+update (FromUI (StorePositions positions)) (ui /\ _) =
     ui { positions = positions } /\ pure doNothing
 
 
@@ -749,10 +748,11 @@ updatePositions ack (R.Network nw) = do
     pure $ ack $ convertPositions positions
 
 
+{-
 performEffect
     :: forall d c n
      . T.Toolkit d c n
-    -> (Either (Action d c n) (Core.Action d c n) -> Effect Unit)
+    -> (Routed (Action d c n) (Core.Action d c n) -> Effect Unit)
     -> Perform d c n
     -> (Model d c n /\ R.Network d c n)
     -> Effect Unit
@@ -776,6 +776,7 @@ performEffect _ pushAction
 performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
     _ <- Event.stopPropagation e
     pure unit
+-}
 
 
 -- FIXME: move to the Toolkit renderer

@@ -1,6 +1,6 @@
 module Rpd.Render.Terminal
     ( TerminalRenderer
-    , terminalRenderer
+    , make
     , Ui
     , View
     , Msg
@@ -26,6 +26,7 @@ import Data.String as String
 import Data.Tuple (snd, fst) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Newtype (unwrap)
+import Effect (Effect)
 
 import Data.Either (Either(..))
 
@@ -44,7 +45,8 @@ import Rpd.API.Action as C
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.Optics as R
 import Rpd.Path as R
-import Rpd.Render.Renderer (Renderer) as R
+import Rpd.Render.UI (make) as UI
+import Rpd.Render.Renderer (Renderer, Routed(..)) as R
 import Rpd.Toolkit as T
 
 
@@ -115,11 +117,15 @@ initUi =
     }
 
 
-type TerminalRenderer d c n  = R.Renderer d c n Ui View Msg Unit
+type TerminalRenderer d c n = R.Renderer d c n Msg Ui View
 
 
-terminalRenderer :: forall d c n. TerminalRenderer d c n
-terminalRenderer =
+make :: forall d c n. TerminalRenderer d c n
+make =
+    UI.make
+        update
+        (recover >>> view)
+    {-
     R.Renderer
         { from : ML.empty
         , init : const initUi
@@ -127,6 +133,7 @@ terminalRenderer =
         , view
         , performEffect : R.skipEffects
         }
+    -}
 
 
 noView :: View
@@ -277,14 +284,15 @@ packNetwork nw@(R.Network { name, patches }) (Packing container) =
 
 update
     :: forall d c n
-     . Either Msg (C.Action d c n)
+     . R.Routed Msg (C.Action d c n)
     -> Covered R.RpdError (Ui /\ R.Network d c n)
-    -> Ui /\ Array Unit
+    -> Covered R.RpdError (Ui /\ R.Network d c n) /\ Effect (R.Routed Msg (C.Action d c n))
 -- update R.Bang (ui /\ nw) =
 --     ui { packing = Just $ ui.packing # packNetwork nw }
 update _ covered =
-    let (ui /\ _) = recover covered
-    in (covered # withError addError ui) /\ []
+    let (ui /\ nw) = recover covered
+    in (carry $ (covered # withError addError ui) /\ nw)
+        /\ (pure $ R.FromUI Skip)
 
 
 addError :: R.RpdError -> Ui  -> Ui
