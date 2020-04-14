@@ -8,12 +8,14 @@ import Prelude
 
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.List (List)
-import Data.List (toUnfoldable) as List
+import Data.List (toUnfoldable, List(..)) as List
 import Data.String (joinWith) as Str
 
 import FRP.Event (Event)
 
 import Effect (Effect)
+
+import FSM (class DoNothing, doNothing, class Batch, batch, break)
 
 import Rpd.API
     ( InletSubscription
@@ -105,6 +107,18 @@ data DataAction d c
     | SendPeriodicallyToInlet (Inlet d c) Int (InletPeriodSubscription d)
 
 
+instance doNothingAction :: DoNothing (Action d c n) where
+    doNothing = NoOp
+
+
+instance batchAction :: Batch (Action d c n) where
+    batch List.Nil = NoOp
+    batch (List.Cons first others) = Join first $ batch others
+    break NoOp = List.Nil
+    break (Join actionA actionB) = List.Cons actionA $ break actionB
+    break action = List.Cons action List.Nil
+
+
 {-
 data RpdEffect d c n -- TODO: move to a separate module
     = DoE (Perform d c n)
@@ -145,13 +159,6 @@ data RpdEffect d c n -- TODO: move to a separate module
 -- instance showStringAction :: Show StringAction where
 --   show = GShow.genericShow
 
-
-instance semigroupAction :: Semigroup (Action d c n) where
-    append = Join
-
-
-instance monoidAction :: Monoid (Action d c n) where
-    mempty = NoOp
 
 
 showKind :: forall d c n. Action d c n -> String

@@ -23,7 +23,8 @@ import FRP.Event as E
 import FRP.Event.Class (count) as E
 import FRP.Event.Time as E
 
-import FSM.Covered (follow, followJoin, fine) as Covered
+import FSM.Covered (follow, followJoin, fine, foldUpdate) as Covered
+import FSM (doNothing, (<+>), batch)
 
 import Rpd.Util (PushableFlow(..), Canceler)
 import Rpd.API as Api
@@ -71,7 +72,7 @@ foldSteps
 foldSteps initNW foldable foldF =
     foldr
         (\x step -> step <∞> foldF x)
-        ((Covered.carry $ initNW) /\ mempty)
+        ((Covered.carry $ initNW) /\ pure doNothing)
         foldable
 
 
@@ -82,17 +83,15 @@ apply
     -> Network d c n
     -> Step d c n
 apply toolkit (Join actionA actionB) nw =
-    case apply toolkit actionA nw of
-        coveredNw /\ effects ->
-            let
-                coveredNw' /\ effects' = apply toolkit actionB $ Covered.recover coveredNw
-            in
-                Covered.joinErrors coveredNw coveredNw' /\ (effects <> effects')
+    Covered.foldUpdate
+        (\action coveredNw -> apply toolkit action $ Covered.recover coveredNw)
+        nw
+        (actionA /\ actionB)
 apply toolkit action nw =
     proceed $ apply_ toolkit action nw
     where
         proceed :: StepE d c n -> Step d c n
-        proceed = Covered.unpack <<< Covered.fromEither (nw /\ mempty)
+        proceed = Covered.unpack <<< Covered.fromEither (nw /\ pure doNothing)
 
 
 apply_
@@ -187,10 +186,10 @@ applyRequestAction _ (ToAddNodeByDef patchPath alias n (NodeDef def)) nw =
                     , pushToInlets : PushToInlets pushToInlets
                     , pushToOutlets : PushToOutlets pushToOutlets
                     }
-        pure $  (Build $ AddNode node)
-                <> (fold $ addInlet path <$> def.inlets)
-                <> (fold $ addOutlet path <$> def.outlets)
-                <> (Request $ ToProcessWith path def.process)
+        pure $ (Build $ AddNode node)
+            <+> (batch $ addInlet path <$> def.inlets)
+            <+> (batch $ addOutlet path <$> def.outlets)
+            <+> (Request $ ToProcessWith path def.process)
         {-
         , do
             flows <- Api.makeInletOutletsFlows
@@ -266,10 +265,8 @@ applyRequestAction _ (ToConnect outletPath inletPath) nw = do
             (PushToInlet pushToInlet) = pushToInlet'
             newLink = Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid }
         canceler :: Canceler <- E.subscribe outletFlow pushToInlet
-        pure $ fold
-                [ Build $ AddLink newLink
-                , Inner $ StoreLinkCanceler newLink canceler
-                ]
+        pure $  (Build $ AddLink newLink)
+            <+> (Inner $ StoreLinkCanceler newLink canceler)
 applyRequestAction _ (ToDisconnect outletPath inletPath) nw = do
     fine nw
     -- pure $ nw /\ [ Disconnect link ]
@@ -364,7 +361,7 @@ applyBuildAction tk (RemoveNode node) nw = do
 applyBuildAction _ (RemoveInlet inlet) nw = do
     nw' <- Api.removeInlet inlet nw
     pure $ nw' /\
-        (pure $ fold [
+        (pure $ doNothing
             {- CancelInletSubscriptions inlet
             , CancelNodeSubscriptions node
             , SubscribeNodeProcess node
@@ -372,46 +369,49 @@ applyBuildAction _ (RemoveInlet inlet) nw = do
             , SubscribeNodeUpdates node
             , SendActionOnInletUpdatesE inlet
             -}
-        ])
+        )
 applyBuildAction _ (RemoveOutlet outlet) nw = do
     nw' <- Api.removeOutlet outlet nw
     pure $ nw' /\
-        (pure $ fold [ {- CancelOutletSubscriptions outlet -} ])
+        (pure $ doNothing {- CancelOutletSubscriptions outlet -})
 applyBuildAction _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw =
     let newNode = Api.processWith processF node
         nw' = nw # setJust (_node uuid) newNode
     in
         pure $ nw' /\
-            (pure $ fold [ {- SubscribeNodeProcess newNode -} ])
+            (pure $ doNothing {- SubscribeNodeProcess newNode -})
 applyBuildAction _ (AddInlet inlet@(Inlet uuid path _ _)) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     nw' <- Api.addInlet inlet nw
     pure $ nw' /\
-        (pure $ fold [
+        (pure $ doNothing
        {- CancelNodeSubscriptions node
         , SubscribeNodeProcess node
         , InformNodeOnInletUpdates inlet node
         , SubscribeNodeUpdates node
         , SendActionOnInletUpdatesE inlet
         -}
-        ])
+        )
 applyBuildAction _ (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     nw' <- Api.addOutlet outlet nw
     pure $ nw' /\
-        (pure $ fold [
+        (pure $ doNothing
        {- CancelNodeSubscriptions node
         , SubscribeNodeProcess node
         , InformNodeOnOutletUpdates outlet node
         , SubscribeNodeUpdates node
         , SendActionOnOutletUpdatesE outlet
-        -} ])
-applyBuildAction _ (Connect outlet inlet) nw = do
-    pure $ nw /\ (pure $ fold [ {- AddLinkE outlet inlet -} ])
+        -})
+applyBuildAction _ (Connect (Outlet ouuid _ _ _) (Inlet iuuid _ _ _)) nw = do
+    pure $ nw /\ do
+        uuid <- UUID.new
+        let newLink = Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid }
+        pure $ Build $ AddLink newLink
 applyBuildAction _ (AddLink link) nw =
     withE $ Api.addLink link nw -- TODO: subscriptions
 
@@ -459,11 +459,11 @@ applyInnerAction _ (ClearLinkCancelers (Link uuid _)) nw =
 
 
 fine :: forall d c n. Network d c n -> StepE d c n
-fine nw = pure $ nw /\ mempty
+fine nw = pure $ nw /\ pure doNothing
 
 
 withE :: forall d c n. Either RpdError (Network d c n) -> StepE d c n
-withE e = e <#> (flip (/\) mempty)
+withE e = e <#> (flip (/\) $ pure doNothing)
 
 
 {-

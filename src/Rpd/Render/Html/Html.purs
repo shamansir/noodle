@@ -36,6 +36,8 @@ import Effect (Effect)
 
 import Data.Covered (carry, uncover, recover)
 
+import FSM (doNothing)
+
 import Rpd.API (uuidByPath) as R
 import Rpd.API.Errors (RpdError) as R
 import Rpd.API.Action (Action(..), DataAction(..), BuildAction(..), RequestAction(..)) as Core
@@ -609,13 +611,13 @@ update
     -> Model d c n /\ R.Network d c n
     -> Model d c n /\ Effect (Either (Action d c n) (Core.Action d c n))
 
-update (Right (Core.Data Core.Bang)) (ui /\ _) = ui /\ pure mempty
+update (Right (Core.Data Core.Bang)) (ui /\ _) = ui /\ pure doNothing
 update (Right (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ _) =
     ui { lastInletData = ui.lastInletData # Map.insert inletPath d }
-    /\ pure mempty
+    /\ pure doNothing
 update (Right (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (ui /\ _) =
     ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d }
-    /\ pure mempty
+    /\ pure doNothing
 update (Right (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
     ui /\ updatePositions (my <<< StorePositions) nw
 update (Right (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)))) ( ui /\ nw ) =
@@ -634,21 +636,21 @@ update (Right (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _))))
                 -- TODO: remove from packing when node was removed
             /\ updatePositions (my <<< StorePositions) nw
         _ ->
-            ui /\ pure mempty
+            ui /\ pure doNothing
     where
         patchPath = P.getPatchPath $ P.lift nodePath
 update (Right (Core.Build (Core.AddLink _))) ( ui /\ nw ) =
     ui /\ updatePositions (my <<< StorePositions) nw
-update (Right _) (ui /\ _) = ui /\ pure mempty
+update (Right _) (ui /\ _) = ui /\ pure doNothing
 
-update (Left NoOp) (ui /\ _) = ui /\ pure mempty
---update (Left (Batch actions)) (ui /\ _) = ui /\ pure mempty -- FIXME: implement
+update (Left NoOp) (ui /\ _) = ui /\ pure doNothing
+--update (Left (Batch actions)) (ui /\ _) = ui /\ pure doNothing -- FIXME: implement
 update (Left (MouseMove mousePos)) ( ui /\ nw ) =
     ui { mousePos = mousePos } /\
         (case ui.dragging of
             Dragging (DragNode _) ->
                 updatePositions (my <<< StorePositions) nw
-            _ -> pure mempty
+            _ -> pure doNothing
         )
 update (Left (MouseUp mousePos)) ( ui /\ nw ) =
     ui { mousePos = mousePos }
@@ -656,7 +658,7 @@ update (Left (MouseUp mousePos)) ( ui /\ nw ) =
     where
         pinNodeIfDragging (Dragging (DragNode node)) =
             pure $ my $ PinNode node mousePos
-        pinNodeIfDragging _ = pure mempty -- discard link if dragging it
+        pinNodeIfDragging _ = pure doNothing -- discard link if dragging it
 update (Left (PinNode node position)) ( ui /\ nw ) =
     let
         (R.Node _ nodePath _ _ _) = node
@@ -670,9 +672,9 @@ update (Left (PinNode node position)) ( ui /\ nw ) =
                         ui.layout # Layout.pinAt patch node position
                     }
             Nothing -> ui
-        /\ pure mempty
+        /\ pure doNothing
 update (Left (ClickBackground e)) ( ui /\ nw ) =
-    ui { dragging = NotDragging } /\ pure mempty
+    ui { dragging = NotDragging } /\ pure doNothing
 update (Left (ClickNodeTitle node e)) ( ui /\ nw ) =
     ui
         { dragging = Dragging $ DragNode node
@@ -723,18 +725,18 @@ update (Left (ClickInlet (R.Inlet _ inletPath _ _) e)) ( ui /\ nw ) =
         case ui.dragging of
             Dragging (DragLink (R.Outlet _ outletPath _ _)) ->
                 pure $ core $ Core.Request $ Core.ToConnect outletPath inletPath
-            _ -> pure mempty
+            _ -> pure doNothing
     )
 update (Left (ClickOutlet outletPath e)) ( ui /\ nw ) =
     ui
         { dragging = Dragging $ DragLink outletPath
         -- TODO: if node was dragged before, place it at the mouse point
         }
-    /\ (Event.stopPropagation (ME.toEvent e) >>= (const $ pure mempty))
-update (Left EnableDebug) (ui /\ _) = ui /\ pure mempty -- TODO: why do nothing?
-update (Left DisableDebug) (ui /\ _) = ui /\ pure mempty -- TODO: why do nothing?
+    /\ (Event.stopPropagation (ME.toEvent e) >>= (const $ pure doNothing))
+update (Left EnableDebug) (ui /\ _) = ui /\ pure doNothing -- TODO: why do nothing?
+update (Left DisableDebug) (ui /\ _) = ui /\ pure doNothing -- TODO: why do nothing?
 update (Left (StorePositions positions)) (ui /\ _) =
-    ui { positions = positions } /\ pure mempty
+    ui { positions = positions } /\ pure doNothing
 
 
 updatePositions
