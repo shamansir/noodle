@@ -1,6 +1,6 @@
 module Rpd.Render.UI
     ( UI, CoveredUI
-    , make, run
+    , make, run, run', view
     , imapModel, imapAction, imapError
     ) where
 
@@ -48,12 +48,25 @@ make updateF viewF =
     UI (FSM.make updateF) viewF
 
 
+
 run
+    :: forall action model view
+     . DoNothing action
+    => UI action model view
+    -> model
+    -> Effect
+        { next :: Event view
+        , push :: action -> Effect Unit
+        , stop :: Canceler
+        }
+run ui model = run' ui model []
+
+
+run'
     :: forall action model view f
      . DoNothing action
     => Foldable f
     => UI action model view
-    -> view
     -> model
     -> f action
     -> Effect
@@ -61,7 +74,7 @@ run
         , push :: action -> Effect Unit
         , stop :: Canceler
         }
-run (UI fsm viewF) view model actions = do
+run' (UI fsm viewF) model actions = do
     { event : views, push : pushView } <- Event.create
     { pushAction, stop } <- FSM.run' fsm model (pushView <<< viewF) actions
     pure
@@ -69,6 +82,10 @@ run (UI fsm viewF) view model actions = do
         , push : pushAction
         , stop
         }
+
+
+view :: forall action model view. UI action model view -> model -> view
+view (UI _ viewF) = viewF
 
 
 imapModel
