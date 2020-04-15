@@ -6,6 +6,7 @@ module Rpd.Render.Terminal
     , Msg
     , Packing -- TODO: do not expose maybe?
     , Status -- TODO: do not expose maybe?
+    , init
     , view -- TODO: do not expose maybe?
     ) where
 
@@ -108,8 +109,8 @@ initialBounds :: Bounds
 initialBounds = 20 /\ 20
 
 
-initUi :: Ui
-initUi =
+init :: Ui
+init =
     -- { packing : Packing $ R2.container 200 200
     { status : Empty
     , invalidate : true
