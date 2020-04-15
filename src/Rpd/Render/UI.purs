@@ -1,6 +1,6 @@
 module Rpd.Render.UI
     ( UI, CoveredUI
-    , make, run, run', view
+    , make, run, run', view, once
     , imapModel, imapAction, imapError
     ) where
 

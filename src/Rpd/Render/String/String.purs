@@ -1,7 +1,7 @@
 module Rpd.Render.String
     ( StringRenderer
-    , stringRenderer
-    , stringRendererWithOptions
+    , make
+    , makeWithOptions
     , view -- TODO: do not expose maybe?
     ) where
 
@@ -78,13 +78,13 @@ defaultOptions =
     { showUuid : false }
 
 
-stringRenderer :: forall d c n. Toolkit d c n -> StringRenderer d c n
-stringRenderer toolkit =
-    stringRendererWithOptions toolkit defaultOptions
+make :: forall d c n. Toolkit d c n -> StringRenderer d c n
+make toolkit =
+    makeWithOptions toolkit defaultOptions
 
 
-stringRendererWithOptions :: forall d c n. Toolkit d c n -> Options -> StringRenderer d c n
-stringRendererWithOptions toolkit options =
+makeWithOptions :: forall d c n. Toolkit d c n -> Options -> StringRenderer d c n
+makeWithOptions toolkit options =
     UI.makeMinimal toolkit
         $ Covered.run
             (\error -> "<" <> show error <> ">" <> "/")

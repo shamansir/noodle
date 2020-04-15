@@ -11,6 +11,7 @@ import Data.List as List
 import Data.Either (Either(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Traversable (traverse, traverse_)
+import Data.Covered (carry)
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
@@ -20,13 +21,15 @@ import Effect.Ref as Ref
 import Effect.Aff (delay)
 import Effect.Console (log)
 
-import Test.Spec (Spec, describe, it, pending', itOnly)
+import Test.Spec (Spec, describe, it, pending', pending, itOnly)
 import Test.Spec.Assertions (shouldEqual, fail)
 
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
 
 import FRP.Event as Event
+
+import FSM (doNothing)
 
 -- import Rpd.API as R
 import Rpd.Path
@@ -38,11 +41,14 @@ import Rpd.API.Action.Sequence ((</>), ActionList)
 import Rpd.API.Action.Sequence as Actions
 import Rpd.API.Action.Sequence as R
 
+import Rpd.Render.UI (make, once, run) as UI
+import Rpd.Render.Renderer (Routed(..))
 import Rpd.Render.Renderer (Renderer, Minimal) as Render
-import Rpd.Render.UI (make, once) as UI
-import Rpd.Render.Terminal (terminalRenderer)
+import Rpd.Render.Terminal (make, init) as TerminalRenderer
+import Rpd.Render.Terminal (TerminalRenderer)
 import Rpd.Render.Terminal.Multiline as ML
-import Rpd.Render.String (stringRenderer, stringRendererWithOptions)
+import Rpd.Render.String (make, makeWithOptions) as StringRenderer
+import Rpd.Render.String (StringRenderer)
 
 import Rpd.Test.Util.Spy as Spy
 
@@ -87,6 +93,14 @@ type CompareViews view = view -> view -> Either String Unit
 type CompareViewsAff view = view -> view -> Aff Unit
 
 
+stringRenderer :: StringRenderer MyData Channel Node
+stringRenderer = StringRenderer.make toolkit
+
+
+terminalRenderer :: TerminalRenderer MyData Channel Node
+terminalRenderer = TerminalRenderer.make
+
+
 spec :: Spec Unit
 spec = do
 
@@ -94,10 +108,10 @@ spec = do
 
     it "rendering the empty network works" do
       stringSample <- liftEffect $ loadSample "Empty.String"
-      let doNothing = Actions.init </> (R.do_ $ const $ pure unit)
-      expectToRender stringRenderer toolkit compareStrings' doNothing
+      let doNothing' = Actions.init </> (R.do_ $ const $ pure unit)
+      expectToRenderM stringRenderer compareStrings' doNothing'
           $ String.trim stringSample
-      expectToRenderMUV terminalRenderer toolkit compareMultiline' doNothing
+      expectToRender terminalRenderer compareMultiline' doNothing' TerminalRenderer.init
           -- ML.from' "{>}"
           $ ML.empty' (100 /\ 100)
       pure unit
@@ -108,9 +122,9 @@ spec = do
           </> R.addPatch "foo"
           </> R.addNode (toPatch "foo") "bar" Node
       stringSample <- liftEffect $ loadSample "SingleNode.String"
-      expectToRender stringRenderer toolkit compareStrings' singleNodeNW
+      expectToRenderM stringRenderer compareStrings' singleNodeNW
           $ String.trim stringSample
-      expectToRenderMUV terminalRenderer toolkit compareMultiline' singleNodeNW
+      expectToRender terminalRenderer compareMultiline' singleNodeNW TerminalRenderer.init
           $ ML.empty' (100 /\ 100) # ML.place (0 /\ 0) "[]bar[]"
 
     it "rendering several nodes works" do
@@ -125,9 +139,9 @@ spec = do
           </> R.addNode (toPatch "foo1") "bar11" Node
       stringSample <- liftEffect $ loadSample "SeveralNodes.String"
       terminalSample <- liftEffect $ loadSample "SeveralNodes.Terminal"
-      expectToRender stringRenderer toolkit compareStrings' severalNodesNW
+      expectToRenderM stringRenderer compareStrings' severalNodesNW
           $ String.trim stringSample
-      expectToRenderMUV terminalRenderer toolkit compareMultiline' severalNodesNW
+      expectToRender terminalRenderer compareMultiline' severalNodesNW TerminalRenderer.init
           $ ML.empty' (100 /\ 100)
               # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
@@ -143,10 +157,10 @@ spec = do
           </> R.addOutlet (toNode "foo" "bar") "abc2" Channel
       stringSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.String"
       terminalSample <- liftEffect $ loadSample "NodeWithInletsAndOutlets.Terminal"
-      expectToRender stringRenderer toolkit compareStrings' nodeWithInletsAndOutletsNW
+      expectToRenderM stringRenderer compareStrings' nodeWithInletsAndOutletsNW
         $ String.trim stringSample
-      expectToRenderMUV
-        terminalRenderer toolkit compareMultiline' nodeWithInletsAndOutletsNW
+      expectToRender
+        terminalRenderer compareMultiline' nodeWithInletsAndOutletsNW TerminalRenderer.init
           $ ML.empty' (100 /\ 100)
             # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
@@ -162,9 +176,9 @@ spec = do
           </> R.connect (toOutlet "foo" "src" "srco") (toInlet "foo" "dst" "dsti")
       stringSample <- liftEffect $ loadSample "WithConnection.String"
       terminalSample <- liftEffect $ loadSample "WithConnection.Terminal"
-      expectToRender stringRenderer toolkit compareStrings' withConnectionNW
+      expectToRenderM stringRenderer compareStrings' withConnectionNW
         $ String.trim stringSample
-      expectToRenderMUV terminalRenderer toolkit compareMultiline' withConnectionNW
+      expectToRender terminalRenderer compareMultiline' withConnectionNW TerminalRenderer.init
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
 
@@ -175,9 +189,9 @@ spec = do
           </> R.addInlet (toNode "idont" "exist") "foo" Channel
       stringSample <- liftEffect $ loadSample "Error.String"
       terminalSample <- liftEffect $ loadSample "Error.Terminal"
-      expectToRenderFirst stringRenderer toolkit compareStrings' erroneousNW
+      expectToRenderMFirst stringRenderer compareStrings' erroneousNW
         $ String.trim stringSample
-      expectToRenderMUV terminalRenderer toolkit compareMultiline' erroneousNW
+      expectToRender terminalRenderer compareMultiline' erroneousNW TerminalRenderer.init
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
       pure unit
@@ -186,34 +200,32 @@ spec = do
 
     describe "core renderer" do
 
-      pending' "applies actions to the network" do
+      pending "applies actions to the network"  {- do
         let
-          renderer = stringRendererWithOptions { showUuid : true }
+          renderer = StringRenderer.makeWithOptions toolkit { showUuid : true }
           toolkit' =
             R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
           emptyNW = Actions.init
+        stringSample <- liftEffect $ loadSample "SingleNode.String"
+        expectToRenderM renderer toolkit' compareStrings'
+          (Actions.init
+            -- </> R.Bang
+            </> R.addNode (toPatch "foo") "bar" Node)
+          stringSample -}
+
+    describe "MUV renderer" do
+
+      pending "applies actions to the network" {- do
+        let
+          renderer = StringRenderer.makeWithOptions { showUuid : true }
+          toolkit' =
+            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
         stringSample <- liftEffect $ loadSample "SingleNode.String"
         expectToRender renderer toolkit' compareStrings'
           (Actions.init
             -- </> R.Bang
             </> R.addNode (toPatch "foo") "bar" Node)
-          stringSample
-
-    describe "MUV renderer" do
-
-      pending' "applies actions to the network" do
-        let
-          renderer =
-              RenderMUV.fromMinimal
-                $ stringRendererWithOptions { showUuid : true }
-          toolkit' =
-            R.Toolkit (R.ToolkitName "foo") $ const R.emptyNode
-        stringSample <- liftEffect $ loadSample "SingleNode.String"
-        expectToRenderMUV renderer toolkit' compareStrings'
-          (Actions.init
-            -- </> R.Bang
-            </> R.addNode (toPatch "foo") "bar" Node)
-          stringSample
+          stringSample -}
 
 
     -- TODO:
@@ -237,65 +249,57 @@ loadSample name =
   readTextFile UTF8 $ "test/_samples/" <> name <> ".sample"
 
 
-expectToRender
+expectToRenderM
   :: forall d c n view
-   . Render.Renderer d c n view
-  -> R.Toolkit d c n
+   . Render.Minimal d c n view
   -> CompareViewsAff view
   -> R.ActionList d c n
   -> view
   -> Aff Unit
-expectToRender renderer toolkit compareViews actions expectation = do
+expectToRenderM renderer compareViews actions expectation = do
   maybeLastView <- liftEffect $ do
     lastViewSpy <- Spy.last
     { push, next : views }
-          <- Render.make renderer toolkit $ Network.empty "network"
+          <- UI.run renderer $ carry $ Network.empty "network"
     _ <- Event.subscribe views $ Spy.with lastViewSpy
-    _ <- case push of
-          Render.PushF pushAction ->
-              traverse_ pushAction actions
+    _ <- traverse_ push actions
     Spy.get lastViewSpy
   maybeLastView # maybe (fail "no views were recevied") (compareViews expectation)
 
 
-expectToRenderFirst
+expectToRenderMFirst
   :: forall d c n view
-   . Render.Renderer d c n view
-  -> R.Toolkit d c n
+   . Render.Minimal d c n view
   -> CompareViewsAff view
   -> R.ActionList d c n
   -> view
   -> Aff Unit
-expectToRenderFirst renderer toolkit compareViews actions expectation = do
+expectToRenderMFirst renderer compareViews actions expectation = do
   maybeFirstView <- liftEffect $ do
-    firstViewSpy <- Spy.first -- the only difference with `expectToRender`
+    firstViewSpy <- Spy.first -- the only difference with `expectToRenderM`
     { push, next : views }
-          <- Render.make renderer toolkit $ Network.empty "network"
+          <- UI.run renderer $ carry $ Network.empty "network"
     _ <- Event.subscribe views $ Spy.with firstViewSpy
-    _ <- case push of
-          Render.PushF pushAction ->
-              traverse_ pushAction actions
+    _ <- traverse_ push actions
     Spy.get firstViewSpy
   maybeFirstView # maybe (fail "no views were recevied") (compareViews expectation)
 
 
-expectToRenderMUV
-  :: forall d c n model view action effect
-   . RenderMUV.Renderer d c n model view action effect
-  -> R.Toolkit d c n
+expectToRender
+  :: forall d c n action model view
+   . Render.Renderer d c n action model view
   -> CompareViewsAff view
   -> R.ActionList d c n
+  -> model
   -> view
   -> Aff Unit
-expectToRenderMUV renderer toolkit compareViews actions expectation = do
+expectToRender renderer compareViews actions model expectation = do
   maybeLastView <- liftEffect $ do
     lastViewSpy <- Spy.last
     { push, next : views }
-          <- RenderMUV.make renderer toolkit $ Network.empty "network"
+          <- UI.run renderer $ carry $ model /\ Network.empty "network"
     _ <- Event.subscribe views $ Spy.with lastViewSpy
-    _ <- case push of
-          RenderMUV.PushF pushAction ->
-              traverse_ (pushAction <<< Right) actions
+    _ <- traverse_ (push <<< FromCore) actions
     Spy.get lastViewSpy
   maybeLastView # maybe (fail "no views were recevied") (compareViews expectation)
 
