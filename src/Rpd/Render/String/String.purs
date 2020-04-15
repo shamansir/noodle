@@ -31,9 +31,12 @@ import Rpd.Network
     , Outlet(..)
     , Link(..)
     ) as R
+import Rpd.Toolkit
 import Rpd.API.Errors (RpdError) as R
 import Rpd.Optics (_node, _inlet, _outlet, _link, _networkPatches, _networkLinks)
-import Rpd.Render.Renderer (Minimal)
+import Rpd.Render.Renderer (Minimal) as Renderer
+import Rpd.Render.Renderer (makeMinimal) as UI
+import Rpd.Render.UI as UI
 import Rpd.Path as P
 
 
@@ -42,7 +45,7 @@ type Options =
     }
 
 
-type StringRenderer d c n = Renderer d c n String
+type StringRenderer d c n = Renderer.Minimal d c n String
 
 
 lineBreak = "\n" :: String
@@ -75,14 +78,14 @@ defaultOptions =
     { showUuid : false }
 
 
-stringRenderer :: forall d c n. StringRenderer d c n
-stringRenderer =
-    stringRendererWithOptions defaultOptions
+stringRenderer :: forall d c n. Toolkit d c n -> StringRenderer d c n
+stringRenderer toolkit =
+    stringRendererWithOptions toolkit defaultOptions
 
 
-stringRendererWithOptions :: forall d c n. Options -> StringRenderer d c n
-stringRendererWithOptions options =
-    Renderer ""
+stringRendererWithOptions :: forall d c n. Toolkit d c n -> Options -> StringRenderer d c n
+stringRendererWithOptions toolkit options =
+    UI.makeMinimal toolkit
         $ Covered.run
             (\error -> "<" <> show error <> ">" <> "/")
             (view options)
