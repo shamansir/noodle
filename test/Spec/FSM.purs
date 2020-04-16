@@ -18,7 +18,7 @@ import Data.Covered (Covered(..))
 import Rpd.UUID (UUID)
 import Rpd.UUID as UUID
 
-import Test.Spec (Spec, describe, it, pending', itOnly, describeOnly, pending)
+import Test.Spec (Spec, describe, it, pending', pending)
 import Test.Spec.Assertions (shouldEqual, fail)
 
 import FSM as FSM
@@ -52,7 +52,7 @@ data Action
 spec :: Spec Unit
 spec = do
 
-  describeOnly "FSM" do
+  describe "FSM" do
 
     describe "creating" do
 
@@ -208,7 +208,7 @@ spec = do
 
       pending "TODO"
 
-  describeOnly "CoveredFSM" do
+  describe "CoveredFSM" do
 
     it "passes error through update cycle" do
         let
