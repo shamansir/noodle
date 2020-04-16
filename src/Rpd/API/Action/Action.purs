@@ -15,7 +15,6 @@ import FRP.Event (Event)
 
 import Effect (Effect)
 
-import FSM (class DoNothing, doNothing, class Batch, batch, break)
 
 import Rpd.API
     ( InletSubscription
@@ -38,7 +37,6 @@ type Perform d c n = (Network d c n -> Effect Unit)
 
 data Action d c n
     = NoOp
-    | Join (Action d c n) (Action d c n)
     | Inner (InnerAction d c n)
     | Request (RequestAction d c n)
     | Build (BuildAction d c n)
@@ -107,18 +105,6 @@ data DataAction d c
     | SendPeriodicallyToInlet (Inlet d c) Int (InletPeriodSubscription d)
 
 
-instance doNothingAction :: DoNothing (Action d c n) where
-    doNothing = NoOp
-
-
-instance batchAction :: Batch (Action d c n) where
-    batch List.Nil = NoOp
-    batch (List.Cons first others) = Join first $ batch others
-    break NoOp = List.Nil
-    break (Join actionA actionB) = List.Cons actionA $ break actionB
-    break action = List.Cons action List.Nil
-
-
 {-
 data RpdEffect d c n -- TODO: move to a separate module
     = DoE (Perform d c n)
@@ -163,7 +149,6 @@ data RpdEffect d c n -- TODO: move to a separate module
 
 showKind :: forall d c n. Action d c n -> String
 showKind NoOp = "NoOp"
-showKind (Join _ _) = "Join"
 showKind (Inner _) = "Inner"
 showKind (Request _) = "Request"
 showKind (Build _) = "Build"
@@ -172,8 +157,6 @@ showKind (Data _) = "Data"
 
 instance showAction :: (Show d, Show c, Show n) => Show (Action d c n) where
     show NoOp = "NoOp"
-    show (Join actionA actionB) =
-        "J: {" <> show actionA <> "," <> show actionB <> " }"
     show (Inner innerAction) = "I: " <> show innerAction
     show (Request requestAction) = "R: " <> show requestAction
     show (Build buildAction) = "B: " <> show buildAction
