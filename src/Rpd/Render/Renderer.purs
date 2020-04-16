@@ -11,7 +11,7 @@ import Rpd.Network (Network)
 import Rpd.Toolkit (Toolkit)
 
 import Rpd.Render.UI (CoveredUI)
-import Rpd.Render.UI (make) as UI
+import Rpd.Render.UI (makeWithPush) as UI
 
 
 data Routed other core
@@ -33,5 +33,5 @@ makeMinimal
     -> (Covered RpdError (Network d c n) -> view)
     -> Minimal d c n view
 makeMinimal toolkit =
-    UI.make
-        \action coveredNw -> C.apply toolkit action $ recover coveredNw
+    UI.makeWithPush
+        \pushAction action coveredNw -> C.apply toolkit pushAction action $ recover coveredNw

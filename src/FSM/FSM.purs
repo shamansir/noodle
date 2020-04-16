@@ -1,7 +1,7 @@
 module FSM
     ( FSM
     , prepare -- FIXME: do not expose
-    , make, makePassing
+    , make, makeWithPush, makePassing
     , run, run', run'', fold
     , pushAll, noSubscription
     , imapModel, imapAction
@@ -39,7 +39,7 @@ type AndThen action = List action
 
 
 data FSM action model =
-    FSM (action -> model -> model /\ Effect (AndThen action))
+    FSM ((action -> Effect Unit) -> action -> model -> model /\ Effect (AndThen action))
 
 
 instance invariantFSM :: Invariant (FSM action) where
@@ -68,13 +68,20 @@ make
     :: forall action model
      . (action -> model -> model /\ Effect (AndThen action))
     -> FSM action model
-make = FSM
+make = FSM <<< const
+
+
+makeWithPush
+    :: forall action model
+     . ((action -> Effect Unit) -> action -> model -> model /\ Effect (AndThen action))
+    -> FSM action model
+makeWithPush = FSM
 
 
 makePassing
     :: forall action model
      . FSM action model
-makePassing = FSM (\_ m -> m /\ doNothing)
+makePassing = FSM (\_ _ m -> m /\ doNothing)
 
 
 noSubscription :: forall a. a -> Effect Unit
@@ -105,6 +112,9 @@ join'':: forall action. List (Effect (AndThen action)) -> Effect (AndThen action
 join'' = foldr (<:>) $ pure List.Nil
 
 
+-- newtype PushF action = PushF (action -> Effect Unit)
+
+
 -- TODO: add `NestFSM` to support placing actions inside other actions, like we do for GUI
 
 
@@ -123,7 +133,7 @@ prepare (FSM f) init subModels subActions = do
     let
         (updates :: Event (model /\ Effect (AndThen action))) =
             Event.fold
-                (\action prev -> f action $ fst prev)
+                (\action prev -> f pushAction action $ fst prev)
                 actions
                 (init /\ doNothing)
         (models :: Event model)
@@ -187,6 +197,7 @@ run'' fsm init subModels subActions actionList = do
     pure { pushAction, stop : stop }
 
 
+
 fold
     :: forall action model f
      . Foldable f
@@ -240,8 +251,9 @@ imapAction
     -> FSM actionA model
     -> FSM actionB model
 imapAction mapAToB mapBToA (FSM updateF) =
-    FSM \actionB model ->
-        map (map (map mapAToB)) $ updateF (mapBToA actionB) model
+    FSM \push actionB model ->
+        map (map (map mapAToB))
+            $ updateF (mapAToB >>> push) (mapBToA actionB) model
 
 
 imapModel
@@ -251,8 +263,8 @@ imapModel
     -> FSM action modelA
     -> FSM action modelB
 imapModel mapAToB mapBToA (FSM updateF) =
-    FSM \action modelB ->
-        bimap mapAToB identity $ updateF action $ mapBToA modelB
+    FSM \push action modelB ->
+        bimap mapAToB identity $ updateF push action $ mapBToA modelB
 
 
 -- TODO: try to get rid of those
