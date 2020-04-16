@@ -1,6 +1,6 @@
 module Rpd.Render.UI
     ( UI, CoveredUI
-    , make, run, run', view, once
+    , make, makeWithPush, run, run', view, once
     , imapModel, imapAction, imapError
     ) where
 
@@ -18,7 +18,7 @@ import FRP.Event as Event
 import Data.Covered (Covered, recover, inject, hasError, cover', mapError)
 
 import FSM (FSM, AndThen)
-import FSM (run, run', make, imapModel, imapAction) as FSM
+import FSM (run, run', make, makeWithPush, imapModel, imapAction) as FSM
 import Data.Foldable (class Foldable)
 
 
@@ -46,6 +46,15 @@ make
     -> UI action model view
 make updateF viewF =
     UI (FSM.make updateF) viewF
+
+
+makeWithPush
+    :: forall action model view
+     . ((action -> Effect Unit) -> action -> model -> model /\ Effect (AndThen action))
+    -> (model -> view)
+    -> UI action model view
+makeWithPush updateF viewF =
+    UI (FSM.makeWithPush updateF) viewF
 
 
 

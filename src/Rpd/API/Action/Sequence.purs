@@ -26,7 +26,7 @@ import Data.Covered (Covered)
 import Data.Covered (fromEither, fromEither', carry, appendError, recover, cover) as Covered
 
 import FSM.Covered (CoveredFSM)
-import FSM (make, fold, pushAll) as FSM
+import FSM (makeWithPush, fold, pushAll) as FSM
 
 import Rpd.Network
 import Rpd.API
@@ -159,9 +159,9 @@ type Sequencer d c n = CoveredFSM RpdError (Action d c n) (Network d c n)
 
 make :: forall d c n. Toolkit d c n -> Sequencer d c n
 make toolkit =
-    FSM.make
-        $ \action coveredModel ->
-            apply toolkit action $ Covered.recover coveredModel
+    FSM.makeWithPush
+        $ \pushAction action coveredModel ->
+            apply toolkit pushAction action $ Covered.recover coveredModel
 
 
 -- fold

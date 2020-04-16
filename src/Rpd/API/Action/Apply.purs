@@ -80,11 +80,12 @@ foldSteps initNW foldable foldF =
 apply
     :: forall d c n
      . Toolkit d c n
+    -> (Action d c n -> Effect Unit)
     -> Action d c n
     -> Network d c n
     -> Step d c n
-apply toolkit action nw =
-    proceed $ apply_ toolkit action nw
+apply toolkit pushAction action nw =
+    proceed $ apply_ toolkit pushAction action nw
     where
         proceed :: StepE d c n -> Step d c n
         proceed = Covered.unpack <<< Covered.fromEither (nw /\ doNothing)
@@ -93,14 +94,16 @@ apply toolkit action nw =
 apply_
     :: forall d c n
      . Toolkit d c n
+    -> (Action d c n -> Effect Unit)
     -> Action d c n
     -> Network d c n
     -> StepE d c n
-apply_ _ NoOp nw = fine nw
-apply_ toolkit (Inner innerAction) nw = applyInnerAction toolkit innerAction nw
-apply_ toolkit (Request requestAction) nw = applyRequestAction toolkit requestAction nw
-apply_ toolkit (Build buildAction) nw = applyBuildAction toolkit buildAction nw
-apply_ toolkit (Data dataAction) nw = applyDataAction toolkit dataAction nw
+apply_ _ _ NoOp nw = fine nw
+apply_ toolkit _ (Inner innerAction) nw = applyInnerAction toolkit innerAction nw
+apply_ toolkit _ (Request requestAction) nw = applyRequestAction toolkit requestAction nw
+apply_ toolkit push (Build buildAction) nw =
+    applyBuildAction toolkit (push <<< Data) buildAction nw
+apply_ toolkit _ (Data dataAction) nw = applyDataAction toolkit dataAction nw
 
 
 applyDataAction
@@ -320,19 +323,20 @@ applyRequestAction _ (ToSubscribeToNode nodePath inletsHandler outletsHandler) n
 applyBuildAction
     :: forall d c n
      . Toolkit d c n
+    -> (DataAction d c -> Effect Unit)
     -> BuildAction d c n
     -> Network d c n
     -> StepE d c n
-applyBuildAction _ (AddPatch p) nw =
+applyBuildAction _ _ (AddPatch p) nw =
     fine $ Api.addPatch p nw
-applyBuildAction _ (AddNode node) nw =
+applyBuildAction _ _ (AddNode node) nw =
     withE $ Api.addNode node nw
         {--
         [
             All subscriptions
         ]
         --}
-applyBuildAction tk (RemoveNode node) nw = do
+applyBuildAction tk _ (RemoveNode node) nw = do
     withE $ Api.removeNode node nw
     {- FIXME: bring back, RemoveNode would do that in order:
               remove inlets, remove outlets, so cancel their subscriptions
@@ -355,43 +359,52 @@ applyBuildAction tk (RemoveNode node) nw = do
         removeOutlets outlets inNW =
             foldSteps inNW outlets $ applyBuildAction tk <<< RemoveOutlet
     -}
-applyBuildAction _ (RemoveInlet inlet) nw = do
+applyBuildAction _ _ (RemoveInlet inlet) nw = do
     nw' <- Api.removeInlet inlet nw
-    pure $ nw' /\
-        (doNothing
-            {- CancelInletSubscriptions inlet
-            , CancelNodeSubscriptions node
-            , SubscribeNodeProcess node
-            , InformNodeOnInletUpdates inlet node
-            , SubscribeNodeUpdates node
-            , SendActionOnInletUpdatesE inlet
-            -}
-        )
-applyBuildAction _ (RemoveOutlet outlet) nw = do
+    pure $ nw' /\ doNothing {- do
+        _ <- Api.cancelInletSubscriptions uuid nw
+        batch
+            $ CancelInletSubscriptions inlet
+            : CancelNodeSubscriptions node
+            : SubscribeNodeProcess node
+            : InformNodeOnInletUpdates inlet node
+            : SubscribeNodeUpdates node
+            : SendActionOnInletUpdatesE inlet
+            Nil
+        -}
+applyBuildAction _ _ (RemoveOutlet outlet) nw = do
     nw' <- Api.removeOutlet outlet nw
     pure $ nw' /\
         (doNothing {- CancelOutletSubscriptions outlet -})
-applyBuildAction _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw =
+applyBuildAction _ _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw =
     let newNode = Api.processWith processF node
         nw' = nw # setJust (_node uuid) newNode
     in
         pure $ nw' /\
             (doNothing {- SubscribeNodeProcess newNode -})
-applyBuildAction _ (AddInlet inlet@(Inlet uuid path _ _)) nw = do
+applyBuildAction _ pushAction (AddInlet inlet@(Inlet uuid path _ { flow })) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     nw' <- Api.addInlet inlet nw
-    pure $ nw' /\
-        (doNothing
-       {- CancelNodeSubscriptions node
-        , SubscribeNodeProcess node
-        , InformNodeOnInletUpdates inlet node
-        , SubscribeNodeUpdates node
-        , SendActionOnInletUpdatesE inlet
-        -}
-        )
-applyBuildAction _ (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
+    pure $ nw' /\ do
+        _ <- Api.cancelNodeSubscriptions nodeUuid nw
+        processCanceler <- Api.setupNodeProcessFlow node nw
+        inletUpdatesCanceler <- Api.informNodeOnInletUpdates inlet node
+        nodeUpdatesCanceler <-
+            Api.subscribeNode node
+                (const $ const $ const $ pure unit) -- FIXME: implement
+                (const $ const $ const $ pure unit) -- FIXME: implement
+        let (InletFlow flow') = flow
+        sendValuesCanceler <- E.subscribe flow' (pushAction <<< GotInletData inlet)
+        batch $ Inner
+            <$> ClearNodeCancelers node
+            : StoreNodeCanceler node processCanceler
+            : StoreInletCanceler inlet inletUpdatesCanceler
+            : StoreNodeCanceler node nodeUpdatesCanceler
+            : StoreInletCanceler inlet sendValuesCanceler
+            : Nil
+applyBuildAction _ _ (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
@@ -404,12 +417,12 @@ applyBuildAction _ (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
         , SubscribeNodeUpdates node
         , SendActionOnOutletUpdatesE outlet
         -})
-applyBuildAction _ (Connect (Outlet ouuid _ _ _) (Inlet iuuid _ _ _)) nw = do
+applyBuildAction _ _ (Connect (Outlet ouuid _ _ _) (Inlet iuuid _ _ _)) nw = do
     pure $ nw /\ do
         uuid <- UUID.new
         let newLink = Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid }
         single $ Build $ AddLink newLink
-applyBuildAction _ (AddLink link) nw =
+applyBuildAction _ _ (AddLink link) nw =
     withE $ Api.addLink link nw -- TODO: subscriptions
 
 
