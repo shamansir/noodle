@@ -17,7 +17,7 @@ import FRP.Event as Event
 
 import Data.Covered (Covered, recover, inject, hasError, cover', mapError)
 
-import FSM (FSM, class DoNothing)
+import FSM (FSM, AndThen)
 import FSM (run, run', make, imapModel, imapAction) as FSM
 import Data.Foldable (class Foldable)
 
@@ -41,7 +41,7 @@ type CoveredUI error action model view = UI action (Covered error model) view
 
 make
     :: forall action model view
-     . (action -> model -> model /\ Effect action)
+     . (action -> model -> model /\ Effect (AndThen action))
     -> (model -> view)
     -> UI action model view
 make updateF viewF =
@@ -51,8 +51,7 @@ make updateF viewF =
 
 run
     :: forall action model view
-     . DoNothing action
-    => UI action model view
+     . UI action model view
     -> model
     -> Effect
         { next :: Event view
@@ -64,8 +63,7 @@ run ui model = run' ui model []
 
 run'
     :: forall action model view f
-     . DoNothing action
-    => Foldable f
+     . Foldable f
     => UI action model view
     -> model
     -> f action

@@ -29,8 +29,8 @@ type CoveredFSM error action model =
 -- TODO: try `Semigroup error`
 
 
-fine :: forall error action model. DoNothing action => model -> Covered error model /\ Effect action
-fine nw = pure nw /\ pure doNothing
+fine :: forall error action model. model -> Covered error model /\ Effect (AndThen action)
+fine nw = pure nw /\ doNothing
 
 
 fineDo
@@ -39,17 +39,16 @@ fineDo
     -> Effect action
     -> Covered error model /\ Effect action
 fineDo nw eff = pure nw /\ eff
--- TODO: make an operator out of it
 
 
+-- TODO: try to get rid of those
 -- is it some combination of bind and mapping?
 -- since it's `m a -> (a -> m a) -> m a`
 follow
     :: forall error action model
-     . Batch action
-    => Covered error model /\ Effect action
-    -> (model -> Covered error model /\ Effect action)
-    -> Covered error model /\ Effect action
+     . Covered error model /\ Effect (AndThen action)
+    -> (model -> Covered error model /\ Effect (AndThen action))
+    -> Covered error model /\ Effect (AndThen action)
 follow (Recovered err v /\ x) f =
     case f v of
         Recovered err' v' /\ x' -> Recovered err' v' /\ (x <:> x')
@@ -60,13 +59,13 @@ follow (Carried v /\ x) f =
         Carried v' /\ x' -> Carried v' /\ (x <:> x')
 
 
+-- TODO: try to get rid of those
 followJoin
     :: forall error action model
-     . Batch action
-    => Semigroup error
-    => Covered error model /\ Effect action
-    -> (model -> Covered error model /\ Effect action)
-    -> Covered error model /\ Effect action
+     . Semigroup error
+    => Covered error model /\ Effect (AndThen action)
+    -> (model -> Covered error model /\ Effect (AndThen action))
+    -> Covered error model /\ Effect (AndThen action)
 followJoin (Recovered err v /\ x) f =
     case f v of
         Recovered err' v' /\ x' -> Recovered (err <> err') v' /\ (x <:> x')
@@ -77,17 +76,15 @@ followJoin (Carried v /\ x) f =
         Carried v' /\ x' -> Carried v' /\ (x <:> x')
 
 
-{- FIMXE: this should be somehow unified with FSM.foldUpdate or even integrated into the FSM type -}
-{-        implement `Foldable`? -}
+-- TODO: try to get rid of those
 foldUpdate
     :: forall error action model
      . Semigroup error
-    => Batch action
-    => (action -> Covered error model ->  Covered error model /\ Effect action)
+    => (action -> Covered error model -> Covered error model /\ Effect (AndThen action))
     -- => CoveredFSM error action model
     -> model
     -> ( action /\ action )
-    -> Covered error model /\ Effect action
+    -> Covered error model /\ Effect (AndThen action)
 foldUpdate updateF model ( actionA /\ actionB ) =
     FSM.foldUpdate
         (\action model' ->

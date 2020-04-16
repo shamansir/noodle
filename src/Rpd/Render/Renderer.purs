@@ -4,11 +4,9 @@ import Prelude (($))
 import Data.Covered
 import Data.Tuple.Nested (type (/\))
 
-import FSM (class DoNothing, doNothing)
-
 import Rpd.API.Errors (RpdError)
-import Rpd.API.Action as C
-import Rpd.API.Action.Apply as C
+import Rpd.API.Action (Action) as C
+import Rpd.API.Action.Apply (apply) as C
 import Rpd.Network (Network)
 import Rpd.Toolkit (Toolkit)
 
@@ -23,10 +21,6 @@ data Routed other core
 
 type Renderer d c n action model view
     = CoveredUI RpdError (Routed action (C.Action d c n)) (model /\ Network d c n) view
-
-
-instance routedDoNothing :: DoNothing (Routed action (C.Action d c n)) where
-    doNothing = FromCore C.NoOp
 
 
 type Minimal d c n view

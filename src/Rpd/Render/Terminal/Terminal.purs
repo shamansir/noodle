@@ -41,6 +41,8 @@ import Math (ceil, sqrt, (%))
 
 import Data.Covered
 
+import FSM (AndThen, doNothing)
+
 import Rpd.API.Errors (RpdError) as R
 import Rpd.API.Action as C
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
@@ -287,13 +289,14 @@ update
     :: forall d c n
      . R.Routed Msg (C.Action d c n)
     -> Covered R.RpdError (Ui /\ R.Network d c n)
-    -> Covered R.RpdError (Ui /\ R.Network d c n) /\ Effect (R.Routed Msg (C.Action d c n))
+    -> Covered R.RpdError (Ui /\ R.Network d c n)
+        /\ Effect (AndThen (R.Routed Msg (C.Action d c n)))
 -- update R.Bang (ui /\ nw) =
 --     ui { packing = Just $ ui.packing # packNetwork nw }
 update _ covered =
     let (ui /\ nw) = recover covered
     in (carry $ (covered # withError addError ui) /\ nw)
-        /\ (pure $ R.FromUI Skip)
+        /\ doNothing
 
 
 addError :: R.RpdError -> Ui  -> Ui

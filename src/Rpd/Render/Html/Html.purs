@@ -35,7 +35,7 @@ import Effect (Effect)
 
 import Data.Covered (carry, uncover, recover)
 
-import FSM (doNothing)
+import FSM (AndThen, doNothing, single, batch)
 
 import Rpd.API (uuidByPath) as R
 import Rpd.API.Errors (RpdError) as R
@@ -608,15 +608,15 @@ update
     :: forall d c n
      . Routed (Action d c n) (Core.Action d c n)
     -> Model d c n /\ R.Network d c n
-    -> Model d c n /\ Effect (Routed (Action d c n) (Core.Action d c n))
+    -> Model d c n /\ Effect (AndThen (Routed (Action d c n) (Core.Action d c n)))
 
-update (FromCore (Core.Data Core.Bang)) (ui /\ _) = ui /\ pure doNothing
+update (FromCore (Core.Data Core.Bang)) (ui /\ _) = ui /\ doNothing
 update (FromCore (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ _) =
     ui { lastInletData = ui.lastInletData # Map.insert inletPath d }
-    /\ pure doNothing
+    /\ doNothing
 update (FromCore (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (ui /\ _) =
     ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d }
-    /\ pure doNothing
+    /\ doNothing
 update (FromCore (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
     ui /\ updatePositions (my <<< StorePositions) nw
 update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)))) ( ui /\ nw ) =
@@ -635,29 +635,29 @@ update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)
                 -- TODO: remove from packing when node was removed
             /\ updatePositions (my <<< StorePositions) nw
         _ ->
-            ui /\ pure doNothing
+            ui /\ doNothing
     where
         patchPath = P.getPatchPath $ P.lift nodePath
 update (FromCore (Core.Build (Core.AddLink _))) ( ui /\ nw ) =
     ui /\ updatePositions (my <<< StorePositions) nw
-update (FromCore _) (ui /\ _) = ui /\ pure doNothing
+update (FromCore _) (ui /\ _) = ui /\ doNothing
 
-update (FromUI NoOp) (ui /\ _) = ui /\ pure doNothing
---update (FromUI (Batch actions)) (ui /\ _) = ui /\ pure doNothing -- FIXME: implement
+update (FromUI NoOp) (ui /\ _) = ui /\ doNothing
+--update (FromUI (Batch actions)) (ui /\ _) = ui /\ doNothing -- FIXME: implement
 update (FromUI (MouseMove mousePos)) ( ui /\ nw ) =
     ui { mousePos = mousePos } /\
         (case ui.dragging of
             Dragging (DragNode _) ->
                 updatePositions (my <<< StorePositions) nw
-            _ -> pure doNothing
+            _ -> doNothing
         )
 update (FromUI (MouseUp mousePos)) ( ui /\ nw ) =
     ui { mousePos = mousePos }
     /\ pinNodeIfDragging ui.dragging
     where
         pinNodeIfDragging (Dragging (DragNode node)) =
-            pure $ my $ PinNode node mousePos
-        pinNodeIfDragging _ = pure doNothing -- discard link if dragging it
+            single $ my $ PinNode node mousePos
+        pinNodeIfDragging _ = doNothing -- discard link if dragging it
 update (FromUI (PinNode node position)) ( ui /\ nw ) =
     let
         (R.Node _ nodePath _ _ _) = node
@@ -671,9 +671,9 @@ update (FromUI (PinNode node position)) ( ui /\ nw ) =
                         ui.layout # Layout.pinAt patch node position
                     }
             Nothing -> ui
-        /\ pure doNothing
+        /\ doNothing
 update (FromUI (ClickBackground e)) ( ui /\ nw ) =
-    ui { dragging = NotDragging } /\ pure doNothing
+    ui { dragging = NotDragging } /\ doNothing
 update (FromUI (ClickNodeTitle node e)) ( ui /\ nw ) =
     ui
         { dragging = Dragging $ DragNode node
@@ -723,29 +723,29 @@ update (FromUI (ClickInlet (R.Inlet _ inletPath _ _) e)) ( ui /\ nw ) =
         _ <- Event.stopPropagation $ ME.toEvent e
         case ui.dragging of
             Dragging (DragLink (R.Outlet _ outletPath _ _)) ->
-                pure $ core $ Core.Request $ Core.ToConnect outletPath inletPath
-            _ -> pure doNothing
+                single $ core $ Core.Request $ Core.ToConnect outletPath inletPath
+            _ -> doNothing
     )
 update (FromUI (ClickOutlet outletPath e)) ( ui /\ nw ) =
     ui
         { dragging = Dragging $ DragLink outletPath
         -- TODO: if node was dragged before, place it at the mouse point
         }
-    /\ (Event.stopPropagation (ME.toEvent e) >>= (const $ pure doNothing))
-update (FromUI EnableDebug) (ui /\ _) = ui /\ pure doNothing -- TODO: why do nothing?
-update (FromUI DisableDebug) (ui /\ _) = ui /\ pure doNothing -- TODO: why do nothing?
+    /\ (Event.stopPropagation (ME.toEvent e) >>= (const $ doNothing))
+update (FromUI EnableDebug) (ui /\ _) = ui /\ doNothing -- TODO: why do nothing?
+update (FromUI DisableDebug) (ui /\ _) = ui /\ doNothing -- TODO: why do nothing?
 update (FromUI (StorePositions positions)) (ui /\ _) =
-    ui { positions = positions } /\ pure doNothing
+    ui { positions = positions } /\ doNothing
 
 
 updatePositions
     :: forall d c n x
      . ((UUID.Tagged /-> Position) -> x)
     -> R.Network d c n
-    -> Effect x
+    -> Effect (AndThen x)
 updatePositions ack (R.Network nw) = do
     positions <- collectPositions $ loadUUIDs $ Map.keys nw.registry
-    pure $ ack $ convertPositions positions
+    single $ ack $ convertPositions positions
 
 
 {-

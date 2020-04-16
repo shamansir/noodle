@@ -1,15 +1,14 @@
 module FSM
-    ( FSM(..) -- FIXME: do not expose constructor
+    ( FSM
     , prepare -- FIXME: do not expose
     , make, makePassing
     , run, run', run'', fold
     , pushAll, noSubscription
     , imapModel, imapAction
-    , class DoNothing, doNothing
-    , class Batch, batch, break
-    , append, (<+>)
-    , appendEffects, (<:>)
-    , foldUpdate
+    , AndThen, doNothing, single, batch
+
+    , join, join', join''
+    , foldUpdate, appendEffects, (<:>)
     ) where
 
 
@@ -25,10 +24,10 @@ import Data.Foldable (class Foldable)
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Either (Either)
+import Data.Foldable (foldr)
 import Data.Traversable (traverse_)
 import Data.Bifunctor (bimap)
 import Data.Functor.Invariant (class Invariant, imap)
-
 
 import FRP.Event (Event)
 import FRP.Event as Event
@@ -36,27 +35,28 @@ import FRP.Event as Event
 import Rpd.Util (Canceler)
 
 
+type AndThen action = List action
+
+
 data FSM action model =
-    -- TODO: try: (action -> model -> Effect (model /\ Array action))
-    FSM (action -> model -> model /\ Effect action)
-    -- Array -> Foldable & Applicative & DoNothing
+    FSM (action -> model -> model /\ Effect (AndThen action))
 
 
 instance invariantFSM :: Invariant (FSM action) where
     imap = imapModel
 
 
+{-}
 class DoNothing action where -- a.k.a. `Monoid`?
     doNothing :: action
+-}
 
 
+{-
 class Batch action where -- a.k.a. `Semigroup`?
     batch :: List action -> action
     break :: action -> List action
-
-
-infixl 1 append as <+>
-infixl 1 appendEffects as <:>
+-}
 
 
 -- instance effectActionSemigroup :: Batch action => Semigroup (Effect action) where
@@ -66,20 +66,43 @@ infixl 1 appendEffects as <:>
 
 make
     :: forall action model
-     . (action -> model -> model /\ Effect action)
+     . (action -> model -> model /\ Effect (AndThen action))
     -> FSM action model
 make = FSM
 
 
 makePassing
     :: forall action model
-     . DoNothing action
-    => FSM action model
-makePassing = FSM (\_ m -> m /\ pure doNothing)
+     . FSM action model
+makePassing = FSM (\_ m -> m /\ doNothing)
 
 
 noSubscription :: forall a. a -> Effect Unit
 noSubscription = const $ pure unit
+
+
+doNothing :: forall action. Effect (AndThen action)
+doNothing = pure List.Nil
+
+
+single :: forall action. action -> Effect (AndThen action)
+single = pure <<< List.singleton
+
+
+batch :: forall action. List action -> Effect (AndThen action)
+batch = pure
+
+
+join :: forall action. List (AndThen action) -> AndThen action
+join = foldr (<>) List.Nil
+
+
+join' :: forall action. List (AndThen action) -> Effect (AndThen action)
+join' = pure <<< join
+
+
+join'':: forall action. List (Effect (AndThen action)) -> Effect (AndThen action)
+join'' = foldr (<:>) $ pure List.Nil
 
 
 -- TODO: add `NestFSM` to support placing actions inside other actions, like we do for GUI
@@ -87,8 +110,7 @@ noSubscription = const $ pure unit
 
 prepare
     :: forall action model
-     . DoNothing action
-    => FSM action model
+     . FSM action model
     -> model
     -> (model -> Effect Unit) -- FIXME: use `update` itself for that?
     -> (action -> Effect Unit) -- FIXME: use `update` itself for that?
@@ -99,17 +121,17 @@ prepare
 prepare (FSM f) init subModels subActions = do
     { event : actions, push : pushAction } <- Event.create
     let
-        (updates :: Event (model /\ Effect action)) =
+        (updates :: Event (model /\ Effect (AndThen action))) =
             Event.fold
                 (\action prev -> f action $ fst prev)
                 actions
-                (init /\ pure doNothing)
+                (init /\ doNothing)
         (models :: Event model)
             = fst <$> updates
     stopModelSubscription <- Event.subscribe models subModels
     stopActionSubscription <- Event.subscribe actions subActions
     stopPerformingEffects <- Event.subscribe updates
-        \(_ /\ eff) -> eff >>= pushAction
+        \(_ /\ eff) -> eff >>= traverse_ pushAction
     pure
         { pushAction
         , stop : stopModelSubscription
@@ -120,8 +142,7 @@ prepare (FSM f) init subModels subActions = do
 
 run
     :: forall action model f
-     . DoNothing action
-    => Foldable f
+     . Foldable f
     => FSM action model
     -> model
     -> f action
@@ -135,8 +156,7 @@ run fsm init = do
 
 run'
     :: forall action model f
-     . DoNothing action
-    => Foldable f
+     . Foldable f
     => FSM action model
     -> model
     -> (model -> Effect Unit)
@@ -151,8 +171,7 @@ run' fsm init subscription = do
 
 run''
     :: forall action model f
-     . DoNothing action
-    => Foldable f
+     . Foldable f
     => FSM action model
     -> model
     -> (model -> Effect Unit)
@@ -170,8 +189,7 @@ run'' fsm init subModels subActions actionList = do
 
 fold
     :: forall action model f
-     . DoNothing action
-    => Foldable f
+     . Foldable f
     => FSM action model
     -> model
     -> f action
@@ -223,7 +241,7 @@ imapAction
     -> FSM actionB model
 imapAction mapAToB mapBToA (FSM updateF) =
     FSM \actionB model ->
-        map (map mapAToB) $ updateF (mapBToA actionB) model
+        map (map (map mapAToB)) $ updateF (mapBToA actionB) model
 
 
 imapModel
@@ -237,26 +255,29 @@ imapModel mapAToB mapBToA (FSM updateF) =
         bimap mapAToB identity $ updateF action $ mapBToA modelB
 
 
-append :: forall action. Batch action => action -> action -> action
-append actionA actionB = batch $ actionA : List.singleton actionB
-
-
-appendEffects :: forall action. Batch action => Effect action -> Effect action -> Effect action
-appendEffects effectA effectB =
-    append <$> effectA <*> effectB
-
-
+-- TODO: try to get rid of those
 foldUpdate
     :: forall action model
-     . Batch action
-    => (action -> model ->  model /\ Effect action)
+     . (action -> model ->  model /\ Effect (AndThen action))
     -- => FSM action model
     -> model
     -> ( action /\ action )
-    -> model /\ Effect action
+    -> model /\ Effect (AndThen action)
 foldUpdate updateF model ( actionA /\ actionB ) =
     let
         model' /\ effects' = updateF actionA model
         model'' /\ effects'' = updateF actionB model'
     in
         model'' /\ (effects' <:> effects'')
+
+
+infixr 5 appendEffects as <:>
+
+
+appendEffects
+    :: forall action
+     . Effect (AndThen action)
+    -> Effect (AndThen action)
+    -> Effect (AndThen action)
+appendEffects effectA effectB =
+    append <$> effectA <*> effectB
