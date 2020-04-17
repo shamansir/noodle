@@ -380,8 +380,9 @@ applyBuildAction _ _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw =
     let newNode = Api.processWith processF node
         nw' = nw # setJust (_node uuid) newNode
     in
-        pure $ nw' /\
-            (doNothing {- SubscribeNodeProcess newNode -})
+        pure $ nw' /\ do
+            processCanceler <- Api.setupNodeProcessFlow node nw'
+            single $ Inner $ StoreNodeCanceler node processCanceler
 applyBuildAction _ pushAction (AddInlet inlet@(Inlet uuid path _ { flow })) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
@@ -404,19 +405,28 @@ applyBuildAction _ pushAction (AddInlet inlet@(Inlet uuid path _ { flow })) nw =
             : StoreNodeCanceler node nodeUpdatesCanceler
             : StoreInletCanceler inlet sendValuesCanceler
             : Nil
-applyBuildAction _ _ (AddOutlet outlet@(Outlet uuid path _ _)) nw = do
+applyBuildAction _ pushAction (AddOutlet outlet@(Outlet uuid path _ { flow })) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     nw' <- Api.addOutlet outlet nw
-    pure $ nw' /\
-        (doNothing
-       {- CancelNodeSubscriptions node
-        , SubscribeNodeProcess node
-        , InformNodeOnOutletUpdates outlet node
-        , SubscribeNodeUpdates node
-        , SendActionOnOutletUpdatesE outlet
-        -})
+    pure $ nw' /\ do
+        _ <- Api.cancelNodeSubscriptions nodeUuid nw
+        processCanceler <- Api.setupNodeProcessFlow node nw
+        outletUpdatesCanceler <- Api.informNodeOnOutletUpdates outlet node
+        nodeUpdatesCanceler <-
+            Api.subscribeNode node
+                (const $ const $ const $ pure unit) -- FIXME: implement
+                (const $ const $ const $ pure unit) -- FIXME: implement
+        let (OutletFlow flow') = flow
+        sendValuesCanceler <- E.subscribe flow' (pushAction <<< GotOutletData outlet)
+        batch $ Inner
+            <$> ClearNodeCancelers node
+            : StoreNodeCanceler node processCanceler
+            : StoreOutletCanceler outlet outletUpdatesCanceler
+            : StoreNodeCanceler node nodeUpdatesCanceler
+            : StoreOutletCanceler outlet sendValuesCanceler
+            : Nil
 applyBuildAction _ _ (Connect (Outlet ouuid _ _ _) (Inlet iuuid _ _ _)) nw = do
     pure $ nw /\ do
         uuid <- UUID.new

@@ -21,7 +21,7 @@ import Rpd.Path
 import Rpd.Util (flow) as R
 import Rpd.Network (empty) as Network
 
-import Test.Spec (Spec, it, pending, pending')
+import Test.Spec (Spec, it, pending, pending', itOnly)
 import Test.Spec.Assertions (shouldContain, shouldNotContain)
 
 -- import Rpd.Test.CollectData (TraceItem(..))
