@@ -359,19 +359,16 @@ applyBuildAction tk _ (RemoveNode node) nw = do
         removeOutlets outlets inNW =
             foldSteps inNW outlets $ applyBuildAction tk <<< RemoveOutlet
     -}
-applyBuildAction _ _ (RemoveInlet inlet) nw = do
+applyBuildAction _ _ (RemoveInlet inlet@(Inlet uuid path _ _)) nw = do
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
+    nodeUuid <- uuidByPath UUID.toNode nodePath nw
+    node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     nw' <- Api.removeInlet inlet nw
-    pure $ nw' /\ doNothing {- do
-        _ <- Api.cancelInletSubscriptions uuid nw
-        batch
-            $ CancelInletSubscriptions inlet
-            : CancelNodeSubscriptions node
-            : SubscribeNodeProcess node
-            : InformNodeOnInletUpdates inlet node
-            : SubscribeNodeUpdates node
-            : SendActionOnInletUpdatesE inlet
-            Nil
-        -}
+    pure $ nw' /\ do
+        _ <- Api.cancelInletSubscriptions uuid nw'
+        -- _ <- Api.cancelNodeSubscriptions nodeUuid nw'
+        nodeProcessCanceler <- Api.setupNodeProcessFlow node nw'
+        single $ Inner $ StoreNodeCanceler node nodeProcessCanceler
 applyBuildAction _ _ (RemoveOutlet outlet) nw = do
     nw' <- Api.removeOutlet outlet nw
     pure $ nw' /\
@@ -381,8 +378,8 @@ applyBuildAction _ _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw =
         nw' = nw # setJust (_node uuid) newNode
     in
         pure $ nw' /\ do
-            processCanceler <- Api.setupNodeProcessFlow node nw'
-            single $ Inner $ StoreNodeCanceler node processCanceler
+            processCanceler <- Api.setupNodeProcessFlow newNode nw'
+            single $ Inner $ StoreNodeCanceler newNode processCanceler
 applyBuildAction _ pushAction (AddInlet inlet@(Inlet uuid path _ { flow })) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
