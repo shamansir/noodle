@@ -30,7 +30,7 @@ import Rpd.Toolkit
     , NodeDef(..)
     )
 
-import Test.Spec (Spec, it, pending, describe)
+import Test.Spec (Spec, it, pending, describe, itOnly)
 import Test.Spec.Assertions (shouldContain, shouldNotContain, shouldEqual, shouldNotEqual)
 
 import Rpd.Test.Util.Trace (TraceItem(..))

@@ -18,7 +18,7 @@ import Rpd.Util (flow) as R
 
 import Effect.Class (liftEffect)
 
-import Test.Spec (Spec, it, pending, pending')
+import Test.Spec (Spec, it, pending, pending', itOnly)
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
 import Rpd.Test.Util.Trace (TraceItem(..))
