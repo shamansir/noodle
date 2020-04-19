@@ -2,6 +2,7 @@ module Rpd.Render.UI
     ( UI, CoveredUI
     , make, makeWithPush, run, run', view, once
     , imapModel, imapAction, imapError
+    , mapFSM
     ) where
 
 import Prelude
@@ -57,7 +58,6 @@ makeWithPush updateF viewF =
     UI (FSM.makeWithPush updateF) viewF
 
 
-
 run
     :: forall action model view
      . UI action model view
@@ -93,6 +93,17 @@ run' (UI fsm viewF) model actions = do
 
 view :: forall action model view. UI action model view -> model -> view
 view (UI _ viewF) = viewF
+
+
+-- TODO: get rid of this function by making a `CoveredFSM` to be a `newtype`
+--       or just by always considering UI to be "Covered"
+mapFSM
+    :: forall action model view
+     . (FSM action model -> FSM action model)
+    -> UI action model view
+    -> UI action model view
+mapFSM f (UI fsm viewF)
+    = UI (f fsm) viewF
 
 
 imapModel

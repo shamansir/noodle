@@ -15,7 +15,7 @@ import Data.List ((:), List(..))
 import Data.Foldable (class Foldable, foldr)
 import Data.Traversable (traverse, traverse_)
 import Data.Covered (Covered)
-import Data.Covered (carry, fromEither, whenC, unpack, recover, joinErrors) as Covered
+import Data.Covered (carry, fromEither, whenC, unpack, recover) as Covered
 import Data.Foldable (fold)
 
 import Debug.Trace as DT
