@@ -2,10 +2,11 @@ module FSM
     ( FSM
     , prepare -- FIXME: do not expose
     , make, makeWithPush, makePassing
-    , run, run', run'', fold
+    , run, run', run'', fold, fold'
     , pushAll, noSubscription
     , imapModel, imapAction
     , AndThen, doNothing, single, batch
+    , joinWith
 
     , join, join', join''
     , foldUpdate, appendEffects, (<:>)
@@ -38,6 +39,7 @@ import Rpd.Util (Canceler)
 type AndThen action = List action
 
 
+-- TODO: try changing back to `List (Effect action)`
 data FSM action model =
     FSM ((action -> Effect Unit) -> action -> model -> model /\ Effect (AndThen action))
 
@@ -150,6 +152,8 @@ prepare (FSM f) init subModels subActions = do
         }
 
 
+-- TODO: just take the `model` and not a list of actions, and that's it,
+-- user may perform the initial actions just by running a separate FSM
 run
     :: forall action model f
      . Foldable f
@@ -221,23 +225,23 @@ fold fsm init actionList = do
     -- fold' fsm init (const $ pure unit) actionList
 
 
-{- fold'
+fold'
     :: forall action model
-     . DoNothing action
-    => FSM action model
+     . FSM action model
     -> model
     -> (model -> Effect Unit)
     -> List action
     -> Effect (model /\ Canceler)
 fold' fsm init subscription actionList = do
     lastValRef <- Ref.new init
-    { pushAction, stop } <- prepare fsm init $ \model -> do
+    { pushAction, stop } <- prepare fsm init (\model -> do
         _ <- lastValRef # Ref.write model
         _ <- subscription model
-        pure unit
+        pure unit)
+        noSubscription
     _ <- traverse_ pushAction actionList
     lastVal <- Ref.read lastValRef
-    pure $ lastVal /\ stop -}
+    pure $ lastVal /\ stop
 
 
 pushAll :: forall action. (action -> Effect Unit) -> List action -> Effect Unit
@@ -293,3 +297,14 @@ appendEffects
     -> Effect (AndThen action)
 appendEffects effectA effectB =
     append <$> effectA <*> effectB
+
+
+joinWith
+    :: forall action model
+     . (model -> model -> model)
+    -> FSM action model
+    -> FSM action model
+joinWith joinF (FSM updateF) =
+    FSM $ \push action model ->
+            let model' /\ effects' = updateF push action model
+            in (model `joinF` model') /\ effects'

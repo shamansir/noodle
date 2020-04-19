@@ -3,6 +3,7 @@ module Data.Covered where
 
 import Prelude
 
+import Control.Alt (class Alt)
 import Data.Either
 import Data.Maybe
 import Data.Maybe (fromMaybe) as Maybe
@@ -42,7 +43,11 @@ instance coveredApplicative :: Applicative (Covered e) where
 instance coveredBind :: Semigroup e => Bind (Covered e) where
     -- bind covered k = k $ recover covered
     -- Above breaks the second law: Recovered err x >>= pure != Recovered err x, but Carried x
-    bind covered k = joinErrors covered $ k $ recover covered
+    bind covered k = appendErrors covered $ k $ recover covered
+
+
+instance coveredAlt :: Alt (Covered e) where
+    alt = consider
 
 
 instance coveredSemigroup :: (Semigroup e, Semigroup a) => Semigroup (Covered e a) where
@@ -145,30 +150,35 @@ whenC f (Recovered err v) = Recovered err v /\ f v
 whenC f (Carried v) = Carried v /\ f v
 
 
+consider :: forall e a. Covered e a -> Covered e a -> Covered e a
+consider (Recovered errA _) (Carried vB) = Recovered errA vB
+consider _ coveredB = coveredB
+
+
 -- traverse?
 unpack :: forall e a x. Covered e (a /\ x) -> Covered e a /\ x
 unpack (Recovered err (v /\ x)) = Recovered err v /\ x
 unpack (Carried (v /\ x)) = Carried v /\ x
 
 
-appendError
+stack
     :: forall m e a
      . Monoid (m e)
     => Applicative m
     => Covered e a
     -> Covered (m e) a
     -> Covered (m e) a
-appendError (Recovered err val) (Recovered errors _) = Recovered (errors <> pure err <> mempty) val
-appendError (Recovered err val) (Carried _) = Recovered (pure err) val
-appendError (Carried val) (Carried _) = Recovered mempty val
-appendError (Carried val) (Recovered errors _) = Recovered errors val
+stack (Recovered err val) (Recovered errors _) = Recovered (errors <> pure err) val
+stack (Recovered err val) (Carried _) = Recovered (pure err) val
+stack (Carried val) (Carried _) = Recovered mempty val
+stack (Carried val) (Recovered errors _) = Recovered errors val
 
 
-joinErrors :: forall e a b. Semigroup e => Covered e a -> Covered e b -> Covered e b
-joinErrors (Recovered errorsA _) (Recovered errorsB val) = Recovered (errorsA <> errorsB) val
-joinErrors (Recovered errors _) (Carried val) = Recovered errors val
-joinErrors (Carried _) (Carried val) = Carried val
-joinErrors (Carried _) (Recovered errors val) = Recovered errors val
+appendErrors :: forall e a b. Semigroup e => Covered e a -> Covered e b -> Covered e b
+appendErrors (Recovered errorsA _) (Recovered errorsB val) = Recovered (errorsA <> errorsB) val
+appendErrors (Recovered errors _) (Carried val) = Recovered errors val
+appendErrors (Carried _) (Carried val) = Carried val
+appendErrors (Carried _) (Recovered errors val) = Recovered errors val
 
 
 instance showCovered :: (Show e, Show a) => Show (Covered e a) where

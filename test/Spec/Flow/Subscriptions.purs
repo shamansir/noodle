@@ -219,6 +219,8 @@ spec = do
 
       pure unit
 
+    pending "removing the inlet is only affecting the processing by not having a corresponding value"
+
 
   describe "subscribing outlet" $ do
 

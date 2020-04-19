@@ -7,10 +7,11 @@ module FSM.Covered
 
 import Prelude
 
+import Control.Alt ((<|>))
 import Data.List (List)
 import Data.List as List
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Covered (Covered(..), carry, appendError, cover, uncover', recover, mapError, joinErrors)
+import Data.Covered (Covered(..), carry, cover, uncover', recover, mapError, appendErrors, consider)
 
 import Effect (Effect)
 import Effect.Ref as Ref
@@ -19,11 +20,10 @@ import FRP.Event (Event)
 import FRP.Event as Event
 
 import FSM
-import FSM (foldUpdate) as FSM
+import FSM (foldUpdate, make, makeWithPush, joinWith) as FSM
 
 
-type CoveredFSM error action model =
-    FSM action (Covered error model)
+type CoveredFSM error action model = FSM action (Covered error model)
 
 
 -- TODO: try `Semigroup error`
@@ -89,7 +89,7 @@ foldUpdate updateF model ( actionA /\ actionB ) =
     FSM.foldUpdate
         (\action model' ->
             let model'' /\ effects = updateF action model'
-            in joinErrors model' model'' /\ effects
+            in appendErrors model' model'' /\ effects
         )
         (carry model)
         ( actionA /\ actionB )

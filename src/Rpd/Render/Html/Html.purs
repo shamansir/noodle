@@ -33,9 +33,12 @@ import Debug.Trace as DT
 
 import Effect (Effect)
 
-import Data.Covered (carry, uncover, recover)
+import Control.Alt ((<|>))
+
+import Data.Covered (carry, uncover, recover, appendErrors)
 
 import FSM (AndThen, doNothing, single, batch)
+import FSM (joinWith) as FSM
 
 import Rpd.API (uuidByPath) as R
 import Rpd.API.Errors (RpdError) as R
@@ -542,6 +545,7 @@ make toolkitRenderer toolkit =
                     ui' { debug = ui'.debug # updateDebugBox nw action }
             in (carry $ ui'' /\ nw) /\ effects)
         (view toolkitRenderer <<< recover)
+        # UI.mapFSM (FSM.joinWith appendErrors)
         --(\covered -> view toolkitRenderer $ recover covered)
     {-
     R.Renderer

@@ -8,6 +8,7 @@ import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Effect.Console as Console
 
+import Control.Alt ((<|>))
 import Data.List as List
 import Data.List ((:), List(..))
 import Data.Maybe
@@ -162,7 +163,8 @@ spec = do
           updateF ActionOne _ = HoldsString "ActionOne" /\ doNothing
           updateF _ model = model /\ doNothing
           myFsm = FSM.make updateF
-        (lastModel /\ _) <- liftEffect $ FSM.fold myFsm emptyModel $ (NoOp : ActionOne : List.Nil)
+        (lastModel /\ _) <- liftEffect
+            $ FSM.fold myFsm emptyModel $ NoOp : ActionOne : List.Nil
         lastModel `shouldEqual` HoldsString "ActionOne"
 
       it "folds the models to the very last state with effects as well" do
@@ -171,7 +173,8 @@ spec = do
           updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ doNothing
           updateF _ model = model /\ doNothing
           myFsm = FSM.make updateF
-        (lastModel /\ _) <- liftEffect $ FSM.fold myFsm emptyModel $ (NoOp : ActionOne : List.Nil)
+        (lastModel /\ _) <- liftEffect
+            $ FSM.fold myFsm emptyModel $ NoOp : ActionOne : List.Nil
         case lastModel of
           (HoldsUUID _) -> pure unit
           _ -> fail $ "should contain UUID in the model, but " <> show lastModel
@@ -186,7 +189,8 @@ spec = do
           updateF _ model =
             model /\ doNothing
           myFsm = FSM.make updateF
-        (lastModel /\ _) <- liftEffect $ FSM.fold myFsm emptyModel $ (ActionOne : List.Nil)
+        (lastModel /\ _) <- liftEffect
+          $ FSM.fold myFsm emptyModel $ ActionOne : List.Nil
         case lastModel of
           (HoldsUUID _) -> pure unit
           _ -> fail $ "should contain UUID in the model, but " <> show lastModel
@@ -228,7 +232,8 @@ spec = do
           updateF NoOp _ = Covered.cover Empty ErrorOne /\ doNothing
           updateF ActionOne _ = Covered.cover Empty ErrorTwo /\ doNothing
           updateF _ _ = Covered.carry Empty /\ doNothing
-          (myCovererdFsm :: CoveredFSM Error Action Model) = FSM.make updateF
+          (myCovererdFsm :: CoveredFSM Error Action Model)
+            = FSM.make updateF # FSM.joinWith ((<|>))
         lastModel <- liftEffect $ do
           ref <- Ref.new $ Covered.carry Empty
           _ <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
@@ -238,17 +243,41 @@ spec = do
           Recovered ErrorTwo _ -> pure unit
           _ -> fail $ "does not contain ErrorTwo, but " <> show lastModel
 
+    it "folding also keeps the latest error" do
+        let
+          updateF NoOp _ = Covered.cover Empty ErrorOne /\ doNothing
+          updateF ActionOne _ = Covered.cover Empty ErrorTwo /\ doNothing
+          updateF _ _ = Covered.carry Empty /\ doNothing
+          (myCovererdFsm :: CoveredFSM Error Action Model)
+              = FSM.make updateF # FSM.joinWith ((<|>))
+        lastModel /\ _ <- liftEffect
+            $ FSM.fold myCovererdFsm (Covered.carry emptyModel)
+                  $ NoOp : ActionOne : List.Nil
+        case lastModel of
+          Recovered ErrorTwo _ -> pure unit
+          _ -> fail $ "does not contain ErrorTwo, but " <> show lastModel
+
+    it "folding keeps the latest error even if there were a sucess after" do
+        let
+          updateF NoOp _ = Covered.cover Empty ErrorOne /\ doNothing
+          updateF ActionOne _ = Covered.carry Empty /\ doNothing
+          updateF _ _ = Covered.carry Empty /\ doNothing
+          (myCovererdFsm :: CoveredFSM Error Action Model)
+              = FSM.make updateF # FSM.joinWith ((<|>))
+        lastModel /\ _ <- liftEffect
+            $ FSM.fold myCovererdFsm (Covered.carry emptyModel)
+                  $ NoOp : ActionOne : List.Nil
+        case lastModel of
+          Recovered ErrorOne _ -> pure unit
+          _ -> fail $ "does not contain ErrorOne, but " <> show lastModel
+
     it "provides the way to collect errors" do
         let
-          updateF' NoOp c = Covered.cover Empty [ ErrorOne ] /\ doNothing
-          updateF' ActionOne _ = Covered.cover Empty [ ErrorTwo ] /\ doNothing
-          updateF' _ _ = Covered.carry Empty /\ doNothing
-          updateF action prevModel =
-            let
-              nextModel /\ effects = updateF' action prevModel
-            in
-              prevModel `Covered.joinErrors` nextModel /\ effects
-          (myCovererdFsm :: CoveredFSM (Array Error) Action Model) = FSM.make updateF
+          updateF NoOp c = Covered.cover Empty [ ErrorOne ] /\ doNothing
+          updateF ActionOne _ = Covered.cover Empty [ ErrorTwo ] /\ doNothing
+          updateF _ _ = Covered.carry Empty /\ doNothing
+          (myCovererdFsm :: CoveredFSM (Array Error) Action Model)
+            = FSM.make updateF # FSM.joinWith Covered.appendErrors
         lastModel <- liftEffect $ do
           ref <- Ref.new $ Covered.carry Empty
           _ <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
