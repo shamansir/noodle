@@ -50,6 +50,7 @@ import Rpd.Optics as R
 import Rpd.Path as R
 import Rpd.Render.UI (make) as UI
 import Rpd.Render.Renderer (Renderer, Routed(..)) as R
+import Rpd.Render.Renderer (make) as Renderer
 import Rpd.Toolkit as T
 
 
@@ -123,10 +124,11 @@ init =
 type TerminalRenderer d c n = R.Renderer d c n Msg Ui View
 
 
-make :: forall d c n. TerminalRenderer d c n
-make =
-    UI.make
-        update
+make :: forall d c n. T.Toolkit d c n -> TerminalRenderer d c n
+make toolkit =
+    Renderer.make
+        toolkit
+        (const update)
         (recover >>> view)
     {-
     R.Renderer
