@@ -84,6 +84,24 @@ cover' x (Just err) = Recovered err x
 cover' x Nothing = Carried x
 
 
+recover :: forall e a. Covered e a -> a
+recover (Recovered _ x) = x
+recover (Carried x) = x
+
+
+uncover :: forall e a. Covered e a -> Maybe e /\ a
+uncover covered = hasError covered /\ recover covered
+
+
+uncover' :: forall m e a. Monoid (m e) => Covered (m e) a -> m e /\ a
+uncover' covered = (hasError covered # Maybe.fromMaybe mempty) /\ recover covered
+
+
+consider :: forall e a. Covered e a -> Covered e a -> Covered e a
+consider (Recovered errA _) (Carried vB) = Recovered errA vB
+consider _ coveredB = coveredB
+
+
 inject :: forall e a b. b -> Covered e a -> Covered e b
 inject b covered = const b <$> covered
 
@@ -91,6 +109,11 @@ inject b covered = const b <$> covered
 fromMaybe :: forall e a. e -> a -> Maybe a -> Covered e a
 fromMaybe _ _ (Just v)  = Carried v
 fromMaybe e v Nothing  = Recovered e v
+
+
+toMaybe :: forall e a. Covered e a -> Maybe a
+toMaybe (Recovered _ _) = Nothing
+toMaybe (Carried x) = Just x
 
 
 fromEither :: forall e a. a -> Either e a -> Covered e a
@@ -107,22 +130,11 @@ toEither (Recovered err _) = Left err
 toEither (Carried x) = Right x
 
 
-toMaybe :: forall e a. Covered e a -> Maybe a
-toMaybe (Recovered _ _) = Nothing
-toMaybe (Carried x) = Just x
-
-
-recover :: forall e a. Covered e a -> a
-recover (Recovered _ x) = x
-recover (Carried x) = x
-
-
-uncover :: forall e a. Covered e a -> Maybe e /\ a
-uncover covered = hasError covered /\ recover covered
-
-
-uncover' :: forall m e a. Monoid (m e) => Covered (m e) a -> m e /\ a
-uncover' covered = (hasError covered # Maybe.fromMaybe mempty) /\ recover covered
+appendErrors :: forall e a b. Semigroup e => Covered e a -> Covered e b -> Covered e b
+appendErrors (Recovered errorsA _) (Recovered errorsB val) = Recovered (errorsA <> errorsB) val
+appendErrors (Recovered errors _) (Carried val) = Recovered errors val
+appendErrors (Carried _) (Carried val) = Carried val
+appendErrors (Carried _) (Recovered errors val) = Recovered errors val
 
 
 mapError :: forall ea eb a. (ea -> eb) -> Covered ea a -> Covered eb a
@@ -150,11 +162,6 @@ whenC f (Recovered err v) = Recovered err v /\ f v
 whenC f (Carried v) = Carried v /\ f v
 
 
-consider :: forall e a. Covered e a -> Covered e a -> Covered e a
-consider (Recovered errA _) (Carried vB) = Recovered errA vB
-consider _ coveredB = coveredB
-
-
 -- traverse?
 unpack :: forall e a x. Covered e (a /\ x) -> Covered e a /\ x
 unpack (Recovered err (v /\ x)) = Recovered err v /\ x
@@ -172,13 +179,6 @@ stack (Recovered err val) (Recovered errors _) = Recovered (errors <> pure err) 
 stack (Recovered err val) (Carried _) = Recovered (pure err) val
 stack (Carried val) (Carried _) = Recovered mempty val
 stack (Carried val) (Recovered errors _) = Recovered errors val
-
-
-appendErrors :: forall e a b. Semigroup e => Covered e a -> Covered e b -> Covered e b
-appendErrors (Recovered errorsA _) (Recovered errorsB val) = Recovered (errorsA <> errorsB) val
-appendErrors (Recovered errors _) (Carried val) = Recovered errors val
-appendErrors (Carried _) (Carried val) = Carried val
-appendErrors (Carried _) (Recovered errors val) = Recovered errors val
 
 
 instance showCovered :: (Show e, Show a) => Show (Covered e a) where
