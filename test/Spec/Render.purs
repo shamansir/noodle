@@ -3,6 +3,8 @@ module Rpd.Test.Spec.Render
 
 import Prelude
 
+import Debug.Trace (traceM) as DT
+
 import Data.Time.Duration (Milliseconds(..))
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.String as String
@@ -98,7 +100,7 @@ stringRenderer = StringRenderer.make toolkit
 
 
 terminalRenderer :: TerminalRenderer MyData Channel Node
-terminalRenderer = TerminalRenderer.make
+terminalRenderer = TerminalRenderer.make toolkit
 
 
 spec :: Spec Unit
@@ -298,6 +300,7 @@ expectToRender renderer compareViews actions model expectation = do
     lastViewSpy <- Spy.last
     { push, next : views }
           <- UI.run renderer $ carry $ model /\ Network.empty "network"
+--    _ <- Event.subscribe views $ DT.traceM
     _ <- Event.subscribe views $ Spy.with lastViewSpy
     _ <- traverse_ (push <<< FromCore) actions
     Spy.get lastViewSpy
