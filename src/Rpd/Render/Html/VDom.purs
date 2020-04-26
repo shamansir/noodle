@@ -51,7 +51,7 @@ embed
     -> (view -> HtmlView d c n action) -- insert the rendering result
     -> UI.Renderer d c n action model view -- renderer
     -> model /\ Network d c n -- initial model
-    -> Effect Unit
+    -> Effect (A.Action d c n -> Effect Unit)
 embed sel render renderer firstModel = do
     doc ← DOM.window >>= DOM.document
     mbEl ← DOM.querySelector (wrap sel) (HTMLDocument.toParentNode doc)
@@ -78,7 +78,7 @@ embed sel render renderer firstModel = do
                     pure unit
             _ <- push $ UI.FromCore $ A.Data A.Bang
             _ <- push $ UI.FromCore $ A.Request $ A.ToAddPatch "bar" -- FIXME: remove
-            pure unit
+            pure $ push <<< UI.FromCore
 
 
 -- TODO: let specifying actions to start with
@@ -87,5 +87,5 @@ embed'
      . String -- selector
     -> UI.Renderer d c n action model (HtmlView d c n action) -- renderer
     -> model /\ Network d c n -- initial model
-    -> Effect Unit
+    -> Effect (A.Action d c n -> Effect Unit)
 embed' sel = embed sel identity
