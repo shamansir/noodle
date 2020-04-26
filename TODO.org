@@ -6,7 +6,9 @@
 
     ** Lists, Arrays and Sequences are all messed up; Prefer `List`s everywhere, except for unique stuff, there prefer `Sequence`;
 
-    ** For `FSM`, use `Effect action`, not an array of Actions; However, this way you'll have to know what is "empty" action; Maybe make it a `Monoid`?
+    ** In `FSM`, do not allow actions to be passed to `run` and other functions, all the actions should only be pushed afterwards — that will simplify things a lot, see my own `purescript-fsm` example as the proof (and for the one below as well); And, for `VDOM` & renderer, allow pushing actions after embedding;
+
+    ** For `FSM`, use `List (Effect action)`, not one effect to share data between other actions: that would make the `FSM` granularly implemented;
 
     ** Save the latest data received into outlet (maybe inlet as well) to re-send it on connection. :api:test:
 
