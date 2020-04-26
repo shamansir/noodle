@@ -2,45 +2,25 @@ module Rpd.Render.Html where
 
 import Prelude
 
-import Math (atan2, sqrt, pow)
-
 import Data.Int (toNumber)
-import Data.Either (Either(..))
-import Data.Foldable (fold, foldr)
 import Data.Lens (view) as L
-import Data.Lens.At (at) as L
-import Data.List (List)
-import Data.List (List(..), toUnfoldable, length, head) as List
+import Data.List (toUnfoldable) as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..), isJust, maybe, fromMaybe)
 import Data.Set as Set
 import Data.Set (Set)
 import Data.Array as Array
-import Data.Array ((:))
 import Data.Sequence as Seq
-import Data.Sequence (Seq)
-import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Vec2 (Vec2(..))
 import Data.Vec2 as Vec2
-import Data.Exists (Exists, mkExists)
-import Control.Alternative ((<|>))
-
-
-import Debug.Trace as DT
-
--- import Debug.Trace as DT
 
 import Effect (Effect)
 
-import Control.Alt ((<|>))
-
-import Data.Covered (carry, uncover, recover, appendErrors)
+import Data.Covered (carry, uncover, recover)
 
 import FSM (AndThen, doNothing, single, batch)
-import FSM (joinWith) as FSM
 
-import Rpd.API (uuidByPath) as R
 import Rpd.API.Errors (RpdError) as R
 import Rpd.API.Action (Action(..), DataAction(..), BuildAction(..), RequestAction(..)) as Core
 import Rpd.Network as R
@@ -52,7 +32,6 @@ import Rpd.Util (type (/->), (+>), Bounds, Rect, Position)
 import Rpd.Toolkit (Toolkit, class Channels, ToolkitRenderer) as T
 
 import Rpd.Render.Atom as R
-import Rpd.Render.UI as UI
 import Rpd.Render.Layout as Layout
 import Rpd.Render.Layout (Layout, PatchLayout, Cell(..), ZIndex(..))
 import Rpd.Render.Renderer (Renderer, Routed(..))
@@ -117,12 +96,14 @@ data Action d c n
     | StorePositions (UUID.Tagged /-> Position)
 
 
+{-
 data Perform d c n
     = UpdatePositions
     | TryConnecting (R.Outlet d c) (R.Inlet d c)
     | TryToPinNode (R.Node d n) Position
     | TryRemovingNode (R.Node d n)
     | StopPropagation Event
+-}
 
 
 data DragSubject d c n
@@ -174,6 +155,30 @@ type ToolkitRenderer d c n =
         (View d c n)
         (Routed (Action d c n) (Core.Action d c n))
 -- FIXME: user might want to use custom messages in the renderer
+
+
+
+make
+    :: forall d c n
+     . T.Channels d c
+    => Show d => Show c => Show n
+    => R.Atom n
+    => ToolkitRenderer d c n
+    -> T.Toolkit d c n
+    -> HtmlRenderer d c n
+make toolkitRenderer toolkit =
+    Renderer.make
+        toolkit
+        (\_ action covered ->
+            let
+                maybeError /\ (ui /\ nw) = uncover covered
+                (ui' /\ effects) = update action (ui /\ nw)
+                ui'' = -- FIXME: use <$> over model to update debug box and skip errors
+                    ui' { debug = ui'.debug # updateDebugBox nw action }
+            in (carry $ ui'' /\ nw) /\ effects)
+        (view toolkitRenderer <<< recover)
+
+        -- it is done in Renderer.make: # UI.mapFSM (FSM.joinWith appendErrors
 
 
 core :: forall d c n. Core.Action d c n -> Routed (Action d c n) (Core.Action d c n)
@@ -526,29 +531,6 @@ updateDebugBox nw (FromCore action) (Just debug) = Just $ DebugBox.update action
 updateDebugBox _ (FromUI EnableDebug) _ = Just $ DebugBox.init
 updateDebugBox _ (FromUI DisableDebug) _ = Nothing
 updateDebugBox _ _ v = v
-
-
-make
-    :: forall d c n
-     . T.Channels d c
-    => Show d => Show c => Show n
-    => R.Atom n
-    => ToolkitRenderer d c n
-    -> T.Toolkit d c n
-    -> HtmlRenderer d c n
-make toolkitRenderer toolkit =
-    Renderer.make
-        toolkit
-        (\_ action covered ->
-            let
-                maybeError /\ (ui /\ nw) = uncover covered
-                (ui' /\ effects) = update action (ui /\ nw)
-                ui'' = -- FIXME: use <$> over model to update debug box and skip errors
-                    ui' { debug = ui'.debug # updateDebugBox nw action }
-            in (carry $ ui'' /\ nw) /\ effects)
-        (view toolkitRenderer <<< recover)
-
-        -- it is done in Renderer.make: # UI.mapFSM (FSM.joinWith appendErrors
 
 
 -- FIXME: show in DebugBox
