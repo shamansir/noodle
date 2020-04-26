@@ -56,6 +56,7 @@ import Rpd.Render.UI as UI
 import Rpd.Render.Layout as Layout
 import Rpd.Render.Layout (Layout, PatchLayout, Cell(..), ZIndex(..))
 import Rpd.Render.Renderer (Renderer, Routed(..))
+import Rpd.Render.Renderer (make) as Renderer
 import Rpd.Render.Html.DebugBox as DebugBox
 
 import Spork.Html (Html)
@@ -536,8 +537,9 @@ make
     -> T.Toolkit d c n
     -> HtmlRenderer d c n
 make toolkitRenderer toolkit =
-    UI.make
-        (\action covered ->
+    Renderer.make
+        toolkit
+        (\_ action covered ->
             let
                 maybeError /\ (ui /\ nw) = uncover covered
                 (ui' /\ effects) = update action (ui /\ nw)
@@ -545,24 +547,8 @@ make toolkitRenderer toolkit =
                     ui' { debug = ui'.debug # updateDebugBox nw action }
             in (carry $ ui'' /\ nw) /\ effects)
         (view toolkitRenderer <<< recover)
-        # UI.mapFSM (FSM.joinWith appendErrors)
-        --(\covered -> view toolkitRenderer $ recover covered)
-    {-
-    R.Renderer
-        { from : emptyView
-        , init : init
-        , update :
-            \toolkit action covered ->
-                let
-                    maybeError /\ (ui /\ nw) = uncover covered
-                    (ui' /\ effects) = update action (ui /\ nw)
-                    ui'' =
-                        ui' { debug = ui'.debug # updateDebugBox nw action }
-                in (ui'' /\ effects)
-        , view : view toolkitRenderer
-        , performEffect
-        }
-    -}
+
+        -- it is done in Renderer.make: # UI.mapFSM (FSM.joinWith appendErrors
 
 
 -- FIXME: show in DebugBox

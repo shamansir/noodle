@@ -187,16 +187,15 @@ spec = do
     it "rendering the erroneous network responds with the error" do
       let
         erroneousNW = Actions.init
-          -- add inlet to non-exising node
+          -- add inlet to a non-exising node
           </> R.addInlet (toNode "idont" "exist") "foo" Channel
       stringSample <- liftEffect $ loadSample "Error.String"
       terminalSample <- liftEffect $ loadSample "Error.Terminal"
-      expectToRenderMFirst stringRenderer compareStrings' erroneousNW
+      expectToRenderM stringRenderer compareStrings' erroneousNW
         $ String.trim stringSample
       expectToRender terminalRenderer compareMultiline' erroneousNW TerminalRenderer.init
         $ ML.empty' (100 /\ 100)
           # ML.inject (0 /\ 0) (ML.toMultiline terminalSample)
-      pure unit
 
   describe "dynamic rendering" do
 

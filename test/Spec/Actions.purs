@@ -156,7 +156,8 @@ spec =
 
           liftEffect stop
 
-      it "when some error happened, it is reported only once" do
+      pending' "when some error happened, it is reported only once" do
+          -- we collect errors from now on, so this has no sense anymore
           errHandlerSpy <- liftEffect Spy.ifErrorC
 
           let
