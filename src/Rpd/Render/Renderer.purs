@@ -4,6 +4,7 @@ import Prelude
 import Effect (Effect)
 
 import FSM (AndThen)
+import FSM (joinWith) as FSM
 
 import Data.Covered
 import Data.Tuple.Nested ((/\), type (/\))
@@ -15,7 +16,7 @@ import Rpd.Network (Network)
 import Rpd.Toolkit (Toolkit)
 
 import Rpd.Render.UI (CoveredUI)
-import Rpd.Render.UI (makeWithPush) as UI
+import Rpd.Render.UI (makeWithPush, mapFSM) as UI
 
 
 data Routed other core
@@ -53,10 +54,10 @@ make
     -> UpdateF d c n action model view
     -> ViewF d c n model view
     -> Renderer d c n action model view
-make toolkit updateF viewF =
+make toolkit updateF =
     UI.makeWithPush
         updateF'
-        viewF
+    >>> UI.mapFSM (FSM.joinWith appendErrors)
     where
         updateF' pushAction action@(FromCore coreAction) coveredModel =
             let
@@ -67,8 +68,8 @@ make toolkit updateF viewF =
                     (\coreModel -> uiModel /\ coreModel)
                         <$> coveredCoreModel
                 nextModel /\ uiEffects =
-                    updateF pushAction action coveredModel'
-                nextEffects = uiEffects <> (map FromCore <$> coreEffects)
+                    updateF pushAction action $ appendErrors coveredModel coveredModel'
+                nextEffects = (map FromCore <$> coreEffects) <> uiEffects
             in
                 nextModel /\ nextEffects
         updateF' pushAction action coveredModel =
@@ -82,4 +83,5 @@ makeMinimal
     -> Minimal d c n view
 makeMinimal toolkit =
     UI.makeWithPush
-        \pushAction action coveredNw -> C.apply toolkit pushAction action $ recover coveredNw
+        (\pushAction action coveredNw -> C.apply toolkit pushAction action $ recover coveredNw)
+    >>> UI.mapFSM (FSM.joinWith appendErrors)

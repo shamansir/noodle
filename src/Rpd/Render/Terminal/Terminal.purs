@@ -12,28 +12,17 @@ module Rpd.Render.Terminal
 
 import Prelude
 
-import Control.Alt ((<|>))
-
-import Data.Array ((!!))
 import Data.Array as Array
-import Data.Int (toNumber, floor, round)
-import Data.List (List, (:))
+import Data.Int (toNumber, round)
 import Data.List as List
-import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Sequence as Seq
-import Data.String (CodePoint, fromCodePointArray, toCodePointArray, codePointFromChar, joinWith)
+import Data.String (codePointFromChar, joinWith)
 import Data.String as String
-import Data.Tuple (snd, fst) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
-import Data.Newtype (unwrap)
 import Effect (Effect)
-
-import Data.Either (Either(..))
-
-import Data.Foldable (foldMap, foldr, sequence_)
+import Data.Foldable (foldr)
 import Data.Lens as Lens
-import Data.Traversable (traverse)
 
 import Data.BinPack.R2 as R2
 
@@ -48,8 +37,7 @@ import Rpd.API.Action as C
 import Rpd.Network (Network(..), Patch(..), Node(..), Inlet(..), Outlet(..), Link(..)) as R
 import Rpd.Optics as R
 import Rpd.Path as R
-import Rpd.Render.UI (make) as UI
-import Rpd.Render.Renderer (Renderer, Routed(..)) as R
+import Rpd.Render.Renderer (Renderer, Routed) as R
 import Rpd.Render.Renderer (make) as Renderer
 import Rpd.Toolkit as T
 
@@ -130,15 +118,6 @@ make toolkit =
         toolkit
         (const update)
         (recover >>> view)
-    {-
-    R.Renderer
-        { from : ML.empty
-        , init : const initUi
-        , update : const update
-        , view
-        , performEffect : R.skipEffects
-        }
-    -}
 
 
 noView :: View
