@@ -16,7 +16,7 @@ import Rpd.Network (Network)
 import Rpd.Network (empty) as Network
 import Rpd.API.Action as Action
 import Rpd.API.Action.Apply (apply) as Action
-import Rpd.API.Action.Sequence ((</>))
+import Rpd.API.Action.Sequence ((</>), pushAll)
 import Rpd.Render.Html (make, init) as HtmlRenderer
 import Rpd.Render.Html.VDom as VDom
 import Rpd.Toolkit as T
@@ -32,11 +32,12 @@ network = Network.empty "aaa"
 
 main :: Effect Unit
 main = do
-    VDom.embed'
-        "#app"
-        (HtmlRenderer.make ExampleToolkit.htmlRenderer ExampleToolkit.toolkit)
-        (HtmlRenderer.init network /\ network)
-
+    push <-
+        VDom.embed'
+            "#app"
+            (HtmlRenderer.make ExampleToolkit.htmlRenderer ExampleToolkit.toolkit)
+            (HtmlRenderer.init network /\ network)
+    pushAll push Network.recipe
     -- _ /\ { stop } <-
     --     Actions.runFolding
     --         ExampleToolkit.toolkit
