@@ -25,7 +25,7 @@ import FRP.Event.Class (count) as E
 import FRP.Event.Time as E
 
 import FSM (doNothing, single, batch, join, join', join'', AndThen)
-import FSM.Covered (follow, followJoin, fine, foldUpdate) as Covered
+import FSM.Rollback (follow, followJoin, fine, foldUpdate) as Covered
 
 import Rpd.Util (PushableFlow(..), Canceler)
 import Rpd.API as Api
@@ -82,9 +82,20 @@ apply
      . Toolkit d c n
     -> (Action d c n -> Effect Unit)
     -> Action d c n
+    -> Covered RpdError (Network d c n)
+    -> Step d c n
+apply toolkit pushAction action coveredNw =
+    apply' toolkit pushAction action $ Covered.recover coveredNw
+
+
+apply'
+    :: forall d c n
+     . Toolkit d c n
+    -> (Action d c n -> Effect Unit)
+    -> Action d c n
     -> Network d c n
     -> Step d c n
-apply toolkit pushAction action nw =
+apply' toolkit pushAction action nw =
     proceed $ apply_ toolkit pushAction action nw
     where
         proceed :: StepE d c n -> Step d c n

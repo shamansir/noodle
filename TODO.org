@@ -14,6 +14,8 @@
 
     ** In DebugBox, be able to filter the events by type. :debug:
 
+    ** Make both UI and Renderer `newtype`s with closed constructors since they add new logic over `FSM` which could be accidentally forgotten to be added;
+
     ** Change the way links are updating the position: The layout should rather track the position of node when dragging and distribute the links by knowing/calculating the inlets and outlets positions using the dimensions of the Node. (SVG renderer would help with that). :render:
 
     ** Rename ~RPD~ -> ~Noodle~. :rename:api:

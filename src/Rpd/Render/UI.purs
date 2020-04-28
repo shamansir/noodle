@@ -95,7 +95,7 @@ view :: forall action model view. UI action model view -> model -> view
 view (UI _ viewF) = viewF
 
 
--- TODO: get rid of this function by making a `CoveredFSM` to be a `newtype`
+-- TODO: get rid of this function by making a `RollbackFSM` to be a `newtype`
 --       or just by always considering UI to be "Covered"
 mapFSM
     :: forall action model view

@@ -63,7 +63,9 @@ make toolkit updateF =
             let
                 (uiModel /\ coreModel) = recover coveredModel
                 coveredCoreModel /\ coreEffects =
-                    C.apply toolkit (pushAction <<< FromCore) coreAction coreModel
+                    C.apply toolkit (pushAction <<< FromCore) coreAction
+                        $ appendErrors coveredModel
+                        $ carry coreModel
                 coveredModel' =
                     (\coreModel -> uiModel /\ coreModel)
                         <$> coveredCoreModel
@@ -83,5 +85,5 @@ makeMinimal
     -> Minimal d c n view
 makeMinimal toolkit =
     UI.makeWithPush
-        (\pushAction action coveredNw -> C.apply toolkit pushAction action $ recover coveredNw)
+        (C.apply toolkit)
     >>> UI.mapFSM (FSM.joinWith appendErrors)

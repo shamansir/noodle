@@ -1,5 +1,5 @@
-module FSM.Covered
-    ( CoveredFSM
+module FSM.Rollback
+    ( RollbackFSM
     , fine, fineDo
     , follow, followJoin
     , foldUpdate
@@ -7,30 +7,57 @@ module FSM.Covered
 
 import Prelude
 
-import Control.Alt ((<|>))
-import Data.List (List)
-import Data.List as List
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Covered (Covered(..), carry, cover, uncover', recover, mapError, appendErrors, consider)
+import Data.Covered (Covered(..), carry, appendErrors)
 
 import Effect (Effect)
-import Effect.Ref as Ref
 
-import FRP.Event (Event)
-import FRP.Event as Event
-
-import FSM
-import FSM (foldUpdate, make, makeWithPush, joinWith) as FSM
+import FSM (FSM, AndThen, doNothing, (<:>))
+import FSM (foldUpdate) as FSM
 
 
-type CoveredFSM error action model = FSM action (Covered error model)
+type RollbackFSM error action model = FSM action (Covered error model) -- TODO: make a `newtype`
+
+
+{-
+toRollback
+    :: forall error action model
+     . FSM action (Covered error model)
+    -> RollbackFSM error action model
+toRollback fsm =
+    RollbackFSM $ fsm # FSM.joinWith (<|>)
+
+
+toRollback'
+    :: forall error action model
+     . Semigroup error
+    => FSM action (Covered error model)
+    -> RollbackFSM error action model
+toRollback' fsm =
+    RollbackFSM $ fsm # FSM.joinWith appendErrors
+
+
+make
+    :: forall error action model
+     . (action -> Covered error model -> Covered error model /\ Effect (AndThen action))
+    -> RollbackFSM error action model
+make = FSM.make >>> toRollback
+
+
+make'
+    :: forall error action model
+     . Semigroup error
+    => (action -> Covered error model -> Covered error model /\ Effect (AndThen action))
+    -> RollbackFSM error action model
+make' = FSM.make >>> toRollback'
+-}
 
 
 -- TODO: try `Semigroup error`
 
 
 fine :: forall error action model. model -> Covered error model /\ Effect (AndThen action)
-fine nw = pure nw /\ doNothing
+fine model = pure model /\ doNothing
 
 
 fineDo
@@ -38,7 +65,7 @@ fineDo
      . model
     -> Effect action
     -> Covered error model /\ Effect action
-fineDo nw eff = pure nw /\ eff
+fineDo model eff = pure model /\ eff
 
 
 -- TODO: try to get rid of those
@@ -81,7 +108,7 @@ foldUpdate
     :: forall error action model
      . Semigroup error
     => (action -> Covered error model -> Covered error model /\ Effect (AndThen action))
-    -- => CoveredFSM error action model
+    -- => RollbackFSM error action model
     -> model
     -> ( action /\ action )
     -> Covered error model /\ Effect (AndThen action)
@@ -103,7 +130,7 @@ foldUpdate updateF model ( actionA /\ actionB ) =
 {-
 fold
     :: forall error action model
-     . CoveredFSM error action model
+     . RollbackFSM error action model
     -> List action
     -> Effect
             ((List error /\ model) /\

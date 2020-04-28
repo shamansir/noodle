@@ -24,7 +24,7 @@ import Test.Spec.Assertions (shouldEqual, fail)
 
 import FSM as FSM
 import FSM (FSM, doNothing, single, batch)
-import FSM.Covered (CoveredFSM)
+import FSM.Rollback (RollbackFSM)
 
 
 data Error
@@ -212,11 +212,11 @@ spec = do
 
       pending "TODO"
 
-  describe "CoveredFSM" do
+  describe "RollbackFSM" do
 
     it "passes error through update cycle" do
         let
-          (myCovererdFsm :: CoveredFSM Error Action Model) =
+          (myCovererdFsm :: RollbackFSM Error Action Model) =
               FSM.make (\_ _ -> Covered.cover Empty ErrorOne /\ doNothing)
         lastModel <- liftEffect $ do
           ref <- Ref.new $ Covered.carry Empty
@@ -232,7 +232,7 @@ spec = do
           updateF NoOp _ = Covered.cover Empty ErrorOne /\ doNothing
           updateF ActionOne _ = Covered.cover Empty ErrorTwo /\ doNothing
           updateF _ _ = Covered.carry Empty /\ doNothing
-          (myCovererdFsm :: CoveredFSM Error Action Model)
+          (myCovererdFsm :: RollbackFSM Error Action Model)
             = FSM.make updateF # FSM.joinWith ((<|>))
         lastModel <- liftEffect $ do
           ref <- Ref.new $ Covered.carry Empty
@@ -248,7 +248,7 @@ spec = do
           updateF NoOp _ = Covered.cover Empty ErrorOne /\ doNothing
           updateF ActionOne _ = Covered.cover Empty ErrorTwo /\ doNothing
           updateF _ _ = Covered.carry Empty /\ doNothing
-          (myCovererdFsm :: CoveredFSM Error Action Model)
+          (myCovererdFsm :: RollbackFSM Error Action Model)
               = FSM.make updateF # FSM.joinWith ((<|>))
         lastModel /\ _ <- liftEffect
             $ FSM.fold myCovererdFsm (Covered.carry emptyModel)
@@ -262,7 +262,7 @@ spec = do
           updateF NoOp _ = Covered.cover Empty ErrorOne /\ doNothing
           updateF ActionOne _ = Covered.carry Empty /\ doNothing
           updateF _ _ = Covered.carry Empty /\ doNothing
-          (myCovererdFsm :: CoveredFSM Error Action Model)
+          (myCovererdFsm :: RollbackFSM Error Action Model)
               = FSM.make updateF # FSM.joinWith ((<|>))
         lastModel /\ _ <- liftEffect
             $ FSM.fold myCovererdFsm (Covered.carry emptyModel)
@@ -276,7 +276,7 @@ spec = do
           updateF NoOp c = Covered.cover Empty [ ErrorOne ] /\ doNothing
           updateF ActionOne _ = Covered.cover Empty [ ErrorTwo ] /\ doNothing
           updateF _ _ = Covered.carry Empty /\ doNothing
-          (myCovererdFsm :: CoveredFSM (Array Error) Action Model)
+          (myCovererdFsm :: RollbackFSM (Array Error) Action Model)
             = FSM.make updateF # FSM.joinWith Covered.appendErrors
         lastModel <- liftEffect $ do
           ref <- Ref.new $ Covered.carry Empty
