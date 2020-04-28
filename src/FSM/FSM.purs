@@ -19,16 +19,20 @@ import Effect (Effect)
 import Effect.Ref as Ref
 import Effect.Console as Console
 
+import Control.Alt ((<|>))
+import Control.Comonad (class Comonad, extract)
+
 import Data.List (List, (:))
 import Data.List as List
 import Data.Foldable (class Foldable)
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Either (Either)
+import Data.Either (Either(..))
 import Data.Foldable (foldr)
 import Data.Traversable (traverse_)
 import Data.Bifunctor (bimap)
 import Data.Functor.Invariant (class Invariant, imap)
+import Data.Covered (Covered, recover, inject, hasError, cover', mapError, appendErrors)
 
 import FRP.Event (Event)
 import FRP.Event as Event
@@ -46,6 +50,9 @@ data FSM action model =
 
 instance invariantFSM :: Invariant (FSM action) where
     imap = imapModel
+
+
+-- instance semigroupAndThen :: Semigroup (Effect AndThen) where
 
 
 {-}
@@ -308,3 +315,56 @@ joinWith joinF (FSM updateF) =
     FSM $ \push action model ->
             let model' /\ effects' = updateF push action model
             in (model `joinF` model') /\ effects'
+
+
+
+-- isn't it bad that types are the same, but the resulting action is diffrent?
+nest
+    :: forall actionA modelA actionB modelB
+     . FSM actionA modelA
+    -> FSM (Either actionA actionB) (modelA /\ modelB)
+    -> FSM (Either actionA actionB) (modelA /\ modelB)
+nest (FSM innerUpdate) (FSM outerUpdate) =
+    FSM nestedUpdate
+    where
+        nestedUpdate pushAction action@(Left innerAction) model@(innerModel /\ outerModel) =
+            let
+                innerModel' /\ innerEffects' =
+                    innerUpdate (pushAction <<< Left) innerAction innerModel
+                outerModel' /\ outerEffects' =
+                    outerUpdate pushAction action $ innerModel' /\ outerModel
+                nestedModel = outerModel'
+                nestedEffects = (map Left <$> innerEffects') <> outerEffects'
+            in
+                nestedModel /\ nestedEffects
+        nestedUpdate pushAction action model =
+            outerUpdate pushAction action model
+
+
+{-
+-- isn't it bad that types are the same, but the resulting action is diffrent?
+nest'
+    :: forall actionA modelA actionB modelB f
+     . Comonad f
+    => FSM actionA (f modelA)
+    -> FSM (Either actionA actionB) (f (modelA /\ modelB))
+    -> FSM (Either actionA actionB) (f (modelA /\ modelB))
+nest' (FSM innerUpdate) (FSM outerUpdate) =
+    FSM nestedUpdate
+    where
+        nestedUpdate pushAction action@(Left innerAction) wrappedModel =
+            let
+                (innerModel /\ outerModel) = extract wrappedModel
+                wrappedInnerModel /\ innerEffects =
+                    innerUpdate (pushAction <<< Left) innerAction innerModel
+                wrappedModel' =
+                    (\innerModel -> innerModel /\ outerModel)
+                        <$> wrappedInnerModel
+                nextModel /\ outerEffects =
+                    outerUpdate pushAction action $ appendErrors wrappedModel wrappedModel'
+                nextEffects = (map Left <$> innerEffects) <> outerEffects
+            in
+                nextModel /\ nextEffects
+        nestedUpdate pushAction action wrappedModel =
+            nestedUpdate pushAction action wrappedModel
+-}

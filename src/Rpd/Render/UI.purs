@@ -19,7 +19,7 @@ import FRP.Event as Event
 import Data.Covered (Covered, recover, inject, hasError, cover', mapError)
 
 import FSM (FSM, AndThen)
-import FSM (run, run', make, makeWithPush, imapModel, imapAction) as FSM
+import FSM (run, run', make, makeWithPush, imapModel, imapAction, nest) as FSM
 import Data.Foldable (class Foldable)
 
 
@@ -146,3 +146,32 @@ once
     -> model
     -> view
 once (UI _ viewF) model = viewF model
+
+
+nest
+    :: forall actionA modelA actionB modelB view
+     . FSM actionA modelA
+    -> UI (Either actionA actionB) (modelA /\ modelB) view
+    -> UI (Either actionA actionB) (modelA /\ modelB) view
+nest innerFSM (UI outerFSM outerView) =
+    UI (FSM.nest innerFSM outerFSM) outerView
+
+
+-- nest'
+    {-
+        nestedUpdate pushAction action@(FromCore coreAction) coveredModel =
+            let
+                (uiModel /\ coreModel) = recover coveredModel
+                coveredCoreModel /\ coreEffects =
+                    C.apply toolkit (pushAction <<< FromCore) coreAction coreModel
+                coveredModel' =
+                    (\coreModel -> uiModel /\ coreModel)
+                        <$> coveredCoreModel
+                nextModel /\ uiEffects =
+                    updateF pushAction action $ appendErrors coveredModel coveredModel'
+                nextEffects = (map FromCore <$> coreEffects) <> uiEffects
+            in
+                nextModel /\ nextEffects
+        nestedUpdate pushAction action coveredModel =
+            updateF pushAction action coveredModel
+    -}

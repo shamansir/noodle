@@ -4,6 +4,9 @@ module Data.Covered where
 import Prelude
 
 import Control.Alt (class Alt)
+import Control.Extend (class Extend)
+import Control.Comonad (class Comonad)
+
 import Data.Either
 import Data.Maybe
 import Data.Maybe (fromMaybe) as Maybe
@@ -60,10 +63,34 @@ instance coveredSemigroup :: (Semigroup e, Semigroup a) => Semigroup (Covered e 
     append (Carried valA) (Carried valB) =
         Carried (valA <> valB)
 
+
+{-
+instance coveredSemigroup :: (Semigroup e) => Semigroup (Covered e a) where
+    append (Recovered errorsA valA) (Recovered errorsB valB) =
+        Recovered (errorsA <> errorsB) valB
+    append (Recovered errorsA _) (Carried valB) =
+        Recovered errorsA valB
+    append (Carried _) (Recovered errorsB valB) =
+        Recovered errorsB valB
+    append (Carried _) (Carried valB) =
+        Carried valB
+-}
+
 -- TODO: Semigroup, + like Tuple has, see Tuple Apply, but that would join data, not errors
 
 
+instance coveredExtend :: Semigroup e => Extend (Covered e) where
+    extend k covered = appendErrors covered $ carry $ k covered
+
+
+instance coveredComonad :: Semigroup e => Comonad (Covered e) where
+    extract = recover
 -- TODO: Comonad
+
+
+-- class Semigroup' w where
+--     append' :: forall a b. w a b -> w a b -> w a b
+
 
 
 run :: forall a e x. Semigroup a => (e -> a) -> (x -> a) -> Covered e x -> a

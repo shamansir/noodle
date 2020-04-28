@@ -16,7 +16,7 @@ import Effect.Aff (delay, launchAff_) --, throwError
 
 import FRP.Event.Time (interval)
 
-import FSM (fold, run) as Actions
+import FSM.Rollback (fold, run) as Actions
 
 import Rpd.API
     ( NodeInletsSubscription, NodeOutletsSubscription

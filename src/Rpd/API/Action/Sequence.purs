@@ -3,42 +3,26 @@ module Rpd.API.Action.Sequence where
 import Prelude
 
 import Effect (Effect)
-import Effect.Class (liftEffect, class MonadEffect)
-import Effect.Ref as Ref
-import Effect.Console (log) as Console
 
-import Control.Monad.Error.Class
-import Control.Alternative ((<|>))
-
-import Data.Array ((:))
-import Data.Array (snoc) as Array
 import Data.List (List(..), snoc)
-import Data.Either
-import Data.Maybe
-import Data.Tuple (fst)
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Traversable (sequence, traverse_)
+import Data.Either (Either)
 
 import FRP.Event (Event)
-import FRP.Event as Event
 
-import Data.Covered (Covered)
-import Data.Covered (fromEither, fromEither', carry, recover, cover, appendErrors) as Covered
+import FSM.Rollback (RollbackFSM)
+import FSM.Rollback (makeWithPush') as RollbackFSM
+import FSM (pushAll) as FSM
 
-import FSM.Covered (CoveredFSM)
-import FSM (makeWithPush, fold, pushAll, joinWith) as FSM
-
-import Rpd.Network
+import Rpd.Network (Network)
 import Rpd.API
     ( NodeInletsSubscription, NodeOutletsSubscription
     , InletSubscription, OutletSubscription
     )
 import Rpd.API.Errors (RpdError)
 import Rpd.API.Action
-import Rpd.API.Action.Apply (Step, apply)
+import Rpd.API.Action.Apply (apply)
 import Rpd.Path as Path
 import Rpd.Toolkit (Toolkit, NodeDef)
-import Rpd.Util (Canceler)
 
 
 type ActionList d c n = List (Action d c n) -- TODO: or newtype?
@@ -154,15 +138,12 @@ pass = const $ pure unit
 
 
 -- FIXME: change `Array Action` to `Action`
-type Sequencer d c n = CoveredFSM RpdError (Action d c n) (Network d c n)
+type Sequencer d c n = RollbackFSM RpdError (Action d c n) (Network d c n)
 
 
 make :: forall d c n. Toolkit d c n -> Sequencer d c n
-make toolkit =
-    (FSM.makeWithPush
-        $ \pushAction action coveredModel ->
-            apply toolkit pushAction action $ Covered.recover coveredModel)
-        # FSM.joinWith Covered.appendErrors
+make =
+    RollbackFSM.makeWithPush' <<< apply
 
 -- fold
 --     :: forall d c n

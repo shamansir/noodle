@@ -23,7 +23,7 @@ import Effect.Aff (Aff, delay)
 import Test.Spec.Assertions (fail)
 import Rpd.Test.Util.Actions (getOrFail)
 
-import FSM (run'') as Actions
+import FSM.Rollback (run'') as Actions
 import Rpd.API.Action (Action(..), DataAction(..))
 import Rpd.API.Action.Sequence (ActionList, Sequencer)
 import Rpd.Path as P

@@ -25,7 +25,8 @@ import FRP.Event.Class (count) as E
 import FRP.Event.Time as E
 
 import FSM (doNothing, single, batch, join, join', join'', AndThen)
-import FSM.Covered (follow, followJoin, fine, foldUpdate) as Covered
+import FSM.Rollback (RollbackFSM)
+import FSM.Rollback (followJoin) as Rollback
 
 import Rpd.Util (PushableFlow(..), Canceler)
 import Rpd.API as Api
@@ -57,7 +58,7 @@ infixl 1 next as <∞>
 -- TODO: make an operator?
 -- TODO: close to Actions sequensing?
 next :: forall d c n. Step d c n -> (Network d c n -> Step d c n) -> Step d c n
-next = Covered.followJoin
+next = Rollback.followJoin
     -- (nw /\ effs) <- stepA
     -- (nw' /\ effs') <- stepB nw
     -- pure $ nw' /\ (effs <> effs')
@@ -82,9 +83,20 @@ apply
      . Toolkit d c n
     -> (Action d c n -> Effect Unit)
     -> Action d c n
-    -> Network d c n
+    -> Covered RpdError (Network d c n)
     -> Step d c n
 apply toolkit pushAction action nw =
+    apply' toolkit pushAction action $ Covered.recover nw
+
+
+apply'
+    :: forall d c n
+     . Toolkit d c n
+    -> (Action d c n -> Effect Unit)
+    -> Action d c n
+    -> Network d c n
+    -> Step d c n
+apply' toolkit pushAction action nw =
     proceed $ apply_ toolkit pushAction action nw
     where
         proceed :: StepE d c n -> Step d c n

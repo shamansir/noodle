@@ -24,7 +24,8 @@ import Test.Spec.Assertions (shouldEqual, fail)
 
 import FSM as FSM
 import FSM (FSM, doNothing, single, batch)
-import FSM.Covered (CoveredFSM)
+import FSM.Rollback (RollbackFSM)
+import FSM.Rollback (make, make', run, run', fold) as RollbackFSM
 
 
 data Error
@@ -212,15 +213,15 @@ spec = do
 
       pending "TODO"
 
-  describe "CoveredFSM" do
+  describe "Rollback with FSM" do
 
     it "passes error through update cycle" do
         let
-          (myCovererdFsm :: CoveredFSM Error Action Model) =
-              FSM.make (\_ _ -> Covered.cover Empty ErrorOne /\ doNothing)
+          (myRollbackFsm :: RollbackFSM Error Action Model) =
+              RollbackFSM.make (\_ _ -> Covered.cover Empty ErrorOne /\ doNothing)
         lastModel <- liftEffect $ do
           ref <- Ref.new $ Covered.carry Empty
-          _ <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
+          _ <- RollbackFSM.run' myRollbackFsm (Covered.carry emptyModel) (flip Ref.write ref)
                   $ NoOp : List.Nil
           Ref.read ref
         case lastModel of
@@ -232,11 +233,11 @@ spec = do
           updateF NoOp _ = Covered.cover Empty ErrorOne /\ doNothing
           updateF ActionOne _ = Covered.cover Empty ErrorTwo /\ doNothing
           updateF _ _ = Covered.carry Empty /\ doNothing
-          (myCovererdFsm :: CoveredFSM Error Action Model)
-            = FSM.make updateF # FSM.joinWith ((<|>))
+          (myRollbackFsm :: RollbackFSM Error Action Model)
+            = RollbackFSM.make updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new $ Covered.carry Empty
-          _ <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
+          _ <- RollbackFSM.run' myRollbackFsm (Covered.carry emptyModel) (flip Ref.write ref)
                   $ NoOp : ActionOne : List.Nil
           Ref.read ref
         case lastModel of
@@ -248,10 +249,10 @@ spec = do
           updateF NoOp _ = Covered.cover Empty ErrorOne /\ doNothing
           updateF ActionOne _ = Covered.cover Empty ErrorTwo /\ doNothing
           updateF _ _ = Covered.carry Empty /\ doNothing
-          (myCovererdFsm :: CoveredFSM Error Action Model)
-              = FSM.make updateF # FSM.joinWith ((<|>))
+          (myRollbackFsm :: RollbackFSM Error Action Model)
+              = RollbackFSM.make updateF
         lastModel /\ _ <- liftEffect
-            $ FSM.fold myCovererdFsm (Covered.carry emptyModel)
+            $ RollbackFSM.fold myRollbackFsm (Covered.carry emptyModel)
                   $ NoOp : ActionOne : List.Nil
         case lastModel of
           Recovered ErrorTwo _ -> pure unit
@@ -262,10 +263,10 @@ spec = do
           updateF NoOp _ = Covered.cover Empty ErrorOne /\ doNothing
           updateF ActionOne _ = Covered.carry Empty /\ doNothing
           updateF _ _ = Covered.carry Empty /\ doNothing
-          (myCovererdFsm :: CoveredFSM Error Action Model)
-              = FSM.make updateF # FSM.joinWith ((<|>))
+          (myRollbackFsm :: RollbackFSM Error Action Model)
+              = RollbackFSM.make updateF
         lastModel /\ _ <- liftEffect
-            $ FSM.fold myCovererdFsm (Covered.carry emptyModel)
+            $ RollbackFSM.fold myRollbackFsm (Covered.carry emptyModel)
                   $ NoOp : ActionOne : List.Nil
         case lastModel of
           Recovered ErrorOne _ -> pure unit
@@ -276,11 +277,11 @@ spec = do
           updateF NoOp c = Covered.cover Empty [ ErrorOne ] /\ doNothing
           updateF ActionOne _ = Covered.cover Empty [ ErrorTwo ] /\ doNothing
           updateF _ _ = Covered.carry Empty /\ doNothing
-          (myCovererdFsm :: CoveredFSM (Array Error) Action Model)
-            = FSM.make updateF # FSM.joinWith Covered.appendErrors
+          (myRollbackFsm :: RollbackFSM (Array Error) Action Model)
+            = RollbackFSM.make' updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new $ Covered.carry Empty
-          _ <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
+          _ <- RollbackFSM.run' myRollbackFsm (Covered.carry emptyModel) (flip Ref.write ref)
                   $ NoOp : ActionOne : List.Nil
           Ref.read ref
         case lastModel of

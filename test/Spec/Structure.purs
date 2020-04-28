@@ -17,7 +17,7 @@ import Test.Spec.Assertions (shouldEqual, fail)
 
 import Rpd.Test.Util.Actions (getOrFail)
 
-import FSM (fold) as Actions
+import FSM.Rollback (fold) as Actions
 import Rpd.API.Action.Sequence ((</>))
 import Rpd.API.Action.Sequence as Actions
 import Rpd.API.Action.Sequence (addPatch, addNode, addInlet, addOutlet) as R
