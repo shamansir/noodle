@@ -5,12 +5,14 @@ import Prelude
 import Data.Int (toNumber)
 import Data.Lens (view) as L
 import Data.List (toUnfoldable) as List
+import Data.Either (Either(..))
 import Data.Map as Map
 import Data.Maybe (Maybe(..), isJust, maybe, fromMaybe)
 import Data.Set as Set
 import Data.Set (Set)
 import Data.Array as Array
 import Data.Sequence as Seq
+import Data.Tuple (fst, snd)
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Vec2 (Vec2(..))
 import Data.Vec2 as Vec2
@@ -20,6 +22,7 @@ import Effect (Effect)
 import Data.Covered (carry, uncover, recover)
 
 import FSM (AndThen, doNothing, single, batch)
+--import UI (view, update, update') as UI
 
 import Rpd.API.Errors (RpdError) as R
 import Rpd.API.Action (Action(..), DataAction(..), BuildAction(..), RequestAction(..)) as Core
@@ -37,6 +40,7 @@ import Rpd.Render.Layout (Layout, PatchLayout, Cell(..), ZIndex(..))
 import Rpd.Render.Renderer (Renderer, Routed(..))
 import Rpd.Render.Renderer (make) as Renderer
 import Rpd.Render.Html.DebugBox as DebugBox
+import Rpd.Render.Html.DebugBox (debugBox)
 
 import Spork.Html (Html)
 import Spork.Html as H
@@ -94,6 +98,7 @@ data Action d c n
     | ClickRemoveButton (R.Node d n) ME.MouseEvent
     | PinNode (R.Node d n) Position
     | StorePositions (UUID.Tagged /-> Position)
+    | ToDebugBox DebugBox.Action
 
 
 {-
@@ -516,7 +521,7 @@ viewDebugWindow ui nw =
                     $ if isJust ui.debug then DisableDebug else EnableDebug)
             ]
         , case ui.debug of
-            Just debug -> (const $ FromUI NoOp) <$> DebugBox.view nw debug
+            Just debug -> (FromUI <<< ToDebugBox) <$> DebugBox.view (nw /\ debug)
             _ -> H.div [] []
         ]
 
@@ -527,7 +532,8 @@ updateDebugBox
     -> Routed (Action d c n) (Core.Action d c n)
     -> Maybe (DebugBox.Model d c n)
     -> Maybe (DebugBox.Model d c n)
-updateDebugBox nw (FromCore action) (Just debug) = Just $ DebugBox.update action nw debug
+updateDebugBox nw (FromCore action) (Just debug) =
+    Just $ DebugBox.update (Right action) (nw /\ debug)
 updateDebugBox _ (FromUI EnableDebug) _ = Just $ DebugBox.init
 updateDebugBox _ (FromUI DisableDebug) _ = Nothing
 updateDebugBox _ _ v = v
@@ -708,6 +714,12 @@ update (FromUI EnableDebug) (ui /\ _) = ui /\ doNothing -- TODO: why do nothing?
 update (FromUI DisableDebug) (ui /\ _) = ui /\ doNothing -- TODO: why do nothing?
 update (FromUI (StorePositions positions)) (ui /\ _) =
     ui { positions = positions } /\ doNothing
+update (FromUI (ToDebugBox debugBoxAction)) (ui /\ nw) =
+    ui { debug =
+        (\debug -> DebugBox.update (Left debugBoxAction) (nw /\ debug))
+            <$> ui.debug
+        }
+    /\ doNothing
 
 
 updatePositions

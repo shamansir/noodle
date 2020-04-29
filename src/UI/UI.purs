@@ -1,6 +1,8 @@
-module Rpd.Render.UI
+module UI
     ( UI, CoveredUI
-    , make, makeWithPush, run, run', view, once
+    , make, makeWithPush, run, run', once
+    , view, update, update'
+    , makeMinimal, makeWithNoEffects
     , imapModel, imapAction, imapError
     , mapFSM
     ) where
@@ -9,29 +11,18 @@ import Prelude
 
 import Effect (Effect)
 
-import Data.Either (Either(..))
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Maybe (Maybe(..))
 
 import FRP.Event (Event)
 import FRP.Event as Event
 
-import Data.Covered (Covered, recover, inject, hasError, cover', mapError)
+import Data.Covered (Covered, mapError)
 
 import FSM (FSM, AndThen)
-import FSM (run, run', make, makeWithPush, imapModel, imapAction) as FSM
+import FSM as FSM
 import Data.Foldable (class Foldable)
 
-
-import Rpd.Network (Network) as R
--- import Rpd.API as R
-import Rpd.API.Action (Action) as Core
-import Rpd.API.Action.Apply (apply) as Core
-import Rpd.API.Action.Sequence (make) as ActionSeq
-import Rpd.API.Errors (RpdError) as R
-import Rpd.Toolkit as T
 import Rpd.Util (Canceler)
-
 
 
 data UI action model view = UI (FSM action model) (model -> view)
@@ -56,6 +47,24 @@ makeWithPush
     -> UI action model view
 makeWithPush updateF viewF =
     UI (FSM.makeWithPush updateF) viewF
+
+
+makeMinimal
+    :: forall action model view
+     . (action -> model -> model)
+    -> (model -> view)
+    -> UI action model view
+makeMinimal updateF viewF =
+    UI (FSM.makeMinimal updateF) viewF
+
+
+makeWithNoEffects
+    :: forall action model view
+     . (action -> model -> model /\ AndThen action)
+    -> (model -> view)
+    -> UI action model view
+makeWithNoEffects updateF viewF =
+    UI (FSM.makeWithNoEffects updateF) viewF
 
 
 run
@@ -93,6 +102,25 @@ run' (UI fsm viewF) model actions = do
 
 view :: forall action model view. UI action model view -> model -> view
 view (UI _ viewF) = viewF
+
+
+update
+    :: forall action model view
+     . UI action model view
+    -> (action -> Effect Unit)
+    -> action
+    -> model
+    -> model /\ Effect (AndThen action)
+update (UI fsm _) = FSM.update fsm
+
+
+update'
+    :: forall action model view
+     . UI action model view
+    -> action
+    -> model
+    -> model /\ Effect (AndThen action)
+update' (UI fsm _) = FSM.update' fsm
 
 
 -- TODO: get rid of this function by making a `RollbackFSM` to be a `newtype`

@@ -35,9 +35,7 @@ import Rpd.Network (Network)
 import Rpd.API.Action (Action(..), DataAction(Bang), RequestAction(ToAddPatch)) as A
 import Rpd.Toolkit (Toolkit) as T
 import Rpd.Render.Renderer (Renderer, Routed(..)) as UI
-import Rpd.Render.UI (run, view) as UI
-
-import Debug.Trace as DT
+import UI (run, view) as UI
 
 
 type HtmlView d c n action = Html (UI.Routed action (A.Action d c n))

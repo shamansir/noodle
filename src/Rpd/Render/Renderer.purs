@@ -15,8 +15,8 @@ import Rpd.API.Action.Apply (apply) as C
 import Rpd.Network (Network)
 import Rpd.Toolkit (Toolkit)
 
-import Rpd.Render.UI (CoveredUI)
-import Rpd.Render.UI (makeWithPush, mapFSM) as UI
+import UI (CoveredUI)
+import UI (makeWithPush, mapFSM) as UI
 
 
 data Routed other core

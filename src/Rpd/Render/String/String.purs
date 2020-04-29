@@ -36,7 +36,7 @@ import Rpd.API.Errors (RpdError) as R
 import Rpd.Optics (_node, _inlet, _outlet, _link, _networkPatches, _networkLinks)
 import Rpd.Render.Renderer (Minimal) as Renderer
 import Rpd.Render.Renderer (makeMinimal) as UI
-import Rpd.Render.UI as UI
+import UI as UI
 import Rpd.Path as P
 
 

@@ -43,7 +43,7 @@ import Rpd.API.Action.Sequence ((</>), ActionList)
 import Rpd.API.Action.Sequence as Actions
 import Rpd.API.Action.Sequence as R
 
-import Rpd.Render.UI (make, once, run) as UI
+import UI (make, once, run) as UI
 import Rpd.Render.Renderer (Routed(..))
 import Rpd.Render.Renderer (Renderer, Minimal) as Render
 import Rpd.Render.Terminal (make, init) as TerminalRenderer

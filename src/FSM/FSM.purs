@@ -2,8 +2,10 @@ module FSM
     ( FSM
     , prepare -- FIXME: do not expose
     , make, makeWithPush, makePassing
+    , makeMinimal, makeWithNoEffects
     , run, run', run'', fold, fold'
     , pushAll, noSubscription
+    , update, update'
     , imapModel, imapAction
     , AndThen, doNothing, single, batch
     , joinWith
@@ -84,6 +86,22 @@ makePassing
     :: forall action model
      . FSM action model
 makePassing = FSM (\_ _ m -> m /\ doNothing)
+
+
+makeMinimal
+    :: forall action model
+     . (action -> model -> model)
+    -> FSM action model
+makeMinimal updateF =
+    FSM \_ action model -> updateF action model /\ doNothing
+
+
+makeWithNoEffects
+    :: forall action model
+     . (action -> model -> model /\ AndThen action)
+    -> FSM action model
+makeWithNoEffects updateF =
+    FSM \_ action model -> pure <$> updateF action model
 
 
 noSubscription :: forall a. a -> Effect Unit
@@ -308,3 +326,22 @@ joinWith joinF (FSM updateF) =
     FSM $ \push action model ->
             let model' /\ effects' = updateF push action model
             in (model `joinF` model') /\ effects'
+
+
+update
+    :: forall action model
+     . FSM action model
+    -> (action -> Effect Unit)
+    -> action
+    -> model
+    -> model /\ Effect (AndThen action)
+update (FSM updateF) = updateF
+
+
+update'
+    :: forall action model
+     . FSM action model
+    -> action
+    -> model
+    -> model /\ Effect (AndThen action)
+update' (FSM updateF) = updateF $ const $ pure unit
