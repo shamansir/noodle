@@ -1,31 +1,29 @@
 module Rpd.Render.Html.DebugBox
     ( debugBox, DebugBox, Action, Model, Filter
-    , init, update, view )
+    , init, update, view
+    , ActionsKind, FilterState )
     where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
+import Data.String as String
 import Data.Either (Either(..))
+import Data.Lens (view) as L
 import Data.List (List, (:))
 import Data.List as List
+import Data.Maybe (Maybe(..))
 import Data.Sequence as Seq
-import Data.Lens (view) as L
 import Data.Tuple.Nested ((/\), type (/\))
-
-import Spork.Html (Html)
-import Spork.Html as H
-
-import UI (UI)
-import UI (makeMinimal) as UI
-
 import Rpd.API.Action as Core
 import Rpd.Network as R
 import Rpd.Optics as L
-import Rpd.UUID as R
 import Rpd.Process as R
-
 import Rpd.Render.Atom as R
+import Rpd.UUID as R
+import Spork.Html (Html)
+import Spork.Html as H
+import UI (UI)
+import UI (makeMinimal) as UI
 
 
 actionStackSize :: Int
@@ -64,11 +62,20 @@ allKinds :: List ActionsKind
 allKinds = Build : Data : Inner : List.Nil
 
 
+instance showActionsKind :: Show ActionsKind where
+    show Build = "Build"
+    show Inner = "Inner"
+    show Data = "Data"
+    show Request = "Request"
+
+
+derive instance eqActionsKind :: Eq ActionsKind
+
+
 data FilterState = On | Off
 
 
-data Filter =
-    Filter (List (ActionsKind /\ FilterState))
+type Filter = (List (ActionsKind /\ FilterState))
 
 
 type Model d c n =
@@ -80,7 +87,7 @@ type Model d c n =
 init :: forall d c n. Model d c n
 init =
     { lastActions : List.Nil
-    , filter : Filter $ (flip (/\) Off) <$> allKinds
+    , filter : flip (/\) On <$> allKinds
     }
 
 
@@ -99,8 +106,14 @@ update (Right action) (nw /\ model) =
                     List.take actionStackSize model.lastActions
                 )
         }
-update (Left msg) (nw /\ model) =
+update (Left (Invert kind)) (nw /\ model) =
     model
+        { filter = switchIfKind <$> model.filter
+        }
+    where
+        switchIfKind (otherKind /\ On) | otherKind == kind = otherKind /\ Off
+        switchIfKind (otherKind /\ Off) | otherKind == kind = otherKind /\ On
+        switchIfKind (otherKind /\ val) = otherKind /\ val
 
 
 -- viewItems
@@ -212,9 +225,29 @@ viewModel
     => Model d c n
     -> Html Action
 viewModel model =
-    H.ul [ H.classes [ "commands-debug" ] ]
-        $ List.toUnfoldable (viewAction <$> model.lastActions)
+    H.div
+        [ ]
+        [ H.ul [ H.classes [ "filter-controls" ] ]
+            $ List.toUnfoldable (filterSwitch <$> model.filter)
+        , H.ul [ H.classes [ "commands-debug" ] ]
+            $ List.toUnfoldable (viewAction <$> model.lastActions)
+        ]
     where
+        filterSwitch :: ActionsKind /\ FilterState -> Html Action
+        filterSwitch (kind /\ filterState) =
+            H.span
+                []
+                [ H.label [ H.for checkboxId ] [ H.text $ show kind ]
+                , H.input
+                    [ H.type_ H.InputCheckbox
+                    , H.id_ checkboxId
+                    , H.checked $ case filterState of
+                        On -> true
+                        Off -> false
+                    , H.onValueChange $ const $ Just $ Invert kind
+                    ]
+                ]
+            where checkboxId = "filter-dbox-" <> (String.toLower $ show kind)
         viewAction :: Core.Action d c n -> Html Action
         viewAction action =
             H.li [] [ H.text $ show action ]
