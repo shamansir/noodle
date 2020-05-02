@@ -12,7 +12,7 @@ import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Aff (Aff, launchAff_)
 
-import Test.Spec (Spec, describe, it, pending')
+import Test.Spec (Spec, describe, it, pending, pending')
 import Test.Spec.Assertions (shouldEqual, fail)
 
 import Noodle.Test.Util.Actions (getOrFail)
@@ -121,3 +121,7 @@ spec =
         pure unit
 
       -- TODO: subPatches
+
+      pending "disconnecting the inlet from outlet removes the corresponding link"
+
+      pending "removing the node also removes the links which were connected to that node"

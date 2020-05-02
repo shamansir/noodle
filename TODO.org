@@ -4,21 +4,23 @@
 
 * Primary
 
-    ** Lists, Arrays and Sequences are all messed up; Prefer `List`s everywhere, except for unique stuff, there prefer `Sequence`;
+    ** In `FSM` (and Action Sequences), do not allow actions to be passed to `run` and other functions, all the actions should only be pushed afterwards — that will simplify things a lot, see my own `purescript-fsm` example as the proof (and for the one below as well);
 
-    ** In `FSM`, do not allow actions to be passed to `run` and other functions, all the actions should only be pushed afterwards — that will simplify things a lot, see my own `purescript-fsm` example as the proof (and for the one below as well);
+    ** Lists, Arrays and Sequences are all messed up; Prefer `List`s everywhere, except for unique stuff, there prefer `Sequence`;
 
     ** For `FSM`, use `List (Effect action)`, not one effect to share data between other actions: that would make the `FSM` granularly implemented;
 
     ** Save the latest data received into outlet (maybe inlet as well) to re-send it on connection. :api:test:
 
-    ** In DebugBox, be able to filter the events by type. :debug:
+    ** DONE In DebugBox, be able to filter the events by type. :debug:
+
+    ** NodeDef could be used like a function, `defineNode`: not to say `inlets` and `outlets` and `process` every time
 
     ** Make both UI and Renderer `newtype`s with closed constructors since they add new logic over `FSM` which could be accidentally forgotten to be added;
 
     ** Change the way links are updating the position: The layout should rather track the position of node when dragging and distribute the links by knowing/calculating the inlets and outlets positions using the dimensions of the Node. (SVG renderer would help with that). :render:
 
-    ** Rename ~RPD~ -> ~Noodle~. :rename:api:
+    ** DONE Rename ~RPD~ -> ~Noodle~. :rename:api:
 
     ** When the node is created, its links are not visible at first. Fix links issues. :fix:
 
