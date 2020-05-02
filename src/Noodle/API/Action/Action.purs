@@ -76,8 +76,9 @@ data BuildAction d c n
     | AddOutlet (Outlet d c)
     | RemoveInlet (Inlet d c)
     | RemoveOutlet (Outlet d c)
-    | AddLink Link
     | Connect (Outlet d c) (Inlet d c)
+    | AddLink Link
+    | RemoveLink Link
     | ProcessWith (Node d n) (ProcessF d)
 
 
@@ -188,7 +189,8 @@ instance showBuildAction :: (Show d, Show c, Show n) => Show (BuildAction d c n)
     show (RemoveInlet inlet) = "RemoveInlet " <> show inlet
     show (RemoveOutlet outlet) = "RemoveOutlet " <> show outlet
     show (Connect outlet inlet) = "Connect " <> show inlet <> " " <> show outlet
-    show (AddLink link) = "AddLink "
+    show (AddLink link) = "AddLink " <> show link
+    show (RemoveLink link) = "RemoveLink " <> show link
     show (ProcessWith node _) = "ProcessWith " <> show node
 
 

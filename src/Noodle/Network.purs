@@ -192,5 +192,5 @@ instance showInlet :: Show c => Show (Inlet d c) where
 instance showOutlet :: Show c => Show (Outlet d c) where
     show (Outlet uuid path c _) = "Outlet " <> show c <> " " <> show uuid <> " " <> show path
 
-instance showLink :: Show c => Show Link where
+instance showLink :: Show Link where
     show (Link uuid _) = "Link " <> show uuid
