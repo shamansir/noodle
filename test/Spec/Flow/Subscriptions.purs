@@ -59,22 +59,20 @@ spec = do
         inletHandler alias _ v = Spy.consider traceSpy $ alias /\ v
         outletHandler :: R.NodeOutletsSubscription Delivery
         outletHandler alias _ v = pure unit
-        structure :: Actions
-        structure =
-          Actions.init
+      { push } <- liftEffect
+        $ Actions.run
+            mySequencer
+            (pure $ Network.empty "network")
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
             </> R.addPatch "patch"
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addInlet (toNode "patch" "node") "inlet" Pass
-
-      _ <- liftEffect
-        $ Actions.fold
-            mySequencer
-            (pure $ Network.empty "network")
-            $ structure
-                 </> R.subscribeToNode (toNode "patch" "node") inletHandler outletHandler
-                 </> R.streamToInlet
-                        (toInlet "patch" "node" "inlet")
-                        (R.flow $ const Notebook <$> interval 30)
+            </> R.subscribeToNode (toNode "patch" "node") inletHandler outletHandler
+            </> R.streamToInlet
+                  (toInlet "patch" "node" "inlet")
+                  (R.flow $ const Notebook <$> interval 30)
 
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Spy.get traceSpy
@@ -90,23 +88,20 @@ spec = do
 
     it "subscribing to inlet passes the inlet data to the subscriber" $ do
       traceSpy <- liftEffect Spy.trace
-      let
-        structure :: Actions
-        structure =
-          Actions.init
+      { push } <- liftEffect
+        $ Actions.run
+            mySequencer
+            (pure $ Network.empty "network")
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
             </> R.addPatch "patch"
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addInlet (toNode "patch" "node") "inlet" Pass
-
-      _ <- liftEffect
-        $ Actions.fold
-            mySequencer
-            (pure $ Network.empty "network")
-            $ structure
-                 </> R.subscribeToInlet (toInlet "patch" "node" "inlet") (Spy.with traceSpy)
-                 </> R.streamToInlet
-                        (toInlet "patch" "node" "inlet")
-                        (R.flow $ const Notebook <$> interval 30)
+            </> R.subscribeToInlet (toInlet "patch" "node" "inlet") (Spy.with traceSpy)
+            </> R.streamToInlet
+                  (toInlet "patch" "node" "inlet")
+                  (R.flow $ const Notebook <$> interval 30)
 
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Spy.get traceSpy
@@ -127,19 +122,21 @@ spec = do
             </> R.addPatch "patch"
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addInlet (toNode "patch" "node") "inlet" Pass
-        network :: R.Network Delivery Pipe Node
-        network = Network.empty "network"
 
-      result /\ { push, stop } <- liftEffect
-        $ Actions.fold
+      { push } <- liftEffect
+        $ Actions.run
             mySequencer
-            (pure network)
-            $ structure
-                 </> R.subscribeToInlet (toInlet "patch" "node" "inlet") (Spy.with traceSpy)
-                 </> R.streamToInlet
-                        (toInlet "patch" "node" "inlet")
-                        (R.flow $ const Notebook <$> interval 30)
-      network' <- getOrFail result
+            (pure $ Network.empty "network")
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
+            </> R.addPatch "patch"
+            </> R.addNode (toPatch "patch") "node" Empty
+            </> R.addInlet (toNode "patch" "node") "inlet" Pass
+            </> R.subscribeToInlet (toInlet "patch" "node" "inlet") (Spy.with traceSpy)
+            </> R.streamToInlet
+                  (toInlet "patch" "node" "inlet")
+                  (R.flow $ const Notebook <$> interval 30)
 
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Spy.get traceSpy
@@ -160,52 +157,39 @@ spec = do
       vals' `shouldNotContain` Notebook
       vals' `shouldEqual` []
 
-      liftEffect stop
-
     it "when the inlet was removed and again added after the subscription, the subscriber still doesn't receive anything" $ do
       traceSpy <- liftEffect Spy.trace
 
-      let
-        structure :: Actions
-        structure =
-          Actions.init
+      { push } <- liftEffect
+        $ Actions.run
+            mySequencer
+            (pure $ Network.empty "network")
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
             </> R.addPatch "patch"
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addInlet (toNode "patch" "node") "inlet" Pass
-        network :: R.Network Delivery Pipe Node
-        network = Network.empty "network"
-
-      result /\ { stop } <- liftEffect
-        $ Actions.fold
-            mySequencer
-            (pure network)
-            $ structure
-                 </> R.subscribeToInlet (toInlet "patch" "node" "inlet") (Spy.with traceSpy)
-                 </> R.streamToInlet
-                        (toInlet "patch" "node" "inlet")
-                        (R.flow $ const Notebook <$> interval 30)
-      network' <- getOrFail result
+            </> R.subscribeToInlet (toInlet "patch" "node" "inlet") (Spy.with traceSpy)
+            </> R.streamToInlet
+                  (toInlet "patch" "node" "inlet")
+                  (R.flow $ const Notebook <$> interval 30)
 
       delay (Milliseconds 100.0)
-      _ <- liftEffect stop
       vals <- liftEffect $ Spy.get traceSpy
       vals `shouldContain` Notebook
       liftEffect $ Spy.reset traceSpy
 
-      result' /\ { stop : stop' } <- liftEffect
-        $ Actions.fold
-            mySequencer
-            (pure network')
-            $ Actions.init
-                 </> R.removeInlet (toInlet "patch" "node" "inlet")
-                 </> R.addInlet (toNode "patch" "node") "inlet" Pass
-                 </> R.streamToInlet
-                        (toInlet "patch" "node" "inlet")
-                        (R.flow $ const Liver <$> interval 30)
-      _ <- getOrFail result
+      liftEffect
+           $  Actions.pushAll push
+           $  Actions.init
+          </> R.removeInlet (toInlet "patch" "node" "inlet")
+          </> R.addInlet (toNode "patch" "node") "inlet" Pass
+          </> R.streamToInlet
+                (toInlet "patch" "node" "inlet")
+                (R.flow $ const Liver <$> interval 30)
 
       delay (Milliseconds 100.0)
-      _ <- liftEffect stop
       vals' <- liftEffect $ Spy.get traceSpy
       vals' `shouldNotContain` Liver
       vals' `shouldNotContain` Notebook
@@ -220,23 +204,21 @@ spec = do
 
     it "subscribing to outlet passes the outlet data to the subscriber" do
       traceSpy <- liftEffect Spy.trace
-      let
-        structure :: Actions
-        structure =
-          Actions.init
+
+      { push } <- liftEffect
+        $ Actions.run
+            mySequencer
+            (pure $ Network.empty "network")
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
             </> R.addPatch "patch"
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addOutlet (toNode "patch" "node") "outlet" Pass
-
-      _ <- liftEffect
-        $ Actions.fold
-            mySequencer
-            (pure $ Network.empty "network")
-            $ structure
-                 </> R.subscribeToOutlet (toOutlet "patch" "node" "outlet") (Spy.with traceSpy)
-                 </> R.streamToOutlet
-                        (toOutlet "patch" "node" "outlet")
-                        (R.flow $ const Notebook <$> interval 30)
+            </> R.subscribeToOutlet (toOutlet "patch" "node" "outlet") (Spy.with traceSpy)
+            </> R.streamToOutlet
+                  (toOutlet "patch" "node" "outlet")
+                  (R.flow $ const Notebook <$> interval 30)
 
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Spy.get traceSpy
@@ -247,26 +229,20 @@ spec = do
     it "when the outlet was removed after the subscription, the subscriber stops receiving data" do
       traceSpy <- liftEffect Spy.trace
 
-      let
-        structure :: Actions
-        structure =
-          Actions.init
+      { push } <- liftEffect
+        $ Actions.run
+            mySequencer
+            (pure $ Network.empty "network")
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
             </> R.addPatch "patch"
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addOutlet (toNode "patch" "node") "outlet" Pass
-        network :: R.Network Delivery Pipe Node
-        network = Network.empty "network"
-
-      result /\ { push, stop } <- liftEffect
-        $ Actions.fold
-            mySequencer
-            (pure network)
-            $ structure
-                 </> R.subscribeToOutlet (toOutlet "patch" "node" "outlet") (Spy.with traceSpy)
-                 </> R.streamToOutlet
-                        (toOutlet "patch" "node" "outlet")
-                        (R.flow $ const Notebook <$> interval 30)
-      network' <- getOrFail result
+            </> R.subscribeToOutlet (toOutlet "patch" "node" "outlet") (Spy.with traceSpy)
+            </> R.streamToOutlet
+                  (toOutlet "patch" "node" "outlet")
+                  (R.flow $ const Notebook <$> interval 30)
 
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Spy.get traceSpy
@@ -274,8 +250,8 @@ spec = do
       liftEffect $ Spy.reset traceSpy
 
       _ <- liftEffect
-        $ Actions.pushAll push
-        $ Actions.init
+             $  Actions.pushAll push
+             $  Actions.init
             </> R.removeOutlet (toOutlet "patch" "node" "outlet")
             </> R.streamToOutlet
                   (toOutlet "patch" "node" "outlet")
@@ -287,52 +263,39 @@ spec = do
       vals' `shouldNotContain` Notebook
       vals' `shouldEqual` []
 
-      liftEffect stop
-
     it "when the outlet was removed and again added after the subscription, the subscriber still doesn't receive anything" do
       traceSpy <- liftEffect Spy.trace
 
-      let
-        structure :: Actions
-        structure =
-          Actions.init
+      { push } <- liftEffect
+        $ Actions.run
+            mySequencer
+            (pure $ Network.empty "network")
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
             </> R.addPatch "patch"
             </> R.addNode (toPatch "patch") "node" Empty
             </> R.addOutlet (toNode "patch" "node") "outlet" Pass
-        network :: R.Network Delivery Pipe Node
-        network = Network.empty "network"
-
-      result /\ { stop } <- liftEffect
-        $ Actions.fold
-            mySequencer
-            (pure network)
-            $ structure
-                 </> R.subscribeToOutlet (toOutlet "patch" "node" "outlet") (Spy.with traceSpy)
-                 </> R.streamToOutlet
-                        (toOutlet "patch" "node" "outlet")
-                        (R.flow $ const Notebook <$> interval 30)
-      network' <- getOrFail result
+            </> R.subscribeToOutlet (toOutlet "patch" "node" "outlet") (Spy.with traceSpy)
+            </> R.streamToOutlet
+                  (toOutlet "patch" "node" "outlet")
+                  (R.flow $ const Notebook <$> interval 30)
 
       delay (Milliseconds 100.0)
-      _ <- liftEffect stop
       vals <- liftEffect $ Spy.get traceSpy
       vals `shouldContain` Notebook
       liftEffect $ Spy.reset traceSpy
 
-      result' /\ { stop : stop' } <- liftEffect
-        $ Actions.fold
-            mySequencer
-            (pure network')
-            $ Actions.init
-                 </> R.removeOutlet (toOutlet "patch" "node" "outlet")
-                 </> R.addOutlet (toNode "patch" "node") "outlet" Pass
-                 </> R.streamToOutlet
-                        (toOutlet "patch" "node" "outlet")
-                        (R.flow $ const Liver <$> interval 30)
-      _ <- getOrFail result
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
+            </> R.removeOutlet (toOutlet "patch" "node" "outlet")
+            </> R.addOutlet (toNode "patch" "node") "outlet" Pass
+            </> R.streamToOutlet
+                  (toOutlet "patch" "node" "outlet")
+                  (R.flow $ const Liver <$> interval 30)
 
       delay (Milliseconds 100.0)
-      _ <- liftEffect stop
       vals' <- liftEffect $ Spy.get traceSpy
       vals' `shouldNotContain` Liver
       vals' `shouldNotContain` Notebook
