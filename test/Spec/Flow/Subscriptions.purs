@@ -27,7 +27,7 @@ import Noodle.API.Action.Sequence ((</>))
 import Noodle.API.Action.Sequence (init, pushAll) as Actions
 import Noodle.API.Action.Sequence as R
 import Noodle.Process (InletHandler(..), InletAlias, OutletAlias) as R
-import Noodle.Path (toPatch, toNode, toInlet)
+import Noodle.Path (toPatch, toNode, toInlet, toOutlet)
 import Noodle.UUID as UUID
 import Noodle.Util (flow) as R
 import Noodle.Network (empty) as Network
@@ -55,11 +55,8 @@ spec = do
       traceSpy <- liftEffect Spy.trace
 
       let
-        -- inletHandler :: R.InletAlias -> UUID.ToInlet -> Delivery -> Effect Unit
         inletHandler :: R.NodeInletsSubscription Delivery
         inletHandler alias _ v = Spy.consider traceSpy $ alias /\ v
-          -- Ref.modify ((:) $ alias /\ v) ref >>= pure <<< const unit
-        -- outletHandler :: R.OutletAlias -> UUID.ToOutlet -> Delivery -> Effect Unit
         outletHandler :: R.NodeOutletsSubscription Delivery
         outletHandler alias _ v = pure unit
         structure :: Actions
@@ -78,9 +75,6 @@ spec = do
                  </> R.streamToInlet
                         (toInlet "patch" "node" "inlet")
                         (R.flow $ const Notebook <$> interval 30)
-
-                --  </> R.do_ $ \nw -> do
-                --         _ <- launchAff_ $ delay (Milliseconds 100.0)
 
       delay (Milliseconds 100.0)
       vals <- liftEffect $ Spy.get traceSpy
@@ -224,8 +218,124 @@ spec = do
 
   describe "subscribing outlet" $ do
 
-    pending "subscribing to inlet passes the inlet data to the subscriber"
+    it "subscribing to outlet passes the outlet data to the subscriber" do
+      traceSpy <- liftEffect Spy.trace
+      let
+        structure :: Actions
+        structure =
+          Actions.init
+            </> R.addPatch "patch"
+            </> R.addNode (toPatch "patch") "node" Empty
+            </> R.addOutlet (toNode "patch" "node") "outlet" Pass
 
-    pending "when the outlet was removed after the subscription, the subscriber stops receiving data"
+      _ <- liftEffect
+        $ Actions.fold
+            mySequencer
+            (pure $ Network.empty "network")
+            $ structure
+                 </> R.subscribeToOutlet (toOutlet "patch" "node" "outlet") (Spy.with traceSpy)
+                 </> R.streamToOutlet
+                        (toOutlet "patch" "node" "outlet")
+                        (R.flow $ const Notebook <$> interval 30)
 
-    pending "when the outlet was removed and again added after the subscription, the subscriber still doesn't receive anything"
+      delay (Milliseconds 100.0)
+      vals <- liftEffect $ Spy.get traceSpy
+      vals `shouldContain` Notebook
+
+      pure unit
+
+    it "when the outlet was removed after the subscription, the subscriber stops receiving data" do
+      traceSpy <- liftEffect Spy.trace
+
+      let
+        structure :: Actions
+        structure =
+          Actions.init
+            </> R.addPatch "patch"
+            </> R.addNode (toPatch "patch") "node" Empty
+            </> R.addOutlet (toNode "patch" "node") "outlet" Pass
+        network :: R.Network Delivery Pipe Node
+        network = Network.empty "network"
+
+      result /\ { pushAction, stop } <- liftEffect
+        $ Actions.fold
+            mySequencer
+            (pure network)
+            $ structure
+                 </> R.subscribeToOutlet (toOutlet "patch" "node" "outlet") (Spy.with traceSpy)
+                 </> R.streamToOutlet
+                        (toOutlet "patch" "node" "outlet")
+                        (R.flow $ const Notebook <$> interval 30)
+      network' <- getOrFail result
+
+      delay (Milliseconds 100.0)
+      vals <- liftEffect $ Spy.get traceSpy
+      vals `shouldContain` Notebook
+      liftEffect $ Spy.reset traceSpy
+
+      _ <- liftEffect
+        $ Actions.pushAll pushAction
+        $ Actions.init
+            </> R.removeOutlet (toOutlet "patch" "node" "outlet")
+            </> R.streamToOutlet
+                  (toOutlet "patch" "node" "outlet")
+                  (R.flow $ const Liver <$> interval 30)
+
+      delay (Milliseconds 100.0)
+      vals' <- liftEffect $ Spy.get traceSpy
+      vals' `shouldNotContain` Liver
+      vals' `shouldNotContain` Notebook
+      vals' `shouldEqual` []
+
+      liftEffect stop
+
+    it "when the outlet was removed and again added after the subscription, the subscriber still doesn't receive anything" do
+      traceSpy <- liftEffect Spy.trace
+
+      let
+        structure :: Actions
+        structure =
+          Actions.init
+            </> R.addPatch "patch"
+            </> R.addNode (toPatch "patch") "node" Empty
+            </> R.addOutlet (toNode "patch" "node") "outlet" Pass
+        network :: R.Network Delivery Pipe Node
+        network = Network.empty "network"
+
+      result /\ { stop } <- liftEffect
+        $ Actions.fold
+            mySequencer
+            (pure network)
+            $ structure
+                 </> R.subscribeToOutlet (toOutlet "patch" "node" "outlet") (Spy.with traceSpy)
+                 </> R.streamToOutlet
+                        (toOutlet "patch" "node" "outlet")
+                        (R.flow $ const Notebook <$> interval 30)
+      network' <- getOrFail result
+
+      delay (Milliseconds 100.0)
+      _ <- liftEffect stop
+      vals <- liftEffect $ Spy.get traceSpy
+      vals `shouldContain` Notebook
+      liftEffect $ Spy.reset traceSpy
+
+      result' /\ { stop : stop' } <- liftEffect
+        $ Actions.fold
+            mySequencer
+            (pure network')
+            $ Actions.init
+                 </> R.removeOutlet (toOutlet "patch" "node" "outlet")
+                 </> R.addOutlet (toNode "patch" "node") "outlet" Pass
+                 </> R.streamToOutlet
+                        (toOutlet "patch" "node" "outlet")
+                        (R.flow $ const Liver <$> interval 30)
+      _ <- getOrFail result
+
+      delay (Milliseconds 100.0)
+      _ <- liftEffect stop
+      vals' <- liftEffect $ Spy.get traceSpy
+      vals' `shouldNotContain` Liver
+      vals' `shouldNotContain` Notebook
+      vals' `shouldEqual` []
+
+      pure unit
