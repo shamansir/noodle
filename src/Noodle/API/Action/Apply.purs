@@ -18,8 +18,6 @@ import Data.Covered (Covered)
 import Data.Covered (carry, fromEither, whenC, unpack, recover) as Covered
 import Data.Foldable (fold)
 
-import Debug.Trace as DT
-
 import FRP.Event as E
 import FRP.Event.Class (count) as E
 import FRP.Event.Time as E
@@ -208,6 +206,7 @@ applyRequestAction _ (ToAddNextNodeByDef patchPath n def) nw = do
 applyRequestAction tk (ToRemoveNode nodePath) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
+    -- FIXME: shouldn't `links`  be removed within the calls to inlets and outlets?
     links <- view (_nodeLinks nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     inlets <- view (_nodeInlets nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     outlets <- view (_nodeOutlets nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
@@ -253,11 +252,19 @@ applyRequestAction _ (ToAddOutlet nodePath alias c) nw =
 applyRequestAction tk (ToRemoveInlet inletPath) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
     inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
-    pure $ nw /\ (single $ Build $ RemoveInlet inlet)
+    links <- view (_inletLinks inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
+    pure $ nw /\
+        (join'' $ (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> links)
+                : (single $ Build $ RemoveInlet inlet)
+                : Nil)
 applyRequestAction tk (ToRemoveOutlet outletPath) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
     outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
-    pure $ nw /\ (single $ Build $ RemoveOutlet outlet)
+    links <- view (_outletLinks outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
+    pure $ nw /\
+        (join'' $ (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> links)
+                : (single $ Build $ RemoveOutlet outlet)
+                : Nil)
 applyRequestAction _ (ToProcessWith nodePath processF) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
@@ -346,11 +353,6 @@ applyBuildAction _ _ (AddPatch p) nw =
     fine $ Api.addPatch p nw
 applyBuildAction _ _ (AddNode node) nw =
     withE $ Api.addNode node nw
-        {--
-        [
-            All subscriptions
-        ]
-        --}
 applyBuildAction tk _ (RemoveNode node@(Node uuid _ _ _ _)) nw = do
     nw' <- Api.removeNode node nw
     pure $ nw' /\ do
@@ -434,9 +436,13 @@ applyBuildAction _ _ (Connect (Outlet ouuid _ _ _) (Inlet iuuid _ _ _)) nw = do
         let newLink = Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid }
         single $ Build $ AddLink newLink
 applyBuildAction _ _ (AddLink link) nw =
-    withE $ Api.addLink link nw -- TODO: subscriptions
-applyBuildAction _ _ (RemoveLink link) nw =
-    withE $ Api.removeLink link nw -- TODO: subscriptions
+    withE $ Api.addLink link nw
+applyBuildAction _ _ (RemoveLink link@(Link linkUuid { inlet, outlet })) nw = do
+    nw' <- Api.removeLink link nw
+    pure $ nw' /\ do
+        -- _ <- Api.cancelOutletSubscriptions outlet nw
+        _ <- Api.cancelLinkSubscriptions linkUuid nw
+        doNothing
 
 
 applyInnerAction

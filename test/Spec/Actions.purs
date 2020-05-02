@@ -3,8 +3,6 @@ module Noodle.Test.Spec.Actions
 
 import Prelude
 
-import Debug.Trace as DT
-
 import Data.Either (Either(..))
 import Data.Lens (view) as L
 import Data.Maybe (Maybe(..), isJust)

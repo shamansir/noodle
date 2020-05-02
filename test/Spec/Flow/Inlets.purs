@@ -218,6 +218,43 @@ spec = do
       (InletData (toInlet "patch" "node" "inlet2") Banana)
     pure unit
 
+
+  it "when inlet was removed, it stops receiving data" $ do
+      let
+        structure :: Actions
+        structure =
+          Actions.init
+            </> R.addPatch "patch"
+            </> R.addNode (toPatch "patch") "node" Empty
+            </> R.addInlet (toNode "patch" "node") "inlet" Pass
+        stream = R.flow $ const Banana <$> interval 25
+
+        nwWithFlow
+          = structure </>
+            R.streamToInlet (toInlet "patch" "node" "inlet") stream
+
+      nw' /\ collectedData <- CollectData.channelsAfter
+        (Milliseconds 100.0)
+        mySequencer
+        (Network.empty "network")
+        nwWithFlow
+
+      collectedData `shouldContain`
+        (InletData (toInlet "patch" "node" "inlet") Banana)
+
+      _ /\ collectedData' <- CollectData.channelsAfter
+        (Milliseconds 100.0)
+        mySequencer
+        (Network.empty "network")
+        $ nwWithFlow </> R.removeInlet (toInlet "patch" "node" "inlet")
+
+      collectedData' `shouldNotContain`
+        (InletData (toInlet "patch" "node" "inlet") Banana)
+
+      collectedData' `shouldEqual` []
+
+      pure unit
+
   pending "sending data to the inlet triggers the processing function of the node"
 
   pending "receiving data from the stream triggers the processing function of the node"

@@ -18,8 +18,6 @@ import Data.Either (Either(..))
 import Data.String (joinWith)
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Debug.Trace as DT
-
 import Data.Covered
 import Data.Covered (run) as Covered
 

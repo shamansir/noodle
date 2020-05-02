@@ -3,7 +3,7 @@ module Noodle.Test.Spec.Render
 
 import Prelude
 
-import Debug.Trace (traceM) as DT
+import Debug.Trace
 
 import Data.Time.Duration (Milliseconds(..))
 import Data.Maybe (Maybe(..), fromMaybe, maybe)

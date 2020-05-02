@@ -314,10 +314,10 @@ _nodeLinks :: forall d c n. UUID.ToNode -> Getter' (Network d c n) (Maybe (Seq L
 _nodeLinks nodeUuid =
     to \nw ->
         (\inlets outlets ->
-            Seq.append
-                <$> (fromMaybe Seq.empty <$> viewInletLinks nw <$> inlets)
-                <*> (fromMaybe Seq.empty <$> viewOutletLinks nw <$> outlets)
-                # Seq.concat
+            let
+                inletsLinks = viewInletLinks nw <$> inlets # Util.seqCatMaybes # Seq.concat
+                outletsLinks = viewOutletLinks nw <$> outlets # Util.seqCatMaybes # Seq.concat
+            in inletsLinks <> outletsLinks
         )
         <$> view (_nodeInlets nodeUuid) nw
         <*> view (_nodeOutlets nodeUuid) nw
