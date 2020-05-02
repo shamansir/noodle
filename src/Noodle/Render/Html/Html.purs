@@ -4,7 +4,8 @@ import Prelude
 
 import Data.Int (toNumber)
 import Data.Lens (view) as L
-import Data.List (toUnfoldable) as List
+import Data.List ((:), List(..))
+import Data.List (toUnfoldable, singleton) as List
 import Data.Either (Either(..))
 import Data.Map as Map
 import Data.Maybe (Maybe(..), isJust, maybe, fromMaybe)
@@ -596,7 +597,7 @@ update (FromCore (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d)))
     ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d }
     /\ doNothing
 update (FromCore (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
-    ui /\ updatePositions (my <<< StorePositions) nw
+    ui /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
 update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)))) ( ui /\ nw ) =
     case L.view (L._patchByPath patchPath) nw of
         -- FIXME: Raise the error if patch wasn't found
@@ -611,13 +612,15 @@ update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)
                         ui.layout
                 }
                 -- TODO: remove from packing when node was removed
-            /\ updatePositions (my <<< StorePositions) nw
+            /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
         _ ->
             ui /\ doNothing
     where
         patchPath = P.getPatchPath $ P.lift nodePath
 update (FromCore (Core.Build (Core.AddLink _))) ( ui /\ nw ) =
-    ui /\ updatePositions (my <<< StorePositions) nw
+    ui /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
+update (FromCore (Core.Build (Core.RemoveNode _))) ( ui /\ nw ) =
+    ui /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
 update (FromCore _) (ui /\ _) = ui /\ doNothing
 
 update (FromUI NoOp) (ui /\ _) = ui /\ doNothing
@@ -626,7 +629,7 @@ update (FromUI (MouseMove mousePos)) ( ui /\ nw ) =
     ui { mousePos = mousePos } /\
         (case ui.dragging of
             Dragging (DragNode _) ->
-                updatePositions (my <<< StorePositions) nw
+                updatePositions (List.singleton <<< my <<< StorePositions) nw
             _ -> doNothing
         )
 update (FromUI (MouseUp mousePos)) ( ui /\ nw ) =
@@ -668,7 +671,7 @@ update (FromUI (ClickNodeTitle node e)) ( ui /\ nw ) =
         }
     /\ do
         _ <- Event.stopPropagation $ ME.toEvent e
-        updatePositions (my <<< StorePositions) nw
+        updatePositions (List.singleton <<< my <<< StorePositions) nw
 update (FromUI (ClickRemoveButton node e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging
@@ -685,13 +688,7 @@ update (FromUI (ClickRemoveButton node e)) ( ui /\ nw ) =
         }
     /\ do
         _ <- Event.stopPropagation $ ME.toEvent e
-        updatePositions (\positions ->
-            my $ StorePositions positions
-            {- FIXME: Batch
-                [ my $ StorePositions positions
-                , core $ Core.Build $ Core.RemoveNode node
-                ] -}
-            ) nw
+        single $ core $ Core.Build $ Core.RemoveNode node
 update (FromUI (ClickInlet (R.Inlet _ inletPath _ _) e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging
@@ -726,10 +723,10 @@ updatePositions
     :: forall d c n x
      . ((UUID.Tagged /-> Position) -> x)
     -> R.Network d c n
-    -> Effect (AndThen x)
+    -> Effect x
 updatePositions ack (R.Network nw) = do
     positions <- collectPositions $ loadUUIDs $ Map.keys nw.registry
-    single $ ack $ convertPositions positions
+    pure $ ack $ convertPositions positions
 
 
 {-
