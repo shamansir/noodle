@@ -4,8 +4,8 @@ module Xodus.Toolkit.Value where
 import Prelude (class Show)
 
 
-data Value = Value_
+data Value = Value
 
 
 instance showValue :: Show Value where
-    show Value_ = "Value_"
+    show Value = "Value_"
