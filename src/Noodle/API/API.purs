@@ -1,8 +1,6 @@
 
 module Noodle.API where
 
-import Debug.Trace
-
 import Prelude
 
 import Data.Maybe (Maybe(..), maybe, fromMaybe)

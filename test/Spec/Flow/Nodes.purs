@@ -30,7 +30,7 @@ import Noodle.Toolkit
     , NodeDef(..)
     )
 
-import Test.Spec (Spec, it, pending, describe, itOnly)
+import Test.Spec (Spec, it, pending, pending', describe, itOnly)
 import Test.Spec.Assertions (shouldContain, shouldNotContain, shouldEqual, shouldNotEqual)
 
 import Noodle.Test.Util.Trace (TraceItem(..))
@@ -337,54 +337,201 @@ spec = do
 
   describe "removing" $ do
 
-      it "when node was removed, its inlets stop receiving data" $ do
-        let
-          curseInlet = toInlet "patch" "node" "curse"
+    pending "when node was removed, its processing function is not called anymore"
 
-          structure :: Actions
-          structure =
-            Actions.init
-              </> R.addPatch "patch"
-              </> R.addNodeByDef
-                      (toPatch "patch")
-                      "node"
-                      Custom
-                      nodeDef
+    it "when node was removed, its inlets stop receiving data" $ do
+      let
+        curseInlet = toInlet "patch" "node" "curse"
 
-          nodeDef :: NodeDef Delivery Pipe
-          nodeDef =
-              NodeDef
-                { inlets :
-                    withInlets
-                    ~< "curse" /\ Pass
-                , outlets :
-                    noOutlets
-                , process : R.Withhold
-                }
+        structure :: Actions
+        structure =
+          Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "node"
+                    Custom
+                    nodeDef
 
-        let
-          nwWithFlow =
-            structure </>
-              R.streamToInlet curseInlet (R.flow $ const (Curse 4) <$> interval 30)
+        nodeDef :: NodeDef Delivery Pipe
+        nodeDef =
+            NodeDef
+              { inlets :
+                  withInlets
+                  ~< "curse" /\ Pass
+              , outlets :
+                  noOutlets
+              , process : R.Withhold
+              }
 
-        nw' /\ collectedData <- CollectData.channelsAfter
-          (Milliseconds 100.0)
-          mySequencer
-          (Network.empty "network")
-          nwWithFlow
+      let
+        nwWithFlow =
+          structure </>
+            R.streamToInlet curseInlet (R.flow $ const (Curse 4) <$> interval 30)
 
-        collectedData `shouldContain`
-          (InletData curseInlet $ Curse 4)
+      nw' /\ collectedData <- CollectData.channelsAfter
+        (Milliseconds 100.0)
+        mySequencer
+        (Network.empty "network")
+        nwWithFlow
 
-        _ /\ collectedData' <- CollectData.channelsAfter
-          (Milliseconds 100.0)
-          mySequencer
-          (Network.empty "network")
-          $ nwWithFlow </> R.removeInlet curseInlet
+      collectedData `shouldContain`
+        (InletData curseInlet $ Curse 4)
 
-        collectedData' `shouldNotContain`
-          (InletData curseInlet $ Curse 4)
+      _ /\ collectedData' <- CollectData.channelsAfter
+        (Milliseconds 100.0)
+        mySequencer
+        (Network.empty "network")
+        $ nwWithFlow </> R.removeNode (toNode "patch" "node")
 
-        collectedData' `shouldEqual` []
+      collectedData' `shouldNotContain`
+        (InletData curseInlet $ Curse 4)
 
-        pure unit
+      collectedData' `shouldEqual` []
+
+      pure unit
+
+    it "when node was removed, its outgoing connections are deactivated and do not receive any data" $ do
+      let
+        curseOutlet = toOutlet "patch" "subject" "curse"
+        curseInlet = toInlet "patch" "other" "curse"
+
+        structure :: Actions
+        structure =
+          Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "subject"
+                    Custom
+                    subjectNodeDef
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "other"
+                    Custom
+                    otherNodeDef
+            </> R.connect
+                  curseOutlet
+                  curseInlet
+
+        subjectNodeDef :: NodeDef Delivery Pipe
+        subjectNodeDef =
+            NodeDef
+              { inlets :
+                  noInlets
+              , outlets :
+                  withOutlets
+                  >~ "curse" /\ Pass
+              , process : R.Withhold
+              }
+
+        otherNodeDef :: NodeDef Delivery Pipe
+        otherNodeDef =
+            NodeDef
+              { inlets :
+                  withInlets
+                  ~< "curse" /\ Pass
+              , outlets :
+                  noOutlets
+              , process : R.Withhold
+              }
+
+        nwWithFlow =
+          structure </>
+            R.streamToOutlet curseOutlet (R.flow $ const (Curse 4) <$> interval 30)
+
+      nw' /\ collectedData <- CollectData.channelsAfter
+        (Milliseconds 100.0)
+        mySequencer
+        (Network.empty "network")
+        nwWithFlow
+
+      collectedData `shouldContain`
+        (InletData curseInlet $ Curse 4)
+
+      _ /\ collectedData' <- CollectData.channelsAfter
+        (Milliseconds 100.0)
+        mySequencer
+        (Network.empty "network")
+        $ nwWithFlow </> R.removeNode (toNode "patch" "subject")
+
+      collectedData' `shouldNotContain`
+        (InletData curseInlet $ Curse 4)
+
+      collectedData' `shouldEqual` []
+
+      pure unit
+
+    -- FIXME: the values which are streamed this way are staying for the moment,
+    --        for some reason we need to cancel everything outlet-related,
+    --        not only link-related, to get rid of this behavior
+    pending' "when node was removed, its ingoing connections are deactivated and do not receive any data" $ do
+      let
+        curseOutlet = toOutlet "patch" "other" "curse"
+        curseInlet = toInlet "patch" "subject" "curse"
+
+        structure :: Actions
+        structure =
+          Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "subject"
+                    Custom
+                    subjectNodeDef
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "other"
+                    Custom
+                    otherNodeDef
+            </> R.connect
+                  curseOutlet
+                  curseInlet
+
+        subjectNodeDef :: NodeDef Delivery Pipe
+        subjectNodeDef =
+            NodeDef
+              { inlets :
+                  withInlets
+                  ~< "curse" /\ Pass
+              , outlets :
+                  noOutlets
+              , process : R.Withhold
+              }
+
+        otherNodeDef :: NodeDef Delivery Pipe
+        otherNodeDef =
+            NodeDef
+              { inlets :
+                  noInlets
+              , outlets :
+                  withOutlets
+                  >~ "curse" /\ Pass
+              , process : R.Withhold
+              }
+
+        nwWithFlow =
+          structure </>
+            R.streamToOutlet curseOutlet (R.flow $ const (Curse 4) <$> interval 30)
+
+      nw' /\ collectedData <- CollectData.channelsAfter
+        (Milliseconds 100.0)
+        mySequencer
+        (Network.empty "network")
+        nwWithFlow
+
+      collectedData `shouldContain`
+        (InletData curseInlet $ Curse 4)
+
+      _ /\ collectedData' <- CollectData.channelsAfter
+        (Milliseconds 100.0)
+        mySequencer
+        (Network.empty "network")
+        $ nwWithFlow </> R.removeNode (toNode "patch" "subject")
+
+      collectedData' `shouldNotContain`
+        (InletData curseInlet $ Curse 4)
+
+      collectedData' `shouldEqual` []
+
+      pure unit
