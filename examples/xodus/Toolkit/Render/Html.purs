@@ -56,7 +56,7 @@ renderNode BangNode (R.Node _ path _ _ _) _ _ =
                 $ H.always_ $ R.core
                 $ A.Request
                 $ A.ToSendToInlet (P.inletInNode path "bang")
-                $ Value_
+                $ Value
             ]
             [ H.text "◌" ]
         ]

@@ -5,9 +5,9 @@ import Prelude
 import Data.Tuple.Nested ((/\))
 
 import Noodle.Process (ProcessF(..)) as R
-import Noodle.Toolkit as T
-import Noodle.Toolkit (withInlets, withOutlets, (~<), (>~))
-import Noodle.Render.Atom (class Atom) as R -- FIXME: shouldn't require `Render` module
+import Noodle.Toolkit (NodeDef(..), withInlets, withOutlets) as T
+import Noodle.Toolkit ((~<), (>~))
+import Noodle.Render.Atom (class Atom) as R
 
 import Xodus.Toolkit.Value (Value)
 import Xodus.Toolkit.Channel (Channel(..))

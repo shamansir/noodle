@@ -1,20 +1,15 @@
 module Xodus.Toolkit where
 
-import Prelude (($), identity)
-
-import Data.Maybe (Maybe(..))
-import Data.Map (singleton) as Map
-import Data.Tuple.Nested ((/\))
-
 import Noodle.Toolkit as T
-import Noodle.Util (type (/->))
+import Noodle.Render.Html (ToolkitRenderer) as R
 
-import Xodus.Toolkit.Value
-import Xodus.Toolkit.Channel
+import Xodus.Toolkit.Value (Value)
+import Xodus.Toolkit.Channel (Channel)
 import Xodus.Toolkit.Node
 import Xodus.Toolkit.Render.Html as RenderHtml
 
 
+htmlRenderer :: R.ToolkitRenderer Value Channel Node
 htmlRenderer = RenderHtml.renderer
 
 

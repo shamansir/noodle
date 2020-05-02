@@ -16,6 +16,6 @@ instance showChannel :: Show Channel where
 
 
 instance xodusChannel :: T.Channels Value Channel where
-    default _ = Value_
+    default _ = Value
     accept _ _ = true
     adapt _ = identity
