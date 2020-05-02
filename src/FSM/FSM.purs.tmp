@@ -113,11 +113,11 @@ prepare
     -> (model -> Effect Unit) -- FIXME: use `update` itself for that?
     -> (action -> Effect Unit) -- FIXME: use `update` itself for that?
     -> Effect
-            { pushAction :: action -> Effect Unit
+            { push :: action -> Effect Unit
             , stop :: Canceler
             }
 prepare (FSM f) init subModels subActions = do
-    { event : actions, push : pushAction } <- Event.create
+    { event : actions, push : push } <- Event.create
     let
         (updates :: Event (model /\ Effect action)) =
             Event.fold
@@ -129,9 +129,9 @@ prepare (FSM f) init subModels subActions = do
     stopModelSubscription <- Event.subscribe models subModels
     stopActionSubscription <- Event.subscribe actions subActions
     stopPerformingEffects <- Event.subscribe updates
-        \(_ /\ eff) -> eff >>= pushAction
+        \(_ /\ eff) -> eff >>= push
     pure
-        { pushAction
+        { push
         , stop : stopModelSubscription
               <> stopActionSubscription
               <> stopPerformingEffects
@@ -145,7 +145,7 @@ run
     -> model
     -> action
     -> Effect
-            { pushAction :: action -> Effect Unit
+            { push :: action -> Effect Unit
             , stop :: Canceler
             }
 run fsm init = do
@@ -161,7 +161,7 @@ run'
     -> (model -> Effect Unit)
     -> action
     -> Effect
-            { pushAction :: action -> Effect Unit
+            { push :: action -> Effect Unit
             , stop :: Canceler
             }
 run' fsm init subscription = do
@@ -178,13 +178,13 @@ run''
     -> (action -> Effect Unit)
     -> action
     -> Effect
-            { pushAction :: action -> Effect Unit
+            { push :: action -> Effect Unit
             , stop :: Canceler
             }
 run'' fsm init subModels subActions actionList = do
-    { pushAction, stop } <- prepare fsm init subModels subActions
-    _ <- traverse_ pushAction $ break actionList
-    pure { pushAction, stop : stop }
+    { push, stop } <- prepare fsm init subModels subActions
+    _ <- traverse_ push $ break actionList
+    pure { push, stop : stop }
 
 
 fold
@@ -196,18 +196,18 @@ fold
     -> action
     -> Effect
             (model /\
-                { pushAction :: action -> Effect Unit
-                 -- FIXME: not a lot of sense in returning `pushAction` here
+                { push :: action -> Effect Unit
+                 -- FIXME: not a lot of sense in returning `push` here
                  ---       and may be `stop` as well
                 , stop :: Canceler
             })
     -- -> Effect (model /\ Canceler)
 fold fsm init actionList = do
     lastValRef <- Ref.new init
-    { pushAction, stop } <- prepare fsm init (flip Ref.write lastValRef) noSubscription
-    _ <- traverse_ pushAction $ break actionList
+    { push, stop } <- prepare fsm init (flip Ref.write lastValRef) noSubscription
+    _ <- traverse_ push $ break actionList
     lastVal <- Ref.read lastValRef
-    pure $ lastVal /\ { pushAction, stop }
+    pure $ lastVal /\ { push, stop }
     -- fold' fsm init (const $ pure unit) actionList
 
 
@@ -221,11 +221,11 @@ fold fsm init actionList = do
     -> Effect (model /\ Canceler)
 fold' fsm init subscription actionList = do
     lastValRef <- Ref.new init
-    { pushAction, stop } <- prepare fsm init $ \model -> do
+    { push, stop } <- prepare fsm init $ \model -> do
         _ <- lastValRef # Ref.write model
         _ <- subscription model
         pure unit
-    _ <- traverse_ pushAction actionList
+    _ <- traverse_ push actionList
     lastVal <- Ref.read lastValRef
     pure $ lastVal /\ stop -}
 

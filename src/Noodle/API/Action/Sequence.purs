@@ -48,7 +48,7 @@ type ActionList d c n = List (Action d c n) -- TODO: or newtype?
 -- type BasicContinuationResult model action =
 --     { models :: Event (Either NoodleError model)
 --     , actions :: Event action
---     , pushAction :: action -> Effect Unit
+--     , push :: action -> Effect Unit
 --     , stop :: Canceler
 --     }
 -- type ContinuationResult d c n =
