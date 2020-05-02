@@ -1,5 +1,5 @@
 module Example.Toolkit.Render.String where
 
-import Rpd.API.Action
+import Noodle.API.Action
 
 renderer = 42

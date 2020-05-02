@@ -1,4 +1,4 @@
-module Rpd.Test.Spec.Spread
+module Noodle.Test.Spec.Spread
     ( spec
     ) where
 

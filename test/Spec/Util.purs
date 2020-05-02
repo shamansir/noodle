@@ -1,4 +1,4 @@
-module Rpd.Test.Spec.Util
+module Noodle.Test.Spec.Util
     ( spec
     ) where
 
@@ -12,9 +12,9 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
 
-import Rpd.UUID as UUID
--- import Rpd.API.Covered (Covered(..))
--- import Rpd.API.Covered as Covered
+import Noodle.UUID as UUID
+-- import Noodle.API.Covered (Covered(..))
+-- import Noodle.API.Covered as Covered
 
 
 spec :: Spec Unit

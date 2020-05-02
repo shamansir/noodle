@@ -1,0 +1,16 @@
+.noodle-node-list {
+    margin: 5px;
+}
+
+.noodle-node-list-button {
+    margin: 2px;
+    cursor: pointer;
+    padding: 2px;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 2px;
+    transition: background-color 100ms ease-in;
+}
+
+.noodle-node-list-button:hover {
+    background-color: rgba(255,255,255,0.3);
+}

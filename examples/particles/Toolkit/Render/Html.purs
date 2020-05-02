@@ -16,16 +16,16 @@ import Data.Spread (Spread) as S
 import Data.Vec2 (Vec2(..))
 import Data.Vec2 (arrow) as Vec2
 
--- import Rpd.Toolkit (ToolkitRenderer)
-import Rpd.Network as R
-import Rpd.API.Action (Action(..), RequestAction(..), DataAction(..)) as A
-import Rpd.API.Action.Sequence as A
-import Rpd.Render.Html (View, ToolkitRenderer, core) as R
-import Rpd.Render.Html.NodeList (render) as NodeList
-import Rpd.Path as P
-import Rpd.Process as R
+-- import Noodle.Toolkit (ToolkitRenderer)
+import Noodle.Network as R
+import Noodle.API.Action (Action(..), RequestAction(..), DataAction(..)) as A
+import Noodle.API.Action.Sequence as A
+import Noodle.Render.Html (View, ToolkitRenderer, core) as R
+import Noodle.Render.Html.NodeList (render) as NodeList
+import Noodle.Path as P
+import Noodle.Process as R
 
-import Rpd.Render.Atom as R
+import Noodle.Render.Atom as R
 
 import Spork.Html (Html)
 import Spork.Html as H

@@ -1,4 +1,4 @@
-module Rpd.Test.Spec.FSM
+module Noodle.Test.Spec.FSM
     ( spec ) where
 
 import Prelude
@@ -16,8 +16,8 @@ import Data.Tuple.Nested ((/\))
 import Data.Covered as Covered
 import Data.Covered (Covered(..))
 
-import Rpd.UUID (UUID)
-import Rpd.UUID as UUID
+import Noodle.UUID (UUID)
+import Noodle.UUID as UUID
 
 import Test.Spec (Spec, describe, it, pending', pending)
 import Test.Spec.Assertions (shouldEqual, fail)

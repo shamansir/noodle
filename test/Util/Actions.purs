@@ -1,4 +1,4 @@
-module Rpd.Test.Util.Actions
+module Noodle.Test.Util.Actions
     ( getOrFail
     , getOrFail'
     , failIfNoError

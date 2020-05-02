@@ -8,7 +8,7 @@ import Data.List
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Exists (Exists, mkExists)
 
-import Rpd.Process (ProcessF(..))
+import Noodle.Process (ProcessF(..))
 
 data Renderer msg c d view = Renderer
 

@@ -6,8 +6,8 @@ import Data.Maybe (Maybe(..))
 import Data.Map (singleton) as Map
 import Data.Tuple.Nested ((/\))
 
-import Rpd.Toolkit as T
-import Rpd.Util (type (/->))
+import Noodle.Toolkit as T
+import Noodle.Util (type (/->))
 
 import Example.Toolkit.Value
 import Example.Toolkit.Channel

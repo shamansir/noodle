@@ -1,4 +1,4 @@
-module Rpd.Test.Spec.RpdFileParser
+module Noodle.Test.Spec.NoodleFileParser
     ( spec ) where
 
 
@@ -16,13 +16,13 @@ import Effect.Aff (Aff)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, fail)
 
-import Rpd.Path as R
-import Rpd.Process (ProcessF(..)) as R
--- import Rpd.Command (Command)
--- import Rpd.Command as Cmd
-import Rpd.Toolkit as T
-import Rpd.Parser.RpdFile (parse, RpdFileCommand, RpdFile)
-import Rpd.Parser.RpdFile (RpdFileCommand(..)) as Cmd
+import Noodle.Path as R
+import Noodle.Process (ProcessF(..)) as R
+-- import Noodle.Command (Command)
+-- import Noodle.Command as Cmd
+import Noodle.Toolkit as T
+import Noodle.Parser.NoodleFile (parse, NoodleFileCommand, NoodleFile)
+import Noodle.Parser.NoodleFile (NoodleFileCommand(..)) as Cmd
 
 
 data Data = Foo | Bar
@@ -155,7 +155,7 @@ spec =
       pure unit
 
 
-parsesAs :: String -> Array RpdFileCommand  -> Aff Unit
+parsesAs :: String -> Array NoodleFileCommand  -> Aff Unit
 parsesAs input expected =
     (toolkit
         # parse input)

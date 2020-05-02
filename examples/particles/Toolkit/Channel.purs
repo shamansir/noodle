@@ -2,7 +2,7 @@ module Example.Toolkit.Channel where
 
 import Prelude (class Show, identity)
 
-import Rpd.Toolkit as T
+import Noodle.Toolkit as T
 
 import Example.Toolkit.Value
 

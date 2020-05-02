@@ -1,4 +1,4 @@
-module Rpd.Test.Spec.Structure
+module Noodle.Test.Spec.Structure
     ( spec ) where
 
 import Prelude
@@ -15,17 +15,17 @@ import Effect.Aff (Aff, launchAff_)
 import Test.Spec (Spec, describe, it, pending')
 import Test.Spec.Assertions (shouldEqual, fail)
 
-import Rpd.Test.Util.Actions (getOrFail)
+import Noodle.Test.Util.Actions (getOrFail)
 
 import FSM (fold) as Actions
-import Rpd.API.Action.Sequence ((</>))
-import Rpd.API.Action.Sequence as Actions
-import Rpd.API.Action.Sequence (addPatch, addNode, addInlet, addOutlet) as R
-import Rpd.Path as P
-import Rpd.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath) as L
-import Rpd.Network (Inlet(..), Network, Node(..), Outlet(..)) as R
-import Rpd.Network (empty) as N
-import Rpd.Toolkit as T
+import Noodle.API.Action.Sequence ((</>))
+import Noodle.API.Action.Sequence as Actions
+import Noodle.API.Action.Sequence (addPatch, addNode, addInlet, addOutlet) as R
+import Noodle.Path as P
+import Noodle.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath) as L
+import Noodle.Network (Inlet(..), Network, Node(..), Outlet(..)) as R
+import Noodle.Network (empty) as N
+import Noodle.Toolkit as T
 
 
 data MyData

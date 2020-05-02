@@ -1,4 +1,4 @@
-module Rpd.Test.Spec.Flow.Nodes
+module Noodle.Test.Spec.Flow.Nodes
     ( spec
     ) where
 
@@ -16,14 +16,14 @@ import Effect.Ref as Ref
 import FRP.Event as Event
 import FRP.Event.Time (interval)
 
-import Rpd.Util (flow) as R
-import Rpd.API.Action.Sequence ((</>))
-import Rpd.API.Action.Sequence (init) as Actions
-import Rpd.API.Action.Sequence as R
-import Rpd.Process (ProcessF(..), makeProcessST) as R
-import Rpd.Path
-import Rpd.Network (empty) as Network
-import Rpd.Toolkit
+import Noodle.Util (flow) as R
+import Noodle.API.Action.Sequence ((</>))
+import Noodle.API.Action.Sequence (init) as Actions
+import Noodle.API.Action.Sequence as R
+import Noodle.Process (ProcessF(..), makeProcessST) as R
+import Noodle.Path
+import Noodle.Network (empty) as Network
+import Noodle.Toolkit
     ( (>~), (~<)
     , withInlets, withOutlets
     , noInlets, noOutlets
@@ -33,9 +33,9 @@ import Rpd.Toolkit
 import Test.Spec (Spec, it, pending, describe, itOnly)
 import Test.Spec.Assertions (shouldContain, shouldNotContain, shouldEqual, shouldNotEqual)
 
-import Rpd.Test.Util.Trace (TraceItem(..))
-import Rpd.Test.Util.Trace (channelsAfter) as CollectData
-import Rpd.Test.Spec.Flow.Base
+import Noodle.Test.Util.Trace (TraceItem(..))
+import Noodle.Test.Util.Trace (channelsAfter) as CollectData
+import Noodle.Test.Spec.Flow.Base
     ( Actions
     , Delivery(..), Pipe(..), Node(..)
     , mySequencer

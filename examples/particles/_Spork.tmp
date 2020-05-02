@@ -4,12 +4,12 @@ import Prelude
 
 import Data.Const (Const)
 import Effect (Effect)
-import Rpd (RpdError, Rpd, Network, emptyNetwork)
-import Rpd (init) as Rpd
-import Rpd.Render (Message(..)) as Ui
-import Rpd.Render (update, once, Renderer, proxy') as Render
-import Rpd.Render.Terminal (terminalRenderer)
-import Rpd.Render.Terminal (view) as TerminalRenderer
+import Noodle (NoodleError, Noodle, Network, emptyNetwork)
+import Noodle (init) as Noodle
+import Noodle.Render (Message(..)) as Ui
+import Noodle.Render (update, once, Renderer, proxy') as Render
+import Noodle.Render.Terminal (terminalRenderer)
+import Noodle.Render.Terminal (view) as TerminalRenderer
 import Spork.App (App)
 import Spork.App as App
 import Spork.Html (Html)
@@ -47,7 +47,7 @@ render nw =
 update :: forall d. Model d -> Action d -> App.Transition Effect (Model d) (Action d)
 update model action = do
   -- FIXME: we need to name separate effects (like `Connect` / `Disconnect` etc.) if we want to support Spork
-  -- almost all of the actions on Rpd are effectful, but we're not marking them as such
+  -- almost all of the actions on Noodle are effectful, but we're not marking them as such
   App.purely model
   -- Render.update action model >>= ...
 

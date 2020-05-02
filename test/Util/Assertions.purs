@@ -1,4 +1,4 @@
-module Rpd.Test.Util.Assertions where
+module Noodle.Test.Util.Assertions where
 
 import Prelude
 import Data.Maybe

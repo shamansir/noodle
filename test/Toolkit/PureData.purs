@@ -1,3 +1,3 @@
-module Rpd.Test.Toolkit.PureData where
+module Noodle.Test.Toolkit.PureData where
 
 foo = 42

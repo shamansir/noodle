@@ -1,3 +1,3 @@
-module Rpd.Test.Toolkit.P5.String where
+module Noodle.Test.Toolkit.P5.String where
 
 foo = 42

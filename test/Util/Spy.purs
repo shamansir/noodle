@@ -1,4 +1,4 @@
-module Rpd.Test.Util.Spy
+module Noodle.Test.Util.Spy
     ( Spy, create, with, with', reset, get, consider
     , wasCalled, callCount, trace, first, last, last'
     , ifError, ifSuccess

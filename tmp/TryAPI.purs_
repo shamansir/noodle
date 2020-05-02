@@ -9,7 +9,7 @@ import Data.Traversable (traverse)
 import Data.Tuple.Nested ((/\), type (/\))
 import Effect (Effect)
 
-import Rpd.Util (Flow)
+import Noodle.Util (Flow)
 
 data Network = Network Unit
 data Patch = Patch Unit
@@ -18,7 +18,7 @@ data Inlet = Inlet Unit
 data Outlet = Outlet Unit
 data Link = Link Unit
 
-type Rpd a = ExceptT String Effect a
+type Noodle a = ExceptT String Effect a
 
 data PatchPath = PatchPath String
 data NodePath = NodePath String
@@ -26,17 +26,17 @@ data InletPath = InletPath String
 data OutletPath = OutletPath String
 
 
-addNode :: String -> Network -> Rpd (NodePath /\ Network)
+addNode :: String -> Network -> Noodle (NodePath /\ Network)
 addNode _ _ = pure $ (NodePath "") /\ Network unit
 
 
-connect :: String -> Network -> Rpd Network
+connect :: String -> Network -> Noodle Network
 connect _ _ = pure $ Network unit
 
 
-data RpdDSL a next
+data NoodleDSL a next
     = MakeNode {} next
-    | MakeNodeAnd {} (Node -> RpdDSL a next) next
+    | MakeNodeAnd {} (Node -> NoodleDSL a next) next
     | MakeInlet {} next
     | MakeOutlet {} next
     | Select Node next
@@ -44,7 +44,7 @@ data RpdDSL a next
     | Bang
 
 
-buildNetwork :: Rpd Int
+buildNetwork :: Noodle Int
 buildNetwork = do
     let nw = Network unit
     (nodeA /\ nw') <- addNode "test" nw

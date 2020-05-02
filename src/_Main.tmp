@@ -2,14 +2,14 @@ module Main where
 
 import Prelude
 
-import Rpd
+import Noodle
   ( Network, network, patch, node, inlet, inlet', inletWithDefault, outlet, outlet'
   , processWith
   , LazyNode
-  , RpdEff
+  , NoodleEff
   ) as R
-import Rpd.Flow (flow) as R
-import Rpd.Render.Html as RenderH
+import Noodle.Flow (flow) as R
+import Noodle.Render.Html as RenderH
 
 import Data.Map as Map
 import Data.Maybe (fromMaybe)
@@ -68,7 +68,7 @@ myNetwork =
       Map.singleton "c" $ fromMaybe Bang $ Map.lookup "d" inputs
     processF inputs = Map.empty
 
-main :: ∀ e. R.RpdEff ( dom :: DOM, console :: CONSOLE | e ) Unit
+main :: ∀ e. R.NoodleEff ( dom :: DOM, console :: CONSOLE | e ) Unit
 main = do
   documentType <- document =<< window
   element <- getElementById (ElementId "app") $ htmlDocumentToNonElementParentNode documentType

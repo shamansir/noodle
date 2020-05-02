@@ -1,4 +1,4 @@
-module Rpd.Test.Spec.Render
+module Noodle.Test.Spec.Render
     ( spec ) where
 
 import Prelude
@@ -33,26 +33,26 @@ import FRP.Event as Event
 
 import FSM (doNothing)
 
--- import Rpd.API as R
-import Rpd.Path
-import Rpd.Network (Network) as R
-import Rpd.Network (empty) as Network
-import Rpd.Toolkit as R
-import Rpd.Toolkit (empty) as Toolkit
-import Rpd.API.Action.Sequence ((</>), ActionList)
-import Rpd.API.Action.Sequence as Actions
-import Rpd.API.Action.Sequence as R
+-- import Noodle.API as R
+import Noodle.Path
+import Noodle.Network (Network) as R
+import Noodle.Network (empty) as Network
+import Noodle.Toolkit as R
+import Noodle.Toolkit (empty) as Toolkit
+import Noodle.API.Action.Sequence ((</>), ActionList)
+import Noodle.API.Action.Sequence as Actions
+import Noodle.API.Action.Sequence as R
 
 import UI (make, once, run) as UI
-import Rpd.Render.Renderer (Routed(..))
-import Rpd.Render.Renderer (Renderer, Minimal) as Render
-import Rpd.Render.Terminal (make, init) as TerminalRenderer
-import Rpd.Render.Terminal (TerminalRenderer)
-import Rpd.Render.Terminal.Multiline as ML
-import Rpd.Render.String (make, makeWithOptions) as StringRenderer
-import Rpd.Render.String (StringRenderer)
+import Noodle.Render.Renderer (Routed(..))
+import Noodle.Render.Renderer (Renderer, Minimal) as Render
+import Noodle.Render.Terminal (make, init) as TerminalRenderer
+import Noodle.Render.Terminal (TerminalRenderer)
+import Noodle.Render.Terminal.Multiline as ML
+import Noodle.Render.String (make, makeWithOptions) as StringRenderer
+import Noodle.Render.String (StringRenderer)
 
-import Rpd.Test.Util.Spy as Spy
+import Noodle.Test.Util.Spy as Spy
 
 
 data MyData

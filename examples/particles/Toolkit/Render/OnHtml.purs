@@ -14,7 +14,7 @@ import Data.String (take) as String
 import Data.Array (catMaybes, length, mapWithIndex) as Array
 import Data.Traversable (for_)
 
--- import Rpd.Render.Html (View) as R
+-- import Noodle.Render.Html (View) as R
 import Spork.Html (Html)
 import Spork.Html as H
 

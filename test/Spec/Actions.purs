@@ -1,4 +1,4 @@
-module Rpd.Test.Spec.Actions
+module Noodle.Test.Spec.Actions
     ( spec ) where
 
 import Prelude
@@ -29,19 +29,19 @@ import Data.Covered (recover)
 
 import FSM as FSM
 
-import Rpd.API.Action.Sequence ((</>))
-import Rpd.API.Action.Sequence (addPatch, addNode, addInlet, addOutlet) as R
-import Rpd.API.Action.Sequence as Actions
-import Rpd.API.Action.Sequence (make) as Sequencer
+import Noodle.API.Action.Sequence ((</>))
+import Noodle.API.Action.Sequence (addPatch, addNode, addInlet, addOutlet) as R
+import Noodle.API.Action.Sequence as Actions
+import Noodle.API.Action.Sequence (make) as Sequencer
 
-import Rpd.Network (Inlet(..), Network, Node(..), Outlet(..)) as R
-import Rpd.Network (empty) as N
-import Rpd.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath, _patchByPath) as L
-import Rpd.Path as P
-import Rpd.Test.Util.Actions (getOrFail, getOrFail', failIfNoError, failIfNoErrors)
-import Rpd.Test.Util.Spy as Spy
-import Rpd.Test.Util.Assertions
-import Rpd.Toolkit as T
+import Noodle.Network (Inlet(..), Network, Node(..), Outlet(..)) as R
+import Noodle.Network (empty) as N
+import Noodle.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath, _patchByPath) as L
+import Noodle.Path as P
+import Noodle.Test.Util.Actions (getOrFail, getOrFail', failIfNoError, failIfNoErrors)
+import Noodle.Test.Util.Spy as Spy
+import Noodle.Test.Util.Assertions
+import Noodle.Toolkit as T
 
 
 data MyData

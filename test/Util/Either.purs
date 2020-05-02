@@ -1,4 +1,4 @@
-module Rpd.Test.Util.Either
+module Noodle.Test.Util.Either
     ( getOrFail
     , failIfNoError
     ) where

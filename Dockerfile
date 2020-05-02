@@ -33,7 +33,7 @@ COPY --from=0 /app/index.html .
 RUN mkdir ./css
 RUN mkdir ./example-css
 
-COPY --from=0 /app/src/Rpd/Render/Html/*.css ./css/
+COPY --from=0 /app/src/Noodle/Render/Html/*.css ./css/
 COPY --from=0 /app/examples/particles/Toolkit/Render/*.css ./example-css/
 COPY --from=0 /app/index.docker.css ./index.css
 

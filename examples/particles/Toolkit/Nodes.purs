@@ -26,12 +26,12 @@ import Data.Time.Duration (Milliseconds(..))
 import Data.DateTime.Instant (unInstant)
 import Debug.Trace as DT
 
-import Rpd.UUID as UUID
-import Rpd.Process as R
-import Rpd.Toolkit as T
-import Rpd.Toolkit (withInlets, withOutlets, (~<), (>~))
+import Noodle.UUID as UUID
+import Noodle.Process as R
+import Noodle.Toolkit as T
+import Noodle.Toolkit (withInlets, withOutlets, (~<), (>~))
 
-import Rpd.Render.Atom as R -- FIXME: shouldn't require `Render` module
+import Noodle.Render.Atom as R -- FIXME: shouldn't require `Render` module
 
 import Example.Toolkit.Value (RgbaColor(..), Value)
 import Example.Toolkit.Value (Value(..), fill, move) as V

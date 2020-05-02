@@ -1,4 +1,4 @@
-module Rpd.Test.Spec.Flow.Base
+module Noodle.Test.Spec.Flow.Base
     ( Network, Actions
     , Delivery(..), Pipe(..), Node(..)
     , myToolkit, mySequencer
@@ -7,9 +7,9 @@ module Rpd.Test.Spec.Flow.Base
 import Prelude
 
 import FSM
-import Rpd.Network (Network) as R
-import Rpd.Toolkit as R
-import Rpd.API.Action.Sequence (ActionList, Sequencer, make) as R
+import Noodle.Network (Network) as R
+import Noodle.Toolkit as R
+import Noodle.API.Action.Sequence (ActionList, Sequencer, make) as R
 
 
 data Delivery

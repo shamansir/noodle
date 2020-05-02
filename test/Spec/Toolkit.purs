@@ -1,4 +1,4 @@
-module Rpd.Test.Spec.Toolkit
+module Noodle.Test.Spec.Toolkit
     ( spec ) where
 
 import Prelude (Unit, pure, unit, ($))

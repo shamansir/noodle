@@ -1,4 +1,4 @@
-module Rpd.Test.Spec.Flow.Inlets
+module Noodle.Test.Spec.Flow.Inlets
     ( spec
     ) where
 
@@ -9,21 +9,21 @@ import Data.Tuple.Nested ((/\))
 
 import FRP.Event.Time (interval)
 
-import Rpd.API.Action.Sequence ((</>))
-import Rpd.API.Action.Sequence (init) as Actions
-import Rpd.API.Action.Sequence as R
-import Rpd.Network (empty) as Network
-import Rpd.Path (toPatch, toNode, toInlet)
-import Rpd.Util (flow) as R
+import Noodle.API.Action.Sequence ((</>))
+import Noodle.API.Action.Sequence (init) as Actions
+import Noodle.API.Action.Sequence as R
+import Noodle.Network (empty) as Network
+import Noodle.Path (toPatch, toNode, toInlet)
+import Noodle.Util (flow) as R
 
 import Effect.Class (liftEffect)
 
 import Test.Spec (Spec, it, pending, pending', itOnly)
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
-import Rpd.Test.Util.Trace (TraceItem(..))
-import Rpd.Test.Util.Trace (channelsAfter) as CollectData
-import Rpd.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, mySequencer)
+import Noodle.Test.Util.Trace (TraceItem(..))
+import Noodle.Test.Util.Trace (channelsAfter) as CollectData
+import Noodle.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, mySequencer)
 
 
 {- ======================================= -}

@@ -22,7 +22,7 @@ import FSM (FSM, AndThen)
 import FSM as FSM
 import Data.Foldable (class Foldable)
 
-import Rpd.Util (Canceler)
+import Noodle.Util (Canceler)
 
 
 data UI action model view = UI (FSM action model) (model -> view)

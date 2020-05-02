@@ -4,16 +4,16 @@ module Example.Network
 
 import Prelude
 
-import Rpd.Network (empty) as Network
-import Rpd.Network as R
-import Rpd.Path as R
-import Rpd.Toolkit as R
+import Noodle.Network (empty) as Network
+import Noodle.Network as R
+import Noodle.Path as R
+import Noodle.Toolkit as R
 
--- import Rpd.API as Rpd
-import Rpd.API.Action.Apply as Rpd
-import Rpd.API.Action.Sequence as Actions
-import Rpd.API.Action.Sequence ((</>))
--- import Rpd.API ((</>))
+-- import Noodle.API as Noodle
+import Noodle.API.Action.Apply as Noodle
+import Noodle.API.Action.Sequence as Actions
+import Noodle.API.Action.Sequence ((</>))
+-- import Noodle.API ((</>))
 
 import Example.Toolkit.Nodes (Node(..))
 import Example.Toolkit.Value (Value(..))
@@ -30,14 +30,14 @@ recipe =
         </> Actions.addNode (R.toPatch "test") "list" NodeListNode
 
         -- FIXME: this block produces an error
-        -- </> Rpd.addNode (R.toPatch "test") "random"
-        -- </> Rpd.addInlet (R.toNode "test" "random") "min"
-        -- </> Rpd.addInlet (R.toNode "test" "random") "max"
-        -- </> Rpd.addInlet (R.toNode "test" "random") "bang"
-        -- </> Rpd.addOutlet (R.toNode "test" "random") "random"
+        -- </> Noodle.addNode (R.toPatch "test") "random"
+        -- </> Noodle.addInlet (R.toNode "test" "random") "min"
+        -- </> Noodle.addInlet (R.toNode "test" "random") "max"
+        -- </> Noodle.addInlet (R.toNode "test" "random") "bang"
+        -- </> Noodle.addOutlet (R.toNode "test" "random") "random"
 
-        -- </> Rpd.addToolkitNode (R.toPatch "test") "random" toolkit RandomNode
+        -- </> Noodle.addToolkitNode (R.toPatch "test") "random" toolkit RandomNode
 
-        -- </> Rpd.sendToInlet (R.toInlet "test" "random" "min") (Number' 10.0)
-        -- </> Rpd.sendToInlet (R.toInlet "test" "random" "max") (Number' 20.0)
-        -- </> Rpd.sendToInlet (R.toInlet "test" "random" "bang") Bang
+        -- </> Noodle.sendToInlet (R.toInlet "test" "random" "min") (Number' 10.0)
+        -- </> Noodle.sendToInlet (R.toInlet "test" "random" "max") (Number' 20.0)
+        -- </> Noodle.sendToInlet (R.toInlet "test" "random" "bang") Bang

@@ -1,4 +1,4 @@
-module Rpd.Test.Spec.Flow.Subscriptions
+module Noodle.Test.Spec.Flow.Subscriptions
     ( spec
     ) where
 
@@ -18,27 +18,27 @@ import FRP.Event.Time (interval)
 
 import FSM (fold, run) as Actions
 
-import Rpd.API
+import Noodle.API
     ( NodeInletsSubscription, NodeOutletsSubscription
     , InletSubscription
     ) as R
-import Rpd.API.Action as R
-import Rpd.API.Action.Sequence ((</>))
-import Rpd.API.Action.Sequence (init, pushAll) as Actions
-import Rpd.API.Action.Sequence as R
-import Rpd.Process (InletHandler(..), InletAlias, OutletAlias) as R
-import Rpd.Path (toPatch, toNode, toInlet)
-import Rpd.UUID as UUID
-import Rpd.Util (flow) as R
-import Rpd.Network (empty) as Network
-import Rpd.Network (Network) as R
+import Noodle.API.Action as R
+import Noodle.API.Action.Sequence ((</>))
+import Noodle.API.Action.Sequence (init, pushAll) as Actions
+import Noodle.API.Action.Sequence as R
+import Noodle.Process (InletHandler(..), InletAlias, OutletAlias) as R
+import Noodle.Path (toPatch, toNode, toInlet)
+import Noodle.UUID as UUID
+import Noodle.Util (flow) as R
+import Noodle.Network (empty) as Network
+import Noodle.Network (Network) as R
 
 import Test.Spec (Spec, it, describe, pending, pending', itOnly)
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
-import Rpd.Test.Util.Actions (getOrFail, getOrFail')
-import Rpd.Test.Util.Spy as Spy
-import Rpd.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, mySequencer)
+import Noodle.Test.Util.Actions (getOrFail, getOrFail')
+import Noodle.Test.Util.Spy as Spy
+import Noodle.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, mySequencer)
 
 
 {- ======================================= -}

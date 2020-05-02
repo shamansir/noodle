@@ -35,7 +35,7 @@ import Data.Functor.Invariant (class Invariant, imap)
 import FRP.Event (Event)
 import FRP.Event as Event
 
-import Rpd.Util (Canceler)
+import Noodle.Util (Canceler)
 
 
 type AndThen action = List action

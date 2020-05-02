@@ -20,10 +20,10 @@ import Data.Map as Map
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
 
-import Rpd.Process (ProcessF(..)) as R
-import Rpd.Toolkit (nodes, inlets, outlets) as Toolkit
-import Rpd.Toolkit as Rpd
-import Rpd.Util (type (/->))
+import Noodle.Process (ProcessF(..)) as R
+import Noodle.Toolkit (nodes, inlets, outlets) as Toolkit
+import Noodle.Toolkit as Noodle
+import Noodle.Util (type (/->))
 
 
 

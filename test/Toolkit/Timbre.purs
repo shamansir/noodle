@@ -1,4 +1,4 @@
-module Rpd.Test.Toolkit.Timbre
+module Noodle.Test.Toolkit.Timbre
     ( toolkit
     , Data
     , Channel
@@ -13,8 +13,8 @@ import Data.List as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
-import Rpd.Process as R
-import Rpd.Toolkit as T
+import Noodle.Process as R
+import Noodle.Toolkit as T
 
 
 data WaveKind

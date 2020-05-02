@@ -1,0 +1,4 @@
+module Noodle.Render.Debug where
+
+a :: Int
+a = 5

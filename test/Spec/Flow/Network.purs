@@ -1,4 +1,4 @@
-module Rpd.Test.Spec.Flow.Network
+module Noodle.Test.Spec.Flow.Network
     ( spec
     ) where
 
@@ -12,11 +12,11 @@ import Effect.Class (liftEffect)
 import Test.Spec (Spec, it, pending)
 import Test.Spec.Assertions (shouldEqual)
 
-import Rpd.Network as Network
-import Rpd.API.Action.Sequence as Actions
+import Noodle.Network as Network
+import Noodle.API.Action.Sequence as Actions
 
-import Rpd.Test.Util.Trace (channelsAfter)
-import Rpd.Test.Spec.Flow.Base (mySequencer)
+import Noodle.Test.Util.Trace (channelsAfter)
+import Noodle.Test.Spec.Flow.Base (mySequencer)
 
 
 {- ======================================= -}

@@ -1,4 +1,4 @@
-module Rpd.Test.Util.Trace
+module Noodle.Test.Util.Trace
     ( channelsAfter
     , TraceItem(..)
     , (+>)
@@ -21,16 +21,16 @@ import Effect.Class (liftEffect)
 import Effect.Aff (Aff, delay)
 
 import Test.Spec.Assertions (fail)
-import Rpd.Test.Util.Actions (getOrFail)
+import Noodle.Test.Util.Actions (getOrFail)
 
 import FSM (run'') as Actions
-import Rpd.API.Action (Action(..), DataAction(..))
-import Rpd.API.Action.Sequence (ActionList, Sequencer)
-import Rpd.Path as P
-import Rpd.Toolkit as T
-import Rpd.Network as R
-import Rpd.Util (Canceler)
-import Rpd.Test.Util.Spy as Spy
+import Noodle.API.Action (Action(..), DataAction(..))
+import Noodle.API.Action.Sequence (ActionList, Sequencer)
+import Noodle.Path as P
+import Noodle.Toolkit as T
+import Noodle.Network as R
+import Noodle.Util (Canceler)
+import Noodle.Test.Util.Spy as Spy
 
 
 infixl 6 snoc as +>

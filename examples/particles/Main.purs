@@ -12,14 +12,14 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Exists
 
 
-import Rpd.Network (Network)
-import Rpd.Network (empty) as Network
-import Rpd.API.Action as Action
-import Rpd.API.Action.Apply (apply) as Action
-import Rpd.API.Action.Sequence ((</>), pushAll)
-import Rpd.Render.Html (make, init) as HtmlRenderer
-import Rpd.Render.Html.VDom as VDom
-import Rpd.Toolkit as T
+import Noodle.Network (Network)
+import Noodle.Network (empty) as Network
+import Noodle.API.Action as Action
+import Noodle.API.Action.Apply (apply) as Action
+import Noodle.API.Action.Sequence ((</>), pushAll)
+import Noodle.Render.Html (make, init) as HtmlRenderer
+import Noodle.Render.Html.VDom as VDom
+import Noodle.Toolkit as T
 
 
 import Example.Network (recipe) as Network
