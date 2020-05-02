@@ -4,24 +4,28 @@ module Noodle.Render.Html.DebugBox
     , ActionsKind, FilterState )
     where
 
+
 import Prelude
 
 import Data.String as String
 import Data.Either (Either(..))
 import Data.Lens (view) as L
 import Data.List (List, (:))
-import Data.List as List
+import Data.List (foldr, length, toUnfoldable, take, List(..)) as List
 import Data.Maybe (Maybe(..))
 import Data.Sequence as Seq
 import Data.Tuple.Nested ((/\), type (/\))
+
+import Spork.Html (Html)
+import Spork.Html as H
+
 import Noodle.API.Action as Core
 import Noodle.Network as R
 import Noodle.Optics as L
 import Noodle.Process as R
 import Noodle.Render.Atom as R
 import Noodle.UUID as R
-import Spork.Html (Html)
-import Spork.Html as H
+
 import UI (UI)
 import UI (makeMinimal) as UI
 
@@ -58,10 +62,6 @@ data ActionsKind
     | Request
 
 
-allKinds :: List ActionsKind
-allKinds = Build : Data : Inner : List.Nil
-
-
 instance showActionsKind :: Show ActionsKind where
     show Build = "Build"
     show Inner = "Inner"
@@ -75,7 +75,7 @@ derive instance eqActionsKind :: Eq ActionsKind
 data FilterState = On | Off
 
 
-type Filter = (List (ActionsKind /\ FilterState))
+type Filter = List (ActionsKind /\ FilterState)
 
 
 type Model d c n =
@@ -87,7 +87,12 @@ type Model d c n =
 init :: forall d c n. Model d c n
 init =
     { lastActions : List.Nil
-    , filter : flip (/\) On <$> allKinds
+    , filter
+        : (Build /\ On)
+        : (Data /\ Off)
+        : (Request /\ Off)
+        : (Inner /\ Off)
+        : List.Nil
     }
 
 
@@ -99,21 +104,34 @@ update
 update (Right action) (nw /\ model) =
     model
         { lastActions =
-            action :
-                (if List.length model.lastActions < actionStackSize then
-                    model.lastActions
-                else
-                    List.take actionStackSize model.lastActions
-                )
+            if (not $ filtered)
+            then
+                action :
+                    (if List.length model.lastActions < actionStackSize then
+                        model.lastActions
+                    else
+                        List.take actionStackSize model.lastActions
+                    )
+            else model.lastActions
         }
+    where
+        filtered = List.foldr check true model.filter
+        check (kind /\ state) prev =
+            prev && case action /\ kind /\ state of
+                Core.Build _   /\ Build   /\ On -> false
+                Core.Data _    /\ Data    /\ On -> false
+                Core.Inner _   /\ Inner   /\ On -> false
+                Core.Request _ /\ Request /\ On -> false
+                _ -> true
+
 update (Left (Invert kind)) (nw /\ model) =
     model
         { filter = switchIfKind <$> model.filter
         }
     where
-        switchIfKind (otherKind /\ On) | otherKind == kind = otherKind /\ Off
+        switchIfKind (otherKind /\ On)  | otherKind == kind = otherKind /\ Off
         switchIfKind (otherKind /\ Off) | otherKind == kind = otherKind /\ On
-        switchIfKind (otherKind /\ val) = otherKind /\ val
+        switchIfKind (otherKind /\ val) | otherwise         = otherKind /\ val
 
 
 -- viewItems
@@ -235,7 +253,7 @@ viewModel model =
     where
         filterSwitch :: ActionsKind /\ FilterState -> Html Action
         filterSwitch (kind /\ filterState) =
-            H.span
+            H.li
                 []
                 [ H.label [ H.for checkboxId ] [ H.text $ show kind ]
                 , H.input

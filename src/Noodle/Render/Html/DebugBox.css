@@ -25,3 +25,8 @@
 #debug .network-debug, #debug .commands-debug {
     border: 1px dashed rgba(255,255,255,0.3);
 }
+
+#debug .filter-controls li {
+    display: inline-block;
+    margin-right: 10px;
+}
