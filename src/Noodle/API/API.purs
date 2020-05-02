@@ -296,6 +296,19 @@ addLink link@(Link uuid { outlet, inlet }) nw = do
             # setJust (_patchLink patchUuid uuid) unit
 
 
+removeLink :: forall d c n
+     . Link
+    -> Network d c n
+    -> Either NoodleError (Network d c n)
+removeLink link@(Link uuid { outlet, inlet }) nw = do
+    (Outlet _ opath _ _) <- view (_outlet outlet) nw # note (Err.ftfs $ UUID.uuid outlet)
+    let patchPath = Path.getPatchPath $ Path.lift opath
+    patchUuid <- nw # uuidByPath UUID.toPatch patchPath
+    pure $ nw
+        # set (_link uuid) Nothing
+        # set (_patchLink patchUuid uuid) Nothing
+
+
 processWith
     :: forall d n
      . ProcessF d
