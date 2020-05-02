@@ -65,12 +65,12 @@ make
 make (Renderer first view) toolkit initialNW = do
     { event : views, push : pushView } <- Event.create
     let sequencer = ActionSeq.make toolkit
-    { pushAction, stop } <-
+    { push, stop } <-
         ActionSeq.prepare sequencer (pure initialNW) (pushView <<< view) FSM.noSubscription
     pure
         { first
         , next : views
-        , push : PushF pushAction
+        , push : PushF push
         , stop : stop
         }
 

@@ -59,23 +59,23 @@ make toolkit updateF =
         updateF'
     >>> UI.mapFSM (FSM.joinWith appendErrors)
     where
-        updateF' pushAction action@(FromCore coreAction) coveredModel =
+        updateF' push action@(FromCore coreAction) coveredModel =
             let
                 (uiModel /\ coreModel) = recover coveredModel
                 coveredCoreModel /\ coreEffects =
-                    C.apply toolkit (pushAction <<< FromCore) coreAction
+                    C.apply toolkit (push <<< FromCore) coreAction
                         $ appendErrors coveredModel
                         $ carry coreModel
                 coveredModel' =
                     (\coreModel -> uiModel /\ coreModel)
                         <$> coveredCoreModel
                 nextModel /\ uiEffects =
-                    updateF pushAction action $ appendErrors coveredModel coveredModel'
+                    updateF push action $ appendErrors coveredModel coveredModel'
                 nextEffects = (map FromCore <$> coreEffects) <> uiEffects
             in
                 nextModel /\ nextEffects
-        updateF' pushAction action coveredModel =
-            updateF pushAction action coveredModel
+        updateF' push action coveredModel =
+            updateF push action coveredModel
 
 
 makeMinimal

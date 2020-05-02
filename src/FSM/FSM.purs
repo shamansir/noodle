@@ -1,6 +1,5 @@
 module FSM
     ( FSM
-    , prepare -- FIXME: do not expose
     , make, makeWithPush, makePassing
     , makeMinimal, makeWithNoEffects
     , run, run', run'', fold, fold'
@@ -19,15 +18,12 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Ref as Ref
-import Effect.Console as Console
 
 import Data.List (List, (:))
 import Data.List as List
-import Data.Foldable (class Foldable)
+import Data.Foldable (class Foldable, foldr)
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Either (Either)
-import Data.Foldable (foldr)
 import Data.Traversable (traverse_)
 import Data.Bifunctor (bimap)
 import Data.Functor.Invariant (class Invariant, imap)
@@ -138,48 +134,14 @@ join'' = foldr (<:>) $ pure List.Nil
 -- TODO: add `NestFSM` to support placing actions inside other actions, like we do for GUI
 
 
-prepare
-    :: forall action model
-     . FSM action model
-    -> model
-    -> (model -> Effect Unit) -- FIXME: use `update` itself for that?
-    -> (action -> Effect Unit) -- FIXME: use `update` itself for that?
-    -> Effect
-            { pushAction :: action -> Effect Unit
-            , stop :: Canceler
-            }
-prepare (FSM f) init subModels subActions = do
-    { event : actions, push : pushAction } <- Event.create
-    let
-        (updates :: Event (model /\ Effect (AndThen action))) =
-            Event.fold
-                (\action prev -> f pushAction action $ fst prev)
-                actions
-                (init /\ doNothing)
-        (models :: Event model)
-            = fst <$> updates
-    stopModelSubscription <- Event.subscribe models subModels
-    stopActionSubscription <- Event.subscribe actions subActions
-    stopPerformingEffects <- Event.subscribe updates
-        \(_ /\ eff) -> eff >>= traverse_ pushAction
-    pure
-        { pushAction
-        , stop : stopModelSubscription
-              <> stopActionSubscription
-              <> stopPerformingEffects
-        }
-
-
 -- TODO: just take the `model` and not a list of actions, and that's it,
 -- user may perform the initial actions just by running a separate FSM
 run
-    :: forall action model f
-     . Foldable f
-    => FSM action model
+    :: forall action model
+     . FSM action model
     -> model
-    -> f action
     -> Effect
-            { pushAction :: action -> Effect Unit
+            { push :: action -> Effect Unit
             , stop :: Canceler
             }
 run fsm init = do
@@ -187,14 +149,12 @@ run fsm init = do
 
 
 run'
-    :: forall action model f
-     . Foldable f
-    => FSM action model
+    :: forall action model
+     . FSM action model
     -> model
     -> (model -> Effect Unit)
-    -> f action
     -> Effect
-            { pushAction :: action -> Effect Unit
+            { push :: action -> Effect Unit
             , stop :: Canceler
             }
 run' fsm init subscription = do
@@ -202,22 +162,35 @@ run' fsm init subscription = do
 
 
 run''
-    :: forall action model f
-     . Foldable f
-    => FSM action model
+    :: forall action model
+     . FSM action model
     -> model
     -> (model -> Effect Unit)
     -> (action -> Effect Unit)
-    -> f action
     -> Effect
-            { pushAction :: action -> Effect Unit
+            { push :: action -> Effect Unit
             , stop :: Canceler
             }
-run'' fsm init subModels subActions actionList = do
-    { pushAction, stop } <- prepare fsm init subModels subActions
-    _ <- traverse_ pushAction actionList
-    pure { pushAction, stop : stop }
-
+run'' (FSM f) init subModels subActions = do
+    { event : actions, push : push } <- Event.create
+    let
+        (updates :: Event (model /\ Effect (AndThen action))) =
+            Event.fold
+                (\action prev -> f push action $ fst prev)
+                actions
+                (init /\ doNothing)
+        (models :: Event model)
+            = fst <$> updates
+    stopModelSubscription <- Event.subscribe models subModels
+    stopActionSubscription <- Event.subscribe actions subActions
+    stopPerformingEffects <- Event.subscribe updates
+        \(_ /\ eff) -> eff >>= traverse_ push
+    pure
+        { push
+        , stop : stopModelSubscription
+               <> stopActionSubscription
+               <> stopPerformingEffects
+        }
 
 
 fold
@@ -228,41 +201,47 @@ fold
     -> f action
     -> Effect
             (model /\
-                { pushAction :: action -> Effect Unit
-                 -- FIXME: not a lot of sense in returning `pushAction` here
+                { push :: action -> Effect Unit
+                 -- FIXME: not a lot of sense in returning `push` here
                  ---       and may be `stop` as well
                 , stop :: Canceler
             })
     -- -> Effect (model /\ Canceler)
 fold fsm init actionList = do
     lastValRef <- Ref.new init
-    { pushAction, stop } <- prepare fsm init (flip Ref.write lastValRef) noSubscription
-    _ <- traverse_ pushAction actionList
+    { push, stop } <- run'' fsm init (flip Ref.write lastValRef) noSubscription
+    _ <- traverse_ push actionList
     lastVal <- Ref.read lastValRef
-    pure $ lastVal /\ { pushAction, stop }
+    pure $ lastVal /\ { push, stop }
     -- fold' fsm init (const $ pure unit) actionList
 
 
 fold'
-    :: forall action model
-     . FSM action model
+    :: forall action model f
+     . Foldable f
+    => FSM action model
     -> model
     -> (model -> Effect Unit)
-    -> List action
+    -> f action
     -> Effect (model /\ Canceler)
 fold' fsm init subscription actionList = do
     lastValRef <- Ref.new init
-    { pushAction, stop } <- prepare fsm init (\model -> do
+    { push, stop } <- run'' fsm init (\model -> do
         _ <- lastValRef # Ref.write model
         _ <- subscription model
         pure unit)
         noSubscription
-    _ <- traverse_ pushAction actionList
+    _ <- traverse_ push actionList
     lastVal <- Ref.read lastValRef
     pure $ lastVal /\ stop
 
 
-pushAll :: forall action. (action -> Effect Unit) -> List action -> Effect Unit
+pushAll
+    :: forall action f
+     . Foldable f
+    => (action -> Effect Unit)
+    -> f action
+    -> Effect Unit
 pushAll = traverse_
 
 

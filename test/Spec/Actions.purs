@@ -83,8 +83,9 @@ spec =
                   Actions.init
                       </> R.addPatch "foo"
 
-          { stop } <- liftEffect
-              $ FSM.run' sequencer (pure network) (Spy.with handlerSpy) actionsList
+          { stop, push } <- liftEffect
+              $ FSM.run' sequencer (pure network) (Spy.with handlerSpy)
+          liftEffect $ FSM.pushAll push actionsList
 
           handlerCalled <- liftEffect $ Spy.get handlerSpy
           handlerCalled `shouldEqual` true
@@ -100,8 +101,9 @@ spec =
                   Actions.init
                       </> R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
-          { stop } <- liftEffect
-              $ FSM.run' sequencer (pure network) (Spy.with handlerSpy) actionsList
+          { stop, push } <- liftEffect
+              $ FSM.run' sequencer (pure network) (Spy.with handlerSpy)
+          liftEffect $ FSM.pushAll push actionsList
 
           handlerCalled <- liftEffect $  Spy.get handlerSpy
           handlerCalled `shouldEqual` true
@@ -117,11 +119,13 @@ spec =
                   Actions.init
                       </> R.addPatch "foo"
 
-          { pushAction, stop } <- liftEffect
-              $ FSM.run' sequencer (pure network) (Spy.with handlerSpy) actionsList
+          { push, stop } <-
+            liftEffect
+              $ FSM.run' sequencer (pure network) (Spy.with handlerSpy)
+          liftEffect $ FSM.pushAll push actionsList
 
           liftEffect $ Spy.reset handlerSpy
-          liftEffect $ pushAction $ R.addPatch "bar"
+          liftEffect $ push $ R.addPatch "bar"
           handlerCalled <- liftEffect $ Spy.get handlerSpy
           handlerCalled `shouldEqual` true
 
@@ -138,17 +142,18 @@ spec =
                   =  Spy.consider handlerSpy v
                   <> Spy.consider errHandlerSpy v
 
-          { pushAction, stop } <- liftEffect
-              $ FSM.run' sequencer (pure network) everyStep actionsList
+          { push, stop } <- liftEffect
+              $ FSM.run' sequencer (pure network) everyStep
+          liftEffect $ FSM.pushAll push actionsList
 
-          liftEffect $ pushAction
+          liftEffect $ push
               $ R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
           errHandlerCalled <- liftEffect $ Spy.get errHandlerSpy
           errHandlerCalled `shouldEqual` true
 
           liftEffect $ Spy.reset handlerSpy
-          liftEffect $ pushAction $ R.addPatch "foo"
+          liftEffect $ push $ R.addPatch "foo"
           handlerCalled <- liftEffect $ Spy.get handlerSpy
           handlerCalled `shouldEqual` true
 
@@ -161,16 +166,17 @@ spec =
           let
               actionsList = Actions.init
 
-          { pushAction, stop } <- liftEffect
-              $ FSM.run' sequencer (pure network) (Spy.with errHandlerSpy) actionsList
+          { push, stop } <- liftEffect
+              $ FSM.run' sequencer (pure network) (Spy.with errHandlerSpy)
+          liftEffect $ FSM.pushAll push actionsList
 
-          liftEffect $ pushAction
+          liftEffect $ push
               $ R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
           liftEffect $ Spy.reset errHandlerSpy
           --liftEffect $ Spy.reset collectErrorsSpy
-          -- liftEffect $ pushAction $ R.addNode (P.toPatch "foo") "fail" Node
-          liftEffect $ pushAction $ R.addPatch "foo"
+          -- liftEffect $ push $ R.addNode (P.toPatch "foo") "fail" Node
+          liftEffect $ push $ R.addPatch "foo"
           hadError <- liftEffect $ Spy.get errHandlerSpy
           hadError `shouldEqual` false
 
@@ -183,13 +189,14 @@ spec =
               actionsList = Actions.init
               lastNetworkSpy = Spy.contramap recover lastSpy
 
-          { pushAction, stop } <- liftEffect
-              $ FSM.run' sequencer (pure network) (Spy.with lastNetworkSpy) actionsList
+          { push, stop } <- liftEffect
+              $ FSM.run' sequencer (pure network) (Spy.with lastNetworkSpy)
+          liftEffect $ FSM.pushAll push actionsList
 
-          liftEffect $ pushAction
+          liftEffect $ push
               $ R.addNode (P.toPatch "foo") "fail" Node -- no such patch exists
 
-          liftEffect $ pushAction $ R.addPatch "foo"
+          liftEffect $ push $ R.addPatch "foo"
           maybeLastNetwork <- liftEffect $ Spy.get lastNetworkSpy
           shouldHaveValue maybeLastNetwork
           shouldHaveValue
@@ -209,17 +216,18 @@ spec =
                   Actions.init
                       </> R.addPatch "foo"
 
-          { pushAction, stop } <- liftEffect
-              $ FSM.run' sequencer (pure network) (Spy.with handlerSpy) actionsList
+          { push, stop } <- liftEffect
+              $ FSM.run' sequencer (pure network) (Spy.with handlerSpy)
+          liftEffect $ FSM.pushAll push actionsList
 
           liftEffect $ Spy.reset handlerSpy
-          liftEffect $ pushAction $ R.addPatch "bar"
+          liftEffect $ push $ R.addPatch "bar"
           handlerCalled <- liftEffect $ Spy.get handlerSpy
           handlerCalled `shouldEqual` true
 
           liftEffect stop
           liftEffect $ Spy.reset handlerSpy
-          liftEffect $ pushAction $ R.addPatch "buz"
+          liftEffect $ push $ R.addPatch "buz"
           handlerCalled' <- liftEffect $ Spy.get handlerSpy
           handlerCalled' `shouldEqual` false
 
@@ -294,11 +302,12 @@ spec =
 
         -- nothing to listen for
 
-        { pushAction, stop } <- liftEffect
-            $ FSM.run sequencer (pure network) actionsList
+        { push, stop } <- liftEffect
+            $ FSM.run sequencer (pure network)
+        liftEffect $ FSM.pushAll push actionsList
 
         liftEffect $ Spy.reset handlerSpy
-        liftEffect $ pushAction $ R.addPatch "bar"
+        liftEffect $ push $ R.addPatch "bar"
         handlerCalled <- liftEffect $ Spy.get handlerSpy
         handlerCalled `shouldEqual` true
 
@@ -314,8 +323,9 @@ spec =
                 Actions.init
                   </> R.addPatch "foo"
 
-        { stop } <- liftEffect
-            $ FSM.run' sequencer (pure network) (Spy.with handlerSpy) actionsList
+        { stop, push } <- liftEffect
+            $ FSM.run' sequencer (pure network) (Spy.with handlerSpy)
+        liftEffect $ FSM.pushAll push actionsList
 
         handlerCalled <- liftEffect $ Spy.get handlerSpy
         handlerCalled `shouldEqual` true
@@ -327,11 +337,12 @@ spec =
 
         let actionsList = Actions.init
 
-        { pushAction, stop } <- liftEffect
-            $ FSM.run' sequencer (pure network) (Spy.with handlerSpy) actionsList
+        { push, stop } <- liftEffect
+            $ FSM.run' sequencer (pure network) (Spy.with handlerSpy)
+        liftEffect $ FSM.pushAll push actionsList
 
         liftEffect $ Spy.reset handlerSpy
-        liftEffect $ pushAction $ R.addPatch "foo"
+        liftEffect $ push $ R.addPatch "foo"
         handlerCalled <- liftEffect $ Spy.get handlerSpy
         handlerCalled `shouldEqual` true
 
@@ -406,8 +417,9 @@ spec =
           actionsList =
                 Actions.init
 
-        { pushAction, stop } <- liftEffect
-            $ FSM.run' sequencer (pure network) (Spy.with handlerSpy) actionsList
+        { push, stop } <- liftEffect
+            $ FSM.run' sequencer (pure network) $ Spy.with handlerSpy
+        liftEffect $ FSM.pushAll push actionsList
 
         liftEffect $ Spy.reset handlerSpy
         liftEffect $ Actions.pushAll (Spy.with pushAllSpy)

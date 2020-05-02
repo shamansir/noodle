@@ -63,12 +63,14 @@ spec = do
 
       it "is easy to run" do
         let (fsm :: FSM Action Unit) = FSM.make (\_ _ -> unit /\ doNothing)
-        _ <- liftEffect $ FSM.run fsm unit List.Nil
+        _ <- liftEffect $ FSM.run fsm unit
         pure unit
 
       it "is easy to run with some actions" do
         let fsm = FSM.make (\_ _ -> unit /\ doNothing)
-        _ <- liftEffect $ FSM.run fsm unit $ List.singleton NoOp
+        _ <- liftEffect $ do
+          { push } <- FSM.run fsm unit
+          push NoOp
         pure unit
 
     describe "updating" do
@@ -78,8 +80,8 @@ spec = do
           (myFsm ::FSM Action Model) = FSM.make (\_ _ -> HoldsString "foo" /\ doNothing)
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
-                  $ List.singleton NoOp
+          { push } <- FSM.run' myFsm emptyModel (flip Ref.write ref)
+          push NoOp
           Ref.read ref
         lastModel `shouldEqual` (HoldsString "foo")
 
@@ -88,8 +90,8 @@ spec = do
           myFsm = FSM.make (\action _ -> HoldsAction action /\ doNothing)
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
-                  $ List.singleton ActionOne
+          { push } <- FSM.run' myFsm emptyModel (flip Ref.write ref)
+          push ActionOne
           Ref.read ref
         lastModel `shouldEqual` (HoldsAction ActionOne)
 
@@ -98,8 +100,9 @@ spec = do
           myFsm = FSM.make (\action _ -> HoldsAction action /\ doNothing)
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
-                  $ (ActionOne : NoOp : List.Nil)
+          { push } <- FSM.run' myFsm emptyModel (flip Ref.write ref)
+          push ActionOne
+          push NoOp
           Ref.read ref
         lastModel `shouldEqual` (HoldsAction NoOp)
 
@@ -113,8 +116,8 @@ spec = do
           myFsm = FSM.make updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
-                  $ List.singleton NoOp
+          { push } <- FSM.run' myFsm emptyModel (flip Ref.write ref)
+          push NoOp
           Ref.read ref
         case lastModel of
           (HoldsUUID _) -> pure unit
@@ -129,8 +132,8 @@ spec = do
           myFsm = FSM.make updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
-                  $ (ActionOne : List.Nil)
+          { push } <- FSM.run' myFsm emptyModel (flip Ref.write ref)
+          push ActionOne
           Ref.read ref
         case lastModel of
           (HoldsUUID _) -> pure unit
@@ -148,8 +151,8 @@ spec = do
           myFsm = FSM.make updateF
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          _ <- FSM.run' myFsm emptyModel (flip Ref.write ref)
-                  $ (ActionOne : List.Nil)
+          { push } <- FSM.run' myFsm emptyModel (flip Ref.write ref)
+          push ActionOne
           Ref.read ref
         case lastModel of
           (HoldsUUID _) -> pure unit
@@ -202,9 +205,8 @@ spec = do
           (myFsm :: FSM Action Model) = FSM.make (\_ _ -> HoldsString "foo" /\ doNothing)
         lastModel <- liftEffect $ do
           ref <- Ref.new Empty
-          { pushAction } <- FSM.run' myFsm emptyModel (flip Ref.write ref)
-                  $ List.Nil
-          pushAction NoOp
+          { push } <- FSM.run' myFsm emptyModel (flip Ref.write ref)
+          push NoOp
           Ref.read ref
         lastModel `shouldEqual` (HoldsString "foo")
 
@@ -220,8 +222,8 @@ spec = do
               FSM.make (\_ _ -> Covered.cover Empty ErrorOne /\ doNothing)
         lastModel <- liftEffect $ do
           ref <- Ref.new $ Covered.carry Empty
-          _ <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
-                  $ NoOp : List.Nil
+          { push } <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
+          push NoOp
           Ref.read ref
         case lastModel of
           Recovered ErrorOne _ -> pure unit
@@ -236,8 +238,9 @@ spec = do
             = FSM.make updateF # FSM.joinWith ((<|>))
         lastModel <- liftEffect $ do
           ref <- Ref.new $ Covered.carry Empty
-          _ <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
-                  $ NoOp : ActionOne : List.Nil
+          { push } <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
+          push NoOp
+          push ActionOne
           Ref.read ref
         case lastModel of
           Recovered ErrorTwo _ -> pure unit
@@ -280,8 +283,9 @@ spec = do
             = FSM.make updateF # FSM.joinWith Covered.appendErrors
         lastModel <- liftEffect $ do
           ref <- Ref.new $ Covered.carry Empty
-          _ <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
-                  $ NoOp : ActionOne : List.Nil
+          { push } <- FSM.run' myCovererdFsm (Covered.carry emptyModel) (flip Ref.write ref)
+          push NoOp
+          push ActionOne
           Ref.read ref
         case lastModel of
           Recovered [ ErrorOne, ErrorTwo ] _ -> pure unit

@@ -130,7 +130,7 @@ spec = do
         network :: R.Network Delivery Pipe Node
         network = Network.empty "network"
 
-      result /\ { pushAction, stop } <- liftEffect
+      result /\ { push, stop } <- liftEffect
         $ Actions.fold
             mySequencer
             (pure network)
@@ -147,7 +147,7 @@ spec = do
       liftEffect $ Spy.reset traceSpy
 
       _ <- liftEffect
-        $ Actions.pushAll pushAction
+        $ Actions.pushAll push
         $ Actions.init
             </> R.removeInlet (toInlet "patch" "node" "inlet")
             </> R.streamToInlet
@@ -257,7 +257,7 @@ spec = do
         network :: R.Network Delivery Pipe Node
         network = Network.empty "network"
 
-      result /\ { pushAction, stop } <- liftEffect
+      result /\ { push, stop } <- liftEffect
         $ Actions.fold
             mySequencer
             (pure network)
@@ -274,7 +274,7 @@ spec = do
       liftEffect $ Spy.reset traceSpy
 
       _ <- liftEffect
-        $ Actions.pushAll pushAction
+        $ Actions.pushAll push
         $ Actions.init
             </> R.removeOutlet (toOutlet "patch" "node" "outlet")
             </> R.streamToOutlet

@@ -737,24 +737,24 @@ performEffect
     -> Perform d c n
     -> (Model d c n /\ R.Network d c n)
     -> Effect Unit
-performEffect _ pushAction UpdatePositions ( ui /\ (R.Network nw) ) = do
+performEffect _ push UpdatePositions ( ui /\ (R.Network nw) ) = do
     positions <- collectPositions $ loadUUIDs $ Map.keys nw.registry
-    pushAction $ my $ StorePositions $ convertPositions positions
-performEffect _ pushAction
+    push $ my $ StorePositions $ convertPositions positions
+performEffect _ push
     (TryConnecting (R.Outlet _ outletPath _ _) (R.Inlet _ inletPath _ _))
     ( ui /\ nw ) = do
-    pushAction $ core $ Core.Request $ Core.ToConnect outletPath inletPath
-performEffect _ pushAction
+    push $ core $ Core.Request $ Core.ToConnect outletPath inletPath
+performEffect _ push
     (TryToPinNode node position)
     ( ui /\ nw ) = do
     -- FIXME: it's not an effect, actually
-    pushAction $ my $ PinNode node position
-performEffect _ pushAction
+    push $ my $ PinNode node position
+performEffect _ push
     (TryRemovingNode node)
     ( ui /\ nw ) = do
     -- FIXME: it's not an effect, actually
-    pushAction $ core $ Core.Build $ Core.RemoveNode node
-performEffect _ pushAction (StopPropagation e) ( ui /\ nw ) = do
+    push $ core $ Core.Build $ Core.RemoveNode node
+performEffect _ push (StopPropagation e) ( ui /\ nw ) = do
     _ <- Event.stopPropagation e
     pure unit
 -}

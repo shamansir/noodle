@@ -23,7 +23,7 @@ import Effect.Aff (Aff, delay)
 import Test.Spec.Assertions (fail)
 import Noodle.Test.Util.Actions (getOrFail)
 
-import FSM (run'') as Actions
+import FSM (run'', pushAll) as Actions
 import Noodle.API.Action (Action(..), DataAction(..))
 import Noodle.API.Action.Sequence (ActionList, Sequencer)
 import Noodle.Path as P
@@ -63,17 +63,13 @@ channelsAfter
 channelsAfter period sequencer network actions = do
   lastModelSpy <- liftEffect $ Spy.last' $ pure network
   actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap handleAction
-  { stop } <- liftEffect $
+  { push, stop } <- liftEffect $
     Actions.run''
         sequencer
         (pure network)
         (Spy.with lastModelSpy)
         (Spy.with actionTraceSpy)
-        actions
-  {-
-  maybeNw <- liftEffect $ Spy.get lastModelSpy
-  coveredNw <- getOrFail (Covered.fromMaybe "not called" (pure network) maybeNw)
-  -}
+  _ <- liftEffect $ Actions.pushAll push actions
   coveredNw <- liftEffect $ Spy.get lastModelSpy
   network' <- getOrFail coveredNw
   delay period

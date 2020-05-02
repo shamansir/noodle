@@ -134,18 +134,18 @@ fold
     -> List action
     -> Effect
             ((List error /\ model) /\
-            { pushAction :: action -> Effect Unit
+            { push :: action -> Effect Unit
             , stop :: Effect Unit
             })
 fold fsm@(FSM initial _) actionList = do
-    res@{ models, pushAction, stop } <- prepare fsm
+    res@{ models, push, stop } <- prepare fsm
     lastValRef <- Ref.new initialCovered
     let modelsFolded =
             Event.fold appendError models initialCovered
     stopCollectingLastValue <-
         Event.subscribe modelsFolded (flip Ref.write lastValRef)
-    _ <- pushAll pushAction actionList
+    _ <- pushAll push actionList
     lastVal <- Ref.read lastValRef
-    pure $ uncover' lastVal /\ { pushAction, stop : stop <> stopCollectingLastValue }
+    pure $ uncover' lastVal /\ { push, stop : stop <> stopCollectingLastValue }
     where initialCovered = mapError List.singleton initial
 -}

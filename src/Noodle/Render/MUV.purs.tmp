@@ -116,7 +116,7 @@ make
         , stop :: Canceler
         }
 make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = do
-    { models, pushAction, stop } <-
+    { models, push, stop } <-
         ActionSeq.prepare_
             (init initialNW /\ initialNW)
             myApply
@@ -126,7 +126,7 @@ make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = 
     pure
         { first : from
         , next : views
-        , push : PushF pushAction
+        , push : PushF push
         , stop : stop <> stopViews
         }
     where
@@ -149,10 +149,10 @@ make (Renderer { from, init, update, view, performEffect }) toolkit initialNW = 
                         (Left userAction)
                         covered
             pure $ (model' /\ nw) /\ (Left <$> userEffects)
-        myPerformEff pushAction (Right coreEffect) (_ /\ nw) =
-            Core.performEffect toolkit (pushAction <<< Right) coreEffect nw
-        myPerformEff pushAction (Left userEffect) (model /\ nw) =
-            performEffect toolkit pushAction userEffect (model /\ nw)
+        myPerformEff push (Right coreEffect) (_ /\ nw) =
+            Core.performEffect toolkit (push <<< Right) coreEffect nw
+        myPerformEff push (Left userEffect) (model /\ nw) =
+            performEffect toolkit push userEffect (model /\ nw)
 
 
 once

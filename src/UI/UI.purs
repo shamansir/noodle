@@ -1,6 +1,6 @@
 module UI
     ( UI, CoveredUI
-    , make, makeWithPush, run, run', once
+    , make, makeWithPush, run, once
     , view, update, update'
     , makeMinimal, makeWithNoEffects
     , imapModel, imapAction, imapError
@@ -76,26 +76,12 @@ run
         , push :: action -> Effect Unit
         , stop :: Canceler
         }
-run ui model = run' ui model []
-
-
-run'
-    :: forall action model view f
-     . Foldable f
-    => UI action model view
-    -> model
-    -> f action
-    -> Effect
-        { next :: Event view
-        , push :: action -> Effect Unit
-        , stop :: Canceler
-        }
-run' (UI fsm viewF) model actions = do
+run (UI fsm viewF) model = do
     { event : views, push : pushView } <- Event.create
-    { pushAction, stop } <- FSM.run' fsm model (pushView <<< viewF) actions
+    { push, stop } <- FSM.run' fsm model (pushView <<< viewF)
     pure
         { next : views
-        , push : pushAction
+        , push : push
         , stop
         }
 

@@ -82,8 +82,8 @@ apply
     -> Action d c n
     -> Covered NoodleError (Network d c n)
     -> Step d c n
-apply toolkit pushAction action coveredNw =
-    apply' toolkit pushAction action $ Covered.recover coveredNw
+apply toolkit push action coveredNw =
+    apply' toolkit push action $ Covered.recover coveredNw
 
 
 apply'
@@ -93,8 +93,8 @@ apply'
     -> Action d c n
     -> Network d c n
     -> Step d c n
-apply' toolkit pushAction action nw =
-    proceed $ apply_ toolkit pushAction action nw
+apply' toolkit push action nw =
+    proceed $ apply_ toolkit push action nw
     where
         proceed :: StepE d c n -> Step d c n
         proceed = Covered.unpack <<< Covered.fromEither (nw /\ doNothing)
@@ -386,7 +386,7 @@ applyBuildAction _ _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw =
             _ <- Api.cancelNodeSubscriptions uuid nw'
             processCanceler <- Api.setupNodeProcessFlow newNode nw'
             single $ Inner $ StoreNodeCanceler newNode processCanceler
-applyBuildAction _ pushAction (AddInlet inlet@(Inlet uuid path _ { flow })) nw = do
+applyBuildAction _ push (AddInlet inlet@(Inlet uuid path _ { flow })) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
@@ -400,7 +400,7 @@ applyBuildAction _ pushAction (AddInlet inlet@(Inlet uuid path _ { flow })) nw =
                 (const $ const $ const $ pure unit) -- FIXME: implement
                 (const $ const $ const $ pure unit) -- FIXME: implement
         let (InletFlow flow') = flow
-        sendValuesCanceler <- E.subscribe flow' (pushAction <<< GotInletData inlet)
+        sendValuesCanceler <- E.subscribe flow' (push <<< GotInletData inlet)
         batch $ Inner
             <$> ClearNodeCancelers node
              :  StoreNodeCanceler node processCanceler
@@ -408,7 +408,7 @@ applyBuildAction _ pushAction (AddInlet inlet@(Inlet uuid path _ { flow })) nw =
              :  StoreNodeCanceler node nodeUpdatesCanceler
              :  StoreInletCanceler inlet sendValuesCanceler
              :  Nil
-applyBuildAction _ pushAction (AddOutlet outlet@(Outlet uuid path _ { flow })) nw = do
+applyBuildAction _ push (AddOutlet outlet@(Outlet uuid path _ { flow })) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
@@ -422,7 +422,7 @@ applyBuildAction _ pushAction (AddOutlet outlet@(Outlet uuid path _ { flow })) n
                 (const $ const $ const $ pure unit) -- FIXME: implement
                 (const $ const $ const $ pure unit) -- FIXME: implement
         let (OutletFlow flow') = flow
-        sendValuesCanceler <- E.subscribe flow' (pushAction <<< GotOutletData outlet)
+        sendValuesCanceler <- E.subscribe flow' (push <<< GotOutletData outlet)
         batch $ Inner
             <$> ClearNodeCancelers node
              :  StoreNodeCanceler node processCanceler
@@ -503,60 +503,60 @@ performEffect -- TODO: move to a separate module
     -> NoodleEffect d c n
     -> Network d c n
     -> Effect Unit
-performEffect _ pushAction (DoE effectful) nw = effectful nw
-performEffect _ pushAction (AddPatchE alias) _ = MOVED
-performEffect _ pushAction (AddNodeE patchPath nodeAlias n (NodeDef def)) _ = MOVED
-performEffect toolkit pushAction (AddNextNodeE patchPath n (NodeDef def)) nw = MOVED
-performEffect _ pushAction (ProcessWithE node processF) _ = do
-    pushAction $ Build $ ProcessWith node processF
-performEffect _ pushAction (AddLinkE outlet inlet) _ =  MOVED
-performEffect _ pushAction (SubscribeNodeProcess node) nw = do
+performEffect _ push (DoE effectful) nw = effectful nw
+performEffect _ push (AddPatchE alias) _ = MOVED
+performEffect _ push (AddNodeE patchPath nodeAlias n (NodeDef def)) _ = MOVED
+performEffect toolkit push (AddNextNodeE patchPath n (NodeDef def)) nw = MOVED
+performEffect _ push (ProcessWithE node processF) _ = do
+    push $ Build $ ProcessWith node processF
+performEffect _ push (AddLinkE outlet inlet) _ =  MOVED
+performEffect _ push (SubscribeNodeProcess node) nw = do
     canceler <- Api.setupNodeProcessFlow node nw
-    pushAction $ Inner $ StoreNodeCanceler node canceler
-performEffect _ pushAction (CancelNodeSubscriptions node@(Node uuid _ _ _ _)) nw = do
+    push $ Inner $ StoreNodeCanceler node canceler
+performEffect _ push (CancelNodeSubscriptions node@(Node uuid _ _ _ _)) nw = do
     _ <- Api.cancelNodeSubscriptions uuid nw
-    pushAction $ Inner $ ClearNodeCancelers node
-performEffect _ pushAction (CancelInletSubscriptions inlet@(Inlet uuid _ _ _ )) nw = do
+    push $ Inner $ ClearNodeCancelers node
+performEffect _ push (CancelInletSubscriptions inlet@(Inlet uuid _ _ _ )) nw = do
     _ <- Api.cancelInletSubscriptions uuid nw
-    pushAction $ Inner $ ClearInletCancelers inlet
-performEffect _ pushAction (CancelOutletSubscriptions outlet@(Outlet uuid _ _ _ )) nw = do
+    push $ Inner $ ClearInletCancelers inlet
+performEffect _ push (CancelOutletSubscriptions outlet@(Outlet uuid _ _ _ )) nw = do
     _ <- Api.cancelOutletSubscriptions uuid nw
-    pushAction $ Inner $ ClearOutletCancelers outlet
-performEffect _ pushAction (CancelLinkSubscriptions link@(Link uuid _)) nw = do
+    push $ Inner $ ClearOutletCancelers outlet
+performEffect _ push (CancelLinkSubscriptions link@(Link uuid _)) nw = do
     _ <- Api.cancelLinkSubscriptions uuid nw
-    pushAction $ Inner $ ClearLinkCancelers link
-performEffect _ pushAction (AddInletE nodePath inletAlias c) _ = MOVED
-performEffect _ pushAction (InformNodeOnInletUpdates inlet node) _ = do
+    push $ Inner $ ClearLinkCancelers link
+performEffect _ push (AddInletE nodePath inletAlias c) _ = MOVED
+performEffect _ push (InformNodeOnInletUpdates inlet node) _ = do
     canceler <- Api.informNodeOnInletUpdates inlet node
-    pushAction $ Inner $ StoreInletCanceler inlet canceler
-performEffect _ pushAction (AddOutletE nodePath outletAlias c) _ = MOVED
-performEffect _ pushAction (InformNodeOnOutletUpdates outlet node) _ = do
+    push $ Inner $ StoreInletCanceler inlet canceler
+performEffect _ push (AddOutletE nodePath outletAlias c) _ = MOVED
+performEffect _ push (InformNodeOnOutletUpdates outlet node) _ = do
     canceler :: Canceler <- Api.informNodeOnOutletUpdates outlet node
-    pushAction $ Inner $ StoreOutletCanceler outlet canceler
-performEffect _ pushAction (SubscribeNodeUpdates node) _ = do
+    push $ Inner $ StoreOutletCanceler outlet canceler
+performEffect _ push (SubscribeNodeUpdates node) _ = do
     canceler :: Canceler <-
         Api.subscribeNode node
             (const $ const $ const $ pure unit) -- FIXME: implement
             (const $ const $ const $ pure unit) -- FIXME: implement
-    pushAction $ Inner $ StoreNodeCanceler node canceler
-performEffect _ pushAction (SendToInletE inlet d) _ = MOVED
-performEffect _ pushAction (SendToOutletE outlet d) _ = MOVED
-performEffect _ pushAction (StreamToInletE inlet flow) _ = MOVED
-performEffect _ pushAction (StreamToOutletE outlet flow) _ = MOVED
-performEffect _ pushAction (SubscribeToInletE inlet handler) _ = MOVED
-performEffect _ pushAction (SubscribeToOutletE outlet handler) _ = MOVED
-performEffect _ pushAction
+    push $ Inner $ StoreNodeCanceler node canceler
+performEffect _ push (SendToInletE inlet d) _ = MOVED
+performEffect _ push (SendToOutletE outlet d) _ = MOVED
+performEffect _ push (StreamToInletE inlet flow) _ = MOVED
+performEffect _ push (StreamToOutletE outlet flow) _ = MOVED
+performEffect _ push (SubscribeToInletE inlet handler) _ = MOVED
+performEffect _ push (SubscribeToOutletE outlet handler) _ = MOVED
+performEffect _ push
     (SubscribeToNodeE node inletsHandler outletsHandler) _ = MOVED
-performEffect _ pushAction (SendActionOnInletUpdatesE inlet@(Inlet _ path _ { flow })) _ = do
+performEffect _ push (SendActionOnInletUpdatesE inlet@(Inlet _ path _ { flow })) _ = do
     let (InletFlow flow') = flow
-    canceler :: Canceler <- E.subscribe flow' (pushAction <<< Data <<< GotInletData inlet)
-    pushAction $ Inner $ StoreInletCanceler inlet canceler
-performEffect _ pushAction (SendActionOnOutletUpdatesE outlet@(Outlet _ path _ { flow })) _ = do
+    canceler :: Canceler <- E.subscribe flow' (push <<< Data <<< GotInletData inlet)
+    push $ Inner $ StoreInletCanceler inlet canceler
+performEffect _ push (SendActionOnOutletUpdatesE outlet@(Outlet _ path _ { flow })) _ = do
     let (OutletFlow flow') = flow
-    canceler :: Canceler <- E.subscribe flow' (pushAction <<< Data <<< GotOutletData outlet)
-    pushAction $ Inner $ StoreOutletCanceler outlet canceler
-performEffect _ pushAction (SendPeriodicallyToInletE inlet period fn) _ = MOVED
-performEffect _ pushAction (SendPeriodicallyToOutletE outlet period fn) _ = MOVED
+    canceler :: Canceler <- E.subscribe flow' (push <<< Data <<< GotOutletData outlet)
+    push $ Inner $ StoreOutletCanceler outlet canceler
+performEffect _ push (SendPeriodicallyToInletE inlet period fn) _ = MOVED
+performEffect _ push (SendPeriodicallyToOutletE outlet period fn) _ = MOVED
 -}
 
 
@@ -567,18 +567,18 @@ performEffect _ pushAction (SendPeriodicallyToOutletE outlet period fn) _ = MOVE
 --     -> Toolkit d c n
 --     -> R.Network d c n
 --     -> R.Noodle (R.Network d c n)
--- apply' Bang pushAction _ nw =
+-- apply' Bang push _ nw =
 --     Noodle.subscribeAllInlets onInletData nw
 --         </> Noodle.subscribeAllOutlets onOutletData
 --     where
 --         onInletData inletPath d =
---             pushAction $ GotInletData inletPath d
+--             push $ GotInletData inletPath d
 --         onOutletData outletPath d =
---             pushAction $ GotOutletData outletPath d
--- apply' (AddPatch alias) pushAction _ nw =
+--             push $ GotOutletData outletPath d
+-- apply' (AddPatch alias) push _ nw =
 --     R.addPatch alias nw
 --         -- FIXME: subscribe the nodes in the patch
--- apply' (AddNode patchPath alias n) pushAction _ nw =
+-- apply' (AddNode patchPath alias n) push _ nw =
 --     Noodle.addNode patchPath alias n nw
 --         -- FIXME: `onInletData`/`onOutletData` do not receive the proper state
 --         --        of the network this way (do they need it?), but they should
@@ -591,22 +591,22 @@ performEffect _ pushAction (SendPeriodicallyToOutletE outlet period fn) _ = MOVE
 --         (patchAlias /\ nodeAlias) = P.explodeNodePath nodePath
 --         -- addModel = pure <<< ((/\) model)
 --         onNodeInletData nodePath (inletAlias /\ _ /\ d) =
---             pushAction $ GotInletData (P.toInlet patchAlias nodeAlias inletAlias) d
+--             push $ GotInletData (P.toInlet patchAlias nodeAlias inletAlias) d
 --         onNodeOutletData nodePath (outletAlias /\ _ /\ d) =
---             pushAction $ GotOutletData (P.toOutlet patchAlias nodeAlias outletAlias) d
--- apply' (AddInlet nodePath alias c) pushAction _ nw =
+--             push $ GotOutletData (P.toOutlet patchAlias nodeAlias outletAlias) d
+-- apply' (AddInlet nodePath alias c) push _ nw =
 --     let
 --         inletPath = P.inletInNode nodePath alias
 --         onInletData d =
---             pushAction $ GotInletData inletPath d
+--             push $ GotInletData inletPath d
 --     in
 --         Noodle.addInlet nodePath alias c nw
 --             </> Noodle.subscribeInlet inletPath (R.InletHandler onInletData)
--- apply' (AddOutlet nodePath alias c) pushAction _ nw =
+-- apply' (AddOutlet nodePath alias c) push _ nw =
 --     let
 --         outletPath = P.outletInNode nodePath alias
 --         onOutletData d =
---             pushAction $ GotOutletData outletPath d
+--             push $ GotOutletData outletPath d
 --     in
 --         Noodle.addOutlet nodePath alias c nw
 --             </> Noodle.subscribeOutlet outletPath (R.OutletHandler onOutletData)
