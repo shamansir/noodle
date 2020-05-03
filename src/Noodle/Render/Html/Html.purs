@@ -279,7 +279,9 @@ viewPatch toolkitRenderer ui nw patchUuid =
     case L.view (L._patch patchUuid) nw of
         Just (R.Patch _ patchPath@(P.ToPatch name) { nodes }) ->
             H.div
-                [ H.classes [ "noodle-patch" ] ]
+                [ H.classes [ "noodle-patch" ]
+                , uuidToAttr patchUuid
+                ]
                 [ H.div
                     [ H.classes [ "noodle-patch-name" ] ]
                     [ H.span [] [ H.text name ] ]
@@ -307,7 +309,10 @@ viewPatch toolkitRenderer ui nw patchUuid =
         renderLayout Nothing =
             H.div [] []
         maybeDragging (Dragging (DragNode (R.Node nodeUuid _ _ _ _))) =
-            Just $ viewNode toolkitRenderer ui nw (Pinned dragZIndex ui.mousePos) nodeUuid
+            let
+                nodePos = toLocalPos ui.positions patchUuid ui.mousePos
+            in Just $ viewNode
+                toolkitRenderer ui nw (Pinned dragZIndex nodePos) nodeUuid
         maybeDragging _ = Nothing
         showPinnedNode (R.Node nodeUuid _ _ _ _) (zIndex /\ pos) =
             viewNode toolkitRenderer ui nw (Pinned zIndex pos) nodeUuid
@@ -596,6 +601,8 @@ update (FromCore (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (u
 update (FromCore (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (ui /\ _) =
     ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d }
     /\ doNothing
+update (FromCore (Core.Build (Core.AddPatch _))) ( ui /\ nw ) =
+    ui /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
 update (FromCore (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
     ui /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
 update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)))) ( ui /\ nw ) =
@@ -646,10 +653,11 @@ update (FromUI (PinNode node position)) ( ui /\ nw ) =
         maybePatch = L.view (L._patchByPath patchPath) nw
     in
         case maybePatch of
-            Just patch ->
-                ui
+            Just patch@(R.Patch patchUuid _ _) ->
+                let localPosition = toLocalPos ui.positions patchUuid position
+                in ui
                     { layout =
-                        ui.layout # Layout.pinAt patch node position
+                        ui.layout # Layout.pinAt patch node localPosition
                     }
             Nothing -> ui
         /\ doNothing
@@ -810,6 +818,19 @@ getLinkTransformStyle { from, angle, length } =
         fromPosStr = show from.x <> "px, " <> show from.y <> "px"
         angleStr = show angle <> "rad"
         lengthStr = show length <> "px"
+
+
+toLocalPos :: (UUID.Tagged /-> Position) -> UUID.ToPatch -> Position -> Position
+toLocalPos positions patchUuid pos =
+    let
+       patchPos = Map.lookup (UUID.liftTagged patchUuid) positions
+                        # fromMaybe { x : 0.0, y : 0.0 }
+    in
+        { x : pos.x - patchPos.x
+        -- FIXME: 25.0 is a height of inlets area
+        , y : pos.y - 25.0 - patchPos.y
+        }
+
 
 
 foreign import collectPositions
