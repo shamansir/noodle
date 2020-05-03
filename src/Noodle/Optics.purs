@@ -18,6 +18,8 @@ module Noodle.Optics
 
 import Prelude
 
+import Debug.Trace (spy) as DT
+
 import Data.Lens (Lens', Getter', lens, view, set, over, to)
 import Data.Lens.At (at)
 
@@ -36,7 +38,7 @@ import Noodle.Path as Path
 import Noodle.UUID (UUID)
 import Noodle.UUID as UUID
 import Noodle.Util (Flow, PushableFlow(..), Canceler)
-import Noodle.Util (seqMember', seqDelete, seqCatMaybes) as Util
+import Noodle.Util (seqMember', seqDelete, seqCatMaybes, seqNub) as Util
 
 
 -- make separate lenses to access the entities registry by uuid,
@@ -362,9 +364,11 @@ _linksBetween
     -> Getter' (Network d c n) (Maybe (Seq Link))
 _linksBetween outletUuid inletUuid =
     to \nw ->
-        (Seq.append <<< Seq.filter isBetween)
+        Seq.append
             <$> view (_inletLinks inletUuid) nw
             <*> view (_outletLinks outletUuid) nw
+            <#> Seq.filter isBetween
+            <#> Util.seqNub
     where
         isBetween (Link _ { inlet, outlet }) =
             inlet == inletUuid && outlet == outletUuid

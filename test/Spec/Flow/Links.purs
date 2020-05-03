@@ -10,7 +10,6 @@ import Effect.Aff (delay, launchAff_)
 import Effect.Class (liftEffect)
 
 import Data.Time.Duration (Milliseconds(..))
-import Data.Tuple.Nested ((/\))
 import Data.Array (catMaybes) as Array
 
 import FRP.Event.Time (interval)
@@ -109,25 +108,7 @@ spec = do
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node2" "inlet") Notebook)
 
-    pure unit
-
   it "disconnecting some outlet from some inlet makes the data flow between them stop" $ do
-
-    -- collectedData <- CollectData.channelsAfter
-    --   (Milliseconds 100.0)
-    --   $ structure
-    --           -- first stream, then connect
-    --         </> R.streamToOutlet
-    --                   (toOutlet "patch" "node1" "outlet")
-    --                   (R.flow $ const Notebook <$> interval 30)
-    --         </> R.connect
-    --                   (toOutlet "patch" "node1" "outlet")
-    --                   (toInlet "patch" "node2" "inlet")
-
-    -- collectedData `shouldContain`
-    --   (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
-    -- collectedData `shouldContain`
-    --   (InletData (toInlet "patch" "node2" "inlet") Notebook)
 
     actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
 
@@ -171,12 +152,61 @@ spec = do
     collectedData' <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
     collectedData' `shouldNotContain`
+      (OutletData (toOutlet "patch" "node2" "inlet") Notebook)
+
+  it "disconnecting some outlet from some inlet doesn't stop other connections of that outlet" $ do
+
+    actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+    { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+    liftEffect
+         $  Actions.pushAll push
+         $  Actions.init
+        </> R.addPatch "patch"
+        </> R.addNode (toPatch "patch") "node1" Empty
+        </> R.addOutlet (toNode "patch" "node1") "outlet" Pass
+        </> R.addNode (toPatch "patch") "node2" Empty
+        </> R.addInlet (toNode "patch" "node2") "inlet1" Pass
+        </> R.addInlet (toNode "patch" "node2") "inlet2" Pass
+        </> R.streamToOutlet
+                  (toOutlet "patch" "node1" "outlet")
+                  (R.flow $ const Notebook <$> interval 30)
+        </> R.connect
+                  (toOutlet "patch" "node1" "outlet")
+                  (toInlet "patch" "node2" "inlet1")
+        </> R.connect
+                  (toOutlet "patch" "node1" "outlet")
+                  (toInlet "patch" "node2" "inlet2")
+
+    delay $ Milliseconds 100.0
+
+    collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
+
+    collectedData `shouldContain`
       (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
+    collectedData `shouldContain`
+      (InletData (toInlet "patch" "node2" "inlet1") Notebook)
+    collectedData `shouldContain`
+      (InletData (toInlet "patch" "node2" "inlet2") Notebook)
+
+    _ <- liftEffect $ Spy.reset actionTraceSpy
+
+    liftEffect $ push $ R.disconnect
+          (toOutlet "patch" "node1" "outlet")
+          (toInlet "patch" "node2" "inlet1")
+
+    delay $ Milliseconds 100.0
+
+    collectedData' <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
+
     collectedData' `shouldNotContain`
-      (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
-
-    pure unit
-
+      (OutletData (toOutlet "patch" "node2" "inlet1") Notebook)
+    collectedData' `shouldContain`
+      (InletData (toInlet "patch" "node2" "inlet2") Notebook)
 
   pending "default value of the inlet is sent on connection"
 

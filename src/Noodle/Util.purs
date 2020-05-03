@@ -5,7 +5,7 @@ module Noodle.Util
     , Subscriber, Canceler
     , Flow, PushF, PushableFlow(..)
     , flow, never
-    , seqMember, seqMember', seqDelete, seqCatMaybes, (:), (+>)
+    , seqMember, seqMember', seqDelete, seqCatMaybes, (:), (+>), seqNub, seqNubBy
     , Position, Rect, Bounds, quickBounds, quickBounds'
     ) where
 
@@ -15,6 +15,7 @@ import Prelude
 import Effect (Effect)
 import Data.Map (Map)
 import Data.Map as Map
+import Data.List (nubBy) as List
 import Data.Bifunctor (lmap, bimap)
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
@@ -113,6 +114,14 @@ seqCatMaybes seq =
         eliminateMaybe (Just val) seq' = Seq.cons val seq'
         eliminateMaybe Nothing seq' = seq'
 
+
+seqNub :: forall a. Eq a => Seq a -> Seq a
+seqNub = seqNubBy (==)
+
+
+seqNubBy :: forall a. (a -> a -> Boolean) -> Seq a -> Seq a
+seqNubBy eq =
+    Seq.toUnfoldable >>> List.nubBy eq >>> Seq.fromFoldable
 
 
 -- TODO: place in Data.Seq
