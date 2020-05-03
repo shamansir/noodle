@@ -75,7 +75,6 @@ embed sel render renderer firstModel = do
                     _ <- Ref.write next_vdom vdom_ref
                     pure unit
             _ <- push $ UI.FromCore $ A.Data A.Bang
-            _ <- push $ UI.FromCore $ A.Request $ A.ToAddPatch "bar" -- FIXME: remove
             pure $ push <<< UI.FromCore
 
 
