@@ -1,7 +1,7 @@
 module Noodle.Test.Util.Trace
-    ( channelsAfter
-    , TraceItem(..)
+    ( TraceItem(..)
     , (+>)
+    , collectData
     ) where
 
 import Prelude
@@ -52,6 +52,12 @@ instance showTraceItem :: Show d => Show (TraceItem d) where
 derive instance eqTraceItem :: Eq d => Eq (TraceItem d)
 
 
+collectData (Data (GotInletData (R.Inlet _ path _ _) d)) = Just $ InletData path d
+collectData (Data (GotOutletData (R.Outlet _ path _ _) d)) = Just $ OutletData path d
+collectData _ = Nothing
+
+
+
 channelsAfter
   :: forall d c n
    . (Show d)
@@ -62,7 +68,7 @@ channelsAfter
   -> Aff (R.Network d c n /\ TracedFlow d)
 channelsAfter period sequencer network actions = do
   lastModelSpy <- liftEffect $ Spy.last' $ pure network
-  actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap handleAction
+  actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
   { push, stop } <- liftEffect $
     Actions.run''
         sequencer
@@ -76,7 +82,3 @@ channelsAfter period sequencer network actions = do
   _ <- liftEffect stop
   vals <- liftEffect $ Spy.get actionTraceSpy
   pure $ network' /\ Array.catMaybes vals
-  where
-    handleAction (Data (GotInletData (R.Inlet _ path _ _) d)) = Just $ InletData path d
-    handleAction (Data (GotOutletData (R.Outlet _ path _ _) d)) = Just $ OutletData path d
-    handleAction _ = Nothing

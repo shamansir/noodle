@@ -7,14 +7,18 @@ import Prelude
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\))
+import Data.Array (catMaybes) as Array
 
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
+import Effect.Aff (delay)
 
 import FRP.Event as Event
 import FRP.Event.Time (interval)
+
+import FSM (run_, pushAll) as Actions
 
 import Noodle.Util (flow) as R
 import Noodle.API.Action.Sequence ((</>))
@@ -33,8 +37,8 @@ import Noodle.Toolkit
 import Test.Spec (Spec, it, pending, pending', describe, itOnly)
 import Test.Spec.Assertions (shouldContain, shouldNotContain, shouldEqual, shouldNotEqual)
 
-import Noodle.Test.Util.Trace (TraceItem(..))
-import Noodle.Test.Util.Trace (channelsAfter) as CollectData
+import Noodle.Test.Util.Spy (trace, with, get, contramap, reset) as Spy
+import Noodle.Test.Util.Trace (TraceItem(..), collectData)
 import Noodle.Test.Spec.Flow.Base
     ( Actions
     , Delivery(..), Pipe(..), Node(..)
@@ -60,16 +64,6 @@ spec = do
         curse1Inlet = toInlet "patch" "node" "curse1"
         curse2Inlet = toInlet "patch" "node" "curse2"
         applesOutlet = toOutlet "patch" "node" "apples"
-
-        structure :: Actions
-        structure =
-          Actions.init
-            </> R.addPatch "patch"
-            </> R.addNodeByDef
-                    (toPatch "patch")
-                    "node"
-                    Custom
-                    nodeDef
 
         nodeDef :: NodeDef Delivery Pipe
         nodeDef =
@@ -98,23 +92,34 @@ spec = do
                 send _ = Nothing
             pure send
 
-      _ /\ collectedData <-
-        CollectData.channelsAfter
-            (Milliseconds 100.0)
-            mySequencer
-            (Network.empty "network")
-            $ structure
-                </> R.sendToInlet curse1Inlet (Curse 4)
-                </> R.sendToInlet curse2Inlet (Curse 3)
+      actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
 
+      { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "node"
+                    Custom
+                    nodeDef
+            </> R.sendToInlet curse1Inlet (Curse 4)
+            </> R.sendToInlet curse2Inlet (Curse 3)
+
+      delay $ Milliseconds 100.0
+
+      collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
       collectedData `shouldContain`
         (InletData curse1Inlet $ Curse 4)
       collectedData `shouldContain`
         (InletData curse2Inlet $ Curse 3)
       collectedData `shouldContain`
         (OutletData applesOutlet $ Apple 7)
-
-      pure unit
 
 
     it "returning multiple values from processing function actually sends these values to the outlets" $ do
@@ -124,16 +129,6 @@ spec = do
         curse2Inlet = toInlet "patch" "node" "curse2"
         apples1Outlet = toOutlet "patch" "node" "apples1"
         apples2Outlet = toOutlet "patch" "node" "apples2"
-
-        structure :: Actions
-        structure =
-          Actions.init
-            </> R.addPatch "patch"
-            </> R.addNodeByDef
-                    (toPatch "patch")
-                    "node"
-                    Custom
-                    nodeDef
 
         nodeDef :: NodeDef Delivery Pipe
         nodeDef =
@@ -162,13 +157,27 @@ spec = do
                     in pure send
                 _ -> pure $ const Nothing
 
-      _ /\ collectedData <- CollectData.channelsAfter
-        (Milliseconds 100.0)
+      actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+      { push } <- liftEffect $ Actions.run_
         mySequencer
-        (Network.empty "network")
-        $ structure
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "node"
+                    Custom
+                    nodeDef
             </> R.sendToInlet curse1Inlet (Curse 4)
             </> R.sendToInlet curse2Inlet (Curse 3)
+
+      delay $ Milliseconds 100.0
+
+      collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
       collectedData `shouldContain`
         (InletData curse1Inlet $ Curse 4)
@@ -188,16 +197,6 @@ spec = do
       let
         curseInlet = toInlet "patch" "node" "curse"
 
-        structure :: Actions
-        structure =
-          Actions.init
-            </> R.addPatch "patch"
-            </> R.addNodeByDef
-                    (toPatch "patch")
-                    "node"
-                    Custom
-                    nodeDef
-
         nodeDef :: NodeDef Delivery Pipe
         nodeDef =
             NodeDef
@@ -216,12 +215,27 @@ spec = do
             _ <- valueRef # Ref.write curse
             pure $ const Nothing
 
-      _ /\ collectedData <- CollectData.channelsAfter
-        (Milliseconds 100.0)
+      actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+      { push } <- liftEffect $ Actions.run_
         mySequencer
-        (Network.empty "network")
-        $ structure
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "node"
+                    Custom
+                    nodeDef
             </> R.sendToInlet curseInlet (Curse 4)
+
+      delay $ Milliseconds 100.0
+
+      collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
       storedValue <- liftEffect $ Ref.read valueRef
 
@@ -237,16 +251,6 @@ spec = do
       wasCalledRef <- liftEffect $ Ref.new false -- FIXME: rewrite using Spy.
 
       let
-        structure :: Actions
-        structure =
-          Actions.init
-            </> R.addPatch "patch"
-            </> R.addNodeByDef
-                    (toPatch "patch")
-                    "node"
-                    Custom
-                    nodeDef
-
         nodeDef :: NodeDef Delivery Pipe
         nodeDef =
             NodeDef
@@ -262,11 +266,26 @@ spec = do
             _ <- wasCalledRef # Ref.write true
             pure $ const Nothing
 
-      _ /\ collectedData <- CollectData.channelsAfter
-        (Milliseconds 100.0)
+      actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+      { push } <- liftEffect $ Actions.run_
         mySequencer
-        (Network.empty "network")
-        structure
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                  (toPatch "patch")
+                  "node"
+                  Custom
+                  nodeDef
+
+      delay $ Milliseconds 100.0
+
+      collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
       wasCalled <- liftEffect $ Ref.read wasCalledRef
 
@@ -274,66 +293,67 @@ spec = do
 
       wasCalled `shouldEqual` false
 
-      pure unit
-
 
     it "processing with state works" $ do
-        let
+      let
 
-          curseInlet = toInlet "patch" "node" "curse"
-          applesOutlet = toOutlet "patch" "node" "apples"
+        curseInlet = toInlet "patch" "node" "curse"
+        applesOutlet = toOutlet "patch" "node" "apples"
 
-          structure :: Actions
-          structure =
-            Actions.init
-              </> R.addPatch "patch"
-              </> R.addNodeByDef
-                      (toPatch "patch")
-                      "node"
-                      Custom
-                      nodeDef
+        nodeDef :: NodeDef Delivery Pipe
+        nodeDef =
+            NodeDef
+              { inlets :
+                  withInlets
+                  ~< "curse" /\ Pass
+              , outlets :
+                  withOutlets
+                  >~ "apples" /\ Pass
+              , process : R.ProcessST $ R.makeProcessST 10 processF
+              }
 
-          nodeDef :: NodeDef Delivery Pipe
-          nodeDef =
-              NodeDef
-                { inlets :
-                    withInlets
-                    ~< "curse" /\ Pass
-                , outlets :
-                    withOutlets
-                    >~ "apples" /\ Pass
-                , process : R.ProcessST $ R.makeProcessST 10 processF
-                }
+        processF (prevState /\ receive) = do
+            -- FIXME: rewrite using `<$>`
+            let
+                curse = receive "curse" # fromMaybe Damaged
+            pure $ case curse of
+                (Curse c) ->
+                    let send "apples" = Just $ Apple (prevState + c)
+                        send _ = Nothing
+                    in (prevState + c) /\ send
+                _ -> prevState /\ const Nothing
 
-          processF (prevState /\ receive) = do
-              -- FIXME: rewrite using `<$>`
-              let
-                  curse = receive "curse" # fromMaybe Damaged
-              pure $ case curse of
-                  (Curse c) ->
-                      let send "apples" = Just $ Apple (prevState + c)
-                          send _ = Nothing
-                      in (prevState + c) /\ send
-                  _ -> prevState /\ const Nothing
+      actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
 
-        _ /\ collectedData <- CollectData.channelsAfter
-          (Milliseconds 100.0)
-          mySequencer
-          (Network.empty "network")
-          $ structure
-              </> R.sendToInlet curseInlet (Curse 4)
-              </> R.sendToInlet curseInlet (Curse 3)
+      { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
 
-        collectedData `shouldContain`
-          (InletData curseInlet $ Curse 4)
-        collectedData `shouldContain`
-          (InletData curseInlet $ Curse 3)
-        collectedData `shouldContain`
-          (OutletData applesOutlet $ Apple 14)
-        collectedData `shouldContain`
-          (OutletData applesOutlet $ Apple 17)
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "node"
+                    Custom
+                    nodeDef
+            </> R.sendToInlet curseInlet (Curse 4)
+            </> R.sendToInlet curseInlet (Curse 3)
 
-        pure unit
+      delay $ Milliseconds 100.0
+
+      collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
+
+      collectedData `shouldContain`
+        (InletData curseInlet $ Curse 4)
+      collectedData `shouldContain`
+        (InletData curseInlet $ Curse 3)
+      collectedData `shouldContain`
+        (OutletData applesOutlet $ Apple 14)
+      collectedData `shouldContain`
+        (OutletData applesOutlet $ Apple 17)
 
   describe "removing" $ do
 
@@ -342,16 +362,6 @@ spec = do
     it "when node was removed, its inlets stop receiving data" $ do
       let
         curseInlet = toInlet "patch" "node" "curse"
-
-        structure :: Actions
-        structure =
-          Actions.init
-            </> R.addPatch "patch"
-            </> R.addNodeByDef
-                    (toPatch "patch")
-                    "node"
-                    Custom
-                    nodeDef
 
         nodeDef :: NodeDef Delivery Pipe
         nodeDef =
@@ -364,55 +374,50 @@ spec = do
               , process : R.Withhold
               }
 
-      let
-        nwWithFlow =
-          structure </>
-            R.streamToInlet curseInlet (R.flow $ const (Curse 4) <$> interval 30)
+      actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
 
-      nw' /\ collectedData <- CollectData.channelsAfter
-        (Milliseconds 100.0)
+      { push } <- liftEffect $ Actions.run_
         mySequencer
-        (Network.empty "network")
-        nwWithFlow
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "node"
+                    Custom
+                    nodeDef
+            </> R.streamToInlet curseInlet
+                    (R.flow $ const (Curse 4) <$> interval 30)
+
+      delay $ Milliseconds 100.0
+
+      collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
       collectedData `shouldContain`
         (InletData curseInlet $ Curse 4)
 
-      _ /\ collectedData' <- CollectData.channelsAfter
-        (Milliseconds 100.0)
-        mySequencer
-        (Network.empty "network")
-        $ nwWithFlow </> R.removeNode (toNode "patch" "node")
+      _ <- liftEffect $ Spy.reset actionTraceSpy
+
+      liftEffect $ push $ R.removeNode (toNode "patch" "node")
+
+      delay $ Milliseconds 100.0
+
+      collectedData' <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
       collectedData' `shouldNotContain`
         (InletData curseInlet $ Curse 4)
 
       collectedData' `shouldEqual` []
 
-      pure unit
 
     it "when node was removed, its outgoing connections are deactivated and do not receive any data" $ do
       let
         curseOutlet = toOutlet "patch" "subject" "curse"
         curseInlet = toInlet "patch" "other" "curse"
-
-        structure :: Actions
-        structure =
-          Actions.init
-            </> R.addPatch "patch"
-            </> R.addNodeByDef
-                    (toPatch "patch")
-                    "subject"
-                    Custom
-                    subjectNodeDef
-            </> R.addNodeByDef
-                    (toPatch "patch")
-                    "other"
-                    Custom
-                    otherNodeDef
-            </> R.connect
-                  curseOutlet
-                  curseInlet
 
         subjectNodeDef :: NodeDef Delivery Pipe
         subjectNodeDef =
@@ -436,31 +441,52 @@ spec = do
               , process : R.Withhold
               }
 
-        nwWithFlow =
-          structure </>
-            R.streamToOutlet curseOutlet (R.flow $ const (Curse 4) <$> interval 30)
+      actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
 
-      nw' /\ collectedData <- CollectData.channelsAfter
-        (Milliseconds 100.0)
+      { push } <- liftEffect $ Actions.run_
         mySequencer
-        (Network.empty "network")
-        nwWithFlow
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                  (toPatch "patch")
+                  "subject"
+                  Custom
+                  subjectNodeDef
+            </> R.addNodeByDef
+                  (toPatch "patch")
+                  "other"
+                  Custom
+                  otherNodeDef
+            </> R.connect
+                  curseOutlet
+                  curseInlet
+            </> R.streamToOutlet curseOutlet
+                  (R.flow $ const (Curse 4) <$> interval 30)
+
+      delay $ Milliseconds 100.0
+
+      collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
       collectedData `shouldContain`
         (InletData curseInlet $ Curse 4)
 
-      _ /\ collectedData' <- CollectData.channelsAfter
-        (Milliseconds 100.0)
-        mySequencer
-        (Network.empty "network")
-        $ nwWithFlow </> R.removeNode (toNode "patch" "subject")
+      _ <- liftEffect $ Spy.reset actionTraceSpy
+
+      liftEffect $ push $ R.removeNode (toNode "patch" "subject")
+
+      delay $ Milliseconds 100.0
+
+      collectedData' <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
       collectedData' `shouldNotContain`
         (InletData curseInlet $ Curse 4)
 
       collectedData' `shouldEqual` []
-
-      pure unit
 
     -- FIXME: the values which are streamed this way are staying for the moment,
     --        for some reason we need to cancel everything outlet-related,
@@ -470,24 +496,6 @@ spec = do
         curseOutlet = toOutlet "patch" "other" "curse"
         curseInlet = toInlet "patch" "subject" "curse"
 
-        structure :: Actions
-        structure =
-          Actions.init
-            </> R.addPatch "patch"
-            </> R.addNodeByDef
-                    (toPatch "patch")
-                    "subject"
-                    Custom
-                    subjectNodeDef
-            </> R.addNodeByDef
-                    (toPatch "patch")
-                    "other"
-                    Custom
-                    otherNodeDef
-            </> R.connect
-                  curseOutlet
-                  curseInlet
-
         subjectNodeDef :: NodeDef Delivery Pipe
         subjectNodeDef =
             NodeDef
@@ -510,24 +518,46 @@ spec = do
               , process : R.Withhold
               }
 
-        nwWithFlow =
-          structure </>
-            R.streamToOutlet curseOutlet (R.flow $ const (Curse 4) <$> interval 30)
+      actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
 
-      nw' /\ collectedData <- CollectData.channelsAfter
-        (Milliseconds 100.0)
+      { push } <- liftEffect $ Actions.run_
         mySequencer
-        (Network.empty "network")
-        nwWithFlow
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "subject"
+                    Custom
+                    subjectNodeDef
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "other"
+                    Custom
+                    otherNodeDef
+            </> R.connect
+                  curseOutlet
+                  curseInlet
+            </> R.streamToOutlet curseOutlet (R.flow $ const (Curse 4) <$> interval 30)
+
+      delay $ Milliseconds 100.0
+
+      collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
       collectedData `shouldContain`
         (InletData curseInlet $ Curse 4)
 
-      _ /\ collectedData' <- CollectData.channelsAfter
-        (Milliseconds 100.0)
-        mySequencer
-        (Network.empty "network")
-        $ nwWithFlow </> R.removeNode (toNode "patch" "subject")
+      _ <- liftEffect $ Spy.reset actionTraceSpy
+
+      liftEffect $ push $ R.removeNode (toNode "patch" "subject")
+
+      delay $ Milliseconds 100.0
+
+      collectedData' <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
       collectedData' `shouldNotContain`
         (InletData curseInlet $ Curse 4)
