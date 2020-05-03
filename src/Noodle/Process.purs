@@ -23,6 +23,7 @@ import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Exists (Exists, mkExists, runExists)
 import Effect (Effect(..))
+import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 
 import Noodle.Util (Flow, type (/->))
@@ -139,6 +140,7 @@ data ProcessF d
     -- TODO: one more option w/o any effects
     -- TODO: and so, test them all
     | Process (Receive d -> Effect (Send d))
+    | ProcessAff (Receive d -> Aff (Send d))
     | ProcessST (Exists (ProcessST' d))
 
 

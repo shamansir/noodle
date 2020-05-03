@@ -184,7 +184,6 @@ spec = do
       collectedData `shouldContain`
         (OutletData apples2Outlet $ Apple 1)
 
-
     it "when node has no outlets, but has some inlets, processing is still performed" $ do
       valueRef <- liftEffect $ Ref.new Damaged
 
@@ -283,6 +282,71 @@ spec = do
 
       wasCalled `shouldEqual` false
 
+    -- I am not yet sure how to test it propetly
+    pending' "processing with affect works" $ do
+      let
+
+        curseInlet = toInlet "patch" "node" "curse"
+        applesOutlet = toOutlet "patch" "node" "apples"
+
+        nodeDef :: NodeDef Delivery Pipe
+        nodeDef =
+            NodeDef
+              { inlets :
+                  withInlets
+                  ~< "curse" /\ Pass
+              , outlets :
+                  withOutlets
+                  >~ "apples" /\ Pass
+              , process : R.ProcessAff processF
+              }
+
+        processF receive = do
+            delay $ Milliseconds 100.0
+            -- FIXME: rewrite using `<$>`
+            let
+                curse1 = receive "curse1" # fromMaybe Damaged
+                curse2 = receive "curse2" # fromMaybe Damaged
+            case curse1 /\ curse2 of
+                (Curse c1 /\ Curse c2) ->
+                    let send "apples1" = Just $ Apple (c1 + c2)
+                        send "apples2" = Just $ Apple (c1 - c2)
+                        send _ = Nothing
+                    in pure send
+                _ -> pure $ const Nothing
+
+      actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+      { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "node"
+                    Custom
+                    nodeDef
+            </> R.sendToInlet curseInlet (Curse 4)
+            </> R.sendToInlet curseInlet (Curse 3)
+
+      collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
+
+      delay $ Milliseconds 100.0
+
+      collectedData `shouldContain`
+        (InletData curseInlet $ Curse 4)
+      collectedData `shouldContain`
+        (InletData curseInlet $ Curse 3)
+      collectedData `shouldContain`
+        (OutletData applesOutlet $ Apple 14)
+      -- because delayed more than 90ms
+      collectedData `shouldNotContain`
+        (OutletData applesOutlet $ Apple 17)
 
     it "processing with state works" $ do
       let
