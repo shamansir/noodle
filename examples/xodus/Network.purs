@@ -15,7 +15,8 @@ import Xodus.Toolkit.Channel (Channel(..))
 recipe :: Actions.ActionList Value Channel Node
 recipe =
     Actions.init
-        </> Actions.addPatch "test"
-        </> Actions.addNode (R.toPatch "test") "bang" BangNode
-        </> Actions.addInlet (R.toNode "test" "bang") "ch" Channel
-        </> Actions.addNode (R.toPatch "test") "list" NodeListNode
+        </> Actions.addPatch "xodus-dnq"
+        </> Actions.addNode (R.toPatch "xodus-dnq") "list" NodeListNode
+        </> Actions.addNode (R.toPatch "xodus-dnq") "connect" ConnectNode
+        </> Actions.addNode (R.toPatch "xodus-dnq") "databases" DatabasesNode
+
