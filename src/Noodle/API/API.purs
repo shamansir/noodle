@@ -4,6 +4,7 @@ module Noodle.API where
 import Prelude
 
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Either (either)
 import Data.Sequence (Seq)
 import Data.Sequence as Seq
 import Data.List (List)
@@ -21,6 +22,7 @@ import Data.Newtype (unwrap)
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
+import Effect.Aff (runAff_)
 
 import FRP.Event as E
 import FRP.Event.Class (count) as E
@@ -433,6 +435,49 @@ buildOutletsFlow _ (Process processNode) (InletsFlow inletsFlow) inlets outlets 
                             Nothing -> pure unit
                     )
                     outletsAliases
+            pure unit
+    canceler <- liftEffect $ E.subscribe processFlow processHandler
+    pure $ (OutletsFlow event)
+           /\ Just canceler
+buildOutletsFlow _ (ProcessAff processNode) (InletsFlow inletsFlow) inlets outlets nw = do
+    -- collect data from inletsFlow into the Map (Alias /-> d) and pass Map.lookup to the `processF` handler.
+    { push, event } <- E.create
+    let
+        outletsAliases :: List (Path.ToOutlet /\ UUID.ToOutlet)
+        outletsAliases =
+            (outlets
+                 # List.fromFoldable
+                <#> \uuid ->
+                    view (_outlet uuid) nw
+                        <#> \(Outlet uuid' path _ _) -> path /\ uuid')
+                 # List.catMaybes
+                -- FIXME: if outlet wasn't found, raise an error?
+                --  # Map.fromFoldable
+        foldingF
+            ((Path.ToInlet { node : nodePath, inlet : inletAlias })
+            /\ uuid
+            /\ curD)
+            inletVals =
+            inletVals # Map.insert inletAlias curD
+        processFlow = E.fold foldingF inletsFlow Map.empty
+        processHandler :: _ -> Effect Unit
+        processHandler inletsValues = do
+            let receive = flip Map.lookup $ inletsValues
+            _ <-
+                runAff_
+                (either
+                    (const $ pure unit)
+                    $ \(send :: Path.Alias -> Maybe d) -> do
+                        _ <- traverse
+                            (\(path@(Path.ToOutlet { outlet : alias }) /\ uuid) ->
+                                case send alias of
+                                    Just v -> push $ path /\ uuid /\ v
+                                    Nothing -> pure unit
+                            )
+                            outletsAliases
+                        pure unit
+                )
+                $ processNode receive
             pure unit
     canceler <- liftEffect $ E.subscribe processFlow processHandler
     pure $ (OutletsFlow event)
