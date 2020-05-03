@@ -680,12 +680,11 @@ update (FromUI (ClickNodeTitle node e)) ( ui /\ nw ) =
     /\ do
         _ <- Event.stopPropagation $ ME.toEvent e
         updatePositions (List.singleton <<< my <<< StorePositions) nw
-update (FromUI (ClickRemoveButton node e)) ( ui /\ nw ) =
+update (FromUI (ClickRemoveButton node@(R.Node _ nodePath _ _ _) e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging
         , layout =
             let
-                (R.Node _ nodePath _ _ _) = node
                 patchPath = P.getPatchPath $ P.lift nodePath
                 maybePatch = L.view (L._patchByPath patchPath) nw
             in
@@ -696,7 +695,7 @@ update (FromUI (ClickRemoveButton node e)) ( ui /\ nw ) =
         }
     /\ do
         _ <- Event.stopPropagation $ ME.toEvent e
-        single $ core $ Core.Build $ Core.RemoveNode node
+        single $ core $ Core.Request $ Core.ToRemoveNode nodePath
 update (FromUI (ClickInlet (R.Inlet _ inletPath _ _) e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging

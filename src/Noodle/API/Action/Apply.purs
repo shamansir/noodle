@@ -3,8 +3,6 @@ module Noodle.API.Action.Apply where
 import Prelude
 import Effect (Effect)
 
-import Debug.Trace (spy) as DT
-
 import Data.Maybe
 import Data.String (take) as String
 import Data.Either
@@ -208,7 +206,7 @@ applyRequestAction _ (ToAddNextNodeByDef patchPath n def) nw = do
 applyRequestAction tk (ToRemoveNode nodePath) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
-    -- FIXME: shouldn't `links`  be removed within the calls to inlets and outlets?
+    -- FIXME: shouldn't `links`  be removed within the calls to remove inlets (/outlets)?
     links <- view (_nodeLinks nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     inlets <- view (_nodeInlets nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     outlets <- view (_nodeOutlets nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
@@ -439,7 +437,7 @@ applyBuildAction _ _ (Connect (Outlet ouuid _ _ _) (Inlet iuuid _ _ _)) nw = do
         single $ Build $ AddLink newLink
 applyBuildAction _ _ (AddLink link) nw =
     withE $ Api.addLink link nw
-applyBuildAction _ _ (RemoveLink link@(Link linkUuid { inlet, outlet })) nw = do
+applyBuildAction _ _ (RemoveLink link@(Link linkUuid _)) nw = do
     nw' <- Api.removeLink link nw
     pure $ nw' /\ do
         -- _ <- Api.cancelOutletSubscriptions outlet nw
