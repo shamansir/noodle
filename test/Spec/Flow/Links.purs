@@ -11,8 +11,11 @@ import Effect.Class (liftEffect)
 
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\))
+import Data.Array (catMaybes) as Array
 
 import FRP.Event.Time (interval)
+
+import FSM (run_, pushAll) as Actions
 
 import Noodle.API.Action.Sequence ((</>))
 import Noodle.API.Action.Sequence (init) as Actions
@@ -25,8 +28,8 @@ import Test.Spec (Spec, it, pending, pending', itOnly)
 import Test.Spec.Assertions (shouldContain, shouldNotContain)
 
 -- import Noodle.Test.CollectData (TraceItem(..))
-import Noodle.Test.Util.Trace (channelsAfter) as CollectData
-import Noodle.Test.Util.Trace (TraceItem(..), (+>))
+import Noodle.Test.Util.Spy (trace, with, get, contramap, reset) as Spy
+import Noodle.Test.Util.Trace (TraceItem(..), (+>), collectData)
 import Noodle.Test.Spec.Flow.Base (Actions, Network, Delivery(..), Pipe(..), Node(..), mySequencer)
 
 
@@ -39,28 +42,32 @@ spec :: Spec Unit
 spec = do
 
   it "connecting some outlet to some inlet makes data flow from this outlet to this inlet" $ do
-    let
-      structure :: Actions
-      structure =
-        Actions.init
+    actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+    { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+    liftEffect
+           $  Actions.pushAll push
+           $  Actions.init
           </> R.addPatch "patch"
           </> R.addNode (toPatch "patch") "node1" Empty
           </> R.addOutlet (toNode "patch" "node1") "outlet" Pass
           </> R.addNode (toPatch "patch") "node2" Empty
           </> R.addInlet (toNode "patch" "node2") "inlet" Pass
-
-    _ /\ collectedData <- CollectData.channelsAfter
-      (Milliseconds 100.0)
-      mySequencer
-      (Network.empty "network")
-      $ structure
-          -- first connect, then stream
+            -- first connect, then stream
           </> R.connect
               (toOutlet "patch" "node1" "outlet")
               (toInlet "patch" "node2" "inlet")
           </> R.streamToOutlet
               (toOutlet "patch" "node1" "outlet")
               (R.flow $ const Notebook <$> interval 30)
+
+    delay $ Milliseconds 100.0
+
+    collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
     collectedData `shouldContain`
       (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
@@ -70,28 +77,32 @@ spec = do
     pure unit
 
   it "connecting some outlet having its own flow to some inlet directs this existing flow to this inlet" $ do
-    let
-      structure :: Actions
-      structure =
-        Actions.init
+    actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+    { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+    liftEffect
+           $  Actions.pushAll push
+           $  Actions.init
           </> R.addPatch "patch"
           </> R.addNode (toPatch "patch") "node1" Empty
           </> R.addOutlet (toNode "patch" "node1") "outlet" Pass
           </> R.addNode (toPatch "patch") "node2" Empty
           </> R.addInlet (toNode "patch" "node2") "inlet" Pass
+            -- first stream, then connect
+          </> R.streamToOutlet
+                    (toOutlet "patch" "node1" "outlet")
+                    (R.flow $ const Notebook <$> interval 30)
+          </> R.connect
+                    (toOutlet "patch" "node1" "outlet")
+                    (toInlet "patch" "node2" "inlet")
 
-    _ /\ collectedData <- CollectData.channelsAfter
-      (Milliseconds 100.0)
-      mySequencer
-      (Network.empty "network")
-      $ structure
-              -- first stream, then connect
-            </> R.streamToOutlet
-                      (toOutlet "patch" "node1" "outlet")
-                      (R.flow $ const Notebook <$> interval 30)
-            </> R.connect
-                      (toOutlet "patch" "node1" "outlet")
-                      (toInlet "patch" "node2" "inlet")
+    delay $ Milliseconds 100.0
+
+    collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
     collectedData `shouldContain`
       (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
@@ -101,15 +112,6 @@ spec = do
     pure unit
 
   it "disconnecting some outlet from some inlet makes the data flow between them stop" $ do
-    let
-      structure :: Actions
-      structure =
-        Actions.init
-          </> R.addPatch "patch"
-          </> R.addNode (toPatch "patch") "node1" Empty
-          </> R.addOutlet (toNode "patch" "node1") "outlet" Pass
-          </> R.addNode (toPatch "patch") "node2" Empty
-          </> R.addInlet (toNode "patch" "node2") "inlet" Pass
 
     -- collectedData <- CollectData.channelsAfter
     --   (Milliseconds 100.0)
@@ -127,11 +129,21 @@ spec = do
     -- collectedData `shouldContain`
     --   (InletData (toInlet "patch" "node2" "inlet") Notebook)
 
-    network /\ collectedData <- CollectData.channelsAfter
-      (Milliseconds 100.0)
-      mySequencer
-      (Network.empty "network")
-      $ structure
+    actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+    { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+    liftEffect
+         $  Actions.pushAll push
+         $  Actions.init
+        </> R.addPatch "patch"
+        </> R.addNode (toPatch "patch") "node1" Empty
+        </> R.addOutlet (toNode "patch" "node1") "outlet" Pass
+        </> R.addNode (toPatch "patch") "node2" Empty
+        </> R.addInlet (toNode "patch" "node2") "inlet" Pass
         </> R.streamToOutlet
                   (toOutlet "patch" "node1" "outlet")
                   (R.flow $ const Notebook <$> interval 30)
@@ -139,19 +151,24 @@ spec = do
                   (toOutlet "patch" "node1" "outlet")
                   (toInlet "patch" "node2" "inlet")
 
+    delay $ Milliseconds 100.0
+
+    collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
+
     collectedData `shouldContain`
       (OutletData (toOutlet "patch" "node1" "outlet") Notebook)
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node2" "inlet") Notebook)
 
-    _ /\ collectedData' <- CollectData.channelsAfter
-      (Milliseconds 100.0)
-      mySequencer
-      network -- notice the use of the previous network result here
-      $ Actions.init
-        </> R.disconnect
-            (toOutlet "patch" "node1" "outlet")
-            (toInlet "patch" "node2" "inlet")
+    _ <- liftEffect $ Spy.reset actionTraceSpy
+
+    liftEffect $ push $ R.disconnect
+          (toOutlet "patch" "node1" "outlet")
+          (toInlet "patch" "node2" "inlet")
+
+    delay $ Milliseconds 100.0
+
+    collectedData' <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
     collectedData' `shouldNotContain`
       (OutletData (toOutlet "patch" "node1" "outlet") Notebook)

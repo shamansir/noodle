@@ -6,8 +6,13 @@ import Prelude
 
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\))
+import Data.Array (catMaybes) as Array
+
+import Effect.Aff (delay)
 
 import FRP.Event.Time (interval)
+
+import FSM (run_, pushAll) as Actions
 
 import Noodle.API.Action.Sequence ((</>))
 import Noodle.API.Action.Sequence (init) as Actions
@@ -21,8 +26,8 @@ import Effect.Class (liftEffect)
 import Test.Spec (Spec, it, pending, pending', itOnly)
 import Test.Spec.Assertions (shouldEqual, shouldContain, shouldNotContain)
 
-import Noodle.Test.Util.Trace (TraceItem(..))
-import Noodle.Test.Util.Trace (channelsAfter) as CollectData
+import Noodle.Test.Util.Spy (trace, with, get, contramap, reset) as Spy
+import Noodle.Test.Util.Trace (TraceItem(..), collectData)
 import Noodle.Test.Spec.Flow.Base (Delivery(..), Pipe(..), Node(..), Actions, mySequencer)
 
 
@@ -36,47 +41,50 @@ spec = do
   -- INLETS --
 
   it "we receive no data from the inlet when it has no flow" $ do
-    let
-      structure :: Actions
-      structure =
-        Actions.init
+    actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+    { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+    liftEffect
+           $  Actions.pushAll push
+           $  Actions.init
           </> R.addPatch "patch"
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
 
-    _ /\ collectedData <-
-        CollectData.channelsAfter
-          (Milliseconds 100.0)
-          mySequencer
-          (Network.empty "network")
-          structure
+    delay $ Milliseconds 100.0
 
+    collectedData <- liftEffect $ Spy.get actionTraceSpy
     collectedData `shouldEqual` []
-
-    pure unit
 
   pending "we receive the default value of the inlet just when it was set"
 
   it "we receive the data sent directly to the inlet" $ do
-    let
-      structure :: Actions
-      structure =
-        Actions.init
+    let firstInlet = toInlet "patch" "node" "inlet"
+
+    actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+    { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+    liftEffect
+           $  Actions.pushAll push
+           $  Actions.init
           </> R.addPatch "patch"
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
-      firstInlet = toInlet "patch" "node" "inlet"
+          </> R.sendToInlet firstInlet Parcel
+          </> R.sendToInlet firstInlet Pills
+          </> R.sendToInlet firstInlet (Curse 5)
 
-    _ /\ collectedData <-
-      CollectData.channelsAfter
-          (Milliseconds 100.0)
-          mySequencer
-          (Network.empty "network")
-          $ structure
-              </> R.sendToInlet firstInlet Parcel
-              </> R.sendToInlet firstInlet Pills
-              </> R.sendToInlet firstInlet (Curse 5)
+    delay $ Milliseconds 100.0
 
+    collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
     collectedData `shouldEqual`
         [ InletData firstInlet Parcel
         , InletData firstInlet Pills
@@ -84,102 +92,102 @@ spec = do
         ]
 
   it "we receive the values from the data stream attached to the inlet" $ do
-    let
-      structure :: Actions
-      structure =
-        Actions.init
+    actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+    { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+    liftEffect
+           $  Actions.pushAll push
+           $  Actions.init
           </> R.addPatch "patch"
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
-
-    _ /\ collectedData <- CollectData.channelsAfter
-      (Milliseconds 100.0)
-      mySequencer
-      (Network.empty "network")
-      $ structure
-         </> R.streamToInlet
+          </> R.streamToInlet
                 (toInlet "patch" "node" "inlet")
                 (R.flow $ const Pills <$> interval 30)
 
+    delay $ Milliseconds 100.0
+
+    collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
     collectedData `shouldContain`
         (InletData (toInlet "patch" "node" "inlet") Pills)
-    pure unit
 
   pending "it is possible to manually cancel the streaming-to-inlet procedure"
 
   it "attaching several simultaneous streams to the inlet allows them to overlap" $ do
-    let
-      structure :: Actions
-      structure =
-        Actions.init
+    let firstInlet = toInlet "patch" "node" "inlet"
+
+    actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+    { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+    liftEffect
+           $  Actions.pushAll push
+           $  Actions.init
           </> R.addPatch "patch"
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
-      firstInlet = toInlet "patch" "node" "inlet"
+          </> R.streamToInlet
+                (toInlet "patch" "node" "inlet")
+                (R.flow $ const Pills <$> interval 20)
+          </> R.streamToInlet
+                (toInlet "patch" "node" "inlet")
+                (R.flow $ const Banana <$> interval 29)
 
-    _ /\ collectedData <- CollectData.channelsAfter
-      (Milliseconds 100.0)
-      mySequencer
-      (Network.empty "network")
-      $ structure
-            </> R.streamToInlet
-                  (toInlet "patch" "node" "inlet")
-                  (R.flow $ const Pills <$> interval 20)
-            </> R.streamToInlet
-                  (toInlet "patch" "node" "inlet")
-                  (R.flow $ const Banana <$> interval 29)
+    delay $ Milliseconds 100.0
 
+    collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "inlet") Pills)
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "inlet") Banana)
 
-    pure unit
-
   -- TODO: could be replaced, since for now user has no control over stopping the stream
   pending' "when there are no incoming streams anymore, values are not sent to the inlet" $ do
-    let
-      structure :: Actions
-      structure =
-        Actions.init
+    actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+    { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+    liftEffect
+           $  Actions.pushAll push
+           $  Actions.init
           </> R.addPatch "patch"
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet" Pass
-
-    _ /\ collectedData <- CollectData.channelsAfter
-      (Milliseconds 100.0)
-      mySequencer
-      (Network.empty "network")
-      $ structure
           </> R.streamToInlet
                 (toInlet "patch" "node" "inlet")
                 (R.flow $ const Pills <$> interval 20)
 
+    delay $ Milliseconds 100.0
+
+    collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "inlet") Pills)
-    -- collectedData' <- CollectData.channelsAfter
-    --   (Milliseconds 100.0)
-    --   nw
-    --   $ pure []
-    -- collectedData' `shouldNotContain`
-    --   (InletData (toInlet "patch" "node" "inlet") Pills)
-    pure unit
 
   it "two different streams may work for different inlets" $ do
-    let
-      structure :: Actions
-      structure =
-        Actions.init
+    actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+    { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+    liftEffect
+           $  Actions.pushAll push
+           $  Actions.init
           </> R.addPatch "patch"
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "for-pills" Pass
           </> R.addInlet (toNode "patch" "node") "for-bananas" Pass
-
-    _ /\ collectedData <- CollectData.channelsAfter
-      (Milliseconds 100.0)
-      mySequencer
-      (Network.empty "network")
-      $ structure
           </> R.streamToInlet
                 (toInlet "patch" "node" "for-pills")
                 (R.flow $ const Pills <$> interval 30)
@@ -187,6 +195,9 @@ spec = do
                 (toInlet "patch" "node" "for-bananas")
                 (R.flow $ const Banana <$> interval 25)
 
+    delay $ Milliseconds 100.0
+
+    collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "for-pills") Pills)
     collectedData `shouldContain`
@@ -194,24 +205,28 @@ spec = do
     pure unit
 
   it "same stream may produce values for several inlets" $ do
-    let
-      structure :: Actions
-      structure =
-        Actions.init
+    let stream = R.flow $ const Banana <$> interval 25
+
+    actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
+
+    { push } <- liftEffect $ Actions.run_
+        mySequencer
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
+
+    liftEffect
+           $  Actions.pushAll push
+           $  Actions.init
           </> R.addPatch "patch"
           </> R.addNode (toPatch "patch") "node" Empty
           </> R.addInlet (toNode "patch" "node") "inlet1" Pass
           </> R.addInlet (toNode "patch" "node") "inlet2" Pass
-      stream = R.flow $ const Banana <$> interval 25
-
-    _ /\ collectedData <- CollectData.channelsAfter
-      (Milliseconds 100.0)
-      mySequencer
-      (Network.empty "network")
-      $ structure
           </> R.streamToInlet (toInlet "patch" "node" "inlet1") stream
           </> R.streamToInlet (toInlet "patch" "node" "inlet2") stream
 
+    delay $ Milliseconds 100.0
+
+    collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
     collectedData `shouldContain`
       (InletData (toInlet "patch" "node" "inlet1") Banana)
     collectedData `shouldContain`
@@ -220,40 +235,40 @@ spec = do
 
 
   it "when inlet was removed, it stops receiving data" $ do
-      let
-        structure :: Actions
-        structure =
-          Actions.init
-            </> R.addPatch "patch"
-            </> R.addNode (toPatch "patch") "node" Empty
-            </> R.addInlet (toNode "patch" "node") "inlet" Pass
-        stream = R.flow $ const Banana <$> interval 25
+    let stream = R.flow $ const Banana <$> interval 25
 
-        nwWithFlow
-          = structure </>
-            R.streamToInlet (toInlet "patch" "node" "inlet") stream
+    actionTraceSpy <- liftEffect $ Spy.trace <#> Spy.contramap collectData
 
-      nw' /\ collectedData <- CollectData.channelsAfter
-        (Milliseconds 100.0)
+    { push } <- liftEffect $ Actions.run_
         mySequencer
-        (Network.empty "network")
-        nwWithFlow
+        (pure $ Network.empty "foo")
+        (Spy.with actionTraceSpy)
 
-      collectedData `shouldContain`
-        (InletData (toInlet "patch" "node" "inlet") Banana)
+    liftEffect
+           $  Actions.pushAll push
+           $  Actions.init
+          </> R.addPatch "patch"
+          </> R.addNode (toPatch "patch") "node" Empty
+          </> R.addInlet (toNode "patch" "node") "inlet" Pass
+          </> R.streamToInlet (toInlet "patch" "node" "inlet") stream
 
-      _ /\ collectedData' <- CollectData.channelsAfter
-        (Milliseconds 100.0)
-        mySequencer
-        (Network.empty "network")
-        $ nwWithFlow </> R.removeInlet (toInlet "patch" "node" "inlet")
+    delay $ Milliseconds 100.0
 
-      collectedData' `shouldNotContain`
-        (InletData (toInlet "patch" "node" "inlet") Banana)
+    collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
+    collectedData `shouldContain`
+      (InletData (toInlet "patch" "node" "inlet") Banana)
 
-      collectedData' `shouldEqual` []
+    _ <- liftEffect $ Spy.reset actionTraceSpy
 
-      pure unit
+    liftEffect $ push $ R.removeInlet (toInlet "patch" "node" "inlet")
+
+    delay $ Milliseconds 100.0
+
+    collectedData' <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
+    collectedData' `shouldNotContain`
+      (InletData (toInlet "patch" "node" "inlet") Banana)
+
+    collectedData' `shouldEqual` []
 
   pending "sending data to the inlet triggers the processing function of the node"
 

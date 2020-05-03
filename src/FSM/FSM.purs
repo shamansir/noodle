@@ -2,7 +2,7 @@ module FSM
     ( FSM
     , make, makeWithPush, makePassing
     , makeMinimal, makeWithNoEffects
-    , run, run', run'', fold, fold'
+    , run, run', run'', run_, fold, fold'
     , pushAll, noSubscription
     , update, update'
     , imapModel, imapAction
@@ -159,6 +159,19 @@ run'
             }
 run' fsm init subscription = do
     run'' fsm init subscription noSubscription
+
+
+run_
+    :: forall action model
+     . FSM action model
+    -> model
+    -> (action -> Effect Unit)
+    -> Effect
+            { push :: action -> Effect Unit
+            , stop :: Canceler
+            }
+run_ fsm init =
+    run'' fsm init noSubscription
 
 
 run''
