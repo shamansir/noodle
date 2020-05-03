@@ -18,4 +18,5 @@ toolkit =
     T.Toolkit (T.ToolkitName "xodus") nodes
     where
         nodes NodeListNode = T.emptyNode
-        nodes BangNode = bangNode
+        nodes ConnectNode = connectNode
+        nodes DatabasesNode = databaseNode

@@ -5,7 +5,7 @@ import Prelude
 import Data.Tuple.Nested ((/\))
 
 import Noodle.Process (ProcessF(..)) as R
-import Noodle.Toolkit (NodeDef(..), withInlets, withOutlets) as T
+import Noodle.Toolkit (NodeDef(..), noInlets, withInlets, withOutlets) as T
 import Noodle.Toolkit ((~<), (>~))
 import Noodle.Render.Atom (class Atom) as R
 
@@ -17,30 +17,46 @@ type NodeDef = T.NodeDef Value Channel
 
 
 data Node
-    = BangNode
+    = ConnectNode
     | NodeListNode
+    | DatabasesNode
 
 
 instance showNode :: Show Node where
     show NodeListNode = "node list"
-    show BangNode = "bang"
+    show ConnectNode = "connect"
+    show DatabasesNode = "databases"
 
 
 nodesForTheList :: Array Node
 nodesForTheList =
-    [ BangNode
+    [ ConnectNode
+    , DatabasesNode
     ]
 
 
-bangNode :: NodeDef
-bangNode =
+connectNode :: NodeDef
+connectNode =
     T.NodeDef
         { inlets :
             T.withInlets
             ~< "bang" /\ Channel
         , outlets :
             T.withOutlets
-            >~ "bang" /\ Channel
+            >~ "databases" /\ Channel
+        , process : R.Process pure  -- FIXME: use `PassThrough`
+        }
+
+
+databaseNode :: NodeDef
+databaseNode =
+    T.NodeDef
+        { inlets :
+            T.withInlets
+            ~< "databases" /\ Channel
+        , outlets :
+            T.withOutlets
+            >~ "database" /\ Channel
         , process : R.Process pure  -- FIXME: use `PassThrough`
         }
 

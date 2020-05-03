@@ -7,7 +7,7 @@ import Data.Maybe (maybe)
 
 import Noodle.Network (Node(..)) as R
 import Noodle.API.Action (Action(..), RequestAction(..), DataAction(..)) as A
-import Noodle.Render.Html (View, ToolkitRenderer, core) as R
+import Noodle.Render.Html (View, ToolkitRenderer, core, my) as R
 import Noodle.Render.Html.NodeList (render) as NodeList
 import Noodle.Path as P
 import Noodle.Process (Receive, Send) as R
@@ -48,7 +48,7 @@ renderNode
 renderNode NodeListNode (R.Node _ (P.ToNode { patch }) _ _ _) _ _ =
     NodeList.render (P.ToPatch patch) nodesForTheList
 
-renderNode BangNode (R.Node _ path _ _ _) _ _ =
+renderNode ConnectNode (R.Node _ path _ _ _) _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
@@ -56,7 +56,16 @@ renderNode BangNode (R.Node _ path _ _ _) _ _ =
                 $ H.always_ $ R.core
                 $ A.Request
                 $ A.ToSendToInlet (P.inletInNode path "bang")
-                $ Value
+                $ Bang
             ]
             [ H.text "◌" ]
+        ]
+
+renderNode DatabasesNode (R.Node _ path _ _ _) _ _ =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ H.div
+            [
+            ]
+            [ H.text "databases" ]
         ]
