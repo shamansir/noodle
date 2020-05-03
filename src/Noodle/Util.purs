@@ -34,6 +34,11 @@ type Rect = { width :: Number, height :: Number }
 type Bounds = Position /\ Rect
 
 
+-- instance ringPosition :: Ring Position where
+--     sub posA posB =
+--       { x : posA.x + posB.x, y : posA.y + posB.y }
+
+
 quickBounds :: Number -> Number -> Number -> Number -> Bounds
 quickBounds x y width height =
     -- { pos : { x, y }, rect : { width, height }}
