@@ -3,14 +3,17 @@ module Xodus.Toolkit.Node where
 import Prelude
 
 import Data.Tuple.Nested ((/\))
+import Data.Maybe (Maybe(..))
+import Data.List ((:), List(..))
 
 import Noodle.Process (ProcessF(..)) as R
 import Noodle.Toolkit (NodeDef(..), noInlets, withInlets, withOutlets) as T
 import Noodle.Toolkit ((~<), (>~))
 import Noodle.Render.Atom (class Atom) as R
 
-import Xodus.Toolkit.Value (Value)
+import Xodus.Toolkit.Value (Value(..), Database(..))
 import Xodus.Toolkit.Channel (Channel(..))
+import Xodus.Toolkit.Requests
 
 
 type NodeDef = T.NodeDef Value Channel
@@ -44,7 +47,13 @@ connectNode =
         , outlets :
             T.withOutlets
             >~ "databases" /\ Channel
-        , process : R.Process pure  -- FIXME: use `PassThrough`
+       , process : R.Process
+            $ \receive -> do
+                _ <- someFunction
+                let
+                    send "databases" = Just $ Databases (Database "some-name" : Nil)
+                    send _ = Nothing
+                pure send
         }
 
 
