@@ -8,4 +8,4 @@ data Value = Value
 
 
 instance showValue :: Show Value where
-    show Value = "Value_"
+    show Value = "Value"

@@ -16,8 +16,6 @@ import Data.Traversable (traverse_, for_)
 import Data.Spread (run) as Spread
 import Data.Vec2 (Vec2(..))
 
-import Debug.Trace as DT
-
 
 class OnCanvas x where
     apply :: x -> Context2D -> Effect Unit

@@ -19,7 +19,7 @@ import Xodus.Toolkit (toolkit, htmlRenderer) as XodusToolkit
 
 
 network :: forall d c n. Network d c n
-network = Network.empty "aaa"
+network = Network.empty "xodus"
 
 
 main :: Effect Unit
