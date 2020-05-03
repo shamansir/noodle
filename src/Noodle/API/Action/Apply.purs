@@ -3,11 +3,13 @@ module Noodle.API.Action.Apply where
 import Prelude
 import Effect (Effect)
 
+import Debug.Trace (spy) as DT
+
 import Data.Maybe
 import Data.String (take) as String
 import Data.Either
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Sequence (empty, singleton, toUnfoldable) as Seq
+import Data.Sequence (empty, singleton, toUnfoldable, length) as Seq
 import Data.Lens (view, setJust, set)
 import Data.List (singleton, fromFoldable) as List
 import Data.Array ((:)) as A

@@ -111,8 +111,6 @@ spec = do
             </> R.sendToInlet curse1Inlet (Curse 4)
             </> R.sendToInlet curse2Inlet (Curse 3)
 
-      delay $ Milliseconds 100.0
-
       collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
       collectedData `shouldContain`
         (InletData curse1Inlet $ Curse 4)
@@ -120,7 +118,6 @@ spec = do
         (InletData curse2Inlet $ Curse 3)
       collectedData `shouldContain`
         (OutletData applesOutlet $ Apple 7)
-
 
     it "returning multiple values from processing function actually sends these values to the outlets" $ do
       let
@@ -167,6 +164,7 @@ spec = do
       liftEffect
              $  Actions.pushAll push
              $  Actions.init
+            </> R.addPatch "patch"
             </> R.addNodeByDef
                     (toPatch "patch")
                     "node"
@@ -174,8 +172,6 @@ spec = do
                     nodeDef
             </> R.sendToInlet curse1Inlet (Curse 4)
             </> R.sendToInlet curse2Inlet (Curse 3)
-
-      delay $ Milliseconds 100.0
 
       collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
@@ -187,8 +183,6 @@ spec = do
         (OutletData apples1Outlet $ Apple 7)
       collectedData `shouldContain`
         (OutletData apples2Outlet $ Apple 1)
-
-      pure unit
 
 
     it "when node has no outlets, but has some inlets, processing is still performed" $ do
@@ -233,8 +227,6 @@ spec = do
                     nodeDef
             </> R.sendToInlet curseInlet (Curse 4)
 
-      delay $ Milliseconds 100.0
-
       collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
       storedValue <- liftEffect $ Ref.read valueRef
@@ -243,8 +235,6 @@ spec = do
         (InletData curseInlet $ Curse 4)
 
       storedValue `shouldEqual` (Curse 4)
-
-      pure unit
 
 
     it "when node has both no outlets and inlets, processing is not performed" $ do
@@ -341,8 +331,6 @@ spec = do
                     nodeDef
             </> R.sendToInlet curseInlet (Curse 4)
             </> R.sendToInlet curseInlet (Curse 3)
-
-      delay $ Milliseconds 100.0
 
       collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
 
@@ -489,9 +477,9 @@ spec = do
       collectedData' `shouldEqual` []
 
     -- FIXME: the values which are streamed this way are staying for the moment,
-    --        for some reason we need to cancel everything outlet-related,
-    --        not only link-related, to get rid of this behavior
-    pending' "when node was removed, its ingoing connections are deactivated and do not receive any data" $ do
+    --        for some reason we have to cancel the user stream itself,
+    --        not only the pushing subscription, to get rid of this behavior
+    it "when node was removed, its ingoing connections are deactivated and do not receive any data" $ do
       let
         curseOutlet = toOutlet "patch" "other" "curse"
         curseInlet = toInlet "patch" "subject" "curse"
@@ -561,7 +549,3 @@ spec = do
 
       collectedData' `shouldNotContain`
         (InletData curseInlet $ Curse 4)
-
-      collectedData' `shouldEqual` []
-
-      pure unit

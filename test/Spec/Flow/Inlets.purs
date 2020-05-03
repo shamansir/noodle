@@ -57,7 +57,7 @@ spec = do
 
     delay $ Milliseconds 100.0
 
-    collectedData <- liftEffect $ Spy.get actionTraceSpy
+    collectedData <- liftEffect $ Array.catMaybes <$> Spy.get actionTraceSpy
     collectedData `shouldEqual` []
 
   pending "we receive the default value of the inlet just when it was set"
