@@ -47,11 +47,11 @@ connectNode =
         , outlets :
             T.withOutlets
             >~ "databases" /\ Channel
-       , process : R.Process
+       , process : R.ProcessAff
             $ \receive -> do
-                _ <- someFunction
+                databases <- getDatabases
                 let
-                    send "databases" = Just $ Databases (Database "some-name" : Nil)
+                    send "databases" = Just $ Databases databases
                     send _ = Nothing
                 pure send
         }

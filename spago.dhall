@@ -2,11 +2,12 @@
 Welcome to a Spago project!
 You can edit this file as you like.
 -}
-{ name =
-    "purescript-noodle"
+{ name = "purescript-noodle"
 , dependencies =
   [ "aff"
   , "affjax"
+  , "argonaut-codecs"
+  , "argonaut-core"
   , "arrays"
   , "behaviors"
   , "canvas"

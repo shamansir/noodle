@@ -344,7 +344,6 @@ spec = do
         (InletData curseInlet $ Curse 3)
       collectedData `shouldContain`
         (OutletData applesOutlet $ Apple 14)
-      -- because delayed more than 90ms
       collectedData `shouldNotContain`
         (OutletData applesOutlet $ Apple 17)
 
