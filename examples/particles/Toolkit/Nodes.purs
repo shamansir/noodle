@@ -24,7 +24,6 @@ import Data.Spread as Spread
 
 import Data.Time.Duration (Milliseconds(..))
 import Data.DateTime.Instant (unInstant)
-import Debug.Trace as DT
 
 import Noodle.UUID as UUID
 import Noodle.Process as R
