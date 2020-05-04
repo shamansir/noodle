@@ -1,0 +1,12 @@
+.xodus-connect-button {
+    padding: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    color: red;
+    font-size: 20px;
+}
+
+.xodus-database {
+    cursor: pointer;
+    padding: 3px;
+}
