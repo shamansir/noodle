@@ -11,8 +11,9 @@ import Noodle.Toolkit (NodeDef(..), noInlets, withInlets, withOutlets) as T
 import Noodle.Toolkit ((~<), (>~))
 import Noodle.Render.Atom (class Atom) as R
 
-import Xodus.Toolkit.Value (Value(..), Database(..))
+import Xodus.Toolkit.Value (Value(..))
 import Xodus.Toolkit.Channel (Channel(..))
+import Xodus.Toolkit.Dto
 import Xodus.Toolkit.Requests
 
 
@@ -23,12 +24,14 @@ data Node
     = ConnectNode
     | NodeListNode
     | DatabasesNode
+    | QueryNode
 
 
 instance showNode :: Show Node where
     show NodeListNode = "node list"
     show ConnectNode = "connect"
     show DatabasesNode = "databases"
+    show QueryNode = "query"
 
 
 nodesForTheList :: Array Node
@@ -66,7 +69,29 @@ databaseNode =
         , outlets :
             T.withOutlets
             >~ "database" /\ Channel
-        , process : R.Process pure  -- FIXME: use `PassThrough`
+        , process : R.Withhold
+        }
+
+
+queryNode :: NodeDef
+queryNode =
+    T.NodeDef
+        { inlets :
+            T.withInlets
+            ~< "database" /\ Channel
+        , outlets :
+            T.withOutlets
+            >~ "enitities" /\ Channel
+        , process : R.ProcessAff
+            $ \receive ->
+                case receive "database" of
+                    Just (Source (Database location)) -> do
+                        databases <- getDatabases
+                        let
+                            send "databases" = Just $ Databases databases
+                            send _ = Nothing
+                        pure send
+                    _ -> pure $ const Nothing
         }
 
 

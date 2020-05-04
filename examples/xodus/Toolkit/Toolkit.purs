@@ -20,3 +20,4 @@ toolkit =
         nodes NodeListNode = T.emptyNode
         nodes ConnectNode = connectNode
         nodes DatabasesNode = databaseNode
+        nodes QueryNode = queryNode

@@ -6,17 +6,17 @@ import Prelude
 import Data.List (List)
 import Data.List (length) as List
 
-
-data Database = Database String
+import Xodus.Toolkit.Dto
+import Xodus.Toolkit.Requests
 
 
 data Value
     = Bang
     | Databases (List Database)
-    | TheDatabase Database
+    | Source Database
 
 
 instance showValue :: Show Value where
     show Bang = "◌"
     show (Databases databases) = (show $ List.length databases) <> " Databases"
-    show (TheDatabase (Database databaseName)) = show databaseName
+    show (Source (Database databaseName)) = show databaseName

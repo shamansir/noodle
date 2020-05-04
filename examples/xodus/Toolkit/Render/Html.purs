@@ -3,7 +3,8 @@ module Xodus.Toolkit.Render.Html where
 
 import Prelude
 
-import Data.Maybe (maybe)
+import Data.Maybe (Maybe(..), maybe)
+import Data.List (toUnfoldable)
 
 import Noodle.Network (Node(..)) as R
 import Noodle.API.Action (Action(..), RequestAction(..), DataAction(..)) as A
@@ -20,6 +21,7 @@ import Spork.Html as H
 import Xodus.Toolkit.Node (Node(..), nodesForTheList)
 import Xodus.Toolkit.Value (Value(..))
 import Xodus.Toolkit.Channel (Channel(..))
+import Xodus.Toolkit.Dto
 
 
 renderer :: R.ToolkitRenderer Value Channel Node
@@ -58,14 +60,30 @@ renderNode ConnectNode (R.Node _ path _ _ _) _ _ =
                 $ A.ToSendToInlet (P.inletInNode path "bang")
                 $ Bang
             ]
-            [ H.text "◌" ]
+            [ H.span [ H.classes [ "xodus-connect-button" ] ] [ H.text "◌" ] ]
         ]
 
-renderNode DatabasesNode (R.Node _ path _ _ _) _ _ =
+renderNode DatabasesNode (R.Node _ path _ _ _) receive _ =
     H.div
         [ H.classes [ "tk-node" ] ]
-        [ H.div
-            [
-            ]
-            [ H.text "databases" ]
+        [ case receive "databases" of
+               Just (Databases databases) -> H.ul [] $ renderDatabase <$> toUnfoldable databases
+               _ -> H.text "no databases"
         ]
+    where
+        renderDatabase :: Database -> R.View Value Channel Node
+        renderDatabase (Database database) =
+            H.li
+                [ H.classes [ "xodus-database" ]
+                , H.onClick
+                    $ H.always_ $ R.core
+                    $ A.Request
+                    $ A.ToSendToOutlet (P.outletInNode path "database")
+                    $ Source $ Database database
+                ]
+                [ H.text database.location ]
+
+renderNode QueryNode (R.Node _ path _ _ _) receive _ =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ H.div [] [] ]
