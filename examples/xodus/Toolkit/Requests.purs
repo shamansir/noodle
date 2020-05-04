@@ -18,20 +18,33 @@ import Affjax.ResponseFormat (json)
 import Xodus.Toolkit.Dto
 
 
+newtype Method = Method String
+
+
 rootApi :: String
 rootApi = "http://localhost:18080/api"
 
 
+requestList :: forall a. J.DecodeJson a => Method -> Aff (List a)
+requestList (Method method) =
+    get json (rootApi <> method)
+        <#> either (const Nil)
+            (_.body >>> decodeList)
+    where
+        decodeList :: Json -> List a
+        decodeList = J.decodeJson >>> either (const Nil) identity
+
+
 getDatabases :: Aff (List Database)
 getDatabases =
-    get json (rootApi <> "/dbs")
-        <#> either (const Nil)
-            (_.body
-                >>> decodeDatabases
-                >>> map unwrap
-                >>> map Database)
+    requestList $ Method "/dbs"
 
 
-decodeDatabases :: Json -> List Database
-decodeDatabases v =
-    J.decodeJson v # either (const Nil) identity
+getEntities :: Database -> Aff (List Entity)
+getEntities _ =
+    requestList $ Method "/entities"
+
+
+getEntityTypes :: Database -> Aff (List EntityType)
+getEntityTypes (Database database) =
+    requestList $ Method $ "/dbs/" <> database.uuid <> "/types"
