@@ -19,5 +19,6 @@ toolkit =
     where
         nodes NodeListNode = T.emptyNode
         nodes ConnectNode = connectNode
-        nodes DatabasesNode = databaseNode
-        nodes QueryNode = queryNode
+        nodes SourceNode = sourceNode
+        nodes AllOfNode = allOfNode
+        nodes SelectNode = selectNode

@@ -18,12 +18,16 @@ recipe =
         </> Actions.addPatch "xodus-dnq"
         </> Actions.addNode (R.toPatch "xodus-dnq") "list" NodeListNode
         </> Actions.addNode (R.toPatch "xodus-dnq") "connect" ConnectNode
-        </> Actions.addNode (R.toPatch "xodus-dnq") "databases" DatabasesNode
-        </> Actions.addNode (R.toPatch "xodus-dnq") "query" QueryNode
+        </> Actions.addNode (R.toPatch "xodus-dnq") "source" SourceNode
+        </> Actions.addNode (R.toPatch "xodus-dnq") "all-of" AllOfNode
+        </> Actions.addNode (R.toPatch "xodus-dnq") "select" SelectNode
         </> Actions.connect
                 (R.toOutlet "xodus-dnq" "connect" "databases")
-                (R.toInlet "xodus-dnq" "databases" "databases")
+                (R.toInlet "xodus-dnq" "source" "databases")
         </> Actions.connect
-                (R.toOutlet "xodus-dnq" "databases" "database")
-                (R.toInlet "xodus-dnq" "query" "database")
+                (R.toOutlet "xodus-dnq" "source" "source")
+                (R.toInlet "xodus-dnq" "all-of" "source")
+        </> Actions.connect
+                (R.toOutlet "xodus-dnq" "all-of" "query")
+                (R.toInlet "xodus-dnq" "select" "query")
 

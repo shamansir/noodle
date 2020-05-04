@@ -14,10 +14,11 @@ import Noodle.Toolkit ((~<), (>~))
 import Noodle.Toolkit (defineNode) as T
 import Noodle.Render.Atom (class Atom) as R
 
-import Xodus.Toolkit.Value (Value(..), QueryResult(..))
+import Xodus.Toolkit.Value (Value(..))
 import Xodus.Toolkit.Channel (Channel(..))
-import Xodus.Toolkit.Dto
-import Xodus.Toolkit.Requests
+import Xodus.Dto
+import Xodus.Requests
+import Xodus.Query as Q
 
 
 type NodeDef = T.NodeDef Value Channel
@@ -26,22 +27,25 @@ type NodeDef = T.NodeDef Value Channel
 data Node
     = ConnectNode
     | NodeListNode
-    | DatabasesNode
-    | QueryNode
+    | SourceNode
+    | AllOfNode
+    | SelectNode
 
 
 instance showNode :: Show Node where
     show NodeListNode = "node list"
     show ConnectNode = "connect"
-    show DatabasesNode = "databases"
-    show QueryNode = "query"
+    show SourceNode = "source"
+    show AllOfNode = "all of"
+    show SelectNode = "select"
 
 
 nodesForTheList :: Array Node
 nodesForTheList =
     [ ConnectNode
-    , DatabasesNode
-    , QueryNode
+    , SourceNode
+    , AllOfNode
+    , SelectNode
     ]
 
 
@@ -61,33 +65,63 @@ connectNode =
                 pure send
 
 
-databaseNode :: NodeDef
-databaseNode =
+sourceNode :: NodeDef
+sourceNode =
     T.defineNode
         (T.withInlets
-            ~< "databases" /\ Channel)
+            ~< "databases" /\ Channel
+            ~< "only" /\ Channel)
         (T.withOutlets
-            >~ "database" /\ Channel)
-        R.Withhold
+            >~ "source" /\ Channel)
+        $ R.ProcessAff
+            $ \receive -> do
+                case receive "only" of
+                    Just (SelectDatabase database) -> do
+                        entityTypes <- getEntityTypes database
+                        let
+                            send "source" = Just $ Source database entityTypes
+                            send _ = Nothing
+                        pure send
+                    _ -> pure $ const Nothing
 
 
-queryNode :: NodeDef
-queryNode =
+allOfNode :: NodeDef
+allOfNode =
     T.defineNode
         (T.withInlets
-            ~< "database" /\ Channel)
+            ~< "source" /\ Channel
+            ~< "only" /\ Channel)
         (T.withOutlets
-            >~ "entities" /\ Channel
-            >~ "types" /\ Channel)
+            >~ "query" /\ Channel)
+        $ R.Process
+            $ \receive ->
+                case receive "source" of
+                    Just (Source database entityTypes) -> do
+                        let
+                            send "query" = Just $ Query $ Q.make database entityTypes $
+                                case receive "only" of
+                                    Just (SelectType entityType) ->
+                                        Q.AllOf entityType
+                                    _ -> Q.All
+                            send _ = Nothing
+                        pure send
+                    _ -> pure $ const Nothing
+
+
+selectNode :: NodeDef
+selectNode =
+    T.defineNode
+        (T.withInlets
+            ~< "query" /\ Channel)
+        (T.withOutlets
+            >~ "result" /\ Channel)
         $ R.ProcessAff
             $ \receive ->
-                case receive "database" of
-                    Just (Source database) -> do
-                        entityTypes <- getEntityTypes database
-                        allEntities <- fold $ getEntities database <$> entityTypes
+                case receive "query" of
+                    Just (Query query) -> do
+                        entities <- perform query
                         let
-                            send "types" = Just $ Result $ HasEntityTypes entityTypes
-                            send "entities" = Just $ Result $ HasEntities allEntities
+                            send "result" = Just $ Result entities
                             send _ = Nothing
                         pure send
                     _ -> pure $ const Nothing

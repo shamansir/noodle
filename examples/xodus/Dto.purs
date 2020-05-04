@@ -1,4 +1,4 @@
-module Xodus.Toolkit.Dto where
+module Xodus.Dto where
 
 import Data.Newtype (class Newtype, unwrap)
 import Data.Argonaut.Core (Json)
