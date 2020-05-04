@@ -25,14 +25,19 @@ rootApi :: String
 rootApi = "http://localhost:18080/api"
 
 
-requestList :: forall a. J.DecodeJson a => Method -> Aff (List a)
-requestList (Method method) =
+requestValue :: forall a. J.DecodeJson a => Method -> a -> Aff a
+requestValue (Method method) default =
     get json (rootApi <> method)
-        <#> either (const Nil)
-            (_.body >>> decodeList)
+        <#> either (const default)
+            (_.body >>> decodeValue)
     where
-        decodeList :: Json -> List a
-        decodeList = J.decodeJson >>> either (const Nil) identity
+        decodeValue :: Json -> a
+        decodeValue = J.decodeJson >>> either (const default) identity
+
+
+requestList :: forall a. J.DecodeJson a => Method -> Aff (List a)
+requestList method =
+    requestValue method Nil
 
 
 getDatabases :: Aff (List Database)
@@ -40,9 +45,15 @@ getDatabases =
     requestList $ Method "/dbs"
 
 
-getEntities :: Database -> Aff (List Entity)
-getEntities _ =
-    requestList $ Method "/entities"
+getEntities :: Database -> EntityType -> Aff (List Entity)
+getEntities (Database database) (EntityType entityType) =
+    requestValue
+        (Method $ "/dbs/" <> database.uuid <> "/entities"
+                          <> "?id=" <> show entityType.id
+                          <> "&offset=" <> show 0
+                          <> "&pageSize=" <> show 50)
+        { items : (Nil :: List Entity) }
+        <#> _.items
 
 
 getEntityTypes :: Database -> Aff (List EntityType)

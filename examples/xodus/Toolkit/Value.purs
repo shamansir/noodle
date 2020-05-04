@@ -25,6 +25,6 @@ data Value
 instance showValue :: Show Value where
     show Bang = "◌"
     show (Databases databases) = (show $ List.length databases) <> " Databases"
-    show (Source (Database databaseName)) = show databaseName
+    show (Source (Database database)) = show database.location
     show (Result (HasEntities entities)) = (show $ List.length entities) <> " Entities"
     show (Result (HasEntityTypes entityTypes)) = (show $ List.length entityTypes) <> " Entity Types"
