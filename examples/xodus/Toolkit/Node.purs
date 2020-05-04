@@ -5,10 +5,13 @@ import Prelude
 import Data.Tuple.Nested ((/\))
 import Data.Maybe (Maybe(..))
 import Data.List ((:), List(..))
+import Data.Foldable (fold)
+import Data.Traversable (traverse)
 
 import Noodle.Process (ProcessF(..)) as R
 import Noodle.Toolkit (NodeDef(..), noInlets, withInlets, withOutlets) as T
 import Noodle.Toolkit ((~<), (>~))
+import Noodle.Toolkit (defineNode) as T
 import Noodle.Render.Atom (class Atom) as R
 
 import Xodus.Toolkit.Value (Value(..), QueryResult(..))
@@ -44,57 +47,50 @@ nodesForTheList =
 
 connectNode :: NodeDef
 connectNode =
-    T.NodeDef
-        { inlets :
-            T.withInlets
-            ~< "bang" /\ Channel
-        , outlets :
-            T.withOutlets
-            >~ "databases" /\ Channel
-       , process : R.ProcessAff
+    T.defineNode
+        (T.withInlets
+            ~< "bang" /\ Channel)
+        (T.withOutlets
+            >~ "databases" /\ Channel)
+        $ R.ProcessAff
             $ \receive -> do
                 databases <- getDatabases
                 let
                     send "databases" = Just $ Databases databases
                     send _ = Nothing
                 pure send
-        }
 
 
 databaseNode :: NodeDef
 databaseNode =
-    T.NodeDef
-        { inlets :
-            T.withInlets
-            ~< "databases" /\ Channel
-        , outlets :
-            T.withOutlets
-            >~ "database" /\ Channel
-        , process : R.Withhold
-        }
+    T.defineNode
+        (T.withInlets
+            ~< "databases" /\ Channel)
+        (T.withOutlets
+            >~ "database" /\ Channel)
+        R.Withhold
 
 
 queryNode :: NodeDef
 queryNode =
-    T.NodeDef
-        { inlets :
-            T.withInlets
-            ~< "database" /\ Channel
-        , outlets :
-            T.withOutlets
-            >~ "enitities" /\ Channel
-            >~ "types" /\ Channel
-        , process : R.ProcessAff
+    T.defineNode
+        (T.withInlets
+            ~< "database" /\ Channel)
+        (T.withOutlets
+            >~ "entities" /\ Channel
+            >~ "types" /\ Channel)
+        $ R.ProcessAff
             $ \receive ->
                 case receive "database" of
                     Just (Source database) -> do
                         entityTypes <- getEntityTypes database
+                        allEntities <- fold $ getEntities database <$> entityTypes
                         let
                             send "types" = Just $ Result $ HasEntityTypes entityTypes
+                            send "entities" = Just $ Result $ HasEntities allEntities
                             send _ = Nothing
                         pure send
                     _ -> pure $ const Nothing
-        }
 
 
 instance nodeAtom :: R.Atom Node where

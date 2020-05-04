@@ -35,6 +35,10 @@ import Noodle.UUID as UUID
 type Perform d c n = (Network d c n -> Effect Unit)
 
 
+-- FIXME: add the `Process` action which is executed every type some node is processed
+--        so, for example, UI could track that action to update the view of the node
+
+
 data Action d c n
     = NoOp
     | Inner (InnerAction d c n)

@@ -8,5 +8,9 @@
 
 .xodus-database {
     cursor: pointer;
+}
+
+.xodus-list-item {
     padding: 3px;
+    display: inline-block;
 }

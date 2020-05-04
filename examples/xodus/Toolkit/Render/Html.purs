@@ -19,7 +19,7 @@ import Spork.Html (Html)
 import Spork.Html as H
 
 import Xodus.Toolkit.Node (Node(..), nodesForTheList)
-import Xodus.Toolkit.Value (Value(..))
+import Xodus.Toolkit.Value (Value(..), QueryResult(..))
 import Xodus.Toolkit.Channel (Channel(..))
 import Xodus.Toolkit.Dto
 
@@ -63,10 +63,10 @@ renderNode ConnectNode (R.Node _ path _ _ _) _ _ =
             [ H.span [ H.classes [ "xodus-connect-button" ] ] [ H.text "◌" ] ]
         ]
 
-renderNode DatabasesNode (R.Node _ path _ _ _) receive _ =
+renderNode DatabasesNode (R.Node _ path _ _ _) atInlet _ =
     H.div
         [ H.classes [ "tk-node" ] ]
-        [ case receive "databases" of
+        [ case atInlet "databases" of
                Just (Databases databases) -> H.ul [] $ renderDatabase <$> toUnfoldable databases
                _ -> H.text "no databases"
         ]
@@ -74,7 +74,7 @@ renderNode DatabasesNode (R.Node _ path _ _ _) receive _ =
         renderDatabase :: Database -> R.View Value Channel Node
         renderDatabase (Database database) =
             H.li
-                [ H.classes [ "xodus-database" ]
+                [ H.classes [ "xodus-list-item xodus-database" ]
                 , H.onClick
                     $ H.always_ $ R.core
                     $ A.Request
@@ -83,7 +83,18 @@ renderNode DatabasesNode (R.Node _ path _ _ _) receive _ =
                 ]
                 [ H.text database.location ]
 
-renderNode QueryNode (R.Node _ path _ _ _) receive _ =
+renderNode QueryNode (R.Node _ path _ _ _) _ atOutlet =
     H.div
         [ H.classes [ "tk-node" ] ]
-        [ H.div [] [] ]
+            [ case atOutlet "types" of
+                Just (Result (HasEntityTypes entityTypes)) ->
+                    H.ul [] $ renderEntityType <$> toUnfoldable entityTypes
+                _ -> H.text "no entity types"
+        ]
+    where
+        renderEntityType :: EntityType -> R.View Value Channel Node
+        renderEntityType (EntityType entityType) =
+            H.li
+                [ H.classes [ "xodus-list-item xodus-entity-type" ]
+                ]
+                [ H.text $ show entityType.id <> ": " <> entityType.name ]
