@@ -11,7 +11,7 @@ import Noodle.Toolkit (NodeDef(..), noInlets, withInlets, withOutlets) as T
 import Noodle.Toolkit ((~<), (>~))
 import Noodle.Render.Atom (class Atom) as R
 
-import Xodus.Toolkit.Value (Value(..))
+import Xodus.Toolkit.Value (Value(..), QueryResult(..))
 import Xodus.Toolkit.Channel (Channel(..))
 import Xodus.Toolkit.Dto
 import Xodus.Toolkit.Requests
@@ -38,6 +38,7 @@ nodesForTheList :: Array Node
 nodesForTheList =
     [ ConnectNode
     , DatabasesNode
+    , QueryNode
     ]
 
 
@@ -82,13 +83,14 @@ queryNode =
         , outlets :
             T.withOutlets
             >~ "enitities" /\ Channel
+            >~ "types" /\ Channel
         , process : R.ProcessAff
             $ \receive ->
                 case receive "database" of
-                    Just (Source (Database location)) -> do
-                        databases <- getDatabases
+                    Just (Source database) -> do
+                        entityTypes <- getEntityTypes database
                         let
-                            send "databases" = Just $ Databases databases
+                            send "types" = Just $ Result $ HasEntityTypes entityTypes
                             send _ = Nothing
                         pure send
                     _ -> pure $ const Nothing
