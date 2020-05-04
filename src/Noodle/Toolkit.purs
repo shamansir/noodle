@@ -2,7 +2,7 @@ module Noodle.Toolkit
     ( Toolkit(..), ToolkitName(..)
     , NodeDefAlias(..), ChannelDefAlias(..)
     , InletAlias(..), OutletAlias(..)
-    , NodeDef(..)
+    , NodeDef(..), defineNode
     , class Channels
     , default, adapt, accept--, show
     -- , nodes, inlets, outlets
@@ -87,9 +87,9 @@ class Channels d c where
 
 data NodeDef d c =
     NodeDef
-        { process :: ProcessF d
-        , inlets :: List (InletAlias /\ c)
+        { inlets :: List (InletAlias /\ c)
         , outlets :: List (OutletAlias /\ c)
+        , process :: ProcessF d
         }
         -- (Channels d c =>
         --     { process :: ProcessF d
@@ -135,6 +135,15 @@ emptyNode =
         , inlets : List.Nil
         , outlets : List.Nil
         }
+
+
+defineNode
+    :: forall d c
+     . List (InletAlias /\ c)
+    -> List (OutletAlias /\ c)
+    -> ProcessF d
+    -> NodeDef d c
+defineNode inlets outlets process = NodeDef { inlets, outlets, process }
 
 
 infixl 1 andInlet as ~<
