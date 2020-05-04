@@ -1,4 +1,4 @@
-module Xodus.Toolkit.Requests where
+module Xodus.Requests where
 
 import Prelude
 
@@ -15,7 +15,8 @@ import Effect.Aff (Milliseconds(..), Aff, launchAff_, delay)
 import Affjax (get)
 import Affjax.ResponseFormat (json)
 
-import Xodus.Toolkit.Dto
+import Xodus.Dto
+import Xodus.Query
 
 
 newtype Method = Method String
@@ -59,3 +60,12 @@ getEntities (Database database) (EntityType entityType) =
 getEntityTypes :: Database -> Aff (List EntityType)
 getEntityTypes (Database database) =
     requestList $ Method $ "/dbs/" <> database.uuid <> "/types"
+
+
+
+perform :: Query -> Aff (List Entity)
+perform (Query' database entityTypes All) = do
+    fold $ getEntities database <$> entityTypes
+perform (Query' database _ (AllOf entityType)) = do
+    getEntities database entityType
+perform _ = pure Nil

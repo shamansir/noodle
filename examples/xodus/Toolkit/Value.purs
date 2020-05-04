@@ -6,25 +6,27 @@ import Prelude
 import Data.List (List)
 import Data.List (length) as List
 
-import Xodus.Toolkit.Dto
-import Xodus.Toolkit.Requests
-
-
-data QueryResult
-    = HasEntities (List Entity)
-    | HasEntityTypes (List EntityType)
+import Xodus.Dto
+import Xodus.Requests
+import Xodus.Query as Q
 
 
 data Value
     = Bang
     | Databases (List Database)
-    | Source Database
-    | Result QueryResult
+    | SelectDatabase Database
+    | Source Database (List EntityType)
+    | SelectType EntityType
+    | Query Q.Query
+    | Result (List Entity)
 
 
 instance showValue :: Show Value where
     show Bang = "◌"
     show (Databases databases) = (show $ List.length databases) <> " Databases"
-    show (Source (Database database)) = show database.location
-    show (Result (HasEntities entities)) = (show $ List.length entities) <> " Entities"
-    show (Result (HasEntityTypes entityTypes)) = (show $ List.length entityTypes) <> " Entity Types"
+    show (SelectDatabase (Database database)) = database.location
+    show (Source (Database database) entityTypes) =
+        database.location <> ". " <> (show $ List.length entityTypes) <> " Types"
+    show (SelectType (EntityType entityType)) = entityType.name
+    show (Query query) = show query
+    show (Result entities) = (show $ List.length entities) <> " Entities"
