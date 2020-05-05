@@ -97,6 +97,14 @@ renderNode AllOfNode (R.Node _ path _ _ _) atInlet _ =
                 ]
                 [ H.text $ show id <> ": " <> name ]
 
+renderNode UnionNode node _ _ =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ H.div
+            [ ]
+            [ ]
+        ]
+
 renderNode SelectNode _ _ atOutlet =
     H.div
         [ H.classes [ "tk-node" ] ]

@@ -29,6 +29,10 @@ data Node
     | NodeListNode
     | SourceNode
     | AllOfNode
+    | UnionNode
+    -- | IntersectNode
+    -- | DropNode
+    -- | TakeNode
     | SelectNode
 
 
@@ -37,6 +41,10 @@ instance showNode :: Show Node where
     show ConnectNode = "connect"
     show SourceNode = "source"
     show AllOfNode = "all of"
+    show UnionNode = "union"
+    -- show IntersectNode = "intersect"
+    -- show DropNode = "drop"
+    -- show TakeNode = "take"
     show SelectNode = "select"
 
 
@@ -106,6 +114,29 @@ allOfNode =
                             send _ = Nothing
                         pure send
                     _ -> pure $ const Nothing
+
+
+unionNode :: NodeDef
+unionNode =
+    T.defineNode
+        (T.withInlets
+            ~< "queryA" /\ Channel
+            ~< "queryB" /\ Channel)
+        (T.withOutlets
+            >~ "query" /\ Channel)
+        $ R.Process
+            $ \receive ->
+                let
+                    send "query" =
+                        case receive "queryA" /\ receive "queryB" of
+                            Just (Query (Q.Query' dbA etA selA))
+                            /\ Just (Query (Q.Query' _ _ selB))
+                                -> Just $ Query $ Q.make dbA etA $ Q.Union selA selB
+                            Just queryA /\ Nothing -> Just queryA
+                            Nothing /\ Just queryB -> Just queryB
+                            _ -> Nothing
+                    send _ = Nothing
+                in pure send
 
 
 selectNode :: NodeDef

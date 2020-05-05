@@ -21,4 +21,5 @@ toolkit =
         nodes ConnectNode = connectNode
         nodes SourceNode = sourceNode
         nodes AllOfNode = allOfNode
+        nodes UnionNode = unionNode
         nodes SelectNode = selectNode
