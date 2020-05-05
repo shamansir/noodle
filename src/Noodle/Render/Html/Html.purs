@@ -141,8 +141,8 @@ init :: forall d c n. R.Network d c n -> Model d c n
 init nw =
     { lastInletData : Map.empty
     , lastOutletData : Map.empty
-    -- , debug : Nothing
-    , debug : Just DebugBox.init
+    , debug : Nothing
+    --, debug : Just DebugBox.init
     -- , uuidToChannelDef : Map.empty
     -- , uuidToNodeDef : Map.empty
     , uuidToChannel : Map.empty

@@ -3,6 +3,7 @@ module Xodus.Requests where
 import Prelude
 
 import Data.List
+import Data.List (take, drop, filter, union, sortBy, intersect) as List
 import Data.Newtype (class Newtype, unwrap)
 import Data.Either
 import Data.Argonaut.Core (Json)
@@ -64,8 +65,17 @@ getEntityTypes (Database database) =
 
 
 perform :: Query -> Aff (List Entity)
-perform (Query' database entityTypes All) = do
-    fold $ getEntities database <$> entityTypes
-perform (Query' database _ (AllOf entityType)) = do
-    getEntities database entityType
-perform _ = pure Nil
+perform (Query' database entityTypes selector) = foldSelector selector
+    where
+    foldSelector All = fold $ getEntities database <$> entityTypes
+    foldSelector (AllOf entityType) = getEntities database entityType
+    foldSelector (Take amount selector') = List.take amount <$> foldSelector selector'
+    foldSelector (Drop amount selector') = List.drop amount <$> foldSelector selector'
+    foldSelector (Filter (Condition condition) selector')
+            = List.filter condition <$> foldSelector selector'
+    foldSelector (Union selectorA selectorB)
+            = List.union <$> foldSelector selectorA <*> foldSelector selectorB
+    foldSelector (Intersect selectorA selectorB)
+            = List.intersect <$> foldSelector selectorA <*> foldSelector selectorB
+    foldSelector (Sort (Comparison order) selector')
+            = List.sortBy order <$> foldSelector selector'
