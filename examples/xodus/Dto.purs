@@ -1,5 +1,7 @@
 module Xodus.Dto where
 
+import Prelude (class Eq, eq, (==))
+
 import Data.Newtype (class Newtype, unwrap)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Core as J
@@ -24,6 +26,10 @@ newtype Entity =
         -- , typeId :: Int
         -- , properties :: Array ({ name :: String, value :: String })
         }
+
+
+instance eqEntity :: Eq Entity where
+    eq (Entity eA) (Entity eB) = eA.id == eB.id -- FIXME: proper comparison
 
 
 newtype EntityType =

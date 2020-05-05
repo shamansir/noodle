@@ -2,7 +2,7 @@ module Xodus.Query
     ( Query
     , Query'(..) -- FIXME: do not expose
     , Selector(..)
-    , Comparison, SortRule, Field
+    , Condition(..), Comparison(..), Field
     , make
     ) where
 
@@ -10,6 +10,7 @@ module Xodus.Query
 import Prelude (class Show, class Functor, ($))
 
 import Data.List
+import Data.Ord (Ordering)
 
 import Xodus.Dto
 
@@ -23,10 +24,10 @@ data Query' a = Query' Database (List EntityType) a
 data Field = Field String
 
 
-data Comparison = Comparison Field
+data Condition = Condition (Entity -> Boolean)
 
 
-data SortRule = SortRule Field
+data Comparison = Comparison (Entity -> Entity -> Ordering)
 
 
 data Selector
@@ -34,7 +35,7 @@ data Selector
     | AllOf EntityType
     | Take Int Selector
     | Drop Int Selector
-    | Filter Comparison Selector
+    | Filter Condition Selector
     | Union Selector Selector
     | Intersect Selector Selector
     | Sort Comparison Selector
