@@ -14,3 +14,46 @@
     padding: 3px;
     display: inline-block;
 }
+
+table.xodus-table {
+    /* border-collapse: collapse; */
+    font-size: 12px;
+    border-radius: 5px;
+    border: 1px solid #000;
+    border-spacing: 0;
+    font-family: sans-serif;
+    color: #333;
+}
+
+table.xodus-table tr {
+    border-collapse: collapse;
+}
+
+table.xodus-table th,
+table.xodus-table td {
+    /* padding: 3px; */
+    border: 1px solid #ddd;
+    padding: 3px 4px;
+}
+
+table.xodus-table th {
+    background-color: #eee;
+}
+
+table.xodus-table tr:first-child td:first-child,
+table.xodus-table tr:first-child th:first-child {
+    border-top-left-radius: 5px;
+}
+
+table.xodus-table tr:first-child td:last-child,
+table.xodus-table tr:first-child th:last-child {
+    border-top-right-radius: 5px;
+}
+
+table.xodus-table tr:last-child td:first-child {
+    border-bottom-left-radius: 5px;
+}
+
+table.xodus-table tr:last-child td:last-child {
+    border-bottom-right-radius: 5px;
+}
