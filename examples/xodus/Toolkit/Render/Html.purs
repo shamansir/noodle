@@ -4,7 +4,7 @@ module Xodus.Toolkit.Render.Html where
 import Prelude
 
 import Data.Maybe (Maybe(..), maybe)
-import Data.List (toUnfoldable)
+import Data.List (toUnfoldable, List(..))
 
 import Noodle.Network (Node(..)) as R
 import Noodle.API.Action (Action(..), RequestAction(..), DataAction(..)) as A
@@ -130,9 +130,40 @@ toInlet path alias v =
         $ v
 
 
-toOutlet:: P.ToNode -> P.Alias -> Value -> _
+toOutlet :: P.ToNode -> P.Alias -> Value -> _
 toOutlet path alias v =
     H.always_ $ R.core
         $ A.Request
         $ A.ToSendToOutlet (P.outletInNode path alias)
         $ v
+
+
+viewGrid
+    :: forall a x
+     . Show a
+    => (a -> Int -> x)
+    -> List (List a)
+    -> Html x
+viewGrid handler =
+    viewGrid' handler Nil
+
+viewGrid'
+    :: forall a x
+     . Show a
+    => (a -> Int -> x)
+    -> List a
+    -> List (List a)
+    -> Html x
+viewGrid' handler headers cells =
+    H.table
+        [ H.classes [ "xodus-table" ] ]
+        (headerHtml (toUnfoldable headers)
+            <> cellsHtml (toUnfoldable <$> toUnfoldable cells))
+    where headerCell v = H.th [] [ H.text $ show v ]
+          dataCell v = H.td [] [ H.text $ show v ]
+          headerHtml [] = []
+          headerHtml headers =
+                [ H.tr [] (headerCell <$> headers) ]
+          cellsHtml [] = []
+          cellsHtml cells =
+                (\row -> H.tr [] (dataCell <$> row)) <$> cells
