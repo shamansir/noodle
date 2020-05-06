@@ -7,7 +7,7 @@ module Xodus.Query
     ) where
 
 
-import Prelude (class Show, class Functor, ($))
+import Prelude
 
 import Data.List
 import Data.Ord (Ordering)
@@ -47,6 +47,10 @@ make = Query'
 
 instance functorQuery :: Functor Query' where
     map f (Query' database entityTypes value) = Query' database entityTypes $ f value
+
+
+instance applyQuery :: Apply Query' where
+    apply (Query' _ _ f) (Query' database entityTypes value) = Query' database entityTypes $ f value
 
 
 instance showQuery :: Show (Query' a) where
