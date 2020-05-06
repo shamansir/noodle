@@ -129,9 +129,9 @@ unionNode =
                 let
                     send "query" =
                         case receive "queryA" /\ receive "queryB" of
-                            Just (Query (Q.Query' dbA etA selA))
-                            /\ Just (Query (Q.Query' _ _ selB))
-                                -> Just $ Query $ Q.make dbA etA $ Q.Union selA selB
+                            Just (Query queryA)
+                            /\ Just (Query queryB)
+                                -> Just $ Query $ Q.Union <$> queryA <*> queryB
                             Just queryA /\ Nothing -> Just queryA
                             Nothing /\ Just queryB -> Just queryB
                             _ -> Nothing

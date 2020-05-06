@@ -97,14 +97,6 @@ renderNode AllOfNode (R.Node _ path _ _ _) atInlet _ =
                 ]
                 [ H.text $ show id <> ": " <> name ]
 
-renderNode UnionNode node _ _ =
-    H.div
-        [ H.classes [ "tk-node" ] ]
-        [ H.div
-            [ ]
-            [ ]
-        ]
-
 renderNode SelectNode _ _ atOutlet =
     H.div
         [ H.classes [ "tk-node" ] ]
@@ -120,6 +112,14 @@ renderNode SelectNode _ _ atOutlet =
                 [ H.classes [ "xodus-list-item xodus-entity" ]
                 ]
                 [ H.text $ show entity.id ]
+
+renderNode _ _ _ _ =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ H.div
+            [ ]
+            [ ]
+        ]
 
 
 toInlet :: P.ToNode -> P.Alias -> Value -> _
