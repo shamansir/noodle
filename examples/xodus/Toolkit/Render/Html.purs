@@ -4,7 +4,10 @@ module Xodus.Toolkit.Render.Html where
 import Prelude
 
 import Data.Maybe (Maybe(..), maybe)
-import Data.List (toUnfoldable, List(..))
+import Data.List (toUnfoldable, List(..), (:), head, zip)
+import Data.Tuple (fst, snd)
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Foldable (class Foldable, foldr)
 
 import Noodle.Network (Node(..)) as R
 import Noodle.API.Action (Action(..), RequestAction(..), DataAction(..)) as A
@@ -147,6 +150,7 @@ viewGrid
 viewGrid handler =
     viewGrid' handler Nil
 
+
 viewGrid'
     :: forall a x
      . Show a
@@ -167,3 +171,77 @@ viewGrid' handler headers cells =
           cellsHtml [] = []
           cellsHtml cells =
                 (\row -> H.tr [] (dataCell <$> row)) <$> cells
+
+
+class Render x a where
+    render :: a -> Html x
+
+
+instance renderShow :: Show a => Render x a
+    where render = H.text <<< show
+
+
+{-
+class (Render x rowId, Render x colId) <= ToGrid x rowId colId a where
+    cell :: rowId /\ Int -> colId /\ Int -> a -> Html x
+-}
+
+
+grid
+    :: forall action rowId colId a b
+     . Render action rowId => Render action colId
+    => List colId
+    -> (rowId -> colId -> b -> Html action)
+    -- -> (rowId /\ Int -> colId /\ Int -> b -> Html x)
+    -> (rowId -> a -> List b)
+    -> List (rowId /\ a /\ action)
+    -> Html action
+grid headers renderCell getCells rows = H.table
+    [ H.classes [ "xodus-table" ] ]
+        (headerHtml (toUnfoldable headers)
+            <> (rowHtml <$> toUnfoldable cells))
+    where
+        headerHtml [] = []
+        headerHtml headers' =
+            [ H.tr [] (headerCell <$> headers') ]
+        headerCell v = H.th [] [ render v ]
+        cells :: List (rowId /\ action /\ List (Html action))
+        cells =
+                (\(rowId /\ action /\ row) ->
+                    rowId /\ action /\ (cellToHtml <$> zip row headers))
+            <$> (\(rowId /\ v /\ action) ->
+                    rowId /\ action /\ ((/\) rowId <$> getCells rowId v))
+            <$> rows
+        cellToHtml ((rowId /\ b) /\ colId) = renderCell rowId colId b
+        rowHtml (rowId /\ action /\ row) =
+            H.tr [] (dataCell <$> toUnfoldable row)
+        dataCell v = H.td [] [ v ]
+
+{-
+gridV
+    :: forall x rowId colId a b
+     . Render x rowId => Render x colId
+    => (rowId /\ Int -> colId /\ Int -> b -> Html x)
+    -- -> (rowId -> a -> List (colId /\ b))
+    -> (rowId -> a -> List b)
+    -> List (rowId /\ a)
+    -> Html x
+gridV renderCell cells rows = H.table
+    [ H.classes [ "xodus-table" ] ]
+        (headerHtml (toUnfoldable headers)
+            <> cellsHtml (toUnfoldable <$> toUnfoldable cells))
+    where
+        headers =
+            foldr
+                (\(rowId /\ a) headers' ->
+                    rowId : headers'
+                ) Nil rows
+        headerCell v = H.th [] [ render v ]
+        dataCell v = H.td [] [ H.text $ show v ]
+        headerHtml [] = []
+        headerHtml headers =
+            [ H.tr [] (headerCell <$> headers) ]
+        cellsHtml [] = []
+        cellsHtml cells =
+            (\row -> H.tr [] (dataCell <$> row)) <$> cells
+-}

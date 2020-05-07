@@ -50,10 +50,12 @@ table.xodus-table tr:first-child th:last-child {
     border-top-right-radius: 5px;
 }
 
-table.xodus-table tr:last-child td:first-child {
+table.xodus-table tr:last-child td:first-child,
+table.xodus-table tr:last-child th:first-child {
     border-bottom-left-radius: 5px;
 }
 
-table.xodus-table tr:last-child td:last-child {
+table.xodus-table tr:last-child td:last-child,
+table.xodus-table tr:last-child th:last-child {
     border-bottom-right-radius: 5px;
 }
