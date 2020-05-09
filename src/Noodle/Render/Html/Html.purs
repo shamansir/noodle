@@ -131,7 +131,10 @@ instance showDragState :: Show (DragState d c n) where
 type PushF d c n = Action d c n -> Effect Unit
 
 
-type View d c n = Html (Routed (Action d c n) (Core.Action d c n))
+type RoutedAction d c n = Routed (Action d c n) (Core.Action d c n)
+
+
+type View d c n = Html (RoutedAction d c n)
 
 
 type HtmlRenderer d c n = Renderer d c n (Action d c n) (Model d c n) (View d c n)
@@ -159,7 +162,7 @@ init nw =
 type ToolkitRenderer d c n =
     T.ToolkitRenderer d c n
         (View d c n)
-        (Routed (Action d c n) (Core.Action d c n))
+        (RoutedAction d c n)
 -- FIXME: user might want to use custom messages in the renderer
 
 
@@ -187,11 +190,11 @@ make toolkitRenderer toolkit =
         -- it is done in Renderer.make: # UI.mapFSM (FSM.joinWith appendErrors
 
 
-core :: forall d c n. Core.Action d c n -> Routed (Action d c n) (Core.Action d c n)
+core :: forall d c n. Core.Action d c n -> RoutedAction d c n
 core = FromCore
 
 
-my :: forall d c n. Action d c n -> Routed (Action d c n) (Core.Action d c n)
+my :: forall d c n. Action d c n -> RoutedAction d c n
 my = FromUI
 
 
@@ -535,7 +538,7 @@ viewDebugWindow ui nw =
 updateDebugBox
     :: forall d c n
      . R.Network d c n
-    -> Routed (Action d c n) (Core.Action d c n)
+    -> RoutedAction d c n
     -> Maybe (DebugBox.Model d c n)
     -> Maybe (DebugBox.Model d c n)
 updateDebugBox nw (FromCore action) (Just debug) =
@@ -590,9 +593,9 @@ view toolkitRenderer (ui /\ nw) =
 
 update
     :: forall d c n
-     . Routed (Action d c n) (Core.Action d c n)
+     . RoutedAction d c n
     -> Model d c n /\ R.Network d c n
-    -> Model d c n /\ Effect (AndThen (Routed (Action d c n) (Core.Action d c n)))
+    -> Model d c n /\ Effect (AndThen (RoutedAction d c n))
 
 update (FromCore (Core.Data Core.Bang)) (ui /\ _) = ui /\ doNothing
 update (FromCore (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ _) =
