@@ -29,7 +29,12 @@ import Xodus.Dto
 
 type View = R.View Value Channel Node
 
+
 type Action = R.RoutedAction Value Channel Node
+
+
+class Render a where
+    render :: P.ToNode -> a -> View
 
 
 renderer :: R.ToolkitRenderer Value Channel Node
@@ -70,44 +75,28 @@ renderNode SourceNode (R.Node _ path _ _ _) atInlet _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ case atInlet "databases" of
-               Just (Databases databases) -> H.ul [] $ renderDatabase <$> toUnfoldable databases
-               _ -> H.text "no databases"
+            Just (Databases databases) ->
+                render path databases
+            _ -> render path (Nil :: List Database)
         ]
-    where
-        renderDatabase :: Database -> View
-        renderDatabase database@(Database { location }) =
-            H.li
-                [ H.classes [ "xodus-list-item xodus-database" ]
-                , H.onClick $ H.always_ $ toInlet path "only" $ SelectDatabase database
-                ]
-                [ H.text location ]
 
 renderNode AllOfNode (R.Node _ path _ _ _) atInlet _ =
     H.div
         [ H.classes [ "tk-node" ] ]
             [ case atInlet "source" of
                 Just (Source database entityTypes) ->
-                    H.div
-                        []
-                        [ render path entityTypes ]
-                _ -> H.text "no entity types"
+                    render path entityTypes
+                _ -> render path (Nil :: List EntityType)
         ]
 
-renderNode SelectNode _ _ atOutlet =
+renderNode SelectNode (R.Node _ path _ _ _) _ atOutlet =
     H.div
         [ H.classes [ "tk-node" ] ]
             [ case atOutlet "result" of
                 Just (Result entities) ->
-                    H.ul [] $ renderEntity <$> toUnfoldable entities
-                _ -> H.text "no entities"
+                    render path entities
+                _ -> render path (Nil :: List Entity)
         ]
-    where
-        renderEntity :: Entity -> View
-        renderEntity (Entity entity) =
-            H.li
-                [ H.classes [ "xodus-list-item xodus-entity" ]
-                ]
-                [ H.text $ show entity.id ]
 
 renderNode _ _ _ _ =
     H.div
@@ -134,8 +123,24 @@ toOutlet path alias v =
         $ v
 
 
-instance renderEntityTypes :: Render (List EntityType) where
+instance renderDatbases :: Render (List Database) where
     render path entityTypes =
+        grid
+            path
+            (singleton "location")
+            (\_ (Database { location }) -> singleton location)
+            (\_ _ name -> H.text name)
+            (mapWithIndex
+                (\index db ->
+                    index
+                        /\ db
+                        /\ (Just $ toInlet path "only" $ SelectDatabase $ db)
+                ) entityTypes
+            )
+
+
+instance renderEntityTypes :: Render (List EntityType) where
+    render path databases =
         grid'
             path
             (Just $ toInlet path "only" Bang)
@@ -147,13 +152,24 @@ instance renderEntityTypes :: Render (List EntityType) where
                     index
                         /\ etype
                         /\ (Just $ toInlet path "only" $ SelectType $ etype)
-                ) entityTypes
+                ) databases
             )
 
 
--- TODO: abstract over view and path
-class Render a where
-    render :: P.ToNode -> a -> View
+instance renderEntities :: Render (List Entity) where
+    render path entities =
+        grid
+            path
+            (singleton "id")
+            (\_ (Entity { id }) -> singleton id)
+            (\_ _ name -> H.text name)
+            (mapWithIndex
+                (\index entity ->
+                    index
+                        /\ entity
+                        /\ Nothing
+                ) entities
+            )
 
 
 instance renderString :: Render String where
@@ -162,12 +178,6 @@ instance renderString :: Render String where
 
 instance renderInt :: Render Int where
     render _ = H.text <<< show
-
-
-{-
-class (Render x rowId, Render x colId) <= ToGrid x rowId colId a where
-    cell :: rowId /\ Int -> colId /\ Int -> a -> Html x
--}
 
 
 grid
@@ -192,6 +202,10 @@ grid'
     -> (rowId -> colId -> b -> View)
     -> List (rowId /\ a /\ Maybe Action)
     -> View
+grid' nodePath maybeAll headers getCells renderCell Nil =
+    H.table
+        [ H.classes [ "xodus-table" ] ]
+        [ H.tr [] [ H.td [] [ H.text "Empty" ] ] ]
 grid' nodePath maybeAll headers getCells renderCell rows =
     H.table
         [ H.classes [ "xodus-table" ] ]
