@@ -84,3 +84,7 @@ table.xodus-table tfoot th {
 .xodus-clickable {
     cursor: pointer;
 }
+
+.xodus-clickable:hover {
+    opacity: 0.7;
+}
