@@ -210,12 +210,14 @@ grid' nodePath maybeAll headers getCells renderCell rows =
     H.table
         [ H.classes [ "xodus-table" ] ]
             (headerHtml (toUnfoldable headers)
-                <> (rowHtml <$> toUnfoldable cells)
+                <> (rowHtml <$> toUnfoldable cells # wrapRows)
                 <> (toUnfoldable <$> singleton <$> footerHtml <$> maybeAll # fromMaybe []))
     where
         headerHtml [] = []
         headerHtml headers' =
             [ H.thead [] [ H.tr [] (headerCell <$> headers') ] ]
+        wrapRows r =
+            [ H.tbody [] r ]
         headerCell v = H.th [] [ render nodePath v ]
         cells =
                 (\(rowId /\ action /\ row) ->
@@ -234,7 +236,7 @@ grid' nodePath maybeAll headers getCells renderCell rows =
                         ]
                     Nothing -> []
                 )
-                (dataCell <$> toUnfoldable row)
+                $ {-( [ H.span [] [ H.text "AAA" ] ]) <> -} (dataCell <$> toUnfoldable row)
         dataCell v = H.td [] [ v ]
         footerHtml allAction =
             H.tfoot

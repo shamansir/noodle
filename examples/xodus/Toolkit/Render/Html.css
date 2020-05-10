@@ -88,3 +88,17 @@ table.xodus-table tfoot th {
 .xodus-clickable:hover {
     opacity: 0.7;
 }
+
+table.xodus-table tr span {
+    /* content: 'AA'; */
+    position: absolute;
+    left: 5px;
+    font-size: 9px;
+    border: 1px solid chocolate;
+    padding: 1px 1px 0 1px;
+    border-radius: 3px;
+    border-right: none;
+    border-bottom-right-radius: 0;
+    border-top-right-radius: 0;
+    background-color: chocolate;
+}
