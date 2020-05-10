@@ -6,17 +6,9 @@
     font-size: 20px;
 }
 
-.xodus-database {
-    cursor: pointer;
-}
-
-.xodus-list-item {
-    padding: 3px;
-    display: inline-block;
-}
-
 table.xodus-table {
     /* border-collapse: collapse; */
+    position: relative;
     font-size: 11px;
     border-radius: 5px;
     border: 1px solid #000;
@@ -24,6 +16,17 @@ table.xodus-table {
     font-family: sans-serif;
     color: #ddd;
     margin: 5px;
+    margin-left: 20px;
+}
+
+table.xodus-table.xodus-wide-ticker {
+    margin-left: 30px;
+}
+
+table.xodus-table thead,
+table.xodus-table tbody,
+table.xodus-table tfoot {
+    position: relative;
 }
 
 table.xodus-table tr {
@@ -45,26 +48,6 @@ table.xodus-table td {
 table.xodus-table th,
 table.xodus-table td {
     padding: 3px 4px;
-}
-
-table.xodus-table tr:first-child td:first-child,
-table.xodus-table tr:first-child th:first-child {
-    border-top-left-radius: 5px;
-}
-
-table.xodus-table tr:first-child td:last-child,
-table.xodus-table tr:first-child th:last-child {
-    border-top-right-radius: 5px;
-}
-
-table.xodus-table tr:last-child td:first-child,
-table.xodus-table tr:last-child th:first-child {
-    border-bottom-left-radius: 5px;
-}
-
-table.xodus-table tr:last-child td:last-child,
-table.xodus-table tr:last-child th:last-child {
-    border-bottom-right-radius: 5px;
 }
 
 table.xodus-table tfoot {
@@ -89,10 +72,45 @@ table.xodus-table tfoot th {
     opacity: 0.7;
 }
 
-table.xodus-table tr span {
-    /* content: 'AA'; */
+table.xodus-table tr {
+    position: relative;
+}
+
+table.xodus-table thead th.xodus-ticker,
+table.xodus-table tfoot th.xodus-ticker {
+    visibility: hidden;
+}
+
+table.xodus-table thead th.xodus-first {
+    border-top-left-radius: 3px;
+}
+
+table.xodus-table thead th.xodus-last {
+    border-top-right-radius: 3px;
+}
+
+table.xodus-table tbody tr.xodus-last td.xodus-first {
+    border-bottom-left-radius: 3px;
+}
+
+table.xodus-table tbody tr.xodus-last td.xodus-last {
+    border-bottom-right-radius: 3px;
+}
+
+table.xodus-table tfoot tr.xodus-last th.xodus-first {
+    border-bottom-left-radius: 3px;
+}
+
+table.xodus-table tfoot tr.xodus-last th.xodus-last {
+    border-bottom-right-radius: 3px;
+}
+
+table.xodus-table tbody tr td.xodus-ticker {
     position: absolute;
-    left: 5px;
+    left: -14px;
+    margin-top: 4px;
+    text-align: right;
+    width: 10px;
     font-size: 9px;
     border: 1px solid chocolate;
     padding: 1px 1px 0 1px;
@@ -101,4 +119,22 @@ table.xodus-table tr span {
     border-bottom-right-radius: 0;
     border-top-right-radius: 0;
     background-color: chocolate;
+}
+
+table.xodus-table.xouds-wide-ticker tbody tr td.xodus-ticker {
+    left: -24px;
+    width: 20px;
+}
+
+table.xodus-table .xodus-ticker {
+    /* display: float; */
+    position: absolute;
+    /* top: 0; */
+    left: 0;
+}
+
+table.xodus-table tfoot tr th {
+    display: float;
+    position: relative;
+    margin-top: -10px;
 }
