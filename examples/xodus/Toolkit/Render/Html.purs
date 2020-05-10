@@ -3,8 +3,8 @@ module Xodus.Toolkit.Render.Html where
 
 import Prelude
 
-import Data.Maybe (Maybe(..), maybe)
-import Data.List (toUnfoldable, List(..), (:), head, zip, mapWithIndex)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.List (toUnfoldable, List(..), (:), head, zip, mapWithIndex, singleton)
 import Data.Tuple (fst, snd)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Foldable (class Foldable, foldr)
@@ -25,6 +25,11 @@ import Xodus.Toolkit.Node (Node(..), nodesForTheList)
 import Xodus.Toolkit.Value (Value(..))
 import Xodus.Toolkit.Channel (Channel(..))
 import Xodus.Dto
+
+
+type View = R.View Value Channel Node
+
+type Action = R.RoutedAction Value Channel Node
 
 
 renderer :: R.ToolkitRenderer Value Channel Node
@@ -48,7 +53,7 @@ renderNode
     -> R.Node Value Node
     -> R.Receive Value
     -> R.Send Value
-    -> R.View Value Channel Node
+    -> View
 
 renderNode NodeListNode (R.Node _ (P.ToNode { patch }) _ _ _) _ _ =
     NodeList.render (P.ToPatch patch) nodesForTheList
@@ -57,7 +62,7 @@ renderNode ConnectNode (R.Node _ path _ _ _) _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
-            [ H.onClick $ toInlet path "bang" $ Bang ]
+            [ H.onClick $ H.always_ $ toInlet path "bang" $ Bang ]
             [ H.span [ H.classes [ "xodus-connect-button" ] ] [ H.text "◌" ] ]
         ]
 
@@ -69,11 +74,11 @@ renderNode SourceNode (R.Node _ path _ _ _) atInlet _ =
                _ -> H.text "no databases"
         ]
     where
-        renderDatabase :: Database -> R.View Value Channel Node
+        renderDatabase :: Database -> View
         renderDatabase database@(Database { location }) =
             H.li
                 [ H.classes [ "xodus-list-item xodus-database" ]
-                , H.onClick $ toInlet path "only" $ SelectDatabase database
+                , H.onClick $ H.always_ $ toInlet path "only" $ SelectDatabase database
                 ]
                 [ H.text location ]
 
@@ -84,21 +89,9 @@ renderNode AllOfNode (R.Node _ path _ _ _) atInlet _ =
                 Just (Source database entityTypes) ->
                     H.div
                         []
-                        [ H.span
-                            [ H.onClick $ toInlet path "only" $ Bang ]
-                            [ H.text "None" ]
-                        , H.ul [] $ renderEntityType <$> toUnfoldable entityTypes
-                        ]
+                        [ render path entityTypes ]
                 _ -> H.text "no entity types"
         ]
-    where
-        renderEntityType :: EntityType -> R.View Value Channel Node
-        renderEntityType entityType@(EntityType { id, name }) =
-            H.li
-                [ H.classes [ "xodus-list-item xodus-entity-type" ]
-                , H.onClick $ toInlet path "only" $ SelectType $ entityType
-                ]
-                [ H.text $ show id <> ": " <> name ]
 
 renderNode SelectNode _ _ atOutlet =
     H.div
@@ -109,7 +102,7 @@ renderNode SelectNode _ _ atOutlet =
                 _ -> H.text "no entities"
         ]
     where
-        renderEntity :: Entity -> R.View Value Channel Node
+        renderEntity :: Entity -> View
         renderEntity (Entity entity) =
             H.li
                 [ H.classes [ "xodus-list-item xodus-entity" ]
@@ -125,52 +118,50 @@ renderNode _ _ _ _ =
         ]
 
 
-toInlet :: P.ToNode -> P.Alias -> Value -> _
+toInlet :: P.ToNode -> P.Alias -> Value -> Action
 toInlet path alias v =
-    H.always_ $ R.core
+    R.core
         $ A.Request
         $ A.ToSendToInlet (P.inletInNode path alias)
         $ v
 
 
-toOutlet :: P.ToNode -> P.Alias -> Value -> _
+toOutlet :: P.ToNode -> P.Alias -> Value -> Action
 toOutlet path alias v =
-    H.always_ $ R.core
+    R.core
         $ A.Request
         $ A.ToSendToOutlet (P.outletInNode path alias)
         $ v
 
 
-data R d c n = R (R.RoutedAction d c n)
-
-
-instance renderEntityTypes :: Render (R d c n) (List EntityType) where
-    render entityTypes =
-        grid
-            ("name" : Nil)
-            (\_ (EntityType { name }) -> name : Nil)
-            (\_ _ name -> H.text $ show name)
+instance renderEntityTypes :: Render (List EntityType) where
+    render path entityTypes =
+        grid'
+            path
+            (Just $ toInlet path "only" Bang)
+            (singleton "name")
+            (\_ (EntityType { name }) -> singleton name)
+            (\_ _ name -> H.text name)
             (mapWithIndex
                 (\index etype ->
-                    index /\ etype /\ Nothing
-                        -- Just $ toInlet path "only" $ SelectType $ entityType
+                    index
+                        /\ etype
+                        /\ (Just $ toInlet path "only" $ SelectType $ etype)
                 ) entityTypes
             )
 
 
-class Render x a where
-    render :: a -> Html x
+-- TODO: abstract over view and path
+class Render a where
+    render :: P.ToNode -> a -> View
 
 
--- instance renderShow :: Show a => Render x a
---     where render = H.text <<< show
-
-instance renderString :: Render x String where
-    render = H.text <<< show
+instance renderString :: Render String where
+    render _ = H.text
 
 
-instance renderInt :: Render x Int where
-    render = H.text <<< show
+instance renderInt :: Render Int where
+    render _ = H.text <<< show
 
 
 {-
@@ -180,24 +171,38 @@ class (Render x rowId, Render x colId) <= ToGrid x rowId colId a where
 
 
 grid
-    :: forall action rowId colId a b
-     . Render action rowId => Render action colId
-    => List colId
+    :: forall rowId colId a b
+     . Render rowId => Render colId
+    => P.ToNode
+    -> List colId
     -> (rowId -> a -> List b)
-    -> (rowId -> colId -> b -> Html action)
-    -- -> (rowId /\ Int -> colId /\ Int -> b -> Html x)
-    -> List (rowId /\ a /\ Maybe action)
-    -> Html action
-grid headers getCells renderCell rows = H.table
-    [ H.classes [ "xodus-table" ] ]
-        (headerHtml (toUnfoldable headers)
-            <> (rowHtml <$> toUnfoldable cells))
+    -> (rowId -> colId -> b -> View)
+    -> List (rowId /\ a /\ Maybe Action)
+    -> View
+grid p = grid' p Nothing
+
+
+grid'
+    :: forall rowId colId a b
+     . Render rowId => Render colId
+    => P.ToNode
+    -> Maybe Action
+    -> List colId
+    -> (rowId -> a -> List b)
+    -> (rowId -> colId -> b -> View)
+    -> List (rowId /\ a /\ Maybe Action)
+    -> View
+grid' nodePath maybeAll headers getCells renderCell rows =
+    H.table
+        [ H.classes [ "xodus-table" ] ]
+            (headerHtml (toUnfoldable headers)
+                <> (rowHtml <$> toUnfoldable cells)
+                <> (toUnfoldable <$> singleton <$> footerHtml <$> maybeAll # fromMaybe []))
     where
         headerHtml [] = []
         headerHtml headers' =
-            [ H.tr [] (headerCell <$> headers') ]
-        headerCell v = H.th [] [ render v ]
-        -- cells :: List (rowId /\ Maybe action /\ List (Html action))
+            [ H.thead [] [ H.tr [] (headerCell <$> headers') ] ]
+        headerCell v = H.th [] [ render nodePath v ]
         cells =
                 (\(rowId /\ action /\ row) ->
                     rowId /\ action /\ (cellToHtml <$> zip row headers))
@@ -205,35 +210,26 @@ grid headers getCells renderCell rows = H.table
                     rowId /\ action /\ ((/\) rowId <$> getCells rowId v))
             <$> rows
         cellToHtml ((rowId /\ b) /\ colId) = renderCell rowId colId b
-        rowHtml (rowId /\ action /\ row) =
-            H.tr [] (dataCell <$> toUnfoldable row)
+        rowHtml (rowId /\ maybeAction /\ row) =
+            H.tr
+                (case maybeAction of
+                    Just action ->
+                        [ H.classes
+                             [ "xodus-clickable" ]
+                        , H.onClick $ H.always_ $ action
+                        ]
+                    Nothing -> []
+                )
+                (dataCell <$> toUnfoldable row)
         dataCell v = H.td [] [ v ]
-
-{-
-gridV
-    :: forall x rowId colId a b
-     . Render x rowId => Render x colId
-    => (rowId /\ Int -> colId /\ Int -> b -> Html x)
-    -- -> (rowId -> a -> List (colId /\ b))
-    -> (rowId -> a -> List b)
-    -> List (rowId /\ a)
-    -> Html x
-gridV renderCell cells rows = H.table
-    [ H.classes [ "xodus-table" ] ]
-        (headerHtml (toUnfoldable headers)
-            <> cellsHtml (toUnfoldable <$> toUnfoldable cells))
-    where
-        headers =
-            foldr
-                (\(rowId /\ a) headers' ->
-                    rowId : headers'
-                ) Nil rows
-        headerCell v = H.th [] [ render v ]
-        dataCell v = H.td [] [ H.text $ show v ]
-        headerHtml [] = []
-        headerHtml headers =
-            [ H.tr [] (headerCell <$> headers) ]
-        cellsHtml [] = []
-        cellsHtml cells =
-            (\row -> H.tr [] (dataCell <$> row)) <$> cells
--}
+        footerHtml allAction =
+            H.tfoot
+                (case maybeAll of
+                    Just action ->
+                        [ H.classes
+                             [ "xodus-clickable" ]
+                        , H.onClick $ H.always_ $ action
+                        ]
+                    Nothing -> []
+                )
+                [ H.tr [] [ H.th [] [ H.text "All" ] ] ]
