@@ -17,27 +17,34 @@
 
 table.xodus-table {
     /* border-collapse: collapse; */
-    font-size: 12px;
+    font-size: 11px;
     border-radius: 5px;
     border: 1px solid #000;
     border-spacing: 0;
     font-family: sans-serif;
-    color: #333;
+    color: #ddd;
+    margin: 5px;
 }
 
 table.xodus-table tr {
     border-collapse: collapse;
 }
 
-table.xodus-table th,
-table.xodus-table td {
-    /* padding: 3px; */
-    border: 1px solid #ddd;
-    padding: 3px 4px;
+table.xodus-table thead th {
+    background-color: #eee;
+    color: #000;
+    border-bottom: none !important;
+    border-bottom-right-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
 }
 
-table.xodus-table th {
-    background-color: #eee;
+table.xodus-table td {
+    border: 1px solid #ddd;
+}
+
+table.xodus-table th,
+table.xodus-table td {
+    padding: 3px 4px;
 }
 
 table.xodus-table tr:first-child td:first-child,
@@ -58,4 +65,22 @@ table.xodus-table tr:last-child th:first-child {
 table.xodus-table tr:last-child td:last-child,
 table.xodus-table tr:last-child th:last-child {
     border-bottom-right-radius: 5px;
+}
+
+table.xodus-table tfoot {
+    background-color: chocolate;
+    border-width: 0;
+}
+
+table.xodus-table tfoot th {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    border-collapse: collapse;
+    color: black;
+    font-weight: normal;
+    text-align: center;
+}
+
+.xodus-clickable {
+    cursor: pointer;
 }
