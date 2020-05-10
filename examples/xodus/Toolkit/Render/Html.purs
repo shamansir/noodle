@@ -4,7 +4,7 @@ module Xodus.Toolkit.Render.Html where
 import Prelude
 
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.List (toUnfoldable, List(..), (:), head, zip, mapWithIndex, singleton)
+import Data.List (toUnfoldable, List(..), (:), head, zip, mapWithIndex, singleton, length)
 import Data.Tuple (fst, snd)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Foldable (class Foldable, foldr)
@@ -209,16 +209,26 @@ grid' nodePath maybeAll headers getCells renderCell Nil =
 grid' nodePath maybeAll headers getCells renderCell rows =
     H.table
         [ H.classes [ "xodus-table" ] ]
-            (headerHtml (toUnfoldable headers)
-                <> (rowHtml <$> toUnfoldable cells # wrapRows)
-                <> (toUnfoldable <$> singleton <$> footerHtml <$> maybeAll # fromMaybe []))
+            (headerHtml (toUnfoldable $ mapWithIndex ((/\)) headers)
+                <> (rowHtml <$> (toUnfoldable $ mapWithIndex ((/\)) cells) # wrapRows)
+                <> (toUnfoldable
+                        <$> singleton
+                        <$> footerHtml (length rows)
+                        <$> maybeAll # fromMaybe []))
     where
+        ordClasses count idx | idx == 0 && idx == (count - 1) = [ "xodus-first", "xodus-last" ]
+        ordClasses count idx | idx == 0 = [ "xodus-first"]
+        ordClasses count idx | idx == (count - 1) = [ "xodus-last" ]
+        ordClasses count idx | otherwise = []
         headerHtml [] = []
         headerHtml headers' =
-            [ H.thead [] [ H.tr [] (headerCell <$> headers') ] ]
+            [ H.thead [] [ H.tr [] ([ emptyTicker ] <> (headerCell <$> headers')) ] ]
+        headerCell (colIdx /\ colId) =
+            H.th
+                [ H.classes $ ordClasses (length headers) colIdx ]
+                [ render nodePath colId ]
         wrapRows r =
             [ H.tbody [] r ]
-        headerCell v = H.th [] [ render nodePath v ]
         cells =
                 (\(rowId /\ action /\ row) ->
                     rowId /\ action /\ (cellToHtml <$> zip row headers))
@@ -226,19 +236,24 @@ grid' nodePath maybeAll headers getCells renderCell rows =
                     rowId /\ action /\ ((/\) rowId <$> getCells rowId v))
             <$> rows
         cellToHtml ((rowId /\ b) /\ colId) = renderCell rowId colId b
-        rowHtml (rowId /\ maybeAction /\ row) =
+        ticker rowId = H.td [ H.classes [ "xodus-ticker" ] ] [ render nodePath rowId ]
+        emptyTicker = H.th [ H.classes [ "xodus-ticker" ] ] [ H.text "ID" ]
+        rowHtml (rowIdx /\ (rowId /\ maybeAction /\ row)) =
             H.tr
                 (case maybeAction of
                     Just action ->
                         [ H.classes
-                             [ "xodus-clickable" ]
+                            ([ "xodus-clickable" ] <> ordClasses (length rows) rowIdx)
                         , H.onClick $ H.always_ $ action
                         ]
-                    Nothing -> []
+                    Nothing ->
+                        [ H.classes $ ordClasses (length rows) rowIdx ]
                 )
-                $ {-( [ H.span [] [ H.text "AAA" ] ]) <> -} (dataCell <$> toUnfoldable row)
-        dataCell v = H.td [] [ v ]
-        footerHtml allAction =
+                $ [ ticker rowId ]
+                    <> (dataCell (length row) <$> (toUnfoldable $ mapWithIndex ((/\)) row))
+        dataCell cellCount (cellIdx /\ v) =
+            H.td [ H.classes $ ordClasses cellCount cellIdx ] [ v ]
+        footerHtml colCount allAction =
             H.tfoot
                 (case maybeAll of
                     Just action ->
@@ -248,4 +263,13 @@ grid' nodePath maybeAll headers getCells renderCell rows =
                         ]
                     Nothing -> []
                 )
-                [ H.tr [] [ H.th [] [ H.text "All" ] ] ]
+                [ H.tr
+                    [ H.classes [ "xodus-first", "xodus-last" ] ]
+                    ([ emptyTicker ]
+                        <> [ H.th
+                                [ H.colSpan colCount
+                                , H.classes [ "xodus-first", "xodus-last" ]
+                                ]
+                                [ H.text "All" ]
+                            ])
+                    ]
