@@ -4,19 +4,14 @@ import Prelude
 
 import Data.Tuple.Nested ((/\))
 import Data.Maybe (Maybe(..))
-import Data.List ((:), List(..))
-import Data.Foldable (fold)
-import Data.Traversable (traverse)
 
 import Noodle.Process (ProcessF(..)) as R
-import Noodle.Toolkit (NodeDef(..), noInlets, withInlets, withOutlets) as T
+import Noodle.Toolkit (NodeDef(..), noInlets, withInlets, withOutlets, defineNode) as T
 import Noodle.Toolkit ((~<), (>~))
-import Noodle.Toolkit (defineNode) as T
 import Noodle.Render.Atom (class Atom) as R
 
 import Xodus.Toolkit.Value (Value(..))
 import Xodus.Toolkit.Channel (Channel(..))
-import Xodus.Dto
 import Xodus.Requests
 import Xodus.Query as Q
 

@@ -9,7 +9,7 @@ module Xodus.Query
 
 import Prelude
 
-import Data.List
+import Data.Array
 import Data.Ord (Ordering)
 
 import Xodus.Dto
@@ -18,7 +18,7 @@ import Xodus.Dto
 type Query = Query' Selector
 
 
-data Query' a = Query' Database (List EntityType) a
+data Query' a = Query' Database (Array EntityType) a
 
 
 data Field = Field String
@@ -41,7 +41,7 @@ data Selector
     | Sort Comparison Selector
 
 
-make :: Database -> (List EntityType) -> Selector -> Query
+make :: Database -> (Array EntityType) -> Selector -> Query
 make = Query'
 
 

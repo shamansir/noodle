@@ -2,16 +2,12 @@ module Xodus.Requests where
 
 import Prelude
 
-import Data.List
-import Data.List (take, drop, filter, union, sortBy, intersect) as List
-import Data.Newtype (class Newtype, unwrap)
-import Data.Either
+import Data.Array (take, drop, filter, union, sortBy, intersect, fold) as Array
+import Data.Either (either)
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Core as J
-import Data.Argonaut.Encode as J
-import Data.Argonaut.Decode as J
+import Data.Argonaut.Decode (class DecodeJson, decodeJson) as J
 
-import Effect.Aff (Milliseconds(..), Aff, launchAff_, delay)
+import Effect.Aff (Aff)
 
 import Affjax (get)
 import Affjax.ResponseFormat (json)
@@ -37,45 +33,45 @@ requestValue (Method method) default =
         decodeValue = J.decodeJson >>> either (const default) identity
 
 
-requestList :: forall a. J.DecodeJson a => Method -> Aff (List a)
-requestList method =
-    requestValue method Nil
+requestArray :: forall a. J.DecodeJson a => Method -> Aff (Array a)
+requestArray method =
+    requestValue method []
 
 
-getDatabases :: Aff (List Database)
+getDatabases :: Aff (Array Database)
 getDatabases =
-    requestList $ Method "/dbs"
+    requestArray $ Method "/dbs"
 
 
-getEntities :: Database -> EntityType -> Aff (List Entity)
+getEntities :: Database -> EntityType -> Aff (Array Entity)
 getEntities (Database database) (EntityType entityType) =
     requestValue
         (Method $ "/dbs/" <> database.uuid <> "/entities"
                           <> "?id=" <> show entityType.id
                           <> "&offset=" <> show 0
                           <> "&pageSize=" <> show 50)
-        { items : (Nil :: List Entity) }
+        { items : ([] :: Array Entity) }
         <#> _.items
 
 
-getEntityTypes :: Database -> Aff (List EntityType)
+getEntityTypes :: Database -> Aff (Array EntityType)
 getEntityTypes (Database database) =
-    requestList $ Method $ "/dbs/" <> database.uuid <> "/types"
+    requestArray $ Method $ "/dbs/" <> database.uuid <> "/types"
 
 
 
-perform :: Query -> Aff (List Entity)
+perform :: Query -> Aff (Array Entity)
 perform (Query' database entityTypes selector) = foldSelector selector
     where
-    foldSelector All = fold $ getEntities database <$> entityTypes
+    foldSelector All = Array.fold $ getEntities database <$> entityTypes
     foldSelector (AllOf entityType) = getEntities database entityType
-    foldSelector (Take amount selector') = List.take amount <$> foldSelector selector'
-    foldSelector (Drop amount selector') = List.drop amount <$> foldSelector selector'
+    foldSelector (Take amount selector') = Array.take amount <$> foldSelector selector'
+    foldSelector (Drop amount selector') = Array.drop amount <$> foldSelector selector'
     foldSelector (Filter (Condition condition) selector')
-            = List.filter condition <$> foldSelector selector'
+            = Array.filter condition <$> foldSelector selector'
     foldSelector (Union selectorA selectorB)
-            = List.union <$> foldSelector selectorA <*> foldSelector selectorB
+            = Array.union <$> foldSelector selectorA <*> foldSelector selectorB
     foldSelector (Intersect selectorA selectorB)
-            = List.intersect <$> foldSelector selectorA <*> foldSelector selectorB
+            = Array.intersect <$> foldSelector selectorA <*> foldSelector selectorB
     foldSelector (Sort (Comparison order) selector')
-            = List.sortBy order <$> foldSelector selector'
+            = Array.sortBy order <$> foldSelector selector'

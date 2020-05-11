@@ -9,7 +9,7 @@ import Noodle.API.Action.Sequence ((</>))
 
 import Xodus.Toolkit.Node (Node(..))
 import Xodus.Toolkit.Value (Value)
-import Xodus.Toolkit.Channel (Channel(..))
+import Xodus.Toolkit.Channel (Channel)
 
 
 recipe :: Actions.ActionList Value Channel Node

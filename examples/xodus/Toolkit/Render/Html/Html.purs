@@ -4,7 +4,7 @@ module Xodus.Toolkit.Render.Html where
 import Prelude
 
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.List (toUnfoldable, List(..), (:), head, zip, mapWithIndex, singleton, length)
+import Data.Array ((:), head, zip, mapWithIndex, singleton, length)
 import Data.Tuple (fst, snd)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Foldable (class Foldable, foldr)
@@ -71,7 +71,7 @@ renderNode SourceNode (R.Node _ path _ _ _) atInlet _ =
             Just (Databases databases) ->
                 toHtml path $ Grid databases
             _ ->
-                toHtml path $ Grid (Nil :: List Database)
+                toHtml path $ Grid ([] :: Array Database)
         ]
 
 renderNode AllOfNode (R.Node _ path _ _ _) atInlet _ =
@@ -81,7 +81,7 @@ renderNode AllOfNode (R.Node _ path _ _ _) atInlet _ =
                 Just (Source database entityTypes) ->
                     toHtml path $ Grid entityTypes
                 _ ->
-                    toHtml path $ Grid (Nil :: List EntityType)
+                    toHtml path $ Grid ([] :: Array EntityType)
         ]
 
 renderNode SelectNode (R.Node _ path _ _ _) _ atOutlet =
@@ -89,9 +89,9 @@ renderNode SelectNode (R.Node _ path _ _ _) _ atOutlet =
         [ H.classes [ "tk-node" ] ]
             [ case atOutlet "result" of
                 Just (Result entities) ->
-                    toHtml path $ Grid  entities
+                    toHtml path $ Grid entities
                 _ ->
-                    toHtml path $ Grid (Nil :: List Entity)
+                    toHtml path $ Grid ([] :: Array Entity)
         ]
 
 renderNode _ _ _ _ =

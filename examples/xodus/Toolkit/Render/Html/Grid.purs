@@ -3,8 +3,9 @@ module Xodus.Toolkit.Render.Html.Grid where
 
 import Prelude
 
-import Data.List
+import Data.Array
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Spork.Html as H
@@ -19,10 +20,10 @@ import Xodus.Toolkit.Render.Html.ToHtml
 newtype Grid a = Grid a
 
 
-instance toHtmlDatbases :: ToHtml (Grid (List Database)) where
+instance toHtmlDatbases :: ToHtml (Grid (Array Database)) where
     toHtml path (Grid entityTypes) =
         grid
-            Nil
+            []
             path
             (singleton "location")
             (\_ (Database { location }) -> singleton location)
@@ -36,10 +37,10 @@ instance toHtmlDatbases :: ToHtml (Grid (List Database)) where
             )
 
 
-instance toHtmlEntityTypes :: ToHtml (Grid (List EntityType)) where
+instance toHtmlEntityTypes :: ToHtml (Grid (Array EntityType)) where
     toHtml path (Grid databases) =
         grid'
-            Nil
+            []
             path
             (Just $ toInlet path "only" Bang)
             (singleton "name")
@@ -54,12 +55,12 @@ instance toHtmlEntityTypes :: ToHtml (Grid (List EntityType)) where
             )
 
 
-instance toHtmlEntities :: ToHtml (Grid (List Entity)) where
+instance toHtmlEntities :: ToHtml (Grid (Array Entity)) where
     toHtml path (Grid entities) =
         grid
             (singleton "xodus-wide-ticker")
             path
-            (singleton "type")
+            ("type" : (_.type <$> allProperties entities))
             (\_ (Entity { type : type_ }) -> singleton type_ )
             (\_ _ prop -> H.text prop)
             (mapWithIndex
@@ -69,18 +70,23 @@ instance toHtmlEntities :: ToHtml (Grid (List Entity)) where
                         /\ Nothing
                 ) entities
             )
-
+        where
+            valueOrEmpty (Just { value }) = value
+            valueOrEmpty Nothing = "-"
+            valuesOf entity@(Entity { type : type_ }) =
+                type_ :
+                    (valueOrEmpty <$> dataOfProperty entity <$> _.name <$> allProperties entities)
 
 
 grid
     :: forall rowId colId a b
      . ToHtml rowId => ToHtml colId
-    => List String
+    => Array String
     -> P.ToNode
-    -> List colId
-    -> (rowId -> a -> List b)
+    -> Array colId
+    -> (rowId -> a -> Array b)
     -> (rowId -> colId -> b -> View)
-    -> List (rowId /\ a /\ Maybe Action)
+    -> Array (rowId /\ a /\ Maybe Action)
     -> View
 grid classes p = grid' classes p Nothing
 
@@ -88,15 +94,15 @@ grid classes p = grid' classes p Nothing
 grid'
     :: forall rowId colId a b
      . ToHtml rowId => ToHtml colId
-    => List String
+    => Array String
     -> P.ToNode
     -> Maybe Action
-    -> List colId
-    -> (rowId -> a -> List b)
+    -> Array colId
+    -> (rowId -> a -> Array b)
     -> (rowId -> colId -> b -> View)
-    -> List (rowId /\ a /\ Maybe Action)
+    -> Array (rowId /\ a /\ Maybe Action)
     -> View
-grid' classes nodePath maybeAll headers getCells renderCell Nil =
+grid' classes nodePath maybeAll headers getCells renderCell [] =
     H.table
         [ H.classes ([ "xodus-table" ] <> toUnfoldable classes) ]
         [ H.tr [] [ H.td [] [ H.text "Empty" ] ] ]
