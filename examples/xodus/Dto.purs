@@ -1,12 +1,13 @@
 module Xodus.Dto where
 
-import Prelude (class Eq, eq, (==))
+import Prelude
 
-import Data.Newtype (class Newtype, unwrap)
-import Data.Argonaut.Core (Json)
-import Data.Argonaut.Core as J
-import Data.Argonaut.Encode as J
-import Data.Argonaut.Decode as J
+import Data.Newtype (class Newtype)
+import Data.Array (filter, head, concat, nub)
+import Data.Maybe (Maybe(..))
+
+import Data.Argonaut.Encode (class EncodeJson) as J
+import Data.Argonaut.Decode (class DecodeJson) as J
 
 
 newtype Database =
@@ -59,3 +60,39 @@ derive newtype instance encodeJsonEntity :: J.EncodeJson Entity
 derive newtype instance decodeJsonEntity :: J.DecodeJson Entity
 derive newtype instance encodeJsonEntityType :: J.EncodeJson EntityType
 derive newtype instance decodeJsonEntityType :: J.DecodeJson EntityType
+
+
+type PropertyData = { name :: String, type :: String, value :: String }
+
+
+allProperties :: Array Entity -> Array { name :: String, type :: String }
+allProperties entities =
+    getEntityProps <$> entities # concat # nub
+    where
+        getEntityProps (Entity { properties }) =
+            (\{ name, type : type_ } -> { name, type : type_ })
+                <$> getPropertyData
+                <$> properties
+
+
+allPropertiesOf :: Entity -> Array PropertyData
+allPropertiesOf (Entity { properties }) =
+    getPropertyData <$> properties
+
+
+dataOfProperty :: Entity -> String -> Maybe PropertyData
+dataOfProperty (Entity { properties }) propName =
+    case
+        filter
+            (\p -> p.name == propName)
+            properties of
+        [] -> Nothing
+        props -> getPropertyData <$> head props
+
+
+getPropertyData
+    :: forall r0 r1
+     . { name :: String, value :: String, type :: { displayName :: String | r1 } | r0 }
+    -> PropertyData
+getPropertyData { name, value, type : type_ } =
+    { name, value, type : type_.displayName }
