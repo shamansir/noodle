@@ -126,6 +126,7 @@ toOutlet path alias v =
 instance renderDatbases :: Render (List Database) where
     render path entityTypes =
         grid
+            Nil
             path
             (singleton "location")
             (\_ (Database { location }) -> singleton location)
@@ -142,6 +143,7 @@ instance renderDatbases :: Render (List Database) where
 instance renderEntityTypes :: Render (List EntityType) where
     render path databases =
         grid'
+            Nil
             path
             (Just $ toInlet path "only" Bang)
             (singleton "name")
@@ -159,13 +161,14 @@ instance renderEntityTypes :: Render (List EntityType) where
 instance renderEntities :: Render (List Entity) where
     render path entities =
         grid
+            (singleton "xodus-wide-ticker")
             path
-            (singleton "id")
-            (\_ (Entity { id }) -> singleton id)
-            (\_ _ name -> H.text name)
+            (singleton "type")
+            (\_ (Entity { type : type_ }) -> singleton type_ )
+            (\_ _ prop -> H.text prop)
             (mapWithIndex
-                (\index entity ->
-                    index
+                (\_ entity@(Entity { id }) ->
+                    id
                         /\ entity
                         /\ Nothing
                 ) entities
@@ -183,32 +186,34 @@ instance renderInt :: Render Int where
 grid
     :: forall rowId colId a b
      . Render rowId => Render colId
-    => P.ToNode
+    => List String
+    -> P.ToNode
     -> List colId
     -> (rowId -> a -> List b)
     -> (rowId -> colId -> b -> View)
     -> List (rowId /\ a /\ Maybe Action)
     -> View
-grid p = grid' p Nothing
+grid classes p = grid' classes p Nothing
 
 
 grid'
     :: forall rowId colId a b
      . Render rowId => Render colId
-    => P.ToNode
+    => List String
+    -> P.ToNode
     -> Maybe Action
     -> List colId
     -> (rowId -> a -> List b)
     -> (rowId -> colId -> b -> View)
     -> List (rowId /\ a /\ Maybe Action)
     -> View
-grid' nodePath maybeAll headers getCells renderCell Nil =
+grid' classes nodePath maybeAll headers getCells renderCell Nil =
     H.table
-        [ H.classes [ "xodus-table" ] ]
+        [ H.classes ([ "xodus-table" ] <> toUnfoldable classes) ]
         [ H.tr [] [ H.td [] [ H.text "Empty" ] ] ]
-grid' nodePath maybeAll headers getCells renderCell rows =
+grid' classes nodePath maybeAll headers getCells renderCell rows =
     H.table
-        [ H.classes [ "xodus-table" ] ]
+        [ H.classes ([ "xodus-table" ] <> toUnfoldable classes) ]
             (headerHtml (toUnfoldable $ mapWithIndex ((/\)) headers)
                 <> (rowHtml <$> (toUnfoldable $ mapWithIndex ((/\)) cells) # wrapRows)
                 <> (toUnfoldable

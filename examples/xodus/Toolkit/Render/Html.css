@@ -16,11 +16,11 @@ table.xodus-table {
     font-family: sans-serif;
     color: #ddd;
     margin: 5px;
-    margin-left: 20px;
+    margin-left: 18px;
 }
 
 table.xodus-table.xodus-wide-ticker {
-    margin-left: 30px;
+    margin-left: 26px;
 }
 
 table.xodus-table thead,
@@ -107,10 +107,10 @@ table.xodus-table tfoot tr.xodus-last th.xodus-last {
 
 table.xodus-table tbody tr td.xodus-ticker {
     position: absolute;
-    left: -14px;
+    left: -12px;
     margin-top: 4px;
     text-align: right;
-    width: 10px;
+    width: 8px;
     font-size: 9px;
     border: 1px solid chocolate;
     padding: 1px 1px 0 1px;
@@ -121,9 +121,9 @@ table.xodus-table tbody tr td.xodus-ticker {
     background-color: chocolate;
 }
 
-table.xodus-table.xouds-wide-ticker tbody tr td.xodus-ticker {
-    left: -24px;
-    width: 20px;
+table.xodus-table.xodus-wide-ticker tbody tr td.xodus-ticker {
+    left: -20px;
+    width: 16px;
 }
 
 table.xodus-table .xodus-ticker {
