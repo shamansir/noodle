@@ -60,8 +60,8 @@ instance toHtmlEntities :: ToHtml (Grid (Array Entity)) where
         grid
             (singleton "xodus-wide-ticker")
             path
-            ("type" : (_.type <$> allProperties entities))
-            (\_ (Entity { type : type_ }) -> singleton type_ )
+            ("type" : (_.name <$> allProperties entities))
+            (const valuesOf)
             (\_ _ prop -> H.text prop)
             (mapWithIndex
                 (\_ entity@(Entity { id }) ->
@@ -116,10 +116,15 @@ grid' classes nodePath maybeAll headers getCells renderCell rows =
                         <$> footerHtml (length rows)
                         <$> maybeAll # fromMaybe []))
     where
+
         ordClasses count idx | idx == 0 && idx == (count - 1) = [ "xodus-first", "xodus-last" ]
         ordClasses count idx | idx == 0 = [ "xodus-first"]
         ordClasses count idx | idx == (count - 1) = [ "xodus-last" ]
         ordClasses count idx | otherwise = []
+
+        ticker rowId = H.td [ H.classes [ "xodus-ticker" ] ] [ toHtml nodePath rowId ]
+        emptyTicker = H.th [ H.classes [ "xodus-ticker" ] ] [ H.text "ID" ]
+
         headerHtml [] = []
         headerHtml headers' =
             [ H.thead [] [ H.tr [] ([ emptyTicker ] <> (headerCell <$> headers')) ] ]
@@ -127,8 +132,7 @@ grid' classes nodePath maybeAll headers getCells renderCell rows =
             H.th
                 [ H.classes $ ordClasses (length headers) colIdx ]
                 [ toHtml nodePath colId ]
-        wrapRows r =
-            [ H.tbody [] r ]
+
         cells =
                 (\(rowId /\ action /\ row) ->
                     rowId /\ action /\ (cellToHtml <$> zip row headers))
@@ -136,8 +140,11 @@ grid' classes nodePath maybeAll headers getCells renderCell rows =
                     rowId /\ action /\ ((/\) rowId <$> getCells rowId v))
             <$> rows
         cellToHtml ((rowId /\ b) /\ colId) = renderCell rowId colId b
-        ticker rowId = H.td [ H.classes [ "xodus-ticker" ] ] [ toHtml nodePath rowId ]
-        emptyTicker = H.th [ H.classes [ "xodus-ticker" ] ] [ H.text "ID" ]
+        dataCell cellCount (cellIdx /\ v) =
+            H.td [ H.classes $ ordClasses cellCount cellIdx ] [ v ]
+
+        wrapRows r =
+            [ H.tbody [] r ]
         rowHtml (rowIdx /\ (rowId /\ maybeAction /\ row)) =
             H.tr
                 (case maybeAction of
@@ -151,8 +158,7 @@ grid' classes nodePath maybeAll headers getCells renderCell rows =
                 )
                 $ [ ticker rowId ]
                     <> (dataCell (length row) <$> (toUnfoldable $ mapWithIndex ((/\)) row))
-        dataCell cellCount (cellIdx /\ v) =
-            H.td [ H.classes $ ordClasses cellCount cellIdx ] [ v ]
+
         footerHtml colCount allAction =
             H.tfoot
                 (case maybeAll of
