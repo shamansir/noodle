@@ -21,10 +21,19 @@ newtype Database =
 newtype Entity =
     Entity
         { id :: String
-        -- , type :: String
-        -- , label :: String
-        -- , typeId :: Int
-        -- , properties :: Array ({ name :: String, value :: String })
+        , type :: String
+        , label :: String
+        , typeId :: Int
+        , properties ::
+            Array
+                { name :: String
+                , value :: String
+                , type ::
+                    { clazz :: String
+                    , displayName :: String
+                    , readonly :: Boolean
+                    }
+                }
         }
 
 
