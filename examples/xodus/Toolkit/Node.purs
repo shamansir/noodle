@@ -24,10 +24,12 @@ data Node
     | NodeListNode
     | SourceNode
     | AllOfNode
+    | TakeNode
+    | DropNode
+    | FilterNode
     | UnionNode
-    -- | IntersectNode
-    -- | DropNode
-    -- | TakeNode
+    | IntersectNode
+    | SortNode
     | SelectNode
 
 
@@ -36,10 +38,12 @@ instance showNode :: Show Node where
     show ConnectNode = "connect"
     show SourceNode = "source"
     show AllOfNode = "all of"
+    show TakeNode = "take"
+    show DropNode = "drop"
+    show FilterNode = "filter"
     show UnionNode = "union"
-    -- show IntersectNode = "intersect"
-    -- show DropNode = "drop"
-    -- show TakeNode = "take"
+    show IntersectNode = "intersect"
+    show SortNode = "sort"
     show SelectNode = "select"
 
 
@@ -48,9 +52,17 @@ nodesForTheList =
     [ ConnectNode
     , SourceNode
     , AllOfNode
+    , TakeNode
+    , DropNode
+    , FilterNode
+    , UnionNode
+    , IntersectNode
+    , SortNode
     , SelectNode
     ]
 
+
+{- CONNECT -}
 
 connectNode :: NodeDef
 connectNode =
@@ -67,6 +79,8 @@ connectNode =
                     send _ = Nothing
                 pure send
 
+
+{- SOURCE -}
 
 sourceNode :: NodeDef
 sourceNode =
@@ -87,6 +101,8 @@ sourceNode =
                         pure send
                     _ -> pure $ const Nothing
 
+
+{- ALL OF -}
 
 allOfNode :: NodeDef
 allOfNode =
@@ -111,6 +127,27 @@ allOfNode =
                     _ -> pure $ const Nothing
 
 
+
+{- TAKE -}
+
+takeNode :: NodeDef
+takeNode = unionNode
+
+
+{- DROP -}
+
+dropNode :: NodeDef
+dropNode = unionNode
+
+
+{- FILTER -}
+
+filterNode :: NodeDef
+filterNode = unionNode
+
+
+{- UNION -}
+
 unionNode :: NodeDef
 unionNode =
     T.defineNode
@@ -133,6 +170,39 @@ unionNode =
                     send _ = Nothing
                 in pure send
 
+
+{- INTERSECT -}
+
+intersectNode :: NodeDef
+intersectNode =
+    T.defineNode
+        (T.withInlets
+            ~< "queryA" /\ Channel
+            ~< "queryB" /\ Channel)
+        (T.withOutlets
+            >~ "query" /\ Channel)
+        $ R.Process
+            $ \receive ->
+                let
+                    send "query" =
+                        case receive "queryA" /\ receive "queryB" of
+                            Just (Query queryA)
+                            /\ Just (Query queryB)
+                                -> Just $ Query $ Q.Intersect <$> queryA <*> queryB
+                            Just queryA /\ Nothing -> Just queryA
+                            Nothing /\ Just queryB -> Just queryB
+                            _ -> Nothing
+                    send _ = Nothing
+                in pure send
+
+
+{- SORT -}
+
+sortNode :: NodeDef
+sortNode = unionNode
+
+
+{- SELECT -}
 
 selectNode :: NodeDef
 selectNode =

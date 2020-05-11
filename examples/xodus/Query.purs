@@ -53,5 +53,16 @@ instance applyQuery :: Apply Query' where
     apply (Query' _ _ f) (Query' database entityTypes value) = Query' database entityTypes $ f value
 
 
-instance showQuery :: Show (Query' a) where
-    show _ = "query"
+instance showQuery :: Show a => Show (Query' a) where
+    show (Query' _ _ v) = show v
+
+
+instance showSelector :: Show Selector where
+    show All = "A"
+    show (AllOf (EntityType { name })) = "AO(" <> name <> ")"
+    show (Take n s) = "T(" <> show n <> "," <> show s <> ")"
+    show (Drop n s) = "D(" <> show n <> "," <> show s <> ")"
+    show (Union sA sB) = "U(" <> show sA <> "," <> show sB <> ")"
+    show (Intersect sA sB) = "I(" <> show sA <> "," <> show sB <> ")"
+    show (Sort _ s) = "S(" <> show s <> ")"
+    show (Filter _ s) = "F(" <> show s <> ")"

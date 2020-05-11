@@ -94,6 +94,10 @@ renderNode SelectNode (R.Node _ path _ _ _) _ atOutlet =
                     toHtml path $ Grid ([] :: Array Entity)
         ]
 
+renderNode UnionNode (R.Node _ path _ _ _) _ atOutlet =
+    H.div
+        [ H.classes [ "tk-node" ] ] [ H.text "union" ]
+
 renderNode _ _ _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
