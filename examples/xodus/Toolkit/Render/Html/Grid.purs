@@ -1,130 +1,26 @@
-module Xodus.Toolkit.Render.Html where
+module Xodus.Toolkit.Render.Html.Grid where
 
 
 import Prelude
 
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.List (toUnfoldable, List(..), (:), head, zip, mapWithIndex, singleton, length)
-import Data.Tuple (fst, snd)
+import Data.List
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Foldable (class Foldable, foldr)
 
-import Noodle.Network (Node(..)) as R
-import Noodle.API.Action (Action(..), RequestAction(..), DataAction(..)) as A
-import Noodle.Render.Html (View, ToolkitRenderer, core, my, RoutedAction) as R
-import Noodle.Render.Html.NodeList (render) as NodeList
-import Noodle.Path as P
-import Noodle.Process (Receive, Send) as R
-
-import Noodle.Render.Atom as R
-
-import Spork.Html (Html)
 import Spork.Html as H
 
-import Xodus.Toolkit.Node (Node(..), nodesForTheList)
-import Xodus.Toolkit.Value (Value(..))
-import Xodus.Toolkit.Channel (Channel(..))
+import Noodle.Path as P
+
 import Xodus.Dto
+import Xodus.Toolkit.Value (Value(..))
+import Xodus.Toolkit.Render.Html.ToHtml
 
 
-type View = R.View Value Channel Node
+newtype Grid a = Grid a
 
 
-type Action = R.RoutedAction Value Channel Node
-
-
-class Render a where
-    render :: P.ToNode -> a -> View
-
-
-renderer :: R.ToolkitRenderer Value Channel Node
-renderer =
-    { renderNode : renderNode
-    , renderInlet : \c _ d ->
-        H.div
-            [ H.classes [ "tk-inlet", classFor c ] ]
-            [ H.text $ maybe "?" show d ]
-    , renderOutlet : \c _ d ->
-        H.div
-            [ H.classes [ "tk-outlet", classFor c ] ]
-            [ H.text $ maybe "?" show d ]
-    }
-    where
-        classFor Channel = "tk-channel"
-
-
-renderNode
-    :: Node
-    -> R.Node Value Node
-    -> R.Receive Value
-    -> R.Send Value
-    -> View
-
-renderNode NodeListNode (R.Node _ (P.ToNode { patch }) _ _ _) _ _ =
-    NodeList.render (P.ToPatch patch) nodesForTheList
-
-renderNode ConnectNode (R.Node _ path _ _ _) _ _ =
-    H.div
-        [ H.classes [ "tk-node" ] ]
-        [ H.div
-            [ H.onClick $ H.always_ $ toInlet path "bang" $ Bang ]
-            [ H.span [ H.classes [ "xodus-connect-button" ] ] [ H.text "◌" ] ]
-        ]
-
-renderNode SourceNode (R.Node _ path _ _ _) atInlet _ =
-    H.div
-        [ H.classes [ "tk-node" ] ]
-        [ case atInlet "databases" of
-            Just (Databases databases) ->
-                render path databases
-            _ -> render path (Nil :: List Database)
-        ]
-
-renderNode AllOfNode (R.Node _ path _ _ _) atInlet _ =
-    H.div
-        [ H.classes [ "tk-node" ] ]
-            [ case atInlet "source" of
-                Just (Source database entityTypes) ->
-                    render path entityTypes
-                _ -> render path (Nil :: List EntityType)
-        ]
-
-renderNode SelectNode (R.Node _ path _ _ _) _ atOutlet =
-    H.div
-        [ H.classes [ "tk-node" ] ]
-            [ case atOutlet "result" of
-                Just (Result entities) ->
-                    render path entities
-                _ -> render path (Nil :: List Entity)
-        ]
-
-renderNode _ _ _ _ =
-    H.div
-        [ H.classes [ "tk-node" ] ]
-        [ H.div
-            [ ]
-            [ ]
-        ]
-
-
-toInlet :: P.ToNode -> P.Alias -> Value -> Action
-toInlet path alias v =
-    R.core
-        $ A.Request
-        $ A.ToSendToInlet (P.inletInNode path alias)
-        $ v
-
-
-toOutlet :: P.ToNode -> P.Alias -> Value -> Action
-toOutlet path alias v =
-    R.core
-        $ A.Request
-        $ A.ToSendToOutlet (P.outletInNode path alias)
-        $ v
-
-
-instance renderDatbases :: Render (List Database) where
-    render path entityTypes =
+instance toHtmlDatbases :: ToHtml (Grid (List Database)) where
+    toHtml path (Grid entityTypes) =
         grid
             Nil
             path
@@ -140,8 +36,8 @@ instance renderDatbases :: Render (List Database) where
             )
 
 
-instance renderEntityTypes :: Render (List EntityType) where
-    render path databases =
+instance toHtmlEntityTypes :: ToHtml (Grid (List EntityType)) where
+    toHtml path (Grid databases) =
         grid'
             Nil
             path
@@ -158,8 +54,8 @@ instance renderEntityTypes :: Render (List EntityType) where
             )
 
 
-instance renderEntities :: Render (List Entity) where
-    render path entities =
+instance toHtmlEntities :: ToHtml (Grid (List Entity)) where
+    toHtml path (Grid entities) =
         grid
             (singleton "xodus-wide-ticker")
             path
@@ -175,17 +71,10 @@ instance renderEntities :: Render (List Entity) where
             )
 
 
-instance renderString :: Render String where
-    render _ = H.text
-
-
-instance renderInt :: Render Int where
-    render _ = H.text <<< show
-
 
 grid
     :: forall rowId colId a b
-     . Render rowId => Render colId
+     . ToHtml rowId => ToHtml colId
     => List String
     -> P.ToNode
     -> List colId
@@ -198,7 +87,7 @@ grid classes p = grid' classes p Nothing
 
 grid'
     :: forall rowId colId a b
-     . Render rowId => Render colId
+     . ToHtml rowId => ToHtml colId
     => List String
     -> P.ToNode
     -> Maybe Action
@@ -231,7 +120,7 @@ grid' classes nodePath maybeAll headers getCells renderCell rows =
         headerCell (colIdx /\ colId) =
             H.th
                 [ H.classes $ ordClasses (length headers) colIdx ]
-                [ render nodePath colId ]
+                [ toHtml nodePath colId ]
         wrapRows r =
             [ H.tbody [] r ]
         cells =
@@ -241,7 +130,7 @@ grid' classes nodePath maybeAll headers getCells renderCell rows =
                     rowId /\ action /\ ((/\) rowId <$> getCells rowId v))
             <$> rows
         cellToHtml ((rowId /\ b) /\ colId) = renderCell rowId colId b
-        ticker rowId = H.td [ H.classes [ "xodus-ticker" ] ] [ render nodePath rowId ]
+        ticker rowId = H.td [ H.classes [ "xodus-ticker" ] ] [ toHtml nodePath rowId ]
         emptyTicker = H.th [ H.classes [ "xodus-ticker" ] ] [ H.text "ID" ]
         rowHtml (rowIdx /\ (rowId /\ maybeAction /\ row)) =
             H.tr
