@@ -118,7 +118,7 @@ renderNode NumberNode (R.Node _ path _ _ _) lastAtInlet _ =
     H.div
         [ H.classes [ "tk-node" ], H.style "display: flex; flex-direction: column;" ]
         [ H.input
-            [ H.type_ H.InputNumber
+            [ H. H.InputNumber
             , H.onValueChange \v ->
                 Number.fromString v
                     <#> R.core

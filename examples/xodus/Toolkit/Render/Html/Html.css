@@ -105,6 +105,11 @@ table.xodus-table tfoot tr.xodus-last th.xodus-last {
     border-bottom-right-radius: 3px;
 }
 
+table.xodus-table.xodus-empty tbody tr td {
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+}
+
 table.xodus-table tbody tr td.xodus-ticker {
     position: absolute;
     left: -12px;
@@ -137,4 +142,27 @@ table.xodus-table tfoot tr th {
     display: float;
     position: relative;
     margin-top: -10px;
+}
+
+.xodus-button {
+    border: 1px solid black;
+    border-radius: 3px;
+    margin: 1px 3px;
+    cursor: pointer;
+    background-color: #fff;
+}
+
+.xodus-button:hover {
+    background-color: rgba(255,255,255,0.7);
+}
+
+.xodus-button:focus,
+.xodus-number:focus {
+    outline: none;
+    color: chocolate;
+}
+
+.xodus-number {
+    border: 1px solid black;
+    width: 35px;
 }

@@ -4,6 +4,7 @@ module Xodus.Toolkit.Value where
 import Prelude
 
 import Data.Array (length) as Array
+import Data.Maybe
 
 import Xodus.Dto
 import Xodus.Query as Q
@@ -16,7 +17,13 @@ data Value
     | Source Database (Array EntityType)
     | SelectType EntityType
     | Query Q.Query
+    | Amount Aggregate
     | Result (Array Entity)
+
+
+data Aggregate
+    = All
+    | Exactly Int
 
 
 instance showValue :: Show Value where
@@ -27,4 +34,6 @@ instance showValue :: Show Value where
         database.location <> ". " <> (show $ Array.length entityTypes) <> " Types"
     show (SelectType (EntityType entityType)) = entityType.name
     show (Query query) = show query
+    show (Amount (Exactly v)) = show v
+    show (Amount All) = "All"
     show (Result entities) = (show $ Array.length entities) <> " Entities"

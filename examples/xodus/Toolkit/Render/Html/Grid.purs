@@ -102,13 +102,25 @@ grid'
     -> (rowId -> colId -> b -> View)
     -> Array (rowId /\ a /\ Maybe Action)
     -> View
+
 grid' classes nodePath maybeAll headers getCells renderCell [] =
     H.table
-        [ H.classes ([ "xodus-table" ] <> toUnfoldable classes) ]
-        [ H.tr [] [ H.td [] [ H.text "Empty" ] ] ]
+        [ H.classes ([ "xodus-table", "xodus-empty" ] <> toUnfoldable classes) ]
+        [ H.tbody
+            []
+            [
+                H.tr
+                [ H.classes [ "xodus-first", "xodus-last" ] ]
+                [ H.td
+                    [ H.classes [ "xodus-first", "xodus-last" ] ]
+                    [ H.text "Empty" ]
+                ]
+            ]
+        ]
+
 grid' classes nodePath maybeAll headers getCells renderCell rows =
     H.table
-        [ H.classes ([ "xodus-table" ] <> toUnfoldable classes) ]
+        [ H.classes ("xodus-table" : toUnfoldable classes) ]
             (headerHtml (toUnfoldable $ mapWithIndex ((/\)) headers)
                 <> (rowHtml <$> (toUnfoldable $ mapWithIndex ((/\)) cells) # wrapRows)
                 <> (toUnfoldable
@@ -150,7 +162,7 @@ grid' classes nodePath maybeAll headers getCells renderCell rows =
                 (case maybeAction of
                     Just action ->
                         [ H.classes
-                            ([ "xodus-clickable" ] <> ordClasses (length rows) rowIdx)
+                            ( "xodus-clickable" : ordClasses (length rows) rowIdx)
                         , H.onClick $ H.always_ $ action
                         ]
                     Nothing ->

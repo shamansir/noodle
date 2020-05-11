@@ -10,7 +10,7 @@ import Noodle.Toolkit (NodeDef(..), noInlets, withInlets, withOutlets, defineNod
 import Noodle.Toolkit ((~<), (>~))
 import Noodle.Render.Atom (class Atom) as R
 
-import Xodus.Toolkit.Value (Value(..))
+import Xodus.Toolkit.Value (Value(..), Aggregate(..))
 import Xodus.Toolkit.Channel (Channel(..))
 import Xodus.Requests
 import Xodus.Query as Q
@@ -131,13 +131,49 @@ allOfNode =
 {- TAKE -}
 
 takeNode :: NodeDef
-takeNode = unionNode
+takeNode =
+    T.defineNode
+        (T.withInlets
+            ~< "query" /\ Channel
+            ~< "amount" /\ Channel)
+        (T.withOutlets
+            >~ "query" /\ Channel)
+        $ R.Process
+            $ \receive ->
+                let
+                    send "query" =
+                        case receive "query" /\ receive "amount" of
+                            Just (Query query)
+                            /\ Just (Amount (Exactly amount))
+                                -> Just $ Query $ Q.Take amount <$> query
+                            Just query /\ _ -> Just query
+                            _ -> Nothing
+                    send _ = Nothing
+                in pure send
 
 
 {- DROP -}
 
 dropNode :: NodeDef
-dropNode = unionNode
+dropNode =
+    T.defineNode
+        (T.withInlets
+            ~< "query" /\ Channel
+            ~< "amount" /\ Channel)
+        (T.withOutlets
+            >~ "query" /\ Channel)
+        $ R.Process
+            $ \receive ->
+                let
+                    send "query" =
+                        case receive "query" /\ receive "amount" of
+                            Just (Query query)
+                            /\ Just (Amount (Exactly amount))
+                                -> Just $ Query $ Q.Drop amount <$> query
+                            Just query /\ _ -> Just query
+                            _ -> Nothing
+                    send _ = Nothing
+                in pure send
 
 
 {- FILTER -}
