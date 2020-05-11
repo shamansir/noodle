@@ -597,17 +597,12 @@ update
     -> Model d c n /\ R.Network d c n
     -> Model d c n /\ Effect (AndThen (RoutedAction d c n))
 
-update (FromCore (Core.Data Core.Bang)) (ui /\ _) = ui /\ doNothing
-update (FromCore (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ _) =
+update (FromCore (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ nw) =
     ui { lastInletData = ui.lastInletData # Map.insert inletPath d }
-    /\ doNothing
-update (FromCore (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (ui /\ _) =
+    /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
+update (FromCore (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (ui /\ nw) =
     ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d }
-    /\ doNothing
-update (FromCore (Core.Build (Core.AddPatch _))) ( ui /\ nw ) =
-    ui /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
-update (FromCore (Core.Build (Core.AddInlet _))) ( ui /\ nw ) =
-    ui /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
+    /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
 update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)))) ( ui /\ nw ) =
     case L.view (L._patchByPath patchPath) nw of
         -- FIXME: Raise the error if patch wasn't found
@@ -627,11 +622,8 @@ update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)
             ui /\ doNothing
     where
         patchPath = P.getPatchPath $ P.lift nodePath
-update (FromCore (Core.Build (Core.AddLink _))) ( ui /\ nw ) =
+update (FromCore _) (ui /\ nw) =
     ui /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
-update (FromCore (Core.Build (Core.RemoveNode _))) ( ui /\ nw ) =
-    ui /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
-update (FromCore _) (ui /\ _) = ui /\ doNothing
 
 update (FromUI NoOp) (ui /\ _) = ui /\ doNothing
 --update (FromUI (Batch actions)) (ui /\ _) = ui /\ doNothing -- FIXME: implement
