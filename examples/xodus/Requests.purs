@@ -69,9 +69,9 @@ perform (Query' database entityTypes selector) = foldSelector selector
     foldSelector (Drop amount selector') = Array.drop amount <$> foldSelector selector'
     foldSelector (Filter (Condition condition) selector')
             = Array.filter condition <$> foldSelector selector'
+    foldSelector (Sort (Comparison order) selector')
+            = Array.sortBy order <$> foldSelector selector'
     foldSelector (Union selectorA selectorB)
             = Array.union <$> foldSelector selectorA <*> foldSelector selectorB
     foldSelector (Intersect selectorA selectorB)
             = Array.intersect <$> foldSelector selectorA <*> foldSelector selectorB
-    foldSelector (Sort (Comparison order) selector')
-            = Array.sortBy order <$> foldSelector selector'

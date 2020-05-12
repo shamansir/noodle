@@ -157,12 +157,13 @@ table.xodus-table tfoot tr th {
 }
 
 .xodus-button:focus,
-.xodus-number:focus {
+.xodus-number:focus,
+.xodus-text:focus {
     outline: none;
     color: chocolate;
 }
 
-.xodus-number {
+.xodus-number, .xodus-text {
     border: 1px solid black;
     width: 35px;
 }

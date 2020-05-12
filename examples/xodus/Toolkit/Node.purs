@@ -33,20 +33,6 @@ data Node
     | SelectNode
 
 
-instance showNode :: Show Node where
-    show NodeListNode = "node list"
-    show ConnectNode = "connect"
-    show SourceNode = "source"
-    show AllOfNode = "all of"
-    show TakeNode = "take"
-    show DropNode = "drop"
-    show FilterNode = "filter"
-    show UnionNode = "union"
-    show IntersectNode = "intersect"
-    show SortNode = "sort"
-    show SelectNode = "select"
-
-
 nodesForTheList :: Array Node
 nodesForTheList =
     [ ConnectNode
@@ -179,7 +165,25 @@ dropNode =
 {- FILTER -}
 
 filterNode :: NodeDef
-filterNode = unionNode
+filterNode =
+    T.defineNode
+        (T.withInlets
+            ~< "query" /\ Channel
+            ~< "filter" /\ Channel)
+        (T.withOutlets
+            >~ "query" /\ Channel)
+        $ R.Process
+            $ \receive ->
+                let
+                    send "query" =
+                        case receive "query" /\ receive "filter" of
+                            Just (Query query)
+                            /\ Just (ToFilter condition _)
+                                -> Just $ Query $ Q.Filter condition <$> query
+                            Just query /\ _ -> Just query
+                            _ -> Nothing
+                    send _ = Nothing
+                in pure send
 
 
 {- UNION -}
@@ -235,7 +239,25 @@ intersectNode =
 {- SORT -}
 
 sortNode :: NodeDef
-sortNode = unionNode
+sortNode =
+    T.defineNode
+        (T.withInlets
+            ~< "query" /\ Channel
+            ~< "sort" /\ Channel)
+        (T.withOutlets
+            >~ "query" /\ Channel)
+        $ R.Process
+            $ \receive ->
+                let
+                    send "query" =
+                        case receive "query" /\ receive "sort" of
+                            Just (Query query)
+                            /\ Just (ToSort comparison _)
+                                -> Just $ Query $ Q.Sort comparison <$> query
+                            Just query /\ _ -> Just query
+                            _ -> Nothing
+                    send _ = Nothing
+                in pure send
 
 
 {- SELECT -}
@@ -263,3 +285,17 @@ instance nodeAtom :: R.Atom Node where
     labelOf = show
     uniqueIdOf = show
     debugInfoOf = show
+
+
+instance showNode :: Show Node where
+    show NodeListNode = "node list"
+    show ConnectNode = "connect"
+    show SourceNode = "source"
+    show AllOfNode = "all of"
+    show TakeNode = "take"
+    show DropNode = "drop"
+    show FilterNode = "filter"
+    show UnionNode = "union"
+    show IntersectNode = "intersect"
+    show SortNode = "sort"
+    show SelectNode = "select"

@@ -3,35 +3,28 @@ module Xodus.Toolkit.Render.Html where
 
 import Prelude
 
-import Debug.Trace as DT
-
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.Array ((:), head, zip, mapWithIndex, singleton, length)
-import Data.Tuple (fst, snd)
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Foldable (class Foldable, foldr)
+import Data.Maybe (Maybe(..), maybe)
+import Data.Either (Either(..), either)
 import Data.Int (fromString) as Int
+import Data.Tuple.Nested ((/\))
 
 import Noodle.Network (Node(..)) as R
-import Noodle.API.Action (Action(..), RequestAction(..), DataAction(..)) as A
-import Noodle.Render.Html (View, ToolkitRenderer, core, my) as R
+import Noodle.Render.Html (ToolkitRenderer) as R
 import Noodle.Render.Html.NodeList (render) as NodeList
 import Noodle.Path as P
 import Noodle.Process (Receive, Send) as R
 
-import Noodle.Render.Atom as R
-
-import Spork.Html (Html)
 import Spork.Html as H
--- import Spork.Html.Events
+
+import Xodus.Dto (Database, Entity, EntityType)
+import Xodus.Query (showV) as Q
+import Xodus.QueryParser as QParser
 
 import Xodus.Toolkit.Node (Node(..), nodesForTheList)
 import Xodus.Toolkit.Value (Value(..), Aggregate(..))
 import Xodus.Toolkit.Channel (Channel(..))
-import Xodus.Dto
-
-import Xodus.Toolkit.Render.Html.ToHtml
-import Xodus.Toolkit.Render.Html.Grid (grid, grid', Grid(..))
+import Xodus.Toolkit.Render.Html.ToHtml (View, toHtml, toInlet)
+import Xodus.Toolkit.Render.Html.Grid (Grid(..))
 
 
 renderer :: R.ToolkitRenderer Value Channel Node
@@ -149,6 +142,51 @@ renderNode IntersectNode (R.Node _ path _ _ _) _ atOutlet =
             Just (Query query) -> show query
             _ -> "-"
         ]
+
+renderNode FilterNode (R.Node _ path _ _ _) atInlet _ =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ H.text "filter"
+        , H.input
+            [ H.classes [ "xodus-text" ]
+            , H.type_ H.InputText
+            -- , H.value $ case atInlet "filter" of
+            --     Just (ToFilter _ info) -> Q.showV info
+            --     _ -> ""
+            , H.onValueChange $
+                -- FIXME: run parser in the node itself
+                QParser.run QParser.condition
+                    >>> either (const Nothing)
+                        \(info /\ condition) ->
+                            Just $ toInlet path "filter" $ ToFilter condition info
+            ]
+        , H.text $ case atInlet "filter" of
+            Just (ToFilter _ info) -> show info
+            _ -> ""
+        ]
+
+renderNode SortNode (R.Node _ path _ _ _) atInlet _ =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ H.text "sort"
+        , H.input
+            [ H.classes [ "xodus-text" ]
+            , H.type_ H.InputText
+            -- , H.value $ case atInlet "sort" of
+            --     Just (ToFilter _ info) -> Q.showV info
+            --     _ -> ""
+            , H.onValueChange $
+                -- FIXME: run parser in the node itself
+                QParser.run QParser.condition
+                    >>> either (const Nothing)
+                        \(info /\ condition) ->
+                            Just $ toInlet path "sort" $ ToFilter condition info
+            ]
+        , H.text $ case atInlet "sort" of
+            Just (ToFilter _ info) -> show info
+            _ -> ""
+        ]
+
 
 renderNode SelectNode (R.Node _ path _ _ _) _ atOutlet =
     H.div
