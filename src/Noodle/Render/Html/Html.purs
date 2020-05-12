@@ -97,6 +97,7 @@ data Action d c n
     | ClickOutlet (R.Outlet d c) ME.MouseEvent
     | ClickNodeTitle (R.Node d n) ME.MouseEvent
     | ClickRemoveButton (R.Node d n) ME.MouseEvent
+    | ClickLink R.Link ME.MouseEvent
     | PinNode (R.Node d n) Position
     | StorePositions (UUID.Tagged /-> Position)
     | ToDebugBox DebugBox.Action
@@ -235,7 +236,7 @@ viewNetwork toolkitRenderer ui nw@(R.Network { name, patches }) =
                 <$> patches # Seq.toUnfoldable) <>
             [ H.div
                 [ H.classes [ "noodle-links" ] ]
-                $ (viewLink ui <$> allLinks)
+                $ (viewLink ui nw <$> allLinks)
                     <> maybe [] (viewDraggingLink ui >>> Array.singleton) currentlyDraggingLink
             ]
     where
@@ -486,16 +487,22 @@ viewOutlet toolkitRenderer ui nw outletUuid =
 viewLink
     :: forall d c n
      . Model d c n
+    -> R.Network d c n
     -> UUID.ToLink /\ LinkEnds
     -> View d c n
-viewLink _ (uuid /\ linkPosition) =
+viewLink _ nw (linkUuid /\ linkPosition) =
     H.div
         [ H.classes [ "noodle-link" ]
         , H.style
             $ getLinkTransformStyle
                 $ getLinkTransform linkPosition
+        , case L.view (L._link linkUuid) nw of
+            Just link -> H.onClick $ handleLinkClick link
+            Nothing -> H.onClick $ const Nothing
         ]
         [ ]
+    where
+        handleLinkClick link e = Just $ my $ ClickLink link e
 
 
 viewDraggingLink
@@ -696,19 +703,29 @@ update (FromUI (ClickInlet (R.Inlet _ inletPath _ _) e)) ( ui /\ nw ) =
         { dragging = NotDragging
         -- TODO: if node was dragged before, place it at the mouse point
         }
-    /\ (do
+    /\ do
         _ <- Event.stopPropagation $ ME.toEvent e
         case ui.dragging of
             Dragging (DragLink (R.Outlet _ outletPath _ _)) ->
                 single $ core $ Core.Request $ Core.ToConnect outletPath inletPath
             _ -> doNothing
-    )
 update (FromUI (ClickOutlet outletPath e)) ( ui /\ nw ) =
     ui
         { dragging = Dragging $ DragLink outletPath
         -- TODO: if node was dragged before, place it at the mouse point
         }
     /\ (Event.stopPropagation (ME.toEvent e) >>= (const $ doNothing))
+update (FromUI (ClickLink link e)) ( ui /\ nw ) =
+    ui
+    /\ do
+        _ <- Event.stopPropagation $ ME.toEvent e
+        x <- updatePositions (my <<< StorePositions) nw
+        batch
+            ( (core $ Core.Build $ Core.RemoveLink link)
+            -- it seems right, not to request to disconnect, rather to remove this particular link
+            : x
+            : Nil
+            )
 update (FromUI EnableDebug) (ui /\ _) = ui /\ doNothing -- TODO: why do nothing?
 update (FromUI DisableDebug) (ui /\ _) = ui /\ doNothing -- TODO: why do nothing?
 update (FromUI (StorePositions positions)) (ui /\ _) =
