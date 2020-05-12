@@ -67,7 +67,7 @@ instance toHtmlEntities :: ToHtml (Grid (Array Entity)) where
                 (\_ entity@(Entity { id }) ->
                     id
                         /\ entity
-                        /\ Nothing
+                        /\ (Just $ toOutlet path "one" $ SelectOne $ entity)
                 ) entities
             )
         where
@@ -76,6 +76,27 @@ instance toHtmlEntities :: ToHtml (Grid (Array Entity)) where
             valuesOf entity@(Entity { type : type_ }) =
                 type_ :
                     (valueOrEmpty <$> dataOfProperty entity <$> _.name <$> allProperties entities)
+
+
+
+instance toHtmlEntity :: ToHtml (Grid Entity) where
+    toHtml path (Grid entity) =
+        grid
+            (singleton "xodus-wide-ticker")
+            path
+            ("name" : "type" : "value" : [])
+            (const valuesOf)
+            (\_ _ prop -> H.text prop)
+            (mapWithIndex
+                (\index prop@{ name } ->
+                    index
+                        /\ prop
+                        /\ Nothing
+                ) $ allPropertiesOf entity
+            )
+        where
+            valuesOf { name, type : type_, value } =
+                name : type_ : value : []
 
 
 grid

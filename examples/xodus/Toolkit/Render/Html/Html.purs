@@ -221,3 +221,14 @@ renderNode SelectNode (R.Node _ path _ _ _) atInlet atOutlet =
                 [ H.span [ H.classes [ "xodus-group-label" ] ] [ H.text label ]
                 , toHtml path $ Grid $ NE.toArray items
                 ]
+
+renderNode SelectOneNode (R.Node _ path _ _ _) atInlet _ =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ case atInlet "one" of
+            Just (SelectOne entity) ->
+                toHtml path $ Grid entity
+            _ ->
+                toHtml path $ Grid ([] :: Array Entity)
+        ]
+

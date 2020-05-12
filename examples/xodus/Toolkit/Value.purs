@@ -16,6 +16,7 @@ data Value
     | SelectDatabase Database
     | Source Database (Array EntityType)
     | SelectType EntityType
+    | SelectOne Entity
     | Query Q.Query
     | Amount Aggregate
     | ToFilter Q.Condition Q.ConditionInfo
@@ -36,6 +37,7 @@ instance showValue :: Show Value where
     show (Source (Database database) entityTypes) =
         database.location <> ". " <> (show $ Array.length entityTypes) <> " Types"
     show (SelectType (EntityType entityType)) = entityType.name
+    show (SelectOne (Entity entity)) = entity.id
     show (Query query) = show query
     show (Amount (Exactly v)) = show v
     show (Amount All) = "All"
