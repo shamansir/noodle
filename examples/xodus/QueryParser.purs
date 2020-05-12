@@ -89,12 +89,14 @@ condition = do
                 Nothing
                     -> false
     where
-        compare "string" cOp value reqValue =
+        compare "String" cOp value reqValue =
             (toOp cOp) value reqValue
-        compare "int" cOp value reqValue =
+        compare "Integer" cOp value reqValue =
             toOp cOp <$> Int.fromString value <*> Int.fromString reqValue # fromMaybe false
-        compare "float" cOp value reqValue =
+        compare "Float" cOp value reqValue =
             toOp cOp <$> Number.fromString value <*> Number.fromString reqValue # fromMaybe false
+        compare "Boolean" cOp value reqValue =
+            toOp cOp <$> boolFromString value <*> boolFromString reqValue # fromMaybe false
         compare _ _ _ _ = false
 
 
@@ -107,17 +109,22 @@ comparison = do
         \entityA entityB ->
             fromMaybe O.EQ $ do
                 { type : typeA, value : valueA } <- dataOfProperty entityA fieldName
-                { type : typeB, value : valueB } <- dataOfProperty entityA fieldName
+                { type : typeB, value : valueB } <- dataOfProperty entityB fieldName
                 pure $ compare typeA typeB dir valueA valueB
     where
-        compare "string" "string" dir valueA valueB =
+        compare "String" "String" dir valueA valueB =
             (dirToOp dir) valueA valueB
-        compare "int" "int" dir valueA valueB =
+        compare "Integer" "Integer" dir valueA valueB =
             dirToOp dir
                 <$> Int.fromString valueA
                 <*> Int.fromString valueB
                 # fromMaybe O.EQ
-        compare "float" "float" dir valueA valueB =
+        compare "Float" "Float" dir valueA valueB =
+            dirToOp dir
+                <$> Number.fromString valueA
+                <*> Number.fromString valueB
+                # fromMaybe O.EQ
+        compare "Boolean" "Boolean" dir valueA valueB =
             dirToOp dir
                 <$> Number.fromString valueA
                 <*> Number.fromString valueB
@@ -131,3 +138,10 @@ isTokenChar c | c == '_'     = true
 isTokenChar c | c == '-'     = true
 isTokenChar c | otherwise    = false
 
+
+boolFromString :: String -> Maybe Boolean
+boolFromString "t" = Just true
+boolFromString "f" = Just false
+boolFromString "true" = Just true
+boolFromString "false" = Just false
+boolFromString _ = Nothing
