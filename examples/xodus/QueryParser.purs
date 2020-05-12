@@ -7,6 +7,7 @@ import Control.Alt ((<|>))
 import Data.Array (fromFoldable)
 import Data.Char.Unicode (isSpace, isDigit, isAlphaNum)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Either (Either)
 import Data.List.NonEmpty as NEL
 import Data.List.NonEmpty (NonEmptyList)
 import Data.String as String
@@ -17,41 +18,26 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Text.Parsing.StringParser (Parser, ParseError, runParser, fail)
 import Text.Parsing.StringParser.CodePoints (satisfy, string)
-    -- (anyDigit, eof, string, anyChar, regex, satisfy, skipSpaces)
 import Text.Parsing.StringParser.Combinators (many1)
-    -- (many1, endBy1, sepBy1, optionMaybe, many, manyTill, many1Till, chainl, fix, between)
--- import Text.Parsing.StringParser.Expr (Assoc(..), Operator(..), buildExprParser)
--- import Text.Parsing.Parser.Token (space)
 
-import Xodus.Dto
+
+import Xodus.Dto (dataOfProperty)
 import Xodus.Query
+import Xodus.Query (ComparisonOp(..)) as Q
 
 
-data SortDirection
-    = Ascending
-    | Descending
-
-
-data ComparisonOp
-    = EQ
-    | LT
-    | GT
-    | GTE
-    | LTE
-
-
-data ComparisonInfo = ComparisonInfo Field ComparisonOp String
-data SortInfo = SortInfo Field SortDirection
+run :: forall a. Parser a -> String -> Either ParseError a
+run = runParser
 
 
 cOperator :: Parser ComparisonOp
 cOperator =
-        string "is" $> EQ
-    <|> string "==" $> EQ
-    <|> string "<"  $> LT
-    <|> string ">"  $> GT
-    <|> string ">=" $> GTE
-    <|> string "<=" $> LTE
+        string "is" $> Q.EQ
+    <|> string "==" $> Q.EQ
+    <|> string "<"  $> Q.LT
+    <|> string ">"  $> Q.GT
+    <|> string ">=" $> Q.GTE
+    <|> string "<=" $> Q.LTE
 
 
 {-
@@ -88,7 +74,7 @@ direction =
     <|> string "desc" $> Descending
 
 
-condition :: Parser (ComparisonInfo /\ Condition)
+condition :: Parser (ConditionInfo /\ Condition)
 condition = do
     fieldName <- nextToken
     delim
@@ -145,29 +131,3 @@ isTokenChar c | c == '_'     = true
 isTokenChar c | c == '-'     = true
 isTokenChar c | otherwise    = false
 
-
-toOp :: forall a. Eq a => Ord a => ComparisonOp -> (a -> a -> Boolean)
-toOp EQ = (==)
-toOp LT = (<)
-toOp GT = (>)
-toOp LTE = (<=)
-toOp GTE = (>=)
-
-
-dirToOp :: forall a. Eq a => Ord a => SortDirection -> (a -> a -> O.Ordering)
-dirToOp Ascending a b | a == b = O.EQ
-dirToOp Ascending a b | a < b = O.LT
-dirToOp Ascending a b | a > b = O.GT
-dirToOp Ascending a b | otherwise = O.EQ
-dirToOp Descending a b | a == b = O.EQ
-dirToOp Descending a b | a < b = O.GT
-dirToOp Descending a b | a > b = O.LT
-dirToOp Descending a b | otherwise = O.EQ
-
-
-makePInfo :: String -> ComparisonOp -> String -> ComparisonInfo
-makePInfo f op v = ComparisonInfo (Field f) op v
-
-
-makeSInfo :: String -> SortDirection -> SortInfo
-makeSInfo f dir = SortInfo (Field f) dir

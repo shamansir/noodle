@@ -18,6 +18,8 @@ data Value
     | SelectType EntityType
     | Query Q.Query
     | Amount Aggregate
+    | ToFilter Q.Condition Q.ConditionInfo
+    | ToSort Q.Comparison Q.SortInfo
     | Result (Array Entity)
 
 
@@ -36,4 +38,6 @@ instance showValue :: Show Value where
     show (Query query) = show query
     show (Amount (Exactly v)) = show v
     show (Amount All) = "All"
+    show (ToFilter _ _) = "Filter"
+    show (ToSort _ _) = "Sort"
     show (Result entities) = (show $ Array.length entities) <> " Entities"
