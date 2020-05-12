@@ -266,7 +266,8 @@ selectNode :: NodeDef
 selectNode =
     T.defineNode
         (T.withInlets
-            ~< "query" /\ Channel)
+            ~< "query" /\ Channel
+            ~< "group" /\ Channel)
         (T.withOutlets
             >~ "result" /\ Channel)
         $ R.ProcessAff

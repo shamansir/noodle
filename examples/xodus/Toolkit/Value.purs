@@ -20,6 +20,7 @@ data Value
     | Amount Aggregate
     | ToFilter Q.Condition Q.ConditionInfo
     | ToSort Q.Comparison Q.SortInfo
+    | Switch Boolean
     | Result (Array Entity)
 
 
@@ -40,4 +41,6 @@ instance showValue :: Show Value where
     show (Amount All) = "All"
     show (ToFilter _ _) = "Filter"
     show (ToSort _ _) = "Sort"
+    show (Switch true) = "on"
+    show (Switch false) = "off"
     show (Result entities) = (show $ Array.length entities) <> " Entities"

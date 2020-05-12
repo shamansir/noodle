@@ -3,8 +3,11 @@ module Xodus.Dto where
 import Prelude
 
 import Data.Newtype (class Newtype)
-import Data.Array (filter, head, concat, nub)
+import Data.Array (filter, head, concat, nub, groupBy)
+import Data.Array.NonEmpty (head) as NE
+import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Data.Argonaut.Encode (class EncodeJson) as J
 import Data.Argonaut.Decode (class DecodeJson) as J
@@ -96,3 +99,12 @@ getPropertyData
     -> PropertyData
 getPropertyData { name, value, type : type_ } =
     { name, value, type : type_.displayName }
+
+
+groupByType :: Array Entity -> Array (String /\ NonEmptyArray Entity)
+groupByType entities =
+    groupBy compare entities <#> \vals -> getType (NE.head vals) /\ vals
+    where
+        getType (Entity { type : type_ }) = type_
+        compare entityA entityB =
+            eq (getType entityA) (getType entityB)
