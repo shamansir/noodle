@@ -26,9 +26,9 @@ data Node
     | AllOfNode
     | TakeNode
     | DropNode
-    | FilterNode
     | UnionNode
     | IntersectNode
+    | FilterNode
     | SortNode
     | SelectNode
 
@@ -40,9 +40,9 @@ nodesForTheList =
     , AllOfNode
     , TakeNode
     , DropNode
-    , FilterNode
     , UnionNode
     , IntersectNode
+    , FilterNode
     , SortNode
     , SelectNode
     ]
@@ -162,30 +162,6 @@ dropNode =
                 in pure send
 
 
-{- FILTER -}
-
-filterNode :: NodeDef
-filterNode =
-    T.defineNode
-        (T.withInlets
-            ~< "query" /\ Channel
-            ~< "filter" /\ Channel)
-        (T.withOutlets
-            >~ "query" /\ Channel)
-        $ R.Process
-            $ \receive ->
-                let
-                    send "query" =
-                        case receive "query" /\ receive "filter" of
-                            Just (Query query)
-                            /\ Just (ToFilter condition _)
-                                -> Just $ Query $ Q.Filter condition <$> query
-                            Just query /\ _ -> Just query
-                            _ -> Nothing
-                    send _ = Nothing
-                in pure send
-
-
 {- UNION -}
 
 unionNode :: NodeDef
@@ -231,6 +207,30 @@ intersectNode =
                                 -> Just $ Query $ Q.Intersect <$> queryA <*> queryB
                             Just queryA /\ Nothing -> Just queryA
                             Nothing /\ Just queryB -> Just queryB
+                            _ -> Nothing
+                    send _ = Nothing
+                in pure send
+
+
+{- FILTER -}
+
+filterNode :: NodeDef
+filterNode =
+    T.defineNode
+        (T.withInlets
+            ~< "query" /\ Channel
+            ~< "filter" /\ Channel)
+        (T.withOutlets
+            >~ "query" /\ Channel)
+        $ R.Process
+            $ \receive ->
+                let
+                    send "query" =
+                        case receive "query" /\ receive "filter" of
+                            Just (Query query)
+                            /\ Just (ToFilter condition _)
+                                -> Just $ Query $ Q.Filter condition <$> query
+                            Just query /\ _ -> Just query
                             _ -> Nothing
                     send _ = Nothing
                 in pure send
