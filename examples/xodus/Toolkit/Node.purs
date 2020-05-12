@@ -6,7 +6,7 @@ import Data.Tuple.Nested ((/\))
 import Data.Maybe (Maybe(..))
 
 import Noodle.Process (ProcessF(..)) as R
-import Noodle.Toolkit (NodeDef(..), noInlets, withInlets, withOutlets, defineNode) as T
+import Noodle.Toolkit (NodeDef(..), noInlets, noOutlets, withInlets, withOutlets, defineNode) as T
 import Noodle.Toolkit ((~<), (>~))
 import Noodle.Render.Atom (class Atom) as R
 
@@ -30,6 +30,7 @@ data Node
     | IntersectNode
     | FilterNode
     | SortNode
+    | SelectOneNode
     | SelectNode
 
 
@@ -44,6 +45,7 @@ nodesForTheList =
     , IntersectNode
     , FilterNode
     , SortNode
+    , SelectOneNode
     , SelectNode
     ]
 
@@ -269,7 +271,8 @@ selectNode =
             ~< "query" /\ Channel
             ~< "group" /\ Channel)
         (T.withOutlets
-            >~ "result" /\ Channel)
+            >~ "result" /\ Channel
+            >~ "one" /\ Channel)
         $ R.ProcessAff
             $ \receive ->
                 case receive "query" of
@@ -280,6 +283,17 @@ selectNode =
                             send _ = Nothing
                         pure send
                     _ -> pure $ const Nothing
+
+
+{- SELECT ONE -}
+
+selectOneNode :: NodeDef
+selectOneNode =
+    T.defineNode
+        (T.withInlets
+            ~< "one" /\ Channel)
+        (T.noOutlets)
+        $ R.Withhold
 
 
 instance nodeAtom :: R.Atom Node where
@@ -299,4 +313,5 @@ instance showNode :: Show Node where
     show UnionNode = "union"
     show IntersectNode = "intersect"
     show SortNode = "sort"
+    show SelectOneNode = "select one"
     show SelectNode = "select"

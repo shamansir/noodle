@@ -27,4 +27,5 @@ toolkit =
         nodes IntersectNode = intersectNode
         nodes FilterNode = filterNode
         nodes SortNode = sortNode
+        nodes SelectOneNode = selectOneNode
         nodes SelectNode = selectNode
