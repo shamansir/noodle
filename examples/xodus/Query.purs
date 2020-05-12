@@ -5,6 +5,7 @@ import Prelude
 
 import Data.Array
 import Data.Ord as O
+import Data.Ordering as O
 
 import Xodus.Dto
 
@@ -103,14 +104,8 @@ toOp GTE = (>=)
 
 
 dirToOp :: forall a. Eq a => Ord a => SortDirection -> (a -> a -> O.Ordering)
-dirToOp Ascending a b | a == b = O.EQ
-dirToOp Ascending a b | a < b = O.LT
-dirToOp Ascending a b | a > b = O.GT
-dirToOp Ascending a b | otherwise = O.EQ
-dirToOp Descending a b | a == b = O.EQ
-dirToOp Descending a b | a < b = O.GT
-dirToOp Descending a b | a > b = O.LT
-dirToOp Descending a b | otherwise = O.EQ
+dirToOp Ascending a b = O.compare a b
+dirToOp Descending a b = O.invert $ O.compare a b
 
 
 makePInfo :: String -> ComparisonOp -> String -> ConditionInfo
