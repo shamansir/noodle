@@ -158,7 +158,8 @@ input.xodus-button:hover {
 
 input.xodus-button:focus,
 input.xodus-number:focus,
-input.xodus-text:focus {
+input.xodus-text:focus,
+input.xodus-check:focus {
     outline: none;
     color: chocolate;
 }
@@ -167,6 +168,11 @@ input.xodus-number,
 input.xodus-text {
     border: 1px solid black;
     width: 88px;
+    margin: 3px;
+}
+
+.input.xodus-check {
+    border: 1px solid black;
     margin: 3px;
 }
 
@@ -186,4 +192,35 @@ input {
     width: 80px;
     border: 1px dotted black;
     min-height: 1.2em;
+}
+
+.xodus-group-label {
+    background-color: #aaa;
+    color: black;
+    border-radius: 5px;
+    padding: 5px;
+    margin: 5px;
+    display: inline-block;
+    margin-left: 28px;
+}
+
+.xodus-float {
+    /* float: right; */
+    background-color: #aaa;
+    border-radius: 5px;
+    /* z-index: 1000; */
+    opacity: 0.9;
+    /* display: inline-flex; */
+    display: flex;
+    /* margin: 3px; */
+    right: 0;
+    margin-top: 5px;
+    color: black;
+    /* position: absolute; */
+    padding: 1px 1px 2px 3px;
+    width: 50px;
+    margin-left: 28px;
+    margin-right: 6px;
+    margin-bottom: 9px;
+    align-items: center;
 }

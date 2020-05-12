@@ -6,6 +6,8 @@
 
     ** In `FSM` (and Action Sequences), do not allow actions to be passed to `run` and other functions, all the actions should only be pushed afterwards — that will simplify things a lot, see my own `purescript-fsm` example as the proof (and for the one below as well);
 
+    ** _May be_ get rid of `Channel` as `c` in `d c n`, `Channel` class should be over data, which is `d`; And when you define the inlet on some node, you manually check its data type in processing anyway; Just find a way to be able to do that also w/o running the processing function;
+
     ** Lists, Arrays and Sequences are all messed up; Prefer `List`s everywhere, except for unique stuff, there prefer `Sequence`;
 
     ** For `FSM`, use `List (Effect action)`, not one effect to share data between other actions: that would make the `FSM` granularly implemented;

@@ -7,6 +7,7 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Either (Either(..), either)
 import Data.Int (fromString) as Int
 import Data.Tuple.Nested ((/\))
+import Data.Array.NonEmpty (toArray) as NE
 
 import Noodle.Network (Node(..)) as R
 import Noodle.Render.Html (ToolkitRenderer) as R
@@ -16,7 +17,7 @@ import Noodle.Process (Receive, Send) as R
 
 import Spork.Html as H
 
-import Xodus.Dto (Database, Entity, EntityType)
+import Xodus.Dto (Database, Entity, EntityType, groupByType)
 import Xodus.Query (showV) as Q
 import Xodus.QueryParser as QParser
 
@@ -191,21 +192,32 @@ renderNode SortNode (R.Node _ path _ _ _) atInlet _ =
             ]
         ]
 
-
-renderNode SelectNode (R.Node _ path _ _ _) _ atOutlet =
-    H.div
-        [ H.classes [ "tk-node" ] ]
-            [ case atOutlet "result" of
-                Just (Result entities) ->
-                    toHtml path $ Grid entities
-                _ ->
-                    toHtml path $ Grid ([] :: Array Entity)
-        ]
-
-renderNode _ _ _ _ =
+renderNode SelectNode (R.Node _ path _ _ _) atInlet atOutlet =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
-            [ ]
-            [ ]
+            [ H.classes [ "xodus-float" ] ]
+            [ H.text "group"
+            , H.input
+                [ H.classes [ "xodus-check" ]
+                , H.type_ H.InputCheckbox
+                , H.onChecked $ Just <<< toInlet path "group" <<< Switch
+                ]
+            ]
+        , case atOutlet "result" /\ atInlet "group" of
+            Just (Result entities)
+                /\ Just (Switch true) ->
+                    H.div [] $ renderGroup <$> groupByType entities
+            Just (Result entities)
+                /\ _ ->
+                toHtml path $ Grid entities
+            _ ->
+                toHtml path $ Grid ([] :: Array Entity)
         ]
+    where
+        renderGroup (label /\ items) =
+            H.div
+                [ H.classes [ "xodus-group" ] ]
+                [ H.span [ H.classes [ "xodus-group-label" ] ] [ H.text label ]
+                , toHtml path $ Grid $ NE.toArray items
+                ]
