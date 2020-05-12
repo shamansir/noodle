@@ -2,7 +2,7 @@ module Xodus.Query
     ( Query
     , Query'(..) -- FIXME: do not expose
     , Selector(..)
-    , Condition(..), Comparison(..), Field
+    , Condition(..), Comparison(..), Field(..)
     , make
     ) where
 

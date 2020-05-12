@@ -13,6 +13,7 @@ import Data.String as String
 import Data.Int (fromString) as Int
 import Data.Number (fromString) as Number
 import Data.Ordering (Ordering(..)) as O
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Text.Parsing.StringParser (Parser, ParseError, runParser, fail)
 import Text.Parsing.StringParser.CodePoints (satisfy, string)
@@ -37,6 +38,10 @@ data ComparisonOp
     | GT
     | GTE
     | LTE
+
+
+data ComparisonInfo = ComparisonInfo Field ComparisonOp String
+data SortInfo = SortInfo Field SortDirection
 
 
 cOperator :: Parser ComparisonOp
@@ -83,14 +88,14 @@ direction =
     <|> string "desc" $> Descending
 
 
-condition :: Parser Condition
+condition :: Parser (ComparisonInfo /\ Condition)
 condition = do
     fieldName <- nextToken
     delim
     cOp <- cOperator
     delim
     reqValue <- nextToken
-    pure $ Condition
+    pure $ makePInfo fieldName cOp reqValue /\ Condition
         \entity ->
             case dataOfProperty entity fieldName of
                 Just { name, type : type_, value }
@@ -107,12 +112,12 @@ condition = do
         compare _ _ _ _ = false
 
 
-comparison :: Parser Comparison
+comparison :: Parser (SortInfo /\ Comparison)
 comparison = do
     fieldName <- nextToken
     delim
     dir <- direction
-    pure $ Comparison
+    pure $ makeSInfo fieldName dir /\ Comparison
         \entityA entityB ->
             fromMaybe O.EQ $ do
                 { type : typeA, value : valueA } <- dataOfProperty entityA fieldName
@@ -158,3 +163,11 @@ dirToOp Descending a b | a == b = O.EQ
 dirToOp Descending a b | a < b = O.GT
 dirToOp Descending a b | a > b = O.LT
 dirToOp Descending a b | otherwise = O.EQ
+
+
+makePInfo :: String -> ComparisonOp -> String -> ComparisonInfo
+makePInfo f op v = ComparisonInfo (Field f) op v
+
+
+makeSInfo :: String -> SortDirection -> SortInfo
+makeSInfo f dir = SortInfo (Field f) dir
