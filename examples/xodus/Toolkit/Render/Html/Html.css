@@ -144,7 +144,7 @@ table.xodus-table tfoot tr th {
     margin-top: -10px;
 }
 
-.xodus-button {
+input.xodus-button {
     border: 1px solid black;
     border-radius: 3px;
     margin: 1px 3px;
@@ -152,18 +152,38 @@ table.xodus-table tfoot tr th {
     background-color: #fff;
 }
 
-.xodus-button:hover {
+input.xodus-button:hover {
     background-color: rgba(255,255,255,0.7);
 }
 
-.xodus-button:focus,
-.xodus-number:focus,
-.xodus-text:focus {
+input.xodus-button:focus,
+input.xodus-number:focus,
+input.xodus-text:focus {
     outline: none;
     color: chocolate;
 }
 
-.xodus-number, .xodus-text {
+input.xodus-number,
+input.xodus-text {
     border: 1px solid black;
-    width: 35px;
+    width: 88px;
+    margin: 3px;
+}
+
+.xodus-node-label {
+    display: inline-block;
+    padding: 3px;
+}
+
+input {
+    display: block;
+}
+
+.xodus-node-val-descr {
+    display: block;
+    padding: 3px;
+    margin: 3px;
+    width: 80px;
+    border: 1px dotted black;
+    min-height: 1.2em;
 }

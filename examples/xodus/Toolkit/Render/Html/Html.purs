@@ -84,7 +84,7 @@ renderNode AllOfNode (R.Node _ path _ _ _) atInlet _ =
 renderNode TakeNode (R.Node _ path _ _ _) atInlet _ =
     H.div
         [ H.classes [ "tk-node" ] ]
-        [ H.text "take"
+        [ H.span [ H.classes [ "xodus-node-label" ] ] [ H.text "take" ]
         , H.button
             [ H.classes [ "xodus-button" ]
             , H.onClick $ H.always_ $ toInlet path "amount" $ Amount All
@@ -107,7 +107,7 @@ renderNode TakeNode (R.Node _ path _ _ _) atInlet _ =
 renderNode DropNode (R.Node _ path _ _ _) atInlet _ =
     H.div
         [ H.classes [ "tk-node" ] ]
-        [ H.text "drop"
+        [ H.span [ H.classes [ "xodus-node-label" ] ] [ H.text "drop" ]
         , H.button
             [ H.classes [ "xodus-button" ]
             , H.onClick $ H.always_ $ toInlet path "amount" $ Amount All
@@ -146,13 +146,13 @@ renderNode IntersectNode (R.Node _ path _ _ _) _ atOutlet =
 renderNode FilterNode (R.Node _ path _ _ _) atInlet _ =
     H.div
         [ H.classes [ "tk-node" ] ]
-        [ H.text "filter"
+        [ H.span [ H.classes [ "xodus-node-label" ] ] [ H.text "filter" ]
         , H.input
             [ H.classes [ "xodus-text" ]
             , H.type_ H.InputText
-            -- , H.value $ case atInlet "filter" of
-            --     Just (ToFilter _ info) -> Q.showV info
-            --     _ -> ""
+            , H.value $ case atInlet "filter" of
+                Just (ToFilter _ info) -> Q.showV info
+                _ -> ""
             , H.onValueChange $
                 -- FIXME: run parser in the node itself
                 QParser.run QParser.condition
@@ -160,31 +160,35 @@ renderNode FilterNode (R.Node _ path _ _ _) atInlet _ =
                         \(info /\ condition) ->
                             Just $ toInlet path "filter" $ ToFilter condition info
             ]
-        , H.text $ case atInlet "filter" of
-            Just (ToFilter _ info) -> show info
-            _ -> ""
+        , H.span [ H.classes [ "xodus-node-val-descr" ] ]
+            [ H.text $ case atInlet "filter" of
+                Just (ToFilter _ info) -> show info
+                _ -> ""
+            ]
         ]
 
 renderNode SortNode (R.Node _ path _ _ _) atInlet _ =
     H.div
         [ H.classes [ "tk-node" ] ]
-        [ H.text "sort"
+        [ H.span [ H.classes [ "xodus-node-label" ] ] [ H.text "sort" ]
         , H.input
             [ H.classes [ "xodus-text" ]
             , H.type_ H.InputText
-            -- , H.value $ case atInlet "sort" of
-            --     Just (ToFilter _ info) -> Q.showV info
-            --     _ -> ""
+            , H.value $ case atInlet "sort" of
+                Just (ToSort _ info) -> Q.showV info
+                _ -> ""
             , H.onValueChange $
                 -- FIXME: run parser in the node itself
-                QParser.run QParser.condition
+                QParser.run QParser.comparison
                     >>> either (const Nothing)
-                        \(info /\ condition) ->
-                            Just $ toInlet path "sort" $ ToFilter condition info
+                        \(info /\ comparison) ->
+                            Just $ toInlet path "sort" $ ToSort comparison info
             ]
-        , H.text $ case atInlet "sort" of
-            Just (ToFilter _ info) -> show info
-            _ -> ""
+        , H.span [ H.classes [ "xodus-node-val-descr" ] ]
+            [ H.text $ case atInlet "sort" of
+                Just (ToSort _ info) -> show info
+                _ -> ""
+            ]
         ]
 
 
