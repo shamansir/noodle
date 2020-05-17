@@ -8,6 +8,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\))
 import Data.Array (catMaybes) as Array
+import Data.Traversable (traverse_)
 
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
@@ -18,7 +19,7 @@ import Effect.Aff (delay)
 import FRP.Event as Event
 import FRP.Event.Time (interval)
 
-import FSM (run_, pushAll) as Actions
+import FSM (run_, run, pushAll) as Actions
 
 import Noodle.Util (flow) as R
 import Noodle.API.Action.Sequence ((</>))
@@ -37,7 +38,7 @@ import Noodle.Toolkit
 import Test.Spec (Spec, it, pending, pending', describe, itOnly)
 import Test.Spec.Assertions (shouldContain, shouldNotContain, shouldEqual, shouldNotEqual)
 
-import Noodle.Test.Util.Spy (trace, with, get, contramap, reset) as Spy
+import Noodle.Test.Util.Spy (trace, with, get, contramap, reset, last, consider) as Spy
 import Noodle.Test.Util.Trace (TraceItem(..), collectData)
 import Noodle.Test.Spec.Flow.Base
     ( Actions
@@ -56,7 +57,46 @@ spec = do
 
   describe "processing" $ do
 
-    pending "adding an inlet inludes its flow into processing"
+    pending' "adding an inlet inludes its flow into processing" $ do
+      dataTraceSpy <- liftEffect Spy.last
+
+      let
+        inlet = toInlet "patch" "node" "foo"
+
+        nodeDef :: NodeDef Delivery Pipe
+        nodeDef =
+            NodeDef
+              { inlets :
+                  noInlets
+              , outlets :
+                  noOutlets
+                  -- withOutlets
+                  -- >~ "stub" /\ Pass
+              , process : R.Process processF
+              }
+
+        processF receive = do
+            _ <- traverse_ (Spy.consider dataTraceSpy) (receive "foo")
+            pure $ const Nothing
+
+      { push } <- liftEffect $ Actions.run
+        mySequencer
+        (pure $ Network.empty "foo")
+
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "node"
+                    Custom
+                    nodeDef
+            </> R.addInlet (toNode "patch" "node") "foo" Pass
+            </> R.sendToInlet (toInlet "patch" "node" "foo") (Curse 4)
+
+      value <- liftEffect $ Spy.get dataTraceSpy
+      value `shouldEqual` (Just $ Curse 4)
 
     it "returning some value from processing function actually sends this value to the outlet" $ do
       let
@@ -185,7 +225,7 @@ spec = do
         (OutletData apples2Outlet $ Apple 1)
 
     it "when node has no outlets, but has some inlets, processing is still performed" $ do
-      valueRef <- liftEffect $ Ref.new Damaged
+      valueRef <- liftEffect $ Ref.new Damaged -- FIXME: rewrite using Spy.
 
       let
         curseInlet = toInlet "patch" "node" "curse"
