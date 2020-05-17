@@ -88,7 +88,7 @@ instance toHtmlEntity :: ToHtml (Grid Entity) where
             (const valuesOf)
             (\_ _ prop -> H.text prop)
             (mapWithIndex
-                (\index prop@{ name } ->
+                (\index prop ->
                     index
                         /\ prop
                         /\ Nothing
