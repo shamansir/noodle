@@ -388,7 +388,7 @@ buildOutletsFlow
     -> Seq UUID.ToInlet
     -> Seq UUID.ToOutlet
     -> Network d c n
-    -> Effect (OutletsFlow d /\ Maybe Canceler) -- FIXME: for now, we only need Noodle to handle the
+    -> Effect (OutletsFlow d /\ Maybe Canceler)
 buildOutletsFlow _ Withhold _ _ _ _ =
     -- liftEffect never >>= pure <<< OutletsFlow
     never >>= \flow ->

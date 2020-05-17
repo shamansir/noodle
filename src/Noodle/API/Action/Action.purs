@@ -69,6 +69,7 @@ data RequestAction d c n
     | ToSubscribeToInlet Path.ToInlet (InletSubscription d)
     | ToSubscribeToOutlet Path.ToOutlet (OutletSubscription d)
     | ToSubscribeToNode Path.ToNode (NodeInletsSubscription d) (NodeOutletsSubscription d)
+    | ToAddSubpatch Path.Alias Path.ToPatch Path.ToPatch
 
 
 data BuildAction d c n
@@ -84,6 +85,7 @@ data BuildAction d c n
     | AddLink Link
     | RemoveLink Link
     | ProcessWith (Node d n) (ProcessF d)
+    | AddSubpatch (Node d c)
 
 
 data InnerAction d c n -- FIXME: InnerActions should not be exposed
@@ -196,6 +198,7 @@ instance showBuildAction :: (Show d, Show c, Show n) => Show (BuildAction d c n)
     show (AddLink link) = "AddLink " <> show link
     show (RemoveLink link) = "RemoveLink " <> show link
     show (ProcessWith node _) = "ProcessWith " <> show node
+    show (AddSubpatch node) = "AddSubpatch " <> show node
 
 
 instance showRequestAction :: Show (RequestAction d c n) where
