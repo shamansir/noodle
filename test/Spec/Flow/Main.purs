@@ -11,6 +11,7 @@ import Noodle.Test.Spec.Flow.Links (spec) as Links
 import Noodle.Test.Spec.Flow.Nodes (spec) as Nodes
 import Noodle.Test.Spec.Flow.Network (spec) as Network
 import Noodle.Test.Spec.Flow.Subscriptions (spec) as Subscriptions
+import Noodle.Test.Spec.Flow.Subpatches (spec) as Subpatches
 
 
 spec :: Spec Unit
@@ -31,6 +32,9 @@ spec = do
 
     describe "for network"
       Network.spec
+
+    describe "for subpatches"
+      Subpatches.spec
 
     describe "on subscriptions"
       Subscriptions.spec

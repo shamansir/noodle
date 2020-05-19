@@ -11,12 +11,9 @@ import Data.Array (catMaybes) as Array
 import Data.Traversable (traverse_)
 
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
-import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Effect.Aff (delay)
 
-import FRP.Event as Event
 import FRP.Event.Time (interval)
 
 import FSM (run_, run, pushAll) as Actions
@@ -57,7 +54,7 @@ spec = do
 
   describe "processing" $ do
 
-    pending' "adding an inlet inludes its flow into processing" $ do
+    it "adding an inlet inludes its flow into processing" $ do
       dataTraceSpy <- liftEffect Spy.last
 
       let
@@ -68,14 +65,15 @@ spec = do
             NodeDef
               { inlets :
                   noInlets
+                  -- withInlets
+                  -- ~< "pass" /\ Pass
               , outlets :
                   noOutlets
-                  -- withOutlets
-                  -- >~ "stub" /\ Pass
               , process : R.Process processF
               }
 
         processF receive = do
+            -- let _ = DT.spy "foo" $ receive "foo"
             _ <- traverse_ (Spy.consider dataTraceSpy) (receive "foo")
             pure $ const Nothing
 
@@ -96,6 +94,9 @@ spec = do
             </> R.sendToInlet (toInlet "patch" "node" "foo") (Curse 4)
 
       value <- liftEffect $ Spy.get dataTraceSpy
+      -- FIXME: the issue is that processing function is not re-created when the inlet
+      -- was added to the node that had no inlets. If one adds some (any, not just `foo`!)
+      -- inlet to the defitintion, the test passes
       value `shouldEqual` (Just $ Curse 4)
 
     it "returning some value from processing function actually sends this value to the outlet" $ do

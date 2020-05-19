@@ -134,10 +134,6 @@ subscribeToOutlet :: forall d c n. Path.ToOutlet -> OutletSubscription d -> Acti
 subscribeToOutlet outlet handler = Request $ ToSubscribeToOutlet outlet handler
 
 
-addSubpatch :: forall d c n. Path.Alias -> Path.ToPatch -> Path.ToPatch -> Action d c n
-addSubpatch alias where_ which = Request $ ToAddSubpatch alias where_ which
-
-
 subscribeToNode
     :: forall d c n
      . Path.ToNode

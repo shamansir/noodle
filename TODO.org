@@ -6,17 +6,19 @@
 
     ** DONE In `FSM` (and Action Sequences), do not allow actions to be passed to `run` and other functions, all the actions should only be pushed afterwards — that will simplify things a lot, see my own `purescript-fsm` example as the proof (and for the one below as well);
 
-    ** _May be_ get rid of `Channel` as `c` in `d c n`, `Channel` class should be over data, which is `d`; And when you define the inlet on some node, you manually check its data type in processing anyway; Just find a way to be able to do that also w/o running the processing function;
-
     ** Subpatches;
 
     ** Remove button is not visible;
 
-    ** Publish demos;
+    ** PureData-like demo;
 
     ** URLs, representing just some part of the UI and still allowing to operate between them;
 
     ** Lists, Arrays and Sequences are all messed up; Prefer `List`s everywhere, except for unique stuff, there prefer `Sequence`;
+
+    ** Load the logic for tests from some files with `Network` specs and rules what to monitor values and expecting them to equal smth: it's very hard to read a certain amount of tests due to a lot of `liftEffect`s and so on;
+
+    ** _May be_ get rid of `Channel` as `c` in `d c n`, `Channel` class should be over data, which is `d`; And when you define the inlet on some node, you manually check its data type in processing anyway; Just find a way to be able to do that also w/o running the processing function; On the other hand,
 
     ** For `FSM`, use `List (Effect action)`, not one effect to share data between other actions: that would make the `FSM` granularly implemented;
 
