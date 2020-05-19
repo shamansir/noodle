@@ -340,8 +340,6 @@ applyRequestAction _ (ToSubscribeToNode nodePath inletsHandler outletsHandler) n
     pure $ nw /\ do
         canceler :: Canceler <- Api.subscribeNode node inletsHandler outletsHandler
         single $ Inner $ StoreNodeCanceler node canceler
-applyRequestAction _ (ToAddSubpatch alias where_ which_) nw = do
-    pure $ nw /\ doNothing -- FIXME: implement
 
 
 applyBuildAction
@@ -445,8 +443,6 @@ applyBuildAction _ _ (RemoveLink link@(Link linkUuid _)) nw = do
         -- _ <- Api.cancelOutletSubscriptions outlet nw
         _ <- Api.cancelLinkSubscriptions linkUuid nw
         doNothing
-applyBuildAction _ _ (AddSubpatch subPatchNode) nw = do
-    pure $ nw /\ doNothing -- FIXME: implement
 
 
 applyInnerAction
