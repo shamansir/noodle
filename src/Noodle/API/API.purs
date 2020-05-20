@@ -403,10 +403,11 @@ buildOutletsFlow _ Withhold _ _ _ _ =
 --         inlets
 --         outlets
 --         nw
-buildOutletsFlow _ (Process processNode) (InletsFlow inletsFlow) inlets outlets nw = do
+buildOutletsFlow _ processF (InletsFlow inletsFlow) inlets outlets nw = do
     -- collect data from inletsFlow into the Map (Alias /-> d) and pass Map.lookup to the `processF` handler.
     { push, event } <- E.create
     let
+
         outletsAliases :: List (Path.ToOutlet /\ UUID.ToOutlet)
         outletsAliases =
             (outlets
@@ -423,9 +424,11 @@ buildOutletsFlow _ (Process processNode) (InletsFlow inletsFlow) inlets outlets 
             /\ curD)
             inletVals =
             inletVals # Map.insert inletAlias curD
+
         processFlow = E.fold foldingF inletsFlow Map.empty
-        processHandler inletsValues = do
-            -- TODO: could even produce Aff (and then cancel it on next iteration)
+
+        makeHandler Withhold = pure $ const $ pure unit
+        makeHandler (Process processNode) = pure \inletsValues -> do
             let receive = flip Map.lookup $ inletsValues
             (send :: Path.Alias -> Maybe d) <- processNode receive
             _ <- traverse
@@ -436,32 +439,7 @@ buildOutletsFlow _ (Process processNode) (InletsFlow inletsFlow) inlets outlets 
                     )
                     outletsAliases
             pure unit
-    canceler <- liftEffect $ E.subscribe processFlow processHandler
-    pure $ (OutletsFlow event)
-           /\ Just canceler
-buildOutletsFlow _ (ProcessAff processNode) (InletsFlow inletsFlow) inlets outlets nw = do
-    -- collect data from inletsFlow into the Map (Alias /-> d) and pass Map.lookup to the `processF` handler.
-    { push, event } <- E.create
-    let
-        outletsAliases :: List (Path.ToOutlet /\ UUID.ToOutlet)
-        outletsAliases =
-            (outlets
-                 # List.fromFoldable
-                <#> \uuid ->
-                    view (_outlet uuid) nw
-                        <#> \(Outlet uuid' path _ _) -> path /\ uuid')
-                 # List.catMaybes
-                -- FIXME: if outlet wasn't found, raise an error?
-                --  # Map.fromFoldable
-        foldingF
-            ((Path.ToInlet { node : nodePath, inlet : inletAlias })
-            /\ uuid
-            /\ curD)
-            inletVals =
-            inletVals # Map.insert inletAlias curD
-        processFlow = E.fold foldingF inletsFlow Map.empty
-        processHandler :: _ -> Effect Unit
-        processHandler inletsValues = do
+        makeHandler (ProcessAff processNode) = pure \inletsValues -> do
             let receive = flip Map.lookup $ inletsValues
             _ <-
                 runAff_
@@ -479,53 +457,30 @@ buildOutletsFlow _ (ProcessAff processNode) (InletsFlow inletsFlow) inlets outle
                 )
                 $ processNode receive
             pure unit
+        makeHandler (ProcessST processSt) = runExists
+                (\(ProcessST' (initialState /\ processNode)) -> do
+                    stateRef <- Ref.new initialState
+                    pure (\inletsValues -> do
+                        let receive = flip Map.lookup $ inletsValues
+                        curState <- Ref.read stateRef
+                        nextState /\ send <- processNode (curState /\ receive)
+                        _ <- Ref.write nextState stateRef
+                        _ <- traverse
+                                (\(path@(Path.ToOutlet { outlet : alias }) /\ uuid) ->
+                                    case send alias of
+                                        Just v -> push $ path /\ uuid /\ v
+                                        Nothing -> pure unit
+                                )
+                                outletsAliases
+                        pure unit
+                    )
+                )
+                processSt
+
+    processHandler <- makeHandler processF
     canceler <- liftEffect $ E.subscribe processFlow processHandler
     pure $ (OutletsFlow event)
            /\ Just canceler
-buildOutletsFlow _ (ProcessST processSt) (InletsFlow inletsFlow) inlets outlets nw = do
-    -- collect data from inletsFlow into the Map (Alias /-> d) and pass Map.lookup to the `processF` handler.
-    { push, event } <- E.create
-    let
-        outletsAliases :: List (Path.ToOutlet /\ UUID.ToOutlet)
-        outletsAliases =
-            (outlets
-                    # List.fromFoldable
-                <#> \uuid ->
-                    view (_outlet uuid) nw
-                        <#> \(Outlet uuid' path _ _) -> path /\ uuid')
-                    # List.catMaybes
-                -- FIXME: if outlet wasn't found, raise an error?
-                --  # Map.fromFoldable
-        foldingF
-            ((Path.ToInlet { node : nodePath, inlet : inletAlias })
-            /\ uuid
-            /\ curD)
-            inletVals =
-            inletVals # Map.insert inletAlias curD
-        processFlow = E.fold foldingF inletsFlow Map.empty
-
-    processHandler <- runExists
-        (\(ProcessST' (initialState /\ processNode)) -> do
-            stateRef <- Ref.new initialState
-            pure (\inletsValues -> do
-                let receive = flip Map.lookup $ inletsValues
-                curState <- Ref.read stateRef
-                nextState /\ send <- processNode (curState /\ receive)
-                _ <- Ref.write nextState stateRef
-                _ <- traverse
-                        (\(path@(Path.ToOutlet { outlet : alias }) /\ uuid) ->
-                            case send alias of
-                                Just v -> push $ path /\ uuid /\ v
-                                Nothing -> pure unit
-                        )
-                        outletsAliases
-                pure unit
-            )
-        )
-        processSt
-    canceler <- liftEffect $ E.subscribe processFlow processHandler
-    pure $ (OutletsFlow event)
-            /\ Just canceler
 
 
 informNodeOnInletUpdates
