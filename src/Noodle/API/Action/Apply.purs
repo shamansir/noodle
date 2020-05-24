@@ -387,13 +387,13 @@ applyBuildAction _ _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw =
             processCanceler <- Api.setupNodeProcessFlow newNode nw'
             single $ Inner $ StoreNodeCanceler newNode processCanceler
 applyBuildAction _ push (AddInlet inlet@(Inlet uuid path _ { flow })) nw = do
-    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
-    nodeUuid <- uuidByPath UUID.toNode nodePath nw
-    node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     nw' <- Api.addInlet inlet nw
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
+    nodeUuid <- uuidByPath UUID.toNode nodePath nw'
+    node <- view (_node nodeUuid) nw' # note (Err.ftfs $ UUID.uuid nodeUuid)
     pure $ nw' /\ do
-        _ <- Api.cancelNodeSubscriptions nodeUuid nw
-        processCanceler <- Api.setupNodeProcessFlow node nw
+        _ <- Api.cancelNodeSubscriptions nodeUuid nw'
+        processCanceler <- Api.setupNodeProcessFlow node nw'
         inletUpdatesCanceler <- Api.informNodeOnInletUpdates inlet node
         nodeUpdatesCanceler <-
             Api.subscribeNode node
@@ -409,13 +409,13 @@ applyBuildAction _ push (AddInlet inlet@(Inlet uuid path _ { flow })) nw = do
              :  StoreInletCanceler inlet sendValuesCanceler
              :  Nil
 applyBuildAction _ push (AddOutlet outlet@(Outlet uuid path _ { flow })) nw = do
-    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
-    nodeUuid <- uuidByPath UUID.toNode nodePath nw
-    node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     nw' <- Api.addOutlet outlet nw
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
+    nodeUuid <- uuidByPath UUID.toNode nodePath nw'
+    node <- view (_node nodeUuid) nw' # note (Err.ftfs $ UUID.uuid nodeUuid)
     pure $ nw' /\ do
-        _ <- Api.cancelNodeSubscriptions nodeUuid nw
-        processCanceler <- Api.setupNodeProcessFlow node nw
+        _ <- Api.cancelNodeSubscriptions nodeUuid nw'
+        processCanceler <- Api.setupNodeProcessFlow node nw'
         outletUpdatesCanceler <- Api.informNodeOnOutletUpdates outlet node
         nodeUpdatesCanceler <-
             Api.subscribeNode node
