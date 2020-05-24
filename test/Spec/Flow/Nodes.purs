@@ -58,15 +58,11 @@ spec = do
       dataTraceSpy <- liftEffect Spy.last
 
       let
-        inlet = toInlet "patch" "node" "foo"
-
         nodeDef :: NodeDef Delivery Pipe
         nodeDef =
             NodeDef
               { inlets :
                   noInlets
-                  -- withInlets
-                  -- ~< "pass" /\ Pass
               , outlets :
                   noOutlets
               , process : R.Process processF
@@ -94,9 +90,47 @@ spec = do
             </> R.sendToInlet (toInlet "patch" "node" "foo") (Curse 4)
 
       value <- liftEffect $ Spy.get dataTraceSpy
-      -- FIXME: the issue is that processing function is not re-created when the inlet
-      -- was added to the node that had no inlets. If one adds some (any, not just `foo`!)
-      -- inlet to the defitintion, the test passes
+      value `shouldEqual` (Just $ Curse 4)
+
+    it "adding on outlet inludes its flow into processing" $ do
+      dataTraceSpy <- liftEffect Spy.last
+
+      let
+        nodeDef :: NodeDef Delivery Pipe
+        nodeDef =
+            NodeDef
+              { inlets :
+                  noInlets
+              , outlets :
+                  noOutlets
+              , process : R.Process processF
+              }
+
+        processF receive = do
+            let
+              send "out" = receive "in"
+              send _ = Nothing
+            pure send
+
+      { push } <- liftEffect $ Actions.run
+        mySequencer
+        (pure $ Network.empty "foo")
+
+      liftEffect
+             $  Actions.pushAll push
+             $  Actions.init
+            </> R.addPatch "patch"
+            </> R.addNodeByDef
+                    (toPatch "patch")
+                    "node"
+                    Custom
+                    nodeDef
+            </> R.addInlet (toNode "patch" "node") "in" Pass
+            </> R.addOutlet (toNode "patch" "node") "out" Pass
+            </> R.subscribeToOutlet (toOutlet "patch" "node" "out") (Spy.consider dataTraceSpy)
+            </> R.sendToInlet (toInlet "patch" "node" "in") (Curse 4)
+
+      value <- liftEffect $ Spy.get dataTraceSpy
       value `shouldEqual` (Just $ Curse 4)
 
     it "returning some value from processing function actually sends this value to the outlet" $ do
