@@ -109,6 +109,8 @@
 
     ** Implement multiple selections in UI. :render:
 
+    ** Try Comonadic UI: https://github.com/arthurxavierx/purescript-comonad-ui-todos/tree/master/src/Todos/Moore
+
     ** How may user specify the types for the nodes or channels if user wants to render them differently depending on type? Should the Node/Channel renderer be stored in definition structure instead? For channels, `data` type may be the marker for a renderer, but for Node, what should be the marker. The Node, however, may store some complex type as marker (i.e. data type == `Color | String | NamedColor Color String` and so the Node, having the inputs of `Color` and `String` types, in the body operates with this `NamedColor` structure). Maybe `data` is what should be rendered and node body renderer belongs to the node? How to search for the nodes if they have no readable type? May be all the definitions should be extensible records, so user will be able to add `type` field manually and so determine the type in the renderer when some Node/Channel has its time to render? Phantom Types!? https://frigoeu.github.io/phantomtypes.html, https://stepik.org/lesson/31555/step/7?unit=11808.
 
     ** Add `RPD` Effect. May be it should be produced by all these functions which subscribe to new data flows, and so the result of the `Rpd.run` function should contain it as well. :api:
