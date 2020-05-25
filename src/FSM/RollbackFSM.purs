@@ -7,12 +7,13 @@ module FSM.Rollback
 
 import Prelude
 
+import Data.List (List)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Covered (Covered(..), carry, appendErrors)
 
 import Effect (Effect)
 
-import FSM (FSM, AndThen, doNothing, (<:>))
+import FSM (FSM, doNothing)
 import FSM (foldUpdate) as FSM
 
 
@@ -39,7 +40,7 @@ toRollback' fsm =
 
 make
     :: forall error action model
-     . (action -> Covered error model -> Covered error model /\ Effect (AndThen action))
+     . (action -> Covered error model -> Covered error model /\ List (Effect action))
     -> RollbackFSM error action model
 make = FSM.make >>> toRollback
 
@@ -47,7 +48,7 @@ make = FSM.make >>> toRollback
 make'
     :: forall error action model
      . Semigroup error
-    => (action -> Covered error model -> Covered error model /\ Effect (AndThen action))
+    => (action -> Covered error model -> Covered error model /\ List (Effect action))
     -> RollbackFSM error action model
 make' = FSM.make >>> toRollback'
 -}
@@ -56,7 +57,7 @@ make' = FSM.make >>> toRollback'
 -- TODO: try `Semigroup error`
 
 
-fine :: forall error action model. model -> Covered error model /\ Effect (AndThen action)
+fine :: forall error action model. model -> Covered error model /\ List (Effect action)
 fine model = pure model /\ doNothing
 
 
@@ -73,45 +74,45 @@ fineDo model eff = pure model /\ eff
 -- since it's `m a -> (a -> m a) -> m a`
 follow
     :: forall error action model
-     . Covered error model /\ Effect (AndThen action)
-    -> (model -> Covered error model /\ Effect (AndThen action))
-    -> Covered error model /\ Effect (AndThen action)
+     . Covered error model /\ List (Effect action)
+    -> (model -> Covered error model /\ List (Effect action))
+    -> Covered error model /\ List (Effect action)
 follow (Recovered err v /\ x) f =
     case f v of
-        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <:> x')
-        Carried v' /\ x' -> Recovered err v' /\ (x <:> x')
+        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <> x')
+        Carried v' /\ x' -> Recovered err v' /\ (x <> x')
 follow (Carried v /\ x) f =
     case f v of
-        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <:> x')
-        Carried v' /\ x' -> Carried v' /\ (x <:> x')
+        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <> x')
+        Carried v' /\ x' -> Carried v' /\ (x <> x')
 
 
 -- TODO: try to get rid of those
 followJoin
     :: forall error action model
      . Semigroup error
-    => Covered error model /\ Effect (AndThen action)
-    -> (model -> Covered error model /\ Effect (AndThen action))
-    -> Covered error model /\ Effect (AndThen action)
+    => Covered error model /\ List (Effect action)
+    -> (model -> Covered error model /\ List (Effect action))
+    -> Covered error model /\ List (Effect action)
 followJoin (Recovered err v /\ x) f =
     case f v of
-        Recovered err' v' /\ x' -> Recovered (err <> err') v' /\ (x <:> x')
-        Carried v' /\ x' -> Recovered err v' /\ (x <:> x')
+        Recovered err' v' /\ x' -> Recovered (err <> err') v' /\ (x <> x')
+        Carried v' /\ x' -> Recovered err v' /\ (x <> x')
 followJoin (Carried v /\ x) f =
     case f v of
-        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <:> x')
-        Carried v' /\ x' -> Carried v' /\ (x <:> x')
+        Recovered err' v' /\ x' -> Recovered err' v' /\ (x <> x')
+        Carried v' /\ x' -> Carried v' /\ (x <> x')
 
 
 -- TODO: try to get rid of those
 foldUpdate
     :: forall error action model
      . Semigroup error
-    => (action -> Covered error model -> Covered error model /\ Effect (AndThen action))
+    => (action -> Covered error model -> Covered error model /\ List (Effect action))
     -- => RollbackFSM error action model
     -> model
     -> ( action /\ action )
-    -> Covered error model /\ Effect (AndThen action)
+    -> Covered error model /\ List (Effect action)
 foldUpdate updateF model ( actionA /\ actionB ) =
     FSM.foldUpdate
         (\action model' ->

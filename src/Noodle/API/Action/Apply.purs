@@ -22,7 +22,7 @@ import FRP.Event as E
 import FRP.Event.Class (count) as E
 import FRP.Event.Time as E
 
-import FSM (doNothing, single, batch, join, join', join'', AndThen)
+import FSM (doNothing, single, batch)
 import FSM.Rollback (follow, followJoin, fine, foldUpdate) as Covered
 
 import Noodle.Util (PushableFlow(..), Canceler)
@@ -45,8 +45,8 @@ import Noodle.Toolkit
 import Noodle.UUID as UUID
 
 
-type Step d c n = Covered NoodleError (Network d c n) /\ Effect (AndThen (Action d c n))
-type StepE d c n = Either NoodleError ((Network d c n) /\ Effect (AndThen (Action d c n)))
+type Step d c n = Covered NoodleError (Network d c n) /\ List (Effect (Action d c n))
+type StepE d c n = Either NoodleError (Network d c n /\ List (Effect (Action d c n)))
 
 
 infixl 1 next as <∞>
@@ -152,57 +152,58 @@ applyRequestAction
     -> Network d c n
     -> StepE d c n
 applyRequestAction _ (ToAddPatch alias) nw =
-    pure $ nw /\ do
+    pure $ nw /\ (List.singleton $ do
         uuid <- UUID.new
         let path = Path.toPatch alias
-        single $ Build $ AddPatch $
+        pure $ Build $ AddPatch $
             Patch
                 (UUID.ToPatch uuid)
                 path
                 { nodes : Seq.empty
                 , links : Seq.empty
-                }
+                })
 applyRequestAction tk@(Toolkit _ getDef) (ToAddNode patchPath alias n) nw =
     applyRequestAction tk (ToAddNodeByDef patchPath alias n $ getDef n) nw
 applyRequestAction tk@(Toolkit _ getDef) (ToAddNextNode patchPath n) nw = do
     applyRequestAction tk (ToAddNextNodeByDef patchPath n $ getDef n) nw
 applyRequestAction _ (ToAddNodeByDef patchPath alias n (NodeDef def)) nw =
-    pure $ nw /\ do
-        uuid <- UUID.new
-        flows <- Api.makeInletOutletsFlows
-        let
-            path = Path.nodeInPatch patchPath alias
-            PushableFlow pushToInlets inletsFlow = flows.inlets
-            PushableFlow pushToOutlets outletsFlow = flows.outlets
-            node =
-                Node
-                    (UUID.ToNode uuid)
-                    path
-                    n
-                    Withhold
-                    { inlets : Seq.empty
-                    , outlets : Seq.empty
-                    , inletsFlow : InletsFlow inletsFlow
-                    , outletsFlow : OutletsFlow outletsFlow
-                    , pushToInlets : PushToInlets pushToInlets
-                    , pushToOutlets : PushToOutlets pushToOutlets
-                    }
-        join''
-            $ (single $ Build $ AddNode node)
-            : (batch $ addInlet path <$> def.inlets)
-            : (batch $ addOutlet path <$> def.outlets)
-            : (single $ Request $ ToProcessWith path def.process)
-            : Nil
+    let path = Path.nodeInPatch patchPath alias
+    in pure $ nw /\ (
+        ( pure $ do
+            uuid <- UUID.new
+            flows <- Api.makeInletOutletsFlows
+            let
+                PushableFlow pushToInlets inletsFlow = flows.inlets
+                PushableFlow pushToOutlets outletsFlow = flows.outlets
+                node =
+                    Node
+                        (UUID.ToNode uuid)
+                        path
+                        n
+                        Withhold
+                        { inlets : Seq.empty
+                        , outlets : Seq.empty
+                        , inletsFlow : InletsFlow inletsFlow
+                        , outletsFlow : OutletsFlow outletsFlow
+                        , pushToInlets : PushToInlets pushToInlets
+                        , pushToOutlets : PushToOutlets pushToOutlets
+                        }
+            pure $ Build $ AddNode node )
+        <> (batch $ addInlet path <$> def.inlets)
+        <> (batch $ addOutlet path <$> def.outlets)
+        <> (single $ Request $ ToProcessWith path def.process)
+        <> Nil
+    )
     where
         addInlet path (InletAlias alias /\ c) =
             Request $ ToAddInlet path alias c
         addOutlet path (OutletAlias alias /\ c) =
             Request $ ToAddOutlet path alias c
 applyRequestAction _ (ToAddNextNodeByDef patchPath n def) nw = do
-    pure $ nw /\ do
+    pure $ nw /\ (List.singleton $ do
         uuid <- UUID.new
         let shortHash = String.take 6 $ UUID.toRawString uuid
-        single $ Request $ ToAddNodeByDef patchPath shortHash n def
+        pure $ Request $ ToAddNodeByDef patchPath shortHash n def)
 applyRequestAction tk (ToRemoveNode nodePath) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
@@ -210,15 +211,15 @@ applyRequestAction tk (ToRemoveNode nodePath) nw = do
     links <- view (_nodeLinks nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     inlets <- view (_nodeInlets nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     outlets <- view (_nodeOutlets nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
-    pure $ nw /\ do
-        join''
-            $ (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> links)
-            : (batch $ Seq.toUnfoldable $ Build <<< RemoveInlet <$> inlets)
-            : (batch $ Seq.toUnfoldable $ Build <<< RemoveOutlet <$> outlets)
-            : (single $ Build $ RemoveNode node)
-            : Nil
+    pure $ nw /\
+            (  (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> links)
+            <> (batch $ Seq.toUnfoldable $ Build <<< RemoveInlet <$> inlets)
+            <> (batch $ Seq.toUnfoldable $ Build <<< RemoveOutlet <$> outlets)
+            <> (single $ Build $ RemoveNode node)
+            <> Nil
+            )
 applyRequestAction _ (ToAddInlet nodePath alias c) nw =
-    pure $ nw /\ do
+    pure $ nw /\ (List.singleton $ do
         uuid <- UUID.new
         flow <- makePushableFlow
         let
@@ -232,9 +233,9 @@ applyRequestAction _ (ToAddInlet nodePath alias c) nw =
                     { flow : InletFlow inletFlow
                     , push : PushToInlet pushToInlet
                     }
-        single $ Build $ AddInlet newInlet
+        pure $ Build $ AddInlet newInlet)
 applyRequestAction _ (ToAddOutlet nodePath alias c) nw =
-    pure $ nw /\ do
+    pure $ nw /\ (List.singleton $ do
         uuid <- UUID.new
         flow <- makePushableFlow
         let
@@ -248,23 +249,25 @@ applyRequestAction _ (ToAddOutlet nodePath alias c) nw =
                     { flow : OutletFlow outletFlow
                     , push : PushToOutlet pushToOutlet
                     }
-        single $ Build $ AddOutlet newOutlet
+        pure $ Build $ AddOutlet newOutlet)
 applyRequestAction tk (ToRemoveInlet inletPath) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
     inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     links <- view (_inletLinks inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     pure $ nw /\
-        (join'' $ (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> links)
-                : (single $ Build $ RemoveInlet inlet)
-                : Nil)
+            (  (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> links)
+            <> (single $ Build $ RemoveInlet inlet)
+            <> Nil
+            )
 applyRequestAction tk (ToRemoveOutlet outletPath) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
     outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     links <- view (_outletLinks outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     pure $ nw /\
-        (join'' $ (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> links)
-                : (single $ Build $ RemoveOutlet outlet)
-                : Nil)
+            (  (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> links)
+            <> (single $ Build $ RemoveOutlet outlet)
+            <> Nil
+            )
 applyRequestAction _ (ToProcessWith nodePath processF) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)

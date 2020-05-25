@@ -11,6 +11,7 @@ import Prelude
 
 import Effect (Effect)
 
+import Data.List (List)
 import Data.Tuple.Nested ((/\), type (/\))
 
 import FRP.Event (Event)
@@ -18,7 +19,7 @@ import FRP.Event as Event
 
 import Data.Covered (Covered, mapError)
 
-import FSM (FSM, AndThen)
+import FSM (FSM)
 import FSM as FSM
 import Data.Foldable (class Foldable)
 
@@ -33,7 +34,7 @@ type CoveredUI error action model view = UI action (Covered error model) view
 
 make
     :: forall action model view
-     . (action -> model -> model /\ Effect (AndThen action))
+     . (action -> model -> model /\ List (Effect action))
     -> (model -> view)
     -> UI action model view
 make updateF viewF =
@@ -42,7 +43,7 @@ make updateF viewF =
 
 makeWithPush
     :: forall action model view
-     . ((action -> Effect Unit) -> action -> model -> model /\ Effect (AndThen action))
+     . ((action -> Effect Unit) -> action -> model -> model /\ List (Effect action))
     -> (model -> view)
     -> UI action model view
 makeWithPush updateF viewF =
@@ -60,7 +61,7 @@ makeMinimal updateF viewF =
 
 makeWithNoEffects
     :: forall action model view
-     . (action -> model -> model /\ AndThen action)
+     . (action -> model -> model /\ List action)
     -> (model -> view)
     -> UI action model view
 makeWithNoEffects updateF viewF =
@@ -96,7 +97,7 @@ update
     -> (action -> Effect Unit)
     -> action
     -> model
-    -> model /\ Effect (AndThen action)
+    -> model /\ List (Effect action)
 update (UI fsm _) = FSM.update fsm
 
 
@@ -105,7 +106,7 @@ update'
      . UI action model view
     -> action
     -> model
-    -> model /\ Effect (AndThen action)
+    -> model /\ List (Effect action)
 update' (UI fsm _) = FSM.update' fsm
 
 
