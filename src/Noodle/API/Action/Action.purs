@@ -80,15 +80,14 @@ data BuildAction d c n
     | AddOutlet (Outlet d c)
     | RemoveInlet (Inlet d c)
     | RemoveOutlet (Outlet d c)
-    | Connect (Outlet d c) (Inlet d c)
     | AddLink Link
+    | Connect Link
     | RemoveLink Link
     | ProcessWith (Node d n) (ProcessF d)
 
 
 data InnerAction d c n -- FIXME: InnerActions should not be exposed
-    = Do (Perform d c n) -- FIXME: We don't need it nowadays
-    | StoreNodeCanceler (Node d n) Canceler
+    = StoreNodeCanceler (Node d n) Canceler
     | ClearNodeCancelers (Node d n)
     | StoreInletCanceler (Inlet d c) Canceler
     | ClearInletCancelers (Inlet d c)
@@ -192,8 +191,8 @@ instance showBuildAction :: (Show d, Show c, Show n) => Show (BuildAction d c n)
     show (AddOutlet outlet) = "AddOutlet " <> show outlet
     show (RemoveInlet inlet) = "RemoveInlet " <> show inlet
     show (RemoveOutlet outlet) = "RemoveOutlet " <> show outlet
-    show (Connect outlet inlet) = "Connect " <> show inlet <> " " <> show outlet
     show (AddLink link) = "AddLink " <> show link
+    show (Connect link) = "Connect " <> show link
     show (RemoveLink link) = "RemoveLink " <> show link
     show (ProcessWith node _) = "ProcessWith " <> show node
 
