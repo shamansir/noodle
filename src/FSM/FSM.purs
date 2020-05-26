@@ -6,7 +6,7 @@ module FSM
     , pushAll, noSubscription
     , update, update'
     , imapModel, imapAction
-    , doNothing, single, batch
+    , doNothing, single, batch, just
     , joinWith
     , foldUpdate
     ) where
@@ -32,7 +32,6 @@ import FRP.Event as Event
 import Noodle.Util (Canceler)
 
 
--- TODO: try changing back to `List (Effect action)`
 data FSM action model =
     FSM ((action -> Effect Unit) -> action -> model -> model /\ List (Effect action))
 
@@ -103,8 +102,12 @@ doNothing :: forall action. List (Effect action)
 doNothing = List.Nil
 
 
+just :: forall action. Effect action -> List (Effect action)
+just = List.singleton
+
+
 single :: forall action. action -> List (Effect action)
-single = pure >>> List.singleton
+single = pure >>> just
 
 
 batch :: forall action. List action -> List (Effect action)

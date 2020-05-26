@@ -22,7 +22,7 @@ import FRP.Event as E
 import FRP.Event.Class (count) as E
 import FRP.Event.Time as E
 
-import FSM (doNothing, single, batch)
+import FSM (doNothing, single, batch, just)
 import FSM.Rollback (follow, followJoin, fine, foldUpdate) as Covered
 
 import Noodle.Util (PushableFlow(..), Canceler)
@@ -128,21 +128,21 @@ applyDataAction _ (GotInletData _ _) nw =
 applyDataAction _ (GotOutletData _ _) nw =
     fine nw
 applyDataAction _ (SendToInlet inlet d) nw =
-    pure $ nw /\ (Api.sendToInlet inlet d *> single NoOp)
+    pure $ nw /\ (just $ Api.sendToInlet inlet d *> pure NoOp)
 applyDataAction _ (SendToOutlet outlet d) nw =
-    pure $ nw /\ (Api.sendToOutlet outlet d *> single NoOp)
+    pure $ nw /\ (just $ Api.sendToOutlet outlet d *> pure NoOp)
 applyDataAction _ (StreamToInlet inlet flow) nw =
-    pure $ nw /\ do
+    pure $ nw /\ (just $ do
         canceler :: Canceler <- Api.streamToInlet inlet flow
-        single $ Inner $ StoreInletCanceler inlet canceler
+        pure $ Inner $ StoreInletCanceler inlet canceler)
 applyDataAction _ (StreamToOutlet outlet flow) nw =
-    pure $ nw /\ do
+    pure $ nw /\ (just $ do
         canceler :: Canceler <- Api.streamToOutlet outlet flow
-        single $ Inner $ StoreOutletCanceler outlet canceler
+        pure $ Inner $ StoreOutletCanceler outlet canceler)
 applyDataAction _ (SendPeriodicallyToInlet inlet period fn) nw =
-    pure $ nw /\ do
+    pure $ nw /\ (just $ do
         canceler :: Canceler <- Api.sendPeriodicallyToInlet inlet period fn
-        single $ Inner $ StoreInletCanceler inlet canceler
+        pure $ Inner $ StoreInletCanceler inlet canceler)
 
 
 applyRequestAction
@@ -152,7 +152,7 @@ applyRequestAction
     -> Network d c n
     -> StepE d c n
 applyRequestAction _ (ToAddPatch alias) nw =
-    pure $ nw /\ (List.singleton $ do
+    pure $ nw /\ (just $ do
         uuid <- UUID.new
         let path = Path.toPatch alias
         pure $ Build $ AddPatch $
@@ -169,7 +169,7 @@ applyRequestAction tk@(Toolkit _ getDef) (ToAddNextNode patchPath n) nw = do
 applyRequestAction _ (ToAddNodeByDef patchPath alias n (NodeDef def)) nw =
     let path = Path.nodeInPatch patchPath alias
     in pure $ nw /\ (
-        ( pure $ do
+        ( just $ do
             uuid <- UUID.new
             flows <- Api.makeInletOutletsFlows
             let
@@ -192,7 +192,6 @@ applyRequestAction _ (ToAddNodeByDef patchPath alias n (NodeDef def)) nw =
         <> (batch $ addInlet path <$> def.inlets)
         <> (batch $ addOutlet path <$> def.outlets)
         <> (single $ Request $ ToProcessWith path def.process)
-        <> Nil
     )
     where
         addInlet path (InletAlias alias /\ c) =
@@ -200,7 +199,7 @@ applyRequestAction _ (ToAddNodeByDef patchPath alias n (NodeDef def)) nw =
         addOutlet path (OutletAlias alias /\ c) =
             Request $ ToAddOutlet path alias c
 applyRequestAction _ (ToAddNextNodeByDef patchPath n def) nw = do
-    pure $ nw /\ (List.singleton $ do
+    pure $ nw /\ (just $ do
         uuid <- UUID.new
         let shortHash = String.take 6 $ UUID.toRawString uuid
         pure $ Request $ ToAddNodeByDef patchPath shortHash n def)
@@ -216,10 +215,9 @@ applyRequestAction tk (ToRemoveNode nodePath) nw = do
             <> (batch $ Seq.toUnfoldable $ Build <<< RemoveInlet <$> inlets)
             <> (batch $ Seq.toUnfoldable $ Build <<< RemoveOutlet <$> outlets)
             <> (single $ Build $ RemoveNode node)
-            <> Nil
             )
 applyRequestAction _ (ToAddInlet nodePath alias c) nw =
-    pure $ nw /\ (List.singleton $ do
+    pure $ nw /\ (just $ do
         uuid <- UUID.new
         flow <- makePushableFlow
         let
@@ -235,7 +233,7 @@ applyRequestAction _ (ToAddInlet nodePath alias c) nw =
                     }
         pure $ Build $ AddInlet newInlet)
 applyRequestAction _ (ToAddOutlet nodePath alias c) nw =
-    pure $ nw /\ (List.singleton $ do
+    pure $ nw /\ (just $ do
         uuid <- UUID.new
         flow <- makePushableFlow
         let
@@ -257,7 +255,6 @@ applyRequestAction tk (ToRemoveInlet inletPath) nw = do
     pure $ nw /\
             (  (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> links)
             <> (single $ Build $ RemoveInlet inlet)
-            <> Nil
             )
 applyRequestAction tk (ToRemoveOutlet outletPath) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
@@ -266,30 +263,18 @@ applyRequestAction tk (ToRemoveOutlet outletPath) nw = do
     pure $ nw /\
             (  (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> links)
             <> (single $ Build $ RemoveOutlet outlet)
-            <> Nil
             )
 applyRequestAction _ (ToProcessWith nodePath processF) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     pure $ nw /\ (single $ Build $ ProcessWith node processF)
 applyRequestAction _ (ToConnect outletPath inletPath) nw = do
-    outletUuid <- uuidByPath UUID.toOutlet outletPath nw
-    outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
-    inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
-    pure $ nw /\ do
+    ouuid <- uuidByPath UUID.toOutlet outletPath nw
+    iuuid <- uuidByPath UUID.toInlet inletPath nw
+    pure $ nw /\ (just $ do
         uuid <- UUID.new
-        let
-            (Outlet ouuid _ _ { flow : outletFlow' }) = outlet
-            (Inlet iuuid _ _ { push : pushToInlet' }) = inlet
-            (OutletFlow outletFlow) = outletFlow'
-            (PushToInlet pushToInlet) = pushToInlet'
-            newLink = Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid }
-        canceler :: Canceler <- E.subscribe outletFlow pushToInlet
-        batch $
-               (Build $ AddLink newLink)
-             : (Inner $ StoreLinkCanceler newLink canceler)
-             : Nil
+        pure $ Build $ Connect
+            $ Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid })
 applyRequestAction _ (ToDisconnect outletPath inletPath) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
@@ -326,23 +311,23 @@ applyRequestAction _ (ToSubscribeToInlet inletPath handler) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
     inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
-    pure $ nw /\ do
+    pure $ nw /\ (just $ do
         canceler :: Canceler <- Api.subscribeToInlet inlet handler
-        single $ Inner $ StoreInletCanceler inlet canceler
+        pure $ Inner $ StoreInletCanceler inlet canceler)
 applyRequestAction _ (ToSubscribeToOutlet outletPath handler) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
     outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
-    pure $ nw /\ do
+    pure $ nw /\ (just $ do
         canceler :: Canceler <- Api.subscribeToOutlet outlet handler
-        single $ Inner $ StoreOutletCanceler outlet canceler
+        pure $ Inner $ StoreOutletCanceler outlet canceler)
 applyRequestAction _ (ToSubscribeToNode nodePath inletsHandler outletsHandler) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
-    pure $ nw /\ do
+    pure $ nw /\ (just $ do
         canceler :: Canceler <- Api.subscribeNode node inletsHandler outletsHandler
-        single $ Inner $ StoreNodeCanceler node canceler
+        pure $ Inner $ StoreNodeCanceler node canceler)
 
 
 applyBuildAction
@@ -358,42 +343,43 @@ applyBuildAction _ _ (AddNode node) nw =
     withE $ Api.addNode node nw
 applyBuildAction tk _ (RemoveNode node@(Node uuid _ _ _ _)) nw = do
     nw' <- Api.removeNode node nw
-    pure $ nw' /\ do
+    pure $ nw' /\ (just $ do
         _ <- Api.cancelNodeSubscriptions uuid nw'
-        single $ Inner $ ClearNodeCancelers node
+        pure $ Inner $ ClearNodeCancelers node)
 applyBuildAction _ _ (RemoveInlet inlet@(Inlet uuid path _ _)) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     nw' <- Api.removeInlet inlet nw
-    pure $ nw' /\ do
+    pure $ nw' /\ (just $ do
         _ <- Api.cancelInletSubscriptions uuid nw'
         _ <- Api.cancelNodeSubscriptions nodeUuid nw'
         nodeProcessCanceler <- Api.setupNodeProcessFlow node nw'
-        single $ Inner $ StoreNodeCanceler node nodeProcessCanceler
+        pure $ Inner $ StoreNodeCanceler node nodeProcessCanceler)
 applyBuildAction _ _ (RemoveOutlet outlet@(Outlet uuid path _ _)) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     nw' <- Api.removeOutlet outlet nw
-    pure $ nw' /\ do
+    pure $ nw' /\ (just $ do
         _ <- Api.cancelOutletSubscriptions uuid nw'
         _ <- Api.cancelNodeSubscriptions nodeUuid nw'
         nodeProcessCanceler <- Api.setupNodeProcessFlow node nw'
-        single $ Inner $ StoreNodeCanceler node nodeProcessCanceler
+        pure $ Inner $ StoreNodeCanceler node nodeProcessCanceler)
 applyBuildAction _ _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw =
     let newNode = Api.processWith processF node
         nw' = nw # setJust (_node uuid) newNode
     in
-        pure $ nw' /\ do
+        pure $ nw' /\ (just $ do
             _ <- Api.cancelNodeSubscriptions uuid nw'
             processCanceler <- Api.setupNodeProcessFlow newNode nw'
-            single $ Inner $ StoreNodeCanceler newNode processCanceler
+            pure $ Inner $ StoreNodeCanceler newNode processCanceler)
 applyBuildAction _ push (AddInlet inlet@(Inlet uuid path _ { flow })) nw = do
     nw' <- Api.addInlet inlet nw
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw'
     node <- view (_node nodeUuid) nw' # note (Err.ftfs $ UUID.uuid nodeUuid)
+    let (InletFlow flow') = flow
     pure $ nw' /\ do
         _ <- Api.cancelNodeSubscriptions nodeUuid nw'
         processCanceler <- Api.setupNodeProcessFlow node nw'
@@ -402,7 +388,6 @@ applyBuildAction _ push (AddInlet inlet@(Inlet uuid path _ { flow })) nw = do
             Api.subscribeNode node
                 (const $ const $ const $ pure unit) -- FIXME: implement
                 (const $ const $ const $ pure unit) -- FIXME: implement
-        let (InletFlow flow') = flow
         sendValuesCanceler <- E.subscribe flow' (push <<< GotInletData inlet)
         batch $ Inner
             <$> ClearNodeCancelers node
@@ -433,12 +418,20 @@ applyBuildAction _ push (AddOutlet outlet@(Outlet uuid path _ { flow })) nw = do
              :  StoreNodeCanceler node nodeUpdatesCanceler
              :  StoreOutletCanceler outlet sendValuesCanceler
              :  Nil
-applyBuildAction _ _ (Connect (Outlet ouuid _ _ _) (Inlet iuuid _ _ _)) nw = do
-    pure $ nw /\ do
+applyBuildAction _ _ (Connect link@(Link _ { outlet : ouuid, inlet : iuuid })) nw = do
+    outlet <- view (_outlet ouuid) nw # note (Err.ftfs $ UUID.uuid ouuid)
+    inlet <- view (_inlet iuuid) nw # note (Err.ftfs $ UUID.uuid iuuid)
+    pure $ nw /\ (just $ do
         uuid <- UUID.new
-        let newLink = Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid }
-        single $ Build $ AddLink newLink
-applyBuildAction _ _ (AddLink link) nw =
+        let
+            (Outlet ouuid _ _ { flow : outletFlow' }) = outlet
+            (Inlet iuuid _ _ { push : pushToInlet' }) = inlet
+            (OutletFlow outletFlow) = outletFlow'
+            (PushToInlet pushToInlet) = pushToInlet'
+            newLink = Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid }
+        canceler :: Canceler <- E.subscribe outletFlow pushToInlet
+        pure $ Inner $ StoreLinkCanceler newLink canceler)
+applyBuildAction _ _ (AddLink link) nw = do
     withE $ Api.addLink link nw
 applyBuildAction _ _ (RemoveLink link@(Link linkUuid _)) nw = do
     nw' <- Api.removeLink link nw
@@ -454,8 +447,6 @@ applyInnerAction
     -> InnerAction d c n
     -> Network d c n
     -> StepE d c n
-applyInnerAction _ (Do effectful) nw =
-    pure $ nw /\ (effectful nw *> single NoOp)
 applyInnerAction _ (StoreNodeCanceler (Node uuid _ _ _ _) canceler) nw =
     let
         curNodeCancelers = Api.getNodeCancelers uuid nw
