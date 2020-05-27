@@ -14,6 +14,7 @@ import Prelude
 
 import Data.Array as Array
 import Data.Int (toNumber, round)
+import Data.List (List)
 import Data.List as List
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Sequence as Seq
@@ -30,7 +31,7 @@ import Math (ceil, sqrt, (%))
 
 import Data.Covered
 
-import FSM (AndThen, doNothing)
+import FSM (doNothing)
 
 import Noodle.API.Errors (NoodleError) as R
 import Noodle.API.Action as C
@@ -271,7 +272,7 @@ update
      . R.Routed Msg (C.Action d c n)
     -> Covered R.NoodleError (Ui /\ R.Network d c n)
     -> Covered R.NoodleError (Ui /\ R.Network d c n)
-        /\ Effect (AndThen (R.Routed Msg (C.Action d c n)))
+        /\ List (Effect (R.Routed Msg (C.Action d c n)))
 -- update R.Bang (ui /\ nw) =
 --     ui { packing = Just $ ui.packing # packNetwork nw }
 update _ covered =

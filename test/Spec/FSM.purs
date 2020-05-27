@@ -23,7 +23,7 @@ import Test.Spec (Spec, describe, it, pending', pending)
 import Test.Spec.Assertions (shouldEqual, fail)
 
 import FSM as FSM
-import FSM (FSM, doNothing, single, batch)
+import FSM (FSM, doNothing, single, batch, just)
 import FSM.Rollback (RollbackFSM)
 
 
@@ -110,7 +110,7 @@ spec = do
 
       it "performs the effect from the update function" do
         let
-          updateF NoOp model = model /\ (UUID.new >>= single <<< StoreUUID)
+          updateF NoOp model = model /\ just (UUID.new >>= pure <<< StoreUUID)
           updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ doNothing
           updateF _ model = model /\ doNothing
           myFsm = FSM.make updateF
@@ -126,7 +126,7 @@ spec = do
       it "works when asking to perform several actions from effectful part of `update`" do
         let
           updateF ActionOne model =
-            model /\ (UUID.new >>= \uuid -> batch $ NoOp : StoreUUID uuid : Nil)
+            model /\ (pure NoOp : (UUID.new >>= pure <<< StoreUUID) : Nil)
           updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ doNothing
           updateF _ model = model /\ doNothing
           myFsm = FSM.make updateF
@@ -143,7 +143,7 @@ spec = do
         let
           updateF ActionOne model =
             HoldsString "fail" /\
-              (UUID.new >>= single <<< StoreUUID)
+              just (UUID.new >>= pure <<< StoreUUID)
           updateF (StoreUUID uuid) model =
             HoldsUUID uuid /\ doNothing
           updateF _ model =
@@ -172,7 +172,7 @@ spec = do
 
       it "folds the models to the very last state with effects as well" do
         let
-          updateF NoOp model = model /\ (UUID.new >>= single <<< StoreUUID)
+          updateF NoOp model = model /\ just (UUID.new >>= pure <<< StoreUUID)
           updateF (StoreUUID uuid) _ = HoldsUUID uuid /\ doNothing
           updateF _ model = model /\ doNothing
           myFsm = FSM.make updateF
@@ -186,7 +186,7 @@ spec = do
         let
           updateF ActionOne model =
             HoldsString "fail" /\
-              (UUID.new >>= single <<< StoreUUID)
+              just (UUID.new >>= pure <<< StoreUUID)
           updateF (StoreUUID uuid) model =
             HoldsUUID uuid /\ doNothing
           updateF _ model =
