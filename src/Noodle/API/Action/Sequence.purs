@@ -134,6 +134,10 @@ subscribeToOutlet :: forall d c n. Path.ToOutlet -> OutletSubscription d -> Acti
 subscribeToOutlet outlet handler = Request $ ToSubscribeToOutlet outlet handler
 
 
+none :: forall d c n. Action d c n
+none = NoOp
+
+
 subscribeToNode
     :: forall d c n
      . Path.ToNode
