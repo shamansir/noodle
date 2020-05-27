@@ -380,44 +380,58 @@ applyBuildAction _ push (AddInlet inlet@(Inlet uuid path _ { flow })) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw'
     node <- view (_node nodeUuid) nw' # note (Err.ftfs $ UUID.uuid nodeUuid)
     let (InletFlow flow') = flow
-    pure $ nw' /\ do
-        _ <- Api.cancelNodeSubscriptions nodeUuid nw'
-        processCanceler <- Api.setupNodeProcessFlow node nw'
-        inletUpdatesCanceler <- Api.informNodeOnInletUpdates inlet node
-        nodeUpdatesCanceler <-
-            Api.subscribeNode node
-                (const $ const $ const $ pure unit) -- FIXME: implement
-                (const $ const $ const $ pure unit) -- FIXME: implement
-        sendValuesCanceler <- E.subscribe flow' (push <<< GotInletData inlet)
-        batch $ Inner
-            <$> ClearNodeCancelers node
-             :  StoreNodeCanceler node processCanceler
-             :  StoreInletCanceler inlet inletUpdatesCanceler
-             :  StoreNodeCanceler node nodeUpdatesCanceler
-             :  StoreInletCanceler inlet sendValuesCanceler
-             :  Nil
+    pure $ nw' /\
+        -- FIXME: all those should be separate Actions without the API code
+        -- performed afterwards, not before?
+        ( (do
+            _ <- Api.cancelNodeSubscriptions nodeUuid nw'
+            pure $ Inner $ ClearNodeCancelers node)
+        : (do
+            processCanceler <- Api.setupNodeProcessFlow node nw'
+            pure $ Inner $ StoreNodeCanceler node processCanceler)
+        : (do
+            inletUpdatesCanceler <- Api.informNodeOnInletUpdates inlet node
+            pure $ Inner $ StoreInletCanceler inlet inletUpdatesCanceler)
+        : (do
+            nodeUpdatesCanceler <-
+                Api.subscribeNode node
+                    (const $ const $ const $ pure unit) -- FIXME: implement
+                    (const $ const $ const $ pure unit) -- FIXME: implement
+            pure $ Inner $ StoreNodeCanceler node nodeUpdatesCanceler)
+        : (do
+            sendValuesCanceler <- E.subscribe flow' (push <<< GotInletData inlet)
+            pure $ Inner $ StoreInletCanceler inlet sendValuesCanceler)
+        : Nil
+        )
 applyBuildAction _ push (AddOutlet outlet@(Outlet uuid path _ { flow })) nw = do
     nw' <- Api.addOutlet outlet nw
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw'
     node <- view (_node nodeUuid) nw' # note (Err.ftfs $ UUID.uuid nodeUuid)
-    pure $ nw' /\ do
-        _ <- Api.cancelNodeSubscriptions nodeUuid nw'
-        processCanceler <- Api.setupNodeProcessFlow node nw'
-        outletUpdatesCanceler <- Api.informNodeOnOutletUpdates outlet node
-        nodeUpdatesCanceler <-
-            Api.subscribeNode node
-                (const $ const $ const $ pure unit) -- FIXME: implement
-                (const $ const $ const $ pure unit) -- FIXME: implement
-        let (OutletFlow flow') = flow
-        sendValuesCanceler <- E.subscribe flow' (push <<< GotOutletData outlet)
-        batch $ Inner
-            <$> ClearNodeCancelers node
-             :  StoreNodeCanceler node processCanceler
-             :  StoreOutletCanceler outlet outletUpdatesCanceler
-             :  StoreNodeCanceler node nodeUpdatesCanceler
-             :  StoreOutletCanceler outlet sendValuesCanceler
-             :  Nil
+    let (OutletFlow flow') = flow
+    pure $ nw' /\
+       -- FIXME: all those should be separate Actions without the API code
+        -- performed afterwards, not before?
+        ( (do
+            _ <- Api.cancelNodeSubscriptions nodeUuid nw'
+            pure $ Inner $ ClearNodeCancelers node)
+        : (do
+            processCanceler <- Api.setupNodeProcessFlow node nw'
+            pure $ Inner $ StoreNodeCanceler node processCanceler)
+        : (do
+            outletUpdatesCanceler <- Api.informNodeOnOutletUpdates outlet node
+            pure $ Inner $ StoreOutletCanceler outlet outletUpdatesCanceler)
+        : (do
+            nodeUpdatesCanceler <-
+                Api.subscribeNode node
+                    (const $ const $ const $ pure unit) -- FIXME: implement
+                    (const $ const $ const $ pure unit) -- FIXME: implement
+            pure $ Inner $ StoreNodeCanceler node nodeUpdatesCanceler)
+        : (do
+            sendValuesCanceler <- E.subscribe flow' (push <<< GotOutletData outlet)
+            pure $ Inner $ StoreOutletCanceler outlet sendValuesCanceler)
+        : Nil
+        )
 applyBuildAction _ _ (Connect link@(Link _ { outlet : ouuid, inlet : iuuid })) nw = do
     outlet <- view (_outlet ouuid) nw # note (Err.ftfs $ UUID.uuid ouuid)
     inlet <- view (_inlet iuuid) nw # note (Err.ftfs $ UUID.uuid iuuid)
@@ -435,10 +449,10 @@ applyBuildAction _ _ (AddLink link) nw = do
     withE $ Api.addLink link nw
 applyBuildAction _ _ (RemoveLink link@(Link linkUuid _)) nw = do
     nw' <- Api.removeLink link nw
-    pure $ nw' /\ do
+    pure $ nw' /\ (just $ do
         -- _ <- Api.cancelOutletSubscriptions outlet nw
         _ <- Api.cancelLinkSubscriptions linkUuid nw
-        doNothing
+        pure NoOp)
 
 
 applyInnerAction
