@@ -435,16 +435,20 @@ applyBuildAction _ push (AddOutlet outlet@(Outlet uuid path _ { flow })) nw = do
 applyBuildAction _ _ (Connect link@(Link _ { outlet : ouuid, inlet : iuuid })) nw = do
     outlet <- view (_outlet ouuid) nw # note (Err.ftfs $ UUID.uuid ouuid)
     inlet <- view (_inlet iuuid) nw # note (Err.ftfs $ UUID.uuid iuuid)
-    pure $ nw /\ (just $ do
-        uuid <- UUID.new
-        let
-            (Outlet ouuid _ _ { flow : outletFlow' }) = outlet
-            (Inlet iuuid _ _ { push : pushToInlet' }) = inlet
-            (OutletFlow outletFlow) = outletFlow'
-            (PushToInlet pushToInlet) = pushToInlet'
-            newLink = Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid }
-        canceler :: Canceler <- E.subscribe outletFlow pushToInlet
-        pure $ Inner $ StoreLinkCanceler newLink canceler)
+    pure $ nw /\
+        ( (pure $ Build $ AddLink link)
+         -- FIXME: is it right to add link and connect at the same time?
+         -- Do not expose `addLink` then
+        : (do
+            let
+                (Outlet ouuid _ _ { flow : outletFlow' }) = outlet
+                (Inlet iuuid _ _ { push : pushToInlet' }) = inlet
+                (OutletFlow outletFlow) = outletFlow'
+                (PushToInlet pushToInlet) = pushToInlet'
+            canceler :: Canceler <- E.subscribe outletFlow pushToInlet
+            pure $ Inner $ StoreLinkCanceler link canceler)
+        : Nil
+        )
 applyBuildAction _ _ (AddLink link) nw = do
     withE $ Api.addLink link nw
 applyBuildAction _ _ (RemoveLink link@(Link linkUuid _)) nw = do

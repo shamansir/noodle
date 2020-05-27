@@ -110,7 +110,7 @@ spec = do
 
     it "rendering the empty network works" do
       stringSample <- liftEffect $ loadSample "Empty.String"
-      let doNothing' = Actions.init {- </> (R.do_ $ const $ pure unit) -}
+      let doNothing' = Actions.init </> R.none
       expectToRenderM stringRenderer compareStrings' doNothing'
           $ String.trim stringSample
       expectToRender terminalRenderer compareMultiline' doNothing' TerminalRenderer.init
