@@ -1,13 +1,14 @@
 module Noodle.Render.Renderer where
 
 import Prelude
+
 import Effect (Effect)
 
-import FSM (AndThen)
-import FSM (joinWith) as FSM
-
 import Data.Covered
+import Data.List (List)
 import Data.Tuple.Nested ((/\), type (/\))
+
+import FSM (joinWith) as FSM
 
 import Noodle.API.Errors (NoodleError)
 import Noodle.API.Action (Action) as C
@@ -33,7 +34,7 @@ type UpdateF d c n action model view
     -> Routed action (C.Action d c n)
     -> Covered NoodleError (model /\ Network d c n)
     -> Covered NoodleError (model /\ Network d c n)
-        /\ Effect (AndThen (Routed action (C.Action d c n)))
+        /\ List (Effect (Routed action (C.Action d c n)))
 
 
 type ViewF d c n model view

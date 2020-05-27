@@ -22,7 +22,7 @@ import Effect (Effect)
 
 import Data.Covered (carry, uncover, recover)
 
-import FSM (AndThen, doNothing, single, batch)
+import FSM (doNothing, single, batch, just)
 --import UI (view, update, update') as UI
 
 import Noodle.API.Errors (NoodleError) as R
@@ -602,14 +602,14 @@ update
     :: forall d c n
      . RoutedAction d c n
     -> Model d c n /\ R.Network d c n
-    -> Model d c n /\ Effect (AndThen (RoutedAction d c n))
+    -> Model d c n /\ List (Effect (RoutedAction d c n))
 
 update (FromCore (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ nw) =
     ui { lastInletData = ui.lastInletData # Map.insert inletPath d }
-    /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
+    /\ (just $ updatePositions (my <<< StorePositions) nw)
 update (FromCore (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (ui /\ nw) =
     ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d }
-    /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
+    /\ (just $ updatePositions (my <<< StorePositions) nw)
 update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)))) ( ui /\ nw ) =
     case L.view (L._patchByPath patchPath) nw of
         -- FIXME: Raise the error if patch wasn't found
@@ -624,13 +624,13 @@ update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)
                         ui.layout
                 }
                 -- TODO: remove from packing when node was removed
-            /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
+            /\ (just $ updatePositions (my <<< StorePositions) nw)
         _ ->
             ui /\ doNothing
     where
         patchPath = P.getPatchPath $ P.lift nodePath
 update (FromCore _) (ui /\ nw) =
-    ui /\ updatePositions (List.singleton <<< my <<< StorePositions) nw
+    ui /\ (just $ updatePositions (my <<< StorePositions) nw)
 
 update (FromUI NoOp) (ui /\ _) = ui /\ doNothing
 --update (FromUI (Batch actions)) (ui /\ _) = ui /\ doNothing -- FIXME: implement
@@ -638,7 +638,7 @@ update (FromUI (MouseMove mousePos)) ( ui /\ nw ) =
     ui { mousePos = mousePos } /\
         (case ui.dragging of
             Dragging (DragNode _) ->
-                updatePositions (List.singleton <<< my <<< StorePositions) nw
+                just $ updatePositions (my <<< StorePositions) nw
             _ -> doNothing
         )
 update (FromUI (MouseUp mousePos)) ( ui /\ nw ) =
@@ -679,9 +679,13 @@ update (FromUI (ClickNodeTitle node e)) ( ui /\ nw ) =
                         ui.layout # Layout.abandon patch node
                     Nothing -> ui.layout
         }
-    /\ do
-        _ <- Event.stopPropagation $ ME.toEvent e
-        updatePositions (List.singleton <<< my <<< StorePositions) nw
+    /\ (
+        (do
+            _ <- Event.stopPropagation $ ME.toEvent e
+            pure $ my NoOp)
+        : updatePositions (my <<< StorePositions) nw
+        : Nil
+    )
 update (FromUI (ClickRemoveButton node@(R.Node _ nodePath _ _ _) e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging
@@ -695,37 +699,46 @@ update (FromUI (ClickRemoveButton node@(R.Node _ nodePath _ _ _) e)) ( ui /\ nw 
                         ui.layout # Layout.remove patch node
                     Nothing -> ui.layout
         }
-    /\ do
-        _ <- Event.stopPropagation $ ME.toEvent e
-        single $ core $ Core.Request $ Core.ToRemoveNode nodePath
+    /\ (
+        (do
+            _ <- Event.stopPropagation $ ME.toEvent e
+            pure $ my NoOp)
+        : (pure $ core $ Core.Request $ Core.ToRemoveNode nodePath)
+        : Nil
+    )
 update (FromUI (ClickInlet (R.Inlet _ inletPath _ _) e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging
         -- TODO: if node was dragged before, place it at the mouse point
         }
-    /\ do
-        _ <- Event.stopPropagation $ ME.toEvent e
-        case ui.dragging of
+    /\ (
+        (do
+            _ <- Event.stopPropagation $ ME.toEvent e
+            pure $ my NoOp)
+        : (case ui.dragging of
             Dragging (DragLink (R.Outlet _ outletPath _ _)) ->
-                single $ core $ Core.Request $ Core.ToConnect outletPath inletPath
-            _ -> doNothing
+                pure $ core $ Core.Request $ Core.ToConnect outletPath inletPath
+            _ -> pure $ my NoOp)
+        : Nil
+    )
 update (FromUI (ClickOutlet outletPath e)) ( ui /\ nw ) =
     ui
         { dragging = Dragging $ DragLink outletPath
         -- TODO: if node was dragged before, place it at the mouse point
         }
-    /\ (Event.stopPropagation (ME.toEvent e) >>= (const $ doNothing))
+    /\ (just $ do
+        _ <- Event.stopPropagation $ ME.toEvent e
+        pure $ my NoOp)
 update (FromUI (ClickLink link e)) ( ui /\ nw ) =
     ui
-    /\ do
-        _ <- Event.stopPropagation $ ME.toEvent e
-        x <- updatePositions (my <<< StorePositions) nw
-        batch
-            ( (core $ Core.Build $ Core.RemoveLink link)
-            -- it seems right, not to request to disconnect, rather to remove this particular link
-            : x
-            : Nil
-            )
+    /\ (
+        (do
+            _ <- Event.stopPropagation $ ME.toEvent e
+            pure $ my NoOp)
+        -- it seems right, not to request to disconnect, rather to remove this particular link
+        : (pure $ core $ Core.Build $ Core.RemoveLink link)
+        : (updatePositions (my <<< StorePositions) nw)
+        : Nil)
 update (FromUI EnableDebug) (ui /\ _) = ui /\ doNothing -- TODO: why do nothing?
 update (FromUI DisableDebug) (ui /\ _) = ui /\ doNothing -- TODO: why do nothing?
 update (FromUI (StorePositions positions)) (ui /\ _) =

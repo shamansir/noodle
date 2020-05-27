@@ -144,8 +144,8 @@ subscribeToNode node inletsHandler outletsHandler =
     Request $ ToSubscribeToNode node inletsHandler outletsHandler
 
 
-do_ :: forall d c n. (Perform d c n) -> Action d c n
-do_ f = Inner $ Do f
+-- do_ :: forall d c n. (Perform d c n) -> Action d c n
+-- do_ f = Inner $ Do f
 
 
 -- pass :: forall d c n. EveryStep d c n
