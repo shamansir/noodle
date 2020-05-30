@@ -140,7 +140,7 @@ let additions =
       , repo =
           "https://github.com/hdgarrood/purescript-sequences.git"
       , version =
-          "v2.1.0"  -- branch, tag, or commit hash
+          "v2.1.0"
       }
   , spork =
       { dependencies =
@@ -166,7 +166,7 @@ let additions =
       , repo =
           "https://github.com/natefaubion/purescript-spork.git"
       , version =
-          "v1.0.0"  -- branch, tag, or commit hash
+          "v1.0.0"
       }
   , spec =
       { dependencies =
@@ -187,7 +187,21 @@ let additions =
       , repo =
           "https://github.com/purescript-spec/purescript-spec.git"
       , version =
-          "v4.0.1"  -- branch, tag, or commit hash
+          "v4.0.1"
+      }
+    , halogen-svg =
+      { dependencies =
+          [ "prelude"
+          , "halogen"
+          , "strings"
+          , "web-uievents"
+          , "effect"
+          , "dom-indexed"
+          ]
+      , repo =
+          "https://github.com/FungusHumungus/purescript-halogen-svg.git"
+      , version =
+          "f1858f8038d4759a5b4f43d49090878f7f02fd3d"
       }
   , prelude =
     { dependencies = [] : List Text
