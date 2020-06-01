@@ -16,9 +16,7 @@
 
     ** URLs, representing just some part of the UI and still allowing to operate between them;
 
-    ** Optics: Change Lenses which resolve to Maybe, to Prisms;
-
-    ** Get rid of
+    ** Optics: Change Lenses which resolve to Maybe, to Prisms; https://thomashoneyman.com/articles/practical-profunctor-lenses-optics;
 
     ** Lists, Arrays and Sequences are all messed up; Prefer `List`s everywhere, except for unique stuff, there prefer `Sequence`;
 

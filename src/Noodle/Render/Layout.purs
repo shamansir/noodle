@@ -197,6 +197,7 @@ pack layerSize nodeSize (R.Patch _ patchPath _) node layout =
         (Map.lookup patchPath layout)
         layout
 
+
 resize
     :: forall d n
      . LayerSize

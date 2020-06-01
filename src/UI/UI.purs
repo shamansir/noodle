@@ -1,6 +1,6 @@
 module UI
     ( UI, CoveredUI
-    , make, makeWithPush, run, once
+    , make, makeWithPush, run, once, render
     , view, update, update'
     , makeMinimal, makeWithNoEffects
     , imapModel, imapAction, imapError
@@ -161,3 +161,11 @@ once
     -> model
     -> view
 once (UI _ viewF) model = viewF model
+
+
+render
+    :: forall action model view
+     . UI action model view
+    -> model
+    -> view
+render = once
