@@ -11,13 +11,18 @@ import Noodle.Render.Atom (class Atom, labelOf)
 import Noodle.API.Action (Action(..), RequestAction(..)) as A
 import Noodle.Path (ToPatch) as P
 import UI (UI)
+import UI (make, makePassing) as UI
 
 
 import Spork.Html as H
 
 
-type NodeList d c n m = UI (RoutedAction d c n) (P.ToPatch /\ (Array n)) (m (RoutedAction d c n))
+type NodeList d c n v = UI (RoutedAction d c n) (P.ToPatch /\ (Array n)) (v (RoutedAction d c n))
 type NodeListHtml d c n = NodeList d c n H.Html
+
+
+make :: forall d c n v. (P.ToPatch /\ (Array n) -> v (RoutedAction d c n)) -> NodeList d c n v
+make = UI.makePassing
 
 
 render :: forall d c n. Atom n => P.ToPatch -> Array n -> View d c n

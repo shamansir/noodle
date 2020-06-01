@@ -68,6 +68,14 @@ makeWithNoEffects updateF viewF =
     UI (FSM.makeWithNoEffects updateF) viewF
 
 
+makePassing
+    :: forall action model view
+     . (model -> view)
+    -> UI action model view
+makePassing viewF =
+    UI FSM.makePassing viewF
+
+
 run
     :: forall action model view
      . UI action model view
