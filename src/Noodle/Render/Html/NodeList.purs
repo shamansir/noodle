@@ -1,17 +1,15 @@
 module Noodle.Render.Html.NodeList where
 
-import Prelude (($), (<$>), (<<<))
-import Data.Newtype (wrap)
+import Prelude (($), (<$>))
 import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Noodle.Render.Renderer (Routed(..))
-import Noodle.Render.Html (View, RoutedAction)
-import Noodle.Render.Html (core, Action) as R
+import Noodle.Render.Action (RoutedAction)
+import Noodle.Render.Action (core) as R
+import Noodle.Render.Html (View)
 import Noodle.Render.Atom (class Atom, labelOf)
 import Noodle.API.Action (Action(..), RequestAction(..)) as A
 import Noodle.Path (ToPatch) as P
-import UI (UI)
 import UI (make, makePassing, Component) as UI
 
 
