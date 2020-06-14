@@ -185,15 +185,15 @@ viewPatch toolkitRenderer ui nw patchUuid =
                 ]
         renderLayout Nothing =
             H.div [] []
-        maybeDragging (Dragging (DragNode (R.Node nodeUuid _ _ _ _))) =
+        maybeDragging (Dragging (DragNode (R.Node nodeUuid _ _ _ _ _))) =
             let
                 nodePos = toLocalPos ui.positions patchUuid ui.mousePos
             in Just $ viewNode
                 toolkitRenderer ui nw (Pinned dragZIndex nodePos) nodeUuid
         maybeDragging _ = Nothing
-        showPinnedNode (R.Node nodeUuid _ _ _ _) (zIndex /\ pos) =
+        showPinnedNode (R.Node nodeUuid _ _ _ _ _) (zIndex /\ pos) =
             viewNode toolkitRenderer ui nw (Pinned zIndex pos) nodeUuid
-        showPackedNode (Taken (R.Node nodeUuid _ _ _ _)) pos rect =
+        showPackedNode (Taken (R.Node nodeUuid _ _ _ _ _)) pos rect =
             viewNode toolkitRenderer ui nw (Packed pos rect) nodeUuid
         showPackedNode Abandoned pos rect =
             H.div [] []
@@ -211,7 +211,7 @@ viewNode
     -> View d c n
 viewNode toolkitRenderer ui nw emplacement nodeUuid =
     case L.view (L._node nodeUuid) nw of
-        Just node@(R.Node uuid path@(P.ToNode { node : name }) n _ { inlets, outlets }) ->
+        Just node@(R.Node uuid path@(P.ToNode { node : name }) n _ _ { inlets, outlets }) ->
             H.div
                 (getAttrs emplacement node)
                 (

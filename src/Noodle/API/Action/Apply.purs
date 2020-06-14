@@ -180,6 +180,7 @@ applyRequestAction _ (ToAddNodeByDef patchPath alias n (NodeDef def)) nw =
                         (UUID.ToNode uuid)
                         path
                         n
+                        Auto
                         Withhold
                         { inlets : Seq.empty
                         , outlets : Seq.empty
@@ -341,7 +342,7 @@ applyBuildAction _ _ (AddPatch p) nw =
     fine $ Api.addPatch p nw
 applyBuildAction _ _ (AddNode node) nw =
     withE $ Api.addNode node nw
-applyBuildAction tk _ (RemoveNode node@(Node uuid _ _ _ _)) nw = do
+applyBuildAction tk _ (RemoveNode node@(Node uuid _ _ _ _ _)) nw = do
     nw' <- Api.removeNode node nw
     pure $ nw' /\ (just $ do
         _ <- Api.cancelNodeSubscriptions uuid nw'
@@ -366,7 +367,7 @@ applyBuildAction _ _ (RemoveOutlet outlet@(Outlet uuid path _ _)) nw = do
         _ <- Api.cancelNodeSubscriptions nodeUuid nw'
         nodeProcessCanceler <- Api.setupNodeProcessFlow node nw'
         pure $ Inner $ StoreNodeCanceler node nodeProcessCanceler)
-applyBuildAction _ _ (ProcessWith node@(Node uuid _ _ _ _) processF) nw =
+applyBuildAction _ _ (ProcessWith node@(Node uuid _ _ _ _ _) processF) nw =
     let newNode = Api.processWith processF node
         nw' = nw # setJust (_node uuid) newNode
     in
@@ -465,13 +466,13 @@ applyInnerAction
     -> InnerAction d c n
     -> Network d c n
     -> StepE d c n
-applyInnerAction _ (StoreNodeCanceler (Node uuid _ _ _ _) canceler) nw =
+applyInnerAction _ (StoreNodeCanceler (Node uuid _ _ _ _ _) canceler) nw =
     let
         curNodeCancelers = Api.getNodeCancelers uuid nw
         newNodeCancelers = canceler A.: curNodeCancelers
     in
         fine $ Api.storeNodeCancelers uuid newNodeCancelers nw
-applyInnerAction _ (ClearNodeCancelers (Node uuid _ _ _ _)) nw =
+applyInnerAction _ (ClearNodeCancelers (Node uuid _ _ _ _ _)) nw =
     fine $ Api.clearNodeCancelers uuid nw
 applyInnerAction _ (StoreInletCanceler (Inlet uuid _ _ _) canceler) nw =
     let

@@ -104,11 +104,12 @@ viewNetwork nw@(R.Network { patches, name }) =
             H.li [ H.classes [ "patch-debug" ] ]
                 [ H.text "Unknown patch" ]
         viewNode :: Maybe (R.Node d n) -> Html Action
-        viewNode (Just (R.Node uuid path n processF { inlets, outlets })) =
+        viewNode (Just (R.Node uuid path n pos processF { inlets, outlets })) =
             H.li [ H.classes [ "node-debug" ] ]
                 [ H.div []
                     [ H.span [] [ H.text $ show uuid ]
                     , H.span [] [ H.text $ show path ]
+                    , H.span [] [ H.text $ show pos ]
                     , H.span []
                         [ H.text $ case processF of
                             R.Withhold -> "withhold"

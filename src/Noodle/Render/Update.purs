@@ -41,7 +41,7 @@ update (FromCore (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (u
 update (FromCore (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (ui /\ nw) =
     ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d }
     /\ (just $ updatePositions (my <<< StorePositions) nw)
-update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)))) ( ui /\ nw ) =
+update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _ _)))) ( ui /\ nw ) =
     case L.view (L._patchByPath patchPath) nw of
         -- FIXME: Raise the error if patch wasn't found
         Just patch ->
@@ -81,7 +81,7 @@ update (FromUI (MouseUp mousePos)) ( ui /\ nw ) =
         pinNodeIfDragging _ = doNothing -- discard link if dragging it
 update (FromUI (PinNode node position)) ( ui /\ nw ) =
     let
-        (R.Node _ nodePath _ _ _) = node
+        (R.Node _ nodePath _ _ _ _) = node
         patchPath = P.getPatchPath $ P.lift nodePath
         maybePatch = L.view (L._patchByPath patchPath) nw
     in
@@ -101,7 +101,7 @@ update (FromUI (ClickNodeTitle node e)) ( ui /\ nw ) =
         { dragging = Dragging $ DragNode node
         , layout =
             let
-                (R.Node _ nodePath _ _ _) = node
+                (R.Node _ nodePath _ _ _ _) = node
                 patchPath = P.getPatchPath $ P.lift nodePath
                 maybePatch = L.view (L._patchByPath patchPath) nw
             in
@@ -117,7 +117,7 @@ update (FromUI (ClickNodeTitle node e)) ( ui /\ nw ) =
         : updatePositions (my <<< StorePositions) nw
         : Nil
     )
-update (FromUI (ClickRemoveButton node@(R.Node _ nodePath _ _ _) e)) ( ui /\ nw ) =
+update (FromUI (ClickRemoveButton node@(R.Node _ nodePath _ _ _ _) e)) ( ui /\ nw ) =
     ui
         { dragging = NotDragging
         , layout =

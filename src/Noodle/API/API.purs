@@ -174,7 +174,7 @@ addNode
     -> Network d c n
     -> Either NoodleError (Network d c n)
     -- -> Either NoodleError (Network d c n /\ Node d n)
-addNode node@(Node uuid path _ _ _) nw = do
+addNode node@(Node uuid path _ _ _ _) nw = do
     let patchPath = Path.getPatchPath $ Path.lift path
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
@@ -188,7 +188,7 @@ removeNode
      . Node d n
     -> Network d c n
     -> Either NoodleError (Network d c n)
-removeNode node@(Node uuid path _ _ _) nw = do
+removeNode node@(Node uuid path _ _ _ _) nw = do
     let patchPath = Path.getPatchPath $ Path.lift path
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
@@ -318,11 +318,12 @@ processWith
     -> Node d n
 processWith processF node =
     -- uuid <- nw # uuidByPath UUID.toNode path
-    let (Node uuid path n _ state) = node
+    let (Node uuid path n pos _ state) = node
     in Node
         uuid
         path
         n
+        pos
         processF
         state
 
@@ -349,7 +350,7 @@ setupNodeProcessFlow
     -> Network d c n -- FIXME: get rid of the network usage here as well?
     -> Subscriber
 setupNodeProcessFlow node nw =
-    let (Node uuid _ _ process { inletsFlow, inlets, outlets }) = node
+    let (Node uuid _ _ _ process { inletsFlow, inlets, outlets }) = node
     in if Seq.null inlets
         then pure $ pure unit
     else case process of
@@ -492,7 +493,7 @@ informNodeOnInletUpdates
     -> Subscriber
 informNodeOnInletUpdates inlet node = do
     let Inlet uuid path _ { flow } = inlet
-        Node _ _ _ _ { pushToInlets } = node
+        Node _ _ _ _ _ { pushToInlets } = node
         (PushToInlets informNode) = pushToInlets
         (InletFlow inletFlow) = flow
     E.subscribe inletFlow (\d -> informNode (path /\ uuid /\ d))
@@ -505,7 +506,7 @@ informNodeOnOutletUpdates
     -> Subscriber
 informNodeOnOutletUpdates outlet node = do
     let (Outlet uuid path _ { flow }) = outlet
-        (Node _ _ _ _ { pushToOutlets }) = node
+        (Node _ _ _ _ _ { pushToOutlets }) = node
         (PushToOutlets informNode) = pushToOutlets
         (OutletFlow outletFlow) = flow
     E.subscribe outletFlow (\d -> informNode (path /\ uuid /\ d))
@@ -517,9 +518,9 @@ subscribeNode
     -> NodeInletsSubscription d
     -> NodeOutletsSubscription d
     -> Effect Canceler
-subscribeNode (Node _ _ _ _ { inletsFlow, outletsFlow }) inletsHandler outletsHandler = do
-    let InletsFlow inletsFlow' = inletsFlow
-    let OutletsFlow outletsFlow' = outletsFlow
+subscribeNode (Node _ _ _ _ _ { inletsFlow, outletsFlow }) inletsHandler outletsHandler = do
+    let InletsFlow inletsFlow' = inletsFlow -- FIXME: use optics to access
+    let OutletsFlow outletsFlow' = outletsFlow -- FIXME: use optics to access
     inletsCanceler :: Canceler <-
         E.subscribe inletsFlow' $
             (\((Path.ToInlet { inlet }) /\ uuid /\ d) -> inletsHandler inlet uuid d)

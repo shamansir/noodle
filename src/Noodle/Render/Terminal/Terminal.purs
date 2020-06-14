@@ -158,7 +158,7 @@ packOutlet nw (R.Outlet _ path _ _) =
 
 
 viewNode :: forall d c n. R.Network d c n -> R.Node d n -> View
-viewNode nw (R.Node uuid path@(R.ToNode { node : name }) _ _ { inlets, outlets }) =
+viewNode nw (R.Node uuid path@(R.ToNode { node : name }) _ _ _ { inlets, outlets }) =
     let
         inletsStr = String.fromCodePointArray
             $ Array.replicate (Seq.length inlets)
@@ -172,7 +172,7 @@ viewNode nw (R.Node uuid path@(R.ToNode { node : name }) _ _ { inlets, outlets }
 
 
 packNode :: forall d c n. R.Network d c n -> R.Node d n -> Item
-packNode nw (R.Node uuid path@(R.ToNode { node : name }) _ _ { inlets, outlets }) =
+packNode nw (R.Node uuid path@(R.ToNode { node : name }) _ _ _ { inlets, outlets }) =
     R2.item width 1
         { subject : NodeSubj path
         , packing : Nothing

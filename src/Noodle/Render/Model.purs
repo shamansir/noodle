@@ -82,7 +82,7 @@ data DragState d c n
 
 instance showDragState :: Show (DragState d c n) where
     show NotDragging = "not dragging"
-    show (Dragging (DragNode (R.Node _ nPath _ _ _))) = "dragging node " <> show nPath
+    show (Dragging (DragNode (R.Node _ nPath _ _ _ _))) = "dragging node " <> show nPath
     show (Dragging (DragLink (R.Outlet _ oPath _ _))) = "dragging link from " <> show oPath
 
 

@@ -137,7 +137,7 @@ viewPatch options nw (R.Patch id path@(P.ToPatch name) { nodes, links }) =
 
 
 viewNode :: forall d c n. Options -> R.Network d c n -> R.Node d n -> String
-viewNode options nw (R.Node _ path@(P.ToNode { node }) _ _ { inlets, outlets }) =
+viewNode options nw (R.Node _ path@(P.ToNode { node }) _ _ _ { inlets, outlets }) =
     "Node " <> node <> " " <> show path <> semicolon
         <> lineBreak <> vertLine <> vertLine
         <> count inletCounter inletCount

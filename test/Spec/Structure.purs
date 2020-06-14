@@ -73,7 +73,7 @@ spec =
         case L.view (L._patchNodesByPath $ P.toPatch "patch") network' of
           Just nodes ->
             (nodes
-              <#> \(R.Node _ (P.ToNode { node }) _ _ _) -> node)
+              <#> \(R.Node _ (P.ToNode { node }) _ _ _ _) -> node)
               # Seq.toUnfoldable
               # shouldEqual [ "one", "two", "three" ]
           Nothing -> fail "patch wasn't found"

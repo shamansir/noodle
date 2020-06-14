@@ -41,6 +41,10 @@ import Noodle.Util (Flow, PushableFlow(..), Canceler)
 import Noodle.Util (seqMember', seqDelete, seqCatMaybes, seqNub) as Util
 
 
+-- FIXME: improve optics, they can be composable, do not set Node flow over Network etc.
+--        then, after the improvement, use them everywhere possible (should be no data constructors
+--        in pattern matching, for example)
+
 -- make separate lenses to access the entities registry by uuid,
 -- then to read/write the first UUIDs from/to `pathToId`
 -- and then combine/compose them to do everything else
@@ -222,14 +226,14 @@ _nodeInletsFlow :: forall d c n. UUID.ToNode -> Getter' (Network d c n) (Maybe (
 _nodeInletsFlow nodeUuid =
     to \nw ->
         view (_node nodeUuid) nw
-            >>= \(Node _ _ _ _ { inletsFlow }) -> pure inletsFlow
+            >>= \(Node _ _ _ _ _ { inletsFlow }) -> pure inletsFlow
 
 
 _nodeOutletsFlow :: forall d c n. UUID.ToNode -> Getter' (Network d c n) (Maybe (OutletsFlow d))
 _nodeOutletsFlow nodeUuid =
     to \nw ->
         view (_node nodeUuid) nw
-            >>= \(Node _ _ _ _ { outletsFlow }) -> pure outletsFlow
+            >>= \(Node _ _ _ _ _ { outletsFlow }) -> pure outletsFlow
 
 
 _nodeInlet :: forall d c n. UUID.ToNode -> UUID.ToInlet -> Lens' (Network d c n) (Maybe Unit)
@@ -240,14 +244,15 @@ _nodeInlet nodeUuid inletUuid =
         inletLens = _seq inletUuid
         getter nw =
             view nodeLens nw
-                >>= \(Node _ _ _ _ { inlets }) -> view inletLens inlets
+                >>= \(Node _ _ _ _ _ { inlets }) -> view inletLens inlets
         setter nw val =
             over nodeLens
-                (map $ \(Node nuuid npath n process nstate@{ inlets }) ->
+                (map $ \(Node nuuid npath n pos process nstate@{ inlets }) ->
                     Node
                         nuuid
                         npath
                         n
+                        pos
                         process
                         nstate { inlets = set inletLens val inlets }
                 ) nw
@@ -257,7 +262,7 @@ _nodeInlets :: forall d c n. UUID.ToNode -> Getter' (Network d c n) (Maybe (Seq 
 _nodeInlets nodeUuid =
     to \nw ->
         view (_node nodeUuid) nw
-            >>= \(Node _ _ _ _ { inlets }) ->
+            >>= \(Node _ _ _ _ _ { inlets }) ->
                 pure $ viewInlet nw <$> inlets # Util.seqCatMaybes
     where
         viewInlet nw inletUiid = view (_inlet inletUiid) nw
@@ -279,14 +284,15 @@ _nodeOutlet nodeUuid outletUuid =
         outletLens = _seq outletUuid
         getter nw =
             view nodeLens nw
-                >>= \(Node _ _ _ _ { outlets }) -> view outletLens outlets
+                >>= \(Node _ _ _ _ _ { outlets }) -> view outletLens outlets
         setter nw val =
             over nodeLens
-                (map $ \(Node nuuid npath n process nstate@{ outlets }) ->
+                (map $ \(Node nuuid npath n pos process nstate@{ outlets }) ->
                     Node
                         nuuid
                         npath
                         n
+                        pos
                         process
                         nstate { outlets = set outletLens val outlets }
                 ) nw
@@ -295,7 +301,7 @@ _nodeOutlets :: forall d c n. UUID.ToNode -> Getter' (Network d c n) (Maybe (Seq
 _nodeOutlets nodeUuid =
     to \nw ->
         view (_node nodeUuid) nw
-            >>= \(Node _ _ _ _ { outlets }) ->
+            >>= \(Node _ _ _ _ _ { outlets }) ->
                 pure $ viewOutlet nw <$> outlets # Util.seqCatMaybes
     where
         viewOutlet nw outletUuid = view (_outlet outletUuid) nw
@@ -332,9 +338,30 @@ _nodePatch :: forall d c n. UUID.ToNode -> Getter' (Network d c n) (Maybe (Patch
 _nodePatch nodeUuid =
     _rel
         extractNode
-        (\(Node _ nodePath _ _ _) ->
+        (\(Node _ nodePath _ _ _ _) ->
             _patchByPath $ Path.getPatchPath $ Path.lift nodePath)
         (UUID.liftTagged nodeUuid)
+
+
+_nodePosition :: forall d c n. UUID.ToNode -> Lens' (Network d c n) (Maybe Position)
+_nodePosition nodeUuid =
+    lens getter setter
+    where
+        nodeLens = _node nodeUuid
+        getPos (Node _ _ _ pos _ _) = pos
+        setPos (Just val) (Node nuuid npath n _ process nstate) =
+            Node
+                nuuid
+                npath
+                n
+                val
+                process
+                nstate
+        setPos _ node =
+            node
+        getter nw = getPos <$> view nodeLens nw
+        setter nw val =
+            over nodeLens (map $ setPos val) nw
 
 
 _inlet :: forall d c n. UUID.ToInlet -> Lens' (Network d c n) (Maybe (Inlet d c))
