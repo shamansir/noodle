@@ -2,7 +2,7 @@ module Noodle.Optics where
 
 import Prelude
 
-import Data.Lens (Lens', Getter', Prism', Traversal', lens, prism', view, set, over, to, preview)
+import Data.Lens
 import Data.Lens.At (at)
 import Data.Lens.Prism.Maybe (_Just)
 
@@ -20,6 +20,7 @@ import Noodle.Process (ProcessF)
 import Noodle.Util (seqMember', seqDelete, seqCatMaybes, seqNub) as Util
 
 type MLens' s a = Lens' s (Maybe a)
+type MGetter' s a = Getter' s (Maybe a)
 
 
 {- NETWORK -}
@@ -53,28 +54,60 @@ _registry =
 
 
 _entity :: forall d c n. UUID.Tagged -> MLens' (Network d c n) (Entity d c n)
-_entity uuid =
-    _registry <<< at uuid
+_entity uuid = _registry <<< at uuid
 
 
-_patch :: forall d c n. UUID.Tagged -> Traversal' (Network d c n) (Patch d c n)
-_patch uuid = _entity uuid <<< _Just <<< _entityToPatch
+_patch :: forall d c n. UUID.ToPatch -> Traversal' (Network d c n) (Patch d c n)
+_patch uuid = _entity (UUID.liftTagged uuid) <<< _Just <<< _entityToPatch
 
 
-_node :: forall d c n. UUID.Tagged -> Traversal' (Network d c n) (Node d n)
-_node uuid = _entity uuid <<< _Just <<< _entityToNode
+_node :: forall d c n. UUID.ToNode -> Traversal' (Network d c n) (Node d n)
+_node uuid = _entity (UUID.liftTagged uuid) <<< _Just <<< _entityToNode
 
 
-_inlet :: forall d c n. UUID.Tagged -> Traversal' (Network d c n) (Inlet d c)
-_inlet uuid = _entity uuid <<< _Just <<< _entityToInlet
+_inlet :: forall d c n. UUID.ToInlet -> Traversal' (Network d c n) (Inlet d c)
+_inlet uuid = _entity (UUID.liftTagged uuid) <<< _Just <<< _entityToInlet
 
 
-_outlet :: forall d c n. UUID.Tagged -> Traversal' (Network d c n) (Outlet d c)
-_outlet uuid = _entity uuid <<< _Just <<< _entityToOutlet
+_outlet :: forall d c n. UUID.ToOutlet -> Traversal' (Network d c n) (Outlet d c)
+_outlet uuid = _entity (UUID.liftTagged uuid) <<< _Just <<< _entityToOutlet
 
 
-_link :: forall d c n. UUID.Tagged -> Traversal' (Network d c n) Link
-_link uuid = _entity uuid <<< _Just <<< _entityToLink
+_link :: forall d c n. UUID.ToLink -> Traversal' (Network d c n) Link
+_link uuid = _entity (UUID.liftTagged uuid) <<< _Just <<< _entityToLink
+
+
+_entityByPath :: forall d c n. Path -> MLens' (Network d c n) (Entity d c n)
+_entityByPath path =
+    lens getter setter
+    where
+        getter nw =
+            view (_pathToId path) nw >>=
+                \uuid -> view (_entity uuid) nw
+        setter nw val =
+            case view (_pathToId path) nw of
+                Just uuid -> set (_entity uuid) val nw
+                Nothing -> nw
+
+
+_patchByPath :: forall d c n. Path.ToPatch -> Traversal' (Network d c n) (Patch d c n)
+_patchByPath path = _entityByPath (Path.lift path) <<< _Just <<< _entityToPatch
+
+
+_nodeByPath :: forall d c n. Path.ToNode -> Traversal' (Network d c n) (Node d n)
+_nodeByPath path = _entityByPath (Path.lift path) <<< _Just <<< _entityToNode
+
+
+_inletByPath :: forall d c n. Path.ToInlet -> Traversal' (Network d c n) (Inlet d c)
+_inletByPath path = _entityByPath (Path.lift path) <<< _Just <<< _entityToInlet
+
+
+_outletByPath :: forall d c n. Path.ToOutlet -> Traversal' (Network d c n) (Outlet d c)
+_outletByPath path = _entityByPath (Path.lift path) <<< _Just <<< _entityToOutlet
+
+
+-- _linkByPath :: forall d c n. Path.ToLink -> Traversal' (Network d c n) Link
+-- _linkByPath path = _entityByPath (Path.lift path) <<< _Just <<< _entityToLink
 
 
 _paths :: forall d c n. Lens' (Network d c n) (Path /-> UUID.Tagged)
@@ -121,13 +154,21 @@ _patchPath =
             Patch uuid val pstate
 
 
-_pathNodes :: forall d c n. Lens' (Patch d c n) (Seq UUID.ToNode)
-_pathNodes =
+_patchNodes :: forall d c n. Lens' (Patch d c n) (Seq UUID.ToNode)
+_patchNodes =
     lens getter setter
     where
         getter (Patch _ _ { nodes }) = nodes
         setter (Patch uuid path pstate) val =
             Patch uuid path pstate { nodes = val }
+
+
+_patchNode :: forall d c n. UUID.ToNode -> MLens' (Patch d c n) Unit
+_patchNode n = _patchNodes <<< _seqOn n
+
+
+-- _patchNodesByPath :: forall d c n. Path.ToPatch -> Lens' (Patch d c n) (Seq UUID.ToNode)
+-- _patchNodesByPath p = _patchByPath p <<< _patchNode
 
 
 _patchLinks :: forall d c n. Lens' (Patch d c n) (Seq UUID.ToLink)
@@ -137,6 +178,10 @@ _patchLinks =
         getter (Patch _ _ { links }) = links
         setter (Patch uuid path pstate) val =
             Patch uuid path pstate { links = val }
+
+
+_patchLink :: forall d c n. UUID.ToLink -> MLens' (Patch d c n) Unit
+_patchLink l = _patchLinks <<< _seqOn l
 
 
 {- NODE -}
@@ -196,6 +241,10 @@ _nodeInlets =
             Node uuid path n pos process nstate { inlets = val }
 
 
+_nodeInlet :: forall d n. UUID.ToInlet -> MLens' (Node d n) Unit
+_nodeInlet i = _nodeInlets <<< _seqOn i
+
+
 _nodeOutlets :: forall d n. Lens' (Node d n) (Seq UUID.ToOutlet)
 _nodeOutlets =
     lens getter setter
@@ -203,6 +252,10 @@ _nodeOutlets =
         getter (Node _ _ _ _ _ { outlets }) = outlets
         setter (Node uuid path n pos process nstate) val =
             Node uuid path n pos process nstate { outlets = val }
+
+
+_nodeOutlet :: forall d n. UUID.ToOutlet -> MLens' (Node d n) Unit
+_nodeOutlet o = _nodeOutlets <<< _seqOn o
 
 
 _nodeInletsFlow :: forall d n. Lens' (Node d n) (InletsFlow d)
@@ -413,8 +466,8 @@ _entityToLink =
 {- SEQ -}
 
 
-_seq :: forall a. Eq a => a -> Lens' (Seq a) (Maybe Unit)
-_seq v =
+_seqOn :: forall a. Eq a => a -> MLens' (Seq a) Unit
+_seqOn v =
     lens getter setter
     where
         getter = Util.seqMember' v
