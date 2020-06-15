@@ -2,9 +2,11 @@ module Noodle.Optics where
 
 import Prelude
 
-import Data.Lens (Lens', Getter', lens, view, set, over, to)
+import Data.Lens (Lens', Getter', Prism', Traversal', lens, prism', view, set, over, to, preview)
 import Data.Lens.At (at)
+import Data.Lens.Prism.Maybe (_Just)
 
+import Data.Maybe (Maybe(..))
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
 
@@ -15,6 +17,12 @@ import Noodle.UUID (UUID)
 import Noodle.UUID as UUID
 import Noodle.Util (type (/->), Canceler)
 import Noodle.Process (ProcessF)
+import Noodle.Util (seqMember', seqDelete, seqCatMaybes, seqNub) as Util
+
+type MLens' s a = Lens' s (Maybe a)
+
+
+{- NETWORK -}
 
 
 _name :: forall d c n. Lens' (Network d c n) String
@@ -35,13 +43,38 @@ _patches =
             Network nwstate { patches = val }
 
 
-_registry :: forall d c n. Lens' (Network d c n) (Seq UUID.ToPatch)
+_registry :: forall d c n. Lens' (Network d c n) (UUID.Tagged /-> Entity d c n)
 _registry =
     lens getter setter
     where
-        getter (Network { patches }) = patches
+        getter (Network { registry }) = registry
         setter (Network nwstate) val =
-            Network nwstate { patches = val }
+            Network nwstate { registry = val }
+
+
+_entity :: forall d c n. UUID.Tagged -> MLens' (Network d c n) (Entity d c n)
+_entity uuid =
+    _registry <<< at uuid
+
+
+_patch :: forall d c n. UUID.Tagged -> Traversal' (Network d c n) (Patch d c n)
+_patch uuid = _entity uuid <<< _Just <<< _entityToPatch
+
+
+_node :: forall d c n. UUID.Tagged -> Traversal' (Network d c n) (Node d n)
+_node uuid = _entity uuid <<< _Just <<< _entityToNode
+
+
+_inlet :: forall d c n. UUID.Tagged -> Traversal' (Network d c n) (Inlet d c)
+_inlet uuid = _entity uuid <<< _Just <<< _entityToInlet
+
+
+_outlet :: forall d c n. UUID.Tagged -> Traversal' (Network d c n) (Outlet d c)
+_outlet uuid = _entity uuid <<< _Just <<< _entityToOutlet
+
+
+_link :: forall d c n. UUID.Tagged -> Traversal' (Network d c n) Link
+_link uuid = _entity uuid <<< _Just <<< _entityToLink
 
 
 _paths :: forall d c n. Lens' (Network d c n) (Path /-> UUID.Tagged)
@@ -53,6 +86,11 @@ _paths =
             Network nwstate { pathToId = val }
 
 
+_pathToId :: forall d c n. Path -> MLens' (Network d c n) UUID.Tagged
+_pathToId path =
+    _paths <<< at path
+
+
 _cancelers :: forall d c n. Lens' (Network d c n) (UUID /-> Array Canceler)
 _cancelers =
     lens getter setter
@@ -60,6 +98,9 @@ _cancelers =
         getter (Network { cancelers }) = cancelers
         setter (Network nwstate) val =
             Network nwstate { cancelers = val }
+
+
+{- PATCH -}
 
 
 _patchId :: forall d c n. Lens' (Patch d c n) UUID.ToPatch
@@ -96,6 +137,9 @@ _patchLinks =
         getter (Patch _ _ { links }) = links
         setter (Patch uuid path pstate) val =
             Patch uuid path pstate { links = val }
+
+
+{- NODE -}
 
 
 _nodeId :: forall d n. Lens' (Node d n) UUID.ToNode
@@ -197,6 +241,9 @@ _nodePushToOutlets =
             Node uuid path n pos process nstate { pushToOutlets = val }
 
 
+{- INLET -}
+
+
 _inletId :: forall d c. Lens' (Inlet d c) UUID.ToInlet
 _inletId =
     lens getter setter
@@ -240,6 +287,9 @@ _inletPush =
         getter (Inlet _ _ _ { push }) = push
         setter (Inlet uuid path c istate) val =
             Inlet uuid path c istate { push = val }
+
+
+{- OUTLET -}
 
 
 _outletId :: forall d c. Lens' (Inlet d c) UUID.ToInlet
@@ -287,6 +337,9 @@ _outletPush =
             Outlet uuid path c ostate { push = val }
 
 
+{- LINK -}
+
+
 _linkId :: Lens' Link UUID.ToLink
 _linkId =
     lens getter setter
@@ -312,3 +365,60 @@ _linkInletId =
         getter (Link _ { inlet }) = inlet
         setter (Link uuid lstate) val =
             Link uuid lstate { inlet = val }
+
+
+{- ENTITY -}
+
+
+_entityToPatch :: forall d c n. Prism' (Entity d c n) (Patch d c n)
+_entityToPatch =
+    prism' PatchEntity extractPatch
+    where
+        extractPatch (PatchEntity patch) = Just patch
+        extractPatch _ = Nothing
+
+
+_entityToNode :: forall d c n. Prism' (Entity d c n) (Node d n)
+_entityToNode =
+    prism' NodeEntity extractNode
+    where
+        extractNode (NodeEntity node) = Just node
+        extractNode _ = Nothing
+
+
+_entityToInlet :: forall d c n. Prism' (Entity d c n) (Inlet d c)
+_entityToInlet =
+    prism' InletEntity extractInlet
+    where
+        extractInlet (InletEntity inlet) = Just inlet
+        extractInlet _ = Nothing
+
+
+_entityToOutlet :: forall d c n. Prism' (Entity d c n) (Outlet d c)
+_entityToOutlet =
+    prism' OutletEntity extractOutlet
+    where
+        extractOutlet (OutletEntity outlet) = Just outlet
+        extractOutlet _ = Nothing
+
+
+_entityToLink :: forall d c n. Prism' (Entity d c n) Link
+_entityToLink =
+    prism' LinkEntity extractLink
+    where
+        extractLink (LinkEntity link) = Just link
+        extractLink _ = Nothing
+
+
+{- SEQ -}
+
+
+_seq :: forall a. Eq a => a -> Lens' (Seq a) (Maybe Unit)
+_seq v =
+    lens getter setter
+    where
+        getter = Util.seqMember' v
+        setter seq maybeVal =
+            case maybeVal of
+                Just val -> v # Seq.snoc seq
+                Nothing -> seq # Util.seqDelete v
