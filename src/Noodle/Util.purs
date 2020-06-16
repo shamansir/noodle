@@ -5,7 +5,6 @@ module Noodle.Util
     , Subscriber, Canceler
     , Flow, PushF, PushableFlow(..)
     , flow, never
-    , seqMember, seqMember', seqDelete, seqCatMaybes, (:), (+>), seqNub, seqNubBy
     , Position, Rect, Bounds, quickBounds, quickBounds'
     ) where
 
@@ -15,12 +14,7 @@ import Prelude
 import Effect (Effect)
 import Data.Map (Map)
 import Data.Map as Map
-import Data.List (nubBy) as List
 import Data.Bifunctor (lmap, bimap)
-import Data.Sequence as Seq
-import Data.Sequence (Seq)
-import Data.Maybe (Maybe(..))
-import Data.Foldable (foldr)
 import Data.Tuple.Nested ((/\), type (/\))
 
 import FRP.Event (Event, create)
@@ -94,41 +88,3 @@ never :: forall d. Effect (Flow d)
 never =
     create >>=
         \{ event } -> pure event
-
-
--- TODO: place in Data.Seq
-seqMember :: forall a. Eq a => a -> Seq a -> Boolean
-seqMember v seq =
-    Seq.length (Seq.filter ((==) v) seq) > 0
-
-
-seqMember' :: forall a. Eq a => a -> Seq a -> Maybe Unit
-seqMember' v seq =
-    if seqMember v seq then Just unit else Nothing
-
-
-seqDelete :: forall a. Eq a => a -> Seq a -> Seq a
-seqDelete v seq =
-    Seq.filter ((/=) v) seq
-
-
-seqCatMaybes :: forall a. Seq (Maybe a) -> Seq a
-seqCatMaybes seq =
-    foldr eliminateMaybe Seq.empty seq
-    where
-        eliminateMaybe (Just val) seq' = Seq.cons val seq'
-        eliminateMaybe Nothing seq' = seq'
-
-
-seqNub :: forall a. Eq a => Seq a -> Seq a
-seqNub = seqNubBy (==)
-
-
-seqNubBy :: forall a. (a -> a -> Boolean) -> Seq a -> Seq a
-seqNubBy eq =
-    Seq.toUnfoldable >>> List.nubBy eq >>> Seq.fromFoldable
-
-
--- TODO: place in Data.Seq
-infixr 6 Seq.cons as :
-infixl 6 Seq.snoc as +>

@@ -7,7 +7,6 @@ import Data.Lens.At (at)
 import Data.Lens.Prism.Maybe (_Just)
 
 import Data.Maybe (Maybe(..))
-import Data.Sequence as Seq
 import Data.Sequence (Seq)
 
 import Noodle.Network
@@ -17,7 +16,6 @@ import Noodle.UUID (UUID)
 import Noodle.UUID as UUID
 import Noodle.Util (type (/->), Canceler)
 import Noodle.Process (ProcessF)
-import Noodle.Util (seqMember', seqDelete, seqCatMaybes, seqNub) as Util
 
 type MLens' s a = Lens' s (Maybe a)
 type MGetter' s a = Getter' s (Maybe a)
@@ -163,8 +161,8 @@ _patchNodes =
             Patch uuid path pstate { nodes = val }
 
 
-_patchNode :: forall d c n. UUID.ToNode -> MLens' (Patch d c n) Unit
-_patchNode n = _patchNodes <<< _seqOn n
+-- _patchNode :: forall d c n. UUID.ToNode -> MLens' (Patch d c n) Unit
+-- _patchNode n = _patchNodes <<< Seq._on n
 
 
 -- _patchNodesByPath :: forall d c n. Path.ToPatch -> Lens' (Patch d c n) (Seq UUID.ToNode)
@@ -180,8 +178,8 @@ _patchLinks =
             Patch uuid path pstate { links = val }
 
 
-_patchLink :: forall d c n. UUID.ToLink -> MLens' (Patch d c n) Unit
-_patchLink l = _patchLinks <<< _seqOn l
+-- _patchLink :: forall d c n. UUID.ToLink -> MLens' (Patch d c n) Unit
+-- _patchLink l = _patchLinks <<< Seq._on l
 
 
 {- NODE -}
@@ -241,8 +239,8 @@ _nodeInlets =
             Node uuid path n pos process nstate { inlets = val }
 
 
-_nodeInlet :: forall d n. UUID.ToInlet -> MLens' (Node d n) Unit
-_nodeInlet i = _nodeInlets <<< _seqOn i
+-- _nodeInlet :: forall d n. UUID.ToInlet -> MLens' (Node d n) Unit
+-- _nodeInlet i = _nodeInlets <<< Seq._on i
 
 
 _nodeOutlets :: forall d n. Lens' (Node d n) (Seq UUID.ToOutlet)
@@ -254,8 +252,8 @@ _nodeOutlets =
             Node uuid path n pos process nstate { outlets = val }
 
 
-_nodeOutlet :: forall d n. UUID.ToOutlet -> MLens' (Node d n) Unit
-_nodeOutlet o = _nodeOutlets <<< _seqOn o
+-- _nodeOutlet :: forall d n. UUID.ToOutlet -> MLens' (Node d n) Unit
+-- _nodeOutlet o = _nodeOutlets <<< Seq._on o
 
 
 _nodeInletsFlow :: forall d n. Lens' (Node d n) (InletsFlow d)
@@ -461,17 +459,3 @@ _entityToLink =
     where
         extractLink (LinkEntity link) = Just link
         extractLink _ = Nothing
-
-
-{- SEQ -}
-
-
-_seqOn :: forall a. Eq a => a -> MLens' (Seq a) Unit
-_seqOn v =
-    lens getter setter
-    where
-        getter = Util.seqMember' v
-        setter seq maybeVal =
-            case maybeVal of
-                Just val -> v # Seq.snoc seq
-                Nothing -> seq # Util.seqDelete v
