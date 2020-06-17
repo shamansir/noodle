@@ -21,16 +21,14 @@ import Prelude
 import Data.Map as Map
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
-import Data.Maybe (Maybe(..))
 
-import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Path as Path
 import Noodle.Path (Path)
 import Noodle.UUID (UUID)
 import Noodle.UUID as UUID
-import Noodle.Util (type (/->), Canceler, Flow, PushF, seqCatMaybes)
+import Noodle.Util (type (/->), Canceler, Flow, PushF)
 import Noodle.Process (ProcessF)
 
 

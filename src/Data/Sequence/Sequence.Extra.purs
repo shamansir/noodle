@@ -1,10 +1,12 @@
-module Data.Seq.Extra where
+module Data.Sequence.Extra where
 
 
 import Prelude
 
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
+
+import Data.Lens (Lens', lens)
 import Data.Maybe (Maybe(..))
 import Data.Foldable (foldr)
 
@@ -53,8 +55,8 @@ _on :: forall a. Eq a => a -> Lens' (Seq a) (Maybe Unit)
 _on v =
     lens getter setter
     where
-        getter = Util.seqMember' v
+        getter = member' v
         setter seq maybeVal =
             case maybeVal of
                 Just val -> v # Seq.snoc seq
-                Nothing -> seq # Util.seqDelete v
+                Nothing -> seq # delete v
