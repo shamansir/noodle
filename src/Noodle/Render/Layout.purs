@@ -7,17 +7,19 @@ import Data.Maybe (Maybe(..), fromMaybe, fromMaybe')
 import Data.Map as Map
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
+import Data.Sequence.Extra ((+>))
+import Data.Sequence.Extra (catMaybes) as Seq
 import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Foldable (fold, foldr)
-import Data.Lens (view) as L
+import Data.Lens (view, preview) as L
 
 import Data.BinPack.R2 as R2
 
 import Noodle.Path as Path
-import Noodle.Util (Position, Rect, Bounds, type (/->), quickBounds', (+>))
+import Noodle.Util (Position, Rect, type (/->))
 import Noodle.Network as R
-import Noodle.Optics (_networkPatches, _patchNodes) as L
+import Noodle.Optics as L
 
 
 type Layout d n =
@@ -97,15 +99,18 @@ loadIntoStacks
     -> R.Network d c n
     -> (Path.ToPatch /-> NodesStack d n)
 loadIntoStacks layerSize getNodeSize nw =
-    L.view L._networkPatches nw
-        # map pairWithStack
-        # Map.fromFoldable
+    L.view (L._patches) nw
+        <#> (\uuid -> L.preview (L._patch uuid) nw)
+         # Seq.catMaybes
+        <#> pairWithStack
+         # Map.fromFoldable
     where
         pairWithStack (R.Patch patchUuid patchPath _) =
             patchPath /\
             (foldr packNode initialStack
-                $ fromMaybe Seq.empty
-                $ L.view (L._patchNodes patchUuid) nw
+                 $ Seq.catMaybes
+                 $ (\nodeUuid -> L.preview (L._node nodeUuid) nw)
+                <$> L.view (L._patch patchUuid <<< L._patchNodes) nw
             )
         packNode node stack =
             packInStack layerSize (getNodeSize node) node stack

@@ -9,12 +9,14 @@ import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Either (either)
 import Data.Sequence (Seq)
 import Data.Sequence as Seq
+import Data.Sequence.Extra (_on) as Seq
 import Data.List (List)
 import Data.List (fromFoldable, catMaybes) as List
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Either (Either(..), note)
 import Data.Lens (view, set, setJust)
+import Data.Lens.At (at)
 import Data.Tuple.Nested ((/\), type (/\), over1)
 import Data.Foldable (foldr)
 import Data.Traversable (traverse, traverse_)
@@ -100,7 +102,7 @@ uuidByPath f path nw = do
 
 
 storeCancelers :: forall d c n. UUID -> Array Canceler -> Network d c n -> Network d c n
-storeCancelers uuid = setJust (_cancelers uuid)
+storeCancelers uuid = setJust (_cancelers <<< at uuid)
 
 
 getCancelers :: forall d c n. UUID -> Network d c n -> Array Canceler
@@ -165,7 +167,7 @@ addPatch patch@(Patch uuid path _) nw =
     nw
         # setJust (_patch uuid) patch
         # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-        # setJust (_networkPatch uuid) unit
+        # setJust (_patches <<< Seq._on uuid) unit
 
 
 addNode
@@ -180,7 +182,7 @@ addNode node@(Node uuid path _ _ _ _) nw = do
     pure $ nw
          # setJust (_node uuid) node
          # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-         # setJust (_patchNode patchUuid uuid) unit
+         # setJust (_patch patchUuid <<< _patchNodes <<< Seq._on uuid) unit
 
 
 removeNode
@@ -194,7 +196,7 @@ removeNode node@(Node uuid path _ _ _ _) nw = do
     pure $ nw
         # set (_node uuid) Nothing
         # set (_pathToId $ Path.lift path) Nothing
-        # set (_patchNode patchUuid uuid) Nothing
+        # set (_patch patchUuid <<< _patchNodes <<< Seq._on uuid) Nothing
 
 
 {-
@@ -229,20 +231,6 @@ addDefNode patchPath nodeAlias (Toolkit.NodeDef nodeDef) n nw = do
 -}
 
 
-addOutlet
-    :: forall d c n
-     . Outlet d c
-    -> Network d c n
-    -> Either NoodleError (Network d c n)
-addOutlet outlet@(Outlet uuid path _ _) nw = do
-    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
-    nodeUuid <- nw # uuidByPath UUID.toNode nodePath
-    pure $ nw
-        # setJust (_outlet uuid) outlet
-        # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-        # setJust (_nodeOutlet nodeUuid uuid) unit
-
-
 addInlet
     :: forall d c n
      . Inlet d c
@@ -254,7 +242,21 @@ addInlet inlet@(Inlet uuid path _ _) nw = do
     pure $ nw
         # setJust (_inlet uuid) inlet
         # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-        # setJust (_nodeInlet nodeUuid uuid) unit
+        # setJust (_node nodeUuid <<< _nodeInlets <<< Seq._on uuid) unit
+
+
+addOutlet
+    :: forall d c n
+     . Outlet d c
+    -> Network d c n
+    -> Either NoodleError (Network d c n)
+addOutlet outlet@(Outlet uuid path _ _) nw = do
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
+    nodeUuid <- nw # uuidByPath UUID.toNode nodePath
+    pure $ nw
+        # setJust (_outlet uuid) outlet
+        # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
+        # setJust (_node nodeUuid <<< _nodeOutlets <<< Seq._on uuid) unit
 
 
 removeInlet
@@ -268,7 +270,7 @@ removeInlet inlet@(Inlet uuid path _ _) nw = do
     pure $ nw
         # set (_inlet uuid) Nothing
         # set (_pathToId $ Path.lift path) Nothing
-        # set (_nodeInlet nodeUuid uuid) Nothing
+        # set (_node nodeUuid <<< _nodeInlets <<< Seq._on uuid) Nothing
 
 
 removeOutlet
@@ -282,7 +284,7 @@ removeOutlet outlet@(Outlet uuid path _ _) nw = do
     pure $ nw
         # set (_outlet uuid) Nothing
         # set (_pathToId $ Path.lift path) Nothing
-        # set (_nodeOutlet nodeUuid uuid) Nothing
+        # set (_node nodeUuid <<< _nodeOutlets <<< Seq._on uuid) Nothing
 
 
 addLink :: forall d c n
@@ -295,7 +297,7 @@ addLink link@(Link uuid { outlet, inlet }) nw = do
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
             # setJust (_link uuid) link
-            # setJust (_patchLink patchUuid uuid) unit
+            # setJust (_patch patchUuid <<< _patchLinks <<< Seq._on uuid) unit
 
 
 removeLink :: forall d c n
@@ -308,7 +310,7 @@ removeLink link@(Link uuid { outlet, inlet }) nw = do
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
         # set (_link uuid) Nothing
-        # set (_patchLink patchUuid uuid) Nothing
+        # set (_patch patchUuid <<< _patchLinks <<< Seq._on uuid) Nothing
 
 
 processWith

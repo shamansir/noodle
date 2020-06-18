@@ -14,8 +14,10 @@ import Prelude
 import Effect (Effect)
 import Data.Map (Map)
 import Data.Map as Map
+import Data.Foldable (class Foldable, foldr)
 import Data.Bifunctor (lmap, bimap)
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Maybe (Maybe(..))
 
 import FRP.Event (Event, create)
 
@@ -88,3 +90,17 @@ never :: forall d. Effect (Flow d)
 never =
     create >>=
         \{ event } -> pure event
+
+
+catMaybes
+    :: forall f a
+     . Foldable f
+    => Monoid (f a)
+    => Applicative f
+    => f (Maybe a)
+    -> f a
+catMaybes seq =
+    foldr eliminateMaybe (mempty :: f a) seq
+    where
+        eliminateMaybe (Just val) seq' = pure val <> seq'
+        eliminateMaybe Nothing seq' = seq'

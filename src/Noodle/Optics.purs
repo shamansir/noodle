@@ -8,6 +8,7 @@ import Data.Lens.Prism.Maybe (_Just)
 
 import Data.Maybe (Maybe(..))
 import Data.Sequence (Seq)
+import Data.Sequence.Extra as Seq
 
 import Noodle.Network
 import Noodle.Path as Path
@@ -21,25 +22,7 @@ type MLens' s a = Lens' s (Maybe a)
 type MGetter' s a = Getter' s (Maybe a)
 
 
-{- NETWORK -}
-
-
-_name :: forall d c n. Lens' (Network d c n) String
-_name =
-    lens getter setter
-    where
-        getter (Network { name }) = name
-        setter (Network nwstate) val =
-            Network nwstate { name = val }
-
-
-_patches :: forall d c n. Lens' (Network d c n) (Seq UUID.ToPatch)
-_patches =
-    lens getter setter
-    where
-        getter (Network { patches }) = patches
-        setter (Network nwstate) val =
-            Network nwstate { patches = val }
+{- REGISTRY -}
 
 
 _registry :: forall d c n. Lens' (Network d c n) (UUID.Tagged /-> Entity d c n)
@@ -102,6 +85,27 @@ _inletByPath path = _entityByPath (Path.lift path) <<< _Just <<< _entityToInlet
 
 _outletByPath :: forall d c n. Path.ToOutlet -> Traversal' (Network d c n) (Outlet d c)
 _outletByPath path = _entityByPath (Path.lift path) <<< _Just <<< _entityToOutlet
+
+
+{- NETWORK -}
+
+
+_name :: forall d c n. Lens' (Network d c n) String
+_name =
+    lens getter setter
+    where
+        getter (Network { name }) = name
+        setter (Network nwstate) val =
+            Network nwstate { name = val }
+
+
+_patches :: forall d c n. Lens' (Network d c n) (Seq UUID.ToPatch)
+_patches =
+    lens getter setter
+    where
+        getter (Network { patches }) = patches
+        setter (Network nwstate) val =
+            Network nwstate { patches = val }
 
 
 -- _linkByPath :: forall d c n. Path.ToLink -> Traversal' (Network d c n) Link

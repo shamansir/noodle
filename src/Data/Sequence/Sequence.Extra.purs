@@ -13,7 +13,10 @@ import Data.Foldable (foldr)
 import Data.List (nubBy) as List
 
 
--- TODO: place in Data.Seq
+infixr 6 Seq.cons as :
+infixl 6 Seq.snoc as +>
+
+
 member :: forall a. Eq a => a -> Seq a -> Boolean
 member v seq =
     Seq.length (Seq.filter ((==) v) seq) > 0
@@ -44,11 +47,6 @@ nub = nubBy (==)
 nubBy :: forall a. (a -> a -> Boolean) -> Seq a -> Seq a
 nubBy eq =
     Seq.toUnfoldable >>> List.nubBy eq >>> Seq.fromFoldable
-
-
--- TODO: place in Data.Seq
-infixr 6 Seq.cons as :
-infixl 6 Seq.snoc as +>
 
 
 _on :: forall a. Eq a => a -> Lens' (Seq a) (Maybe Unit)
