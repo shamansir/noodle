@@ -6,6 +6,7 @@ module Noodle.Util
     , Flow, PushF, PushableFlow(..)
     , flow, never
     , Position, Rect, Bounds, quickBounds, quickBounds'
+    , merge
     ) where
 
 
@@ -18,6 +19,7 @@ import Data.Foldable (class Foldable, foldr)
 import Data.Bifunctor (lmap, bimap)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe (Maybe(..))
+import Data.Lens (Lens', Prism', lens, view, preview, set, review)
 
 import FRP.Event (Event, create)
 
@@ -104,3 +106,35 @@ catMaybes seq =
     where
         eliminateMaybe (Just val) seq' = pure val <> seq'
         eliminateMaybe Nothing seq' = seq'
+
+
+-- FIXME: could be illegal, by law has to be `Traversal`
+merge
+    :: forall s a b
+     . Lens' s (Maybe a)
+    -> Prism' a b
+    -> Lens' s (Maybe b)
+merge l p =
+    lens getter setter
+    where
+        getter s = view l s >>= preview p
+        setter s maybeX = set l (review p <$> maybeX) s
+
+
+infixr 6 merge as <|<
+
+
+-- FIXME: could be illegal, by law has to be `Traversal`
+{-
+lfish
+    :: forall s a b
+     . Lens' s (Maybe a)
+    -> Prism' a b
+    -> Lens' s (Maybe b)
+lfish fst snd =
+    lens getter setter
+    where
+        getter s = preview fst s <#> ?wh
+        setter s (Just b) = set fst (Just $ review snd b) s
+        setter s Nothing = set fst Nothing s
+-}

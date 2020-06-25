@@ -15,7 +15,7 @@ import Data.List (fromFoldable, catMaybes) as List
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Either (Either(..), note)
-import Data.Lens (view, set, setJust)
+import Data.Lens (view, set, setJust, _Just)
 import Data.Lens.At (at)
 import Data.Tuple.Nested ((/\), type (/\), over1)
 import Data.Foldable (foldr)
@@ -106,11 +106,11 @@ storeCancelers uuid = setJust (_cancelers <<< at uuid)
 
 
 getCancelers :: forall d c n. UUID -> Network d c n -> Array Canceler
-getCancelers uuid nw = nw # view (_cancelers uuid) # fromMaybe []
+getCancelers uuid = view (_cancelers <<< at uuid) >>> fromMaybe []
 
 
 clearCancelers :: forall d c n. UUID -> Network d c n -> Network d c n
-clearCancelers uuid nw = nw # set (_cancelers uuid) Nothing
+clearCancelers uuid = set (_cancelers <<< at uuid) Nothing
 
 
 cancelSubscriptions :: forall d c n. UUID -> Network d c n -> Effect Unit
@@ -196,7 +196,7 @@ removeNode node@(Node uuid path _ _ _ _) nw = do
     pure $ nw
         # set (_node uuid) Nothing
         # set (_pathToId $ Path.lift path) Nothing
-        # set (_patch patchUuid <<< _patchNodes <<< Seq._on uuid) Nothing
+        # set (_patch patchUuid <<< _Just <<< _patchNodes <<< Seq._on uuid) Nothing
 
 
 {-
@@ -270,7 +270,7 @@ removeInlet inlet@(Inlet uuid path _ _) nw = do
     pure $ nw
         # set (_inlet uuid) Nothing
         # set (_pathToId $ Path.lift path) Nothing
-        # set (_node nodeUuid <<< _nodeInlets <<< Seq._on uuid) Nothing
+        # set (_node nodeUuid <<< _Just <<< _nodeInlets <<< Seq._on uuid) Nothing
 
 
 removeOutlet
@@ -284,7 +284,7 @@ removeOutlet outlet@(Outlet uuid path _ _) nw = do
     pure $ nw
         # set (_outlet uuid) Nothing
         # set (_pathToId $ Path.lift path) Nothing
-        # set (_node nodeUuid <<< _nodeOutlets <<< Seq._on uuid) Nothing
+        # set (_node nodeUuid <<< _Just <<< _nodeOutlets <<< Seq._on uuid) Nothing
 
 
 addLink :: forall d c n
@@ -310,7 +310,7 @@ removeLink link@(Link uuid { outlet, inlet }) nw = do
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
         # set (_link uuid) Nothing
-        # set (_patch patchUuid <<< _patchLinks <<< Seq._on uuid) Nothing
+        # set (_patch patchUuid <<< _Just <<< _patchLinks <<< Seq._on uuid) Nothing
 
 
 processWith
@@ -358,7 +358,7 @@ setupNodeProcessFlow node nw =
     else case process of
         Withhold -> pure $ pure unit
         processF -> do
-            _ <- view (_cancelers $ UUID.uuid uuid) nw
+            _ <- view (_cancelers <<< at (UUID.uuid uuid)) nw
                     # fromMaybe []
                     # traverse_ liftEffect
             if Seq.null inlets then pure $ pure unit else do
@@ -367,9 +367,9 @@ setupNodeProcessFlow node nw =
                         outlets
                             # (Seq.toUnfoldable :: forall a. Seq a -> List a)
                             # map (\ouuid ->
-                                view (_outletPush ouuid) nw
-                                    <#> \push -> ouuid /\ push)
-                            # List.catMaybes -- FIXME: raise an error if outlet wasn't found
+                                view (_outlet ouuid <<< _Just <<< _outletPush) nw
+                                    # \push -> ouuid /\ push)
+                            # ?wh
                             # Map.fromFoldable
                     pushToOutletFlow :: (Path.ToOutlet /\ UUID.ToOutlet /\ d) -> Effect Unit
                     pushToOutletFlow (_ /\ ouuid /\ d) =

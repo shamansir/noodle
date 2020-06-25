@@ -15,7 +15,7 @@ import Noodle.Path as Path
 import Noodle.Path (Path)
 import Noodle.UUID (UUID)
 import Noodle.UUID as UUID
-import Noodle.Util (type (/->), Canceler)
+import Noodle.Util (type (/->), Canceler, merge)
 import Noodle.Process (ProcessF)
 
 type MLens' s a = Lens' s (Maybe a)
@@ -38,24 +38,37 @@ _entity :: forall d c n. UUID.Tagged -> MLens' (Network d c n) (Entity d c n)
 _entity uuid = _registry <<< at uuid
 
 
-_patch :: forall d c n. UUID.ToPatch -> Traversal' (Network d c n) (Patch d c n)
-_patch uuid = _entity (UUID.liftTagged uuid) <<< _Just <<< _entityToPatch
+register
+    :: forall d c n x
+     . UUID.Tagged
+    -> Prism' (Entity d c n) x
+    -> MLens' (Network d c n) x
+register uuid prism =
+    merge (_entity uuid) prism
 
 
-_node :: forall d c n. UUID.ToNode -> Traversal' (Network d c n) (Node d n)
-_node uuid = _entity (UUID.liftTagged uuid) <<< _Just <<< _entityToNode
+_patch' :: forall d c n. UUID.ToPatch -> MLens' (Network d c n) (Patch d c n)
+_patch' uuid = register (UUID.liftTagged uuid) _entityToPatch
 
 
-_inlet :: forall d c n. UUID.ToInlet -> Traversal' (Network d c n) (Inlet d c)
-_inlet uuid = _entity (UUID.liftTagged uuid) <<< _Just <<< _entityToInlet
+_patch :: forall d c n. UUID.ToPatch -> MLens' (Network d c n) (Patch d c n)
+_patch uuid = register (UUID.liftTagged uuid) _entityToPatch
 
 
-_outlet :: forall d c n. UUID.ToOutlet -> Traversal' (Network d c n) (Outlet d c)
-_outlet uuid = _entity (UUID.liftTagged uuid) <<< _Just <<< _entityToOutlet
+_node :: forall d c n. UUID.ToNode -> MLens' (Network d c n) (Node d n)
+_node uuid = register (UUID.liftTagged uuid) _entityToNode
 
 
-_link :: forall d c n. UUID.ToLink -> Traversal' (Network d c n) Link
-_link uuid = _entity (UUID.liftTagged uuid) <<< _Just <<< _entityToLink
+_inlet :: forall d c n. UUID.ToInlet -> MLens' (Network d c n) (Inlet d c)
+_inlet uuid = register (UUID.liftTagged uuid) _entityToInlet
+
+
+_outlet :: forall d c n. UUID.ToOutlet -> MLens' (Network d c n) (Outlet d c)
+_outlet uuid = register (UUID.liftTagged uuid) _entityToOutlet
+
+
+_link :: forall d c n. UUID.ToLink -> MLens' (Network d c n) Link
+_link uuid = register (UUID.liftTagged uuid) _entityToLink
 
 
 _entityByPath :: forall d c n. Path -> MLens' (Network d c n) (Entity d c n)
