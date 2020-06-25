@@ -15,7 +15,7 @@ import Data.List (fromFoldable, catMaybes) as List
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Either (Either(..), note)
-import Data.Lens (view, set, setJust, _Just)
+import Data.Lens (view, preview, set, setJust, _Just)
 import Data.Lens.At (at)
 import Data.Tuple.Nested ((/\), type (/\), over1)
 import Data.Foldable (foldr)
@@ -182,7 +182,7 @@ addNode node@(Node uuid path _ _ _ _) nw = do
     pure $ nw
          # setJust (_node uuid) node
          # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-         # setJust (_patch patchUuid <<< _patchNodes <<< Seq._on uuid) unit
+         # setJust (_patch patchUuid <<< _Just <<< _patchNodes <<< Seq._on uuid) unit
 
 
 removeNode
@@ -242,7 +242,7 @@ addInlet inlet@(Inlet uuid path _ _) nw = do
     pure $ nw
         # setJust (_inlet uuid) inlet
         # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-        # setJust (_node nodeUuid <<< _nodeInlets <<< Seq._on uuid) unit
+        # setJust (_node nodeUuid <<< _Just <<< _nodeInlets <<< Seq._on uuid) unit
 
 
 addOutlet
@@ -256,7 +256,7 @@ addOutlet outlet@(Outlet uuid path _ _) nw = do
     pure $ nw
         # setJust (_outlet uuid) outlet
         # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-        # setJust (_node nodeUuid <<< _nodeOutlets <<< Seq._on uuid) unit
+        # setJust (_node nodeUuid <<< _Just <<< _nodeOutlets <<< Seq._on uuid) unit
 
 
 removeInlet
@@ -297,7 +297,7 @@ addLink link@(Link uuid { outlet, inlet }) nw = do
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
             # setJust (_link uuid) link
-            # setJust (_patch patchUuid <<< _patchLinks <<< Seq._on uuid) unit
+            # setJust (_patch patchUuid <<< _Just <<< _patchLinks <<< Seq._on uuid) unit
 
 
 removeLink :: forall d c n
@@ -367,9 +367,9 @@ setupNodeProcessFlow node nw =
                         outlets
                             # (Seq.toUnfoldable :: forall a. Seq a -> List a)
                             # map (\ouuid ->
-                                view (_outlet ouuid <<< _Just <<< _outletPush) nw
-                                    # \push -> ouuid /\ push)
-                            # ?wh
+                                preview (_outlet ouuid <<< _Just <<< _outletPush) nw
+                                    <#> \push -> ouuid /\ push)
+                            # List.catMaybes
                             # Map.fromFoldable
                     pushToOutletFlow :: (Path.ToOutlet /\ UUID.ToOutlet /\ d) -> Effect Unit
                     pushToOutletFlow (_ /\ ouuid /\ d) =
