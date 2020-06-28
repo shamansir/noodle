@@ -9,7 +9,7 @@ import Data.Either
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Sequence (empty, singleton, toUnfoldable, length, filter) as Seq
 import Data.Sequence.Extra (catMaybes) as Seq
-import Data.Lens (view, setJust, set, preview)
+import Data.Lens (view, setJust, set, preview, _Just)
 import Data.List (singleton, fromFoldable) as List
 import Data.Array ((:)) as A
 import Data.List ((:), List(..))
@@ -212,16 +212,19 @@ applyRequestAction tk (ToRemoveNode nodePath) nw = do
     node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     patch <- view (_patch patchUuid) nw # note (Err.ftfs $ UUID.uuid patchUuid)
     -- FIXME: shouldn't `links`  be removed within the calls to remove inlets (/outlets)?
-    inlets <- view (_node nodeUuid <<< _nodeInlets) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
-    outlets <- view (_node nodeUuid <<< _nodeOutlets) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
-    allLinks <- view (_patch patchUuid <<< _patchLinks) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     let
+        inletsUuids = view (_node nodeUuid <<< _Just <<< _nodeInlets) nw
+        outletsUuids = view (_node nodeUuid <<< _Just <<< _nodeOutlets) nw
+        inlets = Seq.catMaybes $ (\uuid -> view (_inlet uuid) nw) <$> inletsUuids
+        outlets = Seq.catMaybes $ (\uuid -> view (_outlet uuid) nw) <$> outletsUuids
+        allLinksUuids = view (_patch patchUuid <<< _Just <<< _patchLinks) nw
+        allLinks = Seq.catMaybes $ (\uuid -> view (_link uuid) nw) <$> allLinksUuids
         filteredLinks =
             Seq.catMaybes
-             $  (\inletUuid outletUuid link@(Link _ { inlet, outlet }) ->
+             $ ((\inletUuid outletUuid link@(Link _ { inlet, outlet }) ->
                     if inlet == inletUuid || outlet == outletUuid
                     then Just link else Nothing)
-            <$> inlets <*> outlets <*> allLinks
+            <$> inletsUuids <*> outletsUuids <*> allLinks)
     pure $ nw /\
             (  (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> filteredLinks)
             <> (batch $ Seq.toUnfoldable $ Build <<< RemoveInlet <$> inlets)
@@ -261,25 +264,27 @@ applyRequestAction _ (ToAddOutlet nodePath alias c) nw =
                     }
         pure $ Build $ AddOutlet newOutlet)
 applyRequestAction tk (ToRemoveInlet inletPath) nw = do
-    inletUuid <- uuidByPath UUID.toInlet inletPath nw
     patchUuid <- uuidByPath UUID.toPatch (Path.getPatchPath $ Path.lift inletPath) nw
+    inletUuid <- uuidByPath UUID.toInlet inletPath nw
     inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
-    allLinks <- view (_patch patchUuid <<< _patchLinks) nw # note (Err.ftfs $ UUID.uuid patchUuid)
     let
+        allLinksUuids = view (_patch patchUuid <<< _Just <<< _patchLinks) nw
+        allLinks = Seq.catMaybes $ (\uuid -> view (_link uuid) nw) <$> allLinksUuids
         inletLinks =
-            allLinks <#> Seq.filter (\(Link _ { inlet }) -> inlet == inletUuid)
+            allLinks # Seq.filter (\(Link _ { inlet }) -> inlet == inletUuid)
     pure $ nw /\
             (  (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> inletLinks)
             <> (single $ Build $ RemoveInlet inlet)
             )
 applyRequestAction tk (ToRemoveOutlet outletPath) nw = do
+    patchUuid <- uuidByPath UUID.toPatch (Path.getPatchPath $ Path.lift outletPath) nw
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
     outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
-    patchUuid <- uuidByPath UUID.toPatch (Path.getPatchPath $ Path.lift outletPath) nw
-    allLinks <- view (_patch patchUuid <<< _patchLinks) nw # note (Err.ftfs $ UUID.uuid patchUuid)
     let
+        allLinksUuids = view (_patch patchUuid <<< _Just <<< _patchLinks) nw
+        allLinks = Seq.catMaybes $ (\uuid -> view (_link uuid) nw) <$> allLinksUuids
         outletLinks =
-            allLinks <#> Seq.filter (\(Link _ { outlet }) -> outlet == outletUuid)
+            allLinks # Seq.filter (\(Link _ { outlet }) -> outlet == outletUuid)
     pure $ nw /\
             (  (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> outletLinks)
             <> (single $ Build $ RemoveOutlet outlet)
@@ -296,14 +301,15 @@ applyRequestAction _ (ToConnect outletPath inletPath) nw = do
         pure $ Build $ Connect
             $ Link (UUID.ToLink uuid) { outlet : ouuid, inlet : iuuid })
 applyRequestAction _ (ToDisconnect outletPath inletPath) nw = do
+    patchUuid <- uuidByPath UUID.toPatch (Path.getPatchPath $ Path.lift outletPath) nw
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    patchUuid <- uuidByPath UUID.toPatch (Path.getPatchPath $ Path.lift outletPath) nw
-    allLinks <- view (_patch patchUuid <<< _patchLinks) nw # note (Err.ftfs $ UUID.uuid patchUuid)
     let
+        allLinksUuids = view (_patch patchUuid <<< _Just <<< _patchLinks) nw
+        allLinks = Seq.catMaybes $ (\uuid -> view (_link uuid) nw) <$> allLinksUuids
         linksBetween =
             allLinks
-                <#> Seq.filter
+                # Seq.filter
                     (\(Link _ { inlet, outlet }) -> inlet == inletUuid && outlet == outletUuid)
     -- FIXME: perform all cancelers
     pure $ nw /\ (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> linksBetween)
