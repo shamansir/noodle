@@ -11,7 +11,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
-import Data.Lens (view) as L
+import Data.Lens (preview) as L
 
 import Noodle.Network as R
 import Noodle.API.Action (Action(..), DataAction(..), BuildAction(..), RequestAction(..)) as Core
@@ -42,7 +42,7 @@ update (FromCore (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d)))
     ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d }
     /\ (just $ updatePositions (my <<< StorePositions) nw)
 update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _ _)))) ( ui /\ nw ) =
-    case L.view (L._patchByPath patchPath) nw of
+    case L.preview (L._patchByPath patchPath) nw of
         -- FIXME: Raise the error if patch wasn't found
         Just patch ->
             ui
@@ -83,7 +83,7 @@ update (FromUI (PinNode node position)) ( ui /\ nw ) =
     let
         (R.Node _ nodePath _ _ _ _) = node
         patchPath = P.getPatchPath $ P.lift nodePath
-        maybePatch = L.view (L._patchByPath patchPath) nw
+        maybePatch = L.preview (L._patchByPath patchPath) nw
     in
         case maybePatch of
             Just patch@(R.Patch patchUuid _ _) ->
@@ -103,7 +103,7 @@ update (FromUI (ClickNodeTitle node e)) ( ui /\ nw ) =
             let
                 (R.Node _ nodePath _ _ _ _) = node
                 patchPath = P.getPatchPath $ P.lift nodePath
-                maybePatch = L.view (L._patchByPath patchPath) nw
+                maybePatch = L.preview (L._patchByPath patchPath) nw
             in
                 case maybePatch of
                     Just patch ->
@@ -123,7 +123,7 @@ update (FromUI (ClickRemoveButton node@(R.Node _ nodePath _ _ _ _) e)) ( ui /\ n
         , layout =
             let
                 patchPath = P.getPatchPath $ P.lift nodePath
-                maybePatch = L.view (L._patchByPath patchPath) nw
+                maybePatch = L.preview (L._patchByPath patchPath) nw
             in
                 case maybePatch of
                     Just patch ->

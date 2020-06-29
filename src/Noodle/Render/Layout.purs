@@ -12,7 +12,7 @@ import Data.Sequence.Extra (catMaybes) as Seq
 import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Foldable (fold, foldr)
-import Data.Lens (view, preview) as L
+import Data.Lens (view, preview, _Just) as L
 
 import Data.BinPack.R2 as R2
 
@@ -100,7 +100,7 @@ loadIntoStacks
     -> (Path.ToPatch /-> NodesStack d n)
 loadIntoStacks layerSize getNodeSize nw =
     L.view (L._patches) nw
-        <#> (\uuid -> L.preview (L._patch uuid) nw)
+        <#> (\uuid -> L.view (L._patch uuid) nw)
          # Seq.catMaybes
         <#> pairWithStack
          # Map.fromFoldable
@@ -109,8 +109,8 @@ loadIntoStacks layerSize getNodeSize nw =
             patchPath /\
             (foldr packNode initialStack
                  $ Seq.catMaybes
-                 $ (\nodeUuid -> L.preview (L._node nodeUuid) nw)
-                <$> L.view (L._patch patchUuid <<< L._patchNodes) nw
+                 $ (\nodeUuid -> L.view (L._node nodeUuid) nw)
+                <$> L.view (L._patch patchUuid <<< L._Just <<< L._patchNodes) nw
             )
         packNode node stack =
             packInStack layerSize (getNodeSize node) node stack
