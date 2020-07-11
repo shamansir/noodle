@@ -1,6 +1,6 @@
 module Noodle.Render.Html.NodeList where
 
-import Prelude (($), (<$>))
+import Prelude (($), (<$>), (<<<), (>>>), flip)
 import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 
@@ -10,7 +10,9 @@ import Noodle.Render.Html (View)
 import Noodle.Render.Atom (class Atom, labelOf)
 import Noodle.API.Action (Action(..), RequestAction(..)) as A
 import Noodle.Path (ToPatch) as P
-import UI (make, makePassing, Component) as UI
+
+import UI.Component (Component) as UI
+import UI.Component (makePassing) as Component
 
 
 import Spork.Html as H
@@ -23,16 +25,17 @@ make
     :: forall d c n v
      . Atom n
     => (P.ToPatch /\ Array n -> v (RoutedAction d c n))
+    -> P.ToPatch /\ Array n
     -> NodeList d c n v
-make = UI.makePassing
+make = Component.makePassing
 
 
-makeHtml:: forall d c n. Atom n => NodeList d c n H.Html
-makeHtml = make $ uncurry render
+makeHtml:: forall d c n. Atom n => P.ToPatch /\ Array n -> NodeList d c n H.Html
+makeHtml = make renderHtml
 
 
-render :: forall d c n. Atom n => P.ToPatch -> Array n -> View d c n
-render patchPath nodes =
+renderHtml :: forall d c n. Atom n => P.ToPatch /\ Array n -> View d c n
+renderHtml (patchPath /\ nodes) =
     H.div [ H.classes [ "noodle-node-list" ] ]
         $ createNodeButton <$> nodes
         where

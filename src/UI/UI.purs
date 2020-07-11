@@ -1,6 +1,5 @@
 module UI
-    ( UI, CoveredUI, Component
-    , class RendersTo, render
+    ( UI, CoveredUI
     , make, makeWithPush, run, once
     , view, update, update'
     , makeMinimal, makeWithNoEffects, makePassing
@@ -31,17 +30,6 @@ data UI action model view = UI (FSM action model) (model -> view)
 
 
 type CoveredUI error action model view = UI action (Covered error model) view
-
-
-type Component action model view = UI action model (view action)
-
-
-class RendersTo model view where
-    render :: model -> view
-
-
-instance rendersToUi :: RendersTo (model /\ UI action model view) view where
-    render (model /\ ui) = once ui model
 
 
 make
