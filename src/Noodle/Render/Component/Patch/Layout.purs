@@ -145,8 +145,8 @@ packInStack layerSize (NodeSize { width, height }) node stack =
             = newLayer layerSize # packNode # fromMaybe' (const $ newLayer layerSize)
 
 
-newLayout :: forall d n. Unit -> Layout d n
-newLayout _ =
+new :: forall d n. Unit -> Layout d n
+new _ =
     { offset : { x : 0.0, y : 0.0 }
     , pinned : Map.empty
     , stack : Seq.empty

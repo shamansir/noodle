@@ -9,6 +9,8 @@ import Noodle.Network (Node, Outlet, Patch) as R
 import Noodle.Util (type (/->), Position)
 import Noodle.UUID as UUID
 
+import Noodle.Render.Component.Patch.Layout (Layout)
+
 
 type Positions = (UUID.Tagged /-> Position)
 
