@@ -7,14 +7,17 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Array (singleton) as Array
 
 import Noodle.Network (Patch(..), Node(..)) as R
+import Noodle.API.Action (Action(..), RequestAction(..)) as A
+import Noodle.Path (ToPatch(..)) as P
+import Noodle.Util (Position)
+
 import Noodle.Render.Action (core) as R
 import Noodle.Render.Html (View)
 import Noodle.Render.Layout as Layout
 import Noodle.Render.Layout (PatchLayout, Cell(..), ZIndex(..))
 import Noodle.Render.Atom (class Atom, labelOf)
-import Noodle.API.Action (Action(..), RequestAction(..)) as A
-import Noodle.Path (ToPatch(..)) as P
-import Noodle.Util (Position)
+import Noodle.Render.Context (Context)
+
 
 import Spork.Html as H
 
@@ -22,24 +25,27 @@ import Spork.Html as H
 import Noodle.Render.Component.Patch.Model
 
 
-render :: forall d c n. Atom n => Position -> Model d c n -> View d c n
-render mousePos { dragging, positions, patch } = render' mousePos dragging positions patch
+render :: forall d c n. Atom n => Context d c n (View d c n) -> Model d c n -> View d c n
+render { mousePos } { dragging, positions, patch } = render' mousePos dragging positions patch
 
 
 render' :: forall d c n. Atom n => DragSubject d c n -> Positions -> R.Patch d c n -> View d c n
-render' mousePos dragging positions (R.Patch patchUuid patchPath@(P.ToPatch name) { nodes }) =
-    H.div
-        [ H.classes [ "noodle-patch" ]
-        , uuidToAttr patchUuid
-        ]
-        [ H.div
-            [ H.classes [ "noodle-patch-name" ] ]
-            [ H.span [] [ H.text name ] ]
-        , renderLayout $ Layout.layoutOf patchPath ui.layout
-        ]
+render' mousePos dragging positions =
+    let
+        (R.Patch patchUuid patchPath@(P.ToPatch name) { nodes }) = patch
+    in
+        H.div
+            [ H.classes [ "noodle-patch" ]
+            , uuidToAttr patchUuid
+            ]
+            [ H.div
+                [ H.classes [ "noodle-patch-name" ] ]
+                [ H.span [] [ H.text name ] ]
+            , renderLayout $ Layout.layoutOf patchPath ui.layout
+            ]
     where
-        renderLayout :: Maybe (PatchLayout d n) -> View d c n
-        renderLayout (Just patchLayout) =
+        renderLayout :: DragSubject d c n -> Maybe (PatchLayout d n) -> View d c n
+        renderLayout dragging (Just patchLayout) =
             H.div
                 [ H.classes [ "noodle-nodes" ] ]
                 [ H.div
@@ -52,7 +58,7 @@ render' mousePos dragging positions (R.Patch patchUuid patchPath@(P.ToPatch name
                     [ H.classes [ "noodle-dragged-nodes" ] ]
                     $ maybe [] Array.singleton (maybeDragging dragging)
                 ]
-        renderLayout Nothing =
+        renderLayout _ Nothing =
             H.div [] []
         maybeDragging (Dragging (DragNode (R.Node nodeUuid _ _ _ _ _))) =
             let

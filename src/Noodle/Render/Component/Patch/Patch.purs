@@ -1,4 +1,4 @@
-module Noodle.Render.Component.NodeList where
+module Noodle.Render.Component.Patch where
 
 import Data.Tuple.Nested ((/\), type (/\))
 

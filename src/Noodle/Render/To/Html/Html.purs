@@ -23,7 +23,8 @@ import Noodle.Optics as L
 import Noodle.Path as P
 import Noodle.UUID as UUID
 import Noodle.Util (Position)
-import Noodle.Toolkit (Toolkit, class Channels, ToolkitRenderer) as T
+import Noodle.Toolkit (Toolkit, class Channels) as T
+import Noodle.Render.Toolkit (Renderer) as T
 
 import Noodle.Render.Atom (class Atom, labelOf) as R
 import Noodle.Render.Layout as Layout
@@ -49,10 +50,7 @@ type HtmlRenderer d c n = Renderer d c n (Action d c n) (Model d c n) (View d c 
 
 
 -- type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
-type ToolkitRenderer d c n =
-    T.ToolkitRenderer d c n
-        (View d c n)
-        (RoutedAction d c n)
+type ToolkitRenderer d c n = T.Renderer d c n (View d c n)
 -- FIXME: user might want to use custom messages in the renderer
 
 

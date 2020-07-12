@@ -17,6 +17,7 @@ type Model d c n =
     { patch :: R.Patch d c n
     , dragging :: DragState d c n
     , positions :: Positions
+    , layout :: Layout d n
     }
 
 
