@@ -4,12 +4,15 @@ import Prelude
 
 import Data.Map (lookup) as Map
 import Data.Maybe (fromMaybe)
+import Data.Vec2 (Vec2(..))
+import Data.Vec2 as Vec2
+import Data.Tuple.Nested ((/\))
 
-import Noodle.Network (Node, Outlet, Patch) as R
-import Noodle.Util (type (/->), Position)
+import Noodle.Network (Node(..), Outlet(..), Patch) as R
+import Noodle.Util (type (/->), Rect, Position)
 import Noodle.UUID as UUID
 
-import Noodle.Render.Component.Patch.Layout (Layout)
+import Noodle.Render.Component.Patch.Layout (Layout, ZIndex(..))
 
 
 type Positions = (UUID.Tagged /-> Position)
@@ -33,6 +36,20 @@ data DragState d c n
     | Dragging (DragSubject d c n)
 
 
+data Emplacement
+    = NotDetermined
+    | Pinned ZIndex Position
+    | Packed Position Rect
+
+
+type LinkEnds = { from :: Position, to :: Position }
+type LinkTransform = { from :: Position, angle :: Number, length :: Number }
+
+
+dragZIndex :: ZIndex
+dragZIndex = ZIndex 1000
+
+
 toLocalPos :: Positions -> UUID.ToPatch -> Position -> Position
 toLocalPos positions patchUuid pos =
     let
@@ -43,3 +60,15 @@ toLocalPos positions patchUuid pos =
         -- FIXME: 25.0 is a height of inlets area
         , y : pos.y - 25.0 - patchPos.y
         }
+
+
+getLinkTransform :: { from :: Position, to :: Position } -> LinkTransform
+getLinkTransform { from, to } =
+    let { angle, length } = Vec2.arrow (Vec2 from.x from.y /\ Vec2 to.x to.y)
+    in { from, angle, length }
+
+
+instance showDragState :: Show (DragState d c n) where
+    show NotDragging = "not dragging"
+    show (Dragging (DragNode (R.Node _ nPath _ _ _ _))) = "dragging node " <> show nPath
+    show (Dragging (DragLink (R.Outlet _ oPath _ _))) = "dragging link from " <> show oPath

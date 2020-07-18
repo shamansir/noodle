@@ -17,4 +17,5 @@ type Renderer d c n view =
     , renderInlet :: c -> R.Inlet d c -> Maybe d -> view
     -- , renderOutlet :: ChannelDefAlias -> R.Outlet d -> c -> (msg -> Effect Unit) -> view
     , renderOutlet :: c -> R.Outlet d c -> Maybe d -> view
+    , getNodeSize :: n -> R.Node d n -> { width :: Number, height :: Number, depth :: Number }
     }

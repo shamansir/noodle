@@ -219,3 +219,12 @@ abandon node layout =
 
 remove :: forall d n. R.Node d n -> Layout d n -> Layout d n
 remove = abandon
+
+
+defaultLayerSize :: LayerSize
+defaultLayerSize = LayerSize { width : 1000.0, height : 1000.0 }
+
+
+-- FIXME: move to the Toolkit renderer
+getNodeSize :: forall d n. R.Node d n -> NodeSize
+getNodeSize _ = NodeSize { width : 100.0, height : 70.0 }
