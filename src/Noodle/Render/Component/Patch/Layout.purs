@@ -85,13 +85,13 @@ newLayer (LayerSize { width, height }) =
 
 
 -- load the existing nodes from the network into Stacks
-loadIntoStacks
+loadIntoStack
     :: forall d c n
      . LayerSize
     -> GetNodeSize d n
-    -> R.Network d c n
-    -> (Path.ToPatch /-> NodesStack d n)
-loadIntoStacks layerSize getNodeSize nw =
+    -> R.Patch d c n
+    -> NodesStack d n
+loadIntoStack layerSize getNodeSize patch =
     L.view (L._patches) nw
         <#> (\uuid -> L.view (L._patch uuid) nw)
          # Seq.catMaybes
@@ -103,7 +103,7 @@ loadIntoStacks layerSize getNodeSize nw =
             (foldr packNode initialStack
                  $ Seq.catMaybes
                  $ (\nodeUuid -> L.view (L._node nodeUuid) nw)
-                <$> L.view (L._patch patchUuid <<< L._Just <<< L._patchNodes) nw
+                <$> L.view L._patchNodes patch
             )
         packNode node stack =
             packInStack layerSize (getNodeSize node) node stack

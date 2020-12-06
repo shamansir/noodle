@@ -11,6 +11,7 @@ module Noodle.Network
     , PushToInlet(..), PushToOutlet(..)
     , PushToInlets(..), PushToOutlets(..)
     , Position(..)
+    , Registry
     -- FIXME: do not expose constructors, provide all the optics as getters
     , empty
     ) where
@@ -60,6 +61,9 @@ data Entity d c n
     | LinkEntity Link
 
 
+type Registry d c n = UUID.Tagged /-> Entity d c n
+
+
 -- TODO:
 -- data TaggedCanceler
 --     = PatchCanceler Canceler
@@ -74,7 +78,7 @@ data Network d c n =
         { name :: String
         , patches :: Seq UUID.ToPatch
         -- TODO: get rid of `registry` by storing actual instances everywhere
-        , registry :: UUID.Tagged /-> Entity d c n
+        , registry :: Registry d c n
         -- , pathToId :: Path /-> Set UUID
         , pathToId :: Path /-> UUID.Tagged
         , cancelers :: UUID /-> Array Canceler

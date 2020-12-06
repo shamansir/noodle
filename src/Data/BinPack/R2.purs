@@ -49,7 +49,7 @@ instance foldableBin2 :: Foldable (Bin2 n) where
         foldl f (foldl f (f e i) r) b
     foldl f e (Free _) = e
     foldMap f (Node { r, b, i }) = f i <> foldMap f r <> foldMap f b
-    foldMap _ (Free _)           = mempty
+    foldMap _ (Free _) = mempty
 
 instance showBin2 :: (Show a, Show n) => Show (Bin2 n a) where
     show (Node { r, b, i, w, h }) =

@@ -25,7 +25,7 @@ type MGetter' s a = Getter' s (Maybe a)
 {- REGISTRY -}
 
 
-_registry :: forall d c n. Lens' (Network d c n) (UUID.Tagged /-> Entity d c n)
+_registry :: forall d c n. Lens' (Network d c n) (Registry d c n)
 _registry =
     lens getter setter
     where
@@ -34,40 +34,40 @@ _registry =
             Network nwstate { registry = val }
 
 
-_entity :: forall d c n. UUID.Tagged -> MLens' (Network d c n) (Entity d c n)
-_entity uuid = _registry <<< at uuid
+_entity :: forall d c n. UUID.Tagged -> MLens' (Registry d c n) (Entity d c n)
+_entity = at -- _registry <<< at uuid
 
 
 register
     :: forall d c n x
      . UUID.Tagged
     -> Prism' (Entity d c n) x
-    -> MLens' (Network d c n) x
+    -> MLens' (Registry d c n) x
 register uuid prism =
     merge (_entity uuid) prism
 
 
-_patch' :: forall d c n. UUID.ToPatch -> MLens' (Network d c n) (Patch d c n)
+_patch' :: forall d c n. UUID.ToPatch -> MLens' (Registry d c n) (Patch d c n)
 _patch' uuid = register (UUID.liftTagged uuid) _entityToPatch
 
 
-_patch :: forall d c n. UUID.ToPatch -> MLens' (Network d c n) (Patch d c n)
+_patch :: forall d c n. UUID.ToPatch -> MLens' (Registry d c n) (Patch d c n)
 _patch uuid = register (UUID.liftTagged uuid) _entityToPatch
 
 
-_node :: forall d c n. UUID.ToNode -> MLens' (Network d c n) (Node d n)
+_node :: forall d c n. UUID.ToNode -> MLens' (Registry d c n) (Node d n)
 _node uuid = register (UUID.liftTagged uuid) _entityToNode
 
 
-_inlet :: forall d c n. UUID.ToInlet -> MLens' (Network d c n) (Inlet d c)
+_inlet :: forall d c n. UUID.ToInlet -> MLens' (Registry d c n) (Inlet d c)
 _inlet uuid = register (UUID.liftTagged uuid) _entityToInlet
 
 
-_outlet :: forall d c n. UUID.ToOutlet -> MLens' (Network d c n) (Outlet d c)
+_outlet :: forall d c n. UUID.ToOutlet -> MLens' (Registry d c n) (Outlet d c)
 _outlet uuid = register (UUID.liftTagged uuid) _entityToOutlet
 
 
-_link :: forall d c n. UUID.ToLink -> MLens' (Network d c n) Link
+_link :: forall d c n. UUID.ToLink -> MLens' (Registry d c n) Link
 _link uuid = register (UUID.liftTagged uuid) _entityToLink
 
 
@@ -75,12 +75,12 @@ _entityByPath :: forall d c n. Path -> MLens' (Network d c n) (Entity d c n)
 _entityByPath path =
     lens getter setter
     where
-        getter nw =
+        getter nw@(Network nwstate) =
             view (_pathToId path) nw >>=
-                \uuid -> view (_entity uuid) nw
-        setter nw val =
+                \uuid -> view (_entity uuid) nwstate.registry
+        setter nw@(Network nwstate) val =
             case view (_pathToId path) nw of
-                Just uuid -> set (_entity uuid) val nw
+                Just uuid -> Network nwstate { registry = set (_entity uuid) val nwstate.registry }
                 Nothing -> nw
 
 

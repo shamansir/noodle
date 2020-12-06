@@ -18,7 +18,7 @@ type Layout d n =
     Path.ToPatch /-> Patch.Layout d n
 
 
--- FIXME: get rid of the functions below, they are just operations on the Map
+-- FIXME: get rid of the functions below, they are just operations on the Map, replace them with lenses in the code
 
 
 layoutOf :: forall d n. Path.ToPatch -> Layout d n -> Maybe (Patch.Layout d n)

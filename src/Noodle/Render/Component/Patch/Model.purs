@@ -8,11 +8,12 @@ import Data.Vec2 (Vec2(..))
 import Data.Vec2 as Vec2
 import Data.Tuple.Nested ((/\))
 
-import Noodle.Network (Node(..), Outlet(..), Patch) as R
+import Noodle.Network (Node(..), Outlet(..), Patch, Network) as R
 import Noodle.Util (type (/->), Rect, Position)
 import Noodle.UUID as UUID
 
 import Noodle.Render.Component.Patch.Layout (Layout, ZIndex(..))
+import Noodle.Render.Component.Patch.Layout as Layout
 
 
 type Positions = (UUID.Tagged /-> Position)
@@ -21,7 +22,6 @@ type Positions = (UUID.Tagged /-> Position)
 type Model d c n =
     { patch :: R.Patch d c n
     , dragging :: DragState d c n
-    , positions :: Positions
     , layout :: Layout d n
     }
 
@@ -44,6 +44,16 @@ data Emplacement
 
 type LinkEnds = { from :: Position, to :: Position }
 type LinkTransform = { from :: Position, angle :: Number, length :: Number }
+
+
+-- TODO: use lens to get nodes from the patch
+-- FIXME: do not require network to be passed
+init :: forall d c n. R.Patch d c n -> Model d c n
+init patch =
+    { patch : patch
+    , dragging : NotDragging
+    , layout : Layout.loadIntoStack Layout.defaultLayerSize Layout.getNodeSize patch
+    }
 
 
 dragZIndex :: ZIndex
