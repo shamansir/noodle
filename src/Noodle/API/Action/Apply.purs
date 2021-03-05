@@ -209,16 +209,16 @@ applyRequestAction _ (ToAddNextNodeByDef patchPath n def) nw = do
 applyRequestAction tk (ToRemoveNode nodePath) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
     patchUuid <- uuidByPath UUID.toPatch (Path.getPatchPath $ Path.lift nodePath) nw
-    node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
-    patch <- view (_patch patchUuid) nw # note (Err.ftfs $ UUID.uuid patchUuid)
+    node <- view (_nodeN nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
+    patch <- view (_patchN patchUuid) nw # note (Err.ftfs $ UUID.uuid patchUuid)
     -- FIXME: shouldn't `links`  be removed within the calls to remove inlets (/outlets)?
     let
-        inletsUuids = view (_node nodeUuid <<< _Just <<< _nodeInlets) nw
-        outletsUuids = view (_node nodeUuid <<< _Just <<< _nodeOutlets) nw
-        inlets = Seq.catMaybes $ (\uuid -> view (_inlet uuid) nw) <$> inletsUuids
-        outlets = Seq.catMaybes $ (\uuid -> view (_outlet uuid) nw) <$> outletsUuids
-        allLinksUuids = view (_patch patchUuid <<< _Just <<< _patchLinks) nw
-        allLinks = Seq.catMaybes $ (\uuid -> view (_link uuid) nw) <$> allLinksUuids
+        inletsUuids = view (_nodeN nodeUuid <<< _Just <<< _nodeInlets) nw
+        outletsUuids = view (_nodeN nodeUuid <<< _Just <<< _nodeOutlets) nw
+        inlets = Seq.catMaybes $ (\uuid -> view (_inletN uuid) nw) <$> inletsUuids
+        outlets = Seq.catMaybes $ (\uuid -> view (_outletN uuid) nw) <$> outletsUuids
+        allLinksUuids = view (_patchN patchUuid <<< _Just <<< _patchLinks) nw
+        allLinks = Seq.catMaybes $ (\uuid -> view (_linkN uuid) nw) <$> allLinksUuids
         filteredLinks =
             Seq.catMaybes
              $ ((\inletUuid outletUuid link@(Link _ { inlet, outlet }) ->
@@ -266,10 +266,10 @@ applyRequestAction _ (ToAddOutlet nodePath alias c) nw =
 applyRequestAction tk (ToRemoveInlet inletPath) nw = do
     patchUuid <- uuidByPath UUID.toPatch (Path.getPatchPath $ Path.lift inletPath) nw
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
+    inlet <- view (_inletN inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     let
-        allLinksUuids = view (_patch patchUuid <<< _Just <<< _patchLinks) nw
-        allLinks = Seq.catMaybes $ (\uuid -> view (_link uuid) nw) <$> allLinksUuids
+        allLinksUuids = view (_patchN patchUuid <<< _Just <<< _patchLinks) nw
+        allLinks = Seq.catMaybes $ (\uuid -> view (_linkN uuid) nw) <$> allLinksUuids
         inletLinks =
             allLinks # Seq.filter (\(Link _ { inlet }) -> inlet == inletUuid)
     pure $ nw /\
@@ -279,10 +279,10 @@ applyRequestAction tk (ToRemoveInlet inletPath) nw = do
 applyRequestAction tk (ToRemoveOutlet outletPath) nw = do
     patchUuid <- uuidByPath UUID.toPatch (Path.getPatchPath $ Path.lift outletPath) nw
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
-    outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
+    outlet <- view (_outletN outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     let
-        allLinksUuids = view (_patch patchUuid <<< _Just <<< _patchLinks) nw
-        allLinks = Seq.catMaybes $ (\uuid -> view (_link uuid) nw) <$> allLinksUuids
+        allLinksUuids = view (_patchN patchUuid <<< _Just <<< _patchLinks) nw
+        allLinks = Seq.catMaybes $ (\uuid -> view (_linkN uuid) nw) <$> allLinksUuids
         outletLinks =
             allLinks # Seq.filter (\(Link _ { outlet }) -> outlet == outletUuid)
     pure $ nw /\
@@ -291,7 +291,7 @@ applyRequestAction tk (ToRemoveOutlet outletPath) nw = do
             )
 applyRequestAction _ (ToProcessWith nodePath processF) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
-    node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
+    node <- view (_nodeN nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     pure $ nw /\ (single $ Build $ ProcessWith node processF)
 applyRequestAction _ (ToConnect outletPath inletPath) nw = do
     ouuid <- uuidByPath UUID.toOutlet outletPath nw
@@ -305,8 +305,8 @@ applyRequestAction _ (ToDisconnect outletPath inletPath) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
     let
-        allLinksUuids = view (_patch patchUuid <<< _Just <<< _patchLinks) nw
-        allLinks = Seq.catMaybes $ (\uuid -> view (_link uuid) nw) <$> allLinksUuids
+        allLinksUuids = view (_patchN patchUuid <<< _Just <<< _patchLinks) nw
+        allLinks = Seq.catMaybes $ (\uuid -> view (_linkN uuid) nw) <$> allLinksUuids
         linksBetween =
             allLinks
                 # Seq.filter
@@ -315,47 +315,47 @@ applyRequestAction _ (ToDisconnect outletPath inletPath) nw = do
     pure $ nw /\ (batch $ Seq.toUnfoldable $ Build <<< RemoveLink <$> linksBetween)
 applyRequestAction _ (ToSendToInlet inletPath d) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
+    inlet <- view (_inletN inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     -- FIXME: use SendToInlet data action?
     pure $ nw /\ (single $ Data $ SendToInlet inlet d)
 applyRequestAction _ (ToSendToOutlet outletPath d) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
-    outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
+    outlet <- view (_outletN outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ (single $ Data $ SendToOutlet outlet d)
 applyRequestAction _ (ToSendPeriodicallyToInlet inletPath period fn) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
+    inlet <- view (_inletN inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ (single $ Data $ SendPeriodicallyToInlet inlet period fn)
 applyRequestAction _ (ToStreamToInlet inletPath event) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
+    inlet <- view (_inletN inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ (single $ Data $ StreamToInlet inlet event)
 applyRequestAction _ (ToStreamToOutlet outletPath event) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
-    outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
+    outlet <- view (_outletN outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ (single $ Data $ StreamToOutlet outlet event)
 applyRequestAction _ (ToSubscribeToInlet inletPath handler) nw = do
     inletUuid <- uuidByPath UUID.toInlet inletPath nw
-    inlet <- view (_inlet inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
+    inlet <- view (_inletN inletUuid) nw # note (Err.ftfs $ UUID.uuid inletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ (just $ do
         canceler :: Canceler <- Api.subscribeToInlet inlet handler
         pure $ Inner $ StoreInletCanceler inlet canceler)
 applyRequestAction _ (ToSubscribeToOutlet outletPath handler) nw = do
     outletUuid <- uuidByPath UUID.toOutlet outletPath nw
-    outlet <- view (_outlet outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
+    outlet <- view (_outletN outletUuid) nw # note (Err.ftfs $ UUID.uuid outletUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ (just $ do
         canceler :: Canceler <- Api.subscribeToOutlet outlet handler
         pure $ Inner $ StoreOutletCanceler outlet canceler)
 applyRequestAction _ (ToSubscribeToNode nodePath inletsHandler outletsHandler) nw = do
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
-    node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
+    node <- view (_nodeN nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     -- TODO: adapt / check the data with the channel instance? or do it in the caller?
     pure $ nw /\ (just $ do
         canceler :: Canceler <- Api.subscribeNode node inletsHandler outletsHandler
@@ -381,7 +381,7 @@ applyBuildAction tk _ (RemoveNode node@(Node uuid _ _ _ _ _)) nw = do
 applyBuildAction _ _ (RemoveInlet inlet@(Inlet uuid path _ _)) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
-    node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
+    node <- view (_nodeN nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     nw' <- Api.removeInlet inlet nw
     pure $ nw' /\ (just $ do
         _ <- Api.cancelInletSubscriptions uuid nw'
@@ -391,7 +391,7 @@ applyBuildAction _ _ (RemoveInlet inlet@(Inlet uuid path _ _)) nw = do
 applyBuildAction _ _ (RemoveOutlet outlet@(Outlet uuid path _ _)) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw
-    node <- view (_node nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
+    node <- view (_nodeN nodeUuid) nw # note (Err.ftfs $ UUID.uuid nodeUuid)
     nw' <- Api.removeOutlet outlet nw
     pure $ nw' /\ (just $ do
         _ <- Api.cancelOutletSubscriptions uuid nw'
@@ -400,7 +400,7 @@ applyBuildAction _ _ (RemoveOutlet outlet@(Outlet uuid path _ _)) nw = do
         pure $ Inner $ StoreNodeCanceler node nodeProcessCanceler)
 applyBuildAction _ _ (ProcessWith node@(Node uuid _ _ _ _ _) processF) nw =
     let newNode = Api.processWith processF node
-        nw' = nw # setJust (_node uuid) newNode
+        nw' = nw # setJust (_nodeN uuid) newNode
     in
         pure $ nw' /\ (just $ do
             _ <- Api.cancelNodeSubscriptions uuid nw'
@@ -410,7 +410,7 @@ applyBuildAction _ push (AddInlet inlet@(Inlet uuid path _ { flow })) nw = do
     nw' <- Api.addInlet inlet nw
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw'
-    node <- view (_node nodeUuid) nw' # note (Err.ftfs $ UUID.uuid nodeUuid)
+    node <- view (_nodeN nodeUuid) nw' # note (Err.ftfs $ UUID.uuid nodeUuid)
     let (InletFlow flow') = flow
     pure $ nw' /\
         -- FIXME: all those should be separate Actions without the API code
@@ -439,7 +439,7 @@ applyBuildAction _ push (AddOutlet outlet@(Outlet uuid path _ { flow })) nw = do
     nw' <- Api.addOutlet outlet nw
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- uuidByPath UUID.toNode nodePath nw'
-    node <- view (_node nodeUuid) nw' # note (Err.ftfs $ UUID.uuid nodeUuid)
+    node <- view (_nodeN nodeUuid) nw' # note (Err.ftfs $ UUID.uuid nodeUuid)
     let (OutletFlow flow') = flow
     pure $ nw' /\
        -- FIXME: all those should be separate Actions without the API code
@@ -465,8 +465,8 @@ applyBuildAction _ push (AddOutlet outlet@(Outlet uuid path _ { flow })) nw = do
         : Nil
         )
 applyBuildAction _ _ (Connect link@(Link _ { outlet : ouuid, inlet : iuuid })) nw = do
-    outlet <- view (_outlet ouuid) nw # note (Err.ftfs $ UUID.uuid ouuid)
-    inlet <- view (_inlet iuuid) nw # note (Err.ftfs $ UUID.uuid iuuid)
+    outlet <- view (_outletN ouuid) nw # note (Err.ftfs $ UUID.uuid ouuid)
+    inlet <- view (_inletN iuuid) nw # note (Err.ftfs $ UUID.uuid iuuid)
     pure $ nw /\
         ( (pure $ Build $ AddLink link)
          -- FIXME: is it right to add link and connect at the same time?
@@ -659,4 +659,3 @@ performEffect _ push (SendPeriodicallyToOutletE outlet period fn) _ = MOVED
 -- apply' (Disconnect { inlet : inletPath, outlet : outletPath }) _ _ nw =
 --     Noodle.disconnectTop outletPath inletPath nw
 -- apply' _ _ _ nw = pure nw
-

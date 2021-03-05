@@ -165,7 +165,7 @@ addPatch
     -> Network d c n
 addPatch patch@(Patch uuid path _) nw =
     nw
-        # setJust (_patch uuid) patch
+        # setJust (_patchN uuid) patch
         # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
         # setJust (_patches <<< Seq._on uuid) unit
 
@@ -180,9 +180,9 @@ addNode node@(Node uuid path _ _ _ _) nw = do
     let patchPath = Path.getPatchPath $ Path.lift path
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
-         # setJust (_node uuid) node
+         # setJust (_nodeN uuid) node
          # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-         # setJust (_patch patchUuid <<< _Just <<< _patchNodes <<< Seq._on uuid) unit
+         # setJust (_patchN patchUuid <<< _Just <<< _patchNodes <<< Seq._on uuid) unit
 
 
 removeNode
@@ -194,9 +194,9 @@ removeNode node@(Node uuid path _ _ _ _) nw = do
     let patchPath = Path.getPatchPath $ Path.lift path
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
-        # set (_node uuid) Nothing
+        # set (_nodeN uuid) Nothing
         # set (_pathToId $ Path.lift path) Nothing
-        # set (_patch patchUuid <<< _Just <<< _patchNodes <<< Seq._on uuid) Nothing
+        # set (_patchN patchUuid <<< _Just <<< _patchNodes <<< Seq._on uuid) Nothing
 
 
 {-
@@ -240,9 +240,9 @@ addInlet inlet@(Inlet uuid path _ _) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- nw # uuidByPath UUID.toNode nodePath
     pure $ nw
-        # setJust (_inlet uuid) inlet
+        # setJust (_inletN uuid) inlet
         # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-        # setJust (_node nodeUuid <<< _Just <<< _nodeInlets <<< Seq._on uuid) unit
+        # setJust (_nodeN nodeUuid <<< _Just <<< _nodeInlets <<< Seq._on uuid) unit
 
 
 addOutlet
@@ -254,9 +254,9 @@ addOutlet outlet@(Outlet uuid path _ _) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- nw # uuidByPath UUID.toNode nodePath
     pure $ nw
-        # setJust (_outlet uuid) outlet
+        # setJust (_outletN uuid) outlet
         # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-        # setJust (_node nodeUuid <<< _Just <<< _nodeOutlets <<< Seq._on uuid) unit
+        # setJust (_nodeN nodeUuid <<< _Just <<< _nodeOutlets <<< Seq._on uuid) unit
 
 
 removeInlet
@@ -268,9 +268,9 @@ removeInlet inlet@(Inlet uuid path _ _) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- nw # uuidByPath UUID.toNode nodePath
     pure $ nw
-        # set (_inlet uuid) Nothing
+        # set (_inletN uuid) Nothing
         # set (_pathToId $ Path.lift path) Nothing
-        # set (_node nodeUuid <<< _Just <<< _nodeInlets <<< Seq._on uuid) Nothing
+        # set (_nodeN nodeUuid <<< _Just <<< _nodeInlets <<< Seq._on uuid) Nothing
 
 
 removeOutlet
@@ -282,9 +282,9 @@ removeOutlet outlet@(Outlet uuid path _ _) nw = do
     nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
     nodeUuid <- nw # uuidByPath UUID.toNode nodePath
     pure $ nw
-        # set (_outlet uuid) Nothing
+        # set (_outletN uuid) Nothing
         # set (_pathToId $ Path.lift path) Nothing
-        # set (_node nodeUuid <<< _Just <<< _nodeOutlets <<< Seq._on uuid) Nothing
+        # set (_nodeN nodeUuid <<< _Just <<< _nodeOutlets <<< Seq._on uuid) Nothing
 
 
 addLink :: forall d c n
@@ -292,12 +292,12 @@ addLink :: forall d c n
     -> Network d c n
     -> Either NoodleError (Network d c n)
 addLink link@(Link uuid { outlet, inlet }) nw = do
-    (Outlet _ opath _ _) <- view (_outlet outlet) nw # note (Err.ftfs $ UUID.uuid outlet)
+    (Outlet _ opath _ _) <- view (_outletN outlet) nw # note (Err.ftfs $ UUID.uuid outlet)
     let patchPath = Path.getPatchPath $ Path.lift opath
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
-            # setJust (_link uuid) link
-            # setJust (_patch patchUuid <<< _Just <<< _patchLinks <<< Seq._on uuid) unit
+            # setJust (_linkN uuid) link
+            # setJust (_patchN patchUuid <<< _Just <<< _patchLinks <<< Seq._on uuid) unit
 
 
 removeLink :: forall d c n
@@ -305,12 +305,12 @@ removeLink :: forall d c n
     -> Network d c n
     -> Either NoodleError (Network d c n)
 removeLink link@(Link uuid { outlet, inlet }) nw = do
-    (Outlet _ opath _ _) <- view (_outlet outlet) nw # note (Err.ftfs $ UUID.uuid outlet)
+    (Outlet _ opath _ _) <- view (_outletN outlet) nw # note (Err.ftfs $ UUID.uuid outlet)
     let patchPath = Path.getPatchPath $ Path.lift opath
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
-        # set (_link uuid) Nothing
-        # set (_patch patchUuid <<< _Just <<< _patchLinks <<< Seq._on uuid) Nothing
+        # set (_linkN uuid) Nothing
+        # set (_patchN patchUuid <<< _Just <<< _patchLinks <<< Seq._on uuid) Nothing
 
 
 processWith
@@ -367,7 +367,7 @@ setupNodeProcessFlow node nw =
                         outlets
                             # (Seq.toUnfoldable :: forall a. Seq a -> List a)
                             # map (\ouuid ->
-                                preview (_outlet ouuid <<< _Just <<< _outletPush) nw
+                                preview (_outletN ouuid <<< _Just <<< _outletPush) nw
                                     <#> \push -> ouuid /\ push)
                             # List.catMaybes
                             # Map.fromFoldable
@@ -418,7 +418,7 @@ buildOutletsFlow _ processF (InletsFlow inletsFlow) inlets outlets nw = do
             (outlets
                  # List.fromFoldable
                 <#> \uuid ->
-                    view (_outlet uuid) nw
+                    view (_outletN uuid) nw
                         <#> \(Outlet uuid' path _ _) -> path /\ uuid')
                  # List.catMaybes
                 -- FIXME: if outlet wasn't found, raise an error?

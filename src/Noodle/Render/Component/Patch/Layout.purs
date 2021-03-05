@@ -18,8 +18,9 @@ import Data.Lens (view, _Just) as L
 
 import Noodle.Path as Path
 import Noodle.Network as R
-import Noodle.Optics (_node, _patch, _patchNodes, _patches) as L
+import Noodle.Optics (_node, _nodeN, _patch, _patchNodes, _patches) as L
 import Noodle.Util (Rect, Position, type (/->))
+
 
 -- TODO: generalize to any cell
 
@@ -102,7 +103,7 @@ loadIntoStack layerSize getNodeSize patch =
             patchPath /\
             (foldr packNode initialStack
                  $ Seq.catMaybes
-                 $ (\nodeUuid -> L.view (L._node nodeUuid) nw)
+                 $ (\nodeUuid -> L.view (L._nodeN nodeUuid) nw)
                 <$> L.view L._patchNodes patch
             )
         packNode node stack =

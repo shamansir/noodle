@@ -38,6 +38,10 @@ _entity :: forall d c n. UUID.Tagged -> MLens' (Registry d c n) (Entity d c n)
 _entity = at -- _registry <<< at uuid
 
 
+_entityN :: forall d c n. UUID.Tagged -> MLens' (Network d c n) (Entity d c n)
+_entityN uuid = _registry <<< at uuid
+
+
 register
     :: forall d c n x
      . UUID.Tagged
@@ -47,28 +51,58 @@ register uuid prism =
     merge (_entity uuid) prism
 
 
-_patch' :: forall d c n. UUID.ToPatch -> MLens' (Registry d c n) (Patch d c n)
-_patch' uuid = register (UUID.liftTagged uuid) _entityToPatch
+-- TODO: get rid of all *-`N` lenses (they should compose from `_registry`)
+registerN
+    :: forall d c n x
+     . UUID.Tagged
+    -> Prism' (Entity d c n) x
+    -> MLens' (Network d c n) x
+registerN uuid prism =
+    merge (_entityN uuid) prism
+
+
+-- _patch' :: forall d c n. UUID.ToPatch -> MLens' (Registry d c n) (Patch d c n)
+-- _patch' uuid = register (UUID.liftTagged uuid) _entityToPatch
 
 
 _patch :: forall d c n. UUID.ToPatch -> MLens' (Registry d c n) (Patch d c n)
 _patch uuid = register (UUID.liftTagged uuid) _entityToPatch
 
 
+_patchN :: forall d c n. UUID.ToPatch -> MLens' (Network d c n) (Patch d c n)
+_patchN uuid = registerN (UUID.liftTagged uuid) _entityToPatch
+
+
 _node :: forall d c n. UUID.ToNode -> MLens' (Registry d c n) (Node d n)
 _node uuid = register (UUID.liftTagged uuid) _entityToNode
+
+
+_nodeN :: forall d c n. UUID.ToNode -> MLens' (Network d c n) (Node d n)
+_nodeN uuid = registerN (UUID.liftTagged uuid) _entityToNode
 
 
 _inlet :: forall d c n. UUID.ToInlet -> MLens' (Registry d c n) (Inlet d c)
 _inlet uuid = register (UUID.liftTagged uuid) _entityToInlet
 
 
+_inletN :: forall d c n. UUID.ToInlet -> MLens' (Network d c n) (Inlet d c)
+_inletN uuid = registerN (UUID.liftTagged uuid) _entityToInlet
+
+
 _outlet :: forall d c n. UUID.ToOutlet -> MLens' (Registry d c n) (Outlet d c)
 _outlet uuid = register (UUID.liftTagged uuid) _entityToOutlet
 
 
+_outletN :: forall d c n. UUID.ToOutlet -> MLens' (Network d c n) (Outlet d c)
+_outletN uuid = registerN (UUID.liftTagged uuid) _entityToOutlet
+
+
 _link :: forall d c n. UUID.ToLink -> MLens' (Registry d c n) Link
 _link uuid = register (UUID.liftTagged uuid) _entityToLink
+
+
+_linkN :: forall d c n. UUID.ToLink -> MLens' (Network d c n) Link
+_linkN uuid = registerN (UUID.liftTagged uuid) _entityToLink
 
 
 _entityByPath :: forall d c n. Path -> MLens' (Network d c n) (Entity d c n)
