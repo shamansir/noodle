@@ -14,12 +14,11 @@ import Noodle.Process (Receive, Send) as R
 import Noodle.Render.Html (ToolkitRenderer, View) as R
 import Noodle.Render.Html.NodeList (render) as NodeList
 import Spork.Html as H
+
 import TensorFlow.Toolkit.Channel (Channel(..))
 import TensorFlow.Toolkit.Node (Node(..), nodesForTheList)
 import TensorFlow.Toolkit.Value (Value(..))
-
-
-type View = R.View Value Channel Node
+import TensorFlow.Toolkit.Render.Html.ToHtml (View, toInlet)
 
 
 renderer :: R.ToolkitRenderer Value Channel Node
@@ -44,6 +43,14 @@ renderNode
     -> R.Receive Value
     -> R.Send Value
     -> View
+
+renderNode BangNode (R.Node _ path _ _ _) _ _ =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ H.div
+            [ H.onClick $ H.always_ $ toInlet path "bang" $ Bang ]
+            [ H.span [ H.classes [ "xodus-connect-button" ] ] [ H.text "◌" ] ]
+        ]
 
 renderNode NodeListNode (R.Node _ (P.ToNode { patch }) _ _ _) _ _ =
     NodeList.render (P.ToPatch patch) nodesForTheList

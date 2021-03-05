@@ -17,6 +17,7 @@ toolkit :: T.Toolkit Value Channel Node
 toolkit =
     T.Toolkit (T.ToolkitName "tensoflow") nodes
     where
+        nodes BangNode = bangNode
         nodes NodeListNode = T.emptyNode
         nodes LayerNode = layerNode
         nodes AddNode = addNode

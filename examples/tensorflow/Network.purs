@@ -16,6 +16,7 @@ recipe :: Actions.ActionList Value Channel Node
 recipe =
     Actions.init
         </> Actions.addPatch "tensforflow"
+        </> Actions.addNode (R.toPatch "tensforflow") "bang" BangNode
         </> Actions.addNode (R.toPatch "tensforflow") "list" NodeListNode
         </> Actions.addNode (R.toPatch "tensforflow") "add" AddNode
         </> Actions.addNode (R.toPatch "tensforflow") "layer-1" LayerNode
