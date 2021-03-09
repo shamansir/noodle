@@ -18,8 +18,7 @@ type NodeDef = T.NodeDef Value Channel
 
 
 data Node
-    = BangNode
-    | NodeListNode
+    = NodeListNode
     | AddNode
     | InputLayerNode
     | TfModelNode
@@ -27,29 +26,11 @@ data Node
 
 nodesForTheList :: Array Node
 nodesForTheList =
-    [ BangNode
-    , NodeListNode
+    [ NodeListNode
     , AddNode
     , InputLayerNode
     , TfModelNode
     ]
-
-
-{- BANG NODE -}
-
-bangNode :: NodeDef
-bangNode =
-    T.defineNode
-        (T.withInlets
-            ~< "bang" /\ Channel)
-        (T.withOutlets
-            >~ "bang" /\ Channel)
-        $ R.Process
-            $ \_ ->
-                let
-                    send "bang" = Just $ Bang
-                    send _ = Nothing
-                in pure send
 
 
 {- LAYER NODE -}
@@ -58,15 +39,19 @@ inputLayerNode :: NodeDef
 inputLayerNode =
     T.defineNode
         (T.withInlets
-            ~< "bang" /\ Channel)
+            ~< "shape" /\ Channel)
         (T.withOutlets
             >~ "layer" /\ Channel)
         $ R.Process
             $ \receive ->
-                let
-                    send "layer" = Just $ TF $ InputLayer
-                    send _ = Nothing
-                in pure send
+                case receive "shape" of
+                    Just (Shape shape) ->
+                        let
+                            send "layer" = Just $ TF $ InputLayer shape
+                            send _ = Nothing
+                        in pure send
+                    _ ->
+                        pure $ pure Nothing
 
 
 {- TFMODEL NODE -}
@@ -115,7 +100,6 @@ instance nodeAtom :: R.Atom Node where
 
 
 instance showNode :: Show Node where
-    show BangNode = "bang"
     show NodeListNode = "node list"
     show AddNode = "add"
     show InputLayerNode = "input layer"

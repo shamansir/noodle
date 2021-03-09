@@ -7,15 +7,16 @@ import Data.Array (length) as Array
 import Data.Maybe
 
 import TensorFlow.TfModel
+import Data.Tuple.Nested ((/\))
 
 
 data Value
-    = Bang
+    = Shape Shape
     | TF TfModel
     | Code String
 
 
 instance showValue :: Show Value where
-    show Bang = "◌"
+    show (Shape (n1 /\ n2 /\ n3)) = show n1 <> ":" <> show n2 <> ":" <> show n3
     show (TF _) = "TF"
     show (Code str) = str

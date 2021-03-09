@@ -1,10 +1,15 @@
 
 module TensorFlow.TfModel where
 
+import Data.Tuple.Nested (type (/\))
+
+
+type Shape = Int /\ Int /\ Int
+
 
 data TfModel
     = Empty
-    | InputLayer
+    | InputLayer Shape
     | Conv2DLayer TfModel
     | MaxPoooling2DLayer TfModel
     | Concatenate TfModel TfModel
