@@ -19,5 +19,5 @@ recipe =
         </> Actions.addNode (R.toPatch "tensforflow") "bang" BangNode
         </> Actions.addNode (R.toPatch "tensforflow") "list" NodeListNode
         </> Actions.addNode (R.toPatch "tensforflow") "add" AddNode
-        </> Actions.addNode (R.toPatch "tensforflow") "layer-1" LayerNode
-        </> Actions.addNode (R.toPatch "tensforflow") "layer-2" LayerNode
+        </> Actions.addNode (R.toPatch "tensforflow") "layer-1" InputLayerNode
+        </> Actions.addNode (R.toPatch "tensforflow") "layer-2" InputLayerNode

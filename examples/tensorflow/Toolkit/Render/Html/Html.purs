@@ -60,10 +60,19 @@ renderNode AddNode (R.Node _ path _ _ _) atInlet _ =
         [ H.classes [ "tk-node" ] ]
         [ ]
 
-renderNode LayerNode (R.Node _ path _ _ _) atInlet _ =
+renderNode InputLayerNode (R.Node _ path _ _ _) atInlet _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ ]
+
+
+renderNode TfModelNode (R.Node _ path _ _ _) _ atOutlet =
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ case atOutlet "codestr" of
+            Just (Code str) -> H.text str
+            _ -> H.text "empty"
+        ]
 
 
 

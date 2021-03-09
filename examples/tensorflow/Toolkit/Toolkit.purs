@@ -19,5 +19,6 @@ toolkit =
     where
         nodes BangNode = bangNode
         nodes NodeListNode = T.emptyNode
-        nodes LayerNode = layerNode
+        nodes InputLayerNode = inputLayerNode
         nodes AddNode = addNode
+        nodes TfModelNode = tfModelNode

@@ -6,12 +6,16 @@ import Prelude
 import Data.Array (length) as Array
 import Data.Maybe
 
+import TensorFlow.TfModel
+
 
 data Value
     = Bang
-    | Layer Int
+    | TF TfModel
+    | Code String
 
 
 instance showValue :: Show Value where
     show Bang = "◌"
-    show (Layer n) = "layer " <> show n
+    show (TF _) = "TF"
+    show (Code str) = str
