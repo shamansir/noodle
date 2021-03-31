@@ -22,4 +22,4 @@ toolkit =
         nodes BangNode = bangNode
         nodes DrawLogoNode = drawLogoNode
         nodes RayNode = rayNode
-        nodes PreviewNode = T.emptyNode
+        nodes PreviewNode = previewNode

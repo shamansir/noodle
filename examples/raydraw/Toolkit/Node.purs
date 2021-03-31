@@ -4,13 +4,14 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
+import Effect.Console (log, logShow)
 import Noodle.Process (ProcessF(..)) as R
-import Noodle.Toolkit ((~<), (>~))
-import Noodle.Toolkit (NodeDef(..), noInlets, noOutlets, withInlets, withOutlets, defineNode) as T
-import RayDraw.Toolkit.Channel (Channel(..))
-import RayDraw.Toolkit.Value (Value(..), Aggregate(..))
 import Noodle.Render.Atom (class Atom) as R
-
+import Noodle.Toolkit ((~<), (>~))
+import Noodle.Toolkit (NodeDef, defineNode, withInlets, withOutlets) as T
+import RayDraw.Toolkit.Channel (Channel(..))
+import RayDraw.Toolkit.Render (renderNativeRay, renderRay)
+import RayDraw.Toolkit.Value (Value)
 
 type NodeDef = T.NodeDef Value Channel
 
@@ -54,7 +55,8 @@ bangNode =
             ~< "bang" /\ Channel)
         (T.withOutlets
             >~ "bang" /\ Channel)
-        $ R.Withhold
+        $ R.Process pure
+
 
 {- PALETTE NODE -}
 
@@ -97,14 +99,21 @@ drawLogoNode =
 
 {- PREVIEW NODE -}
 
-allOfNode :: NodeDef
-allOfNode =
+previewNode :: NodeDef
+previewNode =
     T.defineNode
         (T.withInlets
             ~< "image" /\ Channel)
         (T.withOutlets
             >~ "image" /\ Channel)
-        $ R.Withhold
+        $ R.Process
+            $ \receive ->                
+                do 
+                  log "test test"
+                  renderNativeRay 1.0
+                  pure $ \s -> Nothing
+
+
            
 instance nodeAtom :: R.Atom Node where
     labelOf = show
