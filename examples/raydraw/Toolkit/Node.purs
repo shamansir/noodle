@@ -110,7 +110,7 @@ previewNode =
             $ \receive ->                
                 do 
                   log "test test"
-                  renderNativeRay 1.0
+                  renderRay 1.0
                   pure $ \s -> Nothing
 
 

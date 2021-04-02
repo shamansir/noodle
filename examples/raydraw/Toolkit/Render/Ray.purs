@@ -4,7 +4,7 @@ import Data.Unit (Unit)
 import Effect (Effect)
 import Effect.Console (log)
 
-foreign import renderNativeRay :: Number -> Effect Unit
+foreign import renderNativeRay :: String -> String -> Effect Unit
 
 
 vertexShader :: String
@@ -106,4 +106,4 @@ fragmentShader = """
 
 renderRay :: Number -> Effect Unit
 renderRay x = do 
-    log ("calling renderRay")
+    renderNativeRay fragmentShader vertexShader
