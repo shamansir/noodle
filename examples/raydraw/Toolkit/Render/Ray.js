@@ -3,16 +3,27 @@ exports.renderNativeRay = function (fragmentShader) {
     return function (vertexShader) {
         return function () {
 
-            const canvas = document.createElement("canvas");
-            const network = document.querySelector('#network');
 
+            var maybeCanvas = document.querySelector('#previewCanvas');
+            if (maybeCanvas != null) {
+                maybeCanvas.remove();
+            }   
+
+            var canvas;            
+            canvas = document.createElement("canvas");
+            canvas.id = "previewCanvas";
+            
+            canvas.width  = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const network = document.querySelector('#network');
             network.appendChild(canvas);
 
             const renderer = new THREE.WebGLRenderer({ canvas });
 
             var wWidth = window.innerWidth;
             var wHeight = window.innerHeight;
-
+            
             const fov = 75;
             const aspect = 300 / 150;  // the canvas default (because 300x150)
             const near = 0.1;
