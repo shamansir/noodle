@@ -3,24 +3,19 @@ module RayDraw.Toolkit.Render.Html where
 
 import Prelude
 
-import DOM.HTML.Indexed as I
-import Data.Either (Either(..), either)
-import Data.Int (fromString) as Int
-import Data.Maybe (Maybe(..), maybe)
-import Data.Tuple.Nested ((/\))
-import Noodle.API.Action (Action(..), RequestAction(..), DataAction(..)) as A
+import Data.Maybe (maybe)
+import Noodle.API.Action (Action(..), DataAction(..), RequestAction(..)) as A
 import Noodle.Network (Node(..)) as R
 import Noodle.Path as P
 import Noodle.Path as Path
 import Noodle.Process (Receive, Send) as R
-import Noodle.Render.Atom as R
-import Noodle.Render.Html (View, RoutedAction, ToolkitRenderer, core) as R
+import Noodle.Render.Html (ToolkitRenderer, core) as R
 import Noodle.Render.Html.NodeList (render) as NodeList
 import RayDraw.Toolkit.Channel (Channel(..))
 import RayDraw.Toolkit.Node (Node(..), nodesForTheList)
-import RayDraw.Toolkit.Render.Html.ToHtml (View, toInlet)
+import RayDraw.Toolkit.Render.Html.ToHtml (View, toInlet, toOutlet)
 import RayDraw.Toolkit.Value (RgbaColor(..), Value(..), colorToCss)
-import Spork.Html (Html)
+import Spork.Html (Html, IProp)
 import Spork.Html as H
 
 
@@ -81,10 +76,10 @@ renderNode _ _ _ _ =
         [ H.classes [ "tk-node" ] ]
         [ ]
 
-
-colorPickerTile :: forall i. RgbaColor -> Path.ToNode -> Html i
+colorPickerTile :: RgbaColor -> Path.ToNode -> View
 colorPickerTile color path = H.span [                
-                    H.styles $ [H.Style "background-color" $ colorToCss color] <> paletteCellStyle
+                     H.styles $ [H.Style "background-color" $ colorToCss color] <> paletteCellStyle,
+                     H.onClick $ H.always_ $ toOutlet path "color" $ Color color
                    ]  
                 []
 
