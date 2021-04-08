@@ -6,8 +6,8 @@ import Noodle.API.Action.Sequence ((</>))
 import Noodle.API.Action.Sequence as Actions
 import Noodle.Path as R
 import RayDraw.Toolkit.Channel (Channel)
-import RayDraw.Toolkit.Node (Node(..), previewNode)
-import RayDraw.Toolkit.Value (Value)
+import RayDraw.Toolkit.Node (Node(..))
+import RayDraw.Toolkit.Value (Value(..))
 
 
 recipe :: Actions.ActionList Value Channel Node
@@ -20,5 +20,5 @@ recipe =
         </> Actions.connect 
                     (R.toOutlet "raydraw-dnq" "bang" "bang")
                     (R.toInlet "raydraw-dnq" "preview" "image")
-
+        </> Actions.sendToInlet (R.toInlet "raydraw-dnq" "bang" "bang") Bang
 
