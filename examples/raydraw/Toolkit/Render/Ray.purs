@@ -1,10 +1,19 @@
 module RayDraw.Toolkit.Render where 
 
+import Prelude
+
 import Data.Unit (Unit)
 import Effect (Effect)
 import Effect.Console (log)
+import Effect.Random (random)
+import RayDraw.Toolkit.Value (RgbaColor(..))
+import Text.Smolder.HTML (abbr)
 
-foreign import renderNativeRay :: String -> String -> Effect Unit
+foreign import renderNativeRay :: Vector3 -> String -> String -> Effect Unit
+
+foreign import data Vector3 :: Type
+
+foreign import createVec3 :: Number -> Number -> Number -> Vector3
 
 
 vertexShader :: String
@@ -64,7 +73,7 @@ vertexShader = """
             color2Intensity = snoise(uv * 1.8 + timeDisplacement * 0.12);
 
             vec3 pos = position;
-            // pos.xyz += noise * 12.0;
+            //pos.xyz += noise * 12.0;
             pos.x += noise * 12.0;
             pos.y += noise * 12.0;
             pos.z += noise2 * 5.0;
@@ -91,19 +100,20 @@ fragmentShader = """
         varying float noise;
         varying float color1Intensity;
         varying float color2Intensity;
+        uniform vec3 color1;
 
         void main() {
             vec3 color = vec3(noise);
             color = mix(color, vec3(1.0), 0.4);
-            color = mix(color, vec3(1., 0.2, 0.5), 1.0 - (vUv.x * 0.6 + 0.1));
-            color = mix(color, vec3(0.5, 0.2, 1.0), vUv.y / 2.0 + 0.25);
-            color = mix(color, vec3(0.7, 0.4, 1.0), color1Intensity * 0.5);
-            color = lighten(color, vec3(0.5, 0.2, 0.8), 0.9);
+            color = mix(color, color1, 1.0 - (vUv.x * 0.6 + 0.1));
+            color = mix(color, color1, vUv.y / 2.0 + 0.25);
+            color = mix(color, color1, color1Intensity * 0.5);
+            color = lighten(color, color1, 0.9);
 
             gl_FragColor = vec4(color, 1.0);
         }
 """
 
-renderRay :: Number -> Effect Unit
-renderRay x = do 
-    renderNativeRay fragmentShader vertexShader
+renderRay :: RgbaColor -> Effect Unit
+renderRay (RgbaColor { r, g, b, a }) = do 
+    renderNativeRay (createVec3 r g b) fragmentShader vertexShader

@@ -11,7 +11,7 @@ import Noodle.Toolkit ((~<), (>~))
 import Noodle.Toolkit (NodeDef, defineNode, withInlets, withOutlets) as T
 import RayDraw.Toolkit.Channel (Channel(..))
 import RayDraw.Toolkit.Render (renderNativeRay, renderRay)
-import RayDraw.Toolkit.Value (Value)
+import RayDraw.Toolkit.Value (RgbaColor(..), Value)
 
 type NodeDef = T.NodeDef Value Channel
 
@@ -110,7 +110,7 @@ previewNode =
             $ \receive ->                
                 do 
                   log "test test"
-                  renderRay 1.0
+                  renderRay $ RgbaColor {r : 0.4, g : 1.0, b : 0.6, a : 1.0}
                   pure $ \s -> Nothing
 
 
