@@ -16,9 +16,21 @@ recipe =
         </> Actions.addPatch "raydraw-dnq"
         </> Actions.addNode (R.toPatch "raydraw-dnq") "list" NodeListNode
         </> Actions.addNode (R.toPatch "raydraw-dnq") "bang" BangNode
+        </> Actions.addNode (R.toPatch "raydraw-dnq") "palette1" PaletteNode
+        </> Actions.addNode (R.toPatch "raydraw-dnq") "palette2" PaletteNode
+        </> Actions.addNode (R.toPatch "raydraw-dnq") "palette3" PaletteNode
         </> Actions.addNode (R.toPatch "raydraw-dnq") "preview" PreviewNode
         </> Actions.connect 
                     (R.toOutlet "raydraw-dnq" "bang" "bang")
-                    (R.toInlet "raydraw-dnq" "preview" "image")
+                    (R.toInlet "raydraw-dnq" "preview" "bang")
+        </> Actions.connect 
+                    (R.toOutlet "raydraw-dnq" "palette1" "color")
+                    (R.toInlet "raydraw-dnq" "preview" "color1")
+        </> Actions.connect 
+                    (R.toOutlet "raydraw-dnq" "palette2" "color")
+                    (R.toInlet "raydraw-dnq" "preview" "color2")
+        </> Actions.connect 
+                    (R.toOutlet "raydraw-dnq" "palette3" "color")
+                    (R.toInlet "raydraw-dnq" "preview" "color3")
         </> Actions.sendToInlet (R.toInlet "raydraw-dnq" "bang" "bang") Bang
 
