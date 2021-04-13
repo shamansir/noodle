@@ -4,14 +4,13 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
-import Effect.Console (log, logShow)
 import Noodle.Process (ProcessF(..)) as R
 import Noodle.Render.Atom (class Atom) as R
 import Noodle.Toolkit ((~<), (>~))
 import Noodle.Toolkit (NodeDef, defineNode, withInlets, withOutlets) as T
 import RayDraw.Toolkit.Channel (Channel(..))
-import RayDraw.Toolkit.Render (renderNativeRay, renderRay)
-import RayDraw.Toolkit.Value (RgbaColor(..), Value(..))
+import RayDraw.Toolkit.Render (renderRay)
+import RayDraw.Toolkit.Value (Value(..))
 
 type NodeDef = T.NodeDef Value Channel
 

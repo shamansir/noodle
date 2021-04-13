@@ -2,12 +2,8 @@ module RayDraw.Toolkit.Render where
 
 import Prelude
 
-import Data.Unit (Unit)
 import Effect (Effect)
-import Effect.Console (log)
-import Effect.Random (random)
 import RayDraw.Toolkit.Value (RgbaColor(..))
-import Text.Smolder.HTML (abbr)
 
 foreign import renderNativeRay :: Vector3 -> Vector3 -> Vector3 -> String -> String -> Effect Unit
 
