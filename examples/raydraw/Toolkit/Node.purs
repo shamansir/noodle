@@ -11,7 +11,7 @@ import Noodle.Toolkit ((~<), (>~))
 import Noodle.Toolkit (NodeDef, defineNode, withInlets, withOutlets) as T
 import RayDraw.Toolkit.Channel (Channel(..))
 import RayDraw.Toolkit.Render (renderNativeRay, renderRay)
-import RayDraw.Toolkit.Value (RgbaColor(..), Value)
+import RayDraw.Toolkit.Value (RgbaColor(..), Value(..))
 
 type NodeDef = T.NodeDef Value Channel
 
@@ -103,16 +103,19 @@ previewNode :: NodeDef
 previewNode =
     T.defineNode
         (T.withInlets
-            ~< "image" /\ Channel)
+            ~< "bang" /\ Channel
+            ~< "color1" /\ Channel
+            ~< "color2" /\ Channel
+            ~< "color3" /\ Channel)
         (T.withOutlets
             >~ "image" /\ Channel)
         $ R.Process
-            $ \receive ->                
-                do 
-                  log "test test"
-                  renderRay $ RgbaColor {r : 0.4, g : 1.0, b : 0.6, a : 1.0}
-                  pure $ \s -> Nothing
-
+            $ \receive ->
+               case (receive "bang") /\ (receive "color1") /\ (receive "color2") /\ (receive "color3") of               
+                    (Just Bang) /\ (Just (Color col1)) /\ (Just (Color col2)) /\ (Just (Color col3)) -> do
+                        renderRay col1 col2 col3                                                               
+                        pure $ const Nothing
+                    _ -> pure $ const Nothing
 
            
 instance nodeAtom :: R.Atom Node where

@@ -6,10 +6,10 @@ import Data.Unit (Unit)
 import Effect (Effect)
 import Effect.Console (log)
 import Effect.Random (random)
-import RayDraw.Toolkit.Value (RgbaColor(..))
+import RayDraw.Toolkit.Value (RgbaColor(..), Value(..))
 import Text.Smolder.HTML (abbr)
 
-foreign import renderNativeRay :: Vector3 -> String -> String -> Effect Unit
+foreign import renderNativeRay :: Vector3 -> Vector3 -> Vector3 -> String -> String -> Effect Unit
 
 foreign import data Vector3 :: Type
 
@@ -101,19 +101,24 @@ fragmentShader = """
         varying float color1Intensity;
         varying float color2Intensity;
         uniform vec3 color1;
+        uniform vec3 color2;
+        uniform vec3 color3;
 
         void main() {
             vec3 color = vec3(noise);
             color = mix(color, vec3(1.0), 0.4);
             color = mix(color, color1, 1.0 - (vUv.x * 0.6 + 0.1));
-            color = mix(color, color1, vUv.y / 2.0 + 0.25);
-            color = mix(color, color1, color1Intensity * 0.5);
-            color = lighten(color, color1, 0.9);
+            color = mix(color, color2, vUv.y / 2.0 + 0.25);
+            color = mix(color, color3, color1Intensity * 0.5);
+            color = lighten(color, color3, 0.9);
 
             gl_FragColor = vec4(color, 1.0);
         }
 """
 
-renderRay :: RgbaColor -> Effect Unit
-renderRay (RgbaColor { r, g, b, a }) = do 
-    renderNativeRay (createVec3 r g b) fragmentShader vertexShader
+renderRay :: RgbaColor -> RgbaColor -> RgbaColor -> Effect Unit
+renderRay col1 col2 col3 = do 
+    renderNativeRay (colorToVec col1) (colorToVec col2) (colorToVec col3) fragmentShader vertexShader
+
+colorToVec :: RgbaColor -> Vector3
+colorToVec (RgbaColor { r, g, b, a}) = createVec3 r g b
