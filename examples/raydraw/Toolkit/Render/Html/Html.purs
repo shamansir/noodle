@@ -77,17 +77,9 @@ renderNode _ _ _ _ =
         [ ]
 
 colorPickerTile :: RgbaColor -> Path.ToNode -> View
-colorPickerTile color path = H.span [                
-                     H.styles $ [H.Style "background-color" $ colorToCss color] <> paletteCellStyle,
+colorPickerTile color path = H.span [    
+                     H.classes ["tk-color-value"],
+                     H.styles $ [H.Style "background-color" $ colorToCss color],
                      H.onClick $ H.always_ $ toOutlet path "color" $ Color color
                    ]  
                 []
-
-paletteCellStyle :: Array H.Style
-paletteCellStyle = [H.Style "float" "left", 
-                    H.Style "width" "10px", 
-                    H.Style "height" "10px",  
-                    H.Style "display" "block", 
-                    H.Style "margin" "1px", 
-                    H.Style "border" "1px solid rgba(255,255,255,.1)", 
-                    H.Style "border-radius" "2px"]
