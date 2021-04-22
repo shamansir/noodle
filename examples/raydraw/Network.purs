@@ -35,7 +35,7 @@ recipe =
                     (R.toOutlet "raydraw-dnq" "palette3" "color")
                     (R.toInlet "raydraw-dnq" "preview" "color3")
         </> Actions.sendToInlet (R.toInlet "raydraw-dnq" "bang" "bang") Bang
-        </> Actions.sendToOutlet (R.toOutlet "raydraw-dnq" "palette1" "color") (Color (RgbaColor {r: 1.0, g : 0.2, b : 0.5, a: 1.0}))
-        </> Actions.sendToOutlet (R.toOutlet "raydraw-dnq" "palette2" "color") (Color (RgbaColor {r: 0.5, g : 0.2, b : 1.0, a: 1.0}))
-        </> Actions.sendToOutlet (R.toOutlet "raydraw-dnq" "palette3" "color") (Color (RgbaColor {r: 0.7, g : 0.4, b : 1.0, a: 1.0}))
+        </> Actions.sendToOutlet (R.toOutlet "raydraw-dnq" "palette1" "color") (Color (RgbaColor {r: 1.0, g : 0.5, b : 0.0, a: 1.0}))
+        </> Actions.sendToOutlet (R.toOutlet "raydraw-dnq" "palette2" "color") (Color (RgbaColor {r: 0.8, g : 1.0, b : 0.2, a: 1.0}))
+        </> Actions.sendToOutlet (R.toOutlet "raydraw-dnq" "palette3" "color") (Color (RgbaColor {r: 0.25, g : 0.5, b : 1.0, a: 1.0}))
 

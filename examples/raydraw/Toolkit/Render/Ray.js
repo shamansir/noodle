@@ -14,95 +14,148 @@ exports.renderNativeRay = function (color1) {
                 return function (vertexShader) {
                     return function () {
 
+                        var mesh, scene, camera, renderer;
 
-                        var maybeCanvas = document.querySelector('#previewCanvas');
-                        if (maybeCanvas != null) {
-                            maybeCanvas.remove();
-                        }
+                        var t = 0;
 
-                        var canvas;
-                        canvas = document.createElement("canvas");
-                        canvas.id = "previewCanvas";
+                        init();
+                        animate();
 
-                        canvas.width = window.innerWidth;
-                        canvas.height = window.innerHeight;
+                        function init() {
+                            //Renderer
 
-                        const network = document.querySelector('#network');
-                        network.appendChild(canvas);
-
-                        const renderer = new THREE.WebGLRenderer({ canvas });
-
-                        var wWidth = window.innerWidth;
-                        var wHeight = window.innerHeight;
-
-                        const fov = 75;
-                        const aspect = 300 / 150;  // the canvas default (because 300x150)
-                        const near = 0.1;
-                        const far = 5;
-                        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 100);
-                        camera.position.z = wWidth < 800 ? 80 : 60;
-                        camera.position.x = wWidth < 800 ? 0 : 5;
-
-                        const scene = new THREE.Scene();
-
-                        {
-                            const color = 0xFFFFFF;
-                            const intensity = 1;
-                            const light = new THREE.DirectionalLight(color, intensity);
-                            light.position.set(-1, 2, 4);
-                            scene.add(light);
-                        }
-
-                        // const boxWidth = 1;
-                        // const boxHeight = 1;
-                        // const boxDepth = 1;
-                        // const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-
-                        //const material = new THREE.MeshPhongMaterial({ color: 0x44aa88 });  // greenish blue
-
-                        const material = new THREE.ShaderMaterial({
-                            uniforms: {
-                                color1: new THREE.Uniform(color1),
-                                color2: new THREE.Uniform(color2),
-                                color3: new THREE.Uniform(color3),
-                                posX: { type: 'f', value: 0 },
-                                posY: { type: 'f', value: 0 },
-                            },
-                            vertexShader: vertexShader,
-                            fragmentShader: fragmentShader,
-                            side: THREE.DoubleSide,
-                        });
-
-                        function makeInstance(geometry, x) {
-
-                            const mesh = new THREE.Mesh(geometry, material);
-                            scene.add(mesh);
-
-                            mesh.position.x = x;
-
-                            return mesh;
-                        }
-
-                        const geometry = new THREE.PlaneGeometry(50, 50, 6);
-                        const objs = [
-                            makeInstance(geometry, 0)
-                        ];
-
-                        function render(time) {
-                            time *= 0.001;  // convert time to seconds
-
-                            objs.forEach((mesh, ndx) => {
-                                const speed = 1;
-                                const rot = time * speed;
-                                // mesh.rotation.x = rot;
-                                mesh.rotation.y = rot;
+                            var maybeCanvas = document.querySelector('#previewCanvas');
+                            if (maybeCanvas != null) {
+                                maybeCanvas.remove();
+                            }
+    
+                            var canvas;
+                            canvas = document.createElement("canvas");
+                            canvas.id = "previewCanvas";
+    
+                            canvas.width = window.innerWidth;
+                            canvas.height = window.innerHeight;
+    
+                            const network = document.querySelector('#network');
+                            network.appendChild(canvas);
+    
+                            renderer = new THREE.WebGLRenderer({
+                                canvas: canvas,
+                                antialias: true
                             });
+                            renderer.setClearColor(0xccffff);
+                            renderer.setPixelRatio(window.devicePixelRatio);
+                            renderer.setSize(window.innerWidth, window.innerHeight);
 
-                            renderer.render(scene, camera);
+                            //Camera
+                            camera = new THREE.PerspectiveCamera(
+                                35,
+                                window.innerWidth / window.innerHeight,
+                                1,
+                                3000
+                            );
 
-                            requestAnimationFrame(render);
+                            //Scene
+                            scene = new THREE.Scene();
+
+                            function addLight(...pos) {
+                                const color = 0xffffff;
+                                const intensity = 1;
+                                const light = new THREE.DirectionalLight(color, intensity);
+                                light.position.set(...pos);
+                                scene.add(light);
+                            }
+                            addLight(-1, 2, 4);
+                            addLight(-3, -2, -3);
+
+                            const vertices = [
+                                { pos: [2, -1, -6] }, // 0
+                                { pos: [2, 1, -6] }, // 1
+
+                                { pos: [-2, -1, 0] }, // 2
+                                { pos: [-2, 1, 0] }, // 3
+
+                                { pos: [2, -1, 0] }, // 4
+                                { pos: [2, 1, 0] }, // 5
+
+                                { pos: [-3, -1, 7] }, // 6
+                                { pos: [-3, 1, 7] } // 7
+                            ];
+                            const numVertices = vertices.length;
+                            const positionNumComponents = 3;
+                            const positions = new Float32Array(numVertices * positionNumComponents);
+                            let posNdx = 0;
+                            for (const vertex of vertices) {
+                                positions.set(vertex.pos, posNdx);
+                                posNdx += positionNumComponents;
+                            }
+
+                            const geometry = new THREE.BufferGeometry();
+                            geometry.setAttribute(
+                                "position",
+                                new THREE.BufferAttribute(positions, positionNumComponents)
+                            );
+
+                            geometry.setIndex([
+                                0, 3, 1, 3, 0, 2,
+                                2, 5, 3, 5, 2, 4,
+                                4, 7, 5, 4, 6, 7]);
+
+                            geometry.computeVertexNormals();
+
+                            var numVertices2 = geometry.attributes.position.count;
+                            var distance = new Float32Array(numVertices2 * 1); // 1 value per vertex
+                            geometry.addAttribute('distance', new THREE.BufferAttribute(distance, 1));
+
+                            // populate attribute
+                            for (var i = 0; i < numVertices2; i++) {
+                                var numVertex = Math.floor(i / 2); //going through verticies along line     
+
+                                // making ray thinner at the beginning
+                                var yy = geometry.attributes.position.getY(i);
+                                var k = (0.7 + 0.3 * (numVertex / (numVertices / 2 - 1)));
+                                geometry.attributes.position.setY(i, yy * k);
+
+                                distance[i] = numVertex / (numVertices / 2 - 1);
+                            }
+
+
+                            // uniforms
+                            var uniforms = {
+                                "fraction": { value: 0 },
+                                colorA: new THREE.Uniform(color1),
+                                colorB: new THREE.Uniform(color2),
+                                colorC: new THREE.Uniform(color3),
+                            };
+
+                            // material
+                            var material = new THREE.ShaderMaterial({
+                                uniforms: uniforms,
+                                vertexShader: vertexShader,
+                                fragmentShader: fragmentShader,
+                                side: THREE.DoubleSide
+                            });
+                            mesh = new THREE.Mesh(geometry, material);
+
+                            scene.add(mesh);
+                            mesh.position.set(0, 0, -20);
+
+                            mesh.rotation.x = 0.4;
                         }
-                        requestAnimationFrame(render);
+
+                        function animate() {
+
+                            requestAnimationFrame(animate);
+                            t += 0.010;
+
+                            mesh.material.uniforms.fraction.value = 0.5 * (1 + Math.sin(t - Math.PI / 2));
+                            render();
+                        }
+
+                        function render() {
+                            renderer.render(scene, camera);
+                        }
+
                     };
                 };
             };
