@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install PureScript global
 RUN npm cache clean --force && \
-    npm install -g purescript --unsafe-perm spago
+    npm install -g purescript@0.13 --unsafe-perm spago
 
 # Install yarn global
 # RUN npm install -g yarn
