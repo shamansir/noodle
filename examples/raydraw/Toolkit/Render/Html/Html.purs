@@ -77,7 +77,7 @@ renderNode ProductPaletteNode (R.Node _ path _ _ _) _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div [] 
-          (renderPaletteInput <$> allProducts)                
+          (renderPaletteInput path <$> allProducts)                
         ]
 
 renderNode _ _ _ _ =
@@ -85,8 +85,8 @@ renderNode _ _ _ _ =
         [ H.classes [ "tk-node" ] ]
         [ ]
 
-renderPaletteInput :: Product -> View
-renderPaletteInput prod = 
+renderPaletteInput :: Path.ToNode -> Product -> View
+renderPaletteInput path prod = 
     let 
       palette = getPalette prod 
       shortName = productShortName prod
@@ -97,7 +97,10 @@ renderPaletteInput prod =
     in
     H.label [H.classes [ "tk-palette-item" ]] 
         [ H.div [H.classes ["tk-palette-name"]] [H.text shortName],
-        H.input [H.type_ H.InputRadio, H.name "palette"],
+        H.input [H.type_ H.InputRadio, 
+                 H.name "palette",
+                 H.onClick $ H.always_ $ toOutlet path "palette" $ Palette palette
+                     ],
         H.div [H.classes ["tk-palette-checkmark"]] [
             colorDiv color1,
             colorDiv color2,
