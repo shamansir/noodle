@@ -113,13 +113,10 @@ data Product
 
 allProducts :: Array Product
 allProducts = [
-       JetBrains,
-       Space,
-       IntelliJ,
-       IntelliJEdu,
+       JetBrains,       
+       IntelliJ,    
        PhpStorm,
-       PyCharm,
-       PyCharmEdu,
+       PyCharm,       
        RubyMine,
        WebStorm,
        CLion,
@@ -131,26 +128,14 @@ allProducts = [
        DotCover,
        DotMemory,
        DotPeek,
-       DotTrace,
-       Rider,
+       DotTrace,       
        TeamCity,
        YouTrack,
        Upsource,
        Hub,
        Kotlin,
-       MPS,
-       Mono,
-       Datalore,
-       DataSpell,
-       Qodana,
-       Toolbox
+       MPS
        ]
-
--- getPalette :: Product -> ProductPalette
--- getPalette _ = ProductPalette {color1 : RgbaColor {r: 1.0, g : 0.5, b : 0.0, a: 1.0},
---                                color2 : RgbaColor {r: 1.0, g : 0.5, b : 0.0, a: 1.0}, 
---                                color3 : RgbaColor {r: 1.0, g : 0.5, b : 0.0, a: 1.0}}
-
 
 
 defaultColor :: RgbaColor
@@ -213,8 +198,8 @@ productShortName product =
         DataGrip      -> "DG"         
         AppCode       -> "AC"        
         GoLand        -> "GL"       
-        ReSharper     -> "RS"          
-        ReSharperCpp  -> "RSc"             
+        ReSharper     -> "R#"          
+        ReSharperCpp  -> "R++"             
         DotCover      -> "DC"         
         DotMemory     -> "DM"          
         DotPeek       -> "DP"        
@@ -223,7 +208,7 @@ productShortName product =
         TeamCity      -> "TC"         
         YouTrack      -> "YT"         
         Upsource      -> "US"         
-        Hub           -> "Hu"    
+        Hub           -> "HB"    
         Kotlin        -> "KT"       
         MPS           -> "MPS"    
         Mono          -> "MO"     
