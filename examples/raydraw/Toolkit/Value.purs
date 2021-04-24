@@ -22,6 +22,16 @@ productPalette c1 c2 c3 = ProductPalette {
     color3 : c3    
 }
 
+getColor1 :: ProductPalette -> RgbaColor
+getColor1 (ProductPalette {color1, color2, color3}) = color1 
+
+getColor2 :: ProductPalette -> RgbaColor
+getColor2 (ProductPalette {color1, color2, color3}) = color2
+
+getColor3 :: ProductPalette -> RgbaColor
+getColor3 (ProductPalette {color1, color2, color3}) = color3 
+
+
 data Value
     = Bang
     | Color RgbaColor
@@ -100,13 +110,39 @@ data Product
     | Qodana
     | Toolbox
 
-all :: Array Product
-all = [
-       JetBrains, 
-       Space, 
-       IntelliJ, 
-       IntelliJEdu, 
-       PhpStorm
+allProducts :: Array Product
+allProducts = [
+       JetBrains,
+       Space,
+       IntelliJ,
+       IntelliJEdu,
+       PhpStorm,
+       PyCharm,
+       PyCharmEdu,
+       RubyMine,
+       WebStorm,
+       CLion,
+       DataGrip,
+       AppCode,
+       GoLand,
+       ReSharper,
+       ReSharperCpp,
+       DotCover,
+       DotMemory,
+       DotPeek,
+       DotTrace,
+       Rider,
+       TeamCity,
+       YouTrack,
+       Upsource,
+       Hub,
+       Kotlin,
+       MPS,
+       Mono,
+       Datalore,
+       DataSpell,
+       Qodana,
+       Toolbox
        ]
 
 -- getPalette :: Product -> ProductPalette
@@ -159,3 +195,38 @@ getPalette product =
         Datalore ->     p "#3bea62" "#6b57ff" "#07c3f2"
         DataSpell ->    p "#087cfa" "#21d789" "#fcf84a"
         Qodana ->       p "#07c3f2" "#6b57ff" "#fa3290"        
+
+productShortName :: Product -> String
+productShortName product = 
+    case product of 
+        JetBrains     -> "JB"                              
+        Space         -> "SP"      
+        IntelliJ      -> "IJ"         
+        IntelliJEdu   -> "IJe"            
+        PhpStorm      -> "PS"         
+        PyCharm       -> "PC"        
+        PyCharmEdu    -> "PCe"           
+        RubyMine      -> "RM"         
+        WebStorm      -> "WS"         
+        CLion         -> "CL"      
+        DataGrip      -> "DG"         
+        AppCode       -> "AC"        
+        GoLand        -> "GL"       
+        ReSharper     -> "RS"          
+        ReSharperCpp  -> "RSc"             
+        DotCover      -> "DC"         
+        DotMemory     -> "DM"          
+        DotPeek       -> "DP"        
+        DotTrace      -> "DT"         
+        Rider         -> "RD"      
+        TeamCity      -> "TC"         
+        YouTrack      -> "YT"         
+        Upsource      -> "US"         
+        Hub           -> "Hu"    
+        Kotlin        -> "KT"       
+        MPS           -> "MPS"    
+        Mono          -> "MO"     
+        Datalore      -> "DL"         
+        DataSpell     -> "DS"          
+        Qodana        -> "QO"       
+        Toolbox       -> "TB"                    
