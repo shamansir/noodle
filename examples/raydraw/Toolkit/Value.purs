@@ -11,6 +11,7 @@ import Data.Int (toNumber, round, fromStringAs, toStringAs, hexadecimal)
 import Data.Maybe (Maybe(..), fromJust, fromMaybe)
 import Data.String.Regex (regex, parseFlags, match)
 import Text.Smolder.SVG.Attributes (color)
+import Data.Number.Format(toStringWith, precision)
 
 newtype RgbaColor = RgbaColor { r :: Number, g :: Number, b :: Number, a :: Number }
 newtype ProductPalette = ProductPalette { color1 :: RgbaColor, color2 :: RgbaColor, color3 :: RgbaColor } 
@@ -44,10 +45,10 @@ instance showValue :: Show Value where
 
 instance showRgbaColor :: Show RgbaColor where
     show (RgbaColor { r, g, b, a }) =
-        "rgba(" <> show r <> ","
-                <> show g <> ","
-                <> show b <> ","
-                <> show a <> ")"
+        "rgba(" <> toStringWith (precision 3) r <> ","
+                <> toStringWith (precision 3) g <> ","
+                <> toStringWith (precision 3) b <> ","
+                <> toStringWith (precision 3) a <> ")"
 
 instance showProductPalette :: Show ProductPalette where 
     show (ProductPalette {color1, color2, color3}) = 
