@@ -18,7 +18,8 @@ type NodeDef = T.NodeDef Value Channel
 data Node
     = BangNode
     | NodeListNode
-    | PaletteNode
+    | ProductPaletteNode
+    | ColorNode
     | RayNode
     | DrawLogoNode
     | PreviewNode
@@ -28,7 +29,8 @@ data Node
 nodesForTheList :: Array Node
 nodesForTheList =
     [ BangNode,
-      PaletteNode,
+      ProductPaletteNode,
+      ColorNode,
       RayNode,
       DrawLogoNode,
       PreviewNode
@@ -38,7 +40,8 @@ nodesForTheList =
 instance showNode :: Show Node where
     show BangNode = "bang"
     show NodeListNode = "node list"
-    show PaletteNode = "palette"
+    show ProductPaletteNode = "product palette"
+    show ColorNode = "color"
     show RayNode = "ray"
     show DrawLogoNode = "draw logo"
     show PreviewNode = "preview"
@@ -57,10 +60,21 @@ bangNode =
         $ R.Process pure
 
 
-{- PALETTE NODE -}
+{- PRODUCT PALETTE NODE -}
 
-paletteNode :: NodeDef
-paletteNode =
+productPaletteNode :: NodeDef
+productPaletteNode =
+    T.defineNode
+        (T.withInlets
+            ~< "bang" /\ Channel)
+        (T.withOutlets
+            >~ "palette" /\ Channel)
+        $ R.Withhold
+
+{- COLOR NODE -}
+
+colorNode :: NodeDef
+colorNode =
     T.defineNode
         (T.withInlets
             ~< "bang" /\ Channel)

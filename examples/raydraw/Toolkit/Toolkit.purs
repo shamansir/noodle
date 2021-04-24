@@ -18,7 +18,8 @@ toolkit =
     T.Toolkit (T.ToolkitName "raydraw") nodes
     where
         nodes NodeListNode = T.emptyNode
-        nodes PaletteNode = paletteNode
+        nodes ProductPaletteNode = productPaletteNode
+        nodes ColorNode = colorNode
         nodes BangNode = bangNode
         nodes DrawLogoNode = drawLogoNode
         nodes RayNode = rayNode

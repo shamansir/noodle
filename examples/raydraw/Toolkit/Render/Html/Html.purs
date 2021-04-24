@@ -1,6 +1,7 @@
 module RayDraw.Toolkit.Render.Html where
 
 
+import Data.Array
 import Prelude
 
 import Data.Maybe (maybe)
@@ -15,7 +16,7 @@ import RayDraw.Toolkit.Channel (Channel(..))
 import RayDraw.Toolkit.Node (Node(..), nodesForTheList)
 import RayDraw.Toolkit.Render.Html.ToHtml (View, toInlet, toOutlet)
 import RayDraw.Toolkit.Value (RgbaColor(..), Value(..), colorToCss)
-import Spork.Html (Html, IProp)
+import Spork.Html (Html, IProp, InputType)
 import Spork.Html as H
 
 
@@ -59,7 +60,7 @@ renderNode BangNode (R.Node _ path _ _ _) _ _ =
             [ H.text "◌" ]
         ]
 
-renderNode PaletteNode (R.Node _ path _ _ _) _ _ = 
+renderNode ColorNode (R.Node _ path _ _ _) _ _ = 
     H.div
         [ H.classes [ "tk-node" ] ]
         [ H.div
@@ -71,10 +72,28 @@ renderNode PaletteNode (R.Node _ path _ _ _) _ _ =
             ]
         ]
 
+renderNode ProductPaletteNode (R.Node _ path _ _ _) _ _ = 
+    H.div
+        [ H.classes [ "tk-node" ] ]
+        [ H.div [] 
+          (const renderPaletteInput <$> 1 .. 9)                 
+        ]
+
 renderNode _ _ _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ ]
+
+renderPaletteInput :: View
+renderPaletteInput = H.label [H.classes [ "tk-palette-item" ]] 
+    [ H.div [H.classes ["tk-palette-name"]] [H.text "JB"],
+      H.input [H.type_ H.InputRadio, H.name "palette"],
+      H.div [H.classes ["tk-palette-checkmark"]] [
+         H.div [H.classes ["tk-palette-color"]] [],
+         H.div [H.classes ["tk-palette-color"]] [],
+         H.div [H.classes ["tk-palette-color"]] []    
+      ] 
+    ]
 
 colorPickerTile :: RgbaColor -> Path.ToNode -> View
 colorPickerTile color path = H.span [    
