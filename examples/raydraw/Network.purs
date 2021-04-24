@@ -24,14 +24,6 @@ recipe =
         </> Actions.connect 
                     (R.toOutlet "raydraw-dnq" "palette" "palette")
                     (R.toInlet "raydraw-dnq" "preview" "palette")
-        -- </> Actions.connect 
-        --             (R.toOutlet "raydraw-dnq" "color2" "color")
-        --             (R.toInlet "raydraw-dnq" "preview" "color2")
-        -- </> Actions.connect 
-        --             (R.toOutlet "raydraw-dnq" "color3" "color")
-        --             (R.toInlet "raydraw-dnq" "preview" "color3")
         </> Actions.sendToInlet (R.toInlet "raydraw-dnq" "bang" "bang") Bang
         </> Actions.sendToOutlet (R.toOutlet "raydraw-dnq" "palette" "palette") (Palette (getPalette JetBrains))
-        -- </> Actions.sendToOutlet (R.toOutlet "raydraw-dnq" "color2" "color") (Color (RgbaColor {r: 0.8, g : 1.0, b : 0.2, a: 1.0}))
-        -- </> Actions.sendToOutlet (R.toOutlet "raydraw-dnq" "color3" "color") (Color (RgbaColor {r: 0.25, g : 0.5, b : 1.0, a: 1.0}))
 
