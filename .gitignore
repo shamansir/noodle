@@ -13,3 +13,4 @@
 /.cache
 /public
 log
+/dist/

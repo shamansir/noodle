@@ -5,7 +5,7 @@ import Prelude
 import Effect (Effect)
 import RayDraw.Toolkit.Value (RgbaColor(..))
 
-foreign import renderNativeRay :: Vector3 -> Vector3 -> Vector3 -> String -> String -> Effect Unit
+foreign import renderNativeRay :: Array (Array Number) -> Vector3 -> Vector3 -> Vector3 -> String -> String -> Effect Unit
 
 foreign import data Vector3 :: Type
 
@@ -70,7 +70,13 @@ fragmentShader = """
 
 renderRay :: RgbaColor -> RgbaColor -> RgbaColor -> Effect Unit
 renderRay col1 col2 col3 = do 
-    renderNativeRay (colorToVec col1) (colorToVec col2) (colorToVec col3) fragmentShader vertexShader
-
+    renderNativeRay points (colorToVec col1) (colorToVec col2) (colorToVec col3) fragmentShader vertexShader
+    where
+      points = [[2.0, -6.0],
+                [-2.0, 0.0],
+                [2.0, 0.0],
+                [-3.0, 7.0],
+                [3.0, 5.0]]
+                       
 colorToVec :: RgbaColor -> Vector3
 colorToVec (RgbaColor { r, g, b, a}) = createVec3 r g b

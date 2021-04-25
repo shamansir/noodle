@@ -32,16 +32,30 @@ getColor2 (ProductPalette {color1, color2, color3}) = color2
 getColor3 :: ProductPalette -> RgbaColor
 getColor3 (ProductPalette {color1, color2, color3}) = color3 
 
+type Point2D = { x :: Number, y :: Number}
+newtype RayPoints = RayPoints (Array Point2D)
+
+rayPoints :: Array Point2D -> RayPoints
+rayPoints = RayPoints
+
+rayPointsToArray :: RayPoints -> Array (Array Number)
+rayPointsToArray (RayPoints points) = 
+    let
+      pointToArray point2d = [point2d.x, point2d.y]       
+    in points <#> pointToArray
+
 
 data Value
     = Bang
     | Color RgbaColor
     | Palette ProductPalette
+    | Points RayPoints
 
 instance showValue :: Show Value where
     show Bang = "◌"
     show (Color color) = "color: " <> show color
     show (Palette palette) = "palette: " <> show palette
+    show (Points points) = "points"
 
 instance showRgbaColor :: Show RgbaColor where
     show (RgbaColor { r, g, b, a }) =

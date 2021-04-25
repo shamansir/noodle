@@ -7,7 +7,8 @@ exports.createVec3 = function (x) {
     };
 };
 
-exports.renderNativeRay = function (color1) {
+exports.renderNativeRay = function (points) {
+ return function (color1) {
     return function (color2) {
         return function (color3) {
             return function (fragmentShader) {
@@ -69,14 +70,6 @@ exports.renderNativeRay = function (color1) {
                             addLight(-1, 2, 4);
                             addLight(-3, -2, -3);
 
-                            var points = [
-                                [2, -6],
-                                [-2, 0],
-                                [2, 0],
-                                [-3, 7],
-                                [3, 5]
-                            ];
-                            
                             const vertices = [];
                             points.forEach(pair => {
                                 vertices.push({pos : [pair[0], -1, pair[1]]});
@@ -179,4 +172,5 @@ exports.renderNativeRay = function (color1) {
             };
         };
     };
+};
 };
