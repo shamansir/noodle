@@ -54,6 +54,7 @@ exports.renderNativeRay = function (color1) {
                                 1,
                                 3000
                             );
+                            camera.position.y = -1;
 
                             //Scene
                             scene = new THREE.Scene();
@@ -68,19 +69,20 @@ exports.renderNativeRay = function (color1) {
                             addLight(-1, 2, 4);
                             addLight(-3, -2, -3);
 
-                            const vertices = [
-                                { pos: [2, -1, -6] }, // 0
-                                { pos: [2, 1, -6] }, // 1
-
-                                { pos: [-2, -1, 0] }, // 2
-                                { pos: [-2, 1, 0] }, // 3
-
-                                { pos: [2, -1, 0] }, // 4
-                                { pos: [2, 1, 0] }, // 5
-
-                                { pos: [-3, -1, 7] }, // 6
-                                { pos: [-3, 1, 7] } // 7
+                            var points = [
+                                [2, -6],
+                                [-2, 0],
+                                [2, 0],
+                                [-3, 7],
+                                [3, 5]
                             ];
+                            
+                            const vertices = [];
+                            points.forEach(pair => {
+                                vertices.push({pos : [pair[0], -1, pair[1]]});
+                                vertices.push({pos : [pair[0], 1, pair[1]]});
+                            });
+                             
                             const numVertices = vertices.length;
                             const positionNumComponents = 3;
                             const positions = new Float32Array(numVertices * positionNumComponents);
@@ -96,11 +98,27 @@ exports.renderNativeRay = function (color1) {
                                 new THREE.BufferAttribute(positions, positionNumComponents)
                             );
 
-                            geometry.setIndex([
-                                0, 3, 1, 3, 0, 2,
-                                2, 5, 3, 5, 2, 4,
-                                4, 7, 5, 4, 6, 7]);
+                            var geometryIndicies = [];
 
+                            //     1  3  5  7    3 + i*2
+                            //     o--o--o--o-..-o
+                            //     | /| /| /|   /|
+                            //     |/ |/ |/ |/   |
+                            //     o--o--o--o-..-o
+                            //     0  2  4  6    2 + i*2
+
+                            for (var i = 0; i < points.length - 1; i++) {
+                                // upper vertex
+                                geometryIndicies.push(0 + i*2);
+                                geometryIndicies.push(3 + i*2);
+                                geometryIndicies.push(1 + i*2);
+
+                                // lower vertex
+                                geometryIndicies.push(3 + i*2);
+                                geometryIndicies.push(0 + i*2);
+                                geometryIndicies.push(2 + i*2);
+                            }                            
+                            geometry.setIndex(geometryIndicies);
                             geometry.computeVertexNormals();
 
                             var numVertices2 = geometry.attributes.position.count;
