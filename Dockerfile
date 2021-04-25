@@ -34,7 +34,7 @@ RUN mkdir ./css
 RUN mkdir ./example-css
 
 COPY --from=0 /app/src/Noodle/Render/Html/*.css ./css/
-COPY --from=0 /app/examples/particles/Toolkit/Render/*.css ./example-css/
+COPY --from=0 /app/examples/raydraw/Toolkit/Render/Html/*.css ./example-css/
 COPY --from=0 /app/index.docker.css ./index.css
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
