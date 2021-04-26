@@ -65,3 +65,28 @@
 .tk-palette-item input:checked ~ .tk-palette-checkmark:after {
     display: block;
 }
+
+.tk-points-row {
+    float: left;
+    display: block;
+}
+
+.tk-points-row input {
+    width: 70px;
+    height: 15px;
+    margin: 1px;
+    border: solid 1px;
+    border-color: #000;   
+    font-family: 'PT Mono', 'Andale Mono', 'Fira mono', 'Menlo', monospace;
+    font-size: 10px;
+}
+
+.tk-points-row button {
+    width: 30px;
+    height: 15px;
+    margin: 1px;
+    border: solid 1px;
+    border-color: #000;   
+    font-family: 'PT Mono', 'Andale Mono', 'Fira mono', 'Menlo', monospace;
+    font-size: 10px;
+}

@@ -38,6 +38,9 @@ newtype RayPoints = RayPoints (Array Point2D)
 rayPoints :: Array Point2D -> RayPoints
 rayPoints = RayPoints
 
+getRayPoints :: RayPoints -> Array Point2D
+getRayPoints (RayPoints arr) = arr
+
 rayPointsToArray :: RayPoints -> Array (Array Number)
 rayPointsToArray (RayPoints points) = 
     let

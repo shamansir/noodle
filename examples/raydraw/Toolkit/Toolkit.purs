@@ -23,4 +23,5 @@ toolkit =
         nodes BangNode = bangNode
         nodes DrawLogoNode = drawLogoNode
         nodes RayNode = rayNode
+        nodes RayPointsNode = rayPointsNode
         nodes PreviewNode = previewNode

@@ -4,7 +4,8 @@ module RayDraw.Toolkit.Render.Html where
 import Data.Array
 import Prelude
 
-import Data.Maybe (maybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Number (fromString)
 import Noodle.API.Action (Action(..), DataAction(..), RequestAction(..)) as A
 import Noodle.Network (Node(..)) as R
 import Noodle.Path as P
@@ -15,7 +16,7 @@ import Noodle.Render.Html.NodeList (render) as NodeList
 import RayDraw.Toolkit.Channel (Channel(..))
 import RayDraw.Toolkit.Node (Node(..), nodesForTheList)
 import RayDraw.Toolkit.Render.Html.ToHtml (View, toInlet, toOutlet)
-import RayDraw.Toolkit.Value (Product(..), RgbaColor(..), Value(..), allProducts, colorToCss, getPalette, productShortName, getColor1, getColor2, getColor3)
+import RayDraw.Toolkit.Value (Product(..), RayPoints, RgbaColor(..), Value(..), allProducts, colorToCss, getColor1, getColor2, getColor3, getPalette, getRayPoints, productShortName, rayPoints)
 import Spork.Html (Html, IProp, InputType)
 import Spork.Html as H
 
@@ -79,6 +80,32 @@ renderNode ProductPaletteNode (R.Node _ path _ _ _) _ _ =
         [ H.div [] 
           (renderPaletteInput path <$> allProducts)                
         ]
+
+renderNode RayPointsNode (R.Node _ path _ _ _) atInlet _ = 
+    let 
+      rayPointsInput = case atInlet "points" of 
+            (Just (Points points)) -> points
+            _ -> rayPoints []
+      pointsArray = getRayPoints rayPointsInput
+      updateXValue index point val = Points (rayPoints (fromMaybe [] $ updateAt index {x:val, y:point.y} pointsArray))
+      updateYValue index point val = Points (rayPoints (fromMaybe [] $ updateAt index {x:point.x, y: val} pointsArray))
+      inputRow index point = H.div [H.classes ["tk-points-row"]] [           
+                H.input [H.type_ H.InputNumber, 
+                         H.value $ show point.x,
+                         H.onValueChange (\v ->
+                                    fromString v
+                                    <#> toInlet path "points" <<< updateXValue index point) 
+                        ],
+                H.input [H.type_ H.InputNumber, 
+                         H.value $ show point.y,
+                         H.onValueChange (\v ->
+                                    fromString v
+                                    <#> toInlet path "points" <<< updateYValue index point) ]
+            ]
+    in
+    H.div
+        [ H.classes [ "tk-node" ] ]        
+        (mapWithIndex inputRow pointsArray)
 
 renderNode _ _ _ _ =
     H.div

@@ -21,8 +21,9 @@ data Node
     | ProductPaletteNode
     | ColorNode
     | RayNode
+    | RayPointsNode
     | DrawLogoNode
-    | PreviewNode
+    | PreviewNode    
 
 
 
@@ -32,6 +33,7 @@ nodesForTheList =
       ProductPaletteNode,
       ColorNode,
       RayNode,
+      RayPointsNode,
       DrawLogoNode,
       PreviewNode
     ]
@@ -43,6 +45,7 @@ instance showNode :: Show Node where
     show ProductPaletteNode = "product palette"
     show ColorNode = "color"
     show RayNode = "ray"
+    show RayPointsNode = "ray points"
     show DrawLogoNode = "draw logo"
     show PreviewNode = "preview"
 
@@ -92,6 +95,18 @@ rayNode =
         (T.withOutlets
             >~ "bang" /\ Channel)
         $ R.Withhold
+
+{- RAY POINTS NODE -}
+
+rayPointsNode :: NodeDef
+rayPointsNode =
+    T.defineNode
+        (T.withInlets
+            ~< "points" /\ Channel)
+        (T.withOutlets
+            >~ "points" /\ Channel)
+        $ R.Withhold
+
 
 {- DRAW LOGO NODE -}
 
