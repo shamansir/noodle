@@ -1,4 +1,4 @@
-FROM node:latest
+FROM node:15.14-stretch
 
 # Create app directory
 WORKDIR /app
