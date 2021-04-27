@@ -26,7 +26,14 @@ recipe =
         </> Actions.connect 
                     (R.toOutlet "raydraw-dnq" "palette" "palette")
                     (R.toInlet "raydraw-dnq" "preview" "palette")
+        </> Actions.connect 
+                    (R.toOutlet "raydraw-dnq" "points" "points")
+                    (R.toInlet "raydraw-dnq" "preview" "points")
         </> Actions.sendToInlet (R.toInlet "raydraw-dnq" "bang" "bang") Bang
         </> Actions.sendToOutlet (R.toOutlet "raydraw-dnq" "palette" "palette") (Palette $ getPalette JetBrains)
-        </> Actions.sendToInlet (R.toInlet "raydraw-dnq" "points" "points") (Points $ rayPoints [{x : 1.0, y : 3.0}, {x: 3.0, y : 10.0}, {x : 5.0, y: 10.0}])
-
+        </> Actions.sendToInlet (R.toInlet "raydraw-dnq" "points" "points") (Points $ rayPoints [
+                {x : 2.0,  y : -6.0}, 
+                {x : -2.0, y : 0.0}, 
+                {x : 2.0,  y : 0.0},
+                {x : -3.0, y : 7.0},
+                {x : 3.0,  y : 5.0}])

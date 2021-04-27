@@ -10,7 +10,7 @@ import Noodle.Toolkit ((~<), (>~))
 import Noodle.Toolkit (NodeDef, defineNode, withInlets, withOutlets) as T
 import RayDraw.Toolkit.Channel (Channel(..))
 import RayDraw.Toolkit.Render (renderRay)
-import RayDraw.Toolkit.Value (Value(..), getColor1, getColor2, getColor3)
+import RayDraw.Toolkit.Value (Value(..), getColor1, getColor2, getColor3, rayPoints)
 
 type NodeDef = T.NodeDef Value Channel
 
@@ -105,7 +105,11 @@ rayPointsNode =
             ~< "points" /\ Channel)
         (T.withOutlets
             >~ "points" /\ Channel)
-        $ R.Withhold
+        $ R.Process $ \receive -> 
+            let
+                send "points" = receive "points"
+                send _ = Nothing
+            in pure send                
 
 
 {- DRAW LOGO NODE -}
@@ -132,14 +136,15 @@ previewNode =
     T.defineNode
         (T.withInlets
             ~< "bang" /\ Channel
+            ~< "points" /\ Channel
             ~< "palette" /\ Channel)
         (T.withOutlets
             >~ "image" /\ Channel)
         $ R.Process
             $ \receive ->
-               case (receive "bang") /\ (receive "palette") of               
-                    (Just Bang) /\ (Just (Palette palette))-> do
-                        renderRay (getColor1 palette) (getColor2 palette) (getColor3 palette)                                                               
+               case (receive "bang") /\ (receive "points") /\ (receive "palette") of               
+                    (Just Bang) /\ (Just (Points rayPoints)) /\ (Just (Palette palette))-> do
+                        renderRay rayPoints (getColor1 palette) (getColor2 palette) (getColor3 palette)                                                               
                         pure $ const Nothing
                     _ -> pure $ const Nothing
 

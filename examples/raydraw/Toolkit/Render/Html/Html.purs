@@ -101,7 +101,9 @@ renderNode RayPointsNode (R.Node _ path _ _ _) atInlet _ =
                          H.onValueChange (\v ->
                                     fromString v
                                     <#> toInlet path "points" <<< updateYValue index point) ]
-            ]
+                -- H.button [] [H.text "+"],                
+                -- H.button [] [H.text "-"]
+            ]             
     in
     H.div
         [ H.classes [ "tk-node" ] ]        
