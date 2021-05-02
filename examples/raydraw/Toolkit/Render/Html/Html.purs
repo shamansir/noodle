@@ -87,9 +87,15 @@ renderNode RayPointsNode (R.Node _ path _ _ _) atInlet _ =
             (Just (Points points)) -> points
             _ -> rayPoints []
       pointsArray = getRayPoints rayPointsInput
-      updateXValue index point val = Points (rayPoints (fromMaybe [] $ updateAt index {x:val, y:point.y} pointsArray))
-      updateYValue index point val = Points (rayPoints (fromMaybe [] $ updateAt index {x:point.x, y: val} pointsArray))
-      inputRow index point = H.div [H.classes ["tk-points-row"]] [           
+      updateXValue index point val = Points (rayPoints (fromMaybe pointsArray $ updateAt index {x:val, y:point.y} pointsArray))
+      updateYValue index point val = Points (rayPoints (fromMaybe pointsArray $ updateAt index {x:point.x, y: val} pointsArray))
+      insertPoint index point = Points (rayPoints (fromMaybe pointsArray $ insertAt index point pointsArray))
+      deletePoint index point = Points (rayPoints (fromMaybe pointsArray $ deleteAt index pointsArray))
+      deleteButton index point = if length pointsArray > 2 
+                                    then [H.button [H.onClick $ H.always_ $ toInlet path "points" $ deletePoint index point] [H.text "-"]]
+                                    else []
+                        
+      inputRow index point = H.div [H.classes ["tk-points-row"]] $ [           
                 H.input [H.type_ H.InputNumber, 
                          H.value $ show point.x,
                          H.onValueChange (\v ->
@@ -100,10 +106,9 @@ renderNode RayPointsNode (R.Node _ path _ _ _) atInlet _ =
                          H.value $ show point.y,
                          H.onValueChange (\v ->
                                     fromString v
-                                    <#> toInlet path "points" <<< updateYValue index point) ]
-                -- H.button [] [H.text "+"],                
-                -- H.button [] [H.text "-"]
-            ]             
+                                    <#> toInlet path "points" <<< updateYValue index point) ],
+                H.button [H.onClick $ H.always_ $ toInlet path "points" $ insertPoint index point] [H.text "+"]                
+            ] <> (deleteButton index point)
     in
     H.div
         [ H.classes [ "tk-node" ] ]        
@@ -113,7 +118,7 @@ renderNode _ _ _ _ =
     H.div
         [ H.classes [ "tk-node" ] ]
         [ ]
-
+        
 renderPaletteInput :: Path.ToNode -> Product -> View
 renderPaletteInput path prod = 
     let 
