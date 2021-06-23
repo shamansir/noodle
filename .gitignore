@@ -1,16 +1,1 @@
-/bower_components/
-/node_modules/
-/.spago/
-/.pulp-cache/
-/.idea/
-/output/
-/generated-docs/
-/.psc-package/
-/.psc*
-/.purs*
-/.psa*
-/examples/private
-/.cache
-/public
-log
-/dist/
+.psc-ide-port
