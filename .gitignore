@@ -1,1 +1,4 @@
 .psc-ide-port
+.purs-repl
+.spago
+output
