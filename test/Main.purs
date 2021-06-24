@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Time.Duration (Milliseconds(..))
 import Data.Maybe (Maybe(..))
+import Data.Identity (Identity)
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
@@ -15,7 +16,8 @@ import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 
-import Node (fromFn, Node(..)) as Node
+import Node (fromFn) as Node
+import Node (Node)
 
 
 main :: Effect Unit
@@ -23,15 +25,14 @@ main = launchAff_ $ runSpec [consoleReporter] do
   describe "Noodle" do
     describe "Node" do
       it "creating" do
-        { node, inlets, outlets } :: _
+        node :: Node Identity Int
           <- liftEffect
               $ Node.fromFn 0
-              $ \receive -> do
-                sum <- (+) <$> receive "a" <*> receive "b"
+              $ \receive ->
                 let
-                  send "out" = Just sum
+                  send "out" = (+) <$> receive "a" <*> receive "b"
                   send _ = Nothing
-                pure send
+                in pure send
                 -- pure $ const $ (+) <$> receive "a" <*> receive "b"
         pure unit
       pending "todo"

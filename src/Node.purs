@@ -21,16 +21,16 @@ import Signal.Channel as Ch
 
 -- type Node''' d = Node' Identity Unit
 
-data NodeM m d =
-    NodeM
-        (Signal (String /\ d) /\ Signal (String /\ m d))
+data Node m d =
+    Node
+        (Channel (String /\ d) /\ Channel (String /\ m d))
 
 
-type Node = NodeM Identity
+--type Node = NodeM Identity
 
-type EffNode = NodeM Effect
+type EffNode = Node Effect
 
-type AffNode = NodeM Aff
+type AffNode = Node Aff
 
 
 fromFn
@@ -38,14 +38,14 @@ fromFn
      . Applicative m
     => d
     -> ((String -> Maybe d) -> m (String -> Maybe d))
-    -> Effect { node :: NodeM m d, inlets :: Channel (String /\ d), outlets :: Channel (String /\ m d) }
+    -> Effect (Node m d)
 fromFn def fn = do
     inlets_chan <- Ch.channel ("bang" /\ def)
     outlets_chan <- Ch.channel ("bang" /\ pure def)
     let
-        inlets = Ch.subscribe inlets_chan
-        outlets = Ch.subscribe outlets_chan
-        node = NodeM (inlets /\ outlets)
-    pure { node, inlets : inlets_chan, outlets : outlets_chan }
+        -- inlets = Ch.subscribe inlets_chan
+        -- outlets = Ch.subscribe outlets_chan
+        node = Node (inlets_chan /\ outlets_chan)
+    pure node
 
 -- fromFn' :: (d -> d) -> Node''' d
