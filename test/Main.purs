@@ -3,8 +3,9 @@ module Test.Main where
 import Prelude
 
 import Data.Time.Duration (Milliseconds(..))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Identity (Identity)
+import Data.Tuple.Nested ((/\))
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
@@ -16,7 +17,7 @@ import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 
-import Node (fromFn) as Node
+import Node (fromFn, receive, send) as Node
 import Node (Node, NodeDef)
 
 
@@ -25,14 +26,12 @@ main = launchAff_ $ runSpec [consoleReporter] do
   describe "Noodle" do
     describe "Node" do
       it "creating" do
-        node :: NodeDef Identity Int
+        node :: NodeDef Int
           <- liftEffect
               $ Node.fromFn 0
-              $ \receive ->
-                let
-                  send "out" = (+) <$> receive "a" <*> receive "b"
-                  send _ = Nothing
-                in pure send
+              $ \i ->
+                pure $ Node.send
+                    [ "c" /\ fromMaybe 0 ((+) <$> Node.receive "a" i <*> Node.receive "b" i) ]
                 -- pure $ const $ (+) <$> receive "a" <*> receive "b"
         pure unit
       pending "todo"

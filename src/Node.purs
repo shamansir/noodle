@@ -79,3 +79,7 @@ sendAllTo sendTo (Send map) =
 
 receive :: forall d. String -> Receive d -> Maybe d
 receive label (Receive r) = Map.lookup label r -- unwrap >>> flip Map.lookup
+
+
+send :: forall d. Array (String /\ d) -> Send d
+send = Send <<< Map.fromFoldable
