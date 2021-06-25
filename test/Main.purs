@@ -17,7 +17,7 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 
 import Node (fromFn) as Node
-import Node (Node)
+import Node (Node, NodeDef)
 
 
 main :: Effect Unit
@@ -25,7 +25,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
   describe "Noodle" do
     describe "Node" do
       it "creating" do
-        node :: Node Identity Int
+        node :: NodeDef Identity Int
           <- liftEffect
               $ Node.fromFn 0
               $ \receive ->

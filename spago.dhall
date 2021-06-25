@@ -20,6 +20,7 @@ to generate this file without the comments in this block.
   , "identity"
   , "lists"
   , "maybe"
+  , "ordered-collections"
   , "prelude"
   , "psci-support"
   , "signal"
