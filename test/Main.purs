@@ -6,6 +6,7 @@ import Data.Time.Duration (Milliseconds(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Identity (Identity)
 import Data.Tuple.Nested ((/\))
+import Signal.Channel as Channel
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
@@ -16,6 +17,7 @@ import Test.Spec (pending, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
+import Test.Signal
 
 import Node (fromFn, receive, send) as Node
 import Node (Node, NodeDef)
@@ -26,14 +28,18 @@ main = launchAff_ $ runSpec [consoleReporter] do
   describe "Noodle" do
     describe "Node" do
       it "creating" do
-        node :: NodeDef Int
+        def :: NodeDef Int
           <- liftEffect
               $ Node.fromFn 0
               $ \i ->
                 pure $ Node.send
                     [ "c" /\ fromMaybe 0 ((+) <$> Node.receive "a" i <*> Node.receive "b" i) ]
                 -- pure $ const $ (+) <$> receive "a" <*> receive "b"
-        pure unit
+        let out = Channel.subscribe def.out
+        expect 10 out [ "c" /\ 0 ]
+        _ <- liftEffect $ Channel.send def.in ( "a" /\ 3 )
+        _ <- liftEffect $ Channel.send def.in ( "b" /\ 4 )
+        expect 10 out [ "c" /\ 7 ]
       pending "todo"
     {- describe "Features" do
       it "runs in NodeJS" $ pure unit
