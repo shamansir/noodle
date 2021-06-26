@@ -23,15 +23,14 @@ import Node (fromFn, receive, send, send', outlets, disconnect) as Node
 import Node (Node, (|>), (<|), (<~>), (+>), (<+))
 
 
-createNode :: Effect (Node Int)
-createNode =
+createSumNode :: Effect (Node Int)
+createSumNode =
     Node.fromFn 0
       $ \inlets ->
-          pure $ Node.send'
-            [ "c" /\ ((+)
-                          <$> "a" <| inlets
+          Node.send'
+            [ "c" /\ ((+) <$> "a" <| inlets
                           <*> "b" <| inlets
-                      )
+                     )
             ]
 
 
@@ -39,70 +38,74 @@ main :: Effect Unit
 main = launchAff_ $ runSpec [consoleReporter] do
   describe "Noodle" do
     describe "Node" do
+
       it "creating" do
         node :: Node Int
-          <- liftEffect $ createNode
+          <- liftEffect $ createSumNode
         let out = Node.outlets node
         expectFn out [ "bang" /\ 0 ]
-        _ <- liftEffect $ node |> ( "a" /\ 3 )
-        _ <- liftEffect $ node |> ( "b" /\ 4 )
+        liftEffect $ do
+          node |> ( "a" /\ 3 )
+          node |> ( "b" /\ 4 )
         expectFn out [ "c" /\ 7 ]
+
       it "connecting" do
         nodeA :: Node Int
-          <- liftEffect $ createNode
+          <- liftEffect $ createSumNode
         nodeB :: Node Int
-          <- liftEffect $ createNode
+          <- liftEffect $ createSumNode
+        _ <- liftEffect
+          $ (nodeA /\ "c") <~> (nodeB /\ "a")
+        let outB = Node.outlets nodeB
+        expectFn outB [ "bang" /\ 0 ]
+        liftEffect $ do
+            nodeA |> ( "a" /\ 3 )
+            nodeA |> ( "b" /\ 3 )
+            nodeB |> ( "b" /\ 4 )
+        expectFn outB [ "c" /\ 10 ]
+
+      it "connecting 2" do
+        nodeA :: Node Int
+          <- liftEffect $ createSumNode
+        nodeB :: Node Int
+          <- liftEffect $ createSumNode
         _ <- liftEffect $ (nodeA /\ "c") <~> (nodeB /\ "a")
         let outB = Node.outlets nodeB
         expectFn outB [ "bang" /\ 0 ]
-        _ <- liftEffect $ nodeA |> ( "a" /\ 3 )
-        _ <- liftEffect $ nodeA |> ( "b" /\ 3 )
-        _ <- liftEffect $ nodeB |> ( "b" /\ 4 )
-        expectFn outB [ "c" /\ 10 ]
-      it "connecting 2" do
-        nodeA :: Node Int
-          <- liftEffect $ createNode
-        nodeB :: Node Int
-          <- liftEffect $ createNode
-        link <- liftEffect $ (nodeA /\ "c") <~> (nodeB /\ "a")
-        let outB = Node.outlets nodeB
-        expectFn outB [ "bang" /\ 0 ]
-        _ <- liftEffect $ nodeA |> ( "a" /\ 3 )
-        _ <- liftEffect $ nodeA |> ( "b" /\ 3 )
-        _ <- liftEffect $ nodeB |> ( "b" /\ 4 )
-        expectFn outB [ "c" /\ 10 ]
-        _ <- liftEffect $ nodeA |> ( "a" /\ 5 )
-        _ <- liftEffect $ nodeA |> ( "b" /\ 7 )
+        liftEffect $ do
+          nodeA |> ( "a" /\ 3 )
+          nodeA |> ( "b" /\ 3 )
+          nodeB |> ( "b" /\ 4 )
+        expectFn outB [ "c" /\ 10 ] -- sums up values
+        liftEffect $ do
+          nodeA |> ( "a" /\ 5 )
+          nodeA |> ( "b" /\ 7 )
         expectFn outB [ "c" /\ 16 ] -- recalculates the value
-        _ <- liftEffect $ nodeB |> ( "b" /\ 17 )
+        liftEffect
+          $ nodeB |> ( "b" /\ 17 )
         expectFn outB [ "c" /\ 29 ] -- sums up new values
-        _ <- liftEffect $ Node.disconnect link
-        pure unit
+
       it "disconnecting" do
         nodeA :: Node Int
-          <- liftEffect $ createNode
+          <- liftEffect $ createSumNode
         nodeB :: Node Int
-          <- liftEffect $ createNode
-        link <- liftEffect $ (nodeA /\ "c") <~> (nodeB /\ "a")
+          <- liftEffect $ createSumNode
+        link <- liftEffect
+          $ (nodeA /\ "c") <~> (nodeB /\ "a") -- connect outlet `c` from Node A to inlet `a` from Node B
         let outB = Node.outlets nodeB
-        expectFn outB [ "bang" /\ 0 ]
-        _ <- liftEffect $ nodeA |> ( "a" /\ 3 )
-        _ <- liftEffect $ nodeA |> ( "b" /\ 3 )
-        _ <- liftEffect $ nodeB |> ( "b" /\ 4 )
-        expectFn outB [ "c" /\ 10 ]
-        _ <- liftEffect $ Node.disconnect link
-        _ <- liftEffect $ nodeA |> ( "a" /\ 5 )
-        _ <- liftEffect $ nodeA |> ( "b" /\ 7 )
+        expectFn outB [ "bang" /\ 0 ] -- expect default value to be there
+        liftEffect $ do
+          nodeA |> ( "a" /\ 3 )
+          nodeA |> ( "b" /\ 3 )
+          nodeB |> ( "b" /\ 4 )
+        expectFn outB [ "c" /\ 10 ] -- sums up values
+        liftEffect $ do
+          Node.disconnect link -- disconnect
+          nodeA |> ( "a" /\ 5 )
+          nodeA |> ( "b" /\ 7 )
         expectFn outB [ "c" /\ 10 ] -- doesn't recalculate
-        _ <- liftEffect $ nodeB |> ( "b" /\ 17 )
-        expectFn outB [ "c" /\ 23 ] -- sums up with 10 which was stored in its `a`
+        liftEffect
+          $ nodeB |> ( "b" /\ 17 )
+        expectFn outB [ "c" /\ 23 ] -- sums up with 10 which was stored in its `a` before connection
+
       pending "todo"
-    {- describe "Features" do
-      it "runs in NodeJS" $ pure unit
-      it "runs in the browser" $ pure unit
-      it "supports streaming reporters" $ pure unit
-      it "supports async specs" do
-        res <- delay (Milliseconds 100.0) $> "Alligator"
-        res `shouldEqual` "Alligator"
-      it "is PureScript 0.12.x compatible" $ pure unit
-    -}

@@ -5,10 +5,13 @@ module Node
     , inlet, outlet, outletFlipped
     , inlets, outlets
     , (<|), (|>), (<~>), (<+), (+>)
+    , fromFn1, fromFn2, fromFn3, fromFn4, fromFn5
+    , fromFn1', fromFn2', fromFn3', fromFn4', fromFn5'
+    , withFn1, withFn2, withFn3, withFn4, withFn5
     )
     where
 
-import Prelude (bind, pure, ($), (#), flip, (<$>), (>>>), (<<<), (>>=), (=<<), unit, Unit)
+import Prelude (bind, pure, ($), (#), flip, (<$>), (<*>), (>>>), (<<<), (>>=), (=<<), unit, Unit, identity)
 
 import Control.Applicative (class Applicative, class Apply)
 
@@ -60,12 +63,12 @@ newtype Send d = Send (Map String d)
 newtype Link = Link (Ref Boolean)
 
 
-fromFn
+fromEffFn
     :: forall d
      . d
     -> (Receive d -> Effect (Send d))
     -> Effect (Node d)
-fromFn def fn = do
+fromEffFn def fn = do
     inlets_chan <- Ch.channel ("bang" /\ def)
     outlets_chan <- Ch.channel ("bang" /\ def)
     let
@@ -80,6 +83,14 @@ fromFn def fn = do
         sendFx = ((=<<) $ sendAllTo outlets_chan) <$> fn_signal
     _ <- Signal.runSignal sendFx
     pure node
+
+
+fromFn
+    :: forall d
+     . d
+    -> (Receive d -> Send d)
+    -> Effect (Node d)
+fromFn def fn = fromEffFn def (pure <<< fn)
 
 
 infixl 5 receive as <|
@@ -167,3 +178,81 @@ outlet (Node (_ /\ outlets_chan)) _ =
 
 outletFlipped :: forall d. String -> Node d -> Signal d
 outletFlipped = flip outlet
+
+
+fromFn1 :: forall d. d -> (d -> d) -> Effect (Node d)
+fromFn1 def fn =
+    fromFn def $ \r -> send' [ "0" /\ (fn <$> receive "0" r) ]
+
+
+fromFn1' :: forall d. d -> (d -> Maybe d) -> Effect (Node d)
+fromFn1' def fn =
+    fromFn def $ \r -> send' [ "0" /\ (fn =<< receive "0" r) ]
+
+
+fromFn2 :: forall d. d -> (d -> d -> d) -> Effect (Node d)
+fromFn2 def fn =
+    fromFn def $ \r -> send' [ "0" /\ (fn <$> receive "0" r <*> receive "1" r) ]
+
+
+fromFn2' :: forall d. d -> (d -> d -> Maybe d) -> Effect (Node d)
+fromFn2' def fn =
+    fromFn def $ \r -> send' [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r) ]
+
+
+
+fromFn3 :: forall d. d -> (d -> d -> d -> d) -> Effect (Node d)
+fromFn3 def fn =
+    fromFn def $
+        \r -> send' [ "0" /\ (fn <$> receive "0" r <*> receive "1" r <*> receive "2" r) ]
+
+
+fromFn3' :: forall d. d -> (d -> d -> d -> Maybe d) -> Effect (Node d)
+fromFn3' def fn =
+    fromFn def $
+        \r -> send' [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r <*> receive "2" r) ]
+
+
+fromFn4 :: forall d. d -> (d -> d -> d -> d -> d) -> Effect (Node d)
+fromFn4 def fn =
+    fromFn def $
+        \r -> send' [ "0" /\ (fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r) ]
+
+
+fromFn4' :: forall d. d -> (d -> d -> d -> d -> Maybe d) -> Effect (Node d)
+fromFn4' def fn =
+    fromFn def $
+        \r -> send' [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r) ]
+
+
+fromFn5 :: forall d. d -> (d -> d -> d -> d -> d -> d) -> Effect (Node d)
+fromFn5 def fn =
+    fromFn def $ \r -> send'
+        [ "0" /\ (fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r <*> receive "4" r) ]
+
+
+fromFn5' :: forall d. d -> (d -> d -> d -> d -> d -> Maybe d) -> Effect (Node d)
+fromFn5' def fn =
+    fromFn def $ \r -> send'
+        [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r <*> receive "4" r) ]
+
+
+withFn1 :: forall d. (d -> d) -> String -> Receive d -> Maybe d
+withFn1 fn inlet r = fn <$> receive inlet r
+
+
+withFn2 :: forall d. (d -> d -> d) -> String -> String -> Receive d -> Maybe d
+withFn2 fn inletA inletB r = fn <$> receive inletA r <*> receive inletB r
+
+
+withFn3 :: forall d. (d -> d -> d -> d) -> String -> String -> String -> Receive d -> Maybe d
+withFn3 fn inletA inletB inletC r = fn <$> receive inletA r <*> receive inletB r <*> receive inletC r
+
+
+withFn4 :: forall d. (d -> d -> d -> d -> d) -> String -> String -> String -> String -> Receive d -> Maybe d
+withFn4 fn inletA inletB inletC inletD r = fn <$> receive inletA r <*> receive inletB r <*> receive inletC r <*> receive inletD r
+
+
+withFn5 :: forall d. (d -> d -> d -> d -> d -> d) -> String -> String -> String -> String -> String -> Receive d -> Maybe d
+withFn5 fn inletA inletB inletC inletD inletE r =
+    fn <$> receive inletA r <*> receive inletB r <*> receive inletC r <*> receive inletD r <*> receive inletE r
