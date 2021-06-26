@@ -36,10 +36,30 @@ main = launchAff_ $ runSpec [consoleReporter] do
                     [ "c" /\ fromMaybe 0 ((+) <$> Node.receive "a" i <*> Node.receive "b" i) ]
                 -- pure $ const $ (+) <$> receive "a" <*> receive "b"
         let out = Channel.subscribe def.out
-        expect 10 out [ "c" /\ 0 ]
+        expectFn out [ "c" /\ 0 ]
         _ <- liftEffect $ Channel.send def.in ( "a" /\ 3 )
         _ <- liftEffect $ Channel.send def.in ( "b" /\ 4 )
-        expect 10 out [ "c" /\ 7 ]
+        expectFn out [ "c" /\ 7 ]
+      it "connecting" do
+        defA :: NodeDef Int
+          <- liftEffect
+              $ Node.fromFn 0
+              $ \i ->
+                pure $ Node.send
+                    [ "c" /\ fromMaybe 0 ((+) <$> Node.receive "a" i <*> Node.receive "b" i) ]
+        defB :: NodeDef Int
+          <- liftEffect
+              $ Node.fromFn 0
+              $ \i ->
+                pure $ Node.send
+                    [ "c" /\ fromMaybe 0 ((+) <$> Node.receive "a" i <*> Node.receive "b" i) ]
+                -- pure $ const $ (+) <$> receive "a" <*> receive "b"
+        _ <- liftEffect $ Node.connect (defA.node /\ "c") (defB.node /\ "a")
+        let out = Channel.subscribe defB.out
+        expectFn out [ "c" /\ 0 ]
+        _ <- liftEffect $ Channel.send defA.in ( "a" /\ 3 )
+        _ <- liftEffect $ Channel.send defA.in ( "b" /\ 4 )
+        expectFn out [ "c" /\ 7 ]
       pending "todo"
     {- describe "Features" do
       it "runs in NodeJS" $ pure unit
