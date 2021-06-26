@@ -23,6 +23,7 @@ to generate this file without the comments in this block.
   , "ordered-collections"
   , "prelude"
   , "psci-support"
+  , "refs"
   , "signal"
   , "tuples"
   ]

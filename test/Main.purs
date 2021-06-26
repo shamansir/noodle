@@ -19,8 +19,20 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 import Test.Signal
 
-import Node (fromFn, receive, send, send', outlets) as Node
+import Node (fromFn, receive, send, send', outlets, disconnect) as Node
 import Node (Node, (|>), (<|), (<~>), (+>), (<+))
+
+
+createNode :: Effect (Node Int)
+createNode =
+    Node.fromFn 0
+      $ \inlets ->
+          pure $ Node.send'
+            [ "c" /\ ((+)
+                          <$> "a" <| inlets
+                          <*> "b" <| inlets
+                      )
+            ]
 
 
 main :: Effect Unit
@@ -29,15 +41,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
     describe "Node" do
       it "creating" do
         node :: Node Int
-          <- liftEffect
-              $ Node.fromFn 0
-              $ \inlets ->
-                pure $ Node.send'
-                    [ "c" /\ ((+)
-                                  <$> "a" <| inlets
-                                  <*> "b" <| inlets
-                             )
-                    ]
+          <- liftEffect $ createNode
         let out = Node.outlets node
         expectFn out [ "bang" /\ 0 ]
         _ <- liftEffect $ node |> ( "a" /\ 3 )
@@ -45,33 +49,51 @@ main = launchAff_ $ runSpec [consoleReporter] do
         expectFn out [ "c" /\ 7 ]
       it "connecting" do
         nodeA :: Node Int
-          <- liftEffect
-              $ Node.fromFn 0
-              $ \inlets ->
-                pure $ Node.send'
-                    [ "c" /\ ((+)
-                                  <$> "a" <| inlets
-                                  <*> "b" <| inlets
-                             )
-                    ]
+          <- liftEffect $ createNode
         nodeB :: Node Int
-          <- liftEffect
-              $ Node.fromFn 0
-              $ \inlets ->
-                pure $ Node.send'
-                    [ "c" /\ ((+)
-                                  <$> "a" <| inlets
-                                  <*> "b" <| inlets
-                             )
-                    ]
-                -- pure $ const $ (+) <$> receive "a" <*> receive "b"
+          <- liftEffect $ createNode
         _ <- liftEffect $ (nodeA /\ "c") <~> (nodeB /\ "a")
         let outB = Node.outlets nodeB
         expectFn outB [ "bang" /\ 0 ]
         _ <- liftEffect $ nodeA |> ( "a" /\ 3 )
         _ <- liftEffect $ nodeA |> ( "b" /\ 3 )
         _ <- liftEffect $ nodeB |> ( "b" /\ 4 )
-        expectFn outB [ "c" /\ 7 ]
+        expectFn outB [ "c" /\ 10 ]
+      {- it "connecting 2" do
+        nodeA :: Node Int
+          <- liftEffect $ createNode
+        nodeB :: Node Int
+          <- liftEffect $ createNode
+        link <- liftEffect $ (nodeA /\ "c") <~> (nodeB /\ "a")
+        let outB = Node.outlets nodeB
+        expectFn outB [ "bang" /\ 0 ]
+        _ <- liftEffect $ nodeA |> ( "a" /\ 3 )
+        _ <- liftEffect $ nodeA |> ( "b" /\ 3 )
+        _ <- liftEffect $ nodeB |> ( "b" /\ 4 )
+        expectFn outB [ "c" /\ 10 ]
+        _ <- liftEffect $ nodeA |> ( "a" /\ 5 )
+        _ <- liftEffect $ nodeA |> ( "b" /\ 7 )
+        _ <- liftEffect $ nodeB |> ( "b" /\ 17 )
+        expectFn outB [ "c" /\ 10 ]
+        _ <- liftEffect $ Node.disconnect link
+        pure unit -}
+      it "disconnecting" do
+        nodeA :: Node Int
+          <- liftEffect $ createNode
+        nodeB :: Node Int
+          <- liftEffect $ createNode
+        link <- liftEffect $ (nodeA /\ "c") <~> (nodeB /\ "a")
+        let outB = Node.outlets nodeB
+        expectFn outB [ "bang" /\ 0 ]
+        _ <- liftEffect $ nodeA |> ( "a" /\ 3 )
+        _ <- liftEffect $ nodeA |> ( "b" /\ 3 )
+        _ <- liftEffect $ nodeB |> ( "b" /\ 4 )
+        expectFn outB [ "c" /\ 10 ]
+        _ <- liftEffect $ Node.disconnect link
+        _ <- liftEffect $ nodeA |> ( "a" /\ 5 )
+        _ <- liftEffect $ nodeA |> ( "b" /\ 7 )
+        _ <- liftEffect $ nodeB |> ( "b" /\ 17 )
+        expectFn outB [ "c" /\ 10 ]
       pending "todo"
     {- describe "Features" do
       it "runs in NodeJS" $ pure unit

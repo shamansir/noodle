@@ -1,6 +1,6 @@
 module Node
-    ( Node, Receive, Send
-    , receive, send, send', sendTo, connect
+    ( Node, Receive, Send, Link
+    , receive, send, send', sendTo, connect, disconnect
     , fromFn
     , inlet, outlet, outletFlipped
     , inlets, outlets
@@ -16,7 +16,7 @@ import Data.Array ((..))
 import Data.Array (mapMaybe) as Array
 import Data.Identity (Identity)
 import Data.Maybe (Maybe)
-import Data.Tuple (uncurry, snd)
+import Data.Tuple (uncurry, snd, Tuple(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Map (Map)
 import Data.Map as Map
@@ -26,6 +26,8 @@ import Data.Traversable (traverse, traverse_, sequence)
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
 
 import Signal (Signal, (~>))
 import Signal (foldp, unwrap, flatten, constant, runSignal) as Signal
@@ -53,6 +55,9 @@ newtype Receive d = Receive (Map String d)
 
 
 newtype Send d = Send (Map String d)
+
+
+newtype Link = Link (Ref Boolean)
 
 
 fromFn
@@ -108,11 +113,28 @@ sendTo (Node (inlets_chan /\ _)) (inlet /\ d) =
     Ch.send inlets_chan $ inlet /\ d
 
 
-connect :: forall d. (Node d /\ String) -> (Node d /\ String) -> Effect Unit
-connect (srcNode /\ outlet) (trgNode /\ inlet) =
-    let
-        (Node ( _ /\ outlets_chan )) = srcNode
-    in pure unit
+connect :: forall d. (Node d /\ String) -> (Node d /\ String) -> Effect Link
+connect (srcNode /\ srcOutlet) (dstNode /\ dstInlet) =
+    let (Node ( inlets_chan /\ _ )) = dstNode
+    in do
+        ref <- Ref.new true
+        _ <- Signal.runSignal
+                $ outlet srcNode srcOutlet
+                ~> Tuple dstInlet
+                -- ~> Ch.send inlets_chan
+                ~> sendIfRef inlets_chan ref
+        pure $ Link ref
+
+
+sendIfRef :: forall a. Channel a -> Ref Boolean -> a -> Effect Unit
+sendIfRef channel ref v =
+    Ref.read ref >>= \flag ->
+        if flag then Ch.send channel v else pure unit
+
+
+disconnect :: Link -> Effect Unit
+disconnect (Link ref) =
+    ref # Ref.write false
 
 
 getInletsChannel :: forall d. Node d -> Channel (String /\ d)
