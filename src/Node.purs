@@ -1,8 +1,10 @@
 module Node
     ( Node, Receive, Send
-    , receive, send, sendTo, connect
+    , receive, send, send', sendTo, connect
     , fromFn
-    , (<|), (|>), (<~>)
+    , inlet, outlet, outletFlipped
+    , inlets, outlets
+    , (<|), (|>), (<~>), (<+), (+>)
     )
     where
 
@@ -11,6 +13,7 @@ import Prelude (bind, pure, ($), (#), flip, (<$>), (>>>), (<<<), (>>=), (=<<), u
 import Control.Applicative (class Applicative, class Apply)
 
 import Data.Array ((..))
+import Data.Array (mapMaybe) as Array
 import Data.Identity (Identity)
 import Data.Maybe (Maybe)
 import Data.Tuple (uncurry, snd)
@@ -74,9 +77,11 @@ fromFn def fn = do
     pure node
 
 
-infixl 4 receive as <|
-infixl 4 sendTo as |>
+infixl 5 receive as <|
+infixl 5 sendTo as |>
 infixl 4 connect as <~>
+infixl 4 inlet as +>
+infixl 4 outletFlipped as <+
 
 
 -- fromFn' :: (d -> d) -> Node''' d
@@ -94,8 +99,13 @@ send :: forall d. Array (String /\ d) -> Send d
 send = Send <<< Map.fromFoldable
 
 
+send' :: forall d. Array (String /\ Maybe d) -> Send d
+send' = Send <<< Map.fromFoldable <<< Array.mapMaybe sequence
+
+
 sendTo :: forall d. Node d -> (String /\ d) -> Effect Unit
-sendTo node (inlet /\ d) = pure unit -- TODO:
+sendTo (Node (inlets_chan /\ _)) (inlet /\ d) =
+    Ch.send inlets_chan $ inlet /\ d
 
 
 connect :: forall d. (Node d /\ String) -> (Node d /\ String) -> Effect Unit
@@ -113,13 +123,13 @@ getOutletsChannel :: forall d. Node d -> Channel (String /\ d)
 getOutletsChannel (Node (_ /\ outlets_chan)) = outlets_chan
 
 
-allInlets :: forall d. Node d -> Signal (String /\ d)
-allInlets (Node (inlets_chan /\ _)) =
+inlets :: forall d. Node d -> Signal (String /\ d)
+inlets (Node (inlets_chan /\ _)) =
     Ch.subscribe inlets_chan
 
 
-allOutlets :: forall d. Node d -> Signal (String /\ d)
-allOutlets (Node (_ /\ outlets_chan)) =
+outlets :: forall d. Node d -> Signal (String /\ d)
+outlets (Node (_ /\ outlets_chan)) =
     Ch.subscribe outlets_chan
 
 
@@ -131,3 +141,7 @@ inlet (Node (inlets_chan /\ _)) _ =
 outlet :: forall d. Node d -> String -> Signal d
 outlet (Node (_ /\ outlets_chan)) _ =
     Ch.subscribe outlets_chan ~> snd -- FIXME
+
+
+outletFlipped :: forall d. String -> Node d -> Signal d
+outletFlipped = flip outlet

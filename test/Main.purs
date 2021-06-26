@@ -19,8 +19,8 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 import Test.Signal
 
-import Node (fromFn, receive, send) as Node
-import Node (Node, NodeDef)
+import Node (fromFn, receive, send, send', outlets) as Node
+import Node (Node, (|>), (<|), (<~>), (+>), (<+))
 
 
 main :: Effect Unit
@@ -28,38 +28,50 @@ main = launchAff_ $ runSpec [consoleReporter] do
   describe "Noodle" do
     describe "Node" do
       it "creating" do
-        def :: NodeDef Int
+        node :: Node Int
           <- liftEffect
               $ Node.fromFn 0
-              $ \i ->
-                pure $ Node.send
-                    [ "c" /\ fromMaybe 0 ((+) <$> Node.receive "a" i <*> Node.receive "b" i) ]
-                -- pure $ const $ (+) <$> receive "a" <*> receive "b"
-        let out = Channel.subscribe def.out
-        expectFn out [ "c" /\ 0 ]
-        _ <- liftEffect $ Channel.send def.in ( "a" /\ 3 )
-        _ <- liftEffect $ Channel.send def.in ( "b" /\ 4 )
+              $ \inlets ->
+                pure $ Node.send'
+                    [ "c" /\ ((+)
+                                  <$> "a" <| inlets
+                                  <*> "b" <| inlets
+                             )
+                    ]
+        let out = Node.outlets node
+        expectFn out [ "bang" /\ 0 ]
+        _ <- liftEffect $ node |> ( "a" /\ 3 )
+        _ <- liftEffect $ node |> ( "b" /\ 4 )
         expectFn out [ "c" /\ 7 ]
       it "connecting" do
-        defA :: NodeDef Int
+        nodeA :: Node Int
           <- liftEffect
               $ Node.fromFn 0
-              $ \i ->
-                pure $ Node.send
-                    [ "c" /\ fromMaybe 0 ((+) <$> Node.receive "a" i <*> Node.receive "b" i) ]
-        defB :: NodeDef Int
+              $ \inlets ->
+                pure $ Node.send'
+                    [ "c" /\ ((+)
+                                  <$> "a" <| inlets
+                                  <*> "b" <| inlets
+                             )
+                    ]
+        nodeB :: Node Int
           <- liftEffect
               $ Node.fromFn 0
-              $ \i ->
-                pure $ Node.send
-                    [ "c" /\ fromMaybe 0 ((+) <$> Node.receive "a" i <*> Node.receive "b" i) ]
+              $ \inlets ->
+                pure $ Node.send'
+                    [ "c" /\ ((+)
+                                  <$> "a" <| inlets
+                                  <*> "b" <| inlets
+                             )
+                    ]
                 -- pure $ const $ (+) <$> receive "a" <*> receive "b"
-        _ <- liftEffect $ Node.connect (defA.node /\ "c") (defB.node /\ "a")
-        let out = Channel.subscribe defB.out
-        expectFn out [ "c" /\ 0 ]
-        _ <- liftEffect $ Channel.send defA.in ( "a" /\ 3 )
-        _ <- liftEffect $ Channel.send defA.in ( "b" /\ 4 )
-        expectFn out [ "c" /\ 7 ]
+        _ <- liftEffect $ (nodeA /\ "c") <~> (nodeB /\ "a")
+        let outB = Node.outlets nodeB
+        expectFn outB [ "bang" /\ 0 ]
+        _ <- liftEffect $ nodeA |> ( "a" /\ 3 )
+        _ <- liftEffect $ nodeA |> ( "b" /\ 3 )
+        _ <- liftEffect $ nodeB |> ( "b" /\ 4 )
+        expectFn outB [ "c" /\ 7 ]
       pending "todo"
     {- describe "Features" do
       it "runs in NodeJS" $ pure unit
