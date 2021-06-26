@@ -59,7 +59,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
         _ <- liftEffect $ nodeA |> ( "b" /\ 3 )
         _ <- liftEffect $ nodeB |> ( "b" /\ 4 )
         expectFn outB [ "c" /\ 10 ]
-      {- it "connecting 2" do
+      it "connecting 2" do
         nodeA :: Node Int
           <- liftEffect $ createNode
         nodeB :: Node Int
@@ -73,10 +73,11 @@ main = launchAff_ $ runSpec [consoleReporter] do
         expectFn outB [ "c" /\ 10 ]
         _ <- liftEffect $ nodeA |> ( "a" /\ 5 )
         _ <- liftEffect $ nodeA |> ( "b" /\ 7 )
+        expectFn outB [ "c" /\ 16 ] -- recalculates the value
         _ <- liftEffect $ nodeB |> ( "b" /\ 17 )
-        expectFn outB [ "c" /\ 10 ]
+        expectFn outB [ "c" /\ 29 ] -- sums up new values
         _ <- liftEffect $ Node.disconnect link
-        pure unit -}
+        pure unit
       it "disconnecting" do
         nodeA :: Node Int
           <- liftEffect $ createNode
@@ -92,8 +93,9 @@ main = launchAff_ $ runSpec [consoleReporter] do
         _ <- liftEffect $ Node.disconnect link
         _ <- liftEffect $ nodeA |> ( "a" /\ 5 )
         _ <- liftEffect $ nodeA |> ( "b" /\ 7 )
+        expectFn outB [ "c" /\ 10 ] -- doesn't recalculate
         _ <- liftEffect $ nodeB |> ( "b" /\ 17 )
-        expectFn outB [ "c" /\ 10 ]
+        expectFn outB [ "c" /\ 23 ] -- sums up with 10 which was stored in its `a`
       pending "todo"
     {- describe "Features" do
       it "runs in NodeJS" $ pure unit
