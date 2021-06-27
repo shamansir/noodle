@@ -1,4 +1,4 @@
-module Noodle.Node.Channel where
+module Noodle.Channel where
 
 
 type Channel d = { accept :: (d -> Boolean) }

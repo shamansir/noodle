@@ -13,8 +13,10 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 import Test.Signal (expectFn)
 
-import Noodle.Node (make, pass', outlets, disconnect) as Node
-import Noodle.Node (Node, (<~>), (+>), (<+))
+import Noodle.Node (pass', outlets, disconnect) as Node
+import Noodle.Node ((<~>), (+>), (<+))
+import Noodle.Node.Unit (Node)
+import Noodle.Node.Unit (make) as Node
 
 
 createSumNode :: Effect (Node Int)
@@ -102,4 +104,4 @@ main = launchAff_ $ runSpec [consoleReporter] do
           $ nodeB +> ( "b" /\ 17 )
         expectFn outB [ "c" /\ 23 ] -- sums up with 10 which was stored in its `a` before connection
 
-      pending "todo"
+      pending "sending and running a signal"
