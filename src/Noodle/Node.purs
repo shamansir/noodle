@@ -1,15 +1,16 @@
 module Noodle.Node
     ( Node, Receive, Pass, Link
     , receive, pass, pass', send, connect, disconnect
-    , make, makeEff
+    , empty, make, makeEff
     , inlet, outlet, outletFlipped
     , inlets, outlets
     , (<|), (|>), (<~>), (<+), (+>)
     , withFn1, withFn2, withFn3, withFn4, withFn5
+    , consumer
     )
     where
 
-import Prelude (bind, pure, ($), (#), flip, (<$>), (<*>), (>>>), (<<<), (>>=), (=<<), unit, Unit)
+import Prelude (bind, const, pure, ($), (#), flip, (<$>), (<*>), (>>>), (<<<), (>>=), (=<<), unit, Unit)
 
 import Data.Array (mapMaybe) as Array
 import Data.Maybe (Maybe)
@@ -29,6 +30,7 @@ import Signal.Channel (Channel)
 import Signal.Channel as Ch
 
 
+{- Node stores incoming and outgoing channels (`Signal.Channel`, not `Noodle.Channel`) of data of type `d` + any additional data -}
 data Node d a
     = Node
         (Channel (String /\ d) /\ Channel (String /\ d)) a
@@ -43,6 +45,23 @@ newtype Pass d = Pass (String /-> d)
 newtype Link = Link (Ref Boolean)
 
 
+consumer :: String
+consumer = "consume_"
+
+
+empty :: forall d a. a -> d -> Effect (Node d a)
+empty v def = make v def $ const $ pass []
+
+
+make
+    :: forall d a
+     . a
+    -> d
+    -> (Receive d -> Pass d)
+    -> Effect (Node d a)
+make v def fn = makeEff v def (pure <<< fn)
+
+
 makeEff
     :: forall d a
      . a
@@ -50,8 +69,8 @@ makeEff
     -> (Receive d -> Effect (Pass d))
     -> Effect (Node d a)
 makeEff v def fn = do
-    inlets_chan <- Ch.channel ("bang" /\ def)
-    outlets_chan <- Ch.channel ("bang" /\ def)
+    inlets_chan <- Ch.channel (consumer /\ def)
+    outlets_chan <- Ch.channel (consumer /\ def)
     let
         inlets = Ch.subscribe inlets_chan
         --outlets = Ch.subscribe outlets_chan
@@ -65,14 +84,6 @@ makeEff v def fn = do
     _ <- Signal.runSignal passFx
     pure node
 
-
-make
-    :: forall d a
-     . a
-    -> d
-    -> (Receive d -> Pass d)
-    -> Effect (Node d a)
-make v def fn = makeEff v def (pure <<< fn)
 
 
 infixl 5 receive as <+

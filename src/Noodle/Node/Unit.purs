@@ -1,7 +1,7 @@
 module Noodle.Node.Unit
     ( Node
     , send, connect
-    , make, makeEff
+    , empty, make, makeEff
     , inlet, outlet, outletFlipped
     , inlets, outlets
     , fromFn1, fromFn2, fromFn3, fromFn4, fromFn5
@@ -22,6 +22,10 @@ import Noodle.Node as N
 
 
 type Node d = N.Node d Unit
+
+
+empty :: forall d. d -> Effect (Node d)
+empty = N.empty unit
 
 
 makeEff

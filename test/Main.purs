@@ -13,7 +13,7 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 import Test.Signal (expectFn)
 
-import Noodle.Node (pass', outlets, disconnect) as Node
+import Noodle.Node (pass', outlets, disconnect, consumer) as Node
 import Noodle.Node ((<~>), (+>), (<+))
 import Noodle.Node.Unit (Node)
 import Noodle.Node.Unit (make) as Node
@@ -39,7 +39,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
         node :: Node Int
           <- liftEffect $ createSumNode
         let out = Node.outlets node
-        expectFn out [ "bang" /\ 0 ]
+        expectFn out [ Node.consumer /\ 0 ]
         liftEffect $ do
           node +> ( "a" /\ 3 )
           node +> ( "b" /\ 4 )
@@ -53,7 +53,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
         _ <- liftEffect
           $ (nodeA /\ "c") <~> (nodeB /\ "a")
         let outB = Node.outlets nodeB
-        expectFn outB [ "bang" /\ 0 ]
+        expectFn outB [ Node.consumer /\ 0 ]
         liftEffect $ do
             nodeA +> ( "a" /\ 3 )
             nodeA +> ( "b" /\ 3 )
@@ -67,7 +67,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
           <- liftEffect $ createSumNode
         _ <- liftEffect $ (nodeA /\ "c") <~> (nodeB /\ "a")
         let outB = Node.outlets nodeB
-        expectFn outB [ "bang" /\ 0 ]
+        expectFn outB [ Node.consumer /\ 0 ]
         liftEffect $ do
           nodeA +> ( "a" /\ 3 )
           nodeA +> ( "b" /\ 3 )
@@ -89,7 +89,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
         link <- liftEffect
           $ (nodeA /\ "c") <~> (nodeB /\ "a") -- connect outlet `c` from Node A to inlet `a` from Node B
         let outB = Node.outlets nodeB
-        expectFn outB [ "bang" /\ 0 ] -- expect default value to be there
+        expectFn outB [ Node.consumer /\ 0 ] -- expect default value to be there
         liftEffect $ do
           nodeA +> ( "a" /\ 3 )
           nodeA +> ( "b" /\ 3 )
