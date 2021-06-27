@@ -19,17 +19,17 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 import Test.Signal
 
-import Node (fromFn, receive, send, send', outlets, disconnect) as Node
+import Node (make, receive, pass, pass', outlets, disconnect) as Node
 import Node (Node, (|>), (<|), (<~>), (+>), (<+))
 
 
 createSumNode :: Effect (Node Int)
 createSumNode =
-    Node.fromFn 0
+    Node.make 0
       $ \inlets ->
-          Node.send'
-            [ "c" /\ ((+) <$> "a" <| inlets
-                          <*> "b" <| inlets
+          Node.pass'
+            [ "c" /\ ((+) <$> "a" <+ inlets
+                          <*> "b" <+ inlets
                      )
             ]
 
@@ -45,8 +45,8 @@ main = launchAff_ $ runSpec [consoleReporter] do
         let out = Node.outlets node
         expectFn out [ "bang" /\ 0 ]
         liftEffect $ do
-          node |> ( "a" /\ 3 )
-          node |> ( "b" /\ 4 )
+          node +> ( "a" /\ 3 )
+          node +> ( "b" /\ 4 )
         expectFn out [ "c" /\ 7 ]
 
       it "connecting" do
@@ -59,9 +59,9 @@ main = launchAff_ $ runSpec [consoleReporter] do
         let outB = Node.outlets nodeB
         expectFn outB [ "bang" /\ 0 ]
         liftEffect $ do
-            nodeA |> ( "a" /\ 3 )
-            nodeA |> ( "b" /\ 3 )
-            nodeB |> ( "b" /\ 4 )
+            nodeA +> ( "a" /\ 3 )
+            nodeA +> ( "b" /\ 3 )
+            nodeB +> ( "b" /\ 4 )
         expectFn outB [ "c" /\ 10 ]
 
       it "connecting 2" do
@@ -73,16 +73,16 @@ main = launchAff_ $ runSpec [consoleReporter] do
         let outB = Node.outlets nodeB
         expectFn outB [ "bang" /\ 0 ]
         liftEffect $ do
-          nodeA |> ( "a" /\ 3 )
-          nodeA |> ( "b" /\ 3 )
-          nodeB |> ( "b" /\ 4 )
+          nodeA +> ( "a" /\ 3 )
+          nodeA +> ( "b" /\ 3 )
+          nodeB +> ( "b" /\ 4 )
         expectFn outB [ "c" /\ 10 ] -- sums up values
         liftEffect $ do
-          nodeA |> ( "a" /\ 5 )
-          nodeA |> ( "b" /\ 7 )
+          nodeA +> ( "a" /\ 5 )
+          nodeA +> ( "b" /\ 7 )
         expectFn outB [ "c" /\ 16 ] -- recalculates the value
         liftEffect
-          $ nodeB |> ( "b" /\ 17 )
+          $ nodeB +> ( "b" /\ 17 )
         expectFn outB [ "c" /\ 29 ] -- sums up new values
 
       it "disconnecting" do
@@ -95,17 +95,17 @@ main = launchAff_ $ runSpec [consoleReporter] do
         let outB = Node.outlets nodeB
         expectFn outB [ "bang" /\ 0 ] -- expect default value to be there
         liftEffect $ do
-          nodeA |> ( "a" /\ 3 )
-          nodeA |> ( "b" /\ 3 )
-          nodeB |> ( "b" /\ 4 )
+          nodeA +> ( "a" /\ 3 )
+          nodeA +> ( "b" /\ 3 )
+          nodeB +> ( "b" /\ 4 )
         expectFn outB [ "c" /\ 10 ] -- sums up values
         liftEffect $ do
           Node.disconnect link -- disconnect
-          nodeA |> ( "a" /\ 5 )
-          nodeA |> ( "b" /\ 7 )
+          nodeA +> ( "a" /\ 5 )
+          nodeA +> ( "b" /\ 7 )
         expectFn outB [ "c" /\ 10 ] -- doesn't recalculate
         liftEffect
-          $ nodeB |> ( "b" /\ 17 )
+          $ nodeB +> ( "b" /\ 17 )
         expectFn outB [ "c" /\ 23 ] -- sums up with 10 which was stored in its `a` before connection
 
       pending "todo"

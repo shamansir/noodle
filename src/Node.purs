@@ -1,7 +1,7 @@
 module Node
-    ( Node, Receive, Send, Link
-    , receive, send, send', sendTo, connect, disconnect
-    , fromFn
+    ( Node, Receive, Pass, Link
+    , receive, pass, pass', send, connect, disconnect
+    , make, makeEff
     , inlet, outlet, outletFlipped
     , inlets, outlets
     , (<|), (|>), (<~>), (<+), (+>)
@@ -13,27 +13,20 @@ module Node
 
 import Prelude (bind, pure, ($), (#), flip, (<$>), (<*>), (>>>), (<<<), (>>=), (=<<), unit, Unit, identity)
 
-import Control.Applicative (class Applicative, class Apply)
-
-import Data.Array ((..))
 import Data.Array (mapMaybe) as Array
-import Data.Identity (Identity)
 import Data.Maybe (Maybe)
 import Data.Tuple (uncurry, snd, Tuple(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Newtype (unwrap, class Newtype)
-import Data.Traversable (traverse, traverse_, sequence)
+import Data.Traversable (traverse_, sequence)
 
 import Effect (Effect)
-import Effect.Aff (Aff)
-import Effect.Class (liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
 import Signal (Signal, (~>))
-import Signal (foldp, unwrap, flatten, constant, runSignal) as Signal
+import Signal (foldp, runSignal) as Signal
 import Signal.Channel (Channel)
 import Signal.Channel as Ch
 
@@ -57,18 +50,18 @@ data Node d =
 newtype Receive d = Receive (Map String d)
 
 
-newtype Send d = Send (Map String d)
+newtype Pass d = Pass (Map String d)
 
 
 newtype Link = Link (Ref Boolean)
 
 
-fromEffFn
+makeEff
     :: forall d
      . d
-    -> (Receive d -> Effect (Send d))
+    -> (Receive d -> Effect (Pass d))
     -> Effect (Node d)
-fromEffFn def fn = do
+makeEff def fn = do
     inlets_chan <- Ch.channel ("bang" /\ def)
     outlets_chan <- Ch.channel ("bang" /\ def)
     let
@@ -77,50 +70,50 @@ fromEffFn def fn = do
         node = Node (inlets_chan /\ outlets_chan)
         maps :: Signal (Map String d)
         maps = inlets # Signal.foldp (uncurry Map.insert) Map.empty
-        fn_signal :: Signal (Effect (Send d))
+        fn_signal :: Signal (Effect (Pass d))
         fn_signal = (Receive >>> fn) <$> maps
-        sendFx :: Signal (Effect Unit)
-        sendFx = ((=<<) $ sendAllTo outlets_chan) <$> fn_signal
-    _ <- Signal.runSignal sendFx
+        passFx :: Signal (Effect Unit)
+        passFx = ((=<<) $ distribute outlets_chan) <$> fn_signal
+    _ <- Signal.runSignal passFx
     pure node
 
 
-fromFn
+make
     :: forall d
      . d
-    -> (Receive d -> Send d)
+    -> (Receive d -> Pass d)
     -> Effect (Node d)
-fromFn def fn = fromEffFn def (pure <<< fn)
+make def fn = makeEff def (pure <<< fn)
 
 
-infixl 5 receive as <|
-infixl 5 sendTo as |>
+infixl 5 receive as <+
+infixl 5 send as +>
 infixl 4 connect as <~>
-infixl 4 inlet as +>
-infixl 4 outletFlipped as <+
+infixl 4 inlet as |>
+infixl 4 outletFlipped as <|
 
 
 -- fromFn' :: (d -> d) -> Node''' d
 
-sendAllTo :: forall d. Channel (String /\ d) -> Send d -> Effect Unit
-sendAllTo sendTo (Send map) =
-    traverse_ (Ch.send sendTo) $ (Map.toUnfoldable map :: Array (String /\ d))
+distribute :: forall d. Channel (String /\ d) -> Pass d -> Effect Unit
+distribute passTo (Pass map) =
+    traverse_ (Ch.send passTo) $ (Map.toUnfoldable map :: Array (String /\ d))
 
 
 receive :: forall d. String -> Receive d -> Maybe d
 receive label (Receive r) = Map.lookup label r -- unwrap >>> flip Map.lookup
 
 
-send :: forall d. Array (String /\ d) -> Send d
-send = Send <<< Map.fromFoldable
+pass :: forall d. Array (String /\ d) -> Pass d
+pass = Pass <<< Map.fromFoldable
 
 
-send' :: forall d. Array (String /\ Maybe d) -> Send d
-send' = Send <<< Map.fromFoldable <<< Array.mapMaybe sequence
+pass' :: forall d. Array (String /\ Maybe d) -> Pass d
+pass' = Pass <<< Map.fromFoldable <<< Array.mapMaybe sequence
 
 
-sendTo :: forall d. Node d -> (String /\ d) -> Effect Unit
-sendTo (Node (inlets_chan /\ _)) (inlet /\ d) =
+send :: forall d. Node d -> (String /\ d) -> Effect Unit
+send (Node (inlets_chan /\ _)) (inlet /\ d) =
     Ch.send inlets_chan $ inlet /\ d
 
 
@@ -182,58 +175,58 @@ outletFlipped = flip outlet
 
 fromFn1 :: forall d. d -> (d -> d) -> Effect (Node d)
 fromFn1 def fn =
-    fromFn def $ \r -> send' [ "0" /\ (fn <$> receive "0" r) ]
+    make def $ \r -> pass' [ "0" /\ (fn <$> receive "0" r) ]
 
 
 fromFn1' :: forall d. d -> (d -> Maybe d) -> Effect (Node d)
 fromFn1' def fn =
-    fromFn def $ \r -> send' [ "0" /\ (fn =<< receive "0" r) ]
+    make def $ \r -> pass' [ "0" /\ (fn =<< receive "0" r) ]
 
 
 fromFn2 :: forall d. d -> (d -> d -> d) -> Effect (Node d)
 fromFn2 def fn =
-    fromFn def $ \r -> send' [ "0" /\ (fn <$> receive "0" r <*> receive "1" r) ]
+    make def $ \r -> pass' [ "0" /\ (fn <$> receive "0" r <*> receive "1" r) ]
 
 
 fromFn2' :: forall d. d -> (d -> d -> Maybe d) -> Effect (Node d)
 fromFn2' def fn =
-    fromFn def $ \r -> send' [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r) ]
+    make def $ \r -> pass' [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r) ]
 
 
 
 fromFn3 :: forall d. d -> (d -> d -> d -> d) -> Effect (Node d)
 fromFn3 def fn =
-    fromFn def $
-        \r -> send' [ "0" /\ (fn <$> receive "0" r <*> receive "1" r <*> receive "2" r) ]
+    make def $
+        \r -> pass' [ "0" /\ (fn <$> receive "0" r <*> receive "1" r <*> receive "2" r) ]
 
 
 fromFn3' :: forall d. d -> (d -> d -> d -> Maybe d) -> Effect (Node d)
 fromFn3' def fn =
-    fromFn def $
-        \r -> send' [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r <*> receive "2" r) ]
+    make def $
+        \r -> pass' [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r <*> receive "2" r) ]
 
 
 fromFn4 :: forall d. d -> (d -> d -> d -> d -> d) -> Effect (Node d)
 fromFn4 def fn =
-    fromFn def $
-        \r -> send' [ "0" /\ (fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r) ]
+    make def $
+        \r -> pass' [ "0" /\ (fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r) ]
 
 
 fromFn4' :: forall d. d -> (d -> d -> d -> d -> Maybe d) -> Effect (Node d)
 fromFn4' def fn =
-    fromFn def $
-        \r -> send' [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r) ]
+    make def $
+        \r -> pass' [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r) ]
 
 
 fromFn5 :: forall d. d -> (d -> d -> d -> d -> d -> d) -> Effect (Node d)
 fromFn5 def fn =
-    fromFn def $ \r -> send'
+    make def $ \r -> pass'
         [ "0" /\ (fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r <*> receive "4" r) ]
 
 
 fromFn5' :: forall d. d -> (d -> d -> d -> d -> d -> Maybe d) -> Effect (Node d)
 fromFn5' def fn =
-    fromFn def $ \r -> send'
+    make def $ \r -> pass'
         [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r <*> receive "4" r) ]
 
 
