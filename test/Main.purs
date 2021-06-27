@@ -2,25 +2,19 @@ module Test.Main where
 
 import Prelude
 
-import Data.Time.Duration (Milliseconds(..))
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Identity (Identity)
 import Data.Tuple.Nested ((/\))
-import Signal.Channel as Channel
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
-import Effect.Aff (launchAff_, delay)
+import Effect.Aff (launchAff_)
 
 import Test.Spec (pending, describe, it)
-import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
-import Test.Signal
+import Test.Signal (expectFn)
 
-import Node (make, receive, pass, pass', outlets, disconnect) as Node
-import Node (Node, (|>), (<|), (<~>), (+>), (<+))
+import Noodle.Node (make, pass', outlets, disconnect) as Node
+import Noodle.Node (Node, (<~>), (+>), (<+))
 
 
 createSumNode :: Effect (Node Int)

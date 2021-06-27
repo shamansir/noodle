@@ -1,9 +1,9 @@
-module Node
-    ( Node, Receive, Pass, Link
-    , receive, pass, pass', send, connect, disconnect
-    , make, makeEff
-    , inlet, outlet, outletFlipped
-    , inlets, outlets
+module Noodle.Node
+    ( Node, Receive, Pass, Link, Node'
+    , receive, pass, pass', send, send', connect, connect', disconnect
+    , make, makeEff, make', makeEff'
+    , inlet, outlet, outletFlipped, inlet', outlet', outletFlipped'
+    , inlets, outlets, inlets', outlets'
     , (<|), (|>), (<~>), (<+), (+>)
     , fromFn1, fromFn2, fromFn3, fromFn4, fromFn5
     , fromFn1', fromFn2', fromFn3', fromFn4', fromFn5'
@@ -31,20 +31,12 @@ import Signal.Channel (Channel)
 import Signal.Channel as Ch
 
 
--- data Node' a m d = Node' (Channel d /\ Channel (m d)) a
+data Node' d a
+    = Node
+        (Channel (String /\ d) /\ Channel (String /\ d)) a
 
 
--- type Node'' m d = Node' ( Array String /\ Array String ) m ( String /\ d )
-
-
--- type Node''' d = Node' Identity Unit
-
-data Node d =
-    Node
-        (Channel (String /\ d) /\ Channel (String /\ d))
-
-
---type Node = NodeM Identity
+type Node d = Node' d Unit
 
 
 newtype Receive d = Receive (Map String d)
@@ -61,13 +53,22 @@ makeEff
      . d
     -> (Receive d -> Effect (Pass d))
     -> Effect (Node d)
-makeEff def fn = do
+makeEff = makeEff' unit
+
+
+makeEff'
+    :: forall d a
+     . a
+    -> d
+    -> (Receive d -> Effect (Pass d))
+    -> Effect (Node' d a)
+makeEff' v def fn = do
     inlets_chan <- Ch.channel ("bang" /\ def)
     outlets_chan <- Ch.channel ("bang" /\ def)
     let
         inlets = Ch.subscribe inlets_chan
         --outlets = Ch.subscribe outlets_chan
-        node = Node (inlets_chan /\ outlets_chan)
+        node = Node (inlets_chan /\ outlets_chan) v
         maps :: Signal (Map String d)
         maps = inlets # Signal.foldp (uncurry Map.insert) Map.empty
         fn_signal :: Signal (Effect (Pass d))
@@ -86,11 +87,20 @@ make
 make def fn = makeEff def (pure <<< fn)
 
 
+make'
+    :: forall d a
+     . a
+    -> d
+    -> (Receive d -> Pass d)
+    -> Effect (Node' d a)
+make' v def fn = makeEff' v def (pure <<< fn)
+
+
 infixl 5 receive as <+
-infixl 5 send as +>
-infixl 4 connect as <~>
-infixl 4 inlet as |>
-infixl 4 outletFlipped as <|
+infixl 5 send' as +>
+infixl 4 connect' as <~>
+infixl 4 inlet' as |>
+infixl 4 outletFlipped' as <|
 
 
 -- fromFn' :: (d -> d) -> Node''' d
@@ -113,17 +123,25 @@ pass' = Pass <<< Map.fromFoldable <<< Array.mapMaybe sequence
 
 
 send :: forall d. Node d -> (String /\ d) -> Effect Unit
-send (Node (inlets_chan /\ _)) (inlet /\ d) =
-    Ch.send inlets_chan $ inlet /\ d
+send = send'
+
+
+send' :: forall d a. Node' d a -> (String /\ d) -> Effect Unit
+send' node (inlet /\ d) =
+    Ch.send (getInletsChannel node) $ inlet /\ d
 
 
 connect :: forall d. (Node d /\ String) -> (Node d /\ String) -> Effect Link
-connect (srcNode /\ srcOutlet) (dstNode /\ dstInlet) =
-    let (Node ( inlets_chan /\ _ )) = dstNode
+connect = connect'
+
+
+connect' :: forall d a. (Node' d a /\ String) -> (Node' d a /\ String) -> Effect Link
+connect' (srcNode /\ srcOutlet) (dstNode /\ dstInlet) =
+    let inlets_chan = getInletsChannel dstNode
     in do
         ref <- Ref.new true
         _ <- Signal.runSignal
-                $ outlet srcNode srcOutlet
+                $ outlet' srcNode srcOutlet
                 ~> Tuple dstInlet
                 -- ~> Ch.send inlets_chan
                 ~> sendIfRef inlets_chan ref
@@ -141,36 +159,56 @@ disconnect (Link ref) =
     ref # Ref.write false
 
 
-getInletsChannel :: forall d. Node d -> Channel (String /\ d)
-getInletsChannel (Node (inlets_chan /\ _)) = inlets_chan
+getInletsChannel :: forall d a. Node' d a -> Channel (String /\ d)
+getInletsChannel (Node (inlets_chan /\ _) _) = inlets_chan
 
 
-getOutletsChannel :: forall d. Node d -> Channel (String /\ d)
-getOutletsChannel (Node (_ /\ outlets_chan)) = outlets_chan
+getOutletsChannel :: forall d a. Node' d a -> Channel (String /\ d)
+getOutletsChannel (Node (_ /\ outlets_chan) _) = outlets_chan
 
 
 inlets :: forall d. Node d -> Signal (String /\ d)
-inlets (Node (inlets_chan /\ _)) =
-    Ch.subscribe inlets_chan
+inlets = inlets'
+
+
+inlets' :: forall d a. Node' d a -> Signal (String /\ d)
+inlets' =
+    Ch.subscribe <<< getInletsChannel
 
 
 outlets :: forall d. Node d -> Signal (String /\ d)
-outlets (Node (_ /\ outlets_chan)) =
-    Ch.subscribe outlets_chan
+outlets = outlets'
+
+
+outlets' :: forall d a. Node' d a -> Signal (String /\ d)
+outlets' =
+    Ch.subscribe <<< getOutletsChannel
 
 
 inlet :: forall d. Node d -> String -> Signal d
-inlet (Node (inlets_chan /\ _)) _ =
-    Ch.subscribe inlets_chan ~> snd -- FIXME
+inlet = inlet'
+
+
+inlet' :: forall d a. Node' d a -> String -> Signal d
+inlet' node _ =
+    Ch.subscribe (getInletsChannel node) ~> snd -- FIXME
 
 
 outlet :: forall d. Node d -> String -> Signal d
-outlet (Node (_ /\ outlets_chan)) _ =
-    Ch.subscribe outlets_chan ~> snd -- FIXME
+outlet = inlet'
+
+
+outlet' :: forall d a. Node' d a -> String -> Signal d
+outlet' node _ =
+    Ch.subscribe (getOutletsChannel node) ~> snd -- FIXME
 
 
 outletFlipped :: forall d. String -> Node d -> Signal d
-outletFlipped = flip outlet
+outletFlipped = outletFlipped'
+
+
+outletFlipped' :: forall d a. String -> Node' d a -> Signal d
+outletFlipped' = flip outlet'
 
 
 fromFn1 :: forall d. d -> (d -> d) -> Effect (Node d)
