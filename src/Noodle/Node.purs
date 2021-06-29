@@ -1,13 +1,14 @@
 module Noodle.Node
     ( Node, Receive, Pass, Link
     , get, set
-    , receive, pass, pass', send, connect, disconnect
+    , receive, pass, pass', passNothing, send, connect, disconnect
     , empty, make, makeEff
     , inlet, outlet, outletFlipped
     , inlets, outlets
     , (<|), (|>), (<~>), (<+), (+>)
     , withFn1, withFn2, withFn3, withFn4, withFn5
     , consumer
+    , lastUpdateAt
     )
     where
 
@@ -120,6 +121,10 @@ receive :: forall d. String -> Receive d -> Maybe d
 receive label (Receive { fromInlets }) = Map.lookup label fromInlets -- unwrap >>> flip Map.lookup
 
 
+lastUpdateAt :: forall d. Receive d -> String
+lastUpdateAt (Receive { last }) = last
+
+
 pass :: forall d. Array (String /\ d) -> Pass d
 --pass = Pass <<< Map.fromFoldable
 pass values = Pass { toOutlets : Map.fromFoldable values }
@@ -128,6 +133,10 @@ pass values = Pass { toOutlets : Map.fromFoldable values }
 pass' :: forall d. Array (String /\ Maybe d) -> Pass d
 --pass' = Pass <<< Map.fromFoldable <<< Array.mapMaybe sequence
 pass' values = Pass { toOutlets : Map.fromFoldable $ Array.mapMaybe sequence $ values }
+
+
+passNothing :: forall d. Pass d
+passNothing = Pass { toOutlets : Map.empty }
 
 
 send :: forall d a. Node d a -> (String /\ d) -> Effect Unit

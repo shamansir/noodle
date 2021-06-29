@@ -2,7 +2,7 @@ module Noodle.Node.Shaped
     where
 
 
-import Prelude (pure, ($), (>>>), (<$>))
+import Prelude (pure, ($), (#), (>>>), (<$>), map)
 
 
 import Noodle.Node as N
@@ -10,11 +10,12 @@ import Noodle.Node (Receive, Pass)
 import Noodle.Shape as N
 
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map.Extra (type (/->))
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Bifunctor (lmap, rmap)
+
 import Effect (Effect)
 
 
@@ -46,7 +47,21 @@ make
     -> Array (String /\ N.Shape d)
     -> (Receive d -> Pass d)
     -> Effect (Node d)
-make def inlets outlets fn = N.empty (Map.empty /\ Map.empty) def -- FIXME, + don't trigger `fn` for cold inlets
+make def inlets outlets fn =
+    let
+        inletsMap = Map.fromFoldable inlets
+        outletsMap = Map.fromFoldable outlets
+    in N.make
+        (inletsMap /\ outletsMap)
+        def
+        (\receive ->
+            if inletsMap
+                # Map.lookup (N.lastUpdateAt receive)
+                # map N.isHot
+                # fromMaybe true
+            then fn receive
+            else N.passNothing
+        )
 
 
 makeEff
@@ -57,8 +72,20 @@ makeEff
     -> (Receive d -> Effect (Pass d))
     -> Effect (Node d)
 makeEff def inlets outlets fn =
-    -- N.makeEff (Map.empty /\ Map.empty) ...
-    N.empty (Map.empty /\ Map.empty) def -- FIXME, + don't trigger `fn` for cold inlets
+    let
+        inletsMap = Map.fromFoldable inlets
+        outletsMap = Map.fromFoldable outlets
+    in N.makeEff
+        (inletsMap /\ outletsMap)
+        def
+        (\receive ->
+            if inletsMap
+                # Map.lookup (N.lastUpdateAt receive)
+                # map N.isHot
+                # fromMaybe true
+            then fn receive
+            else pure $ N.passNothing
+        )
 
 
 addInlet :: forall d. String -> N.Shape d -> Node d -> Node d

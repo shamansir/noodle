@@ -36,6 +36,10 @@ data Shape d =
 -- TODO:int = {}
 
 
+isHot :: forall d. Shape d -> Boolean
+isHot (Shape def) = def.isHot
+
+
 cold :: forall d. Shape d -> Shape d
 cold (Shape def) =
     Shape def { isHot = false }
