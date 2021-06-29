@@ -1,18 +1,20 @@
 module Noodle.Node.Shaped
     where
 
-import Prelude (pure, ($))
+
+import Prelude (pure, ($), (>>>), (<$>))
 
 
 import Noodle.Node as N
 import Noodle.Node (Receive, Pass)
-import Noodle.Channel as N
 import Noodle.Shape as N
 
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Map.Extra (type (/->))
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
+import Data.Bifunctor (lmap, rmap)
 import Effect (Effect)
 
 
@@ -44,7 +46,7 @@ make
     -> Array (String /\ N.Shape d)
     -> (Receive d -> Pass d)
     -> Effect (Node d)
-make def inlets outlets fn = N.empty (Map.empty /\ Map.empty) def
+make def inlets outlets fn = N.empty (Map.empty /\ Map.empty) def -- FIXME, + don't trigger `fn` for cold inlets
 
 
 makeEff
@@ -54,4 +56,30 @@ makeEff
     -> Array (String /\ N.Shape d)
     -> (Receive d -> Effect (Pass d))
     -> Effect (Node d)
-makeEff def inlets outlets fn = N.empty (Map.empty /\ Map.empty) def
+makeEff def inlets outlets fn =
+    -- N.makeEff (Map.empty /\ Map.empty) ...
+    N.empty (Map.empty /\ Map.empty) def -- FIXME, + don't trigger `fn` for cold inlets
+
+
+addInlet :: forall d. String -> N.Shape d -> Node d -> Node d
+addInlet name shape = (<$>) (lmap $ Map.insert name shape)
+
+
+reshapeInlet :: forall d. String -> N.Shape d -> Node d -> Node d
+reshapeInlet = addInlet
+
+
+addOutlet :: forall d. String -> N.Shape d -> Node d -> Node d
+addOutlet name shape = (<$>) (rmap $ Map.insert name shape)
+
+
+reshapeOutlet :: forall d. String -> N.Shape d -> Node d -> Node d
+reshapeOutlet = addOutlet
+
+
+inletShape :: forall d. String -> Node d -> Maybe (N.Shape d)
+inletShape inlet = N.get >>> Tuple.snd >>> Map.lookup inlet
+
+
+outletShape :: forall d. String -> Node d -> Maybe (N.Shape d)
+outletShape outlet = N.get >>> Tuple.fst >>> Map.lookup outlet

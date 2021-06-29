@@ -1,5 +1,6 @@
 module Noodle.Node
     ( Node, Receive, Pass, Link
+    , get, set
     , receive, pass, pass', send, connect, disconnect
     , empty, make, makeEff
     , inlet, outlet, outletFlipped
@@ -19,6 +20,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Traversable (traverse_, sequence)
+import Data.Functor (class Functor)
 
 import Effect (Effect)
 import Effect.Ref (Ref)
@@ -33,8 +35,9 @@ import Signal.Channel.Extra as Ch
 
 {- Node stores incoming and outgoing channels (`Signal.Channel`, not `Noodle.Channel`) of data of type `d` + any additional data -}
 data Node d a
-    = Node
-        (Channel (String /\ d) /\ Channel (String /\ d)) a
+    = Node -- TODO: add name
+        (Channel (String /\ d) /\ Channel (String /\ d))
+        a
 
 
 data Receive d = Receive { last :: String, fromInlets :: String /-> d }
@@ -44,6 +47,10 @@ newtype Pass d = Pass { toOutlets :: String /-> d }
 
 
 newtype Link = Link (Ref Boolean)
+
+
+instance functorNode :: Functor (Node d) where
+    map f (Node channels a) = Node channels $ f a
 
 
 consumer :: String
@@ -94,6 +101,14 @@ infixl 4 inlet as |>
 infixl 4 outletFlipped as <|
 
 
+get :: forall d a. Node d a -> a
+get (Node _ a) = a
+
+
+set :: forall d a. a -> Node d a -> Node d a
+set a (Node channels _) = Node channels a
+
+
 -- fromFn' :: (d -> d) -> Node''' d
 
 distribute :: forall d. Channel (String /\ d) -> Pass d -> Effect Unit
@@ -136,6 +151,10 @@ connect (srcNode /\ srcOutlet) (dstNode /\ dstInlet) =
 disconnect :: Link -> Effect Unit
 disconnect (Link ref) =
     ref # Ref.write false
+
+
+attach :: forall d a. Signal d -> String -> Node d a -> Effect (Node d a)
+attach signal inlet node = pure node -- FIXME: TODO
 
 
 getInletsChannel :: forall d a. Node d a -> Channel (String /\ d)
