@@ -1,4 +1,4 @@
-module Subpatch where
+module Noodle.Subpatch where
 
 import Data.Tuple.Nested (type (/\))
 
