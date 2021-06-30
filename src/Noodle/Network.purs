@@ -10,5 +10,4 @@ import Data.Map.Extra (type (/->))
 
 data Network d a =
     Network
-        { patches :: String /-> (Patch d a)
-        }
+        (String /-> Patch d a)

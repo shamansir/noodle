@@ -26,6 +26,10 @@ data Shape d =
         }
 
 
+transform :: forall d. Shape d -> d -> Maybe d
+transform (Shape { accept }) = accept
+
+
 -- TODO: Functor Shape ...
 
 

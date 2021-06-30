@@ -73,57 +73,40 @@ outletFlipped = N.outletFlipped
 
 
 fromFn1 :: forall d. d -> (d -> d) -> Effect (Node d)
-fromFn1 def fn =
-    make def $ \r -> N.pass' [ "0" /\ (fn <$> N.receive "0" r) ]
+fromFn1 = N.fromFn1 unit
 
 
 fromFn1' :: forall d. d -> (d -> Maybe d) -> Effect (Node d)
-fromFn1' def fn =
-    make def $ \r -> N.pass' [ "0" /\ (fn =<< N.receive "0" r) ]
+fromFn1' = N.fromFn1' unit
 
 
 fromFn2 :: forall d. d -> (d -> d -> d) -> Effect (Node d)
-fromFn2 def fn =
-    make def $ \r -> N.pass' [ "0" /\ (fn <$> N.receive "0" r <*> N.receive "1" r) ]
+fromFn2 = N.fromFn2 unit
 
 
 fromFn2' :: forall d. d -> (d -> d -> Maybe d) -> Effect (Node d)
-fromFn2' def fn =
-    make def $ \r -> N.pass' [ "0" /\ (identity =<< fn <$> N.receive "0" r <*> N.receive "1" r) ]
-
+fromFn2' = N.fromFn2' unit
 
 
 fromFn3 :: forall d. d -> (d -> d -> d -> d) -> Effect (Node d)
-fromFn3 def fn =
-    make def $
-        \r -> N.pass' [ "0" /\ (fn <$> N.receive "0" r <*> N.receive "1" r <*> N.receive "2" r) ]
+fromFn3 = N.fromFn3 unit
 
 
 fromFn3' :: forall d. d -> (d -> d -> d -> Maybe d) -> Effect (Node d)
-fromFn3' def fn =
-    make def $
-        \r -> N.pass' [ "0" /\ (identity =<< fn <$> N.receive "0" r <*> N.receive "1" r <*> N.receive "2" r) ]
+fromFn3' = N.fromFn3' unit
 
 
 fromFn4 :: forall d. d -> (d -> d -> d -> d -> d) -> Effect (Node d)
-fromFn4 def fn =
-    make def $
-        \r -> N.pass' [ "0" /\ (fn <$> N.receive "0" r <*> N.receive "1" r <*> N.receive "2" r <*> N.receive "3" r) ]
+fromFn4 = N.fromFn4 unit
 
 
 fromFn4' :: forall d. d -> (d -> d -> d -> d -> Maybe d) -> Effect (Node d)
-fromFn4' def fn =
-    make def $
-        \r -> N.pass' [ "0" /\ (identity =<< fn <$> N.receive "0" r <*> N.receive "1" r <*> N.receive "2" r <*> N.receive "3" r) ]
+fromFn4' = N.fromFn4' unit
 
 
 fromFn5 :: forall d. d -> (d -> d -> d -> d -> d -> d) -> Effect (Node d)
-fromFn5 def fn =
-    make def $ \r -> N.pass'
-        [ "0" /\ (fn <$> N.receive "0" r <*> N.receive "1" r <*> N.receive "2" r <*> N.receive "3" r <*> N.receive "4" r) ]
+fromFn5 = N.fromFn5 unit
 
 
 fromFn5' :: forall d. d -> (d -> d -> d -> d -> d -> Maybe d) -> Effect (Node d)
-fromFn5' def fn =
-    make def $ \r -> N.pass'
-        [ "0" /\ (identity =<< fn <$> N.receive "0" r <*> N.receive "1" r <*> N.receive "2" r <*> N.receive "3" r <*> N.receive "4" r) ]
+fromFn5' = N.fromFn5' unit

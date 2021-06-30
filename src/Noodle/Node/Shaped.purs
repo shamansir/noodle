@@ -9,6 +9,7 @@ import Noodle.Node as N
 import Noodle.Node (Receive, Pass)
 import Noodle.Shape as N
 
+import Data.Array (snoc)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map.Extra (type (/->))
@@ -124,57 +125,28 @@ withOutlets :: forall d. Array (String /\ N.Shape d) -> OutletsShape d
 withOutlets = OutletsShape
 
 
-{- TODO
 infixl 1 andInlet as ~<
-
-infixl 1 andInlets as ~<<
 
 infixl 1 andOutlet as >~
 
-infixl 1 andOutlets as >>~
-
 
 andInlet
-    :: forall c
-     . Array (InletAlias /\ c)
-    -> String /\ c
-    -> List (InletAlias /\ c)
-andInlet list (name /\ channel) =
-    list `List.snoc` (InletAlias name /\ channel)
-
-
-andInlets
-    :: forall c
-     . List (InletAlias /\ c)
-    -> List (String /\ c)
-    -> List (InletAlias /\ c)
-andInlets list source =
-    foldr
-        (:)
-        (source <#> (\(name /\ channel) -> InletAlias name /\ channel))
-        list
+    :: forall d
+     . InletsShape d
+    -> String /\ N.Shape d
+    -> InletsShape d
+andInlet (InletsShape inlets) (name /\ shape) =
+    InletsShape $ inlets `snoc` (name /\ shape)
 
 
 andOutlet
-    :: forall c
-     . Array (OutletAlias /\ c)
-    -> String /\ c
-    -> List (OutletAlias /\ c)
-andOutlet list (name /\ channel) =
-    list `List.snoc` (OutletAlias name /\ channel)
+    :: forall d
+     . OutletsShape d
+    -> String /\ N.Shape d
+    -> OutletsShape d
+andOutlet (OutletsShape outlets) (name /\ shape) =
+    OutletsShape $ outlets `snoc` (name /\ shape)
 
-
-andOutlets
-    :: forall c
-     . Array (OutletAlias /\ c)
-    -> Array (String /\ c)
-    -> Array (OutletAlias /\ c)
-andOutlets list source =
-    foldr
-        (:)
-        (source <#> (\(name /\ channel) -> OutletAlias name /\ channel))
-        list
--}
 
 noInlets :: forall d. InletsShape d
 noInlets = InletsShape []

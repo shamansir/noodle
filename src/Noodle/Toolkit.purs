@@ -11,3 +11,6 @@ data Toolkit d a = Toolkit (String /-> Node d a)
 
 
 data Renderer d a view = Renderer (String -> Node d a -> view)
+
+
+

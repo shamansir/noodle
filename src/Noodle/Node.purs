@@ -2,17 +2,19 @@ module Noodle.Node
     ( Node, Receive, Pass, Link
     , get, set
     , receive, pass, pass', passNothing, send, connect, disconnect
-    , empty, make, makeEff
+    , empty, make, makeEff, doNothing
     , inlet, outlet, outletFlipped
     , inlets, outlets
     , (<|), (|>), (<~>), (<+), (+>)
     , withFn1, withFn2, withFn3, withFn4, withFn5
+    , fromFn1, fromFn2, fromFn3, fromFn4, fromFn5
+    , fromFn1', fromFn2', fromFn3', fromFn4', fromFn5'
     , consumer
     , lastUpdateAt
     )
     where
 
-import Prelude (bind, const, pure, ($), (#), flip, (<$>), (<*>), (>>>), (<<<), (>>=), (=<<), unit, Unit)
+import Prelude (bind, const, pure, ($), (#), flip, (<$>), (<*>), (>>>), (<<<), (>>=), (=<<), unit, Unit, identity)
 
 import Data.Array (mapMaybe) as Array
 import Data.Maybe (Maybe)
@@ -139,6 +141,10 @@ passNothing :: forall d. Pass d
 passNothing = Pass { toOutlets : Map.empty }
 
 
+doNothing :: forall d. Receive d -> Pass d
+doNothing = const $ passNothing
+
+
 send :: forall d a. Node d a -> (String /\ d) -> Effect Unit
 send node (inlet /\ d) =
     Ch.send (getInletsChannel node) $ inlet /\ d
@@ -217,3 +223,60 @@ withFn4 fn inletA inletB inletC inletD r = fn <$> receive inletA r <*> receive i
 withFn5 :: forall d. (d -> d -> d -> d -> d -> d) -> String -> String -> String -> String -> String -> Receive d -> Maybe d
 withFn5 fn inletA inletB inletC inletD inletE r =
     fn <$> receive inletA r <*> receive inletB r <*> receive inletC r <*> receive inletD r <*> receive inletE r
+
+
+fromFn1 :: forall d a. a -> d -> (d -> d) -> Effect (Node d a)
+fromFn1 a def fn =
+    make a def $ \r -> pass' [ "0" /\ (fn <$> receive "0" r) ]
+
+
+fromFn1' :: forall d a. a -> d -> (d -> Maybe d) -> Effect (Node d a)
+fromFn1' a def fn =
+    make a def $ \r -> pass' [ "0" /\ (fn =<< receive "0" r) ]
+
+
+fromFn2 :: forall d a. a -> d -> (d -> d -> d) -> Effect (Node d a)
+fromFn2 a def fn =
+    make a def $ \r -> pass' [ "0" /\ (fn <$> receive "0" r <*> receive "1" r) ]
+
+
+fromFn2' :: forall d a. a -> d -> (d -> d -> Maybe d) -> Effect (Node d a)
+fromFn2' a def fn =
+    make a def $ \r -> pass' [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r) ]
+
+
+
+fromFn3 :: forall d a. a -> d -> (d -> d -> d -> d) -> Effect (Node d a)
+fromFn3 a def fn =
+    make a def $
+        \r -> pass' [ "0" /\ (fn <$> receive "0" r <*> receive "1" r <*> receive "2" r) ]
+
+
+fromFn3' :: forall d a. a -> d -> (d -> d -> d -> Maybe d) -> Effect (Node d a)
+fromFn3' a def fn =
+    make a def $
+        \r -> pass' [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r <*> receive "2" r) ]
+
+
+fromFn4 :: forall d a. a -> d -> (d -> d -> d -> d -> d) -> Effect (Node d a)
+fromFn4 a def fn =
+    make a def $
+        \r -> pass' [ "0" /\ (fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r) ]
+
+
+fromFn4' :: forall d a. a -> d -> (d -> d -> d -> d -> Maybe d) -> Effect (Node d a)
+fromFn4' a def fn =
+    make a def $
+        \r -> pass' [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r) ]
+
+
+fromFn5 :: forall d a. a -> d -> (d -> d -> d -> d -> d -> d) -> Effect (Node d a)
+fromFn5 a def fn =
+    make a def $ \r -> pass'
+        [ "0" /\ (fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r <*> receive "4" r) ]
+
+
+fromFn5' :: forall d a. a -> d -> (d -> d -> d -> d -> d -> Maybe d) -> Effect (Node d a)
+fromFn5' a def fn =
+    make a def $ \r -> pass'
+        [ "0" /\ (identity =<< fn <$> receive "0" r <*> receive "1" r <*> receive "2" r <*> receive "3" r <*> receive "4" r) ]
