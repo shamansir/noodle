@@ -34,6 +34,10 @@ etc.
 -}
 
 
+newtype InletsShape d = InletsShape (Array (String /\ N.Shape d))
+newtype OutletsShape d = OutletsShape (Array (String /\ N.Shape d))
+
+
 type Node d =
     N.Node
         d
@@ -43,11 +47,11 @@ type Node d =
 make
     :: forall d
     .  d
-    -> Array (String /\ N.Shape d)
-    -> Array (String /\ N.Shape d)
+    -> InletsShape d
+    -> OutletsShape d
     -> (Receive d -> Pass d)
     -> Effect (Node d)
-make def inlets outlets fn =
+make def (InletsShape inlets) (OutletsShape outlets) fn =
     let
         inletsMap = Map.fromFoldable inlets
         outletsMap = Map.fromFoldable outlets
@@ -67,11 +71,11 @@ make def inlets outlets fn =
 makeEff
     :: forall d
     .  d
-    -> Array (String /\ N.Shape d)
-    -> Array (String /\ N.Shape d)
+    -> InletsShape d
+    -> OutletsShape d
     -> (Receive d -> Effect (Pass d))
     -> Effect (Node d)
-makeEff def inlets outlets fn =
+makeEff def (InletsShape inlets) (OutletsShape outlets) fn =
     let
         inletsMap = Map.fromFoldable inlets
         outletsMap = Map.fromFoldable outlets
@@ -110,3 +114,71 @@ inletShape inlet = N.get >>> Tuple.snd >>> Map.lookup inlet
 
 outletShape :: forall d. String -> Node d -> Maybe (N.Shape d)
 outletShape outlet = N.get >>> Tuple.fst >>> Map.lookup outlet
+
+
+withInlets :: forall d. Array (String /\ N.Shape d) -> InletsShape d
+withInlets = InletsShape
+
+
+withOutlets :: forall d. Array (String /\ N.Shape d) -> OutletsShape d
+withOutlets = OutletsShape
+
+
+{- TODO
+infixl 1 andInlet as ~<
+
+infixl 1 andInlets as ~<<
+
+infixl 1 andOutlet as >~
+
+infixl 1 andOutlets as >>~
+
+
+andInlet
+    :: forall c
+     . Array (InletAlias /\ c)
+    -> String /\ c
+    -> List (InletAlias /\ c)
+andInlet list (name /\ channel) =
+    list `List.snoc` (InletAlias name /\ channel)
+
+
+andInlets
+    :: forall c
+     . List (InletAlias /\ c)
+    -> List (String /\ c)
+    -> List (InletAlias /\ c)
+andInlets list source =
+    foldr
+        (:)
+        (source <#> (\(name /\ channel) -> InletAlias name /\ channel))
+        list
+
+
+andOutlet
+    :: forall c
+     . Array (OutletAlias /\ c)
+    -> String /\ c
+    -> List (OutletAlias /\ c)
+andOutlet list (name /\ channel) =
+    list `List.snoc` (OutletAlias name /\ channel)
+
+
+andOutlets
+    :: forall c
+     . Array (OutletAlias /\ c)
+    -> Array (String /\ c)
+    -> Array (OutletAlias /\ c)
+andOutlets list source =
+    foldr
+        (:)
+        (source <#> (\(name /\ channel) -> OutletAlias name /\ channel))
+        list
+-}
+
+noInlets :: forall d. InletsShape d
+noInlets = InletsShape []
+
+
+noOutlets :: forall d. OutletsShape d
+noOutlets = OutletsShape []
