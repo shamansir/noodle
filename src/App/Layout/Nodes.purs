@@ -1,4 +1,4 @@
-module App.Layout where
+module App.Layout.Nodes where
 
 
 import Data.BinPack.R2 (Bin2)

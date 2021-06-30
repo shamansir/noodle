@@ -12,4 +12,6 @@ type OutletPath = String /\ String
 
 
 data Patch d a =
-    Patch (String /-> Node d a) ((OutletPath /\ InletPath) /-> Link)
+    Patch
+        (String /-> Node d a)
+        ((OutletPath /\ InletPath) /-> Link)
