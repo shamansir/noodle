@@ -104,4 +104,4 @@ main = launchAff_ $ runSpec [consoleReporter] do
           $ nodeB +> ( "b" /\ 17 )
         expectFn outB [ "c" /\ 23 ] -- sums up with 10 which was stored in its `a` before connection
 
-      pending "sending and running a signal"
+      pending "receiving and running a signal"
