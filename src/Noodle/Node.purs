@@ -96,6 +96,8 @@ makeEff v def fn = do
     pure node
 
 
+-- TODO: `makePastDep` a.k.a. `makeFolding`
+
 
 infixl 5 receive as <+
 infixl 5 send as +>
