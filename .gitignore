@@ -1,4 +1,7 @@
 .psc-ide-port
 .purs-repl
 .spago
+.parcel-cache
+dist
 output
+index.js

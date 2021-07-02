@@ -19,6 +19,7 @@ to generate this file without the comments in this block.
   , "control"
   , "datetime"
   , "effect"
+  , "foldable-traversable"
   , "halogen"
   , "halogen-svg-elems"
   , "identity"
@@ -33,5 +34,5 @@ to generate this file without the comments in this block.
   , "tuples"
   ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs", "test/**/*.purs" ]
+, sources = [ "src/**/*.purs" ]
 }

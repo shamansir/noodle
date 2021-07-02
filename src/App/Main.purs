@@ -28,6 +28,7 @@ component =
     , eval: H.mkEval H.defaultEval { handleAction = handleAction }
     }
 
+
 initialState :: forall input. input -> State
 initialState _ = 0
 
