@@ -69,18 +69,18 @@ make def (InletsShape inlets) (OutletsShape outlets) fn =
         )
 
 
-makeEff
+makeEffectful
     :: forall d
     .  d
     -> InletsShape d
     -> OutletsShape d
     -> (Receive d -> Effect (Pass d))
     -> Effect (Node d)
-makeEff def (InletsShape inlets) (OutletsShape outlets) fn =
+makeEffectful def (InletsShape inlets) (OutletsShape outlets) fn =
     let
         inletsMap = Map.fromFoldable inlets
         outletsMap = Map.fromFoldable outlets
-    in N.makeEff
+    in N.makeEffectful
         (inletsMap /\ outletsMap)
         def
         (\receive ->

@@ -1,7 +1,7 @@
 module Noodle.Node.Unit
     ( Node
     , send, connect
-    , empty, make, makeEff
+    , empty, make, makeEffectful
     , inlet, outlet, outletFlipped
     , inlets, outlets
     , fromFn1, fromFn2, fromFn3, fromFn4, fromFn5
@@ -28,12 +28,12 @@ empty :: forall d. d -> Effect (Node d)
 empty = N.empty unit
 
 
-makeEff
+makeEffectful
     :: forall d
      . d
     -> (N.Receive d -> Effect (N.Pass d))
     -> Effect (Node d)
-makeEff = N.makeEff unit
+makeEffectful = N.makeEffectful unit
 
 
 make
@@ -41,7 +41,7 @@ make
      . d
     -> (N.Receive d -> N.Pass d)
     -> Effect (Node d)
-make def fn = makeEff def (pure <<< fn)
+make = N.make unit
 
 
 send :: forall d. Node d -> (String /\ d) -> Effect Unit

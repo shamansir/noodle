@@ -105,3 +105,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
         expectFn outB [ "c" /\ 23 ] -- sums up with 10 which was stored in its `a` before connection
 
       pending "receiving and running a signal"
+
+      pending "shaped: hot inlets"
+
+      pending "shaped: cold inlets"

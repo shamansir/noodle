@@ -21,6 +21,7 @@ to generate this file without the comments in this block.
   , "effect"
   , "foldable-traversable"
   , "halogen"
+  , "halogen-subscriptions"
   , "halogen-svg-elems"
   , "identity"
   , "invariant"

@@ -2,7 +2,7 @@ module Noodle.Node
     ( Node, Receive, Pass, Link
     , get, set
     , receive, pass, pass', passNothing, send, connect, disconnect
-    , empty, make, makeEff, doNothing
+    , empty, make, makeEffectful, doNothing
     , inlet, outlet, outletFlipped
     , inlets, outlets
     , (<|), (|>), (<~>), (<+), (+>)
@@ -70,16 +70,16 @@ make
     -> d
     -> (Receive d -> Pass d)
     -> Effect (Node d a)
-make v def fn = makeEff v def (pure <<< fn)
+make v def fn = makeEffectful v def (pure <<< fn)
 
 
-makeEff
+makeEffectful
     :: forall d a
      . a
     -> d
     -> (Receive d -> Effect (Pass d))
     -> Effect (Node d a)
-makeEff v def fn = do
+makeEffectful v def fn = do
     inlets_chan <- Ch.channel (consumer /\ def)
     outlets_chan <- Ch.channel (consumer /\ def)
     let
@@ -96,7 +96,33 @@ makeEff v def fn = do
     pure node
 
 
--- TODO: `makePastDep` a.k.a. `makeFolding`
+{-
+
+makeFolding -- makePastDep
+    :: forall d a state
+     . a -- use `a` as the state?
+    -> state
+    -> d
+    -> (Receive d -> state -> Effect (state /\ Pass d))
+    -> Effect (Node d a)
+makeFolding
+
+
+makeEffectfulFolding
+    :: forall d a state
+     . a -- use `a` as the state?
+    -> state
+    -> d
+    -> (Receive d -> state -> Effect (state /\ Pass d))
+    -> Effect (Node d a)
+makeEffectfulFolding
+
+-}
+
+
+
+-- TODO: makeFixedPoint --forall i o. (Emitter i -> { input :: Emitter i, output :: Emitter o }) -> Emitter o
+
 
 
 infixl 5 receive as <+
