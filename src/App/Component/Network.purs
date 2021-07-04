@@ -1,13 +1,15 @@
 module App.Component.Network where
 
-import Prelude (Void)
+import Prelude (Void, ($), (<$>), (<*>), flip, absurd, (=<<))
 
 import Type.Proxy (Proxy(..))
 
 import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..))
+import Data.Tuple as Tuple
 
-import Noodle.Network as Noodle
+import Noodle.Network (Network) as Noodle
+import Noodle.Network as Network
 import App.Component.Patch as PatchC
 
 
@@ -16,7 +18,7 @@ import Halogen.HTML as HH
 import Halogen.Svg.Elements as HS
 
 
-type Slots = ( patch :: forall query. H.Slot query Void Int )
+type Slots = ( patch :: PatchC.Slot Int )
 
 
 _patch = Proxy :: Proxy "patch"
@@ -33,22 +35,35 @@ type State d =
     }
 
 
-data Action
+data Action d
     = SelectPatch String
+    | HandlePatch (PatchC.Action d)
 
 
 initialState :: forall d. Input d -> State d
 initialState { nw } = { nw, currentPatch : Nothing }
 
 
-render :: forall d m. State d -> H.ComponentHTML Action Slots m
-render _ = HS.svg [] []
+render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
+render { nw, currentPatch } =
+    HS.svg
+        []
+        [ patchesTabs
+        , maybeCurrent $ (flip Network.patch $ nw) =<< currentPatch
+        ]
+    where
+        patchesTabs = HS.g [] (patchLabel <$> Tuple.fst <$> Network.patches nw)
+        patchLabel label = HS.text [] [ HH.text label ]
+        maybeCurrent (Just patch) = HH.slot _patch 0 PatchC.component { patch } absurd
+        maybeCurrent Nothing = HS.text [] [ HH.text "No patch selected" ]
 
 
-handleAction :: forall output m d. Action -> H.HalogenM (State d) Action Slots output m Unit
+handleAction :: forall output m d. Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
 handleAction = case _ of
-  SelectPatch _ ->
-    H.modify_ \state -> state
+    SelectPatch _ ->
+        H.modify_ \state -> state
+    HandlePatch _ ->
+        H.modify_ \state -> state
 
 
 component :: forall query output m d. H.Component query (Input d) output m

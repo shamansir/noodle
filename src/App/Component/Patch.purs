@@ -1,7 +1,7 @@
 module App.Component.Patch where
 
 
-import Prelude (identity, (<<<))
+import Prelude (identity, (<<<), Void)
 
 import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..))
@@ -13,6 +13,9 @@ import Halogen.HTML as HH
 import Halogen.Svg.Elements as HS
 
 import Type.Proxy (Proxy(..))
+
+
+type Slot id = forall query. H.Slot query Void id
 
 
 type Input d =
