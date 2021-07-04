@@ -16,6 +16,7 @@ import App.Component.Patch as PatchC
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.Svg.Elements as HS
+import Halogen.Svg.Attributes as HSA
 
 
 type Slots = ( patch :: PatchC.Slot Int )
@@ -47,7 +48,7 @@ initialState { nw } = { nw, currentPatch : Nothing }
 render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
 render { nw, currentPatch } =
     HS.svg
-        []
+        [ HSA.width 300.0, HSA.height 400.0 ]
         [ patchesTabs
         , maybeCurrent $ (flip Network.patch $ nw) =<< currentPatch
         ]
