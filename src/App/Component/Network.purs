@@ -45,7 +45,7 @@ data Action d
 
 
 initialState :: forall d. Input d -> State d
-initialState { nw } = { nw, currentPatch : Nothing, width : 1000.0, height : 1000.0 }
+initialState { nw } = { nw, currentPatch : Just "base", width : 1000.0, height : 1000.0 }
 
 
 render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
@@ -57,8 +57,8 @@ render { nw, currentPatch, width, height } =
         , maybeCurrent $ (flip Network.patch $ nw) =<< currentPatch
         ]
     where
-        tabHeight = 25.0
-        tabLength = 65.0
+        tabHeight = 20.0
+        tabLength = 60.0
         background =
             HS.rect [ HSA.width width, HSA.height height, HSA.fill $ Just Colors.background ]
         patchesTabs = HS.g [ HSA.class_ $ H.ClassName "patches-tabs" ] (patchLabel <$> Tuple.fst <$> Network.patches nw)

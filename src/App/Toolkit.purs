@@ -9,9 +9,17 @@ import Data.Tuple.Nested ((/\))
 import Noodle.Node.Unit (Node)
 import Noodle.Node.Unit (make) as Node
 import Noodle.Node ((<+))
-import Noodle.Node (pass') as Node
+import Noodle.Node (pass', doNothing) as Node
 
 import Effect (Effect)
+
+
+
+library :: Effect (Node String)
+library =
+    Node.make
+        ""
+        Node.doNothing
 
 
 sumNode :: Effect (Node Int)

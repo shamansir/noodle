@@ -38,7 +38,7 @@ import Signal.Channel.Extra as Ch
 
 {- Node stores incoming and outgoing channels (`Signal.Channel`, not `Noodle.Channel`) of data of type `d` + any additional data -}
 data Node d a
-    = Node -- TODO: add name
+    = Node
         (Channel (String /\ d) /\ Channel (String /\ d))
         a
 
