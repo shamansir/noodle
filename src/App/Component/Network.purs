@@ -1,6 +1,6 @@
 module App.Component.Network where
 
-import Prelude (Void, ($), (<$>), (<*>), flip, absurd, (=<<))
+import Prelude
 
 import Type.Proxy (Proxy(..))
 
@@ -10,6 +10,8 @@ import Data.Tuple as Tuple
 
 import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
+
+import App.Colors as Colors
 import App.Component.Patch as PatchC
 
 
@@ -33,6 +35,7 @@ type Input d =
 type State d =
     { nw :: Noodle.Network d Unit
     , currentPatch :: Maybe String
+    , width :: Number, height :: Number
     }
 
 
@@ -42,21 +45,37 @@ data Action d
 
 
 initialState :: forall d. Input d -> State d
-initialState { nw } = { nw, currentPatch : Nothing }
+initialState { nw } = { nw, currentPatch : Nothing, width : 1000.0, height : 1000.0 }
 
 
 render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
-render { nw, currentPatch } =
+render { nw, currentPatch, width, height } =
     HS.svg
-        [ HSA.width 300.0, HSA.height 400.0 ]
-        [ patchesTabs
+        [ HSA.width width, HSA.height height ]
+        [ background
+        , patchesTabs
         , maybeCurrent $ (flip Network.patch $ nw) =<< currentPatch
         ]
     where
-        patchesTabs = HS.g [] (patchLabel <$> Tuple.fst <$> Network.patches nw)
-        patchLabel label = HS.text [] [ HH.text label ]
-        maybeCurrent (Just patch) = HH.slot _patch 0 PatchC.component { patch } absurd
-        maybeCurrent Nothing = HS.text [] [ HH.text "No patch selected" ]
+        tabHeight = 25.0
+        tabLength = 65.0
+        background =
+            HS.rect [ HSA.width width, HSA.height height, HSA.fill $ Just Colors.background ]
+        patchesTabs = HS.g [ HSA.class_ $ H.ClassName "patches-tabs" ] (patchLabel <$> Tuple.fst <$> Network.patches nw)
+        patchLabel label =
+            HS.g
+                [ HSA.class_ $ H.ClassName "patch-tab" ]
+                [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just Colors.tabBackground ]
+                , HS.text [] [ HH.text label ]
+                ]
+        maybeCurrent (Just patch) =
+            HS.g
+                [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]
+                [ HH.slot _patch 0 PatchC.component { patch } absurd ]
+        maybeCurrent Nothing =
+            HS.text
+                [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]
+                [ HH.text "No patch selected" ]
 
 
 handleAction :: forall output m d. Action d -> H.HalogenM (State d) (Action d) Slots output m Unit

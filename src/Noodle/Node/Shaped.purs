@@ -7,7 +7,8 @@ import Prelude (pure, ($), (#), (>>>), (<$>), map)
 
 import Noodle.Node as N
 import Noodle.Node (Receive, Pass)
-import Noodle.Shape as N
+import Noodle.Channel.Shape as Channel
+import Noodle.Node.Shape (Shape)
 
 import Data.Array (snoc)
 import Data.Map as Map
@@ -35,14 +36,12 @@ etc.
 -}
 
 
-newtype InletsShape d = InletsShape (Array (String /\ N.Shape d))
-newtype OutletsShape d = OutletsShape (Array (String /\ N.Shape d))
+newtype InletsShape d = InletsShape (Array (String /\ Channel.Shape d))
+newtype OutletsShape d = OutletsShape (Array (String /\ Channel.Shape d))
 
 
 type Node d =
-    N.Node
-        d
-        ((String /-> N.Shape d) /\ (String /-> N.Shape d))
+    N.Node d (Shape d)
 
 
 make
@@ -62,7 +61,7 @@ make def (InletsShape inlets) (OutletsShape outlets) fn =
         (\receive ->
             if inletsMap
                 # Map.lookup (N.lastUpdateAt receive)
-                # map N.isHot
+                # map Channel.isHot
                 # fromMaybe true
             then fn receive
             else N.passNothing
@@ -86,42 +85,49 @@ makeEffectful def (InletsShape inlets) (OutletsShape outlets) fn =
         (\receive ->
             if inletsMap
                 # Map.lookup (N.lastUpdateAt receive)
-                # map N.isHot
+                # map Channel.isHot
                 # fromMaybe true
             then fn receive
             else pure $ N.passNothing
         )
 
 
-addInlet :: forall d. String -> N.Shape d -> Node d -> Node d
+addInlet :: forall d. String -> Channel.Shape d -> Node d -> Node d
 addInlet name shape = (<$>) (lmap $ Map.insert name shape)
 
 
-reshapeInlet :: forall d. String -> N.Shape d -> Node d -> Node d
+reshape :: forall d. (InletsShape d /\ OutletsShape d) -> Node d -> Node d
+reshape (InletsShape inlets /\ OutletsShape outlets) =
+    N.set
+        (Map.fromFoldable inlets /\ Map.fromFoldable outlets)
+        -- FIXME: update the handler to monitor hot/cold inlets as well
+
+
+reshapeInlet :: forall d. String -> Channel.Shape d -> Node d -> Node d
 reshapeInlet = addInlet
 
 
-addOutlet :: forall d. String -> N.Shape d -> Node d -> Node d
+addOutlet :: forall d. String -> Channel.Shape d -> Node d -> Node d
 addOutlet name shape = (<$>) (rmap $ Map.insert name shape)
 
 
-reshapeOutlet :: forall d. String -> N.Shape d -> Node d -> Node d
+reshapeOutlet :: forall d. String -> Channel.Shape d -> Node d -> Node d
 reshapeOutlet = addOutlet
 
 
-inletShape :: forall d. String -> Node d -> Maybe (N.Shape d)
+inletShape :: forall d. String -> Node d -> Maybe (Channel.Shape d)
 inletShape inlet = N.get >>> Tuple.snd >>> Map.lookup inlet
 
 
-outletShape :: forall d. String -> Node d -> Maybe (N.Shape d)
+outletShape :: forall d. String -> Node d -> Maybe (Channel.Shape d)
 outletShape outlet = N.get >>> Tuple.fst >>> Map.lookup outlet
 
 
-withInlets :: forall d. Array (String /\ N.Shape d) -> InletsShape d
+withInlets :: forall d. Array (String /\ Channel.Shape d) -> InletsShape d
 withInlets = InletsShape
 
 
-withOutlets :: forall d. Array (String /\ N.Shape d) -> OutletsShape d
+withOutlets :: forall d. Array (String /\ Channel.Shape d) -> OutletsShape d
 withOutlets = OutletsShape
 
 
@@ -133,7 +139,7 @@ infixl 1 andOutlet as >~
 andInlet
     :: forall d
      . InletsShape d
-    -> String /\ N.Shape d
+    -> String /\ Channel.Shape d
     -> InletsShape d
 andInlet (InletsShape inlets) (name /\ shape) =
     InletsShape $ inlets `snoc` (name /\ shape)
@@ -142,7 +148,7 @@ andInlet (InletsShape inlets) (name /\ shape) =
 andOutlet
     :: forall d
      . OutletsShape d
-    -> String /\ N.Shape d
+    -> String /\ Channel.Shape d
     -> OutletsShape d
 andOutlet (OutletsShape outlets) (name /\ shape) =
     OutletsShape $ outlets `snoc` (name /\ shape)

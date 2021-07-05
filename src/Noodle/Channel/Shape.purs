@@ -1,4 +1,4 @@
-module Noodle.Shape
+module Noodle.Channel.Shape
     where
 
 
