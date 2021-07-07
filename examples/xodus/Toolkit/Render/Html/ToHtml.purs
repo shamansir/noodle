@@ -8,7 +8,8 @@ import Spork.Html as H
 import Noodle.Path as P
 import Noodle.API.Action (Action(..), RequestAction(..)) as A
 
-import Noodle.Render.Html (View, RoutedAction, core) as R
+import Noodle.Render.Action (RoutedAction, core) as R
+import Noodle.Render.Html (View) as R
 
 import Xodus.Toolkit.Node (Node)
 import Xodus.Toolkit.Value (Value)

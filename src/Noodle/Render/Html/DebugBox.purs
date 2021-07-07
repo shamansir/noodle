@@ -1,7 +1,6 @@
 module Noodle.Render.Html.DebugBox
-    ( debugBox, DebugBox, Action, Model, Filter
-    , init, update, view
-    , ActionsKind, FilterState )
+    ( debugBox, DebugBox
+    , view )
     where
 
 
@@ -26,12 +25,11 @@ import Noodle.Process as R
 import Noodle.Render.Atom as R
 import Noodle.UUID as R
 
+
 import UI (UI)
 import UI (makeMinimal) as UI
 
-
-actionStackSize :: Int
-actionStackSize = 10
+import Noodle.Render.DebugBox
 
 
 type DebugBox d c n =
@@ -49,89 +47,6 @@ debugBox =
     UI.makeMinimal
         (\action (nw /\ model) -> nw /\ update action (nw /\ model))
         view
-
-
-data Action
-    = Invert ActionsKind
-
-
-data ActionsKind
-    = Build
-    | Data
-    | Inner
-    | Request
-
-
-instance showActionsKind :: Show ActionsKind where
-    show Build = "Build"
-    show Inner = "Inner"
-    show Data = "Data"
-    show Request = "Request"
-
-
-derive instance eqActionsKind :: Eq ActionsKind
-
-
-data FilterState = On | Off
-
-
-type Filter = List (ActionsKind /\ FilterState)
-
-
-type Model d c n =
-    { lastActions :: List (Core.Action d c n)
-    , filter :: Filter
-    }
-
-
-init :: forall d c n. Model d c n
-init =
-    { lastActions : List.Nil
-    , filter
-        : (Build /\ On)
-        : (Data /\ Off)
-        : (Request /\ Off)
-        : (Inner /\ Off)
-        : List.Nil
-    }
-
-
-update
-    :: forall d c n
-     . Either Action (Core.Action d c n)
-    -> R.Network d c n /\ Model d c n
-    -> Model d c n
-update (Right action) (nw /\ model) =
-    model
-        { lastActions =
-            if (not $ filtered)
-            then
-                action :
-                    (if List.length model.lastActions < actionStackSize then
-                        model.lastActions
-                    else
-                        List.take actionStackSize model.lastActions
-                    )
-            else model.lastActions
-        }
-    where
-        filtered = List.foldr check true model.filter
-        check (kind /\ state) prev =
-            prev && case action /\ kind /\ state of
-                Core.Build _   /\ Build   /\ On -> false
-                Core.Data _    /\ Data    /\ On -> false
-                Core.Inner _   /\ Inner   /\ On -> false
-                Core.Request _ /\ Request /\ On -> false
-                _ -> true
-
-update (Left (Invert kind)) (nw /\ model) =
-    model
-        { filter = switchIfKind <$> model.filter
-        }
-    where
-        switchIfKind (otherKind /\ On)  | otherKind == kind = otherKind /\ Off
-        switchIfKind (otherKind /\ Off) | otherKind == kind = otherKind /\ On
-        switchIfKind (otherKind /\ val) | otherwise         = otherKind /\ val
 
 
 -- viewItems
@@ -189,11 +104,12 @@ viewNetwork nw@(R.Network { patches, name }) =
             H.li [ H.classes [ "patch-debug" ] ]
                 [ H.text "Unknown patch" ]
         viewNode :: Maybe (R.Node d n) -> Html Action
-        viewNode (Just (R.Node uuid path n processF { inlets, outlets })) =
+        viewNode (Just (R.Node uuid path n pos processF { inlets, outlets })) =
             H.li [ H.classes [ "node-debug" ] ]
                 [ H.div []
                     [ H.span [] [ H.text $ show uuid ]
                     , H.span [] [ H.text $ show path ]
+                    , H.span [] [ H.text $ show pos ]
                     , H.span []
                         [ H.text $ case processF of
                             R.Withhold -> "withhold"

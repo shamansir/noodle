@@ -10,7 +10,8 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Noodle.Network (Network)
 import Noodle.Network (empty) as Network
 import Noodle.API.Action.Sequence (pushAll)
-import Noodle.Render.Html (make, init) as HtmlRenderer
+import Noodle.Render.Model (init) as HtmlRenderer
+import Noodle.Render.Html (make) as HtmlRenderer
 import Noodle.Render.Html.VDom as VDom
 
 

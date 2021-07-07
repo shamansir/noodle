@@ -8,7 +8,7 @@ module FSM
     , imapModel, imapAction
     , doNothing, single, batch, just
     , joinWith
-    , foldUpdate
+    , foldUpdate, updateThrough
     ) where
 
 
@@ -75,7 +75,7 @@ makeWithPush = FSM
 makePassing
     :: forall action model
      . FSM action model
-makePassing = FSM (\_ _ m -> m /\ doNothing)
+makePassing = FSM $ const updateThrough
 
 
 makeMinimal
@@ -96,6 +96,10 @@ makeWithNoEffects updateF =
 
 noSubscription :: forall a. a -> Effect Unit
 noSubscription = const $ pure unit
+
+
+updateThrough :: forall action model. action -> model -> model /\ List (Effect action)
+updateThrough _ m = m /\ doNothing
 
 
 doNothing :: forall action. List (Effect action)

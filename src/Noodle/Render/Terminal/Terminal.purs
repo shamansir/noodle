@@ -18,6 +18,7 @@ import Data.List (List)
 import Data.List as List
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Sequence as Seq
+import Data.Sequence.Extra as Seq
 import Data.String (codePointFromChar, joinWith)
 import Data.String as String
 import Data.Tuple.Nested (type (/\), (/\))
@@ -158,7 +159,7 @@ packOutlet nw (R.Outlet _ path _ _) =
 
 
 viewNode :: forall d c n. R.Network d c n -> R.Node d n -> View
-viewNode nw (R.Node uuid path@(R.ToNode { node : name }) _ _ { inlets, outlets }) =
+viewNode nw (R.Node uuid path@(R.ToNode { node : name }) _ _ _ { inlets, outlets }) =
     let
         inletsStr = String.fromCodePointArray
             $ Array.replicate (Seq.length inlets)
@@ -172,7 +173,7 @@ viewNode nw (R.Node uuid path@(R.ToNode { node : name }) _ _ { inlets, outlets }
 
 
 packNode :: forall d c n. R.Network d c n -> R.Node d n -> Item
-packNode nw (R.Node uuid path@(R.ToNode { node : name }) _ _ { inlets, outlets }) =
+packNode nw (R.Node uuid path@(R.ToNode { node : name }) _ _ _ { inlets, outlets }) =
     R2.item width 1
         { subject : NodeSubj path
         , packing : Nothing
@@ -238,10 +239,10 @@ viewNetwork (Packing b2) nw@(R.Network { name, patches })  =
                 withSubPacking v' =
                     maybe v' (injectSubPacking v') item.packing
         viewSubject (PatchSubj patchPath) w h =
-            Lens.view (R._patchByPath patchPath) nw >>=
+            Lens.preview (R._patchByPath patchPath) nw >>=
                 pure <<< viewPatch nw (w /\ h)
         viewSubject (NodeSubj nodePath) w h =
-            Lens.view (R._nodeByPath nodePath) nw >>=
+            Lens.preview (R._nodeByPath nodePath) nw >>=
                 pure <<< viewNode nw
         viewSubject _ _ _ = Nothing
 
@@ -258,7 +259,11 @@ packNetwork nw@(R.Network { name, patches }) (Packing container) =
         patchWidth = round $ toNumber width / columns
         patchHeight = round $ toNumber height
             / toNumber (if (orphans == 0) then rows else 1 + rows)
-        actualPatches = Lens.view R._networkPatches nw
+        actualPatchesUuids = Lens.view R._patches nw
+        actualPatches =
+            (\uuid -> Lens.view (R._patch uuid) nw) <$> actualPatchesUuids
+                # Seq.catMaybes
+                # List.fromFoldable
     in
         actualPatches
             # map (packPatch (patchWidth /\ patchHeight) nw)

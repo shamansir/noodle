@@ -6,13 +6,17 @@
 
     ** DONE In `FSM` (and Action Sequences), do not allow actions to be passed to `run` and other functions, all the actions should only be pushed afterwards — that will simplify things a lot, see my own `purescript-fsm` example as the proof (and for the one below as well);
 
-    ** Subpatches;
+    ** DONE Subpatches;
+
+    ** Subpatches demo;
 
     ** Remove button is not visible;
 
-    ** PureData-like demo;
+    ** PureData-like demo; Removing and adding nodes on the same place;
 
     ** URLs, representing just some part of the UI and still allowing to operate between them;
+
+    ** Optics: Change Lenses which resolve to Maybe, to Prisms; https://thomashoneyman.com/articles/practical-profunctor-lenses-optics;
 
     ** Lists, Arrays and Sequences are all messed up; Prefer `List`s everywhere, except for unique stuff, there prefer `Sequence`;
 

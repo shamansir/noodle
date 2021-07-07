@@ -4,159 +4,48 @@ import Prelude
 
 import Data.Int (toNumber)
 import Data.Lens (view) as L
-import Data.List ((:), List(..))
-import Data.List (toUnfoldable, singleton) as List
-import Data.Either (Either(..))
+import Data.List (toUnfoldable) as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..), isJust, maybe, fromMaybe)
-import Data.Set as Set
-import Data.Set (Set)
 import Data.Array as Array
 import Data.Sequence as Seq
-import Data.Tuple (fst, snd)
 import Data.Tuple.Nested (type (/\), (/\))
-import Data.Vec2 (Vec2(..))
-import Data.Vec2 as Vec2
 
 import Effect (Effect)
 
 import Data.Covered (carry, uncover, recover)
 
-import FSM (doNothing, single, batch, just)
 --import UI (view, update, update') as UI
 
 import Noodle.API.Errors (NoodleError) as R
-import Noodle.API.Action (Action(..), DataAction(..), BuildAction(..), RequestAction(..)) as Core
 import Noodle.Network as R
 import Noodle.Optics as L
 import Noodle.Path as P
-import Noodle.UUID (UUID)
 import Noodle.UUID as UUID
-import Noodle.Util (type (/->), (+>), Bounds, Rect, Position)
+import Noodle.Util (Position)
 import Noodle.Toolkit (Toolkit, class Channels, ToolkitRenderer) as T
 
-import Noodle.Render.Atom as R
+import Noodle.Render.Atom (class Atom, labelOf) as R
 import Noodle.Render.Layout as Layout
-import Noodle.Render.Layout (Layout, PatchLayout, Cell(..), ZIndex(..))
+import Noodle.Render.Layout (PatchLayout, Cell(..), ZIndex(..))
 import Noodle.Render.Renderer (Renderer, Routed(..))
 import Noodle.Render.Renderer (make) as Renderer
-import Noodle.Render.Html.DebugBox as DebugBox
-import Noodle.Render.Html.DebugBox (debugBox)
+import Noodle.Render.Html.DebugBox (view) as DebugBox
+
+import Noodle.Render.Action (Action(..), RoutedAction, my)
+import Noodle.Render.Model
+import Noodle.Render.Update (update, updateDebugBox)
 
 import Spork.Html (Html)
 import Spork.Html as H
 -- import Web.UIEvent.Event as ME
-import Web.Event.Event (stopPropagation) as Event
-import Web.Event.Event (Event)
 import Web.UIEvent.MouseEvent as ME
-
-
-type Model d c n =
-    -- TODO: use UUID to store inlets?
-    { lastInletData :: P.ToInlet /-> d
-    , lastOutletData :: P.ToOutlet /-> d
-    , debug :: Maybe (DebugBox.Model d c n)
-    -- , uuidToChannelDef :: UUID /-> T.ChannelDefAlias
-    -- , uuidToNodeDef :: UUID /-> T.NodeDefAlias
-    , uuidToChannel :: UUID /-> c
-    , mousePos :: MousePos
-    , dragging :: DragState d c n
-    , positions :: UUID.Tagged /-> Position
-    -- , positions ::
-    --     { inlets :: UUID.ToInlet /-> Position
-    --     , outlets :: UUID.ToOutlet /-> Position
-    --     }
-    , layout :: Layout d n
-    }
-
-
--- data ZIndex = ZIndex Int
-
-
-data Emplacement
-    = NotDetermined
-    | Pinned ZIndex Position
-    | Packed Position Rect
-
-
-type LinkEnds = { from :: Position, to :: Position }
-type LinkTransform = { from :: Position, angle :: Number, length :: Number }
-
-
-type MousePos = Position
-
-
-data Action d c n
-    = NoOp
-    | EnableDebug
-    | DisableDebug
-    | ClickBackground ME.MouseEvent
-    | MouseMove MousePos
-    | MouseUp MousePos
-    | ClickInlet (R.Inlet d c) ME.MouseEvent
-    | ClickOutlet (R.Outlet d c) ME.MouseEvent
-    | ClickNodeTitle (R.Node d n) ME.MouseEvent
-    | ClickRemoveButton (R.Node d n) ME.MouseEvent
-    | ClickLink R.Link ME.MouseEvent
-    | PinNode (R.Node d n) Position
-    | StorePositions (UUID.Tagged /-> Position)
-    | ToDebugBox DebugBox.Action
-
-
-{-
-data Perform d c n
-    = UpdatePositions
-    | TryConnecting (R.Outlet d c) (R.Inlet d c)
-    | TryToPinNode (R.Node d n) Position
-    | TryRemovingNode (R.Node d n)
-    | StopPropagation Event
--}
-
-
-data DragSubject d c n
-    = DragNode (R.Node d n)
-    | DragLink (R.Outlet d c)
-
-
-data DragState d c n
-    = NotDragging
-    | Dragging (DragSubject d c n)
-
-
-instance showDragState :: Show (DragState d c n) where
-    show NotDragging = "not dragging"
-    show (Dragging (DragNode (R.Node _ nPath _ _ _))) = "dragging node " <> show nPath
-    show (Dragging (DragLink (R.Outlet _ oPath _ _))) = "dragging link from " <> show oPath
-
-
-type PushF d c n = Action d c n -> Effect Unit
-
-
-type RoutedAction d c n = Routed (Action d c n) (Core.Action d c n)
 
 
 type View d c n = Html (RoutedAction d c n)
 
 
 type HtmlRenderer d c n = Renderer d c n (Action d c n) (Model d c n) (View d c n)
-
-
-init :: forall d c n. R.Network d c n -> Model d c n
-init nw =
-    { lastInletData : Map.empty
-    , lastOutletData : Map.empty
-    , debug : Nothing
-    --, debug : Just DebugBox.init
-    -- , uuidToChannelDef : Map.empty
-    -- , uuidToNodeDef : Map.empty
-    , uuidToChannel : Map.empty
-    , mousePos : { x : -1.0, y : -1.0 }
-    , dragging : NotDragging
-    , positions : Map.empty -- FIXME: exclude nodes (they are stored in the `packing`)
-    , layout :
-            Layout.loadIntoStacks defaultLayerSize getNodeSize nw
-                # Layout.initWithStacks
-    }
 
 
 -- type ToolkitRenderer d c = T.ToolkitRenderer d c (View d) Message
@@ -189,22 +78,6 @@ make toolkitRenderer toolkit =
         (view toolkitRenderer <<< recover)
 
         -- it is done in Renderer.make: # UI.mapFSM (FSM.joinWith appendErrors
-
-
-core :: forall d c n. Core.Action d c n -> RoutedAction d c n
-core = FromCore
-
-
-my :: forall d c n. Action d c n -> RoutedAction d c n
-my = FromUI
-
-
-defaultLayerSize :: Layout.LayerSize
-defaultLayerSize = Layout.LayerSize { width : 1000.0, height : 1000.0 }
-
-
-dragZIndex :: ZIndex
-dragZIndex = ZIndex 1000
 
 
 emptyView :: forall d c n. View d c n
@@ -312,15 +185,15 @@ viewPatch toolkitRenderer ui nw patchUuid =
                 ]
         renderLayout Nothing =
             H.div [] []
-        maybeDragging (Dragging (DragNode (R.Node nodeUuid _ _ _ _))) =
+        maybeDragging (Dragging (DragNode (R.Node nodeUuid _ _ _ _ _))) =
             let
                 nodePos = toLocalPos ui.positions patchUuid ui.mousePos
             in Just $ viewNode
                 toolkitRenderer ui nw (Pinned dragZIndex nodePos) nodeUuid
         maybeDragging _ = Nothing
-        showPinnedNode (R.Node nodeUuid _ _ _ _) (zIndex /\ pos) =
+        showPinnedNode (R.Node nodeUuid _ _ _ _ _) (zIndex /\ pos) =
             viewNode toolkitRenderer ui nw (Pinned zIndex pos) nodeUuid
-        showPackedNode (Taken (R.Node nodeUuid _ _ _ _)) pos rect =
+        showPackedNode (Taken (R.Node nodeUuid _ _ _ _ _)) pos rect =
             viewNode toolkitRenderer ui nw (Packed pos rect) nodeUuid
         showPackedNode Abandoned pos rect =
             H.div [] []
@@ -338,7 +211,7 @@ viewNode
     -> View d c n
 viewNode toolkitRenderer ui nw emplacement nodeUuid =
     case L.view (L._node nodeUuid) nw of
-        Just node@(R.Node uuid path@(P.ToNode { node : name }) n _ { inlets, outlets }) ->
+        Just node@(R.Node uuid path@(P.ToNode { node : name }) n _ _ { inlets, outlets }) ->
             H.div
                 (getAttrs emplacement node)
                 (
@@ -542,19 +415,6 @@ viewDebugWindow ui nw =
         ]
 
 
-updateDebugBox
-    :: forall d c n
-     . R.Network d c n
-    -> RoutedAction d c n
-    -> Maybe (DebugBox.Model d c n)
-    -> Maybe (DebugBox.Model d c n)
-updateDebugBox nw (FromCore action) (Just debug) =
-    Just $ DebugBox.update (Right action) (nw /\ debug)
-updateDebugBox _ (FromUI EnableDebug) _ = Just $ DebugBox.init
-updateDebugBox _ (FromUI DisableDebug) _ = Nothing
-updateDebugBox _ _ v = v
-
-
 -- FIXME: show in DebugBox
 viewMousePos :: forall d c n. Position -> View d c n
 viewMousePos { x, y } =
@@ -598,169 +458,6 @@ view toolkitRenderer (ui /\ nw) =
         handleClick e = Just $ my $ ClickBackground e
 
 
-update
-    :: forall d c n
-     . RoutedAction d c n
-    -> Model d c n /\ R.Network d c n
-    -> Model d c n /\ List (Effect (RoutedAction d c n))
-
-update (FromCore (Core.Data (Core.GotInletData (R.Inlet _ inletPath _ _) d))) (ui /\ nw) =
-    ui { lastInletData = ui.lastInletData # Map.insert inletPath d }
-    /\ (just $ updatePositions (my <<< StorePositions) nw)
-update (FromCore (Core.Data (Core.GotOutletData (R.Outlet _ outletPath _ _) d))) (ui /\ nw) =
-    ui { lastOutletData = ui.lastOutletData # Map.insert outletPath d }
-    /\ (just $ updatePositions (my <<< StorePositions) nw)
-update (FromCore (Core.Build (Core.AddNode node@(R.Node nodeUuid nodePath _ _ _)))) ( ui /\ nw ) =
-    case L.view (L._patchByPath patchPath) nw of
-        -- FIXME: Raise the error if patch wasn't found
-        Just patch ->
-            ui
-                { layout =
-                    Layout.pack
-                        defaultLayerSize
-                        (getNodeSize node)
-                        patch
-                        node
-                        ui.layout
-                }
-                -- TODO: remove from packing when node was removed
-            /\ (just $ updatePositions (my <<< StorePositions) nw)
-        _ ->
-            ui /\ doNothing
-    where
-        patchPath = P.getPatchPath $ P.lift nodePath
-update (FromCore _) (ui /\ nw) =
-    ui /\ (just $ updatePositions (my <<< StorePositions) nw)
-
-update (FromUI NoOp) (ui /\ _) = ui /\ doNothing
---update (FromUI (Batch actions)) (ui /\ _) = ui /\ doNothing -- FIXME: implement
-update (FromUI (MouseMove mousePos)) ( ui /\ nw ) =
-    ui { mousePos = mousePos } /\
-        (case ui.dragging of
-            Dragging (DragNode _) ->
-                just $ updatePositions (my <<< StorePositions) nw
-            _ -> doNothing
-        )
-update (FromUI (MouseUp mousePos)) ( ui /\ nw ) =
-    ui { mousePos = mousePos }
-    /\ pinNodeIfDragging ui.dragging
-    where
-        pinNodeIfDragging (Dragging (DragNode node)) =
-            single $ my $ PinNode node mousePos
-        pinNodeIfDragging _ = doNothing -- discard link if dragging it
-update (FromUI (PinNode node position)) ( ui /\ nw ) =
-    let
-        (R.Node _ nodePath _ _ _) = node
-        patchPath = P.getPatchPath $ P.lift nodePath
-        maybePatch = L.view (L._patchByPath patchPath) nw
-    in
-        case maybePatch of
-            Just patch@(R.Patch patchUuid _ _) ->
-                let localPosition = toLocalPos ui.positions patchUuid position
-                in ui
-                    { layout =
-                        ui.layout # Layout.pinAt patch node localPosition
-                    }
-            Nothing -> ui
-        /\ doNothing
-update (FromUI (ClickBackground e)) ( ui /\ nw ) =
-    ui { dragging = NotDragging } /\ doNothing
-update (FromUI (ClickNodeTitle node e)) ( ui /\ nw ) =
-    ui
-        { dragging = Dragging $ DragNode node
-        , layout =
-            let
-                (R.Node _ nodePath _ _ _) = node
-                patchPath = P.getPatchPath $ P.lift nodePath
-                maybePatch = L.view (L._patchByPath patchPath) nw
-            in
-                case maybePatch of
-                    Just patch ->
-                        ui.layout # Layout.abandon patch node
-                    Nothing -> ui.layout
-        }
-    /\ (
-        (do
-            _ <- Event.stopPropagation $ ME.toEvent e
-            pure $ my NoOp)
-        : updatePositions (my <<< StorePositions) nw
-        : Nil
-    )
-update (FromUI (ClickRemoveButton node@(R.Node _ nodePath _ _ _) e)) ( ui /\ nw ) =
-    ui
-        { dragging = NotDragging
-        , layout =
-            let
-                patchPath = P.getPatchPath $ P.lift nodePath
-                maybePatch = L.view (L._patchByPath patchPath) nw
-            in
-                case maybePatch of
-                    Just patch ->
-                        ui.layout # Layout.remove patch node
-                    Nothing -> ui.layout
-        }
-    /\ (
-        (do
-            _ <- Event.stopPropagation $ ME.toEvent e
-            pure $ my NoOp)
-        : (pure $ core $ Core.Request $ Core.ToRemoveNode nodePath)
-        : Nil
-    )
-update (FromUI (ClickInlet (R.Inlet _ inletPath _ _) e)) ( ui /\ nw ) =
-    ui
-        { dragging = NotDragging
-        -- TODO: if node was dragged before, place it at the mouse point
-        }
-    /\ (
-        (do
-            _ <- Event.stopPropagation $ ME.toEvent e
-            pure $ my NoOp)
-        : (case ui.dragging of
-            Dragging (DragLink (R.Outlet _ outletPath _ _)) ->
-                pure $ core $ Core.Request $ Core.ToConnect outletPath inletPath
-            _ -> pure $ my NoOp)
-        : Nil
-    )
-update (FromUI (ClickOutlet outletPath e)) ( ui /\ nw ) =
-    ui
-        { dragging = Dragging $ DragLink outletPath
-        -- TODO: if node was dragged before, place it at the mouse point
-        }
-    /\ (just $ do
-        _ <- Event.stopPropagation $ ME.toEvent e
-        pure $ my NoOp)
-update (FromUI (ClickLink link e)) ( ui /\ nw ) =
-    ui
-    /\ (
-        (do
-            _ <- Event.stopPropagation $ ME.toEvent e
-            pure $ my NoOp)
-        -- it seems right, not to request to disconnect, rather to remove this particular link
-        : (pure $ core $ Core.Build $ Core.RemoveLink link)
-        : (updatePositions (my <<< StorePositions) nw)
-        : Nil)
-update (FromUI EnableDebug) (ui /\ _) = ui /\ doNothing -- TODO: why do nothing?
-update (FromUI DisableDebug) (ui /\ _) = ui /\ doNothing -- TODO: why do nothing?
-update (FromUI (StorePositions positions)) (ui /\ _) =
-    ui { positions = positions } /\ doNothing
-update (FromUI (ToDebugBox debugBoxAction)) (ui /\ nw) =
-    ui { debug =
-        (\debug -> DebugBox.update (Left debugBoxAction) (nw /\ debug))
-            <$> ui.debug
-        }
-    /\ doNothing
-
-
-updatePositions
-    :: forall d c n x
-     . ((UUID.Tagged /-> Position) -> x)
-    -> R.Network d c n
-    -> Effect x
-updatePositions ack (R.Network nw) = do
-    positions <- collectPositions $ loadUUIDs $ Map.keys nw.registry
-    pure $ ack $ convertPositions positions
-
-
 {-
 performEffect
     :: forall d c n
@@ -792,48 +489,6 @@ performEffect _ push (StopPropagation e) ( ui /\ nw ) = do
 -}
 
 
--- FIXME: move to the Toolkit renderer
-getNodeSize :: forall d n. R.Node d n -> Layout.NodeSize
-getNodeSize _ = Layout.NodeSize { width : 100.0, height : 70.0 }
-
-
-uuidToAttr :: forall a r i. UUID.IsTagged a => a -> H.IProp (id ∷ String | r) i
--- uuidToAttr uuid  = H.prop "uuid" $ UUID.taggedToRawString uuid
-uuidToAttr = H.id_ <<< UUID.taggedToRawString
-
-
-loadUUIDs :: Set UUID.Tagged -> Array { uuid :: String, kind :: String }
-loadUUIDs uuids = UUID.encode <$> Set.toUnfoldable uuids
-
-
--- TODO: move to Renderer.Layout?
-convertPositions
-    :: Array
-            { uuid :: String
-            , kind :: String
-            , pos :: Position
-            }
-    -> UUID.Tagged /-> Position
-convertPositions srcPositions =
-    Map.fromFoldable $ Array.catMaybes $ decodePos <$> srcPositions
-    where
-        decodePos
-            ::
-                { uuid :: String
-                , kind :: String
-                , pos :: Position
-                }
-            -> Maybe (UUID.Tagged /\ Position)
-        decodePos { kind, uuid, pos } =
-            (\tagged -> tagged /\ pos) <$> UUID.decode { uuid, kind }
-
-
-getLinkTransform :: { from :: Position, to :: Position } -> LinkTransform
-getLinkTransform { from, to } =
-    let { angle, length } = Vec2.arrow (Vec2 from.x from.y /\ Vec2 to.x to.y)
-    in { from, angle, length }
-
-
 getLinkTransformStyle :: LinkTransform -> String
 getLinkTransformStyle { from, angle, length } =
     "transform: translate(" <> fromPosStr <> ") rotate(" <> angleStr <> ");"
@@ -844,17 +499,10 @@ getLinkTransformStyle { from, angle, length } =
         lengthStr = show length <> "px"
 
 
-toLocalPos :: (UUID.Tagged /-> Position) -> UUID.ToPatch -> Position -> Position
-toLocalPos positions patchUuid pos =
-    let
-       patchPos = Map.lookup (UUID.liftTagged patchUuid) positions
-                        # fromMaybe { x : 0.0, y : 0.0 }
-    in
-        { x : pos.x - patchPos.x
-        -- FIXME: 25.0 is a height of inlets area
-        , y : pos.y - 25.0 - patchPos.y
-        }
 
+uuidToAttr :: forall a r i. UUID.IsTagged a => a -> H.IProp (id ∷ String | r) i
+-- uuidToAttr uuid  = H.prop "uuid" $ UUID.taggedToRawString uuid
+uuidToAttr = H.id_ <<< UUID.taggedToRawString
 
 
 foreign import collectPositions

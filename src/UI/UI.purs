@@ -1,8 +1,9 @@
 module UI
-    ( UI, CoveredUI
+    ( UI, CoveredUI, Component
+    , class RendersTo, render
     , make, makeWithPush, run, once
     , view, update, update'
-    , makeMinimal, makeWithNoEffects
+    , makeMinimal, makeWithNoEffects, makePassing
     , imapModel, imapAction, imapError
     , mapFSM
     ) where
@@ -30,6 +31,17 @@ data UI action model view = UI (FSM action model) (model -> view)
 
 
 type CoveredUI error action model view = UI action (Covered error model) view
+
+
+type Component action model view = UI action model (view action)
+
+
+class RendersTo model view where
+    render :: model -> view
+
+
+instance rendersToUi :: RendersTo (model /\ UI action model view) view where
+    render (model /\ ui) = once ui model
 
 
 make
@@ -66,6 +78,14 @@ makeWithNoEffects
     -> UI action model view
 makeWithNoEffects updateF viewF =
     UI (FSM.makeWithNoEffects updateF) viewF
+
+
+makePassing
+    :: forall action model view
+     . (model -> view)
+    -> UI action model view
+makePassing viewF =
+    UI FSM.makePassing viewF
 
 
 run
@@ -161,3 +181,11 @@ once
     -> model
     -> view
 once (UI _ viewF) model = viewF model
+
+
+{- render
+    :: forall action model view
+     . UI action model view
+    -> model
+    -> view
+render = once -}

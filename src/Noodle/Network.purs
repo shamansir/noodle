@@ -10,6 +10,7 @@ module Noodle.Network
     , InletsFlow(..), OutletsFlow(..)
     , PushToInlet(..), PushToOutlet(..)
     , PushToInlets(..), PushToOutlets(..)
+    , Position(..)
     -- FIXME: do not expose constructors, provide all the optics as getters
     , empty
     ) where
@@ -20,16 +21,14 @@ import Prelude
 import Data.Map as Map
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
-import Data.Maybe (Maybe(..))
 
-import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Path as Path
 import Noodle.Path (Path)
 import Noodle.UUID (UUID)
 import Noodle.UUID as UUID
-import Noodle.Util (type (/->), Canceler, Flow, PushF, seqCatMaybes)
+import Noodle.Util (type (/->), Canceler, Flow, PushF)
 import Noodle.Process (ProcessF)
 
 
@@ -45,6 +44,11 @@ data OutletsFlow d = OutletsFlow (Flow (Path.ToOutlet /\ UUID.ToOutlet /\ d))
 data PushToOutlet d = PushToOutlet (PushF d)
 data PushToOutlets d = PushToOutlets (PushF (Path.ToOutlet /\ UUID.ToOutlet /\ d))
         -- FIXME: PushF (Maybe OutletInNode /\ d)
+
+
+data Position
+    = Auto
+    | Pinned { x :: Number, y :: Number, z :: Number }
 
 
 -- TODO: Make `Entity` a type kind?
@@ -93,6 +97,7 @@ data Node d n =
         UUID.ToNode
         Path.ToNode
         n
+        Position
         (ProcessF d)
         { inlets :: Seq UUID.ToInlet
         , outlets :: Seq UUID.ToOutlet
@@ -145,7 +150,7 @@ instance eqPatch :: Eq (Patch d c n) where
     eq (Patch pidA _ _) (Patch pidB _ _) = (pidA == pidB)
 
 instance eqNode :: Eq (Node d n) where
-    eq (Node nidA _ _ _ _) (Node nidB _ _ _ _) = (nidA == nidB)
+    eq (Node nidA _ _ _ _ _) (Node nidB _ _ _ _ _) = (nidA == nidB)
 
 instance eqInlet :: Eq (Inlet d c) where
     eq (Inlet iidA _ _ _) (Inlet iidB _ _ _) = (iidA == iidB)
@@ -165,7 +170,7 @@ instance ordPatch :: Ord (Patch d c n) where
     compare (Patch pidA _ _) (Patch pidB _ _) = compare pidA pidB
 
 instance ordNode :: Ord (Node d n) where
-    compare (Node nidA _ _ _ _) (Node nidB _ _ _ _)  = compare nidA nidB
+    compare (Node nidA _ _ _ _ _) (Node nidB _ _ _ _ _)  = compare nidA nidB
 
 instance ordInlet :: Ord (Inlet d c) where
     compare (Inlet iidA _ _ _) (Inlet iidB _ _ _) = compare iidA iidB
@@ -177,6 +182,11 @@ instance ordLink :: Ord Link where
     compare (Link lidA _) (Link lidB _)  = compare lidA lidB
 
 
+instance showPosition :: Show Position where
+    show Auto = "auto"
+    show (Pinned { x, y, z }) = "{" <> show x <> ";" <> show y <> ";" <> show z <> "}"
+
+
 instance showNetwork :: Show (Network d c n) where
     show (Network { name }) = "Network " <> name
 
@@ -184,7 +194,7 @@ instance showPatch :: Show (Patch d c n) where
     show (Patch uuid path _) = "Patch " <> show uuid <> " " <> show path
 
 instance showNode :: Show n => Show (Node d n) where
-    show (Node uuid path n _ _) = "Node " <> show n <> " " <> show uuid <> " " <> show path
+    show (Node uuid path n _ _ _) = "Node " <> show n <> " " <> show uuid <> " " <> show path
 
 instance showInlet :: Show c => Show (Inlet d c) where
     show (Inlet uuid path c _) = "Inlet " <> show c <> " " <> show uuid <> " " <> show path

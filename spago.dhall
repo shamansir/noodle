@@ -20,6 +20,7 @@ You can edit this file as you like.
   , "effect"
   , "event"
   , "foldable-traversable"
+  , "halogen-svg"
   , "node-fs"
   , "now"
   , "numbers"

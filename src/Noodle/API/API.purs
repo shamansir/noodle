@@ -9,12 +9,14 @@ import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Either (either)
 import Data.Sequence (Seq)
 import Data.Sequence as Seq
+import Data.Sequence.Extra (_on) as Seq
 import Data.List (List)
 import Data.List (fromFoldable, catMaybes) as List
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Either (Either(..), note)
-import Data.Lens (view, set, setJust)
+import Data.Lens (view, preview, set, setJust, _Just)
+import Data.Lens.At (at)
 import Data.Tuple.Nested ((/\), type (/\), over1)
 import Data.Foldable (foldr)
 import Data.Traversable (traverse, traverse_)
@@ -100,15 +102,15 @@ uuidByPath f path nw = do
 
 
 storeCancelers :: forall d c n. UUID -> Array Canceler -> Network d c n -> Network d c n
-storeCancelers uuid = setJust (_cancelers uuid)
+storeCancelers uuid = setJust (_cancelers <<< at uuid)
 
 
 getCancelers :: forall d c n. UUID -> Network d c n -> Array Canceler
-getCancelers uuid nw = nw # view (_cancelers uuid) # fromMaybe []
+getCancelers uuid = view (_cancelers <<< at uuid) >>> fromMaybe []
 
 
 clearCancelers :: forall d c n. UUID -> Network d c n -> Network d c n
-clearCancelers uuid nw = nw # set (_cancelers uuid) Nothing
+clearCancelers uuid = set (_cancelers <<< at uuid) Nothing
 
 
 cancelSubscriptions :: forall d c n. UUID -> Network d c n -> Effect Unit
@@ -165,7 +167,7 @@ addPatch patch@(Patch uuid path _) nw =
     nw
         # setJust (_patch uuid) patch
         # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-        # setJust (_networkPatch uuid) unit
+        # setJust (_patches <<< Seq._on uuid) unit
 
 
 addNode
@@ -174,13 +176,13 @@ addNode
     -> Network d c n
     -> Either NoodleError (Network d c n)
     -- -> Either NoodleError (Network d c n /\ Node d n)
-addNode node@(Node uuid path _ _ _) nw = do
+addNode node@(Node uuid path _ _ _ _) nw = do
     let patchPath = Path.getPatchPath $ Path.lift path
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
          # setJust (_node uuid) node
          # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-         # setJust (_patchNode patchUuid uuid) unit
+         # setJust (_patch patchUuid <<< _Just <<< _patchNodes <<< Seq._on uuid) unit
 
 
 removeNode
@@ -188,13 +190,13 @@ removeNode
      . Node d n
     -> Network d c n
     -> Either NoodleError (Network d c n)
-removeNode node@(Node uuid path _ _ _) nw = do
+removeNode node@(Node uuid path _ _ _ _) nw = do
     let patchPath = Path.getPatchPath $ Path.lift path
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
         # set (_node uuid) Nothing
         # set (_pathToId $ Path.lift path) Nothing
-        # set (_patchNode patchUuid uuid) Nothing
+        # set (_patch patchUuid <<< _Just <<< _patchNodes <<< Seq._on uuid) Nothing
 
 
 {-
@@ -229,20 +231,6 @@ addDefNode patchPath nodeAlias (Toolkit.NodeDef nodeDef) n nw = do
 -}
 
 
-addOutlet
-    :: forall d c n
-     . Outlet d c
-    -> Network d c n
-    -> Either NoodleError (Network d c n)
-addOutlet outlet@(Outlet uuid path _ _) nw = do
-    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
-    nodeUuid <- nw # uuidByPath UUID.toNode nodePath
-    pure $ nw
-        # setJust (_outlet uuid) outlet
-        # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-        # setJust (_nodeOutlet nodeUuid uuid) unit
-
-
 addInlet
     :: forall d c n
      . Inlet d c
@@ -254,7 +242,21 @@ addInlet inlet@(Inlet uuid path _ _) nw = do
     pure $ nw
         # setJust (_inlet uuid) inlet
         # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
-        # setJust (_nodeInlet nodeUuid uuid) unit
+        # setJust (_node nodeUuid <<< _Just <<< _nodeInlets <<< Seq._on uuid) unit
+
+
+addOutlet
+    :: forall d c n
+     . Outlet d c
+    -> Network d c n
+    -> Either NoodleError (Network d c n)
+addOutlet outlet@(Outlet uuid path _ _) nw = do
+    nodePath <- (Path.getNodePath $ Path.lift path) # note (Err.nnp $ Path.lift path)
+    nodeUuid <- nw # uuidByPath UUID.toNode nodePath
+    pure $ nw
+        # setJust (_outlet uuid) outlet
+        # setJust (_pathToId $ Path.lift path) (UUID.liftTagged uuid)
+        # setJust (_node nodeUuid <<< _Just <<< _nodeOutlets <<< Seq._on uuid) unit
 
 
 removeInlet
@@ -268,7 +270,7 @@ removeInlet inlet@(Inlet uuid path _ _) nw = do
     pure $ nw
         # set (_inlet uuid) Nothing
         # set (_pathToId $ Path.lift path) Nothing
-        # set (_nodeInlet nodeUuid uuid) Nothing
+        # set (_node nodeUuid <<< _Just <<< _nodeInlets <<< Seq._on uuid) Nothing
 
 
 removeOutlet
@@ -282,7 +284,7 @@ removeOutlet outlet@(Outlet uuid path _ _) nw = do
     pure $ nw
         # set (_outlet uuid) Nothing
         # set (_pathToId $ Path.lift path) Nothing
-        # set (_nodeOutlet nodeUuid uuid) Nothing
+        # set (_node nodeUuid <<< _Just <<< _nodeOutlets <<< Seq._on uuid) Nothing
 
 
 addLink :: forall d c n
@@ -295,7 +297,7 @@ addLink link@(Link uuid { outlet, inlet }) nw = do
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
             # setJust (_link uuid) link
-            # setJust (_patchLink patchUuid uuid) unit
+            # setJust (_patch patchUuid <<< _Just <<< _patchLinks <<< Seq._on uuid) unit
 
 
 removeLink :: forall d c n
@@ -308,7 +310,7 @@ removeLink link@(Link uuid { outlet, inlet }) nw = do
     patchUuid <- nw # uuidByPath UUID.toPatch patchPath
     pure $ nw
         # set (_link uuid) Nothing
-        # set (_patchLink patchUuid uuid) Nothing
+        # set (_patch patchUuid <<< _Just <<< _patchLinks <<< Seq._on uuid) Nothing
 
 
 processWith
@@ -318,11 +320,12 @@ processWith
     -> Node d n
 processWith processF node =
     -- uuid <- nw # uuidByPath UUID.toNode path
-    let (Node uuid path n _ state) = node
+    let (Node uuid path n pos _ state) = node
     in Node
         uuid
         path
         n
+        pos
         processF
         state
 
@@ -349,13 +352,13 @@ setupNodeProcessFlow
     -> Network d c n -- FIXME: get rid of the network usage here as well?
     -> Subscriber
 setupNodeProcessFlow node nw =
-    let (Node uuid _ _ process { inletsFlow, inlets, outlets }) = node
+    let (Node uuid _ _ _ process { inletsFlow, inlets, outlets }) = node
     in if Seq.null inlets
         then pure $ pure unit
     else case process of
         Withhold -> pure $ pure unit
         processF -> do
-            _ <- view (_cancelers $ UUID.uuid uuid) nw
+            _ <- view (_cancelers <<< at (UUID.uuid uuid)) nw
                     # fromMaybe []
                     # traverse_ liftEffect
             if Seq.null inlets then pure $ pure unit else do
@@ -364,9 +367,9 @@ setupNodeProcessFlow node nw =
                         outlets
                             # (Seq.toUnfoldable :: forall a. Seq a -> List a)
                             # map (\ouuid ->
-                                view (_outletPush ouuid) nw
+                                preview (_outlet ouuid <<< _Just <<< _outletPush) nw
                                     <#> \push -> ouuid /\ push)
-                            # List.catMaybes -- FIXME: raise an error if outlet wasn't found
+                            # List.catMaybes
                             # Map.fromFoldable
                     pushToOutletFlow :: (Path.ToOutlet /\ UUID.ToOutlet /\ d) -> Effect Unit
                     pushToOutletFlow (_ /\ ouuid /\ d) =
@@ -492,7 +495,7 @@ informNodeOnInletUpdates
     -> Subscriber
 informNodeOnInletUpdates inlet node = do
     let Inlet uuid path _ { flow } = inlet
-        Node _ _ _ _ { pushToInlets } = node
+        Node _ _ _ _ _ { pushToInlets } = node
         (PushToInlets informNode) = pushToInlets
         (InletFlow inletFlow) = flow
     E.subscribe inletFlow (\d -> informNode (path /\ uuid /\ d))
@@ -505,7 +508,7 @@ informNodeOnOutletUpdates
     -> Subscriber
 informNodeOnOutletUpdates outlet node = do
     let (Outlet uuid path _ { flow }) = outlet
-        (Node _ _ _ _ { pushToOutlets }) = node
+        (Node _ _ _ _ _ { pushToOutlets }) = node
         (PushToOutlets informNode) = pushToOutlets
         (OutletFlow outletFlow) = flow
     E.subscribe outletFlow (\d -> informNode (path /\ uuid /\ d))
@@ -517,9 +520,9 @@ subscribeNode
     -> NodeInletsSubscription d
     -> NodeOutletsSubscription d
     -> Effect Canceler
-subscribeNode (Node _ _ _ _ { inletsFlow, outletsFlow }) inletsHandler outletsHandler = do
-    let InletsFlow inletsFlow' = inletsFlow
-    let OutletsFlow outletsFlow' = outletsFlow
+subscribeNode (Node _ _ _ _ _ { inletsFlow, outletsFlow }) inletsHandler outletsHandler = do
+    let InletsFlow inletsFlow' = inletsFlow -- FIXME: use optics to access
+    let OutletsFlow outletsFlow' = outletsFlow -- FIXME: use optics to access
     inletsCanceler :: Canceler <-
         E.subscribe inletsFlow' $
             (\((Path.ToInlet { inlet }) /\ uuid /\ d) -> inletsHandler inlet uuid d)

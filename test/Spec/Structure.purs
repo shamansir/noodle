@@ -3,9 +3,10 @@ module Noodle.Test.Spec.Structure
 
 import Prelude
 
-import Data.Lens (view) as L
+import Data.Lens (preview, view) as L
 import Data.Maybe (Maybe(..))
 import Data.Sequence as Seq
+import Data.Sequence.Extra as Seq
 import Data.Tuple.Nested ((/\))
 
 import Effect.Class (liftEffect)
@@ -22,7 +23,7 @@ import Noodle.API.Action.Sequence ((</>))
 import Noodle.API.Action.Sequence as Actions
 import Noodle.API.Action.Sequence (addPatch, addNode, addInlet, addOutlet) as R
 import Noodle.Path as P
-import Noodle.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath) as L
+import Noodle.Optics as L
 import Noodle.Network (Inlet(..), Network, Node(..), Outlet(..)) as R
 import Noodle.Network (empty) as N
 import Noodle.Toolkit as T
@@ -70,13 +71,13 @@ spec =
                 </> R.addNode (P.toPatch "patch") "two" Node
                 </> R.addNode (P.toPatch "patch") "three" Node
         network' <- getOrFail result
-        case L.view (L._patchNodesByPath $ P.toPatch "patch") network' of
-          Just nodes ->
-            (nodes
-              <#> \(R.Node _ (P.ToNode { node }) _ _ _) -> node)
-              # Seq.toUnfoldable
-              # shouldEqual [ "one", "two", "three" ]
-          Nothing -> fail "patch wasn't found"
+        let
+          nodesUuids = L.view (L._patchByPath (P.toPatch "patch") <<< L._patchNodes) network'
+          nodes = (\uuid -> L.view (L._node uuid) network') <$> nodesUuids # Seq.catMaybes
+        (nodes
+          <#> \(R.Node _ (P.ToNode { node }) _ _ _ _) -> node)
+          # Seq.toUnfoldable
+          # shouldEqual [ "one", "two", "three" ]
         pure unit
 
       it "adding inlets to the node preserves the order of addition" $ do
@@ -90,13 +91,13 @@ spec =
               </> R.addInlet (P.toNode "patch" "node") "two" Channel
               </> R.addInlet (P.toNode "patch" "node") "three" Channel
         network' <- getOrFail result
-        case L.view (L._nodeInletsByPath $ P.toNode "patch" "node") network' of
-          Just inlets ->
-            (inlets
-              <#> \(R.Inlet _ (P.ToInlet { inlet }) _ _) -> inlet)
-              # Seq.toUnfoldable
-              # shouldEqual [ "one", "two", "three" ]
-          Nothing -> fail "node wasn't found"
+        let
+          inletsUuids = L.view (L._nodeByPath (P.toNode "patch" "node") <<< L._nodeInlets) network'
+          inlets = (\uuid -> L.view (L._inlet uuid) network') <$> inletsUuids # Seq.catMaybes
+        (inlets
+          <#> \(R.Inlet _ (P.ToInlet { inlet }) _ _) -> inlet)
+          # Seq.toUnfoldable
+          # shouldEqual [ "one", "two", "three" ]
         pure unit
 
 
@@ -111,13 +112,13 @@ spec =
               </> R.addOutlet (P.toNode "patch" "node") "two" Channel
               </> R.addOutlet (P.toNode "patch" "node") "three" Channel
         network' <- getOrFail result
-        case L.view (L._nodeOutletsByPath $ P.toNode "patch" "node") network' of
-          Just inlets ->
-            (inlets
-              <#> \(R.Outlet _ (P.ToOutlet { outlet }) _ _) -> outlet)
-              # Seq.toUnfoldable
-              # shouldEqual [ "one", "two", "three" ]
-          Nothing -> fail "node wasn't found"
+        let
+          outletsUuids = L.view (L._nodeByPath (P.toNode "patch" "node") <<< L._nodeOutlets) network'
+          outlets = (\uuid -> L.view (L._outlet uuid) network') <$> outletsUuids # Seq.catMaybes
+        (outlets
+          <#> \(R.Outlet _ (P.ToOutlet { outlet }) _ _) -> outlet)
+          # Seq.toUnfoldable
+          # shouldEqual [ "one", "two", "three" ]
         pure unit
 
       -- TODO: subPatches

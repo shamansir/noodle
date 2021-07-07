@@ -4,7 +4,7 @@ module Noodle.Test.Spec.Actions
 import Prelude
 
 import Data.Either (Either(..))
-import Data.Lens (view) as L
+import Data.Lens (view, preview) as L
 import Data.Maybe (Maybe(..), isJust)
 import Data.Sequence as Seq
 import Data.Array (length)
@@ -34,7 +34,7 @@ import Noodle.API.Action.Sequence (make) as Sequencer
 
 import Noodle.Network (Inlet(..), Network, Node(..), Outlet(..)) as R
 import Noodle.Network (empty) as N
-import Noodle.Optics (_nodeInletsByPath, _nodeOutletsByPath, _patchNodesByPath, _patchByPath) as L
+import Noodle.Optics (_patchByPath) as L
 import Noodle.Path as P
 import Noodle.Test.Util.Actions (getOrFail, getOrFail', failIfNoError, failIfNoErrors)
 import Noodle.Test.Util.Spy as Spy
@@ -202,7 +202,7 @@ spec =
           shouldHaveValue
               (
                 maybeLastNetwork
-                  >>= L.view (L._patchByPath $ P.toPatch "foo")
+                  >>= L.preview (L._patchByPath $ P.toPatch "foo")
               )
 
           liftEffect stop

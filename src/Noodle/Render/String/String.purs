@@ -12,6 +12,7 @@ import Data.Array as Array
 import Data.List as List
 import Data.Sequence as Seq
 import Data.Sequence (Seq)
+import Data.Sequence.Extra  (catMaybes) as Seq
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Lens as L
 import Data.Either (Either(..))
@@ -31,7 +32,7 @@ import Noodle.Network
     ) as R
 import Noodle.Toolkit
 import Noodle.API.Errors (NoodleError) as R
-import Noodle.Optics (_node, _inlet, _outlet, _link, _networkPatches, _networkLinks)
+import Noodle.Optics (_patch, _node, _inlet, _outlet, _link, _patches)
 import Noodle.Render.Renderer (Minimal) as Renderer
 import Noodle.Render.Renderer (makeMinimal) as UI
 import UI as UI
@@ -99,13 +100,14 @@ view options nw@(R.Network { name, patches }) =
                 lineBreak <> corner <> patchesInfo
             else "")
     where
-        allPatches = L.view _networkPatches nw
-        patchCount = List.length allPatches
+        allPatchesUuids = L.view _patches nw
+        allPatches =
+            (\patchUuid -> L.view (_patch patchUuid) nw) <$> allPatchesUuids
+                # Seq.catMaybes
+        patchCount = Seq.length allPatches
         patchesInfo =
             joinWith (lineBreak <> corner)
-                $ (viewPatch options nw <$> allPatches)
-                    # List.toUnfoldable
-
+                $ (viewPatch options nw <$> allPatches # Seq.toUnfoldable)
 
 
 viewPatch :: forall d c n. Options -> R.Network d c n -> R.Patch d c n -> String
@@ -137,7 +139,7 @@ viewPatch options nw (R.Patch id path@(P.ToPatch name) { nodes, links }) =
 
 
 viewNode :: forall d c n. Options -> R.Network d c n -> R.Node d n -> String
-viewNode options nw (R.Node _ path@(P.ToNode { node }) _ _ { inlets, outlets }) =
+viewNode options nw (R.Node _ path@(P.ToNode { node }) _ _ _ { inlets, outlets }) =
     "Node " <> node <> " " <> show path <> semicolon
         <> lineBreak <> vertLine <> vertLine
         <> count inletCounter inletCount
