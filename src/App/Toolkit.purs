@@ -1,7 +1,7 @@
 module App.Toolkit where
 
 
-import Prelude (($), (<$>), (<*>), (<#>), (+))
+import Prelude (($), (<$>), (<*>), (<#>), (+), Unit, unit)
 
 import Data.Tuple.Nested ((/\))
 
@@ -15,10 +15,10 @@ import Effect (Effect)
 
 
 
-library :: Effect (Node String)
+library :: Effect (Node Unit)
 library =
     Node.make
-        ""
+        unit
         Node.doNothing
 
 

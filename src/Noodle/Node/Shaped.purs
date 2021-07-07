@@ -1,15 +1,23 @@
 module Noodle.Node.Shaped
-    where
+    ( Def, Node
+    , empty
+    , define, defineEffectful
+    , make
+    , addInlet, addOutlet
+    , reshape, reshapeInlet, reshapeOutlet
+    , inletShape, outletShape
+    , send, connect, disconnect
+    , inlet, outlet, outletFlipped
+    , inlets, outlets
+    , fromFn1, fromFn2, fromFn3, fromFn4, fromFn5
+    , fromFn1', fromFn2', fromFn3', fromFn4', fromFn5'
+    ) where
 
 
-import Prelude (pure, ($), (#), (>>>), (<$>), map)
 
+import Prelude (pure, ($), (#), (>>>), (<<<), (<$>), map, Unit)
 
-import Noodle.Node as N
-import Noodle.Node (Receive, Pass)
-import Noodle.Channel.Shape as Channel
-import Noodle.Node.Shape (Shape)
-
+import Data.Tuple (curry, uncurry)
 import Data.Array (snoc)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -17,6 +25,16 @@ import Data.Map.Extra (type (/->))
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Bifunctor (lmap, rmap)
+
+import Noodle.Node as N
+import Noodle.Node.Define as D
+import Noodle.Node.Define (Receive, Pass)
+import Noodle.Channel.Shape as Channel
+import Noodle.Node.Shape (Shape)
+import Noodle.Node.Shape as Shape
+
+
+import Signal (Signal)
 
 import Effect (Effect)
 
@@ -36,127 +54,143 @@ etc.
 -}
 
 
-newtype InletsShape d = InletsShape (Array (String /\ Channel.Shape d))
-newtype OutletsShape d = OutletsShape (Array (String /\ Channel.Shape d))
+type Def d =
+    D.Def (Shape d) d
 
 
 type Node d =
     N.Node d (Shape d)
 
 
+empty :: forall d. Def d
+empty = D.empty Shape.empty
+
+
+define
+    :: forall d
+     . Shape.Inlets d
+    -> Shape.Outlets d
+    -> (D.Receive d -> D.Pass d)
+    -> Def d
+define inlets outlets = D.define $ inlets /\ outlets
+
+
+defineEffectful
+    :: forall d
+     . Shape.Inlets d
+    -> Shape.Outlets d
+    -> (D.Receive d -> Effect (D.Pass d))
+    -> Def d
+defineEffectful inlets outlets = D.defineEffectful $ inlets /\ outlets
+
+
 make
     :: forall d
-    .  d
-    -> InletsShape d
-    -> OutletsShape d
-    -> (Receive d -> Pass d)
+     . d
+    -> Def d
     -> Effect (Node d)
-make def (InletsShape inlets) (OutletsShape outlets) fn =
-    let
-        inletsMap = Map.fromFoldable inlets
-        outletsMap = Map.fromFoldable outlets
-    in N.make
-        (inletsMap /\ outletsMap)
-        def
-        (\receive ->
-            if inletsMap
-                # Map.lookup (N.lastUpdateAt receive)
-                # map Channel.isHot
-                # fromMaybe true
-            then fn receive
-            else N.passNothing
-        )
+make = N.make
 
 
-makeEffectful
-    :: forall d
-    .  d
-    -> InletsShape d
-    -> OutletsShape d
-    -> (Receive d -> Effect (Pass d))
-    -> Effect (Node d)
-makeEffectful def (InletsShape inlets) (OutletsShape outlets) fn =
-    let
-        inletsMap = Map.fromFoldable inlets
-        outletsMap = Map.fromFoldable outlets
-    in N.makeEffectful
-        (inletsMap /\ outletsMap)
-        def
-        (\receive ->
-            if inletsMap
-                # Map.lookup (N.lastUpdateAt receive)
-                # map Channel.isHot
-                # fromMaybe true
-            then fn receive
-            else pure $ N.passNothing
-        )
+addInlet :: forall d. String -> Channel.Shape d -> Def d -> Def d
+-- addInlet name shape = (<$>) (lmap $ Map.insert name shape)
+addInlet name shape (D.Def shapes fn) = D.Def ((lmap $ Map.insert name shape) shapes) fn
 
 
-addInlet :: forall d. String -> Channel.Shape d -> Node d -> Node d
-addInlet name shape = (<$>) (lmap $ Map.insert name shape)
+addOutlet :: forall d. String -> Channel.Shape d -> Def d -> Def d
+-- addOutlet name shape = (<$>) (rmap $ Map.insert name shape)
+addOutlet name shape (D.Def shapes fn) = D.Def ((rmap $ Map.insert name shape) shapes) fn
 
 
-reshape :: forall d. (InletsShape d /\ OutletsShape d) -> Node d -> Node d
-reshape (InletsShape inlets /\ OutletsShape outlets) =
-    N.set
-        (Map.fromFoldable inlets /\ Map.fromFoldable outlets)
+reshape :: forall d. Shape.Inlets d -> Shape.Outlets d -> Def d -> Def d
+reshape inlets outlets =
+    D.set (inlets /\ outlets)
         -- FIXME: update the handler to monitor hot/cold inlets as well
 
 
-reshapeInlet :: forall d. String -> Channel.Shape d -> Node d -> Node d
+reshapeInlet :: forall d. String -> Channel.Shape d -> Def d -> Def d
 reshapeInlet = addInlet
 
 
-addOutlet :: forall d. String -> Channel.Shape d -> Node d -> Node d
-addOutlet name shape = (<$>) (rmap $ Map.insert name shape)
-
-
-reshapeOutlet :: forall d. String -> Channel.Shape d -> Node d -> Node d
+reshapeOutlet :: forall d. String -> Channel.Shape d -> Def d -> Def d
 reshapeOutlet = addOutlet
 
 
-inletShape :: forall d. String -> Node d -> Maybe (Channel.Shape d)
-inletShape inlet = N.get >>> Tuple.snd >>> Map.lookup inlet
+inletShape :: forall d. String -> Def d -> Maybe (Channel.Shape d)
+inletShape inlet = D.get >>> Tuple.snd >>> Map.lookup inlet
 
 
-outletShape :: forall d. String -> Node d -> Maybe (Channel.Shape d)
-outletShape outlet = N.get >>> Tuple.fst >>> Map.lookup outlet
+outletShape :: forall d. String -> Def d -> Maybe (Channel.Shape d)
+outletShape outlet = D.get >>> Tuple.fst >>> Map.lookup outlet
 
 
-withInlets :: forall d. Array (String /\ Channel.Shape d) -> InletsShape d
-withInlets = InletsShape
+send :: forall d. Node d -> (String /\ d) -> Effect Unit
+send = N.send
 
 
-withOutlets :: forall d. Array (String /\ Channel.Shape d) -> OutletsShape d
-withOutlets = OutletsShape
+connect :: forall d. (Node d /\ String) -> (Node d /\ String) -> Effect N.Link
+connect = N.connect
 
 
-infixl 1 andInlet as ~<
-
-infixl 1 andOutlet as >~
-
-
-andInlet
-    :: forall d
-     . InletsShape d
-    -> String /\ Channel.Shape d
-    -> InletsShape d
-andInlet (InletsShape inlets) (name /\ shape) =
-    InletsShape $ inlets `snoc` (name /\ shape)
+disconnect :: N.Link -> Effect Unit
+disconnect = N.disconnect
 
 
-andOutlet
-    :: forall d
-     . OutletsShape d
-    -> String /\ Channel.Shape d
-    -> OutletsShape d
-andOutlet (OutletsShape outlets) (name /\ shape) =
-    OutletsShape $ outlets `snoc` (name /\ shape)
+inlets :: forall d. Node d -> Signal (String /\ d)
+inlets = N.inlets
 
 
-noInlets :: forall d. InletsShape d
-noInlets = InletsShape []
+outlets :: forall d. Node d -> Signal (String /\ d)
+outlets = N.outlets
 
 
-noOutlets :: forall d. OutletsShape d
-noOutlets = OutletsShape []
+inlet :: forall d. Node d -> String -> Signal d
+inlet = N.inlet
+
+
+outlet :: forall d. Node d -> String -> Signal d
+outlet = N.outlet
+
+
+outletFlipped :: forall d. String -> Node d -> Signal d
+outletFlipped = N.outletFlipped
+
+
+fromFn1 :: forall d. Shape.Inlets d -> Shape.Outlets d -> (d -> d) -> Def d
+fromFn1 inlets outlets = D.fromFn1 $ inlets /\ outlets
+
+
+fromFn1' :: forall d. Shape.Inlets d -> Shape.Outlets d -> (d -> Maybe d) -> Def d
+fromFn1' inlets outlets = D.fromFn1' $ inlets /\ outlets
+
+
+fromFn2 :: forall d. Shape.Inlets d -> Shape.Outlets d -> (d -> d -> d) -> Def d
+fromFn2 inlets outlets = D.fromFn2 $ inlets /\ outlets
+
+
+fromFn2' :: forall d. Shape.Inlets d -> Shape.Outlets d -> (d -> d -> Maybe d) -> Def d
+fromFn2' inlets outlets = D.fromFn2' $ inlets /\ outlets
+
+
+fromFn3 :: forall d. Shape.Inlets d -> Shape.Outlets d -> (d -> d -> d -> d) -> Def d
+fromFn3 inlets outlets = D.fromFn3 $ inlets /\ outlets
+
+
+fromFn3' :: forall d. Shape.Inlets d -> Shape.Outlets d -> (d -> d -> d -> Maybe d) -> Def d
+fromFn3' inlets outlets = D.fromFn3' $ inlets /\ outlets
+
+
+fromFn4 :: forall d. Shape.Inlets d -> Shape.Outlets d -> (d -> d -> d -> d -> d) -> Def d
+fromFn4 inlets outlets = D.fromFn4 $ inlets /\ outlets
+
+
+fromFn4' :: forall d. Shape.Inlets d -> Shape.Outlets d -> (d -> d -> d -> d -> Maybe d) -> Def d
+fromFn4' inlets outlets = D.fromFn4' $ inlets /\ outlets
+
+
+fromFn5 :: forall d. Shape.Inlets d -> Shape.Outlets d -> (d -> d -> d -> d -> d -> d) -> Def d
+fromFn5 inlets outlets = D.fromFn5 $ inlets /\ outlets
+
+
+fromFn5' :: forall d. Shape.Inlets d -> Shape.Outlets d -> (d -> d -> d -> d -> d -> Maybe d) -> Def d
+fromFn5' inlets outlets = D.fromFn5' $ inlets /\ outlets
