@@ -14,17 +14,14 @@ import Noodle.Node as Node
 import Noodle.Node.Define (Def)
 
 
-data Toolkit d a = Toolkit (String /-> Def a d)
+data Toolkit d = Toolkit (String /-> Def d)
 
 
-data Renderer d a view = Renderer (String -> Node d a -> view)
-
-
-make :: forall d a. Array (String /\ Def a d) -> Toolkit d a
+make :: forall d. Array (String /\ Def d) -> Toolkit d
 make = Toolkit <<< Map.fromFoldable
 
 
-spawn :: forall d a. String -> d -> Toolkit d a -> Maybe (Effect (Node d a))
+spawn :: forall d. String -> d -> Toolkit d -> Maybe (Effect (Node d))
 spawn name def (Toolkit nodeDefs) =
     nodeDefs
         # Map.lookup name

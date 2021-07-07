@@ -4,11 +4,12 @@ module Noodle.Node.Shape where
 import Noodle.Channel.Shape as Channel
 
 
-import Prelude ((#))
+import Prelude ((#), (<$>))
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (snoc)
+import Data.Functor (class Functor)
 
 
 type Inlets d = (String /-> Channel.Shape d)
@@ -16,6 +17,10 @@ type Outlets d = (String /-> Channel.Shape d)
 
 
 type Shape d = Inlets d /\ Outlets d
+
+
+-- instance functorShape :: Functor Shape where
+--     map f (inlets /\ outlets) = f <$> inlets /\ f <$> outlets
 
 
 empty :: forall d. Shape d

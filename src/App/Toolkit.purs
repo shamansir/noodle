@@ -11,25 +11,24 @@ import Data.Maybe as Maybe
 -- import Noodle.Node.Unit (Node)
 -- import Noodle.Node.Unit (make) as Node
 import Noodle.Node ((<+))
-import Noodle.Node.Define (pass', doNothing, withFn2) as Def
-import Noodle.Node.Shaped (Node)
-import Noodle.Node.Shaped as NS
+import Noodle.Node.Define (Def)
+import Noodle.Node.Define (pass', doNothing, empty, define) as Def
 import Noodle.Node.Shape ((>~), (~<), withInlets, withOutlets)
 import Noodle.Channel.Shape as Channel
-import Noodle.Toolkit.Shaped as TS
+import Noodle.Toolkit as T
 import Data.Functor.Invariant (imap)
 
 import Effect (Effect)
 
 
-library :: NS.Def Unit
+library :: Def Unit
 library =
-    NS.empty
+    Def.empty
 
 
-sumNode :: NS.Def Int
+sumNode :: Def Int
 sumNode =
-    NS.define
+    Def.define
       (withInlets
          ~< "a" /\ Channel.int 0
          ~< "b" /\ Channel.int 0
@@ -39,7 +38,9 @@ sumNode =
       )
       $ \inlets ->
           Def.pass'
-            [ "c" /\ (inlets # Def.withFn2 ((+)) "a" "b")
+            [ "c" /\ ((+) <$> "a" <+ inlets
+                          <*> "b" <+ inlets
+                     )
             ]
 
 -- TODO
@@ -59,9 +60,9 @@ sumNode' = sumNode # imap ?wh ?wh -- Just (Maybe.fromMaybe 0)
 -}
 
 
-toolkit :: TS.Toolkit Int
+toolkit :: T.Toolkit Int
 toolkit =
-  TS.make [ "sum" /\ sumNode ]
+  T.make [ "sum" /\ sumNode ]
 
 
 {-

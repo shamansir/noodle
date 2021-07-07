@@ -20,7 +20,7 @@ instance Invariant Shape where
 data Shape d =
     Shape
         { default :: d
-        , accept :: d -> Maybe d
+        , accept :: d -> Maybe d -- TODO: remove, move to typeclass, can be used on `Node.connect`
         --, adapt :: d -> d
         , isHot :: Boolean
         }
