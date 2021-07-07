@@ -10,7 +10,7 @@ import Data.Tuple as Tuple
 
 import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
-import Noodle.Toolkit.Shaped (Toolkit) as Noodle
+import Noodle.Toolkit (Toolkit) as Noodle
 
 import App.Colors as Colors
 import App.Component.Patch as PatchC
@@ -29,13 +29,13 @@ _patch = Proxy :: Proxy "patch"
 
 
 type Input d =
-    { nw :: Noodle.Network d Unit
+    { nw :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
     }
 
 
 type State d =
-    { nw :: Noodle.Network d Unit
+    { nw :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
     , currentPatch :: Maybe String
     , width :: Number, height :: Number

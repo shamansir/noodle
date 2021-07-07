@@ -1,7 +1,7 @@
 module App.Toolkit.Render where
 
 
-import Noodle.Node.Unit (Node)
+import Noodle.Node (Node)
 
 
 import Halogen.HTML as HH

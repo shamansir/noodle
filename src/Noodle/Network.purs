@@ -13,28 +13,28 @@ import Data.Map.Extra (type (/->))
 import Data.Tuple.Nested (type (/\), (/\))
 
 
-data Network d a =
+data Network d =
     Network
-        (String /-> Patch d a)
+        (String /-> Patch d)
 
 
-empty :: forall d a. Network d a
+empty :: forall d. Network d
 empty = Network $ Map.empty
 
 
 -- TODO: optics
 
-patch :: forall d a. String -> Network d a -> Maybe (Patch d a)
+patch :: forall d. String -> Network d -> Maybe (Patch d)
 patch name (Network patches) = patches # Map.lookup name
 
 
-patches :: forall d a. Network d a -> Array (String /\ Patch d a)
+patches :: forall d. Network d -> Array (String /\ Patch d)
 patches (Network patches) = patches # Map.toUnfoldable
 
 
-addPatch :: forall d a. String /\ Patch d a -> Network d a -> Network d a
+addPatch :: forall d. String /\ Patch d -> Network d -> Network d
 addPatch (name /\ patch) (Network patches) = Network $ Map.insert name patch $ patches
 
 
-removePatch :: forall d a. String -> Network d a -> Network d a
+removePatch :: forall d. String -> Network d -> Network d
 removePatch name (Network patches) = Network $ Map.delete name $ patches

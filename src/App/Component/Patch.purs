@@ -7,8 +7,7 @@ import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..))
 
 import Noodle.Patch as Noodle
-import Noodle.Toolkit.Shaped as Noodle
-import Noodle.Toolkit.Shaped as Toolkit
+import Noodle.Toolkit as Noodle
 
 
 import Halogen as H
@@ -22,13 +21,13 @@ type Slot id = forall query. H.Slot query Void id
 
 
 type Input d =
-    { patch :: Noodle.Patch d Unit
+    { patch :: Noodle.Patch d
     , toolkit :: Noodle.Toolkit d
     }
 
 
 type State d =
-    { patch :: Noodle.Patch d Unit
+    { patch :: Noodle.Patch d
     , toolkit :: Noodle.Toolkit d
     }
 

@@ -12,11 +12,11 @@ type InletPath = String /\ String
 type OutletPath = String /\ String
 
 
-data Patch d a =
+data Patch d =
     Patch
-        (String /-> Node d a)
+        (String /-> Node d)
         ((OutletPath /\ InletPath) /-> Link)
 
 
-empty :: forall d a. Patch d a
+empty :: forall d. Patch d
 empty = Patch Map.empty Map.empty
