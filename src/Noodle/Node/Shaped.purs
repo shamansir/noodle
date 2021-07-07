@@ -25,6 +25,7 @@ import Data.Map.Extra (type (/->))
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Bifunctor (lmap, rmap)
+import Data.Functor.Invariant (class Invariant)
 
 import Noodle.Node as N
 import Noodle.Node.Define as D
@@ -56,6 +57,11 @@ etc.
 
 type Def d =
     D.Def (Shape d) d
+
+
+{- instance invariantDef :: Invariant (D.Def (Shape d)) where
+    imap aToB bToA (D.Def shape fn) =
+        D.Def (shape) $ \receive -> (<$>) aToB <$> (fn $ bToA <$> receive) -}
 
 
 type Node d =

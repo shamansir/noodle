@@ -4,6 +4,7 @@ module Noodle.Node.Shape where
 import Noodle.Channel.Shape as Channel
 
 
+import Prelude ((#))
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Tuple.Nested ((/\), type (/\))
@@ -34,27 +35,27 @@ infixl 1 andInlet as ~<
 infixl 1 andOutlet as >~
 
 
-withInlets :: forall d. Array (String /\ Channel.Shape d) -> Inlets d
-withInlets = Map.fromFoldable
+withInlets :: forall d. Inlets d
+withInlets = Map.empty
 
 
-withOutlets :: forall d. Array (String /\ Channel.Shape d) -> Outlets d
-withOutlets = Map.fromFoldable
+withOutlets :: forall d. Outlets d
+withOutlets = Map.empty
 
 
 andInlet
     :: forall d
-     . Array (String /\ Channel.Shape d)
+     . Inlets d
     -> String /\ Channel.Shape d
-    -> Array (String /\ Channel.Shape d)
+    -> Inlets d
 andInlet inlets (name /\ shape) =
-    inlets `snoc` (name /\ shape)
+    inlets # Map.insert name shape
 
 
 andOutlet
     :: forall d
-     . Array (String /\ Channel.Shape d)
+     . Outlets d
     -> String /\ Channel.Shape d
-    -> Array (String /\ Channel.Shape d)
+    -> Outlets d
 andOutlet outlets (name /\ shape) =
-    outlets `snoc` (name /\ shape)
+    outlets # Map.insert name shape

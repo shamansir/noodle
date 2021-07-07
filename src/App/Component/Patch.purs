@@ -5,7 +5,10 @@ import Prelude (identity, (<<<), Void)
 
 import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..))
+
 import Noodle.Patch as Noodle
+import Noodle.Toolkit.Shaped as Noodle
+import Noodle.Toolkit.Shaped as Toolkit
 
 
 import Halogen as H
@@ -20,16 +23,19 @@ type Slot id = forall query. H.Slot query Void id
 
 type Input d =
     { patch :: Noodle.Patch d Unit
+    , toolkit :: Noodle.Toolkit d
     }
 
 
 type State d =
     { patch :: Noodle.Patch d Unit
+    , toolkit :: Noodle.Toolkit d
     }
 
 
 data Action d
     = Receive (Input d)
+    | AddNode String
 
 
 initialState :: forall d. Input d -> State d
@@ -44,6 +50,8 @@ handleAction :: forall output m d. Action d -> H.HalogenM (State d) (Action d) (
 handleAction = case _ of
   Receive input ->
     H.modify_ (\state -> state { patch = input.patch })
+  AddNode name ->
+    H.modify_ (\state -> state)
 
 
 component :: forall query output m d. H.Component query (Input d) output m

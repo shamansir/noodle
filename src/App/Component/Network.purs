@@ -10,6 +10,7 @@ import Data.Tuple as Tuple
 
 import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
+import Noodle.Toolkit.Shaped (Toolkit) as Noodle
 
 import App.Colors as Colors
 import App.Component.Patch as PatchC
@@ -29,11 +30,13 @@ _patch = Proxy :: Proxy "patch"
 
 type Input d =
     { nw :: Noodle.Network d Unit
+    , toolkit :: Noodle.Toolkit d
     }
 
 
 type State d =
     { nw :: Noodle.Network d Unit
+    , toolkit :: Noodle.Toolkit d
     , currentPatch :: Maybe String
     , width :: Number, height :: Number
     }
@@ -45,11 +48,15 @@ data Action d
 
 
 initialState :: forall d. Input d -> State d
-initialState { nw } = { nw, currentPatch : Just "base", width : 1000.0, height : 1000.0 }
+initialState { nw, toolkit } =
+    { nw, toolkit
+    , currentPatch : Just "base"
+    , width : 1000.0, height : 1000.0
+    }
 
 
 render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
-render { nw, currentPatch, width, height } =
+render { nw, toolkit, currentPatch, width, height } =
     HS.svg
         [ HSA.width width, HSA.height height ]
         [ background
@@ -71,7 +78,7 @@ render { nw, currentPatch, width, height } =
         maybeCurrent (Just patch) =
             HS.g
                 [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]
-                [ HH.slot _patch 0 PatchC.component { patch } absurd ]
+                [ HH.slot _patch 0 PatchC.component { patch, toolkit } absurd ]
         maybeCurrent Nothing =
             HS.text
                 [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]
