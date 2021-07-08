@@ -73,7 +73,7 @@ render { node } =
                 $ Array.mapWithIndex outlet' outlets
         outlet' idx (name /\ shape) =
             HS.g
-                [ HSA.transform [ HSA.Translate 0.0 $ slotHeight * toNumber idx ] ]
+                [ HSA.transform [ HSA.Translate (width - slotWidth) $ slotHeight * toNumber idx ] ]
                 [ HS.text [] [ HH.text name ] ]
         body = HS.g [] []
 

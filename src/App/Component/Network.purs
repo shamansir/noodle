@@ -23,7 +23,7 @@ import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
 
 
-type Slots = ( patch :: PatchC.Slot Int )
+type Slots = ( patch :: PatchC.Slot Unit )
 
 
 _patch = Proxy :: Proxy "patch"
@@ -79,7 +79,7 @@ render { nw, toolkit, currentPatch, width, height } =
         maybeCurrent (Just patch) =
             HS.g
                 [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]
-                [ HH.slot _patch 0 PatchC.component { patch, toolkit } absurd ]
+                [ HH.slot _patch unit PatchC.component { patch, toolkit } absurd ]
         maybeCurrent Nothing =
             HS.text
                 [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]

@@ -31,4 +31,12 @@ addNode name node (Patch nodes links) =
 
 
 nodes :: forall d. Patch d -> Array (String /\ Node d)
-nodes (Patch nodes links) = nodes # Map.toUnfoldable
+nodes (Patch nodes _) = nodes # Map.toUnfoldable
+
+
+nodesCount :: forall d. Patch d -> Int
+nodesCount (Patch nodes _) = Map.size nodes
+
+
+linksCount :: forall d. Patch d -> Int
+linksCount (Patch _ links) = Map.size links

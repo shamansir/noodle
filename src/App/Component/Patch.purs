@@ -6,6 +6,7 @@ import Prelude
 import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..))
 import Data.Set as Set
+import Data.Array as Array
 import Data.Tuple.Nested ((/\))
 import Effect.Class (class MonadEffect, liftEffect)
 
@@ -75,11 +76,11 @@ render { patch, toolkit } =
                 [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just Colors.tabBackground ]
                 , HS.text [] [ HH.text name ]
                 ]
-        node (label /\ n) =
+        node idx (label /\ n) =
             HS.g
                 [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]
-                [ HH.slot _node 0 NodeC.component { node : n } absurd ]
-        nodes = HS.g [ HSA.class_ $ H.ClassName "nodes" ] (node <$> Patch.nodes patch)
+                [ HH.slot _node idx NodeC.component { node : n } absurd ]
+        nodes = HS.g [ HSA.class_ $ H.ClassName "nodes" ] $ Array.mapWithIndex node $ Patch.nodes patch
 
 
 handleAction :: forall output m d. MonadEffect m => Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
@@ -93,7 +94,13 @@ handleAction = case _ of
             newNode <- liftEffect newNode'
             H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
                 (\state ->
-                    state { patch = state.patch # Patch.addNode "sum" newNode }
+                    state
+                        { patch =
+                            state.patch
+                                # Patch.addNode
+                                    (name <> "-" <> (show $ Patch.nodesCount state.patch + 1))
+                                    newNode
+                        }
                 )
         Nothing -> pure unit
 
