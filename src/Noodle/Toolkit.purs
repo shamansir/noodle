@@ -8,6 +8,7 @@ import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Tuple.Nested (type (/\))
 import Data.Maybe (Maybe)
+import Data.Set (Set)
 
 import Noodle.Node (Node)
 import Noodle.Node as Node
@@ -26,3 +27,8 @@ spawn name def (Toolkit nodeDefs) =
     nodeDefs
         # Map.lookup name
         # map (Node.make def)
+
+
+nodeNames :: forall d. Toolkit d -> Set String
+nodeNames (Toolkit nodeDefs) =
+    nodeDefs # Map.keys

@@ -68,8 +68,8 @@ render { nw, toolkit, currentPatch, width, height } =
         tabLength = 60.0
         background =
             HS.rect [ HSA.width width, HSA.height height, HSA.fill $ Just Colors.background ]
-        patchesTabs = HS.g [ HSA.class_ $ H.ClassName "patches-tabs" ] (patchLabel <$> Tuple.fst <$> Network.patches nw)
-        patchLabel label =
+        patchesTabs = HS.g [ HSA.class_ $ H.ClassName "patches-tabs" ] (patchTab <$> Tuple.fst <$> Network.patches nw)
+        patchTab label =
             HS.g
                 [ HSA.class_ $ H.ClassName "patch-tab" ]
                 [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just Colors.tabBackground ]
