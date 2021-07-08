@@ -7,6 +7,7 @@ import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..))
 import Data.Set as Set
 import Data.Tuple.Nested ((/\))
+import Effect.Class (class MonadEffect, liftEffect)
 
 import Noodle.Patch (Patch) as Noodle
 import Noodle.Patch as Patch
@@ -18,6 +19,7 @@ import App.Component.Node as NodeC
 
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
 
@@ -67,7 +69,9 @@ render { patch, toolkit } =
         nodeButtons = HS.g [ HSA.class_ $ H.ClassName "patches-tabs" ] $ nodeButton <$> (Set.toUnfoldable $ Toolkit.nodeNames toolkit)
         nodeButton name =
             HS.g
-                [ HSA.class_ $ H.ClassName "node-button" ]
+                [ HSA.class_ $ H.ClassName "node-button"
+                , HE.onClick \_ -> AddNode name
+                ]
                 [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just Colors.tabBackground ]
                 , HS.text [] [ HH.text name ]
                 ]
@@ -78,15 +82,23 @@ render { patch, toolkit } =
         nodes = HS.g [ HSA.class_ $ H.ClassName "nodes" ] (node <$> Patch.nodes patch)
 
 
-handleAction :: forall output m d. Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
+handleAction :: forall output m d. MonadEffect m => Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
 handleAction = case _ of
   Receive input ->
     H.modify_ (\state -> state { patch = input.patch })
-  AddNode name ->
-    H.modify_ (\state -> state)
+  AddNode name -> do
+    toolkit <- H.gets _.toolkit
+    case Toolkit.spawn name toolkit of
+        Just newNode' -> do
+            newNode <- liftEffect newNode'
+            H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
+                (\state ->
+                    state { patch = state.patch # Patch.addNode "sum" newNode }
+                )
+        Nothing -> pure unit
 
 
-component :: forall query output m d. H.Component query (Input d) output m
+component :: forall query output m d. MonadEffect m => H.Component query (Input d) output m
 component =
     H.mkComponent
         { initialState

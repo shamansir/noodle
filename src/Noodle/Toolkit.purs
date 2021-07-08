@@ -15,20 +15,20 @@ import Noodle.Node as Node
 import Noodle.Node.Define (Def)
 
 
-data Toolkit d = Toolkit (String /-> Def d)
+data Toolkit d = Toolkit d (String /-> Def d)
 
 
-make :: forall d. Array (String /\ Def d) -> Toolkit d
-make = Toolkit <<< Map.fromFoldable
+make :: forall d. d -> Array (String /\ Def d) -> Toolkit d
+make def = Toolkit def <<< Map.fromFoldable
 
 
-spawn :: forall d. String -> d -> Toolkit d -> Maybe (Effect (Node d))
-spawn name def (Toolkit nodeDefs) =
+spawn :: forall d. String -> Toolkit d -> Maybe (Effect (Node d))
+spawn name (Toolkit def nodeDefs) =
     nodeDefs
         # Map.lookup name
         # map (Node.make def)
 
 
 nodeNames :: forall d. Toolkit d -> Set String
-nodeNames (Toolkit nodeDefs) =
+nodeNames (Toolkit _ nodeDefs) =
     nodeDefs # Map.keys

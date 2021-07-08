@@ -4,6 +4,7 @@ import Prelude
 
 import Type.Proxy (Proxy(..))
 
+import Effect.Class (class MonadEffect)
 import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..))
 import Data.Tuple as Tuple
@@ -55,7 +56,7 @@ initialState { nw, toolkit } =
     }
 
 
-render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
+render :: forall d m. MonadEffect m => State d -> H.ComponentHTML (Action d) Slots m
 render { nw, toolkit, currentPatch, width, height } =
     HS.svg
         [ HSA.width width, HSA.height height ]
@@ -85,7 +86,7 @@ render { nw, toolkit, currentPatch, width, height } =
                 [ HH.text "No patch selected" ]
 
 
-handleAction :: forall output m d. Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
+handleAction :: forall output m d. MonadEffect m => Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
 handleAction = case _ of
     SelectPatch _ ->
         H.modify_ \state -> state
@@ -93,7 +94,7 @@ handleAction = case _ of
         H.modify_ \state -> state
 
 
-component :: forall query output m d. H.Component query (Input d) output m
+component :: forall query output m d. MonadEffect m => H.Component query (Input d) output m
 component =
     H.mkComponent
         { initialState

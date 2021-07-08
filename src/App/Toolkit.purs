@@ -21,12 +21,19 @@ import Data.Functor.Invariant (imap)
 import Effect (Effect)
 
 
+type Data = Int
+
+
 library :: Def Unit
 library =
     Def.empty
 
 
-sumNode :: Def Int
+default :: Data
+default = 0
+
+
+sumNode :: Def Data
 sumNode =
     Def.define
       (withInlets
@@ -60,9 +67,10 @@ sumNode' = sumNode # imap ?wh ?wh -- Just (Maybe.fromMaybe 0)
 -}
 
 
-toolkit :: T.Toolkit Int
+toolkit :: T.Toolkit Data
 toolkit =
-  T.make [ "sum" /\ sumNode ]
+  T.make default
+    [ "sum" /\ sumNode ]
 
 
 {-
