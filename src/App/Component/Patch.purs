@@ -14,6 +14,7 @@ import Noodle.Toolkit (Toolkit) as Noodle
 import Noodle.Toolkit as Toolkit
 
 import App.Colors as Colors
+import App.Component.Node as NodeC
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -24,6 +25,12 @@ import Type.Proxy (Proxy(..))
 
 
 type Slot id = forall query. H.Slot query Void id
+
+
+type Slots = ( node :: NodeC.Slot Int )
+
+
+_node = Proxy :: Proxy "node"
 
 
 type Input d =
@@ -47,7 +54,7 @@ initialState :: forall d. Input d -> State d
 initialState = identity
 
 
-render :: forall d m. State d -> H.ComponentHTML (Action d) () m
+render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
 render { patch, toolkit } =
     HS.g
         []
@@ -67,11 +74,11 @@ render { patch, toolkit } =
         node (label /\ n) =
             HS.g
                 [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]
-                [ {- HH.slot _patch 0 PatchC.component { patch, toolkit } absurd -} ]
+                [ HH.slot _node 0 NodeC.component { node : n } absurd ]
         nodes = HS.g [ HSA.class_ $ H.ClassName "nodes" ] (node <$> Patch.nodes patch)
 
 
-handleAction :: forall output m d. Action d -> H.HalogenM (State d) (Action d) () output m Unit
+handleAction :: forall output m d. Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
 handleAction = case _ of
   Receive input ->
     H.modify_ (\state -> state { patch = input.patch })

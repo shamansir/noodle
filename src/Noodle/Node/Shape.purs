@@ -4,12 +4,15 @@ module Noodle.Node.Shape where
 import Noodle.Channel.Shape as Channel
 
 
-import Prelude ((#), (<$>))
+import Prelude ((#), (<$>), (>>>))
+
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
+import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array (snoc)
 import Data.Functor (class Functor)
+import Data.Maybe (Maybe)
 
 
 type Inlets d = (String /-> Channel.Shape d)
@@ -64,3 +67,19 @@ andOutlet
     -> Outlets d
 andOutlet outlets (name /\ shape) =
     outlets # Map.insert name shape
+
+
+inlet :: forall d. String -> Shape d -> Maybe (Channel.Shape d)
+inlet name (inlets /\ _) = Map.lookup name inlets
+
+
+outlet :: forall d. String -> Shape d -> Maybe (Channel.Shape d)
+outlet name (_ /\ outlets) = Map.lookup name outlets
+
+
+inlets :: forall d. Shape d -> Array (String /\ Channel.Shape d)
+inlets = Tuple.fst >>> Map.toUnfoldable
+
+
+outlets :: forall d. Shape d -> Array (String /\ Channel.Shape d)
+outlets = Tuple.snd >>> Map.toUnfoldable

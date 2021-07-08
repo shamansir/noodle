@@ -2,8 +2,10 @@ module Noodle.Node
     ( Node, Link
     , send, connect, disconnect
     , make
-    , inlet, outlet, outletFlipped
+    , inlet, outlet
     , inlets, outlets
+    , inletSignal, outletSignal, outletSignalFlipped
+    , inletsSignal, outletsSignal
     , (<|), (|>), (<~>), (<+), (+>)
     , consumer
     )
@@ -28,6 +30,8 @@ import Effect.Ref as Ref
 import Noodle.Node.Define (Def(..))
 import Noodle.Node.Define as Def
 import Noodle.Node.Shape (Shape)
+import Noodle.Node.Shape as Shape
+import Noodle.Channel.Shape as Channel
 
 import Signal (Signal, (~>))
 import Signal (foldp, runSignal, filter) as Signal
@@ -80,8 +84,8 @@ make default (Def shape fn) = do
 infixl 5 Def.receive as <+
 infixl 5 send as +>
 infixl 4 connect as <~>
-infixl 4 inlet as |>
-infixl 4 outletFlipped as <|
+infixl 4 inletSignal as |>
+infixl 4 outletSignalFlipped as <|
 
 
 -- fromFn' :: (d -> d) -> Node''' d
@@ -102,7 +106,7 @@ connect (srcNode /\ srcOutlet) (dstNode /\ dstInlet) =
     in do
         ref <- Ref.new true
         _ <- Signal.runSignal
-                $ outlet srcNode srcOutlet
+                $ outletSignal srcNode srcOutlet
                 ~> Tuple dstInlet
                 -- ~> Ch.send inlets_chan
                 ~> Ch.sendIfRef inlets_chan ref
@@ -126,25 +130,45 @@ getOutletsChannel :: forall d. Node d -> Channel (String /\ d)
 getOutletsChannel (Node _ (_ /\ outlets_chan)) = outlets_chan
 
 
-inlets :: forall d. Node d -> Signal (String /\ d)
-inlets =
+inletsSignal :: forall d. Node d -> Signal (String /\ d)
+inletsSignal =
     Ch.subscribe <<< getInletsChannel
 
 
-outlets :: forall d. Node d -> Signal (String /\ d)
-outlets =
+outletsSignal :: forall d. Node d -> Signal (String /\ d)
+outletsSignal =
     Ch.subscribe <<< getOutletsChannel
 
 
-inlet :: forall d. Node d -> String -> Signal d
-inlet node name =
+inletSignal :: forall d. Node d -> String -> Signal d
+inletSignal node name =
     Ch.subscribe (getInletsChannel node) ~> snd -- FIXME
 
 
-outlet :: forall d. Node d -> String -> Signal d
-outlet node _ =
+outletSignal :: forall d. Node d -> String -> Signal d
+outletSignal node _ =
     Ch.subscribe (getOutletsChannel node) ~> snd -- FIXME
 
 
-outletFlipped :: forall d. String -> Node d -> Signal d
-outletFlipped = flip outlet
+outletSignalFlipped :: forall d. String -> Node d -> Signal d
+outletSignalFlipped = flip outletSignal
+
+
+getShape :: forall d. Node d -> Shape d
+getShape (Node shape _) = shape
+
+
+inlet :: forall d. String -> Node d -> Maybe (Channel.Shape d)
+inlet name = getShape >>> Shape.inlet name
+
+
+outlet :: forall d. String -> Node d -> Maybe (Channel.Shape d)
+outlet name = getShape >>> Shape.outlet name
+
+
+inlets :: forall d. Node d -> Array (String /\ Channel.Shape d)
+inlets = getShape >>> Shape.inlets
+
+
+outlets :: forall d. Node d -> Array (String /\ Channel.Shape d)
+outlets = getShape >>> Shape.outlets
