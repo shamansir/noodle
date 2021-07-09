@@ -6,7 +6,7 @@ import Data.BinPack.R2 (Bin2)
 import Noodle.Node (Node)
 
 
-cellSize = 30
+cell = 30
 
 
-type Layout d = Bin2 Int (Node d)
+type Layout a = Bin2 Int a

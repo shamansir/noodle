@@ -8,6 +8,7 @@ module Noodle.Node
     , inletsSignal, outletsSignal
     , (<|), (|>), (<~>), (<+), (+>)
     , consumer
+    , dimensions
     )
     where
 
@@ -172,3 +173,7 @@ inlets = getShape >>> Shape.inlets
 
 outlets :: forall d. Node d -> Array (String /\ Channel.Shape d)
 outlets = getShape >>> Shape.outlets
+
+
+dimensions :: forall d. Node d -> Int /\ Int
+dimensions (Node (inlets /\ outlets) _) = Map.size inlets /\ Map.size outlets

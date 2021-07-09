@@ -130,6 +130,10 @@ getShape :: forall d. Def d -> Shape d
 getShape (Def shape _) = shape
 
 
+dimensions :: forall d. Def d -> Int /\ Int
+dimensions (Def (inlets /\ outlets) _) = Map.size inlets /\ Map.size outlets
+
+
 {-
 fromFn1 :: forall d a. a -> (d -> d) -> Def d
 fromFn1 v fn =

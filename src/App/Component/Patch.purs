@@ -8,7 +8,11 @@ import Data.Maybe (Maybe(..))
 import Data.Set as Set
 import Data.Array as Array
 import Data.Tuple.Nested ((/\))
+import Data.Maybe as Maybe
 import Effect.Class (class MonadEffect, liftEffect)
+
+import Data.BinPack.R2 (Bin2)
+import Data.BinPack.R2 as R2
 
 import Noodle.Patch (Patch) as Noodle
 import Noodle.Patch as Patch
@@ -45,6 +49,7 @@ type Input d =
 type State d =
     { patch :: Noodle.Patch d
     , toolkit :: Noodle.Toolkit d
+    , layout :: Bin2 Int String
     }
 
 
@@ -54,7 +59,8 @@ data Action d
 
 
 initialState :: forall d. Input d -> State d
-initialState = identity
+initialState { patch, toolkit } =
+    { patch, toolkit, layout : R2.container 2000 2000 }
 
 
 render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
@@ -85,8 +91,10 @@ render { patch, toolkit } =
 
 handleAction :: forall output m d. MonadEffect m => Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
 handleAction = case _ of
+
   Receive input ->
     H.modify_ (\state -> state { patch = input.patch })
+
   AddNode name -> do
     toolkit <- H.gets _.toolkit
     case Toolkit.spawn name toolkit of
@@ -94,15 +102,15 @@ handleAction = case _ of
             newNode <- liftEffect newNode'
             H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
                 (\state ->
-                    state
-                        { patch =
-                            state.patch
-                                # Patch.addNode
-                                    (name <> "-" <> (show $ Patch.nodesCount state.patch + 1))
-                                    newNode
+                    let nodeName = makeUniqueName state.patch name
+                    in state
+                        { patch = state.patch # Patch.addNode nodeName newNode
+                        , layout = R2.packOne state.layout (R2.item 30 40 nodeName)
+                                    # Maybe.fromMaybe state.layout
                         }
                 )
         Nothing -> pure unit
+    where makeUniqueName patch name = name <> "-" <> (show $ Patch.nodesCount patch + 1)
 
 
 component :: forall query output m d. MonadEffect m => H.Component query (Input d) output m
