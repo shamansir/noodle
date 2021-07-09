@@ -21,7 +21,7 @@ import Data.Functor.Invariant (imap)
 import Effect (Effect)
 
 
-type Data = Int
+type Data = Number
 
 
 library :: Def Unit
@@ -30,18 +30,18 @@ library =
 
 
 default :: Data
-default = 0
+default = 0.0
 
 
 sumNode :: Def Data
 sumNode =
     Def.define
       (withInlets
-         ~< "a" /\ Channel.int 0
-         ~< "b" /\ Channel.int 0
+         ~< "a" /\ Channel.number 0.0
+         ~< "b" /\ Channel.number 0.0
       )
       (withOutlets
-         >~ "c" /\ Channel.int 0
+         >~ "c" /\ Channel.number 0.0
       )
       $ \inlets ->
           Def.pass'

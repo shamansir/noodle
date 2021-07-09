@@ -6,8 +6,9 @@ import Prelude
 import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..))
 import Data.Set as Set
+import Data.List as List
 import Data.Array as Array
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe as Maybe
 import Effect.Class (class MonadEffect, liftEffect)
 
@@ -49,7 +50,7 @@ type Input d =
 type State d =
     { patch :: Noodle.Patch d
     , toolkit :: Noodle.Toolkit d
-    , layout :: Bin2 Int String
+    , layout :: Bin2 Number String
     }
 
 
@@ -60,20 +61,27 @@ data Action d
 
 initialState :: forall d. Input d -> State d
 initialState { patch, toolkit } =
-    { patch, toolkit, layout : R2.container 2000 2000 }
+    { patch, toolkit, layout : R2.container 2000.0 2000.0 }
 
 
 render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
-render { patch, toolkit } =
+render { patch, toolkit, layout } =
     HS.g
         []
         [ nodeButtons
-        , nodes
+        , nodes'
         ]
     where
         tabHeight = 20.0
         tabLength = 60.0
-        nodeButtons = HS.g [ HSA.class_ $ H.ClassName "patches-tabs" ] $ nodeButton <$> (Set.toUnfoldable $ Toolkit.nodeNames toolkit)
+        packedNodes
+            = List.catMaybes
+            $ (\(name /\ x /\ y /\ w /\ h) ->
+                patch
+                     #  Patch.findNode name
+                    <#> { node : _, x, y, w, h }
+            ) <$> R2.toList layout
+        nodeButtons = HS.g [ HSA.class_ $ H.ClassName "nodes-tabs" ] $ nodeButton <$> (Set.toUnfoldable $ Toolkit.nodeNames toolkit)
         nodeButton name =
             HS.g
                 [ HSA.class_ $ H.ClassName "node-button"
@@ -82,11 +90,11 @@ render { patch, toolkit } =
                 [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just Colors.tabBackground ]
                 , HS.text [] [ HH.text name ]
                 ]
-        node idx (label /\ n) =
+        node' idx { node, x, y, w, h } =
             HS.g
-                [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]
-                [ HH.slot _node idx NodeC.component { node : n } absurd ]
-        nodes = HS.g [ HSA.class_ $ H.ClassName "nodes" ] $ Array.mapWithIndex node $ Patch.nodes patch
+                [ HSA.transform [ HSA.Translate x y ] ]
+                [ HH.slot _node idx NodeC.component { node } absurd ]
+        nodes' = HS.g [ HSA.class_ $ H.ClassName "nodes" ] $ Array.mapWithIndex node' $ List.toUnfoldable $ packedNodes -- Patch.nodes patch
 
 
 handleAction :: forall output m d. MonadEffect m => Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
@@ -103,9 +111,10 @@ handleAction = case _ of
             H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
                 (\state ->
                     let nodeName = makeUniqueName state.patch name
+                        --inletsCount /\ outletsCount = Node.dimensions newNode'
                     in state
                         { patch = state.patch # Patch.addNode nodeName newNode
-                        , layout = R2.packOne state.layout (R2.item 30 40 nodeName)
+                        , layout = R2.packOne state.layout (R2.item 30.0 40.0 nodeName)
                                     # Maybe.fromMaybe state.layout
                         }
                 )

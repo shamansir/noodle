@@ -24,6 +24,7 @@ to generate this file without the comments in this block.
   , "halogen-subscriptions"
   , "halogen-svg-elems"
   , "identity"
+  , "integers"
   , "invariant"
   , "lists"
   , "maybe"

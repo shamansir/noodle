@@ -4,6 +4,8 @@ module Noodle.Patch where
 import Noodle.Node
 
 import Prelude ((#))
+
+import Data.Maybe (Maybe)
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Tuple.Nested ((/\), type (/\))
@@ -32,6 +34,10 @@ addNode name node (Patch nodes links) =
 
 nodes :: forall d. Patch d -> Array (String /\ Node d)
 nodes (Patch nodes _) = nodes # Map.toUnfoldable
+
+
+findNode :: forall d. String -> Patch d -> Maybe (Node d)
+findNode name (Patch nodes _) = nodes # Map.lookup name
 
 
 nodesCount :: forall d. Patch d -> Int
