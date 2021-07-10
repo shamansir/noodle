@@ -6,7 +6,7 @@ import Prelude
 import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..))
 import Data.Set as Set
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested (type (/\), (/\))
 import Data.Array as Array
 import Data.Int (toNumber)
 
@@ -100,3 +100,11 @@ component =
                 , receive = Just <<< Receive
                 }
         }
+
+
+findBounds :: forall d. Noodle.Node d -> Number /\ Number
+findBounds node =
+    let
+        inletsCount /\ outletsCount = Node.dimensions node
+    in
+        70.0 /\ toNumber (max inletsCount outletsCount) * 20.0

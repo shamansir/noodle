@@ -3,6 +3,7 @@ module App.Emitters where
 
 import Prelude
 
+import Effect (Effect)
 import Effect.Class (class MonadEffect)
 import Effect.Aff as Aff
 
@@ -10,12 +11,13 @@ import Halogen as H
 import Halogen.Query.Event (eventListener)
 import Halogen.Subscription as HS
 
-import Signal ((~>))
+import Signal (Signal, (~>))
 import Signal (runSignal) as Signal
 import Signal.DOM as Signal
 
 import Web.HTML.Window (document)
 import Web.Event.Event (EventType)
+import Web.UIEvent.UIEvent (UIEvent)
 import Web.UIEvent.MouseEvent as ME
 import Web.UIEvent.MouseEvent.EventTypes as MET
 import Web.HTML.HTMLDocument as HTMLDocument
@@ -43,17 +45,17 @@ mouseMove :: forall t. HTMLDocument -> (ME.MouseEvent -> t) -> HS.Emitter t
 mouseMove = mouse MET.mousemove
 
 
-animationFrame :: forall m t. MonadEffect m => m (HS.Emitter Number)
-animationFrame = H.liftEffect $ do
+fromSignal :: forall m a. MonadEffect m => Effect (Signal a) -> m (HS.Emitter a)
+fromSignal signalEff = H.liftEffect $ do
     { emitter, listener } <- HS.create
-    signal <- Signal.animationFrame
+    signal <- signalEff
     Signal.runSignal $ signal ~> HS.notify listener
     pure emitter
-    --signal ~> HS.notify listener
 
---   _ <- H.liftAff $ Aff.forkAff $ forever do
---     Aff.delay $ Milliseconds 1000.0
---     H.liftEffect $ HS.notify listener val
-    --pure emitter
 
--- TODO: animationFrame
+windowDimensions :: forall m. MonadEffect m => m (HS.Emitter { w :: Int, h :: Int })
+windowDimensions = fromSignal Signal.windowDimensions
+
+
+animationFrame :: forall m. MonadEffect m => m (HS.Emitter Number)
+animationFrame = fromSignal Signal.animationFrame -- could use Web.HTML.Window instead

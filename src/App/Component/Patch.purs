@@ -62,7 +62,7 @@ data Action d
 
 initialState :: forall d. Input d -> State d
 initialState { patch, toolkit } =
-    { patch, toolkit, layout : R2.container 2000.0 2000.0 }
+    { patch, toolkit, layout : R2.container 800.0 800.0 }
 
 
 render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
@@ -113,10 +113,10 @@ handleAction = case _ of
             H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
                 (\state ->
                     let nodeName = makeUniqueName state.patch name
-                        --inletsCount /\ outletsCount = Node.dimensions newNode'
+                        width /\ height = NodeC.findBounds newNode
                     in state
                         { patch = state.patch # Patch.addNode nodeName newNode
-                        , layout = R2.packOne state.layout (R2.item 30.0 40.0 nodeName)
+                        , layout = R2.packOne state.layout (R2.item width height nodeName)
                                     # Maybe.fromMaybe state.layout
                         }
                 )
