@@ -21,6 +21,7 @@ import Noodle.Toolkit (Toolkit) as Noodle
 import Noodle.Toolkit as Toolkit
 
 import App.Colors as Colors
+import App.ClassNames as CS
 import App.Component.Node as NodeC
 
 import Halogen as H
@@ -79,22 +80,22 @@ render { patch, toolkit, layout } =
             $ (\(name /\ x /\ y /\ w /\ h) ->
                 patch
                      #  Patch.findNode name
-                    <#> { node : _, x, y, w, h }
+                    <#> { name, node : _, x, y, w, h }
             ) <$> R2.toList layout
-        nodeButtons = HS.g [ HSA.class_ $ H.ClassName "nodes-tabs" ] $ nodeButton <$> (Set.toUnfoldable $ Toolkit.nodeNames toolkit)
+        nodeButtons = HS.g [ HSA.classes CS.nodesTabs ] $ nodeButton <$> (Set.toUnfoldable $ Toolkit.nodeNames toolkit)
         nodeButton name =
             HS.g
-                [ HSA.class_ $ H.ClassName "node-button"
+                [ HSA.classes CS.nodeButton
                 , HE.onClick \_ -> AddNode name
                 ]
                 [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just Colors.tabBackground ]
                 , HS.text [] [ HH.text name ]
                 ]
-        node' idx { node, x, y, w, h } =
+        node' idx { node, name, x, y, w, h } =
             HS.g
-                [ HSA.transform [ HSA.Translate x y ] ]
-                [ HH.slot _node idx NodeC.component { node } absurd ]
-        nodes' = HS.g [ HSA.class_ $ H.ClassName "nodes" ] $ Array.mapWithIndex node' $ List.toUnfoldable $ packedNodes -- Patch.nodes patch
+                [ HSA.transform [ HSA.Translate x $ tabHeight + y ] ]
+                [ HH.slot _node idx NodeC.component { node, name } absurd ]
+        nodes' = HS.g [ HSA.classes CS.nodes ] $ Array.mapWithIndex node' $ List.toUnfoldable $ packedNodes -- Patch.nodes patch
 
 
 handleAction :: forall output m d. MonadEffect m => Action d -> H.HalogenM (State d) (Action d) Slots output m Unit

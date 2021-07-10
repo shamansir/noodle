@@ -14,6 +14,7 @@ import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
 
 import App.Colors as Colors
+import App.ClassNames as CS
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -28,11 +29,13 @@ type Slot id = forall query. H.Slot query Void id
 
 type Input d =
     { node :: Noodle.Node d
+    , name :: String
     }
 
 
 type State d =
     { node :: Noodle.Node d
+    , name :: String
     }
 
 
@@ -45,14 +48,16 @@ initialState = identity
 
 
 render :: forall d m. State d -> H.ComponentHTML (Action d) () m
-render { node } =
+render { node, name } =
     HS.g
         []
-        [ inlets'
+        [ name'
+        , inlets'
         , body
         , outlets'
         ]
     where
+        name' = HS.text [] [ HH.text name ]
         inlets = Node.inlets node
         outlets = Node.outlets node
         inletsCount = toNumber $ Array.length inlets
@@ -62,14 +67,14 @@ render { node } =
         width = 50.0
         height = max inletsCount outletsCount * slotHeight
         inlets' =
-            HS.g [ HSA.class_ $ H.ClassName "inlets" ]
+            HS.g [ HSA.classes CS.nodeInlets ]
                 $ Array.mapWithIndex inlet' inlets
         inlet' idx (name /\ shape) =
             HS.g
                 [ HSA.transform [ HSA.Translate 0.0 $ slotHeight * toNumber idx ] ]
                 [ HS.text [] [ HH.text name ] ]
         outlets' =
-            HS.g [ HSA.class_ $ H.ClassName "outlets" ]
+            HS.g [ HSA.classes CS.nodeOutlets ]
                 $ Array.mapWithIndex outlet' outlets
         outlet' idx (name /\ shape) =
             HS.g

@@ -3,6 +3,16 @@ body {
     margin: 0;
 }
 
+.no-select {
+    /*cursor: default;*/
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 text {
     font-family: Avenir, sans-serif;
     font-size: 9px;
@@ -10,6 +20,10 @@ text {
 }
 
 .patch-tab {
+    cursor: pointer;
+}
+
+.node-button {
     cursor: pointer;
 }
 
