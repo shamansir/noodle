@@ -1,4 +1,4 @@
-module App.Toolkit.Render where
+module App.Example.Toolkit.Render where
 
 
 import Noodle.Node (Node)

@@ -34,6 +34,9 @@ to generate this file without the comments in this block.
   , "refs"
   , "signal"
   , "tuples"
+  , "web-events"
+  , "web-html"
+  , "web-uievents"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

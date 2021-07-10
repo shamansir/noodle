@@ -1,4 +1,4 @@
-module App.Toolkit where
+module App.Example.Toolkit where
 
 
 import Prelude (($), (#), (<$>), (<*>), (<#>), (+), Unit, unit)

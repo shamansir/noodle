@@ -101,8 +101,9 @@ render { patch, toolkit, layout } =
 handleAction :: forall output m d. MonadEffect m => Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
 handleAction = case _ of
 
-  Receive input ->
-    H.modify_ (\state -> state { patch = input.patch })
+  Receive _ ->
+    pure unit
+    --H.modify_ (\state -> state { patch = input.patch })
 
   AddNode name -> do
     toolkit <- H.gets _.toolkit

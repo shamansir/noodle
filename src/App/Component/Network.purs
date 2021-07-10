@@ -51,6 +51,7 @@ type State d =
     , currentPatch :: Maybe String
     , width :: Number, height :: Number
     , mouse :: Mouse.State Unit
+    , currentFrame :: Number
     }
 
 
@@ -58,6 +59,7 @@ data Action d
     = Initialize
     | SelectPatch String
     | HandleMouse H.SubscriptionId ME.MouseEvent
+    | AnimationFrame H.SubscriptionId Number
     | HandlePatch (PatchC.Action d)
 
 
@@ -67,15 +69,17 @@ initialState { nw, toolkit } =
     , currentPatch : Just "base"
     , width : 1000.0, height : 1000.0
     , mouse : Mouse.init
+    , currentFrame : 0.0
     }
 
 
 render :: forall d m. MonadEffect m => State d -> H.ComponentHTML (Action d) Slots m
-render { nw, toolkit, currentPatch, width, height, mouse } =
+render { nw, toolkit, currentPatch, width, height, mouse, currentFrame } =
     HS.svg
         [ HSA.width width, HSA.height height ]
         [ background
         , mouseState
+        , curFrame
         , patchesTabs
         , maybeCurrent $ (flip Network.patch $ nw) =<< currentPatch
         ]
@@ -84,6 +88,10 @@ render { nw, toolkit, currentPatch, width, height, mouse } =
             HS.text
                 [ HSA.transform [ HSA.Translate 100.0 0.0 ] ]
                 [ HH.text $ show mouse ]
+        curFrame =
+            HS.text
+                [ HSA.transform [ HSA.Translate 200.0 0.0 ] ]
+                [ HH.text $ show currentFrame ]
         tabHeight = 20.0
         tabLength = 60.0
         background =
@@ -113,6 +121,8 @@ handleAction = case _ of
         H.subscribe' $ Emitters.mouseDown document <<< HandleMouse
         H.subscribe' $ Emitters.mouseMove document <<< HandleMouse
         H.subscribe' $ Emitters.mouseUp document <<< HandleMouse
+        animFrame <- H.liftEffect Emitters.animationFrame
+        H.subscribe' $ \sid -> AnimationFrame sid <$> animFrame
     SelectPatch _ ->
         H.modify_ \state -> state
     HandlePatch _ ->
@@ -120,6 +130,9 @@ handleAction = case _ of
     HandleMouse _ mouseEvent ->
         H.modify_ \state -> state
             { mouse = state.mouse # Mouse.apply (const $ Just unit) mouseEvent }
+    AnimationFrame _ time ->
+        H.modify_ \state -> state
+            { currentFrame = time }
 
 
 component :: forall query output m d. MonadAff m => MonadEffect m => H.Component query (Input d) output m

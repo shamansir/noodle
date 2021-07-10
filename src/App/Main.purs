@@ -13,7 +13,7 @@ import Halogen.VDom.Driver (runUI)
 import Noodle.Network as Network
 import Noodle.Patch as Patch
 import App.Component.Network as NetworkC
-import App.Toolkit (toolkit)
+import App.Example.Toolkit (toolkit)
 
 
 main :: Effect Unit
