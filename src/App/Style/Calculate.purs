@@ -35,14 +35,16 @@ outletPos u Horizontal idx =
 
 inletRectPos :: GetPosByIdx
 inletRectPos u Vertical idx =
-    0.0 /\ (u.slotOuterHeight * toNumber idx)
+    0.0 /\ (plateHeight + u.slotOuterHeight * toNumber idx)
+    where _ /\ plateHeight = namePlateSize u Vertical
 inletRectPos u Horizontal idx =
     0.0 /\ toNumber idx
 
 
 outletRectPos :: GetPosByIdx
 outletRectPos u Vertical idx =
-    (u.nodeBodyWidth + u.slotOuterWidth) /\ u.slotOuterHeight * toNumber idx
+    (u.nodeBodyWidth + u.slotOuterWidth) /\ (plateHeight + u.slotOuterHeight * toNumber idx)
+    where _ /\ plateHeight = namePlateSize u Vertical
 outletRectPos u Horizontal idx =
     0.0 /\ toNumber idx
 
@@ -75,6 +77,13 @@ namePos :: GetPos
 namePos u Vertical =
     u.slotOuterWidth /\ 0.0
 namePos u Horizontal = 0.0 /\ 0.0
+
+
+nameTextPos :: GetPos
+nameTextPos u Vertical =
+    3.0 /\ (plateHeight / 2.0)
+    where _ /\ plateHeight = namePlateSize u Vertical
+nameTextPos u Horizontal = 0.0 /\ 0.0
 
 
 slotSize :: GetSize

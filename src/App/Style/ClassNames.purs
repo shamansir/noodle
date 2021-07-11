@@ -21,6 +21,14 @@ nodesTabs :: Array H.ClassName
 nodesTabs = H.ClassName <$> [ "nodes-tabs" ]
 
 
+nodeTitle :: Array H.ClassName
+nodeTitle = H.ClassName <$> [ "node-title" ]
+
+
+nodeTitleFocus :: Array H.ClassName
+nodeTitleFocus = H.ClassName <$> [ "node-title-focus" ]
+
+
 nodeButton :: String -> Array H.ClassName
 nodeButton name = H.ClassName <$> [ "node-button", "node-tab-" <> name, "no-select" ]
 

@@ -64,7 +64,7 @@ slotOuterWidth _ = 50.0
 slotOuterHeight _ = 25.0
 
 
-slotRadius = 4.0
+slotRadius = 3.5
 
 
 slotStrokeWidth = 1.5

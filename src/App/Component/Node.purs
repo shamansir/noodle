@@ -78,16 +78,26 @@ render { node, name, style, flow } =
 
         translateTo (x /\ y) =
             HSA.transform [ HSA.Translate x y ]
+
         name' =
             HS.g
-                [ translateTo $ Calc.namePos u flow ]
+                [ translateTo $ Calc.namePos u flow
+                , HSA.classes $ CS.nodeTitle <> CS.nodeTitleFocus
+                ]
                 [ HS.rect
                     [ HSA.fill $ Just colors.namePlateBg
                     , HSA.width namePlateWidth
                     , HSA.height namePlateHeight
                     ]
-                , HS.text [ HSA.fill $ Just colors.nodeName ] [ HH.text name ]
+                , HS.g
+                    [ translateTo $ Calc.nameTextPos u flow
+                    ]
+                    [ HS.text
+                        [ HSA.fill $ Just colors.nodeName ]
+                        [ HH.text name ]
+                    ]
                 ]
+
         slot classes rectPos pos textPos (name /\ shape) =
             HS.g
                 [ HSA.classes classes ]
@@ -117,9 +127,11 @@ render { node, name, style, flow } =
                         ]
                     ]
                 ]
+
         inlets' =
             HS.g [ HSA.classes CS.nodeInlets ]
                 $ Array.mapWithIndex inlet' inlets
+
         inlet' idx (name /\ shape) =
             slot
                 (CS.inlet name)
@@ -127,9 +139,11 @@ render { node, name, style, flow } =
                 (Calc.inletPos u flow idx)
                 (Calc.inletTextPos u flow idx)
                 (name /\ shape)
+
         outlets' =
             HS.g [ HSA.classes CS.nodeOutlets ]
                 $ Array.mapWithIndex outlet' outlets
+
         outlet' idx (name /\ shape) =
             slot
                 (CS.outlet name)
@@ -137,6 +151,7 @@ render { node, name, style, flow } =
                 (Calc.outletPos u flow idx)
                 (Calc.outletTextPos u flow idx)
                 (name /\ shape)
+
         body =
             HS.g
                 [ translateTo $ Calc.bodyPos u flow ]
@@ -148,6 +163,7 @@ render { node, name, style, flow } =
                     , HSA.width innerWidth, HSA.height innerHeight
                     ]
                 ]
+
         shadow =
             HS.g
                 [ translateTo $ Calc.shadowPos u flow ]

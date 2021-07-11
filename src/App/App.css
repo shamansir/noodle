@@ -17,13 +17,29 @@ text {
     font-family: Avenir, sans-serif;
     font-size: 9px;
     alignment-baseline: hanging;
+    dominant-baseline: hanging;
+}
+
+.node-title text {
+    alignment-baseline: middle;
+    dominant-baseline: middle;
 }
 
 .node-vert .inlet text {
     text-anchor: end;
 }
 
+.node-vert .inlet text,
+.node-vert .outlet text {
+    alignment-baseline: middle;
+    dominant-baseline: middle;
+}
+
 .slot-focus {
+    cursor: pointer;
+}
+
+.node-title-focus {
     cursor: pointer;
 }
 

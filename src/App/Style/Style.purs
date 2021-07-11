@@ -34,7 +34,10 @@ type Units =
 
 type Colors =
     { background :: Color
-    , tabBackground :: Color
+    , patchTabBackground :: Color
+    , patchTabStroke :: Color
+    , nodeTabBackground :: Color
+    , nodeTabStroke :: Color
     , slotStroke :: Color
     , slotFill :: Color
     , slotTextFill :: Color

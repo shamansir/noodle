@@ -102,6 +102,7 @@ render (s@{ nw, toolkit, style, flow }) =
                 [ HSA.transform [ HSA.Translate 200.0 0.0 ] ]
                 [ HH.text $ show s.currentFrame ]
         tabHeight = 20.0
+        tabPadding = 4.0
         tabLength = 60.0
         background =
             HS.rect
@@ -112,16 +113,22 @@ render (s@{ nw, toolkit, style, flow }) =
         patchTab label =
             HS.g
                 [ HSA.classes $ CS.patchTab label ]
-                [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just colors.tabBackground ]
-                , HS.text [] [ HH.text label ]
+                [ HS.rect [ HSA.width tabLength, HSA.height tabHeight
+                , HSA.fill $ Just colors.patchTabBackground
+                , HSA.stroke $ Just colors.patchTabStroke
+                , HSA.strokeWidth 1.0
+                ]
+                , HS.text
+                    [ HSA.transform [ HSA.Translate 3.0 3.0 ] ]
+                     [ HH.text label ]
                 ]
         maybeCurrent (Just patch) =
             HS.g
-                [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]
+                [ HSA.transform [ HSA.Translate 0.0 $ tabHeight + tabPadding ] ]
                 [ HH.slot _patch unit PatchC.component { patch, toolkit, style, flow } absurd ]
         maybeCurrent Nothing =
             HS.text
-                [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]
+                [ HSA.transform [ HSA.Translate 0.0 $ tabHeight + tabPadding ] ]
                 [ HH.text "No patch selected" ]
 
 

@@ -80,6 +80,8 @@ render { patch, toolkit, layout, style, flow } =
     where
         colors = style.colors
         tabHeight = 20.0
+        tabVertPadding = 15.0
+        tabHorzPadding = 5.0
         tabLength = 60.0
         packedNodes
             = List.catMaybes
@@ -92,14 +94,20 @@ render { patch, toolkit, layout, style, flow } =
         nodeButton name =
             HS.g
                 [ HSA.classes $ CS.nodeButton name
+                , HSA.transform [ HSA.Translate tabHorzPadding 0.0 ]
                 , HE.onClick \_ -> AddNode name
                 ]
-                [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just colors.tabBackground ]
-                , HS.text [] [ HH.text name ]
+                [ HS.rect
+                    [ HSA.width tabLength, HSA.height tabHeight
+                    , HSA.fill $ Just colors.nodeTabBackground
+                    , HSA.stroke $ Just colors.nodeTabStroke
+                    , HSA.strokeWidth 1.0
+                    ]
+                , HS.text [] [ HH.text $ "+ " <> name ]
                 ]
         node' idx { node, name, x, y, w, h } =
             HS.g
-                [ HSA.transform [ HSA.Translate x $ tabHeight + y ]
+                [ HSA.transform [ HSA.Translate x $ tabHeight + tabVertPadding + y ]
                 , HSA.classes $ CS.node flow name
                 ]
                 [ HH.slot _node idx NodeC.component { node, name, style, flow } absurd ]

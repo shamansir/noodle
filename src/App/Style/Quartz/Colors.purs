@@ -8,7 +8,10 @@ import App.Style (Colors)
 colors :: Colors
 colors =
     { background : RGB 34 34 42
-    , tabBackground : RGB 220 220 220
+    , nodeTabBackground : RGB 170 170 170
+    , nodeTabStroke : RGBA 220 220 220 0.7
+    , patchTabBackground : RGB 220 220 220
+    , patchTabStroke : RGBA 0 0 0 0.7
     , slotStroke : RGB 0 0 0
     , slotFill : RGB 255 255 255
     , slotTextFill : RGB 255 255 255
