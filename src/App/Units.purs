@@ -35,3 +35,9 @@ slotStrokeWidth = 1.5
 
 
 bodyStrokeWidth = 1.0
+
+
+bodyCornerRadius = 0.0
+
+
+bodyShadowShift = 5.0

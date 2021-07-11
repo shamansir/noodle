@@ -52,10 +52,11 @@ render :: forall d m. State d -> H.ComponentHTML (Action d) () m
 render { node, name } =
     HS.g
         []
-        [ name'
+        [ shadow
         , body
         , inlets'
         , outlets'
+        , name'
         ]
     where
         name' = HS.text [] [ HH.text name ]
@@ -67,7 +68,8 @@ render { node, name } =
         slot (x /\ y) (name /\ shape) =
             HS.g
                 [ HSA.transform
-                    [ HSA.Translate x y ] ]
+                    [ HSA.Translate x y ]
+                ]
                 [ HS.circle
                     [ HSA.fill $ Just Colors.slotFill
                     , HSA.stroke $ Just Colors.slotStroke
@@ -98,7 +100,20 @@ render { node, name } =
                     [ HSA.fill $ Just Colors.bodyFill
                     , HSA.stroke $ Just Colors.bodyStroke
                     , HSA.strokeWidth $ U.bodyStrokeWidth
-                    , HSA.rx 5.0, HSA.ry 5.0
+                    , HSA.rx U.bodyCornerRadius, HSA.ry U.bodyCornerRadius
+                    , HSA.width U.nodeBodyWidth, HSA.height height
+                    ]
+                ]
+        shadow =
+            HS.g
+                [ HSA.transform
+                    [ HSA.Translate U.bodyShadowShift U.bodyShadowShift ]
+                ]
+                [ HS.rect
+                    [ HSA.fill $ Just Colors.bodyShadow
+                    , HSA.stroke $ Just Colors.bodyShadow
+                    , HSA.strokeWidth $ U.bodyStrokeWidth
+                    , HSA.rx U.bodyCornerRadius, HSA.ry U.bodyCornerRadius
                     , HSA.width U.nodeBodyWidth, HSA.height height
                     ]
                 ]
