@@ -19,7 +19,10 @@ cellWidth = 40.0
 cellHeight = 40.0
 
 
-nodeBodyWidth = cellWidth * 4.0
+nodeBodyWidth = cellWidth * 2.0
+
+
+nodeBodyHeight = cellHeight * 2.0
 
 
 slotOuterWidth = 50.0
@@ -28,7 +31,7 @@ slotOuterWidth = 50.0
 slotOuterHeight = 25.0
 
 
-slotRadius = 5.0
+slotRadius = 4.0
 
 
 slotStrokeWidth = 1.5
