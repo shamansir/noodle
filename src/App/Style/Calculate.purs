@@ -19,28 +19,30 @@ type GetSizeByNode d = Units -> NodeFlow -> Node d -> Number /\ Number
 
 inletPos :: GetPosByIdx
 inletPos u Vertical idx =
-    u.slotOuterWidth /\ ((u.slotOuterHeight / 2.0) + (u.slotOuterHeight * toNumber idx))
+    u.slotOuterWidth /\ (plateHeight + (u.slotOuterHeight / 2.0) + (u.slotOuterHeight * toNumber idx))
+    where _ /\ plateHeight = namePlateSize u Vertical
 inletPos u Horizontal idx =
     0.0 /\ toNumber idx
 
 
 outletPos :: GetPosByIdx
 outletPos u Vertical idx =
-    ( u.slotOuterWidth + u.nodeBodyWidth) /\ ((u.slotOuterHeight / 2.0) + (u.slotOuterHeight * toNumber idx))
+    ( u.slotOuterWidth + u.nodeBodyWidth) /\ (plateHeight + (u.slotOuterHeight / 2.0) + (u.slotOuterHeight * toNumber idx))
+    where _ /\ plateHeight = namePlateSize u Vertical
 outletPos u Horizontal idx =
     0.0 /\ toNumber idx
 
 
 inletRectPos :: GetPosByIdx
 inletRectPos u Vertical idx =
-    ((u.slotOuterWidth - u.slotRadius / 2.0) /\ (u.slotOuterHeight * toNumber idx))
+    0.0 /\ (u.slotOuterHeight * toNumber idx)
 inletRectPos u Horizontal idx =
     0.0 /\ toNumber idx
 
 
 outletRectPos :: GetPosByIdx
 outletRectPos u Vertical idx =
-    (u.nodeBodyWidth - u.slotOuterWidth) /\ u.slotOuterHeight * toNumber idx
+    (u.nodeBodyWidth + u.slotOuterWidth) /\ u.slotOuterHeight * toNumber idx
 outletRectPos u Horizontal idx =
     0.0 /\ toNumber idx
 
@@ -53,7 +55,7 @@ bodyPos u Horizontal = u.slotOuterWidth /\ 0.0
 inletTextPos :: GetPosByIdx
 inletTextPos u Vertical idx =
     case inletPos u Vertical idx of
-        x /\ y -> (x - u.slotOuterWidth) /\ y
+        x /\ y -> (x - u.slotRadius - 5.0) /\ y
 inletTextPos u Horizontal idx = 0.0 /\ 0.0
 
 
@@ -93,7 +95,8 @@ nodeBounds u flow node =
         case flow of
             Vertical ->
                 (u.slotOuterWidth * 2.0 + u.nodeBodyWidth)
-                /\ (toNumber (max inletsCount outletsCount) * u.slotOuterHeight)
+                /\ (u.nodePadding + plateHeight + toNumber (max inletsCount outletsCount) * u.slotOuterHeight)
+                where _ /\ plateHeight = namePlateSize u Vertical
             Horizontal ->
                 (u.slotOuterWidth * 2.0 + u.nodeBodyWidth)
                 /\ (toNumber (max inletsCount outletsCount) * u.slotOuterHeight)
@@ -107,7 +110,8 @@ nodeBodySize u flow node =
         case flow of
             Vertical ->
                 u.nodeBodyWidth
-                /\ (toNumber (max inletsCount outletsCount) * u.slotOuterHeight)
+                /\ (plateHeight + toNumber (max inletsCount outletsCount) * u.slotOuterHeight)
+                where _ /\ plateHeight = namePlateSize u Vertical
             Horizontal ->
                 (toNumber (max inletsCount outletsCount) * u.slotOuterWidth)
                 /\ u.nodeBodyHeight

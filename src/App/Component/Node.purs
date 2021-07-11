@@ -13,12 +13,13 @@ import Data.Int (toNumber)
 import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
 
-import App.ClassNames as CS
 import App.Style (Style, NodeFlow(..), transparent)
 import App.Style.Calculate as Calc
+import App.Style.ClassNames as CS
 
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Properties as HP
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
 
@@ -32,6 +33,7 @@ type Input d =
     { node :: Noodle.Node d
     , name :: String
     , style :: Style
+    , flow :: NodeFlow
     }
 
 
@@ -39,6 +41,7 @@ type State d =
     { node :: Noodle.Node d
     , name :: String
     , style :: Style
+    , flow :: NodeFlow
     }
 
 
@@ -51,7 +54,7 @@ initialState = identity
 
 
 render :: forall d m. State d -> H.ComponentHTML (Action d) () m
-render { node, name, style } =
+render { node, name, style, flow } =
     HS.g
         []
         [ shadow
@@ -61,7 +64,6 @@ render { node, name, style } =
         , outlets'
         ]
     where
-        flow = Vertical
         u = style.units flow
         colors = style.colors
 
@@ -86,9 +88,9 @@ render { node, name, style } =
                     ]
                 , HS.text [ HSA.fill $ Just colors.nodeName ] [ HH.text name ]
                 ]
-        slot rectPos pos textPos (name /\ shape) =
+        slot classes rectPos pos textPos (name /\ shape) =
             HS.g
-                []
+                [ HSA.classes classes ]
                 [ HS.g
                     [ translateTo pos ]
                     [ HS.circle
@@ -100,9 +102,14 @@ render { node, name, style } =
                     ]
                 , HS.g
                     [ translateTo textPos ]
-                    [ HS.text [ ] [ HH.text name ] ]
+                    [ HS.text
+                        [ HSA.fill $ Just colors.slotTextFill ]
+                        [ HH.text name ]
+                    ]
                 , HS.g
-                    [ translateTo rectPos ]
+                    [ translateTo rectPos
+                    , HSA.classes CS.slotFocusArea
+                    ]
                     [ HS.rect
                         [ {- HE.onClick
                         , -} HSA.fill $ Just transparent
@@ -115,6 +122,7 @@ render { node, name, style } =
                 $ Array.mapWithIndex inlet' inlets
         inlet' idx (name /\ shape) =
             slot
+                (CS.inlet name)
                 (Calc.inletRectPos u flow idx)
                 (Calc.inletPos u flow idx)
                 (Calc.inletTextPos u flow idx)
@@ -124,6 +132,7 @@ render { node, name, style } =
                 $ Array.mapWithIndex outlet' outlets
         outlet' idx (name /\ shape) =
             slot
+                (CS.outlet name)
                 (Calc.outletRectPos u flow idx)
                 (Calc.outletPos u flow idx)
                 (Calc.outletTextPos u flow idx)

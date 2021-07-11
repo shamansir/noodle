@@ -19,6 +19,14 @@ text {
     alignment-baseline: hanging;
 }
 
+.node-vert .inlet text {
+    text-anchor: end;
+}
+
+.slot-focus {
+    cursor: pointer;
+}
+
 .patch-tab {
     cursor: pointer;
 }

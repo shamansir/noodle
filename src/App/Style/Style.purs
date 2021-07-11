@@ -28,6 +28,7 @@ type Units =
     , bodyStrokeWidth :: Number
     , bodyCornerRadius :: Number
     , bodyShadowShift :: Number
+    , nodePadding :: Number
     }
 
 
@@ -36,6 +37,7 @@ type Colors =
     , tabBackground :: Color
     , slotStroke :: Color
     , slotFill :: Color
+    , slotTextFill :: Color
     , bodyFill :: Color
     , bodyShadow :: Color
     , bodyStroke :: Color

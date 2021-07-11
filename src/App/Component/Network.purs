@@ -16,8 +16,8 @@ import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
 import Noodle.Toolkit (Toolkit) as Noodle
 
-import App.Style (Style)
-import App.ClassNames as CS
+import App.Style (Style, NodeFlow(..))
+import App.Style.ClassNames as CS
 import App.Component.Patch as PatchC
 import App.Mouse as Mouse
 import App.Emitters as Emitters
@@ -46,6 +46,7 @@ type Input d =
     { nw :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
     , style :: Style
+    , flow :: NodeFlow
     }
 
 
@@ -57,6 +58,7 @@ type State d =
     , mouse :: Mouse.State Unit
     , currentFrame :: Number
     , style :: Style
+    , flow :: NodeFlow
     }
 
 
@@ -70,8 +72,8 @@ data Action d
 
 
 initialState :: forall d. Input d -> State d
-initialState { nw, toolkit, style } =
-    { nw, toolkit, style
+initialState { nw, toolkit, style, flow } =
+    { nw, toolkit, style, flow
     , currentPatch : Just "base"
     , width : 1000, height : 1000
     , mouse : Mouse.init
@@ -80,7 +82,7 @@ initialState { nw, toolkit, style } =
 
 
 render :: forall d m. MonadEffect m => State d -> H.ComponentHTML (Action d) Slots m
-render (s@{ nw, toolkit, style }) =
+render (s@{ nw, toolkit, style, flow }) =
     HS.svg
         [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height ]
         [ background
@@ -109,14 +111,14 @@ render (s@{ nw, toolkit, style }) =
         patchesTabs = HS.g [ HSA.classes CS.patchesTabs ] (patchTab <$> Tuple.fst <$> Network.patches nw)
         patchTab label =
             HS.g
-                [ HSA.classes CS.patchTab ]
+                [ HSA.classes $ CS.patchTab label ]
                 [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just colors.tabBackground ]
                 , HS.text [] [ HH.text label ]
                 ]
         maybeCurrent (Just patch) =
             HS.g
                 [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]
-                [ HH.slot _patch unit PatchC.component { patch, toolkit, style } absurd ]
+                [ HH.slot _patch unit PatchC.component { patch, toolkit, style, flow } absurd ]
         maybeCurrent Nothing =
             HS.text
                 [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]

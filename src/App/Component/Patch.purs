@@ -20,9 +20,9 @@ import Noodle.Patch as Patch
 import Noodle.Toolkit (Toolkit) as Noodle
 import Noodle.Toolkit as Toolkit
 
-import App.ClassNames as CS
 import App.Component.Node as NodeC
 import App.Style (Style, NodeFlow(..))
+import App.Style.ClassNames as CS
 import App.Style.Calculate as Calc
 
 import Halogen as H
@@ -47,6 +47,7 @@ type Input d =
     { patch :: Noodle.Patch d
     , toolkit :: Noodle.Toolkit d
     , style :: Style
+    , flow :: NodeFlow
     }
 
 
@@ -55,6 +56,7 @@ type State d =
     , toolkit :: Noodle.Toolkit d
     , layout :: Bin2 Number String
     , style :: Style
+    , flow :: NodeFlow
     }
 
 
@@ -64,12 +66,12 @@ data Action d
 
 
 initialState :: forall d. Input d -> State d
-initialState { patch, toolkit, style } =
-    { patch, toolkit, style, layout : R2.container 1500.0 900.0 }
+initialState { patch, toolkit, style, flow } =
+    { patch, toolkit, style, flow, layout : R2.container 1500.0 900.0 }
 
 
 render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
-render { patch, toolkit, layout, style } =
+render { patch, toolkit, layout, style, flow } =
     HS.g
         []
         [ nodeButtons
@@ -89,7 +91,7 @@ render { patch, toolkit, layout, style } =
         nodeButtons = HS.g [ HSA.classes CS.nodesTabs ] $ nodeButton <$> (Set.toUnfoldable $ Toolkit.nodeNames toolkit)
         nodeButton name =
             HS.g
-                [ HSA.classes CS.nodeButton
+                [ HSA.classes $ CS.nodeButton name
                 , HE.onClick \_ -> AddNode name
                 ]
                 [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just colors.tabBackground ]
@@ -97,8 +99,10 @@ render { patch, toolkit, layout, style } =
                 ]
         node' idx { node, name, x, y, w, h } =
             HS.g
-                [ HSA.transform [ HSA.Translate x $ tabHeight + y ] ]
-                [ HH.slot _node idx NodeC.component { node, name, style } absurd ]
+                [ HSA.transform [ HSA.Translate x $ tabHeight + y ]
+                , HSA.classes $ CS.node flow name
+                ]
+                [ HH.slot _node idx NodeC.component { node, name, style, flow } absurd ]
         nodes' = HS.g [ HSA.classes CS.nodes ] $ Array.mapWithIndex node' $ List.toUnfoldable $ packedNodes -- Patch.nodes patch
 
 

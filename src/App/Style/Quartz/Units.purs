@@ -19,32 +19,16 @@ data Cells = Cells -}
 units :: NodeFlow -> Units
 
 
-units Horizontal =
+units flow =
     { cellWidth
     , cellHeight
-    , nodeBodyWidth : nodeBodyWidth Horizontal
-    , nodeBodyHeight : nodeBodyHeight Horizontal
-    , namePlateHeight : namePlateHeight Horizontal
-    , namePlateWidth : namePlateWidth Horizontal
-    , slotOuterWidth : slotOuterWidth Horizontal
-    , slotOuterHeight : slotOuterHeight Horizontal
-    , slotRadius
-    , slotStrokeWidth
-    , bodyStrokeWidth
-    , bodyCornerRadius
-    , bodyShadowShift
-    }
-
-
-units Vertical =
-    { cellWidth
-    , cellHeight
-    , nodeBodyWidth : nodeBodyWidth Vertical
-    , nodeBodyHeight : nodeBodyHeight Vertical
-    , namePlateHeight : namePlateHeight Vertical
-    , namePlateWidth : namePlateWidth Vertical
-    , slotOuterWidth : slotOuterWidth Vertical
-    , slotOuterHeight : slotOuterHeight Vertical
+    , nodeBodyWidth : nodeBodyWidth flow
+    , nodeBodyHeight : nodeBodyHeight flow
+    , namePlateHeight : namePlateHeight flow
+    , namePlateWidth : namePlateWidth flow
+    , slotOuterWidth : slotOuterWidth flow
+    , slotOuterHeight : slotOuterHeight flow
+    , nodePadding : nodePadding flow
     , slotRadius
     , slotStrokeWidth
     , bodyStrokeWidth
@@ -63,6 +47,9 @@ nodeBodyWidth _ = cellWidth * 2.0
 
 
 nodeBodyHeight _ = cellHeight * 2.0
+
+
+nodePadding _ = 20.0
 
 
 namePlateHeight _ = 15.0
