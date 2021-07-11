@@ -28,10 +28,10 @@ slotOuterWidth = 50.0
 slotOuterHeight = 25.0
 
 
-slotRadius = 6.0
+slotRadius = 5.0
 
 
-slotInnerRadius = slotRadius * 0.65
+slotStrokeWidth = 1.5
 
 
-slotInnerShift = (slotRadius - slotInnerRadius - 1.0) / 4.0
+bodyStrokeWidth = 1.0

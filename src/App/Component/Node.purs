@@ -53,8 +53,8 @@ render { node, name } =
     HS.g
         []
         [ name'
-        , inlets'
         , body
+        , inlets'
         , outlets'
         ]
     where
@@ -63,26 +63,23 @@ render { node, name } =
         outlets = Node.outlets node
         inletsCount = toNumber $ Array.length inlets
         outletsCount = toNumber $ Array.length outlets
+        ( width /\ height ) = findBounds node
         slot (x /\ y) (name /\ shape) =
             HS.g
                 [ HSA.transform
                     [ HSA.Translate x y ] ]
-                [ HS.rect
+                [ HS.circle
+                    [ HSA.fill $ Just Colors.slotFill
+                    , HSA.stroke $ Just Colors.slotStroke
+                    , HSA.strokeWidth $ U.slotStrokeWidth
+                    , HSA.r U.slotRadius
+                    ]
+                , HS.text [] [ HH.text name ]
+                , HS.rect
                     [ {- HE.onClick
                     , -} HSA.fill $ Just Colors.transparent
                     , HSA.width U.slotOuterWidth, HSA.height U.slotOuterHeight
                     ]
-                , HS.circle
-                    [ HSA.fill $ Just Colors.channelBack
-                    , HSA.r U.slotRadius
-                    ]
-                , HS.circle
-                    [ HSA.transform
-                        [ HSA.Translate U.slotInnerShift U.slotInnerShift ]
-                    , HSA.fill $ Just Colors.channelFront
-                    , HSA.r $ U.slotInnerRadius
-                    ]
-                , HS.text [] [ HH.text name ]
                 ]
         inlets' =
             HS.g [ HSA.classes CS.nodeInlets ]
@@ -94,7 +91,17 @@ render { node, name } =
                 $ Array.mapWithIndex outlet' outlets
         outlet' idx (name /\ shape) =
             slot ((U.nodeBodyWidth - U.slotOuterWidth) /\ U.slotOuterHeight * toNumber idx) (name /\ shape)
-        body = HS.g [] []
+        body =
+            HS.g
+                []
+                [ HS.rect
+                    [ HSA.fill $ Just Colors.bodyFill
+                    , HSA.stroke $ Just Colors.bodyStroke
+                    , HSA.strokeWidth $ U.bodyStrokeWidth
+                    , HSA.rx 5.0, HSA.ry 5.0
+                    , HSA.width U.nodeBodyWidth, HSA.height height
+                    ]
+                ]
 
 
 handleAction :: forall output m d. Action d -> H.HalogenM (State d) (Action d) () output m Unit
