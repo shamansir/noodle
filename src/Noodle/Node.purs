@@ -62,8 +62,8 @@ make
     -> Def d
     -> Effect (Node d)
 make default (Def shape fn) = do
-    inlets_chan <- Ch.channel (consumer /\ default) -- TODO: `isHot` etc.
-    outlets_chan <- Ch.channel (consumer /\ default) -- TODO: `isHot` etc.
+    inlets_chan <- Ch.channel (consumer /\ default)
+    outlets_chan <- Ch.channel (consumer /\ default)
     let
         inlets = Ch.subscribe inlets_chan
         node = Node shape (inlets_chan /\ outlets_chan)
@@ -71,7 +71,7 @@ make default (Def shape fn) = do
         maps = inlets # Signal.foldp store (consumer /\ Map.empty)
         toReceive (last /\ fromInlets) = Def.Receive { last, fromInlets }
         fn_signal :: Signal (Effect (Def.Pass d))
-        fn_signal = maps ~> toReceive ~> fn
+        fn_signal = maps ~> toReceive ~> fn -- Do not call fn if not the `isHot` inlet triggered the calculation
         passFx :: Signal (Effect Unit)
         passFx = ((=<<) $ distribute outlets_chan) <$> fn_signal
     _ <- Signal.runSignal passFx

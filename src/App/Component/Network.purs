@@ -16,7 +16,7 @@ import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
 import Noodle.Toolkit (Toolkit) as Noodle
 
-import App.Colors as Colors
+import App.Style (Style)
 import App.ClassNames as CS
 import App.Component.Patch as PatchC
 import App.Mouse as Mouse
@@ -45,6 +45,7 @@ _patch = Proxy :: Proxy "patch"
 type Input d =
     { nw :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
+    , style :: Style
     }
 
 
@@ -55,6 +56,7 @@ type State d =
     , width :: Int, height :: Int
     , mouse :: Mouse.State Unit
     , currentFrame :: Number
+    , style :: Style
     }
 
 
@@ -68,8 +70,8 @@ data Action d
 
 
 initialState :: forall d. Input d -> State d
-initialState { nw, toolkit } =
-    { nw, toolkit
+initialState { nw, toolkit, style } =
+    { nw, toolkit, style
     , currentPatch : Just "base"
     , width : 1000, height : 1000
     , mouse : Mouse.init
@@ -78,7 +80,7 @@ initialState { nw, toolkit } =
 
 
 render :: forall d m. MonadEffect m => State d -> H.ComponentHTML (Action d) Slots m
-render (s@{ nw, toolkit }) =
+render (s@{ nw, toolkit, style }) =
     HS.svg
         [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height ]
         [ background
@@ -88,6 +90,7 @@ render (s@{ nw, toolkit }) =
         , maybeCurrent $ (flip Network.patch $ nw) =<< s.currentPatch
         ]
     where
+        colors = style.colors
         mouseState =
             HS.text
                 [ HSA.transform [ HSA.Translate 100.0 0.0 ] ]
@@ -101,19 +104,19 @@ render (s@{ nw, toolkit }) =
         background =
             HS.rect
                 [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height
-                , HSA.fill $ Just Colors.background
+                , HSA.fill $ Just colors.background
                 ]
         patchesTabs = HS.g [ HSA.classes CS.patchesTabs ] (patchTab <$> Tuple.fst <$> Network.patches nw)
         patchTab label =
             HS.g
                 [ HSA.classes CS.patchTab ]
-                [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just Colors.tabBackground ]
+                [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just colors.tabBackground ]
                 , HS.text [] [ HH.text label ]
                 ]
         maybeCurrent (Just patch) =
             HS.g
                 [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]
-                [ HH.slot _patch unit PatchC.component { patch, toolkit } absurd ]
+                [ HH.slot _patch unit PatchC.component { patch, toolkit, style } absurd ]
         maybeCurrent Nothing =
             HS.text
                 [ HSA.transform [ HSA.Translate 0.0 tabHeight ] ]

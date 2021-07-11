@@ -20,9 +20,10 @@ import Noodle.Patch as Patch
 import Noodle.Toolkit (Toolkit) as Noodle
 import Noodle.Toolkit as Toolkit
 
-import App.Colors as Colors
 import App.ClassNames as CS
 import App.Component.Node as NodeC
+import App.Style (Style, NodeFlow(..))
+import App.Style.Calculate as Calc
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -45,6 +46,7 @@ _node = Proxy :: Proxy "node"
 type Input d =
     { patch :: Noodle.Patch d
     , toolkit :: Noodle.Toolkit d
+    , style :: Style
     }
 
 
@@ -52,6 +54,7 @@ type State d =
     { patch :: Noodle.Patch d
     , toolkit :: Noodle.Toolkit d
     , layout :: Bin2 Number String
+    , style :: Style
     }
 
 
@@ -61,18 +64,19 @@ data Action d
 
 
 initialState :: forall d. Input d -> State d
-initialState { patch, toolkit } =
-    { patch, toolkit, layout : R2.container 800.0 800.0 }
+initialState { patch, toolkit, style } =
+    { patch, toolkit, style, layout : R2.container 1500.0 900.0 }
 
 
 render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
-render { patch, toolkit, layout } =
+render { patch, toolkit, layout, style } =
     HS.g
         []
         [ nodeButtons
         , nodes'
         ]
     where
+        colors = style.colors
         tabHeight = 20.0
         tabLength = 60.0
         packedNodes
@@ -88,13 +92,13 @@ render { patch, toolkit, layout } =
                 [ HSA.classes CS.nodeButton
                 , HE.onClick \_ -> AddNode name
                 ]
-                [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just Colors.tabBackground ]
+                [ HS.rect [ HSA.width tabLength, HSA.height tabHeight, HSA.fill $ Just colors.tabBackground ]
                 , HS.text [] [ HH.text name ]
                 ]
         node' idx { node, name, x, y, w, h } =
             HS.g
                 [ HSA.transform [ HSA.Translate x $ tabHeight + y ] ]
-                [ HH.slot _node idx NodeC.component { node, name } absurd ]
+                [ HH.slot _node idx NodeC.component { node, name, style } absurd ]
         nodes' = HS.g [ HSA.classes CS.nodes ] $ Array.mapWithIndex node' $ List.toUnfoldable $ packedNodes -- Patch.nodes patch
 
 
@@ -113,7 +117,9 @@ handleAction = case _ of
             H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
                 (\state ->
                     let nodeName = makeUniqueName state.patch name
-                        width /\ height = NodeC.findBounds newNode
+                        flow = Vertical
+                        width /\ height =
+                            Calc.nodeBounds (state.style.units flow) flow newNode
                     in state
                         { patch = state.patch # Patch.addNode nodeName newNode
                         , layout = R2.packOne state.layout (R2.item width height nodeName)
