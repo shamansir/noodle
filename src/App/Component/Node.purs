@@ -15,6 +15,7 @@ import Noodle.Node as Node
 
 import App.Colors as Colors
 import App.ClassNames as CS
+import App.Units as U
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -62,24 +63,37 @@ render { node, name } =
         outlets = Node.outlets node
         inletsCount = toNumber $ Array.length inlets
         outletsCount = toNumber $ Array.length outlets
-        slotWidth = 20.0
-        slotHeight = 20.0
-        width = 50.0
-        height = max inletsCount outletsCount * slotHeight
+        slot (x /\ y) (name /\ shape) =
+            HS.g
+                [ HSA.transform
+                    [ HSA.Translate x y ] ]
+                [ HS.rect
+                    [ {- HE.onClick
+                    , -} HSA.fill $ Just Colors.transparent
+                    , HSA.width U.slotOuterWidth, HSA.height U.slotOuterHeight
+                    ]
+                , HS.circle
+                    [ HSA.fill $ Just Colors.channelBack
+                    , HSA.r U.slotRadius
+                    ]
+                , HS.circle
+                    [ HSA.transform
+                        [ HSA.Translate U.slotInnerShift U.slotInnerShift ]
+                    , HSA.fill $ Just Colors.channelFront
+                    , HSA.r $ U.slotInnerRadius
+                    ]
+                , HS.text [] [ HH.text name ]
+                ]
         inlets' =
             HS.g [ HSA.classes CS.nodeInlets ]
                 $ Array.mapWithIndex inlet' inlets
         inlet' idx (name /\ shape) =
-            HS.g
-                [ HSA.transform [ HSA.Translate 0.0 $ slotHeight * toNumber idx ] ]
-                [ HS.text [] [ HH.text name ] ]
+            slot (0.0 /\ U.slotOuterHeight * toNumber idx) (name /\ shape)
         outlets' =
             HS.g [ HSA.classes CS.nodeOutlets ]
                 $ Array.mapWithIndex outlet' outlets
         outlet' idx (name /\ shape) =
-            HS.g
-                [ HSA.transform [ HSA.Translate (width - slotWidth) $ slotHeight * toNumber idx ] ]
-                [ HS.text [] [ HH.text name ] ]
+            slot ((U.nodeBodyWidth - U.slotOuterWidth) /\ U.slotOuterHeight * toNumber idx) (name /\ shape)
         body = HS.g [] []
 
 
@@ -107,4 +121,5 @@ findBounds node =
     let
         inletsCount /\ outletsCount = Node.dimensions node
     in
-        70.0 /\ toNumber (max inletsCount outletsCount) * 20.0
+        (U.slotOuterWidth * 2.0 + U.nodeBodyWidth)
+        /\ toNumber (max inletsCount outletsCount) * U.slotOuterHeight
