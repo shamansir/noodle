@@ -140,8 +140,8 @@ size :: forall n. Bin2 n _ -> n /\ n
 size (Free { w, h }) = w /\ h
 size (Node { w, h }) = w /\ h
 
-repack :: forall n a. n -> n -> Bin2 n a -> Bin2 n a
-repack newWidth newHeight bin = bin -- FIXME: implement
+{- repack :: forall n a. n -> n -> Bin2 n a -> Bin2 n a
+repack newWidth newHeight bin = bin -- FIXME: implement -}
 
 {-
 has no sense since it frees not only the exact cell,

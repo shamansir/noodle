@@ -11,6 +11,13 @@ import Data.Array as Array
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe as Maybe
 import Data.Tuple (curry, uncurry)
+import Data.Map as Map
+import Data.Map.Extra (type (/->))
+import Data.PinBoard (PinBoard)
+import Data.PinBoard as PB
+
+import Control.Alternative ((<|>))
+
 import Effect.Class (class MonadEffect, liftEffect)
 
 import Data.BinPack.R2 (Bin2)
@@ -70,6 +77,7 @@ type State d =
     , flow :: NodeFlow
     , offset :: Number /\ Number
     , layout :: Bin2 Number String
+    , pinned :: PinBoard String
     , mouse :: Mouse.State String
     }
 
@@ -86,6 +94,7 @@ initialState { patch, toolkit, style, flow, offset } =
     { patch, toolkit, style, flow
     , offset : case offset of (x /\ y) -> (x /\ (y + tabHeight + tabVertPadding))
     , layout : R2.container 1500.0 900.0
+    , pinned : []
     , mouse : Mouse.init
     }
 
@@ -176,16 +185,25 @@ handleAction = case _ of
 
     HandleMouse _ mouseEvent ->
         H.modify_ \state ->
-            state
-                { mouse =
-                    state.mouse
-                        # Mouse.apply
-                            (Mouse.shift' state.offset
-                                >>> (const $ Just "foo")
-                                -- >>> (uncurry $ R2.sample' state.layout)
-                            )
+            let
+                nextMouse
+                    = state.mouse
+                        # Mouse.apply (findNode state)
                         mouseEvent
+            in state
+                { mouse =
+                    nextMouse
                 }
+
+    where
+        findNode state pos =
+            findInLayout state pos <|> findInPinned state pos
+        findInLayout state =
+            Mouse.shift' state.offset
+                >>> (uncurry $ R2.sample' state.layout)
+        findInPinned state =
+            Mouse.shift' state.offset
+                >>> flip PB.search state.pinned
 
 
 component :: forall query output m d. MonadEffect m => H.Component query (Input d) output m
