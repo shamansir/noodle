@@ -47,6 +47,10 @@ data Node d
     = Node
         (Shape d)
         (Channel (String /\ d) /\ Channel (String /\ d))
+        -- we can turn these into Signals if we either pass the function needed to send values and forget it,
+        -- or create it ourselves and return it to be re-used by outer world.
+        -- Signals will give us Functors etc.
+        -- see: https://github.com/sharkdp/purescript-flare/blob/master/src/Flare.purs#L156
 
 
 newtype Link = Link (Ref Boolean)

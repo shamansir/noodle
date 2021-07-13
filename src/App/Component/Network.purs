@@ -55,7 +55,6 @@ type State d =
     , toolkit :: Noodle.Toolkit d
     , currentPatch :: Maybe String
     , width :: Int, height :: Int
-    , mouse :: Mouse.State Unit
     , currentFrame :: Number
     , style :: Style
     , flow :: NodeFlow
@@ -65,7 +64,6 @@ type State d =
 data Action d
     = Initialize
     | SelectPatch String
-    | HandleMouse H.SubscriptionId ME.MouseEvent
     | AnimationFrame H.SubscriptionId Number
     | WindowResize H.SubscriptionId { w :: Int, h :: Int }
     | HandlePatch (PatchC.Action d)
@@ -76,7 +74,6 @@ initialState { nw, toolkit, style, flow } =
     { nw, toolkit, style, flow
     , currentPatch : Just "base"
     , width : 1000, height : 1000
-    , mouse : Mouse.init
     , currentFrame : 0.0
     }
 
@@ -86,17 +83,12 @@ render (s@{ nw, toolkit, style, flow }) =
     HS.svg
         [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height ]
         [ background
-        , mouseState
         , curFrame
         , patchesTabs
         , maybeCurrent $ (flip Network.patch $ nw) =<< s.currentPatch
         ]
     where
         colors = style.colors
-        mouseState =
-            HS.text
-                [ HSA.transform [ HSA.Translate 100.0 0.0 ] ]
-                [ HH.text $ show s.mouse ]
         curFrame =
             HS.text
                 [ HSA.transform [ HSA.Translate 200.0 0.0 ] ]
@@ -104,6 +96,7 @@ render (s@{ nw, toolkit, style, flow }) =
         tabHeight = 20.0
         tabPadding = 4.0
         tabLength = 60.0
+        patchOffset = 0.0 /\ (tabHeight + tabPadding)
         background =
             HS.rect
                 [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height
@@ -125,7 +118,7 @@ render (s@{ nw, toolkit, style, flow }) =
         maybeCurrent (Just patch) =
             HS.g
                 [ HSA.transform [ HSA.Translate 0.0 $ tabHeight + tabPadding ] ]
-                [ HH.slot _patch unit PatchC.component { patch, toolkit, style, flow } absurd ]
+                [ HH.slot _patch unit PatchC.component { patch, toolkit, style, flow, offset : patchOffset } absurd ]
         maybeCurrent Nothing =
             HS.text
                 [ HSA.transform [ HSA.Translate 0.0 $ tabHeight + tabPadding ] ]
@@ -135,14 +128,10 @@ render (s@{ nw, toolkit, style, flow }) =
 handleAction :: forall output m d. MonadAff m => MonadEffect m => Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
 handleAction = case _ of
     Initialize -> do
-        -- pure unit
         innerWidth <- H.liftEffect $ Window.innerWidth =<< window
         innerHeight <- H.liftEffect $ Window.innerWidth =<< window
         H.modify_ _ { width = innerWidth, height = innerHeight }
-        document <- H.liftEffect $ document =<< window
-        H.subscribe' $ Emitters.mouseDown document <<< HandleMouse
-        H.subscribe' $ Emitters.mouseMove document <<< HandleMouse
-        H.subscribe' $ Emitters.mouseUp document <<< HandleMouse
+        -- pure unit
         {- animFrame <- H.liftEffect Emitters.animationFrame
         H.subscribe' $ \sid -> AnimationFrame sid <$> animFrame -}
         windowResize <- H.liftEffect Emitters.windowDimensions
@@ -151,9 +140,6 @@ handleAction = case _ of
         H.modify_ \state -> state
     HandlePatch _ ->
         H.modify_ \state -> state
-    HandleMouse _ mouseEvent ->
-        H.modify_ \state -> state
-            { mouse = state.mouse # Mouse.apply (const $ Just unit) mouseEvent }
     AnimationFrame _ time ->
         H.modify_ \state -> state
             { currentFrame = time }

@@ -5,6 +5,7 @@ module Data.BinPack.R2
 , packOne
 , toList
 , sample
+, sample'
 , container
 , sqContainer
 , item
@@ -26,6 +27,7 @@ import Data.Foldable (class Foldable, foldMap, foldr, foldl, foldM)
 import Data.List (List(..), (:), sortBy, singleton)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Tuple as Tuple
 
 data Bin2 n a
     = Node  { w :: n, h :: n
@@ -123,6 +125,9 @@ sample (Node { w, h, r, b, i }) x y =
         (LT /\ LT) -> Just (i /\ x /\ y)
         (_  /\ LT) -> sample r (x - w) y
         _          -> sample b x (y - h)
+
+sample' :: forall n a. Ring n => Ord n => Bin2 n a -> n -> n -> Maybe a
+sample' bin x y = Tuple.fst <$> sample bin x y
 
 valueOf :: forall a. Bin2 _ a -> Maybe a
 valueOf (Free _) = Nothing
