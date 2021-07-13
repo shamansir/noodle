@@ -190,10 +190,29 @@ handleAction = case _ of
                     = state.mouse
                         # Mouse.apply (findNode state)
                         mouseEvent
-            in state
-                { mouse =
-                    nextMouse
-                }
+            in case nextMouse of
+                Mouse.DropAt pos i ->
+                    let
+                        flow = Vertical
+                        width /\ height =
+                            state.patch
+                                # Patch.findNode i
+                                # map (Calc.nodeBounds (state.style.units flow) flow)
+                                # Maybe.fromMaybe (0.0 /\ 0.0)
+                    in
+                        state
+                            { mouse =
+                                nextMouse
+                            , layout =
+                                state.layout # R2.abandon i
+                            , pinned =
+                                state.pinned # PB.pin pos (width /\ height) i
+                            }
+                _ ->
+                    state
+                        { mouse =
+                            nextMouse
+                        }
 
     where
         findNode state pos =

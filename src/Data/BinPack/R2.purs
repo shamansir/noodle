@@ -14,6 +14,7 @@ module Data.BinPack.R2
 , valueOf
 , size
 , unfold
+, abandon
 )
 where
 
@@ -139,6 +140,18 @@ itemOf bin = valueOf bin >>= \v -> pure $ v /\ size bin
 size :: forall n. Bin2 n _ -> n /\ n
 size (Free { w, h }) = w /\ h
 size (Node { w, h }) = w /\ h
+
+
+abandon :: forall n a. Eq a => a -> Bin2 n a -> Bin2 n a
+abandon another (Node { i, w, h }) | i == another = Free { w, h }
+abandon another (Node n)           | otherwise =
+    Node $ n { r = abandon another n.r, b = abandon another n.b }
+abandon _       (Free { w, h })    = Free { w, h }
+
+
+{- abandon :: forall n a. Eq a => a -> Bin2 n a -> (Maybe (n /\ n /\ n /\ n) /\ Bin2 n a)
+abandon another = unfold unfoldF (Nothing /\ )
+    where unfoldF (a /\ (x /\ y /\ w /\ h)) (_ /\ bp) = -}
 
 {- repack :: forall n a. n -> n -> Bin2 n a -> Bin2 n a
 repack newWidth newHeight bin = bin -- FIXME: implement -}
