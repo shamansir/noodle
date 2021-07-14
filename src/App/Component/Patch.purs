@@ -30,6 +30,7 @@ import Noodle.Toolkit as Toolkit
 
 import App.Component.Node as NodeC
 import App.Style (Style, NodeFlow(..))
+import App.Style as Style
 import App.Style.ClassNames as CS
 import App.Style.Calculate as Calc
 import App.Mouse as Mouse
@@ -111,12 +112,16 @@ render { patch, toolkit, layout, style, flow, mouse, offset } =
         []
         [ mouseState
         , nodeButtons
-        , nodes'
+        , nodesLayout
+        , pinnedNodes
+        , maybeDraggedNode mouse
         ]
     where
         mouseState =
             HS.text
-                [ HSA.transform [ HSA.Translate 100.0 0.0 ] ]
+                [ HSA.transform [ HSA.Translate 100.0 0.0 ]
+                , HSA.fill $ Just $ Style.white
+                ]
                 [ HH.text $ show $ Mouse.shift offset mouse ]
         colors = style.colors
         packedNodes
@@ -147,7 +152,17 @@ render { patch, toolkit, layout, style, flow, mouse, offset } =
                 , HSA.classes $ CS.node flow name
                 ]
                 [ HH.slot _node idx NodeC.component { node, name, style, flow } absurd ]
-        nodes' = HS.g [ HSA.classes CS.nodes ] $ Array.mapWithIndex node' $ List.toUnfoldable $ packedNodes -- Patch.nodes patch
+        nodesLayout =
+            HS.g [ HSA.classes CS.nodes ] $ Array.mapWithIndex node' $ List.toUnfoldable $ packedNodes -- Patch.nodes patch
+        pinnedNodes =
+            HS.g [] []
+        maybeDraggedNode (Mouse.Dragging _ (x /\ y) _) =
+            HS.g
+                [ HSA.transform [ HSA.Translate x y ] ]
+                [ HS.text [] [ HH.text "aaa" ] ]
+        maybeDraggedNode _ =
+            HS.g [] []
+
 
 
 handleAction :: forall output m d. MonadEffect m => Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
@@ -171,7 +186,7 @@ handleAction = case _ of
                 H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
                     (\state ->
                         let nodeName = makeUniqueName state.patch name
-                            flow = Vertical
+                            flow = Vertical -- FIXME
                             width /\ height =
                                 Calc.nodeBounds (state.style.units flow) flow newNode
                         in state
@@ -191,9 +206,16 @@ handleAction = case _ of
                         # Mouse.apply (findNode state)
                         mouseEvent
             in case nextMouse of
+                Mouse.StartDrag _ i ->
+                    state
+                        { mouse =
+                            nextMouse
+                        , layout =
+                            state.layout # R2.abandon i -- FIXME: abandon when we started to drag it
+                        }
                 Mouse.DropAt pos i ->
                     let
-                        flow = Vertical
+                        flow = Vertical -- FIXME
                         width /\ height =
                             state.patch
                                 # Patch.findNode i
@@ -203,8 +225,6 @@ handleAction = case _ of
                         state
                             { mouse =
                                 nextMouse
-                            , layout =
-                                state.layout # R2.abandon i
                             , pinned =
                                 state.pinned # PB.pin pos (width /\ height) i
                             }

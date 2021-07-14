@@ -58,3 +58,11 @@ type Style =
 
 transparent :: Color
 transparent = RGBA 0 0 0 0.0
+
+
+white :: Color
+white = Named "white"
+
+
+black :: Color
+black = Named "black"

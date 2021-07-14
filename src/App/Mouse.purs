@@ -11,6 +11,8 @@ import Web.UIEvent.MouseEvent as ME
 
 data State a
     = Move ( Number /\ Number )
+    | Click ( Number /\ Number ) a
+    | StartDrag ( Number /\ Number ) a
     | Dragging ( Number /\ Number ) ( Number /\ Number ) a
     | DropAt ( Number /\ Number ) a
 
@@ -27,20 +29,34 @@ apply toItem event curState =
         nextPos = (toNumber $ ME.clientX event) /\ (toNumber $ ME.clientY event)
         analyze (Move _) =
             case buttonDown /\ (toItem nextPos) of
-                true /\ Just item -> Dragging nextPos nextPos item
+                true /\ Just item -> Click nextPos item
                 _ -> Move nextPos
-        analyze (Dragging startPos _ item) =
+        analyze (Click clickPos item) =
             if buttonDown then
-                Dragging startPos nextPos item
-            else DropAt nextPos item
-        analyze (DropAt _ item) =
-            if buttonDown then
-                DropAt nextPos item
+                StartDrag clickPos item
             else Move nextPos
+        analyze (StartDrag clickPos item) =
+            if buttonDown then
+                Dragging clickPos nextPos item
+            else Move nextPos
+        analyze (Dragging clickPos _ item) =
+            if buttonDown then
+                Dragging clickPos nextPos item
+            else DropAt nextPos item
+        analyze (DropAt _ _) =
+            {- if buttonDown then
+                DropAt nextPos item
+            else -} Move nextPos
 
 
 instance showMouse :: Show a => Show (State a) where
     show (Move (x /\ y)) = show x <> ";" <> show y
+    show (Click ( curX /\ curY ) item) =
+        "click " <> show curX <> ";" <> show curY <>
+            " : " <> show item
+    show (StartDrag ( curX /\ curY ) item) =
+        "start drag " <> show curX <> ";" <> show curY <>
+            " : " <> show item
     show (Dragging (startX /\ startY) ( curX /\ curY ) item) =
         "drag from " <> show startX <> ";" <> show startY <>
             " to " <> show curX <> ";" <> show curY <>
@@ -52,6 +68,8 @@ instance showMouse :: Show a => Show (State a) where
 
 mapPos :: forall a. ((Number /\ Number) -> (Number /\ Number)) -> State a -> State a
 mapPos f (Move pos) = Move $ f pos
+mapPos f (Click pos i) = Click (f pos) i
+mapPos f (StartDrag pos i) = Click (f pos) i
 mapPos f (Dragging start pos i) = Dragging (f start) (f pos) i
 mapPos f (DropAt pos i) = DropAt (f pos) i
 
