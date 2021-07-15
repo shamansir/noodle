@@ -2,6 +2,7 @@ module App.Component.Patch where
 
 
 import Prelude
+import Debug as Debug
 
 import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..))
@@ -217,6 +218,8 @@ handleAction = case _ of
                             nextMouse
                         , layout =
                             state.layout # R2.abandon i
+                        , pinned =
+                            state.pinned # PB.unpin i
                         }
                 Mouse.DropAt pos i ->
                     let

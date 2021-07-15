@@ -1,6 +1,7 @@
 module Data.PinBoard where
 
 
+import Debug as Debug
 import Prelude
 import Data.Array ((:))
 import Data.Array as Array
@@ -17,8 +18,9 @@ newtype Pin a
 type PinBoard a = Array (Pin a)
 
 
-instance eqPin :: Eq a => Eq (Pin a) where
-    eq a b = get a == get b
+-- it's not the fair `Eq`, so we don't use `Eq` typeclass here
+compareByItem :: forall a. Eq a => Pin a -> Pin a -> Boolean
+compareByItem a b = get a == get b
 
 
 get :: forall a. Pin a -> a
@@ -40,7 +42,7 @@ toArray = (<$>) (\(Pin t) -> t)
 search :: forall a. (Number /\ Number) -> PinBoard a -> Maybe a
 search (x /\ y) = Array.findMap matches
     where
-        matches (Pin (item /\ ix /\ iy /\ iw /\ ih)) | x >= ix && x <= iw && y >= iy && y <= ih = Just item
+        matches (Pin (item /\ ix /\ iy /\ iw /\ ih)) | x >= ix && x <= ix + iw && y >= iy && y <= iy + ih = Just item
         matches _                                    | otherwise = Nothing
 
 
@@ -49,4 +51,4 @@ pin (x /\ y) (w /\ h) i = (:) (Pin $ i /\ x /\ y /\ w /\ h)
 
 
 unpin :: forall a. Eq a => a -> PinBoard a -> PinBoard a
-unpin = Array.delete <<< pinNowhere
+unpin = Array.deleteBy compareByItem <<< pinNowhere
