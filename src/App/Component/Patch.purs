@@ -23,6 +23,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Data.BinPack.R2.Optional (Bin2)
 import Data.BinPack.R2.Optional as R2
 
+import Noodle.Node (Node) as Noodle
 import Noodle.Patch (Patch) as Noodle
 import Noodle.Patch as Patch
 import Noodle.Toolkit (Toolkit) as Noodle
@@ -107,14 +108,14 @@ tabLength = 60.0
 
 
 render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
-render { patch, toolkit, layout, style, flow, mouse, offset } =
+render state =
     HS.g
         []
         [ mouseState
         , nodeButtons
         , nodesLayout
         , pinnedNodes
-        , maybeDraggedNode mouse
+        , maybeDraggedNode state.mouse
         ]
     where
         mouseState =
@@ -122,16 +123,17 @@ render { patch, toolkit, layout, style, flow, mouse, offset } =
                 [ HSA.transform [ HSA.Translate 100.0 0.0 ]
                 , HSA.fill $ Just $ Style.white
                 ]
-                [ HH.text $ show $ Mouse.shift offset mouse ]
-        colors = style.colors
-        packedNodes
-            = List.catMaybes
-            $ (\(name /\ x /\ y /\ w /\ h) ->
-                patch
-                     #  Patch.findNode name
-                    <#> { name, node : _, x, y, w, h }
-            ) <$> R2.toList layout
-        nodeButtons = HS.g [ HSA.classes CS.nodesTabs ] $ nodeButton <$> (Set.toUnfoldable $ Toolkit.nodeNames toolkit)
+                [ HH.text $ show $ Mouse.shift state.offset state.mouse ]
+        colors = state.style.colors
+        assocNode (name /\ x /\ y /\ w /\ h) =
+            state.patch
+                #  Patch.findNode name
+                <#> { name, node : _, x, y, w, h }
+        packedNodes'
+            = List.catMaybes $ assocNode <$> R2.toList state.layout
+        pinnedNodes'
+            = Array.catMaybes $ assocNode <$> PB.toArray state.pinned
+        nodeButtons = HS.g [ HSA.classes CS.nodesTabs ] $ nodeButton <$> (Set.toUnfoldable $ Toolkit.nodeNames state.toolkit)
         nodeButton name =
             HS.g
                 [ HSA.classes $ CS.nodeButton name
@@ -146,20 +148,25 @@ render { patch, toolkit, layout, style, flow, mouse, offset } =
                     ]
                 , HS.text [] [ HH.text $ "+ " <> name ]
                 ]
-        node' idx { node, name, x, y, w, h } =
+        node' idxShift idx { node, name, x, y, w, h } = -- FIXME: replace idxShift with something like Layer ID
             HS.g
                 [ HSA.transform [ HSA.Translate x $ tabHeight + tabVertPadding + y ]
-                , HSA.classes $ CS.node flow name
+                , HSA.classes $ CS.node state.flow name
                 ]
-                [ HH.slot _node idx NodeC.component { node, name, style, flow } absurd ]
+                [ HH.slot _node (idxShift + idx)
+                    NodeC.component { node, name, style : state.style, flow : state.flow }
+                    absurd
+                ]
         nodesLayout =
-            HS.g [ HSA.classes CS.nodes ] $ Array.mapWithIndex node' $ List.toUnfoldable $ packedNodes -- Patch.nodes patch
+            HS.g [ HSA.classes CS.nodes ] $ Array.mapWithIndex (node' 0) $ List.toUnfoldable $ packedNodes' -- Patch.nodes patch
         pinnedNodes =
-            HS.g [] []
-        maybeDraggedNode (Mouse.Dragging _ (x /\ y) _) =
-            HS.g
-                [ HSA.transform [ HSA.Translate x y ] ]
-                [ HS.text [] [ HH.text "aaa" ] ]
+            HS.g [ HSA.classes CS.nodes ] $ Array.mapWithIndex (node' 5000) $ pinnedNodes'
+        maybeDraggedNode (Mouse.Dragging _ (x /\ y) name) =
+            let
+                w /\ h = boundsOf' state name # Maybe.fromMaybe (0.0 /\ 0.0)
+            in case assocNode ( name /\ x /\ y /\ w /\ h ) of
+                Just n -> node' 10000 0 n
+                Nothing -> HS.g [] []
         maybeDraggedNode _ =
             HS.g [] []
 
@@ -186,9 +193,7 @@ handleAction = case _ of
                 H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
                     (\state ->
                         let nodeName = makeUniqueName state.patch name
-                            flow = Vertical -- FIXME
-                            width /\ height =
-                                Calc.nodeBounds (state.style.units flow) flow newNode
+                            width /\ height = boundsOf state newNode
                         in state
                             { patch = state.patch # Patch.addNode nodeName newNode
                             , layout = R2.packOne state.layout (R2.item width height nodeName)
@@ -211,15 +216,12 @@ handleAction = case _ of
                         { mouse =
                             nextMouse
                         , layout =
-                            state.layout # R2.abandon i -- FIXME: abandon when we started to drag it
+                            state.layout # R2.abandon i
                         }
                 Mouse.DropAt pos i ->
                     let
-                        flow = Vertical -- FIXME
                         width /\ height =
-                            state.patch
-                                # Patch.findNode i
-                                # map (Calc.nodeBounds (state.style.units flow) flow)
+                            boundsOf' state i
                                 # Maybe.fromMaybe (0.0 /\ 0.0)
                     in
                         state
@@ -257,3 +259,23 @@ component =
                 , initialize = Just Initialize
                 }
         }
+
+
+boundsOf :: forall d x. { flow :: NodeFlow, style :: Style | x } -> Noodle.Node d -> Number /\ Number
+boundsOf state =
+    let
+        flow = state.flow
+        units = state.style.units
+    in
+        Calc.nodeBounds (units flow) flow
+
+
+boundsOf' :: forall d x. { flow :: NodeFlow, style :: Style, patch :: Noodle.Patch d | x } -> String -> Maybe (Number /\ Number)
+boundsOf' state name =
+    let
+        flow = state.flow
+        units = state.style.units
+    in
+        state.patch
+            # Patch.findNode name
+            # map (Calc.nodeBounds (units flow) flow)
