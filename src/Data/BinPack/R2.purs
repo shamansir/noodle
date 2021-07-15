@@ -14,7 +14,6 @@ module Data.BinPack.R2
 , valueOf
 , size
 , unfold
-, abandon
 )
 where
 
@@ -142,11 +141,11 @@ size (Free { w, h }) = w /\ h
 size (Node { w, h }) = w /\ h
 
 
-abandon :: forall n a. Eq a => a -> Bin2 n a -> Bin2 n a
+{- abandon :: forall n a. Eq a => a -> Bin2 n a -> Bin2 n a
 abandon another (Node { i, w, h }) | i == another = Free { w, h }
 abandon another (Node n)           | otherwise =
     Node $ n { r = abandon another n.r, b = abandon another n.b }
-abandon _       (Free { w, h })    = Free { w, h }
+abandon _       (Free { w, h })    = Free { w, h } -}
 
 
 {- abandon :: forall n a. Eq a => a -> Bin2 n a -> (Maybe (n /\ n /\ n /\ n) /\ Bin2 n a)

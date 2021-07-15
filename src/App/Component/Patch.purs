@@ -20,8 +20,8 @@ import Control.Alternative ((<|>))
 
 import Effect.Class (class MonadEffect, liftEffect)
 
-import Data.BinPack.R2 (Bin2)
-import Data.BinPack.R2 as R2
+import Data.BinPack.R2.Optional (Bin2)
+import Data.BinPack.R2.Optional as R2
 
 import Noodle.Patch (Patch) as Noodle
 import Noodle.Patch as Patch
