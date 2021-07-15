@@ -57,7 +57,7 @@ import Type.Proxy (Proxy(..))
 type Slot id = forall query. H.Slot query Void id
 
 
-type Slots = ( node :: NodeC.Slot Int )
+type Slots = ( node :: NodeC.Slot String )
 
 
 _node = Proxy :: Proxy "node"
@@ -148,24 +148,24 @@ render state =
                     ]
                 , HS.text [] [ HH.text $ "+ " <> name ]
                 ]
-        node' idxShift idx { node, name, x, y, w, h } = -- FIXME: replace idxShift with something like Layer ID
+        node' { node, name, x, y, w, h } = -- FIXME: replace idxShift with something like Layer ID
             HS.g
                 [ HSA.transform [ HSA.Translate x $ tabHeight + tabVertPadding + y ]
                 , HSA.classes $ CS.node state.flow name
                 ]
-                [ HH.slot _node (idxShift + idx)
+                [ HH.slot _node name
                     NodeC.component { node, name, style : state.style, flow : state.flow }
                     absurd
                 ]
         nodesLayout =
-            HS.g [ HSA.classes CS.nodes ] $ Array.mapWithIndex (node' 0) $ List.toUnfoldable $ packedNodes' -- Patch.nodes patch
+            HS.g [ HSA.classes CS.nodes ] $ map node' $ List.toUnfoldable $ packedNodes' -- Patch.nodes patch
         pinnedNodes =
-            HS.g [ HSA.classes CS.nodes ] $ Array.mapWithIndex (node' 5000) $ pinnedNodes'
+            HS.g [ HSA.classes CS.nodes ] $ map node' $ pinnedNodes'
         maybeDraggedNode (Mouse.Dragging _ (x /\ y) name) =
             let
                 w /\ h = boundsOf' state name # Maybe.fromMaybe (0.0 /\ 0.0)
             in case assocNode ( name /\ x /\ y /\ w /\ h ) of
-                Just n -> node' 10000 0 n
+                Just n -> node' n
                 Nothing -> HS.g [] []
         maybeDraggedNode _ =
             HS.g [] []
