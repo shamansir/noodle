@@ -34,6 +34,7 @@ to generate this file without the comments in this block.
   , "psci-support"
   , "refs"
   , "signal"
+  , "sized-vectors"
   , "tuples"
   , "web-events"
   , "web-html"
