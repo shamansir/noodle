@@ -1,7 +1,7 @@
 module App.Example.Toolkit where
 
 
-import Prelude (($), (#), (<$>), (<*>), (<#>), (+), Unit, unit)
+import Prelude (($), (#), (<$>), (<*>), (<#>), (+), Unit, unit, identity)
 
 import Data.Tuple.Nested ((/\))
 import Data.Maybe (Maybe(..))
@@ -37,11 +37,11 @@ sumNode :: Def Data
 sumNode =
     Def.define
       (withInlets
-         ~< "a" /\ Channel.number 0.0
-         ~< "b" /\ Channel.number 0.0
+         ~< "a" /\ ?wh
+         ~< "b" /\ ?wh
       )
       (withOutlets
-         >~ "c" /\ Channel.number 0.0
+         >~ "c" /\ ?wh
       )
       $ \inlets ->
           Def.pass'

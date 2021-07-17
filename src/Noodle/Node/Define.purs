@@ -218,14 +218,15 @@ withFn5 fn inletA inletB inletC inletD inletE r =
 -}
 
 
+{-
 addInlet :: forall d. String -> Channel.Shape d -> Def d -> Def d
 -- addInlet name shape = (<$>) (lmap $ Map.insert name shape)
 addInlet name shape (Def shapes fn) = Def ((lmap $ Map.insert name shape) shapes) fn
 
 
-addOutlet :: forall d. String -> Channel.Shape d -> Def d -> Def d
+addOutlet :: forall d. String -> (forall a. Channel.Shape a d) -> Def d -> Def d
 -- addOutlet name shape = (<$>) (rmap $ Map.insert name shape)
-addOutlet name shape (Def shapes fn) = Def ((rmap $ Map.insert name shape) shapes) fn
+addOutlet name shape (Def shapes fn) = Def ((rmap $ Map.insert name shape) shapes) fn -}
 
 
 reshape :: forall d. Shape.Inlets d -> Shape.Outlets d -> Def d -> Def d
@@ -234,17 +235,17 @@ reshape inlets outlets (Def _ fn) =
         -- FIXME: update the handler to monitor hot/cold inlets as well
 
 
-reshapeInlet :: forall d. String -> Channel.Shape d -> Def d -> Def d
-reshapeInlet = addInlet
+{- reshapeInlet :: forall d. String -> Channel.Shape d -> Def d -> Def d
+reshapeInlet = addInlet -}
 
 
-reshapeOutlet :: forall d. String -> Channel.Shape d -> Def d -> Def d
-reshapeOutlet = addOutlet
+{- reshapeOutlet :: forall d. String -> Channel.Shape d -> Def d -> Def d
+reshapeOutlet = addOutlet -}
 
 
-inletShape :: forall d. String -> Def d -> Maybe (Channel.Shape d)
+inletShape :: forall d. String -> Def d -> Maybe (forall a. Channel.Shape a d)
 inletShape inlet = getShape >>> Tuple.snd >>> Map.lookup inlet
 
 
-outletShape :: forall d. String -> Def d -> Maybe (Channel.Shape d)
+outletShape :: forall d. String -> Def d -> Maybe (forall a. Channel.Shape a d)
 outletShape outlet = getShape >>> Tuple.fst >>> Map.lookup outlet

@@ -2,7 +2,7 @@ module Noodle.Channel.Shape
     where
 
 
-import Prelude ((>>>), (<<<), (>>=), (<$>), ($))
+import Prelude ((>>>), (<<<), (>>=), (<$>), ($), (<*>), (=<<))
 
 
 import Data.Maybe (Maybe(..))
@@ -20,8 +20,8 @@ import Data.Functor.Invariant (class Invariant)
 
 data Shape a d =
     Shape
-        { default :: a
-        , accept :: a -> Maybe d -- TODO: remove, move to typeclass, can be used on `Node.connect`
+        { default :: a -- d?
+        , accept :: a -> Maybe d -- TODO: remove, move to typeclass, can be used on `Node.connect` / `Node.send`
         --, adapt :: d -> d
         , isHot :: Boolean
         , hidden :: Boolean
@@ -70,11 +70,11 @@ hot (Shape def) =
     Shape def { isHot = true }
 
 
-shape :: forall d. d -> Shape d d
-shape v =
+shape :: forall a d. a -> (a -> Maybe d) -> Shape a d
+shape v accept =
     Shape
         { default : v
-        , accept : Just
+        , accept : accept
         , isHot : true
         , hidden : false
         }
@@ -85,14 +85,26 @@ acceptWith f (Shape def) = Shape def { accept = f }
 
 
 {- int :: Int -> Shape Int
-int = shape
+int = shape -}
 
 
-number :: Number -> Shape Number
+number :: forall d. Number -> (Number -> Maybe d) -> Shape Number d
 number = shape
 
 
-boolean :: Boolean -> Shape Boolean
+{- boolean :: Boolean -> Shape Boolean
 boolean = shape -}
 
 -- TODO
+
+{-
+foo :: forall a d. (a -> d) -> (d -> a) -> Shape a d -> Shape d d
+foo f g (Shape { default, accept, isHot, hidden }) =
+    Shape
+        { default : f default
+        , accept : g >>> accept -- <<< ?wh
+        , isHot
+        , hidden
+        }
+
+-}

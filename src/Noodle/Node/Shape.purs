@@ -15,8 +15,8 @@ import Data.Functor (class Functor)
 import Data.Maybe (Maybe)
 
 
-type Inlets d = (String /-> Channel.Shape d)
-type Outlets d = (String /-> Channel.Shape d)
+type Inlets d = (String /-> (forall a. Channel.Shape a d)) -- forall a. (String /-> Channel.Shape a d)
+type Outlets d = (String /-> (forall a. Channel.Shape a d)) -- forall a. (String /-> Channel.Shape a d)
 
 
 type Shape d = Inlets d /\ Outlets d
@@ -54,7 +54,7 @@ withOutlets = Map.empty
 andInlet
     :: forall d
      . Inlets d
-    -> String /\ Channel.Shape d
+    -> String /\ (forall a. Channel.Shape a d)
     -> Inlets d
 andInlet inlets (name /\ shape) =
     inlets # Map.insert name shape
@@ -63,23 +63,23 @@ andInlet inlets (name /\ shape) =
 andOutlet
     :: forall d
      . Outlets d
-    -> String /\ Channel.Shape d
+    -> String /\ (forall a. Channel.Shape a d)
     -> Outlets d
 andOutlet outlets (name /\ shape) =
     outlets # Map.insert name shape
 
 
-inlet :: forall d. String -> Shape d -> Maybe (Channel.Shape d)
+inlet :: forall d. String -> Shape d -> Maybe (forall a. Channel.Shape a d)
 inlet name (inlets /\ _) = Map.lookup name inlets
 
 
-outlet :: forall d. String -> Shape d -> Maybe (Channel.Shape d)
+outlet :: forall d. String -> Shape d -> Maybe (forall a. Channel.Shape a d)
 outlet name (_ /\ outlets) = Map.lookup name outlets
 
 
-inlets :: forall d. Shape d -> Array (String /\ Channel.Shape d)
+inlets :: forall d. Shape d -> Array (String /\ (forall a. Channel.Shape a d))
 inlets = Tuple.fst >>> Map.toUnfoldable
 
 
-outlets :: forall d. Shape d -> Array (String /\ Channel.Shape d)
+outlets :: forall d. Shape d -> Array (String /\ (forall a. Channel.Shape a d))
 outlets = Tuple.snd >>> Map.toUnfoldable
