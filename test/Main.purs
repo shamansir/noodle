@@ -3,6 +3,8 @@ module Test.Main where
 import Prelude
 
 import Data.Tuple.Nested ((/\))
+import Data.Maybe (Maybe(..))
+import Control.Alternative ((<|>))
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
@@ -13,7 +15,7 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 import Test.Signal (expectFn)
 
-import Noodle.Node.Define (pass', define, defineEffectful) as Node
+import Noodle.Node.Define (pass', define, defineEffectful, passNothing) as D
 import Noodle.Node.Shape (noInlets, noOutlets) as Shape
 import Noodle.Node ((<~>), (+>), (<+))
 import Noodle.Node (Node)
@@ -30,11 +32,11 @@ import Signal.Channel.Extra as Ch
 createSumNode :: Effect (Node Int)
 createSumNode =
     Node.make 0
-      $ Node.define
+      $ D.define
           Shape.noInlets -- FIXME: this shouldn't work, the inlets should be defined in advance
           Shape.noOutlets -- FIXME: this shouldn't work, the outlets should be defined in advance
       $ \inlets ->
-          Node.pass'
+          D.pass'
             [ "c" /\ ((+) <$> "a" <+ inlets
                           <*> "b" <+ inlets
                      )
@@ -42,9 +44,9 @@ createSumNode =
 
 createTimerNode :: Effect (Node Unit)
 createTimerNode = do
-    channel <- Ch.channel (Node.consumer /\ unit)
+    channel <- Ch.channel unit
     node <- Node.make unit
-      $ Node.defineEffectful
+      $ D.defineEffectful
           Shape.noInlets -- FIXME: this shouldn't work, the inlets should be defined in advance
           Shape.noOutlets -- FIXME: this shouldn't work, the outlets should be defined in advance
       $ \inlets -> do
@@ -54,13 +56,16 @@ createTimerNode = do
 
           -- btw, what if channel transformations a.k.a. `adapt` would be `a -> Maybe d`, so two types instead of one?
           -- on the other hand default would be `a` anyways... maybe functor over `d`, while default is `a`???
-          Ch.send channel ("c" /\ unit)
-          pure $ Node.pass'
-            [ "c" /\ ((+) <$> "a" <+ inlets
-                          <*> "b" <+ inlets
-                     )
-            ]
-    Signal.runSignal $ Ch.subscribe channel ~> Node.send node
+          case ("trigger" <+ inlets) of
+            Just _ ->
+              -- TODO: delay, send several times?
+              Ch.send channel unit
+            Nothing -> pure unit
+          pure $ D.passNothing
+    Signal.runSignal $
+      Ch.subscribe channel
+        ~> ((/\) "trigger")
+        ~> Node.send node
     pure node
 
 

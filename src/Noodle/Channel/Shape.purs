@@ -2,31 +2,47 @@ module Noodle.Channel.Shape
     where
 
 
-import Prelude ((>>>), (<<<), (>>=), (<$>))
+import Prelude ((>>>), (<<<), (>>=), (<$>), ($))
 
 
 import Data.Maybe (Maybe(..))
 -- import Noodle.Shape (Shape)
 
+import Data.Functor (class Functor)
 import Data.Functor.Invariant (class Invariant)
 
 
-instance Invariant Shape where
+{- instance Invariant Shape where
     imap :: forall a b. (a -> b) -> (b -> a) -> Shape a -> Shape b
     imap toB toA (Shape { default, accept, isHot }) =
-        Shape { default : toB default, accept : \b -> toB <$> accept (toA b), isHot }
+        Shape { default : toB default, accept : \b -> toB <$> accept (toA b), isHot } -}
 
 
-data Shape d =
+data Shape a d =
     Shape
-        { default :: d
-        , accept :: d -> Maybe d -- TODO: remove, move to typeclass, can be used on `Node.connect`
+        { default :: a
+        , accept :: a -> Maybe d -- TODO: remove, move to typeclass, can be used on `Node.connect`
         --, adapt :: d -> d
         , isHot :: Boolean
+        , hidden :: Boolean
         }
 
 
-transform :: forall d. Shape d -> d -> Maybe d
+class IsShape a d where
+    accept :: a -> Maybe d
+    --default :: a
+
+
+instance functorShape :: Functor (Shape a) where
+    map :: forall a z d. (d -> z) -> Shape a d -> Shape a z
+    map f (Shape { default, accept, isHot, hidden }) =
+        Shape
+            { default, isHot, hidden
+            , accept : ((<$>) f) <$> accept
+            }
+
+
+transform :: forall a d. Shape a d -> a -> Maybe d
 transform (Shape { accept }) = accept
 
 
@@ -40,34 +56,35 @@ transform (Shape { accept }) = accept
 -- TODO:int = {}
 
 
-isHot :: forall d. Shape d -> Boolean
+isHot :: forall a d. Shape a d -> Boolean
 isHot (Shape def) = def.isHot
 
 
-cold :: forall d. Shape d -> Shape d
+cold :: forall a d. Shape a d -> Shape a d
 cold (Shape def) =
     Shape def { isHot = false }
 
 
-hot :: forall d. Shape d -> Shape d
+hot :: forall a d. Shape a d -> Shape a d
 hot (Shape def) =
     Shape def { isHot = true }
 
 
-shape :: forall d. d -> Shape d
+shape :: forall d. d -> Shape d d
 shape v =
     Shape
         { default : v
         , accept : Just
         , isHot : true
+        , hidden : false
         }
 
 
-acceptWith :: forall d. (d -> Maybe d) -> Shape d -> Shape d
+acceptWith :: forall a d. (a -> Maybe d) -> Shape a d -> Shape a d
 acceptWith f (Shape def) = Shape def { accept = f }
 
 
-int :: Int -> Shape Int
+{- int :: Int -> Shape Int
 int = shape
 
 
@@ -76,6 +93,6 @@ number = shape
 
 
 boolean :: Boolean -> Shape Boolean
-boolean = shape
+boolean = shape -}
 
 -- TODO
