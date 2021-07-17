@@ -2,7 +2,7 @@ module Noodle.Node.Define
     ( Def(..), Receive(..), Pass(..)
     , empty
     , define, defineEffectful
-    , receive, pass, pass', passNothing, doNothing
+    , receive, pass, pass', passNothing, passThrough, doNothing
     , lastUpdateAt
     --, withFn1, withFn2, withFn3, withFn4, withFn5
     -- , fromFn1, fromFn2, fromFn3, fromFn4, fromFn5
@@ -120,6 +120,10 @@ pass' values = Pass { toOutlets : Map.fromFoldable $ Array.mapMaybe sequence $ v
 
 passNothing :: forall d. Pass d
 passNothing = Pass { toOutlets : Map.empty }
+
+
+passThrough :: forall d. Receive d -> Pass d
+passThrough (Receive { fromInlets }) = Pass { toOutlets : fromInlets }
 
 
 doNothing :: forall d. Receive d -> Pass d

@@ -105,6 +105,9 @@ send node (inlet /\ d) =
     Ch.send (getInletsChannel node) $ inlet /\ d
 
 
+-- TODO: sendToOutlet ??
+
+
 connect :: forall d. (Node d /\ String) -> (Node d /\ String) -> Effect Link
 connect (srcNode /\ srcOutlet) (dstNode /\ dstInlet) =
     let inlets_chan = getInletsChannel dstNode

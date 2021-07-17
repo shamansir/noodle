@@ -13,25 +13,55 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 import Test.Signal (expectFn)
 
-import Noodle.Node.Define (pass', define) as Node
+import Noodle.Node.Define (pass', define, defineEffectful) as Node
 import Noodle.Node.Shape (noInlets, noOutlets) as Shape
 import Noodle.Node ((<~>), (+>), (<+))
 import Noodle.Node (Node)
-import Noodle.Node (make, consumer, outletsSignal, disconnect) as Node
+import Noodle.Node (make, consumer, outletsSignal, disconnect, send) as Node
+
+import Signal ((~>))
+import Signal as Signal
+import Signal.Channel (Channel)
+import Signal.Channel as Ch
+import Signal.Channel.Extra as Ch
+
 
 
 createSumNode :: Effect (Node Int)
 createSumNode =
     Node.make 0
       $ Node.define
-          Shape.noInlets
-          Shape.noOutlets
+          Shape.noInlets -- FIXME: this shouldn't work, the inlets should be defined in advance
+          Shape.noOutlets -- FIXME: this shouldn't work, the outlets should be defined in advance
       $ \inlets ->
           Node.pass'
             [ "c" /\ ((+) <$> "a" <+ inlets
                           <*> "b" <+ inlets
                      )
             ]
+
+createTimerNode :: Effect (Node Unit)
+createTimerNode = do
+    channel <- Ch.channel (Node.consumer /\ unit)
+    node <- Node.make unit
+      $ Node.defineEffectful
+          Shape.noInlets -- FIXME: this shouldn't work, the inlets should be defined in advance
+          Shape.noOutlets -- FIXME: this shouldn't work, the outlets should be defined in advance
+      $ \inlets -> do
+          -- some channel that transforms `unit` values from hidden inlet into a `Signal` and runs it?
+          -- but there seems to be no way to send values to inlets/outlets from inside the node
+          -- ...or there is one, if we use some function as a data?
+
+          -- btw, what if channel transformations a.k.a. `adapt` would be `a -> Maybe d`, so two types instead of one?
+          -- on the other hand default would be `a` anyways... maybe functor over `d`, while default is `a`???
+          Ch.send channel ("c" /\ unit)
+          pure $ Node.pass'
+            [ "c" /\ ((+) <$> "a" <+ inlets
+                          <*> "b" <+ inlets
+                     )
+            ]
+    Signal.runSignal $ Ch.subscribe channel ~> Node.send node
+    pure node
 
 
 main :: Effect Unit
