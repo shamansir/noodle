@@ -36,6 +36,7 @@ to generate this file without the comments in this block.
   , "signal"
   , "sized-vectors"
   , "tuples"
+  , "typelevel"
   , "web-events"
   , "web-html"
   , "web-uievents"

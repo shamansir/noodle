@@ -13,15 +13,19 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 import Test.Signal (expectFn)
 
-import Noodle.Node (pass', outlets, disconnect, consumer) as Node
+import Noodle.Node.Define (pass', define) as Node
+import Noodle.Node.Shape (noInlets, noOutlets) as Shape
 import Noodle.Node ((<~>), (+>), (<+))
-import Noodle.Node.Unit (Node)
-import Noodle.Node.Unit (make) as Node
+import Noodle.Node (Node)
+import Noodle.Node (make, consumer, outletsSignal, disconnect) as Node
 
 
 createSumNode :: Effect (Node Int)
 createSumNode =
     Node.make 0
+      $ Node.define
+          Shape.noInlets
+          Shape.noOutlets
       $ \inlets ->
           Node.pass'
             [ "c" /\ ((+) <$> "a" <+ inlets
@@ -38,7 +42,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
       it "creating" do
         node :: Node Int
           <- liftEffect $ createSumNode
-        let out = Node.outlets node
+        let out = Node.outletsSignal node
         expectFn out [ Node.consumer /\ 0 ]
         liftEffect $ do
           node +> ( "a" /\ 3 )
@@ -52,7 +56,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
           <- liftEffect $ createSumNode
         _ <- liftEffect
           $ (nodeA /\ "c") <~> (nodeB /\ "a")
-        let outB = Node.outlets nodeB
+        let outB = Node.outletsSignal nodeB
         expectFn outB [ Node.consumer /\ 0 ]
         liftEffect $ do
             nodeA +> ( "a" /\ 3 )
@@ -66,7 +70,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
         nodeB :: Node Int
           <- liftEffect $ createSumNode
         _ <- liftEffect $ (nodeA /\ "c") <~> (nodeB /\ "a")
-        let outB = Node.outlets nodeB
+        let outB = Node.outletsSignal nodeB
         expectFn outB [ Node.consumer /\ 0 ]
         liftEffect $ do
           nodeA +> ( "a" /\ 3 )
@@ -88,7 +92,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
           <- liftEffect $ createSumNode
         link <- liftEffect
           $ (nodeA /\ "c") <~> (nodeB /\ "a") -- connect outlet `c` from Node A to inlet `a` from Node B
-        let outB = Node.outlets nodeB
+        let outB = Node.outletsSignal nodeB
         expectFn outB [ Node.consumer /\ 0 ] -- expect default value to be there
         liftEffect $ do
           nodeA +> ( "a" /\ 3 )
