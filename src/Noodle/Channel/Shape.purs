@@ -47,6 +47,7 @@ instance shapeIsShape :: IsShape (Shape) where
     accept :: forall a d. Shape d a -> d -> Maybe a
     accept (Shape s) = s.accept
 
+
 {- instance bifunctorShape :: Bifunctor Shape where
     bimap = dimap -}
 
@@ -89,32 +90,25 @@ shape v accept =
         }
 
 
+shape' :: forall a d. (d -> Maybe a) -> a -> Shape d a
+shape' = flip shape
+
+
+shape'' :: forall a d. (a -> d) -> (d -> Maybe a) -> a -> Shape d d
+shape'' f toN def = f <$> shape def toN
+
+
 acceptWith :: forall a d. (a -> Maybe d) -> Shape a d -> Shape a d
 acceptWith f (Shape def) = Shape def { accept = f }
 
 
-{- int :: Int -> Shape Int
-int = shape -}
+through :: forall a. a -> Shape a a
+through = flip shape Just
 
 
-{- number :: forall d. Number -> (Number -> Maybe d) -> Shape Number
-number = shape -}
 number :: Number -> Shape Number Number
-number = flip shape Just
+number = through
 
 
-{- boolean :: Boolean -> Shape Boolean
-boolean = shape -}
-
--- TODO
-
-
-{-
-align :: forall a b. (a -> b) -> (b -> a) -> Shape a b -> Shape b b
-align f g (Shape { default, accept, isHot, hidden }) =
-    Shape
-        { default : f default
-        , accept : g >>> accept -- <<< ?wh
-        , isHot
-        , hidden
-        } -}
+number' :: forall a. (Number -> a) -> (a -> Maybe Number) -> Number -> Shape a a
+number' = shape''
