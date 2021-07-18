@@ -2,7 +2,7 @@ module Noodle.Channel.Shape
     where
 
 
-import Prelude ((>>>), (<<<), (>>=), (<$>), ($), (<*>), (=<<))
+import Prelude ((>>>), (<<<), (>>=), (<$>), ($), (<*>), (=<<), flip)
 
 
 import Data.Maybe (Maybe(..))
@@ -10,6 +10,7 @@ import Data.Maybe (Maybe(..))
 
 import Data.Functor (class Functor)
 import Data.Functor.Invariant (class Invariant)
+import Data.Bifunctor (class Bifunctor)
 
 
 {- instance Invariant Shape where
@@ -28,8 +29,8 @@ data Shape a d =
         }
 
 
-class IsShape a d where
-    accept :: a -> Maybe d
+class IsShape m where
+    accept :: forall a d. m a d -> a -> Maybe d
     --default :: a
 
 
@@ -40,6 +41,14 @@ instance functorShape :: Functor (Shape a) where
             { default, isHot, hidden
             , accept : ((<$>) f) <$> accept
             }
+
+
+instance shapeIsShape :: IsShape (Shape) where
+    accept :: forall a d. Shape a d -> a -> Maybe d
+    accept (Shape s) = s.accept
+
+{- instance bifunctorShape :: Bifunctor Shape where
+    bimap = dimap -}
 
 
 transform :: forall a d. Shape a d -> a -> Maybe d
@@ -88,8 +97,10 @@ acceptWith f (Shape def) = Shape def { accept = f }
 int = shape -}
 
 
-number :: forall d. Number -> (Number -> Maybe d) -> Shape Number d
-number = shape
+{- number :: forall d. Number -> (Number -> Maybe d) -> Shape Number
+number = shape -}
+number :: Number -> Shape Number Number
+number = flip shape Just
 
 
 {- boolean :: Boolean -> Shape Boolean
@@ -97,14 +108,12 @@ boolean = shape -}
 
 -- TODO
 
-{-
-foo :: forall a d. (a -> d) -> (d -> a) -> Shape a d -> Shape d d
-foo f g (Shape { default, accept, isHot, hidden }) =
+
+align :: forall a b. (a -> b) -> (b -> a) -> Shape a b -> Shape b b
+align f g (Shape { default, accept, isHot, hidden }) =
     Shape
         { default : f default
         , accept : g >>> accept -- <<< ?wh
         , isHot
         , hidden
         }
-
--}

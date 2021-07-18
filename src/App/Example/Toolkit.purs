@@ -37,11 +37,11 @@ sumNode :: Def Data
 sumNode =
     Def.define
       (withInlets
-         ~< "a" /\ ?wh
-         ~< "b" /\ ?wh
+         ~< "a" /\ Channel.number 0.0
+         ~< "b" /\ Channel.number 0.0
       )
       (withOutlets
-         >~ "c" /\ ?wh
+         >~ "c" /\ Channel.number 0.0
       )
       $ \inlets ->
           Def.pass'

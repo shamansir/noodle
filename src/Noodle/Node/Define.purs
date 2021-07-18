@@ -243,9 +243,9 @@ reshapeInlet = addInlet -}
 reshapeOutlet = addOutlet -}
 
 
-inletShape :: forall d. String -> Def d -> Maybe (forall a. Channel.Shape a d)
+inletShape :: forall d. String -> Def d -> Maybe (Channel.Shape d d)
 inletShape inlet = getShape >>> Tuple.snd >>> Map.lookup inlet
 
 
-outletShape :: forall d. String -> Def d -> Maybe (forall a. Channel.Shape a d)
+outletShape :: forall d. String -> Def d -> Maybe (Channel.Shape d d)
 outletShape outlet = getShape >>> Tuple.fst >>> Map.lookup outlet
