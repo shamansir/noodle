@@ -26,6 +26,7 @@ import Data.Traversable (sequence)
 --import Data.Functor (class Functor)
 import Data.Functor.Invariant (class Invariant)
 import Data.Bifunctor (lmap, rmap)
+import Data.Newtype (unwrap)
 
 
 import Noodle.Node.Shape (Shape, Inlets, Outlets)
@@ -74,7 +75,7 @@ defineEffectful
     -> Outlets d
     -> (Receive d -> Effect (Pass d))
     -> Def d
-defineEffectful = curry $ Def
+defineEffectful i o = Def $ Shape.make i o
 
 
 fromFn
@@ -145,12 +146,12 @@ doNothing :: forall d. Receive d -> Pass d
 doNothing = const $ passNothing
 
 
-getShape :: forall d. Def d -> Shape d
-getShape (Def shape _) = shape
+getShape :: forall d. Def d -> Inlets d /\ Outlets d
+getShape (Def shape _) = unwrap shape
 
 
 dimensions :: forall d. Def d -> Int /\ Int
-dimensions (Def (inlets /\ outlets) _) = Map.size inlets /\ Map.size outlets
+dimensions (Def shape _) = Shape.dimensions shape
 
 
 {-
@@ -246,7 +247,7 @@ addOutlet name shape (Def shapes fn) = Def ((rmap $ Map.insert name shape) shape
 
 reshape :: forall d. Shape.Inlets d -> Shape.Outlets d -> Def d -> Def d
 reshape inlets outlets (Def _ fn) =
-    Def (inlets /\ outlets) fn
+    Def (Shape.make inlets outlets) fn
         -- FIXME: update the handler to monitor hot/cold inlets as well
 
 

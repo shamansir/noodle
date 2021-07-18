@@ -10,13 +10,8 @@ import Data.Maybe (Maybe(..))
 
 import Data.Functor (class Functor)
 import Data.Functor.Invariant (class Invariant)
-import Data.Bifunctor (class Bifunctor)
-
-
-{- instance Invariant Shape where
-    imap :: forall a b. (a -> b) -> (b -> a) -> Shape a -> Shape b
-    imap toB toA (Shape { default, accept, isHot }) =
-        Shape { default : toB default, accept : \b -> toB <$> accept (toA b), isHot } -}
+import Data.Profunctor (class Profunctor)
+import Data.Profunctor as Profunctor
 
 
 data Shape d a =
@@ -43,27 +38,19 @@ instance functorShape :: Functor (Shape a) where
             }
 
 
+instance profunctorShape :: Profunctor Shape where
+    dimap :: forall a b c d. (b -> a) -> (c -> d) -> Shape a c -> Shape b d
+    dimap f g s =
+        lcmap f (g <$> s)
+
+
 instance shapeIsShape :: IsShape (Shape) where
     accept :: forall a d. Shape d a -> d -> Maybe a
     accept (Shape s) = s.accept
 
 
-{- instance bifunctorShape :: Bifunctor Shape where
-    bimap = dimap -}
-
-
 transform :: forall a d. Shape d a -> d -> Maybe a
 transform (Shape { accept }) = accept
-
-
--- TODO: Functor Shape ...
-
-
--- TODO: monoid :: Monoid m => Shape m
-
-
--- TODO: int :: Shape Int
--- TODO:int = {}
 
 
 isHot :: forall a d. Shape a d -> Boolean
@@ -100,6 +87,28 @@ shape'' f toN def = f <$> shape def toN
 
 acceptWith :: forall a d. (a -> Maybe d) -> Shape a d -> Shape a d
 acceptWith f (Shape def) = Shape def { accept = f }
+
+
+lcmap :: forall a b c. (b -> a) -> Shape a c -> Shape b c
+lcmap f (Shape { default, accept, isHot, hidden }) =
+    Shape
+        { default
+        , accept : accept <<< f
+        , isHot
+        , hidden
+        }
+
+
+rmap :: forall a b c. (b -> c) -> Shape a b -> Shape a c
+rmap = (<$>)
+
+
+move :: forall a b. (a -> b) -> (b -> a) -> Shape a a -> Shape b b
+move f g shape_ = lcmap g (f <$> shape_)
+
+
+move' :: forall a b c d. (b -> a) -> (c -> d) -> Shape a c -> Shape b d
+move' = Profunctor.dimap
 
 
 through :: forall a. a -> Shape a a
