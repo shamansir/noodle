@@ -4,22 +4,23 @@ import Prelude
 
 import Data.Tuple.Nested ((/\))
 import Data.Maybe (Maybe(..))
+import Data.Time.Duration (Milliseconds(..))
 import Control.Alternative ((<|>))
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
-import Effect.Aff (launchAff_)
+import Effect.Aff (launchAff_, delay)
 
 import Test.Spec (pending, describe, it)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
-import Test.Signal (expectFn)
+import Test.Signal (expectFn, expect)
 
-import Noodle.Node.Define (pass', define, defineEffectful, passNothing) as D
+import Noodle.Node.Define as D
 import Noodle.Node.Shape (noInlets, noOutlets) as Shape
 import Noodle.Node ((<~>), (+>), (<+))
 import Noodle.Node (Node)
-import Noodle.Node (make, consumer, outletsSignal, disconnect, send) as Node
+import Noodle.Node (make, consumer, outletsSignal, disconnect, send, produce) as Node
 
 import Signal ((~>))
 import Signal as Signal
@@ -32,9 +33,7 @@ import Signal.Channel.Extra as Ch
 createSumNode :: Effect (Node Int)
 createSumNode =
     Node.make 0
-      $ D.define
-          Shape.noInlets -- FIXME: this shouldn't work, the inlets should be defined in advance
-          Shape.noOutlets -- FIXME: this shouldn't work, the outlets should be defined in advance
+      $ D.fromFn
       $ \inlets ->
           D.pass'
             [ "c" /\ ((+) <$> "a" <+ inlets
@@ -42,31 +41,32 @@ createSumNode =
                      )
             ]
 
-createTimerNode :: Effect (Node Unit)
+createTimerNode :: Effect (Node (Maybe Unit))
 createTimerNode = do
     channel <- Ch.channel unit
-    node <- Node.make unit
-      $ D.defineEffectful
-          Shape.noInlets -- FIXME: this shouldn't work, the inlets should be defined in advance
-          Shape.noOutlets -- FIXME: this shouldn't work, the outlets should be defined in advance
+    node <- Node.make Nothing
+      $ D.fromFnEffectful
       $ \inlets -> do
-          -- some channel that transforms `unit` values from hidden inlet into a `Signal` and runs it?
-          -- but there seems to be no way to send values to inlets/outlets from inside the node
-          -- ...or there is one, if we use some function as a data?
-
-          -- btw, what if channel transformations a.k.a. `adapt` would be `a -> Maybe d`, so two types instead of one?
-          -- on the other hand default would be `a` anyways... maybe functor over `d`, while default is `a`???
           case ("trigger" <+ inlets) of
-            Just _ ->
-              -- TODO: delay, send several times?
+            Just _ -> do
+              launchAff_ $ delay $ Milliseconds 1000.0
               Ch.send channel unit
             Nothing -> pure unit
           pure $ D.passNothing
     Signal.runSignal $
       Ch.subscribe channel
-        ~> ((/\) "trigger")
-        ~> Node.send node
+        ~> Just
+        ~> ((/\) "out")
+        ~> Node.produce node
     pure node
+
+
+createBangNode :: Effect (Node (Maybe Unit))
+createBangNode = do
+    Node.make Nothing
+      $ D.fromFn
+      $ const
+      $ D.pass [ "bang" /\ Just unit ]
 
 
 main :: Effect Unit
@@ -143,8 +143,23 @@ main = launchAff_ $ runSpec [consoleReporter] do
           $ nodeB +> ( "b" /\ 17 )
         expectFn outB [ "c" /\ 23 ] -- sums up with 10 which was stored in its `a` before connection
 
+      it "triggering a signal value" do
+        timerNode :: Node (Maybe Unit)
+          <- liftEffect $ createTimerNode
+        bangNode :: Node (Maybe Unit)
+          <- liftEffect $ createBangNode
+        _ <- liftEffect
+          $ (timerNode /\ "out") <~> (bangNode /\ "bang") -- connect outlet `out` from `timer` node to inlet `bang` of the `bang` node
+        let bangOut = Node.outletsSignal bangNode
+        liftEffect $ do
+          timerNode +> ( "trigger" /\ Just unit )
+        expectFn bangOut [ "bang" /\ Nothing ]
+        expect 1100 bangOut [ "bang" /\ Just unit ]
+
       pending "receiving and running a signal"
 
       pending "shaped: hot inlets"
 
       pending "shaped: cold inlets"
+
+      pending "shaped: adapting"

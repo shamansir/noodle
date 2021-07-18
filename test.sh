@@ -1,2 +1,2 @@
 #!/bin/bash
-spago -x ./test.dhall test
+spago -x ./test.dhall test --watch

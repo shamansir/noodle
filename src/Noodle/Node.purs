@@ -1,12 +1,12 @@
 module Noodle.Node
     ( Node, Link
-    , send, connect, disconnect
+    , send, produce, connect, disconnect
     , make
     , inlet, outlet
     , inlets, outlets
     , inletSignal, outletSignal, outletSignalFlipped
     , inletsSignal, outletsSignal
-    , (<|), (|>), (<~>), (<+), (+>)
+    , (<|), (|>), (<~>), (<+), (+>), (++>)
     , consumer
     , dimensions
     )
@@ -88,6 +88,7 @@ make default (Def shape fn) = do
 
 infixl 5 Def.receive as <+
 infixl 5 send as +>
+infixl 5 produce as ++>
 infixl 4 connect as <~>
 infixl 4 inletSignal as |>
 infixl 4 outletSignalFlipped as <|
@@ -103,6 +104,11 @@ distribute passTo (Def.Pass { toOutlets }) =
 send :: forall d. Node d -> (String /\ d) -> Effect Unit
 send node (inlet /\ d) =
     Ch.send (getInletsChannel node) $ inlet /\ d
+
+
+produce :: forall d. Node d -> (String /\ d) -> Effect Unit
+produce node (outlet /\ d) =
+    Ch.send (getOutletsChannel node) $ outlet /\ d
 
 
 -- TODO: sendToOutlet ??

@@ -2,6 +2,7 @@ module Noodle.Node.Define
     ( Def(..), Receive(..), Pass(..)
     , empty
     , define, defineEffectful
+    , fromFn, fromFnEffectful
     , receive, pass, pass', passNothing, passThrough, doNothing
     , lastUpdateAt
     --, withFn1, withFn2, withFn3, withFn4, withFn5
@@ -74,6 +75,20 @@ defineEffectful
     -> (Receive d -> Effect (Pass d))
     -> Def d
 defineEffectful = curry $ Def
+
+
+fromFn
+    :: forall d
+     . (Receive d -> Pass d)
+    -> Def d
+fromFn = define Shape.noInlets Shape.noOutlets
+
+
+fromFnEffectful
+    :: forall d
+     . (Receive d -> Effect (Pass d))
+    -> Def d
+fromFnEffectful = defineEffectful Shape.noInlets Shape.noOutlets
 
 
 {-
