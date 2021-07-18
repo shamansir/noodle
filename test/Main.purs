@@ -14,13 +14,14 @@ import Effect.Aff (launchAff_, delay)
 import Test.Spec (pending, describe, it)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
+import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Signal (expectFn, expect)
 
 import Noodle.Node.Define as D
 import Noodle.Node.Shape (noInlets, noOutlets) as Shape
 import Noodle.Node ((<~>), (+>), (<+))
 import Noodle.Node (Node)
-import Noodle.Node (make, consumer, outletsSignal, disconnect, send, produce) as Node
+import Noodle.Node as Node
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -43,34 +44,22 @@ createSumNode =
             ]
 
 
-{-
-createDelayNode :: forall a. Effect (Node (Maybe (Signal a)))
+
+type SignalNode a = Node (Maybe (Signal a))
+
+
+createDelayNode :: forall a. Effect (SignalNode a)
 createDelayNode = do
     node <- Node.make Nothing
       $ D.fromFn
       $ \inlets -> do
           case ("in" <+ inlets) of
             Just (Just signal) -> do
-              D.pass [ "out" /\ Just (signal # SignalT.delay 1000.0) ]
+              D.pass [ "out" /\ Just (signal # SignalT.delay 300.0) ]
             Just Nothing -> D.passNothing
             Nothing -> D.passNothing
     pure node
 
-
-createDelayNode' :: forall a. Effect (Node (Maybe (Signal a)))
-createDelayNode' = do
-    node <- Node.make Nothing
-      $ D.fromFnEffectful
-      $ \inlets -> do
-          case ("in" <+ inlets) of
-            Just (Just signal) -> do
-              _ <- Signal.unwrap (SignalT.delay 1000.0 (signal ~> (const $ pure unit)))
-              pure unit
-            Just Nothing -> pure unit
-            Nothing -> pure unit
-          pure $ D.passNothing
-    pure node
--}
 
 createBangNode :: Effect (Node (Maybe Unit))
 createBangNode = do
@@ -194,6 +183,33 @@ main = launchAff_ $ runSpec [consoleReporter] do
         expectFn bangOut [ Node.consumer /\ Nothing ]
         liftEffect $ Signal.runSignal producer
         expectFn bangOut [ "bang" /\ Just unit ]
+
+      it "delaying" do
+        delayingNode
+          :: SignalNode Int
+          <- liftEffect $ createDelayNode
+        myChannel <- liftEffect $ Ch.channel 0
+        let
+          mySignal = Ch.subscribe myChannel
+          outSignal = Node.outletSignal delayingNode "out"
+        --expectFn outSignal [ Nothing ]
+        liftEffect $ do
+           delayingNode +> ( "in" /\ Just mySignal )
+        maybeOut <- liftEffect $ Signal.get outSignal
+        case maybeOut of
+          (Just delayedSignal) -> do
+            v1 <- liftEffect $ Signal.get delayedSignal
+            v1 `shouldEqual` 0
+            liftEffect $ Ch.send myChannel 5
+            v2 <- liftEffect $ Signal.get delayedSignal
+            v2 `shouldEqual` 0
+            delay $ Milliseconds 400.0
+            v3 <- liftEffect $ Signal.get delayedSignal
+            v3 `shouldEqual` 5
+            pure unit
+          _ ->
+            fail "foo"
+        --expect
 
       pending "receiving and running a signal"
 
