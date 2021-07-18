@@ -166,19 +166,19 @@ getShape :: forall d. Node d -> Shape d
 getShape (Node shape _) = shape
 
 
-inlet :: forall d. String -> Node d -> Maybe (forall a. Channel.Shape a d)
+inlet :: forall d. String -> Node d -> Maybe (Channel.Shape d d)
 inlet name = getShape >>> Shape.inlet name
 
 
-outlet :: forall d. String -> Node d -> Maybe (forall a. Channel.Shape a d)
+outlet :: forall d. String -> Node d -> Maybe (Channel.Shape d d)
 outlet name = getShape >>> Shape.outlet name
 
 
-inlets :: forall d. Node d -> Array (String /\ (forall a. Channel.Shape a d))
+inlets :: forall d. Node d -> Array (String /\ (Channel.Shape d d))
 inlets = getShape >>> Shape.inlets
 
 
-outlets :: forall d. Node d -> Array (String /\ (forall a. Channel.Shape a d))
+outlets :: forall d. Node d -> Array (String /\ (Channel.Shape d d))
 outlets = getShape >>> Shape.outlets
 
 

@@ -19,10 +19,10 @@ import Data.Bifunctor (class Bifunctor)
         Shape { default : toB default, accept : \b -> toB <$> accept (toA b), isHot } -}
 
 
-data Shape a d =
+data Shape d a =
     Shape
         { default :: a -- d?
-        , accept :: a -> Maybe d -- TODO: remove, move to typeclass, can be used on `Node.connect` / `Node.send`
+        , accept :: d -> Maybe a -- TODO: remove, move to typeclass, can be used on `Node.connect` / `Node.send`
         --, adapt :: d -> d
         , isHot :: Boolean
         , hidden :: Boolean
@@ -30,28 +30,28 @@ data Shape a d =
 
 
 class IsShape m where
-    accept :: forall a d. m a d -> a -> Maybe d
+    accept :: forall a d. m d a -> d -> Maybe a
     --default :: a
 
 
 instance functorShape :: Functor (Shape a) where
-    map :: forall a z d. (d -> z) -> Shape a d -> Shape a z
+    map :: forall d a b. (a -> b) -> Shape d a -> Shape d b
     map f (Shape { default, accept, isHot, hidden }) =
         Shape
-            { default, isHot, hidden
+            { default : f default, isHot, hidden
             , accept : ((<$>) f) <$> accept
             }
 
 
 instance shapeIsShape :: IsShape (Shape) where
-    accept :: forall a d. Shape a d -> a -> Maybe d
+    accept :: forall a d. Shape d a -> d -> Maybe a
     accept (Shape s) = s.accept
 
 {- instance bifunctorShape :: Bifunctor Shape where
     bimap = dimap -}
 
 
-transform :: forall a d. Shape a d -> a -> Maybe d
+transform :: forall a d. Shape d a -> d -> Maybe a
 transform (Shape { accept }) = accept
 
 
@@ -79,7 +79,7 @@ hot (Shape def) =
     Shape def { isHot = true }
 
 
-shape :: forall a d. a -> (a -> Maybe d) -> Shape a d
+shape :: forall a d. a -> (d -> Maybe a) -> Shape d a
 shape v accept =
     Shape
         { default : v
@@ -109,6 +109,7 @@ boolean = shape -}
 -- TODO
 
 
+{-
 align :: forall a b. (a -> b) -> (b -> a) -> Shape a b -> Shape b b
 align f g (Shape { default, accept, isHot, hidden }) =
     Shape
@@ -116,4 +117,4 @@ align f g (Shape { default, accept, isHot, hidden }) =
         , accept : g >>> accept -- <<< ?wh
         , isHot
         , hidden
-        }
+        } -}
