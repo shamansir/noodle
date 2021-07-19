@@ -5,20 +5,21 @@ import Prelude
 import Data.Maybe (Maybe(..), maybe)
 import Data.Int (toNumber)
 import Data.Tuple.Nested ((/\), type (/\))
-import Halogen.Svg.Attributes (a)
 import Web.UIEvent.MouseEvent as ME
+import Data.Vec2 (Vec2)
+import Data.Vec2 as Vec2
 
 
 data State a
-    = Move ( Number /\ Number )
-    | Click ( Number /\ Number ) a
-    | StartDrag ( Number /\ Number ) a
-    | Dragging ( Number /\ Number ) ( Number /\ Number ) a
-    | DropAt ( Number /\ Number ) a
+    = Move Vec2
+    | Click Vec2 a
+    | StartDrag Vec2 a
+    | Dragging Vec2 Vec2 a
+    | DropAt Vec2 a
 
 
 init :: forall a. State a
-init = Move ( 0.0 /\ 0.0 )
+init = Move $ Vec2.make 0.0 0.0
 
 
 apply :: forall a. ((Number /\ Number) -> Maybe a) -> ME.MouseEvent -> State a -> State a
@@ -26,9 +27,10 @@ apply toItem event curState =
     analyze curState
     where
         buttonDown = ME.buttons event == 1
-        nextPos = (toNumber $ ME.clientX event) /\ (toNumber $ ME.clientY event)
+        nextPos' = (toNumber $ ME.clientX event) /\ (toNumber $ ME.clientY event)
+        nextPos = Vec2.fromTuple nextPos'
         analyze (Move _) =
-            case buttonDown /\ (toItem nextPos) of
+            case buttonDown /\ (toItem nextPos') of
                 true /\ Just item -> Click nextPos item
                 _ -> Move nextPos
         analyze (Click clickPos item) =
@@ -50,33 +52,14 @@ apply toItem event curState =
 
 
 instance showMouse :: Show a => Show (State a) where
-    show (Move (x /\ y)) = show x <> ";" <> show y
-    show (Click ( curX /\ curY ) item) =
-        "click " <> show curX <> ";" <> show curY <>
+    show (Move curPos) = show curPos
+    show (Click curPos item) =
+        "click " <> show curPos <> " : " <> show item
+    show (StartDrag startPos item) =
+        "start drag " <> show startPos <> " : " <> show item
+    show (Dragging startPos curPos item) =
+        "drag from " <> show startPos <>
+            " to " <> show curPos <>
             " : " <> show item
-    show (StartDrag ( curX /\ curY ) item) =
-        "start drag " <> show curX <> ";" <> show curY <>
-            " : " <> show item
-    show (Dragging (startX /\ startY) ( curX /\ curY ) item) =
-        "drag from " <> show startX <> ";" <> show startY <>
-            " to " <> show curX <> ";" <> show curY <>
-            " : " <> show item
-    show (DropAt ( curX /\ curY ) item) =
-        "drop at " <> show curX <> ";" <> show curY <>
-            " : " <> show item
-
-
-mapPos :: forall a. ((Number /\ Number) -> (Number /\ Number)) -> State a -> State a
-mapPos f (Move pos) = Move $ f pos
-mapPos f (Click pos i) = Click (f pos) i
-mapPos f (StartDrag pos i) = Click (f pos) i
-mapPos f (Dragging start pos i) = Dragging (f start) (f pos) i
-mapPos f (DropAt pos i) = DropAt (f pos) i
-
-
-shift' :: (Number /\ Number) -> (Number /\ Number) -> (Number /\ Number)
-shift' (offX /\ offY) (x /\ y) = (x - offX) /\ (y - offY)
-
-
-shift :: forall a. (Number /\ Number) -> State a -> State a
-shift offset = mapPos $ shift' offset
+    show (DropAt curPos item) =
+        "drop at " <> show curPos <> " : " <> show item

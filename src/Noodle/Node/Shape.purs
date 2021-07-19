@@ -24,7 +24,7 @@ type Outlets d = (String /-> (Channel.Shape d d)) -- forall a. (String /-> Chann
 newtype Shape d = Shape (Inlets d /\ Outlets d)
 
 
-derive instance Newtype (Shape a) _
+derive instance Newtype (Shape d) _
 
 
 instance invariantShape :: Invariant Shape where

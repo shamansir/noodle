@@ -16,6 +16,8 @@ import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.PinBoard (PinBoard)
 import Data.PinBoard as PB
+import Data.Vec2 (Vec2)
+import Data.Vec2 as Vec2
 
 import Control.Alternative ((<|>))
 
@@ -69,7 +71,7 @@ type Input d =
     , toolkit :: Noodle.Toolkit d
     , style :: Style
     , flow :: NodeFlow
-    , offset :: Number /\ Number
+    , offset :: Vec2
     }
 
 
@@ -78,7 +80,7 @@ type State d =
     , toolkit :: Noodle.Toolkit d
     , style :: Style
     , flow :: NodeFlow
-    , offset :: Number /\ Number
+    , offset :: Vec2
     , layout :: Bin2 Number String
     , pinned :: PinBoard String
     , mouse :: Mouse.State String
@@ -95,7 +97,10 @@ data Action d
 initialState :: forall d. Input d -> State d
 initialState { patch, toolkit, style, flow, offset } =
     { patch, toolkit, style, flow
-    , offset : case offset of (x /\ y) -> (x /\ (y + tabHeight + tabVertPadding))
+    , offset :
+        add offset
+            $ Vec2.make 0.0
+            $ tabHeight + tabVertPadding
     , layout : R2.container 1500.0 900.0
     , pinned : []
     , mouse : Mouse.init
@@ -124,7 +129,7 @@ render state =
                 [ HSA.transform [ HSA.Translate 100.0 0.0 ]
                 , HSA.fill $ Just $ Style.white
                 ]
-                [ HH.text $ show $ Mouse.shift state.offset state.mouse ]
+                [ HH.text $ show $ sub state.offset state.mouse ]
         colors = state.style.colors
         assocNode (name /\ x /\ y /\ w /\ h) =
             state.patch
@@ -231,7 +236,7 @@ handleAction = case _ of
                             { mouse =
                                 nextMouse
                             , pinned =
-                                state.pinned # PB.pin pos (width /\ height) i
+                                state.pinned # PB.pin (Vec2.toTuple pos) (width /\ height) i
                             }
                 _ ->
                     state
@@ -243,10 +248,10 @@ handleAction = case _ of
         findNode state pos =
             findInLayout state pos <|> findInPinned state pos
         findInLayout state =
-            Mouse.shift' state.offset
+            sub state.offset
                 >>> (uncurry $ R2.sample' state.layout)
         findInPinned state =
-            Mouse.shift' state.offset
+            sub state.offset
                 >>> flip PB.search state.pinned
 
 
