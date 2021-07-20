@@ -1,7 +1,6 @@
 module Data.PinBoard where
 
 
-import Debug as Debug
 import Prelude
 import Data.Array ((:))
 import Data.Array as Array
@@ -41,11 +40,15 @@ toArray :: forall a. PinBoard a -> Array (a /\ Pos /\ Size)
 toArray = (<$>) (\(Pin t) -> t)
 
 
-search :: forall a. Pos -> PinBoard a -> Maybe a
+search :: forall a. Pos -> PinBoard a -> Maybe (a /\ Pos)
 search pos = Array.findMap matches
     where
-        matches (Pin (item /\ ipos /\ size)) | V2.inside pos (ipos /\ size) = Just item
+        matches (Pin (item /\ ipos /\ size)) | V2.inside pos (ipos /\ size) = Just (item /\ (pos - ipos))
         matches _                            | otherwise = Nothing
+
+
+search' :: forall a. Pos -> PinBoard a -> Maybe a
+search' pos pb = Tuple.fst <$> search pos pb
 
 
 pin :: forall a. Pos -> Size -> a -> PinBoard a -> PinBoard a

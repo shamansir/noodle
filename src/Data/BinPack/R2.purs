@@ -128,7 +128,7 @@ unfold f =
                     (unfold' (pos + V2.w' w) v r) b
                 -- $ unfold' x (y + h) (unfold' (x + w) y v r) b
 
-sample :: forall n a. Ring n => Ord n => Bin2 n a -> Pos_ n -> Maybe (a /\ Size_ n)
+sample :: forall n a. Ring n => Ord n => Bin2 n a -> Pos_ n -> Maybe (a /\ Pos_ n)
 sample (Free _)                 _   = Nothing
 sample (Node { w, h, r, b, i }) pos =
     case (compare (V2.x pos) w /\ compare (V2.y pos) h) of

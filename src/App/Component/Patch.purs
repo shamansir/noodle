@@ -83,7 +83,7 @@ type State d =
     , offset :: Pos
     , layout :: Bin2 Number String
     , pinned :: PinBoard String
-    , mouse :: Mouse.State String
+    , mouse :: Mouse.State (String /\ Pos)
     }
 
 
@@ -130,7 +130,7 @@ render state =
         colors = state.style.colors
         assocNode (name /\ pos /\ bounds) =
             state.patch
-                #  Patch.findNode name
+                # Patch.findNode name
                 <#> { name, node : _, x : V2.x pos, y : V2.y pos, w : V2.w bounds, h : V2.h bounds }
         packedNodes'
             = List.catMaybes $ assocNode <$> R2.toList state.layout
@@ -164,12 +164,16 @@ render state =
             HS.g [ HSA.classes CS.nodes ] $ map node' $ List.toUnfoldable $ packedNodes' -- Patch.nodes patch
         pinnedNodes =
             HS.g [ HSA.classes CS.nodes ] $ map node' $ pinnedNodes'
-        maybeDraggedNode (Mouse.Dragging _ pos name) =
+        floatingNode pos (name /\ nodeOffset) =
             let
                 bounds = boundsOf' state name # Maybe.fromMaybe zero
-            in case assocNode ( name /\ pos /\ bounds ) of
+            in case assocNode ( name /\ (pos - nodeOffset) /\ bounds ) of
                 Just n -> node' n
                 Nothing -> HS.g [] []
+        maybeDraggedNode (Mouse.StartDrag pos node) =
+            floatingNode pos node
+        maybeDraggedNode (Mouse.Dragging _ pos node) =
+            floatingNode pos node
         maybeDraggedNode _ =
             HS.g [] []
 
@@ -214,7 +218,7 @@ handleAction = case _ of
                         # Mouse.apply (findNode state)
                         mouseEvent
             in case nextMouse of
-                Mouse.StartDrag _ i ->
+                Mouse.StartDrag _ (i /\ _) ->
                     state
                         { mouse =
                             nextMouse
@@ -223,7 +227,7 @@ handleAction = case _ of
                         , pinned =
                             state.pinned # PB.unpin i
                         }
-                Mouse.DropAt pos i ->
+                Mouse.DropAt pos (i /\ offset) ->
                     let
                         bounds =
                             boundsOf' state i
@@ -233,7 +237,7 @@ handleAction = case _ of
                             { mouse =
                                 nextMouse
                             , pinned =
-                                state.pinned # PB.pin pos bounds i
+                                state.pinned # PB.pin (pos - offset) bounds i
                             }
                 _ ->
                     state
@@ -245,13 +249,9 @@ handleAction = case _ of
         findNode state pos =
             findInLayout state pos <|> findInPinned state pos
         findInLayout state =
-            flip (-) state.offset
-            -- flip sub state.offset
-                >>> R2.sample' state.layout
+            R2.sample state.layout
         findInPinned state =
-            flip (-) state.offset
-            -- flip sub state.offset
-                >>> flip PB.search state.pinned
+            flip PB.search state.pinned
 
 
 component :: forall query output m d. MonadEffect m => H.Component query (Input d) output m

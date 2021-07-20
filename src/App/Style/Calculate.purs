@@ -66,7 +66,7 @@ bodyPos u Horizontal = u.slotOuterWidth <+> 0.0
 
 inletTextPos :: GetPosByIdx
 inletTextPos u Vertical idx =
-    inletPos u Vertical idx - V2.x' (u.slotRadius - 5.0)
+    inletPos u Vertical idx - V2.x' (u.slotRadius + 5.0)
 inletTextPos u Horizontal idx = 0.0 <+> 0.0
 
 

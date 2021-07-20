@@ -21,6 +21,15 @@ init :: forall a. State a
 init = Move $ 0.0 <+> 0.0
 
 
+withPos :: forall a. (Pos -> Pos) -> State a -> State a
+withPos f (Move pos) = Move $ f pos
+withPos f (Click pos v) = Click (f pos) v
+withPos f (StartDrag pos v) = StartDrag (f pos) v
+withPos f (Dragging start pos v) = Dragging start (f pos) v
+withPos f (DropAt pos v) = DropAt (f pos) v
+
+
+
 apply :: forall a. (Pos -> Maybe a) -> ME.MouseEvent -> State a -> State a
 apply toItem event curState =
     analyze curState
@@ -28,7 +37,7 @@ apply toItem event curState =
         buttonDown = ME.buttons event == 1
         nextPos = (toNumber $ ME.clientX event) <+> (toNumber $ ME.clientY event)
         analyze (Move _) =
-            case buttonDown /\ (toItem nextPos) of
+            case buttonDown /\ toItem nextPos of
                 true /\ Just item -> Click nextPos item
                 _ -> Move nextPos
         analyze (Click clickPos item) =
