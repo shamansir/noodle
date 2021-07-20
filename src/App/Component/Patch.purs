@@ -245,10 +245,12 @@ handleAction = case _ of
         findNode state pos =
             findInLayout state pos <|> findInPinned state pos
         findInLayout state =
-            sub state.offset
+            flip (-) state.offset
+            -- flip sub state.offset
                 >>> R2.sample' state.layout
         findInPinned state =
-            sub state.offset
+            flip (-) state.offset
+            -- flip sub state.offset
                 >>> flip PB.search state.pinned
 
 
