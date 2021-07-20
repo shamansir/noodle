@@ -16,8 +16,8 @@ import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.PinBoard (PinBoard)
 import Data.PinBoard as PB
-import Data.Vec2 (Vec2)
-import Data.Vec2 as Vec2
+import Data.Vec2 (Vec2, Pos, Size, (<+>))
+import Data.Vec2 as V2
 
 import Control.Alternative ((<|>))
 
@@ -71,7 +71,7 @@ type Input d =
     , toolkit :: Noodle.Toolkit d
     , style :: Style
     , flow :: NodeFlow
-    , offset :: Vec2
+    , offset :: Pos
     }
 
 
@@ -80,7 +80,7 @@ type State d =
     , toolkit :: Noodle.Toolkit d
     , style :: Style
     , flow :: NodeFlow
-    , offset :: Vec2
+    , offset :: Pos
     , layout :: Bin2 Number String
     , pinned :: PinBoard String
     , mouse :: Mouse.State String
@@ -97,11 +97,8 @@ data Action d
 initialState :: forall d. Input d -> State d
 initialState { patch, toolkit, style, flow, offset } =
     { patch, toolkit, style, flow
-    , offset :
-        add offset
-            $ Vec2.make 0.0
-            $ tabHeight + tabVertPadding
-    , layout : R2.container 1500.0 900.0
+    , offset : offset + (V2.h' $ tabHeight + tabVertPadding)
+    , layout : R2.container $ 1500.0 <+> 900.0
     , pinned : []
     , mouse : Mouse.init
     }
@@ -129,12 +126,12 @@ render state =
                 [ HSA.transform [ HSA.Translate 100.0 0.0 ]
                 , HSA.fill $ Just $ Style.white
                 ]
-                [ HH.text $ show $ sub state.offset state.mouse ]
+                [ HH.text $ show $ state.mouse ]
         colors = state.style.colors
-        assocNode (name /\ x /\ y /\ w /\ h) =
+        assocNode (name /\ pos /\ bounds) =
             state.patch
                 #  Patch.findNode name
-                <#> { name, node : _, x, y, w, h }
+                <#> { name, node : _, x : V2.x pos, y : V2.y pos, w : V2.w bounds, h : V2.h bounds }
         packedNodes'
             = List.catMaybes $ assocNode <$> R2.toList state.layout
         pinnedNodes'
@@ -154,7 +151,7 @@ render state =
                     ]
                 , HS.text [] [ HH.text $ "+ " <> name ]
                 ]
-        node' { node, name, x, y, w, h } = -- FIXME: replace idxShift with something like Layer ID
+        node' { node, name, x, y, w, h } = -- FIXME: use Vec2
             HS.g
                 [ HSA.transform [ HSA.Translate x $ tabHeight + tabVertPadding + y ]
                 , HSA.classes $ CS.node state.flow name
@@ -167,10 +164,10 @@ render state =
             HS.g [ HSA.classes CS.nodes ] $ map node' $ List.toUnfoldable $ packedNodes' -- Patch.nodes patch
         pinnedNodes =
             HS.g [ HSA.classes CS.nodes ] $ map node' $ pinnedNodes'
-        maybeDraggedNode (Mouse.Dragging _ (x /\ y) name) =
+        maybeDraggedNode (Mouse.Dragging _ pos name) =
             let
-                w /\ h = boundsOf' state name # Maybe.fromMaybe (0.0 /\ 0.0)
-            in case assocNode ( name /\ x /\ y /\ w /\ h ) of
+                bounds = boundsOf' state name # Maybe.fromMaybe zero
+            in case assocNode ( name /\ pos /\ bounds ) of
                 Just n -> node' n
                 Nothing -> HS.g [] []
         maybeDraggedNode _ =
@@ -199,10 +196,10 @@ handleAction = case _ of
                 H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
                     (\state ->
                         let nodeName = makeUniqueName state.patch name
-                            width /\ height = boundsOf state newNode
+                            bounds = boundsOf state newNode
                         in state
                             { patch = state.patch # Patch.addNode nodeName newNode
-                            , layout = R2.packOne state.layout (R2.item width height nodeName)
+                            , layout = R2.packOne state.layout (R2.item bounds nodeName)
                                         # Maybe.fromMaybe state.layout
                             }
                     )
@@ -228,15 +225,15 @@ handleAction = case _ of
                         }
                 Mouse.DropAt pos i ->
                     let
-                        width /\ height =
+                        bounds =
                             boundsOf' state i
-                                # Maybe.fromMaybe (0.0 /\ 0.0)
+                                # Maybe.fromMaybe zero
                     in
                         state
                             { mouse =
                                 nextMouse
                             , pinned =
-                                state.pinned # PB.pin (Vec2.toTuple pos) (width /\ height) i
+                                state.pinned # PB.pin pos bounds i
                             }
                 _ ->
                     state
@@ -249,7 +246,7 @@ handleAction = case _ of
             findInLayout state pos <|> findInPinned state pos
         findInLayout state =
             sub state.offset
-                >>> (uncurry $ R2.sample' state.layout)
+                >>> R2.sample' state.layout
         findInPinned state =
             sub state.offset
                 >>> flip PB.search state.pinned
@@ -269,7 +266,7 @@ component =
         }
 
 
-boundsOf :: forall d x. { flow :: NodeFlow, style :: Style | x } -> Noodle.Node d -> Number /\ Number
+boundsOf :: forall d x. { flow :: NodeFlow, style :: Style | x } -> Noodle.Node d -> Size
 boundsOf state =
     let
         flow = state.flow
@@ -278,7 +275,7 @@ boundsOf state =
         Calc.nodeBounds (units flow) flow
 
 
-boundsOf' :: forall d x. { flow :: NodeFlow, style :: Style, patch :: Noodle.Patch d | x } -> String -> Maybe (Number /\ Number)
+boundsOf' :: forall d x. { flow :: NodeFlow, style :: Style, patch :: Noodle.Patch d | x } -> String -> Maybe Size
 boundsOf' state name =
     let
         flow = state.flow

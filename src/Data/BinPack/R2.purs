@@ -28,6 +28,10 @@ import Data.List (List(..), (:), sortBy, singleton)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Tuple as Tuple
+import Data.Vec2 (Vec2_, (<+>), Pos_, Size_)
+import Data.Vec2 as V2
+import Data.Typelevel.Num.Reps (D2, d0, d1)
+
 
 data Bin2 n a
     = Node  { w :: n, h :: n
@@ -37,10 +41,11 @@ data Bin2 n a
 
 -- type DeepBin2 n a = Bin2 n { value :: a, inner :: Maybe (DeepBin2 n a) }
 
-newtype Item n a = Item (n /\ n /\ a)
+
+newtype Item n a = Item (Size_ n /\ a)
 
 instance functorBin2 :: Functor (Bin2 n) where
-    map f (Node { w, h, r, b, i }) = node w h (map f r) (map f b) (f i)
+    map f (Node { w, h, r, b, i }) = node (w <+> h) (map f r) (map f b) (f i)
     map _ (Free { w, h })          = Free { w, h }
 
 instance foldableBin2 :: Foldable (Bin2 n) where
@@ -60,110 +65,87 @@ instance showBin2 :: (Show a, Show n) => Show (Bin2 n a) where
     show (Free { w, h }) = "{ Free: " <> show w <> "x" <> show h <> " }"
 
 
-container :: forall n a. n -> n -> Bin2 n a
-container w h = Free { w, h }
+container :: forall n a. Size_ n -> Bin2 n a
+container size = Free { w : V2.w size, h : V2.h size }
 
 sqContainer :: forall n a. n -> Bin2 n a
-sqContainer x = container x x
+sqContainer x = container $ x <+> x
 
-item :: forall n a. n -> n -> a -> Item n a
-item w h i = Item $ w /\ h /\ i
+item :: forall n a. Size_ n -> a -> Item n a
+item size i = Item $ size /\ i
 
-node :: forall n a. n -> n -> Bin2 n a -> Bin2 n a -> a -> Bin2 n a
-node width height pright pbelow item =
-    Node { w : width, h : height, r : pright, b : pbelow, i : item }
+node :: forall n a. Size_ n -> Bin2 n a -> Bin2 n a -> a -> Bin2 n a
+node size pright pbelow item =
+    Node { w : V2.w size, h : V2.h size, r : pright, b : pbelow, i : item }
 
 sqItem :: forall n a. n -> a -> Item n a
-sqItem l = item l l
+sqItem l = item $ l <+> l
 
 pack' :: forall n a. Ring n => Ord n => Bin2 n a -> Item n a -> Maybe (Bin2 n a)
-pack' (Free { w : fw, h : fh }) (Item (w /\ h /\ i)) =
+pack' (Free { w : fw, h : fh }) (Item (size /\ i)) =
     let
+        w /\ h = V2.toTuple size
         fits = w <= fw && h <= fh
-        pright = container (fw - w) h
-        pbelow = container fw (fh - h)
+        pright = container $ fw - w <+> h
+        pbelow = container $ fw <+> fh - h
     in
-        if fits then Just $ node w h pright pbelow i else Nothing
+        if fits then Just $ node size pright pbelow i else Nothing
 
 pack' (Node { w : nw, h : nh, r, b, i : ni }) i
     = pright i <|> pbelow i
     where
-        pright = (<$>) (\r' -> node nw nh r' b ni) <<< pack' r
-        pbelow = (<$>) (\b' -> node nw nh r b' ni) <<< pack' b
+        pright = (<$>) (\r' -> node (nw <+> nh) r' b ni) <<< pack' r
+        pbelow = (<$>) (\b' -> node (nw <+> nh) r b' ni) <<< pack' b
 
 pack :: forall n a. Ring n => Ord n => Bin2 n a -> List (Item n a) -> Maybe (Bin2 n a)
 pack c = foldM pack' c <<< sortBy (comparing area)
     where
-        area (Item (w /\ h /\ _)) = w * h
+        area (Item (size /\ _)) = V2.area size
 
 packOne :: forall n a. Ring n => Ord n => Bin2 n a -> Item n a -> Maybe (Bin2 n a)
 packOne c = pack c <<< singleton
 
-toList :: forall n a. Semiring n => Bin2 n a -> List (a /\ (n /\ n /\ n /\ n))
-toList = unpack' zero zero -- FIXME: use unfold for that
+toList :: forall n a. Semiring n => Bin2 n a -> List (a /\ (Pos_ n /\ Size_ n))
+toList = unpack' zero -- FIXME: use unfold for that
     where
-        unpack' _ _ (Free _)       = Nil
-        unpack' x y (Node { w, h, r, b, i }) =
-            (i /\ (x /\ y /\ w /\ h)) : unpack' (x + w) y r <> unpack' x (y + h) b
+        unpack' _   (Free _)                 = Nil
+        unpack' pos (Node { w, h, r, b, i }) =
+            (i /\ (pos /\ (w <+> h))) : unpack' (pos + V2.w' w) r <> unpack' (pos + V2.h' h) b
 
-unfold :: forall n a k. Semiring n => (a /\ (n /\ n /\ n /\ n) -> k -> k) -> k -> Bin2 n a -> k
+unfold :: forall n a k. Semiring n => (a /\ (Pos_ n /\ Size_ n) -> k -> k) -> k -> Bin2 n a -> k
 unfold f =
-    unfold' zero zero
+    unfold' zero
     where
-        unfold' _ _ v (Free _)       = v
-        unfold' x y v (Node { w, h, r, b, i }) =
+        --unfold' :: Vec2_ n -> k -> Bin2 n a -> k
+        unfold' _   v (Free _)                 = v
+        unfold' pos v (Node { w, h, r, b, i }) =
             -- unfold everything below, then at right, then the current item
             -- f (i /\ (x /\ y /\ w /\ h)) $ unfold' (x + w) y (unfold' x (y + h) v b) r
             -- unfold everything at right, then below, then the current item
-            f (i /\ (x /\ y /\ w /\ h))
-                $ unfold' x (y + h) (unfold' (x + w) y v r) b
+            f (i /\ (pos /\ (w <+> h)))
+                $ unfold'
+                    (pos + V2.h' h)
+                    (unfold' (pos + V2.w' w) v r) b
+                -- $ unfold' x (y + h) (unfold' (x + w) y v r) b
 
-sample :: forall n a. Ring n => Ord n => Bin2 n a -> n -> n -> Maybe (a /\ n /\ n)
-sample (Free _)       _ _ = Nothing
-sample (Node { w, h, r, b, i }) x y =
-    case (compare x w /\ compare y h) of
-        (LT /\ LT) -> Just (i /\ x /\ y)
-        (_  /\ LT) -> sample r (x - w) y
-        _          -> sample b x (y - h)
+sample :: forall n a. Ring n => Ord n => Bin2 n a -> Pos_ n -> Maybe (a /\ Size_ n)
+sample (Free _)                 _   = Nothing
+sample (Node { w, h, r, b, i }) pos =
+    case (compare (V2.x pos) w /\ compare (V2.y pos) h) of
+        (LT /\ LT) -> Just $ i /\ pos
+        (_  /\ LT) -> sample r (pos - V2.w' w)
+        _          -> sample b (pos - V2.h' h)
 
-sample' :: forall n a. Ring n => Ord n => Bin2 n a -> n -> n -> Maybe a
-sample' bin x y = Tuple.fst <$> sample bin x y
+sample' :: forall n a. Ring n => Ord n => Bin2 n a -> Pos_ n -> Maybe a
+sample' bin pos = Tuple.fst <$> sample bin pos
 
 valueOf :: forall a. Bin2 _ a -> Maybe a
 valueOf (Free _) = Nothing
 valueOf (Node { i }) = Just i
 
-itemOf :: forall n a. Bin2 n a -> Maybe (a /\ n /\ n)
+itemOf :: forall n a. Bin2 n a -> Maybe (a /\ Size_ n)
 itemOf bin = valueOf bin >>= \v -> pure $ v /\ size bin
 
-size :: forall n. Bin2 n _ -> n /\ n
-size (Free { w, h }) = w /\ h
-size (Node { w, h }) = w /\ h
-
-
-{- abandon :: forall n a. Eq a => a -> Bin2 n a -> Bin2 n a
-abandon another (Node { i, w, h }) | i == another = Free { w, h }
-abandon another (Node n)           | otherwise =
-    Node $ n { r = abandon another n.r, b = abandon another n.b }
-abandon _       (Free { w, h })    = Free { w, h } -}
-
-
-{- abandon :: forall n a. Eq a => a -> Bin2 n a -> (Maybe (n /\ n /\ n /\ n) /\ Bin2 n a)
-abandon another = unfold unfoldF (Nothing /\ )
-    where unfoldF (a /\ (x /\ y /\ w /\ h)) (_ /\ bp) = -}
-
-{- repack :: forall n a. n -> n -> Bin2 n a -> Bin2 n a
-repack newWidth newHeight bin = bin -- FIXME: implement -}
-
-{-
-has no sense since it frees not only the exact cell,
-but all the area to the rignt and below
-
-free :: forall n a. Eq a => a -> Bin2 n a -> Bin2 n a
-free item (Node { i, w, h })
-    | i == item = Free { w, h }
-free item (Node { i, w, h, r, b })
-    | otherwise =
-        Node { i, w, h, r : free item r, b : free item b }
-free _    f@(Free _) = f
--}
+size :: forall n. Bin2 n _ -> Size_ n
+size (Free { w, h }) = w <+> h
+size (Node { w, h }) = w <+> h

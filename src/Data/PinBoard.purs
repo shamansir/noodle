@@ -9,10 +9,12 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
+import Data.Vec2 (Pos, Size)
+import Data.Vec2 as V2
 
 
 newtype Pin a
-    = Pin (a /\ Number /\ Number /\ Number /\ Number)
+    = Pin (a /\ Pos /\ Size)
 
 
 type PinBoard a = Array (Pin a)
@@ -32,22 +34,22 @@ empty = []
 
 
 pinNowhere :: forall a. a -> Pin a
-pinNowhere i = Pin $ i /\ 0.0 /\ 0.0 /\ 0.0 /\ 0.0
+pinNowhere i = Pin $ i /\ zero /\ zero
 
 
-toArray :: forall a. PinBoard a -> Array (a /\ Number /\ Number /\ Number /\ Number)
+toArray :: forall a. PinBoard a -> Array (a /\ Pos /\ Size)
 toArray = (<$>) (\(Pin t) -> t)
 
 
-search :: forall a. (Number /\ Number) -> PinBoard a -> Maybe a
-search (x /\ y) = Array.findMap matches
+search :: forall a. Pos -> PinBoard a -> Maybe a
+search pos = Array.findMap matches
     where
-        matches (Pin (item /\ ix /\ iy /\ iw /\ ih)) | x >= ix && x <= ix + iw && y >= iy && y <= iy + ih = Just item
-        matches _                                    | otherwise = Nothing
+        matches (Pin (item /\ ipos /\ size)) | V2.inside pos (ipos /\ size) = Just item
+        matches _                            | otherwise = Nothing
 
 
-pin :: forall a. (Number /\ Number) -> (Number /\ Number) -> a -> PinBoard a -> PinBoard a
-pin (x /\ y) (w /\ h) i = (:) (Pin $ i /\ x /\ y /\ w /\ h)
+pin :: forall a. Pos -> Size -> a -> PinBoard a -> PinBoard a
+pin pos size i = (:) (Pin $ i /\ pos /\ size)
 
 
 unpin :: forall a. Eq a => a -> PinBoard a -> PinBoard a

@@ -2,35 +2,33 @@ module App.Mouse where
 
 
 import Prelude
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..))
 import Data.Int (toNumber)
 import Data.Tuple.Nested ((/\), type (/\))
 import Web.UIEvent.MouseEvent as ME
-import Data.Vec2 (Vec2)
-import Data.Vec2 as Vec2
+import Data.Vec2 (Pos, (<+>))
 
 
 data State a
-    = Move Vec2
-    | Click Vec2 a
-    | StartDrag Vec2 a
-    | Dragging Vec2 Vec2 a
-    | DropAt Vec2 a
+    = Move Pos
+    | Click Pos a
+    | StartDrag Pos a
+    | Dragging Pos Pos a
+    | DropAt Pos a
 
 
 init :: forall a. State a
-init = Move $ Vec2.make 0.0 0.0
+init = Move $ 0.0 <+> 0.0
 
 
-apply :: forall a. ((Number /\ Number) -> Maybe a) -> ME.MouseEvent -> State a -> State a
+apply :: forall a. (Pos -> Maybe a) -> ME.MouseEvent -> State a -> State a
 apply toItem event curState =
     analyze curState
     where
         buttonDown = ME.buttons event == 1
-        nextPos' = (toNumber $ ME.clientX event) /\ (toNumber $ ME.clientY event)
-        nextPos = Vec2.fromTuple nextPos'
+        nextPos = (toNumber $ ME.clientX event) <+> (toNumber $ ME.clientY event)
         analyze (Move _) =
-            case buttonDown /\ (toItem nextPos') of
+            case buttonDown /\ (toItem nextPos) of
                 true /\ Just item -> Click nextPos item
                 _ -> Move nextPos
         analyze (Click clickPos item) =

@@ -9,6 +9,7 @@ import Data.Set as Set
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Array as Array
 import Data.Int (toNumber)
+import Data.Vec2 as V2
 
 import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
@@ -67,17 +68,17 @@ render { node, name, style, flow } =
         u = style.units flow
         colors = style.colors
 
-        ( slotOuterWidth /\ slotOuterHeight ) = Calc.slotSize u flow
-        ( namePlateWidth /\ namePlateHeight ) = Calc.namePlateSize u flow
+        ( slotOuterWidth /\ slotOuterHeight ) = V2.toTuple $ Calc.slotSize u flow
+        ( namePlateWidth /\ namePlateHeight ) = V2.toTuple $ Calc.namePlateSize u flow
 
-        ( outerWidth /\ outerHeight ) = node # Calc.nodeBounds u flow
-        ( innerWidth /\ innerHeight ) = node # Calc.nodeBodySize u flow
+        ( outerWidth /\ outerHeight ) = node # Calc.nodeBounds u flow # V2.toTuple
+        ( innerWidth /\ innerHeight ) = node # Calc.nodeBodySize u flow # V2.toTuple
 
         inlets = Node.inlets node
         outlets = Node.outlets node
 
-        translateTo (x /\ y) =
-            HSA.transform [ HSA.Translate x y ]
+        translateTo pos =
+            HSA.transform [ HSA.Translate (V2.x pos) (V2.y pos) ]
 
         name' =
             HS.g

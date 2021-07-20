@@ -11,6 +11,7 @@ import Data.Maybe (Maybe(..))
 import Data.Int (toNumber)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
+import Data.Vec2 ((<+>))
 
 import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
@@ -96,7 +97,7 @@ render (s@{ nw, toolkit, style, flow }) =
         tabHeight = 20.0
         tabPadding = 4.0
         tabLength = 60.0
-        patchOffset = 0.0 /\ (tabHeight + tabPadding)
+        patchOffset = 0.0 <+> (tabHeight + tabPadding)
         background =
             HS.rect
                 [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height
