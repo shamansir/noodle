@@ -18,6 +18,7 @@ import Data.PinBoard (PinBoard)
 import Data.PinBoard as PB
 import Data.Vec2 (Vec2, Pos, Size, (<+>))
 import Data.Vec2 as V2
+import Data.Bifunctor (bimap)
 
 import Control.Alternative ((<|>))
 
@@ -66,6 +67,12 @@ type Slots = ( node :: NodeC.Slot String )
 _node = Proxy :: Proxy "node"
 
 
+data Subject
+    = Node String
+    | Inlet (String /\ String)
+    | Outlet (String /\ String)
+
+
 type Input d =
     { patch :: Noodle.Patch d
     , toolkit :: Noodle.Toolkit d
@@ -83,7 +90,7 @@ type State d =
     , offset :: Pos
     , layout :: Bin2 Number String
     , pinned :: PinBoard String
-    , mouse :: Mouse.State (String /\ Pos)
+    , mouse :: Mouse.State (Subject /\ Pos)
     }
 
 
@@ -170,10 +177,10 @@ render state =
             in case assocNode ( name /\ (pos - nodeOffset) /\ bounds ) of
                 Just n -> node' n
                 Nothing -> HS.g [] []
-        maybeDraggedNode (Mouse.StartDrag pos node) =
-            floatingNode pos node
-        maybeDraggedNode (Mouse.Dragging _ pos node) =
-            floatingNode pos node
+        maybeDraggedNode (Mouse.StartDrag pos (Node node /\ offset)) =
+            floatingNode pos (node /\ offset)
+        maybeDraggedNode (Mouse.Dragging _ pos (Node node /\ offset)) =
+            floatingNode pos (node /\ offset)
         maybeDraggedNode _ =
             HS.g [] []
 
@@ -215,10 +222,10 @@ handleAction = case _ of
             let
                 nextMouse
                     = state.mouse
-                        # Mouse.apply (findNode state)
+                        # Mouse.apply (findNode state >>> map (bimap Node identity))
                         mouseEvent
             in case nextMouse of
-                Mouse.StartDrag _ (i /\ _) ->
+                Mouse.StartDrag _ (Node i /\ _) ->
                     state
                         { mouse =
                             nextMouse
@@ -227,7 +234,7 @@ handleAction = case _ of
                         , pinned =
                             state.pinned # PB.unpin i
                         }
-                Mouse.DropAt pos (i /\ offset) ->
+                Mouse.DropAt pos (Node i /\ offset) ->
                     let
                         bounds =
                             boundsOf' state i
@@ -286,3 +293,10 @@ boundsOf' state name =
         state.patch
             # Patch.findNode name
             # map (Calc.nodeBounds (units flow) flow)
+
+
+
+instance showSubject :: Show Subject where
+    show (Node n) = "node " <> n
+    show (Inlet path) = "inlet " <> show path
+    show (Outlet path) = "outlet " <> show path
