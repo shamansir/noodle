@@ -222,6 +222,7 @@ handleAction = case _ of
             let
                 nextMouse
                     = state.mouse
+                        -- # Mouse.withPos ((-) state.offset)
                         # Mouse.apply (findNode state >>> map (bimap Node identity))
                         mouseEvent
             in case nextMouse of

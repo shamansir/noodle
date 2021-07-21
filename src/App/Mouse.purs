@@ -10,7 +10,7 @@ import Data.Vec2 (Pos, (<+>))
 
 
 data State a
-    = Move Pos
+    = Move Pos (Maybe a)
     | Click Pos a
     | StartDrag Pos a
     | Dragging Pos Pos a
@@ -18,11 +18,11 @@ data State a
 
 
 init :: forall a. State a
-init = Move $ 0.0 <+> 0.0
+init = Move (0.0 <+> 0.0) Nothing
 
 
 withPos :: forall a. (Pos -> Pos) -> State a -> State a
-withPos f (Move pos) = Move $ f pos
+withPos f (Move pos v) = Move (f pos) v
 withPos f (Click pos v) = Click (f pos) v
 withPos f (StartDrag pos v) = StartDrag (f pos) v
 withPos f (Dragging start pos v) = Dragging start (f pos) v
@@ -36,30 +36,30 @@ apply toItem event curState =
     where
         buttonDown = ME.buttons event == 1
         nextPos = (toNumber $ ME.clientX event) <+> (toNumber $ ME.clientY event)
-        analyze (Move _) =
+        analyze (Move _ _) =
             case buttonDown /\ toItem nextPos of
                 true /\ Just item -> Click nextPos item
-                _ -> Move nextPos
+                _ -> Move nextPos $ toItem nextPos
         analyze (Click clickPos item) =
             if buttonDown then
                 StartDrag clickPos item
-            else Move nextPos
+            else Move nextPos $ Just item
         analyze (StartDrag clickPos item) =
             if buttonDown then
                 Dragging clickPos nextPos item
-            else Move nextPos
+            else Move nextPos $ Just item
         analyze (Dragging clickPos _ item) =
             if buttonDown then
                 Dragging clickPos nextPos item
             else DropAt nextPos item
-        analyze (DropAt _ _) =
+        analyze (DropAt _ item) =
             {- if buttonDown then
                 DropAt nextPos item
-            else -} Move nextPos
+            else -} Move nextPos $ Just item
 
 
 instance showMouse :: Show a => Show (State a) where
-    show (Move curPos) = show curPos
+    show (Move curPos maybeItem) = show curPos <> " : " <> show maybeItem
     show (Click curPos item) =
         "click " <> show curPos <> " : " <> show item
     show (StartDrag startPos item) =
