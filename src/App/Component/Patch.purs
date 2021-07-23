@@ -176,7 +176,7 @@ render state =
         floatingNode pos (name /\ nodeOffset) =
             let
                 bounds = boundsOf' state name # Maybe.fromMaybe zero
-            in case assocNode ( name /\ (pos - nodeOffset) /\ bounds ) of
+            in case assocNode ( name /\ (pos - nodeOffset - state.offset) /\ bounds ) of
                 Just n -> node' n
                 Nothing -> HS.g [] []
         maybeDraggedNode (Mouse.StartDrag pos (Node node /\ offset)) =
@@ -249,7 +249,7 @@ handleAction = case _ of
                             { mouse =
                                 nextMouse
                             , pinned =
-                                state.pinned # PB.pin (pos - offset) bounds i
+                                state.pinned # PB.pin (pos - offset - state.offset) bounds i
                             }
                 _ ->
                     state
@@ -260,17 +260,17 @@ handleAction = case _ of
     where
         findDragSubject state pos =
             (findNodeInLayout state pos <|> findNodeInPinned state pos)
-                >>= placeInsideNode state pos
-        placeInsideNode :: State d -> Pos -> (String /\ Pos) -> Maybe (Subject /\ Pos)
-        placeInsideNode state absPos (nodeName /\ inPos) =
+                >>= whereInsideNode state
+        whereInsideNode :: State d -> (String /\ Pos) -> Maybe (Subject /\ Pos)
+        whereInsideNode state (nodeName /\ pos) =
             let
                 flow = state.flow
                 units = state.style.units flow
             in -- Just $ Node nodeName /\ inPos {-
             if V2.inside'
-                (inPos - Calc.namePos units flow)
+                (pos - Calc.namePos units flow)
                 (Calc.namePlateSize units flow) then
-                Just $ Node nodeName /\ inPos
+                Just $ Node nodeName /\ pos
             else
                 state.patch
                 # Patch.findNode nodeName
@@ -278,8 +278,8 @@ handleAction = case _ of
                     let inlets = Node.inlets node <#> fst # Array.mapWithIndex (/\)
                         outlets = Node.outlets node <#> fst # Array.mapWithIndex (/\)
                         isInSlot sl fn (idx /\ slotName) =
-                            if V2.inside inPos (fn idx /\ Calc.slotSize units flow)
-                                then Just $ sl (nodeName /\ slotName) /\ inPos
+                            if V2.inside pos (fn idx /\ Calc.slotSize units flow)
+                                then Just $ sl (nodeName /\ slotName) /\ pos
                                 else Nothing
                         testInlets = Array.findMap (isInSlot Inlet $ Calc.inletRectPos units flow) inlets
                         testOutlets = Array.findMap (isInSlot Outlet $ Calc.outletRectPos units flow) outlets
