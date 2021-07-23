@@ -9,9 +9,10 @@ import Data.Maybe (Maybe(..))
 import Data.Set as Set
 import Data.List as List
 import Data.Array as Array
+import Data.Array ((..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe as Maybe
-import Data.Tuple (curry, uncurry)
+import Data.Tuple (curry, uncurry, fst)
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.PinBoard (PinBoard)
@@ -28,6 +29,7 @@ import Data.BinPack.R2.Optional (Bin2)
 import Data.BinPack.R2.Optional as R2
 
 import Noodle.Node (Node) as Noodle
+import Noodle.Node as Node
 import Noodle.Patch (Patch) as Noodle
 import Noodle.Patch as Patch
 import Noodle.Toolkit (Toolkit) as Noodle
@@ -222,8 +224,10 @@ handleAction = case _ of
             let
                 nextMouse
                     = state.mouse
-                        -- # Mouse.withPos ((-) state.offset)
-                        # Mouse.apply (findNode state >>> map (bimap Node identity))
+                        # Mouse.apply
+                                (flip (-) state.offset
+                                >>> findDragSubject state
+                                )
                         mouseEvent
             in case nextMouse of
                 Mouse.StartDrag _ (Node i /\ _) ->
@@ -254,11 +258,35 @@ handleAction = case _ of
                         }
 
     where
-        findNode state pos =
-            findInLayout state pos <|> findInPinned state pos
-        findInLayout state =
+        findDragSubject state pos =
+            (findNodeInLayout state pos <|> findNodeInPinned state pos)
+                >>= placeInsideNode state pos
+        placeInsideNode :: State d -> Pos -> (String /\ Pos) -> Maybe (Subject /\ Pos)
+        placeInsideNode state absPos (nodeName /\ inPos) =
+            let
+                flow = state.flow
+                units = state.style.units flow
+            in -- Just $ Node nodeName /\ inPos {-
+            if V2.inside'
+                (inPos - Calc.namePos units flow)
+                (Calc.namePlateSize units flow) then
+                Just $ Node nodeName /\ inPos
+            else
+                state.patch
+                # Patch.findNode nodeName
+                >>= \node ->
+                    let inlets = Node.inlets node <#> fst # Array.mapWithIndex (/\)
+                        outlets = Node.outlets node <#> fst # Array.mapWithIndex (/\)
+                        isInSlot sl fn (idx /\ slotName) =
+                            if V2.inside inPos (fn idx /\ Calc.slotSize units flow)
+                                then Just $ sl (nodeName /\ slotName) /\ inPos
+                                else Nothing
+                        testInlets = Array.findMap (isInSlot Inlet $ Calc.inletRectPos units flow) inlets
+                        testOutlets = Array.findMap (isInSlot Outlet $ Calc.outletRectPos units flow) outlets
+                    in testOutlets <|> testInlets
+        findNodeInLayout state =
             R2.sample state.layout
-        findInPinned state =
+        findNodeInPinned state =
             flip PB.search state.pinned
 
 
