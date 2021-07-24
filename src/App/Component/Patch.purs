@@ -230,10 +230,10 @@ handleAction = case _ of
                             )
                     mouseEvent
         H.modify_ (_ { mouse = nextMouse })
-        H.modify_ $ \_ ->
+        H.modify_ $ \state' ->
             case nextMouse of
                 Mouse.StartDrag _ (Node n /\ _) ->
-                    state
+                    state'
                         { layout =
                             state.layout # R2.abandon n
                         , pinned =
@@ -245,12 +245,12 @@ handleAction = case _ of
                             boundsOf' state n
                                 # Maybe.fromMaybe zero
                     in
-                        state
+                        state'
                             { pinned =
                                 state.pinned # PB.pin (pos - offset - state.offset) bounds n
                             }
                 _ ->
-                    state
+                    state'
         case nextMouse of
             Mouse.DropAt pos (Outlet outlet /\ _) ->
                 case findDragSubject state $ pos - state.offset of
