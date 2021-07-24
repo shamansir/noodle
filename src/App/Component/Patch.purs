@@ -2,31 +2,33 @@ module App.Component.Patch where
 
 
 import Prelude
+
 import Debug as Debug
-
-import Data.Unit (Unit, unit)
-import Data.Maybe (Maybe(..))
-import Data.Set as Set
-import Data.List as List
-import Data.Array as Array
-import Data.Array ((..))
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Maybe as Maybe
-import Data.Tuple (curry, uncurry, fst)
-import Data.Map as Map
-import Data.Map.Extra (type (/->))
-import Data.PinBoard (PinBoard)
-import Data.PinBoard as PB
-import Data.Vec2 (Vec2, Pos, Size, (<+>))
-import Data.Vec2 as V2
-import Data.Bifunctor (bimap)
-
-import Control.Alternative ((<|>))
 
 import Effect.Class (class MonadEffect, liftEffect)
 
+import Data.Array ((..))
+import Data.Array as Array
+import Data.Bifunctor (bimap)
 import Data.BinPack.R2.Optional (Bin2)
 import Data.BinPack.R2.Optional as R2
+import Data.List as List
+import Data.Map as Map
+import Data.Map.Extra (type (/->))
+import Data.Maybe (Maybe(..))
+import Data.Maybe as Maybe
+import Data.PinBoard (PinBoard)
+import Data.PinBoard as PB
+import Data.Set as Set
+import Data.Tuple (curry, uncurry, fst)
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Unit (Unit, unit)
+import Data.Vec2 (Vec2, Pos, Size, (<+>))
+import Data.Vec2 as V2
+
+import Control.Alternative ((<|>))
+
+import Type.Proxy (Proxy(..))
 
 import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
@@ -36,28 +38,26 @@ import Noodle.Toolkit (Toolkit) as Noodle
 import Noodle.Toolkit as Toolkit
 
 import App.Component.Node as NodeC
+import App.Emitters as Emitters
+import App.Mouse as Mouse
 import App.Style (Style, NodeFlow(..))
 import App.Style as Style
-import App.Style.ClassNames as CS
 import App.Style.Calculate as Calc
-import App.Mouse as Mouse
-import App.Emitters as Emitters
+import App.Style.ClassNames as CS
 
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
-import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
+import Halogen.Svg.Elements as HS
 
 import Web.HTML (window)
+import Web.HTML.HTMLDocument as HTMLDocument
+import Web.HTML.HTMLFieldSetElement (name)
 import Web.HTML.Window (document)
+import Web.HTML.Window as Window
 import Web.UIEvent.MouseEvent as ME
 import Web.UIEvent.MouseEvent.EventTypes as MET
-import Web.HTML.HTMLDocument as HTMLDocument
-import Web.HTML.Window as Window
-
-
-import Type.Proxy (Proxy(..))
 
 
 type Slot id = forall query. H.Slot query Void id
@@ -100,7 +100,7 @@ data Action d
     = Initialize
     | Receive (Input d)
     | AddNode String
-    | HandleMouse H.SubscriptionId ME.MouseEvent
+    | HandleMouse H.SubscriptionId ME.MouseEvent -- TODO Split mouse handing in different actions
 
 
 initialState :: forall d. Input d -> State d
@@ -127,7 +127,7 @@ render state =
         , nodeButtons
         , nodesLayout
         , pinnedNodes
-        , maybeDraggedNode state.mouse
+        , whatIsBeingDragged state.mouse
         ]
     where
         mouseState =
@@ -179,11 +179,11 @@ render state =
             in case assocNode ( name /\ (pos - nodeOffset - state.offset) /\ bounds ) of
                 Just n -> node' n
                 Nothing -> HS.g [] []
-        maybeDraggedNode (Mouse.StartDrag pos (Node node /\ offset)) =
+        whatIsBeingDragged (Mouse.StartDrag pos (Node node /\ offset)) =
             floatingNode pos (node /\ offset)
-        maybeDraggedNode (Mouse.Dragging _ pos (Node node /\ offset)) =
+        whatIsBeingDragged (Mouse.Dragging _ pos (Node node /\ offset)) =
             floatingNode pos (node /\ offset)
-        maybeDraggedNode _ =
+        whatIsBeingDragged _ =
             HS.g [] []
 
 
@@ -219,43 +219,48 @@ handleAction = case _ of
             Nothing -> pure unit
         where makeUniqueName patch name = name <> "-" <> (show $ Patch.nodesCount patch + 1)
 
-    HandleMouse _ mouseEvent ->
-        H.modify_ \state ->
-            let
-                nextMouse
-                    = state.mouse
-                        # Mouse.apply
-                                (flip (-) state.offset
-                                >>> findDragSubject state
-                                )
-                        mouseEvent
-            in case nextMouse of
-                Mouse.StartDrag _ (Node i /\ _) ->
+    HandleMouse _ mouseEvent -> do
+        state <- H.get
+        let
+            nextMouse
+                = state.mouse
+                    # Mouse.apply
+                            (flip (-) state.offset
+                            >>> findDragSubject state
+                            )
+                    mouseEvent
+        H.modify_ (_ { mouse = nextMouse })
+        H.modify_ $ \_ ->
+            case nextMouse of
+                Mouse.StartDrag _ (Node n /\ _) ->
                     state
-                        { mouse =
-                            nextMouse
-                        , layout =
-                            state.layout # R2.abandon i
+                        { layout =
+                            state.layout # R2.abandon n
                         , pinned =
-                            state.pinned # PB.unpin i
+                            state.pinned # PB.unpin n
                         }
-                Mouse.DropAt pos (Node i /\ offset) ->
+                Mouse.DropAt pos (Node n /\ offset) ->
                     let
                         bounds =
-                            boundsOf' state i
+                            boundsOf' state n
                                 # Maybe.fromMaybe zero
                     in
                         state
-                            { mouse =
-                                nextMouse
-                            , pinned =
-                                state.pinned # PB.pin (pos - offset - state.offset) bounds i
+                            { pinned =
+                                state.pinned # PB.pin (pos - offset - state.offset) bounds n
                             }
                 _ ->
                     state
-                        { mouse =
-                            nextMouse
-                        }
+        case nextMouse of
+            Mouse.DropAt pos (Outlet outlet /\ _) ->
+                case findDragSubject state $ pos - state.offset of
+                    Just (Inlet inlet /\ _) -> do
+                        nextPatch <- liftEffect $ Patch.connect outlet inlet state.patch
+                        H.modify_ (_ { patch = nextPatch })
+                    _ ->
+                        pure unit
+            _ ->
+                pure unit
 
     where
         findDragSubject state pos =
