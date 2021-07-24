@@ -127,9 +127,12 @@ render state =
         , nodeButtons
         , nodesLayout
         , pinnedNodes
+        , existingLinks
         , whatIsBeingDragged state.mouse
         ]
     where
+        flow = state.flow
+        units = state.style.units flow
         mouseState =
             HS.text
                 [ HSA.transform [ HSA.Translate 100.0 0.0 ]
@@ -179,18 +182,39 @@ render state =
             in case assocNode ( name /\ (pos - nodeOffset - state.offset) /\ bounds ) of
                 Just n -> node' n
                 Nothing -> HS.g [] []
+        existingLinks =
+            HS.g [] $ closedLink <$> (Array.fromFoldable $ Patch.links state.patch)
+        linkEndsPositions (srcNodeName /\ outlet) (dstNodeName /\ inlet) =
+            (\outletIdx srcNodePos inletIdx dstNodePos ->
+                (srcNodePos + Calc.outletPos units flow outletIdx)
+                /\ (dstNodePos + Calc.inletPos units flow inletIdx)
+            )
+                <$> (Patch.findNode srcNodeName state.patch >>= Node.indexOfOutlet outlet)
+                <*> findNodePosition srcNodeName
+                <*> (Patch.findNode dstNodeName state.patch >>= Node.indexOfInlet inlet)
+                <*> findNodePosition dstNodeName
+        closedLink (outletPath /\ inletPath) =
+            case linkEndsPositions outletPath inletPath of
+                Just (outletPos /\ inletPos) ->
+                    let
+                        x1 /\ y1 = V2.toTuple $ (V2.h' 35.0) + outletPos
+                        x2 /\ y2 = V2.toTuple $ (V2.h' 35.0) + inletPos
+                    in HS.line
+                        [ HSA.x1 x1, HSA.x2 x2
+                        , HSA.y1 y1, HSA.y2 y2
+                        , HSA.strokeWidth 3.0, HSA.stroke $ Just $ Style.white
+                        ]
+                Nothing -> HS.g [] []
         findNodePosition nodeName =
             (R2.find nodeName state.layout <#> fst)
             <|> (PB.find nodeName state.pinned <#> fst)
-        openLink pos ((nodeName /\ outlet) /\ outletOffset ) =
+        openLink pos (nodeName /\ outlet) =
             -- FIXME: too much logic for a renderer
             case (/\)
-                    <$> (Patch.findNode nodeName state.patch >>= \node -> Node.indexOfOutlet outlet node)
+                    <$> (Patch.findNode nodeName state.patch >>= Node.indexOfOutlet outlet)
                     <*> findNodePosition nodeName of
                 Just (outletIdx /\ nodePos) ->
                     let
-                        flow = state.flow
-                        units = state.style.units flow
                         outletInnerPos = Calc.outletPos units flow outletIdx
                         -- FIXME: get rid of magic numbers
                         x1 /\ y1 = V2.toTuple $ (V2.h' 35.0) + nodePos + outletInnerPos
@@ -205,8 +229,8 @@ render state =
             floatingNode pos (node /\ offset)
         whatIsBeingDragged (Mouse.Dragging _ pos (Node node /\ offset)) =
             floatingNode pos (node /\ offset)
-        whatIsBeingDragged (Mouse.Dragging _ pos (Outlet outlet /\ offset)) =
-            openLink pos (outlet /\ offset)
+        whatIsBeingDragged (Mouse.Dragging _ pos (Outlet outlet /\ _)) =
+            openLink pos outlet
         whatIsBeingDragged _ =
             HS.g [] []
 
