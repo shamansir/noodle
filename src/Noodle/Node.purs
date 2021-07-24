@@ -8,13 +8,13 @@ module Noodle.Node
     , inletsSignal, outletsSignal
     , (<|), (|>), (<~>), (<+), (+>), (++>)
     , consumer
-    , dimensions
+    , dimensions, indexOfInlet, indexOfOutlet
     )
     where
 
 import Prelude
 
-import Data.Array (mapMaybe) as Array
+import Data.Array (mapMaybe, elemIndex) as Array
 import Data.Maybe (Maybe(..))
 import Data.Tuple (uncurry, curry, fst, snd, Tuple(..))
 import Data.Tuple.Nested ((/\), type (/\))
@@ -196,6 +196,16 @@ outlets = getShape' >>> Shape.outlets
 
 dimensions :: forall d. Node d -> Int /\ Int
 dimensions (Node _ shape _) = Shape.dimensions shape
+
+
+indexOfInlet :: forall d. String -> Node d -> Maybe Int
+indexOfInlet inletName node =
+    Array.elemIndex inletName $ fst <$> inlets node
+
+
+indexOfOutlet :: forall d. String -> Node d -> Maybe Int
+indexOfOutlet outletName node =
+    Array.elemIndex outletName $ fst <$> outlets node
 
 
 default :: forall d. Node d -> d

@@ -4,6 +4,7 @@ module Data.BinPack.R2.Optional
     , pack
     , packOne
     , toList
+    , find
     , sample
     , sample'
     , container
@@ -74,6 +75,9 @@ unfold f = R2.unfold f'
     where
         f' (Nothing /\ _) prev = prev
         f' (Just a /\ s) prev = f (a /\ s) prev
+
+find :: forall n a. Eq a => Semiring n => a -> Bin2 n a -> Maybe (Pos_ n /\ Size_ n)
+find needle = R2.find $ Just needle
 
 sample :: forall n a. Ring n => Ord n => Bin2 n a -> Pos_ n -> Maybe (a /\ Size_ n)
 sample bin pos = R2.sample bin pos >>= f'

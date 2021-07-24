@@ -179,10 +179,34 @@ render state =
             in case assocNode ( name /\ (pos - nodeOffset - state.offset) /\ bounds ) of
                 Just n -> node' n
                 Nothing -> HS.g [] []
+        findNodePosition nodeName =
+            (R2.find nodeName state.layout <#> fst)
+            <|> (PB.find nodeName state.pinned <#> fst)
+        openLink pos ((nodeName /\ outlet) /\ outletOffset ) =
+            -- FIXME: too much logic for a renderer
+            case (/\)
+                    <$> (Patch.findNode nodeName state.patch >>= \node -> Node.indexOfOutlet outlet node)
+                    <*> findNodePosition nodeName of
+                Just (outletIdx /\ nodePos) ->
+                    let
+                        flow = state.flow
+                        units = state.style.units flow
+                        outletInnerPos = Calc.outletPos units flow outletIdx
+                        -- FIXME: get rid of magic numbers
+                        x1 /\ y1 = V2.toTuple $ (V2.h' 35.0) + nodePos + outletInnerPos
+                        x2 /\ y2 = V2.toTuple $ pos - (V2.h' 25.0)
+                    in HS.line
+                        [ HSA.x1 x1, HSA.x2 x2
+                        , HSA.y1 y1, HSA.y2 y2
+                        , HSA.strokeWidth 3.0, HSA.stroke $ Just $ Style.white
+                        ]
+                Nothing -> HS.g [] []
         whatIsBeingDragged (Mouse.StartDrag pos (Node node /\ offset)) =
             floatingNode pos (node /\ offset)
         whatIsBeingDragged (Mouse.Dragging _ pos (Node node /\ offset)) =
             floatingNode pos (node /\ offset)
+        whatIsBeingDragged (Mouse.Dragging _ pos (Outlet outlet /\ offset)) =
+            openLink pos (outlet /\ offset)
         whatIsBeingDragged _ =
             HS.g [] []
 
@@ -226,7 +250,7 @@ handleAction = case _ of
                 = state.mouse
                     # Mouse.apply
                             (flip (-) state.offset
-                            >>> findDragSubject state
+                            >>> findSubjectUnderPos state
                             )
                     mouseEvent
         H.modify_ (_ { mouse = nextMouse })
@@ -253,7 +277,7 @@ handleAction = case _ of
                     state'
         case nextMouse of
             Mouse.DropAt pos (Outlet outlet /\ _) ->
-                case findDragSubject state $ pos - state.offset of
+                case findSubjectUnderPos state $ pos - state.offset of
                     Just (Inlet inlet /\ _) -> do
                         nextPatch <- liftEffect $ Patch.connect outlet inlet state.patch
                         H.modify_ (_ { patch = nextPatch })
@@ -263,7 +287,7 @@ handleAction = case _ of
                 pure unit
 
     where
-        findDragSubject state pos =
+        findSubjectUnderPos state pos =
             (findNodeInLayout state pos <|> findNodeInPinned state pos)
                 >>= whereInsideNode state
         whereInsideNode :: State d -> (String /\ Pos) -> Maybe (Subject /\ Pos)

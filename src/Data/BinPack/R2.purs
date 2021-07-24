@@ -4,6 +4,7 @@ module Data.BinPack.R2
 , pack
 , packOne
 , toList
+, find
 , sample
 , sample'
 , container
@@ -25,7 +26,7 @@ import Control.Alt ((<|>))
 
 import Data.Foldable (class Foldable, foldMap, foldr, foldl, foldM)
 import Data.List (List(..), (:), sortBy, singleton)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Tuple as Tuple
 import Data.Vec2 (Vec2_, (<+>), Pos_, Size_)
@@ -127,6 +128,17 @@ unfold f =
                     (pos + V2.h' h)
                     (unfold' (pos + V2.w' w) v r) b
                 -- $ unfold' x (y + h) (unfold' (x + w) y v r) b
+
+find :: forall n a. Eq a => Semiring n => a -> Bin2 n a -> Maybe (Pos_ n /\ Size_ n)
+find needle =
+    unfold
+        (\(item /\ (pos /\ size)) prev ->
+            if isJust prev then prev
+            else if (item == needle) then Just $ pos /\ size
+            else Nothing
+        )
+        Nothing
+
 
 sample :: forall n a. Ring n => Ord n => Bin2 n a -> Pos_ n -> Maybe (a /\ Pos_ n)
 sample (Free _)                 _   = Nothing

@@ -19,13 +19,17 @@ newtype Pin a
 type PinBoard a = Array (Pin a)
 
 
--- it's not the fair `Eq`, so we don't use `Eq` typeclass here
+-- it's not the fair `Eq`, so we don't provide `Eq` typeclass instance here
 compareByItem :: forall a. Eq a => Pin a -> Pin a -> Boolean
 compareByItem a b = get a == get b
 
 
 get :: forall a. Pin a -> a
 get (Pin pin) = Tuple.fst pin
+
+
+getNumbers :: forall a. Pin a -> (Pos /\ Size)
+getNumbers (Pin (_ /\ pos /\ size)) = pos /\ size
 
 
 empty :: forall a. PinBoard a
@@ -38,6 +42,12 @@ pinNowhere i = Pin $ i /\ zero /\ zero
 
 toArray :: forall a. PinBoard a -> Array (a /\ Pos /\ Size)
 toArray = (<$>) (\(Pin t) -> t)
+
+
+find :: forall a. Eq a => a -> PinBoard a -> Maybe (Pos /\ Size)
+find needle pb =
+    Array.find (compareByItem $ pinNowhere needle) pb
+        <#> getNumbers
 
 
 search :: forall a. Pos -> PinBoard a -> Maybe (a /\ Pos)
