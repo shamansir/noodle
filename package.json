@@ -1,0 +1,25 @@
+{
+  "name": "noodle",
+  "version": "1.0.0",
+  "description": "Generative Visual Programming",
+  "main": "index.html",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shamansir/noodle.git"
+  },
+  "author": "shamansir",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shamansir/noodle/issues"
+  },
+  "homepage": "https://github.com/shamansir/noodle#readme",
+  "dependencies": {
+    "hydra-synth": "^1.3.8"
+  }
+}

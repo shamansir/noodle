@@ -1,4 +1,4 @@
-module App.Example.Toolkit where
+module JustSum.Toolkit where
 
 
 import Prelude (($), (#), (<$>), (<*>), (<#>), (+), Unit, unit, identity)

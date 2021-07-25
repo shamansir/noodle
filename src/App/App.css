@@ -3,6 +3,10 @@ body {
     margin: 0;
 }
 
+#noodle {
+    position: absolute;
+}
+
 .no-select {
     /*cursor: default;*/
     -webkit-touch-callout: none;

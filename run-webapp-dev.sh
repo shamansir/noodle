@@ -1,2 +1,2 @@
 #!/bin/bash
-spago build --watch && parcel index.htm # better run in different Terminals
+spago -x ./example.dhall build --watch && parcel ./example/Hydra/index.htm # better run in different Terminals

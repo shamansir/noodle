@@ -1,4 +1,4 @@
-var Main = require('./output/App.Main');
+var Main = require('./output/Hydra.Main');
 
 function main () {
     /*

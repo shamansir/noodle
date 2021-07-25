@@ -2,6 +2,8 @@
 .purs-repl
 .spago
 .parcel-cache
+node_modules
 dist
 output
 index.js
+hydra.bundle.*.js

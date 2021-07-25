@@ -1,4 +1,4 @@
-module App.Example.Toolkit.Render where
+module JustSum.Toolkit.Render where
 
 
 import Noodle.Node (Node)

@@ -82,7 +82,9 @@ initialState { nw, toolkit, style, flow } =
 render :: forall d m. MonadEffect m => State d -> H.ComponentHTML (Action d) Slots m
 render (s@{ nw, toolkit, style, flow }) =
     HS.svg
-        [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height ]
+        [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height
+        , HSA.id "noodle"
+        ]
         [ background
         , curFrame
         , patchesTabs
