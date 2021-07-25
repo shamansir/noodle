@@ -113,10 +113,14 @@ initialState { patch, toolkit, style, flow, offset } =
     }
 
 
+-- FIXME: take those from Calculate as well
 tabHeight = 20.0
 tabVertPadding = 15.0
 tabHorzPadding = 5.0
 tabLength = 60.0
+-- FIXME: get rid of magic numbers
+nodesOffset = V2.h' 35.0
+cursorOffset = V2.h' 25.0
 
 
 render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
@@ -125,9 +129,9 @@ render state =
         []
         [ mouseState
         , nodeButtons
+        , existingLinks
         , nodesLayout
         , pinnedNodes
-        , existingLinks
         , whatIsBeingDragged state.mouse
         ]
     where
@@ -197,8 +201,8 @@ render state =
             case linkEndsPositions outletPath inletPath of
                 Just (outletPos /\ inletPos) ->
                     let
-                        x1 /\ y1 = V2.toTuple $ (V2.h' 35.0) + outletPos
-                        x2 /\ y2 = V2.toTuple $ (V2.h' 35.0) + inletPos
+                        x1 /\ y1 = V2.toTuple $ nodesOffset + outletPos
+                        x2 /\ y2 = V2.toTuple $ nodesOffset + inletPos
                     in HS.line
                         [ HSA.x1 x1, HSA.x2 x2
                         , HSA.y1 y1, HSA.y2 y2
@@ -216,9 +220,8 @@ render state =
                 Just (outletIdx /\ nodePos) ->
                     let
                         outletInnerPos = Calc.outletPos units flow outletIdx
-                        -- FIXME: get rid of magic numbers
-                        x1 /\ y1 = V2.toTuple $ (V2.h' 35.0) + nodePos + outletInnerPos
-                        x2 /\ y2 = V2.toTuple $ pos - (V2.h' 25.0)
+                        x1 /\ y1 = V2.toTuple $ nodesOffset + nodePos + outletInnerPos
+                        x2 /\ y2 = V2.toTuple $ pos - cursorOffset
                     in HS.line
                         [ HSA.x1 x1, HSA.x2 x2
                         , HSA.y1 y1, HSA.y2 y2
