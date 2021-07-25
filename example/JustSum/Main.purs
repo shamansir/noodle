@@ -6,6 +6,7 @@ import Prelude ((#), Unit)
 import Effect (Effect)
 
 import Data.Tuple.Nested ((/\))
+import Data.Maybe (Maybe(..))
 
 import App (run) as App
 import App (App)
@@ -37,6 +38,7 @@ app =
     , flow
     , network
     , toolkit : Toolkit.toolkit
+    , currentPatch : Just "base"
     }
 
 

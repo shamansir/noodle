@@ -4,6 +4,7 @@ module Hydra.Main where
 import Prelude ((#), Unit)
 
 import Effect (Effect)
+import Data.Maybe (Maybe(..))
 
 import Data.Tuple.Nested ((/\))
 
@@ -38,6 +39,7 @@ app =
     , flow
     , network
     , toolkit : Toolkit.toolkit
+    , currentPatch : Just "hydra"
     }
 
 

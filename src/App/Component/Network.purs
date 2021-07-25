@@ -44,15 +44,16 @@ _patch = Proxy :: Proxy "patch"
 
 
 type Input d =
-    { nw :: Noodle.Network d
+    { network :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
     , style :: Style
     , flow :: NodeFlow
+    , currentPatch :: Maybe String
     }
 
 
 type State d =
-    { nw :: Noodle.Network d
+    { network :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
     , currentPatch :: Maybe String
     , width :: Int, height :: Int
@@ -71,16 +72,16 @@ data Action d
 
 
 initialState :: forall d. Input d -> State d
-initialState { nw, toolkit, style, flow } =
-    { nw, toolkit, style, flow
-    , currentPatch : Just "base"
+initialState { network, toolkit, style, flow, currentPatch } =
+    { network, toolkit, style, flow
+    , currentPatch
     , width : 1000, height : 1000
     , currentFrame : 0.0
     }
 
 
 render :: forall d m. MonadEffect m => State d -> H.ComponentHTML (Action d) Slots m
-render (s@{ nw, toolkit, style, flow }) =
+render (s@{ network, toolkit, style, flow }) =
     HS.svg
         [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height
         , HSA.id "noodle"
@@ -88,7 +89,7 @@ render (s@{ nw, toolkit, style, flow }) =
         [ background
         , curFrame
         , patchesTabs
-        , maybeCurrent $ (flip Network.patch $ nw) =<< s.currentPatch
+        , maybeCurrent $ (flip Network.patch $ network) =<< s.currentPatch
         ]
     where
         colors = style.colors
@@ -105,7 +106,7 @@ render (s@{ nw, toolkit, style, flow }) =
                 [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height
                 , HSA.fill $ Just colors.background
                 ]
-        patchesTabs = HS.g [ HSA.classes CS.patchesTabs ] (patchTab <$> Tuple.fst <$> Network.patches nw)
+        patchesTabs = HS.g [ HSA.classes CS.patchesTabs ] (patchTab <$> Tuple.fst <$> Network.patches network)
         patchTab label =
             HS.g
                 [ HSA.classes $ CS.patchTab label ]

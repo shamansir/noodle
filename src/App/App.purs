@@ -3,6 +3,7 @@ module App where
 import Prelude
 
 import Effect (Effect)
+import Data.Maybe (Maybe)
 
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
@@ -20,10 +21,11 @@ type App d =
     , flow :: NodeFlow
     , toolkit :: Toolkit d
     , network :: Network d
+    , currentPatch :: Maybe String
     }
 
 
 run :: forall d. App d -> Effect Unit
-run { style, flow, toolkit, network } = HA.runHalogenAff do
-  body <- HA.awaitBody
-  runUI NetworkC.component { nw : network, toolkit, style, flow } body
+run app = HA.runHalogenAff do
+    body <- HA.awaitBody
+    runUI NetworkC.component app body

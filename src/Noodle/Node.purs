@@ -134,8 +134,10 @@ disconnect (Link ref) =
     ref # Ref.write false
 
 
+{-
 attach :: forall d. Signal d -> String -> Node d -> Effect (Node d)
 attach signal inlet node = pure node -- FIXME: TODO
+-}
 
 
 getInletsChannel :: forall d. Node d -> Channel (String /\ d)
@@ -158,12 +160,20 @@ outletsSignal =
 
 inletSignal :: forall d. Node d -> String -> Signal d
 inletSignal node name =
-    Ch.subscribe (getInletsChannel node) ~> snd -- FIXME
+    ( Ch.subscribe (getInletsChannel node)
+        # Signal.filter
+            (fst >>> (==) name)
+            (consumer /\ default node)
+    ) ~> snd
 
 
 outletSignal :: forall d. Node d -> String -> Signal d
-outletSignal node _ =
-    Ch.subscribe (getOutletsChannel node) ~> snd -- FIXME
+outletSignal node name =
+    ( Ch.subscribe (getOutletsChannel node)
+        # Signal.filter
+            (fst >>> (==) name)
+            (consumer /\ default node)
+    ) ~> snd
 
 
 outletSignalFlipped :: forall d. String -> Node d -> Signal d
