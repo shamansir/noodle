@@ -6,41 +6,40 @@ import Type.Proxy (Proxy(..))
 
 import Effect.Class (class MonadEffect)
 import Effect.Aff.Class (class MonadAff)
-import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..))
 import Data.Int (toNumber)
 import Data.Tuple as Tuple
-import Data.Tuple.Nested (type (/\), (/\))
+--import Data.Tuple.Nested (type (/\), (/\))
 import Data.Vec2 ((<+>))
 
 import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
 import Noodle.Toolkit (Toolkit) as Noodle
 
-import App.Style (Style, NodeFlow(..))
+import App.Style (Style, NodeFlow)
 import App.Style.ClassNames as CS
 import App.Component.Patch as PatchC
-import App.Mouse as Mouse
 import App.Emitters as Emitters
+import App.UI (UI)
 
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
-import Halogen.Query.Event (eventListener)
 
 import Web.HTML (window)
-import Web.HTML.Window (document)
-import Web.UIEvent.MouseEvent as ME
-import Web.UIEvent.MouseEvent.EventTypes as MET
-import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.Window as Window
 
 
-type Slots = ( patch :: PatchC.Slot Unit )
+type Slots =
+    ( patch :: PatchC.Slot Unit
+    , background :: forall query. H.Slot query Void Unit
+    )
 
 
 _patch = Proxy :: Proxy "patch"
+
+_background = Proxy :: Proxy "background"
 
 
 type Input d =
@@ -49,6 +48,7 @@ type Input d =
     , style :: Style
     , flow :: NodeFlow
     , currentPatch :: Maybe String
+    , ui :: UI d
     }
 
 
@@ -60,6 +60,7 @@ type State d =
     , currentFrame :: Number
     , style :: Style
     , flow :: NodeFlow
+    , ui :: UI d
     }
 
 
@@ -72,8 +73,8 @@ data Action d
 
 
 initialState :: forall d. Input d -> State d
-initialState { network, toolkit, style, flow, currentPatch } =
-    { network, toolkit, style, flow
+initialState { network, toolkit, style, flow, currentPatch, ui } =
+    { network, toolkit, style, flow, ui
     , currentPatch
     , width : 1000, height : 1000
     , currentFrame : 0.0
@@ -102,10 +103,14 @@ render (s@{ network, toolkit, style, flow }) =
         tabLength = 60.0
         patchOffset = 0.0 <+> (tabHeight + tabPadding)
         background =
-            HS.rect
-                [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height
-                , HSA.fill $ Just colors.background
-                ]
+            case s.ui.background of
+                Nothing ->
+                    HS.rect
+                        [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height
+                        , HSA.fill $ Just colors.background
+                        ]
+                Just userBgComp ->
+                    HH.slot _background unit userBgComp network absurd
         patchesTabs = HS.g [ HSA.classes CS.patchesTabs ] (patchTab <$> Tuple.fst <$> Network.patches network)
         patchTab label =
             HS.g

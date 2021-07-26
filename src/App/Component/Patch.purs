@@ -3,26 +3,19 @@ module App.Component.Patch where
 
 import Prelude
 
-import Debug as Debug
-
 import Effect.Class (class MonadEffect, liftEffect)
 
-import Data.Array ((..))
 import Data.Array as Array
-import Data.Bifunctor (bimap)
 import Data.BinPack.R2.Optional (Bin2)
 import Data.BinPack.R2.Optional as R2
 import Data.List as List
-import Data.Map as Map
-import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
 import Data.PinBoard (PinBoard)
 import Data.PinBoard as PB
 import Data.Set as Set
-import Data.Tuple (curry, uncurry, fst)
+import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Unit (Unit, unit)
 import Data.Vec2 (Vec2, Pos, Size, (<+>))
 import Data.Vec2 as V2
 
@@ -40,7 +33,7 @@ import Noodle.Toolkit as Toolkit
 import App.Component.Node as NodeC
 import App.Emitters as Emitters
 import App.Mouse as Mouse
-import App.Style (Style, NodeFlow(..))
+import App.Style (Style, NodeFlow)
 import App.Style as Style
 import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
@@ -52,12 +45,8 @@ import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Elements as HS
 
 import Web.HTML (window)
-import Web.HTML.HTMLDocument as HTMLDocument
-import Web.HTML.HTMLFieldSetElement (name)
 import Web.HTML.Window (document)
-import Web.HTML.Window as Window
 import Web.UIEvent.MouseEvent as ME
-import Web.UIEvent.MouseEvent.EventTypes as MET
 
 
 type Slot id = forall query. H.Slot query Void id

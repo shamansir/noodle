@@ -19,6 +19,7 @@ import Noodle.Patch as Patch
 
 import Hydra (Hydra)
 import Hydra.Toolkit as Toolkit
+import Hydra.UI (ui)
 
 
 style :: Style
@@ -40,6 +41,7 @@ app =
     , network
     , toolkit : Toolkit.toolkit
     , currentPatch : Just "hydra"
+    , ui
     }
 
 

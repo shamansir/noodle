@@ -14,7 +14,7 @@ import Noodle.Toolkit (Toolkit)
 
 import App.Component.Network as NetworkC
 import App.Style (Style, NodeFlow)
-import App.UI (class UI)
+import App.UI (UI)
 
 
 type App d =
@@ -23,10 +23,11 @@ type App d =
     , toolkit :: Toolkit d
     , network :: Network d
     , currentPatch :: Maybe String
+    , ui :: UI d
     }
 
 
-run :: forall d. UI d => App d -> Effect Unit
+run :: forall d. App d -> Effect Unit
 run app = HA.runHalogenAff do
     body <- HA.awaitBody
     runUI NetworkC.component app body
