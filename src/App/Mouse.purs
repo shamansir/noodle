@@ -29,7 +29,6 @@ withPos f (Dragging start pos v) = Dragging start (f pos) v
 withPos f (DropAt pos v) = DropAt (f pos) v
 
 
-
 apply :: forall a. (Pos -> Maybe a) -> ME.MouseEvent -> State a -> State a
 apply toItem event curState =
     analyze curState

@@ -1,4 +1,4 @@
-require('./example/Hydra/Hydra');
+require('./example/Hydra/init-hydra');
 var Main = require('./output/Hydra.Main');
 
 function main () {

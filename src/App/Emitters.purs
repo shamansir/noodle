@@ -24,7 +24,6 @@ import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.HTMLDocument (HTMLDocument)
 
 
-
 mouse :: forall t. EventType -> HTMLDocument -> (ME.MouseEvent -> t) -> HS.Emitter t
 mouse evtType document handler =
     eventListener
