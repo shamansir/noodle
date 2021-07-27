@@ -24,6 +24,9 @@ data Shape d a =
         }
 
 
+type Shape' d = Shape d d
+
+
 class IsShape m where
     accept :: forall a d. m d a -> d -> Maybe a
     --default :: a
@@ -67,6 +70,20 @@ hot (Shape def) =
     Shape def { isHot = true }
 
 
+isHidden :: forall a d. Shape a d -> Boolean
+isHidden (Shape def) = def.hidden
+
+
+hidden :: forall a d. Shape a d -> Shape a d
+hidden (Shape def) =
+    Shape def { hidden = true }
+
+
+visible :: forall a d. Shape a d -> Shape a d
+visible (Shape def) =
+    Shape def { hidden = false }
+
+
 shape :: forall a d. a -> (d -> Maybe a) -> Shape d a
 shape v accept =
     Shape
@@ -83,6 +100,10 @@ shape' = flip shape
 
 shape'' :: forall a d. (a -> d) -> (d -> Maybe a) -> a -> Shape d d
 shape'' f toN def = f <$> shape def toN
+
+
+shape''' :: forall d. d -> (d -> Boolean) -> Shape d d
+shape''' v test = shape v (\d -> if test d then Just d else Nothing)
 
 
 acceptWith :: forall a d. (a -> Maybe d) -> Shape a d -> Shape a d

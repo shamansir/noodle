@@ -1,6 +1,7 @@
 module Hydra where
 
 
+import Prelude (($))
 import Data.Maybe (Maybe)
 
 
@@ -10,6 +11,7 @@ data Value
     | Time
     | Seq (Array Number)
     -- Harmonic Int
+    -- FN (Time -> Value)
 
 
 data Hydra
@@ -22,3 +24,18 @@ data Hydra
 
 default :: Hydra
 default = None
+
+
+defaultOsc :: Hydra
+defaultOsc = osc 60.0 0.1 0.0
+
+
+osc :: Number -> Number -> Number -> Hydra
+osc frequency syn offset =
+    Osc (Num frequency) (Num syn) (Num offset)
+
+
+tryOsc :: Hydra -> Hydra -> Hydra -> Hydra
+tryOsc (Value' freq) (Value' sync) (Value' offset) =
+    Osc freq sync offset
+tryOsc _ _ _ = None
