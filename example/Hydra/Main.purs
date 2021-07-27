@@ -31,7 +31,9 @@ flow = Vertical
 
 
 network :: Network Hydra
-network = Network.empty # Network.addPatch ( "hydra" /\ Patch.empty )
+network =
+    Network.empty
+        # Network.addPatch ( "hydra" /\ Patch.empty )
 
 
 app :: App Hydra

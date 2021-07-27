@@ -8,6 +8,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Data.Array as Array
 import Data.BinPack.R2.Optional (Bin2)
 import Data.BinPack.R2.Optional as R2
+import Data.Int (toNumber)
 import Data.List as List
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
@@ -128,7 +129,7 @@ render state =
         units = state.style.units flow
         mouseState =
             HS.text
-                [ HSA.transform [ HSA.Translate 100.0 0.0 ]
+                [ HSA.transform [ HSA.Translate 500.0 (-20.0) ]
                 , HSA.fill $ Just $ Style.white
                 ]
                 [ HH.text $ show $ state.mouse ]
@@ -141,11 +142,16 @@ render state =
             = List.catMaybes $ assocNode <$> R2.toList state.layout
         pinnedNodes'
             = Array.catMaybes $ assocNode <$> PB.toArray state.pinned
-        nodeButtons = HS.g [ HSA.classes CS.nodesTabs ] $ nodeButton <$> (Set.toUnfoldable $ Toolkit.nodeNames state.toolkit)
-        nodeButton name =
+        nodeButtons
+            = HS.g
+                [ HSA.classes CS.nodesTabs ]
+                $ nodeButton <$> (Array.mapWithIndex (/\) $ Set.toUnfoldable $ Toolkit.nodeNames state.toolkit)
+        nodeButton (idx /\ name) =
             HS.g
                 [ HSA.classes $ CS.nodeButton name
-                , HSA.transform [ HSA.Translate tabHorzPadding 0.0 ]
+                , HSA.transform
+                    [ HSA.Translate (tabHorzPadding + (toNumber idx * (tabLength + tabHorzPadding))) 0.0
+                    ]
                 , HE.onClick \_ -> AddNode name
                 ]
                 [ HS.rect
