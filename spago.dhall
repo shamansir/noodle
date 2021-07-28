@@ -37,6 +37,7 @@ to generate this file without the comments in this block.
   , "refs"
   , "signal"
   , "sized-vectors"
+  , "strings"
   , "tuples"
   , "typelevel"
   , "web-events"

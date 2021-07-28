@@ -1,19 +1,26 @@
 module Noodle.Patch where
 
 
-import Noodle.Node (Node, Link)
-import Noodle.Node as Node
-
-import Prelude (($), (#), (<$>), (<*>), (<#>), pure, discard)
+import Prelude
 import Effect (Effect)
+import Effect.Class (liftEffect)
 
 -- import Data.Functor (lift)
 
 import Data.Set (Set)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
+import Data.Foldable (foldr)
+import Data.Traversable (sequence, traverse)
 import Data.Tuple.Nested ((/\), type (/\))
+
+
+import Noodle.Node (Node, Link)
+import Noodle.Node as Node
+import Noodle.Toolkit (Toolkit)
+import Noodle.Toolkit as Toolkit
+
 
 
 type InletPath = String /\ String
@@ -35,6 +42,24 @@ addNode name node (Patch nodes links) =
     Patch
         (nodes # Map.insert name node)
         links
+
+
+addNodeFrom :: forall d. Toolkit d -> String /\ String -> Patch d -> Effect (Patch d)
+addNodeFrom toolkit (nodeType /\ nodeId) patch =
+    Toolkit.spawn nodeType toolkit
+        <#> maybe patch (\node -> addNode nodeId node patch)
+
+
+addNodeFrom' :: forall d. Toolkit d -> String -> Patch d -> Effect (String /\ Patch d)
+addNodeFrom' toolkit nodeType patch =
+    addNodeFrom toolkit (nodeType /\ nextNodeId) patch
+        <#> ((/\) nextNodeId)
+    where nextNodeId = addUniqueNodeId patch nodeType
+
+
+addNodesFrom :: forall d. Toolkit d -> Array (String /\ String) -> Patch d -> Effect (Patch d)
+addNodesFrom toolkit pairs patch =
+    foldr (\pair patchEff -> patchEff >>= addNodeFrom toolkit pair) (pure patch) pairs
 
 
 nodes :: forall d. Patch d -> Array (String /\ Node d)
@@ -89,3 +114,27 @@ disconnect outletPath inletPath patch@(Patch _ links) =
             pure $ forgetLink outletPath inletPath patch
         Nothing ->
             pure patch
+
+
+send :: forall d. String -> (String /\ d) -> Patch d -> Effect Unit
+send node (inlet /\ v) patch =
+    patch
+        # findNode node
+        <#> (flip Node.send (inlet /\ v))
+        # fromMaybe (pure unit)
+
+
+produce :: forall d. String -> (String /\ d) -> Patch d -> Effect Unit
+produce node (outlet /\ v) patch =
+    patch
+        # findNode node
+        <#> (flip Node.produce (outlet /\ v))
+        # fromMaybe (pure unit)
+
+
+addUniqueNodeId :: forall d. Patch d -> String -> String
+addUniqueNodeId patch nodeType =
+    nodeType <> "-" <> (show $ nodesCount patch + 1)
+
+
+-- TODO: `withNode`

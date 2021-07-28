@@ -233,7 +233,6 @@ render state =
             HS.g [] []
 
 
-
 handleAction :: forall output m d. MonadEffect m => Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
 handleAction = case _ of
 
@@ -249,21 +248,20 @@ handleAction = case _ of
 
     AddNode name -> do
         toolkit <- H.gets _.toolkit
-        case Toolkit.spawn name toolkit of
-            Just newNode' -> do
-                newNode <- liftEffect newNode'
+        maybeNode <- liftEffect $ Toolkit.spawn name toolkit
+        case maybeNode of
+            Just node -> do
                 H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
                     (\state ->
-                        let nodeName = makeUniqueName state.patch name
-                            bounds = boundsOf state newNode
+                        let nodeName = Patch.addUniqueNodeId state.patch name
+                            bounds = boundsOf state node
                         in state
-                            { patch = state.patch # Patch.addNode nodeName newNode
+                            { patch = state.patch # Patch.addNode nodeName node
                             , layout = R2.packOne state.layout (R2.item bounds nodeName)
                                         # Maybe.fromMaybe state.layout
                             }
                     )
             Nothing -> pure unit
-        where makeUniqueName patch name = name <> "-" <> (show $ Patch.nodesCount patch + 1)
 
     HandleMouse _ mouseEvent -> do
         state <- H.get

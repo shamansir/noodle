@@ -1,4 +1,4 @@
-module App where
+module App (App, run) where
 
 import Prelude
 
@@ -30,4 +30,7 @@ type App d =
 run :: forall d. App d -> Effect Unit
 run app = HA.runHalogenAff do
     body <- HA.awaitBody
-    runUI NetworkC.component app body
+    runUI
+        NetworkC.component
+        app
+        body
