@@ -3,6 +3,8 @@ module App.Component.Patch where
 
 import Prelude
 
+import Debug (spy) as Debug
+
 import Effect.Class (class MonadEffect, liftEffect)
 
 import Data.Array as Array
@@ -91,6 +93,9 @@ data Action d
     = Initialize
     | Receive (Input d)
     | AddNode String
+    | DetachNode String
+    | PinNode String Pos
+    | Connect Patch.OutletPath Patch.InletPath
     | HandleMouse H.SubscriptionId ME.MouseEvent -- TODO Split mouse handing in different actions
 
 
@@ -266,6 +271,32 @@ handleAction = case _ of
                     )
             Nothing -> pure unit
 
+    DetachNode nodeId ->
+        H.modify_ $ \state ->
+            state
+            { layout =
+                state.layout # R2.abandon nodeId
+            , pinned =
+                state.pinned # PB.unpin nodeId
+            }
+
+    PinNode nodeId pos ->
+        H.modify_ $ \state ->
+        let
+            bounds =
+                boundsOf' state.flow state.style state.patch nodeId
+                    # Maybe.fromMaybe zero
+        in
+            state
+                { pinned =
+                    state.pinned # PB.pin (pos - state.offset) bounds nodeId
+                }
+
+    Connect outletPath inletPath -> do
+        state <- H.get
+        nextPatch <- liftEffect $ Patch.connect outletPath inletPath state.patch
+        H.modify_ (_ { patch = nextPatch })
+
     HandleMouse _ mouseEvent -> do
         state <- H.get
         let
@@ -277,33 +308,18 @@ handleAction = case _ of
                             )
                     mouseEvent
         H.modify_ (_ { mouse = nextMouse })
-        H.modify_ $ \state' ->
-            case nextMouse of
-                Mouse.StartDrag _ (Node n /\ _) ->
-                    state'
-                        { layout =
-                            state.layout # R2.abandon n
-                        , pinned =
-                            state.pinned # PB.unpin n
-                        }
-                Mouse.DropAt pos (Node n /\ offset) ->
-                    let
-                        bounds =
-                            boundsOf' state.flow state.style state.patch n
-                                # Maybe.fromMaybe zero
-                    in
-                        state'
-                            { pinned =
-                                state.pinned # PB.pin (pos - offset - state.offset) bounds n
-                            }
-                _ ->
-                    state'
+        case nextMouse of
+            Mouse.StartDrag _ (Node nodeId /\ _) ->
+                handleAction $ DetachNode nodeId
+            Mouse.DropAt pos (Node nodeId /\ offset) ->
+                handleAction $ PinNode nodeId $ pos - offset
+            _ ->
+                pure unit
         case nextMouse of
             Mouse.DropAt pos (Outlet outlet /\ _) ->
                 case findSubjectUnderPos state $ pos - state.offset of
                     Just (Inlet inlet /\ _) -> do
-                        nextPatch <- liftEffect $ Patch.connect outlet inlet state.patch
-                        H.modify_ (_ { patch = nextPatch })
+                        handleAction $ Connect outlet inlet
                     _ ->
                         pure unit
             _ ->
