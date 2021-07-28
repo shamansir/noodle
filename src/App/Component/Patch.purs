@@ -232,7 +232,8 @@ render state =
                         ]
                 Nothing -> HS.g [] []
         whatIsBeingDragged (Mouse.StartDrag pos (Node node /\ offset)) =
-            floatingNode pos (node /\ offset)
+            HS.g [] []
+            --floatingNode pos (node /\ offset)
         whatIsBeingDragged (Mouse.Dragging _ pos (Node node /\ offset)) =
             floatingNode pos (node /\ offset)
         whatIsBeingDragged (Mouse.Dragging _ pos (Outlet outlet /\ _)) =
