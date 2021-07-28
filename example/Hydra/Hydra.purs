@@ -1,7 +1,7 @@
 module Hydra where
 
 
-import Prelude (($))
+import Prelude ((<<<))
 import Data.Maybe (Maybe)
 
 
@@ -39,3 +39,7 @@ tryOsc :: Hydra -> Hydra -> Hydra -> Hydra
 tryOsc (Value' freq) (Value' sync) (Value' offset) =
     Osc freq sync offset
 tryOsc _ _ _ = None
+
+
+num :: Number -> Hydra
+num = Value' <<< Num

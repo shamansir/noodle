@@ -33,6 +33,12 @@ data Patch d =
         ((OutletPath /\ InletPath) /-> Link)
 
 
+infixl 4 connect as <~>
+infixl 4 disconnect as <~/~>
+infixl 5 send' as +>
+infixl 5 produce' as ++>
+
+
 empty :: forall d. Patch d
 empty = Patch Map.empty Map.empty
 
@@ -116,20 +122,30 @@ disconnect outletPath inletPath patch@(Patch _ links) =
             pure patch
 
 
-send :: forall d. String -> (String /\ d) -> Patch d -> Effect Unit
-send node (inlet /\ v) patch =
+send :: forall d. (String /\ String) -> d -> Patch d -> Effect Unit
+send (node /\ inlet) v patch =
     patch
         # findNode node
         <#> (flip Node.send (inlet /\ v))
         # fromMaybe (pure unit)
 
 
-produce :: forall d. String -> (String /\ d) -> Patch d -> Effect Unit
-produce node (outlet /\ v) patch =
+send' :: forall d. (String /\ String) -> d -> Patch d -> Effect (Patch d)
+send' path v patch =
+    send path v patch *> pure patch
+
+
+produce :: forall d. (String /\ String) -> d -> Patch d -> Effect Unit
+produce (node /\ outlet) v patch =
     patch
         # findNode node
         <#> (flip Node.produce (outlet /\ v))
         # fromMaybe (pure unit)
+
+
+produce' :: forall d. (String /\ String) -> d -> Patch d -> Effect (Patch d)
+produce' path v patch =
+    produce path v patch *> pure patch
 
 
 addUniqueNodeId :: forall d. Patch d -> String -> String
