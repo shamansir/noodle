@@ -1,8 +1,8 @@
 module Hydra where
 
 
-import Prelude ((<<<))
-import Data.Maybe (Maybe)
+import Prelude (($), (<<<))
+import Data.Maybe (Maybe(..))
 
 
 data Value
@@ -19,7 +19,7 @@ data Hydra
     | Osc Value Value Value
     | Value' Value
     | Join (Array Hydra)
-    | Out Hydra (Maybe Int)
+    | Out (Maybe Int) Hydra
 
 
 default :: Hydra
@@ -43,3 +43,11 @@ tryOsc _ _ _ = None
 
 num :: Number -> Hydra
 num = Value' <<< Num
+
+
+out :: Int -> Hydra -> Hydra
+out = Out <<< Just
+
+
+out' :: Hydra -> Hydra
+out' = Out $ Nothing

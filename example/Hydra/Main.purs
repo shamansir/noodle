@@ -1,7 +1,7 @@
 module Hydra.Main where
 
 
-import Prelude (Unit, (<#>), (>>=))
+import Prelude (Unit, (<#>), (>>=), discard)
 
 import Effect (Effect)
 import Data.Maybe (Maybe(..))
@@ -14,6 +14,7 @@ import App.Style.Quartz as Quartz
 import Noodle.Network (Network)
 
 import Hydra (Hydra)
+import Hydra.Engine (init) as HydraE
 import Hydra.Toolkit (toolkit)
 import Hydra.UI (ui)
 import Hydra.Network (network)
@@ -39,7 +40,8 @@ app nw =
 
 
 main :: Effect Unit
-main =
+main = do
+    HydraE.init "hydra-canvas"
     network toolkit
         <#> app
         >>= App.run

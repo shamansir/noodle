@@ -7,9 +7,11 @@ import Effect.Console as Console
 
 import Data.Tuple.Nested ((/\))
 import Data.Maybe (maybe)
+import Data.Traversable (sequence)
 
 import Hydra (Hydra)
 import Hydra as Hydra
+import Hydra.Engine as HydraE
 
 import Hydra.Toolkit.Shape (osc, value) as Channel
 import Hydra.Compile (compile) as Hydra
@@ -63,5 +65,9 @@ out =
       )
       noOutlets
       $ \inlets -> do
-          maybe (pure unit) (Hydra.compile >>> Console.log) ("src" <+ inlets)
+          _ <- sequence $ do
+              hydra <- ("src" <+ inlets)
+              compiledStr <- Hydra.compile $ Hydra.out' hydra
+              --pure $ pure unit
+              pure $ HydraE.evaluate compiledStr
           pure $ Def.passNothing
