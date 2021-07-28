@@ -19,6 +19,7 @@ import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Vec2 (Vec2, Pos, Size, (<+>))
 import Data.Vec2 as V2
+import Data.Foldable (foldr)
 
 import Control.Alternative ((<|>))
 
@@ -97,7 +98,9 @@ initialState :: forall d. Input d -> State d
 initialState { patch, toolkit, style, flow, offset } =
     { patch, toolkit, style, flow
     , offset : offset + (V2.h' $ tabHeight + tabVertPadding)
-    , layout : R2.container $ 1500.0 <+> 900.0
+    , layout :
+        (R2.container $ 1500.0 <+> 900.0)
+            # addNodesFrom flow style patch
     , pinned : []
     , mouse : Mouse.init
     }
@@ -177,7 +180,7 @@ render state =
             HS.g [ HSA.classes CS.nodes ] $ map node' $ pinnedNodes'
         floatingNode pos (name /\ nodeOffset) =
             let
-                bounds = boundsOf' state name # Maybe.fromMaybe zero
+                bounds = boundsOf' state.flow state.style state.patch name # Maybe.fromMaybe zero
             in case assocNode ( name /\ (pos - nodeOffset - state.offset) /\ bounds ) of
                 Just n -> node' n
                 Nothing -> HS.g [] []
@@ -254,7 +257,7 @@ handleAction = case _ of
                 H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
                     (\state ->
                         let nodeName = Patch.addUniqueNodeId state.patch name
-                            bounds = boundsOf state node
+                            bounds = boundsOf state.flow state.style node
                         in state
                             { patch = state.patch # Patch.addNode nodeName node
                             , layout = R2.packOne state.layout (R2.item bounds nodeName)
@@ -286,7 +289,7 @@ handleAction = case _ of
                 Mouse.DropAt pos (Node n /\ offset) ->
                     let
                         bounds =
-                            boundsOf' state n
+                            boundsOf' state.flow state.style state.patch n
                                 # Maybe.fromMaybe zero
                     in
                         state'
@@ -315,7 +318,7 @@ handleAction = case _ of
             let
                 flow = state.flow
                 units = state.style.units flow
-            in -- Just $ Node nodeName /\ inPos {-
+            in
             if V2.inside'
                 (pos - Calc.namePos units flow)
                 (Calc.namePlateSize units flow) then
@@ -353,24 +356,27 @@ component =
         }
 
 
-boundsOf :: forall d x. { flow :: NodeFlow, style :: Style | x } -> Noodle.Node d -> Size
-boundsOf state =
-    let
-        flow = state.flow
-        units = state.style.units
-    in
-        Calc.nodeBounds (units flow) flow
+addNodesFrom :: forall d. NodeFlow -> Style -> Noodle.Patch d -> Bin2 Number String -> Bin2 Number String
+addNodesFrom flow style patch layout =
+    Patch.nodes patch
+        # foldr
+            (\(nodeName /\ node) layout' ->
+                R2.packOne layout' (R2.item (boundsOf flow style node) nodeName)
+                    # Maybe.fromMaybe layout'
+            )
+            layout
 
 
-boundsOf' :: forall d x. { flow :: NodeFlow, style :: Style, patch :: Noodle.Patch d | x } -> String -> Maybe Size
-boundsOf' state name =
-    let
-        flow = state.flow
-        units = state.style.units
-    in
-        state.patch
-            # Patch.findNode name
-            # map (Calc.nodeBounds (units flow) flow)
+boundsOf :: forall d. NodeFlow -> Style -> Noodle.Node d -> Size
+boundsOf flow style =
+    Calc.nodeBounds (style.units flow) flow
+
+
+boundsOf' :: forall d. NodeFlow -> Style -> Noodle.Patch d -> String -> Maybe Size
+boundsOf' flow style patch name =
+    patch
+        # Patch.findNode name
+        # map (Calc.nodeBounds (style.units flow) flow)
 
 
 
