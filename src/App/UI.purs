@@ -31,8 +31,8 @@ type BgOutput d = Void
 
 
 data NodeOutput d
-    = SendToInlet (String /\ String) d
-    | SendToOutlet (String /\ String) d
+    = SendToInlet String d
+    | SendToOutlet String d
 
 
 type BgSlot d id = H.Slot BgQuery (BgOutput d) id

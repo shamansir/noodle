@@ -103,6 +103,7 @@ data Action d
     | PinNode String Pos
     | Connect Patch.OutletPath Patch.InletPath
     | HandleMouse H.SubscriptionId ME.MouseEvent -- TODO Split mouse handing in different actions
+    | HandleNode String (UI.NodeOutput d)
 
 
 initialState :: forall d. Input d -> State d
@@ -333,6 +334,12 @@ handleAction = case _ of
                         pure unit
             _ ->
                 pure unit
+
+    HandleNode nodeName (UI.SendToOutlet outlet d) ->
+        pure unit -- FIXME
+
+    HandleNode nodeName (UI.SendToInlet inlet d) ->
+        pure unit -- FIXME
 
     where
         findSubjectUnderPos state pos =

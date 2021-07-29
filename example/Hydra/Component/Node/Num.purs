@@ -1,14 +1,21 @@
 module Hydra.Component.Node.Num where
 
 
-import Prelude (Unit, unit, const, pure)
+import Prelude
+
+-- import Data.String.Read (read)
+--import Data.Parse
+import Data.Number as Number
+import Data.Maybe (maybe)
 
 import App.UI (BgInput)
 import App.UI as UI
 
 import Hydra (Hydra)
+import Hydra as Hydra
 
 import DOM.HTML.Indexed.InputType (InputType(..)) as I
+import DOM.HTML.Indexed.StepValue (StepValue(..)) as I
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -17,10 +24,13 @@ import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Elements as HS
 
+
 type State = Unit
 
 
-type Action = Unit
+data Action
+    = NoOp
+    | Change Number
 
 
 initialState :: UI.NodeInput Hydra -> State
@@ -34,13 +44,20 @@ render _ =
         [ HH.input
             [ HP.type_ I.InputNumber
             , HP.width 40, HP.height 9
-            --, HE.onValueInput ()
+            , HP.min 0.0
+            , HP.max 255.0
+            , HP.step $ I.Step 0.1
+            , HE.onValueInput (Number.fromString >>> maybe NoOp Change)
             ]
         ]
 
 
-handleAction :: forall output m. Action -> H.HalogenM State Action () output m Unit
-handleAction _ = pure unit
+handleAction :: forall m. Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
+handleAction = case _ of
+    Change n ->
+        H.raise $ UI.SendToOutlet "num" $ Hydra.num n
+    NoOp ->
+        pure unit
 
 
 component :: forall m. UI.NodeComponent m Hydra
