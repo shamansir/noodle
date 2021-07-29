@@ -10,6 +10,7 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Data.Array as Array
 import Data.Int (toNumber)
 import Data.Vec2 as V2
+import Data.Vec2 ((<+>))
 
 import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
@@ -178,7 +179,8 @@ render { node, name, style, flow, ui } =
                     Nothing ->
                         HS.g [ ] [ ]
                     Just userNodeBody ->
-                        HH.slot _body name userNodeBody node (const NoOp)
+                        HS.g [ translateTo $ 0.0 <+> u.namePlateHeight ]
+                            [ HH.slot _body name userNodeBody node (const NoOp) ]
                 ]
 
         shadow =

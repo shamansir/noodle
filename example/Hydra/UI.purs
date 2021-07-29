@@ -6,19 +6,19 @@ import Data.Maybe (Maybe(..))
 
 import Hydra (Hydra)
 import Hydra.Component.Background as BG
+import Hydra.Component.Node.Num as NumNode
 
-import Halogen as H
-
-import App.UI (UI, BgInput, NodeInput)
+import App.UI as UI
+import App.UI (UI)
 
 
 ui :: UI Hydra
 ui = { background, node }
 
 
-background :: forall m query output. Maybe (H.Component query (BgInput Hydra) output m)
+background :: forall m. Maybe (UI.BgComponent m Hydra)
 background = Just BG.component
 
 
-node :: forall m query output. String -> Maybe (H.Component query (NodeInput Hydra) output m)
-node = const $ Nothing
+node :: forall m. String -> Maybe (UI.NodeComponent m Hydra)
+node = const $ Just $ NumNode.component
