@@ -19,7 +19,7 @@ import Data.PinBoard as PB
 import Data.Set as Set
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Vec2 (Vec2, Pos, Size, (<+>))
+import Data.Vec2 (Pos, Size, (<+>))
 import Data.Vec2 as V2
 import Data.Foldable (foldr)
 
@@ -42,7 +42,6 @@ import App.Style as Style
 import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
 import App.UI (UI)
-import App.UI as UI
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -103,7 +102,6 @@ data Action d
     | PinNode String Pos
     | Connect Patch.OutletPath Patch.InletPath
     | HandleMouse H.SubscriptionId ME.MouseEvent -- TODO Split mouse handing in different actions
-    | HandleNode String (UI.NodeOutput d)
 
 
 initialState :: forall d. Input d -> State d
@@ -129,7 +127,7 @@ nodesOffset = V2.h' 35.0
 cursorOffset = V2.h' 25.0
 
 
-render :: forall d m. State d -> H.ComponentHTML (Action d) Slots m
+render :: forall d m. MonadEffect m => State d -> H.ComponentHTML (Action d) Slots m
 render state =
     HS.g
         []
@@ -334,12 +332,6 @@ handleAction = case _ of
                         pure unit
             _ ->
                 pure unit
-
-    HandleNode nodeName (UI.SendToOutlet outlet d) ->
-        pure unit -- FIXME
-
-    HandleNode nodeName (UI.SendToInlet inlet d) ->
-        pure unit -- FIXME
 
     where
         findSubjectUnderPos state pos =

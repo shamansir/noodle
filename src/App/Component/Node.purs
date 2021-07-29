@@ -3,6 +3,8 @@ module App.Component.Node where
 
 import Prelude
 
+import Effect.Class (class MonadEffect, liftEffect)
+
 import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..))
 import Data.Set as Set
@@ -12,6 +14,7 @@ import Data.Int (toNumber)
 import Data.Vec2 as V2
 import Data.Vec2 ((<+>))
 
+import Noodle.Node ((+>), (++>))
 import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
 
@@ -59,6 +62,7 @@ type State d =
 
 data Action d
     = Receive (Input d)
+    | SendData (UI.NodeOutput d)
     | NoOp
 
 
@@ -180,7 +184,7 @@ render { node, name, style, flow, ui } =
                         HS.g [ ] [ ]
                     Just userNodeBody ->
                         HS.g [ translateTo $ u.bodyPadding <+> u.namePlateHeight ]
-                            [ HH.slot _body name userNodeBody node (const NoOp) ]
+                            [ HH.slot _body name userNodeBody node SendData ]
                 ]
 
         shadow =
@@ -196,15 +200,24 @@ render { node, name, style, flow, ui } =
                 ]
 
 
-handleAction :: forall output m d. Action d -> H.HalogenM (State d) (Action d) (Slots d) output m Unit
+handleAction :: forall output m d. MonadEffect m => Action d -> H.HalogenM (State d) (Action d) (Slots d) output m Unit
 handleAction = case _ of
-  Receive input ->
-    H.modify_ (\state -> state { node = input.node })
-  NoOp ->
-    pure unit
+    Receive input ->
+        H.modify_ (\state -> state { node = input.node })
+
+    SendData (UI.SendToOutlet outlet d) -> do
+        state <- H.get
+        liftEffect (state.node ++> (outlet /\ d))
+
+    SendData (UI.SendToInlet inlet d) -> do
+        state <- H.get
+        liftEffect (state.node +> (inlet /\ d))
+
+    NoOp ->
+        pure unit
 
 
-component :: forall query output m d. H.Component query (Input d) output m
+component :: forall query output m d. MonadEffect m => H.Component query (Input d) output m
 component =
     H.mkComponent
         { initialState

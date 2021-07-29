@@ -65,7 +65,7 @@ type State d =
     }
 
 
-data Action d
+data Action
     = Initialize
     | SelectPatch String
     | AnimationFrame H.SubscriptionId Number
@@ -82,7 +82,7 @@ initialState { network, toolkit, style, flow, currentPatch, ui } =
     }
 
 
-render :: forall d m. MonadEffect m => State d -> H.ComponentHTML (Action d) (Slots d) m
+render :: forall d m. MonadEffect m => State d -> H.ComponentHTML Action (Slots d) m
 render (s@{ network, toolkit, style, flow }) =
     HS.svg
         [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height
@@ -135,7 +135,7 @@ render (s@{ network, toolkit, style, flow }) =
                 [ HH.text "No patch selected" ]
 
 
-handleAction :: forall output m d. MonadAff m => MonadEffect m => Action d -> H.HalogenM (State d) (Action d) (Slots d) output m Unit
+handleAction :: forall output m d. MonadAff m => MonadEffect m => Action -> H.HalogenM (State d) Action (Slots d) output m Unit
 handleAction = case _ of
     Initialize -> do
         innerWidth <- H.liftEffect $ Window.innerWidth =<< window
