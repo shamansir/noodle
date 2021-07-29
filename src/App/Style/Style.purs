@@ -29,6 +29,7 @@ type Units =
     , bodyCornerRadius :: Number
     , bodyShadowShift :: Number
     , nodePadding :: Number
+    , bodyPadding :: Number
     }
 
 

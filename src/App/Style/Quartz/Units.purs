@@ -34,6 +34,7 @@ units flow =
     , bodyStrokeWidth
     , bodyCornerRadius
     , bodyShadowShift
+    , bodyPadding
     }
 
 
@@ -77,3 +78,6 @@ bodyCornerRadius = 0.0
 
 
 bodyShadowShift = 5.0
+
+
+bodyPadding = 5.0

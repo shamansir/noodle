@@ -179,7 +179,7 @@ render { node, name, style, flow, ui } =
                     Nothing ->
                         HS.g [ ] [ ]
                     Just userNodeBody ->
-                        HS.g [ translateTo $ 0.0 <+> u.namePlateHeight ]
+                        HS.g [ translateTo $ u.bodyPadding <+> u.namePlateHeight ]
                             [ HH.slot _body name userNodeBody node (const NoOp) ]
                 ]
 

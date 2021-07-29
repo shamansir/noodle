@@ -19,6 +19,7 @@ to generate this file without the comments in this block.
   , "control"
   , "datetime"
   , "debug"
+  , "dom-indexed"
   , "effect"
   , "foldable-traversable"
   , "halogen"

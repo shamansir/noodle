@@ -30,10 +30,11 @@ initialState = const unit
 render :: forall m. State -> H.ComponentHTML Action () m
 render _ =
     HS.foreignObject
-        [ HSA.x 0.0, HSA.y 0.0, HSA.width 50.0, HSA.height 10.0 ]
+        [ HSA.x 0.0, HSA.y 0.0, HSA.width 52.0, HSA.height 22.0 ]
         [ HH.input
             [ HP.type_ I.InputNumber
-            , HP.width 50, HP.height 10
+            , HP.width 40, HP.height 9
+            --, HE.onValueInput ()
             ]
         ]
 
