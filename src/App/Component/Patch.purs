@@ -41,6 +41,8 @@ import App.Style (Style, NodeFlow)
 import App.Style as Style
 import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
+import App.UI (UI)
+import App.UI as UI
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -74,6 +76,8 @@ type Input d =
     , style :: Style
     , flow :: NodeFlow
     , offset :: Pos
+    , ui :: UI d
+    -- , nodeBodyRenderer :: String -> Maybe (UI.NodeComponent m d)
     }
 
 
@@ -86,6 +90,8 @@ type State d =
     , layout :: Bin2 Number String
     , pinned :: PinBoard String
     , mouse :: Mouse.State (Subject /\ Pos)
+    , ui :: UI d
+    -- , nodeBodyRenderer :: String -> Maybe (UI.NodeComponent m d)
     }
 
 
@@ -100,7 +106,7 @@ data Action d
 
 
 initialState :: forall d. Input d -> State d
-initialState { patch, toolkit, style, flow, offset } =
+initialState { patch, toolkit, style, flow, offset, ui } =
     { patch, toolkit, style, flow
     , offset : offset + (V2.h' $ tabHeight + tabVertPadding)
     , layout :
@@ -108,6 +114,7 @@ initialState { patch, toolkit, style, flow, offset } =
             # addNodesFrom flow style patch
     , pinned : []
     , mouse : Mouse.init
+    , ui
     }
 
 
@@ -176,7 +183,8 @@ render state =
                 , HSA.classes $ CS.node state.flow name
                 ]
                 [ HH.slot _node name
-                    NodeC.component { node, name, style : state.style, flow : state.flow }
+                    NodeC.component
+                        { node, name, style : state.style, flow : state.flow, ui : state.ui }
                     absurd
                 ]
         nodesLayout =

@@ -21,6 +21,7 @@ import App.Style.ClassNames as CS
 import App.Component.Patch as PatchC
 import App.Emitters as Emitters
 import App.UI (UI)
+import App.UI as UI
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -31,9 +32,9 @@ import Web.HTML (window)
 import Web.HTML.Window as Window
 
 
-type Slots =
+type Slots d =
     ( patch :: PatchC.Slot Unit
-    , background :: forall query. H.Slot query Void Unit
+    , background :: UI.BgSlot d Unit
     )
 
 
@@ -69,7 +70,7 @@ data Action d
     | SelectPatch String
     | AnimationFrame H.SubscriptionId Number
     | WindowResize H.SubscriptionId { w :: Int, h :: Int }
-    | HandlePatch (PatchC.Action d)
+    -- | HandlePatch (PatchC.Action d)
 
 
 initialState :: forall d. Input d -> State d
@@ -81,7 +82,7 @@ initialState { network, toolkit, style, flow, currentPatch, ui } =
     }
 
 
-render :: forall d m. MonadEffect m => State d -> H.ComponentHTML (Action d) Slots m
+render :: forall d m. MonadEffect m => State d -> H.ComponentHTML (Action d) (Slots d) m
 render (s@{ network, toolkit, style, flow }) =
     HS.svg
         [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height
@@ -127,14 +128,14 @@ render (s@{ network, toolkit, style, flow }) =
         maybeCurrent (Just patch) =
             HS.g
                 [ HSA.transform [ HSA.Translate 0.0 $ tabHeight + tabPadding ] ]
-                [ HH.slot _patch unit PatchC.component { patch, toolkit, style, flow, offset : patchOffset } absurd ]
+                [ HH.slot _patch unit PatchC.component { patch, toolkit, style, flow, offset : patchOffset, ui : s.ui } absurd ]
         maybeCurrent Nothing =
             HS.text
                 [ HSA.transform [ HSA.Translate 0.0 $ tabHeight + tabPadding ] ]
                 [ HH.text "No patch selected" ]
 
 
-handleAction :: forall output m d. MonadAff m => MonadEffect m => Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
+handleAction :: forall output m d. MonadAff m => MonadEffect m => Action d -> H.HalogenM (State d) (Action d) (Slots d) output m Unit
 handleAction = case _ of
     Initialize -> do
         innerWidth <- H.liftEffect $ Window.innerWidth =<< window
@@ -147,8 +148,8 @@ handleAction = case _ of
         H.subscribe' $ \sid -> WindowResize sid <$> windowResize
     SelectPatch _ ->
         H.modify_ \state -> state
-    HandlePatch _ ->
-        H.modify_ \state -> state
+    -- HandlePatch _ ->
+    --     H.modify_ \state -> state
     AnimationFrame _ time ->
         H.modify_ \state -> state
             { currentFrame = time }

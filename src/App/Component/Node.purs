@@ -23,6 +23,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
+import App.UI (UI)
 
 import Type.Proxy (Proxy(..))
 
@@ -35,6 +36,7 @@ type Input d =
     , name :: String
     , style :: Style
     , flow :: NodeFlow
+    , ui :: UI d
     }
 
 
@@ -43,6 +45,7 @@ type State d =
     , name :: String
     , style :: Style
     , flow :: NodeFlow
+    , ui :: UI d
     }
 
 
