@@ -24,11 +24,18 @@ import Halogen.HTML.Properties as HP
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
 import App.UI (UI)
+import App.UI as UI
 
 import Type.Proxy (Proxy(..))
 
 
 type Slot id = forall query. H.Slot query Void id
+
+
+type Slots d = ( body :: UI.NodeSlot d String )
+
+
+_body = Proxy :: Proxy "body"
 
 
 type Input d =
@@ -51,14 +58,15 @@ type State d =
 
 data Action d
     = Receive (Input d)
+    | NoOp
 
 
 initialState :: forall d. Input d -> State d
 initialState = identity
 
 
-render :: forall d m. State d -> H.ComponentHTML (Action d) () m
-render { node, name, style, flow } =
+render :: forall d m. State d -> H.ComponentHTML (Action d) (Slots d) m
+render { node, name, style, flow, ui } =
     HS.g
         []
         [ shadow
@@ -166,6 +174,11 @@ render { node, name, style, flow } =
                     , HSA.rx u.bodyCornerRadius, HSA.ry u.bodyCornerRadius
                     , HSA.width innerWidth, HSA.height innerHeight
                     ]
+                , case ui.node name of -- FIXME: typeName
+                    Nothing ->
+                        HS.g [ ] [ ]
+                    Just userNodeBody ->
+                        HH.slot _body name userNodeBody node (const NoOp)
                 ]
 
         shadow =
@@ -181,10 +194,12 @@ render { node, name, style, flow } =
                 ]
 
 
-handleAction :: forall output m d. Action d -> H.HalogenM (State d) (Action d) () output m Unit
+handleAction :: forall output m d. Action d -> H.HalogenM (State d) (Action d) (Slots d) output m Unit
 handleAction = case _ of
   Receive input ->
     H.modify_ (\state -> state { node = input.node })
+  NoOp ->
+    pure unit
 
 
 component :: forall query output m d. H.Component query (Input d) output m
