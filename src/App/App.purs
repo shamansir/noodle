@@ -11,6 +11,7 @@ import Halogen.VDom.Driver (runUI)
 
 import Noodle.Network (Network)
 import Noodle.Toolkit (Toolkit)
+import Noodle.Patch as Patch
 
 import App.Component.Network as NetworkC
 import App.Style (Style, NodeFlow)
@@ -22,7 +23,7 @@ type App d =
     , flow :: NodeFlow
     , toolkit :: Toolkit d
     , network :: Network d
-    , currentPatch :: Maybe String
+    , currentPatch :: Maybe Patch.Id
     , ui :: UI d
     }
 

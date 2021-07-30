@@ -14,6 +14,7 @@ import Data.Vec2 ((<+>))
 
 import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
+import Noodle.Patch as Patch
 import Noodle.Toolkit (Toolkit) as Noodle
 
 import App.Style (Style, NodeFlow)
@@ -48,7 +49,7 @@ type Input d =
     , toolkit :: Noodle.Toolkit d
     , style :: Style
     , flow :: NodeFlow
-    , currentPatch :: Maybe String
+    , currentPatch :: Maybe Patch.Id
     , ui :: UI d
     }
 
@@ -56,7 +57,7 @@ type Input d =
 type State d =
     { network :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
-    , currentPatch :: Maybe String
+    , currentPatch :: Maybe Patch.Id
     , width :: Int, height :: Int
     , currentFrame :: Number
     , style :: Style
@@ -67,7 +68,7 @@ type State d =
 
 data Action
     = Initialize
-    | SelectPatch String
+    | SelectPatch Patch.Id
     | AnimationFrame H.SubscriptionId Number
     | WindowResize H.SubscriptionId { w :: Int, h :: Int }
     -- | HandlePatch (PatchC.Action d)

@@ -36,7 +36,7 @@ import Type.Proxy (Proxy(..))
 type Slot id = forall query. H.Slot query Void id
 
 
-type Slots d = ( body :: UI.NodeSlot d String )
+type Slots d = ( body :: UI.NodeSlot d Node.Id )
 
 
 _body = Proxy :: Proxy "body"
@@ -44,7 +44,7 @@ _body = Proxy :: Proxy "body"
 
 type Input d =
     { node :: Noodle.Node d
-    , name :: String
+    , name :: Node.Id
     , style :: Style
     , flow :: NodeFlow
     , ui :: UI d
@@ -53,7 +53,7 @@ type Input d =
 
 type State d =
     { node :: Noodle.Node d
-    , name :: String
+    , name :: Node.Id
     , style :: Style
     , flow :: NodeFlow
     , ui :: UI d

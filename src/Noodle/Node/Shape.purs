@@ -17,8 +17,13 @@ import Data.Maybe (Maybe)
 import Data.Newtype (unwrap, class Newtype)
 
 
-type Inlets d = (String /-> (Channel.Shape d d)) -- forall a. (String /-> Channel.Shape a d)
-type Outlets d = (String /-> (Channel.Shape d d)) -- forall a. (String /-> Channel.Shape a d)
+
+type InletId = String
+type OutletId = String
+
+
+type Inlets d = (InletId /-> (Channel.Shape d d)) -- forall a. (String /-> Channel.Shape a d)
+type Outlets d = (OutletId /-> (Channel.Shape d d)) -- forall a. (String /-> Channel.Shape a d)
 
 
 newtype Shape d = Shape (Inlets d /\ Outlets d)
@@ -64,7 +69,7 @@ withOutlets = Map.empty
 andInlet
     :: forall d
      . Inlets d
-    -> String /\ (Channel.Shape d d)
+    -> InletId /\ (Channel.Shape d d)
     -> Inlets d
 andInlet inlets (name /\ shape) =
     inlets # Map.insert name shape
@@ -73,25 +78,25 @@ andInlet inlets (name /\ shape) =
 andOutlet
     :: forall d
      . Outlets d
-    -> String /\ (Channel.Shape d d)
+    -> OutletId /\ (Channel.Shape d d)
     -> Outlets d
 andOutlet outlets (name /\ shape) =
     outlets # Map.insert name shape
 
 
-inlet :: forall d. String -> Shape d -> Maybe (Channel.Shape d d)
+inlet :: forall d. InletId -> Shape d -> Maybe (Channel.Shape d d)
 inlet name (Shape (inlets /\ _)) = Map.lookup name inlets
 
 
-outlet :: forall d. String -> Shape d -> Maybe (Channel.Shape d d)
+outlet :: forall d. OutletId -> Shape d -> Maybe (Channel.Shape d d)
 outlet name (Shape (_ /\ outlets)) = Map.lookup name outlets
 
 
-inlets :: forall d. Shape d -> Array (String /\ (Channel.Shape d d))
+inlets :: forall d. Shape d -> Array (InletId /\ (Channel.Shape d d))
 inlets = unwrap >>> Tuple.fst >>> Map.toUnfoldable
 
 
-outlets :: forall d. Shape d -> Array (String /\ (Channel.Shape d d))
+outlets :: forall d. Shape d -> Array (OutletId /\ (Channel.Shape d d))
 outlets = unwrap >>> Tuple.snd >>> Map.toUnfoldable
 
 

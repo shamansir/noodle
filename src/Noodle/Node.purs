@@ -1,7 +1,8 @@
 module Noodle.Node
-    ( Node, Link
+    ( Node, Link, Id, Family
     , send, produce, connect, disconnect
     , make, move
+    , markFamily, family
     , inlet, outlet
     , inlets, outlets
     , inletSignal, outletSignal, outletSignalFlipped
@@ -31,7 +32,7 @@ import Effect.Ref as Ref
 
 import Noodle.Node.Define (Def(..))
 import Noodle.Node.Define as Def
-import Noodle.Node.Shape (Shape)
+import Noodle.Node.Shape (Shape, InletId, OutletId)
 import Noodle.Node.Shape as Shape
 import Noodle.Channel.Shape as Channel
 
@@ -42,13 +43,18 @@ import Signal.Channel as Ch
 import Signal.Channel.Extra as Ch
 
 
+type Id = String
+
+type Family = String
+
 
 {- Node stores incoming and outgoing channels (`Signal.Channel`, not `Noodle.Channel`) of data of type `d` + any additional data -}
 data Node d
     = Node
         d
         (Shape d)
-        (Channel (String /\ d) /\ Channel (String /\ d))
+        (Channel (InletId /\ d) /\ Channel (OutletId /\ d))
+        (Maybe Family)
         -- we can turn these into Signals if we either pass the function needed to send values and forget it,
         -- or create it ourselves and return it to be re-used by outer world.
         -- Signals will give us Functors etc.
@@ -72,7 +78,7 @@ make default (Def shape fn) = do
     outlets_chan <- Ch.channel (consumer /\ default)
     let
         inlets = Ch.subscribe inlets_chan
-        node = Node default shape (inlets_chan /\ outlets_chan)
+        node = Node default shape (inlets_chan /\ outlets_chan) Nothing
         store ( inlet /\ d ) ( _ /\ map ) = inlet /\ (map # Map.insert inlet d)
         maps = inlets # Signal.foldp store (consumer /\ Map.empty)
         toReceive (last /\ fromInlets) = Def.Receive { last, fromInlets }
@@ -98,17 +104,17 @@ infixl 4 outletSignalFlipped as <|
 
 -- fromFn' :: (d -> d) -> Node''' d
 
-distribute :: forall d. Channel (String /\ d) -> Def.Pass d -> Effect Unit
+distribute :: forall d. Channel (OutletId /\ d) -> Def.Pass d -> Effect Unit
 distribute passTo (Def.Pass { toOutlets }) =
-    traverse_ (Ch.send passTo) $ (Map.toUnfoldable toOutlets :: Array (String /\ d))
+    traverse_ (Ch.send passTo) $ (Map.toUnfoldable toOutlets :: Array (OutletId /\ d))
 
 
-send :: forall d. Node d -> (String /\ d) -> Effect Unit
+send :: forall d. Node d -> (InletId /\ d) -> Effect Unit
 send node (inlet /\ d) =
     Ch.send (getInletsChannel node) $ inlet /\ d
 
 
-produce :: forall d. Node d -> (String /\ d) -> Effect Unit
+produce :: forall d. Node d -> (OutletId /\ d) -> Effect Unit
 produce node (outlet /\ d) =
     Ch.send (getOutletsChannel node) $ outlet /\ d
 
@@ -116,7 +122,7 @@ produce node (outlet /\ d) =
 -- TODO: sendToOutlet ??
 
 
-connect :: forall d. (Node d /\ String) -> (Node d /\ String) -> Effect Link
+connect :: forall d. (Node d /\ OutletId) -> (Node d /\ InletId) -> Effect Link
 connect (srcNode /\ srcOutlet) (dstNode /\ dstInlet) =
     let inlets_chan = getInletsChannel dstNode
     in do
@@ -135,30 +141,30 @@ disconnect (Link ref) =
 
 
 {-
-attach :: forall d. Signal d -> String -> Node d -> Effect (Node d)
+attach :: forall d. Signal d -> InletId -> Node d -> Effect (Node d)
 attach signal inlet node = pure node -- FIXME: TODO
 -}
 
 
-getInletsChannel :: forall d. Node d -> Channel (String /\ d)
-getInletsChannel (Node _ _ (inlets_chan /\ _)) = inlets_chan
+getInletsChannel :: forall d. Node d -> Channel (InletId /\ d)
+getInletsChannel (Node _ _ (inlets_chan /\ _) _) = inlets_chan
 
 
-getOutletsChannel :: forall d. Node d -> Channel (String /\ d)
-getOutletsChannel (Node _ _ (_ /\ outlets_chan)) = outlets_chan
+getOutletsChannel :: forall d. Node d -> Channel (OutletId /\ d)
+getOutletsChannel (Node _ _ (_ /\ outlets_chan) _) = outlets_chan
 
 
-inletsSignal :: forall d. Node d -> Signal (String /\ d)
+inletsSignal :: forall d. Node d -> Signal (InletId /\ d)
 inletsSignal =
     Ch.subscribe <<< getInletsChannel
 
 
-outletsSignal :: forall d. Node d -> Signal (String /\ d)
+outletsSignal :: forall d. Node d -> Signal (OutletId /\ d)
 outletsSignal =
     Ch.subscribe <<< getOutletsChannel
 
 
-inletSignal :: forall d. Node d -> String -> Signal d
+inletSignal :: forall d. Node d -> InletId -> Signal d
 inletSignal node name =
     ( Ch.subscribe (getInletsChannel node)
         # Signal.filter
@@ -167,7 +173,7 @@ inletSignal node name =
     ) ~> snd
 
 
-outletSignal :: forall d. Node d -> String -> Signal d
+outletSignal :: forall d. Node d -> OutletId -> Signal d
 outletSignal node name =
     ( Ch.subscribe (getOutletsChannel node)
         # Signal.filter
@@ -176,7 +182,7 @@ outletSignal node name =
     ) ~> snd
 
 
-outletSignalFlipped :: forall d. String -> Node d -> Signal d
+outletSignalFlipped :: forall d. OutletId -> Node d -> Signal d
 outletSignalFlipped = flip outletSignal
 
 
@@ -185,45 +191,54 @@ getShape = unwrap <<< getShape'
 
 
 getShape' :: forall d. Node d -> Shape d
-getShape' (Node _ shape _) = shape
+getShape' (Node _ shape _ _) = shape
 
 
-inlet :: forall d. String -> Node d -> Maybe (Channel.Shape d d)
+inlet :: forall d. InletId -> Node d -> Maybe (Channel.Shape d d)
 inlet name = getShape' >>> Shape.inlet name
 
 
-outlet :: forall d. String -> Node d -> Maybe (Channel.Shape d d)
+outlet :: forall d. OutletId -> Node d -> Maybe (Channel.Shape d d)
 outlet name = getShape' >>> Shape.outlet name
 
 
-inlets :: forall d. Node d -> Array (String /\ (Channel.Shape d d))
+inlets :: forall d. Node d -> Array (InletId /\ (Channel.Shape d d))
 inlets = getShape' >>> Shape.inlets
 
 
-outlets :: forall d. Node d -> Array (String /\ (Channel.Shape d d))
+outlets :: forall d. Node d -> Array (OutletId /\ (Channel.Shape d d))
 outlets = getShape' >>> Shape.outlets
 
 
 dimensions :: forall d. Node d -> Int /\ Int
-dimensions (Node _ shape _) = Shape.dimensions shape
+dimensions (Node _ shape _ _) = Shape.dimensions shape
 
 
-indexOfInlet :: forall d. String -> Node d -> Maybe Int
+indexOfInlet :: forall d. InletId -> Node d -> Maybe Int
 indexOfInlet inletName node =
     Array.elemIndex inletName $ fst <$> inlets node
 
 
-indexOfOutlet :: forall d. String -> Node d -> Maybe Int
+indexOfOutlet :: forall d. OutletId -> Node d -> Maybe Int
 indexOfOutlet outletName node =
     Array.elemIndex outletName $ fst <$> outlets node
 
 
 default :: forall d. Node d -> d
-default (Node d _ _) = d
+default (Node d _ _ _) = d
+
+
+markFamily :: forall d. Family -> Node d -> Node d
+markFamily family (Node default shape channels _) =
+    Node default shape channels $ Just family
+
+
+family :: forall d. Node d -> Maybe Family
+family (Node _ _ _ f) = f
 
 
 move :: forall a b. (a -> b) -> (b -> a) -> Node a -> Effect (Node b)
-move f g (Node default shape (inChannel /\ outChannel)) =
+move f g (Node default shape (inChannel /\ outChannel) nodeFamily) =
     let
         movedShape = imap f g shape
         nextDefault = f default
@@ -232,4 +247,4 @@ move f g (Node default shape (inChannel /\ outChannel)) =
         newOutChannel <- Ch.channel (consumer /\ nextDefault)
         _ <- Signal.runSignal $ (Ch.subscribe inChannel ~> ((<$>) f) ~> Ch.send newInChannel)
         _ <- Signal.runSignal $ (Ch.subscribe outChannel ~> ((<$>) f) ~> Ch.send newOutChannel)
-        pure $ Node nextDefault movedShape (newInChannel /\ newOutChannel)
+        pure $ Node nextDefault movedShape (newInChannel /\ newOutChannel) nodeFamily

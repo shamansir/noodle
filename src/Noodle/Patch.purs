@@ -18,18 +18,21 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Node (Node, Link)
 import Noodle.Node as Node
+import Noodle.Node.Shape (InletId, OutletId)
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit as Toolkit
 
 
+type Id = String
 
-type InletPath = String /\ String
-type OutletPath = String /\ String
+
+type InletPath = Node.Id /\ InletId
+type OutletPath = Node.Id /\ OutletId
 
 
 data Patch d =
     Patch
-        (String /-> Node d)
+        (Node.Id /-> Node d)
         ((OutletPath /\ InletPath) /-> Link)
 
 
@@ -43,32 +46,32 @@ empty :: forall d. Patch d
 empty = Patch Map.empty Map.empty
 
 
-addNode :: forall d. String -> Node d -> Patch d -> Patch d
+addNode :: forall d. Node.Id -> Node d -> Patch d -> Patch d
 addNode name node (Patch nodes links) =
     Patch
         (nodes # Map.insert name node)
         links
 
 
-addNodeFrom :: forall d. Toolkit d -> String /\ String -> Patch d -> Effect (Patch d)
-addNodeFrom toolkit (nodeType /\ nodeId) patch =
-    Toolkit.spawn nodeType toolkit
-        <#> maybe patch (\node -> addNode nodeId node patch)
+addNodeFrom :: forall d. Toolkit d -> Node.Family /\ Node.Id -> Patch d -> Effect (Patch d)
+addNodeFrom toolkit (nodeFamily /\ nodeId) patch =
+    Toolkit.spawn nodeFamily toolkit
+        <#> maybe patch (\node -> addNode nodeId (node # Node.markFamily nodeFamily) patch)
 
 
-addNodeFrom' :: forall d. Toolkit d -> String -> Patch d -> Effect (String /\ Patch d)
-addNodeFrom' toolkit nodeType patch =
-    addNodeFrom toolkit (nodeType /\ nextNodeId) patch
+addNodeFrom' :: forall d. Toolkit d -> Node.Family -> Patch d -> Effect (Node.Id /\ Patch d)
+addNodeFrom' toolkit nodeFamily patch =
+    addNodeFrom toolkit (nodeFamily /\ nextNodeId) patch
         <#> ((/\) nextNodeId)
-    where nextNodeId = addUniqueNodeId patch nodeType
+    where nextNodeId = addUniqueNodeId patch nodeFamily
 
 
-addNodesFrom :: forall d. Toolkit d -> Array (String /\ String) -> Patch d -> Effect (Patch d)
+addNodesFrom :: forall d. Toolkit d -> Array (Node.Family /\ Node.Id) -> Patch d -> Effect (Patch d)
 addNodesFrom toolkit pairs patch =
     foldr (\pair patchEff -> patchEff >>= addNodeFrom toolkit pair) (pure patch) pairs
 
 
-nodes :: forall d. Patch d -> Array (String /\ Node d)
+nodes :: forall d. Patch d -> Array (Node.Id /\ Node d)
 nodes (Patch nodes _) = nodes # Map.toUnfoldable
 
 
@@ -76,7 +79,7 @@ links :: forall d. Patch d -> Set (OutletPath /\ InletPath)
 links (Patch _ links) = links # Map.keys
 
 
-findNode :: forall d. String -> Patch d -> Maybe (Node d)
+findNode :: forall d. Node.Id -> Patch d -> Maybe (Node d)
 findNode name (Patch nodes _) = nodes # Map.lookup name
 
 
@@ -122,7 +125,7 @@ disconnect outletPath inletPath patch@(Patch _ links) =
             pure patch
 
 
-send :: forall d. (String /\ String) -> d -> Patch d -> Effect Unit
+send :: forall d. (Node.Id /\ InletId) -> d -> Patch d -> Effect Unit
 send (node /\ inlet) v patch =
     patch
         # findNode node
@@ -130,12 +133,12 @@ send (node /\ inlet) v patch =
         # fromMaybe (pure unit)
 
 
-send' :: forall d. (String /\ String) -> d -> Patch d -> Effect (Patch d)
+send' :: forall d. (Node.Id /\ InletId) -> d -> Patch d -> Effect (Patch d)
 send' path v patch =
     send path v patch *> pure patch
 
 
-produce :: forall d. (String /\ String) -> d -> Patch d -> Effect Unit
+produce :: forall d. (Node.Id /\ OutletId) -> d -> Patch d -> Effect Unit
 produce (node /\ outlet) v patch =
     patch
         # findNode node
@@ -143,14 +146,14 @@ produce (node /\ outlet) v patch =
         # fromMaybe (pure unit)
 
 
-produce' :: forall d. (String /\ String) -> d -> Patch d -> Effect (Patch d)
+produce' :: forall d. (Node.Id /\ OutletId) -> d -> Patch d -> Effect (Patch d)
 produce' path v patch =
     produce path v patch *> pure patch
 
 
-addUniqueNodeId :: forall d. Patch d -> String -> String
-addUniqueNodeId patch nodeType =
-    nodeType <> "-" <> (show $ nodesCount patch + 1)
+addUniqueNodeId :: forall d. Patch d -> Node.Family -> Node.Id
+addUniqueNodeId patch nodeFamily =
+    nodeFamily <> "-" <> (show $ nodesCount patch + 1)
 
 
 -- TODO: `withNode`

@@ -18,14 +18,14 @@ import Noodle.Node as Node
 import Noodle.Node.Define (Def)
 
 
-data Toolkit d = Toolkit d (String /-> Def d)
+data Toolkit d = Toolkit d (Node.Id /-> Def d)
 
 
-make :: forall d. d -> Array (String /\ Def d) -> Toolkit d
+make :: forall d. d -> Array (Node.Family /\ Def d) -> Toolkit d
 make def = Toolkit def <<< Map.fromFoldable
 
 
-spawn :: forall d. String -> Toolkit d -> Effect (Maybe (Node d))
+spawn :: forall d. Node.Family -> Toolkit d -> Effect (Maybe (Node d))
 spawn name (Toolkit def nodeDefs) =
     nodeDefs
         # Map.lookup name
@@ -33,6 +33,6 @@ spawn name (Toolkit def nodeDefs) =
         # sequence
 
 
-nodeNames :: forall d. Toolkit d -> Set String
-nodeNames (Toolkit _ nodeDefs) =
+nodeFamilies :: forall d. Toolkit d -> Set Node.Family
+nodeFamilies (Toolkit _ nodeDefs) =
     nodeDefs # Map.keys

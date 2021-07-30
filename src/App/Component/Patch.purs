@@ -33,6 +33,7 @@ import Noodle.Patch (Patch) as Noodle
 import Noodle.Patch as Patch
 import Noodle.Toolkit (Toolkit) as Noodle
 import Noodle.Toolkit as Toolkit
+import Noodle.Node.Shape (InletId, OutletId)
 
 import App.Component.Node as NodeC
 import App.Emitters as Emitters
@@ -57,16 +58,16 @@ import Web.UIEvent.MouseEvent as ME
 type Slot id = forall query. H.Slot query Void id
 
 
-type Slots = ( node :: NodeC.Slot String )
+type Slots = ( node :: NodeC.Slot Node.Id )
 
 
 _node = Proxy :: Proxy "node"
 
 
 data Subject
-    = Node String
-    | Inlet (String /\ String)
-    | Outlet (String /\ String)
+    = Node Node.Id
+    | Inlet (Node.Id /\ InletId)
+    | Outlet (Node.Id /\ OutletId)
 
 
 type Input d =
@@ -76,7 +77,7 @@ type Input d =
     , flow :: NodeFlow
     , offset :: Pos
     , ui :: UI d
-    -- , nodeBodyRenderer :: String -> Maybe (UI.NodeComponent m d)
+    -- , nodeBodyRenderer :: Node.Family -> Maybe (UI.NodeComponent m d)
     }
 
 
@@ -86,20 +87,20 @@ type State d =
     , style :: Style
     , flow :: NodeFlow
     , offset :: Pos
-    , layout :: Bin2 Number String
-    , pinned :: PinBoard String
+    , layout :: Bin2 Number Node.Id
+    , pinned :: PinBoard Node.Id
     , mouse :: Mouse.State (Subject /\ Pos)
     , ui :: UI d
-    -- , nodeBodyRenderer :: String -> Maybe (UI.NodeComponent m d)
+    -- , nodeBodyRenderer :: Node.Family -> Maybe (UI.NodeComponent m d)
     }
 
 
 data Action d
     = Initialize
     | Receive (Input d)
-    | AddNode String
-    | DetachNode String
-    | PinNode String Pos
+    | AddNode Node.Family
+    | DetachNode Node.Id
+    | PinNode Node.Id Pos
     | Connect Patch.OutletPath Patch.InletPath
     | HandleMouse H.SubscriptionId ME.MouseEvent -- TODO Split mouse handing in different actions
 
@@ -159,7 +160,7 @@ render state =
         nodeButtons
             = HS.g
                 [ HSA.classes CS.nodesTabs ]
-                $ nodeButton <$> (Array.mapWithIndex (/\) $ Set.toUnfoldable $ Toolkit.nodeNames state.toolkit)
+                $ nodeButton <$> (Array.mapWithIndex (/\) $ Set.toUnfoldable $ Toolkit.nodeFamilies state.toolkit)
         nodeButton (idx /\ name) =
             HS.g
                 [ HSA.classes $ CS.nodeButton name
@@ -337,7 +338,7 @@ handleAction = case _ of
         findSubjectUnderPos state pos =
             (findNodeInLayout state pos <|> findNodeInPinned state pos)
                 >>= whereInsideNode state
-        whereInsideNode :: State d -> (String /\ Pos) -> Maybe (Subject /\ Pos)
+        whereInsideNode :: State d -> (Node.Id /\ Pos) -> Maybe (Subject /\ Pos)
         whereInsideNode state (nodeName /\ pos) =
             let
                 flow = state.flow
@@ -380,7 +381,7 @@ component =
         }
 
 
-addNodesFrom :: forall d. NodeFlow -> Style -> Noodle.Patch d -> Bin2 Number String -> Bin2 Number String
+addNodesFrom :: forall d. NodeFlow -> Style -> Noodle.Patch d -> Bin2 Number Node.Id -> Bin2 Number Node.Id
 addNodesFrom flow style patch layout =
     Patch.nodes patch
         # foldr
@@ -396,7 +397,7 @@ boundsOf flow style =
     Calc.nodeBounds (style.units flow) flow
 
 
-boundsOf' :: forall d. NodeFlow -> Style -> Noodle.Patch d -> String -> Maybe Size
+boundsOf' :: forall d. NodeFlow -> Style -> Noodle.Patch d -> Node.Id -> Maybe Size
 boundsOf' flow style patch name =
     patch
         # Patch.findNode name

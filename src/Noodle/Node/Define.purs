@@ -29,19 +29,19 @@ import Data.Bifunctor (lmap, rmap)
 import Data.Newtype (unwrap)
 
 
-import Noodle.Node.Shape (Shape, Inlets, Outlets)
+import Noodle.Node.Shape (Shape, Inlets, Outlets, InletId, OutletId)
 import Noodle.Node.Shape as Shape
 import Noodle.Channel.Shape as Channel
 
 
-newtype Receive d = Receive { last :: String, fromInlets :: String /-> d }
+newtype Receive d = Receive { last :: InletId, fromInlets :: InletId /-> d }
 
 
 instance functorReceive :: Functor Receive where
     map f (Receive { last, fromInlets }) = Receive { last, fromInlets : f <$> fromInlets }
 
 
-newtype Pass d = Pass { toOutlets :: String /-> d }
+newtype Pass d = Pass { toOutlets :: OutletId /-> d }
 
 
 instance functorPass :: Functor Pass where
@@ -116,20 +116,20 @@ defineEffectfulFolding
 -}
 
 
-receive :: forall d. String -> Receive d -> Maybe d
+receive :: forall d. InletId -> Receive d -> Maybe d
 receive label (Receive { fromInlets }) = Map.lookup label fromInlets -- unwrap >>> flip Map.lookup
 
 
-lastUpdateAt :: forall d. Receive d -> String
+lastUpdateAt :: forall d. Receive d -> InletId
 lastUpdateAt (Receive { last }) = last
 
 
-pass :: forall d. Array (String /\ d) -> Pass d
+pass :: forall d. Array (OutletId /\ d) -> Pass d
 --pass = Pass <<< Map.fromFoldable
 pass values = Pass { toOutlets : Map.fromFoldable values }
 
 
-pass' :: forall d. Array (String /\ Maybe d) -> Pass d
+pass' :: forall d. Array (OutletId /\ Maybe d) -> Pass d
 --pass' = Pass <<< Map.fromFoldable <<< Array.mapMaybe sequence
 pass' values = Pass { toOutlets : Map.fromFoldable $ Array.mapMaybe sequence $ values }
 
@@ -212,35 +212,35 @@ fromFn5' v fn =
 
 
 {-
-withFn1 :: forall d. (d -> d) -> String -> Receive d -> Maybe d
+withFn1 :: forall d. (d -> d) -> InletId -> Receive d -> Maybe d
 withFn1 fn inlet r = fn <$> receive inlet r
 
 
-withFn2 :: forall d. (d -> d -> d) -> String -> String -> Receive d -> Maybe d
+withFn2 :: forall d. (d -> d -> d) -> InletId -> InletId -> Receive d -> Maybe d
 withFn2 fn inletA inletB r = fn <$> receive inletA r <*> receive inletB r
 
 
-withFn3 :: forall d. (d -> d -> d -> d) -> String -> String -> String -> Receive d -> Maybe d
+withFn3 :: forall d. (d -> d -> d -> d) -> InletId -> InletId -> InletId -> Receive d -> Maybe d
 withFn3 fn inletA inletB inletC r = fn <$> receive inletA r <*> receive inletB r <*> receive inletC r
 
 
-withFn4 :: forall d. (d -> d -> d -> d -> d) -> String -> String -> String -> String -> Receive d -> Maybe d
+withFn4 :: forall d. (d -> d -> d -> d -> d) -> InletId -> InletId -> InletId -> InletId -> Receive d -> Maybe d
 withFn4 fn inletA inletB inletC inletD r = fn <$> receive inletA r <*> receive inletB r <*> receive inletC r <*> receive inletD r
 
 
-withFn5 :: forall d. (d -> d -> d -> d -> d -> d) -> String -> String -> String -> String -> String -> Receive d -> Maybe d
+withFn5 :: forall d. (d -> d -> d -> d -> d -> d) -> InletId -> InletId -> InletId -> InletId -> InletId -> Receive d -> Maybe d
 withFn5 fn inletA inletB inletC inletD inletE r =
     fn <$> receive inletA r <*> receive inletB r <*> receive inletC r <*> receive inletD r <*> receive inletE r
 -}
 
 
 {-
-addInlet :: forall d. String -> Channel.Shape d -> Def d -> Def d
+addInlet :: forall d. InletId -> Channel.Shape d -> Def d -> Def d
 -- addInlet name shape = (<$>) (lmap $ Map.insert name shape)
 addInlet name shape (Def shapes fn) = Def ((lmap $ Map.insert name shape) shapes) fn
 
 
-addOutlet :: forall d. String -> (forall a. Channel.Shape a d) -> Def d -> Def d
+addOutlet :: forall d. OutletId -> (forall a. Channel.Shape a d) -> Def d -> Def d
 -- addOutlet name shape = (<$>) (rmap $ Map.insert name shape)
 addOutlet name shape (Def shapes fn) = Def ((rmap $ Map.insert name shape) shapes) fn -}
 
@@ -251,7 +251,7 @@ reshape inlets outlets (Def _ fn) =
         -- FIXME: update the handler to monitor hot/cold inlets as well
 
 
-{- reshapeInlet :: forall d. String -> Channel.Shape d -> Def d -> Def d
+{- reshapeInlet :: forall d. InletId -> Channel.Shape d -> Def d -> Def d
 reshapeInlet = addInlet -}
 
 
@@ -259,9 +259,9 @@ reshapeInlet = addInlet -}
 reshapeOutlet = addOutlet -}
 
 
-inletShape :: forall d. String -> Def d -> Maybe (Channel.Shape d d)
+inletShape :: forall d. InletId -> Def d -> Maybe (Channel.Shape d d)
 inletShape inlet = getShape >>> Tuple.snd >>> Map.lookup inlet
 
 
-outletShape :: forall d. String -> Def d -> Maybe (Channel.Shape d d)
+outletShape :: forall d. OutletId -> Def d -> Maybe (Channel.Shape d d)
 outletShape outlet = getShape >>> Tuple.fst >>> Map.lookup outlet

@@ -9,6 +9,8 @@ import Data.Maybe (Maybe)
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Node (Node)
+import Noodle.Node as Node
+import Noodle.Node.Shape (InletId, OutletId)
 import Noodle.Network (Network)
 
 
@@ -31,8 +33,8 @@ type BgOutput d = Void
 
 
 data NodeOutput d
-    = SendToInlet String d
-    | SendToOutlet String d
+    = SendToInlet InletId d
+    | SendToOutlet OutletId d
 
 
 type BgSlot d id = H.Slot BgQuery (BgOutput d) id
@@ -50,7 +52,7 @@ type NodeComponent m d = H.Component NodeQuery (NodeInput d) (NodeOutput d) m
 type BgRenderer d = forall m. Maybe (BgComponent m d)
 
 
-type NodeRenderer d = forall m. String -> Maybe (NodeComponent m d)
+type NodeRenderer d = forall m. Node.Family -> Maybe (NodeComponent m d)
 
 
 type UI d =

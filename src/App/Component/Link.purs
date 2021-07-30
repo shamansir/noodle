@@ -9,20 +9,23 @@ import Data.Tuple.Nested (type (/\))
 
 import Noodle.Network as Noodle
 
+import Noodle.Node as Node
+import Noodle.Node.Shape (InletId, OutletId)
+
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.Svg.Elements as HS
 
 
 type Input =
-    { outlet :: Maybe (String /\ String)
-    , inlet :: Maybe (String /\ String)
+    { outlet :: Maybe (Node.Id /\ InletId)
+    , inlet :: Maybe (Node.Id /\ OutletId)
     }
 
 
 type State =
-    { outlet :: Maybe (String /\ String)
-    , inlet :: Maybe (String /\ String)
+    { outlet :: Maybe (Node.Id /\ InletId)
+    , inlet :: Maybe (Node.Id /\ OutletId)
     -- TODO: positions, etc
     }
 
