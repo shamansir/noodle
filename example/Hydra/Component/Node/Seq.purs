@@ -5,8 +5,7 @@ import Prelude
 
 -- import Data.String.Read (read)
 --import Data.Parse
-import Data.Number as Number
-import Data.Maybe (maybe, fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Array ((:))
 import Data.Array as Array
 
@@ -18,14 +17,7 @@ import Hydra (Hydra)
 import Hydra as Hydra
 import Hydra.Component.Input as Input
 
-import DOM.HTML.Indexed.InputType (InputType(..)) as I
-import DOM.HTML.Indexed.StepValue (StepValue(..)) as I
-
 import Halogen as H
-import Halogen.HTML as HH
-import Halogen.HTML.Properties as HP
-import Halogen.HTML.Events as HE
-import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Elements as HS
 
 

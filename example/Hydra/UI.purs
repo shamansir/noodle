@@ -7,6 +7,7 @@ import Data.Maybe (Maybe(..))
 import Hydra (Hydra)
 import Hydra.Component.Background as BG
 import Hydra.Component.Node.Num as NumNode
+import Hydra.Component.Node.Osc as OscNode
 
 import Noodle.Node as Node
 
@@ -24,4 +25,5 @@ background = Just BG.component
 
 node :: forall m. Node.Family -> Maybe (UI.NodeComponent m Hydra)
 node "num" = Just $ NumNode.component
+node "osc" = Just $ OscNode.component
 node _ = Nothing

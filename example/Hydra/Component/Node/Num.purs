@@ -7,10 +7,8 @@ import Effect.Class (liftEffect)
 
 -- import Data.String.Read (read)
 --import Data.Parse
-import Data.Number as Number
-import Data.Maybe (maybe, fromMaybe)
+import Data.Maybe (fromMaybe)
 
-import App.UI (BgInput)
 import App.UI as UI
 
 import Hydra (Hydra)
@@ -20,10 +18,6 @@ import Hydra.Component.Input as Input
 import Noodle.Node as Node
 
 import Halogen as H
-import Halogen.HTML as HH
-import Halogen.HTML.Properties as HP
-import Halogen.HTML.Events as HE
-import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Elements as HS
 
 
