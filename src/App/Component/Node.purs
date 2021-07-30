@@ -179,12 +179,18 @@ render { node, name, style, flow, ui } =
                     , HSA.rx u.bodyCornerRadius, HSA.ry u.bodyCornerRadius
                     , HSA.width innerWidth, HSA.height innerHeight
                     ]
-                , case ui.node name of -- FIXME: typeName
+                ,
+                -- FIXME: somehow `Node.family node >>= ui.node` doesn't compile due to type difference in `m`
+                case Node.family node of
+                    Just family ->
+                        case ui.node family of
+                            Nothing ->
+                                HS.g [ ] [ ]
+                            Just userNodeBody ->
+                                HS.g [ translateTo $ u.bodyPadding <+> u.namePlateHeight ]
+                                    [ HH.slot _body name userNodeBody node SendData ]
                     Nothing ->
                         HS.g [ ] [ ]
-                    Just userNodeBody ->
-                        HS.g [ translateTo $ u.bodyPadding <+> u.namePlateHeight ]
-                            [ HH.slot _body name userNodeBody node SendData ]
                 ]
 
         shadow =

@@ -46,7 +46,7 @@ render _ =
             , HP.width 40, HP.height 9
             , HP.min 0.0
             , HP.max 255.0
-            , HP.step $ I.Step 0.1
+            , HP.step $ I.Step 0.01
             , HE.onValueInput (Number.fromString >>> maybe NoOp Change)
             ]
         ]
