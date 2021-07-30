@@ -7,9 +7,11 @@ module Noodle.Node
     , inlets, outlets
     , inletSignal, outletSignal, outletSignalFlipped
     , inletsSignal, outletsSignal
+    , get, get'
     , (<|), (|>), (<~>), (<+), (+>), (++>)
     , consumer
     , dimensions, indexOfInlet, indexOfOutlet
+    , defaultOfInlet, defaultOfOutlet
     )
     where
 
@@ -37,7 +39,7 @@ import Noodle.Node.Shape as Shape
 import Noodle.Channel.Shape as Channel
 
 import Signal (Signal, (~>))
-import Signal (foldp, runSignal, filter) as Signal
+import Signal (foldp, runSignal, filter, get) as Signal
 import Signal.Channel (Channel)
 import Signal.Channel as Ch
 import Signal.Channel.Extra as Ch
@@ -186,6 +188,14 @@ outletSignalFlipped :: forall d. OutletId -> Node d -> Signal d
 outletSignalFlipped = flip outletSignal
 
 
+get :: forall d. Node d -> InletId -> Effect d
+get node name = inletSignal node name # Signal.get
+
+
+get' :: forall d. Node d -> OutletId -> Effect d
+get' node name = outletSignal node name # Signal.get
+
+
 getShape :: forall d. Node d -> Shape.Inlets d /\ Shape.Outlets d
 getShape = unwrap <<< getShape'
 
@@ -222,6 +232,14 @@ indexOfInlet inletName node =
 indexOfOutlet :: forall d. OutletId -> Node d -> Maybe Int
 indexOfOutlet outletName node =
     Array.elemIndex outletName $ fst <$> outlets node
+
+
+defaultOfInlet :: forall d. InletId -> Node d -> Maybe d
+defaultOfInlet name node = inlet name node <#> Channel.getDefault
+
+
+defaultOfOutlet :: forall d. OutletId -> Node d -> Maybe d
+defaultOfOutlet name node = outlet name node <#> Channel.getDefault
 
 
 default :: forall d. Node d -> d

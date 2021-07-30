@@ -45,6 +45,20 @@ num :: Number -> Hydra
 num = Value' <<< Num
 
 
+numOr :: Number -> Hydra -> Number
+numOr _ (Value' (Num n)) = n
+numOr def _ = def
+
+
+seq :: Array Number -> Hydra
+seq = Value' <<< Seq
+
+
+seq' :: Hydra -> Array Number
+seq' (Value' (Seq s)) = s
+seq' _ = []
+
+
 out :: Int -> Hydra -> Hydra
 out = Out <<< Just
 

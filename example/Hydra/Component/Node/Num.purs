@@ -3,19 +3,21 @@ module Hydra.Component.Node.Num where
 
 import Prelude
 
+import Effect.Class (liftEffect)
+
 -- import Data.String.Read (read)
 --import Data.Parse
 import Data.Number as Number
-import Data.Maybe (maybe)
+import Data.Maybe (maybe, fromMaybe)
 
 import App.UI (BgInput)
 import App.UI as UI
 
 import Hydra (Hydra)
 import Hydra as Hydra
+import Hydra.Component.Input as Input
 
-import DOM.HTML.Indexed.InputType (InputType(..)) as I
-import DOM.HTML.Indexed.StepValue (StepValue(..)) as I
+import Noodle.Node as Node
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -25,7 +27,7 @@ import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Elements as HS
 
 
-type State = Unit
+type State = Number
 
 
 data Action
@@ -34,27 +36,25 @@ data Action
 
 
 initialState :: UI.NodeInput Hydra -> State
-initialState = const unit
+initialState node =
+    Node.defaultOfInlet "num" node
+        <#> Hydra.numOr 0.0
+         #  fromMaybe 0.0
 
 
 render :: forall m. State -> H.ComponentHTML Action () m
-render _ =
-    HS.foreignObject
-        [ HSA.x 0.0, HSA.y 0.0, HSA.width 52.0, HSA.height 22.0 ]
-        [ HH.input
-            [ HP.type_ I.InputNumber
-            , HP.width 40, HP.height 9
-            , HP.min 0.0
-            , HP.max 255.0
-            , HP.step $ I.Step 0.01
-            , HE.onValueInput (Number.fromString >>> maybe NoOp Change)
-            ]
+render num =
+    HS.g
+        [ ]
+        [ Input.number num { min : 0.0, max : 255.0, step : 0.01 } NoOp Change
+        -- , HS.text [] [ HH.text $ show num ]
         ]
 
 
 handleAction :: forall m. Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
 handleAction = case _ of
-    Change n ->
+    Change n -> do
+        H.put n
         H.raise $ UI.SendToOutlet "num" $ Hydra.num n
     NoOp ->
         pure unit

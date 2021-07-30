@@ -52,6 +52,15 @@ instance shapeIsShape :: IsShape (Shape) where
     accept (Shape s) = s.accept
 
 
+default :: forall a d. a -> Shape d a -> Shape d a
+default default' (Shape def) =
+    Shape def { default = default' }
+
+
+getDefault :: forall a d. Shape d a -> a
+getDefault (Shape { default }) = default
+
+
 transform :: forall a d. Shape d a -> d -> Maybe a
 transform (Shape { accept }) = accept
 
