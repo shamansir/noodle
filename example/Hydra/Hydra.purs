@@ -3,13 +3,8 @@ module Hydra where
 
 import Prelude (($), (<<<))
 import Data.Maybe (Maybe(..))
-
-
-type Fn = { name :: String, args :: Array String, out :: String }
-
-
-class ToFn a where
-    toFn :: a -> Fn
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Array as Array
 
 
 data Value
@@ -78,18 +73,36 @@ data Modulate
     | ModulateHue { what :: Source, amount :: Value }
 
 
-data Hydra
-    = None
-    | Hydra Source
+data Entity =
+    Entity Source
         (Array Geometry)
         (Array Color)
         (Array Blend)
         (Array Modulate)
-    | Out (Maybe Int) Hydra
+
+
+data Output
+    = Default
+    | Output Int
+
+
+type Queue =
+    Array (Entity /\ Output)
+
+
+data Hydra
+    = None
+    | Value Value
+    | Hydra Entity
+    | Out Queue
 
 
 default :: Hydra
 default = None
+
+
+entityOf :: Source -> Entity
+entityOf src = Entity src [] [] [] []
 
 
 defaultOsc :: Hydra
@@ -98,36 +111,36 @@ defaultOsc = osc 60.0 0.1 0.0
 
 osc :: Number -> Number -> Number -> Hydra
 osc frequency syn offset =
-    Osc (Num frequency) (Num syn) (Num offset)
+    entityOf $ Osc (Num frequency) (Num syn) (Num offset)
 
 
 tryOsc :: Hydra -> Hydra -> Hydra -> Hydra
-tryOsc (Value' freq) (Value' sync) (Value' offset) =
-    Osc freq sync offset
+tryOsc (Value freq) (Value sync) (Value offset) =
+    entityOf $ Osc freq sync offset
 tryOsc _ _ _ = None
 
 
 num :: Number -> Hydra
-num = Value' <<< Num
+num = Value <<< Num
 
 
 numOr :: Number -> Hydra -> Number
-numOr _ (Value' (Num n)) = n
+numOr _ (Value (Num n)) = n
 numOr def _ = def
 
 
 seq :: Array Number -> Hydra
-seq = Value' <<< Seq
+seq = Value <<< Seq
 
 
 seq' :: Hydra -> Array Number
-seq' (Value' (Seq s)) = s
+seq' (Value (Seq s)) = s
 seq' _ = []
 
 
-out :: Int -> Hydra -> Hydra
-out = Out <<< Just
+out :: Int -> Entity -> Hydra
+out n entity = Out [ entity /\ Just n ]
 
 
-out' :: Hydra -> Hydra
-out' = Out $ Nothing
+out' :: Entity -> Hydra
+out' entity = Out [ entity /\ Nothing ]

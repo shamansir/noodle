@@ -9,7 +9,7 @@ import Data.Traversable (sequence)
 import Hydra (Hydra(..), Value(..))
 
 
-compile :: Hydra -> Maybe String
+compile :: Hydra -> Maybe String -- TODO: Compile only out-specs?
 compile None = Nothing
 compile (Osc v1 v2 v3) =
     (\v1 v2 v3 -> "osc(" <> v1 <> "," <> v2 <> "," <> v3 <> ")")
