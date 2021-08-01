@@ -12,9 +12,9 @@ import Data.Traversable (sequence)
 import Hydra (Hydra)
 import Hydra as Hydra
 import Hydra.Engine as HydraE
-
-import Hydra.Toolkit.Shape (osc, value) as Channel
+import Hydra.Toolkit.Shape (entity, out, value) as Channel
 import Hydra.Compile (compile) as Hydra
+import Hydra.Try as Hydra
 
 import Noodle.Node ((<+))
 import Noodle.Node.Define (Def)
@@ -44,12 +44,12 @@ osc =
         ~< "offset" /\ Channel.value
       )
       (withOutlets
-        >~ "osc" /\ Channel.osc
+        >~ "osc" /\ Channel.entity
       )
       $ \inlets ->
         Def.pass'
           [ "osc" /\
-            (Hydra.tryOsc
+            (Hydra.osc
                  <$> "freq" <+ inlets
                  <*> "sync" <+ inlets
                  <*> "offset" <+ inlets
@@ -61,7 +61,7 @@ out :: Def Hydra
 out =
     Def.defineEffectful
       (withInlets
-         ~< "src" /\ Channel.osc
+         ~< "src" /\ Channel.entity
       )
       noOutlets
       $ \inlets -> do

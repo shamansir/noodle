@@ -12,13 +12,14 @@ import Noodle.Channel.Shape as Channel
 
 value :: Shape' Hydra
 value =
-  Channel.shape''' (Value' $ Num 0.0) isValue
-  where isValue (Value' _) = true
-        isValue _ = false
+  Channel.shape''' None Hydra.isValue
 
 
-osc :: Shape' Hydra
-osc =
-  Channel.shape''' Hydra.defaultOsc isOsc
-  where isOsc (Osc _ _ _) = true
-        isOsc _ = false
+entity :: Shape' Hydra
+entity =
+  Channel.shape''' None Hydra.isEntity
+
+
+out :: Shape' Hydra
+out =
+  Channel.shape''' None Hydra.isOut

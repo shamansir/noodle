@@ -1,7 +1,7 @@
 module Hydra where
 
 
-import Prelude (($), (<<<))
+import Prelude (($), (<<<), (>>>))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
@@ -51,26 +51,26 @@ data Color
 
 
 data Blend
-    = Add { what :: Source, amount :: Value }
-    | Layer { what :: Source }
-    | Blend { what :: Source, amount :: Value }
-    | Mult { what :: Source, amount :: Value }
-    | Diff { what :: Source }
-    | Mask { what :: Source }
+    = Add { what :: Entity, amount :: Value }
+    | Layer { what :: Entity }
+    | Blend { what :: Entity, amount :: Value }
+    | Mult { what :: Entity, amount :: Value }
+    | Diff { what :: Entity }
+    | Mask { what :: Entity }
 
 
 data Modulate
-    = ModulateRepeat { what :: Source, repeatX :: Value, repeatY :: Value, offsetX :: Value, offsetY :: Value }
-    | ModulateRepeatX { what :: Source, reps :: Value, offset :: Value }
-    | ModulateRepeatY { what :: Source, reps :: Value, offset :: Value }
-    | ModulateKaleid { what :: Source, nSides :: Value }
-    | ModulateScrollX { what :: Source, scrollX :: Value, speed :: Value }
-    | ModulateScrollY { what :: Source, scrollY :: Value, speed :: Value }
-    | Modulate { what :: Source, amount :: Value }
-    | ModulateScale { what :: Source, multiple :: Value, offset :: Value }
-    | ModulatePixelate { what :: Source, multiple :: Value, offset :: Value }
-    | ModulateRotate { what :: Source, multiple :: Value, offset :: Value }
-    | ModulateHue { what :: Source, amount :: Value }
+    = ModulateRepeat { what :: Entity, repeatX :: Value, repeatY :: Value, offsetX :: Value, offsetY :: Value }
+    | ModulateRepeatX { what :: Entity, reps :: Value, offset :: Value }
+    | ModulateRepeatY { what :: Entity, reps :: Value, offset :: Value }
+    | ModulateKaleid { what :: Entity, nSides :: Value }
+    | ModulateScrollX { what :: Entity, scrollX :: Value, speed :: Value }
+    | ModulateScrollY { what :: Entity, scrollY :: Value, speed :: Value }
+    | Modulate { what :: Entity, amount :: Value }
+    | ModulateScale { what :: Entity, multiple :: Value, offset :: Value }
+    | ModulatePixelate { what :: Entity, multiple :: Value, offset :: Value }
+    | ModulateRotate { what :: Entity, multiple :: Value, offset :: Value }
+    | ModulateHue { what :: Entity, amount :: Value }
 
 
 data Entity =
@@ -105,42 +105,64 @@ entityOf :: Source -> Entity
 entityOf src = Entity src [] [] [] []
 
 
-defaultOsc :: Hydra
-defaultOsc = osc 60.0 0.1 0.0
-
-
-osc :: Number -> Number -> Number -> Hydra
-osc frequency syn offset =
-    entityOf $ Osc (Num frequency) (Num syn) (Num offset)
-
-
-tryOsc :: Hydra -> Hydra -> Hydra -> Hydra
-tryOsc (Value freq) (Value sync) (Value offset) =
-    entityOf $ Osc freq sync offset
-tryOsc _ _ _ = None
+hydraOf :: Entity -> Hydra
+hydraOf = Hydra
 
 
 num :: Number -> Hydra
 num = Value <<< Num
 
 
-numOr :: Number -> Hydra -> Number
-numOr _ (Value (Num n)) = n
-numOr def _ = def
-
-
 seq :: Array Number -> Hydra
 seq = Value <<< Seq
 
 
-seq' :: Hydra -> Array Number
-seq' (Value (Seq s)) = s
-seq' _ = []
+defaultSource :: Source
+defaultSource = Osc { freq : Num 60.0, sync : Num 0.1, offset : Num 0.0 }
 
 
-out :: Int -> Entity -> Hydra
-out n entity = Out [ entity /\ Just n ]
+defaultEntity :: Entity
+defaultEntity = entityOf defaultSource
 
 
-out' :: Entity -> Hydra
-out' entity = Out [ entity /\ Nothing ]
+isValue :: Hydra -> Boolean
+isValue (Value _) = true
+isValue _ = false
+
+
+isEntity :: Hydra -> Boolean
+isEntity (Hydra _) = true
+isEntity _ = false
+
+
+isOut :: Hydra -> Boolean
+isOut (Out _) = true
+isOut _ = false
+
+
+type HydraFn1 = Hydra -> Hydra
+type HydraFn2 = Hydra -> Hydra -> Hydra
+type HydraFn3 = Hydra -> Hydra -> Hydra -> Hydra
+type HydraFn4 = Hydra -> Hydra -> Hydra -> Hydra -> Hydra
+type HydraFn5 = Hydra -> Hydra -> Hydra -> Hydra -> Hydra -> Hydra
+
+
+type HydraEFn0 = HydraFn1
+type HydraEFn1 = HydraFn2
+type HydraEFn2 = HydraFn3
+type HydraEFn3 = HydraFn4
+type HydraEFn4 = HydraFn5
+
+
+type ToHydraFn1 = Value -> Hydra
+type ToHydraFn2 = Value -> Value -> Hydra
+type ToHydraFn3 = Value -> Value -> Value -> Hydra
+type ToHydraFn4 = Value -> Value -> Value -> Value -> Hydra
+type ToHydraFn5 = Value -> Value -> Value -> Value -> Value -> Hydra
+
+
+type ToHydraEFn0 = Entity -> Hydra
+type ToHydraEFn1 = Entity -> Value -> Hydra
+type ToHydraEFn2 = Entity -> Value -> Value -> Hydra
+type ToHydraEFn3 = Entity -> Value -> Value -> Value -> Hydra
+type ToHydraEFn4 = Entity -> Value -> Value -> Value -> Value -> Hydra

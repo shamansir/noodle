@@ -15,6 +15,7 @@ import Noodle.Node as Node
 
 import Hydra (Hydra)
 import Hydra as Hydra
+import Hydra.Extract as HydraE
 import Hydra.Component.Input as Input
 
 import Halogen as H
@@ -34,7 +35,7 @@ data Action
 initialState :: UI.NodeInput Hydra -> State
 initialState node =
     Node.defaultOfInlet "seq" node
-        <#> Hydra.seq'
+        <#> HydraE.seq
          #  fromMaybe []
 
 

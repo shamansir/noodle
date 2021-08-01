@@ -13,7 +13,7 @@ import App.UI as UI
 import Noodle.Node (Node)
 
 import Hydra (Hydra)
-import Hydra (defaultOsc) as Hydra
+import Hydra (hydraOf, entityOf, defaultSource) as Hydra
 import Hydra.Compile (compile) as Hydra
 
 import Halogen as H
@@ -30,7 +30,7 @@ data Action
 
 initialState :: UI.NodeInput Hydra -> State
 initialState node =
-    Hydra.defaultOsc /\ node
+    (Hydra.hydraOf $ Hydra.entityOf $ Hydra.defaultSource) /\ node
 
 
 render :: forall m. State -> H.ComponentHTML Action () m

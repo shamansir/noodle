@@ -5,6 +5,7 @@ module Noodle.Node.Define
     , fromFn, fromFnEffectful
     , receive, pass, pass', passNothing, passThrough, doNothing
     , lastUpdateAt
+    , dimensions, processWith, processEffectfulWith
     --, withFn1, withFn2, withFn3, withFn4, withFn5
     -- , fromFn1, fromFn2, fromFn3, fromFn4, fromFn5
     --, fromFn1', fromFn2', fromFn3', fromFn4', fromFn5'
@@ -24,12 +25,12 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Data.Map.Extra (type (/->))
 import Data.Traversable (sequence)
 --import Data.Functor (class Functor)
-import Data.Functor.Invariant (class Invariant)
+import Data.Functor.Invariant (class Invariant, imap)
 import Data.Bifunctor (lmap, rmap)
 import Data.Newtype (unwrap)
 
 
-import Noodle.Node.Shape (Shape, Inlets, Outlets, InletId, OutletId)
+import Noodle.Node.Shape (Shape(..), Inlets, Outlets, InletId, OutletId)
 import Noodle.Node.Shape as Shape
 import Noodle.Channel.Shape as Channel
 
@@ -48,12 +49,12 @@ instance functorPass :: Functor Pass where
     map f (Pass { toOutlets }) = Pass { toOutlets : f <$> toOutlets }
 
 
-data Def d = Def (Shape d) (Receive d -> Effect (Pass d))
+data Def d = Def (Shape d) (Receive d -> Effect (Pass d)) -- TODO: Define.Shapeless, still
 
 
-{- instance invariantDef :: Invariant Def where
-    imap aToB bToA (Def (inlets /\ outlets) fn) =
-        Def ((?wh <$> inlets) /\ (?wh <$> outlets)) $ \receive -> (<$>) aToB <$> (fn $ bToA <$> receive) --}
+instance invariantDef :: Invariant Def where
+    imap aToB bToA (Def shape fn) =
+        Def (imap aToB bToA shape) $ \receive -> (<$>) aToB <$> (fn $ bToA <$> receive)
 
 
 empty :: forall d. Def d
@@ -152,6 +153,14 @@ getShape (Def shape _) = unwrap shape
 
 dimensions :: forall d. Def d -> Int /\ Int
 dimensions (Def shape _) = Shape.dimensions shape
+
+
+processWith :: forall d. (Receive d -> Pass d) -> Def d -> Def d
+processWith fn = processEffectfulWith (pure <<< fn)
+
+
+processEffectfulWith :: forall d. (Receive d -> Effect (Pass d)) -> Def d -> Def d
+processEffectfulWith fn (Def shape _) = Def shape fn
 
 
 {-
