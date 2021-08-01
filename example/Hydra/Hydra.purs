@@ -3,10 +3,11 @@ module Hydra where
 
 import Prelude (($), (<<<), (>>>), (<$>), flip)
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
 
-import Hydra.Fn (class ToFn, fn)
+import Hydra.Fn (class ToFn, fn, toFn)
 
 
 data Value
@@ -89,7 +90,7 @@ data Output
 
 
 type Queue =
-    Array (Entity /\ Output)
+    Array (Entity /\ Output) -- TODO: non-empty array
 
 
 data Hydra
@@ -170,47 +171,53 @@ type ToHydraEFn3 = Entity -> Value -> Value -> Value -> Hydra
 type ToHydraEFn4 = Entity -> Value -> Value -> Value -> Value -> Hydra
 
 
-data EntityOrValue
+data EorV
     = E -- entity
     | V -- value
 
 
-data EntityOrValue'
-    = E' Entity
-    | V' Value
+type EntityOrValue = Either Entity Value
 
 
-v1 :: String -> Array (String /\ EntityOrValue)
+e' :: Entity -> EntityOrValue
+e' = Left
+
+
+v' :: Value -> EntityOrValue
+v' = Right
+
+
+v1 :: String -> Array (String /\ EorV)
 v1 v1 = [ v1 /\ V ]
 
 
-v2 :: String -> String -> Array (String /\ EntityOrValue)
+v2 :: String -> String -> Array (String /\ EorV)
 v2 v1 v2 = flip (/\) V <$> [ v1, v2 ]
 
 
-v3 :: String -> String -> String -> Array (String /\ EntityOrValue)
+v3 :: String -> String -> String -> Array (String /\ EorV)
 v3 v1 v2 v3 = flip (/\) V <$> [ v1, v2, v3 ]
 
 
-v4 :: String -> String -> String -> String -> Array (String /\ EntityOrValue)
+v4 :: String -> String -> String -> String -> Array (String /\ EorV)
 v4 v1 v2 v3 v4 = flip (/\) V <$> [ v1, v2, v3, v4 ]
 
 
-v5 :: String -> String -> String -> String -> String -> Array (String /\ EntityOrValue)
+v5 :: String -> String -> String -> String -> String -> Array (String /\ EorV)
 v5 v1 v2 v3 v4 v5 = flip (/\) V <$> [ v1, v2, v3, v4, v5 ]
 
 
-e :: String -> String /\ EntityOrValue
+e :: String -> String /\ EorV
 e = flip (/\) E
 
 
-instance ToFn Source EntityOrValue where
-    toFn (Noise _)    = fn "noise" (v2 "scale" "offset") -- $ e "noise"
-    toFn (Voronoi _)  = fn "voronoi" (v3 "scale" "speed" "blending") -- $ e "voronoi"
-    toFn (Osc _)      = fn "osc" (v3 "freq" "sync" "offset") -- $ e "osc"
-    toFn (Shape _)    = fn "shape" (v3 "sides" "radius" "smoothing") -- $ e "shape"
-    toFn (Gradient _) = fn "gradient" (v1 "speed") -- $ e "gradient"
-    toFn (Solid _)    = fn "solid" (v4 "r" "g" "b" "a") -- $ e "solid"
+instance ToFn Source EorV where
+    toFn (Noise _)    = fn "noise" $ v2 "scale" "offset"
+    toFn (Voronoi _)  = fn "voronoi" $ v3 "scale" "speed" "blending"
+    toFn (Osc _)      = fn "osc" $ v3 "freq" "sync" "offset"
+    toFn (Shape _)    = fn "shape" $ v3 "sides" "radius" "smoothing"
+    toFn (Gradient _) = fn "gradient" $ v1 "speed"
+    toFn (Solid _)    = fn "solid" $ v4 "r" "g" "b" "a"
 
 
 instance ToFn Source Value where
@@ -219,4 +226,79 @@ instance ToFn Source Value where
     toFn (Osc vs)      = fn "osc" [ "freq" /\ vs.freq, "sync" /\ vs.sync, "offset" /\ vs.offset ]
     toFn (Shape vs)    = fn "shape" [ "sides" /\ vs.sides, "radius" /\ vs.radius, "smoothing" /\ vs.smoothing ]
     toFn (Gradient vs) = fn "gradient" [ "speed" /\ vs.speed ]
-    toFn (Solid vs)    = fn "solid" [ "r" /\ vs.r, "g" /\ vs.g, "b" /\ vs.b, "a" /\ vs.a ]
+    toFn (Solid vs)    = fn "solid" [ "r" /\ vs."r", "g" /\ vs.g, "b" /\ vs.b, "a" /\ vs.a ]
+
+
+instance ToFn Geometry Value where
+    toFn (Rotate vs)   = fn "rotate" [ "angle" /\ vs.angle, "speed" /\ vs.speed ]
+    toFn (Scale vs)    = fn "scale"
+                            [ "amount" /\ vs.amount
+                            , "xMult" /\ vs.xMult, "yMult" /\ vs.yMult
+                            , "offsetX" /\ vs.offsetX, "offsetY" /\ vs.offsetY
+                            ]
+    toFn (Pixelate vs) = fn "pixelate" [ "pixelX" /\ vs.pixelX, "pixelY" /\ vs.pixelY ]
+    toFn (Repeat vs)   = fn "repeat"
+                            [ "repeatX" /\ vs.repeatX, "repeatY" /\ vs.repeatY
+                            , "offsetX" /\ vs.offsetX, "offsetY" /\ vs.offsetY
+                            ]
+    toFn (RepeatX vs) = fn "repeatX" [ "reps" /\ vs.reps, "offset" /\ vs.offset ]
+    toFn (RepeatY vs) = fn "repeatY" [ "reps" /\ vs.reps, "offset" /\ vs.offset ]
+    toFn (Kaleid vs)  = fn "kaleid" [ "nSides" /\ vs.nSides ]
+    toFn (ScrollX vs) = fn "scrollX" [ "scrollX" /\ vs.scrollX, "speed" /\ vs.speed ]
+    toFn (ScrollY vs) = fn "scrollY" [ "scrollY" /\ vs.scrollY, "speed" /\ vs.speed ]
+
+
+instance ToFn Color Value where
+    toFn (Posterize vs)  = fn "rotate" [ "bins" /\ vs.bins, "gamma" /\ vs.gamma ]
+    toFn (Shift vs)      = fn "shift" [ "r" /\ vs."r", "g" /\ vs.g, "b" /\ vs.b, "a" /\ vs.a ]
+    toFn (Invert vs)     = fn "invert" [ "amount" /\ vs.amount ]
+    toFn (Contrast vs)   = fn "contrast" [ "amount" /\ vs.amount ]
+    toFn (Brightness vs) = fn "brightness" [ "amount" /\ vs.amount ]
+    toFn (Luma vs)       = fn "luma" [ "treshold" /\ vs.treshold, "tolerance" /\ vs.tolerance ]
+    toFn (Tresh vs)      = fn "tresh" [ "treshold" /\ vs.treshold, "tolerance" /\ vs.tolerance ]
+    toFn (Color vs)      = fn "color" [ "r" /\ vs."r", "g" /\ vs.g, "b" /\ vs.b, "a" /\ vs.a ]
+    toFn (Saturate vs)   = fn "saturate" [ "amount" /\ vs.amount ]
+    toFn (Hue vs)        = fn "hue" [ "amount" /\ vs.amount ]
+    toFn (Colorama vs)   = fn "colorama" [ "amount" /\ vs.amount ]
+
+
+instance ToFn Blend EntityOrValue where
+    toFn (Add vs)   = fn "add" [ "what" /\ e' vs.what, "amount" /\ v' vs.amount ]
+    toFn (Layer vs) = fn "layer" [ "what" /\ e' vs.what ]
+    toFn (Blend vs) = fn "blend" [ "what" /\ e' vs.what, "amount" /\ v' vs.amount ]
+    toFn (Mult vs)  = fn "mult" [ "what" /\ e' vs.what, "amount" /\ v' vs.amount ]
+    toFn (Diff vs)  = fn "diff" [ "what" /\ e' vs.what ]
+    toFn (Mask vs)  = fn "mask" [ "what" /\ e' vs.what ]
+
+
+instance ToFn Modulate EntityOrValue where
+    toFn (ModulateRepeat vs)   = fn "modulateRepeat"
+                                    [ "what" /\ e' vs.what
+                                    , "repeatX" /\ v' vs.repeatX, "repeatY" /\ v' vs.repeatY
+                                    , "offsetX" /\ v' vs.offsetX, "offsetY" /\ v' vs.offsetY
+                                    ]
+    toFn (ModulateRepeatX vs)  = fn "modulateRepeatX"
+                                    [ "what" /\ e' vs.what, "reps" /\ v' vs.reps, "offset" /\ v' vs.offset ]
+    toFn (ModulateRepeatY vs)  = fn "modulateRepeatY"
+                                    [ "what" /\ e' vs.what, "reps" /\ v' vs.reps, "offset" /\ v' vs.offset ]
+    toFn (ModulateKaleid vs)   = fn "modulateKaleid"
+                                    [ "what" /\ e' vs.what, "nSides" /\ v' vs.nSides ]
+    toFn (ModulateScrollX vs)  = fn "modulateScrollX"
+                                    [ "what" /\ e' vs.what, "scrollX" /\ v' vs.scrollX, "speed" /\ v' vs.speed ]
+    toFn (ModulateScrollY vs)  = fn "modulateScrollY"
+                                    [ "what" /\ e' vs.what, "scrollY" /\ v' vs.scrollY, "speed" /\ v' vs.speed ]
+    toFn (Modulate vs)         = fn "modulate" [ "what" /\ e' vs.what, "amount" /\ v' vs.amount ]
+    toFn (ModulateScale vs)    = fn "modulateScale"
+                                    [ "what" /\ e' vs.what, "multiple" /\ v' vs.multiple, "offset" /\ v' vs.offset ]
+    toFn (ModulatePixelate vs) = fn "modulatePixelate"
+                                    [ "what" /\ e' vs.what, "multiple" /\ v' vs.multiple, "offset" /\ v' vs.offset ]
+    toFn (ModulateRotate vs)   = fn "modulateRotate"
+                                    [ "what" /\ e' vs.what, "multiple" /\ v' vs.multiple, "offset" /\ v' vs.offset ]
+    toFn (ModulateHue vs)      = fn "modulateHue" [ "what" /\ e' vs.what, "amount" /\ v' vs.amount ]
+
+
+instance ToFn Modifier EntityOrValue where
+    toFn (G geom) = v' <$> toFn geom
+    toFn (C color) = v' <$> toFn color
+    toFn (B blend) = toFn blend
+    toFn (M modulate) = toFn modulate
