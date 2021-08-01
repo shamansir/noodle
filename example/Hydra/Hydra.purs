@@ -1,10 +1,12 @@
 module Hydra where
 
 
-import Prelude (($), (<<<), (>>>))
+import Prelude (($), (<<<), (>>>), (<$>), flip)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
+
+import Hydra.Fn (class ToFn, fn)
 
 
 data Value
@@ -22,6 +24,7 @@ data Source
     | Shape { sides :: Value, radius :: Value, smoothing :: Value }
     | Gradient { speed :: Value }
     | Solid { r :: Value, g :: Value, b :: Value, a :: Value }
+    -- | Source Output
 
 
 data Geometry
@@ -73,12 +76,11 @@ data Modulate
     | ModulateHue { what :: Entity, amount :: Value }
 
 
+data Modifier = G Geometry | C Color | B Blend | M Modulate
+
+
 data Entity =
-    Entity Source
-        (Array Geometry)
-        (Array Color)
-        (Array Blend)
-        (Array Modulate)
+    Entity Source (Array Modifier)
 
 
 data Output
@@ -102,7 +104,7 @@ default = None
 
 
 entityOf :: Source -> Entity
-entityOf src = Entity src [] [] [] []
+entityOf src = Entity src []
 
 
 hydraOf :: Entity -> Hydra
@@ -166,3 +168,55 @@ type ToHydraEFn1 = Entity -> Value -> Hydra
 type ToHydraEFn2 = Entity -> Value -> Value -> Hydra
 type ToHydraEFn3 = Entity -> Value -> Value -> Value -> Hydra
 type ToHydraEFn4 = Entity -> Value -> Value -> Value -> Value -> Hydra
+
+
+data EntityOrValue
+    = E -- entity
+    | V -- value
+
+
+data EntityOrValue'
+    = E' Entity
+    | V' Value
+
+
+v1 :: String -> Array (String /\ EntityOrValue)
+v1 v1 = [ v1 /\ V ]
+
+
+v2 :: String -> String -> Array (String /\ EntityOrValue)
+v2 v1 v2 = flip (/\) V <$> [ v1, v2 ]
+
+
+v3 :: String -> String -> String -> Array (String /\ EntityOrValue)
+v3 v1 v2 v3 = flip (/\) V <$> [ v1, v2, v3 ]
+
+
+v4 :: String -> String -> String -> String -> Array (String /\ EntityOrValue)
+v4 v1 v2 v3 v4 = flip (/\) V <$> [ v1, v2, v3, v4 ]
+
+
+v5 :: String -> String -> String -> String -> String -> Array (String /\ EntityOrValue)
+v5 v1 v2 v3 v4 v5 = flip (/\) V <$> [ v1, v2, v3, v4, v5 ]
+
+
+e :: String -> String /\ EntityOrValue
+e = flip (/\) E
+
+
+instance ToFn Source EntityOrValue where
+    toFn (Noise _)    = fn "noise" (v2 "scale" "offset") -- $ e "noise"
+    toFn (Voronoi _)  = fn "voronoi" (v3 "scale" "speed" "blending") -- $ e "voronoi"
+    toFn (Osc _)      = fn "osc" (v3 "freq" "sync" "offset") -- $ e "osc"
+    toFn (Shape _)    = fn "shape" (v3 "sides" "radius" "smoothing") -- $ e "shape"
+    toFn (Gradient _) = fn "gradient" (v1 "speed") -- $ e "gradient"
+    toFn (Solid _)    = fn "solid" (v4 "r" "g" "b" "a") -- $ e "solid"
+
+
+instance ToFn Source Value where
+    toFn (Noise vs)    = fn "noise" [ "scale" /\ vs.scale, "offset" /\ vs.offset ]
+    toFn (Voronoi vs)  = fn "voronoi" [ "scale" /\ vs.scale, "speed" /\ vs.speed, "blending" /\ vs.blending ]
+    toFn (Osc vs)      = fn "osc" [ "freq" /\ vs.freq, "sync" /\ vs.sync, "offset" /\ vs.offset ]
+    toFn (Shape vs)    = fn "shape" [ "sides" /\ vs.sides, "radius" /\ vs.radius, "smoothing" /\ vs.smoothing ]
+    toFn (Gradient vs) = fn "gradient" [ "speed" /\ vs.speed ]
+    toFn (Solid vs)    = fn "solid" [ "r" /\ vs.r, "g" /\ vs.g, "b" /\ vs.b, "a" /\ vs.a ]
