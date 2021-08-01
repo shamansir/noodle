@@ -209,7 +209,7 @@ instance ToFn Geometry Value where
 
 
 instance ToFn Color Value where
-    toFn (Posterize vs)  = fn "rotate" [ "bins" /\ vs.bins, "gamma" /\ vs.gamma ]
+    toFn (Posterize vs)  = fn "posterize" [ "bins" /\ vs.bins, "gamma" /\ vs.gamma ]
     toFn (Shift vs)      = fn "shift" [ "r" /\ vs."r", "g" /\ vs.g, "b" /\ vs.b, "a" /\ vs.a ]
     toFn (Invert vs)     = fn "invert" [ "amount" /\ vs.amount ]
     toFn (Contrast vs)   = fn "contrast" [ "amount" /\ vs.amount ]
