@@ -1,11 +1,9 @@
 module Hydra where
 
 
-import Prelude (($), (<<<), (>>>), (<$>), flip)
-import Data.Maybe (Maybe(..))
+import Prelude ((<$>), (<<<))
 import Data.Either (Either(..))
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array as Array
 
 import Hydra.Fn (class ToFn, fn, toFn)
 
@@ -171,11 +169,6 @@ type ToHydraEFn3 = Entity -> Value -> Value -> Value -> Hydra
 type ToHydraEFn4 = Entity -> Value -> Value -> Value -> Value -> Hydra
 
 
-data EorV
-    = E -- entity
-    | V -- value
-
-
 type EntityOrValue = Either Entity Value
 
 
@@ -185,39 +178,6 @@ e' = Left
 
 v' :: Value -> EntityOrValue
 v' = Right
-
-
-v1 :: String -> Array (String /\ EorV)
-v1 v1 = [ v1 /\ V ]
-
-
-v2 :: String -> String -> Array (String /\ EorV)
-v2 v1 v2 = flip (/\) V <$> [ v1, v2 ]
-
-
-v3 :: String -> String -> String -> Array (String /\ EorV)
-v3 v1 v2 v3 = flip (/\) V <$> [ v1, v2, v3 ]
-
-
-v4 :: String -> String -> String -> String -> Array (String /\ EorV)
-v4 v1 v2 v3 v4 = flip (/\) V <$> [ v1, v2, v3, v4 ]
-
-
-v5 :: String -> String -> String -> String -> String -> Array (String /\ EorV)
-v5 v1 v2 v3 v4 v5 = flip (/\) V <$> [ v1, v2, v3, v4, v5 ]
-
-
-e :: String -> String /\ EorV
-e = flip (/\) E
-
-
-instance ToFn Source EorV where
-    toFn (Noise _)    = fn "noise" $ v2 "scale" "offset"
-    toFn (Voronoi _)  = fn "voronoi" $ v3 "scale" "speed" "blending"
-    toFn (Osc _)      = fn "osc" $ v3 "freq" "sync" "offset"
-    toFn (Shape _)    = fn "shape" $ v3 "sides" "radius" "smoothing"
-    toFn (Gradient _) = fn "gradient" $ v1 "speed"
-    toFn (Solid _)    = fn "solid" $ v4 "r" "g" "b" "a"
 
 
 instance ToFn Source Value where

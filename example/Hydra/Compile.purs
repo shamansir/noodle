@@ -35,7 +35,7 @@ compileFn' = compileFnBy (either compileEntity compileValue) <<< toFn
 compileFnBy :: forall x. (x -> String) -> Fn x -> String
 compileFnBy toString (Fn { name, args })  =
     name <> "(" <> (String.joinWith "," $ compileArg <$> args) <> ")"
-    where compileArg (argName /\ value) = "/* " <> argName <> "*/ " <> toString value
+    where compileArg (argName /\ value) = "/*" <> argName <> "*/ " <> toString value
 
 
 compileEntity :: Entity -> String
