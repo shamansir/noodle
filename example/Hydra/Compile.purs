@@ -11,6 +11,7 @@ import Data.Tuple.Nested ((/\))
 
 import Hydra
 import Hydra.Fn (class ToFn, Fn(..), toFn)
+import Hydra.Fn (argsToArray) as Fn
 
 
 compileValue :: Value -> String
@@ -34,7 +35,7 @@ compileFn' = compileFnBy (either compileEntity compileValue) <<< toFn
 
 compileFnBy :: forall x. (x -> String) -> Fn x -> String
 compileFnBy toString (Fn { name, args })  =
-    name <> "(" <> (String.joinWith "," $ compileArg <$> args) <> ")"
+    name <> "(" <> (String.joinWith "," $ compileArg <$> Fn.argsToArray args) <> ")"
     where compileArg (argName /\ value) = "/*" <> argName <> "*/ " <> toString value
 
 

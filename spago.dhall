@@ -21,6 +21,7 @@ to generate this file without the comments in this block.
   , "debug"
   , "dom-indexed"
   , "effect"
+  , "either"
   , "foldable-traversable"
   , "halogen"
   , "halogen-subscriptions"
