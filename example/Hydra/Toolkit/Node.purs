@@ -49,11 +49,10 @@ osc =
       $ \inlets ->
         Def.pass'
           [ "osc" /\
-            (Hydra.osc
-                 <$> "freq" <+ inlets
-                 <*> "sync" <+ inlets
-                 <*> "offset" <+ inlets
-            )
+              Hydra.osc
+                  ("freq" <+ inlets)
+                  ("sync" <+ inlets)
+                  ("offset" <+ inlets)
           ]
 
 

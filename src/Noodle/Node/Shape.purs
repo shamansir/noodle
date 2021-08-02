@@ -53,6 +53,14 @@ noOutlets :: forall d. Outlets d
 noOutlets = Map.empty
 
 
+formInlets :: forall d. Array (InletId /\ Channel.Shape d d) -> Inlets d
+formInlets = Map.fromFoldable
+
+
+formOutlets :: forall d. Array (OutletId /\ Channel.Shape d d) -> Outlets d
+formOutlets = Map.fromFoldable
+
+
 infixl 1 andInlet as ~<
 
 infixl 1 andOutlet as >~

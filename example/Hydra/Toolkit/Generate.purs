@@ -2,23 +2,30 @@ module Hydra.Tookit.Generate
     (all, generate, GenId) where
 
 
-import Prelude (($), flip, (<$>), (<>))
+import Prelude (($), flip, (<$>), (<>), map, join)
 
 
 import Data.Maybe (Maybe(..))
+import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Hydra
     ( Hydra
-    , HydraFn1, HydraFn2, HydraFn3, HydraFn4, HydraFn5
+    , HydraFn1M, HydraFn2M, HydraFn3M, HydraFn4M, HydraFn5M
     , HydraEFn0, HydraEFn1, HydraEFn2, HydraEFn3, HydraEFn4
     )
 import Hydra.Fn (class ToFn, Fn, fn, toFn)
+import Hydra.Fn as Fn
 import Hydra.Try as Try
+import Hydra.Toolkit.Shape as TShape
 
-import Noodle.Node.Define (Def)
-import Noodle.Node.Define (empty) as Def
+import Noodle.Node.Define (Def, Receive, Pass)
+import Noodle.Node.Define (empty, define, defineEffectful, pass') as Def
 import Noodle.Node (Id) as Node
+import Noodle.Node ((+>), (<+))
+import Noodle.Node.Shape as Shape
+import Noodle.Node.Shape (Inlets, Outlets)
+import Noodle.Channel.Shape (Shape') as Ch
 
 
 newtype GenId = GenId Node.Id
@@ -100,7 +107,7 @@ instance ToFn GenId EorV where
 
 
 generate' :: String -> Def Hydra
-generate' "osc" = fromFnV3 (toFn "osc") Try.osc
+generate' "osc" = flip fromFnV3 Try.osc $ toFn "osc"
 generate' _ = Def.empty
 
 
@@ -108,12 +115,61 @@ generate :: GenId -> String /\ Def Hydra
 generate (GenId id) = id /\ generate' id
 
 
-fromFnV1 :: Fn EorV -> HydraFn1 -> Def Hydra
-fromFnV1 _ _ = Def.empty
+eovToShape :: EorV -> Ch.Shape' Hydra
+eovToShape E = TShape.entity
+eovToShape V = TShape.value
 
 
-fromFnV3 :: Fn EorV -> HydraFn3 -> Def Hydra
-fromFnV3 _ _ = Def.empty
+inletsFromFn :: Fn EorV -> Inlets Hydra
+inletsFromFn fn =
+    Shape.formInlets $ map eovToShape <$> Fn.getArgs fn
+
+
+outletsFromFn :: Fn EorV -> Inlets Hydra
+outletsFromFn fn =
+    Shape.formOutlets [ Fn.getName fn /\ TShape.entity ]
+
+
+-- loadFromInlet :: Receive Hydra -> String /\ EorV -> Maybe Hydra
+-- loadFromInlet inlets (name /\ _) = name <+ inlets
+
+loadFromInlet :: Receive Hydra -> String -> Maybe Hydra
+loadFromInlet = flip (<+)
+
+
+fromFn :: Fn EorV -> (Receive Hydra -> Pass Hydra) -> Def Hydra
+fromFn fn =
+    Def.define
+        (inletsFromFn fn)
+        (outletsFromFn fn)
+
+
+makeReceiver :: forall f a. (f -> Fn (Maybe Hydra) -> Maybe (Maybe Hydra)) -> Fn a -> f -> Receive Hydra -> Pass Hydra
+makeReceiver x fn f =
+    (\inlets ->
+        Def.pass'
+            [ Fn.getName fn
+                /\ join (x f $ loadFromInlet inlets <$> fst <$> Fn.addNames fn)
+            ]
+    )
+
+
+fromFnV1 :: Fn EorV -> HydraFn1M -> Def Hydra
+fromFnV1 fn f =
+    fromFn fn $
+        makeReceiver Fn.applyFn1 fn f
+
+
+fromFnV2 :: Fn EorV -> HydraFn2M -> Def Hydra
+fromFnV2 fn f =
+    fromFn fn $
+        makeReceiver Fn.applyFn2 fn f
+
+
+fromFnV3 :: Fn EorV -> HydraFn3M -> Def Hydra
+fromFnV3 fn f =
+    fromFn fn $
+        makeReceiver Fn.applyFn3 fn f
 
 
 data EorV

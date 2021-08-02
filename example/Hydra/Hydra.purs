@@ -3,6 +3,7 @@ module Hydra where
 
 import Prelude ((<$>), (<<<))
 import Data.Either (Either(..))
+import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Hydra.Fn (class ToFn, fn, toFn)
@@ -131,9 +132,19 @@ isValue (Value _) = true
 isValue _ = false
 
 
+toValue :: Hydra -> Maybe Value
+toValue (Value v) = Just v
+toValue _ = Nothing
+
+
 isEntity :: Hydra -> Boolean
 isEntity (Hydra _) = true
 isEntity _ = false
+
+
+toEntity :: Hydra -> Maybe Entity
+toEntity (Hydra e) = Just e
+toEntity _ = Nothing
 
 
 isOut :: Hydra -> Boolean
@@ -148,11 +159,25 @@ type HydraFn4 = Hydra -> Hydra -> Hydra -> Hydra -> Hydra
 type HydraFn5 = Hydra -> Hydra -> Hydra -> Hydra -> Hydra -> Hydra
 
 
+type HydraFn1M = Maybe Hydra -> Maybe Hydra
+type HydraFn2M = Maybe Hydra -> Maybe Hydra -> Maybe Hydra
+type HydraFn3M = Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra
+type HydraFn4M = Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra
+type HydraFn5M = Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra
+
+
 type HydraEFn0 = HydraFn1
 type HydraEFn1 = HydraFn2
 type HydraEFn2 = HydraFn3
 type HydraEFn3 = HydraFn4
 type HydraEFn4 = HydraFn5
+
+
+type HydraEFn0M = HydraFn1M
+type HydraEFn1M = HydraFn2M
+type HydraEFn2M = HydraFn3M
+type HydraEFn3M = HydraFn4M
+type HydraEFn4M = HydraFn5M
 
 
 type ToHydraFn1 = Value -> Hydra

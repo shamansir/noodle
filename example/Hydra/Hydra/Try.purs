@@ -1,127 +1,22 @@
 module Hydra.Try where
 
-import Prelude (($))
+import Prelude (($), unit, (>>>), (<<<), (>>=), (=<<), (<$>))
 
-import Hydra
+-- import Data.Vec as Vec
+-- import Data.Vec (Vec)
+
+import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 
-{- tryV1 :: ToHydraFn1 -> HydraFn1
-tryV1 f (Value v) = f v
-tryV1 _ _ = None -}
 
 
-tryV1 :: Value -> ToHydraFn1 -> HydraFn1
-tryV1 _ f (Value v) = f v
-tryV1 def f _ = f def
-
-{-
-tryV2 :: ToHydraFn2 -> HydraFn2
-tryV2 f (Value v1) (Value v2) = f v1 v2
-tryV2 _ _ _ = None
--}
+import Hydra
+import Hydra.Fn as Fn
 
 
-tryV2 :: (Value /\ Value) -> ToHydraFn2 -> HydraFn2
-tryV2 _ f (Value v1) (Value v2) = f v1 v2
-tryV2 (v1 /\ v2) f _ _ = f v1 v2
-
-
-{-
-tryV3 :: ToHydraFn3 -> HydraFn3
-tryV3 f (Value v1) (Value v2) (Value v3) = f v1 v2 v3
-tryV3 _ _ _ _ = None
--}
-
-
-tryV3 :: (Value /\ Value /\ Value) -> ToHydraFn3 -> HydraFn3
-tryV3 _ f (Value v1) (Value v2) (Value v3) = f v1 v2 v3
-tryV3 (v1 /\ v2 /\ v3) f _ _ _ = f v1 v2 v3
-
-{-
-tryV4 :: ToHydraFn3 -> HydraFn3
-tryV4 f (Value v1) (Value v2) (Value v3) (Value v4) = f v1 v2 v3 v4
-tryV4 _ _ _ _ _ = None
--}
-
-
-tryV4 :: (Value /\ Value /\ Value /\ Value) -> ToHydraFn4 -> HydraFn4
-tryV4 _ f (Value v1) (Value v2) (Value v3) (Value v4)  = f v1 v2 v3 v4
-tryV4 (v1 /\ v2 /\ v3 /\ v4) f _ _ _ _ = f v1 v2 v3 v4
-
-{-
-tryV5 :: (Value -> Value -> Value -> Value -> Value -> Hydra) -> Hydra -> Hydra -> Hydra -> Hydra -> Hydra -> Hydra
-tryV5 f (Value v1) (Value v2) (Value v3) (Value v4) (Value v5) = f v1 v2 v3 v4 v5
-tryV5 _ _ _ _ _ _ = None
--}
-
-
-tryV5 :: (Value /\ Value /\ Value /\ Value /\ Value) -> ToHydraFn5 -> HydraFn5
-tryV5 _ f (Value v1) (Value v2) (Value v3) (Value v4) (Value v5) = f v1 v2 v3 v4 v5
-tryV5 (v1 /\ v2 /\ v3 /\ v4 /\ v5) f _ _ _ _ _ = f v1 v2 v3 v4 v5
-
-{-
-tryE :: ToHydraEFn0 -> HydraFn1
-tryE f (Hydra e) = f e
-tryE _ _ = None
--}
-
-
-tryE :: Entity -> ToHydraEFn0 -> HydraEFn0
-tryE _ f (Hydra e) = f e
-tryE e f _ = f e
-
-
-{-
-tryEV1 :: ToHydraEFn1 -> HydraEFn1
-tryEV1 f (Hydra e) (Value v) = f e v
-tryEV1 _ _ _ = None
--}
-
-
-tryEV1 :: (Entity /\ Value) -> ToHydraEFn1 -> HydraEFn1
-tryEV1 _ f (Hydra e) (Value v) = f e v
-tryEV1 (e /\ v) f _ _ = f e v
-
-
-{-
-tryEV2 :: ToHydraEFn2 -> HydraEFn2
-tryEV2 f (Hydra e) (Value v1) (Value v2) = f e v1 v2
-tryEV2 _ _ _ _ = None
--}
-
-
-tryEV2 :: (Entity /\ Value /\ Value) -> ToHydraEFn2 -> HydraEFn2
-tryEV2 _ f (Hydra e) (Value v1) (Value v2) = f e v1 v2
-tryEV2 (e /\ v1 /\ v2) f _ _ _ = f e v1 v2
-
-
-{-
-tryEV3 :: ToHydraEFn3 -> HydraEFn3
-tryEV3 f (Hydra e) (Value v1) (Value v2) (Value v3) = f e v1 v2 v3
-tryEV3 _ _ _ _ _ = None
--}
-
-
-tryEV3 :: (Entity /\ Value /\ Value /\ Value) -> ToHydraEFn3 -> HydraEFn3
-tryEV3 _ f (Hydra e) (Value v1) (Value v2) (Value v3) = f e v1 v2 v3
-tryEV3 (e /\ v1 /\ v2 /\ v3) f _ _ _ _ = f e v1 v2 v3
-
-
-{-
-tryEV4 :: ToHydraEFn4 -> HydraEFn4
-tryEV4 f (Hydra e) (Value v1) (Value v2) (Value v3) (Value v4) = f e v1 v2 v3 v4
-tryEV4 _ _ _ _ _ _ = None
--}
-
-
-tryEV4 :: (Entity /\ Value /\ Value /\ Value /\ Value) -> ToHydraEFn4 -> HydraEFn4
-tryEV4 _ f (Hydra e) (Value v1) (Value v2) (Value v3) (Value v4) = f e v1 v2 v3 v4
-tryEV4 (e /\ v1 /\ v2 /\ v3 /\ v4) f _ _ _ _ _ = f e v1 v2 v3 v4
-
-
-osc :: HydraFn3
+osc :: HydraFn3M
 osc =
-    tryV3
+    tryV3M
         ( Num 60.0 /\ Num 0.1 /\ Num 0.0 )
         (\freq sync offset -> Hydra $ entityOf $ Osc { freq, sync, offset })
 
@@ -135,3 +30,95 @@ out n =
 out' :: HydraEFn0
 out' =
     tryE defaultEntity (\entity -> Out [ entity /\ Default ])
+
+
+
+
+tryV1 :: Value -> ToHydraFn1 -> HydraFn1
+tryV1 = Fn.tryFn1 toValue
+
+
+tryV1M :: Value -> ToHydraFn1 -> HydraFn1M
+tryV1M v fn = Fn.tryFn1 ((=<<) toValue) v $ Just <<< fn
+
+
+tryV2 :: (Value /\ Value) -> ToHydraFn2 -> HydraFn2
+tryV2 = Fn.tryFn2 toValue
+
+
+tryV2M :: (Value /\ Value) -> ToHydraFn2 -> HydraFn2M
+tryV2M v fn = Fn.tryFn2 ((=<<) toValue) v $ \v1 v2 -> Just $ fn v1 v2
+
+
+tryV3 :: (Value /\ Value /\ Value) -> ToHydraFn3 -> HydraFn3
+tryV3 = Fn.tryFn3 toValue
+
+
+tryV3M :: (Value /\ Value /\ Value) -> ToHydraFn3 -> HydraFn3M
+tryV3M v fn = Fn.tryFn3 ((=<<) toValue) v $ \v1 v2 v3 -> Just $ fn v1 v2 v3
+
+
+tryV4 :: (Value /\ Value /\ Value /\ Value) -> ToHydraFn4 -> HydraFn4
+tryV4 = Fn.tryFn4 toValue
+
+
+tryV4M :: (Value /\ Value /\ Value /\ Value) -> ToHydraFn4 -> HydraFn4M
+tryV4M v fn = Fn.tryFn4 ((=<<) toValue) v $ \v1 v2 v3 v4 -> Just $ fn v1 v2 v3 v4
+
+
+tryV5 :: (Value /\ Value /\ Value /\ Value /\ Value) -> ToHydraFn5 -> HydraFn5
+tryV5 = Fn.tryFn5 toValue
+
+
+tryV5M :: (Value /\ Value /\ Value /\ Value /\ Value) -> ToHydraFn5 -> HydraFn5M
+tryV5M v fn = Fn.tryFn5 ((=<<) toValue) v $ \v1 v2 v3 v4 v5 -> Just $ fn v1 v2 v3 v4 v5
+
+
+tryE :: Entity -> ToHydraEFn0 -> HydraEFn0
+tryE _ f (Hydra e) = f e
+tryE e f _ = f e
+
+
+tryEM :: Entity -> ToHydraEFn0 -> HydraEFn0M
+tryEM _ f (Just (Hydra e)) = Just $ f e
+tryEM e f _ = Just $ f e
+
+
+tryEV1 :: (Entity /\ Value) -> ToHydraEFn1 -> HydraEFn1
+tryEV1 (_ /\ v) f (Hydra e) = tryV1 v $ f e
+tryEV1 (e /\ v) f _         = tryV1 v $ f e
+
+
+tryEV1M :: (Entity /\ Value) -> ToHydraEFn1 -> HydraEFn1M
+tryEV1M (_ /\ v) f (Just (Hydra e)) = tryV1M v $ f e
+tryEV1M (e /\ v) f _                = tryV1M v $ f e
+
+
+tryEV2 :: (Entity /\ Value /\ Value) -> ToHydraEFn2 -> HydraEFn2
+tryEV2 (_ /\ v1 /\ v2) f (Hydra e) = tryV2 (v1 /\ v2) $ f e
+tryEV2 (e /\ v1 /\ v2) f _         = tryV2 (v1 /\ v2) $ f e
+
+
+tryEV2M :: (Entity /\ Value /\ Value) -> ToHydraEFn2 -> HydraEFn2M
+tryEV2M (_ /\ v1 /\ v2) f (Just (Hydra e)) = tryV2M (v1 /\ v2) $ f e
+tryEV2M (e /\ v1 /\ v2) f _                = tryV2M (v1 /\ v2) $ f e
+
+
+tryEV3 :: (Entity /\ Value /\ Value /\ Value) -> ToHydraEFn3 -> HydraEFn3
+tryEV3 (_ /\ v1 /\ v2 /\ v3) f (Hydra e) = tryV3 (v1 /\ v2 /\ v3) $ f e
+tryEV3 (e /\ v1 /\ v2 /\ v3) f _         = tryV3 (v1 /\ v2 /\ v3) $ f e
+
+
+tryEV3M :: (Entity /\ Value /\ Value /\ Value) -> ToHydraEFn3 -> HydraEFn3M
+tryEV3M (_ /\ v1 /\ v2 /\ v3) f (Just (Hydra e)) = tryV3M (v1 /\ v2 /\ v3) $ f e
+tryEV3M (e /\ v1 /\ v2 /\ v3) f _                = tryV3M (v1 /\ v2 /\ v3) $ f e
+
+
+tryEV4 :: (Entity /\ Value /\ Value /\ Value /\ Value) -> ToHydraEFn4 -> HydraEFn4
+tryEV4 (_ /\ v1 /\ v2 /\ v3 /\ v4) f (Hydra e) = tryV4 (v1 /\ v2 /\ v3 /\ v4) $ f e
+tryEV4 (e /\ v1 /\ v2 /\ v3 /\ v4) f _         = tryV4 (v1 /\ v2 /\ v3 /\ v4) $ f e
+
+
+tryEV4M :: (Entity /\ Value /\ Value /\ Value /\ Value) -> ToHydraEFn4 -> HydraEFn4M
+tryEV4M (_ /\ v1 /\ v2 /\ v3 /\ v4) f (Just (Hydra e)) = tryV4M (v1 /\ v2 /\ v3 /\ v4) $ f e
+tryEV4M (e /\ v1 /\ v2 /\ v3 /\ v4) f _                = tryV4M (v1 /\ v2 /\ v3 /\ v4) $ f e
