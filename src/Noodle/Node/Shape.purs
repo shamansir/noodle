@@ -4,16 +4,18 @@ module Noodle.Node.Shape where
 import Noodle.Channel.Shape as Channel
 
 
-import Prelude ((#), (<$>), (>>>), (<<<), ($))
+import Prelude
 
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Array (snoc)
+import Data.Array as Array
+
 import Data.Functor (class Functor)
 import Data.Functor.Invariant (class Invariant)
 import Data.Maybe (Maybe)
+
 import Data.Newtype (unwrap, class Newtype)
 
 
@@ -22,8 +24,8 @@ type InletId = String
 type OutletId = String
 
 
-type Inlets d = (InletId /-> (Channel.Shape d d)) -- forall a. (String /-> Channel.Shape a d)
-type Outlets d = (OutletId /-> (Channel.Shape d d)) -- forall a. (String /-> Channel.Shape a d)
+type Inlets d = Array (InletId /\ (Channel.Shape d d)) -- forall a. (String /-> Channel.Shape a d)
+type Outlets d = Array (OutletId /\ (Channel.Shape d d)) -- forall a. (String /-> Channel.Shape a d)
 
 
 newtype Shape d = Shape (Inlets d /\ Outlets d)
@@ -46,19 +48,19 @@ make = Tuple.curry Shape
 
 
 noInlets :: forall d. Inlets d
-noInlets = Map.empty
+noInlets = []
 
 
 noOutlets :: forall d. Outlets d
-noOutlets = Map.empty
+noOutlets = []
 
 
 formInlets :: forall d. Array (InletId /\ Channel.Shape d d) -> Inlets d
-formInlets = Map.fromFoldable
+formInlets = identity
 
 
 formOutlets :: forall d. Array (OutletId /\ Channel.Shape d d) -> Outlets d
-formOutlets = Map.fromFoldable
+formOutlets = identity
 
 
 infixl 1 andInlet as ~<
@@ -67,11 +69,11 @@ infixl 1 andOutlet as >~
 
 
 withInlets :: forall d. Inlets d
-withInlets = Map.empty
+withInlets = []
 
 
 withOutlets :: forall d. Outlets d
-withOutlets = Map.empty
+withOutlets = []
 
 
 andInlet
@@ -79,8 +81,7 @@ andInlet
      . Inlets d
     -> InletId /\ (Channel.Shape d d)
     -> Inlets d
-andInlet inlets (name /\ shape) =
-    inlets # Map.insert name shape
+andInlet = Array.snoc
 
 
 andOutlet
@@ -88,32 +89,33 @@ andOutlet
      . Outlets d
     -> OutletId /\ (Channel.Shape d d)
     -> Outlets d
-andOutlet outlets (name /\ shape) =
-    outlets # Map.insert name shape
+andOutlet = Array.snoc
 
 
 inlet :: forall d. InletId -> Shape d -> Maybe (Channel.Shape d d)
-inlet name (Shape (inlets /\ _)) = Map.lookup name inlets
+inlet name (Shape (inlets /\ _)) =
+    Tuple.snd <$> Array.find (Tuple.fst >>> (==) name) inlets
 
 
 outlet :: forall d. OutletId -> Shape d -> Maybe (Channel.Shape d d)
-outlet name (Shape (_ /\ outlets)) = Map.lookup name outlets
+outlet name (Shape (_ /\ outlets)) =
+    Tuple.snd <$> Array.find (Tuple.fst >>> (==) name) outlets
 
 
 inlets :: forall d. Shape d -> Array (InletId /\ (Channel.Shape d d))
-inlets = unwrap >>> Tuple.fst >>> Map.toUnfoldable
+inlets = unwrap >>> Tuple.fst
 
 
 outlets :: forall d. Shape d -> Array (OutletId /\ (Channel.Shape d d))
-outlets = unwrap >>> Tuple.snd >>> Map.toUnfoldable
+outlets = unwrap >>> Tuple.snd
 
 
 dimensions :: forall d. Shape d -> Int /\ Int
-dimensions (Shape (inlets /\ outlets)) = Map.size inlets /\ Map.size outlets
+dimensions (Shape (inlets /\ outlets)) = Array.length inlets /\ Array.length outlets
 
 
 move :: forall a b. (a -> b) -> (b -> a) -> Shape a -> Shape b
 move f g (Shape (inlets /\ outlets)) =
     Shape
-        $ (Channel.move f g <$> inlets)
-        /\ (Channel.move f g <$> outlets)
+        $ (map (Channel.move f g) <$> inlets)
+        /\ (map (Channel.move f g) <$> outlets)

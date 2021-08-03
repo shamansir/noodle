@@ -2,6 +2,7 @@ module App.Component.Node where
 
 
 import Prelude
+import Debug as Debug
 
 import Effect.Class (class MonadEffect, liftEffect)
 

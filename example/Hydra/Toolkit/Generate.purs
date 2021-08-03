@@ -2,6 +2,7 @@ module Hydra.Toolkit.Generate
     (all, generate, GenId) where
 
 
+import Debug as Debug
 import Prelude (($), flip, (<$>), (<>), map, join)
 
 

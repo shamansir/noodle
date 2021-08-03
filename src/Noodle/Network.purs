@@ -33,7 +33,7 @@ patch name (Network patches) = patches # Map.lookup name
 
 
 patches :: forall d. Network d -> Array (Patch.Id /\ Patch d)
-patches (Network patches) = patches # Map.toUnfoldable
+patches (Network patches) = patches # Map.toUnfoldableUnordered
 
 
 addPatch :: forall d. Patch.Id /\ Patch d -> Network d -> Network d
