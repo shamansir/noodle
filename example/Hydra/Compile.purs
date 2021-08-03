@@ -17,7 +17,9 @@ import Hydra.Fn (argsToArray) as Fn
 compileValue :: Value -> String
 compileValue (Num n) = show n
 compileValue Mouse = "mouse"
-compileValue Time = "mouse"
+compileValue Time = "time"
+compileValue X = "x"
+compileValue Y = "y"
 compileValue (Seq xs) = "[" <> (String.joinWith "," $ show <$> xs) <> "]"
 
 

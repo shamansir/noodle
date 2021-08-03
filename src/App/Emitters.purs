@@ -15,6 +15,10 @@ import Signal (Signal, (~>))
 import Signal (runSignal) as Signal
 import Signal.DOM as Signal
 
+import Noodle.Node (Node)
+import Noodle.Node as Node
+import Noodle.Node.Shape (InletId, OutletId)
+
 import Web.HTML.Window (document)
 import Web.Event.Event (EventType)
 import Web.UIEvent.UIEvent (UIEvent)
@@ -44,17 +48,28 @@ mouseMove :: forall t. HTMLDocument -> (ME.MouseEvent -> t) -> HS.Emitter t
 mouseMove = mouse MET.mousemove
 
 
-fromSignal :: forall m a. MonadEffect m => Effect (Signal a) -> m (HS.Emitter a)
-fromSignal signalEff = H.liftEffect $ do
+fromSignal' :: forall m a. MonadEffect m => Effect (Signal a) -> m (HS.Emitter a)
+fromSignal' signalEff = H.liftEffect $ signalEff >>= fromSignal
+
+
+fromSignal :: forall m a. MonadEffect m => Signal a -> m (HS.Emitter a)
+fromSignal signal = H.liftEffect $ do
     { emitter, listener } <- HS.create
-    signal <- signalEff
     Signal.runSignal $ signal ~> HS.notify listener
     pure emitter
 
 
+fromInlet :: forall m d. MonadEffect m => Node d -> InletId -> m (HS.Emitter d)
+fromInlet node = fromSignal <<< Node.inletSignal node
+
+
+fromOutlet :: forall m d. MonadEffect m => Node d -> OutletId -> m (HS.Emitter d)
+fromOutlet node = fromSignal <<< Node.outletSignal node
+
+
 windowDimensions :: forall m. MonadEffect m => m (HS.Emitter { w :: Int, h :: Int })
-windowDimensions = fromSignal Signal.windowDimensions
+windowDimensions = fromSignal' Signal.windowDimensions
 
 
 animationFrame :: forall m. MonadEffect m => m (HS.Emitter Number)
-animationFrame = fromSignal Signal.animationFrame -- could use Web.HTML.Window instead
+animationFrame = fromSignal' Signal.animationFrame -- could use Web.HTML.Window instead

@@ -3,7 +3,7 @@ module Hydra.Component.Node.Num where
 
 import Prelude
 
-import Effect.Class (liftEffect)
+import Effect.Class (class MonadEffect)
 
 -- import Data.String.Read (read)
 --import Data.Parse
@@ -37,7 +37,7 @@ initialState node =
          #  fromMaybe 0.0
 
 
-render :: forall m. State -> H.ComponentHTML Action () m
+render :: forall m. MonadEffect m => State -> H.ComponentHTML Action () m
 render num =
     HS.g
         [ ]
@@ -46,7 +46,7 @@ render num =
         ]
 
 
-handleAction :: forall m. Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
 handleAction = case _ of
     Change n -> do
         H.put n
@@ -55,7 +55,7 @@ handleAction = case _ of
         pure unit
 
 
-component :: forall m. UI.NodeComponent m Hydra
+component :: forall m. MonadEffect m => UI.NodeComponent m Hydra
 component =
     H.mkComponent
         { initialState

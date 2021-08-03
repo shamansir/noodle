@@ -44,17 +44,17 @@ _patch = Proxy :: Proxy "patch"
 _background = Proxy :: Proxy "background"
 
 
-type Input d =
+type Input m d =
     { network :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
     , style :: Style
     , flow :: NodeFlow
     , currentPatch :: Maybe Patch.Id
-    , ui :: UI d
+    , ui :: UI m d
     }
 
 
-type State d =
+type State m d =
     { network :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
     , currentPatch :: Maybe Patch.Id
@@ -62,7 +62,7 @@ type State d =
     , currentFrame :: Number
     , style :: Style
     , flow :: NodeFlow
-    , ui :: UI d
+    , ui :: UI m d
     }
 
 
@@ -74,7 +74,7 @@ data Action
     -- | HandlePatch (PatchC.Action d)
 
 
-initialState :: forall d. Input d -> State d
+initialState :: forall m d. Input m d -> State m d
 initialState { network, toolkit, style, flow, currentPatch, ui } =
     { network, toolkit, style, flow, ui
     , currentPatch
@@ -83,7 +83,7 @@ initialState { network, toolkit, style, flow, currentPatch, ui } =
     }
 
 
-render :: forall d m. MonadEffect m => State d -> H.ComponentHTML Action (Slots d) m
+render :: forall d m. MonadEffect m => State m d -> H.ComponentHTML Action (Slots d) m
 render (s@{ network, toolkit, style, flow }) =
     HS.svg
         [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height
@@ -136,7 +136,7 @@ render (s@{ network, toolkit, style, flow }) =
                 [ HH.text "No patch selected" ]
 
 
-handleAction :: forall output m d. MonadAff m => MonadEffect m => Action -> H.HalogenM (State d) Action (Slots d) output m Unit
+handleAction :: forall output m d. MonadAff m => MonadEffect m => Action -> H.HalogenM (State m d) Action (Slots d) output m Unit
 handleAction = case _ of
     Initialize -> do
         innerWidth <- H.liftEffect $ Window.innerWidth =<< window
@@ -159,7 +159,7 @@ handleAction = case _ of
             { width = w, height = h }
 
 
-component :: forall query output m d. MonadAff m => MonadEffect m => H.Component query (Input d) output m
+component :: forall query output m d. MonadAff m => MonadEffect m => H.Component query (Input m d) output m
 component =
     H.mkComponent
         { initialState

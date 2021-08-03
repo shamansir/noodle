@@ -70,18 +70,18 @@ data Subject
     | Outlet (Node.Id /\ OutletId)
 
 
-type Input d =
+type Input m d =
     { patch :: Noodle.Patch d
     , toolkit :: Noodle.Toolkit d
     , style :: Style
     , flow :: NodeFlow
     , offset :: Pos
-    , ui :: UI d
+    , ui :: UI m d
     -- , nodeBodyRenderer :: Node.Family -> Maybe (UI.NodeComponent m d)
     }
 
 
-type State d =
+type State m d =
     { patch :: Noodle.Patch d
     , toolkit :: Noodle.Toolkit d
     , style :: Style
@@ -90,14 +90,14 @@ type State d =
     , layout :: Bin2 Number Node.Id
     , pinned :: PinBoard Node.Id
     , mouse :: Mouse.State (Subject /\ Pos)
-    , ui :: UI d
+    , ui :: UI m d
     -- , nodeBodyRenderer :: Node.Family -> Maybe (UI.NodeComponent m d)
     }
 
 
-data Action d
+data Action m d
     = Initialize
-    | Receive (Input d)
+    | Receive (Input m d)
     | AddNode Node.Family
     | DetachNode Node.Id
     | PinNode Node.Id Pos
@@ -105,7 +105,7 @@ data Action d
     | HandleMouse H.SubscriptionId ME.MouseEvent -- TODO Split mouse handing in different actions
 
 
-initialState :: forall d. Input d -> State d
+initialState :: forall m d. Input m d -> State m d
 initialState { patch, toolkit, style, flow, offset, ui } =
     { patch, toolkit, style, flow
     , offset : offset + (V2.h' $ tabHeight + tabVertPadding)
@@ -128,7 +128,7 @@ nodesOffset = V2.h' 35.0
 cursorOffset = V2.h' 25.0
 
 
-render :: forall d m. MonadEffect m => State d -> H.ComponentHTML (Action d) Slots m
+render :: forall d m. MonadEffect m => State m d -> H.ComponentHTML (Action m d) Slots m
 render state =
     HS.g
         []
@@ -250,7 +250,7 @@ render state =
             HS.g [] []
 
 
-handleAction :: forall output m d. MonadEffect m => Action d -> H.HalogenM (State d) (Action d) Slots output m Unit
+handleAction :: forall output m d. MonadEffect m => Action m d -> H.HalogenM (State m d) (Action m d) Slots output m Unit
 handleAction = case _ of
 
     Initialize -> do
@@ -338,7 +338,7 @@ handleAction = case _ of
         findSubjectUnderPos state pos =
             (findNodeInLayout state pos <|> findNodeInPinned state pos)
                 >>= whereInsideNode state
-        whereInsideNode :: State d -> (Node.Id /\ Pos) -> Maybe (Subject /\ Pos)
+        whereInsideNode :: State m d -> (Node.Id /\ Pos) -> Maybe (Subject /\ Pos)
         whereInsideNode state (nodeName /\ pos) =
             let
                 flow = state.flow
@@ -367,7 +367,7 @@ handleAction = case _ of
             flip PB.search state.pinned
 
 
-component :: forall query output m d. MonadEffect m => H.Component query (Input d) output m
+component :: forall query output m d. MonadEffect m => H.Component query (Input m d) output m
 component =
     H.mkComponent
         { initialState

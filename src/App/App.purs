@@ -3,6 +3,7 @@ module App (App, run) where
 import Prelude
 
 import Effect (Effect)
+import Effect.Aff (Aff)
 import Data.Maybe (Maybe)
 
 import Halogen.Aff as HA
@@ -24,7 +25,7 @@ type App d =
     , toolkit :: Toolkit d
     , network :: Network d
     , currentPatch :: Maybe Patch.Id
-    , ui :: UI d
+    , ui :: UI Aff d
     }
 
 

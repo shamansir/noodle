@@ -42,35 +42,35 @@ type Slots d = ( body :: UI.NodeSlot d Node.Id )
 _body = Proxy :: Proxy "body"
 
 
-type Input d =
+type Input m d =
     { node :: Noodle.Node d
     , name :: Node.Id
     , style :: Style
     , flow :: NodeFlow
-    , ui :: UI d
+    , ui :: UI m d
     }
 
 
-type State d =
+type State m d =
     { node :: Noodle.Node d
     , name :: Node.Id
     , style :: Style
     , flow :: NodeFlow
-    , ui :: UI d
+    , ui :: UI m d
     }
 
 
-data Action d
-    = Receive (Input d)
+data Action m d
+    = Receive (Input m d)
     | SendData (UI.NodeOutput d)
     | NoOp
 
 
-initialState :: forall d. Input d -> State d
+initialState :: forall m d. Input m d -> State m d
 initialState = identity
 
 
-render :: forall d m. State d -> H.ComponentHTML (Action d) (Slots d) m
+render :: forall d m. MonadEffect m => State m d -> H.ComponentHTML (Action m d) (Slots d) m
 render { node, name, style, flow, ui } =
     HS.g
         []
@@ -206,7 +206,7 @@ render { node, name, style, flow, ui } =
                 ]
 
 
-handleAction :: forall output m d. MonadEffect m => Action d -> H.HalogenM (State d) (Action d) (Slots d) output m Unit
+handleAction :: forall output m d. MonadEffect m => Action m d -> H.HalogenM (State m d) (Action m d) (Slots d) output m Unit
 handleAction = case _ of
     Receive input ->
         H.modify_ (\state -> state { node = input.node })
@@ -223,7 +223,7 @@ handleAction = case _ of
         pure unit
 
 
-component :: forall query output m d. MonadEffect m => H.Component query (Input d) output m
+component :: forall query output m d. MonadEffect m => H.Component query (Input m d) output m
 component =
     H.mkComponent
         { initialState

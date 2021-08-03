@@ -49,13 +49,13 @@ type BgComponent m d = H.Component BgQuery (BgInput d) (BgOutput d) m
 type NodeComponent m d = H.Component NodeQuery (NodeInput d) (NodeOutput d) m
 
 
-type BgRenderer d = forall m. Maybe (BgComponent m d)
+type BgRenderer m d = Maybe (BgComponent m d)
 
 
-type NodeRenderer d = forall m. Node.Family -> Maybe (NodeComponent m d)
+type NodeRenderer m d = Node.Family -> Maybe (NodeComponent m d)
 
 
-type UI d =
-    { background :: BgRenderer d
-    , node :: NodeRenderer d
+type UI m d =
+    { background :: BgRenderer m d
+    , node :: NodeRenderer m d
     }

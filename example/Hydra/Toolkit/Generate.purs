@@ -108,12 +108,12 @@ instance ToFn GenId EorV where
 
 generate' :: String -> Def Hydra
 {- Source -}
-generate' "noise" = fromFnV2 (toFn "noise") Try.noise
-generate' "voronoi" = fromFnV3 (toFn "voronoi") Try.voronoi
-generate' "osc" = fromFnV3 (toFn "osc") Try.osc
-generate' "shape" = fromFnV3 (toFn "shape") Try.shape
+generate' "noise"    = fromFnV2 (toFn "noise") Try.noise
+generate' "voronoi"  = fromFnV3 (toFn "voronoi") Try.voronoi
+generate' "osc"      = fromFnV3 (toFn "osc") Try.osc
+generate' "shape"    = fromFnV3 (toFn "shape") Try.shape
 generate' "gradient" = fromFnV1 (toFn "gradient") Try.gradient
-generate' "solid" = fromFnV4 (toFn "solid") Try.solid
+generate' "solid"    = fromFnV4 (toFn "solid") Try.solid
 
 generate' _ = Def.empty
 
