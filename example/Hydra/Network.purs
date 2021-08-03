@@ -37,7 +37,14 @@ network toolkit = do
                 >>= ("sync" /\ "num")   <~> ("osc" /\ "sync")
                 >>= ("offset" /\ "num") <~> ("osc" /\ "offset")
                 >>= ("osc" /\ "osc")    <~> ("out" /\ "src")
-                >>= ("freq" /\ "num")   +>  Hydra.num 4.0
-                >>= ("sync" /\ "num")   +>  Hydra.num 0.1
-                >>= ("offset" /\ "num") +>  Hydra.num 1.2
+
+                {-
+                >>= ("freq" /\ "num")   +>  Hydra.num 4.0 -- doesn't update the node :(
+                >>= ("sync" /\ "num")   +>  Hydra.num 0.1 -- doesn't update the node :(
+                >>= ("offset" /\ "num") +>  Hydra.num 1.2 -- doesn't update the node :(
+                -}
+
+                >>= ("freq" /\ "num")   +>  Hydra.num 60.0 -- doesn't update the node :(
+                >>= ("sync" /\ "num")   +>  Hydra.num 0.1 -- doesn't update the node :(
+                >>= ("offset" /\ "num") +>  Hydra.num 0.0 -- doesn't update the node :(
         )

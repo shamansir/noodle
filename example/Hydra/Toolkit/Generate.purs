@@ -1,4 +1,4 @@
-module Hydra.Tookit.Generate
+module Hydra.Toolkit.Generate
     (all, generate, GenId) where
 
 
@@ -11,8 +11,8 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Hydra
     ( Hydra
-    , HydraFn1M, HydraFn2M, HydraFn3M, HydraFn4M, HydraFn5M
-    , HydraEFn0, HydraEFn1, HydraEFn2, HydraEFn3, HydraEFn4
+    , HydraFn1M, HydraFn2M, HydraFn3M, HydraFn4M, HydraFn5M, HydraFn6M
+    , HydraEFn0, HydraEFn1, HydraEFn2, HydraEFn3, HydraEFn4, HydraEFn5
     )
 import Hydra.Fn (class ToFn, Fn, fn, toFn)
 import Hydra.Fn as Fn
@@ -189,6 +189,12 @@ fromFnV5 :: Fn EorV -> HydraFn5M -> Def Hydra
 fromFnV5 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn5 fn f
+
+
+fromFnV6 :: Fn EorV -> HydraFn6M -> Def Hydra
+fromFnV6 fn f =
+    fromFn fn $
+        makeReceiver Fn.applyFn6 fn f
 
 
 data EorV

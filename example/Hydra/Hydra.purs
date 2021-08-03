@@ -1,10 +1,12 @@
 module Hydra where
 
 
-import Prelude ((<$>), (<<<))
+import Prelude ((<$>), (<<<), ($))
+
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Array as Array
 
 import Hydra.Fn (class ToFn, fn, toFn)
 
@@ -109,6 +111,26 @@ entityOf :: Source -> Entity
 entityOf src = Entity src []
 
 
+geometry :: Geometry -> Modifier
+geometry = G
+
+
+color :: Color -> Modifier
+color = C
+
+
+blend :: Blend -> Modifier
+blend = B
+
+
+modulate :: Modulate -> Modifier
+modulate = M
+
+
+addModifier :: Entity -> Modifier -> Entity
+addModifier (Entity src modifiers) = Entity src <<< Array.snoc modifiers
+
+
 hydraOf :: Entity -> Hydra
 hydraOf = Hydra
 
@@ -154,11 +176,15 @@ isOut (Out _) = true
 isOut _ = false
 
 
+--addGeometry
+
+
 type HydraFn1 = Hydra -> Hydra
 type HydraFn2 = Hydra -> Hydra -> Hydra
 type HydraFn3 = Hydra -> Hydra -> Hydra -> Hydra
 type HydraFn4 = Hydra -> Hydra -> Hydra -> Hydra -> Hydra
 type HydraFn5 = Hydra -> Hydra -> Hydra -> Hydra -> Hydra -> Hydra
+type HydraFn6 = Hydra -> Hydra -> Hydra -> Hydra -> Hydra -> Hydra -> Hydra
 
 
 type HydraFn1M = Maybe Hydra -> Maybe Hydra
@@ -166,6 +192,7 @@ type HydraFn2M = Maybe Hydra -> Maybe Hydra -> Maybe Hydra
 type HydraFn3M = Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra
 type HydraFn4M = Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra
 type HydraFn5M = Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra
+type HydraFn6M = Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra
 
 
 type HydraEFn0 = HydraFn1
@@ -173,6 +200,14 @@ type HydraEFn1 = HydraFn2
 type HydraEFn2 = HydraFn3
 type HydraEFn3 = HydraFn4
 type HydraEFn4 = HydraFn5
+type HydraEFn5 = HydraFn6
+
+
+type HydraEEFn0 = HydraFn2
+type HydraEEFn1 = HydraFn3
+type HydraEEFn2 = HydraFn4
+type HydraEEFn3 = HydraFn5
+type HydraEEFn4 = HydraFn6
 
 
 type HydraEFn0M = HydraFn1M
@@ -180,6 +215,14 @@ type HydraEFn1M = HydraFn2M
 type HydraEFn2M = HydraFn3M
 type HydraEFn3M = HydraFn4M
 type HydraEFn4M = HydraFn5M
+type HydraEFn5M = HydraFn6M
+
+
+type HydraEEFn0M = HydraFn2M
+type HydraEEFn1M = HydraFn3M
+type HydraEEFn2M = HydraFn4M
+type HydraEEFn3M = HydraFn5M
+type HydraEEFn4M = HydraFn6M
 
 
 type ToHydraFn1 = Value -> Hydra
@@ -187,6 +230,7 @@ type ToHydraFn2 = Value -> Value -> Hydra
 type ToHydraFn3 = Value -> Value -> Value -> Hydra
 type ToHydraFn4 = Value -> Value -> Value -> Value -> Hydra
 type ToHydraFn5 = Value -> Value -> Value -> Value -> Value -> Hydra
+type ToHydraFn6 = Value -> Value -> Value -> Value -> Value -> Value -> Hydra
 
 
 type ToHydraEFn0 = Entity -> Hydra
@@ -194,6 +238,14 @@ type ToHydraEFn1 = Entity -> Value -> Hydra
 type ToHydraEFn2 = Entity -> Value -> Value -> Hydra
 type ToHydraEFn3 = Entity -> Value -> Value -> Value -> Hydra
 type ToHydraEFn4 = Entity -> Value -> Value -> Value -> Value -> Hydra
+type ToHydraEFn5 = Entity -> Value -> Value -> Value -> Value -> Value -> Hydra
+
+
+type ToHydraEEFn0 = Entity -> Entity -> Hydra
+type ToHydraEEFn1 = Entity -> Entity -> Value -> Hydra
+type ToHydraEEFn2 = Entity -> Entity -> Value -> Value -> Hydra
+type ToHydraEEFn3 = Entity -> Entity -> Value -> Value -> Value -> Hydra
+type ToHydraEEFn4 = Entity -> Entity -> Value -> Value -> Value -> Value -> Hydra
 
 
 type EntityOrValue = Either Entity Value
