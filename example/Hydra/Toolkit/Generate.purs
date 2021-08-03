@@ -54,49 +54,49 @@ instance ToFn String EorV where
     toFn "solid"    = fn "solid" $ v4 "r" "g" "b" "a"
 
     {- Geometry -}
-    toFn "rotate"   = fn "rotate" $ v2 "angle" "speed"
-    toFn "scale"    = fn "scale" $ v5 "amount" "x-mult" "y-mult" "offset-x" "offset-y"
-    toFn "pixelate" = fn "pixelate" $ v2 "pixel-x" "pixel-y"
-    toFn "repeat"   = fn "repeat" $ v4 "repeat-x" "repeat-y" "offset-x" "offset-y"
-    toFn "repeat-x" = fn "repeat-x" $ v2 "reps" "offset"
-    toFn "repeat-y" = fn "repeat-y" $ v2 "reps" "offset"
-    toFn "kaleid"   = fn "kaleid" $ v1 "n-sides"
-    toFn "scroll-x" = fn "scroll-x" $ v2 "amount" "speed"
-    toFn "scroll-y" = fn "scroll-y" $ v2 "amount" "speed"
+    toFn "rotate"   = fn "rotate" $ ve2 "src" "angle" "speed"
+    toFn "scale"    = fn "scale" $ ve5 "src" "amount" "x-mult" "y-mult" "offset-x" "offset-y"
+    toFn "pixelate" = fn "pixelate" $ ve2 "src" "pixel-x" "pixel-y"
+    toFn "repeat"   = fn "repeat" $ ve4 "src" "repeat-x" "repeat-y" "offset-x" "offset-y"
+    toFn "repeat-x" = fn "repeat-x" $ ve2 "src" "reps" "offset"
+    toFn "repeat-y" = fn "repeat-y" $ ve2 "src" "reps" "offset"
+    toFn "kaleid"   = fn "kaleid" $ ve1 "src" "n-sides"
+    toFn "scroll-x" = fn "scroll-x" $ ve2 "src" "amount" "speed"
+    toFn "scroll-y" = fn "scroll-y" $ ve2 "src" "amount" "speed"
 
     {- Color -}
-    toFn "posterize" = fn "posterize" $ v2 "bins" "gamma"
-    toFn "shift"     = fn "shift" $ v4 "r" "g" "b" "a"
-    toFn "invert"    = fn "invert" $ v1 "amount"
-    toFn "contrast"  = fn "contrast" $ v1 "amount"
-    toFn "brightness" = fn "brightness" $ v1 "amount"
-    toFn "luma"      = fn "luma" $ v2 "treshhold" "tolerance"
-    toFn "tresh"     = fn "tresh" $ v2 "treshhold" "tolerance"
-    toFn "color"     = fn "color" $ v4 "r" "g" "b" "a"
-    toFn "saturate"  = fn "saturate" $ v1 "amount"
-    toFn "hue"       = fn "hue" $ v1 "amount"
-    toFn "colorama"  = fn "hue" $ v1 "amount"
+    toFn "posterize" = fn "posterize" $ ve2 "src" "bins" "gamma"
+    toFn "shift"     = fn "shift" $ ve4 "src" "r" "g" "b" "a"
+    toFn "invert"    = fn "invert" $ ve1 "src" "amount"
+    toFn "contrast"  = fn "contrast" $ ve1 "src" "amount"
+    toFn "brightness" = fn "brightness" $ ve1 "src" "amount"
+    toFn "luma"      = fn "luma" $ ve2 "src" "treshhold" "tolerance"
+    toFn "tresh"     = fn "tresh" $ ve2 "src" "treshhold" "tolerance"
+    toFn "color"     = fn "color" $ ve4 "src" "r" "g" "b" "a"
+    toFn "saturate"  = fn "saturate" $ ve1 "src" "amount"
+    toFn "hue"       = fn "hue" $ ve1 "src" "amount"
+    toFn "colorama"  = fn "hue" $ ve1 "src" "amount"
 
     {- Blend -}
-    toFn "add"       = fn "add" $ ve1 "what" "amount"
-    toFn "layer"     = fn "layer" $ ve0 "what"
-    toFn "blend"     = fn "blend" $ ve1 "what" "amount"
-    toFn "mult"      = fn "mult" $ ve1 "what" "amount"
-    toFn "diff"      = fn "diff" $ ve0 "what"
-    toFn "mask"      = fn "mask" $ ve0 "what"
+    toFn "add"       = fn "add" $ vee1 "src" "what" "amount"
+    toFn "layer"     = fn "layer" $ vee0 "src" "what"
+    toFn "blend"     = fn "blend" $ vee1 "src" "what" "amount"
+    toFn "mult"      = fn "mult" $ vee1 "src" "what" "amount"
+    toFn "diff"      = fn "diff" $ vee0 "src" "what"
+    toFn "mask"      = fn "mask" $ vee0 "src" "what"
 
     {- Modulate -}
-    toFn "mod-repeat"   = fn "mod-repeat" $ ve4 "what" "repeat-x" "repeat-y" "offset-x" "offset-y"
-    toFn "mod-repeat-x" = fn "mod-repeat-x" $ ve2 "what" "reps" "offset"
-    toFn "mod-repeat-y" = fn "mod-repeat-y" $ ve2 "what" "reps" "offset"
-    toFn "mod-kaleid"   = fn "mod-kaleid" $ ve1 "what" "n-sides"
-    toFn "mod-scroll-x" = fn "mod-scroll-x" $ ve2 "what" "amount" "speed"
-    toFn "mod-scroll-y" = fn "mod-scroll-y" $ ve2 "what" "amount" "speed"
-    toFn "modulate"     = fn "modulate" $ ve1 "what" "amount"
-    toFn "mod-scale"    = fn "mod-scale" $ ve2 "what" "multiple" "offset"
-    toFn "mod-pixelate" = fn "mod-pixelate" $ ve2 "what" "multiple" "offset"
-    toFn "mod-rotate"   = fn "mod-rotate" $ ve2 "what" "multiple" "offset"
-    toFn "mod-hue"      = fn "mod-hue" $ ve1 "what" "amount"
+    toFn "mod-repeat"   = fn "mod-repeat" $ vee4 "src" "what" "repeat-x" "repeat-y" "offset-x" "offset-y"
+    toFn "mod-repeat-x" = fn "mod-repeat-x" $ vee2 "src" "what" "reps" "offset"
+    toFn "mod-repeat-y" = fn "mod-repeat-y" $ vee2 "src" "what" "reps" "offset"
+    toFn "mod-kaleid"   = fn "mod-kaleid" $ vee1 "src" "what" "n-sides"
+    toFn "mod-scroll-x" = fn "mod-scroll-x" $ vee2 "src" "what" "amount" "speed"
+    toFn "mod-scroll-y" = fn "mod-scroll-y" $ vee2 "src" "what" "amount" "speed"
+    toFn "modulate"     = fn "modulate" $ vee1 "src" "what" "amount"
+    toFn "mod-scale"    = fn "mod-scale" $ vee2 "src" "what" "multiple" "offset"
+    toFn "mod-pixelate" = fn "mod-pixelate" $ vee2 "src" "what" "multiple" "offset"
+    toFn "mod-rotate"   = fn "mod-rotate" $ vee2 "src" "what" "multiple" "offset"
+    toFn "mod-hue"      = fn "mod-hue" $ vee1 "src" "what" "amount"
 
     {- Other -}
     toFn _ = fn "" []
@@ -108,12 +108,53 @@ instance ToFn GenId EorV where
 
 generate' :: String -> Def Hydra
 {- Source -}
-generate' "noise"    = fromFnV2 (toFn "noise") Try.noise
-generate' "voronoi"  = fromFnV3 (toFn "voronoi") Try.voronoi
-generate' "osc"      = fromFnV3 (toFn "osc") Try.osc
-generate' "shape"    = fromFnV3 (toFn "shape") Try.shape
-generate' "gradient" = fromFnV1 (toFn "gradient") Try.gradient
-generate' "solid"    = fromFnV4 (toFn "solid") Try.solid
+generate' "noise"    = fromFn2 (toFn "noise")    Try.noise
+generate' "voronoi"  = fromFn3 (toFn "voronoi")  Try.voronoi
+generate' "osc"      = fromFn3 (toFn "osc")      Try.osc
+generate' "shape"    = fromFn3 (toFn "shape")    Try.shape
+generate' "gradient" = fromFn1 (toFn "gradient") Try.gradient
+generate' "solid"    = fromFn4 (toFn "solid")    Try.solid
+{- Geometry -}
+generate' "rotate"    = fromFn3 (toFn "rotate")   Try.rotate
+generate' "scale"     = fromFn6 (toFn "scale")    Try.scale
+generate' "pixelate"  = fromFn3 (toFn "pixelate") Try.pixelate
+generate' "repeat"    = fromFn5 (toFn "repeat")   Try.repeat
+generate' "repeat-x"  = fromFn3 (toFn "repeat-x") Try.repeatX
+generate' "repeat-y"  = fromFn3 (toFn "repeat-y") Try.repeatY
+generate' "kaleid"    = fromFn2 (toFn "kaleid")   Try.kaleid
+generate' "scroll-x"  = fromFn3 (toFn "scroll-x") Try.scrollX
+generate' "scroll-y"  = fromFn3 (toFn "scroll-y") Try.scrollY
+{- Color -}
+generate' "posterize"  = fromFn3 (toFn "posterize")  Try.posterize
+generate' "shift"      = fromFn5 (toFn "shift")      Try.shift
+generate' "invert"     = fromFn2 (toFn "invert")     Try.invert
+generate' "contrast"   = fromFn2 (toFn "contrast")   Try.contrast
+generate' "brightness" = fromFn2 (toFn "brightness") Try.brightness
+generate' "luma"       = fromFn3 (toFn "luma")       Try.luma
+generate' "tresh"      = fromFn3 (toFn "tresh")      Try.tresh
+generate' "color"      = fromFn5 (toFn "color")      Try.color
+generate' "saturate"   = fromFn2 (toFn "saturate")   Try.saturate
+generate' "hue"        = fromFn2 (toFn "hue")        Try.hue
+generate' "colorama"   = fromFn2 (toFn "colorama")   Try.colorama
+{- Blend -}
+generate' "add"   = fromFn3 (toFn "add")   Try.add
+generate' "layer" = fromFn2 (toFn "layer") Try.layer
+generate' "blend" = fromFn3 (toFn "blend") Try.blend
+generate' "mult"  = fromFn3 (toFn "mult")  Try.mult
+generate' "diff"  = fromFn2 (toFn "diff")  Try.diff
+generate' "mask"  = fromFn2 (toFn "mask")  Try.mask
+{- Modulate -}
+generate' "mod-repeat"   = fromFn6 (toFn "mod-repeat")   Try.modRepeat
+generate' "mod-repeat-x" = fromFn4 (toFn "mod-repeat-x") Try.modRepeatX
+generate' "mod-repeat-y" = fromFn4 (toFn "mod-repeat-y") Try.modRepeatY
+generate' "mod-kaleid"   = fromFn3 (toFn "mod-kaleid")   Try.modKaleid
+generate' "mod-scroll-x" = fromFn4 (toFn "mod-scroll-x") Try.modScrollX
+generate' "mod-scroll-y" = fromFn4 (toFn "mod-scroll-y") Try.modScrollY
+generate' "modulate"     = fromFn3 (toFn "modulate")     Try.modulate
+generate' "mod-scale"    = fromFn4 (toFn "mod-scale")    Try.modScale
+generate' "mod-pixelate" = fromFn4 (toFn "mod-pixelate") Try.modPixelate
+generate' "mod-rotate"   = fromFn4 (toFn "mod-rotate")   Try.modRotate
+generate' "mod-hue"      = fromFn3 (toFn "mod-hue")      Try.modHue
 
 generate' _ = Def.empty
 
@@ -161,38 +202,38 @@ makeReceiver x fn f =
     )
 
 
-fromFnV1 :: Fn EorV -> HydraFn1M -> Def Hydra
-fromFnV1 fn f =
+fromFn1 :: Fn EorV -> HydraFn1M -> Def Hydra
+fromFn1 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn1 fn f
 
 
-fromFnV2 :: Fn EorV -> HydraFn2M -> Def Hydra
-fromFnV2 fn f =
+fromFn2 :: Fn EorV -> HydraFn2M -> Def Hydra
+fromFn2 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn2 fn f
 
 
-fromFnV3 :: Fn EorV -> HydraFn3M -> Def Hydra
-fromFnV3 fn f =
+fromFn3 :: Fn EorV -> HydraFn3M -> Def Hydra
+fromFn3 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn3 fn f
 
 
-fromFnV4 :: Fn EorV -> HydraFn4M -> Def Hydra
-fromFnV4 fn f =
+fromFn4 :: Fn EorV -> HydraFn4M -> Def Hydra
+fromFn4 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn4 fn f
 
 
-fromFnV5 :: Fn EorV -> HydraFn5M -> Def Hydra
-fromFnV5 fn f =
+fromFn5 :: Fn EorV -> HydraFn5M -> Def Hydra
+fromFn5 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn5 fn f
 
 
-fromFnV6 :: Fn EorV -> HydraFn6M -> Def Hydra
-fromFnV6 fn f =
+fromFn6 :: Fn EorV -> HydraFn6M -> Def Hydra
+fromFn6 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn6 fn f
 
@@ -240,6 +281,31 @@ ve3 e0' v1' v2' v3' = ve0 e0' <> v3 v1' v2' v3'
 
 ve4 :: String -> String -> String -> String -> String -> Array (String /\ EorV)
 ve4 e0' v1' v2' v3' v4' = ve0 e0' <> v4 v1' v2' v3' v4'
+
+
+ve5 :: String -> String -> String -> String -> String -> String -> Array (String /\ EorV)
+ve5 e0' v1' v2' v3' v4' v5' = ve0 e0' <> v5 v1' v2' v3' v4' v5'
+
+
+vee0 :: String -> String -> Array (String /\ EorV)
+vee0 e0 e1 = [ e e0, e e1 ]
+
+
+vee1 :: String -> String -> String -> Array (String /\ EorV)
+vee1 e0' e1' v1' = vee0 e0' e1' <> v1 v1'
+
+
+vee2 :: String -> String -> String -> String -> Array (String /\ EorV)
+vee2 e0' e1' v1' v2' = vee0 e0' e1' <> v2 v1' v2'
+
+
+vee3 :: String -> String -> String -> String -> String -> Array (String /\ EorV)
+vee3 e0' e1' v1' v2' v3' = vee0 e0' e1' <> v3 v1' v2' v3'
+
+
+vee4 :: String -> String -> String -> String -> String -> String -> Array (String /\ EorV)
+vee4 e0' e1' v1' v2' v3' v4' = vee0 e0' e1' <> v4 v1' v2' v3' v4'
+
 
 
 v :: String -> String /\ EorV
