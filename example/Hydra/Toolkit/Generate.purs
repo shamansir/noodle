@@ -75,7 +75,7 @@ instance ToFn String EorV where
     toFn "color"     = fn "color" $ ve4 "src" "r" "g" "b" "a"
     toFn "saturate"  = fn "saturate" $ ve1 "src" "amount"
     toFn "hue"       = fn "hue" $ ve1 "src" "amount"
-    toFn "colorama"  = fn "hue" $ ve1 "src" "amount"
+    toFn "colorama"  = fn "colorama" $ ve1 "src" "amount"
 
     {- Blend -}
     toFn "add"       = fn "add" $ vee1 "src" "what" "amount"

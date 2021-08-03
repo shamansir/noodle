@@ -2,7 +2,7 @@
   "name": "noodle",
   "version": "1.0.0",
   "description": "Generative Visual Programming",
-  "main": "index.html",
+  "main": "noodle-hydra-web.js",
   "directories": {
     "test": "test"
   },
