@@ -107,7 +107,14 @@ instance ToFn GenId EorV where
 
 
 generate' :: String -> Def Hydra
-generate' "osc" = flip fromFnV3 Try.osc $ toFn "osc"
+{- Source -}
+generate' "noise" = fromFnV2 (toFn "noise") Try.noise
+generate' "voronoi" = fromFnV3 (toFn "voronoi") Try.voronoi
+generate' "osc" = fromFnV3 (toFn "osc") Try.osc
+generate' "shape" = fromFnV3 (toFn "shape") Try.shape
+generate' "gradient" = fromFnV1 (toFn "gradient") Try.gradient
+generate' "solid" = fromFnV4 (toFn "solid") Try.solid
+
 generate' _ = Def.empty
 
 
@@ -170,6 +177,18 @@ fromFnV3 :: Fn EorV -> HydraFn3M -> Def Hydra
 fromFnV3 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn3 fn f
+
+
+fromFnV4 :: Fn EorV -> HydraFn4M -> Def Hydra
+fromFnV4 fn f =
+    fromFn fn $
+        makeReceiver Fn.applyFn4 fn f
+
+
+fromFnV5 :: Fn EorV -> HydraFn5M -> Def Hydra
+fromFnV5 fn f =
+    fromFn fn $
+        makeReceiver Fn.applyFn5 fn f
 
 
 data EorV

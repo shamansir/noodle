@@ -14,6 +14,8 @@ data Value
     | Mouse
     | Time
     | Seq (Array Number)
+    | X -- a.k.a width
+    | Y -- a.k.a height
     -- Harmonic Int
     -- FN (Time -> Value)
 

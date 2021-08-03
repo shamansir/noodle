@@ -101,6 +101,9 @@ arrayToArgs arr =
 
         --helper' f arr = fromMaybe Unknown (f <$> Vec.fromArray arr)
 
+-- TODO: use `Foldable`
+
+
 applyVec0 :: forall x z. z -> Vec D0 x -> z
 applyVec0 z _ = z
 

@@ -14,11 +14,55 @@ import Hydra
 import Hydra.Fn as Fn
 
 
+{- Source -}
+
+noise :: HydraFn2M
+noise =
+    tryV2M
+        ( Num 10.0 /\ Num 0.1 )
+        (\scale offset -> Hydra $ entityOf $ Noise { scale, offset })
+
+
+voronoi :: HydraFn3M
+voronoi =
+    tryV3M
+        ( Num 5.0 /\ Num 0.3 /\ Num 0.3 )
+        (\scale speed blending -> Hydra $ entityOf $ Voronoi { scale, speed, blending })
+
+
 osc :: HydraFn3M
 osc =
     tryV3M
         ( Num 60.0 /\ Num 0.1 /\ Num 0.0 )
         (\freq sync offset -> Hydra $ entityOf $ Osc { freq, sync, offset })
+
+
+{- osc' :: HydraFn3
+osc' =
+    tryV3
+        ( Num 60.0 /\ Num 0.1 /\ Num 0.0 )
+        (\freq sync offset -> Hydra $ entityOf $ Osc { freq, sync, offset }) -}
+
+
+shape :: HydraFn3M
+shape =
+    tryV3M
+        ( Num 3.0 /\ Num 0.3 /\ Num 0.01 )
+        (\sides radius smoothing -> Hydra $ entityOf $ Shape { sides, radius, smoothing })
+
+
+gradient :: HydraFn1M
+gradient =
+    tryV1M
+        ( X )
+        (\speed -> Hydra $ entityOf $ Gradient { speed })
+
+
+solid :: HydraFn4M
+solid =
+    tryV4M
+        ( Num 0.0 /\ Num 0.0 /\ Num 0.0 /\ Num 1.0 )
+        (\r g b a -> Hydra $ entityOf $ Solid { r, g, b, a })
 
 
 out :: Int -> HydraEFn0
