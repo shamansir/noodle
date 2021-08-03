@@ -180,15 +180,10 @@ render { node, name, style, flow, ui } =
                     , HSA.width innerWidth, HSA.height innerHeight
                     ]
                 ,
-                -- FIXME: somehow `Node.family node >>= ui.node` doesn't compile due to type difference in `m`
-                case Node.family node of
-                    Just family ->
-                        case ui.node family of
-                            Nothing ->
-                                HS.g [ ] [ ]
-                            Just userNodeBody ->
-                                HS.g [ translateTo $ u.bodyPadding <+> u.namePlateHeight ]
-                                    [ HH.slot _body name userNodeBody node SendData ]
+                case Node.family node >>= ui.node of
+                    Just userNodeBody ->
+                        HS.g [ translateTo $ u.bodyPadding <+> u.namePlateHeight ]
+                            [ HH.slot _body name userNodeBody node SendData ]
                     Nothing ->
                         HS.g [ ] [ ]
                 ]

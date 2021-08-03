@@ -50,7 +50,8 @@ handleAction = case _ of
         emitter <- E.fromOutlet node "osc"
         _ <- H.subscribe (Update <$> emitter)
         pure unit
-    Update _ -> pure unit
+    Update newHydra ->
+        H.modify_ (\(_ /\ node) -> newHydra /\ node)
 
 
 component :: forall m. MonadEffect m => UI.NodeComponent m Hydra
