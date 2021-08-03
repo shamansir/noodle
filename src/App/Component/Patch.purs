@@ -10,7 +10,8 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Data.Array as Array
 import Data.BinPack.R2.Optional (Bin2)
 import Data.BinPack.R2.Optional as R2
-import Data.Int (toNumber)
+import Data.Int (toNumber, floor)
+import Data.Number
 import Data.List as List
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
@@ -42,6 +43,7 @@ import App.Style (Style, NodeFlow)
 import App.Style as Style
 import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
+import App.Svg.Extra (translateTo') as HSA
 import App.UI (UI)
 
 import Halogen as H
@@ -161,12 +163,20 @@ render state =
             = HS.g
                 [ HSA.classes CS.nodesTabs ]
                 $ nodeButton <$> (Array.mapWithIndex (/\) $ Set.toUnfoldable $ Toolkit.nodeFamilies state.toolkit)
+        familiesCount = Set.size $ Toolkit.nodeFamilies state.toolkit
+        fullTabWidth = (tabLength + tabHorzPadding)
+        maxButtonsX = 1400
+        fitsInWidthX = (maxButtonsX `div` floor fullTabWidth) * floor fullTabWidth
+        nodeButtonPos idx =
+            let
+                linearX = (toNumber idx * (tabLength + tabHorzPadding))
+                modX = toNumber $ floor linearX `mod` fitsInWidthX
+                divX = toNumber $ floor linearX `div` fitsInWidthX
+            in (tabHorzPadding + modX) <+> (divX * (tabHeight + tabVertPadding))
         nodeButton (idx /\ name) =
             HS.g
                 [ HSA.classes $ CS.nodeButton name
-                , HSA.transform
-                    [ HSA.Translate (tabHorzPadding + (toNumber idx * (tabLength + tabHorzPadding))) 0.0
-                    ]
+                , HSA.translateTo' $ nodeButtonPos idx
                 , HE.onClick \_ -> AddNode name
                 ]
                 [ HS.rect

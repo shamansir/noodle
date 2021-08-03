@@ -28,8 +28,10 @@ import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
+
 import App.UI (UI)
 import App.UI as UI
+import App.Svg.Extra (translateTo') as HSA
 
 import Type.Proxy (Proxy(..))
 
@@ -94,12 +96,9 @@ render { node, name, style, flow, ui } =
         inlets = Node.inlets node
         outlets = Node.outlets node
 
-        translateTo pos =
-            HSA.transform [ HSA.Translate (V2.x pos) (V2.y pos) ]
-
         name' =
             HS.g
-                [ translateTo $ Calc.namePos u flow
+                [ HSA.translateTo' $ Calc.namePos u flow
                 , HSA.classes $ CS.nodeTitle <> CS.nodeTitleFocus
                 ]
                 [ HS.rect
@@ -108,7 +107,7 @@ render { node, name, style, flow, ui } =
                     , HSA.height namePlateHeight
                     ]
                 , HS.g
-                    [ translateTo $ Calc.nameTextPos u flow
+                    [ HSA.translateTo' $ Calc.nameTextPos u flow
                     ]
                     [ HS.text
                         [ HSA.fill $ Just colors.nodeName ]
@@ -120,7 +119,7 @@ render { node, name, style, flow, ui } =
             HS.g
                 [ HSA.classes classes ]
                 [ HS.g
-                    [ translateTo pos ]
+                    [ HSA.translateTo' pos ]
                     [ HS.circle
                         [ HSA.fill $ Just colors.slotFill
                         , HSA.stroke $ Just colors.slotStroke
@@ -129,13 +128,13 @@ render { node, name, style, flow, ui } =
                         ]
                     ]
                 , HS.g
-                    [ translateTo textPos ]
+                    [ HSA.translateTo' textPos ]
                     [ HS.text
                         [ HSA.fill $ Just colors.slotTextFill ]
                         [ HH.text name ]
                     ]
                 , HS.g
-                    [ translateTo rectPos
+                    [ HSA.translateTo' rectPos
                     , HSA.classes CS.slotFocusArea
                     ]
                     [ HS.rect
@@ -172,7 +171,7 @@ render { node, name, style, flow, ui } =
 
         body =
             HS.g
-                [ translateTo $ Calc.bodyPos u flow ]
+                [ HSA.translateTo' $ Calc.bodyPos u flow ]
                 [ HS.rect
                     [ HSA.fill $ Just colors.bodyFill
                     , HSA.stroke $ Just colors.bodyStroke
@@ -183,7 +182,8 @@ render { node, name, style, flow, ui } =
                 ,
                 case Node.family node >>= ui.node of
                     Just userNodeBody ->
-                        HS.g [ translateTo $ u.bodyPadding <+> u.namePlateHeight ]
+                        HS.g
+                            [ HSA.translateTo' $ u.bodyPadding <+> u.namePlateHeight ]
                             [ HH.slot _body name userNodeBody node SendData ]
                     Nothing ->
                         HS.g [ ] [ ]
@@ -191,7 +191,7 @@ render { node, name, style, flow, ui } =
 
         shadow =
             HS.g
-                [ translateTo $ Calc.shadowPos u flow ]
+                [ HSA.translateTo' $ Calc.shadowPos u flow ]
                 [ HS.rect
                     [ HSA.fill $ Just colors.bodyShadow
                     , HSA.stroke $ Just colors.bodyShadow
