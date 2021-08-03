@@ -79,6 +79,7 @@ type Input m d =
     , flow :: NodeFlow
     , offset :: Pos
     , ui :: UI m d
+    , area :: Size
     -- , nodeBodyRenderer :: Node.Family -> Maybe (UI.NodeComponent m d)
     }
 
@@ -93,6 +94,7 @@ type State m d =
     , pinned :: PinBoard Node.Id
     , mouse :: Mouse.State (Subject /\ Pos)
     , ui :: UI m d
+    , area :: Size
     -- , nodeBodyRenderer :: Node.Family -> Maybe (UI.NodeComponent m d)
     }
 
@@ -108,15 +110,15 @@ data Action m d
 
 
 initialState :: forall m d. Input m d -> State m d
-initialState { patch, toolkit, style, flow, offset, ui } =
+initialState { patch, toolkit, style, flow, offset, ui, area } =
     { patch, toolkit, style, flow
     , offset : offset + (V2.h' $ tabHeight + tabVertPadding)
     , layout :
-        (R2.container $ 1500.0 <+> 900.0)
+        R2.container area
             # addNodesFrom flow style patch
     , pinned : []
     , mouse : Mouse.init
-    , ui
+    , ui, area
     }
 
 
@@ -146,7 +148,7 @@ render state =
         units = state.style.units flow
         mouseState =
             HS.text
-                [ HSA.transform [ HSA.Translate 500.0 (-20.0) ]
+                [ HSA.translateTo' $ 500.0 <+> -20.0
                 , HSA.fill $ Just $ Style.white
                 ]
                 [ HH.text $ show $ state.mouse ]

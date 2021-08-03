@@ -9,8 +9,8 @@ import Effect.Aff.Class (class MonadAff)
 import Data.Maybe (Maybe(..))
 import Data.Int (toNumber)
 import Data.Tuple as Tuple
---import Data.Tuple.Nested (type (/\), (/\))
-import Data.Vec2 ((<+>))
+import Data.Vec2 ((<+>), Size)
+import Data.Vec2 as V2
 
 import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
@@ -23,6 +23,7 @@ import App.Component.Patch as PatchC
 import App.Emitters as Emitters
 import App.UI (UI)
 import App.UI as UI
+import App.Svg.Extra as HSA
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -58,7 +59,7 @@ type State m d =
     { network :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
     , currentPatch :: Maybe Patch.Id
-    , width :: Int, height :: Int
+    , windowSize :: Size
     , currentFrame :: Number
     , style :: Style
     , flow :: NodeFlow
@@ -78,7 +79,7 @@ initialState :: forall m d. Input m d -> State m d
 initialState { network, toolkit, style, flow, currentPatch, ui } =
     { network, toolkit, style, flow, ui
     , currentPatch
-    , width : 1000, height : 1000
+    , windowSize : 1000.0 <+> 1000.0
     , currentFrame : 0.0
     }
 
@@ -86,7 +87,7 @@ initialState { network, toolkit, style, flow, currentPatch, ui } =
 render :: forall d m. MonadEffect m => State m d -> H.ComponentHTML Action (Slots d) m
 render (s@{ network, toolkit, style, flow }) =
     HS.svg
-        [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height
+        [ HSA.width $ V2.w s.windowSize, HSA.height $ V2.h s.windowSize
         , HSA.id "noodle"
         ]
         [ background
@@ -98,7 +99,7 @@ render (s@{ network, toolkit, style, flow }) =
         colors = style.colors
         curFrame =
             HS.text
-                [ HSA.transform [ HSA.Translate 200.0 0.0 ] ]
+                [ HSA.translateTo' $ 200.0 <+> 0.0 ]
                 [ HH.text $ show s.currentFrame ]
         tabHeight = 20.0
         tabPadding = 4.0
@@ -108,7 +109,7 @@ render (s@{ network, toolkit, style, flow }) =
             case s.ui.background of
                 Nothing ->
                     HS.rect
-                        [ HSA.width $ toNumber s.width, HSA.height $ toNumber s.height
+                        [ HSA.width $ V2.w s.windowSize, HSA.height $ V2.h s.windowSize
                         , HSA.fill $ Just colors.background
                         ]
                 Just userBgComp ->
@@ -123,16 +124,20 @@ render (s@{ network, toolkit, style, flow }) =
                 , HSA.strokeWidth 1.0
                 ]
                 , HS.text
-                    [ HSA.transform [ HSA.Translate 3.0 3.0 ] ]
-                     [ HH.text label ]
+                    [ HSA.translateTo' $ 3.0 <+> 3.0 ]
+                    [ HH.text label ]
                 ]
         maybeCurrent (Just patch) =
             HS.g
-                [ HSA.transform [ HSA.Translate 0.0 $ tabHeight + tabPadding ] ]
-                [ HH.slot _patch unit PatchC.component { patch, toolkit, style, flow, offset : patchOffset, ui : s.ui } absurd ]
+                [ HSA.translateTo' $ 0.0 <+> tabHeight + tabPadding ]
+                [ HH.slot _patch unit
+                    PatchC.component
+                    { patch, toolkit, style, flow, offset : patchOffset, ui : s.ui, area : s.windowSize - patchOffset }
+                    absurd
+                ]
         maybeCurrent Nothing =
             HS.text
-                [ HSA.transform [ HSA.Translate 0.0 $ tabHeight + tabPadding ] ]
+                [ HSA.translateTo' $ 0.0 <+> tabHeight + tabPadding ]
                 [ HH.text "No patch selected" ]
 
 
@@ -140,8 +145,8 @@ handleAction :: forall output m d. MonadAff m => MonadEffect m => Action -> H.Ha
 handleAction = case _ of
     Initialize -> do
         innerWidth <- H.liftEffect $ Window.innerWidth =<< window
-        innerHeight <- H.liftEffect $ Window.innerWidth =<< window
-        H.modify_ _ { width = innerWidth, height = innerHeight }
+        innerHeight <- H.liftEffect $ Window.innerHeight =<< window
+        H.modify_ _ { windowSize = toNumber innerWidth <+> toNumber innerHeight }
         -- pure unit
         {- animFrame <- H.liftEffect Emitters.animationFrame
         H.subscribe' $ \sid -> AnimationFrame sid <$> animFrame -}
@@ -156,7 +161,7 @@ handleAction = case _ of
             { currentFrame = time }
     WindowResize _ { w, h } ->
         H.modify_ \state -> state
-            { width = w, height = h }
+            { windowSize = toNumber w <+> toNumber h }
 
 
 component :: forall query output m d. MonadAff m => MonadEffect m => H.Component query (Input m d) output m
