@@ -17,10 +17,11 @@ import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
 import Data.PinBoard (PinBoard)
 import Data.PinBoard as PB
+import Data.Set (Set)
 import Data.Set as Set
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Vec2 (Pos, Size, (<+>))
+import Data.Vec2 (Vec2, Pos, Size, (<+>))
 import Data.Vec2 as V2
 import Data.Foldable (foldr)
 
@@ -36,7 +37,6 @@ import Noodle.Toolkit (Toolkit) as Noodle
 import Noodle.Toolkit as Toolkit
 import Noodle.Node.Shape (InletId, OutletId)
 
-import App.Component.Node as NodeC
 import App.Emitters as Emitters
 import App.Mouse as Mouse
 import App.Style (Style, NodeFlow)
@@ -45,6 +45,9 @@ import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
 import App.Svg.Extra (translateTo') as HSA
 import App.UI (UI)
+
+import App.Component.Node as NodeC
+import App.Component.ButtonStrip as BS
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -90,12 +93,12 @@ type State m d =
     , style :: Style
     , flow :: NodeFlow
     , offset :: Pos
+    , buttonStrip :: BS.ButtonStrip Node.Family
     , layout :: Bin2 Number Node.Id
     , pinned :: PinBoard Node.Id
     , mouse :: Mouse.State (Subject /\ Pos)
     , ui :: UI m d
     , area :: Size
-    -- , nodeBodyRenderer :: Node.Family -> Maybe (UI.NodeComponent m d)
     }
 
 
@@ -112,24 +115,15 @@ data Action m d
 initialState :: forall m d. Input m d -> State m d
 initialState { patch, toolkit, style, flow, offset, ui, area } =
     { patch, toolkit, style, flow
-    , offset : offset + (V2.h' $ tabHeight + tabVertPadding)
+    , offset : offset
     , layout :
         R2.container area
             # addNodesFrom flow style patch
+    , buttonStrip : BS.make (V2.w area) $ Toolkit.nodeFamilies toolkit
     , pinned : []
     , mouse : Mouse.init
     , ui, area
     }
-
-
--- FIXME: take those from Calculate as well
-tabHeight = 20.0
-tabVertPadding = 15.0
-tabHorzPadding = 5.0
-tabLength = 60.0
--- FIXME: get rid of magic numbers
-nodesOffset = V2.h' 35.0
-cursorOffset = V2.h' 25.0
 
 
 render :: forall d m. MonadEffect m => State m d -> H.ComponentHTML (Action m d) Slots m
@@ -164,25 +158,19 @@ render state =
         nodeButtons
             = HS.g
                 [ HSA.classes CS.nodesTabs ]
-                $ nodeButton <$> (Array.mapWithIndex (/\) $ Set.toUnfoldable $ Toolkit.nodeFamilies state.toolkit)
-        familiesCount = Set.size $ Toolkit.nodeFamilies state.toolkit
-        fullTabWidth = (tabLength + tabHorzPadding)
-        maxButtonsX = 1400
-        fitsInWidthX = (maxButtonsX `div` floor fullTabWidth) * floor fullTabWidth
-        nodeButtonPos idx =
-            let
-                linearX = (toNumber idx * (tabLength + tabHorzPadding))
-                modX = toNumber $ floor linearX `mod` fitsInWidthX
-                divX = toNumber $ floor linearX `div` fitsInWidthX
-            in (tabHorzPadding + modX) <+> (divX * (tabHeight + tabVertPadding))
-        nodeButton (idx /\ name) =
+                $ nodeButton <$> BS.unfold state.buttonStrip
+        bsBottomY = V2.h $ BS.size state.buttonStrip
+        bsOffset = V2.h' bsBottomY
+        --absNodesOffset = bsBottomY
+        -- cursorOffset = 0.0 <+> fullButtonHeight
+        nodeButton (buttonPos /\ name) =
             HS.g
                 [ HSA.classes $ CS.nodeButton name
-                , HSA.translateTo' $ nodeButtonPos idx
+                , HSA.translateTo' buttonPos
                 , HE.onClick \_ -> AddNode name
                 ]
                 [ HS.rect
-                    [ HSA.width tabLength, HSA.height tabHeight
+                    [ HSA.width $ V2.w BS.buttonSize, HSA.height $ V2.h BS.buttonSize
                     , HSA.fill $ Just colors.nodeTabBackground
                     , HSA.stroke $ Just colors.nodeTabStroke
                     , HSA.strokeWidth 1.0
@@ -191,7 +179,7 @@ render state =
                 ]
         node' { node, name, x, y, w, h } = -- FIXME: use Vec2
             HS.g
-                [ HSA.transform [ HSA.Translate x $ tabHeight + tabVertPadding + y ]
+                [ HSA.transform [ HSA.Translate x $ bsBottomY + y ]
                 , HSA.classes $ CS.node state.flow name
                 ]
                 [ HH.slot _node name
@@ -206,7 +194,7 @@ render state =
         floatingNode pos (name /\ nodeOffset) =
             let
                 bounds = boundsOf' state.flow state.style state.patch name # Maybe.fromMaybe zero
-            in case assocNode ( name /\ (pos - nodeOffset - state.offset) /\ bounds ) of
+            in case assocNode ( name /\ (pos - nodeOffset - bsOffset - state.offset) /\ bounds ) of
                 Just n -> node' n
                 Nothing -> HS.g [] []
         existingLinks =
@@ -224,8 +212,8 @@ render state =
             case linkEndsPositions outletPath inletPath of
                 Just (outletPos /\ inletPos) ->
                     let
-                        x1 /\ y1 = V2.toTuple $ nodesOffset + outletPos
-                        x2 /\ y2 = V2.toTuple $ nodesOffset + inletPos
+                        x1 /\ y1 = V2.toTuple $ bsOffset + outletPos
+                        x2 /\ y2 = V2.toTuple $ bsOffset + inletPos
                     in HS.line
                         [ HSA.x1 x1, HSA.x2 x2
                         , HSA.y1 y1, HSA.y2 y2
@@ -243,8 +231,8 @@ render state =
                 Just (outletIdx /\ nodePos) ->
                     let
                         outletInnerPos = Calc.outletPos units flow outletIdx
-                        x1 /\ y1 = V2.toTuple $ nodesOffset + nodePos + outletInnerPos
-                        x2 /\ y2 = V2.toTuple $ pos - cursorOffset
+                        x1 /\ y1 = V2.toTuple $ bsOffset + nodePos + outletInnerPos
+                        x2 /\ y2 = V2.toTuple $ pos - state.offset
                     in HS.line
                         [ HSA.x1 x1, HSA.x2 x2
                         , HSA.y1 y1, HSA.y2 y2
@@ -321,10 +309,12 @@ handleAction = case _ of
     HandleMouse _ mouseEvent -> do
         state <- H.get
         let
+            bsOffset = V2.zh $ BS.size $ state.buttonStrip
+            mouseOffset = state.offset + bsOffset
             nextMouse
                 = state.mouse
                     # Mouse.apply
-                            (flip (-) state.offset
+                            (flip (-) mouseOffset
                             >>> findSubjectUnderPos state
                             )
                     mouseEvent
@@ -333,12 +323,12 @@ handleAction = case _ of
             Mouse.StartDrag _ (Node nodeId /\ _) ->
                 handleAction $ DetachNode nodeId
             Mouse.DropAt pos (Node nodeId /\ offset) ->
-                handleAction $ PinNode nodeId $ pos - offset
+                handleAction $ PinNode nodeId $ pos - bsOffset - offset
             _ ->
                 pure unit
         case nextMouse of
             Mouse.DropAt pos (Outlet outlet /\ _) ->
-                case findSubjectUnderPos state $ pos - state.offset of
+                case findSubjectUnderPos state $ pos - mouseOffset of
                     Just (Inlet inlet /\ _) -> do
                         handleAction $ Connect outlet inlet
                     _ ->
