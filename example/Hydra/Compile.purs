@@ -16,7 +16,8 @@ import Hydra.Fn (argsToArray) as Fn
 
 compileValue :: Value -> String
 compileValue (Num n) = show n
-compileValue Mouse = "mouse"
+compileValue MouseX = "mouse.x"
+compileValue MouseY = "mouse.y"
 compileValue Time = "time"
 compileValue X = "x"
 compileValue Y = "y"
