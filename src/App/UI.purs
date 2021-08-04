@@ -11,8 +11,10 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Noodle.Node (Node)
 import Noodle.Node as Node
 import Noodle.Node.Shape (InletId, OutletId)
+import Noodle.Channel.Shape as Channel
 import Noodle.Network (Network)
 
+import App.Style.Color (Color)
 
 import Halogen as H
 
@@ -58,4 +60,6 @@ type NodeRenderer m d = Node.Family -> Maybe (NodeComponent m d)
 type UI m d =
     { background :: BgRenderer m d
     , node :: NodeRenderer m d
+    , markNode :: Node.Family -> Maybe Color
+    , markChannel :: Channel.Id -> Maybe Color
     }

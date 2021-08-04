@@ -1,11 +1,12 @@
 module Hydra.Toolkit.Generate
-    (all, generate, GenId) where
+    (all, generate, GenId, Kind(..), byKind, ofKind) where
 
 
 import Debug as Debug
-import Prelude (($), flip, (<$>), (<>), map, join)
+import Prelude (($), flip, (<$>), (<>), map, join, (==))
 
 
+import Data.Array as Array
 import Data.Maybe (Maybe(..))
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -22,7 +23,7 @@ import Hydra.Toolkit.Shape as TShape
 
 import Noodle.Node.Define (Def, Receive, Pass)
 import Noodle.Node.Define (empty, define, defineEffectful, pass') as Def
-import Noodle.Node (Id) as Node
+import Noodle.Node (Id, Family) as Node
 import Noodle.Node ((+>), (<+))
 import Noodle.Node.Shape as Shape
 import Noodle.Node.Shape (Inlets, Outlets)
@@ -32,16 +33,43 @@ import Noodle.Channel.Shape (Shape') as Ch
 newtype GenId = GenId Node.Id
 
 
+data Kind
+    = Source
+    | Geom
+    | Color
+    | Blend
+    | Mod
+
+
+byKind :: Kind -> Array Node.Family
+byKind Source = [ "noise", "voronoi", "osc", "shape", "gradient" ]
+byKind Geom = [ "rotate", "scale", "pixelate", "repeat", "repeat-x", "repeat-y", "kaleid", "scroll-x", "scroll-y" ]
+byKind Color = [ "posterize", "shift", "invert", "contrast", "brightness", "luma", "tresh"
+               , "color", "saturate", "hue", "colorama" ]
+byKind Blend = [ "add", "layer", "blend", "mult", "diff", "mask" ]
+byKind Mod = [ "mod-repeat", "mod-repeat-x", "mod-repeat-y", "mod-kaleid", "mod-scroll-x", "mod-scroll-y", "moduldate"
+             , "mod-scale", "mod-pixelate", "mod-rotate", "mod-hue" ]
+
+
+ofKind :: Node.Family -> Maybe Kind
+ofKind family =
+    Array.findMap
+        (\(kind /\ family') ->
+            if (family' == family) then Just kind else Nothing
+        )
+        all'
+
+
 all :: Array GenId
-all = GenId <$> sources <> geom <> color <> blends <> mods
-    where
-        sources = [ "noise", "voronoi", "osc", "shape", "gradient" ]
-        geom = [ "rotate", "scale", "pixelate", "repeat", "repeat-x", "repeat-y", "kaleid", "scroll-x", "scroll-y" ]
-        color = [ "posterize", "shift", "invert", "contrast", "brightness", "luma", "tresh"
-                , "color", "saturate", "hue", "colorama" ]
-        blends = [ "add", "layer", "blend", "mult", "diff", "mask" ]
-        mods = [ "mod-repeat", "mod-repeat-x", "mod-repeat-y", "mod-kaleid", "mod-scroll-x", "mod-scroll-y", "moduldate"
-               , "mod-scale", "mod-pixelate", "mod-rotate", "mod-hue" ]
+all = GenId <$> byKind Source <> byKind Geom <> byKind Color <> byKind Blend <> byKind Mod
+
+
+all' :: Array (Kind /\ Node.Family)
+all' = ((/\) Source <$> byKind Source)
+    <> ((/\) Geom <$> byKind Geom)
+    <> ((/\) Color <$> byKind Color)
+    <> ((/\) Blend <$> byKind Blend)
+    <> ((/\) Mod <$> byKind Mod)
 
 
 instance ToFn String EorV where

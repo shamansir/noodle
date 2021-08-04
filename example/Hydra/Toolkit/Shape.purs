@@ -12,14 +12,14 @@ import Noodle.Channel.Shape as Channel
 
 value :: Shape' Hydra
 value =
-  Channel.shape''' None Hydra.isValue
+  Channel.shapeBy "value" None Hydra.isValue
 
 
 entity :: Shape' Hydra
 entity =
-  Channel.shape''' None Hydra.isEntity
+  Channel.shapeBy "entity" None Hydra.isEntity
 
 
 out :: Shape' Hydra
 out =
-  Channel.shape''' None Hydra.isOut
+  Channel.shapeBy "out" None Hydra.isOut

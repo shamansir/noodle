@@ -1,9 +1,11 @@
 module App.Style where
 
 
-import Halogen.Svg.Attributes (Color(..))
+import App.Style.Color (Color)
+import App.Style.Color as Color
 
 
+-- import Halogen.Svg.Attributes hiding (Color)
 data Connector
     = Square
     | Circle
@@ -58,12 +60,12 @@ type Style =
 
 
 transparent :: Color
-transparent = RGBA 0 0 0 0.0
+transparent = Color.rgba 0 0 0 0.0
 
 
 white :: Color
-white = Named "white"
+white = Color.named "white"
 
 
 black :: Color
-black = Named "black"
+black = Color.named "black"

@@ -14,9 +14,13 @@ import Data.Profunctor (class Profunctor)
 import Data.Profunctor as Profunctor
 
 
+type Id = String
+
+
 data Shape d a =
     Shape
-        { default :: a -- d?
+        { id :: String
+        , default :: a -- d?
         , accept :: d -> Maybe a -- TODO: remove, move to typeclass, can be used on `Node.connect` / `Node.send`
         --, adapt :: d -> d
         , isHot :: Boolean
@@ -34,9 +38,9 @@ class IsShape m where
 
 instance functorShape :: Functor (Shape a) where
     map :: forall d a b. (a -> b) -> Shape d a -> Shape d b
-    map f (Shape { default, accept, isHot, hidden }) =
+    map f (Shape { id, default, accept, isHot, hidden }) =
         Shape
-            { default : f default, isHot, hidden
+            { id, default : f default, isHot, hidden
             , accept : ((<$>) f) <$> accept
             }
 
@@ -93,26 +97,21 @@ visible (Shape def) =
     Shape def { hidden = false }
 
 
-shape :: forall a d. a -> (d -> Maybe a) -> Shape d a
-shape v accept =
+shape :: forall a d. Id -> a -> (d -> Maybe a) -> Shape d a
+shape id v accept =
     Shape
-        { default : v
-        , accept : accept
+        { id, default : v, accept
         , isHot : true
         , hidden : false
         }
 
 
-shape' :: forall a d. (d -> Maybe a) -> a -> Shape d a
-shape' = flip shape
+shapeBy :: forall d. Id -> d -> (d -> Boolean) -> Shape d d
+shapeBy id v test = shape id v (\d -> if test d then Just d else Nothing)
 
 
-shape'' :: forall a d. (a -> d) -> (d -> Maybe a) -> a -> Shape d d
-shape'' f toN def = f <$> shape def toN
-
-
-shape''' :: forall d. d -> (d -> Boolean) -> Shape d d
-shape''' v test = shape v (\d -> if test d then Just d else Nothing)
+through :: forall a. Id -> a -> Shape a a
+through id = flip (shape id) Just
 
 
 acceptWith :: forall a d. (a -> Maybe d) -> Shape a d -> Shape a d
@@ -120,9 +119,10 @@ acceptWith f (Shape def) = Shape def { accept = f }
 
 
 lcmap :: forall a b c. (b -> a) -> Shape a c -> Shape b c
-lcmap f (Shape { default, accept, isHot, hidden }) =
+lcmap f (Shape { id, default, accept, isHot, hidden }) =
     Shape
-        { default
+        { id
+        , default
         , accept : accept <<< f
         , isHot
         , hidden
@@ -139,15 +139,3 @@ move f g shape_ = lcmap g (f <$> shape_)
 
 move' :: forall a b c d. (b -> a) -> (c -> d) -> Shape a c -> Shape b d
 move' = Profunctor.dimap
-
-
-through :: forall a. a -> Shape a a
-through = flip shape Just
-
-
-number :: Number -> Shape Number Number
-number = through
-
-
-number' :: forall a. (Number -> a) -> (a -> Maybe Number) -> Number -> Shape a a
-number' = shape''
