@@ -18,8 +18,8 @@ import Hydra.Try as Hydra
 
 import Noodle.Node ((<+))
 import Noodle.Node.Define (Def)
-import Noodle.Node.Define (define, defineEffectful, pass', passThrough, passNothing) as Def
-import Noodle.Node.Shape ((>~), (~<), withInlets, withOutlets, noOutlets)
+import Noodle.Node.Define (define, defineEffectful, pass, pass', passThrough, passNothing) as Def
+import Noodle.Node.Shape ((>~), (~<), withInlets, withOutlets, noInlets, noOutlets)
 import Noodle.Channel.Shape (hidden) as Channel
 
 
@@ -35,24 +35,31 @@ number =
       Def.passThrough
 
 
-osc :: Def Hydra
-osc =
+time :: Def Hydra
+time =
     Def.define
-      (withInlets
-        ~< "freq" /\ Channel.value
-        ~< "sync" /\ Channel.value
-        ~< "offset" /\ Channel.value
-      )
+      noInlets
       (withOutlets
-        >~ "osc" /\ Channel.entity
+        >~ "time" /\ Channel.value
       )
-      $ \inlets ->
-        Def.pass'
-          [ "osc" /\
-              Hydra.osc
-                  ("freq" <+ inlets)
-                  ("sync" <+ inlets)
-                  ("offset" <+ inlets)
+      $ \_ ->
+        Def.pass
+          [ "time" /\ Hydra.time
+          ]
+
+
+mouse :: Def Hydra
+mouse =
+    Def.define
+      noOutlets
+      (withOutlets
+        >~ "x" /\ Channel.value
+        >~ "y" /\ Channel.value
+      )
+      $ \_ ->
+        Def.pass
+          [ "x" /\ Hydra.mouseX
+          , "y" /\ Hydra.mouseY
           ]
 
 

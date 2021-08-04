@@ -20,6 +20,8 @@ toolkit :: Toolkit Hydra
 toolkit =
   T.make Hydra.default $
     [ "num" /\ Node.number
+    , "time" /\ Node.time
+    , "mouse" /\ Node.mouse
     ] <> (Gen.generate <$> Gen.all) <>
     [ "out" /\ Node.out
     ]

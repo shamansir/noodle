@@ -13,7 +13,8 @@ import Hydra.Fn (class ToFn, fn, toFn)
 
 data Value
     = Num Number
-    | Mouse
+    | MouseX
+    | MouseY
     | Time
     | Seq (Array Number)
     | X -- a.k.a width
@@ -137,6 +138,26 @@ hydraOf = Hydra
 
 num :: Number -> Hydra
 num = Value <<< Num
+
+
+time :: Hydra
+time = Value $ Time
+
+
+mouseX :: Hydra
+mouseX = Value $ MouseX
+
+
+mouseY :: Hydra
+mouseY = Value $ MouseY
+
+
+x :: Hydra
+x = Value $ X
+
+
+y :: Hydra
+y = Value $ Y
 
 
 seq :: Array Number -> Hydra
