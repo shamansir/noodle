@@ -56,6 +56,10 @@ instance shapeIsShape :: IsShape (Shape) where
     accept (Shape s) = s.accept
 
 
+id :: forall a d. Shape d a -> String
+id (Shape { id }) = id
+
+
 default :: forall a d. a -> Shape d a -> Shape d a
 default default' (Shape def) =
     Shape def { default = default' }

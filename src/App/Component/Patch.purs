@@ -171,7 +171,7 @@ render state =
                 ]
                 [ HS.rect
                     [ HSA.width $ V2.w BS.buttonSize, HSA.height $ V2.h BS.buttonSize
-                    , HSA.fill $ Just colors.nodeTabBackground
+                    , HSA.fill $ state.ui.markNode name <|> Just colors.nodeTabBackground
                     , HSA.stroke $ Just colors.nodeTabStroke
                     , HSA.strokeWidth 1.0
                     ]

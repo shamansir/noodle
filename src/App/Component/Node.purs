@@ -14,10 +14,12 @@ import Data.Array as Array
 import Data.Int (toNumber)
 import Data.Vec2 as V2
 import Data.Vec2 ((<+>))
+import Control.Alternative ((<|>))
 
 import Noodle.Node ((+>), (++>))
 import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
+import Noodle.Channel.Shape as Ch
 
 import App.Style (Style, NodeFlow(..), transparent)
 import App.Style.Calculate as Calc
@@ -110,7 +112,7 @@ render { node, name, style, flow, ui } =
                     [ HSA.translateTo' $ Calc.nameTextPos u flow
                     ]
                     [ HS.text
-                        [ HSA.fill $ Just colors.nodeName ]
+                        [ HSA.fill $ (ui.markNode =<< Node.family node) <|> Just colors.nodeName ]
                         [ HH.text name ]
                     ]
                 ]
@@ -121,7 +123,7 @@ render { node, name, style, flow, ui } =
                 [ HS.g
                     [ HSA.translateTo' pos ]
                     [ HS.circle
-                        [ HSA.fill $ Just colors.slotFill
+                        [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just colors.slotFill
                         , HSA.stroke $ Just colors.slotStroke
                         , HSA.strokeWidth u.slotStrokeWidth
                         , HSA.r u.slotRadius
