@@ -56,7 +56,7 @@ data Node d
         d
         (Shape d)
         (Channel (InletId /\ d) /\ Channel (OutletId /\ d))
-        (Maybe Family)
+        (Maybe Family) -- FIXME: make family required?
         -- we can turn these into Signals if we either pass the function needed to send values and forget it,
         -- or create it ourselves and return it to be re-used by outer world.
         -- Signals will give us Functors etc.

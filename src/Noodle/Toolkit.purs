@@ -2,7 +2,7 @@ module Noodle.Toolkit
     where
 
 
-import Prelude ((<<<), (#), map)
+import Prelude ((<<<), (#), map, ($))
 
 import Effect (Effect)
 
@@ -26,10 +26,11 @@ make def = Toolkit def <<< Map.fromFoldable
 
 
 spawn :: forall d. Node.Family -> Toolkit d -> Effect (Maybe (Node d))
-spawn name (Toolkit def nodeDefs) =
+spawn family (Toolkit def nodeDefs) =
     nodeDefs
-        # Map.lookup name
+        # Map.lookup family
         # map (Node.make def)
+        # map (map $ Node.markFamily family)
         # sequence
 
 
