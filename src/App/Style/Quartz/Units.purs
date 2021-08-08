@@ -22,7 +22,7 @@ units _ =
         { size : 40.0 <+> 40.0
         , padding : 20.0 <+> 20.0
         }
-    , nodeBody :
+    , body :
         -- { margin : 20.0 <+> 20.0
         { size : Fixed 80.0 <+> Stretch
         , strokeWidth : 1.0
@@ -38,7 +38,7 @@ units _ =
     , slot :
         { radius : 3.5
         , strokeWidth : 1.5
-        , outerSize : 50.0 <+> 25.0
+        , area : 50.0 <+> 25.0
         -- , padding
         , inletsOffset : 0.0 <+> 0.0
         , outletsOffset : 0.0 <+> 0.0

@@ -9,7 +9,7 @@ import Effect.Class (class MonadEffect)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested ((/\), type (/\))
 
-import App.UI as UI
+import App.Toolkit.UI as UI
 import App.Emitters as E
 
 import Noodle.Node (Node)

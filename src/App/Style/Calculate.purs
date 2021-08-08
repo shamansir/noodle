@@ -20,12 +20,12 @@ type GetSizeByNode d = Flags -> Units -> NodeFlow -> Node d -> Size
 
 
 slotArea :: GetSize
-slotArea _ u _ = u.slot.outerSize
+slotArea _ u _ = u.slot.area
 
 
 inletConnectorPos :: SlotDirection -> GetPosByIdx
 inletConnectorPos dir t u Vertical idx =
-    u.nodeBody.margin +
+    u.body.margin +
     u.slot.inletsOffset +
     (
         connectorOffsetX dir
@@ -36,15 +36,15 @@ inletConnectorPos dir t u Vertical idx =
         )
     )
     where
-        outerHeight = V2.h $ u.slot.outerSize
-        connectorOffsetX Inside = V2.w $ u.slot.outerSize
+        outerHeight = V2.h $ u.slot.area
+        connectorOffsetX Inside = V2.w $ u.slot.area
         connectorOffsetX Between =
-            V2.w $ (u.slot.outerSize </> V2.vv 2.0) - V2.vv u.slot.radius
+            V2.w $ (u.slot.area </> V2.vv 2.0) - V2.vv u.slot.radius
         connectorOffsetX Outside = 0.0
         titleHeight =
             if t.hasTitle then V2.h $ titleSize t u Vertical else 0.0
 inletConnectorPos dir t u Horizontal idx =
-    u.nodeBody.margin +
+    u.body.margin +
     u.slot.inletsOffset +
     (
         (titleWidth
@@ -55,10 +55,10 @@ inletConnectorPos dir t u Horizontal idx =
         connectorOffsetY dir
     )
     where
-        outerWidth = V2.w $ u.slot.outerSize
-        connectorOffsetY Inside = V2.h $ u.slot.outerSize
+        outerWidth = V2.w $ u.slot.area
+        connectorOffsetY Inside = V2.h $ u.slot.area
         connectorOffsetY Between =
-            V2.h $ (u.slot.outerSize </> V2.vv 2.0) - V2.vv u.slot.radius
+            V2.h $ (u.slot.area </> V2.vv 2.0) - V2.vv u.slot.radius
         connectorOffsetY Outside = 0.0
         titleWidth =
             if t.hasTitle then V2.w $ titleSize t u Horizontal else 0.0
@@ -66,7 +66,7 @@ inletConnectorPos dir t u Horizontal idx =
 
 inletRectPos :: GetPosByIdx
 inletRectPos t u Vertical idx =
-    u.nodeBody.margin +
+    u.body.margin +
     u.slot.inletsOffset +
     (
         0.0
@@ -74,10 +74,10 @@ inletRectPos t u Vertical idx =
         (titleHeight + outerHeight * toNumber idx)
     )
     where
-        outerHeight = V2.h $ u.slot.outerSize
+        outerHeight = V2.h $ u.slot.area
         titleHeight = if t.hasTitle then V2.h $ titleSize t u Vertical else 0.0
 inletRectPos t u Horizontal idx =
-    u.nodeBody.margin +
+    u.body.margin +
     u.slot.inletsOffset +
     (
         (titleWidth + outerWidth * toNumber idx)
@@ -85,7 +85,7 @@ inletRectPos t u Horizontal idx =
         0.0
     )
     where
-        outerWidth = V2.w $ u.slot.outerSize
+        outerWidth = V2.w $ u.slot.area
         titleWidth = if t.hasTitle then V2.w $ titleSize t u Horizontal else 0.0
 
 
@@ -99,7 +99,7 @@ outletConnectorPos :: SlotDirection -> GetPosByIdx
 outletConnectorPos dir t u Vertical idx =
     0.0 <+> 0.0
     {-
-    ( u.slotOuterWidth + u.nodeBodyWidth )
+    ( u.slotOuterWidth + u.bodyWidth )
     <+>
     (plateHeight + (u.slotOuterHeight / 2.0) + (u.slotOuterHeight * toNumber idx))
     where plateHeight = V2.h $ titleSize t u Vertical
@@ -118,7 +118,7 @@ outletRectPos :: GetPosByIdx
 outletRectPos t u Vertical idx =
     20.0 <+> 30.0
     {-
-    (u.nodeBodyWidth + u.slotOuterWidth)
+    (u.bodyWidth + u.slotOuterWidth)
     <+>
     (plateHeight + u.slotOuterHeight * toNumber idx)
     where plateHeight = V2.h $ titleSize t u Vertical
@@ -152,8 +152,8 @@ titleTextPos t u Horizontal = 0.0 <+> 0.0
 
 
 titleSize :: GetSize
-titleSize t u Vertical = 200.0 <+> 20.0 -- u.nodeBody.width <+> u.namePlateHeight
-titleSize t u Horizontal = 200.0 <+> 20.0 -- u.nodeBodyWidth <+> u.namePlateHeight
+titleSize t u Vertical = 200.0 <+> 20.0 -- u.body.width <+> u.namePlateHeight
+titleSize t u Horizontal = 200.0 <+> 20.0 -- u.bodyWidth <+> u.namePlateHeight
 
 
 nodeBounds :: forall d. GetSizeByNode d
@@ -165,30 +165,30 @@ nodeBounds t u flow node =
     in
         case flow of
             Vertical ->
-                (u.slotOuterWidth * 2.0 + u.nodeBodyWidth)
+                (u.slotOuterWidth * 2.0 + u.bodyWidth)
                 <+>
                 (u.nodePadding + plateHeight + toNumber (max inletsCount outletsCount) * u.slotOuterHeight)
                 where plateHeight = V2.h $ titleSize u Vertical
             Horizontal ->
-                (u.slotOuterWidth * 2.0 + u.nodeBodyWidth)
+                (u.slotOuterWidth * 2.0 + u.bodyWidth)
                 <+>
                 (toNumber (max inletsCount outletsCount) * u.slotOuterHeight)
     -}
 
 
-nodeBodySize :: forall d. GetSizeByNode d
-nodeBodySize t u flow node =
+bodySize :: forall d. GetSizeByNode d
+bodySize t u flow node =
     100.0 <+> 100.0
     {- let
         inletsCount /\ outletsCount = Node.dimensions node
     in
         case flow of
             Vertical ->
-                u.nodeBodyWidth
+                u.bodyWidth
                 <+>
                 (plateHeight + toNumber (max inletsCount outletsCount) * u.slotOuterHeight)
                 where plateHeight = V2.h $ titleSize u Vertical
             Horizontal ->
                 (toNumber (max inletsCount outletsCount) * u.slotOuterWidth)
                 <+>
-                u.nodeBodyHeight -}
+                u.bodyHeight -}

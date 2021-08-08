@@ -15,8 +15,8 @@ import Hydra.Toolkit.Generate (Kind(..))
 import Noodle.Node as Node
 import Noodle.Channel.Shape as Channel
 
-import App.UI as UI
-import App.UI (UI)
+import App.Toolkit.UI as UI
+import App.Toolkit.UI (UI)
 import App.Style as Style
 import App.Style.Color (Color)
 import App.Style.Color as Color

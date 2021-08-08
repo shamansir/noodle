@@ -1,4 +1,4 @@
-module App.UI where
+module App.Toolkit.UI where
 
 
 import Prelude (Void, Unit)

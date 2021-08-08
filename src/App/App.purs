@@ -16,7 +16,7 @@ import Noodle.Patch as Patch
 
 import App.Component.Network as NetworkC
 import App.Style (Style, NodeFlow)
-import App.UI (UI)
+import App.Toolkit.UI (UI)
 
 
 type App d =

@@ -3,7 +3,7 @@ module Hydra.Component.Background where
 
 import Prelude (Unit, unit, const, pure)
 
-import App.UI (BgInput)
+import App.Toolkit.UI (BgInput)
 
 import Hydra (Hydra)
 

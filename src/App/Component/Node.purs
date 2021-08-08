@@ -32,9 +32,10 @@ import Halogen.HTML.Properties as HP
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
 
-import App.UI (UI)
-import App.UI as UI
+import App.Toolkit.UI (UI)
+import App.Toolkit.UI as UI
 import App.Svg.Extra (translateTo') as HSA
+import App.Style (Side)
 
 import Type.Proxy (Proxy(..))
 
@@ -102,7 +103,10 @@ render { node, name, style, flow, ui } =
         ( namePlateWidth /\ namePlateHeight ) = V2.toTuple $ Calc.titleSize f u flow
 
         ( outerWidth /\ outerHeight ) = node # Calc.nodeBounds f u flow # V2.toTuple
-        ( innerWidth /\ innerHeight ) = node # Calc.nodeBodySize f u flow # V2.toTuple
+        ( innerWidth /\ innerHeight ) = node # Calc.bodySize f u flow # V2.toTuple
+
+        fitSize :: V2.Size_ Side -> V2.Size -> V2.Size
+        fitSize _ a = a
 
         inlets = Node.inlets node
         outlets = Node.outlets node
@@ -151,8 +155,8 @@ render { node, name, style, flow, ui } =
                     [ HS.rect
                         [ {- HE.onClick
                         , -} HSA.fill $ Just transparent
-                        , HSA.width $ V2.w $ u.slot.outerSize
-                        , HSA.height $ V2.h $ u.slot.outerSize
+                        , HSA.width $ V2.w $ u.slot.area
+                        , HSA.height $ V2.h $ u.slot.area
                         ]
                     ]
                 ]
@@ -187,15 +191,15 @@ render { node, name, style, flow, ui } =
                 [ HS.rect
                     [ HSA.fill $ Just colors.body.fill
                     , HSA.stroke $ Just colors.body.stroke
-                    , HSA.strokeWidth $ u.nodeBody.strokeWidth
-                    , HSA.rx u.nodeBody.cornerRadius, HSA.ry u.nodeBody.cornerRadius
+                    , HSA.strokeWidth $ u.body.strokeWidth
+                    , HSA.rx u.body.cornerRadius, HSA.ry u.body.cornerRadius
                     , HSA.width innerWidth, HSA.height innerHeight
                     ]
                 ,
                 case Node.family node >>= ui.node of
                     Just userNodeBody ->
                         HS.g
-                            [ HSA.translateTo' $ u.title.padding <+> V2.h u.title.size ]
+                            [ HSA.translateTo' $ V2.h u.title.padding <+> V2.h (fitSize u.title.size V2.zero) ]
                             [ HH.slot _body name userNodeBody node SendData ]
                     Nothing ->
                         HS.g [ ] [ ]
@@ -207,8 +211,8 @@ render { node, name, style, flow, ui } =
                 [ HS.rect
                     [ HSA.fill $ Just colors.body.shadow
                     , HSA.stroke $ Just colors.body.shadow
-                    , HSA.strokeWidth $ u.nodeBody.strokeWidth
-                    , HSA.rx u.nodeBody.cornerRadius, HSA.ry u.nodeBody.cornerRadius
+                    , HSA.strokeWidth $ u.body.strokeWidth
+                    , HSA.rx u.body.cornerRadius, HSA.ry u.body.cornerRadius
                     , HSA.width innerWidth, HSA.height innerHeight
                     ]
                 ]
