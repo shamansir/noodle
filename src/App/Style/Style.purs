@@ -114,6 +114,14 @@ type Style =
     }
 
 
+defaultFlags :: Flags
+defaultFlags =
+    { hasTitle : true
+    , customBody : false
+    , hasRemoveButton : true
+    }
+
+
 transparent :: Color
 transparent = Color.rgba 0 0 0 0.0
 

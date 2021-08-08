@@ -7,7 +7,7 @@ import Debug as Debug
 import Effect.Class (class MonadEffect, liftEffect)
 
 import Data.Unit (Unit, unit)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set as Set
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Array as Array
@@ -22,6 +22,7 @@ import Noodle.Node as Node
 import Noodle.Channel.Shape as Ch
 
 import App.Style (Style, NodeFlow(..), transparent)
+import App.Style (Flags, defaultFlags) as Style
 import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
 
@@ -75,6 +76,9 @@ initialState :: forall m d. Input m d -> State m d
 initialState = identity
 
 
+
+
+
 render :: forall d m. MonadEffect m => State m d -> H.ComponentHTML (Action m d) (Slots d) m
 render { node, name, style, flow, ui } =
     HS.g
@@ -86,33 +90,38 @@ render { node, name, style, flow, ui } =
         , outlets'
         ]
     where
+        flagsFor :: Noodle.Node d -> Style.Flags
+        flagsFor node = fromMaybe Style.defaultFlags $ ui.flags <$> Node.family node
+
+        f = flagsFor node
         u = style.units flow
         colors = style.colors
+        dir = style.slot.direction
 
-        ( slotOuterWidth /\ slotOuterHeight ) = V2.toTuple $ Calc.slotSize u flow
-        ( namePlateWidth /\ namePlateHeight ) = V2.toTuple $ Calc.namePlateSize u flow
+        ( slotOuterWidth /\ slotOuterHeight ) = V2.toTuple $ Calc.slotArea f u flow
+        ( namePlateWidth /\ namePlateHeight ) = V2.toTuple $ Calc.titleSize f u flow
 
-        ( outerWidth /\ outerHeight ) = node # Calc.nodeBounds u flow # V2.toTuple
-        ( innerWidth /\ innerHeight ) = node # Calc.nodeBodySize u flow # V2.toTuple
+        ( outerWidth /\ outerHeight ) = node # Calc.nodeBounds f u flow # V2.toTuple
+        ( innerWidth /\ innerHeight ) = node # Calc.nodeBodySize f u flow # V2.toTuple
 
         inlets = Node.inlets node
         outlets = Node.outlets node
 
         name' =
             HS.g
-                [ HSA.translateTo' $ Calc.namePos u flow
+                [ HSA.translateTo' $ Calc.titlePos f u flow
                 , HSA.classes $ CS.nodeTitle <> CS.nodeTitleFocus
                 ]
                 [ HS.rect
-                    [ HSA.fill $ Just colors.namePlateBg
+                    [ HSA.fill $ Just colors.title.background
                     , HSA.width namePlateWidth
                     , HSA.height namePlateHeight
                     ]
                 , HS.g
-                    [ HSA.translateTo' $ Calc.nameTextPos u flow
+                    [ HSA.translateTo' $ Calc.titleTextPos f u flow
                     ]
                     [ HS.text
-                        [ HSA.fill $ (ui.markNode =<< Node.family node) <|> Just colors.nodeName ]
+                        [ HSA.fill $ (ui.markNode =<< Node.family node) <|> Just colors.title.fill ]
                         [ HH.text name ]
                     ]
                 ]
@@ -123,16 +132,16 @@ render { node, name, style, flow, ui } =
                 [ HS.g
                     [ HSA.translateTo' pos ]
                     [ HS.circle
-                        [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just colors.slotFill
-                        , HSA.stroke $ Just colors.slotStroke
-                        , HSA.strokeWidth u.slotStrokeWidth
-                        , HSA.r u.slotRadius
+                        [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just colors.slot.fill
+                        , HSA.stroke $ Just colors.slot.stroke
+                        , HSA.strokeWidth u.slot.strokeWidth
+                        , HSA.r u.slot.radius
                         ]
                     ]
                 , HS.g
                     [ HSA.translateTo' textPos ]
                     [ HS.text
-                        [ HSA.fill $ Just colors.slotTextFill ]
+                        [ HSA.fill $ Just colors.slot.label ]
                         [ HH.text name ]
                     ]
                 , HS.g
@@ -142,7 +151,8 @@ render { node, name, style, flow, ui } =
                     [ HS.rect
                         [ {- HE.onClick
                         , -} HSA.fill $ Just transparent
-                        , HSA.width u.slotOuterWidth, HSA.height u.slotOuterHeight
+                        , HSA.width $ V2.w $ u.slot.outerSize
+                        , HSA.height $ V2.h $ u.slot.outerSize
                         ]
                     ]
                 ]
@@ -154,9 +164,9 @@ render { node, name, style, flow, ui } =
         inlet' idx (name /\ shape) =
             slot
                 (CS.inlet name)
-                (Calc.inletRectPos u flow idx)
-                (Calc.inletPos u flow idx)
-                (Calc.inletTextPos u flow idx)
+                (Calc.inletRectPos f u flow idx)
+                (Calc.inletConnectorPos dir f u flow idx)
+                (Calc.inletTextPos dir f u flow idx)
                 (name /\ shape)
 
         outlets' =
@@ -166,26 +176,26 @@ render { node, name, style, flow, ui } =
         outlet' idx (name /\ shape) =
             slot
                 (CS.outlet name)
-                (Calc.outletRectPos u flow idx)
-                (Calc.outletPos u flow idx)
-                (Calc.outletTextPos u flow idx)
+                (Calc.outletRectPos f u flow idx)
+                (Calc.outletConnectorPos dir f u flow idx)
+                (Calc.outletTextPos dir f u flow idx)
                 (name /\ shape)
 
         body =
             HS.g
-                [ HSA.translateTo' $ Calc.bodyPos u flow ]
+                [ HSA.translateTo' $ Calc.bodyPos f u flow ]
                 [ HS.rect
-                    [ HSA.fill $ Just colors.bodyFill
-                    , HSA.stroke $ Just colors.bodyStroke
-                    , HSA.strokeWidth $ u.bodyStrokeWidth
-                    , HSA.rx u.bodyCornerRadius, HSA.ry u.bodyCornerRadius
+                    [ HSA.fill $ Just colors.body.fill
+                    , HSA.stroke $ Just colors.body.stroke
+                    , HSA.strokeWidth $ u.nodeBody.strokeWidth
+                    , HSA.rx u.nodeBody.cornerRadius, HSA.ry u.nodeBody.cornerRadius
                     , HSA.width innerWidth, HSA.height innerHeight
                     ]
                 ,
                 case Node.family node >>= ui.node of
                     Just userNodeBody ->
                         HS.g
-                            [ HSA.translateTo' $ u.bodyPadding <+> u.namePlateHeight ]
+                            [ HSA.translateTo' $ u.title.padding <+> V2.h u.title.size ]
                             [ HH.slot _body name userNodeBody node SendData ]
                     Nothing ->
                         HS.g [ ] [ ]
@@ -193,12 +203,12 @@ render { node, name, style, flow, ui } =
 
         shadow =
             HS.g
-                [ HSA.translateTo' $ Calc.shadowPos u flow ]
+                [ HSA.translateTo' $ Calc.shadowPos f u flow ]
                 [ HS.rect
-                    [ HSA.fill $ Just colors.bodyShadow
-                    , HSA.stroke $ Just colors.bodyShadow
-                    , HSA.strokeWidth $ u.bodyStrokeWidth
-                    , HSA.rx u.bodyCornerRadius, HSA.ry u.bodyCornerRadius
+                    [ HSA.fill $ Just colors.body.shadow
+                    , HSA.stroke $ Just colors.body.shadow
+                    , HSA.strokeWidth $ u.nodeBody.strokeWidth
+                    , HSA.rx u.nodeBody.cornerRadius, HSA.ry u.nodeBody.cornerRadius
                     , HSA.width innerWidth, HSA.height innerHeight
                     ]
                 ]

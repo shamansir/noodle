@@ -4,13 +4,14 @@ module App.Style.Quartz
 
 import Prelude (const)
 import Data.Set as Set
+import Data.Vec2 ((<+>))
 
 import App.Style
     ( Style
     , NodeFlow(..)
     , Connector(..) , SlotDirection(..), SlotInfoVisibility(..)
     , LinkType(..)
-    , TitlePos(..)
+    , ShadowType(..)
     )
 
 import App.Style.Quartz.Colors (colors)
@@ -26,8 +27,8 @@ style =
         , direction : Outside
         , info : Always
         }
-    , title : const OnTop
-    , link : { type : Straight }
+    , link : Straight
     , supportedFlows : Set.singleton Vertical
-    , font : { size : 7.0 }
+    , font : { size : 7.0, family : "'PT Mono', 'Andale Mono', 'Fira mono', 'Menlo', sans-serif" }
+    , shadow : Solid { offset : 5.0 <+> 5.0 }
     }
