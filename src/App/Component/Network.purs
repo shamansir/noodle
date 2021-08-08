@@ -119,8 +119,8 @@ render (s@{ network, toolkit, style, flow }) =
             HS.g
                 [ HSA.classes $ CS.patchTab label ]
                 [ HS.rect [ HSA.width tabLength, HSA.height tabHeight
-                , HSA.fill $ Just colors.patchTabBackground
-                , HSA.stroke $ Just colors.patchTabStroke
+                , HSA.fill $ Just colors.patchTab.background
+                , HSA.stroke $ Just colors.patchTab.stroke
                 , HSA.strokeWidth 1.0
                 ]
                 , HS.text

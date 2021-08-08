@@ -172,8 +172,8 @@ render state =
                 ]
                 [ HS.rect
                     [ HSA.width $ V2.w BS.buttonSize, HSA.height $ V2.h BS.buttonSize
-                    , HSA.fill $ state.ui.markNode name <|> Just colors.nodeTabBackground
-                    , HSA.stroke $ Just colors.nodeTabStroke
+                    , HSA.fill $ state.ui.markNode name <|> Just colors.nodeTab.background
+                    , HSA.stroke $ Just colors.nodeTab.stroke
                     , HSA.strokeWidth 1.0
                     ]
                 , HS.text [] [ HH.text $ "+ " <> name ]
@@ -194,20 +194,22 @@ render state =
             HS.g [ HSA.classes CS.nodes ] $ map node' $ pinnedNodes'
         floatingNode pos (name /\ nodeOffset) =
             let
-                bounds = boundsOf state.flow state.style state.patch name # Maybe.fromMaybe zero
+                bounds = boundsOf state.ui state.style state.flow state.patch name # Maybe.fromMaybe zero
             in case assocNode ( name /\ (pos - nodeOffset - bsOffset - state.offset) /\ bounds ) of
                 Just n -> node' n
                 Nothing -> HS.g [] []
         existingLinks =
             HS.g [] $ closedLink <$> (Array.fromFoldable $ Patch.links state.patch)
         linkEndsPositions (srcNodeName /\ outlet) (dstNodeName /\ inlet) =
-            (\outletIdx srcNodePos inletIdx dstNodePos ->
-                (srcNodePos + Calc.outletConnectorPos units flow outletIdx)
-                /\ (dstNodePos + Calc.inletConnectorPos units flow inletIdx)
+            (\outletConnectorPos srcNodePos inletConnectorPos dstNodePos ->
+                (srcNodePos + outletConnectorPos)
+                /\ (dstNodePos + inletConnectorPos)
             )
-                <$> (Patch.findNode srcNodeName state.patch >>= Node.indexOfOutlet outlet)
+                <$> (Patch.findNode srcNodeName state.patch
+                        >>= NodeC.outletConnectorPos state.ui state.style state.flow outlet)
                 <*> findNodePosition srcNodeName
-                <*> (Patch.findNode dstNodeName state.patch >>= Node.indexOfInlet inlet)
+                <*> (Patch.findNode dstNodeName state.patch
+                        >>= NodeC.inletConnectorPos state.ui state.style state.flow inlet)
                 <*> findNodePosition dstNodeName
         closedLink (outletPath /\ inletPath) =
             case linkEndsPositions outletPath inletPath of
@@ -227,12 +229,13 @@ render state =
         openLink pos (nodeName /\ outlet) =
             -- FIXME: too much logic for a renderer
             case (/\)
-                    <$> (Patch.findNode nodeName state.patch >>= Node.indexOfOutlet outlet)
+                    <$> (Patch.findNode nodeName state.patch
+                            >>= NodeC.outletConnectorPos state.ui state.style state.flow outlet
+                        )
                     <*> findNodePosition nodeName of
-                Just (outletIdx /\ nodePos) ->
+                Just (outletConnectorPos /\ nodePos) ->
                     let
-                        outletInnerPos = Calc.outletConnectorPos units flow outletIdx
-                        x1 /\ y1 = V2.toTuple $ bsOffset + nodePos + outletInnerPos
+                        x1 /\ y1 = V2.toTuple $ bsOffset + nodePos + outletConnectorPos
                         x2 /\ y2 = V2.toTuple $ pos - state.offset
                     in HS.line
                         [ HSA.x1 x1, HSA.x2 x2
