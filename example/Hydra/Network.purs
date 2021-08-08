@@ -36,7 +36,7 @@ network toolkit = do
                 >>= ("freq" /\ "num")   <~> ("osc" /\ "freq")
                 >>= ("sync" /\ "num")   <~> ("osc" /\ "sync")
                 >>= ("offset" /\ "num") <~> ("osc" /\ "offset")
-                >>= ("osc" /\ "osc")    <~> ("out" /\ "src")
+                --- >>= ("osc" /\ "osc")    <~> ("out" /\ "src")
 
                 {-
                 >>= ("freq" /\ "num")   +>  Hydra.num 4.0 -- doesn't update the node :(

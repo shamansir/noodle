@@ -15,6 +15,7 @@ import Noodle.Channel.Shape as Channel
 import Noodle.Network (Network)
 
 import App.Style.Color (Color)
+import App.Style (Flags)
 
 import Halogen as H
 
@@ -57,9 +58,11 @@ type BgRenderer m d = Maybe (BgComponent m d)
 type NodeRenderer m d = Node.Family -> Maybe (NodeComponent m d)
 
 
+{- a.k.a. ToolkitUI -}
 type UI m d =
     { background :: BgRenderer m d
     , node :: NodeRenderer m d
     , markNode :: Node.Family -> Maybe Color
     , markChannel :: Channel.Id -> Maybe Color
+    , flags :: Node.Family -> Flags
     }

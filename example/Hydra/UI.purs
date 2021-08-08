@@ -17,12 +17,13 @@ import Noodle.Channel.Shape as Channel
 
 import App.UI as UI
 import App.UI (UI)
+import App.Style as Style
 import App.Style.Color (Color)
 import App.Style.Color as Color
 
 
 ui :: forall m. MonadEffect m => UI m Hydra
-ui = { background, node, markNode, markChannel }
+ui = { background, node, markNode, markChannel, flags : const $ Style.defaultFlags }
 
 
 background :: forall m. Maybe (UI.BgComponent m Hydra)
