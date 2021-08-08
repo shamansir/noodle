@@ -9,6 +9,9 @@ import Data.Typelevel.Num.Reps (D2, d0, d1)
 import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 
+import Data.EuclideanRing (class EuclideanRing)
+import Data.EuclideanRing (div) as ER
+
 
 type Vec2 = Vec2_ Number
 type Vec2_ n = Vec D2 n
@@ -159,6 +162,21 @@ inside' pos size = inside pos (zero /\ size)
 
 
 infixl 1 make as <+> -- same as `Semiring`: `<>`
+
+
+infixl 7 div as </>
+
+
+
+div :: forall n. EuclideanRing n => Vec2_ n -> Vec2_ n -> Vec2_ n
+div v1 v2 = ER.div (x v1) (x v2) <+> ER.div (y v1) (y v2)
+
+
+{- instance euclVec2 :: EuclideanRing (Vec D2 Number) where
+    degree _ = 1
+    div v1 v2 =
+        div (x v1) (x v2) <+> div (y v1) (y v2)
+    mod _ _ = 0.0 -}
 
 
 {- instance showPosition :: Show Position where
