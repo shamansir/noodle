@@ -57,7 +57,7 @@ type Units =
         { size :: Size
         , padding :: Size -- node padding?
         }
-    , nodeBody ::
+    , body ::
         { size :: Size_ Side
         , margin :: Size
         , strokeWidth :: Number
@@ -72,7 +72,7 @@ type Units =
     -- , preview
     --    :: { size :: Size }
     , slot ::
-        { outerSize :: Size -- size of the rect: name/value + connector
+        { area :: Size -- size of the rect: name/value + connector
         --, padding :: Size
         , radius :: Number
         , strokeWidth :: Number

@@ -39,12 +39,12 @@ import Noodle.Node.Shape (InletId, OutletId)
 
 import App.Emitters as Emitters
 import App.Mouse as Mouse
-import App.Style (Style, NodeFlow)
+import App.Style (Style, NodeFlow, Flags)
 import App.Style as Style
 import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
 import App.Svg.Extra (translateTo') as HSA
-import App.UI (UI)
+import App.Toolkit.UI (UI)
 
 import App.Component.Node as NodeC
 import App.Component.ButtonStrip as BS
@@ -83,7 +83,7 @@ type Input m d =
     , offset :: Pos
     , ui :: UI m d
     , area :: Size
-    -- , nodeBodyRenderer :: Node.Family -> Maybe (UI.NodeComponent m d)
+    -- , bodyRenderer :: Node.Family -> Maybe (UI.NodeComponent m d)
     }
 
 
@@ -201,8 +201,8 @@ render state =
             HS.g [] $ closedLink <$> (Array.fromFoldable $ Patch.links state.patch)
         linkEndsPositions (srcNodeName /\ outlet) (dstNodeName /\ inlet) =
             (\outletIdx srcNodePos inletIdx dstNodePos ->
-                (srcNodePos + Calc.outletPos units flow outletIdx)
-                /\ (dstNodePos + Calc.inletPos units flow inletIdx)
+                (srcNodePos + Calc.outletConnectorPos units flow outletIdx)
+                /\ (dstNodePos + Calc.inletConnectorPos units flow inletIdx)
             )
                 <$> (Patch.findNode srcNodeName state.patch >>= Node.indexOfOutlet outlet)
                 <*> findNodePosition srcNodeName
@@ -230,7 +230,7 @@ render state =
                     <*> findNodePosition nodeName of
                 Just (outletIdx /\ nodePos) ->
                     let
-                        outletInnerPos = Calc.outletPos units flow outletIdx
+                        outletInnerPos = Calc.outletConnectorPos units flow outletIdx
                         x1 /\ y1 = V2.toTuple $ bsOffset + nodePos + outletInnerPos
                         x2 /\ y2 = V2.toTuple $ pos - state.offset
                     in HS.line
@@ -347,8 +347,8 @@ handleAction = case _ of
                 units = state.style.units flow
             in
             if V2.inside'
-                (pos - Calc.namePos units flow)
-                (Calc.namePlateSize units flow) then
+                (pos - Calc.titlePos units flow)
+                (Calc.titleSize units flow) then
                 Just $ Node nodeName /\ pos
             else
                 state.patch
@@ -357,7 +357,7 @@ handleAction = case _ of
                     let inlets = Node.inlets node <#> fst # Array.mapWithIndex (/\)
                         outlets = Node.outlets node <#> fst # Array.mapWithIndex (/\)
                         isInSlot sl fn (idx /\ slotName) =
-                            if V2.inside pos (fn idx /\ Calc.slotSize units flow)
+                            if V2.inside pos (fn idx /\ Calc.slotArea units flow)
                                 then Just $ sl (nodeName /\ slotName) /\ pos
                                 else Nothing
                         testInlets = Array.findMap (isInSlot Inlet $ Calc.inletRectPos units flow) inlets
@@ -394,17 +394,16 @@ addNodesFrom flow style patch layout =
             layout
 
 
-boundsOf :: forall d. NodeFlow -> Style -> Noodle.Node d -> Size
-boundsOf flow style =
-    Calc.nodeBounds (style.units flow) flow
+boundsOf :: forall d. Flags -> NodeFlow -> Style -> Noodle.Node d -> Size
+boundsOf flags flow style =
+    Calc.nodeBounds flags (style.units flow) flow
 
 
-boundsOf' :: forall d. NodeFlow -> Style -> Noodle.Patch d -> Node.Id -> Maybe Size
-boundsOf' flow style patch name =
+boundsOf' :: forall d. Flags -> NodeFlow -> Style -> Noodle.Patch d -> Node.Id -> Maybe Size
+boundsOf' flags flow style patch name =
     patch
         # Patch.findNode name
-        # map (Calc.nodeBounds (style.units flow) flow)
-
+        # map (Calc.nodeBounds flags (style.units flow) flow)
 
 
 instance showSubject :: Show Subject where

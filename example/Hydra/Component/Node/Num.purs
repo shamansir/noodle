@@ -9,7 +9,7 @@ import Effect.Class (class MonadEffect)
 --import Data.Parse
 import Data.Maybe (fromMaybe)
 
-import App.UI as UI
+import App.Toolkit.UI as UI
 
 import Hydra (Hydra)
 import Hydra as Hydra

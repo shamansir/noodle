@@ -21,8 +21,8 @@ import App.Style (Style, NodeFlow)
 import App.Style.ClassNames as CS
 import App.Component.Patch as PatchC
 import App.Emitters as Emitters
-import App.UI (UI)
-import App.UI as UI
+import App.Toolkit.UI (UI)
+import App.Toolkit.UI as UI
 import App.Svg.Extra as HSA
 
 import Halogen as H

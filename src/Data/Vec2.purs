@@ -1,7 +1,10 @@
 module Data.Vec2 where
 
 
-import Prelude
+import Prelude (flip, class Semiring, class Ord)
+import Prelude ((+), (*), (<=), (>=), (&&))
+import Prelude (zero) as P
+
 import Data.Vec (Vec, (+>))
 import Data.Vec as Vec
 
@@ -25,6 +28,8 @@ type Size_ n = Vec2_ n
 
 --derive instance Newtype Position _
 
+zero :: Vec2
+zero = 0.0 <+> 0.0
 
 
 make :: forall n. n -> n -> Vec2_ n
@@ -58,7 +63,7 @@ x = flip Vec.index d0
 
 {-| create a vector `(x, 0)`. -}
 x' :: forall n. Semiring n => n -> Pos_ n
-x' x = x <+> zero
+x' x = x <+> P.zero
 
 
 {-| get Y component of a vector. -}
@@ -68,7 +73,7 @@ y = flip Vec.index d1
 
 {-| create a vector `(0, y)`. -}
 y' :: forall n. Semiring n => n -> Pos_ n
-y' y = zero <+> y
+y' y = P.zero <+> y
 
 
 {-| get left component of a vector. -}
@@ -113,12 +118,12 @@ h' = y'
 
 {-| set Y component of a vector to zero: (x, y) -> (x, 0) -}
 xz :: forall n. Semiring n => Vec2_ n -> Pos_ n
-xz v = x v <+> zero
+xz v = x v <+> P.zero
 
 
 {-| set X component of a vector to zero: (x, y) -> (0, y) -}
 zy :: forall n. Semiring n => Vec2_ n -> Pos_ n
-zy v = zero <+> y v
+zy v = P.zero <+> y v
 
 
 {-| set height component of a vector to zero: (w, h) -> (w, 0) -}
@@ -158,7 +163,7 @@ inside pos (bpos /\ bsize) =
 
 
 inside' :: forall n. Semiring n => Ord n => Pos_ n -> Size_ n -> Boolean
-inside' pos size = inside pos (zero /\ size)
+inside' pos size = inside pos (P.zero /\ size)
 
 
 infixl 1 make as <+> -- same as `Semiring`: `<>`

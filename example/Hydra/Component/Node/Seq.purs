@@ -9,7 +9,7 @@ import Data.Maybe (fromMaybe)
 import Data.Array ((:))
 import Data.Array as Array
 
-import App.UI as UI
+import App.Toolkit.UI as UI
 
 import Noodle.Node as Node
 
