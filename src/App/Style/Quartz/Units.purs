@@ -2,9 +2,9 @@ module App.Style.Quartz.Units
     (units) where
 
 
-import Prelude
+import Data.Vec2 ((<+>))
 
-import App.Style (Units, NodeFlow(..))
+import App.Style (Units, Side(..), NodeFlow)
 
 
 {- data Size a = Size Int Int a
@@ -17,67 +17,30 @@ data Cells = Cells -}
 
 
 units :: NodeFlow -> Units
-
-
-units flow =
-    { cellWidth
-    , cellHeight
-    , nodeBodyWidth : nodeBodyWidth flow
-    , nodeBodyHeight : nodeBodyHeight flow
-    , namePlateHeight : namePlateHeight flow
-    , namePlateWidth : namePlateWidth flow
-    , slotOuterWidth : slotOuterWidth flow
-    , slotOuterHeight : slotOuterHeight flow
-    , nodePadding : nodePadding flow
-    , slotRadius
-    , slotStrokeWidth
-    , bodyStrokeWidth
-    , bodyCornerRadius
-    , bodyShadowShift
-    , bodyPadding
+units _ =
+    { cell :
+        { size : 40.0 <+> 40.0
+        , padding : 20.0 <+> 20.0
+        }
+    , nodeBody :
+        -- { margin : 20.0 <+> 20.0
+        { size : Fixed 80.0 <+> Stretch
+        , strokeWidth : 1.0
+        , cornerRadius : 0.0
+        , shadowShift : 5.0
+        , shadowBlur : 0.0
+        , margin : 20.0 <+> 20.0
+        }
+    , title :
+        { size : Fixed 15.0 <+> Stretch
+        , padding : 3.0 <+> 5.0
+        }
+    , slot :
+        { radius : 3.5
+        , strokeWidth : 1.5
+        , outerSize : 50.0 <+> 25.0
+        -- , padding
+        , inletsOffset : 0.0 <+> 0.0
+        , outletsOffset : 0.0 <+> 0.0
+        }
     }
-
-
-cellWidth = 40.0
-
-
-cellHeight = 40.0
-
-
-nodeBodyWidth _ = cellWidth * 2.0
-
-
-nodeBodyHeight _ = cellHeight * 2.0
-
-
-nodePadding _ = 20.0
-
-
-namePlateHeight _ = 15.0
-
-
-namePlateWidth _ = 15.0
-
-
-slotOuterWidth _ = 50.0
-
-
-slotOuterHeight _ = 25.0
-
-
-slotRadius = 3.5
-
-
-slotStrokeWidth = 1.5
-
-
-bodyStrokeWidth = 1.0
-
-
-bodyCornerRadius = 0.0
-
-
-bodyShadowShift = 5.0
-
-
-bodyPadding = 5.0

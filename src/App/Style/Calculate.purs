@@ -6,106 +6,160 @@ import Data.Int (toNumber)
 
 import Noodle.Node (Node)
 import Noodle.Node (dimensions) as Node
-import App.Style (NodeFlow(..), Units)
-import Data.Vec2 (Vec2, (<+>), Pos, Size)
+import App.Style (Flags, NodeFlow(..), Units, SlotDirection(..))
+import Data.Vec2 (Vec2, (<+>), (</>), Pos, Size)
 import Data.Vec2 as V2
 
 import Data.Tuple.Nested ((/\))
 
 
-type GetPos = Units -> NodeFlow -> Pos
-type GetPosByIdx = Units -> NodeFlow -> Int -> Pos
-type GetSize = Units -> NodeFlow -> Size
-type GetSizeByNode d = Units -> NodeFlow -> Node d -> Size
+type GetPos = Flags -> Units -> NodeFlow -> Pos
+type GetPosByIdx = Flags -> Units -> NodeFlow -> Int -> Pos
+type GetSize = Flags -> Units -> NodeFlow -> Size
+type GetSizeByNode d = Flags -> Units -> NodeFlow -> Node d -> Size
 
 
-inletPos :: GetPosByIdx
-inletPos u Vertical idx =
-    u.slotOuterWidth
-    <+>
-    (plateHeight + (u.slotOuterHeight / 2.0) + (u.slotOuterHeight * toNumber idx))
-    where plateHeight = V2.h $ namePlateSize u Vertical
-inletPos u Horizontal idx =
-    0.0 <+> toNumber idx
+slotArea :: GetSize
+slotArea _ u _ = u.slot.outerSize
 
 
-outletPos :: GetPosByIdx
-outletPos u Vertical idx =
-    ( u.slotOuterWidth + u.nodeBodyWidth )
-    <+>
-    (plateHeight + (u.slotOuterHeight / 2.0) + (u.slotOuterHeight * toNumber idx))
-    where plateHeight = V2.h $ namePlateSize u Vertical
-outletPos u Horizontal idx =
-    0.0 <+> toNumber idx
+inletConnectorPos :: SlotDirection -> GetPosByIdx
+inletConnectorPos dir t u Vertical idx =
+    u.nodeBody.margin +
+    u.slot.inletsOffset +
+    (
+        connectorOffsetX dir
+        <+>
+        (titleHeight
+            + (outerHeight * toNumber idx)
+            + (outerHeight / 2.0)
+        )
+    )
+    where
+        outerHeight = V2.h $ u.slot.outerSize
+        connectorOffsetX Inside = V2.w $ u.slot.outerSize
+        connectorOffsetX Between =
+            V2.w $ (u.slot.outerSize </> V2.vv 2.0) - V2.vv u.slot.radius
+        connectorOffsetX Outside = 0.0
+        titleHeight =
+            if t.hasTitle then V2.h $ titleSize t u Vertical else 0.0
+inletConnectorPos dir t u Horizontal idx =
+    u.nodeBody.margin +
+    u.slot.inletsOffset +
+    (
+        (titleWidth
+            + (outerWidth * toNumber idx)
+            + (outerWidth / 2.0)
+        )
+        <+>
+        connectorOffsetY dir
+    )
+    where
+        outerWidth = V2.w $ u.slot.outerSize
+        connectorOffsetY Inside = V2.h $ u.slot.outerSize
+        connectorOffsetY Between =
+            V2.h $ (u.slot.outerSize </> V2.vv 2.0) - V2.vv u.slot.radius
+        connectorOffsetY Outside = 0.0
+        titleWidth =
+            if t.hasTitle then V2.w $ titleSize t u Horizontal else 0.0
 
 
 inletRectPos :: GetPosByIdx
-inletRectPos u Vertical idx =
-    0.0
+inletRectPos t u Vertical idx =
+    u.nodeBody.margin +
+    u.slot.inletsOffset +
+    (
+        0.0
+        <+>
+        (titleHeight + outerHeight * toNumber idx)
+    )
+    where
+        outerHeight = V2.h $ u.slot.outerSize
+        titleHeight = if t.hasTitle then V2.h $ titleSize t u Vertical else 0.0
+inletRectPos t u Horizontal idx =
+    u.nodeBody.margin +
+    u.slot.inletsOffset +
+    (
+        (titleWidth + outerWidth * toNumber idx)
+        <+>
+        0.0
+    )
+    where
+        outerWidth = V2.w $ u.slot.outerSize
+        titleWidth = if t.hasTitle then V2.w $ titleSize t u Horizontal else 0.0
+
+
+inletTextPos :: SlotDirection -> GetPosByIdx
+inletTextPos dir t u Vertical idx =
+    inletConnectorPos dir t u Vertical idx - V2.x' (u.slot.radius + 5.0)
+inletTextPos dir t u Horizontal idx = 0.0 <+> 0.0
+
+
+outletConnectorPos :: SlotDirection -> GetPosByIdx
+outletConnectorPos dir t u Vertical idx =
+    0.0 <+> 0.0
+    {-
+    ( u.slotOuterWidth + u.nodeBodyWidth )
     <+>
-    (plateHeight + u.slotOuterHeight * toNumber idx)
-    where plateHeight = V2.h $ namePlateSize u Vertical
-inletRectPos u Horizontal idx =
+    (plateHeight + (u.slotOuterHeight / 2.0) + (u.slotOuterHeight * toNumber idx))
+    where plateHeight = V2.h $ titleSize t u Vertical
+    -}
+outletConnectorPos dir t u Horizontal idx =
     0.0 <+> toNumber idx
 
 
+outletTextPos :: SlotDirection -> GetPosByIdx
+outletTextPos dir t u Vertical idx =
+    0.0 <+> 0.0 -- outletRectPos t u Vertical idx + V2.x' (u.slotRadius + 5.0)
+outletTextPos dir t u Horizontal idx = 0.0 <+> 0.0
+
+
 outletRectPos :: GetPosByIdx
-outletRectPos u Vertical idx =
+outletRectPos t u Vertical idx =
+    20.0 <+> 30.0
+    {-
     (u.nodeBodyWidth + u.slotOuterWidth)
     <+>
     (plateHeight + u.slotOuterHeight * toNumber idx)
-    where plateHeight = V2.h $ namePlateSize u Vertical
-outletRectPos u Horizontal idx =
+    where plateHeight = V2.h $ titleSize t u Vertical
+    -}
+outletRectPos t u Horizontal idx =
     0.0 <+> toNumber idx
 
 
 bodyPos :: GetPos
-bodyPos u Vertical = u.slotOuterWidth <+> 0.0
-bodyPos u Horizontal = u.slotOuterWidth <+> 0.0
-
-
-inletTextPos :: GetPosByIdx
-inletTextPos u Vertical idx =
-    inletPos u Vertical idx - V2.x' (u.slotRadius + 5.0)
-inletTextPos u Horizontal idx = 0.0 <+> 0.0
-
-
-outletTextPos :: GetPosByIdx
-outletTextPos u Vertical idx =
-    outletPos u Vertical idx + V2.x' (u.slotRadius + 5.0)
-outletTextPos u Horizontal idx = 0.0 <+> 0.0
+bodyPos t u Vertical = V2.vv 0.0 -- u.slotOuterWidth <+> 0.0
+bodyPos t u Horizontal = V2.vv 0.0 -- u.slotOuterWidth <+> 0.0
 
 
 shadowPos :: GetPos
-shadowPos u dir =
-    bodyPos u dir + V2.vv u.bodyShadowShift
+shadowPos t u dir =
+    bodyPos t u dir -- + V2.vv u.bodyShadowShift
 
 
-namePos :: GetPos
-namePos u Vertical =
-    u.slotOuterWidth <+> 0.0
-namePos u Horizontal = 0.0 <+> 0.0
+titlePos :: GetPos
+titlePos t u Vertical =
+    0.0 <+> 0.0 -- u.slotOuterWidth <+> 0.0
+titlePos t u Horizontal = 0.0 <+> 0.0
 
 
-nameTextPos :: GetPos
-nameTextPos u Vertical =
-    3.0 <+> (plateHeight / 2.0)
-    where plateHeight = V2.h $ namePlateSize u Vertical
-nameTextPos u Horizontal = 0.0 <+> 0.0
+titleTextPos :: GetPos
+titleTextPos t u Vertical =
+    3.0 <+> 15.0
+    -- 3.0 <+> (plateHeight / 2.0)
+    -- where plateHeight = V2.h $ titleSize u Vertical
+titleTextPos t u Horizontal = 0.0 <+> 0.0
 
 
-slotSize :: GetSize
-slotSize u Vertical = u.slotOuterWidth <+> u.slotOuterHeight
-slotSize u Horizontal = u.slotOuterWidth <+> u.slotOuterHeight
-
-
-namePlateSize :: GetSize
-namePlateSize u Vertical = u.nodeBodyWidth <+> u.namePlateHeight
-namePlateSize u Horizontal = u.nodeBodyWidth <+> u.namePlateHeight
+titleSize :: GetSize
+titleSize t u Vertical = 200.0 <+> 20.0 -- u.nodeBody.width <+> u.namePlateHeight
+titleSize t u Horizontal = 200.0 <+> 20.0 -- u.nodeBodyWidth <+> u.namePlateHeight
 
 
 nodeBounds :: forall d. GetSizeByNode d
-nodeBounds u flow node =
+nodeBounds t u flow node =
+    100.0 <+> 100.0
+    {-
     let
         inletsCount /\ outletsCount = Node.dimensions node
     in
@@ -114,16 +168,18 @@ nodeBounds u flow node =
                 (u.slotOuterWidth * 2.0 + u.nodeBodyWidth)
                 <+>
                 (u.nodePadding + plateHeight + toNumber (max inletsCount outletsCount) * u.slotOuterHeight)
-                where plateHeight = V2.h $ namePlateSize u Vertical
+                where plateHeight = V2.h $ titleSize u Vertical
             Horizontal ->
                 (u.slotOuterWidth * 2.0 + u.nodeBodyWidth)
                 <+>
                 (toNumber (max inletsCount outletsCount) * u.slotOuterHeight)
+    -}
 
 
 nodeBodySize :: forall d. GetSizeByNode d
-nodeBodySize u flow node =
-    let
+nodeBodySize t u flow node =
+    100.0 <+> 100.0
+    {- let
         inletsCount /\ outletsCount = Node.dimensions node
     in
         case flow of
@@ -131,8 +187,8 @@ nodeBodySize u flow node =
                 u.nodeBodyWidth
                 <+>
                 (plateHeight + toNumber (max inletsCount outletsCount) * u.slotOuterHeight)
-                where plateHeight = V2.h $ namePlateSize u Vertical
+                where plateHeight = V2.h $ titleSize u Vertical
             Horizontal ->
                 (toNumber (max inletsCount outletsCount) * u.slotOuterWidth)
                 <+>
-                u.nodeBodyHeight
+                u.nodeBodyHeight -}
