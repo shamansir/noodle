@@ -79,9 +79,6 @@ initialState :: forall m d. Input m d -> State m d
 initialState = identity
 
 
-
-
-
 render :: forall d m. MonadEffect m => State m d -> H.ComponentHTML (Action m d) (Slots d) m
 render { node, name, style, flow, ui } =
     HS.g
@@ -280,3 +277,23 @@ whereInside ui style flow node pos =
 boundsOf :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Node d -> Size
 boundsOf ui style flow node =
     Calc.nodeBounds (UI.flagsFor ui node) (style.units flow) flow node
+
+
+inletConnectorPos :: forall m d. UI m d -> Style -> NodeFlow -> InletId -> Noodle.Node d -> Maybe Pos
+inletConnectorPos ui style flow inletId node =
+    Node.indexOfInlet inletId node
+        <#> Calc.inletConnectorPos
+                style.slot.direction
+                (UI.flagsFor ui node)
+                (style.units flow)
+                flow
+
+
+outletConnectorPos :: forall m d. UI m d -> Style -> NodeFlow -> OutletId -> Noodle.Node d -> Maybe Pos
+outletConnectorPos ui style flow outletId node =
+    Node.indexOfOutlet outletId node
+        <#> Calc.outletConnectorPos
+                style.slot.direction
+                (UI.flagsFor ui node)
+                (style.units flow)
+                flow
