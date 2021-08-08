@@ -5,7 +5,6 @@ import Prelude
 import Data.Int (toNumber)
 
 import Noodle.Node (Node)
-import Noodle.Node (dimensions) as Node
 import App.Style (Flags, NodeFlow(..), Units, SlotDirection(..))
 import Data.Vec2 (Vec2, (<+>), (</>), Pos, Size)
 import Data.Vec2 as V2
