@@ -1,12 +1,10 @@
 module App.Toolkit.UI where
 
 
-import Prelude (Void, Unit)
-import Effect.Class (class MonadEffect)
+import Prelude (Void, ($), (<$>))
 
 
-import Data.Maybe (Maybe)
-import Data.Tuple.Nested ((/\), type (/\))
+import Data.Maybe (Maybe, fromMaybe)
 
 import Noodle.Node (Node)
 import Noodle.Node as Node
@@ -16,6 +14,7 @@ import Noodle.Network (Network)
 
 import App.Style.Color (Color)
 import App.Style (Flags)
+import App.Style (defaultFlags) as Style
 
 import Halogen as H
 
@@ -32,6 +31,7 @@ data BgQuery a = BgCarry a
 data NodeQuery a = NodeCarry a
 
 
+type BgOutput :: forall k. k -> Type
 type BgOutput d = Void
 
 
@@ -40,6 +40,7 @@ data NodeOutput d
     | SendToOutlet OutletId d
 
 
+type BgSlot :: forall k. k -> Type -> Type
 type BgSlot d id = H.Slot BgQuery (BgOutput d) id
 
 
@@ -66,3 +67,7 @@ type UI m d =
     , markChannel :: Channel.Id -> Maybe Color
     , flags :: Node.Family -> Flags
     }
+
+
+flagsFor :: forall m d. UI m d -> Node d -> Flags
+flagsFor ui node = fromMaybe Style.defaultFlags $ ui.flags <$> Node.family node

@@ -13,7 +13,7 @@ import Data.BinPack.R2.Optional as R2
 import Data.Int (toNumber, floor)
 import Data.Number
 import Data.List as List
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Maybe as Maybe
 import Data.PinBoard (PinBoard)
 import Data.PinBoard as PB
@@ -45,6 +45,7 @@ import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
 import App.Svg.Extra (translateTo') as HSA
 import App.Toolkit.UI (UI)
+import App.Toolkit.UI (flagsFor) as UI
 
 import App.Component.Node as NodeC
 import App.Component.ButtonStrip as BS
@@ -118,7 +119,7 @@ initialState { patch, toolkit, style, flow, offset, ui, area } =
     , offset : offset
     , layout :
         R2.container area
-            # addNodesFrom flow style patch
+            # addNodesFrom ui style flow patch
     , buttonStrip : BS.make (V2.w area) $ Toolkit.nodeFamilies toolkit
     , pinned : []
     , mouse : Mouse.init
@@ -193,7 +194,7 @@ render state =
             HS.g [ HSA.classes CS.nodes ] $ map node' $ pinnedNodes'
         floatingNode pos (name /\ nodeOffset) =
             let
-                bounds = boundsOf' state.flow state.style state.patch name # Maybe.fromMaybe zero
+                bounds = boundsOf state.flow state.style state.patch name # Maybe.fromMaybe zero
             in case assocNode ( name /\ (pos - nodeOffset - bsOffset - state.offset) /\ bounds ) of
                 Just n -> node' n
                 Nothing -> HS.g [] []
@@ -271,7 +272,7 @@ handleAction = case _ of
                 H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
                     (\state ->
                         let nodeName = Patch.addUniqueNodeId state.patch name
-                            bounds = boundsOf state.flow state.style node
+                            bounds = NodeC.boundsOf state.ui state.style state.flow node
                         in state
                             { patch = state.patch # Patch.addNode nodeName node
                             , layout = R2.packOne state.layout (R2.item bounds nodeName)
@@ -293,7 +294,7 @@ handleAction = case _ of
         H.modify_ $ \state ->
         let
             bounds =
-                boundsOf' state.flow state.style state.patch nodeId
+                boundsOf state.ui state.style state.flow state.patch nodeId
                     # Maybe.fromMaybe zero
         in
             state
@@ -337,32 +338,22 @@ handleAction = case _ of
                 pure unit
 
     where
+        liftSubject :: Node.Id -> NodeC.WhereInside -> Subject
+        liftSubject nodeId NodeC.Title = Node nodeId
+        liftSubject nodeId (NodeC.Inlet inletId) = Inlet $ nodeId /\ inletId
+        liftSubject nodeId (NodeC.Outlet outletId) = Outlet $ nodeId /\ outletId
+        findSubjectUnderPos :: State m d -> Pos -> Maybe (Subject /\ Pos)
         findSubjectUnderPos state pos =
             (findNodeInLayout state pos <|> findNodeInPinned state pos)
-                >>= whereInsideNode state
-        whereInsideNode :: State m d -> (Node.Id /\ Pos) -> Maybe (Subject /\ Pos)
-        whereInsideNode state (nodeName /\ pos) =
-            let
-                flow = state.flow
-                units = state.style.units flow
-            in
-            if V2.inside'
-                (pos - Calc.titlePos units flow)
-                (Calc.titleSize units flow) then
-                Just $ Node nodeName /\ pos
-            else
-                state.patch
-                # Patch.findNode nodeName
-                >>= \node ->
-                    let inlets = Node.inlets node <#> fst # Array.mapWithIndex (/\)
-                        outlets = Node.outlets node <#> fst # Array.mapWithIndex (/\)
-                        isInSlot sl fn (idx /\ slotName) =
-                            if V2.inside pos (fn idx /\ Calc.slotArea units flow)
-                                then Just $ sl (nodeName /\ slotName) /\ pos
-                                else Nothing
-                        testInlets = Array.findMap (isInSlot Inlet $ Calc.inletRectPos units flow) inlets
-                        testOutlets = Array.findMap (isInSlot Outlet $ Calc.outletRectPos units flow) outlets
-                    in testOutlets <|> testInlets
+                >>= \(nodeId /\ pos') ->
+                        state.patch
+                            # Patch.findNode nodeId
+                            >>= flip (whereInsideNode state) pos'
+                            <#> liftSubject nodeId
+                            <#> flip (/\) pos'
+        whereInsideNode :: State m d -> Noodle.Node d -> Pos -> Maybe NodeC.WhereInside
+        whereInsideNode state =
+            NodeC.whereInside state.ui state.style state.flow
         findNodeInLayout state =
             R2.sample state.layout
         findNodeInPinned state =
@@ -383,27 +374,22 @@ component =
         }
 
 
-addNodesFrom :: forall d. NodeFlow -> Style -> Noodle.Patch d -> Bin2 Number Node.Id -> Bin2 Number Node.Id
-addNodesFrom flow style patch layout =
+addNodesFrom :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Patch d -> Bin2 Number Node.Id -> Bin2 Number Node.Id
+addNodesFrom ui style flow patch layout =
     Patch.nodes patch
         # foldr
             (\(nodeName /\ node) layout' ->
-                R2.packOne layout' (R2.item (boundsOf flow style node) nodeName)
+                R2.packOne layout' (R2.item (NodeC.boundsOf ui style flow node) nodeName)
                     # Maybe.fromMaybe layout'
             )
             layout
 
 
-boundsOf :: forall d. Flags -> NodeFlow -> Style -> Noodle.Node d -> Size
-boundsOf flags flow style =
-    Calc.nodeBounds flags (style.units flow) flow
-
-
-boundsOf' :: forall d. Flags -> NodeFlow -> Style -> Noodle.Patch d -> Node.Id -> Maybe Size
-boundsOf' flags flow style patch name =
+boundsOf :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Patch d -> Node.Id -> Maybe Size
+boundsOf ui style flow patch nodeId =
     patch
-        # Patch.findNode name
-        # map (Calc.nodeBounds flags (style.units flow) flow)
+        # Patch.findNode nodeId
+        # map (NodeC.boundsOf ui style flow)
 
 
 instance showSubject :: Show Subject where

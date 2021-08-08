@@ -9,19 +9,21 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set as Set
+import Data.Tuple (fst)
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Array as Array
 import Data.Int (toNumber)
 import Data.Vec2 as V2
-import Data.Vec2 ((<+>))
+import Data.Vec2 ((<+>), Pos, Size)
 import Control.Alternative ((<|>))
 
 import Noodle.Node ((+>), (++>))
 import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
 import Noodle.Channel.Shape as Ch
+import Noodle.Node.Shape (InletId, OutletId)
 
-import App.Style (Style, NodeFlow(..), transparent)
+import App.Style (Flags, Style, NodeFlow(..), Units, transparent)
 import App.Style (Flags, defaultFlags) as Style
 import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
@@ -85,14 +87,13 @@ render { node, name, style, flow, ui } =
     HS.g
         []
         [ shadow
-        , body
         , name'
         , inlets'
         , outlets'
         ]
     where
         flagsFor :: Noodle.Node d -> Style.Flags
-        flagsFor node = fromMaybe Style.defaultFlags $ ui.flags <$> Node.family node
+        flagsFor = UI.flagsFor ui
 
         f = flagsFor node
         u = style.units flow
@@ -246,3 +247,36 @@ component =
                 , receive = Just <<< Receive
                 }
         }
+
+
+data WhereInside
+    = Title
+    | Inlet InletId
+    | Outlet OutletId
+
+
+
+whereInside :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Node d -> Pos -> Maybe WhereInside
+whereInside ui style flow node pos =
+    if V2.inside'
+        (pos - Calc.titlePos f u flow)
+        (Calc.titleSize f u flow) then
+        Just Title
+    else
+        let inlets = Node.inlets node <#> fst # Array.mapWithIndex (/\)
+            outlets = Node.outlets node <#> fst # Array.mapWithIndex (/\)
+            isInSlot sl fn (idx /\ slotName) =
+                if V2.inside pos (fn idx /\ Calc.slotArea f u flow)
+                    then Just $ sl slotName
+                    else Nothing
+            testInlets = Array.findMap (isInSlot Inlet $ Calc.inletRectPos f u flow) inlets
+            testOutlets = Array.findMap (isInSlot Outlet $ Calc.outletRectPos f u flow) outlets
+        in testOutlets <|> testInlets
+    where
+        f = UI.flagsFor ui node
+        u = style.units flow
+
+
+boundsOf :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Node d -> Size
+boundsOf ui style flow node =
+    Calc.nodeBounds (UI.flagsFor ui node) (style.units flow) flow node
