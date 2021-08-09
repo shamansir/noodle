@@ -167,7 +167,7 @@ render { node, name, style, flow, ui } =
         inlet' idx (name /\ shape) =
             slot
                 (CS.inlet name)
-                (Calc.inletRectPos f u flow idx)
+                (Calc.inletRectPos dir f u flow idx)
                 (Calc.inletConnectorPos dir f u flow idx)
                 (Calc.inletTextPos dir f u flow idx)
                 (name /\ shape)
@@ -179,7 +179,7 @@ render { node, name, style, flow, ui } =
         outlet' idx (name /\ shape) =
             slot
                 (CS.outlet name)
-                (Calc.outletRectPos f u flow idx)
+                (Calc.outletRectPos dir f u flow idx)
                 (Calc.outletConnectorPos dir f u flow idx)
                 (Calc.outletTextPos dir f u flow idx)
                 (name /\ shape)
@@ -198,7 +198,7 @@ render { node, name, style, flow, ui } =
                 case Node.family node >>= ui.node of
                     Just userNodeBody ->
                         HS.g
-                            [ HSA.translateTo' $ V2.h u.title.padding <+> V2.h (fitSize u.title.size V2.zero) ]
+                            [ HSA.translateTo' $ Calc.bodyInnerOffset dir f u flow ]
                             [ HH.slot _body name userNodeBody node SendData ]
                     Nothing ->
                         HS.g [ ] [ ]
@@ -267,12 +267,13 @@ whereInside ui style flow node pos =
                 if V2.inside pos (fn idx /\ Calc.slotArea f u flow)
                     then Just $ sl slotName
                     else Nothing
-            testInlets = Array.findMap (isInSlot Inlet $ Calc.inletRectPos f u flow) inlets
-            testOutlets = Array.findMap (isInSlot Outlet $ Calc.outletRectPos f u flow) outlets
+            testInlets = Array.findMap (isInSlot Inlet $ Calc.inletRectPos dir f u flow) inlets
+            testOutlets = Array.findMap (isInSlot Outlet $ Calc.outletRectPos dir f u flow) outlets
         in testOutlets <|> testInlets
     where
         f = UI.flagsFor ui node
         u = style.units flow
+        dir = style.slot.direction
 
 
 boundsOf :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Node d -> Size

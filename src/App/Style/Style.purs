@@ -122,6 +122,11 @@ defaultFlags =
     }
 
 
+fromSide :: Number -> Side -> Number
+fromSide _ (Fixed n) = n
+fromSide n Stretch = n
+
+
 transparent :: Color
 transparent = Color.rgba 0 0 0 0.0
 
