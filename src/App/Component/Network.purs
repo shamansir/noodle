@@ -106,14 +106,18 @@ render (s@{ network, toolkit, style, flow }) =
         tabLength = 60.0
         patchOffset = 0.0 <+> (tabHeight + tabPadding)
         background =
-            case s.ui.background of
-                Nothing ->
-                    HS.rect
-                        [ HSA.width $ V2.w s.windowSize, HSA.height $ V2.h s.windowSize
-                        , HSA.fill $ Just colors.background
-                        ]
-                Just userBgComp ->
-                    HH.slot _background unit userBgComp network absurd
+            HS.g
+                []
+                [ HS.rect
+                    [ HSA.width $ V2.w s.windowSize, HSA.height $ V2.h s.windowSize
+                    , HSA.fill $ Just colors.background
+                    ]
+                , case s.ui.background of
+                    Nothing ->
+                        HS.g [] []
+                    Just userBgComp ->
+                        HH.slot _background unit userBgComp network absurd
+                ]
         patchesTabs = HS.g [ HSA.classes CS.patchesTabs ] (patchTab <$> Tuple.fst <$> Network.patches network)
         patchTab label =
             HS.g

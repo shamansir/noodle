@@ -84,6 +84,7 @@ render { node, name, style, flow, ui } =
     HS.g
         []
         [ shadow
+        , body
         , name'
         , inlets'
         , outlets'
