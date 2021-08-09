@@ -263,9 +263,18 @@ handleAction = case _ of
         H.subscribe' $ Emitters.mouseMove document <<< HandleMouse
         H.subscribe' $ Emitters.mouseUp document <<< HandleMouse
 
-    Receive _ ->
-        pure unit
-        --H.modify_ (\state -> state { patch = input.patch })
+    Receive input ->
+        H.modify_
+            (\state ->
+                state
+                    { area = input.area
+                     -- FIXME: skip pinned nodes or `R2.reflow` with existing ones
+                    , layout =
+                        R2.container input.area
+                            # addNodesFrom state.ui state.style state.flow state.patch
+                    , buttonStrip = BS.make (V2.w input.area) $ Toolkit.nodeFamilies state.toolkit
+                    }
+            )
 
     AddNode name -> do
         toolkit <- H.gets _.toolkit
