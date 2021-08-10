@@ -116,7 +116,7 @@ render (s@{ network, toolkit, style, flow }) =
                     Nothing ->
                         HS.g [] []
                     Just userBgComp ->
-                        HH.slot _background unit userBgComp network absurd
+                        HH.slot _background unit userBgComp { network, size : s.windowSize } absurd
                 ]
         patchesTabs = HS.g [ HSA.classes CS.patchesTabs ] (patchTab <$> Tuple.fst <$> Network.patches network)
         patchTab label =

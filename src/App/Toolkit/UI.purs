@@ -5,6 +5,7 @@ import Prelude (Void, ($), (<$>))
 
 
 import Data.Maybe (Maybe, fromMaybe)
+import Data.Vec2 (Size)
 
 import Noodle.Node (Node)
 import Noodle.Node as Node
@@ -19,10 +20,10 @@ import App.Style (defaultFlags) as Style
 import Halogen as H
 
 
-type BgInput d = Network d
+type BgInput d = { size :: Size, network :: Network d }
 
 
-type NodeInput d = Node d
+type NodeInput d = { node :: Node d }
 
 
 data BgQuery a = BgCarry a
@@ -38,6 +39,7 @@ type BgOutput d = Void
 data NodeOutput d
     = SendToInlet InletId d
     | SendToOutlet OutletId d
+    -- TODO: Replace Node.Id Node.Family
 
 
 type BgSlot :: forall k. k -> Type -> Type
