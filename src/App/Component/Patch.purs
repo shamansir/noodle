@@ -268,11 +268,8 @@ handleAction = case _ of
             (\state ->
                 state
                     { area = input.area
-                     -- FIXME: skip pinned nodes or `R2.reflow` with existing ones
-                    , layout =
-                        R2.container input.area
-                            # addNodesFrom state.ui state.style state.flow state.patch
-                    , buttonStrip = BS.make (V2.w input.area) $ Toolkit.nodeFamilies state.toolkit
+                    , layout = state.layout # R2.reflow' input.area
+                    , buttonStrip = state.buttonStrip # BS.reflow (V2.w input.area)
                     }
             )
 

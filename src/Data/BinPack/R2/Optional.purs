@@ -16,6 +16,8 @@ module Data.BinPack.R2.Optional
     , size
     , unfold
     , abandon
+    , reflow
+    , reflow'
     ) where
 
 
@@ -106,3 +108,10 @@ abandon another = (<$>) abandonIt
         abandonIt (Just a) | a == another = Nothing
         abandonIt (Just a) | otherwise = Just a
         abandonIt Nothing = Nothing
+
+
+reflow :: forall n a. Ring n => Ord n => Size_ n -> Bin2 n a -> Maybe (Bin2 n a)
+reflow = R2.reflow
+
+reflow' :: forall n a. Ring n => Ord n => Size_ n -> Bin2 n a -> Bin2 n a
+reflow' = R2.reflow'
