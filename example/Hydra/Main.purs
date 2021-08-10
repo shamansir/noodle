@@ -10,6 +10,7 @@ import App (run) as App
 import App (App)
 import App.Style (Style, NodeFlow(..))
 import App.Style.Quartz as Quartz
+import App.Style.Color as Color
 
 import Noodle.Network (Network)
 
@@ -21,7 +22,11 @@ import Hydra.Network (network)
 
 
 style :: Style
-style = Quartz.style
+style =
+    Quartz.style
+        { colors
+            { background = Color.named "transparent" }
+        }
 
 
 flow :: NodeFlow
@@ -40,8 +45,7 @@ app nw =
 
 
 main :: Effect Unit
-main = do
-    HydraE.init "hydra-canvas"
+main =
     network toolkit
         <#> app
         >>= App.run

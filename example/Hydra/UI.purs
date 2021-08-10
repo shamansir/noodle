@@ -26,7 +26,7 @@ ui :: forall m. MonadEffect m => UI m Hydra
 ui = { background, node, markNode, markChannel, flags : const $ Style.defaultFlags }
 
 
-background :: forall m. Maybe (UI.BgComponent m Hydra)
+background :: forall m. MonadEffect m => Maybe (UI.BgComponent m Hydra)
 background = Just BG.component
 
 
