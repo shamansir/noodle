@@ -98,14 +98,11 @@ render { node, name, style, flow, ui } =
         colors = style.colors
         dir = style.slot.direction
 
-        ( slotOuterWidth /\ slotOuterHeight ) = V2.toTuple $ Calc.slotArea f u flow
-        ( namePlateWidth /\ namePlateHeight ) = V2.toTuple $ Calc.titleSize f u flow
+        ( slotAreaWidth /\ slotAreaHeight ) = V2.toTuple $ Calc.slotArea f u flow
+        ( titleWidth /\ titleHeight ) = V2.toTuple $ Calc.titleSize f u flow
 
         ( outerWidth /\ outerHeight ) = node # Calc.nodeBounds f u flow # V2.toTuple
         ( innerWidth /\ innerHeight ) = node # Calc.bodySize f u flow # V2.toTuple
-
-        fitSize :: V2.Size_ Side -> V2.Size -> V2.Size
-        fitSize _ a = a
 
         inlets = Node.inlets node
         outlets = Node.outlets node
@@ -117,8 +114,8 @@ render { node, name, style, flow, ui } =
                 ]
                 [ HS.rect
                     [ HSA.fill $ Just colors.title.background
-                    , HSA.width namePlateWidth
-                    , HSA.height namePlateHeight
+                    , HSA.width titleWidth
+                    , HSA.height titleHeight
                     ]
                 , HS.g
                     [ HSA.translateTo' $ Calc.titleTextPos f u flow
@@ -154,8 +151,8 @@ render { node, name, style, flow, ui } =
                     [ HS.rect
                         [ {- HE.onClick
                         , -} HSA.fill $ Just transparent
-                        , HSA.width $ V2.w $ u.slot.area
-                        , HSA.height $ V2.h $ u.slot.area
+                        , HSA.width slotAreaWidth
+                        , HSA.height slotAreaHeight
                         ]
                     ]
                 ]
