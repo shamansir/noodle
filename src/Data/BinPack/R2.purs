@@ -15,6 +15,8 @@ module Data.BinPack.R2
 , valueOf
 , size
 , unfold
+, reflow
+, reflow'
 )
 where
 
@@ -26,7 +28,7 @@ import Control.Alt ((<|>))
 
 import Data.Foldable (class Foldable, foldMap, foldr, foldl, foldM)
 import Data.List (List(..), (:), sortBy, singleton)
-import Data.Maybe (Maybe(..), isJust)
+import Data.Maybe (Maybe(..), isJust, fromMaybe)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Tuple as Tuple
 import Data.Vec2 (Vec2_, (<+>), Pos_, Size_)
@@ -117,7 +119,7 @@ unfold :: forall n a k. Semiring n => (a /\ (Pos_ n /\ Size_ n) -> k -> k) -> k 
 unfold f =
     unfold' zero
     where
-        --unfold' :: Vec2_ n -> k -> Bin2 n a -> k
+        unfold' :: Vec2_ n -> k -> Bin2 n a -> k
         unfold' _   v (Free _)                 = v
         unfold' pos v (Node { w, h, r, b, i }) =
             -- unfold everything below, then at right, then the current item
@@ -161,3 +163,21 @@ itemOf bin = valueOf bin >>= \v -> pure $ v /\ size bin
 size :: forall n. Bin2 n _ -> Size_ n
 size (Free { w, h }) = w <+> h
 size (Node { w, h }) = w <+> h
+
+reflow :: forall n a. Ring n => Ord n => Size_ n -> Bin2 n a -> Maybe (Bin2 n a)
+reflow =
+    unfold
+        (\(a /\ (_ /\ size)) dst ->
+            dst >>= flip packOne (item size a)
+        )
+        <<< Just <<< container
+
+
+reflow' :: forall n a. Ring n => Ord n => Size_ n -> Bin2 n a -> Bin2 n a
+reflow' =
+    unfold
+        (\(a /\ (_ /\ size)) dst ->
+            packOne dst (item size a)
+                # fromMaybe dst
+        )
+        <<< container

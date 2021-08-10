@@ -6,7 +6,7 @@ import Prelude
 import Data.Int (toNumber, floor)
 import Data.Vec2 (Vec2, Size, Pos, (<+>))
 import Data.Vec2 as V2
-import Data.Tuple (fst)
+import Data.Tuple (fst, snd)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Set (Set)
 import Data.Set as Set
@@ -53,5 +53,11 @@ make maxWidth items =
             $ map addPos $ Array.mapWithIndex (/\) $ Set.toUnfoldable items
 
 
+-- FIXME: toFoldable
 unfold :: forall a. ButtonStrip a -> Array (Pos /\ a)
 unfold (ButtonStrip _ items) = items
+
+
+reflow :: forall a. Ord a => Number -> ButtonStrip a -> ButtonStrip a
+reflow newWidth =
+    make newWidth <<< Set.fromFoldable <<< (<$>) snd <<< unfold
