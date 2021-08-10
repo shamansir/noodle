@@ -78,7 +78,7 @@ inletRectPos dir t u Vertical idx =
         (titleHeight + outerHeight * toNumber idx)
     )
     where
-        offsetX Inside = V2.w u.body.margin
+        offsetX Inside = V2.w u.body.margin - u.slot.radius
         offsetX Between = V2.w u.slot.area / 2.0
         offsetX Outside = 0.0
         outerHeight = V2.h $ u.slot.area
@@ -98,8 +98,11 @@ inletRectPos dir t u Horizontal idx =
 
 inletTextPos :: SlotDirection -> GetPosByIdx
 inletTextPos dir t u Vertical idx =
-    inletConnectorPos dir t u Vertical idx
-    - V2.x' (u.slot.radius + slotPadding)
+    inletConnectorPos dir t u Vertical idx + offsetX dir
+    where
+        offsetX Inside = V2.x' (u.slot.radius + slotPadding)
+        offsetX Outside = - V2.x' (u.slot.radius + slotPadding)
+        offsetX Between = V2.x' (u.slot.radius + slotPadding)
 inletTextPos dir t u Horizontal idx = 0.0 <+> 0.0
 
 
@@ -125,8 +128,11 @@ outletConnectorPos dir t u Horizontal idx =
 
 outletTextPos :: SlotDirection -> GetPosByIdx
 outletTextPos dir t u Vertical idx =
-    outletRectPos dir t u Vertical idx
-    + V2.x' (u.slot.radius * 2.0 + slotPadding * 2.0)
+    outletConnectorPos dir t u Vertical idx + offsetX dir
+    where
+        offsetX Inside = - V2.x' (u.slot.radius + slotPadding)
+        offsetX Outside = V2.x' (u.slot.radius + slotPadding)
+        offsetX Between = - V2.x' (u.slot.radius * 2.0 + slotPadding * 2.0)
 outletTextPos dir t u Horizontal idx = 0.0 <+> 0.0
 
 
@@ -137,14 +143,14 @@ outletRectPos dir t u Vertical idx =
     (
         (bodyWidth + offsetX dir)
         <+>
-        (titleHeight + (outerHeight / 2.0) + (outerHeight* toNumber idx))
+        (titleHeight + (outerHeight / 2.0) + (outerHeight * toNumber idx))
     )
     where
         bodyWidth = Style.fromSide 100.0 $ V2.w u.body.size -- FIXME: what to do with 100.0?
         outerHeight = V2.h u.slot.area
-        offsetX Inside = 0.0 -- V2.w $ u.slot.area
+        offsetX Inside = -V2.w u.slot.area
         offsetX Between = 0.0 -- V2.w $ (u.slot.area </> V2.vv 2.0) - V2.vv u.slot.radius
-        offsetX Outside = -u.slot.radius - 3.0
+        offsetX Outside = -u.slot.radius - slotPadding
         titleHeight = if t.hasTitle then V2.h $ titleSize t u Vertical else 0.0
 outletRectPos dir t u Horizontal idx =
     0.0 <+> toNumber idx

@@ -1,6 +1,8 @@
 module App.Style where
 
 
+import Prelude (class Show)
+
 import App.Style.Color (Color)
 import App.Style.Color as Color
 
@@ -137,3 +139,9 @@ white = Color.named "white"
 
 black :: Color
 black = Color.named "black"
+
+
+instance showSlotDirection :: Show SlotDirection where
+    show Inside = "inside"
+    show Outside = "outside"
+    show Between = "between"

@@ -10,7 +10,27 @@ text {
     dominant-baseline: middle;
 }
 
-.node-vert .inlet text {
+.node-vert .dir-outside .inlet text {
+    text-anchor: end;
+}
+
+.node-vert .dir-inside .inlet text {
+    text-anchor: start;
+}
+
+.node-vert .dir-between .inlet text {
+    text-anchor: start;
+}
+
+.node-vert .dir-outside .outlet text {
+    text-anchor: start;
+}
+
+.node-vert .dir-inside .outlet text {
+    text-anchor: end;
+}
+
+.node-vert .dir-between .outlet text {
     text-anchor: end;
 }
 

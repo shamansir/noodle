@@ -158,7 +158,7 @@ render { node, name, style, flow, ui } =
                 ]
 
         inlets' =
-            HS.g [ HSA.classes CS.nodeInlets ]
+            HS.g [ HSA.classes $ CS.nodeInlets style.slot.direction ]
                 $ Array.mapWithIndex inlet' inlets
 
         inlet' idx (name /\ shape) =
@@ -170,7 +170,7 @@ render { node, name, style, flow, ui } =
                 (name /\ shape)
 
         outlets' =
-            HS.g [ HSA.classes CS.nodeOutlets ]
+            HS.g [ HSA.classes $ CS.nodeOutlets style.slot.direction ]
                 $ Array.mapWithIndex outlet' outlets
 
         outlet' idx (name /\ shape) =

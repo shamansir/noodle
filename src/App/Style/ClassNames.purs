@@ -1,11 +1,11 @@
 module App.Style.ClassNames where
 
 
-import Prelude ((<$>), (<>))
+import Prelude ((<$>), (<>), show)
 import Halogen as H
 
 
-import App.Style (NodeFlow(..))
+import App.Style (NodeFlow(..), SlotDirection(..))
 
 
 
@@ -40,16 +40,16 @@ node flow name = H.ClassName <$> [ "node", "node-" <> flowStr flow, "node-" <> n
     flowStr Horizontal = "horz"
 
 
-nodeInlets :: Array H.ClassName
-nodeInlets = H.ClassName <$> [ "node-inlets" ]
+nodeInlets :: SlotDirection -> Array H.ClassName
+nodeInlets dir = H.ClassName <$> [ "node-inlets", "dir-" <> show dir ]
 
 
 inlet :: String -> Array H.ClassName
 inlet name = H.ClassName <$> [ "inlet", "inlet-" <> name ]
 
 
-nodeOutlets :: Array H.ClassName
-nodeOutlets = H.ClassName <$> [ "node-outlets" ]
+nodeOutlets :: SlotDirection -> Array H.ClassName
+nodeOutlets dir = H.ClassName <$> [ "node-outlets", "dir-" <> show dir ]
 
 
 outlet :: String -> Array H.ClassName
