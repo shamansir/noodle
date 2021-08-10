@@ -33,7 +33,7 @@ data Action
 
 
 initialState :: UI.NodeInput Hydra -> State
-initialState node =
+initialState { node } =
     Node.defaultOfInlet "seq" node
         <#> HydraE.seq
          #  fromMaybe []

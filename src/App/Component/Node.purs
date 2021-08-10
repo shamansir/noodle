@@ -196,7 +196,7 @@ render { node, name, style, flow, ui } =
                     Just userNodeBody ->
                         HS.g
                             [ HSA.translateTo' $ Calc.bodyInnerOffset dir f u flow ]
-                            [ HH.slot _body name userNodeBody node SendData ]
+                            [ HH.slot _body name userNodeBody { node } SendData ]
                     Nothing ->
                         HS.g [ ] [ ]
                 ]

@@ -32,7 +32,7 @@ data Action
 
 
 initialState :: UI.NodeInput Hydra -> State
-initialState node =
+initialState { node } =
     (Hydra.hydraOf $ Hydra.entityOf $ Hydra.defaultSource) /\ node
 
 

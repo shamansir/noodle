@@ -31,7 +31,7 @@ data Action
 
 
 initialState :: UI.NodeInput Hydra -> State
-initialState node =
+initialState { node } =
     Node.defaultOfInlet "num" node
         <#> HydraE.numOr 0.0
          #  fromMaybe 0.0
