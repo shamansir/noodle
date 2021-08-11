@@ -1,4 +1,4 @@
-module App.Style.Quartz
+module App.Style.Hydra
     (style) where
 
 
@@ -14,8 +14,8 @@ import App.Style
     , ShadowType(..)
     )
 
-import App.Style.Quartz.Colors (colors)
-import App.Style.Quartz.Units (units)
+import App.Style.Hydra.Colors (colors)
+import App.Style.Hydra.Units (units)
 
 
 style :: Style
@@ -29,6 +29,6 @@ style =
         }
     , link : Straight
     , supportedFlows : Set.singleton Vertical
-    , font : { size : 7.0, family : [ "PT Mono", "Andale Mono", "Fira mono", "Menlo", "sans-serif" ] }
+    , font : { size : 7.0, family : [ "Trispace", "PT Mono", "Andale Mono", "Fira mono", "Menlo" ] }
     , shadow : Solid { offset : 5.0 <+> 5.0 }
     }

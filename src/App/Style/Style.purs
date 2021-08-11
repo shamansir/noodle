@@ -112,7 +112,7 @@ type Style =
     , shadow :: ShadowType
     , link :: LinkType
     , supportedFlows :: Set NodeFlow
-    , font :: { size :: Number, family :: String }
+    , font :: { size :: Number, family :: Array String }
     }
 
 

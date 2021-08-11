@@ -6,11 +6,13 @@ import Type.Proxy (Proxy(..))
 
 import Effect.Class (class MonadEffect)
 import Effect.Aff.Class (class MonadAff)
+
 import Data.Maybe (Maybe(..))
 import Data.Int (toNumber)
 import Data.Tuple as Tuple
 import Data.Vec2 ((<+>), Size)
 import Data.Vec2 as V2
+import Data.NonEmpty (NonEmpty, singleton) as NE
 
 import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
@@ -29,6 +31,8 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
+import Halogen.HTML.CSS as CSS
+import CSS as CSS
 
 import Web.HTML (window)
 import Web.HTML.Window as Window
@@ -86,14 +90,20 @@ initialState { network, toolkit, style, flow, currentPatch, ui } =
 
 render :: forall d m. MonadEffect m => State m d -> H.ComponentHTML Action (Slots d) m
 render (s@{ network, toolkit, style, flow }) =
-    HS.svg
-        [ HSA.width $ V2.w s.windowSize, HSA.height $ V2.h s.windowSize
-        , HSA.id "noodle"
+    HH.div
+        [ CSS.style $ do
+            CSS.fontFamily style.font.family $ NE.singleton CSS.sansSerif
+            CSS.fontSize $ CSS.pt style.font.size
         ]
-        [ background
-        , curFrame
-        , patchesTabs
-        , maybeCurrent $ (flip Network.patch $ network) =<< s.currentPatch
+        [ HS.svg
+            [ HSA.width $ V2.w s.windowSize, HSA.height $ V2.h s.windowSize
+            , HSA.id "noodle"
+            ]
+            [ background
+            , curFrame
+            , patchesTabs
+            , maybeCurrent $ (flip Network.patch $ network) =<< s.currentPatch
+            ]
         ]
     where
         colors = style.colors
