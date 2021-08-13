@@ -5,7 +5,9 @@ module App.Style.Hydra.Units
 import Data.Vec2 ((<+>))
 import Data.Tuple.Nested ((/\))
 
-import App.Style (Units, CalculateSide(..), NodeFlow(..))
+import Data.Set (Set)
+
+import App.Style (Units, NodeFlow(..))
 
 
 {- data Size a = Size Int Int a
@@ -21,11 +23,9 @@ units :: NodeFlow -> Units
 units _ =
     { cell :
         { size : 40.0 <+> 40.0
-        --, padding : 20.0 <+> 20.0
         }
     , body :
-        -- { margin : 20.0 <+> 20.0
-        { size : 100.0 /\ StretchBySum
+        { size : 100.0
         , strokeWidth : 1.0
         , cornerRadius : 0.0
         , margin : 50.0 <+> 10.0

@@ -7,6 +7,7 @@ import App.Style.Color (Color)
 import App.Style.Color as Color
 
 import Data.Set (Set)
+import Data.Set.Ordered (OSet)
 
 import Data.Vec2 (Size_, Size, Pos, (<+>))
 import Data.Tuple.Nested ((/\), type (/\))
@@ -43,16 +44,22 @@ data LinkType
     | Curve
 
 
-data CalculateSide
-    = Fixed Number
-    | StretchByMax -- maximum of inlets or maximum of outlets
-    | StretchBySum -- sum of inlets and outlets
-    | StretchByMaxPlus Number
-    | StretchBySumPlus Number
+data NodePart
+    = Title
+    | OnlyInlets
+    | OnlyOutlets
+    | UserBody Number
+    | InletsAndOutlets
+    | UserBodyBetweenSlots
+    | UserBodyBetweenSlotsMin Number
 
 
-type BodySize
-    = Number /\ CalculateSide
+data TitleMode
+    = OutsideBody
+    | InsideBody
+
+
+type Order = OSet NodePart
 
 
 data ShadowType
@@ -66,7 +73,7 @@ type Units =
         { size :: Size
         }
     , body ::
-        { size :: BodySize
+        { size :: Number
         , margin :: Size
         , strokeWidth :: Number
         , cornerRadius :: Number
@@ -105,13 +112,15 @@ type Flags =
 
 
 type Style =
-    { units :: NodeFlow -> Units
+    { units :: NodeFlow -> Units -- join Units and Color into titleStyle - SlotStyle etc.?
+    , order :: Order
     , colors :: Colors
     , slot ::
         { connector :: Connector
         , direction :: SlotDirection
         , info :: SlotInfoVisibility
         }
+    , title :: TitleMode
     , shadow :: ShadowType
     , link :: LinkType
     , supportedFlows :: Set NodeFlow

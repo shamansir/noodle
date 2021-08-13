@@ -7,11 +7,13 @@ import Data.Vec2 (Vec2, (<+>), (</>), Pos, Size)
 import Data.Vec2 as V2
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
+import Data.Foldable
+import Data.Set.Ordered (map) as OSet
 
 import Noodle.Node (Node)
 import Noodle.Node as Node
 
-import App.Style (Flags, NodeFlow(..), Units, SlotDirection(..), BodySize(..), CalculateSide(..))
+import App.Style (Flags, NodeFlow(..), Units, SlotDirection(..), Order, NodePart(..))
 
 
 type GetPos = Flags -> Units -> NodeFlow -> Pos
@@ -116,7 +118,7 @@ outletConnectorPos dir t u Vertical idx =
         (titleHeight + (outerHeight / 2.0) + (outerHeight * toNumber idx))
     )
     where
-        bodyWidth = Tuple.fst $ u.body.size
+        bodyWidth = u.body.size
         outerHeight = V2.h u.slot.area
         connectorOffsetX Inside = 0.0 -- V2.w $ u.slot.area
         connectorOffsetX Between = 0.0 -- V2.w $ (u.slot.area </> V2.vv 2.0) - V2.vv u.slot.radius
@@ -146,7 +148,7 @@ outletRectPos dir t u Vertical idx =
         (titleHeight + (outerHeight / 2.0) + (outerHeight * toNumber idx))
     )
     where
-        bodyWidth = Tuple.fst u.body.size
+        bodyWidth = u.body.size
         outerHeight = V2.h u.slot.area
         offsetX Inside = -V2.w u.slot.area
         offsetX Between = 0.0 -- V2.w $ (u.slot.area </> V2.vv 2.0) - V2.vv u.slot.radius
@@ -168,12 +170,12 @@ titleSize :: GetSize
 titleSize t u Vertical =
     bodyWidth <+> titleHeight
     where
-        bodyWidth = Tuple.fst u.body.size
+        bodyWidth = u.body.size
         titleHeight = u.title.size
 titleSize t u Horizontal =
     titleWidth <+> bodyHeight
     where
-        bodyHeight = Tuple.fst u.body.size
+        bodyHeight = u.body.size
         titleWidth = u.title.size
 
 
@@ -181,51 +183,41 @@ bodyPos :: GetPos
 bodyPos _ u _ = u.body.margin
 
 
-nodeBounds :: forall d. GetSizeByNode d
-nodeBounds t u flow node =
+nodeBounds :: forall d. Order -> GetSizeByNode d
+nodeBounds order t u flow node =
     (V2.w u.body.margin * 2.0 + bodyWidth)
     <+>
     (V2.h u.body.margin * 2.0 + bodyHeight)
     where
-        bodyWidth /\ bodyHeight = V2.toTuple $ bodySize t u flow node
+        bodyWidth /\ bodyHeight = V2.toTuple $ bodySize order t u flow node
 
 
-bodySize :: forall d. GetSizeByNode d
-bodySize t u flow node =
+bodySize :: forall d. Order -> GetSizeByNode d
+bodySize order t u flow node =
     let
         inletsCount /\ outletsCount = Node.dimensions node
+        sizeOf Title = if t.hasTitle then V2.h $ titleSize t u Vertical else 0.0
+        sizeOf (UserBody n) = n
+        sizeOf OnlyInlets = toNumber inletsCount * V2.h u.slot.area
+        sizeOf OnlyOutlets = toNumber outletsCount * V2.h u.slot.area
+        sizeOf InletsAndOutlets = toNumber (max inletsCount outletsCount) * V2.h u.slot.area
+        sizeOf UserBodyBetweenSlots = sizeOf InletsAndOutlets
+        sizeOf (UserBodyBetweenSlotsMin n) =
+            if sizeOf InletsAndOutlets > n then sizeOf InletsAndOutlets else n
     in
         case flow of
             Vertical ->
                 bodyWidth <+> bodyHeight
                 where
-                    yOffset =
-                        titleHeight
-                        + max (V2.h u.slot.inletsOffset) (V2.h u.slot.outletsOffset)
-                    bodyWidth = Tuple.fst u.body.size
-                    bodyHeight =
-                        yOffset + case Tuple.snd u.body.size of
-                            Fixed n -> n
-                            StretchByMax -> toNumber (max inletsCount outletsCount) * V2.h u.slot.area
-                            StretchBySum -> toNumber (inletsCount + outletsCount) * V2.h u.slot.area
-                            StretchByMaxPlus n -> n + toNumber (max inletsCount outletsCount) * V2.h u.slot.area
-                            StretchBySumPlus n -> n + toNumber (inletsCount + outletsCount) * V2.h u.slot.area
-                    titleHeight = if t.hasTitle then V2.h $ titleSize t u Vertical else 0.0
+                    bodyWidth = u.body.size
+                    bodyHeight = foldr (+) 0.0 $ OSet.map sizeOf order
             Horizontal ->
                 bodyWidth <+> bodyHeight
                 where
-                    xOffset =
-                        titleWidth
-                        + max (V2.w u.slot.inletsOffset) (V2.w u.slot.outletsOffset)
-                    bodyWidth =
-                        xOffset + case Tuple.snd u.body.size of
-                            Fixed n -> n
-                            StretchByMax -> toNumber (max inletsCount outletsCount) * V2.w u.slot.area
-                            StretchBySum -> toNumber (inletsCount + outletsCount) * V2.w u.slot.area
-                            StretchByMaxPlus n -> n + toNumber (max inletsCount outletsCount) * V2.w u.slot.area
-                            StretchBySumPlus n -> n + toNumber (inletsCount + outletsCount) * V2.w u.slot.area
-                    bodyHeight = Tuple.fst u.body.size
-                    titleWidth = if t.hasTitle then V2.w $ titleSize t u Horizontal else 0.0
+                    bodyWidth = foldr (+) 0.0 $ OSet.map sizeOf order
+                    bodyHeight = u.body.size
+
+
 
 
 shadowPos :: GetPos

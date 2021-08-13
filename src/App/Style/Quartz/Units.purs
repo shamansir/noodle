@@ -5,7 +5,7 @@ module App.Style.Quartz.Units
 import Data.Vec2 ((<+>))
 import Data.Tuple.Nested ((/\))
 
-import App.Style (Units, CalculateSide(..), NodeFlow(..))
+import App.Style (Units, NodeFlow(..))
 
 
 {- data Size a = Size Int Int a
@@ -25,7 +25,7 @@ units _ =
         }
     , body :
         -- { margin : 20.0 <+> 20.0
-        { size : 100.0 /\ StretchByMaxPlus 55.0
+        { size : 100.0
         , strokeWidth : 1.0
         , cornerRadius : 0.0
         , margin : 50.0 <+> 10.0
