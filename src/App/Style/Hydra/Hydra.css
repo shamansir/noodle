@@ -1,5 +1,10 @@
 /* @import url('https://fonts.googleapis.com/css2?family=family=Space+Grotesk:wght@400;500&display=swap'); */
 
+text {
+    alignment-baseline: hanging;
+    dominant-baseline: hanging;
+}
+
 .node-title text {
     alignment-baseline: middle;
     dominant-baseline: middle;
@@ -35,4 +40,20 @@
 .node-vert .outlet text {
     alignment-baseline: middle;
     dominant-baseline: middle;
+}
+
+.slot-focus {
+    cursor: pointer;
+}
+
+.node-title-focus {
+    cursor: pointer;
+}
+
+.patch-tab {
+    cursor: pointer;
+}
+
+.node-button {
+    cursor: pointer;
 }

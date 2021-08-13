@@ -3,15 +3,15 @@ module App.Style.Calculate where
 import Prelude
 
 import Data.Int (toNumber)
+import Data.Vec2 (Vec2, (<+>), (</>), Pos, Size)
+import Data.Vec2 as V2
+import Data.Tuple as Tuple
+import Data.Tuple.Nested ((/\))
 
 import Noodle.Node (Node)
 import Noodle.Node as Node
-import App.Style (Flags, NodeFlow(..), Units, SlotDirection(..), Side(..))
-import App.Style (fromSide) as Style
-import Data.Vec2 (Vec2, (<+>), (</>), Pos, Size)
-import Data.Vec2 as V2
 
-import Data.Tuple.Nested ((/\))
+import App.Style (Flags, NodeFlow(..), Units, SlotDirection(..), BodySize(..), CalculateSide(..))
 
 
 type GetPos = Flags -> Units -> NodeFlow -> Pos
@@ -116,7 +116,7 @@ outletConnectorPos dir t u Vertical idx =
         (titleHeight + (outerHeight / 2.0) + (outerHeight * toNumber idx))
     )
     where
-        bodyWidth = Style.fromSide 100.0 $ V2.w u.body.size -- FIXME: what to do with 100.0?
+        bodyWidth = Tuple.fst $ u.body.size
         outerHeight = V2.h u.slot.area
         connectorOffsetX Inside = 0.0 -- V2.w $ u.slot.area
         connectorOffsetX Between = 0.0 -- V2.w $ (u.slot.area </> V2.vv 2.0) - V2.vv u.slot.radius
@@ -146,7 +146,7 @@ outletRectPos dir t u Vertical idx =
         (titleHeight + (outerHeight / 2.0) + (outerHeight * toNumber idx))
     )
     where
-        bodyWidth = Style.fromSide 100.0 $ V2.w u.body.size -- FIXME: what to do with 100.0?
+        bodyWidth = Tuple.fst u.body.size
         outerHeight = V2.h u.slot.area
         offsetX Inside = -V2.w u.slot.area
         offsetX Between = 0.0 -- V2.w $ (u.slot.area </> V2.vv 2.0) - V2.vv u.slot.radius
@@ -168,13 +168,13 @@ titleSize :: GetSize
 titleSize t u Vertical =
     bodyWidth <+> titleHeight
     where
-        bodyWidth = Style.fromSide 100.0 $ V2.w u.body.size -- FIXME: what to do with 100.0?
-        titleHeight = Style.fromSide 20.0 $ V2.h u.title.size -- FIXME: what to do with 20.0?
+        bodyWidth = Tuple.fst u.body.size
+        titleHeight = u.title.size
 titleSize t u Horizontal =
     titleWidth <+> bodyHeight
     where
-        bodyHeight = Style.fromSide 100.0 $ V2.h u.body.size -- FIXME: what to do with 100.0?
-        titleWidth = Style.fromSide 20.0 $ V2.w u.title.size -- FIXME: what to do with 20.0?
+        bodyHeight = Tuple.fst u.body.size
+        titleWidth = u.title.size
 
 
 bodyPos :: GetPos
@@ -199,22 +199,32 @@ bodySize t u flow node =
             Vertical ->
                 bodyWidth <+> bodyHeight
                 where
-                    autoBodyHeight =
+                    yOffset =
                         titleHeight
                         + max (V2.h u.slot.inletsOffset) (V2.h u.slot.outletsOffset)
-                        + (toNumber (max inletsCount outletsCount) * V2.h u.slot.area)
-                    bodyWidth = Style.fromSide 100.0 $ V2.w u.body.size -- FIXME: what to do with 100.0?
-                    bodyHeight = Style.fromSide autoBodyHeight $ V2.h u.body.size
+                    bodyWidth = Tuple.fst u.body.size
+                    bodyHeight =
+                        yOffset + case Tuple.snd u.body.size of
+                            Fixed n -> n
+                            StretchByMax -> toNumber (max inletsCount outletsCount) * V2.h u.slot.area
+                            StretchBySum -> toNumber (inletsCount + outletsCount) * V2.h u.slot.area
+                            StretchByMaxPlus n -> n + toNumber (max inletsCount outletsCount) * V2.h u.slot.area
+                            StretchBySumPlus n -> n + toNumber (inletsCount + outletsCount) * V2.h u.slot.area
                     titleHeight = if t.hasTitle then V2.h $ titleSize t u Vertical else 0.0
             Horizontal ->
                 bodyWidth <+> bodyHeight
                 where
-                    autoBodyWidth =
+                    xOffset =
                         titleWidth
                         + max (V2.w u.slot.inletsOffset) (V2.w u.slot.outletsOffset)
-                        + (toNumber (max inletsCount outletsCount) * V2.w u.slot.area)
-                    bodyWidth = Style.fromSide autoBodyWidth $ V2.w u.body.size
-                    bodyHeight = Style.fromSide 100.0 $ V2.h u.body.size -- FIXME: what to do with 100.0?
+                    bodyWidth =
+                        xOffset + case Tuple.snd u.body.size of
+                            Fixed n -> n
+                            StretchByMax -> toNumber (max inletsCount outletsCount) * V2.w u.slot.area
+                            StretchBySum -> toNumber (inletsCount + outletsCount) * V2.w u.slot.area
+                            StretchByMaxPlus n -> n + toNumber (max inletsCount outletsCount) * V2.w u.slot.area
+                            StretchBySumPlus n -> n + toNumber (inletsCount + outletsCount) * V2.w u.slot.area
+                    bodyHeight = Tuple.fst u.body.size
                     titleWidth = if t.hasTitle then V2.w $ titleSize t u Horizontal else 0.0
 
 

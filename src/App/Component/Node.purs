@@ -37,7 +37,6 @@ import Halogen.Svg.Attributes as HSA
 import App.Toolkit.UI (UI)
 import App.Toolkit.UI as UI
 import App.Svg.Extra (translateTo') as HSA
-import App.Style (Side)
 
 import Type.Proxy (Proxy(..))
 

@@ -8,7 +8,8 @@ import App.Style.Color as Color
 
 import Data.Set (Set)
 
-import Data.Vec2 (Size_, Size, Pos)
+import Data.Vec2 (Size_, Size, Pos, (<+>))
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Node (Family) as Node
 
@@ -42,9 +43,16 @@ data LinkType
     | Curve
 
 
-data Side
+data CalculateSide
     = Fixed Number
-    | Stretch
+    | StretchByMax -- maximum of inlets or maximum of outlets
+    | StretchBySum -- sum of inlets and outlets
+    | StretchByMaxPlus Number
+    | StretchBySumPlus Number
+
+
+type BodySize
+    = Number /\ CalculateSide
 
 
 data ShadowType
@@ -53,29 +61,24 @@ data ShadowType
     | Blurred { offset :: Pos, blur :: Number }
 
 
-
 type Units =
     { cell ::
         { size :: Size
-        , padding :: Size -- node padding?
         }
     , body ::
-        { size :: Size_ Side
+        { size :: BodySize
         , margin :: Size
         , strokeWidth :: Number
         , cornerRadius :: Number
-        , shadowShift :: Number
-        , shadowBlur :: Number
         }
     , title ::
-        { size :: Size_ Side
+        { size :: Number
         , padding :: Size
         }
     -- , preview
     --    :: { size :: Size }
     , slot ::
         { area :: Size -- size of the rect: name/value + connector
-        --, padding :: Size
         , radius :: Number
         , strokeWidth :: Number
         , inletsOffset :: Pos
@@ -124,9 +127,11 @@ defaultFlags =
     }
 
 
-fromSide :: Number -> Side -> Number
-fromSide _ (Fixed n) = n
-fromSide n Stretch = n
+{- findBodySize :: NodeFlow -> (CalculateSide -> Number) -> BodySize -> Size
+findBodySize Horizontal _ (h /\ Fixed w) = w <+> h
+findBodySize Horizontal f (h /\ StretchByMax) = f StretchByMax <+> h
+findBodySize Horizontal f (h /\ StretchBySum) = f StretchBySum <+> h -}
+
 
 
 transparent :: Color
