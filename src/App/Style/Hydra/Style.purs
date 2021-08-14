@@ -23,17 +23,41 @@ import Data.Set.Ordered as OSet
 
 style :: Style
 style =
-    { colors
-    , units
-    , order : OSet.fromFoldable [ Title, UserBody 55.0, OnlyInlets, OnlyOutlets ]
+    { order :
+        OSet.fromFoldable
+            [ Title, UserBody 55.0, OnlyInlets, OnlyOutlets ]
+    , bg :
+        { fill : colors.background
+        }
+    , body :
+        { shadow : Solid { offset : 5.0 <+> 5.0 }
+        , size : units.body.size
+        , margin : units.body.margin
+        , fill : colors.body.fill
+        , stroke : colors.body.stroke
+        , strokeWidth : units.body.strokeWidth
+        , cornerRadius : units.body.cornerRadius
+        }
     , slot :
-        { connector : Circle
+        { connector : Circle 5.0
         , direction : Inside
         , info : Always
+        , strokeWidth : units.slot.strokeWidth
+        , stroke : colors.slot.stroke
+        , fill : colors.slot.fill
+        , label : { color : colors.slot.label, maxWidth : units.slot.labelMaxWidth }
+        , value : { color : colors.slot.value, maxWidth : units.slot.valueMaxWidth }
         }
-    , link : Straight
-    , title : OutsideBody
+    , link : { type : Straight }
+    , title :
+        { mode : OutsideBody
+        , background : colors.title.background
+        , fill : colors.title.fill
+        , size : units.title.size
+        , padding : units.title.padding
+        }
     , supportedFlows : Set.singleton Vertical
     , font : { size : 7.0, family : [ "Trispace", "PT Mono", "Andale Mono", "Fira mono", "Menlo" ] }
-    , shadow : Solid { offset : 5.0 <+> 5.0 }
+    , patchTab : { background : colors.patchTab.background, stroke : colors.patchTab.stroke }
+    , nodeTab : { background : colors.nodeTab.background, stroke : colors.nodeTab.stroke }
     }

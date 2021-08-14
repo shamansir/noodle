@@ -24,8 +24,8 @@ import Hydra.Network (network)
 style :: Style
 style =
     Hydra.style
-        { colors
-            { background = Color.named "transparent" }
+        { bg
+            { fill = Color.named "transparent" }
         }
 
 

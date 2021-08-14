@@ -15,11 +15,21 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Noodle.Node (Family) as Node
 
 
+type Flags =
+    { hasTitle :: Boolean
+    , customBody :: Boolean
+    , hasRemoveButton :: Boolean
+    }
+
+
+type Radius = Number
+
+
 data Connector
-    = Square
-    | Rect
-    | Circle
-    | DoubleCircle
+    = Square Number
+    | Rect Size
+    | Circle Radius
+    | DoubleCircle Radius Radius
 
 
 data NodeFlow
@@ -68,6 +78,82 @@ data ShadowType
     | Blurred { offset :: Pos, blur :: Number }
 
 
+type CellStyle =
+    { size :: Size
+    }
+
+
+type BackgroundStyle =
+    { fill :: Color
+    }
+
+
+type PatchTabStyle =
+    { background :: Color
+    , stroke :: Color
+    }
+
+
+type NodeTabStyle =
+    { background :: Color
+    , stroke :: Color
+    }
+
+
+type SlotStyle =
+    { stroke :: Color
+    , fill :: Color
+    , label :: { color :: Color, maxWidth :: Number }
+    , value :: { color :: Color, maxWidth :: Number }
+    , connector :: Connector
+    , direction :: SlotDirection
+    , info :: SlotInfoVisibility
+    , strokeWidth :: Number
+    }
+
+
+type TitleStyle =
+    { mode :: TitleMode
+    , fill :: Color
+    , background :: Color
+    , size :: Number
+    , padding :: Size
+    }
+
+
+type BodyStyle =
+    { shadow :: ShadowType
+    , size :: Number
+    , margin :: Size
+    , fill :: Color
+    , stroke :: Color
+    , strokeWidth :: Number
+    , cornerRadius :: Number
+    }
+
+
+type LinkStyle =
+    { type :: LinkType
+    }
+
+
+type Style =
+    { slot :: SlotStyle
+    , bg :: BackgroundStyle
+    , body :: BodyStyle
+    , title :: TitleStyle
+    , link :: LinkStyle
+
+    , patchTab :: PatchTabStyle
+    , nodeTab :: NodeTabStyle
+
+    , order :: Order
+    , supportedFlows :: Set NodeFlow
+    , font :: { size :: Number, family :: Array String }
+    }
+
+
+-- FIXME: get rid of, it's just a helper
 type Units =
     { cell ::
         { size :: Size
@@ -88,12 +174,13 @@ type Units =
         { area :: Size -- size of the rect: name/value + connector
         , radius :: Number
         , strokeWidth :: Number
-        , inletsOffset :: Pos
-        , outletsOffset :: Pos
+        , labelMaxWidth :: Number
+        , valueMaxWidth :: Number
         }
     }
 
 
+-- FIXME: get rid of, it's just a helper
 type Colors =
     { background :: Color
     , patchTab :: { background :: Color, stroke :: Color }
@@ -103,29 +190,6 @@ type Colors =
     , title :: { fill :: Color, background :: Color }
     }
 
-
-type Flags =
-    { hasTitle :: Boolean
-    , customBody :: Boolean
-    , hasRemoveButton :: Boolean
-    }
-
-
-type Style =
-    { units :: NodeFlow -> Units -- join Units and Color into titleStyle - SlotStyle etc.?
-    , order :: Order
-    , colors :: Colors
-    , slot ::
-        { connector :: Connector
-        , direction :: SlotDirection
-        , info :: SlotInfoVisibility
-        }
-    , title :: TitleMode
-    , shadow :: ShadowType
-    , link :: LinkType
-    , supportedFlows :: Set NodeFlow
-    , font :: { size :: Number, family :: Array String }
-    }
 
 
 defaultFlags :: Flags

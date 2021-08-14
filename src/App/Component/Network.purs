@@ -106,7 +106,6 @@ render (s@{ network, toolkit, style, flow }) =
             ]
         ]
     where
-        colors = style.colors
         curFrame =
             HS.text
                 [ HSA.translateTo' $ 200.0 <+> 0.0 ]
@@ -120,7 +119,7 @@ render (s@{ network, toolkit, style, flow }) =
                 []
                 [ HS.rect
                     [ HSA.width $ V2.w s.windowSize, HSA.height $ V2.h s.windowSize
-                    , HSA.fill $ Just colors.background
+                    , HSA.fill $ Just style.bg.fill
                     ]
                 , case s.ui.background of
                     Nothing ->
@@ -133,8 +132,8 @@ render (s@{ network, toolkit, style, flow }) =
             HS.g
                 [ HSA.classes $ CS.patchTab label ]
                 [ HS.rect [ HSA.width tabLength, HSA.height tabHeight
-                , HSA.fill $ Just colors.patchTab.background
-                , HSA.stroke $ Just colors.patchTab.stroke
+                , HSA.fill $ Just style.patchTab.background
+                , HSA.stroke $ Just style.patchTab.stroke
                 , HSA.strokeWidth 1.0
                 ]
                 , HS.text

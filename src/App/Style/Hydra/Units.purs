@@ -1,5 +1,4 @@
-module App.Style.Hydra.Units
-    (units) where
+module App.Style.Hydra.Units (units) where
 
 
 import Data.Vec2 ((<+>))
@@ -7,7 +6,7 @@ import Data.Tuple.Nested ((/\))
 
 import Data.Set (Set)
 
-import App.Style (Units, NodeFlow(..))
+import App.Style (Units)
 
 
 {- data Size a = Size Int Int a
@@ -19,8 +18,8 @@ data Pixels = Pixels
 data Cells = Cells -}
 
 
-units :: NodeFlow -> Units
-units _ =
+units :: Units
+units =
     { cell :
         { size : 40.0 <+> 40.0
         }
@@ -38,7 +37,7 @@ units _ =
         { radius : 3.5
         , strokeWidth : 1.5
         , area : 50.0 <+> 25.0 -- x, same as body.margin
-        , inletsOffset : 0.0 <+> 0.0
-        , outletsOffset : 0.0 <+> 0.0
+        , labelMaxWidth : 20.0
+        , valueMaxWidth : 10.0
         }
     }

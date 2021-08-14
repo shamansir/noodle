@@ -140,14 +140,12 @@ render state =
         ]
     where
         flow = state.flow
-        units = state.style.units flow
         mouseState =
             HS.text
                 [ HSA.translateTo' $ 500.0 <+> -20.0
                 , HSA.fill $ Just $ Style.white
                 ]
                 [ HH.text $ show $ state.mouse ]
-        colors = state.style.colors
         assocNode (name /\ pos /\ bounds) =
             state.patch
                 # Patch.findNode name
@@ -172,8 +170,8 @@ render state =
                 ]
                 [ HS.rect
                     [ HSA.width $ V2.w BS.buttonSize, HSA.height $ V2.h BS.buttonSize
-                    , HSA.fill $ state.ui.markNode name <|> Just colors.nodeTab.background
-                    , HSA.stroke $ Just colors.nodeTab.stroke
+                    , HSA.fill $ state.ui.markNode name <|> Just state.style.nodeTab.background
+                    , HSA.stroke $ Just state.style.nodeTab.stroke
                     , HSA.strokeWidth 1.0
                     ]
                 , HS.text [] [ HH.text $ "+ " <> name ]
