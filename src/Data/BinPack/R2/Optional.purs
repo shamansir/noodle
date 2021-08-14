@@ -14,7 +14,7 @@ module Data.BinPack.R2.Optional
     , itemOf
     , valueOf
     , size
-    , unfold
+    , fold
     , abandon
     , reflow
     , reflow'
@@ -72,8 +72,8 @@ toList = R2.toList >>> List.mapMaybe filterF
         filterF (Nothing /\ _)     = Nothing
 
 
-unfold :: forall n a k. Semiring n => (a /\ (Pos_ n /\ Size_ n) -> k -> k) -> k -> Bin2 n a -> k
-unfold f = R2.unfold f'
+fold :: forall n a k. Semiring n => (a /\ (Pos_ n /\ Size_ n) -> k -> k) -> k -> Bin2 n a -> k
+fold f = R2.fold f'
     where
         f' (Nothing /\ _) prev = prev
         f' (Just a /\ s) prev = f (a /\ s) prev

@@ -14,7 +14,7 @@ module Data.BinPack.R2
 , itemOf
 , valueOf
 , size
-, unfold
+, fold
 , reflow
 , reflow'
 )
@@ -115,25 +115,25 @@ toList = unpack' zero -- FIXME: use unfold for that
         unpack' pos (Node { w, h, r, b, i }) =
             (i /\ (pos /\ (w <+> h))) : unpack' (pos + V2.w' w) r <> unpack' (pos + V2.h' h) b
 
-unfold :: forall n a k. Semiring n => (a /\ (Pos_ n /\ Size_ n) -> k -> k) -> k -> Bin2 n a -> k
-unfold f =
-    unfold' zero
+fold :: forall n a k. Semiring n => (a /\ (Pos_ n /\ Size_ n) -> k -> k) -> k -> Bin2 n a -> k
+fold f =
+    fold' zero
     where
-        unfold' :: Vec2_ n -> k -> Bin2 n a -> k
-        unfold' _   v (Free _)                 = v
-        unfold' pos v (Node { w, h, r, b, i }) =
-            -- unfold everything below, then at right, then the current item
-            -- f (i /\ (x /\ y /\ w /\ h)) $ unfold' (x + w) y (unfold' x (y + h) v b) r
-            -- unfold everything at right, then below, then the current item
+        fold' :: Vec2_ n -> k -> Bin2 n a -> k
+        fold' _   v (Free _)                 = v
+        fold' pos v (Node { w, h, r, b, i }) =
+            -- fold everything below, then at right, then the current item
+            -- f (i /\ (x /\ y /\ w /\ h)) $ fold' (x + w) y (fold' x (y + h) v b) r
+            -- fold everything at right, then below, then the current item
             f (i /\ (pos /\ (w <+> h)))
-                $ unfold'
+                $ fold'
                     (pos + V2.h' h)
-                    (unfold' (pos + V2.w' w) v r) b
-                -- $ unfold' x (y + h) (unfold' (x + w) y v r) b
+                    (fold' (pos + V2.w' w) v r) b
+                -- $ fold' x (y + h) (fold' (x + w) y v r) b
 
 find :: forall n a. Eq a => Semiring n => a -> Bin2 n a -> Maybe (Pos_ n /\ Size_ n)
 find needle =
-    unfold
+    fold
         (\(item /\ (pos /\ size)) prev ->
             if isJust prev then prev
             else if (item == needle) then Just $ pos /\ size
@@ -166,7 +166,7 @@ size (Node { w, h }) = w <+> h
 
 reflow :: forall n a. Ring n => Ord n => Size_ n -> Bin2 n a -> Maybe (Bin2 n a)
 reflow =
-    unfold
+    fold
         (\(a /\ (_ /\ size)) dst ->
             dst >>= flip packOne (item size a)
         )
@@ -175,7 +175,7 @@ reflow =
 
 reflow' :: forall n a. Ring n => Ord n => Size_ n -> Bin2 n a -> Bin2 n a
 reflow' =
-    unfold
+    fold
         (\(a /\ (_ /\ size)) dst ->
             packOne dst (item size a)
                 # fromMaybe dst
