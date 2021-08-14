@@ -22,7 +22,11 @@ class {-FoldableWithIndex Pos l <=-} IsLayout l where
     -- toUnfoldable ::
     find :: forall a. a -> l a -> Maybe (Pos /\ Size)
     sample :: forall a. Pos -> l a -> Maybe (a /\ Pos /\ Size)
+    remove :: forall a. Eq a => a -> l a -> l a
     -- reflow :: forall a. Size -> l a -> Maybe (l a)
+
+
+-- TODO: scale
 
 
 packOrDrop :: forall l a. IsLayout l => a -> Size -> l a -> l a

@@ -1,1 +1,1 @@
-* Find a way to make `Node`s functors, to be able to map data.
+* Find a way to make `Node`s a `Functor`, to be able to map data.
