@@ -13,6 +13,7 @@ import App.Style
     , LinkType(..)
     , ShadowType(..)
     )
+import App.Style.Order as Order
 
 import App.Style.Hydra.Colors (colors)
 import App.Style.Hydra.Units (units)
@@ -24,7 +25,7 @@ import Data.Set.Ordered as OSet
 style :: Style
 style =
     { order :
-        OSet.fromFoldable
+        Order.fromFoldable
             [ Title, UserBody 55.0, OnlyInlets, OnlyOutlets ]
     , bg :
         { fill : colors.background

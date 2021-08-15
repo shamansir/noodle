@@ -15,6 +15,7 @@ import Noodle.Node (Node)
 import Noodle.Node as Node
 
 import App.Style
+import App.Style.Order as Order
 
 
 type Index = Int
@@ -228,11 +229,11 @@ bodySize f s flow node =
                 bodyWidth <+> bodyHeight
                 where
                     bodyWidth = s.body.size
-                    bodyHeight = foldr (+) 0.0 $ OSet.map sizeOf s.order
+                    bodyHeight = Order.sizeBy sizeOf s.order
             Horizontal ->
                 bodyWidth <+> bodyHeight
                 where
-                    bodyWidth = foldr (+) 0.0 $ OSet.map sizeOf s.order
+                    bodyWidth = Order.sizeBy sizeOf s.order
                     bodyHeight = s.body.size
 
 

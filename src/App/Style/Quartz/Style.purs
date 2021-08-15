@@ -14,7 +14,7 @@ import App.Style
     , ShadowType(..)
     )
 
-import Data.Set.Ordered as OSet
+import App.Style.Order as Order
 
 import App.Style.Quartz.Colors (colors)
 import App.Style.Quartz.Units (units)
@@ -23,7 +23,7 @@ import App.Style.Quartz.Units (units)
 style :: Style
 style =
     { order :
-        OSet.fromFoldable [ Title, UserBodyBetweenSlots ]
+        Order.fromFoldable [ Title, UserBodyBetweenSlots ]
     , bg :
         { fill : colors.background
         }

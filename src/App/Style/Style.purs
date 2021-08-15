@@ -3,6 +3,7 @@ module App.Style where
 
 import Prelude (class Show)
 
+import App.Style.Order
 import App.Style.Color (Color)
 import App.Style.Color as Color
 
@@ -67,9 +68,6 @@ data NodePart
 data TitleMode
     = OutsideBody
     | InsideBody
-
-
-type Order = OSet NodePart
 
 
 data ShadowType
@@ -147,7 +145,7 @@ type Style =
     , patchTab :: PatchTabStyle
     , nodeTab :: NodeTabStyle
 
-    , order :: Order
+    , order :: Order NodePart
     , supportedFlows :: Set NodeFlow
     , font :: { size :: Number, family :: Array String }
     }
