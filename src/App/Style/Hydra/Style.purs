@@ -2,24 +2,18 @@ module App.Style.Hydra
     (style) where
 
 
-import Prelude (const)
 import Data.Set as Set
-import Data.Vec2 ((<+>))
 
 import App.Style
-    ( Style
-    , NodeFlow(..)
-    , Connector(..) , SlotDirection(..), SlotInfoVisibility(..), NodePart(..), TitleMode(..)
-    , LinkType(..)
-    , ShadowType(..)
-    )
 import App.Style.Order as Order
 
-import App.Style.Hydra.Colors (colors)
-import App.Style.Hydra.Units (units)
-
-import Data.Set as Set
-import Data.Set.Ordered as OSet
+import App.Style.Hydra.Background (bg)
+import App.Style.Hydra.Body (body)
+import App.Style.Hydra.Title (title)
+import App.Style.Hydra.Slot (slot)
+import App.Style.Hydra.Link (link)
+import App.Style.Hydra.NodeTab (nodeTab)
+import App.Style.Hydra.PatchTab (patchTab)
 
 
 style :: Style
@@ -27,39 +21,13 @@ style =
     { order :
         Order.make
             [ Title, UserBody 55.0, OnlyInlets, OnlyOutlets ]
-    , bg :
-        { fill : colors.background
-        }
-    , body :
-        { shadow : Solid { offset : 5.0 <+> 5.0 }
-        , size : units.body.size
-        , margin : units.body.margin
-        , fill : colors.body.fill
-        , stroke : colors.body.stroke
-        , strokeWidth : units.body.strokeWidth
-        , cornerRadius : units.body.cornerRadius
-        }
-    , slot :
-        { connector : Circle 5.0
-        , offset : 8.0 <+> 0.0
-        , direction : Inside
-        , info : Always
-        , strokeWidth : units.slot.strokeWidth
-        , stroke : colors.slot.stroke
-        , fill : colors.slot.fill
-        , label : { color : colors.slot.label, maxWidth : units.slot.labelMaxWidth }
-        , value : { color : colors.slot.value, maxWidth : units.slot.valueMaxWidth }
-        }
-    , link : { type : Straight }
-    , title :
-        { mode : OutsideBody
-        , background : colors.title.background
-        , fill : colors.title.fill
-        , size : units.title.size
-        , padding : units.title.padding
-        }
+    , bg
+    , body
+    , slot
+    , link
+    , title
     , supportedFlows : Set.singleton Vertical
     , font : { size : 7.0, family : [ "Trispace", "PT Mono", "Andale Mono", "Fira mono", "Menlo" ] }
-    , patchTab : { background : colors.patchTab.background, stroke : colors.patchTab.stroke }
-    , nodeTab : { background : colors.nodeTab.background, stroke : colors.nodeTab.stroke }
+    , patchTab
+    , nodeTab
     }
