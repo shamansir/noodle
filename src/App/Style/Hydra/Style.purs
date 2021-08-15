@@ -41,6 +41,7 @@ style =
         }
     , slot :
         { connector : Circle 5.0
+        , offset : 8.0 <+> 0.0
         , direction : Inside
         , info : Always
         , strokeWidth : units.slot.strokeWidth

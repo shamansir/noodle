@@ -69,7 +69,7 @@ slotArea _ s Horizontal _ = V2.h (connectorSize s.slot.connector) + slotPadding 
 inletConnectorPos :: forall d. GetPosByIdx d
 inletConnectorPos f s Vertical node idx =
     s.body.margin +
-    --s.slot.inletsOffset +
+    s.slot.offset +
     (
         connectorOffsetX s.slot.direction
         <+>
@@ -87,7 +87,7 @@ inletConnectorPos f s Vertical node idx =
         connectorOffsetX Outside = 0.0
 inletConnectorPos f s Horizontal node idx =
     s.body.margin +
-    --s.slot.inletsOffset +
+    s.slot.offset +
     (
         (titleWidth
             + (outerWidth * toNumber idx)
@@ -108,7 +108,7 @@ inletConnectorPos f s Horizontal node idx =
 
 inletRectPos :: forall d. GetPosByIdx d
 inletRectPos f s Vertical node idx =
-    --s.slot.inletsOffset +
+    s.slot.offset +
     (
         offsetX s.slot.direction
         <+>
@@ -122,7 +122,7 @@ inletRectPos f s Vertical node idx =
         titleHeight = if f.hasTitle then V2.h $ titleSize f s Vertical node else 0.0
 inletRectPos f s Horizontal node idx =
     s.body.margin +
-    --s.slot.inletsOffset +
+    s.slot.offset +
     (
         (titleWidth + outerWidth * toNumber idx)
         <+>
@@ -145,7 +145,8 @@ inletTextPos f s  Horizontal idx node = 0.0 <+> 0.0
 
 outletConnectorPos :: forall d. GetPosByIdx d
 outletConnectorPos f s Vertical node idx =
-    s.body.margin +
+    s.body.margin -
+    s.slot.offset +
     (
         (connectorOffsetX s.slot.direction + bodyWidth)
         <+>
@@ -175,8 +176,8 @@ outletTextPos f s Horizontal node idx = 0.0 <+> 0.0
 
 outletRectPos :: forall d. GetPosByIdx d
 outletRectPos f s Vertical node idx =
-    s.body.margin +
-    --s.slot.outletsOffset +
+    s.body.margin -
+    s.slot.offset +
     (
         (bodyWidth + offsetX s.slot.direction)
         <+>

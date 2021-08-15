@@ -38,6 +38,7 @@ style =
         }
     , slot :
         { connector : Circle 5.0
+        , offset : 0.0 <+> 0.0
         , direction : Outside
         , info : Always
         , strokeWidth : units.slot.strokeWidth

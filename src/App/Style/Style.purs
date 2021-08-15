@@ -25,6 +25,9 @@ type Flags =
 type Radius = Number
 
 
+type Shift = Number
+
+
 data Connector
     = Square Number
     | Rect Size
@@ -103,6 +106,7 @@ type SlotStyle =
     , label :: { color :: Color, maxWidth :: Number }
     , value :: { color :: Color, maxWidth :: Number }
     , connector :: Connector
+    , offset :: Pos
     , direction :: SlotDirection
     , info :: SlotInfoVisibility
     , strokeWidth :: Number
