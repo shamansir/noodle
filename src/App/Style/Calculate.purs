@@ -62,8 +62,8 @@ connectorRadius (DoubleCircle _ maxRadius) = Just maxRadius
 
 
 slotArea :: forall d. GetSize d
-slotArea _ s Vertical _ = V2.w (connectorSize s.slot.connector) + slotPadding + s.slot.label.maxWidth <+> 20.0 -- TODO
-slotArea _ s Horizontal _ = V2.h (connectorSize s.slot.connector) + slotPadding + s.slot.label.maxWidth <+> 20.0 -- TODO
+slotArea _ s Vertical _ = V2.w (connectorSize s.slot.connector + s.slot.offset) + slotPadding + s.slot.label.maxWidth <+> 20.0 -- TODO
+slotArea _ s Horizontal _ = V2.h (connectorSize s.slot.connector + s.slot.offset) + slotPadding + s.slot.label.maxWidth <+> 20.0 -- TODO
 
 
 inletConnectorPos :: forall d. GetPosByIdx d
@@ -112,25 +112,27 @@ inletRectPos f s Vertical node idx =
     (
         offsetX s.slot.direction
         <+>
-        (titleHeight + outerHeight * toNumber idx)
+        (offsetY + outerHeight * toNumber idx)
     )
     where
         offsetX Inside = V2.w s.body.margin - V2.w (connectorSize s.slot.connector)
         offsetX Between = V2.w (slotArea f s Vertical node) / 2.0
         offsetX Outside = 0.0
         outerHeight = V2.h $ slotArea f s Vertical node
-        titleHeight = if f.hasTitle then V2.h $ titleSize f s Vertical node else 0.0
+        sizeF' = sizeF f s Vertical node
+        offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF' hasOutlets s.order
 inletRectPos f s Horizontal node idx =
     s.body.margin +
     s.slot.offset +
     (
-        (titleWidth + outerWidth * toNumber idx)
+        (offsetX + outerWidth * toNumber idx)
         <+>
         0.0
     )
     where
         outerWidth = V2.w $ slotArea f s Horizontal node
-        titleWidth = if f.hasTitle then V2.w $ titleSize f s Horizontal node else 0.0
+        sizeF' = sizeF f s Vertical node
+        offsetX = fromMaybe 0.0 $ Order.sizeBefore sizeF' hasOutlets s.order
 
 
 inletTextPos :: forall d. GetPosByIdx d
@@ -181,7 +183,7 @@ outletRectPos f s Vertical node idx =
     (
         (bodyWidth + offsetX s.slot.direction)
         <+>
-        (titleHeight + (outerHeight / 2.0) + (outerHeight * toNumber idx))
+        (offsetY + (outerHeight / 2.0) + (outerHeight * toNumber idx))
     )
     where
         bodyWidth = s.body.size
@@ -189,7 +191,8 @@ outletRectPos f s Vertical node idx =
         offsetX Inside = -V2.w $ slotArea f s Vertical node
         offsetX Between = 0.0 -- V2.w $ (slotArea slot flow </> V2.vv 2.0) - V2.vv V2.w (connectorSize slot.connector)
         offsetX Outside = -V2.w (connectorSize s.slot.connector) - slotPadding
-        titleHeight = if f.hasTitle then V2.h $ titleSize f s Vertical node else 0.0
+        sizeF' = sizeF f s Vertical node
+        offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF' hasOutlets s.order
 outletRectPos f s Horizontal node idx =
     0.0 <+> toNumber idx
 
@@ -233,13 +236,19 @@ sizeF f s flow node =
     let
         inletsCount /\ outletsCount = Node.dimensions node
         sizeOf Title = if f.hasTitle then V2.h $ titleSize f s flow node else 0.0
-        sizeOf (UserBody n) = n
+        sizeOf (UserBody n) = if f.customBody then n else 0.0
         sizeOf OnlyInlets = toNumber inletsCount * V2.h (slotArea f s flow node)
         sizeOf OnlyOutlets = toNumber outletsCount * V2.h (slotArea f s flow node)
         sizeOf InletsAndOutlets = toNumber (max inletsCount outletsCount) * V2.h (slotArea f s flow node)
         sizeOf UserBodyBetweenSlots = sizeOf InletsAndOutlets
         sizeOf (UserBodyBetweenSlotsMin n) =
-            if sizeOf InletsAndOutlets > n then sizeOf InletsAndOutlets else n
+            if f.customBody
+                then
+                    if sizeOf InletsAndOutlets > n
+                        then sizeOf InletsAndOutlets
+                        else n
+                else 0.0
+
     in sizeOf
 
 

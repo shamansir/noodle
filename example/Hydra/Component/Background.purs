@@ -11,6 +11,7 @@ import Data.Vec2 as V2
 
 import Hydra (Hydra)
 import Hydra.Engine as Hydra
+import App.Style.Hydra.Background (bg)
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -47,15 +48,12 @@ render :: forall m. State -> H.ComponentHTML Action () m
 render { size } =
     HS.foreignObject
         [ HSA.x 0.0, HSA.y 0.0, HSA.width $ V2.w size, HSA.height $ V2.h size
-        --, HP.style ""
-        -- , HP.style { zIndex: -10000.0, position: absolute }
-        -- , HSA.style
         , HSA.id "hydra-holder"
         ]
         [
             HH.canvas
                 [ HP.id canvasId
-                , HP.style "width: 100%; height: 100%;background-color: rgb(34,34,42);"
+                , HP.style $ "width: 100%; height: 100%;background-color: " <> (HSA.printColor $ Just bg.fill) <> ";"
                 ]
         ]
 

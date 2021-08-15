@@ -9,7 +9,7 @@ import Data.Vec2 ((<+>))
 title :: TitleStyle
 title =
     { mode : OutsideBody
-    , background : RGBA 33 33 99 0.5
+    , background : RGBA 0 0 0 0.0
     , fill : RGB 255 255 255
     , size : 20.0
     , padding : 3.0 <+> 10.0

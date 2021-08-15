@@ -5,4 +5,4 @@ import Halogen.Svg.Attributes (Color(..))
 import App.Style (BackgroundStyle)
 
 bg :: BackgroundStyle
-bg = { fill : RGB 34 34 42 }
+bg = { fill : RGB 257 172 64 }

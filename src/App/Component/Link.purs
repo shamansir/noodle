@@ -58,3 +58,15 @@ component =
         , render
         , eval: H.mkEval H.defaultEval { handleAction = handleAction }
         }
+
+
+{-
+function bezierByH(x0, y0, x1, y1) {
+    var mx = x0 + (x1 - x0) / 2;
+
+    return 'M' + x0 + ' ' + y0 + ' '
+         + 'C' + mx + ' ' + y0 + ' '
+               + mx + ' ' + y1 + ' '
+               + x1 + ' ' + y1;
+}
+-}

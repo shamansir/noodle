@@ -23,7 +23,26 @@ import App.Style.Color as Color
 
 
 ui :: forall m. MonadEffect m => UI m Hydra
-ui = { background, node, markNode, markChannel, flags : const $ Style.defaultFlags }
+ui =
+    { background, node, markNode, markChannel
+    , flags :
+        \family ->
+            { customBody : hasCustomBody family
+            , hasTitle : hasTitle family
+            , hasRemoveButton : true
+            }
+    }
+
+
+hasTitle :: Node.Family -> Boolean
+hasTitle _ = true
+
+
+hasCustomBody :: Node.Family -> Boolean
+hasCustomBody "num" = true
+hasCustomBody "osc" = true
+hasCustomBody "color" = true
+hasCustomBody _ = false
 
 
 background :: forall m. MonadEffect m => Maybe (UI.BgComponent m Hydra)
