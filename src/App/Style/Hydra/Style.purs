@@ -25,7 +25,7 @@ import Data.Set.Ordered as OSet
 style :: Style
 style =
     { order :
-        Order.fromFoldable
+        Order.make
             [ Title, UserBody 55.0, OnlyInlets, OnlyOutlets ]
     , bg :
         { fill : colors.background

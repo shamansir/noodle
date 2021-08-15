@@ -44,6 +44,8 @@ data Bin2 n a
 
 -- type DeepBin2 n a = Bin2 n { value :: a, inner :: Maybe (DeepBin2 n a) }
 
+-- TODO: IsLayout instance
+
 
 newtype Item n a = Item (Size_ n /\ a)
 

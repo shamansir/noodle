@@ -3,12 +3,11 @@ module App.Style where
 
 import Prelude (class Show)
 
-import App.Style.Order
+import App.Style.Order as O
 import App.Style.Color (Color)
 import App.Style.Color as Color
 
 import Data.Set (Set)
-import Data.Set.Ordered (OSet)
 
 import Data.Vec2 (Size_, Size, Pos, (<+>))
 import Data.Tuple.Nested ((/\), type (/\))
@@ -145,10 +144,13 @@ type Style =
     , patchTab :: PatchTabStyle
     , nodeTab :: NodeTabStyle
 
-    , order :: Order NodePart
+    , order :: Order
     , supportedFlows :: Set NodeFlow
     , font :: { size :: Number, family :: Array String }
     }
+
+
+type Order = O.Order NodePart
 
 
 -- FIXME: get rid of, it's just a helper

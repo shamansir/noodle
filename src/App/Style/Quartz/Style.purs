@@ -23,7 +23,7 @@ import App.Style.Quartz.Units (units)
 style :: Style
 style =
     { order :
-        Order.fromFoldable [ Title, UserBodyBetweenSlots ]
+        Order.make [ Title, UserBodyBetweenSlots ]
     , bg :
         { fill : colors.background
         }

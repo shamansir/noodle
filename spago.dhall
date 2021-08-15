@@ -48,6 +48,7 @@ to generate this file without the comments in this block.
   , "strings"
   , "tuples"
   , "typelevel"
+  , "unfoldable"
   , "web-events"
   , "web-html"
   , "web-uievents"

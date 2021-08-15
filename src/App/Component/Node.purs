@@ -96,8 +96,8 @@ render { node, name, style, flow, ui } =
 
         f = flagsFor node
 
-        ( slotAreaWidth /\ slotAreaHeight ) = V2.toTuple $ Calc.slotArea f style flow
-        ( titleWidth /\ titleHeight ) = V2.toTuple $ Calc.titleSize f style flow
+        ( slotAreaWidth /\ slotAreaHeight ) = V2.toTuple $ Calc.slotArea f style flow node
+        ( titleWidth /\ titleHeight ) = V2.toTuple $ Calc.titleSize f style flow node
 
         ( outerWidth /\ outerHeight ) = node # Calc.nodeBounds f style flow # V2.toTuple
         ( innerWidth /\ innerHeight ) = node # Calc.bodySize f style flow # V2.toTuple
@@ -107,7 +107,7 @@ render { node, name, style, flow, ui } =
 
         name' =
             HS.g
-                [ HSA.translateTo' $ Calc.titlePos f style flow
+                [ HSA.translateTo' $ Calc.titlePos f style flow node
                 , HSA.classes $ CS.nodeTitle <> CS.nodeTitleFocus
                 ]
                 [ HS.rect
@@ -116,7 +116,7 @@ render { node, name, style, flow, ui } =
                     , HSA.height titleHeight
                     ]
                 , HS.g
-                    [ HSA.translateTo' $ Calc.titleTextPos f style flow
+                    [ HSA.translateTo' $ Calc.titleTextPos f style flow node
                     ]
                     [ HS.text
                         [ HSA.fill $ (ui.markNode =<< Node.family node) <|> Just style.title.fill ]
@@ -162,9 +162,9 @@ render { node, name, style, flow, ui } =
         inlet' idx (name /\ shape) =
             slot
                 (CS.inlet name)
-                (Calc.inletRectPos f style flow idx)
-                (Calc.inletConnectorPos f style flow idx)
-                (Calc.inletTextPos f style flow idx)
+                (Calc.inletRectPos f style flow node idx)
+                (Calc.inletConnectorPos f style flow node idx)
+                (Calc.inletTextPos f style flow node idx)
                 (name /\ shape)
 
         outlets' =
@@ -174,14 +174,14 @@ render { node, name, style, flow, ui } =
         outlet' idx (name /\ shape) =
             slot
                 (CS.outlet name)
-                (Calc.outletRectPos f style flow idx)
-                (Calc.outletConnectorPos f style flow idx)
-                (Calc.outletTextPos f style flow idx)
+                (Calc.outletRectPos f style flow node idx)
+                (Calc.outletConnectorPos f style flow node idx)
+                (Calc.outletTextPos f style flow node idx)
                 (name /\ shape)
 
         body =
             HS.g
-                [ HSA.translateTo' $ Calc.bodyPos f style flow ]
+                [ HSA.translateTo' $ Calc.bodyPos f style flow node ]
                 [ HS.rect
                     [ HSA.fill $ Just style.body.fill
                     , HSA.stroke $ Just style.body.stroke
@@ -193,7 +193,7 @@ render { node, name, style, flow, ui } =
                 case Node.family node >>= ui.node of
                     Just userNodeBody ->
                         HS.g
-                            [ HSA.translateTo' $ Calc.bodyInnerOffset f style flow ]
+                            [ HSA.translateTo' $ Calc.bodyInnerOffset f style flow node ]
                             [ HH.slot _body name userNodeBody { node } SendData ]
                     Nothing ->
                         HS.g [ ] [ ]
@@ -201,7 +201,7 @@ render { node, name, style, flow, ui } =
 
         shadow =
             HS.g
-                [ HSA.translateTo' $ Calc.shadowPos f style flow ]
+                [ HSA.translateTo' $ Calc.shadowPos f style flow node ]
                 [ HS.rect
                     [ HSA.fill $ Just $ Color.named "black" -- style.body.shadow
                     , HSA.stroke $ Just $ Color.named "black"
@@ -252,18 +252,18 @@ data WhereInside
 whereInside :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Node d -> Pos -> Maybe WhereInside
 whereInside ui style flow node pos =
     if V2.inside'
-        (pos - Calc.titlePos f style flow)
-        (Calc.titleSize f style flow) then
+        (pos - Calc.titlePos f style flow node)
+        (Calc.titleSize f style flow node) then
         Just Title
     else
         let inlets = Node.inlets node <#> fst # Array.mapWithIndex (/\)
             outlets = Node.outlets node <#> fst # Array.mapWithIndex (/\)
             isInSlot sl fn (idx /\ slotName) =
-                if V2.inside pos (fn idx /\ Calc.slotArea f style flow)
+                if V2.inside pos (fn idx /\ Calc.slotArea f style flow node)
                     then Just $ sl slotName
                     else Nothing
-            testInlets = Array.findMap (isInSlot Inlet $ Calc.inletRectPos f style flow) inlets
-            testOutlets = Array.findMap (isInSlot Outlet $ Calc.outletRectPos f style flow) outlets
+            testInlets = Array.findMap (isInSlot Inlet $ Calc.inletRectPos f style flow node) inlets
+            testOutlets = Array.findMap (isInSlot Outlet $ Calc.outletRectPos f style flow node) outlets
         in testOutlets <|> testInlets
     where
         f = UI.flagsFor ui node
@@ -281,6 +281,7 @@ inletConnectorPos ui style flow inletId node =
                 (UI.flagsFor ui node)
                 style
                 flow
+                node
 
 
 outletConnectorPos :: forall m d. UI m d -> Style -> NodeFlow -> OutletId -> Noodle.Node d -> Maybe Pos
@@ -290,3 +291,4 @@ outletConnectorPos ui style flow outletId node =
                 (UI.flagsFor ui node)
                 style
                 flow
+                node

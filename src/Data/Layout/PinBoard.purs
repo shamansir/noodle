@@ -19,6 +19,9 @@ newtype Pin a
 type PinBoard a = Array (Pin a)
 
 
+-- TODO: IsPinnableLayout instance
+
+
 -- it's not the fair `Eq`, so we don't provide `Eq` typeclass instance here
 compareByItem :: forall a. Eq a => Pin a -> Pin a -> Boolean
 compareByItem a b = get a == get b
