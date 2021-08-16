@@ -16,6 +16,7 @@ import Noodle.Node.Shape (InletId, OutletId)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.Svg.Elements as HS
+import Halogen.Svg.Elements.None as HS
 import Halogen.Svg.Attributes as HSA
 
 

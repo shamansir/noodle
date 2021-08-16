@@ -55,6 +55,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
 import Halogen.Svg.Elements as HS
+import Halogen.Svg.Elements.None as HS
 
 import Web.HTML (window)
 import Web.HTML.Window (document)
@@ -200,7 +201,7 @@ render state =
                 bounds = boundsOf state.ui state.style state.flow state.patch name # Maybe.fromMaybe zero
             in case assocNode ( name /\ (pos - nodeOffset - bsOffset - state.offset) /\ bounds ) of
                 Just n -> node' n
-                Nothing -> HS.g [] []
+                Nothing -> HS.none
         existingLinks =
             HS.g [] $ closedLink <$> (Array.fromFoldable $ Patch.links state.patch)
         linkEndsPositions (srcNodeName /\ outlet) (dstNodeName /\ inlet) =
@@ -225,7 +226,7 @@ render state =
                         , HSA.y1 y1, HSA.y2 y2
                         , HSA.strokeWidth 3.0, HSA.stroke $ Just $ Style.white
                         ]
-                Nothing -> HS.g [] []
+                Nothing -> HS.none
         findNodePosition nodeName =
             (R2.find nodeName state.layout <#> fst)
             <|> (PB.find nodeName state.pinned <#> fst)
@@ -244,16 +245,16 @@ render state =
                         , HSA.y1 y1, HSA.y2 y2
                         , HSA.strokeWidth 3.0, HSA.stroke $ Just $ Style.white
                         ]
-                Nothing -> HS.g [] []
+                Nothing -> HS.none
         whatIsBeingDragged (Mouse.StartDrag pos (Node node /\ offset)) =
-            HS.g [] []
+            HS.none
             --floatingNode pos (node /\ offset)
         whatIsBeingDragged (Mouse.Dragging _ pos (Node node /\ offset)) =
             floatingNode pos (node /\ offset)
         whatIsBeingDragged (Mouse.Dragging _ pos (Outlet outlet /\ _)) =
             openLink pos outlet
         whatIsBeingDragged _ =
-            HS.g [] []
+            HS.none
 
 
 handleAction :: forall output m d. MonadEffect m => Action m d -> H.HalogenM (State m d) (Action m d) Slots output m Unit

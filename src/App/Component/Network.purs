@@ -30,6 +30,7 @@ import App.Svg.Extra as HSA
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.Svg.Elements as HS
+import Halogen.Svg.Elements.None as HS
 import Halogen.Svg.Attributes as HSA
 import Halogen.HTML.CSS as CSS
 import CSS as CSS
@@ -123,7 +124,7 @@ render (s@{ network, toolkit, style, flow }) =
                     ]
                 , case s.ui.background of
                     Nothing ->
-                        HS.g [] []
+                        HS.none
                     Just userBgComp ->
                         HH.slot _background unit userBgComp { network, size : s.windowSize } absurd
                 ]

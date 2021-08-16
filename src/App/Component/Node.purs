@@ -34,6 +34,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.Svg.Elements as HS
+import Halogen.Svg.Elements.None as HS
 import Halogen.Svg.Attributes as HSA
 
 import App.Toolkit.UI (UI)
@@ -119,7 +120,7 @@ render { node, name, style, flow, ui } =
                                 , HSA.height titleHeight
                                 ]
                         OutsideBody ->
-                            HS.g [] []
+                            HS.none
                     , HS.g
                         [ HSA.translateTo' $ Calc.titleTextPos f style flow node
                         ]
@@ -128,7 +129,7 @@ render { node, name, style, flow, ui } =
                             [ HH.text name ]
                         ]
                     ]
-            else HS.g [] []
+            else HS.none
 
         slot classes rectPos pos textPos (name /\ shape) =
             HS.g
@@ -202,7 +203,7 @@ render { node, name, style, flow, ui } =
                             [ HSA.translateTo' $ Calc.bodyInnerOffset f style flow node ]
                             [ HH.slot _body name userNodeBody { node } SendData ]
                     Nothing ->
-                        HS.g [ ] [ ]
+                        HS.none
                 ]
 
         shadow =
