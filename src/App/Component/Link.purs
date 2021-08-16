@@ -1,11 +1,12 @@
 module App.Component.Link where
 
 
-import Prelude (identity)
+import Prelude
 
 import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\))
+import Data.Vec2 (Pos)
 
 import Noodle.Network as Noodle
 
@@ -15,18 +16,30 @@ import Noodle.Node.Shape (InletId, OutletId)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.Svg.Elements as HS
+import Halogen.Svg.Attributes as HSA
+
+
+import App.Style (LinkStyle)
+
+
+type Slot id = forall query. H.Slot query Void id
 
 
 type Input =
-    { outlet :: Maybe (Node.Id /\ InletId)
-    , inlet :: Maybe (Node.Id /\ OutletId)
+    { outlet :: Node.Id /\ OutletId
+    , inlet :: Maybe (Node.Id /\ InletId)
+    , style :: LinkStyle
+    , startPos :: Pos
+    , endPos :: Pos
     }
 
 
 type State =
-    { outlet :: Maybe (Node.Id /\ InletId)
-    , inlet :: Maybe (Node.Id /\ OutletId)
-    -- TODO: positions, etc
+    { outlet :: Node.Id /\ OutletId
+    , inlet :: Maybe (Node.Id /\ InletId)
+    , style :: LinkStyle
+    , startPos :: Pos
+    , endPos :: Pos
     }
 
 
@@ -60,13 +73,9 @@ component =
         }
 
 
-{-
-function bezierByH(x0, y0, x1, y1) {
-    var mx = x0 + (x1 - x0) / 2;
-
-    return 'M' + x0 + ' ' + y0 + ' '
-         + 'C' + mx + ' ' + y0 + ' '
-               + mx + ' ' + y1 + ' '
-               + x1 + ' ' + y1;
-}
--}
+bezierBy :: { x0 :: Number, y0 :: Number, x1 :: Number, y1 :: Number } -> Array HSA.PathCommand
+bezierBy { x0, y0, x1, y1 } =
+    [ HSA.m HSA.Abs x0 y0
+    , HSA.c HSA.Abs mx y0 mx y1 x1 y1
+    ]
+    where mx = x0 + (x1 - x0) / 2.0

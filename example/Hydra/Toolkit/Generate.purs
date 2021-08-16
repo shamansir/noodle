@@ -47,7 +47,7 @@ byKind Geom = [ "rotate", "scale", "pixelate", "repeat", "repeat-x", "repeat-y",
 byKind Color = [ "posterize", "shift", "invert", "contrast", "brightness", "luma", "tresh"
                , "color", "saturate", "hue", "colorama" ]
 byKind Blend = [ "add", "layer", "blend", "mult", "diff", "mask" ]
-byKind Mod = [ "mod-repeat", "mod-repeat-x", "mod-repeat-y", "mod-kaleid", "mod-scroll-x", "mod-scroll-y", "moduldate"
+byKind Mod = [ "mod-repeat", "mod-repeat-x", "mod-repeat-y", "mod-kaleid", "mod-scroll-x", "mod-scroll-y", "modulate"
              , "mod-scale", "mod-pixelate", "mod-rotate", "mod-hue" ]
 
 

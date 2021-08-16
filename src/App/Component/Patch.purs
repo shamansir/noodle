@@ -60,14 +60,19 @@ import Web.HTML (window)
 import Web.HTML.Window (document)
 import Web.UIEvent.MouseEvent as ME
 
+import App.Component.Link as Link
+
 
 type Slot id = forall query. H.Slot query Void id
 
 
-type Slots = ( node :: NodeC.Slot Node.Id )
+type Slots = ( node :: NodeC.Slot Node.Id, link :: Link.Slot Int )
 
 
 _node = Proxy :: Proxy "node"
+
+
+_link = Proxy :: Proxy "link"
 
 
 data Subject
@@ -225,7 +230,6 @@ render state =
             (R2.find nodeName state.layout <#> fst)
             <|> (PB.find nodeName state.pinned <#> fst)
         openLink pos (nodeName /\ outlet) =
-            -- FIXME: too much logic for a renderer
             case (/\)
                     <$> (Patch.findNode nodeName state.patch
                             >>= NodeC.outletConnectorPos state.ui state.style state.flow outlet

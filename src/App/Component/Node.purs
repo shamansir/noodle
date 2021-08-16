@@ -24,7 +24,7 @@ import Noodle.Node as Node
 import Noodle.Channel.Shape as Ch
 import Noodle.Node.Shape (InletId, OutletId)
 
-import App.Style (Flags, Style, NodeFlow(..), transparent)
+import App.Style (Flags, Style, NodeFlow(..), transparent, TitleMode(..))
 import App.Style (Flags, defaultFlags) as Style
 import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
@@ -106,23 +106,29 @@ render { node, name, style, flow, ui } =
         outlets = Node.outlets node
 
         name' =
-            HS.g
-                [ HSA.translateTo' $ Calc.titlePos f style flow node
-                , HSA.classes $ CS.nodeTitle <> CS.nodeTitleFocus
-                ]
-                [ HS.rect
-                    [ HSA.fill $ Just style.title.background
-                    , HSA.width titleWidth
-                    , HSA.height titleHeight
+            if f.hasTitle then
+                HS.g
+                    [ HSA.translateTo' $ Calc.titlePos f style flow node
+                    , HSA.classes $ CS.nodeTitle <> CS.nodeTitleFocus
                     ]
-                , HS.g
-                    [ HSA.translateTo' $ Calc.titleTextPos f style flow node
+                    [ case style.title.mode of
+                        InsideBody ->
+                             HS.rect
+                                [ HSA.fill $ Just style.title.background
+                                , HSA.width titleWidth
+                                , HSA.height titleHeight
+                                ]
+                        OutsideBody ->
+                            HS.g [] []
+                    , HS.g
+                        [ HSA.translateTo' $ Calc.titleTextPos f style flow node
+                        ]
+                        [ HS.text
+                            [ HSA.fill $ (ui.markNode =<< Node.family node) <|> Just style.title.fill ]
+                            [ HH.text name ]
+                        ]
                     ]
-                    [ HS.text
-                        [ HSA.fill $ (ui.markNode =<< Node.family node) <|> Just style.title.fill ]
-                        [ HH.text name ]
-                    ]
-                ]
+            else HS.g [] []
 
         slot classes rectPos pos textPos (name /\ shape) =
             HS.g

@@ -79,8 +79,8 @@ inletConnectorPos f s Vertical node idx =
         )
     )
     where
-        sizeF' = sizeF f s Vertical node
-        offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF' hasInlets s.order
+        sizeF_ = sizeF' f s Vertical node
+        offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF_ hasInlets s.order
         outerHeight = V2.h $ slotArea f s Vertical node
         connectorOffsetX Inside = 0.0 -- V2.w $ slotArea slot flow
         connectorOffsetX Between = 0.0 -- V2.w $ (slotArea slot flow </> V2.vv 2.0) - V2.vv V2.w (connectorSize slot.connector)
@@ -119,8 +119,8 @@ inletRectPos f s Vertical node idx =
         offsetX Between = V2.w (slotArea f s Vertical node) / 2.0
         offsetX Outside = 0.0
         outerHeight = V2.h $ slotArea f s Vertical node
-        sizeF' = sizeF f s Vertical node
-        offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF' hasOutlets s.order
+        sizeF_ = sizeF' f s Vertical node
+        offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF_ hasInlets s.order
 inletRectPos f s Horizontal node idx =
     s.body.margin +
     s.slot.offset +
@@ -131,8 +131,8 @@ inletRectPos f s Horizontal node idx =
     )
     where
         outerWidth = V2.w $ slotArea f s Horizontal node
-        sizeF' = sizeF f s Vertical node
-        offsetX = fromMaybe 0.0 $ Order.sizeBefore sizeF' hasOutlets s.order
+        sizeF_ = sizeF' f s Vertical node
+        offsetX = fromMaybe 0.0 $ Order.sizeBefore sizeF_ hasInlets s.order
 
 
 inletTextPos :: forall d. GetPosByIdx d
@@ -160,8 +160,8 @@ outletConnectorPos f s Vertical node idx =
         connectorOffsetX Inside = 0.0 -- V2.w $ slotArea slot flow
         connectorOffsetX Between = 0.0 -- V2.w $ (slotArea slot flow </> V2.vv 2.0) - V2.vv V2.w (connectorSize slot.connector)
         connectorOffsetX Outside = 0.0
-        sizeF' = sizeF f s Vertical node
-        offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF' hasOutlets s.order
+        sizeF_ = sizeF' f s Vertical node
+        offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF_ hasOutlets s.order
 outletConnectorPos f s Horizontal node idx =
     0.0 <+> toNumber idx
 
@@ -191,8 +191,8 @@ outletRectPos f s Vertical node idx =
         offsetX Inside = -V2.w $ slotArea f s Vertical node
         offsetX Between = 0.0 -- V2.w $ (slotArea slot flow </> V2.vv 2.0) - V2.vv V2.w (connectorSize slot.connector)
         offsetX Outside = -V2.w (connectorSize s.slot.connector) - slotPadding
-        sizeF' = sizeF f s Vertical node
-        offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF' hasOutlets s.order
+        sizeF_ = sizeF' f s Vertical node
+        offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF_ hasOutlets s.order
 outletRectPos f s Horizontal node idx =
     0.0 <+> toNumber idx
 
@@ -219,7 +219,15 @@ titleSize _ s Horizontal _ =
 
 
 bodyPos :: forall d. GetPos d
-bodyPos _ s _ _ = s.body.margin
+bodyPos f s flow _ =
+    if f.hasTitle then
+        case s.title.mode of
+            InsideBody -> s.body.margin
+            OutsideBody -> s.body.margin
+                + case flow of
+                    Vertical -> V2.h' s.title.size
+                    Horizontal -> V2.w' s.title.size
+    else 0.0 <+> 0.0
 
 
 nodeBounds :: forall d. GetSize d
@@ -231,11 +239,16 @@ nodeBounds f s flow node =
         bodyWidth /\ bodyHeight = V2.toTuple $ bodySize f s flow node
 
 
-sizeF :: forall d. Flags -> Style -> NodeFlow -> Node d -> Order.SizeF NodePart
+sizeF :: forall d. GetSizeF d NodePart
 sizeF f s flow node =
     let
         inletsCount /\ outletsCount = Node.dimensions node
-        sizeOf Title = if f.hasTitle then V2.h $ titleSize f s flow node else 0.0
+        sizeOf Title =
+            if f.hasTitle then
+                case s.title.mode of
+                    InsideBody -> V2.h $ titleSize f s flow node
+                    OutsideBody -> 0.0
+            else 0.0
         sizeOf (UserBody n) = if f.customBody then n else 0.0
         sizeOf OnlyInlets = toNumber inletsCount * V2.h (slotArea f s flow node)
         sizeOf OnlyOutlets = toNumber outletsCount * V2.h (slotArea f s flow node)
@@ -248,25 +261,49 @@ sizeF f s flow node =
                         then sizeOf InletsAndOutlets
                         else n
                 else 0.0
+    in sizeOf
 
+
+sizeF' :: forall d. GetSizeF d NodePart
+sizeF' f s flow node =
+    let
+        inletsCount /\ outletsCount = Node.dimensions node
+        sizeOf Title =
+            if f.hasTitle then
+                case s.title.mode of
+                    InsideBody -> V2.h $ titleSize f s flow node
+                    OutsideBody -> V2.h $ titleSize f s flow node
+            else 0.0
+        sizeOf (UserBody n) = if f.customBody then n else 0.0
+        sizeOf OnlyInlets = toNumber inletsCount * V2.h (slotArea f s flow node)
+        sizeOf OnlyOutlets = toNumber outletsCount * V2.h (slotArea f s flow node)
+        sizeOf InletsAndOutlets = toNumber (max inletsCount outletsCount) * V2.h (slotArea f s flow node)
+        sizeOf UserBodyBetweenSlots = sizeOf InletsAndOutlets
+        sizeOf (UserBodyBetweenSlotsMin n) =
+            if f.customBody
+                then
+                    if sizeOf InletsAndOutlets > n
+                        then sizeOf InletsAndOutlets
+                        else n
+                else 0.0
     in sizeOf
 
 
 bodySize :: forall d. GetSize d
 bodySize f s flow node =
     let
-        sizeF' = sizeF f s flow node
+        sizeF_ = sizeF f s flow node
     in
         case flow of
             Vertical ->
                 bodyWidth <+> bodyHeight
                 where
                     bodyWidth = s.body.size
-                    bodyHeight = Order.sizeBy sizeF' s.order
+                    bodyHeight = Order.sizeBy sizeF_ s.order
             Horizontal ->
                 bodyWidth <+> bodyHeight
                 where
-                    bodyWidth = Order.sizeBy sizeF' s.order
+                    bodyWidth = Order.sizeBy sizeF_ s.order
                     bodyHeight = s.body.size
 
 
@@ -278,6 +315,14 @@ shadowPos f s flow node =
 
 bodyInnerOffset :: forall d. GetPos d
 bodyInnerOffset f s Vertical node =
-    if f.hasTitle then V2.zh $ titleSize f s Vertical node else zero
+    if f.hasTitle then
+        case s.title.mode of
+            InsideBody -> V2.zh $ titleSize f s Vertical node
+            OutsideBody -> zero
+     else zero
 bodyInnerOffset f s Horizontal node =
-    if f.hasTitle then V2.wz $ titleSize f s Horizontal node else zero
+    if f.hasTitle then
+        case s.title.mode of
+            InsideBody -> V2.wz $ titleSize f s Horizontal node
+            OutsideBody -> zero
+     else zero
