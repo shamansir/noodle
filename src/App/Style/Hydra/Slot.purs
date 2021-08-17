@@ -9,7 +9,7 @@ import Data.Vec2 ((<+>))
 slot :: SlotStyle
 slot =
     { connector : Circle 5.0
-    , offset : 8.0 <+> 0.0
+    , offset : 10.0 <+> 0.0
     , direction : Inside
     , info : Always
     , strokeWidth : 1.5

@@ -9,7 +9,7 @@ import Data.Vec2 ((<+>))
 body :: BodyStyle
 body =
     { shadow : Solid { offset : 5.0 <+> 5.0 }
-    , size : 100.0
+    , size : 110.0
     , margin : 50.0 <+> 10.0
     , fill : RGBA 0 0 0 0.9
     , stroke : RGB 0 0 0
