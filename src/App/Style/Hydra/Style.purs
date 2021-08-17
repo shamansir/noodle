@@ -20,8 +20,7 @@ style :: Style
 style =
     { order :
         Order.make
-            [ Title, UserBodyBetweenSlots ]
-            -- [ Title, UserBody 55.0, OnlyInlets, OnlyOutlets ]
+            [ Title, UserBody 55.0, OnlyInlets, OnlyOutlets ]
     , bg
     , body
     , slot

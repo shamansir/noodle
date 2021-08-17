@@ -45,7 +45,7 @@ import Type.Proxy (Proxy(..))
 
 
 debug :: Boolean
-debug = true
+debug = false
 
 
 type Slot id = forall query. H.Slot query Void id
