@@ -11,6 +11,11 @@ text {
     text-transform: uppercase;
 }
 
+.node-title-focus.debug {
+    stroke: red;
+    stroke-width: 2px;
+}
+
 
 .node-vert .dir-outside .inlet text {
     text-anchor: end;
@@ -44,6 +49,11 @@ text {
 
 .slot-focus {
     cursor: pointer;
+}
+
+.slot-focus.debug {
+    stroke: red;
+    stroke-width: 2px;
 }
 
 .node-title-focus {

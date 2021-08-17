@@ -44,6 +44,10 @@ import App.Svg.Extra (translateTo') as HSA
 import Type.Proxy (Proxy(..))
 
 
+debug :: Boolean
+debug = true
+
+
 type Slot id = forall query. H.Slot query Void id
 
 
@@ -110,7 +114,7 @@ render { node, name, style, flow, ui } =
             if f.hasTitle then
                 HS.g
                     [ HSA.translateTo' $ Calc.titlePos f style flow node
-                    , HSA.classes $ CS.nodeTitle <> CS.nodeTitleFocus
+                    , HSA.classes $ CS.nodeTitle
                     ]
                     [ case style.title.mode of
                         InsideBody ->
@@ -128,6 +132,13 @@ render { node, name, style, flow, ui } =
                             [ HSA.fill $ (ui.markNode =<< Node.family node) <|> Just style.title.fill ]
                             [ HH.text name ]
                         ]
+                    , HS.rect
+                        [ HSA.classes $
+                            if not debug then CS.nodeTitleFocus else CS.nodeTitleFocusDebug
+                        , HSA.fill $ Just transparent
+                        , HSA.width titleWidth
+                        , HSA.height titleHeight
+                        ]
                     ]
             else HS.none
 
@@ -144,14 +155,17 @@ render { node, name, style, flow, ui } =
                         ]
                     ]
                 , HS.g
-                    [ HSA.translateTo' textPos ]
+                    [ HSA.translateTo' textPos
+                    , HSA.classes CS.slotIdLabel
+                    ]
                     [ HS.text
                         [ HSA.fill $ Just style.slot.label.color ]
                         [ HH.text name ]
                     ]
                 , HS.g
                     [ HSA.translateTo' rectPos
-                    , HSA.classes CS.slotFocusArea
+                    , HSA.classes
+                        $ if not debug then CS.slotFocusArea else CS.slotFocusAreaDebug
                     ]
                     [ HS.rect
                         [ {- HE.onClick

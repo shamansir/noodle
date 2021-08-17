@@ -29,6 +29,10 @@ nodeTitleFocus :: Array H.ClassName
 nodeTitleFocus = H.ClassName <$> [ "node-title-focus" ]
 
 
+nodeTitleFocusDebug :: Array H.ClassName
+nodeTitleFocusDebug = H.ClassName <$> [ "node-title-focus", "debug" ]
+
+
 nodeButton :: String -> Array H.ClassName
 nodeButton name = H.ClassName <$> [ "node-button", "node-tab-" <> name, "no-select" ]
 
@@ -60,5 +64,13 @@ nodes :: Array H.ClassName
 nodes = H.ClassName <$> [ "nodes" ]
 
 
+slotIdLabel :: Array H.ClassName
+slotIdLabel = H.ClassName <$> [ "slot-id-label" ]
+
+
 slotFocusArea :: Array H.ClassName
 slotFocusArea = H.ClassName <$> [ "slot-focus" ]
+
+
+slotFocusAreaDebug :: Array H.ClassName
+slotFocusAreaDebug = H.ClassName <$> [ "slot-focus", "debug" ]
