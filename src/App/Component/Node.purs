@@ -264,7 +264,7 @@ component =
 
 
 data WhereInside
-    = Title
+    = Header
     | Inlet InletId
     | Outlet OutletId
 
@@ -275,7 +275,7 @@ whereInside ui style flow node pos =
     if V2.inside'
         (pos - Calc.titlePos f style flow node)
         (Calc.titleSize f style flow node) then
-        Just Title
+        Just Header
     else
         let inlets = Node.inlets node <#> fst # Array.mapWithIndex (/\)
             outlets = Node.outlets node <#> fst # Array.mapWithIndex (/\)

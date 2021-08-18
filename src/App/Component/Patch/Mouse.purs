@@ -1,0 +1,75 @@
+module App.Component.Patch.Mouse where
+
+
+import Prelude
+
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Vec2 (Pos)
+import Data.Maybe (Maybe(..))
+
+import Noodle.Node as Node
+import Noodle.Node.Shape (InletId, OutletId)
+import Noodle.Patch (Patch)
+import Noodle.Patch as Patch
+
+import App.Mouse as Mouse
+
+import Web.UIEvent.MouseEvent as ME
+
+
+type Focusable = Clickable
+
+
+data Clickable
+    = Header Node.Id
+    | Inlet (Node.Id /\ InletId)
+    | Outlet (Node.Id /\ OutletId)
+
+
+data Draggable
+    = Node Node.Id
+    | Link (Node.Id /\ OutletId) (Maybe (Node.Id /\ InletId))
+
+
+type State = Mouse.State' (Pos /\ Focusable) (Pos /\ Clickable) (Pos /\ Draggable)
+
+
+-- apply = Mouse.apply' Just
+
+
+init :: State
+init = Mouse.init
+
+
+
+apply
+    :: (Pos -> Maybe (Pos /\ Focusable))
+    -> (Clickable -> Maybe Draggable)
+    -> (Draggable -> Maybe Focusable)
+    -> ME.MouseEvent
+    -> State
+    -> State
+apply pToF cToD dToF =
+    Mouse.apply'
+        pToF
+        Just
+        (\(pos /\ clickable) -> (/\) pos <$> cToD clickable)
+        Just
+        (\(pos /\ focusable) -> (/\) pos <$> dToF focusable)
+
+
+{- clickableToDraggable :: Clickable -> Maybe Draggable
+clickableToDraggable (Header nodeId) = Just $ Node nodeId
+clickableToDraggable (Inlet inletPath) = Nothing -- FIXME: could be link
+clickableToDraggable (Outlet outletPath) = Just $ LinkFrom outletPath -}
+
+
+instance showClickable :: Show Clickable where
+    show (Header n) = "header " <> n
+    show (Inlet path) = "inlet " <> show path
+    show (Outlet path) = "outlet " <> show path
+
+
+instance showDraggable :: Show Draggable where
+    show (Node n) = "node " <> n
+    show (Link outlet maybeInlet) = "link " <> show outlet <> " - " <> show maybeInlet

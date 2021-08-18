@@ -38,7 +38,7 @@ import Noodle.Toolkit as Toolkit
 import Noodle.Node.Shape (InletId, OutletId)
 
 import App.Emitters as Emitters
-import App.Mouse as Mouse
+import App.Mouse as M
 import App.Style (Style, NodeFlow, Flags)
 import App.Style as Style
 import App.Style.Calculate as Calc
@@ -62,6 +62,10 @@ import Web.HTML.Window (document)
 import Web.UIEvent.MouseEvent as ME
 
 import App.Component.Link as Link
+import App.Component.Patch.Mouse as Mouse
+import App.Component.Patch.Mouse (Focusable(..)) as Clickable
+import App.Component.Patch.Mouse (Clickable(..)) as Clickable
+import App.Component.Patch.Mouse (Draggable(..)) as Draggable
 
 
 type Slot id = forall query. H.Slot query Void id
@@ -74,12 +78,6 @@ _node = Proxy :: Proxy "node"
 
 
 _link = Proxy :: Proxy "link"
-
-
-data Subject
-    = Node Node.Id
-    | Inlet (Node.Id /\ InletId)
-    | Outlet (Node.Id /\ OutletId)
 
 
 type Input m d =
@@ -103,7 +101,7 @@ type State m d =
     , buttonStrip :: BS.ButtonStrip Node.Family
     , layout :: Bin2 Number Node.Id
     , pinned :: PinBoard Node.Id
-    , mouse :: Mouse.State (Subject /\ Pos)
+    , mouse :: Mouse.State
     , ui :: UI m d
     , area :: Size
     }
@@ -116,6 +114,7 @@ data Action m d
     | DetachNode Node.Id
     | PinNode Node.Id Pos
     | Connect Patch.OutletPath Patch.InletPath
+    | DisconnectTop Patch.InletPath
     | HandleMouse H.SubscriptionId ME.MouseEvent -- TODO Split mouse handing in different actions
 
 
@@ -244,15 +243,18 @@ render state =
                         [ HSA.x1 x1, HSA.x2 x2
                         , HSA.y1 y1, HSA.y2 y2
                         , HSA.strokeWidth 3.0, HSA.stroke $ Just $ Style.white
-                        ]
+                        ] -- TODO: move to `Link` component
                 Nothing -> HS.none
-        whatIsBeingDragged (Mouse.StartDrag pos (Node node /\ offset)) =
+        whatIsBeingDragged (M.StartDrag pos (offset /\ Draggable.Node node)) =
             HS.none
             --floatingNode pos (node /\ offset)
-        whatIsBeingDragged (Mouse.Dragging _ pos (Node node /\ offset)) =
+        whatIsBeingDragged (M.Dragging _ pos (offset /\ Draggable.Node node)) =
             floatingNode pos (node /\ offset)
-        whatIsBeingDragged (Mouse.Dragging _ pos (Outlet outlet /\ _)) =
+        whatIsBeingDragged (M.Dragging _ pos (offset /\ Draggable.Link outlet maybeInlet)) =
             openLink pos outlet
+        {- whatIsBeingDragged (Mouse.Dragging _ pos (Inlet inlet /\ pos)) =
+            HS.none -}
+            -- openLink pos outlet
         whatIsBeingDragged _ =
             HS.none
 
@@ -319,6 +321,15 @@ handleAction = case _ of
         nextPatch <- liftEffect $ Patch.connect outletPath inletPath state.patch
         H.modify_ (_ { patch = nextPatch })
 
+    DisconnectTop inletPath -> do
+        -- TODO: store `draggedLink outletPath` in state?
+        pure unit
+        {-
+        state <- H.get
+        nextPatch <- liftEffect $ Patch.connect outletPath inletPath state.patch
+        H.modify_ (_ { patch = nextPatch })
+        -}
+
     HandleMouse _ mouseEvent -> do
         state <- H.get
         let
@@ -330,19 +341,18 @@ handleAction = case _ of
                             (flip (-) mouseOffset
                             >>> findSubjectUnderPos state
                             )
+                    clickableToDraggable
+                    draggableToClickable
                     mouseEvent
         H.modify_ (_ { mouse = nextMouse })
         case nextMouse of
-            Mouse.StartDrag _ (Node nodeId /\ _) ->
+            M.StartDrag _ (_ /\ Draggable.Node nodeId) ->
                 handleAction $ DetachNode nodeId
-            Mouse.DropAt pos (Node nodeId /\ offset) ->
+            M.DropAt pos (offset /\ Draggable.Node nodeId) ->
                 handleAction $ PinNode nodeId $ pos - bsOffset - offset
-            _ ->
-                pure unit
-        case nextMouse of
-            Mouse.DropAt pos (Outlet outlet /\ _) ->
+            M.DropAt pos (_ /\ Draggable.Link outlet maybeInlet) ->
                 case findSubjectUnderPos state $ pos - mouseOffset of
-                    Just (Inlet inlet /\ _) -> do
+                    Just (_ /\ Clickable.Inlet inlet) -> do
                         handleAction $ Connect outlet inlet
                     _ ->
                         pure unit
@@ -350,11 +360,21 @@ handleAction = case _ of
                 pure unit
 
     where
-        liftSubject :: Node.Id -> NodeC.WhereInside -> Subject
-        liftSubject nodeId NodeC.Title = Node nodeId
-        liftSubject nodeId (NodeC.Inlet inletId) = Inlet $ nodeId /\ inletId
-        liftSubject nodeId (NodeC.Outlet outletId) = Outlet $ nodeId /\ outletId
-        findSubjectUnderPos :: State m d -> Pos -> Maybe (Subject /\ Pos)
+
+        clickableToDraggable :: Mouse.Clickable -> Maybe Mouse.Draggable
+        clickableToDraggable (Clickable.Header nodeId) = Just $ Draggable.Node nodeId
+        clickableToDraggable (Clickable.Inlet inletPath) = Nothing -- TODO;
+        clickableToDraggable (Clickable.Outlet outletPath) = Just $ Draggable.Link outletPath Nothing
+
+        draggableToClickable :: Mouse.Draggable -> Maybe Mouse.Clickable
+        draggableToClickable _ = Nothing
+
+        liftSubject :: Node.Id -> NodeC.WhereInside -> Mouse.Clickable
+        liftSubject nodeId NodeC.Header = Clickable.Header nodeId
+        liftSubject nodeId (NodeC.Inlet inletId) = Clickable.Inlet $ nodeId /\ inletId
+        liftSubject nodeId (NodeC.Outlet outletId) = Clickable.Outlet $ nodeId /\ outletId
+
+        findSubjectUnderPos :: State m d -> Pos -> Maybe (Pos /\ Mouse.Clickable)
         findSubjectUnderPos state pos =
             (findNodeInLayout state pos <|> findNodeInPinned state pos)
                 >>= \(nodeId /\ pos') ->
@@ -362,12 +382,15 @@ handleAction = case _ of
                             # Patch.findNode nodeId
                             >>= flip (whereInsideNode state) pos'
                             <#> liftSubject nodeId
-                            <#> flip (/\) pos'
+                            <#> (/\) pos'
+
         whereInsideNode :: State m d -> Noodle.Node d -> Pos -> Maybe NodeC.WhereInside
         whereInsideNode state =
             NodeC.whereInside state.ui state.style state.flow
+
         findNodeInLayout state =
             R2.sample state.layout
+
         findNodeInPinned state =
             flip PB.search state.pinned
 
@@ -402,9 +425,3 @@ boundsOf ui style flow patch nodeId =
     patch
         # Patch.findNode nodeId
         # map (NodeC.boundsOf ui style flow)
-
-
-instance showSubject :: Show Subject where
-    show (Node n) = "node " <> n
-    show (Inlet path) = "inlet " <> show path
-    show (Outlet path) = "outlet " <> show path
