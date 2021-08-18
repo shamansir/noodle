@@ -40,16 +40,16 @@ apply
     -> State a
     -> State a
 apply f =
-    apply' f Just Just Just Just
+    apply' f (const Just) (const Just) (const Just) (const Just)
 
 
 apply'
     :: forall focusable clickable draggable
      . (Pos -> Maybe focusable)
-    -> (focusable -> Maybe clickable)
-    -> (clickable -> Maybe draggable)
-    -> (clickable -> Maybe focusable)
-    -> (draggable -> Maybe focusable)
+    -> (Pos -> focusable -> Maybe clickable)
+    -> (Pos -> clickable -> Maybe draggable)
+    -> (Pos -> clickable -> Maybe focusable)
+    -> (Pos -> draggable -> Maybe focusable)
     -> ME.MouseEvent
     -> State' focusable clickable draggable
     -> State' focusable clickable draggable
@@ -59,19 +59,19 @@ apply' pToF fToC cToD cToF dToF event curState =
         buttonDown = ME.buttons event == 1
         nextPos = (toNumber $ ME.clientX event) <+> (toNumber $ ME.clientY event)
         analyze (Move _ _) =
-            case buttonDown /\ (pToF nextPos >>= fToC) of
+            case buttonDown /\ (pToF nextPos >>= fToC nextPos) of
                 true /\ Just clickable ->
                     Click nextPos clickable
                 _ /\ _ -> Move nextPos $ pToF nextPos
         analyze (Click clickPos clickable) =
-            case buttonDown /\ cToD clickable of
+            case buttonDown /\ cToD nextPos clickable of
                 true /\ Just draggable ->
                     StartDrag clickPos draggable
-                _ /\ _ -> Move nextPos $ cToF clickable
+                _ /\ _ -> Move nextPos $ cToF nextPos clickable
         analyze (StartDrag clickPos draggable) =
             if buttonDown then
                 Dragging clickPos nextPos draggable
-            else Move nextPos $ dToF draggable
+            else Move nextPos $ dToF nextPos draggable
         analyze (Dragging clickPos _ draggable) =
             if buttonDown then
                 Dragging clickPos nextPos draggable
@@ -81,7 +81,7 @@ apply' pToF fToC cToD cToF dToF event curState =
                 DropAt nextPos item
             else -}
             -- Move nextPos $ Just item
-            Move nextPos $ dToF draggable
+            Move nextPos $ dToF nextPos draggable
 
 
 instance showMouse :: (Show f, Show c, Show d) => Show (State' f c d) where

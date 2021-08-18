@@ -19,7 +19,7 @@ import Data.PinBoard (PinBoard)
 import Data.PinBoard as PB
 import Data.Set (Set)
 import Data.Set as Set
-import Data.Tuple (fst)
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Vec2 (Vec2, Pos, Size, (<+>))
 import Data.Vec2 as V2
@@ -114,7 +114,7 @@ data Action m d
     | DetachNode Node.Id
     | PinNode Node.Id Pos
     | Connect Patch.OutletPath Patch.InletPath
-    | DisconnectTop Patch.InletPath
+    | Disconnect Patch.OutletPath Patch.InletPath
     | HandleMouse H.SubscriptionId ME.MouseEvent -- TODO Split mouse handing in different actions
 
 
@@ -227,8 +227,8 @@ render state =
                         ]
                 Nothing -> HS.none
         findNodePosition nodeName =
-            (R2.find nodeName state.layout <#> fst)
-            <|> (PB.find nodeName state.pinned <#> fst)
+            (R2.find nodeName state.layout <#> Tuple.fst)
+            <|> (PB.find nodeName state.pinned <#> Tuple.fst)
         openLink pos (nodeName /\ outlet) =
             case (/\)
                     <$> (Patch.findNode nodeName state.patch
@@ -321,19 +321,15 @@ handleAction = case _ of
         nextPatch <- liftEffect $ Patch.connect outletPath inletPath state.patch
         H.modify_ (_ { patch = nextPatch })
 
-    DisconnectTop inletPath -> do
-        -- TODO: store `draggedLink outletPath` in state?
-        pure unit
-        {-
+    Disconnect outletPath inletPath -> do
         state <- H.get
-        nextPatch <- liftEffect $ Patch.connect outletPath inletPath state.patch
+        nextPatch <- liftEffect $ Patch.disconnect outletPath inletPath state.patch
         H.modify_ (_ { patch = nextPatch })
-        -}
 
     HandleMouse _ mouseEvent -> do
         state <- H.get
         let
-            bsOffset = V2.zh $ BS.size $ state.buttonStrip
+            bsOffset = V2.zh $ BS.size state.buttonStrip
             mouseOffset = state.offset + bsOffset
             nextMouse
                 = state.mouse
@@ -341,16 +337,18 @@ handleAction = case _ of
                             (flip (-) mouseOffset
                             >>> findSubjectUnderPos state
                             )
-                    clickableToDraggable
-                    draggableToClickable
+                    (clickableToDraggable state.patch)
+                    (draggableToClickable state.patch)
                     mouseEvent
         H.modify_ (_ { mouse = nextMouse })
         case nextMouse of
             M.StartDrag _ (_ /\ Draggable.Node nodeId) ->
                 handleAction $ DetachNode nodeId
+            M.StartDrag _ (_ /\ Draggable.Link outlet (Just inlet)) ->
+                handleAction $ Disconnect outlet inlet
             M.DropAt pos (offset /\ Draggable.Node nodeId) ->
                 handleAction $ PinNode nodeId $ pos - bsOffset - offset
-            M.DropAt pos (_ /\ Draggable.Link outlet maybeInlet) ->
+            M.DropAt pos (_ /\ Draggable.Link outlet Nothing) ->
                 case findSubjectUnderPos state $ pos - mouseOffset of
                     Just (_ /\ Clickable.Inlet inlet) -> do
                         handleAction $ Connect outlet inlet
@@ -361,25 +359,35 @@ handleAction = case _ of
 
     where
 
-        clickableToDraggable :: Mouse.Clickable -> Maybe Mouse.Draggable
-        clickableToDraggable (Clickable.Header nodeId) = Just $ Draggable.Node nodeId
-        clickableToDraggable (Clickable.Inlet inletPath) = Nothing -- TODO;
-        clickableToDraggable (Clickable.Outlet outletPath) = Just $ Draggable.Link outletPath Nothing
+        clickableToDraggable :: Noodle.Patch d -> Pos -> Mouse.Clickable -> Maybe Mouse.Draggable
+        clickableToDraggable patch _ (Clickable.Header nodeId) = Just $ Draggable.Node nodeId
+        clickableToDraggable patch _ (Clickable.Inlet inletPath) =
+            patch
+                 #  topLinkAt inletPath
+                <#> (\outletPath -> Draggable.Link outletPath $ Just inletPath)
+        clickableToDraggable patch _ (Clickable.Outlet outletPath) = Just $ Draggable.Link outletPath Nothing
 
-        draggableToClickable :: Mouse.Draggable -> Maybe Mouse.Clickable
-        draggableToClickable _ = Nothing
+        draggableToClickable :: Noodle.Patch d -> Pos -> Mouse.Draggable -> Maybe Mouse.Clickable
+        draggableToClickable _ _ _ = Nothing
 
         liftSubject :: Node.Id -> NodeC.WhereInside -> Mouse.Clickable
         liftSubject nodeId NodeC.Header = Clickable.Header nodeId
         liftSubject nodeId (NodeC.Inlet inletId) = Clickable.Inlet $ nodeId /\ inletId
         liftSubject nodeId (NodeC.Outlet outletId) = Clickable.Outlet $ nodeId /\ outletId
 
+        topLinkAt :: Patch.InletPath -> Noodle.Patch d -> Maybe Patch.OutletPath
+        topLinkAt inletPath patch =
+            patch
+                 #  Patch.linksLeadingTo inletPath
+                <#> Tuple.fst
+                 #  Array.head
+
         findSubjectUnderPos :: State m d -> Pos -> Maybe (Pos /\ Mouse.Clickable)
         findSubjectUnderPos state pos =
             (findNodeInLayout state pos <|> findNodeInPinned state pos)
                 >>= \(nodeId /\ pos') ->
                         state.patch
-                            # Patch.findNode nodeId
+                             #  Patch.findNode nodeId
                             >>= flip (whereInsideNode state) pos'
                             <#> liftSubject nodeId
                             <#> (/\) pos'

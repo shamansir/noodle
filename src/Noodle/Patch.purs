@@ -8,11 +8,14 @@ import Effect.Class (liftEffect)
 -- import Data.Functor (lift)
 
 import Data.Set (Set)
+import Data.List (List)
+import Data.Array as Array
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Foldable (foldr)
 import Data.Traversable (sequence, traverse)
+import Data.Tuple (fst, snd)
 import Data.Tuple.Nested ((/\), type (/\))
 
 
@@ -123,6 +126,30 @@ disconnect outletPath inletPath patch@(Patch _ links) =
             pure $ forgetLink outletPath inletPath patch
         Nothing ->
             pure patch
+
+
+linksStartingFrom :: forall d. OutletPath -> Patch d -> Array (InletPath /\ Link)
+linksStartingFrom outletPath (Patch _ links) =
+    links
+        # Map.toUnfoldable
+        # Array.mapMaybe
+            (\((outletPath' /\ inletPath) /\ link) ->
+                if outletPath' == outletPath
+                then Just $ inletPath /\ link
+                else Nothing
+            )
+
+
+linksLeadingTo :: forall d. InletPath -> Patch d -> Array (OutletPath /\ Link)
+linksLeadingTo inletPath (Patch _ links) =
+    links
+        # Map.toUnfoldable
+        # Array.mapMaybe
+            (\((outletPath /\ inletPath') /\ link) ->
+                if inletPath' == inletPath
+                then Just $ outletPath /\ link
+                else Nothing
+            )
 
 
 send :: forall d. (Node.Id /\ InletId) -> d -> Patch d -> Effect Unit

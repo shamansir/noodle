@@ -44,18 +44,18 @@ init = Mouse.init
 
 apply
     :: (Pos -> Maybe (Pos /\ Focusable))
-    -> (Clickable -> Maybe Draggable)
-    -> (Draggable -> Maybe Focusable)
+    -> (Pos -> Clickable -> Maybe Draggable)
+    -> (Pos -> Draggable -> Maybe Focusable)
     -> ME.MouseEvent
     -> State
     -> State
 apply pToF cToD dToF =
     Mouse.apply'
         pToF
-        Just
-        (\(pos /\ clickable) -> (/\) pos <$> cToD clickable)
-        Just
-        (\(pos /\ focusable) -> (/\) pos <$> dToF focusable)
+        (const Just)
+        (\nextPos (origPos /\ clickable) -> (/\) origPos <$> cToD nextPos clickable)
+        (const Just)
+        (\nextPos (origPos /\ focusable) -> (/\) origPos <$> dToF nextPos focusable)
 
 
 {- clickableToDraggable :: Clickable -> Maybe Draggable
