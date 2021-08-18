@@ -9,55 +9,82 @@ import Web.UIEvent.MouseEvent as ME
 import Data.Vec2 (Pos, (<+>))
 
 
-data State a
-    = Move Pos (Maybe a)
-    | Click Pos a
-    | StartDrag Pos a
-    | Dragging Pos Pos a
-    | DropAt Pos a
+
+type State a = State' a a a
 
 
-init :: forall a. State a
+data State' focusable clickable draggable
+    = Move Pos (Maybe focusable)
+    | Click Pos clickable
+    | StartDrag Pos draggable
+    | Dragging Pos Pos draggable
+    | DropAt Pos draggable
+
+
+init :: forall f c d. State' f c d
 init = Move (0.0 <+> 0.0) Nothing
 
 
-withPos :: forall a. (Pos -> Pos) -> State a -> State a
-withPos f (Move pos v) = Move (f pos) v
-withPos f (Click pos v) = Click (f pos) v
-withPos f (StartDrag pos v) = StartDrag (f pos) v
-withPos f (Dragging start pos v) = Dragging start (f pos) v
-withPos f (DropAt pos v) = DropAt (f pos) v
+updatePos :: forall f c d. (Pos -> Pos) -> State' f c d -> State' f c d
+updatePos f (Move pos v) = Move (f pos) v
+updatePos f (Click pos v) = Click (f pos) v
+updatePos f (StartDrag pos v) = StartDrag (f pos) v
+updatePos f (Dragging start pos v) = Dragging start (f pos) v
+updatePos f (DropAt pos v) = DropAt (f pos) v
 
 
-apply :: forall a. (Pos -> Maybe a) -> ME.MouseEvent -> State a -> State a
-apply toItem event curState =
+apply
+    :: forall a
+     . (Pos -> Maybe a)
+    -> ME.MouseEvent
+    -> State a
+    -> State a
+apply f =
+    apply' f Just Just Just Just
+
+
+apply'
+    :: forall focusable clickable draggable
+     . (Pos -> Maybe focusable)
+    -> (focusable -> Maybe clickable)
+    -> (clickable -> Maybe draggable)
+    -> (clickable -> Maybe focusable)
+    -> (draggable -> Maybe focusable)
+    -> ME.MouseEvent
+    -> State' focusable clickable draggable
+    -> State' focusable clickable draggable
+apply' pToF fToC cToD cToF dToF event curState =
     analyze curState
     where
         buttonDown = ME.buttons event == 1
         nextPos = (toNumber $ ME.clientX event) <+> (toNumber $ ME.clientY event)
         analyze (Move _ _) =
-            case buttonDown /\ toItem nextPos of
-                true /\ Just item -> Click nextPos item
-                _ -> Move nextPos $ toItem nextPos
-        analyze (Click clickPos item) =
+            case buttonDown /\ (pToF nextPos >>= fToC) of
+                true /\ Just clickable ->
+                    Click nextPos clickable
+                _ /\ _ -> Move nextPos $ pToF nextPos
+        analyze (Click clickPos clickable) =
+            case buttonDown /\ cToD clickable of
+                true /\ Just draggable ->
+                    StartDrag clickPos draggable
+                _ /\ _ -> Move nextPos $ cToF clickable
+        analyze (StartDrag clickPos draggable) =
             if buttonDown then
-                StartDrag clickPos item
-            else Move nextPos $ Just item
-        analyze (StartDrag clickPos item) =
+                Dragging clickPos nextPos draggable
+            else Move nextPos $ dToF draggable
+        analyze (Dragging clickPos _ draggable) =
             if buttonDown then
-                Dragging clickPos nextPos item
-            else Move nextPos $ Just item
-        analyze (Dragging clickPos _ item) =
-            if buttonDown then
-                Dragging clickPos nextPos item
-            else DropAt nextPos item
-        analyze (DropAt _ item) =
+                Dragging clickPos nextPos draggable
+            else DropAt nextPos draggable
+        analyze (DropAt _ draggable) =
             {- if buttonDown then
                 DropAt nextPos item
-            else -} Move nextPos $ Just item
+            else -}
+            -- Move nextPos $ Just item
+            Move nextPos $ dToF draggable
 
 
-instance showMouse :: Show a => Show (State a) where
+instance showMouse :: (Show f, Show c, Show d) => Show (State' f c d) where
     show (Move curPos maybeItem) = show curPos <> " : " <> show maybeItem
     show (Click curPos item) =
         "click " <> show curPos <> " : " <> show item
