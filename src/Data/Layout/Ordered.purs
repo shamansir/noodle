@@ -7,7 +7,14 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 
 -- TODO: `IsLayout` instance (AutoSizedLayout?)
--- TODO: Replace `Order` with just Ordered Ste
+-- TODO: Replace `Order` with just Ordered Ser
+
+data Size
+    = Auto
+    | Fixed Number
+    | Percentage Number
+    | Cells Number
+
 
 data HBox s a = Horz (Order (s /\ VBox s a))
 
