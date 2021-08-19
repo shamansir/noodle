@@ -1,6 +1,6 @@
 module Test.Main where
 
-import Prelude (Unit, ($))
+import Prelude (Unit, ($), discard)
 
 import Effect (Effect)
 import Effect.Aff (launchAff_)
@@ -10,9 +10,12 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 
 import Test.Nodes (spec) as Nodes
+import Test.Layouts (spec) as Layouts
 
 
 main :: Effect Unit
 main = launchAff_ $ runSpec [consoleReporter] do
   describe "Noodle"
     Nodes.spec
+  describe "Layouts"
+    Layouts.spec
