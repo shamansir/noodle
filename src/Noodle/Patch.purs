@@ -152,6 +152,36 @@ linksLeadingTo inletPath (Patch _ links) =
             )
 
 
+linksToNode :: forall d. Node.Id -> Patch d -> Array ((OutletPath /\ InletPath) /\ Link)
+linksToNode nodeId (Patch _ links) =
+    links
+        # Map.toUnfoldable
+        # Array.mapMaybe
+            (\(linkPath@(_ /\ (nodeId' /\ _)) /\ link) ->
+                if nodeId' == nodeId
+                then Just $ linkPath /\ link
+                else Nothing
+            )
+
+
+linksFromNode :: forall d. Node.Id -> Patch d -> Array ((InletPath /\ OutletPath) /\ Link)
+linksFromNode nodeId (Patch _ links) =
+    links
+        # Map.toUnfoldable
+        # Array.mapMaybe
+            (\(linkPath@((nodeId' /\ _) /\ _) /\ link) ->
+                if nodeId' == nodeId
+                then Just $ linkPath /\ link
+                else Nothing
+            )
+
+
+linksToFromNode :: forall d. Node.Id -> Patch d -> Array ((InletPath /\ OutletPath) /\ Link)
+linksToFromNode node patch =
+    Array.nubByEq samePath $ linksToNode node patch <> linksFromNode node patch
+    where samePath (pathA /\ _) (pathB /\ _) = pathA == pathB
+
+
 send :: forall d. (Node.Id /\ InletId) -> d -> Patch d -> Effect Unit
 send (node /\ inlet) v patch =
     patch
