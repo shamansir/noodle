@@ -7,13 +7,14 @@ import App.Style.Order (Order)
 
 
 import Data.Maybe (Maybe(..))
-import Data.Vec2 (Size, Pos, (<+>))
+import Data.Vec2 (Size, Size_, Pos, (<+>))
 import Data.Vec2 as V2
 import Data.Int (toNumber)
 import Data.Array as Array
 import Data.Tuple (fst, snd)
 import Data.Tuple.Nested ((/\), type (/\))
 
+import Data.Foldable (foldr)
 import Data.Bifunctor (class Bifunctor, bimap, lmap)
 
 
@@ -46,6 +47,9 @@ data VBox s a = Vert (Array (s /\ HBox s a))
 
 
 type Ordered s a = VBox s a
+
+
+type OrderedN a = Ordered Number a
 
 
 instance functorHBox :: Functor (HBox s) where
@@ -88,19 +92,17 @@ make :: forall s a. Array (s /\ Array (s /\ a)) -> Ordered s a
 make items = Vert $ map Horz <$> items
 
 
-fit :: forall a. Size -> Ordered Rule a -> Ordered Size a
+fit :: forall a. Size -> Ordered Rule a -> Ordered Number a
 fit size (Vert vbox) =
     Vert result
     where
 
-        result :: Array (Size /\ HBox Size a)
+        result :: Array (Number /\ HBox Number a)
         result =
-            (\(h /\ (Horz hbox)) ->
-                (V2.w size <+> h)
-                /\
-                (Horz $ (lmap (\w -> w <+> h)) <$> fitPlain' (V2.w size) hbox)
-            )
+            map
+                (\(Horz hbox) -> Horz $ fitPlain' (V2.w size) hbox)
             <$> verticalFit
+
 
         verticalFit :: Array (Number /\ HBox Rule a)
         verticalFit = fitPlain' (V2.h size) vbox
@@ -133,12 +135,22 @@ fit size (Vert vbox) =
                 fillAutoAmount Nothing = (amount - knownAmount) / toNumber autoCount
 
 
+fillSizes :: forall a. Ordered Number a -> Ordered Size a
+fillSizes (Vert vbox) =
+    Vert
+        $ (\(h /\ (Horz hbox)) ->
+            ((foldr (+) 0.0 (fst <$> hbox)) <+> h)
+            /\
+            (lmap (\w' -> w' <+> h) $ Horz hbox)
+        ) <$> vbox
+
+
 mapSize :: forall s1 s2 a. (s1 -> s2) -> Ordered s1 a -> Ordered s2 a
 mapSize = lmap
 
 
-mapSize' :: forall s1 s2 a. (Direction -> s1 -> s2) -> Ordered s1 a -> Ordered s2 a
-mapSize' f (Vert items) = Vert $ bimap (f Vertical) (lmap $ f Horizontal) <$> items
+-- mapSize' :: forall s1 s2 a. (Direction -> s1 -> s2) -> Ordered s1 a -> Ordered s2 a
+-- mapSize' f (Vert items) = Vert $ bimap (f Vertical) (lmap $ f Horizontal) <$> items
 
 
 {- tryHorz :: forall a. Rule -> a -> Ordered Rule a -> Maybe (Ordered Rule a)
@@ -149,15 +161,29 @@ tryVert :: forall a. Rule -> a -> Ordered Rule a -> Maybe (Ordered Rule a)
 tryVert _ _ ordered = ordered -}
 
 
-find :: forall a. Pos -> Ordered Size a -> Maybe a
+find :: forall a. Pos -> Ordered Number a -> Maybe a
 find _ _ = Nothing
 
 
-sizeOf :: forall s a. Eq a => a -> Ordered s a -> Maybe s
-sizeOf _ _ = Nothing
+sizeOf :: forall s a. Eq a => a -> Ordered s a -> Maybe (Size_ s)
+sizeOf a (Vert vbox) =
+    Array.findMap
+        (\(h /\ (Horz hbox)) ->
+            Array.findMap
+                (\(w /\ item) ->
+                    if item == a then Just (w <+> h)
+                    else Nothing
+                )
+                hbox
+        )
+        vbox
 
 
-fold :: forall s a b. (s -> s -> a -> b) -> b -> Ordered s a -> b
+posOf :: forall a. Eq a => a -> Ordered Number a -> Maybe Pos
+posOf _ _ = Nothing
+
+
+fold :: forall s a b. (s -> a -> b) -> b -> Ordered s a -> b
 fold f def _ = def
 
 
@@ -165,7 +191,7 @@ unfold :: forall s a. Ordered s a -> Array (s /\ Array (s /\ a))
 unfold _ = []
 
 
-unfold' :: forall a. Ordered Size a -> Array (Pos /\ Size /\ Array (Pos /\ Size /\ a))
+unfold' :: forall a. Ordered Number a -> Array (Pos /\ Size /\ Array (Pos /\ Size /\ a))
 unfold' _ = []
 
 
@@ -173,7 +199,7 @@ flatten :: forall s a. Ordered s a -> Array (s /\ s /\ a)
 flatten _ = []
 
 
-flatten' :: forall a. Ordered Size a -> Array (Pos /\ Size /\ a)
+flatten' :: forall a. Ordered Number a -> Array (Pos /\ Size /\ a)
 flatten' _ = []
 
 
