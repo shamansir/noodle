@@ -1,4 +1,4 @@
-module Data.Layout.Ordered where
+module Data.Layout.Flex where
 
 
 import Prelude
@@ -10,16 +10,17 @@ import Data.Maybe (Maybe(..))
 import Data.Vec2 (Size, Size_, Pos, (<+>))
 import Data.Vec2 as V2
 import Data.Int (toNumber)
+import Data.Array ((:))
 import Data.Array as Array
-import Data.Tuple (fst, snd)
+import Data.Tuple (fst, snd, curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Data.Foldable (foldr)
 import Data.Bifunctor (class Bifunctor, bimap, lmap)
+import Data.Unfoldable (class Unfoldable, unfoldr)
 
 
 -- TODO: `IsLayout` instance (AutoSizedLayout?)
--- TODO: Rename to `Flex`?
 
 
 cellSize :: Number
@@ -36,20 +37,24 @@ data Rule
 -- data VBox s a = Vert (Array (s /\ a))
 
 
-data Direction
+{- data Direction
     = Horizontal
-    | Vertical
+    | Vertical -}
+
+
+-- Operator candidates: ⁅ ⁆ ≡ ⫴ ⊢ ⊣ ⊪ ⊩ ≬ ⟷ ⧦ ⟺ ∥ ⁞ ⁝ ‖ ᎒ ᎓ ੦ ᠁ … ‒ – — ― ⊲ ⊳ ⊽ ⎪ ⎜ ⎟ ⟺ ⟚ ⟛
 
 
 data HBox s a = Horz (Array (s /\ a))
 
+
 data VBox s a = Vert (Array (s /\ HBox s a))
 
 
-type Ordered s a = VBox s a
+type Flex s a = VBox s a
 
 
-type OrderedN a = Ordered Number a
+type FlexN a = Flex Number a
 
 
 instance functorHBox :: Functor (HBox s) where
@@ -88,11 +93,11 @@ cells :: Number -> Rule
 cells = Cells
 
 
-make :: forall s a. Array (s /\ Array (s /\ a)) -> Ordered s a
+make :: forall s a. Array (s /\ Array (s /\ a)) -> Flex s a
 make items = Vert $ map Horz <$> items
 
 
-fit :: forall a. Size -> Ordered Rule a -> Ordered Number a
+fit :: forall a. Size -> Flex Rule a -> Flex Number a
 fit size (Vert vbox) =
     Vert result
     where
@@ -135,7 +140,7 @@ fit size (Vert vbox) =
                 fillAutoAmount Nothing = (amount - knownAmount) / toNumber autoCount
 
 
-fillSizes :: forall a. Ordered Number a -> Ordered Size a
+fillSizes :: forall a. Flex Number a -> Flex Size a
 fillSizes (Vert vbox) =
     Vert
         $ (\(h /\ (Horz hbox)) ->
@@ -145,7 +150,7 @@ fillSizes (Vert vbox) =
         ) <$> vbox
 
 
-mapSize :: forall s1 s2 a. (s1 -> s2) -> Ordered s1 a -> Ordered s2 a
+mapSize :: forall s1 s2 a. (s1 -> s2) -> Flex s1 a -> Flex s2 a
 mapSize = lmap
 
 
@@ -161,11 +166,33 @@ tryVert :: forall a. Rule -> a -> Ordered Rule a -> Maybe (Ordered Rule a)
 tryVert _ _ ordered = ordered -}
 
 
-find :: forall a. Pos -> Ordered Number a -> Maybe a
-find _ _ = Nothing
+find :: forall a. Pos -> Flex Number a -> Maybe a
+find pos ordered =
+    snd <$> snd <$> find' pos ordered
 
 
-sizeOf :: forall s a. Eq a => a -> Ordered s a -> Maybe (Size_ s)
+find' :: forall a. Pos -> Flex Number a -> Maybe (Pos /\ Size /\ a)
+find' pos =
+    flatten' >>> -- FIXME: use Unfoldable for faster search?
+        foldr
+            (\(pos' /\ size /\ a) _ ->
+                if V2.inside pos (pos' /\ size) then Just (pos' /\ size /\ a) else Nothing
+            )
+            Nothing
+
+
+{- get :: forall s a. Int /\ Int -> Ordered s a -> Maybe (Size_ s /\ a)
+get (ny /\ nx) (Vert vbox) =
+    Array.index vbox ny
+        >>= (\(h /\ (Horz hbox)) -> ((<+>) h) <$> Array.index hbox nx) -}
+
+
+toUnfoldable :: forall f s a. Unfoldable f => Flex s a -> f (Size_ s /\ a)
+toUnfoldable =
+    flatten >>> Array.toUnfoldable -- TODO: make unfoldable manually?
+
+
+sizeOf :: forall s a. Eq a => a -> Flex s a -> Maybe (Size_ s)
 sizeOf a (Vert vbox) =
     Array.findMap
         (\(h /\ (Horz hbox)) ->
@@ -179,28 +206,56 @@ sizeOf a (Vert vbox) =
         vbox
 
 
-posOf :: forall a. Eq a => a -> Ordered Number a -> Maybe Pos
+posOf :: forall a. Eq a => a -> Flex Number a -> Maybe Pos
 posOf _ _ = Nothing
 
 
-fold :: forall s a b. (s -> a -> b) -> b -> Ordered s a -> b
-fold f def _ = def
+fold :: forall s a b. (Size_ s -> a -> b -> b) -> b -> Flex s a -> b
+fold f def (Vert vbox) =
+    foldr
+        (\(h /\ (Horz hbox)) b ->
+            foldr
+                (\(w /\ a) b' ->
+                    f (w <+> h) a b'
+                )
+                b
+                hbox
+        )
+        def
+        vbox
 
 
-unfold :: forall s a. Ordered s a -> Array (s /\ Array (s /\ a))
-unfold _ = []
+foldWithPos :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex Number a -> b
+foldWithPos f def (Vert vbox) =
+    snd $ foldr
+        (\(h /\ (Horz hbox)) (y /\ b) ->
+            (y + h)
+            /\
+            (snd $ foldr
+                (\(w /\ a) (x /\ b') ->
+                    (x + w)
+                    /\
+                    (f (x <+> y) (w <+> h) a b')
+                )
+                (0.0 /\ b)
+                hbox
+            )
+        )
+        (0.0 /\ def)
+        vbox
 
 
-unfold' :: forall a. Ordered Number a -> Array (Pos /\ Size /\ Array (Pos /\ Size /\ a))
-unfold' _ = []
+{- unfold :: forall s a. Ordered s a -> Array (s /\ Array (s /\ a))
+unfold _ = [] -- fold (curry <<< ?wh) [] -}
 
 
-flatten :: forall s a. Ordered s a -> Array (s /\ s /\ a)
-flatten _ = []
+-- unfold' :: forall a. Ordered Number a -> Array (Pos /\ Size /\ Array (Pos /\ Size /\ a))
+-- unfold' _ = []
 
 
-flatten' :: forall a. Ordered Number a -> Array (Pos /\ Size /\ a)
-flatten' _ = []
+flatten :: forall s a. Flex s a -> Array (Size_ s /\ a)
+flatten = fold (curry (:)) []
 
 
--- toUnfoldable ::
+flatten' :: forall a. Flex Number a -> Array (Pos /\ Size /\ a)
+flatten' = foldWithPos (\p s a arr -> (p /\ s /\ a) : arr) []
