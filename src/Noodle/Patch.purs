@@ -75,7 +75,7 @@ addNodesFrom toolkit pairs patch =
 
 
 nodes :: forall d. Patch d -> Array (Node.Id /\ Node d)
-nodes (Patch nodes _) = nodes # Map.toUnfoldableUnordered
+nodes (Patch nodes _) = nodes # Map.toUnfoldable--Unordered
 
 
 links :: forall d. Patch d -> Set (OutletPath /\ InletPath)
