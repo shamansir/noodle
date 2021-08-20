@@ -33,6 +33,7 @@ import App.Style.Color as Color
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
+import Halogen.HTML.Events as HE
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 import Halogen.Svg.Attributes as HSA
@@ -48,10 +49,15 @@ debug :: Boolean
 debug = false
 
 
-type Slot id = forall query. H.Slot query Void id
+type Slot id = forall query. H.Slot query Output id
 
 
 type Slots d = ( body :: UI.NodeSlot d Node.Id )
+
+
+data Output
+    = Remove
+    | Replace Node.Family
 
 
 _body = Proxy :: Proxy "body"
@@ -77,7 +83,8 @@ type State m d =
 
 data Action m d
     = Receive (Input m d)
-    | SendData (UI.NodeOutput d)
+    | RequestRemove
+    | FromUser (UI.NodeOutput d)
     | NoOp
 
 
@@ -92,6 +99,7 @@ render { node, name, style, flow, ui } =
         [ shadow
         , body
         , name'
+        , removeButton'
         , inlets'
         , outlets'
         ]
@@ -138,6 +146,25 @@ render { node, name, style, flow, ui } =
                         , HSA.fill $ Just transparent
                         , HSA.width titleWidth
                         , HSA.height titleHeight
+                        ]
+                    ]
+            else HS.none
+
+        removeButton' =
+            if f.hasRemoveButton then
+                HS.g
+                    [ HSA.translateTo' $ Calc.removeButtonPos f style flow node
+                    , HSA.classes $ CS.removeButton
+                    ]
+                    [ HS.circle
+                        [ HSA.r Calc.removeButtonRadius
+                        , HSA.fill $ Just $ Color.rgba 48 48 48 0.0
+                        ]
+                    , HS.none -- TODO: diag.cross with lines
+                    , HS.circle
+                        [ HSA.r Calc.removeButtonRadius
+                        , HSA.fill $ Just transparent
+                        , HE.onClick \_ -> RequestRemove
                         ]
                     ]
             else HS.none
@@ -215,7 +242,7 @@ render { node, name, style, flow, ui } =
                     Just userNodeBody ->
                         HS.g
                             [ HSA.translateTo' $ Calc.bodyInnerOffset f style flow node ]
-                            [ HH.slot _body name userNodeBody { node } SendData ]
+                            [ HH.slot _body name userNodeBody { node } FromUser ]
                     Nothing ->
                         HS.none
                 ]
@@ -233,24 +260,30 @@ render { node, name, style, flow, ui } =
                 ]
 
 
-handleAction :: forall output m d. MonadEffect m => Action m d -> H.HalogenM (State m d) (Action m d) (Slots d) output m Unit
+handleAction :: forall m d. MonadEffect m => Action m d -> H.HalogenM (State m d) (Action m d) (Slots d) Output m Unit
 handleAction = case _ of
     Receive input ->
         H.modify_ (\state -> state { node = input.node })
 
-    SendData (UI.SendToOutlet outlet d) -> do
+    FromUser (UI.SendToOutlet outlet d) -> do
         state <- H.get
         liftEffect (state.node ++> (outlet /\ d))
 
-    SendData (UI.SendToInlet inlet d) -> do
+    FromUser (UI.SendToInlet inlet d) -> do
         state <- H.get
         liftEffect (state.node +> (inlet /\ d))
+
+    RequestRemove -> do
+        H.raise Remove
+
+    FromUser (UI.Replace family) -> do
+        H.raise $ Replace family
 
     NoOp ->
         pure unit
 
 
-component :: forall query output m d. MonadEffect m => H.Component query (Input m d) output m
+component :: forall query m d. MonadEffect m => H.Component query (Input m d) Output m
 component =
     H.mkComponent
         { initialState

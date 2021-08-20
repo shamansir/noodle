@@ -110,6 +110,7 @@ type State m d =
 data Action m d
     = Initialize
     | Receive (Input m d)
+    | FromNode Node.Id NodeC.Output
     | AddNode Node.Family
     | DetachNode Node.Id
     | PinNode Node.Id Pos
@@ -189,7 +190,7 @@ render state =
                 [ HH.slot _node name
                     NodeC.component
                         { node, name, style : state.style, flow : state.flow, ui : state.ui }
-                    absurd
+                    $ FromNode name
                 ]
         nodesLayout =
             HS.g [ HSA.classes CS.nodes ] $ map node' $ List.toUnfoldable $ packedNodes' -- Patch.nodes patch
@@ -318,12 +319,21 @@ handleAction = case _ of
 
     Connect outletPath inletPath -> do
         state <- H.get
-        nextPatch <- liftEffect $ Patch.connect outletPath inletPath state.patch
-        H.modify_ (_ { patch = nextPatch })
+        nextPatch  <- liftEffect $ Patch.disconnect outletPath inletPath state.patch
+        nextPatch' <- liftEffect $ Patch.connect outletPath inletPath nextPatch
+        H.modify_ (_ { patch = nextPatch' })
 
     Disconnect outletPath inletPath -> do
         state <- H.get
         nextPatch <- liftEffect $ Patch.disconnect outletPath inletPath state.patch
+        H.modify_ (_ { patch = nextPatch })
+
+    FromNode nodeId (NodeC.Replace family) ->
+        pure unit
+
+    FromNode nodeId NodeC.Remove -> do
+        state <- H.get
+        nextPatch <- liftEffect $ Patch.removeNode nodeId state.patch
         H.modify_ (_ { patch = nextPatch })
 
     HandleMouse _ mouseEvent -> do

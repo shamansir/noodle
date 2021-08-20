@@ -39,7 +39,7 @@ type BgOutput d = Void
 data NodeOutput d
     = SendToInlet InletId d
     | SendToOutlet OutletId d
-    -- TODO: Replace Node.Id Node.Family
+    | Replace Node.Family
 
 
 type BgSlot :: forall k. k -> Type -> Type

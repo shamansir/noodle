@@ -37,6 +37,10 @@ nodeButton :: String -> Array H.ClassName
 nodeButton name = H.ClassName <$> [ "node-button", "node-tab-" <> name, "no-select" ]
 
 
+removeButton :: Array H.ClassName
+removeButton = H.ClassName <$> [ "remove-button" ]
+
+
 node :: NodeFlow -> String -> Array H.ClassName
 node flow name = H.ClassName <$> [ "node", "node-" <> flowStr flow, "node-" <> name, "no-select" ]
     where

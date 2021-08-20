@@ -67,3 +67,15 @@ text {
 .node-button {
     cursor: pointer;
 }
+
+.remove-button circle {
+    fill: rgba(48, 48, 48, 0.0);
+}
+
+.remove-button circle:hover {
+    fill: rgba(48, 48, 48, 0.5);
+}
+
+.remove-button {
+    cursor: pointer;
+}

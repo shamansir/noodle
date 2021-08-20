@@ -8,7 +8,7 @@ import Data.Vec2 as V2
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
 import Data.Foldable
-import Data.Set.Ordered (map) as OSet
+-- import Data.Set.Ordered (map) as OSet
 import Data.Maybe (Maybe(..), fromMaybe)
 
 import Noodle.Node (Node)
@@ -29,6 +29,10 @@ type GetSizeF d a = Flags -> Style -> NodeFlow -> Node d -> Order.SizeF a
 
 slotPadding :: Pos
 slotPadding = 3.5 <+> 10.0
+
+
+removeButtonRadius :: Number
+removeButtonRadius = 7.0
 
 
 hasInlets :: NodePart -> Boolean
@@ -208,6 +212,14 @@ outletRectPos f s Vertical node idx =
         offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF_ hasOutlets s.order
 outletRectPos f s Horizontal node idx =
     0.0 <+> toNumber idx
+
+
+removeButtonPos :: forall d. GetPos d
+removeButtonPos f s w n =
+    s.body.margin
+        + titleSize f s w n
+        - V2.vv removeButtonRadius
+        - V2.y' 3.0
 
 
 titlePos :: forall d. GetPos d

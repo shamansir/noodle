@@ -13,9 +13,9 @@ import Data.Array as Array
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
-import Data.Foldable (foldr)
+import Data.Foldable (foldr, foldM)
 import Data.Traversable (sequence, traverse)
-import Data.Tuple (fst, snd)
+import Data.Tuple (fst, snd, curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 
 
@@ -108,6 +108,13 @@ forgetLink outletPath inletPath (Patch nodes links) =
         $ links
 
 
+forgetNode :: forall d. Node.Id -> Patch d -> Patch d
+forgetNode nodeId (Patch nodes links) =
+    Patch
+        (Map.delete nodeId nodes)
+        links
+
+
 connect :: forall d. OutletPath -> InletPath -> Patch d -> Effect (Patch d)
 connect (srcNodeName /\ outlet) (dstNodeName /\ inlet) patch =
     case (/\) <$> findNode srcNodeName patch <*> findNode dstNodeName patch of
@@ -126,6 +133,14 @@ disconnect outletPath inletPath patch@(Patch _ links) =
             pure $ forgetLink outletPath inletPath patch
         Nothing ->
             pure patch
+
+
+removeNode :: forall d. Node.Id -> Patch d -> Effect (Patch d)
+removeNode nodeId patch@(Patch nodes _) =
+    let linksWithNode = patch # linksToFromNode nodeId
+    in do
+        noMoreLinksPatch <- foldM (flip $ uncurry disconnect) patch (fst <$> linksWithNode)
+        pure $ forgetNode nodeId noMoreLinksPatch
 
 
 linksStartingFrom :: forall d. OutletPath -> Patch d -> Array (InletPath /\ Link)
@@ -164,7 +179,7 @@ linksToNode nodeId (Patch _ links) =
             )
 
 
-linksFromNode :: forall d. Node.Id -> Patch d -> Array ((InletPath /\ OutletPath) /\ Link)
+linksFromNode :: forall d. Node.Id -> Patch d -> Array ((OutletPath /\ InletPath) /\ Link)
 linksFromNode nodeId (Patch _ links) =
     links
         # Map.toUnfoldable
@@ -176,7 +191,7 @@ linksFromNode nodeId (Patch _ links) =
             )
 
 
-linksToFromNode :: forall d. Node.Id -> Patch d -> Array ((InletPath /\ OutletPath) /\ Link)
+linksToFromNode :: forall d. Node.Id -> Patch d -> Array ((OutletPath /\ InletPath) /\ Link)
 linksToFromNode node patch =
     Array.nubByEq samePath $ linksToNode node patch <> linksFromNode node patch
     where samePath (pathA /\ _) (pathB /\ _) = pathA == pathB
