@@ -6,8 +6,11 @@ import Prelude
 -- import Data.String.Read (read)
 --import Data.Parse
 import Effect.Class (class MonadEffect)
+
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Vec2 (Pos, (<+>))
+import Data.Vec2 as V2
 
 import App.Toolkit.UI as UI
 import App.Emitters as E
@@ -17,10 +20,12 @@ import Noodle.Node (Node)
 import Hydra (Hydra)
 import Hydra (hydraOf, entityOf, defaultSource) as Hydra
 import Hydra.Compile (compile) as Hydra
+import Hydra.Component.SineWave as SineWave
 
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.Svg.Elements as HS
+import Halogen.Svg.Attributes as HSA
 
 
 type State = Hydra /\ Node Hydra
@@ -40,7 +45,7 @@ render :: forall m. MonadEffect m => State -> H.ComponentHTML Action () m
 render (hydra /\ node) =
     HS.g
         []
-        [ HS.text [] [ HH.text $ fromMaybe "-" $ Hydra.compile hydra ] ]
+        [ HS.path [ HSA.d $ SineWave.render (0.0 <+> 0.0) 150.0 150.0 3 ] ]
 
 
 handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
