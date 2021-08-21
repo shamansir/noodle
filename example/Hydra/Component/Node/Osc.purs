@@ -45,7 +45,7 @@ render :: forall m. MonadEffect m => State -> H.ComponentHTML Action () m
 render (hydra /\ node) =
     HS.g
         []
-        [ HS.path [ HSA.d $ SineWave.render (0.0 <+> 0.0) 150.0 150.0 3 ] ]
+        [ ] -- HS.path [ HSA.d $ SineWave.render (0.0 <+> 0.0) 150.0 150.0 3 ] ]
 
 
 handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
