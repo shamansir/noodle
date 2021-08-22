@@ -63,7 +63,7 @@ instance argsShowTpl :: Show x => Show (Args (String /\ x)) where
 
 instance fnShow :: Show x => Show (Fn x) where
     show (Fn { name, args }) =
-        show name <> " " <> show args
+        name <> " " <> show args
 
 
 instance fnFunctor :: Functor Fn where

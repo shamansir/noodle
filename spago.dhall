@@ -32,6 +32,7 @@ to generate this file without the comments in this block.
   , "integers"
   , "invariant"
   , "lists"
+  , "math"
   , "maybe"
   , "newtype"
   , "nonempty"

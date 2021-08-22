@@ -9,6 +9,7 @@ import Hydra (Hydra)
 import Hydra.Component.Background as BG
 import Hydra.Component.Node.Num as NumNode
 import Hydra.Component.Node.Osc as OscNode
+import Hydra.Component.Node.Color as ColorNode
 import Hydra.Toolkit.Generate as Gen
 import Hydra.Toolkit.Generate (Kind(..))
 
@@ -52,6 +53,7 @@ background = Just BG.component
 node :: forall m. MonadEffect m => Node.Family -> Maybe (UI.NodeComponent m Hydra)
 node "num" = Just $ NumNode.component
 node "osc" = Just $ OscNode.component
+node "color" = Just $ ColorNode.component
 node _ = Nothing
 
 

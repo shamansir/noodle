@@ -18,7 +18,7 @@ import Hydra.Try as Hydra
 
 import Noodle.Node ((<+))
 import Noodle.Node.Define (Def)
-import Noodle.Node.Define (define, defineEffectful, pass, pass', passThrough, passNothing) as Def
+import Noodle.Node.Define as Def
 import Noodle.Node.Shape ((>~), (~<), withInlets, withOutlets, noInlets, noOutlets)
 import Noodle.Channel.Shape (hidden) as Channel
 
@@ -42,10 +42,8 @@ time =
       (withOutlets
         >~ "time" /\ Channel.value
       )
-      $ \_ ->
-        Def.pass
-          [ "time" /\ Hydra.time
-          ]
+      $ Def.alwaysOne
+      $ "time" /\ Hydra.time
 
 
 mouse :: Def Hydra
@@ -56,8 +54,7 @@ mouse =
         >~ "x" /\ Channel.value
         >~ "y" /\ Channel.value
       )
-      $ \_ ->
-        Def.pass
+      $ Def.always
           [ "x" /\ Hydra.mouseX
           , "y" /\ Hydra.mouseY
           ]

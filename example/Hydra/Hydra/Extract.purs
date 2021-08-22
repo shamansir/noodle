@@ -19,7 +19,13 @@ numOr def (Value val) = fromMaybe def $ numV val
 numOr def _ = def
 
 
-seq :: Hydra -> Array Number
-seq (Value (Num n)) = [ n ]
-seq (Value (Seq xs)) = catMaybes $ numV <$> xs
+seq :: Hydra -> Array Value
+seq (Value (Seq xs)) = xs
+seq (Value v) = [ v ]
 seq _ = []
+
+
+seq' :: Hydra -> Array Number
+seq' (Value (Num n)) = [ n ]
+seq' (Value (Seq xs)) = catMaybes $ numV <$> xs
+seq' _ = []

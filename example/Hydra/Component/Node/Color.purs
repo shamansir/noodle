@@ -1,4 +1,4 @@
-module Hydra.Component.Node.Seq where
+module Hydra.Component.Node.Color where
 
 
 import Prelude
@@ -8,6 +8,8 @@ import Prelude
 import Data.Maybe (fromMaybe)
 import Data.Array ((:))
 import Data.Array as Array
+import Data.Int (toNumber)
+import Data.Maybe (Maybe(..))
 
 import App.Toolkit.UI as UI
 
@@ -21,59 +23,54 @@ import Hydra.Component.Input as Input
 import Halogen as H
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
+import Halogen.Svg.Attributes as HSA
+import Halogen.Svg.Attributes (Color(..))
 
 
-type State = Array Value
+type State = Array Color
 
 
 data Action
-    = NoOp
-    | Add
-    | Change Int Number
-    | Remove Int
+    = Todo
+
+
+bodyWidth = 110.0 -- FIXME: pass from outside
 
 
 initialState :: UI.NodeInput Hydra -> State
 initialState { node } =
-    Node.defaultOfInlet "seq" node
-        <#> HydraE.seq
-         #  fromMaybe []
+    {- Node.defaultOfInlet "seq" node
+        <#> HydraE.seq -
+         #  fromMaybe [] -}
+    [ RGB 255 255 255, RGB 255 0 0, RGB 0 255 0, RGB 0 0 255 ]
 
 
 render :: forall m. State -> H.ComponentHTML Action () m
-render numbers =
+render colors =
     HS.g
         []
-        [ (HS.g [] $ Array.mapWithIndex itemInput numbers)
-        , Input.button Add
+        [ (HS.g [] $ Array.mapWithIndex colorRect colors)
         ]
     where
-        itemInput i (Num n) =
+        colorsCount = Array.length colors
+        colorRectWidth = bodyWidth / toNumber colorsCount
+        colorRect i color =
             HS.g
                 [ ]
-                [ Input.number n { min : 0.0, max : 255.0, step : 0.01 } NoOp $ Change i
-                , Input.button $ Remove i
+                [ HS.rect
+                    [ HSA.x $ colorRectWidth * toNumber i
+                    , HSA.y 0.0
+                    , HSA.width colorRectWidth
+                    , HSA.height 55.0
+                    , HSA.fill $ Just color
+                    ]
                 ]
-        itemInput _ _ =
-            HS.none
 
 
 handleAction :: forall m. Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
 handleAction = case _ of
-    NoOp ->
+    Todo ->
         pure unit
-    Add -> do
-        H.modify_ ((:) (Num 0.0))
-        next <- H.get
-        H.raise $ UI.SendToOutlet "seq" $ Hydra.seq next
-    Change i n -> do
-        H.modify_ $ \a -> Array.updateAt i (Num n) a # fromMaybe a
-        next <- H.get
-        H.raise $ UI.SendToOutlet "seq" $ Hydra.seq next
-    Remove i -> do
-        H.modify_ $ \a -> Array.deleteAt i a # fromMaybe a
-        next <- H.get
-        H.raise $ UI.SendToOutlet "seq" $ Hydra.seq next
 
 
 component :: forall m. UI.NodeComponent m Hydra

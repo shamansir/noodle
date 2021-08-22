@@ -3,7 +3,7 @@ module Noodle.Node.Define
     , empty
     , define, defineEffectful
     , fromFn, fromFnEffectful
-    , receive, pass, pass', passNothing, passThrough, doNothing
+    , receive, pass, pass', passNothing, passThrough, doNothing, always, alwaysOne
     , lastUpdateAt
     , dimensions, processWith, processEffectfulWith
     --, withFn1, withFn2, withFn3, withFn4, withFn5
@@ -128,6 +128,14 @@ lastUpdateAt (Receive { last }) = last
 pass :: forall d. Array (OutletId /\ d) -> Pass d
 --pass = Pass <<< Map.fromFoldable
 pass values = Pass { toOutlets : Map.fromFoldable values }
+
+
+always :: forall d. Array (OutletId /\ d) -> Receive d -> Pass d
+always = const <<< pass
+
+
+alwaysOne :: forall d. OutletId /\ d -> Receive d -> Pass d
+alwaysOne = always <<< Array.singleton
 
 
 pass' :: forall d. Array (OutletId /\ Maybe d) -> Pass d
