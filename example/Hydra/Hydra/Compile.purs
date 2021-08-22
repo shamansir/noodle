@@ -21,8 +21,8 @@ compileValue (Num n) = show n
 compileValue MouseX = "() => mouse.x"
 compileValue MouseY = "() => mouse.y"
 compileValue Time = "() => time"
-compileValue X = "x"
-compileValue Y = "y"
+compileValue Width = "x"
+compileValue Height = "y"
 compileValue (Seq xs) = "[" <> (String.joinWith "," $ show <$> xs) <> "]"
 
 
@@ -35,7 +35,7 @@ compileFn = compileFnBy compileValue <<< toFn
 
 
 compileFn' :: forall a. ToFn a EntityOrValue => a -> String
-compileFn' = compileFnBy (either compileEntity compileValue) <<< toFn
+compileFn' = compileFnBy (entityOrValue compileEntity compileValue) <<< toFn
 
 
 compileFnBy :: forall x. (x -> String) -> Fn x -> String
@@ -55,7 +55,7 @@ compileQueue :: Queue -> String
 compileQueue queue =
     String.joinWith "\n\n" $ ouputCode <$> queue
     where
-        ouputCode (e /\ Default) = compileEntity (Debug.spy "e" e)  <> "\n   .out()"
+        ouputCode (e /\ Default) = compileEntity e  <> "\n   .out()"
         ouputCode (e /\ Output n) = compileEntity e <> "\n   .out(" <> show n <> ")"
 
 

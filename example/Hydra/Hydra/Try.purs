@@ -58,7 +58,7 @@ shape =
 gradient :: H.HydraFn1M
 gradient =
     tryV1M
-        ( X )
+        ( Width )
         (\speed -> Hydra $ H.entityOf $ Gradient { speed })
 
 

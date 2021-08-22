@@ -72,8 +72,10 @@ out =
       noOutlets
       $ \inlets -> do
           _ <- sequence $ do
-              hydra <- ("src" <+ inlets)
+              hydra <- "src" <+ inlets
               compiledStr <- Hydra.compile $ Hydra.out' hydra
               --pure $ pure unit
-              pure $ HydraE.evaluate compiledStr
+              pure $ do
+                Console.logShow hydra
+                HydraE.evaluate compiledStr
           pure $ Def.passNothing

@@ -1,12 +1,13 @@
 module Hydra.Fn where
 
 
-import Prelude (map, (==), (<$>), ($), otherwise, const, flip)
+import Prelude
 
 import Data.Functor (class Functor)
 import Data.Array as Array
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (fst, snd)
+import Data.String as String
 
 import Data.Vec (Vec, (!!), (+>))
 import Data.Vec (fromArray, toArray, zipWithE, singleton, empty) as Vec
@@ -43,16 +44,34 @@ instance functorArgs :: Functor Args where
 
 newtype Fn x = Fn { name :: String, args :: Args (String /\ x) }
 
-
 class ToFn a x where
     toFn :: a -> Fn x
 
 
-instance toFnFunctor :: Functor Fn where
+-- instance argsShow :: Show x => Show (Args x) where
+--     show args = String.joinWith " " $ show <$> argsToArray args
+
+
+showToFn :: forall x a. Show x => ToFn a x => a -> String
+showToFn a = show (toFn a :: Fn x)
+
+
+instance argsShowTpl :: Show x => Show (Args (String /\ x)) where
+    show args = String.joinWith " " $ showArg <$> argsToArray args
+        where showArg (name /\ value) = "(" <> name <> " " <> show value <> ")"
+
+
+instance fnShow :: Show x => Show (Fn x) where
+    show (Fn { name, args }) =
+        show name <> " " <> show args
+
+
+instance fnFunctor :: Functor Fn where
     map f (Fn { name, args }) =
         Fn { name, args : map (map f) args }
     {- map f (Fn { name, args, out }) =
         Fn { name, args : map (map f) args, out : map f out } -}
+
 
 fn :: forall x. String -> Array (String /\ x) -> Fn x
 fn name args = Fn { name, args : arrayToArgs args }

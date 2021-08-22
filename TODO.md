@@ -1,5 +1,32 @@
 
-* Fix inlets/outlets areas for `Hydra` style while not breaking `Quartz` style;
+* [v] : Pretty-print Hydra structure;
+* `Out` with a buffer number;
+* Don't show hidden inlets;
+* Color node with preview;
+* Palette node;
+* Node for sequences — accepting values so that sequences could be joined;
+* Math node;
+* Pi node;
+* Preview node (to see the contents of the output);
+* The nodes with some status display inside (i.e. `osc`);
+* The node with interactive control inside (i.e. knob in Num node);
+* Spreads node, min/max/step;
+* Be able to compile expressions;
+* Nodes to help with expressions;
+* Don't show hidden inlets;
+* Ribbons;
+* Different link styles;
+* Different connector styles;
+* Value editors;
+* Preview sequences;
+* Finish remove-node buttons;
 * Be able to dim slot if it's not connected to anything;
 * Use CSS styles constructor;
-* Find a way to make `Node`s a `Functor`, to be able to map data.
+* Find a way to make `Node`s a `Functor`, to be able to map data;
+* Better layouting, may be using `Flex` layout;
+* Hover areas are still not perfect;
+* Some nodes are harder to drag after adding them;
+* Fix deployment;
+* Why sometimes Hydra output is not working;
+* Blinking when user starts to drag the node;
+* Hot/cold inlets;

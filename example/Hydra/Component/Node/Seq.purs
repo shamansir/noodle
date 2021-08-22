@@ -13,16 +13,17 @@ import App.Toolkit.UI as UI
 
 import Noodle.Node as Node
 
-import Hydra (Hydra)
+import Hydra (Hydra, Value(..))
 import Hydra as Hydra
 import Hydra.Extract as HydraE
 import Hydra.Component.Input as Input
 
 import Halogen as H
 import Halogen.Svg.Elements as HS
+import Halogen.Svg.Elements.None as HS
 
 
-type State = Array Number
+type State = Array Value
 
 
 data Action
@@ -34,9 +35,10 @@ data Action
 
 initialState :: UI.NodeInput Hydra -> State
 initialState { node } =
-    Node.defaultOfInlet "seq" node
-        <#> HydraE.seq
-         #  fromMaybe []
+    {- Node.defaultOfInlet "seq" node
+        <#> HydraE.seq -
+         #  fromMaybe [] -}
+    []
 
 
 render :: forall m. State -> H.ComponentHTML Action () m
@@ -47,12 +49,14 @@ render numbers =
         , Input.button Add
         ]
     where
-        itemInput i n =
+        itemInput i (Num n) =
             HS.g
                 [ ]
                 [ Input.number n { min : 0.0, max : 255.0, step : 0.01 } NoOp $ Change i
                 , Input.button $ Remove i
                 ]
+        itemInput _ _ =
+            HS.none
 
 
 handleAction :: forall m. Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
@@ -60,11 +64,11 @@ handleAction = case _ of
     NoOp ->
         pure unit
     Add -> do
-        H.modify_ ((:) 0.0)
+        H.modify_ ((:) (Num 0.0))
         next <- H.get
         H.raise $ UI.SendToOutlet "seq" $ Hydra.seq next
     Change i n -> do
-        H.modify_ $ \a -> Array.updateAt i n a # fromMaybe a
+        H.modify_ $ \a -> Array.updateAt i (Num n) a # fromMaybe a
         next <- H.get
         H.raise $ UI.SendToOutlet "seq" $ Hydra.seq next
     Remove i -> do

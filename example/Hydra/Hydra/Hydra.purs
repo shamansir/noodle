@@ -1,14 +1,15 @@
 module Hydra where
 
 
-import Prelude ((<$>), (<<<), ($))
+import Prelude ((<$>), (<<<), ($), class Show, show, (<>))
 
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
+import Data.String as String
 
-import Hydra.Fn (class ToFn, fn, toFn)
+import Hydra.Fn (class ToFn, Fn, fn, toFn)
 
 
 data Value
@@ -16,9 +17,9 @@ data Value
     | MouseX
     | MouseY
     | Time
-    | Seq (Array Number)
-    | X -- a.k.a width
-    | Y -- a.k.a height
+    | Seq (Array Value)
+    | Width
+    | Height
     -- Harmonic Int
     -- FN (Time -> Value)
 
@@ -141,26 +142,26 @@ num = Value <<< Num
 
 
 time :: Hydra
-time = Value $ Time
+time = Value Time
 
 
 mouseX :: Hydra
-mouseX = Value $ MouseX
+mouseX = Value MouseX
 
 
 mouseY :: Hydra
-mouseY = Value $ MouseY
+mouseY = Value MouseY
 
 
-x :: Hydra
-x = Value $ X
+width :: Hydra
+width = Value Width
 
 
-y :: Hydra
-y = Value $ Y
+height :: Hydra
+height = Value Height
 
 
-seq :: Array Number -> Hydra
+seq :: Array Value -> Hydra
 seq = Value <<< Seq
 
 
@@ -269,15 +270,22 @@ type ToHydraEEFn3 = Entity -> Entity -> Value -> Value -> Value -> Hydra
 type ToHydraEEFn4 = Entity -> Entity -> Value -> Value -> Value -> Value -> Hydra
 
 
-type EntityOrValue = Either Entity Value
+data EntityOrValue
+    = E Entity
+    | V Value
 
 
 e' :: Entity -> EntityOrValue
-e' = Left
+e' = E
 
 
 v' :: Value -> EntityOrValue
-v' = Right
+v' = V
+
+
+entityOrValue :: forall x. (Entity -> x) -> (Value -> x) -> EntityOrValue -> x
+entityOrValue ef _ (E e) = ef e
+entityOrValue _ ev (V v) = ev v
 
 
 instance ToFn Source Value where
@@ -362,3 +370,36 @@ instance ToFn Modifier EntityOrValue where
     toFn (C color) = v' <$> toFn color
     toFn (B blend) = toFn blend
     toFn (M modulate) = toFn modulate
+
+
+instance Show Value where
+    show (Num num) = show num
+    show MouseX = "{mouse.x}"
+    show MouseY = "{mouse.y}"
+    show Time = "{time}"
+    show Width = "{width}"
+    show Height = "{height}"
+    show (Seq values) = String.joinWith "," $ show <$> values
+
+
+instance Show EntityOrValue where
+    show (E entity) = show entity
+    show (V value) = show value
+
+
+instance Show Entity where
+    show (Entity source modifiers) =
+        show (toFn source :: Fn Value) <> "\n    " <>
+            String.joinWith "\n    " (show <$> (toFn <$> modifiers :: Array (Fn EntityOrValue)))
+
+
+instance Show Output where
+    show Default = "{out:default}"
+    show (Output n) = "{out:" <> show n <> "}"
+
+
+instance Show Hydra where
+    show None = "None"
+    show (Value v) = show v
+    show (Hydra entity) = show entity
+    show (Out queue) = show queue
