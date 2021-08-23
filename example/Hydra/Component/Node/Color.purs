@@ -3,6 +3,8 @@ module Hydra.Component.Node.Color where
 
 import Prelude
 
+import Effect.Class (class MonadEffect)
+
 -- import Data.String.Read (read)
 --import Data.Parse
 import Data.Maybe (fromMaybe)
@@ -10,9 +12,12 @@ import Data.Array ((:))
 import Data.Array as Array
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\), type (/\))
 
 import App.Toolkit.UI as UI
+import App.Emitters as E
 
+import Noodle.Node (Node)
 import Noodle.Node as Node
 
 import Hydra (Hydra, Value(..))
@@ -24,29 +29,30 @@ import Halogen as H
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 import Halogen.Svg.Attributes as HSA
-import Halogen.Svg.Attributes (Color(..))
+import Halogen.Svg.Attributes (Color(..)) as S
 
 
-type State = Array Color
+type State = Array S.Color /\ Node Hydra
 
 
 data Action
-    = Todo
+    = Initialize
+    | Update Hydra
 
 
 bodyWidth = 110.0 -- FIXME: pass from outside
 
 
-initialState :: UI.NodeInput Hydra -> State
+initialState :: forall d. UI.NodeInput Hydra -> State
 initialState { node } =
     {- Node.defaultOfInlet "seq" node
         <#> HydraE.seq -
          #  fromMaybe [] -}
-    [ RGB 255 255 255, RGB 255 0 0, RGB 0 255 0, RGB 0 0 255 ]
+    [ S.RGB 255 255 255, S.RGB 255 0 0, S.RGB 0 255 0, S.RGB 0 0 255 ] /\ node
 
 
 render :: forall m. State -> H.ComponentHTML Action () m
-render colors =
+render (colors /\ _) =
     HS.g
         []
         [ (HS.g [] $ Array.mapWithIndex colorRect colors)
@@ -67,16 +73,25 @@ render colors =
                 ]
 
 
-handleAction :: forall m. Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
 handleAction = case _ of
-    Todo ->
+    Initialize -> do
+        _ /\ node <- H.get
+        emitter <- E.fromOutlet node "color"
+        _ <- H.subscribe (Update <$> emitter)
+        pure unit
+    Update hydra -> do
+        H.modify_ (\(_ /\ node) -> HydraE.colorMod hydra /\ node)
         pure unit
 
 
-component :: forall m. UI.NodeComponent m Hydra
+component :: forall m. MonadEffect m => UI.NodeComponent m Hydra
 component =
     H.mkComponent
         { initialState
         , render
-        , eval: H.mkEval H.defaultEval { handleAction = handleAction }
+        , eval: H.mkEval H.defaultEval
+            { handleAction = handleAction
+            , initialize = Just Initialize
+            }
         }

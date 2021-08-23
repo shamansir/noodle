@@ -3,6 +3,9 @@ module App.Emitters where
 
 import Prelude
 
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Map.Extra (type (/->))
+
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 import Effect.Aff as Aff
@@ -65,6 +68,22 @@ fromInlet node = fromSignal <<< Node.inletSignal node
 
 fromOutlet :: forall m d. MonadEffect m => Node d -> OutletId -> m (HS.Emitter d)
 fromOutlet node = fromSignal <<< Node.outletSignal node
+
+
+fromAllInlets :: forall m d. MonadEffect m => Node d -> m (HS.Emitter (InletId /\ d))
+fromAllInlets = fromSignal <<< Node.inletsSignal
+
+
+fromAllOutlets :: forall m d. MonadEffect m => Node d -> m (HS.Emitter (OutletId /\ d))
+fromAllOutlets = fromSignal <<< Node.outletsSignal
+
+
+fromAllInlets' :: forall m d. MonadEffect m => Node d -> m (HS.Emitter (InletId /-> d))
+fromAllInlets' = fromSignal <<< Node.inletsSignal'
+
+
+fromAllOutlets' :: forall m d. MonadEffect m => Node d -> m (HS.Emitter (OutletId /-> d))
+fromAllOutlets' = fromSignal <<< Node.outletsSignal'
 
 
 windowDimensions :: forall m. MonadEffect m => m (HS.Emitter { w :: Int, h :: Int })

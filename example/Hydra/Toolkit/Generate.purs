@@ -42,7 +42,7 @@ data Kind
 
 
 byKind :: Kind -> Array Node.Family
-byKind Source = [ "noise", "voronoi", "osc", "shape", "gradient" ]
+byKind Source = [ "noise", "voronoi", "osc", "shape", "gradient", "solid" ]
 byKind Geom = [ "rotate", "scale", "pixelate", "repeat", "repeat-x", "repeat-y", "kaleid", "scroll-x", "scroll-y" ]
 byKind Color = [ "posterize", "shift", "invert", "contrast", "brightness", "luma", "tresh"
                , "color", "saturate", "hue", "colorama" ]
@@ -66,10 +66,10 @@ all = GenId <$> byKind Source <> byKind Geom <> byKind Color <> byKind Blend <> 
 
 all' :: Array (Kind /\ Node.Family)
 all' = ((/\) Source <$> byKind Source)
-    <> ((/\) Geom <$> byKind Geom)
-    <> ((/\) Color <$> byKind Color)
-    <> ((/\) Blend <$> byKind Blend)
-    <> ((/\) Mod <$> byKind Mod)
+    <> ((/\) Geom   <$> byKind Geom)
+    <> ((/\) Color  <$> byKind Color)
+    <> ((/\) Blend  <$> byKind Blend)
+    <> ((/\) Mod    <$> byKind Mod)
 
 
 instance ToFn String EorV where

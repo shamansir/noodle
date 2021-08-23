@@ -6,7 +6,7 @@ module Noodle.Node
     , inlet, outlet
     , inlets, outlets
     , inletSignal, outletSignal, outletSignalFlipped
-    , inletsSignal, outletsSignal
+    , inletsSignal, outletsSignal, inletsSignal', outletsSignal'
     , get, get'
     , (<|), (|>), (<~>), (<+), (+>), (++>)
     , consumer
@@ -161,9 +161,19 @@ inletsSignal =
     Ch.subscribe <<< getInletsChannel
 
 
+inletsSignal' :: forall d. Node d -> Signal (InletId /-> d)
+inletsSignal' =
+    Signal.foldp (uncurry Map.insert) Map.empty <<< inletsSignal
+
+
 outletsSignal :: forall d. Node d -> Signal (OutletId /\ d)
 outletsSignal =
     Ch.subscribe <<< getOutletsChannel
+
+
+outletsSignal' :: forall d. Node d -> Signal (OutletId /-> d)
+outletsSignal' =
+    Signal.foldp (uncurry Map.insert) Map.empty <<< outletsSignal
 
 
 inletSignal :: forall d. Node d -> InletId -> Signal d
