@@ -102,16 +102,31 @@ outlet name (Shape (_ /\ outlets)) =
     Tuple.snd <$> Array.find (Tuple.fst >>> (==) name) outlets
 
 
-inlets :: forall d. Shape d -> Array (InletId /\ (Channel.Shape d d))
+inlets :: forall d. Shape d -> Array (InletId /\ Channel.Shape d d)
 inlets = unwrap >>> Tuple.fst
 
 
-outlets :: forall d. Shape d -> Array (OutletId /\ (Channel.Shape d d))
+inletsBy :: forall d. (Channel.Shape d d -> Boolean) -> Shape d -> Array (InletId /\ Channel.Shape d d)
+inletsBy pred = inlets >>> Array.filter (Tuple.snd >>> pred)
+
+
+outlets :: forall d. Shape d -> Array (OutletId /\ Channel.Shape d d)
 outlets = unwrap >>> Tuple.snd
+
+
+outletsBy :: forall d. (Channel.Shape d d -> Boolean) -> Shape d -> Array (InletId /\ Channel.Shape d d)
+outletsBy pred = outlets >>> Array.filter (Tuple.snd >>> pred)
 
 
 dimensions :: forall d. Shape d -> Int /\ Int
 dimensions (Shape (inlets /\ outlets)) = Array.length inlets /\ Array.length outlets
+
+
+dimensionsBy :: forall d. (Channel.Shape d d -> Boolean) -> Shape d -> Int /\ Int
+dimensionsBy pred (Shape (inlets /\ outlets)) =
+    (Array.length $ Array.filter (Tuple.snd >>> pred) inlets)
+    /\
+    (Array.length $ Array.filter (Tuple.snd >>> pred) outlets)
 
 
 move :: forall a b. (a -> b) -> (b -> a) -> Shape a -> Shape b

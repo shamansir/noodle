@@ -115,8 +115,8 @@ render { node, name, style, flow, ui } =
         ( outerWidth /\ outerHeight ) = node # Calc.nodeBounds f style flow # V2.toTuple
         ( innerWidth /\ innerHeight ) = node # Calc.bodySize f style flow # V2.toTuple
 
-        inlets = Node.inlets node
-        outlets = Node.outlets node
+        inlets = Node.inletsBy (not Ch.isHidden) node
+        outlets = Node.outletsBy (not Ch.isHidden) node
 
         name' =
             if f.hasTitle then
@@ -231,7 +231,8 @@ render { node, name, style, flow, ui } =
             HS.g
                 [ HSA.translateTo' $ Calc.bodyPos f style flow node ]
                 [ HS.rect
-                    [ HSA.fill $ Just style.body.fill
+                    [ HSA.id $ name <> "-body-bg"
+                    , HSA.fill $ Just style.body.fill
                     , HSA.stroke $ Just style.body.stroke
                     , HSA.strokeWidth $ style.body.strokeWidth
                     , HSA.rx style.body.cornerRadius, HSA.ry style.body.cornerRadius

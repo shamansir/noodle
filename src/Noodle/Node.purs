@@ -4,13 +4,13 @@ module Noodle.Node
     , make, move
     , markFamily, family
     , inlet, outlet
-    , inlets, outlets
+    , inlets, outlets, inletsBy, outletsBy
     , inletSignal, outletSignal, outletSignalFlipped
     , inletsSignal, outletsSignal, inletsSignal', outletsSignal'
     , get, get'
     , (<|), (|>), (<~>), (<+), (+>), (++>)
     , consumer
-    , dimensions, indexOfInlet, indexOfOutlet
+    , dimensions, dimensionsBy, indexOfInlet, indexOfOutlet
     , defaultOfInlet, defaultOfOutlet
     )
     where
@@ -222,16 +222,28 @@ outlet :: forall d. OutletId -> Node d -> Maybe (Channel.Shape d d)
 outlet name = getShape' >>> Shape.outlet name
 
 
-inlets :: forall d. Node d -> Array (InletId /\ (Channel.Shape d d))
+inlets :: forall d. Node d -> Array (InletId /\ Channel.Shape d d)
 inlets = getShape' >>> Shape.inlets
 
 
-outlets :: forall d. Node d -> Array (OutletId /\ (Channel.Shape d d))
+inletsBy :: forall d. (Channel.Shape d d -> Boolean) -> Node d -> Array (InletId /\ Channel.Shape d d)
+inletsBy pred = getShape' >>> Shape.inletsBy pred
+
+
+outlets :: forall d. Node d -> Array (OutletId /\ Channel.Shape d d)
 outlets = getShape' >>> Shape.outlets
+
+
+outletsBy :: forall d. (Channel.Shape d d -> Boolean) -> Node d -> Array (InletId /\ Channel.Shape d d)
+outletsBy pred = getShape' >>> Shape.outletsBy pred
 
 
 dimensions :: forall d. Node d -> Int /\ Int
 dimensions (Node _ shape _ _) = Shape.dimensions shape
+
+
+dimensionsBy :: forall d. (Channel.Shape d d -> Boolean) -> Node d -> Int /\ Int
+dimensionsBy pred (Node _ shape _ _) = Shape.dimensionsBy pred shape
 
 
 indexOfInlet :: forall d. InletId -> Node d -> Maybe Int

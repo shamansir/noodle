@@ -13,6 +13,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 
 import Noodle.Node (Node)
 import Noodle.Node as Node
+import Noodle.Channel.Shape as Ch
 
 import App.Style
 import App.Style.Order as Order
@@ -267,7 +268,7 @@ nodeBounds f s flow node =
 sizeF :: forall d. GetSizeF d NodePart
 sizeF f s flow node =
     let
-        inletsCount /\ outletsCount = Node.dimensions node
+        inletsCount /\ outletsCount = Node.dimensionsBy (not Ch.isHidden) node
         sizeOf Title =
             if f.hasTitle then
                 case s.title.mode of
@@ -292,7 +293,7 @@ sizeF f s flow node =
 sizeF' :: forall d. GetSizeF d NodePart
 sizeF' f s flow node =
     let
-        inletsCount /\ outletsCount = Node.dimensions node
+        inletsCount /\ outletsCount = Node.dimensionsBy (not Ch.isHidden) node
         sizeOf Title =
             if f.hasTitle then
                 case s.title.mode of
