@@ -67,7 +67,7 @@ render (colors /\ _) =
                     [ HSA.x $ colorRectWidth * toNumber i
                     , HSA.y 0.0
                     , HSA.width colorRectWidth
-                    , HSA.height 55.0
+                    , HSA.height 55.0 -- FIXME
                     , HSA.fill $ Just color
                     ]
                 ]
@@ -82,7 +82,6 @@ handleAction = case _ of
         pure unit
     Update hydra -> do
         H.modify_ (\(_ /\ node) -> HydraE.colorMod hydra /\ node)
-        pure unit
 
 
 component :: forall m. MonadEffect m => UI.NodeComponent m Hydra

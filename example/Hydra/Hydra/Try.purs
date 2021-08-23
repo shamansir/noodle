@@ -222,7 +222,7 @@ tresh =
 color :: H.HydraEFn4M
 color =
     tryEV4M
-        ( H.defaultEntity /\ Num 0.5 /\ Num 0.5 /\ Num 0.5 /\ Num 0.5 )
+        ( H.defaultEntity /\ Num 0.0 /\ Num 0.0 /\ Num 0.0 /\ Num 1.0 )
         (\what r g b a ->
             Hydra $ H.addModifier what $ H.color $ Color { r, g, b, a }
         )

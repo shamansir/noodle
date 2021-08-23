@@ -3,15 +3,20 @@ module Hydra.Component.Node.Seq where
 
 import Prelude
 
+import Effect.Class (class MonadEffect)
+
 -- import Data.String.Read (read)
 --import Data.Parse
-import Data.Maybe (fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Array ((:))
 import Data.Array as Array
+import Data.Tuple.Nested (type (/\), (/\))
 
 import App.Toolkit.UI as UI
+import App.Emitters as E
 
 import Noodle.Node as Node
+import Noodle.Node (Node)
 
 import Hydra (Hydra, Value(..))
 import Hydra as Hydra
@@ -23,29 +28,32 @@ import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 
 
-type State = Array Value
+type State = Array Value /\ Node Hydra
 
 
 data Action
     = NoOp
-    | Add
+    | Initialize
+    -- | Add
     | Change Int Number
     | Remove Int
+    | Update Hydra
 
 
 initialState :: UI.NodeInput Hydra -> State
 initialState { node } =
-    Node.defaultOfInlet "seq" node
+    (Node.defaultOfInlet "seq" node
         <#> HydraE.seq
          #  fromMaybe []
+    ) /\ node
 
 
 render :: forall m. State -> H.ComponentHTML Action () m
-render numbers =
+render (numbers /\ _) =
     HS.g
         []
         [ (HS.g [] $ Array.mapWithIndex itemInput numbers)
-        , Input.button Add
+        -- , Input.button Add
         ]
     where
         itemInput i (Num n) =
@@ -58,28 +66,38 @@ render numbers =
             HS.none
 
 
-handleAction :: forall m. Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
 handleAction = case _ of
     NoOp ->
         pure unit
-    Add -> do
+    Initialize -> do
+        _ /\ node <- H.get
+        emitter <- E.fromOutlet node "seq"
+        _ <- H.subscribe (Update <$> emitter)
+        pure unit
+    {- Add -> do
         H.modify_ ((:) (Num 0.0))
         next <- H.get
-        H.raise $ UI.SendToOutlet "seq" $ Hydra.seq next
+        H.raise $ UI.SendToOutlet "seq" $ Hydra.seq next -}
     Change i n -> do
-        H.modify_ $ \a -> Array.updateAt i (Num n) a # fromMaybe a
-        next <- H.get
+        H.modify_ $ \(a /\ node) -> (Array.updateAt i (Num n) a # fromMaybe a) /\ node
+        next /\ _ <- H.get
         H.raise $ UI.SendToOutlet "seq" $ Hydra.seq next
+    Update hydra -> do
+        H.modify_ (\(_ /\ node) -> HydraE.seq hydra /\ node)
     Remove i -> do
-        H.modify_ $ \a -> Array.deleteAt i a # fromMaybe a
-        next <- H.get
+        H.modify_ $ \(a /\ node) -> (Array.deleteAt i a # fromMaybe a) /\ node
+        next /\ _ <- H.get
         H.raise $ UI.SendToOutlet "seq" $ Hydra.seq next
 
 
-component :: forall m. UI.NodeComponent m Hydra
+component :: forall m. MonadEffect m => UI.NodeComponent m Hydra
 component =
     H.mkComponent
         { initialState
         , render
-        , eval: H.mkEval H.defaultEval { handleAction = handleAction }
+        , eval: H.mkEval H.defaultEval
+            { handleAction = handleAction
+            , initialize = Just Initialize
+            }
         }

@@ -48,3 +48,9 @@ colorMod (Hydra (Entity _ modifiers)) =
         extractColors _ = Nothing
         joinToColor r g b a = S.RGBA (floor $ r * 255.0) (floor $ g * 255.0) (floor $ b * 255.0) a
 colorMod _ = []
+
+
+buildSeq5 :: Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Hydra
+buildSeq5 h1 h2 h3 h4 h5 =
+    Value $ Seq $ seqOf h1 <> seqOf h2 <> seqOf h3 <> seqOf h4 <> seqOf h5
+    where seqOf maybeH = fromMaybe [] (seq <$> maybeH)

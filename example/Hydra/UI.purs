@@ -10,6 +10,7 @@ import Hydra.Component.Background as BG
 import Hydra.Component.Node.Num as NumNode
 import Hydra.Component.Node.Osc as OscNode
 import Hydra.Component.Node.Color as ColorNode
+import Hydra.Component.Node.Seq as SeqNode
 import Hydra.Toolkit.Generate as Gen
 import Hydra.Toolkit.Generate (Kind(..))
 
@@ -43,6 +44,7 @@ hasCustomBody :: Node.Family -> Boolean
 hasCustomBody "num" = true
 hasCustomBody "osc" = true
 hasCustomBody "color" = true
+hasCustomBody "seq" = true
 hasCustomBody _ = false
 
 
@@ -54,6 +56,7 @@ node :: forall m. MonadEffect m => Node.Family -> Maybe (UI.NodeComponent m Hydr
 node "num" = Just $ NumNode.component
 node "osc" = Just $ OscNode.component
 node "color" = Just $ ColorNode.component
+node "seq" = Just $ SeqNode.component
 node _ = Nothing
 
 
@@ -92,6 +95,7 @@ isValueNode :: Node.Family -> Boolean
 isValueNode "num" = true
 isValueNode "time" = true
 isValueNode "mouse" = true
+isValueNode "seq" = true
 isValueNode _ = false
 
 

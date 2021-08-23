@@ -22,6 +22,7 @@ toolkit =
     [ "num" /\ Node.number
     , "time" /\ Node.time
     , "mouse" /\ Node.mouse
+    , "seq" /\ Node.seq
     ] <> (Gen.generate <$> Gen.all) <>
     [ "out" /\ Node.out
     ]

@@ -15,6 +15,7 @@ import Hydra.Engine as HydraE
 import Hydra.Toolkit.Shape (entity, out, value) as Channel
 import Hydra.Compile (compile) as Hydra
 import Hydra.Try as Hydra
+import Hydra.Extract as HydraE
 
 import Noodle.Node ((<+))
 import Noodle.Node.Define (Def)
@@ -49,7 +50,7 @@ time =
 mouse :: Def Hydra
 mouse =
     Def.define
-      noOutlets
+      noInlets
       (withOutlets
         >~ "x" /\ Channel.value
         >~ "y" /\ Channel.value
@@ -58,6 +59,32 @@ mouse =
           [ "x" /\ Hydra.mouseX
           , "y" /\ Hydra.mouseY
           ]
+
+
+seq :: Def Hydra
+seq =
+    Def.define
+      (withOutlets
+        >~ "1" /\ Channel.value
+        >~ "2" /\ Channel.value
+        >~ "3" /\ Channel.value
+        >~ "4" /\ Channel.value
+        >~ "5" /\ Channel.value
+      )
+      (withOutlets
+        >~ "seq" /\ Channel.value
+      )
+      $ \inlets ->
+        Def.pass
+          [ "seq" /\
+              HydraE.buildSeq5
+                  ("1" <+ inlets)
+                  ("2" <+ inlets)
+                  ("3" <+ inlets)
+                  ("4" <+ inlets)
+                  ("5" <+ inlets)
+          ]
+
 
 
 out :: Def Hydra
