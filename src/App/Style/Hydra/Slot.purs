@@ -8,11 +8,11 @@ import Data.Vec2 ((<+>))
 
 slot :: SlotStyle
 slot =
-    { connector : Circle 5.0
+    { connector : DoubleCircle 3.0 5.0
     , offset : 10.0 <+> 0.0
     , direction : Inside
     , info : Always
-    , strokeWidth : 1.5
+    , strokeWidth : 1.0
     , stroke : C.rgb 0 0 0
     , fill : C.rgb 255 255 255
     , label : { color : C.rgb 255 255 255, maxWidth : 30.0 }

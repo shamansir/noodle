@@ -24,7 +24,7 @@ import Noodle.Node as Node
 import Noodle.Channel.Shape as Ch
 import Noodle.Node.Shape (InletId, OutletId)
 
-import App.Style (Flags, Style, NodeFlow(..), transparent, TitleMode(..))
+import App.Style (Flags, Style, NodeFlow(..), transparent, TitleMode(..), Connector(..))
 import App.Style (Flags, defaultFlags) as Style
 import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
@@ -171,17 +171,54 @@ render { node, name, style, flow, ui } =
                     ]
             else HS.none
 
+        connector (Circle r) shape =
+            HS.circle
+                [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
+                , HSA.stroke $ Just style.slot.stroke
+                , HSA.strokeWidth style.slot.strokeWidth
+                , HSA.r r
+                ]
+
+        connector (DoubleCircle ir or) shape =
+            HS.g
+                []
+                [ HS.circle
+                    [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
+                    , HSA.strokeWidth 0.0
+                    , HSA.r ir
+                    ]
+                , HS.circle
+                    [ HSA.fill Nothing
+                    , HSA.stroke $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
+                    , HSA.strokeWidth style.slot.strokeWidth
+                    , HSA.r or
+                    ]
+                ]
+
+        connector (Rect s) shape =
+            HS.rect
+                [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
+                , HSA.stroke $ Just style.slot.stroke
+                , HSA.strokeWidth style.slot.strokeWidth
+                , HSA.width $ V2.w s
+                , HSA.height $ V2.h s
+                ]
+
+        connector (Square n) shape =
+            HS.rect
+                [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
+                , HSA.stroke $ Just style.slot.stroke
+                , HSA.strokeWidth style.slot.strokeWidth
+                , HSA.width n
+                , HSA.height n
+                ]
+
         slot classes rectPos pos textPos (name /\ shape) =
             HS.g
                 [ HSA.classes classes ]
                 [ HS.g
                     [ HSA.translateTo' pos ]
-                    [ HS.circle
-                        [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
-                        , HSA.stroke $ Just style.slot.stroke
-                        , HSA.strokeWidth style.slot.strokeWidth
-                        , HSA.r $ fromMaybe 0.0 $ Calc.connectorRadius style.slot.connector
-                        ]
+                    [ connector style.slot.connector shape
                     ]
                 , HS.g
                     [ HSA.translateTo' textPos

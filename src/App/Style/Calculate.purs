@@ -29,7 +29,7 @@ type GetSizeF d a = Flags -> Style -> NodeFlow -> Node d -> Order.SizeF a
 
 
 slotPadding :: Pos
-slotPadding = 3.5 <+> 10.0
+slotPadding = 2.0 <+> 7.0
 
 
 removeButtonRadius :: Number
@@ -56,14 +56,7 @@ connectorSize :: Connector -> Size
 connectorSize (Square n) = n <+> n
 connectorSize (Rect size) = size
 connectorSize (Circle radius) = radius * 2.0 <+> radius * 2.0
-connectorSize (DoubleCircle _ maxRadius) = maxRadius * 2.0 <+> maxRadius * 2.0
-
-
-connectorRadius :: Connector -> Maybe Number
-connectorRadius (Square _) = Nothing
-connectorRadius (Rect _) = Nothing
-connectorRadius (Circle radius) = Just radius
-connectorRadius (DoubleCircle _ maxRadius) = Just maxRadius
+connectorSize (DoubleCircle _ outerRadius) = outerRadius * 2.0 <+> outerRadius * 2.0
 
 
 slotArea :: forall d. GetSize d
