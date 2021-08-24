@@ -1,7 +1,7 @@
 module JetBrains.Palettes where
 
 
-import Prelude (($), (#), (<$>), (/), flip)
+import Prelude (($), (#), (<$>), (/), flip, (<<<))
 
 import Data.Color as C
 import Data.Map as Map
@@ -13,7 +13,7 @@ import Data.Typelevel.Num.Reps (D3, d0, d1, d2)
 
 
 import Hydra
-import Hydra (Color) as Hydra
+import Hydra (Color, Source) as Hydra
 
 
 type PaletteId = String
@@ -75,12 +75,21 @@ palettes =
     ] # Map.fromFoldable
 
 
-toColorMod :: Palette -> Hydra.Color
-toColorMod p =
-    Color
-        { r : adapt [ (p !! d0) !! d0, (p !! d1) !! d0, (p !! d2) !! d0 ]
-        , g : adapt [ (p !! d0) !! d1, (p !! d1) !! d1, (p !! d2) !! d1 ]
-        , b : adapt [ (p !! d0) !! d2, (p !! d1) !! d2, (p !! d2) !! d2 ]
-        , a : Seq [ Num 1.0, Num 1.0, Num 1.0 ]
-        }
+toRgbaVals :: Palette -> { r :: Value, g :: Value, b :: Value, a :: Value }
+toRgbaVals p =
+    { r : adapt [ (p !! d0) !! d0, (p !! d1) !! d0, (p !! d2) !! d0 ]
+    , g : adapt [ (p !! d0) !! d1, (p !! d1) !! d1, (p !! d2) !! d1 ]
+    , b : adapt [ (p !! d0) !! d2, (p !! d1) !! d2, (p !! d2) !! d2 ]
+    , a : Seq [ Num 1.0, Num 1.0, Num 1.0 ]
+    }
     where adapt arr = Seq $ Num <$> (flip (/) 255.0) <$> toNumber <$> arr
+
+
+toColorMod :: Palette -> Hydra.Color
+toColorMod =
+    Color <<< toRgbaVals
+
+
+toSolidSource :: Palette -> Hydra.Source
+toSolidSource =
+    Solid <<< toRgbaVals

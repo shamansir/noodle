@@ -24,6 +24,7 @@ toolkit =
     , "mouse" /\ Node.mouse
     , "seq" /\ Node.seq
     , "palette" /\ Node.palette
+    , "solid-pal" /\ Node.solidPalette
     ] <> (Gen.generate <$> Gen.all) <>
     [ "out" /\ Node.out
     ]

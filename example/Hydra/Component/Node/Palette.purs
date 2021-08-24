@@ -37,7 +37,12 @@ import Halogen.Svg.Attributes as HSA
 import Data.Color as C
 
 
-type State = P.PaletteId
+type State = Mode /\ P.PaletteId
+
+
+data Mode
+    = Modifier
+    | Solid
 
 
 data Action
@@ -51,13 +56,13 @@ bodyWidth = 110.0 -- FIXME: pass from outside
 -- defaultPalette = Hydra.Color { r = Num
 
 
-initialState :: UI.NodeInput Hydra -> State
-initialState _ =
-    "JetBrains"
+initialState :: Mode -> UI.NodeInput Hydra -> State
+initialState mode _ =
+    mode /\ "JetBrains"
 
 
 render :: forall m. State -> H.ComponentHTML Action () m
-render paletteId =
+render (_ /\ paletteId) =
     HS.g
         []
         [ (HS.g [] $ Array.mapWithIndex colorRect colors)
@@ -84,15 +89,18 @@ render paletteId =
 handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
 handleAction = case _ of
     Change paletteId -> do
-        H.put paletteId
+        mode /\ _ <- H.get
+        H.modify_ (\(mode /\ _) -> mode /\ paletteId)
         let palette = fromMaybe P.default $ Map.lookup paletteId P.palettes
-        H.raise $ UI.SendToInlet "palette" $ Hydra.justModifier $ Hydra.color $ P.toColorMod palette
+        H.raise $ UI.SendToInlet "palette" $ case mode of
+            Modifier -> Hydra.justModifier $ Hydra.color $ P.toColorMod palette
+            Solid -> Hydra.hydraOf $ Hydra.entityOf $ P.toSolidSource palette
 
 
-component :: forall m. MonadEffect m => UI.NodeComponent m Hydra
-component =
+component :: forall m. MonadEffect m => Mode -> UI.NodeComponent m Hydra
+component mode =
     H.mkComponent
-        { initialState
+        { initialState : initialState mode
         , render
         , eval: H.mkEval H.defaultEval { handleAction = handleAction }
         }

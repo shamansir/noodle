@@ -1,6 +1,6 @@
 module Hydra.UI where
 
-import Prelude (($), (<#>), const)
+import Prelude (($), (<#>), const, otherwise)
 
 import Data.Maybe (Maybe(..))
 import Effect.Class (class MonadEffect)
@@ -48,6 +48,7 @@ hasCustomBody "osc" = true
 hasCustomBody "color" = true
 hasCustomBody "seq" = true
 hasCustomBody "palette" = true
+hasCustomBody "solid-pal" = true
 hasCustomBody _ = false
 
 
@@ -56,11 +57,12 @@ background = Just BG.component
 
 
 node :: forall m. MonadEffect m => Node.Family -> Maybe (UI.NodeComponent m Hydra)
-node "num"     = Just $ NumNode.component
-node "osc"     = Just $ OscNode.component
-node "color"   = Just $ ColorNode.component
-node "seq"     = Just $ SeqNode.component
-node "palette" = Just $ PaletteNode.component
+node "num"       = Just $ NumNode.component
+node "osc"       = Just $ OscNode.component
+node "color"     = Just $ ColorNode.component
+node "seq"       = Just $ SeqNode.component
+node "palette"   = Just $ PaletteNode.component PaletteNode.Modifier
+node "solid-pal" = Just $ PaletteNode.component PaletteNode.Solid
 node _ = Nothing
 
 
@@ -104,10 +106,10 @@ isValueNode _ = false
 
 
 markNode :: Node.Family -> Maybe Color
-markNode family =
-    if isValueNode family
-        then Just $ Color.rgb 255 255 255
-        else Gen.ofKind family <#> markByKind
+markNode family | isValueNode family = Just valueColor
+markNode "solid-pal" = Just sourceColor
+markNode "palette" = Just colorColor
+markNode family | otherwise = Gen.ofKind family <#> markByKind
     where
         markByKind Source = sourceColor
         markByKind Geom = geomColor

@@ -65,11 +65,11 @@ seq :: Def Hydra
 seq =
     Def.define
       (withInlets
-        >~ "1" /\ Channel.value
-        >~ "2" /\ Channel.value
-        >~ "3" /\ Channel.value
-        >~ "4" /\ Channel.value
-        >~ "5" /\ Channel.value
+        ~< "1" /\ Channel.value
+        ~< "2" /\ Channel.value
+        ~< "3" /\ Channel.value
+        ~< "4" /\ Channel.value
+        ~< "5" /\ Channel.value
       )
       (withOutlets
         >~ "seq" /\ Channel.value
@@ -86,12 +86,12 @@ seq =
           ]
 
 
-palette :: Def Hydra -- TODO: + palette-solid
+palette :: Def Hydra
 palette =
     Def.define
       (withInlets
-        >~ "src" /\ Channel.entity
-        >~ "palette" /\ (Channel.modifier # Channel.hidden)
+        ~< "src" /\ Channel.entity
+        ~< "palette" /\ (Channel.modifier # Channel.hidden)
       )
       (withOutlets
         >~ "palette" /\ Channel.entity
@@ -106,6 +106,18 @@ palette =
                       )
                 )
             ]
+
+
+solidPalette :: Def Hydra -- TODO: + palette-solid
+solidPalette =
+    Def.define
+      (withInlets
+        ~< "palette" /\ (Channel.entity # Channel.hidden)
+      )
+      (withOutlets
+        >~ "palette" /\ Channel.entity
+      )
+      $ Def.passThrough
 
 
 out :: Def Hydra
