@@ -1,7 +1,7 @@
 module JetBrains.Palettes where
 
 
-import Prelude (($), (#), (<$>))
+import Prelude (($), (#), (<$>), (/), flip)
 
 import Data.Color as C
 import Data.Map as Map
@@ -81,6 +81,6 @@ toColorMod p =
         { r : adapt [ (p !! d0) !! d0, (p !! d1) !! d0, (p !! d2) !! d0 ]
         , g : adapt [ (p !! d0) !! d1, (p !! d1) !! d1, (p !! d2) !! d1 ]
         , b : adapt [ (p !! d0) !! d2, (p !! d1) !! d2, (p !! d2) !! d2 ]
-        , a : adapt [ 1, 1, 1 ]
+        , a : Seq [ Num 1.0, Num 1.0, Num 1.0 ]
         }
-    where adapt arr = Seq $ Num <$> toNumber <$> arr
+    where adapt arr = Seq $ Num <$> (flip (/) 255.0) <$> toNumber <$> arr

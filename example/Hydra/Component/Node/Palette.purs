@@ -61,6 +61,7 @@ render paletteId =
     HS.g
         []
         [ (HS.g [] $ Array.mapWithIndex colorRect colors)
+        , Input.button $ Change "PyCharm"
         ]
     where
         colors = P.toArray palette
