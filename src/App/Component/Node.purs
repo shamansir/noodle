@@ -36,7 +36,9 @@ import Halogen.HTML.Properties as HP
 import Halogen.HTML.Events as HE
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
+import Halogen.Svg.Elements.Extended as HS
 import Halogen.Svg.Attributes as HSA
+import Halogen.Svg.Attributes.Extended as HSA
 
 import App.Toolkit.UI (UI)
 import App.Toolkit.UI as UI
@@ -230,7 +232,25 @@ render { node, name, style, flow, ui } =
         body =
             HS.g
                 [ HSA.translateTo' $ Calc.bodyPos f style flow node ]
-                [ HS.rect
+                [ case Node.family node >>= ui.node of
+                    Just _ ->
+                        HS.mask
+                            [ HSA.id $ name <> "-body-mask"
+                            ]
+                            [ HS.rect
+                                [ HSA.fill $ Just $ Color.named "black"
+                                , HSA.width innerWidth, HSA.height innerHeight
+                                ]
+                            , HS.rect
+                                [ HSA.fill $ Just $ Color.named "white"
+                                , HSA.stroke $ Just $ Color.named "black"
+                                , HSA.strokeWidth $ style.body.strokeWidth
+                                , HSA.rx style.body.cornerRadius, HSA.ry style.body.cornerRadius
+                                , HSA.width innerWidth, HSA.height innerHeight
+                                ]
+                            ]
+                    Nothing -> HS.none
+                , HS.rect
                     [ HSA.id $ name <> "-body-bg"
                     , HSA.fill $ Just style.body.fill
                     , HSA.stroke $ Just style.body.stroke
@@ -238,11 +258,12 @@ render { node, name, style, flow, ui } =
                     , HSA.rx style.body.cornerRadius, HSA.ry style.body.cornerRadius
                     , HSA.width innerWidth, HSA.height innerHeight
                     ]
-                ,
-                case Node.family node >>= ui.node of
+                , case Node.family node >>= ui.node of
                     Just userNodeBody ->
-                        HS.g
-                            [ HSA.translateTo' $ Calc.bodyInnerOffset f style flow node ]
+                        HS.g'
+                            [ HSA.translateTo' $ Calc.bodyInnerOffset f style flow node
+                            , HSA.mask $ "url(#" <> name <> "-body-mask)"
+                            ]
                             [ HH.slot _body name userNodeBody { node } FromUser ]
                     Nothing ->
                         HS.none
