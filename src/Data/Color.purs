@@ -1,4 +1,4 @@
-module App.Style.Color where
+module Data.Color where
 
 
 import Prelude (($), (*))

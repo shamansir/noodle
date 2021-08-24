@@ -101,6 +101,7 @@ type Queue =
 data Hydra
     = None
     | Value Value
+    | Mod Modifier
     | Hydra Entity
     | Out Queue
 
@@ -135,6 +136,10 @@ addModifier (Entity src modifiers) = Entity src <<< Array.snoc modifiers
 
 hydraOf :: Entity -> Hydra
 hydraOf = Hydra
+
+
+justModifier :: Modifier -> Hydra
+justModifier = Mod
 
 
 num :: Number -> Hydra
@@ -178,6 +183,11 @@ isValue (Value _) = true
 isValue _ = false
 
 
+isModifier :: Hydra -> Boolean
+isModifier (Mod _) = true
+isModifier _ = false
+
+
 toValue :: Hydra -> Maybe Value
 toValue (Value v) = Just v
 toValue _ = Nothing
@@ -191,6 +201,11 @@ isEntity _ = false
 toEntity :: Hydra -> Maybe Entity
 toEntity (Hydra e) = Just e
 toEntity _ = Nothing
+
+
+toModifier :: Hydra -> Maybe Modifier
+toModifier (Mod m) = Just m
+toModifier _ = Nothing
 
 
 isOut :: Hydra -> Boolean
@@ -390,7 +405,12 @@ instance Show EntityOrValue where
 instance Show Entity where
     show (Entity source modifiers) =
         show (toFn source :: Fn Value) <> "\n    " <>
-            String.joinWith "\n    " (show <$> (toFn <$> modifiers :: Array (Fn EntityOrValue)))
+            String.joinWith "\n    " (show <$> modifiers)
+
+
+instance Show Modifier where
+    show modifier =
+        show $ (toFn modifier :: Fn EntityOrValue)
 
 
 instance Show Output where
@@ -401,5 +421,6 @@ instance Show Output where
 instance Show Hydra where
     show None = "None"
     show (Value v) = show v
+    show (Mod mod) = show mod
     show (Hydra entity) = show entity
     show (Out queue) = show queue

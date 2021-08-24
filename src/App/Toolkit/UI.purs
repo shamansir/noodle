@@ -13,7 +13,7 @@ import Noodle.Node.Shape (InletId, OutletId)
 import Noodle.Channel.Shape as Channel
 import Noodle.Network (Network)
 
-import App.Style.Color (Color)
+import Data.Color (Color)
 import App.Style (Flags)
 import App.Style (defaultFlags) as Style
 

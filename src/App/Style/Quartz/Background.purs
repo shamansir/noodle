@@ -1,8 +1,8 @@
 module App.Style.Quartz.Background where
 
-import Halogen.Svg.Attributes (Color(..))
+import Data.Color (rgb, rgba) as C
 
 import App.Style (BackgroundStyle)
 
 bg :: BackgroundStyle
-bg = { fill : RGB 34 34 42 }
+bg = { fill : C.rgb 34 34 42 }

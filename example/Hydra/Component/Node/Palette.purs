@@ -1,4 +1,4 @@
-module Hydra.Component.Node.Color where
+module Hydra.Component.Node.Palette where
 
 
 import Prelude
@@ -10,12 +10,17 @@ import Effect.Class (class MonadEffect)
 import Data.Maybe (fromMaybe)
 import Data.Array ((:))
 import Data.Array as Array
+import Data.Map as Map
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Vec ((!!))
+import Data.Typelevel.Num.Reps (d0, d1, d2)
 
 import App.Toolkit.UI as UI
 import App.Emitters as E
+
+import JetBrains.Palettes as P
 
 import Noodle.Node (Node)
 import Noodle.Node as Node
@@ -32,32 +37,34 @@ import Halogen.Svg.Attributes as HSA
 import Data.Color as C
 
 
-type State = Array C.Color /\ Node Hydra
+type State = P.PaletteId
 
 
 data Action
-    = Initialize
-    | Update Hydra
+    = Change P.PaletteId
 
 
 bodyWidth = 110.0 -- FIXME: pass from outside
 
 
-initialState :: forall d. UI.NodeInput Hydra -> State
-initialState { node } =
-    {- Node.defaultOfInlet "seq" node
-        <#> HydraE.seq -
-         #  fromMaybe [] -}
-    [ C.rgb 255 255 255, C.rgb 255 0 0, C.rgb 0 255 0, C.rgb 0 0 255 ] /\ node
+-- defaultPalette :: Hydra.Color
+-- defaultPalette = Hydra.Color { r = Num
+
+
+initialState :: UI.NodeInput Hydra -> State
+initialState _ =
+    "JetBrains"
 
 
 render :: forall m. State -> H.ComponentHTML Action () m
-render (colors /\ _) =
+render paletteId =
     HS.g
         []
         [ (HS.g [] $ Array.mapWithIndex colorRect colors)
         ]
     where
+        colors = P.toArray palette
+        palette = fromMaybe P.default $ Map.lookup paletteId P.palettes
         colorsCount = Array.length colors
         colorRectWidth = bodyWidth / toNumber colorsCount
         colorRect i color =
@@ -75,13 +82,10 @@ render (colors /\ _) =
 
 handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
 handleAction = case _ of
-    Initialize -> do
-        _ /\ node <- H.get
-        emitter <- E.fromOutlet node "color"
-        _ <- H.subscribe (Update <$> emitter)
-        pure unit
-    Update hydra -> do
-        H.modify_ (\(_ /\ node) -> HydraE.colorMod hydra /\ node)
+    Change paletteId -> do
+        H.put paletteId
+        let palette = fromMaybe P.default $ Map.lookup paletteId P.palettes
+        H.raise $ UI.SendToInlet "palette" $ Hydra.justModifier $ Hydra.color $ P.toColorMod palette
 
 
 component :: forall m. MonadEffect m => UI.NodeComponent m Hydra
@@ -89,8 +93,5 @@ component =
     H.mkComponent
         { initialState
         , render
-        , eval: H.mkEval H.defaultEval
-            { handleAction = handleAction
-            , initialize = Just Initialize
-            }
+        , eval: H.mkEval H.defaultEval { handleAction = handleAction }
         }

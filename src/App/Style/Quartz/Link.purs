@@ -1,6 +1,6 @@
 module App.Style.Quartz.Link where
 
---import Halogen.Svg.Attributes (Color(..))
+--import Data.Color (rgb, rgba) as C
 
 import App.Style (LinkStyle, LinkType(..))
 

@@ -3,7 +3,7 @@ module Hydra.Toolkit.Shape where
 
 import Prelude (($))
 
-import Hydra (Hydra(..), Value(..))
+import Hydra (Hydra(..), Value(..), Modifier)
 import Hydra as Hydra
 
 import Noodle.Channel.Shape (Shape')
@@ -18,6 +18,11 @@ value =
 entity :: Shape' Hydra
 entity =
   Channel.shapeBy "entity" None Hydra.isEntity
+
+
+modifier :: Shape' Hydra
+modifier =
+  Channel.shapeBy "modifier" None Hydra.isModifier
 
 
 out :: Shape' Hydra

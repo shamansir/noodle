@@ -6,13 +6,15 @@ import Data.Maybe (Maybe(..))
 import Effect.Class (class MonadEffect)
 
 import Hydra (Hydra)
+import Hydra.Toolkit.Generate as Gen
+import Hydra.Toolkit.Generate (Kind(..))
+
 import Hydra.Component.Background as BG
 import Hydra.Component.Node.Num as NumNode
 import Hydra.Component.Node.Osc as OscNode
 import Hydra.Component.Node.Color as ColorNode
 import Hydra.Component.Node.Seq as SeqNode
-import Hydra.Toolkit.Generate as Gen
-import Hydra.Toolkit.Generate (Kind(..))
+import Hydra.Component.Node.Palette as PaletteNode
 
 import Noodle.Node as Node
 import Noodle.Channel.Shape as Channel
@@ -20,8 +22,8 @@ import Noodle.Channel.Shape as Channel
 import App.Toolkit.UI as UI
 import App.Toolkit.UI (UI)
 import App.Style as Style
-import App.Style.Color (Color)
-import App.Style.Color as Color
+import Data.Color (Color)
+import Data.Color as Color
 
 
 ui :: forall m. MonadEffect m => UI m Hydra
@@ -45,6 +47,7 @@ hasCustomBody "num" = true
 hasCustomBody "osc" = true
 hasCustomBody "color" = true
 hasCustomBody "seq" = true
+hasCustomBody "palette" = true
 hasCustomBody _ = false
 
 
@@ -53,10 +56,11 @@ background = Just BG.component
 
 
 node :: forall m. MonadEffect m => Node.Family -> Maybe (UI.NodeComponent m Hydra)
-node "num" = Just $ NumNode.component
-node "osc" = Just $ OscNode.component
-node "color" = Just $ ColorNode.component
-node "seq" = Just $ SeqNode.component
+node "num"     = Just $ NumNode.component
+node "osc"     = Just $ OscNode.component
+node "color"   = Just $ ColorNode.component
+node "seq"     = Just $ SeqNode.component
+node "palette" = Just $ PaletteNode.component
 node _ = Nothing
 
 

@@ -4,8 +4,8 @@ module App.Style where
 import Prelude (class Show)
 
 import App.Style.Order as O
-import App.Style.Color (Color)
-import App.Style.Color as Color
+import Data.Color (Color)
+import Data.Color as Color
 
 import Data.Set (Set)
 

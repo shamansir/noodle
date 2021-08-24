@@ -28,7 +28,7 @@ import App.Style (Flags, Style, NodeFlow(..), transparent, TitleMode(..))
 import App.Style (Flags, defaultFlags) as Style
 import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
-import App.Style.Color as Color
+import Data.Color as Color
 
 import Halogen as H
 import Halogen.HTML as HH

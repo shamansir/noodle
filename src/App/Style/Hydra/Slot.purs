@@ -1,6 +1,6 @@
 module App.Style.Hydra.Slot where
 
-import Halogen.Svg.Attributes (Color(..))
+import Data.Color (rgb, rgba) as C
 
 import App.Style (SlotStyle, Connector(..), SlotDirection(..), SlotInfoVisibility(..))
 import Data.Vec2 ((<+>))
@@ -13,8 +13,8 @@ slot =
     , direction : Inside
     , info : Always
     , strokeWidth : 1.5
-    , stroke : RGB 0 0 0
-    , fill : RGB 255 255 255
-    , label : { color : RGB 255 255 255, maxWidth : 30.0 }
-    , value : { color : RGB 255 255 255, maxWidth : 10.0 }
+    , stroke : C.rgb 0 0 0
+    , fill : C.rgb 255 255 255
+    , label : { color : C.rgb 255 255 255, maxWidth : 30.0 }
+    , value : { color : C.rgb 255 255 255, maxWidth : 10.0 }
     }

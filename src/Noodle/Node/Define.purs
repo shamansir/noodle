@@ -3,7 +3,7 @@ module Noodle.Node.Define
     , empty
     , define, defineEffectful
     , fromFn, fromFnEffectful
-    , receive, pass, pass', passNothing, passThrough, doNothing, always, alwaysOne
+    , receive, pass, pass', passNothing, passThrough, passThrough', doNothing, always, alwaysOne
     , lastUpdateAt
     , dimensions, processWith, processEffectfulWith
     --, withFn1, withFn2, withFn3, withFn4, withFn5
@@ -17,13 +17,14 @@ import Prelude
 
 import Effect (Effect)
 import Data.Array as Array
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Map as Map
 import Data.Tuple (curry, uncurry)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Map.Extra (type (/->))
 import Data.Traversable (sequence)
+import Data.Foldable (foldr)
 --import Data.Functor (class Functor)
 import Data.Functor.Invariant (class Invariant, imap)
 import Data.Bifunctor (lmap, rmap)
@@ -149,6 +150,19 @@ passNothing = Pass { toOutlets : Map.empty }
 
 passThrough :: forall d. Receive d -> Pass d
 passThrough (Receive { fromInlets }) = Pass { toOutlets : fromInlets }
+
+
+passThrough' :: forall d. Array InletId -> Receive d -> Pass d
+passThrough' inlets (Receive { fromInlets }) =
+    Pass
+        { toOutlets :
+            Map.fromFoldable
+                 $  Array.catMaybes
+                 $  (\inlet ->
+                        ((/\) inlet) <$> Map.lookup inlet fromInlets
+                    )
+                <$> inlets
+         }
 
 
 doNothing :: forall d. Receive d -> Pass d

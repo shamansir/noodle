@@ -9,10 +9,10 @@ import Data.Tuple.Nested ((/\))
 import Data.Maybe (maybe)
 import Data.Traversable (sequence)
 
-import Hydra (Hydra)
+import Hydra (Hydra(..))
 import Hydra as Hydra
 import Hydra.Engine as HydraE
-import Hydra.Toolkit.Shape (entity, out, value) as Channel
+import Hydra.Toolkit.Shape (entity, out, value, modifier) as Channel
 import Hydra.Compile (compile) as Hydra
 import Hydra.Try as Hydra
 import Hydra.Extract as HydraE
@@ -64,7 +64,7 @@ mouse =
 seq :: Def Hydra
 seq =
     Def.define
-      (withOutlets
+      (withInlets
         >~ "1" /\ Channel.value
         >~ "2" /\ Channel.value
         >~ "3" /\ Channel.value
@@ -85,6 +85,27 @@ seq =
                   ("5" <+ inlets)
           ]
 
+
+palette :: Def Hydra -- TODO: + palette-solid
+palette =
+    Def.define
+      (withInlets
+        >~ "src" /\ Channel.entity
+        >~ "palette" /\ (Channel.modifier # Channel.hidden)
+      )
+      (withOutlets
+        >~ "palette" /\ Channel.entity
+      )
+      $ \inlets ->
+          Def.pass'
+            [ "palette" /\
+                (Hydra
+                  <$> ( Hydra.addModifier
+                        <$> (HydraE.entity =<< "src" <+ inlets)
+                        <*> (HydraE.modifier =<< "palette" <+ inlets)
+                      )
+                )
+            ]
 
 
 out :: Def Hydra

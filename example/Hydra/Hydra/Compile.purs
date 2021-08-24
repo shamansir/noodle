@@ -62,5 +62,6 @@ compileQueue queue =
 compile :: Hydra -> Maybe String -- TODO: Compile only out-specs?
 compile None = Nothing
 compile (Value v) = Just $ compileValue v
+compile (Mod m)   = Just $ compileModifier m
 compile (Hydra e) = Just $ compileEntity e
-compile (Out q) = Just $ compileQueue q
+compile (Out q)   = Just $ compileQueue q

@@ -1,8 +1,8 @@
 module App.Style.Hydra.Background where
 
-import Halogen.Svg.Attributes (Color(..))
+import Data.Color (rgb) as C
 
 import App.Style (BackgroundStyle)
 
 bg :: BackgroundStyle
-bg = { fill : RGB 257 172 64 }
+bg = { fill : C.rgb 257 172 64 }

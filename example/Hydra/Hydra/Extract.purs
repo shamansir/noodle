@@ -9,7 +9,7 @@ import Data.Int (floor)
 
 import Hydra
 
-import Halogen.Svg.Attributes (Color(..)) as S
+import Data.Color as C
 
 
 numV :: Value -> Maybe Number
@@ -39,14 +39,22 @@ seq' (Value v) = numsV v
 seq' _ = []
 
 
-colorMod :: Hydra -> Array S.Color
+entity :: Hydra -> Maybe Entity
+entity = toEntity
+
+
+modifier :: Hydra -> Maybe Modifier
+modifier = toModifier
+
+
+colorMod :: Hydra -> Array C.Color
 colorMod (Hydra (Entity _ modifiers)) =
     Array.concat $ Array.catMaybes $ extractColors <$> modifiers
     where
-        extractColors :: Modifier -> Maybe (Array S.Color)
+        extractColors :: Modifier -> Maybe (Array C.Color)
         extractColors (C (Color {r, g, b, a})) = Just $ joinToColor <$> numsV r <*> numsV g <*> numsV b <*> numsV a
         extractColors _ = Nothing
-        joinToColor r g b a = S.RGBA (floor $ r * 255.0) (floor $ g * 255.0) (floor $ b * 255.0) a
+        joinToColor r g b a = C.rgba (floor $ r * 255.0) (floor $ g * 255.0) (floor $ b * 255.0) a
 colorMod _ = []
 
 

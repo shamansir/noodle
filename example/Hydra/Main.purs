@@ -10,7 +10,7 @@ import App (run) as App
 import App (App)
 import App.Style (Style, NodeFlow(..))
 import App.Style.Hydra as Hydra
-import App.Style.Color as Color
+import Data.Color as Color
 
 import Noodle.Network (Network)
 
