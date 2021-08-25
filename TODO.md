@@ -1,7 +1,9 @@
 
 * [v] : Pretty-print Hydra structure;
+* Dockerfile, fix deployment;
 * `Out` with a buffer number;
-* Don't show hidden inlets;
+* Ribbons;
+* [v] Don't show hidden inlets;
 * Color node with preview;
 * Palette node;
 * Node for sequences — accepting values so that sequences could be joined;
@@ -13,8 +15,7 @@
 * Spreads node, min/max/step;
 * Be able to compile expressions;
 * Nodes to help with expressions;
-* Don't show hidden inlets;
-* Ribbons;
+* Caluclate the number of links for slots and support styling the "empty" ones differently;
 * Different link styles;
 * Different connector styles;
 * Value editors;
@@ -26,7 +27,6 @@
 * Better layouting, may be using `Flex` layout;
 * Hover areas are still not perfect;
 * Some nodes are harder to drag after adding them;
-* Fix deployment;
 * Why sometimes Hydra output is not working;
 * Blinking when user starts to drag the node;
 * Hot/cold inlets;

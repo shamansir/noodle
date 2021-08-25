@@ -1,5 +1,5 @@
 module Noodle.Node
-    ( Node, Link, Id, Family
+    ( Node, Link, Id, Family, LinksCount
     , send, produce, connect, disconnect
     , make, move
     , markFamily, family
@@ -12,14 +12,16 @@ module Noodle.Node
     , consumer
     , dimensions, dimensionsBy, indexOfInlet, indexOfOutlet
     , defaultOfInlet, defaultOfOutlet
+    , linksAtInlet, linksAtOutlet
     )
     where
 
 import Prelude
 
 import Data.Array (mapMaybe, elemIndex) as Array
-import Data.Maybe (Maybe(..))
-import Data.Tuple (uncurry, curry, fst, snd, Tuple(..))
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Tuple (Tuple(..))
+import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
@@ -48,6 +50,8 @@ import Signal.Channel.Extra as Ch
 type Id = String
 
 type Family = String
+
+type LinksCount = (InletId /-> Int) /\ (OutletId /-> Int)
 
 
 {- Node stores incoming and outgoing channels (`Signal.Channel`, not `Noodle.Channel`) of data of type `d` + any additional data -}
@@ -163,7 +167,7 @@ inletsSignal =
 
 inletsSignal' :: forall d. Node d -> Signal (InletId /-> d)
 inletsSignal' =
-    Signal.foldp (uncurry Map.insert) Map.empty <<< inletsSignal
+    Signal.foldp (Tuple.uncurry Map.insert) Map.empty <<< inletsSignal
 
 
 outletsSignal :: forall d. Node d -> Signal (OutletId /\ d)
@@ -173,25 +177,25 @@ outletsSignal =
 
 outletsSignal' :: forall d. Node d -> Signal (OutletId /-> d)
 outletsSignal' =
-    Signal.foldp (uncurry Map.insert) Map.empty <<< outletsSignal
+    Signal.foldp (Tuple.uncurry Map.insert) Map.empty <<< outletsSignal
 
 
 inletSignal :: forall d. Node d -> InletId -> Signal d
 inletSignal node name =
     ( Ch.subscribe (getInletsChannel node)
         # Signal.filter
-            (fst >>> (==) name)
+            (Tuple.fst >>> (==) name)
             (consumer /\ default node)
-    ) ~> snd
+    ) ~> Tuple.snd
 
 
 outletSignal :: forall d. Node d -> OutletId -> Signal d
 outletSignal node name =
     ( Ch.subscribe (getOutletsChannel node)
         # Signal.filter
-            (fst >>> (==) name)
+            (Tuple.fst >>> (==) name)
             (consumer /\ default node)
-    ) ~> snd
+    ) ~> Tuple.snd
 
 
 outletSignalFlipped :: forall d. OutletId -> Node d -> Signal d
@@ -248,12 +252,12 @@ dimensionsBy pred (Node _ shape _ _) = Shape.dimensionsBy pred shape
 
 indexOfInlet :: forall d. InletId -> Node d -> Maybe Int
 indexOfInlet inletName node =
-    Array.elemIndex inletName $ fst <$> inlets node
+    Array.elemIndex inletName $ Tuple.fst <$> inlets node
 
 
 indexOfOutlet :: forall d. OutletId -> Node d -> Maybe Int
 indexOfOutlet outletName node =
-    Array.elemIndex outletName $ fst <$> outlets node
+    Array.elemIndex outletName $ Tuple.fst <$> outlets node
 
 
 defaultOfInlet :: forall d. InletId -> Node d -> Maybe d
@@ -288,3 +292,11 @@ move f g (Node default shape (inChannel /\ outChannel) nodeFamily) =
         _ <- Signal.runSignal $ (Ch.subscribe inChannel ~> ((<$>) f) ~> Ch.send newInChannel)
         _ <- Signal.runSignal $ (Ch.subscribe outChannel ~> ((<$>) f) ~> Ch.send newOutChannel)
         pure $ Node nextDefault movedShape (newInChannel /\ newOutChannel) nodeFamily
+
+
+linksAtInlet :: InletId -> LinksCount -> Int
+linksAtInlet inlet = fromMaybe 0 <<< Map.lookup inlet <<< Tuple.fst
+
+
+linksAtOutlet :: OutletId -> LinksCount -> Int
+linksAtOutlet outlet = fromMaybe 0 <<< Map.lookup outlet <<< Tuple.snd

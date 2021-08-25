@@ -5,17 +5,20 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (liftEffect)
 
+import Debug as Debug
+
 -- import Data.Functor (lift)
 
 import Data.Set (Set)
 import Data.List (List)
 import Data.Array as Array
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Map (Map)
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Foldable (foldr, foldM)
 import Data.Traversable (sequence, traverse)
-import Data.Tuple (fst, snd, curry, uncurry)
+import Data.Tuple (fst, snd, curry, uncurry) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 
@@ -139,7 +142,7 @@ removeNode :: forall d. Node.Id -> Patch d -> Effect (Patch d)
 removeNode nodeId patch@(Patch nodes _) =
     let linksWithNode = patch # linksToFromNode nodeId
     in do
-        noMoreLinksPatch <- foldM (flip $ uncurry disconnect) patch (fst <$> linksWithNode)
+        noMoreLinksPatch <- foldM (flip $ Tuple.uncurry disconnect) patch (Tuple.fst <$> linksWithNode)
         pure $ forgetNode nodeId noMoreLinksPatch
 
 
@@ -195,6 +198,24 @@ linksToFromNode :: forall d. Node.Id -> Patch d -> Array ((OutletPath /\ InletPa
 linksToFromNode node patch =
     Array.nubByEq samePath $ linksToNode node patch <> linksFromNode node patch
     where samePath (pathA /\ _) (pathB /\ _) = pathA == pathB
+
+
+linksCountAtNode :: forall d. Node.Id -> Patch d -> Node.LinksCount
+linksCountAtNode node patch =
+    let
+        linksData = Tuple.fst <$> linksToFromNode node patch
+        addOne (Just n) = Just $ n + 1
+        addOne Nothing = Just 1
+        addInletInfo (_ /\ inletPath) map =
+            case inletPath of
+                node' /\ inlet -> if node == node' then Map.alter addOne inlet map else map
+        addOutletInfo (outletPath /\ _) map =
+            case outletPath of
+                node' /\ outlet -> if node == node' then Map.alter addOne outlet map else map
+    in
+    (foldr addInletInfo Map.empty linksData)
+    /\
+    (foldr addOutletInfo Map.empty linksData)
 
 
 send :: forall d. (Node.Id /\ InletId) -> d -> Patch d -> Effect Unit

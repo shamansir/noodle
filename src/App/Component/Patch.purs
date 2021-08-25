@@ -189,7 +189,10 @@ render state =
                 ]
                 [ HH.slot _node name
                     NodeC.component
-                        { node, name, style : state.style, flow : state.flow, ui : state.ui }
+                        { node, name
+                        , style : state.style, flow : state.flow, ui : state.ui
+                        , linksCount : Patch.linksCountAtNode name state.patch
+                        }
                     $ FromNode name
                 ]
         nodesLayout =

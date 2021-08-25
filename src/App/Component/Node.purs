@@ -9,12 +9,14 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set as Set
-import Data.Tuple (fst)
+import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Array as Array
 import Data.Int (toNumber)
 import Data.Vec2 as V2
 import Data.Vec2 ((<+>), Pos, Size)
+import Data.Map as Map
+import Data.Map.Extra (type (/->))
 
 import Control.Alternative ((<|>))
 
@@ -71,6 +73,7 @@ type Input m d =
     , style :: Style
     , flow :: NodeFlow
     , ui :: UI m d
+    , linksCount :: Node.LinksCount
     }
 
 
@@ -80,6 +83,7 @@ type State m d =
     , style :: Style
     , flow :: NodeFlow
     , ui :: UI m d
+    , linksCount :: Node.LinksCount
     }
 
 
@@ -95,7 +99,7 @@ initialState = identity
 
 
 render :: forall d m. MonadEffect m => State m d -> H.ComponentHTML (Action m d) (Slots d) m
-render { node, name, style, flow, ui } =
+render { node, name, style, flow, ui, linksCount } =
     HS.g
         []
         [ shadow
@@ -171,7 +175,10 @@ render { node, name, style, flow, ui } =
                     ]
             else HS.none
 
-        connector (Circle r) shape =
+        -- dimByLinks count color =
+            -- TODO:
+
+        connector (Circle r) _ shape =
             HS.circle
                 [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
                 , HSA.stroke $ Just style.slot.stroke
@@ -179,7 +186,7 @@ render { node, name, style, flow, ui } =
                 , HSA.r r
                 ]
 
-        connector (DoubleCircle ir or) shape =
+        connector (DoubleCircle ir or) _ shape =
             HS.g
                 []
                 [ HS.circle
@@ -195,7 +202,7 @@ render { node, name, style, flow, ui } =
                     ]
                 ]
 
-        connector (Rect s) shape =
+        connector (Rect s) _ shape =
             HS.rect
                 [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
                 , HSA.stroke $ Just style.slot.stroke
@@ -204,7 +211,7 @@ render { node, name, style, flow, ui } =
                 , HSA.height $ V2.h s
                 ]
 
-        connector (Square n) shape =
+        connector (Square n) _ shape =
             HS.rect
                 [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
                 , HSA.stroke $ Just style.slot.stroke
@@ -213,12 +220,12 @@ render { node, name, style, flow, ui } =
                 , HSA.height n
                 ]
 
-        slot classes rectPos pos textPos (name /\ shape) =
+        slot classes rectPos pos textPos linksCount (name /\ shape) =
             HS.g
                 [ HSA.classes classes ]
                 [ HS.g
                     [ HSA.translateTo' pos ]
-                    [ connector style.slot.connector shape
+                    [ connector style.slot.connector linksCount shape
                     ]
                 , HS.g
                     [ HSA.translateTo' textPos
@@ -226,7 +233,7 @@ render { node, name, style, flow, ui } =
                     ]
                     [ HS.text
                         [ HSA.fill $ Just style.slot.label.color ]
-                        [ HH.text name ]
+                        [ HH.text $ name <> ":" <> show linksCount ]
                     ]
                 , HS.g
                     [ HSA.translateTo' rectPos
@@ -252,6 +259,7 @@ render { node, name, style, flow, ui } =
                 (Calc.inletRectPos f style flow node idx)
                 (Calc.inletConnectorPos f style flow node idx)
                 (Calc.inletTextPos f style flow node idx)
+                (Node.linksAtInlet name linksCount)
                 (name /\ shape)
 
         outlets' =
@@ -264,6 +272,7 @@ render { node, name, style, flow, ui } =
                 (Calc.outletRectPos f style flow node idx)
                 (Calc.outletConnectorPos f style flow node idx)
                 (Calc.outletTextPos f style flow node idx)
+                (Node.linksAtOutlet name linksCount)
                 (name /\ shape)
 
         body =
@@ -322,7 +331,7 @@ render { node, name, style, flow, ui } =
 handleAction :: forall m d. MonadEffect m => Action m d -> H.HalogenM (State m d) (Action m d) (Slots d) Output m Unit
 handleAction = case _ of
     Receive input ->
-        H.modify_ (\state -> state { node = input.node })
+        H.modify_ (\state -> state { node = input.node, linksCount = input.linksCount })
 
     FromUser (UI.SendToOutlet outlet d) -> do
         state <- H.get
@@ -369,8 +378,8 @@ whereInside ui style flow node pos =
         (Calc.titleSize f style flow node) then
         Just Header
     else
-        let inlets = Node.inlets node <#> fst # Array.mapWithIndex (/\)
-            outlets = Node.outlets node <#> fst # Array.mapWithIndex (/\)
+        let inlets = Node.inletsBy (not Ch.isHidden) node <#> Tuple.fst # Array.mapWithIndex (/\)
+            outlets = Node.outletsBy (not Ch.isHidden) node <#> Tuple.fst # Array.mapWithIndex (/\)
             isInSlot sl fn (idx /\ slotName) =
                 if V2.inside pos (fn idx /\ Calc.slotArea f style flow node)
                     then Just $ sl slotName
