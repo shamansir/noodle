@@ -13,13 +13,13 @@ RUN npm cache clean --force && \
 
 RUN spago -x ./example.dhall build
 
-RUN parcel -V
+RUN curl https://hydra.ojack.xyz/bundle.min.js\?1.2.6 --output ./hydra.bundle.v1.2.6.min.js
 
 RUN mkdir static
 
-RUN parcel build --dist-dir ./static index.html
+RUN parcel -V
 
-RUN curl https://hydra.ojack.xyz/bundle.min.js\?1.2.6 --output ./hydra.bundle.v1.2.6.min.js
+RUN parcel build --dist-dir ./static index.html
 
 FROM nginx:alpine
 
