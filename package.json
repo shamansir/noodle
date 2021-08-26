@@ -2,7 +2,6 @@
   "name": "noodle",
   "version": "1.0.0",
   "description": "Generative Visual Programming",
-  "main": "noodle.html",
   "directories": {
     "test": "test"
   },
