@@ -15,6 +15,7 @@ slot =
     , strokeWidth : 1.0
     , stroke : C.rgb 0 0 0
     , fill : C.rgb 255 255 255
+    , dimWhenNoLinks : true
     , label : { color : C.rgb 255 255 255, maxWidth : 30.0 }
     , value : { color : C.rgb 255 255 255, maxWidth : 10.0 }
     }

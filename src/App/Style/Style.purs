@@ -106,6 +106,7 @@ type SlotStyle =
     , fill :: Color
     , label :: { color :: Color, maxWidth :: Number }
     , value :: { color :: Color, maxWidth :: Number }
+    , dimWhenNoLinks :: Boolean
     , connector :: Connector
     , offset :: Pos
     , direction :: SlotDirection

@@ -177,11 +177,14 @@ render { node, name, style, flow, ui, linksCount } =
                     ]
             else HS.none
 
-        -- dimByLinks count color =
-            -- TODO:
+        dimAmount = 0.3
+        dimColors linksCount = style.slot.dimWhenNoLinks && linksCount == 0
 
-        slotFill linksCount shape =
-            ui.markChannel (Ch.id shape) <|> Just style.slot.fill
+        slotFill lC shape =
+            if not $ dimColors lC then
+                ui.markChannel (Ch.id shape) <|> Just style.slot.fill
+            else
+                C.dim dimAmount <$> ui.markChannel (Ch.id shape) <|> Just style.slot.fill
 
         connector (Circle r) lC shape =
             HS.circle
@@ -194,11 +197,13 @@ render { node, name, style, flow, ui, linksCount } =
         connector (DoubleCircle ir or) lC shape =
             HS.g
                 []
-                [ HS.circle
-                    [ HSA.fill $ C.toSvg <$> slotFill lC shape
-                    , HSA.strokeWidth 0.0
-                    , HSA.r ir
-                    ]
+                [ if lC > 0 then
+                    HS.circle
+                        [ HSA.fill $ C.toSvg <$> slotFill lC shape
+                        , HSA.strokeWidth 0.0
+                        , HSA.r ir
+                        ]
+                  else HS.none
                 , HS.circle
                     [ HSA.fill Nothing
                     , HSA.stroke $ C.toSvg <$> slotFill lC shape
@@ -237,8 +242,12 @@ render { node, name, style, flow, ui, linksCount } =
                     , HSA.classes CS.slotIdLabel
                     ]
                     [ HS.text
-                        [ HSA.fill $ Just $ C.toSvg style.slot.label.color ]
-                        [ HH.text $ name <> ":" <> show linksCount ]
+                        [ HSA.fill $ Just $
+                            if not $ dimColors linksCount
+                                then C.toSvg style.slot.label.color
+                                else C.toSvg $ C.dim dimAmount $ style.slot.label.color
+                        ]
+                        [ HH.text name ]
                     ]
                 , HS.g
                     [ HSA.translateTo' rectPos
