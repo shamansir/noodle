@@ -2,3 +2,19 @@ foreignObject#hydra-holder {
     z-index: -1;
     position: relative;
 }
+
+.palette-button circle {
+    stroke: rgba(0, 0, 0, 0.0);
+}
+
+.palette-node:hover .palette-button circle {
+    stroke: rgba(0, 0, 0, 0.5);
+}
+
+.palette-button:hover circle {
+    fill: rgba(0, 0, 0, 0.5);
+}
+
+.palette-button rect {
+    cursor: pointer;
+}

@@ -4,6 +4,8 @@ module Hydra.Component.Node.Palette where
 import Prelude
 
 import Effect.Class (class MonadEffect)
+import Color as C
+import Math (floor)
 
 -- import Data.String.Read (read)
 --import Data.Parse
@@ -31,6 +33,8 @@ import Hydra.Extract as HydraE
 import Hydra.Component.Input as Input
 
 import Halogen as H
+import Halogen.HTML.Properties as HP
+import Halogen.HTML.Events as HE
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 import Halogen.Svg.Attributes as HSA
@@ -65,11 +69,33 @@ initialState mode _ =
 render :: forall m. State -> H.ComponentHTML Action () m
 render (_ /\ paletteId) =
     HS.g
-        []
+        [ HSA.class_ $ H.ClassName "palette-node" ]
         [ (HS.g [] $ Array.mapWithIndex colorRect colors)
-        , Input.button $ Change "PyCharm"
+        , (HS.g [] $ Array.mapWithIndex paletteButton $ Map.toUnfoldable P.palettes)
         ]
     where
+        paletteButton idx (paletteId /\ _) =
+            HS.g
+                [ HSA.class_ $ H.ClassName "palette-button" ]
+                [ HS.circle
+                    [ HSA.cx $ 7.0 + (toNumber $ idx `mod` 9) * 12.0
+                    , HSA.cy $ 7.0 + (floor $ toNumber idx / 9.0) * 12.0
+                    , HSA.stroke $ Just $ C.toSvg $ C.rgba 0 0 0 0.5
+                    , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
+                    , HSA.strokeWidth 1.0
+                    , HSA.r 5.0
+                    ]
+                , HS.rect
+                    [ HSA.x $ 2.0 + (toNumber $ idx `mod` 9) * 12.0
+                    , HSA.y $ 2.0 + (floor $ toNumber idx / 9.0) * 12.0
+                    , HSA.width 10.0
+                    , HSA.height 10.0
+                    , HSA.stroke $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
+                    , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
+                    , HE.onClick $ const $ Change paletteId
+                    -- , HP.style "cursor: pointer"
+                    ]
+                ]
         colors = P.toArray palette
         palette = fromMaybe P.default $ Map.lookup paletteId P.palettes
         colorsCount = Array.length colors
