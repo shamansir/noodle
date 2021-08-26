@@ -13,7 +13,9 @@ RUN npm cache clean --force && \
 
 RUN spago -x ./example.dhall build
 
-RUN curl https://hydra.ojack.xyz/bundle.min.js\?1.2.6 --output ./hydra.bundle.v1.2.6.min.js
+RUN apt-get update; apt-get install curl
+
+RUN wget https://hydra.ojack.xyz/bundle.min.js\?1.2.6 -O ./hydra.bundle.v1.2.6.min.js
 
 RUN mkdir static
 
