@@ -8,15 +8,15 @@ COPY . .
 # Install PureScript global
 # RUN npm cache clean --force && \
 #    npm install -g purescript@0.14 --unsafe-perm spago parcel-bundler
-RUN npm install parcel@next
+RUN npm install -g parcel@next
 
 RUN spago -x ./example.dhall build
 
+RUN parcel -V
+
 RUN parcel build --dist-dir ./static index.html
 
-RUN wget https://hydra.ojack.xyz/bundle.min.js?1.2.6 hydra.bundle.v1.2.6.min.js
-
-RUN mv bundle.min.js
+RUN curl https://hydra.ojack.xyz/bundle.min.js\?1.2.6 --output ./hydra.bundle.v1.2.6.min.js
 
 FROM nginx:alpine
 
