@@ -79,4 +79,81 @@ bezierBy { x0, y0, x1, y1 } =
     [ HSA.m HSA.Abs x0 y0
     , HSA.c HSA.Abs mx y0 mx y1 x1 y1
     ]
-    where mx = x0 + (x1 - x0) / 2.0
+    where mx = x0 + ((x1 - x0) / 2.0)
+
+{-
+function bezierByH(x0, y0, x1, y1) {
+    var mx = x0 + (x1 - x0) / 2;
+
+    return 'M' + x0 + ' ' + y0 + ' '
+         + 'C' + mx + ' ' + y0 + ' '
+               + mx + ' ' + y1 + ' '
+               + x1 + ' ' + y1;
+}
+
+function bezierByH(x0, y0, x1, y1) {
+    var mx = x0 + (x1 - x0) / 2;
+
+    return 'M' + x0 + ' ' + y0 + ' '
+         + 'C' + mx + ' ' + y0 + ' '
+               + mx + ' ' + y1 + ' '
+               + x1 + ' ' + y1;
+}
+
+
+function bezierByH(x0, y0, x1, y1) {
+    var mx = x0 + (x1 - x0) / 2;
+
+    return 'M' + x0 + ' ' + y0 + ' '
+         + 'C' + mx + ' ' + y0 + ' '
+               + mx + ' ' + y1 + ' '
+               + x1 + ' ' + y1;
+}
+
+
+function bezierByV(x0, y0, x1, y1) {
+    var mx = x0 + (x1 - x0) / 2;
+    var my = y0 + (y1 - y0) / 2;
+
+    return 'M' + x0 + ' ' + y0 + ' '
+         + 'C' + x0 + ' ' + my + ' '
+               + x1 + ' ' + my + ' '
+               + x1 + ' ' + y1;
+}
+
+function bezierByH(x0, y0, x1, y1) {
+    var mx = x0 + (x1 - x0) / 2;
+
+    return 'M' + x0 + ' ' + y0 + ' '
+         + 'C' + mx + ' ' + y0 + ' '
+               + mx + ' ' + y1 + ' '
+               + x1 + ' ' + y1;
+}
+
+function pipeByH(x0, y0, x1, y1) {
+    var mx = (x1 - x0) / 2;
+
+    return 'M' + x0 + ' ' + y0 + ' '
+         + 'L' + (x0 + mx - (mx / 2)) + ' ' + y0 + ' '
+         + 'L' + (x0 + mx + (mx / 2)) + ' ' + y1 + ' '
+         + 'L' + x1 + ' ' + y1;
+}
+
+function bezierByH(x0, y0, x1, y1) {
+    var mx = x0 + (x1 - x0) / 2;
+
+    return 'M' + x0 + ' ' + y0 + ' '
+         + 'C' + mx + ' ' + y0 + ' '
+               + mx + ' ' + y1 + ' '
+               + x1 + ' ' + y1;
+}
+
+
+function bezierByH(x0, y0, x1, y1) {
+    var mx = x0 + (x1 - x0) / 2;
+
+    return 'M' + x0 + ' ' + y0 + ' '
+         + 'C' + mx + ' ' + y0 + ' '
+               + mx + ' ' + y1 + ' '
+               + x1 + ' ' + y1;
+} -}

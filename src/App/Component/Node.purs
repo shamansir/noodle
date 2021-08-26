@@ -40,9 +40,7 @@ import Halogen.HTML.Properties as HP
 import Halogen.HTML.Events as HE
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
-import Halogen.Svg.Elements.Extended as HS
 import Halogen.Svg.Attributes as HSA
-import Halogen.Svg.Attributes.Extended as HSA
 
 import App.Toolkit.UI (UI)
 import App.Toolkit.UI as UI
@@ -320,7 +318,7 @@ render { node, name, style, flow, ui, linksCount } =
                     ]
                 , case Node.family node >>= ui.node of
                     Just userNodeBody ->
-                        HS.g'
+                        HS.g
                             [ HSA.translateTo' $ Calc.bodyInnerOffset f style flow node
                             , HSA.mask $ "url(#" <> name <> "-body-mask)"
                             ]

@@ -41,7 +41,7 @@ import Noodle.Node.Shape (InletId, OutletId)
 
 import App.Emitters as Emitters
 import App.Mouse as M
-import App.Style (Style, NodeFlow, Flags)
+import App.Style (Style, NodeFlow, Flags, LinkType(..))
 import App.Style as Style
 import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
@@ -50,6 +50,7 @@ import App.Toolkit.UI (UI)
 import App.Toolkit.UI (flagsFor) as UI
 
 import App.Component.Node as NodeC
+import App.Component.Link as LinkC
 import App.Component.ButtonStrip as BS
 
 import Halogen as H
@@ -209,6 +210,18 @@ render state =
                 Nothing -> HS.none
         existingLinks =
             HS.g [] $ closedLink <$> (Array.fromFoldable $ Patch.links state.patch)
+        drawLink Straight (x0 /\ y0) (x1 /\ y1) =
+            HS.line
+                [ HSA.x1 x0, HSA.x2 x1
+                , HSA.y1 y0, HSA.y2 y1
+                , HSA.strokeWidth 3.0, HSA.stroke $ Just $ C.toSvg C.white
+                ] -- TODO: move to `Link` component
+        drawLink Curve (x0 /\ y0) (x1 /\ y1) =
+            HS.path
+                [ HSA.d $ LinkC.bezierBy { x0, y0, x1, y1 }
+                , HSA.strokeWidth 1.5, HSA.stroke $ Just $ C.toSvg C.white
+                , HSA.fill $ Just $ C.toSvg $ C.transparent
+                ]
         linkEndsPositions (srcNodeName /\ outlet) (dstNodeName /\ inlet) =
             (\outletConnectorPos srcNodePos inletConnectorPos dstNodePos ->
                 (srcNodePos + outletConnectorPos)
@@ -226,11 +239,7 @@ render state =
                     let
                         x1 /\ y1 = V2.toTuple $ bsOffset + outletPos
                         x2 /\ y2 = V2.toTuple $ bsOffset + inletPos
-                    in HS.line
-                        [ HSA.x1 x1, HSA.x2 x2
-                        , HSA.y1 y1, HSA.y2 y2
-                        , HSA.strokeWidth 3.0, HSA.stroke $ Just $ C.toSvg C.white
-                        ]
+                    in drawLink state.style.link.type (x1 /\ y1) (x2 /\ y2)
                 Nothing -> HS.none
         findNodePosition nodeName =
             (R2.find nodeName state.layout <#> Tuple.fst)
@@ -245,11 +254,7 @@ render state =
                     let
                         x1 /\ y1 = V2.toTuple $ bsOffset + nodePos + outletConnectorPos
                         x2 /\ y2 = V2.toTuple $ pos - state.offset
-                    in HS.line
-                        [ HSA.x1 x1, HSA.x2 x2
-                        , HSA.y1 y1, HSA.y2 y2
-                        , HSA.strokeWidth 3.0, HSA.stroke $ Just $ C.toSvg C.white
-                        ] -- TODO: move to `Link` component
+                    in drawLink state.style.link.type (x1 /\ y1) (x2 /\ y2)
                 Nothing -> HS.none
         whatIsBeingDragged (M.StartDrag pos (offset /\ Draggable.Node node)) =
             HS.none

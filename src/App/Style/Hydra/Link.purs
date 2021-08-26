@@ -5,4 +5,4 @@ module App.Style.Hydra.Link where
 import App.Style (LinkStyle, LinkType(..))
 
 link :: LinkStyle
-link = { type : Straight }
+link = { type : Curve }

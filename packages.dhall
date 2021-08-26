@@ -103,5 +103,5 @@ let upstream =
 
 in upstream
   -- with metadata.version = "v0.14.1"
-  with halogen-svg-elems.repo = "https://github.com/antarestrader/purescript-halogen-svg-elems.git"
-  with halogen-svg-elems.version = "7edf4b2a1623629a71e88cc883e3ec3883310a6b"
+  with halogen-svg-elems.repo = "https://github.com/shamansir/purescript-halogen-svg-elems.git"
+  with halogen-svg-elems.version = "2505905e51c5bb0ecd82e77cdee81d34dc37b029"
