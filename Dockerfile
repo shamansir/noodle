@@ -8,11 +8,14 @@ COPY . .
 # Install PureScript global
 # RUN npm cache clean --force && \
 #    npm install -g purescript@0.14 --unsafe-perm spago parcel-bundler
-RUN npm install -g parcel@next
+RUN npm cache clean --force && \
+    npm install -g --unsafe-perm parcel@next
 
 RUN spago -x ./example.dhall build
 
 RUN parcel -V
+
+RUN mkdir static
 
 RUN parcel build --dist-dir ./static index.html
 
