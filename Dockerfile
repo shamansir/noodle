@@ -9,7 +9,8 @@ COPY . .
 # RUN npm cache clean --force && \
 #    npm install -g purescript@0.14 --unsafe-perm spago parcel-bundler
 RUN npm cache clean --force && \
-    npm install -g --unsafe-perm parcel@next
+    npm install -g --unsafe-perm parcel@next && \
+    npm install
 
 RUN spago -x ./example.dhall build
 
