@@ -219,8 +219,8 @@ render state =
         drawLink Curve (x0 /\ y0) (x1 /\ y1) =
             HS.path
                 [ HSA.d $ case state.flow of
-                            Vertical -> LinkC.bezierByV { x0, y0, x1, y1 }
-                            Horizontal -> LinkC.bezierByH { x0, y0, x1, y1 }
+                            Vertical -> LinkC.bezierByH { x0, y0, x1, y1 }
+                            Horizontal -> LinkC.bezierByV { x0, y0, x1, y1 }
                 , HSA.strokeWidth 1.5, HSA.stroke $ Just $ C.toSvg C.white
                 , HSA.fill $ Just $ C.toSvg $ C.transparent
                 ]
