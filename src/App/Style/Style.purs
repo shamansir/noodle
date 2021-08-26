@@ -56,6 +56,7 @@ data SlotInfoVisibility
 data LinkType
     = Straight
     | Curve
+    | Pipe
 
 
 data NodePart

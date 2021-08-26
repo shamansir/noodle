@@ -41,7 +41,7 @@ import Noodle.Node.Shape (InletId, OutletId)
 
 import App.Emitters as Emitters
 import App.Mouse as M
-import App.Style (Style, NodeFlow, Flags, LinkType(..))
+import App.Style (Style, NodeFlow(..), Flags, LinkType(..))
 import App.Style as Style
 import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
@@ -218,7 +218,15 @@ render state =
                 ] -- TODO: move to `Link` component
         drawLink Curve (x0 /\ y0) (x1 /\ y1) =
             HS.path
-                [ HSA.d $ LinkC.bezierBy { x0, y0, x1, y1 }
+                [ HSA.d $ case state.flow of
+                            Vertical -> LinkC.bezierByV { x0, y0, x1, y1 }
+                            Horizontal -> LinkC.bezierByH { x0, y0, x1, y1 }
+                , HSA.strokeWidth 1.5, HSA.stroke $ Just $ C.toSvg C.white
+                , HSA.fill $ Just $ C.toSvg $ C.transparent
+                ]
+        drawLink Pipe (x0 /\ y0) (x1 /\ y1) =
+            HS.path
+                [ HSA.d $ LinkC.pipeByH { x0, y0, x1, y1 }
                 , HSA.strokeWidth 1.5, HSA.stroke $ Just $ C.toSvg C.white
                 , HSA.fill $ Just $ C.toSvg $ C.transparent
                 ]
