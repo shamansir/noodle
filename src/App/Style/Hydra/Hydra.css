@@ -72,8 +72,16 @@ text {
     fill: rgba(48, 48, 48, 0.0);
 }
 
-.remove-button circle:hover {
-    fill: rgba(48, 48, 48, 0.5);
+.remove-button line {
+    stroke: rgba(255, 255, 255, 0.0);
+}
+
+.remove-button:hover circle {
+    fill: rgba(48, 48, 48, 0.3);
+}
+
+.remove-button:hover line {
+    stroke: rgba(255, 255, 255, 1.0);
 }
 
 .remove-button {

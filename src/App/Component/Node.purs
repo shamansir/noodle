@@ -166,7 +166,16 @@ render { node, name, style, flow, ui, linksCount } =
                         [ HSA.r Calc.removeButtonRadius
                         , HSA.fill $ Just $ C.toSvg $ C.rgba 48 48 48 0.0
                         ]
-                    , HS.none -- TODO: diag.cross with lines
+                    , HS.line
+                        [ HSA.x1 $ -2.5, HSA.y1 $ -2.5, HSA.x2 2.5, HSA.y2 2.5
+                        , HSA.stroke $ Just $ C.toSvg $ C.white -- C.rgb 200 0 0
+                        , HSA.strokeWidth 1.0
+                        ]
+                    , HS.line
+                        [ HSA.x1 $ -2.5, HSA.y1 2.5, HSA.x2 2.5, HSA.y2 $ -2.5
+                        , HSA.stroke $ Just $ C.toSvg $ C.white -- C.rgb 200 0 0
+                        , HSA.strokeWidth 1.0
+                        ]
                     , HS.circle
                         [ HSA.r Calc.removeButtonRadius
                         , HSA.fill $ Just $ C.toSvg C.transparent
