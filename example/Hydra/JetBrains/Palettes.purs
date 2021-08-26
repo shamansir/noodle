@@ -3,7 +3,7 @@ module JetBrains.Palettes where
 
 import Prelude (($), (#), (<$>), (/), flip, (<<<))
 
-import Data.Color as C
+import Color as C
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Tuple.Nested ((/\), type (/\))

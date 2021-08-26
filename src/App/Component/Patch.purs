@@ -6,6 +6,8 @@ import Prelude
 import Debug (spy) as Debug
 
 import Effect.Class (class MonadEffect, liftEffect)
+import Color as C
+import Color.Extra as C
 
 import Data.Array as Array
 import Data.BinPack.R2.Optional (Bin2)
@@ -149,7 +151,7 @@ render state =
         mouseState =
             HS.text
                 [ HSA.translateTo' $ 500.0 <+> -20.0
-                , HSA.fill $ Just $ Style.white
+                , HSA.fill $ Just $ C.toSvg $ C.white
                 ]
                 [ HH.text $ show $ state.mouse ]
         assocNode (name /\ pos /\ bounds) =
@@ -176,8 +178,8 @@ render state =
                 ]
                 [ HS.rect
                     [ HSA.width $ V2.w BS.buttonSize, HSA.height $ V2.h BS.buttonSize
-                    , HSA.fill $ state.ui.markNode name <|> Just state.style.nodeTab.background
-                    , HSA.stroke $ Just state.style.nodeTab.stroke
+                    , HSA.fill $ C.toSvg <$> (state.ui.markNode name <|> Just state.style.nodeTab.background)
+                    , HSA.stroke $ Just $ C.toSvg state.style.nodeTab.stroke
                     , HSA.strokeWidth 1.0
                     ]
                 , HS.text [] [ HH.text $ "+ " <> name ]
@@ -227,7 +229,7 @@ render state =
                     in HS.line
                         [ HSA.x1 x1, HSA.x2 x2
                         , HSA.y1 y1, HSA.y2 y2
-                        , HSA.strokeWidth 3.0, HSA.stroke $ Just $ Style.white
+                        , HSA.strokeWidth 3.0, HSA.stroke $ Just $ C.toSvg C.white
                         ]
                 Nothing -> HS.none
         findNodePosition nodeName =
@@ -246,7 +248,7 @@ render state =
                     in HS.line
                         [ HSA.x1 x1, HSA.x2 x2
                         , HSA.y1 y1, HSA.y2 y2
-                        , HSA.strokeWidth 3.0, HSA.stroke $ Just $ Style.white
+                        , HSA.strokeWidth 3.0, HSA.stroke $ Just $ C.toSvg C.white
                         ] -- TODO: move to `Link` component
                 Nothing -> HS.none
         whatIsBeingDragged (M.StartDrag pos (offset /\ Draggable.Node node)) =

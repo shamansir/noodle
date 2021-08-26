@@ -1,6 +1,6 @@
 module App.Style.Hydra.Background where
 
-import Data.Color (rgb) as C
+import Color (rgb) as C
 
 import App.Style (BackgroundStyle)
 

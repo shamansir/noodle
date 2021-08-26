@@ -10,7 +10,9 @@ import App (run) as App
 import App (App)
 import App.Style (Style, NodeFlow(..))
 import App.Style.Hydra as Hydra
-import Data.Color as Color
+
+import Color as C
+import Color.Extra as C
 
 import Noodle.Network (Network)
 
@@ -25,7 +27,7 @@ style :: Style
 style =
     Hydra.style
         { bg
-            { fill = Color.named "transparent" }
+            { fill = C.transparent }
         }
 
 

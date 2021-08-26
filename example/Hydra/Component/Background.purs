@@ -5,6 +5,8 @@ import Prelude
 
 import Effect.Class (class MonadEffect, liftEffect)
 
+import Color.Extra as C
+
 import Data.Maybe
 import Data.Vec2 (Size)
 import Data.Vec2 as V2
@@ -20,7 +22,6 @@ import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
 
 import App.Toolkit.UI (BgInput)
-
 
 
 
@@ -53,7 +54,7 @@ render { size } =
         [
             HH.canvas
                 [ HP.id canvasId
-                , HP.style $ "width: 100%; height: 100%;background-color: " <> (HSA.printColor $ Just bg.fill) <> ";"
+                , HP.style $ "width: 100%; height: 100%;background-color: " <> (HSA.printColor $ Just $ C.toSvg bg.fill) <> ";"
                 ]
         ]
 

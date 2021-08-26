@@ -6,6 +6,9 @@ import Debug as Debug
 
 import Effect.Class (class MonadEffect, liftEffect)
 
+import Color as C
+import Color.Extra as C
+
 import Data.Unit (Unit, unit)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set as Set
@@ -26,11 +29,10 @@ import Noodle.Node as Node
 import Noodle.Channel.Shape as Ch
 import Noodle.Node.Shape (InletId, OutletId)
 
-import App.Style (Flags, Style, NodeFlow(..), transparent, TitleMode(..), Connector(..))
+import App.Style (Style, NodeFlow(..), TitleMode(..), Connector(..))
 import App.Style (Flags, defaultFlags) as Style
 import App.Style.Calculate as Calc
 import App.Style.ClassNames as CS
-import Data.Color as Color
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -133,7 +135,7 @@ render { node, name, style, flow, ui, linksCount } =
                     [ case style.title.mode of
                         InsideBody ->
                              HS.rect
-                                [ HSA.fill $ Just style.title.background
+                                [ HSA.fill $ Just $ C.toSvg style.title.background
                                 , HSA.width titleWidth
                                 , HSA.height titleHeight
                                 ]
@@ -143,13 +145,13 @@ render { node, name, style, flow, ui, linksCount } =
                         [ HSA.translateTo' $ Calc.titleTextPos f style flow node
                         ]
                         [ HS.text
-                            [ HSA.fill $ (ui.markNode =<< Node.family node) <|> Just style.title.fill ]
+                            [ HSA.fill $ C.toSvg <$> ((ui.markNode =<< Node.family node) <|> Just style.title.fill) ]
                             [ HH.text name ]
                         ]
                     , HS.rect
                         [ HSA.classes $
                             if not debug then CS.nodeTitleFocus else CS.nodeTitleFocusDebug
-                        , HSA.fill $ Just transparent
+                        , HSA.fill $ Just $ C.toSvg C.transparent
                         , HSA.width titleWidth
                         , HSA.height titleHeight
                         ]
@@ -164,12 +166,12 @@ render { node, name, style, flow, ui, linksCount } =
                     ]
                     [ HS.circle
                         [ HSA.r Calc.removeButtonRadius
-                        , HSA.fill $ Just $ Color.rgba 48 48 48 0.0
+                        , HSA.fill $ Just $ C.toSvg $ C.rgba 48 48 48 0.0
                         ]
                     , HS.none -- TODO: diag.cross with lines
                     , HS.circle
                         [ HSA.r Calc.removeButtonRadius
-                        , HSA.fill $ Just transparent
+                        , HSA.fill $ Just $ C.toSvg C.transparent
                         , HE.onClick \_ -> RequestRemove
                         ]
                     ]
@@ -178,43 +180,46 @@ render { node, name, style, flow, ui, linksCount } =
         -- dimByLinks count color =
             -- TODO:
 
-        connector (Circle r) _ shape =
+        slotFill linksCount shape =
+            ui.markChannel (Ch.id shape) <|> Just style.slot.fill
+
+        connector (Circle r) lC shape =
             HS.circle
-                [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
-                , HSA.stroke $ Just style.slot.stroke
+                [ HSA.fill $ C.toSvg <$> slotFill lC shape
+                , HSA.stroke $ Just $ C.toSvg style.slot.stroke
                 , HSA.strokeWidth style.slot.strokeWidth
                 , HSA.r r
                 ]
 
-        connector (DoubleCircle ir or) _ shape =
+        connector (DoubleCircle ir or) lC shape =
             HS.g
                 []
                 [ HS.circle
-                    [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
+                    [ HSA.fill $ C.toSvg <$> slotFill lC shape
                     , HSA.strokeWidth 0.0
                     , HSA.r ir
                     ]
                 , HS.circle
                     [ HSA.fill Nothing
-                    , HSA.stroke $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
+                    , HSA.stroke $ C.toSvg <$> slotFill lC shape
                     , HSA.strokeWidth style.slot.strokeWidth
                     , HSA.r or
                     ]
                 ]
 
-        connector (Rect s) _ shape =
+        connector (Rect s) lC shape =
             HS.rect
-                [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
-                , HSA.stroke $ Just style.slot.stroke
+                [ HSA.fill $ C.toSvg <$> slotFill lC shape
+                , HSA.stroke $ Just $ C.toSvg style.slot.stroke
                 , HSA.strokeWidth style.slot.strokeWidth
                 , HSA.width $ V2.w s
                 , HSA.height $ V2.h s
                 ]
 
-        connector (Square n) _ shape =
+        connector (Square n) lC shape =
             HS.rect
-                [ HSA.fill $ ui.markChannel (Ch.id shape) <|> Just style.slot.fill
-                , HSA.stroke $ Just style.slot.stroke
+                [ HSA.fill $ C.toSvg <$> slotFill lC shape
+                , HSA.stroke $ Just $ C.toSvg style.slot.stroke
                 , HSA.strokeWidth style.slot.strokeWidth
                 , HSA.width n
                 , HSA.height n
@@ -232,7 +237,7 @@ render { node, name, style, flow, ui, linksCount } =
                     , HSA.classes CS.slotIdLabel
                     ]
                     [ HS.text
-                        [ HSA.fill $ Just style.slot.label.color ]
+                        [ HSA.fill $ Just $ C.toSvg style.slot.label.color ]
                         [ HH.text $ name <> ":" <> show linksCount ]
                     ]
                 , HS.g
@@ -242,7 +247,7 @@ render { node, name, style, flow, ui, linksCount } =
                     ]
                     [ HS.rect
                         [ {- HE.onClick
-                        , -} HSA.fill $ Just transparent
+                        , -} HSA.fill $ Just $ C.toSvg C.transparent
                         , HSA.width slotAreaWidth
                         , HSA.height slotAreaHeight
                         ]
@@ -284,12 +289,12 @@ render { node, name, style, flow, ui, linksCount } =
                             [ HSA.id $ name <> "-body-mask"
                             ]
                             [ HS.rect
-                                [ HSA.fill $ Just $ Color.named "black"
+                                [ HSA.fill $ Just $ C.toSvg $ C.black
                                 , HSA.width innerWidth, HSA.height innerHeight
                                 ]
                             , HS.rect
-                                [ HSA.fill $ Just $ Color.named "white"
-                                , HSA.stroke $ Just $ Color.named "black"
+                                [ HSA.fill $ Just $ C.toSvg $ C.white
+                                , HSA.stroke $ Just $ C.toSvg $ C.black
                                 , HSA.strokeWidth $ style.body.strokeWidth
                                 , HSA.rx style.body.cornerRadius, HSA.ry style.body.cornerRadius
                                 , HSA.width innerWidth, HSA.height innerHeight
@@ -298,8 +303,8 @@ render { node, name, style, flow, ui, linksCount } =
                     Nothing -> HS.none
                 , HS.rect
                     [ HSA.id $ name <> "-body-bg"
-                    , HSA.fill $ Just style.body.fill
-                    , HSA.stroke $ Just style.body.stroke
+                    , HSA.fill $ Just $ C.toSvg style.body.fill
+                    , HSA.stroke $ Just $ C.toSvg style.body.stroke
                     , HSA.strokeWidth $ style.body.strokeWidth
                     , HSA.rx style.body.cornerRadius, HSA.ry style.body.cornerRadius
                     , HSA.width innerWidth, HSA.height innerHeight
@@ -319,8 +324,8 @@ render { node, name, style, flow, ui, linksCount } =
             HS.g
                 [ HSA.translateTo' $ Calc.shadowPos f style flow node ]
                 [ HS.rect
-                    [ HSA.fill $ Just $ Color.named "black" -- style.body.shadow
-                    , HSA.stroke $ Just $ Color.named "black"
+                    [ HSA.fill $ Just $ C.toSvg $ C.black -- style.body.shadow
+                    , HSA.stroke $ Just $ C.toSvg $ C.black
                     , HSA.strokeWidth style.body.strokeWidth
                     , HSA.rx style.body.cornerRadius, HSA.ry style.body.cornerRadius
                     , HSA.width innerWidth, HSA.height innerHeight

@@ -1,6 +1,6 @@
 module App.Style.Hydra.Title where
 
-import Halogen.Svg.Attributes (Color(..))
+import Color as C
 
 import App.Style (TitleStyle, TitleMode(..))
 import Data.Vec2 ((<+>))
@@ -9,8 +9,8 @@ import Data.Vec2 ((<+>))
 title :: TitleStyle
 title =
     { mode : OutsideBody
-    , background : RGBA 0 0 0 0.0
-    , fill : RGB 255 255 255
+    , background : C.rgba 0 0 0 0.0
+    , fill : C.rgb 255 255 255
     , size : 20.0
     , padding : 3.0 <+> 10.0
     }

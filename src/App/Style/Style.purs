@@ -4,8 +4,9 @@ module App.Style where
 import Prelude (class Show)
 
 import App.Style.Order as O
-import Data.Color (Color)
-import Data.Color as Color
+
+import Color (Color)
+import Color as C
 
 import Data.Set (Set)
 
@@ -208,19 +209,6 @@ defaultFlags =
 findBodySize Horizontal _ (h /\ Fixed w) = w <+> h
 findBodySize Horizontal f (h /\ StretchByMax) = f StretchByMax <+> h
 findBodySize Horizontal f (h /\ StretchBySum) = f StretchBySum <+> h -}
-
-
-
-transparent :: Color
-transparent = Color.rgba 0 0 0 0.0
-
-
-white :: Color
-white = Color.named "white"
-
-
-black :: Color
-black = Color.named "black"
 
 
 instance showSlotDirection :: Show SlotDirection where

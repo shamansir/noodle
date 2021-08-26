@@ -1,6 +1,6 @@
 module App.Style.Quartz.PatchTab where
 
-import Data.Color (rgb, rgba) as C
+import Color (rgb, rgba) as C
 
 import App.Style (PatchTabStyle)
 

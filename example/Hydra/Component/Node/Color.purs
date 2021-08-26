@@ -29,7 +29,9 @@ import Halogen as H
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 import Halogen.Svg.Attributes as HSA
-import Data.Color as C
+
+import Color as C
+import Color.Extra as C
 
 
 type State = Array C.Color /\ Node Hydra
@@ -68,7 +70,7 @@ render (colors /\ _) =
                     , HSA.y 0.0
                     , HSA.width colorRectWidth
                     , HSA.height 55.0 -- FIXME
-                    , HSA.fill $ Just color
+                    , HSA.fill $ Just $ C.toSvg color
                     ]
                 ]
 

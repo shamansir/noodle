@@ -1,6 +1,6 @@
 module App.Style.Hydra.Slot where
 
-import Data.Color (rgb, rgba) as C
+import Color (rgb, rgba) as C
 
 import App.Style (SlotStyle, Connector(..), SlotDirection(..), SlotInfoVisibility(..))
 import Data.Vec2 ((<+>))

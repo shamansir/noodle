@@ -1,6 +1,6 @@
 module App.Style.Quartz.Title where
 
-import Data.Color (rgb, rgba) as C
+import Color (rgb, rgba) as C
 
 import App.Style (TitleStyle, TitleMode(..))
 import Data.Vec2 ((<+>))

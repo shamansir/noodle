@@ -7,6 +7,8 @@ import Type.Proxy (Proxy(..))
 import Effect.Class (class MonadEffect)
 import Effect.Aff.Class (class MonadAff)
 
+import Color.Extra as C
+
 import Data.Maybe (Maybe(..))
 import Data.Int (toNumber)
 import Data.Tuple as Tuple
@@ -120,7 +122,7 @@ render (s@{ network, toolkit, style, flow }) =
                 []
                 [ HS.rect
                     [ HSA.width $ V2.w s.windowSize, HSA.height $ V2.h s.windowSize
-                    , HSA.fill $ Just style.bg.fill
+                    , HSA.fill $ Just $ C.toSvg style.bg.fill
                     ]
                 , case s.ui.background of
                     Nothing ->
@@ -133,8 +135,8 @@ render (s@{ network, toolkit, style, flow }) =
             HS.g
                 [ HSA.classes $ CS.patchTab label ]
                 [ HS.rect [ HSA.width tabLength, HSA.height tabHeight
-                , HSA.fill $ Just style.patchTab.background
-                , HSA.stroke $ Just style.patchTab.stroke
+                , HSA.fill $ Just $ C.toSvg style.patchTab.background
+                , HSA.stroke $ Just $ C.toSvg style.patchTab.stroke
                 , HSA.strokeWidth 1.0
                 ]
                 , HS.text

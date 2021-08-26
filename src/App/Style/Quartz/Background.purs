@@ -1,6 +1,6 @@
 module App.Style.Quartz.Background where
 
-import Data.Color (rgb, rgba) as C
+import Color (rgb, rgba) as C
 
 import App.Style (BackgroundStyle)
 

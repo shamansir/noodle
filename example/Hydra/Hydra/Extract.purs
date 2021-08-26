@@ -9,7 +9,7 @@ import Data.Int (floor)
 
 import Hydra
 
-import Data.Color as C
+import Color as C
 
 
 numV :: Value -> Maybe Number

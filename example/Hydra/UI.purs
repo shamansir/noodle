@@ -22,8 +22,9 @@ import Noodle.Channel.Shape as Channel
 import App.Toolkit.UI as UI
 import App.Toolkit.UI (UI)
 import App.Style as Style
-import Data.Color (Color)
-import Data.Color as Color
+
+import Color (Color)
+import Color as C
 
 
 ui :: forall m. MonadEffect m => UI m Hydra
@@ -85,16 +86,16 @@ node _ = Nothing
 -- modulate : hsl(260, 100%, 70%) -- 153 102 255 -- #9966FF
 
 
-valueColor = Color.rgb 255 255 255 :: Color
-entityColor = Color.rgb 98 190 193 :: Color
-outColor = Color.rgb 221 227 146 :: Color
+valueColor = C.rgb 255 255 255 :: Color
+entityColor = C.rgb 98 190 193 :: Color
+outColor = C.rgb 221 227 146 :: Color
 
 
-sourceColor = Color.rgb 255 153 102 :: Color
-geomColor = Color.rgb 204 255 102 :: Color
-colorColor = Color.rgb 102 255 153 :: Color
-blendColor = Color.rgb 102 204 255 :: Color
-modColor = Color.rgb 153 102 255 :: Color
+sourceColor = C.rgb 255 153 102 :: Color
+geomColor = C.rgb 204 255 102 :: Color
+colorColor = C.rgb 102 255 153 :: Color
+blendColor = C.rgb 102 204 255 :: Color
+modColor = C.rgb 153 102 255 :: Color
 
 
 isValueNode :: Node.Family -> Boolean
