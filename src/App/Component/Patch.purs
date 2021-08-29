@@ -204,8 +204,8 @@ render state =
             HS.g [ HSA.classes CS.nodes ] $ map node' $ pinnedNodes'
         floatingNode pos (name /\ nodeOffset) =
             let
-                bounds = boundsOf state.ui state.style state.flow state.patch name # Maybe.fromMaybe zero
-            in case assocNode ( name /\ (pos - nodeOffset - bsOffset - state.offset) /\ bounds ) of
+                nodeArea = areaOf state.ui state.style state.flow state.patch name # Maybe.fromMaybe zero
+            in case assocNode ( name /\ (pos - nodeOffset - bsOffset - state.offset) /\ nodeArea ) of
                 Just n -> node' n
                 Nothing -> HS.none
         existingLinks =
@@ -305,10 +305,10 @@ handleAction = case _ of
                 H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
                     (\state ->
                         let nodeName = Patch.addUniqueNodeId state.patch name
-                            bounds = NodeC.boundsOf state.ui state.style state.flow node
+                            nodeArea = NodeC.areaOf state.ui state.style state.flow node
                         in state
                             { patch = state.patch # Patch.addNode nodeName node
-                            , layout = R2.packOne state.layout (R2.item bounds nodeName)
+                            , layout = R2.packOne state.layout (R2.item nodeArea nodeName)
                                         # Maybe.fromMaybe state.layout
                             }
                     )
@@ -326,13 +326,13 @@ handleAction = case _ of
     PinNode nodeId pos ->
         H.modify_ $ \state ->
         let
-            bounds =
-                boundsOf state.ui state.style state.flow state.patch nodeId
+            nodeArea =
+                areaOf state.ui state.style state.flow state.patch nodeId
                     # Maybe.fromMaybe zero
         in
             state
                 { pinned =
-                    state.pinned # PB.pin (pos - state.offset) bounds nodeId
+                    state.pinned # PB.pin (pos - state.offset) nodeArea nodeId
                 }
 
     Connect outletPath inletPath -> do
@@ -450,14 +450,14 @@ addNodesFrom ui style flow patch layout =
     Patch.nodes patch
         # foldr
             (\(nodeName /\ node) layout' ->
-                R2.packOne layout' (R2.item (NodeC.boundsOf ui style flow node) nodeName)
+                R2.packOne layout' (R2.item (NodeC.areaOf ui style flow node) nodeName)
                     # Maybe.fromMaybe layout'
             )
             layout
 
 
-boundsOf :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Patch d -> Node.Id -> Maybe Size
-boundsOf ui style flow patch nodeId =
+areaOf :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Patch d -> Node.Id -> Maybe Size
+areaOf ui style flow patch nodeId =
     patch
         # Patch.findNode nodeId
-        # map (NodeC.boundsOf ui style flow)
+        # map (NodeC.areaOf ui style flow)

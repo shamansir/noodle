@@ -118,7 +118,7 @@ render { node, name, style, flow, ui, linksCount } =
         ( slotAreaWidth /\ slotAreaHeight ) = V2.toTuple $ Calc.slotArea f style flow node
         ( titleWidth /\ titleHeight ) = V2.toTuple $ Calc.titleSize f style flow node
 
-        ( outerWidth /\ outerHeight ) = node # Calc.nodeBounds f style flow # V2.toTuple
+        ( outerWidth /\ outerHeight ) = node # Calc.nodeArea f style flow # V2.toTuple
         ( innerWidth /\ innerHeight ) = node # Calc.bodySize f style flow # V2.toTuple
 
         inlets = Node.inletsBy (not Ch.isHidden) node
@@ -391,7 +391,6 @@ data WhereInside
     | Outlet OutletId
 
 
-
 whereInside :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Node d -> Pos -> Maybe WhereInside
 whereInside ui style flow node pos =
     if V2.inside'
@@ -412,9 +411,9 @@ whereInside ui style flow node pos =
         f = UI.flagsFor ui node
 
 
-boundsOf :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Node d -> Size
-boundsOf ui style flow node =
-    Calc.nodeBounds (UI.flagsFor ui node) style flow node
+areaOf :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Node d -> Size
+areaOf ui style flow node =
+    Calc.nodeArea (UI.flagsFor ui node) style flow node
 
 
 inletConnectorPos :: forall m d. UI m d -> Style -> NodeFlow -> InletId -> Noodle.Node d -> Maybe Pos

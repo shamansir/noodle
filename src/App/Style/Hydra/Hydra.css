@@ -49,6 +49,7 @@ text {
 
 .slot-focus {
     cursor: pointer;
+    pointer-events : all;
 }
 
 .slot-focus.debug {

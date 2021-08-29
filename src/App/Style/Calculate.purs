@@ -83,7 +83,7 @@ inletConnectorPos f s Vertical node idx =
         )
     )
     where
-        sizeF_ = sizeF' f s Vertical node
+        sizeF_ = nodeAreaF f s Vertical node
         offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF_ hasInlets s.order
         outerHeight = V2.h $ slotArea f s Vertical node
         connectorOffsetX Inside = 0.0 -- V2.w $ slotArea slot flow
@@ -123,7 +123,7 @@ inletRectPos f s Vertical node idx =
         )
     )
     where
-        sizeF_ = sizeF' f s Vertical node
+        sizeF_ = nodeAreaF f s Vertical node
         offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF_ hasInlets s.order
         outerHeight = V2.h $ slotArea f s Vertical node
         offsetX Inside = V2.w s.body.margin - V2.w (connectorSize s.slot.connector)
@@ -139,7 +139,7 @@ inletRectPos f s Horizontal node idx =
     )
     where
         outerWidth = V2.w $ slotArea f s Horizontal node
-        sizeF_ = sizeF' f s Vertical node
+        sizeF_ = nodeAreaF f s Vertical node
         offsetX = fromMaybe 0.0 $ Order.sizeBefore sizeF_ hasInlets s.order
 
 
@@ -168,7 +168,7 @@ outletConnectorPos f s Vertical node idx =
         connectorOffsetX Inside = 0.0 -- V2.w $ slotArea slot flow
         connectorOffsetX Between = 0.0 -- V2.w $ (slotArea slot flow </> V2.vv 2.0) - V2.vv V2.w (connectorSize slot.connector)
         connectorOffsetX Outside = 0.0
-        sizeF_ = sizeF' f s Vertical node
+        sizeF_ = nodeAreaF f s Vertical node
         offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF_ hasOutlets s.order
 outletConnectorPos f s Horizontal node idx =
     0.0 <+> toNumber idx
@@ -202,7 +202,7 @@ outletRectPos f s Vertical node idx =
         offsetX Inside = -V2.w $ slotArea f s Vertical node
         offsetX Between = 0.0 -- V2.w $ (slotArea slot flow </> V2.vv 2.0) - V2.vv V2.w (connectorSize slot.connector)
         offsetX Outside = -V2.w (connectorSize s.slot.connector) - V2.w slotPadding
-        sizeF_ = sizeF' f s Vertical node
+        sizeF_ = nodeAreaF f s Vertical node
         offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF_ hasOutlets s.order
 outletRectPos f s Horizontal node idx =
     0.0 <+> toNumber idx
@@ -249,17 +249,9 @@ bodyPos f s flow _ =
     else 0.0 <+> 0.0
 
 
-nodeBounds :: forall d. GetSize d
-nodeBounds f s flow node =
-    (V2.w s.body.margin * 2.0 + bodyWidth)
-    <+>
-    (V2.h s.body.margin * 2.0 + bodyHeight)
-    where
-        bodyWidth /\ bodyHeight = V2.toTuple $ bodySize f s flow node
-
-
-sizeF :: forall d. GetSizeF d NodePart
-sizeF f s flow node =
+-- excluding the parts outside of the node body
+bodySizeF :: forall d. GetSizeF d NodePart
+bodySizeF f s flow node =
     let
         inletsCount /\ outletsCount = Node.dimensionsBy (not Ch.isHidden) node
         sizeOf Title =
@@ -283,8 +275,9 @@ sizeF f s flow node =
     in sizeOf
 
 
-sizeF' :: forall d. GetSizeF d NodePart
-sizeF' f s flow node =
+-- including the parts outside of the node body
+nodeAreaF :: forall d. GetSizeF d NodePart
+nodeAreaF f s flow node =
     let
         inletsCount /\ outletsCount = Node.dimensionsBy (not Ch.isHidden) node
         sizeOf Title =
@@ -308,23 +301,36 @@ sizeF' f s flow node =
     in sizeOf
 
 
-bodySize :: forall d. GetSize d
-bodySize f s flow node =
-    let
-        sizeF_ = sizeF f s flow node
-    in
-        case flow of
-            Vertical ->
-                bodyWidth <+> bodyHeight
-                where
-                    bodyWidth = s.body.size
-                    bodyHeight = Order.sizeBy sizeF_ s.order
-            Horizontal ->
-                bodyWidth <+> bodyHeight
-                where
-                    bodyWidth = Order.sizeBy sizeF_ s.order
-                    bodyHeight = s.body.size
+orderBy :: forall d. GetSizeF d NodePart -> GetSize d
+orderBy sizeF f s flow node =
+    case flow of
+        Vertical ->
+            bodyWidth <+> bodyHeight
+            where
+                bodyWidth = s.body.size
+                bodyHeight = Order.sizeBy (sizeF f s flow node) s.order
+        Horizontal ->
+            bodyWidth <+> bodyHeight
+            where
+                bodyWidth = Order.sizeBy (sizeF f s flow node) s.order
+                bodyHeight = s.body.size
 
+
+
+-- including the parts outside of the actual body
+nodeArea :: forall d. GetSize d
+nodeArea f s flow node =
+    (V2.w s.body.margin * 2.0 + bodyWidth)
+    <+>
+    (V2.h s.body.margin * 2.0 + bodyHeight)
+    where
+        bodyWidth /\ bodyHeight =
+            V2.toTuple $ orderBy nodeAreaF f s flow node
+
+
+bodySize :: forall d. GetSize d
+bodySize =
+    orderBy bodySizeF
 
 
 shadowPos :: forall d. GetPos d
