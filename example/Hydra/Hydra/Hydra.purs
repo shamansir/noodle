@@ -1,9 +1,8 @@
 module Hydra where
 
 
-import Prelude ((<$>), (<<<), ($), class Show, show, (<>))
+import Prelude
 
-import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
@@ -34,6 +33,13 @@ data Value
     -- Harmonic Int
     -- FN (Time -> Value)
 
+
+{- data Expr
+    = V Value
+    | Fn (Time -> Value)
+    | Op Value Value -}
+
+
 data Source
     = Noise { scale :: Value, offset :: Value }
     | Voronoi { scale :: Value, speed :: Value, blending :: Value }
@@ -41,7 +47,6 @@ data Source
     | Shape { sides :: Value, radius :: Value, smoothing :: Value }
     | Gradient { speed :: Value }
     | Solid { r :: Value, g :: Value, b :: Value, a :: Value }
-    | Source Buffer
 
 
 data Geometry
@@ -71,49 +76,51 @@ data Color
 
 
 data Blend
-    = Add { what :: Entity, amount :: Value }
-    | Layer { what :: Entity }
-    | Blend { what :: Entity, amount :: Value }
-    | Mult { what :: Entity, amount :: Value }
-    | Diff { what :: Entity }
-    | Mask { what :: Entity }
+    = Add { what :: Texture, amount :: Value }
+    | Layer { what :: Texture }
+    | Blend { what :: Texture, amount :: Value }
+    | Mult { what :: Texture, amount :: Value }
+    | Diff { what :: Texture }
+    | Mask { what :: Texture }
 
 
 data Modulate
-    = ModulateRepeat { what :: Entity, repeatX :: Value, repeatY :: Value, offsetX :: Value, offsetY :: Value }
-    | ModulateRepeatX { what :: Entity, reps :: Value, offset :: Value }
-    | ModulateRepeatY { what :: Entity, reps :: Value, offset :: Value }
-    | ModulateKaleid { what :: Entity, nSides :: Value }
-    | ModulateScrollX { what :: Entity, scrollX :: Value, speed :: Value }
-    | ModulateScrollY { what :: Entity, scrollY :: Value, speed :: Value }
-    | Modulate { what :: Entity, amount :: Value }
-    | ModulateScale { what :: Entity, multiple :: Value, offset :: Value }
-    | ModulatePixelate { what :: Entity, multiple :: Value, offset :: Value }
-    | ModulateRotate { what :: Entity, multiple :: Value, offset :: Value }
-    | ModulateHue { what :: Entity, amount :: Value }
+    = ModulateRepeat { what :: Texture, repeatX :: Value, repeatY :: Value, offsetX :: Value, offsetY :: Value }
+    | ModulateRepeatX { what :: Texture, reps :: Value, offset :: Value }
+    | ModulateRepeatY { what :: Texture, reps :: Value, offset :: Value }
+    | ModulateKaleid { what :: Texture, nSides :: Value }
+    | ModulateScrollX { what :: Texture, scrollX :: Value, speed :: Value }
+    | ModulateScrollY { what :: Texture, scrollY :: Value, speed :: Value }
+    | Modulate { what :: Texture, amount :: Value }
+    | ModulateScale { what :: Texture, multiple :: Value, offset :: Value }
+    | ModulatePixelate { what :: Texture, multiple :: Value, offset :: Value }
+    | ModulateRotate { what :: Texture, multiple :: Value, offset :: Value }
+    | ModulateHue { what :: Texture, amount :: Value }
 
 
 data Modifier = G Geometry | C Color | B Blend | M Modulate
 
 
-data Entity =
-    Entity Source (Array Modifier)
+data Texture
+    = Texture Source (Array Modifier)
+    | Source Buffer (Array Modifier)
 
 
-data Output
+data Target
     = Default
     | Output Buffer
 
 
 type Queue =
-    Array (Entity /\ Output) -- TODO: non-empty array
+    Array (Texture /\ Target) -- TODO: non-empty array?
 
 
 data Hydra
     = None
-    | Value Value
+    | Val Value
     | Mod Modifier
-    | Hydra Entity
+    | Tex Texture
+    | Buf Buffer
     | Out Queue
 
 
@@ -121,8 +128,8 @@ default :: Hydra
 default = None
 
 
-entityOf :: Source -> Entity
-entityOf src = Entity src []
+textureOf :: Source -> Texture
+textureOf src = Texture src []
 
 
 geometry :: Geometry -> Modifier
@@ -141,56 +148,61 @@ modulate :: Modulate -> Modifier
 modulate = M
 
 
-addModifier :: Entity -> Modifier -> Entity
-addModifier (Entity src modifiers) = Entity src <<< Array.snoc modifiers
+addModifier :: Texture -> Modifier -> Texture
+addModifier (Texture src modifiers) = Texture src <<< Array.snoc modifiers
+addModifier (Source buf modifiers) = Source buf <<< Array.snoc modifiers
 
 
-hydraOf :: Entity -> Hydra
-hydraOf = Hydra
+hydraOf :: Texture -> Hydra
+hydraOf = Tex
 
 
 justModifier :: Modifier -> Hydra
 justModifier = Mod
 
 
+buffer :: Buffer -> Hydra
+buffer = Buf
+
+
 num :: Number -> Hydra
-num = Value <<< Num
+num = Val <<< Num
 
 
 time :: Hydra
-time = Value Time
+time = Val Time
 
 
 mouseX :: Hydra
-mouseX = Value MouseX
+mouseX = Val MouseX
 
 
 mouseY :: Hydra
-mouseY = Value MouseY
+mouseY = Val MouseY
 
 
 width :: Hydra
-width = Value Width
+width = Val Width
 
 
 height :: Hydra
-height = Value Height
+height = Val Height
 
 
 seq :: Array Value -> Hydra
-seq = Value <<< Seq
+seq = Val <<< Seq
 
 
 defaultSource :: Source
 defaultSource = Osc { freq : Num 60.0, sync : Num 0.1, offset : Num 0.0 }
 
 
-defaultEntity :: Entity
-defaultEntity = entityOf defaultSource
+defaultTexture :: Texture
+defaultTexture = textureOf defaultSource
 
 
 isValue :: Hydra -> Boolean
-isValue (Value _) = true
+isValue (Val _) = true
 isValue _ = false
 
 
@@ -199,19 +211,30 @@ isModifier (Mod _) = true
 isModifier _ = false
 
 
+isBuffer :: Hydra -> Boolean
+isBuffer (Buf _) = true
+isBuffer _ = false
+
+
+isTexture :: Hydra -> Boolean
+isTexture (Tex _) = true
+isTexture _ = false
+
+
 toValue :: Hydra -> Maybe Value
-toValue (Value v) = Just v
+toValue (Val v) = Just v
 toValue _ = Nothing
 
 
-isEntity :: Hydra -> Boolean
-isEntity (Hydra _) = true
-isEntity _ = false
+toBuffer :: Hydra -> Maybe Buffer
+toBuffer (Buf buf) = Just buf
+toBuffer _ = Nothing
 
 
-toEntity :: Hydra -> Maybe Entity
-toEntity (Hydra e) = Just e
-toEntity _ = Nothing
+
+toTexture :: Hydra -> Maybe Texture
+toTexture (Tex t) = Just t
+toTexture _ = Nothing
 
 
 toModifier :: Hydra -> Maybe Modifier
@@ -243,12 +266,12 @@ type HydraFn5M = Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> May
 type HydraFn6M = Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra
 
 
-type HydraEFn0 = HydraFn1
-type HydraEFn1 = HydraFn2
-type HydraEFn2 = HydraFn3
-type HydraEFn3 = HydraFn4
-type HydraEFn4 = HydraFn5
-type HydraEFn5 = HydraFn6
+type HydraTFn0 = HydraFn1
+type HydraTFn1 = HydraFn2
+type HydraTFn2 = HydraFn3
+type HydraTFn3 = HydraFn4
+type HydraTFn4 = HydraFn5
+type HydraTFn5 = HydraFn6
 
 
 type HydraEEFn0 = HydraFn2
@@ -258,19 +281,19 @@ type HydraEEFn3 = HydraFn5
 type HydraEEFn4 = HydraFn6
 
 
-type HydraEFn0M = HydraFn1M
-type HydraEFn1M = HydraFn2M
-type HydraEFn2M = HydraFn3M
-type HydraEFn3M = HydraFn4M
-type HydraEFn4M = HydraFn5M
-type HydraEFn5M = HydraFn6M
+type HydraTFn0M = HydraFn1M
+type HydraTFn1M = HydraFn2M
+type HydraTFn2M = HydraFn3M
+type HydraTFn3M = HydraFn4M
+type HydraTFn4M = HydraFn5M
+type HydraTFn5M = HydraFn6M
 
 
-type HydraEEFn0M = HydraFn2M
-type HydraEEFn1M = HydraFn3M
-type HydraEEFn2M = HydraFn4M
-type HydraEEFn3M = HydraFn5M
-type HydraEEFn4M = HydraFn6M
+type HydraTTFn0M = HydraFn2M
+type HydraTTFn1M = HydraFn3M
+type HydraTTFn2M = HydraFn4M
+type HydraTTFn3M = HydraFn5M
+type HydraTTFn4M = HydraFn6M
 
 
 type ToHydraFn1 = Value -> Hydra
@@ -281,37 +304,37 @@ type ToHydraFn5 = Value -> Value -> Value -> Value -> Value -> Hydra
 type ToHydraFn6 = Value -> Value -> Value -> Value -> Value -> Value -> Hydra
 
 
-type ToHydraEFn0 = Entity -> Hydra
-type ToHydraEFn1 = Entity -> Value -> Hydra
-type ToHydraEFn2 = Entity -> Value -> Value -> Hydra
-type ToHydraEFn3 = Entity -> Value -> Value -> Value -> Hydra
-type ToHydraEFn4 = Entity -> Value -> Value -> Value -> Value -> Hydra
-type ToHydraEFn5 = Entity -> Value -> Value -> Value -> Value -> Value -> Hydra
+type ToHydraTFn0 = Texture -> Hydra
+type ToHydraTFn1 = Texture -> Value -> Hydra
+type ToHydraTFn2 = Texture -> Value -> Value -> Hydra
+type ToHydraTFn3 = Texture -> Value -> Value -> Value -> Hydra
+type ToHydraTFn4 = Texture -> Value -> Value -> Value -> Value -> Hydra
+type ToHydraTFn5 = Texture -> Value -> Value -> Value -> Value -> Value -> Hydra
 
 
-type ToHydraEEFn0 = Entity -> Entity -> Hydra
-type ToHydraEEFn1 = Entity -> Entity -> Value -> Hydra
-type ToHydraEEFn2 = Entity -> Entity -> Value -> Value -> Hydra
-type ToHydraEEFn3 = Entity -> Entity -> Value -> Value -> Value -> Hydra
-type ToHydraEEFn4 = Entity -> Entity -> Value -> Value -> Value -> Value -> Hydra
+type ToHydraTTFn0 = Texture -> Texture -> Hydra
+type ToHydraTTFn1 = Texture -> Texture -> Value -> Hydra
+type ToHydraTTFn2 = Texture -> Texture -> Value -> Value -> Hydra
+type ToHydraTTFn3 = Texture -> Texture -> Value -> Value -> Value -> Hydra
+type ToHydraTTFn4 = Texture -> Texture -> Value -> Value -> Value -> Value -> Hydra
 
 
-data EntityOrValue
-    = E Entity
+data TextureOrValue
+    = T Texture
     | V Value
 
 
-e' :: Entity -> EntityOrValue
-e' = E
+t' :: Texture -> TextureOrValue
+t' = T
 
 
-v' :: Value -> EntityOrValue
+v' :: Value -> TextureOrValue
 v' = V
 
 
-entityOrValue :: forall x. (Entity -> x) -> (Value -> x) -> EntityOrValue -> x
-entityOrValue ef _ (E e) = ef e
-entityOrValue _ ev (V v) = ev v
+textureOrValue :: forall x. (Texture -> x) -> (Value -> x) -> TextureOrValue -> x
+textureOrValue tf _ (T t) = tf t
+textureOrValue _ ev (V v) = ev v
 
 
 instance ToFn Source Value where
@@ -356,42 +379,42 @@ instance ToFn Color Value where
     toFn (Colorama vs)   = fn "colorama" [ "amount" /\ vs.amount ]
 
 
-instance ToFn Blend EntityOrValue where
-    toFn (Add vs)   = fn "add" [ "what" /\ e' vs.what, "amount" /\ v' vs.amount ]
-    toFn (Layer vs) = fn "layer" [ "what" /\ e' vs.what ]
-    toFn (Blend vs) = fn "blend" [ "what" /\ e' vs.what, "amount" /\ v' vs.amount ]
-    toFn (Mult vs)  = fn "mult" [ "what" /\ e' vs.what, "amount" /\ v' vs.amount ]
-    toFn (Diff vs)  = fn "diff" [ "what" /\ e' vs.what ]
-    toFn (Mask vs)  = fn "mask" [ "what" /\ e' vs.what ]
+instance ToFn Blend TextureOrValue where
+    toFn (Add vs)   = fn "add" [ "what" /\ t' vs.what, "amount" /\ v' vs.amount ]
+    toFn (Layer vs) = fn "layer" [ "what" /\ t' vs.what ]
+    toFn (Blend vs) = fn "blend" [ "what" /\ t' vs.what, "amount" /\ v' vs.amount ]
+    toFn (Mult vs)  = fn "mult" [ "what" /\ t' vs.what, "amount" /\ v' vs.amount ]
+    toFn (Diff vs)  = fn "diff" [ "what" /\ t' vs.what ]
+    toFn (Mask vs)  = fn "mask" [ "what" /\ t' vs.what ]
 
 
-instance ToFn Modulate EntityOrValue where
+instance ToFn Modulate TextureOrValue where
     toFn (ModulateRepeat vs)   = fn "modulateRepeat"
-                                    [ "what" /\ e' vs.what
+                                    [ "what" /\ t' vs.what
                                     , "repeatX" /\ v' vs.repeatX, "repeatY" /\ v' vs.repeatY
                                     , "offsetX" /\ v' vs.offsetX, "offsetY" /\ v' vs.offsetY
                                     ]
     toFn (ModulateRepeatX vs)  = fn "modulateRepeatX"
-                                    [ "what" /\ e' vs.what, "reps" /\ v' vs.reps, "offset" /\ v' vs.offset ]
+                                    [ "what" /\ t' vs.what, "reps" /\ v' vs.reps, "offset" /\ v' vs.offset ]
     toFn (ModulateRepeatY vs)  = fn "modulateRepeatY"
-                                    [ "what" /\ e' vs.what, "reps" /\ v' vs.reps, "offset" /\ v' vs.offset ]
+                                    [ "what" /\ t' vs.what, "reps" /\ v' vs.reps, "offset" /\ v' vs.offset ]
     toFn (ModulateKaleid vs)   = fn "modulateKaleid"
-                                    [ "what" /\ e' vs.what, "nSides" /\ v' vs.nSides ]
+                                    [ "what" /\ t' vs.what, "nSides" /\ v' vs.nSides ]
     toFn (ModulateScrollX vs)  = fn "modulateScrollX"
-                                    [ "what" /\ e' vs.what, "scrollX" /\ v' vs.scrollX, "speed" /\ v' vs.speed ]
+                                    [ "what" /\ t' vs.what, "scrollX" /\ v' vs.scrollX, "speed" /\ v' vs.speed ]
     toFn (ModulateScrollY vs)  = fn "modulateScrollY"
-                                    [ "what" /\ e' vs.what, "scrollY" /\ v' vs.scrollY, "speed" /\ v' vs.speed ]
-    toFn (Modulate vs)         = fn "modulate" [ "what" /\ e' vs.what, "amount" /\ v' vs.amount ]
+                                    [ "what" /\ t' vs.what, "scrollY" /\ v' vs.scrollY, "speed" /\ v' vs.speed ]
+    toFn (Modulate vs)         = fn "modulate" [ "what" /\ t' vs.what, "amount" /\ v' vs.amount ]
     toFn (ModulateScale vs)    = fn "modulateScale"
-                                    [ "what" /\ e' vs.what, "multiple" /\ v' vs.multiple, "offset" /\ v' vs.offset ]
+                                    [ "what" /\ t' vs.what, "multiple" /\ v' vs.multiple, "offset" /\ v' vs.offset ]
     toFn (ModulatePixelate vs) = fn "modulatePixelate"
-                                    [ "what" /\ e' vs.what, "multiple" /\ v' vs.multiple, "offset" /\ v' vs.offset ]
+                                    [ "what" /\ t' vs.what, "multiple" /\ v' vs.multiple, "offset" /\ v' vs.offset ]
     toFn (ModulateRotate vs)   = fn "modulateRotate"
-                                    [ "what" /\ e' vs.what, "multiple" /\ v' vs.multiple, "offset" /\ v' vs.offset ]
-    toFn (ModulateHue vs)      = fn "modulateHue" [ "what" /\ e' vs.what, "amount" /\ v' vs.amount ]
+                                    [ "what" /\ t' vs.what, "multiple" /\ v' vs.multiple, "offset" /\ v' vs.offset ]
+    toFn (ModulateHue vs)      = fn "modulateHue" [ "what" /\ t' vs.what, "amount" /\ v' vs.amount ]
 
 
-instance ToFn Modifier EntityOrValue where
+instance ToFn Modifier TextureOrValue where
     toFn (G geom) = v' <$> toFn geom
     toFn (C color) = v' <$> toFn color
     toFn (B blend) = toFn blend
@@ -419,30 +442,33 @@ instance Show Buffer where
     show S3 = "s3"
 
 
-instance Show EntityOrValue where
-    show (E entity) = show entity
+instance Show TextureOrValue where
+    show (T texture) = show texture
     show (V value) = show value
 
 
-instance Show Entity where
-    show (Entity source modifiers) =
+instance Show Texture where
+    show (Texture source modifiers) =
         show (toFn source :: Fn Value) <> "\n    " <>
             String.joinWith "\n    " (show <$> modifiers)
-
+    show (Source buf modifiers) =
+        "{src:" <> show buf <> "}" <> "\n    " <>
+            String.joinWith "\n    " (show <$> modifiers)
 
 instance Show Modifier where
     show modifier =
-        show $ (toFn modifier :: Fn EntityOrValue)
+        show $ (toFn modifier :: Fn TextureOrValue)
 
 
-instance Show Output where
+instance Show Target where
     show Default = "{out:default}"
     show (Output buf) = "{out:" <> show buf <> "}"
 
 
 instance Show Hydra where
     show None = "None"
-    show (Value v) = show v
+    show (Val v) = show v
     show (Mod mod) = show mod
-    show (Hydra entity) = show entity
+    show (Tex tex) = show tex
+    show (Buf buf) = show buf
     show (Out queue) = show queue

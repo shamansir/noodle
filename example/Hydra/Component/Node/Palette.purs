@@ -121,7 +121,7 @@ handleAction = case _ of
         let palette = fromMaybe P.default $ Map.lookup paletteId P.palettes
         H.raise $ UI.SendToInlet "palette" $ case mode of
             Modifier -> Hydra.justModifier $ Hydra.color $ P.toColorMod palette
-            Solid -> Hydra.hydraOf $ Hydra.entityOf $ P.toSolidSource palette
+            Solid -> Hydra.hydraOf $ Hydra.textureOf $ P.toSolidSource palette
 
 
 component :: forall m. MonadEffect m => Mode -> UI.NodeComponent m Hydra
