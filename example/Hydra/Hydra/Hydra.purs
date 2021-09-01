@@ -12,6 +12,17 @@ import Data.String as String
 import Hydra.Fn (class ToFn, Fn, fn, toFn)
 
 
+data Buffer
+    = O0
+    | O1
+    | O2
+    | O3
+    | S0
+    | S1
+    | S2
+    | S3
+
+
 data Value
     = Num Number
     | MouseX
@@ -30,7 +41,7 @@ data Source
     | Shape { sides :: Value, radius :: Value, smoothing :: Value }
     | Gradient { speed :: Value }
     | Solid { r :: Value, g :: Value, b :: Value, a :: Value }
-    -- | Source Output
+    | Source Buffer
 
 
 data Geometry
@@ -91,7 +102,7 @@ data Entity =
 
 data Output
     = Default
-    | Output Int
+    | Output Buffer
 
 
 type Queue =
@@ -397,6 +408,17 @@ instance Show Value where
     show (Seq values) = String.joinWith "," $ show <$> values
 
 
+instance Show Buffer where
+    show O0 = "o0"
+    show O1 = "o1"
+    show O2 = "o2"
+    show O3 = "o3"
+    show S0 = "s0"
+    show S1 = "s1"
+    show S2 = "s2"
+    show S3 = "s3"
+
+
 instance Show EntityOrValue where
     show (E entity) = show entity
     show (V value) = show value
@@ -415,7 +437,7 @@ instance Show Modifier where
 
 instance Show Output where
     show Default = "{out:default}"
-    show (Output n) = "{out:" <> show n <> "}"
+    show (Output buf) = "{out:" <> show buf <> "}"
 
 
 instance Show Hydra where
