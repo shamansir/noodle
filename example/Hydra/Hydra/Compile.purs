@@ -34,8 +34,8 @@ compileFn :: forall a. ToFn a Value => a -> String
 compileFn = compileFnBy compileValue <<< toFn
 
 
-compileFn' :: forall a. ToFn a EntityOrValue => a -> String
-compileFn' = compileFnBy (entityOrValue compileEntity compileValue) <<< toFn
+compileFn' :: forall a. ToFn a TextureOrValue => a -> String
+compileFn' = compileFnBy (textureOrValue compileTexture compileValue) <<< toFn
 
 
 compileFnBy :: forall x. (x -> String) -> Fn x -> String
@@ -44,24 +44,41 @@ compileFnBy toString (Fn { name, args })  =
     where compileArg (argName /\ value) = "/*" <> argName <> "*/ " <> toString value
 
 
-compileEntity :: Entity -> String
-compileEntity (Entity source modifiers) =
-    if Array.length modifiers > 0
-        then compileFn source <> "\n    ." <> (String.joinWith "\n    ." $ compileModifier <$> modifiers)
-        else compileFn source
+compileBuffer :: Buffer -> String
+compileBuffer = case _ of
+    O0 -> "o0"
+    O1 -> "o1"
+    O2 -> "o2"
+    O3 -> "o3"
+    S0 -> "s0"
+    S1 -> "s1"
+    S2 -> "s2"
+    S3 -> "s3"
+
+
+compileTexture :: Texture -> String
+compileTexture what =
+    compile what
+    where
+        compile (Texture sourceFn modifiers) =
+            compileFn sourceFn <> "\n    ." <> (String.joinWith "\n    ." $ compileModifier <$> modifiers)
+        compile (Source buffer modifiers) =
+            "src(" <> compileBuffer buffer <> ")\n    ." <> (String.joinWith "\n    ." $ compileModifier <$> modifiers)
+        compileModifiers modifiers = String.joinWith "\n    ." $ compileModifier <$> modifiers
 
 
 compileQueue :: Queue -> String
 compileQueue queue =
     String.joinWith "\n\n" $ ouputCode <$> queue
     where
-        ouputCode (e /\ Default) = compileEntity e  <> "\n   .out()"
-        ouputCode (e /\ Output n) = compileEntity e <> "\n   .out(" <> show n <> ")"
+        ouputCode (e /\ Default) = compileTexture e  <> "\n   .out()"
+        ouputCode (e /\ Output n) = compileTexture e <> "\n   .out(" <> show n <> ")"
 
 
 compile :: Hydra -> Maybe String -- TODO: Compile only out-specs?
 compile None = Nothing
-compile (Value v) = Just $ compileValue v
-compile (Mod m)   = Just $ compileModifier m
-compile (Hydra e) = Just $ compileEntity e
-compile (Out q)   = Just $ compileQueue q
+compile (Val v) = Just $ compileValue v
+compile (Mod m) = Just $ compileModifier m
+compile (Tex t) = Just $ compileTexture t
+compile (Buf b) = Just $ compileBuffer b
+compile (Out q) = Just $ compileQueue q

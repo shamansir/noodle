@@ -17,7 +17,7 @@ value =
 
 entity :: Shape' Hydra
 entity =
-  Channel.shapeBy "entity" None Hydra.isEntity
+  Channel.shapeBy "entity" None Hydra.isTexture
 
 
 modifier :: Shape' Hydra

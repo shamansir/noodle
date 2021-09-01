@@ -18,7 +18,7 @@ import App.Emitters as E
 import Noodle.Node (Node)
 
 import Hydra (Hydra)
-import Hydra (hydraOf, entityOf, defaultSource) as Hydra
+import Hydra (hydraOf, textureOf, defaultSource) as Hydra
 import Hydra.Compile (compile) as Hydra
 import Hydra.Component.SineWave as SineWave
 
@@ -38,7 +38,7 @@ data Action
 
 initialState :: UI.NodeInput Hydra -> State
 initialState { node } =
-    (Hydra.hydraOf $ Hydra.entityOf $ Hydra.defaultSource) /\ node
+    (Hydra.hydraOf $ Hydra.textureOf $ Hydra.defaultSource) /\ node
 
 
 render :: forall m. MonadEffect m => State -> H.ComponentHTML Action () m
