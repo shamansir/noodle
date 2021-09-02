@@ -72,7 +72,7 @@ all' = ((/\) Source <$> byKind Source)
     <> ((/\) Mod    <$> byKind Mod)
 
 
-instance ToFn String EorV where
+instance ToFn String TextureOrValue where
 
     {- Source -}
     toFn "noise"    = fn "noise" $ v2 "scale" "offset"
@@ -83,55 +83,55 @@ instance ToFn String EorV where
     toFn "solid"    = fn "solid" $ v4 "r" "g" "b" "a"
 
     {- Geometry -}
-    toFn "rotate"   = fn "rotate" $ ve2 "src" "angle" "speed"
-    toFn "scale"    = fn "scale" $ ve5 "src" "amount" "x-mult" "y-mult" "offset-x" "offset-y"
-    toFn "pixelate" = fn "pixelate" $ ve2 "src" "pixel-x" "pixel-y"
-    toFn "repeat"   = fn "repeat" $ ve4 "src" "repeat-x" "repeat-y" "offset-x" "offset-y"
-    toFn "repeat-x" = fn "repeat-x" $ ve2 "src" "reps" "offset"
-    toFn "repeat-y" = fn "repeat-y" $ ve2 "src" "reps" "offset"
-    toFn "kaleid"   = fn "kaleid" $ ve1 "src" "n-sides"
-    toFn "scroll-x" = fn "scroll-x" $ ve2 "src" "amount" "speed"
-    toFn "scroll-y" = fn "scroll-y" $ ve2 "src" "amount" "speed"
+    toFn "rotate"   = fn "rotate" $ vt2 "src" "angle" "speed"
+    toFn "scale"    = fn "scale" $ vt5 "src" "amount" "x-mult" "y-mult" "offset-x" "offset-y"
+    toFn "pixelate" = fn "pixelate" $ vt2 "src" "pixel-x" "pixel-y"
+    toFn "repeat"   = fn "repeat" $ vt4 "src" "repeat-x" "repeat-y" "offset-x" "offset-y"
+    toFn "repeat-x" = fn "repeat-x" $ vt2 "src" "reps" "offset"
+    toFn "repeat-y" = fn "repeat-y" $ vt2 "src" "reps" "offset"
+    toFn "kaleid"   = fn "kaleid" $ vt1 "src" "n-sides"
+    toFn "scroll-x" = fn "scroll-x" $ vt2 "src" "amount" "speed"
+    toFn "scroll-y" = fn "scroll-y" $ vt2 "src" "amount" "speed"
 
     {- Color -}
-    toFn "posterize" = fn "posterize" $ ve2 "src" "bins" "gamma"
-    toFn "shift"     = fn "shift" $ ve4 "src" "r" "g" "b" "a"
-    toFn "invert"    = fn "invert" $ ve1 "src" "amount"
-    toFn "contrast"  = fn "contrast" $ ve1 "src" "amount"
-    toFn "brightness" = fn "brightness" $ ve1 "src" "amount"
-    toFn "luma"      = fn "luma" $ ve2 "src" "treshhold" "tolerance"
-    toFn "tresh"     = fn "tresh" $ ve2 "src" "treshhold" "tolerance"
-    toFn "color"     = fn "color" $ ve4 "src" "r" "g" "b" "a"
-    toFn "saturate"  = fn "saturate" $ ve1 "src" "amount"
-    toFn "hue"       = fn "hue" $ ve1 "src" "amount"
-    toFn "colorama"  = fn "colorama" $ ve1 "src" "amount"
+    toFn "posterize" = fn "posterize" $ vt2 "src" "bins" "gamma"
+    toFn "shift"     = fn "shift" $ vt4 "src" "r" "g" "b" "a"
+    toFn "invert"    = fn "invert" $ vt1 "src" "amount"
+    toFn "contrast"  = fn "contrast" $ vt1 "src" "amount"
+    toFn "brightness" = fn "brightness" $ vt1 "src" "amount"
+    toFn "luma"      = fn "luma" $ vt2 "src" "treshhold" "tolerance"
+    toFn "tresh"     = fn "tresh" $ vt2 "src" "treshhold" "tolerance"
+    toFn "color"     = fn "color" $ vt4 "src" "r" "g" "b" "a"
+    toFn "saturate"  = fn "saturate" $ vt1 "src" "amount"
+    toFn "hue"       = fn "hue" $ vt1 "src" "amount"
+    toFn "colorama"  = fn "colorama" $ vt1 "src" "amount"
 
     {- Blend -}
-    toFn "add"       = fn "add" $ vee1 "src" "what" "amount"
-    toFn "layer"     = fn "layer" $ vee0 "src" "what"
-    toFn "blend"     = fn "blend" $ vee1 "src" "what" "amount"
-    toFn "mult"      = fn "mult" $ vee1 "src" "what" "amount"
-    toFn "diff"      = fn "diff" $ vee0 "src" "what"
-    toFn "mask"      = fn "mask" $ vee0 "src" "what"
+    toFn "add"       = fn "add" $ vtt1 "src" "what" "amount"
+    toFn "layer"     = fn "layer" $ vtt0 "src" "what"
+    toFn "blend"     = fn "blend" $ vtt1 "src" "what" "amount"
+    toFn "mult"      = fn "mult" $ vtt1 "src" "what" "amount"
+    toFn "diff"      = fn "diff" $ vtt0 "src" "what"
+    toFn "mask"      = fn "mask" $ vtt0 "src" "what"
 
     {- Modulate -}
-    toFn "mod-repeat"   = fn "mod-repeat" $ vee4 "src" "what" "repeat-x" "repeat-y" "offset-x" "offset-y"
-    toFn "mod-repeat-x" = fn "mod-repeat-x" $ vee2 "src" "what" "reps" "offset"
-    toFn "mod-repeat-y" = fn "mod-repeat-y" $ vee2 "src" "what" "reps" "offset"
-    toFn "mod-kaleid"   = fn "mod-kaleid" $ vee1 "src" "what" "n-sides"
-    toFn "mod-scroll-x" = fn "mod-scroll-x" $ vee2 "src" "what" "amount" "speed"
-    toFn "mod-scroll-y" = fn "mod-scroll-y" $ vee2 "src" "what" "amount" "speed"
-    toFn "modulate"     = fn "modulate" $ vee1 "src" "what" "amount"
-    toFn "mod-scale"    = fn "mod-scale" $ vee2 "src" "what" "multiple" "offset"
-    toFn "mod-pixelate" = fn "mod-pixelate" $ vee2 "src" "what" "multiple" "offset"
-    toFn "mod-rotate"   = fn "mod-rotate" $ vee2 "src" "what" "multiple" "offset"
-    toFn "mod-hue"      = fn "mod-hue" $ vee1 "src" "what" "amount"
+    toFn "mod-repeat"   = fn "mod-repeat" $ vtt4 "src" "what" "repeat-x" "repeat-y" "offset-x" "offset-y"
+    toFn "mod-repeat-x" = fn "mod-repeat-x" $ vtt2 "src" "what" "reps" "offset"
+    toFn "mod-repeat-y" = fn "mod-repeat-y" $ vtt2 "src" "what" "reps" "offset"
+    toFn "mod-kaleid"   = fn "mod-kaleid" $ vtt1 "src" "what" "n-sides"
+    toFn "mod-scroll-x" = fn "mod-scroll-x" $ vtt2 "src" "what" "amount" "speed"
+    toFn "mod-scroll-y" = fn "mod-scroll-y" $ vtt2 "src" "what" "amount" "speed"
+    toFn "modulate"     = fn "modulate" $ vtt1 "src" "what" "amount"
+    toFn "mod-scale"    = fn "mod-scale" $ vtt2 "src" "what" "multiple" "offset"
+    toFn "mod-pixelate" = fn "mod-pixelate" $ vtt2 "src" "what" "multiple" "offset"
+    toFn "mod-rotate"   = fn "mod-rotate" $ vtt2 "src" "what" "multiple" "offset"
+    toFn "mod-hue"      = fn "mod-hue" $ vtt1 "src" "what" "amount"
 
     {- Other -}
     toFn _ = fn "" []
 
 
-instance ToFn GenId EorV where
+instance ToFn GenId TextureOrValue where
     toFn (GenId str) = toFn str
 
 
@@ -192,29 +192,29 @@ generate :: GenId -> String /\ Def Hydra
 generate (GenId id) = id /\ generate' id
 
 
-eovToShape :: EorV -> Ch.Shape' Hydra
-eovToShape E = TShape.entity
-eovToShape V = TShape.value
+tovToShape :: TextureOrValue -> Ch.Shape' Hydra
+tovToShape T = TShape.texture
+tovToShape V = TShape.value
 
 
-inletsFromFn :: Fn EorV -> Inlets Hydra
+inletsFromFn :: Fn TextureOrValue -> Inlets Hydra
 inletsFromFn fn =
-    Shape.formInlets $ map eovToShape <$> Fn.getArgs fn
+    Shape.formInlets $ map tovToShape <$> Fn.getArgs fn
 
 
-outletsFromFn :: Fn EorV -> Inlets Hydra
+outletsFromFn :: Fn TextureOrValue -> Inlets Hydra
 outletsFromFn fn =
-    Shape.formOutlets [ Fn.getName fn /\ TShape.entity ]
+    Shape.formOutlets [ Fn.getName fn /\ TShape.texture ]
 
 
--- loadFromInlet :: Receive Hydra -> String /\ EorV -> Maybe Hydra
+-- loadFromInlet :: Receive Hydra -> String /\ TextureOrValue -> Maybe Hydra
 -- loadFromInlet inlets (name /\ _) = name <+ inlets
 
 loadFromInlet :: Receive Hydra -> String -> Maybe Hydra
 loadFromInlet = flip (<+)
 
 
-fromFn :: Fn EorV -> (Receive Hydra -> Pass Hydra) -> Def Hydra
+fromFn :: Fn TextureOrValue -> (Receive Hydra -> Pass Hydra) -> Def Hydra
 fromFn fn =
     Def.define
         (inletsFromFn fn)
@@ -231,115 +231,115 @@ makeReceiver x fn f =
     )
 
 
-fromFn1 :: Fn EorV -> HydraFn1M -> Def Hydra
+fromFn1 :: Fn TextureOrValue -> HydraFn1M -> Def Hydra
 fromFn1 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn1 fn f
 
 
-fromFn2 :: Fn EorV -> HydraFn2M -> Def Hydra
+fromFn2 :: Fn TextureOrValue -> HydraFn2M -> Def Hydra
 fromFn2 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn2 fn f
 
 
-fromFn3 :: Fn EorV -> HydraFn3M -> Def Hydra
+fromFn3 :: Fn TextureOrValue -> HydraFn3M -> Def Hydra
 fromFn3 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn3 fn f
 
 
-fromFn4 :: Fn EorV -> HydraFn4M -> Def Hydra
+fromFn4 :: Fn TextureOrValue -> HydraFn4M -> Def Hydra
 fromFn4 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn4 fn f
 
 
-fromFn5 :: Fn EorV -> HydraFn5M -> Def Hydra
+fromFn5 :: Fn TextureOrValue -> HydraFn5M -> Def Hydra
 fromFn5 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn5 fn f
 
 
-fromFn6 :: Fn EorV -> HydraFn6M -> Def Hydra
+fromFn6 :: Fn TextureOrValue -> HydraFn6M -> Def Hydra
 fromFn6 fn f =
     fromFn fn $
         makeReceiver Fn.applyFn6 fn f
 
 
-data EorV
-    = E -- entity
+data TextureOrValue
+    = T -- texture
     | V -- value
 
 
-v1 :: String -> Array (String /\ EorV)
+v1 :: String -> Array (String /\ TextureOrValue)
 v1 v1' = [ v v1' ]
 
 
-v2 :: String -> String -> Array (String /\ EorV)
+v2 :: String -> String -> Array (String /\ TextureOrValue)
 v2 v1' v2' = v <$> [ v1', v2' ]
 
 
-v3 :: String -> String -> String -> Array (String /\ EorV)
+v3 :: String -> String -> String -> Array (String /\ TextureOrValue)
 v3 v1' v2' v3' = v <$> [ v1', v2', v3' ]
 
 
-v4 :: String -> String -> String -> String -> Array (String /\ EorV)
+v4 :: String -> String -> String -> String -> Array (String /\ TextureOrValue)
 v4 v1' v2' v3' v4' = v <$> [ v1', v2', v3', v4' ]
 
 
-v5 :: String -> String -> String -> String -> String -> Array (String /\ EorV)
+v5 :: String -> String -> String -> String -> String -> Array (String /\ TextureOrValue)
 v5 v1' v2' v3' v4' v5' = v <$> [ v1', v2', v3', v4', v5' ]
 
 
-ve0 :: String -> Array (String /\ EorV)
-ve0 e0 = [ e e0 ]
+vt0 :: String -> Array (String /\ TextureOrValue)
+vt0 t0 = [ t t0 ]
 
 
-ve1 :: String -> String -> Array (String /\ EorV)
-ve1 e0' v1' = ve0 e0' <> v1 v1'
+vt1 :: String -> String -> Array (String /\ TextureOrValue)
+vt1 t0' v1' = vt0 t0' <> v1 v1'
 
 
-ve2 :: String -> String -> String -> Array (String /\ EorV)
-ve2 e0' v1' v2' = ve0 e0' <> v2 v1' v2'
+vt2 :: String -> String -> String -> Array (String /\ TextureOrValue)
+vt2 t0' v1' v2' = vt0 t0' <> v2 v1' v2'
 
 
-ve3 :: String -> String -> String -> String -> Array (String /\ EorV)
-ve3 e0' v1' v2' v3' = ve0 e0' <> v3 v1' v2' v3'
+vt3 :: String -> String -> String -> String -> Array (String /\ TextureOrValue)
+vt3 t0' v1' v2' v3' = vt0 t0' <> v3 v1' v2' v3'
 
 
-ve4 :: String -> String -> String -> String -> String -> Array (String /\ EorV)
-ve4 e0' v1' v2' v3' v4' = ve0 e0' <> v4 v1' v2' v3' v4'
+vt4 :: String -> String -> String -> String -> String -> Array (String /\ TextureOrValue)
+vt4 t0' v1' v2' v3' v4' = vt0 t0' <> v4 v1' v2' v3' v4'
 
 
-ve5 :: String -> String -> String -> String -> String -> String -> Array (String /\ EorV)
-ve5 e0' v1' v2' v3' v4' v5' = ve0 e0' <> v5 v1' v2' v3' v4' v5'
+vt5 :: String -> String -> String -> String -> String -> String -> Array (String /\ TextureOrValue)
+vt5 t0' v1' v2' v3' v4' v5' = vt0 t0' <> v5 v1' v2' v3' v4' v5'
 
 
-vee0 :: String -> String -> Array (String /\ EorV)
-vee0 e0 e1 = [ e e0, e e1 ]
+vtt0 :: String -> String -> Array (String /\ TextureOrValue)
+vtt0 t0 t1 = [ t t0, t t1 ]
 
 
-vee1 :: String -> String -> String -> Array (String /\ EorV)
-vee1 e0' e1' v1' = vee0 e0' e1' <> v1 v1'
+vtt1 :: String -> String -> String -> Array (String /\ TextureOrValue)
+vtt1 t0' t1' v1' = vtt0 t0' t1' <> v1 v1'
 
 
-vee2 :: String -> String -> String -> String -> Array (String /\ EorV)
-vee2 e0' e1' v1' v2' = vee0 e0' e1' <> v2 v1' v2'
+vtt2 :: String -> String -> String -> String -> Array (String /\ TextureOrValue)
+vtt2 t0' t1' v1' v2' = vtt0 t0' t1' <> v2 v1' v2'
 
 
-vee3 :: String -> String -> String -> String -> String -> Array (String /\ EorV)
-vee3 e0' e1' v1' v2' v3' = vee0 e0' e1' <> v3 v1' v2' v3'
+vtt3 :: String -> String -> String -> String -> String -> Array (String /\ TextureOrValue)
+vtt3 t0' t1' v1' v2' v3' = vtt0 t0' t1' <> v3 v1' v2' v3'
 
 
-vee4 :: String -> String -> String -> String -> String -> String -> Array (String /\ EorV)
-vee4 e0' e1' v1' v2' v3' v4' = vee0 e0' e1' <> v4 v1' v2' v3' v4'
+vtt4 :: String -> String -> String -> String -> String -> String -> Array (String /\ TextureOrValue)
+vtt4 t0' t1' v1' v2' v3' v4' = vtt0 t0' t1' <> v4 v1' v2' v3' v4'
 
 
 
-v :: String -> String /\ EorV
+v :: String -> String /\ TextureOrValue
 v = flip (/\) V
 
 
-e :: String -> String /\ EorV
-e = flip (/\) E
+t :: String -> String /\ TextureOrValue
+t = flip (/\) T
