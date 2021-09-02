@@ -61,9 +61,9 @@ compileTexture what =
     compile' what
     where
         compile' (Texture sourceFn modifiers) =
-            compileFn sourceFn <> "\n    ." <> compileModifiers modifiers
+            compileFn sourceFn <> "\n    " <> compileModifiers modifiers
         compile' (Source buffer modifiers) =
-            "src(" <> compileBuffer buffer <> ")\n    ." <> compileModifiers modifiers
+            "src(" <> compileBuffer buffer <> ")\n    " <> compileModifiers modifiers
         compileModifiers modifiers = String.joinWith "\n    ." $ compileModifier <$> modifiers
 
 
