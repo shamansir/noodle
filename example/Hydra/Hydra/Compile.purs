@@ -58,12 +58,12 @@ compileBuffer = case _ of
 
 compileTexture :: Texture -> String
 compileTexture what =
-    compile what
+    compile' what
     where
-        compile (Texture sourceFn modifiers) =
-            compileFn sourceFn <> "\n    ." <> (String.joinWith "\n    ." $ compileModifier <$> modifiers)
-        compile (Source buffer modifiers) =
-            "src(" <> compileBuffer buffer <> ")\n    ." <> (String.joinWith "\n    ." $ compileModifier <$> modifiers)
+        compile' (Texture sourceFn modifiers) =
+            compileFn sourceFn <> "\n    ." <> compileModifiers modifiers
+        compile' (Source buffer modifiers) =
+            "src(" <> compileBuffer buffer <> ")\n    ." <> compileModifiers modifiers
         compileModifiers modifiers = String.joinWith "\n    ." $ compileModifier <$> modifiers
 
 

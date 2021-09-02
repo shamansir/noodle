@@ -12,7 +12,7 @@ import Data.Traversable (sequence)
 import Hydra (Hydra(..))
 import Hydra as Hydra
 import Hydra.Engine as HydraE
-import Hydra.Toolkit.Shape (entity, out, value, modifier) as Channel
+import Hydra.Toolkit.Shape (texture, out, value, modifier) as Channel
 import Hydra.Compile (compile) as Hydra
 import Hydra.Try as Hydra
 import Hydra.Extract as HydraE
@@ -90,16 +90,16 @@ palette :: Def Hydra
 palette =
     Def.define
       (withInlets
-        ~< "src" /\ Channel.entity
+        ~< "src" /\ Channel.texture
         ~< "palette" /\ (Channel.modifier # Channel.hidden)
       )
       (withOutlets
-        >~ "palette" /\ Channel.entity
+        >~ "palette" /\ Channel.texture
       )
       $ \inlets ->
           Def.pass'
             [ "palette" /\
-                (Hydra
+                (Tex
                   <$> ( Hydra.addModifier
                         <$> (HydraE.entity =<< "src" <+ inlets)
                         <*> (HydraE.modifier =<< "palette" <+ inlets)
@@ -112,10 +112,10 @@ solidPalette :: Def Hydra -- TODO: + palette-solid
 solidPalette =
     Def.define
       (withInlets
-        ~< "palette" /\ (Channel.entity # Channel.hidden)
+        ~< "palette" /\ (Channel.texture # Channel.hidden)
       )
       (withOutlets
-        >~ "palette" /\ Channel.entity
+        >~ "palette" /\ Channel.texture
       )
       $ Def.passThrough
 
@@ -124,7 +124,7 @@ out :: Def Hydra
 out =
     Def.defineEffectful
       (withInlets
-         ~< "src" /\ Channel.entity
+         ~< "src" /\ Channel.texture
       )
       noOutlets
       $ \inlets -> do
