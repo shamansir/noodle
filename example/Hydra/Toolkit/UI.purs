@@ -1,4 +1,4 @@
-module Hydra.UI where
+module Hydra.Toolkit.UI where
 
 import Prelude (($), (<#>), const, otherwise)
 
