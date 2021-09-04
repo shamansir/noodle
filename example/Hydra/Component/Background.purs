@@ -13,6 +13,8 @@ import Data.Vec2 as V2
 
 import Hydra (Hydra)
 import Hydra.Engine as Hydra
+import Hydra.Component.State as App
+
 import App.Style.Hydra.Background (bg)
 
 import Halogen as H
@@ -33,14 +35,14 @@ type State =
 
 data Action
     = Initialize
-    | Receive (BgInput Hydra)
+    | Receive (BgInput App.State Hydra)
 
 
 canvasId :: String
 canvasId = "hydra-canvas"
 
 
-initialState :: BgInput Hydra -> State
+initialState :: BgInput App.State Hydra -> State
 initialState _ =
     { hydraReady : false, size : zero }
 
@@ -67,7 +69,7 @@ handleAction (Receive { size }) =
     H.modify_ $ _ { size = size }
 
 
-component :: forall query output m. MonadEffect m => H.Component query (BgInput Hydra) output m
+component :: forall query output m. MonadEffect m => H.Component query (BgInput App.State Hydra) output m
 component =
     H.mkComponent
         { initialState

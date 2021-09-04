@@ -39,6 +39,8 @@ import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 import Halogen.Svg.Attributes as HSA
 
+import Hydra.Component.State as App
+
 import Color.Extra (toSvg) as C
 
 
@@ -61,7 +63,7 @@ bodyWidth = 110.0 -- FIXME: pass from outside
 -- defaultPalette = Hydra.Color { r = Num
 
 
-initialState :: Mode -> UI.NodeInput Hydra -> State
+initialState :: Mode -> UI.NodeInput App.State Hydra -> State
 initialState mode _ =
     mode /\ "JetBrains"
 
@@ -113,7 +115,7 @@ render (_ /\ paletteId) =
                 ]
 
 
-handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput App.State Hydra) m Unit
 handleAction = case _ of
     Change paletteId -> do
         mode /\ _ <- H.get
@@ -124,7 +126,7 @@ handleAction = case _ of
             Solid -> Hydra.hydraOf $ Hydra.textureOf $ P.toSolidSource palette
 
 
-component :: forall m. MonadEffect m => Mode -> UI.NodeComponent m Hydra
+component :: forall m. MonadEffect m => Mode -> UI.NodeComponent m App.State Hydra
 component mode =
     H.mkComponent
         { initialState : initialState mode

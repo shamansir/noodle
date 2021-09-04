@@ -41,9 +41,9 @@ import Web.HTML (window)
 import Web.HTML.Window as Window
 
 
-type Slots d =
+type Slots s d =
     ( patch :: PatchC.Slot Unit
-    , background :: UI.BgSlot d Unit
+    , background :: UI.BgSlot s d Unit
     )
 
 
@@ -52,17 +52,17 @@ _patch = Proxy :: Proxy "patch"
 _background = Proxy :: Proxy "background"
 
 
-type Input m d =
+type Input m s d =
     { network :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
     , style :: Style
     , flow :: NodeFlow
     , currentPatch :: Maybe Patch.Id
-    , ui :: UI m d
+    , ui :: UI m s d
     }
 
 
-type State m d =
+type State m s d =
     { network :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
     , currentPatch :: Maybe Patch.Id
@@ -70,7 +70,7 @@ type State m d =
     , currentFrame :: Number
     , style :: Style
     , flow :: NodeFlow
-    , ui :: UI m d
+    , ui :: UI m s d
     }
 
 
@@ -82,7 +82,7 @@ data Action
     -- | HandlePatch (PatchC.Action d)
 
 
-initialState :: forall m d. Input m d -> State m d
+initialState :: forall m s d. Input m s d -> State m s d
 initialState { network, toolkit, style, flow, currentPatch, ui } =
     { network, toolkit, style, flow, ui
     , currentPatch
@@ -91,7 +91,7 @@ initialState { network, toolkit, style, flow, currentPatch, ui } =
     }
 
 
-render :: forall d m. MonadEffect m => State m d -> H.ComponentHTML Action (Slots d) m
+render :: forall m s d. MonadEffect m => State m s d -> H.ComponentHTML Action (Slots s d) m
 render (s@{ network, toolkit, style, flow }) =
     HH.div
         [ CSS.style $ do
@@ -128,7 +128,7 @@ render (s@{ network, toolkit, style, flow }) =
                     Nothing ->
                         HS.none
                     Just userBgComp ->
-                        HH.slot _background unit userBgComp { network, size : s.windowSize } absurd
+                        HH.slot _background unit userBgComp { network, size : s.windowSize, state : s.ui.state } absurd
                 ]
         patchesTabs = HS.g [ HSA.classes CS.patchesTabs ] (patchTab <$> Tuple.fst <$> Network.patches network)
         patchTab label =
@@ -157,7 +157,7 @@ render (s@{ network, toolkit, style, flow }) =
                 [ HH.text "No patch selected" ]
 
 
-handleAction :: forall output m d. MonadAff m => MonadEffect m => Action -> H.HalogenM (State m d) Action (Slots d) output m Unit
+handleAction :: forall output m s d. MonadAff m => MonadEffect m => Action -> H.HalogenM (State m s d) Action (Slots s d) output m Unit
 handleAction = case _ of
     Initialize -> do
         innerWidth <- H.liftEffect $ Window.innerWidth =<< window
@@ -180,7 +180,7 @@ handleAction = case _ of
             { windowSize = toNumber w <+> toNumber h }
 
 
-component :: forall query output m d. MonadAff m => MonadEffect m => H.Component query (Input m d) output m
+component :: forall query output m s d. MonadAff m => MonadEffect m => H.Component query (Input m s d) output m
 component =
     H.mkComponent
         { initialState

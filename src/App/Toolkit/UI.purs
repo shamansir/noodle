@@ -6,6 +6,7 @@ import Prelude (Void, ($), (<$>))
 
 import Data.Maybe (Maybe, fromMaybe)
 import Data.Vec2 (Size)
+import Data.Const (Const)
 
 import Noodle.Node (Node)
 import Noodle.Node as Node
@@ -20,10 +21,13 @@ import App.Style (defaultFlags) as Style
 import Halogen as H
 
 
-type BgInput d = { size :: Size, network :: Network d }
+type BgInput s d = { size :: Size, network :: Network d, state :: s }
 
 
-type NodeInput d = { node :: Node d }
+type NodeInput s d = { node :: Node d, state :: s }
+
+
+type PatchInput s d = { state :: s }
 
 
 data BgQuery a = BgCarry a
@@ -32,44 +36,49 @@ data BgQuery a = BgCarry a
 data NodeQuery a = NodeCarry a
 
 
-type BgOutput :: forall k. k -> Type
-type BgOutput d = Void
+data PatchQuery a = PatchCarry a
 
 
-data NodeOutput d
+type BgOutput s d = Void
+
+
+data NodeOutput s d
     = SendToInlet InletId d
     | SendToOutlet OutletId d
     | Replace Node.Family
+    | Update s
 
 
-type BgSlot :: forall k. k -> Type -> Type
-type BgSlot d id = H.Slot BgQuery (BgOutput d) id
+data PatchOutput state d
+    = Update' state
 
 
-type NodeSlot d id = H.Slot NodeQuery (NodeOutput d) id
+type BgSlot s d id = H.Slot BgQuery (BgOutput s d) id
 
 
-type BgComponent m d = H.Component BgQuery (BgInput d) (BgOutput d) m
+type NodeSlot s d id = H.Slot NodeQuery (NodeOutput s d) id
 
 
-type NodeComponent m d = H.Component NodeQuery (NodeInput d) (NodeOutput d) m
+type BgComponent m s d = H.Component BgQuery (BgInput s d) (BgOutput s d) m
 
 
-type BgRenderer m d = Maybe (BgComponent m d)
+type NodeComponent m s d = H.Component NodeQuery (NodeInput s d) (NodeOutput s d) m
 
 
-type NodeRenderer m d = Node.Family -> Maybe (NodeComponent m d)
+type PatchComponent m s d = H.Component PatchQuery (PatchInput s d) (PatchOutput s d) m
 
 
 {- a.k.a. ToolkitUI -}
-type UI m d =
-    { background :: BgRenderer m d
-    , node :: NodeRenderer m d
+type UI m state d =
+    { background :: Maybe (BgComponent m state d)
+    , patch :: Maybe (PatchComponent m state d)
+    , node :: Node.Family -> Maybe (NodeComponent m state d)
     , markNode :: Node.Family -> Maybe Color
     , markChannel :: Channel.Id -> Maybe Color
     , flags :: Node.Family -> Flags
+    , state :: state
     }
 
 
-flagsFor :: forall m d. UI m d -> Node d -> Flags
+flagsFor :: forall m s d. UI m s d -> Node d -> Flags
 flagsFor ui node = fromMaybe Style.defaultFlags $ ui.flags <$> Node.family node

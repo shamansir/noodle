@@ -56,7 +56,7 @@ debug = false
 type Slot id = forall query. H.Slot query Output id
 
 
-type Slots d = ( body :: UI.NodeSlot d Node.Id )
+type Slots s d = ( body :: UI.NodeSlot s d Node.Id )
 
 
 data Output
@@ -67,38 +67,38 @@ data Output
 _body = Proxy :: Proxy "body"
 
 
-type Input m d =
+type Input m s d =
     { node :: Noodle.Node d
     , name :: Node.Id
     , style :: Style
     , flow :: NodeFlow
-    , ui :: UI m d
+    , ui :: UI m s d
     , linksCount :: Node.LinksCount
     }
 
 
-type State m d =
+type State m s d =
     { node :: Noodle.Node d
     , name :: Node.Id
     , style :: Style
     , flow :: NodeFlow
-    , ui :: UI m d
+    , ui :: UI m s d
     , linksCount :: Node.LinksCount
     }
 
 
-data Action m d
-    = Receive (Input m d)
+data Action m s d
+    = Receive (Input m s d)
     | RequestRemove
-    | FromUser (UI.NodeOutput d)
+    | FromUser (UI.NodeOutput s d)
     | NoOp
 
 
-initialState :: forall m d. Input m d -> State m d
+initialState :: forall m s d. Input m s d -> State m s d
 initialState = identity
 
 
-render :: forall d m. MonadEffect m => State m d -> H.ComponentHTML (Action m d) (Slots d) m
+render :: forall m s d. MonadEffect m => State m s d -> H.ComponentHTML (Action m s d) (Slots s d) m
 render { node, name, style, flow, ui, linksCount } =
     HS.g
         []
@@ -331,7 +331,7 @@ render { node, name, style, flow, ui, linksCount } =
                             [ HSA.translateTo' $ Calc.bodyInnerOffset f style flow node
                             , HSA.mask $ "url(#" <> name <> "-body-mask)"
                             ]
-                            [ HH.slot _body name userNodeBody { node } FromUser ]
+                            [ HH.slot _body name userNodeBody { node, state : ui.state } FromUser ]
                     Nothing ->
                         HS.none
                 ]
@@ -349,7 +349,7 @@ render { node, name, style, flow, ui, linksCount } =
                 ]
 
 
-handleAction :: forall m d. MonadEffect m => Action m d -> H.HalogenM (State m d) (Action m d) (Slots d) Output m Unit
+handleAction :: forall m s d. MonadEffect m => Action m s d -> H.HalogenM (State m s d) (Action m s d) (Slots s d) Output m Unit
 handleAction = case _ of
     Receive input ->
         H.modify_ (\state -> state { node = input.node, linksCount = input.linksCount })
@@ -368,11 +368,14 @@ handleAction = case _ of
     FromUser (UI.Replace family) -> do
         H.raise $ Replace family
 
+    FromUser (UI.Update userState) ->
+        pure unit -- TODO
+
     NoOp ->
         pure unit
 
 
-component :: forall query m d. MonadEffect m => H.Component query (Input m d) Output m
+component :: forall query m s d. MonadEffect m => H.Component query (Input m s d) Output m
 component =
     H.mkComponent
         { initialState
@@ -391,7 +394,7 @@ data WhereInside
     | Outlet OutletId
 
 
-whereInside :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Node d -> Pos -> Maybe WhereInside
+whereInside :: forall m s d. UI m s d -> Style -> NodeFlow -> Noodle.Node d -> Pos -> Maybe WhereInside
 whereInside ui style flow node pos =
     if V2.inside'
         (pos - Calc.titlePos f style flow node)
@@ -411,12 +414,12 @@ whereInside ui style flow node pos =
         f = UI.flagsFor ui node
 
 
-areaOf :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Node d -> Size
+areaOf :: forall m s d. UI m s d -> Style -> NodeFlow -> Noodle.Node d -> Size
 areaOf ui style flow node =
     Calc.nodeArea (UI.flagsFor ui node) style flow node
 
 
-inletConnectorPos :: forall m d. UI m d -> Style -> NodeFlow -> InletId -> Noodle.Node d -> Maybe Pos
+inletConnectorPos :: forall m s d. UI m s d -> Style -> NodeFlow -> InletId -> Noodle.Node d -> Maybe Pos
 inletConnectorPos ui style flow inletId node =
     Node.indexOfInlet inletId node
         <#> Calc.inletConnectorPos
@@ -426,7 +429,7 @@ inletConnectorPos ui style flow inletId node =
                 node
 
 
-outletConnectorPos :: forall m d. UI m d -> Style -> NodeFlow -> OutletId -> Noodle.Node d -> Maybe Pos
+outletConnectorPos :: forall m s d. UI m s d -> Style -> NodeFlow -> OutletId -> Noodle.Node d -> Maybe Pos
 outletConnectorPos ui style flow outletId node =
     Node.indexOfOutlet outletId node
         <#> Calc.outletConnectorPos

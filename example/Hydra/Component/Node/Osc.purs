@@ -27,6 +27,8 @@ import Halogen.HTML as HH
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
 
+import Hydra.Component.State as App
+
 
 type State = Hydra /\ Node Hydra
 
@@ -36,7 +38,7 @@ data Action
     | Update Hydra
 
 
-initialState :: UI.NodeInput Hydra -> State
+initialState :: UI.NodeInput App.State Hydra -> State
 initialState { node } =
     (Hydra.hydraOf $ Hydra.textureOf $ Hydra.defaultSource) /\ node
 
@@ -48,7 +50,7 @@ render (hydra /\ node) =
         [ ] -- HS.path [ HSA.d $ SineWave.render (0.0 <+> 0.0) 150.0 150.0 3 ] ]
 
 
-handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput App.State Hydra) m Unit
 handleAction = case _ of
     Initialize -> do
         _ /\ node <- H.get
@@ -59,7 +61,7 @@ handleAction = case _ of
         H.modify_ (\(_ /\ node) -> newHydra /\ node)
 
 
-component :: forall m. MonadEffect m => UI.NodeComponent m Hydra
+component :: forall m. MonadEffect m => UI.NodeComponent m App.State Hydra
 component =
     H.mkComponent
         { initialState
