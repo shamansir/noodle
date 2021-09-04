@@ -19,7 +19,7 @@ import Noodle.Network (Network)
 import Hydra (Hydra)
 import Hydra.Engine (init) as HydraE
 import Hydra.Toolkit (toolkit)
-import Hydra.UI (ui)
+import Hydra.Toolkit.UI (ui)
 import Hydra.Network (network)
 
 
