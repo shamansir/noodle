@@ -87,8 +87,8 @@ node _ = Nothing
 
 
 valueColor = C.rgb 255 255 255 :: Color
-entityColor = C.rgb 98 190 193 :: Color
-outColor = C.rgb 221 227 146 :: Color
+textureColor = C.rgb 98 190 193 :: Color
+bufferColor = C.rgb 221 227 146 :: Color
 
 
 sourceColor = C.rgb 255 153 102 :: Color
@@ -121,6 +121,6 @@ markNode family | otherwise = Gen.ofKind family <#> markByKind
 
 markChannel :: Channel.Id -> Maybe Color
 markChannel "value" = Just valueColor
-markChannel "entity" = Just entityColor
-markChannel "out" = Just outColor
+markChannel "texture" = Just textureColor
+markChannel "buffer" = Just bufferColor
 markChannel _ = Nothing

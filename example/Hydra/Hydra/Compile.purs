@@ -46,6 +46,7 @@ compileFnBy toString (Fn { name, args })  =
 
 compileBuffer :: Buffer -> String
 compileBuffer = case _ of
+    Default -> ""
     O0 -> "o0"
     O1 -> "o1"
     O2 -> "o2"
@@ -62,8 +63,8 @@ compileTexture what =
     where
         compile' (Texture sourceFn modifiers) =
             compileFn sourceFn <> "\n    " <> compileModifiers modifiers
-        compile' (Source buffer modifiers) =
-            "src(" <> compileBuffer buffer <> ")\n    " <> compileModifiers modifiers
+        compile' (Buffered buffer _ modifiers) =
+            "src(" <> compileBuffer buffer <> ")\n    " <> compileModifiers modifiers -- FIXME: should include source
         compileModifiers modifiers = String.joinWith "\n    ." $ compileModifier <$> modifiers
 
 
@@ -72,7 +73,7 @@ compileQueue queue =
     String.joinWith "\n\n" $ ouputCode <$> queue
     where
         ouputCode (e /\ Default) = compileTexture e  <> "\n   .out()"
-        ouputCode (e /\ Output n) = compileTexture e <> "\n   .out(" <> show n <> ")"
+        ouputCode (e /\ buf) = compileTexture e <> "\n   .out(" <> compileBuffer buf <> ")"
 
 
 compile :: Hydra -> Maybe String -- TODO: Compile only out-specs?
@@ -81,4 +82,4 @@ compile (Val v) = Just $ compileValue v
 compile (Mod m) = Just $ compileModifier m
 compile (Tex t) = Just $ compileTexture t
 compile (Buf b) = Just $ compileBuffer b
-compile (Out q) = Just $ compileQueue q
+compile (Que q) = Just $ compileQueue q

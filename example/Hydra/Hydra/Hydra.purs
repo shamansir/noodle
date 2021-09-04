@@ -12,7 +12,8 @@ import Hydra.Fn (class ToFn, Fn, fn, toFn)
 
 
 data Buffer
-    = O0
+    = Default
+    | O0
     | O1
     | O2
     | O3
@@ -103,16 +104,15 @@ data Modifier = G Geometry | C Color | B Blend | M Modulate
 
 data Texture
     = Texture Source (Array Modifier)
-    | Source Buffer (Array Modifier)
+    | Buffered Buffer Source (Array Modifier)
 
 
-data Target
-    = Default
-    | Output Buffer
+{- data Buffered
+    = Buffered Buffer Texture -}
 
 
 type Queue =
-    Array (Texture /\ Target) -- TODO: non-empty array?
+    Array (Texture /\ Buffer) -- TODO: non-empty array?
 
 
 data Hydra
@@ -121,7 +121,7 @@ data Hydra
     | Mod Modifier
     | Tex Texture
     | Buf Buffer
-    | Out Queue
+    | Que Queue
 
 
 default :: Hydra
@@ -150,7 +150,7 @@ modulate = M
 
 addModifier :: Texture -> Modifier -> Texture
 addModifier (Texture src modifiers) = Texture src <<< Array.snoc modifiers
-addModifier (Source buf modifiers) = Source buf <<< Array.snoc modifiers
+addModifier (Buffered buf src modifiers) = Buffered buf src <<< Array.snoc modifiers
 
 
 hydraOf :: Texture -> Hydra
@@ -242,9 +242,9 @@ toModifier (Mod m) = Just m
 toModifier _ = Nothing
 
 
-isOut :: Hydra -> Boolean
-isOut (Out _) = true
-isOut _ = false
+isQueue :: Hydra -> Boolean
+isQueue (Que _) = true
+isQueue _ = false
 
 
 --addGeometry
@@ -432,6 +432,7 @@ instance Show Value where
 
 
 instance Show Buffer where
+    show Default = "def"
     show O0 = "o0"
     show O1 = "o1"
     show O2 = "o2"
@@ -451,18 +452,14 @@ instance Show Texture where
     show (Texture source modifiers) =
         show (toFn source :: Fn Value) <> "\n    " <>
             String.joinWith "\n    " (show <$> modifiers)
-    show (Source buf modifiers) =
-        "{src:" <> show buf <> "}" <> "\n    " <>
+    show (Buffered buf source modifiers) =
+        "{buf:" <> show buf <> "}" <> "\n    " <>
+            show (toFn source :: Fn Value) <> "\n    " <>
             String.joinWith "\n    " (show <$> modifiers)
 
 instance Show Modifier where
     show modifier =
         show $ (toFn modifier :: Fn TextureOrValue)
-
-
-instance Show Target where
-    show Default = "{out:default}"
-    show (Output buf) = "{out:" <> show buf <> "}"
 
 
 instance Show Hydra where
@@ -471,4 +468,4 @@ instance Show Hydra where
     show (Mod mod) = show mod
     show (Tex tex) = show tex
     show (Buf buf) = show buf
-    show (Out queue) = show queue
+    show (Que queue) = show queue
