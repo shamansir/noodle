@@ -1,11 +1,11 @@
 
-* [v] : Pretty-print Hydra structure;
-* Dockerfile, fix deployment;
+* [v]: Pretty-print Hydra structure;
+* [v]: Dockerfile, fix deployment;
 * `Out` with a buffer number;
 * Ribbons;
-* [v] Don't show hidden inlets;
-* Color node with preview;
-* Palette node;
+* [v]: Don't show hidden inlets;
+* [v]: Color node with preview;
+* [v]: Palette node;
 * Node for sequences — accepting values so that sequences could be joined;
 * Math node;
 * Pi node;
@@ -30,3 +30,4 @@
 * Why sometimes Hydra output is not working;
 * Blinking when user starts to drag the node;
 * Hot/cold inlets;
+* Node Families and Channel IDs could be parameters of toolkit etc.;

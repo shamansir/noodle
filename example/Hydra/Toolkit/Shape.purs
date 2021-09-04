@@ -25,6 +25,6 @@ modifier =
   Channel.shapeBy "modifier" None Hydra.isModifier
 
 
-out :: Shape' Hydra
-out =
-  Channel.shapeBy "out" None Hydra.isOut
+buffer :: Shape' Hydra
+buffer =
+  Channel.shapeBy "buffer" None Hydra.isBuffer

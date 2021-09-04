@@ -51,7 +51,7 @@ colorMod :: Hydra -> Array C.Color
 colorMod =
     case _ of
         (Tex (Texture _ modifiers)) -> fromModifiers modifiers
-        (Tex (Source _ modifiers)) -> fromModifiers modifiers
+        (Tex (Buffered _ _ modifiers)) -> fromModifiers modifiers
         _ -> []
     where
         fromModifiers :: Array Modifier -> Array C.Color

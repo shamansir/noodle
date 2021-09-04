@@ -12,7 +12,7 @@ import Data.Traversable (sequence)
 import Hydra (Hydra(..))
 import Hydra as Hydra
 import Hydra.Engine as HydraE
-import Hydra.Toolkit.Shape (texture, out, value, modifier) as Channel
+import Hydra.Toolkit.Shape (texture, buffer, value, modifier) as Channel
 import Hydra.Compile (compile) as Hydra
 import Hydra.Try as Hydra
 import Hydra.Extract as HydraE
@@ -129,10 +129,50 @@ out =
       noOutlets
       $ \inlets -> do
           _ <- sequence $ do
-              hydra <- "src" <+ inlets
-              compiledStr <- Hydra.compile $ Hydra.out' hydra
+              texture <- "src" <+ inlets
+              compiledStr <- Hydra.compile $ Hydra.queueToDefault texture
               --pure $ pure unit
               pure $ do
-                Console.logShow hydra
+                Console.logShow texture
+                HydraE.evaluate compiledStr
+          pure $ Def.passNothing
+
+
+toBuffer :: Def Hydra
+toBuffer =
+    Def.defineEffectful
+      (withInlets
+         ~< "src" /\ Channel.texture
+      )
+      (withOutlets
+        >~ "buffer" /\ Channel.buffer
+      )
+      $ \inlets -> do
+          _ <- sequence $ do
+              texture <- "src" <+ inlets
+              compiledStr <- Hydra.compile $ Hydra.queueToDefault texture
+              --pure $ pure unit
+              pure $ do
+                Console.logShow texture
+                HydraE.evaluate compiledStr
+          pure $ Def.passNothing
+
+
+fromBuffer :: Def Hydra
+fromBuffer =
+    Def.defineEffectful
+      (withInlets
+         ~< "buffer" /\ Channel.buffer
+      )
+      (withOutlets
+        >~ "texture" /\ Channel.texture
+      )
+      $ \inlets -> do
+          _ <- sequence $ do
+              texture <- "src" <+ inlets
+              compiledStr <- Hydra.compile $ Hydra.queueToDefault texture
+              --pure $ pure unit
+              pure $ do
+                Console.logShow texture
                 HydraE.evaluate compiledStr
           pure $ Def.passNothing

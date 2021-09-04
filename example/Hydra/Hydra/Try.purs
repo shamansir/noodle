@@ -11,7 +11,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 
 import Hydra
-    ( Hydra(..), Value(..), Target(..), Texture, Buffer
+    ( Hydra(..), Value(..), Texture, Buffer(..)
     , Source(..), Geometry(..), Blend(..), Color(..), Modulate(..)
     )
 import Hydra as H
@@ -415,17 +415,17 @@ modHue =
 
 
 
-{- ====== Out ====== -}
-
-out :: Buffer -> H.HydraTFn0
-out buf =
-    tryT H.defaultTexture (\texture -> Out [ texture /\ Output buf ])
+{- ====== Queue ====== -}
 
 
+queueTo :: Buffer -> H.HydraTFn0
+queueTo buf =
+    tryT H.defaultTexture (\texture -> Que [ texture /\ buf ])
 
-out' :: H.HydraTFn0
-out' =
-    tryT H.defaultTexture (\texture -> Out [ texture /\ Default ])
+
+queueToDefault :: H.HydraTFn0
+queueToDefault =
+    tryT H.defaultTexture (\texture -> Que [ texture /\ Default ])
 
 
 
