@@ -83,19 +83,19 @@ _node = Proxy :: Proxy "node"
 _link = Proxy :: Proxy "link"
 
 
-type Input m d =
+type Input m s d =
     { patch :: Noodle.Patch d
     , toolkit :: Noodle.Toolkit d
     , style :: Style
     , flow :: NodeFlow
     , offset :: Pos
-    , ui :: UI m d
+    , ui :: UI m s d
     , area :: Size
     -- , bodyRenderer :: Node.Family -> Maybe (UI.NodeComponent m d)
     }
 
 
-type State m d =
+type State m s d =
     { patch :: Noodle.Patch d
     , toolkit :: Noodle.Toolkit d
     , style :: Style
@@ -105,14 +105,14 @@ type State m d =
     , layout :: Bin2 Number Node.Id
     , pinned :: PinBoard Node.Id
     , mouse :: Mouse.State
-    , ui :: UI m d
+    , ui :: UI m s d
     , area :: Size
     }
 
 
-data Action m d
+data Action m s d
     = Initialize
-    | Receive (Input m d)
+    | Receive (Input m s d)
     | FromNode Node.Id NodeC.Output
     | AddNode Node.Family
     | DetachNode Node.Id
@@ -122,7 +122,7 @@ data Action m d
     | HandleMouse H.SubscriptionId ME.MouseEvent -- TODO Split mouse handing in different actions
 
 
-initialState :: forall m d. Input m d -> State m d
+initialState :: forall m s d. Input m s d -> State m s d
 initialState { patch, toolkit, style, flow, offset, ui, area } =
     { patch, toolkit, style, flow
     , offset : offset
@@ -136,7 +136,7 @@ initialState { patch, toolkit, style, flow, offset, ui, area } =
     }
 
 
-render :: forall d m. MonadEffect m => State m d -> H.ComponentHTML (Action m d) Slots m
+render :: forall m s d. MonadEffect m => State m s d -> H.ComponentHTML (Action m s d) Slots m
 render state =
     HS.g
         []
@@ -278,7 +278,7 @@ render state =
             HS.none
 
 
-handleAction :: forall output m d. MonadEffect m => Action m d -> H.HalogenM (State m d) (Action m d) Slots output m Unit
+handleAction :: forall output m s d. MonadEffect m => Action m s d -> H.HalogenM (State m s d) (Action m s d) Slots output m Unit
 handleAction = case _ of
 
     Initialize -> do
@@ -410,7 +410,7 @@ handleAction = case _ of
                 <#> Tuple.fst
                  #  Array.head
 
-        findSubjectUnderPos :: State m d -> Pos -> Maybe (Pos /\ Mouse.Clickable)
+        findSubjectUnderPos :: State m s d -> Pos -> Maybe (Pos /\ Mouse.Clickable)
         findSubjectUnderPos state pos =
             (findNodeInLayout state pos <|> findNodeInPinned state pos)
                 >>= \(nodeId /\ pos') ->
@@ -420,7 +420,7 @@ handleAction = case _ of
                             <#> liftSubject nodeId
                             <#> (/\) pos'
 
-        whereInsideNode :: State m d -> Noodle.Node d -> Pos -> Maybe NodeC.WhereInside
+        whereInsideNode :: State m s d -> Noodle.Node d -> Pos -> Maybe NodeC.WhereInside
         whereInsideNode state =
             NodeC.whereInside state.ui state.style state.flow
 
@@ -431,7 +431,7 @@ handleAction = case _ of
             flip PB.search state.pinned
 
 
-component :: forall query output m d. MonadEffect m => H.Component query (Input m d) output m
+component :: forall query output m s d. MonadEffect m => H.Component query (Input m s d) output m
 component =
     H.mkComponent
         { initialState
@@ -445,7 +445,7 @@ component =
         }
 
 
-addNodesFrom :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Patch d -> Bin2 Number Node.Id -> Bin2 Number Node.Id
+addNodesFrom :: forall m s d. UI m s d -> Style -> NodeFlow -> Noodle.Patch d -> Bin2 Number Node.Id -> Bin2 Number Node.Id
 addNodesFrom ui style flow patch layout =
     Patch.nodes patch
         # foldr
@@ -456,7 +456,7 @@ addNodesFrom ui style flow patch layout =
             layout
 
 
-areaOf :: forall m d. UI m d -> Style -> NodeFlow -> Noodle.Patch d -> Node.Id -> Maybe Size
+areaOf :: forall m s d. UI m s d -> Style -> NodeFlow -> Noodle.Patch d -> Node.Id -> Maybe Size
 areaOf ui style flow patch nodeId =
     patch
         # Patch.findNode nodeId

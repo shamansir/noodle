@@ -22,6 +22,7 @@ import Hydra (Hydra, Value(..))
 import Hydra as Hydra
 import Hydra.Extract as HydraE
 import Hydra.Component.Input as Input
+import Hydra.Component.State as App
 
 import Halogen as H
 import Halogen.Svg.Elements as HS
@@ -40,7 +41,7 @@ data Action
     | Update Hydra
 
 
-initialState :: UI.NodeInput Hydra -> State
+initialState :: UI.NodeInput App.State Hydra -> State
 initialState { node } =
     (Node.defaultOfInlet "seq" node
         <#> HydraE.seq
@@ -66,7 +67,7 @@ render (numbers /\ _) =
             HS.none
 
 
-handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput App.State Hydra) m Unit
 handleAction = case _ of
     NoOp ->
         pure unit
@@ -91,7 +92,7 @@ handleAction = case _ of
         H.raise $ UI.SendToOutlet "seq" $ Hydra.seq next
 
 
-component :: forall m. MonadEffect m => UI.NodeComponent m Hydra
+component :: forall m. MonadEffect m => UI.NodeComponent m App.State Hydra
 component =
     H.mkComponent
         { initialState

@@ -21,6 +21,7 @@ import Hydra.Engine (init) as HydraE
 import Hydra.Toolkit (toolkit)
 import Hydra.Toolkit.UI (ui)
 import Hydra.Network (network)
+import Hydra.Component.State as App
 
 
 style :: Style
@@ -35,7 +36,7 @@ flow :: NodeFlow
 flow = Vertical
 
 
-app :: Network Hydra -> App Hydra
+app :: Network Hydra -> App App.State Hydra
 app nw =
     { style
     , flow

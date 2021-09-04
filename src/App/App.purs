@@ -20,10 +20,10 @@ import App.Style (Style, NodeFlow)
 import App.Toolkit.UI (UI)
 
 
-type App d = AppC.Input Aff d
+type App s d = AppC.Input Aff s d
 
 
-run :: forall d. App d -> Effect Unit
+run :: forall s d. App s d -> Effect Unit
 run app = HA.runHalogenAff do
     body <- HA.awaitBody
     runUI

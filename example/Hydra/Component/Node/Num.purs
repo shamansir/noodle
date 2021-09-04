@@ -15,6 +15,7 @@ import Hydra (Hydra)
 import Hydra as Hydra
 import Hydra.Extract as HydraE
 import Hydra.Component.Input as Input
+import Hydra.Component.State as App
 
 import Noodle.Node as Node
 
@@ -30,7 +31,7 @@ data Action
     | Change Number
 
 
-initialState :: UI.NodeInput Hydra -> State
+initialState :: UI.NodeInput App.State Hydra -> State
 initialState { node } =
     Node.defaultOfInlet "num" node
         <#> HydraE.numOr 0.0
@@ -46,7 +47,7 @@ render num =
         ]
 
 
-handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput App.State Hydra) m Unit
 handleAction = case _ of
     Change n -> do
         H.put n
@@ -55,7 +56,7 @@ handleAction = case _ of
         pure unit
 
 
-component :: forall m. MonadEffect m => UI.NodeComponent m Hydra
+component :: forall m. MonadEffect m => UI.NodeComponent m App.State Hydra
 component =
     H.mkComponent
         { initialState

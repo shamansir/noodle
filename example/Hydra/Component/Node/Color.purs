@@ -33,6 +33,8 @@ import Halogen.Svg.Attributes as HSA
 import Color as C
 import Color.Extra as C
 
+import Hydra.Component.State as App
+
 
 type State = Array C.Color /\ Node Hydra
 
@@ -45,7 +47,7 @@ data Action
 bodyWidth = 110.0 -- FIXME: pass from outside
 
 
-initialState :: forall d. UI.NodeInput Hydra -> State
+initialState :: forall d. UI.NodeInput App.State Hydra -> State
 initialState { node } =
     {- Node.defaultOfInlet "seq" node
         <#> HydraE.seq -
@@ -75,7 +77,7 @@ render (colors /\ _) =
                 ]
 
 
-handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput Hydra) m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput App.State Hydra) m Unit
 handleAction = case _ of
     Initialize -> do
         _ /\ node <- H.get
@@ -86,7 +88,7 @@ handleAction = case _ of
         H.modify_ (\(_ /\ node) -> HydraE.colorMod hydra /\ node)
 
 
-component :: forall m. MonadEffect m => UI.NodeComponent m Hydra
+component :: forall m. MonadEffect m => UI.NodeComponent m App.State Hydra
 component =
     H.mkComponent
         { initialState
