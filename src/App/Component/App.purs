@@ -1,4 +1,4 @@
-module App.Component.Network where
+module App.Component.App where
 
 import Prelude
 
