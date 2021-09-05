@@ -1,4 +1,4 @@
-module App (App, run) where
+module App (App, App', run) where
 
 import Prelude
 
@@ -17,13 +17,15 @@ import Noodle.Patch as Patch
 
 import App.Component.App as AppC
 import App.Style (Style, NodeFlow)
-import App.Toolkit.UI (UI)
 
 
-type App s d = AppC.Input Aff s d
+type App d = App' Unit Unit d
 
 
-run :: forall s d. App s d -> Effect Unit
+type App' patch_action patch_state d = AppC.Input patch_action patch_state d Aff
+
+
+run :: forall patch_action patch_state d. App' patch_action patch_state d -> Effect Unit
 run app = HA.runHalogenAff do
     body <- HA.awaitBody
     runUI

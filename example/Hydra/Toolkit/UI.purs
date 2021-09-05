@@ -9,36 +9,41 @@ import Hydra (Hydra)
 import Hydra.Toolkit.Generate as Gen
 import Hydra.Toolkit.Generate (Kind(..))
 
-import Hydra.Component.State (State) -- TODO rename to App.State
 import Hydra.Component.Background as BG
 import Hydra.Component.Node.Num as NumNode
 import Hydra.Component.Node.Osc as OscNode
 import Hydra.Component.Node.Color as ColorNode
 import Hydra.Component.Node.Seq as SeqNode
 import Hydra.Component.Node.Palette as PaletteNode
-import Hydra.Component.State as App
+import Hydra.Toolkit.UI.State (State) as Toolkit
+import Hydra.Toolkit.UI.Action (Action) as Toolkit
+import Hydra.Toolkit.UI.Components as UI
+
 
 import Noodle.Node as Node
 import Noodle.Channel.Shape as Channel
 
-import App.Toolkit.UI as UI
-import App.Toolkit.UI (UI)
+import App.Toolkit.UI (Markings, GetFlags) as UI
 import App.Style as Style
 
 import Color (Color)
 import Color as C
 
 
-ui :: forall m. MonadEffect m => UI m State Hydra
-ui =
-    { background, patch, node, markNode, markChannel
-    , flags :
-        \family ->
-            { customBody : hasCustomBody family
-            , hasTitle : hasTitle family
-            , hasRemoveButton : true
-            }
-    , state : App.init
+components ::  forall a s m. MonadEffect m => UI.Components m
+components =
+    { background, {- patch, -} node }
+
+
+markings :: UI.Markings
+markings = { node : markNode, channel : markChannel }
+
+
+getFlags :: UI.GetFlags
+getFlags family =
+    { customBody : hasCustomBody family
+    , hasTitle : hasTitle family
+    , hasRemoveButton : true
     }
 
 
@@ -56,15 +61,15 @@ hasCustomBody "solid-pal" = true
 hasCustomBody _ = false
 
 
-patch :: forall m. MonadEffect m => Maybe (UI.PatchComponent m State Hydra)
+patch :: forall m. MonadEffect m => Maybe (UI.PatchComponent m)
 patch = Nothing
 
 
-background :: forall m. MonadEffect m => Maybe (UI.BgComponent m State Hydra)
+background :: forall m. MonadEffect m => Maybe (UI.BgComponent m)
 background = Just BG.component
 
 
-node :: forall m. MonadEffect m => Node.Family -> Maybe (UI.NodeComponent m State Hydra)
+node :: forall m. MonadEffect m => Node.Family -> Maybe (UI.NodeComponent m)
 node "num"       = Just $ NumNode.component
 node "osc"       = Just $ OscNode.component
 node "color"     = Just $ ColorNode.component
