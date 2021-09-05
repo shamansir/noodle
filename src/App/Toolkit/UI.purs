@@ -41,8 +41,11 @@ data BgQuery a = BgCarry a
 data NodeQuery a = NodeCarry a
 
 
-type PatchQuery a = PatchQuery' Unit a
-data PatchQuery' patch_action a =
+{- type PatchQuery a = PatchQuery' Unit a
+type PatchQuery' patch_action a = ByPatch patch_action a -}
+
+
+data PatchQuery patch_action a =
     Tell patch_action a
 
 
@@ -50,11 +53,14 @@ type BgOutput = Void
 
 
 type NodeOutput d = NodeOutput' Unit d
-data NodeOutput' patch_action d
+type NodeOutput' patch_action d = FromNode patch_action d
+
+
+data FromNode patch_action d
     = SendToInlet InletId d
     | SendToOutlet OutletId d
     | Replace Node.Family
-    | Update patch_action
+    | ToPatch patch_action
 
 
 type PatchOutput = Void
@@ -81,7 +87,7 @@ type NodeComponent' patch_action patch_state d m = H.Component NodeQuery (NodeIn
 type PatchComponent d m = PatchComponent' Unit Unit d m
 
 
-type PatchComponent' patch_action patch_state d m = H.Component (PatchQuery' patch_action) (PatchInput' patch_state d) PatchOutput m
+type PatchComponent' patch_action patch_state d m = H.Component (PatchQuery patch_action) (PatchInput' patch_state d) PatchOutput m
 
 
 type Components d m = Components' Unit Unit d m

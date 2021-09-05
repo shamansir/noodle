@@ -14,7 +14,7 @@ import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 
-import App.Toolkit.UI as UI
+--import App.Toolkit.UI as UI
 import App.Emitters as E
 
 import Noodle.Node (Node)
@@ -24,6 +24,7 @@ import Hydra (Hydra, Value(..))
 import Hydra as Hydra
 import Hydra.Extract as HydraE
 import Hydra.Component.Input as Input
+import Hydra.Toolkit.UI.Components as UI
 
 import Halogen as H
 import Halogen.Svg.Elements as HS
@@ -45,7 +46,7 @@ data Action
 bodyWidth = 110.0 -- FIXME: pass from outside
 
 
-initialState :: forall patch_state. UI.NodeInput' patch_state Hydra -> State
+initialState :: UI.NodeInput -> State
 initialState { node } =
     {- Node.defaultOfInlet "seq" node
         <#> HydraE.seq -
@@ -75,7 +76,7 @@ render (colors /\ _) =
                 ]
 
 
-handleAction :: forall patch_action m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput' patch_action Hydra) m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () UI.NodeOutput m Unit
 handleAction = case _ of
     Initialize -> do
         _ /\ node <- H.get
@@ -86,7 +87,7 @@ handleAction = case _ of
         H.modify_ (\(_ /\ node) -> HydraE.colorMod hydra /\ node)
 
 
-component :: forall patch_action patch_state m. MonadEffect m => UI.NodeComponent' patch_action patch_state Hydra m
+component :: forall m. MonadEffect m => UI.NodeComponent m
 component =
     H.mkComponent
         { initialState
