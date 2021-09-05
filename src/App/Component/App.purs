@@ -25,7 +25,6 @@ import App.Style (Style, NodeFlow)
 import App.Style.ClassNames as CS
 import App.Component.Patch as PatchC
 import App.Emitters as Emitters
-import App.Toolkit.UI (UI)
 import App.Toolkit.UI as UI
 import App.Svg.Extra as HSA
 
@@ -41,9 +40,9 @@ import Web.HTML (window)
 import Web.HTML.Window as Window
 
 
-type Slots s d =
+type Slots d =
     ( patch :: PatchC.Slot Unit
-    , background :: UI.BgSlot s d Unit
+    , background :: UI.BgSlot Unit
     )
 
 
@@ -52,25 +51,32 @@ _patch = Proxy :: Proxy "patch"
 _background = Proxy :: Proxy "background"
 
 
-type Input m s d =
+type Input patch_action patch_state d m =
     { network :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
     , style :: Style
     , flow :: NodeFlow
     , currentPatch :: Maybe Patch.Id
-    , ui :: UI m s d
+    , components :: UI.Components' patch_action patch_state d m
+    , markings :: UI.Markings
+    , getFlags :: UI.GetFlags
+    , patchState :: patch_state
     }
 
 
-type State m s d =
+type State patch_action patch_state d m =
     { network :: Noodle.Network d
     , toolkit :: Noodle.Toolkit d
-    , currentPatch :: Maybe Patch.Id
-    , windowSize :: Size
-    , currentFrame :: Number
     , style :: Style
     , flow :: NodeFlow
-    , ui :: UI m s d
+    , currentPatch :: Maybe Patch.Id
+    , components :: UI.Components' patch_action patch_state d m
+    , markings :: UI.Markings
+    , getFlags :: UI.GetFlags
+    -- ^ same as Input
+    , windowSize :: Size
+    , currentFrame :: Number
+    , patchState :: patch_state
     }
 
 
@@ -82,16 +88,16 @@ data Action
     -- | HandlePatch (PatchC.Action d)
 
 
-initialState :: forall m s d. Input m s d -> State m s d
-initialState { network, toolkit, style, flow, currentPatch, ui } =
-    { network, toolkit, style, flow, ui
+initialState :: forall patch_action patch_state d m. Input patch_action patch_state d m -> State patch_action patch_state d m
+initialState { network, toolkit, style, flow, currentPatch, components, markings, getFlags, patchState } =
+    { network, toolkit, style, flow, components, markings, getFlags, patchState
     , currentPatch
     , windowSize : 1000.0 <+> 1000.0
     , currentFrame : 0.0
     }
 
 
-render :: forall m s d. MonadEffect m => State m s d -> H.ComponentHTML Action (Slots s d) m
+render :: forall patch_action patch_state d m. MonadEffect m => State patch_action patch_state d m -> H.ComponentHTML Action (Slots d) m
 render (s@{ network, toolkit, style, flow }) =
     HH.div
         [ CSS.style $ do
@@ -124,11 +130,11 @@ render (s@{ network, toolkit, style, flow }) =
                     [ HSA.width $ V2.w s.windowSize, HSA.height $ V2.h s.windowSize
                     , HSA.fill $ Just $ C.toSvg style.bg.fill
                     ]
-                , case s.ui.background of
+                , case s.components.background of
                     Nothing ->
                         HS.none
                     Just userBgComp ->
-                        HH.slot _background unit userBgComp { network, size : s.windowSize, state : s.ui.state } absurd
+                        HH.slot _background unit userBgComp { network, size : s.windowSize, patchState : s.patchState } absurd
                 ]
         patchesTabs = HS.g [ HSA.classes CS.patchesTabs ] (patchTab <$> Tuple.fst <$> Network.patches network)
         patchTab label =
@@ -148,7 +154,13 @@ render (s@{ network, toolkit, style, flow }) =
                 [ HSA.translateTo' $ 0.0 <+> tabHeight + tabPadding ]
                 [ HH.slot _patch unit
                     PatchC.component
-                    { patch, toolkit, style, flow, offset : patchOffset, ui : s.ui, area : s.windowSize - patchOffset }
+                    { patch, toolkit, style, flow
+                    , offset : patchOffset
+                    , markings : s.markings, getFlags : s.getFlags
+                    , customNodeBody : s.components.node
+                    , area : s.windowSize - patchOffset
+                    , patchState : s.patchState
+                    }
                     absurd
                 ]
         maybeCurrent Nothing =
@@ -157,7 +169,11 @@ render (s@{ network, toolkit, style, flow }) =
                 [ HH.text "No patch selected" ]
 
 
-handleAction :: forall output m s d. MonadAff m => MonadEffect m => Action -> H.HalogenM (State m s d) Action (Slots s d) output m Unit
+handleAction
+    :: forall output patch_action patch_state d m
+     . MonadAff m => MonadEffect m
+    => Action
+    -> H.HalogenM (State patch_action patch_state d m) Action (Slots d) output m Unit
 handleAction = case _ of
     Initialize -> do
         innerWidth <- H.liftEffect $ Window.innerWidth =<< window
@@ -180,7 +196,10 @@ handleAction = case _ of
             { windowSize = toNumber w <+> toNumber h }
 
 
-component :: forall query output m s d. MonadAff m => MonadEffect m => H.Component query (Input m s d) output m
+component
+    :: forall query output patch_action patch_state d m
+     . MonadAff m => MonadEffect m
+    => H.Component query (Input patch_action patch_state d m) output m
 component =
     H.mkComponent
         { initialState

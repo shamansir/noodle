@@ -42,7 +42,6 @@ import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 import Halogen.Svg.Attributes as HSA
 
-import App.Toolkit.UI (UI)
 import App.Toolkit.UI as UI
 import App.Svg.Extra (translateTo') as HSA
 
@@ -56,7 +55,7 @@ debug = false
 type Slot id = forall query. H.Slot query Output id
 
 
-type Slots s d = ( body :: UI.NodeSlot s d Node.Id )
+type Slots patch_action d = ( body :: UI.NodeSlot patch_action d Node.Id )
 
 
 data Output
@@ -67,39 +66,47 @@ data Output
 _body = Proxy :: Proxy "body"
 
 
-type Input m s d =
+type Input patch_action patch_state d m =
     { node :: Noodle.Node d
     , name :: Node.Id
     , style :: Style
     , flow :: NodeFlow
-    , ui :: UI m s d
+    , getFlags :: UI.GetFlags
+    , markings :: UI.Markings
+    , customBody :: Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state d m)
     , linksCount :: Node.LinksCount
+    , patchState :: patch_state
     }
 
 
-type State m s d =
+type State patch_action patch_state d m =
+    Input patch_action patch_state d m
+
+
+type RInput patch_state d =
     { node :: Noodle.Node d
-    , name :: Node.Id
-    , style :: Style
-    , flow :: NodeFlow
-    , ui :: UI m s d
     , linksCount :: Node.LinksCount
+    , patchState :: patch_state
     }
 
 
-data Action m s d
-    = Receive (Input m s d)
+data Action patch_action patch_state d
+    = Receive (RInput patch_state d)
     | RequestRemove
-    | FromUser (UI.NodeOutput s d)
+    | FromUser (UI.NodeOutput' patch_action d)
     | NoOp
 
 
-initialState :: forall m s d. Input m s d -> State m s d
+initialState :: forall patch_action patch_state d m. Input patch_action patch_state d m -> State patch_action patch_state d m
 initialState = identity
 
 
-render :: forall m s d. MonadEffect m => State m s d -> H.ComponentHTML (Action m s d) (Slots s d) m
-render { node, name, style, flow, ui, linksCount } =
+render
+    :: forall patch_action patch_state d m
+     . MonadEffect m
+    => State patch_action patch_state d m
+    -> H.ComponentHTML (Action patch_action patch_state d) (Slots patch_action d) m
+render s@{ node, name, style, flow, linksCount } =
     HS.g
         []
         [ shadow
@@ -111,7 +118,7 @@ render { node, name, style, flow, ui, linksCount } =
         ]
     where
         flagsFor :: Noodle.Node d -> Style.Flags
-        flagsFor = UI.flagsFor ui
+        flagsFor = UI.flagsFor s.getFlags
 
         f = flagsFor node
 
@@ -143,7 +150,7 @@ render { node, name, style, flow, ui, linksCount } =
                         [ HSA.translateTo' $ Calc.titleTextPos f style flow node
                         ]
                         [ HS.text
-                            [ HSA.fill $ C.toSvg <$> ((ui.markNode =<< Node.family node) <|> Just style.title.fill) ]
+                            [ HSA.fill $ C.toSvg <$> ((s.markings.node =<< Node.family node) <|> Just style.title.fill) ]
                             [ HH.text name ]
                         ]
                     , HS.rect
@@ -189,9 +196,9 @@ render { node, name, style, flow, ui, linksCount } =
 
         slotFill lC shape =
             if not $ dimColors lC then
-                ui.markChannel (Ch.id shape) <|> Just style.slot.fill
+                s.markings.channel (Ch.id shape) <|> Just style.slot.fill
             else
-                C.dim dimAmount <$> ui.markChannel (Ch.id shape) <|> Just style.slot.fill
+                C.dim dimAmount <$> s.markings.channel (Ch.id shape) <|> Just style.slot.fill
 
         connector (Circle r) lC shape =
             HS.circle
@@ -299,7 +306,7 @@ render { node, name, style, flow, ui, linksCount } =
         body =
             HS.g
                 [ HSA.translateTo' $ Calc.bodyPos f style flow node ]
-                [ case Node.family node >>= ui.node of
+                [ case Node.family node >>= s.customBody of
                     Just _ ->
                         HS.mask
                             [ HSA.id $ name <> "-body-mask"
@@ -325,13 +332,13 @@ render { node, name, style, flow, ui, linksCount } =
                     , HSA.rx style.body.cornerRadius, HSA.ry style.body.cornerRadius
                     , HSA.width innerWidth, HSA.height innerHeight
                     ]
-                , case Node.family node >>= ui.node of
+                , case Node.family node >>= s.customBody of
                     Just userNodeBody ->
                         HS.g
                             [ HSA.translateTo' $ Calc.bodyInnerOffset f style flow node
                             , HSA.mask $ "url(#" <> name <> "-body-mask)"
                             ]
-                            [ HH.slot _body name userNodeBody { node, state : ui.state } FromUser ]
+                            [ HH.slot _body name userNodeBody { node, patchState : s.patchState } FromUser ]
                     Nothing ->
                         HS.none
                 ]
@@ -349,10 +356,21 @@ render { node, name, style, flow, ui, linksCount } =
                 ]
 
 
-handleAction :: forall m s d. MonadEffect m => Action m s d -> H.HalogenM (State m s d) (Action m s d) (Slots s d) Output m Unit
+handleAction
+    :: forall patch_action patch_state d m
+     . MonadEffect m
+    => Action patch_action patch_state d
+    -> H.HalogenM (State patch_action patch_state d m) (Action patch_action patch_state d) (Slots patch_action d) Output m Unit
 handleAction = case _ of
     Receive input ->
-        H.modify_ (\state -> state { node = input.node, linksCount = input.linksCount })
+        H.modify_
+            (\state ->
+                state
+                    { node = input.node
+                    , linksCount = input.linksCount
+                    , patchState = input.patchState
+                    }
+            )
 
     FromUser (UI.SendToOutlet outlet d) -> do
         state <- H.get
@@ -368,14 +386,18 @@ handleAction = case _ of
     FromUser (UI.Replace family) -> do
         H.raise $ Replace family
 
-    FromUser (UI.Update userState) ->
+    FromUser (UI.Update patchState) ->
         pure unit -- TODO
 
     NoOp ->
         pure unit
 
 
-component :: forall query m s d. MonadEffect m => H.Component query (Input m s d) Output m
+extract :: forall patch_action patch_state d m. Input patch_action patch_state d m -> RInput patch_state d
+extract { node, linksCount, patchState } = { node, linksCount, patchState }
+
+
+component :: forall query patch_action patch_state d m. MonadEffect m => H.Component query (Input patch_action patch_state d m) Output m
 component =
     H.mkComponent
         { initialState
@@ -383,7 +405,7 @@ component =
         , eval:
             H.mkEval H.defaultEval
                 { handleAction = handleAction
-                , receive = Just <<< Receive
+                , receive = Just <<< Receive <<< extract
                 }
         }
 
@@ -394,8 +416,8 @@ data WhereInside
     | Outlet OutletId
 
 
-whereInside :: forall m s d. UI m s d -> Style -> NodeFlow -> Noodle.Node d -> Pos -> Maybe WhereInside
-whereInside ui style flow node pos =
+whereInside :: forall d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Node d -> Pos -> Maybe WhereInside
+whereInside getFlags style flow node pos =
     if V2.inside'
         (pos - Calc.titlePos f style flow node)
         (Calc.titleSize f style flow node) then
@@ -411,29 +433,29 @@ whereInside ui style flow node pos =
             testOutlets = Array.findMap (isInSlot Outlet $ Calc.outletRectPos f style flow node) outlets
         in testOutlets <|> testInlets
     where
-        f = UI.flagsFor ui node
+        f = UI.flagsFor getFlags node
 
 
-areaOf :: forall m s d. UI m s d -> Style -> NodeFlow -> Noodle.Node d -> Size
-areaOf ui style flow node =
-    Calc.nodeArea (UI.flagsFor ui node) style flow node
+areaOf :: forall d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Node d -> Size
+areaOf getFlags style flow node =
+    Calc.nodeArea (UI.flagsFor getFlags node) style flow node
 
 
-inletConnectorPos :: forall m s d. UI m s d -> Style -> NodeFlow -> InletId -> Noodle.Node d -> Maybe Pos
-inletConnectorPos ui style flow inletId node =
+inletConnectorPos :: forall d. UI.GetFlags -> Style -> NodeFlow -> InletId -> Noodle.Node d -> Maybe Pos
+inletConnectorPos getFlags style flow inletId node =
     Node.indexOfInlet inletId node
         <#> Calc.inletConnectorPos
-                (UI.flagsFor ui node)
+                (UI.flagsFor getFlags node)
                 style
                 flow
                 node
 
 
-outletConnectorPos :: forall m s d. UI m s d -> Style -> NodeFlow -> OutletId -> Noodle.Node d -> Maybe Pos
-outletConnectorPos ui style flow outletId node =
+outletConnectorPos :: forall d. UI.GetFlags -> Style -> NodeFlow -> OutletId -> Noodle.Node d -> Maybe Pos
+outletConnectorPos getFlags style flow outletId node =
     Node.indexOfOutlet outletId node
         <#> Calc.outletConnectorPos
-                (UI.flagsFor ui node)
+                (UI.flagsFor getFlags node)
                 style
                 flow
                 node

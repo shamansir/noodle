@@ -1,7 +1,7 @@
 module App.Toolkit.UI where
 
 
-import Prelude (Void, ($), (<$>))
+import Prelude (Unit, Void, ($), (<$>))
 
 
 import Data.Maybe (Maybe, fromMaybe)
@@ -9,6 +9,7 @@ import Data.Vec2 (Size)
 import Data.Const (Const)
 
 import Noodle.Node (Node)
+import Noodle.Patch (Patch)
 import Noodle.Node as Node
 import Noodle.Node.Shape (InletId, OutletId)
 import Noodle.Channel.Shape as Channel
@@ -21,13 +22,17 @@ import App.Style (defaultFlags) as Style
 import Halogen as H
 
 
-type BgInput s d = { size :: Size, network :: Network d, state :: s }
+
+type BgInput d = BgInput' Unit d
+type BgInput' patch_state d = { size :: Size, network :: Network d, patchState :: patch_state }
 
 
-type NodeInput s d = { node :: Node d, state :: s }
+type NodeInput d = NodeInput' Unit d
+type NodeInput' patch_state d = { node :: Node d, patchState :: patch_state }
 
 
-type PatchInput s d = { state :: s }
+type PatchInput d = PatchInput' Unit d
+type PatchInput' patch_state d = { patch :: Patch d, patchState :: patch_state }
 
 
 data BgQuery a = BgCarry a
@@ -36,49 +41,67 @@ data BgQuery a = BgCarry a
 data NodeQuery a = NodeCarry a
 
 
-data PatchQuery a = PatchCarry a
+type PatchQuery a = PatchQuery' Unit a
+data PatchQuery' patch_action a =
+    Tell patch_action a
 
 
-type BgOutput s d = Void
+type BgOutput = Void
 
 
-data NodeOutput s d
+type NodeOutput d = NodeOutput' Unit d
+data NodeOutput' patch_action d
     = SendToInlet InletId d
     | SendToOutlet OutletId d
     | Replace Node.Family
-    | Update s
+    | Update patch_action
 
 
-data PatchOutput state d
-    = Update' state
+type PatchOutput = Void
 
 
-type BgSlot s d id = H.Slot BgQuery (BgOutput s d) id
+type BgSlot id = H.Slot BgQuery BgOutput id
 
 
-type NodeSlot s d id = H.Slot NodeQuery (NodeOutput s d) id
+type NodeSlot patch_action d id = H.Slot NodeQuery (NodeOutput' patch_action d) id
 
 
-type BgComponent m s d = H.Component BgQuery (BgInput s d) (BgOutput s d) m
+type BgComponent d m = BgComponent' Unit d m
 
 
-type NodeComponent m s d = H.Component NodeQuery (NodeInput s d) (NodeOutput s d) m
+type BgComponent' patch_state d m = H.Component BgQuery (BgInput' patch_state d) BgOutput m
 
 
-type PatchComponent m s d = H.Component PatchQuery (PatchInput s d) (PatchOutput s d) m
+type NodeComponent d m = NodeComponent' Unit Unit d m
 
 
-{- a.k.a. ToolkitUI -}
-type UI m state d =
-    { background :: Maybe (BgComponent m state d)
-    , patch :: Maybe (PatchComponent m state d)
-    , node :: Node.Family -> Maybe (NodeComponent m state d)
-    , markNode :: Node.Family -> Maybe Color
-    , markChannel :: Channel.Id -> Maybe Color
-    , flags :: Node.Family -> Flags
-    , state :: state
+type NodeComponent' patch_action patch_state d m = H.Component NodeQuery (NodeInput' patch_state d) (NodeOutput' patch_action d) m
+
+
+type PatchComponent d m = PatchComponent' Unit Unit d m
+
+
+type PatchComponent' patch_action patch_state d m = H.Component (PatchQuery' patch_action) (PatchInput' patch_state d) PatchOutput m
+
+
+type Components d m = Components' Unit Unit d m
+
+
+type Components' patch_action patch_state d m =
+    { background :: Maybe (BgComponent' patch_state d m)
+    --, patch :: Maybe (PatchComponent' patch_action patch_state d m)
+    , node :: Node.Family -> Maybe (NodeComponent' patch_action patch_state d m)
     }
 
 
-flagsFor :: forall m s d. UI m s d -> Node d -> Flags
-flagsFor ui node = fromMaybe Style.defaultFlags $ ui.flags <$> Node.family node
+type Markings =
+    { node :: Node.Family -> Maybe Color
+    , channel :: Channel.Id -> Maybe Color
+    }
+
+
+type GetFlags = Node.Family -> Flags
+
+
+flagsFor :: forall d. GetFlags -> Node d -> Flags
+flagsFor getFlags node = fromMaybe Style.defaultFlags $ getFlags <$> Node.family node
