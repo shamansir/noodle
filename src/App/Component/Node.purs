@@ -93,7 +93,7 @@ type RInput patch_state d =
 data Action patch_action patch_state d
     = Receive (RInput patch_state d)
     | RequestRemove
-    | FromUser (UI.NodeOutput' patch_action d)
+    | FromNode (UI.FromNode patch_action d)
     | NoOp
 
 
@@ -338,7 +338,7 @@ render s@{ node, name, style, flow, linksCount } =
                             [ HSA.translateTo' $ Calc.bodyInnerOffset f style flow node
                             , HSA.mask $ "url(#" <> name <> "-body-mask)"
                             ]
-                            [ HH.slot _body name userNodeBody { node, patchState : s.patchState } FromUser ]
+                            [ HH.slot _body name userNodeBody { node, patchState : s.patchState } FromNode ]
                     Nothing ->
                         HS.none
                 ]
@@ -372,21 +372,21 @@ handleAction = case _ of
                     }
             )
 
-    FromUser (UI.SendToOutlet outlet d) -> do
+    FromNode (UI.SendToOutlet outlet d) -> do
         state <- H.get
         liftEffect (state.node ++> (outlet /\ d))
 
-    FromUser (UI.SendToInlet inlet d) -> do
+    FromNode (UI.SendToInlet inlet d) -> do
         state <- H.get
         liftEffect (state.node +> (inlet /\ d))
 
     RequestRemove -> do
         H.raise Remove
 
-    FromUser (UI.Replace family) -> do
+    FromNode (UI.Replace family) -> do
         H.raise $ Replace family
 
-    FromUser (UI.Update patchState) ->
+    FromNode (UI.ToPatch patchState) ->
         pure unit -- TODO
 
     NoOp ->

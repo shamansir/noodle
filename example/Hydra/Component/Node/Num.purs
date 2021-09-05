@@ -9,12 +9,13 @@ import Effect.Class (class MonadEffect)
 --import Data.Parse
 import Data.Maybe (fromMaybe)
 
-import App.Toolkit.UI as UI
+import App.Toolkit.UI (FromNode(..)) as UI
 
 import Hydra (Hydra)
 import Hydra as Hydra
 import Hydra.Extract as HydraE
 import Hydra.Component.Input as Input
+import Hydra.Toolkit.UI.Components (NodeComponent, NodeInput, NodeOutput) as UI
 
 import Noodle.Node as Node
 
@@ -30,7 +31,7 @@ data Action
     | Change Number
 
 
-initialState :: forall patch_state. UI.NodeInput' patch_state Hydra -> State
+initialState :: UI.NodeInput -> State
 initialState { node } =
     Node.defaultOfInlet "num" node
         <#> HydraE.numOr 0.0
@@ -46,7 +47,7 @@ render num =
         ]
 
 
-handleAction :: forall patch_action m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput' patch_action Hydra) m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () UI.NodeOutput m Unit
 handleAction = case _ of
     Change n -> do
         H.put n
@@ -55,7 +56,7 @@ handleAction = case _ of
         pure unit
 
 
-component :: forall patch_action patch_state m. MonadEffect m => UI.NodeComponent' patch_action patch_state Hydra m
+component :: forall m. MonadEffect m => UI.NodeComponent m
 component =
     H.mkComponent
         { initialState

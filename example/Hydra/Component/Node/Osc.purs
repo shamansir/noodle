@@ -12,7 +12,6 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Vec2 (Pos, (<+>))
 import Data.Vec2 as V2
 
-import App.Toolkit.UI as UI
 import App.Emitters as E
 
 import Noodle.Node (Node)
@@ -21,6 +20,7 @@ import Hydra (Hydra)
 import Hydra (hydraOf, textureOf, defaultSource) as Hydra
 import Hydra.Compile (compile) as Hydra
 import Hydra.Component.SineWave as SineWave
+import Hydra.Toolkit.UI.Components (NodeComponent, NodeInput, NodeOutput) as UI
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -36,7 +36,7 @@ data Action
     | Update Hydra
 
 
-initialState :: forall patch_state. UI.NodeInput' patch_state Hydra -> State
+initialState :: UI.NodeInput -> State
 initialState { node } =
     (Hydra.hydraOf $ Hydra.textureOf $ Hydra.defaultSource) /\ node
 
@@ -48,7 +48,7 @@ render (hydra /\ node) =
         [ ] -- HS.path [ HSA.d $ SineWave.render (0.0 <+> 0.0) 150.0 150.0 3 ] ]
 
 
-handleAction :: forall patch_action m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput' patch_action Hydra) m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () UI.NodeOutput m Unit
 handleAction = case _ of
     Initialize -> do
         _ /\ node <- H.get
@@ -59,7 +59,7 @@ handleAction = case _ of
         H.modify_ (\(_ /\ node) -> newHydra /\ node)
 
 
-component :: forall patch_action patch_state m. MonadEffect m => UI.NodeComponent' patch_action patch_state Hydra m
+component :: forall m. MonadEffect m => UI.NodeComponent m
 component =
     H.mkComponent
         { initialState

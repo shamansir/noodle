@@ -22,7 +22,7 @@ import Halogen.HTML.Properties as HP
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
 
-import App.Toolkit.UI (BgInput')
+import Hydra.Toolkit.UI.Components as UI
 
 
 
@@ -32,21 +32,21 @@ type State =
     }
 
 
-data Action patch_state
+data Action
     = Initialize
-    | Receive (BgInput' patch_state Hydra)
+    | Receive UI.BgInput
 
 
 canvasId :: String
 canvasId = "hydra-canvas"
 
 
-initialState :: forall patch_state. BgInput' patch_state Hydra -> State
+initialState :: UI.BgInput -> State
 initialState _ =
     { hydraReady : false, size : zero }
 
 
-render :: forall patch_state m. State -> H.ComponentHTML (Action patch_state) () m
+render :: forall m. State -> H.ComponentHTML Action () m
 render { size } =
     HS.foreignObject
         [ HSA.x 0.0, HSA.y 0.0, HSA.width $ V2.w size, HSA.height $ V2.h size
@@ -60,7 +60,7 @@ render { size } =
         ]
 
 
-handleAction :: forall output patch_state m. MonadEffect m => Action patch_state -> H.HalogenM State (Action patch_state) () output m Unit
+handleAction :: forall output m. MonadEffect m => Action -> H.HalogenM State Action () output m Unit
 handleAction Initialize = do
     _ <- liftEffect $ Hydra.init canvasId
     H.modify_ $ _ { hydraReady = true }
@@ -68,7 +68,7 @@ handleAction (Receive { size }) =
     H.modify_ $ _ { size = size }
 
 
-component :: forall query output patch_state m. MonadEffect m => H.Component query (BgInput' patch_state Hydra) output m
+component :: forall m. MonadEffect m => UI.BgComponent m
 component =
     H.mkComponent
         { initialState

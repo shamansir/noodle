@@ -19,7 +19,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Vec ((!!))
 import Data.Typelevel.Num.Reps (d0, d1, d2)
 
-import App.Toolkit.UI as UI
+import App.Toolkit.UI (FromNode(..)) as UI
 import App.Emitters as E
 
 import JetBrains.Palettes as P
@@ -31,6 +31,7 @@ import Hydra (Hydra, Value(..))
 import Hydra as Hydra
 import Hydra.Extract as HydraE
 import Hydra.Component.Input as Input
+import Hydra.Toolkit.UI.Components (NodeComponent, NodeInput, NodeOutput) as UI
 
 import Halogen as H
 import Halogen.HTML.Properties as HP
@@ -61,7 +62,7 @@ bodyWidth = 110.0 -- FIXME: pass from outside
 -- defaultPalette = Hydra.Color { r = Num
 
 
-initialState :: forall patch_state. Mode -> UI.NodeInput' patch_state Hydra -> State
+initialState :: Mode -> UI.NodeInput -> State
 initialState mode _ =
     mode /\ "JetBrains"
 
@@ -113,7 +114,7 @@ render (_ /\ paletteId) =
                 ]
 
 
-handleAction :: forall patch_action m. MonadEffect m => Action -> H.HalogenM State Action () (UI.NodeOutput' patch_action Hydra) m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () UI.NodeOutput m Unit
 handleAction = case _ of
     Change paletteId -> do
         mode /\ _ <- H.get
@@ -124,7 +125,7 @@ handleAction = case _ of
             Solid -> Hydra.hydraOf $ Hydra.textureOf $ P.toSolidSource palette
 
 
-component :: forall patch_action patch_state m. MonadEffect m => Mode -> UI.NodeComponent' patch_action patch_state Hydra m
+component :: forall m. Mode -> MonadEffect m => UI.NodeComponent m
 component mode =
     H.mkComponent
         { initialState : initialState mode
