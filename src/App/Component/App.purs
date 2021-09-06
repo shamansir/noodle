@@ -12,6 +12,7 @@ import Color.Extra as C
 import Data.Maybe (Maybe(..))
 import Data.Int (toNumber)
 import Data.Tuple as Tuple
+import Data.Tuple.Nested ((/\))
 import Data.Vec2 ((<+>), Size)
 import Data.Vec2 as V2
 import Data.NonEmpty (NonEmpty, singleton) as NE
@@ -25,7 +26,7 @@ import App.Style (Style, NodeFlow)
 import App.Style.ClassNames as CS
 import App.Component.Patch as PatchC
 import App.Emitters as Emitters
-import App.Toolkit.UI as UI
+import App.Toolkit.UI as ToolkitUI
 import App.Svg.Extra as HSA
 
 import Halogen as H
@@ -40,15 +41,15 @@ import Web.HTML (window)
 import Web.HTML.Window as Window
 
 
-type Slots d =
+type Slots patch_action d =
     ( patch :: PatchC.Slot Unit
-    , background :: UI.BgSlot Unit
+    , tkPatch :: ToolkitUI.PatchSlot' patch_action Unit
     )
 
 
 _patch = Proxy :: Proxy "patch"
 
-_background = Proxy :: Proxy "background"
+_tkPatch = Proxy :: Proxy "tkPatch"
 
 
 type Input patch_action patch_state d m =
@@ -57,9 +58,9 @@ type Input patch_action patch_state d m =
     , style :: Style
     , flow :: NodeFlow
     , currentPatch :: Maybe Patch.Id
-    , components :: UI.Components' patch_action patch_state d m
-    , markings :: UI.Markings
-    , getFlags :: UI.GetFlags
+    , components :: ToolkitUI.Components' patch_action patch_state d m
+    , markings :: ToolkitUI.Markings
+    , getFlags :: ToolkitUI.GetFlags
     , patchState :: patch_state
     }
 
@@ -70,9 +71,9 @@ type State patch_action patch_state d m =
     , style :: Style
     , flow :: NodeFlow
     , currentPatch :: Maybe Patch.Id
-    , components :: UI.Components' patch_action patch_state d m
-    , markings :: UI.Markings
-    , getFlags :: UI.GetFlags
+    , components :: ToolkitUI.Components' patch_action patch_state d m
+    , markings :: ToolkitUI.Markings
+    , getFlags :: ToolkitUI.GetFlags
     -- ^ same as Input
     , windowSize :: Size
     , currentFrame :: Number
@@ -97,7 +98,11 @@ initialState { network, toolkit, style, flow, currentPatch, components, markings
     }
 
 
-render :: forall patch_action patch_state d m. MonadEffect m => State patch_action patch_state d m -> H.ComponentHTML Action (Slots d) m
+render
+    :: forall patch_action patch_state d m
+     . MonadEffect m
+    => State patch_action patch_state d m
+    -> H.ComponentHTML Action (Slots patch_action d) m
 render (s@{ network, toolkit, style, flow }) =
     HH.div
         [ CSS.style $ do
@@ -111,10 +116,11 @@ render (s@{ network, toolkit, style, flow }) =
             [ background
             , curFrame
             , patchesTabs
-            , maybeCurrent $ (flip Network.patch $ network) =<< s.currentPatch
+            , maybeCurrent currentPatch
             ]
         ]
     where
+        currentPatch = (flip Network.patch $ network) =<< s.currentPatch
         curFrame =
             HS.text
                 [ HSA.translateTo' $ 200.0 <+> 0.0 ]
@@ -130,11 +136,16 @@ render (s@{ network, toolkit, style, flow }) =
                     [ HSA.width $ V2.w s.windowSize, HSA.height $ V2.h s.windowSize
                     , HSA.fill $ Just $ C.toSvg style.bg.fill
                     ]
-                , case s.components.background of
+                , case (/\) <$> currentPatch <*> s.components.patch of
                     Nothing ->
                         HS.none
-                    Just userBgComp ->
-                        HH.slot _background unit userBgComp { network, size : s.windowSize, patchState : s.patchState } absurd
+                    Just (patch /\ tkPatchComp) ->
+                        HH.slot
+                            _tkPatch
+                            unit
+                            tkPatchComp
+                            { patch, size : s.windowSize, patchState : s.patchState }
+                            absurd
                 ]
         patchesTabs = HS.g [ HSA.classes CS.patchesTabs ] (patchTab <$> Tuple.fst <$> Network.patches network)
         patchTab label =
@@ -173,7 +184,7 @@ handleAction
     :: forall output patch_action patch_state d m
      . MonadAff m => MonadEffect m
     => Action
-    -> H.HalogenM (State patch_action patch_state d m) Action (Slots d) output m Unit
+    -> H.HalogenM (State patch_action patch_state d m) Action (Slots patch_action d) output m Unit
 handleAction = case _ of
     Initialize -> do
         innerWidth <- H.liftEffect $ Window.innerWidth =<< window

@@ -16,9 +16,6 @@ type PatchComponent m = UI.PatchComponent' UI.Action UI.State Hydra m
 type NodeComponent m = UI.NodeComponent' UI.Action UI.State Hydra m
 
 
-type BgComponent m = UI.BgComponent' UI.State Hydra m
-
-
 type Components m = UI.Components' UI.Action UI.State Hydra m
 
 
@@ -34,7 +31,7 @@ type PatchInput = UI.PatchInput' UI.State Hydra
 --type PatchOutput = UI.PatchOutput' UI.Action Hydra
 
 
-type BgInput = UI.BgInput' UI.State Hydra
+-- type BgInput = UI.BgInput' UI.State Hydra
 
 
 --type BgOutput = UI.BgOutput' UI.State Hydra
