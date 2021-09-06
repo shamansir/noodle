@@ -23,8 +23,8 @@ import Halogen as H
 
 
 
-type BgInput d = BgInput' Unit d
-type BgInput' patch_state d = { size :: Size, network :: Network d, patchState :: patch_state }
+{- type BgInput d = BgInput' Unit d
+type BgInput' patch_state d = { size :: Size, network :: Network d, patchState :: patch_state } -}
 
 
 type NodeInput d = NodeInput' Unit d
@@ -32,10 +32,10 @@ type NodeInput' patch_state d = { node :: Node d, patchState :: patch_state }
 
 
 type PatchInput d = PatchInput' Unit d
-type PatchInput' patch_state d = { patch :: Patch d, patchState :: patch_state }
+type PatchInput' patch_state d = { size :: Size, patch :: Patch d, patchState :: patch_state }
 
 
-data BgQuery a = BgCarry a
+--data BgQuery a = BgCarry a
 
 
 data NodeQuery a = NodeCarry a
@@ -66,36 +66,28 @@ data FromNode patch_action d
 type PatchOutput = Void
 
 
-type BgSlot id = H.Slot BgQuery BgOutput id
+type PatchSlot id = PatchSlot' Unit id
+type PatchSlot' patch_action id = H.Slot (PatchQuery patch_action) PatchOutput id
 
 
 type NodeSlot patch_action d id = H.Slot NodeQuery (NodeOutput' patch_action d) id
 
 
-type BgComponent d m = BgComponent' Unit d m
-
-
-type BgComponent' patch_state d m = H.Component BgQuery (BgInput' patch_state d) BgOutput m
+{- type BgComponent d m = BgComponent' Unit d m
+type BgComponent' patch_state d m = H.Component BgQuery (BgInput' patch_state d) BgOutput m -}
 
 
 type NodeComponent d m = NodeComponent' Unit Unit d m
-
-
 type NodeComponent' patch_action patch_state d m = H.Component NodeQuery (NodeInput' patch_state d) (NodeOutput' patch_action d) m
 
 
 type PatchComponent d m = PatchComponent' Unit Unit d m
-
-
 type PatchComponent' patch_action patch_state d m = H.Component (PatchQuery patch_action) (PatchInput' patch_state d) PatchOutput m
 
 
 type Components d m = Components' Unit Unit d m
-
-
 type Components' patch_action patch_state d m =
-    { background :: Maybe (BgComponent' patch_state d m)
-    --, patch :: Maybe (PatchComponent' patch_action patch_state d m)
+    { patch :: Maybe (PatchComponent' patch_action patch_state d m)
     , node :: Node.Family -> Maybe (NodeComponent' patch_action patch_state d m)
     }
 

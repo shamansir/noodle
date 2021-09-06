@@ -1,4 +1,4 @@
-module Hydra.Component.Background where
+module Hydra.Component.Patch where
 
 
 import Prelude
@@ -34,14 +34,14 @@ type State =
 
 data Action
     = Initialize
-    | Receive UI.BgInput
+    | Receive UI.PatchInput
 
 
 canvasId :: String
 canvasId = "hydra-canvas"
 
 
-initialState :: UI.BgInput -> State
+initialState :: UI.PatchInput -> State
 initialState _ =
     { hydraReady : false, size : zero }
 
@@ -68,7 +68,7 @@ handleAction (Receive { size }) =
     H.modify_ $ _ { size = size }
 
 
-component :: forall m. MonadEffect m => UI.BgComponent m
+component :: forall m. MonadEffect m => UI.PatchComponent m
 component =
     H.mkComponent
         { initialState

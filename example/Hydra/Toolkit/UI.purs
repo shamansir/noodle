@@ -9,7 +9,7 @@ import Hydra (Hydra)
 import Hydra.Toolkit.Generate as Gen
 import Hydra.Toolkit.Generate (Kind(..))
 
-import Hydra.Component.Background as BG
+import Hydra.Component.Patch as Patch
 import Hydra.Component.Node.Num as NumNode
 import Hydra.Component.Node.Osc as OscNode
 import Hydra.Component.Node.Color as ColorNode
@@ -30,9 +30,9 @@ import Color (Color)
 import Color as C
 
 
-components ::  forall a s m. MonadEffect m => UI.Components m
+components ::  forall m. MonadEffect m => UI.Components m
 components =
-    { background, {- patch, -} node }
+    { patch, node }
 
 
 markings :: UI.Markings
@@ -62,11 +62,7 @@ hasCustomBody _ = false
 
 
 patch :: forall m. MonadEffect m => Maybe (UI.PatchComponent m)
-patch = Nothing
-
-
-background :: forall m. MonadEffect m => Maybe (UI.BgComponent m)
-background = Just BG.component
+patch = Just Patch.component
 
 
 node :: forall m. MonadEffect m => Node.Family -> Maybe (UI.NodeComponent m)
