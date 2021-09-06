@@ -128,13 +128,12 @@ out =
       )
       noOutlets
       $ \inlets -> do
-          _ <- sequence $ do
+          {-_ <- sequence $ do
               texture <- "src" <+ inlets
               compiledStr <- Hydra.compile $ Hydra.queueToDefault texture
-              --pure $ pure unit
               pure $ do
                 Console.logShow texture
-                HydraE.evaluate compiledStr
+                HydraE.evaluate compiledStr -}
           pure $ Def.passNothing
 
 
@@ -148,13 +147,13 @@ toBuffer =
         >~ "buffer" /\ Channel.buffer
       )
       $ \inlets -> do
-          _ <- sequence $ do
+          {-_ <- sequence $ do
               texture <- "src" <+ inlets
               compiledStr <- Hydra.compile $ Hydra.queueToDefault texture
-              --pure $ pure unit
               pure $ do
                 Console.logShow texture
-                HydraE.evaluate compiledStr
+                HydraE.evaluate compiledStr -}
+
           pure $ Def.passNothing
 
 
@@ -168,11 +167,11 @@ fromBuffer =
         >~ "texture" /\ Channel.texture
       )
       $ \inlets -> do
-          _ <- sequence $ do
+          {- _ <- sequence $ do
               texture <- "src" <+ inlets
               compiledStr <- Hydra.compile $ Hydra.queueToDefault texture
               --pure $ pure unit
               pure $ do
                 Console.logShow texture
-                HydraE.evaluate compiledStr
+                HydraE.evaluate compiledStr -}
           pure $ Def.passNothing

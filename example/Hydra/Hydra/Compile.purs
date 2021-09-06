@@ -14,6 +14,8 @@ import Data.Tuple.Nested ((/\))
 import Hydra
 import Hydra.Fn (class ToFn, Fn(..), toFn)
 import Hydra.Fn (argsToArray) as Fn
+import Hydra.Queue (Queue)
+import Hydra.Queue (toUnfoldable) as Queue
 
 
 compileValue :: Value -> String
@@ -28,6 +30,10 @@ compileValue (Seq xs) = "[" <> (String.joinWith "," $ show <$> xs) <> "]"
 
 compileModifier :: Modifier -> String
 compileModifier mod = compileFn' mod -- compileModifier = compileFn' ???
+
+
+compileModifiers :: Array Modifier -> String
+compileModifiers modifiers = String.joinWith "\n    ." $ compileModifier <$> modifiers
 
 
 compileFn :: forall a. ToFn a Value => a -> String
@@ -58,28 +64,24 @@ compileBuffer = case _ of
 
 
 compileTexture :: Texture -> String
-compileTexture what =
-    compile' what
+compileTexture (Texture (Source buf) modifiers) =
+    "src(" <> compileBuffer buf <> ")\n    " <> compileModifiers modifiers
+compileTexture (Texture source modifiers) =
+    compileFn source <> "\n    " <> compileModifiers modifiers
+
+
+compile :: Queue -> String
+compile queue =
+    String.joinWith "\n\n" $ ouputCode <$> Queue.toUnfoldable queue
     where
-        compile' (Texture sourceFn modifiers) =
-            compileFn sourceFn <> "\n    " <> compileModifiers modifiers
-        compile' (Buffered buffer _ modifiers) =
-            "src(" <> compileBuffer buffer <> ")\n    " <> compileModifiers modifiers -- FIXME: should include source
-        compileModifiers modifiers = String.joinWith "\n    ." $ compileModifier <$> modifiers
+        ouputCode (Default /\ tex) = compileTexture tex <> "\n   .out()"
+        ouputCode (buf     /\ tex) = compileTexture tex <> "\n   .out(" <> compileBuffer buf <> ")"
 
 
-compileQueue :: Queue -> String
-compileQueue queue =
-    String.joinWith "\n\n" $ ouputCode <$> queue
-    where
-        ouputCode (e /\ Default) = compileTexture e  <> "\n   .out()"
-        ouputCode (e /\ buf) = compileTexture e <> "\n   .out(" <> compileBuffer buf <> ")"
-
-
-compile :: Hydra -> Maybe String -- TODO: Compile only out-specs?
+{- compile :: Hydra -> Maybe String -- TODO: Compile only out-specs?
 compile None = Nothing
 compile (Val v) = Just $ compileValue v
 compile (Mod m) = Just $ compileModifier m
 compile (Tex t) = Just $ compileTexture t
 compile (Buf b) = Just $ compileBuffer b
-compile (Que q) = Just $ compileQueue q
+compile (Que q) = Just $ compileQueue q -}
