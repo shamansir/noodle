@@ -51,7 +51,6 @@ colorMod :: Hydra -> Array C.Color
 colorMod =
     case _ of
         (Tex (Texture _ modifiers)) -> fromModifiers modifiers
-        (Tex (Buffered _ _ modifiers)) -> fromModifiers modifiers
         _ -> []
     where
         fromModifiers :: Array Modifier -> Array C.Color
@@ -60,6 +59,7 @@ colorMod =
         extractColors (C (Color {r, g, b, a})) = Just $ joinToColor <$> numsV r <*> numsV g <*> numsV b <*> numsV a
         extractColors _ = Nothing
         joinToColor r g b a = C.rgba (floor $ r * 255.0) (floor $ g * 255.0) (floor $ b * 255.0) a
+
 
 buildSeq5 :: Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Hydra
 buildSeq5 h1 h2 h3 h4 h5 =

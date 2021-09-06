@@ -414,21 +414,6 @@ modHue =
         )
 
 
-
-{- ====== Queue ====== -}
-
-
-queueTo :: Buffer -> H.HydraTFn0
-queueTo buf =
-    tryT H.defaultTexture (\texture -> Que [ texture /\ buf ])
-
-
-queueToDefault :: H.HydraTFn0
-queueToDefault =
-    tryT H.defaultTexture (\texture -> Que [ texture /\ Default ])
-
-
-
 -- TODO: check if we can use `Foldable` / `Unfoldable`
 
 tryV1 :: Value -> H.ToHydraFn1 -> H.HydraFn1

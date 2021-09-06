@@ -4,8 +4,13 @@ module Hydra.Toolkit.UI.State where
 import Prelude (Unit, unit)
 
 
-type State = Unit
+import Hydra (Buffer)
+import Hydra.Queue (Queue)
+import Hydra.Queue as Queue
 
 
-init :: Unit
-init = unit
+type State = Queue
+
+
+init :: State
+init = Queue.empty

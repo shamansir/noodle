@@ -4,6 +4,7 @@ module Hydra where
 import Prelude
 
 import Data.Maybe (Maybe(..))
+import Data.Map.Extra (type (/->))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
 import Data.String as String
@@ -48,6 +49,7 @@ data Source
     | Shape { sides :: Value, radius :: Value, smoothing :: Value }
     | Gradient { speed :: Value }
     | Solid { r :: Value, g :: Value, b :: Value, a :: Value }
+    | Source Buffer
 
 
 data Geometry
@@ -104,15 +106,10 @@ data Modifier = G Geometry | C Color | B Blend | M Modulate
 
 data Texture
     = Texture Source (Array Modifier)
-    | Buffered Buffer Source (Array Modifier)
 
 
 {- data Buffered
     = Buffered Buffer Texture -}
-
-
-type Queue =
-    Array (Texture /\ Buffer) -- TODO: non-empty array?
 
 
 data Hydra
@@ -121,7 +118,6 @@ data Hydra
     | Mod Modifier
     | Tex Texture
     | Buf Buffer
-    | Que Queue
 
 
 default :: Hydra
@@ -150,7 +146,6 @@ modulate = M
 
 addModifier :: Texture -> Modifier -> Texture
 addModifier (Texture src modifiers) = Texture src <<< Array.snoc modifiers
-addModifier (Buffered buf src modifiers) = Buffered buf src <<< Array.snoc modifiers
 
 
 hydraOf :: Texture -> Hydra
@@ -240,11 +235,6 @@ toTexture _ = Nothing
 toModifier :: Hydra -> Maybe Modifier
 toModifier (Mod m) = Just m
 toModifier _ = Nothing
-
-
-isQueue :: Hydra -> Boolean
-isQueue (Que _) = true
-isQueue _ = false
 
 
 --addGeometry
@@ -344,6 +334,7 @@ instance ToFn Source Value where
     toFn (Shape vs)    = fn "shape" [ "sides" /\ vs.sides, "radius" /\ vs.radius, "smoothing" /\ vs.smoothing ]
     toFn (Gradient vs) = fn "gradient" [ "speed" /\ vs.speed ]
     toFn (Solid vs)    = fn "solid" [ "r" /\ vs."r", "g" /\ vs.g, "b" /\ vs.b, "a" /\ vs.a ]
+    toFn (Source _)    = fn "src" [] -- FIXME
 
 
 instance ToFn Geometry Value where
@@ -452,10 +443,7 @@ instance Show Texture where
     show (Texture source modifiers) =
         show (toFn source :: Fn Value) <> "\n    " <>
             String.joinWith "\n    " (show <$> modifiers)
-    show (Buffered buf source modifiers) =
-        "{buf:" <> show buf <> "}" <> "\n    " <>
-            show (toFn source :: Fn Value) <> "\n    " <>
-            String.joinWith "\n    " (show <$> modifiers)
+
 
 instance Show Modifier where
     show modifier =
@@ -468,4 +456,3 @@ instance Show Hydra where
     show (Mod mod) = show mod
     show (Tex tex) = show tex
     show (Buf buf) = show buf
-    show (Que queue) = show queue
