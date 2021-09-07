@@ -24,6 +24,10 @@ data Buffer
     | S3
 
 
+derive instance eqBuffer :: Eq Buffer
+derive instance ordBuffer :: Ord Buffer
+
+
 data Value
     = Num Number
     | MouseX

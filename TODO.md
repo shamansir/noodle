@@ -2,6 +2,7 @@
 * [v]: Pretty-print Hydra structure;
 * [v]: Dockerfile, fix deployment;
 * `Out` with a buffer number;
+* `to-buffer` and `from-buffer` nodes;
 * Ribbons;
 * [v]: Don't show hidden inlets;
 * [v]: Color node with preview;
@@ -31,3 +32,4 @@
 * Blinking when user starts to drag the node;
 * Hot/cold inlets;
 * Node Families and Channel IDs could be parameters of toolkit etc.;
+* Layouts are just positions bounds to components, unify searching by position, adding items etc. to them;

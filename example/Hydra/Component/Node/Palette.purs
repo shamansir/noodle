@@ -117,10 +117,9 @@ render (_ /\ paletteId) =
 handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () UI.NodeOutput m Unit
 handleAction = case _ of
     Change paletteId -> do
-        mode /\ _ <- H.get
-        H.modify_ (\(mode /\ _) -> mode /\ paletteId)
+        curMode /\ _ <- H.modify (\(mode /\ _) -> mode /\ paletteId)
         let palette = fromMaybe P.default $ Map.lookup paletteId P.palettes
-        H.raise $ UI.SendToInlet "palette" $ case mode of
+        H.raise $ UI.SendToInlet "palette" $ case curMode of
             Modifier -> Hydra.justModifier $ Hydra.color $ P.toColorMod palette
             Solid -> Hydra.hydraOf $ Hydra.textureOf $ P.toSolidSource palette
 
