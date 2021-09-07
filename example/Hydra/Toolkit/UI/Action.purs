@@ -1,7 +1,8 @@
 module Hydra.Toolkit.UI.Action where
 
 
-import Prelude (Unit)
+import Hydra (Buffer, Texture)
 
 
-type Action = Unit
+data Action =
+    Store Buffer Texture

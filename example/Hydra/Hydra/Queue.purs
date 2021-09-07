@@ -1,6 +1,7 @@
 module Hydra.Queue where
 
 
+import Data.Maybe (Maybe)
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Unfoldable (class Unfoldable)
@@ -19,3 +20,7 @@ empty = Map.empty
 
 toUnfoldable :: forall f. Unfoldable f => Queue -> f (Buffer /\ Texture)
 toUnfoldable = Map.toUnfoldable
+
+
+textureAt :: Buffer -> Queue -> Maybe Texture
+textureAt = Map.lookup
