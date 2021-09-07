@@ -14,7 +14,7 @@ import Data.Array ((:))
 import Data.Array as Array
 import Data.Map as Map
 import Data.Int (toNumber)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Vec ((!!))
 import Data.Typelevel.Num.Reps (d0, d1, d2)
@@ -47,7 +47,11 @@ import Color.Extra (toSvg) as C
 
 
 type State =
-    { mode :: Mode, buffer :: Buffer, queue :: Queue }
+    { mode :: Mode
+    , buffer :: Buffer
+    , queue :: Queue
+    , node :: Node Hydra
+    }
 
 
 data Mode
@@ -56,7 +60,8 @@ data Mode
 
 
 data Action
-    = Initialize
+    = NoOp
+    | Initialize
     | Receive Queue
     | Select Buffer
     | Store Texture
@@ -79,8 +84,8 @@ bodyWidth = 110.0 -- FIXME: pass from outside
 
 
 initialState :: Mode -> UI.NodeInput -> State
-initialState mode { patchState } =
-    { mode, buffer : O0, queue : patchState }
+initialState mode { patchState, node } =
+    { mode, buffer : O0, queue : patchState, node }
 
 
 render :: forall m. State -> H.ComponentHTML Action () m
@@ -117,10 +122,14 @@ render { mode, buffer, queue } =
 
 handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () UI.NodeOutput m Unit
 handleAction = case _ of
+    NoOp -> pure unit
     Initialize -> do
-        { mode } <- H.get
+        { mode, node } <- H.get
         case mode of
-            ToBuffer -> pure unit -- TODO: subscribe inlet
+            ToBuffer -> do
+                emitter <- E.fromInlet node "texture"
+                _ <- H.subscribe (maybe NoOp Store <<< Hydra.toTexture <$> emitter)
+                pure unit
             FromBuffer -> pure unit -- TODO: do nothing
     Receive queue ->
         H.modify_ (_ { queue = queue })
