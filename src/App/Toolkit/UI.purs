@@ -41,12 +41,12 @@ type PatchInput' patch_state d = { size :: Size, patch :: Patch d, patchState ::
 data NodeQuery a = NodeCarry a
 
 
-{- type PatchQuery a = PatchQuery' Unit a
-type PatchQuery' patch_action a = ByPatch patch_action a -}
+type PatchQuery a = PatchQuery' Unit a
+type PatchQuery' patch_action a = TellPatch patch_action a
 
 
-data PatchQuery patch_action a =
-    Tell patch_action a
+data TellPatch patch_action a =
+    TellPatch patch_action a
 
 
 type BgOutput = Void
@@ -67,7 +67,7 @@ type PatchOutput = Void
 
 
 type PatchSlot id = PatchSlot' Unit id
-type PatchSlot' patch_action id = H.Slot (PatchQuery patch_action) PatchOutput id
+type PatchSlot' patch_action id = H.Slot (TellPatch patch_action) PatchOutput id
 
 
 type NodeSlot patch_action d id = H.Slot NodeQuery (NodeOutput' patch_action d) id
@@ -82,7 +82,7 @@ type NodeComponent' patch_action patch_state d m = H.Component NodeQuery (NodeIn
 
 
 type PatchComponent d m = PatchComponent' Unit Unit d m
-type PatchComponent' patch_action patch_state d m = H.Component (PatchQuery patch_action) (PatchInput' patch_state d) PatchOutput m
+type PatchComponent' patch_action patch_state d m = H.Component (TellPatch patch_action) (PatchInput' patch_state d) PatchOutput m
 
 
 type Components d m = Components' Unit Unit d m

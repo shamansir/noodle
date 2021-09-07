@@ -28,6 +28,9 @@ type NodeOutput = UI.NodeOutput' UI.Action Hydra
 type PatchInput = UI.PatchInput' UI.State Hydra
 
 
+type PatchQuery a = UI.PatchQuery' UI.Action a
+
+
 --type PatchOutput = UI.PatchOutput' UI.Action Hydra
 
 
