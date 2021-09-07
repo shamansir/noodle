@@ -23,12 +23,15 @@ import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
 
 import Hydra.Toolkit.UI.Components as UI
+import Hydra.Queue (Queue)
+import Hydra.Queue as Queue
 
 
 
 type State =
     { hydraReady :: Boolean
     , size :: Size
+    , queue :: Queue
     }
 
 
@@ -42,8 +45,8 @@ canvasId = "hydra-canvas"
 
 
 initialState :: UI.PatchInput -> State
-initialState _ =
-    { hydraReady : false, size : zero }
+initialState { patchState } =
+    { hydraReady : false, size : zero, queue : patchState }
 
 
 render :: forall m. State -> H.ComponentHTML Action () m
@@ -68,6 +71,10 @@ handleAction (Receive { size }) =
     H.modify_ $ _ { size = size }
 
 
+handleQuery :: forall action output m a. UI.PatchQuery a -> H.HalogenM State action () output m (Maybe a)
+handleQuery  _ = pure Nothing
+
+
 component :: forall m. MonadEffect m => UI.PatchComponent m
 component =
     H.mkComponent
@@ -75,6 +82,7 @@ component =
         , render
         , eval: H.mkEval H.defaultEval
             { handleAction = handleAction
+            , handleQuery = handleQuery
             , initialize = Just Initialize
             , receive = Just <<< Receive
             }

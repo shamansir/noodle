@@ -41,7 +41,7 @@ import Web.HTML (window)
 import Web.HTML.Window as Window
 
 
-type Slots patch_action d =
+type Slots patch_action =
     ( patch :: PatchC.Slot Unit
     , tkPatch :: ToolkitUI.PatchSlot' patch_action Unit
     )
@@ -89,7 +89,10 @@ data Action
     -- | HandlePatch (PatchC.Action d)
 
 
-initialState :: forall patch_action patch_state d m. Input patch_action patch_state d m -> State patch_action patch_state d m
+initialState
+    :: forall patch_action patch_state d m
+     . Input patch_action patch_state d m
+    -> State patch_action patch_state d m
 initialState { network, toolkit, style, flow, currentPatch, components, markings, getFlags, patchState } =
     { network, toolkit, style, flow, components, markings, getFlags, patchState
     , currentPatch
@@ -102,7 +105,7 @@ render
     :: forall patch_action patch_state d m
      . MonadEffect m
     => State patch_action patch_state d m
-    -> H.ComponentHTML Action (Slots patch_action d) m
+    -> H.ComponentHTML Action (Slots patch_action) m
 render (s@{ network, toolkit, style, flow }) =
     HH.div
         [ CSS.style $ do
@@ -184,7 +187,7 @@ handleAction
     :: forall output patch_action patch_state d m
      . MonadAff m => MonadEffect m
     => Action
-    -> H.HalogenM (State patch_action patch_state d m) Action (Slots patch_action d) output m Unit
+    -> H.HalogenM (State patch_action patch_state d m) Action (Slots patch_action) output m Unit
 handleAction = case _ of
     Initialize -> do
         innerWidth <- H.liftEffect $ Window.innerWidth =<< window
