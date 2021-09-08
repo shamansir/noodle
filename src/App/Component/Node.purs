@@ -73,7 +73,7 @@ type Input patch_action patch_state d m =
     , flow :: NodeFlow
     , getFlags :: UI.GetFlags
     , markings :: UI.Markings
-    , customBody :: Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state d m)
+    , controlArea :: Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state d m)
     , linksCount :: Node.LinksCount
     , patchState :: patch_state
     }
@@ -306,7 +306,7 @@ render s@{ node, name, style, flow, linksCount } =
         body =
             HS.g
                 [ HSA.translateTo' $ Calc.bodyPos f style flow node ]
-                [ case Node.family node >>= s.customBody of
+                [ case Node.family node >>= s.controlArea of
                     Just _ ->
                         HS.mask
                             [ HSA.id $ name <> "-body-mask"
@@ -332,7 +332,7 @@ render s@{ node, name, style, flow, linksCount } =
                     , HSA.rx style.body.cornerRadius, HSA.ry style.body.cornerRadius
                     , HSA.width innerWidth, HSA.height innerHeight
                     ]
-                , case Node.family node >>= s.customBody of
+                , case Node.family node >>= s.controlArea of
                     Just userNodeBody ->
                         HS.g
                             [ HSA.translateTo' $ Calc.bodyInnerOffset f style flow node

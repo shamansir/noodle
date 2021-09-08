@@ -41,7 +41,7 @@ markings = { node : markNode, channel : markChannel }
 
 getFlags :: UI.GetFlags
 getFlags family =
-    { customBody : hasCustomBody family
+    { controlArea : hasControlArea family
     , hasTitle : hasTitle family
     , hasRemoveButton : true
     }
@@ -51,14 +51,14 @@ hasTitle :: Node.Family -> Boolean
 hasTitle _ = true
 
 
-hasCustomBody :: Node.Family -> Boolean
-hasCustomBody "num" = true
-hasCustomBody "osc" = true
-hasCustomBody "color" = true
-hasCustomBody "seq" = true
-hasCustomBody "palette" = true
-hasCustomBody "solid-pal" = true
-hasCustomBody _ = false
+hasControlArea :: Node.Family -> Boolean
+hasControlArea "num" = true
+hasControlArea "osc" = true
+hasControlArea "color" = true
+hasControlArea "seq" = true
+hasControlArea "palette" = true
+hasControlArea "solid-pal" = true
+hasControlArea _ = false
 
 
 patch :: forall m. MonadEffect m => Maybe (UI.PatchComponent m)

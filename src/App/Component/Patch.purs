@@ -211,7 +211,7 @@ render state =
                         { node, name
                         , style : state.style, flow : state.flow
                         , getFlags : state.getFlags, markings : state.markings
-                        , customBody : state.customNodeBody
+                        , controlArea : state.customNodeBody
                         , linksCount : Patch.linksCountAtNode name state.patch
                         , patchState : state.patchState
                         }
