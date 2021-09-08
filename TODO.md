@@ -8,6 +8,7 @@
 * [v]: Don't show hidden inlets;
 * [v]: Color node with preview;
 * [v]: Palette node;
+* Bug: `patch_state` seems not to be updated for nodes, see Render node and `Queue`;
 * Bug: very often, Hydra rendering doesn't start at all;
 * Bug: send last value immediately on connection;
 * Bug: when dragged, nodes reset state;

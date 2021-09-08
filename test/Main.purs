@@ -11,6 +11,7 @@ import Test.Spec.Runner (runSpec)
 
 import Test.Nodes (spec) as Nodes
 import Test.Layouts (spec) as Layouts
+import Test.Hydra.Compilation (spec) as HydraCompilation
 
 
 main :: Effect Unit
@@ -19,3 +20,6 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Nodes.spec
   describe "Layouts"
     Layouts.spec
+  describe "Hydra" do
+    describe "Compilation"
+      HydraCompilation.spec
