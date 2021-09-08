@@ -18,7 +18,7 @@ import Noodle.Node (Family) as Node
 
 type Flags =
     { hasTitle :: Boolean
-    , customBody :: Boolean
+    , controlArea :: Boolean
     , hasRemoveButton :: Boolean
     }
 
@@ -202,7 +202,7 @@ type Colors =
 defaultFlags :: Flags
 defaultFlags =
     { hasTitle : true
-    , customBody : false
+    , controlArea : false
     , hasRemoveButton : true
     }
 

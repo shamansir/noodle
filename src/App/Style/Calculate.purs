@@ -260,13 +260,13 @@ bodySizeF f s flow node =
                     InsideBody -> V2.h $ titleSize f s flow node
                     OutsideBody -> 0.0
             else 0.0
-        sizeOf (UserBody n) = if f.customBody then n else 0.0
+        sizeOf (UserBody n) = if f.controlArea then n else 0.0
         sizeOf OnlyInlets = toNumber inletsCount * V2.h (slotArea f s flow node)
         sizeOf OnlyOutlets = toNumber outletsCount * V2.h (slotArea f s flow node)
         sizeOf InletsAndOutlets = toNumber (max inletsCount outletsCount) * V2.h (slotArea f s flow node)
         sizeOf UserBodyBetweenSlots = sizeOf InletsAndOutlets
         sizeOf (UserBodyBetweenSlotsMin n) =
-            if f.customBody
+            if f.controlArea
                 then
                     if sizeOf InletsAndOutlets > n
                         then sizeOf InletsAndOutlets
@@ -286,13 +286,13 @@ nodeAreaF f s flow node =
                     InsideBody -> V2.h $ titleSize f s flow node
                     OutsideBody -> V2.h $ titleSize f s flow node
             else 0.0
-        sizeOf (UserBody n) = if f.customBody then n else 0.0
+        sizeOf (UserBody n) = if f.controlArea then n else 0.0
         sizeOf OnlyInlets = toNumber inletsCount * V2.h (slotArea f s flow node)
         sizeOf OnlyOutlets = toNumber outletsCount * V2.h (slotArea f s flow node)
         sizeOf InletsAndOutlets = toNumber (max inletsCount outletsCount) * V2.h (slotArea f s flow node)
         sizeOf UserBodyBetweenSlots = sizeOf InletsAndOutlets
         sizeOf (UserBodyBetweenSlotsMin n) =
-            if f.customBody
+            if f.controlArea
                 then
                     if sizeOf InletsAndOutlets > n
                         then sizeOf InletsAndOutlets
