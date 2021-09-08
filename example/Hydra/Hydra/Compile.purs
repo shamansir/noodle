@@ -44,17 +44,21 @@ compileOp Multiply = "*"
 
 
 compileValue :: Compiler -> Value -> String
-compileValue _ (Num n)  = show n
-compileValue _ MouseX   = "() => mouse.x"
-compileValue _ MouseY   = "() => mouse.y"
-compileValue _ Time     = "() => time"
-compileValue _ Width    = "x"
-compileValue _ Height   = "y"
-compileValue _ (Seq xs) = "[" <> (String.joinWith "," $ show <$> xs) <> "]"
-compileValue _ Pi       = "Math.PI"
+compileValue _ (Num n)      = show n
+compileValue _ MouseX       = "() => mouse.x"
+compileValue _ MouseY       = "() => mouse.y"
+compileValue _ Time         = "() => time"
+compileValue _ CanvasWidth  = "width"
+compileValue _ CanvasHeight = "height"
+compileValue _ WindowWidth  = "window.innerWidth"
+compileValue _ WindowHeight = "window.innerHeight"
+compileValue _ (Seq xs)     = "[" <> (String.joinWith "," $ show <$> xs) <> "]"
+compileValue _ Pi           = "Math.PI"
 compileValue _ (Harmonic n) = "a.fft[" <> show n <> "]"
 compileValue c (Expr v1 op v2) =
     "(" <> compileValue c v1 <> compileOp op <> compileValue c v2 <> ")"
+compileValue c (Dynamic v) =
+    "() => " <> compileValue c v
 compileValue c (OfTime v) =
     "(time) => " <> compileValue c v
 
@@ -107,17 +111,21 @@ compileBuffer = case _ of
 compileTexture :: Compiler -> Texture -> String
 compileTexture compiler (Texture (Source buf) modifiers) =
     "src(" <> compileBuffer buf <> ")" <>
-        (if compiler.newLines then "\n   " else "")
-        <> compileModifiers compiler modifiers
+        if Array.length modifiers > 0 then
+            (if compiler.newLines then "\n   ." else ".")
+                <> compileModifiers compiler modifiers
+        else (if compiler.newLines then "\n   " else "")
 compileTexture compiler (Texture source modifiers) =
     compileFn compiler source <>
-        (if compiler.newLines then "\n   " else "")
-        <> compileModifiers compiler modifiers
+        if Array.length modifiers > 0 then
+            (if compiler.newLines then "\n   ." else ".")
+                <> compileModifiers compiler modifiers
+        else (if compiler.newLines then "\n   " else "")
 
 
 compile :: Compiler -> Queue -> String
 compile compiler queue =
-    String.joinWith "\n\n" $ ouputCode <$> Queue.toUnfoldable queue
+    String.joinWith (if compiler.newLines then "\n\n" else "\n") $ ouputCode <$> Queue.toUnfoldable queue
     where
         ouputCode (Default /\ tex) =
             compileTexture compiler tex <>
@@ -131,7 +139,7 @@ compile compiler queue =
 
 compileWithRender :: Compiler -> Queue -> String
 compileWithRender compiler queue  =
-    compile compiler queue <> "\n\n    render()"
+    compile compiler queue <> if compiler.newLines then "\n\n    render()" else "\nrender()"
 
 
 {- compile :: Hydra -> Maybe String -- TODO: Compile only out-specs?

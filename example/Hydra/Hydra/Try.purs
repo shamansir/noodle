@@ -58,7 +58,7 @@ shape =
 gradient :: H.HydraFn1M
 gradient =
     tryV1M
-        ( Width )
+        ( CanvasWidth )
         (\speed -> Tex $ H.textureOf $ Gradient { speed })
 
 

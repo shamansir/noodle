@@ -8,6 +8,7 @@ import Data.Map.Extra (type (/->))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
 import Data.String as String
+import Data.Foldable (foldl)
 
 import Hydra.Fn (class ToFn, Fn, fn, toFn)
 
@@ -47,10 +48,13 @@ data Value
     | MouseY
     | Time
     | Seq (Array Value)
-    | Width
-    | Height
+    | CanvasWidth
+    | CanvasHeight
+    | WindowWidth
+    | WindowHeight
     | Pi
     | Expr Value Op Value
+    | Dynamic Value
     | OfTime Value
     | Harmonic Int
     -- Harmonic Int
@@ -169,6 +173,10 @@ addModifier :: Texture -> Modifier -> Texture
 addModifier (Texture src modifiers) = Texture src <<< Array.snoc modifiers
 
 
+withModifiers :: Texture -> Array Modifier -> Texture
+withModifiers = foldl addModifier
+
+
 hydraOf :: Texture -> Hydra
 hydraOf = Tex
 
@@ -198,11 +206,11 @@ mouseY = Val MouseY
 
 
 width :: Hydra
-width = Val Width
+width = Val CanvasWidth
 
 
 height :: Hydra
-height = Val Height
+height = Val CanvasHeight
 
 
 seq :: Array Value -> Hydra
@@ -445,12 +453,15 @@ instance Show Value where
     show MouseX = "{mouse.x}"
     show MouseY = "{mouse.y}"
     show Time = "{time}"
-    show Width = "{width}"
-    show Height = "{height}"
+    show CanvasWidth = "{width}"
+    show CanvasHeight = "{height}"
+    show WindowWidth = "{win.width}"
+    show WindowHeight = "{win.height}"
     show (Seq values) = String.joinWith "," $ show <$> values
     show Pi = "{pi}"
     show (Expr v1 op v2) = "{" <> show v1 <> show op <> show v2 <> "}"
     show (OfTime v) = "{time -> " <> show v <> "}"
+    show (Dynamic v) = "{* -> " <> show v <> "}"
     show (Harmonic n) = "{fft:" <> show n <> "}"
 
 
