@@ -15,6 +15,8 @@ import Hydra.Component.Node.Osc as OscNode
 import Hydra.Component.Node.Color as ColorNode
 import Hydra.Component.Node.Seq as SeqNode
 import Hydra.Component.Node.Palette as PaletteNode
+import Hydra.Component.Node.Buffer as BufferNode
+import Hydra.Component.Node.Out as OutNode
 import Hydra.Toolkit.UI.State (State) as Toolkit
 import Hydra.Toolkit.UI.Action (Action) as Toolkit
 import Hydra.Toolkit.UI.Components as UI
@@ -58,6 +60,8 @@ hasControlArea "color" = true
 hasControlArea "seq" = true
 hasControlArea "palette" = true
 hasControlArea "solid-pal" = true
+hasControlArea "to-buffer" = true
+hasControlArea "from-buffer" = true
 hasControlArea _ = false
 
 
@@ -66,13 +70,16 @@ patch = Just Patch.component
 
 
 node :: forall m. MonadEffect m => Node.Family -> Maybe (UI.NodeComponent m)
-node "num"       = Just $ NumNode.component
-node "osc"       = Just $ OscNode.component
-node "color"     = Just $ ColorNode.component
-node "seq"       = Just $ SeqNode.component
-node "palette"   = Just $ PaletteNode.component PaletteNode.Modifier
-node "solid-pal" = Just $ PaletteNode.component PaletteNode.Solid
-node _ = Nothing
+node "num"         = Just $ NumNode.component
+node "osc"         = Just $ OscNode.component
+node "color"       = Just $ ColorNode.component
+node "seq"         = Just $ SeqNode.component
+node "palette"     = Just $ PaletteNode.component PaletteNode.Modifier
+node "solid-pal"   = Just $ PaletteNode.component PaletteNode.Solid
+node "to-buffer"   = Just $ BufferNode.component BufferNode.ToBuffer
+node "from-buffer" = Just $ BufferNode.component BufferNode.FromBuffer
+node "out"         = Just $ OutNode.component
+node _             = Nothing
 
 
 -- #404E4D -- 64 78 77
