@@ -52,6 +52,7 @@ data Value
     | Pi
     | Expr Value Op Value
     | OfTime Value
+    | Harmonic Int
     -- Harmonic Int
     -- FN (Time -> Value)
 
@@ -450,6 +451,7 @@ instance Show Value where
     show Pi = "{pi}"
     show (Expr v1 op v2) = "{" <> show v1 <> show op <> show v2 <> "}"
     show (OfTime v) = "{time -> " <> show v <> "}"
+    show (Harmonic n) = "{fft:" <> show n <> "}"
 
 
 instance Show Buffer where
