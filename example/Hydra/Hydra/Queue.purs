@@ -1,11 +1,12 @@
 module Hydra.Queue where
 
 
-import Prelude (flip)
+import Prelude (flip, (>>>))
 
 import Data.Maybe (Maybe)
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
+import Data.Foldable (class Foldable)
 import Data.Unfoldable (class Unfoldable)
 import Data.Tuple.Nested (type (/\))
 
@@ -22,6 +23,10 @@ empty = Map.empty
 
 isEmpty :: Queue -> Boolean
 isEmpty = Map.isEmpty
+
+
+fromFoldable :: forall f. Foldable f => f (Buffer /\ Texture) -> Queue
+fromFoldable = Map.fromFoldable
 
 
 toUnfoldable :: forall f. Unfoldable f => Queue -> f (Buffer /\ Texture)
@@ -42,3 +47,7 @@ toDefault = toBuffer Default
 
 toBuffer :: Buffer -> Texture -> Queue -> Queue
 toBuffer = Map.insert
+
+
+atBuffer :: Buffer -> Texture -> Queue
+atBuffer buf tex = toBuffer buf tex empty

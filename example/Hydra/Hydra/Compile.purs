@@ -36,6 +36,13 @@ compact :: Compiler
 compact = { argNames : false, newLines : false }
 
 
+compileOp :: Op -> String
+compileOp Plus = "+"
+compileOp Subtract = "-"
+compileOp Divide = "/"
+compileOp Multiply = "*"
+
+
 compileValue :: Compiler -> Value -> String
 compileValue _ (Num n)  = show n
 compileValue _ MouseX   = "() => mouse.x"
@@ -44,6 +51,11 @@ compileValue _ Time     = "() => time"
 compileValue _ Width    = "x"
 compileValue _ Height   = "y"
 compileValue _ (Seq xs) = "[" <> (String.joinWith "," $ show <$> xs) <> "]"
+compileValue _ Pi       = "Math.PI"
+compileValue c (Expr v1 op v2) =
+    "(" <> compileValue c v1 <> compileOp op <> compileValue c v2 <> ")"
+compileValue c (OfTime v) =
+    "(time) => " <> compileValue c v
 
 
 compileModifier :: Compiler -> Modifier -> String

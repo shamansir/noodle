@@ -28,6 +28,19 @@ derive instance eqBuffer :: Eq Buffer
 derive instance ordBuffer :: Ord Buffer
 
 
+-- infixl 6 Plus as /+/
+-- infixl 6 Subtract as /-/
+-- infixl 7 Multiply as /*/
+-- infixl 7 Divide as ///
+
+
+data Op
+    = Plus
+    | Divide
+    | Multiply
+    | Subtract
+
+
 data Value
     = Num Number
     | MouseX
@@ -36,6 +49,9 @@ data Value
     | Seq (Array Value)
     | Width
     | Height
+    | Pi
+    | Expr Value Op Value
+    | OfTime Value
     -- Harmonic Int
     -- FN (Time -> Value)
 
@@ -416,6 +432,13 @@ instance ToFn Modifier TextureOrValue where
     toFn (M modulate) = toFn modulate
 
 
+instance Show Op where
+    show Plus = "+"
+    show Subtract = "-"
+    show Multiply = "+"
+    show Divide = "/"
+
+
 instance Show Value where
     show (Num num) = show num
     show MouseX = "{mouse.x}"
@@ -424,6 +447,9 @@ instance Show Value where
     show Width = "{width}"
     show Height = "{height}"
     show (Seq values) = String.joinWith "," $ show <$> values
+    show Pi = "{pi}"
+    show (Expr v1 op v2) = "{" <> show v1 <> show op <> show v2 <> "}"
+    show (OfTime v) = "{time -> " <> show v <> "}"
 
 
 instance Show Buffer where
