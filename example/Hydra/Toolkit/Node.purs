@@ -141,7 +141,7 @@ toBuffer :: Def Hydra
 toBuffer =
     Def.defineEffectful
       (withInlets
-         ~< "src" /\ Channel.texture
+         ~< "texture" /\ Channel.texture
       )
       (withOutlets
         >~ "buffer" /\ Channel.buffer
