@@ -1,4 +1,11 @@
-module Hydra.Compile where
+module Hydra.Compile
+    ( Compiler
+    , compile
+    , compileWithRender
+    , friendly
+    , compact
+    )
+    where
 
 
 import Prelude
@@ -18,36 +25,57 @@ import Hydra.Queue (Queue)
 import Hydra.Queue (toUnfoldable) as Queue
 
 
-compileValue :: Value -> String
-compileValue (Num n) = show n
-compileValue MouseX = "() => mouse.x"
-compileValue MouseY = "() => mouse.y"
-compileValue Time = "() => time"
-compileValue Width = "x"
-compileValue Height = "y"
-compileValue (Seq xs) = "[" <> (String.joinWith "," $ show <$> xs) <> "]"
+type Compiler = { argNames :: Boolean, newLines :: Boolean }
 
 
-compileModifier :: Modifier -> String
-compileModifier mod = compileFn' mod -- compileModifier = compileFn' ???
+friendly :: Compiler
+friendly = { argNames : true, newLines : true }
 
 
-compileModifiers :: Array Modifier -> String
-compileModifiers modifiers = String.joinWith "\n    ." $ compileModifier <$> modifiers
+compact :: Compiler
+compact = { argNames : false, newLines : false }
 
 
-compileFn :: forall a. ToFn a Value => a -> String
-compileFn = compileFnBy compileValue <<< toFn
+compileValue :: Compiler -> Value -> String
+compileValue _ (Num n)  = show n
+compileValue _ MouseX   = "() => mouse.x"
+compileValue _ MouseY   = "() => mouse.y"
+compileValue _ Time     = "() => time"
+compileValue _ Width    = "x"
+compileValue _ Height   = "y"
+compileValue _ (Seq xs) = "[" <> (String.joinWith "," $ show <$> xs) <> "]"
 
 
-compileFn' :: forall a. ToFn a TextureOrValue => a -> String
-compileFn' = compileFnBy (textureOrValue compileTexture compileValue) <<< toFn
+compileModifier :: Compiler -> Modifier -> String
+compileModifier compiler mod = compileFn' compiler mod -- compileModifier = compileFn' ???
 
 
-compileFnBy :: forall x. (x -> String) -> Fn x -> String
-compileFnBy toString (Fn { name, args })  =
+compileModifiers :: Compiler -> Array Modifier -> String
+compileModifiers compiler modifiers =
+    String.joinWith
+        (if compiler.newLines then "\n    ." else ".")
+        $ compileModifier compiler <$> modifiers
+
+
+compileFn :: forall a. ToFn a Value => Compiler -> a -> String
+compileFn compiler =
+    compileFnBy compiler (compileValue compiler) <<< toFn
+
+
+compileFn' :: forall a. ToFn a TextureOrValue => Compiler -> a  -> String
+compileFn' compiler =
+    compileFnBy
+        compiler
+        (textureOrValue (compileTexture compiler) (compileValue compiler))
+        <<< toFn
+
+
+compileFnBy :: forall x. Compiler -> (x -> String) -> Fn x -> String
+compileFnBy compiler toString (Fn { name, args }) =
     name <> "(" <> (String.joinWith "," $ compileArg <$> Fn.argsToArray args) <> ")"
-    where compileArg (argName /\ value) = "/*" <> argName <> "*/ " <> toString value
+    where
+        compileArg (argName /\ value) =
+            (if compiler.argNames then "/*" <> argName <> "*/ " else "") <> toString value
 
 
 compileBuffer :: Buffer -> String
@@ -63,19 +91,34 @@ compileBuffer = case _ of
     S3 -> "s3"
 
 
-compileTexture :: Texture -> String
-compileTexture (Texture (Source buf) modifiers) =
-    "src(" <> compileBuffer buf <> ")\n    " <> compileModifiers modifiers
-compileTexture (Texture source modifiers) =
-    compileFn source <> "\n    " <> compileModifiers modifiers
+compileTexture :: Compiler -> Texture -> String
+compileTexture compiler (Texture (Source buf) modifiers) =
+    "src(" <> compileBuffer buf <> ")" <>
+        (if compiler.newLines then "\n   " else "")
+        <> compileModifiers compiler modifiers
+compileTexture compiler (Texture source modifiers) =
+    compileFn compiler source <>
+        (if compiler.newLines then "\n   " else "")
+        <> compileModifiers compiler modifiers
 
 
-compile :: Queue -> String
-compile queue =
+compile :: Compiler -> Queue -> String
+compile compiler queue =
     String.joinWith "\n\n" $ ouputCode <$> Queue.toUnfoldable queue
     where
-        ouputCode (Default /\ tex) = compileTexture tex <> "\n   .out()"
-        ouputCode (buf     /\ tex) = compileTexture tex <> "\n   .out(" <> compileBuffer buf <> ")"
+        ouputCode (Default /\ tex) =
+            compileTexture compiler tex <>
+                (if compiler.newLines then "\n   " else "")
+                <> ".out()"
+        ouputCode (buf     /\ tex) =
+            compileTexture compiler tex <>
+                (if compiler.newLines then "\n   " else "")
+                <> ".out(" <> compileBuffer buf <> ")"
+
+
+compileWithRender :: Compiler -> Queue -> String
+compileWithRender compiler queue  =
+    compile compiler queue <> "\n\n    render()"
 
 
 {- compile :: Hydra -> Maybe String -- TODO: Compile only out-specs?

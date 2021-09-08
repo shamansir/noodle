@@ -1,4 +1,4 @@
-module Hydra.Component.Node.Out where
+module Hydra.Component.Node.Render where
 
 
 import Prelude
@@ -51,14 +51,15 @@ import Color.Extra (toSvg) as C
 
 
 type State =
-    { node :: Node Hydra
+    { queue :: Queue
+    , node :: Node Hydra
     }
 
 
 data Action
     = NoOp
-    | Initialize
-    | Render Texture
+    | Receive Queue
+    | Render
 
 
 bodyWidth = 110.0 -- FIXME: pass from outside
@@ -70,27 +71,44 @@ bodyWidth = 110.0 -- FIXME: pass from outside
 
 initialState :: UI.NodeInput -> State
 initialState { patchState, node } =
-    { node }
+    { queue : patchState, node }
 
 
 render :: forall m. State -> H.ComponentHTML Action () m
-render = const $
+render { queue } =
     HS.g
-        [ ]
-        [ ]
+        [ HSA.class_ $ H.ClassName "render-button"
+        ]
+        [ HS.circle
+            [ HSA.cx 12.0
+            , HSA.cy 12.0
+            , HSA.stroke $ Just $ C.toSvg
+                    $ if not $ Queue.isEmpty queue then C.rgba 0 255 0 1.0 else C.rgba 100 100 100 1.0
+            , HSA.fill $ Just $ C.toSvg
+                    $ if not $ Queue.isEmpty queue then C.rgba 0 100 0 1.0 else C.rgba 50 50 50 1.0
+            , HSA.strokeWidth 2.0
+            , HSA.r 10.0
+            ]
+        , HS.rect
+            [ HSA.x 2.0
+            , HSA.y 2.0
+            , HSA.width 20.0
+            , HSA.height 20.0
+            , HSA.stroke $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
+            , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
+            , HE.onClick $ const $ Render
+            -- , HP.style "cursor: pointer"
+            ]
+        ]
 
 
 handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () UI.NodeOutput m Unit
 handleAction = case _ of
     NoOp -> pure unit
-    Initialize -> do
-        { node } <- H.get
-        emitter <- E.fromInlet node "texture"
-        _ <- H.subscribe (maybe NoOp Render <<< Hydra.toTexture <$> emitter)
-        pure unit
-    Render texture -> do
-        -- { queue } <- H.get
-        let queue = Queue.just texture
+    Receive queue ->
+        H.modify_ (_ { queue = queue })
+    Render -> do
+        { queue } <- H.get
         liftEffect $ do
             Console.logShow $ Hydra.compileWithRender Compiler.friendly queue
             HydraE.evaluate $ Hydra.compileWithRender Compiler.compact  queue
@@ -104,6 +122,6 @@ component =
         , render
         , eval: H.mkEval H.defaultEval
             { handleAction = handleAction
-            , initialize = Just Initialize
+            , receive = Just <<< Receive <<< _.patchState
             }
         }

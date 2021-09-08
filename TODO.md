@@ -1,12 +1,18 @@
 
 * [v]: Pretty-print Hydra structure;
 * [v]: Dockerfile, fix deployment;
-* `Out` with a buffer number;
-* `to-buffer` and `from-buffer` nodes;
+* [v]: `Out` with a buffer number;
+* [v]: `to-buffer` and `from-buffer` nodes;
+* Render node;
 * Ribbons;
 * [v]: Don't show hidden inlets;
 * [v]: Color node with preview;
 * [v]: Palette node;
+* Bug: very often, Hydra rendering doesn't start at all;
+* Bug: send last value immediately on connection;
+* Bug: when dragged, nodes reset state;
+* Bug: when dragged, links disappear;
+* Bug: when user starts to drag node, it blinks;
 * Node for sequences — accepting values so that sequences could be joined;
 * Math node;
 * Pi node;
@@ -19,6 +25,7 @@
 * Caluclate the number of links for slots and support styling the "empty" ones differently;
 * Different link styles;
 * Different connector styles;
+* Move CSS to `purescript-css`;
 * Value editors;
 * Preview sequences;
 * Finish remove-node buttons;
@@ -35,3 +42,4 @@
 * Layouts are just positions bounds to components, unify searching by position, adding items etc. to them;
 * Some universal layouting like `elm-ui`, but for `purs`;
 * `NoodleM`, which has `patch_state` as state and also provides access to inlets and outlets — so what can be used in `effectful` processing function of the node;
+* `Osc` and `Render` nodes have only logic, considering above (`NoodleM`) implemented, move this logic to the nodes definitions instead; Same with `Buffer` nodes — it's better to keep component's logic inside the component and `Hydra`-related logic (like, compulation) inside the nodes;

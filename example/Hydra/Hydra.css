@@ -18,3 +18,11 @@ foreignObject#hydra-holder {
 .palette-button rect {
     cursor: pointer;
 }
+
+.buffer-button rect {
+    cursor: pointer;
+}
+
+.render-button rect {
+    cursor: pointer;
+}

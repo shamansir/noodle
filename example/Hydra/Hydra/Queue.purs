@@ -20,6 +20,10 @@ empty :: Queue
 empty = Map.empty
 
 
+isEmpty :: Queue -> Boolean
+isEmpty = Map.isEmpty
+
+
 toUnfoldable :: forall f. Unfoldable f => Queue -> f (Buffer /\ Texture)
 toUnfoldable = Map.toUnfoldable
 

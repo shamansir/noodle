@@ -17,6 +17,7 @@ import Hydra.Component.Node.Seq as SeqNode
 import Hydra.Component.Node.Palette as PaletteNode
 import Hydra.Component.Node.Buffer as BufferNode
 import Hydra.Component.Node.Out as OutNode
+import Hydra.Component.Node.Render as RenderNode
 import Hydra.Toolkit.UI.State (State) as Toolkit
 import Hydra.Toolkit.UI.Action (Action) as Toolkit
 import Hydra.Toolkit.UI.Components as UI
@@ -62,6 +63,7 @@ hasControlArea "palette" = true
 hasControlArea "solid-pal" = true
 hasControlArea "to-buffer" = true
 hasControlArea "from-buffer" = true
+hasControlArea "render" = true
 hasControlArea _ = false
 
 
@@ -79,6 +81,7 @@ node "solid-pal"   = Just $ PaletteNode.component PaletteNode.Solid
 node "to-buffer"   = Just $ BufferNode.component BufferNode.ToBuffer
 node "from-buffer" = Just $ BufferNode.component BufferNode.FromBuffer
 node "out"         = Just $ OutNode.component
+node "render"      = Just $ RenderNode.component
 node _             = Nothing
 
 

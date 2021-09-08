@@ -117,61 +117,46 @@ solidPalette =
       (withOutlets
         >~ "palette" /\ Channel.texture
       )
-      $ Def.passThrough
+      Def.passThrough
 
 
 out :: Def Hydra
 out =
-    Def.defineEffectful
+    Def.define
       (withInlets
          ~< "texture" /\ Channel.texture
       )
       noOutlets
-      $ \inlets -> do
-          {-_ <- sequence $ do
-              texture <- "texture" <+ inlets
-              compiledStr <- Hydra.compile $ Hydra.queueToDefault texture
-              pure $ do
-                Console.logShow texture
-                HydraE.evaluate compiledStr -}
-          pure $ Def.passNothing
+      Def.doNothing
 
 
 toBuffer :: Def Hydra
 toBuffer =
-    Def.defineEffectful
+    Def.define
       (withInlets
          ~< "texture" /\ Channel.texture
       )
       (withOutlets
         >~ "buffer" /\ Channel.buffer
       )
-      $ \inlets -> do
-          {-_ <- sequence $ do
-              texture <- "texture" <+ inlets
-              compiledStr <- Hydra.compile $ Hydra.queueToDefault texture
-              pure $ do
-                Console.logShow texture
-                HydraE.evaluate compiledStr -}
-
-          pure $ Def.passNothing
+      Def.doNothing
 
 
 fromBuffer :: Def Hydra
 fromBuffer =
-    Def.defineEffectful
+    Def.define
       (withInlets
          ~< "buffer" /\ Channel.buffer
       )
       (withOutlets
         >~ "texture" /\ Channel.texture
       )
-      $ \inlets -> do
-          {- _ <- sequence $ do
-              texture <- "texture" <+ inlets
-              compiledStr <- Hydra.compile $ Hydra.queueToDefault texture
-              --pure $ pure unit
-              pure $ do
-                Console.logShow texture
-                HydraE.evaluate compiledStr -}
-          pure $ Def.passNothing
+      Def.doNothing
+
+
+render :: Def Hydra
+render =
+  Def.define
+      noInlets
+      noOutlets
+      Def.doNothing

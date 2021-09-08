@@ -27,6 +27,7 @@ toolkit =
     , "solid-pal" /\ Node.solidPalette
     ] <> (Gen.generate <$> Gen.all) <>
     [ "out" /\ Node.out
+    , "render" /\ Node.render
     , "from-buffer" /\ Node.fromBuffer
     , "to-buffer" /\ Node.toBuffer
     ]

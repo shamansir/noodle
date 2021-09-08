@@ -92,18 +92,22 @@ render :: forall m. State -> H.ComponentHTML Action () m
 render { mode, buffer, queue } =
     HS.g
         [ HSA.class_ $ H.ClassName "buffer-node" ]
-        [ (HS.g [] $ Array.mapWithIndex (bufferButton  0.0 $ C.rgb 0 0 127) sourceBuffers)
+        [ (HS.g [] $ Array.mapWithIndex (bufferButton  0.0 $ C.rgb 0 0 200) sourceBuffers)
         , (HS.g [] $ Array.mapWithIndex (bufferButton 18.0 $ C.rgb 0 127 0) outputBuffers)
         ]
     where
-        bufferButton y color idx buffer =
+        bufferButton y color idx otherBuffer =
             HS.g
-                [ HSA.class_ $ H.ClassName "buffer-button" ]
+                [ HSA.class_ $ H.ClassName "buffer-button"
+                ]
                 [ HS.circle
                     [ HSA.cx $ 7.0 + (toNumber $ idx `mod` 9) * 12.0
                     , HSA.cy $ y + 7.0 + (floor $ toNumber idx / 9.0) * 12.0
                     , HSA.stroke $ Just $ C.toSvg color
-                    , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
+                    , HSA.fill $ Just $ C.toSvg
+                        $ if otherBuffer == buffer
+                            then C.rgba 100 100 45 1.0
+                            else C.rgba 0 0 0 0.0
                     , HSA.strokeWidth 1.0
                     , HSA.r 5.0
                     ]
@@ -114,7 +118,7 @@ render { mode, buffer, queue } =
                     , HSA.height 10.0
                     , HSA.stroke $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
                     , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
-                    , HE.onClick $ const $ Select buffer
+                    , HE.onClick $ const $ Select otherBuffer
                     -- , HP.style "cursor: pointer"
                     ]
                 ]
