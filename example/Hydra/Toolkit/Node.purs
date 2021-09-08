@@ -90,7 +90,7 @@ palette :: Def Hydra
 palette =
     Def.define
       (withInlets
-        ~< "src" /\ Channel.texture
+        ~< "texture" /\ Channel.texture
         ~< "palette" /\ (Channel.modifier # Channel.hidden)
       )
       (withOutlets
@@ -101,7 +101,7 @@ palette =
             [ "palette" /\
                 (Tex
                   <$> ( Hydra.addModifier
-                        <$> (HydraE.entity =<< "src" <+ inlets)
+                        <$> (HydraE.entity =<< "texture" <+ inlets)
                         <*> (HydraE.modifier =<< "palette" <+ inlets)
                       )
                 )
@@ -124,12 +124,12 @@ out :: Def Hydra
 out =
     Def.defineEffectful
       (withInlets
-         ~< "src" /\ Channel.texture
+         ~< "texture" /\ Channel.texture
       )
       noOutlets
       $ \inlets -> do
           {-_ <- sequence $ do
-              texture <- "src" <+ inlets
+              texture <- "texture" <+ inlets
               compiledStr <- Hydra.compile $ Hydra.queueToDefault texture
               pure $ do
                 Console.logShow texture
@@ -148,7 +148,7 @@ toBuffer =
       )
       $ \inlets -> do
           {-_ <- sequence $ do
-              texture <- "src" <+ inlets
+              texture <- "texture" <+ inlets
               compiledStr <- Hydra.compile $ Hydra.queueToDefault texture
               pure $ do
                 Console.logShow texture
@@ -168,7 +168,7 @@ fromBuffer =
       )
       $ \inlets -> do
           {- _ <- sequence $ do
-              texture <- "src" <+ inlets
+              texture <- "texture" <+ inlets
               compiledStr <- Hydra.compile $ Hydra.queueToDefault texture
               --pure $ pure unit
               pure $ do

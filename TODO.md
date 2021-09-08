@@ -33,3 +33,5 @@
 * Hot/cold inlets;
 * Node Families and Channel IDs could be parameters of toolkit etc.;
 * Layouts are just positions bounds to components, unify searching by position, adding items etc. to them;
+* Some universal layouting like `elm-ui`, but for `purs`;
+* `NoodleM`, which has `patch_state` as state and also provides access to inlets and outlets — so what can be used in `effectful` processing function of the node;
