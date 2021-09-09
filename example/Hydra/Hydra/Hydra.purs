@@ -57,7 +57,7 @@ data Value
     | Dynamic Value
     | OfTime Value
     | Harmonic Int
-    -- Harmonic Int
+    -- Fast Value
     -- FN (Time -> Value)
 
 
@@ -109,7 +109,7 @@ data Blend
     | Blend { what :: Texture, amount :: Value }
     | Mult { what :: Texture, amount :: Value }
     | Diff { what :: Texture }
-    | Mask { what :: Texture }
+    | Mask { what :: Texture, reps :: Value, offset :: Value }
 
 
 data Modulate
@@ -405,7 +405,7 @@ instance ToFn Blend TextureOrValue where
     toFn (Blend vs) = fn "blend" [ "what" /\ t' vs.what, "amount" /\ v' vs.amount ]
     toFn (Mult vs)  = fn "mult" [ "what" /\ t' vs.what, "amount" /\ v' vs.amount ]
     toFn (Diff vs)  = fn "diff" [ "what" /\ t' vs.what ]
-    toFn (Mask vs)  = fn "mask" [ "what" /\ t' vs.what ]
+    toFn (Mask vs)  = fn "mask" [ "what" /\ t' vs.what, "reps" /\ v' vs.reps, "offset" /\ v' vs.offset ]
 
 
 instance ToFn Modulate TextureOrValue where
