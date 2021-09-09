@@ -112,7 +112,7 @@ instance ToFn String TextureOrValue where
     toFn "blend"     = fn "blend" $ vtt1 "texture" "what" "amount"
     toFn "mult"      = fn "mult" $ vtt1 "texture" "what" "amount"
     toFn "diff"      = fn "diff" $ vtt0 "texture" "what"
-    toFn "mask"      = fn "mask" $ vtt0 "texture" "what"
+    toFn "mask"      = fn "mask" $ vtt2 "texture" "what" "reps" "offset"
 
     {- Modulate -}
     toFn "mod-repeat"   = fn "mod-repeat" $ vtt4 "texture" "what" "repeat-x" "repeat-y" "offset-x" "offset-y"
@@ -171,7 +171,7 @@ generate' "layer" = fromFn2 (toFn "layer") Try.layer
 generate' "blend" = fromFn3 (toFn "blend") Try.blend
 generate' "mult"  = fromFn3 (toFn "mult")  Try.mult
 generate' "diff"  = fromFn2 (toFn "diff")  Try.diff
-generate' "mask"  = fromFn2 (toFn "mask")  Try.mask
+generate' "mask"  = fromFn4 (toFn "mask")  Try.mask
 {- Modulate -}
 generate' "mod-repeat"   = fromFn6 (toFn "mod-repeat")   Try.modRepeat
 generate' "mod-repeat-x" = fromFn4 (toFn "mod-repeat-x") Try.modRepeatX
