@@ -55,6 +55,7 @@ compileValue _ WindowHeight = "window.innerHeight"
 compileValue _ (Seq xs)     = "[" <> (String.joinWith "," $ show <$> xs) <> "]"
 compileValue _ Pi           = "Math.PI"
 compileValue _ (Harmonic n) = "a.fft[" <> show n <> "]"
+compileValue c (Fast n v)   = compileValue c v <> ".fast(" <> show n <> ")"
 compileValue c (Expr v1 op v2) =
     "(" <> compileValue c v1 <> compileOp op <> compileValue c v2 <> ")"
 compileValue c (Dynamic v) =

@@ -57,7 +57,7 @@ data Value
     | Dynamic Value
     | OfTime Value
     | Harmonic Int
-    -- Fast Value
+    | Fast Number Value -- TODO: allow only sequences
     -- FN (Time -> Value)
 
 
@@ -463,6 +463,7 @@ instance Show Value where
     show (OfTime v) = "{time -> " <> show v <> "}"
     show (Dynamic v) = "{* -> " <> show v <> "}"
     show (Harmonic n) = "{fft:" <> show n <> "}"
+    show (Fast n v) = "{fast " <> show n <> " " <> show v <> "}"
 
 
 instance Show Buffer where
