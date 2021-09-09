@@ -4,6 +4,7 @@ module Hydra.API where
 import Prelude (($), flip, (<<<))
 
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Array as Array
 
 import Hydra as H
 import Hydra.Queue as HQ
@@ -19,8 +20,12 @@ out :: H.Texture -> HQ.Queue
 out = HQ.just
 
 
-out' :: H.Buffer -> H.Texture -> H.Buffer /\ H.Texture
-out' = (/\)
+out' :: H.Buffer -> H.Texture -> HQ.Queue
+out' buf tex = queue $ Array.singleton $ out'' buf tex
+
+
+out'' :: H.Buffer -> H.Texture -> H.Buffer /\ H.Texture
+out'' = (/\)
 
 
 queue :: Array (H.Buffer /\ H.Texture) -> HQ.Queue
@@ -83,7 +88,79 @@ fft :: Int -> H.Value
 fft = H.Harmonic
 
 
--- TODO: expr
+{- ########## -}
+{- Expression -}
+{- ########## -}
+
+
+infixl 6 add' as /+/
+infixl 6 subtract as /-/
+infixl 7 multiply as /*/
+infixl 7 divide as ///
+
+
+-- implement arithmetics typeclasses on values?
+
+
+expr :: H.Op -> H.Value -> H.Value -> H.Value
+expr op v1 v2 = H.Expr v1 op v2
+
+
+add' :: H.Value -> H.Value -> H.Value
+add' = expr H.Addition
+
+
+subtract :: H.Value -> H.Value -> H.Value
+subtract = expr H.Subtraction
+
+
+multiply :: H.Value -> H.Value -> H.Value
+multiply = expr H.Multiplication
+
+
+divide :: H.Value -> H.Value -> H.Value
+divide = expr H.Division
+
+
+{- ###### -}
+{- Buffer -}
+{- ###### -}
+
+
+default :: H.Buffer
+default = H.Default
+
+
+o0 :: H.Buffer
+o0 = H.O0
+
+
+o1 :: H.Buffer
+o1 = H.O1
+
+
+o2 :: H.Buffer
+o2 = H.O2
+
+
+o3 :: H.Buffer
+o3 = H.O3
+
+
+s0 :: H.Buffer
+s0 = H.S0
+
+
+s1 :: H.Buffer
+s1 = H.S1
+
+
+s2 :: H.Buffer
+s2 = H.S2
+
+
+s3 :: H.Buffer
+s3 = H.S3
 
 
 {- ###### -}

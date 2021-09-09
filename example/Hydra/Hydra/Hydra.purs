@@ -29,17 +29,11 @@ derive instance eqBuffer :: Eq Buffer
 derive instance ordBuffer :: Ord Buffer
 
 
--- infixl 6 Plus as /+/
--- infixl 6 Subtract as /-/
--- infixl 7 Multiply as /*/
--- infixl 7 Divide as ///
-
-
 data Op
-    = Plus
-    | Divide
-    | Multiply
-    | Subtract
+    = Addition
+    | Division
+    | Multiplication
+    | Subtraction
 
 
 data Value
@@ -442,10 +436,10 @@ instance ToFn Modifier TextureOrValue where
 
 
 instance Show Op where
-    show Plus = "+"
-    show Subtract = "-"
-    show Multiply = "+"
-    show Divide = "/"
+    show Addition = "+"
+    show Subtraction = "-"
+    show Multiplication = "*"
+    show Division = "/"
 
 
 instance Show Value where

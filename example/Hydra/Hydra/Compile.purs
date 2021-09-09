@@ -37,10 +37,10 @@ compact = { argNames : false, newLines : false }
 
 
 compileOp :: Op -> String
-compileOp Plus = "+"
-compileOp Subtract = "-"
-compileOp Divide = "/"
-compileOp Multiply = "*"
+compileOp Addition = "+"
+compileOp Subtraction = "-"
+compileOp Division = "/"
+compileOp Multiplication = "*"
 
 
 compileValue :: Compiler -> Value -> String

@@ -12,7 +12,9 @@ import Data.Maybe (Maybe(..))
 import Data.Vec2 ((<+>))
 
 
-import Hydra as H
+--import Hydra as H
+import Hydra.API as H
+import Hydra.API ((/*/), (///))
 import Hydra.Compile (compact) as Compiler
 import Hydra.Compile (compile, compileWithRender)
 import Hydra.Queue (Queue)
@@ -30,44 +32,46 @@ spec = do
             Queue.empty `shouldCompileTo` ""
 
         it "just oscillator" $ do
-            (Queue.just
-                $ H.textureOf
-                $ H.Osc { freq : H.Num 60.0, sync : H.Num 0.1, offset : H.Num 0.0 }
+            (H.osc (H.n 60.0) (H.n 0.1) (H.n 0.0)
+                # H.out
             )
                 `shouldCompileTo`
                 "osc(60.0,0.1,0.0).out()"
 
         it "oscillator built with expressions (book example #1)" $ do
-            (Queue.atBuffer H.O0
-                $ H.textureOf
-                $ H.Osc
-                    { freq : H.Expr (H.Expr H.Pi H.Multiply $ H.Num 2.0) H.Multiply $ H.Num 10.0
-                    , sync : H.Num 0.0
-                    , offset : H.Num 0.0
-                    }
-              )
+
+            -- Original: osc(Math.PI*2*10,0).out(o0)
+
+            (H.osc2 (H.pi /*/ H.n 2.0 /*/ H.n 10.0) (H.n 0.0)
+                # H.out' H.o0
+            )
                 `shouldCompileTo`
                 "osc(((Math.PI*2.0)*10.0),0.0,0.0).out(o0)"
 
         it "several buffers sent to `render` (book example #2)" $ do
-            (Queue.fromFoldable
-                [ H.O0 /\
-                    (H.textureOf
-                        $ H.Osc
-                            { freq : H.Num 40.0, sync : H.Num 0.0, offset : H.Num 0.0 }
-                    )
-                , H.O1 /\
-                    H.withModifiers
-                        (H.textureOf $ H.Source H.O0)
-                        [ H.color $ H.Tresh { treshold : H.Num 0.5, tolerance : H.Num 0.04 } ]
-                , H.O2 /\
-                    H.withModifiers
-                        (H.textureOf $ H.Source H.O0)
-                        [ H.color $ H.Posterize { bins : H.Num 3.0, gamma : H.Num 1.0 } ]
-                , H.O3 /\
-                    H.withModifiers
-                        (H.textureOf $ H.Source H.O0)
-                        [ H.geometry $ H.Pixelate { pixelX : H.Num 20.0, pixelY : H.Num 20.0 } ]
+
+            {- Original:
+
+            osc(40,0).out(o0)
+            src(o0).thresh().out(o1)
+            src(o0).posterize(3,1).out(o2)
+            src(o0).pixelate(20, 20).out(o3)
+            render()
+
+            -}
+
+            (H.queue
+                [ H.osc2 (H.n 40.0) (H.n 0.0)
+                    # H.out'' H.o0
+                , H.src H.o0
+                    # H.tresh0
+                    # H.out'' H.o1
+                , H.src H.o0
+                    # H.posterize (H.n 3.0) (H.n 1.0)
+                    # H.out'' H.o2
+                , H.src H.o0
+                    # H.pixelate (H.n 20.0) (H.n 20.0)
+                    # H.out'' H.o3
                 ]
             )
                 `shouldCompileWithRenderTo`
@@ -78,66 +82,62 @@ src(o0).pixelate(20.0,20.0).out(o3)
 render()"""
 
         it "(book example #3)" $ do
-            (Queue.atBuffer H.O0
-                $ H.withModifiers
-                    (H.textureOf
-                        $ H.Osc
-                            { freq : H.Num 200.0, sync : H.Num 0.0, offset : H.Num 0.0 }
-                    )
-                [ H.geometry $ H.Kaleid { nSides : H.Num 99.0 } ]
 
-              )
+            -- Original: osc(200, 0).kaleid(99).out(o0)
+
+            (H.osc2 (H.n 200.0) (H.n 0.0)
+                # H.kaleid (H.n 99.0)
+                # H.out' H.o0
+            )
                 `shouldCompileTo`
                 "osc(200.0,0.0,0.0).kaleid(99.0).out(o0)"
 
         it "modifier with a function inside (book example #3.2)" $ do
-            (Queue.atBuffer H.O0
-                $ H.withModifiers
-                    (H.textureOf
-                        $ H.Osc
-                            { freq : H.Num 40.0, sync : H.Num 0.0, offset : H.Num 0.0 }
-                    )
-                [ H.color $ H.Tresh { treshold : H.Num 0.5, tolerance : H.Num 0.04 }
-                , H.geometry $ H.Kaleid { nSides : H.Num 99.0 }
-                , H.geometry $ H.Scale
-                    { amount : H.Num 1.0
-                    , xMult : H.Num 1.0
-                    , yMult : H.Dynamic $ H.Expr H.WindowWidth H.Divide H.WindowHeight
-                    , offsetX : H.Num 0.0
-                    , offsetY : H.Num 0.0
-                    }
-                ]
 
-              )
+            {- Original:
+
+            osc(40,0)
+                .thresh()
+                .kaleid(3)
+                .scale(1,1,()=>window.innerWidth/window.innerHeight)
+                .out(o0)
+            -}
+
+            (H.osc2 (H.n 40.0) (H.n 0.0)
+                # H.tresh0
+                # H.kaleid (H.n 99.0)
+                # H.scale3 (H.n 1.0) (H.n 1.0) (H.dyn $ H.windowWidth /// H.windowHeight)
+                # H.out' H.o0
+            )
                 `shouldCompileTo`
                 "osc(40.0,0.0,0.0).tresh(0.5,0.04).kaleid(99.0).scale(1.0,1.0,() => (window.innerWidth/window.innerHeight),0.0,0.0).out(o0)"
 
 
         it "blends, where texture is an argument (book example #10)" $ do
-            (Queue.atBuffer H.O0
-                $ H.withModifiers
-                    (H.textureOf
-                        $ H.Shape
-                            { radius : H.Num 0.7, sides : H.Num 4.0, smoothing : H.Num 0.0 }
+
+            {- Original:
+
+            shape(4,0.9)
+                .diff(
+                    src(o0)
+                        .scale(0.9)
+                        .mask(shape(4,0.9,0.01))
+                        .rotate(0.1)
+                )
+                .out(o0)
+            -}
+
+            (H.shape2 (H.n 4.0) (H.n 0.9)
+                # H.diff
+                    (H.src H.o0
+                        # H.scale1 (H.n 0.9)
+                        # H.mask0 (H.shape (H.n 4.0) (H.n 0.9) (H.n 0.01))
+                        # H.rotate1 (H.n 0.1)
                     )
-                    [ H.blend $ H.Diff
-                        { what :
-                            H.withModifiers
-                                (H.textureOf $ H.Source H.O0)
-                                [ H.geometry $ H.ScrollX { scrollX : H.Num 0.01, speed : H.Num 0.0 }
-                                , H.blend $ H.Mask
-                                    { what : H.textureOf
-                                        $ H.Shape
-                                        { radius : H.Num 0.7, sides : H.Num 4.0, smoothing : H.Num 0.0 }
-                                    , reps : H.Num 3.0
-                                    , offset : H.Num 0.5
-                                    }
-                                ]
-                        }
-                    ]
-              )
+                # H.out' H.o0
+            )
                 `shouldCompileTo`
-                "shape(4.0,0.7,0.0).diff(src(o0).scrollX(0.01,0.0).mask(shape(4.0,0.7,0.0),3.0,0.5)).out(o0)"
+                "shape(4.0,0.9,0.01).diff(src(o0).scale(0.9,1.0,1.0,0.0,0.0).mask(shape(4.0,0.9,0.01),3.0,0.5).rotate(0.1,0.0)).out(o0)"
 
 
 shouldCompileTo
