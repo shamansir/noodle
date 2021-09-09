@@ -75,7 +75,10 @@ import App.Component.Patch.Mouse (Draggable(..)) as Draggable
 type Slot id = forall query. H.Slot query Void id
 
 
-type Slots = ( node :: NodeC.Slot Node.Id, link :: Link.Slot Int )
+type Slots patch_action =
+    ( node :: NodeC.Slot patch_action Node.Id
+    , link :: Link.Slot Int
+    )
 
 
 _node = Proxy :: Proxy "node"
@@ -90,7 +93,8 @@ type Input patch_action patch_state d m =
     , style :: Style
     , flow :: NodeFlow
     , offset :: Pos
-    , customNodeBody :: Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state d m)
+    , customNodeBody ::
+            Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state d m)
     , markings :: UI.Markings
     , getFlags :: UI.GetFlags
     , area :: Size
@@ -104,7 +108,8 @@ type State patch_action patch_state d m =
     , style :: Style
     , flow :: NodeFlow
     , offset :: Pos
-    , customNodeBody :: Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state d m)
+    , customNodeBody ::
+            Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state d m)
     , markings :: UI.Markings
     , getFlags :: UI.GetFlags
     , area :: Size
@@ -117,10 +122,10 @@ type State patch_action patch_state d m =
     }
 
 
-data Action
+data Action patch_action
     = Initialize
     | Receive RInput
-    | FromNode Node.Id NodeC.Output
+    | FromNode Node.Id (NodeC.Output patch_action)
     | AddNode Node.Family
     | DetachNode Node.Id
     | PinNode Node.Id Pos
@@ -152,7 +157,7 @@ render
     :: forall patch_action patch_state d m
      . MonadEffect m
     => State patch_action patch_state d m
-    -> H.ComponentHTML Action Slots m
+    -> H.ComponentHTML (Action patch_action) (Slots patch_action) m
 render state =
     HS.g
         []
@@ -300,8 +305,8 @@ render state =
 handleAction
     :: forall output patch_action patch_state d m
      . MonadEffect m
-    => Action
-    -> H.HalogenM (State patch_action patch_state d m) Action Slots output m Unit
+    => Action patch_action
+    -> H.HalogenM (State patch_action patch_state d m) (Action patch_action) (Slots patch_action) output m Unit
 handleAction = case _ of
 
     Initialize -> do
@@ -376,6 +381,9 @@ handleAction = case _ of
         state <- H.get
         nextPatch <- liftEffect $ Patch.removeNode nodeId state.patch
         H.modify_ (_ { patch = nextPatch })
+
+    FromNode _ (NodeC.ToPatch patchAction) -> do
+        pure unit -- FIXME
 
     HandleMouse _ mouseEvent -> do
         state <- H.get

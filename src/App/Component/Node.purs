@@ -52,15 +52,16 @@ debug :: Boolean
 debug = false
 
 
-type Slot id = forall query. H.Slot query Output id
+type Slot patch_action id = forall query. H.Slot query (Output patch_action) id
 
 
 type Slots patch_action d = ( body :: UI.NodeSlot patch_action d Node.Id )
 
 
-data Output
+data Output patch_action
     = Remove
     | Replace Node.Family
+    | ToPatch patch_action
 
 
 _body = Proxy :: Proxy "body"
@@ -360,7 +361,12 @@ handleAction
     :: forall patch_action patch_state d m
      . MonadEffect m
     => Action patch_action patch_state d
-    -> H.HalogenM (State patch_action patch_state d m) (Action patch_action patch_state d) (Slots patch_action d) Output m Unit
+    -> H.HalogenM
+            (State patch_action patch_state d m)
+            (Action patch_action patch_state d)
+            (Slots patch_action d)
+            (Output patch_action)
+            m Unit
 handleAction = case _ of
     Receive input ->
         H.modify_
@@ -372,6 +378,9 @@ handleAction = case _ of
                     }
             )
 
+    RequestRemove -> do
+        H.raise Remove
+
     FromNode (UI.SendToOutlet outlet d) -> do
         state <- H.get
         liftEffect (state.node ++> (outlet /\ d))
@@ -380,14 +389,11 @@ handleAction = case _ of
         state <- H.get
         liftEffect (state.node +> (inlet /\ d))
 
-    RequestRemove -> do
-        H.raise Remove
-
     FromNode (UI.Replace family) -> do
         H.raise $ Replace family
 
-    FromNode (UI.ToPatch patchState) ->
-        pure unit -- TODO
+    FromNode (UI.ToPatch patchAction) ->
+        H.raise $ ToPatch patchAction
 
     NoOp ->
         pure unit
@@ -397,7 +403,7 @@ extract :: forall patch_action patch_state d m. Input patch_action patch_state d
 extract { node, linksCount, patchState } = { node, linksCount, patchState }
 
 
-component :: forall query patch_action patch_state d m. MonadEffect m => H.Component query (Input patch_action patch_state d m) Output m
+component :: forall query patch_action patch_state d m. MonadEffect m => H.Component query (Input patch_action patch_state d m) (Output patch_action) m
 component =
     H.mkComponent
         { initialState
