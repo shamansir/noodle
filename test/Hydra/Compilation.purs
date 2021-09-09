@@ -129,13 +129,15 @@ render()"""
                                     { what : H.textureOf
                                         $ H.Shape
                                         { radius : H.Num 0.7, sides : H.Num 4.0, smoothing : H.Num 0.0 }
+                                    , reps : H.Num 3.0
+                                    , offset : H.Num 0.5
                                     }
                                 ]
                         }
                     ]
               )
                 `shouldCompileTo`
-                "shape(4.0,0.7,0.0).diff(src(o0).scrollX(0.01,0.0).mask(shape(4.0,0.7,0.0))).out(o0)"
+                "shape(4.0,0.7,0.0).diff(src(o0).scrollX(0.01,0.0).mask(shape(4.0,0.7,0.0),3.0,0.5)).out(o0)"
 
 
 shouldCompileTo

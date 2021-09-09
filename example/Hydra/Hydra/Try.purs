@@ -303,12 +303,12 @@ diff =
         )
 
 
-mask :: H.HydraTTFn0M
+mask :: H.HydraTTFn2M
 mask =
-    tryTTM
-        ( H.defaultTexture /\ H.defaultTexture )
-        (\trg src ->
-            Tex $ H.addModifier trg $ H.blend $ Mask { what : src }
+    tryTTV2M
+        ( H.defaultTexture /\ H.defaultTexture /\ Num 3.0 /\ Num 0.5 )
+        (\trg src reps offset ->
+            Tex $ H.addModifier trg $ H.blend $ Mask { what : src, reps, offset }
         )
 
 
