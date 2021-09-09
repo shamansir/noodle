@@ -37,7 +37,7 @@ spec = do
                 `shouldCompileTo`
                 "osc(60.0,0.1,0.0).out()"
 
-        it "Book example #1" $ do
+        it "oscillator built with expressions (book example #1)" $ do
             (Queue.atBuffer H.O0
                 $ H.textureOf
                 $ H.Osc
@@ -49,7 +49,7 @@ spec = do
                 `shouldCompileTo`
                 "osc(((Math.PI*2.0)*10.0),0.0,0.0).out(o0)"
 
-        it "Book example #2" $ do
+        it "several buffers sent to `render` (book example #2)" $ do
             (Queue.fromFoldable
                 [ H.O0 /\
                     (H.textureOf
@@ -77,7 +77,7 @@ src(o0).posterize(3.0,1.0).out(o2)
 src(o0).pixelate(20.0,20.0).out(o3)
 render()"""
 
-        it "Book example #3" $ do
+        it "(book example #3)" $ do
             (Queue.atBuffer H.O0
                 $ H.withModifiers
                     (H.textureOf
@@ -90,7 +90,7 @@ render()"""
                 `shouldCompileTo`
                 "osc(200.0,0.0,0.0).kaleid(99.0).out(o0)"
 
-        it "Book example #3, v2" $ do
+        it "modifier with a function inside (book example #3.2)" $ do
             (Queue.atBuffer H.O0
                 $ H.withModifiers
                     (H.textureOf
@@ -111,6 +111,31 @@ render()"""
               )
                 `shouldCompileTo`
                 "osc(40.0,0.0,0.0).tresh(0.5,0.04).kaleid(99.0).scale(1.0,1.0,() => (window.innerWidth/window.innerHeight),0.0,0.0).out(o0)"
+
+
+        it "blends, where texture is an argument (book example #10)" $ do
+            (Queue.atBuffer H.O0
+                $ H.withModifiers
+                    (H.textureOf
+                        $ H.Shape
+                            { radius : H.Num 0.7, sides : H.Num 4.0, smoothing : H.Num 0.0 }
+                    )
+                    [ H.blend $ H.Diff
+                        { what :
+                            H.withModifiers
+                                (H.textureOf $ H.Source H.O0)
+                                [ H.geometry $ H.ScrollX { scrollX : H.Num 0.01, speed : H.Num 0.0 }
+                                , H.blend $ H.Mask
+                                    { what : H.textureOf
+                                        $ H.Shape
+                                        { radius : H.Num 0.7, sides : H.Num 4.0, smoothing : H.Num 0.0 }
+                                    }
+                                ]
+                        }
+                    ]
+              )
+                `shouldCompileTo`
+                "shape(4.0,0.7,0.0).diff(src(o0).scrollX(0.01,0.0).mask(shape(4.0,0.7,0.0))).out(o0)"
 
 
 shouldCompileTo
