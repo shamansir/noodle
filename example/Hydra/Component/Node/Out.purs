@@ -92,8 +92,8 @@ handleAction = case _ of
         -- { queue } <- H.get
         let queue = Queue.just texture
         liftEffect $ do
-            Console.logShow $ Hydra.compileWithRender Compiler.friendly queue
-            HydraE.evaluate $ Hydra.compileWithRender Compiler.compact  queue
+            Console.log $ Hydra.compile Compiler.friendly queue
+            HydraE.evaluate $ Hydra.compile Compiler.compact queue
         pure unit
 
 

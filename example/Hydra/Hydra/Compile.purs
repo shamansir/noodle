@@ -131,16 +131,16 @@ compile compiler queue =
         ouputCode (Default /\ tex) =
             compileTexture compiler tex <>
                 (if compiler.newLines then "\n   " else "")
-                <> ".out()"
+                <> ".out();"
         ouputCode (buf     /\ tex) =
             compileTexture compiler tex <>
                 (if compiler.newLines then "\n   " else "")
-                <> ".out(" <> compileBuffer buf <> ")"
+                <> ".out(" <> compileBuffer buf <> ");"
 
 
 compileWithRender :: Compiler -> Queue -> String
 compileWithRender compiler queue  =
-    compile compiler queue <> if compiler.newLines then "\n\n    render()" else "\nrender()"
+    compile compiler queue <> if compiler.newLines then "\n\n    render();" else "\nrender();"
 
 
 {- compile :: Hydra -> Maybe String -- TODO: Compile only out-specs?

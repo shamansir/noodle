@@ -110,7 +110,7 @@ handleAction = case _ of
     Render -> do
         { queue } <- H.get
         liftEffect $ do
-            Console.logShow $ Hydra.compileWithRender Compiler.friendly queue
+            Console.log $ Hydra.compileWithRender Compiler.friendly queue
             HydraE.evaluate $ Hydra.compileWithRender Compiler.compact  queue
         pure unit
 

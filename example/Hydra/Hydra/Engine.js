@@ -12,6 +12,6 @@ exports.init = function(canvasId) {
 exports.evaluate = function(hydraCode) {
     return function() {
         console.log(hydraCode);
-        Function('"use strict";return (' + hydraCode + ')')();
+        Function('"use strict";return (function(){' + hydraCode + '})')()();
     }
 };
