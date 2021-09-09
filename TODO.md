@@ -1,47 +1,72 @@
+## Bugs:
 
+* `patch_state` seems not to be updated for nodes, see Render node and `Queue`;
+* very often, Hydra rendering doesn't start at all;
+* send last value immediately on connection;
+* when dragged, nodes reset state;
+* when dragged, links disappear;
+* when user starts to drag node, it blinks;
+* link overlaps the inlet/outlet hover area;
+* Some nodes are harder to drag after adding them;
+* Why sometimes Hydra output is not working;
+
+## Existing nodes:
+
+* Knobs controls instead of numbers items in `Num` nodes;
+* Preview sequences;
+
+## App features:
+
+* [v]: Don't show hidden inlets;
+* Disconnect links when they're clicked;
+* [v]: Caluclate the number of links for slots and support styling the "empty" ones differently, be able to dim slot if it's not connected to anything;
+* Show values on the slots;
+* Value editors;
+* Ribbons;
+* [v] Finish remove-node buttons;
+* Better layouting, may be using `Flex` layout;
+* [v]: Hover areas are still not perfect;
+* Hot/cold inlets;
+
+## API
+
+* Find a way to make `Node`s a `Functor`, to be able to map data;
+* `NoodleM`, which has `patch_state` as state and also provides access to inlets and outlets — so what can be used in `effectful` processing function of the node;
+* `Osc` and `Render` nodes have only logic, considering above (`NoodleM`) implemented, move this logic to the nodes definitions instead; Same with `Buffer` nodes — it's better to keep component's logic inside the component and `Hydra`-related logic (like, compulation) inside the nodes;
+* `Hydra` as a separate purescript package?;
+* Node Families and Channel IDs could be parameters of toolkit etc., as types;
+* Layouts are just positions bounds to components, unify searching by position, adding items etc. to them;
+* Some universal layouting like `elm-ui`, but for `purs`;
+
+## Style
+
+* [v]: Different link styles;
+* [v]: Different connector styles;
+* Move CSS to `purescript-css`, use CSS styles constructor;
+
+## Oher:
+
+* [v]: Be able to compile expressions;
 * [v]: Pretty-print Hydra structure;
 * [v]: Dockerfile, fix deployment;
+
+## New nodes:
+
 * [v]: `Out` with a buffer number;
 * [v]: `to-buffer` and `from-buffer` nodes;
 * Render node;
-* Ribbons;
-* [v]: Don't show hidden inlets;
-* [v]: Color node with preview;
-* [v]: Palette node;
 * Fast node;
-* Bug: `patch_state` seems not to be updated for nodes, see Render node and `Queue`;
-* Bug: very often, Hydra rendering doesn't start at all;
-* Bug: send last value immediately on connection;
-* Bug: when dragged, nodes reset state;
-* Bug: when dragged, links disappear;
-* Bug: when user starts to drag node, it blinks;
-* Node for sequences — accepting values so that sequences could be joined;
 * Math node;
 * Pi node;
+* [v] Time node;
+* [v]: Mouse.x / Mouse.y nodes;
+* Screen width / height nodes;
+* Canvas width / height nodes;
+* [~] Node for sequences — accepting values so that sequences could be joined;
 * Preview node (to see the contents of the output);
-* The nodes with some status display inside (i.e. `osc`);
-* The node with interactive control inside (i.e. knob in Num node);
-* Spreads node, min/max/step;
-* Be able to compile expressions;
+* [v] The nodes with some status display inside (i.e. `osc`);
+* [v] The node with interactive control inside (i.e. knob in Num node);
 * Nodes to help with expressions;
-* Caluclate the number of links for slots and support styling the "empty" ones differently;
-* Different link styles;
-* Different connector styles;
-* Move CSS to `purescript-css`;
-* Value editors;
-* Preview sequences;
-* Finish remove-node buttons;
-* Be able to dim slot if it's not connected to anything;
-* Use CSS styles constructor;
-* Find a way to make `Node`s a `Functor`, to be able to map data;
-* Better layouting, may be using `Flex` layout;
-* Hover areas are still not perfect;
-* Some nodes are harder to drag after adding them;
-* Why sometimes Hydra output is not working;
-* Blinking when user starts to drag the node;
-* Hot/cold inlets;
-* Node Families and Channel IDs could be parameters of toolkit etc.;
-* Layouts are just positions bounds to components, unify searching by position, adding items etc. to them;
-* Some universal layouting like `elm-ui`, but for `purs`;
-* `NoodleM`, which has `patch_state` as state and also provides access to inlets and outlets — so what can be used in `effectful` processing function of the node;
-* `Osc` and `Render` nodes have only logic, considering above (`NoodleM`) implemented, move this logic to the nodes definitions instead; Same with `Buffer` nodes — it's better to keep component's logic inside the component and `Hydra`-related logic (like, compulation) inside the nodes;
+* Spreads node, min/max/step;
+* [v]: Color node with preview;
+* [v]: Palette node;
