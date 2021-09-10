@@ -72,7 +72,7 @@ import App.Component.Patch.Mouse (Clickable(..)) as Clickable
 import App.Component.Patch.Mouse (Draggable(..)) as Draggable
 
 
-type Slot id = forall query. H.Slot query Void id
+type Slot patch_action id = forall query. H.Slot query patch_action id
 
 
 type Slots patch_action =
@@ -303,10 +303,10 @@ render state =
 
 
 handleAction
-    :: forall output patch_action patch_state d m
+    :: forall patch_action patch_state d m
      . MonadEffect m
     => Action patch_action
-    -> H.HalogenM (State patch_action patch_state d m) (Action patch_action) (Slots patch_action) output m Unit
+    -> H.HalogenM (State patch_action patch_state d m) (Action patch_action) (Slots patch_action) patch_action m Unit
 handleAction = case _ of
 
     Initialize -> do
@@ -375,7 +375,7 @@ handleAction = case _ of
         H.modify_ (_ { patch = nextPatch })
 
     FromNode nodeId (NodeC.Replace family) ->
-        pure unit
+        pure unit -- FIXME
 
     FromNode nodeId NodeC.Remove -> do
         state <- H.get
@@ -383,7 +383,7 @@ handleAction = case _ of
         H.modify_ (_ { patch = nextPatch })
 
     FromNode _ (NodeC.ToPatch patchAction) -> do
-        pure unit -- FIXME
+        H.raise patchAction
 
     HandleMouse _ mouseEvent -> do
         state <- H.get
@@ -466,7 +466,10 @@ extract :: forall patch_action patch_state d m. Input patch_action patch_state d
 extract { area } = { area }
 
 
-component :: forall query output patch_action patch_state d m. MonadEffect m => H.Component query (Input patch_action patch_state d m) output m
+component
+    :: forall query patch_action patch_state d m
+     . MonadEffect m
+    => H.Component query (Input patch_action patch_state d m) patch_action m
 component =
     H.mkComponent
         { initialState

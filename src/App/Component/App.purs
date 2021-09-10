@@ -41,9 +41,9 @@ import Web.HTML (window)
 import Web.HTML.Window as Window
 
 
-type Slots patch_action =
-    ( patch :: PatchC.Slot Unit
-    , tkPatch :: ToolkitUI.PatchSlot' patch_action Unit
+type Slots patch_action patch_state =
+    ( patch :: PatchC.Slot patch_action Unit
+    , tkPatch :: ToolkitUI.PatchSlot' patch_action patch_state Unit
     )
 
 
@@ -81,11 +81,13 @@ type State patch_action patch_state d m =
     }
 
 
-data Action
+data Action patch_action patch_state
     = Initialize
     | SelectPatch Patch.Id
     | AnimationFrame H.SubscriptionId Number
     | WindowResize H.SubscriptionId { w :: Int, h :: Int }
+    | ToPatch patch_action
+    | FromPatch (ToolkitUI.InformApp patch_state)
     -- | HandlePatch (PatchC.Action d)
 
 
@@ -105,7 +107,7 @@ render
     :: forall patch_action patch_state d m
      . MonadEffect m
     => State patch_action patch_state d m
-    -> H.ComponentHTML Action (Slots patch_action) m
+    -> H.ComponentHTML (Action patch_action patch_state) (Slots patch_action patch_state) m
 render (s@{ network, toolkit, style, flow }) =
     HH.div
         [ CSS.style $ do
@@ -148,7 +150,7 @@ render (s@{ network, toolkit, style, flow }) =
                             unit
                             tkPatchComp
                             { patch, size : s.windowSize, patchState : s.patchState }
-                            absurd
+                            FromPatch
                 ]
         patchesTabs = HS.g [ HSA.classes CS.patchesTabs ] (patchTab <$> Tuple.fst <$> Network.patches network)
         patchTab label =
@@ -175,7 +177,7 @@ render (s@{ network, toolkit, style, flow }) =
                     , area : s.windowSize - patchOffset
                     , patchState : s.patchState
                     }
-                    absurd
+                    ToPatch
                 ]
         maybeCurrent Nothing =
             HS.text
@@ -186,8 +188,8 @@ render (s@{ network, toolkit, style, flow }) =
 handleAction
     :: forall output patch_action patch_state d m
      . MonadAff m => MonadEffect m
-    => Action
-    -> H.HalogenM (State patch_action patch_state d m) Action (Slots patch_action) output m Unit
+    => Action patch_action patch_state
+    -> H.HalogenM (State patch_action patch_state d m) (Action patch_action patch_state) (Slots patch_action patch_state) output m Unit
 handleAction = case _ of
     Initialize -> do
         innerWidth <- H.liftEffect $ Window.innerWidth =<< window
@@ -208,6 +210,11 @@ handleAction = case _ of
     WindowResize _ { w, h } ->
         H.modify_ \state -> state
             { windowSize = toNumber w <+> toNumber h }
+    ToPatch patchAction ->
+        H.tell _tkPatch unit $ ToolkitUI.TellPatch patchAction
+    FromPatch (ToolkitUI.Next patchState) ->
+        H.modify_ \state -> state
+            { patchState = patchState }
 
 
 component

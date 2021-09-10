@@ -20,14 +20,11 @@ type Components m = UI.Components' UI.Action UI.State Hydra m
 
 
 type NodeInput = UI.NodeInput' UI.State Hydra
-
-
 type NodeOutput = UI.NodeOutput' UI.Action Hydra
 
 
 type PatchInput = UI.PatchInput' UI.State Hydra
-
-
+type PatchOutput = UI.PatchOutput' UI.State
 type PatchQuery a = UI.PatchQuery' UI.Action a
 
 

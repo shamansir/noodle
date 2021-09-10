@@ -23,6 +23,8 @@ import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
 
 import Hydra.Toolkit.UI.Components as UI
+import App.Toolkit.UI (TellPatch(..), InformApp(..)) as UI
+import Hydra.Toolkit.UI.Action as ToolkitUI
 import Hydra.Queue (Queue)
 import Hydra.Queue as Queue
 
@@ -71,8 +73,11 @@ handleAction (Receive { size }) =
     H.modify_ $ _ { size = size }
 
 
-handleQuery :: forall action output m a. UI.PatchQuery a -> H.HalogenM State action () output m (Maybe a)
-handleQuery  _ = pure Nothing
+handleQuery :: forall action m a. UI.PatchQuery a -> H.HalogenM State action () UI.PatchOutput m (Maybe a)
+handleQuery (UI.TellPatch (ToolkitUI.Store buffer texture) a) = do
+    { queue }  <- H.modify (\state -> state { queue = state.queue # Queue.toBuffer buffer texture })
+    H.raise $ UI.Next queue
+    pure $ Just a
 
 
 component :: forall m. MonadEffect m => UI.PatchComponent m
