@@ -96,18 +96,22 @@ render { mode, buffer, queue } =
         , (HS.g [] $ Array.mapWithIndex (bufferButton 18.0 $ C.rgb 0 127 0) outputBuffers)
         ]
     where
+        fillFor otherBuffer =
+            if otherBuffer == buffer
+                then C.rgba 100 100 45 $ if isOwned otherBuffer then 0.5 else 1.0
+                else if isOwned otherBuffer then C.rgba 100 100 100 1.0 else C.rgba 0 0 0 0.0
+        isOwned =
+            flip Queue.isOwned queue
         bufferButton y color idx otherBuffer =
             HS.g
-                [ HSA.class_ $ H.ClassName "buffer-button"
+                [ {-HSA.class_ $ H.ClassName "buffer-button"
+                , -} HSA.class_ $ H.ClassName $ if isOwned otherBuffer then "buffer-button-owned" else "buffer-button-free"
                 ]
                 [ HS.circle
                     [ HSA.cx $ 7.0 + (toNumber $ idx `mod` 9) * 12.0
                     , HSA.cy $ y + 7.0 + (floor $ toNumber idx / 9.0) * 12.0
                     , HSA.stroke $ Just $ C.toSvg color
-                    , HSA.fill $ Just $ C.toSvg
-                        $ if otherBuffer == buffer
-                            then C.rgba 100 100 45 1.0
-                            else C.rgba 0 0 0 0.0
+                    , HSA.fill $ Just $ C.toSvg $ fillFor otherBuffer
                     , HSA.strokeWidth 1.0
                     , HSA.r 5.0
                     ]
@@ -118,7 +122,7 @@ render { mode, buffer, queue } =
                     , HSA.height 10.0
                     , HSA.stroke $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
                     , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
-                    , HE.onClick $ const $ Select otherBuffer
+                    , HE.onClick $ const $ if isOwned otherBuffer then NoOp else Select otherBuffer
                     -- , HP.style "cursor: pointer"
                     ]
                 ]

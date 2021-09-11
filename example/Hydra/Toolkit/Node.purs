@@ -136,18 +136,14 @@ toBuffer =
       (withInlets
          ~< "texture" /\ Channel.texture
       )
-      (withOutlets
-        >~ "buffer" /\ Channel.buffer
-      )
+      noOutlets
       Def.doNothing
 
 
 fromBuffer :: Def Hydra
 fromBuffer =
     Def.define
-      (withInlets
-         ~< "buffer" /\ Channel.buffer
-      )
+      noInlets
       (withOutlets
         >~ "texture" /\ Channel.texture
       )

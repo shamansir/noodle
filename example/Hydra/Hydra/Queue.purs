@@ -30,6 +30,10 @@ isEmpty :: Queue -> Boolean
 isEmpty = unwrap >>> Map.isEmpty
 
 
+isOwned :: Buffer -> Queue -> Boolean
+isOwned buf = unwrap >>> Map.member buf
+
+
 fromFoldable :: forall f. Foldable f => f (Buffer /\ Texture) -> Queue
 fromFoldable = Map.fromFoldable >>> Queue
 
