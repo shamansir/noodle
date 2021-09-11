@@ -122,9 +122,9 @@ type State patch_action patch_state d m =
     }
 
 
-data Action patch_action
+data Action patch_action patch_state
     = Initialize
-    | Receive RInput
+    | Receive (RInput patch_state)
     | FromNode Node.Id (NodeC.Output patch_action)
     | AddNode Node.Family
     | DetachNode Node.Id
@@ -134,12 +134,16 @@ data Action patch_action
     | HandleMouse H.SubscriptionId ME.MouseEvent -- TODO Split mouse handing in different actions
 
 
-type RInput =
+type RInput patch_state =
     { area :: Size
+    , patchState :: patch_state
     }
 
 
-initialState :: forall patch_action patch_state d m. Input patch_action patch_state d m -> State patch_action patch_state d m
+initialState
+    :: forall patch_action patch_state d m
+     . Input patch_action patch_state d m
+    -> State patch_action patch_state d m
 initialState i@{ patch, toolkit, style, flow, area } =
     { patch, toolkit, style, flow, area
     , patchState : i.patchState, offset : i.offset
@@ -157,7 +161,7 @@ render
     :: forall patch_action patch_state d m
      . MonadEffect m
     => State patch_action patch_state d m
-    -> H.ComponentHTML (Action patch_action) (Slots patch_action) m
+    -> H.ComponentHTML (Action patch_action patch_state) (Slots patch_action) m
 render state =
     HS.g
         []
@@ -305,8 +309,8 @@ render state =
 handleAction
     :: forall patch_action patch_state d m
      . MonadEffect m
-    => Action patch_action
-    -> H.HalogenM (State patch_action patch_state d m) (Action patch_action) (Slots patch_action) patch_action m Unit
+    => Action patch_action patch_state
+    -> H.HalogenM (State patch_action patch_state d m) (Action patch_action patch_state) (Slots patch_action) patch_action m Unit
 handleAction = case _ of
 
     Initialize -> do
@@ -322,6 +326,7 @@ handleAction = case _ of
                     { area = input.area
                     , layout = state.layout # R2.reflow' input.area
                     , buttonStrip = state.buttonStrip # BS.reflow (V2.w input.area)
+                    , patchState = input.patchState
                     }
             )
 
@@ -462,8 +467,8 @@ handleAction = case _ of
             flip PB.search state.pinned
 
 
-extract :: forall patch_action patch_state d m. Input patch_action patch_state d m -> RInput
-extract { area } = { area }
+extract :: forall patch_action patch_state d m. Input patch_action patch_state d m -> RInput patch_state
+extract { area, patchState } = { area, patchState }
 
 
 component

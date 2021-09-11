@@ -4,6 +4,7 @@ module Hydra.Component.Patch where
 import Prelude
 
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Console as Console
 
 import Color.Extra as C
 
@@ -69,13 +70,15 @@ handleAction :: forall output m. MonadEffect m => Action -> H.HalogenM State Act
 handleAction Initialize = do
     _ <- liftEffect $ Hydra.init canvasId
     H.modify_ $ _ { hydraReady = true }
-handleAction (Receive { size }) =
-    H.modify_ $ _ { size = size }
+handleAction (Receive { size, patchState }) =
+    H.modify_ $ _ { size = size, queue = patchState }
 
 
 handleQuery :: forall action m a. UI.PatchQuery a -> H.HalogenM State action () UI.PatchOutput m (Maybe a)
 handleQuery (UI.TellPatch (ToolkitUI.Store buffer texture) a) = do
-    { queue }  <- H.modify (\state -> state { queue = state.queue # Queue.toBuffer buffer texture })
+    { queue } <-
+        H.modify \state ->
+                    state { queue = state.queue # Queue.toBuffer buffer texture }
     H.raise $ UI.Next queue
     pure $ Just a
 

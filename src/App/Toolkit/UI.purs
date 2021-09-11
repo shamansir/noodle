@@ -79,8 +79,8 @@ data InformApp patch_state
     = Next patch_state
 
 
-data TellPatch patch_action a =
-    TellPatch patch_action a
+data TellPatch patch_action a
+    = TellPatch patch_action a
 
 
 type PatchComponent d m = PatchComponent' Unit Unit d m

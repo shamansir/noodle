@@ -46,6 +46,9 @@
 
 ## Oher:
 
+* I don't like the fact `patch_state` is passed through all the components up and down, i.e.L
+    `User Node -> Patch -> App`  and then `App -> User Patch` and `App -> Patch -> User Node`
+    may be there's a way to simplify it?;
 * [v]: Be able to compile expressions;
 * [v]: Pretty-print Hydra structure;
 * [v]: Dockerfile, fix deployment;

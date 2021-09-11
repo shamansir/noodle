@@ -105,13 +105,13 @@ render { queue } =
 handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () UI.NodeOutput m Unit
 handleAction = case _ of
     NoOp -> pure unit
-    Receive queue ->
+    Receive queue -> do
         H.modify_ (_ { queue = queue })
     Render -> do
         { queue } <- H.get
         liftEffect $ do
             Console.log $ Hydra.compileWithRender Compiler.friendly queue
-            HydraE.evaluate $ Hydra.compileWithRender Compiler.compact  queue
+            HydraE.evaluate $ Hydra.compileWithRender Compiler.compact queue
         pure unit
 
 
