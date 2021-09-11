@@ -37,7 +37,7 @@ type NodeInput d = NodeInput' Unit d
 type NodeInput' patch_state d = { node :: Node d, patchState :: patch_state }
 
 
-type NodeOutput d = NodeOutput' Unit d
+type NodeOutput d = NodeOutput' Void d
 type NodeOutput' patch_action d = FromNode patch_action d
 
 
@@ -51,7 +51,7 @@ data FromNode patch_action d
     | ToPatch patch_action
 
 
-type NodeComponent d m = NodeComponent' Unit Unit d m
+type NodeComponent d m = NodeComponent' Void Unit d m
 type NodeComponent' patch_action patch_state d m =
     H.Component NodeQuery (NodeInput' patch_state d) (NodeOutput' patch_action d) m
 
@@ -59,7 +59,7 @@ type NodeComponent' patch_action patch_state d m =
 {- Patch -}
 
 
-type PatchSlot id = PatchSlot' Unit Unit id
+type PatchSlot id = PatchSlot' Void Unit id
 type PatchSlot' patch_action patch_state id = H.Slot (TellPatch patch_action) (InformApp patch_state) id
 
 
@@ -71,7 +71,7 @@ type PatchOutput = PatchOutput' Unit
 type PatchOutput' patch_state = InformApp patch_state
 
 
-type PatchQuery a = PatchQuery' Unit a
+type PatchQuery a = PatchQuery' Void a
 type PatchQuery' patch_action a = TellPatch patch_action a
 
 
@@ -83,7 +83,7 @@ data TellPatch patch_action a
     = TellPatch patch_action a
 
 
-type PatchComponent d m = PatchComponent' Unit Unit d m
+type PatchComponent d m = PatchComponent' Void Unit d m
 type PatchComponent' patch_action patch_state d m =
     H.Component (TellPatch patch_action) (PatchInput' patch_state d) (PatchOutput' patch_state) m
 
@@ -91,7 +91,7 @@ type PatchComponent' patch_action patch_state d m =
 {- Components -}
 
 
-type Components d m = Components' Unit Unit d m
+type Components d m = Components' Void Unit d m
 type Components' patch_action patch_state d m =
     { patch :: Maybe (PatchComponent' patch_action patch_state d m)
     , node :: Node.Family -> Maybe (NodeComponent' patch_action patch_state d m)
