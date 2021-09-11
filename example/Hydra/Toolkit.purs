@@ -22,6 +22,7 @@ toolkit =
     [ "num" /\ Node.number
     , "time" /\ Node.time
     , "mouse" /\ Node.mouse
+    , "pi" /\ Node.pi
     , "seq" /\ Node.seq
     , "palette" /\ Node.palette
     , "solid-pal" /\ Node.solidPalette

@@ -18,6 +18,7 @@ import Hydra.Component.Node.Palette as PaletteNode
 import Hydra.Component.Node.Buffer as BufferNode
 import Hydra.Component.Node.Out as OutNode
 import Hydra.Component.Node.Render as RenderNode
+import Hydra.Component.Node.Pi as PiNode
 import Hydra.Toolkit.UI.State (State) as Toolkit
 import Hydra.Toolkit.UI.Action (Action) as Toolkit
 import Hydra.Toolkit.UI.Components as UI
@@ -73,6 +74,7 @@ patch = Just Patch.component
 
 node :: forall m. MonadEffect m => Node.Family -> Maybe (UI.NodeComponent m)
 node "num"         = Just $ NumNode.component
+node "pi"          = Just $ PiNode.component
 node "osc"         = Just $ OscNode.component
 node "color"       = Just $ ColorNode.component
 node "seq"         = Just $ SeqNode.component

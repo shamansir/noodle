@@ -156,3 +156,13 @@ render =
       noInlets
       noOutlets
       Def.doNothing
+
+
+pi :: Def Hydra
+pi =
+    Def.define
+      noInlets
+      (withOutlets
+        >~ "pi" /\ Channel.value
+      )
+      Def.doNothing

@@ -139,6 +139,8 @@ data Hydra
     | Buf Buffer
 
 
+-- FIXME: use API for everything below
+
 default :: Hydra
 default = None
 
@@ -187,6 +189,10 @@ num :: Number -> Hydra
 num = Val <<< Num
 
 
+pi :: Hydra
+pi = Val Pi
+
+
 time :: Hydra
 time = Val Time
 
@@ -217,6 +223,9 @@ defaultSource = Osc { freq : Num 60.0, sync : Num 0.1, offset : Num 0.0 }
 
 defaultTexture :: Texture
 defaultTexture = textureOf defaultSource
+
+
+-- FIXME: use API for everything above
 
 
 isValue :: Hydra -> Boolean
