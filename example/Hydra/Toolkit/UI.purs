@@ -20,6 +20,7 @@ import Hydra.Component.Node.Out as OutNode
 import Hydra.Component.Node.Render as RenderNode
 import Hydra.Component.Node.Pi as PiNode
 import Hydra.Component.Node.Math as MathNode
+import Hydra.Component.Node.Fast as FastNode
 import Hydra.Toolkit.UI.State (State) as Toolkit
 import Hydra.Toolkit.UI.Action (Action) as Toolkit
 import Hydra.Toolkit.UI.Components as UI
@@ -87,6 +88,7 @@ node "from-buffer" = Just $ BufferNode.component BufferNode.FromBuffer
 node "out"         = Just $ OutNode.component
 node "render"      = Just $ RenderNode.component
 node "math"        = Just $ MathNode.component
+node "fast"        = Just $ FastNode.component
 node _             = Nothing
 
 

@@ -30,7 +30,8 @@
 
 ## API
 
-* Extracting values from inlets in Definitions is quite painful, why don't provide User with API with using `Channel`/`Shape` purposes?
+* Extracting values from inlets in Definitions is quite painful, why don't provide User with API with using `Channel`/`Shape` purposes (get rid of `Hydra.Extract`)?
+    * `SendToOutlet` / `SendToInlet` should also verify type;
 * Node Families and Channel IDs could be parameters of toolkit etc., as types;
 * Layouts are just positions bounds to components, unify searching by position, adding items etc. to them;
 * Some universal layouting like `elm-ui`, but for `purs`;

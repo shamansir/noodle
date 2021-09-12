@@ -185,3 +185,20 @@ math =
                 ("a"  <+ inlets)
                 ("op" <+ inlets)
                 ("b"  <+ inlets)
+
+
+fast :: Def Hydra
+fast =
+    Def.define
+      (withInlets
+        ~< "speed" /\ (Channel.value # Channel.hidden)
+        ~< "value" /\ Channel.value
+      )
+      (withOutlets
+        >~ "value" /\ Channel.value
+      )
+      $ \inlets ->
+        Def.passTo' $ "value" /\
+            HydraE.fastVal
+                ("speed" <+ inlets)
+                ("value" <+ inlets)

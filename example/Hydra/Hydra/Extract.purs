@@ -71,3 +71,8 @@ buildSeq5 h1 h2 h3 h4 h5 =
 performMaybe :: Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra
 performMaybe (Just (Val valA)) (Just (Op op)) (Just (Val valB)) = Just $ Val $ Hydra.expr op valA valB
 performMaybe _                 _              _                 = Nothing
+
+
+fastVal :: Maybe Hydra -> Maybe Hydra -> Maybe Hydra
+fastVal (Just (Val (Num n))) (Just (Val v)) = Just $ Val $ Fast n v
+fastVal _                    _              = Nothing
