@@ -29,11 +29,14 @@ derive instance eqBuffer :: Eq Buffer
 derive instance ordBuffer :: Ord Buffer
 
 
-data Op
+data Operation
     = Addition
     | Division
     | Multiplication
     | Subtraction
+
+
+derive instance eqOperation :: Eq Operation
 
 
 data Value
@@ -47,7 +50,7 @@ data Value
     | WindowWidth
     | WindowHeight
     | Pi
-    | Expr Value Op Value
+    | Expr Value Operation Value
     | Dynamic Value
     | OfTime Value
     | Harmonic Int
@@ -133,6 +136,7 @@ data Texture
 
 data Hydra
     = None
+    | Op  Operation
     | Val Value
     | Mod Modifier
     | Tex Texture
@@ -225,6 +229,10 @@ defaultTexture :: Texture
 defaultTexture = textureOf defaultSource
 
 
+fromOp :: Operation -> Hydra
+fromOp = Op
+
+
 -- FIXME: use API for everything above
 
 
@@ -246,6 +254,11 @@ isBuffer _ = false
 isTexture :: Hydra -> Boolean
 isTexture (Tex _) = true
 isTexture _ = false
+
+
+isOp :: Hydra -> Boolean
+isOp (Op _) = true
+isOp _ = false
 
 
 toValue :: Hydra -> Maybe Value
@@ -444,7 +457,7 @@ instance ToFn Modifier TextureOrValue where
     toFn (M modulate) = toFn modulate
 
 
-instance Show Op where
+instance Show Operation where
     show Addition = "+"
     show Subtraction = "-"
     show Multiplication = "*"
@@ -499,6 +512,7 @@ instance Show Modifier where
 
 instance Show Hydra where
     show None = "None"
+    show (Op op) = show op
     show (Val v) = show v
     show (Mod mod) = show mod
     show (Tex tex) = show tex

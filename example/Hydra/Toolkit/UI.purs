@@ -19,6 +19,7 @@ import Hydra.Component.Node.Buffer as BufferNode
 import Hydra.Component.Node.Out as OutNode
 import Hydra.Component.Node.Render as RenderNode
 import Hydra.Component.Node.Pi as PiNode
+import Hydra.Component.Node.Math as MathNode
 import Hydra.Toolkit.UI.State (State) as Toolkit
 import Hydra.Toolkit.UI.Action (Action) as Toolkit
 import Hydra.Toolkit.UI.Components as UI
@@ -65,6 +66,7 @@ hasControlArea "solid-pal" = true
 hasControlArea "to-buffer" = true
 hasControlArea "from-buffer" = true
 hasControlArea "render" = true
+hasControlArea "math" = true
 hasControlArea _ = false
 
 
@@ -84,6 +86,7 @@ node "to-buffer"   = Just $ BufferNode.component BufferNode.ToBuffer
 node "from-buffer" = Just $ BufferNode.component BufferNode.FromBuffer
 node "out"         = Just $ OutNode.component
 node "render"      = Just $ RenderNode.component
+node "math"        = Just $ MathNode.component
 node _             = Nothing
 
 

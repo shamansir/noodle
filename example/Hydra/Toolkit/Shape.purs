@@ -28,3 +28,8 @@ modifier =
 buffer :: Shape' Hydra
 buffer =
   Channel.shapeBy "buffer" None Hydra.isBuffer
+
+
+operation :: Shape' Hydra
+operation =
+  Channel.shapeBy "op" None Hydra.isOp

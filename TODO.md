@@ -30,13 +30,15 @@
 
 ## API
 
-* Find a way to make `Node`s a `Functor`, to be able to map data;
-* `NoodleM`, which has `patch_state` as state and also provides access to inlets and outlets — so what can be used in `effectful` processing function of the node;
-* `Osc` and `Render` nodes have only logic, considering above (`NoodleM`) implemented, move this logic to the nodes definitions instead; Same with `Buffer` nodes — it's better to keep component's logic inside the component and `Hydra`-related logic (like, compulation) inside the nodes;
-* `Hydra` as a separate purescript package?;
+* Extracting values from inlets in Definitions is quite painful, why don't provide User with API with using `Channel`/`Shape` purposes?
 * Node Families and Channel IDs could be parameters of toolkit etc., as types;
 * Layouts are just positions bounds to components, unify searching by position, adding items etc. to them;
 * Some universal layouting like `elm-ui`, but for `purs`;
+* `NoodleM`, which has `patch_state` as state and also provides access to inlets and outlets as a Free Monad (see `HalogenM`) — so what can be used in `effectful` processing function of the node;
+    * Should it only allow getting/modifiying user patch state and getting inlet values (adapted to types using channels) or should it provide the whole set of actions such as connecting nodes, sending values to outlets etc.? Or both should be there, just as different algebras?
+* `Osc` and `Render` nodes have only logic, considering above (`NoodleM`) implemented, move this logic to the nodes definitions instead; Same with `Buffer` nodes — it's better to keep component's logic inside the component and `Hydra`-related logic (like, compulation) inside the nodes;
+* Find a way to make `Node`s a `Functor`, to be able to map data;
+* `Hydra` as a separate purescript package?;
 
 ## Style
 

@@ -31,4 +31,5 @@ toolkit =
     , "render" /\ Node.render
     , "from-buffer" /\ Node.fromBuffer
     , "to-buffer" /\ Node.toBuffer
+    , "math" /\ Node.math
     ]

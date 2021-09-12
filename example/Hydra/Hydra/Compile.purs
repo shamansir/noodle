@@ -36,7 +36,7 @@ compact :: Compiler
 compact = { argNames : false, newLines : false }
 
 
-compileOp :: Op -> String
+compileOp :: Operation -> String
 compileOp Addition = "+"
 compileOp Subtraction = "-"
 compileOp Division = "/"

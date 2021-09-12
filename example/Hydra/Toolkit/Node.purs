@@ -12,7 +12,7 @@ import Data.Traversable (sequence)
 import Hydra (Hydra(..))
 import Hydra as Hydra
 import Hydra.Engine as HydraE
-import Hydra.Toolkit.Shape (texture, buffer, value, modifier) as Channel
+import Hydra.Toolkit.Shape (texture, buffer, value, modifier, operation) as Channel
 import Hydra.Compile (compile) as Hydra
 import Hydra.Try as Hydra
 import Hydra.Extract as HydraE
@@ -166,3 +166,22 @@ pi =
         >~ "pi" /\ Channel.value
       )
       Def.doNothing
+
+
+math :: Def Hydra
+math =
+    Def.define
+      (withInlets
+        ~< "a" /\ Channel.value
+        ~< "b" /\ Channel.value
+        ~< "op" /\ (Channel.operation # Channel.hidden)
+      )
+      (withOutlets
+        >~ "=" /\ Channel.value
+      )
+      $ \inlets ->
+        Def.passTo' $ "=" /\
+            HydraE.performMaybe
+                ("a"  <+ inlets)
+                ("op" <+ inlets)
+                ("b"  <+ inlets)

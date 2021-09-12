@@ -3,7 +3,8 @@ module Noodle.Node.Define
     , empty
     , define, defineEffectful
     , fromFn, fromFnEffectful
-    , receive, pass, pass', passNothing, passThrough, passThrough', doNothing, always, alwaysOne
+    , receive, pass, pass', passTo, passTo', passNothing, passThrough, passThrough'
+    , doNothing, always, alwaysOne
     , lastUpdateAt
     , dimensions, processWith, processEffectfulWith
     --, withFn1, withFn2, withFn3, withFn4, withFn5
@@ -131,17 +132,25 @@ pass :: forall d. Array (OutletId /\ d) -> Pass d
 pass values = Pass { toOutlets : Map.fromFoldable values }
 
 
+pass' :: forall d. Array (OutletId /\ Maybe d) -> Pass d
+--pass' = Pass <<< Map.fromFoldable <<< Array.mapMaybe sequence
+pass' values = Pass { toOutlets : Map.fromFoldable $ Array.mapMaybe sequence $ values }
+
+
+passTo :: forall d. OutletId /\ d -> Pass d
+passTo = pass <<< Array.singleton
+
+
+passTo' :: forall d. OutletId /\ Maybe d -> Pass d
+passTo' = pass' <<< Array.singleton
+
+
 always :: forall d. Array (OutletId /\ d) -> Receive d -> Pass d
 always = const <<< pass
 
 
 alwaysOne :: forall d. OutletId /\ d -> Receive d -> Pass d
 alwaysOne = always <<< Array.singleton
-
-
-pass' :: forall d. Array (OutletId /\ Maybe d) -> Pass d
---pass' = Pass <<< Map.fromFoldable <<< Array.mapMaybe sequence
-pass' values = Pass { toOutlets : Map.fromFoldable $ Array.mapMaybe sequence $ values }
 
 
 passNothing :: forall d. Pass d

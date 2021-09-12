@@ -102,7 +102,7 @@ infixl 7 divide as ///
 -- implement arithmetics typeclasses on values?
 
 
-expr :: H.Op -> H.Value -> H.Value -> H.Value
+expr :: H.Operation -> H.Value -> H.Value -> H.Value
 expr op v1 v2 = H.Expr v1 op v2
 
 

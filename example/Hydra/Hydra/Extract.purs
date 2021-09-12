@@ -8,6 +8,7 @@ import Data.Array (catMaybes, concat) as Array
 import Data.Int (floor)
 
 import Hydra
+import Hydra.API as Hydra
 
 import Color as C
 
@@ -65,3 +66,8 @@ buildSeq5 :: Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe H
 buildSeq5 h1 h2 h3 h4 h5 =
     Val $ Seq $ seqOf h1 <> seqOf h2 <> seqOf h3 <> seqOf h4 <> seqOf h5
     where seqOf maybeH = fromMaybe [] (seq <$> maybeH)
+
+
+performMaybe :: Maybe Hydra -> Maybe Hydra -> Maybe Hydra -> Maybe Hydra
+performMaybe (Just (Val valA)) (Just (Op op)) (Just (Val valB)) = Just $ Val $ Hydra.expr op valA valB
+performMaybe _                 _              _                 = Nothing
