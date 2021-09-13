@@ -33,4 +33,5 @@ toolkit =
     , "to-buffer" /\ Node.toBuffer
     , "math" /\ Node.math
     , "fast" /\ Node.fast
+    , "sqrt" /\ Node.sqrt
     ]

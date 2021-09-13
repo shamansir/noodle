@@ -202,3 +202,20 @@ fast =
             HydraE.fastVal
                 ("speed" <+ inlets)
                 ("value" <+ inlets)
+
+
+sqrt :: Def Hydra
+sqrt =
+    Def.define
+      (withInlets
+        ~< "value" /\ Channel.value
+      )
+      (withOutlets
+        >~ "value" /\ Channel.value
+      )
+      $ \inlets ->
+        Def.passTo' $ "value" /\
+            Hydra.tryV1M
+                (Hydra.Num 0.0)
+                Hydra.sqrt
+                ("value" <+ inlets)

@@ -51,11 +51,11 @@ data Value
     | WindowHeight
     | Pi
     | Expr Value Operation Value
-    | Dynamic Value
-    | OfTime Value
+    | Dynamic Value -- () -> Value
+    | OfTime Value -- (time) -> Value
     | Harmonic Int
     | Fast Number Value -- TODO: allow only sequences
-    -- FN (Time -> Value)
+    | Sqrt Value -- TODO: allow only numbers
 
 
 {- data Expr
@@ -219,6 +219,10 @@ height = Val CanvasHeight
 
 seq :: Array Value -> Hydra
 seq = Val <<< Seq
+
+
+sqrt :: Value -> Hydra
+sqrt = Val <<< Sqrt
 
 
 defaultSource :: Source
@@ -480,6 +484,7 @@ instance Show Value where
     show (Dynamic v) = "{* -> " <> show v <> "}"
     show (Harmonic n) = "{fft:" <> show n <> "}"
     show (Fast n v) = "{fast " <> show n <> " " <> show v <> "}"
+    show (Sqrt n) = "{sqrt " <> show n <> "}"
 
 
 instance Show Buffer where
