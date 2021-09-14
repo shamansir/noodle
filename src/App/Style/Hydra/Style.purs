@@ -20,7 +20,7 @@ style :: Style
 style =
     { order :
         Order.make
-            [ Title, UserBody 55.0, OnlyInlets, OnlyOutlets ]
+            [ Title, Ribbon, UserBody 55.0, OnlyInlets, OnlyOutlets ]
     , bg
     , body
     , slot

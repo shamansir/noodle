@@ -283,7 +283,9 @@ render s@{ node, name, style, flow, linksCount } =
                 ]
 
         inlets' =
-            HS.g [ HSA.classes $ CS.nodeInlets style.slot.direction ]
+            HS.g
+                [ HSA.classes $ CS.nodeInlets style.slot.direction
+                ]
                 $ Array.mapWithIndex inlet' inlets
 
         inlet' idx (name /\ shape) =
@@ -296,7 +298,9 @@ render s@{ node, name, style, flow, linksCount } =
                 (name /\ shape)
 
         outlets' =
-            HS.g [ HSA.classes $ CS.nodeOutlets style.slot.direction ]
+            HS.g
+                [ HSA.classes $ CS.nodeInlets style.slot.direction
+                ]
                 $ Array.mapWithIndex outlet' outlets
 
         outlet' idx (name /\ shape) =

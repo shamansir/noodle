@@ -365,16 +365,16 @@ bodyInnerOffset f s Vertical node =
             OutsideBody -> zero
     else zero)
     +
-    if f.hasRibbon then
+    (if f.hasRibbon then
         V2.zh $ ribbonSize f s Vertical node
-    else zero
+    else zero)
 bodyInnerOffset f s Horizontal node =
-    if f.hasTitle then
+    (if f.hasTitle then
         case s.title.mode of
             InsideBody -> V2.wz $ titleSize f s Horizontal node
             OutsideBody -> zero
-    else zero
+    else zero)
     +
-    if f.hasRibbon then
+    (if f.hasRibbon then
         V2.wz $ ribbonSize f s Horizontal node
-    else zero
+    else zero)
