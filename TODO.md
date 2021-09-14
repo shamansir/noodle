@@ -17,12 +17,12 @@
 
 ## App features:
 
-* [v]: Don't show hidden inlets;
+* [v] Don't show hidden inlets;
 * Disconnect links when they're clicked;
-* [v]: Caluclate the number of links for slots and support styling the "empty" ones differently, be able to dim slot if it's not connected to anything;
+* [v] Caluclate the number of links for slots and support styling the "empty" ones differently, be able to dim slot if it's not connected to anything;
 * Show values on the slots;
 * Value editors;
-* Ribbons;
+* [v] Ribbons;
 * [v] Finish remove-node buttons;
 * Better layouting, may be using `Flex` layout;
 * [v]: Hover areas are still not perfect;

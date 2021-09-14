@@ -10,6 +10,11 @@ body {
     z-index: 1000;
 }
 
+text.debug {
+    alignment-baseline: hanging;
+    dominant-baseline: hanging;
+}
+
 .no-select {
     /*cursor: default;*/
     -webkit-touch-callout: none;

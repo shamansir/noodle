@@ -128,7 +128,9 @@ render (s@{ network, toolkit, style, flow }) =
         currentPatch = (flip Network.patch $ network) =<< s.currentPatch
         curFrame =
             HS.text
-                [ HSA.translateTo' $ 200.0 <+> 0.0 ]
+                [ HSA.translateTo' $ 200.0 <+> 0.0
+                , HSA.class_ $ H.ClassName "debug"
+                ]
                 [ HH.text $ show s.currentFrame ]
         tabHeight = 20.0
         tabPadding = 4.0

@@ -178,6 +178,7 @@ render state =
             HS.text
                 [ HSA.translateTo' $ 500.0 <+> -20.0
                 , HSA.fill $ Just $ C.toSvg $ C.white
+                , HSA.class_ $ H.ClassName "debug"
                 ]
                 [ HH.text $ show $ state.mouse ]
         assocNode (name /\ pos /\ bounds) =
