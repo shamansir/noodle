@@ -107,7 +107,7 @@ inletConnectorPos f s Horizontal node idx =
             V2.h (slotArea f s Horizontal node </> V2.vv 2.0) - V2.w (connectorSize s.slot.connector)
         connectorOffsetY Outside = 0.0
         titleWidth =
-            if f.hasTitle then V2.w $ titleSize f s Horizontal node else 0.0
+            if f.hasTitle then V2.w $ titleSize f s Horizontal node else zero
 
 
 inletRectPos :: forall d. GetPosByIdx d
@@ -135,7 +135,7 @@ inletRectPos f s Horizontal node idx =
     (
         (offsetX + outerWidth * toNumber idx)
         <+>
-        0.0
+        zero
     )
     where
         outerWidth = V2.w $ slotArea f s Horizontal node
@@ -150,7 +150,7 @@ inletTextPos f s Vertical idx node =
         offsetX Inside = V2.x' (V2.w (connectorSize s.slot.connector) + V2.w slotPadding)
         offsetX Outside = - V2.x' (V2.w (connectorSize s.slot.connector) + V2.w slotPadding)
         offsetX Between = V2.x' (V2.w (connectorSize s.slot.connector) + V2.w slotPadding)
-inletTextPos f s  Horizontal idx node = 0.0 <+> 0.0
+inletTextPos f s  Horizontal idx node = zero
 
 
 outletConnectorPos :: forall d. GetPosByIdx d
@@ -171,7 +171,7 @@ outletConnectorPos f s Vertical node idx =
         sizeF_ = nodeAreaF f s Vertical node
         offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF_ hasOutlets s.order
 outletConnectorPos f s Horizontal node idx =
-    0.0 <+> toNumber idx
+    zero <+> toNumber idx
 
 
 outletTextPos :: forall d. GetPosByIdx d
@@ -181,7 +181,7 @@ outletTextPos f s Vertical node idx =
         offsetX Inside = - V2.x' (V2.w (connectorSize s.slot.connector) + V2.w slotPadding)
         offsetX Outside = V2.x' (V2.w (connectorSize s.slot.connector) + V2.w slotPadding)
         offsetX Between = - V2.x' (V2.w (connectorSize s.slot.connector) * 2.0 + V2.w slotPadding * 2.0)
-outletTextPos f s Horizontal node idx = 0.0 <+> 0.0
+outletTextPos f s Horizontal node idx = zero
 
 
 outletRectPos :: forall d. GetPosByIdx d
@@ -205,7 +205,7 @@ outletRectPos f s Vertical node idx =
         sizeF_ = nodeAreaF f s Vertical node
         offsetY = fromMaybe 0.0 $ Order.sizeBefore sizeF_ hasOutlets s.order
 outletRectPos f s Horizontal node idx =
-    0.0 <+> toNumber idx
+    zero <+> toNumber idx
 
 
 removeButtonPos :: forall d. GetPos d
@@ -237,6 +237,19 @@ titleSize _ s Horizontal _ =
         titleWidth = s.title.size
 
 
+ribbonSize :: forall d. GetSize d
+ribbonSize _ s Vertical _ =
+    bodyWidth <+> 6.0
+    where
+        bodyWidth = s.body.size
+        --ribbonHeight = s.ribbon.size
+ribbonSize _ s Horizontal _ =
+    6.0 <+> bodyHeight
+    where
+        bodyHeight = s.body.size
+        --ribbonWidth = s.ribbon.size
+
+
 bodyPos :: forall d. GetPos d
 bodyPos f s flow _ =
     if f.hasTitle then
@@ -259,6 +272,9 @@ bodySizeF f s flow node =
                 case s.title.mode of
                     InsideBody -> V2.h $ titleSize f s flow node
                     OutsideBody -> 0.0
+            else 0.0
+        sizeOf Ribbon =
+            if f.hasRibbon then V2.h $ ribbonSize f s flow node
             else 0.0
         sizeOf (UserBody n) = if f.controlArea then n else 0.0
         sizeOf OnlyInlets = toNumber inletsCount * V2.h (slotArea f s flow node)
@@ -285,6 +301,9 @@ nodeAreaF f s flow node =
                 case s.title.mode of
                     InsideBody -> V2.h $ titleSize f s flow node
                     OutsideBody -> V2.h $ titleSize f s flow node
+            else 0.0
+        sizeOf Ribbon =
+            if f.hasRibbon then V2.h $ ribbonSize f s flow node
             else 0.0
         sizeOf (UserBody n) = if f.controlArea then n else 0.0
         sizeOf OnlyInlets = toNumber inletsCount * V2.h (slotArea f s flow node)
@@ -340,14 +359,22 @@ shadowPos f s flow node =
 
 bodyInnerOffset :: forall d. GetPos d
 bodyInnerOffset f s Vertical node =
-    if f.hasTitle then
+    (if f.hasTitle then
         case s.title.mode of
             InsideBody -> V2.zh $ titleSize f s Vertical node
             OutsideBody -> zero
-     else zero
+    else zero)
+    +
+    if f.hasRibbon then
+        V2.zh $ ribbonSize f s Vertical node
+    else zero
 bodyInnerOffset f s Horizontal node =
     if f.hasTitle then
         case s.title.mode of
             InsideBody -> V2.wz $ titleSize f s Horizontal node
             OutsideBody -> zero
-     else zero
+    else zero
+    +
+    if f.hasRibbon then
+        V2.wz $ ribbonSize f s Horizontal node
+    else zero

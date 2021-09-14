@@ -41,6 +41,7 @@ import Halogen.HTML.Events as HE
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 import Halogen.Svg.Attributes as HSA
+import Halogen.HTML.Core (ClassName(..)) as CSS
 
 import App.Toolkit.UI as UI
 import App.Svg.Extra (translateTo') as HSA
@@ -125,12 +126,15 @@ render s@{ node, name, style, flow, linksCount } =
 
         ( slotAreaWidth /\ slotAreaHeight ) = V2.toTuple $ Calc.slotArea f style flow node
         ( titleWidth /\ titleHeight ) = V2.toTuple $ Calc.titleSize f style flow node
+        ( ribbonWidth /\ ribbonHeight ) = V2.toTuple $ Calc.ribbonSize f style flow node
 
         ( outerWidth /\ outerHeight ) = node # Calc.nodeArea f style flow # V2.toTuple
         ( innerWidth /\ innerHeight ) = node # Calc.bodySize f style flow # V2.toTuple
 
         inlets = Node.inletsBy (not Ch.isHidden) node
         outlets = Node.outletsBy (not Ch.isHidden) node
+
+        familyColor = (s.markings.node =<< Node.family node) <|> Just style.title.fill
 
         name' =
             if f.hasTitle then
@@ -151,7 +155,7 @@ render s@{ node, name, style, flow, linksCount } =
                         [ HSA.translateTo' $ Calc.titleTextPos f style flow node
                         ]
                         [ HS.text
-                            [ HSA.fill $ C.toSvg <$> ((s.markings.node =<< Node.family node) <|> Just style.title.fill) ]
+                            [ HSA.fill $ C.toSvg <$> familyColor ]
                             [ HH.text name ]
                         ]
                     , HS.rect
@@ -333,6 +337,17 @@ render s@{ node, name, style, flow, linksCount } =
                     , HSA.rx style.body.cornerRadius, HSA.ry style.body.cornerRadius
                     , HSA.width innerWidth, HSA.height innerHeight
                     ]
+                , if f.hasRibbon then
+                    HS.rect
+                        [ HSA.class_ $ CSS.ClassName "ribbon"
+                        , HSA.fill $ C.toSvg <$> familyColor
+                        , HSA.stroke $ C.toSvg <$> familyColor
+                        , HSA.strokeWidth 0.0
+                        , HSA.x 0.0, HSA.y 0.0
+                        , HSA.width ribbonWidth, HSA.height ribbonHeight
+                        , HSA.mask $ "url(#" <> name <> "-body-mask)"
+                        ]
+                  else HS.none
                 , case Node.family node >>= s.controlArea of
                     Just userNodeBody ->
                         HS.g

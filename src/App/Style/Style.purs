@@ -18,6 +18,7 @@ import Noodle.Node (Family) as Node
 
 type Flags =
     { hasTitle :: Boolean
+    , hasRibbon :: Boolean
     , controlArea :: Boolean
     , hasRemoveButton :: Boolean
     }
@@ -61,6 +62,7 @@ data LinkType
 
 data NodePart
     = Title
+    | Ribbon
     | OnlyInlets
     | OnlyOutlets
     | UserBody Number
@@ -202,6 +204,7 @@ type Colors =
 defaultFlags :: Flags
 defaultFlags =
     { hasTitle : true
+    , hasRibbon : true
     , controlArea : false
     , hasRemoveButton : true
     }

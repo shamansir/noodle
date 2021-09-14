@@ -49,12 +49,17 @@ getFlags :: UI.GetFlags
 getFlags family =
     { controlArea : hasControlArea family
     , hasTitle : hasTitle family
+    , hasRibbon : hasRibbon family
     , hasRemoveButton : true
     }
 
 
 hasTitle :: Node.Family -> Boolean
 hasTitle _ = true
+
+
+hasRibbon :: Node.Family -> Boolean
+hasRibbon _ = true
 
 
 hasControlArea :: Node.Family -> Boolean
@@ -69,6 +74,7 @@ hasControlArea "from-buffer" = true
 hasControlArea "render" = true
 hasControlArea "math" = true
 hasControlArea "pi" = true
+hasControlArea "fast" = true
 hasControlArea _ = false
 
 
