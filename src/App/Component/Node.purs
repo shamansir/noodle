@@ -134,6 +134,7 @@ render s@{ node, name, style, flow, linksCount } =
         inlets = Node.inletsBy (not Ch.isHidden) node
         outlets = Node.outletsBy (not Ch.isHidden) node
 
+        titleColor = Just style.title.fill
         familyColor = (s.markings.node =<< Node.family node) <|> Just style.title.fill
 
         name' =
@@ -155,7 +156,7 @@ render s@{ node, name, style, flow, linksCount } =
                         [ HSA.translateTo' $ Calc.titleTextPos f style flow node
                         ]
                         [ HS.text
-                            [ HSA.fill $ C.toSvg <$> familyColor ]
+                            [ HSA.fill $ C.toSvg <$> titleColor ] -- `familyColor`?
                             [ HH.text name ]
                         ]
                     , HS.rect
