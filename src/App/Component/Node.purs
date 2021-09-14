@@ -10,7 +10,7 @@ import Color as C
 import Color.Extra as C
 
 import Data.Unit (Unit, unit)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Set as Set
 import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
@@ -316,8 +316,9 @@ render s@{ node, name, style, flow, linksCount } =
         body =
             HS.g
                 [ HSA.translateTo' $ Calc.bodyPos f style flow node ]
-                [ case Node.family node >>= s.controlArea of
-                    Just _ ->
+                [ if
+                    f.hasRibbon
+                    || ((isJust (Node.family node >>= s.controlArea)) && f.controlArea) then
                         HS.mask
                             [ HSA.id $ name <> "-body-mask"
                             ]
@@ -333,7 +334,7 @@ render s@{ node, name, style, flow, linksCount } =
                                 , HSA.width innerWidth, HSA.height innerHeight
                                 ]
                             ]
-                    Nothing -> HS.none
+                    else HS.none
                 , HS.rect
                     [ HSA.id $ name <> "-body-bg"
                     , HSA.fill $ Just $ C.toSvg style.body.fill
