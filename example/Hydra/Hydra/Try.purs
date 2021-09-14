@@ -205,17 +205,17 @@ luma :: H.HydraTFn2M
 luma =
     tryTV2M
         ( H.defaultTexture /\ Num 0.5 /\ Num 0.1 )
-        (\what treshold tolerance ->
-            Tex $ H.addModifier what $ H.color $ Luma { treshold, tolerance }
+        (\what threshold tolerance ->
+            Tex $ H.addModifier what $ H.color $ Luma { threshold, tolerance }
         )
 
 
-tresh :: H.HydraTFn2M
-tresh =
+thresh :: H.HydraTFn2M
+thresh =
     tryTV2M
         ( H.defaultTexture /\ Num 0.5 /\ Num 0.04 )
-        (\what treshold tolerance ->
-            Tex $ H.addModifier what $ H.color $ Tresh { treshold, tolerance }
+        (\what threshold tolerance ->
+            Tex $ H.addModifier what $ H.color $ Tresh { threshold, tolerance }
         )
 
 

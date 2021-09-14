@@ -63,7 +63,7 @@ spec = do
                 [ osc2 (n 40.0) (n 0.0)
                     # out'' o0
                 , src o0
-                    # tresh0
+                    # thresh0
                     # out'' o1
                 , src o0
                     # posterize (n 3.0) (n 1.0)
@@ -75,7 +75,7 @@ spec = do
             )
                 `shouldCompileWithRenderTo`
                 """osc(40.0,0.0,0.0).out(o0)
-src(o0).tresh(0.5,0.04).out(o1)
+src(o0).thresh(0.5,0.04).out(o1)
 src(o0).posterize(3.0,1.0).out(o2)
 src(o0).pixelate(20.0,20.0).out(o3)
 render()"""
@@ -103,13 +103,13 @@ render()"""
             -}
 
             (osc2 (n 40.0) (n 0.0)
-                # tresh0
+                # thresh0
                 # kaleid (n 99.0)
                 # scale3 (n 1.0) (n 1.0) (dyn $ windowWidth /// windowHeight)
                 # out' o0
             )
                 `shouldCompileTo`
-                "osc(40.0,0.0,0.0).tresh(0.5,0.04).kaleid(99.0).scale(1.0,1.0,() => (window.innerWidth/window.innerHeight),0.0,0.0).out(o0)"
+                "osc(40.0,0.0,0.0).thresh(0.5,0.04).kaleid(99.0).scale(1.0,1.0,() => (window.innerWidth/window.innerHeight),0.0,0.0).out(o0)"
 
 
         it "blends, where texture is an argument (book example #10)" $ do

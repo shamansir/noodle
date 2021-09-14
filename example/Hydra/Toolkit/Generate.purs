@@ -44,7 +44,7 @@ data Kind
 byKind :: Kind -> Array Node.Family
 byKind Source = [ "noise", "voronoi", "osc", "shape", "gradient", "solid" ]
 byKind Geom = [ "rotate", "scale", "pixelate", "repeat", "repeat-x", "repeat-y", "kaleid", "scroll-x", "scroll-y" ]
-byKind Color = [ "posterize", "shift", "invert", "contrast", "brightness", "luma", "tresh"
+byKind Color = [ "posterize", "shift", "invert", "contrast", "brightness", "luma", "thresh"
                , "color", "saturate", "hue", "colorama" ]
 byKind Blend = [ "add", "layer", "blend", "mult", "diff", "mask" ]
 byKind Mod = [ "mod-repeat", "mod-repeat-x", "mod-repeat-y", "mod-kaleid", "mod-scroll-x", "mod-scroll-y", "modulate"
@@ -99,8 +99,8 @@ instance ToFn String TextureOrValue where
     toFn "invert"    = fn "invert" $ vt1 "texture" "amount"
     toFn "contrast"  = fn "contrast" $ vt1 "texture" "amount"
     toFn "brightness" = fn "brightness" $ vt1 "texture" "amount"
-    toFn "luma"      = fn "luma" $ vt2 "texture" "treshhold" "tolerance"
-    toFn "tresh"     = fn "tresh" $ vt2 "texture" "treshhold" "tolerance"
+    toFn "luma"      = fn "luma" $ vt2 "texture" "threshhold" "tolerance"
+    toFn "thresh"     = fn "thresh" $ vt2 "texture" "threshhold" "tolerance"
     toFn "color"     = fn "color" $ vt4 "texture" "r" "g" "b" "a"
     toFn "saturate"  = fn "saturate" $ vt1 "texture" "amount"
     toFn "hue"       = fn "hue" $ vt1 "texture" "amount"
@@ -160,7 +160,7 @@ generate' "invert"     = fromFn2 (toFn "invert")     Try.invert
 generate' "contrast"   = fromFn2 (toFn "contrast")   Try.contrast
 generate' "brightness" = fromFn2 (toFn "brightness") Try.brightness
 generate' "luma"       = fromFn3 (toFn "luma")       Try.luma
-generate' "tresh"      = fromFn3 (toFn "tresh")      Try.tresh
+generate' "thresh"      = fromFn3 (toFn "thresh")      Try.thresh
 generate' "color"      = fromFn5 (toFn "color")      Try.color
 generate' "saturate"   = fromFn2 (toFn "saturate")   Try.saturate
 generate' "hue"        = fromFn2 (toFn "hue")        Try.hue

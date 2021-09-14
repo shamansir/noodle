@@ -297,11 +297,11 @@ invert0 = invert $ n 1.0 -- amount
 
 
 luma  :: V2Modifier
-luma  treshold tolerance = modify $ H.color $ H.Luma { treshold, tolerance }
+luma  threshold tolerance = modify $ H.color $ H.Luma { threshold, tolerance }
 luma1 :: V1Modifier
-luma1 treshold = luma treshold $ n 0.1 -- tolerance
+luma1 threshold = luma threshold $ n 0.1 -- tolerance
 luma0 :: V0Modifier
-luma0 = luma1 $ n 0.5 -- treshold
+luma0 = luma1 $ n 0.5 -- threshold
 
 
 posterize  :: V2Modifier
@@ -330,12 +330,12 @@ shift0 :: V0Modifier
 shift0 = shift1 $ n 0.5 --r
 
 
-tresh  :: V2Modifier
-tresh  treshold tolerance = modify $ H.color $ H.Tresh { treshold, tolerance }
-tresh1 :: V1Modifier
-tresh1 treshold = tresh treshold $ n 0.04 -- tolerance
-tresh0 :: V0Modifier
-tresh0 = tresh1 $ n 0.5 -- treshold
+thresh  :: V2Modifier
+thresh  threshold tolerance = modify $ H.color $ H.Tresh { threshold, tolerance }
+thresh1 :: V1Modifier
+thresh1 threshold = thresh threshold $ n 0.04 -- tolerance
+thresh0 :: V0Modifier
+thresh0 = thresh1 $ n 0.5 -- threshold
 
 
 {- ######## -}
