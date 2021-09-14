@@ -77,6 +77,7 @@ sourceBuffers = [ S0, S1, S2, S3 ]
 
 
 bodyWidth = 110.0 -- FIXME: pass from outside
+bodyHeight = 80.0 -- FIXME: pass from outside
 
 
 -- defaultPalette :: Hydra.Color
@@ -92,34 +93,39 @@ render :: forall m. State -> H.ComponentHTML Action () m
 render { mode, buffer, queue } =
     HS.g
         [ HSA.class_ $ H.ClassName "buffer-node" ]
-        [ (HS.g [] $ Array.mapWithIndex (bufferButton  0.0 $ C.rgb 0 0 200) sourceBuffers)
-        , (HS.g [] $ Array.mapWithIndex (bufferButton 18.0 $ C.rgb 0 127 0) outputBuffers)
+        [ (HS.g [] $ Array.mapWithIndex (bufferButton  0.0 $ C.rgb 200 200 200) sourceBuffers)
+        , (HS.g [] $ Array.mapWithIndex (bufferButton 18.0 $ C.rgb 127 127 127) outputBuffers)
         ]
     where
         fillFor otherBuffer =
             if otherBuffer == buffer
-                then C.rgba 100 100 45 $ if isOwned otherBuffer then 0.5 else 1.0
+                then C.rgba 255 255 255 $ if isOwned otherBuffer then 0.5 else 1.0
                 else if isOwned otherBuffer then C.rgba 100 100 100 1.0 else C.rgba 0 0 0 0.0
         isOwned =
             flip Queue.isOwned queue
+        circleRadius = 5.0
+        circleDiameter = circleRadius * 2.0
+        circleDiameterAndPadding = circleDiameter + 2.0
+        xFor idx = (bodyWidth / 2.0) - (4.0 * circleDiameter / 2.0) + (toNumber $ idx `mod` 9) * circleDiameterAndPadding
+        yFor _   = (bodyHeight / 2.0) - (circleDiameter * 2.0)
         bufferButton y color idx otherBuffer =
             HS.g
                 [ {-HSA.class_ $ H.ClassName "buffer-button"
                 , -} HSA.class_ $ H.ClassName $ if isOwned otherBuffer then "buffer-button-owned" else "buffer-button-free"
                 ]
                 [ HS.circle
-                    [ HSA.cx $ 7.0 + (toNumber $ idx `mod` 9) * 12.0
-                    , HSA.cy $ y + 7.0 + (floor $ toNumber idx / 9.0) * 12.0
+                    [ HSA.cx $ xFor idx
+                    , HSA.cy $ y + yFor idx
                     , HSA.stroke $ Just $ C.toSvg color
                     , HSA.fill $ Just $ C.toSvg $ fillFor otherBuffer
                     , HSA.strokeWidth 1.0
-                    , HSA.r 5.0
+                    , HSA.r circleRadius
                     ]
                 , HS.rect
-                    [ HSA.x $ 2.0 + (toNumber $ idx `mod` 9) * 12.0
-                    , HSA.y $ y + 2.0 + (floor $ toNumber idx / 9.0) * 12.0
-                    , HSA.width 10.0
-                    , HSA.height 10.0
+                    [ HSA.x $ xFor idx - circleRadius
+                    , HSA.y $ y + yFor idx - circleRadius
+                    , HSA.width circleDiameter
+                    , HSA.height circleDiameter
                     , HSA.stroke $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
                     , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
                     , HE.onClick $ const $ if isOwned otherBuffer then NoOp else Select otherBuffer

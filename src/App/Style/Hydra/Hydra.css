@@ -1,6 +1,7 @@
 /* @import url('https://fonts.googleapis.com/css2?family=family=Space+Grotesk:wght@400;500&display=swap'); */
 
-text {
+.node-button text,
+.patch-tab text {
     alignment-baseline: hanging;
     dominant-baseline: hanging;
 }

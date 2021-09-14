@@ -39,6 +39,7 @@ operations = [ Addition, Division, Multiplication, Subtraction ]
 
 
 bodyWidth = 110.0 -- FIXME: pass from outside
+bodyHeight = 80.0 -- FIXME: pass from outside
 
 
 -- defaultPalette :: Hydra.Color
@@ -57,6 +58,10 @@ render currentOp =
         [ HS.g [] $ Array.mapWithIndex operatorButton operations
         ]
     where
+        operatorsCount = toNumber $ Array.length operations
+        cellWidth = 20.0
+        cellHeight = 20.0
+        xFor idx = (bodyWidth / 2.0) - (cellWidth * operatorsCount / 2.0) + toNumber idx * cellWidth
         operatorButton idx op =
             HS.g
                 [ {-HSA.class_ $ H.ClassName "buffer-button"
@@ -67,15 +72,16 @@ render currentOp =
                         $ if op == currentOp
                             then C.rgb 255 255 255
                             else C.rgb 100 100 100
-                    , HSA.x $ toNumber idx * 10.0
-                    , HSA.y 0.0
+                    , HSA.x $ xFor idx
+                    , HSA.y $ bodyHeight / 2.0
+                    , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 25.0
                     ]
                     [ HH.text $ show op ]
                 , HS.rect
-                    [ HSA.x $ toNumber idx * 10.0
-                    , HSA.y 0.0
-                    , HSA.width 10.0
-                    , HSA.height 10.0
+                    [ HSA.x $ xFor idx
+                    , HSA.y $ bodyHeight / 2.0 - cellHeight / 2.0
+                    , HSA.width cellWidth
+                    , HSA.height cellHeight
                     , HSA.stroke $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
                     , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
                     , HE.onClick $ const $ Select op

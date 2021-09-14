@@ -63,6 +63,7 @@ data Action
 
 
 bodyWidth = 110.0 -- FIXME: pass from outside
+bodyHeight = 50.0 -- FIXME: pass from outside
 
 
 -- defaultPalette :: Hydra.Color
@@ -80,8 +81,8 @@ render { queue } =
         [ HSA.class_ $ H.ClassName "render-button"
         ]
         [ HS.circle
-            [ HSA.cx 12.0
-            , HSA.cy 12.0
+            [ HSA.cx $ bodyWidth / 2.0
+            , HSA.cy $ bodyHeight / 2.0
             , HSA.stroke $ Just $ C.toSvg
                     $ if not $ Queue.isEmpty queue then C.rgba 0 255 0 1.0 else C.rgba 100 100 100 1.0
             , HSA.fill $ Just $ C.toSvg
@@ -90,8 +91,8 @@ render { queue } =
             , HSA.r 10.0
             ]
         , HS.rect
-            [ HSA.x 2.0
-            , HSA.y 2.0
+            [ HSA.x $ bodyWidth / 2.0 - 5.0
+            , HSA.y $ bodyHeight / 2.0 - 5.0
             , HSA.width 20.0
             , HSA.height 20.0
             , HSA.stroke $ Just $ C.toSvg $ C.rgba 0 0 0 0.0

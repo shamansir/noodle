@@ -68,6 +68,7 @@ hasControlArea "to-buffer" = true
 hasControlArea "from-buffer" = true
 hasControlArea "render" = true
 hasControlArea "math" = true
+hasControlArea "pi" = true
 hasControlArea _ = false
 
 
@@ -89,6 +90,7 @@ node "out"         = Just $ OutNode.component
 node "render"      = Just $ RenderNode.component
 node "math"        = Just $ MathNode.component
 node "fast"        = Just $ FastNode.component
+node "pi"          = Just $ PiNode.component
 node _             = Nothing
 
 

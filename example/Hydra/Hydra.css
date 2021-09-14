@@ -26,3 +26,11 @@ foreignObject#hydra-holder {
 .render-button rect {
     cursor: pointer;
 }
+
+.operator-button rect {
+    cursor: pointer;
+}
+
+/* .operator-button {
+    dominant-baseline: hanging;
+} */
