@@ -67,6 +67,8 @@ data Action
     | Store Texture
 
 
+derive instance eqMode :: Eq Mode
+
 
 outputBuffers :: Array Buffer
 outputBuffers = [ O0, O1, O2, O3 ]
@@ -128,7 +130,7 @@ render { mode, buffer, queue } =
                     , HSA.height circleDiameter
                     , HSA.stroke $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
                     , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
-                    , HE.onClick $ const $ if isOwned otherBuffer then NoOp else Select otherBuffer
+                    , HE.onClick $ const $ if mode == ToBuffer && isOwned otherBuffer then NoOp else Select otherBuffer
                     -- , HP.style "cursor: pointer"
                     ]
                 ]

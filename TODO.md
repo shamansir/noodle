@@ -9,6 +9,10 @@
 * link overlaps the inlet/outlet hover area;
 * Some nodes are harder to drag after adding them;
 * Why sometimes Hydra output is not working;
+* API: recursive references to buffers are not working, like:
+    * `shape(4,0.9).diff(src(o0).scale(0.9).mask(shape(4,0.9,0.01)).rotate(0.1)).out(o0)`
+    * `noise(10, 0).modulate(o0).blend(o0,0.9).out(o0)`
+    * `src(o0).modulateRotate(noise(2,0),0.03).hue(0.003).layer(shape(2,0.125).luma().color(0,0,1)).out(o0)`
 
 ## Existing nodes:
 
