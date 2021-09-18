@@ -11,11 +11,10 @@ import Type.Row (type (+))
 import Color as C
 import Color.Extra as C
 
-import App.Layout.BinPack.R2 (Bin2)
 import App.Layout as L
 import App.Layout.Optional as LOpt
+import App.Layout.BinPack.R2 (Bin2)
 import App.Layout.PinBoard (PinBoard)
-import App.Layout.PinBoard as PB
 
 import Data.Array as Array
 
@@ -158,7 +157,7 @@ initialState i@{ patch, toolkit, style, flow, area } =
         L.container area
             # addNodesFrom i.getFlags style flow patch
     , buttonStrip : BS.make (V2.w area) $ Toolkit.nodeFamilies toolkit
-    , pinned : []
+    , pinned : L.container area
     , mouse : Mouse.init
     }
 
@@ -194,7 +193,7 @@ render state =
         packedNodes'
             = List.catMaybes $ assocNode <$> LOpt.toList state.layout
         pinnedNodes'
-            = Array.catMaybes $ assocNode <$> PB.toArray state.pinned
+            = Array.catMaybes $ assocNode <$> L.toArray state.pinned
         nodeButtons
             = HS.g
                 [ HSA.classes CS.nodesTabs ]
@@ -286,7 +285,7 @@ render state =
                 Nothing -> HS.none
         findNodePosition nodeName =
             (LOpt.find nodeName state.layout <#> Tuple.fst)
-            <|> (PB.find nodeName state.pinned <#> Tuple.fst)
+            <|> (L.find nodeName state.pinned <#> Tuple.fst)
         openLink pos (nodeName /\ outlet) =
             case (/\)
                     <$> (Patch.findNode nodeName state.patch
@@ -361,7 +360,7 @@ handleAction = case _ of
             { layout =
                 state.layout # LOpt.abandon nodeId
             , pinned =
-                state.pinned # PB.unpin nodeId
+                state.pinned # L.unpin nodeId
             }
 
     PinNode nodeId pos ->
@@ -373,7 +372,7 @@ handleAction = case _ of
         in
             state
                 { pinned =
-                    state.pinned # PB.pin (pos - state.offset) nodeArea nodeId
+                    state.pinned # L.pin nodeId (pos - state.offset) nodeArea
                 }
 
     Connect outletPath inletPath -> do
@@ -472,7 +471,7 @@ handleAction = case _ of
             flip LOpt.atPos' state.layout
 
         findNodeInPinned state =
-            flip PB.search state.pinned
+            flip L.atPos' state.pinned
 
 
 extract :: forall patch_action patch_state d m. Input patch_action patch_state d m -> RInput patch_state

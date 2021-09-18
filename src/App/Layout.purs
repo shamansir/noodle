@@ -40,7 +40,8 @@ class IsLayout l <= IsAutoLayout l where
 
 class IsLayout l <= IsPinningLayout l where
     pin :: forall a. a -> Pos -> Size -> l a -> l a
-    unpin :: forall a. Eq a => a -> l a -> Maybe (l a)
+    unpin :: forall a. Eq a => a -> l a -> l a
+    --unpin :: forall a. Eq a => a -> l a -> Maybe (l a)
     -- unpin == remove
 
 
