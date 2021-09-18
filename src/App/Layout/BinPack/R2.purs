@@ -1,4 +1,4 @@
-module Data.BinPack.R2
+module App.Layout.BinPack.R2
 ( Bin2
 , Item
 , pack
@@ -47,6 +47,18 @@ data Bin2 n a
 -- type DeepBin2 n a = Bin2 n { value :: a, inner :: Maybe (DeepBin2 n a) }
 
 -- TODO: IsLayout instance
+
+instance bin2IsLayout :: IsLayout (Bin2 Number) where
+    size = size
+    fold = fold
+    find = find
+    sample = flip sample
+    container = container
+    -- remove =
+
+
+instance bin2IsAutoLayout :: IsAutoLayout (Bin2 Number) where
+    pack v s = flip packOne $ item s v
 
 
 newtype Item n a = Item (Size_ n /\ a)
@@ -145,12 +157,11 @@ find needle =
         )
         Nothing
 
-
-sample :: forall n a. Ring n => Ord n => Bin2 n a -> Pos_ n -> Maybe (a /\ Pos_ n)
+sample :: forall n a. Ring n => Ord n => Bin2 n a -> Pos_ n -> Maybe (a /\ Pos_ n /\ Size_ n)
 sample (Free _)                 _   = Nothing
 sample (Node { w, h, r, b, i }) pos =
     case (compare (V2.x pos) w /\ compare (V2.y pos) h) of
-        (LT /\ LT) -> Just $ i /\ pos
+        (LT /\ LT) -> Just $ i /\ pos /\ (w <+> h)
         (_  /\ LT) -> sample r (pos - V2.w' w)
         _          -> sample b (pos - V2.h' h)
 
