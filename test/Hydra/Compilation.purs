@@ -5,8 +5,6 @@ import Prelude (($), (#), Unit, discard)
 import Control.Monad.Error.Class (class MonadError, class MonadThrow, throwError, try)
 import Effect.Exception (Error, error)
 
-import App.Layout.Flex as O
-
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe (Maybe(..))
 import Data.Vec2 ((<+>))
