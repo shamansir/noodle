@@ -1,4 +1,4 @@
-module Data.Layout.Pinnable where
+module App.Layout.Pinnable where
 
 
 -- import Prelude ((>>=), ($))
@@ -9,7 +9,7 @@ import Data.Vec2 (Pos, Size)
 -- import Data.Foldable (foldr)
 -- import Data.Tuple.Nested ((/\), type (/\))
 
-import Data.Layout
+import App.Layout
 
 
 class IsLayout l <= IsPinnableLayout l where

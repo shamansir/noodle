@@ -1,4 +1,4 @@
-module Data.Layout.Flex where
+module App.Layout.Flex where
 
 
 import Prelude

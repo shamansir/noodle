@@ -1,4 +1,4 @@
-module Data.Layout where
+module App.Layout where
 
 
 import Prelude
@@ -37,10 +37,8 @@ class IsLayout l <= IsPinningLayout l where
 
 -- TODO: what are:
 --   * both Pin and Auto layouts
---   * layout that saves order of adding
---   * layout like `elm-ui`
-
-
+--   * layout that saves order of adding `IsLayout (Timestamp /\ a)`
+--   * layout like `elm-ui` (may be just `IsLayout` with own packing)
 
 
 -- TODO: scale
