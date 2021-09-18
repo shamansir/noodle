@@ -11,16 +11,19 @@ import Type.Row (type (+))
 import Color as C
 import Color.Extra as C
 
+import App.Layout.BinPack.R2 (Bin2)
+import App.Layout as L
+import App.Layout.Optional as LOpt
+import App.Layout.PinBoard (PinBoard)
+import App.Layout.PinBoard as PB
+
 import Data.Array as Array
-import Data.BinPack.R2.Optional (Bin2)
-import Data.BinPack.R2.Optional as R2
+
 import Data.Int (toNumber, floor)
 import Data.Number
 import Data.List as List
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Maybe as Maybe
-import Data.PinBoard (PinBoard)
-import Data.PinBoard as PB
 import Data.Set (Set)
 import Data.Set as Set
 import Data.Tuple (fst, snd) as Tuple
@@ -87,6 +90,9 @@ _node = Proxy :: Proxy "node"
 _link = Proxy :: Proxy "link"
 
 
+type BinPackedNodes = Bin2 Number (Maybe Node.Id)
+
+
 type Input patch_action patch_state d m =
     { patch :: Noodle.Patch d
     , toolkit :: Noodle.Toolkit d
@@ -116,7 +122,7 @@ type State patch_action patch_state d m =
     , patchState :: patch_state
     --- ^^^ same as Input
     , buttonStrip :: BS.ButtonStrip Node.Family
-    , layout :: Bin2 Number Node.Id
+    , layout :: BinPackedNodes
     , pinned :: PinBoard Node.Id
     , mouse :: Mouse.State
     }
@@ -149,7 +155,7 @@ initialState i@{ patch, toolkit, style, flow, area } =
     , patchState : i.patchState, offset : i.offset
     , getFlags : i.getFlags, markings : i.markings, customNodeBody : i.customNodeBody
     , layout :
-        R2.container area
+        L.container area
             # addNodesFrom i.getFlags style flow patch
     , buttonStrip : BS.make (V2.w area) $ Toolkit.nodeFamilies toolkit
     , pinned : []
@@ -186,7 +192,7 @@ render state =
                 # Patch.findNode name
                 <#> { name, node : _, x : V2.x pos, y : V2.y pos, w : V2.w bounds, h : V2.h bounds }
         packedNodes'
-            = List.catMaybes $ assocNode <$> R2.toList state.layout
+            = List.catMaybes $ assocNode <$> LOpt.toList state.layout
         pinnedNodes'
             = Array.catMaybes $ assocNode <$> PB.toArray state.pinned
         nodeButtons
@@ -279,7 +285,7 @@ render state =
                     in drawLink state.style.link.type (x1 /\ y1) (x2 /\ y2)
                 Nothing -> HS.none
         findNodePosition nodeName =
-            (R2.find nodeName state.layout <#> Tuple.fst)
+            (LOpt.find nodeName state.layout <#> Tuple.fst)
             <|> (PB.find nodeName state.pinned <#> Tuple.fst)
         openLink pos (nodeName /\ outlet) =
             case (/\)
@@ -325,7 +331,7 @@ handleAction = case _ of
             (\state ->
                 state
                     { area = input.area
-                    , layout = state.layout # R2.reflow' input.area
+                    , layout = state.layout # L.reflowOrDrop input.area
                     , buttonStrip = state.buttonStrip # BS.reflow (V2.w input.area)
                     , patchState = input.patchState
                     }
@@ -342,7 +348,8 @@ handleAction = case _ of
                             nodeArea = NodeC.areaOf state.getFlags state.style state.flow node
                         in state
                             { patch = state.patch # Patch.addNode nodeName node
-                            , layout = R2.packOne state.layout (R2.item nodeArea nodeName)
+                            , layout = state.layout
+                                        # LOpt.pack nodeName nodeArea
                                         # Maybe.fromMaybe state.layout
                             }
                     )
@@ -352,7 +359,7 @@ handleAction = case _ of
         H.modify_ $ \state ->
             state
             { layout =
-                state.layout # R2.abandon nodeId
+                state.layout # LOpt.abandon nodeId
             , pinned =
                 state.pinned # PB.unpin nodeId
             }
@@ -462,7 +469,7 @@ handleAction = case _ of
             NodeC.whereInside state.getFlags state.style state.flow
 
         findNodeInLayout state =
-            R2.sample state.layout
+            flip LOpt.atPos' state.layout
 
         findNodeInPinned state =
             flip PB.search state.pinned
@@ -489,12 +496,13 @@ component =
         }
 
 
-addNodesFrom :: forall d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Patch d -> Bin2 Number Node.Id -> Bin2 Number Node.Id
+addNodesFrom :: forall d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Patch d -> BinPackedNodes -> BinPackedNodes
 addNodesFrom getFlags style flow patch layout =
     Patch.nodes patch
         # foldr
             (\(nodeName /\ node) layout' ->
-                R2.packOne layout' (R2.item (NodeC.areaOf getFlags style flow node) nodeName)
+                layout'
+                    # LOpt.pack nodeName (NodeC.areaOf getFlags style flow node)
                     # Maybe.fromMaybe layout'
             )
             layout
