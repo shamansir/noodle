@@ -15,6 +15,8 @@ import App.Layout as L
 import App.Layout.Optional as LOpt
 import App.Layout.BinPack.R2 (Bin2)
 import App.Layout.PinBoard (PinBoard)
+import App.Layout.Strip as S
+
 
 import Data.Array as Array
 
@@ -120,7 +122,7 @@ type State patch_action patch_state d m =
     , area :: Size
     , patchState :: patch_state
     --- ^^^ same as Input
-    , buttonStrip :: BS.ButtonStrip Node.Family
+    , buttonStrip :: S.Strip Node.Family
     , layout :: BinPackedNodes
     , pinned :: PinBoard Node.Id
     , mouse :: Mouse.State
@@ -197,8 +199,8 @@ render state =
         nodeButtons
             = HS.g
                 [ HSA.classes CS.nodesTabs ]
-                $ nodeButton <$> BS.unfold state.buttonStrip
-        bsBottomY = V2.h $ BS.size state.buttonStrip
+                $ nodeButton <$> S.unfold state.buttonStrip
+        bsBottomY = V2.h $ S.size state.buttonStrip
         bsOffset = V2.h' bsBottomY
         --absNodesOffset = bsBottomY
         -- cursorOffset = 0.0 <+> fullButtonHeight
@@ -400,7 +402,7 @@ handleAction = case _ of
     HandleMouse _ mouseEvent -> do
         state <- H.get
         let
-            bsOffset = V2.zh $ BS.size state.buttonStrip
+            bsOffset = V2.zh $ S.size state.buttonStrip
             mouseOffset = state.offset + bsOffset
             nextMouse
                 = state.mouse
