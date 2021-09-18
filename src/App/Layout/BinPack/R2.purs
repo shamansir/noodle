@@ -26,6 +26,8 @@ import Prelude
 
 import Control.Alt ((<|>))
 
+import App.Layout (class IsLayout, class IsAutoLayout)
+
 import Data.Foldable (class Foldable, foldMap, foldr, foldl, foldM)
 import Data.List (List(..), (:), sortBy, singleton)
 import Data.Maybe (Maybe(..), isJust, fromMaybe)

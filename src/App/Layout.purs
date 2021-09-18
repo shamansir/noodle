@@ -5,10 +5,13 @@ import Prelude
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Foldable (foldr, class Foldable)
+import Data.Unfoldable (unfoldr, class Unfoldable)
 import Data.FoldableWithIndex (class FoldableWithIndex)
 
 
-import Data.Vec2 (Pos, Size)
+import Data.Vec2 (Pos, Size, (<+>))
+import Data.Array ((:))
+import Data.Array as Array
 
 
 import Data.Tuple.Nested ((/\), type (/\))
@@ -17,11 +20,13 @@ import Data.Tuple.Nested ((/\), type (/\))
 class {-FoldableWithIndex Pos l <=-} IsLayout l where
     size :: forall a. l a -> Size
     container :: forall a. Size -> l a
-    toFoldable :: forall f a. Foldable f => l a -> f (a /\ Pos /\ Size)
-    -- toUnfoldable ::
+    --toFoldable :: forall f a. Foldable f => l a -> f (a /\ Pos /\ Size)
+    --toUnfoldable :: forall f a. Unfoldable f => l a -> f (a /\ Pos /\ Size)
+    --unfold :: forall a. l a -> Array (a /\ Pos /\ Size)
+    fold :: forall a k. ((a /\ Pos /\ Size) -> k -> k) -> k -> l a -> k
     find :: forall a. a -> l a -> Maybe (Pos /\ Size)
     sample :: forall a. Pos -> l a -> Maybe (a /\ Pos /\ Size)
-    remove :: forall a. Eq a => a -> l a -> l a
+    remove :: forall a. Eq a => a -> l a -> Maybe (l a)
     -- reflow :: forall a. Size -> l a -> Maybe (l a)
 
 
@@ -43,6 +48,17 @@ class IsLayout l <= IsPinningLayout l where
 
 -- TODO: scale
 
+sqContainer :: forall l a. IsLayout l => Number -> l a
+sqContainer n = container $ n <+> n
+
+
+count :: forall l a. IsLayout l => l a -> Int
+count = (toUnfoldable :: l a -> Array (a /\ Pos /\ Size)) >>> Array.length
+
+
+toUnfoldable :: forall f l a. Unfoldable f => IsLayout l => l a -> f (a /\ Pos /\ Size)
+toUnfoldable = fold (:) [] >>> Array.toUnfoldable
+
 
 packOrDrop :: forall l a. IsAutoLayout l => a -> Size -> l a -> l a
 packOrDrop a size dst = fromMaybe dst $ pack a size dst
@@ -55,7 +71,7 @@ reflow size layout =
             dst >>= pack a itemSize
         )
         (Just $ container size)
-        (toFoldable layout :: Array (a /\ Pos /\ Size))
+        (toUnfoldable layout :: Array (a /\ Pos /\ Size))
 
 
 reflowOrDrop :: forall l a. IsAutoLayout l => Size -> l a -> l a
@@ -65,7 +81,7 @@ reflowOrDrop size layout =
             packOrDrop a itemSize dst
         )
         (container size)
-        (toFoldable layout :: Array (a /\ Pos /\ Size))
+        (toUnfoldable layout :: Array (a /\ Pos /\ Size))
 
 
 packMany :: forall f l a. IsAutoLayout l => Foldable f => f (a /\ Size) -> l a -> Maybe (l a)
