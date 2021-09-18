@@ -2,7 +2,7 @@ module Test.Layouts where
 
 import Prelude
 
-import Data.Layout.Flex as O
+import App.Layout.Flex as O
 
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Maybe (Maybe(..))
