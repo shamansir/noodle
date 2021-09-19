@@ -5,8 +5,6 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (liftEffect)
 
-import Debug as Debug
-
 -- import Data.Functor (lift)
 
 import Data.Set (Set)

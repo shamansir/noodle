@@ -10,8 +10,6 @@ module Hydra.Compile
 
 import Prelude
 
-import Debug as Debug
-
 import Data.String as String
 import Data.Maybe (Maybe(..))
 import Data.Either (either)

@@ -2,7 +2,6 @@ module Hydra.Toolkit.Generate
     (all, generate, GenId, Kind(..), byKind, ofKind) where
 
 
-import Debug as Debug
 import Prelude (($), flip, (<$>), (<>), map, join, (==))
 
 

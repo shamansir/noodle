@@ -3,8 +3,6 @@ module App.Component.Patch where
 
 import Prelude
 
-import Debug (spy) as Debug
-
 import Effect.Class (class MonadEffect, liftEffect)
 import Type.Row (type (+))
 

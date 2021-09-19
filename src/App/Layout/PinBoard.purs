@@ -2,6 +2,7 @@ module App.Layout.PinBoard where
 
 
 import Prelude
+
 import Data.Array ((:))
 import Data.Array as Array
 import Data.Maybe (Maybe(..))
@@ -55,7 +56,8 @@ compareByItem a b = get a == get b
 isPosInside :: forall a. Pos -> Pin a -> Maybe (a /\ Pos /\ Size)
 isPosInside pos' (Pin (a /\ pos /\ size)) =
     if V2.inside pos' (pos /\ size) then
-        Just (a /\ pos /\ size)
+        --Just (a /\ pos' /\ size)
+        Just (a /\ (pos' - pos) /\ size)
     else Nothing
 
 
