@@ -38,6 +38,7 @@
 
 ## API
 
+* Could nodes store `Signal`s instead of `Channel`s? `Functor` instances and s.o.
 * Extracting values from inlets in Definitions is quite painful, why don't provide User with API with using `Channel`/`Shape` purposes (get rid of `Hydra.Extract`)?
     * `SendToOutlet` / `SendToInlet` should also verify type;
 * Node Families and Channel IDs could be parameters of toolkit etc., as types;
@@ -64,7 +65,7 @@
 
 * I don't like the fact `patch_state` is passed through all the components up and down, i.e.L
     `User Node -> Patch -> App`  and then `App -> User Patch` and `App -> Patch -> User Node`
-    may be there's a way to simplify it? (or see);
+    may be there's a way to simplify it? (or see above and move this state to the `NoodleM`);
 * [v]: Dockerfile, fix deployment;
 
 ## New nodes:
