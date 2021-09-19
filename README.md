@@ -1,3 +1,7 @@
+# Current state:
+
+https://noodle.labs.jb.gg
+
 # Run:
 
 1. `npm install -g purescript@0.14 spago parcel-bundler`
