@@ -30,7 +30,6 @@ import Hydra.Queue (Queue)
 import Hydra.Queue as Queue
 
 
-
 type State =
     { hydraReady :: Boolean
     , size :: Size

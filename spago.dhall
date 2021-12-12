@@ -28,6 +28,7 @@ to generate this file without the comments in this block.
   , "foldable-traversable"
   , "halogen"
   , "halogen-css"
+  , "halogen-hooks"
   , "halogen-subscriptions"
   , "halogen-svg-elems"
   , "identity"
