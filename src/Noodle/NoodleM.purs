@@ -6,9 +6,12 @@ module Noodle.NoodleM
 import Prelude
 
 -- import Control.Semigroupoid ((<<<))
+import Effect (Effect)
+import Effect.Ref as Ref
+import Effect.Ref (Ref)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Aff.Class (class MonadAff, liftAff)
-import Control.Monad.Free (Free, hoistFree, liftF)
+import Control.Monad.Free (Free, hoistFree, liftF, runFreeM, foldFree)
 import Control.Monad.State (modify, modify_)
 import Control.Monad.State.Class (class MonadState)
 import Control.Monad.Error.Class (class MonadThrow, throwError)
@@ -23,6 +26,7 @@ import Noodle.Node (Node)
 import Noodle.Node.Shape (InletId, OutletId)
 import Noodle.Node.Define as Def
 import Noodle.Node.Define (Def)
+import Noodle.Network (Network)
 
 import Halogen (HalogenM)
 
@@ -41,6 +45,7 @@ data NoodleF state d m a
     -- | Connect Patch.Id Patch.OutletPath Patch.InletPath (Unit -> m (a /\ Node.Link))
     -- | Disconnect Patch.Id Patch.OutletPath Patch.InletPath a
     -- | DisconnectLink Node.Link
+    | Receive Patch.Id Node.Id InletId (d -> a)
     -- | Send Patch.Id Node.Id InletId d a
     -- | Produce Patch.Id Node.Id OutletId d a
     -- | GetAtInlet Patch.Id Node.Id InletId (Unit -> m (a /\ d))
@@ -53,6 +58,7 @@ instance functorNoodleF :: Functor m => Functor (NoodleF state d m) where
         Lift m -> Lift (map f m)
         AddPatch pid a -> AddPatch pid $ f a
         AddNode pid nid a -> AddNode pid nid $ f a
+        Receive pid nid iid k -> Receive pid nid iid $ map f k
 
 
 newtype NoodleM state d m a = NoodleM (Free (NoodleF state d m) a)
@@ -91,9 +97,40 @@ addNode :: forall state d m. Patch.Id -> Node.Family -> NoodleM state d m Unit
 addNode pid nfid = NoodleM $ liftF $ AddNode pid nfid $ unit
 
 
-program :: forall state d m a. NoodleM state d m Unit
+receive :: forall state d m. Patch.Id -> Node.Id -> InletId -> NoodleM state d m d
+receive pid nid iid = NoodleM $ liftF $ Receive pid nid iid identity
+
+
+program :: forall state d m. MonadEffect m => NoodleM state d m Unit
 program = do
     addPatch "ff"
     addNode "ff" "aa"
+    x <- receive "ff" "aa" "ee"
+    n <- liftEffect $ pure 0
     -- modify_ ((+) 1)
+    --pure (x + n)
     pure unit
+
+
+runEff :: forall state d. d -> Ref state -> Ref (Network d) -> Free (NoodleF state d Effect) ~> Effect -- (state /\ Network d)
+runEff default stateRef nwRef =
+    --foldFree go-- (go stateRef)
+    runFreeM go
+    where
+        go (State f) = do
+            state <- Ref.read stateRef
+            case f state of
+                a /\ nextState -> do
+                    Ref.write nextState stateRef
+                    pure a
+        go (Lift m) = m
+        go (AddPatch _ next) = pure next
+        go (AddNode _ _ next) = pure next
+        go (Receive _ _ _ getV) = pure $ getV default
+
+
+
+
+-- run :: forall state d m a. state -> Network d -> NoodleM state d m a -> Effect (state /\ Network d)
+-- run state nw = case _ of
+--     _ -> pure $ state /\ nw
