@@ -7,6 +7,7 @@ import Prelude
 
 -- import Control.Semigroupoid ((<<<))
 import Effect (Effect)
+import Effect.Aff (Aff)
 import Effect.Ref as Ref
 import Effect.Ref (Ref)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -112,22 +113,31 @@ program = do
     pure unit
 
 
-runEff :: forall state d. d -> Ref state -> Ref (Network d) -> Free (NoodleF state d Effect) ~> Effect -- (state /\ Network d)
-runEff default stateRef nwRef =
+runNoodleM :: forall state d. d -> state -> Network d -> NoodleM state d Aff ~> Aff
+runNoodleM default state nw (NoodleM noodleFree) = do
+    stateRef <- liftEffect $ Ref.new state
+    nwRef <- liftEffect $ Ref.new nw
+    runNoodleFreeM default stateRef nwRef noodleFree
+
+
+runNoodleFreeM :: forall state d. d -> Ref state -> Ref (Network d) -> Free (NoodleF state d Aff) ~> Aff
+runNoodleFreeM default stateRef nwRef =
     --foldFree go-- (go stateRef)
     runFreeM go
     where
         go (State f) = do
-            state <- Ref.read stateRef
+            state <- getUserState
             case f state of
-                a /\ nextState -> do
-                    Ref.write nextState stateRef
-                    pure a
+                next /\ nextState -> do
+                    writeUserState nextState
+                    pure next
         go (Lift m) = m
         go (AddPatch _ next) = pure next
         go (AddNode _ _ next) = pure next
         go (Receive _ _ _ getV) = pure $ getV default
 
+        getUserState = liftEffect $ Ref.read stateRef
+        writeUserState nextState = liftEffect $ Ref.write nextState stateRef
 
 
 
