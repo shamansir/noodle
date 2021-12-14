@@ -1,5 +1,6 @@
 module Noodle.NoodleM
-    ( NoodleF
+    ( NoodleM
+    , runNoodleM
     ) where
 
 
@@ -24,10 +25,12 @@ import Noodle.Patch as Patch
 import Noodle.Patch (Patch)
 import Noodle.Node as Node
 import Noodle.Node (Node)
+import Noodle.Node.NodeM (NodeF, NodeM)
 import Noodle.Node.Shape (InletId, OutletId)
 import Noodle.Node.Define as Def
 import Noodle.Node.Define (Def)
 import Noodle.Network (Network)
+
 
 import Halogen (HalogenM)
 
@@ -47,6 +50,7 @@ data NoodleF state d m a
     -- | Disconnect Patch.Id Patch.OutletPath Patch.InletPath a
     -- | DisconnectLink Node.Link
     | Receive Patch.Id Node.Id InletId (d -> a)
+    | WithNode Patch.Id Node.Id (NodeM state d m Unit) a -- (Node d -> a)
     -- | Send Patch.Id Node.Id InletId d a
     -- | Produce Patch.Id Node.Id OutletId d a
     -- | GetAtInlet Patch.Id Node.Id InletId (Unit -> m (a /\ d))
@@ -60,18 +64,19 @@ instance functorNoodleF :: Functor m => Functor (NoodleF state d m) where
         AddPatch pid a -> AddPatch pid $ f a
         AddNode pid nid a -> AddNode pid nid $ f a
         Receive pid nid iid k -> Receive pid nid iid $ map f k
+        WithNode pid nid nmu a -> WithNode pid nid nmu $ f a
 
 
 newtype NoodleM state d m a = NoodleM (Free (NoodleF state d m) a)
 
 
-derive newtype instance functorHalogenM :: Functor (NoodleM state d m)
-derive newtype instance applyHalogenM :: Apply (NoodleM state d m)
-derive newtype instance applicativeHalogenM :: Applicative (NoodleM state d m)
-derive newtype instance bindHalogenM :: Bind (NoodleM state d m)
-derive newtype instance monadHalogenM :: Monad (NoodleM state d m)
-derive newtype instance semigroupHalogenM :: Semigroup a => Semigroup (NoodleM state d m a)
-derive newtype instance monoidHalogenM :: Monoid a => Monoid (NoodleM state d m a)
+derive newtype instance functorNoodleM :: Functor (NoodleM state d m)
+derive newtype instance applyNoodleM :: Apply (NoodleM state d m)
+derive newtype instance applicativeNoodleM :: Applicative (NoodleM state d m)
+derive newtype instance bindNoodleM :: Bind (NoodleM state d m)
+derive newtype instance monadNoodleM :: Monad (NoodleM state d m)
+derive newtype instance semigroupNoodleM :: Semigroup a => Semigroup (NoodleM state d m a)
+derive newtype instance monoidNoodleM :: Monoid a => Monoid (NoodleM state d m a)
 
 
 instance monadEffectNoodleM :: MonadEffect m => MonadEffect (NoodleM state d m) where
@@ -135,6 +140,7 @@ runNoodleFreeM default stateRef nwRef =
         go (AddPatch _ next) = pure next
         go (AddNode _ _ next) = pure next
         go (Receive _ _ _ getV) = pure $ getV default
+        go (WithNode _ _ _ next) = pure next
 
         getUserState = liftEffect $ Ref.read stateRef
         writeUserState nextState = liftEffect $ Ref.write nextState stateRef
