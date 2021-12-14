@@ -17,7 +17,7 @@ import Data.Profunctor as Profunctor
 type Id = String
 
 
-data Shape d a =
+data Shape d a = -- FIXME: get rid of two type arguments, rename to `Channel`, is `id` needed?
     Shape
         { id :: String
         , default :: a -- d?

@@ -1,4 +1,4 @@
-module Noodle.Node.NodeM
+module Noodle.NodeM
     ( NodeM
     , NodeF
     , runNodeM

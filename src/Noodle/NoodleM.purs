@@ -25,7 +25,8 @@ import Noodle.Patch as Patch
 import Noodle.Patch (Patch)
 import Noodle.Node as Node
 import Noodle.Node (Node)
-import Noodle.Node.NodeM (NodeF, NodeM)
+import Noodle.NodeM (NodeF, NodeM)
+import Noodle.PatchM (PatchF, PatchM)
 import Noodle.Node.Shape (InletId, OutletId)
 import Noodle.Node.Define as Def
 import Noodle.Node.Define (Def)
@@ -50,6 +51,7 @@ data NoodleF state d m a
     -- | Disconnect Patch.Id Patch.OutletPath Patch.InletPath a
     -- | DisconnectLink Node.Link
     | Receive Patch.Id Node.Id InletId (d -> a)
+    | WithPatch Patch.Id (PatchM state d m Unit) a -- (Node d -> a)
     | WithNode Patch.Id Node.Id (NodeM state d m Unit) a -- (Node d -> a)
     -- | Send Patch.Id Node.Id InletId d a
     -- | Produce Patch.Id Node.Id OutletId d a
@@ -64,6 +66,7 @@ instance functorNoodleF :: Functor m => Functor (NoodleF state d m) where
         AddPatch pid a -> AddPatch pid $ f a
         AddNode pid nid a -> AddNode pid nid $ f a
         Receive pid nid iid k -> Receive pid nid iid $ map f k
+        WithPatch pid pmu a -> WithPatch pid pmu $ f a
         WithNode pid nid nmu a -> WithNode pid nid nmu $ f a
 
 
@@ -140,6 +143,7 @@ runNoodleFreeM default stateRef nwRef =
         go (AddPatch _ next) = pure next
         go (AddNode _ _ next) = pure next
         go (Receive _ _ _ getV) = pure $ getV default
+        go (WithPatch _ _ next) = pure next
         go (WithNode _ _ _ next) = pure next
 
         getUserState = liftEffect $ Ref.read stateRef
