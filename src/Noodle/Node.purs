@@ -34,15 +34,16 @@ import Effect (Effect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
-import Noodle.Node.Define (Def(..))
-import Noodle.Node.Define as Def
-import Noodle.Node.Shape (Shape, InletId, OutletId)
-import Noodle.Node.Shape as Shape
-import Noodle.Channel.Shape as Channel
+--import Noodle.Node.Define (Def(..))
+--import Noodle.Node.Define as Def
+--import Noodle.Node.Shape (Shape, InletId, OutletId)
+--import Noodle.Node.Shape as Shape
+import Noodle.Channel as Channel
+import Noodle.Fn (Fn)
+import Noodle.Fn as Fn
 
 import Signal (Signal, (~>))
 import Signal (foldp, runSignal, filter, get) as Signal
-import Signal.Channel (Channel)
 import Signal.Channel as Ch
 import Signal.Channel.Extra as Ch
 
@@ -54,13 +55,21 @@ type Family = String
 type LinksCount = (InletId /-> Int) /\ (OutletId /-> Int)
 
 
+type InletId = Fn.InputId
+
+
+type OutletId = Fn.OutputId
+
+
 {- Node stores incoming and outgoing channels (`Signal.Channel`, not `Noodle.Channel`) of data of type `d` + any additional data -}
 data Node d
     = Node
         d
-        (Shape d)
-        (Channel (InletId /\ d) /\ Channel (OutletId /\ d))
-        (Maybe Family) -- FIXME: make family required?
+        (Fn.Named (String /\ Signal d))
+        (forall state m. Fn.ProcessM state d m Unit)
+        -- (Shape d)
+        -- (Channel (InletId /\ d) /\ Channel (OutletId /\ d))
+        -- (Maybe Family) -- FIXME: make family required?
         -- we can turn these into Signals if we either pass the function needed to send values and forget it,
         -- or create it ourselves and return it to be re-used by outer world.
         -- Signals will give us Functors etc.

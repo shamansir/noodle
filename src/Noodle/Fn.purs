@@ -1,6 +1,11 @@
 module Noodle.Fn
     ( Fn, Named, named
+    , InputId, OutputId
     , make, make'
+    , Receive, Pass
+    , receive, send
+    , ProcessM
+    , runProcessM
     )
     where
 
