@@ -1,6 +1,8 @@
 module Noodle.Channel where
 
 
+import Prelude
+
 import Data.Maybe (Maybe)
 
 
@@ -12,6 +14,23 @@ data Temperature
 data Visibility
     = Hidden
     | Visible
+
+
+newtype Def d  =
+    Def
+    { default :: d
+    , temperature :: Temperature
+    , visibility :: Visibility
+    }
+
+
+instance functorDef :: Functor Def where
+    map f (Def def) =
+        { default : f def.default
+        -- , adapt : ?wh def.adapt
+        , temperature : def.temperature
+        , visibility : def.visibility
+        } # Def
 
 
 {-

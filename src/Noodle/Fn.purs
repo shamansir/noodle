@@ -1,11 +1,13 @@
 module Noodle.Fn
     ( Fn, Named, named
+    , BiFn, BiNamed
     , InputId, OutputId
     , make, make'
     , Receive, Pass
     , receive, send
     , ProcessM
     , runProcessM
+    , toBiFn, toNamedBiFn
     )
     where
 
@@ -13,7 +15,7 @@ module Noodle.Fn
 import Prelude
 
 import Data.Maybe (Maybe)
-import Data.Bifunctor (lmap)
+import Data.Bifunctor (class Bifunctor, lmap)
 import Data.Vec (Vec)
 import Data.Vec as Vec
 import Data.Typelevel.Num.Sets (class Nat)
@@ -26,15 +28,25 @@ import Effect.Ref as Ref
 import Effect.Ref (Ref)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Aff.Class (class MonadAff, liftAff)
-import Control.Monad.Free (Free, liftF, runFreeM)
+import Control.Monad.Free (Free, liftF, runFreeM, foldFree)
 import Control.Monad.State.Class (class MonadState)
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 
 
 
+data BiFn :: forall (k1 :: Type) (k2 :: Type). k1 -> k2 -> Type -> Type -> Type
+
+data BiFn num_inputs num_outputs i o = BiFn (Vec num_inputs i) (Vec num_outputs o)
+
+
+data BiNamed :: forall (k1 :: Type) (k2 :: Type). k1 -> k2 -> Type -> Type -> Type
+
+data BiNamed num_inputs num_outputs i o = BiNamed String (BiFn num_inputs num_outputs i o)
+
+
 data Fn :: forall (k1 :: Type) (k2 :: Type). k1 -> k2 -> Type -> Type
 
-data Fn num_inputs num_outputs a = Fn (Vec num_inputs a) (Vec num_outputs a)
+data Fn num_inputs num_outputs a = Fn (BiFn num_inputs num_outputs a a)
 
 
 data Named :: forall (k1 :: Type) (k2 :: Type). k1 -> k2 -> Type -> Type
@@ -42,29 +54,44 @@ data Named :: forall (k1 :: Type) (k2 :: Type). k1 -> k2 -> Type -> Type
 data Named num_inputs num_outputs a = Named String (Fn num_inputs num_outputs a)
 
 
+instance functorBiFn :: Functor (BiFn num_inputs num_outputs b) where
+    map f (BiFn inputs outputs) = BiFn inputs (f <$> outputs)
+
+
+instance bifunctorBiFn :: Bifunctor (BiFn num_inputs num_outputs) where
+    bimap fa fb (BiFn inputs outputs) = BiFn (fa <$> inputs) (fb <$> outputs)
+
 
 instance functorFn :: Functor (Fn num_inputs num_outputs) where
-    map f (Fn inputs outputs) = Fn (f <$> inputs) (f <$> outputs)
+    map f (Fn (BiFn inputs outputs)) = Fn $ BiFn (f <$> inputs) (f <$> outputs)
 
 
 instance applyFn :: Apply (Fn ni no) where
     apply :: forall a b. Fn ni no (a -> b) -> Fn ni no a -> Fn ni no b
-    apply (Fn inputsF ouputsF) (Fn inputs outputs)
-        = Fn (inputsF <*> inputs) (ouputsF <*> outputs)
+    apply (Fn (BiFn inputsF ouputsF)) (Fn (BiFn inputs outputs))
+        = Fn $ BiFn (inputsF <*> inputs) (ouputsF <*> outputs)
 
 
 instance applicativeFn :: (Nat ni, Nat no) => Applicative (Fn ni no) where
     pure :: forall a. a -> Fn ni no a
-    pure a = Fn (pure a) (pure a)
+    pure a = Fn $ BiFn (pure a) (pure a)
 
 
 named :: forall ni no a. String -> Fn ni no a -> Named ni no a
 named = Named
 
 
+toBiFn :: forall ni no a. Fn ni no a -> BiFn ni no a a
+toBiFn (Fn biFn) = biFn
+
+
+toNamedBiFn :: forall ni no a. Named ni no a -> BiNamed ni no a a
+toNamedBiFn (Named name (Fn biFn)) = BiNamed name biFn
+
+
 make :: forall ni no a. Nat ni => Nat no => { inputs :: Array a, outputs :: Array a } -> Maybe (Fn ni no a)
 make { inputs, outputs } =
-    Fn <$> Vec.fromArray inputs <*> Vec.fromArray outputs
+    Fn <$> (BiFn <$> Vec.fromArray inputs <*> Vec.fromArray outputs)
     -- Fn
     --     (Vec.fromArray inputs # Maybe.fromMaybe Vec.empty)
     --     (Vec.fromArray outputs # Maybe.fromMaybe Vec.empty)
@@ -72,7 +99,7 @@ make { inputs, outputs } =
 
 make' :: forall ni no a. { inputs :: Vec ni a, outputs :: Vec no a } -> Fn ni no a
 make' { inputs, outputs } =
-    Fn
+    Fn $ BiFn
         inputs
         outputs
 
@@ -125,6 +152,7 @@ derive newtype instance bindProcessM :: Bind (ProcessM state d m)
 derive newtype instance monadProcessM :: Monad (ProcessM state d m)
 derive newtype instance semigroupProcessM :: Semigroup a => Semigroup (ProcessM state d m a)
 derive newtype instance monoidProcessM :: Monoid a => Monoid (ProcessM state d m a)
+--derive newtype instance bifunctorProcessM :: Bifunctor (ProcessM state d m a)
 
 
 instance monadEffectNoodleM :: MonadEffect m => MonadEffect (ProcessM state d m) where
@@ -158,6 +186,21 @@ program = do
     -- modify_ ((+) 1)
     --pure (x + n)
     pure unit -}
+
+
+imapProcessFFocus :: forall state d d' m a. (d -> d') -> (d' -> d) -> ProcessF state d m ~> ProcessF state d' m
+imapProcessFFocus f g =
+    case _ of
+        State k -> State k
+        Lift m -> Lift m
+        Receive' iid k -> Receive' iid (k <<< g)
+        Send' oid d next -> Send' oid (f d) next
+
+
+imapProcessMFocus :: forall state d d' m a. (d -> d') -> (d' -> d) -> ProcessM state d m ~> ProcessM state d' m
+imapProcessMFocus f g (ProcessM processFree) =
+    ProcessM $ foldFree (liftF <<< imapProcessFFocus f g) processFree
+    --ProcessM $ liftF $ imapProcessFFocus f g processFree
 
 
 runProcessM :: forall state d. d -> state -> ProcessM state d Aff ~> Aff

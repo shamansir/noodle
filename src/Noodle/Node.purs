@@ -1,4 +1,5 @@
 module Noodle.Node
+    {-
     ( Node, Link, Id, Family, LinksCount
     , send, produce, connect, disconnect
     , make, move
@@ -14,6 +15,7 @@ module Noodle.Node
     , defaultOfInlet, defaultOfOutlet
     , linksAtInlet, linksAtOutlet
     )
+    -}
     where
 
 import Prelude
@@ -61,11 +63,17 @@ type InletId = Fn.InputId
 type OutletId = Fn.OutputId
 
 
+type InletDef d = String /\ Channel.Def d /\ Signal d
+
+
+type OutletDef d = String /\ Channel.Def d /\ Signal d
+
+
 {- Node stores incoming and outgoing channels (`Signal.Channel`, not `Noodle.Channel`) of data of type `d` + any additional data -}
 data Node d
     = Node
         d
-        (Fn.Named (String /\ Signal d))
+        (forall (ni :: Type) (no :: Type). Fn.BiNamed ni no (InletDef d) (OutletDef d))
         (forall state m. Fn.ProcessM state d m Unit)
         -- (Shape d)
         -- (Channel (InletId /\ d) /\ Channel (OutletId /\ d))
@@ -76,6 +84,12 @@ data Node d
         -- see: https://github.com/sharkdp/purescript-flare/blob/master/src/Flare.purs#L156
 
 
+instance functorNode :: Functor Node where
+    map f (Node d fn processM) = Node (f d) (f <$> processM)
+    -- map f (Node d fn processM) = Node (f d) (f <$> fn) (f <$> processM)
+
+
+{-
 newtype Link = Link (Ref Boolean)
 
 
@@ -155,10 +169,8 @@ disconnect (Link ref) =
     ref # Ref.write false
 
 
-{-
-attach :: forall d. Signal d -> InletId -> Node d -> Effect (Node d)
-attach signal inlet node = pure node -- FIXME: TODO
--}
+-- attach :: forall d. Signal d -> InletId -> Node d -> Effect (Node d)
+-- attach signal inlet node = pure node -- FIXME: TODO
 
 
 getInletsChannel :: forall d. Node d -> Channel (InletId /\ d)
@@ -309,3 +321,5 @@ linksAtInlet inlet = fromMaybe 0 <<< Map.lookup inlet <<< Tuple.fst
 
 linksAtOutlet :: OutletId -> LinksCount -> Int
 linksAtOutlet outlet = fromMaybe 0 <<< Map.lookup outlet <<< Tuple.snd
+
+-}
