@@ -1,13 +1,10 @@
 module Noodle.Fn
-    ( Fn, Named, named
-    , BiFn, BiNamed
+    ( Fn
     , InputId, OutputId
-    , make, make'
-    , Receive, Pass
+    --, Receive, Pass
     , receive, send
     , ProcessM
     , runProcessM
-    , toBiFn, toNamedBiFn
     )
     where
 
@@ -33,75 +30,10 @@ import Control.Monad.State.Class (class MonadState)
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 
 
-
-data BiFn :: forall (k1 :: Type) (k2 :: Type). k1 -> k2 -> Type -> Type -> Type
-
-data BiFn num_inputs num_outputs i o = BiFn (Vec num_inputs i) (Vec num_outputs o)
+type Name = String
 
 
-data BiNamed :: forall (k1 :: Type) (k2 :: Type). k1 -> k2 -> Type -> Type -> Type
-
-data BiNamed num_inputs num_outputs i o = BiNamed String (BiFn num_inputs num_outputs i o)
-
-
-data Fn :: forall (k1 :: Type) (k2 :: Type). k1 -> k2 -> Type -> Type
-
-data Fn num_inputs num_outputs a = Fn (BiFn num_inputs num_outputs a a)
-
-
-data Named :: forall (k1 :: Type) (k2 :: Type). k1 -> k2 -> Type -> Type
-
-data Named num_inputs num_outputs a = Named String (Fn num_inputs num_outputs a)
-
-
-instance functorBiFn :: Functor (BiFn num_inputs num_outputs b) where
-    map f (BiFn inputs outputs) = BiFn inputs (f <$> outputs)
-
-
-instance bifunctorBiFn :: Bifunctor (BiFn num_inputs num_outputs) where
-    bimap fa fb (BiFn inputs outputs) = BiFn (fa <$> inputs) (fb <$> outputs)
-
-
-instance functorFn :: Functor (Fn num_inputs num_outputs) where
-    map f (Fn (BiFn inputs outputs)) = Fn $ BiFn (f <$> inputs) (f <$> outputs)
-
-
-instance applyFn :: Apply (Fn ni no) where
-    apply :: forall a b. Fn ni no (a -> b) -> Fn ni no a -> Fn ni no b
-    apply (Fn (BiFn inputsF ouputsF)) (Fn (BiFn inputs outputs))
-        = Fn $ BiFn (inputsF <*> inputs) (ouputsF <*> outputs)
-
-
-instance applicativeFn :: (Nat ni, Nat no) => Applicative (Fn ni no) where
-    pure :: forall a. a -> Fn ni no a
-    pure a = Fn $ BiFn (pure a) (pure a)
-
-
-named :: forall ni no a. String -> Fn ni no a -> Named ni no a
-named = Named
-
-
-toBiFn :: forall ni no a. Fn ni no a -> BiFn ni no a a
-toBiFn (Fn biFn) = biFn
-
-
-toNamedBiFn :: forall ni no a. Named ni no a -> BiNamed ni no a a
-toNamedBiFn (Named name (Fn biFn)) = BiNamed name biFn
-
-
-make :: forall ni no a. Nat ni => Nat no => { inputs :: Array a, outputs :: Array a } -> Maybe (Fn ni no a)
-make { inputs, outputs } =
-    Fn <$> (BiFn <$> Vec.fromArray inputs <*> Vec.fromArray outputs)
-    -- Fn
-    --     (Vec.fromArray inputs # Maybe.fromMaybe Vec.empty)
-    --     (Vec.fromArray outputs # Maybe.fromMaybe Vec.empty)
-
-
-make' :: forall ni no a. { inputs :: Vec ni a, outputs :: Vec no a } -> Fn ni no a
-make' { inputs, outputs } =
-    Fn $ BiFn
-        inputs
-        outputs
+data Fn state i o m d = Fn Name (Array i) (Array o) (ProcessM state d m Unit)
 
 
 newtype InputId = InputId String

@@ -46,6 +46,7 @@ import Noodle.Fn as Fn
 
 import Signal (Signal, (~>))
 import Signal (foldp, runSignal, filter, get) as Signal
+import Signal.Channel as Sig
 import Signal.Channel as Ch
 import Signal.Channel.Extra as Ch
 
@@ -53,6 +54,7 @@ import Signal.Channel.Extra as Ch
 type Id = String
 
 type Family = String
+
 
 type LinksCount = (InletId /-> Int) /\ (OutletId /-> Int)
 
@@ -63,18 +65,18 @@ type InletId = Fn.InputId
 type OutletId = Fn.OutputId
 
 
-type InletDef d = String /\ Channel.Def d /\ Signal d
+type InletDef d = String /\ Channel.Def d -- /\ Signal d
 
 
-type OutletDef d = String /\ Channel.Def d /\ Signal d
+type OutletDef d = String /\ Channel.Def d -- /\ Signal d
 
 
 {- Node stores incoming and outgoing channels (`Signal.Channel`, not `Noodle.Channel`) of data of type `d` + any additional data -}
-data Node d
+data Node state m d
     = Node
         d
-        (forall (ni :: Type) (no :: Type). Fn.BiNamed ni no (InletDef d) (OutletDef d))
-        (forall state m. Fn.ProcessM state d m Unit)
+        (Fn state (InletDef d) (OutletDef d) m d)
+        (Sig.Channel (InletId /\ d) /\ Sig.Channel (OutletId /\ d))
         -- (Shape d)
         -- (Channel (InletId /\ d) /\ Channel (OutletId /\ d))
         -- (Maybe Family) -- FIXME: make family required?
@@ -84,15 +86,12 @@ data Node d
         -- see: https://github.com/sharkdp/purescript-flare/blob/master/src/Flare.purs#L156
 
 
-instance functorNode :: Functor Node where
-    map f (Node d fn processM) = Node (f d) (f <$> processM)
+-- instance functorNode :: Functor (Node state) where
+--     map f (Node d fn (isignal /\ osignal) processM) = Node (f d) (f <$> processM)
     -- map f (Node d fn processM) = Node (f d) (f <$> fn) (f <$> processM)
 
 
 {-
-newtype Link = Link (Ref Boolean)
-
-
 consumer :: String
 consumer = "consume_"
 
