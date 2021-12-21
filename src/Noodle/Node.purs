@@ -33,6 +33,7 @@ import Data.Functor (class Functor)
 import Data.Functor.Invariant (class Invariant, imap)
 
 import Effect (Effect)
+import Effect.Class (class MonadEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
@@ -71,11 +72,14 @@ type InletDef d = String /\ Channel.Def d -- /\ Signal d
 type OutletDef d = String /\ Channel.Def d -- /\ Signal d
 
 
+type NodeFn state m d = Fn state (InletDef d) (OutletDef d) m d
+
+
 {- Node stores incoming and outgoing channels (`Signal.Channel`, not `Noodle.Channel`) of data of type `d` + any additional data -}
 data Node state m d
     = Node
         d
-        (Fn state (InletDef d) (OutletDef d) m d)
+        (NodeFn state m d)
         (Sig.Channel (InletId /\ d) /\ Sig.Channel (OutletId /\ d))
         -- (Shape d)
         -- (Channel (InletId /\ d) /\ Channel (OutletId /\ d))
@@ -86,36 +90,46 @@ data Node state m d
         -- see: https://github.com/sharkdp/purescript-flare/blob/master/src/Flare.purs#L156
 
 
+-- instance invariantNode :: Invariant (Node state m) where
+--     imap ()
+
+
 -- instance functorNode :: Functor (Node state) where
 --     map f (Node d fn (isignal /\ osignal) processM) = Node (f d) (f <$> processM)
     -- map f (Node d fn processM) = Node (f d) (f <$> fn) (f <$> processM)
 
 
-{-
-consumer :: String
-consumer = "consume_"
+consumerIn :: Fn.InputId
+consumerIn = Fn.InputId "consume_"
+
+
+consumerOut :: Fn.OutputId
+consumerOut = Fn.OutputId "consume_"
 
 
 make
-    :: forall d
-     . d
-    -> Def d
-    -> Effect (Node d)
-make default (Def shape fn) = do
-    inlets_chan <- Ch.channel (consumer /\ default)
-    outlets_chan <- Ch.channel (consumer /\ default)
+    :: forall state m d
+     . MonadEffect m
+    => d
+    -> NodeFn state m d
+    -> m (Node state m d)
+make default fn = do
+    inlets_chan <- Ch.channel (consumerIn /\ default)
+    outlets_chan <- Ch.channel (consumerOut /\ default)
     let
         inlets = Ch.subscribe inlets_chan
-        node = Node default shape (inlets_chan /\ outlets_chan) Nothing
+        node = Node default fn (inlets_chan /\ outlets_chan)
         store ( inlet /\ d ) ( _ /\ map ) = inlet /\ (map # Map.insert inlet d)
-        maps = inlets # Signal.foldp store (consumer /\ Map.empty)
-        toReceive (last /\ fromInlets) = Def.Receive { last, fromInlets }
-        fn_signal :: Signal (Effect (Def.Pass d))
+        maps = inlets # Signal.foldp store (consumerIn /\ Map.empty)
+        toReceive (last /\ fromInputs) = Fn.Receive { last, fromInputs }
+        fn_signal :: Signal (Effect (Fn.Pass d))
         fn_signal = maps ~> toReceive ~> fn -- Do not call fn if not the `isHot` inlet triggered the calculation
         passFx :: Signal (Effect Unit)
         passFx = ((=<<) $ distribute outlets_chan) <$> fn_signal
     _ <- Signal.runSignal passFx
     pure node
+
+{-
 
 
 -- TODO: makeFixedPoint --forall i o. (Emitter i -> { input :: Emitter i, output :: Emitter o }) -> Emitter o
@@ -131,12 +145,13 @@ infixl 4 outletSignalFlipped as <|
 
 
 -- fromFn' :: (d -> d) -> Node''' d
+-}
 
-distribute :: forall d. Channel (OutletId /\ d) -> Def.Pass d -> Effect Unit
-distribute passTo (Def.Pass { toOutlets }) =
+distribute :: forall d. Sig.Channel (OutletId /\ d) -> Fn.Pass d -> Effect Unit
+distribute passTo (Fn.Pass { toOutlets }) =
     traverse_ (Ch.send passTo) $ (Map.toUnfoldable toOutlets :: Array (OutletId /\ d))
 
-
+{-
 send :: forall d. Node d -> (InletId /\ d) -> Effect Unit
 send node (inlet /\ d) =
     Ch.send (getInletsChannel node) $ inlet /\ d

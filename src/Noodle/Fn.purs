@@ -1,7 +1,7 @@
 module Noodle.Fn
     ( Fn
-    , InputId, OutputId
-    --, Receive, Pass
+    , InputId(..), OutputId(..)
+    , Receive(..), Pass(..)
     , receive, send
     , ProcessM
     , runProcessM
