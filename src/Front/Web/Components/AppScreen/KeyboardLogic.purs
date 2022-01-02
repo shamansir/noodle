@@ -370,9 +370,9 @@ navigateIfNeeded (Right num) input curFocus =
         Connecting (n /\ o)
                    NoTarget -> Connecting (n /\ o) $ ToNode $ min num (input.nodesCount - 1)
         Connecting (n /\ o)
-                (ToNode n') -> Connecting (n /\ o) $ ToInlet (n /\ (min num $ fromMaybe 0 $ _.inletsCount <$> input.mbCurrentNode))
+                (ToNode n') -> Connecting (n /\ o) $ ToInlet (n' /\ (min num $ fromMaybe 0 $ _.inletsCount <$> input.mbCurrentNode))
         Connecting (n /\ o)
-                (ToInlet _) -> curFocus
+                (ToInlet _) -> Free -- TODO: investigate, why not keep current focus
         Free -> curFocus
         CommandInput -> curFocus
         ValueEditor -> curFocus
@@ -560,3 +560,7 @@ toSequence = case _ of
     Connecting (nidx /\ oidx)
         (ToInlet (nidx' /\ iidx))
                               -> [ "n", show nidx, "o", show oidx, "c", "n", show nidx', "i", show iidx ]
+
+
+resetFocus :: State -> State
+resetFocus = _ { focus = Free }

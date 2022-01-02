@@ -455,3 +455,7 @@ loadKbInput state =
         , uiMode : state.uiMode
         , mbCurrentNode
         }
+
+
+resetKeyboardFocus :: forall tk ps fs sr cr m. State _ tk ps fs sr cr m -> State _ tk ps fs sr cr m
+resetKeyboardFocus s = s { keyboard = KL.resetFocus s.keyboard }

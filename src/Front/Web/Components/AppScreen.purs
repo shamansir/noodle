@@ -652,6 +652,7 @@ handleAction ploc = case _ of
         whenJust mbCurrentPatch \curPatch -> do
             whenJust2 (Patch.findRawNode source.fromNode curPatch) (Patch.findRawNode target.toNode curPatch)
                 \srcNode dstNode -> do
+                    let _ = Debug.spy "Patch connect" unit
                     nextPatch /\ rawLink <-
                         H.lift $ Patch.connectRaw
                             source.fromOutlet
@@ -854,10 +855,16 @@ performKbAction ploc = case _ of
                     let mbOutletR = RawNode.shape srcNode # RawShape.outletAtIndex outletIndex <#> _.name
                     let mbInletR  = RawNode.shape dstNode # RawShape.inletAtIndex inletIndex   <#> _.name
                     whenJust2 mbOutletR mbInletR \outletR inletR -> do
+                       {-
+                        let _ = Debug.spyWith "fromNodeIndex" show fromNodeIndex
+                        let _ = Debug.spyWith "outletIndex" show outletIndex
+                        let _ = Debug.spyWith "toNodeIndex" show toNodeIndex
+                        let _ = Debug.spyWith "inletIndex" show inletIndex
                         let _ = Debug.spyWith "inletR" show inletR
                         let _ = Debug.spyWith "outletR" show outletR
                         let _ = Debug.spyWith "srcNodeR" show $ RawNode.id srcNode
                         let _ = Debug.spyWith "dstNodeR" show $ RawNode.id dstNode
+                        -}
                         nextPatch /\ rawLink <-
                             H.lift $ Patch.connectRaw
                                 outletR
@@ -867,8 +874,9 @@ performKbAction ploc = case _ of
                                 curPatch
                         let connectCommandOp = QOp.connect rawLink
                         H.modify_
-                              $ CState.replacePatch (Patch.id curPatch) nextPatch
-                            >>> CState.trackCommandOp connectCommandOp
+                              $   CState.resetKeyboardFocus -- TODO: maybe can be done inside KeyboardLogic module?
+                              >>> CState.replacePatch (Patch.id curPatch) nextPatch
+                              >>> CState.trackCommandOp connectCommandOp
                         sendNdfOpToWebSocket connectCommandOp
             -- H.get >>= _.lockOn >>> f >>> Just >>> pure
 
