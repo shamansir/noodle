@@ -32,6 +32,7 @@ import Data.Newtype (unwrap)
 import Data.Functor (class Functor)
 import Data.Functor.Invariant (class Invariant, imap)
 
+import Effect.Aff (Aff, launchAff_)
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 import Effect.Ref (Ref)
@@ -110,10 +111,11 @@ consumerOut = Fn.OutputId "consume_"
 make
     :: forall state m d
      . MonadEffect m
-    => d
-    -> NodeFn state m d
-    -> m (Node state m d)
-make default fn = do
+    => state
+    -> d
+    -> NodeFn state Aff d
+    -> m (Node state Aff d)
+make state default fn = do
     inlets_chan <- Ch.channel (consumerIn /\ default)
     outlets_chan <- Ch.channel (consumerOut /\ default)
     let
@@ -123,7 +125,8 @@ make default fn = do
         maps = inlets # Signal.foldp store (consumerIn /\ Map.empty)
         toReceive (last /\ fromInputs) = Fn.Receive { last, fromInputs }
         fn_signal :: Signal (Effect (Fn.Pass d))
-        fn_signal = maps ~> toReceive ~> fn -- Do not call fn if not the `isHot` inlet triggered the calculation
+        -- fn_signal :: Signal (Effect Unit)
+        fn_signal = maps ~> toReceive ~> (\receive -> Fn.runFn receive default state fn) ~> launchAff_ -- Do not call fn if not the `isHot` inlet triggered the calculation
         passFx :: Signal (Effect Unit)
         passFx = ((=<<) $ distribute outlets_chan) <$> fn_signal
     _ <- Signal.runSignal passFx

@@ -4,7 +4,7 @@ module Noodle.Fn
     , Receive(..), Pass(..)
     , receive, send
     , ProcessM
-    , runProcessM
+    , runFn
     )
     where
 
@@ -135,14 +135,19 @@ imapProcessMFocus f g (ProcessM processFree) =
     --ProcessM $ liftF $ imapProcessFFocus f g processFree
 
 
-runProcessM :: forall state d. d -> state -> ProcessM state d Aff ~> Aff
-runProcessM default state (ProcessM processFree) = do
+runFn :: forall state i o d. Receive d -> d -> state -> Fn state i o Aff d -> Aff Unit
+runFn receive default state (Fn _ _ _ processM) =
+    runProcessM receive default state processM
+
+
+runProcessM :: forall state d. Receive d -> d -> state -> ProcessM state d Aff ~> Aff
+runProcessM receive default state (ProcessM processFree) = do
     stateRef <- liftEffect $ Ref.new state
-    runProcessFreeM default stateRef processFree
+    runProcessFreeM receive default stateRef processFree
 
 
-runProcessFreeM :: forall state d. d -> Ref state -> Free (ProcessF state d Aff) ~> Aff
-runProcessFreeM default stateRef =
+runProcessFreeM :: forall state d. Receive d -> d -> Ref state -> Free (ProcessF state d Aff) ~> Aff
+runProcessFreeM receive default stateRef =
     --foldFree go-- (go stateRef)
     runFreeM go
     where
