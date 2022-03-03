@@ -34,7 +34,7 @@ import Data.Functor.Invariant (class Invariant, imap)
 
 import Effect.Aff (Aff, launchAff_)
 import Effect (Effect)
-import Effect.Class (class MonadEffect)
+import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
@@ -116,20 +116,22 @@ make
     -> NodeFn state Aff d
     -> m (Node state Aff d)
 make state default fn = do
-    inlets_chan <- Ch.channel (consumerIn /\ default)
-    outlets_chan <- Ch.channel (consumerOut /\ default)
+    inlets_chan <- liftEffect $ Ch.channel (consumerIn /\ default)
+    outlets_chan <- liftEffect $ Ch.channel (consumerOut /\ default)
     let
         inlets = Ch.subscribe inlets_chan
         node = Node default fn (inlets_chan /\ outlets_chan)
         store ( inlet /\ d ) ( _ /\ map ) = inlet /\ (map # Map.insert inlet d)
         maps = inlets # Signal.foldp store (consumerIn /\ Map.empty)
         toReceive (last /\ fromInputs) = Fn.Receive { last, fromInputs }
-        fn_signal :: Signal (Effect (Fn.Pass d))
-        -- fn_signal :: Signal (Effect Unit)
-        fn_signal = maps ~> toReceive ~> (\receive -> Fn.runFn receive default state fn) ~> launchAff_ -- Do not call fn if not the `isHot` inlet triggered the calculation
-        passFx :: Signal (Effect Unit)
-        passFx = ((=<<) $ distribute outlets_chan) <$> fn_signal
-    _ <- Signal.runSignal passFx
+        send :: Fn.Send d
+        send = Fn.Send $ Tuple.curry $ Ch.send outlets_chan
+        -- fn_signal :: Signal (Effect (Fn.Pass d))
+        fn_signal :: Signal (Effect Unit)
+        fn_signal = maps ~> toReceive ~> (\receive -> Fn.runFn receive send default state fn) ~> launchAff_ -- Do not call fn if not the `isHot` inlet triggered the calculation
+        -- passFx :: Signal (Effect Unit)
+        -- passFx = ((=<<) $ distribute outlets_chan) <$> fn_signal
+    _ <- liftEffect $ Signal.runSignal fn_signal
     pure node
 
 {-

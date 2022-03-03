@@ -1,7 +1,7 @@
 module Noodle.Fn
     ( Fn
     , InputId(..), OutputId(..)
-    , Receive(..), Pass(..)
+    , Receive(..), Pass(..), Send(..)
     , receive, send
     , ProcessM
     , runFn
@@ -20,6 +20,7 @@ import Data.Map.Extra (type (/->))
 import Data.Tuple.Nested (type (/\), (/\))
 
 
+import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Ref as Ref
 import Effect.Ref (Ref)
@@ -38,8 +39,13 @@ data Fn state i o m d = Fn Name (Array i) (Array o) (ProcessM state d m Unit)
 
 newtype InputId = InputId String
 
+derive newtype instance eqInputId :: Eq InputId
+derive newtype instance ordInputId :: Ord InputId
 
 newtype OutputId = OutputId String
+
+derive newtype instance eqOutputId :: Eq OutputId
+derive newtype instance ordOutputId :: Ord OutputId
 
 
 type Process m d = Receive d -> m (Pass d)
@@ -57,6 +63,9 @@ newtype Pass d = Pass { toOutlets :: OutputId /-> d }
 
 instance functorPass :: Functor Pass where
     map f (Pass { toOutlets }) = Pass { toOutlets : f <$> toOutlets }
+
+
+newtype Send d = Send (OutputId -> d -> Effect Unit)
 
 
 data ProcessF state d m a
@@ -135,19 +144,19 @@ imapProcessMFocus f g (ProcessM processFree) =
     --ProcessM $ liftF $ imapProcessFFocus f g processFree
 
 
-runFn :: forall state i o d. Receive d -> d -> state -> Fn state i o Aff d -> Aff Unit
-runFn receive default state (Fn _ _ _ processM) =
-    runProcessM receive default state processM
+runFn :: forall state i o d. Receive d -> Send d -> d -> state -> Fn state i o Aff d -> Aff Unit
+runFn receive send default state (Fn _ _ _ processM) =
+    runProcessM receive send default state processM
 
 
-runProcessM :: forall state d. Receive d -> d -> state -> ProcessM state d Aff ~> Aff
-runProcessM receive default state (ProcessM processFree) = do
+runProcessM :: forall state d. Receive d -> Send d -> d -> state -> ProcessM state d Aff ~> Aff
+runProcessM receive send default state (ProcessM processFree) = do
     stateRef <- liftEffect $ Ref.new state
-    runProcessFreeM receive default stateRef processFree
+    runProcessFreeM receive send default stateRef processFree
 
 
-runProcessFreeM :: forall state d. Receive d -> d -> Ref state -> Free (ProcessF state d Aff) ~> Aff
-runProcessFreeM receive default stateRef =
+runProcessFreeM :: forall state d. Receive d -> Send d -> d -> Ref state -> Free (ProcessF state d Aff) ~> Aff
+runProcessFreeM (Receive { last, fromInputs }) (Send sendFn) default stateRef =
     --foldFree go-- (go stateRef)
     runFreeM go
     where
