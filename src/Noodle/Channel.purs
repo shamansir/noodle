@@ -4,6 +4,7 @@ module Noodle.Channel where
 import Prelude
 
 import Data.Maybe (Maybe)
+import Data.Newtype (class Newtype, unwrap)
 
 
 data Temperature
@@ -31,6 +32,10 @@ instance functorDef :: Functor Def where
         , temperature : def.temperature
         , visibility : def.visibility
         } # Def
+
+
+default :: forall d. Def d -> d
+default (Def def) = def.default -- unwrap >>> _.default
 
 
 {-

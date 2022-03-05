@@ -1,55 +1,81 @@
 module Noodle.Node
-    {-
-    ( Node, Link, Id, Family, LinksCount
-    , send, produce, connect, disconnect
-    , make, move
-    , markFamily, family
-    , inlet, outlet
-    , inlets, outlets, inletsBy, outletsBy
-    , inletSignal, outletSignal, outletSignalFlipped
-    , inletsSignal, outletsSignal, inletsSignal', outletsSignal'
-    , get, get'
-    , (<|), (|>), (<~>), (<+), (+>), (++>)
-    , consumer
-    , dimensions, dimensionsBy, indexOfInlet, indexOfOutlet
-    , defaultOfInlet, defaultOfOutlet
-    , linksAtInlet, linksAtOutlet
-    )
-    -}
-    where
+  ( Family
+  , Id
+  , InletDef
+  , InletId
+  , Link(..)
+  , LinksCount
+  , Node(..)
+  , NodeFn
+  , OutletDef
+  , OutletId
+  , connect
+  , consumerIn
+  , consumerOut
+  , default
+  , defaultOfInlet
+  , defaultOfOutlet
+  , dimensions
+  , disconnect
+  , distribute
+  , family
+  , get
+  , get'
+  , getFn
+  , getInletsChannel
+  , getOutletsChannel
+  , getShape
+  , getShape'
+  , indexOfInlet
+  , indexOfOutlet
+  , inlet
+  , inletSignal
+  , inlets
+  , inletsSignal
+  , inletsSignal'
+  , linksAtInlet
+  , linksAtOutlet
+  , make
+  , markFamily
+  , move
+  , outletSignal
+  , outletSignalFlipped
+  , outlets
+  , outletsSignal
+  , outletsSignal'
+  , produce
+  , send
+  )
+  where
 
 import Prelude
 
 import Data.Array (mapMaybe, elemIndex) as Array
+import Data.Functor (class Functor)
+import Data.Functor.Invariant (class Invariant, imap)
+import Data.Map as Map
+import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Newtype (unwrap)
+import Data.Traversable (traverse_, sequence)
 import Data.Tuple (Tuple(..))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Map as Map
-import Data.Map.Extra (type (/->))
-import Data.Traversable (traverse_, sequence)
-import Data.Newtype (unwrap)
-import Data.Functor (class Functor)
-import Data.Functor.Invariant (class Invariant, imap)
 
-import Effect.Aff (Aff, launchAff_)
 import Effect (Effect)
+import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
---import Noodle.Node.Define (Def(..))
---import Noodle.Node.Define as Def
---import Noodle.Node.Shape (Shape, InletId, OutletId)
---import Noodle.Node.Shape as Shape
 import Noodle.Channel as Channel
 import Noodle.Fn (Fn)
 import Noodle.Fn as Fn
 
 import Signal (Signal, (~>))
 import Signal (foldp, runSignal, filter, get) as Signal
-import Signal.Channel as Sig
 import Signal.Channel as Ch
+import Signal.Channel as Sig
 import Signal.Channel.Extra as Ch
 
 
@@ -67,10 +93,10 @@ type InletId = Fn.InputId
 type OutletId = Fn.OutputId
 
 
-type InletDef d = String /\ Channel.Def d -- /\ Signal d
+type InletDef d = InletId /\ Channel.Def d -- /\ Signal d
 
 
-type OutletDef d = String /\ Channel.Def d -- /\ Signal d
+type OutletDef d = OutletId /\ Channel.Def d -- /\ Signal d
 
 
 type NodeFn state m d = Fn state (InletDef d) (OutletDef d) m d
@@ -125,7 +151,7 @@ make state default fn = do
         maps = inlets # Signal.foldp store (consumerIn /\ Map.empty)
         toReceive (last /\ fromInputs) = Fn.Receive { last, fromInputs }
         send :: Fn.Send d
-        send = Fn.Send $ Tuple.curry $ Ch.send outlets_chan
+        send = Fn.Send $ Tuple.curry $ Ch.send outlets_chan -- could put the outgoing data in a Map and send once / in packs, see `Pass``
         -- fn_signal :: Signal (Effect (Fn.Pass d))
         fn_signal :: Signal (Effect Unit)
         fn_signal = maps ~> toReceive ~> (\receive -> Fn.runFn receive send default state fn) ~> launchAff_ -- Do not call fn if not the `isHot` inlet triggered the calculation
@@ -156,7 +182,7 @@ distribute :: forall d. Sig.Channel (OutletId /\ d) -> Fn.Pass d -> Effect Unit
 distribute passTo (Fn.Pass { toOutlets }) =
     traverse_ (Ch.send passTo) $ (Map.toUnfoldable toOutlets :: Array (OutletId /\ d))
 
-{-
+
 send :: forall d. Node d -> (InletId /\ d) -> Effect Unit
 send node (inlet /\ d) =
     Ch.send (getInletsChannel node) $ inlet /\ d
@@ -168,6 +194,9 @@ produce node (outlet /\ d) =
 
 
 -- TODO: sendToOutlet ??
+
+
+data Link = Link (Ref Boolean)
 
 
 connect :: forall d. (Node d /\ OutletId) -> (Node d /\ InletId) -> Effect Link
@@ -191,12 +220,15 @@ disconnect (Link ref) =
 -- attach :: forall d. Signal d -> InletId -> Node d -> Effect (Node d)
 -- attach signal inlet node = pure node -- FIXME: TODO
 
+getFn :: forall state m d. Node state m d -> NodeFn state m d
+getFn (Node fn _ _ _) = fn
 
-getInletsChannel :: forall d. Node d -> Channel (InletId /\ d)
+
+getInletsChannel :: forall d. Node d -> Ch.Channel (InletId /\ d)
 getInletsChannel (Node _ _ (inlets_chan /\ _) _) = inlets_chan
 
 
-getOutletsChannel :: forall d. Node d -> Channel (OutletId /\ d)
+getOutletsChannel :: forall d. Node d -> Ch.Channel (OutletId /\ d)
 getOutletsChannel (Node _ _ (_ /\ outlets_chan) _) = outlets_chan
 
 
@@ -225,24 +257,24 @@ inletSignal node name =
     ( Ch.subscribe (getInletsChannel node)
         # Signal.filter
             (Tuple.fst >>> (==) name)
-            (consumer /\ default node)
+            (consumerIn /\ default node)
     ) ~> Tuple.snd
 
 
-outletSignal :: forall d. Node d -> OutletId -> Signal d
+outletSignal :: forall state m d. Node state m d -> OutletId -> Signal d
 outletSignal node name =
     ( Ch.subscribe (getOutletsChannel node)
         # Signal.filter
             (Tuple.fst >>> (==) name)
-            (consumer /\ default node)
+            (consumerOut /\ default node)
     ) ~> Tuple.snd
 
 
-outletSignalFlipped :: forall d. OutletId -> Node d -> Signal d
+outletSignalFlipped :: forall state m d. OutletId -> Node d -> Signal d
 outletSignalFlipped = flip outletSignal
 
 
-get :: forall d. Node d -> InletId -> Effect d
+get :: forall state m d. Node state m d -> InletId -> Effect d
 get node name = inletSignal node name # Signal.get
 
 
@@ -250,44 +282,51 @@ get' :: forall d. Node d -> OutletId -> Effect d
 get' node name = outletSignal node name # Signal.get
 
 
-getShape :: forall d. Node d -> Shape.Inlets d /\ Shape.Outlets d
-getShape = unwrap <<< getShape'
+getShape :: forall d. Node d -> Array (InletDef d) /\ Array (OutletDef d)
+getShape = getFn <<< Fn.shapeOf
 
 
-getShape' :: forall d. Node d -> Shape d
-getShape' (Node _ shape _ _) = shape
+getShape' :: forall d. Node d -> (InletId /-> Channel.Def d) /\ (OutletId /-> Channel.Def d)
+getShape' = getFn <<< Fn.shapeOf <<< foldToMaps
+    where foldToMaps = identity
 
 
-inlet :: forall d. InletId -> Node d -> Maybe (Channel.Shape d d)
-inlet name = getShape' >>> Shape.inlet name
+inlet :: forall d. InletId -> Node d -> Maybe (InletDef d)
+inlet name = getFn >>> Fn.findInput (Tuple.fst >>> (==) name)
 
 
-outlet :: forall d. OutletId -> Node d -> Maybe (Channel.Shape d d)
-outlet name = getShape' >>> Shape.outlet name
+outlet :: forall d. OutletId -> Node d -> Maybe (OutletDef d)
+outlet name = getFn >>> Fn.findOutput (Tuple.fst >>> (==) name)
 
 
-inlets :: forall d. Node d -> Array (InletId /\ Channel.Shape d d)
-inlets = getShape' >>> Shape.inlets
+inlets :: forall d. Node d -> Array (InletDef d)
+inlets = getShape >>> Tuple.fst
 
 
-inletsBy :: forall d. (Channel.Shape d d -> Boolean) -> Node d -> Array (InletId /\ Channel.Shape d d)
+{-
+inletsBy :: forall d. (InletDef d -> Boolean) -> Node d -> Array (InletDef d)
 inletsBy pred = getShape' >>> Shape.inletsBy pred
+-}
 
 
-outlets :: forall d. Node d -> Array (OutletId /\ Channel.Shape d d)
-outlets = getShape' >>> Shape.outlets
+outlets :: forall d. Node d -> Array (OutletDef d)
+outlets = getShape >>> Tuple.snd
 
 
+{-
 outletsBy :: forall d. (Channel.Shape d d -> Boolean) -> Node d -> Array (InletId /\ Channel.Shape d d)
 outletsBy pred = getShape' >>> Shape.outletsBy pred
+-}
 
 
 dimensions :: forall d. Node d -> Int /\ Int
-dimensions (Node _ shape _ _) = Shape.dimensions shape
+dimensions = getFn >>> Fn.dimensions
 
 
+{-
 dimensionsBy :: forall d. (Channel.Shape d d -> Boolean) -> Node d -> Int /\ Int
 dimensionsBy pred (Node _ shape _ _) = Shape.dimensionsBy pred shape
+-}
 
 
 indexOfInlet :: forall d. InletId -> Node d -> Maybe Int
@@ -301,11 +340,11 @@ indexOfOutlet outletName node =
 
 
 defaultOfInlet :: forall d. InletId -> Node d -> Maybe d
-defaultOfInlet name node = inlet name node <#> Channel.getDefault
+defaultOfInlet name node = inlet name node <#> Channel.default
 
 
 defaultOfOutlet :: forall d. OutletId -> Node d -> Maybe d
-defaultOfOutlet name node = outlet name node <#> Channel.getDefault
+defaultOfOutlet name node = outlet name node <#> Channel.default
 
 
 default :: forall d. Node d -> d
@@ -327,8 +366,8 @@ move f g (Node default shape (inChannel /\ outChannel) nodeFamily) =
         movedShape = imap f g shape
         nextDefault = f default
     in do
-        newInChannel <- Ch.channel (consumer /\ nextDefault)
-        newOutChannel <- Ch.channel (consumer /\ nextDefault)
+        newInChannel <- Ch.channel (consumerIn /\ nextDefault)
+        newOutChannel <- Ch.channel (consumerOut /\ nextDefault)
         _ <- Signal.runSignal $ (Ch.subscribe inChannel ~> ((<$>) f) ~> Ch.send newInChannel)
         _ <- Signal.runSignal $ (Ch.subscribe outChannel ~> ((<$>) f) ~> Ch.send newOutChannel)
         pure $ Node nextDefault movedShape (newInChannel /\ newOutChannel) nodeFamily
@@ -340,5 +379,3 @@ linksAtInlet inlet = fromMaybe 0 <<< Map.lookup inlet <<< Tuple.fst
 
 linksAtOutlet :: OutletId -> LinksCount -> Int
 linksAtOutlet outlet = fromMaybe 0 <<< Map.lookup outlet <<< Tuple.snd
-
--}

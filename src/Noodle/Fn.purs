@@ -5,30 +5,33 @@ module Noodle.Fn
     , receive, send
     , ProcessM
     , runFn
+    , shapeOf, dimensions
+    , findInput, findOutput
     )
     where
 
 
 import Prelude
 
+import Control.Monad.Error.Class (class MonadThrow, throwError)
+import Control.Monad.Free (Free, liftF, runFreeM, foldFree)
+import Control.Monad.State.Class (class MonadState)
+
+import Data.Array as Array
+import Data.Bifunctor (class Bifunctor, lmap, bimap)
+import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe)
-import Data.Bifunctor (class Bifunctor, lmap)
+import Data.Tuple.Nested (type (/\), (/\))
+import Data.Typelevel.Num.Sets (class Nat)
 import Data.Vec (Vec)
 import Data.Vec as Vec
-import Data.Typelevel.Num.Sets (class Nat)
-import Data.Map.Extra (type (/->))
-import Data.Tuple.Nested (type (/\), (/\))
-
 
 import Effect (Effect)
 import Effect.Aff (Aff)
-import Effect.Ref as Ref
-import Effect.Ref (Ref)
-import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Aff.Class (class MonadAff, liftAff)
-import Control.Monad.Free (Free, liftF, runFreeM, foldFree)
-import Control.Monad.State.Class (class MonadState)
-import Control.Monad.Error.Class (class MonadThrow, throwError)
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
 
 
 type Name = String
@@ -73,6 +76,8 @@ data ProcessF state d m a
     | Lift (m a)
     | Send' OutputId d a
     | Receive' InputId (d -> a)
+    -- Connect
+    -- Disconnect etc.
 
 
 instance functorNodeF :: Functor m => Functor (ProcessF state d m) where
@@ -144,6 +149,11 @@ imapProcessMFocus f g (ProcessM processFree) =
     --ProcessM $ liftF $ imapProcessFFocus f g processFree
 
 
+-- mapInputs
+
+-- mapOutputs
+
+
 runFn :: forall state i o d. Receive d -> Send d -> d -> state -> Fn state i o Aff d -> Aff Unit
 runFn receive send default state (Fn _ _ _ processM) =
     runProcessM receive send default state processM
@@ -178,3 +188,19 @@ runProcessFreeM (Receive { last, fromInputs }) (Send sendFn) default stateRef =
 -- run :: forall state d m a. state -> Network d -> NoodleM state d m a -> Effect (state /\ Network d)
 -- run state nw = case _ of
 --     _ -> pure $ state /\ nw
+
+
+shapeOf :: forall state i o m d. Fn state i o m d -> Array i /\ Array o
+shapeOf (Fn _ inputs outputs _) = inputs /\ outputs
+
+
+dimensions :: forall state i o m d. Fn state i o m d -> Int /\ Int
+dimensions = shapeOf >>> bimap Array.length Array.length
+
+
+findInput :: forall state i o m d. (i -> Boolean) -> Fn state i o m d -> Maybe i
+findInput pred (Fn _ inputs _ _) = Array.index inputs =<< Array.findIndex pred inputs
+
+
+findOutput :: forall state i o m d. (o -> Boolean) -> Fn state i o m d -> Maybe o
+findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex pred outputs
