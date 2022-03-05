@@ -5,6 +5,7 @@ module Noodle.Fn
     , receive, send
     , ProcessM
     , runFn
+    , name
     , shapeOf, dimensions
     , findInput, findOutput
     )
@@ -149,6 +150,9 @@ imapProcessMFocus f g (ProcessM processFree) =
     --ProcessM $ liftF $ imapProcessFFocus f g processFree
 
 
+-- imapFn
+
+
 -- mapInputs
 
 -- mapOutputs
@@ -188,6 +192,9 @@ runProcessFreeM (Receive { last, fromInputs }) (Send sendFn) default stateRef =
 -- run :: forall state d m a. state -> Network d -> NoodleM state d m a -> Effect (state /\ Network d)
 -- run state nw = case _ of
 --     _ -> pure $ state /\ nw
+
+name :: forall state i o m d. Fn state i o m d -> Name
+name (Fn n _ _ _) = n
 
 
 shapeOf :: forall state i o m d. Fn state i o m d -> Array i /\ Array o
