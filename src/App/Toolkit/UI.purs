@@ -1,7 +1,7 @@
 module App.Toolkit.UI where
 
 
-import Prelude (Unit, Void, ($), (<$>))
+import Prelude (Unit, Void, ($), (<$>), (<<<))
 
 
 import Data.Maybe (Maybe, fromMaybe)
@@ -11,9 +11,8 @@ import Data.Const (Const)
 import Noodle.Node (Node)
 import Noodle.Patch (Patch)
 import Noodle.Node as Node
-import Noodle.Node.Shape (InletId, OutletId)
-import Noodle.Channel.Shape as Channel
 import Noodle.Network (Network)
+import Noodle.Channel as Channel
 
 import Color (Color)
 import App.Style (Flags)
@@ -30,11 +29,15 @@ type BgInput' patch_state d = { size :: Size, network :: Network d, patchState :
 {- Node -}
 
 
+-- FIXME: get rid of `patch_action` -> with PatchM it seems to not be needed
+-- FIXME: patch_state == node_state ?
+
+
 type NodeSlot patch_action d id = H.Slot NodeQuery (NodeOutput' patch_action d) id
 
 
-type NodeInput d = NodeInput' Unit d
-type NodeInput' patch_state d = { node :: Node d, patchState :: patch_state }
+type NodeInput m d = NodeInput' Unit Unit m d
+type NodeInput' patch_state node_state m d = { node :: Node node_state m d, patchState :: patch_state }
 
 
 type NodeOutput d = NodeOutput' Void d
@@ -45,15 +48,15 @@ data NodeQuery a = NodeCarry a
 
 
 data FromNode patch_action d
-    = SendToInlet InletId d
-    | SendToOutlet OutletId d
+    = SendToInlet Node.InletId d
+    | SendToOutlet Node.OutletId d
     | Replace Node.Family
     | ToPatch patch_action
 
 
-type NodeComponent d m = NodeComponent' Void Unit d m
-type NodeComponent' patch_action patch_state d m =
-    H.Component NodeQuery (NodeInput' patch_state d) (NodeOutput' patch_action d) m
+type NodeComponent d m = NodeComponent' Void Unit Unit d m
+type NodeComponent' patch_action patch_state node_state d m =
+    H.Component NodeQuery (NodeInput' patch_state node_state m d) (NodeOutput' patch_action d) m
 
 
 {- Patch -}
@@ -91,10 +94,10 @@ type PatchComponent' patch_action patch_state d m =
 {- Components -}
 
 
-type Components d m = Components' Void Unit d m
-type Components' patch_action patch_state d m =
+type Components d m = Components' Void Unit Unit d m
+type Components' patch_action patch_state node_state d m =
     { patch :: Maybe (PatchComponent' patch_action patch_state d m)
-    , node :: Node.Family -> Maybe (NodeComponent' patch_action patch_state d m)
+    , node :: Node.Family -> Maybe (NodeComponent' patch_action patch_state node_state d m)
     }
 
 
@@ -113,5 +116,5 @@ type Markings =
 type GetFlags = Node.Family -> Flags
 
 
-flagsFor :: forall d. GetFlags -> Node d -> Flags
-flagsFor getFlags node = fromMaybe Style.defaultFlags $ getFlags <$> Node.family node
+flagsFor :: forall state m d. GetFlags -> Node state m d -> Flags
+flagsFor getFlags = getFlags <<< Node.family

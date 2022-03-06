@@ -7,6 +7,9 @@ import Data.Maybe (Maybe)
 import Data.Newtype (class Newtype, unwrap)
 
 
+type Id = String
+
+
 data Temperature
     = Hot
     | Cold
@@ -19,7 +22,8 @@ data Visibility
 
 newtype Def d  =
     Def
-    { default :: d
+    { id :: Id
+    , default :: d
     , temperature :: Temperature
     , visibility :: Visibility
     }
@@ -27,7 +31,8 @@ newtype Def d  =
 
 instance functorDef :: Functor Def where
     map f (Def def) =
-        { default : f def.default
+        { id : def.id
+        , default : f def.default
         -- , adapt : ?wh def.adapt
         , temperature : def.temperature
         , visibility : def.visibility
@@ -36,6 +41,13 @@ instance functorDef :: Functor Def where
 
 default :: forall d. Def d -> d
 default (Def def) = def.default -- unwrap >>> _.default
+
+
+isHidden :: forall d. Def d -> Boolean
+isHidden (Def def) =
+    case def.visibility of
+        Hidden -> true
+        Visible -> false
 
 
 {-

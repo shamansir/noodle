@@ -22,7 +22,6 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Node (Node, Link)
 import Noodle.Node as Node
-import Noodle.Node.Shape (InletId, OutletId)
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit as Toolkit
 
@@ -30,8 +29,8 @@ import Noodle.Toolkit as Toolkit
 type Id = String
 
 
-type InletPath = Node.Id /\ InletId
-type OutletPath = Node.Id /\ OutletId
+type InletPath = Node.Id /\ Node.InletId
+type OutletPath = Node.Id /\ Node.OutletId
 
 
 data Patch d =
@@ -216,7 +215,7 @@ linksCountAtNode node patch =
     (foldr addOutletInfo Map.empty linksData)
 
 
-send :: forall d. (Node.Id /\ InletId) -> d -> Patch d -> Effect Unit
+send :: forall d. (Node.Id /\ Node.InletId) -> d -> Patch d -> Effect Unit
 send (node /\ inlet) v patch =
     patch
         # findNode node
@@ -224,12 +223,12 @@ send (node /\ inlet) v patch =
         # fromMaybe (pure unit)
 
 
-send' :: forall d. (Node.Id /\ InletId) -> d -> Patch d -> Effect (Patch d)
+send' :: forall d. (Node.Id /\ Node.InletId) -> d -> Patch d -> Effect (Patch d)
 send' path v patch =
     send path v patch *> pure patch
 
 
-produce :: forall d. (Node.Id /\ OutletId) -> d -> Patch d -> Effect Unit
+produce :: forall d. (Node.Id /\ Node.OutletId) -> d -> Patch d -> Effect Unit
 produce (node /\ outlet) v patch =
     patch
         # findNode node
@@ -237,7 +236,7 @@ produce (node /\ outlet) v patch =
         # fromMaybe (pure unit)
 
 
-produce' :: forall d. (Node.Id /\ OutletId) -> d -> Patch d -> Effect (Patch d)
+produce' :: forall d. (Node.Id /\ Node.OutletId) -> d -> Patch d -> Effect (Patch d)
 produce' path v patch =
     produce path v patch *> pure patch
 

@@ -15,7 +15,7 @@ module Noodle.Node
   , default
   , defaultOfInlet
   , defaultOfOutlet
-  , dimensions
+  , dimensions, dimensionsBy, dimensionsBy'
   , disconnect
   , distribute
   , family
@@ -44,6 +44,7 @@ module Noodle.Node
   , outletsSignal'
   , produce
   , send
+  , in_, out_
   )
   where
 
@@ -91,6 +92,14 @@ type InletId = Fn.InputId
 
 
 type OutletId = Fn.OutputId
+
+
+in_ :: String -> InletId
+in_ = Fn.in_
+
+
+out_ :: String -> OutletId
+out_ = Fn.out_
 
 
 type InletDef d = InletId /\ Channel.Def d -- /\ Signal d
@@ -322,10 +331,12 @@ dimensions :: forall state m d. Node state m d -> Int /\ Int
 dimensions = getFn >>> Fn.dimensions
 
 
-{-
-dimensionsBy :: forall state m d. (Channel.Shape d d -> Boolean) -> Node state m d -> Int /\ Int
-dimensionsBy pred (Node _ shape _ _) = Shape.dimensionsBy pred shape
--}
+dimensionsBy :: forall state m d. (InletDef d -> Boolean) -> (OutletDef d -> Boolean) -> Node state m d -> Int /\ Int
+dimensionsBy iPred oPred = getFn >>> Fn.dimensionsBy iPred oPred
+
+
+dimensionsBy' :: forall state m d. (Channel.Def d -> Boolean) -> Node state m d -> Int /\ Int
+dimensionsBy' pred = dimensionsBy (Tuple.snd >>> pred) (Tuple.snd >>> pred)
 
 
 indexOfInlet :: forall state m d. InletId -> Node state m d -> Maybe Int

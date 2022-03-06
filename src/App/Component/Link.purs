@@ -11,7 +11,6 @@ import Data.Vec2 (Pos)
 import Noodle.Network as Noodle
 
 import Noodle.Node as Node
-import Noodle.Node.Shape (InletId, OutletId)
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -27,8 +26,8 @@ type Slot id = forall query. H.Slot query Void id
 
 
 type Input =
-    { outlet :: Node.Id /\ OutletId
-    , inlet :: Maybe (Node.Id /\ InletId)
+    { outlet :: Node.Id /\ Node.OutletId
+    , inlet :: Maybe (Node.Id /\ Node.InletId)
     , style :: LinkStyle
     , startPos :: Pos
     , endPos :: Pos
@@ -36,8 +35,8 @@ type Input =
 
 
 type State =
-    { outlet :: Node.Id /\ OutletId
-    , inlet :: Maybe (Node.Id /\ InletId)
+    { outlet :: Node.Id /\ Node.OutletId
+    , inlet :: Maybe (Node.Id /\ Node.InletId)
     , style :: LinkStyle
     , startPos :: Pos
     , endPos :: Pos

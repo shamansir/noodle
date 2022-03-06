@@ -6,9 +6,10 @@ module Noodle.Fn
     , ProcessM
     , runFn
     , name
-    , shapeOf, dimensions
+    , shapeOf, dimensions, dimensionsBy
     , findInput, findOutput
     , mapInputs, mapOutputs, mapInputsAndOutputs
+    , in_, out_
     )
     where
 
@@ -125,6 +126,14 @@ instance monadThrowNoodleM :: MonadThrow e m => MonadThrow e (ProcessM state d m
   throwError = ProcessM <<< liftF <<< Lift <<< throwError
 
 
+in_ :: String -> InputId
+in_ = InputId
+
+
+out_ :: String -> OutputId
+out_ = OutputId
+
+
 receive :: forall state d m. InputId -> ProcessM state d m d
 receive iid = ProcessM $ liftF $ Receive' iid identity
 
@@ -214,6 +223,10 @@ shapeOf (Fn _ inputs outputs _) = inputs /\ outputs
 
 dimensions :: forall state i o m d. Fn state i o m d -> Int /\ Int
 dimensions = shapeOf >>> bimap Array.length Array.length
+
+
+dimensionsBy :: forall state i o m d. (i -> Boolean) -> (o -> Boolean) -> Fn state i o m d -> Int /\ Int
+dimensionsBy iPred oPred = shapeOf >>> bimap (Array.filter iPred >>> Array.length) (Array.filter oPred >>> Array.length)
 
 
 findInput :: forall state i o m d. (i -> Boolean) -> Fn state i o m d -> Maybe i

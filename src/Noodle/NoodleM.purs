@@ -29,7 +29,6 @@ import Noodle.Node as Node
 import Noodle.Node (Node)
 -- import Noodle.NodeM (NodeF, NodeM)
 import Noodle.PatchM (PatchF, PatchM)
-import Noodle.Node.Shape (InletId, OutletId)
 import Noodle.Node.Define as Def
 import Noodle.Node.Define (Def)
 import Noodle.Network (Network)
@@ -52,9 +51,9 @@ data NoodleF state d m a
     -- | Connect Patch.Id Patch.OutletPath Patch.InletPath (Unit -> m (a /\ Node.Link))
     -- | Disconnect Patch.Id Patch.OutletPath Patch.InletPath a
     -- | DisconnectLink Node.Link
-    | Receive Patch.Id Node.Id InletId (d -> a)
+    | Receive Patch.Id Node.Id Node.InletId (d -> a)
     | WithPatch Patch.Id (PatchM state d m Unit) a -- (Node d -> a)
-    | WithNode Patch.Id Node.Id (Maybe (Node d) -> a) -- (Node d -> a)
+    | WithNode Patch.Id Node.Id (Maybe (Node state m d) -> a) -- (Node d -> a)
     -- | Send Patch.Id Node.Id InletId d a
     -- | Produce Patch.Id Node.Id OutletId d a
     -- | GetAtInlet Patch.Id Node.Id InletId (Unit -> m (a /\ d))
@@ -109,8 +108,8 @@ addNode :: forall state d m. Patch.Id -> Node.Family -> NoodleM state d m Unit
 addNode pid nfid = NoodleM $ liftF $ AddNode pid nfid $ unit
 
 
-receive :: forall state d m. Patch.Id -> Node.Id -> InletId -> NoodleM state d m d
-receive pid nid iid = NoodleM $ liftF $ Receive pid nid iid identity
+receive :: forall state d m. Patch.Id -> Node.Id -> String {- FIXME: Node.InletId -} -> NoodleM state d m d
+receive pid nid iid = NoodleM $ liftF $ Receive pid nid (Node.in_ iid) identity
 
 
 program :: forall state d m. MonadEffect m => NoodleM state d m Unit
