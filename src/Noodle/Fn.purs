@@ -8,6 +8,7 @@ module Noodle.Fn
     , name
     , shapeOf, dimensions
     , findInput, findOutput
+    , mapInputs, mapOutputs, mapInputsAndOutputs
     )
     where
 
@@ -20,6 +21,7 @@ import Control.Monad.State.Class (class MonadState)
 
 import Data.Array as Array
 import Data.Bifunctor (class Bifunctor, lmap, bimap)
+import Data.Functor.Invariant (class Invariant, imap)
 import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe)
 import Data.Tuple.Nested (type (/\), (/\))
@@ -39,6 +41,11 @@ type Name = String
 
 
 data Fn state i o m d = Fn Name (Array i) (Array o) (ProcessM state d m Unit)
+
+
+instance invariantFn :: Invariant (Fn state i o m) where
+    imap :: forall state i o m d d'. (d -> d') -> (d' -> d) -> Fn state i o m d -> Fn state i o m d'
+    imap f g (Fn name is os processM) = Fn name is os $ imapProcessMFocus f g processM
 
 
 newtype InputId = InputId String
@@ -150,12 +157,16 @@ imapProcessMFocus f g (ProcessM processFree) =
     --ProcessM $ liftF $ imapProcessFFocus f g processFree
 
 
--- imapFn
+mapInputs :: forall state i i' o m d. (i -> i') -> Fn state i o m d -> Fn state i' o m d
+mapInputs f (Fn name is os processM) = Fn name (f <$> is) os processM
 
 
--- mapInputs
+mapOutputs :: forall state i o o' m d. (o -> o') -> Fn state i o m d -> Fn state i o' m d
+mapOutputs f (Fn name is os processM) = Fn name is (f <$> os) processM
 
--- mapOutputs
+
+mapInputsAndOutputs :: forall state i i' o o' m d. (i -> i') -> (o -> o') -> Fn state i o m d -> Fn state i' o' m d
+mapInputsAndOutputs f g = mapInputs f >>> mapOutputs g
 
 
 runFn :: forall state i o d. Receive d -> Send d -> d -> state -> Fn state i o Aff d -> Aff Unit

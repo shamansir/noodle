@@ -359,17 +359,17 @@ family :: forall state m d. Node state m d -> Family
 family = getFn >>> Fn.name
 
 
-move :: forall state m a b. (a -> b) -> (b -> a) -> Node state m a -> Effect (Node state m b)
-move f g (Node state m default shape (inChannel /\ outChannel) nodeFamily) =
+move :: forall state m d d'. (d -> d') -> (d' -> d) -> Node state m d -> Effect (Node state m d')
+move f g (Node default fn (inChannel /\ outChannel)) =
     let
-        movedShape = imap f g shape
+        movedFn = imap f g $ Fn.mapInputsAndOutputs (map $ map f) (map $ map f) fn
         nextDefault = f default
     in do
         newInChannel <- Ch.channel (consumerIn /\ nextDefault)
         newOutChannel <- Ch.channel (consumerOut /\ nextDefault)
-        _ <- Signal.runSignal $ (Ch.subscribe inChannel ~> ((<$>) f) ~> Ch.send newInChannel)
-        _ <- Signal.runSignal $ (Ch.subscribe outChannel ~> ((<$>) f) ~> Ch.send newOutChannel)
-        pure $ Node nextDefault movedShape (newInChannel /\ newOutChannel) nodeFamily
+        _ <- Signal.runSignal $ (Ch.subscribe inChannel ~> map f ~> Ch.send newInChannel)
+        _ <- Signal.runSignal $ (Ch.subscribe outChannel ~> map f ~> Ch.send newOutChannel)
+        pure $ Node nextDefault movedFn (newInChannel /\ newOutChannel)
 
 
 linksAtInlet :: InletId -> LinksCount -> Int

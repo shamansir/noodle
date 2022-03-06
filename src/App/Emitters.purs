@@ -20,7 +20,6 @@ import Signal.DOM as Signal
 
 import Noodle.Node (Node)
 import Noodle.Node as Node
-import Noodle.Node.Shape (InletId, OutletId)
 
 import Web.HTML.Window (document)
 import Web.Event.Event (EventType)
@@ -62,27 +61,27 @@ fromSignal signal = H.liftEffect $ do
     pure emitter
 
 
-fromInlet :: forall m d. MonadEffect m => Node d -> InletId -> m (HS.Emitter d)
+fromInlet :: forall state m d. MonadEffect m => Node state m d -> Node.InletId -> m (HS.Emitter d)
 fromInlet node = fromSignal <<< Node.inletSignal node
 
 
-fromOutlet :: forall m d. MonadEffect m => Node d -> OutletId -> m (HS.Emitter d)
+fromOutlet :: forall state m d. MonadEffect m => Node state m d -> Node.OutletId -> m (HS.Emitter d)
 fromOutlet node = fromSignal <<< Node.outletSignal node
 
 
-fromAllInlets :: forall m d. MonadEffect m => Node d -> m (HS.Emitter (InletId /\ d))
+fromAllInlets :: forall state m d. MonadEffect m => Node state m d -> m (HS.Emitter (Node.InletId /\ d))
 fromAllInlets = fromSignal <<< Node.inletsSignal
 
 
-fromAllOutlets :: forall m d. MonadEffect m => Node d -> m (HS.Emitter (OutletId /\ d))
+fromAllOutlets :: forall state m d. MonadEffect m => Node state m d -> m (HS.Emitter (Node.OutletId /\ d))
 fromAllOutlets = fromSignal <<< Node.outletsSignal
 
 
-fromAllInlets' :: forall m d. MonadEffect m => Node d -> m (HS.Emitter (InletId /-> d))
+fromAllInlets' :: forall state m d. MonadEffect m => Node state m d -> m (HS.Emitter (Node.InletId /-> d))
 fromAllInlets' = fromSignal <<< Node.inletsSignal'
 
 
-fromAllOutlets' :: forall m d. MonadEffect m => Node d -> m (HS.Emitter (OutletId /-> d))
+fromAllOutlets' :: forall state m d. MonadEffect m => Node state m d -> m (HS.Emitter (Node.OutletId /-> d))
 fromAllOutlets' = fromSignal <<< Node.outletsSignal'
 
 
