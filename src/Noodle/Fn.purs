@@ -9,12 +9,15 @@ module Noodle.Fn
     , shapeOf, dimensions, dimensionsBy
     , findInput, findOutput
     , mapInputs, mapOutputs, mapInputsAndOutputs
-    , in_, out_
+    , in_, out_, _in, _out
     )
     where
 
 
 import Prelude
+
+
+import Data.Newtype (class Newtype, unwrap)
 
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.Free (Free, liftF, runFreeM, foldFree)
@@ -54,12 +57,14 @@ newtype InputId = InputId String
 derive newtype instance eqInputId :: Eq InputId
 derive newtype instance ordInputId :: Ord InputId
 derive newtype instance showInputId :: Show InputId
+derive instance newtypeInputId :: Newtype InputId _
 
 newtype OutputId = OutputId String
 
 derive newtype instance eqOutputId :: Eq OutputId
 derive newtype instance ordOutputId :: Ord OutputId
 derive newtype instance showOutputId :: Show OutputId
+derive instance newtypeOutputId :: Newtype OutputId _
 
 
 type Process m d = Receive d -> m (Pass d)
@@ -132,8 +137,16 @@ in_ :: String -> InputId
 in_ = InputId
 
 
+_in :: InputId -> String
+_in = unwrap
+
+
 out_ :: String -> OutputId
 out_ = OutputId
+
+
+_out :: OutputId -> String
+_out = unwrap
 
 
 receive :: forall state d m. InputId -> ProcessM state d m d

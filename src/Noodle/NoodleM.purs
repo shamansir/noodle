@@ -29,8 +29,6 @@ import Noodle.Node as Node
 import Noodle.Node (Node)
 -- import Noodle.NodeM (NodeF, NodeM)
 import Noodle.PatchM (PatchF, PatchM)
-import Noodle.Node.Define as Def
-import Noodle.Node.Define (Def)
 import Noodle.Network (Network)
 
 

@@ -15,7 +15,6 @@ import Data.Traversable (sequence)
 
 import Noodle.Node (Node)
 import Noodle.Node as Node
-import Noodle.Node.Define (Def)
 
 
 data Toolkit d = Toolkit d (Node.Id /-> Def d)

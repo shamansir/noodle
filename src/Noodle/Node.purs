@@ -44,7 +44,7 @@ module Noodle.Node
   , outletsSignal'
   , produce
   , send
-  , in_, out_
+  , in_, out_, _in, _out
   , inletsBy, outletsBy
   )
   where
@@ -101,6 +101,14 @@ in_ = Fn.in_
 
 out_ :: String -> OutletId
 out_ = Fn.out_
+
+
+_in :: InletId -> String
+_in = Fn._in
+
+
+_out :: OutletId -> String
+_out = Fn._out
 
 
 type InletDef d = InletId /\ Channel.Def d -- /\ Signal d
