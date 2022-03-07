@@ -10,9 +10,12 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 
 import Test.Nodes (spec) as Nodes
+import Test.Fn (spec) as Fn
 
 
 main :: Effect Unit
 main = launchAff_ $ runSpec [consoleReporter] do
+  describe "Fn"
+    Fn.spec
   describe "Noodle"
     Nodes.spec

@@ -26,6 +26,7 @@ to generate this file without the comments in this block.
   , "effect"
   , "either"
   , "foldable-traversable"
+  , "free"
   , "halogen"
   , "halogen-css"
   , "halogen-hooks"

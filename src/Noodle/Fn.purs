@@ -1,5 +1,5 @@
 module Noodle.Fn
-    ( Fn
+    ( Fn, make
     , InputId(..), OutputId(..)
     , Receive(..), Pass(..), Send(..)
     , receive, send
@@ -26,6 +26,7 @@ import Control.Monad.State.Class (class MonadState)
 import Data.Array as Array
 import Data.Bifunctor (class Bifunctor, lmap, bimap)
 import Data.Functor.Invariant (class Invariant, imap)
+import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe)
 import Data.Tuple.Nested (type (/\), (/\))
@@ -44,11 +45,11 @@ import Effect.Ref as Ref
 type Name = String
 
 
-data Fn state i o m d = Fn Name (Array i) (Array o) (ProcessM state d m Unit)
+data Fn i o state m d = Fn Name (Array i) (Array o) (ProcessM i o state d m Unit)
 
 
-instance invariantFn :: Invariant (Fn state i o m) where
-    imap :: forall state i o m d d'. (d -> d') -> (d' -> d) -> Fn state i o m d -> Fn state i o m d'
+instance invariantFn :: Invariant (Fn i o state m) where
+    imap :: forall i o state m d d'. (d -> d') -> (d' -> d) -> Fn i o state m d -> Fn i o state m d'
     imap f g (Fn name is os processM) = Fn name is os $ imapProcessMFocus f g processM
 
 
@@ -67,36 +68,36 @@ derive newtype instance showOutputId :: Show OutputId
 derive instance newtypeOutputId :: Newtype OutputId _
 
 
-type Process m d = Receive d -> m (Pass d)
+type Process i o m d = Receive i d -> m (Pass o d)
 
 
-newtype Receive d = Receive { last :: InputId, fromInputs :: InputId /-> d }
+newtype Receive i d = Receive { last :: Maybe i, fromInputs :: i /-> d }
 
 
-instance functorReceive :: Functor Receive where
+instance functorReceive :: Functor (Receive i) where
     map f (Receive { last, fromInputs }) = Receive { last, fromInputs : f <$> fromInputs }
 
 
-newtype Pass d = Pass { toOutlets :: OutputId /-> d }
+newtype Pass o d = Pass { toOutputs :: o /-> d }
 
 
-instance functorPass :: Functor Pass where
-    map f (Pass { toOutlets }) = Pass { toOutlets : f <$> toOutlets }
+instance functorPass :: Functor (Pass o) where
+    map f (Pass { toOutputs }) = Pass { toOutputs : f <$> toOutputs }
 
 
-newtype Send d = Send (OutputId -> d -> Effect Unit)
+newtype Send o d = Send (o -> d -> Effect Unit)
 
 
-data ProcessF state d m a
+data ProcessF i o state d m a
     = State (state -> a /\ state)
     | Lift (m a)
-    | Send' OutputId d a
-    | Receive' InputId (d -> a)
+    | Send' o d a
+    | Receive' i (d -> a)
     -- Connect
     -- Disconnect etc.
 
 
-instance functorNodeF :: Functor m => Functor (ProcessF state d m) where
+instance functorNodeF :: Functor m => Functor (ProcessF i o state d m) where
     map f = case _ of
         State k -> State (lmap f <<< k)
         Lift m -> Lift (map f m)
@@ -104,32 +105,32 @@ instance functorNodeF :: Functor m => Functor (ProcessF state d m) where
         Send' oid d next -> Send' oid d $ f next
 
 
-newtype ProcessM state d m a = ProcessM (Free (ProcessF state d m) a)
+newtype ProcessM i o state d m a = ProcessM (Free (ProcessF i o state d m) a)
 
 
-derive newtype instance functorProcessM :: Functor (ProcessM state d m)
-derive newtype instance applyProcessM :: Apply (ProcessM state d m)
-derive newtype instance applicativeProcessM :: Applicative (ProcessM state d m)
-derive newtype instance bindProcessM :: Bind (ProcessM state d m)
-derive newtype instance monadProcessM :: Monad (ProcessM state d m)
-derive newtype instance semigroupProcessM :: Semigroup a => Semigroup (ProcessM state d m a)
-derive newtype instance monoidProcessM :: Monoid a => Monoid (ProcessM state d m a)
---derive newtype instance bifunctorProcessM :: Bifunctor (ProcessM state d m a)
+derive newtype instance functorProcessM :: Functor (ProcessM i o state d m)
+derive newtype instance applyProcessM :: Apply (ProcessM i o state d m)
+derive newtype instance applicativeProcessM :: Applicative (ProcessM i o state d m)
+derive newtype instance bindProcessM :: Bind (ProcessM i o state d m)
+derive newtype instance monadProcessM :: Monad (ProcessM i o state d m)
+derive newtype instance semigroupProcessM :: Semigroup a => Semigroup (ProcessM i o state d m a)
+derive newtype instance monoidProcessM :: Monoid a => Monoid (ProcessM i o state d m a)
+--derive newtype instance bifunctorProcessM :: Bifunctor (ProcessM i o state d m a)
 
 
-instance monadEffectNoodleM :: MonadEffect m => MonadEffect (ProcessM state d m) where
+instance monadEffectNoodleM :: MonadEffect m => MonadEffect (ProcessM i o state d m) where
   liftEffect = ProcessM <<< liftF <<< Lift <<< liftEffect
 
 
-instance monadAffNoodleM :: MonadAff m => MonadAff (ProcessM state d m) where
+instance monadAffNoodleM :: MonadAff m => MonadAff (ProcessM i o state d m) where
   liftAff = ProcessM <<< liftF <<< Lift <<< liftAff
 
 
-instance monadStateNoodleM :: MonadState state (ProcessM state d m) where
+instance monadStateNoodleM :: MonadState state (ProcessM i o state d m) where
   state = ProcessM <<< liftF <<< State
 
 
-instance monadThrowNoodleM :: MonadThrow e m => MonadThrow e (ProcessM state d m) where
+instance monadThrowNoodleM :: MonadThrow e m => MonadThrow e (ProcessM i o state d m) where
   throwError = ProcessM <<< liftF <<< Lift <<< throwError
 
 
@@ -149,24 +150,67 @@ _out :: OutputId -> String
 _out = unwrap
 
 
-receive :: forall state d m. InputId -> ProcessM state d m d
+{- Creating -}
+
+
+make :: forall i o state m d. Name -> Array i -> Array o -> ProcessM i o state d m Unit -> Fn i o state m d
+make = Fn
+
+
+{-
+program :: forall state d m. MonadEffect m => ProcessM state d m Unit
+program = do
+    x <- receive $ in_ "ee"
+    n <- liftEffect $ pure 0
+    -- modify_ ((+) 1)
+    -- pure (x + n)
+    pure unit
+
+-}
+
+
+{- Processing -}
+
+receive :: forall i o state d m. i -> ProcessM i o state d m d
 receive iid = ProcessM $ liftF $ Receive' iid identity
 
 
-send :: forall state d m. OutputId -> d -> ProcessM state d m Unit
+send :: forall i o state d m. o -> d -> ProcessM i o state d m Unit
 send oid d = ProcessM $ liftF $ Send' oid d unit
 
 
-{- program :: forall state d m. MonadEffect m => ProcessM state d m Unit
-program = do
-    x <- receive "ee"
-    n <- liftEffect $ pure 0
-    -- modify_ ((+) 1)
-    --pure (x + n)
-    pure unit -}
+{- Maps -}
 
 
-imapProcessFFocus :: forall state d d' m a. (d -> d') -> (d' -> d) -> ProcessF state d m ~> ProcessF state d' m
+mapProcessFInputs :: forall i i' o state d m a. (i -> i') -> ProcessF i o state d m ~> ProcessF i' o state d m
+mapProcessFInputs f =
+    case _ of
+        State k -> State k
+        Lift m -> Lift m
+        Receive' iid k -> Receive' (f iid) k
+        Send' oid d next -> Send' oid d next
+
+
+mapProcessFOutputs :: forall i o o' state d m a. (o -> o') -> ProcessF i o state d m ~> ProcessF i o' state d m
+mapProcessFOutputs f =
+    case _ of
+        State k -> State k
+        Lift m -> Lift m
+        Receive' iid k -> Receive' iid k
+        Send' oid d next -> Send' (f oid) d next
+
+
+mapProcessMInputs :: forall i i' o state d m a. (i -> i') -> ProcessM i o state d m ~> ProcessM i' o state d m
+mapProcessMInputs f (ProcessM processFree) =
+    ProcessM $ foldFree (liftF <<< mapProcessFInputs f) processFree
+
+
+mapProcessMOutputs :: forall i o o' state d m a. (o -> o') -> ProcessM i o state d m ~> ProcessM i o' state d m
+mapProcessMOutputs f (ProcessM processFree) =
+    ProcessM $ foldFree (liftF <<< mapProcessFOutputs f) processFree
+
+
+imapProcessFFocus :: forall i o state d d' m a. (d -> d') -> (d' -> d) -> ProcessF i o state d m ~> ProcessF i o state d' m
 imapProcessFFocus f g =
     case _ of
         State k -> State k
@@ -175,36 +219,39 @@ imapProcessFFocus f g =
         Send' oid d next -> Send' oid (f d) next
 
 
-imapProcessMFocus :: forall state d d' m a. (d -> d') -> (d' -> d) -> ProcessM state d m ~> ProcessM state d' m
+imapProcessMFocus :: forall i o state d d' m a. (d -> d') -> (d' -> d) -> ProcessM i o state d m ~> ProcessM i o state d' m
 imapProcessMFocus f g (ProcessM processFree) =
     ProcessM $ foldFree (liftF <<< imapProcessFFocus f g) processFree
     --ProcessM $ liftF $ imapProcessFFocus f g processFree
 
 
-mapInputs :: forall state i i' o m d. (i -> i') -> Fn state i o m d -> Fn state i' o m d
-mapInputs f (Fn name is os processM) = Fn name (f <$> is) os processM
+mapInputs :: forall i i' o state m d. (i -> i') -> Fn i o state m d -> Fn i' o state m d
+mapInputs f (Fn name is os processM) = Fn name (f <$> is) os $ mapProcessMInputs f processM
 
 
-mapOutputs :: forall state i o o' m d. (o -> o') -> Fn state i o m d -> Fn state i o' m d
-mapOutputs f (Fn name is os processM) = Fn name is (f <$> os) processM
+mapOutputs :: forall i o o' state m d. (o -> o') -> Fn i o state m d -> Fn i o' state m d
+mapOutputs f (Fn name is os processM) = Fn name is (f <$> os) $ mapProcessMOutputs f processM
 
 
-mapInputsAndOutputs :: forall state i i' o o' m d. (i -> i') -> (o -> o') -> Fn state i o m d -> Fn state i' o' m d
+mapInputsAndOutputs :: forall i i' o o' state m d. (i -> i') -> (o -> o') -> Fn i o state m d -> Fn i' o' state m d
 mapInputsAndOutputs f g = mapInputs f >>> mapOutputs g
 
 
-runFn :: forall state i o d. Receive d -> Send d -> d -> state -> Fn state i o Aff d -> Aff Unit
+{- Running -}
+
+
+runFn :: forall i o state d. Receive i d -> Send o d -> d -> state -> Fn i o state Aff d -> Aff Unit
 runFn receive send default state (Fn _ _ _ processM) =
     runProcessM receive send default state processM
 
 
-runProcessM :: forall state d. Receive d -> Send d -> d -> state -> ProcessM state d Aff ~> Aff
+runProcessM :: forall i o state d. Receive i d -> Send o d -> d -> state -> ProcessM i o state d Aff ~> Aff
 runProcessM receive send default state (ProcessM processFree) = do
     stateRef <- liftEffect $ Ref.new state
     runProcessFreeM receive send default stateRef processFree
 
 
-runProcessFreeM :: forall state d. Receive d -> Send d -> d -> Ref state -> Free (ProcessF state d Aff) ~> Aff
+runProcessFreeM :: forall i o state d. Receive i d -> Send o d -> d -> Ref state -> Free (ProcessF i o state d Aff) ~> Aff
 runProcessFreeM (Receive { last, fromInputs }) (Send sendFn) default stateRef =
     --foldFree go-- (go stateRef)
     runFreeM go
@@ -217,36 +264,41 @@ runProcessFreeM (Receive { last, fromInputs }) (Send sendFn) default stateRef =
                     pure next
         go (Lift m) = m
         go (Receive' _ getV) = pure $ getV default
-        go (Send' _ _ next) = pure next
+        go (Send' outlet v next) = do
+            liftEffect $ sendFn outlet v
+            pure next
 
         getUserState = liftEffect $ Ref.read stateRef
         writeUserState nextState = liftEffect $ Ref.write nextState stateRef
-
 
 
 -- run :: forall state d m a. state -> Network d -> NoodleM state d m a -> Effect (state /\ Network d)
 -- run state nw = case _ of
 --     _ -> pure $ state /\ nw
 
-name :: forall state i o m d. Fn state i o m d -> Name
+
+{- Get information about the function -}
+
+
+name :: forall i o state m d. Fn i o state m d -> Name
 name (Fn n _ _ _) = n
 
 
-shapeOf :: forall state i o m d. Fn state i o m d -> Array i /\ Array o
+shapeOf :: forall i o state m d. Fn i o state m d -> Array i /\ Array o
 shapeOf (Fn _ inputs outputs _) = inputs /\ outputs
 
 
-dimensions :: forall state i o m d. Fn state i o m d -> Int /\ Int
+dimensions :: forall i o state m d. Fn i o state m d -> Int /\ Int
 dimensions = shapeOf >>> bimap Array.length Array.length
 
 
-dimensionsBy :: forall state i o m d. (i -> Boolean) -> (o -> Boolean) -> Fn state i o m d -> Int /\ Int
+dimensionsBy :: forall i o state m d. (i -> Boolean) -> (o -> Boolean) -> Fn i o state m d -> Int /\ Int
 dimensionsBy iPred oPred = shapeOf >>> bimap (Array.filter iPred >>> Array.length) (Array.filter oPred >>> Array.length)
 
 
-findInput :: forall state i o m d. (i -> Boolean) -> Fn state i o m d -> Maybe i
+findInput :: forall i o state m d. (i -> Boolean) -> Fn i o state m d -> Maybe i
 findInput pred (Fn _ inputs _ _) = Array.index inputs =<< Array.findIndex pred inputs
 
 
-findOutput :: forall state i o m d. (o -> Boolean) -> Fn state i o m d -> Maybe o
+findOutput :: forall i o state m d. (o -> Boolean) -> Fn i o state m d -> Maybe o
 findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex pred outputs
