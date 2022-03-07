@@ -3,6 +3,7 @@ module Noodle.Patch where
 
 import Prelude
 import Effect (Effect)
+import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 
 -- import Data.Functor (lift)
@@ -57,22 +58,22 @@ addNode name node (Patch nodes links) =
         links
 
 
-addNodeFrom :: forall node_state m d. Toolkit d -> Node.Family /\ Node.Id -> Patch node_state m d -> Effect (Patch node_state m d)
-addNodeFrom toolkit (nodeFamily /\ nodeId) patch =
-    Toolkit.spawn nodeFamily toolkit
+addNodeFrom :: forall node_state d. Toolkit node_state Aff d -> node_state -> Node.Family /\ Node.Id -> Patch node_state Aff d -> Effect (Patch node_state Aff d)
+addNodeFrom toolkit state (nodeFamily /\ nodeId) patch =
+    Toolkit.spawn nodeFamily state toolkit
         <#> maybe patch (\node -> addNode nodeId node patch)
 
 
-addNodeFrom' :: forall node_state m d. Toolkit d -> Node.Family -> Patch node_state m d -> Effect (Node.Id /\ Patch node_state m d)
-addNodeFrom' toolkit nodeFamily patch =
-    addNodeFrom toolkit (nodeFamily /\ nextNodeId) patch
+addNodeFrom' :: forall node_state d. Toolkit node_state Aff d -> node_state -> Node.Family -> Patch node_state Aff d -> Effect (Node.Id /\ Patch node_state Aff d)
+addNodeFrom' toolkit state nodeFamily patch =
+    addNodeFrom toolkit state (nodeFamily /\ nextNodeId) patch
         <#> ((/\) nextNodeId)
     where nextNodeId = addUniqueNodeId patch nodeFamily
 
 
-addNodesFrom :: forall node_state m d. Toolkit d -> Array (Node.Family /\ Node.Id) -> Patch node_state m d -> Effect (Patch node_state m d)
-addNodesFrom toolkit pairs patch =
-    foldr (\pair patchEff -> patchEff >>= addNodeFrom toolkit pair) (pure patch) pairs
+addNodesFrom :: forall node_state d. Toolkit node_state Aff d -> node_state -> Array (Node.Family /\ Node.Id) -> Patch node_state Aff d -> Effect (Patch node_state Aff d)
+addNodesFrom toolkit state pairs patch =
+    foldr (\pair patchEff -> patchEff >>= addNodeFrom toolkit state pair) (pure patch) pairs
 
 
 nodes :: forall node_state m d. Patch node_state m d -> Array (Node.Id /\ Node node_state m d)
