@@ -8,7 +8,6 @@ import Data.Vec2 (Pos)
 import Data.Maybe (Maybe(..))
 
 import Noodle.Node as Node
-import Noodle.Node.Shape (InletId, OutletId)
 import Noodle.Patch (Patch)
 import Noodle.Patch as Patch
 
@@ -22,13 +21,13 @@ type Focusable = Clickable
 
 data Clickable
     = Header Node.Id
-    | Inlet (Node.Id /\ InletId)
-    | Outlet (Node.Id /\ OutletId)
+    | Inlet (Node.Id /\ Node.InletId)
+    | Outlet (Node.Id /\ Node.OutletId)
 
 
 data Draggable
     = Node Node.Id
-    | Link (Node.Id /\ OutletId) (Maybe (Node.Id /\ InletId))
+    | Link (Node.Id /\ Node.OutletId) (Maybe (Node.Id /\ Node.InletId))
 
 
 type State = Mouse.State' (Pos /\ Focusable) (Pos /\ Clickable) (Pos /\ Draggable)

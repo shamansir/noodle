@@ -41,7 +41,6 @@ import Noodle.Patch (Patch) as Noodle
 import Noodle.Patch as Patch
 import Noodle.Toolkit (Toolkit) as Noodle
 import Noodle.Toolkit as Toolkit
-import Noodle.Node.Shape (InletId, OutletId)
 
 import App.Emitters as Emitters
 import App.Mouse as M

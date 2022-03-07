@@ -22,11 +22,10 @@ import Data.Map.Extra (type (/->))
 
 import Control.Alternative ((<|>))
 
-import Noodle.Node ((+>), (++>))
+-- import Noodle.Node ((+>), (++>))
 import Noodle.Node (Node) as Noodle
 import Noodle.Node as Node
-import Noodle.Channel.Shape as Ch
-import Noodle.Node.Shape (InletId, OutletId)
+import Noodle.Channel as Ch
 
 import App.Style (Style, NodeFlow(..), TitleMode(..), Connector(..))
 import App.Style (Flags, defaultFlags) as Style
@@ -67,46 +66,46 @@ data Output patch_action
 _body = Proxy :: Proxy "body"
 
 
-type Input patch_action patch_state d m =
-    { node :: Noodle.Node d
+type Input patch_action patch_state node_state d m =
+    { node :: Noodle.Node node_state m d
     , name :: Node.Id
     , style :: Style
     , flow :: NodeFlow
     , getFlags :: UI.GetFlags
     , markings :: UI.Markings
-    , controlArea :: Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state d m)
+    , controlArea :: Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state node_state d m)
     , linksCount :: Node.LinksCount
     , patchState :: patch_state
     }
 
 
-type State patch_action patch_state d m =
-    Input patch_action patch_state d m
+type State patch_action patch_state node_state d m =
+    Input patch_action patch_state node_state d m
 
 
-type RInput patch_state d =
-    { node :: Noodle.Node d
+type RInput patch_state node_state d m =
+    { node :: Noodle.Node node_state m d
     , linksCount :: Node.LinksCount
     , patchState :: patch_state
     }
 
 
-data Action patch_action patch_state d
-    = Receive (RInput patch_state d)
+data Action patch_action patch_state node_state d m
+    = Receive (RInput patch_state node_state d m)
     | RequestRemove
     | FromNode (UI.FromNode patch_action d)
     | NoOp
 
 
-initialState :: forall patch_action patch_state d m. Input patch_action patch_state d m -> State patch_action patch_state d m
+initialState :: forall patch_action patch_state node_state d m. Input patch_action patch_state d m -> State patch_action patch_state node_state d m
 initialState = identity
 
 
 render
-    :: forall patch_action patch_state d m
+    :: forall patch_action patch_state node_state d m
      . MonadEffect m
-    => State patch_action patch_state d m
-    -> H.ComponentHTML (Action patch_action patch_state d) (Slots patch_action d) m
+    => State patch_action patch_state node_state d m
+    -> H.ComponentHTML (Action patch_action patch_state node_state d) (Slots patch_action d) m
 render s@{ node, name, style, flow, linksCount } =
     HS.g
         []
@@ -402,12 +401,18 @@ handleAction = case _ of
         H.raise Remove
 
     FromNode (UI.SendToOutlet outlet d) -> do
+        pure unit
+        {- FIXME:
         state <- H.get
         liftEffect (state.node ++> (outlet /\ d))
+        -}
 
     FromNode (UI.SendToInlet inlet d) -> do
+        pure unit
+        {- FIXME:
         state <- H.get
         liftEffect (state.node +> (inlet /\ d))
+        -}
 
     FromNode (UI.Replace family) -> do
         H.raise $ Replace family
@@ -438,11 +443,11 @@ component =
 
 data WhereInside
     = Header
-    | Inlet InletId
-    | Outlet OutletId
+    | Inlet Node.InletId
+    | Outlet Node.OutletId
 
 
-whereInside :: forall d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Node d -> Pos -> Maybe WhereInside
+whereInside :: forall node_state m d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Node node_state m d -> Pos -> Maybe WhereInside
 whereInside getFlags style flow node pos =
     if V2.inside'
         (pos - Calc.titlePos f style flow node)
@@ -467,7 +472,7 @@ areaOf getFlags style flow node =
     Calc.nodeArea (UI.flagsFor getFlags node) style flow node
 
 
-inletConnectorPos :: forall d. UI.GetFlags -> Style -> NodeFlow -> InletId -> Noodle.Node d -> Maybe Pos
+inletConnectorPos :: forall d. UI.GetFlags -> Style -> NodeFlow -> Node.InletId -> Noodle.Node d -> Maybe Pos
 inletConnectorPos getFlags style flow inletId node =
     Node.indexOfInlet inletId node
         <#> Calc.inletConnectorPos
@@ -477,7 +482,7 @@ inletConnectorPos getFlags style flow inletId node =
                 node
 
 
-outletConnectorPos :: forall d. UI.GetFlags -> Style -> NodeFlow -> OutletId -> Noodle.Node d -> Maybe Pos
+outletConnectorPos :: forall d. UI.GetFlags -> Style -> NodeFlow -> Node.OutletId -> Noodle.Node d -> Maybe Pos
 outletConnectorPos getFlags style flow outletId node =
     Node.indexOfOutlet outletId node
         <#> Calc.outletConnectorPos

@@ -50,6 +50,10 @@ isHidden (Def def) =
         Visible -> false
 
 
+id :: forall d. Def d -> Id
+id (Def { id }) = id
+
+
 {-
 class Channel d where
     --adapt :: d -> d

@@ -26,9 +26,9 @@ import Noodle.Patch as Patch
 import Noodle.Patch (Patch)
 import Noodle.Node as Node
 import Noodle.Node (Node)
-import Noodle.Node.Shape (InletId, OutletId)
-import Noodle.Node.Define as Def
-import Noodle.Node.Define (Def)
+-- import Noodle.Node.Shape (InletId, OutletId)
+-- import Noodle.Node.Define as Def
+-- import Noodle.Node.Define (Def)
 
 import Halogen (HalogenM)
 
@@ -86,14 +86,14 @@ program = do
     pure unit -}
 
 
-runPatchM :: forall state d. d -> state -> Patch d -> PatchM state d Aff ~> Aff
+runPatchM :: forall state node_state d. d -> state -> Patch node_state Aff d -> PatchM state d Aff ~> Aff
 runPatchM default state patch (PatchM patchFree) = do
     stateRef <- liftEffect $ Ref.new state
     patchRef <- liftEffect $ Ref.new patch
     runPatchFreeM default stateRef patchRef patchFree
 
 
-runPatchFreeM :: forall state d. d -> Ref state -> Ref (Patch d) -> Free (PatchF state d Aff) ~> Aff
+runPatchFreeM :: forall state node_state m d. d -> Ref state -> Ref (Patch node_state m d) -> Free (PatchF state d Aff) ~> Aff
 runPatchFreeM default stateRef patchRef =
     --foldFree go-- (go stateRef)
     runFreeM go

@@ -45,12 +45,13 @@ module Noodle.Node
   , produce
   , send
   , in_, out_
+  , inletsBy, outletsBy
   )
   where
 
 import Prelude
 
-import Data.Array (mapMaybe, elemIndex) as Array
+import Data.Array (mapMaybe, elemIndex, filter) as Array
 import Data.Functor (class Functor)
 import Data.Functor.Invariant (class Invariant, imap)
 import Data.Bifunctor (bimap)
@@ -311,20 +312,16 @@ inlets :: forall state m d. Node state m d -> Array (InletDef d)
 inlets = getShape >>> Tuple.fst
 
 
-{-
-inletsBy :: forall state m d. (InletDef d -> Boolean) -> Node state m d -> Array (InletDef d)
-inletsBy pred = getShape' >>> Shape.inletsBy pred
--}
+inletsBy :: forall state m d. (Channel.Def d -> Boolean) -> Node state m d -> Array (InletDef d)
+inletsBy pred = inlets >>> Array.filter (Tuple.snd >>> pred)
 
 
 outlets :: forall state m d. Node state m d -> Array (OutletDef d)
 outlets = getShape >>> Tuple.snd
 
 
-{-
-outletsBy :: forall state m d. (Channel.Shape d d -> Boolean) -> Node state m d -> Array (InletId /\ Channel.Shape d d)
-outletsBy pred = getShape' >>> Shape.outletsBy pred
--}
+outletsBy :: forall state m d. (Channel.Def d -> Boolean) -> Node state m d -> Array (OutletDef d)
+outletsBy pred = outlets >>> Array.filter (Tuple.snd >>> pred)
 
 
 dimensions :: forall state m d. Node state m d -> Int /\ Int

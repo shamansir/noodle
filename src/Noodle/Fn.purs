@@ -53,11 +53,13 @@ newtype InputId = InputId String
 
 derive newtype instance eqInputId :: Eq InputId
 derive newtype instance ordInputId :: Ord InputId
+derive newtype instance showInputId :: Show InputId
 
 newtype OutputId = OutputId String
 
 derive newtype instance eqOutputId :: Eq OutputId
 derive newtype instance ordOutputId :: Ord OutputId
+derive newtype instance showOutputId :: Show OutputId
 
 
 type Process m d = Receive d -> m (Pass d)

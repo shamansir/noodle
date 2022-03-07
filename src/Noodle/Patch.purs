@@ -24,6 +24,7 @@ import Noodle.Node (Node, Link)
 import Noodle.Node as Node
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit as Toolkit
+-- import Noodle.PatchM (PatchM)
 
 
 type Id = String
@@ -33,9 +34,9 @@ type InletPath = Node.Id /\ Node.InletId
 type OutletPath = Node.Id /\ Node.OutletId
 
 
-data Patch d =
+data Patch node_state m d =
     Patch
-        (Node.Id /-> Node d)
+        (Node.Id /-> Node node_state m d)
         ((OutletPath /\ InletPath) /-> Link)
 
 
@@ -45,77 +46,77 @@ infixl 5 send' as +>
 infixl 5 produce' as ++>
 
 
-empty :: forall d. Patch d
+empty :: forall node_state m d. Patch node_state m d
 empty = Patch Map.empty Map.empty
 
 
-addNode :: forall d. Node.Id -> Node d -> Patch d -> Patch d
+addNode :: forall node_state m d. Node.Id -> Node node_state m d -> Patch node_state m d -> Patch node_state m d
 addNode name node (Patch nodes links) =
     Patch
         (nodes # Map.insert name node)
         links
 
 
-addNodeFrom :: forall d. Toolkit d -> Node.Family /\ Node.Id -> Patch d -> Effect (Patch d)
+addNodeFrom :: forall node_state m d. Toolkit d -> Node.Family /\ Node.Id -> Patch node_state m d -> Effect (Patch node_state m d)
 addNodeFrom toolkit (nodeFamily /\ nodeId) patch =
     Toolkit.spawn nodeFamily toolkit
-        <#> maybe patch (\node -> addNode nodeId (node # Node.markFamily nodeFamily) patch)
+        <#> maybe patch (\node -> addNode nodeId node patch)
 
 
-addNodeFrom' :: forall d. Toolkit d -> Node.Family -> Patch d -> Effect (Node.Id /\ Patch d)
+addNodeFrom' :: forall node_state m d. Toolkit d -> Node.Family -> Patch node_state m d -> Effect (Node.Id /\ Patch node_state m d)
 addNodeFrom' toolkit nodeFamily patch =
     addNodeFrom toolkit (nodeFamily /\ nextNodeId) patch
         <#> ((/\) nextNodeId)
     where nextNodeId = addUniqueNodeId patch nodeFamily
 
 
-addNodesFrom :: forall d. Toolkit d -> Array (Node.Family /\ Node.Id) -> Patch d -> Effect (Patch d)
+addNodesFrom :: forall node_state m d. Toolkit d -> Array (Node.Family /\ Node.Id) -> Patch node_state m d -> Effect (Patch node_state m d)
 addNodesFrom toolkit pairs patch =
     foldr (\pair patchEff -> patchEff >>= addNodeFrom toolkit pair) (pure patch) pairs
 
 
-nodes :: forall d. Patch d -> Array (Node.Id /\ Node d)
+nodes :: forall node_state m d. Patch node_state m d -> Array (Node.Id /\ Node node_state m d)
 nodes (Patch nodes _) = nodes # Map.toUnfoldable--Unordered
 
 
-links :: forall d. Patch d -> Set (OutletPath /\ InletPath)
+links :: forall node_state m d. Patch node_state m d -> Set (OutletPath /\ InletPath)
 links (Patch _ links) = links # Map.keys
 
 
-findNode :: forall d. Node.Id -> Patch d -> Maybe (Node d)
+findNode :: forall node_state m d. Node.Id -> Patch node_state m d -> Maybe (Node node_state m d)
 findNode name (Patch nodes _) = nodes # Map.lookup name
 
 
-nodesCount :: forall d. Patch d -> Int
+nodesCount :: forall node_state m d. Patch node_state m d -> Int
 nodesCount (Patch nodes _) = Map.size nodes
 
 
-linksCount :: forall d. Patch d -> Int
+linksCount :: forall node_state m d. Patch node_state m d -> Int
 linksCount (Patch _ links) = Map.size links
 
 
-registerLink :: forall d. OutletPath -> InletPath -> Link -> Patch d -> Patch d
+registerLink :: forall node_state m d. OutletPath -> InletPath -> Link -> Patch node_state m d -> Patch node_state m d
 registerLink outletPath inletPath link (Patch nodes links) =
     Patch nodes
         $ Map.insert (outletPath /\ inletPath) link
         $ links
 
 
-forgetLink :: forall d. OutletPath -> InletPath -> Patch d -> Patch d
+forgetLink :: forall node_state m d. OutletPath -> InletPath -> Patch node_state m d -> Patch node_state m d
 forgetLink outletPath inletPath (Patch nodes links) =
     Patch nodes
         $ Map.delete (outletPath /\ inletPath)
         $ links
 
 
-forgetNode :: forall d. Node.Id -> Patch d -> Patch d
+forgetNode :: forall node_state m d. Node.Id -> Patch node_state m d -> Patch node_state m d
 forgetNode nodeId (Patch nodes links) =
     Patch
         (Map.delete nodeId nodes)
         links
 
 
-connect :: forall d. OutletPath -> InletPath -> Patch d -> Effect (Patch d)
+connect :: forall node_state m d. OutletPath -> InletPath -> Patch node_state m d -> Effect (Patch node_state m d)
 connect (srcNodeName /\ outlet) (dstNodeName /\ inlet) patch =
     case (/\) <$> findNode srcNodeName patch <*> findNode dstNodeName patch of
         Just (srcNode /\ dstNode) ->
@@ -125,7 +126,7 @@ connect (srcNodeName /\ outlet) (dstNodeName /\ inlet) patch =
         Nothing -> pure patch
 
 
-disconnect :: forall d. OutletPath -> InletPath -> Patch d -> Effect (Patch d)
+disconnect :: forall node_state m d. OutletPath -> InletPath -> Patch node_state m d -> Effect (Patch node_state m d)
 disconnect outletPath inletPath patch@(Patch _ links) =
     case links # Map.lookup (outletPath /\ inletPath) of
         Just link -> do
@@ -135,7 +136,7 @@ disconnect outletPath inletPath patch@(Patch _ links) =
             pure patch
 
 
-removeNode :: forall d. Node.Id -> Patch d -> Effect (Patch d)
+removeNode :: forall node_state m d. Node.Id -> Patch node_state m d -> Effect (Patch node_state m d)
 removeNode nodeId patch@(Patch nodes _) =
     let linksWithNode = patch # linksToFromNode nodeId
     in do
@@ -143,7 +144,7 @@ removeNode nodeId patch@(Patch nodes _) =
         pure $ forgetNode nodeId noMoreLinksPatch
 
 
-linksStartingFrom :: forall d. OutletPath -> Patch d -> Array (InletPath /\ Link)
+linksStartingFrom :: forall node_state m d. OutletPath -> Patch node_state m d -> Array (InletPath /\ Link)
 linksStartingFrom outletPath (Patch _ links) =
     links
         # Map.toUnfoldable
@@ -155,7 +156,7 @@ linksStartingFrom outletPath (Patch _ links) =
             )
 
 
-linksLeadingTo :: forall d. InletPath -> Patch d -> Array (OutletPath /\ Link)
+linksLeadingTo :: forall node_state m d. InletPath -> Patch node_state m d -> Array (OutletPath /\ Link)
 linksLeadingTo inletPath (Patch _ links) =
     links
         # Map.toUnfoldable
@@ -167,7 +168,7 @@ linksLeadingTo inletPath (Patch _ links) =
             )
 
 
-linksToNode :: forall d. Node.Id -> Patch d -> Array ((OutletPath /\ InletPath) /\ Link)
+linksToNode :: forall node_state m d. Node.Id -> Patch node_state m d -> Array ((OutletPath /\ InletPath) /\ Link)
 linksToNode nodeId (Patch _ links) =
     links
         # Map.toUnfoldable
@@ -179,7 +180,7 @@ linksToNode nodeId (Patch _ links) =
             )
 
 
-linksFromNode :: forall d. Node.Id -> Patch d -> Array ((OutletPath /\ InletPath) /\ Link)
+linksFromNode :: forall node_state m d. Node.Id -> Patch node_state m d -> Array ((OutletPath /\ InletPath) /\ Link)
 linksFromNode nodeId (Patch _ links) =
     links
         # Map.toUnfoldable
@@ -191,13 +192,13 @@ linksFromNode nodeId (Patch _ links) =
             )
 
 
-linksToFromNode :: forall d. Node.Id -> Patch d -> Array ((OutletPath /\ InletPath) /\ Link)
+linksToFromNode :: forall node_state m d. Node.Id -> Patch node_state m d -> Array ((OutletPath /\ InletPath) /\ Link)
 linksToFromNode node patch =
     Array.nubByEq samePath $ linksToNode node patch <> linksFromNode node patch
     where samePath (pathA /\ _) (pathB /\ _) = pathA == pathB
 
 
-linksCountAtNode :: forall d. Node.Id -> Patch d -> Node.LinksCount
+linksCountAtNode :: forall node_state m d. Node.Id -> Patch node_state m d -> Node.LinksCount
 linksCountAtNode node patch =
     let
         linksData = Tuple.fst <$> linksToFromNode node patch
@@ -215,7 +216,7 @@ linksCountAtNode node patch =
     (foldr addOutletInfo Map.empty linksData)
 
 
-send :: forall d. (Node.Id /\ Node.InletId) -> d -> Patch d -> Effect Unit
+send :: forall node_state m d. (Node.Id /\ Node.InletId) -> d -> Patch node_state m d -> Effect Unit
 send (node /\ inlet) v patch =
     patch
         # findNode node
@@ -223,12 +224,12 @@ send (node /\ inlet) v patch =
         # fromMaybe (pure unit)
 
 
-send' :: forall d. (Node.Id /\ Node.InletId) -> d -> Patch d -> Effect (Patch d)
+send' :: forall node_state m d. (Node.Id /\ Node.InletId) -> d -> Patch node_state m d -> Effect (Patch node_state m d)
 send' path v patch =
     send path v patch *> pure patch
 
 
-produce :: forall d. (Node.Id /\ Node.OutletId) -> d -> Patch d -> Effect Unit
+produce :: forall node_state m d. (Node.Id /\ Node.OutletId) -> d -> Patch node_state m d -> Effect Unit
 produce (node /\ outlet) v patch =
     patch
         # findNode node
@@ -236,12 +237,12 @@ produce (node /\ outlet) v patch =
         # fromMaybe (pure unit)
 
 
-produce' :: forall d. (Node.Id /\ Node.OutletId) -> d -> Patch d -> Effect (Patch d)
+produce' :: forall node_state m d. (Node.Id /\ Node.OutletId) -> d -> Patch node_state m d -> Effect (Patch node_state m d)
 produce' path v patch =
     produce path v patch *> pure patch
 
 
-addUniqueNodeId :: forall d. Patch d -> Node.Family -> Node.Id
+addUniqueNodeId :: forall node_state m d. Patch node_state m d -> Node.Family -> Node.Id
 addUniqueNodeId patch nodeFamily =
     nodeFamily <> "-" <> (show $ nodesCount patch + 1)
 

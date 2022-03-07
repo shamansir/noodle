@@ -1,6 +1,4 @@
 module App.Style.Calculate
-  ( bodySizeF
-  )
   where
 
 import Prelude
