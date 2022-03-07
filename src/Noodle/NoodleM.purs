@@ -121,14 +121,14 @@ program = do
     pure unit
 
 
-runNoodleM :: forall state d. d -> state -> Network d -> NoodleM state d Aff ~> Aff
+runNoodleM :: forall state d. d -> state -> Network state Aff d -> NoodleM state d Aff ~> Aff
 runNoodleM default state nw (NoodleM noodleFree) = do
     stateRef <- liftEffect $ Ref.new state
     nwRef <- liftEffect $ Ref.new nw
     runNoodleFreeM default stateRef nwRef noodleFree
 
 
-runNoodleFreeM :: forall state d. d -> Ref state -> Ref (Network d) -> Free (NoodleF state d Aff) ~> Aff
+runNoodleFreeM :: forall state d. d -> Ref state -> Ref (Network state Aff d) -> Free (NoodleF state d Aff) ~> Aff
 runNoodleFreeM default stateRef nwRef =
     --foldFree go-- (go stateRef)
     runFreeM go
