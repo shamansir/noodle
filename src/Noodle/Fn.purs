@@ -1,5 +1,5 @@
 module Noodle.Fn
-    ( Fn, make
+    ( Fn, Name, make
     , InputId(..), OutputId(..)
     , Receive(..), Pass(..), Send(..)
     , receive, send
@@ -24,11 +24,12 @@ import Control.Monad.Free (Free, liftF, runFreeM, foldFree)
 import Control.Monad.State.Class (class MonadState)
 
 import Data.Array as Array
-import Data.Bifunctor (class Bifunctor, lmap, bimap)
+import Data.Bifunctor (class Bifunctor, lmap, rmap, bimap)
 import Data.Functor.Invariant (class Invariant, imap)
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe)
+import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Typelevel.Num.Sets (class Nat)
 import Data.Vec (Vec)
@@ -45,11 +46,20 @@ import Effect.Ref as Ref
 type Name = String
 
 
-data Fn i o state m d = Fn Name (Array i) (Array o) (ProcessM i o state d m Unit)
+{-
+    - `i` -> input ID
+    - `ii` -> input info (i.e. channel)
+    - `o` -> output ID
+    - `oo` -> output info (i.e. channel)
+    - `state` -> function state (to be shared / reused)
+    - `m` -> monad where the function will be run
+    - `d` -> data pass through the inputs/outputs
+-}
+data Fn i ii o oo state m d = Fn Name (Array (i /\ ii)) (Array (o /\ oo)) (ProcessM i o state d m Unit)
 
 
-instance invariantFn :: Invariant (Fn i o state m) where
-    imap :: forall i o state m d d'. (d -> d') -> (d' -> d) -> Fn i o state m d -> Fn i o state m d'
+instance invariantFn :: Invariant (Fn i ii o oo state m) where
+    imap :: forall i ii o oo state m d d'. (d -> d') -> (d' -> d) -> Fn i ii o oo state m d -> Fn i ii o oo state m d'
     imap f g (Fn name is os processM) = Fn name is os $ imapProcessMFocus f g processM
 
 
@@ -68,7 +78,7 @@ derive newtype instance showOutputId :: Show OutputId
 derive instance newtypeOutputId :: Newtype OutputId _
 
 
-type Process i o m d = Receive i d -> m (Pass o d)
+-- type Process i o d m = Receive i d -> m (Pass o d)
 
 
 newtype Receive i d = Receive { last :: Maybe i, fromInputs :: i /-> d }
@@ -153,7 +163,7 @@ _out = unwrap
 {- Creating -}
 
 
-make :: forall i o state m d. Name -> Array i -> Array o -> ProcessM i o state d m Unit -> Fn i o state m d
+make :: forall i ii o oo state m d. Name -> Array (i /\ ii) -> Array (o /\ oo) -> ProcessM i o state d m Unit -> Fn i ii o oo state m d
 make = Fn
 
 
@@ -182,7 +192,7 @@ send oid d = ProcessM $ liftF $ Send' oid d unit
 {- Maps -}
 
 
-mapProcessFInputs :: forall i i' o state d m a. (i -> i') -> ProcessF i o state d m ~> ProcessF i' o state d m
+mapProcessFInputs :: forall i i' o state d m. (i -> i') -> ProcessF i o state d m ~> ProcessF i' o state d m
 mapProcessFInputs f =
     case _ of
         State k -> State k
@@ -191,7 +201,7 @@ mapProcessFInputs f =
         Send' oid d next -> Send' oid d next
 
 
-mapProcessFOutputs :: forall i o o' state d m a. (o -> o') -> ProcessF i o state d m ~> ProcessF i o' state d m
+mapProcessFOutputs :: forall i o o' state d m. (o -> o') -> ProcessF i o state d m ~> ProcessF i o' state d m
 mapProcessFOutputs f =
     case _ of
         State k -> State k
@@ -200,17 +210,17 @@ mapProcessFOutputs f =
         Send' oid d next -> Send' (f oid) d next
 
 
-mapProcessMInputs :: forall i i' o state d m a. (i -> i') -> ProcessM i o state d m ~> ProcessM i' o state d m
+mapProcessMInputs :: forall i i' o state d m. (i -> i') -> ProcessM i o state d m ~> ProcessM i' o state d m
 mapProcessMInputs f (ProcessM processFree) =
     ProcessM $ foldFree (liftF <<< mapProcessFInputs f) processFree
 
 
-mapProcessMOutputs :: forall i o o' state d m a. (o -> o') -> ProcessM i o state d m ~> ProcessM i o' state d m
+mapProcessMOutputs :: forall i o o' state d m. (o -> o') -> ProcessM i o state d m ~> ProcessM i o' state d m
 mapProcessMOutputs f (ProcessM processFree) =
     ProcessM $ foldFree (liftF <<< mapProcessFOutputs f) processFree
 
 
-imapProcessFFocus :: forall i o state d d' m a. (d -> d') -> (d' -> d) -> ProcessF i o state d m ~> ProcessF i o state d' m
+imapProcessFFocus :: forall i o state d d' m. (d -> d') -> (d' -> d) -> ProcessF i o state d m ~> ProcessF i o state d' m
 imapProcessFFocus f g =
     case _ of
         State k -> State k
@@ -219,28 +229,40 @@ imapProcessFFocus f g =
         Send' oid d next -> Send' oid (f d) next
 
 
-imapProcessMFocus :: forall i o state d d' m a. (d -> d') -> (d' -> d) -> ProcessM i o state d m ~> ProcessM i o state d' m
+imapProcessMFocus :: forall i o state d d' m. (d -> d') -> (d' -> d) -> ProcessM i o state d m ~> ProcessM i o state d' m
 imapProcessMFocus f g (ProcessM processFree) =
     ProcessM $ foldFree (liftF <<< imapProcessFFocus f g) processFree
     --ProcessM $ liftF $ imapProcessFFocus f g processFree
 
 
-mapInputs :: forall i i' o state m d. (i -> i') -> Fn i o state m d -> Fn i' o state m d
-mapInputs f (Fn name is os processM) = Fn name (f <$> is) os $ mapProcessMInputs f processM
+mapInputs :: forall i ii ii' o oo state m d. (ii -> ii') -> Fn i ii o oo state m d -> Fn i ii' o oo state m d
+mapInputs f (Fn name is os processM) = Fn name (rmap f <$> is) os processM
 
 
-mapOutputs :: forall i o o' state m d. (o -> o') -> Fn i o state m d -> Fn i o' state m d
-mapOutputs f (Fn name is os processM) = Fn name is (f <$> os) $ mapProcessMOutputs f processM
+mapInputsIds :: forall i i' ii o oo state m d. (i -> i') -> Fn i ii o oo state m d -> Fn i' ii o oo state m d
+mapInputsIds f (Fn name is os processM) = Fn name (lmap f <$> is) os $ mapProcessMInputs f processM
 
 
-mapInputsAndOutputs :: forall i i' o o' state m d. (i -> i') -> (o -> o') -> Fn i o state m d -> Fn i' o' state m d
+mapOutputs :: forall i ii o oo oo' state m d. (oo -> oo') -> Fn i ii o oo state m d -> Fn i ii o oo' state m d
+mapOutputs f (Fn name is os processM) = Fn name is (rmap f <$> os) processM
+
+
+mapOutputsIds :: forall i ii o o' oo state m d. (o -> o') -> Fn i ii o oo state m d -> Fn i ii o' oo state m d
+mapOutputsIds f (Fn name is os processM) = Fn name is (lmap f <$> os) $ mapProcessMOutputs f processM
+
+
+mapInputsAndOutputs :: forall i ii ii' o oo oo' state m d. (ii -> ii') -> (oo -> oo') -> Fn i ii o oo state m d -> Fn i ii' o oo' state m d
 mapInputsAndOutputs f g = mapInputs f >>> mapOutputs g
+
+
+mapInputsAndOutputsIds :: forall i i' ii o o' oo state m d. (i -> i') -> (o -> o') -> Fn i ii o oo state m d -> Fn i' ii o' oo state m d
+mapInputsAndOutputsIds f g = mapInputsIds f >>> mapOutputsIds g
 
 
 {- Running -}
 
 
-runFn :: forall i o state d. Receive i d -> Send o d -> d -> state -> Fn i o state Aff d -> Aff Unit
+runFn :: forall i ii o oo state d. Receive i d -> Send o d -> d -> state -> Fn i ii o oo state Aff d -> Aff Unit
 runFn receive send default state (Fn _ _ _ processM) =
     runProcessM receive send default state processM
 
@@ -280,25 +302,29 @@ runProcessFreeM (Receive { last, fromInputs }) (Send sendFn) default stateRef =
 {- Get information about the function -}
 
 
-name :: forall i o state m d. Fn i o state m d -> Name
+name :: forall i ii o oo state m d. Fn i ii o oo state m d -> Name
 name (Fn n _ _ _) = n
 
 
-shapeOf :: forall i o state m d. Fn i o state m d -> Array i /\ Array o
+shapeOf :: forall i ii o oo state m d. Fn i ii o oo state m d -> Array (i /\ ii) /\ Array (o /\ oo)
 shapeOf (Fn _ inputs outputs _) = inputs /\ outputs
 
 
-dimensions :: forall i o state m d. Fn i o state m d -> Int /\ Int
+dimensions :: forall i ii o oo state m d. Fn i ii o oo state m d -> Int /\ Int
 dimensions = shapeOf >>> bimap Array.length Array.length
 
 
-dimensionsBy :: forall i o state m d. (i -> Boolean) -> (o -> Boolean) -> Fn i o state m d -> Int /\ Int
-dimensionsBy iPred oPred = shapeOf >>> bimap (Array.filter iPred >>> Array.length) (Array.filter oPred >>> Array.length)
+dimensionsBy :: forall i ii o oo state m d. (i -> Boolean) -> (o -> Boolean) -> Fn i ii o oo state m d -> Int /\ Int
+dimensionsBy iPred oPred = shapeOf >>> bimap (Array.filter (Tuple.fst >>> iPred) >>> Array.length) (Array.filter (Tuple.fst >>> oPred) >>> Array.length)
 
 
-findInput :: forall i o state m d. (i -> Boolean) -> Fn i o state m d -> Maybe i
-findInput pred (Fn _ inputs _ _) = Array.index inputs =<< Array.findIndex pred inputs
+dimensionsBy' :: forall i ii o oo state m d. (ii -> Boolean) -> (oo -> Boolean) -> Fn i ii o oo state m d -> Int /\ Int
+dimensionsBy' iPred oPred = shapeOf >>> bimap (Array.filter (Tuple.snd >>> iPred) >>> Array.length) (Array.filter (Tuple.snd >>> oPred) >>> Array.length)
 
 
-findOutput :: forall i o state m d. (o -> Boolean) -> Fn i o state m d -> Maybe o
-findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex pred outputs
+findInput :: forall i ii o oo state m d. (i -> Boolean) -> Fn i ii o oo state m d -> Maybe (i /\ ii)
+findInput pred (Fn _ inputs _ _) = Array.index inputs =<< Array.findIndex (Tuple.fst >>> pred) inputs
+
+
+findOutput :: forall i ii o oo state m d. (o -> Boolean) -> Fn i ii o oo state m d -> Maybe (o /\ oo)
+findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex (Tuple.fst >>> pred) outputs
