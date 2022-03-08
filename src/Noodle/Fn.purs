@@ -1,5 +1,5 @@
 module Noodle.Fn
-    ( Fn, Name, make
+    ( Fn, Fn', Name, make, make'
     , InputId(..), OutputId(..)
     , Receive(..), Pass(..), Send(..)
     , receive, send
@@ -56,6 +56,9 @@ type Name = String
     - `d` -> data pass through the inputs/outputs
 -}
 data Fn i ii o oo state m d = Fn Name (Array (i /\ ii)) (Array (o /\ oo)) (ProcessM i o state d m Unit)
+
+
+type Fn' i o state m d = Fn i Unit o Unit state m d
 
 
 instance invariantFn :: Invariant (Fn i ii o oo state m) where
@@ -165,6 +168,10 @@ _out = unwrap
 
 make :: forall i ii o oo state m d. Name -> Array (i /\ ii) -> Array (o /\ oo) -> ProcessM i o state d m Unit -> Fn i ii o oo state m d
 make = Fn
+
+
+make' :: forall i o state m d. Name -> Array i -> Array o -> ProcessM i o state d m Unit -> Fn' i o state m d
+make' name inputs outputs = make name ((\i -> i /\ unit) <$> inputs) ((\o -> o /\ unit) <$> outputs)
 
 
 {-
