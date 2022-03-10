@@ -10,3 +10,4 @@ output
 index.js
 hydra.bundle.*.js
 static
+.DS_Store

@@ -4,6 +4,8 @@ import Prelude
 
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\), type (/\))
+
 import Control.Monad.State (modify_)
 
 import Effect.Class (class MonadEffect, liftEffect)
@@ -17,8 +19,10 @@ import Test.Signal (expectFn, expect)
 -- import Noodle.Node ((<~>), (+>), (<+))
 import Noodle.Node (Node)
 import Noodle.Node as Node
-import Noodle.Fn (Fn)
+import Noodle.Fn (Fn, Fn')
 import Noodle.Fn as Fn
+import Noodle.Fn.Process as Fn
+import Noodle.Fn.Transfer as Fn
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -33,18 +37,16 @@ spec = do
 
         it "summing works" $ do
             let
-                fn :: forall state m. MonadEffect m => Fn String String state m Int
+                fn :: forall state m. MonadEffect m => Fn' String String state m Int
                 fn =
-                    Fn.make "foo" [ "a", "b" ] [ "sum" ] $ do
+                    Fn.make' "foo" [ "a", "b" ] [ "sum" ] $ do
                         a <- Fn.receive "a"
                         b <- Fn.receive "b"
                         Fn.send "sum" $ a + b
-            Fn.runFn
-                (Fn.Receive { last : Nothing,  fromInputs : Map.empty })
-                (Fn.Send
-                    (\outputId val ->
-                        Console.log $ outputId <> " +> " <> show val
-                    ))
+                logSend outputId val = Console.log $ outputId <> " +> " <> show val
+            Fn.run
+                (Fn.r [ "a" /\ 0, "b" /\ 0 ])
+                (Fn.s logSend)
                 0
                 unit
                 fn
