@@ -11,6 +11,7 @@ import Test.Spec.Runner (runSpec)
 
 import Test.Nodes (spec) as Nodes
 import Test.Fn (spec) as Fn
+import Test.Toolkit (spec) as Toolkit
 
 
 main :: Effect Unit
@@ -19,3 +20,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Fn.spec
   describe "Nodes"
     Nodes.spec
+  describe "Toolkit"
+    Toolkit.spec

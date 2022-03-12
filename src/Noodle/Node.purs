@@ -6,7 +6,7 @@ module Noodle.Node
   , Link(..)
   , LinksCount
   , Node(..)
-  , NodeFn
+  , NodeFn, NodeProcess
   , OutletDef
   , OutletId
   , ChannelDefs
@@ -35,7 +35,7 @@ module Noodle.Node
   , inletsSignal'
   , linksAtInlet
   , linksAtOutlet
-  , make, run
+  , make, make', run
 --   , markFamily
   , move
   , outletSignal
@@ -74,9 +74,9 @@ import Effect.Ref as Ref
 
 import Noodle.Channel as Channel
 import Noodle.Fn.Stateful (Fn')
-import Noodle.Fn.Stateful (run) as Fn
+import Noodle.Fn.Stateful (run, make') as Fn
 import Noodle.Fn
-            (InputId, OutputId
+            ( InputId, OutputId
             , in_, out_, _in, _out
             , dimensions, name, findInput, findOutput, shapeOf
             , mapInputsAndOutputs
@@ -136,7 +136,7 @@ type ChannelDefs d = Array (InletDef d) /\ Array (OutletDef d)
 type NodeFn state d = Fn' InletId (Channel.Def d) OutletId (Channel.Def d) state Aff d
 
 
-type NodeProcess state m d = Fn.ProcessM InletId OutletId state d m Unit
+type NodeProcess state d = Fn.ProcessM InletId OutletId state d Aff Unit
 
 
 -- type NodeFn state m d = Fn InletId OutletId state m d
@@ -175,13 +175,24 @@ consumerOut = Fn.out_ "consume_"
 
 
 make
-    :: forall state m d
-     . MonadEffect m => MonadRec m
-    => state -- TODO: `state` should be needed only when running a node
+    :: forall state d
+     . Family
     -> d
+    -> Array (InletId /\ Channel.Def d)
+    -> Array (OutletId /\ Channel.Def d)
+    -> NodeProcess state d
+    -> Effect (Node state d)
+make family default inlets outlets =
+    make' default <<< Fn.make' family inlets outlets
+
+
+make'
+    :: forall state m d
+     . MonadEffect m
+    => d
     -> NodeFn state d
     -> m (Node state d)
-make state default fn = do
+make' default fn = do
     inlets_chan <- liftEffect $ Ch.channel (consumerIn /\ default)
     outlets_chan <- liftEffect $ Ch.channel (consumerOut /\ default)
     pure $ Node default fn (inlets_chan /\ outlets_chan)
