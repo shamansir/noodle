@@ -72,8 +72,14 @@ import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
 import Noodle.Channel as Channel
-import Noodle.Fn (Fn)
-import Noodle.Fn as Fn
+import Noodle.Fn.Stateful (Fn')
+import Noodle.Fn.Stateful (run) as Fn
+import Noodle.Fn
+            (InputId, OutputId
+            , in_, out_, _in, _out
+            , dimensions, name, findInput, findOutput, shapeOf
+            , mapInputsAndOutputs
+            ) as Fn
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Transfer as Fn
 
@@ -124,7 +130,7 @@ type OutletDef d = OutletId /\ Channel.Def d -- /\ Signal d
 type ChannelDefs d = Array (InletDef d) /\ Array (OutletDef d)
 
 
-type NodeFn state m d = Fn InletId (Channel.Def d) OutletId (Channel.Def d) state m d
+type NodeFn state m d = Fn' InletId (Channel.Def d) OutletId (Channel.Def d) state m d
 
 
 type NodeProcess state m d = Fn.ProcessM InletId OutletId state d m Unit
@@ -158,11 +164,11 @@ data Node state m d
 
 
 consumerIn :: Fn.InputId
-consumerIn = Fn.InputId "consume_"
+consumerIn = Fn.in_ "consume_"
 
 
 consumerOut :: Fn.OutputId
-consumerOut = Fn.OutputId "consume_"
+consumerOut = Fn.out_ "consume_"
 
 
 make
@@ -185,7 +191,7 @@ make state default fn = do
         send = Fn.Send $ Tuple.curry $ Ch.send outlets_chan -- could put the outgoing data in a Map and send once / in packs, see `Pass``
         -- fn_signal :: Signal (Effect (Fn.Pass d))
         fn_signal :: Signal (Effect Unit)
-        fn_signal = maps ~> toReceive ~> (\receive -> Fn.run receive send default state fn) ~> launchAff_ -- Do not call fn if not the `isHot` inlet triggered the calculation
+        fn_signal = maps ~> toReceive ~> (\receive -> Fn.run default state send receive fn) ~> launchAff_ -- Do not call fn if not the `isHot` inlet triggered the calculation
         -- passFx :: Signal (Effect Unit)
         -- passFx = ((=<<) $ distribute outlets_chan) <$> fn_signal
     _ <- liftEffect $ Signal.runSignal fn_signal

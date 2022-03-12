@@ -34,5 +34,9 @@ r :: forall i d. Ord i => Array (i /\ d) -> Receive i d
 r arr = Receive { last : Nothing, fromInputs : Map.fromFoldable arr }
 
 
+r' :: forall i d. Ord i => i -> Array (i /\ d) -> Receive i d
+r' last arr = Receive { last : Just last, fromInputs : Map.fromFoldable arr }
+
+
 s :: forall o d. (o -> d -> Effect Unit) -> Send o d
 s = Send

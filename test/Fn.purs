@@ -37,18 +37,25 @@ spec = do
 
         it "summing works" $ do
             let
-                fn :: forall state m. MonadEffect m => Fn' String String state m Int
+                fn :: forall m. MonadEffect m => Fn String String m Int
                 fn =
-                    Fn.make' "foo" [ "a", "b" ] [ "sum" ] $ do
+                    Fn.make "foo" [ "a", "b" ] [ "sum" ] $ do
                         a <- Fn.receive "a"
                         b <- Fn.receive "b"
                         Fn.send "sum" $ a + b
-                logSend outputId val = Console.log $ outputId <> " +> " <> show val
+                assertAt expName expVal name val =
+                    if (name == expName) then
+                        shouldEqual val expVal
+                    else fail "got none"
             Fn.run
-                (Fn.r [ "a" /\ 0, "b" /\ 0 ])
-                (Fn.s logSend)
                 0
-                unit
+                (Fn.s $ assertAt "sum" 0)
+                (Fn.r [ "a" /\ 0, "b" /\ 0 ])
+                fn
+            Fn.run
+                0
+                (Fn.s $ assertAt "sum" 8)
+                (Fn.r [ "a" /\ 3, "b" /\ 5 ])
                 fn
 
     describe "bar" $ do

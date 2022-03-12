@@ -15,6 +15,8 @@ import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.State.Class (class MonadState)
 
 import Data.Maybe (Maybe)
+import Data.Maybe as Maybe
+import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Bifunctor (lmap)
@@ -124,13 +126,13 @@ imapMFocus f g (ProcessM processFree) =
     --ProcessM $ liftF $ imapProcessFFocus f g processFree
 
 
-runM :: forall i o state d. T.Receive i d -> T.Send o d -> d -> state -> ProcessM i o state d Aff ~> Aff
+runM :: forall i o state d. Ord i => T.Receive i d -> T.Send o d -> d -> state -> ProcessM i o state d Aff ~> Aff
 runM receive send default state (ProcessM processFree) = do
     stateRef <- liftEffect $ Ref.new state
     runFreeM receive send default stateRef processFree
 
 
-runFreeM :: forall i o state d. T.Receive i d -> T.Send o d -> d -> Ref state -> Free (ProcessF i o state d Aff) ~> Aff
+runFreeM :: forall i o state d. Ord i => T.Receive i d -> T.Send o d -> d -> Ref state -> Free (ProcessF i o state d Aff) ~> Aff
 runFreeM (T.Receive { last, fromInputs }) (T.Send sendFn) default stateRef =
     --foldFree go-- (go stateRef)
     Free.runFreeM go
@@ -142,7 +144,11 @@ runFreeM (T.Receive { last, fromInputs }) (T.Send sendFn) default stateRef =
                     writeUserState nextState
                     pure next
         go (Lift m) = m
-        go (Receive' _ getV) = pure $ getV default
+        go (Receive' iid getV) =
+            pure
+                $ getV
+                $ Maybe.fromMaybe default
+                $ Map.lookup iid fromInputs
         go (Send' outlet v next) = do
             liftEffect $ sendFn outlet v
             pure next
