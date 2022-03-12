@@ -9,22 +9,12 @@ module Noodle.Fn
 import Prelude
 
 
-import Data.Newtype (class Newtype, unwrap)
+import Data.Tuple.Nested (type (/\))
 
-import Data.Array as Array
-import Data.Bifunctor (lmap, rmap, bimap)
-import Data.Functor.Invariant (class Invariant)
-import Data.Maybe (Maybe)
-import Data.Tuple as Tuple
-import Data.Tuple.Nested (type (/\), (/\))
-
-import Effect (Effect)
 import Effect.Aff (Aff)
 
 import Noodle.Fn.Process (ProcessM)
-import Noodle.Fn.Process as Process
 import Noodle.Fn.Transfer (Receive, Send)
-import Noodle.Fn.Transfer as T
 import Noodle.Fn.Stateful (Fn, Fn', make, make', run) as Stateful
 import Noodle.Fn.Stateful (Name) as Fn
 import Noodle.Fn.Stateful

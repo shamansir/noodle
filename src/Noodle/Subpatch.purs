@@ -7,4 +7,4 @@ import Noodle.Patch (Patch)
 import Noodle.Node (Node)
 
 
-type Subpatch state m d = Node state m d /\ Patch state m d -- node represents inputs and outputs of the subpatch
+type Subpatch state d = Node state d /\ Patch state d -- node represents inputs and outputs of the subpatch

@@ -46,7 +46,7 @@ spec = do
                 assertAt expName expVal name val =
                     if (name == expName) then
                         shouldEqual val expVal
-                    else fail "got none"
+                    else fail $ "got none at " <> show name
             Fn.run
                 0
                 (Fn.s $ assertAt "sum" 0)

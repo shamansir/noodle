@@ -1,5 +1,9 @@
 module Noodle.Toolkit
-    where
+  ( Toolkit(..)
+  , nodeFamilies
+  , spawn, spawn'
+  )
+  where
 
 
 import Prelude ((<<<), (#), map, ($), unit, Unit)
@@ -19,7 +23,7 @@ import Noodle.Node as Node
 
 
 {- TODO: maybe `m` would be just `Effect` or `Aff` here -}
-data Toolkit state m d = Toolkit d (Node.Family /-> NodeFn state m d)
+data Toolkit state d = Toolkit d (Node.Family /-> NodeFn state d)
 
 
 
@@ -27,18 +31,19 @@ data Toolkit state m d = Toolkit d (Node.Family /-> NodeFn state m d)
 -- make def = Toolkit def <<< Map.fromFoldable
 
 
-spawn :: forall state d. Node.Family -> state -> Toolkit state Aff d -> Effect (Maybe (Node state Aff d))
-spawn family state (Toolkit def nodeDefs) =
+
+spawn :: forall d. Node.Family -> Toolkit Unit d -> Effect (Maybe (Node Unit d))
+spawn family = spawn' family unit
+
+
+spawn' :: forall state d. Node.Family -> state -> Toolkit state d -> Effect (Maybe (Node state d))
+spawn' family state (Toolkit def nodeDefs) =
     nodeDefs
         # Map.lookup family
         # map (Node.make state def)
         # sequence
 
 
-spawn' :: forall d. Node.Family -> Toolkit Unit Aff d -> Effect (Maybe (Node Unit Aff d))
-spawn' family = spawn family unit
-
-
-nodeFamilies :: forall state m d. Toolkit state m d -> Set Node.Family
+nodeFamilies :: forall state d. Toolkit state d -> Set Node.Family
 nodeFamilies (Toolkit _ nodeDefs) =
     nodeDefs # Map.keys

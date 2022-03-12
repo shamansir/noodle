@@ -2,9 +2,7 @@ module Noodle.Fn.Process where
 
 import Prelude
 
-import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
@@ -13,11 +11,10 @@ import Control.Monad.Free (Free, foldFree)
 import Control.Monad.Free as Free
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.State.Class (class MonadState)
+import Control.Monad.Rec.Class (class MonadRec)
 
-import Data.Maybe (Maybe)
 import Data.Maybe as Maybe
 import Data.Map as Map
-import Data.Map.Extra (type (/->))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Bifunctor (lmap)
 
@@ -126,13 +123,13 @@ imapMFocus f g (ProcessM processFree) =
     --ProcessM $ liftF $ imapProcessFFocus f g processFree
 
 
-runM :: forall i o state d. Ord i => T.Receive i d -> T.Send o d -> d -> state -> ProcessM i o state d Aff ~> Aff
+runM :: forall i o state d m. MonadEffect m => MonadRec m => Ord i => T.Receive i d -> T.Send o d -> d -> state -> ProcessM i o state d m ~> m
 runM receive send default state (ProcessM processFree) = do
     stateRef <- liftEffect $ Ref.new state
     runFreeM receive send default stateRef processFree
 
 
-runFreeM :: forall i o state d. Ord i => T.Receive i d -> T.Send o d -> d -> Ref state -> Free (ProcessF i o state d Aff) ~> Aff
+runFreeM :: forall i o state d m. MonadEffect m => MonadRec m => Ord i => T.Receive i d -> T.Send o d -> d -> Ref state -> Free (ProcessF i o state d m) ~> m
 runFreeM (T.Receive { last, fromInputs }) (T.Send sendFn) default stateRef =
     --foldFree go-- (go stateRef)
     Free.runFreeM go

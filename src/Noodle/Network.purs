@@ -17,41 +17,41 @@ import Noodle.Patch as Patch
 import Noodle.Subpatch (Subpatch)
 
 
-data Network node_state m d =
+data Network node_state d =
     Network
-        (Patch.Id /-> Patch node_state m d)
+        (Patch.Id /-> Patch node_state d)
 
 
-empty :: forall node_state m d. Network node_state m d
+empty :: forall node_state d. Network node_state d
 empty = Network $ Map.empty
 
 
 -- TODO: optics, State monad
 
-patch :: forall node_state m d. Patch.Id  -> Network node_state m d -> Maybe (Patch node_state m d)
+patch :: forall node_state d. Patch.Id  -> Network node_state d -> Maybe (Patch node_state d)
 patch name (Network patches) = patches # Map.lookup name
 
 
-patches :: forall node_state m d. Network node_state m d -> Array (Patch.Id /\ Patch node_state m d)
+patches :: forall node_state d. Network node_state d -> Array (Patch.Id /\ Patch node_state d)
 patches (Network patches) = patches # Map.toUnfoldableUnordered
 
 
-addPatch :: forall node_state m d. Patch.Id /\ Patch node_state m d -> Network node_state m d -> Network node_state m d
+addPatch :: forall node_state d. Patch.Id /\ Patch node_state d -> Network node_state d -> Network node_state d
 addPatch (name /\ patch) (Network patches) = Network $ Map.insert name patch $ patches
 
 
-removePatch :: forall node_state m d. Patch.Id -> Network node_state m d -> Network node_state m d
+removePatch :: forall node_state d. Patch.Id -> Network node_state d -> Network node_state d
 removePatch name (Network patches) = Network $ Map.delete name $ patches
 
 
-withPatch :: forall node_state m d. Patch.Id -> (Patch node_state m d -> Patch node_state m d) -> Network node_state m d -> Network node_state m d
+withPatch :: forall node_state d. Patch.Id -> (Patch node_state d -> Patch node_state d) -> Network node_state d -> Network node_state d
 withPatch name f (Network patches) =
     Network
         $ Map.update (f >>> Just) name
         $ patches
 
 
-withPatch' :: forall node_state m d. Patch.Id -> (Patch node_state m d -> Effect (Patch node_state m d)) -> Network node_state m d -> Effect (Network node_state m d)
+withPatch' :: forall node_state d. Patch.Id -> (Patch node_state d -> Effect (Patch node_state d)) -> Network node_state d -> Effect (Network node_state d)
 withPatch' name f nw@(Network patches) =
     do
         maybeNextPatch <- sequence (patch name nw <#> f)
@@ -65,7 +65,7 @@ withPatch' name f nw@(Network patches) =
                 pure nw
 
 
-addNode :: forall node_state m d. Patch.Id /\ Node.Id -> Node node_state m d -> Network node_state m d -> Network node_state m d
+addNode :: forall node_state d. Patch.Id /\ Node.Id -> Node node_state d -> Network node_state d -> Network node_state d
 addNode (patch /\ nodeName) theNode =
     withPatch patch $ Patch.addNode nodeName theNode
 
@@ -74,9 +74,9 @@ addNode (patch /\ nodeName) theNode =
 -- addNodes patch =
 
 
-connect :: forall node_state m d. Patch.Id -> Patch.OutletPath -> Patch.InletPath -> Network node_state m d -> Effect (Network node_state m d)
+connect :: forall node_state d. Patch.Id -> Patch.OutletPath -> Patch.InletPath -> Network node_state d -> Effect (Network node_state d)
 connect patch outlet inlet = withPatch' patch $ Patch.connect outlet inlet
 
 
-disconnect :: forall node_state m d. Patch.Id -> Patch.OutletPath -> Patch.InletPath -> Network node_state m d -> Effect (Network node_state m d)
+disconnect :: forall node_state d. Patch.Id -> Patch.OutletPath -> Patch.InletPath -> Network node_state d -> Effect (Network node_state d)
 disconnect patch outlet inlet = withPatch' patch $ Patch.disconnect outlet inlet

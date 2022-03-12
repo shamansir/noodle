@@ -51,7 +51,7 @@ data NoodleF state d m a
     -- | DisconnectLink Node.Link
     | Receive Patch.Id Node.Id Node.InletId (d -> a)
     | WithPatch Patch.Id (PatchM state d m Unit) a -- (Node d -> a)
-    | WithNode Patch.Id Node.Id (Maybe (Node state m d) -> a) -- (Node d -> a)
+    | WithNode Patch.Id Node.Id (Maybe (Node state d) -> a) -- (Node d -> a)
     -- | Send Patch.Id Node.Id InletId d a
     -- | Produce Patch.Id Node.Id OutletId d a
     -- | GetAtInlet Patch.Id Node.Id InletId (Unit -> m (a /\ d))
@@ -121,14 +121,14 @@ program = do
     pure unit
 
 
-runNoodleM :: forall state d. d -> state -> Network state Aff d -> NoodleM state d Aff ~> Aff
+runNoodleM :: forall state d. d -> state -> Network state d -> NoodleM state d Aff ~> Aff
 runNoodleM default state nw (NoodleM noodleFree) = do
     stateRef <- liftEffect $ Ref.new state
     nwRef <- liftEffect $ Ref.new nw
     runNoodleFreeM default stateRef nwRef noodleFree
 
 
-runNoodleFreeM :: forall state d. d -> Ref state -> Ref (Network state Aff d) -> Free (NoodleF state d Aff) ~> Aff
+runNoodleFreeM :: forall state d. d -> Ref state -> Ref (Network state d) -> Free (NoodleF state d Aff) ~> Aff
 runNoodleFreeM default stateRef nwRef =
     --foldFree go-- (go stateRef)
     runFreeM go

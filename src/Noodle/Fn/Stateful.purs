@@ -3,7 +3,7 @@ module Noodle.Fn.Stateful
     , InputId(..), OutputId(..)
     , run
     , name
-    , shapeOf, dimensions, dimensionsBy
+    , shapeOf, dimensions, dimensionsBy, dimensionsBy'
     , findInput, findOutput
     , mapInputs, mapOutputs, mapInputsAndOutputs
     , mapInputsIds, mapOutputsIds, mapInputsAndOutputsIds
@@ -13,7 +13,6 @@ module Noodle.Fn.Stateful
 
 
 import Prelude
-
 
 import Data.Newtype (class Newtype, unwrap)
 
@@ -25,7 +24,10 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 
 import Effect (Effect)
+import Effect.Class (class MonadEffect)
 import Effect.Aff (Aff)
+
+import Control.Monad.Rec.Class (class MonadRec)
 
 import Noodle.Fn.Process (ProcessM)
 import Noodle.Fn.Process as Process
@@ -139,7 +141,7 @@ mapInputsAndOutputsIds f g = mapInputsIds f >>> mapOutputsIds g
 {- Running -}
 
 
-run :: forall i ii o oo state d. Ord i => d -> state -> Send o d -> Receive i d -> Fn' i ii o oo state Aff d -> Aff Unit
+run :: forall i ii o oo state d m. MonadRec m => MonadEffect m => Ord i => d -> state -> Send o d -> Receive i d -> Fn' i ii o oo state m d -> m Unit
 run default state send receive (Fn _ _ _ processM) =
     Process.runM receive send default state processM
 

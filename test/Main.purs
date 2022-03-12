@@ -17,5 +17,5 @@ main :: Effect Unit
 main = launchAff_ $ runSpec [consoleReporter] do
   describe "Fn"
     Fn.spec
-  describe "Noodle"
+  describe "Nodes"
     Nodes.spec
