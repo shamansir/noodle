@@ -23,10 +23,12 @@ import Data.Traversable (sequence)
 import Noodle.Node (Node, NodeFn)
 import Noodle.Node as Node
 import Noodle.Channel as Channel
-import Noodle.Fn.Stateful (make') as Fn
+import Noodle.Fn.Stateful (make', name) as Fn
 
 
-{- TODO: maybe `m` would be just `Effect` or `Aff` here -}
+--type Toolkit d = Toolkit' Unit d
+
+
 data Toolkit state d = Toolkit d (Node.Family /-> NodeFn state d)
 
 
@@ -48,12 +50,12 @@ register
     -> Node.NodeProcess state d
     -> Toolkit state d
 register tk family inlets outlets process =
-  register' tk family $ Fn.make' family inlets outlets process
+  register' tk $ Fn.make' family inlets outlets process
 
 
-register' :: forall state d. Toolkit state d -> Node.Family -> NodeFn state d -> Toolkit state d
-register' (Toolkit def fns) family fn =
-  Toolkit def $ Map.insert family fn $ fns
+register' :: forall state d. Toolkit state d -> NodeFn state d -> Toolkit state d
+register' (Toolkit def fns) fn =
+  Toolkit def $ Map.insert (Fn.name fn) fn $ fns
 
 
 spawn :: forall d. Node.Family -> Toolkit Unit d -> Effect (Maybe (Node Unit d))

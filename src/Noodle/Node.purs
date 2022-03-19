@@ -22,27 +22,22 @@ module Noodle.Node
   , family
   , getI, getO
   , getFn
-  , getInletsChannel
-  , getOutletsChannel
+  , getInletsChannel, getOutletsChannel
 --   , getShape
 --   , getShape'
   , indexOfInlet
   , indexOfOutlet
-  , inlet
-  , inletSignal
-  , inlets
-  , inletsSignal
-  , inletsSignal'
-  , linksAtInlet
-  , linksAtOutlet
+  , inlet, inletSignal
+  , inlets, inletsSignal, inletsSignal'
+  , linksAtInlet, linksAtOutlet
   , make, make', run
 --   , markFamily
   , move
   , outletSignal
   , outletSignalFlipped
   , outlets
-  , outletsSignal
-  , outletsSignal'
+  , outletsSignal, outletsSignal'
+  --, subscribeInlet, subscribeOutlet
   , produce
   , send
   , in_, out_, _in, _out
@@ -285,6 +280,9 @@ getInletsChannel (Node _ _ (inlets_chan /\ _)) = inlets_chan
 
 getOutletsChannel :: forall state d. Node state d -> Ch.Channel (OutletId /\ d)
 getOutletsChannel (Node _ _ (_ /\ outlets_chan)) = outlets_chan
+
+
+-- subscribeInlet inletId = inletsSignal >>> Signal.filter
 
 
 inletsSignal :: forall state d. Node state d -> Signal (InletId /\ d)

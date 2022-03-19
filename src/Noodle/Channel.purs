@@ -1,4 +1,10 @@
-module Noodle.Channel where
+module Noodle.Channel
+  ( Def
+  , default, isHidden, id
+  , hot, cold, hiddenHot, hiddenCold
+  , hiddenCold
+  )
+  where
 
 
 import Prelude
@@ -20,7 +26,7 @@ data Visibility
     | Visible
 
 
-newtype Def d  =
+newtype Def d =
     Def
     { id :: Id
     , default :: d
@@ -52,6 +58,46 @@ isHidden (Def def) =
 
 id :: forall d. Def d -> Id
 id (Def { id }) = id
+
+
+hot :: forall d. Id -> d -> Def d
+hot id def =
+    Def
+        { id
+        , default : def
+        , temperature : Hot
+        , visibility : Visible
+        }
+
+
+cold :: forall d. Id -> d -> Def d
+cold id def =
+    Def
+        { id
+        , default : def
+        , temperature : Cold
+        , visibility : Visible
+        }
+
+
+hiddenHot :: forall d. Id -> d -> Def d
+hiddenHot id def =
+    Def
+        { id
+        , default : def
+        , temperature : Hot
+        , visibility : Hidden
+        }
+
+
+hiddenCold :: forall d. Id -> d -> Def d
+hiddenCold id def =
+    Def
+        { id
+        , default : def
+        , temperature : Cold
+        , visibility : Hidden
+        }
 
 
 {-
