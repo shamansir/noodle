@@ -140,6 +140,7 @@ type NodeProcess state d = Fn.ProcessM InletId OutletId state d Aff Unit
 {- Node stores incoming and outgoing channels (`Signal.Channel`, not `Noodle.Channel`) of data of type `d` + any additional data -}
 data Node state d
     = Node
+        -- state
         d
         (NodeFn state d)
         (Sig.Channel (InletId /\ d) /\ Sig.Channel (OutletId /\ d))
@@ -208,6 +209,10 @@ run (Node default fn (inlets_chan /\ outlets_chan)) state =
         -- passFx :: Signal (Effect Unit)
         -- passFx = ((=<<) $ distribute outlets_chan) <$> fn_signal
     in liftEffect $ Signal.runSignal fn_signal
+
+
+
+-- mkRun ::
 
 
 {-
@@ -429,3 +434,14 @@ linksAtInlet inlet = fromMaybe 0 <<< Map.lookup inlet <<< Tuple.fst
 
 linksAtOutlet :: OutletId -> LinksCount -> Int
 linksAtOutlet outlet = fromMaybe 0 <<< Map.lookup outlet <<< Tuple.snd
+
+
+-- subscribeInlet :: InletId -> (d -> Effect Unit) -> Effect Unit
+-- subscribeInlet = TODO
+
+
+-- changeProcess :: forall state d. Node state d -> NodeProcess state d -> Node state d
+-- changeProcess (Node )
+
+
+-- with :: forall state d. Node state d -> NodeProcess state d ->

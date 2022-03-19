@@ -1,7 +1,8 @@
 module Noodle.Fn.Stateful
     ( Fn, Fn', Name, make, make'
     , InputId(..), OutputId(..)
-    , run
+    , run, run'
+    , with, with'
     , name
     , shapeOf, dimensions, dimensionsBy, dimensionsBy'
     , findInput, findOutput
@@ -146,6 +147,11 @@ run default state send receive (Fn _ _ _ processM) =
     Process.runM receive send default state processM
 
 
+run' :: forall i ii o oo state d m. MonadRec m => MonadEffect m => Ord i => d -> state -> (o -> d -> Effect Unit) -> Fn' i ii o oo state m d -> m Unit
+run' default state send =
+    run default state (T.s send) T.r_
+
+
 {- mkRun :: forall i ii o oo m d. Name -> d -> Array (i /\ d) -> Array o -> (o -> d -> Effect Unit) -> ProcessM i o Unit d m Unit -> Aff Unit
 mkRun name default inlets outlets send processM =
     Process.runM (T.r inlets) send default unit processM
@@ -200,3 +206,18 @@ findInput pred (Fn _ inputs _ _) = Array.index inputs =<< Array.findIndex (Tuple
 
 findOutput :: forall i ii o oo state m d. (o -> Boolean) -> Fn' i ii o oo state m d -> Maybe (o /\ oo)
 findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex (Tuple.fst >>> pred) outputs
+
+
+changeProcess :: forall i ii o oo state m d. Fn' i ii o oo state m d -> ProcessM i o state d m Unit -> Fn' i ii o oo state m d
+changeProcess (Fn name inputs outputs _) newProcessM =
+    Fn name inputs outputs newProcessM
+
+
+with :: forall i ii o oo state m d. Ord i => MonadRec m => MonadEffect m => Fn' i ii o oo state m d -> d -> state -> Send o d -> Receive i d -> ProcessM i o state d m Unit -> m Unit
+with fn def state send receive =
+    changeProcess fn >>> run def state send receive
+
+
+with' :: forall i ii o oo state m d. Ord i => MonadRec m => MonadEffect m => Fn' i ii o oo state m d -> d -> state -> (o -> d -> Effect Unit) -> ProcessM i o state d m Unit -> m Unit
+with' fn def state send =
+    changeProcess fn >>> run' def state send

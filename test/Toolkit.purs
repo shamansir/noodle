@@ -63,13 +63,12 @@ spec = do
             case maybeNode of
                 Just node -> liftEffect $ do
                     Node.run node unit
-                    Node.send node (Fn.in_ "a" /\ 5)
-                    Node.send node (Fn.in_ "b" /\ 3)
-                    sum <- Node.getO node (Fn.out_ "sum")
-                    Console.log $ "ss" <> show sum
-                    pure unit
+                    Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
+                    Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
+                    sum <- Node.getO node (Fn.out_ "sum") -- TODO: some operator i.e. v <- "sum" <+ node
+                    shouldEqual sum 8
                 Nothing ->
-                    pure unit
+                    fail "node wasn't spawned"
 
             pure unit
 

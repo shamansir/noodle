@@ -10,6 +10,8 @@ import Control.Monad.State (modify_)
 
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
 
 import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
@@ -36,6 +38,8 @@ spec = do
     describe "foo" $
 
         it "summing works" $ do
+            called1 :: Ref Boolean <- liftEffect $ Ref.new false
+            called2 :: Ref Boolean <- liftEffect $ Ref.new false
             let
                 fn :: forall m. MonadEffect m => Fn String String m Int
                 fn =
@@ -43,20 +47,26 @@ spec = do
                         a <- Fn.receive "a"
                         b <- Fn.receive "b"
                         Fn.send "sum" $ a + b
-                assertAt expName expVal name val =
-                    if (name == expName) then
+                assertAt markRef expName expVal name val =
+                    if (name == expName) then do
                         shouldEqual val expVal
-                    else fail $ "got none at " <> show name
+                        Ref.write true markRef
+                    else
+                        fail $ "got none at " <> show name
             Fn.run
                 0
-                (Fn.s $ assertAt "sum" 0)
+                (Fn.s $ assertAt called1 "sum" 0)
                 (Fn.r [ "a" /\ 0, "b" /\ 0 ])
                 fn
+            called1B <- liftEffect $ Ref.read called1
+            shouldEqual called1B true
             Fn.run
                 0
-                (Fn.s $ assertAt "sum" 8)
+                (Fn.s $ assertAt called2 "sum" 8)
                 (Fn.r [ "a" /\ 3, "b" /\ 5 ])
                 fn
+            called2B <- liftEffect $ Ref.read called2
+            shouldEqual called2B true
 
     describe "bar" $ do
         pure unit

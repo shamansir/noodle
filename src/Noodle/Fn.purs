@@ -1,6 +1,6 @@
 module Noodle.Fn
     ( Fn, Fn', make, make'
-    , run
+    , run, with, with'
     , module StatefulExports
     )
     where
@@ -11,11 +11,15 @@ import Prelude
 
 import Data.Tuple.Nested (type (/\))
 
+import Effect (Effect)
 import Effect.Aff (Aff)
+import Effect.Class (class MonadEffect)
+
+import Control.Monad.Rec.Class (class MonadRec)
 
 import Noodle.Fn.Process (ProcessM)
 import Noodle.Fn.Transfer (Receive, Send)
-import Noodle.Fn.Stateful (Fn, Fn', make, make', run) as Stateful
+import Noodle.Fn.Stateful (Fn, Fn', make, make', run, with, with') as Stateful
 import Noodle.Fn.Stateful (Name) as Fn
 import Noodle.Fn.Stateful
             ( Name
@@ -62,3 +66,11 @@ make' = Stateful.make'
 run :: forall i ii o oo d. Ord i => d -> Send o d -> Receive i d -> Fn' i ii o oo Aff d -> Aff Unit
 run default =
     Stateful.run default unit
+
+
+with :: forall i ii o oo d. Ord i => Fn' i ii o oo Aff d -> d -> Send o d -> Receive i d -> ProcessM i o Unit d Aff Unit -> Aff Unit
+with fn default = Stateful.with fn default unit
+
+
+with' :: forall i ii o oo d. Ord i => Fn' i ii o oo Aff d -> d -> (o -> d -> Effect Unit) -> ProcessM i o Unit d Aff Unit -> Aff Unit
+with' fn default = Stateful.with' fn default unit
