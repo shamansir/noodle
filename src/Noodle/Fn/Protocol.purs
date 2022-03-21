@@ -11,7 +11,7 @@ import Data.Tuple.Nested (type (/\))
 
 
 type Protocol i o d = -- a.k.a. Transport
-    { receive :: i -> Maybe d
+    { receive :: i -> Effect (Maybe d)
     , send :: o -> d -> Effect Unit
     , sendIn :: i -> d -> Effect Unit
     , last :: Maybe i

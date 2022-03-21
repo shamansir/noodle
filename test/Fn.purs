@@ -44,14 +44,21 @@ newTracker :: forall d. Effect (Tracker d)
 newTracker = Ref.new Map.empty
 
 
-shouldContain :: forall d. String -> d -> Tracker d -> Aff Unit
-shouldContain _ _ _ = throwError $ error "aaaa"
+shouldContain :: forall d. Eq d => Show d => String -> d -> Tracker d -> Aff Unit
+shouldContain id val tracker = do
+    values <- liftEffect $ Ref.read tracker
+    case Map.lookup id values of
+        Just otherVal ->
+            if val == otherVal then pure unit
+            else throwError $ error $ show val <> " /= " <> show otherVal
+        Nothing ->
+            throwError $ error $ "\"" <> id <> "\" was not found in tracker"
 
 
 makeProtocol :: forall d. Array (String /\ d) -> Tracker d -> Tracker d -> Effect (Protocol String String d)
 makeProtocol initialAtInputs inputs outputs =
     { last : Nothing
-    , receive : const Nothing
+    , receive : pure <<< const Nothing
     , send : const $ const $ pure unit
     , sendIn : const $ const $ pure unit
     } # pure
@@ -72,7 +79,9 @@ spec = do
                         a <- Fn.receive "a"
                         b <- Fn.receive "b"
                         Fn.send "sum" $ a + b
-            testProtocol <- liftEffect $ makeProtocol [ "a" /\ 0, "b" /\ 0 ] inputsTracker outputsTracker
+            testProtocol <- liftEffect
+                                $ makeProtocol [ "a" /\ 0, "b" /\ 0 ]
+                                    inputsTracker outputsTracker
             Fn.run 0 testProtocol fn
             outputsTracker # shouldContain "sum" 8
             pure unit
@@ -89,7 +98,9 @@ spec = do
                         a <- Fn.receive "a"
                         b <- Fn.receive "b"
                         Fn.send "sum" $ a + b
-            testProtocol <- liftEffect $ makeProtocol [ "a" /\ 0, "b" /\ 0 ] inputsTracker outputsTracker
+            testProtocol <- liftEffect
+                                $ makeProtocol [ "a" /\ 0, "b" /\ 0 ]
+                                    inputsTracker outputsTracker
             Fn.run 0 testProtocol fn
             outputsTracker # shouldContain "sum" 13
             inputsTracker # shouldContain "a" 6

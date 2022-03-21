@@ -206,7 +206,7 @@ run (Node default fn (inlets_chan /\ outlets_chan)) state =
         protocol :: (Maybe InletId /\ (InletId /-> d)) -> Protocol InletId OutletId d
         protocol (last /\ inletsMap) =
             { last : last
-            , receive : flip Map.lookup inletsMap
+            , receive : pure <<< flip Map.lookup inletsMap
             , send : \outlet d -> pure unit
             , sendIn : \inlet d -> pure unit
             }

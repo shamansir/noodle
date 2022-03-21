@@ -151,11 +151,12 @@ runFreeM protocol default stateRef fn =
                     writeUserState nextState
                     pure next
         go (Lift m) = m
-        go (Receive' iid getV) =
+        go (Receive' iid getV) = do
+            maybeVal <- liftEffect $ protocol.receive iid
             pure
                 $ getV
-                $ Maybe.fromMaybe default -- FIXME: should be Maybe or default of particular input
-                $ protocol.receive iid
+                $ Maybe.fromMaybe default -- FIXME: should either be Maybe or default of particular input channel
+                $ maybeVal
         go (Send' output v next) = do
             liftEffect $ protocol.send output v
             pure next
