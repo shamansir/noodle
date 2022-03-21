@@ -1,8 +1,8 @@
 module Noodle.Fn.Stateful
     ( Fn, Fn', Name, make, make'
     , InputId(..), OutputId(..)
-    , run, run'
-    , with, with'
+    , run
+    , with
     , name
     , shapeOf, dimensions, dimensionsBy, dimensionsBy'
     , findInput, findOutput
@@ -32,8 +32,7 @@ import Control.Monad.Rec.Class (class MonadRec)
 
 import Noodle.Fn.Process (ProcessM)
 import Noodle.Fn.Process as Process
-import Noodle.Fn.Transfer (Receive, Send)
-import Noodle.Fn.Transfer as T
+import Noodle.Fn.Protocol (Protocol)
 
 
 type Name = String
@@ -142,14 +141,9 @@ mapInputsAndOutputsIds f g = mapInputsIds f >>> mapOutputsIds g
 {- Running -}
 
 
-run :: forall i ii o oo state d m. MonadRec m => MonadEffect m => Ord i => d -> state -> Send o d -> Receive i d -> Fn' i ii o oo state m d -> m Unit
-run default state send receive (Fn _ _ _ processM) =
-    Process.runM receive send default state processM
-
-
-run' :: forall i ii o oo state d m. MonadRec m => MonadEffect m => Ord i => d -> state -> (o -> d -> Effect Unit) -> Fn' i ii o oo state m d -> m Unit
-run' default state send =
-    run default state (T.s send) T.r_
+run :: forall i ii o oo state d m. MonadRec m => MonadEffect m => Ord i => d -> state -> Protocol i o d -> Fn' i ii o oo state m d -> m Unit
+run default state protocol (Fn _ _ _ processM) =
+    Process.runM protocol default state processM
 
 
 {- mkRun :: forall i ii o oo m d. Name -> d -> Array (i /\ d) -> Array o -> (o -> d -> Effect Unit) -> ProcessM i o Unit d m Unit -> Aff Unit
@@ -213,11 +207,6 @@ changeProcess (Fn name inputs outputs _) newProcessM =
     Fn name inputs outputs newProcessM
 
 
-with :: forall i ii o oo state m d. Ord i => MonadRec m => MonadEffect m => Fn' i ii o oo state m d -> d -> state -> Send o d -> Receive i d -> ProcessM i o state d m Unit -> m Unit
-with fn def state send receive =
-    changeProcess fn >>> run def state send receive
-
-
-with' :: forall i ii o oo state m d. Ord i => MonadRec m => MonadEffect m => Fn' i ii o oo state m d -> d -> state -> (o -> d -> Effect Unit) -> ProcessM i o state d m Unit -> m Unit
-with' fn def state send =
-    changeProcess fn >>> run' def state send
+with :: forall i ii o oo state m d. Ord i => MonadRec m => MonadEffect m => Fn' i ii o oo state m d -> d -> state -> Protocol i o d -> ProcessM i o state d m Unit -> m Unit
+with fn def state protocol =
+    changeProcess fn >>> run def state protocol

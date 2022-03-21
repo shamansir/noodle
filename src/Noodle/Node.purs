@@ -18,7 +18,6 @@ module Noodle.Node
   , defaultOfOutlet
   , dimensions--, dimensionsBy, dimensionsBy'
   , disconnect
-  , distribute
   , family
   , getI, getO
   , getFn
@@ -77,7 +76,7 @@ import Noodle.Fn
             , mapInputsAndOutputs
             ) as Fn
 import Noodle.Fn.Process as Fn
-import Noodle.Fn.Transfer as Fn
+import Noodle.Fn.Protocol (Protocol)
 
 import Control.Monad.Rec.Class (class MonadRec)
 
@@ -200,12 +199,23 @@ run (Node default fn (inlets_chan /\ outlets_chan)) state =
         inlets = Ch.subscribe inlets_chan
         store ( inlet /\ d ) ( _ /\ map ) = Just inlet /\ (map # Map.insert inlet d)
         maps = inlets # Signal.foldp store (Just consumerIn /\ Map.empty)
-        toReceive (last /\ fromInputs) = Fn.Receive { last, fromInputs }
-        send :: Fn.Send OutletId d
-        send = Fn.Send $ Tuple.curry $ Ch.send outlets_chan -- could put the outgoing data in a Map and send once / in packs, see `Pass``
+        toReceive (last /\ inputs) = { last, inputs }
+        -- send :: Fn.Send OutletId d
+        -- send = Fn.Send $ Tuple.curry $ Ch.send outlets_chan -- could put the outgoing data in a Map and send once / in packs, see `Pass``
         -- fn_signal :: Signal (Effect (Fn.Pass d))
+        protocol :: (Maybe InletId /\ (InletId /-> d)) -> Protocol InletId OutletId d
+        protocol (last /\ inletsMap) =
+            { last : last
+            , receive : flip Map.lookup inletsMap
+            , send : \outlet d -> pure unit
+            , sendIn : \inlet d -> pure unit
+            }
         fn_signal :: Signal (Effect Unit)
-        fn_signal = maps ~> toReceive ~> (\receive -> Fn.run default state send receive fn) ~> launchAff_ -- Do not call fn if not the `isHot` inlet triggered the calculation
+        fn_signal = maps
+                        ~> (\(last /\ inputMap) ->
+                                Fn.run default state (protocol (last /\ inputMap)) fn
+                            )
+                        ~> launchAff_ -- Do not call fn if not the `isHot` inlet triggered the calculation
         -- passFx :: Signal (Effect Unit)
         -- passFx = ((=<<) $ distribute outlets_chan) <$> fn_signal
     in liftEffect $ Signal.runSignal fn_signal
@@ -233,9 +243,11 @@ infixl 4 outletSignalFlipped as <|
 -- fromFn' :: (d -> d) -> Node''' d
 -}
 
+{-
 distribute :: forall state d. Sig.Channel (OutletId /\ d) -> Fn.Pass OutletId d -> Effect Unit
 distribute passTo (Fn.Pass { toOutputs }) =
     traverse_ (Ch.send passTo) $ (Map.toUnfoldable toOutputs :: Array (OutletId /\ d))
+-}
 
 
 send :: forall state d. Node state d -> (InletId /\ d) -> Effect Unit

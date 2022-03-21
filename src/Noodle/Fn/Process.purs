@@ -13,18 +13,20 @@ import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.State.Class (class MonadState)
 import Control.Monad.Rec.Class (class MonadRec)
 
+import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
 import Data.Map as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Bifunctor (lmap)
 
-import Noodle.Fn.Transfer as T
+import Noodle.Fn.Protocol (Protocol)
 
 
 data ProcessF i o state d m a
     = State (state -> a /\ state)
     | Lift (m a)
     | Send' o d a
+    | SendIn i d a
     | Receive' i (d -> a)
     -- Connect
     -- Disconnect etc.
@@ -36,6 +38,7 @@ instance functorProcessF :: Functor m => Functor (ProcessF i o state d m) where
         Lift m -> Lift (map f m)
         Receive' iid k -> Receive' iid $ map f k
         Send' oid d next -> Send' oid d $ f next
+        SendIn iid d next -> SendIn iid d $ f next
 
 
 newtype ProcessM i o state d m a = ProcessM (Free (ProcessF i o state d m) a)
@@ -77,6 +80,10 @@ send :: forall i o state d m. o -> d -> ProcessM i o state d m Unit
 send oid d = ProcessM $ Free.liftF $ Send' oid d unit
 
 
+sendIn :: forall i o state d m. i -> d -> ProcessM i o state d m Unit
+sendIn iid d = ProcessM $ Free.liftF $ SendIn iid d unit
+
+
 {- Maps -}
 
 
@@ -87,6 +94,7 @@ mapFInputs f =
         Lift m -> Lift m
         Receive' iid k -> Receive' (f iid) k
         Send' oid d next -> Send' oid d next
+        SendIn iid d next -> SendIn (f iid) d next
 
 
 mapFOutputs :: forall i o o' state d m. (o -> o') -> ProcessF i o state d m ~> ProcessF i o' state d m
@@ -96,6 +104,7 @@ mapFOutputs f =
         Lift m -> Lift m
         Receive' iid k -> Receive' iid k
         Send' oid d next -> Send' (f oid) d next
+        SendIn iid d next -> SendIn iid d next
 
 
 mapMInputs :: forall i i' o state d m. (i -> i') -> ProcessM i o state d m ~> ProcessM i' o state d m
@@ -115,6 +124,7 @@ imapFFocus f g =
         Lift m -> Lift m
         Receive' iid k -> Receive' iid (k <<< g)
         Send' oid d next -> Send' oid (f d) next
+        SendIn iid d next -> SendIn iid (f d) next
 
 
 imapMFocus :: forall i o state d d' m. (d -> d') -> (d' -> d) -> ProcessM i o state d m ~> ProcessM i o state d' m
@@ -123,16 +133,16 @@ imapMFocus f g (ProcessM processFree) =
     --ProcessM $ liftF $ imapProcessFFocus f g processFree
 
 
-runM :: forall i o state d m. MonadEffect m => MonadRec m => Ord i => T.Receive i d -> T.Send o d -> d -> state -> ProcessM i o state d m ~> m
-runM receive send default state (ProcessM processFree) = do
+runM :: forall i o state d m. MonadEffect m => MonadRec m => Ord i => Protocol i o d -> d -> state -> ProcessM i o state d m ~> m
+runM protocol default state (ProcessM processFree) = do
     stateRef <- liftEffect $ Ref.new state
-    runFreeM receive send default stateRef processFree
+    runFreeM protocol default stateRef processFree
 
 
-runFreeM :: forall i o state d m. MonadEffect m => MonadRec m => Ord i => T.Receive i d -> T.Send o d -> d -> Ref state -> Free (ProcessF i o state d m) ~> m
-runFreeM (T.Receive { last, fromInputs }) (T.Send sendFn) default stateRef =
+runFreeM :: forall i o state d m. MonadEffect m => MonadRec m => Ord i => Protocol i o d -> d -> Ref state -> Free (ProcessF i o state d m) ~> m
+runFreeM protocol default stateRef fn =
     --foldFree go-- (go stateRef)
-    Free.runFreeM go
+    Free.runFreeM go fn
     where
         go (State f) = do
             state <- getUserState
@@ -144,10 +154,13 @@ runFreeM (T.Receive { last, fromInputs }) (T.Send sendFn) default stateRef =
         go (Receive' iid getV) =
             pure
                 $ getV
-                $ Maybe.fromMaybe default
-                $ Map.lookup iid fromInputs
-        go (Send' outlet v next) = do
-            liftEffect $ sendFn outlet v
+                $ Maybe.fromMaybe default -- FIXME: should be Maybe or default of particular input
+                $ protocol.receive iid
+        go (Send' output v next) = do
+            liftEffect $ protocol.send output v
+            pure next
+        go (SendIn input v next) = do
+            liftEffect $ protocol.sendIn input v
             pure next
 
         getUserState = liftEffect $ Ref.read stateRef

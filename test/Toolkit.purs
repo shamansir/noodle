@@ -61,7 +61,7 @@ spec = do
                             Fn.send (Fn.out_ "sum") $ a + b
             maybeNode <- toolkit # Toolkit.spawn "sum" # liftEffect
             case maybeNode of
-                Just node -> liftEffect $ do
+                Just node -> liftEffect $ do -- do inside `NodeM` ?
                     Node.run node unit
                     Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
                     Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
