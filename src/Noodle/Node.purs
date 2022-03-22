@@ -197,6 +197,7 @@ run :: forall state m d. MonadEffect m => Node state d -> state -> m Unit
 run (Node default fn (inlets_chan /\ outlets_chan)) state =
     let
         inlets = Ch.subscribe inlets_chan
+        outlets = Ch.subscribe outlets_chan
         store ( inlet /\ d ) ( _ /\ map ) = Just inlet /\ (map # Map.insert inlet d)
         maps = inlets # Signal.foldp store (Just consumerIn /\ Map.empty)
         toReceive (last /\ inputs) = { last, inputs }
@@ -205,7 +206,7 @@ run (Node default fn (inlets_chan /\ outlets_chan)) state =
         -- fn_signal :: Signal (Effect (Fn.Pass d))
         protocol :: (Maybe InletId /\ (InletId /-> d)) -> Protocol InletId OutletId d
         protocol (last /\ inletsMap) =
-            { last : last
+            { last : const $ pure last
             , receive : pure <<< flip Map.lookup inletsMap
             , send : \outlet d -> pure unit
             , sendIn : \inlet d -> pure unit

@@ -30,6 +30,7 @@ import Noodle.Fn (Fn, Fn')
 import Noodle.Fn as Fn
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Protocol (Protocol)
+import Noodle.Fn.Protocol as Protocol
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -37,14 +38,7 @@ import Signal.Channel as Ch
 import Signal.Time as SignalT
 
 
-type Tracker d = Ref (String /-> d)
-
-
-newTracker :: forall d. Effect (Tracker d)
-newTracker = Ref.new Map.empty
-
-
-shouldContain :: forall d. Eq d => Show d => String -> d -> Tracker d -> Aff Unit
+shouldContain :: forall d. Eq d => Show d => String -> d -> Protocol.Tracker String d -> Aff Unit
 shouldContain id val tracker = do
     values <- liftEffect $ Ref.read tracker
     case Map.lookup id values of
@@ -55,23 +49,13 @@ shouldContain id val tracker = do
             throwError $ error $ "\"" <> id <> "\" was not found in tracker"
 
 
-makeProtocol :: forall d. Array (String /\ d) -> Tracker d -> Tracker d -> Effect (Protocol String String d)
-makeProtocol initialAtInputs inputs outputs =
-    { last : Nothing
-    , receive : pure <<< const Nothing
-    , send : const $ const $ pure unit
-    , sendIn : const $ const $ pure unit
-    } # pure
-
-
 spec :: Spec Unit
 spec = do
 
     describe "foo" $ do
 
         it "summing works" $ do
-            inputsTracker :: Tracker Int <- liftEffect newTracker
-            outputsTracker :: Tracker Int <- liftEffect newTracker
+            p <- liftEffect $ Protocol.mkDefault [ "a" /\ 5, "b" /\ 3 ]
             let
                 fn :: forall m. MonadEffect m => Fn String String m Int
                 fn =
@@ -79,16 +63,12 @@ spec = do
                         a <- Fn.receive "a"
                         b <- Fn.receive "b"
                         Fn.send "sum" $ a + b
-            testProtocol <- liftEffect
-                                $ makeProtocol [ "a" /\ 0, "b" /\ 0 ]
-                                    inputsTracker outputsTracker
-            Fn.run 0 testProtocol fn
-            outputsTracker # shouldContain "sum" 8
+            Fn.run 0 p.protocol fn
+            p.outputs # shouldContain "sum" 8
             pure unit
 
         it "summing works with sendIn" $ do
-            inputsTracker :: Tracker Int <- liftEffect $ newTracker
-            outputsTracker :: Tracker Int <- liftEffect $ newTracker
+            p <- liftEffect $ Protocol.mkDefault [ "a" /\ 0, "b" /\ 0 ]
             let
                 fn :: forall m. MonadEffect m => Fn String String m Int
                 fn =
@@ -98,13 +78,10 @@ spec = do
                         a <- Fn.receive "a"
                         b <- Fn.receive "b"
                         Fn.send "sum" $ a + b
-            testProtocol <- liftEffect
-                                $ makeProtocol [ "a" /\ 0, "b" /\ 0 ]
-                                    inputsTracker outputsTracker
-            Fn.run 0 testProtocol fn
-            outputsTracker # shouldContain "sum" 13
-            inputsTracker # shouldContain "a" 6
-            inputsTracker # shouldContain "b" 7
+            Fn.run 0 p.protocol fn
+            p.outputs # shouldContain "sum" 13
+            p.inputs # shouldContain "a" 6
+            p.inputs # shouldContain "b" 7
             pure unit
 
     describe "bar" $ do
