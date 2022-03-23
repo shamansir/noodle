@@ -208,8 +208,8 @@ run (Node default fn (inlets_chan /\ outlets_chan)) state =
         protocol (last /\ inletsMap) =
             { last : const $ pure last
             , receive : pure <<< flip Map.lookup inletsMap
-            , send : \outlet d -> pure unit
-            , sendIn : \inlet d -> pure unit
+            , send : \outlet d -> Ch.send outlets_chan (outlet /\ d)
+            , sendIn : \inlet d -> Ch.send inlets_chan (inlet /\ d)
             }
         fn_signal :: Signal (Effect Unit)
         fn_signal = maps
