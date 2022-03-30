@@ -23,7 +23,7 @@ import Data.Traversable (sequence)
 import Noodle.Node (Node, NodeFn)
 import Noodle.Node as Node
 import Noodle.Channel as Channel
-import Noodle.Fn.Stateful (make', name) as Fn
+import Noodle.Fn (make, name) as Fn
 
 
 --type Toolkit d = Toolkit' Unit d
@@ -50,7 +50,7 @@ register
     -> Node.NodeProcess state d
     -> Toolkit state d
 register tk family inlets outlets process =
-  register' tk $ Fn.make' family inlets outlets process
+  register' tk $ Fn.make family inlets outlets process
 
 
 register' :: forall state d. Toolkit state d -> NodeFn state d -> Toolkit state d

@@ -67,10 +67,10 @@ import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
 import Noodle.Channel as Channel
-import Noodle.Fn.Stateful (Fn')
-import Noodle.Fn.Stateful (run, make') as Fn
+import Noodle.Fn (Fn)
 import Noodle.Fn
-            ( InputId, OutputId
+            ( run, make
+            , InputId, OutputId
             , in_, out_, _in, _out
             , dimensions, name, findInput, findOutput, shapeOf
             , mapInputsAndOutputs
@@ -127,7 +127,7 @@ type OutletDef d = OutletId /\ Channel.Def d -- /\ Signal d
 type ChannelDefs d = Array (InletDef d) /\ Array (OutletDef d)
 
 
-type NodeFn state d = Fn' InletId (Channel.Def d) OutletId (Channel.Def d) state Aff d
+type NodeFn state d = Fn InletId (Channel.Def d) OutletId (Channel.Def d) state Aff d
 
 
 type NodeProcess state d = Fn.ProcessM InletId OutletId state d Aff Unit
@@ -178,7 +178,7 @@ make
     -> NodeProcess state d
     -> Effect (Node state d)
 make family default inlets outlets =
-    make' default <<< Fn.make' family inlets outlets
+    make' default <<< Fn.make family inlets outlets
 
 
 make'
