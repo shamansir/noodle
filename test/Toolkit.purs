@@ -45,7 +45,7 @@ spec = do
                 toolkit :: Toolkit Unit Int
                 toolkit =
                     Toolkit.register' (Toolkit.empty 0)
-                        $ Fn.make' "sum"
+                        $ Fn.make "sum"
                             -- TODO: withInlets / withInputs ...
                                 -- -< "a" /\ intChan
                             [ Fn.in_ "a" /\ intChan
