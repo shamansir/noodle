@@ -57,7 +57,7 @@ spec = do
         it "summing works" $ do
             p <- liftEffect $ Protocol.mkDefault [ "a" /\ 5, "b" /\ 3 ]
             let
-                fn :: forall m. MonadEffect m => Fn String String m Int
+                fn :: forall m. MonadEffect m => Fn' String String m Int
                 fn =
                     Fn.make "foo" [ "a", "b" ] [ "sum" ] $ do
                         a <- Fn.receive "a"
@@ -70,7 +70,7 @@ spec = do
         it "summing works with sendIn" $ do
             p <- liftEffect $ Protocol.mkDefault [ "a" /\ 0, "b" /\ 0 ]
             let
-                fn :: forall m. MonadEffect m => Fn String String m Int
+                fn :: forall m. MonadEffect m => Fn' String String m Int
                 fn =
                     Fn.make "foo" [ "a", "b" ] [ "sum" ] $ do
                         Fn.sendIn "a" 6

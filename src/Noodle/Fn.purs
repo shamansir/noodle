@@ -36,10 +36,6 @@ import Noodle.Fn.Process as Process
 import Noodle.Fn.Protocol (Protocol)
 
 
-class ToFn a i ii o oo state d where
-    toFn :: forall m. a -> Fn i ii o oo state m d
-
-
 type Name = String
 
 
@@ -56,6 +52,10 @@ data Fn i ii o oo state m d = Fn Name (Array (i /\ ii)) (Array (o /\ oo)) (Proce
 
 
 type Fn' i o state m d = Fn i Unit o Unit state m d
+
+
+class ToFn a i ii o oo state d where
+    toFn :: forall m. a -> Fn i ii o oo state m d
 
 
 instance invariantFn :: Invariant (Fn i ii o oo state m) where
