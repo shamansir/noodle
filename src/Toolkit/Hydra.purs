@@ -1,7 +1,21 @@
-module Hydra.Hydra where
-
-
-import Noodle.Fn (Fn, class ToFn) as Noodle
+module Toolkit.Hydra
+  ( Blend(..)
+  , Buffer(..)
+  , Color(..)
+  , Geometry(..)
+  , Hydra(..)
+  , Modifier(..)
+  , Modulate(..)
+  , Operation(..)
+  , Source(..)
+  , Texture(..)
+  , TextureOrValue(..)
+  , Value(..)
+  , t'
+  , textureOrValue
+  , v'
+  )
+  where
 
 
 import Prelude
@@ -142,15 +156,6 @@ data Hydra
     | Mod Modifier
     | Tex Texture
     | Buf Buffer
-
-
-data Evaluate a = Evaluate Hydra a
-
-
-type FnV target = Noodle.Fn String Value String Value Unit Evaluate target
-
-
-type FnTV target = Noodle.Fn String TextureOrValue String TextureOrValue Unit Evaluate target
 
 
 -- FIXME: use API for everything below
