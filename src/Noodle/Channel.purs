@@ -1,8 +1,7 @@
 module Noodle.Channel
-  ( Def
+  ( Def, make
   , default, isHidden, id
   , hot, cold, hiddenHot, hiddenCold
-  , hiddenCold
   )
   where
 
@@ -43,6 +42,10 @@ instance functorDef :: Functor Def where
         , temperature : def.temperature
         , visibility : def.visibility
         } # Def
+
+
+make :: forall d. Id -> d -> Def d
+make = hot
 
 
 default :: forall d. Def d -> d

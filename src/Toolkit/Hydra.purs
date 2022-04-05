@@ -2,8 +2,9 @@ module Toolkit.Hydra.Toolkit where
 
 import Prelude
 
-import Toolkit.Hydra.Op
+import Toolkit.Hydra.Op (Hydra(..))
 import Toolkit.Hydra.Fn as Fn
+import Toolkit.Hydra.Fn.Gen (toNodeFn) as Fn
 
 
 import Noodle.Toolkit (Toolkit, empty, registerFn) as T
@@ -15,5 +16,4 @@ toolkit :: Toolkit
 toolkit =
     T.registerFn
         (T.empty None)
-        ?wh
-        -- Fn.noise
+        (Fn.toNodeFn Fn.noise)

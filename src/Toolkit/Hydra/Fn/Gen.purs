@@ -1,21 +1,15 @@
 module Toolkit.Hydra.Fn.Gen
   ( Evaluate(..)
-  , Fn
+  , Fn, toNodeFn
   , fn2v
   )
   where
 
 
-import Toolkit.Hydra.Op
-
-import Noodle.Fn (Fn, class ToFn) as Noodle
-import Noodle.Fn (make) as Fn
-import Noodle.Fn.Process (receive, send, sendIn, lift) as Fn
-import Noodle.Node as Node
-import Noodle.Node (NodeFn)
-
-
 import Prelude
+
+import Effect (Effect)
+import Effect.Class (liftEffect)
 
 import Data.Maybe (Maybe(..), maybe)
 import Data.Map.Extra (type (/->))
@@ -29,29 +23,43 @@ import Data.Vec (fromArray, toArray, zipWithE, singleton, empty) as Vec
 import Data.Typelevel.Num.Reps (D0, D1, D2, D3, D4, D5, D6, d0, d1, d2, d3, d4, d5, d6)
 
 
+import Noodle.Fn (Fn, class ToFn) as Noodle
+import Noodle.Fn (make, in_, out_, mapM, mapInputsAndOutputs, mapInputsAndOutputsIds) as Fn
+import Noodle.Fn.Process (receive, send, sendIn, lift) as Fn
+import Noodle.Channel as Channel
+import Noodle.Node as Node
+import Noodle.Node (NodeFn)
+
+import Toolkit.Hydra.Op
+
+
+
+
 data Evaluate a = Evaluate Hydra a
 
 
 type Fn = Noodle.Fn String Hydra String Hydra Unit Evaluate Hydra
 
 
-{- adaptVal :: Hydra -> Maybe Value
-adaptVal _ = Nothing
-
-
-toHydra :: Value -> Hydra
-toHydra = Val -}
-
-
--- TODO: use something like HydraOp with `fromHydra` / `toHydra` ++ `compile` etc.?
-
-
 eval :: Hydra -> Evaluate Unit
 eval h = Evaluate h unit
 
 
+evaluate :: Evaluate ~> Effect -- or Aff?
+evaluate =
+    case _ of
+        Evaluate hydra a ->
+            pure a
+
+
 toNodeFn :: Fn -> NodeFn Unit Hydra
-toNodeFn fn = fn
+toNodeFn =
+    Fn.mapInputsAndOutputs hydraToDef hydraToDef
+    <<< Fn.mapInputsAndOutputsIds Fn.in_ Fn.out_
+    <<< Fn.mapM (evaluate >>> liftEffect)
+    where
+        hydraToDef :: Hydra -> Channel.Def Hydra
+        hydraToDef v = Channel.make "foo" v
 
 
 fn2v

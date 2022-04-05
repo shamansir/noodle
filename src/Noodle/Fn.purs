@@ -1,17 +1,21 @@
 module Noodle.Fn
-    ( Fn, Fn', Name, make, make'
-    , class ToFn, toFn
-    , InputId(..), OutputId(..)
-    , run
-    , with
-    , name
-    , shapeOf, dimensions, dimensionsBy, dimensionsBy'
-    , findInput, findOutput
-    , mapInputs, mapOutputs, mapInputsAndOutputs
-    , mapInputsIds, mapOutputsIds, mapInputsAndOutputsIds
-    , in_, out_, _in, _out
-    )
-    where
+  ( Fn, Fn'
+  , class ToFn, toFn
+  , InputId(..), OutputId(..)
+  , Name, name
+  , make, make'
+  , run
+  , shapeOf
+  , with
+  , _in, in_, _out, out_
+  , dimensions, dimensionsBy, dimensionsBy'
+  , findInput, findOutput
+  , mapInputs, mapInputsIds
+  , mapOutputs, mapOutputsIds
+  , mapInputsAndOutputs, mapInputsAndOutputsIds
+  , mapM
+  )
+  where
 
 
 import Prelude
@@ -142,6 +146,10 @@ mapInputsAndOutputs f g = mapInputs f >>> mapOutputs g
 
 mapInputsAndOutputsIds :: forall i i' ii o o' oo state m d. (i -> i') -> (o -> o') -> Fn i ii o oo state m d -> Fn i' ii o' oo state m d
 mapInputsAndOutputsIds f g = mapInputsIds f >>> mapOutputsIds g
+
+
+mapM :: forall i ii o oo state m m' d. (m ~> m') -> Fn i ii o oo state m d -> Fn i ii o oo state m' d
+mapM f (Fn name is os processM) = Fn name is os $ Process.mapMM f processM
 
 
 {- Running -}

@@ -141,6 +141,22 @@ imapMFocus f g (ProcessM processFree) =
     --ProcessM $ liftF $ imapProcessFFocus f g processFree
 
 
+mapFM :: forall i o state d m m'. (m ~> m') -> ProcessF i o state d m ~> ProcessF i o state d m'
+mapFM f =
+    case _ of
+        State k -> State k
+        Lift m -> Lift $ f m
+        Receive' iid k -> Receive' iid k
+        Send' oid d next -> Send' oid d next
+        SendIn iid d next -> SendIn iid d next
+
+
+mapMM :: forall i o state d m m'. (m ~> m') -> ProcessM i o state d m ~> ProcessM i o state d m'
+mapMM f (ProcessM processFree) =
+    ProcessM $ foldFree (Free.liftF <<< mapFM f) processFree
+
+
+
 runM :: forall i o state d m. MonadEffect m => MonadRec m => Ord i => Protocol i o d -> d -> state -> ProcessM i o state d m ~> m
 runM protocol default state (ProcessM processFree) = do
     stateRef <- liftEffect $ Ref.new state
