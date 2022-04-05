@@ -1,12 +1,11 @@
 module Toolkit.Hydra.Fn
-  ( Evaluate(..)
-  , FnTV
-  , FnV
+  ( noise
   )
   where
 
 
-import Toolkit.Hydra
+import Toolkit.Hydra.Op
+import Toolkit.Hydra.Fn.Gen as Gen
 
 import Noodle.Fn (Fn, class ToFn) as Noodle
 import Noodle.Fn (make) as Fn
@@ -21,20 +20,19 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
 import Data.String as String
 import Data.Foldable (foldl)
-
-
-data Evaluate a = Evaluate Hydra a
-
-
-type FnV target = Noodle.Fn String Value String target Unit Evaluate target
-
-
-type FnTV target = Noodle.Fn String TextureOrValue String target Unit Evaluate target
+import Data.Vec (Vec, (!!), (+>))
+import Data.Vec (fromArray, toArray, zipWithE, singleton, empty) as Vec
+import Data.Typelevel.Num.Reps (D0, D1, D2, D3, D4, D5, D6, d0, d1, d2, d3, d4, d5, d6)
 
 
 
-noise :: FnV Source
-noise = Fn.make "noise"
-    [ "scale" /\ Num 0.0, "offset" /\ Num 0.0 ]
-    [ "noise" /\ Noise { scale : Num 0.0, offset : Num 0.0 } ]
-    $ pure unit
+noise :: Gen.Fn
+noise =
+    Gen.fn2v
+        "noise"
+        (  ("scale" /\ Num 10.0)
+        +> ("offset" /\ Num 0.1)
+        +> Vec.empty
+        )
+        ( Vec.singleton "offset" )
+        (\scale offset -> Tex $ Texture (Noise { scale, offset }) [])

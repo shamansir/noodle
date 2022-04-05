@@ -70,7 +70,7 @@ instance monadThrowNoodleM :: MonadThrow e m => MonadThrow e (ProcessM i o state
   throwError = ProcessM <<< Free.liftF <<< Lift <<< throwError
 
 
-  {- Processing -}
+{- Processing -}
 
 receive :: forall i o state d m. i -> ProcessM i o state d m d
 receive iid = ProcessM $ Free.liftF $ Receive' iid identity

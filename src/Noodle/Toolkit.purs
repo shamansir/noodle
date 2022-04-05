@@ -3,7 +3,7 @@ module Noodle.Toolkit
   , empty
   , nodeFamilies
   , spawn, spawn'
-  , register, register'
+  , register, registerFn
   )
   where
 
@@ -29,6 +29,7 @@ import Noodle.Fn (make, name) as Fn
 --type Toolkit d = Toolkit' Unit d
 
 
+-- data Toolkit d = Toolkit d (Node.Family /-> (forall state. NodeFn state d))
 data Toolkit state d = Toolkit d (Node.Family /-> NodeFn state d)
 
 
@@ -50,11 +51,11 @@ register
     -> Node.NodeProcess state d
     -> Toolkit state d
 register tk family inlets outlets process =
-  register' tk $ Fn.make family inlets outlets process
+  registerFn tk $ Fn.make family inlets outlets process
 
 
-register' :: forall state d. Toolkit state d -> NodeFn state d -> Toolkit state d
-register' (Toolkit def fns) fn =
+registerFn :: forall state d. Toolkit state d -> NodeFn state d -> Toolkit state d
+registerFn (Toolkit def fns) fn =
   Toolkit def $ Map.insert (Fn.name fn) fn $ fns
 
 
