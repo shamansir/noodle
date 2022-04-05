@@ -30,9 +30,9 @@ noise :: Gen.Fn
 noise =
     Gen.fn2v
         "noise"
-        (  ("scale" /\ Num 10.0)
-        +> ("offset" /\ Num 0.1)
+        (  "scale"  /\ Num 10.0
+        +> "offset" /\ Num 0.1
         +> Vec.empty
         )
         ( Vec.singleton "offset" )
-        (\scale offset -> Tex $ Texture (Noise { scale, offset }) [])
+        (\scale offset -> Noise { scale, offset })

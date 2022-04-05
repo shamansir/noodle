@@ -84,6 +84,14 @@ sendIn :: forall i o state d m. i -> d -> ProcessM i o state d m Unit
 sendIn iid d = ProcessM $ Free.liftF $ SendIn iid d unit
 
 
+lift :: forall i o state d m. m Unit -> ProcessM i o state d m Unit
+lift m = ProcessM $ Free.liftF $ Lift m
+
+
+-- lift :: forall i o state d m a. m a -> ProcessM i o state d m a
+-- lift m = ProcessM $ Free.liftF $ Lift m
+
+
 {- Maps -}
 
 

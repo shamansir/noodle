@@ -10,7 +10,9 @@ import Toolkit.Hydra.Op
 
 import Noodle.Fn (Fn, class ToFn) as Noodle
 import Noodle.Fn (make) as Fn
-import Noodle.Fn.Process (receive, send, sendIn) as Fn
+import Noodle.Fn.Process (receive, send, sendIn, lift) as Fn
+import Noodle.Node as Node
+import Noodle.Node (NodeFn)
 
 
 import Prelude
@@ -44,19 +46,28 @@ toHydra = Val -}
 -- TODO: use something like HydraOp with `fromHydra` / `toHydra` ++ `compile` etc.?
 
 
+eval :: Hydra -> Evaluate Unit
+eval h = Evaluate h unit
+
+
+toNodeFn :: Fn -> NodeFn Unit Hydra
+toNodeFn fn = fn
+
+
 fn2v
     :: forall a b
      . HydrateIn a => HydrateOut a => HydrateOut b
     => String -> Vec D2 (String /\ a) -> Vec D1 String -> (a -> a -> b) -> Fn
 fn2v name inputs output fn =
     Fn.make name
-        [ input0id /\ toHydra input0default, input0id /\ toHydra input0default ]
+        [ input0id /\ toHydra input0default, input1id /\ toHydra input0default ]
         [ outputid /\ toHydra outputdefault ]
         $ do
             input0val <- Fn.receive input0id
             input1val <- Fn.receive input1id
-            maybe (pure unit) (toHydra >>> Fn.send outputid)
-                $ fn <$> fromHydra input0val <*> fromHydra input1val
+            let maybeOut = fn <$> fromHydra input0val <*> fromHydra input1val
+            maybe (pure unit) (toHydra >>> Fn.send outputid) maybeOut
+            maybe (pure unit) (toHydra >>> eval >>> Fn.lift) maybeOut
     where
         input0id = Tuple.fst $ inputs !! d0
         input0default = Tuple.snd $ inputs !! d0
