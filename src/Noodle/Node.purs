@@ -16,7 +16,7 @@ module Noodle.Node
   , default
   , defaultOfInlet
   , defaultOfOutlet
-  , dimensions--, dimensionsBy, dimensionsBy'
+  , dimensions, dimensionsBy, dimensionsBy'
   , disconnect
   , family
   , getI, getO
@@ -46,7 +46,7 @@ module Noodle.Node
 
 import Prelude
 
-import Data.Array (mapMaybe, elemIndex, filter) as Array
+import Data.Array (mapMaybe, elemIndex, filter, length) as Array
 import Data.Functor (class Functor)
 import Data.Functor.Invariant (class Invariant, imap)
 import Data.Bifunctor (bimap)
@@ -389,12 +389,12 @@ dimensions :: forall state d. Node state d -> Int /\ Int
 dimensions = getFn >>> Fn.dimensions
 
 
-{- dimensionsBy :: forall state d. (InletDef d -> Boolean) -> (OutletDef d -> Boolean) -> Node m d -> Int /\ Int
-dimensionsBy iPred oPred = getFn >>> Fn.dimensionsBy iPred oPred
+dimensionsBy :: forall state d. (InletDef d -> Boolean) -> (OutletDef d -> Boolean) -> Node state d -> Int /\ Int
+dimensionsBy iPred oPred = getShape >>> bimap (Array.filter iPred >>> Array.length) (Array.filter oPred >>> Array.length)
 
 
-dimensionsBy' :: forall state d. (Channel.Def d -> Boolean) -> Node m d -> Int /\ Int
-dimensionsBy' pred = dimensionsBy (Tuple.snd >>> pred) (Tuple.snd >>> pred) -}
+dimensionsBy' :: forall state d. (Channel.Def d -> Boolean) -> Node state d -> Int /\ Int
+dimensionsBy' pred = dimensionsBy (Tuple.snd >>> pred) (Tuple.snd >>> pred)
 
 
 indexOfInlet :: forall state d. InletId -> Node state d -> Maybe Int

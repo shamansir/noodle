@@ -18,6 +18,8 @@ import Color (Color)
 import App.Style (Flags)
 import App.Style (defaultFlags) as Style
 
+import Effect.Aff (Aff)
+
 import Halogen as H
 
 
@@ -36,8 +38,8 @@ type BgInput' patch_state d = { size :: Size, network :: Network d, patchState :
 type NodeSlot patch_action d id = H.Slot NodeQuery (NodeOutput' patch_action d) id
 
 
-type NodeInput m d = NodeInput' Unit Unit m d
-type NodeInput' patch_state node_state m d = { node :: Node node_state m d, patchState :: patch_state }
+type NodeInput d = NodeInput' Unit Unit d
+type NodeInput' patch_state node_state d = { node :: Node node_state d, patchState :: patch_state }
 
 
 type NodeOutput d = NodeOutput' Void d
@@ -54,9 +56,9 @@ data FromNode patch_action d
     | ToPatch patch_action
 
 
-type NodeComponent d m = NodeComponent' Void Unit Unit d m
-type NodeComponent' patch_action patch_state node_state d m =
-    H.Component NodeQuery (NodeInput' patch_state node_state m d) (NodeOutput' patch_action d) m
+type NodeComponent d m = NodeComponent' Void Unit Unit d
+type NodeComponent' patch_action patch_state node_state d =
+    H.Component NodeQuery (NodeInput' patch_state node_state d) (NodeOutput' patch_action d) Aff
 
 
 {- Patch -}
@@ -66,8 +68,8 @@ type PatchSlot id = PatchSlot' Void Unit id
 type PatchSlot' patch_action patch_state id = H.Slot (TellPatch patch_action) (InformApp patch_state) id
 
 
-type PatchInput d = PatchInput' Unit d
-type PatchInput' patch_state d = { size :: Size, patch :: Patch d, patchState :: patch_state }
+type PatchInput d = PatchInput' Unit Unit d
+type PatchInput' patch_state node_state d = { size :: Size, patch :: Patch node_state d, patchState :: patch_state }
 
 
 type PatchOutput = PatchOutput' Unit
@@ -86,18 +88,18 @@ data TellPatch patch_action a
     = TellPatch patch_action a
 
 
-type PatchComponent d m = PatchComponent' Void Unit d m
-type PatchComponent' patch_action patch_state d m =
-    H.Component (TellPatch patch_action) (PatchInput' patch_state d) (PatchOutput' patch_state) m
+type PatchComponent d = PatchComponent' Void Unit Unit d
+type PatchComponent' patch_action patch_state node_state d =
+    H.Component (TellPatch patch_action) (PatchInput' patch_state node_state d) (PatchOutput' patch_state) Aff
 
 
 {- Components -}
 
 
-type Components d m = Components' Void Unit Unit d m
-type Components' patch_action patch_state node_state d m =
-    { patch :: Maybe (PatchComponent' patch_action patch_state d m)
-    , node :: Node.Family -> Maybe (NodeComponent' patch_action patch_state node_state d m)
+type Components d = Components' Void Unit Unit d
+type Components' patch_action patch_state node_state d =
+    { patch :: Maybe (PatchComponent' patch_action patch_state node_state d)
+    , node :: Node.Family -> Maybe (NodeComponent' patch_action patch_state node_state d)
     }
 
 
@@ -116,5 +118,5 @@ type Markings =
 type GetFlags = Node.Family -> Flags
 
 
-flagsFor :: forall state m d. GetFlags -> Node state m d -> Flags
+flagsFor :: forall state d. GetFlags -> Node state d -> Flags
 flagsFor getFlags = getFlags <<< Node.family

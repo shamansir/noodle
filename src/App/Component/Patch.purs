@@ -4,6 +4,7 @@ module App.Component.Patch where
 import Prelude
 
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Aff (Aff)
 import Type.Row (type (+))
 
 import Color as C
@@ -91,14 +92,14 @@ _link = Proxy :: Proxy "link"
 type BinPackedNodes = Bin2 Number (Maybe Node.Id)
 
 
-type Input patch_action patch_state d m =
-    { patch :: Noodle.Patch d
-    , toolkit :: Noodle.Toolkit d
+type Input patch_action patch_state node_state d =
+    { patch :: Noodle.Patch node_state d
+    , toolkit :: Noodle.Toolkit node_state d
     , style :: Style
     , flow :: NodeFlow
     , offset :: Pos
     , customNodeBody ::
-            Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state d m)
+            Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state node_state d)
     , markings :: UI.Markings
     , getFlags :: UI.GetFlags
     , area :: Size
@@ -106,14 +107,14 @@ type Input patch_action patch_state d m =
     }
 
 
-type State patch_action patch_state d m =
-    { patch :: Noodle.Patch d
-    , toolkit :: Noodle.Toolkit d
+type State patch_action patch_state node_state d =
+    { patch :: Noodle.Patch node_state d
+    , toolkit :: Noodle.Toolkit node_state d
     , style :: Style
     , flow :: NodeFlow
     , offset :: Pos
     , customNodeBody ::
-            Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state d m)
+            Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state node_state d)
     , markings :: UI.Markings
     , getFlags :: UI.GetFlags
     , area :: Size
@@ -145,9 +146,9 @@ type RInput patch_state =
 
 
 initialState
-    :: forall patch_action patch_state d m
-     . Input patch_action patch_state d m
-    -> State patch_action patch_state d m
+    :: forall patch_action patch_state node_state d
+     . Input patch_action patch_state node_state d
+    -> State patch_action patch_state node_state d
 initialState i@{ patch, toolkit, style, flow, area } =
     { patch, toolkit, style, flow, area
     , patchState : i.patchState, offset : i.offset
@@ -162,10 +163,9 @@ initialState i@{ patch, toolkit, style, flow, area } =
 
 
 render
-    :: forall patch_action patch_state d m
-     . MonadEffect m
-    => State patch_action patch_state d m
-    -> H.ComponentHTML (Action patch_action patch_state) (Slots patch_action) m
+    :: forall patch_action patch_state node_state d
+     . State patch_action patch_state node_state d
+    -> H.ComponentHTML (Action patch_action patch_state) (Slots patch_action) Aff
 render state =
     HS.g
         []
@@ -312,10 +312,9 @@ render state =
 
 
 handleAction
-    :: forall patch_action patch_state d m
-     . MonadEffect m
-    => Action patch_action patch_state
-    -> H.HalogenM (State patch_action patch_state d m) (Action patch_action patch_state) (Slots patch_action) patch_action m Unit
+    :: forall patch_action patch_state node_state d
+     . Action patch_action patch_state
+    -> H.HalogenM (State patch_action patch_state node_state d) (Action patch_action patch_state) (Slots patch_action) patch_action Aff Unit
 handleAction = case _ of
 
     Initialize -> do
@@ -336,8 +335,9 @@ handleAction = case _ of
             )
 
     AddNode name -> do
+        {- FIXME:
         toolkit <- H.gets _.toolkit
-        maybeNode <- liftEffect $ Toolkit.spawn name toolkit
+        maybeNode <- liftEffect $ Toolkit.spawn' name toolkit
         case maybeNode of
             Just node -> do
                 H.modify_ -- _ { patch = _.patch # Patch.addNode "sum" newNode }
@@ -352,6 +352,8 @@ handleAction = case _ of
                             }
                     )
             Nothing -> pure unit
+        -}
+        pure unit
 
     DetachNode nodeId ->
         H.modify_ $ \state ->
@@ -429,7 +431,7 @@ handleAction = case _ of
 
     where
 
-        clickableToDraggable :: Noodle.Patch d -> Pos -> Mouse.Clickable -> Maybe Mouse.Draggable
+        clickableToDraggable :: Noodle.Patch node_state d -> Pos -> Mouse.Clickable -> Maybe Mouse.Draggable
         clickableToDraggable patch _ (Clickable.Header nodeId) = Just $ Draggable.Node nodeId
         clickableToDraggable patch _ (Clickable.Inlet inletPath) =
             patch
@@ -437,7 +439,7 @@ handleAction = case _ of
                 <#> (\outletPath -> Draggable.Link outletPath $ Just inletPath)
         clickableToDraggable patch _ (Clickable.Outlet outletPath) = Just $ Draggable.Link outletPath Nothing
 
-        draggableToClickable :: Noodle.Patch d -> Pos -> Mouse.Draggable -> Maybe Mouse.Clickable
+        draggableToClickable :: Noodle.Patch node_state d -> Pos -> Mouse.Draggable -> Maybe Mouse.Clickable
         draggableToClickable _ _ _ = Nothing
 
         liftSubject :: Node.Id -> NodeC.WhereInside -> Mouse.Clickable
@@ -445,14 +447,14 @@ handleAction = case _ of
         liftSubject nodeId (NodeC.Inlet inletId) = Clickable.Inlet $ nodeId /\ inletId
         liftSubject nodeId (NodeC.Outlet outletId) = Clickable.Outlet $ nodeId /\ outletId
 
-        topLinkAt :: Patch.InletPath -> Noodle.Patch d -> Maybe Patch.OutletPath
+        topLinkAt :: Patch.InletPath -> Noodle.Patch node_state d -> Maybe Patch.OutletPath
         topLinkAt inletPath patch =
             patch
                  #  Patch.linksLeadingTo inletPath
                 <#> Tuple.fst
                  #  Array.head
 
-        findSubjectUnderPos :: State patch_action patch_state d m -> Pos -> Maybe (Pos /\ Mouse.Clickable)
+        findSubjectUnderPos :: State patch_action patch_state node_state d -> Pos -> Maybe (Pos /\ Mouse.Clickable)
         findSubjectUnderPos state pos =
             (findNodeInLayout state pos <|> findNodeInPinned state pos)
                 >>= \(nodeId /\ pos') ->
@@ -462,7 +464,7 @@ handleAction = case _ of
                             <#> liftSubject nodeId
                             <#> (/\) pos'
 
-        whereInsideNode :: State patch_action patch_state d m -> Noodle.Node d -> Pos -> Maybe NodeC.WhereInside
+        whereInsideNode :: State patch_action patch_state node_state d -> Noodle.Node node_state d -> Pos -> Maybe NodeC.WhereInside
         whereInsideNode state =
             NodeC.whereInside state.getFlags state.style state.flow
 
@@ -473,14 +475,13 @@ handleAction = case _ of
             flip L.atPos' state.pinned
 
 
-extract :: forall patch_action patch_state d m. Input patch_action patch_state d m -> RInput patch_state
+extract :: forall patch_action patch_state node_state d. Input patch_action patch_state node_state d -> RInput patch_state
 extract { area, patchState } = { area, patchState }
 
 
 component
-    :: forall query patch_action patch_state d m
-     . MonadEffect m
-    => H.Component query (Input patch_action patch_state d m) patch_action m
+    :: forall query patch_action patch_state node_state d
+     . H.Component query (Input patch_action patch_state node_state d) patch_action Aff
 component =
     H.mkComponent
         { initialState
@@ -494,7 +495,7 @@ component =
         }
 
 
-addNodesFrom :: forall d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Patch d -> BinPackedNodes -> BinPackedNodes
+addNodesFrom :: forall node_state d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Patch node_state d -> BinPackedNodes -> BinPackedNodes
 addNodesFrom getFlags style flow patch layout =
     Patch.nodes patch
         # foldr
@@ -506,7 +507,7 @@ addNodesFrom getFlags style flow patch layout =
             layout
 
 
-areaOf :: forall d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Patch d -> Node.Id -> Maybe Size
+areaOf :: forall node_state d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Patch node_state d -> Node.Id -> Maybe Size
 areaOf getFlags style flow patch nodeId =
     patch
         # Patch.findNode nodeId

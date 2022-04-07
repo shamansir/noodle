@@ -4,6 +4,7 @@ module App.Component.Node where
 import Prelude
 
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Aff (Aff)
 
 import Color as C
 import Color.Extra as C
@@ -66,46 +67,45 @@ data Output patch_action
 _body = Proxy :: Proxy "body"
 
 
-type Input patch_action patch_state node_state d m =
-    { node :: Noodle.Node node_state m d
+type Input patch_action patch_state node_state d =
+    { node :: Noodle.Node node_state d
     , name :: Node.Id
     , style :: Style
     , flow :: NodeFlow
     , getFlags :: UI.GetFlags
     , markings :: UI.Markings
-    , controlArea :: Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state node_state d m)
+    , controlArea :: Node.Family -> Maybe (UI.NodeComponent' patch_action patch_state node_state d)
     , linksCount :: Node.LinksCount
     , patchState :: patch_state
     }
 
 
-type State patch_action patch_state node_state d m =
-    Input patch_action patch_state node_state d m
+type State patch_action patch_state node_state d =
+    Input patch_action patch_state node_state d
 
 
-type RInput patch_state node_state d m =
-    { node :: Noodle.Node node_state m d
+type RInput patch_state node_state d =
+    { node :: Noodle.Node node_state d
     , linksCount :: Node.LinksCount
     , patchState :: patch_state
     }
 
 
-data Action patch_action patch_state node_state d m
-    = Receive (RInput patch_state node_state d m)
+data Action patch_action patch_state node_state d
+    = Receive (RInput patch_state node_state d)
     | RequestRemove
     | FromNode (UI.FromNode patch_action d)
     | NoOp
 
 
-initialState :: forall patch_action patch_state node_state d m. Input patch_action patch_state node_state d m -> State patch_action patch_state node_state d m
+initialState :: forall patch_action patch_state node_state d. Input patch_action patch_state node_state d -> State patch_action patch_state node_state d
 initialState = identity
 
 
 render
     :: forall patch_action patch_state node_state d m
-     . MonadEffect m
-    => State patch_action patch_state node_state d m
-    -> H.ComponentHTML (Action patch_action patch_state node_state d m) (Slots patch_action d) m
+     . State patch_action patch_state node_state d
+    -> H.ComponentHTML (Action patch_action patch_state node_state d) (Slots patch_action d) Aff -- TODO: try to get back to using MonadEffect again
 render s@{ node, name, style, flow, linksCount } =
     HS.g
         []
@@ -117,7 +117,7 @@ render s@{ node, name, style, flow, linksCount } =
         , outlets'
         ]
     where
-        flagsFor :: Noodle.Node node_state m d -> Style.Flags
+        flagsFor :: Noodle.Node node_state d -> Style.Flags
         flagsFor = UI.flagsFor s.getFlags
 
         f = flagsFor node
@@ -379,10 +379,10 @@ render s@{ node, name, style, flow, linksCount } =
 handleAction
     :: forall patch_action patch_state node_state d m
      . MonadEffect m
-    => Action patch_action patch_state node_state d m
+    => Action patch_action patch_state node_state d
     -> H.HalogenM
-            (State patch_action patch_state node_state d m)
-            (Action patch_action patch_state node_state d m)
+            (State patch_action patch_state node_state d)
+            (Action patch_action patch_state node_state d)
             (Slots patch_action d)
             (Output patch_action)
             m Unit
@@ -424,11 +424,11 @@ handleAction = case _ of
         pure unit
 
 
-extract :: forall patch_action patch_state node_state d m. Input patch_action patch_state node_state d m -> RInput patch_state node_state d m
+extract :: forall patch_action patch_state node_state d. Input patch_action patch_state node_state d -> RInput patch_state node_state d
 extract { node, linksCount, patchState } = { node, linksCount, patchState }
 
 
-component :: forall query patch_action patch_state node_state d m. MonadEffect m => H.Component query (Input patch_action patch_state node_state d m) (Output patch_action) m
+component :: forall query patch_action patch_state node_state d. H.Component query (Input patch_action patch_state node_state d) (Output patch_action) Aff
 component =
     H.mkComponent
         { initialState
@@ -447,7 +447,7 @@ data WhereInside
     | Outlet Node.OutletId
 
 
-whereInside :: forall node_state m d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Node node_state m d -> Pos -> Maybe WhereInside
+whereInside :: forall node_state d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Node node_state d -> Pos -> Maybe WhereInside
 whereInside getFlags style flow node pos =
     if V2.inside'
         (pos - Calc.titlePos f style flow node)
@@ -468,12 +468,12 @@ whereInside getFlags style flow node pos =
         f = UI.flagsFor getFlags node
 
 
-areaOf :: forall state m d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Node state m d -> Size
+areaOf :: forall state d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Node state d -> Size
 areaOf getFlags style flow node =
     Calc.nodeArea (UI.flagsFor getFlags node) style flow node
 
 
-inletConnectorPos :: forall state m d. UI.GetFlags -> Style -> NodeFlow -> Node.InletId -> Noodle.Node state m d -> Maybe Pos
+inletConnectorPos :: forall state d. UI.GetFlags -> Style -> NodeFlow -> Node.InletId -> Noodle.Node state d -> Maybe Pos
 inletConnectorPos getFlags style flow inletId node =
     Node.indexOfInlet inletId node
         <#> Calc.inletConnectorPos
@@ -483,7 +483,7 @@ inletConnectorPos getFlags style flow inletId node =
                 node
 
 
-outletConnectorPos :: forall state m d. UI.GetFlags -> Style -> NodeFlow -> Node.OutletId -> Noodle.Node state m d -> Maybe Pos
+outletConnectorPos :: forall state d. UI.GetFlags -> Style -> NodeFlow -> Node.OutletId -> Noodle.Node state d -> Maybe Pos
 outletConnectorPos getFlags style flow outletId node =
     Node.indexOfOutlet outletId node
         <#> Calc.outletConnectorPos

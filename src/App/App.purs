@@ -19,13 +19,14 @@ import App.Component.App as AppC
 import App.Style (Style, NodeFlow)
 
 
-type App d = App' Unit Unit d
+type App d = App' Unit Unit Unit d
 
 
-type App' patch_action patch_state d = AppC.Input patch_action patch_state d Aff
+--type App' patch_action patch_state d = AppC.Input patch_action patch_state d Aff
+type App' patch_action patch_state node_state d = AppC.Input patch_action patch_state node_state d
 
 
-run :: forall patch_action patch_state d. App' patch_action patch_state d -> Effect Unit
+run :: forall patch_action patch_state node_state d. App' patch_action patch_state node_state d -> Effect Unit
 run app = HA.runHalogenAff do
     body <- HA.awaitBody
     runUI

@@ -5,6 +5,7 @@ import Prelude
 import Type.Proxy (Proxy(..))
 
 import Effect.Class (class MonadEffect)
+import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 
 import Color.Extra as C
@@ -52,26 +53,26 @@ _patch = Proxy :: Proxy "patch"
 _tkPatch = Proxy :: Proxy "tkPatch"
 
 
-type Input patch_action patch_state d m =
-    { network :: Noodle.Network d
-    , toolkit :: Noodle.Toolkit d
+type Input patch_action patch_state node_state d =
+    { network :: Noodle.Network node_state d
+    , toolkit :: Noodle.Toolkit node_state d
     , style :: Style
     , flow :: NodeFlow
     , currentPatch :: Maybe Patch.Id
-    , components :: ToolkitUI.Components' patch_action patch_state d m
+    , components :: ToolkitUI.Components' patch_action patch_state node_state d
     , markings :: ToolkitUI.Markings
     , getFlags :: ToolkitUI.GetFlags
     , patchState :: patch_state
     }
 
 
-type State patch_action patch_state d m =
-    { network :: Noodle.Network d
-    , toolkit :: Noodle.Toolkit d
+type State patch_action patch_state node_state d =
+    { network :: Noodle.Network node_state d
+    , toolkit :: Noodle.Toolkit node_state d
     , style :: Style
     , flow :: NodeFlow
     , currentPatch :: Maybe Patch.Id
-    , components :: ToolkitUI.Components' patch_action patch_state d m
+    , components :: ToolkitUI.Components' patch_action patch_state node_state d
     , markings :: ToolkitUI.Markings
     , getFlags :: ToolkitUI.GetFlags
     -- ^ same as Input
@@ -104,10 +105,9 @@ initialState { network, toolkit, style, flow, currentPatch, components, markings
 
 
 render
-    :: forall patch_action patch_state d m
-     . MonadEffect m
-    => State patch_action patch_state d m
-    -> H.ComponentHTML (Action patch_action patch_state) (Slots patch_action patch_state) m
+    :: forall patch_action patch_state node_state d
+     . State patch_action patch_state node_state d
+    -> H.ComponentHTML (Action patch_action patch_state) (Slots patch_action patch_state) Aff -- FIXME: there is MonadAff here!
 render (s@{ network, toolkit, style, flow }) =
     HH.div
         [ CSS.style $ do
@@ -188,10 +188,10 @@ render (s@{ network, toolkit, style, flow }) =
 
 
 handleAction
-    :: forall output patch_action patch_state d m
+    :: forall output patch_action patch_state node_state d m
      . MonadAff m => MonadEffect m
     => Action patch_action patch_state
-    -> H.HalogenM (State patch_action patch_state d m) (Action patch_action patch_state) (Slots patch_action patch_state) output m Unit
+    -> H.HalogenM (State patch_action patch_state node_state d) (Action patch_action patch_state) (Slots patch_action patch_state) output m Unit
 handleAction = case _ of
     Initialize -> do
         innerWidth <- H.liftEffect $ Window.innerWidth =<< window
@@ -220,9 +220,8 @@ handleAction = case _ of
 
 
 component
-    :: forall query output patch_action patch_state d m
-     . MonadAff m => MonadEffect m
-    => H.Component query (Input patch_action patch_state d m) output m
+    :: forall query output patch_action patch_state node_state d
+     . H.Component query (Input patch_action patch_state node_state d) output Aff -- FIXME: there is MonadAff here!
 component =
     H.mkComponent
         { initialState

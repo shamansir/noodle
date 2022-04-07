@@ -1,5 +1,5 @@
 module Noodle.Channel
-  ( Def, make
+  ( Def, Id, make
   , default, isHidden, id
   , hot, cold, hiddenHot, hiddenCold
   )
