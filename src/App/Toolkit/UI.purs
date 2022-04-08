@@ -56,7 +56,7 @@ data FromNode patch_action d
     | ToPatch patch_action
 
 
-type NodeComponent d m = NodeComponent' Void Unit Unit d
+type NodeComponent d = NodeComponent' Void Unit Unit d
 type NodeComponent' patch_action patch_state node_state d =
     H.Component NodeQuery (NodeInput' patch_state node_state d) (NodeOutput' patch_action d) Aff
 

@@ -1,6 +1,6 @@
 module Toolkit.Hydra.UI where
 
-import Prelude (($), (<#>), const, otherwise)
+import Prelude (($), (<#>), const, otherwise, Unit)
 
 import Data.Maybe (Maybe(..))
 import Effect.Class (class MonadEffect)
@@ -50,7 +50,7 @@ data Kind
     | Mod
 
 
-components ::  UI.Components Hydra
+components ::  UI.Components
 components =
     { patch, node }
 
@@ -92,11 +92,11 @@ hasControlArea "fast" = true
 hasControlArea _ = false
 
 
-patch :: forall d. Maybe (UI.PatchComponent d)
+patch :: Maybe UI.PatchComponent
 patch = Nothing -- FIXME: Just Patch.component
 
 
-node :: forall d. Node.Family -> Maybe (UI.NodeComponent d)
+node :: Node.Family -> Maybe UI.NodeComponent
 -- node "num"         = Just $ NumNode.component
 -- node "pi"          = Just $ PiNode.component
 -- node "osc"         = Just $ OscNode.component

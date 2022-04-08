@@ -66,7 +66,7 @@ main =
         >>= App.run
 
 
-network :: Toolkit Hydra Unit -> Effect (Network Unit Hydra)
+network :: Toolkit Unit Hydra -> Effect (Network Unit Hydra)
 network toolkit = do
     pure $ Network.empty
 

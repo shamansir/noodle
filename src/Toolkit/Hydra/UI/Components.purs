@@ -11,13 +11,13 @@ import Toolkit.Hydra.UI.State (State) as UI
 import Halogen (HalogenM) as H
 
 
-type PatchComponent m = UI.PatchComponent' UI.Action UI.State Hydra m
+type PatchComponent = UI.PatchComponent' UI.Action UI.State Unit Hydra -- FIXME: no `m` here, `... Unit Hydra`
 
 
-type NodeComponent m = UI.NodeComponent' UI.Action UI.State Hydra m
+type NodeComponent = UI.NodeComponent' UI.Action UI.State Unit Hydra
 
 
-type Components m = UI.Components' UI.Action UI.State Hydra m
+type Components = UI.Components' UI.Action UI.State Unit Hydra
 
 
 type NodeInput = UI.NodeInput' UI.State Unit Hydra
