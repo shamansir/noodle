@@ -1,4 +1,4 @@
-module Toolkit.Hydra.Toolkit where
+module Toolkit.Hydra where
 
 import Prelude
 

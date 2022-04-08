@@ -184,6 +184,8 @@ data Hydra
 
 
 
+-- TODO: rename HydrateIn to FromHydra and HydrateOut to ToHydra. Just because
+
 instance HydrateIn Operation where
     fromHydra (Op b) = Just b
     fromHydra _ = Nothing
@@ -560,7 +562,6 @@ instance ToFn Modifier TextureOrValue where
 
 
 
-
 {-
 instance Show Operation where
     show Addition = "+"
@@ -624,5 +625,4 @@ instance Show Hydra where
     show (Mod mod) = show mod
     show (Tex tex) = show tex
     show (Buf buf) = show buf
-
 -}
