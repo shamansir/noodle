@@ -52,6 +52,7 @@ to generate this file without the comments in this block.
   , "sized-vectors"
   , "strings"
   , "tailrec"
+  , "transformers"
   , "tuples"
   , "typelevel"
   , "typelevel-prelude"

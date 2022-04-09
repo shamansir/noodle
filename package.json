@@ -20,5 +20,8 @@
   "homepage": "https://github.com/shamansir/noodle#readme",
   "dependencies": {
     "hydra-synth": "^1.3.9"
+  },
+  "devDependencies": {
+    "process": "^0.11.10"
   }
 }

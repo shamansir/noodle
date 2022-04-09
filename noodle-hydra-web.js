@@ -6,7 +6,8 @@ require('./example/Hydra/Hydra.css');
 require('./src/App/Style/Hydra/Hydra.css');
 
 
-var Main = require('./output/Hydra.Main');
+// var Main = require('./output/Hydra.Main');
+var WebMain = require('./output/WebMain');
 
 function main () {
     /*
@@ -25,7 +26,7 @@ function main () {
     You will probably want to make it a function from String -> Effect ()
   */
 
-  Main.main();
+    WebMain.main();
 }
 
 // HMR setup. For more info see: https://parceljs.org/hmr.html
