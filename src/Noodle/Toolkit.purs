@@ -1,6 +1,6 @@
 module Noodle.Toolkit
-  ( Toolkit(..)
-  , empty
+  ( Toolkit
+  , empty, name
   , nodeFamilies
   , spawn, spawn'
   , register, registerFn
@@ -29,8 +29,11 @@ import Noodle.Fn (make, name) as Fn
 --type Toolkit d = Toolkit' Unit d
 
 
+type Name = String
+
+
 -- data Toolkit d = Toolkit d (Node.Family /-> (forall state. NodeFn state d))
-data Toolkit state d = Toolkit d (Node.Family /-> NodeFn state d)
+data Toolkit state d = Toolkit Name d (Node.Family /-> NodeFn state d)
 
 
 
@@ -38,8 +41,8 @@ data Toolkit state d = Toolkit d (Node.Family /-> NodeFn state d)
 -- make def = Toolkit def <<< Map.fromFoldable
 
 
-empty :: forall state d. d -> Toolkit state d
-empty def = Toolkit def $ Map.empty
+empty :: forall state d. Name -> d -> Toolkit state d
+empty name def = Toolkit name def $ Map.empty
 
 
 register
@@ -55,8 +58,8 @@ register tk family inlets outlets process =
 
 
 registerFn :: forall state d. Toolkit state d -> NodeFn state d -> Toolkit state d
-registerFn (Toolkit def fns) fn =
-  Toolkit def $ Map.insert (Fn.name fn) fn $ fns
+registerFn (Toolkit name def fns) fn =
+  Toolkit name def $ Map.insert (Fn.name fn) fn $ fns
 
 
 spawn :: forall d. Node.Family -> Toolkit Unit d -> Effect (Maybe (Node Unit d))
@@ -64,7 +67,7 @@ spawn family = spawn' family unit
 
 
 spawn' :: forall state d. Node.Family -> state -> Toolkit state d -> Effect (Maybe (Node state d))
-spawn' family state (Toolkit def nodeDefs) =
+spawn' family state (Toolkit _ def nodeDefs) =
     nodeDefs
         # Map.lookup family
         # map (Node.make' def)
@@ -75,5 +78,9 @@ spawn' family state (Toolkit def nodeDefs) =
 
 
 nodeFamilies :: forall state d. Toolkit state d -> Set Node.Family
-nodeFamilies (Toolkit _ nodeDefs) =
+nodeFamilies (Toolkit _ _ nodeDefs) =
     nodeDefs # Map.keys
+
+
+name :: forall state d. Toolkit state d -> Name
+name (Toolkit name _ _) = name

@@ -26,11 +26,31 @@ import Data.Unfoldable (class Unfoldable, unfoldr)
 cellSize :: Number
 cellSize = 45.0
 
+
 data Rule
-    = Auto
-    | Fixed Number
+    = Auto -- a.k.a Fill a.k.a Portion 1
+    | Fixed Number -- a.k.a. Px or Units
     | Percentage Int
-    | Cells Number
+    | Cells Number -- get rid of in favor of Units
+    -- TODO:  -- a.k.a. FillPortion Int
+    -- TODO: shrink to contents (not possible for SVG)
+    -- TODO: Min / Max (or a wrapper, Min Number a, Max Number a, MinMax (Number /\ Number) a)
+    -- TODO: a -> Rule ?
+
+
+data Cell a
+    = Taken a
+    | Space
+
+
+-- TODO: padding + spacing (VBox items have padding and Horz items have spacing)
+
+-- TODO: constraints
+
+-- add align + centering + distribute
+
+
+-- TODO: append
 
 
 -- data HBox s a = Horz (Array (s /\ VBox s a))
@@ -49,6 +69,13 @@ data HBox s a = Horz (Array (s /\ a))
 
 
 data VBox s a = Vert (Array (s /\ HBox s a))
+
+
+-- both VBox and HBox implement `IsLayout`
+-- plus, both may distribute or align inner items
+
+-- fitting => solving (means)
+
 
 
 type Flex s a = VBox s a
@@ -140,6 +167,10 @@ fit size (Vert vbox) =
                 fillAutoAmount Nothing = (amount - knownAmount) / toNumber autoCount
 
 
+-- TODO: fitWrap (cut oversize)
+
+
+-- add width data to vertical boxes and height data to horizontal ones
 fillSizes :: forall a. Flex Number a -> Flex Size a
 fillSizes (Vert vbox) =
     Vert
@@ -148,6 +179,10 @@ fillSizes (Vert vbox) =
             /\
             (lmap (\w' -> w' <+> h) $ Horz hbox)
         ) <$> vbox
+
+
+layout :: forall a. Size -> Flex Rule a -> Flex Size a
+layout size = fit size >>> fillSizes
 
 
 mapSize :: forall s1 s2 a. (s1 -> s2) -> Flex s1 a -> Flex s2 a
@@ -259,3 +294,11 @@ flatten = fold (curry (:)) []
 
 flatten' :: forall a. Flex Number a -> Array (Pos /\ Size /\ a)
 flatten' = foldWithPos (\p s a arr -> (p /\ s /\ a) : arr) []
+
+
+horz :: forall s a. Array (s /\ a) -> HBox s a
+horz = Horz
+
+
+vert :: forall s a. Array (s /\ a) -> HBox s a
+vert = Horz

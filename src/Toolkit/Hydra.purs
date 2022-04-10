@@ -15,5 +15,5 @@ type Toolkit = T.Toolkit Unit Hydra
 toolkit :: Toolkit
 toolkit =
     T.registerFn
-        (T.empty None)
+        (T.empty "Hydra" None)
         (Fn.toNodeFn Fn.noise)

@@ -16,16 +16,19 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
 import Data.Vec2 ((<+>), Size)
 import Data.Vec2 as V2
+import Data.Array (length) as Array
 import Data.NonEmpty (NonEmpty, singleton) as NE
 
 import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
 import Noodle.Patch as Patch
 import Noodle.Toolkit (Toolkit) as Noodle
+import Noodle.Toolkit (name) as Toolkit
 
 import App.Style (Style, NodeFlow)
 import App.Style.ClassNames as CS
 import App.Component.Patch as PatchC
+import App.Component.Test.FlexLayout as FLTC
 import App.Emitters as Emitters
 import App.Toolkit.UI as ToolkitUI
 import App.Svg.Extra as HSA
@@ -45,12 +48,15 @@ import Web.HTML.Window as Window
 type Slots patch_action patch_state =
     ( patch :: PatchC.Slot patch_action Unit
     , tkPatch :: ToolkitUI.PatchSlot' patch_action patch_state Unit
+    , fltc :: FLTC.Slot Unit
     )
 
 
 _patch = Proxy :: Proxy "patch"
 
 _tkPatch = Proxy :: Proxy "tkPatch"
+
+_fltc = Proxy :: Proxy "fltc"
 
 
 type Input patch_action patch_state node_state d =
@@ -89,6 +95,7 @@ data Action patch_action patch_state
     | WindowResize H.SubscriptionId { w :: Int, h :: Int }
     | ToPatch patch_action
     | FromPatch (ToolkitUI.InformApp patch_state)
+    | Skip
     -- | HandlePatch (PatchC.Action d)
 
 
@@ -118,13 +125,20 @@ render (s@{ network, toolkit, style, flow }) =
             [ HSA.width $ V2.w s.windowSize, HSA.height $ V2.h s.windowSize
             , HSA.id "noodle"
             ]
-            [ background
+            {- [ background
             , curFrame
             , patchesTabs
             , maybeCurrent currentPatch
+            ] -}
+            [ flexLayoutTest
             ]
         ]
     where
+        flexLayoutTest =
+            HH.slot _fltc unit
+                FLTC.component
+                []
+                (const Skip)
         currentPatch = (flip Network.patch $ network) =<< s.currentPatch
         curFrame =
             HS.text
@@ -154,7 +168,12 @@ render (s@{ network, toolkit, style, flow }) =
                             { patch, size : s.windowSize, patchState : s.patchState }
                             FromPatch
                 ]
-        patchesTabs = HS.g [ HSA.classes CS.patchesTabs ] (patchTab <$> Tuple.fst <$> Network.patches network)
+        patchesTabs | (Array.length $ Network.patches network) > 0 =
+                        HS.g [ HSA.classes CS.patchesTabs ] (patchTab <$> Tuple.fst <$> Network.patches network)
+        patchesTabs | otherwise =
+                        HS.text
+                            [ HSA.translateTo' $ 0.0 <+> tabHeight ]
+                            [ HH.text "No patches in network." ]
         patchTab label =
             HS.g
                 [ HSA.classes $ CS.patchTab label ]
@@ -182,9 +201,20 @@ render (s@{ network, toolkit, style, flow }) =
                     ToPatch
                 ]
         maybeCurrent Nothing =
-            HS.text
-                [ HSA.translateTo' $ 0.0 <+> tabHeight + tabPadding ]
-                [ HH.text "No patch selected" ]
+            HS.g
+                []
+                [ HS.text
+                        [ HSA.translateTo' $ 0.0 <+> tabHeight + tabPadding + 12.0 ]
+                        [ HH.text "No patch selected" ]
+                , toolkitInfo toolkit
+                ]
+        toolkitInfo toolkit =
+            HS.g
+                []
+                [ HS.text
+                    [ HSA.translateTo' $ 0.0 <+> tabHeight + tabPadding + 40.0 ]
+                    [ HH.text $ Toolkit.name toolkit ]
+                ]
 
 
 handleAction
@@ -217,6 +247,8 @@ handleAction = case _ of
     FromPatch (ToolkitUI.Next patchState) ->
         H.modify_ \state -> state
             { patchState = patchState }
+    Skip ->
+        pure unit
 
 
 component

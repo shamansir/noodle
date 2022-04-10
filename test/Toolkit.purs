@@ -44,7 +44,7 @@ spec = do
                 intChan = Ch.hot "int" 0
                 toolkit :: Toolkit Unit Int
                 toolkit =
-                    Toolkit.registerFn (Toolkit.empty 0)
+                    Toolkit.registerFn (Toolkit.empty "Ints" 0)
                         $ Fn.make "sum"
                             -- TODO: withInlets / withInputs ...
                                 -- -< "a" /\ intChan
