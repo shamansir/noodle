@@ -280,6 +280,9 @@ foldWithPos f def (Vert vbox) =
         vbox
 
 
+-- TODO: foldWithPos' :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex Size a -> b
+
+
 {- unfold :: forall s a. Ordered s a -> Array (s /\ Array (s /\ a))
 unfold _ = [] -- fold (curry <<< ?wh) [] -}
 
@@ -294,11 +297,3 @@ flatten = fold (curry (:)) []
 
 flatten' :: forall a. Flex Number a -> Array (Pos /\ Size /\ a)
 flatten' = foldWithPos (\p s a arr -> (p /\ s /\ a) : arr) []
-
-
-horz :: forall s a. Array (s /\ a) -> HBox s a
-horz = Horz
-
-
-vert :: forall s a. Array (s /\ a) -> HBox s a
-vert = Horz

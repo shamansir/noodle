@@ -11,6 +11,7 @@ import Color.Extra as C
 
 import App.Layout.Flex (Flex)
 import App.Layout.Flex as Flex
+import App.Layout.Flex.Build as Flex
 
 import Data.Array as Array
 
@@ -28,6 +29,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.Svg.Attributes as HSA
+import App.Svg.Extra as HSA
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 
@@ -35,11 +37,14 @@ import Halogen.Svg.Elements.None as HS
 type Slot id = forall query. H.Slot query Void id
 
 
-type ColoredBlock = Int
+type ColoredBlock = C.Color
+
+
+type ColoredFlex = Flex Size ColoredBlock
 
 
 type State =
-    Array (String /\ Flex Size ColoredBlock)
+    Array (String /\ ColoredFlex)
 
 
 data Action
@@ -47,7 +52,20 @@ data Action
 
 
 initialState :: State
-initialState = []
+initialState = map (Flex.layout $ 300.0 <+> 20.0) <$>
+    [ "[ fill black ]" /\
+        Flex.vert
+            [ Flex.fill /\
+                Flex.horz [ Flex.fill /\ C.black ]
+            ]
+    ]
+
+
+renderFlex ::forall m slots. ColoredFlex -> H.ComponentHTML Action slots m
+renderFlex =
+    const $ HS.g [] []
+    -- Flex.foldWithPos ?wh (HS.g [] [])
+
 
 
 render
@@ -58,7 +76,12 @@ render
 render state =
     HS.g
         []
-        []
+        [ HS.text
+                [ HSA.translateTo' $ 200.0 <+> 0.0
+                , HSA.class_ $ H.ClassName "debug"
+                ]
+                [ HH.text $ show "foo" ]
+        ]
 
 handleAction
     :: forall slots output m
