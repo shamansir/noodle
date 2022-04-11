@@ -26,3 +26,7 @@ percents = Percentage
 
 units :: Number -> Rule
 units = Units
+
+
+auto :: Rule
+auto = Auto

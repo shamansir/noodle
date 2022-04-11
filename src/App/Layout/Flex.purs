@@ -43,6 +43,20 @@ data Cell a
     | Space
 
 
+data HasPadding a
+    = Padding Number a
+
+
+data Align
+    = Start
+    | End
+    | Center
+    | SpaceAround
+    | SpaceBetween
+    | SpaceEvenly
+    | Gap Number -- TODO: Gap Rule
+
+
 -- TODO: padding + spacing (VBox items have padding and Horz items have spacing)
 
 -- TODO: constraints
@@ -69,6 +83,16 @@ data HBox s a = Horz (Array (s /\ a))
 
 
 data VBox s a = Vert (Array (s /\ HBox s a))
+
+
+class Container (x :: Type -> Type -> Type) s a | x -> s, x -> a where
+    items :: x s a -> Array (s /\ a)
+    fit_ :: Number -> x Rule a -> x Number a
+    -- fit' :: Number -> x Rule (Cell a) -> x Number (Сell a)
+    align_ :: Number -> Align -> x Rule a -> x Number (Cell a)
+    takes :: x Number a -> Number
+
+-- Rule as Container ?
 
 
 -- both VBox and HBox implement `IsLayout`
@@ -112,13 +136,33 @@ instance bifunctorVBox :: Bifunctor VBox where
     bimap f g (Vert items) = Vert $ bimap f (bimap f g) <$> items
 
 
-auto :: Rule
-auto = Auto
-
-
 
 make :: forall s a. Array (s /\ Array (s /\ a)) -> Flex s a
 make items = Vert $ map Horz <$> items
+
+
+alignPlain :: forall a. Number -> Align -> Array (Number /\ a) -> Array (Number /\ Cell a)
+alignPlain total how items =
+    if sumTaken < total
+        then doAlign how
+        else map Taken <$> items
+    where
+        sumTaken = Array.foldr (+) 0.0 (fst <$> items)
+        doAlign Start = (map Taken <$> items) <> [ (total - sumTaken) /\ Space ]
+        doAlign Center =
+            [ ((total - sumTaken) / 2.0) /\ Space ]
+            <> (map Taken <$> items)
+            <> [ ((total - sumTaken) / 2.0) /\ Space ]
+        doAlign End =
+            [ (total - sumTaken) /\ Space ] <> (map Taken <$> items)
+        doAlign SpaceAround =
+            []
+        doAlign SpaceBetween =
+            []
+        doAlign SpaceEvenly =
+            []
+        doAlign (Gap n) =
+            []
 
 
 fit :: forall a. Size -> Flex Rule a -> Flex Number a
