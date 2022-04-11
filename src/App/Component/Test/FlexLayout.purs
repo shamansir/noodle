@@ -9,16 +9,18 @@ import Type.Row (type (+))
 import Color as C
 import Color.Extra as C
 
-import App.Layout.Flex (Flex)
+import App.Layout.Flex (Flex, Rule)
 import App.Layout.Flex as Flex
 import App.Layout.Flex.Build as Flex
 
+import Data.Array ((:))
 import Data.Array as Array
 
 import Data.Int (toNumber, floor)
 import Data.Number
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Maybe as Maybe
+import Data.Tuple (uncurry)
 import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Vec2 (Vec2, Pos, Size, (<+>))
@@ -40,7 +42,8 @@ type Slot id = forall query. H.Slot query Void id
 type ColoredBlock = C.Color
 
 
-type ColoredFlex = Flex Size ColoredBlock
+type ColoredFlex = Flex Rule ColoredBlock
+--type ColoredFlex = Flex Size ColoredBlock
 
 
 type State =
@@ -52,19 +55,85 @@ data Action
 
 
 initialState :: State
-initialState = map (Flex.layout $ 300.0 <+> 20.0) <$>
-    [ "[ fill black ]" /\
+initialState =
+    [ "vert [ fill /\\ horz [ fill /\\ black ] ]" /\
         Flex.vert
             [ Flex.fill /\
                 Flex.horz [ Flex.fill /\ C.black ]
             ]
+    , "vert [ fill /\\ horz [ fill /\\ red, fill /\\ green, fill /\\ blue ] ]" /\
+        Flex.vert
+            [ Flex.fill /\
+                Flex.horz
+                    [ Flex.fill /\ C.rgb 255 0 0
+                    , Flex.fill /\ C.rgb 0 255 0
+                    , Flex.fill /\ C.rgb 0 0 255
+                    ]
+            ]
+    , "vert [ fill /\\ horz [ percent 10 /\\ red, fill /\\ green, fill /\\ blue ] ]" /\
+        Flex.vert
+            [ Flex.fill /\
+                Flex.horz
+                    [ Flex.percents 10 /\ C.rgb 255 0 0
+                    , Flex.fill /\ C.rgb 0 255 0
+                    , Flex.fill /\ C.rgb 0 0 255
+                    ]
+            ]
+    , "vert [ fill /\\ horz [ percent 15 /\\ red, percent 40 /\\ green ] ]" /\
+        Flex.vert
+            [ Flex.fill /\
+                Flex.horz
+                    [ Flex.percents 15 /\ C.rgb 255 0 0
+                    , Flex.percents 40 /\ C.rgb 0 255 0
+                    ]
+            ]
+    , "vert [ fill /\\ horz [ units 55 /\\ red, fill /\\ green, units 120 /\\ blue ] ]" /\
+        Flex.vert
+            [ Flex.fill /\
+                Flex.horz
+                    [ Flex.units 55.0 /\ C.rgb 255 0 0
+                    , Flex.fill /\ C.rgb 0 255 0
+                    , Flex.units 120.0 /\ C.rgb 0 0 255
+                    ]
+            ]
+    , "vert [ percent 15 /\\ horz [ fill /\\ red ], fill /\\ horz [ fill /\\ green ], percent 40 /\\ [ fill /\\ blue ] ]" /\
+        Flex.vert
+            [ Flex.percents 15 /\ Flex.horz [ Flex.fill /\ C.rgb 255 0 0 ]
+            , Flex.fill /\ Flex.horz [ Flex.fill /\ C.rgb 0 255 0 ]
+            , Flex.percents 40 /\ Flex.horz [ Flex.fill /\ C.rgb 0 0 255 ]
+            ]
     ]
 
 
-renderFlex ::forall m slots. ColoredFlex -> H.ComponentHTML Action slots m
-renderFlex =
-    const $ HS.g [] []
-    -- Flex.foldWithPos ?wh (HS.g [] [])
+renderFlex ::forall m slots. Int -> String -> ColoredFlex -> H.ComponentHTML Action slots m
+renderFlex n description flex =
+    HS.g
+        [ HSA.translateTo' $ 0.0 <+> toNumber n * V2.h size ]
+        [ HS.g
+            []
+            $ Flex.fold' (\pos size color prev -> drawBox pos size color : prev) []
+            $ Flex.fit size flex
+        , HS.text
+                [ HSA.fill $ Just $ C.toSvg $ C.white
+                , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 8.0
+                , HSA.translateTo' $ V2.w size / 2.0 <+> V2.h size / 2.0
+                , HSA.text_anchor $ HSA.AnchorMiddle
+                ]
+                [ HH.text description
+                ]
+        ]
+    where
+        size = 500.0 <+> 60.0
+        drawBox pos size color =
+            HS.g
+                [ HSA.translateTo' pos
+                ]
+                [ HS.rect
+                    [ HSA.width $ V2.w size
+                    , HSA.height $ V2.h size
+                    , HSA.fill $ Just $ C.toSvg color
+                    ]
+                ]
 
 
 
@@ -73,15 +142,11 @@ render
      . MonadEffect m
     => State
     -> H.ComponentHTML Action slots m
-render state =
+render =
     HS.g
         []
-        [ HS.text
-                [ HSA.translateTo' $ 200.0 <+> 0.0
-                , HSA.class_ $ H.ClassName "debug"
-                ]
-                [ HH.text $ show "foo" ]
-        ]
+        <<< Array.mapWithIndex (uncurry <<< renderFlex)
+
 
 handleAction
     :: forall slots output m

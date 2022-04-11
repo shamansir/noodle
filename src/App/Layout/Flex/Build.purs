@@ -18,3 +18,11 @@ vert = Vert
 
 fill :: Rule
 fill = Auto
+
+
+percents :: Int -> Rule
+percents = Percentage
+
+
+units :: Number -> Rule
+units = Units

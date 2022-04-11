@@ -29,7 +29,7 @@ cellSize = 45.0
 
 data Rule
     = Auto -- a.k.a Fill a.k.a Portion 1
-    | Fixed Number -- a.k.a. Px or Units
+    | Units Number -- a.k.a. Px or Units
     | Percentage Int
     | Cells Number -- get rid of in favor of Units
     -- TODO:  -- a.k.a. FillPortion Int
@@ -81,7 +81,15 @@ data VBox s a = Vert (Array (s /\ HBox s a))
 type Flex s a = VBox s a
 
 
+{-
 type FlexN a = Flex Number a
+
+
+type FlexR a = Flex Rule a
+
+
+type FlexS a = Flex Rule a
+-}
 
 
 instance functorHBox :: Functor (HBox s) where
@@ -107,17 +115,6 @@ instance bifunctorVBox :: Bifunctor VBox where
 auto :: Rule
 auto = Auto
 
-
-fixed :: Number -> Rule
-fixed = Fixed
-
-
-percents :: Int -> Rule
-percents = Percentage
-
-
-cells :: Number -> Rule
-cells = Cells
 
 
 make :: forall s a. Array (s /\ Array (s /\ a)) -> Flex s a
@@ -153,7 +150,7 @@ fit size (Vert vbox) =
                 isAuto _ = false
 
                 toKnownAmount Auto = Nothing
-                toKnownAmount (Fixed n) = Just n
+                toKnownAmount (Units n) = Just n
                 toKnownAmount (Percentage p) = Just $ amount * (toNumber p / 100.0)
                 toKnownAmount (Cells c) = Just $ c * cellSize
 
@@ -208,7 +205,7 @@ find pos ordered =
 
 find' :: forall a. Pos -> Flex Number a -> Maybe (Pos /\ Size /\ a)
 find' pos =
-    flatten' >>> -- FIXME: use Unfoldable for faster search?
+    flatten >>> -- FIXME: use Unfoldable for faster search?
         foldr
             (\(pos' /\ size /\ a) _ ->
                 if V2.inside pos (pos' /\ size) then Just (pos' /\ size /\ a) else Nothing
@@ -224,7 +221,7 @@ get (ny /\ nx) (Vert vbox) =
 
 toUnfoldable :: forall f s a. Unfoldable f => Flex s a -> f (Size_ s /\ a)
 toUnfoldable =
-    flatten >>> Array.toUnfoldable -- TODO: make unfoldable manually?
+    flatten' >>> Array.toUnfoldable -- TODO: make unfoldable manually?
 
 
 sizeOf :: forall s a. Eq a => a -> Flex s a -> Maybe (Size_ s)
@@ -245,23 +242,12 @@ posOf :: forall a. Eq a => a -> Flex Number a -> Maybe Pos
 posOf _ _ = Nothing
 
 
-fold :: forall s a b. (Size_ s -> a -> b -> b) -> b -> Flex s a -> b
-fold f def (Vert vbox) =
-    foldr
-        (\(h /\ (Horz hbox)) b ->
-            foldr
-                (\(w /\ a) b' ->
-                    f (w <+> h) a b'
-                )
-                b
-                hbox
-        )
-        def
-        vbox
+fold :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex Rule a -> b
+fold f d = fit (1.0 <+> 1.0) >>> fold' f d
 
 
-foldWithPos :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex Number a -> b
-foldWithPos f def (Vert vbox) =
+fold' :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex Number a -> b -- TODO: Number -> Semiring, where possible
+fold' f def (Vert vbox) =
     snd $ foldr
         (\(h /\ (Horz hbox)) (y /\ b) ->
             (y + h)
@@ -280,7 +266,39 @@ foldWithPos f def (Vert vbox) =
         vbox
 
 
--- TODO: foldWithPos' :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex Size a -> b
+fold'' :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex Size a -> b
+fold'' f def (Vert vbox) =
+    snd $ foldr
+        (\(vsize /\ (Horz hbox)) (y /\ b) ->
+            (y + V2.h vsize)
+            /\
+            (snd $ foldr
+                (\(hsize /\ a) (x /\ b') ->
+                    (x + V2.w hsize)
+                    /\
+                    (f (x <+> y) hsize a b')
+                )
+                (0.0 /\ b)
+                hbox
+            )
+        )
+        (0.0 /\ def)
+        vbox
+
+
+fold''' :: forall s a b. (Size_ s -> a -> b -> b) -> b -> Flex s a -> b
+fold''' f def (Vert vbox) =
+    foldr
+        (\(h /\ (Horz hbox)) b ->
+            foldr
+                (\(w /\ a) b' ->
+                    f (w <+> h) a b'
+                )
+                b
+                hbox
+        )
+        def
+        vbox
 
 
 {- unfold :: forall s a. Ordered s a -> Array (s /\ Array (s /\ a))
@@ -291,9 +309,9 @@ unfold _ = [] -- fold (curry <<< ?wh) [] -}
 -- unfold' _ = []
 
 
-flatten :: forall s a. Flex s a -> Array (Size_ s /\ a)
-flatten = fold (curry (:)) []
+flatten :: forall a. Flex Number a -> Array (Pos /\ Size /\ a)
+flatten = fold' (\p s a arr -> (p /\ s /\ a) : arr) []
 
 
-flatten' :: forall a. Flex Number a -> Array (Pos /\ Size /\ a)
-flatten' = foldWithPos (\p s a arr -> (p /\ s /\ a) : arr) []
+flatten' :: forall s a. Flex s a -> Array (Size_ s /\ a)
+flatten' = fold''' (curry (:)) []
