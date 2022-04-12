@@ -148,21 +148,31 @@ alignPlain total how items =
         else map Taken <$> items
     where
         sumTaken = Array.foldr (+) 0.0 (fst <$> items)
+        count = Array.length items
         doAlign Start = (map Taken <$> items) <> [ (total - sumTaken) /\ Space ]
         doAlign Center =
-            [ ((total - sumTaken) / 2.0) /\ Space ]
-            <> (map Taken <$> items)
-            <> [ ((total - sumTaken) / 2.0) /\ Space ]
+            let sideSpace = (total - sumTaken) / 2.0
+            in
+            [ sideSpace /\ Space ] <> (map Taken <$> items) <> [ sideSpace /\ Space ]
         doAlign End =
             [ (total - sumTaken) /\ Space ] <> (map Taken <$> items)
-        doAlign SpaceAround =
-            []
         doAlign SpaceBetween =
-            []
+            let spaceBetween = (total - sumTaken) / (toNumber $ count - 1)
+            in Array.intersperse (spaceBetween /\ Space) (map Taken <$> items)
+        doAlign SpaceAround =
+            let oneSpace = (total - sumTaken) / toNumber count
+                halfSpace = oneSpace / 2.0
+            in [ halfSpace /\ Space ] <> Array.intersperse (oneSpace /\ Space) (map Taken <$> items) <> [ halfSpace /\ Space ]
         doAlign SpaceEvenly =
-            []
+            let evenSpace = (total - sumTaken) / toNumber (count + 1)
+            in [ evenSpace /\ Space ] <> Array.intersperse (evenSpace /\ Space) (map Taken <$> items) <> [ evenSpace /\ Space ]
         doAlign (Gap n) =
-            []
+            Array.intersperse (n /\ Space) (map Taken <$> items)
+
+
+-- TODO: fitAll a.k.a. distribute a.k.a justify
+
+-- TODO
 
 
 fit :: forall a. Size -> Flex Rule a -> Flex Number a
