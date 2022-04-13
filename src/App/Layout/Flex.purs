@@ -1,4 +1,32 @@
-module App.Layout.Flex where
+module App.Layout.Flex
+  ( Align(..)
+  , Cell(..)
+  , Flex(..)
+  , Flex2
+  , Flex3
+  , Padding(..)
+  , PreEval(..)
+  , Rule(..)
+  , alignPlain
+  , class Flexy
+  , fillSizes
+  , find
+  , find'
+  , fit
+  , flatten
+  , flatten'
+  , fold
+  , fold'
+  , fold''
+  , fold'''
+  , layout
+  , make
+  , make2
+  , mapSize
+  , posOf
+  , toUnfoldable
+  )
+  where
 
 
 import Prelude
@@ -23,18 +51,14 @@ import Data.Unfoldable (class Unfoldable, unfoldr)
 -- TODO: `IsLayout` instance (AutoSizedLayout?)
 
 
-cellSize :: Number
-cellSize = 45.0
-
-
 data Rule
-    = Auto -- a.k.a Fill a.k.a Portion 1
+    = Portion Int -- a.k.a Fill a.k.a Portion 1
     | Units Number -- a.k.a. Px or Units
     | Percentage Int
-    | Cells Number -- get rid of in favor of Units
-    -- TODO:  -- a.k.a. FillPortion Int
-    -- TODO: shrink to contents (not possible for SVG)
-    -- TODO: Min / Max (or a wrapper, Min Number a, Max Number a, MinMax (Number /\ Number) a)
+    -- | Cells Number
+    | Min Number Rule
+    | Max Number Rule
+    | MinMax (Number /\ Number) Rule
     -- TODO: a -> Rule ?
 
 
@@ -43,12 +67,14 @@ data Cell a
     | Space
 
 
-data HasPadding a
-    = Padding Number a
+data Padding
+    = NoPadding
+    | Padding Number
 
 
 data Align
-    = Start
+    = Justify
+    | Start
     | End
     | Center
     | SpaceAround
@@ -79,18 +105,29 @@ data Align
 -- Operator candidates: ⁅ ⁆ ≡ ⫴ ⊢ ⊣ ⊪ ⊩ ≬ ⟷ ⧦ ⟺ ∥ ⁞ ⁝ ‖ ᎒ ᎓ ੦ ᠁ … ‒ – — ― ⊲ ⊳ ⊽ ⎪ ⎜ ⎟ ⟺ ⟚ ⟛
 
 
-data HBox s a = Horz (Array (s /\ a))
+{- data HBox s a = Horz Padding Align (Array (s /\ a))
 
 
-data VBox s a = Vert (Array (s /\ HBox s a))
+data VBox s a = Vert Padding Align (Array (s /\ HBox s a)) -}
 
 
-class Container (x :: Type -> Type -> Type) s a | x -> s, x -> a where
+-- FIXME:
+
+data Flex s a = Flex Padding Align (Array (s /\ a))
+
+type Flex2 s a = Flex s (Flex s a)
+
+type Flex3 s a = Flex2 s (Flex s a)
+
+
+
+class Flexy (x :: Type -> Type -> Type) s a | x -> s, x -> a where
     items :: x s a -> Array (s /\ a)
     fit_ :: Number -> x Rule a -> x Number a
     -- fit' :: Number -> x Rule (Cell a) -> x Number (Сell a)
     align_ :: Number -> Align -> x Rule a -> x Number (Cell a)
     takes :: x Number a -> Number
+    from :: Array (s /\ a) -> x s a
 
 -- Rule as Container ?
 
@@ -100,9 +137,6 @@ class Container (x :: Type -> Type -> Type) s a | x -> s, x -> a where
 
 -- fitting => solving (means)
 
-
-
-type Flex s a = VBox s a
 
 
 {-
@@ -116,29 +150,22 @@ type FlexS a = Flex Rule a
 -}
 
 
-instance functorHBox :: Functor (HBox s) where
-    map :: forall a b. (a -> b) -> HBox s a -> HBox s b
-    map f (Horz items) = Horz $ map f <$> items
+instance functorFlex :: Functor (Flex s) where
+    map :: forall a b. (a -> b) -> Flex s a -> Flex s b
+    map f (Flex p a items) = Flex p a $ map f <$> items
 
 
-instance functorVBox :: Functor (VBox s) where
-    map :: forall a b. (a -> b) -> VBox s a -> VBox s b
-    map f (Vert items) = Vert $ map (map f) <$> items
+instance bifunctorFlex :: Bifunctor Flex where
+    bimap :: forall s1 s2 a b. (s1 -> s2) -> (a -> b) -> Flex s1 a -> Flex s2 b
+    bimap f g (Flex p a items) = Flex p a $ bimap f g <$> items
 
 
-instance bifunctorHBox :: Bifunctor HBox where
-    bimap :: forall s1 s2 a b. (s1 -> s2) -> (a -> b) -> HBox s1 a -> HBox s2 b
-    bimap f g (Horz items) = Horz $ bimap f g <$> items
+make :: forall s a. Array (s /\ a) -> Flex s a
+make = Flex NoPadding Justify
 
 
-instance bifunctorVBox :: Bifunctor VBox where
-    bimap :: forall s1 s2 a b. (s1 -> s2) -> (a -> b) -> VBox s1 a -> VBox s2 b
-    bimap f g (Vert items) = Vert $ bimap f (bimap f g) <$> items
-
-
-
-make :: forall s a. Array (s /\ Array (s /\ a)) -> Flex s a
-make items = Vert $ map Horz <$> items
+make2 :: forall s a. Array (s /\ Array (s /\ a)) -> Flex2 s a
+make2 items = Flex NoPadding Justify $ map (Flex NoPadding Justify) <$> items
 
 
 alignPlain :: forall a. Number -> Align -> Array (Number /\ a) -> Array (Number /\ Cell a)
@@ -175,8 +202,19 @@ alignPlain total how items =
 -- TODO
 
 
-fit :: forall a. Size -> Flex Rule a -> Flex Number a
-fit size (Vert vbox) =
+data PreEval
+    = Known Number
+    | Portion_ Int
+
+
+fit :: forall x. Number -> Flex2 Rule a -> Flex Number a -- TODO: Semiring n => Flex n a
+fit
+
+
+
+fit2 :: forall a. Size -> Flex2 Rule a -> Flex2 Number a
+fit2 size (Flex padding align vbox) =
+
     Vert result
     where
 
@@ -197,25 +235,27 @@ fit size (Vert vbox) =
 
         fitPlain :: Number -> Array Rule -> Array Number
         fitPlain amount rules =
-            fillAutoAmount <$> maybeActualAmounts
+            fillPortionAmount <$> preEvaluated
             where
 
-                isAuto Auto = true
-                isAuto _ = false
+                preEvaluate (Portion n) = Portion_ n
+                preEvaluate (Units n) = Known n
+                preEvaluate (Percentage p) = Known $ amount * (toNumber p / 100.0)
+                --toKnownAmount (Cells c) = Just $ c * cellSize
 
-                toKnownAmount Auto = Nothing
-                toKnownAmount (Units n) = Just n
-                toKnownAmount (Percentage p) = Just $ amount * (toNumber p / 100.0)
-                toKnownAmount (Cells c) = Just $ c * cellSize
+                preEvaluated = preEvaluate <$> rules
 
-                autoCount = Array.length $ Array.filter isAuto $ rules
+                extractKnown (Known n) = Just n
+                extractKnown (Portion_ _) = Nothing
 
-                maybeActualAmounts =  toKnownAmount <$> rules
+                extractPortion (Portion_ n) = Just n
+                extractPortion (Known _) = Nothing
 
-                knownAmount = Array.foldr (+) 0.0 $ Array.catMaybes maybeActualAmounts
+                portionCount = Array.foldr (+) 0 $ Array.catMaybes $ map extractPortion preEvaluated
+                knownAmount = Array.foldr (+) 0.0 $ Array.catMaybes $ map extractKnown preEvaluated
 
-                fillAutoAmount (Just n) = n
-                fillAutoAmount Nothing = (amount - knownAmount) / toNumber autoCount
+                fillPortionAmount (Known n) = n
+                fillPortionAmount (Portion_ n) = ((amount - knownAmount) / toNumber portionCount) * toNumber n
 
 
 -- TODO: fitWrap (cut oversize)
@@ -278,7 +318,7 @@ toUnfoldable =
     flatten' >>> Array.toUnfoldable -- TODO: make unfoldable manually?
 
 
-sizeOf :: forall s a. Eq a => a -> Flex s a -> Maybe (Size_ s)
+{- sizeOf :: forall s a. Eq a => a -> Flex s a -> Maybe (Size_ s)
 sizeOf a (Vert vbox) =
     Array.findMap
         (\(h /\ (Horz hbox)) ->
@@ -289,7 +329,7 @@ sizeOf a (Vert vbox) =
                 )
                 hbox
         )
-        vbox
+        vbox -}
 
 
 posOf :: forall a. Eq a => a -> Flex Number a -> Maybe Pos

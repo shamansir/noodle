@@ -17,7 +17,11 @@ vert = Vert
 
 
 fill :: Rule
-fill = Auto
+fill = Portion 1
+
+
+portion :: Int -> Rule
+portion = Portion
 
 
 percents :: Int -> Rule
@@ -29,4 +33,4 @@ units = Units
 
 
 auto :: Rule
-auto = Auto
+auto = Portion 1

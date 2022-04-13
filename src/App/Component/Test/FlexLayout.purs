@@ -102,6 +102,15 @@ initialState =
             , Flex.fill /\ Flex.horz [ Flex.fill /\ C.rgb 0 255 0 ]
             , Flex.percents 40 /\ Flex.horz [ Flex.fill /\ C.rgb 0 0 255 ]
             ]
+    , "vert [ horz [ portion 1 /\\ red, portion 3 /\\ green, portion 2 /\\ blue ] ]" /\
+        Flex.vert
+            [ Flex.fill /\
+                Flex.horz
+                    [ Flex.portion 1 /\ C.rgb 255 0 0
+                    , Flex.portion 3 /\ C.rgb 0 255 0
+                    , Flex.portion 2 /\ C.rgb 0 0 255
+                    ]
+            ]
     ]
 
 
