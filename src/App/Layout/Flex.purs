@@ -211,7 +211,7 @@ data PreEval
 fit :: forall a. Number -> Flex Rule a -> Flex Number a -- TODO: Semiring n => Flex n a, Container f => f n a
 fit amount (Flex padding align items) =
     -- FIXME: take align and padding into consideration
-    Flex padding align $ Array.zip (justify amount (fst <$> items)) (snd <$> items)
+    Flex padding align $ Array.reverse $ Array.zip (justify amount (fst <$> items)) (snd <$> items)
     where
         justify :: Number -> Array Rule -> Array Number
         justify amount rules =
