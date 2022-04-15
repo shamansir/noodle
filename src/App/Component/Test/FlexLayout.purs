@@ -120,7 +120,7 @@ renderFlex n description flex =
         [ HSA.translateTo' $ 0.0 <+> toNumber n * V2.h size ]
         [ HS.g
             []
-            $ Flex.fold2' (\pos size color prev -> drawBox pos size color : prev) []
+            $ Flex.fold2 (\pos size color prev -> drawBox pos size color : prev) []
             $ Flex.fit2 size flex
         , HS.text
                 [ HSA.fill $ Just $ C.toSvg $ C.white
