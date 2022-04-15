@@ -8,12 +8,12 @@ import Data.Tuple.Nested (type (/\), (/\))
 import App.Layout.Flex
 
 
-horz :: forall s a. Array (s /\ a) -> HBox s a
-horz = Horz
+horz :: forall s a. Array (s /\ a) -> Flex s a
+horz = make
 
 
-vert :: forall s a. Array (s /\ HBox s a) -> VBox s a
-vert = Vert
+vert :: forall s a. Array (s /\ Flex s a) -> Flex2 s a
+vert = make
 
 
 fill :: Rule

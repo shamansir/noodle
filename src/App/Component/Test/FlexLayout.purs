@@ -9,7 +9,7 @@ import Type.Row (type (+))
 import Color as C
 import Color.Extra as C
 
-import App.Layout.Flex (Flex, Rule)
+import App.Layout.Flex (Flex, Flex2, Rule)
 import App.Layout.Flex as Flex
 import App.Layout.Flex.Build as Flex
 
@@ -42,7 +42,7 @@ type Slot id = forall query. H.Slot query Void id
 type ColoredBlock = C.Color
 
 
-type ColoredFlex = Flex Rule ColoredBlock
+type ColoredFlex = Flex2 Rule ColoredBlock
 --type ColoredFlex = Flex Size ColoredBlock
 
 
@@ -120,8 +120,8 @@ renderFlex n description flex =
         [ HSA.translateTo' $ 0.0 <+> toNumber n * V2.h size ]
         [ HS.g
             []
-            $ Flex.fold' (\pos size color prev -> drawBox pos size color : prev) []
-            $ Flex.fit size flex
+            $ Flex.fold2' (\pos size color prev -> drawBox pos size color : prev) []
+            $ Flex.fit2 size flex
         , HS.text
                 [ HSA.fill $ Just $ C.toSvg $ C.white
                 , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 8.0
