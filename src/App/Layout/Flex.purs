@@ -14,17 +14,15 @@ module App.Layout.Flex
   , find'
   , fit, fit2
   , flatten2
-  , flatten2'
   , fold2
   , fold2'
-  , fold2''
-  , fold2'''
+  , foldInSquare
   , layout
   , make
   , make2
-  , mapSize
+  , mapSize, map2Size
   , posOf
-  , toUnfoldable2
+  --, toUnfoldable2
   )
   where
 
@@ -32,27 +30,25 @@ module App.Layout.Flex
 import Prelude
 
 import App.Style.Order (Order)
-
-
-import Data.Maybe (Maybe(..))
-import Data.Vec2 (Size, Size_, Pos, (<+>))
-import Data.Vec2 as V2
-import Data.Int (toNumber)
+import CSS (b)
 import Data.Array ((:))
 import Data.Array as Array
+import Data.Bifunctor (class Bifunctor, bimap, lmap)
+import Data.Foldable (foldr)
+import Data.Int (toNumber)
+import Data.Maybe (Maybe(..))
 import Data.Tuple (fst, snd, curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
-
-import Data.Foldable (foldr)
-import Data.Bifunctor (class Bifunctor, bimap, lmap)
 import Data.Unfoldable (class Unfoldable, unfoldr)
+import Data.Vec2 (Size, Size_, Pos, (<+>))
+import Data.Vec2 as V2
 
 
 -- TODO: `IsLayout` instance (AutoSizedLayout?)
 
 
 data Rule
-    = Portion Int -- a.k.a Fill a.k.a Portion 1
+    = Portion Int
     | Units Number -- a.k.a. Px or Units
     | Percentage Int
     -- | Cells Number
@@ -62,14 +58,13 @@ data Rule
     -- | TODO: Fn (a -> Rule a)
 
 
-data Cell a
-    = Taken a
-    | Space
+data Cell s a
+    = Taken (s /\ a)
+    | Space s
 
 
 data Padding
-    = NoPadding
-    | Padding (Number /\ Number)
+    = Padding (Number /\ Number)
 
 
 data Align
@@ -83,89 +78,48 @@ data Align
     | Gap Number -- TODO: Gap Rule
 
 
--- TODO: padding + spacing (VBox items have padding and Horz items have spacing)
-
 -- TODO: constraints
-
--- add align + centering + distribute
-
-
--- TODO: append
-
-
--- data HBox s a = Horz (Array (s /\ VBox s a))
--- data VBox s a = Vert (Array (s /\ a))
-
-
-{- data Direction
-    = Horizontal
-    | Vertical -}
-
 
 -- Operator candidates: ⁅ ⁆ ≡ ⫴ ⊢ ⊣ ⊪ ⊩ ≬ ⟷ ⧦ ⟺ ∥ ⁞ ⁝ ‖ ᎒ ᎓ ੦ ᠁ … ‒ – — ― ⊲ ⊳ ⊽ ⎪ ⎜ ⎟ ⟺ ⟚ ⟛
 
 
-{- data HBox s a = Horz Padding Align (Array (s /\ a))
-
-
-data VBox s a = Vert Padding Align (Array (s /\ HBox s a)) -}
-
-
--- FIXME:
-
-data Flex s a = Flex Padding Align (Array (s /\ a))
+data Flex s a = Flex (Array (Cell s a))
 
 type Flex2 s a = Flex s (Flex s a)
 
 type Flex3 s a = Flex2 s (Flex s a)
 
 
-
-class Container (x :: Type -> Type -> Type) s a | x -> s, x -> a where
-    items :: x s a -> Array (s /\ a)
-    fit_ :: Number -> x Rule a -> x Number a
-    -- fit' :: Number -> x Rule (Cell a) -> x Number (Сell a)
-    align_ :: Number -> Align -> x Rule a -> x Number (Cell a)
-    takes :: x Number a -> Number
-    from :: Array (s /\ a) -> x s a
-
--- Rule as Container ?
+derive instance functorCell :: Functor (Cell s)
 
 
--- both VBox and HBox implement `IsLayout`
--- plus, both may distribute or align inner items
-
--- fitting => solving (means)
-
-
-
-{-
-type FlexN a = Flex Number a
-
-
-type FlexR a = Flex Rule a
-
-
-type FlexS a = Flex Rule a
--}
+instance bifunctorCell :: Bifunctor Cell where
+    bimap :: forall s1 s2 a b. (s1 -> s2) -> (a -> b) -> Cell s1 a -> Cell s2 b
+    bimap f g (Taken (s /\ a)) = Taken $ f s /\ g a
+    bimap f g (Space s) = Space $ f s
 
 
 instance functorFlex :: Functor (Flex s) where
     map :: forall a b. (a -> b) -> Flex s a -> Flex s b
-    map f (Flex p a items) = Flex p a $ map f <$> items
+    map f (Flex items) = Flex $ map f <$> items
 
 
 instance bifunctorFlex :: Bifunctor Flex where
     bimap :: forall s1 s2 a b. (s1 -> s2) -> (a -> b) -> Flex s1 a -> Flex s2 b
-    bimap f g (Flex p a items) = Flex p a $ bimap f g <$> items
+    bimap f g (Flex items) = Flex $ bimap f g <$> items
+
+
+noPadding :: Padding
+noPadding = Padding $ 0.0 /\ 0.0
 
 
 make :: forall s a. Array (s /\ a) -> Flex s a
-make = Flex NoPadding Fill
+make = Flex <<< map Taken
 
 
 make2 :: forall s a. Array (s /\ Array (s /\ a)) -> Flex2 s a
-make2 items = Flex NoPadding Fill $ map (Flex NoPadding Fill) <$> items
+--make2 items = Flex noPadding $ map (Flex noPadding) <$> items
+make2 = make <<< map (map make)
 
 
 alignPlain :: forall a. Number -> Align -> Array (Number /\ a) -> Array (Number /\ Cell a)
@@ -208,35 +162,34 @@ data PreEval
     | Portion_ Int
 
 
-fit :: forall a. Number -> Flex Rule a -> Flex Number a -- TODO: Semiring n => Flex n a, Container f => f n a
-fit amount (Flex padding align items) =
-    -- FIXME: take align and padding into consideration
-    Flex padding align $ Array.reverse $ Array.zip (justify amount (fst <$> items)) (snd <$> items)
+-- fit :: forall n a. Semiring n => n -> Flex Rule a -> Flex n a
+-- fit :: forall c a. Container c => Number -> c Rule a -> c n a
+fit :: forall a. Number -> Flex Rule a -> Flex Number a
+fit amount (Flex padding items) =
+    -- FIXME: take padding into consideration
+    Flex padding $ Array.reverse $ distribute amount items
     where
-        justify :: Number -> Array Rule -> Array Number
-        justify amount rules =
-            fillPortionAmount <$> preEvaluated
+        distribute :: Number -> Array (Cell (Rule /\ a)) -> Array (Cell (Number /\ a))
+        distribute amount rules =
+            map fillEvaluated $ Array.zip preEvaluated rules
+            -- fillPortionAmount <$> preEvaluated
             where
 
-                preEvaluate (Portion n) = Portion_ n
-                preEvaluate (Units n) = Known n
-                preEvaluate (Percentage p) = Known $ amount * (toNumber p / 100.0)
-                preEvaluate (Min min rule) =
-                    case preEvaluate rule of
+                preEvaluateRule (Portion n) = Portion_ n
+                preEvaluateRule (Units n) = Known n
+                preEvaluateRule (Percentage p) = Known $ (amount - amountOfSpace) * (toNumber p / 100.0)
+                preEvaluateRule (Min min rule) =
+                    case preEvaluateRule rule of
                         Known n -> Known $ if n >= min then n else min
                         Portion_ i -> Portion_ i -- FIXME
-                preEvaluate (Max max rule) =
-                    case preEvaluate rule of
+                preEvaluateRule (Max max rule) =
+                    case preEvaluateRule rule of
                         Known n -> Known $ if n <= max then n else max
                         Portion_ i -> Portion_ i -- FIXME
-                preEvaluate (MinMax (min /\ max) rule) =
-                    case preEvaluate rule of
+                preEvaluateRule (MinMax (min /\ max) rule) =
+                    case preEvaluateRule rule of
                         Known n -> Known $ if n <= min then min else if n >= max then max else n
                         Portion_ i -> Portion_ i -- FIXME
-
-                --toKnownAmount (Cells c) = Just $ c * cellSize
-
-                preEvaluated = preEvaluate <$> rules
 
                 extractKnown (Known n) = Just n
                 extractKnown (Portion_ _) = Nothing
@@ -244,11 +197,24 @@ fit amount (Flex padding align items) =
                 extractPortion (Portion_ n) = Just n
                 extractPortion (Known _) = Nothing
 
+                extractSpace (Space n) = Just n
+                extractSpace (Taken _) = Nothing
+
+                preEvaluateCell (Taken (rule /\ a)) = preEvaluateRule rule
+                preEvaluateCell (Space n) = Known n
+
+                preEvaluated = preEvaluateCell <$> rules
+
                 portionCount = Array.foldr (+) 0 $ Array.catMaybes $ map extractPortion preEvaluated
                 knownAmount = Array.foldr (+) 0.0 $ Array.catMaybes $ map extractKnown preEvaluated
+                amountOfSpace = Array.foldr (+) 0.0 $ Array.catMaybes $ map extractSpace rules
 
-                fillPortionAmount (Known n) = n
-                fillPortionAmount (Portion_ n) = ((amount - knownAmount) / toNumber portionCount) * toNumber n
+                fillEvaluated :: PreEval /\ Cell (Rule /\ a) -> Cell (Number /\ a)
+                fillEvaluated (_ /\ Space space) = Space space
+                fillEvaluated (Known n /\ Taken (_ /\ a)) = Taken $ n /\ a
+                fillEvaluated (Portion_ p /\ Taken (_ /\ a)) = Taken $ evaluatePortion p /\ a
+
+                evaluatePortion p = ((amount - knownAmount - amountOfSpace) / toNumber portionCount) * toNumber p
 
 
 
@@ -257,17 +223,21 @@ fit2 size vflex =
     (fit $ V2.w size) <$> (fit (V2.h size) vflex)
 
 
+fitToSquare :: Flex2 Rule a -> Flex2 Number a
+fitToSquare = fit2 $ 1.0 <+> 1.0
+
+
 -- TODO: fitWrap (cut oversize)
 
 
 -- add width data to vertical boxes and height data to horizontal ones
 fillSizes :: forall a. Flex2 Number a -> Flex2 Size a
-fillSizes (Flex vpadding valign vitems) =
-    Flex vpadding valign
-        $ (\(h /\ (Flex hpadding halign hitems)) ->
+fillSizes (Flex vpadding vitems) =
+    Flex vpadding
+        $ (\(h /\ (Flex hpadding hitems)) ->
             ((foldr (+) 0.0 (fst <$> hitems)) <+> h)
             /\
-            (lmap (\w' -> w' <+> h) $ Flex hpadding halign hitems)
+            (lmap (\w' -> w' <+> h) $ Flex hpadding hitems)
         ) <$> vitems
 
 
@@ -281,18 +251,6 @@ mapSize = lmap
 
 map2Size :: forall s1 s2 a. (s1 -> s2) -> Flex2 s1 a -> Flex2 s2 a
 map2Size f = lmap f <<< map (lmap f)
-
-
--- mapSize' :: forall s1 s2 a. (Direction -> s1 -> s2) -> Ordered s1 a -> Ordered s2 a
--- mapSize' f (Vert items) = Vert $ bimap (f Vertical) (lmap $ f Horizontal) <$> items
-
-
-{- tryHorz :: forall a. Rule -> a -> Ordered Rule a -> Maybe (Ordered Rule a)
-tryHorz _ _ ordered = ordered
-
-
-tryVert :: forall a. Rule -> a -> Ordered Rule a -> Maybe (Ordered Rule a)
-tryVert _ _ ordered = ordered -}
 
 
 find :: forall a. Pos -> Flex2 Number a -> Maybe a
@@ -310,43 +268,47 @@ find' pos =
             Nothing
 
 
-{- get :: forall s a. Int /\ Int -> Ordered s a -> Maybe (Size_ s /\ a)
-get (ny /\ nx) (Vert vbox) =
-    Array.index vbox ny
-        >>= (\(h /\ (Horz hbox)) -> ((<+>) h) <$> Array.index hbox nx) -}
-
-
-toUnfoldable2 :: forall f s a. Unfoldable f => Flex2 s a -> f (Size_ s /\ a)
-toUnfoldable2 =
-    flatten2' >>> Array.toUnfoldable -- TODO: make unfoldable manually?
-
-
-{- sizeOf :: forall s a. Eq a => a -> Flex s a -> Maybe (Size_ s)
-sizeOf a (Vert vbox) =
-    Array.findMap
-        (\(h /\ (Horz hbox)) ->
-            Array.findMap
-                (\(w /\ item) ->
-                    if item == a then Just (w <+> h)
-                    else Nothing
-                )
-                hbox
-        )
-        vbox -}
-
-
 posOf :: forall a. Eq a => a -> Flex Number a -> Maybe Pos
 posOf _ _ = Nothing
 
 
-fold2 :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex2 Rule a -> b
-fold2 f d = fit2 (1.0 <+> 1.0) >>> fold2' f d
+-- align :: Align -> Flex s a -> Flex s (Cell a)
 
 
-fold2' :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex2 Number a -> b -- TODO: Number -> Semiring, where possible
-fold2' f def (Flex vpadding valign vitems) =
+-- padding :: Padding -> Flex s a -> Flex s (Cell a)
+
+
+{- fold_ :: forall n a b. Semiring n => (n -> n -> Maybe a -> b -> b) -> b -> Flex2 n a -> b
+fold_ f def (Flex vitems) =
     snd $ foldr
-        (\(h /\ Flex hpadding halign hitems) (y /\ b) ->
+        (\(vsize /\ Flex hitems) (y /\ b) ->
+            (y + V2.h vsize)
+            /\
+            (snd $ foldr
+                (\(hsize /\ a) (x /\ b') ->
+                    (x + V2.w hsize)
+                    /\
+                    (f (x <+> y) hsize a b')
+                )
+                (zero /\ b)
+                hitems
+            )
+        )
+        (zero /\ def)
+        vitems
+    where
+        foldv (Space n) ()
+        foldh -}
+
+
+foldInSquare :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex2 Rule a -> b
+foldInSquare f d = fit2 (1.0 <+> 1.0) >>> fold2' f d
+
+
+fold2 :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex2 Number a -> b -- TODO: Number -> Semiring, where possible, Size_ n, Pos_ n
+fold2 f def (Flex vpadding vitems) =
+    snd $ foldr
+        (\(h /\ Flex hpadding hitems) (y /\ b) ->
             (y + h)
             /\
             (snd $ foldr
@@ -363,10 +325,10 @@ fold2' f def (Flex vpadding valign vitems) =
         vitems
 
 
-fold2'' :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex2 Size a -> b
-fold2'' f def (Flex vpadding valign vitems) =
+fold2' :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex2 Size a -> b
+fold2' f def (Flex vpadding vitems) =
     snd $ foldr
-        (\(vsize /\ Flex hpadding halign hitems) (y /\ b) ->
+        (\(vsize /\ Flex hpadding hitems) (y /\ b) ->
             (y + V2.h vsize)
             /\
             (snd $ foldr
@@ -383,19 +345,64 @@ fold2'' f def (Flex vpadding valign vitems) =
         vitems
 
 
-fold2''' :: forall s a b. (Size_ s -> a -> b -> b) -> b -> Flex2 s a -> b
-fold2''' f def (Flex vpadding valign vitems) =
+fold2WithSpace :: forall a b. (Pos -> Size -> Maybe a -> b -> b) -> b -> Flex2 Number a -> b
+fold2WithSpace f def (Flex vitems) =
+    snd $ foldr
+        (\(h /\ Flex hitems) (y /\ b) ->
+            (y + h)
+            /\
+            (snd $ foldr
+                (\(w /\ a) (x /\ b') ->
+                    (x + w)
+                    /\
+                    (f (x <+> y) (w <+> h) a b')
+                )
+                (0.0 /\ b)
+                hitems
+            )
+        )
+        (0.0 /\ def)
+        vitems
+    where
+        foldv (Space h) (y /\ b) =
+            (y + h)
+            /\
+            (snd $ foldr
+                (\(w /\ a) (x /\ b') ->
+                    (x + w)
+                    /\
+                    (f (x <+> y) (w <+> h) a b')
+                )
+                (0.0 /\ b)
+                hitems
+            )
+        foldv (Taken h /\ Flex hitems) (y /\ b) =
+            (y + h)
+            /\
+            (snd $ foldr
+                (\(w /\ a) (x /\ b') ->
+                    (x + w)
+                    /\
+                    (f (x <+> y) (w <+> h) a b')
+                )
+                (0.0 /\ b)
+                hitems
+            )
+
+
+{- fold2''' :: forall s a b. (Size_ s -> a -> b -> b) -> b -> Flex2 s a -> b
+fold2''' f def (Flex vpadding vitems) =
     foldr
-        (\(h /\ Flex hpadding halign hitems) b ->
+        (\(h /\ Flex hpadding hitems) b ->
             foldr
                 (\(w /\ a) b' ->
                     f (w <+> h) a b'
                 )
                 b
-                hitems
+                $ onlyValues hitems
         )
         def
-        vitems
+        $ onlyValues vitems -}
 
 
 {- unfold :: forall s a. Ordered s a -> Array (s /\ Array (s /\ a))
@@ -410,5 +417,5 @@ flatten2 :: forall a. Flex2 Number a -> Array (Pos /\ Size /\ a)
 flatten2 = fold2' (\p s a arr -> (p /\ s /\ a) : arr) []
 
 
-flatten2' :: forall s a. Flex2 s a -> Array (Size_ s /\ a)
-flatten2' = fold2''' (curry (:)) []
+{- flatten2' :: forall s a. Flex2 s a -> Array (Size_ s /\ a)
+flatten2' = fold2''' (curry (:)) [] -}
