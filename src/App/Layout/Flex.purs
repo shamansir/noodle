@@ -7,7 +7,8 @@ module App.Layout.Flex
   , Padding(..)
   , PreEval(..)
   , Rule(..)
-  , alignPlain
+  , align, alignStart, alignCenter, alignEnd, alignSpaceBetween, alignSpaceAround, alignSpaceEvenly, distributeWithGaps
+  , padding
   --, class Container
   , fillSizes
   , find
@@ -69,8 +70,7 @@ data Padding
 
 
 data Align
-    = Fill -- a.k.a. Justify
-    | Start
+    = Start
     | End
     | Center
     | SpaceAround
@@ -164,21 +164,14 @@ make2 :: forall s a. Array (s /\ Array (s /\ a)) -> Flex2 s a
 make2 items = Flex $ map Flex <$> items
 
 
--- TODO: align :: forall a. Number -> Align -> Flex Number a -> Flex Number (Cell a)
-
-
--- TODO: padding :: forall a. Number /\ Number -> Flex Number a -> Flex Number (Cell a)
-
-
-alignPlain :: forall a. Number -> Align -> Array (Number /\ a) -> Array (Number /\ Cell a)
-alignPlain total how items =
-    if sumTaken < total
-        then doAlign how
-        else map Taken <$> items
+align :: forall a. Number -> Align -> Flex Number a -> Flex Number (Cell a)
+align total how (Flex items) =
+    Flex $ if sumTaken < total
+            then doAlign how
+            else (map Taken <$> items)
     where
         sumTaken = Array.foldr (+) 0.0 (fst <$> items)
         count = Array.length items
-        doAlign Fill = doAlign Start -- FIXME
         doAlign Start = (map Taken <$> items) <> [ (total - sumTaken) /\ Space ]
         doAlign Center =
             let sideSpace = (total - sumTaken) / 2.0
@@ -198,6 +191,39 @@ alignPlain total how items =
             in [ evenSpace /\ Space ] <> Array.intersperse (evenSpace /\ Space) (map Taken <$> items) <> [ evenSpace /\ Space ]
         doAlign (Gap n) =
             Array.intersperse (n /\ Space) (map Taken <$> items)
+
+
+alignStart :: forall a. Number -> Flex Number a -> Flex Number (Cell a)
+alignStart n = align n Start
+
+
+alignCenter :: forall a. Number -> Flex Number a -> Flex Number (Cell a)
+alignCenter n = align n Center
+
+
+alignEnd :: forall a. Number -> Flex Number a -> Flex Number (Cell a)
+alignEnd n = align n End
+
+
+alignSpaceBetween :: forall a. Number -> Flex Number a -> Flex Number (Cell a)
+alignSpaceBetween n = align n SpaceBetween
+
+
+alignSpaceAround :: forall a. Number -> Flex Number a -> Flex Number (Cell a)
+alignSpaceAround n = align n SpaceAround
+
+
+alignSpaceEvenly :: forall a. Number -> Flex Number a -> Flex Number (Cell a)
+alignSpaceEvenly n = align n SpaceEvenly
+
+
+distributeWithGaps :: forall a. Number -> Number -> Flex Number a -> Flex Number (Cell a)
+distributeWithGaps total gap = align total $ Gap gap
+
+
+padding :: forall a. (Number /\ Number) -> Flex Number a -> Flex Number (Cell a)
+padding (start /\ end) (Flex items) =
+    Flex $ [ start /\ Space ] <> (map Taken <$> items) <> [ end /\ Space ]
 
 
 -- TODO: fitAll a.k.a. distribute a.k.a justify
