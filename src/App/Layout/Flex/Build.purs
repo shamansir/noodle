@@ -8,12 +8,36 @@ import Data.Tuple.Nested (type (/\), (/\))
 import App.Layout.Flex
 
 
+flex :: forall s a. Array (s /\ a) -> Flex s a
+flex = make
+
+
+flex2 :: forall s a. Array (s /\ Flex s a) -> Flex2 s a
+flex2 = make
+
+
+flex3 :: forall s a. Array (s /\ Flex s (Flex s a)) -> Flex3 s a
+flex3 = make
+
+
+flex4 :: forall s a. Array (s /\ Flex s (Flex s (Flex s a))) -> Flex4 s a
+flex4 = make
+
+
 horz :: forall s a. Array (s /\ a) -> Flex s a
-horz = make
+horz = flex
 
 
 vert :: forall s a. Array (s /\ Flex s a) -> Flex2 s a
-vert = make
+vert = flex2
+
+
+horz' :: forall s a. Array (s /\ Flex s (Flex s a)) -> Flex3 s a
+horz' = flex3
+
+
+vert' :: forall s a. Array (s /\ Flex s (Flex s (Flex s a))) -> Flex4 s a
+vert' = flex3
 
 
 fill :: Rule

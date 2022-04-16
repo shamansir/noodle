@@ -47,7 +47,9 @@ type ColoredFlex = Flex2 Rule ColoredBlock
 
 
 type State =
-    Array (String /\ ColoredFlex)
+    { colored :: Array (String /\ ColoredFlex)
+    , node :: Flex2 Rule String
+    }
 
 
 data Action
@@ -56,71 +58,86 @@ data Action
 
 initialState :: State
 initialState =
-    [ "vert [ fill /\\ horz [ fill /\\ black ] ]" /\
+    { colored :
+        [ "vert [ fill /\\ horz [ fill /\\ black ] ]" /\
+
+            Flex.vert
+                [ Flex.fill /\
+                    Flex.horz [ Flex.fill /\ C.black ]
+                ]
+        , "vert [ fill /\\ horz [ fill /\\ red, fill /\\ green, fill /\\ blue ] ]" /\
+            Flex.vert
+                [ Flex.fill /\
+                    Flex.horz
+                        [ Flex.fill /\ C.rgb 255 0 0
+                        , Flex.fill /\ C.rgb 0 255 0
+                        , Flex.fill /\ C.rgb 0 0 255
+                        ]
+                ]
+        , "vert [ fill /\\ horz [ percent 10 /\\ red, fill /\\ green, fill /\\ blue ] ]" /\
+            Flex.vert
+                [ Flex.fill /\
+                    Flex.horz
+                        [ Flex.percents 10 /\ C.rgb 255 0 0
+                        , Flex.fill /\ C.rgb 0 255 0
+                        , Flex.fill /\ C.rgb 0 0 255
+                        ]
+                ]
+        , "vert [ fill /\\ horz [ percent 15 /\\ red, percent 40 /\\ green ] ]" /\
+            Flex.vert
+                [ Flex.fill /\
+                    Flex.horz
+                        [ Flex.percents 15 /\ C.rgb 255 0 0
+                        , Flex.percents 40 /\ C.rgb 0 255 0
+                        ]
+                ]
+        , "vert [ fill /\\ horz [ units 55 /\\ red, fill /\\ green, units 120 /\\ blue ] ]" /\
+            Flex.vert
+                [ Flex.fill /\
+                    Flex.horz
+                        [ Flex.units 55.0 /\ C.rgb 255 0 0
+                        , Flex.fill /\ C.rgb 0 255 0
+                        , Flex.units 120.0 /\ C.rgb 0 0 255
+                        ]
+                ]
+        , "vert [ percent 15 /\\ horz [ fill /\\ red ], fill /\\ horz [ fill /\\ green ], percent 40 /\\ [ fill /\\ blue ] ]" /\
+            Flex.vert
+                [ Flex.percents 15 /\ Flex.horz [ Flex.fill /\ C.rgb 255 0 0 ]
+                , Flex.fill /\ Flex.horz [ Flex.fill /\ C.rgb 0 255 0 ]
+                , Flex.percents 40 /\ Flex.horz [ Flex.fill /\ C.rgb 0 0 255 ]
+                ]
+        , "vert [ horz [ portion 1 /\\ red, portion 3 /\\ green, portion 2 /\\ blue ] ]" /\
+            Flex.vert
+                [ Flex.fill /\
+                    Flex.horz
+                        [ Flex.portion 1 /\ C.rgb 255 0 0
+                        , Flex.portion 3 /\ C.rgb 0 255 0
+                        , Flex.portion 2 /\ C.rgb 0 0 255
+                        ]
+                ]
+        ]
+    , node :
         Flex.vert
             [ Flex.fill /\
-                Flex.horz [ Flex.fill /\ C.black ]
+                Flex.horz []
             ]
-    , "vert [ fill /\\ horz [ fill /\\ red, fill /\\ green, fill /\\ blue ] ]" /\
-        Flex.vert
-            [ Flex.fill /\
-                Flex.horz
-                    [ Flex.fill /\ C.rgb 255 0 0
-                    , Flex.fill /\ C.rgb 0 255 0
-                    , Flex.fill /\ C.rgb 0 0 255
-                    ]
-            ]
-    , "vert [ fill /\\ horz [ percent 10 /\\ red, fill /\\ green, fill /\\ blue ] ]" /\
-        Flex.vert
-            [ Flex.fill /\
-                Flex.horz
-                    [ Flex.percents 10 /\ C.rgb 255 0 0
-                    , Flex.fill /\ C.rgb 0 255 0
-                    , Flex.fill /\ C.rgb 0 0 255
-                    ]
-            ]
-    , "vert [ fill /\\ horz [ percent 15 /\\ red, percent 40 /\\ green ] ]" /\
-        Flex.vert
-            [ Flex.fill /\
-                Flex.horz
-                    [ Flex.percents 15 /\ C.rgb 255 0 0
-                    , Flex.percents 40 /\ C.rgb 0 255 0
-                    ]
-            ]
-    , "vert [ fill /\\ horz [ units 55 /\\ red, fill /\\ green, units 120 /\\ blue ] ]" /\
-        Flex.vert
-            [ Flex.fill /\
-                Flex.horz
-                    [ Flex.units 55.0 /\ C.rgb 255 0 0
-                    , Flex.fill /\ C.rgb 0 255 0
-                    , Flex.units 120.0 /\ C.rgb 0 0 255
-                    ]
-            ]
-    , "vert [ percent 15 /\\ horz [ fill /\\ red ], fill /\\ horz [ fill /\\ green ], percent 40 /\\ [ fill /\\ blue ] ]" /\
-        Flex.vert
-            [ Flex.percents 15 /\ Flex.horz [ Flex.fill /\ C.rgb 255 0 0 ]
-            , Flex.fill /\ Flex.horz [ Flex.fill /\ C.rgb 0 255 0 ]
-            , Flex.percents 40 /\ Flex.horz [ Flex.fill /\ C.rgb 0 0 255 ]
-            ]
-    , "vert [ horz [ portion 1 /\\ red, portion 3 /\\ green, portion 2 /\\ blue ] ]" /\
-        Flex.vert
-            [ Flex.fill /\
-                Flex.horz
-                    [ Flex.portion 1 /\ C.rgb 255 0 0
-                    , Flex.portion 3 /\ C.rgb 0 255 0
-                    , Flex.portion 2 /\ C.rgb 0 0 255
-                    ]
-            ]
-    ]
+    }
 
 
-renderFlex ::forall m slots. Int -> String -> ColoredFlex -> H.ComponentHTML Action slots m
-renderFlex n description flex =
+renderFlex
+    :: forall a m slots
+     . String
+    -> Pos
+    -> Size
+    -> (Pos -> Size -> a -> H.ComponentHTML Action slots m)
+    -> Flex2 Rule a
+    -> H.ComponentHTML Action slots m
+renderFlex description pos size drawF flex =
     HS.g
-        [ HSA.translateTo' $ 0.0 <+> toNumber n * V2.h size ]
+        [ HSA.translateTo' pos ]
         [ HS.g
             []
-            $ Flex.fold2 (\pos size color prev -> drawBox pos size color : prev) []
+            $ Flex.fold2 (\pos size val prev -> drawF pos size val : prev) []
             $ Flex.fit2 size flex
         , HS.text
                 [ HSA.fill $ Just $ C.toSvg $ C.white
@@ -131,6 +148,11 @@ renderFlex n description flex =
                 [ HH.text description
                 ]
         ]
+
+
+renderColoredFlex :: forall m slots. Int -> String -> ColoredFlex -> H.ComponentHTML Action slots m
+renderColoredFlex n description =
+    renderFlex description (0.0 <+> toNumber n * V2.h size) size drawBox
     where
         size = 500.0 <+> 60.0
         drawBox pos size color =
@@ -151,10 +173,10 @@ render
      . MonadEffect m
     => State
     -> H.ComponentHTML Action slots m
-render =
+render state =
     HS.g
         []
-        <<< Array.mapWithIndex (uncurry <<< renderFlex)
+        $ Array.mapWithIndex (uncurry <<< renderColoredFlex) state.colored
 
 
 handleAction

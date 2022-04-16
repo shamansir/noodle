@@ -4,6 +4,7 @@ module App.Layout.Flex
   , Flex(..)
   , Flex2
   , Flex3
+  , Flex4
   , Padding(..)
   , PreEval(..)
   , Rule(..)
@@ -15,6 +16,7 @@ module App.Layout.Flex
   , find'
   , fit, fit2, fitToSquare
   , flatten2
+  , justify
   , fold2
   , fold2'
   , layout
@@ -22,6 +24,7 @@ module App.Layout.Flex
   , make2
   , mapSize
   , posOf
+  , lift, lift2, map2Size
   )
   where
 
@@ -29,20 +32,18 @@ module App.Layout.Flex
 import Prelude
 
 import App.Style.Order (Order)
-
-
-import Data.Maybe (Maybe(..))
-import Data.Vec2 (Size, Size_, Pos, (<+>))
-import Data.Vec2 as V2
-import Data.Int (toNumber)
+import Control.Apply (lift2)
 import Data.Array ((:))
 import Data.Array as Array
+import Data.Bifunctor (class Bifunctor, bimap, lmap)
+import Data.Foldable (foldr)
+import Data.Int (toNumber)
+import Data.Maybe (Maybe(..))
 import Data.Tuple (fst, snd, curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
-
-import Data.Foldable (foldr)
-import Data.Bifunctor (class Bifunctor, bimap, lmap)
 import Data.Unfoldable (class Unfoldable, unfoldr)
+import Data.Vec2 (Size, Size_, Pos, (<+>))
+import Data.Vec2 as V2
 
 
 -- TODO: `IsLayout` instance (AutoSizedLayout?)
@@ -114,6 +115,9 @@ data Flex s a = Flex (Array (s /\ a))
 type Flex2 s a = Flex s (Flex s a)
 
 type Flex3 s a = Flex2 s (Flex s a)
+
+
+type Flex4 s a = Flex3 s (Flex s a)
 
 
 
@@ -197,8 +201,16 @@ alignStart :: forall a. Number -> Flex Number a -> Flex Number (Cell a)
 alignStart n = align n Start
 
 
+-- alignStart' :: forall a. Number -> Flex Rule a -> Flex Number (Cell a)
+-- alignStart' n = fit n >>> alignStart n
+
+
 alignCenter :: forall a. Number -> Flex Number a -> Flex Number (Cell a)
 alignCenter n = align n Center
+
+
+-- alignCenter' :: forall a. Number -> Flex Number a -> Flex Number (Cell a)
+-- alignCenter' n = fit n >>> alignCenter n
 
 
 alignEnd :: forall a. Number -> Flex Number a -> Flex Number (Cell a)
@@ -226,6 +238,10 @@ padding (start /\ end) (Flex items) =
     Flex $ [ start /\ Space ] <> (map Taken <$> items) <> [ end /\ Space ]
 
 
+
+justify :: forall s a. Array a -> Flex Rule a
+justify items = Flex $ ((/\) (Portion 1)) <$> items
+
 -- TODO: fitAll a.k.a. distribute a.k.a justify
 
 -- TODO
@@ -239,10 +255,10 @@ data PreEval
 fit :: forall a. Number -> Flex Rule a -> Flex Number a -- TODO: Semiring n => Flex n a, Container f => f n a
 fit amount (Flex items) =
     -- FIXME: take align and padding into consideration
-    Flex $ Array.reverse $ Array.zip (justify (fst <$> items)) (snd <$> items)
+    Flex $ Array.reverse $ Array.zip (justify_ (fst <$> items)) (snd <$> items)
     where
-        justify :: Array Rule -> Array Number
-        justify rules =
+        justify_ :: Array Rule -> Array Number
+        justify_ rules =
             fillPortionAmount <$> preEvaluated
             where
 
@@ -301,6 +317,14 @@ fillSizes (Flex vitems) =
             /\
             (lmap (\w' -> w' <+> h) $ Flex hitems)
         ) <$> vitems
+
+
+lift :: forall s a. Flex s a -> Flex s (Cell a)
+lift = map Taken
+
+
+lift2 :: forall s a. Flex2 s a -> Flex2 s (Cell a)
+lift2 = map $ map Taken
 
 
 layout :: forall a. Size -> Flex2 Rule a -> Flex2 Size a
