@@ -56,7 +56,7 @@ fold = foldAt []
                     foldAt (Array.cons s path) f b flex_
                 )
                 def
-                $ Axis.items faxis
+                $ Array.reverse $ Axis.items faxis -- FIXME: why reverse?
 
 
 data Dir = Horz | Vert
