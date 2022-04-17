@@ -207,6 +207,7 @@ data PreEval
 fit :: forall a. Number -> Axis Rule a -> Axis Number a -- TODO: Semiring n => Flex n a, Container f => f n a
 fit amount (Axis items) =
     -- FIXME: take align and padding into consideration
+    -- FIXME: why `reverse`?
     Axis $ Array.reverse $ Array.zip (justify_ (fst <$> items)) (snd <$> items)
     where
         justify_ :: Array Rule -> Array Number
@@ -358,7 +359,7 @@ fold2 f d = fit2 (1.0 <+> 1.0) >>> fold2' f d -}
 
 
 fold :: forall s a b. (s -> a -> b -> b) -> b -> Axis s a -> b
-fold f def (Axis items) = foldr (uncurry f) def items
+fold f def (Axis items) = foldr (uncurry f) def $ Array.reverse items     -- FIXME: why `reverse`?
 
 
 foldPrev :: forall s a b. (Array s -> s -> a -> b -> b) -> b -> Axis s a -> b
@@ -368,7 +369,7 @@ foldPrev f def (Axis items) =
             Array.snoc prev s /\ f prev s a b
         )
         ([] /\ def)
-        items
+        $ Array.reverse items     -- FIXME: why `reverse`?
 
 
 

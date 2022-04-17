@@ -21,10 +21,10 @@ import Data.Tuple.Nested (type (/\))
 
 
 type Protocol i o d = -- a.k.a. Transport
-    { receive :: i -> Effect (Maybe d) -- FIXME: remove effect here, was only needed for tests
+    { receive :: i -> Effect (Maybe d) -- FIXME: remove Effect here, was only needed for tests
     , send :: o -> d -> Effect Unit
     , sendIn :: i -> d -> Effect Unit
-    , last :: Unit -> Effect (Maybe i) -- FIXME: remove effect here, was only needed for tests
+    , last :: Unit -> Effect (Maybe i) -- FIXME: remove Effect here, was only needed for tests
     -- , replaceNode : Node.Family -> Effect Unit
     }
 

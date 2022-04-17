@@ -1,5 +1,6 @@
 module App.Layout.Flex
   ( Flex
+  , flex, nest
   , fold, foldN
   )
   where
@@ -42,35 +43,6 @@ flex = Level <<< Axis.make
 nest :: forall s a. Array (s /\ Flex s a) -> Flex s a
 nest = Deeper <<< Axis.make
 
-
-testPlain :: Flex Int String
-testPlain =
-    flex [ 5 /\ "a", 10 /\ "f", 2 /\ "3" ]
-
-
-testNested2 :: Flex Int String
-testNested2 =
-    nest [ 5 /\ flex [ 2 /\ "a" ], 10 /\ flex [ 3 /\ "b", 5 /\ "d"], 2 /\ flex [ 4 /\ "c" ] ]
-
-
-testNested :: Flex Int String
-testNested =
-    nest
-        [ 5 /\ nest [ 2 /\ testNested2 ]
-        , 10 /\ flex [ 3 /\ "b", 5 /\ "d"]
-        , 7 /\ nest [ 0 /\ testPlain ]
-        , 2 /\ flex [ 4 /\ "c" ]
-        ]
-
-
-testNestedMixed :: Flex Int String
-testNestedMixed =
-    nest
-        [ 5 /\ flex [ 2 /\ "a"]
-        , 10 /\ flex [ 3 /\ "b", 5 /\ "d" ]
-        , 7 /\ nest [ 0 /\ testPlain ]
-        , 2 /\ flex [ 4 /\ "c" ]
-        ]
 
 
 fold :: forall s a b. (Array s -> Array s -> s -> a -> b -> b) -> b -> Flex s a -> b

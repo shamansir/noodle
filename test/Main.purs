@@ -12,6 +12,7 @@ import Test.Spec.Runner (runSpec)
 import Test.Nodes (spec) as Nodes
 import Test.Fn (spec) as Fn
 import Test.Toolkit (spec) as Toolkit
+import Test.Flex (spec) as Flex
 
 
 main :: Effect Unit
@@ -22,3 +23,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Nodes.spec
   describe "Toolkit"
     Toolkit.spec
+  describe "Flex"
+    Flex.spec
