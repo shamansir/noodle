@@ -59,6 +59,33 @@ fold = foldAt []
                 $ Array.reverse $ Axis.items faxis -- FIXME: why reverse?
 
 
+fit :: forall a. Size -> Flex Rule a -> Flex Number a
+fit size = fitAt Vert size
+    where
+        flipDir =
+            case _ of
+                Horz -> Vert
+                Vert -> Horz
+        sideFromDir size_ =
+            case _ of
+                Horz -> V2.w size_
+                Vert -> V2.h size_
+        fitAt dir pSize =
+            case _ of
+                Level axis ->
+                    Level $ Axis.fit (sideFromDir pSize dir) axis -- FIXME: fit to size as one column?
+                Deeper faxis ->
+                    Deeper
+                        $ map (fitAt (flipDir dir) pSize)
+                        -- $ Axis.fold ?wh ?wh
+                        $ Axis.fit (sideFromDir pSize dir)
+                        $ faxis
+
+
+-- TODO: layout :: forall a. Size -> Flex Rule a -> Flex (Pos /\ Size) a
+-- layout size = fit size >>> fillSizes
+
+
 data Dir = Horz | Vert
 
 
