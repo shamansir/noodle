@@ -1,7 +1,8 @@
 module App.Layout.Flex
   ( Flex
   , flex, nest
-  , fold, foldN
+  --, fold, foldN
+  , fit
   )
   where
 
@@ -24,7 +25,7 @@ import Data.Vec2 (Size, Size_, Pos, Pos_, (<+>))
 import Data.Vec2 as V2
 
 import App.Layout.Flex.Axis as Axis
-import App.Layout.Flex.Axis (Axis)
+import App.Layout.Flex.Axis (Axis2)
 import App.Layout.Flex.Rule (Rule(..))
 
 
@@ -32,20 +33,20 @@ import App.Layout.Flex.Rule (Rule(..))
 
 
 data Flex s a
-    = Level (Axis s a)
-    | Deeper (Axis s (Flex s a))
+    = Level (Axis2 s a)
+    | Deeper (Axis2 s (Flex s a))
 
 
-flex :: forall s a. Array (s /\ a) -> Flex s a
-flex = Level <<< Axis.make
+flex :: forall s a. Array (s /\ Array (s /\ a)) -> Flex s a
+flex = Level <<< Axis.make2
 
 
-nest :: forall s a. Array (s /\ Flex s a) -> Flex s a
-nest = Deeper <<< Axis.make
+nest :: forall s a. Array (s /\ Array (s /\ Flex s a)) -> Flex s a
+nest = Deeper <<< Axis.make2
 
 
 
-fold :: forall s a b. (Array s -> Array s -> s -> a -> b -> b) -> b -> Flex s a -> b
+{- fold :: forall s a b. (Array s -> Array s -> s -> a -> b -> b) -> b -> Flex s a -> b
 fold = foldAt []
     where
         foldAt path f def (Level axis) =
@@ -56,39 +57,29 @@ fold = foldAt []
                     foldAt (Array.cons s path) f b flex_
                 )
                 def
-                $ Array.reverse $ Axis.items faxis -- FIXME: why reverse?
+                $ Array.reverse $ Axis.items faxis -- FIXME: why reverse? -}
 
 
-fit :: forall a. Size -> Flex Rule a -> Flex Number a
-fit size = fitAt Vert size
+fit :: forall a. Size -> Flex Rule a -> Flex Size a
+fit size = fitAt size
     where
-        flipDir =
+        fitAt pSize =
             case _ of
-                Horz -> Vert
-                Vert -> Horz
-        sideFromDir size_ =
-            case _ of
-                Horz -> V2.w size_
-                Vert -> V2.h size_
-        fitAt dir pSize =
-            case _ of
-                Level axis ->
-                    Level $ Axis.fit (sideFromDir pSize dir) axis -- FIXME: fit to size as one column?
-                Deeper faxis ->
+                Level axis2 -> Level $ Axis.layout pSize axis2
+                Deeper faxis2 ->
                     Deeper
-                        $ map (fitAt (flipDir dir) pSize)
-                        -- $ Axis.fold ?wh ?wh
-                        $ Axis.fit (sideFromDir pSize dir)
-                        $ faxis
+                        $ map (Axis.mapItems (\(cSize /\ axis2) -> cSize /\ fitAt cSize axis2))
+                        -- $ map (Axis.mapItems (\(cSize /\ axis2) -> (pSize - cSize) /\ fitAt cSize axis2))
+                        $ Axis.layout pSize faxis2
 
 
--- TODO: layout :: forall a. Size -> Flex Rule a -> Flex (Pos /\ Size) a
--- layout size = fit size >>> fillSizes
+-- TODO: layout :: forall a. Size -> Flex Rule a -> Flex (Pos /\ Size) a -- Flex Unit (Pos /\ Size /\ a)
+-- layout size = fit size >>> foldN >>> fillSizes
 
 
 data Dir = Horz | Vert
 
-
+{-
 foldN :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Flex n a -> b
 foldN = foldAt Vert (zero <+> zero) zero
     where
@@ -124,3 +115,4 @@ foldN = foldAt Vert (zero <+> zero) zero
                         )
                         (def /\ zero)
                         faxis
+-}

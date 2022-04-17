@@ -24,6 +24,7 @@ module App.Layout.Flex.Axis
   , posOf
   , lift, lift2, map2Size
   , foldPrev
+  , mapItems
   )
   where
 
@@ -35,6 +36,7 @@ import Control.Apply (lift2)
 import Data.Array ((:))
 import Data.Array as Array
 import Data.Bifunctor (class Bifunctor, bimap, lmap)
+import Data.Functor.Invariant (class Invariant)
 import Data.Foldable (foldr)
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
@@ -270,6 +272,10 @@ fillSizes (Axis vitems) =
             /\
             (lmap (\w' -> w' <+> h) $ Axis hitems)
         ) <$> vitems
+
+
+mapItems :: forall s a s' a'. (s /\ a -> s' /\ a') -> Axis s a -> Axis s' a'
+mapItems f (Axis items) = Axis $ map f items
 
 
 lift :: forall s a. Axis s a -> Axis s (Cell a)
