@@ -4,6 +4,7 @@ module App.Layout.Flex.Axis
   , Axis, Axis2, Axis3, Axis4
   , Padding(..)
   , PreEval(..)
+  , items
   , align, alignStart, alignCenter, alignEnd, alignSpaceBetween, alignSpaceAround, alignSpaceEvenly, distributeWithGaps
   , padding
   --, class Container
@@ -13,6 +14,7 @@ module App.Layout.Flex.Axis
   , fit, fit2, fitToSquare
   , flatten2
   , justify
+  , fold
   , fold2
   , fold2'
   , layout
@@ -21,6 +23,7 @@ module App.Layout.Flex.Axis
   , mapSize
   , posOf
   , lift, lift2, map2Size
+  , foldPrev
   )
   where
 
@@ -38,7 +41,7 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple (fst, snd, curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Unfoldable (class Unfoldable, unfoldr)
-import Data.Vec2 (Size, Size_, Pos, (<+>))
+import Data.Vec2 (Size, Size_, Pos, Pos_, (<+>))
 import Data.Vec2 as V2
 
 
@@ -92,6 +95,10 @@ type Axis4 s a = Axis3 s (Axis s a)
 
 -- TODO: IsLayout
 -- fitting => solving (means)
+
+
+items :: forall s a. Axis s a -> Array (s /\ a)
+items (Axis xs) = xs
 
 
 
@@ -296,12 +303,12 @@ tryVert :: forall a. Rule -> a -> Ordered Rule a -> Maybe (Ordered Rule a)
 tryVert _ _ ordered = ordered -}
 
 
-find :: forall a. Pos -> Axis2 Number a -> Maybe a
+find :: forall n a. Semiring n => Ord n => Pos_ n -> Axis2 n a -> Maybe a
 find pos ordered =
     snd <$> snd <$> find' pos ordered
 
 
-find' :: forall a. Pos -> Axis2 Number a -> Maybe (Pos /\ Size /\ a)
+find' :: forall n a. Semiring n => Ord n => Pos_ n -> Axis2 n a -> Maybe (Pos_ n /\ Size_ n /\ a)
 find' pos =
     flatten2 >>> -- FIXME: use Unfoldable for faster search?
         foldr
@@ -346,7 +353,26 @@ posOf _ _ = Nothing
 fold2 f d = fit2 (1.0 <+> 1.0) >>> fold2' f d -}
 
 
-fold2 :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Axis2 Number a -> b -- TODO: Number -> Semiring, where possible
+-- foldPrev :: forall s a. Semigroup s => (s -> s -> a -> b -> b) -> b -> Axis2 nsa -> b
+-- foldPrev
+
+
+fold :: forall s a b. (s -> a -> b -> b) -> b -> Axis s a -> b
+fold f def (Axis items) = foldr (uncurry f) def items
+
+
+foldPrev :: forall s a b. (Array s -> s -> a -> b -> b) -> b -> Axis s a -> b
+foldPrev f def (Axis items) =
+    snd $ foldr
+        (\(s /\ a) (prev /\ b) ->
+            Array.snoc prev s /\ f prev s a b
+        )
+        ([] /\ def)
+        items
+
+
+
+fold2 :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Axis2 n a -> b
 fold2 f def (Axis vitems) =
     snd $ foldr
         (\(h /\ Axis hitems) (y /\ b) ->
@@ -358,15 +384,15 @@ fold2 f def (Axis vitems) =
                     /\
                     (f (x <+> y) (w <+> h) a b')
                 )
-                (0.0 /\ b)
+                (zero /\ b)
                 hitems
             )
         )
-        (0.0 /\ def)
+        (zero /\ def)
         vitems
 
 
-fold2' :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Axis2 Size a -> b
+fold2' :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Axis2 (Size_ n) a -> b
 fold2' f def (Axis vitems) =
     snd $ foldr
         (\(vsize /\ Axis hitems) (y /\ b) ->
@@ -378,11 +404,11 @@ fold2' f def (Axis vitems) =
                     /\
                     (f (x <+> y) hsize a b')
                 )
-                (0.0 /\ b)
+                (zero /\ b)
                 hitems
             )
         )
-        (0.0 /\ def)
+        (zero /\ def)
         vitems
 
 
@@ -409,7 +435,7 @@ unfold _ = [] -- fold (curry <<< ?wh) [] -}
 -- unfold' _ = []
 
 
-flatten2 :: forall a. Axis2 Number a -> Array (Pos /\ Size /\ a)
+flatten2 :: forall n a. Semiring n => Axis2 n a -> Array (Pos_ n /\ Size_ n /\ a)
 flatten2 = fold2 (\p s a arr -> (p /\ s /\ a) : arr) []
 
 
