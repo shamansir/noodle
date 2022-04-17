@@ -14,9 +14,8 @@ module App.Layout.Flex.Axis
   , fit, fit2, fitToSquare
   , flatten2
   , justify
-  , fold
-  , fold2
-  , fold2'
+  , fold, fold2
+  , fold2N, fold2N'
   , layout
   , make
   , make2
@@ -53,7 +52,7 @@ import App.Layout.Flex.Rule (Rule(..))
 
 data Cell a
     = Taken a
-    | Space
+    | Space -- include into Rule ?
 
 
 data Padding
@@ -149,6 +148,9 @@ align total how (Axis items) =
             in [ evenSpace /\ Space ] <> Array.intersperse (evenSpace /\ Space) (map Taken <$> items) <> [ evenSpace /\ Space ]
         doAlign (Gap n) =
             Array.intersperse (n /\ Space) (map Taken <$> items)
+
+
+-- TODO :: align2
 
 
 alignStart :: forall a. Number -> Axis Number a -> Axis Number (Cell a)
@@ -365,7 +367,17 @@ fold2 f d = fit2 (1.0 <+> 1.0) >>> fold2' f d -}
 
 
 fold :: forall s a b. (s -> a -> b -> b) -> b -> Axis s a -> b
-fold f def (Axis items) = foldr (uncurry f) def $ Array.reverse items     -- FIXME: why `reverse`?
+fold f def (Axis items) = foldr (uncurry f) def items
+
+
+fold2 :: forall s a b. ((s /\ s) -> a -> b -> b) -> b -> Axis2 s a -> b
+fold2 f def (Axis items) =
+    foldr
+        (\(s /\ axis) b ->
+            fold (\s' -> f (s /\ s')) b axis
+        )
+        def
+        items
 
 
 foldPrev :: forall s a b. (Array s -> s -> a -> b -> b) -> b -> Axis s a -> b
@@ -379,8 +391,8 @@ foldPrev f def (Axis items) =
 
 
 
-fold2 :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Axis2 n a -> b
-fold2 f def (Axis vitems) =
+fold2N :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Axis2 n a -> b
+fold2N f def (Axis vitems) =
     snd $ foldr
         (\(h /\ Axis hitems) (y /\ b) ->
             (y + h)
@@ -399,8 +411,8 @@ fold2 f def (Axis vitems) =
         vitems
 
 
-fold2' :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Axis2 (Size_ n) a -> b
-fold2' f def (Axis vitems) =
+fold2N' :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Axis2 (Size_ n) a -> b
+fold2N' f def (Axis vitems) =
     snd $ foldr
         (\(vsize /\ Axis hitems) (y /\ b) ->
             (y + V2.h vsize)
@@ -443,7 +455,7 @@ unfold _ = [] -- fold (curry <<< ?wh) [] -}
 
 
 flatten2 :: forall n a. Semiring n => Axis2 n a -> Array (Pos_ n /\ Size_ n /\ a)
-flatten2 = fold2 (\p s a arr -> (p /\ s /\ a) : arr) []
+flatten2 = fold2N (\p s a arr -> (p /\ s /\ a) : arr) []
 
 
 -- flatten2' :: forall s a. Flex2 s a -> Array (Size_ s /\ a)

@@ -1,16 +1,15 @@
 module App.Layout.Flex
   ( Flex
-  , flex, nest
-  --, fold, foldN
   , fit
+  , flex, flex1
+  , fold, foldN
+  , nest, nest1
   )
   where
 
 
 import Prelude
 
-import App.Style.Order (Order)
-import Control.Apply (lift2)
 import Data.Array ((:))
 -- import Data.Array.Ex ((:))
 import Data.Array as Array
@@ -37,13 +36,23 @@ data Flex s a
     | Deeper (Axis2 s (Flex s a))
 
 
+-- TODO: Functor, etc.
+
+
 flex :: forall s a. Array (s /\ Array (s /\ a)) -> Flex s a
 flex = Level <<< Axis.make2
+
+
+flex1 :: forall s a. s -> Array (s /\ a) -> Flex s a
+flex1 s arr = flex $ Array.singleton (s /\ arr)
 
 
 nest :: forall s a. Array (s /\ Array (s /\ Flex s a)) -> Flex s a
 nest = Deeper <<< Axis.make2
 
+
+nest1 :: forall s a. s -> Array (s /\ Flex s a) -> Flex s a
+nest1 s arr = nest $ Array.singleton (s /\ arr)
 
 
 {- fold :: forall s a b. (Array s -> Array s -> s -> a -> b -> b) -> b -> Flex s a -> b
@@ -73,46 +82,43 @@ fit size = fitAt size
                         $ Axis.layout pSize faxis2
 
 
+fillSizes :: forall a. Flex Number a -> Flex Size a
+fillSizes =
+    case _ of
+        Level axis2 -> Level $ Axis.fillSizes axis2
+        Deeper faxis2 ->
+            Deeper
+                $ map (map fillSizes)
+                $ Axis.fillSizes faxis2
+
+
 -- TODO: layout :: forall a. Size -> Flex Rule a -> Flex (Pos /\ Size) a -- Flex Unit (Pos /\ Size /\ a)
 -- layout size = fit size >>> foldN >>> fillSizes
 
 
-data Dir = Horz | Vert
 
-{-
-foldN :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Flex n a -> b
-foldN = foldAt Vert (zero <+> zero) zero
+fold :: forall s a b. (Array (s /\ s) -> a -> b -> b) -> b -> Flex s a -> b
+fold f def = case _ of
+    Level axis ->
+        Axis.fold2 (Array.singleton >>> f) def axis
+    Deeper faxis ->
+        Axis.fold2 (\pPos flex b -> fold (\cPos -> f (pPos : cPos)) b flex) def faxis
+
+
+foldN :: forall n a b. Ring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Flex (Size_ n) a -> b
+foldN = foldAt (zero <+> zero)
     where
-        foldAt dir pos n f def (Level axis) =
-            fst $ case dir of
-                Horz ->
-                    Axis.fold
-                        (\width a (b /\ prevX) ->
-                            f ((V2.x pos + prevX) <+> V2.y pos) (width <+> n) a b /\ (prevX + width)
-                        )
-                        (def /\ zero)
-                        axis
-                Vert ->
-                    Axis.fold
-                        (\height a (b /\ prevY) ->
-                            f (V2.x pos <+> (V2.y pos + prevY)) (n <+> height) a b /\ (prevY + height)
-                        )
-                        (def /\ zero)
-                        axis
-        foldAt dir pos n f def (Deeper faxis) =
-            fst $ case dir of
-                Horz ->
-                    Axis.fold
-                        (\width flex_ (b /\ prevX) ->
-                            foldAt Vert ((V2.x pos + prevX) <+> V2.y pos) width f b flex_ /\ (prevX + width)
-                        )
-                        (def /\ zero)
-                        faxis
-                Vert ->
-                    Axis.fold
-                        (\height flex_ (b /\ prevY) ->
-                            foldAt Horz (V2.x pos <+> (V2.y pos + prevY)) height f b flex_ /\ (prevY + height)
-                        )
-                        (def /\ zero)
-                        faxis
--}
+        foldAt pPos f def (Level axis) =
+            Axis.fold2N'
+                (\cPos ->
+                    f (pPos - cPos)
+                )
+                def
+                axis
+        foldAt pPos f def (Deeper faxis) =
+            Axis.fold2N'
+                (\cPos _ flex b ->
+                    foldAt (pPos - cPos) f b flex
+                )
+                def
+                faxis
