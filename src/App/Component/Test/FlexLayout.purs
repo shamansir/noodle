@@ -9,9 +9,10 @@ import Type.Row (type (+))
 import Color as C
 import Color.Extra as C
 
-import App.Layout.Flex (Flex, Flex2, Rule)
-import App.Layout.Flex as Flex
+import App.Layout.Flex.Axis (Axis, Axis2)
+import App.Layout.Flex.Rule (Rule)
 import App.Layout.Flex.Build as Flex
+import App.Layout.Flex.Axis as Flex
 
 import Data.Array ((:))
 import Data.Array as Array
@@ -42,13 +43,13 @@ type Slot id = forall query. H.Slot query Void id
 type ColoredBlock = C.Color
 
 
-type ColoredFlex = Flex2 Rule ColoredBlock
+type ColoredFlex = Axis2 Rule ColoredBlock
 --type ColoredFlex = Flex Size ColoredBlock
 
 
 type State =
     { colored :: Array (String /\ ColoredFlex)
-    , node :: Flex2 Rule String
+    , node :: Axis2 Rule String
     }
 
 
@@ -130,7 +131,7 @@ renderFlex
     -> Pos
     -> Size
     -> (Pos -> Size -> a -> H.ComponentHTML Action slots m)
-    -> Flex2 Rule a
+    -> Axis2 Rule a
     -> H.ComponentHTML Action slots m
 renderFlex description pos size drawF flex =
     HS.g
