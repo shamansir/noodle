@@ -206,7 +206,7 @@ padding (start /\ end) (Axis items) =
 
 
 
-justify :: forall s a. Array a -> Axis Rule a
+justify :: forall a. Array a -> Axis Rule a
 justify items = Axis $ ((/\) (Portion 1)) <$> Just <$> items
 
 -- TODO: fitAll a.k.a. distribute a.k.a justify

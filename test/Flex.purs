@@ -29,8 +29,8 @@ import App.Layout.Flex as Flex
 
 
 
-flexRow :: Flex Int String
-flexRow =
+oneRow :: Flex Int String
+oneRow =
     flex1 5
         [ 5 /\ put "a"
         , 10 /\ put "f"
@@ -39,8 +39,8 @@ flexRow =
         ]
 
 
-flexRows :: Flex Int String
-flexRows =
+severalRows :: Flex Int String
+severalRows =
     flex
         [ 10 /\ [ 5 /\ put "a", 10 /\ put "f", 2 /\ put "k" ]
         , 3 /\ [ 2 /\ put "c", 7 /\ put "d", 2 /\ put "e" ]
@@ -48,8 +48,8 @@ flexRows =
         ]
 
 
-testNested2 :: Flex Int String
-testNested2 =
+complexNesting :: Flex Int String
+complexNesting =
     flex
         [ 3 /\
             [ 5 /\ nest1 7 [ 2 /\ put "a" ]
@@ -60,8 +60,9 @@ testNested2 =
             [ 3 /\ nest1 5 [ 0 /\ put "e", 6 /\ put "h", 1 /\ put "j" ]
             , 5 /\ nest1 9 [ 4 /\ put "i" ]
             , 6 /\ nest1 1 [ 17 /\ put "f", 22 /\ put "g" ]
-            , 1 /\ nest' flexRows
+            , 1 /\ nest' severalRows
             ]
+        , 2 /\ [ 3 /\ put "k" ]
         ]
 
 
@@ -154,16 +155,55 @@ spec = do
                     ]
                     testNested22 -}
 
-        describe "foldN" $ do
+        describe "folding with position and size" $ do
 
-            it "testPlain" $ do
+            it "one row" $ do
                 liftEffect $ testFoldN
                     [ (0 <+> 0) /\ (5 <+> 5) /\ "a"
                     , (5 <+> 0) /\ (10 <+> 5) /\ "f"
                     , (15 <+> 0) /\ (2 <+> 5) /\ "3"
                     , (17 <+> 0) /\ (30 <+> 5) /\ "i"
                     ]
-                    flexRow
+                    oneRow
+
+            it "several rows" $ do
+                liftEffect $ testFoldN
+                    [ (0 <+> 0) /\ (5 <+> 10) /\ "a"
+                    , (5 <+> 0) /\ (10 <+> 10) /\ "f"
+                    , (15 <+> 0) /\ (2 <+> 10) /\ "k"
+                    , (0 <+> 10) /\ (2 <+> 3) /\ "c"
+                    , (2 <+> 10) /\ (7 <+> 3) /\ "d"
+                    , (9 <+> 10) /\ (2 <+> 3) /\ "e"
+                    , (0 <+> 13) /\ (1 <+> 7) /\ "x"
+                    , (1 <+> 13) /\ (2 <+> 7) /\ "m"
+                    , (3 <+> 13) /\ (14 <+> 7) /\ "n"
+                    ]
+                    severalRows
+
+            it "complex nesting" $ do
+                liftEffect $ testFoldN
+                    [ ( 0 <+>  0) /\ ( 2 <+>  7) /\ "a"
+                    , ( 5 <+>  0) /\ ( 3 <+>  2) /\ "b"
+                    , ( 8 <+>  0) /\ ( 5 <+>  2) /\ "d"
+                    , (15 <+>  0) /\ ( 4 <+>  3) /\ "c"
+                    , ( 0 <+>  3) /\ ( 0 <+>  5) /\ "e"
+                    , ( 0 <+>  3) /\ ( 6 <+>  5) /\ "h"
+                    , ( 6 <+>  3) /\ ( 1 <+>  5) /\ "j"
+                    , ( 3 <+>  3) /\ ( 4 <+>  9) /\ "i"
+                    , ( 8 <+>  3) /\ (17 <+>  1) /\ "f"
+                    , (25 <+>  3) /\ (22 <+>  1) /\ "g"
+                    , (14 <+>  3) /\ ( 5 <+> 10) /\ "a"
+                    , (19 <+>  3) /\ (10 <+> 10) /\ "f"
+                    , (29 <+>  3) /\ ( 2 <+> 10) /\ "k"
+                    , (14 <+> 13) /\ ( 2 <+>  3) /\ "c"
+                    , (16 <+> 13) /\ ( 7 <+>  3) /\ "d"
+                    , (23 <+> 13) /\ ( 2 <+>  3) /\ "e"
+                    , (14 <+> 16) /\ ( 1 <+>  7) /\ "x"
+                    , (15 <+> 16) /\ ( 2 <+>  7) /\ "m"
+                    , (17 <+> 16) /\ (14 <+>  7) /\ "n"
+                    , (0  <+> 7)  /\ ( 3 <+>  2) /\ "k"
+                    ]
+                    complexNesting
 
             {- it "testNested2" $ do
                 liftEffect $ testFoldN
