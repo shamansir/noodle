@@ -11,7 +11,6 @@ import Color.Extra as C
 
 import App.Layout.Flex.Axis (Axis, Axis2)
 import App.Layout.Flex.Rule (Rule)
-import App.Layout.Flex.Build as Flex
 import App.Layout.Flex.Axis as Flex
 
 import Data.Array ((:))
