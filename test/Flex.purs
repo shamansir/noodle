@@ -31,7 +31,12 @@ import App.Layout.Flex as Flex
 
 flexRow :: Flex Int String
 flexRow =
-    flex1 5 [ 5 /\ put "a", 10 /\ put "f", 2 /\ put "3" ]
+    flex1 5
+        [ 5 /\ put "a"
+        , 10 /\ put "f"
+        , 2 /\ put "3"
+        , 30 /\ put "i"
+        ]
 
 
 flexRows :: Flex Int String
@@ -153,9 +158,10 @@ spec = do
 
             it "testPlain" $ do
                 liftEffect $ testFoldN
-                    [ (0 <+> 0) /\ (0 <+> 5) /\ "a"
-                    , (0 <+> 5) /\ (0 <+> 10) /\ "f"
-                    , (0 <+> 15) /\ (0 <+> 2) /\ "3"
+                    [ (0 <+> 0) /\ (5 <+> 5) /\ "a"
+                    , (5 <+> 0) /\ (10 <+> 5) /\ "f"
+                    , (15 <+> 0) /\ (2 <+> 5) /\ "3"
+                    , (17 <+> 0) /\ (30 <+> 5) /\ "i"
                     ]
                     flexRow
 

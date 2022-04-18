@@ -130,9 +130,9 @@ foldS = foldAt (zero <+> zero)
             Axis.fold2S
                 (\cPos cSize maybeItem b ->
                     case maybeItem of
-                        Just (Left a) -> f (pPos - cPos) cSize a b
+                        Just (Left a) -> f (pPos + cPos) cSize a b
                         Just (Right flex) ->
-                            foldAt (pPos - cPos) f b flex
+                            foldAt (pPos + cPos) f b flex
                         Nothing -> b
                 )
                 def
@@ -146,9 +146,9 @@ foldN = foldAt (zero <+> zero)
             Axis.fold2N
                 (\cPos cSize maybeItem b ->
                     case maybeItem of
-                        Just (Left a) -> f (pPos - cPos) cSize a b
+                        Just (Left a) -> f (pPos + cPos) cSize a b
                         Just (Right flex) ->
-                            foldAt (pPos - cPos) f b flex
+                            foldAt (pPos + cPos) f b flex
                         Nothing -> b
                 )
                 def

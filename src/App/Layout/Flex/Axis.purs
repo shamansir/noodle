@@ -38,7 +38,7 @@ import Data.Array as Array
 import Data.Bifunctor (class Bifunctor, bimap, lmap)
 import Data.Functor.Invariant (class Invariant)
 import Data.Traversable (sequence)
-import Data.Foldable (foldr)
+import Data.Foldable (foldr, foldl)
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple (fst, snd, curry, uncurry)
@@ -334,8 +334,8 @@ find pos ordered =
 find' :: forall n a. Semiring n => Ord n => Pos_ n -> Axis2 n a -> Maybe (Pos_ n /\ Size_ n /\ a)
 find' pos =
     flatten2 >>> -- FIXME: use Unfoldable for faster search?
-        foldr
-            (\(pos' /\ size /\ maybeA) _ ->
+        foldl
+            (\_ (pos' /\ size /\ maybeA) ->
                 maybeA >>=
                     \a -> if V2.inside pos (pos' /\ size) then Just (pos' /\ size /\ a) else Nothing
             )
@@ -382,7 +382,7 @@ fold2 f d = fit2 (1.0 <+> 1.0) >>> fold2' f d -}
 
 
 fold :: forall s a b. (s -> Maybe a -> b -> b) -> b -> Axis s a -> b
-fold f def = foldr (uncurry f) def <<< items
+fold f def = foldl (flip $ uncurry f) def <<< items
 
 
 fold' :: forall s a b. (s -> a -> b -> b) -> b -> Axis s a -> b
@@ -395,8 +395,8 @@ fold' f = fold $ \s maybeA b -> maybe b (\a -> f s a b) maybeA
 
 fold2 :: forall s a b. ((s /\ Maybe s) -> Maybe a -> b -> b) -> b -> Axis2 s a -> b
 fold2 f def =
-    foldr
-        (\(s /\ maybeAxis) b ->
+    foldl
+        (\b (s /\ maybeAxis) ->
             case maybeAxis of
                 Just axis -> fold (\s' -> f (s /\ Just s')) b axis
                 Nothing -> f (s /\ Nothing) Nothing b
@@ -408,8 +408,8 @@ fold2 f def =
 
 fold2' :: forall s a b. ((s /\ s) -> a -> b -> b) -> b -> Axis2 s a -> b
 fold2' f def =
-    foldr
-        (\(s /\ axis) b ->
+    foldl
+        (\b (s /\ axis) ->
             fold' (\s' -> f (s /\ s')) b axis
         )
         def
@@ -436,14 +436,14 @@ foldPrev' f def (Axis items) =
 
 fold2N :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> Maybe a -> b -> b) -> b -> Axis2 n a -> b
 fold2N f def vaxis =
-    snd $ foldr
-        (\(h /\ haxis) (y /\ b) ->
+    snd $ foldl
+        (\(y /\ b) (h /\ haxis) ->
             (y + h)
             /\
             maybe b
                 (snd
-                    <<< foldr
-                        (\(w /\ a) (x /\ b') ->
+                    <<< foldl
+                        (\(x /\ b') (w /\ a) ->
                             (x + w)
                             /\
                             (f (x <+> y) (w <+> h) a b')
@@ -459,14 +459,14 @@ fold2N f def vaxis =
 
 fold2S :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> Maybe a -> b -> b) -> b -> Axis2 (Size_ n) a -> b
 fold2S f def vaxis =
-    snd $ foldr
-        (\(vsize /\ haxis) (y /\ b) ->
+    snd $ foldl
+        (\(y /\ b) (vsize /\ haxis) ->
             (y + V2.h vsize)
             /\
             maybe b
                 (snd
-                    <<< foldr
-                        (\(hsize /\ a) (x /\ b') ->
+                    <<< foldl
+                        (\(x /\ b') (hsize /\ a) ->
                             (x + V2.w hsize)
                             /\
                             (f (x <+> y) hsize a b')
