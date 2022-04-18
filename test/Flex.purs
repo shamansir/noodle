@@ -24,57 +24,57 @@ import Test.Signal (expectFn, expect)
 
 import App.Layout.Flex.Rule (Rule)
 import App.Layout.Flex.Rule as R
-import App.Layout.Flex (Flex, flex, flex1, nest, nest1)
+import App.Layout.Flex (Flex, flex, flex1, put, putAll, nest, nest', nest1)
 import App.Layout.Flex as Flex
 
 
 
 flexRow :: Flex Int String
 flexRow =
-    flex1 5 [ 5 /\ "a", 10 /\ "f", 2 /\ "3" ]
+    flex1 5 [ 5 /\ put "a", 10 /\ put "f", 2 /\ put "3" ]
 
 
 flexRows :: Flex Int String
 flexRows =
     flex
-        [ 10 /\ [ 5 /\ "a", 10 /\ "f", 2 /\ "k" ]
-        , 3 /\ [ 2 /\ "c", 7 /\ "d", 2 /\ "e" ]
-        , 7 /\ [ 1 /\ "x", 2 /\ "m", 14 /\ "n" ]
+        [ 10 /\ [ 5 /\ put "a", 10 /\ put "f", 2 /\ put "k" ]
+        , 3 /\ [ 2 /\ put "c", 7 /\ put "d", 2 /\ put "e" ]
+        , 7 /\ [ 1 /\ put "x", 2 /\ put "m", 14 /\ put "n" ]
         ]
 
 
 testNested2 :: Flex Int String
 testNested2 =
-    nest
+    flex
         [ 3 /\
-            [ 5 /\ flex1 7 [ 2 /\ "a" ]
-            , 10 /\ flex1 2 [ 3 /\ "b", 5 /\ "d" ]
-            , 2 /\ flex1 3 [ 4 /\ "c" ]
+            [ 5 /\ nest1 7 [ 2 /\ put "a" ]
+            , 10 /\ nest1 2 [ 3 /\ put "b", 5 /\ put "d" ]
+            , 2 /\ nest1 3 [ 4 /\ put "c" ]
             ]
         , 4 /\
-            [ 3 /\ flex1 5 [ 0 /\ "e", 6 /\ "h", 1 /\ "j" ]
-            , 5 /\ flex1 9 [ 4 /\ "i" ]
-            , 6 /\ flex1 1 [ 17 /\ "f", 22 /\ "g" ]
-            , 1 /\ flexRows
+            [ 3 /\ nest1 5 [ 0 /\ put "e", 6 /\ put "h", 1 /\ put "j" ]
+            , 5 /\ nest1 9 [ 4 /\ put "i" ]
+            , 6 /\ nest1 1 [ 17 /\ put "f", 22 /\ put "g" ]
+            , 1 /\ nest' flexRows
             ]
         ]
 
 
 -- testNodeDef :: Array (Flex Rule String)
-testNodeDef :: Flex Rule (Either String (Flex Rule String))
+testNodeDef :: Flex Rule String
 testNodeDef =
     flex
         [ R.units 30.0 /\
-            [ R.units 30.0 /\ Left "padding-left"
-            , R.fill /\ (Right $ flex1 (R.fill) [ R.fill /\ "title", R.units 10.0 /\ "close-button" ])
-            , R.units 30.0 /\ Left "padding-right"
+            [ R.units 30.0 /\ put "padding-left"
+            , R.fill /\ (nest' $ flex1 (R.fill) [ R.fill /\ put "title", R.units 10.0 /\ put "close-button" ])
+            , R.units 30.0 /\ put "padding-right"
             ]
         , R.fill /\
             [ R.units 30.0 /\
                 -- "inlets"
-                (Right $ flex1 (R.fill) [ R.units 5.0 /\ "inlet1", R.units 5.0 /\ "inlet2", R.units 5.0 /\ "inlet3", R.fill /\ "space" ])
-            , R.fill /\ Left "body"
-            , R.units 30.0 /\ Left "outlets"
+                (nest' $ flex1 (R.fill) [ R.units 5.0 /\ put "inlet1", R.units 5.0 /\ put "inlet2", R.units 5.0 /\ put "inlet3", R.fill /\ put "space" ])
+            , R.fill /\ put "body"
+            , R.units 30.0 /\ put "outlets"
             ]
         ]
 

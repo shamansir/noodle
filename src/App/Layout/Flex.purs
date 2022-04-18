@@ -1,7 +1,7 @@
 module App.Layout.Flex
   ( Flex
   , fit
-  --, flex, put, nest
+  , flex, flex1, put, putAll, nest, nest', nest1
   , fold, foldN
   )
   where
@@ -40,16 +40,32 @@ data Flex s a
 -- TODO: Functor, etc.
 
 
-{- flex :: forall s a. Array (s /\ Item s a) -> Flex s a
-flex = Flex <<< Axis.make2
+flex :: forall s a. Array (s /\ Array (s /\ Item s a)) -> Flex s a
+flex = Flex <<< Axis.make2 <<< map (map $ Just <<< map (map Just))
+
+
+flex1 :: forall s a. s -> Array (s /\ Item s a) -> Flex s a
+flex1 = curry (flex <<< Array.singleton)
 
 
 put :: forall s a. a -> Item s a
 put = Left
 
 
-nest :: forall s a. Array (s /\ Item s a) -> Item s a
-nest = Right <<< flex -}
+putAll :: forall s a. Array (s /\ a) -> Array (s /\ Item s a)
+putAll = map $ map put
+
+
+nest :: forall s a. Array (s /\ Array (s /\ Item s a)) -> Item s a
+nest = Right <<< flex
+
+
+nest' :: forall s a. Flex s a -> Item s a
+nest' = Right
+
+
+nest1 :: forall s a. s -> Array (s /\ Item s a) -> Item s a
+nest1 = curry (nest <<< Array.singleton)
 
 
 {- fold :: forall s a b. (Array s -> Array s -> s -> a -> b -> b) -> b -> Flex s a -> b
