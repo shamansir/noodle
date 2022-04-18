@@ -10,6 +10,7 @@ module App.Layout.Flex
 
 import Prelude
 
+import Data.Either (Either(..))
 import Data.Array ((:))
 -- import Data.Array.Ex ((:))
 import Data.Array as Array
@@ -32,8 +33,7 @@ import App.Layout.Flex.Rule (Rule(..))
 
 
 data Flex s a
-    = Level (Axis2 s a)
-    | Deeper (Axis2 s (Flex s a))
+    = Flex (Axis2 s (Either a (Flex s a)))
 
 
 -- TODO: Functor, etc.

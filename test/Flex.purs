@@ -9,6 +9,8 @@ import Effect.Class (liftEffect)
 import Effect.Console as Console
 
 import Data.Maybe as Maybe
+import Data.Either as Either
+import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Array as Array
 import Data.Tuple.Nested (type (/\), (/\))
@@ -20,6 +22,8 @@ import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Signal (expectFn, expect)
 
 
+import App.Layout.Flex.Rule (Rule)
+import App.Layout.Flex.Rule as R
 import App.Layout.Flex (Flex, flex, flex1, nest, nest1)
 import App.Layout.Flex as Flex
 
@@ -54,6 +58,26 @@ testNested2 =
             , 1 /\ flexRows
             ]
         ]
+
+
+-- testNodeDef :: Array (Flex Rule String)
+testNodeDef :: Flex Rule (Either String (Flex Rule String))
+testNodeDef =
+    flex
+        [ R.units 30.0 /\
+            [ R.units 30.0 /\ Left "padding-left"
+            , R.fill /\ (Right $ flex1 (R.fill) [ R.fill /\ "title", R.units 10.0 /\ "close-button" ])
+            , R.units 30.0 /\ Left "padding-right"
+            ]
+        , R.fill /\
+            [ R.units 30.0 /\
+                -- "inlets"
+                (Right $ flex1 (R.fill) [ R.units 5.0 /\ "inlet1", R.units 5.0 /\ "inlet2", R.units 5.0 /\ "inlet3", R.fill /\ "space" ])
+            , R.fill /\ Left "body"
+            , R.units 30.0 /\ Left "outlets"
+            ]
+        ]
+
 
 
 {- testNested22 :: Flex Int String

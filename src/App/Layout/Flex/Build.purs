@@ -39,23 +39,3 @@ horz' = flex3
 
 vert' :: forall s a. Array (s /\ Axis s (Axis s (Axis s a))) -> Axis4 s a
 vert' = flex3
-
-
-fill :: Rule
-fill = Portion 1
-
-
-portion :: Int -> Rule
-portion = Portion
-
-
-percents :: Int -> Rule
-percents = Percentage
-
-
-units :: Number -> Rule
-units = Units
-
-
-auto :: Rule
-auto = Portion 1

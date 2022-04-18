@@ -1,6 +1,5 @@
 module App.Layout.Flex.Axis
   ( Align(..)
-  , Cell(..)
   , Axis, Axis2, Axis3, Axis4
   , Padding(..)
   , PreEval(..)
@@ -15,14 +14,15 @@ module App.Layout.Flex.Axis
   , flatten2
   , justify
   , fold, fold2
-  , fold2N, fold2N'
+  , fold2N, fold2S
   , layout
   , make
   , make2
   , mapSize
   , posOf
-  , lift, lift2, map2Size
-  , foldPrev
+  --, lift, lift2
+  , map2Size
+--   , foldPrev
   , mapItems
   )
   where
@@ -36,9 +36,10 @@ import Data.Array ((:))
 import Data.Array as Array
 import Data.Bifunctor (class Bifunctor, bimap, lmap)
 import Data.Functor.Invariant (class Invariant)
+import Data.Traversable (sequence)
 import Data.Foldable (foldr)
 import Data.Int (toNumber)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple (fst, snd, curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Unfoldable (class Unfoldable, unfoldr)
@@ -50,14 +51,8 @@ import App.Layout.Flex.Rule (Rule(..))
 -- TODO: `IsLayout` instance (AutoSizedLayout?)
 
 
-data Cell a
-    = Taken a
-    | Space -- include into Rule ?
-
-
 data Padding
-    = NoPadding
-    | Padding (Number /\ Number)
+    = Padding (Number /\ Number)
 
 
 data Align
@@ -83,7 +78,7 @@ data Align
 -- Operator candidates: ⁅ ⁆ ≡ ⫴ ⊢ ⊣ ⊪ ⊩ ≬ ⟷ ⧦ ⟺ ∥ ⁞ ⁝ ‖ ᎒ ᎓ ੦ ᠁ … ‒ – — ― ⊲ ⊳ ⊽ ⎪ ⎜ ⎟ ⟺ ⟚ ⟛
 
 
-data Axis s a = Axis (Array (s /\ a))
+data Axis s a = Axis (Array (s /\ Maybe a))
 
 type Axis2 s a = Axis s (Axis s a)
 
@@ -98,62 +93,69 @@ type Axis4 s a = Axis3 s (Axis s a)
 -- fitting => solving (means)
 
 
-items :: forall s a. Axis s a -> Array (s /\ a)
+-- items :: forall s a. Axis s a -> Array (s /\ a)
+-- items (Axis xs) = Array.mapMaybe (\(s /\ maybeA) -> ((/\) s) <*> maybeA) xs
+
+
+items :: forall s a. Axis s a -> Array (s /\ Maybe a)
 items (Axis xs) = xs
 
+
+items' :: forall s a. Axis s a -> Array (s /\ a)
+items' = items >>> Array.mapMaybe sequence
 
 
 instance functorAxis :: Functor (Axis s) where
     map :: forall a b. (a -> b) -> Axis s a -> Axis s b
-    map f (Axis items) = Axis $ map f <$> items
+    map f (Axis items) = Axis $ map (map f) <$> items
 
 
 instance bifunctorAxis :: Bifunctor Axis where
     bimap :: forall s1 s2 a b. (s1 -> s2) -> (a -> b) -> Axis s1 a -> Axis s2 b
-    bimap f g (Axis items) = Axis $ bimap f g <$> items
+    bimap f g (Axis items) = Axis $ bimap f (map g) <$> items
 
 
-make :: forall s a. Array (s /\ a) -> Axis s a
+make :: forall s a. Array (s /\ Maybe a) -> Axis s a
 make = Axis
 
 
-make2 :: forall s a. Array (s /\ Array (s /\ a)) -> Axis2 s a
-make2 items = Axis $ map Axis <$> items
+make2 :: forall s a. Array (s /\ Maybe (Array (s /\ Maybe a))) -> Axis2 s a
+make2 items = Axis $ map (map Axis) <$> items
 
 
-align :: forall a. Number -> Align -> Axis Number a -> Axis Number (Cell a)
+align :: forall a. Number -> Align -> Axis Number a -> Axis Number a
 align total how (Axis items) =
     Axis $ if sumTaken < total
             then doAlign how
-            else (map Taken <$> items)
+            else items
     where
         sumTaken = Array.foldr (+) 0.0 (fst <$> items)
         count = Array.length items
-        doAlign Start = (map Taken <$> items) <> [ (total - sumTaken) /\ Space ]
+        doAlign Start = items <> [ (total - sumTaken) /\ Nothing ]
         doAlign Center =
             let sideSpace = (total - sumTaken) / 2.0
             in
-            [ sideSpace /\ Space ] <> (map Taken <$> items) <> [ sideSpace /\ Space ]
+            [ sideSpace /\ Nothing ] <> items <> [ sideSpace /\ Nothing ]
         doAlign End =
-            [ (total - sumTaken) /\ Space ] <> (map Taken <$> items)
+            [ (total - sumTaken) /\ Nothing ] <> items
         doAlign SpaceBetween =
             let spaceBetween = (total - sumTaken) / (toNumber $ count - 1)
-            in Array.intersperse (spaceBetween /\ Space) (map Taken <$> items)
+            in Array.intersperse (spaceBetween /\ Nothing) items
         doAlign SpaceAround =
             let oneSpace = (total - sumTaken) / toNumber count
                 halfSpace = oneSpace / 2.0
-            in [ halfSpace /\ Space ] <> Array.intersperse (oneSpace /\ Space) (map Taken <$> items) <> [ halfSpace /\ Space ]
+            in [ halfSpace /\ Nothing ] <> Array.intersperse (oneSpace /\ Nothing) items <> [ halfSpace /\ Nothing ]
         doAlign SpaceEvenly =
             let evenSpace = (total - sumTaken) / toNumber (count + 1)
-            in [ evenSpace /\ Space ] <> Array.intersperse (evenSpace /\ Space) (map Taken <$> items) <> [ evenSpace /\ Space ]
+            in [ evenSpace /\ Nothing ] <> Array.intersperse (evenSpace /\ Nothing) items <> [ evenSpace /\ Nothing ]
         doAlign (Gap n) =
-            Array.intersperse (n /\ Space) (map Taken <$> items)
+            Array.intersperse (n /\ Nothing) items
 
 
 -- TODO :: align2
 
 
-alignStart :: forall a. Number -> Axis Number a -> Axis Number (Cell a)
+alignStart :: forall a. Number -> Axis Number a -> Axis Number a
 alignStart n = align n Start
 
 
@@ -161,7 +163,7 @@ alignStart n = align n Start
 -- alignStart' n = fit n >>> alignStart n
 
 
-alignCenter :: forall a. Number -> Axis Number a -> Axis Number (Cell a)
+alignCenter :: forall a. Number -> Axis Number a -> Axis Number a
 alignCenter n = align n Center
 
 
@@ -169,34 +171,34 @@ alignCenter n = align n Center
 -- alignCenter' n = fit n >>> alignCenter n
 
 
-alignEnd :: forall a. Number -> Axis Number a -> Axis Number (Cell a)
+alignEnd :: forall a. Number -> Axis Number a -> Axis Number a
 alignEnd n = align n End
 
 
-alignSpaceBetween :: forall a. Number -> Axis Number a -> Axis Number (Cell a)
+alignSpaceBetween :: forall a. Number -> Axis Number a -> Axis Number a
 alignSpaceBetween n = align n SpaceBetween
 
 
-alignSpaceAround :: forall a. Number -> Axis Number a -> Axis Number (Cell a)
+alignSpaceAround :: forall a. Number -> Axis Number a -> Axis Number a
 alignSpaceAround n = align n SpaceAround
 
 
-alignSpaceEvenly :: forall a. Number -> Axis Number a -> Axis Number (Cell a)
+alignSpaceEvenly :: forall a. Number -> Axis Number a -> Axis Number a
 alignSpaceEvenly n = align n SpaceEvenly
 
 
-distributeWithGaps :: forall a. Number -> Number -> Axis Number a -> Axis Number (Cell a)
+distributeWithGaps :: forall a. Number -> Number -> Axis Number a -> Axis Number a
 distributeWithGaps total gap = align total $ Gap gap
 
 
-padding :: forall a. (Number /\ Number) -> Axis Number a -> Axis Number (Cell a)
+padding :: forall a. (Number /\ Number) -> Axis Number a -> Axis Number a
 padding (start /\ end) (Axis items) =
-    Axis $ [ start /\ Space ] <> (map Taken <$> items) <> [ end /\ Space ]
+    Axis $ [ start /\ Nothing ] <> items <> [ end /\ Nothing ]
 
 
 
 justify :: forall s a. Array a -> Axis Rule a
-justify items = Axis $ ((/\) (Portion 1)) <$> items
+justify items = Axis $ ((/\) (Portion 1)) <$> Just <$> items
 
 -- TODO: fitAll a.k.a. distribute a.k.a justify
 
@@ -211,8 +213,7 @@ data PreEval
 fit :: forall a. Number -> Axis Rule a -> Axis Number a -- TODO: Semiring n => Flex n a, Container f => f n a
 fit amount (Axis items) =
     -- FIXME: take align and padding into consideration
-    -- FIXME: why `reverse`?
-    Axis $ Array.reverse $ Array.zip (justify_ (fst <$> items)) (snd <$> items)
+    Axis $ Array.zip (justify_ (fst <$> items)) (snd <$> items)
     where
         justify_ :: Array Rule -> Array Number
         justify_ rules =
@@ -269,23 +270,27 @@ fitToSquare = fit2 $ 1.0 <+> 1.0
 fillSizes :: forall a. Axis2 Number a -> Axis2 Size a
 fillSizes (Axis vitems) =
     Axis
-        $ (\(h /\ Axis hitems) ->
-            ((foldr (+) 0.0 (fst <$> hitems)) <+> h)
-            /\
-            (lmap (\w' -> w' <+> h) $ Axis hitems)
+        $ (\(h /\ maybeHAxis) ->
+            case maybeHAxis of
+                Just (Axis hitems) ->
+                    ((foldr (+) 0.0 (fst <$> hitems)) <+> h)
+                    /\
+                    (Just $ lmap (\w' -> w' <+> h) $ Axis hitems)
+                Nothing ->
+                    (0.0 <+> h) /\ Nothing
         ) <$> vitems
 
 
-mapItems :: forall s a s' a'. (s /\ a -> s' /\ a') -> Axis s a -> Axis s' a'
+mapItems :: forall s a s' a'. (s /\ Maybe a -> s' /\ Maybe a') -> Axis s a -> Axis s' a'
 mapItems f (Axis items) = Axis $ map f items
 
 
-lift :: forall s a. Axis s a -> Axis s (Cell a)
+{- lift :: forall s a. Axis s a -> Axis s (Cell a)
 lift = map Taken
 
 
 lift2 :: forall s a. Axis2 s a -> Axis2 s (Cell a)
-lift2 = map $ map Taken
+lift2 = map $ map Taken -}
 
 
 layout :: forall a. Size -> Axis2 Rule a -> Axis2 Size a
@@ -321,8 +326,9 @@ find' :: forall n a. Semiring n => Ord n => Pos_ n -> Axis2 n a -> Maybe (Pos_ n
 find' pos =
     flatten2 >>> -- FIXME: use Unfoldable for faster search?
         foldr
-            (\(pos' /\ size /\ a) _ ->
-                if V2.inside pos (pos' /\ size) then Just (pos' /\ size /\ a) else Nothing
+            (\(pos' /\ size /\ maybeA) _ ->
+                maybeA >>=
+                    \a -> if V2.inside pos (pos' /\ size) then Just (pos' /\ size /\ a) else Nothing
             )
             Nothing
 
@@ -366,69 +372,103 @@ fold2 f d = fit2 (1.0 <+> 1.0) >>> fold2' f d -}
 -- foldPrev
 
 
-fold :: forall s a b. (s -> a -> b -> b) -> b -> Axis s a -> b
-fold f def (Axis items) = foldr (uncurry f) def items
+fold :: forall s a b. (s -> Maybe a -> b -> b) -> b -> Axis s a -> b
+fold f def = foldr (uncurry f) def <<< items
 
 
-fold2 :: forall s a b. ((s /\ s) -> a -> b -> b) -> b -> Axis2 s a -> b
-fold2 f def (Axis items) =
+fold' :: forall s a b. (s -> a -> b -> b) -> b -> Axis s a -> b
+fold' f = fold $ \s maybeA b -> maybe b (\a -> f s a b) maybeA
+
+
+-- fold' :: forall s a b. (s -> Maybe a -> b -> b) -> b -> Axis s a -> b
+-- fold' f def (Axis items) = foldr (uncurry f) def items
+
+
+fold2 :: forall s a b. ((s /\ Maybe s) -> Maybe a -> b -> b) -> b -> Axis2 s a -> b
+fold2 f def =
     foldr
-        (\(s /\ axis) b ->
-            fold (\s' -> f (s /\ s')) b axis
+        (\(s /\ maybeAxis) b ->
+            case maybeAxis of
+                Just axis -> fold (\s' -> f (s /\ Just s')) b axis
+                Nothing -> f (s /\ Nothing) Nothing b
+
         )
         def
-        items
+        <<< items
 
 
-foldPrev :: forall s a b. (Array s -> s -> a -> b -> b) -> b -> Axis s a -> b
-foldPrev f def (Axis items) =
+fold2' :: forall s a b. ((s /\ s) -> a -> b -> b) -> b -> Axis2 s a -> b
+fold2' f def =
+    foldr
+        (\(s /\ axis) b ->
+            fold' (\s' -> f (s /\ s')) b axis
+        )
+        def
+        <<< items'
+
+
+{- foldPrev :: forall s a b. (Array s -> s -> a -> b -> b) -> b -> Axis s a -> b
+foldPrev f =
+    foldPrev' $ \prev s maybeA b -> case maybeA of
+        Just a -> f prev s a b
+        Nothing -> b
+
+
+foldPrev' :: forall s a b. (Array s -> s -> Maybe a -> b -> b) -> b -> Axis s a -> b
+foldPrev' f def (Axis items) =
     snd $ foldr
         (\(s /\ a) (prev /\ b) ->
             Array.snoc prev s /\ f prev s a b
         )
         ([] /\ def)
-        $ Array.reverse items     -- FIXME: why `reverse`?
+        items
+-}
 
 
-
-fold2N :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Axis2 n a -> b
-fold2N f def (Axis vitems) =
+fold2N :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> Maybe a -> b -> b) -> b -> Axis2 n a -> b
+fold2N f def vaxis =
     snd $ foldr
-        (\(h /\ Axis hitems) (y /\ b) ->
+        (\(h /\ haxis) (y /\ b) ->
             (y + h)
             /\
-            (snd $ foldr
-                (\(w /\ a) (x /\ b') ->
-                    (x + w)
-                    /\
-                    (f (x <+> y) (w <+> h) a b')
+            maybe b
+                (snd
+                    <<< foldr
+                        (\(w /\ a) (x /\ b') ->
+                            (x + w)
+                            /\
+                            (f (x <+> y) (w <+> h) a b')
+                        )
+                        (zero /\ b)
+                    <<< items
                 )
-                (zero /\ b)
-                hitems
-            )
+                haxis
         )
         (zero /\ def)
-        vitems
+        $ items vaxis
 
 
-fold2N' :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Axis2 (Size_ n) a -> b
-fold2N' f def (Axis vitems) =
+fold2S :: forall n a b. Semiring n => (Pos_ n -> Size_ n -> Maybe a -> b -> b) -> b -> Axis2 (Size_ n) a -> b
+fold2S f def vaxis =
     snd $ foldr
-        (\(vsize /\ Axis hitems) (y /\ b) ->
+        (\(vsize /\ haxis) (y /\ b) ->
             (y + V2.h vsize)
             /\
-            (snd $ foldr
-                (\(hsize /\ a) (x /\ b') ->
-                    (x + V2.w hsize)
-                    /\
-                    (f (x <+> y) hsize a b')
+            maybe b
+                (snd
+                    <<< foldr
+                        (\(hsize /\ a) (x /\ b') ->
+                            (x + V2.w hsize)
+                            /\
+                            (f (x <+> y) hsize a b')
+                        )
+                        (zero /\ b)
+                    <<< items
                 )
-                (zero /\ b)
-                hitems
-            )
+                haxis
         )
         (zero /\ def)
-        vitems
+        $ items vaxis
 
 
 {- fold2''' :: forall s a b. (Size_ s -> a -> b -> b) -> b -> Flex2 s a -> b
@@ -454,7 +494,7 @@ unfold _ = [] -- fold (curry <<< ?wh) [] -}
 -- unfold' _ = []
 
 
-flatten2 :: forall n a. Semiring n => Axis2 n a -> Array (Pos_ n /\ Size_ n /\ a)
+flatten2 :: forall n a. Semiring n => Axis2 n a -> Array (Pos_ n /\ Size_ n /\ Maybe a)
 flatten2 = fold2N (\p s a arr -> (p /\ s /\ a) : arr) []
 
 
