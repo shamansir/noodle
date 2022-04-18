@@ -13,7 +13,7 @@ module App.Layout.Flex.Axis
   , fit, fit2, fitToSquare
   , flatten2
   , justify
-  , fold, fold2
+  , fold, fold2, fold2'
   , fold2N, fold2S
   , layout
   , make
@@ -24,6 +24,7 @@ module App.Layout.Flex.Axis
   , map2Size
 --   , foldPrev
   , mapItems
+  , vert, horz
   )
   where
 
@@ -121,6 +122,14 @@ make = Axis
 
 make2 :: forall s a. Array (s /\ Maybe (Array (s /\ Maybe a))) -> Axis2 s a
 make2 items = Axis $ map (map Axis) <$> items
+
+
+vert :: forall s a. Array (s /\ Axis s a) -> Axis2 s a
+vert = horz
+
+
+horz :: forall s a. Array (s /\ a) -> Axis s a
+horz = make <<< map (map Just)
 
 
 align :: forall a. Number -> Align -> Axis Number a -> Axis Number a

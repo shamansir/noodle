@@ -151,13 +151,13 @@ spec = do
 
         describe "foldN" $ do
 
-            it "testPlain" $ pure unit {- do
+            it "testPlain" $ do
                 liftEffect $ testFoldN
                     [ (0 <+> 0) /\ (0 <+> 5) /\ "a"
                     , (0 <+> 5) /\ (0 <+> 10) /\ "f"
                     , (0 <+> 15) /\ (0 <+> 2) /\ "3"
                     ]
-                    testPlain -}
+                    flexRow
 
             {- it "testNested2" $ do
                 liftEffect $ testFoldN
@@ -185,38 +185,36 @@ spec = do
         pure unit
 
 
-{-
-type FoldSample s a = Array s /\ Array s /\ s /\ a
+type FoldSample s a = Array (s /\ s) /\ a
 
 
 testFold
     :: forall s a
      . Eq s => Eq a
     => Show s => Show a
+    => Semiring s
     => Array (FoldSample s a)
     -> Flex s a
     -> Effect Unit
 testFold items flex =
     let
-        foldF sRef path prev n str = do
+        foldF sRef path str = do
             arr <- Ref.read sRef
             let next = Array.head arr
             Ref.write (Maybe.fromMaybe [] $ Array.tail arr) sRef
             case next of
-                Just (path' /\ prev' /\ n' /\ str') -> do
+                Just (path' /\ str') -> do
                     -- Console.log $ show path <> " --- " <> show prev <> " --- " <> show n <> " --- " <> show str
                     -- Console.log $ show path' <> " --- " <> show prev' <> " --- " <> show n' <> " --- " <> show str'
                     path' `shouldEqual` path
-                    prev' `shouldEqual` prev
-                    n' `shouldEqual` n
                     str' `shouldEqual` str
                 Nothing -> do
-                    fail $ "excessive call at " <> show path <> " --- " <> show prev <> " --- " <> show n <> " --- " <> show str
+                    fail $ "excessive call at " <> show path <> " --- " <> " --- " <> show str
             pure unit
     in do
         sRef <- Ref.new items
         Flex.fold
-            (\path prev n str eff -> eff <> foldF sRef path prev n str)
+            (\path str eff -> eff <> foldF sRef path str)
             (pure unit)
             flex
         arr <- Ref.read sRef
@@ -231,7 +229,7 @@ testFoldN
     :: forall s a
      . Eq s => Eq a
     => Show s => Show a
-    => Semiring s
+    => Ring s
     => Array (FoldNSample s a)
     -> Flex s a
     -> Effect Unit
@@ -260,4 +258,3 @@ testFoldN items flex =
         arr <- Ref.read sRef
         if Array.length arr > 0 then fail $ (show $ Array.length items) <> " items not fullfilled"
         else pure unit
--}

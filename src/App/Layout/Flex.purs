@@ -2,7 +2,7 @@ module App.Layout.Flex
   ( Flex
   , fit
   , flex, flex1, put, putAll, nest, nest', nest1
-  , fold, foldN
+  , fold, foldN, foldS
   )
   where
 
@@ -123,11 +123,27 @@ fold f def (Flex faxis2) =
         ) def faxis2
 
 
-foldN :: forall n a b. Ring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Flex (Size_ n) a -> b
-foldN = foldAt (zero <+> zero)
+foldS :: forall n a b. Ring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Flex (Size_ n) a -> b
+foldS = foldAt (zero <+> zero)
     where
         foldAt pPos f def (Flex faxis) =
             Axis.fold2S
+                (\cPos cSize maybeItem b ->
+                    case maybeItem of
+                        Just (Left a) -> f (pPos - cPos) cSize a b
+                        Just (Right flex) ->
+                            foldAt (pPos - cPos) f b flex
+                        Nothing -> b
+                )
+                def
+                faxis
+
+
+foldN :: forall n a b. Ring n => (Pos_ n -> Size_ n -> a -> b -> b) -> b -> Flex n a -> b
+foldN = foldAt (zero <+> zero)
+    where
+        foldAt pPos f def (Flex faxis) =
+            Axis.fold2N
                 (\cPos cSize maybeItem b ->
                     case maybeItem of
                         Just (Left a) -> f (pPos - cPos) cSize a b

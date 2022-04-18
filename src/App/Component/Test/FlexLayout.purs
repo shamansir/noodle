@@ -11,7 +11,10 @@ import Color.Extra as C
 
 import App.Layout.Flex.Axis (Axis, Axis2)
 import App.Layout.Flex.Rule (Rule)
-import App.Layout.Flex.Axis as Flex
+import App.Layout.Flex.Axis as Axis
+import App.Layout.Flex.Rule as Rule
+-- import App.Layout.Flex as Flex
+-- import App.Layout.Flex (Flex)
 
 import Data.Array ((:))
 import Data.Array as Array
@@ -42,12 +45,12 @@ type Slot id = forall query. H.Slot query Void id
 type ColoredBlock = C.Color
 
 
-type ColoredFlex = Axis2 Rule ColoredBlock
+type ColoredAxis2 = Axis2 Rule ColoredBlock
 --type ColoredFlex = Flex Size ColoredBlock
 
 
 type State =
-    { colored :: Array (String /\ ColoredFlex)
+    { colored :: Array (String /\ ColoredAxis2)
     , node :: Axis2 Rule String
     }
 
@@ -61,84 +64,84 @@ initialState =
     { colored :
         [ "vert [ fill /\\ horz [ fill /\\ black ] ]" /\
 
-            Flex.vert
-                [ Flex.fill /\
-                    Flex.horz [ Flex.fill /\ C.black ]
+            Axis.vert
+                [ Rule.fill /\
+                    Axis.horz [ Rule.fill /\ C.black ]
                 ]
         , "vert [ fill /\\ horz [ fill /\\ red, fill /\\ green, fill /\\ blue ] ]" /\
-            Flex.vert
-                [ Flex.fill /\
-                    Flex.horz
-                        [ Flex.fill /\ C.rgb 255 0 0
-                        , Flex.fill /\ C.rgb 0 255 0
-                        , Flex.fill /\ C.rgb 0 0 255
+            Axis.vert
+                [ Rule.fill /\
+                    Axis.horz
+                        [ Rule.fill /\ C.rgb 255 0 0
+                        , Rule.fill /\ C.rgb 0 255 0
+                        , Rule.fill /\ C.rgb 0 0 255
                         ]
                 ]
         , "vert [ fill /\\ horz [ percent 10 /\\ red, fill /\\ green, fill /\\ blue ] ]" /\
-            Flex.vert
-                [ Flex.fill /\
-                    Flex.horz
-                        [ Flex.percents 10 /\ C.rgb 255 0 0
-                        , Flex.fill /\ C.rgb 0 255 0
-                        , Flex.fill /\ C.rgb 0 0 255
+            Axis.vert
+                [ Rule.fill /\
+                    Axis.horz
+                        [ Rule.percents 10 /\ C.rgb 255 0 0
+                        , Rule.fill /\ C.rgb 0 255 0
+                        , Rule.fill /\ C.rgb 0 0 255
                         ]
                 ]
         , "vert [ fill /\\ horz [ percent 15 /\\ red, percent 40 /\\ green ] ]" /\
-            Flex.vert
-                [ Flex.fill /\
-                    Flex.horz
-                        [ Flex.percents 15 /\ C.rgb 255 0 0
-                        , Flex.percents 40 /\ C.rgb 0 255 0
+            Axis.vert
+                [ Rule.fill /\
+                    Axis.horz
+                        [ Rule.percents 15 /\ C.rgb 255 0 0
+                        , Rule.percents 40 /\ C.rgb 0 255 0
                         ]
                 ]
         , "vert [ fill /\\ horz [ units 55 /\\ red, fill /\\ green, units 120 /\\ blue ] ]" /\
-            Flex.vert
-                [ Flex.fill /\
-                    Flex.horz
-                        [ Flex.units 55.0 /\ C.rgb 255 0 0
-                        , Flex.fill /\ C.rgb 0 255 0
-                        , Flex.units 120.0 /\ C.rgb 0 0 255
+            Axis.vert
+                [ Rule.fill /\
+                    Axis.horz
+                        [ Rule.units 55.0 /\ C.rgb 255 0 0
+                        , Rule.fill /\ C.rgb 0 255 0
+                        , Rule.units 120.0 /\ C.rgb 0 0 255
                         ]
                 ]
         , "vert [ percent 15 /\\ horz [ fill /\\ red ], fill /\\ horz [ fill /\\ green ], percent 40 /\\ [ fill /\\ blue ] ]" /\
-            Flex.vert
-                [ Flex.percents 15 /\ Flex.horz [ Flex.fill /\ C.rgb 255 0 0 ]
-                , Flex.fill /\ Flex.horz [ Flex.fill /\ C.rgb 0 255 0 ]
-                , Flex.percents 40 /\ Flex.horz [ Flex.fill /\ C.rgb 0 0 255 ]
+            Axis.vert
+                [ Rule.percents 15 /\ Axis.horz [ Rule.fill /\ C.rgb 255 0 0 ]
+                , Rule.fill /\ Axis.horz [ Rule.fill /\ C.rgb 0 255 0 ]
+                , Rule.percents 40 /\ Axis.horz [ Rule.fill /\ C.rgb 0 0 255 ]
                 ]
         , "vert [ horz [ portion 1 /\\ red, portion 3 /\\ green, portion 2 /\\ blue ] ]" /\
-            Flex.vert
-                [ Flex.fill /\
-                    Flex.horz
-                        [ Flex.portion 1 /\ C.rgb 255 0 0
-                        , Flex.portion 3 /\ C.rgb 0 255 0
-                        , Flex.portion 2 /\ C.rgb 0 0 255
+            Axis.vert
+                [ Rule.fill /\
+                    Axis.horz
+                        [ Rule.portion 1 /\ C.rgb 255 0 0
+                        , Rule.portion 3 /\ C.rgb 0 255 0
+                        , Rule.portion 2 /\ C.rgb 0 0 255
                         ]
                 ]
         ]
     , node :
-        Flex.vert
-            [ Flex.fill /\
-                Flex.horz []
+        Axis.vert
+            [ Rule.fill /\
+                Axis.horz []
             ]
     }
 
 
-renderFlex
+renderAxis2
     :: forall a m slots
      . String
     -> Pos
     -> Size
-    -> (Pos -> Size -> a -> H.ComponentHTML Action slots m)
+    -> (Pos -> Size -> Maybe a -> H.ComponentHTML Action slots m)
     -> Axis2 Rule a
     -> H.ComponentHTML Action slots m
-renderFlex description pos size drawF flex =
+renderAxis2 description pos size drawF axis =
     HS.g
         [ HSA.translateTo' pos ]
         [ HS.g
             []
-            $ Flex.fold2 (\pos size val prev -> drawF pos size val : prev) []
-            $ Flex.fit2 size flex
+            $ Axis.fold2N (\pos size val prev -> drawF pos size val : prev) []
+            $ Axis.fit2 size axis
         , HS.text
                 [ HSA.fill $ Just $ C.toSvg $ C.white
                 , HSA.font_size $ HSA.FontSizeLength $ HSA.Px 8.0
@@ -150,12 +153,12 @@ renderFlex description pos size drawF flex =
         ]
 
 
-renderColoredFlex :: forall m slots. Int -> String -> ColoredFlex -> H.ComponentHTML Action slots m
-renderColoredFlex n description =
-    renderFlex description (0.0 <+> toNumber n * V2.h size) size drawBox
+renderColoredAxis2 :: forall m slots. Int -> String -> ColoredAxis2 -> H.ComponentHTML Action slots m
+renderColoredAxis2 n description =
+    renderAxis2 description (0.0 <+> toNumber n * V2.h size) size drawBox
     where
         size = 500.0 <+> 60.0
-        drawBox pos size color =
+        drawBox pos size (Just color) =
             HS.g
                 [ HSA.translateTo' pos
                 ]
@@ -165,6 +168,10 @@ renderColoredFlex n description =
                     , HSA.fill $ Just $ C.toSvg color
                     ]
                 ]
+        drawBox pos size Nothing =
+            HS.g
+                []
+                []
 
 
 
@@ -176,7 +183,7 @@ render
 render state =
     HS.g
         []
-        $ Array.mapWithIndex (uncurry <<< renderColoredFlex) state.colored
+        $ Array.mapWithIndex (uncurry <<< renderColoredAxis2) state.colored
 
 
 handleAction
