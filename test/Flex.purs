@@ -24,7 +24,7 @@ import Test.Signal (expectFn, expect)
 
 import App.Layout.Flex.Rule (Rule)
 import App.Layout.Flex.Rule as R
-import App.Layout.Flex (Flex, flex, flex1, put, putAll, nest, nest', nest1)
+import App.Layout.Flex (Flex, flex, flex1, put, putAll, nest, nest', nest1, fit)
 import App.Layout.Flex as Flex
 
 
@@ -72,88 +72,23 @@ testNodeDef =
     flex
         [ R.units 30.0 /\
             [ R.units 30.0 /\ put "padding-left"
-            , R.fill /\ (nest' $ flex1 (R.fill) [ R.fill /\ put "title", R.units 10.0 /\ put "close-button" ])
+            , R.fill /\ (nest' $ flex1 R.fill [ R.fill /\ put "title", R.units 10.0 /\ put "close-button" ])
             , R.units 30.0 /\ put "padding-right"
             ]
         , R.fill /\
             [ R.units 30.0 /\
                 -- "inlets"
-                (nest' $ flex1 (R.fill) [ R.units 5.0 /\ put "inlet1", R.units 5.0 /\ put "inlet2", R.units 5.0 /\ put "inlet3", R.fill /\ put "space" ])
+                (nest' $ flex1 R.fill [ R.units 5.0 /\ put "inlet1", R.units 5.0 /\ put "inlet2", R.units 5.0 /\ put "inlet3", R.fill /\ put "space" ])
             , R.fill /\ put "body"
             , R.units 30.0 /\ put "outlets"
             ]
         ]
 
 
-
-{- testNested22 :: Flex Int String
-testNested22 =
-    nest1 2
-        [ 5 /\ flex1 2 [ 2 /\ "a" ]
-        , 10 /\ flex1 3 [ 3 /\ "b", 5 /\ "d" ]
-        , 2 /\ flex1 5 [ 4 /\ "c" ]
-        , 1 /\ flex1 7 [ 2 /\ "f", 4 /\ "m", 0 /\ "n", 3 /\ "o" ]
-        ] -}
-
-
-{-
-testNested :: Flex Int String
-testNested =
-    nest
-        [ 5 /\ nest [ 2 /\ testNested2 ]
-        , 10 /\ flex [ 3 /\ "b", 5 /\ "d"]
-        , 7 /\ nest [ 0 /\ testPlain ]
-        , 2 /\ flex [ 4 /\ "c" ]
-        ]
-
-
-testNestedMixed :: Flex Int String
-testNestedMixed =
-    nest
-        [ 5 /\ flex [ 2 /\ "a" ]
-        , 10 /\ flex [ 3 /\ "b", 5 /\ "d" ]
-        , 7 /\ nest [ 0 /\ testPlain ]
-        , 2 /\ flex [ 4 /\ "c" ]
-        ]
--}
-
-
 spec :: Spec Unit
 spec = do
 
     describe "flex" $ do
-
-        describe "fold" $ do
-
-            it "testPlain" $ pure unit {-do
-                liftEffect $ testFold
-                    [ [] /\ [] /\ 5 /\ "a"
-                    , [] /\ [5] /\ 10 /\ "f"
-                    , [] /\ [5,10] /\ 2 /\ "3"
-                    ]
-                    testPlain -}
-
-            {- it "testNested2" $ do
-                liftEffect $ testFold
-                    [ [5] /\ [] /\ 2 /\ "a"
-                    , [10] /\ [] /\ 3 /\ "b" -- should include prev items in a row as well, i.e. [5]?
-                    , [10] /\ [3] /\ 5 /\ "d"
-                    , [2] /\ [] /\ 4 /\ "c" -- should include prev items in a row as well, i.e. [5.10]?
-                    ]
-                    testNested2
-
-            it "testNested22" $ do
-                liftEffect $ testFold
-                    [ [5] /\ [] /\ 2 /\ "a"
-                    , [10] /\ [] /\ 3 /\ "b" -- should include prev items in a row as well, i.e. [5]?
-                    , [10] /\ [3] /\ 5 /\ "d"
-                    , [2] /\ [] /\ 4 /\ "c" -- should include prev items in a row as well, i.e. [5.10]?
-                    , [1] /\ [] /\ 2 /\ "f" -- should include prev items in a row as well, i.e. [5.10,2]?
-                    , [1] /\ [2] /\ 4 /\ "m"
-                    , [1] /\ [2,4] /\ 0 /\ "n"
-                    , [1] /\ [2,4,0] /\ 3 /\ "o"
-                    ]
-                    testNested22 -}
 
         describe "folding with position and size" $ do
 
@@ -205,27 +140,24 @@ spec = do
                     ]
                     complexNesting
 
-            {- it "testNested2" $ do
-                liftEffect $ testFoldN
-                    [ (0 <+> 0) /\ (2 <+> 5) /\ "a"
-                    , (0 <+> 5) /\ (3 <+> 10) /\ "b"
-                    , (3 <+> 5) /\ (5 <+> 10) /\ "d"
-                    , (0 <+> 15) /\ (4 <+> 2) /\ "c"
-                    ]
-                    testNested2
+        describe "fit & fold" $ do
 
-            it "testNested22" $ do
-                liftEffect $ testFoldN
-                    [ (0 <+> 0) /\ (2 <+> 5) /\ "a"
-                    , (0 <+> 5) /\ (3 <+> 10) /\ "b"
-                    , (3 <+> 5) /\ (5 <+> 10) /\ "d"
-                    , (0 <+> 15) /\ (4 <+> 2) /\ "c"
-                    , (0 <+> 17) /\ (2 <+> 1) /\ "f"
-                    , (2 <+> 17) /\ (4 <+> 1) /\ "m"
-                    , (6 <+> 17) /\ (0 <+> 1) /\ "n"
-                    , (6 <+> 17) /\ (3 <+> 1) /\ "o"
+            it "node structure" $ do
+                liftEffect $ testFoldS
+                    [ ( 0.0 <+>  0.0) /\ (30.0 <+> 30.0) /\ "padding-left"
+                    , (30.0 <+>  0.0) /\ (30.0 <+> 30.0) /\ "title"
+                    , (60.0 <+>  0.0) /\ (10.0 <+> 30.0) /\ "close-button"
+                    , (70.0 <+>  0.0) /\ (30.0 <+> 30.0) /\ "padding-right"
+                    , ( 0.0 <+> 30.0) /\ (30.0 <+>  5.0) /\ "inlet1"
+                    , ( 0.0 <+> 35.0) /\ (30.0 <+>  5.0) /\ "inlet2"
+                    , ( 0.0 <+> 40.0) /\ (30.0 <+>  5.0) /\ "inlet3"
+                    , ( 9.0 <+> 45.0) /\ (30.0 <+> 55.0) /\ "spacei"
+                    , (30.0 <+> 30.0) /\ (40.0 <+> 70.0) /\ "body"
+                    , (70.0 <+> 30.0) /\ (30.0 <+> 60.0) /\ "spaceo"
+                    , (70.0 <+> 90.0) /\ (30.0 <+>  5.0) /\ "outlet1"
+                    , (70.0 <+> 95.0) /\ (30.0 <+>  5.0) /\ "outlet2"
                     ]
-                    testNested22 -}
+                    $ Flex.fit (100.0 <+> 100.0) testNodeDef
 
     describe "bar" $ do
         pure unit
@@ -298,6 +230,44 @@ testFoldN items flex =
     in do
         sRef <- Ref.new items
         Flex.foldN
+            (\pos size str eff -> eff <> foldF sRef pos size str)
+            (pure unit)
+            flex
+        arr <- Ref.read sRef
+        if Array.length arr > 0 then fail $ (show $ Array.length items) <> " items not fullfilled"
+        else pure unit
+
+
+type FoldSSample s a = Pos_ s /\ Size_ s /\ a
+
+
+testFoldS
+    :: forall s a
+     . Eq s => Eq a
+    => Show s => Show a
+    => Ring s
+    => Array (FoldSSample s a)
+    -> Flex (Size_ s) a
+    -> Effect Unit
+testFoldS items flex =
+    let
+        foldF sRef pos size str = do
+            arr <- Ref.read sRef
+            let next = Array.head arr
+            Ref.write (Maybe.fromMaybe [] $ Array.tail arr) sRef
+            case next of
+                Just (pos' /\ size' /\ str') -> do
+                    --Console.log $ show pos <> " --- " <> show size <> " --- " <> show str
+                    --Console.log $ show pos' <> " --- " <> show size' <> " --- " <> show str'
+                    pos' `shouldEqual` pos
+                    size' `shouldEqual` size
+                    str' `shouldEqual` str
+                Nothing -> do
+                    fail $ "excessive call at " <> show pos <> " --- " <> show size <> " --- " <> show str
+            pure unit
+    in do
+        sRef <- Ref.new items
+        Flex.foldS
             (\pos size str eff -> eff <> foldF sRef pos size str)
             (pure unit)
             flex
