@@ -37,7 +37,12 @@ data Flex s a
     = Flex (Axis2 s (Item s a))
 
 
--- TODO: Functor, etc.
+instance functorFlex :: Functor (Flex s) where
+    map f (Flex axis2) = Flex $ map (map $ bimap f $ map f) axis2
+
+
+instance bifunctorFlex :: Bifunctor Flex where
+    bimap f g (Flex axis2) = Flex $ bimap f (bimap f $ bimap g $ bimap f g) axis2
 
 
 flex :: forall s a. Array (s /\ Array (s /\ Item s a)) -> Flex s a
