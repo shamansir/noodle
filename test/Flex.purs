@@ -75,12 +75,37 @@ testNodeDef =
             , R.fill /\ (nest' $ flex1 R.fill [ R.fill /\ put "title", R.units 10.0 /\ put "close-button" ])
             , R.units 30.0 /\ put "padding-right"
             ]
-        , R.fill /\
-            [ R.units 30.0 /\
-                -- "inlets"
-                (nest' $ flex1 R.fill [ R.units 5.0 /\ put "inlet1", R.units 5.0 /\ put "inlet2", R.units 5.0 /\ put "inlet3", R.fill /\ put "space" ])
+        , R.fill /\ -- vert
+            [ R.units 30.0 /\ -- horz
+                nest
+                    [ R.fill /\
+                        [ R.fill /\
+                            nest'
+                                (flex
+                                    [ R.units 5.0 /\ [ R.fill /\ put "inlet1" ]
+                                    , R.units 5.0 /\ [ R.fill /\ put "inlet2" ]
+                                    , R.units 5.0 /\ [ R.fill /\ put "inlet3" ]
+                                    , R.fill /\ [ R.fill /\ put "spacei" ]
+                                    ]
+
+                                )
+                        ]
+                    ]
             , R.fill /\ put "body"
-            , R.units 30.0 /\ put "outlets"
+            , R.units 30.0 /\ -- horz
+                nest
+                    [ R.fill /\
+                        [ R.fill /\
+                            nest'
+                                (flex
+                                    [ R.fill /\ [ R.fill /\ put "spaceo" ]
+                                    , R.units 5.0 /\ [ R.fill /\ put "outlet1" ]
+                                    , R.units 5.0 /\ [ R.fill /\ put "outlet2" ]
+                                    ]
+
+                                )
+                        ]
+                    ]
             ]
         ]
 
@@ -151,13 +176,30 @@ spec = do
                     , ( 0.0 <+> 30.0) /\ (30.0 <+>  5.0) /\ "inlet1"
                     , ( 0.0 <+> 35.0) /\ (30.0 <+>  5.0) /\ "inlet2"
                     , ( 0.0 <+> 40.0) /\ (30.0 <+>  5.0) /\ "inlet3"
-                    , ( 9.0 <+> 45.0) /\ (30.0 <+> 55.0) /\ "spacei"
+                    , ( 0.0 <+> 45.0) /\ (30.0 <+> 55.0) /\ "spacei"
                     , (30.0 <+> 30.0) /\ (40.0 <+> 70.0) /\ "body"
                     , (70.0 <+> 30.0) /\ (30.0 <+> 60.0) /\ "spaceo"
                     , (70.0 <+> 90.0) /\ (30.0 <+>  5.0) /\ "outlet1"
                     , (70.0 <+> 95.0) /\ (30.0 <+>  5.0) /\ "outlet2"
                     ]
                     $ Flex.fit (100.0 <+> 100.0) testNodeDef
+
+            it "node structure v.2" $ do
+                liftEffect $ testFoldS
+                    [ (  0.0 <+>   0.0) /\ ( 30.0 <+> 30.0) /\ "padding-left"
+                    , ( 30.0 <+>   0.0) /\ (100.0 <+> 30.0) /\ "title"
+                    , (130.0 <+>   0.0) /\ ( 10.0 <+> 30.0) /\ "close-button"
+                    , (140.0 <+>   0.0) /\ ( 30.0 <+> 30.0) /\ "padding-right"
+                    , (  0.0 <+>  30.0) /\ ( 30.0 <+>  5.0) /\ "inlet1"
+                    , (  0.0 <+>  35.0) /\ ( 30.0 <+>  5.0) /\ "inlet2"
+                    , (  0.0 <+>  40.0) /\ ( 30.0 <+>  5.0) /\ "inlet3"
+                    , (  0.0 <+>  45.0) /\ ( 30.0 <+> 65.0) /\ "spacei"
+                    , ( 30.0 <+>  30.0) /\ (110.0 <+> 80.0) /\ "body"
+                    , (140.0 <+>  30.0) /\ ( 30.0 <+> 70.0) /\ "spaceo"
+                    , (140.0 <+> 100.0) /\ ( 30.0 <+>  5.0) /\ "outlet1"
+                    , (140.0 <+> 105.0) /\ ( 30.0 <+>  5.0) /\ "outlet2"
+                    ]
+                    $ Flex.fit (170.0 <+> 110.0) testNodeDef
 
     describe "bar" $ do
         pure unit
