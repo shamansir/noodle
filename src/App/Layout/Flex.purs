@@ -1,7 +1,7 @@
 module App.Layout.Flex
   ( Flex
   , fit
-  , flex, flex1, put, putAll, nest, nest', nest1
+  , flex, flex1, put, putAll, nest, nest', nest1, nest2, nest2'
   , fold, foldN, foldS
   )
   where
@@ -27,6 +27,8 @@ import App.Layout.Flex.Axis as Axis
 import App.Layout.Flex.Axis (Axis2)
 import App.Layout.Flex.Rule (Rule(..))
 
+import App.Layout (class IsLayout)
+
 
 -- TODO: `IsLayout` instance (AutoSizedLayout?)
 
@@ -35,6 +37,20 @@ type Item s a = Either a (Flex s a)
 
 data Flex s a
     = Flex (Axis2 s (Item s a))
+
+
+{-
+instance flexNIsLayout :: IsLayout (Flex Number) where
+    size = ?wh
+    fold = foldN
+    find = ?wh
+    sample = ?wh
+
+instance flexSIsLayout :: IsLayout (Flex Size) where
+    fold = ?wh
+    find = ?wh
+    sample = ?wh
+-}
 
 
 instance functorFlex :: Functor (Flex s) where
@@ -71,6 +87,26 @@ nest' = Right
 
 nest1 :: forall s a. s -> Array (s /\ Item s a) -> Item s a
 nest1 = curry (nest <<< Array.singleton)
+
+
+nest2 :: forall s a. s -> Array (s /\ Array (s /\ Item s a)) -> Item s a
+nest2 rule inner =
+    nest
+        [ rule /\
+            [ rule /\
+                nest inner
+            ]
+        ]
+
+
+nest2' :: forall s a. s -> Flex s a -> Item s a
+nest2' rule inner =
+    nest
+        [ rule /\
+            [ rule /\
+                nest' inner
+            ]
+        ]
 
 
 {- fold :: forall s a b. (Array s -> Array s -> s -> a -> b -> b) -> b -> Flex s a -> b

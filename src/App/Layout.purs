@@ -21,8 +21,6 @@ import Data.Tuple.Nested ((/\), type (/\))
 
 
 class {-FoldableWithIndex Pos l <=-} IsLayout l where
-    size :: forall a. l a -> Size
-    container :: forall a. Size -> l a
     --toFoldable :: forall f a. Foldable f => l a -> f (a /\ Pos /\ Size)
     --toUnfoldable :: forall f a. Unfoldable f => l a -> f (a /\ Pos /\ Size)
     --unfold :: forall a. l a -> Array (a /\ Pos /\ Size)
@@ -32,13 +30,20 @@ class {-FoldableWithIndex Pos l <=-} IsLayout l where
     --remove :: forall a. Eq a => a -> l a -> Maybe (l a)
     -- reflow :: forall a. Size -> l a -> Maybe (l a)
 
+class IsLayout l <= IsSizedLayout l where
+    size :: forall a. l a -> Size
 
-class IsLayout l <= IsAutoLayout l where
+
+class IsSizedLayout l <= IsContainerLayout l where
+    container :: forall a. Size -> l a
+
+
+class IsContainerLayout l <= IsAutoLayout l where
     pack :: forall a. a -> Size -> l a -> Maybe (l a)
     --packMany ::
 
 
-class IsLayout l <= IsPinningLayout l where
+class IsContainerLayout l <= IsPinningLayout l where
     pin :: forall a. a -> Pos -> Size -> l a -> l a
     unpin :: forall a. Eq a => a -> l a -> l a
     --unpin :: forall a. Eq a => a -> l a -> Maybe (l a)
@@ -49,13 +54,13 @@ class IsLayout l <= IsPinningLayout l where
 --   * both Pin and Auto layouts;
 --   * layout of (Maybe items)
 --   * layout that saves order of adding `IsLayout (Timestamp /\ a)`;
---   * layout like `elm-ui` (may be just `IsLayout` with own packing);
+--   * layout like `elm-ui` (may be just `IsLayout` with own packing); (Flex Layout)
 --   * layered layouts;
 
 
 -- TODO: scale
 
-sqContainer :: forall l a. IsLayout l => Number -> l a
+sqContainer :: forall l a. IsContainerLayout l => Number -> l a
 sqContainer n = container $ n <+> n
 
 
