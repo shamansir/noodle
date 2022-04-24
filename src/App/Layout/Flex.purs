@@ -23,6 +23,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Unfoldable (class Unfoldable, unfoldr)
 import Data.Vec2 (Size, Size_, Pos, Pos_, (<+>))
 import Data.Vec2 as V2
+import Data.Typelevel.Undefined (undefined)
 
 import App.Layout.Flex.Axis as Axis
 import App.Layout.Flex.Axis (Axis2)
@@ -40,6 +41,10 @@ data Flex s a
     = Flex (Axis2 s (Item s a))
 
 
+data Layers s a
+    = Layers (Array (Flex s a))
+
+
 instance flexNIsLayout :: IsLayout (Flex Number) where
     fold f = foldN $ \pos size a -> f (a /\ pos /\ size)
     find = posOfN
@@ -50,6 +55,18 @@ instance flexSIsLayout :: IsLayout (Flex Size) where
     fold f = foldS $ \pos size a -> f (a /\ pos /\ size)
     find = posOfS
     sample pos l = (\(pos' /\ size /\ a) -> (a /\ pos' /\ size)) <$> atPosS pos l -- FIXME: just make all the tuples to be in the same order
+
+
+instance layersNIsLayout :: IsLayout (Layers Number) where
+    fold = undefined -- FIXME: implement
+    find = undefined -- FIXME: implement
+    sample = undefined -- FIXME: implement
+
+
+instance layersSIsLayout :: IsLayout (Layers Size) where
+    fold = undefined -- FIXME: implement
+    find = undefined -- FIXME: implement
+    sample = undefined -- FIXME: implement
 
 
 instance flexNIsSizedLayout :: IsSizedLayout (Flex Number) where
