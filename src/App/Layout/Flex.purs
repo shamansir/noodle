@@ -3,6 +3,7 @@ module App.Layout.Flex
   , fit
   , flex, flex1, put, putAll, nest, nest', nest1, nest2, nest2'
   , fold, foldN, foldS
+  , sizeS, sizeN
   )
   where
 
@@ -27,7 +28,7 @@ import App.Layout.Flex.Axis as Axis
 import App.Layout.Flex.Axis (Axis2)
 import App.Layout.Flex.Rule (Rule(..))
 
-import App.Layout (class IsLayout)
+import App.Layout (class IsLayout, class IsSizedLayout)
 
 
 -- TODO: `IsLayout` instance (AutoSizedLayout?)
@@ -39,18 +40,24 @@ data Flex s a
     = Flex (Axis2 s (Item s a))
 
 
-{-
 instance flexNIsLayout :: IsLayout (Flex Number) where
-    size = ?wh
-    fold = foldN
-    find = ?wh
-    sample = ?wh
+    fold f = foldN $ \pos size a -> f (a /\ pos /\ size)
+    find = posOfN
+    sample pos l =  (\(pos' /\ size /\ a) -> (a /\ pos' /\ size)) <$> atPosN pos l -- FIXME: just make all the tuples to be in the same order
+
 
 instance flexSIsLayout :: IsLayout (Flex Size) where
-    fold = ?wh
-    find = ?wh
-    sample = ?wh
--}
+    fold f = foldS $ \pos size a -> f (a /\ pos /\ size)
+    find = posOfS
+    sample pos l = (\(pos' /\ size /\ a) -> (a /\ pos' /\ size)) <$> atPosS pos l -- FIXME: just make all the tuples to be in the same order
+
+
+instance flexNIsSizedLayout :: IsSizedLayout (Flex Number) where
+    size = sizeN
+
+
+instance flexSIsSizedLayout :: IsSizedLayout (Flex Size) where
+    size = sizeS
 
 
 instance functorFlex :: Functor (Flex s) where
@@ -121,6 +128,31 @@ fold = foldAt []
                 )
                 def
                 $ Array.reverse $ Axis.items faxis -- FIXME: why reverse? -}
+
+
+atPosN :: forall n a. Semiring n => Ord n => Pos_ n -> Flex n a -> Maybe (Pos_ n /\ Size_ n /\ a)
+atPosN pos (Flex axis2) = Nothing -- FIXME implement using `Axis.find'`
+
+
+-- Vec D2 Number -> Flex (Vec D2 Number) a0 -> Maybe (Tuple a0 (Tuple (Vec D2 Number) (Vec D2 Number)))
+atPosS :: forall n a. Semiring n => Ord n => Pos_ n -> Flex (Size_ n) a -> Maybe (Pos_ n /\ Size_ n /\ a)
+atPosS pos (Flex axis2) = Nothing -- FIXME implement using `Axis.find'`
+
+
+posOfN :: forall n a. Semiring n => Ord n => a -> Flex n a -> Maybe (Pos_ n /\ Size_ n)
+posOfN a (Flex axis2) = Nothing -- FIXME implement using `Axis.posOf2`
+
+
+posOfS :: forall n a. Semiring n => Ord n => a -> Flex (Size_ n) a -> Maybe (Pos_ n /\ Size_ n)
+posOfS a (Flex axis2) = Nothing -- FIXME implement using `Axis.posOf2`
+
+
+sizeN :: forall n a. Semiring n => Flex n a -> Size_ n
+sizeN = const $ zero <+> zero -- FIXME: implement using `Axis.sizeOf`
+
+
+sizeS :: forall n a. Semiring n => Flex (Size_ n) a -> Size_ n
+sizeS = const $ zero <+> zero -- FIXME: implement using `Axis.sizeOf`
 
 
 fit :: forall a. Size -> Flex Rule a -> Flex Size a

@@ -19,12 +19,13 @@ module App.Layout.Flex.Axis
   , make
   , make2
   , mapSize
-  , posOf
+  , posOf, posOf2
   --, lift, lift2
   , map2Size
 --   , foldPrev
   , mapItems
   , vert, horz
+  , sizeOf
   )
   where
 
@@ -370,7 +371,15 @@ sizeOf a (Vert vbox) =
 
 
 posOf :: forall a. Eq a => a -> Axis Number a -> Maybe Pos
-posOf _ _ = Nothing
+posOf _ _ = Nothing -- FIXME: implement
+
+
+posOf2 :: forall a. Eq a => a -> Axis2 Number a -> Maybe Pos
+posOf2 _ _ = Nothing -- FIXME: implement
+
+
+sizeOf :: forall a. Axis2 Number a -> Size
+sizeOf = const $ 0.0 <+> 0.0 -- FIXME: implement
 
 
 {- fold2 :: forall a b. (Pos -> Size -> a -> b -> b) -> b -> Flex2 Rule a -> b
