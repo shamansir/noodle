@@ -1,7 +1,8 @@
 module App.Layout.Flex
-  ( Flex
+  ( Flex, Layers
   , fit
   , flex, flex1, put, putAll, nest, nest', nest1, nest2, nest2'
+  , layers
   , fold, foldN, foldS
   , sizeS, sizeN
   )
@@ -14,22 +15,21 @@ import Data.Either (Either(..))
 import Data.Array ((:))
 -- import Data.Array.Ex ((:))
 import Data.Array as Array
-import Data.Bifunctor (class Bifunctor, bimap, lmap)
-import Data.Foldable (foldr)
-import Data.Int (toNumber)
+import Data.Bifunctor (class Bifunctor, bimap)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Tuple (fst, snd, curry, uncurry)
+import Data.Tuple (curry)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Unfoldable (class Unfoldable, unfoldr)
+-- import Data.Unfoldable (class Unfoldable, unfoldr)
 import Data.Vec2 (Size, Size_, Pos, Pos_, (<+>))
-import Data.Vec2 as V2
-import Data.Typelevel.Undefined (undefined)
+
+import Control.Alt ((<|>))
 
 import App.Layout.Flex.Axis as Axis
 import App.Layout.Flex.Axis (Axis2)
-import App.Layout.Flex.Rule (Rule(..))
+import App.Layout.Flex.Rule (Rule)
 
 import App.Layout (class IsLayout, class IsSizedLayout)
+import App.Layout as L
 
 
 -- TODO: `IsLayout` instance (AutoSizedLayout?)
@@ -48,25 +48,25 @@ data Layers s a
 instance flexNIsLayout :: IsLayout (Flex Number) where
     fold f = foldN $ \pos size a -> f (a /\ pos /\ size)
     find = posOfN
-    sample pos l =  (\(pos' /\ size /\ a) -> (a /\ pos' /\ size)) <$> atPosN pos l -- FIXME: just make all the tuples to be in the same order
+    sample pos l =  (\(pos' /\ size /\ a) -> (a /\ pos' /\ size)) <$> atPosN pos l -- FIXME: just make all the Layout's functions work take arguments instead of tuples (but return tuples still)
 
 
 instance flexSIsLayout :: IsLayout (Flex Size) where
     fold f = foldS $ \pos size a -> f (a /\ pos /\ size)
     find = posOfS
-    sample pos l = (\(pos' /\ size /\ a) -> (a /\ pos' /\ size)) <$> atPosS pos l -- FIXME: just make all the tuples to be in the same order
+    sample pos l = (\(pos' /\ size /\ a) -> (a /\ pos' /\ size)) <$> atPosS pos l -- FIXME: just make all the Layout's functions work take arguments instead of tuples (but return tuples still)
 
 
 instance layersNIsLayout :: IsLayout (Layers Number) where
-    fold = undefined -- FIXME: implement
-    find = undefined -- FIXME: implement
-    sample = undefined -- FIXME: implement
+    fold f def (Layers layers) = Array.foldl (L.fold f) def layers
+    find what (Layers layers) = Array.foldl (\prev layout -> prev <|> L.find what layout) Nothing layers
+    sample pos (Layers layers) = Array.foldl (\prev layout -> prev <|> L.sample pos layout) Nothing layers
 
 
 instance layersSIsLayout :: IsLayout (Layers Size) where
-    fold = undefined -- FIXME: implement
-    find = undefined -- FIXME: implement
-    sample = undefined -- FIXME: implement
+    fold f def (Layers layers) = Array.foldl (L.fold f) def layers
+    find what (Layers layers) = Array.foldl (\prev layout -> prev <|> L.find what layout) Nothing layers
+    sample pos (Layers layers) = Array.foldl (\prev layout -> prev <|> L.sample pos layout) Nothing layers
 
 
 instance flexNIsSizedLayout :: IsSizedLayout (Flex Number) where
@@ -91,6 +91,10 @@ flex = Flex <<< Axis.make2 <<< map (map $ Just <<< map (map Just))
 
 flex1 :: forall s a. s -> Array (s /\ Item s a) -> Flex s a
 flex1 = curry (flex <<< Array.singleton)
+
+
+layers :: forall s a. Array (Flex s a) -> Layers s a
+layers = Layers
 
 
 put :: forall s a. a -> Item s a

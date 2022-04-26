@@ -14,7 +14,7 @@ import Data.Vec2 as V2
 import Data.Newtype (unwrap, class Newtype)
 
 
-import App.Layout (class IsLayout, class IsPinningLayout)
+import App.Layout (class IsLayout, class IsSizedLayout, class IsContainerLayout, class IsPinningLayout)
 
 
 newtype Pin a
@@ -33,11 +33,16 @@ derive instance Newtype (PinBoard a) _
 
 
 instance IsLayout PinBoard where
-    size = size
-    container _ = empty
     fold = fold
     find = find
     sample = sample
+
+
+instance IsSizedLayout PinBoard where
+    size = size
+
+instance IsContainerLayout PinBoard where
+    container _ = empty -- means can have any size and still work
 
 
 instance IsPinningLayout PinBoard where

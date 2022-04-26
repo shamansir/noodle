@@ -39,6 +39,8 @@ import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 
 
+import App.Layouts.App as App
+
 type Slot id = forall query. H.Slot query Void id
 
 
@@ -52,6 +54,7 @@ type ColoredAxis2 = Axis2 Rule ColoredBlock
 type State =
     { colored :: Array (String /\ ColoredAxis2)
     , node :: Axis2 Rule String
+    , app :: App.Layout
     }
 
 
@@ -124,6 +127,7 @@ initialState =
             [ Rule.fill /\
                 Axis.horz []
             ]
+    , app : App.layout
     }
 
 

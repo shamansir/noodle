@@ -26,7 +26,7 @@ import Prelude
 
 import Control.Alt ((<|>))
 
-import App.Layout (class IsLayout, class IsAutoLayout)
+import App.Layout (class IsLayout, class IsSizedLayout, class IsContainerLayout, class IsAutoLayout)
 
 import Data.Foldable (class Foldable, foldMap, foldr, foldl, foldM)
 import Data.List (List(..), (:), sortBy, singleton)
@@ -49,12 +49,19 @@ data Bin2 n a
 -- TODO: IsLayout instance
 
 instance bin2IsLayout :: IsLayout (Bin2 Number) where
-    size = size
     fold = fold
     find = find
     sample = flip sample
-    container = container
+
     -- remove =
+
+
+instance bin2IsSizedLayout :: IsSizedLayout (Bin2 Number) where
+    size = size
+
+
+instance bin2IsContainerLayout :: IsContainerLayout (Bin2 Number) where
+    container = container
 
 
 instance bin2IsAutoLayout :: IsAutoLayout (Bin2 Number) where

@@ -37,6 +37,7 @@ class IsLayout l <= IsSizedLayout l where
 class IsSizedLayout l <= IsContainerLayout l where
     container :: forall a. Size -> l a
 
+-- TODO: join `IsContainerLayout`` with `IsSizedLayout` back, because `container _ = empty` means can have any size and still work
 
 class IsContainerLayout l <= IsAutoLayout l where
     pack :: forall a. a -> Size -> l a -> Maybe (l a)
