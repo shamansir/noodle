@@ -13,7 +13,7 @@ import App.Layout.Flex.Axis (Axis, Axis2)
 import App.Layout.Flex.Rule (Rule)
 import App.Layout.Flex.Axis as Axis
 import App.Layout.Flex.Rule as Rule
--- import App.Layout.Flex as Flex
+import App.Layout.Flex as Flex
 -- import App.Layout.Flex (Flex)
 
 import Data.Array ((:))
@@ -40,6 +40,7 @@ import Halogen.Svg.Elements.None as HS
 
 
 import App.Layouts.App as App
+import App.LayoutRenderer as Layout
 
 type Slot id = forall query. H.Slot query Void id
 
@@ -187,7 +188,10 @@ render
 render state =
     HS.g
         []
-        $ Array.mapWithIndex (uncurry <<< renderColoredAxis2) state.colored
+        -- $ Array.mapWithIndex (uncurry <<< renderColoredAxis2) state.colored
+        -- $ Layout.render ?wh state.app
+        [ Layout.renderToSvgText $ Flex.fitLayers (500.0 <+> 500.0) state.app
+        ]
 
 
 handleAction

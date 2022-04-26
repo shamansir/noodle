@@ -1,6 +1,6 @@
 module App.Layout.Flex
   ( Flex, Layers
-  , fit
+  , fit, fitLayers
   , flex, flex1, put, putAll, nest, nest', nest1, nest2, nest2'
   , layers
   , fold, foldN, foldS
@@ -186,6 +186,10 @@ fit size = fitAt size
                         $ map (Axis.mapItems (\(cSize /\ axis2) -> cSize /\ map (map $ fitAt cSize) axis2))
                         -- $ map (Axis.mapItems (\(cSize /\ axis2) -> (pSize - cSize) /\ map (map $ fitAt cSize) axis2))
                         $ Axis.layout pSize faxis2
+
+
+fitLayers :: forall a. Size -> Layers Rule a -> Layers Size a
+fitLayers size (Layers layers) = Layers $ fit size <$> layers
 
 
 fillSizes :: forall a. Flex Number a -> Flex Size a
