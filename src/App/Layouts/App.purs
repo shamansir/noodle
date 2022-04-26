@@ -48,13 +48,16 @@ layout =
                 [ R.fill /\ F.put Body
                 ]
             ]
-        , F.flex
-            [ R.percents 20 /\
+        ,  F.flex
+            [ R.percents 15 /\
                 [ R.fill /\ F.put Space
                 ]
-            , R.units 70.0 /\
-                [ R.percents 20 /\ F.put Space
-                , R.units 30.0 /\ F.put NodeList
+            , R.percents 5 /\
+                [ R.fill /\ F.put Space
+                ]
+            , R.units 100.0 /\
+                [ R.percents 5 /\ F.put Space
+                , R.units 50.0 /\ F.put NodeList
                 ]
             ]
         ]

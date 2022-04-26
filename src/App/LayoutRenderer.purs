@@ -47,7 +47,7 @@ renderToSvgText =
                     ]
                 , HS.text
                     [ HSA.translateTo' $ pos + ((V2.w size / 2.0) <+> (V2.h size / 2.0))
-
+                    , HSA.text_anchor $ HSA.AnchorMiddle
                     ]
                     [ HH.text $ show a ]
                 ]

@@ -14,6 +14,7 @@ import Data.Array ((:))
 import Data.Array as Array
 import Data.List (List(..))
 import Data.List as List
+import Data.Tuple (curry, uncurry)
 
 
 import Data.Tuple as Tuple
@@ -24,6 +25,7 @@ class {-FoldableWithIndex Pos l <=-} IsLayout l where
     --toFoldable :: forall f a. Foldable f => l a -> f (a /\ Pos /\ Size)
     --toUnfoldable :: forall f a. Unfoldable f => l a -> f (a /\ Pos /\ Size)
     --unfold :: forall a. l a -> Array (a /\ Pos /\ Size)
+    -- TODO: make a function `a -> Pos -> Size -> k -> k`, then `fold' == fold (curry <<< curry f)`
     fold :: forall a k. ((a /\ Pos /\ Size) -> k -> k) -> k -> l a -> k
     find :: forall a. Eq a => a -> l a -> Maybe (Pos /\ Size)
     sample :: forall a. Pos -> l a -> Maybe (a /\ Pos /\ Size)
@@ -37,7 +39,7 @@ class IsLayout l <= IsSizedLayout l where
 class IsSizedLayout l <= IsContainerLayout l where
     container :: forall a. Size -> l a
 
--- TODO: join `IsContainerLayout`` with `IsSizedLayout` back, because `container _ = empty` means can have any size and still work
+-- TODO: join `IsContainerLayout`` with `IsSizedLayout` back, because `container _ = empty` means "can have any size and may still work"
 
 class IsContainerLayout l <= IsAutoLayout l where
     pack :: forall a. a -> Size -> l a -> Maybe (l a)
@@ -67,6 +69,15 @@ sqContainer n = container $ n <+> n
 
 count :: forall l a. IsLayout l => l a -> Int
 count = toArray >>> Array.length
+
+
+{-
+fold :: forall a k. (a -> Pos -> Size -> k -> k) -> k -> l a -> k
+
+
+fold' :: forall l k a. IsLayout l => ((a /\ Pos /\ Size) -> k -> k) -> k -> l a -> k
+fold' f = fold (curry <<< curry f)
+-}
 
 
 toList :: forall l a. IsLayout l => l a -> List (a /\ Pos /\ Size)
