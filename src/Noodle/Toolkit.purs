@@ -1,7 +1,7 @@
 module Noodle.Toolkit
   ( Toolkit
   , empty, name
-  , nodeFamilies
+  , nodeFamilies, nodeFamiliesCount
   , spawn, spawn'
   , register, registerFn
   )
@@ -80,6 +80,11 @@ spawn' family state (Toolkit _ def nodeDefs) =
 nodeFamilies :: forall state d. Toolkit state d -> Set Node.Family
 nodeFamilies (Toolkit _ _ nodeDefs) =
     nodeDefs # Map.keys
+
+
+nodeFamiliesCount :: forall state d. Toolkit state d -> Int
+nodeFamiliesCount (Toolkit _ _ nodeDefs) =
+    nodeDefs # Map.size
 
 
 name :: forall state d. Toolkit state d -> Name

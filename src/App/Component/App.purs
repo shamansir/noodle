@@ -23,12 +23,11 @@ import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
 import Noodle.Patch as Patch
 import Noodle.Toolkit (Toolkit) as Noodle
-import Noodle.Toolkit (name) as Toolkit
+import Noodle.Toolkit (name, nodeFamilies, nodeFamiliesCount) as Toolkit
 
 import App.Style (Style, NodeFlow)
 import App.Style.ClassNames as CS
 import App.Component.Patch as PatchC
-import App.Component.Test.FlexLayout as FLTC
 import App.Emitters as Emitters
 import App.Toolkit.UI as ToolkitUI
 import App.Svg.Extra as HSA
@@ -48,7 +47,6 @@ import Web.HTML.Window as Window
 type Slots patch_action patch_state =
     ( patch :: PatchC.Slot patch_action Unit
     , tkPatch :: ToolkitUI.PatchSlot' patch_action patch_state Unit
-    , fltc :: FLTC.Slot Unit
     )
 
 
@@ -125,20 +123,13 @@ render (s@{ network, toolkit, style, flow }) =
             [ HSA.width $ V2.w s.windowSize, HSA.height $ V2.h s.windowSize
             , HSA.id "noodle"
             ]
-            {- [ background
+            [ background
             , curFrame
             , patchesTabs
             , maybeCurrent currentPatch
-            ] -}
-            [ flexLayoutTest
             ]
         ]
     where
-        flexLayoutTest =
-            HH.slot _fltc unit
-                FLTC.component
-                []
-                (const Skip)
         currentPatch = (flip Network.patch $ network) =<< s.currentPatch
         curFrame =
             HS.text
@@ -213,7 +204,10 @@ render (s@{ network, toolkit, style, flow }) =
                 []
                 [ HS.text
                     [ HSA.translateTo' $ 0.0 <+> tabHeight + tabPadding + 40.0 ]
-                    [ HH.text $ Toolkit.name toolkit ]
+                    [ -- HS.tspan
+                    HH.text $ Toolkit.name toolkit <> ". Families: " <> show (Toolkit.nodeFamiliesCount toolkit)
+
+                    ]
                 ]
 
 

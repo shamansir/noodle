@@ -1,5 +1,9 @@
 module App.LayoutRenderer where
 
+-- TODO: App.Layout.Render
+-- TODO: App.Layout.Instance.Flex
+-- TODO: App.Layout.Instance....
+
 import Prelude
 
 import Color as C
