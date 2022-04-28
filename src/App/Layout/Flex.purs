@@ -46,15 +46,15 @@ data Layers s a
 
 
 instance flexNIsLayout :: IsLayout (Flex Number) where
-    fold f = foldN $ \pos size a -> f (a /\ pos /\ size)
+    fold f = foldN $ \pos size a -> f (a /\ pos /\ size)  -- FIXME: just make all the Layout's functions work take arguments instead of tuples (but return tuples still)
     find = posOfN
-    sample pos l =  (\(pos' /\ size /\ a) -> (a /\ pos' /\ size)) <$> atPosN pos l -- FIXME: just make all the Layout's functions work take arguments instead of tuples (but return tuples still)
+    sample pos l = atPosN pos l
 
 
 instance flexSIsLayout :: IsLayout (Flex Size) where
-    fold f = foldS $ \pos size a -> f (a /\ pos /\ size)
+    fold f = foldS $ \pos size a -> f (a /\ pos /\ size)  -- FIXME: just make all the Layout's functions work take arguments instead of tuples (but return tuples still)
     find = posOfS
-    sample pos l = (\(pos' /\ size /\ a) -> (a /\ pos' /\ size)) <$> atPosS pos l -- FIXME: just make all the Layout's functions work take arguments instead of tuples (but return tuples still)
+    sample pos l = atPosS pos l
 
 
 instance layersNIsLayout :: IsLayout (Layers Number) where
@@ -151,12 +151,12 @@ fold = foldAt []
                 $ Array.reverse $ Axis.items faxis -- FIXME: why reverse? -}
 
 
-atPosN :: forall n a. Semiring n => Ord n => Pos_ n -> Flex n a -> Maybe (Pos_ n /\ Size_ n /\ a)
+atPosN :: forall n a. Semiring n => Ord n => Pos_ n -> Flex n a -> Maybe (a /\ Pos_ n /\ Size_ n)
 atPosN pos (Flex axis2) = Nothing -- FIXME implement using `Axis.find'`
 
 
 -- Vec D2 Number -> Flex (Vec D2 Number) a0 -> Maybe (Tuple a0 (Tuple (Vec D2 Number) (Vec D2 Number)))
-atPosS :: forall n a. Semiring n => Ord n => Pos_ n -> Flex (Size_ n) a -> Maybe (Pos_ n /\ Size_ n /\ a)
+atPosS :: forall n a. Semiring n => Ord n => Pos_ n -> Flex (Size_ n) a -> Maybe (a /\ Pos_ n /\ Size_ n)
 atPosS pos (Flex axis2) = Nothing -- FIXME implement using `Axis.find'`
 
 

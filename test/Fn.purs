@@ -65,7 +65,6 @@ spec = do
                         Fn.send "sum" $ a + b
             Fn.run 0 unit p.protocol fn
             p.outputs # shouldContain "sum" 8
-            pure unit
 
         it "summing works with sendIn" $ do
             p <- liftEffect $ Protocol.mkDefault [ "a" /\ 0, "b" /\ 0 ]
@@ -82,7 +81,6 @@ spec = do
             p.outputs # shouldContain "sum" 13
             p.inputs # shouldContain "a" 6
             p.inputs # shouldContain "b" 7
-            pure unit
 
     describe "bar" $ do
         pure unit

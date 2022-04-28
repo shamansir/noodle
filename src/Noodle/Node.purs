@@ -251,12 +251,12 @@ distribute passTo (Fn.Pass { toOutputs }) =
 -}
 
 
-send :: forall state d. Node state d -> (InletId /\ d) -> Effect Unit
+send :: forall d. (forall state. Node state d) -> (InletId /\ d) -> Effect Unit
 send node (inlet /\ d) =
     Ch.send (getInletsChannel node) $ inlet /\ d
 
 
-produce :: forall state d. Node state d -> (OutletId /\ d) -> Effect Unit
+produce :: forall d. (forall state. Node state d) -> (OutletId /\ d) -> Effect Unit
 produce node (outlet /\ d) =
     Ch.send (getOutletsChannel node) $ outlet /\ d
 
@@ -267,13 +267,14 @@ produce node (outlet /\ d) =
 data Link = Link (Ref Boolean)
 
 
-connect :: forall state d. (Node state d /\ OutletId) -> (Node state d /\ InletId) -> Effect Link
+connect :: forall d. ((forall s_a. Node s_a d) /\ OutletId) -> ((forall s_b. Node s_b d) /\ InletId) -> Effect Link
+-- connect :: forall state d. (Node state d /\ OutletId) -> (Node state d /\ InletId) -> Effect Link
 connect (srcNode /\ srcOutlet) (dstNode /\ dstInlet) =
-    let inlets_chan = getInletsChannel dstNode
+    let inlets_chan = getInletsChannel ?wh -- dstNode
     in do
         ref <- Ref.new true
         _ <- Signal.runSignal
-                $ outletSignal srcNode srcOutlet
+                (outletSignal ?wh srcOutlet)
                 ~> Tuple dstInlet
                 -- ~> Ch.send inlets_chan
                 ~> Ch.sendIfRef inlets_chan ref
@@ -292,38 +293,43 @@ getFn :: forall state d. Node state d -> NodeFn state d
 getFn (Node _ fn _) = fn
 
 
-getInletsChannel :: forall state d. Node state d -> Ch.Channel (InletId /\ d)
+getInletsChannel :: forall d. (forall state. Node state d) -> Ch.Channel (InletId /\ d)
 getInletsChannel (Node _ _ (inlets_chan /\ _)) = inlets_chan
 
 
-getOutletsChannel :: forall state d. Node state d -> Ch.Channel (OutletId /\ d)
+getOutletsChannel :: forall d. (forall state. Node state d) -> Ch.Channel (OutletId /\ d)
 getOutletsChannel (Node _ _ (_ /\ outlets_chan)) = outlets_chan
 
 
 -- subscribeInlet inletId = inletsSignal >>> Signal.filter
 
 
-inletsSignal :: forall state d. Node state d -> Signal (InletId /\ d)
-inletsSignal =
-    Ch.subscribe <<< getInletsChannel
+inletsSignal :: forall d. (forall state. Node state d) -> Signal (InletId /\ d)
+inletsSignal node =
+    -- Ch.subscribe <<< getInletsChannel
+    Ch.subscribe $ getInletsChannel node
 
 
-inletsSignal' :: forall state d. Node state d -> Signal (InletId /-> d)
-inletsSignal' =
-    Signal.foldp (Tuple.uncurry Map.insert) Map.empty <<< inletsSignal
+inletsSignal' :: forall d. (forall state. Node state d) -> Signal (InletId /-> d)
+inletsSignal' node =
+    -- Signal.foldp (Tuple.uncurry Map.insert) Map.empty <<< inletsSignal
+    Signal.foldp (Tuple.uncurry Map.insert) Map.empty $ inletsSignal node
 
 
-outletsSignal :: forall state d. Node state d -> Signal (OutletId /\ d)
-outletsSignal =
-    Ch.subscribe <<< getOutletsChannel
+outletsSignal :: forall d. (forall state. Node state d) -> Signal (OutletId /\ d)
+-- outletsSignal =
+--     Ch.subscribe <<< getOutletsChannel
+outletsSignal node =
+       Ch.subscribe $ getOutletsChannel node
 
 
-outletsSignal' :: forall state d. Node state d -> Signal (OutletId /-> d)
-outletsSignal' =
-    Signal.foldp (Tuple.uncurry Map.insert) Map.empty <<< outletsSignal
+outletsSignal' :: forall d. (forall state. Node state d) -> Signal (OutletId /-> d)
+outletsSignal' node =
+    -- Signal.foldp (Tuple.uncurry Map.insert) Map.empty <<< outletsSignal
+    Signal.foldp (Tuple.uncurry Map.insert) Map.empty $ outletsSignal node
 
 
-inletSignal :: forall state d. Node state d -> InletId -> Signal d
+inletSignal :: forall d. (forall state. Node state d) -> InletId -> Signal d
 inletSignal node name =
     ( Ch.subscribe (getInletsChannel node)
         # Signal.filter
@@ -332,7 +338,7 @@ inletSignal node name =
     ) ~> Tuple.snd
 
 
-outletSignal :: forall state d. Node state d -> OutletId -> Signal d
+outletSignal :: forall d. (forall state. Node state d) -> OutletId -> Signal d
 outletSignal node name =
     ( Ch.subscribe (getOutletsChannel node)
         # Signal.filter
@@ -341,23 +347,24 @@ outletSignal node name =
     ) ~> Tuple.snd
 
 
-outletSignalFlipped :: forall state d. OutletId -> Node state d -> Signal d
-outletSignalFlipped = flip outletSignal
+outletSignalFlipped :: forall d. OutletId -> (forall state. Node state d) -> Signal d
+-- outletSignalFlipped = flip outletSignal
+outletSignalFlipped outletId node = outletSignal node outletId
 
 
-getI :: forall state d. Node state d -> InletId -> Effect d
+getI :: forall d. (forall state. Node state d) -> InletId -> Effect d
 getI node name = inletSignal node name # Signal.get
 
 
-getO :: forall state d. Node state d -> OutletId -> Effect d
+getO :: forall d. (forall state. Node state d) -> OutletId -> Effect d
 getO node name = outletSignal node name # Signal.get
 
 
-getShape :: forall state d. Node state d -> Array (InletDef d) /\ Array (OutletDef d)
+getShape :: forall d. (forall state. Node state d) -> Array (InletDef d) /\ Array (OutletDef d)
 getShape = getFn >>> Fn.shapeOf
 
 
-getShape' :: forall state d. Node state d -> (InletId /-> Channel.Def d) /\ (OutletId /-> Channel.Def d)
+getShape' :: forall d. (forall state. Node state d) -> (InletId /-> Channel.Def d) /\ (OutletId /-> Channel.Def d)
 getShape' = getShape >>> bimap Map.fromFoldable Map.fromFoldable
 
 
@@ -369,53 +376,53 @@ outlet :: forall state d. OutletId -> Node state d -> Maybe (OutletDef d)
 outlet name = getFn >>> Fn.findOutput ((==) name)
 
 
-inlets :: forall state d. Node state d -> Array (InletDef d)
+inlets :: forall d. (forall state. Node state d) -> Array (InletDef d)
 inlets = getShape >>> Tuple.fst
 
 
-inletsBy :: forall state d. (Channel.Def d -> Boolean) -> Node state d -> Array (InletDef d)
+inletsBy :: forall state d. (Channel.Def d -> Boolean) -> (forall state. Node state d) -> Array (InletDef d)
 inletsBy pred = inlets >>> Array.filter (Tuple.snd >>> pred)
 
 
-outlets :: forall state d. Node state d -> Array (OutletDef d)
+outlets :: forall d. (forall state. Node state d) -> Array (OutletDef d)
 outlets = getShape >>> Tuple.snd
 
 
-outletsBy :: forall state d. (Channel.Def d -> Boolean) -> Node state d -> Array (OutletDef d)
+outletsBy :: forall state d. (Channel.Def d -> Boolean) -> (forall state. Node state d) -> Array (OutletDef d)
 outletsBy pred = outlets >>> Array.filter (Tuple.snd >>> pred)
 
 
-dimensions :: forall state d. Node state d -> Int /\ Int
+dimensions :: forall d. (forall state. Node state d) -> Int /\ Int
 dimensions = getFn >>> Fn.dimensions
 
 
-dimensionsBy :: forall state d. (InletDef d -> Boolean) -> (OutletDef d -> Boolean) -> Node state d -> Int /\ Int
+dimensionsBy :: forall d. (InletDef d -> Boolean) -> (OutletDef d -> Boolean) -> (forall state. Node state d) -> Int /\ Int
 dimensionsBy iPred oPred = getShape >>> bimap (Array.filter iPred >>> Array.length) (Array.filter oPred >>> Array.length)
 
 
-dimensionsBy' :: forall state d. (Channel.Def d -> Boolean) -> Node state d -> Int /\ Int
+dimensionsBy' :: forall d. (Channel.Def d -> Boolean) -> (forall state. Node state d) -> Int /\ Int
 dimensionsBy' pred = dimensionsBy (Tuple.snd >>> pred) (Tuple.snd >>> pred)
 
 
-indexOfInlet :: forall state d. InletId -> Node state d -> Maybe Int
+indexOfInlet :: forall d. InletId -> (forall state. Node state d) -> Maybe Int
 indexOfInlet inletName node =
     Array.elemIndex inletName $ Tuple.fst <$> inlets node
 
 
-indexOfOutlet :: forall state d. OutletId -> Node state d -> Maybe Int
+indexOfOutlet :: forall state d. OutletId -> (forall state. Node state d) -> Maybe Int
 indexOfOutlet outletName node =
     Array.elemIndex outletName $ Tuple.fst <$> outlets node
 
 
-defaultOfInlet :: forall state d. InletId -> Node state d -> Maybe d
+defaultOfInlet :: forall d. InletId -> (forall state. Node state d) -> Maybe d
 defaultOfInlet name node = inlet name node <#> Tuple.snd <#> Channel.default
 
 
-defaultOfOutlet :: forall state d. OutletId -> Node state d -> Maybe d
+defaultOfOutlet :: forall d. OutletId -> (forall state. Node state d) -> Maybe d
 defaultOfOutlet name node = outlet name node <#> Tuple.snd <#> Channel.default
 
 
-default :: forall state d. Node state d -> d
+default :: forall d. (forall state. Node state d) -> d
 default (Node d _ _) = d
 
 
@@ -424,7 +431,7 @@ markFamily family (Node m default shape channels _) =
     Node m default shape channels $ Just family -}
 
 
-family :: forall state d. Node state d -> Family
+family :: forall d. (forall state. Node state d) -> Family
 family = getFn >>> Fn.name
 
 
@@ -453,8 +460,8 @@ linksAtOutlet outlet = fromMaybe 0 <<< Map.lookup outlet <<< Tuple.snd
 -- subscribeInlet = TODO
 
 
--- changeProcess :: forall state d. Node state d -> NodeProcess state d -> Node state d
+-- changeProcess :: forall d. (forall state. Node state d) -> NodeProcess state d -> Node state d
 -- changeProcess (Node )
 
 
--- with :: forall state d. Node state d -> NodeProcess state d ->
+-- with :: forall d. (forall state. Node state d) -> NodeProcess state d ->

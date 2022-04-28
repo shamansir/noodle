@@ -25,6 +25,7 @@ to generate this file without the comments in this block.
   , "dom-indexed"
   , "effect"
   , "either"
+  , "exists"
   , "foldable-traversable"
   , "free"
   , "halogen"
