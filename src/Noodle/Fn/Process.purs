@@ -125,6 +125,21 @@ mapMOutputs f (ProcessM processFree) =
     ProcessM $ foldFree (Free.liftF <<< mapFOutputs f) processFree
 
 
+imapFState :: forall i o state state' d m. (state -> state') -> (state' -> state) -> ProcessF i o state d m ~> ProcessF i o state' d m
+imapFState f g =
+    case _ of
+        State k -> State (map f <<< k <<< g)
+        Lift m -> Lift m
+        Receive' iid k -> Receive' iid k
+        Send' oid d next -> Send' oid d next
+        SendIn iid d next -> SendIn iid d next
+
+
+imapMState :: forall i o state state' d m. (state -> state') -> (state' -> state) -> ProcessM i o state d m ~> ProcessM i o state' d m
+imapMState f g (ProcessM processFree) =
+    ProcessM $ foldFree (Free.liftF <<< imapFState f g) processFree
+
+
 imapFFocus :: forall i o state d d' m. (d -> d') -> (d' -> d) -> ProcessF i o state d m ~> ProcessF i o state d' m
 imapFFocus f g =
     case _ of

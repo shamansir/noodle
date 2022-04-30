@@ -14,6 +14,7 @@ module Noodle.Fn
   , mapOutputs, mapOutputsIds
   , mapInputsAndOutputs, mapInputsAndOutputsIds
   , mapM
+  , imapState
   )
   where
 
@@ -151,6 +152,9 @@ mapInputsAndOutputsIds f g = mapInputsIds f >>> mapOutputsIds g
 mapM :: forall i ii o oo state m m' d. (m ~> m') -> Fn i ii o oo state m d -> Fn i ii o oo state m' d
 mapM f (Fn name is os processM) = Fn name is os $ Process.mapMM f processM
 
+
+imapState :: forall i ii o oo state state' m d. (state -> state') -> (state' -> state) -> Fn i ii o oo state m d -> Fn i ii o oo state' m d
+imapState f g (Fn name is os processM) = Fn name is os $ Process.imapMState f g processM
 
 {- Running -}
 

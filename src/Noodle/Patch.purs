@@ -8,6 +8,7 @@ import Effect.Class (liftEffect)
 
 -- import Data.Functor (lift)
 
+import Data.Exists (Exists, mkExists, runExists)
 import Data.Set (Set)
 import Data.List (List)
 import Data.Array as Array
@@ -19,6 +20,7 @@ import Data.Foldable (foldr, foldM)
 import Data.Traversable (sequence, traverse)
 import Data.Tuple (fst, snd, curry, uncurry) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Unsafe.Coerce (unsafeCoerce)
 
 
 import Noodle.Node (Node, Link)
@@ -35,9 +37,14 @@ type InletPath = Node.Id /\ Node.InletId
 type OutletPath = Node.Id /\ Node.OutletId
 
 
+-- data NodeS d state = NodeS state (state -> Node state d)
+data NodeS d state = NodeS (Node state d)
+type NodeE d = Exists (NodeS d)
+
+
 data Patch d =
     Patch
-        (Node.Id /-> (forall state. Node state d))
+        (Node.Id /-> NodeE d)
         ((OutletPath /\ InletPath) /-> Link)
 
 
@@ -47,14 +54,14 @@ infixl 5 send' as +>
 infixl 5 produce' as ++>
 
 
-empty :: forall node_state d. Patch d
+empty :: forall d. Patch d
 empty = Patch Map.empty Map.empty
 
 
 addNode :: forall node_state d. Node.Id -> Node node_state d -> Patch d -> Patch d
 addNode name node (Patch nodes links) =
     Patch
-        (nodes # Map.insert name node)
+        (nodes # Map.insert name (mkExists $ NodeS node))
         links
 
 
@@ -76,7 +83,7 @@ addNodesFrom toolkit state pairs patch =
     foldr (\pair patchEff -> patchEff >>= addNodeFrom toolkit state pair) (pure patch) pairs
 
 
-nodes :: forall d. Patch d -> Array (Node.Id /\ (forall node_state. Node node_state d))
+nodes :: forall d. Patch d -> Array (Node.Id /\ NodeE d)
 nodes (Patch nodes _) = nodes # Map.toUnfoldable--Unordered
 
 
@@ -84,8 +91,12 @@ links :: forall node_state d. Patch d -> Set (OutletPath /\ InletPath)
 links (Patch _ links) = links # Map.keys
 
 
-findNode :: forall node_state d. Node.Id -> Patch d -> Maybe (forall node_state. Node node_state d)
-findNode name (Patch nodes _) = nodes # Map.lookup name
+findNode' :: forall d. Node.Id -> Patch d -> Maybe (NodeE d)
+findNode' name (Patch nodes _) = nodes # Map.lookup name
+
+
+findNode :: forall state d. Node.Id -> Patch d -> Maybe (Node state d)
+findNode name p = unwrapNode <$> findNode' name p
 
 
 nodesCount :: forall node_state d. Patch d -> Int
@@ -117,14 +128,22 @@ forgetNode nodeId (Patch nodes links) =
         links
 
 
-connect :: forall node_state d. OutletPath -> InletPath -> Patch d -> Effect (Patch d)
+connect :: forall d. OutletPath -> InletPath -> Patch d -> Effect (Patch d)
 connect (srcNodeName /\ outlet) (dstNodeName /\ inlet) patch =
-    case (/\) <$> findNode srcNodeName patch <*> findNode dstNodeName patch of
+    {- case (/\) <$> findNode srcNodeName patch <*> findNode dstNodeName patch of
         Just (srcNode /\ dstNode) ->
-            Node.connect (srcNode /\ outlet) (dstNode /\ inlet)
+            Node.connect (?wh /\ outlet) (?wh /\ inlet)
+            -- Node.connect (srcNode /\ outlet) (dstNode /\ inlet)
                 <#> \link ->
                     registerLink (srcNodeName /\ outlet) (dstNodeName /\ inlet) link patch
-        Nothing -> pure patch
+        Nothing -> pure patch -}
+    case findNode srcNodeName patch /\ findNode dstNodeName patch of
+        (Just srcNode /\ Just dstNode) ->
+            Node.connect (srcNode /\ outlet) (dstNode /\ inlet)
+            -- Node.connect (srcNode /\ outlet) (dstNode /\ inlet)
+                <#> \link ->
+                    registerLink (srcNodeName /\ outlet) (dstNodeName /\ inlet) link patch
+        _ -> pure patch
 
 
 disconnect :: forall node_state d. OutletPath -> InletPath -> Patch d -> Effect (Patch d)
@@ -230,7 +249,7 @@ send' path v patch =
     send path v patch *> pure patch
 
 
-produce :: forall node_state d. (Node.Id /\ Node.OutletId) -> d -> Patch d -> Effect Unit
+produce :: forall d. (Node.Id /\ Node.OutletId) -> d -> Patch d -> Effect Unit
 produce (node /\ outlet) v patch =
     patch
         # findNode node
@@ -246,6 +265,11 @@ produce' path v patch =
 addUniqueNodeId :: forall node_state d. Patch d -> Node.Family -> Node.Id
 addUniqueNodeId patch nodeFamily =
     nodeFamily <> "-" <> (show $ nodesCount patch + 1)
+
+
+
+unwrapNode :: forall state d. NodeE d -> Node state d
+unwrapNode = runExists $ \(NodeS node) -> unsafeCoerce node
 
 
 -- TODO: `withNode`
