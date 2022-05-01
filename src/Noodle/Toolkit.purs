@@ -70,7 +70,7 @@ spawn' :: forall state d. Node.Family -> state -> Toolkit state d -> Effect (May
 spawn' family state (Toolkit _ def nodeDefs) =
     nodeDefs
         # Map.lookup family
-        # map (Node.make' def)
+        # map (Node.make' state def)
         # sequence
 
 

@@ -69,7 +69,7 @@ type PatchSlot' patch_action patch_state id = H.Slot (TellPatch patch_action) (I
 
 
 type PatchInput d = PatchInput' Unit Unit d
-type PatchInput' patch_state node_state d = { size :: Size, patch :: Patch node_state d, patchState :: patch_state }
+type PatchInput' patch_state d = { size :: Size, patch :: Patch patch_state d, patchState :: patch_state }
 
 
 type PatchOutput = PatchOutput' Unit

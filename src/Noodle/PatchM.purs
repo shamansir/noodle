@@ -86,14 +86,14 @@ program = do
     pure unit -}
 
 
-runPatchM :: forall state node_state d. d -> state -> Patch node_state d -> PatchM state d Aff ~> Aff
+runPatchM :: forall state d. d -> state -> Patch state d -> PatchM state d Aff ~> Aff
 runPatchM default state patch (PatchM patchFree) = do
     stateRef <- liftEffect $ Ref.new state
     patchRef <- liftEffect $ Ref.new patch
     runPatchFreeM default stateRef patchRef patchFree
 
 
-runPatchFreeM :: forall state node_state d. d -> Ref state -> Ref (Patch node_state d) -> Free (PatchF state d Aff) ~> Aff
+runPatchFreeM :: forall state d. d -> Ref state -> Ref (Patch state d) -> Free (PatchF state d Aff) ~> Aff
 runPatchFreeM default stateRef patchRef =
     --foldFree go-- (go stateRef)
     runFreeM go
