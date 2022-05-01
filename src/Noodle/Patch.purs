@@ -63,7 +63,7 @@ addNode :: forall patch_state node_state d. Node.Id -> Node node_state d -> Patc
 addNode name node (Patch state nodes links) =
     Patch
         state
-        (nodes # Map.insert name (mkExists $ NodeS node))
+        (nodes # Map.insert name (wrapNode node))
         links
 
 
@@ -272,7 +272,11 @@ addUniqueNodeId patch nodeFamily =
 
 
 unwrapNode :: forall state d. NodeE d -> Node state d
-unwrapNode = runExists $ \(NodeS node) -> unsafeCoerce node
+unwrapNode = runExists (\(NodeS node) -> unsafeCoerce node)
+
+
+wrapNode :: forall state d. Node state d -> NodeE d
+wrapNode = mkExists <<< NodeS
 
 
 -- TODO: `withNode`
