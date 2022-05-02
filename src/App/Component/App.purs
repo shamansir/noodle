@@ -58,7 +58,7 @@ _fltc = Proxy :: Proxy "fltc"
 
 
 type Input patch_action patch_state node_state d =
-    { network :: Noodle.Network node_state d
+    { network :: Noodle.Network d
     , toolkit :: Noodle.Toolkit node_state d
     , style :: Style
     , flow :: NodeFlow
@@ -71,7 +71,7 @@ type Input patch_action patch_state node_state d =
 
 
 type State patch_action patch_state node_state d =
-    { network :: Noodle.Network node_state d
+    { network :: Noodle.Network d
     , toolkit :: Noodle.Toolkit node_state d
     , style :: Style
     , flow :: NodeFlow
@@ -126,7 +126,7 @@ render (s@{ network, toolkit, style, flow }) =
             [ background
             , curFrame
             , patchesTabs
-            , maybeCurrent currentPatch
+            , maybeCurrent Nothing-- ?currentPatch
             ]
         ]
     where

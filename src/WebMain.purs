@@ -45,7 +45,7 @@ flow :: NodeFlow
 flow = Vertical
 
 
-app :: Network Unit Hydra -> App' UI.Action UI.State Unit Hydra
+app :: Network Hydra -> App' UI.Action UI.State Unit Hydra
 app nw =
     { style
     , flow
@@ -66,7 +66,7 @@ main =
         >>= App.run
 
 
-network :: Toolkit Unit Hydra -> Effect (Network Unit Hydra)
+network :: Toolkit Unit Hydra -> Effect (Network Hydra)
 network toolkit = do
     pure $ Network.empty
 

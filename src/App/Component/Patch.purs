@@ -495,19 +495,19 @@ component =
         }
 
 
-addNodesFrom :: forall node_state d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Patch node_state d -> BinPackedNodes -> BinPackedNodes
+addNodesFrom :: forall state d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Patch state d -> BinPackedNodes -> BinPackedNodes
 addNodesFrom getFlags style flow patch layout =
     Patch.nodes patch
         # foldr
             (\(nodeName /\ node) layout' ->
                 layout'
-                    # LOpt.pack nodeName (NodeC.areaOf getFlags style flow node)
+                    # LOpt.pack nodeName (NodeC.areaOf getFlags style flow $ Patch.unwrapNode node)
                     # Maybe.fromMaybe layout'
             )
             layout
 
 
-areaOf :: forall node_state d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Patch node_state d -> Node.Id -> Maybe Size
+areaOf :: forall state d. UI.GetFlags -> Style -> NodeFlow -> Noodle.Patch state d -> Node.Id -> Maybe Size
 areaOf getFlags style flow patch nodeId =
     patch
         # Patch.findNode nodeId

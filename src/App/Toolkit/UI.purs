@@ -68,7 +68,7 @@ type PatchSlot id = PatchSlot' Void Unit id
 type PatchSlot' patch_action patch_state id = H.Slot (TellPatch patch_action) (InformApp patch_state) id
 
 
-type PatchInput d = PatchInput' Unit Unit d
+type PatchInput d = PatchInput' Unit d
 type PatchInput' patch_state d = { size :: Size, patch :: Patch patch_state d, patchState :: patch_state }
 
 
@@ -88,9 +88,9 @@ data TellPatch patch_action a
     = TellPatch patch_action a
 
 
-type PatchComponent d = PatchComponent' Void Unit Unit d
-type PatchComponent' patch_action patch_state node_state d =
-    H.Component (TellPatch patch_action) (PatchInput' patch_state node_state d) (PatchOutput' patch_state) Aff
+type PatchComponent d = PatchComponent' Void Unit d
+type PatchComponent' patch_action patch_state d =
+    H.Component (TellPatch patch_action) (PatchInput' patch_state d) (PatchOutput' patch_state) Aff
 
 
 {- Components -}
@@ -98,7 +98,7 @@ type PatchComponent' patch_action patch_state node_state d =
 
 type Components d = Components' Void Unit Unit d
 type Components' patch_action patch_state node_state d =
-    { patch :: Maybe (PatchComponent' patch_action patch_state node_state d)
+    { patch :: Maybe (PatchComponent' patch_action patch_state d)
     , node :: Node.Family -> Maybe (NodeComponent' patch_action patch_state node_state d)
     }
 
