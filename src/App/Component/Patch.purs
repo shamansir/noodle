@@ -93,7 +93,7 @@ type BinPackedNodes = Bin2 Number (Maybe Node.Id)
 
 
 type Input patch_action patch_state node_state d =
-    { patch :: Noodle.Patch node_state d
+    { patch :: Noodle.Patch patch_state d
     , toolkit :: Noodle.Toolkit node_state d
     , style :: Style
     , flow :: NodeFlow
@@ -108,7 +108,7 @@ type Input patch_action patch_state node_state d =
 
 
 type State patch_action patch_state node_state d =
-    { patch :: Noodle.Patch node_state d
+    { patch :: Noodle.Patch patch_state d
     , toolkit :: Noodle.Toolkit node_state d
     , style :: Style
     , flow :: NodeFlow
@@ -431,7 +431,7 @@ handleAction = case _ of
 
     where
 
-        clickableToDraggable :: Noodle.Patch node_state d -> Pos -> Mouse.Clickable -> Maybe Mouse.Draggable
+        clickableToDraggable :: Noodle.Patch patch_state d -> Pos -> Mouse.Clickable -> Maybe Mouse.Draggable
         clickableToDraggable patch _ (Clickable.Header nodeId) = Just $ Draggable.Node nodeId
         clickableToDraggable patch _ (Clickable.Inlet inletPath) =
             patch
@@ -439,7 +439,7 @@ handleAction = case _ of
                 <#> (\outletPath -> Draggable.Link outletPath $ Just inletPath)
         clickableToDraggable patch _ (Clickable.Outlet outletPath) = Just $ Draggable.Link outletPath Nothing
 
-        draggableToClickable :: Noodle.Patch node_state d -> Pos -> Mouse.Draggable -> Maybe Mouse.Clickable
+        draggableToClickable :: Noodle.Patch patch_state d -> Pos -> Mouse.Draggable -> Maybe Mouse.Clickable
         draggableToClickable _ _ _ = Nothing
 
         liftSubject :: Node.Id -> NodeC.WhereInside -> Mouse.Clickable
@@ -447,7 +447,7 @@ handleAction = case _ of
         liftSubject nodeId (NodeC.Inlet inletId) = Clickable.Inlet $ nodeId /\ inletId
         liftSubject nodeId (NodeC.Outlet outletId) = Clickable.Outlet $ nodeId /\ outletId
 
-        topLinkAt :: Patch.InletPath -> Noodle.Patch node_state d -> Maybe Patch.OutletPath
+        topLinkAt :: Patch.InletPath -> Noodle.Patch patch_state d -> Maybe Patch.OutletPath
         topLinkAt inletPath patch =
             patch
                  #  Patch.linksLeadingTo inletPath

@@ -126,7 +126,7 @@ render (s@{ network, toolkit, style, flow }) =
             [ background
             , curFrame
             , patchesTabs
-            , maybeCurrent Nothing-- ?currentPatch
+            , maybeCurrent currentPatch
             ]
         ]
     where
