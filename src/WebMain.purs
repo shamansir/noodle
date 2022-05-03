@@ -45,12 +45,11 @@ flow :: NodeFlow
 flow = Vertical
 
 
-app :: Network Hydra -> App' UI.Action UI.State Unit Hydra
+--app :: Network Hydra -> App' UI.Action UI.State Unit Hydra
+app :: Network Hydra -> App' UI.State Unit Hydra
 app nw =
-    { style
-    , flow
-    , toolkit
-    , components
+    { toolkit
+    -- , components
     , markings
     , getFlags
     , currentPatch : Just "hydra"
