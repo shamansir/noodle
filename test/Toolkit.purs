@@ -42,7 +42,7 @@ spec = do
             checkRef :: Ref Int <- liftEffect $ Ref.new 1
             let
                 intChan = Ch.hot "int" 0
-                toolkit :: Toolkit Unit Int
+                toolkit :: Toolkit Int
                 toolkit =
                     Toolkit.registerFn (Toolkit.empty "Ints" 0)
                         $ Fn.make "sum"

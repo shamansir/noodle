@@ -170,14 +170,15 @@ consumerOut = Fn.out_ "consume_"
 
 
 make
-    :: forall state d
-     . Family
+    :: forall state m d
+     . MonadEffect m
+    => Family
     -> state
     -> d
     -> Array (InletId /\ Channel.Def d)
     -> Array (OutletId /\ Channel.Def d)
     -> NodeProcess state d
-    -> Effect (Node state d)
+    -> m (Node state d)
 make family state default inlets outlets =
     make' state default <<< Fn.make family inlets outlets
 
@@ -199,10 +200,10 @@ run :: forall state m d. MonadEffect m => Node state d -> m Unit
 run (Node state default fn (inlets_chan /\ outlets_chan)) =
     let
         inlets = Ch.subscribe inlets_chan
-        outlets = Ch.subscribe outlets_chan
+        -- outlets = Ch.subscribe outlets_chan
         store ( inlet /\ d ) ( _ /\ map ) = Just inlet /\ (map # Map.insert inlet d)
         maps = inlets # Signal.foldp store (Just consumerIn /\ Map.empty)
-        toReceive (last /\ inputs) = { last, inputs }
+        --toReceive (last /\ inputs) = { last, inputs }
         -- send :: Fn.Send OutletId d
         -- send = Fn.Send $ Tuple.curry $ Ch.send outlets_chan -- could put the outgoing data in a Map and send once / in packs, see `Pass``
         -- fn_signal :: Signal (Effect (Fn.Pass d))

@@ -8,6 +8,7 @@ import Effect.Class (class MonadEffect)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 
+import Color (rgb, rgba) as C
 import Color.Extra as C
 
 import Data.Maybe (Maybe(..))
@@ -16,7 +17,7 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
 import Data.Vec2 ((<+>), Size)
 import Data.Vec2 as V2
-import Data.Array (length) as Array
+import Data.Array (length, fromFoldable) as Array
 import Data.NonEmpty (NonEmpty, singleton) as NE
 
 import Noodle.Network (Network) as Noodle
@@ -67,7 +68,7 @@ _fltc = Proxy :: Proxy "fltc"
 
 type Input patch_state node_state d =
     { network :: Noodle.Network d
-    , toolkit :: Noodle.Toolkit node_state d
+    , toolkit :: Noodle.Toolkit d
     , currentPatch :: Maybe Patch.Id
     , markings :: ToolkitUI.Markings
     , getFlags :: ToolkitUI.GetFlags
@@ -77,7 +78,7 @@ type Input patch_state node_state d =
 
 type State patch_state node_state d =
     { network :: Noodle.Network d
-    , toolkit :: Noodle.Toolkit node_state d
+    , toolkit :: Noodle.Toolkit d
     , currentPatch :: Maybe Patch.Id
     , markings :: ToolkitUI.Markings
     , getFlags :: ToolkitUI.GetFlags
@@ -123,19 +124,32 @@ render (s@{ network, toolkit }) =
             CSS.fontFamily font.family $ NE.singleton CSS.sansSerif
             CSS.fontSize $ CSS.pt font.size
         ]
-        [ toolkitInfo toolkit
+        [ HS.svg
+            [ ]
+            [ toolkitInfo toolkit ]
         ]
     where
+        nodeFamily family =
+            HS.text
+                [ HSA.translateTo' $ 0.0 <+> (font.size * 2.0)
+                , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
+                ]
+                [ -- HS.tspan
+                    HH.text $ family
+
+                ]
         toolkitInfo toolkit =
             HS.g
                 []
-                [ HS.text
-                    [ ]
+                ([ HS.text
+                    [ HSA.translateTo' $ 0.0 <+> font.size
+                    , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
+                    ]
                     [ -- HS.tspan
                     HH.text $ Toolkit.name toolkit <> ". Families: " <> show (Toolkit.nodeFamiliesCount toolkit)
 
                     ]
-                ]
+                ] <> (nodeFamily <$> Array.fromFoldable (Toolkit.nodeFamilies toolkit)))
 
 
 handleAction

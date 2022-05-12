@@ -9,7 +9,7 @@ import Toolkit.Hydra.Fn.Gen (toNodeFn) as Fn
 
 import Noodle.Toolkit (Toolkit, empty, registerFn) as T
 
-type Toolkit = T.Toolkit Unit Hydra
+type Toolkit = T.Toolkit Hydra
 
 
 toolkit :: Toolkit

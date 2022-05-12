@@ -11,7 +11,7 @@ import Control.Monad.Free (Free, foldFree)
 import Control.Monad.Free as Free
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.State.Class (class MonadState)
-import Control.Monad.Rec.Class (class MonadRec)
+import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
@@ -68,6 +68,12 @@ instance monadStateNoodleM :: MonadState state (ProcessM i o state d m) where
 
 instance monadThrowNoodleM :: MonadThrow e m => MonadThrow e (ProcessM i o state d m) where
   throwError = ProcessM <<< Free.liftF <<< Lift <<< throwError
+
+
+instance monadRecHalogenM :: MonadRec (ProcessM i o state d m) where
+  tailRecM k a = k a >>= case _ of
+    Loop x -> tailRecM k x
+    Done y -> pure y
 
 
 {- Processing -}
