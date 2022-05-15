@@ -36,10 +36,43 @@ import Signal.Time as SignalT
 spec :: Spec Unit
 spec = do
 
-    describe "foo" $
+    describe "foo" $ do
 
         it "spawning works" $ do
-            checkRef :: Ref Int <- liftEffect $ Ref.new 1
+            let
+                intChan = Ch.hot "int" 0
+                toolkit :: Toolkit Int
+                toolkit =
+                    Toolkit.registerFn (Toolkit.empty "Ints" 0)
+                        $ Fn.make "sum"
+                            -- TODO: withInlets / withInputs ...
+                                -- -< "a" /\ intChan
+                            [ Fn.in_ "a" /\ intChan
+                            , Fn.in_ "b" /\ intChan
+                            ]
+                            -- TODO: withOutlets / withInputs ...
+                                -- >- "a" /\ intChan
+                            [ Fn.out_ "sum" /\ intChan
+                            ]
+                        $ do
+                            a <- Fn.receive $ Fn.in_ "a"  -- TODO: some operator i.e. <<+ "a"
+                            b <- Fn.receive $ Fn.in_ "b"  -- TODO: some operator i.e. <<+ "b"
+                            Fn.send (Fn.out_ "sum") $ a + b
+            maybeNode <- toolkit # Toolkit.spawnAndRun' "sum" # liftEffect
+            case maybeNode of
+                Just node -> liftEffect $ do -- do inside `NodeM` ?
+                    Node.run' node
+                    Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
+                    Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
+                    sum <- Node.getO node (Fn.out_ "sum") -- TODO: some operator i.e. v <- "sum" <+ node
+                    shouldEqual sum 8
+                Nothing ->
+                    fail "node wasn't spawned"
+
+            pure unit
+
+{-
+        it "spawning with state works" $ do
             let
                 intChan = Ch.hot "int" 0
                 toolkit :: Toolkit Int
@@ -58,8 +91,9 @@ spec = do
                         $ do
                             a <- Fn.receive $ Fn.in_ "a"
                             b <- Fn.receive $ Fn.in_ "b"
+                            modify_ (const $ show $ a - b)
                             Fn.send (Fn.out_ "sum") $ a + b
-            maybeNode <- toolkit # Toolkit.spawn "sum" # liftEffect
+            maybeNode <- toolkit # Toolkit.spawnAndRun "sum" "---" # liftEffect
             case maybeNode of
                 Just node -> liftEffect $ do -- do inside `NodeM` ?
                     Node.run node
@@ -67,10 +101,13 @@ spec = do
                     Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
                     sum <- Node.getO node (Fn.out_ "sum") -- TODO: some operator i.e. v <- "sum" <+ node
                     shouldEqual sum 8
+                    state <- Node.getState node
+                    shouldEqual state "aaa"
                 Nothing ->
                     fail "node wasn't spawned"
 
             pure unit
+-}
 
     describe "bar" $ do
         pure unit

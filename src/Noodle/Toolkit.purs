@@ -2,13 +2,13 @@ module Noodle.Toolkit
   ( Toolkit
   , empty, name
   , nodeFamilies, nodeFamiliesCount
-  , spawn, spawn'
+  , spawn, spawnAndRun, spawnAndRun'
   , register, registerFn
   )
   where
 
 
-import Prelude ((<<<), (>>>), (#), map, ($), unit, Unit)
+import Prelude
 
 import Effect (Effect)
 import Effect.Aff (Aff)
@@ -69,19 +69,25 @@ registerFn (Toolkit name def fns) fn =
   Toolkit name def $ Map.insert (Fn.name fn) (wrapNodeFn fn) $ fns
 
 
-spawn :: forall d. Node.Family -> Toolkit d -> Effect (Maybe (Node Unit d))
-spawn family = spawn' family unit
-
-
-spawn' :: forall node_state d. Node.Family -> node_state -> Toolkit d -> Effect (Maybe (Node node_state d))
-spawn' family state (Toolkit _ def nodeDefs) =
+spawn :: forall node_state d. Node.Family -> Toolkit d -> Effect (Maybe (Node node_state d))
+spawn family (Toolkit _ def nodeDefs) =
     nodeDefs
         # Map.lookup family
-        # map (unwrapNodeFn >>> Node.make' state def)
+        # map (unwrapNodeFn >>> Node.make' def)
         # sequence
 
 
--- TODO: spawnAndRun
+spawnAndRun :: forall node_state d. Node.Family -> node_state -> Toolkit d -> Effect (Maybe (Node node_state d))
+spawnAndRun family state tk =
+    spawn family tk
+      >>= (\maybeNode -> do
+            _ <- sequence (Node.run state <$> maybeNode)
+            pure maybeNode
+            )
+
+
+spawnAndRun' :: forall d. Node.Family -> Toolkit d -> Effect (Maybe (Node Unit d))
+spawnAndRun' family = spawnAndRun family unit
 
 
 nodeFamilies :: forall state d. Toolkit d -> Set Node.Family

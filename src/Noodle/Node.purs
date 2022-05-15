@@ -29,7 +29,7 @@ module Noodle.Node
   , inlet, inletSignal
   , inlets, inletsSignal, inletsSignal'
   , linksAtInlet, linksAtOutlet
-  , make, make', run, runWith, setState
+  , make, make', run, run'
 --   , markFamily
   , move
   , outletSignal
@@ -139,7 +139,6 @@ type NodeProcess state d = Fn.ProcessM InletId OutletId state d Aff Unit
 {- Node stores incoming and outgoing channels (`Signal.Channel`, not `Noodle.Channel`) of data of type `d` + any additional data -}
 data Node state d
     = Node
-        state
         d
         (NodeFn state d)
         (Sig.Channel (InletId /\ d) /\ Sig.Channel (OutletId /\ d))
@@ -173,31 +172,29 @@ make
     :: forall state m d
      . MonadEffect m
     => Family
-    -> state
     -> d
     -> Array (InletId /\ Channel.Def d)
     -> Array (OutletId /\ Channel.Def d)
     -> NodeProcess state d
     -> m (Node state d)
-make family state default inlets outlets =
-    make' state default <<< Fn.make family inlets outlets
+make family default inlets outlets =
+    make' default <<< Fn.make family inlets outlets
 
 
 make'
     :: forall state m d
      . MonadEffect m
-    => state
-    -> d
+    => d
     -> NodeFn state d
     -> m (Node state d)
-make' state default fn = do
+make' default fn = do
     inlets_chan <- liftEffect $ Ch.channel (consumerIn /\ default)
     outlets_chan <- liftEffect $ Ch.channel (consumerOut /\ default)
-    pure $ Node state default fn (inlets_chan /\ outlets_chan)
+    pure $ Node default fn (inlets_chan /\ outlets_chan)
 
 
-run :: forall state m d. MonadEffect m => Node state d -> m Unit
-run (Node state default fn (inlets_chan /\ outlets_chan)) =
+run :: forall state m d. MonadEffect m => state -> Node state d -> m Unit
+run state (Node default fn (inlets_chan /\ outlets_chan)) =
     let
         inlets = Ch.subscribe inlets_chan
         -- outlets = Ch.subscribe outlets_chan
@@ -225,12 +222,8 @@ run (Node state default fn (inlets_chan /\ outlets_chan)) =
     in liftEffect $ Signal.runSignal fn_signal
 
 
-runWith :: forall state m d. MonadEffect m => state -> Node state d -> m Unit
-runWith state = setState state >>> run
-
-
-setState :: forall state d. state -> Node state d -> Node state d
-setState next (Node _ d fn channels) = Node next d fn channels
+run' :: forall state m d. MonadEffect m => Node Unit d -> m Unit
+run' = run unit
 
 
 -- setState' :: forall state state' d. state -> Node state' d -> Node state d
@@ -304,15 +297,15 @@ disconnect (Link ref) =
 -- attach signal inlet node = pure node -- FIXME: TODO
 
 getFn :: forall state d. Node state d -> NodeFn state d
-getFn (Node _ _ fn _) = fn
+getFn (Node _ fn _) = fn
 
 
 getInletsChannel :: forall state d. Node state d -> Ch.Channel (InletId /\ d)
-getInletsChannel (Node _ _ _ (inlets_chan /\ _)) = inlets_chan
+getInletsChannel (Node _ _ (inlets_chan /\ _)) = inlets_chan
 
 
 getOutletsChannel :: forall state d. Node state d -> Ch.Channel (OutletId /\ d)
-getOutletsChannel (Node _ _ _ (_ /\ outlets_chan)) = outlets_chan
+getOutletsChannel (Node _ _ (_ /\ outlets_chan)) = outlets_chan
 
 
 -- subscribeInlet inletId = inletsSignal >>> Signal.filter
@@ -431,11 +424,7 @@ defaultOfOutlet name node = outlet name node <#> Tuple.snd <#> Channel.default
 
 
 default :: forall state d. Node state d -> d
-default (Node _ d _ _) = d
-
-
-currentState :: forall state d. Node state d -> state
-currentState (Node state _ _ _) = state
+default (Node d _ _) = d
 
 
 {- markFamily :: forall state d. Family -> Node m d -> Node m d
@@ -448,7 +437,7 @@ family = getFn >>> Fn.name
 
 
 move :: forall state d d'. (d -> d') -> (d' -> d) -> Node state d -> Effect (Node state d')
-move f g (Node state default fn (inChannel /\ outChannel)) =
+move f g (Node default fn (inChannel /\ outChannel)) =
     let
         movedFn = imap f g $ Fn.mapInputsAndOutputs (map f) (map f) fn
         nextDefault = f default
@@ -457,7 +446,7 @@ move f g (Node state default fn (inChannel /\ outChannel)) =
         newOutChannel <- Ch.channel (consumerOut /\ nextDefault)
         _ <- Signal.runSignal $ (Ch.subscribe inChannel ~> map f ~> Ch.send newInChannel)
         _ <- Signal.runSignal $ (Ch.subscribe outChannel ~> map f ~> Ch.send newOutChannel)
-        pure $ Node state nextDefault movedFn (newInChannel /\ newOutChannel)
+        pure $ Node nextDefault movedFn (newInChannel /\ newOutChannel)
 
 
 linksAtInlet :: InletId -> LinksCount -> Int
