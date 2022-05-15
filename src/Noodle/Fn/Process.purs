@@ -177,10 +177,8 @@ mapMM f (ProcessM processFree) =
     ProcessM $ foldFree (Free.liftF <<< mapFM f) processFree
 
 
-
-runM :: forall i o state d m. MonadEffect m => MonadRec m => Ord i => Protocol i o d -> d -> state -> ProcessM i o state d m ~> m
-runM protocol default state (ProcessM processFree) = do
-    stateRef <- liftEffect $ Ref.new state
+runM :: forall i o state d m. MonadEffect m => MonadRec m => Ord i => Protocol i o d -> d -> Ref state -> ProcessM i o state d m ~> m
+runM protocol default stateRef (ProcessM processFree) =
     runFreeM protocol default stateRef processFree
 
 

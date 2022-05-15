@@ -31,10 +31,14 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 
 import Effect (Effect)
-import Effect.Class (class MonadEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Aff (Aff)
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
 
 import Control.Monad.Rec.Class (class MonadRec)
+import Control.Monad.State.Class (class MonadState)
+import Control.Monad.State as State
 
 import Noodle.Fn.Process (ProcessM)
 import Noodle.Fn.Process as Process
@@ -159,9 +163,11 @@ imapState f g (Fn name is os processM) = Fn name is os $ Process.imapMState f g 
 {- Running -}
 
 
-run :: forall i ii o oo state d m. MonadRec m => MonadEffect m => Ord i => d -> state -> Protocol i o d -> Fn i ii o oo state m d -> m Unit
-run default state protocol (Fn _ _ _ processM) =
-    Process.runM protocol default state processM
+run :: forall i ii o oo state d m. MonadRec m => MonadEffect m => Ord i => d -> state -> Protocol i o d -> Fn i ii o oo state m d -> m state
+run default state protocol (Fn _ _ _ processM) = do
+    stateRef :: Ref state <- liftEffect $ Ref.new state
+    Process.runM protocol default stateRef processM
+    liftEffect $ Ref.read stateRef
 
 
 {- mkRun :: forall i ii o oo m d. Name -> d -> Array (i /\ d) -> Array o -> (o -> d -> Effect Unit) -> ProcessM i o Unit d m Unit -> Aff Unit
@@ -225,6 +231,6 @@ changeProcess (Fn name inputs outputs _) newProcessM =
     Fn name inputs outputs newProcessM
 
 
-with :: forall i ii o oo state m d. Ord i => MonadRec m => MonadEffect m => Fn i ii o oo state m d -> d -> state -> Protocol i o d -> ProcessM i o state d m Unit -> m Unit
+with :: forall i ii o oo state m d. Ord i => MonadRec m => MonadState state m => MonadEffect m => Fn i ii o oo state m d -> d -> state -> Protocol i o d -> ProcessM i o state d m Unit -> m state
 with fn def state protocol =
     changeProcess fn >>> run def state protocol

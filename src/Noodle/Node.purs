@@ -59,6 +59,8 @@ import Data.Tuple (Tuple(..))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
+import Control.Monad.State.Class (class MonadState)
+
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Effect.Aff.Class (class MonadAff)
@@ -193,8 +195,9 @@ make' default fn = do
     pure $ Node default fn (inlets_chan /\ outlets_chan)
 
 
-run :: forall state m d. MonadEffect m => state -> Node state d -> m Unit
-run state (Node default fn (inlets_chan /\ outlets_chan)) =
+run :: forall state m d. MonadEffect m => state -> Node state d -> m state
+run state (Node default fn (inlets_chan /\ outlets_chan)) = liftEffect $ do
+    stateRef :: Ref state <- Ref.new state
     let
         inlets = Ch.subscribe inlets_chan
         -- outlets = Ch.subscribe outlets_chan
@@ -213,16 +216,19 @@ run state (Node default fn (inlets_chan /\ outlets_chan)) =
             }
         fn_signal :: Signal (Effect Unit)
         fn_signal = maps
-                        ~> (\(last /\ inputMap) ->
-                                Fn.run default state (protocol (last /\ inputMap)) fn
+                        ~> (\(last /\ inputMap) -> do
+                                nextState <- Fn.run default state (protocol (last /\ inputMap)) fn
+                                liftEffect $ Ref.write nextState stateRef
+                                pure unit
                             )
                         ~> launchAff_ -- Do not call fn if not the `isHot` inlet triggered the calculation
         -- passFx :: Signal (Effect Unit)
         -- passFx = ((=<<) $ distribute outlets_chan) <$> fn_signal
-    in liftEffect $ Signal.runSignal fn_signal
+    Signal.runSignal fn_signal
+    Ref.read stateRef
 
 
-run' :: forall state m d. MonadEffect m => Node Unit d -> m Unit
+run' :: forall m d. MonadEffect m => Node Unit d -> m Unit
 run' = run unit
 
 
