@@ -6,7 +6,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 
-import Control.Monad.State (modify_)
+import Control.Monad.State (modify_, get) as State
 
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
@@ -43,7 +43,7 @@ spec = do
                 intChan = Ch.hot "int" 0
                 toolkit :: Toolkit Int
                 toolkit =
-                    Toolkit.registerFn (Toolkit.empty "Ints" 1)
+                    Toolkit.registerFn (Toolkit.empty "Ints" 0)
                         $ Fn.make "sum"
                             -- TODO: withInlets / withInputs ...
                                 -- -< "a" /\ intChan
@@ -90,18 +90,19 @@ spec = do
                         $ do
                             a <- Fn.receive $ Fn.in_ "a"
                             b <- Fn.receive $ Fn.in_ "b"
-                            modify_ (const $ show $ a - b)
+                            State.modify_ (const $ show $ a - b)
                             Fn.send (Fn.out_ "sum") $ a + b
             maybeNode <- toolkit # Toolkit.spawn "sum" # liftEffect
             case maybeNode of
                 Just node -> liftEffect $ do -- do inside `NodeM` ?
-                    stateA <- Node.run "---" node
+                    Console.log $ show "before everything"
+                    stateRef <- Node.run "---" node
+                    stateA <- Ref.read stateRef
+                    shouldEqual stateA "0"
                     Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
                     Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
-                    sum <- Node.getO node (Fn.out_ "sum") -- TODO: some operator i.e. v <- "sum" <+ node
-                    shouldEqual sum 8
-                    stateB <- Node.run stateA node
-                    shouldEqual stateB "aaa"
+                    stateB <- Ref.read stateRef
+                    shouldEqual stateB "2"
                 Nothing ->
                     fail "node wasn't spawned"
 

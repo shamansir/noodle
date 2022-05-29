@@ -142,7 +142,7 @@ type NodeProcess state d = Fn.ProcessM InletId OutletId state d Aff Unit
 data Node state d
     = Node
         d
-        (NodeFn state d)
+        (NodeFn state d) -- TODO: consider storing only shape again, w/o function?
         (Sig.Channel (InletId /\ d) /\ Sig.Channel (OutletId /\ d))
         -- (Shape d)
         -- (Channel (InletId /\ d) /\ Channel (OutletId /\ d))
@@ -195,7 +195,7 @@ make' default fn = do
     pure $ Node default fn (inlets_chan /\ outlets_chan)
 
 
-run :: forall state m d. MonadEffect m => state -> Node state d -> m state
+run :: forall state m d. MonadEffect m => state -> Node state d -> m (Ref state)
 run state (Node default fn (inlets_chan /\ outlets_chan)) = liftEffect $ do
     stateRef :: Ref state <- Ref.new state
     let
@@ -225,11 +225,12 @@ run state (Node default fn (inlets_chan /\ outlets_chan)) = liftEffect $ do
         -- passFx :: Signal (Effect Unit)
         -- passFx = ((=<<) $ distribute outlets_chan) <$> fn_signal
     Signal.runSignal fn_signal
-    Ref.read stateRef
+    -- Ref.read stateRef
+    pure stateRef
 
 
 run' :: forall m d. MonadEffect m => Node Unit d -> m Unit
-run' = run unit
+run' node = run unit node *> pure unit
 
 
 -- setState' :: forall state state' d. state -> Node state' d -> Node state d
