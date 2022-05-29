@@ -130,7 +130,9 @@ render (s@{ network, toolkit, windowSize }) =
             CSS.fontSize $ CSS.pt font.size
         ]
         [ HS.svg
-            [ ]
+            [ HSA.width $ V2.w windowSize
+            , HSA.height $ V2.h windowSize
+            ]
             $ Layout.render renderPart
             $ Flex.fitLayers windowSize App.layout
             {- ( toolkitInfo toolkit
@@ -139,12 +141,32 @@ render (s@{ network, toolkit, windowSize }) =
             ) -}
         ]
     where
-        renderPart App.PatchTabs pos size = HS.g [] (patchTab <$> Network.patches network)
-        renderPart App.Body _ _ = toolkitInfo toolkit
-        renderPart _ _ _ =
-            HS.text [] []
+        renderPart App.PatchTabs pos size =
+            HS.g
+                [ HSA.translateTo' pos ]
+                ( addPatch : (patchTab <$> Network.patches network) )
+        renderPart App.Body pos size =
+            HS.g
+                [ HSA.translateTo' pos ]
+                [ toolkitInfo toolkit ]
+        renderPart App.PatchBackground pos size =
+            HS.rect
+                [ HSA.x $ V2.x pos, HSA.y $ V2.y pos
+                , HSA.width $ V2.w size, HSA.height $ V2.h size
+                , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 0.0
+                , HSA.stroke $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
+                , HSA.strokeWidth 1.0
+                ]
+        renderPart App.NodeList _ _ =
+            HS.g [] []
+        renderPart App.Space _ _ =
+            HS.g [] []
         addPatch =
-            HS.text [ ] []
+            HS.text
+                [ HSA.translateTo' $ 0.0 <+> (font.size * 2.0)
+                , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
+                ]
+                [ HH.text $ "Add Patch" ]
         patchTab (name /\ patch) =
             HS.text
                 [ HSA.translateTo' $ 0.0 <+> (font.size * 2.0)

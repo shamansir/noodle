@@ -30,13 +30,29 @@ render :: forall l a trg. IsLayout l => (a -> Pos -> Size -> trg) -> l a -> Arra
 render f = Layout.fold ((:) <<< \(a /\ pos /\ size) -> f a pos size) []
 
 
+renderToSvg
+    :: forall p i l a
+     . IsLayout l
+    => (a -> Pos -> Size -> HH.HTML p i)
+    -> l a
+    -> HH.HTML p i
+renderToSvg renderItem =
+    HS.g [] <<< render rectAt
+    where
+        rectAt a pos size =
+            HS.g
+                [ HSA.translateTo' pos ]
+                [ renderItem a pos size ]
+
+
 renderToSvgText
-    :: forall action slots m l a
+    :: forall p i l a
      . IsLayout l
     => Show a
     => l a
-    -> H.ComponentHTML action slots m
+    -> HH.HTML p i
 renderToSvgText =
+    -- through `renderToSvg`
     HS.g [] <<< render rectAt
     where
         rectAt a pos size =
