@@ -195,9 +195,9 @@ make' default fn = do
     pure $ Node default fn (inlets_chan /\ outlets_chan)
 
 
-run :: forall state m d. MonadEffect m => state -> Node state d -> m (Ref state)
+run :: forall state m d. MonadEffect m => state -> Node state d -> m (Signal state)
 run state (Node default fn (inlets_chan /\ outlets_chan)) = liftEffect $ do
-    stateRef :: Ref state <- Ref.new state
+    stateChan :: Sig.Channel state <- Ch.channel state
     let
         inlets = Ch.subscribe inlets_chan
         -- outlets = Ch.subscribe outlets_chan
@@ -218,7 +218,7 @@ run state (Node default fn (inlets_chan /\ outlets_chan)) = liftEffect $ do
         fn_signal = maps
                         ~> (\(last /\ inputMap) -> do
                                 nextState <- Fn.run default state (protocol (last /\ inputMap)) fn
-                                liftEffect $ Ref.write nextState stateRef
+                                liftEffect $ Ch.send stateChan nextState
                                 pure unit
                             )
                         ~> launchAff_ -- Do not call fn if not the `isHot` inlet triggered the calculation
@@ -226,7 +226,7 @@ run state (Node default fn (inlets_chan /\ outlets_chan)) = liftEffect $ do
         -- passFx = ((=<<) $ distribute outlets_chan) <$> fn_signal
     Signal.runSignal fn_signal
     -- Ref.read stateRef
-    pure stateRef
+    pure $ Ch.subscribe stateChan
 
 
 run' :: forall m d. MonadEffect m => Node Unit d -> m Unit

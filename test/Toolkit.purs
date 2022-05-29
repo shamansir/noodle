@@ -96,12 +96,12 @@ spec = do
             case maybeNode of
                 Just node -> liftEffect $ do -- do inside `NodeM` ?
                     Console.log $ show "before everything"
-                    stateRef <- Node.run "---" node
-                    stateA <- Ref.read stateRef
+                    stateSig <- Node.run "---" node
+                    stateA <- Signal.get stateSig
                     shouldEqual stateA "0"
                     Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
                     Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
-                    stateB <- Ref.read stateRef
+                    stateB <- Signal.get stateSig
                     shouldEqual stateB "2"
                 Nothing ->
                     fail "node wasn't spawned"
