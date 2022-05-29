@@ -17,7 +17,8 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
 import Data.Vec2 ((<+>), Size)
 import Data.Vec2 as V2
-import Data.Array (length, fromFoldable) as Array
+import Data.Array (length, fromFoldable, mapWithIndex) as Array
+import Data.Array ((:))
 import Data.NonEmpty (NonEmpty, singleton) as NE
 
 import Noodle.Network (Network) as Noodle
@@ -32,6 +33,10 @@ import App.Style.ClassNames as CS
 import App.Emitters as Emitters
 import App.Toolkit.UI as ToolkitUI
 import App.Svg.Extra as HSA
+
+import App.Layouts.App (layout, AppLayoutPart(..)) as App
+import App.LayoutRenderer (render) as Layout
+import App.Layout.Flex as Flex
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -118,7 +123,7 @@ render
     :: forall patch_action patch_state node_state d
      . State patch_state node_state d
     -> H.ComponentHTML Action Slots Aff -- FIXME: there is MonadAff here!
-render (s@{ network, toolkit }) =
+render (s@{ network, toolkit, windowSize }) =
     HH.div
         [ CSS.style $ do
             CSS.fontFamily font.family $ NE.singleton CSS.sansSerif
@@ -126,9 +131,28 @@ render (s@{ network, toolkit }) =
         ]
         [ HS.svg
             [ ]
-            [ toolkitInfo toolkit ]
+            $ Layout.render renderPart
+            $ Flex.fitLayers windowSize App.layout
+            {- ( toolkitInfo toolkit
+            : addPatch
+            : (patchTab <$> Network.patches network)
+            ) -}
         ]
     where
+        renderPart App.PatchTabs pos size = HS.g [] (patchTab <$> Network.patches network)
+        renderPart App.Body _ _ = toolkitInfo toolkit
+        renderPart _ _ _ =
+            HS.text [] []
+        addPatch =
+            HS.text [ ] []
+        patchTab (name /\ patch) =
+            HS.text
+                [ HSA.translateTo' $ 0.0 <+> (font.size * 2.0)
+                , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
+                ]
+                [ HH.text $ name
+
+                ]
         nodeFamily family =
             HS.text
                 [ HSA.translateTo' $ 0.0 <+> (font.size * 2.0)

@@ -97,12 +97,14 @@ spec = do
                 Just node -> liftEffect $ do -- do inside `NodeM` ?
                     Console.log $ show "before everything"
                     stateSig <- Node.run "---" node
-                    stateA <- Signal.get stateSig
-                    shouldEqual stateA "0"
+                    stateAtStart <- Signal.get stateSig
+                    stateAtStart `shouldEqual` "0"
                     Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
+                    stateAfterFirstInlet <- Signal.get stateSig
+                    stateAfterFirstInlet `shouldEqual` "5"
                     Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
-                    stateB <- Signal.get stateSig
-                    shouldEqual stateB "2"
+                    finalState <- Signal.get stateSig
+                    finalState `shouldEqual` "2"
                 Nothing ->
                     fail "node wasn't spawned"
 

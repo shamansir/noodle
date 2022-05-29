@@ -85,6 +85,9 @@ instance bifunctorFlex :: Bifunctor Flex where
     bimap f g (Flex axis2) = Flex $ bimap f (bimap f $ bimap g $ bimap f g) axis2
 
 
+-- instance layersIsLayout :: IsLayout (Layers Number)
+
+
 flex :: forall s a. Array (s /\ Array (s /\ Item s a)) -> Flex s a
 flex = Flex <<< Axis.make2 <<< map (map $ Just <<< map (map Just))
 
