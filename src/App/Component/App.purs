@@ -43,6 +43,7 @@ import Halogen.HTML as HH
 import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 import Halogen.Svg.Attributes as HSA
+import Halogen.HTML.Events as HE
 import Halogen.HTML.CSS as CSS
 import CSS as CSS
 
@@ -73,7 +74,7 @@ _fltc = Proxy :: Proxy "fltc"
 
 type Input patch_state node_state d =
     { network :: Noodle.Network d
-    , toolkit :: Noodle.Toolkit d
+    , toolkit :: Noodle.Toolkit patch_state d
     , currentPatch :: Maybe Patch.Id
     , markings :: ToolkitUI.Markings
     , getFlags :: ToolkitUI.GetFlags
@@ -83,7 +84,7 @@ type Input patch_state node_state d =
 
 type State patch_state node_state d =
     { network :: Noodle.Network d
-    , toolkit :: Noodle.Toolkit d
+    , toolkit :: Noodle.Toolkit patch_state d
     , currentPatch :: Maybe Patch.Id
     , markings :: ToolkitUI.Markings
     , getFlags :: ToolkitUI.GetFlags
@@ -97,6 +98,7 @@ type State patch_state node_state d =
 data Action
     = Initialize
     | SelectPatch Patch.Id
+    | AddPatch
     | AnimationFrame H.SubscriptionId Number
     | WindowResize H.SubscriptionId { w :: Int, h :: Int }
     {-
@@ -165,8 +167,10 @@ render (s@{ network, toolkit, windowSize }) =
             HS.text
                 [ HSA.translateTo' $ 0.0 <+> (font.size * 2.0)
                 , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
+                , HE.onClick $ const AddPatch
                 ]
-                [ HH.text $ "Add Patch" ]
+                [ HH.text $ "Add Patch"
+                ]
         patchTab (name /\ patch) =
             HS.text
                 [ HSA.translateTo' $ 0.0 <+> (font.size * 2.0)
@@ -213,6 +217,8 @@ handleAction = case _ of
         H.subscribe' $ \sid -> AnimationFrame sid <$> animFrame -}
         windowResize <- H.liftEffect Emitters.windowDimensions
         H.subscribe' $ \sid -> WindowResize sid <$> windowResize
+    AddPatch ->
+        H.modify_ \state -> state
     SelectPatch _ ->
         H.modify_ \state -> state
     -- HandlePatch _ ->

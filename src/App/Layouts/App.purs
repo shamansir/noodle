@@ -2,12 +2,11 @@ module App.Layouts.App where
 
 import Prelude
 
-import Data.Tuple.Nested ((/\))
-
 import App.Layout.Flex (Layers)
 import App.Layout.Flex as F
 import App.Layout.Flex.Rule (Rule)
 import App.Layout.Flex.Rule as R
+import Data.Tuple.Nested ((/\))
 
 
 type Layout = Layers Rule AppLayoutPart
@@ -33,7 +32,7 @@ layout :: Layout
 layout =
     F.layers
         [ F.flex
-            [ R.percents 15 /\
+            [ topRule /\
                 [ R.fill /\ F.put PatchTabs
                 ]
             , R.fill /\
@@ -41,7 +40,8 @@ layout =
                 ]
             ]
         , F.flex
-            [ R.percents 15 /\
+            -- -- R.min 150.0 (R.percents 10) /\
+            [ topRule /\
                 [ R.fill /\ F.put Space
                 ]
             , R.fill /\
@@ -49,7 +49,7 @@ layout =
                 ]
             ]
         ,  F.flex
-            [ R.percents 15 /\
+            [ topRule /\
                 [ R.fill /\ F.put Space
                 ]
             , R.percents 5 /\
@@ -61,3 +61,5 @@ layout =
                 ]
             ]
         ]
+    where
+        topRule = R.min 25.0 $ R.percents 7

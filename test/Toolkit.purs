@@ -41,9 +41,9 @@ spec = do
         it "spawning works" $ do
             let
                 intChan = Ch.hot "int" 0
-                toolkit :: Toolkit Int
+                toolkit :: Toolkit Unit Int
                 toolkit =
-                    Toolkit.registerFn (Toolkit.empty "Ints" 0)
+                    Toolkit.registerFn (Toolkit.empty "Ints" unit 0)
                         $ Fn.make "sum"
                             -- TODO: withInlets / withInputs ...
                                 -- -< "a" /\ intChan
@@ -74,9 +74,9 @@ spec = do
         it "spawning with state works" $ do
             let
                 intChan = Ch.hot "int" 0
-                toolkit :: Toolkit Int
+                toolkit :: Toolkit Unit Int
                 toolkit =
-                    Toolkit.registerFn (Toolkit.empty "Ints" 0)
+                    Toolkit.registerFn (Toolkit.empty "Ints" unit 0)
                         $ Fn.make "sum"
                             -- TODO: withInlets / withInputs ...
                                 -- -< "a" /\ intChan

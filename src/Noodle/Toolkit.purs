@@ -1,9 +1,14 @@
 module Noodle.Toolkit
   ( Toolkit
-  , empty, name
-  , nodeFamilies, nodeFamiliesCount
-  , spawn, spawnAndRun, spawnAndRun'
-  , register, registerFn
+  , empty
+  , name
+  , nodeFamilies
+  , nodeFamiliesCount
+  , register
+  , registerFn
+  , spawn
+  , spawnAndRun
+  , spawnAndRun'
   )
   where
 
@@ -25,6 +30,8 @@ import Noodle.Node (Node, NodeFn)
 import Noodle.Node as Node
 import Noodle.Channel as Channel
 import Noodle.Fn (make, name) as Fn
+-- import Noodle.Network (PatchE)
+-- import Noodle.Patch (Patch)
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -40,44 +47,43 @@ type Name = String
 
 
 -- data Toolkit d = Toolkit d (Node.Family /-> (forall state. NodeFn state d))
-data Toolkit d = Toolkit Name d (Node.Family /-> NodeFnE d)
-
+data Toolkit patch_state d = Toolkit Name patch_state d (Node.Family /-> NodeFnE d)
 
 
 -- make :: forall d. d -> Array (Node.Family /\ Def d) -> Toolkit d
 -- make def = Toolkit def <<< Map.fromFoldable
 
 
-empty :: forall state d. Name -> d -> Toolkit d
-empty name def = Toolkit name def $ Map.empty
+empty :: forall state d. Name -> state -> d -> Toolkit state d
+empty name state def = Toolkit name state def $ Map.empty
 
 
 register
-    :: forall node_state d
-     . Toolkit d
+    :: forall state node_state d
+     . Toolkit state d
     -> Node.Family
     -> Array (Node.InletId /\ Channel.Def d)
     -> Array (Node.OutletId /\ Channel.Def d)
     -> Node.NodeProcess node_state d
-    -> Toolkit d
+    -> Toolkit state d
 register tk family inlets outlets process =
   registerFn tk $ Fn.make family inlets outlets process
 
 
-registerFn :: forall node_state d. Toolkit d -> NodeFn node_state d -> Toolkit d
-registerFn (Toolkit name def fns) fn =
-  Toolkit name def $ Map.insert (Fn.name fn) (wrapNodeFn fn) $ fns
+registerFn :: forall patch_state node_state d. Toolkit patch_state d -> NodeFn node_state d -> Toolkit patch_state d
+registerFn (Toolkit state name def fns) fn =
+  Toolkit state name def $ Map.insert (Fn.name fn) (wrapNodeFn fn) $ fns
 
 
-spawn :: forall node_state d. Node.Family -> Toolkit d -> Effect (Maybe (Node node_state d))
-spawn family (Toolkit _ def nodeDefs) =
+spawn :: forall state node_state d. Node.Family -> Toolkit state d -> Effect (Maybe (Node node_state d))
+spawn family (Toolkit _ _ def nodeDefs) =
     nodeDefs
         # Map.lookup family
         # map (unwrapNodeFn >>> Node.make' def)
         # sequence
 
 
-spawnAndRun :: forall node_state d. Node.Family -> node_state -> Toolkit d -> Effect (Maybe (Node node_state d))
+spawnAndRun :: forall state node_state d. Node.Family -> node_state -> Toolkit state d -> Effect (Maybe (Node node_state d))
 spawnAndRun family state tk =
     spawn family tk
       >>= (\maybeNode -> do
@@ -86,22 +92,22 @@ spawnAndRun family state tk =
             )
 
 
-spawnAndRun' :: forall d. Node.Family -> Toolkit d -> Effect (Maybe (Node Unit d))
+spawnAndRun' :: forall state d. Node.Family -> Toolkit state d -> Effect (Maybe (Node Unit d))
 spawnAndRun' family = spawnAndRun family unit
 
 
-nodeFamilies :: forall state d. Toolkit d -> Set Node.Family
-nodeFamilies (Toolkit _ _ nodeDefs) =
+nodeFamilies :: forall state d. Toolkit state d -> Set Node.Family
+nodeFamilies (Toolkit _ _ _ nodeDefs) =
     nodeDefs # Map.keys
 
 
-nodeFamiliesCount :: forall state d. Toolkit d -> Int
-nodeFamiliesCount (Toolkit _ _ nodeDefs) =
+nodeFamiliesCount :: forall state d. Toolkit state d -> Int
+nodeFamiliesCount (Toolkit _ _ _ nodeDefs) =
     nodeDefs # Map.size
 
 
-name :: forall d. Toolkit d -> Name
-name (Toolkit name _ _) = name
+name :: forall state d. Toolkit state d -> Name
+name (Toolkit name _ _ _) = name
 
 
 unwrapNodeFn :: forall state d. NodeFnE d -> NodeFn state d

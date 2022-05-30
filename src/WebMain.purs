@@ -1,7 +1,7 @@
 module WebMain where
 
 
-import Prelude (Unit, (<#>), (>>=), ($), pure)
+import Prelude (Unit, (<#>), (>>=), ($), pure, unit)
 
 import Effect (Effect)
 import Data.Maybe (Maybe(..))
@@ -27,6 +27,7 @@ import Noodle.Toolkit (Toolkit)
 
 import Toolkit.Hydra.Op (Hydra)
 import Toolkit.Hydra (toolkit)
+import Toolkit.Hydra.Queue (Queue)
 import Toolkit.Hydra.UI (components, markings, getFlags)
 import Toolkit.Hydra.UI.State (State, init) as UI
 import Toolkit.Hydra.UI.Action (Action) as UI
@@ -46,7 +47,7 @@ flow = Vertical
 
 
 --app :: Network Hydra -> App' UI.Action UI.State Unit Hydra
-app :: Network Hydra -> App' UI.State Unit Hydra
+app :: Network Hydra -> App' UI.State Hydra Hydra
 app nw =
     { toolkit
     -- , components
@@ -65,7 +66,7 @@ main =
         >>= App.run
 
 
-network :: Toolkit Hydra -> Effect (Network Hydra)
+network :: Toolkit Queue Hydra -> Effect (Network Hydra)
 network toolkit = do
     pure $ Network.empty
 

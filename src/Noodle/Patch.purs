@@ -67,20 +67,20 @@ addNode name node (Patch state nodes links) =
         links
 
 
-addNodeFrom :: forall patch_state node_state d. Toolkit d -> node_state -> Node.Family /\ Node.Id -> Patch patch_state d -> Effect (Patch patch_state d)
+addNodeFrom :: forall patch_state node_state d. Toolkit patch_state d -> node_state -> Node.Family /\ Node.Id -> Patch patch_state d -> Effect (Patch patch_state d)
 addNodeFrom toolkit state (nodeFamily /\ nodeId) patch =
     Toolkit.spawnAndRun nodeFamily state toolkit
         <#> maybe patch (\node -> addNode nodeId node patch)
 
 
-addNodeFrom' :: forall patch_state node_state d. Toolkit d -> node_state -> Node.Family -> Patch patch_state d -> Effect (Node.Id /\ Patch patch_state d)
+addNodeFrom' :: forall patch_state node_state d. Toolkit patch_state d -> node_state -> Node.Family -> Patch patch_state d -> Effect (Node.Id /\ Patch patch_state d)
 addNodeFrom' toolkit state nodeFamily patch =
     addNodeFrom toolkit state (nodeFamily /\ nextNodeId) patch
         <#> ((/\) nextNodeId)
     where nextNodeId = addUniqueNodeId patch nodeFamily
 
 
-addNodesFrom :: forall patch_state node_state d. Toolkit d -> node_state -> Array (Node.Family /\ Node.Id) -> Patch patch_state d -> Effect (Patch patch_state d)
+addNodesFrom :: forall patch_state node_state d. Toolkit patch_state d -> node_state -> Array (Node.Family /\ Node.Id) -> Patch patch_state d -> Effect (Patch patch_state d)
 addNodesFrom toolkit state pairs patch =
     foldr (\pair patchEff -> patchEff >>= addNodeFrom toolkit state pair) (pure patch) pairs
 
