@@ -26,7 +26,7 @@ import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
 import Noodle.Patch as Patch
 import Noodle.Toolkit (Toolkit) as Noodle
-import Noodle.Toolkit (name, nodeFamilies, nodeFamiliesCount, state) as Toolkit
+import Noodle.Toolkit (name, nodeFamilies, nodeFamiliesCount, state, spawn) as Toolkit
 
 import App.Style (Style, NodeFlow)
 import App.Style.ClassNames as CS
@@ -244,8 +244,17 @@ handleAction = case _ of
                 }
     SelectPatch patchId ->
         H.modify_ _ { currentPatch = Just patchId }
-    AddNode family ->
-        pure unit
+    AddNode family -> do
+        state <- H.get
+        maybeNode <- H.liftEffect $ Toolkit.spawn family state.toolkit -- TODO: AndRun
+        H.put $
+            state
+                { network =
+                    case (/\) <$> state.currentPatch <*> maybeNode of
+                        Just (curPatchId /\ node) ->
+                            Network.withPatch curPatchId (Patch.addNode "aaa" node) state.network
+                        Nothing -> state.network
+                }
     -- HandlePatch _ ->
     --     H.modify_ \state -> state
     AnimationFrame _ time ->
