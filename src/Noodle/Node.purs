@@ -41,6 +41,7 @@ module Noodle.Node
   , send
   , in_, out_, _in, _out
   , inletsBy, outletsBy
+  , imapState
   )
   where
 
@@ -76,6 +77,7 @@ import Noodle.Fn
             , in_, out_, _in, _out
             , dimensions, name, findInput, findOutput, shapeOf
             , mapInputsAndOutputs
+            , imapState
             ) as Fn
 import Noodle.Fn.Process as Fn
 import Noodle.Fn.Protocol (Protocol)
@@ -473,3 +475,6 @@ linksAtOutlet outlet = fromMaybe 0 <<< Map.lookup outlet <<< Tuple.snd
 
 
 -- with :: forall state d. Node state d -> NodeProcess state d ->
+
+imapState :: forall state state' d. (state -> state') -> (state' -> state) -> Node state d -> Node state' d
+imapState f g (Node d fn chans) = Node d (Fn.imapState f g fn) chans

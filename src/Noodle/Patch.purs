@@ -37,6 +37,7 @@ type InletPath = Node.Id /\ Node.InletId
 type OutletPath = Node.Id /\ Node.OutletId
 
 
+-- FIXME: use Prim.Row types for such cases, instead of `Exists`
 -- data NodeS d state = NodeS state (state -> Node state d)
 data NodeS d state = NodeS (Node state d)
 type NodeE d = Exists (NodeS d)

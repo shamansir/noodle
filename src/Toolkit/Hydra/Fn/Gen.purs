@@ -10,6 +10,8 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
+import Effect.Console (log) as Console
+import Debug (spy)
 
 import Data.Maybe (Maybe(..), maybe)
 import Data.Map.Extra (type (/->))
@@ -48,7 +50,9 @@ eval h = Evaluate h unit
 evaluate :: Evaluate ~> Effect -- or Aff?
 evaluate =
     case _ of
-        Evaluate hydra a ->
+        Evaluate hydra a -> do
+            -- Console.log $ show hydra
+            let _ = spy "eval" hydra
             pure a
 
 

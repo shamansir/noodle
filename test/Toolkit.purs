@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
+import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Control.Monad.State (modify_, get) as State
@@ -57,11 +58,11 @@ spec = do
                         $ do
                             a <- Fn.receive $ Fn.in_ "a"  -- TODO: some operator i.e. <<+ "a"
                             b <- Fn.receive $ Fn.in_ "b"  -- TODO: some operator i.e. <<+ "b"
-                            Fn.send (Fn.out_ "sum") $ a + b
+                            Fn.send (Fn.out_ "sum") $ a + b  -- TODO: some operator i.e. +>> "b"
             maybeNode <- toolkit # Toolkit.spawn "sum" # liftEffect -- or `spawnAndRun`
             case maybeNode of
                 Just node -> liftEffect $ do -- do inside `NodeM` ?
-                    Node.run' node
+                    Node.run' $ Node.imapState Tuple.snd ((/\) unit) $ node -- FIXME: may be no need in `imapState` and joining it with patch state
                     Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
                     Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
                     sum <- Node.getO node (Fn.out_ "sum") -- TODO: some operator i.e. v <- "sum" <+ node
@@ -90,13 +91,13 @@ spec = do
                         $ do
                             a <- Fn.receive $ Fn.in_ "a"
                             b <- Fn.receive $ Fn.in_ "b"
-                            State.modify_ (const $ show $ a - b)
+                            State.modify_ (map $ const $ show $ a - b)
                             Fn.send (Fn.out_ "sum") $ a + b
             maybeNode <- toolkit # Toolkit.spawn "sum" # liftEffect
             case maybeNode of
                 Just node -> liftEffect $ do -- do inside `NodeM` ?
                     Console.log $ show "before everything"
-                    stateSig <- Node.run "---" node
+                    stateSig <- Node.run "---" $ Node.imapState Tuple.snd ((/\) unit) $ node
                     stateAtStart <- Signal.get stateSig
                     stateAtStart `shouldEqual` "0"
                     Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5

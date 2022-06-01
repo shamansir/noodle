@@ -21,11 +21,12 @@ import Data.Array (length, fromFoldable, mapWithIndex) as Array
 import Data.Array ((:))
 import Data.NonEmpty (NonEmpty, singleton) as NE
 
+import Noodle.Node (Family, family) as Node
 import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
 import Noodle.Patch as Patch
 import Noodle.Toolkit (Toolkit) as Noodle
-import Noodle.Toolkit (name, nodeFamilies, nodeFamiliesCount) as Toolkit
+import Noodle.Toolkit (name, nodeFamilies, nodeFamiliesCount, state) as Toolkit
 
 import App.Style (Style, NodeFlow)
 import App.Style.ClassNames as CS
@@ -99,6 +100,7 @@ data Action
     = Initialize
     | SelectPatch Patch.Id
     | AddPatch
+    | AddNode Node.Family
     | AnimationFrame H.SubscriptionId Number
     | WindowResize H.SubscriptionId { w :: Int, h :: Int }
     {-
@@ -150,7 +152,11 @@ render (s@{ network, toolkit, windowSize }) =
         renderPart App.Body pos size =
             HS.g
                 [ HSA.translateTo' pos ]
-                [ toolkitInfo toolkit ]
+                [ toolkitInfo toolkit
+                , case s.currentPatch >>= flip Network.patch network of
+                    Just patch -> patchBody patch
+                    Nothing -> HS.g [] []
+                ]
         renderPart App.PatchBackground pos size =
             HS.rect
                 [ HSA.x $ V2.x pos, HSA.y $ V2.y pos
@@ -163,6 +169,17 @@ render (s@{ network, toolkit, windowSize }) =
             HS.g [] []
         renderPart App.Space _ _ =
             HS.g [] []
+
+        patchBody patch =
+            HS.g [] $ (map Patch.unwrapNode >>> renderNode) <$> Patch.nodes patch
+        renderNode (id /\ node) =
+            HS.text
+                [ HSA.translateTo' $ 0.0 <+> (50.0 + font.size * 2.0)
+                , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
+                , HE.onClick $ const AddPatch
+                ]
+                [ HH.text $ id <> "::" <> Node.family node
+                ]
         addPatch =
             HS.text
                 [ HSA.translateTo' $ 0.0 <+> (font.size * 2.0)
@@ -173,7 +190,7 @@ render (s@{ network, toolkit, windowSize }) =
                 ]
         patchTab (name /\ patch) =
             HS.text
-                [ HSA.translateTo' $ 0.0 <+> (font.size * 2.0)
+                [ HSA.translateTo' $ 200.0 <+> (font.size * 2.0)
                 , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
                 ]
                 [ HH.text $ name
@@ -183,6 +200,7 @@ render (s@{ network, toolkit, windowSize }) =
             HS.text
                 [ HSA.translateTo' $ 0.0 <+> (font.size * 2.0)
                 , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
+                , HE.onClick $ const $ AddNode family
                 ]
                 [ -- HS.tspan
                     HH.text $ family
@@ -217,18 +235,23 @@ handleAction = case _ of
         H.subscribe' $ \sid -> AnimationFrame sid <$> animFrame -}
         windowResize <- H.liftEffect Emitters.windowDimensions
         H.subscribe' $ \sid -> WindowResize sid <$> windowResize
-    AddPatch ->
-        H.modify_ \state -> state
-    SelectPatch _ ->
-        H.modify_ \state -> state
+    AddPatch -> do
+        H.modify_ \state ->
+            let newPatch = Patch.empty (Toolkit.state state.toolkit)
+            in state
+                { network = state.network # Network.addPatch ("foo" /\ newPatch)
+                , currentPatch = Just "foo"
+                }
+    SelectPatch patchId ->
+        H.modify_ _ { currentPatch = Just patchId }
+    AddNode family ->
+        pure unit
     -- HandlePatch _ ->
     --     H.modify_ \state -> state
     AnimationFrame _ time ->
-        H.modify_ \state -> state
-            { currentFrame = time }
+        H.modify_ _ { currentFrame = time }
     WindowResize _ { w, h } ->
-        H.modify_ \state -> state
-            { windowSize = toNumber w <+> toNumber h }
+        H.modify_ _ { windowSize = toNumber w <+> toNumber h }
     {-
     ToPatch patchAction ->
         H.tell _tkPatch unit $ ToolkitUI.TellPatch patchAction
