@@ -11,6 +11,8 @@ import Effect.Aff.Class (class MonadAff)
 import Color (rgb, rgba) as C
 import Color.Extra as C
 
+import Debug (spy) as Debug
+
 import Data.Maybe (Maybe(..))
 import Data.Int (toNumber)
 import Data.Tuple as Tuple
@@ -174,9 +176,8 @@ render (s@{ network, toolkit, windowSize }) =
             HS.g [] $ (map Patch.unwrapNode >>> renderNode) <$> Patch.nodes patch
         renderNode (id /\ node) =
             HS.text
-                [ HSA.translateTo' $ 0.0 <+> (50.0 + font.size * 2.0)
+                [ HSA.translateTo' $ 0.0 <+> (70.0 + font.size * 2.0)
                 , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
-                , HE.onClick $ const AddPatch
                 ]
                 [ HH.text $ id <> "::" <> Node.family node
                 ]
@@ -192,6 +193,7 @@ render (s@{ network, toolkit, windowSize }) =
             HS.text
                 [ HSA.translateTo' $ 200.0 <+> (font.size * 2.0)
                 , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
+                , HE.onClick $ const $ SelectPatch name
                 ]
                 [ HH.text $ name
 
@@ -203,7 +205,7 @@ render (s@{ network, toolkit, windowSize }) =
                 , HE.onClick $ const $ AddNode family
                 ]
                 [ -- HS.tspan
-                    HH.text $ family
+                    HH.text $ "fff" <> family
 
                 ]
         toolkitInfo toolkit =
@@ -245,8 +247,11 @@ handleAction = case _ of
     SelectPatch patchId ->
         H.modify_ _ { currentPatch = Just patchId }
     AddNode family -> do
+        let _ = Debug.spy "family" family
         state <- H.get
         maybeNode <- H.liftEffect $ Toolkit.spawn family state.toolkit -- TODO: AndRun
+        let _ = Debug.spy "currentPatch" state.currentPatch
+        let _ = Debug.spy "maybeNode" maybeNode
         H.put $
             state
                 { network =
