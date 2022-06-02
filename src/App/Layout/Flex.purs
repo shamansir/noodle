@@ -59,14 +59,14 @@ instance flexSIsLayout :: IsLayout (Flex Size) where
 
 instance layersNIsLayout :: IsLayout (Layers Number) where
     fold f def (Layers layers) = Array.foldr (flip $ L.fold f) def layers
-    find what (Layers layers) = Array.foldr (\layout prev -> prev <|> L.find what layout) Nothing layers
-    sample pos (Layers layers) = Array.foldr (\layout prev -> prev <|> L.sample pos layout) Nothing layers
+    find what (Layers layers) = Array.foldl (\prev layout -> prev <|> L.find what layout) Nothing layers
+    sample pos (Layers layers) = Array.foldl (\prev layout -> prev <|> L.sample pos layout) Nothing layers
 
 
 instance layersSIsLayout :: IsLayout (Layers Size) where
     fold f def (Layers layers) = Array.foldr (flip $ L.fold f) def layers
-    find what (Layers layers) = Array.foldr (\layout prev -> prev <|> L.find what layout) Nothing layers
-    sample pos (Layers layers) = Array.foldr (\layout prev -> prev <|> L.sample pos layout) Nothing layers
+    find what (Layers layers) = Array.foldl (\prev layout -> prev <|> L.find what layout) Nothing layers
+    sample pos (Layers layers) = Array.foldl (\prev layout -> prev <|> L.sample pos layout) Nothing layers
 
 
 instance flexNIsSizedLayout :: IsSizedLayout (Flex Number) where

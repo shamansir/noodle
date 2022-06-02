@@ -242,6 +242,9 @@ testFold items flex =
         else pure unit
 
 
+        -- TODO: test order of folding for layers (from bottom to top) and order of searching for layers (from top to bottom), express it in the rules
+
+
 type FoldNSample s a = Pos_ s /\ Size_ s /\ a
 
 
