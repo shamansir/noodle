@@ -243,10 +243,13 @@ handleAction = case _ of
         H.subscribe' $ \sid -> WindowResize sid <$> windowResize
     AddPatch -> do
         H.modify_ \state ->
-            let newPatch = Patch.empty (Toolkit.state state.toolkit)
+            let
+                newPatch = Patch.empty (Toolkit.state state.toolkit)
+                patchCount = Array.length $ Network.patches state.network
+                nextPatchId = "patch-" <> show patchCount
             in state
-                { network = state.network # Network.addPatch ("foo" /\ newPatch)
-                , currentPatch = Just "foo"
+                { network = state.network # Network.addPatch (nextPatchId /\ newPatch)
+                , currentPatch = Just nextPatchId
                 }
     SelectPatch patchId ->
         H.modify_ _ { currentPatch = Just patchId }
@@ -261,7 +264,13 @@ handleAction = case _ of
                 { network =
                     case (/\) <$> state.currentPatch <*> maybeNode of
                         Just (curPatchId /\ node) ->
-                            Network.withPatch curPatchId (Patch.addNode "aaa" node) state.network
+                            Network.withPatch curPatchId
+                                (\patch ->
+                                    let nodeCount = Array.length $ Patch.nodes patch
+                                        nextNodeId = "node-" <> show nodeCount
+                                    in Patch.addNode nextNodeId node patch
+                                )
+                                state.network
                         Nothing -> state.network
                 }
     -- HandlePatch _ ->
