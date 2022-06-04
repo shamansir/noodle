@@ -2,54 +2,44 @@ module App.Component.App where
 
 import Prelude
 
-import Type.Proxy (Proxy(..))
-
-import Effect.Class (class MonadEffect)
-import Effect.Aff (Aff)
-import Effect.Aff.Class (class MonadAff)
-
+import App.Emitters as Emitters
+import App.Layout.Flex as Flex
+import App.LayoutRenderer (render) as Layout
+import App.Layouts.App (layout, AppLayoutPart(..)) as App
+import App.Style (Style, NodeFlow)
+import App.Style.ClassNames as CS
+import App.Svg.Extra as HSA
+import App.Toolkit.UI as ToolkitUI
+import CSS as CSS
 import Color (rgb, rgba) as C
 import Color.Extra as C
-
-import Debug (spy) as Debug
-
-import Data.Maybe (Maybe(..))
+import Data.Array ((:))
+import Data.Array (length, fromFoldable, mapWithIndex) as Array
 import Data.Int (toNumber)
+import Data.Maybe (Maybe(..))
+import Data.NonEmpty (NonEmpty, singleton) as NE
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
 import Data.Vec2 ((<+>), Size)
 import Data.Vec2 as V2
-import Data.Array (length, fromFoldable, mapWithIndex) as Array
-import Data.Array ((:))
-import Data.NonEmpty (NonEmpty, singleton) as NE
-
-import Noodle.Node (Family, family) as Node
+import Debug (spy) as Debug
+import Effect.Aff (Aff)
+import Effect.Aff.Class (class MonadAff)
+import Effect.Class (class MonadEffect)
+import Halogen as H
+import Halogen.HTML as HH
+import Halogen.HTML.CSS as CSS
+import Halogen.HTML.Events as HE
+import Halogen.Svg.Attributes as HSA
+import Halogen.Svg.Elements as HS
+import Halogen.Svg.Elements.None as HS
 import Noodle.Network (Network) as Noodle
 import Noodle.Network as Network
+import Noodle.Node (Family, dimensions, family) as Node
 import Noodle.Patch as Patch
 import Noodle.Toolkit (Toolkit) as Noodle
 import Noodle.Toolkit (name, nodeFamilies, nodeFamiliesCount, state, spawn) as Toolkit
-
-import App.Style (Style, NodeFlow)
-import App.Style.ClassNames as CS
--- import App.Component.Patch as PatchC
-import App.Emitters as Emitters
-import App.Toolkit.UI as ToolkitUI
-import App.Svg.Extra as HSA
-
-import App.Layouts.App (layout, AppLayoutPart(..)) as App
-import App.LayoutRenderer (render) as Layout
-import App.Layout.Flex as Flex
-
-import Halogen as H
-import Halogen.HTML as HH
-import Halogen.Svg.Elements as HS
-import Halogen.Svg.Elements.None as HS
-import Halogen.Svg.Attributes as HSA
-import Halogen.HTML.Events as HE
-import Halogen.HTML.CSS as CSS
-import CSS as CSS
-
+import Type.Proxy (Proxy(..))
 import Web.HTML (window)
 import Web.HTML.Window as Window
 
@@ -175,11 +165,14 @@ render (s@{ network, toolkit, windowSize }) =
         patchBody patch =
             HS.g [] $ (map Patch.unwrapNode >>> renderNode) <$> Patch.nodes patch
         renderNode (id /\ node) =
+            let
+                inletsCount /\ outletsCount = Node.dimensions node
+            in
             HS.text
                 [ HSA.translateTo' $ 0.0 <+> (70.0 + font.size * 2.0)
                 , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
                 ]
-                [ HH.text $ id <> "::" <> Node.family node
+                [ HH.text $ id <> "::" <> Node.family node <> " :: " <> show inletsCount <> "x" <> show outletsCount
                 ]
         addPatch =
             HS.text
