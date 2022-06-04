@@ -10,6 +10,7 @@ import Data.FoldableWithIndex (class FoldableWithIndex)
 
 
 import Data.Vec2 (Pos, Size, (<+>))
+import Data.Vec2 (inside) as V2
 import Data.Array ((:))
 import Data.Array as Array
 import Data.List (List(..))
@@ -19,6 +20,8 @@ import Data.Tuple (curry, uncurry)
 
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+
+import Control.Alt ((<|>))
 
 
 class {-FoldableWithIndex Pos l <=-} IsLayout l where
@@ -38,6 +41,7 @@ class IsLayout l <= IsSizedLayout l where
 
 class IsSizedLayout l <= IsContainerLayout l where
     container :: forall a. Size -> l a
+    -- FIXME: `add :: a -> l a -> Maybe (l a)`
 
 -- TODO: join `IsContainerLayout`` with `IsSizedLayout` back, because `container _ = empty` means "can have any size and may still work"
 

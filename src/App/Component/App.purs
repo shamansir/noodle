@@ -6,6 +6,8 @@ import App.Emitters as Emitters
 import App.Layout.Flex as Flex
 import App.LayoutRenderer (render) as Layout
 import App.Layouts.App (layout, AppLayoutPart(..)) as App
+import App.Layouts.PatchTabs (layout) as PatchTabs
+import App.Layouts.PatchTabs (TabOrAdd(..)) as PT
 import App.Style (Style, NodeFlow)
 import App.Style.ClassNames as CS
 import App.Svg.Extra as HSA
@@ -124,6 +126,7 @@ render (s@{ network, toolkit, windowSize }) =
         [ CSS.style $ do
             CSS.fontFamily font.family $ NE.singleton CSS.sansSerif
             CSS.fontSize $ CSS.pt font.size
+            -- CSS.bas
         ]
         [ HS.svg
             [ HSA.width $ V2.w windowSize
@@ -140,7 +143,13 @@ render (s@{ network, toolkit, windowSize }) =
         renderPart App.PatchTabs pos size =
             HS.g
                 [ HSA.translateTo' pos ]
+                $ Layout.render patchTab
+                $ PatchTabs.layout (V2.w size) $ Tuple.fst <$> Network.patches network
+            {-
+            HS.g
+                [ HSA.translateTo' pos ]
                 ( addPatch : (patchTab <$> Network.patches network) )
+            -}
         renderPart App.Body pos size =
             HS.g
                 [ HSA.translateTo' pos ]
@@ -174,21 +183,23 @@ render (s@{ network, toolkit, windowSize }) =
                 ]
                 [ HH.text $ id <> "::" <> Node.family node <> " :: " <> show inletsCount <> "x" <> show outletsCount
                 ]
-        addPatch =
+        patchTab PT.Add pos size =
             HS.text
-                [ HSA.translateTo' $ 0.0 <+> (font.size * 2.0)
+                [ HSA.translateTo' pos
                 , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
+                , HSA.dominant_baseline $ HSA.Hanging
                 , HE.onClick $ const AddPatch
                 ]
                 [ HH.text $ "Add Patch"
                 ]
-        patchTab (name /\ patch) =
+        patchTab (PT.PatchTab patchId) pos size =
             HS.text
-                [ HSA.translateTo' $ 200.0 <+> (font.size * 2.0)
+                [ HSA.translateTo' pos
                 , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
-                , HE.onClick $ const $ SelectPatch name
+                , HE.onClick $ const $ SelectPatch patchId
+                , HSA.dominant_baseline $ HSA.Hanging
                 ]
-                [ HH.text $ name
+                [ HH.text $ patchId
 
                 ]
         nodeFamily family =
