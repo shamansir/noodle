@@ -4,6 +4,8 @@ module App.Layout.Strip
 
 import Prelude
 
+import Unsafe.Coerce (unsafeCoerce)
+
 import Data.Maybe (Maybe(..))
 import Data.Int (toNumber, floor)
 import Data.Vec2 (Vec2, Size, Pos, (<+>))
@@ -16,7 +18,7 @@ import Data.Array as Array
 
 import Control.Alt ((<|>))
 
-import App.Layout (class IsLayout, class IsSizedLayout) --, findDefault, sampleDefault)
+import App.Layout (class IsLayout, class IsSizedLayout, findDefault, sampleDefault) --, findDefault, sampleDefault)
 
 
 data Strip a = Strip (Size /\ Size) Size (Array (Pos /\ a)) -- Bin2 Number Node.Family
@@ -27,7 +29,7 @@ data Strip a = Strip (Size /\ Size) Size (Array (Pos /\ a)) -- Bin2 Number Node.
 
 instance stripIsLayout :: IsLayout Strip where
     fold = fold
-    find = find -- findDefault
+    find = findDefault
     sample = sample -- sampleDefault
 
 
@@ -43,19 +45,12 @@ fold f b (Strip (itemSize /\ _) _ items) =
             f (item /\ pos /\ itemSize)
 
 
--- FIMXE: make the default implementation of `Layout.find`
 -- FIXME: test
-find :: forall a. Eq a => a -> Strip a -> Maybe (Pos /\ Size)
-find needle = fold findF Nothing
-    where
-        findF (item /\ itemPos /\ itemSize) = (<|>) $
-            if needle == item then Just $ itemPos /\ itemSize else Nothing
-
-
--- FIMXE: make the default implementation of `Layout.sample`
--- FIXME: test
+-- sampleDefault :: forall l a. IsLayout l => Pos -> l a -> Maybe (a /\ Pos /\ Size)
 sample :: forall a. Pos -> Strip a -> Maybe (a /\ Pos /\ Size)
-sample sPos = fold sampleF Nothing
+-- FIMXE: !! the same as Layout.sampleDefault
+sample sPos =
+    fold sampleF Nothing
     where
         sampleF (item /\ itemPos /\ itemSize) = (<|>) $
             if V2.inside sPos (itemPos /\ itemSize) then Just $ item /\ itemPos /\ itemSize else Nothing

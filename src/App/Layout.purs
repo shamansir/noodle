@@ -30,8 +30,8 @@ class {-FoldableWithIndex Pos l <=-} IsLayout l where
     --unfold :: forall a. l a -> Array (a /\ Pos /\ Size)
     -- TODO: make a function `a -> Pos -> Size -> k -> k`, then `fold' == fold (curry <<< curry f)`
     fold :: forall a k. ((a /\ Pos /\ Size) -> k -> k) -> k -> l a -> k
-    find :: forall a. Eq a => a -> l a -> Maybe (Pos /\ Size)
-    sample :: forall a. Pos -> l a -> Maybe (a /\ Pos /\ Size)
+    find :: forall a. Eq a => a -> l a -> Maybe (Pos /\ Size) -- FIXME: make `find` use default implementation
+    sample :: forall a. Pos -> l a -> Maybe (a /\ Pos /\ Size)  -- FIXME: make `sample` a default implementation
     --remove :: forall a. Eq a => a -> l a -> Maybe (l a)
     -- reflow :: forall a. Size -> l a -> Maybe (l a)
 
@@ -157,6 +157,26 @@ pinMany source layout =
         (\(a /\ pos /\ itemSize) -> pin a pos itemSize)
         layout
         source
+
+
+-- FIMXE: make the default implementation of `Layout.find`
+-- FIXME: test
+findDefault :: forall l a. IsLayout l => Eq a => a -> l a -> Maybe (Pos /\ Size)
+findDefault needle = fold findF Nothing
+    where
+        findF (item /\ itemPos /\ itemSize) = (<|>) $
+            if needle == item then Just $ itemPos /\ itemSize else Nothing
+
+
+-- FIMXE: make the default implementation of `Layout.sample`
+-- FIXME: test
+sampleDefault :: forall l a. IsLayout l => Pos -> l a -> Maybe (a /\ Pos /\ Size)
+sampleDefault sPos = fold sampleF Nothing
+    where
+        sampleF (item /\ itemPos /\ itemSize) = (<|>) $
+            if V2.inside sPos (itemPos /\ itemSize) then Just $ item /\ itemPos /\ itemSize else Nothing
+
+
 
 
 
