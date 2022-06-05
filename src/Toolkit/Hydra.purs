@@ -23,6 +23,7 @@ toolkit :: Toolkit
 toolkit =
     T.registerFn
         (T.empty "Hydra" Queue.empty None)
+        unit
         -- FIXME: we have `m == Evaluate` in the toolkit, so we don't need `imapState` and may be Patch State at all.
         --        unless we always want to render something w/o having any node (may be just have a hidden one?)
         (Fn.imapState ((/\) Queue.empty) Tuple.snd $ Fn.toNodeFn Fn.noise)

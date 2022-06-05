@@ -41,7 +41,7 @@ import Unsafe.Coerce (unsafeCoerce)
 
 
 -- FIXME: use Prim.Row types for such cases, instead of `Exists`
-data NodeFnS state d fn_state = NodeFnS (NodeFn (state /\ fn_state) d)
+data NodeFnS state d fn_state = NodeFnS (fn_state /\ NodeFn (state /\ fn_state) d)
 type NodeFnE state d = Exists (NodeFnS state d)
 
 
@@ -64,17 +64,18 @@ register
     :: forall patch_state node_state d
      . Toolkit patch_state d
     -> Node.Family
+    -> node_state
     -> Array (Node.InletId /\ Channel.Def d)
     -> Array (Node.OutletId /\ Channel.Def d)
     -> Node.NodeProcess (patch_state /\ node_state) d
     -> Toolkit patch_state d
-register tk family inlets outlets process =
-  registerFn tk $ Fn.make family inlets outlets process
+register tk family nodeState inlets outlets process =
+  registerFn tk nodeState $ Fn.make family inlets outlets process
 
 
-registerFn :: forall patch_state node_state d. Toolkit patch_state d -> NodeFn (patch_state /\ node_state) d -> Toolkit patch_state d
-registerFn (Toolkit state name def fns) fn =
-  Toolkit state name def $ Map.insert (Fn.name fn) (wrapNodeFn fn) $ fns
+registerFn :: forall patch_state node_state d. Toolkit patch_state d -> node_state -> NodeFn (patch_state /\ node_state) d -> Toolkit patch_state d
+registerFn (Toolkit state name def fns) nodeState fn =
+  Toolkit state name def $ Map.insert (Fn.name fn) (wrapNodeFn $ nodeState /\ fn) $ fns
 
 
 spawn :: forall patch_state node_state d. Node.Family -> Toolkit patch_state d -> Effect (Maybe (Node (patch_state /\ node_state) d))
@@ -116,7 +117,7 @@ unwrapNodeFn :: forall patch_state node_state d. NodeFnE patch_state d -> NodeFn
 unwrapNodeFn = runExists (\(NodeFnS nodeFn) -> unsafeCoerce nodeFn)
 
 
-wrapNodeFn :: forall patch_state node_state d. NodeFn (patch_state /\ node_state) d -> NodeFnE patch_state d
+wrapNodeFn :: forall patch_state node_state d. node_state /\ NodeFn (patch_state /\ node_state) d -> NodeFnE patch_state d
 wrapNodeFn = mkExists <<< NodeFnS
 
 
