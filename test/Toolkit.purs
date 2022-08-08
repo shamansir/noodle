@@ -1,37 +1,52 @@
-module Test.Toolkit where
+module Test.Toolkit
+  ( spec
+  )
+  where
 
 import Prelude
 
+import Effect.Aff (Aff)
+
+import Data.Array as Array
+import Data.Identity (Identity)
+import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
+import Data.Symbol (class IsSymbol, SProxy(..), reifySymbol, reflectSymbol)
+import Data.Traversable (sequence)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-
-import Control.Monad.State (modify_, get) as State
 
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
-import Test.Spec (Spec, pending, describe, it)
-import Test.Spec.Assertions (fail, shouldEqual)
-import Test.Signal (expectFn, expect)
-
--- import Noodle.Node.Shape (noInlets, noOutlets) as Shape
--- import Noodle.Node ((<~>), (+>), (<+))
+import Noodle.Channel as Ch
+import Noodle.Fn as Fn
+import Noodle.Fn.Process as Fn
 import Noodle.Node (Node)
 import Noodle.Node as Node
 import Noodle.Toolkit (Toolkit)
 import Noodle.Toolkit as Toolkit
-import Noodle.Channel as Ch
-import Noodle.Fn as Fn
-import Noodle.Fn.Process as Fn
+
+import Prim.Row (class Cons)
+import Record as Record
+import Record.Extra as Record
 
 import Signal ((~>), Signal)
 import Signal as Signal
 import Signal.Channel as Ch
 import Signal.Time as SignalT
+
+import Test.Signal (expectFn, expect)
+import Test.Spec (Spec, pending, describe, it)
+import Test.Spec.Assertions (fail, shouldEqual)
+import Type.Proxy (Proxy(..))
+
+import Unsafe.Coerce (unsafeCoerce)
+
+import Control.Monad.State as State
 
 
 spec :: Spec Unit

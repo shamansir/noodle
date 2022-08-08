@@ -52,15 +52,19 @@ import Noodle.Toolkit2 as T
 
 
 intChan = Ch.hot "int" 0
+strChan = Ch.hot "str" ""
 
 
 type Nodes =
     ( sum :: Node.NodeFn Unit Int
+    , concat :: Node.NodeFn Int String
     )
 
 
 -- _sum = Proxy :: Proxy "sum"
 _sum = T.family Proxy :: T.Family "sum"
+_concat = T.family Proxy :: T.Family "concat"
+_foo = T.family Proxy :: T.Family "foo"
 
 
 toolkit :: T.Toolkit Nodes
@@ -81,7 +85,21 @@ toolkit =
                 a <- Fn.receive $ Fn.in_ "a"  -- TODO: some operator i.e. <<+ "a"
                 b <- Fn.receive $ Fn.in_ "b"  -- TODO: some operator i.e. <<+ "b"
                 Fn.send (Fn.out_ "sum") $ a + b  -- TODO: some operator i.e. +>> "b"
-
+        , concat :
+            Fn.make "concat"
+                -- TODO: withInlets / withInputs ...
+                    -- -< "a" /\ intChan
+                [ Fn.in_ "a" /\ strChan
+                , Fn.in_ "b" /\ strChan
+                ]
+                -- TODO: withOutlets / withInputs ...
+                    -- >- "a" /\ intChan
+                [ Fn.out_ "concat" /\ strChan
+                ]
+            $ do
+                a <- Fn.receive $ Fn.in_ "a"  -- TODO: some operator i.e. <<+ "a"
+                b <- Fn.receive $ Fn.in_ "b"  -- TODO: some operator i.e. <<+ "b"
+                Fn.send (Fn.out_ "concat") $ a <> b  -- TODO: some operator i.e. +>> "b"
         }
 
 
@@ -89,10 +107,36 @@ spawnSum ∷ ∀ m. Functor m ⇒ MonadEffect m ⇒ Int → m (Node Unit Int)
 spawnSum = T.spawn toolkit _sum
 
 
--- trySpawn :: ∀ m state d. Functor m ⇒ MonadEffect m ⇒ String → d -> m (Maybe (Node state d))
--- trySpawn = T.trySpawn toolkit
+spawnConcat ∷ ∀ m. Functor m ⇒ MonadEffect m ⇒ String → m (Node Int String)
+spawnConcat = T.spawn toolkit _concat
+
+-- fails:
+{-
+spawnFoo ∷ ∀ state d m. Functor m ⇒ MonadEffect m ⇒ String → m (Node state d)
+spawnFoo = T.spawn toolkit _foo
+-}
 
 
 
--- trySpawn :: ∀ m state d. Functor m ⇒ MonadEffect m ⇒ String → d -> m (Maybe (Node state d))
--- trySpawn = T.trySpawn toolkit
+trySpawn ∷
+    forall (m ∷ Type -> Type) (s ∷ Symbol) (r ∷ Row Type) state d
+     . IsSymbol s
+    => Cons s (Node.NodeFn state d) r Nodes
+    => MonadEffect m
+    => String
+    -> d
+    -> m (Maybe ((T.Family s) /\ (Node state d)))
+trySpawn = T.trySpawn toolkit
+
+
+{-
+trySpawn' ∷
+    forall (m ∷ Type -> Type) (s ∷ Symbol) (r ∷ Row Type) state d
+     . IsSymbol s
+    => Cons s (Node.NodeFn state d) r Nodes
+    => MonadEffect m
+    => String
+    -> d
+    -> m (Maybe ((T.Family s) /\ (Node state d)))
+trySpawn' = T.trySpawn' toolkit
+-}

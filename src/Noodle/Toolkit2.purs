@@ -16,6 +16,7 @@ import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
 import Data.List as List
 import Data.Maybe (Maybe(..))
 import Data.Traversable (sequence)
+import Data.Tuple.Nested (type (/\), (/\))
 
 import Effect.Console (log)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -94,8 +95,7 @@ spawn (Toolkit tk) sym st =
 
 spawn
     :: forall m l (nodes :: Row Type) (r' ∷ Row Type) state d
-     . Functor m
-    => IsSymbol l
+     . IsSymbol l
     => Cons l (Node.NodeFn state d) r' nodes
     => MonadEffect m
     => Toolkit nodes
@@ -108,21 +108,39 @@ spawn (Toolkit tk) sym st =
 
 
 trySpawn
-    :: forall m l (nodes :: Row Type) (r' ∷ Row Type) state d t
-     . Functor m
-    => Keys t
-    => IsSymbol l
-    => RowToList nodes t
-    => Cons l (Node.NodeFn state d) r' nodes
+    :: forall m s (nodes :: Row Type) (r' ∷ Row Type) state d ks
+     . Keys ks
+    => IsSymbol s
+    => RowToList nodes ks
+    => Cons s (Node.NodeFn state d) r' nodes
     => MonadEffect m
     => Toolkit nodes
     -> String
     -> d
-    -> m (Maybe (Node state d))
+    -> m (Maybe (Family s /\ Node state d))
 trySpawn (Toolkit tk) s d =
     if List.elem s $ Record.keys tk then
-        Just <$> spawn (Toolkit tk) (produceFamily s :: Family l) d
+        let family_ = produceFamily s :: Family s
+        in Just <$> ((/\) family_) <$> (spawn (Toolkit tk) family_ d)
     else pure Nothing
+
+
+-- not needed
+{-
+trySpawn'
+    :: forall m s (nodes :: Row Type) (r ∷ Row Type) state d
+     . IsSymbol s
+    => Cons s (Node.NodeFn state d) r nodes
+    => MonadEffect m
+    => Toolkit nodes
+    -> String
+    -> d
+    -> m (Maybe (Family s /\ Node state d))
+trySpawn' (Toolkit tk) s d =
+    let family_ = produceFamily s :: Family s
+    in Just <$> ((/\) family_) <$> (spawn (Toolkit tk) family_ d)
+    -- Just <$> spawn (Toolkit tk) (produceFamily s :: Family l) d
+-}
 
 
 
