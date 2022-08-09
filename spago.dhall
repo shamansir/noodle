@@ -33,6 +33,7 @@ to generate this file without the comments in this block.
   , "halogen-hooks"
   , "halogen-subscriptions"
   , "halogen-svg-elems"
+  , "heterogeneous"
   , "identity"
   , "integers"
   , "invariant"

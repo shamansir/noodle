@@ -12,8 +12,10 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Symbol (class IsSymbol, SProxy(..), reifySymbol, reflectSymbol)
 import Data.Traversable (sequence)
-import Data.Tuple (snd) as Tuple
+import Data.Tuple (snd, fst) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+
+import Heterogeneous.Mapping as H
 
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
@@ -58,6 +60,12 @@ strChan = Ch.hot "str" ""
 type Nodes =
     ( sum :: Node.NodeFn Unit Int
     , concat :: Node.NodeFn Int String
+    )
+
+
+type States =
+    ( sum :: Unit
+    , concat :: Int
     )
 
 
@@ -117,16 +125,46 @@ spawnFoo = T.spawn toolkit _foo
 -}
 
 
+-- testSequence = (?wh :: forall m. Applicative m => m (forall a b. a -> b)) <*> Record.sequenceRecord (T.toRecord toolkit)
+-- testSequence = ?wh $ Record.sequenceRecord (T.toRecord toolkit)
 
-trySpawn ∷
+
+testToStates :: forall t101.
+      H.HMapWithIndex T.ToState
+        (T.Toolkit Nodes)
+        (Record States)
+       => (Record States)
+testToStates = T.toStates $ T.toRecord toolkit
+
+
+unsafeSpawn ∷
     forall (m ∷ Type -> Type) (s ∷ Symbol) (r ∷ Row Type) state d
      . IsSymbol s
     => Cons s (Node.NodeFn state d) r Nodes
     => MonadEffect m
     => String
     -> d
-    -> m (Maybe ((T.Family s) /\ (Node state d)))
-trySpawn = T.trySpawn toolkit
+    -> m (Maybe (T.Family s /\ (Node state d)))
+unsafeSpawn = T.unsafeSpawn toolkit
+
+
+-- spawnSum' ∷ ∀ m s. Functor m ⇒ IsSymbol s => MonadEffect m ⇒ Int → m (Maybe (T.Family s /\ Node Unit Int))
+unsafeSpawnSum ∷
+    forall (m ∷ Type -> Type) (r ∷ Row Type)
+     . Cons "sum" (Node.NodeFn Unit Int) r Nodes
+    => MonadEffect m
+    => Int
+    -> m (Maybe (T.Family "sum" /\ (Node Unit Int)))
+unsafeSpawnSum n = unsafeSpawn "sum" n
+
+
+unsafeSpawnSum' ∷
+    forall (m ∷ Type -> Type) (s ∷ Symbol) (r ∷ Row Type)
+     . Cons "sum" (Node.NodeFn Unit Int) r Nodes
+    => MonadEffect m
+    => Int
+    -> m (Maybe (Node Unit Int))
+unsafeSpawnSum' n = map Tuple.snd <$> unsafeSpawnSum n
 
 
 {-
