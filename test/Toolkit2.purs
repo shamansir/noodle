@@ -114,7 +114,7 @@ toolkit =
             $ do
                 a <- Fn.receive $ Fn.in_ "a"
                 b <- Fn.receive $ Fn.in_ "b"
-                -- State.modify_ (map $ const $ show $ a - b)
+                State.modify_ $ const $ show $ a - b
                 Fn.send (Fn.out_ "sum") $ a + b
         , concat :
             Fn.make "concat"
@@ -245,7 +245,6 @@ spec = do
 
         it "spawning with state works" $ liftEffect $ do
             node <- spawnSum2 0
-            Console.log $ show "before everything"
             stateSig <- Node.run "---" node
             stateAtStart <- Signal.get stateSig
             stateAtStart `shouldEqual` "0"
@@ -261,8 +260,7 @@ spec = do
             maybeNode <- unsafeSpawnSum2 0 # liftEffect
             case maybeNode of
                 Just ( _ /\ node ) -> liftEffect $ do -- do inside `NodeM` ?
-                    Console.log $ show "before everything"
-                    stateSig <- Node.run "--" node
+                    stateSig <- Node.run "---" node
                     stateAtStart <- Signal.get stateSig
                     stateAtStart `shouldEqual` "0"
                     Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
