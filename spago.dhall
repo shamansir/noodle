@@ -49,6 +49,7 @@ to generate this file without the comments in this block.
   , "profunctor"
   , "psci-support"
   , "read"
+  , "record"
   , "refs"
   , "signal"
   , "sized-vectors"

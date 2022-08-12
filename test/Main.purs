@@ -12,6 +12,7 @@ import Test.Spec.Runner (runSpec)
 import Test.Nodes (spec) as Nodes
 import Test.Fn (spec) as Fn
 import Test.Toolkit (spec) as Toolkit
+import Test.Toolkit2 (spec) as Toolkit2
 import Test.Flex (spec) as Flex
 
 
@@ -23,5 +24,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Nodes.spec
   describe "Toolkit"
     Toolkit.spec
+  describe "Toolkit2"
+    Toolkit2.spec
   describe "Flex"
     Flex.spec

@@ -27,8 +27,6 @@ import Noodle.Fn as Fn
 import Noodle.Fn.Process as Fn
 import Noodle.Node (Node)
 import Noodle.Node as Node
-import Noodle.Toolkit (Toolkit)
-import Noodle.Toolkit as Toolkit
 
 import Prim.Row (class Cons)
 import Record as Record
@@ -59,6 +57,7 @@ strChan = Ch.hot "str" ""
 
 type Nodes =
     ( sum :: Node.NodeFn Unit Int
+    , sum2 :: Node.NodeFn String Int
     , concat :: Node.NodeFn Int String
     )
 
@@ -69,8 +68,16 @@ type States =
     )
 
 
+states :: Record States
+states =
+    { sum : unit
+    , concat : 0
+    }
+
+
 -- _sum = Proxy :: Proxy "sum"
 _sum = T.family Proxy :: T.Family "sum"
+_sum2 = T.family Proxy :: T.Family "sum2"
 _concat = T.family Proxy :: T.Family "concat"
 _foo = T.family Proxy :: T.Family "foo"
 
@@ -93,6 +100,22 @@ toolkit =
                 a <- Fn.receive $ Fn.in_ "a"  -- TODO: some operator i.e. <<+ "a"
                 b <- Fn.receive $ Fn.in_ "b"  -- TODO: some operator i.e. <<+ "b"
                 Fn.send (Fn.out_ "sum") $ a + b  -- TODO: some operator i.e. +>> "b"
+        , sum2 :
+            Fn.make "sum2"
+                -- TODO: withInlets / withInputs ...
+                    -- -< "a" /\ intChan
+                [ Fn.in_ "a" /\ intChan
+                , Fn.in_ "b" /\ intChan
+                ]
+                -- TODO: withOutlets / withInputs ...
+                    -- >- "a" /\ intChan
+                [ Fn.out_ "sum" /\ intChan
+                ]
+            $ do
+                a <- Fn.receive $ Fn.in_ "a"
+                b <- Fn.receive $ Fn.in_ "b"
+                -- State.modify_ (map $ const $ show $ a - b)
+                Fn.send (Fn.out_ "sum") $ a + b
         , concat :
             Fn.make "concat"
                 -- TODO: withInlets / withInputs ...
@@ -115,6 +138,10 @@ spawnSum ∷ ∀ m. Functor m ⇒ MonadEffect m ⇒ Int → m (Node Unit Int)
 spawnSum = T.spawn toolkit _sum
 
 
+spawnSum2 ∷ ∀ m. Functor m ⇒ MonadEffect m ⇒ Int → m (Node String Int)
+spawnSum2 = T.spawn toolkit _sum2
+
+
 spawnConcat ∷ ∀ m. Functor m ⇒ MonadEffect m ⇒ String → m (Node Int String)
 spawnConcat = T.spawn toolkit _concat
 
@@ -129,12 +156,9 @@ spawnFoo = T.spawn toolkit _foo
 -- testSequence = ?wh $ Record.sequenceRecord (T.toRecord toolkit)
 
 
-testToStates :: forall t101.
-      H.HMapWithIndex T.ToState
-        (T.Toolkit Nodes)
-        (Record States)
-       => (Record States)
-testToStates = T.toStates $ T.toRecord toolkit
+
+testToStates :: H.HMapWithIndex T.ToState (Record Nodes) (Record States) => Record States
+testToStates = T.toStates toolkit
 
 
 unsafeSpawn ∷
@@ -167,6 +191,16 @@ unsafeSpawnSum' ∷
 unsafeSpawnSum' n = map Tuple.snd <$> unsafeSpawnSum n
 
 
+
+unsafeSpawnSum2 ∷
+    forall (m ∷ Type -> Type) (r ∷ Row Type)
+     . Cons "sum2" (Node.NodeFn String Int) r Nodes
+    => MonadEffect m
+    => Int
+    -> m (Maybe (T.Family "sum2" /\ (Node String Int)))
+unsafeSpawnSum2 n = unsafeSpawn "sum2" n
+
+
 {-
 trySpawn' ∷
     forall (m ∷ Type -> Type) (s ∷ Symbol) (r ∷ Row Type) state d
@@ -178,3 +212,69 @@ trySpawn' ∷
     -> m (Maybe ((T.Family s) /\ (Node state d)))
 trySpawn' = T.trySpawn' toolkit
 -}
+
+
+
+
+spec :: Spec Unit
+spec = do
+
+    describe "foo" $ do
+
+        it "spawning works" $ liftEffect $ do
+            node <- spawnSum 0
+            Node.run' node -- FIXME: may be no need in `imapState` and joining it with patch state
+            Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
+            Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
+            sum <- Node.getO node (Fn.out_ "sum") -- TODO: some operator i.e. v <- "sum" <+ node
+            shouldEqual sum 8
+
+        it "unsafe spawning works" $ do
+            maybeNode <- unsafeSpawnSum 0 # liftEffect -- or `spawnAndRun`
+            case maybeNode of
+                Just ( _ /\ node ) -> liftEffect $ do -- do inside `NodeM` ?
+                    Node.run' node -- FIXME: may be no need in `imapState` and joining it with patch state
+                    Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
+                    Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
+                    sum <- Node.getO node (Fn.out_ "sum") -- TODO: some operator i.e. v <- "sum" <+ node
+                    shouldEqual sum 8
+                Nothing ->
+                    fail "node wasn't spawned"
+
+            pure unit
+
+        it "spawning with state works" $ liftEffect $ do
+            node <- spawnSum2 0
+            Console.log $ show "before everything"
+            stateSig <- Node.run "---" node
+            stateAtStart <- Signal.get stateSig
+            stateAtStart `shouldEqual` "0"
+            Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
+            stateAfterFirstInlet <- Signal.get stateSig
+            stateAfterFirstInlet `shouldEqual` "5"
+            Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
+            finalState <- Signal.get stateSig
+            finalState `shouldEqual` "2"
+            pure unit
+
+        it "unsafe spawning with state works" $ do
+            maybeNode <- unsafeSpawnSum2 0 # liftEffect
+            case maybeNode of
+                Just ( _ /\ node ) -> liftEffect $ do -- do inside `NodeM` ?
+                    Console.log $ show "before everything"
+                    stateSig <- Node.run "--" node
+                    stateAtStart <- Signal.get stateSig
+                    stateAtStart `shouldEqual` "0"
+                    Node.send node (Fn.in_ "a" /\ 5) -- TODO: some operator i.e. node +> "a" /\ 5
+                    stateAfterFirstInlet <- Signal.get stateSig
+                    stateAfterFirstInlet `shouldEqual` "5"
+                    Node.send node (Fn.in_ "b" /\ 3) -- TODO: some operator i.e. node +> "b" /\ 3
+                    finalState <- Signal.get stateSig
+                    finalState `shouldEqual` "2"
+                Nothing ->
+                    fail "node wasn't spawned"
+
+            pure unit
+
+    describe "bar" $ do
+        pure unit
