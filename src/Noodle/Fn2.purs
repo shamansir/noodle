@@ -57,8 +57,8 @@ type Name = String
     - `m` -> monad where the function will be run
     - `d` -> data pass through the inputs/outputs
 -}
--- data Fn (is :: Row Type) (os :: Row Type) state m d = Fn Name (Record is) (Record os) (ProcessM i o state d m Unit)
-data Fn i ii o oo state m d = Fn Name (Array (i /\ ii)) (Array (o /\ oo)) (ProcessM i o state d m Unit)
+data Fn (is :: Row Type) (os :: Row Type) state m d = Fn Name (Record is) (Record os) (ProcessM (Record is) (Record os) state d m Unit)
+--data Fn i ii o oo state m d = Fn Name (Array (i /\ ii)) (Array (o /\ oo)) (ProcessM i o state d m Unit)
 
 
 type Fn' i o state m d = Fn i Unit o Unit state m d

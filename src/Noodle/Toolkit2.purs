@@ -97,12 +97,12 @@ toStates = H.hmapWithIndex ToState <<< toRecord
 
 
 spawn
-    :: forall m l (nodes :: Row Type) (r' ∷ Row Type) state d
-     . IsSymbol l
-    => Cons l (Node.NodeFn state d) r' nodes
+    :: forall m s (nodes :: Row Type) (r' ∷ Row Type) state d
+     . IsSymbol s
+    => Cons s (Node.NodeFn state d) r' nodes
     => MonadEffect m
     => Toolkit nodes
-    -> Family l
+    -> Family s
     -> d
     -> m (Node state d)
 spawn (Toolkit tk) sym st =
