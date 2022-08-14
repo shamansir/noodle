@@ -1,9 +1,6 @@
 module Noodle.Fn.Protocol
   ( Protocol
-  , Tracker
-  , check
   , mkDefault
-  , newTracker
   )
   where
 
@@ -20,36 +17,41 @@ import Data.Tuple.Nested (type (/\))
 
 
 
-type Protocol i o d = -- a.k.a. Transport
-    { receive :: i -> Effect (Maybe d) -- FIXME: remove Effect here, was only needed for tests
-    , send :: o -> d -> Effect Unit
-    , sendIn :: i -> d -> Effect Unit
-    , last :: Unit -> Effect (Maybe i) -- FIXME: remove Effect here, was only needed for tests
-    -- , replaceNode : Node.Family -> Effect Unit
+class Channel a d where
+    adapt :: d -> Maybe a
+    lift :: a -> d
+
+
+type Protocol d = -- a.k.a. Transport
+    { receive :: (forall a i. Channel a d => i -> Effect (Maybe a)) -- FIXME: Get rid of `Effect`
+    , receive' :: (forall a i. Channel a d => i -> Effect (Maybe d)) -- FIXME: Get rid of `Effect`
+    , send :: (forall a o. Channel a d => o -> a -> Effect Unit)
+    , sendIn :: (forall a i. Channel a d => i -> a -> Effect Unit)
+    , last :: (forall i.  Unit -> Effect (Maybe i))-- FIXME: Get rid of `Effect`
     }
 
 
-type Tracker k v = Ref (k /-> v)
+-- type Tracker k v = Ref (k /-> v)
 
 
-newTracker :: forall k v. Effect (Tracker k v)
-newTracker = Ref.new Map.empty
+-- newTracker :: forall k v. Effect (Tracker k v)
+-- newTracker = Ref.new Map.empty
 
 
-put :: forall k v. Ord k => k -> v -> Tracker k v -> Effect Unit
-put k v = Ref.modify_ (Map.insert k v)
+-- put :: forall k v. Ord k => k -> v -> Tracker k v -> Effect Unit
+-- put k v = Ref.modify_ (Map.insert k v)
 
 
-check :: forall k v. Ord k => k -> Tracker k v -> Effect (Maybe v)
-check k tracker =
-    Ref.read tracker <#> Map.lookup k
+-- check :: forall k v. Ord k => k -> Tracker k v -> Effect (Maybe v)
+-- check k tracker =
+--     Ref.read tracker <#> Map.lookup k
 
 
 mkDefault
-    :: forall i o d
-     . Ord i => Ord o
-    => Array (i /\ d)
-    -> Effect ({ protocol :: Protocol i o d, inputs :: Tracker i d, outputs :: Tracker o d })
+    :: forall inputs outputs d
+     . Record inputs
+    -> Record outputs
+    -> Effect (protocol :: Protocol d /\ Record outputs)
 mkDefault initials = do
     let initialsMap = Map.fromFoldable initials
     inputs <- newTracker
