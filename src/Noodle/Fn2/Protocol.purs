@@ -17,7 +17,7 @@ import Data.Tuple.Nested (type (/\))
 
 
 
-class Channel a d where
+class Channel a d | d -> a where
     adapt :: d -> Maybe a
     lift :: a -> d
 
