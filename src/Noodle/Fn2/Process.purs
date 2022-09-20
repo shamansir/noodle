@@ -249,11 +249,11 @@ type TestInputs = ( foo :: String, i2 :: Boolean )
 type TestOutputs = ( bar :: Int, o2 :: Boolean )
 
 
-runM :: forall is os state d m. MonadEffect m => MonadRec m => Ref (Record TestInputs)
-    -> Ref (Record TestOutputs)
+runM :: forall is os state d m. MonadEffect m => MonadRec m => Ref (Record is)
+    -> Ref (Record os)
     -> d
     -> Ref state
-    -> ProcessM state TestInputs TestOutputs d m
+    -> ProcessM state is os d m
     ~> m
 runM inputsRef outputsRef default stateRef (ProcessM processFree) =
     runFreeM inputsRef outputsRef default stateRef processFree
@@ -266,11 +266,11 @@ runFreeM
     :: forall is os state d m
      . MonadEffect m
     => MonadRec m
-    => Ref (Record TestInputs)
-    -> Ref (Record TestOutputs)
+    => Ref (Record is)
+    -> Ref (Record os)
     -> d
     -> Ref state
-    -> Free (ProcessF state TestInputs TestOutputs d m)
+    -> Free (ProcessF state is os d m)
     ~> m
 runFreeM inputsRef outputsRef default stateRef fn =
     --foldFree go-- (go stateRef)
@@ -284,23 +284,22 @@ runFreeM inputsRef outputsRef default stateRef fn =
                     pure next
         go (Lift m) = m
         go (Receive' iid getV) = do
-            pure $ getV default
-            -- (valueAtInput :: d) <- getInputAt iid
-            -- pure
-            --     $ getV
-            --     $ valueAtInput
+            valueAtInput <- getInputAt iid
+            pure
+                $ getV
+                $ valueAtInput
         go (Send' oid v next) = do
-            -- sendToOutput oid v
+            sendToOutput oid v
             pure next
         go (SendIn iid v next) = do
-            -- sendToInput iid v
+            sendToInput iid v
             pure next
 
         getUserState = liftEffect $ Ref.read stateRef
         writeUserState nextState = liftEffect $ Ref.write nextState stateRef
-        getInputAt :: forall i. Cons i d TestInputs TestInputs => IsSymbol i => Input i -> m d
+        getInputAt :: forall i. Cons i d is is => IsSymbol i => Input i -> m d
         getInputAt iid = liftEffect $ Record.get iid <$> Ref.read inputsRef
-        sendToOutput :: forall o. Cons o d TestOutputs TestOutputs => IsSymbol o => Output o -> d -> m Unit
+        sendToOutput :: forall o. Cons o d os os => IsSymbol o => Output o -> d -> m Unit
         sendToOutput oid v = liftEffect $ Ref.modify_ (Record.set oid v) outputsRef
-        sendToInput :: forall i. Cons i d TestInputs TestInputs => IsSymbol i => Input i -> d -> m Unit
+        sendToInput :: forall i. Cons i d is is => IsSymbol i => Input i -> d -> m Unit
         sendToInput iid v = liftEffect $ Ref.modify_ (Record.set iid v) inputsRef
