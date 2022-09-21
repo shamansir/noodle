@@ -51,21 +51,22 @@ data ProcessF state d m a
     -- Disconnect etc.
 -}
 
-data ProcessF state is os d m a
+--data ProcessF :: forall is' os'. Symbol -> Symbol -> Type -> Row is' -> Row os' -> Type -> Type -> (Type -> Type) -> Type
+data ProcessF i o state is os din dout m a
     = State (state -> a /\ state)
     | Lift (m a)
-    | Send' (forall o. Output o) d a -- TODO: use strings here, but close the constructors?
+    | Send' (Output o) dout a -- TODO: use strings here, but close the constructors?
     -- | SendIn (forall proxy i. IsSymbol i => proxy i) d a
     -- | SendIn (forall i. Input i) d a
     -- | SendIn (forall i. SProxy i) d a
-    | SendIn (forall i. Input i) d a -- TODO: use strings here, but close the constructors?
-    | Receive' (forall i. Input i) (d -> a) -- TODO: use strings here, but close the constructors?
+    | SendIn (Input i) din a -- TODO: use strings here, but close the constructors?
+    | Receive' (Input i) (din -> a) -- TODO: use strings here, but close the constructors?
     -- Connect
     -- Disconnect etc
 
 
 
-instance functorProcessF :: Functor m => Functor (ProcessF state is os d m) where
+instance functorProcessF :: Functor m => Functor (ProcessF i o state is os din dout m) where
     map f = case _ of
         State k -> State (lmap f <<< k)
         Lift m -> Lift (map f m)
@@ -74,36 +75,36 @@ instance functorProcessF :: Functor m => Functor (ProcessF state is os d m) wher
         SendIn iid d next -> SendIn iid d $ f next
 
 
-newtype ProcessM state is os d m a = ProcessM (Free (ProcessF state is os d m) a)
+newtype ProcessM i o state is os din dout m a = ProcessM (Free (ProcessF i o state is os din dout m) a)
 
 
-derive newtype instance functorProcessM :: Functor (ProcessM state is os d m)
-derive newtype instance applyProcessM :: Apply (ProcessM state is os d m)
-derive newtype instance applicativeProcessM :: Applicative (ProcessM state is os d m)
-derive newtype instance bindProcessM :: Bind (ProcessM state is os d m)
-derive newtype instance monadProcessM :: Monad (ProcessM state is os d m)
-derive newtype instance semigroupProcessM :: Semigroup a => Semigroup (ProcessM state is os d m a)
-derive newtype instance monoidProcessM :: Monoid a => Monoid (ProcessM state is os d m a)
---derive newtype instance bifunctorProcessM :: Bifunctor (ProcessM state is os d m a)
+derive newtype instance functorProcessM :: Functor (ProcessM i o state is os din dout m)
+derive newtype instance applyProcessM :: Apply (ProcessM i o state is os din dout m)
+derive newtype instance applicativeProcessM :: Applicative (ProcessM i o state is os din dout m)
+derive newtype instance bindProcessM :: Bind (ProcessM i o state is os din dout m)
+derive newtype instance monadProcessM :: Monad (ProcessM i o state is os din dout m)
+derive newtype instance semigroupProcessM :: Semigroup a => Semigroup (ProcessM i o state is os din dout m a)
+derive newtype instance monoidProcessM :: Monoid a => Monoid (ProcessM i o state is os din dout m a)
+--derive newtype instance bifunctorProcessM :: Bifunctor (ProcessM i o state is os din dout m a)
 
 
-instance monadEffectNoodleM :: MonadEffect m => MonadEffect (ProcessM state is os d m) where
+instance monadEffectNoodleM :: MonadEffect m => MonadEffect (ProcessM i o state is os din dout m) where
   liftEffect = ProcessM <<< Free.liftF <<< Lift <<< liftEffect
 
 
-instance monadAffNoodleM :: MonadAff m => MonadAff (ProcessM state is os d m) where
+instance monadAffNoodleM :: MonadAff m => MonadAff (ProcessM i o state is os din dout m) where
   liftAff = ProcessM <<< Free.liftF <<< Lift <<< liftAff
 
 
-instance monadStateNoodleM :: MonadState state (ProcessM state is os d m) where
+instance monadStateNoodleM :: MonadState state (ProcessM i o state is os din dout m) where
   state = ProcessM <<< Free.liftF <<< State
 
 
-instance monadThrowNoodleM :: MonadThrow e m => MonadThrow e (ProcessM state is os d m) where
+instance monadThrowNoodleM :: MonadThrow e m => MonadThrow e (ProcessM i o state is os din dout m) where
   throwError = ProcessM <<< Free.liftF <<< Lift <<< throwError
 
 
-instance monadRecHalogenM :: MonadRec (ProcessM state is os d m) where
+instance monadRecHalogenM :: MonadRec (ProcessM i o state is os din dout m) where
   tailRecM k a = k a >>= case _ of
     Loop x -> tailRecM k x
     Done y -> pure y
@@ -111,29 +112,29 @@ instance monadRecHalogenM :: MonadRec (ProcessM state is os d m) where
 
 {- Processing -}
 
-receive :: forall i state is os d m. IsSymbol i => Input i -> ProcessM state is os d m d
+receive :: forall i o state is os din dout m. IsSymbol i => Input i -> ProcessM i o state is os din dout m din
 receive iid = ProcessM $ Free.liftF $ Receive' (unsafeCoerce iid) identity
 
 
-send :: forall o state is os d m. IsSymbol o => Output o -> d -> ProcessM state is os d m Unit
+send :: forall i o state is os din dout m. IsSymbol o => Output o -> dout -> ProcessM i o state is os din dout m Unit
 send oid d = ProcessM $ Free.liftF $ Send' (unsafeCoerce oid) d unit
 
 
 -- sendIn :: forall i state d m. Input i -> d -> ProcessM state d m Unit
 -- sendIn iid d = ProcessM $ Free.liftF $ SendIn iid d unit
-sendIn ∷ ∀ proxy i o state is os d m. IsSymbol i => Input i → d → ProcessM state is os d m Unit
+sendIn ∷ ∀ i o state is os din dout m. IsSymbol i => Input i → din → ProcessM i o state is os din dout m Unit
 -- sendIn iid d = ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid) d unit
 sendIn iid d =
     ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid) d unit
 
 
-sendIn' ∷ ∀ proxy i o state is os d m. IsSymbol i => Input i → d → ProcessM state is os d m Unit
+sendIn' ∷ ∀ i o state is os din dout m. IsSymbol i => Input i → din → ProcessM i o state is os din dout m Unit
 -- sendIn iid d = ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid) d unit
 sendIn' iid d =
     ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid) d unit
 
 
-testSendIn ∷ ∀ state is os d m. d → ProcessM state is os d m Unit
+testSendIn ∷ ∀ o state os din dout m. din → ProcessM "foo" o state TestInputs os din dout m Unit
 testSendIn = sendIn _testInput
 
 
@@ -148,7 +149,7 @@ testExtract =
         SendIn iid d next -> Just $ reflectSymbol (iid :: Input s)
 -}
 
-lift :: forall i o state is os d m. m Unit -> ProcessM state is os d m Unit
+lift :: forall i o state is os din dout m. m Unit -> ProcessM i o state is os din dout m Unit
 lift m = ProcessM $ Free.liftF $ Lift m
 
 
@@ -191,7 +192,7 @@ mapMOutputs f (ProcessM processFree) =
 -}
 
 
-imapFState :: forall state state' is os d m. (state -> state') -> (state' -> state) -> ProcessF state is os d m ~> ProcessF state' is os d m
+imapFState :: forall i o state state' is os din dout m. (state -> state') -> (state' -> state) -> ProcessF i o state is os din dout m ~> ProcessF i o state' is os din dout m
 imapFState f g =
     case _ of
         State k -> State (map f <<< k <<< g)
@@ -201,28 +202,44 @@ imapFState f g =
         SendIn iid d next -> SendIn iid d next
 
 
-imapMState :: forall state state' is os d m. (state -> state') -> (state' -> state) -> ProcessM state is os d m ~> ProcessM state' is os d m
+imapMState :: forall i o state state' is os din dout m. (state -> state') -> (state' -> state) -> ProcessM i o state is os din dout m ~> ProcessM i o state' is os din dout m
 imapMState f g (ProcessM processFree) =
     ProcessM $ foldFree (Free.liftF <<< imapFState f g) processFree
 
 
-imapFFocus :: forall i o state is os d d' m. (d -> d') -> (d' -> d) -> ProcessF state is os d m ~> ProcessF state is os d' m
-imapFFocus f g =
+imapFInFocus :: forall i o state is os din din' dout m. (din -> din') -> (din' -> din) -> ProcessF i o state is os din dout m ~> ProcessF i o state is os din' dout m
+imapFInFocus f g =
     case _ of
         State k -> State k
         Lift m -> Lift m
         Receive' iid k -> Receive' iid (k <<< g)
-        Send' oid d next -> Send' oid (f d) next
+        Send' oid d next -> Send' oid d next
         SendIn iid d next -> SendIn iid (f d) next
 
 
-imapMFocus :: forall state is os d d' m. (d -> d') -> (d' -> d) -> ProcessM state is os d m ~> ProcessM state is os d' m
-imapMFocus f g (ProcessM processFree) =
-    ProcessM $ foldFree (Free.liftF <<< imapFFocus f g) processFree
+mapFOutFocus :: forall i o state is os din dout dout' m. (dout -> dout') -> ProcessF i o state is os din dout m ~> ProcessF i o state is os din dout' m
+mapFOutFocus f =
+    case _ of
+        State k -> State k
+        Lift m -> Lift m
+        Receive' iid k -> Receive' iid k
+        Send' oid d next -> Send' oid (f d) next
+        SendIn iid d next -> SendIn iid d next
+
+
+imapMInFocus :: forall i o state is os din din' dout m. (din -> din') -> (din' -> din) -> ProcessM i o state is os din dout m ~> ProcessM i o state is os din' dout m
+imapMInFocus f g (ProcessM processFree) =
+    ProcessM $ foldFree (Free.liftF <<< imapFInFocus f g) processFree
     --ProcessM $ liftF $ imapProcessFFocus f g processFree
 
 
-mapFM :: forall state is os d m m'. (m ~> m') -> ProcessF state is os d m ~> ProcessF state is os d m'
+mapMOutFocus :: forall i o state is os din dout dout' m. (dout -> dout') -> ProcessM i o state is os din dout m ~> ProcessM i o state is os din dout' m
+mapMOutFocus f (ProcessM processFree) =
+    ProcessM $ foldFree (Free.liftF <<< mapFOutFocus f) processFree
+    --ProcessM $ liftF $ imapProcessFFocus f g processFree
+
+
+mapFM :: forall i o state is os din dout m m'. (m ~> m') -> ProcessF i o state is os din dout m ~> ProcessF i o state is os din dout m'
 mapFM f =
     case _ of
         State k -> State k
@@ -232,7 +249,7 @@ mapFM f =
         SendIn iid d next -> SendIn iid d next
 
 
-mapMM :: forall state is os d m m'. (m ~> m') -> ProcessM state is os d m ~> ProcessM state is os d m'
+mapMM :: forall i o state is os din dout m m'. (m ~> m') -> ProcessM i o state is os din dout m ~> ProcessM i o state is os din dout m'
 mapMM f (ProcessM processFree) =
     ProcessM $ foldFree (Free.liftF <<< mapFM f) processFree
 
@@ -249,33 +266,44 @@ type TestInputs = ( foo :: String, i2 :: Boolean )
 type TestOutputs = ( bar :: Int, o2 :: Boolean )
 
 
-runM :: forall is os state d m. MonadEffect m => MonadRec m => Ref (Record is)
+runM
+    :: forall i o state is os din dout m
+     . MonadEffect m
+    => MonadRec m
+    => IsSymbol i
+    => IsSymbol o
+    => Cons i din is is
+    => Cons o dout os os
+    => Ref (Record is)
     -> Ref (Record os)
-    -> d
     -> Ref state
-    -> ProcessM state is os d m
+    -> ProcessM i o state is os din dout m
     ~> m
-runM inputsRef outputsRef default stateRef (ProcessM processFree) =
-    runFreeM inputsRef outputsRef default stateRef processFree
+runM inputsRef outputsRef stateRef (ProcessM processFree) =
+    runFreeM inputsRef outputsRef stateRef processFree
 
 
 -- TODO: pass the inputs / outputs records here, with the current content and so the scheme for types, they can be stored in `Protocol`.
 -- runFreeM :: forall i o state d m. MonadEffect m => MonadRec m => Ord i => Protocol i o d -> d -> Ref state -> Free (ProcessF state d m) ~> m
 -- runFreeM :: forall is os state d m. MonadEffect m => MonadRec m => Row is -> Row os -> d -> Ref state -> Free (ProcessF state d m) ~> m
 runFreeM
-    :: forall is os state d m
+    :: forall i o state is os din dout m
      . MonadEffect m
     => MonadRec m
+    => IsSymbol i
+    => IsSymbol o
+    => Cons i din is is
+    => Cons o dout os os
     => Ref (Record is)
     -> Ref (Record os)
-    -> d
     -> Ref state
-    -> Free (ProcessF state is os d m)
+    -> Free (ProcessF i o state is os din dout m)
     ~> m
-runFreeM inputsRef outputsRef default stateRef fn =
+runFreeM inputsRef outputsRef stateRef fn =
     --foldFree go-- (go stateRef)
     Free.runFreeM go fn
     where
+        go :: ProcessF i o state is os din dout m ~> m
         go (State f) = do
             state <- getUserState
             case f state of
@@ -297,9 +325,9 @@ runFreeM inputsRef outputsRef default stateRef fn =
 
         getUserState = liftEffect $ Ref.read stateRef
         writeUserState nextState = liftEffect $ Ref.write nextState stateRef
-        getInputAt :: forall i. Cons i d is is => IsSymbol i => Input i -> m d
+        --getInputAt :: Input i -> m d
         getInputAt iid = liftEffect $ Record.get iid <$> Ref.read inputsRef
-        sendToOutput :: forall o. Cons o d os os => IsSymbol o => Output o -> d -> m Unit
+        -- sendToOutput :: Output o -> d -> m Unit
         sendToOutput oid v = liftEffect $ Ref.modify_ (Record.set oid v) outputsRef
-        sendToInput :: forall i. Cons i d is is => IsSymbol i => Input i -> d -> m Unit
+        -- sendToInput :: Cons i d is is => IsSymbol i => Input i -> d -> m Unit
         sendToInput iid v = liftEffect $ Ref.modify_ (Record.set iid v) inputsRef
