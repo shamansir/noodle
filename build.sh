@@ -1,2 +1,2 @@
 #!/bin/bash
-spago -x ./spago.dhall build
+rm -Rf ./outuput && spago -x build
