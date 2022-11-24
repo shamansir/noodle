@@ -23,8 +23,8 @@ import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
 import Noodle.Channel as Ch
-import Noodle.Fn as Fn
-import Noodle.Fn.Process as Fn
+import Noodle.Fn2 as Fn
+import Noodle.Fn2.Process as Fn
 import Noodle.Node (Node)
 import Noodle.Node as Node
 
@@ -89,8 +89,8 @@ toolkit =
             Fn.make "sum"
                 -- TODO: withInlets / withInputs ...
                     -- -< "a" /\ intChan
-                [ Fn.in_ "a" /\ intChan
-                , Fn.in_ "b" /\ intChan
+                [ (Fn.Input :: Fn.Input "a") /\ intChan
+                , (Fn.Input :: Fn.Input "b") /\ intChan
                 ]
                 -- TODO: withOutlets / withInputs ...
                     -- >- "a" /\ intChan
@@ -100,6 +100,8 @@ toolkit =
                 a <- Fn.receive $ Fn.in_ "a"  -- TODO: some operator i.e. <<+ "a"
                 b <- Fn.receive $ Fn.in_ "b"  -- TODO: some operator i.e. <<+ "b"
                 Fn.send (Fn.out_ "sum") $ a + b  -- TODO: some operator i.e. +>> "b"
+        }
+{-
         , sum2 :
             Fn.make "sum2"
                 -- TODO: withInlets / withInputs ...
@@ -132,6 +134,7 @@ toolkit =
                 b <- Fn.receive $ Fn.in_ "b"  -- TODO: some operator i.e. <<+ "b"
                 Fn.send (Fn.out_ "concat") $ a <> b  -- TODO: some operator i.e. +>> "b"
         }
+-}
 
 
 spawnSum ∷ ∀ m. Functor m ⇒ MonadEffect m ⇒ Int → m (Node Unit Int)

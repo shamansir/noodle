@@ -1,4 +1,4 @@
-module Noodle.Fn.Process where
+module Noodle.Fn2.Process where
 
 import Prelude
 
@@ -325,9 +325,9 @@ runFreeM inputsRef outputsRef stateRef fn =
 
         getUserState = liftEffect $ Ref.read stateRef
         writeUserState nextState = liftEffect $ Ref.write nextState stateRef
-        --getInputAt :: Input i -> m d
+        getInputAt :: Input i -> m din
         getInputAt iid = liftEffect $ Record.get iid <$> Ref.read inputsRef
-        -- sendToOutput :: Output o -> d -> m Unit
+        sendToOutput :: Output o -> dout -> m Unit
         sendToOutput oid v = liftEffect $ Ref.modify_ (Record.set oid v) outputsRef
-        -- sendToInput :: Cons i d is is => IsSymbol i => Input i -> d -> m Unit
+        sendToInput :: Cons i din is is => IsSymbol i => Input i -> din -> m Unit
         sendToInput iid v = liftEffect $ Ref.modify_ (Record.set iid v) inputsRef

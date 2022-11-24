@@ -1,4 +1,4 @@
-module Noodle.Fn.Protocol
+module Noodle.Fn2.Protocol
   ( Protocol
   , mkDefault
   )
