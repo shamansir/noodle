@@ -1,0 +1,1 @@
+rm -Rf ./outuput && spago -x ./example.dhall build --watch

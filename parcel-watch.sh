@@ -1,0 +1,1 @@
+rm -Rf ./.parcel-cache && parcel serve --no-cache --dist-dir ./static ./index.html
