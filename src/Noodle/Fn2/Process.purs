@@ -7,22 +7,23 @@ import Control.Monad.Free (Free, foldFree)
 import Control.Monad.Free as Free
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.State.Class (class MonadState)
-import Effect (Effect)
 import Data.Bifunctor (lmap)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
 import Data.Tuple.Nested ((/\), type (/\))
+import Effect (Effect)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Noodle.Fn.Protocol (Protocol)
+import Prim.Row (class Cons)
+import Record as Record
 import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
-import Record as Record
-import Prim.Row (class Cons)
+import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 
 -- type Input (s :: Symbol) = SProxy
 -- type Output (s :: Symbol) = SProxy
@@ -38,35 +39,28 @@ _testInput = Input :: Input "foo"
 
 
 {-
-data ProcessF state d m a
+--data ProcessF :: forall is' os'. Symbol -> Symbol -> Type -> Row is' -> Row os' -> Type -> Type -> (Type -> Type) -> Type
+data ProcessF state is os m a
     = State (state -> a /\ state)
     | Lift (m a)
-    | Send' (forall o. IsSymbol o => Output o) d a
-    -- | SendIn (forall proxy i. IsSymbol i => proxy i) d a
-    -- | SendIn (forall i. Input i) d a
-    -- | SendIn (forall i. SProxy i) d a
-    | SendIn (forall i. IsSymbol i => Input i) d a
-    | Receive' (forall i. IsSymbol i => Input i) (d -> a)
+    | Send' (forall o dout. IsSymbol o => Output o /\ dout) a -- TODO: use strings here, but close the constructors? -- TODO: or put `Cons`` constraints here
+    | SendIn (forall i din. IsSymbol i => Input i /\ din) a -- TODO: use strings here, but close the constructors?
+    | Receive' (forall i din. IsSymbol i => Input i /\ (din -> a)) -- TODO: use strings here, but close the constructors? -- TODO: or put `Cons`` constraints here
     -- Connect
-    -- Disconnect etc.
+    -- Disconnect etc
 -}
 
---data ProcessF :: forall is' os'. Symbol -> Symbol -> Type -> Row is' -> Row os' -> Type -> Type -> (Type -> Type) -> Type
-data ProcessF i o state is os din dout m a
+data ProcessF state is os m a
     = State (state -> a /\ state)
     | Lift (m a)
-    | Send' (Output o) dout a -- TODO: use strings here, but close the constructors?
-    -- | SendIn (forall proxy i. IsSymbol i => proxy i) d a
-    -- | SendIn (forall i. Input i) d a
-    -- | SendIn (forall i. SProxy i) d a
-    | SendIn (Input i) din a -- TODO: use strings here, but close the constructors?
-    | Receive' (Input i) (din -> a) -- TODO: use strings here, but close the constructors?
+    | Send' String (forall dout. dout) a
+    | SendIn String (forall din. din) a
+    | Receive' String (forall din. din -> a)
     -- Connect
     -- Disconnect etc
 
 
-
-instance functorProcessF :: Functor m => Functor (ProcessF i o state is os din dout m) where
+instance functorProcessF :: Functor m => Functor (ProcessF state is os m) where
     map f = case _ of
         State k -> State (lmap f <<< k)
         Lift m -> Lift (map f m)
@@ -75,9 +69,10 @@ instance functorProcessF :: Functor m => Functor (ProcessF i o state is os din d
         SendIn iid d next -> SendIn iid d $ f next
 
 
-newtype ProcessM i o state is os din dout m a = ProcessM (Free (ProcessF i o state is os din dout m) a)
+newtype ProcessM state is os m a = ProcessM (Free (ProcessF state is os m) a)
 
 
+{-
 derive newtype instance functorProcessM :: Functor (ProcessM i o state is os din dout m)
 derive newtype instance applyProcessM :: Apply (ProcessM i o state is os din dout m)
 derive newtype instance applicativeProcessM :: Applicative (ProcessM i o state is os din dout m)
@@ -108,33 +103,38 @@ instance monadRecHalogenM :: MonadRec (ProcessM i o state is os din dout m) wher
   tailRecM k a = k a >>= case _ of
     Loop x -> tailRecM k x
     Done y -> pure y
+-}
 
 
 {- Processing -}
 
-receive :: forall i o state is os din dout m. IsSymbol i => Input i -> ProcessM i o state is os din dout m din
+receive :: forall i o state is os din dout m. IsSymbol i => Cons i din is is => Input i -> ProcessM state is os m din
 receive iid = ProcessM $ Free.liftF $ Receive' (unsafeCoerce iid) identity
 
 
-send :: forall i o state is os din dout m. IsSymbol o => Output o -> dout -> ProcessM i o state is os din dout m Unit
-send oid d = ProcessM $ Free.liftF $ Send' (unsafeCoerce oid) d unit
+send :: forall i o state is os din dout m. IsSymbol o => Cons o dout os os => Output o -> dout -> ProcessM state is os m Unit
+-- send oid d = ProcessM $ Free.liftF $ Send' (unsafeCoerce oid /\ unsafeCoerce d) unit
+send oid d = ProcessM $ Free.liftF $ Send' (reflectSymbol oid) (unsafeCoerce d) unit
 
 
 -- sendIn :: forall i state d m. Input i -> d -> ProcessM state d m Unit
 -- sendIn iid d = ProcessM $ Free.liftF $ SendIn iid d unit
-sendIn ∷ ∀ i o state is os din dout m. IsSymbol i => Input i → din → ProcessM i o state is os din dout m Unit
+sendIn ∷ ∀ i o state is os din dout m. IsSymbol i => Cons i din is is => Input i → din → ProcessM state is os m Unit
 -- sendIn iid d = ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid) d unit
 sendIn iid d =
-    ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid) d unit
+    -- ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid /\ unsafeCoerce d) unit
+    ProcessM $ Free.liftF $ SendIn (reflectSymbol iid) (unsafeCoerce d) unit
 
 
-sendIn' ∷ ∀ i o state is os din dout m. IsSymbol i => Input i → din → ProcessM i o state is os din dout m Unit
+--sendIn' ∷ ∀ i o state is os din dout m. IsSymbol i => Input i → din → ProcessM state is os m Unit
 -- sendIn iid d = ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid) d unit
+sendIn' ∷ ∀ i state is os din m. IsSymbol i => Cons i din is is => Input i → din → ProcessM state is os m Unit
 sendIn' iid d =
-    ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid) d unit
+    -- ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid /\ unsafeCoerce d) unit
+    ProcessM $ Free.liftF $ SendIn (reflectSymbol iid) (unsafeCoerce d) unit
 
 
-testSendIn ∷ ∀ o state os din dout m. din → ProcessM "foo" o state TestInputs os din dout m Unit
+testSendIn ∷ ∀ o state os din dout m. din → ProcessM state TestInputs os m Unit
 testSendIn = sendIn _testInput
 
 
@@ -287,23 +287,19 @@ runM inputsRef outputsRef stateRef (ProcessM processFree) =
 -- runFreeM :: forall i o state d m. MonadEffect m => MonadRec m => Ord i => Protocol i o d -> d -> Ref state -> Free (ProcessF state d m) ~> m
 -- runFreeM :: forall is os state d m. MonadEffect m => MonadRec m => Row is -> Row os -> d -> Ref state -> Free (ProcessF state d m) ~> m
 runFreeM
-    :: forall i o state is os din dout m
+    :: forall state is os m
      . MonadEffect m
     => MonadRec m
-    => IsSymbol i
-    => IsSymbol o
-    => Cons i din is is
-    => Cons o dout os os
     => Ref (Record is)
     -> Ref (Record os)
     -> Ref state
-    -> Free (ProcessF i o state is os din dout m)
+    -> Free (ProcessF state is os m)
     ~> m
 runFreeM inputsRef outputsRef stateRef fn =
     --foldFree go-- (go stateRef)
     Free.runFreeM go fn
     where
-        go :: ProcessF i o state is os din dout m ~> m
+        go :: forall a. ProcessF state is os m a -> m a
         go (State f) = do
             state <- getUserState
             case f state of
@@ -312,7 +308,7 @@ runFreeM inputsRef outputsRef stateRef fn =
                     pure next
         go (Lift m) = m
         go (Receive' iid getV) = do
-            valueAtInput <- getInputAt iid
+            valueAtInput <- getInputAt iid -- use reifySymbol?
             pure
                 $ getV
                 $ valueAtInput
@@ -325,9 +321,15 @@ runFreeM inputsRef outputsRef stateRef fn =
 
         getUserState = liftEffect $ Ref.read stateRef
         writeUserState nextState = liftEffect $ Ref.write nextState stateRef
-        getInputAt :: Input i -> m din
-        getInputAt iid = liftEffect $ Record.get iid <$> Ref.read inputsRef
-        sendToOutput :: Output o -> dout -> m Unit
-        sendToOutput oid v = liftEffect $ Ref.modify_ (Record.set oid v) outputsRef
-        sendToInput :: Cons i din is is => IsSymbol i => Input i -> din -> m Unit
-        sendToInput iid v = liftEffect $ Ref.modify_ (Record.set iid v) inputsRef
+        -- getInputAt :: forall i din. IsSymbol i => Cons i din is is => Input i -> m din
+        -- getInputAt iid = liftEffect $ Record.get iid <$> Ref.read inputsRef
+        getInputAt :: forall din. String -> m din
+        getInputAt iid = liftEffect $ Record.unsafeGet iid <$> Ref.read inputsRef
+        -- sendToOutput :: forall o dout. IsSymbol o => Cons o dout os os => Output o -> dout -> m Unit
+        -- sendToOutput oid v = liftEffect $ Ref.modify_ (Record.set oid v) outputsRef
+        sendToOutput :: forall dout. String -> dout -> m Unit
+        sendToOutput oid v = liftEffect $ Ref.modify_ (Record.unsafeSet oid v) outputsRef
+        -- sendToInput :: forall i din. IsSymbol i => Cons i din is is => Input i -> din -> m Unit
+        -- sendToInput iid v = liftEffect $ Ref.modify_ (Record.set iid v) inputsRef
+        sendToInput :: forall din. String -> din -> m Unit
+        sendToInput iid v = liftEffect $ Ref.modify_ (Record.unsafeSet iid v) inputsRef

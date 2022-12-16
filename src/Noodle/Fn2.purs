@@ -1,5 +1,5 @@
 module Noodle.Fn2
-  ( Fn, Fn'
+  ( Fn
   , class ToFn, toFn
   , InputId(..), OutputId(..)
   , Name, name
@@ -58,10 +58,6 @@ type Name = String
     - `d` -> data pass through the inputs/outputs
 -}
 data Fn (is :: Row Type) (os :: Row Type) state m d = Fn Name (Record is) (Record os) (ProcessM (Record is) (Record os) state d m Unit)
---data Fn i ii o oo state m d = Fn Name (Array (i /\ ii)) (Array (o /\ oo)) (ProcessM i o state d m Unit)
-
-
-type Fn' i o state m d = Fn i Unit o Unit state m d
 
 
 class ToFn a i ii o oo state d where
