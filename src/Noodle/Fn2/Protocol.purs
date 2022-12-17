@@ -43,26 +43,62 @@ type Protocol is os state m =
     }
 
 
+type ProtocolH is os state w m =
+    { state :: w state
+    , inputs :: w (Record is)
+    , outputs :: w (Record os)
+    , lastInput :: w (forall iproxy i. IsSymbol i => Maybe (iproxy i))
+    , lastOutput :: w (forall oproxy o. IsSymbol o => Maybe (oproxy o))
+    , protocol :: Protocol is os state m
+    }
+
+
+type ProtocolW is os state w m =
+    m (ProtocolH is os state w m)
+
 
 onRefs
     :: forall state is os m
     .  MonadEffect m
-    => Ref state
-    -> Ref (Record is)
-    -> Ref (Record os)
-    -> Ref (forall iproxy i. IsSymbol i => Maybe (iproxy i))
-    -> Ref (forall oproxy o. IsSymbol o => Maybe (oproxy o))
-    -> Protocol is os state m
-onRefs stateRef inputsRef outputsRef saveLastInputRef saveLastOutputRef =
-    { getInputs : const $ liftEffect $ Ref.read inputsRef
-    , getOutputs : const $ liftEffect $ Ref.read outputsRef
-    , getState : const $ liftEffect $ Ref.read stateRef
-    , modifyInputs : \f -> liftEffect $ Ref.modify_ f inputsRef
-    , modifyOutputs : \f -> liftEffect $ Ref.modify_ f outputsRef
-    , modifyState : \f -> liftEffect $ Ref.modify_ f stateRef
-    , storeLastInput : \input -> liftEffect $ Ref.write (unsafeCoerce input) saveLastInputRef
-    , storeLastOutput : \output -> liftEffect $ Ref.write (unsafeCoerce output) saveLastOutputRef
-    }
+    => state
+    -> Record is
+    -> Record os
+    -> ProtocolW is os state Ref m
+onRefs state inputs outputs =
+    liftEffect $ do
+
+        stateRef <- Ref.new state
+        inputsRef <- Ref.new inputs
+        outputsRef <- Ref.new outputs
+        (lastInputRef :: Ref (forall iproxy i. IsSymbol i => Maybe (iproxy i))) <- Ref.new $ unsafeCoerce Nothing
+        (lastOutputRef :: Ref (forall oproxy o. IsSymbol o => Maybe (oproxy o))) <- Ref.new $ unsafeCoerce Nothing
+
+        pure
+            { state : stateRef
+            , inputs : inputsRef
+            , outputs : outputsRef
+            , lastInput : lastInputRef
+            , lastOutput : lastOutputRef
+            , protocol :
+                { getInputs : const $ liftEffect $ Ref.read inputsRef
+                , getOutputs : const $ liftEffect $ Ref.read outputsRef
+                , getState : const $ liftEffect $ Ref.read stateRef
+                , modifyInputs : \f -> liftEffect $ Ref.modify_ f inputsRef
+                , modifyOutputs : \f -> liftEffect $ Ref.modify_ f outputsRef
+                , modifyState : \f -> liftEffect $ Ref.modify_ f stateRef
+                , storeLastInput :
+                    (
+                        (\input -> liftEffect $ Ref.write (unsafeCoerce input) lastInputRef)
+                    :: forall iproxy i. IsSymbol i => Maybe (iproxy i) -> m Unit
+                    )
+                , storeLastOutput :
+                    (
+                        (\output -> liftEffect $ Ref.write (unsafeCoerce output) lastOutputRef)
+                    :: forall oproxy o. IsSymbol o => Maybe (oproxy o) -> m Unit
+                    )
+                }
+            }
+
 
 
 onSignals
@@ -71,7 +107,7 @@ onSignals
     => state
     -> Record is
     -> Record os
-    -> m { protocol :: Protocol is os state m }
+    -> ProtocolW is os state Signal m
 onSignals state inputs outputs =
     liftEffect $ do
 
@@ -87,7 +123,13 @@ onSignals state inputs outputs =
         let saveLastInputSig = Channel.subscribe lastInputCh
         let saveLastOutputSig = Channel.subscribe lastOutputCh
 
-        pure { protocol :
+        pure
+            { state : stateSig
+            , inputs : inputsSig
+            , outputs : outputsSig
+            , lastInput : saveLastInputSig
+            , lastOutput : saveLastOutputSig
+            , protocol :
                 { getInputs : const $ liftEffect $ Signal.get inputsSig
                 , getOutputs : const $ liftEffect $ Signal.get outputsSig
                 , getState : const $ liftEffect $ Signal.get stateSig
@@ -97,12 +139,12 @@ onSignals state inputs outputs =
                 , storeLastInput :
                     (
                         (\input -> liftEffect $ Channel.send lastInputCh $ unsafeCoerce input)
-                    :: forall proxy i. IsSymbol i => Maybe (proxy i) -> m Unit
+                    :: forall iproxy i. IsSymbol i => Maybe (iproxy i) -> m Unit
                     )
                 , storeLastOutput :
                     (
                         (\output -> liftEffect $ Channel.send lastOutputCh $ unsafeCoerce output)
-                    :: forall proxy o. IsSymbol o => Maybe (proxy o) -> m Unit
+                    :: forall oproxy o. IsSymbol o => Maybe (oproxy o) -> m Unit
                     )
                 }
             }
