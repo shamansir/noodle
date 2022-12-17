@@ -1,5 +1,6 @@
 module Noodle.Fn2.Protocol
   ( Protocol
+  , ProtocolH
   , onRefs
   , onSignals
   )

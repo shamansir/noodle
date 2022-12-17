@@ -138,44 +138,8 @@ sendIn iid d =
     ProcessM $ Free.liftF $ SendIn (reflectSymbol iid) (unsafeCoerce d) unit
 
 
-
-type TestInputs = ( foo :: String, i2 :: Boolean )
-type TestOutputs = ( bar :: Int, o2 :: Boolean )
-
-
-_fooInput = Input :: Input "foo"
-_barOutput = Output :: Output "bar"
-
-
-testSend ∷ ∀ state is m. Int → ProcessM state is TestOutputs m Unit
-testSend int = send _barOutput int
-
-
-testSendIn ∷ ∀ state os m. String → ProcessM state TestInputs os m Unit
-testSendIn str = sendIn _fooInput str
-
-
-testReceive ∷ ∀ state os m. ProcessM state TestInputs os m String
-testReceive = receive _fooInput
-
-
-{-
-testExtract ::  ∀ state d m proxy s. IsSymbol s => ProcessF state d m Unit -> Maybe String
-testExtract =
-    case _ of
-        State k -> Nothing
-        Lift m -> Nothing
-        Receive' iid k -> Just $ reflectSymbol (iid :: Input s)
-        Send' oid d next -> Just $ reflectSymbol (oid :: Output s)
-        SendIn iid d next -> Just $ reflectSymbol (iid :: Input s)
--}
-
 lift :: forall state is os m. m Unit -> ProcessM state is os m Unit
 lift m = ProcessM $ Free.liftF $ Lift m
-
-
--- lift :: forall i o state d m a. m a -> ProcessM i o state d m a
--- lift m = ProcessM $ Free.liftF $ Lift m
 
 
 {- Maps -}
