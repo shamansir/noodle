@@ -1,12 +1,8 @@
 module Noodle.Fn2.Process
   ( Input(..)
   , Output(..)
-  , ProcessF(..)
-  , ProcessM(..)
-  , TestInputs
-  , TestOutputs
-  , _testInput
-  , _testInputP
+  , ProcessF
+  , ProcessM
   , imapFState
   , imapMState
   , lift
@@ -17,7 +13,6 @@ module Noodle.Fn2.Process
   , runM
   , send
   , sendIn
-  , sendIn'
   )
   where
 
@@ -42,9 +37,9 @@ import Effect.Ref as Ref
 import Noodle.Fn.Protocol (Protocol)
 import Prim.Row (class Cons)
 import Record as Record
+import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
-import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 
 -- type Input (s :: Symbol) = SProxy
 -- type Output (s :: Symbol) = SProxy
@@ -53,10 +48,6 @@ import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 data Input (s :: Symbol) = Input
 data Output (s :: Symbol) = Output
 
-
--- testInput :: forall proxy s. IsSymbol s => proxy s -> Input s
-_testInputP = Proxy :: Proxy "foo"
-_testInput = Input :: Input "foo"
 
 
 {-
@@ -147,16 +138,25 @@ sendIn iid d =
     ProcessM $ Free.liftF $ SendIn (reflectSymbol iid) (unsafeCoerce d) unit
 
 
---sendIn' ∷ ∀ state is os m. IsSymbol i => Input i → din → ProcessM state is os m Unit
--- sendIn iid d = ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid) d unit
-sendIn' ∷ ∀ i state is is' os din m. IsSymbol i => Cons i din is' is => Input i → din → ProcessM state is os m Unit
-sendIn' iid d =
-    -- ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid /\ unsafeCoerce d) unit
-    ProcessM $ Free.liftF $ SendIn (reflectSymbol iid) (unsafeCoerce d) unit
+
+type TestInputs = ( foo :: String, i2 :: Boolean )
+type TestOutputs = ( bar :: Int, o2 :: Boolean )
+
+
+_fooInput = Input :: Input "foo"
+_barOutput = Output :: Output "bar"
+
+
+testSend ∷ ∀ state is m. Int → ProcessM state is TestOutputs m Unit
+testSend int = send _barOutput int
 
 
 testSendIn ∷ ∀ state os m. String → ProcessM state TestInputs os m Unit
-testSendIn str = sendIn _testInput str
+testSendIn str = sendIn _fooInput str
+
+
+testReceive ∷ ∀ state os m. ProcessM state TestInputs os m String
+testReceive = receive _fooInput
 
 
 {-
@@ -219,22 +219,19 @@ runM protocol default stateRef (ProcessM processFree) =
 
 
 
-
-type TestInputs = ( foo :: String, i2 :: Boolean )
-type TestOutputs = ( bar :: Int, o2 :: Boolean )
-
-
 runM
     :: forall state is os m
      . MonadEffect m
     => MonadRec m
     => Ref (Record is)
     -> Ref (Record os)
+    -> Ref (forall i. IsSymbol i => Input i)
+    -> Ref (forall o. IsSymbol o => Output o)
     -> Ref state
     -> ProcessM state is os m
     ~> m
-runM inputsRef outputsRef stateRef (ProcessM processFree) =
-    runFreeM inputsRef outputsRef stateRef processFree
+runM inputsRef outputsRef lastInputRef lastOutputRef stateRef (ProcessM processFree) =
+    runFreeM inputsRef outputsRef lastInputRef lastOutputRef stateRef processFree
 
 
 -- TODO: pass the inputs / outputs records here, with the current content and so the scheme for types, they can be stored in `Protocol`.
@@ -246,10 +243,12 @@ runFreeM
     => MonadRec m
     => Ref (Record is)
     -> Ref (Record os)
+    -> Ref (forall i. IsSymbol i => Input i)
+    -> Ref (forall o. IsSymbol o => Output o)
     -> Ref state
     -> Free (ProcessF state is os m)
     ~> m
-runFreeM inputsRef outputsRef stateRef fn =
+runFreeM inputsRef outputsRef lastInputRef lastOutputRef stateRef fn =
     --foldFree go-- (go stateRef)
     Free.runFreeM go fn
     where
@@ -267,14 +266,21 @@ runFreeM inputsRef outputsRef stateRef fn =
                 $ getV
                 $ valueAtInput
         go (Send' oid v next) = do
+            markLastOutput oid
+            -- liftEffect $ Ref.write (reifySymbol oid unsafeCoerce) lastOutputRef
             sendToOutput oid v
             pure next
         go (SendIn iid v next) = do
+            markLastInput iid
             sendToInput iid v
             pure next
 
         getUserState = liftEffect $ Ref.read stateRef
         writeUserState nextState = liftEffect $ Ref.write nextState stateRef
+        markLastOutput :: String -> m Unit
+        markLastOutput oid = liftEffect $ Ref.write (reifySymbol oid unsafeCoerce) lastOutputRef
+        markLastInput :: String -> m Unit
+        markLastInput iid = liftEffect $ Ref.write (reifySymbol iid unsafeCoerce) lastInputRef
         -- getInputAt :: forall i din. IsSymbol i => Cons i din is is => Input i -> m din
         -- getInputAt iid = liftEffect $ Record.get iid <$> Ref.read inputsRef
         getInputAt :: forall din. String -> m din
