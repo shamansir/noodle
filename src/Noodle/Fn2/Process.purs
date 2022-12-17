@@ -95,38 +95,36 @@ newtype ProcessM :: forall is' os'. Type -> Row is' -> Row os' -> (Type -> Type)
 newtype ProcessM state is os m a = ProcessM (Free (ProcessF state is os m) a)
 
 
-{-
-derive newtype instance functorProcessM :: Functor (ProcessM i o state is os din dout m)
-derive newtype instance applyProcessM :: Apply (ProcessM i o state is os din dout m)
-derive newtype instance applicativeProcessM :: Applicative (ProcessM i o state is os din dout m)
-derive newtype instance bindProcessM :: Bind (ProcessM i o state is os din dout m)
-derive newtype instance monadProcessM :: Monad (ProcessM i o state is os din dout m)
-derive newtype instance semigroupProcessM :: Semigroup a => Semigroup (ProcessM i o state is os din dout m a)
-derive newtype instance monoidProcessM :: Monoid a => Monoid (ProcessM i o state is os din dout m a)
---derive newtype instance bifunctorProcessM :: Bifunctor (ProcessM i o state is os din dout m a)
+derive newtype instance functorProcessM :: Functor (ProcessM state is os m)
+derive newtype instance applyProcessM :: Apply (ProcessM state is os m)
+derive newtype instance applicativeProcessM :: Applicative (ProcessM state is os m)
+derive newtype instance bindProcessM :: Bind (ProcessM state is os m)
+derive newtype instance monadProcessM :: Monad (ProcessM state is os m)
+derive newtype instance semigroupProcessM :: Semigroup a => Semigroup (ProcessM state is os m a)
+derive newtype instance monoidProcessM :: Monoid a => Monoid (ProcessM state is os m a)
+--derive newtype instance bifunctorProcessM :: Bifunctor (ProcessM state is os m a)
 
 
-instance monadEffectNoodleM :: MonadEffect m => MonadEffect (ProcessM i o state is os din dout m) where
+instance monadEffectNoodleM :: MonadEffect m => MonadEffect (ProcessM state is os m) where
   liftEffect = ProcessM <<< Free.liftF <<< Lift <<< liftEffect
 
 
-instance monadAffNoodleM :: MonadAff m => MonadAff (ProcessM i o state is os din dout m) where
+instance monadAffNoodleM :: MonadAff m => MonadAff (ProcessM state is os m) where
   liftAff = ProcessM <<< Free.liftF <<< Lift <<< liftAff
 
 
-instance monadStateNoodleM :: MonadState state (ProcessM i o state is os din dout m) where
+instance monadStateNoodleM :: MonadState state (ProcessM state is os m) where
   state = ProcessM <<< Free.liftF <<< State
 
 
-instance monadThrowNoodleM :: MonadThrow e m => MonadThrow e (ProcessM i o state is os din dout m) where
+instance monadThrowNoodleM :: MonadThrow e m => MonadThrow e (ProcessM state is os m) where
   throwError = ProcessM <<< Free.liftF <<< Lift <<< throwError
 
 
-instance monadRecHalogenM :: MonadRec (ProcessM i o state is os din dout m) where
+instance monadRecNoodleM :: MonadRec (ProcessM state is os m) where
   tailRecM k a = k a >>= case _ of
     Loop x -> tailRecM k x
     Done y -> pure y
--}
 
 
 {- Processing -}
@@ -149,7 +147,7 @@ sendIn iid d =
     ProcessM $ Free.liftF $ SendIn (reflectSymbol iid) (unsafeCoerce d) unit
 
 
---sendIn' ∷ ∀ i o state is os din dout m. IsSymbol i => Input i → din → ProcessM state is os m Unit
+--sendIn' ∷ ∀ state is os m. IsSymbol i => Input i → din → ProcessM state is os m Unit
 -- sendIn iid d = ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid) d unit
 sendIn' ∷ ∀ i state is is' os din m. IsSymbol i => Cons i din is' is => Input i → din → ProcessM state is os m Unit
 sendIn' iid d =
