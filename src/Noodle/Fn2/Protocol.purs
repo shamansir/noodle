@@ -1,6 +1,7 @@
 module Noodle.Fn2.Protocol
   ( Protocol
   , onRefs
+  , onSignals
   )
   where
 
@@ -17,7 +18,7 @@ import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Signal (Signal)
 import Signal as Signal
-import Signal.Channel (Channel)
+import Signal.Channel (Channel, channel)
 import Signal.Channel as Channel
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -31,19 +32,27 @@ class Channel a d | d -> a where
 
 
 type Protocol is os state m =
-    { getInputs :: Unit -> m is
-    , getOutputs :: Unit -> m os
+    { getInputs :: Unit -> m (Record is)
+    , getOutputs :: Unit -> m (Record os)
     , getState :: Unit -> m state
-    , modifyInputs :: (is -> is) -> m Unit
-    , modifyOutputs :: (os -> os) -> m Unit
+    , modifyInputs :: (Record is -> Record is) -> m Unit
+    , modifyOutputs :: (Record os -> Record os) -> m Unit
     , modifyState :: (state -> state) -> m Unit
-    , storeLastInput :: (forall proxy i. IsSymbol i => proxy i -> m Unit)
-    , storeLastOutput :: (forall proxy o. IsSymbol o => proxy o -> m Unit)
+    , storeLastInput :: (forall proxy i. IsSymbol i => Maybe (proxy i) -> m Unit)
+    , storeLastOutput :: (forall proxy o. IsSymbol o => Maybe (proxy o) -> m Unit)
     }
 
 
 
-onRefs :: forall state is os m. MonadEffect m => Ref state -> Ref is -> Ref os -> Ref (forall iproxy i. IsSymbol i => iproxy i) -> Ref (forall oproxy o. IsSymbol o => oproxy o) -> Protocol is os state m
+onRefs
+    :: forall state is os m
+    .  MonadEffect m
+    => Ref state
+    -> Ref (Record is)
+    -> Ref (Record os)
+    -> Ref (forall iproxy i. IsSymbol i => Maybe (iproxy i))
+    -> Ref (forall oproxy o. IsSymbol o => Maybe (oproxy o))
+    -> Protocol is os state m
 onRefs stateRef inputsRef outputsRef saveLastInputRef saveLastOutputRef =
     { getInputs : const $ liftEffect $ Ref.read inputsRef
     , getOutputs : const $ liftEffect $ Ref.read outputsRef
@@ -56,24 +65,47 @@ onRefs stateRef inputsRef outputsRef saveLastInputRef saveLastOutputRef =
     }
 
 
-onSignals :: forall state is os m. MonadEffect m => state -> is -> os -> { protocol :: Protocol is os state m }
-onSignals state inputs outputs saveLastInput saveLastOutput =
-    { protocol }
-    where
-        stateSig = Channel.subscribe state
-        inputsSig = Channel.subscribe inputs
-        outputsSig = Channel.subscribe outputs
-        protocol =
-            { getInputs : const $ liftEffect $ Signal.get inputsSig
-            , getOutputs : const $ liftEffect $ Signal.get outputsSig
-            , getState : const $ liftEffect $ Signal.get stateSig
-            , modifyInputs : \f -> liftEffect $ map f inputsSig -- Signal.get >>= \v -> Signal.  Ref.modify_ f inputsRef
-            , modifyOutputs : \f -> liftEffect $ map f outputsSig
-            , modifyState : \f -> liftEffect $ map f stateSig
-            , storeLastInput : \input -> liftEffect $ Ref.write (unsafeCoerce input) saveLastInputSig
-            , storeLastOutput : \output -> liftEffect $ Ref.write (unsafeCoerce output) saveLastOutputSig
-            }
+onSignals
+    :: forall state is os m
+    .  MonadEffect m
+    => state
+    -> Record is
+    -> Record os
+    -> m { protocol :: Protocol is os state m }
+onSignals state inputs outputs =
+    liftEffect $ do
 
+        stateCh <- channel state
+        inputsCh <- channel inputs
+        outputsCh <- channel outputs
+        (lastInputCh :: Channel (forall iproxy i. IsSymbol i => Maybe (iproxy i))) <- channel $ unsafeCoerce Nothing
+        (lastOutputCh :: Channel (forall oproxy o. IsSymbol o => Maybe (oproxy o))) <- channel $ unsafeCoerce Nothing
+
+        let stateSig = Channel.subscribe stateCh
+        let inputsSig = Channel.subscribe inputsCh
+        let outputsSig = Channel.subscribe outputsCh
+        let saveLastInputSig = Channel.subscribe lastInputCh
+        let saveLastOutputSig = Channel.subscribe lastOutputCh
+
+        pure { protocol :
+                { getInputs : const $ liftEffect $ Signal.get inputsSig
+                , getOutputs : const $ liftEffect $ Signal.get outputsSig
+                , getState : const $ liftEffect $ Signal.get stateSig
+                , modifyInputs : \f -> liftEffect $ Signal.get inputsSig >>= \v -> Channel.send inputsCh (f v)
+                , modifyOutputs : \f -> liftEffect $ Signal.get outputsSig >>= \v -> Channel.send outputsCh (f v)
+                , modifyState : \f -> liftEffect $ Signal.get stateSig >>= \v -> Channel.send stateCh (f v)
+                , storeLastInput :
+                    (
+                        (\input -> liftEffect $ Channel.send lastInputCh $ unsafeCoerce input)
+                    :: forall proxy i. IsSymbol i => Maybe (proxy i) -> m Unit
+                    )
+                , storeLastOutput :
+                    (
+                        (\output -> liftEffect $ Channel.send lastOutputCh $ unsafeCoerce output)
+                    :: forall proxy o. IsSymbol o => Maybe (proxy o) -> m Unit
+                    )
+                }
+            }
 
 
 -- type Tracker k v = Ref (k /-> v)
