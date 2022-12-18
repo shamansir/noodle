@@ -34,6 +34,7 @@ import Noodle.Node as Node
 
 import Noodle.Fn2.Process (ProcessM)
 import Noodle.Fn2.Process as Fn
+import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol)
 import Noodle.Fn2.Protocol as Protocol
 
@@ -67,8 +68,34 @@ spec :: Spec Unit
 spec =
     do
 
-        describe "nothing" $ do
-            pure unit
+        describe "protocol" $ do
+
+            it "values stay initial until changed" $ do
+                protocolS <- Protocol.onRefs 2 { foo : "foo", i2 : false } { bar : 4, o2 : true }
+                curState <- liftEffect $ Ref.read protocolS.state
+                curState `shouldEqual` 2
+                atFoo <- liftEffect $ Ref.read protocolS.inputs <#> _.foo
+                atFoo `shouldEqual` "foo"
+                atBar <- liftEffect $ Ref.read protocolS.outputs <#> _.bar
+                atBar `shouldEqual` 4
+                pure unit
+
+        describe "process" $ do
+            it "sending to input changes its value in refs" $ do
+                protocolS <- Protocol.onRefs 2 { foo : "foo", i2 : false } { bar : 4, o2 : true }
+                _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "foobar"
+                atFoo <- liftEffect $ Ref.read protocolS.inputs <#> _.foo
+                atFoo `shouldEqual` "foobar"
+                {-
+                curState <- liftEffect $ Ref.read protocolS.state
+                curState `shouldEqual` 2
+                atFoo <- liftEffect $ Ref.read protocolS.inputs <#> _.foo
+                atFoo `shouldEqual` "foo"
+                atBar <- liftEffect $ Ref.read protocolS.outputs <#> _.bar
+                atBar `shouldEqual` 4
+                -}
+                pure unit
+
 
 
 {-

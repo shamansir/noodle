@@ -19,15 +19,15 @@ import Test.Flex (spec) as Flex
 
 main :: Effect Unit
 main = launchAff_ $ runSpec [consoleReporter] do
-  describe "Fn"
-    Fn.spec
-  describe "Nodes"
-    Nodes.spec
-  describe "Toolkit"
-    Toolkit.spec
+  -- describe "Fn"
+  --   Fn.spec
+  -- describe "Nodes"
+  --   Nodes.spec
+  -- describe "Toolkit"
+  --   Toolkit.spec
   -- describe "Toolkit2"
   --   Toolkit2.spec
   describe "Protocol"
     Protocol.spec
-  describe "Flex"
-    Flex.spec
+  -- describe "Flex"
+  --   Flex.spec

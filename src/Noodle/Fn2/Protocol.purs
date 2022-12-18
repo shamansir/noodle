@@ -1,6 +1,6 @@
 module Noodle.Fn2.Protocol
   ( Protocol
-  , ProtocolH
+  , ProtocolS
   , onRefs
   , onSignals
   )
@@ -39,23 +39,23 @@ type Protocol is os state m =
     , modifyInputs :: (Record is -> Record is) -> m Unit
     , modifyOutputs :: (Record os -> Record os) -> m Unit
     , modifyState :: (state -> state) -> m Unit
-    , storeLastInput :: (forall proxy i. IsSymbol i => Maybe (proxy i) -> m Unit)
-    , storeLastOutput :: (forall proxy o. IsSymbol o => Maybe (proxy o) -> m Unit)
+    , storeLastInput :: (Maybe (forall iproxy i. IsSymbol i => iproxy i) -> m Unit)
+    , storeLastOutput :: (Maybe (forall oproxy o. IsSymbol o => oproxy o) -> m Unit)
     }
 
 
-type ProtocolH is os state w m =
+type ProtocolS is os state w m =
     { state :: w state
     , inputs :: w (Record is)
     , outputs :: w (Record os)
-    , lastInput :: w (forall iproxy i. IsSymbol i => Maybe (iproxy i))
-    , lastOutput :: w (forall oproxy o. IsSymbol o => Maybe (oproxy o))
+    , lastInput :: w (Maybe (forall iproxy i. IsSymbol i => iproxy i))
+    , lastOutput :: w (Maybe (forall oproxy o. IsSymbol o => oproxy o))
     , protocol :: Protocol is os state m
     }
 
 
 type ProtocolW is os state w m =
-    m (ProtocolH is os state w m)
+    m (ProtocolS is os state w m)
 
 
 onRefs
@@ -71,8 +71,8 @@ onRefs state inputs outputs =
         stateRef <- Ref.new state
         inputsRef <- Ref.new inputs
         outputsRef <- Ref.new outputs
-        (lastInputRef :: Ref (forall iproxy i. IsSymbol i => Maybe (iproxy i))) <- Ref.new $ unsafeCoerce Nothing
-        (lastOutputRef :: Ref (forall oproxy o. IsSymbol o => Maybe (oproxy o))) <- Ref.new $ unsafeCoerce Nothing
+        (lastInputRef :: Ref (Maybe (forall iproxy i. IsSymbol i => iproxy i))) <- Ref.new $ unsafeCoerce Nothing
+        (lastOutputRef :: Ref (Maybe (forall oproxy o. IsSymbol o => oproxy o))) <- Ref.new $ unsafeCoerce Nothing
 
         pure
             { state : stateRef
@@ -90,12 +90,12 @@ onRefs state inputs outputs =
                 , storeLastInput :
                     (
                         (\input -> liftEffect $ Ref.write (unsafeCoerce input) lastInputRef)
-                    :: forall iproxy i. IsSymbol i => Maybe (iproxy i) -> m Unit
+                    :: (Maybe (forall iproxy i. IsSymbol i => iproxy i)) -> m Unit
                     )
                 , storeLastOutput :
                     (
                         (\output -> liftEffect $ Ref.write (unsafeCoerce output) lastOutputRef)
-                    :: forall oproxy o. IsSymbol o => Maybe (oproxy o) -> m Unit
+                    :: (Maybe (forall oproxy o. IsSymbol o => oproxy o)) -> m Unit
                     )
                 }
             }
@@ -115,8 +115,8 @@ onSignals state inputs outputs =
         stateCh <- channel state
         inputsCh <- channel inputs
         outputsCh <- channel outputs
-        (lastInputCh :: Channel (forall iproxy i. IsSymbol i => Maybe (iproxy i))) <- channel $ unsafeCoerce Nothing
-        (lastOutputCh :: Channel (forall oproxy o. IsSymbol o => Maybe (oproxy o))) <- channel $ unsafeCoerce Nothing
+        (lastInputCh :: Channel (Maybe (forall iproxy i. IsSymbol i => iproxy i))) <- channel $ unsafeCoerce Nothing
+        (lastOutputCh :: Channel (Maybe (forall oproxy o. IsSymbol o => oproxy o))) <- channel $ unsafeCoerce Nothing
 
         let stateSig = Channel.subscribe stateCh
         let inputsSig = Channel.subscribe inputsCh
@@ -140,12 +140,12 @@ onSignals state inputs outputs =
                 , storeLastInput :
                     (
                         (\input -> liftEffect $ Channel.send lastInputCh $ unsafeCoerce input)
-                    :: forall iproxy i. IsSymbol i => Maybe (iproxy i) -> m Unit
+                    :: (Maybe (forall iproxy i. IsSymbol i => iproxy i)) -> m Unit
                     )
                 , storeLastOutput :
                     (
                         (\output -> liftEffect $ Channel.send lastOutputCh $ unsafeCoerce output)
-                    :: forall oproxy o. IsSymbol o => Maybe (oproxy o) -> m Unit
+                    :: (Maybe (forall oproxy o. IsSymbol o => oproxy o)) -> m Unit
                     )
                 }
             }

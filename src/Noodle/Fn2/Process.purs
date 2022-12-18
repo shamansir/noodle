@@ -34,12 +34,13 @@ import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
-import Noodle.Fn.Protocol (Protocol)
+-- import Noodle.Fn.Protocol (Protocol)
 import Prim.Row (class Cons)
 import Record as Record
 import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
+import Noodle.Fn2.Protocol (Protocol)
 
 -- type Input (s :: Symbol) = SProxy
 -- type Output (s :: Symbol) = SProxy
@@ -47,6 +48,12 @@ import Unsafe.Coerce (unsafeCoerce)
 
 data Input (s :: Symbol) = Input
 data Output (s :: Symbol) = Output
+
+
+
+data Input2 (s :: Symbol) = Input2 String
+
+data Output2 (s :: Symbol) = Output2 String
 
 
 
@@ -187,15 +194,19 @@ runM
     :: forall state is os m
      . MonadEffect m
     => MonadRec m
-    => Ref (Record is)
-    -> Ref (Record os)
-    -> Ref (forall i. IsSymbol i => Input i)
-    -> Ref (forall o. IsSymbol o => Output o)
-    -> Ref state
+    => Protocol is os state m
     -> ProcessM state is os m
     ~> m
-runM inputsRef outputsRef lastInputRef lastOutputRef stateRef (ProcessM processFree) =
-    runFreeM inputsRef outputsRef lastInputRef lastOutputRef stateRef processFree
+runM protocol (ProcessM processFree) =
+    runFreeM protocol processFree
+
+
+toInput :: forall t isym. IsSymbol isym => t isym -> Input2 isym
+toInput = Input2 <<< reflectSymbol
+
+
+toOutput :: forall t osym . IsSymbol osym => t osym -> Output2 osym
+toOutput = Output2 <<< reflectSymbol
 
 
 -- TODO: pass the inputs / outputs records here, with the current content and so the scheme for types, they can be stored in `Protocol`.
@@ -205,14 +216,10 @@ runFreeM
     :: forall state is os m
      . MonadEffect m
     => MonadRec m
-    => Ref (Record is)
-    -> Ref (Record os)
-    -> Ref (forall i. IsSymbol i => Input i)
-    -> Ref (forall o. IsSymbol o => Output o)
-    -> Ref state
+    => Protocol is os state m
     -> Free (ProcessF state is os m)
     ~> m
-runFreeM inputsRef outputsRef lastInputRef lastOutputRef stateRef fn =
+runFreeM protocol fn =
     --foldFree go-- (go stateRef)
     Free.runFreeM go fn
     where
@@ -221,7 +228,7 @@ runFreeM inputsRef outputsRef lastInputRef lastOutputRef stateRef fn =
             state <- getUserState
             case f state of
                 next /\ nextState -> do
-                    writeUserState nextState
+                    writeUserState state nextState
                     pure next
         go (Lift m) = m
         go (Receive' iid getV) = do
@@ -239,21 +246,21 @@ runFreeM inputsRef outputsRef lastInputRef lastOutputRef stateRef fn =
             sendToInput iid v
             pure next
 
-        getUserState = liftEffect $ Ref.read stateRef
-        writeUserState nextState = liftEffect $ Ref.write nextState stateRef
-        markLastOutput :: String -> m Unit
-        markLastOutput oid = liftEffect $ Ref.write (reifySymbol oid unsafeCoerce) lastOutputRef
+        getUserState = protocol.getState unit
+        writeUserState _ nextState = protocol.modifyState $ const nextState
         markLastInput :: String -> m Unit
-        markLastInput iid = liftEffect $ Ref.write (reifySymbol iid unsafeCoerce) lastInputRef
+        markLastInput iid = protocol.storeLastInput $ Just $ reifySymbol iid (unsafeCoerce <<< toInput)
+        markLastOutput :: String -> m Unit
+        markLastOutput oid = protocol.storeLastOutput $ Just $ reifySymbol oid (unsafeCoerce <<< toOutput)
         -- getInputAt :: forall i din. IsSymbol i => Cons i din is is => Input i -> m din
         -- getInputAt iid = liftEffect $ Record.get iid <$> Ref.read inputsRef
         getInputAt :: forall din. String -> m din
-        getInputAt iid = liftEffect $ Record.unsafeGet iid <$> Ref.read inputsRef
+        getInputAt iid = Record.unsafeGet iid <$> protocol.getInputs unit
         -- sendToOutput :: forall o dout. IsSymbol o => Cons o dout os os => Output o -> dout -> m Unit
         -- sendToOutput oid v = liftEffect $ Ref.modify_ (Record.set oid v) outputsRef
         sendToOutput :: forall dout. String -> dout -> m Unit
-        sendToOutput oid v = liftEffect $ Ref.modify_ (Record.unsafeSet oid v) outputsRef
+        sendToOutput oid v = protocol.modifyOutputs $ Record.unsafeSet oid v -- Ref.modify_ (Record.unsafeSet oid v) outputsRef
         -- sendToInput :: forall i din. IsSymbol i => Cons i din is is => Input i -> din -> m Unit
         -- sendToInput iid v = liftEffect $ Ref.modify_ (Record.set iid v) inputsRef
         sendToInput :: forall din. String -> din -> m Unit
-        sendToInput iid v = liftEffect $ Ref.modify_ (Record.unsafeSet iid v) inputsRef
+        sendToInput iid v = protocol.modifyInputs $ Record.unsafeSet iid v
