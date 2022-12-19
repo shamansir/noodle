@@ -1,7 +1,5 @@
 module Noodle.Fn2.Process
-  ( Input(..)
-  , Output(..)
-  , ProcessF
+  ( ProcessF
   , ProcessM
   , imapFState
   , imapMState
@@ -18,42 +16,36 @@ module Noodle.Fn2.Process
 
 import Prelude
 
+import Data.Bifunctor (lmap)
+import Data.Map as Map
+import Data.Maybe (Maybe(..))
+import Data.Maybe as Maybe
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
+
+
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.Free (Free, foldFree)
 import Control.Monad.Free as Free
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.State.Class (class MonadState)
-import Data.Bifunctor (lmap)
-import Data.Map as Map
-import Data.Maybe (Maybe(..))
-import Data.Maybe as Maybe
-import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
-import Data.Tuple.Nested ((/\), type (/\))
+
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 -- import Noodle.Fn.Protocol (Protocol)
+
 import Prim.Row (class Cons)
 import Record as Record
 import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
+
+import Noodle.Fn2.Flow (Input, Output, toInput, toOutput)
 import Noodle.Fn2.Protocol (Protocol)
 
--- type Input (s :: Symbol) = SProxy
--- type Output (s :: Symbol) = SProxy
-
-
-data Input (s :: Symbol) = Input
-data Output (s :: Symbol) = Output
-
-
-
-data Input2 (s :: Symbol) = Input2 String
-
-data Output2 (s :: Symbol) = Output2 String
 
 
 
@@ -199,14 +191,6 @@ runM
     ~> m
 runM protocol (ProcessM processFree) =
     runFreeM protocol processFree
-
-
-toInput :: forall t isym. IsSymbol isym => t isym -> Input2 isym
-toInput = Input2 <<< reflectSymbol
-
-
-toOutput :: forall t osym . IsSymbol osym => t osym -> Output2 osym
-toOutput = Output2 <<< reflectSymbol
 
 
 -- TODO: pass the inputs / outputs records here, with the current content and so the scheme for types, they can be stored in `Protocol`.

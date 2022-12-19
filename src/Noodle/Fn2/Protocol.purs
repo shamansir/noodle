@@ -3,6 +3,7 @@ module Noodle.Fn2.Protocol
   , ProtocolS
   , onRefs
   , onSignals
+  , onChannels
   )
   where
 
@@ -13,23 +14,20 @@ import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
 import Data.Symbol (class IsSymbol)
 import Data.Tuple.Nested (type (/\))
+
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
+
 import Signal (Signal)
 import Signal as Signal
 import Signal.Channel (Channel, channel)
 import Signal.Channel as Channel
+
 import Unsafe.Coerce (unsafeCoerce)
 
-
-
-
-
-class Channel a d | d -> a where
-    adapt :: d -> Maybe a
-    lift :: a -> d
+import Noodle.Fn2.Flow (Input, Output)
 
 
 type Protocol is os state m =
@@ -39,8 +37,8 @@ type Protocol is os state m =
     , modifyInputs :: (Record is -> Record is) -> m Unit
     , modifyOutputs :: (Record os -> Record os) -> m Unit
     , modifyState :: (state -> state) -> m Unit
-    , storeLastInput :: (Maybe (forall iproxy i. IsSymbol i => iproxy i) -> m Unit)
-    , storeLastOutput :: (Maybe (forall oproxy o. IsSymbol o => oproxy o) -> m Unit)
+    , storeLastInput :: (Maybe (forall i. Input i) -> m Unit)
+    , storeLastOutput :: (Maybe (forall o. Output o) -> m Unit)
     }
 
 
@@ -48,8 +46,8 @@ type ProtocolS is os state w m =
     { state :: w state
     , inputs :: w (Record is)
     , outputs :: w (Record os)
-    , lastInput :: w (Maybe (forall iproxy i. IsSymbol i => iproxy i))
-    , lastOutput :: w (Maybe (forall oproxy o. IsSymbol o => oproxy o))
+    , lastInput :: w (Maybe (forall i. Input i))
+    , lastOutput :: w (Maybe (forall o. Output o))
     , protocol :: Protocol is os state m
     }
 
@@ -71,8 +69,8 @@ onRefs state inputs outputs =
         stateRef <- Ref.new state
         inputsRef <- Ref.new inputs
         outputsRef <- Ref.new outputs
-        (lastInputRef :: Ref (Maybe (forall iproxy i. IsSymbol i => iproxy i))) <- Ref.new $ unsafeCoerce Nothing
-        (lastOutputRef :: Ref (Maybe (forall oproxy o. IsSymbol o => oproxy o))) <- Ref.new $ unsafeCoerce Nothing
+        (lastInputRef :: Ref (Maybe (forall i. Input i))) <- Ref.new $ unsafeCoerce Nothing
+        (lastOutputRef :: Ref (Maybe (forall o. Output o))) <- Ref.new $ unsafeCoerce Nothing
 
         pure
             { state : stateRef
@@ -90,12 +88,12 @@ onRefs state inputs outputs =
                 , storeLastInput :
                     (
                         (\input -> liftEffect $ Ref.write (unsafeCoerce input) lastInputRef)
-                    :: (Maybe (forall iproxy i. IsSymbol i => iproxy i)) -> m Unit
+                    :: (Maybe (forall i. Input i)) -> m Unit
                     )
                 , storeLastOutput :
                     (
                         (\output -> liftEffect $ Ref.write (unsafeCoerce output) lastOutputRef)
-                    :: (Maybe (forall oproxy o. IsSymbol o => oproxy o)) -> m Unit
+                    :: (Maybe (forall o. Output o)) -> m Unit
                     )
                 }
             }
@@ -109,27 +107,48 @@ onSignals
     -> Record is
     -> Record os
     -> ProtocolW is os state Signal m
-onSignals state inputs outputs =
+onSignals state inputs outputs = do
+    onChannelsI <- onChannels state inputs outputs
+    liftEffect $ do
+
+        pure
+            { state : Channel.subscribe onChannelsI.state
+            , inputs : Channel.subscribe onChannelsI.inputs
+            , outputs : Channel.subscribe onChannelsI.outputs
+            , lastInput : Channel.subscribe onChannelsI.lastInput
+            , lastOutput : Channel.subscribe onChannelsI.lastOutput
+            , protocol : onChannelsI.protocol
+            }
+
+
+onChannels
+    :: forall state is os m
+    .  MonadEffect m
+    => state
+    -> Record is
+    -> Record os
+    -> ProtocolW is os state Channel m
+onChannels state inputs outputs =
     liftEffect $ do
 
         stateCh <- channel state
         inputsCh <- channel inputs
         outputsCh <- channel outputs
-        (lastInputCh :: Channel (Maybe (forall iproxy i. IsSymbol i => iproxy i))) <- channel $ unsafeCoerce Nothing
-        (lastOutputCh :: Channel (Maybe (forall oproxy o. IsSymbol o => oproxy o))) <- channel $ unsafeCoerce Nothing
+        (lastInputCh :: Channel (Maybe (forall i. Input i))) <- channel $ unsafeCoerce Nothing
+        (lastOutputCh :: Channel (Maybe (forall o. Output o))) <- channel $ unsafeCoerce Nothing
 
         let stateSig = Channel.subscribe stateCh
         let inputsSig = Channel.subscribe inputsCh
         let outputsSig = Channel.subscribe outputsCh
-        let saveLastInputSig = Channel.subscribe lastInputCh
-        let saveLastOutputSig = Channel.subscribe lastOutputCh
+        -- let saveLastInputSig = Channel.subscribe lastInputCh
+        -- let saveLastOutputSig = Channel.subscribe lastOutputCh
 
         pure
-            { state : stateSig
-            , inputs : inputsSig
-            , outputs : outputsSig
-            , lastInput : saveLastInputSig
-            , lastOutput : saveLastOutputSig
+            { state : stateCh
+            , inputs : inputsCh
+            , outputs : outputsCh
+            , lastInput : lastInputCh
+            , lastOutput : lastOutputCh
             , protocol :
                 { getInputs : const $ liftEffect $ Signal.get inputsSig
                 , getOutputs : const $ liftEffect $ Signal.get outputsSig
@@ -140,12 +159,12 @@ onSignals state inputs outputs =
                 , storeLastInput :
                     (
                         (\input -> liftEffect $ Channel.send lastInputCh $ unsafeCoerce input)
-                    :: (Maybe (forall iproxy i. IsSymbol i => iproxy i)) -> m Unit
+                    :: (Maybe (forall i. Input i)) -> m Unit
                     )
                 , storeLastOutput :
                     (
                         (\output -> liftEffect $ Channel.send lastOutputCh $ unsafeCoerce output)
-                    :: (Maybe (forall oproxy o. IsSymbol o => oproxy o)) -> m Unit
+                    :: (Maybe (forall o. Output o)) -> m Unit
                     )
                 }
             }

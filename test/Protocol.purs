@@ -38,6 +38,9 @@ import Noodle.Fn2.Process as Fn
 import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol)
 import Noodle.Fn2.Protocol as Protocol
+import Noodle.Fn2.Flow (Input(..), Output(..), inputId, outputId) as Fn
+
+import Unsafe.Coerce (unsafeCoerce)
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -49,9 +52,9 @@ type TestInputs = ( foo :: String, i2 :: Boolean )
 type TestOutputs = ( bar :: Int, o2 :: Boolean )
 
 
-_fooInput = Fn.Input :: Fn.Input "foo"
-_i3Input = Fn.Input :: Fn.Input "i3"
-_barOutput = Fn.Output :: Fn.Output "bar"
+_fooInput = Fn.Input "foo" :: Fn.Input "foo"
+_i3Input = Fn.Input "i3" :: Fn.Input "i3"
+_barOutput = Fn.Output "bar" :: Fn.Output "bar"
 
 
 testSend ∷ ∀ state is m. Int → ProcessM state is TestOutputs m Unit
@@ -101,16 +104,28 @@ spec =
                 atFoo `shouldEqual` "barfoo"
                 pure unit
 
-            {- it "sending to input updates last input ref" $ do
+            it "sending to input updates last input ref" $ do
                 protocolS <- protocolOnRefs
                 _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "foobar"
                 lastInput <- liftEffect $ Ref.read protocolS.lastInput
                 case lastInput of
                     Just input ->
-                        let inputSymbol = reflectSymbol input
+                        let inputSymbol = Fn.inputId $ unsafeCoerce input
                         in inputSymbol `shouldEqual` "foo"
-                    Nothing -> fail
-                pure unit -}
+                    Nothing -> fail "no last input was recorded"
+                pure unit
+
+            it "sending to input updates twice last input ref anyway" $ do
+                protocolS <- protocolOnRefs
+                _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "foobar"
+                _ <- Process.runM protocolS.protocol $ Fn.sendIn _i3Input 12
+                lastInput <- liftEffect $ Ref.read protocolS.lastInput
+                case lastInput of
+                    Just input ->
+                        let inputSymbol = Fn.inputId $ unsafeCoerce input
+                        in inputSymbol `shouldEqual` "i3"
+                    Nothing -> fail "no last input was recorded"
+                pure unit
 
             it "sending to output changes its value in refs" $ do
                 protocolS <- protocolOnRefs
