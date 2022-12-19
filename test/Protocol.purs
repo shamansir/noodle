@@ -6,7 +6,9 @@ import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Symbol (reflectSymbol)
+import Data.Symbol (reflectSymbol, class IsSymbol)
+import Prim.Symbol (class Compare)
+import Record.Extra (keys)
 
 import Control.Monad.State (modify_, get) as State
 import Control.Monad.Error.Class (class MonadThrow)
@@ -38,7 +40,7 @@ import Noodle.Fn2.Process as Fn
 import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol)
 import Noodle.Fn2.Protocol as Protocol
-import Noodle.Fn2.Flow (Input(..), Output(..), inputId, outputId) as Fn
+import Noodle.Fn2.Flow (Input(..), Output(..), inputToString) as Fn
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -52,9 +54,9 @@ type TestInputs = ( foo :: String, i2 :: Boolean )
 type TestOutputs = ( bar :: Int, o2 :: Boolean )
 
 
-_fooInput = Fn.Input "foo" :: Fn.Input "foo"
-_i3Input = Fn.Input "i3" :: Fn.Input "i3"
-_barOutput = Fn.Output "bar" :: Fn.Output "bar"
+_fooInput = Fn.Input :: Fn.Input "foo"
+_i3Input = Fn.Input :: Fn.Input "i3"
+_barOutput = Fn.Output :: Fn.Output "bar"
 
 
 testSend ∷ ∀ state is m. Int → ProcessM state is TestOutputs m Unit
@@ -110,8 +112,7 @@ spec =
                 lastInput <- liftEffect $ Ref.read protocolS.lastInput
                 case lastInput of
                     Just input ->
-                        let inputSymbol = Fn.inputId $ unsafeCoerce input
-                        in inputSymbol `shouldEqual` "foo"
+                        Fn.inputToString input `shouldEqual` "foo"
                     Nothing -> fail "no last input was recorded"
                 pure unit
 
@@ -122,8 +123,7 @@ spec =
                 lastInput <- liftEffect $ Ref.read protocolS.lastInput
                 case lastInput of
                     Just input ->
-                        let inputSymbol = Fn.inputId $ unsafeCoerce input
-                        in inputSymbol `shouldEqual` "i3"
+                        Fn.inputToString input `shouldEqual` "i3"
                     Nothing -> fail "no last input was recorded"
                 pure unit
 

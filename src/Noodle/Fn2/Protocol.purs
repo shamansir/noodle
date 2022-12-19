@@ -37,8 +37,8 @@ type Protocol is os state m =
     , modifyInputs :: (Record is -> Record is) -> m Unit
     , modifyOutputs :: (Record os -> Record os) -> m Unit
     , modifyState :: (state -> state) -> m Unit
-    , storeLastInput :: (Maybe (forall i. Input i) -> m Unit)
-    , storeLastOutput :: (Maybe (forall o. Output o) -> m Unit)
+    , storeLastInput :: (Maybe (forall i. IsSymbol i => Input i) -> m Unit)
+    , storeLastOutput :: (Maybe (forall o. IsSymbol o => Output o) -> m Unit)
     }
 
 
@@ -46,8 +46,10 @@ type ProtocolS is os state w m =
     { state :: w state
     , inputs :: w (Record is)
     , outputs :: w (Record os)
-    , lastInput :: w (Maybe (forall i. Input i))
-    , lastOutput :: w (Maybe (forall o. Output o))
+    -- , lastInput :: w (Maybe InputId)
+    -- , lastOutput :: w (Maybe OutputId)
+    , lastInput :: w (Maybe (forall i. IsSymbol i => Input i))
+    , lastOutput :: w (Maybe (forall o. IsSymbol o => Output o))
     , protocol :: Protocol is os state m
     }
 
@@ -69,8 +71,8 @@ onRefs state inputs outputs =
         stateRef <- Ref.new state
         inputsRef <- Ref.new inputs
         outputsRef <- Ref.new outputs
-        (lastInputRef :: Ref (Maybe (forall i. Input i))) <- Ref.new $ unsafeCoerce Nothing
-        (lastOutputRef :: Ref (Maybe (forall o. Output o))) <- Ref.new $ unsafeCoerce Nothing
+        lastInputRef <- Ref.new Nothing
+        lastOutputRef <- Ref.new Nothing
 
         pure
             { state : stateRef
@@ -87,13 +89,13 @@ onRefs state inputs outputs =
                 , modifyState : \f -> liftEffect $ Ref.modify_ f stateRef
                 , storeLastInput :
                     (
-                        (\input -> liftEffect $ Ref.write (unsafeCoerce input) lastInputRef)
-                    :: (Maybe (forall i. Input i)) -> m Unit
+                        (\maybeInput -> liftEffect $ Ref.write (unsafeCoerce <$> maybeInput) lastInputRef)
+                    -- :: (Maybe (forall i. IsSymbol i => Input i)) -> m Unit
                     )
                 , storeLastOutput :
                     (
-                        (\output -> liftEffect $ Ref.write (unsafeCoerce output) lastOutputRef)
-                    :: (Maybe (forall o. Output o)) -> m Unit
+                        (\maybeOutput -> liftEffect $ Ref.write (unsafeCoerce <$> maybeOutput) lastOutputRef)
+                    -- :: (Maybe (forall o. IsSymbol o => Output o)) -> m Unit
                     )
                 }
             }
@@ -134,8 +136,8 @@ onChannels state inputs outputs =
         stateCh <- channel state
         inputsCh <- channel inputs
         outputsCh <- channel outputs
-        (lastInputCh :: Channel (Maybe (forall i. Input i))) <- channel $ unsafeCoerce Nothing
-        (lastOutputCh :: Channel (Maybe (forall o. Output o))) <- channel $ unsafeCoerce Nothing
+        lastInputCh <- channel $ unsafeCoerce Nothing
+        lastOutputCh <- channel $ unsafeCoerce Nothing
 
         let stateSig = Channel.subscribe stateCh
         let inputsSig = Channel.subscribe inputsCh
@@ -158,13 +160,13 @@ onChannels state inputs outputs =
                 , modifyState : \f -> liftEffect $ Signal.get stateSig >>= \v -> Channel.send stateCh (f v)
                 , storeLastInput :
                     (
-                        (\input -> liftEffect $ Channel.send lastInputCh $ unsafeCoerce input)
-                    :: (Maybe (forall i. Input i)) -> m Unit
+                        (\maybeInput -> liftEffect $ Channel.send lastInputCh $ (unsafeCoerce <$> maybeInput))
+                    -- :: (Maybe (forall i. Input i)) -> m Unit
                     )
                 , storeLastOutput :
                     (
-                        (\output -> liftEffect $ Channel.send lastOutputCh $ unsafeCoerce output)
-                    :: (Maybe (forall o. Output o)) -> m Unit
+                        (\maybeOutput -> liftEffect $ Channel.send lastOutputCh $ (unsafeCoerce <$> maybeOutput))
+                    -- :: (Maybe (forall o. Output o)) -> m Unit
                     )
                 }
             }
