@@ -6,8 +6,9 @@ import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Symbol (reflectSymbol)
 
-import Control.Monad.State (modify_)
+import Control.Monad.State (modify_, get) as State
 import Control.Monad.Error.Class (class MonadThrow)
 
 import Effect (Effect)
@@ -49,6 +50,7 @@ type TestOutputs = ( bar :: Int, o2 :: Boolean )
 
 
 _fooInput = Fn.Input :: Fn.Input "foo"
+_i3Input = Fn.Input :: Fn.Input "i3"
 _barOutput = Fn.Output :: Fn.Output "bar"
 
 
@@ -68,10 +70,12 @@ spec :: Spec Unit
 spec =
     do
 
+        let protocolOnRefs = Protocol.onRefs 2 { foo : "foo", i2 : false, i3 : 14 } { bar : 4, o2 : true }
+
         describe "protocol" $ do
 
             it "values stay initial until changed" $ do
-                protocolS <- Protocol.onRefs 2 { foo : "foo", i2 : false } { bar : 4, o2 : true }
+                protocolS <- protocolOnRefs
                 curState <- liftEffect $ Ref.read protocolS.state
                 curState `shouldEqual` 2
                 atFoo <- liftEffect $ Ref.read protocolS.inputs <#> _.foo
@@ -81,19 +85,64 @@ spec =
                 pure unit
 
         describe "process" $ do
+
             it "sending to input changes its value in refs" $ do
-                protocolS <- Protocol.onRefs 2 { foo : "foo", i2 : false } { bar : 4, o2 : true }
+                protocolS <- protocolOnRefs
                 _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "foobar"
                 atFoo <- liftEffect $ Ref.read protocolS.inputs <#> _.foo
                 atFoo `shouldEqual` "foobar"
-                {-
-                curState <- liftEffect $ Ref.read protocolS.state
-                curState `shouldEqual` 2
+                pure unit
+
+            it "sending to input two times its value in refs" $ do
+                protocolS <- protocolOnRefs
+                _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "foobar"
+                _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "barfoo"
                 atFoo <- liftEffect $ Ref.read protocolS.inputs <#> _.foo
-                atFoo `shouldEqual` "foo"
+                atFoo `shouldEqual` "barfoo"
+                pure unit
+
+            {- it "sending to input updates last input ref" $ do
+                protocolS <- protocolOnRefs
+                _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "foobar"
+                lastInput <- liftEffect $ Ref.read protocolS.lastInput
+                case lastInput of
+                    Just input ->
+                        let inputSymbol = reflectSymbol input
+                        in inputSymbol `shouldEqual` "foo"
+                    Nothing -> fail
+                pure unit -}
+
+            it "sending to output changes its value in refs" $ do
+                protocolS <- protocolOnRefs
+                _ <- Process.runM protocolS.protocol $ Fn.send _barOutput 7
                 atBar <- liftEffect $ Ref.read protocolS.outputs <#> _.bar
-                atBar `shouldEqual` 4
-                -}
+                atBar `shouldEqual` 7
+                pure unit
+
+            it "sending to output two times its value in refs" $ do
+                protocolS <- protocolOnRefs
+                _ <- Process.runM protocolS.protocol $ Fn.send _barOutput 7
+                _ <- Process.runM protocolS.protocol $ Fn.send _barOutput 12
+                atBar <- liftEffect $ Ref.read protocolS.outputs <#> _.bar
+                atBar `shouldEqual` 12
+                pure unit
+
+            it "modifying state works" $ do
+                protocolS <- protocolOnRefs
+                _ <- Process.runM protocolS.protocol $ State.modify_ ((+) 42)
+                state <- liftEffect $ Ref.read protocolS.state
+                state `shouldEqual` 44
+                pure unit
+
+            it "using inputs and outputs and modifying state works together" $ do
+                protocolS <- protocolOnRefs
+                _ <- Process.runM protocolS.protocol $ do
+                    atI3 <- Fn.receive _i3Input -- get 14
+                    State.modify_ ((*) atI3) -- 2 * 14
+                    curState <- State.get
+                    Fn.send _barOutput curState
+                atBar <- liftEffect $ Ref.read protocolS.outputs <#> _.bar
+                atBar `shouldEqual` 28
                 pure unit
 
 
