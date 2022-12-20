@@ -3,6 +3,7 @@ module Test.Protocol where
 import Prelude
 
 import Data.Map as Map
+import Data.Array as Array
 import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
@@ -71,6 +72,10 @@ testSendIn ∷ ∀ state os m. String → ProcessM state TestInputs os m Unit
 testSendIn str = Fn.sendIn _fooInput str
 
 
+-- testSendIn' ∷ ∀ state os m. String → ProcessM state TestInputs os m Unit
+-- testSendIn' str = Fn.sendIn _i3Input 12
+
+
 testReceive ∷ ∀ state os m. ProcessM state TestInputs os m String
 testReceive = Fn.receive _fooInput
 
@@ -82,6 +87,16 @@ spec =
         let initialOutputs = { bar : 4, o2 : true }
         let initialState = 2
         let protocolOnRefs = Protocol.onRefs initialState initialInputs initialOutputs
+
+        describe "keys" $ do
+
+            it "we can get keys of the record" $ do
+                (Array.toUnfoldable [ "foo", "i2", "i3" ]) `shouldEqual` Fn.inputsOf initialInputs
+
+            it "we can get keys of the inputs" $ do
+                protocolS <- protocolOnRefs
+                inputs <- liftEffect $ Ref.read protocolS.inputs
+                (Array.toUnfoldable [ "foo", "i2", "i3" ]) `shouldEqual` Fn.inputsOf inputs
 
         describe "protocol" $ do
 

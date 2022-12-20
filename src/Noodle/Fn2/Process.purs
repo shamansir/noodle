@@ -11,6 +11,7 @@ module Noodle.Fn2.Process
   , runM
   , send
   , sendIn
+  , inputsOf
   )
   where
 
@@ -23,6 +24,9 @@ import Data.Maybe as Maybe
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
 import Data.List (List)
+
+import Prim.RowList as RL
+import Record.Extra (class Keys, keys)
 
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.Free (Free, foldFree)
@@ -139,6 +143,10 @@ sendIn iid d =
 
 lift :: forall state is os m. m Unit -> ProcessM state is os m Unit
 lift m = ProcessM $ Free.liftF $ Lift m
+
+
+inputsOf :: forall rl is. RL.RowToList is rl => Keys rl => Record is -> List String
+inputsOf = keys
 
 
 {- Maps -}
