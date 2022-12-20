@@ -1,9 +1,12 @@
 module Noodle.Fn2.Protocol
   ( Protocol
   , ProtocolS
+  , onChannels
   , onRefs
   , onSignals
-  , onChannels
+  , ITest1, ITest2, ITest3, IFnTest1, IFnTest2, IFnTest3
+  , OTest1, OTest2, OTest3, OFnTest1, OFnTest2, OFnTest3
+  , CurIFn, CurOFn, CurIVal, CurOVal
   )
   where
 
@@ -12,7 +15,7 @@ import Prelude
 import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
-import Data.Symbol (class IsSymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Tuple.Nested (type (/\))
 
 import Effect (Effect)
@@ -27,7 +30,31 @@ import Signal.Channel as Channel
 
 import Unsafe.Coerce (unsafeCoerce)
 
-import Noodle.Fn2.Flow (Input, Output, inputId, outputId,InputId, OutputId)
+import Noodle.Fn2.Flow (Input, Output, InputId, OutputId, inputToString, inputId)
+
+
+type ITest1 = Maybe (forall i. IsSymbol i => Input i)
+type ITest2 = (forall i. IsSymbol i => Maybe (Input i))
+type ITest3 = Maybe InputId
+type IFnTest1 m = (ITest1 -> m Unit)
+type IFnTest2 m = (ITest2 -> m Unit)
+type IFnTest3 m = (ITest3 -> m Unit)
+
+type CurIVal = ITest1
+type CurIFn m = IFnTest1 m
+
+
+type OTest1 = Maybe (forall o. IsSymbol o => Output o)
+type OTest2 = (forall o. IsSymbol o => Maybe (Output o))
+type OTest3 = Maybe OutputId
+type OFnTest1 m = (OTest1 -> m Unit)
+type OFnTest2 m = (OTest2 -> m Unit)
+type OFnTest3 m = (OTest3 -> m Unit)
+
+
+type CurOVal = OTest1
+type CurOFn m = OFnTest1 m
+
 
 
 type Protocol is os state m =
@@ -37,8 +64,13 @@ type Protocol is os state m =
     , modifyInputs :: (Record is -> Record is) -> m Unit
     , modifyOutputs :: (Record os -> Record os) -> m Unit
     , modifyState :: (state -> state) -> m Unit
-    , storeLastInput :: (Maybe (forall i. IsSymbol i => Input i) -> m Unit)
-    , storeLastOutput :: (Maybe (forall o. IsSymbol o => Output o) -> m Unit)
+    , storeLastInput :: CurIFn m
+    , storeLastOutput :: CurOFn m
+    -- TODO: try `Cons i is is'`
+    -- , storeLastInput :: (forall i. IsSymbol i => Maybe (Input i)) -> m Unit -- could be `InputId`` since we use `Protocol` only internally
+    -- , storeLastOutput :: (forall o. IsSymbol o => Maybe (Output o)) -> m Unit -- could be `OutputId`` since we use `Protocol` only internally
+    -- , storeLastInput :: InputId -> m Unit -- could be `InputId`` since we use `Protocol` only internally
+    -- , storeLastOutput :: OutputId -> m Unit -- could be `OutputId`` since we use `Protocol` only internally
     }
 
 
@@ -48,8 +80,10 @@ type ProtocolS is os state w m =
     , outputs :: w (Record os)
     -- , lastInput :: w (Maybe InputId)
     -- , lastOutput :: w (Maybe OutputId)
-    , lastInput :: w (Maybe (forall i. IsSymbol i => Input i))
-    , lastOutput :: w (Maybe (forall o. IsSymbol o => Output o))
+    -- , lastInput :: w (forall i. IsSymbol i => Maybe (Input i))
+    -- , lastOutput :: w (forall o. IsSymbol o => Maybe (Output o))
+    , lastInput :: w CurIVal
+    , lastOutput :: w CurOVal
     , protocol :: Protocol is os state m
     }
 
@@ -71,8 +105,10 @@ onRefs state inputs outputs =
         stateRef <- Ref.new state
         inputsRef <- Ref.new inputs
         outputsRef <- Ref.new outputs
-        lastInputRef <- Ref.new Nothing
-        lastOutputRef <- Ref.new Nothing
+        -- (lastInputRef  :: Ref (forall i. IsSymbol i => Maybe (Input i))) <- Ref.new $ unsafeCoerce Nothing
+        -- (lastOutputRef  :: Ref (forall o. IsSymbol o => Maybe (Output o))) <- Ref.new $ unsafeCoerce Nothing
+        (lastInputRef  :: Ref ITest1) <- Ref.new $ unsafeCoerce Nothing
+        (lastOutputRef  :: Ref OTest1) <- Ref.new $ unsafeCoerce Nothing
 
         pure
             { state : stateRef
@@ -89,11 +125,15 @@ onRefs state inputs outputs =
                 , modifyState : \f -> liftEffect $ Ref.modify_ f stateRef
                 , storeLastInput :
                     (
-                        (\maybeInput -> liftEffect $ Ref.write (unsafeCoerce <$> maybeInput) lastInputRef)
+                        -- (\maybeInput -> liftEffect (Ref.write (unsafeCoerce maybeInput) lastInputRef))
+                        (\maybeInput -> liftEffect (Ref.write (unsafeCoerce <$> maybeInput) lastInputRef))
                     -- :: (Maybe (forall i. IsSymbol i => Input i)) -> m Unit
+                    -- :: (forall i. IsSymbol i => Maybe (Input i)) -> m Unit
+                    -- :: (forall i. IsSymbol i => Maybe (Input i)) -> m Unit
                     )
                 , storeLastOutput :
                     (
+                        -- (\maybeOutput -> liftEffect $ Ref.write (unsafeCoerce maybeOutput) lastOutputRef)
                         (\maybeOutput -> liftEffect $ Ref.write (unsafeCoerce <$> maybeOutput) lastOutputRef)
                     -- :: (Maybe (forall o. IsSymbol o => Output o)) -> m Unit
                     )
@@ -160,12 +200,25 @@ onChannels state inputs outputs =
                 , modifyState : \f -> liftEffect $ Signal.get stateSig >>= \v -> Channel.send stateCh (f v)
                 , storeLastInput :
                     (
-                        (\maybeInput -> liftEffect $ Channel.send lastInputCh $ (unsafeCoerce <$> maybeInput))
+                        (\maybeInput ->
+                                -- (testS :: Maybe String) = -- inputToString <$> (inputUnsafe :: Maybe (forall i. IsSymbol i => Input i))
+                                --     case inputUnsafe of
+                                --         Just input_ ->
+                                --             let (input :: forall i. IsSymbol i => Input i) = unsafeCoerce input_
+                                --             in Just (unsafeCoerce (inputToString (unsafeCoerce input)))
+                                --         Nothing -> Nothing
+                            let
+                                (maybeInputUnsafe :: forall i. Maybe (Input i)) = unsafeCoerce maybeInput
+                                -- (maybeInputIdUnsafe :: Maybe InputId) = unsafeCoerce (inputId <$> maybeInputUnsafe)
+                                --(testS :: Maybe String) = inputToString <$> unsafeCoerce <$> maybeInput
+                                -- (testS :: Maybe String) = (unsafeCoerce inputToString :: forall i. IsSymbol i => Input i -> String) <$> ?wh <$> maybeInputUnsafe
+                            in liftEffect $ Channel.send lastInputCh $ unsafeCoerce maybeInput
+                        )
                     -- :: (Maybe (forall i. Input i)) -> m Unit
                     )
                 , storeLastOutput :
                     (
-                        (\maybeOutput -> liftEffect $ Channel.send lastOutputCh $ (unsafeCoerce <$> maybeOutput))
+                        (\maybeOutput -> liftEffect $ Channel.send lastOutputCh $ unsafeCoerce maybeOutput)
                     -- :: (Maybe (forall o. Output o)) -> m Unit
                     )
                 }

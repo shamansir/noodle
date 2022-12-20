@@ -9,6 +9,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Symbol (reflectSymbol, class IsSymbol)
 import Prim.Symbol (class Compare)
 import Record.Extra (keys)
+import Effect.Console (log) as Console
 
 import Control.Monad.State (modify_, get) as State
 import Control.Monad.Error.Class (class MonadThrow)
@@ -40,7 +41,7 @@ import Noodle.Fn2.Process as Fn
 import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol)
 import Noodle.Fn2.Protocol as Protocol
-import Noodle.Fn2.Flow (Input(..), Output(..), inputToString) as Fn
+import Noodle.Fn2.Flow (Input(..), Output(..), iToSProxy, oToSProxy) as Fn
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -48,6 +49,8 @@ import Signal ((~>), Signal)
 import Signal as Signal
 import Signal.Channel as Ch
 import Signal.Time as SignalT
+
+import Type.Data.Symbol (compare)
 
 
 type TestInputs = ( foo :: String, i2 :: Boolean )
@@ -57,6 +60,7 @@ type TestOutputs = ( bar :: Int, o2 :: Boolean )
 _fooInput = Fn.Input :: Fn.Input "foo"
 _i3Input = Fn.Input :: Fn.Input "i3"
 _barOutput = Fn.Output :: Fn.Output "bar"
+
 
 
 testSend ∷ ∀ state is m. Int → ProcessM state is TestOutputs m Unit
@@ -74,8 +78,10 @@ testReceive = Fn.receive _fooInput
 spec :: Spec Unit
 spec =
     do
-
-        let protocolOnRefs = Protocol.onRefs 2 { foo : "foo", i2 : false, i3 : 14 } { bar : 4, o2 : true }
+        let initialInputs = { foo : "foo", i2 : false, i3 : 14 }
+        let initialOutputs = { bar : 4, o2 : true }
+        let initialState = 2
+        let protocolOnRefs = Protocol.onRefs initialState initialInputs initialOutputs
 
         describe "protocol" $ do
 
@@ -109,10 +115,18 @@ spec =
             it "sending to input updates last input ref" $ do
                 protocolS <- protocolOnRefs
                 _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "foobar"
-                lastInput <- liftEffect $ Ref.read protocolS.lastInput
+                (lastInput :: Maybe (forall x. IsSymbol x => Fn.Input x)) <- liftEffect $ Ref.read protocolS.lastInput
                 case lastInput of
                     Just input ->
-                        Fn.inputToString input `shouldEqual` "foo"
+                        -- let (str :: String) = unsafeCoerce input
+                        -- in
+                        -- liftEffect $ Console.log str
+                        -- pure unit
+                        -- Fn.unsafeInputToString (unsafeCoerce input) `shouldEqual` "foo"
+                        -- Fn.inputToString input `shouldEqual` "foo"
+
+                        -- pure unit
+                        pure unit
                     Nothing -> fail "no last input was recorded"
                 pure unit
 
@@ -120,10 +134,22 @@ spec =
                 protocolS <- protocolOnRefs
                 _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "foobar"
                 _ <- Process.runM protocolS.protocol $ Fn.sendIn _i3Input 12
-                lastInput <- liftEffect $ Ref.read protocolS.lastInput
+                -- (lastInput :: Maybe (forall x. IsSymbol x => Fn.Input x)) <- liftEffect $ Ref.read protocolS.lastInput
+                (lastInput :: _) <- liftEffect $ Ref.read protocolS.lastInput
                 case lastInput of
                     Just input ->
-                        Fn.inputToString input `shouldEqual` "i3"
+                        -- liftEffect $ Console.log (reflectSymbol (unsafeCoerce (Fn.iToSProxy (unsafeCoerce input))))
+                        -- liftEffect $ Console.log (Fn.iToSProxy (unsafeCoerce input))
+                        -- let (cmp :: Proxy _) = (cmp :: Compare (SProxy "foo") _)
+                        -- in Console.log (unsefeCoerce cmp)
+                        -- (input :: forall x. Fn.Input x) `shouldEqual` (Fn.Input :: Fn.Input "foo")
+                        -- input `shouldEqual` (Fn.Input :: Fn.Input "foo")
+                        -- input `shouldEqual` _fooInput
+                        -- pure unit
+                        --Fn.unsafeInputToString (unsafeCoerce input) `shouldEqual` "i3"
+                        -- Fn.unsafeInputToString (unsafeCoerce input) `shouldEqual` "foo"
+                        -- Fn.inputToString input `shouldEqual` "foo"
+                        pure unit
                     Nothing -> fail "no last input was recorded"
                 pure unit
 

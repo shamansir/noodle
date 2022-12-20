@@ -1,14 +1,13 @@
 module Noodle.Fn2.Flow
   ( Input(..)
   , Output(..)
-  , InputId
-  , OutputId
-  , inputId, outputId
+  , InputId, OutputId
+  , iToSProxy
+  , inputToString, outputToString
+  , oToSProxy
   , toInput
   , toOutput
-  , inputToString
-  , inputIdToString
---   , unsafeInputToString
+  , inputId, outputId
   )
   where
 
@@ -47,6 +46,10 @@ derive newtype instance showInputId :: Show InputId
 derive newtype instance showOutputId :: Show OutputId
 
 
+instance IsSymbol i => Show (Input i) where
+    show _ = "aa"
+
+
 toInput :: forall t isym. IsSymbol isym => t isym -> Input isym
 toInput _ = Input
 
@@ -55,9 +58,17 @@ toOutput :: forall t osym . IsSymbol osym => t osym -> Output osym
 toOutput _ = Output
 
 
+
+iToSProxy :: forall i. IsSymbol i => Input i -> SProxy i
+iToSProxy _ = SProxy
+
+
+oToSProxy :: forall o. IsSymbol o => Input o -> SProxy o
+oToSProxy _ = SProxy
+
+
 -- inputId :: forall i. IsSymbol i => Input i -> String
 -- inputId = reflectSymbol
-
 
 
 inputId :: forall i. IsSymbol i => Input i -> InputId
@@ -74,8 +85,10 @@ inputId = InputId <<< reflectSymbol
 -- outputId = reflectSymbol
 
 
+
 outputId :: forall o. IsSymbol o => Output o -> OutputId
 outputId = OutputId <<< reflectSymbol
+
 
 
 inputIdToString :: InputId -> String
@@ -86,8 +99,19 @@ outputIdToString :: OutputId -> String
 outputIdToString (OutputId oid) = oid
 
 
+
+-- inputToString :: (forall i. IsSymbol i => Input i) -> String
 inputToString :: forall i. IsSymbol i => Input i -> String
 inputToString input = reflectSymbol input
+
+
+-- inputToString' :: (forall i. IsSymbol i => Input i) -> String
+-- inputToString' input = (inputToString :: (IsSymbol i => Input i) -> String) (input :: forall i. IsSymbol i => Input i)
+
+
+-- outputToString :: (forall o. IsSymbol o => Output o) -> String
+outputToString :: forall o. IsSymbol o => Output o -> String
+outputToString output = reflectSymbol output
 
 
 -- unsafeInputToString :: forall i. Input i -> String

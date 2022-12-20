@@ -22,7 +22,7 @@ import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
-
+import Data.List (List)
 
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.Free (Free, foldFree)
