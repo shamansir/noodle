@@ -40,8 +40,8 @@ type IFnTest1 m = (ITest1 -> m Unit)
 type IFnTest2 m = (ITest2 -> m Unit)
 type IFnTest3 m = (ITest3 -> m Unit)
 
-type CurIVal = ITest1
-type CurIFn m = IFnTest1 m
+type CurIVal = ITest3
+type CurIFn m = IFnTest3 m
 
 
 type OTest1 = Maybe (forall o. IsSymbol o => Output o)
@@ -52,8 +52,8 @@ type OFnTest2 m = (OTest2 -> m Unit)
 type OFnTest3 m = (OTest3 -> m Unit)
 
 
-type CurOVal = OTest1
-type CurOFn m = OFnTest1 m
+type CurOVal = OTest3
+type CurOFn m = OFnTest3 m
 
 
 
@@ -107,8 +107,8 @@ onRefs state inputs outputs =
         outputsRef <- Ref.new outputs
         -- (lastInputRef  :: Ref (forall i. IsSymbol i => Maybe (Input i))) <- Ref.new $ unsafeCoerce Nothing
         -- (lastOutputRef  :: Ref (forall o. IsSymbol o => Maybe (Output o))) <- Ref.new $ unsafeCoerce Nothing
-        (lastInputRef  :: Ref ITest1) <- Ref.new $ unsafeCoerce Nothing
-        (lastOutputRef  :: Ref OTest1) <- Ref.new $ unsafeCoerce Nothing
+        (lastInputRef  :: Ref CurIVal) <- Ref.new $ unsafeCoerce Nothing
+        (lastOutputRef  :: Ref CurOVal) <- Ref.new $ unsafeCoerce Nothing
 
         pure
             { state : stateRef
@@ -125,16 +125,16 @@ onRefs state inputs outputs =
                 , modifyState : \f -> liftEffect $ Ref.modify_ f stateRef
                 , storeLastInput :
                     (
-                        -- (\maybeInput -> liftEffect (Ref.write (unsafeCoerce maybeInput) lastInputRef))
-                        (\maybeInput -> liftEffect (Ref.write (unsafeCoerce <$> maybeInput) lastInputRef))
+                        (\maybeInput -> liftEffect (Ref.write (unsafeCoerce maybeInput) lastInputRef))
+                        -- (\maybeInput -> liftEffect (Ref.write (unsafeCoerce <$> maybeInput) lastInputRef))
                     -- :: (Maybe (forall i. IsSymbol i => Input i)) -> m Unit
                     -- :: (forall i. IsSymbol i => Maybe (Input i)) -> m Unit
                     -- :: (forall i. IsSymbol i => Maybe (Input i)) -> m Unit
                     )
                 , storeLastOutput :
                     (
-                        -- (\maybeOutput -> liftEffect $ Ref.write (unsafeCoerce maybeOutput) lastOutputRef)
-                        (\maybeOutput -> liftEffect $ Ref.write (unsafeCoerce <$> maybeOutput) lastOutputRef)
+                        (\maybeOutput -> liftEffect $ Ref.write (unsafeCoerce maybeOutput) lastOutputRef)
+                        -- (\maybeOutput -> liftEffect $ Ref.write (unsafeCoerce <$> maybeOutput) lastOutputRef)
                     -- :: (Maybe (forall o. IsSymbol o => Output o)) -> m Unit
                     )
                 }

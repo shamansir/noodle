@@ -43,7 +43,7 @@ import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
 
-import Noodle.Fn2.Flow (Input, Output, toInput, toOutput)
+import Noodle.Fn2.Flow (Input, Output, toInput, toOutput, inputIdFromString, outputIdFromString)
 import Noodle.Fn2.Protocol (Protocol)
 
 
@@ -233,9 +233,11 @@ runFreeM protocol fn =
         getUserState = protocol.getState unit
         writeUserState _ nextState = protocol.modifyState $ const nextState
         markLastInput :: String -> m Unit
-        markLastInput iid = protocol.storeLastInput $ Just $ reifySymbol iid (unsafeCoerce <<< toInput)
+        -- markLastInput iid = protocol.storeLastInput $ Just $ reifySymbol iid (unsafeCoerce <<< toInput)
+        markLastInput iid = protocol.storeLastInput $ Just $ inputIdFromString iid
         markLastOutput :: String -> m Unit
-        markLastOutput oid = protocol.storeLastOutput $ Just $ reifySymbol oid (unsafeCoerce <<< toOutput)
+        -- markLastOutput oid = protocol.storeLastOutput $ Just $ reifySymbol oid (unsafeCoerce <<< toOutput)
+        markLastOutput oid = protocol.storeLastOutput $ Just $ outputIdFromString oid
         -- getInputAt :: forall i din. IsSymbol i => Cons i din is is => Input i -> m din
         -- getInputAt iid = liftEffect $ Record.get iid <$> Ref.read inputsRef
         getInputAt :: forall din. String -> m din

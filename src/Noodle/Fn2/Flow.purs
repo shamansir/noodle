@@ -8,6 +8,8 @@ module Noodle.Fn2.Flow
   , toInput
   , toOutput
   , inputId, outputId
+  , inputIdFromString, outputIdFromString
+  , inputIdToString, outputIdToString
   )
   where
 
@@ -48,6 +50,14 @@ derive newtype instance showOutputId :: Show OutputId
 
 instance IsSymbol i => Show (Input i) where
     show _ = "aa"
+
+
+inputIdFromString :: String -> InputId
+inputIdFromString = InputId
+
+
+outputIdFromString :: String -> OutputId
+outputIdFromString = OutputId
 
 
 toInput :: forall t isym. IsSymbol isym => t isym -> Input isym

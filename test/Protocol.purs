@@ -41,7 +41,7 @@ import Noodle.Fn2.Process as Fn
 import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol)
 import Noodle.Fn2.Protocol as Protocol
-import Noodle.Fn2.Flow (Input(..), Output(..), iToSProxy, oToSProxy) as Fn
+import Noodle.Fn2.Flow (Input(..), Output(..), iToSProxy, oToSProxy, inputIdToString) as Fn
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -115,7 +115,7 @@ spec =
             it "sending to input updates last input ref" $ do
                 protocolS <- protocolOnRefs
                 _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "foobar"
-                (lastInput :: Maybe (forall x. IsSymbol x => Fn.Input x)) <- liftEffect $ Ref.read protocolS.lastInput
+                (lastInput :: Protocol.CurIVal) <- liftEffect $ Ref.read protocolS.lastInput
                 case lastInput of
                     Just input ->
                         -- let (str :: String) = unsafeCoerce input
@@ -126,7 +126,7 @@ spec =
                         -- Fn.inputToString input `shouldEqual` "foo"
 
                         -- pure unit
-                        pure unit
+                        (Fn.inputIdToString input) `shouldEqual` "foo"
                     Nothing -> fail "no last input was recorded"
                 pure unit
 
@@ -149,7 +149,7 @@ spec =
                         --Fn.unsafeInputToString (unsafeCoerce input) `shouldEqual` "i3"
                         -- Fn.unsafeInputToString (unsafeCoerce input) `shouldEqual` "foo"
                         -- Fn.inputToString input `shouldEqual` "foo"
-                        pure unit
+                        (Fn.inputIdToString input) `shouldEqual` "i3"
                     Nothing -> fail "no last input was recorded"
                 pure unit
 
