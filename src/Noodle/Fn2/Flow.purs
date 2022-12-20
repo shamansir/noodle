@@ -1,9 +1,14 @@
 module Noodle.Fn2.Flow
   ( Input(..)
   , Output(..)
+  , InputId
+  , OutputId
+  , inputId, outputId
   , toInput
   , toOutput
   , inputToString
+  , inputIdToString
+--   , unsafeInputToString
   )
   where
 
@@ -60,7 +65,9 @@ inputId = InputId <<< reflectSymbol
 
 
 -- inputId' :: forall i. Input i -> InputId
--- inputId' = InputId <<< unsafeCoerce <<< reflectSymbol <<< unsafeCoerce
+-- inputId' input =
+--     inputId (unsafeCoerce input)
+    -- InputId <<< unsafeCoerce <<< reflectSymbol <<< unsafeCoerce
 
 
 -- outputId :: forall o. IsSymbol o => Output o -> String
@@ -84,4 +91,5 @@ inputToString input = reflectSymbol input
 
 
 -- unsafeInputToString :: forall i. Input i -> String
-unsafeInputToString input = inputIdToString $ inputId input
+-- unsafeInputToString input =
+--     unsafeCoerce (reflectSymbol (input :: IsSymbol i => Input i))

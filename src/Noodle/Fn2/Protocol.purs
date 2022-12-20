@@ -27,7 +27,7 @@ import Signal.Channel as Channel
 
 import Unsafe.Coerce (unsafeCoerce)
 
-import Noodle.Fn2.Flow (Input, Output)
+import Noodle.Fn2.Flow (Input, Output, inputId, outputId,InputId, OutputId)
 
 
 type Protocol is os state m =
