@@ -47,7 +47,7 @@ import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
 
-import Noodle.Fn2.Flow (Input, Output, toInput, toOutput, inputIdFromString, outputIdFromString)
+import Noodle.Fn2.Flow (Input, Output, toInput, toOutput, inputIdToString, outputIdToString, InputId, OutputId, inputId, outputId)
 import Noodle.Fn2.Protocol (Protocol)
 
 
@@ -69,9 +69,9 @@ data ProcessF :: forall is' os'. Type -> Row is' -> Row os' -> (Type -> Type) ->
 data ProcessF state is os m a
     = State (state -> a /\ state)
     | Lift (m a)
-    | Send' String (forall dout. dout) a
-    | SendIn String (forall din. din) a
-    | Receive' String (forall din. din -> a)
+    | Send' OutputId (forall dout. dout) a
+    | SendIn InputId (forall din. din) a
+    | Receive' InputId (forall din. din -> a)
     -- Connect
     -- Disconnect etc
 
@@ -124,12 +124,12 @@ instance monadRecNoodleM :: MonadRec (ProcessM state is os m) where
 {- Processing -}
 
 receive :: forall i state is is' os din m. IsSymbol i => Cons i din is' is => Input i -> ProcessM state is os m din
-receive iid = ProcessM $ Free.liftF $ Receive' (reflectSymbol iid) (unsafeCoerce {-identity-})
+receive iid = ProcessM $ Free.liftF $ Receive' (inputId iid) (unsafeCoerce {-identity-})
 
 
 send :: forall o state is os os' dout m. IsSymbol o => Cons o dout os' os => Output o -> dout -> ProcessM state is os m Unit
 -- send oid d = ProcessM $ Free.liftF $ Send' (unsafeCoerce oid /\ unsafeCoerce d) unit
-send oid d = ProcessM $ Free.liftF $ Send' (reflectSymbol oid) (unsafeCoerce d) unit
+send oid d = ProcessM $ Free.liftF $ Send' (outputId oid) (unsafeCoerce d) unit
 
 
 -- sendIn :: forall i state d m. Input i -> d -> ProcessM state d m Unit
@@ -138,7 +138,7 @@ sendIn ∷ ∀ i din state is is' os m. IsSymbol i => Cons i din is' is => Input
 -- sendIn iid d = ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid) d unit
 sendIn iid d =
     -- ProcessM $ Free.liftF $ SendIn (unsafeCoerce iid /\ unsafeCoerce d) unit
-    ProcessM $ Free.liftF $ SendIn (reflectSymbol iid) (unsafeCoerce d) unit
+    ProcessM $ Free.liftF $ SendIn (inputId iid) (unsafeCoerce d) unit
 
 
 lift :: forall state is os m. m Unit -> ProcessM state is os m Unit
@@ -240,21 +240,21 @@ runFreeM protocol fn =
 
         getUserState = protocol.getState unit
         writeUserState _ nextState = protocol.modifyState $ const nextState
-        markLastInput :: String -> m Unit
+        markLastInput :: InputId -> m Unit
         -- markLastInput iid = protocol.storeLastInput $ Just $ reifySymbol iid (unsafeCoerce <<< toInput)
-        markLastInput iid = protocol.storeLastInput $ Just $ inputIdFromString iid
-        markLastOutput :: String -> m Unit
+        markLastInput iid = protocol.storeLastInput $ Just iid
+        markLastOutput :: OutputId -> m Unit
         -- markLastOutput oid = protocol.storeLastOutput $ Just $ reifySymbol oid (unsafeCoerce <<< toOutput)
-        markLastOutput oid = protocol.storeLastOutput $ Just $ outputIdFromString oid
+        markLastOutput oid = protocol.storeLastOutput $ Just oid
         -- getInputAt :: forall i din. IsSymbol i => Cons i din is is => Input i -> m din
         -- getInputAt iid = liftEffect $ Record.get iid <$> Ref.read inputsRef
-        getInputAt :: forall din. String -> m din
-        getInputAt iid = Record.unsafeGet iid <$> protocol.getInputs unit
+        getInputAt :: forall din. InputId -> m din
+        getInputAt iid = Record.unsafeGet (inputIdToString iid) <$> protocol.getInputs unit
         -- sendToOutput :: forall o dout. IsSymbol o => Cons o dout os os => Output o -> dout -> m Unit
         -- sendToOutput oid v = liftEffect $ Ref.modify_ (Record.set oid v) outputsRef
-        sendToOutput :: forall dout. String -> dout -> m Unit
-        sendToOutput oid v = protocol.modifyOutputs $ Record.unsafeSet oid v -- Ref.modify_ (Record.unsafeSet oid v) outputsRef
+        sendToOutput :: forall dout. OutputId -> dout -> m Unit
+        sendToOutput oid v = protocol.modifyOutputs $ Record.unsafeSet (outputIdToString oid) v -- Ref.modify_ (Record.unsafeSet oid v) outputsRef
         -- sendToInput :: forall i din. IsSymbol i => Cons i din is is => Input i -> din -> m Unit
         -- sendToInput iid v = liftEffect $ Ref.modify_ (Record.set iid v) inputsRef
-        sendToInput :: forall din. String -> din -> m Unit
-        sendToInput iid v = protocol.modifyInputs $ Record.unsafeSet iid v
+        sendToInput :: forall din. InputId -> din -> m Unit
+        sendToInput iid v = protocol.modifyInputs $ Record.unsafeSet (inputIdToString iid) v
