@@ -12,6 +12,7 @@ module Noodle.Fn2.Process
   , send
   , sendIn
   , inputsOf
+  , outputsOf
   )
   where
 
@@ -149,6 +150,10 @@ inputsOf :: forall rl is. RL.RowToList is rl => Keys rl => Record is -> List Str
 inputsOf = keys
 
 
+outputsOf :: forall rl os. RL.RowToList os rl => Keys rl => Record os -> List String
+outputsOf = keys
+
+
 {- Maps -}
 
 
@@ -194,7 +199,7 @@ runM
     :: forall state is os m
      . MonadEffect m
     => MonadRec m
-    => Protocol is os state m
+    => Protocol state is os m
     -> ProcessM state is os m
     ~> m
 runM protocol (ProcessM processFree) =
@@ -203,12 +208,12 @@ runM protocol (ProcessM processFree) =
 
 -- TODO: pass the inputs / outputs records here, with the current content and so the scheme for types, they can be stored in `Protocol`.
 -- runFreeM :: forall i o state d m. MonadEffect m => MonadRec m => Ord i => Protocol i o d -> d -> Ref state -> Free (ProcessF state d m) ~> m
--- runFreeM :: forall is os state d m. MonadEffect m => MonadRec m => Row is -> Row os -> d -> Ref state -> Free (ProcessF state d m) ~> m
+-- runFreeM :: forall state is os d m. MonadEffect m => MonadRec m => Row is -> Row os -> d -> Ref state -> Free (ProcessF state d m) ~> m
 runFreeM
     :: forall state is os m
      . MonadEffect m
     => MonadRec m
-    => Protocol is os state m
+    => Protocol state is os m
     -> Free (ProcessF state is os m)
     ~> m
 runFreeM protocol fn =

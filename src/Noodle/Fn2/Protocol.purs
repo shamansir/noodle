@@ -56,8 +56,7 @@ type CurOVal = OTest3
 type CurOFn m = OFnTest3 m
 
 
-
-type Protocol is os state m =
+type Protocol state is os m =
     { getInputs :: Unit -> m (Record is)
     , getOutputs :: Unit -> m (Record os)
     , getState :: Unit -> m state
@@ -74,7 +73,7 @@ type Protocol is os state m =
     }
 
 
-type ProtocolS is os state w m =
+type ProtocolS state is os w m =
     { state :: w state
     , inputs :: w (Record is)
     , outputs :: w (Record os)
@@ -84,12 +83,12 @@ type ProtocolS is os state w m =
     -- , lastOutput :: w (forall o. IsSymbol o => Maybe (Output o))
     , lastInput :: w CurIVal
     , lastOutput :: w CurOVal
-    , protocol :: Protocol is os state m
+    , protocol :: Protocol state is os m
     }
 
 
-type ProtocolW is os state w m =
-    m (ProtocolS is os state w m)
+type ProtocolW state is os w m =
+    m (ProtocolS state is os w m)
 
 
 onRefs
@@ -98,7 +97,7 @@ onRefs
     => state
     -> Record is
     -> Record os
-    -> ProtocolW is os state Ref m
+    -> ProtocolW state is os Ref m
 onRefs state inputs outputs =
     liftEffect $ do
 
@@ -148,7 +147,7 @@ onSignals
     => state
     -> Record is
     -> Record os
-    -> ProtocolW is os state Signal m
+    -> ProtocolW state is os Signal m
 onSignals state inputs outputs = do
     onChannelsI <- onChannels state inputs outputs
     liftEffect $ do
@@ -169,7 +168,7 @@ onChannels
     => state
     -> Record is
     -> Record os
-    -> ProtocolW is os state Channel m
+    -> ProtocolW state is os Channel m
 onChannels state inputs outputs =
     liftEffect $ do
 

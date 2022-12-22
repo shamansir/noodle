@@ -2,11 +2,9 @@ module Noodle.Fn2.Flow
   ( Input(..)
   , Output(..)
   , InputId, OutputId
-  , iToSProxy
+  , iToSProxy, oToSProxy
   , inputToString, outputToString
-  , oToSProxy
-  , toInput
-  , toOutput
+  , toInput, toOutput
   , inputId, outputId
 --   , inputIdFromString, outputIdFromString
   , inputIdToString, outputIdToString
@@ -16,6 +14,7 @@ module Noodle.Fn2.Flow
 import Prelude
 
 import Data.Maybe (Maybe)
+-- import Data.Newtype (class Newtype, wrap, unwrap)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -44,8 +43,15 @@ newtype InputId = InputId String
 newtype OutputId = OutputId String
 
 
+derive newtype instance eqInputId :: Eq InputId
+derive newtype instance ordInputId :: Ord InputId
 derive newtype instance showInputId :: Show InputId
+-- derive instance newtypeInputId :: Newtype InputId _
+
+derive newtype instance eqOutputId :: Eq OutputId
+derive newtype instance ordOutputId :: Ord OutputId
 derive newtype instance showOutputId :: Show OutputId
+-- derive instance newtypeOutputId :: Newtype OutputId _
 
 
 instance IsSymbol i => Show (Input i) where

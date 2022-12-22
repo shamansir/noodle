@@ -11,6 +11,7 @@ import Data.Symbol (reflectSymbol, class IsSymbol)
 import Prim.Symbol (class Compare)
 import Record.Extra (keys)
 import Effect.Console (log) as Console
+import Type.Proxy (Proxy(..))
 
 import Control.Monad.State (modify_, get) as State
 import Control.Monad.Error.Class (class MonadThrow)
@@ -52,6 +53,8 @@ import Signal.Channel as Ch
 import Signal.Time as SignalT
 
 import Type.Data.Symbol (compare)
+
+import Record.Extra as Record
 
 
 type TestInputs = ( foo :: String, i2 :: Boolean )
@@ -97,6 +100,9 @@ spec =
                 protocolS <- protocolOnRefs
                 inputs <- liftEffect $ Ref.read protocolS.inputs
                 (Array.toUnfoldable [ "foo", "i2", "i3" ]) `shouldEqual` Fn.inputsOf inputs
+
+            it "we can get keys of the typed input" $ do
+                (Array.toUnfoldable [ "foo", "i2", "i3" ]) `shouldEqual` (Record.keys (Proxy :: _ TestInputs))
 
         describe "protocol" $ do
 
