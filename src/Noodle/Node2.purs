@@ -35,7 +35,7 @@ import Noodle.Fn2.Protocol (Protocol, ProtocolS)
 import Noodle.Fn2.Protocol as Protocol
 import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, Output, inputIdToString, outputIdToString) as Fn
 import Noodle.Fn2 (Fn)
-import Noodle.Fn2 (_in, _out, inputsShape, outputsShape) as Fn
+import Noodle.Fn2 (_in, _out, inputsShape, outputsShape, run, run') as Fn
 
 import Record.Extra (keys, class Keys) as Record
 import Signal.Channel (Channel)
@@ -66,8 +66,11 @@ class (RL.RowToList os g, Record.Keys g) <= HasOutputs os g
 -}
 
 
-make :: forall state is os m. (Family /\ UID) -> state -> Record is -> Record os -> Fn state is os m -> m (Node state is os m)
-make = Node >>> pure -- FIXME:
+make :: forall state is os m. MonadEffect m => (Family /\ UID) -> state -> Record is -> Record os -> Fn state is os m -> m (Node state is os m)
+make id state is os fn =
+    Protocol.onChannels state is os
+    <#> \protocolS -> Node id protocolS fn
+    -- pure $ Node id protocolS fn
 
 
 _in :: Fn.InputId -> String
@@ -91,16 +94,8 @@ imapState f g (Fn name state is os processM) = Fn name (f state) is os $ Process
 
 
 run :: forall state is os m. MonadRec m => MonadEffect m => Node state is os m -> m Unit
-run (Node _ protocolS fn) = pure unit -- FIXME
-
-
-run' :: forall state is os m. MonadRec m => MonadEffect m => state -> Record is -> Record os -> Node state is os m -> m Unit
-run' state is os (Node _ protocolS fn) = pure unit -- FIXME
-    -- _ <- Process.runM protocol process
-    -- nextState <- protocol.getState unit
-    -- nextInputs <- protocol.getInputs unit
-    -- nextOutputs <- protocol.getOutputs unit
-    -- pure $ nextState /\ nextInputs /\ nextOutputs
+run (Node _ protocolS fn) =
+    Fn.run' protocolS.protocol fn
 
 
 {- Get information about the function -}
@@ -115,23 +110,27 @@ uid (Node (_ /\ uid) _ _) = uid
 
 
 state :: forall state is os m. Node state is os m -> m state
-state (Fn _ state _ _ _) = state
+state (Node _ protocolS _) = protocolS.protocol.getState unit
 
 
 inputs :: forall state is os m. Node state is os m -> m (Record is)
-inputs (Fn _ _ inputs _ _) = inputs
+inputs (Node _ protocolS _) = protocolS.protocol.getInputs unit
 
 
 outputs :: forall state is os m. Node state is os m -> m (Record os)
-outputs (Fn _ _ _ outputs _) = outputs
+outputs (Node _ protocolS _) = protocolS.protocol.getOutputs unit
 
 
-get :: forall state is os m. Node state is os m -> m ( state /\ Record is /\ Record os )
-get fn = state fn /\ inputs fn /\ outputs fn
+get :: forall state is os m. MonadEffect m => Node state is os m -> m ( state /\ Record is /\ Record os )
+get node = do
+    state <- state node
+    is <- inputs node
+    os <- outputs node
+    pure $ state /\ is /\ os
 
 
-set :: forall state is os m. ( state /\ Record is /\ Record os ) -> Node state is os m -> m (Node state is os m)
-set ( state /\ inputs /\ outputs ) (Fn name _ _ _ process) = Fn name state inputs outputs process
+set :: forall state is os m. MonadEffect m => ( state /\ Record is /\ Record os ) -> Node state is os m -> m (Node state is os m)
+set ( state /\ inputs /\ outputs ) node@(Node id protocolS fn) = pure node -- FIXME
 
 
 -- TODO: getAtInput, getAtOutput, updateInputs, updateOutputs, updateState ...
@@ -142,7 +141,7 @@ inputsShape :: forall state (is :: Row Type) os m g. RL.RowToList is g => Record
 inputsShape (Node _ _ fn) = Fn.inputsShape fn
 
 
-outputsShape :: forall state is (os :: Row Type) m g. RL.RowToList os g => Record.Keys g => Fn state is os m -> List Fn.OutputId
+outputsShape :: forall state is (os :: Row Type) m g. RL.RowToList os g => Record.Keys g => Node state is os m -> List Fn.OutputId
 outputsShape (Node _ _ fn) = Fn.outputsShape fn
 
 
@@ -154,9 +153,9 @@ shape
      . RL.RowToList is g
     => RL.RowToList os g
     => Record.Keys g
-    => Fn state is os m
+    => Node state is os m
     -> List Fn.InputId /\ List Fn.OutputId
-shape fn = inputsShape fn /\ outputsShape fn
+shape node = inputsShape node /\ outputsShape node
 
 
 dimensions
@@ -164,7 +163,7 @@ dimensions
      . RL.RowToList is g
     => RL.RowToList os g
     => Record.Keys g
-    => Fn state is os m
+    => Node state is os m
     -> Int /\ Int
 dimensions = shape >>> bimap List.length List.length
 
@@ -176,7 +175,7 @@ dimensionsBy
     => Record.Keys g
     => (Fn.InputId -> Boolean)
     -> (Fn.OutputId -> Boolean)
-    -> Fn state is os m
+    -> Node state is os m
     -> Int /\ Int
 dimensionsBy iPred oPred = shape >>> bimap (List.filter iPred >>> List.length) (List.filter oPred >>> List.length)
 
