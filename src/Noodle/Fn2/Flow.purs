@@ -8,15 +8,22 @@ module Noodle.Fn2.Flow
   , inputId, outputId
 --   , inputIdFromString, outputIdFromString
   , inputIdToString, outputIdToString
+  , keysToInputs, keysToOutputs
   )
   where
 
 import Prelude
 
 import Data.Maybe (Maybe)
+import Data.List (List)
+-- import Data.List (map) as List
 -- import Data.Newtype (class Newtype, wrap, unwrap)
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
 import Unsafe.Coerce (unsafeCoerce)
+
+
+import Prim.RowList as RL
+import Record.Extra (keys, class Keys) as Record
 
 
 -- type Input (s :: Symbol) = SProxy
@@ -135,3 +142,11 @@ outputToString output = reflectSymbol output
 -- unsafeInputToString :: forall i. Input i -> String
 -- unsafeInputToString input =
 --     unsafeCoerce (reflectSymbol (input :: IsSymbol i => Input i))
+
+
+keysToInputs :: forall w is rl. RL.RowToList is rl => Record.Keys rl => w is -> List InputId
+keysToInputs = Record.keys >>> (<$>) InputId
+
+
+keysToOutputs :: forall w os rl. RL.RowToList os rl => Record.Keys rl => w os -> List OutputId
+keysToOutputs = Record.keys >>> (<$>) OutputId
