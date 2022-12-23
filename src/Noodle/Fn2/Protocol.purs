@@ -73,6 +73,9 @@ type Protocol state is os m =
     }
 
 
+-- Functor etc., (only for Signal)
+
+
 type ProtocolS state is os w m =
     { state :: w state
     , inputs :: w (Record is)

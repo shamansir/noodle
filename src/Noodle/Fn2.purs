@@ -2,7 +2,7 @@ module Noodle.Fn2
   ( Fn
   , class ToFn, toFn
   , Name, name
-  , make, run, run', runU
+  , make, run, run'
   , shape
   --, with
 --   , _in, in_, _out, out_
@@ -11,6 +11,8 @@ module Noodle.Fn2
   , mapM
   , imapState
   , changeProcess
+  , _in, _out
+  , inputsShape, outputsShape
   )
   where
 
@@ -46,7 +48,7 @@ import Noodle.Fn2.Process (ProcessM)
 import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol)
 import Noodle.Fn2.Protocol as Protocol
-import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, Output) as Fn
+import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, Output, inputIdToString, outputIdToString) as Fn
 
 import Record.Extra (keys, class Keys) as Record
 
@@ -54,7 +56,7 @@ import Record.Extra (keys, class Keys) as Record
 type Name = String
 
 
-data Fn state (is :: Row Type) (os :: Row Type) m = Fn Name state (Record is) (Record os) (ProcessM state is os m Unit)
+data Fn state (is :: Row Type) (os :: Row Type) m = Fn Name (ProcessM state is os m Unit)
 
 
 class ToFn a state is os where
@@ -67,8 +69,16 @@ class (RL.RowToList is g, Record.Keys g) <= HasInputs is g
 class (RL.RowToList os g, Record.Keys g) <= HasOutputs os g
 
 
-make :: forall state is os m. Name -> state -> Record is -> Record os -> ProcessM state is os m Unit -> Fn state is os m
+make :: forall state is os m. Name -> ProcessM state is os m Unit -> Fn state is os m
 make = Fn
+
+
+_in :: Fn.InputId -> String
+_in = Fn.inputIdToString
+
+
+_out :: Fn.OutputId -> String
+_out = Fn.outputIdToString
 
 
 {-
@@ -76,23 +86,13 @@ in_ :: String -> InputId
 in_ = InputId
 
 
-_in :: InputId -> String
-_in = unwrap
-
-
 out_ :: String -> OutputId
 out_ = OutputId
-
-
-_out :: OutputId -> String
-_out = unwrap -}
+-}
 
 
 {- Creating -}
 
-
--- make :: forall i ii o oo state m d. Name -> Array (i /\ ii) -> Array (o /\ oo) -> ProcessM i o state d m Unit -> Fn i ii o oo state m d
--- make = Fn
 
 -- Toolkit? does it store current state?
 
@@ -114,11 +114,11 @@ program = do
 
 
 mapM :: forall state is os m m'. (m ~> m') -> Fn state is os m -> Fn state is os m'
-mapM f (Fn name state is os processM) = Fn name state is os $ Process.mapMM f processM
+mapM f (Fn name processM) = Fn name $ Process.mapMM f processM
 
 
 imapState :: forall state state' is os m. (state -> state') -> (state' -> state) -> Fn state is os m -> Fn state' is os m
-imapState f g (Fn name state is os processM) = Fn name (f state) is os $ Process.imapMState f g processM
+imapState f g (Fn name processM) = Fn name $ Process.imapMState f g processM
 
 {- Running -}
 
@@ -131,11 +131,8 @@ run default state protocol (Fn _ _ _ processM) = do
 -}
 
 
--- FIXME: current implementation doesn't take default values at all and don't operate on protocol
--- may be default values should be stored in the Node instance?
--- what to do with rendering (i.e. data in some output )? may classes like HasInputs / HasOutputs help?
 run :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os m -> Fn state is os m -> m ( state /\ Record is /\ Record os )
-run protocol (Fn _ state is os process) = do
+run protocol (Fn _ process) = do
     _ <- Process.runM protocol process
     nextState <- protocol.getState unit
     nextInputs <- protocol.getInputs unit
@@ -143,13 +140,8 @@ run protocol (Fn _ state is os process) = do
     pure $ nextState /\ nextInputs /\ nextOutputs
 
 
-run' :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os m -> Fn state is os m -> m (Fn state is os m)
-run' protocol fn = run protocol fn <#> flip set fn
-
-
-runU :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os m -> Fn state is os m -> m Unit
-runU protocol (Fn _ state is os process) =
-    -- FIXME: uses values from protocol, but not defaults
+run' :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os m -> Fn state is os m -> m Unit
+run' protocol (Fn _ process) =
     Process.runM protocol process
 
 
@@ -157,39 +149,15 @@ runU protocol (Fn _ state is os process) =
 
 
 name :: forall state is os m. Fn state is os m -> Name
-name (Fn n _ _ _ _) = n
-
-
-state :: forall state is os m. Fn state is os m -> state
-state (Fn _ state _ _ _) = state
-
-
-inputs :: forall state is os m. Fn state is os m -> Record is
-inputs (Fn _ _ inputs _ _) = inputs
-
-
-outputs :: forall state is os m. Fn state is os m -> Record os
-outputs (Fn _ _ _ outputs _) = outputs
-
-
-get :: forall state is os m. Fn state is os m -> ( state /\ Record is /\ Record os )
-get fn = state fn /\ inputs fn /\ outputs fn
-
-
-set :: forall state is os m. ( state /\ Record is /\ Record os ) -> Fn state is os m -> Fn state is os m
-set ( state /\ inputs /\ outputs ) (Fn name _ _ _ process) = Fn name state inputs outputs process
-
-
--- TODO: getAtInput, getAtOutput, updateInputs, updateOutputs, updateState ...
-
+name (Fn n _) = n
 
 
 inputsShape :: forall state (is :: Row Type) os m g. RL.RowToList is g => Record.Keys g => Fn state is os m -> List Fn.InputId
-inputsShape (Fn _ _ inputs _ _) = Fn.keysToInputs (Proxy :: Proxy is)
+inputsShape (Fn _ _) = Fn.keysToInputs (Proxy :: Proxy is)
 
 
 outputsShape :: forall state is (os :: Row Type) m g. RL.RowToList os g => Record.Keys g => Fn state is os m -> List Fn.OutputId
-outputsShape (Fn _ _ _ outputs _) = Fn.keysToOutputs (Proxy :: Proxy os)
+outputsShape (Fn _ _) = Fn.keysToOutputs (Proxy :: Proxy os)
 
 
 -- TODO: mapRecord
@@ -238,8 +206,8 @@ findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex (Tu
 
 
 changeProcess :: forall state is os m. Fn state is os m -> ProcessM state is os m Unit -> Fn state is os m
-changeProcess (Fn name state inputs outputs _) newProcessM =
-    Fn name state inputs outputs newProcessM
+changeProcess (Fn name _) newProcessM =
+    Fn name newProcessM
 
 
 {-}
