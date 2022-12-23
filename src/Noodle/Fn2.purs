@@ -2,7 +2,7 @@ module Noodle.Fn2
   ( Fn
   , class ToFn, toFn
   , Name, name
---   , run
+  , make, run, run', runU
   , shape
   --, with
 --   , _in, in_, _out, out_
@@ -45,6 +45,7 @@ import Control.Monad.State as State
 import Noodle.Fn2.Process (ProcessM)
 import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol)
+import Noodle.Fn2.Protocol as Protocol
 import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, Output) as Fn
 
 import Record.Extra (keys, class Keys) as Record
@@ -60,6 +61,7 @@ class ToFn a state is os where
     toFn :: forall m. a -> Fn state is os m
 
 
+-- TODO: extend to HasInputs, HasOutputs with getAtInput, getAtOutput, updateInputs, updateOutputs, ...
 class (RL.RowToList is g, Record.Keys g) <= HasInputs is g
 
 class (RL.RowToList os g, Record.Keys g) <= HasOutputs os g
@@ -128,8 +130,27 @@ run default state protocol (Fn _ _ _ processM) = do
     liftEffect $ Ref.read stateRef
 -}
 
+
+-- FIXME: current implementation doesn't take default values at all and don't operate on protocol
+-- may be default values should be stored in the Node instance?
+-- what to do with rendering (i.e. data in some output )? may classes like HasInputs / HasOutputs help?
 run :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os m -> Fn state is os m -> m ( state /\ Record is /\ Record os )
-run protocol fn = pure $ get fn -- FIXME
+run protocol (Fn _ state is os process) = do
+    _ <- Process.runM protocol process
+    nextState <- protocol.getState unit
+    nextInputs <- protocol.getInputs unit
+    nextOutputs <- protocol.getOutputs unit
+    pure $ nextState /\ nextInputs /\ nextOutputs
+
+
+run' :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os m -> Fn state is os m -> m (Fn state is os m)
+run' protocol fn = run protocol fn <#> flip set fn
+
+
+runU :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os m -> Fn state is os m -> m Unit
+runU protocol (Fn _ state is os process) =
+    -- FIXME: uses values from protocol, but not defaults
+    Process.runM protocol process
 
 
 {- Get information about the function -}
