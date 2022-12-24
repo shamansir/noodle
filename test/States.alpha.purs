@@ -1,4 +1,4 @@
-module Test.States2 where
+module Test.StatesAlpha where
 
 import Prelude
 

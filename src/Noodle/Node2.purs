@@ -130,7 +130,8 @@ get node = do
 
 
 set :: forall state is os m. MonadEffect m => ( state /\ Record is /\ Record os ) -> Node state is os m -> m (Node state is os m)
-set ( state /\ inputs /\ outputs ) node@(Node id protocolS fn) = pure node -- FIXME
+set ( state /\ inputs /\ outputs ) node@(Node id protocolS fn) =
+    pure node -- FIXME
 
 
 -- TODO: getAtInput, getAtOutput, updateInputs, updateOutputs, updateState ...

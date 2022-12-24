@@ -1,4 +1,4 @@
-module Test.Protocol where
+module Test.Protocol2 where
 
 import Prelude
 
