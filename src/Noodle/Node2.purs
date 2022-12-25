@@ -36,11 +36,14 @@ import Noodle.Fn2.Protocol (Protocol, ProtocolS)
 import Noodle.Fn2.Protocol as Protocol
 import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, Output, inputIdToString, outputIdToString) as Fn
 import Noodle.Fn2 (Fn)
-import Noodle.Fn2 (_in, _out, inputsShape, outputsShape, run, run') as Fn
+import Noodle.Fn2 (_in, _out, inputsShape, outputsShape, run, run', make) as Fn
 
 import Record (get) as Record
 import Record.Extra (keys, class Keys) as Record
+import Signal (Signal)
+import Signal as Signal
 import Signal.Channel (Channel)
+import Signal.Channel as Channel
 
 
 type Family = String
@@ -68,11 +71,15 @@ class (RL.RowToList os g, Record.Keys g) <= HasOutputs os g
 -}
 
 
-make :: forall state is os m. MonadEffect m => (Family /\ UID) -> state -> Record is -> Record os -> Fn state is os m -> m (Node state is os m)
-make id state is os fn =
+make :: forall state is os m. MonadEffect m => (Family /\ UID) -> state -> Record is -> Record os -> ProcessM state is os m Unit -> m (Node state is os m)
+make (family /\ uid) state is os process =
+    make' (family /\ uid) state is os $ Fn.make family process
+
+
+make' :: forall state is os m. MonadEffect m => (Family /\ UID) -> state -> Record is -> Record os -> Fn state is os m -> m (Node state is os m)
+make' id state is os fn =
     Protocol.onChannels state is os
     <#> \protocolS -> Node id protocolS fn
-    -- pure $ Node id protocolS fn
 
 
 _in :: Fn.InputId -> String
@@ -156,9 +163,31 @@ get node = do
     pure $ state /\ is /\ os
 
 
+subscribeInput :: forall state is os m din. (Record is -> din) -> Node state is os m -> Signal din
+subscribeInput fn node = fn <$> subscribeInputs node
+
+
+subscribeInputs :: forall state is os m. Node state is os m -> Signal (Record is)
+subscribeInputs (Node _ protocolS _) = Channel.subscribe protocolS.inputs
+
+
+subscribeOutput :: forall state is os m dout. (Record os -> dout) -> Node state is os m -> Signal dout
+subscribeOutput fn node = fn <$> subscribeOutputs node
+
+
+subscribeOutputs :: forall state is os m. Node state is os m -> Signal (Record os)
+subscribeOutputs (Node _ protocolS _) = Channel.subscribe protocolS.outputs
+
+
+subscribeState ::  forall state is os m. Node state is os m -> Signal state
+subscribeState (Node _ protocolS _) = Channel.subscribe protocolS.state
+
+
+{-
 set :: forall state is os m. MonadEffect m => ( state /\ Record is /\ Record os ) -> Node state is os m -> m (Node state is os m)
 set ( state /\ inputs /\ outputs ) node@(Node id protocolS fn) =
     pure node -- FIXME
+-}
 
 
 -- TODO: getAtInput, getAtOutput, updateInputs, updateOutputs, updateState ...

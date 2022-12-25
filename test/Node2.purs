@@ -30,9 +30,7 @@ spec = do
     describe "creating & initial values" $ do
 
         it "is initialized properly" $ do
-            let fn = Fn.make "sum" $ pure unit
-
-            node <- Node.make ("sum" /\ 1) unit { a : 2, b : 3 } { sum : 0 } fn
+            node <- Node.make ("sum" /\ 1) unit { a : 2, b : 3 } { sum : 0 } $ pure unit
 
             state <- Node.state node
             state `shouldEqual` unit
@@ -62,9 +60,11 @@ spec = do
 
         it "function is performed properly" $ do
 
+            -- let (test :: _) = _ { foo = _ }
+
             node <-
                 Node.make ("sum" /\ 1) unit { a : 2, b : 3 } { sum : 0 }
-                    $ Fn.make "sum" $ do
+                    $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
                         P.send (Fn.Output :: Fn.Output "sum") $ a + b
