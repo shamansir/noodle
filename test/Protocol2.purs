@@ -102,7 +102,7 @@ spec =
                 (Array.toUnfoldable [ "foo", "i2", "i3" ]) `shouldEqual` Fn.inputsOf inputs
 
             it "we can get keys of the typed input" $ do
-                (Array.toUnfoldable [ "foo", "i2", "i3" ]) `shouldEqual` (Record.keys (Proxy :: _ TestInputs))
+                (Array.toUnfoldable [ "foo", "i2" ]) `shouldEqual` (Record.keys (Proxy :: _ TestInputs))
 
         describe "protocol" $ do
 

@@ -5,8 +5,9 @@ module Noodle.Node2
 import Prelude
 
 import Prim.RowList as RL
-
+import Prim.Row as R
 import Data.Newtype (class Newtype, unwrap)
+import Data.Symbol (class IsSymbol)
 
 import Data.Array as Array
 import Data.Bifunctor (lmap, rmap, bimap)
@@ -37,6 +38,7 @@ import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, O
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 (_in, _out, inputsShape, outputsShape, run, run') as Fn
 
+import Record (get) as Record
 import Record.Extra (keys, class Keys) as Record
 import Signal.Channel (Channel)
 
@@ -121,6 +123,31 @@ outputs :: forall state is os m. Node state is os m -> m (Record os)
 outputs (Node _ protocolS _) = protocolS.protocol.getOutputs unit
 
 
+atInput :: forall i state is' is os m din. Functor m => IsSymbol i => R.Cons i din is' is => Fn.Input i -> Node state is os m -> m din
+atInput i node = inputs node <#> Record.get i
+
+
+atOutput :: forall o state is os os' m dout. Functor m => IsSymbol o => R.Cons o dout os' os => Fn.Output o -> Node state is os m -> m dout
+atOutput o node = outputs node <#> Record.get o
+
+
+atI :: forall i state is' is os m din. Functor m => IsSymbol i => R.Cons i din is' is => Node state is os m -> Fn.Input i -> m din
+atI = flip atInput
+
+
+atO :: forall o state is os os' m dout. Functor m => IsSymbol o => R.Cons o dout os' os => Node state is os m -> Fn.Output o -> m dout
+atO = flip atOutput
+
+
+-- at' ∷ ∀ (m ∷ Type -> Type) (t364 ∷ Type) (state ∷ Type) (os ∷ Row Type) (is ∷ Row Type) (dout :: Type). Functor m ⇒ Node state is os m → (Record is -> dout) -> m dout
+_at ∷ forall m state is os din. Functor m ⇒ Node state is os m → (Record is -> din) -> m din
+_at node fn = inputs node <#> fn
+
+
+at_ ∷ forall m state is os dout. Functor m ⇒ Node state is os m → (Record os -> dout) -> m dout
+at_ node fn = outputs node <#> fn
+
+
 get :: forall state is os m. MonadEffect m => Node state is os m -> m ( state /\ Record is /\ Record os )
 get node = do
     state <- state node
@@ -189,3 +216,8 @@ findInput pred (Fn _ inputs _ _) = Array.index inputs =<< Array.findIndex (Tuple
 findOutput :: forall i ii o oo state m d. (o -> Boolean) -> Fn i ii o oo state m d -> Maybe (o /\ oo)
 findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex (Tuple.fst >>> pred) outputs
 -}
+
+
+with :: forall state is os m. MonadEffect m => MonadRec m => Node state is os m -> Fn state is os m -> m Unit
+with (Node _ protocolS _) fn =
+    Fn.run' protocolS.protocol fn
