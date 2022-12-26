@@ -122,13 +122,12 @@ spawn
     => MonadEffect m
     => Toolkit nodes
     -> Family f
-    -> Int
     -> m (Node state is os m)
-spawn (Toolkit tk) fsym num =
+spawn (Toolkit tk) fsym =
     Record.get fsym tk
         # makeNode
     where
-      makeNode (state /\ is /\ os /\ fn) = Node.make' ("foo" /\ num) state is os fn
+      makeNode (state /\ is /\ os /\ fn) = Node.make' (Node.Family $ reflectSymbol fsym) state is os fn
 
 
 unsafeSpawn
@@ -140,10 +139,9 @@ unsafeSpawn
     => MonadEffect m
     => Toolkit nodes
     -> String
-    -> Int
     -> m (Maybe (Family f /\ Node state is os m))
-unsafeSpawn (Toolkit tk) s n =
-    if List.elem s $ Record.keys tk then
-        let family_ = produceFamily s :: Family f
-        in Just <$> ((/\) family_) <$> (spawn (Toolkit tk) family_ n)
+unsafeSpawn (Toolkit tk) family =
+    if List.elem family $ Record.keys tk then
+        let family_ = produceFamily family :: Family f
+        in Just <$> ((/\) family_) <$> (spawn (Toolkit tk) family_)
     else pure Nothing

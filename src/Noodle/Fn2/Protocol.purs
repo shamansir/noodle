@@ -62,6 +62,7 @@ type CurOFn m = OFnTest3 m -}
 data InputChange
     = SingleInput InputId
     | AllInputs
+    -- TODO: add Hot / Cold
 
 
 data OutputChange

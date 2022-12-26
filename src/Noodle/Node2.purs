@@ -8,6 +8,11 @@ import Prim.RowList as RL
 import Prim.Row as R
 import Data.Newtype (class Newtype, unwrap)
 import Data.Symbol (class IsSymbol)
+import Data.Eq (class Eq)
+-- import Control.Monad.Gen (class MonadGen, chooseInt, unfoldable, sized, resize) as Gen
+-- import Data.Char.Gen as CG
+import Data.Newtype (class Newtype)
+import Data.UUID as UUID
 
 import Data.Array as Array
 import Data.Bifunctor (lmap, rmap, bimap)
@@ -49,13 +54,24 @@ import Signal.Channel as Channel
 import Unsafe.Coerce (unsafeCoerce)
 import Effect.Console (log) as Console
 
-type Family = String
+newtype Family = Family String
+
+derive instance familyNewtype :: Newtype Family _
+
+newtype UUID = UUID String
+
+derive instance uuidNewtype :: Newtype UUID _
 
 
-type UID = Int
+data NodeId = NodeId (Family /\ UUID)
 
 
-data Node state (is :: Row Type) (os :: Row Type) m = Node (Family /\ UID) (Tracker state is os) (Protocol state is os) (Fn state is os m)
+instance eqNodeId :: Eq NodeId where
+    eq (NodeId (Family familyA /\ UUID hashA)) (NodeId (Family familyB /\ UUID hashB))
+        = (familyA == familyB) && (hashA == hashB)
+
+
+data Node state (is :: Row Type) (os :: Row Type) m = Node NodeId (Tracker state is os) (Protocol state is os) (Fn state is os m)
 
 
 -- TODO: implement ToFn
@@ -74,15 +90,16 @@ class (RL.RowToList os g, Record.Keys g) <= HasOutputs os g
 -}
 
 
-make :: forall state is os m. MonadEffect m => (Family /\ UID) -> state -> Record is -> Record os -> ProcessM state is os m Unit -> m (Node state is os m)
-make (family /\ uid) state is os process =
-    make' (family /\ uid) state is os $ Fn.make family process
+make :: forall state is os m. MonadEffect m => Family -> state -> Record is -> Record os -> ProcessM state is os m Unit -> m (Node state is os m)
+make family state is os process =
+    make' family state is os $ Fn.make (unwrap family) process
 
 
-make' :: forall state is os m. MonadEffect m => (Family /\ UID) -> state -> Record is -> Record os -> Fn state is os m -> m (Node state is os m)
-make' id state is os fn =
-    Protocol.make state is os
-    <#> \(tracker /\ protocol) -> Node id tracker protocol fn
+make' :: forall state is os m. MonadEffect m => Family -> state -> Record is -> Record os -> Fn state is os m -> m (Node state is os m)
+make' family state is os fn = do
+    nodeId <- liftEffect $ nextId family
+    tracker /\ protocol <- Protocol.make state is os
+    pure $ Node nodeId tracker protocol fn
 
 
 _in :: Fn.InputId -> String
@@ -104,21 +121,33 @@ imapState f g (Fn name state is os processM) = Fn name (f state) is os $ Process
 
 {- Running -}
 
+nextId :: Family -> Effect NodeId
+nextId f = do
+    hash <- UUID.generate
+    pure $ NodeId $ f /\ UUID hash
+
 
 run :: forall state is os m. MonadRec m => MonadEffect m => Node state is os m -> m Unit
-run (Node _ _ protocol fn) =
-    Fn.run' protocol fn
+run (Node _ _ protocol fn) = Fn.run' protocol fn
 
 
 {- Get information about the function -}
 
 
-family :: forall state is os m. Node state is os m -> Family
-family (Node (family /\ _) _ _ _) = family
+_family :: NodeId -> String
+_family (NodeId (Family family /\ _)) = family
 
 
-uid :: forall state is os m. Node state is os m -> UID
-uid (Node (_ /\ uid) _ _ _) = uid
+_hash :: NodeId -> String
+_hash (NodeId (_ /\ UUID hash)) = hash
+
+
+family :: forall state is os m. Node state is os m -> String
+family (Node nodeId _ _ _) = _family nodeId
+
+
+hash :: forall state is os m. Node state is os m -> String
+hash (Node nodeId _ _ _) = _hash nodeId
 
 
 state :: forall state is os m. MonadEffect m => Node state is os m -> m state
@@ -215,7 +244,7 @@ sendIn_ (Node _ _ protocol _) input din =
 
 -- TODO: subscribeLastInput / subscribeLastOutput
 
-data Link o i = Link (Family /\ UID) (Fn.Output o) (Fn.Input i) (Family /\ UID) (Effect Unit)
+data Link o i = Link NodeId (Fn.Output o) (Fn.Input i) NodeId (Effect Unit)
 
 
 -- TODO: connect
