@@ -38,6 +38,7 @@ data PatchF state d m a
     | Lift (m a)
     | AddNode Node.Family a
     | RemoveNode Node.Id a
+    -- TODO: move node
 
 
 instance functorPatchF :: Functor m => Functor (PatchF state d m) where

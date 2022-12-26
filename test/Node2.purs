@@ -2,6 +2,8 @@ module Test.Node2 where
 
 import Prelude
 
+import Effect.Class (class MonadEffect, liftEffect)
+
 
 import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
@@ -76,5 +78,38 @@ spec = do
 
             atSumAfter <- node `Node.at_` _.sum
             atSumAfter `shouldEqual` 5
+
+            pure unit
+
+
+        it "is possible to connect nodes" $ do
+            nodeA <-
+                Node.make ("sum" /\ 1) unit { a : 2, b : 3 } { sum : 0 }
+                    $ do
+                        a <- P.receive (Fn.Input :: Fn.Input "a")
+                        b <- P.receive (Fn.Input :: Fn.Input "b")
+                        P.send (Fn.Output :: Fn.Output "sum") $ a + b
+
+            nodeB <-
+                Node.make ("sum" /\ 1) unit { a : 2, b : 3 } { sum : 0 }
+                    $ do
+                        a <- P.receive (Fn.Input :: Fn.Input "a")
+                        b <- P.receive (Fn.Input :: Fn.Input "b")
+                        P.send (Fn.Output :: Fn.Output "sum") $ a + b
+
+            _ <- Node.run nodeA
+            _ <- Node.run nodeB
+
+            _ <- Node.connect
+                    (Fn.Output :: Fn.Output "sum")
+                    (Fn.Input :: Fn.Input "b")
+                    identity
+                    nodeA
+                    nodeB
+
+            Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 4
+
+            atSumB <- nodeB `Node.at_` _.sum
+            atSumB `shouldEqual` 5
 
             pure unit

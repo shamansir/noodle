@@ -12,6 +12,7 @@ import Data.Symbol (class IsSymbol)
 import Data.Array as Array
 import Data.Bifunctor (lmap, rmap, bimap)
 import Data.Functor.Invariant (class Invariant)
+import Data.Traversable as T
 import Data.Maybe (Maybe)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
@@ -36,15 +37,16 @@ import Noodle.Fn2.Protocol (Protocol, ProtocolS)
 import Noodle.Fn2.Protocol as Protocol
 import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, Output, inputIdToString, outputIdToString) as Fn
 import Noodle.Fn2 (Fn)
-import Noodle.Fn2 (_in, _out, inputsShape, outputsShape, run, run', make) as Fn
+import Noodle.Fn2 (_in, _out, inputsShape, outputsShape, run, run', make, cloneReplace) as Fn
 
 import Record (get) as Record
 import Record.Extra (keys, class Keys) as Record
-import Signal (Signal)
+import Signal (Signal, (~>))
 import Signal as Signal
 import Signal.Channel (Channel)
 import Signal.Channel as Channel
 
+import Unsafe.Coerce (unsafeCoerce)
 
 type Family = String
 
@@ -179,8 +181,55 @@ subscribeOutputs :: forall state is os m. Node state is os m -> Signal (Record o
 subscribeOutputs (Node _ protocolS _) = Channel.subscribe protocolS.outputs
 
 
-subscribeState ::  forall state is os m. Node state is os m -> Signal state
+subscribeState :: forall state is os m. Node state is os m -> Signal state
 subscribeState (Node _ protocolS _) = Channel.subscribe protocolS.state
+
+
+-- TODO: subscribeLastInput / subscribeLastOutput
+
+
+-- TODO: connect
+
+connect
+    :: forall oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m
+     . IsSymbol oA
+    => IsSymbol iB
+    => R.Cons oA doutA osA' osA
+    => R.Cons iB dinB isB' isB
+    => MonadEffect m
+    => MonadRec m
+    => Fn.Output oA
+    -> Fn.Input iB
+    -> (doutA -> dinB)
+    -> Node stateA isA osA m
+    -> Node stateB isB osB m
+    -> m Unit
+connect
+    outputA
+    inputB
+    convert
+    nodeA@(Node _ protocolSA fnA)
+    nodeB@(Node _ protocolSB fnB) = do
+    let subscription = subscribeOutput (Record.get outputA) nodeA
+    let
+        linkingSignal =
+            subscription
+            ~> convert
+            ~> (\dout ->
+                    -- with nodeB $ Process.sendIn inputB dout
+                    (with nodeB $ do
+                        Process.lift $ liftEffect $ ?wh
+                        Process.sendIn inputB dout
+                    :: Effect Unit)
+                )
+            ~> ?wh
+    -- with nodeB $ Process.lift $ liftEffect $ Signal.runSignal linkingSignal
+                        -- Process.sendIn inputB dout
+    -- traverse
+    -- -- Channel.send
+    -- liftEffect $ T.sequence_ linkingSignal
+    liftEffect $ Signal.runSignal linkingSignal
+    -- pure unit
 
 
 {-
@@ -247,6 +296,6 @@ findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex (Tu
 -}
 
 
-with :: forall state is os m. MonadEffect m => MonadRec m => Node state is os m -> Fn state is os m -> m Unit
-with (Node _ protocolS _) fn =
-    Fn.run' protocolS.protocol fn
+with :: forall state is os m. MonadEffect m => MonadRec m => Node state is os m -> ProcessM state is os m Unit -> m Unit
+with (Node _ protocolS fn) process =
+    Fn.run' protocolS.protocol $ Fn.cloneReplace fn process

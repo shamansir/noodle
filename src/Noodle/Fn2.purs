@@ -10,7 +10,7 @@ module Noodle.Fn2
   -- , findInput, findOutput
   , mapM
   , imapState
-  , changeProcess
+  , cloneReplace
   , _in, _out
   , inputsShape, outputsShape
   )
@@ -205,8 +205,8 @@ findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex (Tu
 -}
 
 
-changeProcess :: forall state is os m. Fn state is os m -> ProcessM state is os m Unit -> Fn state is os m
-changeProcess (Fn name _) newProcessM =
+cloneReplace :: forall state is os m. Fn state is os m -> ProcessM state is os m Unit -> Fn state is os m
+cloneReplace (Fn name _) newProcessM =
     Fn name newProcessM
 
 

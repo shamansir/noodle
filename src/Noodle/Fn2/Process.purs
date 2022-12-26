@@ -75,6 +75,9 @@ data ProcessF state is os m a
     | SendIn InputId (forall din. din) a
     -- | SendInFn (forall din. Record is -> din -> a)
     | Receive' InputId (forall din. din -> a)
+    -- | RunEffect (Effect a)
+    -- | ToEffect (m a -> Effect a)
+    -- | FromEffect (Effect a -> m a)
     -- | LoadFromInputs (forall din. (Record is -> din) /\ (din -> a))
     -- | ModifyInputs (Record is -> Record is)
     -- | ModifyOutputs (Record os -> Record os)
@@ -90,6 +93,7 @@ instance functorProcessF :: Functor m => Functor (ProcessF state is os m) where
         Receive' iid k -> Receive' iid (map f k)
         Send' oid d next -> Send' oid d $ f next
         SendIn iid d next -> SendIn iid d $ f next
+        -- RunEffect effA -> RunEffect $ map f effA
 
 
 newtype ProcessM :: forall is' os'. Type -> Row is' -> Row os' -> (Type -> Type) -> Type -> Type
@@ -106,23 +110,23 @@ derive newtype instance monoidProcessM :: Monoid a => Monoid (ProcessM state is 
 --derive newtype instance bifunctorProcessM :: Bifunctor (ProcessM state is os m a)
 
 
-instance monadEffectNoodleM :: MonadEffect m => MonadEffect (ProcessM state is os m) where
+instance monadEffectProcessM :: MonadEffect m => MonadEffect (ProcessM state is os m) where
   liftEffect = ProcessM <<< Free.liftF <<< Lift <<< liftEffect
 
 
-instance monadAffNoodleM :: MonadAff m => MonadAff (ProcessM state is os m) where
+instance monadAffProcessM :: MonadAff m => MonadAff (ProcessM state is os m) where
   liftAff = ProcessM <<< Free.liftF <<< Lift <<< liftAff
 
 
-instance monadStateNoodleM :: MonadState state (ProcessM state is os m) where
+instance monadStateProcessM :: MonadState state (ProcessM state is os m) where
   state = ProcessM <<< Free.liftF <<< State
 
 
-instance monadThrowNoodleM :: MonadThrow e m => MonadThrow e (ProcessM state is os m) where
+instance monadThrowProcessM :: MonadThrow e m => MonadThrow e (ProcessM state is os m) where
   throwError = ProcessM <<< Free.liftF <<< Lift <<< throwError
 
 
-instance monadRecNoodleM :: MonadRec (ProcessM state is os m) where
+instance monadRecProcessM :: MonadRec (ProcessM state is os m) where
   tailRecM k a = k a >>= case _ of
     Loop x -> tailRecM k x
     Done y -> pure y
@@ -171,6 +175,7 @@ imapFState f g =
         Receive' iid k -> Receive' iid k
         Send' oid d next -> Send' oid d next
         SendIn iid d next -> SendIn iid d next
+        -- RunEffect effA -> RunEffect effA
 
 
 imapMState :: forall state state' is os m. (state -> state') -> (state' -> state) -> ProcessM state is os m ~> ProcessM state' is os m
@@ -187,6 +192,7 @@ mapFM f =
         Receive' iid k -> Receive' iid k
         Send' oid d next -> Send' oid d next
         SendIn iid d next -> SendIn iid d next
+        -- RunEffect effA -> RunEffect effA
 
 
 mapMM :: forall state is os m m'. (m ~> m') -> ProcessM state is os m ~> ProcessM state is os m'
@@ -249,6 +255,10 @@ runFreeM protocol fn =
             markLastInput iid
             sendToInput iid v
             pure next
+        -- go (RunEffect eff) = do
+        --     liftEffect eff
+        -- go (ToEffect fn) = do
+        --     liftEffect eff
         {-
         go (LoadFromInputs (fn /\ getV)) = do
             valueFromInputs <- loadFromInputs fn
