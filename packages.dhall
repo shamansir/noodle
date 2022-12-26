@@ -105,3 +105,15 @@ in upstream
   -- with metadata.version = "v0.14.1"
   with halogen-svg-elems.repo = "https://github.com/shamansir/purescript-halogen-svg-elems.git"
   with halogen-svg-elems.version = "2505905e51c5bb0ecd82e77cdee81d34dc37b029"
+  with purescript-wire =
+    { dependencies =
+        [ "aff"
+        , "filterable"
+        , "refs"
+        , "unsafe-reference"
+        ]
+    , repo =
+       "https://github.com/robertdp/purescript-wire.git"
+    , version =
+        "v0.4.2"
+    }

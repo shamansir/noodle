@@ -97,8 +97,7 @@ spec = do
                         b <- P.receive (Fn.Input :: Fn.Input "b")
                         P.send (Fn.Output :: Fn.Output "sum") $ a + b
 
-            _ <- Node.run nodeA
-            _ <- Node.run nodeB
+            Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 4
 
             _ <- Node.connect
                     (Fn.Output :: Fn.Output "sum")
@@ -107,9 +106,11 @@ spec = do
                     nodeA
                     nodeB
 
-            Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 4
+
+            _ <- Node.run nodeA
+            _ <- Node.run nodeB
 
             atSumB <- nodeB `Node.at_` _.sum
-            atSumB `shouldEqual` 5
+            atSumB `shouldEqual` (4 + 3 + 2)
 
             pure unit

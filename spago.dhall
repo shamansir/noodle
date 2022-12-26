@@ -48,6 +48,7 @@ to generate this file without the comments in this block.
   , "prelude"
   , "profunctor"
   , "psci-support"
+  , "purescript-wire"
   , "read"
   , "record"
   , "refs"

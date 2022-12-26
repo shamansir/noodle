@@ -47,6 +47,7 @@ import Signal.Channel (Channel)
 import Signal.Channel as Channel
 
 import Unsafe.Coerce (unsafeCoerce)
+import Effect.Console (log) as Console
 
 type Family = String
 
@@ -198,6 +199,7 @@ connect
     => R.Cons iB dinB isB' isB
     => MonadEffect m
     => MonadRec m
+    => Show dinB
     => Fn.Output oA
     -> Fn.Input iB
     -> (doutA -> dinB)
@@ -211,24 +213,27 @@ connect
     nodeA@(Node _ protocolSA fnA)
     nodeB@(Node _ protocolSB fnB) = do
     let subscription = subscribeOutput (Record.get outputA) nodeA
+    testChan <- liftEffect $ Channel.channel "foooAAA"
     let
+
+        logSignal = Channel.subscribe testChan ~> Console.log
         linkingSignal =
             subscription
             ~> convert
-            ~> (\dout ->
+            ~> (\dout -> do
+                    Channel.send testChan $ show dout
                     -- with nodeB $ Process.sendIn inputB dout
-                    (with nodeB $ do
-                        Process.lift $ liftEffect $ ?wh
-                        Process.sendIn inputB dout
-                    :: Effect Unit)
+                    -- liftEffect $ Console.log "-----<>-----"
                 )
-            ~> ?wh
+            -- ~> mempty
     -- with nodeB $ Process.lift $ liftEffect $ Signal.runSignal linkingSignal
                         -- Process.sendIn inputB dout
     -- traverse
     -- -- Channel.send
     -- liftEffect $ T.sequence_ linkingSignal
     liftEffect $ Signal.runSignal linkingSignal
+    liftEffect $ Signal.runSignal logSignal
+    liftEffect $ Channel.send testChan "BLAH"
     -- pure unit
 
 
