@@ -33,13 +33,13 @@ import Control.Monad.State as State
 
 import Noodle.Fn2.Process (ProcessM)
 import Noodle.Fn2.Process as Process
-import Noodle.Fn2.Protocol (Protocol, Tracker)
+import Noodle.Fn2.Protocol (Protocol, Tracker, InputChange(..))
 import Noodle.Fn2.Protocol as Protocol
-import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, Output, inputIdToString, outputIdToString) as Fn
+import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, Output, inputIdToString, outputIdToString, inputId) as Fn
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 (_in, _out, inputsShape, outputsShape, run, run', make, cloneReplace) as Fn
 
-import Record (get) as Record
+import Record (get, set) as Record
 import Record.Extra (keys, class Keys) as Record
 import Signal (Signal, (~>))
 import Signal as Signal
@@ -55,7 +55,7 @@ type Family = String
 type UID = Int
 
 
-data Node state (is :: Row Type) (os :: Row Type) m = Node (Family /\ UID) (Tracker state is os) (Protocol state is os m) (Fn state is os m)
+data Node state (is :: Row Type) (os :: Row Type) m = Node (Family /\ UID) (Tracker state is os) (Protocol state is os) (Fn state is os m)
 
 
 -- TODO: implement ToFn
@@ -121,40 +121,40 @@ uid :: forall state is os m. Node state is os m -> UID
 uid (Node (_ /\ uid) _ _ _) = uid
 
 
-state :: forall state is os m. Node state is os m -> m state
-state (Node _ _ protocol _) = protocol.getState unit
+state :: forall state is os m. MonadEffect m => Node state is os m -> m state
+state (Node _ _ protocol _) = liftEffect $ protocol.getState unit
 
 
-inputs :: forall state is os m. Functor m => Node state is os m -> m (Record is)
-inputs (Node _ _ protocol _) = Tuple.snd <$> protocol.getInputs unit
+inputs :: forall state is os m. MonadEffect m => Node state is os m -> m (Record is)
+inputs (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getInputs unit
 
 
-outputs :: forall state is os m. Functor m => Node state is os m -> m (Record os)
-outputs (Node _ _ protocol _) = Tuple.snd <$> protocol.getOutputs unit
+outputs :: forall state is os m. MonadEffect m => Node state is os m -> m (Record os)
+outputs (Node _ _ protocol _) = liftEffect $ Tuple.snd <$> protocol.getOutputs unit
 
 
-atInput :: forall i state is' is os m din. Functor m => IsSymbol i => R.Cons i din is' is => Fn.Input i -> Node state is os m -> m din
+atInput :: forall i state is' is os m din. MonadEffect m => IsSymbol i => R.Cons i din is' is => Fn.Input i -> Node state is os m -> m din
 atInput i node = inputs node <#> Record.get i
 
 
-atOutput :: forall o state is os os' m dout. Functor m => IsSymbol o => R.Cons o dout os' os => Fn.Output o -> Node state is os m -> m dout
+atOutput :: forall o state is os os' m dout. MonadEffect m => IsSymbol o => R.Cons o dout os' os => Fn.Output o -> Node state is os m -> m dout
 atOutput o node = outputs node <#> Record.get o
 
 
-atI :: forall i state is' is os m din. Functor m => IsSymbol i => R.Cons i din is' is => Node state is os m -> Fn.Input i -> m din
+atI :: forall i state is' is os m din. MonadEffect m => IsSymbol i => R.Cons i din is' is => Node state is os m -> Fn.Input i -> m din
 atI = flip atInput
 
 
-atO :: forall o state is os os' m dout. Functor m => IsSymbol o => R.Cons o dout os' os => Node state is os m -> Fn.Output o -> m dout
+atO :: forall o state is os os' m dout. MonadEffect m => IsSymbol o => R.Cons o dout os' os => Node state is os m -> Fn.Output o -> m dout
 atO = flip atOutput
 
 
 -- at' ∷ ∀ (m ∷ Type -> Type) (t364 ∷ Type) (state ∷ Type) (os ∷ Row Type) (is ∷ Row Type) (dout :: Type). Functor m ⇒ Node state is os m → (Record is -> dout) -> m dout
-_at ∷ forall m state is os din. Functor m ⇒ Node state is os m → (Record is -> din) -> m din
+_at ∷ forall m state is os din. MonadEffect m ⇒ Node state is os m → (Record is -> din) -> m din
 _at node fn = inputs node <#> fn
 
 
-at_ ∷ forall m state is os dout. Functor m ⇒ Node state is os m → (Record os -> dout) -> m dout
+at_ ∷ forall m state is os dout. MonadEffect m ⇒ Node state is os m → (Record os -> dout) -> m dout
 at_ node fn = outputs node <#> fn
 
 
@@ -221,6 +221,10 @@ connect
             subscription
             ~> convert
             ~> (\dout -> do
+                    protocolB.modifyInputs
+                        (\curInputs ->
+                            (SingleInput $ Fn.inputId inputB) /\ Record.set inputB dout curInputs
+                        )
                     Channel.send testChan $ show dout
                     -- with nodeB $ Process.sendIn inputB dout
                     -- liftEffect $ Console.log "-----<>-----"

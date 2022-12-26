@@ -67,13 +67,13 @@ data OutputChange
     | AllOutputs
 
 
-type Protocol state is os m =
-    { getInputs :: Unit -> m (InputChange /\ Record is)
-    , getOutputs :: Unit -> m (OutputChange /\ Record os)
-    , getState :: Unit -> m state
-    , modifyInputs :: (Record is -> InputChange /\ Record is) -> m Unit
-    , modifyOutputs :: (Record os -> OutputChange /\ Record os) -> m Unit
-    , modifyState :: (state -> state) -> m Unit
+type Protocol state is os =
+    { getInputs :: Unit -> Effect (InputChange /\ Record is)
+    , getOutputs :: Unit -> Effect (OutputChange /\ Record os)
+    , getState :: Unit -> Effect state
+    , modifyInputs :: (Record is -> InputChange /\ Record is) -> Effect Unit
+    , modifyOutputs :: (Record os -> OutputChange /\ Record os) -> Effect Unit
+    , modifyState :: (state -> state) -> Effect Unit
     -- TODO: try `Cons i is is'`
     -- , storeLastInput :: (forall i. IsSymbol i => Maybe (Input i)) -> m Unit -- could be `InputId`` since we use `Protocol` only internally
     -- , storeLastOutput :: (forall o. IsSymbol o => Maybe (Output o)) -> m Unit -- could be `OutputId`` since we use `Protocol` only internally
@@ -181,7 +181,7 @@ onChannels
     => state
     -> Record is
     -> Record os
-    -> m (Tracker state is os /\ Protocol state is os m)
+    -> m (Tracker state is os /\ Protocol state is os)
 onChannels state inputs outputs =
     liftEffect $ do
 
@@ -199,7 +199,7 @@ onChannels state inputs outputs =
                 , inputs : inputsSig
                 , outputs : outputsSig
                 }
-            protocol :: Protocol state is os m
+            protocol :: Protocol state is os
             protocol =
                 { getInputs : const $ liftEffect $ Signal.get inputsSig
                 , getOutputs : const $ liftEffect $ Signal.get outputsSig

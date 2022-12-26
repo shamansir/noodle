@@ -131,16 +131,16 @@ run default state protocol (Fn _ _ _ processM) = do
 -}
 
 
-run :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os m -> Fn state is os m -> m ( state /\ Record is /\ Record os )
+run :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os -> Fn state is os m -> m ( state /\ Record is /\ Record os )
 run protocol (Fn _ process) = do
     _ <- Process.runM protocol process
-    nextState <- protocol.getState unit
-    nextInputs <- Tuple.snd <$> protocol.getInputs unit
-    nextOutputs <- Tuple.snd <$> protocol.getOutputs unit
+    nextState <- liftEffect $ protocol.getState unit
+    nextInputs <- liftEffect $ Tuple.snd <$> protocol.getInputs unit
+    nextOutputs <- liftEffect $ Tuple.snd <$> protocol.getOutputs unit
     pure $ nextState /\ nextInputs /\ nextOutputs
 
 
-run' :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os m -> Fn state is os m -> m Unit
+run' :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os -> Fn state is os m -> m Unit
 run' protocol (Fn _ process) =
     Process.runM protocol process
 
