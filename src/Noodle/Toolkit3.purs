@@ -1,6 +1,6 @@
 module Noodle.Toolkit3
   ( Toolkit
-  , Family
+  , Family(..)
   , family
   , from, toRecord
   , spawn

@@ -12,7 +12,7 @@ import Test.Spec.Runner (runSpec)
 -- import Test.Nodes (spec) as Nodes
 import Test.Node2 (spec) as Node2
 import Test.Fn (spec) as Fn
-import Test.Toolkit (spec) as Toolkit
+import Test.Toolkit3 (spec) as Toolkit3
 -- import Test.Toolkit2 (spec) as Toolkit2
 import Test.Protocol2 (spec) as Protocol2
 import Test.Flex (spec) as Flex
@@ -30,6 +30,8 @@ main = launchAff_ $ runSpec [consoleReporter] do
   --   Toolkit.spec
   -- describe "Toolkit2"
   --   Toolkit2.spec
+  describe "Toolkit3"
+    Toolkit3.spec
   describe "Protocol2"
     Protocol2.spec
   -- describe "Flex"
