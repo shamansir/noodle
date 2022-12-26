@@ -215,6 +215,8 @@ sendIn_ (Node _ _ protocol _) input din =
 
 -- TODO: subscribeLastInput / subscribeLastOutput
 
+data Link o i = Link (Family /\ UID) (Fn.Output o) (Fn.Input i) (Family /\ UID) (Effect Unit)
+
 
 -- TODO: connect
 
@@ -226,21 +228,49 @@ connect
     => R.Cons iB dinB isB' isB
     => MonadEffect m
     => MonadRec m
-    => Show dinB
     => Fn.Output oA
     -> Fn.Input iB
     -> (doutA -> dinB)
     -> Node stateA isA osA m
     -> Node stateB isB osB m
-    -> m Unit
+    -> m (Link oA iB)
 connect
     outputA
     inputB
     convert
-    nodeA@(Node _ _ protocolA fnA)
-    nodeB@(Node _ _ protocolB fnB) =
-    liftEffect $ Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendIn_ nodeB inputB
-    -- pure unit
+    nodeA@(Node nodeAId _ _ _)
+    nodeB@(Node nodeBId _ _ _) =
+    liftEffect $ do
+        flagRef <- Ref.new true
+        let
+            sendToBIfFlagIsOn dout = do
+                -- Monad.whenM
+                flagOn <- Ref.read flagRef
+                if flagOn then sendIn_ nodeB inputB dout
+                else pure unit
+        Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
+        pure $ Link nodeAId outputA inputB nodeBId $ Ref.write false flagRef
+        -- liftEffect $ Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendIn_ nodeB inputB
+        -- pure unit
+
+
+disconnect
+    :: forall oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m
+     . IsSymbol oA
+    => IsSymbol iB
+    => R.Cons oA doutA osA' osA
+    => R.Cons iB dinB isB' isB
+    => MonadEffect m
+    => MonadRec m
+    => Show dinB
+    => Link oA iB
+    -> Node stateA isA osA m
+    -> Node stateB isB osB m
+    -> m Boolean
+disconnect (Link nodeAIdL _ _ nodeBIdL doDisconnect) (Node nodeAId _ _ _) (Node nodeBId _ _ _) =
+    if (nodeAIdL == nodeAId) && (nodeBIdL == nodeBId) then
+        liftEffect doDisconnect >>= (const $ pure true)
+    else pure false
 
 
 {-

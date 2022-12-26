@@ -81,6 +81,7 @@ spec = do
 
             pure unit
 
+    describe "connecting & disconnecting" $ do
 
         it "is possible to connect nodes" $ do
             nodeA <-
@@ -97,7 +98,8 @@ spec = do
                         b <- P.receive (Fn.Input :: Fn.Input "b")
                         P.send (Fn.Output :: Fn.Output "sum") $ a + b
 
-            Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 4
+            -- Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 4
+            Node.sendIn nodeA (Fn.Input :: Fn.Input "a") 4
 
             _ <- Node.connect
                     (Fn.Output :: Fn.Output "sum")
@@ -112,12 +114,92 @@ spec = do
             atSumB <- nodeB `Node.at_` _.sum
             atSumB `shouldEqual` (4 + 3 + 2)
 
-            Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 7
+            pure unit
+
+
+        it "is possible to connect nodes and keep sending values" $ do
+            nodeA <-
+                Node.make ("sum" /\ 1) unit { a : 2, b : 3 } { sum : 0 }
+                    $ do
+                        a <- P.receive (Fn.Input :: Fn.Input "a")
+                        b <- P.receive (Fn.Input :: Fn.Input "b")
+                        P.send (Fn.Output :: Fn.Output "sum") $ a + b
+
+            nodeB <-
+                Node.make ("sum" /\ 1) unit { a : 2, b : 3 } { sum : 0 }
+                    $ do
+                        a <- P.receive (Fn.Input :: Fn.Input "a")
+                        b <- P.receive (Fn.Input :: Fn.Input "b")
+                        P.send (Fn.Output :: Fn.Output "sum") $ a + b
+
+            -- Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 4
+            Node.sendIn nodeA (Fn.Input :: Fn.Input "a") 4
+
+            _ <- Node.connect
+                    (Fn.Output :: Fn.Output "sum")
+                    (Fn.Input :: Fn.Input "b")
+                    identity
+                    nodeA
+                    nodeB
+
+            _ <- Node.run nodeA
+            _ <- Node.run nodeB
+
+            atSumB <- nodeB `Node.at_` _.sum
+            atSumB `shouldEqual` (4 + 3 + 2)
+
+            -- Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 7
+            Node.sendIn nodeA (Fn.Input :: Fn.Input "a") 7
 
             _ <- Node.run nodeA
             _ <- Node.run nodeB
 
             atSumB' <- nodeB `Node.at_` _.sum
             atSumB' `shouldEqual` (7 + 3 + 2)
+
+            pure unit
+
+        it "disconnecting works" $ do
+            nodeA <-
+                Node.make ("sum" /\ 1) unit { a : 2, b : 3 } { sum : 0 }
+                    $ do
+                        a <- P.receive (Fn.Input :: Fn.Input "a")
+                        b <- P.receive (Fn.Input :: Fn.Input "b")
+                        P.send (Fn.Output :: Fn.Output "sum") $ a + b
+
+            nodeB <-
+                Node.make ("sum" /\ 1) unit { a : 2, b : 3 } { sum : 0 }
+                    $ do
+                        a <- P.receive (Fn.Input :: Fn.Input "a")
+                        b <- P.receive (Fn.Input :: Fn.Input "b")
+                        P.send (Fn.Output :: Fn.Output "sum") $ a + b
+
+            -- Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 4
+            Node.sendIn nodeA (Fn.Input :: Fn.Input "a") 4
+
+            link <- Node.connect
+                    (Fn.Output :: Fn.Output "sum")
+                    (Fn.Input :: Fn.Input "b")
+                    identity
+                    nodeA
+                    nodeB
+
+            _ <- Node.run nodeA
+            _ <- Node.run nodeB
+
+            atSumB <- nodeB `Node.at_` _.sum
+            atSumB `shouldEqual` (4 + 3 + 2)
+
+            success <- Node.disconnect link nodeA nodeB
+            success `shouldEqual` true
+
+            -- Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 7
+            Node.sendIn nodeA (Fn.Input :: Fn.Input "a") 7
+
+            _ <- Node.run nodeA
+            _ <- Node.run nodeB
+
+            atSumB' <- nodeB `Node.at_` _.sum
+            atSumB' `shouldEqual` (4 + 3 + 2)
 
             pure unit
