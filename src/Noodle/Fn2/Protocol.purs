@@ -1,12 +1,11 @@
 module Noodle.Fn2.Protocol
   ( Protocol
-  , ProtocolS
+  , Tracker
   , onChannels
-  , onRefs
-  , onSignals
-  , ITest1, ITest2, ITest3, IFnTest1, IFnTest2, IFnTest3
-  , OTest1, OTest2, OTest3, OFnTest1, OFnTest2, OFnTest3
-  , CurIFn, CurOFn, CurIVal, CurOVal
+  , InputChange(..), OutputChange(..)
+--   , ITest1, ITest2, ITest3, IFnTest1, IFnTest2, IFnTest3
+--   , OTest1, OTest2, OTest3, OFnTest1, OFnTest2, OFnTest3
+--   , CurIFn, CurOFn, CurIVal, CurOVal
   )
   where
 
@@ -16,7 +15,8 @@ import Data.Map as Map
 import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
 import Data.Symbol (class IsSymbol, reflectSymbol)
-import Data.Tuple.Nested (type (/\))
+import Data.Tuple as Tuple
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -33,6 +33,7 @@ import Unsafe.Coerce (unsafeCoerce)
 import Noodle.Fn2.Flow (Input, Output, InputId, OutputId, inputToString, inputId)
 
 
+{-}
 type ITest1 = Maybe (forall i. IsSymbol i => Input i)
 type ITest2 = (forall i. IsSymbol i => Maybe (Input i))
 type ITest3 = Maybe InputId
@@ -53,18 +54,26 @@ type OFnTest3 m = (OTest3 -> m Unit)
 
 
 type CurOVal = OTest3
-type CurOFn m = OFnTest3 m
+type CurOFn m = OFnTest3 m -}
+
+
+data InputChange
+    = SingleInput InputId
+    | AllInputs
+
+
+data OutputChange
+    = SingleOutput OutputId
+    | AllOutputs
 
 
 type Protocol state is os m =
-    { getInputs :: Unit -> m (Record is)
-    , getOutputs :: Unit -> m (Record os)
+    { getInputs :: Unit -> m (InputChange /\ Record is)
+    , getOutputs :: Unit -> m (OutputChange /\ Record os)
     , getState :: Unit -> m state
-    , modifyInputs :: (Record is -> Record is) -> m Unit
-    , modifyOutputs :: (Record os -> Record os) -> m Unit
+    , modifyInputs :: (Record is -> InputChange /\ Record is) -> m Unit
+    , modifyOutputs :: (Record os -> OutputChange /\ Record os) -> m Unit
     , modifyState :: (state -> state) -> m Unit
-    , storeLastInput :: CurIFn m
-    , storeLastOutput :: CurOFn m
     -- TODO: try `Cons i is is'`
     -- , storeLastInput :: (forall i. IsSymbol i => Maybe (Input i)) -> m Unit -- could be `InputId`` since we use `Protocol` only internally
     -- , storeLastOutput :: (forall o. IsSymbol o => Maybe (Output o)) -> m Unit -- could be `OutputId`` since we use `Protocol` only internally
@@ -76,24 +85,23 @@ type Protocol state is os m =
 -- Functor etc., (only for Signal)
 
 
-type ProtocolS state is os w m =
-    { state :: w state
-    , inputs :: w (Record is)
-    , outputs :: w (Record os)
+-- TODO: all Channel-stuff is `Track`
+
+type Tracker state is os =
+    { state :: Signal state
+    , inputs :: Signal (InputChange /\ Record is)
+    , outputs :: Signal (OutputChange /\ Record os)
     -- , lastInput :: w (Maybe InputId)
     -- , lastOutput :: w (Maybe OutputId)
     -- , lastInput :: w (forall i. IsSymbol i => Maybe (Input i))
     -- , lastOutput :: w (forall o. IsSymbol o => Maybe (Output o))
-    , lastInput :: w CurIVal
-    , lastOutput :: w CurOVal
-    , protocol :: Protocol state is os m
+    -- , lastInput :: Signal (Maybe InputId)
+    -- , lastOutput :: Signal (Maybe OutputId)
+    -- , byInput :: Signal (forall din. InputId -> din )
     }
 
 
-type ProtocolW state is os w m =
-    m (ProtocolS state is os w m)
-
-
+{-
 onRefs
     :: forall state is os m
     .  MonadEffect m
@@ -164,6 +172,8 @@ onSignals state inputs outputs = do
             , protocol : onChannelsI.protocol
             }
 
+-}
+
 
 onChannels
     :: forall state is os m
@@ -171,60 +181,35 @@ onChannels
     => state
     -> Record is
     -> Record os
-    -> ProtocolW state is os Channel m
+    -> m (Tracker state is os /\ Protocol state is os m)
 onChannels state inputs outputs =
     liftEffect $ do
 
         stateCh <- channel state
-        inputsCh <- channel inputs
-        outputsCh <- channel outputs
-        lastInputCh <- channel $ unsafeCoerce Nothing
-        lastOutputCh <- channel $ unsafeCoerce Nothing
+        inputsCh <- channel (AllInputs /\ inputs)
+        outputsCh <- channel (AllOutputs /\ outputs)
 
-        let stateSig = Channel.subscribe stateCh
-        let inputsSig = Channel.subscribe inputsCh
-        let outputsSig = Channel.subscribe outputsCh
-        -- let saveLastInputSig = Channel.subscribe lastInputCh
-        -- let saveLastOutputSig = Channel.subscribe lastOutputCh
-
-        pure
-            { state : stateCh
-            , inputs : inputsCh
-            , outputs : outputsCh
-            , lastInput : lastInputCh
-            , lastOutput : lastOutputCh
-            , protocol :
+        let
+            stateSig = Channel.subscribe stateCh
+            inputsSig = Channel.subscribe inputsCh
+            outputsSig = Channel.subscribe outputsCh
+            tracker :: Tracker state is os
+            tracker =
+                { state : stateSig
+                , inputs : inputsSig
+                , outputs : outputsSig
+                }
+            protocol :: Protocol state is os m
+            protocol =
                 { getInputs : const $ liftEffect $ Signal.get inputsSig
                 , getOutputs : const $ liftEffect $ Signal.get outputsSig
                 , getState : const $ liftEffect $ Signal.get stateSig
-                , modifyInputs : \f -> liftEffect $ Signal.get inputsSig >>= \v -> Channel.send inputsCh (f v)
-                , modifyOutputs : \f -> liftEffect $ Signal.get outputsSig >>= \v -> Channel.send outputsCh (f v)
-                , modifyState : \f -> liftEffect $ Signal.get stateSig >>= \v -> Channel.send stateCh (f v)
-                , storeLastInput :
-                    (
-                        (\maybeInput ->
-                                -- (testS :: Maybe String) = -- inputToString <$> (inputUnsafe :: Maybe (forall i. IsSymbol i => Input i))
-                                --     case inputUnsafe of
-                                --         Just input_ ->
-                                --             let (input :: forall i. IsSymbol i => Input i) = unsafeCoerce input_
-                                --             in Just (unsafeCoerce (inputToString (unsafeCoerce input)))
-                                --         Nothing -> Nothing
-                            let
-                                (maybeInputUnsafe :: forall i. Maybe (Input i)) = unsafeCoerce maybeInput
-                                -- (maybeInputIdUnsafe :: Maybe InputId) = unsafeCoerce (inputId <$> maybeInputUnsafe)
-                                --(testS :: Maybe String) = inputToString <$> unsafeCoerce <$> maybeInput
-                                -- (testS :: Maybe String) = (unsafeCoerce inputToString :: forall i. IsSymbol i => Input i -> String) <$> ?wh <$> maybeInputUnsafe
-                            in liftEffect $ Channel.send lastInputCh $ unsafeCoerce maybeInput
-                        )
-                    -- :: (Maybe (forall i. Input i)) -> m Unit
-                    )
-                , storeLastOutput :
-                    (
-                        (\maybeOutput -> liftEffect $ Channel.send lastOutputCh $ unsafeCoerce maybeOutput)
-                    -- :: (Maybe (forall o. Output o)) -> m Unit
-                    )
+                , modifyInputs : \f -> liftEffect $ Signal.get inputsSig >>= Tuple.snd >>> f >>> Channel.send inputsCh
+                , modifyOutputs : \f -> liftEffect $ Signal.get outputsSig >>= Tuple.snd >>> f >>> Channel.send outputsCh
+                , modifyState : \f -> liftEffect $ Signal.get stateSig >>= f >>> Channel.send stateCh
                 }
-            }
+
+        pure $ tracker /\ protocol
 
 
 -- type Tracker k v = Ref (k /-> v)

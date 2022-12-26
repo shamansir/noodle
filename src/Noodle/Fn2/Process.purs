@@ -22,6 +22,8 @@ import Data.Bifunctor (lmap)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
+import Data.Tuple (Tuple(..))
+import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
 import Data.List (List)
@@ -49,7 +51,7 @@ import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 import Noodle.Fn2.Flow (Input, Output, toInput, toOutput, inputIdToString, outputIdToString, InputId, OutputId, inputId, outputId)
-import Noodle.Fn2.Protocol (Protocol)
+import Noodle.Fn2.Protocol (InputChange(..), OutputChange(..), Protocol)
 
 
 
@@ -247,12 +249,12 @@ runFreeM protocol fn =
                 $ valueAtInput
 
         go (Send' oid v next) = do
-            markLastOutput oid
+            -- markLastOutput oid
             -- liftEffect $ Ref.write (reifySymbol oid unsafeCoerce) lastOutputRef
             sendToOutput oid v
             pure next
         go (SendIn iid v next) = do
-            markLastInput iid
+            -- markLastInput iid
             sendToInput iid v
             pure next
         -- go (RunEffect eff) = do
@@ -269,27 +271,27 @@ runFreeM protocol fn =
 
         getUserState = protocol.getState unit
         writeUserState _ nextState = protocol.modifyState $ const nextState
-        markLastInput :: InputId -> m Unit
-        -- markLastInput iid = protocol.storeLastInput $ Just $ reifySymbol iid (unsafeCoerce <<< toInput)
-        markLastInput iid = protocol.storeLastInput $ Just iid
-        markLastOutput :: OutputId -> m Unit
+        -- markLastInput :: InputId -> m Unit
+        -- -- markLastInput iid = protocol.storeLastInput $ Just $ reifySymbol iid (unsafeCoerce <<< toInput)
+        -- markLastInput iid = protocol.storeLastInput $ Just iid
+        -- markLastOutput :: OutputId -> m Unit
         -- markLastOutput oid = protocol.storeLastOutput $ Just $ reifySymbol oid (unsafeCoerce <<< toOutput)
-        markLastOutput oid = protocol.storeLastOutput $ Just oid
+        -- markLastOutput oid = protocol.storeLastOutput $ Just oid
         -- getInputAt :: forall i din. IsSymbol i => Cons i din is is => Input i -> m din
         -- getInputAt iid = liftEffect $ Record.get iid <$> Ref.read inputsRef
         getInputAt :: forall din. InputId -> m din
-        getInputAt iid = Record.unsafeGet (inputIdToString iid) <$> protocol.getInputs unit
+        getInputAt iid = Record.unsafeGet (inputIdToString iid) <$> Tuple.snd <$> protocol.getInputs unit
         -- loadFromInputs :: forall din. (Record is -> din) -> m din
         -- loadFromInputs fn = fn <$> protocol.getInputs unit
         -- sendToOutput :: forall o dout. IsSymbol o => Cons o dout os os => Output o -> dout -> m Unit
         -- sendToOutput oid v = liftEffect $ Ref.modify_ (Record.set oid v) outputsRef
         sendToOutput :: forall dout. OutputId -> dout -> m Unit
-        sendToOutput oid v = protocol.modifyOutputs $ Record.unsafeSet (outputIdToString oid) v -- Ref.modify_ (Record.unsafeSet oid v) outputsRef
+        sendToOutput oid v = protocol.modifyOutputs $ Record.unsafeSet (outputIdToString oid) v >>> (Tuple $ SingleOutput oid) -- Ref.modify_ (Record.unsafeSet oid v) outputsRef
         -- modifyOutputs :: (Record os -> Record os) -> m Unit
         -- modifyOutputs fn = protocol.modifyOutputs fn
         -- sendToInput :: forall i din. IsSymbol i => Cons i din is is => Input i -> din -> m Unit
         -- sendToInput iid v = liftEffect $ Ref.modify_ (Record.set iid v) inputsRef
         sendToInput :: forall din. InputId -> din -> m Unit
-        sendToInput iid v = protocol.modifyInputs $ Record.unsafeSet (inputIdToString iid) v
+        sendToInput iid v = protocol.modifyInputs $ Record.unsafeSet (inputIdToString iid) v >>> (Tuple $ SingleInput iid)
         -- modifyInputs :: (Record is -> Record is) -> m Unit
         -- modifyInputs fn = protocol.modifyInputs fn

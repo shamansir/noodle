@@ -135,8 +135,8 @@ run :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os
 run protocol (Fn _ process) = do
     _ <- Process.runM protocol process
     nextState <- protocol.getState unit
-    nextInputs <- protocol.getInputs unit
-    nextOutputs <- protocol.getOutputs unit
+    nextInputs <- Tuple.snd <$> protocol.getInputs unit
+    nextOutputs <- Tuple.snd <$> protocol.getOutputs unit
     pure $ nextState /\ nextInputs /\ nextOutputs
 
 

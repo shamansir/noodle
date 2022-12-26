@@ -33,7 +33,7 @@ import Control.Monad.State as State
 
 import Noodle.Fn2.Process (ProcessM)
 import Noodle.Fn2.Process as Process
-import Noodle.Fn2.Protocol (Protocol, ProtocolS)
+import Noodle.Fn2.Protocol (Protocol, Tracker)
 import Noodle.Fn2.Protocol as Protocol
 import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, Output, inputIdToString, outputIdToString) as Fn
 import Noodle.Fn2 (Fn)
@@ -55,7 +55,7 @@ type Family = String
 type UID = Int
 
 
-data Node state (is :: Row Type) (os :: Row Type) m = Node (Family /\ UID) (ProtocolS state is os Channel m) (Fn state is os m)
+data Node state (is :: Row Type) (os :: Row Type) m = Node (Family /\ UID) (Tracker state is os) (Protocol state is os m) (Fn state is os m)
 
 
 -- TODO: implement ToFn
@@ -82,7 +82,7 @@ make (family /\ uid) state is os process =
 make' :: forall state is os m. MonadEffect m => (Family /\ UID) -> state -> Record is -> Record os -> Fn state is os m -> m (Node state is os m)
 make' id state is os fn =
     Protocol.onChannels state is os
-    <#> \protocolS -> Node id protocolS fn
+    <#> \(tracker /\ protocol) -> Node id tracker protocol fn
 
 
 _in :: Fn.InputId -> String
@@ -106,31 +106,31 @@ imapState f g (Fn name state is os processM) = Fn name (f state) is os $ Process
 
 
 run :: forall state is os m. MonadRec m => MonadEffect m => Node state is os m -> m Unit
-run (Node _ protocolS fn) =
-    Fn.run' protocolS.protocol fn
+run (Node _ _ protocol fn) =
+    Fn.run' protocol fn
 
 
 {- Get information about the function -}
 
 
 family :: forall state is os m. Node state is os m -> Family
-family (Node (family /\ _) _ _) = family
+family (Node (family /\ _) _ _ _) = family
 
 
 uid :: forall state is os m. Node state is os m -> UID
-uid (Node (_ /\ uid) _ _) = uid
+uid (Node (_ /\ uid) _ _ _) = uid
 
 
 state :: forall state is os m. Node state is os m -> m state
-state (Node _ protocolS _) = protocolS.protocol.getState unit
+state (Node _ _ protocol _) = protocol.getState unit
 
 
-inputs :: forall state is os m. Node state is os m -> m (Record is)
-inputs (Node _ protocolS _) = protocolS.protocol.getInputs unit
+inputs :: forall state is os m. Functor m => Node state is os m -> m (Record is)
+inputs (Node _ _ protocol _) = Tuple.snd <$> protocol.getInputs unit
 
 
-outputs :: forall state is os m. Node state is os m -> m (Record os)
-outputs (Node _ protocolS _) = protocolS.protocol.getOutputs unit
+outputs :: forall state is os m. Functor m => Node state is os m -> m (Record os)
+outputs (Node _ _ protocol _) = Tuple.snd <$> protocol.getOutputs unit
 
 
 atInput :: forall i state is' is os m din. Functor m => IsSymbol i => R.Cons i din is' is => Fn.Input i -> Node state is os m -> m din
@@ -171,7 +171,7 @@ subscribeInput fn node = fn <$> subscribeInputs node
 
 
 subscribeInputs :: forall state is os m. Node state is os m -> Signal (Record is)
-subscribeInputs (Node _ protocolS _) = Channel.subscribe protocolS.inputs
+subscribeInputs (Node _ tracker _ _) = Tuple.snd <$> tracker.inputs
 
 
 subscribeOutput :: forall state is os m dout. (Record os -> dout) -> Node state is os m -> Signal dout
@@ -179,11 +179,11 @@ subscribeOutput fn node = fn <$> subscribeOutputs node
 
 
 subscribeOutputs :: forall state is os m. Node state is os m -> Signal (Record os)
-subscribeOutputs (Node _ protocolS _) = Channel.subscribe protocolS.outputs
+subscribeOutputs (Node _ tracker _ _) = Tuple.snd <$> tracker.outputs
 
 
 subscribeState :: forall state is os m. Node state is os m -> Signal state
-subscribeState (Node _ protocolS _) = Channel.subscribe protocolS.state
+subscribeState (Node _ tracker _ _) = tracker.state
 
 
 -- TODO: subscribeLastInput / subscribeLastOutput
@@ -210,8 +210,8 @@ connect
     outputA
     inputB
     convert
-    nodeA@(Node _ protocolSA fnA)
-    nodeB@(Node _ protocolSB fnB) = do
+    nodeA@(Node _ _ protocolA fnA)
+    nodeB@(Node _ _ protocolB fnB) = do
     let subscription = subscribeOutput (Record.get outputA) nodeA
     testChan <- liftEffect $ Channel.channel "foooAAA"
     let
@@ -249,11 +249,11 @@ set ( state /\ inputs /\ outputs ) node@(Node id protocolS fn) =
 
 
 inputsShape :: forall state (is :: Row Type) os m g. RL.RowToList is g => Record.Keys g => Node state is os m -> List Fn.InputId
-inputsShape (Node _ _ fn) = Fn.inputsShape fn
+inputsShape (Node _ _ _ fn) = Fn.inputsShape fn
 
 
 outputsShape :: forall state is (os :: Row Type) m g. RL.RowToList os g => Record.Keys g => Node state is os m -> List Fn.OutputId
-outputsShape (Node _ _ fn) = Fn.outputsShape fn
+outputsShape (Node _ _ _ fn) = Fn.outputsShape fn
 
 
 -- TODO: mapRecord
@@ -302,5 +302,5 @@ findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex (Tu
 
 
 with :: forall state is os m. MonadEffect m => MonadRec m => Node state is os m -> ProcessM state is os m Unit -> m Unit
-with (Node _ protocolS fn) process =
-    Fn.run' protocolS.protocol $ Fn.cloneReplace fn process
+with (Node _ _ protocol fn) process =
+    Fn.run' protocol $ Fn.cloneReplace fn process
