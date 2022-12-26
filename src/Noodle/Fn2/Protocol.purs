@@ -1,8 +1,10 @@
 module Noodle.Fn2.Protocol
   ( Protocol
   , Tracker
-  , onChannels
+  , make
   , InputChange(..), OutputChange(..)
+  , inputs, outputs
+  , lastInput, lastOutput
 --   , ITest1, ITest2, ITest3, IFnTest1, IFnTest2, IFnTest3
 --   , OTest1, OTest2, OTest3, OFnTest1, OFnTest2, OFnTest3
 --   , CurIFn, CurOFn, CurIVal, CurOVal
@@ -65,6 +67,16 @@ data InputChange
 data OutputChange
     = SingleOutput OutputId
     | AllOutputs
+
+
+inputChangeToMaybe :: InputChange -> Maybe InputId
+inputChangeToMaybe (SingleInput iid) = Just iid
+inputChangeToMaybe AllInputs = Nothing
+
+
+outputChangeToMaybe :: OutputChange -> Maybe OutputId
+outputChangeToMaybe (SingleOutput oid) = Just oid
+outputChangeToMaybe AllOutputs = Nothing
 
 
 type Protocol state is os =
@@ -175,14 +187,14 @@ onSignals state inputs outputs = do
 -}
 
 
-onChannels
+make
     :: forall state is os m
     .  MonadEffect m
     => state
     -> Record is
     -> Record os
     -> m (Tracker state is os /\ Protocol state is os)
-onChannels state inputs outputs =
+make state inputs outputs =
     liftEffect $ do
 
         stateCh <- channel state
@@ -210,6 +222,22 @@ onChannels state inputs outputs =
                 }
 
         pure $ tracker /\ protocol
+
+
+inputs :: forall state is os. Tracker state is os -> Effect (Record is)
+inputs tracker = Signal.get tracker.inputs <#> Tuple.snd
+
+
+outputs :: forall state is os. Tracker state is os -> Effect (Record os)
+outputs tracker = Signal.get tracker.outputs <#> Tuple.snd
+
+
+lastInput :: forall state is os. Tracker state is os -> Effect (Maybe InputId)
+lastInput tracker = Signal.get tracker.inputs <#> Tuple.fst <#> inputChangeToMaybe
+
+
+lastOutput :: forall state is os. Tracker state is os -> Effect (Maybe OutputId)
+lastOutput tracker = Signal.get tracker.outputs <#> Tuple.fst <#> outputChangeToMaybe
 
 
 -- type Tracker k v = Ref (k /-> v)

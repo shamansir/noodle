@@ -106,11 +106,18 @@ spec = do
                     nodeA
                     nodeB
 
-
             _ <- Node.run nodeA
             _ <- Node.run nodeB
 
             atSumB <- nodeB `Node.at_` _.sum
             atSumB `shouldEqual` (4 + 3 + 2)
+
+            Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 7
+
+            _ <- Node.run nodeA
+            _ <- Node.run nodeB
+
+            atSumB' <- nodeB `Node.at_` _.sum
+            atSumB' `shouldEqual` (7 + 3 + 2)
 
             pure unit

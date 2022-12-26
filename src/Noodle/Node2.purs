@@ -33,9 +33,9 @@ import Control.Monad.State as State
 
 import Noodle.Fn2.Process (ProcessM)
 import Noodle.Fn2.Process as Process
-import Noodle.Fn2.Protocol (Protocol, Tracker, InputChange(..))
+import Noodle.Fn2.Protocol (Protocol, Tracker, InputChange(..), OutputChange(..))
 import Noodle.Fn2.Protocol as Protocol
-import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, Output, inputIdToString, outputIdToString, inputId) as Fn
+import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, Output, inputIdToString, outputIdToString, inputId, outputId) as Fn
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 (_in, _out, inputsShape, outputsShape, run, run', make, cloneReplace) as Fn
 
@@ -81,7 +81,7 @@ make (family /\ uid) state is os process =
 
 make' :: forall state is os m. MonadEffect m => (Family /\ UID) -> state -> Record is -> Record os -> Fn state is os m -> m (Node state is os m)
 make' id state is os fn =
-    Protocol.onChannels state is os
+    Protocol.make state is os
     <#> \(tracker /\ protocol) -> Node id tracker protocol fn
 
 
@@ -185,6 +185,33 @@ subscribeOutputs (Node _ tracker _ _) = Tuple.snd <$> tracker.outputs
 subscribeState :: forall state is os m. Node state is os m -> Signal state
 subscribeState (Node _ tracker _ _) = tracker.state
 
+-- private?
+sendOut :: forall o state is os os' m dout. MonadEffect m => IsSymbol o => R.Cons o dout os' os => Node state is os m -> Fn.Output o -> dout -> m Unit
+sendOut node o = liftEffect <<< sendOut_ node o
+
+
+-- private?
+sendOut_ :: forall o state is os os' m dout. IsSymbol o => R.Cons o dout os' os => Node state is os m -> Fn.Output o -> dout -> Effect Unit
+sendOut_ (Node _ _ protocol _) output dout =
+    protocol.modifyOutputs
+        (\curOutputs ->
+            (SingleOutput $ Fn.outputId output) /\ Record.set output dout curOutputs
+        )
+
+
+-- private?
+sendIn :: forall i state is is' os m din. MonadEffect m => IsSymbol i => R.Cons i din is' is => Node state is os m -> Fn.Input i -> din -> m Unit
+sendIn node i = liftEffect <<< sendIn_ node i
+
+
+-- private?
+sendIn_ :: forall i state is is' os m din. IsSymbol i => R.Cons i din is' is => Node state is os m -> Fn.Input i -> din -> Effect Unit
+sendIn_ (Node _ _ protocol _) input din =
+    protocol.modifyInputs
+        (\curInputs ->
+            (SingleInput $ Fn.inputId input) /\ Record.set input din curInputs
+        )
+
 
 -- TODO: subscribeLastInput / subscribeLastOutput
 
@@ -211,33 +238,8 @@ connect
     inputB
     convert
     nodeA@(Node _ _ protocolA fnA)
-    nodeB@(Node _ _ protocolB fnB) = do
-    let subscription = subscribeOutput (Record.get outputA) nodeA
-    testChan <- liftEffect $ Channel.channel "foooAAA"
-    let
-
-        logSignal = Channel.subscribe testChan ~> Console.log
-        linkingSignal =
-            subscription
-            ~> convert
-            ~> (\dout -> do
-                    protocolB.modifyInputs
-                        (\curInputs ->
-                            (SingleInput $ Fn.inputId inputB) /\ Record.set inputB dout curInputs
-                        )
-                    Channel.send testChan $ show dout
-                    -- with nodeB $ Process.sendIn inputB dout
-                    -- liftEffect $ Console.log "-----<>-----"
-                )
-            -- ~> mempty
-    -- with nodeB $ Process.lift $ liftEffect $ Signal.runSignal linkingSignal
-                        -- Process.sendIn inputB dout
-    -- traverse
-    -- -- Channel.send
-    -- liftEffect $ T.sequence_ linkingSignal
-    liftEffect $ Signal.runSignal linkingSignal
-    liftEffect $ Signal.runSignal logSignal
-    liftEffect $ Channel.send testChan "BLAH"
+    nodeB@(Node _ _ protocolB fnB) =
+    liftEffect $ Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendIn_ nodeB inputB
     -- pure unit
 
 

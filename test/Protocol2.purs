@@ -6,6 +6,7 @@ import Data.Map as Map
 import Data.Array as Array
 import Data.Map.Extra (type (/->))
 import Data.Maybe (Maybe(..))
+import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Symbol (reflectSymbol, class IsSymbol)
 import Prim.Symbol (class Compare)
@@ -89,7 +90,7 @@ spec =
         let initialInputs = { foo : "foo", i2 : false, i3 : 14 }
         let initialOutputs = { bar : 4, o2 : true }
         let initialState = 2
-        let protocolOnRefs = Protocol.onRefs initialState initialInputs initialOutputs
+        let makeProtocol = Protocol.make initialState initialInputs initialOutputs
 
         describe "keys" $ do
 
@@ -97,8 +98,8 @@ spec =
                 (Array.toUnfoldable [ "foo", "i2", "i3" ]) `shouldEqual` Fn.inputsOf initialInputs
 
             it "we can get keys of the inputs" $ do
-                protocolS <- protocolOnRefs
-                inputs <- liftEffect $ Ref.read protocolS.inputs
+                tracker /\ protocol <- makeProtocol
+                inputs <- liftEffect $ Protocol.inputs tracker
                 (Array.toUnfoldable [ "foo", "i2", "i3" ]) `shouldEqual` Fn.inputsOf inputs
 
             it "we can get keys of the typed input" $ do
@@ -107,36 +108,36 @@ spec =
         describe "protocol" $ do
 
             it "values stay initial until changed" $ do
-                protocolS <- protocolOnRefs
-                curState <- liftEffect $ Ref.read protocolS.state
+                tracker /\ protocol <- makeProtocol
+                curState <- liftEffect $ Signal.get tracker.state
                 curState `shouldEqual` 2
-                atFoo <- liftEffect $ Ref.read protocolS.inputs <#> _.foo
+                atFoo <- liftEffect $ Protocol.inputs tracker <#> _.foo
                 atFoo `shouldEqual` "foo"
-                atBar <- liftEffect $ Ref.read protocolS.outputs <#> _.bar
+                atBar <- liftEffect $ Signal.get tracker.outputs <#> Tuple.snd <#> _.bar
                 atBar `shouldEqual` 4
                 pure unit
 
         describe "process" $ do
 
             it "sending to input changes its value in refs" $ do
-                protocolS <- protocolOnRefs
-                _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "foobar"
-                atFoo <- liftEffect $ Ref.read protocolS.inputs <#> _.foo
+                tracker /\ protocol <- makeProtocol
+                _ <- Process.runM protocol $ Fn.sendIn _fooInput "foobar"
+                atFoo <- liftEffect $ Protocol.inputs tracker <#> _.foo
                 atFoo `shouldEqual` "foobar"
                 pure unit
 
             it "sending to input two times its value in refs" $ do
-                protocolS <- protocolOnRefs
-                _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "foobar"
-                _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "barfoo"
-                atFoo <- liftEffect $ Ref.read protocolS.inputs <#> _.foo
+                tracker /\ protocol <- makeProtocol
+                _ <- Process.runM protocol $ Fn.sendIn _fooInput "foobar"
+                _ <- Process.runM protocol $ Fn.sendIn _fooInput "barfoo"
+                atFoo <- liftEffect $ Protocol.inputs tracker <#> _.foo
                 atFoo `shouldEqual` "barfoo"
                 pure unit
 
             it "sending to input updates last input ref" $ do
-                protocolS <- protocolOnRefs
-                _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "foobar"
-                (lastInput :: Protocol.CurIVal) <- liftEffect $ Ref.read protocolS.lastInput
+                tracker /\ protocol <- makeProtocol
+                _ <- Process.runM protocol $ Fn.sendIn _fooInput "foobar"
+                lastInput <- liftEffect $ Protocol.lastInput tracker
                 case lastInput of
                     Just input ->
                         -- let (str :: String) = unsafeCoerce input
@@ -152,11 +153,11 @@ spec =
                 pure unit
 
             it "sending to input updates twice last input ref anyway" $ do
-                protocolS <- protocolOnRefs
-                _ <- Process.runM protocolS.protocol $ Fn.sendIn _fooInput "foobar"
-                _ <- Process.runM protocolS.protocol $ Fn.sendIn _i3Input 12
-                -- (lastInput :: Maybe (forall x. IsSymbol x => Fn.Input x)) <- liftEffect $ Ref.read protocolS.lastInput
-                (lastInput :: _) <- liftEffect $ Ref.read protocolS.lastInput
+                tracker /\ protocol <- makeProtocol
+                _ <- Process.runM protocol $ Fn.sendIn _fooInput "foobar"
+                _ <- Process.runM protocol $ Fn.sendIn _i3Input 12
+                -- (lastInput :: Maybe (forall x. IsSymbol x => Fn.Input x)) <- liftEffect $ Signal.get protocolS.lastInput
+                lastInput <- liftEffect $ Protocol.lastInput tracker
                 case lastInput of
                     Just input ->
                         -- liftEffect $ Console.log (reflectSymbol (unsafeCoerce (Fn.iToSProxy (unsafeCoerce input))))
@@ -175,35 +176,35 @@ spec =
                 pure unit
 
             it "sending to output changes its value in refs" $ do
-                protocolS <- protocolOnRefs
-                _ <- Process.runM protocolS.protocol $ Fn.send _barOutput 7
-                atBar <- liftEffect $ Ref.read protocolS.outputs <#> _.bar
+                tracker /\ protocol <- makeProtocol
+                _ <- Process.runM protocol $ Fn.send _barOutput 7
+                atBar <- liftEffect $ Protocol.outputs tracker <#> _.bar
                 atBar `shouldEqual` 7
                 pure unit
 
             it "sending to output two times its value in refs" $ do
-                protocolS <- protocolOnRefs
-                _ <- Process.runM protocolS.protocol $ Fn.send _barOutput 7
-                _ <- Process.runM protocolS.protocol $ Fn.send _barOutput 12
-                atBar <- liftEffect $ Ref.read protocolS.outputs <#> _.bar
+                tracker /\ protocol <- makeProtocol
+                _ <- Process.runM protocol $ Fn.send _barOutput 7
+                _ <- Process.runM protocol $ Fn.send _barOutput 12
+                atBar <- liftEffect $ Protocol.outputs tracker <#> _.bar
                 atBar `shouldEqual` 12
                 pure unit
 
             it "modifying state works" $ do
-                protocolS <- protocolOnRefs
-                _ <- Process.runM protocolS.protocol $ State.modify_ ((+) 42)
-                state <- liftEffect $ Ref.read protocolS.state
+                tracker /\ protocol <- makeProtocol
+                _ <- Process.runM protocol $ State.modify_ ((+) 42)
+                state <- liftEffect $ Signal.get tracker.state
                 state `shouldEqual` 44
                 pure unit
 
             it "using inputs and outputs and modifying state works together" $ do
-                protocolS <- protocolOnRefs
-                _ <- Process.runM protocolS.protocol $ do
+                tracker /\ protocol <- makeProtocol
+                _ <- Process.runM protocol $ do
                     atI3 <- Fn.receive _i3Input -- get 14
                     State.modify_ ((*) atI3) -- 2 * 14
                     curState <- State.get
                     Fn.send _barOutput curState
-                atBar <- liftEffect $ Ref.read protocolS.outputs <#> _.bar
+                atBar <- liftEffect $ Protocol.outputs tracker <#> _.bar
                 atBar `shouldEqual` 28
                 pure unit
 
@@ -213,7 +214,7 @@ spec =
 
 shouldContain :: forall d. Eq d => Show d => String -> d -> Protocol.Tracker String d -> Aff Unit
 shouldContain id val tracker = do
-    values <- liftEffect $ Ref.read tracker
+    values <- liftEffect $ Signal.get tracker
     case Map.lookup id values of
         Just otherVal ->
             if val == otherVal then pure unit
