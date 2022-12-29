@@ -5,6 +5,7 @@ import Prelude
 import Data.Symbol (class IsSymbol)
 import Data.Const (Const)
 import Data.Array ((:))
+import Data.Array as Array
 
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
@@ -60,10 +61,30 @@ init tk = Patch $ hmap NoInstancesOfNodeYet $ Toolkit.toRecord tk
 
 
 registerNode
-    :: forall instances f state is os m
-     . Row.Cons f (NodesOf f state is os m) instances instances
+    :: forall instances' instances f state is os m
+     . Row.Cons f (NodesOf f state is os m) instances' instances
     => IsSymbol f
     => Node f state is os m
     -> Patch instances
     -> Patch instances
 registerNode node (Patch instances) = Patch $ Record.modify (Node.family node) ((:) node) instances
+
+
+nodesOf
+    :: forall instances' instances f state is os m
+     . Row.Cons f (NodesOf f state is os m) instances' instances
+    => IsSymbol f
+    => Node.Family f
+    -> Patch instances
+    -> NodesOf f state is os m
+nodesOf family (Patch instances) = Record.get family instances
+
+
+howMany
+    :: forall instances' instances f state is os m
+     . Row.Cons f (NodesOf f state is os m) instances' instances
+    => IsSymbol f
+    => Node.Family f
+    -> Patch instances
+    -> Int
+howMany f = nodesOf f >>> Array.length
