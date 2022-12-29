@@ -2,6 +2,9 @@ module Test.Toolkit3 where
 
 import Prelude
 
+import Effect.Class (liftEffect)
+import Effect.Console (log) as Console
+
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Test.Spec (Spec, pending, describe, it)
@@ -31,6 +34,8 @@ spec = do
 
         it "spawning works" $ do
 
+
+
             let toolkit =
                     Toolkit.from
                         { foo :
@@ -40,7 +45,7 @@ spec = do
                             /\ Fn.make "foo" (pure unit)
                         }
 
-            node <- Toolkit.spawn toolkit (Toolkit.Family "foo" :: Toolkit.Family "foo")
+            node <- Toolkit.spawn toolkit (Node.Family :: Node.Family "foo")
 
             state <- Node.state node
             state `shouldEqual` unit

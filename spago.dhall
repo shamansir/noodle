@@ -62,6 +62,7 @@ to generate this file without the comments in this block.
   , "typelevel-prelude"
   , "unfoldable"
   , "unsafe-coerce"
+  , "variant"
   , "web-events"
   , "web-html"
   , "web-uievents"

@@ -26,13 +26,16 @@ import Signal.Channel as Ch
 import Signal.Time as SignalT
 
 
+_sum = Node.Family :: Node.Family "sum"
+
+
 spec :: Spec Unit
 spec = do
 
     describe "creating & initial values" $ do
 
         it "is initialized properly" $ do
-            node <- Node.make (Node.Family "sum") unit { a : 2, b : 3 } { sum : 0 } $ pure unit
+            node <- Node.make _sum unit { a : 2, b : 3 } { sum : 0 } $ pure unit
 
             state <- Node.state node
             state `shouldEqual` unit
@@ -65,7 +68,7 @@ spec = do
             -- let (test :: _) = _ { foo = _ }
 
             node <-
-                Node.make (Node.Family "sum") unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
@@ -85,14 +88,14 @@ spec = do
 
         it "is possible to connect nodes" $ do
             nodeA <-
-                Node.make (Node.Family "sum") unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
                         P.send (Fn.Output :: Fn.Output "sum") $ a + b
 
             nodeB <-
-                Node.make (Node.Family "sum") unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
@@ -119,14 +122,14 @@ spec = do
 
         it "is possible to connect nodes and keep sending values" $ do
             nodeA <-
-                Node.make (Node.Family "sum") unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
                         P.send (Fn.Output :: Fn.Output "sum") $ a + b
 
             nodeB <-
-                Node.make (Node.Family "sum") unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
@@ -161,14 +164,14 @@ spec = do
 
         it "disconnecting works" $ do
             nodeA <-
-                Node.make (Node.Family "sum") unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
                         P.send (Fn.Output :: Fn.Output "sum") $ a + b
 
             nodeB <-
-                Node.make (Node.Family "sum") unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")

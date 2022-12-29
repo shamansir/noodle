@@ -31,12 +31,27 @@ instance addOneAndShow ::
   Mapping AddOneAndShow n String where
   mapping AddOneAndShow = add one >>> show
 
+
 --
 -- fooAaa = hmap (show >>> Console.log) { c : 20, a : "foo" }
 -- fooAaa = hmap (show) { c : 20, a : "foo" }
 fooAaa :: { c :: String, a :: String, in :: String }
 fooAaa = hmap (AddOneAndShow) { c : 20, a : 3, in : { a : 12 } }
 
+
+data ToArray = ToArray
+
+instance mappingToArray ::
+  Mapping ToArray a (Array (Tuple x b)) where
+  mapping ToArray = const []
+
+
+instance ixMappingToArray ::
+  MappingWithIndex ToArray i a (Array (Tuple x b)) where
+  mappingWithIndex ToArray _ = const []
+
+
+fooBbb = hmap (ToArray) { c : 20, a : 3, in : { a : 12 } }
 
 
 newtype ZipProps fns = ZipProps { | fns }

@@ -1,7 +1,5 @@
 module Noodle.Toolkit3
   ( Toolkit
-  , Family(..)
-  , family
   , from, toRecord
   , spawn
   , unsafeSpawn
@@ -40,17 +38,16 @@ import Record.Builder as Builder
 import Heterogeneous.Folding as H
 import Heterogeneous.Mapping as H
 
-import Noodle.Node2 (Node)
+import Noodle.Node2 (Node, Family)
 import Noodle.Node2 as Node
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process (ProcessM)
 import Noodle.Fn2.Process as P
 
+import Unsafe.Coerce (unsafeCoerce)
+
 newtype Toolkit (nodes :: Row Type) = Toolkit (Record nodes)
-
-
-data Family (s :: Symbol) = Family String
 
 
 {- type NodeDesc state is os m =
@@ -67,14 +64,6 @@ type FnDesc state is os m =
     state /\ Record is /\ Record os /\ Fn state is os m
 
 
-family :: forall proxy f. IsSymbol f => proxy f -> Family f
-family f = Family $ reflectSymbol f
-
-
-produceFamily :: forall f. IsSymbol f => String -> Family f
-produceFamily f = reifySymbol f (\_ -> (Family f :: Family f))
-
-
 from :: forall (nodes :: Row Type). Record nodes -> Toolkit nodes
 from = Toolkit
 
@@ -87,13 +76,18 @@ data ToState = ToState
 
 
 class GetState from state where
-    getState :: forall proxy s. IsSymbol s => proxy s -> from -> state
+    -- getState :: forall proxy s. IsSymbol s => proxy s -> from -> state
+    getState :: forall f. IsSymbol f => Family f -> from -> state
+
+
+produceFamily :: forall proxy f. IsSymbol f => proxy f -> Family f
+produceFamily proxy = reifySymbol (reflectSymbol proxy) unsafeCoerce
 
 
 instance toState ::
   (IsSymbol sym, GetState a b) =>
   H.MappingWithIndex ToState (SProxy sym) a b where
-    mappingWithIndex ToState prop a = getState prop a
+    mappingWithIndex ToState prop a = getState (produceFamily prop) a
 
 
 {- instance getStateNodeFn ::
@@ -122,12 +116,12 @@ spawn
     => MonadEffect m
     => Toolkit nodes
     -> Family f
-    -> m (Node state is os m)
+    -> m (Node f state is os m)
 spawn (Toolkit tk) fsym =
     Record.get fsym tk
         # makeNode
     where
-      makeNode (state /\ is /\ os /\ fn) = Node.make' (Node.Family $ reflectSymbol fsym) state is os fn
+      makeNode (state /\ is /\ os /\ fn) = Node.make' fsym state is os fn
 
 
 unsafeSpawn
@@ -139,9 +133,9 @@ unsafeSpawn
     => MonadEffect m
     => Toolkit nodes
     -> String
-    -> m (Maybe (Family f /\ Node state is os m))
+    -> m (Maybe (Family f /\ Node f state is os m))
 unsafeSpawn (Toolkit tk) family =
     if List.elem family $ Record.keys tk then
-        let family_ = produceFamily family :: Family f
+        let (family_ :: Family f) = reifySymbol family unsafeCoerce
         in Just <$> ((/\) family_) <$> (spawn (Toolkit tk) family_)
     else pure Nothing
