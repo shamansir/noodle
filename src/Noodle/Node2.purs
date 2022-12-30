@@ -54,6 +54,12 @@ import Signal.Channel as Channel
 import Unsafe.Coerce (unsafeCoerce)
 import Effect.Console (log) as Console
 
+
+type Input = Fn.Input
+
+type Output = Fn.Output
+
+
 data Family (s :: Symbol) = Family
 
 

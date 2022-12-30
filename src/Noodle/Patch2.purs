@@ -31,8 +31,19 @@ import Record.Builder (Builder)
 
 import Unsafe.Coerce (unsafeCoerce)
 
+import Data.Exists (Exists, mkExists, runExists)
+
 
 type NodesOf f state is os m = Array (Node f state is os m)
+
+
+-- type LinkE fo fi = Exists (Node.Link fo fi)
+
+-- data LinkOf fo fi (i :: Symbol) (o :: Symbol) = LinkOf (Node.Input i -> Node.Output o -> Node.Link fo fi i o)
+data LinkOf fo fi = LinkOf (forall i o. Node.Input i -> Node.Output o -> Node.Link fo fi i o)
+
+
+--data LinkOE fo fi = Exists (LinkOf fo fi)
 
 
 data NoInstancesOfNodeYet = NoInstancesOfNodeYet
