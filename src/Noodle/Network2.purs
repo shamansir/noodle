@@ -6,8 +6,8 @@ import Data.Map (Map)
 import Data.Map as Map
 
 
-import Noodle.Patch2 (Patch)
-import Noodle.Patch2 as Patch
+import Noodle.Patch4 (Patch)
+import Noodle.Patch4 as Patch
 import Noodle.Toolkit3 (Toolkit)
 
 

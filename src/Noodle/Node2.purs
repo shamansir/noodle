@@ -40,7 +40,12 @@ import Noodle.Fn2.Process (ProcessM)
 import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol, Tracker, InputChange(..), OutputChange(..))
 import Noodle.Fn2.Protocol as Protocol
-import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, Output, inputIdToString, outputIdToString, inputId, outputId) as Fn
+import Noodle.Fn2.Flow
+            ( keysToInputs, keysToOutputs
+            , InputId, OutputId, Input, Output
+            , inputIdToString, outputIdToString, inputToString, outputToString
+            , inputId, outputId
+            ) as Fn
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 (_in, _out, inputsShape, outputsShape, run, run', make, cloneReplace) as Fn
 
@@ -66,6 +71,7 @@ data Family (s :: Symbol) = Family
 newtype UUID = UUID String
 
 derive instance uuidNewtype :: Newtype UUID _
+derive newtype instance uuidShow :: Show UUID
 
 
 data NodeId f = NodeId (Family f /\ UUID)
@@ -261,12 +267,67 @@ sendIn_ (Node _ _ protocol _) input din =
         )
 
 
+nodeIdToString :: forall f. IsSymbol f => NodeId f -> String
+nodeIdToString (NodeId (family /\ UUID hash)) = reflectSymbol family <> "::" <> hash
+
+
+instance showNodeId :: IsSymbol f => Show (NodeId f) where
+    show = nodeIdToString
+
+
 -- TODO: subscribeLastInput / subscribeLastOutput
 
+-- FIXME: just store ID's as strings, close constructor and use constraints on functions to check if nodes/inputs/outputs do exist
 data Link fo fi o i = Link (NodeId fo) (Fn.Output o) (Fn.Input i) (NodeId fi) (Effect Unit)
 
 
--- TODO: connect
+newtype FromId = FromId String
+newtype ToId = ToId String
+newtype FullId = FullId String
+
+
+derive newtype instance showFromId :: Show FromId
+derive newtype instance showToId :: Show ToId
+derive newtype instance showFullId :: Show FullId
+derive newtype instance eqFromId :: Eq FromId
+derive newtype instance eqToId :: Eq ToId
+derive newtype instance eqFullId :: Eq FullId
+derive newtype instance ordFromId :: Ord FromId
+derive newtype instance ordToId :: Ord ToId
+derive newtype instance ordFullId :: Ord FullId
+
+
+toFromId :: forall fo fi o i. IsSymbol fo => IsSymbol o => Link fo fi o i -> FromId
+toFromId (Link nodeA outA _ _ _) = FromId $ nodeIdToString nodeA <> ">>" <> Fn.outputToString outA
+
+
+toToId :: forall fo fi o i. IsSymbol fi => IsSymbol i => Link fo fi o i -> ToId
+toToId (Link _ _ inB nodeB _) = ToId $ Fn.inputToString inB <> "<<" <> nodeIdToString nodeB
+
+
+toFullId :: forall fo fi o i. IsSymbol fo => IsSymbol o => IsSymbol fi => IsSymbol i => Link fo fi o i -> FullId
+toFullId (Link nodeA outA inB nodeB _) =
+    FullId $ nodeIdToString nodeA <> ">>" <> Fn.outputToString outA <> "--" <> Fn.inputToString inB <> "<<" <> nodeIdToString nodeB
+
+
+connect'
+    :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' m
+     . IsSymbol oA
+    => IsSymbol iB
+    => R.Cons oA d osA' osA
+    => R.Cons iB d isB' isB
+    => MonadEffect m
+    => MonadRec m
+    => Fn.Output oA
+    -> Fn.Input iB
+    -> Node fA stateA isA osA m
+    -> Node fB stateB isB osB m
+    -> m (Link fA fB oA iB)
+connect'
+    outputA
+    inputB =
+    connect outputA inputB identity
+
 
 connect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m
@@ -298,8 +359,6 @@ connect
                 else pure unit
         Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
         pure $ Link nodeAId outputA inputB nodeBId $ Ref.write false flagRef
-        -- liftEffect $ Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendIn_ nodeB inputB
-        -- pure unit
 
 
 disconnect

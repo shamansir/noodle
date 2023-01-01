@@ -1,4 +1,4 @@
-module Noodle.Patch3 where
+module Noodle.Patch4 where
 
 import Prelude
 
@@ -7,6 +7,7 @@ import Data.Const (Const)
 import Data.Array ((:))
 import Data.Array as Array
 import Data.Map (Map)
+import Data.Map as Map
 
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
@@ -38,36 +39,24 @@ import Data.Exists (Exists, mkExists, runExists)
 type NodesOf f state is os m = Array (Node f state is os m)
 
 
--- type LinkE fo fi = Exists (Node.Link fo fi)
-
--- data LinkOf fo fi (i :: Symbol) (o :: Symbol) = LinkOf (Node.Input i -> Node.Output o -> Node.Link fo fi i o)
-data LinksFrom fo o = LinksFrom (Node.NodeId fo -> Node.Output o -> Array (forall fi i. Node.Link fo fi i o))
-
-data LinksTo fi i = LinksTo (Node.NodeId fi -> Node.Input i -> Array (forall fo o. Node.Link fo fi i o))
-
-
 --data LinkOE fo fi = Exists (LinkOf fo fi)
 
 
 data NoInstancesOfNodeYet = NoInstancesOfNodeYet
-data NoLinksFromYet = NoLinksFromYet
-data NoLinksToYet = NoLinksToYet
 
 
-data Patch (instances :: Row Type) (links_from :: Row Type) (links_to :: Row Type) = Patch (Record instances) (Record links_from) (Record links_to)
+type Links =
+  { from :: Map Node.FromId (forall fo fi i o. Node.Link fo fi i o)
+  , to :: Map Node.ToId (forall fo fi i o. Node.Link fo fi i o)
+  }
+
+
+data Patch (instances :: Row Type) = Patch (Record instances) Links
 
 
 instance mappingToNIONY ::
   Mapping NoInstancesOfNodeYet a (NodesOf f state is os m) where
   mapping NoInstancesOfNodeYet = const []
-
-instance mappingToLinksFrom ::
-  Mapping NoLinksFromYet a (LinksFrom fo o) where
-  mapping NoLinksFromYet = const $ LinksFrom \_ _ -> [] :: Array (forall fi i. Node.Link fo fi i o)
-
-instance mappingToLinksTo ::
-  Mapping NoLinksToYet a (LinksTo fi i) where
-  mapping NoLinksToYet = const $ LinksTo \_ _ -> [] :: Array (forall fo o. Node.Link fo fi i o)
 
 
 {- instance mappingIndexedToNIONY ::
@@ -79,55 +68,64 @@ init
     :: forall
         (instances ∷ Row Type)
         (nodes ∷ Row Type)
-        -- (links_from :: Row Type)
-        -- (links_to :: Row Type)
         (rln ∷ RL.RowList Type)
-        -- (rllf ∷ RL.RowList Type)
-        -- (rllt ∷ RL.RowList Type)
      . RL.RowToList nodes rln
-    -- => RL.RowToList links_from rllf
-    -- => RL.RowToList links_to rllt
     => MapRecordWithIndex rln (ConstMapping NoInstancesOfNodeYet) nodes instances
-    -- => MapRecordWithIndex rln (ConstMapping NoLinksFromYet) nodes links_from
-    -- => MapRecordWithIndex rln (ConstMapping NoLinksToYet) nodes links_to
     => Toolkit nodes
-    -> Patch instances () ()
+    -> Patch instances
 init tk =
     Patch
         (hmap NoInstancesOfNodeYet $ Toolkit.toRecord tk)
-        (hmap NoLinksFromYet {})
-        (hmap NoLinksToYet {})
+        { from : Map.empty
+        , to : Map.empty
+        }
 
 
 registerNode
-    :: forall instances' instances lt lf f state is os m
+    :: forall instances' instances f state is os m
      . Row.Cons f (NodesOf f state is os m) instances' instances
     => IsSymbol f
     => Node f state is os m
-    -> Patch instances lt lf
-    -> Patch instances lt lf
-registerNode node (Patch instances lf lt) =
+    -> Patch instances
+    -> Patch instances
+registerNode node (Patch instances links) =
     Patch
         (Record.modify (Node.family node) ((:) node) instances)
-        lf
-        lt
+        links
 
 
 nodesOf
-    :: forall instances' instances lt lf f state is os m
+    :: forall instances' instances f state is os m
      . Row.Cons f (NodesOf f state is os m) instances' instances
     => IsSymbol f
     => Node.Family f
-    -> Patch instances lt lf
+    -> Patch instances
     -> NodesOf f state is os m
-nodesOf family (Patch instances _ _) = Record.get family instances
+nodesOf family (Patch instances _) = Record.get family instances
 
 
 howMany
-    :: forall instances' instances lt lf f state is os m
+    :: forall instances' instances f state is os m
      . Row.Cons f (NodesOf f state is os m) instances' instances
     => IsSymbol f
     => Node.Family f
-    -> Patch instances lt lf
+    -> Patch instances
     -> Int
 howMany f = nodesOf f >>> Array.length
+
+
+registerLink
+    :: forall instances fo fi i o
+     . IsSymbol fo
+    => IsSymbol fi
+    => IsSymbol i
+    => IsSymbol o
+    => Node.Link fo fi i o
+    -> Patch instances
+    -> Patch instances
+registerLink link (Patch instances links) =
+  Patch
+    instances
+    { from : Map.insert (Node.toFromId link) (unsafeCoerce link) links.from
+    , to : Map.insert (Node.toToId link) (unsafeCoerce link) links.to
+    }
