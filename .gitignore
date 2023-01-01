@@ -12,3 +12,4 @@ hydra.bundle.*.js
 static
 .DS_Store
 src_
+to-production.sh
