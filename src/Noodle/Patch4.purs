@@ -109,7 +109,7 @@ instance foldNodesIndexed ::
             (Array (Node f state is os m))
             (u x)
     where
-    foldingWithIndex FoldNodesIndexed i acc nodes = acc <> (Array.toUnfoldable $ convertNodeIndexed i <$> nodes)
+    foldingWithIndex FoldNodesIndexed i acc nodes = acc <> (Array.toUnfoldable $ Array.mapWithIndex (convertNodeIndexed i) nodes)
 
 
 init
@@ -278,7 +278,7 @@ class ConvertNodeTo x where
 
 
 class ConvertNodeIndexed x where
-    convertNodeIndexed :: forall sym f state is os m. IsSymbol sym => Proxy sym -> Node f state is os m -> x
+    convertNodeIndexed :: forall sym f state is os m. IsSymbol sym => Proxy sym -> Int -> Node f state is os m -> x
 
 
 instance extractId :: ConvertNodeTo String where
@@ -286,7 +286,7 @@ instance extractId :: ConvertNodeTo String where
 
 
 instance extractIdIndexed :: ConvertNodeIndexed String where
-    convertNodeIndexed sym node = reflectSymbol sym <> "::" <> Node.hash node
+    convertNodeIndexed sym idx node = reflectSymbol sym <> "::" <> show idx <> "::" <> Node.hash node
 
 
 -- nodes :: forall t218 t219 t220 t224 t227 x. RL.RowToList t220 t227 => FoldlRecord (ConstFolding FoldNodes) x t227 t220 x => ConverNodeTo x => Patch t219 t220 -> x
