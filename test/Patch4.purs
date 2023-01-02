@@ -97,6 +97,7 @@ spec = do
                             # Patch.registerNode nodeC
 
             Patch.testNodes patch `shouldEqual` ""
+            Patch.testNodesIndexed patch `shouldEqual` [ "" ]
 
             -- TODO
 

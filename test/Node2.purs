@@ -206,3 +206,5 @@ spec = do
             atSumB' `shouldEqual` (4 + 3 + 2)
 
             pure unit
+
+        -- TODO: test hashes
