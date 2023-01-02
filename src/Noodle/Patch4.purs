@@ -2,7 +2,7 @@ module Noodle.Patch4 where
 
 import Prelude
 
-import Data.Symbol (class IsSymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Const (Const)
 import Data.Array ((:))
 import Data.Array as Array
@@ -86,24 +86,7 @@ data ExtractInstances = ExtractInstances
 
 data FoldNodes (m :: Type -> Type) x = FoldNodes
 
-data FoldNodesIndexed i (m :: Type -> Type) x = FoldNodesIndexed
-
-
--- instance foldNodes ::
---   FoldingWithIndex FoldNodes i (Array (Node f state is os m)) (NodesOf f state is os m) (Array (Node f state is os m)) where
---   foldingWithIndex FoldNodes _ acc nodes = acc <> nodes
-
-
-
--- instance foldNodes ::
---   Folding (FoldNodes String) (Array (Node f state is os m)) (NodesOf f state is os m) (Array (Node f state is os m)) where
---   folding FoldNodes acc nodes = acc <> nodes
-
-
--- instance foldNodes ::
---     ConvertNodeTo String => Folding (FoldNodes String) String (Array (Node f state is os m)) String where
---     -- folding FoldNodes acc nodes = acc <> "foo"
---     folding FoldNodes acc nodes = acc <> "jjj" <> (String.joinWith "-" (convertNode <$> nodes))
+data FoldNodesIndexed (m :: Type -> Type) x = FoldNodesIndexed
 
 
 instance foldNodes ::
@@ -118,46 +101,15 @@ instance foldNodes ::
 
 
 instance foldNodesIndexed ::
-    ( Unfoldable u, Semigroup (u x), IsSymbol sym, ConvertNodeIndexed (Proxy sym) x )
+    ( Unfoldable u, Semigroup (u x), IsSymbol sym, ConvertNodeIndexed x )
     => FoldingWithIndex
-            (FoldNodesIndexed (Proxy sym) u x)
+            (FoldNodesIndexed u x)
             (Proxy sym)
             (u x)
             (Array (Node f state is os m))
             (u x)
     where
     foldingWithIndex FoldNodesIndexed i acc nodes = acc <> (Array.toUnfoldable $ convertNodeIndexed i <$> nodes)
-
-
-{- instance foldNodes ::
-    ( Unfoldable m, Semigroup (m x), ConvertNodeTo x )
-    => Folding
-            (FoldNodes Array x)
-            (Array x)
-            (Array (Node f state is os m))
-            (Array x)
-    where
-    folding FoldNodes acc nodes = acc <> (convertNode <$> nodes) -}
-
--- instance foldNodes ::
---     ( Unfoldable m, Semigroup (m x), ConvertNodeTo x )
---     => Folding
---             (FoldNodes x)
---             (m x)
---             (Array (Node f state is os m))
---             (m x)
---     where
---     folding FoldNodes acc nodes = acc <> (Array.toUnfoldable $ convertNode <$> nodes)
-
-
--- instance foldNodesI ::
---   FoldingWithIndex (FoldNodes String) i (Array (Node f state is os m)) (NodesOf f state is os m) (Array (Node f state is os m)) where
---   foldingWithIndex FoldNodes _ acc nodes = acc <> nodes
-
-
-{- instance mappingIndexedToNIONY ::
-  MappingWithIndex NoInstancesOfNodeYet k a (Array (Node state is os m)) where
-  mappingWithIndex NoInstancesOfNodeYet = const $ const [] -}
 
 
 init
@@ -271,12 +223,12 @@ nodes_ a (Patch _ instances _) =
 
 
 nodesIndexed
-    :: forall ps (instances :: Row Type) (rla ∷ RL.RowList Type) result i (folding :: Type -> (Type -> Type) -> Type -> Type) (m :: Type -> Type)
+    :: forall ps (instances :: Row Type) (rla ∷ RL.RowList Type) result (folding :: (Type -> Type) -> Type -> Type) (m :: Type -> Type)
      . RL.RowToList instances rla
     => Monoid (m result)
-    => ConvertNodeIndexed i result
-    => FoldlRecord (folding i m result) (m result) rla instances (m result)
-    => folding i m result
+    => ConvertNodeIndexed result
+    => FoldlRecord (folding m result) (m result) rla instances (m result)
+    => folding m result
     -> Patch ps instances
     -> m result
 nodesIndexed a (Patch _ instances _) =
@@ -292,13 +244,13 @@ testNodes' patch = (nodes_ FoldNodes patch :: Array String)
 
 
 testNodesIndexed
-    :: forall state i instances rl
+    :: forall state instances rl
      . RL.RowToList instances rl
-    => ConvertNodeIndexed i String
-    => FoldlRecord (FoldNodesIndexed i Array String) (Array String) rl instances (Array String)
+    => ConvertNodeIndexed String
+    => FoldlRecord (FoldNodesIndexed Array String) (Array String) rl instances (Array String)
     => Patch state instances
     -> Array String
-testNodesIndexed patch = (nodesIndexed (FoldNodesIndexed :: FoldNodesIndexed i Array String) patch :: Array String)
+testNodesIndexed patch = (nodesIndexed (FoldNodesIndexed :: FoldNodesIndexed Array String) patch :: Array String)
 
 
 
@@ -325,16 +277,16 @@ class ConvertNodeTo x where
     convertNode :: forall f state is os m. Node f state is os m -> x
 
 
-class ConvertNodeIndexed i x where
-    convertNodeIndexed :: forall f state is os m. i -> Node f state is os m -> x
+class ConvertNodeIndexed x where
+    convertNodeIndexed :: forall sym f state is os m. IsSymbol sym => Proxy sym -> Node f state is os m -> x
 
 
 instance extractId :: ConvertNodeTo String where
     convertNode = Node.hash
 
 
-instance extractIdIndexed :: ConvertNodeIndexed i String where
-    convertNodeIndexed _ = Node.hash
+instance extractIdIndexed :: ConvertNodeIndexed String where
+    convertNodeIndexed sym node = reflectSymbol sym <> "::" <> Node.hash node
 
 
 -- nodes :: forall t218 t219 t220 t224 t227 x. RL.RowToList t220 t227 => FoldlRecord (ConstFolding FoldNodes) x t227 t220 x => ConverNodeTo x => Patch t219 t220 -> x
