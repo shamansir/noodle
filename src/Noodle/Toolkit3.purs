@@ -4,6 +4,8 @@ module Noodle.Toolkit3
   , spawn
   , unsafeSpawn
   , toStates, ToState
+  , name
+  , nodeFamilies
   )
   where
 
@@ -47,7 +49,12 @@ import Noodle.Fn2.Process as P
 
 import Unsafe.Coerce (unsafeCoerce)
 
-newtype Toolkit (nodes :: Row Type) = Toolkit (Record nodes)
+
+type Name = String
+
+
+data Toolkit :: Type -> Row Type -> Type
+data Toolkit state (nodes :: Row Type) = Toolkit Name (Record nodes)
 
 
 {- type NodeDesc state is os m =
@@ -64,12 +71,12 @@ type FnDesc state is os m =
     state /\ Record is /\ Record os /\ Fn state is os m
 
 
-from :: forall (nodes :: Row Type). Record nodes -> Toolkit nodes
+from :: forall state (nodes :: Row Type). Name -> Record nodes -> Toolkit state nodes
 from = Toolkit
 
 
-toRecord :: forall (nodes :: Row Type). Toolkit nodes -> Record nodes
-toRecord (Toolkit tk) = tk
+toRecord :: forall state (nodes :: Row Type). Toolkit state nodes -> Record nodes
+toRecord (Toolkit _ tk) = tk
 
 
 data ToState = ToState
@@ -104,20 +111,20 @@ instance toStateNodeFn ::
 -}
 
 
-toStates ∷ ∀ (nodes :: Row Type) (states :: Row Type). H.HMapWithIndex ToState (Record nodes) (Record states) ⇒ Toolkit nodes → Record states
+toStates ∷ ∀ ts (nodes :: Row Type) (states :: Row Type). H.HMapWithIndex ToState (Record nodes) (Record states) ⇒ Toolkit ts nodes → Record states
 toStates = H.hmapWithIndex ToState <<< toRecord
 
 
 
 spawn
-    :: forall f (nodes :: Row Type) (r' ∷ Row Type) state is os m
+    :: forall f (nodes :: Row Type) (r' ∷ Row Type) ts state is os m
      . IsSymbol f
     => Cons f (FnDesc state is os m) r' nodes
     => MonadEffect m
-    => Toolkit nodes
+    => Toolkit ts nodes
     -> Family f
     -> m (Node f state is os m)
-spawn (Toolkit tk) fsym =
+spawn (Toolkit _ tk) fsym =
     Record.get fsym tk
         # makeNode
     where
@@ -125,17 +132,30 @@ spawn (Toolkit tk) fsym =
 
 
 unsafeSpawn
-    :: forall f (nodes :: Row Type) (r' ∷ Row Type) state is os m ks
+    :: forall f (nodes :: Row Type) (r' ∷ Row Type) ts state is os m ks
      . Keys ks
     => IsSymbol f
     => RowToList nodes ks
     => Cons f (FnDesc state is os m) r' nodes
     => MonadEffect m
-    => Toolkit nodes
+    => Toolkit ts nodes
     -> String
     -> m (Maybe (Family f /\ Node f state is os m))
-unsafeSpawn (Toolkit tk) family =
+unsafeSpawn toolkit@(Toolkit name tk) family =
     if List.elem family $ Record.keys tk then
         let (family_ :: Family f) = reifySymbol family unsafeCoerce
-        in Just <$> ((/\) family_) <$> (spawn (Toolkit tk) family_)
+        in Just <$> ((/\) family_) <$> (spawn toolkit family_)
     else pure Nothing
+
+
+name :: forall state nodes. Toolkit state nodes -> Name
+name (Toolkit name _) = name
+
+
+nodeFamilies :: forall ks state nodes. Keys ks => RowToList nodes ks => Toolkit state nodes -> List String
+nodeFamilies (Toolkit _ tk) = Record.keys tk
+
+
+-- nodeFamilies' :: forall ks state nodes. Keys ks => RowToList nodes ks => Toolkit state nodes -> List (forall f. IsSymbol f => Family f)
+-- nodeFamilies' :: forall ks state nodes. Keys ks => RowToList nodes ks => Toolkit state nodes -> List (forall f. Family f)
+-- nodeFamilies' (Toolkit _ tk) = (\key -> reifySymbol key unsafeCoerce) <$> Record.keys tk

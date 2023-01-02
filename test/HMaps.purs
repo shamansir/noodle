@@ -10,6 +10,7 @@ import Heterogeneous.Folding
     ( class HFoldlWithIndex
     , class FoldingWithIndex
     , hfoldlWithIndex
+    , class FoldlRecord
     )
 import Heterogeneous.Mapping
     ( class HMapWithIndex
@@ -19,6 +20,7 @@ import Heterogeneous.Mapping
     -- , class HFoldlWithIndex
     )
 import Prim.Row (class Cons) as Row
+import Type.Proxy (Proxy)
 
 import Record as Record
 
@@ -102,9 +104,37 @@ showRecord r =
   "{ " <> hfoldlWithIndex ShowProps "" r <> " }"
 
 
+type TestRows = ( a :: String, b :: Int, c :: Boolean )
+
+
 -- test :: String
 test = showRecord { a: "foo" , b: 42 , c: false }
 
+
+data ShowValues = ShowValues
+
+instance showValues ::
+  (Show a, IsSymbol sym) =>
+  FoldingWithIndex ShowValues (Proxy sym) String a String
+  where
+  foldingWithIndex _ _ str a = pre <> show a
+    where
+    pre | str == "" = ""
+        | otherwise = str <> ", "
+
+showTwice :: forall r.
+  HFoldlWithIndex ShowProps String { | r } String =>
+  HFoldlWithIndex ShowValues String { | r } String =>
+  { | r } ->
+  String
+showTwice r = do
+  let a = "{ " <> hfoldlWithIndex ShowProps "" r <> " }"
+      b = "[ " <> hfoldlWithIndex ShowValues "" r <> " ]"
+  a <> b
+
+
+
+test' = showTwice { a: "foo" , b: 42 , c: false }
 
 {-
 showWithIndex :: forall hlist.
@@ -113,4 +143,3 @@ showWithIndex :: forall hlist.
   Array (Tuple Int String)
 showWithIndex =
   hfoldlWithIndex ShowWithIndex ([] :: Array (Tuple Int String))
-  -}

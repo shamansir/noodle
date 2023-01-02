@@ -5,7 +5,11 @@ import Prelude
 import Effect.Class (liftEffect)
 import Effect.Console (log) as Console
 
+import Data.List ((:))
+import Data.List as List
 import Data.Tuple.Nested ((/\), type (/\))
+
+import Type.Data.Symbol (reflectSymbol, class IsSymbol)
 
 import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
@@ -32,18 +36,16 @@ spec = do
 
     describe "toolkit" $ do
 
+        let toolkit =
+                Toolkit.from "test"
+                    { foo :
+                        unit
+                        /\ { foo : "aaa", bar : "bbb", c : 32 }
+                        /\ { out : false }
+                        /\ Fn.make "foo" (pure unit)
+                    }
+
         it "spawning works" $ do
-
-
-
-            let toolkit =
-                    Toolkit.from
-                        { foo :
-                            unit
-                            /\ { foo : "aaa", bar : "bbb", c : 32 }
-                            /\ { out : false }
-                            /\ Fn.make "foo" (pure unit)
-                        }
 
             node <- Toolkit.spawn toolkit (Node.Family :: Node.Family "foo")
 
@@ -54,3 +56,11 @@ spec = do
             atC `shouldEqual` 32
 
             pure unit
+
+
+        it "getting family list" $ do
+            Toolkit.nodeFamilies toolkit `shouldEqual` ( "foo" : List.Nil )
+            -- let
+            --     myFn :: (forall f. IsSymbol f => Node.Family f) -> String
+            --     myFn f = reflectSymbol f
+            -- (?wh <$> Toolkit.nodeFamilies' toolkit) `shouldEqual` ( "foo" : List.Nil )

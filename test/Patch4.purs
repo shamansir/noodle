@@ -1,4 +1,4 @@
-module Test.Patch2 where
+module Test.Patch4 where
 
 import Prelude
 
@@ -40,7 +40,7 @@ spec = do
     describe "patch" $ do
 
         let toolkit =
-                Toolkit.from
+                Toolkit.from "test"
                     { foo :
                         unit
                         /\ { foo : "aaa", bar : "bbb", c : 32 }
@@ -78,6 +78,25 @@ spec = do
             link <- Node.connect outA inC (if _ then 1 else 0) nodeA nodeB
 
             let nextPath = Patch.registerLink link patch
+
+            -- TODO
+
+            pure unit
+
+
+        it "converting works" $ do
+
+            nodeA <- Toolkit.spawn toolkit _foo
+            nodeB <- Toolkit.spawn toolkit _bar
+            nodeC <- Toolkit.spawn toolkit _bar
+
+            let
+                patch = Patch.init toolkit
+                            # Patch.registerNode nodeA
+                            # Patch.registerNode nodeB
+                            # Patch.registerNode nodeC
+
+            Patch.testNodes patch `shouldEqual` ""
 
             -- TODO
 
