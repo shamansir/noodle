@@ -135,22 +135,22 @@ unwrapNodeHtml (NodeHtml html) = html
 unwrapNodeHtml' (NodeHtml' html) = html
 
 
-instance Patch.ConvertNodeTo (NodeHtml p i) where
-    convertNode :: Node f state is os m -> NodeHtml p i
-    convertNode = renderNode >>> NodeHtml
+-- instance Patch.ConvertNodeTo (NodeHtml p i) where
+--     convertNode :: Node f state is os m -> NodeHtml p i
+--     convertNode = renderNode >>> NodeHtml
 
 
 instance Patch.ConvertNodeTo NodeHtml' where
-    convertNode :: Node f state is os m -> NodeHtml'
+    convertNode :: forall f state is os m g. {- FIXME: RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ -} Node f state is os m -> NodeHtml'
     convertNode = renderNode >>> NodeHtml'
 
 
 -- NodeHtml (ComponentSlot () Aff Action) Action
 
-renderNode :: ∀ p i f state is os m g. RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ Node f state is os m -> HH.HTML (H.ComponentSlot () Aff Action) Action
+renderNode :: ∀ p i f state is os m g. {-FIXME RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒-} Node f state is os m -> HH.HTML (H.ComponentSlot () Aff Action) Action
 renderNode node =
     let
-        inletsCount /\ outletsCount = Node.dimensions node
+        inletsCount /\ outletsCount = 5 /\ 15 -- Node.dimensions node
     in
     HS.text
         [ HSA.translateTo' $ 0.0 <+> (70.0 + font.size * 2.0)
@@ -162,9 +162,10 @@ renderNode node =
 
 
 render
-    :: forall patch_action gstate nodes instances kns kis
-     . Record.Keys kns ⇒ RL.RowToList nodes kns
-    => Record.Keys kis ⇒ RL.RowToList instances kis
+    :: forall patch_action gstate nodes instances rln rli rla
+     . Record.Keys rln ⇒ RL.RowToList nodes rln
+    => Record.Keys rli ⇒ RL.RowToList instances rli  ⇒ RL.RowToList instances rla
+    => Patch.Fold rla Array NodeHtml' instances
     => State gstate nodes instances
     -> H.ComponentHTML Action Slots Aff -- FIXME: there is MonadAff here!
 render (s@{ network, toolkit, windowSize }) =
@@ -190,7 +191,7 @@ render (s@{ network, toolkit, windowSize }) =
             HS.g
                 [ HSA.translateTo' pos ]
                 $ Layout.render patchTab
-                $ PatchTabs.layout (V2.w size) $ ?wh $ Network.patches network
+                $ PatchTabs.layout (V2.w size) $ Array.fromFoldable $ Map.keys $ Network.patches network
             {-
             HS.g
                 [ HSA.translateTo' pos ]
@@ -216,7 +217,7 @@ render (s@{ network, toolkit, windowSize }) =
             HS.g [] []
         renderPart App.Space _ _ =
             HS.g [] []
-        patchBody :: forall p i gstate instances rla.  RL.RowToList instances rla ⇒ Patch.Fold rla Array NodeHtml' instances ⇒ Patch gstate instances → HH.HTML (H.ComponentSlot () Aff Action) Action
+        --patchBody :: forall p i gstate instances rla. Patch gstate instances → HH.HTML (H.ComponentSlot () Aff Action) Action
         patchBody patch =
             HS.g [] $ unwrapNodeHtml' <$> Patch.nodes patch
         renderNode_ :: ∀ p i f state is os m g. RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ Node f state is os m -> HH.HTML p i
@@ -278,7 +279,6 @@ handleAction
      . MonadAff m
     => MonadEffect m
     => Patch.Map rl nodes instances
-    => Record.Keys rl
     => Action
     -> H.HalogenM (State gstate nodes instances) Action Slots output m Unit
 handleAction = case _ of
@@ -341,8 +341,13 @@ handleAction = case _ of
 
 
 component
-    :: forall query output patch_state node_state d
-     . H.Component query (Input patch_state node_state d) output Aff -- FIXME: there is MonadAff here!
+    :: forall query output gstate nodes instances rln rli rla
+     .Record.Keys rln ⇒ RL.RowToList nodes rln
+    => Record.Keys rli ⇒ RL.RowToList instances rli
+    => Record.Keys rla ⇒ RL.RowToList instances rla
+    => Patch.Fold rla Array NodeHtml' instances
+    => Patch.Map rla nodes instances
+    => H.Component query (Input gstate nodes instances) output Aff -- FIXME: there is MonadAff here!
 component =
     H.mkComponent
         { initialState
