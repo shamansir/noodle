@@ -128,9 +128,11 @@ initialState { network, toolkit, currentPatch, markings, getFlags, patchState } 
 
 
 newtype NodeHtml p i = NodeHtml (HH.HTML p i)
+newtype NodeHtml' = NodeHtml' (HH.HTML (H.ComponentSlot () Aff Action) Action)
 
 
 unwrapNodeHtml (NodeHtml html) = html
+unwrapNodeHtml' (NodeHtml' html) = html
 
 
 instance Patch.ConvertNodeTo (NodeHtml p i) where
@@ -138,7 +140,14 @@ instance Patch.ConvertNodeTo (NodeHtml p i) where
     convertNode = renderNode >>> NodeHtml
 
 
-renderNode :: ∀ p i f state is os m g. RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ Node f state is os m -> HH.HTML p i
+instance Patch.ConvertNodeTo NodeHtml' where
+    convertNode :: Node f state is os m -> NodeHtml'
+    convertNode = renderNode >>> NodeHtml'
+
+
+-- NodeHtml (ComponentSlot () Aff Action) Action
+
+renderNode :: ∀ p i f state is os m g. RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ Node f state is os m -> HH.HTML (H.ComponentSlot () Aff Action) Action
 renderNode node =
     let
         inletsCount /\ outletsCount = Node.dimensions node
@@ -153,8 +162,10 @@ renderNode node =
 
 
 render
-    :: forall patch_action patch_state node_state d
-     . State patch_state node_state d
+    :: forall patch_action gstate nodes instances kns kis
+     . Record.Keys kns ⇒ RL.RowToList nodes kns
+    => Record.Keys kis ⇒ RL.RowToList instances kis
+    => State gstate nodes instances
     -> H.ComponentHTML Action Slots Aff -- FIXME: there is MonadAff here!
 render (s@{ network, toolkit, windowSize }) =
     HH.div
@@ -205,9 +216,9 @@ render (s@{ network, toolkit, windowSize }) =
             HS.g [] []
         renderPart App.Space _ _ =
             HS.g [] []
-        patchBody :: forall p i gstate instances rla.  RL.RowToList instances rla ⇒ Patch.Fold rla Array (NodeHtml p i) instances ⇒ Patch gstate instances → HH.HTML p i
+        patchBody :: forall p i gstate instances rla.  RL.RowToList instances rla ⇒ Patch.Fold rla Array NodeHtml' instances ⇒ Patch gstate instances → HH.HTML (H.ComponentSlot () Aff Action) Action
         patchBody patch =
-            HS.g [] $ unwrapNodeHtml <$> Patch.nodes patch
+            HS.g [] $ unwrapNodeHtml' <$> Patch.nodes patch
         renderNode_ :: ∀ p i f state is os m g. RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ Node f state is os m -> HH.HTML p i
         renderNode_ node =
             let
