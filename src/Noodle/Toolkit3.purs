@@ -54,7 +54,7 @@ type Name = String
 
 
 data Toolkit :: Type -> Row Type -> Type
-data Toolkit state (nodes :: Row Type) = Toolkit Name (Record nodes)
+data Toolkit gstate (nodes :: Row Type) = Toolkit Name (Record nodes)
 
 
 {- type NodeDesc state is os m =
@@ -71,11 +71,11 @@ type FnDesc state is os m =
     state /\ Record is /\ Record os /\ Fn state is os m
 
 
-from :: forall state (nodes :: Row Type). Name -> Record nodes -> Toolkit state nodes
+from :: forall gstate (nodes :: Row Type). Name -> Record nodes -> Toolkit gstate nodes
 from = Toolkit
 
 
-toRecord :: forall state (nodes :: Row Type). Toolkit state nodes -> Record nodes
+toRecord :: forall gstate (nodes :: Row Type). Toolkit gstate nodes -> Record nodes
 toRecord (Toolkit _ tk) = tk
 
 
@@ -111,17 +111,17 @@ instance toStateNodeFn ::
 -}
 
 
-toStates ∷ ∀ ts (nodes :: Row Type) (states :: Row Type). H.HMapWithIndex ToState (Record nodes) (Record states) ⇒ Toolkit ts nodes → Record states
+toStates ∷ ∀ gstate (nodes :: Row Type) (states :: Row Type). H.HMapWithIndex ToState (Record nodes) (Record states) ⇒ Toolkit gstate nodes → Record states
 toStates = H.hmapWithIndex ToState <<< toRecord
 
 
 
 spawn
-    :: forall f (nodes :: Row Type) (r' ∷ Row Type) ts state is os m
+    :: forall f (nodes :: Row Type) (r' ∷ Row Type) gstate state is os m
      . IsSymbol f
     => Cons f (FnDesc state is os m) r' nodes
     => MonadEffect m
-    => Toolkit ts nodes
+    => Toolkit gstate nodes
     -> Family f
     -> m (Node f state is os m)
 spawn (Toolkit _ tk) fsym =
@@ -132,13 +132,13 @@ spawn (Toolkit _ tk) fsym =
 
 
 unsafeSpawn
-    :: forall f (nodes :: Row Type) (r' ∷ Row Type) ts state is os m ks
+    :: forall f (nodes :: Row Type) (r' ∷ Row Type) gstate state is os m ks
      . Keys ks
     => IsSymbol f
     => RowToList nodes ks
     => Cons f (FnDesc state is os m) r' nodes
     => MonadEffect m
-    => Toolkit ts nodes
+    => Toolkit gstate nodes
     -> String
     -> m (Maybe (Family f /\ Node f state is os m))
 unsafeSpawn toolkit@(Toolkit name tk) family =
@@ -148,11 +148,11 @@ unsafeSpawn toolkit@(Toolkit name tk) family =
     else pure Nothing
 
 
-name :: forall state nodes. Toolkit state nodes -> Name
+name :: forall gstate nodes. Toolkit gstate nodes -> Name
 name (Toolkit name _) = name
 
 
-nodeFamilies :: forall ks state nodes. Keys ks => RowToList nodes ks => Toolkit state nodes -> List String
+nodeFamilies :: forall ks gstate nodes. Keys ks => RowToList nodes ks => Toolkit gstate nodes -> List String
 nodeFamilies (Toolkit _ tk) = Record.keys tk
 
 

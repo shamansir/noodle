@@ -17,6 +17,7 @@ import Color (rgb, rgba) as C
 import Color.Extra as C
 import Data.Array ((:))
 import Data.Array (length, fromFoldable, mapWithIndex) as Array
+import Data.Map as Map
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
 import Data.NonEmpty (NonEmpty, singleton) as NE
@@ -24,6 +25,7 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\))
 import Data.Vec2 ((<+>), Size)
 import Data.Vec2 as V2
+import Data.List as List
 import Debug (spy) as Debug
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
@@ -45,6 +47,10 @@ import Type.Proxy (Proxy(..))
 import Web.HTML (window)
 import Web.HTML.Window as Window
 
+import Prim.Row (class Cons) as Row
+import Prim.RowList as RL
+import Unsafe.Coerce (unsafeCoerce)
+import Type.Data.Symbol (class IsSymbol)
 
 {- type Slots patch_action patch_state =
     ( patch :: PatchC.Slot patch_action Unit
@@ -67,26 +73,26 @@ _tkPatch = Proxy :: Proxy "tkPatch"
 _fltc = Proxy :: Proxy "fltc"
 
 
-type Input patch_state node_state d =
-    { network :: Noodle.Network d
-    , toolkit :: Noodle.Toolkit patch_state d
+type Input gstate nodes instances =
+    { network :: Noodle.Network gstate nodes instances
+    , toolkit :: Noodle.Toolkit gstate nodes
     , currentPatch :: Maybe Patch.Id
     , markings :: ToolkitUI.Markings
     , getFlags :: ToolkitUI.GetFlags
-    , patchState :: patch_state
+    , patchState :: gstate
     }
 
 
-type State patch_state node_state d =
-    { network :: Noodle.Network d
-    , toolkit :: Noodle.Toolkit patch_state d
+type State gstate nodes instances =
+    { network :: Noodle.Network gstate nodes instances
+    , toolkit :: Noodle.Toolkit gstate nodes
     , currentPatch :: Maybe Patch.Id
     , markings :: ToolkitUI.Markings
     , getFlags :: ToolkitUI.GetFlags
     -- ^ same as Input
     , windowSize :: Size
     , currentFrame :: Number
-    , patchState :: patch_state
+    , patchState :: gstate
     }
 
 
@@ -94,7 +100,7 @@ data Action
     = Initialize
     | SelectPatch Patch.Id
     | AddPatch
-    | AddNode Node.Family
+    | AddNode (forall f. IsSymbol f => Node.Family f)
     | AnimationFrame H.SubscriptionId Number
     | WindowResize H.SubscriptionId { w :: Int, h :: Int }
     {-
@@ -172,7 +178,7 @@ render (s@{ network, toolkit, windowSize }) =
             HS.g [] []
 
         patchBody patch =
-            HS.g [] $ (map Patch.unwrapNode >>> renderNode) <$> Patch.nodes patch
+            HS.g [] $ renderNode <$> Patch.nodes patch
         renderNode (id /\ node) =
             let
                 inletsCount /\ outletsCount = Node.dimensions node
@@ -220,17 +226,20 @@ render (s@{ network, toolkit, windowSize }) =
                     , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
                     ]
                     [ -- HS.tspan
-                    HH.text $ Toolkit.name toolkit <> ". Families: " <> show (Toolkit.nodeFamiliesCount toolkit)
+                    HH.text $ Toolkit.name toolkit <> ". Families: " <> show (List.length $ Toolkit.nodeFamilies toolkit)
 
                     ]
                 ] <> (nodeFamily <$> Array.fromFoldable (Toolkit.nodeFamilies toolkit)))
 
 
 handleAction
-    :: forall output patch_action patch_state node_state d m
-     . MonadAff m => MonadEffect m
+    :: forall output patch_action rl gstate (nodes :: Row Type) (instances :: Row Type) m
+     . MonadAff m
+    => MonadEffect m
+    => Patch.Map rl nodes instances
+    => RL.RowToList nodes rl
     => Action
-    -> H.HalogenM (State patch_state node_state d) Action Slots output m Unit
+    -> H.HalogenM (State gstate nodes instances) Action Slots output m Unit
 handleAction = case _ of
     Initialize -> do
         innerWidth <- H.liftEffect $ Window.innerWidth =<< window
@@ -244,8 +253,8 @@ handleAction = case _ of
     AddPatch -> do
         H.modify_ \state ->
             let
-                newPatch = Patch.init state.toolkit
-                patchCount = Array.length $ Network.patches state.network
+                newPatch = Patch.init' state.patchState state.toolkit
+                patchCount = Map.size $ Network.patches state.network
                 nextPatchId = "patch-" <> show patchCount
             in state
                 { network = state.network # Network.addPatch nextPatchId newPatch
@@ -254,21 +263,21 @@ handleAction = case _ of
     SelectPatch patchId ->
         H.modify_ _ { currentPatch = Just patchId }
     AddNode family -> do
-        let _ = Debug.spy "family" family
+        --let _ = Debug.spy "family" family
         state <- H.get
-        maybeNode <- H.liftEffect $ Toolkit.spawn family state.toolkit -- TODO: AndRun
+        node <- H.liftEffect $ Toolkit.spawn state.toolkit family -- TODO: AndRun
         let _ = Debug.spy "currentPatch" state.currentPatch
-        let _ = Debug.spy "maybeNode" maybeNode
+        let _ = Debug.spy "node" node
         H.put $
             state
                 { network =
-                    case (/\) <$> state.currentPatch <*> maybeNode of
-                        Just (curPatchId /\ node) ->
+                    case state.currentPatch of
+                        Just curPatchId ->
                             Network.withPatch curPatchId
                                 (\patch ->
                                     let nodeCount = Array.length $ Patch.nodes patch
                                         nextNodeId = "node-" <> show nodeCount
-                                    in Patch.addNode nextNodeId node patch
+                                    in Patch.registerNode node patch
                                 )
                                 state.network
                         Nothing -> state.network

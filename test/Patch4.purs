@@ -96,9 +96,22 @@ spec = do
                             # Patch.registerNode nodeB
                             # Patch.registerNode nodeC
 
-            Patch.testNodes patch `shouldEqual` ""
-            Patch.testNodesIndexed patch `shouldEqual` [ "" ]
+            --Patch.nodes patch `shouldEqual` ""
+            Patch.nodes patch `shouldEqual` [ "" ]
+            Patch.nodesIndexed patch `shouldEqual` [ "" ]
+
+            Patch.nodesIndexed patch `shouldEqual` [ I 0, I 1, I 0 ]
 
             -- TODO
 
             pure unit
+
+
+newtype I = I Int
+
+derive newtype instance Show I
+derive newtype instance Eq I
+
+-- FIMXE: include `nodes` type into constraint
+instance Patch.ConvertNodeIndexed I where
+    convertNodeIndexed _ n _ = I n

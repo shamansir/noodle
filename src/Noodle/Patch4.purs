@@ -13,6 +13,7 @@ import Data.Tuple.Nested ((/\), type (/\) )
 import Data.Unfoldable (class Unfoldable)
 import Unsafe.Coerce (unsafeCoerce)
 import Type.Proxy (Proxy)
+import Data.Identity (Identity)
 
 import Record.Extra as Record
 import Record.Unsafe as Record
@@ -72,7 +73,7 @@ type Links =
   }
 
 
-data Patch state (instances :: Row Type) = Patch state (Record instances) Links
+data Patch gstate (instances :: Row Type) = Patch gstate (Record instances) Links
 
 
 instance mappingToNIONY ::
@@ -80,15 +81,54 @@ instance mappingToNIONY ::
   mapping NoInstancesOfNodeYet = const []
 
 
-data ExtractInstances = ExtractInstances
-
-
-
+data FoldNodes :: forall k. (Type -> Type) -> k -> Type
 data FoldNodes (m :: Type -> Type) x = FoldNodes
 
+
+data FoldNodesIndexed :: forall k. (Type -> Type) -> k -> Type
 data FoldNodesIndexed (m :: Type -> Type) x = FoldNodesIndexed
 
 
+class
+    ( RL.RowToList nodes rln
+    , MapRecordWithIndex rln (ConstMapping NoInstancesOfNodeYet) nodes instances
+    ) <= Map rln nodes instances
+
+instance map ::
+    ( RL.RowToList nodes rln
+    , MapRecordWithIndex rln (ConstMapping NoInstancesOfNodeYet) nodes instances
+    ) => Map rln nodes instances
+
+class
+    ( Monoid (m result)
+    , ConvertNodeTo result
+    , RL.RowToList instances rla
+    , FoldlRecord (ConstFolding (FoldNodes m result)) (m result) rla instances (m result)
+    ) <= Fold rla m result instances
+
+instance fold ::
+    ( Monoid (m result)
+    , ConvertNodeTo result
+    , RL.RowToList instances rla
+    , FoldlRecord (ConstFolding (FoldNodes m result)) (m result) rla instances (m result)
+    ) => Fold rla m result instances
+
+class
+    ( Monoid (m result)
+    , ConvertNodeIndexed result
+    , RL.RowToList instances rla
+    , FoldlRecord (FoldNodesIndexed m result) (m result) rla instances (m result)
+    ) <= FoldI rla m result instances
+
+instance foldI ::
+    ( Monoid (m result)
+    , ConvertNodeIndexed result
+    , RL.RowToList instances rla
+    , FoldlRecord (FoldNodesIndexed m result) (m result) rla instances (m result)
+    ) => FoldI rla m result instances
+
+
+{-
 instance foldNodes ::
     ( Unfoldable u, Semigroup (u x), ConvertNodeTo x )
     => Folding
@@ -98,8 +138,20 @@ instance foldNodes ::
             (u x)
     where
     folding FoldNodes acc nodes = acc <> (Array.toUnfoldable $ convertNode <$> nodes)
+-}
+
+instance foldNodesArr ::
+    ConvertNodeTo x
+    => Folding
+            (FoldNodes Array x)
+            (Array x)
+            (Array (Node f state is os m))
+            (Array x)
+    where
+    folding FoldNodes acc nodes = acc <> (convertNode <$> nodes)
 
 
+{-
 instance foldNodesIndexed ::
     ( Unfoldable u, Semigroup (u x), IsSymbol sym, ConvertNodeIndexed x )
     => FoldingWithIndex
@@ -110,6 +162,19 @@ instance foldNodesIndexed ::
             (u x)
     where
     foldingWithIndex FoldNodesIndexed i acc nodes = acc <> (Array.toUnfoldable $ Array.mapWithIndex (convertNodeIndexed i) nodes)
+-}
+
+
+instance foldNodesIndexedArr ::
+    ( IsSymbol sym, ConvertNodeIndexed x )
+    => FoldingWithIndex
+            (FoldNodesIndexed Array x)
+            (Proxy sym)
+            (Array x)
+            (Array (Node f state is os m))
+            (Array x)
+    where
+    foldingWithIndex FoldNodesIndexed i acc nodes = acc <> Array.mapWithIndex (convertNodeIndexed i) nodes
 
 
 init
@@ -117,8 +182,7 @@ init
         (instances ∷ Row Type)
         (nodes ∷ Row Type)
         (rln ∷ RL.RowList Type)
-     . RL.RowToList nodes rln
-    => MapRecordWithIndex rln (ConstMapping NoInstancesOfNodeYet) nodes instances
+     . Map rln nodes instances
     => Toolkit Unit nodes
     -> Patch Unit instances
 init = init' unit
@@ -126,15 +190,14 @@ init = init' unit
 
 init'
     :: forall
-        state
+        gstate
         (instances ∷ Row Type)
         (nodes ∷ Row Type)
         (rln ∷ RL.RowList Type)
-     . RL.RowToList nodes rln
-    => MapRecordWithIndex rln (ConstMapping NoInstancesOfNodeYet) nodes instances
-    => state
-    -> Toolkit state nodes
-    -> Patch state instances
+     . Map rln nodes instances
+    => gstate
+    -> Toolkit gstate nodes
+    -> Patch gstate instances
 init' state tk =
     Patch
         state
@@ -179,14 +242,14 @@ howMany f = nodesOf f >>> Array.length
 
 
 registerLink
-    :: forall ps instances fo fi i o
+    :: forall gstate instances fo fi i o
      . IsSymbol fo
     => IsSymbol fi
     => IsSymbol i
     => IsSymbol o
     => Node.Link fo fi i o
-    -> Patch ps instances
-    -> Patch ps instances
+    -> Patch gstate instances
+    -> Patch gstate instances
 registerLink link (Patch state instances links) =
   Patch
     state
@@ -196,78 +259,48 @@ registerLink link (Patch state instances links) =
     }
 
 
-{-}
 nodes_
-    :: forall ps (instances :: Row Type) (rla ∷ RL.RowList Type) result (folding :: Type -> Type)
-     . RL.RowToList instances rla
-    => ConvertNodeTo result
-    => FoldlRecord (ConstFolding (folding result)) (Array result) rla instances (Array result)
-    => folding result
-    -> Patch ps instances
-    -> Array result
-nodes_ a (Patch _ instances _) =
-    hfoldl a ([] :: Array result) instances -}
-
-
-nodes_
-    :: forall ps (instances :: Row Type) (rla ∷ RL.RowList Type) result (folding :: (Type -> Type) -> Type -> Type) (m :: Type -> Type)
+    :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (folding :: (Type -> Type) -> Type -> Type) (m :: Type -> Type)
      . RL.RowToList instances rla
     => Monoid (m result)
     => ConvertNodeTo result
     => FoldlRecord (ConstFolding (folding m result)) (m result) rla instances (m result)
     => folding m result
-    -> Patch ps instances
+    -> Patch gstate instances
     -> m result
 nodes_ a (Patch _ instances _) =
     hfoldl a (mempty :: m result) instances
 
 
-nodesIndexed
-    :: forall ps (instances :: Row Type) (rla ∷ RL.RowList Type) result (folding :: (Type -> Type) -> Type -> Type) (m :: Type -> Type)
+nodes
+    :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (m :: Type -> Type)
+     . RL.RowToList instances rla
+    => Fold rla m result instances
+    => Patch gstate instances
+    -> m result
+nodes =
+    nodes_ FoldNodes
+
+
+nodesIndexed_
+    :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (folding :: (Type -> Type) -> Type -> Type) (m :: Type -> Type)
      . RL.RowToList instances rla
     => Monoid (m result)
     => ConvertNodeIndexed result
     => FoldlRecord (folding m result) (m result) rla instances (m result)
     => folding m result
-    -> Patch ps instances
+    -> Patch gstate instances
     -> m result
-nodesIndexed a (Patch _ instances _) =
+nodesIndexed_ a (Patch _ instances _) =
     hfoldlWithIndex a (mempty :: m result) instances
 
 
-
--- testNodes ∷ ∀ (t234 ∷ Type) (t235 ∷ Row Type) (t236 ∷ RowList Type). RowToList @Type t235 t236 ⇒ FoldlRecord (ConstFolding (FoldNodes @Type String)) String t236 t235 String ⇒ Patch t234 t235 → String
-testNodes patch = String.joinWith "--" $ testNodes' patch
-
-
-testNodes' patch = (nodes_ FoldNodes patch :: Array String)
-
-
-testNodesIndexed
-    :: forall state instances rl
-     . RL.RowToList instances rl
-    => ConvertNodeIndexed String
-    => FoldlRecord (FoldNodesIndexed Array String) (Array String) rl instances (Array String)
-    => Patch state instances
-    -> Array String
-testNodesIndexed patch = (nodesIndexed (FoldNodesIndexed :: FoldNodesIndexed Array String) patch :: Array String)
-
-
-
--- testNodes''' patch = (nodesIndexed FoldNodesIndexed patch :: Array String)
-
-
-
--- nodes
---     :: forall ps (instances :: Row Type) (rla ∷ RL.RowList Type) t x
---      . RL.RowToList instances rla
---     -- => HFoldl FoldNodes (Array _) (Record instances) (Array x)
---     => FoldlRecord FoldNodes _ rla instances (Array x)
---     => (forall f state is os m. Node.Family f -> NodesOf f state is os m -> x)
---     -> Patch ps instances
---     -> Array x
--- nodes fn (Patch _ instances _) =
---     hfoldlWithIndex FoldNodes fn instances
+nodesIndexed
+    :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (m :: Type -> Type)
+     . FoldI rla m result instances
+    => Patch gstate instances
+    -> m result
+nodesIndexed = nodesIndexed_ FoldNodesIndexed
 
 
 -- families ::
@@ -282,22 +315,16 @@ class ConvertNodeIndexed x where
 
 
 instance extractId :: ConvertNodeTo String where
-    convertNode = Node.hash
+    convertNode = const "foo" -- Node.hash
 
 
 instance extractIdIndexed :: ConvertNodeIndexed String where
-    convertNodeIndexed sym idx node = reflectSymbol sym <> "::" <> show idx <> "::" <> Node.hash node
+    convertNodeIndexed sym idx node = reflectSymbol sym <> "::" <> show idx <> "::" <> "foo" -- Node.hash node
 
 
--- nodes :: forall t218 t219 t220 t224 t227 x. RL.RowToList t220 t227 => FoldlRecord (ConstFolding FoldNodes) x t227 t220 x => ConverNodeTo x => Patch t219 t220 -> x
--- nodes (Patch _ instances _) =
---     hfoldl ?wh empty ?wh
+instance convertToItself :: ConvertNodeTo (Node f state is os m) where
+    convertNode = unsafeCoerce
 
 
-
-
--- nodes :: forall ps instances rli. Record.Keys rli => RL.RowToList instances rli => Patch ps instances -> Array (forall f state is os m. String /\ NodesOf f state is os m)
--- nodes (Patch _ instances _) =
---     Array.fromFoldable ((unsafeGet >>> unsafeCoerce) <$> Record.keys instances)
---     where
---         unsafeGet key = key /\ Record.unsafeGet key instances
+instance convertIndexedToItself :: ConvertNodeIndexed (Node f state is os m) where
+    convertNodeIndexed _ _ = unsafeCoerce
