@@ -31,6 +31,7 @@ import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Halogen as H
+import Halogen.HTML.Core as HH
 import Halogen.HTML as HH
 import Halogen.HTML.CSS as CSS
 import Halogen.HTML.Events as HE
@@ -39,10 +40,12 @@ import Halogen.Svg.Elements as HS
 import Halogen.Svg.Elements.None as HS
 import Noodle.Network2 (Network) as Noodle
 import Noodle.Network2 as Network
+import Noodle.Node2 (Node)
 import Noodle.Node2 (Family, dimensions, family) as Node
+import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
 import Noodle.Toolkit3 (Toolkit) as Noodle
-import Noodle.Toolkit3 (name, nodeFamilies, spawn) as Toolkit
+import Noodle.Toolkit3 (name, nodeFamilies, spawn, unsafeSpawn, FamilyId) as Toolkit
 import Type.Proxy (Proxy(..))
 import Web.HTML (window)
 import Web.HTML.Window as Window
@@ -50,7 +53,8 @@ import Web.HTML.Window as Window
 import Prim.Row (class Cons) as Row
 import Prim.RowList as RL
 import Unsafe.Coerce (unsafeCoerce)
-import Type.Data.Symbol (class IsSymbol)
+import Type.Data.Symbol (class IsSymbol, reflectSymbol)
+import Record.Extra as Record
 
 {- type Slots patch_action patch_state =
     ( patch :: PatchC.Slot patch_action Unit
@@ -100,7 +104,7 @@ data Action
     = Initialize
     | SelectPatch Patch.Id
     | AddPatch
-    | AddNode (forall f. IsSymbol f => Node.Family f)
+    | AddNode Toolkit.FamilyId
     | AnimationFrame H.SubscriptionId Number
     | WindowResize H.SubscriptionId { w :: Int, h :: Int }
     {-
@@ -121,6 +125,31 @@ initialState { network, toolkit, currentPatch, markings, getFlags, patchState } 
     , windowSize : 1000.0 <+> 1000.0
     , currentFrame : 0.0
     }
+
+
+newtype NodeHtml p i = NodeHtml (HH.HTML p i)
+
+
+unwrapNodeHtml (NodeHtml html) = html
+
+
+instance Patch.ConvertNodeTo (NodeHtml p i) where
+    convertNode :: Node f state is os m -> NodeHtml p i
+    convertNode = renderNode >>> NodeHtml
+
+
+renderNode :: ∀ p i f state is os m g. RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ Node f state is os m -> HH.HTML p i
+renderNode node =
+    let
+        inletsCount /\ outletsCount = Node.dimensions node
+    in
+    HS.text
+        [ HSA.translateTo' $ 0.0 <+> (70.0 + font.size * 2.0)
+        , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
+        ]
+        [ HH.text $ {- FIXME id <> -}  "::" <> {- FIXME (Node.familyStr $ Node.family node) <> -} " :: " <> show inletsCount <> "x" <> show outletsCount
+        ]
+
 
 
 render
@@ -150,7 +179,7 @@ render (s@{ network, toolkit, windowSize }) =
             HS.g
                 [ HSA.translateTo' pos ]
                 $ Layout.render patchTab
-                $ PatchTabs.layout (V2.w size) $ Tuple.fst <$> Network.patches network
+                $ PatchTabs.layout (V2.w size) $ ?wh $ Network.patches network
             {-
             HS.g
                 [ HSA.translateTo' pos ]
@@ -176,10 +205,11 @@ render (s@{ network, toolkit, windowSize }) =
             HS.g [] []
         renderPart App.Space _ _ =
             HS.g [] []
-
+        patchBody :: forall p i gstate instances rla.  RL.RowToList instances rla ⇒ Patch.Fold rla Array (NodeHtml p i) instances ⇒ Patch gstate instances → HH.HTML p i
         patchBody patch =
-            HS.g [] $ renderNode <$> Patch.nodes patch
-        renderNode (id /\ node) =
+            HS.g [] $ unwrapNodeHtml <$> Patch.nodes patch
+        renderNode_ :: ∀ p i f state is os m g. RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ Node f state is os m -> HH.HTML p i
+        renderNode_ node =
             let
                 inletsCount /\ outletsCount = Node.dimensions node
             in
@@ -187,7 +217,7 @@ render (s@{ network, toolkit, windowSize }) =
                 [ HSA.translateTo' $ 0.0 <+> (70.0 + font.size * 2.0)
                 , HSA.fill $ Just $ C.toSvg $ C.rgba 0 0 0 1.0
                 ]
-                [ HH.text $ id <> "::" <> Node.family node <> " :: " <> show inletsCount <> "x" <> show outletsCount
+                [ HH.text $ {- FIXME id <> -}  "::" <> {- FIXME (Node.familyStr $ Node.family node) <> -} " :: " <> show inletsCount <> "x" <> show outletsCount
                 ]
         patchTab PT.Add pos size =
             HS.text
@@ -215,7 +245,7 @@ render (s@{ network, toolkit, windowSize }) =
                 , HE.onClick $ const $ AddNode family
                 ]
                 [ -- HS.tspan
-                    HH.text $ "fff" <> family
+                    HH.text $ "fff" {- FIXME <> Node.familyIdStr family -}
 
                 ]
         toolkitInfo toolkit =
@@ -237,7 +267,7 @@ handleAction
      . MonadAff m
     => MonadEffect m
     => Patch.Map rl nodes instances
-    => RL.RowToList nodes rl
+    => Record.Keys rl
     => Action
     -> H.HalogenM (State gstate nodes instances) Action Slots output m Unit
 handleAction = case _ of
@@ -265,14 +295,14 @@ handleAction = case _ of
     AddNode family -> do
         --let _ = Debug.spy "family" family
         state <- H.get
-        node <- H.liftEffect $ Toolkit.spawn state.toolkit family -- TODO: AndRun
+        -- maybeNode <- H.liftEffect $ Toolkit.unsafeSpawn state.toolkit family -- TODO: AndRun
         let _ = Debug.spy "currentPatch" state.currentPatch
-        let _ = Debug.spy "node" node
+        {- let _ = Debug.spy "node" maybeNode
         H.put $
             state
                 { network =
-                    case state.currentPatch of
-                        Just curPatchId ->
+                    case (/\) <$> state.currentPatch <*> maybeNode of
+                        Just (curPatchId /\ (_ /\ node)) ->
                             Network.withPatch curPatchId
                                 (\patch ->
                                     let nodeCount = Array.length $ Patch.nodes patch
@@ -281,7 +311,8 @@ handleAction = case _ of
                                 )
                                 state.network
                         Nothing -> state.network
-                }
+                } -}
+        pure unit
     -- HandlePatch _ ->
     --     H.modify_ \state -> state
     AnimationFrame _ time ->

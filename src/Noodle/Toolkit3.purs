@@ -6,6 +6,7 @@ module Noodle.Toolkit3
   , toStates, ToState
   , name
   , nodeFamilies
+  , FamilyId
   )
   where
 
@@ -65,6 +66,12 @@ data Toolkit gstate (nodes :: Row Type) = Toolkit Name (Record nodes)
     , defaultOutputs :: Record os
     , node :: Node state is os m
     } -}
+
+
+newtype FamilyId = FamilyId String
+
+familyIdStr :: FamilyId -> String
+familyIdStr (FamilyId str) = str
 
 
 type FnDesc state is os m =
@@ -139,21 +146,40 @@ unsafeSpawn
     => Cons f (FnDesc state is os m) r' nodes
     => MonadEffect m
     => Toolkit gstate nodes
-    -> String
+    -> FamilyId
     -> m (Maybe (Family f /\ Node f state is os m))
-unsafeSpawn toolkit@(Toolkit name tk) family =
+unsafeSpawn toolkit@(Toolkit name tk) (FamilyId family) =
     if List.elem family $ Record.keys tk then
         let (family_ :: Family f) = reifySymbol family unsafeCoerce
         in Just <$> ((/\) family_) <$> (spawn toolkit family_)
     else pure Nothing
 
 
+{-
+unsafeSpawn'
+    :: forall f (nodes :: Row Type) (r' ∷ Row Type) gstate state is os m ks
+     . Keys ks
+    => RowToList nodes ks
+    => Cons f (FnDesc state is os m) r' nodes
+    => MonadEffect m
+    => Toolkit gstate nodes
+    -> FamilyId
+    -> m (Maybe (Node f state is os m))
+unsafeSpawn' toolkit =
+    if List.elem family $ Record.keys tk then
+        Record.unsafeGet fsym tk
+            # makeNode
+    else pure Nothing
+    where
+        makeNode (state /\ is /\ os /\ fn) = Node.make' fsym state is os fn -}
+
+
 name :: forall gstate nodes. Toolkit gstate nodes -> Name
 name (Toolkit name _) = name
 
 
-nodeFamilies :: forall ks gstate nodes. Keys ks => RowToList nodes ks => Toolkit gstate nodes -> List String
-nodeFamilies (Toolkit _ tk) = Record.keys tk
+nodeFamilies :: forall ks gstate nodes. Keys ks => RowToList nodes ks => Toolkit gstate nodes -> List FamilyId
+nodeFamilies (Toolkit _ tk) = FamilyId <$> Record.keys tk
 
 
 -- nodeFamilies' :: forall ks state nodes. Keys ks => RowToList nodes ks => Toolkit state nodes -> List (forall f. IsSymbol f => Family f)

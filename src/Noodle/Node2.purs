@@ -67,7 +67,6 @@ type Output = Fn.Output
 
 data Family (s :: Symbol) = Family
 
-
 newtype UUID = UUID String
 
 derive instance uuidNewtype :: Newtype UUID _
@@ -112,7 +111,7 @@ make family state is os process =
     make' family state is os $ Fn.make (reflectSymbol family) process
 
 
-make' :: forall f state is os m. IsSymbol f => MonadEffect m => Family f -> state -> Record is -> Record os -> Fn state is os m -> m (Node f state is os m)
+make' :: forall f state is os m. MonadEffect m => Family f -> state -> Record is -> Record os -> Fn state is os m -> m (Node f state is os m)
 make' family state is os fn = do
     nodeId <- liftEffect $ nextId family
     tracker /\ protocol <- Protocol.make state is os
