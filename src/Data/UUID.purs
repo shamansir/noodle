@@ -1,8 +1,26 @@
-module Data.UUID where
+module Data.UUID
+    ( UUID
+    , generate
+    , toString
+    ) where
 
 import Prelude
 
 import Effect (Effect)
 
 
-foreign import generate :: Effect String
+newtype UUID = UUID String
+derive newtype instance eqUUID :: Eq UUID
+derive newtype instance ordUUID :: Ord UUID
+derive newtype instance showUUID :: Show UUID
+
+
+foreign import generate_ :: Effect String
+
+
+generate :: Effect UUID
+generate = UUID <$> generate_
+
+
+toString :: UUID -> String
+toString (UUID s) = s

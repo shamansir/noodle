@@ -14,6 +14,7 @@ import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Signal (expectFn, expect)
 
 import Data.UUID as UUID
+import Noodle.Id as N
 
 spec :: Spec Unit
 spec = do
@@ -24,6 +25,17 @@ spec = do
 
             uuid <- UUID.generate
 
-            uuid `shouldEqual` "foo"
+            UUID.toString uuid `shouldEqual` "foo"
+
+            pure unit
+
+
+    describe "Node ID" $ do
+
+        it "also works" $ liftEffect $ do
+
+            nodeId <- N.makeNodeId $ N.family' (N.Family :: N.Family "foo")
+
+            N.reflect' nodeId `shouldEqual` "foo"
 
             pure unit

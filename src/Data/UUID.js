@@ -32,8 +32,8 @@ exports.generate2 = function() {
 }
 */
 
-exports.generate3 = function() {
+function generate3() {
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
 
-exports.generate = exports.generate3;
+exports.generate_ = generate3;
