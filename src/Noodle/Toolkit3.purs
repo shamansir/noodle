@@ -7,6 +7,7 @@ module Noodle.Toolkit3
   , name
   , nodeFamilies
   , FamilyId
+  , familyIdStr
   )
   where
 

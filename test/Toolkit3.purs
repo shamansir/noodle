@@ -59,7 +59,7 @@ spec = do
 
 
         it "getting family list" $ do
-            Toolkit.nodeFamilies toolkit `shouldEqual` ( "foo" : List.Nil )
+            (Toolkit.familyIdStr <$> Toolkit.nodeFamilies toolkit) `shouldEqual` ( "foo" : List.Nil )
             -- let
             --     myFn :: (forall f. IsSymbol f => Node.Family f) -> String
             --     myFn f = reflectSymbol f
