@@ -8,6 +8,7 @@ module Noodle.Toolkit3
   , nodeFamilies
   , FamilyId
   , familyIdStr
+  , NodeDef
   )
   where
 
@@ -75,7 +76,7 @@ familyIdStr :: FamilyId -> String
 familyIdStr (FamilyId str) = str
 
 
-type FnDesc state is os m =
+type NodeDef state is os m =
     state /\ Record is /\ Record os /\ Fn state is os m
 
 
@@ -127,7 +128,7 @@ toStates = H.hmapWithIndex ToState <<< toRecord
 spawn
     :: forall f (nodes :: Row Type) (r' ∷ Row Type) gstate state is os m
      . IsSymbol f
-    => Cons f (FnDesc state is os m) r' nodes
+    => Cons f (NodeDef state is os m) r' nodes
     => MonadEffect m
     => Toolkit gstate nodes
     -> Family f
@@ -144,7 +145,7 @@ unsafeSpawn
      . Keys ks
     => IsSymbol f
     => RowToList nodes ks
-    => Cons f (FnDesc state is os m) r' nodes
+    => Cons f (NodeDef state is os m) r' nodes
     => MonadEffect m
     => Toolkit gstate nodes
     -> FamilyId
@@ -161,7 +162,7 @@ unsafeSpawn'
     :: forall f (nodes :: Row Type) (r' ∷ Row Type) gstate state is os m ks
      . Keys ks
     => RowToList nodes ks
-    => Cons f (FnDesc state is os m) r' nodes
+    => Cons f (NodeDef state is os m) r' nodes
     => MonadEffect m
     => Toolkit gstate nodes
     -> FamilyId

@@ -7,10 +7,25 @@ import Data.Tuple.Nested ((/\))
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Fn2.Flow as Fn
-import Noodle.Toolkit3 (Toolkit)
+import Noodle.Node2 (Node)
+import Noodle.Node2 as Node
+import Noodle.Toolkit3 (Toolkit, NodeDef)
 import Noodle.Toolkit3 as Toolkit
 
+
+type Nodes m =
+    ( foo :: NodeDef Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m
+    , bar :: NodeDef Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m
+    , sum :: NodeDef Unit ( a :: Int, b :: Int ) ( sum :: Int ) m
+    )
+
+
+type TestToolkit m =
+    Toolkit Unit (Nodes m)
+
+
 -- toolkit :: Toolkit
+toolkit :: forall m. TestToolkit m
 toolkit =
     Toolkit.from "test"
         { foo :
