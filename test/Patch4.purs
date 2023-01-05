@@ -6,6 +6,8 @@ import Effect.Class (liftEffect)
 import Effect.Console (log) as Console
 
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Array as Array
+import Data.String as String
 
 import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
@@ -17,13 +19,16 @@ import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
-import Noodle.Id (Family(..)) as Node
+import Noodle.Id (reflectFamily', reflect', NodeId, familyOf)
+import Noodle.Id (Family(..), Family') as Node
 import Noodle.Id (Input(..), Output(..)) as Fn
 
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
+
+import Unsafe.Coerce (unsafeCoerce)
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -97,9 +102,13 @@ spec = do
                             # Patch.registerNode nodeB
                             # Patch.registerNode nodeC
 
-            --Patch.nodes patch `shouldEqual` ""
-            Patch.nodes patch `shouldEqual` [ "" ]
-            Patch.nodesIndexed patch `shouldEqual` [ "" ]
+            (reflectFamily' <$> Patch.nodes patch) `shouldEqual` [ "bar", "bar", "foo" ]
+            Array.all (\(fStr /\ _ /\ nodeId) ->
+                (fStr == "foo" || fStr == "bar") &&
+                (reflect' (familyOf nodeId) == "foo" || reflect' (familyOf nodeId) == "bar")
+            ) (Patch.nodesIndexed patch :: Array (String /\ Int /\ NodeId _)) `shouldEqual` true
+
+            -- liftEffect $ Console.log $ show (Patch.nodesIndexed patch :: Array (String /\ Int /\ NodeId _))
 
             Patch.nodesIndexed patch `shouldEqual` [ I 0, I 1, I 0 ]
 

@@ -7,6 +7,7 @@ import Effect.Console (log) as Console
 
 import Data.List ((:))
 import Data.List as List
+import Data.String as String
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Test.Spec (Spec, pending, describe, it)
@@ -15,6 +16,7 @@ import Test.Signal (expectFn, expect)
 
 import Data.UniqueHash as UniqueHash
 import Noodle.Id as N
+import Effect.Console (log) as Console
 
 spec :: Spec Unit
 spec = do
@@ -25,7 +27,8 @@ spec = do
 
             uuid <- UniqueHash.generate
 
-            UniqueHash.toString uuid `shouldEqual` "foo"
+            (String.length (UniqueHash.toString uuid) > 0) `shouldEqual` true
+            (String.length (UniqueHash.toString uuid) <= 40) `shouldEqual` true
 
             pure unit
 
@@ -36,6 +39,8 @@ spec = do
 
             nodeId <- N.makeNodeId $ N.family' (N.Family :: N.Family "foo")
 
-            N.reflect' nodeId `shouldEqual` "foo"
+            String.take 5 (N.reflect' nodeId) `shouldEqual` "foo::"
+            (String.length (N.reflect' nodeId) > 0) `shouldEqual` true
+            (String.length (N.reflect' nodeId) <= 40) `shouldEqual` true
 
             pure unit

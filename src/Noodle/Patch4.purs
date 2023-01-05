@@ -2,7 +2,7 @@ module Noodle.Patch4 where
 
 import Prelude
 
-import Data.Symbol (class IsSymbol, reflectSymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol, reifySymbol)
 import Data.Const (Const)
 import Data.Array ((:))
 import Data.Array as Array
@@ -14,6 +14,7 @@ import Data.Unfoldable (class Unfoldable)
 import Unsafe.Coerce (unsafeCoerce)
 import Type.Proxy (Proxy)
 import Data.Identity (Identity)
+import Data.UniqueHash (UniqueHash)
 
 import Record.Extra as Record
 import Record.Unsafe as Record
@@ -229,7 +230,7 @@ registerNode
 registerNode node (Patch state instances links) =
     Patch
         state
-        (Record.modify (Node.family node) ((:) node) instances)
+        (Record.modify (Node.family node) ((:) node) instances) -- NB: notice that Family' f works!
         links
 
 
@@ -319,12 +320,31 @@ class ConvertNodeIndexed x where
     convertNodeIndexed :: forall sym f state is os m. IsSymbol sym => Proxy sym -> Int -> Node f state is os m -> x
 
 
-instance extractId :: ConvertNodeTo String where
-    convertNode = const "foo" -- Node.hash
+
+instance extractId :: ConvertNodeTo (NodeId f') where
+    convertNode :: forall f state is os m. Node f state is os m -> NodeId f'
+    convertNode node = unsafeCoerce $ Node.id node
 
 
-instance extractIdIndexed :: ConvertNodeIndexed String where
-    convertNodeIndexed sym idx node = reflectSymbol sym <> "::" <> show idx <> "::" <> "foo" -- Node.hash node
+instance extractFamily :: ConvertNodeTo (Family' f') where
+    convertNode :: forall f state is os m. Node f state is os m -> Family' f'
+    convertNode node = unsafeCoerce $ Node.family node -- reifySymbol (reflect' $ Node.family node) unsafeCoerce
+
+
+instance extractHash :: ConvertNodeTo UniqueHash where
+    convertNode :: forall f state is os m. Node f state is os m -> UniqueHash
+    convertNode = Node.hash
+
+
+instance extractIdIndexed :: ConvertNodeIndexed (String /\ Int /\ NodeId f') where
+    convertNodeIndexed
+        :: forall proxy sym f state is os m
+         . IsSymbol sym
+        => proxy sym
+        -> Int
+        -> Node f state is os m
+        -> String /\ Int /\ NodeId f'
+    convertNodeIndexed sym idx node = reflectSymbol sym /\ idx /\ (unsafeCoerce $ Node.id node)
 
 
 instance convertToItself :: ConvertNodeTo (Node f state is os m) where

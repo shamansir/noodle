@@ -9,6 +9,9 @@ import Prelude
 import Effect (Effect)
 
 
+-- length = 18
+
+
 newtype UniqueHash = UniqueHash String
 derive newtype instance eqUniqueHash :: Eq UniqueHash
 derive newtype instance ordUniqueHash :: Ord UniqueHash
