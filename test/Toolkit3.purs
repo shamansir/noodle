@@ -17,6 +17,8 @@ import Test.Signal (expectFn, expect)
 
 -- import Noodle.Node.Shape (noInlets, noOutlets) as Shape
 -- import Noodle.Node ((<~>), (+>), (<+))
+import Noodle.Id (Family(..)) as Node
+import Noodle.Id (reflect')
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Fn2 (Fn)
@@ -59,7 +61,7 @@ spec = do
 
 
         it "getting family list" $ do
-            (Toolkit.familyIdStr <$> Toolkit.nodeFamilies toolkit) `shouldEqual` ( "foo" : List.Nil )
+            (reflect' <$> Toolkit.nodeFamilies toolkit) `shouldEqual` ( "foo" : List.Nil )
             -- let
             --     myFn :: (forall f. IsSymbol f => Node.Family f) -> String
             --     myFn f = reflectSymbol f

@@ -2,13 +2,13 @@ module Noodle.Toolkit3
   ( Toolkit
   , from, toRecord
   , spawn
-  , unsafeSpawn
+  , unsafeSpawn, unsafeSpawn'
   , toStates, ToState
   , name
   , nodeFamilies
-  , FamilyId
-  , familyIdStr
   , NodeDef
+  , class HasNodeDef
+  , class HasNodeDef'
   )
   where
 
@@ -34,16 +34,19 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Prim.Row (class Cons, class Lacks, class Nub)
 import Prim.RowList (RowList, class RowToList)
 import Record as Record
+import Record.Unsafe as RecordU
 import Record.Extra (class Keys)
 import Record.Extra as Record
 import Record.Builder (Builder)
 import Record.Builder as Builder
+import Type.Proxy (Proxy(..))
 
 
 import Heterogeneous.Folding as H
 import Heterogeneous.Mapping as H
 
-import Noodle.Node2 (Node, Family)
+import Noodle.Id
+import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
@@ -68,12 +71,6 @@ data Toolkit gstate (nodes :: Row Type) = Toolkit Name (Record nodes)
     , defaultOutputs :: Record os
     , node :: Node state is os m
     } -}
-
-
-newtype FamilyId = FamilyId String
-
-familyIdStr :: FamilyId -> String
-familyIdStr (FamilyId str) = str
 
 
 type NodeDef state is os m =
@@ -124,12 +121,33 @@ toStates ∷ ∀ gstate (nodes :: Row Type) (states :: Row Type). H.HMapWithInde
 toStates = H.hmapWithIndex ToState <<< toRecord
 
 
+class
+    ( IsSymbol f
+    , Cons f x r' nodes
+    )
+    <= HasNodeDef f r' nodes x
+instance
+    ( IsSymbol f
+    , Cons f x r' nodes
+    )
+    => HasNodeDef f r' nodes x
+
+
+class
+    ( Cons f x r' nodes
+    )
+    <= HasNodeDef' f r' nodes x
+instance
+    ( Cons f x r' nodes
+    )
+    => HasNodeDef' f r' nodes x
+
+
 
 spawn
     :: forall f (nodes :: Row Type) (r' ∷ Row Type) gstate state is os m
-     . IsSymbol f
-    => Cons f (NodeDef state is os m) r' nodes
-    => MonadEffect m
+     . MonadEffect m
+    => HasNodeDef f r' nodes (NodeDef state is os m)
     => Toolkit gstate nodes
     -> Family f
     -> m (Node f state is os m)
@@ -137,24 +155,42 @@ spawn (Toolkit _ tk) fsym =
     Record.get fsym tk
         # makeNode
     where
-      makeNode (state /\ is /\ os /\ fn) = Node.make' fsym state is os fn
+      makeNode (state /\ is /\ os /\ fn) = Node.make' (family' fsym) state is os fn
 
 
 unsafeSpawn
     :: forall f (nodes :: Row Type) (r' ∷ Row Type) gstate state is os m ks
-     . Keys ks
-    => IsSymbol f
-    => RowToList nodes ks
-    => Cons f (NodeDef state is os m) r' nodes
-    => MonadEffect m
+     . MonadEffect m
+    => ListsFamilies nodes ks
+    => HasNodeDef f r' nodes (NodeDef state is os m)
     => Toolkit gstate nodes
-    -> FamilyId
+    -> Family' f
     -> m (Maybe (Family f /\ Node f state is os m))
-unsafeSpawn toolkit@(Toolkit name tk) (FamilyId family) =
-    if List.elem family $ Record.keys tk then
-        let (family_ :: Family f) = reifySymbol family unsafeCoerce
+unsafeSpawn toolkit@(Toolkit name tk) family =
+    if List.elem (reflect' family) $ Record.keys tk then
+        let (family_ :: Family f) = reifySymbol (reflect' family) unsafeCoerce
         in Just <$> ((/\) family_) <$> (spawn toolkit family_)
     else pure Nothing
+
+
+unsafeSpawn'
+    :: forall f (nodes :: Row Type) (r' ∷ Row Type) gstate state is os m ks
+     . MonadEffect m
+    => ListsFamilies nodes ks
+    => HasNodeDef' f r' nodes (NodeDef state is os m)
+    => Toolkit gstate nodes
+    -> FamilyR
+    -> m (Maybe (Node f state is os m))
+unsafeSpawn' toolkit@(Toolkit name tk) family =
+    if List.elem (reflect' family) $ Record.keys tk then
+        RecordU.unsafeGet familyStr tk
+            # makeNode
+            <#> Just
+    else pure Nothing
+    where
+        familyStr = reflect' family
+        (family_ :: Family' f) = reifySymbol familyStr unsafeCoerce
+        makeNode (state /\ is /\ os /\ fn) = Node.make' family_ state is os fn
 
 
 {-
@@ -180,8 +216,8 @@ name :: forall gstate nodes. Toolkit gstate nodes -> Name
 name (Toolkit name _) = name
 
 
-nodeFamilies :: forall ks gstate nodes. Keys ks => RowToList nodes ks => Toolkit gstate nodes -> List FamilyId
-nodeFamilies (Toolkit _ tk) = FamilyId <$> Record.keys tk
+nodeFamilies :: forall ks gstate nodes. ListsFamilies nodes ks => Toolkit gstate nodes -> List FamilyR
+nodeFamilies (Toolkit _ tk) = keysToFamiliesR (Proxy :: Proxy nodes)
 
 
 -- nodeFamilies' :: forall ks state nodes. Keys ks => RowToList nodes ks => Toolkit state nodes -> List (forall f. IsSymbol f => Family f)

@@ -4,9 +4,9 @@ import Prelude
 
 import Data.Tuple.Nested ((/\))
 
+import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
-import Noodle.Fn2.Flow as Fn
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Toolkit3 (Toolkit, NodeDef)

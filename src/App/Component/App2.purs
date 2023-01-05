@@ -41,11 +41,13 @@ import Halogen.Svg.Elements.None as HS
 import Noodle.Network2 (Network) as Noodle
 import Noodle.Network2 as Network
 import Noodle.Node2 (Node)
-import Noodle.Node2 (Family, dimensions, family) as Node
+import Noodle.Id (Family) as Node
+import Noodle.Id (FamilyR) as Toolkit
+import Noodle.Node2 (dimensions, family) as Node
 import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
 import Noodle.Toolkit3 (Toolkit) as Noodle
-import Noodle.Toolkit3 (name, nodeFamilies, spawn, unsafeSpawn, FamilyId) as Toolkit
+import Noodle.Toolkit3 (name, nodeFamilies, spawn, unsafeSpawn) as Toolkit
 import Type.Proxy (Proxy(..))
 import Web.HTML (window)
 import Web.HTML.Window as Window
@@ -104,7 +106,7 @@ data Action
     = Initialize
     | SelectPatch Patch.Id
     | AddPatch
-    | AddNode Toolkit.FamilyId
+    | AddNode Toolkit.FamilyR
     | AnimationFrame H.SubscriptionId Number
     | WindowResize H.SubscriptionId { w :: Int, h :: Int }
     {-

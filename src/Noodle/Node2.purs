@@ -23,6 +23,7 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.List (List)
 import Data.List (length, filter) as List
+import Data.UUID (UUID)
 
 import Type.Proxy (Proxy(..))
 
@@ -84,6 +85,18 @@ make' family state is os fn = do
     nodeId <- liftEffect $ makeNodeId family
     tracker /\ protocol <- Protocol.make state is os
     pure $ Node nodeId tracker protocol fn
+
+
+id :: forall f state is os m. Node f state is os m -> NodeId f
+id (Node id _ _ _) = id
+
+
+family :: forall f state is os m. Node f state is os m -> Family' f
+family = id >>> familyOf
+
+
+hash :: forall f state is os m. Node f state is os m -> UUID
+hash = id >>> hashOf
 
 
 {-}
@@ -284,8 +297,8 @@ disconnect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m
      . MonadEffect m
     => MonadRec m
-    => IsFamily fA
-    => IsFamily fB
+    => IsSymbol fA
+    => IsSymbol fB
     => HasOutput oA doutA osA' osA
     => HasInput iB dinB isB' isB
     => Show dinB

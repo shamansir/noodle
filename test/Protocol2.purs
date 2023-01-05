@@ -44,7 +44,9 @@ import Noodle.Fn2.Process as Fn
 import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol)
 import Noodle.Fn2.Protocol as Protocol
-import Noodle.Fn2.Flow (Input(..), Output(..), iToSProxy, oToSProxy, inputIdToString) as Fn
+import Noodle.Id (reflect')
+import Noodle.Id (Family(..)) as Node
+import Noodle.Id (Input(..), Output(..)) as Fn
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -148,7 +150,7 @@ spec =
                         -- Fn.inputToString input `shouldEqual` "foo"
 
                         -- pure unit
-                        (Fn.inputIdToString input) `shouldEqual` "foo"
+                        (reflect' input) `shouldEqual` "foo"
                     Nothing -> fail "no last input was recorded"
                 pure unit
 
@@ -171,7 +173,7 @@ spec =
                         --Fn.unsafeInputToString (unsafeCoerce input) `shouldEqual` "i3"
                         -- Fn.unsafeInputToString (unsafeCoerce input) `shouldEqual` "foo"
                         -- Fn.inputToString input `shouldEqual` "foo"
-                        (Fn.inputIdToString input) `shouldEqual` "i3"
+                        (reflect' input) `shouldEqual` "i3"
                     Nothing -> fail "no last input was recorded"
                 pure unit
 

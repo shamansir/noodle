@@ -18,6 +18,7 @@ import Data.Identity (Identity)
 import Record.Extra as Record
 import Record.Unsafe as Record
 
+import Noodle.Id
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Toolkit3 (Toolkit)
@@ -225,7 +226,7 @@ nodesOf
     :: forall ps instances' instances f state is os m
      . Row.Cons f (NodesOf f state is os m) instances' instances
     => IsSymbol f
-    => Node.Family f
+    => Family f
     -> Patch ps instances
     -> NodesOf f state is os m
 nodesOf family (Patch _ instances _) = Record.get family instances
@@ -235,7 +236,7 @@ howMany
     :: forall ps instances' instances f state is os m
      . Row.Cons f (NodesOf f state is os m) instances' instances
     => IsSymbol f
-    => Node.Family f
+    => Family f
     -> Patch ps instances
     -> Int
 howMany f = nodesOf f >>> Array.length
@@ -243,11 +244,7 @@ howMany f = nodesOf f >>> Array.length
 
 registerLink
     :: forall gstate instances fo fi i o
-     . IsSymbol fo
-    => IsSymbol fi
-    => IsSymbol i
-    => IsSymbol o
-    => Node.Link fo fi i o
+     . Node.Link fo fi i o
     -> Patch gstate instances
     -> Patch gstate instances
 registerLink link (Patch state instances links) =

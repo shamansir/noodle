@@ -17,7 +17,8 @@ import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
-import Noodle.Fn2.Flow as Fn
+import Noodle.Id (Family(..)) as Node
+import Noodle.Id (Input(..), Output(..)) as Fn
 
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit

@@ -12,13 +12,14 @@ module Noodle.Id
     , reflectOutput, reflectOutput', reflectOutputR
     , keysToOutputsR
     , NodeId, makeNodeId, reflectNodeId
+    , familyOf, hashOf
     , class Reflect, reflect
     , class Reflect', reflect'
     , class FromKeysR, fromKeysR
     -- TODO: make classes below internal
     , class HasInputs, class HasOutputs, class ListsFamilies
     , class HasInput, class HasOutput, class HasFamily
-    , class IsFamily
+    -- , class IsSymbol
     )
     where
 
@@ -207,6 +208,13 @@ makeNodeId :: forall f. Family' f -> Effect (NodeId f)
 makeNodeId f = NodeId <$> ((/\) f) <$> UUID.generate
 
 
+familyOf :: forall f. NodeId f -> Family' f
+familyOf (NodeId (family' /\ _)) = family'
+
+
+hashOf :: forall f. NodeId f -> UUID
+hashOf (NodeId (_ /\ uuid)) = uuid
+
 
 -- TODO: extend to HasInputs, HasOutputs with getAtInput, getAtOutput, updateInputs, updateOutputs, ...
 class (RL.RowToList is g, Record.Keys g) <= HasInputs is g
@@ -229,6 +237,7 @@ instance (IsSymbol o, R.Cons o dout os' os) => HasOutput o dout os' os
 class (IsSymbol f, R.Cons f x fs' fs) <= HasFamily f x fs' fs
 instance (IsSymbol f, R.Cons f x fs' fs) => HasFamily f x fs' fs
 
-
-class IsSymbol f <= IsFamily f
-instance IsSymbol f => IsFamily f
+{-
+class IsSymbol f <= IsSymbol f
+instance IsSymbol f => IsSymbol f
+-}
