@@ -11,7 +11,6 @@ module Noodle.Fn2
   , mapM
   , imapState
   , cloneReplace
-  , _in, _out
   , inputsShape, outputsShape
   )
   where
@@ -44,13 +43,11 @@ import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.State.Class (class MonadState)
 import Control.Monad.State as State
 
+import Noodle.Id (class HasInputs, class HasOutputs, InputR, OutputR, fromKeysR)
 import Noodle.Fn2.Process (ProcessM)
 import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol)
 import Noodle.Fn2.Protocol as Protocol
-import Noodle.Fn2.Flow (keysToInputs, keysToOutputs, InputId, OutputId, Input, Output, inputIdToString, outputIdToString) as Fn
-
-import Record.Extra (keys, class Keys) as Record
 
 
 type Name = String
@@ -63,32 +60,8 @@ class ToFn a state is os where
     toFn :: forall m. a -> Fn state is os m
 
 
--- TODO: extend to HasInputs, HasOutputs with getAtInput, getAtOutput, updateInputs, updateOutputs, ...
-class (RL.RowToList is g, Record.Keys g) <= HasInputs is g
-
-class (RL.RowToList os g, Record.Keys g) <= HasOutputs os g
-
-
 make :: forall state is os m. Name -> ProcessM state is os m Unit -> Fn state is os m
 make = Fn
-
-
-_in :: Fn.InputId -> String
-_in = Fn.inputIdToString
-
-
-_out :: Fn.OutputId -> String
-_out = Fn.outputIdToString
-
-
-{-
-in_ :: String -> InputId
-in_ = InputId
-
-
-out_ :: String -> OutputId
-out_ = OutputId
--}
 
 
 {- Creating -}
@@ -152,12 +125,12 @@ name :: forall state is os m. Fn state is os m -> Name
 name (Fn n _) = n
 
 
-inputsShape :: forall state (is :: Row Type) os m g. RL.RowToList is g => Record.Keys g => Fn state is os m -> List Fn.InputId
-inputsShape (Fn _ _) = Fn.keysToInputs (Proxy :: Proxy is)
+inputsShape :: forall state (is :: Row Type) os m g. HasInputs is g => Fn state is os m -> List InputR
+inputsShape (Fn _ _) = fromKeysR (Proxy :: Proxy is)
 
 
-outputsShape :: forall state is (os :: Row Type) m g. RL.RowToList os g => Record.Keys g => Fn state is os m -> List Fn.OutputId
-outputsShape (Fn _ _) = Fn.keysToOutputs (Proxy :: Proxy os)
+outputsShape :: forall state is (os :: Row Type) m g. HasOutputs os g => Fn state is os m -> List OutputR
+outputsShape (Fn _ _) = fromKeysR (Proxy :: Proxy os)
 
 
 -- TODO: mapRecord
@@ -165,19 +138,17 @@ outputsShape (Fn _ _) = Fn.keysToOutputs (Proxy :: Proxy os)
 
 shape
     :: forall state (is :: Row Type) (os :: Row Type) m g
-     . RL.RowToList is g
-    => RL.RowToList os g
-    => Record.Keys g
+     . HasInputs is g
+    => HasOutputs os g
     => Fn state is os m
-    -> List Fn.InputId /\ List Fn.OutputId
+    -> List InputR /\ List OutputR
 shape fn = inputsShape fn /\ outputsShape fn
 
 
 dimensions
     :: forall state is os m g
-     . RL.RowToList is g
-    => RL.RowToList os g
-    => Record.Keys g
+     . HasInputs is g
+    => HasOutputs os g
     => Fn state is os m
     -> Int /\ Int
 dimensions = shape >>> bimap List.length List.length
@@ -185,11 +156,10 @@ dimensions = shape >>> bimap List.length List.length
 
 dimensionsBy
     :: forall state is os m g
-     . RL.RowToList is g
-    => RL.RowToList os g
-    => Record.Keys g
-    => (Fn.InputId -> Boolean)
-    -> (Fn.OutputId -> Boolean)
+     . HasInputs is g
+    => HasOutputs os g
+    => (InputR -> Boolean)
+    -> (OutputR -> Boolean)
     -> Fn state is os m
     -> Int /\ Int
 dimensionsBy iPred oPred = shape >>> bimap (List.filter iPred >>> List.length) (List.filter oPred >>> List.length)

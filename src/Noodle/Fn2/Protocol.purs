@@ -32,7 +32,7 @@ import Signal.Channel as Channel
 
 import Unsafe.Coerce (unsafeCoerce)
 
-import Noodle.Fn2.Flow (Input, Output, InputId, OutputId, inputToString, inputId)
+import Noodle.Id (InputR, OutputR)
 
 
 {-}
@@ -60,22 +60,22 @@ type CurOFn m = OFnTest3 m -}
 
 
 data InputChange
-    = SingleInput InputId
+    = SingleInput InputR
     | AllInputs
     -- TODO: add Hot / Cold
 
 
 data OutputChange
-    = SingleOutput OutputId
+    = SingleOutput OutputR
     | AllOutputs
 
 
-inputChangeToMaybe :: InputChange -> Maybe InputId
+inputChangeToMaybe :: InputChange -> Maybe InputR
 inputChangeToMaybe (SingleInput iid) = Just iid
 inputChangeToMaybe AllInputs = Nothing
 
 
-outputChangeToMaybe :: OutputChange -> Maybe OutputId
+outputChangeToMaybe :: OutputChange -> Maybe OutputR
 outputChangeToMaybe (SingleOutput oid) = Just oid
 outputChangeToMaybe AllOutputs = Nothing
 
@@ -233,11 +233,11 @@ outputs :: forall state is os. Tracker state is os -> Effect (Record os)
 outputs tracker = Signal.get tracker.outputs <#> Tuple.snd
 
 
-lastInput :: forall state is os. Tracker state is os -> Effect (Maybe InputId)
+lastInput :: forall state is os. Tracker state is os -> Effect (Maybe InputR)
 lastInput tracker = Signal.get tracker.inputs <#> Tuple.fst <#> inputChangeToMaybe
 
 
-lastOutput :: forall state is os. Tracker state is os -> Effect (Maybe OutputId)
+lastOutput :: forall state is os. Tracker state is os -> Effect (Maybe OutputR)
 lastOutput tracker = Signal.get tracker.outputs <#> Tuple.fst <#> outputChangeToMaybe
 
 
