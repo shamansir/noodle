@@ -267,12 +267,12 @@ registerLink link (Patch state instances links) =
 
 
 nodes_
-    :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (m :: Type -> Type)
-     . Fold rla m result instances
+    :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (ff :: Type -> Type)
+     . Fold rla ff result instances
     => Patch gstate instances
-    -> m result
+    -> ff result
 nodes_ (Patch _ instances _) =
-    hfoldl (FoldNodes :: FoldNodes m result) (mempty :: m result) instances
+    hfoldl (FoldNodes :: FoldNodes ff result) (mempty :: ff result) instances
 
 
 nodes
@@ -280,11 +280,11 @@ nodes
      . Fold rla Array (Node f state is os m) instances
     => Patch gstate instances
     -> Array (Node f state is os m)
-nodes patch =
-    (nodes_ patch :: Array (Node _ _ _ _ m))
+nodes = nodes_
+    -- (nodes_ patch :: Array (Node _ _ _ _ m))
 
 
-nodesIndexed_
+nodesIndexed__
     :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (folding :: (Type -> Type) -> Type -> Type) (m :: Type -> Type)
      . RL.RowToList instances rla
     => Monoid (m result)
@@ -293,16 +293,26 @@ nodesIndexed_
     => folding m result
     -> Patch gstate instances
     -> m result
-nodesIndexed_ a (Patch _ instances _) =
+nodesIndexed__ a (Patch _ instances _) =
     hfoldlWithIndex a (mempty :: m result) instances
 
 
-nodesIndexed
-    :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (m :: Type -> Type)
-     . FoldI rla m result instances
+nodesIndexed_
+    :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (ff :: Type -> Type)
+     . FoldI rla ff result instances
     => Patch gstate instances
-    -> m result
-nodesIndexed = nodesIndexed_ FoldNodesIndexed
+    -> ff result
+nodesIndexed_ (Patch _ instances _) =
+    hfoldlWithIndex (FoldNodesIndexed :: FoldNodesIndexed ff result) (mempty :: ff result) instances
+
+
+nodesIndexed
+    :: forall f state is os gstate (instances :: Row Type) (rla ∷ RL.RowList Type) (m :: Type -> Type)
+     . FoldI rla Array (NodeWithIndex f state is os m) instances
+    => Patch gstate instances
+    -> Array (NodeWithIndex f state is os m)
+nodesIndexed = nodesIndexed_
+    -- (nodesIndexed_ patch :: Array (NodeWithIndex _ _ _ _ m))
 
 
 -- families ::
@@ -335,6 +345,9 @@ instance extractHash :: ConvertNodeTo UniqueHash where
 newtype NodeInfo f = NodeInfo (Family' f /\ Int /\ NodeId f)
 
 
+newtype NodeWithIndex f state is os m = NodeWithIndex (Family' f /\ Int /\ Node f state is os m)
+
+
 instance extractIdIndexed :: ConvertNodeIndexed (Int /\ NodeId f') where
     convertNodeIndexed
         :: forall f state is os m
@@ -346,7 +359,7 @@ instance extractIdIndexed :: ConvertNodeIndexed (Int /\ NodeId f') where
     convertNodeIndexed _ idx node = idx /\ (unsafeCoerce $ Node.id node)
 
 
-instance extractIdIndexed' :: ConvertNodeIndexed (NodeInfo f') where
+instance extractIdIndexedInfo :: ConvertNodeIndexed (NodeInfo f') where
     convertNodeIndexed
         :: forall f state is os m
          . IsSymbol f
@@ -355,6 +368,17 @@ instance extractIdIndexed' :: ConvertNodeIndexed (NodeInfo f') where
         -> Node f state is os m
         -> NodeInfo f'
     convertNodeIndexed psym idx node = NodeInfo $ (unsafeCoerce $ familyP psym) /\ idx /\ (unsafeCoerce $ Node.id node)
+
+
+instance extractNodeWithIndex :: ConvertNodeIndexed (NodeWithIndex f' state' is' os' m') where
+    convertNodeIndexed
+        :: forall f state is os m
+         . IsSymbol f
+        => Proxy f
+        -> Int
+        -> Node f state is os m
+        -> NodeWithIndex f' state' is' os' m'
+    convertNodeIndexed psym idx node = NodeWithIndex $ (unsafeCoerce $ familyP psym) /\ idx /\ (unsafeCoerce node)
 
 
 instance convertToItself :: ConvertNodeTo (Node f state is os m) where

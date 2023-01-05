@@ -110,11 +110,16 @@ spec = do
             Array.all (\(Patch.NodeInfo (fsym /\ _ /\ nodeId)) ->
                 (reflect' fsym == "foo" || reflect' fsym == "bar") &&
                 (reflect' (familyOf nodeId) == "foo" || reflect' (familyOf nodeId) == "bar")
-            ) (Patch.nodesIndexed patch :: Array (Patch.NodeInfo _)) `shouldEqual` true
+            ) (Patch.nodesIndexed_ patch :: Array (Patch.NodeInfo _)) `shouldEqual` true
+
+            Array.all (\(Patch.NodeWithIndex (fsym /\ _ /\ node)) ->
+                (reflect' fsym == "foo" || reflect' fsym == "bar") &&
+                (reflect' (familyOf $ Node.id node) == "foo" || reflect' (familyOf $ Node.id node) == "bar")
+            ) (Patch.nodesIndexed patch) `shouldEqual` true
 
             -- liftEffect $ Console.log $ show (Patch.nodesIndexed patch :: Array (String /\ Int /\ NodeId _))
 
-            Patch.nodesIndexed patch `shouldEqual` [ I 0, I 1, I 0 ]
+            Patch.nodesIndexed_ patch `shouldEqual` [ I 0, I 1, I 0 ]
 
             -- TODO
 
