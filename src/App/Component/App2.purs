@@ -117,6 +117,7 @@ data Action
     -- | HandlePatch (PatchC.Action d)
 
 
+
 initialState
     :: forall patch_state node_state d
      . Input patch_state node_state d
@@ -221,7 +222,7 @@ render (s@{ network, toolkit, windowSize }) =
             HS.g [] []
         --patchBody :: forall p i gstate instances rla. Patch gstate instances → HH.HTML (H.ComponentSlot () Aff Action) Action
         patchBody patch =
-            HS.g [] $ unwrapNodeHtml' <$> Patch.nodes patch
+            HS.g [] $ unwrapNodeHtml' <$> Patch.nodes_ patch
         renderNode_ :: ∀ p i f state is os m g. RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ Node f state is os m -> HH.HTML p i
         renderNode_ node =
             let

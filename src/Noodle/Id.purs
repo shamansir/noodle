@@ -1,6 +1,6 @@
 module Noodle.Id
     ( Family(..), Family', FamilyR
-    , family', familyR
+    , family', familyR, familyP
     , reflectFamily, reflectFamily', reflectFamilyR
     , keysToFamiliesR
     , Input(..), Input', InputR
@@ -93,6 +93,10 @@ reflectFamily' (Family' s) = s
 
 reflectFamilyR :: FamilyR -> String
 reflectFamilyR (FamilyR s) = s
+
+
+familyP :: forall proxy f. IsSymbol f => proxy f -> Family' f
+familyP = reflectSymbol >>> Family'
 
 
 keysToFamiliesR :: forall w fs rl. RL.RowToList fs rl => Record.Keys rl => w fs -> List FamilyR

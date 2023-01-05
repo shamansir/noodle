@@ -19,9 +19,10 @@ import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
-import Noodle.Id (reflectFamily', reflect', NodeId, familyOf)
+import Noodle.Id (reflectFamily', reflect', NodeId, familyOf, Family')
 import Noodle.Id (Family(..), Family') as Node
 import Noodle.Id (Input(..), Output(..)) as Fn
+import Type.Data.Symbol (reflectSymbol)
 
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
@@ -102,11 +103,14 @@ spec = do
                             # Patch.registerNode nodeB
                             # Patch.registerNode nodeC
 
-            (reflectFamily' <$> Patch.nodes patch) `shouldEqual` [ "bar", "bar", "foo" ]
-            Array.all (\(fStr /\ _ /\ nodeId) ->
-                (fStr == "foo" || fStr == "bar") &&
+            (reflectFamily' <$> Patch.nodes_ patch) `shouldEqual` [ "bar", "bar", "foo" ]
+
+            (Node.family >>> reflectFamily' <$> Patch.nodes patch) `shouldEqual` [ "bar", "bar", "foo" ]
+
+            Array.all (\(Patch.NodeInfo (fsym /\ _ /\ nodeId)) ->
+                (reflect' fsym == "foo" || reflect' fsym == "bar") &&
                 (reflect' (familyOf nodeId) == "foo" || reflect' (familyOf nodeId) == "bar")
-            ) (Patch.nodesIndexed patch :: Array (String /\ Int /\ NodeId _)) `shouldEqual` true
+            ) (Patch.nodesIndexed patch :: Array (Patch.NodeInfo _)) `shouldEqual` true
 
             -- liftEffect $ Console.log $ show (Patch.nodesIndexed patch :: Array (String /\ Int /\ NodeId _))
 

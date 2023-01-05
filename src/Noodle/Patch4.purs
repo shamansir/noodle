@@ -84,11 +84,11 @@ instance mappingToNIONY ::
 
 
 data FoldNodes :: forall k. (Type -> Type) -> k -> Type
-data FoldNodes (m :: Type -> Type) x = FoldNodes
+data FoldNodes (ff :: Type -> Type) x = FoldNodes
 
 
 data FoldNodesIndexed :: forall k. (Type -> Type) -> k -> Type
-data FoldNodesIndexed (m :: Type -> Type) x = FoldNodesIndexed
+data FoldNodesIndexed (ff :: Type -> Type) x = FoldNodesIndexed
 
 
 class
@@ -102,32 +102,32 @@ instance map ::
     ) => Map rln nodes instances
 
 class
-    ( Monoid (m result)
+    ( Monoid (ff result)
     , ConvertNodeTo result
     , RL.RowToList instances rla
-    , FoldlRecord (ConstFolding (FoldNodes m result)) (m result) rla instances (m result)
-    ) <= Fold rla m result instances
+    , FoldlRecord (ConstFolding (FoldNodes ff result)) (ff result) rla instances (ff result)
+    ) <= Fold rla ff result instances
 
 instance fold ::
-    ( Monoid (m result)
+    ( Monoid (ff result)
     , ConvertNodeTo result
     , RL.RowToList instances rla
-    , FoldlRecord (ConstFolding (FoldNodes m result)) (m result) rla instances (m result)
-    ) => Fold rla m result instances
+    , FoldlRecord (ConstFolding (FoldNodes ff result)) (ff result) rla instances (ff result)
+    ) => Fold rla ff result instances
 
 class
-    ( Monoid (m result)
+    ( Monoid (ff result)
     , ConvertNodeIndexed result
     , RL.RowToList instances rla
-    , FoldlRecord (FoldNodesIndexed m result) (m result) rla instances (m result)
-    ) <= FoldI rla m result instances
+    , FoldlRecord (FoldNodesIndexed ff result) (ff result) rla instances (ff result)
+    ) <= FoldI rla ff result instances
 
 instance foldI ::
-    ( Monoid (m result)
+    ( Monoid (ff result)
     , ConvertNodeIndexed result
     , RL.RowToList instances rla
-    , FoldlRecord (FoldNodesIndexed m result) (m result) rla instances (m result)
-    ) => FoldI rla m result instances
+    , FoldlRecord (FoldNodesIndexed ff result) (ff result) rla instances (ff result)
+    ) => FoldI rla ff result instances
 
 
 {-
@@ -168,10 +168,10 @@ instance foldNodesIndexed ::
 
 
 instance foldNodesIndexedArr ::
-    ( IsSymbol sym, ConvertNodeIndexed x )
+    ( IsSymbol f, ConvertNodeIndexed x )
     => FoldingWithIndex
             (FoldNodesIndexed Array x)
-            (Proxy sym)
+            (Proxy f)
             (Array x)
             (Array (Node f state is os m))
             (Array x)
@@ -267,25 +267,21 @@ registerLink link (Patch state instances links) =
 
 
 nodes_
-    :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (folding :: (Type -> Type) -> Type -> Type) (m :: Type -> Type)
-     . RL.RowToList instances rla
-    => Monoid (m result)
-    => ConvertNodeTo result
-    => FoldlRecord (ConstFolding (folding m result)) (m result) rla instances (m result)
-    => folding m result
-    -> Patch gstate instances
-    -> m result
-nodes_ a (Patch _ instances _) =
-    hfoldl a (mempty :: m result) instances
-
-
-nodes
     :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (m :: Type -> Type)
      . Fold rla m result instances
     => Patch gstate instances
     -> m result
-nodes =
-    nodes_ FoldNodes
+nodes_ (Patch _ instances _) =
+    hfoldl (FoldNodes :: FoldNodes m result) (mempty :: m result) instances
+
+
+nodes
+    :: forall f state is os gstate instances rla m
+     . Fold rla Array (Node f state is os m) instances
+    => Patch gstate instances
+    -> Array (Node f state is os m)
+nodes patch =
+    (nodes_ patch :: Array (Node _ _ _ _ m))
 
 
 nodesIndexed_
@@ -317,7 +313,7 @@ class ConvertNodeTo x where
 
 
 class ConvertNodeIndexed x where
-    convertNodeIndexed :: forall sym f state is os m. IsSymbol sym => Proxy sym -> Int -> Node f state is os m -> x
+    convertNodeIndexed :: forall f state is os m. IsSymbol f => Proxy f -> Int -> Node f state is os m -> x
 
 
 
@@ -328,7 +324,7 @@ instance extractId :: ConvertNodeTo (NodeId f') where
 
 instance extractFamily :: ConvertNodeTo (Family' f') where
     convertNode :: forall f state is os m. Node f state is os m -> Family' f'
-    convertNode node = unsafeCoerce $ Node.family node -- reifySymbol (reflect' $ Node.family node) unsafeCoerce
+    convertNode node = unsafeCoerce $ Node.family node
 
 
 instance extractHash :: ConvertNodeTo UniqueHash where
@@ -336,15 +332,29 @@ instance extractHash :: ConvertNodeTo UniqueHash where
     convertNode = Node.hash
 
 
-instance extractIdIndexed :: ConvertNodeIndexed (String /\ Int /\ NodeId f') where
+newtype NodeInfo f = NodeInfo (Family' f /\ Int /\ NodeId f)
+
+
+instance extractIdIndexed :: ConvertNodeIndexed (Int /\ NodeId f') where
     convertNodeIndexed
-        :: forall proxy sym f state is os m
-         . IsSymbol sym
-        => proxy sym
+        :: forall f state is os m
+         . IsSymbol f
+        => Proxy f
         -> Int
         -> Node f state is os m
-        -> String /\ Int /\ NodeId f'
-    convertNodeIndexed sym idx node = reflectSymbol sym /\ idx /\ (unsafeCoerce $ Node.id node)
+        -> Int /\ NodeId f'
+    convertNodeIndexed _ idx node = idx /\ (unsafeCoerce $ Node.id node)
+
+
+instance extractIdIndexed' :: ConvertNodeIndexed (NodeInfo f') where
+    convertNodeIndexed
+        :: forall f state is os m
+         . IsSymbol f
+        => Proxy f
+        -> Int
+        -> Node f state is os m
+        -> NodeInfo f'
+    convertNodeIndexed psym idx node = NodeInfo $ (unsafeCoerce $ familyP psym) /\ idx /\ (unsafeCoerce $ Node.id node)
 
 
 instance convertToItself :: ConvertNodeTo (Node f state is os m) where
