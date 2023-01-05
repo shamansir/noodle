@@ -123,24 +123,24 @@ toStates = H.hmapWithIndex ToState <<< toRecord
 
 class
     ( IsSymbol f
-    , Cons f x r' nodes
+    , Cons f x nodes' nodes
     )
-    <= HasNodeDef f r' nodes x
+    <= HasNodeDef f nodes' nodes x -- FIXME: use newtype
 instance
     ( IsSymbol f
-    , Cons f x r' nodes
+    , Cons f x nodes' nodes
     )
-    => HasNodeDef f r' nodes x
+    => HasNodeDef f nodes' nodes x -- FIXME: use newtype
 
 
 class
-    ( Cons f x r' nodes
+    ( Cons f x nodes' nodes
     )
-    <= HasNodeDef' f r' nodes x
+    <= HasNodeDef' f nodes' nodes x -- FIXME: use newtype
 instance
-    ( Cons f x r' nodes
+    ( Cons f x nodes' nodes
     )
-    => HasNodeDef' f r' nodes x
+    => HasNodeDef' f nodes' nodes x -- FIXME: use newtype
 
 
 

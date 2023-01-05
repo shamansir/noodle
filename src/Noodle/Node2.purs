@@ -12,7 +12,7 @@ import Data.Eq (class Eq)
 -- import Control.Monad.Gen (class MonadGen, chooseInt, unfoldable, sized, resize) as Gen
 -- import Data.Char.Gen as CG
 import Data.Newtype (class Newtype)
-import Data.UUID as UUID
+import Data.UniqueHash as UniqueHash
 
 import Data.Array as Array
 import Data.Bifunctor (lmap, rmap, bimap)
@@ -23,7 +23,7 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.List (List)
 import Data.List (length, filter) as List
-import Data.UUID (UUID)
+import Data.UniqueHash (UniqueHash)
 
 import Type.Proxy (Proxy(..))
 
@@ -95,7 +95,7 @@ family :: forall f state is os m. Node f state is os m -> Family' f
 family = id >>> familyOf
 
 
-hash :: forall f state is os m. Node f state is os m -> UUID
+hash :: forall f state is os m. Node f state is os m -> UniqueHash
 hash = id >>> hashOf
 
 

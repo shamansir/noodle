@@ -16,7 +16,7 @@ module Noodle.Id
     , class Reflect, reflect
     , class Reflect', reflect'
     , class FromKeysR, fromKeysR
-    -- TODO: make classes below internal
+    -- FIXME: make classes below internal
     , class HasInputs, class HasOutputs, class ListsFamilies
     , class HasInput, class HasOutput, class HasFamily
     -- , class IsSymbol
@@ -29,8 +29,8 @@ import Prelude
 import Effect (Effect)
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.UUID (UUID)
-import Data.UUID as UUID
+import Data.UniqueHash (UniqueHash)
+import Data.UniqueHash as UniqueHash
 import Data.List (List)
 
 import Record.Extra as Record
@@ -193,7 +193,7 @@ keysToOutputsR = Record.keys >>> (<$>) OutputR
 -- _in = reflect'
 
 
-newtype NodeId f = NodeId (Family' f /\ UUID)
+newtype NodeId f = NodeId (Family' f /\ UniqueHash)
 derive newtype instance eqNodeId :: Eq (NodeId f)
 derive newtype instance ordNodeId :: Ord (NodeId f)
 derive newtype instance showNodeId :: Show (NodeId f)
@@ -201,22 +201,23 @@ instance Reflect' (NodeId f) where reflect' = reflectNodeId
 
 
 reflectNodeId :: forall f. NodeId f -> String
-reflectNodeId (NodeId (family' /\ uuid)) = reflect' family' <> "::" <> UUID.toString uuid
+reflectNodeId (NodeId (family' /\ uuid)) = reflect' family' <> "::" <> UniqueHash.toString uuid
 
 
 makeNodeId :: forall f. Family' f -> Effect (NodeId f)
-makeNodeId f = NodeId <$> ((/\) f) <$> UUID.generate
+makeNodeId f = NodeId <$> ((/\) f) <$> UniqueHash.generate
 
 
 familyOf :: forall f. NodeId f -> Family' f
 familyOf (NodeId (family' /\ _)) = family'
 
 
-hashOf :: forall f. NodeId f -> UUID
+hashOf :: forall f. NodeId f -> UniqueHash
 hashOf (NodeId (_ /\ uuid)) = uuid
 
 
 -- TODO: extend to HasInputs, HasOutputs with getAtInput, getAtOutput, updateInputs, updateOutputs, ...
+ -- FIXME: use newtype
 class (RL.RowToList is g, Record.Keys g) <= HasInputs is g
 instance (RL.RowToList is g, Record.Keys g) => HasInputs is g
 

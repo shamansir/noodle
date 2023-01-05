@@ -178,6 +178,18 @@ instance foldNodesIndexedArr ::
     foldingWithIndex FoldNodesIndexed i acc nodes = acc <> Array.mapWithIndex (convertNodeIndexed i) nodes
 
 
+class
+    ( IsSymbol f
+    , Row.Cons f x instances' instances
+    )
+    <= HasInstancesOf f instances' instances x -- FIXME: use newtype
+instance
+    ( IsSymbol f
+    , Row.Cons f x instances' instances
+    )
+    => HasInstancesOf f instances' instances x -- FIXME: use newtype
+
+
 init
     :: forall
         (instances ∷ Row Type)
@@ -210,8 +222,7 @@ init' state tk =
 
 registerNode
     :: forall ps instances' instances f state is os m
-     . Row.Cons f (NodesOf f state is os m) instances' instances
-    => IsSymbol f
+     . HasInstancesOf f instances' instances (NodesOf f state is os m)
     => Node f state is os m
     -> Patch ps instances
     -> Patch ps instances
@@ -224,8 +235,7 @@ registerNode node (Patch state instances links) =
 
 nodesOf
     :: forall ps instances' instances f state is os m
-     . Row.Cons f (NodesOf f state is os m) instances' instances
-    => IsSymbol f
+     . HasInstancesOf f instances' instances (NodesOf f state is os m)
     => Family f
     -> Patch ps instances
     -> NodesOf f state is os m
@@ -234,8 +244,7 @@ nodesOf family (Patch _ instances _) = Record.get family instances
 
 howMany
     :: forall ps instances' instances f state is os m
-     . Row.Cons f (NodesOf f state is os m) instances' instances
-    => IsSymbol f
+     . HasInstancesOf f instances' instances (NodesOf f state is os m)
     => Family f
     -> Patch ps instances
     -> Int
@@ -271,8 +280,7 @@ nodes_ a (Patch _ instances _) =
 
 nodes
     :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (m :: Type -> Type)
-     . RL.RowToList instances rla
-    => Fold rla m result instances
+     . Fold rla m result instances
     => Patch gstate instances
     -> m result
 nodes =

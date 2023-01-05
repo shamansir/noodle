@@ -17,13 +17,13 @@ import Test.Toolkit3 (spec) as Toolkit3
 import Test.Protocol2 (spec) as Protocol2
 import Test.Patch4 (spec) as Patch4
 import Test.Flex (spec) as Flex
-import Test.UUID (spec) as UUID
+import Test.UniqueHash (spec) as UniqueHash
 
 
 main :: Effect Unit
 main = launchAff_ $ runSpec [consoleReporter] do
-  describe "UUID"
-    UUID.spec
+  describe "UniqueHash"
+    UniqueHash.spec
   -- describe "Fn"
   --   Fn.spec
   describe "Node2"

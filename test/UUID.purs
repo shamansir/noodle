@@ -1,4 +1,4 @@
-module Test.UUID where
+module Test.UniqueHash where
 
 import Prelude
 
@@ -13,19 +13,19 @@ import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Signal (expectFn, expect)
 
-import Data.UUID as UUID
+import Data.UniqueHash as UniqueHash
 import Noodle.Id as N
 
 spec :: Spec Unit
 spec = do
 
-    describe "UUID" $ do
+    describe "UniqueHash" $ do
 
         it "works" $ liftEffect $ do
 
-            uuid <- UUID.generate
+            uuid <- UniqueHash.generate
 
-            UUID.toString uuid `shouldEqual` "foo"
+            UniqueHash.toString uuid `shouldEqual` "foo"
 
             pure unit
 
