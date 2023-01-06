@@ -67,6 +67,8 @@ type Id = String
 
 
 data NoInstancesOfNodeYet = NoInstancesOfNodeYet
+data MapNodesTo x = MapNodesTo
+data MapNodesIndexedTo x = MapNodesIndexedTo
 
 
 type Links =
@@ -83,6 +85,18 @@ instance mappingToNIONY ::
   mapping NoInstancesOfNodeYet = const []
 
 
+instance mappingTo ::
+  ( ConvertNodesTo x ) =>
+  Mapping (MapNodesTo x) (NodesOf f state is os m) x where
+  mapping MapNodesTo = convertNodes
+
+
+instance mappingIndexedTo ::
+  ( IsSymbol f, ConvertNodesIndexedTo x ) =>
+  MappingWithIndex (MapNodesIndexedTo x) (Family' f) (NodesOf f state is os m) x where
+  mappingWithIndex MapNodesIndexedTo = convertNodesIndexed
+
+
 data FoldNodes :: forall k. (Type -> Type) -> k -> Type
 data FoldNodes (ff :: Type -> Type) x = FoldNodes
 
@@ -96,10 +110,35 @@ class
     , MapRecordWithIndex rln (ConstMapping NoInstancesOfNodeYet) nodes instances
     ) <= Init rln nodes instances
 
-instance init_ ::
+instance initInstances ::
     ( RL.RowToList nodes rln
     , MapRecordWithIndex rln (ConstMapping NoInstancesOfNodeYet) nodes instances
     ) => Init rln nodes instances
+
+
+class Map :: forall k. RL.RowList Type -> Row Type -> k -> Row Type -> Constraint
+class
+    ( RL.RowToList instances rli
+    , MapRecordWithIndex rli (ConstMapping (MapNodesTo x)) instances result
+    ) <= Map rli instances x result
+
+instance mapInstances ::
+    ( RL.RowToList instances rli
+    , MapRecordWithIndex rli (ConstMapping (MapNodesTo x)) instances result
+    ) => Map rli instances x result
+
+
+class MapI :: forall k. RL.RowList Type -> Row Type -> k -> Row Type -> Constraint
+class
+    ( RL.RowToList instances rli
+    , MapRecordWithIndex rli (MapNodesIndexedTo x) instances result
+    ) <= MapI rli instances x result
+
+instance mapInstancesIndexed ::
+    ( RL.RowToList instances rli
+    , MapRecordWithIndex rli (MapNodesIndexedTo x) instances result
+    ) => MapI rli instances x result
+
 
 class
     ( Monoid (ff result)
@@ -108,7 +147,7 @@ class
     , FoldlRecord (ConstFolding (FoldNodes ff result)) (ff result) rla instances (ff result)
     ) <= Fold rla ff result instances
 
-instance fold ::
+instance foldInstances ::
     ( Monoid (ff result)
     , ConvertNodeTo result
     , RL.RowToList instances rla
@@ -122,7 +161,7 @@ class
     , FoldlRecord (FoldNodesIndexed ff result) (ff result) rla instances (ff result)
     ) <= FoldI rla ff result instances
 
-instance foldI ::
+instance foldInstacesIndexed ::
     ( Monoid (ff result)
     , ConvertNodeIndexed result
     , RL.RowToList instances rla
@@ -171,7 +210,7 @@ instance foldNodesIndexedArr ::
     ( IsSymbol f, ConvertNodeIndexed x )
     => FoldingWithIndex
             (FoldNodesIndexed Array x)
-            (Proxy f)
+            (Family' f)
             (Array x)
             (Array (Node f state is os m))
             (Array x)
@@ -300,16 +339,38 @@ nodesIndexed
 nodesIndexed = nodesIndexed_
 
 
--- TODO: extract nodes grouped by families as well
+nodesMap
+    :: forall gstate instances rli x result
+     . Map rli instances x result
+    => Patch gstate instances
+    -> Record result
+nodesMap (Patch _ instances _) = hmap (MapNodesTo :: MapNodesTo x) instances
 
+
+nodesMapIndexed
+    :: forall gstate instances rli x result
+     . MapI rli instances x result
+    => Patch gstate instances
+    -> Record result
+nodesMapIndexed (Patch _ instances _) = hmapWithIndex (MapNodesIndexedTo :: MapNodesIndexedTo x) instances
+
+
+-- TODO: extract nodes grouped by families as well
 
 class ConvertNodeTo x where
     convertNode :: forall f state is os m. Node f state is os m -> x
 
 
 class ConvertNodeIndexed x where
-    convertNodeIndexed :: forall f state is os m. IsSymbol f => Proxy f -> Int -> Node f state is os m -> x
+    convertNodeIndexed :: forall f state is os m. IsSymbol f => Family' f -> Int -> Node f state is os m -> x
 
+
+class ConvertNodesTo x where
+    convertNodes :: forall f state is os m. Array (Node f state is os m) -> x
+
+
+class ConvertNodesIndexedTo x where
+    convertNodesIndexed :: forall f state is os m. Family' f -> Array (Node f state is os m) -> x
 
 
 instance extractId :: ConvertNodeTo (NodeId f') where
@@ -337,7 +398,7 @@ instance extractIdIndexed :: ConvertNodeIndexed (Int /\ NodeId f') where
     convertNodeIndexed
         :: forall f state is os m
          . IsSymbol f
-        => Proxy f
+        => Family' f
         -> Int
         -> Node f state is os m
         -> Int /\ NodeId f'
@@ -348,27 +409,37 @@ instance extractIdIndexedInfo :: ConvertNodeIndexed (NodeInfo f') where
     convertNodeIndexed
         :: forall f state is os m
          . IsSymbol f
-        => Proxy f
+        => Family' f
         -> Int
         -> Node f state is os m
         -> NodeInfo f'
-    convertNodeIndexed psym idx node = NodeInfo $ (unsafeCoerce $ familyP psym) /\ idx /\ (unsafeCoerce $ Node.id node)
+    convertNodeIndexed family idx node = NodeInfo $ unsafeCoerce family /\ idx /\ (unsafeCoerce $ Node.id node)
 
 
 instance extractNodeWithIndex :: ConvertNodeIndexed (NodeWithIndex f' state' is' os' m') where
     convertNodeIndexed
         :: forall f state is os m
          . IsSymbol f
-        => Proxy f
+        => Family' f
         -> Int
         -> Node f state is os m
         -> NodeWithIndex f' state' is' os' m'
-    convertNodeIndexed psym idx node = NodeWithIndex $ (unsafeCoerce $ familyP psym) /\ idx /\ (unsafeCoerce node)
+    convertNodeIndexed family idx node = NodeWithIndex $ unsafeCoerce family /\ idx /\ unsafeCoerce node
 
 
-instance convertToItself :: ConvertNodeTo (Node f state is os m) where
+instance convertToItself :: ConvertNodeTo (Node f' state' is' os' m') where
+    convertNode :: forall f state is os m. Node f state is os m -> Node f' state' is' os' m'
+    -- convertNode :: Node f' state' is' os' m' -> Node f' state' is' os' m'
     convertNode = unsafeCoerce
+    -- convertNode = identity
 
 
-instance convertIndexedToItself :: ConvertNodeIndexed (Node f state is os m) where
+instance convertIndexedToItself :: ConvertNodeIndexed (Node f' state' is' os' m') where
+    convertNodeIndexed
+        :: forall f state is os m
+         . IsSymbol f
+        => Family' f
+        -> Int
+        -> Node f state is os m
+        -> Node f' state' is' os' m'
     convertNodeIndexed _ _ = unsafeCoerce

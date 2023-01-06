@@ -57,7 +57,7 @@ initialState { network, toolkit, currentPatch, patchState } =
 
 
 render
-    :: forall patch_action gstate nodes instances rln rli rla
+    :: forall gstate nodes instances rln rli rla
      . State gstate nodes instances
     -> H.ComponentHTML Action Slots Aff -- FIXME: there is MonadAff here!
 render state = HH.div [] []
@@ -65,7 +65,7 @@ render state = HH.div [] []
 
 
 handleAction
-    :: forall output patch_action rl gstate (nodes :: Row Type) (instances :: Row Type) m
+    :: forall output rl gstate (nodes :: Row Type) (instances :: Row Type) m
      . MonadAff m
     => MonadEffect m
     => Action

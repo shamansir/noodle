@@ -12,7 +12,7 @@ module Noodle.Toolkit3
   , toRecord
   , toStates
   , unsafeSpawn
-  , unsafeSpawn'
+  , unsafeSpawnR
   , familyDefs
   , familyDefsIndexed
   , class Fold, class FoldI
@@ -177,6 +177,12 @@ instance foldDefsIndexedArr ::
     foldingWithIndex FoldFamilyDefsIndexed sym acc def = convertFamilyDefIndexed (familyP sym) def : acc
 
 
+{- families
+    :: forall gstate families families' x rl
+     . Fold rl (Record families) x families
+    => Toolkit gstate families
+    -> Record x
+families (Toolkit _ defs) = H.hfoldl (FoldFamilyDefs :: FoldFamilyDefs x) ([] :: Array x) defs -}
 
 
 familyDefs
@@ -280,7 +286,7 @@ unsafeSpawn toolkit@(Toolkit name tk) family =
     else pure Nothing
 
 
-unsafeSpawn'
+unsafeSpawnR
     :: forall f (families :: Row Type) (r' ∷ Row Type) gstate state is os m ks
      . MonadEffect m
     => ListsFamilies families ks
@@ -288,7 +294,7 @@ unsafeSpawn'
     => Toolkit gstate families
     -> FamilyR
     -> m (Maybe (Node f state is os m))
-unsafeSpawn' toolkit@(Toolkit name tk) family =
+unsafeSpawnR toolkit@(Toolkit name tk) family =
     if List.elem (reflect' family) $ Record.keys tk then
         RecordU.unsafeGet familyStr tk
             # makeNode
