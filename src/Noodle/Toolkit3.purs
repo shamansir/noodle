@@ -15,6 +15,8 @@ module Noodle.Toolkit3
   , unsafeSpawnR
   , familyDefs
   , familyDefsIndexed
+  , mapFamilies, mapFamiliesIndexed
+  , class Map, class MapI
   , class Fold, class FoldI
   , class ConvertFamilyDefTo, class ConvertFamilyDefIndexed
   , convertFamilyDef, convertFamilyDefIndexed
@@ -110,7 +112,8 @@ instance toState ::
     mappingWithIndex ToState prop a = getState (familyP prop) a
 
 
--- data MapNodesDefs = MapNodesDefs
+data MapFamilyDefs x = MapFamilyDefs
+data MapFamilyDefsIndexed x = MapFamilyDefsIndexed
 
 data FoldFamilyDefs x = FoldFamilyDefs
 
@@ -123,6 +126,43 @@ class ConvertFamilyDefTo x where
 
 class ConvertFamilyDefIndexed x where
     convertFamilyDefIndexed :: forall f state is os m. IsSymbol f => Family' f -> FamilyDef state is os m -> x
+
+
+
+instance mappingTo ::
+  ( ConvertFamilyDefTo x ) =>
+  H.Mapping (MapFamilyDefs x) (FamilyDef state is os m) x where
+  mapping MapFamilyDefs = convertFamilyDef
+
+
+instance mappingIndexedTo ::
+  ( IsSymbol f, ConvertFamilyDefIndexed x ) =>
+  H.MappingWithIndex (MapFamilyDefsIndexed x) (Family' f) (FamilyDef state is os m) x where
+  mappingWithIndex MapFamilyDefsIndexed = convertFamilyDefIndexed
+
+
+class Map :: forall k. RowList Type -> Row Type -> k -> Row Type -> Constraint
+class
+    ( RowToList families rli
+    , H.MapRecordWithIndex rli (H.ConstMapping (MapFamilyDefs x)) families result
+    ) <= Map rli families x result
+
+instance mapInstances ::
+    ( RowToList families rli
+    , H.MapRecordWithIndex rli (H.ConstMapping (MapFamilyDefs x)) families result
+    ) => Map rli families x result
+
+
+class MapI :: forall k. RowList Type -> Row Type -> k -> Row Type -> Constraint
+class
+    ( RowToList families rli
+    , H.MapRecordWithIndex rli (MapFamilyDefsIndexed x) families result
+    ) <= MapI rli families x result
+
+instance mapInstancesIndexed ::
+    ( RowToList families rli
+    , H.MapRecordWithIndex rli (MapFamilyDefsIndexed x) families result
+    ) => MapI rli families x result
 
 
 class
@@ -177,12 +217,20 @@ instance foldDefsIndexedArr ::
     foldingWithIndex FoldFamilyDefsIndexed sym acc def = convertFamilyDefIndexed (familyP sym) def : acc
 
 
-{- families
-    :: forall gstate families families' x rl
-     . Fold rl (Record families) x families
+mapFamilies
+    :: forall gstate families families' rl x
+     . Map rl families x families'
     => Toolkit gstate families
-    -> Record x
-families (Toolkit _ defs) = H.hfoldl (FoldFamilyDefs :: FoldFamilyDefs x) ([] :: Array x) defs -}
+    -> Record families'
+mapFamilies (Toolkit _ defs) = H.hmap (MapFamilyDefs :: MapFamilyDefs x) defs
+
+
+mapFamiliesIndexed
+    :: forall gstate families families' rl x
+     . MapI rl families x families'
+    => Toolkit gstate families
+    -> Record families'
+mapFamiliesIndexed (Toolkit _ defs) = H.hmapWithIndex (MapFamilyDefsIndexed :: MapFamilyDefsIndexed x) defs
 
 
 familyDefs
