@@ -193,24 +193,3 @@ hfoldlWithIndex
     -> Array x
 hfoldlWithIndex =
     HF.hfoldlWithIndex (FoldFamilyDefsIndexed :: FoldFamilyDefsIndexed x) ([] :: Array x)
-
-
-{- Other -}
-
-
-data ToState = ToState
-
-
-class GetState from state where
-    -- getState :: forall proxy s. IsSymbol s => proxy s -> from -> state
-    getState :: forall f. Family' f -> from -> state
-
-
-instance toState ::
-  (IsSymbol sym, GetState a b) =>
-  HM.MappingWithIndex ToState (SProxy sym) a b where
-    mappingWithIndex ToState prop a = getState (familyP prop) a
-
-
-toStates ∷ ∀ (families :: Row Type) (states :: Row Type). HM.HMapWithIndex ToState (Record families) (Record states) ⇒ Record families → Record states
-toStates = HM.hmapWithIndex ToState

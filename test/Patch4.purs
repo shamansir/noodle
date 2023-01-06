@@ -28,6 +28,7 @@ import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
+import Noodle.Patch4.MapsFolds as PMF
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -109,12 +110,12 @@ spec = do
 
             {- (Node.state <$> Patch.nodes patch) `shouldEqual` [ "bar", "bar", "foo" ] -}
 
-            Array.all (\(Patch.NodeInfo (fsym /\ _ /\ nodeId)) ->
+            Array.all (\(PMF.NodeInfo (fsym /\ _ /\ nodeId)) ->
                 (reflect' fsym == "foo" || reflect' fsym == "bar") &&
                 (reflect' (familyOf nodeId) == "foo" || reflect' (familyOf nodeId) == "bar")
-            ) (Patch.nodesIndexed_ patch :: Array (Patch.NodeInfo _)) `shouldEqual` true
+            ) (Patch.nodesIndexed_ patch :: Array (PMF.NodeInfo _)) `shouldEqual` true
 
-            Array.all (\(Patch.NodeWithIndex (fsym /\ _ /\ node)) ->
+            Array.all (\(PMF.NodeWithIndex (fsym /\ _ /\ node)) ->
                 (reflect' fsym == "foo" || reflect' fsym == "bar") &&
                 (reflect' (familyOf $ Node.id node) == "foo" || reflect' (familyOf $ Node.id node) == "bar")
             ) (Patch.nodesIndexed patch) `shouldEqual` true
@@ -134,5 +135,5 @@ derive newtype instance Show I
 derive newtype instance Eq I
 
 -- FIMXE: include `nodes` type into constraint
-instance Patch.ConvertNodeIndexed I where
+instance PMF.ConvertNodeIndexed I where
     convertNodeIndexed _ n _ = I n

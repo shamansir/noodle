@@ -9,14 +9,15 @@ import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
-import Noodle.Toolkit3 (Toolkit, FamilyDef)
+import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
+import Noodle.Toolkit3.MapsFolds as TMF -- FIXME
 
 
 type Nodes m =
-    ( foo :: FamilyDef Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m
-    , bar :: FamilyDef Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m
-    , sum :: FamilyDef Unit ( a :: Int, b :: Int ) ( sum :: Int ) m
+    ( foo :: TMF.FamilyDef Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m
+    , bar :: TMF.FamilyDef Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m
+    , sum :: TMF.FamilyDef Unit ( a :: Int, b :: Int ) ( sum :: Int ) m
     )
 
 

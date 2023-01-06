@@ -14,8 +14,9 @@ import Noodle.Id (Family(..)) as Node
 import Noodle.Id (reflect')
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
-import Noodle.Toolkit3 (class ConvertFamilyDefTo, Toolkit)
+import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
+import Noodle.Toolkit3.MapsFolds as TMF
 import Noodle.Fn2.Process as Fn
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -30,6 +31,7 @@ import Record.Extra as Record
 import Prim.RowList as RL
 import Unsafe.Coerce (unsafeCoerce)
 import Type.Proxy (Proxy(..))
+
 
 spec :: Spec Unit
 spec = do

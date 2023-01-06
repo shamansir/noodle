@@ -46,6 +46,7 @@ import Noodle.Id (FamilyR) as Toolkit
 import Noodle.Node2 (dimensions, family) as Node
 import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
+import Noodle.Patch4.MapsFolds as Patch
 import Noodle.Toolkit3 (Toolkit) as Noodle
 import Noodle.Toolkit3 (name, nodeFamilies, spawn, unsafeSpawn) as Toolkit
 import Type.Proxy (Proxy(..))
