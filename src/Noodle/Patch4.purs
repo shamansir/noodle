@@ -94,12 +94,12 @@ data FoldNodesIndexed (ff :: Type -> Type) x = FoldNodesIndexed
 class
     ( RL.RowToList nodes rln
     , MapRecordWithIndex rln (ConstMapping NoInstancesOfNodeYet) nodes instances
-    ) <= Map rln nodes instances
+    ) <= Init rln nodes instances
 
-instance map ::
+instance init_ ::
     ( RL.RowToList nodes rln
     , MapRecordWithIndex rln (ConstMapping NoInstancesOfNodeYet) nodes instances
-    ) => Map rln nodes instances
+    ) => Init rln nodes instances
 
 class
     ( Monoid (ff result)
@@ -196,7 +196,7 @@ init
         (instances ∷ Row Type)
         (nodes ∷ Row Type)
         (rln ∷ RL.RowList Type)
-     . Map rln nodes instances
+     . Init rln nodes instances
     => Toolkit Unit nodes
     -> Patch Unit instances
 init = init' unit
@@ -208,7 +208,7 @@ init'
         (instances ∷ Row Type)
         (nodes ∷ Row Type)
         (rln ∷ RL.RowList Type)
-     . Map rln nodes instances
+     . Init rln nodes instances
     => gstate
     -> Toolkit gstate nodes
     -> Patch gstate instances
@@ -281,20 +281,6 @@ nodes
     => Patch gstate instances
     -> Array (Node f state is os m)
 nodes = nodes_
-    -- (nodes_ patch :: Array (Node _ _ _ _ m))
-
-
-nodesIndexed__
-    :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (folding :: (Type -> Type) -> Type -> Type) (m :: Type -> Type)
-     . RL.RowToList instances rla
-    => Monoid (m result)
-    => ConvertNodeIndexed result
-    => FoldlRecord (folding m result) (m result) rla instances (m result)
-    => folding m result
-    -> Patch gstate instances
-    -> m result
-nodesIndexed__ a (Patch _ instances _) =
-    hfoldlWithIndex a (mempty :: m result) instances
 
 
 nodesIndexed_
@@ -312,10 +298,9 @@ nodesIndexed
     => Patch gstate instances
     -> Array (NodeWithIndex f state is os m)
 nodesIndexed = nodesIndexed_
-    -- (nodesIndexed_ patch :: Array (NodeWithIndex _ _ _ _ m))
 
 
--- families ::
+-- TODO: extract nodes grouped by families as well
 
 
 class ConvertNodeTo x where

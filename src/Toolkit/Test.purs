@@ -9,14 +9,14 @@ import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
-import Noodle.Toolkit3 (Toolkit, NodeDef)
+import Noodle.Toolkit3 (Toolkit, FamilyDef)
 import Noodle.Toolkit3 as Toolkit
 
 
 type Nodes m =
-    ( foo :: NodeDef Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m
-    , bar :: NodeDef Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m
-    , sum :: NodeDef Unit ( a :: Int, b :: Int ) ( sum :: Int ) m
+    ( foo :: FamilyDef Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m
+    , bar :: FamilyDef Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m
+    , sum :: FamilyDef Unit ( a :: Int, b :: Int ) ( sum :: Int ) m
     )
 
 

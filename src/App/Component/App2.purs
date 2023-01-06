@@ -281,7 +281,7 @@ handleAction
     :: forall output patch_action rl gstate (nodes :: Row Type) (instances :: Row Type) m
      . MonadAff m
     => MonadEffect m
-    => Patch.Map rl nodes instances
+    => Patch.Init rl nodes instances
     => Action
     -> H.HalogenM (State gstate nodes instances) Action Slots output m Unit
 handleAction = case _ of
@@ -349,7 +349,7 @@ component
     => Record.Keys rli ⇒ RL.RowToList instances rli
     => Record.Keys rla ⇒ RL.RowToList instances rla
     => Patch.Fold rla Array NodeHtml' instances
-    => Patch.Map rla nodes instances
+    => Patch.Init rla nodes instances
     => H.Component query (Input gstate nodes instances) output Aff -- FIXME: there is MonadAff here!
 component =
     H.mkComponent

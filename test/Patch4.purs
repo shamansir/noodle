@@ -107,6 +107,8 @@ spec = do
 
             (Node.family >>> reflectFamily' <$> Patch.nodes patch) `shouldEqual` [ "bar", "bar", "foo" ]
 
+            {- (Node.state <$> Patch.nodes patch) `shouldEqual` [ "bar", "bar", "foo" ] -}
+
             Array.all (\(Patch.NodeInfo (fsym /\ _ /\ nodeId)) ->
                 (reflect' fsym == "foo" || reflect' fsym == "bar") &&
                 (reflect' (familyOf nodeId) == "foo" || reflect' (familyOf nodeId) == "bar")
