@@ -222,6 +222,7 @@ hashOf (NodeId (_ /\ uuid)) = uuid
 
 -- TODO: extend to HasInputs, HasOutputs with getAtInput, getAtOutput, updateInputs, updateOutputs, ...
  -- FIXME: use newtype
+-- FIXME: another module?
 class (RL.RowToList is g, Record.Keys g) <= HasInputs is g
 instance (RL.RowToList is g, Record.Keys g) => HasInputs is g
 

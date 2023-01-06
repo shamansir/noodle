@@ -2,73 +2,29 @@ module Noodle.Patch4 where
 
 import Prelude
 
-import Data.Symbol (class IsSymbol, reflectSymbol, reifySymbol)
-import Data.Const (Const)
 import Data.Array ((:))
 import Data.Array as Array
 import Data.Map (Map)
 import Data.Map as Map
-import Data.String as String
-import Data.Tuple.Nested ((/\), type (/\) )
-import Data.Unfoldable (class Unfoldable)
 import Unsafe.Coerce (unsafeCoerce)
-import Type.Proxy (Proxy)
-import Data.Identity (Identity)
-import Data.UniqueHash (UniqueHash)
 
-import Record.Extra as Record
-import Record.Unsafe as Record
-
-import Noodle.Id
+import Noodle.Id (Family)
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
+import Noodle.Patch4.Has as Has
+import Noodle.Patch4.MapsFolds as PI
+import Noodle.Patch4.MapsFolds as PM
+import Noodle.Patch4.MapsFolds as PF
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
 
-
-import Prim.Row (class Cons) as Row
 import Prim.RowList as RL
 
-import Heterogeneous.Mapping
-    ( class HMapWithIndex
-    , class Mapping
-    , class MappingWithIndex
-    , class MapRecordWithIndex
-    , ConstMapping
-    , hmap, hmapWithIndex
-    -- , class HFoldlWithIndex
-    )
-
-import Heterogeneous.Folding
-    ( class HFoldl
-    , class HFoldlWithIndex
-    , class Folding
-    , class FoldingWithIndex
-    , class FoldlRecord
-    , ConstFolding
-    , hfoldl, hfoldlWithIndex
-    -- , class HFoldlWithIndex
-    )
-
 import Record as Record
-import Record.Builder (Builder)
-
-import Unsafe.Coerce (unsafeCoerce)
-
-import Data.Exists (Exists, mkExists, runExists)
-
-
-type NodesOf f state is os m = Array (Node f state is os m)
-
 
 --data LinkOE fo fi = Exists (LinkOf fo fi)
 
 type Id = String
-
-
-data NoInstancesOfNodeYet = NoInstancesOfNodeYet
-data MapNodesTo x = MapNodesTo
-data MapNodesIndexedTo x = MapNodesIndexedTo
 
 
 type Links =
@@ -80,162 +36,12 @@ type Links =
 data Patch gstate (instances :: Row Type) = Patch gstate (Record instances) Links
 
 
-instance mappingToNIONY ::
-  Mapping NoInstancesOfNodeYet node_def (NodesOf f state is os m) where
-  mapping NoInstancesOfNodeYet = const []
-
-
-instance mappingTo ::
-  ( ConvertNodesTo x ) =>
-  Mapping (MapNodesTo x) (NodesOf f state is os m) x where
-  mapping MapNodesTo = convertNodes
-
-
-instance mappingIndexedTo ::
-  ( IsSymbol f, ConvertNodesIndexedTo x ) =>
-  MappingWithIndex (MapNodesIndexedTo x) (Family' f) (NodesOf f state is os m) x where
-  mappingWithIndex MapNodesIndexedTo = convertNodesIndexed
-
-
-data FoldNodes :: forall k. (Type -> Type) -> k -> Type
-data FoldNodes (ff :: Type -> Type) x = FoldNodes
-
-
-data FoldNodesIndexed :: forall k. (Type -> Type) -> k -> Type
-data FoldNodesIndexed (ff :: Type -> Type) x = FoldNodesIndexed
-
-
-class
-    ( RL.RowToList nodes rln
-    , MapRecordWithIndex rln (ConstMapping NoInstancesOfNodeYet) nodes instances
-    ) <= Init rln nodes instances
-
-instance initInstances ::
-    ( RL.RowToList nodes rln
-    , MapRecordWithIndex rln (ConstMapping NoInstancesOfNodeYet) nodes instances
-    ) => Init rln nodes instances
-
-
-class Map :: forall k. RL.RowList Type -> Row Type -> k -> Row Type -> Constraint
-class
-    ( RL.RowToList instances rli
-    , MapRecordWithIndex rli (ConstMapping (MapNodesTo x)) instances result
-    ) <= Map rli instances x result
-
-instance mapInstances ::
-    ( RL.RowToList instances rli
-    , MapRecordWithIndex rli (ConstMapping (MapNodesTo x)) instances result
-    ) => Map rli instances x result
-
-
-class MapI :: forall k. RL.RowList Type -> Row Type -> k -> Row Type -> Constraint
-class
-    ( RL.RowToList instances rli
-    , MapRecordWithIndex rli (MapNodesIndexedTo x) instances result
-    ) <= MapI rli instances x result
-
-instance mapInstancesIndexed ::
-    ( RL.RowToList instances rli
-    , MapRecordWithIndex rli (MapNodesIndexedTo x) instances result
-    ) => MapI rli instances x result
-
-
-class
-    ( Monoid (ff result)
-    , ConvertNodeTo result
-    , RL.RowToList instances rla
-    , FoldlRecord (ConstFolding (FoldNodes ff result)) (ff result) rla instances (ff result)
-    ) <= Fold rla ff result instances
-
-instance foldInstances ::
-    ( Monoid (ff result)
-    , ConvertNodeTo result
-    , RL.RowToList instances rla
-    , FoldlRecord (ConstFolding (FoldNodes ff result)) (ff result) rla instances (ff result)
-    ) => Fold rla ff result instances
-
-class
-    ( Monoid (ff result)
-    , ConvertNodeIndexed result
-    , RL.RowToList instances rla
-    , FoldlRecord (FoldNodesIndexed ff result) (ff result) rla instances (ff result)
-    ) <= FoldI rla ff result instances
-
-instance foldInstacesIndexed ::
-    ( Monoid (ff result)
-    , ConvertNodeIndexed result
-    , RL.RowToList instances rla
-    , FoldlRecord (FoldNodesIndexed ff result) (ff result) rla instances (ff result)
-    ) => FoldI rla ff result instances
-
-
-{-
-instance foldNodes ::
-    ( Unfoldable u, Semigroup (u x), ConvertNodeTo x )
-    => Folding
-            (FoldNodes u x)
-            (u x)
-            (Array (Node f state is os m))
-            (u x)
-    where
-    folding FoldNodes acc nodes = acc <> (Array.toUnfoldable $ convertNode <$> nodes)
--}
-
-instance foldNodesArr ::
-    ConvertNodeTo x
-    => Folding
-            (FoldNodes Array x)
-            (Array x)
-            (Array (Node f state is os m))
-            (Array x)
-    where
-    folding FoldNodes acc nodes = acc <> (convertNode <$> nodes)
-
-
-{-
-instance foldNodesIndexed ::
-    ( Unfoldable u, Semigroup (u x), IsSymbol sym, ConvertNodeIndexed x )
-    => FoldingWithIndex
-            (FoldNodesIndexed u x)
-            (Proxy sym)
-            (u x)
-            (Array (Node f state is os m))
-            (u x)
-    where
-    foldingWithIndex FoldNodesIndexed i acc nodes = acc <> (Array.toUnfoldable $ Array.mapWithIndex (convertNodeIndexed i) nodes)
--}
-
-
-instance foldNodesIndexedArr ::
-    ( IsSymbol f, ConvertNodeIndexed x )
-    => FoldingWithIndex
-            (FoldNodesIndexed Array x)
-            (Family' f)
-            (Array x)
-            (Array (Node f state is os m))
-            (Array x)
-    where
-    foldingWithIndex FoldNodesIndexed i acc nodes = acc <> Array.mapWithIndex (convertNodeIndexed i) nodes
-
-
-class
-    ( IsSymbol f
-    , Row.Cons f x instances' instances
-    )
-    <= HasInstancesOf f instances' instances x -- FIXME: use newtype
-instance
-    ( IsSymbol f
-    , Row.Cons f x instances' instances
-    )
-    => HasInstancesOf f instances' instances x -- FIXME: use newtype
-
-
 init
     :: forall
         (instances ∷ Row Type)
         (nodes ∷ Row Type)
         (rln ∷ RL.RowList Type)
-     . Init rln nodes instances
+     . PI.Init rln nodes instances
     => Toolkit Unit nodes
     -> Patch Unit instances
 init = init' unit
@@ -247,14 +53,14 @@ init'
         (instances ∷ Row Type)
         (nodes ∷ Row Type)
         (rln ∷ RL.RowList Type)
-     . Init rln nodes instances
+     . PI.Init rln nodes instances
     => gstate
     -> Toolkit gstate nodes
     -> Patch gstate instances
 init' state tk =
     Patch
         state
-        (hmap NoInstancesOfNodeYet $ Toolkit.toRecord tk)
+        (PI.init $ Toolkit.toRecord tk)
         { from : Map.empty
         , to : Map.empty
         }
@@ -262,7 +68,7 @@ init' state tk =
 
 registerNode
     :: forall ps instances' instances f state is os m
-     . HasInstancesOf f instances' instances (NodesOf f state is os m)
+     . Has.HasInstancesOf f instances' instances (PM.NodesOf f state is os m)
     => Node f state is os m
     -> Patch ps instances
     -> Patch ps instances
@@ -275,16 +81,16 @@ registerNode node (Patch state instances links) =
 
 nodesOf
     :: forall ps instances' instances f state is os m
-     . HasInstancesOf f instances' instances (NodesOf f state is os m)
+     . Has.HasInstancesOf f instances' instances (PM.NodesOf f state is os m)
     => Family f
     -> Patch ps instances
-    -> NodesOf f state is os m
+    -> PM.NodesOf f state is os m
 nodesOf family (Patch _ instances _) = Record.get family instances
 
 
 howMany
     :: forall ps instances' instances f state is os m
-     . HasInstancesOf f instances' instances (NodesOf f state is os m)
+     . Has.HasInstancesOf f instances' instances (PM.NodesOf f state is os m)
     => Family f
     -> Patch ps instances
     -> Int
@@ -307,139 +113,55 @@ registerLink link (Patch state instances links) =
 
 nodes_
     :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (ff :: Type -> Type)
-     . Fold rla ff result instances
+     . PF.Fold rla ff result instances
     => Patch gstate instances
     -> ff result
 nodes_ (Patch _ instances _) =
-    hfoldl (FoldNodes :: FoldNodes ff result) (mempty :: ff result) instances
+    PF.hfoldl_ instances
 
 
 nodes
     :: forall f state is os gstate instances rla m
-     . Fold rla Array (Node f state is os m) instances
+     . PF.Fold rla Array (Node f state is os m) instances
     => Patch gstate instances
     -> Array (Node f state is os m)
-nodes = nodes_
+nodes (Patch _ instances _) =
+    PF.hfoldl instances
 
 
 nodesIndexed_
     :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (ff :: Type -> Type)
-     . FoldI rla ff result instances
+     . PF.FoldI rla ff result instances
     => Patch gstate instances
     -> ff result
 nodesIndexed_ (Patch _ instances _) =
-    hfoldlWithIndex (FoldNodesIndexed :: FoldNodesIndexed ff result) (mempty :: ff result) instances
+    PF.hfoldlWithIndex_ instances
 
 
 nodesIndexed
     :: forall f state is os gstate (instances :: Row Type) (rla ∷ RL.RowList Type) (m :: Type -> Type)
-     . FoldI rla Array (NodeWithIndex f state is os m) instances
+     . PF.FoldI rla Array (PF.NodeWithIndex f state is os m) instances
     => Patch gstate instances
-    -> Array (NodeWithIndex f state is os m)
-nodesIndexed = nodesIndexed_
+    -> Array (PF.NodeWithIndex f state is os m)
+nodesIndexed (Patch _ instances _) =
+     PF.hfoldlWithIndex instances
 
 
+{-
 nodesMap
     :: forall gstate instances rli x result
-     . Map rli instances x result
+     . PM.Map rli instances x result
     => Patch gstate instances
     -> Record result
-nodesMap (Patch _ instances _) = hmap (MapNodesTo :: MapNodesTo x) instances
+nodesMap (Patch _ instances _) =
+    PM.hmap instances
 
 
 nodesMapIndexed
     :: forall gstate instances rli x result
-     . MapI rli instances x result
+     . PM.MapI rli instances x result
     => Patch gstate instances
     -> Record result
-nodesMapIndexed (Patch _ instances _) = hmapWithIndex (MapNodesIndexedTo :: MapNodesIndexedTo x) instances
-
-
--- TODO: extract nodes grouped by families as well
-
-class ConvertNodeTo x where
-    convertNode :: forall f state is os m. Node f state is os m -> x
-
-
-class ConvertNodeIndexed x where
-    convertNodeIndexed :: forall f state is os m. IsSymbol f => Family' f -> Int -> Node f state is os m -> x
-
-
-class ConvertNodesTo x where
-    convertNodes :: forall f state is os m. Array (Node f state is os m) -> x
-
-
-class ConvertNodesIndexedTo x where
-    convertNodesIndexed :: forall f state is os m. Family' f -> Array (Node f state is os m) -> x
-
-
-instance extractId :: ConvertNodeTo (NodeId f') where
-    convertNode :: forall f state is os m. Node f state is os m -> NodeId f'
-    convertNode node = unsafeCoerce $ Node.id node
-
-
-instance extractFamily :: ConvertNodeTo (Family' f') where
-    convertNode :: forall f state is os m. Node f state is os m -> Family' f'
-    convertNode node = unsafeCoerce $ Node.family node
-
-
-instance extractHash :: ConvertNodeTo UniqueHash where
-    convertNode :: forall f state is os m. Node f state is os m -> UniqueHash
-    convertNode = Node.hash
-
-
-newtype NodeInfo f = NodeInfo (Family' f /\ Int /\ NodeId f)
-
-
-newtype NodeWithIndex f state is os m = NodeWithIndex (Family' f /\ Int /\ Node f state is os m)
-
-
-instance extractIdIndexed :: ConvertNodeIndexed (Int /\ NodeId f') where
-    convertNodeIndexed
-        :: forall f state is os m
-         . IsSymbol f
-        => Family' f
-        -> Int
-        -> Node f state is os m
-        -> Int /\ NodeId f'
-    convertNodeIndexed _ idx node = idx /\ (unsafeCoerce $ Node.id node)
-
-
-instance extractIdIndexedInfo :: ConvertNodeIndexed (NodeInfo f') where
-    convertNodeIndexed
-        :: forall f state is os m
-         . IsSymbol f
-        => Family' f
-        -> Int
-        -> Node f state is os m
-        -> NodeInfo f'
-    convertNodeIndexed family idx node = NodeInfo $ unsafeCoerce family /\ idx /\ (unsafeCoerce $ Node.id node)
-
-
-instance extractNodeWithIndex :: ConvertNodeIndexed (NodeWithIndex f' state' is' os' m') where
-    convertNodeIndexed
-        :: forall f state is os m
-         . IsSymbol f
-        => Family' f
-        -> Int
-        -> Node f state is os m
-        -> NodeWithIndex f' state' is' os' m'
-    convertNodeIndexed family idx node = NodeWithIndex $ unsafeCoerce family /\ idx /\ unsafeCoerce node
-
-
-instance convertToItself :: ConvertNodeTo (Node f' state' is' os' m') where
-    convertNode :: forall f state is os m. Node f state is os m -> Node f' state' is' os' m'
-    -- convertNode :: Node f' state' is' os' m' -> Node f' state' is' os' m'
-    convertNode = unsafeCoerce
-    -- convertNode = identity
-
-
-instance convertIndexedToItself :: ConvertNodeIndexed (Node f' state' is' os' m') where
-    convertNodeIndexed
-        :: forall f state is os m
-         . IsSymbol f
-        => Family' f
-        -> Int
-        -> Node f state is os m
-        -> Node f' state' is' os' m'
-    convertNodeIndexed _ _ = unsafeCoerce
+nodesMapIndexed (Patch _ instances _) =
+    PM.hmapWithIndex instances
+-}
