@@ -55,7 +55,7 @@ instance mappingTo ::
 
 
 instance mappingIndexedTo ::
-  ( IsSymbol f, ConvertFamilyDefIndexed x ) =>
+  ( IsSymbol f, ConvertFamilyDefIndexedTo x ) =>
   HM.MappingWithIndex (MapFamilyDefsIndexed x) (Proxy f) (FamilyDef state is os m) x where
   mappingWithIndex MapFamilyDefsIndexed psym = convertFamilyDefIndexed $ familyP psym
 
@@ -77,13 +77,13 @@ instance mapFamilies_ ::
 class MapI :: RL.RowList Type -> Row Type -> Type -> Row Type -> Constraint
 class
     ( RL.RowToList families rli
-    , ConvertFamilyDefIndexed x
+    , ConvertFamilyDefIndexedTo x
     , HM.MapRecordWithIndex rli (MapFamilyDefsIndexed x) families result
     ) <= MapI rli families x result
 
 instance mapFamiliesIndexed_ ::
     ( RL.RowToList families rli
-    , ConvertFamilyDefIndexed x
+    , ConvertFamilyDefIndexedTo x
     , HM.MapRecordWithIndex rli (MapFamilyDefsIndexed x) families result
     ) => MapI rli families x result
 
@@ -108,14 +108,14 @@ instance fold ::
 
 class
     ( Monoid (ff result)
-    , ConvertFamilyDefIndexed result
+    , ConvertFamilyDefIndexedTo result
     , RL.RowToList families rl
     , HF.FoldlRecord (FoldFamilyDefsIndexed result) (ff result) rl families (ff result)
     ) <= FoldI rl ff result families
 
 instance foldI ::
     ( Monoid (ff result)
-    , ConvertFamilyDefIndexed result
+    , ConvertFamilyDefIndexedTo result
     , RL.RowToList families rl
     , HF.FoldlRecord (FoldFamilyDefsIndexed result) (ff result) rl families (ff result)
     ) => FoldI rl ff result families
@@ -133,7 +133,7 @@ instance foldDefsArr ::
 
 
 instance foldDefsIndexedArr ::
-    ( IsSymbol f, ConvertFamilyDefIndexed x )
+    ( IsSymbol f, ConvertFamilyDefIndexedTo x )
     => HF.FoldingWithIndex
             (FoldFamilyDefsIndexed x)
             (Proxy f)
@@ -151,7 +151,7 @@ class ConvertFamilyDefTo x where
     convertFamilyDef :: forall state is os m. FamilyDef state is os m -> x
 
 
-class ConvertFamilyDefIndexed x where
+class ConvertFamilyDefIndexedTo x where
     convertFamilyDefIndexed :: forall f state is os m. IsSymbol f => Family' f -> FamilyDef state is os m -> x
 
 

@@ -124,9 +124,22 @@ spec = do
 
             Patch.nodesIndexed_ patch `shouldEqual` [ I 0, I 1, I 0 ]
 
+            Patch.nodesMap patch `shouldEqual`
+                { foo : [ S { foo : "foo" } ]
+                , bar : [ S { foo : "bar" }, S { foo : "bar" } ]
+                }-- [ I 0, I 1, I 0 ]
+
             -- TODO
 
             pure unit
+
+newtype S = S { foo :: String }
+
+derive newtype instance Show S
+derive newtype instance Eq S
+
+instance PMF.ConvertNodeTo S where
+    convertNode node = S { foo : reflectFamily' (Node.family node) }
 
 
 newtype I = I Int
@@ -135,5 +148,5 @@ derive newtype instance Show I
 derive newtype instance Eq I
 
 -- FIMXE: include `nodes` type into constraint
-instance PMF.ConvertNodeIndexed I where
+instance PMF.ConvertNodeIndexedTo I where
     convertNodeIndexed _ n _ = I n

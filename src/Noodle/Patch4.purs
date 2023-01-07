@@ -6,21 +6,20 @@ import Data.Array ((:))
 import Data.Array as Array
 import Data.Map (Map)
 import Data.Map as Map
-import Unsafe.Coerce (unsafeCoerce)
-
 import Noodle.Id (Family)
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Patch4.Has as Has
+import Noodle.Patch4.MapsFolds as PF
 import Noodle.Patch4.MapsFolds as PI
 import Noodle.Patch4.MapsFolds as PM
-import Noodle.Patch4.MapsFolds as PF
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
-
 import Prim.RowList as RL
-
 import Record as Record
+import Unsafe.Coerce (unsafeCoerce)
+import Type.Proxy (Proxy(..))
+import Heterogeneous.Mapping as H
 
 --data LinkOE fo fi = Exists (LinkOf fo fi)
 
@@ -147,21 +146,19 @@ nodesIndexed (Patch _ instances _) =
      PF.hfoldlWithIndex instances
 
 
-{-
 nodesMap
-    :: forall gstate instances rli x result
-     . PM.Map rli instances x result
+    :: forall gstate instances rli x rrow
+     . PM.Map rli instances x rrow
     => Patch gstate instances
-    -> Record result
+    -> Record rrow
 nodesMap (Patch _ instances _) =
-    PM.hmap instances
+    PM.hmap (Proxy :: Proxy x) instances
 
 
 nodesMapIndexed
-    :: forall gstate instances rli x result
-     . PM.MapI rli instances x result
+    :: forall gstate instances rli x rrow
+     . PM.MapI rli instances x rrow
     => Patch gstate instances
-    -> Record result
+    -> Record rrow
 nodesMapIndexed (Patch _ instances _) =
-    PM.hmapWithIndex instances
--}
+    PM.hmapWithIndex (Proxy :: Proxy x) instances

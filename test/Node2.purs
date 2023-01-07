@@ -100,7 +100,9 @@ spec = do
             (reflect' <$> Node.inputsShape node) `shouldEqual` ( "a" : "b" : List.Nil )
             (reflect' <$> Node.outputsShape node) `shouldEqual` ( "sum" : List.Nil )
 
-            (bimap (map reflect') (map reflect') $ Node.shape node) `shouldEqual` (( "a" : "b" : List.Nil ) /\ ( "sum" : List.Nil ))
+            (bimap (map reflect') (map reflect') $ Node.shape node)
+                `shouldEqual`
+                (( "a" : "b" : List.Nil ) /\ ( "sum" : List.Nil ))
 
 
     describe "connecting & disconnecting" $ do
