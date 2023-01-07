@@ -142,7 +142,7 @@ reflectInputR :: InputR -> String
 reflectInputR (InputR s) = s
 
 
-keysToInputsR :: forall w is rl. RL.RowToList is rl => Record.Keys rl => w is -> List InputR
+keysToInputsR :: forall w is rl. HasInputs is rl => w is -> List InputR
 keysToInputsR = Record.keys >>> (<$>) InputR
 
 
@@ -189,7 +189,7 @@ reflectOutputR :: OutputR -> String
 reflectOutputR (OutputR s) = s
 
 
-keysToOutputsR :: forall w os rl. RL.RowToList os rl => Record.Keys rl => w os -> List OutputR
+keysToOutputsR :: forall w os rl. HasOutputs os rl => w os -> List OutputR
 keysToOutputsR = Record.keys >>> (<$>) OutputR
 
 

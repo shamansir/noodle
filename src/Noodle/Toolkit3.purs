@@ -10,7 +10,8 @@ module Noodle.Toolkit3
   , unsafeSpawnR
   , familyDefs
   , familyDefsIndexed
---   , mapFamilies, mapFamiliesIndexed
+  , mapFamilies, mapFamiliesIndexed
+  , inputsFromDef, outputsFromDef
   )
   where
 
@@ -93,26 +94,24 @@ familyDefsIndexed (Toolkit _ defs) = TF.hfoldlWithIndex defs
 -- toStates = TM.toStates <<< toRecord
 
 
-{-
 mapFamilies
     :: forall gstate families families' rl x
      . TM.Map rl families x families'
     => Toolkit gstate families
     -> Record families'
 mapFamilies (Toolkit _ defs) =
-    TM.hmap defs
+    TM.hmap (Proxy :: Proxy x) defs
 
 
 
 mapFamiliesIndexed
     :: forall gstate families families' rl x
-     . TM.ConvertFamilyDefIndexed x
+     . TM.ConvertFamilyDefIndexedTo x
     => TM.MapI rl families x families'
     => Toolkit gstate families
     -> Record families'
 mapFamiliesIndexed (Toolkit _ defs) =
-    TM.hmapWithIndex defs
--}
+    TM.hmapWithIndex (Proxy :: Proxy x) defs
 
 
 spawn
@@ -170,3 +169,11 @@ name (Toolkit name _) = name
 
 nodeFamilies :: forall ks gstate families. ListsFamilies families ks => Toolkit gstate families -> List FamilyR
 nodeFamilies (Toolkit _ _) = keysToFamiliesR (Proxy :: Proxy families)
+
+
+inputsFromDef :: forall ks state is os m. HasInputs is ks => TM.FamilyDef state is os m -> List InputR
+inputsFromDef _ = keysToInputsR (Proxy :: Proxy is)
+
+
+outputsFromDef :: forall ks state is os m. HasOutputs os ks => TM.FamilyDef state is os m -> List OutputR
+outputsFromDef _ = keysToOutputsR (Proxy :: Proxy os)

@@ -147,18 +147,18 @@ nodesIndexed (Patch _ instances _) =
 
 
 nodesMap
-    :: forall gstate instances rli x rrow
-     . PM.Map rli instances x rrow
+    :: forall gstate instances rli x instances'
+     . PM.Map rli instances x instances'
     => Patch gstate instances
-    -> Record rrow
+    -> Record instances'
 nodesMap (Patch _ instances _) =
     PM.hmap (Proxy :: Proxy x) instances
 
 
 nodesMapIndexed
-    :: forall gstate instances rli x rrow
-     . PM.MapI rli instances x rrow
+    :: forall gstate instances rli x instances'
+     . PM.MapI rli instances x instances'
     => Patch gstate instances
-    -> Record rrow
+    -> Record instances'
 nodesMapIndexed (Patch _ instances _) =
     PM.hmapWithIndex (Proxy :: Proxy x) instances

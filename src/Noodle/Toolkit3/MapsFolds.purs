@@ -122,7 +122,7 @@ instance foldI ::
 
 
 instance foldDefsArr ::
-    ( IsSymbol f, ConvertFamilyDefTo x )
+    ( ConvertFamilyDefTo x )
     => HF.Folding
             (FoldFamilyDefs x)
             (Array x)
@@ -163,17 +163,19 @@ class ConvertFamilyDefIndexedTo x where
 hmap
     :: forall families families' rl x
      . Map rl families x families'
-    => Record families
+    => Proxy x
+    -> Record families
     -> Record families'
-hmap = HM.hmap (MapFamilyDefs :: MapFamilyDefs x)
+hmap _ = HM.hmap (MapFamilyDefs :: MapFamilyDefs x)
 
 
 hmapWithIndex
     :: forall families families' rl x
      . MapI rl families x families'
-    => Record families
+    => Proxy x
+    -> Record families
     -> Record families'
-hmapWithIndex =
+hmapWithIndex _ =
     HM.hmapWithIndex (MapFamilyDefsIndexed :: MapFamilyDefsIndexed x)
 
 
