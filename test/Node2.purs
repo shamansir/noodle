@@ -3,13 +3,18 @@ module Test.Node2 where
 import Prelude
 
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Console (log) as Console
 
 
 import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Signal (expectFn, expect)
 
+import Data.List ((:))
+import Data.List (List(..)) as List
+import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Bifunctor (bimap)
 
 -- import Noodle.Node.Shape (noInlets, noOutlets) as Shape
 -- import Noodle.Node ((<~>), (+>), (<+))
@@ -19,7 +24,8 @@ import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Id (Family(..)) as Node
-import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Id (Input(..), Output(..), InputR(..) ) as Fn
+import Noodle.Id (reflect')
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -84,6 +90,18 @@ spec = do
             atSumAfter `shouldEqual` 5
 
             pure unit
+
+    describe "shapes" $ do
+
+        it "is possible to extract shape" $ do
+            node <-
+                Node.make _sum unit { a : 2, b : 3 } { sum : 0 } $ pure unit
+
+            (reflect' <$> Node.inputsShape node) `shouldEqual` ( "a" : "b" : List.Nil )
+            (reflect' <$> Node.outputsShape node) `shouldEqual` ( "sum" : List.Nil )
+
+            (bimap (map reflect') (map reflect') $ Node.shape node) `shouldEqual` (( "a" : "b" : List.Nil ) /\ ( "sum" : List.Nil ))
+
 
     describe "connecting & disconnecting" $ do
 

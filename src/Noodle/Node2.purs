@@ -335,27 +335,27 @@ outputsShape (Node _ _ _ fn) = Fn.outputsShape fn
 
 
 shape
-    :: forall f state (is :: Row Type) (os :: Row Type) m g
-     . HasInputs is g
-    => HasOutputs os g
+    :: forall f state (is :: Row Type) (os :: Row Type) m gi go
+     . HasInputs is gi
+    => HasOutputs os go
     => Node f state is os m
     -> List InputR /\ List OutputR
 shape node = inputsShape node /\ outputsShape node
 
 
 dimensions
-    :: forall f state is os m g
-     . HasInputs is g
-    => HasOutputs os g
+    :: forall f state is os m gi go
+     . HasInputs is gi
+    => HasOutputs os go
     => Node f state is os m
     -> Int /\ Int
 dimensions = shape >>> bimap List.length List.length
 
 
 dimensionsBy
-    :: forall f state is os m g
-     . HasInputs is g
-    => HasOutputs os g
+    :: forall f state is os m gi go
+     . HasInputs is gi
+    => HasOutputs os go
     => (InputR -> Boolean)
     -> (OutputR -> Boolean)
     -> Node f state is os m
