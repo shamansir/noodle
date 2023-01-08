@@ -175,8 +175,8 @@ instance Node.HasInputsAt is ks => TMF.ConvertFamilyDefTo (Inputs is ks)
     where
         convertFamilyDef
             :: forall state' is' os' m'
-             -- . Node.HasInputsAt is ks => Family.Def state is os m
-             . Family.Def state' is' os' m'
+             . Node.HasInputsAt is ks
+            => Family.Def state' is' os' m'
             -> Inputs is ks
         convertFamilyDef def = Inputs (Def.inputs def)
 -}

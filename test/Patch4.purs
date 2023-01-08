@@ -8,6 +8,8 @@ import Effect.Console (log) as Console
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
 import Data.String as String
+import Data.List (List)
+import Data.List as List
 
 import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
@@ -19,7 +21,7 @@ import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
-import Noodle.Id (reflectFamily', reflect', NodeId, familyOf, Family')
+import Noodle.Id (reflectFamily', reflect', NodeId, familyOf, Family', class HasInputsAt, class HasOutputsAt)
 import Noodle.Id (Family(..), Family') as Node
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Type.Data.Symbol (reflectSymbol)
@@ -132,6 +134,27 @@ spec = do
                 , bar : [ S { foo : "bar" }, S { foo : "bar" } ]
                 }-- [ I 0, I 1, I 0 ]
 
+            {-
+            Patch.nodesMap patch `shouldEqual`
+                { foo :
+                    [ Shape
+                        { inputs : Array.toUnfoldable [ "foo", "bar", "c" ]
+                        , outputs : Array.toUnfoldable [ "out" ]
+                        }
+                    ]
+                , bar :
+                    [ Shape
+                        { inputs : Array.toUnfoldable [ "a", "b", "c" ]
+                        , outputs : Array.toUnfoldable [ "x" ]
+                        }
+                    , Shape
+                        { inputs : Array.toUnfoldable [ "a", "b", "c" ]
+                        , outputs : Array.toUnfoldable [ "x" ]
+                        }
+                    ]
+                }
+            -}
+
             -- TODO
 
             pure unit
@@ -153,3 +176,26 @@ derive newtype instance Eq I
 -- FIMXE: include `nodes` type into constraint
 instance PMF.ConvertNodeIndexedTo I where
     convertNodeIndexed _ n _ = I n
+
+
+newtype Shape =
+    Shape { inputs :: List String, outputs :: List String }
+
+
+{-
+instance PMF.ConvertNodeTo Shape where
+    convertNode
+        :: forall f' state' is' os' m' ksi kso
+         . HasInputsAt is' ksi
+        => HasOutputsAt os' kso
+        => Node f' state' is' os' m'
+        -> Shape
+    convertNode node =
+        case Node.shape node of
+            inputs /\ outputs ->
+                Shape { inputs : reflect' <$> inputs, outputs : reflect' <$> outputs }
+-}
+
+
+derive newtype instance Show Shape
+derive newtype instance Eq Shape

@@ -216,7 +216,7 @@ sendIn_ (Node _ _ protocol _) input din =
 data Link fo fi o i = Link (NodeId fo) (Output' o) (Input' i) (NodeId fi) (Effect Unit)
 
 
--- FIXME: move to Noodle.Id
+-- FIXME: move to Noodle.Id or Link module
 newtype FromId = FromId String
 newtype ToId = ToId String
 newtype FullId = FullId String

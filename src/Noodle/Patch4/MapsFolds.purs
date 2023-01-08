@@ -1,4 +1,5 @@
-module Noodle.Patch4.MapsFolds where
+module Noodle.Patch4.MapsFolds
+  where
 
 import Prelude
 
@@ -41,9 +42,46 @@ newtype NodeWithIndex f state is os m = NodeWithIndex (Family' f /\ Int /\ Node 
 data NoInstancesOfNodeYet = NoInstancesOfNodeYet
 
 
-data MapNodesTo x = MapNodesTo
 
-data MapNodesIndexedTo x = MapNodesIndexedTo
+
+{- data MapTarget
+foreign import data To :: Type -> MapTarget -}
+
+{-
+data FoldTarget
+foreign import data FoldTo :: (Type -> Type) -> Type -> FoldTarget
+-}
+
+
+{- data Target
+foreign import data ForMap :: MapTarget -> Target
+foreign import data ForFold :: FoldTarget -> Target -}
+
+{-
+data Focus
+foreign import data Empty :: Focus
+foreign import data OnInlets :: Row Type -> Focus
+foreign import data OnOutlets :: Row Type -> Focus
+foreign import data OnInletsOutlets :: Row Type -> Row Type -> Focus
+
+
+data MapNodes :: Focus -> Type -> Type
+data MapNodes (focus :: Focus) x = MapNodes
+
+data MapNodesIndexed :: Focus -> Type -> Type
+data MapNodesIndexed (focus :: Focus) x = MapNodesIndexed
+
+
+data FoldNodes :: Focus -> FoldTarget -> Type
+data FoldNodes (focus :: Focus) (x :: FoldTarget) = FoldNodes
+
+data FoldNodesIndexed :: Focus -> FoldTarget -> Type
+data FoldNodesIndexed (focus :: Focus) (x :: FoldTarget) = FoldNodesIndexed
+-}
+
+data MapNodes x = MapNodes
+
+data MapNodesIndexed x = MapNodesIndexed
 
 
 data FoldNodes :: forall k. (Type -> Type) -> k -> Type
@@ -51,6 +89,8 @@ data FoldNodes (ff :: Type -> Type) x = FoldNodes
 
 data FoldNodesIndexed :: forall k. (Type -> Type) -> k -> Type
 data FoldNodesIndexed (ff :: Type -> Type) x = FoldNodesIndexed
+
+
 
 
 {- Init classed and instances -}
@@ -78,48 +118,48 @@ instance initInstances ::
 class
     ( RL.RowToList instances rli
     , ConvertNodeTo x, ConvertNodesTo (Array x)
-    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapNodesTo x)) instances rrow
+    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapNodes x)) instances rrow
     ) <= Map rli instances x rrow
 
 instance mapInstances ::
     ( RL.RowToList instances rli
     , ConvertNodeTo x, ConvertNodesTo (Array x)
-    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapNodesTo x)) instances rrow
+    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapNodes x)) instances rrow
     ) => Map rli instances x rrow
 
 
 class
     ( RL.RowToList instances rli
     , ConvertNodeTo x, ConvertNodesTo (Array x)
-    , HM.MapRecordWithIndex rli (MapNodesIndexedTo x) instances rrow
+    , HM.MapRecordWithIndex rli (MapNodesIndexed x) instances rrow
     ) <= MapI rli instances x rrow
 
 instance mapInstancesIndexed ::
     ( RL.RowToList instances rli
     , ConvertNodeTo x, ConvertNodesTo (Array x)
-    , HM.MapRecordWithIndex rli (MapNodesIndexedTo x) instances rrow
+    , HM.MapRecordWithIndex rli (MapNodesIndexed x) instances rrow
     ) => MapI rli instances x rrow
 
 
 instance mappingTo ::
     ( ConvertNodeTo x ) =>
     HM.Mapping
-        (MapNodesTo x)
+        (MapNodes x)
         (NodesOf f state is os m)
         (Array x)
     where
-    mapping MapNodesTo = convertNodes
+    mapping MapNodes = convertNodes
 
 
 instance mappingIndexedTo ::
     ( IsSymbol f, ConvertNodeIndexedTo x, ConvertNodesIndexedTo (Array x) ) =>
     HM.MappingWithIndex
-        (MapNodesIndexedTo x)
+        (MapNodesIndexed x)
         (Proxy f)
         (NodesOf f state is os m)
         (Array x)
     where
-    mappingWithIndex MapNodesIndexedTo psym = convertNodesIndexed $ familyP psym
+    mappingWithIndex MapNodesIndexed psym = convertNodesIndexed $ familyP psym
 
 {- Fold classes and instances -}
 
@@ -201,6 +241,7 @@ instance foldNodesIndexedList ::
 {- Converters -}
 
 
+-- class ConvertNodeTo (focus :: Focus) x where
 class ConvertNodeTo x where
     convertNode :: forall f state is os m. Node f state is os m -> x
 
@@ -308,7 +349,7 @@ hmap
     => Proxy x
     -> Record instances
     -> Record rrow
-hmap _ = HM.hmap (MapNodesTo :: MapNodesTo x)
+hmap _ = HM.hmap (MapNodes :: MapNodes x)
 
 
 hmapWithIndex
@@ -317,7 +358,7 @@ hmapWithIndex
     => Proxy x
     -> Record instances
     -> Record rrow
-hmapWithIndex _ = HM.hmapWithIndex (MapNodesIndexedTo :: MapNodesIndexedTo x)
+hmapWithIndex _ = HM.hmapWithIndex (MapNodesIndexed :: MapNodesIndexed x)
 
 
 hfoldl_

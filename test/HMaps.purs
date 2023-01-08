@@ -1,4 +1,7 @@
-module Test.HMaps where
+module Test.HMaps
+  ( MyMapping, Map
+  )
+  where
 
 
 
@@ -22,13 +25,14 @@ import Heterogeneous.Mapping
     -- , class HFoldlWithIndex
     )
 import Prim.Row (class Cons) as Row
-import Type.Proxy (Proxy)
+import Type.Proxy (Proxy(..))
 import Data.List (List)
 
 import Record as Record
 import Record.Extra as Record
 import Prim.Row as R
 import Type.RowList as RL
+import Unsafe.Coerce (unsafeCoerce)
 
 
 
@@ -277,79 +281,443 @@ showWithIndex =
 
 
 
-class (RL.RowToList is rli, Record.Keys rli) <= HasInputsAt is rli
-instance (RL.RowToList is rli, Record.Keys rli) => HasInputsAt is rli
-
-
-class HasInputsAt is rli <= HasInputs is rli a | a -> is, a -> rli
-    where inputs :: a -> List String
-
-
-newtype Def (is :: Row Type) =
-    Def (Record is)
-
-
-instance HasInputsAt is rli => HasInputs is rli (Def is) where
-    inputs :: Def is -> List String
-    -- inputs _ = keysToInputsR (Proxy :: Proxy is)
-    inputs (Def is) = Record.keys is
-
-
-class ConvertFamilyDefTo x where
-    convertFamilyDef :: forall is. Def is -> x
-
-
-class ConvertFamilyDefToFun x where
-    convertFamilyDefFun :: forall is. Def is -> x
-
-
-class ConvertFamilyDefTo' (is :: Row Type) x where
-    convertFamilyDef' :: Def is -> x
-
-
-newtype Inputs is ks = Inputs (List String)
-
-
-newtype Inputs' = Inputs' (List String)
 
 
 
--- instance HasInputsAt is ks => ConvertFamilyDefTo (Inputs is ks)
---     where
---         convertFamilyDef
---             :: forall is'. Def is'
---             -> Inputs is ks
---         convertFamilyDef def = Inputs (inputs def)
 
 
--- instance HasInputsAt is ks => ConvertFamilyDefToFun (Inputs is ks)
---     where
---         convertFamilyDefFun
---             :: forall is'. Def is'
---             -> Inputs is ks
---         convertFamilyDefFun def = Inputs (inputs def)
+
+data Test = Test
+
+testF :: forall a. MyMapping IsMap a -> String
+testF _ = "aaa"
+
+testX :: MyMapping IsMap String -> String
+testX _ = "aaa"
+
+testXX :: MyMapping (MakeMap Unit) String -> String
+testXX _ = "aaa"
+
+testA :: Map -> String
+testA (Map x) = x
 
 
--- instance HasInputsAt is ks => ConvertFamilyDefTo (Inputs is ks)
---     where
---         convertFamilyDef
---             :: forall is'. Def is'
---             -> Inputs is ks
---         convertFamilyDef def = Inputs (inputs def)
+testB :: Map -> String
+testB _ = testA $ Map "x"
+
+
+-- testC :: Map -> String
+-- testC = testA ( Map "x" :: MakeMap String)
+
+
+data Map = Map String
+foreign import data MyMapping :: Map -> Type -> Type
+foreign import data IsMap :: Map
+
+foreign import data MakeMap :: Type -> Map
+
+
+-- data MyMapping
+
+
+-- data Foo :: MyMapping String
+data Foo ( a :: MyMapping IsMap String ) = Foo
+
+
+
+
+
+
+
+
+data Focus
+foreign import data Empty :: Focus
+foreign import data OnKeys :: Row Type -> Focus
+foreign import data FocusT :: Focus -> Focus
+
+foreign import data HoldKeys :: Row Type -> Type
+
+
+
+class TestFocus (x :: Focus) a | a -> x where
+  something :: Proxy x -> a
+
+
+instance TestFocus Empty String where
+  something :: Proxy Empty -> String
+  something _ = "foo"
+
+
+instance TestFocus (OnKeys x) Int where
+  something :: Proxy (OnKeys x) -> Int
+  something _ = 42
+
+
+-- instance TestFocus Empty Int where
+--   something :: Proxy Empty -> Int
+--   something _ = 42
+
+-- class TestFocusA (x :: HoldKeys row) a | a -> x where
+--   somethingA :: a
+
+
+
+class (RL.RowToList row ks, Record.Keys ks) <= HasKeysAt row ks
+instance (RL.RowToList row ks, Record.Keys ks) => HasKeysAt row ks
+
+
+class HasKeysAt row ks <= HasKeys row ks a | a -> row, a -> ks
+    where listKeys :: a -> List String
+
+
+newtype Wrapper (row :: Row Type) =
+    Wrapper (Record row)
+
+data WrapperX (row :: Row Type) =
+    WrapperX (forall rl. (HasKeysAt row rl => Record row))
+
+data WrapperXRl rl (row :: Row Type) =
+    WrapperXRl (HasKeysAt row rl => Record row)
+
+
+
+newtype WrapperA (row :: Row Type) a =
+    WrapperA (a /\ Record row)
+
+
+instance HasKeysAt row ks => HasKeys row ks (WrapperX row) where
+  listKeys (WrapperX row) = Record.keys row
+
+
+instance HasKeysAt row ks => HasKeys row ks (Wrapper row) where
+    listKeys :: Wrapper row -> List String
+    listKeys (Wrapper row) = Record.keys row
+
+
+instance HasKeysAt row ks => HasKeys row ks (WrapperA row a) where
+    listKeys :: forall a. WrapperA row a -> List String
+    listKeys (WrapperA (_ /\ row)) = Record.keys row
+
+
+class ConverterFA x where
+    convertFA :: forall row. Wrapper row -> x
+
+-- class ConverterFA_ Empty x | x -> focus where
+--     convertFA :: forall row. Wrapper row -> x
+
+class ConverterFXA x where
+    convertFXA :: forall row. Wrapper row -> x
+
+class ConverterFAA x where
+    convertFAA :: forall a row. WrapperA row a -> x
+
+
+class ConverterRow (row :: Row Type) x where
+    convertKnowningRow :: Wrapper row -> x
+
+
+class ConverterRowA (row :: Row Type) x where
+    convertKnowningRowA :: forall a. WrapperA row a -> x
+
+
+class ConverterFocus (p :: Focus) x | x -> p where
+    convertFocused :: forall row. Wrapper row -> x
+
+class ConverterFocusP (p :: Focus) x where
+    convertFocusedP :: forall row. Proxy p -> Wrapper row -> x
+
+
+-- class ConverterFocus Empty x where
+--     convertFocused :: forall row. Proxy p -> Wrapper row -> x
+
+
+class ConverterAX a x | a -> x, x -> a where
+  convertAX :: a -> x
+
+newtype Keys row ks = Keys (List String)
+
+
+newtype Keys' = Keys' (List String)
+
 
 -- Compiles ::
 
-instance HasInputsAt is ks => ConvertFamilyDefTo' is (Inputs is ks)
+instance HasKeysAt row ks => ConverterRow row (Keys row ks)
     where
-        convertFamilyDef'
-            :: Def is
-            -> Inputs is ks
-        convertFamilyDef' def = Inputs (inputs def)
+        convertKnowningRow
+            :: Wrapper row
+            -> Keys row ks
+        convertKnowningRow wrapper = Keys (Record.keys (Proxy :: Proxy row)) -- (listKeys wrapper)
 
 
-instance HasInputsAt is ks => ConvertFamilyDefTo' is (Inputs')
+instance HasKeysAt row ks => ConverterRowA row (Keys row ks)
     where
-        convertFamilyDef'
-            :: Def is
-            -> Inputs'
-        convertFamilyDef' def = Inputs' (inputs def)
+        convertKnowningRowA
+            :: forall a
+             . WrapperA row a
+            -> Keys row ks
+        convertKnowningRowA wrapper = Keys (listKeys wrapper)
+
+
+instance HasKeysAt row ks => ConverterRow row Keys'
+    where
+        convertKnowningRow
+            :: Wrapper row
+            -> Keys'
+        convertKnowningRow wrapper = Keys' (listKeys wrapper)
+
+
+instance HasKeysAt row ks => ConverterRowA row Keys'
+    where
+        convertKnowningRowA
+            :: forall a
+             . WrapperA row a
+            -> Keys'
+        convertKnowningRowA wrapper = Keys' (listKeys wrapper)
+
+
+instance HasKeysAt row ks => ConverterAX (Wrapper row) Keys'
+    where
+        convertAX
+            :: Wrapper row
+            -> Keys'
+        convertAX wrapper = Keys' (listKeys wrapper)
+
+
+{-
+instance HasKeysAt row ks => ConverterAX (Wrapper row) String
+    where
+        convertAX
+            :: Wrapper row
+            -> Keys row ks
+        convertAX wrapper = Keys' (listKeys wrapper)
+-}
+
+
+testConvert = convertAX (Wrapper { a : 4 })
+
+
+instance HasKeysAt row ks => ConverterFocus (OnKeys row) Keys'
+    where
+        convertFocused
+            :: forall row'
+             . Wrapper row'
+            -> Keys'
+        convertFocused wrapper = Keys' $ Record.keys (Proxy :: Proxy row) -- Keys (listKeys proxy)
+
+
+instance HasKeysAt row ks => ConverterFocus (OnKeys row) (Keys row ks)
+    where
+        convertFocused
+            :: forall row'
+             . Wrapper row'
+            -> Keys row ks
+        convertFocused wrapper = Keys $ Record.keys (Proxy :: Proxy row) -- Keys (listKeys proxy)
+
+
+instance HasKeysAt row ks => ConverterFocusP (OnKeys row) Keys'
+    where
+        convertFocusedP
+            :: forall row'
+             . Proxy (OnKeys _)
+            -> Wrapper row'
+            -> Keys'
+        convertFocusedP proxy wrapper = Keys' $ Record.keys (Proxy :: Proxy row) -- Keys (listKeys proxy)
+
+
+instance HasKeysAt row ks => ConverterFocusP (OnKeys row) (Keys row ks)
+    where
+        convertFocusedP
+            :: forall row'
+             . Proxy (OnKeys row)
+            -> Wrapper row'
+            -> Keys row ks
+        convertFocusedP proxy wrapper = Keys $ Record.keys (Proxy :: Proxy row) -- Keys (listKeys proxy)
+
+
+{-
+instance HasKeysAt row ks => ConverterFA (Keys row ks)
+    where
+        convertFA
+            :: Wrapper row
+            -> Keys row ks
+        convertFA wrapper = Keys (listKeys wrapper)
+-}
+
+{-}
+instance HasKeysAt row ks => ConverterFA (Keys row ks)
+    where
+        convertFA
+            :: forall row'
+             . Wrapper row'
+            -> Keys row ks
+        convertFA (Wrapper row) = Keys (Record.keys row)-- (listKeys wrapper)
+
+
+instance ConverterFA Keys'
+    where
+        convertFA
+            :: forall row' ks
+             . HasKeysAt row' ks => Wrapper row'
+            -> Keys'
+        convertFA (Wrapper row) = Keys' (Record.keys row)-- (listKeys wrapper)
+-}
+
+
+
+{-
+instance HasKeysAt row ks => ConverterFA (List String)
+    where
+        convertFA
+            :: forall row
+             . Wrapper row
+            -> List String
+        convertFA (Wrapper record) = Record.keys (unsafeCoerce record) -}
+
+
+-- instance HasKeysAt row ks => ConverterFAA (Keys row ks)
+--     where
+--         convertFAA
+--             :: forall a
+--              . WrapperA row a
+--             -> Keys row ks
+--         convertFAA wrapper = Keys (listKeys wrapper)
+
+
+-- instance HasKeysAt row ks => ConverterFA Keys'
+--     where
+--         convertFA
+--             :: forall row
+--              . Wrapper row
+--             -> Keys'
+--         convertFA wrapper = Keys' (listKeys wrapper)
+
+
+-- instance HasKeysAt row ks => ConverterFAA Keys'
+--     where
+--         convertFAA
+--             :: forall a
+--              . WrapperA row a
+--             -> Keys row ks
+--         convertFAA wrapper = Keys' (listKeys wrapper)
+
+
+
+
+
+
+-- An example using the Boolean-like data type YesNo:
+data YesNo = Yes | No
+
+data YesNoKind
+foreign import data YesK :: YesNoKind
+foreign import data NoK  :: YesNoKind
+
+{-
+Read yesK and noK as:
+  yesK = (YesNoProxyValue :: YesNoProxy Yes) - a value of type "YesNoProxy Yes"
+  noK  = (YesNoProxyValue :: YesNoProxy No)  - a value of type "YesNoProxy No" -}
+yesK :: Proxy YesK
+yesK = Proxy
+
+noK :: Proxy NoK
+noK = Proxy
+
+class ReflectYesNoKind :: YesNoKind -> Constraint
+class ReflectYesNoKind a where
+  reflectYesNo :: Proxy a -> YesNo
+
+instance ReflectYesNoKind YesK where
+-- reflectYesNo (Proxy :: Proxy Yes) = Yes
+   reflectYesNo _                    = Yes
+
+instance ReflectYesNoKind NoK where
+-- reflectYesNo (Proxy :: Proxy No) = No
+   reflectYesNo _                   = No
+
+
+-- We can also use instance chains here to distinguish
+-- one from another
+
+class IsYes :: YesNoKind -> Constraint
+class IsYes a where
+  isYes :: Proxy a -> YesNo
+
+instance IsYes YesK where
+  isYes _ = Yes
+else instance IsYes NoK where
+  isYes _ = No
+
+-- Using instance chains here is more convenient if we had
+-- a lot more type-level values than just 2. In some cases,
+-- it is needed in cases where a type-level type can have an
+-- infinite number of values, such as a type-level String
+
+-- Open a REPL, import this module, and then run this code:
+--    reflectYesNo yesK
+--    reflectYesNo noK
+--    isYes yesK
+--    isYes noK
+
+
+-- necessary for not getting errors while trying the functions in the REPL
+
+instance Show YesNo where
+    show Yes = "Yes"
+    show No  = "No"
+
+
+-- We can reify a YesNo by defining a callback function that receives
+-- the corresponding type-level value as its only argument
+-- (where we do type-level programming):
+
+reifyYesNo :: forall returnType
+            . YesNo
+            -> (forall b. ReflectYesNoKind b => Proxy b -> returnType)
+            -> returnType
+reifyYesNo Yes function = function yesK
+reifyYesNo No  function = function noK
+
+
+
+
+
+data KindName
+foreign import data Value :: KindName
+
+
+data Value_Level_Type = V
+
+-- NANS
+inst :: Proxy Value
+inst = Proxy
+
+-- The class name is usually "Is[KindName]"
+class IsKindName :: KindName -> Constraint
+class IsKindName a where
+  -- and the reflect function is usually "reflect[KindName]"
+  reflectKindName :: Proxy a -> Value_Level_Type
+
+instance IsKindName Value where
+  reflectKindName _ = V
+
+-- NANS
+class IsKindName a <= ConstrainedToKindName a
+
+-- NANS
+instance ConstrainedToKindName Value
+
+-- Usually reify[KindName]
+reifyKindName :: forall r
+           . Value_Level_Type
+          -> (forall a. IsKindName a => Proxy a -> r)
+          -> r
+reifyKindName _valueLevel function = function inst
+
+
+testReify :: forall t950. (forall a. IsKindName a => Proxy a -> t950) -> t950
+testReify = reifyKindName V
+
+
+testReify2 :: Value_Level_Type
+testReify2 = reifyKindName V reflectKindName
