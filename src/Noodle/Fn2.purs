@@ -43,7 +43,7 @@ import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.State.Class (class MonadState)
 import Control.Monad.State as State
 
-import Noodle.Id (class HasInputs, class HasOutputs, InputR, OutputR, fromKeysR)
+import Noodle.Id (class HasInputsAt, class HasOutputsAt, InputR, OutputR, fromKeysR)
 import Noodle.Fn2.Process (ProcessM)
 import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol)
@@ -125,11 +125,11 @@ name :: forall state is os m. Fn state is os m -> Name
 name (Fn n _) = n
 
 
-inputsShape :: forall state (is :: Row Type) os m g. HasInputs is g => Fn state is os m -> List InputR
+inputsShape :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> List InputR
 inputsShape (Fn _ _) = fromKeysR (Proxy :: Proxy is)
 
 
-outputsShape :: forall state is (os :: Row Type) m g. HasOutputs os g => Fn state is os m -> List OutputR
+outputsShape :: forall state is (os :: Row Type) m rlo. HasOutputsAt os rlo => Fn state is os m -> List OutputR
 outputsShape (Fn _ _) = fromKeysR (Proxy :: Proxy os)
 
 
@@ -137,27 +137,27 @@ outputsShape (Fn _ _) = fromKeysR (Proxy :: Proxy os)
 
 
 shape
-    :: forall state (is :: Row Type) (os :: Row Type) m g
-     . HasInputs is g
-    => HasOutputs os g
+    :: forall state (is :: Row Type) (os :: Row Type) m rli rlo
+     . HasInputsAt is rli
+    => HasOutputsAt os rlo
     => Fn state is os m
     -> List InputR /\ List OutputR
 shape fn = inputsShape fn /\ outputsShape fn
 
 
 dimensions
-    :: forall state is os m g
-     . HasInputs is g
-    => HasOutputs os g
+    :: forall state is os m rli rlo
+     . HasInputsAt is rli
+    => HasOutputsAt os rlo
     => Fn state is os m
     -> Int /\ Int
 dimensions = shape >>> bimap List.length List.length
 
 
 dimensionsBy
-    :: forall state is os m g
-     . HasInputs is g
-    => HasOutputs os g
+    :: forall state is os m rli rlo
+     . HasInputsAt is rli
+    => HasOutputsAt os rlo
     => (InputR -> Boolean)
     -> (OutputR -> Boolean)
     -> Fn state is os m

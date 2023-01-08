@@ -29,6 +29,7 @@ import Noodle.Toolkit3 as Toolkit
 import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
 import Noodle.Patch4.MapsFolds as PMF
+import Noodle.Family.Def as Family
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -50,15 +51,17 @@ spec = do
         let toolkit =
                 Toolkit.from "test"
                     { foo :
-                        unit
-                        /\ { foo : "aaa", bar : "bbb", c : 32 }
-                        /\ { out : false }
-                        /\ Fn.make "foo" (pure unit)
+                        Family.def
+                            unit
+                            { foo : "aaa", bar : "bbb", c : 32 }
+                            { out : false }
+                            $ Fn.make "foo" $ pure unit
                     , bar :
-                        unit
-                        /\ { a : "aaa", b : "bbb", c : 32 }
-                        /\ { x : false }
-                        /\ Fn.make "bar" (pure unit)
+                        Family.def
+                            unit
+                            { a : "aaa", b : "bbb", c : 32 }
+                            { x : false }
+                            $ Fn.make "bar" $ pure unit
                     }
 
         it "adding node to the patch works" $ do

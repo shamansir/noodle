@@ -12,12 +12,14 @@ import Noodle.Node2 as Node
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Toolkit3.MapsFolds as TMF -- FIXME
+import Noodle.Family.Def as Family -- FIXME
+
 
 
 type Nodes m =
-    ( foo :: TMF.FamilyDef Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m
-    , bar :: TMF.FamilyDef Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m
-    , sum :: TMF.FamilyDef Unit ( a :: Int, b :: Int ) ( sum :: Int ) m
+    ( foo :: Family.Def Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m
+    , bar :: Family.Def Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m
+    , sum :: Family.Def Unit ( a :: Int, b :: Int ) ( sum :: Int ) m
     )
 
 
@@ -28,6 +30,31 @@ type TestToolkit m =
 -- toolkit :: Toolkit
 toolkit :: forall m. TestToolkit m
 toolkit =
+    Toolkit.from "test"
+        { foo :
+            Family.def
+                unit
+                { foo : "aaa", bar : "bbb", c : 32 }
+                { out : false }
+                $ Fn.make "foo" $ pure unit
+        , bar :
+            Family.def
+                unit
+                { a : "aaa", b : "bbb", c : 32 }
+                { x : false }
+                $ Fn.make "bar" $ pure unit
+        , sum :
+            Family.def
+                unit
+                { a : 2, b : 3 }
+                { sum : 0 }
+                $ Fn.make "sum" $ do
+                    a <- P.receive (Fn.Input :: Fn.Input "a")
+                    b <- P.receive (Fn.Input :: Fn.Input "b")
+                    P.send (Fn.Output :: Fn.Output "sum") $ a + b
+        }
+
+    {-
     Toolkit.from "test"
         { foo :
             unit
@@ -49,3 +76,4 @@ toolkit =
                     P.send (Fn.Output :: Fn.Output "sum") $ a + b
                 )
         }
+    -}

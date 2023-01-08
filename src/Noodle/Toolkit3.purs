@@ -37,7 +37,7 @@ import Type.Proxy (Proxy(..))
 
 -- import Heterogeneous.Folding as H
 -- import Heterogeneous.Mapping as H
-
+import Noodle.Family.Def as Family
 import Noodle.Toolkit3.Has as Has
 import Noodle.Toolkit3.MapsFolds as TM
 import Noodle.Toolkit3.MapsFolds as TF
@@ -117,7 +117,7 @@ mapFamiliesIndexed (Toolkit _ defs) =
 spawn
     :: forall f (families :: Row Type) (r' ∷ Row Type) gstate state is os m
      . MonadEffect m
-    => Has.HasFamilyDef f r' families (TM.FamilyDef state is os m)
+    => Has.HasFamilyDef f r' families (Family.Def state is os m)
     => Toolkit gstate families
     -> Family f
     -> m (Node f state is os m)
@@ -125,14 +125,14 @@ spawn (Toolkit _ tk) fsym =
     Record.get fsym tk
         # makeNode
     where
-      makeNode (state /\ is /\ os /\ fn) = Node.make' (family' fsym) state is os fn
+      makeNode (Family.Def (state /\ is /\ os /\ fn)) = Node.make' (family' fsym) state is os fn
 
 
 unsafeSpawn
     :: forall f (families :: Row Type) (r' ∷ Row Type) gstate state is os m ks
      . MonadEffect m
     => ListsFamilies families ks
-    => Has.HasFamilyDef f r' families (TM.FamilyDef state is os m)
+    => Has.HasFamilyDef f r' families (Family.Def state is os m)
     => Toolkit gstate families
     -> Family' f
     -> m (Maybe (Family f /\ Node f state is os m))
@@ -147,7 +147,7 @@ unsafeSpawnR
     :: forall f (families :: Row Type) (r' ∷ Row Type) gstate state is os m ks
      . MonadEffect m
     => ListsFamilies families ks
-    => Has.HasFamilyDef' f r' families (TM.FamilyDef state is os m)
+    => Has.HasFamilyDef' f r' families (Family.Def state is os m)
     => Toolkit gstate families
     -> FamilyR
     -> m (Maybe (Node f state is os m))
@@ -171,9 +171,9 @@ nodeFamilies :: forall ks gstate families. ListsFamilies families ks => Toolkit 
 nodeFamilies (Toolkit _ _) = keysToFamiliesR (Proxy :: Proxy families)
 
 
-inputsFromDef :: forall ks state is os m. HasInputs is ks => TM.FamilyDef state is os m -> List InputR
+inputsFromDef :: forall rli state is os m. HasInputsAt is rli => Family.Def state is os m -> List InputR
 inputsFromDef _ = keysToInputsR (Proxy :: Proxy is)
 
 
-outputsFromDef :: forall ks state is os m. HasOutputs os ks => TM.FamilyDef state is os m -> List OutputR
+outputsFromDef :: forall rlo state is os m. HasOutputsAt os rlo => Family.Def state is os m -> List OutputR
 outputsFromDef _ = keysToOutputsR (Proxy :: Proxy os)

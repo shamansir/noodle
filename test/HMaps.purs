@@ -23,8 +23,12 @@ import Heterogeneous.Mapping
     )
 import Prim.Row (class Cons) as Row
 import Type.Proxy (Proxy)
+import Data.List (List)
 
 import Record as Record
+import Record.Extra as Record
+import Prim.Row as R
+import Type.RowList as RL
 
 
 
@@ -268,3 +272,84 @@ showWithIndex :: forall hlist.
   Array (Tuple Int String)
 showWithIndex =
   hfoldlWithIndex ShowWithIndex ([] :: Array (Tuple Int String))
+-}
+
+
+
+
+class (RL.RowToList is rli, Record.Keys rli) <= HasInputsAt is rli
+instance (RL.RowToList is rli, Record.Keys rli) => HasInputsAt is rli
+
+
+class HasInputsAt is rli <= HasInputs is rli a | a -> is, a -> rli
+    where inputs :: a -> List String
+
+
+newtype Def (is :: Row Type) =
+    Def (Record is)
+
+
+instance HasInputsAt is rli => HasInputs is rli (Def is) where
+    inputs :: Def is -> List String
+    -- inputs _ = keysToInputsR (Proxy :: Proxy is)
+    inputs (Def is) = Record.keys is
+
+
+class ConvertFamilyDefTo x where
+    convertFamilyDef :: forall is. Def is -> x
+
+
+class ConvertFamilyDefToFun x where
+    convertFamilyDefFun :: forall is. Def is -> x
+
+
+class ConvertFamilyDefTo' (is :: Row Type) x where
+    convertFamilyDef' :: Def is -> x
+
+
+newtype Inputs is ks = Inputs (List String)
+
+
+newtype Inputs' = Inputs' (List String)
+
+
+
+-- instance HasInputsAt is ks => ConvertFamilyDefTo (Inputs is ks)
+--     where
+--         convertFamilyDef
+--             :: forall is'. Def is'
+--             -> Inputs is ks
+--         convertFamilyDef def = Inputs (inputs def)
+
+
+-- instance HasInputsAt is ks => ConvertFamilyDefToFun (Inputs is ks)
+--     where
+--         convertFamilyDefFun
+--             :: forall is'. Def is'
+--             -> Inputs is ks
+--         convertFamilyDefFun def = Inputs (inputs def)
+
+
+-- instance HasInputsAt is ks => ConvertFamilyDefTo (Inputs is ks)
+--     where
+--         convertFamilyDef
+--             :: forall is'. Def is'
+--             -> Inputs is ks
+--         convertFamilyDef def = Inputs (inputs def)
+
+-- Compiles ::
+
+instance HasInputsAt is ks => ConvertFamilyDefTo' is (Inputs is ks)
+    where
+        convertFamilyDef'
+            :: Def is
+            -> Inputs is ks
+        convertFamilyDef' def = Inputs (inputs def)
+
+
+instance HasInputsAt is ks => ConvertFamilyDefTo' is (Inputs')
+    where
+        convertFamilyDef'
+            :: Def is
+            -> Inputs'
+        convertFamilyDef' def = Inputs' (inputs def)

@@ -323,11 +323,11 @@ set ( state /\ inputs /\ outputs ) node@(Node id protocolS fn) =
 
 
 
-inputsShape :: forall f state (is :: Row Type) os m g. HasInputs is g => Node f state is os m -> List InputR
+inputsShape :: forall f state (is :: Row Type) os m rli. HasInputsAt is rli => Node f state is os m -> List InputR
 inputsShape (Node _ _ _ fn) = Fn.inputsShape fn
 
 
-outputsShape :: forall f state is (os :: Row Type) m g. HasOutputs os g => Node f state is os m -> List OutputR
+outputsShape :: forall f state is (os :: Row Type) m rlo. HasOutputsAt os rlo => Node f state is os m -> List OutputR
 outputsShape (Node _ _ _ fn) = Fn.outputsShape fn
 
 
@@ -335,27 +335,27 @@ outputsShape (Node _ _ _ fn) = Fn.outputsShape fn
 
 
 shape
-    :: forall f state (is :: Row Type) (os :: Row Type) m gi go
-     . HasInputs is gi
-    => HasOutputs os go
+    :: forall f state (is :: Row Type) (os :: Row Type) m rli rlo
+     . HasInputsAt is rli
+    => HasOutputsAt os rlo
     => Node f state is os m
     -> List InputR /\ List OutputR
 shape node = inputsShape node /\ outputsShape node
 
 
 dimensions
-    :: forall f state is os m gi go
-     . HasInputs is gi
-    => HasOutputs os go
+    :: forall f state is os m rli rlo
+     . HasInputsAt is rli
+    => HasOutputsAt os rlo
     => Node f state is os m
     -> Int /\ Int
 dimensions = shape >>> bimap List.length List.length
 
 
 dimensionsBy
-    :: forall f state is os m gi go
-     . HasInputs is gi
-    => HasOutputs os go
+    :: forall f state is os m rli rlo
+     . HasInputsAt is rli
+    => HasOutputsAt os rlo
     => (InputR -> Boolean)
     -> (OutputR -> Boolean)
     -> Node f state is os m

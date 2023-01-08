@@ -22,16 +22,7 @@ import Heterogeneous.Folding as HF
 
 import Noodle.Id (Family', familyP)
 import Noodle.Fn2 (Fn)
-
-
-{- Helper types -}
-
-type FamilyDef state (is :: Row Type) (os :: Row Type) (m :: Type -> Type) =
-    state /\ Record is /\ Record os /\ Fn state is os m
-
-
-inputsFromDef :: forall rl state (is :: Row Type) os m. Keys rl => RL.RowToList is rl => FamilyDef state is os m -> List String
-inputsFromDef _ = Record.keys (Proxy :: Proxy is)
+import Noodle.Family.Def as Family
 
 
 {- Maps / Folds tags -}
@@ -50,13 +41,13 @@ data FoldFamilyDefsIndexed x = FoldFamilyDefsIndexed
 
 instance mappingTo ::
   ( ConvertFamilyDefTo x ) =>
-  HM.Mapping (MapFamilyDefs x) (FamilyDef state is os m) x where
+  HM.Mapping (MapFamilyDefs x) (Family.Def state is os m) x where
   mapping MapFamilyDefs = convertFamilyDef
 
 
 instance mappingIndexedTo ::
   ( IsSymbol f, ConvertFamilyDefIndexedTo x ) =>
-  HM.MappingWithIndex (MapFamilyDefsIndexed x) (Proxy f) (FamilyDef state is os m) x where
+  HM.MappingWithIndex (MapFamilyDefsIndexed x) (Proxy f) (Family.Def state is os m) x where
   mappingWithIndex MapFamilyDefsIndexed psym = convertFamilyDefIndexed $ familyP psym
 
 
@@ -126,7 +117,7 @@ instance foldDefsArr ::
     => HF.Folding
             (FoldFamilyDefs x)
             (Array x)
-            (FamilyDef state is os m)
+            (Family.Def state is os m)
             (Array x)
     where
     folding FoldFamilyDefs acc def = convertFamilyDef def : acc
@@ -138,7 +129,7 @@ instance foldDefsIndexedArr ::
             (FoldFamilyDefsIndexed x)
             (Proxy f)
             (Array x)
-            (FamilyDef state is os m)
+            (Family.Def state is os m)
             (Array x)
     where
     foldingWithIndex FoldFamilyDefsIndexed sym acc def = convertFamilyDefIndexed (familyP sym) def : acc
@@ -148,11 +139,11 @@ instance foldDefsIndexedArr ::
 
 
 class ConvertFamilyDefTo x where
-    convertFamilyDef :: forall state is os m. FamilyDef state is os m -> x
+    convertFamilyDef :: forall state is os m. Family.Def state is os m -> x
 
 
 class ConvertFamilyDefIndexedTo x where
-    convertFamilyDefIndexed :: forall f state is os m. IsSymbol f => Family' f -> FamilyDef state is os m -> x
+    convertFamilyDefIndexed :: forall f state is os m. IsSymbol f => Family' f -> Family.Def state is os m -> x
 
 
 
