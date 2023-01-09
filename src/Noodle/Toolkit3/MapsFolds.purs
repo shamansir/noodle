@@ -8,6 +8,7 @@ import Data.Array ((:))
 import Data.Array as Array
 import Data.Symbol (SProxy)
 import Data.List (List)
+import Data.Bifunctor (bimap)
 
 import Type.Data.Symbol (class IsSymbol)
 import Type.Proxy (Proxy(..))
@@ -21,6 +22,9 @@ import Heterogeneous.Mapping as HM
 import Heterogeneous.Folding as HF
 
 import Noodle.Id (Family', familyP)
+import Noodle.Id (InputR, OutputR, keysToInputsR, keysToOutputsR) as Fn
+import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn
+import Noodle.Id (reflectInputR, reflectOutputR) as Fn
 import Noodle.Fn2 (Fn)
 import Noodle.Family.Def as Family
 
@@ -75,6 +79,40 @@ instance mapFamiliesIndexed_ ::
     , ConvertFamilyDefIndexedTo x
     , HM.MapRecordWithIndex rli (MapFamilyDefsIndexed x) families target
     ) => MapI rli families target x
+
+
+{- Special Maps -}
+
+data ToShape = ToShape
+
+
+data ExtractShape = ExtractShape
+
+
+instance toShapesMap ::
+    ( Fn.HasInputsAt is iks
+    , Fn.HasOutputsAt os oks
+    ) =>
+    HM.Mapping
+        ToShape
+        (Family.Def state is os m)
+        (List Fn.InputR /\ List Fn.OutputR)
+    where
+    mapping ToShape _ =
+        Fn.keysToInputsR (Proxy :: Proxy is)
+        /\ Fn.keysToOutputsR (Proxy :: Proxy os)
+
+
+instance extractShapeMap ::
+    HM.Mapping
+        ExtractShape
+        (List Fn.InputR /\ List Fn.OutputR)
+        (Array String /\ Array String)
+    where
+    mapping ExtractShape =
+        bimap
+            (map Fn.reflectInputR >>> Array.fromFoldable)
+            (map Fn.reflectOutputR >>> Array.fromFoldable)
 
 
 {- Folds classes and instances -}
@@ -183,3 +221,51 @@ hfoldlWithIndex
     -> Array x
 hfoldlWithIndex =
     HF.hfoldlWithIndex (FoldFamilyDefsIndexed :: FoldFamilyDefsIndexed x) ([] :: Array x)
+
+
+{- Special : Implementations -}
+
+
+class
+    ( RL.RowToList families fs
+    , HM.HMap ToShape (Record families) (Record shapes)
+    , HM.MapRecordWithIndex fs (HM.ConstMapping ToShape) families shapes
+    )
+    <= MapToShapes (fs :: RL.RowList Type) (families :: Row Type) (shapes :: Row Type)
+instance
+    ( RL.RowToList families fs
+    , HM.HMap ToShape (Record families) (Record shapes)
+    , HM.MapRecordWithIndex fs (HM.ConstMapping ToShape) families shapes
+    )
+    => MapToShapes fs families shapes
+
+
+class
+    ( RL.RowToList shapes fs
+    , HM.HMap ExtractShape (Record shapes) (Record ex_shapes)
+    , HM.MapRecordWithIndex fs (HM.ConstMapping ExtractShape) shapes ex_shapes
+    )
+    <= ExtractShapes (fs :: RL.RowList Type) (shapes :: Row Type) (ex_shapes :: Row Type)
+instance
+    ( RL.RowToList shapes fs
+    , HM.HMap ExtractShape (Record shapes) (Record ex_shapes)
+    , HM.MapRecordWithIndex fs (HM.ConstMapping ExtractShape) shapes ex_shapes
+    )
+    => ExtractShapes fs shapes ex_shapes
+
+
+
+toShapes
+    :: forall families fs shapes
+     . MapToShapes fs families shapes
+    => Record families
+    -> Record shapes
+toShapes = HM.hmap ToShape
+
+
+extractShapes
+    :: forall fs shapes ex_shapes
+     . ExtractShapes fs shapes ex_shapes
+    => Record shapes
+    -> Record ex_shapes
+extractShapes = HM.hmap ExtractShape

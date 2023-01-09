@@ -11,7 +11,8 @@ module Noodle.Toolkit3
   , familyDefs
   , familyDefsIndexed
   , mapFamilies, mapFamiliesIndexed
-  , inputsFromDef, outputsFromDef
+  --, inputsFromDef, outputsFromDef
+  , toShapes
   )
   where
 
@@ -114,6 +115,15 @@ mapFamiliesIndexed (Toolkit _ defs) =
     TM.hmapWithIndex (Proxy :: Proxy x) defs
 
 
+toShapes
+    :: forall gstate fs families shapes
+     . TM.MapToShapes fs families shapes
+    => Toolkit gstate families
+    -> Record shapes
+toShapes (Toolkit _ defs) =
+    TM.toShapes defs
+
+
 spawn
     :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os m
      . MonadEffect m
@@ -171,9 +181,11 @@ nodeFamilies :: forall ks gstate families. ListsFamilies families ks => Toolkit 
 nodeFamilies (Toolkit _ _) = keysToFamiliesR (Proxy :: Proxy families)
 
 
+{-
 inputsFromDef :: forall rli state is os m. HasInputsAt is rli => Family.Def state is os m -> List InputR
 inputsFromDef _ = keysToInputsR (Proxy :: Proxy is)
 
 
 outputsFromDef :: forall rlo state is os m. HasOutputsAt os rlo => Family.Def state is os m -> List OutputR
 outputsFromDef _ = keysToOutputsR (Proxy :: Proxy os)
+-}

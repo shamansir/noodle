@@ -6,6 +6,7 @@ import Data.List ((:), List)
 import Data.List as List
 import Data.Array as Array
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Bifunctor (bimap)
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect, class MonadEffect)
@@ -15,7 +16,7 @@ import Noodle.Fn2 as Fn
 import Noodle.Id (Family(..), Family', class HasInputs, class HasInputsAt) as Node
 import Noodle.Id (InputR) as Fn
 import Noodle.Id (inputs) as Def
-import Noodle.Id (reflect', keysToInputsR)
+import Noodle.Id (reflect', keysToInputsR, keysToOutputsR, reflectInputR, reflectOutputR)
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Toolkit3 (Toolkit)
@@ -130,24 +131,34 @@ spec = do
 
             Toolkit.familyDefsIndexed toolkit2 `shouldEqual` [ FI "sum", FI "foo", FI "bar" ]
 
-        it "getting inputs list" $ do
+        it "getting shapes" $ do
+            (TMF.extractShapes $ Toolkit.toShapes toolkit2)
+                `shouldEqual`
+
+                    { bar :
+                        [ "a", "b", "c" ] /\ [ "x" ]
+                    , foo :
+                        [ "bar", "c", "foo" ] /\ [ "out" ]
+                    , sum :
+                        [ "a", "b" ] /\ [ "sum" ]
+                    }
+                    -- {
+
+                    -- }
             -- Toolkit.familyDefs toolkit `shouldEqual` [ Inputs ( "foo" : "bar" : "c" : List.Nil ) ]
 
             -- (Toolkit.mapFamilies toolkit) `shouldEqual` { foo : Inputs ( "foo" : "bar" : "c" : List.Nil ) }
             --pure unit
 
-            pure unit
+            --pure unit
 
 
 --newtype Inputs = Inputs (List Fn.InputR)
-newtype Inputs (is :: Row Type) ks = Inputs (List String)
 
 newtype NameNT = NI String
 
 newtype FamilyNT = FI String
 
-derive newtype instance Show (Inputs is ks)
-derive newtype instance Eq (Inputs is ks)
 
 derive newtype instance Show NameNT
 derive newtype instance Eq NameNT
