@@ -86,25 +86,28 @@ testToFlowImpl = testToFlow someRec
 
 
 
-data ToReprTop repr = ToReprTop (Proxy repr)
-data ToReprDown repr = ToReprDown (Proxy repr)
+data ToReprTop repr = ToReprTop (Repr repr)
+data ToReprDown repr = ToReprDown (Repr repr)
 
 
 testToRepr repr rec = hmapWithIndex (ToReprTop repr) rec
 
-testToReprImpl = testToRepr (Proxy :: Proxy MyRepr) someRec
+testToReprImpl = testToRepr (Repr :: Repr MyRepr) someRec
 
-
+{-
 data Repr
 
 foreign import data MakeRepr :: Type -> Type -> Repr
 foreign import data EmptyRepr :: Repr
 
-foreign import data FromRepr :: Repr -> Type
+foreign import data FromRepr :: Repr -> Type -}
 
 
 -- class HasRepr (repr :: Repr) a where
 --     toRepr :: a -> FromRepr repr
+
+data Repr :: forall k. k -> Type
+data Repr a = Repr
 
 
 class HasRepr repr a where
@@ -128,10 +131,10 @@ instance toReprTopInstance ::
         (repr /\ Record repr_is /\ Record repr_os)
         -- (FromRepr repr /\ Record repr_is /\ Record repr_os)
     where
-    mappingWithIndex (ToReprTop _) prop (s /\ iRec /\ oRec) =
+    mappingWithIndex (ToReprTop repr) prop (s /\ iRec /\ oRec) =
         toRepr s
-            /\ hmap (ToReprDown (Proxy :: Proxy repr)) iRec
-            /\ hmap (ToReprDown (Proxy :: Proxy repr)) oRec
+            /\ hmap (ToReprDown repr) iRec
+            /\ hmap (ToReprDown repr) oRec
 
 
 instance toReprDownInstance ::
@@ -147,10 +150,10 @@ instance toReprDownInstance ::
         toRepr a
 
 
-testDownRepr ∷ ∀ (t311 ∷ Type) (t312 ∷ Type) repr. HMap (ToReprDown repr) t311 t312 ⇒ Proxy repr -> t311 → t312
+testDownRepr ∷ ∀ (t311 ∷ Type) (t312 ∷ Type) repr. HMap (ToReprDown repr) t311 t312 ⇒ Repr repr -> t311 → t312
 testDownRepr repr rec = hmap (ToReprDown repr) rec
 
-testDownReprImpl = testDownRepr (Proxy :: Proxy MyRepr) { foo : "aaa", bar : "bbb", c : 32 }
+testDownReprImpl = testDownRepr (Repr :: Repr MyRepr) { foo : "aaa", bar : "bbb", c : 32 }
 
 
 
