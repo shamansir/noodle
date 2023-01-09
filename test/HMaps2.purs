@@ -16,10 +16,13 @@ import Heterogeneous.Folding
     , class FoldlRecord
     )
 import Heterogeneous.Mapping
-    ( class HMapWithIndex
+    ( class HMap
+    , class HMapWithIndex
+    , class MapRecordWithIndex
     , class Mapping
     , class MappingWithIndex
     , hmap, hmapWithIndex
+    , ConstMapping
     -- , class HFoldlWithIndex
     )
 import Prim.Row (class Cons) as Row
@@ -47,7 +50,7 @@ someRec =
             /\ { sum : 42 }
         }
 
-data ToFlowLists src = ToFlowLists ( Record src )
+data ToFlowLists = ToFlowLists
 
 
 expected1 =
@@ -66,20 +69,91 @@ instance toFlowLists ::
     , RL.RowToList os oks, Record.Keys oks
     ) =>
     MappingWithIndex
-        (ToFlowLists rl)
+        (ToFlowLists)
         (Proxy sym)
         (state /\ Record is /\ Record os)
         (String /\ List String /\ List String)
     where
-    mappingWithIndex (ToFlowLists rec) prop (s /\ iRec /\ oRec) =
+    mappingWithIndex (ToFlowLists) prop (s /\ iRec /\ oRec) =
         show s /\ Record.keys (Proxy :: Proxy is) /\ Record.keys (Proxy :: Proxy os)
 
 
 
-testToFlow rec = hmapWithIndex (ToFlowLists rec) rec
+testToFlow = hmapWithIndex ToFlowLists
 
 
 testToFlowImpl = testToFlow someRec
+
+
+
+data ToReprTop repr = ToReprTop (Proxy repr)
+data ToReprDown repr = ToReprDown (Proxy repr)
+
+
+testToRepr repr rec = hmapWithIndex (ToReprTop repr) rec
+
+testToReprImpl = testToRepr (Proxy :: Proxy MyRepr) someRec
+
+
+data Repr
+
+foreign import data MakeRepr :: Type -> Type -> Repr
+foreign import data EmptyRepr :: Repr
+
+foreign import data FromRepr :: Repr -> Type
+
+
+-- class HasRepr (repr :: Repr) a where
+--     toRepr :: a -> FromRepr repr
+
+
+class HasRepr repr a where
+    toRepr :: a -> repr
+
+
+instance toReprTopInstance ::
+    ( IsSymbol sym
+    , HasRepr repr state
+    -- , HMap ToReprDown (Proxy is) (Record repr_is)
+    -- , HMap ToReprDown (Proxy os) (Record repr_os)
+    , MapRecordWithIndex iks (ConstMapping (ToReprDown repr)) is repr_is
+    , MapRecordWithIndex oks (ConstMapping (ToReprDown repr)) os repr_os
+    , RL.RowToList is iks, Record.Keys iks
+    , RL.RowToList os oks, Record.Keys oks
+    ) =>
+    MappingWithIndex
+        (ToReprTop repr)
+        (Proxy sym)
+        (state /\ Record is /\ Record os)
+        (repr /\ Record repr_is /\ Record repr_os)
+        -- (FromRepr repr /\ Record repr_is /\ Record repr_os)
+    where
+    mappingWithIndex (ToReprTop _) prop (s /\ iRec /\ oRec) =
+        toRepr s
+            /\ hmap (ToReprDown (Proxy :: Proxy repr)) iRec
+            /\ hmap (ToReprDown (Proxy :: Proxy repr)) oRec
+
+
+instance toReprDownInstance ::
+    ( HasRepr repr a
+    ) =>
+    Mapping
+        (ToReprDown repr)
+        -- (Proxy sym)
+        a
+        repr -- (FromRepr repr)
+    where
+    mapping (ToReprDown _) a =
+        toRepr a
+
+
+testDownRepr ∷ ∀ (t311 ∷ Type) (t312 ∷ Type) repr. HMap (ToReprDown repr) t311 t312 ⇒ Proxy repr -> t311 → t312
+testDownRepr repr rec = hmap (ToReprDown repr) rec
+
+testDownReprImpl = testDownRepr (Proxy :: Proxy MyRepr) { foo : "aaa", bar : "bbb", c : 32 }
+
+
+
 
 
 data MyRepr
@@ -88,6 +162,14 @@ data MyRepr
     | Int_ Int
     | Bool_ Boolean
     | Other_
+
+instance Show MyRepr
+    where
+        show Unit_ = "Unit"
+        show (String_ str) = "String::" <> str
+        show (Int_ int) = "Int::" <> show int
+        show (Bool_ bool) = "Bool_::" <> show bool
+        show Other_ = "Other"
 
 
 expected2 =
@@ -105,6 +187,11 @@ expected2 =
             /\ { sum : Int_ 42 }
         }
 
+
+instance HasRepr MyRepr String where toRepr = String_
+instance HasRepr MyRepr Int where toRepr = Int_
+instance HasRepr MyRepr Unit where toRepr _ = Unit_
+instance HasRepr MyRepr Boolean where toRepr = Bool_
 
 
 
@@ -196,3 +283,4 @@ testSimpleHFold2 = showRecord { a: "foo" , b: 42 , c: false }
 main :: Effect Unit
 main = do
   log $ showRecord testToFlowImpl
+  log $ showRecord testToReprImpl
