@@ -20,7 +20,7 @@ import Heterogeneous.Mapping as HM
 import Heterogeneous.Folding as HF
 
 import Data.UniqueHash (UniqueHash)
-import Noodle.Id (Family', NodeId, familyP)
+import Noodle.Id (Family', NodeId, familyP, InputR, class HasInputsAt, class HasOutputsAt)
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 
@@ -63,8 +63,10 @@ foreign import data Empty :: Focus
 foreign import data OnInlets :: Row Type -> Focus
 foreign import data OnOutlets :: Row Type -> Focus
 foreign import data OnInletsOutlets :: Row Type -> Row Type -> Focus
+-}
 
 
+{-
 data MapNodes :: Focus -> Type -> Type
 data MapNodes (focus :: Focus) x = MapNodes
 
@@ -78,6 +80,7 @@ data FoldNodes (focus :: Focus) (x :: FoldTarget) = FoldNodes
 data FoldNodesIndexed :: Focus -> FoldTarget -> Type
 data FoldNodesIndexed (focus :: Focus) (x :: FoldTarget) = FoldNodesIndexed
 -}
+
 
 data MapNodes x = MapNodes
 
@@ -126,6 +129,20 @@ instance mapInstances ::
     , ConvertNodeTo x, ConvertNodesTo (Array x)
     , HM.MapRecordWithIndex rli (HM.ConstMapping (MapNodes x)) instances rrow
     ) => Map rli instances x rrow
+
+class
+    ( RL.RowToList instances rli
+    , HasInputsAt is irl, HasOutputsAt os orl
+    , ConvertNodeTo' is os irl orl x, ConvertNodesTo' is os irl orl (Array x)
+    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapNodes x)) instances rrow
+    ) <= Map' (is :: Row Type) (os :: Row Type) irl orl rli instances x rrow
+
+instance mapInstances' ::
+    ( RL.RowToList instances rli
+    , HasInputsAt is irl, HasOutputsAt os orl
+    , ConvertNodeTo' is os irl orl x, ConvertNodesTo' is os irl orl (Array x)
+    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapNodes x)) instances rrow
+    ) => Map' is os irl orl rli instances x rrow
 
 
 class
@@ -241,6 +258,11 @@ instance foldNodesIndexedList ::
 {- Converters -}
 
 
+--class ConvertNodeTo' :: RL.RowList -> Row Type -> Row Type -> Type -> Constraint
+class (HasInputsAt is irl, HasOutputsAt os orl) <= ConvertNodeTo' (is :: Row Type) (os :: Row Type) irl orl x | is -> irl, os -> orl where
+    convertNode' :: forall f state m. Node f state is os m -> x
+
+
 -- class ConvertNodeTo (focus :: Focus) x where
 class ConvertNodeTo x where
     convertNode :: forall f state is os m. Node f state is os m -> x
@@ -254,6 +276,11 @@ class ConvertNodesTo x where
     convertNodes :: forall f state is os m. Array (Node f state is os m) -> x
 
 
+--class ConvertNodesTo' :: Row Type -> Row Type -> Type -> Constraint
+class ConvertNodesTo' (is :: Row Type) (os :: Row Type) irl orl x | is -> irl, os -> orl where
+    convertNodes' :: forall f state m. Array (Node f state is os m) -> x
+
+
 class ConvertNodesIndexedTo x where
     convertNodesIndexed :: forall f state is os m. Family' f -> Array (Node f state is os m) -> x
 
@@ -264,6 +291,10 @@ instance convertNodesToArray :: ConvertNodeTo x => ConvertNodesTo (Array x) wher
 
 -- instance convertNodesIndexedToArray :: ConvertNodeTo x => ConvertNodesIndexedTo (Array x) where
 --     convertNodesIndexed fsym arr = convertNode <$> arr
+
+instance extractShape :: (HasInputsAt is irl, HasOutputsAt os orl) => ConvertNodeTo' is os irl orl (List InputR) where
+    convertNode' :: forall f state m. Node f state is os m -> List InputR
+    convertNode' node = Node.inputsShape node
 
 
 instance extractId :: ConvertNodeTo (NodeId f') where
@@ -350,6 +381,17 @@ hmap
     -> Record instances
     -> Record rrow
 hmap _ = HM.hmap (MapNodes :: MapNodes x)
+
+
+hmap'
+    :: forall instances is os irl orl rli x rrow
+     . Map' is os irl orl rli instances x rrow
+    => Proxy x
+    -> Proxy is
+    -> Proxy os
+    -> Record instances
+    -> Record rrow
+hmap' _ _ _ = HM.hmap (MapNodes :: MapNodes x)
 
 
 hmapWithIndex

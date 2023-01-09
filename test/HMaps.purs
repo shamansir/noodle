@@ -342,15 +342,32 @@ foreign import data HoldKeys :: Row Type -> Type
 class TestFocus (x :: Focus) a | a -> x where
   something :: Proxy x -> a
 
+class TestFocusNP (x :: Focus) a | a -> x where
+  somethingNP :: a
+
 
 instance TestFocus Empty String where
   something :: Proxy Empty -> String
   something _ = "foo"
+else instance TestFocus (OnKeys x) String where
+  something :: Proxy (OnKeys x) -> String
+  something _ = "bar"
+
+
+instance TestFocusNP Empty String where
+  somethingNP :: String
+  somethingNP = "foo"
+else instance TestFocusNP (OnKeys x) String where
+  somethingNP :: String
+  somethingNP = "bar"
 
 
 instance TestFocus (OnKeys x) Int where
   something :: Proxy (OnKeys x) -> Int
   something _ = 42
+else instance TestFocus Empty Int where
+  something :: Proxy Empty -> Int
+  something _ = 20
 
 
 -- instance TestFocus Empty Int where

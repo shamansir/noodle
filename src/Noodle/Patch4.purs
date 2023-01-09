@@ -38,10 +38,10 @@ data Patch gstate (instances :: Row Type) = Patch gstate (Record instances) Link
 init
     :: forall
         (instances ∷ Row Type)
-        (nodes ∷ Row Type)
+        (families ∷ Row Type)
         (rln ∷ RL.RowList Type)
-     . PI.Init rln nodes instances
-    => Toolkit Unit nodes
+     . PI.Init rln families instances
+    => Toolkit Unit families
     -> Patch Unit instances
 init = init' unit
 
@@ -50,11 +50,12 @@ init'
     :: forall
         gstate
         (instances ∷ Row Type)
-        (nodes ∷ Row Type)
+        (families ∷ Row Type)
+        (shapes ∷ Row Type)
         (rln ∷ RL.RowList Type)
-     . PI.Init rln nodes instances
+     . PI.Init rln families instances
     => gstate
-    -> Toolkit gstate nodes
+    -> Toolkit gstate families
     -> Patch gstate instances
 init' state tk =
     Patch
@@ -153,6 +154,15 @@ nodesMap
     -> Record instances'
 nodesMap (Patch _ instances _) =
     PM.hmap (Proxy :: Proxy x) instances
+
+
+nodesMap'
+    :: forall gstate instances (is :: Row Type) (os :: Row Type) irl orl rli x instances'
+     . PM.Map' is os irl orl rli instances x instances'
+    => Patch gstate instances
+    -> Record instances'
+nodesMap' (Patch _ instances _) =
+    PM.hmap' (Proxy :: Proxy x) (Proxy :: Proxy is) (Proxy :: Proxy os) instances
 
 
 nodesMapIndexed

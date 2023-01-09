@@ -56,7 +56,15 @@ import Unsafe.Coerce (unsafeCoerce)
 import Effect.Console (log) as Console
 
 
-data Node f state (is :: Row Type) (os :: Row Type) m = Node (NodeId f) (Tracker state is os) (Protocol state is os) (Fn state is os m)
+
+
+-- store inputs list in the node (or the family def) itself, create it when we create the node
+data Node f state (is :: Row Type) (os :: Row Type) m
+    = Node
+        (NodeId f)
+        (Tracker state is os)
+        (Protocol state is os)
+        (Fn state is os m)
 
 
 -- TODO: implement ToFn

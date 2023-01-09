@@ -4,12 +4,14 @@ import Prelude
 
 import Effect.Class (liftEffect)
 import Effect.Console (log) as Console
+import Effect.Aff (Aff)
 
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
 import Data.String as String
 import Data.List (List)
 import Data.List as List
+import Data.Bifunctor (bimap)
 
 import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
@@ -23,7 +25,7 @@ import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
 import Noodle.Id (reflectFamily', reflect', NodeId, familyOf, Family', class HasInputsAt, class HasOutputsAt)
 import Noodle.Id (Family(..), Family') as Node
-import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Id (Input(..), Output(..), InputR, OutputR) as Fn
 import Type.Data.Symbol (reflectSymbol)
 
 import Noodle.Toolkit3 (Toolkit)
@@ -45,12 +47,21 @@ _foo = (Node.Family :: Node.Family "foo")
 _bar = (Node.Family :: Node.Family "bar")
 
 
+type Families m =
+    ( foo :: Family.Def Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m
+    , bar :: Family.Def Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m
+    )
+
+type MyToolkit m
+    = Toolkit Unit (Families m)
+
+
 spec :: Spec Unit
 spec = do
 
     describe "patch" $ do
 
-        let toolkit =
+        let (toolkit :: MyToolkit Aff) =
                 Toolkit.from "test"
                     { foo :
                         Family.def
@@ -134,8 +145,17 @@ spec = do
                 , bar : [ S { foo : "bar" }, S { foo : "bar" } ]
                 }-- [ I 0, I 1, I 0 ]
 
-            {-
-            Patch.nodesMap patch `shouldEqual`
+            --let shapes = Node.shape <$> Patch.nodes patch
+
+            {- (bimap (map reflect' >>> Array.fromFoldable) (map reflect' >>> Array.fromFoldable) <$> Node.shape <$> Patch.nodes patch)
+                `shouldEqual`
+                    [ [ "foo", "bar", "c" ] /\ [ "out" ]
+                    , [ "a", "b", "c" ] /\ [ "x" ]
+                    , [ "a", "b", "c" ] /\ [ "x" ]
+                    ] -}
+
+
+            {- Patch.nodesMap' patch `shouldEqual`
                 { foo :
                     [ Shape
                         { inputs : Array.toUnfoldable [ "foo", "bar", "c" ]
@@ -152,8 +172,7 @@ spec = do
                         , outputs : Array.toUnfoldable [ "x" ]
                         }
                     ]
-                }
-            -}
+                } -}
 
             -- TODO
 
@@ -182,19 +201,17 @@ newtype Shape =
     Shape { inputs :: List String, outputs :: List String }
 
 
-{-
-instance PMF.ConvertNodeTo Shape where
-    convertNode
-        :: forall f' state' is' os' m' ksi kso
-         . HasInputsAt is' ksi
-        => HasOutputsAt os' kso
-        => Node f' state' is' os' m'
+instance (HasInputsAt is ksi
+        , HasOutputsAt os kso
+        ) => PMF.ConvertNodeTo' is os ksi kso Shape where
+    convertNode'
+        :: forall f' state' is' os' m'
+         . Node f' state' is os m'
         -> Shape
-    convertNode node =
+    convertNode' node =
         case Node.shape node of
             inputs /\ outputs ->
                 Shape { inputs : reflect' <$> inputs, outputs : reflect' <$> outputs }
--}
 
 
 derive newtype instance Show Shape
