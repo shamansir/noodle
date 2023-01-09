@@ -51,43 +51,40 @@ instance mappingIndexedTo ::
   mappingWithIndex MapFamilyDefsIndexed psym = convertFamilyDefIndexed $ familyP psym
 
 
-class Map :: RL.RowList Type -> Row Type -> Type -> Row Type -> Constraint
 class
     ( RL.RowToList families rli
     , ConvertFamilyDefTo x
-    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapFamilyDefs x)) families result
-    ) <= Map rli families x result
+    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapFamilyDefs x)) families target
+    ) <= Map (rli :: RL.RowList Type) (families :: Row Type) (target :: Row Type) x
 
 instance mapFamilies_ ::
     ( RL.RowToList families rli
     , ConvertFamilyDefTo x
-    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapFamilyDefs x)) families result
-    ) => Map rli families x result
+    , HM.MapRecordWithIndex rli (HM.ConstMapping (MapFamilyDefs x)) families target
+    ) => Map rli families target x
 
 
-class MapI :: RL.RowList Type -> Row Type -> Type -> Row Type -> Constraint
 class
     ( RL.RowToList families rli
     , ConvertFamilyDefIndexedTo x
-    , HM.MapRecordWithIndex rli (MapFamilyDefsIndexed x) families result
-    ) <= MapI rli families x result
+    , HM.MapRecordWithIndex rli (MapFamilyDefsIndexed x) families target
+    ) <= MapI (rli :: RL.RowList Type) (families :: Row Type) (target :: Row Type) x
 
 instance mapFamiliesIndexed_ ::
     ( RL.RowToList families rli
     , ConvertFamilyDefIndexedTo x
-    , HM.MapRecordWithIndex rli (MapFamilyDefsIndexed x) families result
-    ) => MapI rli families x result
+    , HM.MapRecordWithIndex rli (MapFamilyDefsIndexed x) families target
+    ) => MapI rli families target x
 
+
+{- Folds classes and instances -}
 
 class
     ( Monoid (ff result)
     , ConvertFamilyDefTo result
     , RL.RowToList families rl
     , HF.FoldlRecord (HF.ConstFolding (FoldFamilyDefs result)) (ff result) rl families (ff result)
-    ) <= Fold rl ff result families
-
-
-{- Folds classes and instances -}
+    ) <= Fold (rl :: RL.RowList Type) (families :: Row Type) (ff :: Type -> Type) result
 
 
 instance fold ::
@@ -95,21 +92,21 @@ instance fold ::
     , ConvertFamilyDefTo result
     , RL.RowToList families rl
     , HF.FoldlRecord (HF.ConstFolding (FoldFamilyDefs result)) (ff result) rl families (ff result)
-    ) => Fold rl ff result families
+    ) => Fold rl families ff result
 
 class
     ( Monoid (ff result)
     , ConvertFamilyDefIndexedTo result
     , RL.RowToList families rl
     , HF.FoldlRecord (FoldFamilyDefsIndexed result) (ff result) rl families (ff result)
-    ) <= FoldI rl ff result families
+    ) <= FoldI (rl :: RL.RowList Type) (families :: Row Type) (ff :: Type -> Type) result
 
 instance foldI ::
     ( Monoid (ff result)
     , ConvertFamilyDefIndexedTo result
     , RL.RowToList families rl
     , HF.FoldlRecord (FoldFamilyDefsIndexed result) (ff result) rl families (ff result)
-    ) => FoldI rl ff result families
+    ) => FoldI rl families ff result
 
 
 instance foldDefsArr ::
@@ -153,7 +150,7 @@ class ConvertFamilyDefIndexedTo x where
 
 hmap
     :: forall families families' rl x
-     . Map rl families x families'
+     . Map rl families families' x
     => Proxy x
     -> Record families
     -> Record families'
@@ -162,7 +159,7 @@ hmap _ = HM.hmap (MapFamilyDefs :: MapFamilyDefs x)
 
 hmapWithIndex
     :: forall families families' rl x
-     . MapI rl families x families'
+     . MapI rl families families' x
     => Proxy x
     -> Record families
     -> Record families'
@@ -172,7 +169,7 @@ hmapWithIndex _ =
 
 hfoldl
     :: forall families x rl
-     . Fold rl Array x families
+     . Fold rl families Array x
     => Record families
     -> Array x
 hfoldl =
@@ -181,7 +178,7 @@ hfoldl =
 
 hfoldlWithIndex
     :: forall families x rl
-     . FoldI rl Array x families
+     . FoldI rl families Array x
     => Record families
     -> Array x
 hfoldlWithIndex =

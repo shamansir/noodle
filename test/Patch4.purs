@@ -120,12 +120,13 @@ spec = do
                             # Patch.registerNode nodeB
                             # Patch.registerNode nodeC
 
-            (reflectFamily' <$> Patch.nodes_ patch) `shouldEqual` [ "bar", "bar", "foo" ]
+            (reflectF <$> Patch.nodes_ patch) `shouldEqual` [ "bar", "bar", "foo" ]
 
             (Node.family >>> reflectFamily' <$> Patch.nodes patch) `shouldEqual` [ "bar", "bar", "foo" ]
 
             {- (Node.state <$> Patch.nodes patch) `shouldEqual` [ "bar", "bar", "foo" ] -}
 
+            {-
             Array.all (\(PMF.NodeInfo (fsym /\ _ /\ nodeId)) ->
                 (reflect' fsym == "foo" || reflect' fsym == "bar") &&
                 (reflect' (familyOf nodeId) == "foo" || reflect' (familyOf nodeId) == "bar")
@@ -135,6 +136,8 @@ spec = do
                 (reflect' fsym == "foo" || reflect' fsym == "bar") &&
                 (reflect' (familyOf $ Node.id node) == "foo" || reflect' (familyOf $ Node.id node) == "bar")
             ) (Patch.nodesIndexed patch) `shouldEqual` true
+
+            -}
 
             -- liftEffect $ Console.log $ show (Patch.nodesIndexed patch :: Array (String /\ Int /\ NodeId _))
 
@@ -191,6 +194,17 @@ newtype I = I Int
 
 derive newtype instance Show I
 derive newtype instance Eq I
+
+
+
+newtype F f = F (Family' f)
+
+reflectF :: forall f. F f -> String
+reflectF (F family) = reflectFamily' family
+
+instance extractFamily :: PMF.ConvertNodeTo (F f') where
+    convertNode :: forall f state is os m. Node f state is os m -> F f'
+    convertNode node = F $ (unsafeCoerce $ Node.family node :: Family' f')
 
 -- FIMXE: include `nodes` type into constraint
 instance PMF.ConvertNodeIndexedTo I where

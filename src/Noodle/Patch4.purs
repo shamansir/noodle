@@ -113,7 +113,7 @@ registerLink link (Patch state instances links) =
 
 nodes_
     :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (ff :: Type -> Type)
-     . PF.Fold rla ff result instances
+     . PF.Fold rla instances ff result
     => Patch gstate instances
     -> ff result
 nodes_ (Patch _ instances _) =
@@ -122,7 +122,7 @@ nodes_ (Patch _ instances _) =
 
 nodes
     :: forall f state is os gstate instances rla m
-     . PF.Fold rla Array (Node f state is os m) instances
+     . PF.Fold rla instances Array (Node f state is os m)
     => Patch gstate instances
     -> Array (Node f state is os m)
 nodes (Patch _ instances _) =
@@ -131,7 +131,7 @@ nodes (Patch _ instances _) =
 
 nodesIndexed_
     :: forall gstate (instances :: Row Type) (rla ∷ RL.RowList Type) result (ff :: Type -> Type)
-     . PF.FoldI rla ff result instances
+     . PF.FoldI rla instances ff result
     => Patch gstate instances
     -> ff result
 nodesIndexed_ (Patch _ instances _) =
@@ -140,7 +140,7 @@ nodesIndexed_ (Patch _ instances _) =
 
 nodesIndexed
     :: forall f state is os gstate (instances :: Row Type) (rla ∷ RL.RowList Type) (m :: Type -> Type)
-     . PF.FoldI rla Array (PF.NodeWithIndex f state is os m) instances
+     . PF.FoldI rla instances Array (PF.NodeWithIndex f state is os m)
     => Patch gstate instances
     -> Array (PF.NodeWithIndex f state is os m)
 nodesIndexed (Patch _ instances _) =
@@ -149,25 +149,16 @@ nodesIndexed (Patch _ instances _) =
 
 nodesMap
     :: forall gstate instances rli x instances'
-     . PM.Map rli instances x instances'
+     . PM.Map rli instances instances' x
     => Patch gstate instances
     -> Record instances'
 nodesMap (Patch _ instances _) =
     PM.hmap (Proxy :: Proxy x) instances
 
 
-nodesMap'
-    :: forall gstate instances (is :: Row Type) (os :: Row Type) irl orl rli x instances'
-     . PM.Map' is os irl orl rli instances x instances'
-    => Patch gstate instances
-    -> Record instances'
-nodesMap' (Patch _ instances _) =
-    PM.hmap' (Proxy :: Proxy x) (Proxy :: Proxy is) (Proxy :: Proxy os) instances
-
-
 nodesMapIndexed
     :: forall gstate instances rli x instances'
-     . PM.MapI rli instances x instances'
+     . PM.MapI rli instances instances' x
     => Patch gstate instances
     -> Record instances'
 nodesMapIndexed (Patch _ instances _) =

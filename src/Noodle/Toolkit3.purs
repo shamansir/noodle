@@ -76,7 +76,7 @@ toRecord (Toolkit _ tk) = tk
 
 familyDefs
     :: forall gstate families x rl
-     . TF.Fold rl Array x families
+     . TF.Fold rl families Array x
     => Toolkit gstate families
     -> Array x
 familyDefs (Toolkit _ defs) = TF.hfoldl defs
@@ -84,7 +84,7 @@ familyDefs (Toolkit _ defs) = TF.hfoldl defs
 
 familyDefsIndexed
     :: forall gstate families x rl
-     . TF.FoldI rl Array x families
+     . TF.FoldI rl families Array x
     => Toolkit gstate families
     -> Array x
 familyDefsIndexed (Toolkit _ defs) = TF.hfoldlWithIndex defs
@@ -96,7 +96,7 @@ familyDefsIndexed (Toolkit _ defs) = TF.hfoldlWithIndex defs
 
 mapFamilies
     :: forall gstate families families' rl x
-     . TM.Map rl families x families'
+     . TM.Map rl families families' x
     => Toolkit gstate families
     -> Record families'
 mapFamilies (Toolkit _ defs) =
@@ -107,7 +107,7 @@ mapFamilies (Toolkit _ defs) =
 mapFamiliesIndexed
     :: forall gstate families families' rl x
      . TM.ConvertFamilyDefIndexedTo x
-    => TM.MapI rl families x families'
+    => TM.MapI rl families families' x
     => Toolkit gstate families
     -> Record families'
 mapFamiliesIndexed (Toolkit _ defs) =
@@ -115,9 +115,9 @@ mapFamiliesIndexed (Toolkit _ defs) =
 
 
 spawn
-    :: forall f (families :: Row Type) (r' ∷ Row Type) gstate state is os m
+    :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os m
      . MonadEffect m
-    => Has.HasFamilyDef f r' families (Family.Def state is os m)
+    => Has.HasFamilyDef f families' families (Family.Def state is os m)
     => Toolkit gstate families
     -> Family f
     -> m (Node f state is os m)
@@ -129,10 +129,10 @@ spawn (Toolkit _ tk) fsym =
 
 
 unsafeSpawn
-    :: forall f (families :: Row Type) (r' ∷ Row Type) gstate state is os m ks
+    :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os m ks
      . MonadEffect m
     => ListsFamilies families ks
-    => Has.HasFamilyDef f r' families (Family.Def state is os m)
+    => Has.HasFamilyDef f families' families (Family.Def state is os m)
     => Toolkit gstate families
     -> Family' f
     -> m (Maybe (Family f /\ Node f state is os m))
@@ -144,10 +144,10 @@ unsafeSpawn toolkit@(Toolkit name tk) family =
 
 
 unsafeSpawnR
-    :: forall f (families :: Row Type) (r' ∷ Row Type) gstate state is os m ks
+    :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os m ks
      . MonadEffect m
     => ListsFamilies families ks
-    => Has.HasFamilyDef' f r' families (Family.Def state is os m)
+    => Has.HasFamilyDef' f families' families (Family.Def state is os m)
     => Toolkit gstate families
     -> FamilyR
     -> m (Maybe (Node f state is os m))
