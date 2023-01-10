@@ -22,7 +22,7 @@ import Prim.RowList as RL
 import Heterogeneous.Mapping as HM
 import Heterogeneous.Folding as HF
 
-import Noodle.Id (Family', familyP)
+import Noodle.Id (Family', familyP, Input', Output', inputP, outputP)
 import Noodle.Id (InputR, OutputR, keysToInputsR, keysToOutputsR) as Fn
 import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn
 import Noodle.Id (reflectInputR, reflectOutputR) as Fn
@@ -120,22 +120,24 @@ instance extractShapeMap ::
 
 data ToReprTop :: forall k. k -> Type
 data ToReprTop repr = ToReprTop (Repr repr)
-data ToReprDown :: forall k. k -> Type
-data ToReprDown repr = ToReprDown (Repr repr)
+data ToReprDownI :: forall k. Symbol -> k -> Type
+data ToReprDownI f repr = ToReprDownI (Family' f) (Repr repr)
+data ToReprDownO :: forall k. Symbol -> k -> Type
+data ToReprDownO f repr = ToReprDownO (Family' f) (Repr repr)
 
 
 data Repr :: forall k. k -> Type
 data Repr a = Repr
 
--- foreign import data NoSymbol :: forall k. k -> Repr k
--- foreign import data HasSymbol :: forall k. Symbol -> k -> Repr k
 
--- data ReprWithSym :: forall k. Symbol -> k -> Type
--- data ReprWithSym sym a = ReprWithSym
+data Path f i o
+    = FamilyP (Family' f)
+    | InputP (Family' f) (Input' i)
+    | OutputP (Family' f) (Output' o)
 
 
 class HasRepr a repr where
-    toRepr :: forall sym. IsSymbol sym => Proxy sym -> a -> repr -- include Repr as kind here?
+    toRepr :: forall f i o. Path f i o -> a -> repr -- include Repr as kind here?
 
 
 instance toReprTopInstance ::
@@ -147,22 +149,35 @@ instance toReprTopInstance ::
         (repr /\ Record repr_is /\ Record repr_os)
     where
     mappingWithIndex (ToReprTop repr) sym (Family.Def (s /\ iRec /\ oRec /\ _)) =
-        toRepr sym s
-            /\ HM.hmapWithIndex (ToReprDown repr) iRec
-            /\ HM.hmapWithIndex (ToReprDown repr) oRec
+        toRepr (FamilyP $ familyP sym) s
+            /\ HM.hmapWithIndex (ToReprDownI (familyP sym) repr) iRec
+            /\ HM.hmapWithIndex (ToReprDownO (familyP sym) repr) oRec
 
 
-instance toReprDownInstance ::
+instance toReprDownIInstance ::
     ( IsSymbol sym
     , HasRepr a repr
     ) =>
     HM.MappingWithIndex
-        (ToReprDown repr)
+        (ToReprDownI family repr)
         (Proxy sym)
         a
         repr -- (FromRepr repr)
     where
-    mappingWithIndex (ToReprDown _) = toRepr
+    mappingWithIndex (ToReprDownI family _) sym = toRepr (InputP family $ inputP sym)
+
+
+instance toReprDownOInstance ::
+    ( IsSymbol sym
+    , HasRepr a repr
+    ) =>
+    HM.MappingWithIndex
+        (ToReprDownO family repr)
+        (Proxy sym)
+        a
+        repr -- (FromRepr repr)
+    where
+    mappingWithIndex (ToReprDownO family _) sym = toRepr (OutputP family $ outputP sym)
 
 
 {- Folds classes and instances -}
@@ -307,16 +322,16 @@ instance
 class
     ( IsSymbol sym
     , HasRepr state repr
-    , HM.MapRecordWithIndex iks (ToReprDown repr) is repr_is
-    , HM.MapRecordWithIndex oks (ToReprDown repr) os repr_os
+    , HM.MapRecordWithIndex iks (ToReprDownI sym repr) is repr_is
+    , HM.MapRecordWithIndex oks (ToReprDownO sym repr) os repr_os
     , Fn.HasInputsAt is iks
     , Fn.HasOutputsAt os oks
     ) <= ToReprHelper sym is iks os oks repr_is repr_os repr state
 instance
     ( IsSymbol sym
     , HasRepr state repr
-    , HM.MapRecordWithIndex iks (ToReprDown repr) is repr_is
-    , HM.MapRecordWithIndex oks (ToReprDown repr) os repr_os
+    , HM.MapRecordWithIndex iks (ToReprDownI sym repr) is repr_is
+    , HM.MapRecordWithIndex oks (ToReprDownO sym repr) os repr_os
     , Fn.HasInputsAt is iks
     , Fn.HasOutputsAt os oks
     ) => ToReprHelper sym is iks os oks repr_is repr_os repr state

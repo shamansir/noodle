@@ -4,7 +4,7 @@ module Noodle.Id
     , reflectFamily, reflectFamily', reflectFamilyR
     , keysToFamiliesR
     , Input(..), Input', InputR
-    , input', inputR
+    , input', inputR, inputP, outputP
     , reflectInput, reflectInput', reflectInputR
     , keysToInputsR
     , Output(..), Output', OutputR
@@ -125,11 +125,15 @@ instance FromKeysR InputR where fromKeysR = keysToInputsR
 
 
 input' :: forall i. IsSymbol i => Input i -> Input' i
-input' = reflectSymbol >>> Input'
+input' = inputP
 
 
 inputR :: forall i. IsSymbol i => Input i -> InputR
 inputR = reflectSymbol >>> InputR
+
+
+inputP :: forall proxy i. IsSymbol i => proxy i -> Input' i
+inputP = reflectSymbol >>> Input'
 
 
 reflectInput :: forall i. IsSymbol i => Input i -> String
@@ -177,6 +181,10 @@ output' = reflectSymbol >>> Output'
 
 outputR :: forall o. IsSymbol o => Output o -> OutputR
 outputR = reflectSymbol >>> OutputR
+
+
+outputP :: forall proxy i. IsSymbol i => proxy i -> Output' i
+outputP = reflectSymbol >>> Output'
 
 
 reflectOutput :: forall o. IsSymbol o => Output o -> String
