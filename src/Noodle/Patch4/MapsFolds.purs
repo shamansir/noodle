@@ -30,8 +30,6 @@ import Unsafe.Coerce (unsafeCoerce)
 {- Helper types -}
 
 
-type NodesOf f state is os m = Array (Node f state is os m)
-
 -- newtype NodeInfo f = NodeInfo (Family' f /\ Int /\ NodeId f)
 
 newtype NodeWithIndex f state is os m = NodeWithIndex (Family' f /\ Int /\ Node f state is os m)
@@ -100,7 +98,7 @@ data FoldNodesIndexed (ff :: Type -> Type) x = FoldNodesIndexed
 
 
 instance initToNIONY ::
-    HM.Mapping NoInstancesOfNodeYet node_def (NodesOf f state is os m) where
+    HM.Mapping NoInstancesOfNodeYet node_def (Array (Node f state is os m)) where
     mapping NoInstancesOfNodeYet = const []
 
 
@@ -147,7 +145,7 @@ instance mappingTo ::
     ( ConvertNodeTo x ) =>
     HM.Mapping
         (MapNodes x)
-        (NodesOf f state is os m)
+        (Array (Node f state is os m))
         (Array x)
     where
     mapping MapNodes = convertNodes
@@ -158,7 +156,7 @@ instance mappingIndexedTo ::
     HM.MappingWithIndex
         (MapNodesIndexed x)
         (Proxy f)
-        (NodesOf f state is os m)
+        (Array (Node f state is os m))
         (Array x)
     where
     mappingWithIndex MapNodesIndexed psym = convertNodesIndexed $ familyP psym
@@ -200,7 +198,7 @@ instance foldNodesArr ::
     => HF.Folding
             (FoldNodes Array x)
             (Array x)
-            (NodesOf f state is os m)
+            (Array (Node f state is os m))
             (Array x)
     where
     folding FoldNodes acc nodes = acc <> (convertNode <$> nodes)
@@ -211,7 +209,7 @@ instance foldNodesIndexedArr ::
             (FoldNodesIndexed Array x)
             (Proxy f)
             (Array x)
-            (NodesOf f state is os m)
+            (Array (Node f state is os m))
             (Array x)
     where
     foldingWithIndex FoldNodesIndexed psym acc nodes = acc <> Array.mapWithIndex (convertNodeIndexed $ familyP psym) nodes
@@ -222,7 +220,7 @@ instance foldNodesList ::
     => HF.Folding
             (FoldNodes List x)
             (List x)
-            (NodesOf f state is os m)
+            (Array (Node f state is os m))
             (List x)
     where
     folding FoldNodes acc nodes = acc <> (Array.toUnfoldable $ convertNode <$> nodes)
@@ -234,7 +232,7 @@ instance foldNodesIndexedList ::
             (FoldNodesIndexed List x)
             (Proxy f)
             (List x)
-            (NodesOf f state is os m)
+            (Array (Node f state is os m))
             (List x)
     where
     foldingWithIndex FoldNodesIndexed psym acc nodes = acc <> (List.mapWithIndex (convertNodeIndexed $ familyP psym) $ Array.toUnfoldable nodes)

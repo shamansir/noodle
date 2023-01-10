@@ -4,11 +4,11 @@ module Noodle.Id
     , reflectFamily, reflectFamily', reflectFamilyR
     , keysToFamiliesR
     , Input(..), Input', InputR
-    , input', inputR, inputP, outputP
+    , input', inputR, inputR', inputP
     , reflectInput, reflectInput', reflectInputR
     , keysToInputsR
     , Output(..), Output', OutputR
-    , output', outputR
+    , output', outputR, outputR', outputP
     , reflectOutput, reflectOutput', reflectOutputR
     , keysToOutputsR
     , NodeId, makeNodeId, reflectNodeId
@@ -131,6 +131,9 @@ input' = inputP
 inputR :: forall i. IsSymbol i => Input i -> InputR
 inputR = reflectSymbol >>> InputR
 
+inputR' :: forall i. Input' i -> InputR
+inputR' = reflectInput' >>> InputR
+
 
 inputP :: forall proxy i. IsSymbol i => proxy i -> Input' i
 inputP = reflectSymbol >>> Input'
@@ -183,7 +186,11 @@ outputR :: forall o. IsSymbol o => Output o -> OutputR
 outputR = reflectSymbol >>> OutputR
 
 
-outputP :: forall proxy i. IsSymbol i => proxy i -> Output' i
+outputR' :: forall o. Output' o -> OutputR
+outputR' = reflectOutput' >>> OutputR
+
+
+outputP :: forall proxy o. IsSymbol o => proxy o -> Output' o
 outputP = reflectSymbol >>> Output'
 
 
