@@ -17,9 +17,10 @@ module Noodle.Id
     , class Reflect', reflect'
     , class FromKeysR, fromKeysR
     -- FIXME: make classes below internal
-    , class HasInputsAt, class HasOutputsAt, class ListsFamilies
+    , class HasInputsAt, class HasOutputsAt
     , class HasInput, class HasOutput, class HasFamily
     , class HasInputs, inputs, class HasOutputs, outputs
+    , class ListsFamilies, class ListsInstances
     -- , class HasInputs', inputs'
     -- , class IsSymbol
     )
@@ -259,6 +260,10 @@ instance (RL.RowToList os rlo, Record.Keys rlo) => HasOutputsAt os rlo
 
 class (RL.RowToList fs rlf, Record.Keys rlf) <= ListsFamilies fs rlf
 instance (RL.RowToList fs rlf, Record.Keys rlf) => ListsFamilies fs rlf
+
+
+class (RL.RowToList ins rlin, Record.Keys rlin) <= ListsInstances ins rlin
+instance (RL.RowToList ins rlin, Record.Keys rlin) => ListsInstances ins rlin
 
 
 -- class HasInput :: forall k. Symbol -> k -> Row k -> Row k -> Constraint

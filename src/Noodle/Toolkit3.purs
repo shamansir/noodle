@@ -42,6 +42,7 @@ import Noodle.Family.Def as Family
 import Noodle.Toolkit3.Has as Has
 import Noodle.Toolkit3.MapsFolds as TM
 import Noodle.Toolkit3.MapsFolds as TF
+import Noodle.Toolkit3.MapsFolds.Repr as R
 
 import Noodle.Id
 import Noodle.Node2 (Node)
@@ -126,8 +127,8 @@ toShapes (Toolkit _ defs) =
 
 toRepr
     :: forall gstate fs families reprs repr
-     . TM.ExtractReprs fs families reprs repr
-    => TM.Repr repr
+     . R.ExtractReprs fs families reprs repr
+    => R.Repr repr
     -> Toolkit gstate families
     -> Record reprs
 toRepr repr (Toolkit _ defs) =

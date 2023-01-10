@@ -1,6 +1,6 @@
 module Noodle.Patch4.MapsFolds.Repr
   ( Repr(..)
-  , ToReprDownI
+  , ToReprDownI, ToReprDownO
   , ToReprTop(..)
   , class HasRepr
   , toRepr
@@ -8,6 +8,8 @@ module Noodle.Patch4.MapsFolds.Repr
   , NodeLineMap
   , class FoldToReprsRec
   , class FoldToReprsMap
+  , class ExtractReprs
+  , class ToReprHelper
   )
   where
 
@@ -28,7 +30,7 @@ import Prim.RowList as RL
 import Heterogeneous.Mapping as HM
 import Heterogeneous.Folding as HF
 
-import Noodle.Id (NodeId, familyP, inputP, outputP, InputR, OutputR, Input, inputR', outputR')
+import Noodle.Id (NodeId, familyP, inputP, outputP, InputR, OutputR, Input, inputR', outputR', class ListsInstances)
 import Noodle.Family.Def as Family
 import Noodle.Patch4.Path (Path(..))
 import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn
@@ -37,8 +39,8 @@ import Noodle.Node2 as Node
 
 
 
-data ToReprTop :: forall k. k -> Type
-data ToReprTop repr = ToReprTop (Repr repr)
+data ToReprTop :: forall k. (Type -> Type) -> k -> Type
+data ToReprTop m repr = ToReprTop (Repr repr)
 data ToReprDownI :: forall k. Symbol -> k -> Type
 data ToReprDownI f repr = ToReprDownI (NodeId f) (Repr repr)
 data ToReprDownO :: forall k. Symbol -> k -> Type
@@ -61,6 +63,7 @@ type NodeLineMap f repr =
     NodeId f /\ repr /\ Map InputR repr /\ Map OutputR repr
 
 
+{-
 instance foldToReprsRec ::
     ( Semigroup (m (Array (NodeLineRec f repr repr_is repr_os)))
     , MonadEffect m
@@ -84,8 +87,40 @@ instance foldToReprsRec ::
                 /\ HM.hmapWithIndex (ToReprDownI id repr) inputs
                 /\ HM.hmapWithIndex (ToReprDownO id repr) outputs
         ) nodes
+-}
 
 
+instance toReprTopInstance ::
+    ( MonadEffect m
+    , ToReprHelper m f is iks os oks repr_is repr_os repr state
+    -- , HM.MapRecordWithIndex iks (ToReprDownI f3 repr4)
+    --                                          is5
+    --                                          repr_is6
+    ) =>
+    HM.MappingWithIndex
+        (ToReprTop m repr)
+        (Proxy f)
+        (Array (Node f state is os m))
+        (m (Array (NodeLineRec f repr repr_is repr_os)))
+    where
+    mappingWithIndex (ToReprTop repr) fsym =
+        traverseWithIndex (\i node -> do
+            let id = Node.id node
+            state <- Node.state node
+            inputs <- Node.inputs node
+            outputs <- Node.outputs node
+            pure $ id
+                /\ toRepr (NodeP id) state
+                /\ HM.hmapWithIndex (ToReprDownI id repr) inputs
+                /\ HM.hmapWithIndex (ToReprDownO id repr) outputs
+        )
+
+        {-
+        toRepr (FamilyP $ familyP sym) s
+            /\ HM.hmapWithIndex (ToReprDownI (familyP sym) repr) iRec
+            /\ HM.hmapWithIndex (ToReprDownO (familyP sym) repr) oRec -}
+
+{-
 instance foldToReprsMap ::
     ( Semigroup (m (Array (NodeLineMap f repr)))
     , MonadEffect m
@@ -109,32 +144,32 @@ instance foldToReprsMap ::
                 /\ HF.hfoldlWithIndex (ToReprDownI id repr) (Map.empty :: Map InputR repr) inputs
                 /\ HF.hfoldlWithIndex (ToReprDownO id repr) (Map.empty :: Map OutputR repr) outputs
         ) nodes
+-}
 
-
-instance mapToReprDownIInstance ::
-    ( IsSymbol sym
+instance toReprDownIInstance ::
+    ( IsSymbol i
     , HasRepr a repr
     ) =>
     HM.MappingWithIndex
-        (ToReprDownI node_id repr)
-        (Proxy sym)
+        (ToReprDownI family repr)
+        (Proxy i)
         a
         repr -- (FromRepr repr)
     where
-    mappingWithIndex (ToReprDownI nodeId _) sym = toRepr (InputP nodeId $ inputP sym)
+    mappingWithIndex (ToReprDownI family _) isym = toRepr (InputP family $ inputP isym)
 
 
-instance mapToReprDownOInstance ::
-    ( IsSymbol sym
+instance toReprDownOInstance ::
+    ( IsSymbol o
     , HasRepr a repr
     ) =>
     HM.MappingWithIndex
-        (ToReprDownO node_id repr)
-        (Proxy sym)
+        (ToReprDownO family repr)
+        (Proxy o)
         a
         repr -- (FromRepr repr)
     where
-    mappingWithIndex (ToReprDownO nodeId _) sym = toRepr (OutputP nodeId $ outputP sym)
+    mappingWithIndex (ToReprDownO family _) osym = toRepr (OutputP family $ outputP osym)
 
 
 instance foldToReprDownIInstance ::
@@ -170,21 +205,23 @@ instance foldToReprDownOInstance ::
 
 
 class
-    ( IsSymbol f
+    ( MonadEffect m
+    , IsSymbol sym
     , HasRepr state repr
     , Fn.HasInputsAt is iks
     , Fn.HasOutputsAt os oks
-    , HM.MapRecordWithIndex iks (ToReprDownI f repr) is repr_is
-    , HM.MapRecordWithIndex oks (ToReprDownO f repr) os repr_os
-    ) <= ToReprFoldToRecsHelper f is iks os oks repr_is repr_os repr state
+    , HM.MapRecordWithIndex iks (ToReprDownI sym repr) is repr_is
+    , HM.MapRecordWithIndex oks (ToReprDownO sym repr) os repr_os
+    ) <= ToReprHelper m sym is iks os oks repr_is repr_os repr state
 instance
-    ( IsSymbol f
+    ( MonadEffect m
+    , IsSymbol sym
     , HasRepr state repr
     , Fn.HasInputsAt is iks
     , Fn.HasOutputsAt os oks
-    , HM.MapRecordWithIndex iks (ToReprDownI f repr) is repr_is
-    , HM.MapRecordWithIndex oks (ToReprDownO f repr) os repr_os
-    ) => ToReprFoldToRecsHelper f is iks os oks repr_is repr_os repr state
+    , HM.MapRecordWithIndex iks (ToReprDownI sym repr) is repr_is
+    , HM.MapRecordWithIndex oks (ToReprDownO sym repr) os repr_os
+    ) => ToReprHelper m sym is iks os oks repr_is repr_os repr state
 
 class
     ( IsSymbol f
@@ -205,18 +242,20 @@ instance
 
 
 class
-    ( RL.RowToList instances rla
+    ( MonadEffect m
+    , RL.RowToList instances rla
     , HF.FoldlRecord
-        (ToReprTop repr)
+        (ToReprTop m repr)
         (m (Array (NodeLineRec f state repr_is repr_os)))
         rla
         instances
         (m (Array (NodeLineRec f state repr_is repr_os)))
     ) <= FoldToReprsRec m repr rla instances f state repr_is repr_os
 instance
-    ( RL.RowToList instances rla
+    ( MonadEffect m
+    , RL.RowToList instances rla
     , HF.FoldlRecord
-        (ToReprTop repr)
+        (ToReprTop m repr)
         (m (Array (NodeLineRec f state repr_is repr_os)))
         rla
         instances
@@ -225,20 +264,39 @@ instance
 
 
 class
-    ( RL.RowToList instances rla
+    ( MonadEffect m
+    , RL.RowToList instances rla
     , HF.FoldlRecord
-        (ToReprTop repr)
+        (ToReprTop m repr)
         (m (Array (NodeLineMap f repr)))
         rla
         instances
         (m (Array (NodeLineMap f repr)))
     ) <= FoldToReprsMap m rla instances f repr
 instance
-    ( RL.RowToList instances rla
+    ( MonadEffect m
+    , RL.RowToList instances rla
     , HF.FoldlRecord
-        (ToReprTop repr)
+        (ToReprTop m repr)
         (m (Array (NodeLineMap f repr)))
         rla
         instances
         (m (Array (NodeLineMap f repr)))
     ) => FoldToReprsMap m rla instances f repr
+
+
+class
+    ( ListsInstances instances rla
+    , HM.MapRecordWithIndex rla (ToReprTop m repr) instances reprs
+    )
+    <= ExtractReprs
+        (m :: Type -> Type)
+        (rla :: RL.RowList Type)
+        (instances :: Row Type)
+        (reprs :: Row Type)
+        (repr :: Type)
+instance
+    ( ListsInstances instances rla
+    , HM.MapRecordWithIndex rla (ToReprTop m repr) instances reprs
+    )
+    => ExtractReprs m rla instances reprs repr

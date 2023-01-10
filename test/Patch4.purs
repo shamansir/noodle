@@ -5,8 +5,11 @@ import Prelude
 import Effect.Class (liftEffect)
 import Effect.Console (log) as Console
 import Effect.Aff (Aff)
+import Record as Record
+import Type.Proxy (Proxy(..))
 
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Tuple.Nested (over1) as Tuple
 import Data.Array as Array
 import Data.String as String
 import Data.List (List)
@@ -126,7 +129,6 @@ spec = do
             nodeC <- Toolkit.spawn toolkit _bar
 
             let
-                patch :: Patch Unit (Instances Aff)
                 patch = Patch.init toolkit
                             # Patch.registerNode nodeA
                             # Patch.registerNode nodeB
@@ -153,6 +155,7 @@ spec = do
 
             -- liftEffect $ Console.log $ show (Patch.nodesIndexed patch :: Array (String /\ Int /\ NodeId _))
 
+
             Patch.nodesIndexed_ patch `shouldEqual` [ I 0, I 1, I 0 ]
 
             Patch.nodesMap patch `shouldEqual`
@@ -160,13 +163,65 @@ spec = do
                 , bar : [ S { foo : "bar" }, S { foo : "bar" } ]
                 }-- [ I 0, I 1, I 0 ]
 
-            {-
-            reprsArr <- Patch.toReprs (PMF.Repr :: PMF.Repr MyRepr) patch
+        it "repr-ing works" $ do
+            nodeA <- Toolkit.spawn toolkit _foo
+            nodeB <- Toolkit.spawn toolkit _bar
+            nodeC <- Toolkit.spawn toolkit _bar
 
-            reprsArr `shouldEqual`
-                [ ?wh /\ Unit_ /\ { foo : String_ "aaa", bar : String_ "bbb", c : Int_ 32 } /\ { out : Bool_ false }
-                , ?wh /\ Unit_ /\ { foo : String_ "aaa", bar : String_ "bbb", c : Int_ 32 } /\ { out : Bool_ false }
-                , ?wh /\ Unit_ /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 } /\ { x : Bool_ false }
+            let
+                patch :: Patch Unit (Instances Aff)
+                patch = Patch.init toolkit
+                            # Patch.registerNode nodeA
+                            # Patch.registerNode nodeB
+                            # Patch.registerNode nodeC
+
+            let reprMap = Patch.toRepr (Proxy :: Proxy Aff) (PMF.Repr :: PMF.Repr MyRepr) patch
+
+            fooReprs <- Record.get _foo reprMap
+            barReprs <- Record.get _bar reprMap
+
+            ((Tuple.over1 (familyOf >>> reflectFamily')) <$> fooReprs) `shouldEqual`
+                [ "foo"
+                    /\ Unit_
+                    /\ { foo : String_ "aaa", bar : String_ "bbb", c : Int_ 32 }
+                    /\ { out : Bool_ false }
+                ]
+
+            ((Tuple.over1 (familyOf >>> reflectFamily')) <$> barReprs) `shouldEqual`
+                [ "bar"
+                    /\ Unit_
+                    /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 }
+                    /\ { x : Bool_ false }
+                , "bar"
+                    /\ Unit_
+                    /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 }
+                    /\ { x : Bool_ false }
+                ]
+
+            {-
+            reprMap `shouldEqual`
+                { foo :
+                    [ Unit_
+                        /\ { foo : String_ "aaa", bar : String_ "bbb", c : Int_ 32 }
+                        /\ { out : Bool_ false }
+                    , Unit_
+                        /\ { foo : String_ "aaa", bar : String_ "bbb", c : Int_ 32 }
+                        /\ { out : Bool_ false }
+                    ]
+                , bar :
+                    [ Unit_
+                        /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 }
+                        /\ { x : Bool_ false }
+                    ]
+                --, ?wh /\ Unit_ /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 } /\ { x : Bool_ false }
+                }
+            -}
+
+            {-reprArr <- (map (Tuple.over1 (familyOf >>> reflectFamily'))) <$> Patch.toRepr' (PMF.Repr :: PMF.Repr MyRepr) patch
+
+            reprArr `shouldEqual`
+                [
+
                 ] -}
 
             --let shapes = Node.shape <$> Patch.nodes patch

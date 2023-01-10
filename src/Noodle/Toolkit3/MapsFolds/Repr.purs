@@ -34,62 +34,62 @@ class HasRepr a repr where
 
 
 instance toReprTopInstance ::
-    ToReprHelper sym is iks os oks repr_is repr_os repr state =>
+    ToReprHelper f is iks os oks repr_is repr_os repr state =>
     HM.MappingWithIndex
         (ToReprTop repr)
-        (Proxy sym)
+        (Proxy f)
         (Family.Def state is os m)
         (repr /\ Record repr_is /\ Record repr_os)
     where
-    mappingWithIndex (ToReprTop repr) sym (Family.Def (s /\ iRec /\ oRec /\ _)) =
-        toRepr (FamilyP $ familyP sym) s
-            /\ HM.hmapWithIndex (ToReprDownI (familyP sym) repr) iRec
-            /\ HM.hmapWithIndex (ToReprDownO (familyP sym) repr) oRec
+    mappingWithIndex (ToReprTop repr) fsym (Family.Def (s /\ iRec /\ oRec /\ _)) =
+        toRepr (FamilyP $ familyP fsym) s
+            /\ HM.hmapWithIndex (ToReprDownI (familyP fsym) repr) iRec
+            /\ HM.hmapWithIndex (ToReprDownO (familyP fsym) repr) oRec
 
 
 instance toReprDownIInstance ::
-    ( IsSymbol sym
+    ( IsSymbol i
     , HasRepr a repr
     ) =>
     HM.MappingWithIndex
         (ToReprDownI family repr)
-        (Proxy sym)
+        (Proxy i)
         a
         repr -- (FromRepr repr)
     where
-    mappingWithIndex (ToReprDownI family _) sym = toRepr (InputP family $ inputP sym)
+    mappingWithIndex (ToReprDownI family _) isym = toRepr (InputP family $ inputP isym)
 
 
 instance toReprDownOInstance ::
-    ( IsSymbol sym
+    ( IsSymbol o
     , HasRepr a repr
     ) =>
     HM.MappingWithIndex
         (ToReprDownO family repr)
-        (Proxy sym)
+        (Proxy o)
         a
         repr -- (FromRepr repr)
     where
-    mappingWithIndex (ToReprDownO family _) sym = toRepr (OutputP family $ outputP sym)
+    mappingWithIndex (ToReprDownO family _) osym = toRepr (OutputP family $ outputP osym)
 
 
 
 class
-    ( IsSymbol sym
+    ( IsSymbol f
     , HasRepr state repr
-    , HM.MapRecordWithIndex iks (ToReprDownI sym repr) is repr_is
-    , HM.MapRecordWithIndex oks (ToReprDownO sym repr) os repr_os
     , Fn.HasInputsAt is iks
     , Fn.HasOutputsAt os oks
-    ) <= ToReprHelper sym is iks os oks repr_is repr_os repr state
+    , HM.MapRecordWithIndex iks (ToReprDownI f repr) is repr_is
+    , HM.MapRecordWithIndex oks (ToReprDownO f repr) os repr_os
+    ) <= ToReprHelper f is iks os oks repr_is repr_os repr state
 instance
-    ( IsSymbol sym
+    ( IsSymbol f
     , HasRepr state repr
-    , HM.MapRecordWithIndex iks (ToReprDownI sym repr) is repr_is
-    , HM.MapRecordWithIndex oks (ToReprDownO sym repr) os repr_os
     , Fn.HasInputsAt is iks
     , Fn.HasOutputsAt os oks
-    ) => ToReprHelper sym is iks os oks repr_is repr_os repr state
+    , HM.MapRecordWithIndex iks (ToReprDownI f repr) is repr_is
+    , HM.MapRecordWithIndex oks (ToReprDownO f repr) os repr_os
+    ) => ToReprHelper f is iks os oks repr_is repr_os repr state
 
 
 class

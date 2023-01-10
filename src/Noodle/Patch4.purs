@@ -2,6 +2,7 @@ module Noodle.Patch4 where
 
 import Prelude
 
+import Effect (Effect)
 import Data.Array ((:))
 import Data.Array as Array
 import Data.Map (Map)
@@ -13,6 +14,7 @@ import Noodle.Patch4.Has as Has
 import Noodle.Patch4.MapsFolds as PF
 import Noodle.Patch4.MapsFolds as PI
 import Noodle.Patch4.MapsFolds as PM
+import Noodle.Patch4.MapsFolds.Repr as R
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
 import Prim.RowList as RL
@@ -167,23 +169,26 @@ nodesMapIndexed (Patch _ instances _) =
     PM.hmapWithIndex (Proxy :: Proxy x) instances
 
 
-toReprs
-    :: forall f gstate state m (instances :: Row Type) (rla ∷ RL.RowList Type) (ff :: Type -> Type) repr_is repr_os repr
+toRepr
+    :: forall m gstate (instances :: Row Type) (rla ∷ RL.RowList Type) reprs repr
      . MonadEffect m
-    => FoldToReprsRec m repr rla instances f state repr_is repr_os
-    => Repr repr
+    => R.ExtractReprs m rla instances reprs repr
+    => Proxy m
+    -> R.Repr repr
     -> Patch gstate instances
-    -> m (Array (NodeLineRec f state repr_is repr_os))
-toReprs repr (Patch _ instances _) =
-    PF.toReprs repr instances
+    -> Record reprs
+toRepr mproxy repr (Patch _ instances _) =
+    PF.toReprs mproxy repr instances
 
 
-toReprs'
+{-
+toRepr'
     :: forall f gstate m (instances :: Row Type) (rla ∷ RL.RowList Type) (ff :: Type -> Type) repr
      . MonadEffect m
     => FoldToReprsMap m rla instances f repr
     => Repr repr
     -> Patch gstate instances
     -> m (Array (NodeLineMap f repr))
-toReprs' repr (Patch _ instances _) =
+toRepr' repr (Patch _ instances _) =
     PF.toReprs' repr instances
+-}
