@@ -5,10 +5,11 @@ import Prelude
 import Data.Symbol (class IsSymbol)
 import Type.Proxy (Proxy)
 import Data.Tuple.Nested ((/\), type (/\))
+import Prim.RowList as RL
 
 import Heterogeneous.Mapping as HM
 
-import Noodle.Id (Family', familyP, inputP, outputP)
+import Noodle.Id (Family', familyP, inputP, outputP, class ListsFamilies)
 import Noodle.Family.Def as Family
 import Noodle.Toolkit3.Path (Path(..))
 import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn
@@ -89,3 +90,17 @@ instance
     , Fn.HasInputsAt is iks
     , Fn.HasOutputsAt os oks
     ) => ToReprHelper sym is iks os oks repr_is repr_os repr state
+
+
+class
+    ( ListsFamilies families fs
+    , HM.MapRecordWithIndex fs (ToReprTop repr) families reprs
+    )
+    <= ExtractReprs
+        (fs :: RL.RowList Type) (families :: Row Type)
+        (reprs :: Row Type) (repr :: Type)
+instance
+    ( ListsFamilies families fs
+    , HM.MapRecordWithIndex fs (ToReprTop repr) families reprs
+    )
+    => ExtractReprs fs families reprs repr

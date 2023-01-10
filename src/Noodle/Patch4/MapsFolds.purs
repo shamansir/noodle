@@ -3,6 +3,8 @@ module Noodle.Patch4.MapsFolds
 
 import Prelude
 
+import Effect.Class (class MonadEffect)
+
 import Data.Tuple.Nested ((/\), type (/\))
 -- import Data.Array (Array)
 import Data.Array as Array
@@ -23,6 +25,7 @@ import Data.UniqueHash (UniqueHash)
 import Noodle.Id (Family', NodeId, familyP, InputR, class HasInputsAt, class HasOutputsAt)
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
+import Noodle.Patch4.MapsFolds.Repr (Repr, ToReprTop(..), NodeLineRec, NodeLineMap, class FoldToReprsRec, class FoldToReprsMap)
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -402,3 +405,23 @@ hfoldlWithIndex
     => Record instances
     -> Array (NodeWithIndex f state is os m)
 hfoldlWithIndex = hfoldlWithIndex_
+
+
+toReprs
+    :: forall f state m (instances :: Row Type) (rla ∷ RL.RowList Type) (ff :: Type -> Type) repr_is repr_os repr
+     . FoldToReprsRec m repr rla instances f state repr_is repr_os
+    => Repr repr
+    -> Record instances
+    -> m (Array (NodeLineRec f state repr_is repr_os))
+toReprs repr =
+    HF.hfoldlWithIndex (ToReprTop repr) (pure [] :: m (Array (NodeLineRec f state repr_is repr_os)))
+
+
+toReprs'
+    :: forall f m (instances :: Row Type) (rla ∷ RL.RowList Type) (ff :: Type -> Type) repr
+     . FoldToReprsMap m rla instances f repr
+    => Repr repr
+    -> Record instances
+    -> m (Array (NodeLineMap f repr))
+toReprs' repr =
+    HF.hfoldlWithIndex (ToReprTop repr) (pure [] :: m (Array (NodeLineMap f repr)))

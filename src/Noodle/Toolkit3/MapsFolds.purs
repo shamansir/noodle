@@ -21,7 +21,7 @@ import Noodle.Id (Family', familyP, class ListsFamilies)
 import Noodle.Id (InputR, OutputR, keysToInputsR, keysToOutputsR) as Fn
 import Noodle.Id (class HasInputsAt, class HasOutputsAt, reflectInputR, reflectOutputR) as Fn
 import Noodle.Family.Def as Family
-import Noodle.Toolkit3.MapsFolds.Repr (Repr, ToReprTop(..))
+import Noodle.Toolkit3.MapsFolds.Repr (Repr, ToReprTop(..), class ExtractReprs)
 
 
 {- Maps / Folds tags -}
@@ -247,20 +247,6 @@ instance
     , HM.MapRecordWithIndex fs (HM.ConstMapping ExtractShape) shapes ex_shapes
     )
     => ExtractShapes fs shapes ex_shapes
-
-
-class
-    ( ListsFamilies families fs
-    , HM.MapRecordWithIndex fs (ToReprTop repr) families reprs
-    )
-    <= ExtractReprs
-        (fs :: RL.RowList Type) (families :: Row Type)
-        (reprs :: Row Type) (repr :: Type)
-instance
-    ( ListsFamilies families fs
-    , HM.MapRecordWithIndex fs (ToReprTop repr) families reprs
-    )
-    => ExtractReprs fs families reprs repr
 
 
 toShapes

@@ -20,6 +20,7 @@ import Record as Record
 import Unsafe.Coerce (unsafeCoerce)
 import Type.Proxy (Proxy(..))
 import Heterogeneous.Mapping as H
+import Noodle.Patch4.MapsFolds.Repr (Repr, class FoldToReprsRec, class FoldToReprsMap, NodeLineRec, NodeLineMap)
 
 --data LinkOE fo fi = Exists (LinkOf fo fi)
 
@@ -68,7 +69,7 @@ init' state tk =
 
 registerNode
     :: forall ps instances' instances f state is os m
-     . Has.HasInstancesOf f instances' instances (PM.NodesOf f state is os m)
+     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
     => Node f state is os m
     -> Patch ps instances
     -> Patch ps instances
@@ -81,16 +82,16 @@ registerNode node (Patch state instances links) =
 
 nodesOf
     :: forall ps instances' instances f state is os m
-     . Has.HasInstancesOf f instances' instances (PM.NodesOf f state is os m)
+     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
     => Family f
     -> Patch ps instances
-    -> PM.NodesOf f state is os m
+    -> Array (Node f state is os m)
 nodesOf family (Patch _ instances _) = Record.get family instances
 
 
 howMany
     :: forall ps instances' instances f state is os m
-     . Has.HasInstancesOf f instances' instances (PM.NodesOf f state is os m)
+     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
     => Family f
     -> Patch ps instances
     -> Int
@@ -163,3 +164,23 @@ nodesMapIndexed
     -> Record instances'
 nodesMapIndexed (Patch _ instances _) =
     PM.hmapWithIndex (Proxy :: Proxy x) instances
+
+
+toReprs
+    :: forall f gstate state m (instances :: Row Type) (rla ∷ RL.RowList Type) (ff :: Type -> Type) repr_is repr_os repr
+     . FoldToReprsRec m repr rla instances f state repr_is repr_os
+    => Repr repr
+    -> Patch gstate instances
+    -> m (Array (NodeLineRec f state repr_is repr_os))
+toReprs repr (Patch _ instances _) =
+    PF.toReprs repr instances
+
+
+toReprs'
+    :: forall f gstate m (instances :: Row Type) (rla ∷ RL.RowList Type) (ff :: Type -> Type) repr
+     . FoldToReprsMap m rla instances f repr
+    => Repr repr
+    -> Patch gstate instances
+    -> m (Array (NodeLineMap f repr))
+toReprs' repr (Patch _ instances _) =
+    PF.toReprs' repr instances
