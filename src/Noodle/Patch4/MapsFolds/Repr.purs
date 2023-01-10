@@ -1,5 +1,5 @@
 module Noodle.Patch4.MapsFolds.Repr
-  ( Repr
+  ( Repr(..)
   , ToReprDownI
   , ToReprTop(..)
   , class HasRepr
@@ -205,8 +205,7 @@ instance
 
 
 class
-    ( MonadEffect m
-    , RL.RowToList instances rla
+    ( RL.RowToList instances rla
     , HF.FoldlRecord
         (ToReprTop repr)
         (m (Array (NodeLineRec f state repr_is repr_os)))
@@ -215,8 +214,7 @@ class
         (m (Array (NodeLineRec f state repr_is repr_os)))
     ) <= FoldToReprsRec m repr rla instances f state repr_is repr_os
 instance
-    ( MonadEffect m
-    , RL.RowToList instances rla
+    ( RL.RowToList instances rla
     , HF.FoldlRecord
         (ToReprTop repr)
         (m (Array (NodeLineRec f state repr_is repr_os)))
@@ -227,8 +225,7 @@ instance
 
 
 class
-    ( MonadEffect m
-    , RL.RowToList instances rla
+    ( RL.RowToList instances rla
     , HF.FoldlRecord
         (ToReprTop repr)
         (m (Array (NodeLineMap f repr)))
@@ -237,8 +234,7 @@ class
         (m (Array (NodeLineMap f repr)))
     ) <= FoldToReprsMap m rla instances f repr
 instance
-    ( MonadEffect m
-    , RL.RowToList instances rla
+    ( RL.RowToList instances rla
     , HF.FoldlRecord
         (ToReprTop repr)
         (m (Array (NodeLineMap f repr)))

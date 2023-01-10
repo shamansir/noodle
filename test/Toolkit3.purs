@@ -22,6 +22,7 @@ import Noodle.Node2 as Node
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Toolkit3.MapsFolds as TMF
+import Noodle.Toolkit3.MapsFolds.Repr as TMF
 import Noodle.Fn2.Process as Fn
 import Noodle.Family.Def as Family
 import Signal ((~>), Signal)
@@ -37,6 +38,8 @@ import Record.Extra as Record
 import Prim.RowList as RL
 import Unsafe.Coerce (unsafeCoerce)
 import Type.Proxy (Proxy(..))
+
+import Test.Repr.Toolkit3 (MyRepr(..))
 
 
 type Families1 m
@@ -201,37 +204,3 @@ instance Node.HasInputsAt is ks => TMF.ConvertFamilyDefTo (Inputs is ks)
             -> Inputs is ks
         convertFamilyDef def = Inputs (Def.inputs def)
 -}
-
-
-
-data MyRepr
-    = Unit_
-    | String_ String
-    | Int_ Int
-    | Bool_ Boolean
-    | Other_
-
-
-instance Show MyRepr
-    where
-        show Unit_ = "Unit"
-        show (String_ str) = "String::" <> str
-        show (Int_ int) = "Int::" <> show int
-        show (Bool_ bool) = "Bool_::" <> show bool
-        show Other_ = "Other"
-
-
-instance Eq MyRepr
-    where
-        eq Unit_ Unit_ = true
-        eq (String_ strA) (String_ strB) = strA == strB
-        eq (Int_ intA) (Int_ intB) = intA == intB
-        eq (Bool_ boolA) (Bool_ boolB) = boolA == boolB
-        eq Other_ Other_ = true
-        eq _ _ = false
-
-
-instance TMF.HasRepr String MyRepr  where toRepr _ = String_
-instance TMF.HasRepr Int MyRepr where toRepr _ = Int_
-instance TMF.HasRepr Unit MyRepr where toRepr _ _ = Unit_
-instance TMF.HasRepr  Boolean MyRepr where toRepr _ = Bool_

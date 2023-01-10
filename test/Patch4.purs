@@ -33,7 +33,10 @@ import Noodle.Toolkit3 as Toolkit
 import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
 import Noodle.Patch4.MapsFolds as PMF
+import Noodle.Patch4.MapsFolds.Repr as PMF
 import Noodle.Family.Def as Family
+
+import Test.Repr.Patch4 (MyRepr(..))
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -56,12 +59,20 @@ type MyToolkit m
     = Toolkit Unit (Families m)
 
 
+type Instances m =
+    ( foo :: Array (Node "foo" Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m)
+    , bar :: Array (Node "bar" Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m)
+    )
+
+
+
 spec :: Spec Unit
 spec = do
 
     describe "patch" $ do
 
-        let (toolkit :: MyToolkit Aff) =
+        let
+            (toolkit :: MyToolkit Aff) =
                 Toolkit.from "test"
                     { foo :
                         Family.def
@@ -115,6 +126,7 @@ spec = do
             nodeC <- Toolkit.spawn toolkit _bar
 
             let
+                patch :: Patch Unit (Instances Aff)
                 patch = Patch.init toolkit
                             # Patch.registerNode nodeA
                             # Patch.registerNode nodeB
@@ -147,6 +159,15 @@ spec = do
                 { foo : [ S { foo : "foo" } ]
                 , bar : [ S { foo : "bar" }, S { foo : "bar" } ]
                 }-- [ I 0, I 1, I 0 ]
+
+            {-
+            reprsArr <- Patch.toReprs (PMF.Repr :: PMF.Repr MyRepr) patch
+
+            reprsArr `shouldEqual`
+                [ ?wh /\ Unit_ /\ { foo : String_ "aaa", bar : String_ "bbb", c : Int_ 32 } /\ { out : Bool_ false }
+                , ?wh /\ Unit_ /\ { foo : String_ "aaa", bar : String_ "bbb", c : Int_ 32 } /\ { out : Bool_ false }
+                , ?wh /\ Unit_ /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 } /\ { x : Bool_ false }
+                ] -}
 
             --let shapes = Node.shape <$> Patch.nodes patch
 

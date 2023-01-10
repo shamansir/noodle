@@ -21,6 +21,7 @@ import Unsafe.Coerce (unsafeCoerce)
 import Type.Proxy (Proxy(..))
 import Heterogeneous.Mapping as H
 import Noodle.Patch4.MapsFolds.Repr (Repr, class FoldToReprsRec, class FoldToReprsMap, NodeLineRec, NodeLineMap)
+import Effect.Class (class MonadEffect)
 
 --data LinkOE fo fi = Exists (LinkOf fo fi)
 
@@ -168,7 +169,8 @@ nodesMapIndexed (Patch _ instances _) =
 
 toReprs
     :: forall f gstate state m (instances :: Row Type) (rla ∷ RL.RowList Type) (ff :: Type -> Type) repr_is repr_os repr
-     . FoldToReprsRec m repr rla instances f state repr_is repr_os
+     . MonadEffect m
+    => FoldToReprsRec m repr rla instances f state repr_is repr_os
     => Repr repr
     -> Patch gstate instances
     -> m (Array (NodeLineRec f state repr_is repr_os))
@@ -178,7 +180,8 @@ toReprs repr (Patch _ instances _) =
 
 toReprs'
     :: forall f gstate m (instances :: Row Type) (rla ∷ RL.RowList Type) (ff :: Type -> Type) repr
-     . FoldToReprsMap m rla instances f repr
+     . MonadEffect m
+    => FoldToReprsMap m rla instances f repr
     => Repr repr
     -> Patch gstate instances
     -> m (Array (NodeLineMap f repr))
