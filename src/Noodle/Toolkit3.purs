@@ -12,7 +12,7 @@ module Noodle.Toolkit3
   , familyDefsIndexed
   , mapFamilies, mapFamiliesIndexed
   --, inputsFromDef, outputsFromDef
-  , toShapes
+  , toShapes, toRepr
   )
   where
 
@@ -122,6 +122,16 @@ toShapes
     -> Record shapes
 toShapes (Toolkit _ defs) =
     TM.toShapes defs
+
+
+toRepr
+    :: forall gstate fs families reprs repr
+     . TM.ExtractReprs fs families reprs repr
+    => TM.Repr repr
+    -> Toolkit gstate families
+    -> Record reprs
+toRepr repr (Toolkit _ defs) =
+    TM.toReprs repr defs
 
 
 spawn

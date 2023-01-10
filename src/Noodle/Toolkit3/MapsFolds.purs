@@ -25,6 +25,7 @@ import Noodle.Id (Family', familyP)
 import Noodle.Id (InputR, OutputR, keysToInputsR, keysToOutputsR) as Fn
 import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn
 import Noodle.Id (reflectInputR, reflectOutputR) as Fn
+import Noodle.Id (class ListsFamilies)
 import Noodle.Fn2 (Fn)
 import Noodle.Family.Def as Family
 
@@ -113,6 +114,47 @@ instance extractShapeMap ::
         bimap
             (map Fn.reflectInputR >>> Array.fromFoldable)
             (map Fn.reflectOutputR >>> Array.fromFoldable)
+
+
+
+data ToReprTop :: forall k. k -> Type
+data ToReprTop repr = ToReprTop (Repr repr)
+data ToReprDown :: forall k. k -> Type
+data ToReprDown repr = ToReprDown (Repr repr)
+
+
+data Repr :: forall k. k -> Type
+data Repr a = Repr
+
+
+class HasRepr repr a where
+    toRepr :: a -> repr -- include Repr as kind here?
+
+
+instance toReprTopInstance ::
+    ToReprHelper is iks os oks repr_is repr_os repr state =>
+    HM.MappingWithIndex
+        (ToReprTop repr)
+        (Proxy sym)
+        (Family.Def state is os m)
+        (repr /\ Record repr_is /\ Record repr_os)
+    where
+    mappingWithIndex (ToReprTop repr) _ (Family.Def (s /\ iRec /\ oRec /\ _)) =
+        toRepr s
+            /\ HM.hmap (ToReprDown repr) iRec
+            /\ HM.hmap (ToReprDown repr) oRec
+
+
+instance toReprDownInstance ::
+    ( HasRepr repr a
+    ) =>
+    HM.Mapping
+        (ToReprDown repr)
+        a
+        repr -- (FromRepr repr)
+    where
+    mapping (ToReprDown _) a =
+        toRepr a
 
 
 {- Folds classes and instances -}
@@ -254,6 +296,35 @@ instance
     => ExtractShapes fs shapes ex_shapes
 
 
+class
+    ( HasRepr repr state
+    , HM.MapRecordWithIndex iks (HM.ConstMapping (ToReprDown repr)) is repr_is
+    , HM.MapRecordWithIndex oks (HM.ConstMapping (ToReprDown repr)) os repr_os
+    , Fn.HasInputsAt is iks
+    , Fn.HasOutputsAt os oks
+    ) <= ToReprHelper is iks os oks repr_is repr_os repr state
+instance
+    ( HasRepr repr state
+    , HM.MapRecordWithIndex iks (HM.ConstMapping (ToReprDown repr)) is repr_is
+    , HM.MapRecordWithIndex oks (HM.ConstMapping (ToReprDown repr)) os repr_os
+    , Fn.HasInputsAt is iks
+    , Fn.HasOutputsAt os oks
+    ) => ToReprHelper is iks os oks repr_is repr_os repr state
+
+
+class
+    ( ListsFamilies families fs
+    , HM.MapRecordWithIndex fs (ToReprTop repr) families reprs
+    )
+    <= ExtractReprs
+        (fs :: RL.RowList Type) (families :: Row Type)
+        (reprs :: Row Type) (repr :: Type)
+instance
+    ( ListsFamilies families fs
+    , HM.MapRecordWithIndex fs (ToReprTop repr) families reprs
+    )
+    => ExtractReprs fs families reprs repr
+
 
 toShapes
     :: forall families fs shapes
@@ -269,3 +340,12 @@ extractShapes
     => Record shapes
     -> Record ex_shapes
 extractShapes = HM.hmap ExtractShape
+
+
+toReprs
+    :: forall fs families reprs repr
+     . ExtractReprs fs families reprs repr
+    => Repr repr
+    -> Record families
+    -> Record reprs
+toReprs repr = HM.hmapWithIndex (ToReprTop repr)

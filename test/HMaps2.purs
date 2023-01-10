@@ -90,7 +90,7 @@ data ToReprTop repr = ToReprTop (Repr repr)
 data ToReprDown repr = ToReprDown (Repr repr)
 
 
-testToRepr repr rec = hmapWithIndex (ToReprTop repr) rec
+testToRepr repr = hmapWithIndex (ToReprTop repr)
 
 testToReprImpl = testToRepr (Repr :: Repr MyRepr) someRec
 
@@ -115,8 +115,7 @@ class HasRepr repr a where
 
 
 instance toReprTopInstance ::
-    ( IsSymbol sym
-    , HasRepr repr state
+    ( HasRepr repr state
     -- , HMap ToReprDown (Proxy is) (Record repr_is)
     -- , HMap ToReprDown (Proxy os) (Record repr_os)
     , MapRecordWithIndex iks (ConstMapping (ToReprDown repr)) is repr_is
@@ -151,7 +150,7 @@ instance toReprDownInstance ::
 
 
 testDownRepr ∷ ∀ (t311 ∷ Type) (t312 ∷ Type) repr. HMap (ToReprDown repr) t311 t312 ⇒ Repr repr -> t311 → t312
-testDownRepr repr rec = hmap (ToReprDown repr) rec
+testDownRepr repr = hmap (ToReprDown repr)
 
 testDownReprImpl = testDownRepr (Repr :: Repr MyRepr) { foo : "aaa", bar : "bbb", c : 32 }
 

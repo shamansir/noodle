@@ -142,6 +142,26 @@ spec = do
                     , sum :
                         [ "a", "b" ] /\ [ "sum" ]
                     }
+
+
+        it "getting representations" $ do
+            (Toolkit.toRepr (TMF.Repr :: TMF.Repr MyRepr) toolkit2)
+                `shouldEqual`
+
+                    { foo :
+                        Unit_
+                        /\ { foo : String_ "aaa", bar : String_ "bbb", c : Int_ 32 }
+                        /\ { out : Bool_ false }
+                    , bar :
+                        Unit_
+                        /\ { a : String_ "aaa", b : String_ "bbb", c : String_ "ccc" }
+                        /\ { x : Int_ 12 }
+                    , sum :
+                        Unit_
+                        /\ { a : Int_ 40, b : Int_ 2 }
+                        /\ { sum : Int_ 42 }
+                    }
+
                     -- {
 
                     -- }
@@ -191,3 +211,37 @@ instance Node.HasInputsAt is ks => TMF.ConvertFamilyDefTo (Inputs is ks)
             -> Inputs is ks
         convertFamilyDef def = Inputs (Def.inputs def)
 -}
+
+
+
+data MyRepr
+    = Unit_
+    | String_ String
+    | Int_ Int
+    | Bool_ Boolean
+    | Other_
+
+
+instance Show MyRepr
+    where
+        show Unit_ = "Unit"
+        show (String_ str) = "String::" <> str
+        show (Int_ int) = "Int::" <> show int
+        show (Bool_ bool) = "Bool_::" <> show bool
+        show Other_ = "Other"
+
+
+instance Eq MyRepr
+    where
+        eq Unit_ Unit_ = true
+        eq (String_ strA) (String_ strB) = strA == strB
+        eq (Int_ intA) (Int_ intB) = intA == intB
+        eq (Bool_ boolA) (Bool_ boolB) = boolA == boolB
+        eq Other_ Other_ = true
+        eq _ _ = false
+
+
+instance TMF.HasRepr MyRepr String where toRepr = String_
+instance TMF.HasRepr MyRepr Int where toRepr = Int_
+instance TMF.HasRepr MyRepr Unit where toRepr _ = Unit_
+instance TMF.HasRepr MyRepr Boolean where toRepr = Bool_
