@@ -162,16 +162,6 @@ spec = do
                         /\ { sum : Int_ 42 }
                     }
 
-                    -- {
-
-                    -- }
-            -- Toolkit.familyDefs toolkit `shouldEqual` [ Inputs ( "foo" : "bar" : "c" : List.Nil ) ]
-
-            -- (Toolkit.mapFamilies toolkit) `shouldEqual` { foo : Inputs ( "foo" : "bar" : "c" : List.Nil ) }
-            --pure unit
-
-            --pure unit
-
 
 --newtype Inputs = Inputs (List Fn.InputR)
 
@@ -241,7 +231,7 @@ instance Eq MyRepr
         eq _ _ = false
 
 
-instance TMF.HasRepr MyRepr String where toRepr = String_
-instance TMF.HasRepr MyRepr Int where toRepr = Int_
-instance TMF.HasRepr MyRepr Unit where toRepr _ = Unit_
-instance TMF.HasRepr MyRepr Boolean where toRepr = Bool_
+instance TMF.HasRepr String MyRepr  where toRepr _ = String_
+instance TMF.HasRepr Int MyRepr where toRepr _ = Int_
+instance TMF.HasRepr Unit MyRepr where toRepr _ _ = Unit_
+instance TMF.HasRepr  Boolean MyRepr where toRepr _ = Bool_
