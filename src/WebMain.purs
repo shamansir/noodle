@@ -22,7 +22,7 @@ import Toolkit.Test (toolkit)
 app gstate nw =
     { toolkit
     -- , components
-    , currentPatch : Just "hydra"
+    , currentPatch : Nothing -- Just "hydra"
     , network : nw
     , patchState : gstate
     }

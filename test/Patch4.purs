@@ -9,7 +9,7 @@ import Record as Record
 import Type.Proxy (Proxy(..))
 
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Tuple.Nested (over1) as Tuple
+import Data.Tuple.Nested (over1, T2) as Tuple
 import Data.Array as Array
 import Data.String as String
 import Data.List (List)
@@ -169,6 +169,8 @@ spec = do
             nodeC <- Toolkit.spawn toolkit _bar
 
             let
+                extractFamily :: forall f z. Tuple.T2 (NodeId f) z -> Tuple.T2 String z
+                extractFamily = Tuple.over1 (familyOf >>> reflectFamily')
                 patch :: Patch Unit (Instances Aff)
                 patch = Patch.init toolkit
                             # Patch.registerNode nodeA
@@ -180,14 +182,14 @@ spec = do
             fooReprs <- Record.get _foo reprMap
             barReprs <- Record.get _bar reprMap
 
-            ((Tuple.over1 (familyOf >>> reflectFamily')) <$> fooReprs) `shouldEqual`
+            (extractFamily <$> fooReprs) `shouldEqual`
                 [ "foo"
                     /\ Unit_
                     /\ { foo : String_ "aaa", bar : String_ "bbb", c : Int_ 32 }
                     /\ { out : Bool_ false }
                 ]
 
-            ((Tuple.over1 (familyOf >>> reflectFamily')) <$> barReprs) `shouldEqual`
+            (extractFamily <$> barReprs) `shouldEqual`
                 [ "bar"
                     /\ Unit_
                     /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 }
@@ -295,7 +297,7 @@ instance (HasInputsAt is ksi
         , HasOutputsAt os kso
         ) => PMF.ConvertNodeTo' is os ksi kso Shape where
     convertNode'
-        :: forall f' state' is' os' m'
+        :: forall f' state' m'
          . Node f' state' is os m'
         -> Shape
     convertNode' node =
