@@ -170,7 +170,7 @@ nodesMapIndexed (Patch _ instances _) =
 
 
 toRepr
-    :: forall m gstate (instances :: Row Type) (rla ∷ RL.RowList Type) reprs repr
+    :: forall m gstate (instances :: Row Type) (rla ∷ RL.RowList Type) (reprs :: Row Type) repr
      . MonadEffect m
     => R.ExtractReprs m rla instances reprs repr
     => Proxy m

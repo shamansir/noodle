@@ -27,7 +27,7 @@ type Families m =
 type Instances m =
     ( foo :: Array (Node "foo" Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m)
     , bar :: Array (Node "bar" Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m)
-    , sum :: Array (Node "sym" Unit ( a :: Int, b :: Int ) ( sum :: Int ) m)
+    , sum :: Array (Node "sum" Unit ( a :: Int, b :: Int ) ( sum :: Int ) m)
     )
 
 

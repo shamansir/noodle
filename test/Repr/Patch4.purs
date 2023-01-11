@@ -35,4 +35,4 @@ instance Eq MyRepr
 instance HasRepr String MyRepr  where toRepr _ = String_
 instance HasRepr Int MyRepr where toRepr _ = Int_
 instance HasRepr Unit MyRepr where toRepr _ _ = Unit_
-instance HasRepr  Boolean MyRepr where toRepr _ = Bool_
+instance HasRepr Boolean MyRepr where toRepr _ = Bool_

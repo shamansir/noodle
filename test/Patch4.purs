@@ -2,6 +2,7 @@ module Test.Patch4 where
 
 import Prelude
 
+import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Console (log) as Console
 import Effect.Aff (Aff)
@@ -68,6 +69,13 @@ type Instances m =
     )
 
 
+{-
+type ReprInstances m =
+    ( foo :: m (Array (PMF.NodeLineRec "foo" MyRepr ( foo :: MyRepr, bar :: MyRepr, c :: MyRepr ) ( out :: MyRepr )))
+    , bar :: m (Array (PMF.NodeLineRec "bar" MyRepr ( a :: MyRepr, b :: MyRepr, c :: MyRepr ) ( x :: MyRepr )))
+    -- , sum :: m (Array (PMF.NodeLineRec "sum" MyRepr ( a :: MyRepr, b :: MyRepr ) ( sum :: MyRepr )))
+    ) -}
+
 
 spec :: Spec Unit
 spec = do
@@ -76,6 +84,7 @@ spec = do
 
         let
             (toolkit :: MyToolkit Aff) =
+            -- toolkit =
                 Toolkit.from "test"
                     { foo :
                         Family.def
@@ -90,6 +99,9 @@ spec = do
                             { x : false }
                             $ Fn.make "bar" $ pure unit
                     }
+
+            extractFamily :: forall f z. Tuple.T2 (NodeId f) z -> Tuple.T2 String z
+            extractFamily = Tuple.over1 (familyOf >>> reflectFamily')
 
         it "adding node to the patch works" $ do
 
@@ -163,14 +175,47 @@ spec = do
                 , bar : [ S { foo : "bar" }, S { foo : "bar" } ]
                 }-- [ I 0, I 1, I 0 ]
 
-        it "repr-ing works" $ do
+        it "repr-ing works with one family registered" $ do
+            nodeA <- Toolkit.spawn toolkit _foo
+
+            let
+                -- NB! Notice that type is defined here, w/o having it defined, the compiler fails, at least in PS 0.14.5
+                patch :: Patch Unit (Instances Aff)
+                patch = Patch.init toolkit
+                            # Patch.registerNode nodeA
+
+            let reprMap = Patch.toRepr (Proxy :: Proxy Aff) (PMF.Repr :: PMF.Repr MyRepr) patch
+
+            fooReprs <- Record.get _foo reprMap
+            barReprs <- Record.get _bar reprMap
+
+            (extractFamily <$> fooReprs) `shouldEqual`
+                [ "foo"
+                    /\ Unit_
+                    /\ { foo : String_ "aaa", bar : String_ "bbb", c : Int_ 32 }
+                    /\ { out : Bool_ false }
+                ]
+
+            (extractFamily <$> barReprs) `shouldEqual`
+                [ "bar"
+                    /\ Unit_
+                    /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 }
+                    /\ { x : Bool_ false }
+                , "bar"
+                    /\ Unit_
+                    /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 }
+                    /\ { x : Bool_ false }
+                ]
+
+
+        it "repr-ing works with all families registered" $ do
+
             nodeA <- Toolkit.spawn toolkit _foo
             nodeB <- Toolkit.spawn toolkit _bar
             nodeC <- Toolkit.spawn toolkit _bar
 
             let
-                extractFamily :: forall f z. Tuple.T2 (NodeId f) z -> Tuple.T2 String z
-                extractFamily = Tuple.over1 (familyOf >>> reflectFamily')
+                -- NB! Notice the lack of type definition in comparison with previous test
                 patch = Patch.init toolkit
                             # Patch.registerNode nodeA
                             # Patch.registerNode nodeB
@@ -198,63 +243,6 @@ spec = do
                     /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 }
                     /\ { x : Bool_ false }
                 ]
-
-            {-
-            reprMap `shouldEqual`
-                { foo :
-                    [ Unit_
-                        /\ { foo : String_ "aaa", bar : String_ "bbb", c : Int_ 32 }
-                        /\ { out : Bool_ false }
-                    , Unit_
-                        /\ { foo : String_ "aaa", bar : String_ "bbb", c : Int_ 32 }
-                        /\ { out : Bool_ false }
-                    ]
-                , bar :
-                    [ Unit_
-                        /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 }
-                        /\ { x : Bool_ false }
-                    ]
-                --, ?wh /\ Unit_ /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 } /\ { x : Bool_ false }
-                }
-            -}
-
-            {-reprArr <- (map (Tuple.over1 (familyOf >>> reflectFamily'))) <$> Patch.toRepr' (PMF.Repr :: PMF.Repr MyRepr) patch
-
-            reprArr `shouldEqual`
-                [
-
-                ] -}
-
-            --let shapes = Node.shape <$> Patch.nodes patch
-
-            {- (bimap (map reflect' >>> Array.fromFoldable) (map reflect' >>> Array.fromFoldable) <$> Node.shape <$> Patch.nodes patch)
-                `shouldEqual`
-                    [ [ "foo", "bar", "c" ] /\ [ "out" ]
-                    , [ "a", "b", "c" ] /\ [ "x" ]
-                    , [ "a", "b", "c" ] /\ [ "x" ]
-                    ] -}
-
-
-            {- Patch.nodesMap' patch `shouldEqual`
-                { foo :
-                    [ Shape
-                        { inputs : Array.toUnfoldable [ "foo", "bar", "c" ]
-                        , outputs : Array.toUnfoldable [ "out" ]
-                        }
-                    ]
-                , bar :
-                    [ Shape
-                        { inputs : Array.toUnfoldable [ "a", "b", "c" ]
-                        , outputs : Array.toUnfoldable [ "x" ]
-                        }
-                    , Shape
-                        { inputs : Array.toUnfoldable [ "a", "b", "c" ]
-                        , outputs : Array.toUnfoldable [ "x" ]
-                        }
-                    ]
-                } -}
-
-            -- TODO
 
             pure unit
 
