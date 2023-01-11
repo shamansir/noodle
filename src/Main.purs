@@ -7,6 +7,8 @@ import Data.Traversable (traverse_)
 import Data.Tuple.Nested ((/\), type (/\))
 import Type.Proxy (Proxy(..))
 import Record as Record
+import Record.Extra as Record
+import Prim.RowList as RL
 
 import Effect (Effect)
 import Effect.Aff (Aff)
@@ -25,7 +27,7 @@ import Noodle.Patch4.MapsFolds.Repr as PMF
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Id (Family(..), Family') as Node
-import Noodle.Id (NodeId, class HasInputsAt)
+import Noodle.Id (NodeId, class HasInputsAt, class HasOutputsAt)
 import Noodle.Id (familyOf, reflectFamily') as Id
 import Noodle.Id (reflect')
 
@@ -59,16 +61,22 @@ instance HasRepr Int AlwaysUnitRepr where toRepr _ _ = Unit_
 instance HasRepr Boolean AlwaysUnitRepr where toRepr _ _ = Unit_
 
 
-renderNode' :: forall m f is os. MonadEffect m => NodeLineRec f AlwaysUnitRepr is os -> m Unit
-renderNode' (nodeId /\ _ /\ _ /\ _) = liftEffect $ do
+renderNode' :: forall m f is irl os orl. HasInputsAt is irl => HasOutputsAt os orl => MonadEffect m => NodeLineRec f AlwaysUnitRepr is os -> m Unit
+renderNode' (nodeId /\ state /\ is /\ os) = liftEffect $ do
   log $ Id.reflectFamily' $ Id.familyOf nodeId
+  log ">= inputs"
+  traverse_ log $ Record.keys is
+  log "<= outputs"
+  traverse_ log $ Record.keys os
+  log "--------"
+
 
 
 -- renderNode :: forall f (is :: Row Type) irl (os :: Row Type) orl. HasInputsAt is irl => HasInputsAt os orl => Node f Unit is os Effect -> Effect Unit
 renderNode :: forall f is os m. MonadEffect m => Node f Unit is os m -> m Unit
-renderNode node = do
-  liftEffect $ log $ Id.reflectFamily' $ Id.familyOf $ Node.id node
-  -- liftEffect $ log $ show $ Node.shape node
+renderNode node = liftEffect $ do
+  log $ Id.reflectFamily' $ Id.familyOf $ Node.id node
+  -- log $ show $ Node.shape node
 
 
 main :: Effect Unit
@@ -100,10 +108,15 @@ main = do
   sumReprs <- Record.get _sum reprMap
   --   -- Patch.nodes patch
 
+  log "families"
   traverse_ log (reflect' <$> families)
 
+  -- log "\n"
+  -- log "nodes 1"
   -- traverse_ renderNode (Patch.nodes patch)
 
+  log "==========="
+  log "nodes 2"
   traverse_ renderNode' fooReprs
   traverse_ renderNode' barReprs
   traverse_ renderNode' sumReprs
