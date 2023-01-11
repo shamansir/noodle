@@ -15,16 +15,24 @@ import Noodle.Toolkit3.MapsFolds as TMF -- FIXME
 import Noodle.Family.Def as Family -- FIXME
 
 
+type Family = Family.Def
 
-type Nodes m =
-    ( foo :: Family.Def Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m
-    , bar :: Family.Def Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m
-    , sum :: Family.Def Unit ( a :: Int, b :: Int ) ( sum :: Int ) m
+
+type Families m =
+    ( foo :: Family Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m
+    , bar :: Family Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m
+    , sum :: Family Unit ( a :: Int, b :: Int ) ( sum :: Int ) m
+    )
+
+type Instances m =
+    ( foo :: Array (Node "foo" Unit ( foo :: String, bar :: String, c :: Int ) ( out :: Boolean ) m)
+    , bar :: Array (Node "bar" Unit ( a :: String, b :: String, c :: Int ) ( x :: Boolean ) m)
+    , sum :: Array (Node "sym" Unit ( a :: Int, b :: Int ) ( sum :: Int ) m)
     )
 
 
 type TestToolkit m =
-    Toolkit Unit (Nodes m)
+    Toolkit Unit (Families m)
 
 
 -- toolkit :: Toolkit

@@ -171,7 +171,6 @@ spec = do
             let
                 extractFamily :: forall f z. Tuple.T2 (NodeId f) z -> Tuple.T2 String z
                 extractFamily = Tuple.over1 (familyOf >>> reflectFamily')
-                patch :: Patch Unit (Instances Aff)
                 patch = Patch.init toolkit
                             # Patch.registerNode nodeA
                             # Patch.registerNode nodeB
