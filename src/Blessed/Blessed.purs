@@ -13,88 +13,32 @@ import Type.Row (type (+))
 import Blessed.Command
 
 
-data Coord
-    = Px Int
-    | Percent Number
-    | Sum Coord Coord
-    | Sub Coord Coord
+import Blessed.UI.Node (Node(..))
+import Blessed.UI.Node as Node
+import Blessed.UI.Screen as Screen
 
-
-data Offset
-    = OCoord Coord
-    | Center
-
-
-type Dimension = Coord
-
-
-data BorderType
-    = Line
-
-
-type Color = String
-
-
-type Style =
-    ( fg :: Color
-    , bg :: Color
-    , border :: Record Border
-    )
-
-
-type Border =
-    ( type :: BorderType
-    , fg :: Color
-    , bg :: Color
-    )
-
-type ScreenOptions r =
-    ( title :: String
-    | BoxOptions + r
-    )
-
-type BoxOptions r =
-    ( top :: Offset
-    , left :: Offset
-    , width :: Dimension
-    , height :: Dimension
-    , content :: String -- a ?
-    , tags :: Boolean
-    , draggable :: Boolean
-    , hover :: (Record Style -> Record Style)
-    , style :: Record Style
-    | r
-    )
-
-
-data Options
-    = Box (Record (BoxOptions ()))
-    | Screen (Record (ScreenOptions ()))
-    | Image
-
-
-newtype Node =
-    Node
-        { options :: Options
-        -- , parent :: Maybe NodeId
-        , children :: Array Node
-        }
-
-
-newtype NodeId = NodeId Int
 
 
 type Blessed =
-    { nodes :: Map NodeId Node
+    { nodes :: Map Node.Id Node
     , lastId :: Int
     }
 
 
 data BlessedOp m a
     = Lift (m a)
-    | PerformOne Command a
-    | PerformSome (Array Command) a
+    | PerformOne Node.Id Command a
+    | PerformSome Node.Id (Array Command) a
 
 
 run :: forall m a. MonadEffect m => Node -> BlessedOp m a -> m Unit
 run _ _ = pure unit
+
+
+screen :: Screen.Options -> Array Node -> Node
+screen opts children =
+    Node { options : Node.Screen opts, children }
+
+
+-- screenAnd :: ScreenOptions () -> Array Node -> (Node -> BlessedOp m a) -> m Unit
+-- screenAnd  _ _ _ = pure unit
