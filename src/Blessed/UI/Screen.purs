@@ -15,7 +15,8 @@ type OptionsRow r =
     , smartCSR :: Boolean
     | Box.OptionsRow + r
     )
-type Options = Record (OptionsRow ())
+type OptionsU = OptionsRow ()
+type Options = Record (OptionsU)
 
 
 default :: Options
@@ -29,7 +30,14 @@ default =
 
 define ∷ forall (r ∷ Row Type)
     . Union r (OptionsRow ()) (OptionsRow ())
-    ⇒ Nub (OptionsRow ()) r
+    ⇒ Nub r ((OptionsRow ()))
     ⇒ Record r → Options
 define rec =
     Record.merge rec default
+
+
+
+{- define' :: forall r. SubRecord r -> Options
+define' rec =
+    withDefaults default rec
+    -- define { title : "foo" } -}

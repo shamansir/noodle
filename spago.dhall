@@ -23,6 +23,7 @@ to generate this file without the comments in this block.
   , "css"
   , "datetime"
   , "debug"
+  , "default-values"
   , "dom-indexed"
   , "effect"
   , "either"

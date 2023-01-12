@@ -11,13 +11,15 @@ import Effect.Console (log)
 import Cli.App as Cli
 
 import Blessed as B
+import Blessed.UI.Node (Node)
 import Blessed.UI.Screen as Screen
+
 
 main :: Effect Unit
 main = do
   Cli.run
     (B.screen
-      (Screen.default)
-      -- (Screen.define {})
-      [ ]
+      ?wh
+      -- (Screen.define { title : "etst" })
+      []
     )

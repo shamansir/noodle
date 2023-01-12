@@ -117,3 +117,16 @@ in upstream
     , version =
         "v0.4.2"
     }
+  with default-values =
+    { dependencies =
+        [ "prelude"
+        , "either"
+        , "maybe"
+        , "tuples"
+        , "lists"
+        , "ordered-collections"
+        , "foreign-object"
+        ]
+    , repo = "https://github.com/imsaravana369/purescript-default.git"
+    , version = "v1.0.1"
+    }
