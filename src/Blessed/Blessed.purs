@@ -1,4 +1,4 @@
-module Cli.Blessed where
+module Blessed where
 
 import Prelude (Unit, unit, pure)
 
@@ -10,7 +10,7 @@ import Data.Maybe (Maybe)
 import Type.Row (type (+))
 
 
-import Cli.Blessed.Command
+import Blessed.Command
 
 
 data Coord
@@ -48,8 +48,12 @@ type Border =
     , bg :: Color
     )
 
+type ScreenOptions r =
+    ( title :: String
+    | BoxOptions + r
+    )
 
-type BoxOptions =
+type BoxOptions r =
     ( top :: Offset
     , left :: Offset
     , width :: Dimension
@@ -59,26 +63,29 @@ type BoxOptions =
     , draggable :: Boolean
     , hover :: (Record Style -> Record Style)
     , style :: Record Style
+    | r
     )
 
 
 data Options
-    = Box (Record BoxOptions)
-    | Screen
+    = Box (Record (BoxOptions ()))
+    | Screen (Record (ScreenOptions ()))
     | Image
 
 
-type Node =
-    ( options :: Options
-    , parent :: Maybe NodeId
-    )
+newtype Node =
+    Node
+        { options :: Options
+        -- , parent :: Maybe NodeId
+        , children :: Array Node
+        }
 
 
 newtype NodeId = NodeId Int
 
 
 type Blessed =
-    { nodes :: Map NodeId (Record Node)
+    { nodes :: Map NodeId Node
     , lastId :: Int
     }
 
@@ -89,5 +96,5 @@ data BlessedOp m a
     | PerformSome (Array Command) a
 
 
-run :: forall m a. MonadEffect m => Blessed -> BlessedOp m a -> m Unit
+run :: forall m a. MonadEffect m => Node -> BlessedOp m a -> m Unit
 run _ _ = pure unit

@@ -1,4 +1,4 @@
-module Cli.Blessed.Command where
+module Blessed.Command where
 
 import Foreign.JSON
 import Foreign (Foreign)
