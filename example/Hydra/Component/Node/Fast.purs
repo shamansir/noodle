@@ -10,14 +10,14 @@ import Effect.Class (class MonadEffect)
 import Data.Maybe (maybe)
 import Data.Tuple.Nested ((/\), type (/\))
 
-import App.Toolkit.UI (FromNode(..)) as UI
+import Web.App.Toolkit.UI (FromNode(..)) as UI
 
 import Hydra (Hydra)
 import Hydra as Hydra
 import Hydra.Component.Input as Input
 import Hydra.Toolkit.UI.Components (NodeComponent, NodeInput, NodeOutput) as UI
 
-import App.Emitters as E
+import Web.Emitters  as E
 
 import Noodle.Node (Node)
 

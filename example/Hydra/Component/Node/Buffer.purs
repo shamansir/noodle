@@ -19,8 +19,8 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Vec ((!!))
 import Data.Typelevel.Num.Reps (d0, d1, d2)
 
-import App.Toolkit.UI (FromNode(..)) as UI
-import App.Emitters as E
+import Web.App.Toolkit.UI (FromNode(..)) as UI
+import Web.Emitters  as E
 
 import JetBrains.Palettes as P
 

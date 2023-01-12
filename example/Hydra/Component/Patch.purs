@@ -15,7 +15,7 @@ import Data.Vec2 as V2
 import Hydra (Hydra)
 import Hydra.Engine as Hydra
 
-import App.Style.Hydra.Background (bg)
+import Web.App.Style.Hydra.Background (bg)
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -24,7 +24,7 @@ import Halogen.Svg.Elements as HS
 import Halogen.Svg.Attributes as HSA
 
 import Hydra.Toolkit.UI.Components as UI
-import App.Toolkit.UI (TellPatch(..), InformApp(..)) as UI
+import Web.App.Toolkit.UI (TellPatch(..), InformApp(..)) as UI
 import Hydra.Toolkit.UI.Action as ToolkitUI
 import Hydra.Queue (Queue)
 import Hydra.Queue as Queue

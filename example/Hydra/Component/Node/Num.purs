@@ -10,7 +10,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Data.Maybe (fromMaybe, Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 
-import App.Toolkit.UI (FromNode(..)) as UI
+import Web.App.Toolkit.UI (FromNode(..)) as UI
 
 import Hydra (Hydra)
 import Hydra as Hydra

@@ -12,8 +12,8 @@ import Data.Array ((:))
 import Data.Array as Array
 import Data.Tuple.Nested (type (/\), (/\))
 
-import App.Toolkit.UI (FromNode(..)) as UI
-import App.Emitters as E
+import Web.App.Toolkit.UI (FromNode(..)) as UI
+import Web.Emitters  as E
 
 import Noodle.Node as Node
 import Noodle.Node (Node)

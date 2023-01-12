@@ -11,7 +11,7 @@ import Data.Array as Array
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
 
-import App.Toolkit.UI (FromNode(..)) as UI
+import Web.App.Toolkit.UI (FromNode(..)) as UI
 
 import Hydra (Operation(..))
 import Hydra as Hydra

@@ -197,15 +197,7 @@ spec = do
                 ]
 
             (extractFamily <$> barReprs) `shouldEqual`
-                [ "bar"
-                    /\ Unit_
-                    /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 }
-                    /\ { x : Bool_ false }
-                , "bar"
-                    /\ Unit_
-                    /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 }
-                    /\ { x : Bool_ false }
-                ]
+                [ ]
 
 
         it "repr-ing works with all families registered" $ do

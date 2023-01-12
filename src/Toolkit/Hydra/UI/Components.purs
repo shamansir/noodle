@@ -2,7 +2,7 @@ module Toolkit.Hydra.UI.Components where
 
 import Prelude (Unit)
 
-import App.Toolkit.UI as UI
+import Web.App.Toolkit.UI as UI
 
 import Toolkit.Hydra.Op (Hydra)
 import Toolkit.Hydra.UI.Action (Action) as UI

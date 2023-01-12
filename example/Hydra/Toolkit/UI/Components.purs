@@ -1,7 +1,7 @@
 module Hydra.Toolkit.UI.Components where
 
 
-import App.Toolkit.UI as UI
+import Web.App.Toolkit.UI as UI
 
 import Hydra (Hydra)
 import Hydra.Toolkit.UI.Action (Action) as UI

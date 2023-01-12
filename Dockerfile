@@ -40,7 +40,7 @@ COPY --from=0 /app/static .
 #RUN mkdir ./css
 #RUN mkdir ./example-css
 
-#COPY --from=0 /app/src/App/App.css ./css/
+#COPY --from=0 /app/src/App/WebApp.css ./css/
 # COPY --from=0 /app/examples/raydraw/Toolkit/Render/Html/*.css ./example-css/
 #COPY --from=0 /app/index.docker.css ./index.css
 

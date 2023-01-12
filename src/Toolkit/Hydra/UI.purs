@@ -35,8 +35,8 @@ import Noodle.Node as Node
 import Noodle.Channel as Channel
 -- import Noodle.Channel.Shape as Channel
 
-import App.Toolkit.UI (Markings, GetFlags) as UI
-import App.Style as Style
+import Web.App.Toolkit.UI (Markings, GetFlags) as UI
+import Web.App.Style as Style
 
 import Color (Color)
 import Color as C

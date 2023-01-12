@@ -14,8 +14,8 @@ import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 
---import App.Toolkit.UI as UI
-import App.Emitters as E
+--import Web.App.Toolkit.UI as UI
+import Web.Emitters  as E
 
 import Noodle.Node (Node)
 import Noodle.Node as Node

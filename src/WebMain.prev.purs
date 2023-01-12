@@ -6,10 +6,10 @@ import Prelude (Unit, (<#>), (>>=), ($), pure, unit)
 import Effect (Effect)
 import Data.Maybe (Maybe(..))
 
-import App (run) as App
-import App (App')
-import App.Style (Style, NodeFlow(..))
-import App.Style.Hydra as Hydra
+import Web.App (run) as App
+import Web.App (App')
+import Web.App.Style (Style, NodeFlow(..))
+import Web.App.Style.Hydra as Hydra
 
 import Color.Extra (transparent) as C
 

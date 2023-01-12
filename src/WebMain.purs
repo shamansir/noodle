@@ -6,7 +6,7 @@ import Prelude (Unit, (<#>), (>>=), ($), pure, unit)
 import Effect (Effect)
 import Data.Maybe (Maybe(..))
 
-import App2 as App
+import Web.App2 as App
 
 import Noodle.Network2 (Network)
 import Noodle.Network2 as Network

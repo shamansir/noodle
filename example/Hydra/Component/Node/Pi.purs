@@ -9,7 +9,7 @@ import Data.Maybe (Maybe(..))
 import Color as C
 import Color.Extra (toSvg) as C
 
-import App.Toolkit.UI (FromNode(..)) as UI
+import Web.App.Toolkit.UI (FromNode(..)) as UI
 
 import Hydra as Hydra
 import Hydra.Toolkit.UI.Components (NodeComponent, NodeOutput) as UI

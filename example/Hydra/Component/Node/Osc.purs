@@ -12,7 +12,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Vec2 (Pos, (<+>))
 import Data.Vec2 as V2
 
-import App.Emitters as E
+import Web.Emitters  as E
 
 import Noodle.Node (Node)
 

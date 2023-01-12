@@ -1,2 +1,2 @@
 #!/bin/bash
-spago -x ./spago.dhall bundle-app --main App.Main
+spago -x ./spago.dhall bundle-app --main WebApp.Main
