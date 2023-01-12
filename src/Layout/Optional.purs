@@ -1,4 +1,4 @@
-module Web.App.Layout.Optional where
+module Layout.Optional where
 
 
 import Prelude

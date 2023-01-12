@@ -1,4 +1,4 @@
-module Web.App.Layouts.NodeList where
+module Layouts.NodeList where
 
 import Prelude
 

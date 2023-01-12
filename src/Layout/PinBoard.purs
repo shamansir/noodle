@@ -1,4 +1,4 @@
-module Web.App.Layout.PinBoard where
+module Layout.PinBoard where
 
 
 import Prelude

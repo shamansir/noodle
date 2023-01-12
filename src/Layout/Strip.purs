@@ -1,4 +1,4 @@
-module Web.App.Layout.Strip
+module Layout.Strip
   where
 
 

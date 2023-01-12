@@ -1,4 +1,4 @@
-module Web.App.Layout.Flex
+module Layout.Flex
   ( Flex, Layers
   , fit, fitLayers
   , flex, flex1, put, putAll, nest, nest', nest1, nest2, nest2'
@@ -24,9 +24,9 @@ import Data.Vec2 (Size, Size_, Pos, Pos_, (<+>))
 
 import Control.Alt ((<|>))
 
-import Web.App.Layout.Flex.Axis as Axis
-import Web.App.Layout.Flex.Axis (Axis2)
-import Web.App.Layout.Flex.Rule (Rule)
+import Layout.Flex.Axis as Axis
+import Layout.Flex.Axis (Axis2)
+import Layout.Flex.Rule (Rule)
 
 import Web.Layout (class IsLayout, class IsSizedLayout)
 import Web.Layout as L

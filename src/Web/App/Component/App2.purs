@@ -3,11 +3,11 @@ module Web.App.Component.App2 where
 import Prelude
 
 import Web.Emitters  as Emitters
-import Web.App.Layout.Flex as Flex
+import Layout.Flex as Flex
 import Web.LayoutRenderer (render) as Layout
-import Web.App.Layouts.App (layout, AppLayoutPart(..)) as App
-import Web.App.Layouts.PatchTabs (layout) as PatchTabs
-import Web.App.Layouts.PatchTabs (TabOrAdd(..)) as PT
+import Layouts.App (layout, AppLayoutPart(..)) as App
+import Layouts.PatchTabs (layout) as PatchTabs
+import Layouts.PatchTabs (TabOrAdd(..)) as PT
 import Web.App.Style (Style, NodeFlow)
 import Web.App.Style.ClassNames as CS
 import Web.Svg.Extra as HSA

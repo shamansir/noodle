@@ -1,4 +1,4 @@
-module Web.App.Layouts.PatchTabs where
+module Layouts.PatchTabs where
 
 import Prelude
 
@@ -9,11 +9,11 @@ import Data.Array ((:))
 import Data.Ord (class Ord, compare)
 import Data.Ordering (Ordering(..))
 
-import Web.App.Layout.Strip (Strip)
-import Web.App.Layout.Strip (make) as Strip
-import Web.App.Layout.Flex as F
-import Web.App.Layout.Flex.Rule (Rule)
-import Web.App.Layout.Flex.Rule as R
+import Layout.Strip (Strip)
+import Layout.Strip (make) as Strip
+import Layout.Flex as F
+import Layout.Flex.Rule (Rule)
+import Layout.Flex.Rule as R
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Noodle.Patch (Patch)

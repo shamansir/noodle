@@ -1,4 +1,4 @@
-module Web.App.Layout.Flex.Axis
+module Layout.Flex.Axis
   ( Align(..)
   , Axis, Axis2, Axis3, Axis4
   , Padding(..)
@@ -49,7 +49,7 @@ import Data.Vec2 (Size, Size_, Pos, Pos_, (<+>))
 import Data.Vec2 as V2
 
 
-import Web.App.Layout.Flex.Rule (Rule(..))
+import Layout.Flex.Rule (Rule(..))
 -- TODO: `IsLayout` instance (AutoSizedLayout?)
 
 
