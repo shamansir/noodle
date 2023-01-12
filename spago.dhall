@@ -27,6 +27,8 @@ to generate this file without the comments in this block.
   , "either"
   , "exists"
   , "foldable-traversable"
+  , "foreign"
+  , "foreign-generic"
   , "free"
   , "functions"
   , "halogen"
