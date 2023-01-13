@@ -19,6 +19,6 @@ main :: Effect Unit
 main = do
   Cli.run
     (B.screen "main"
-      []
+      [ Screen.title "foo" ]
       []
     )

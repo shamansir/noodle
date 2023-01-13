@@ -19,6 +19,3 @@ newtype Node =
         -- , parent :: Maybe NodeId
         , children :: Array Node
         }
-
-
-newtype Id = Id String

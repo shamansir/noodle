@@ -13,6 +13,9 @@ to generate this file without the comments in this block.
 { name = "noodle"
 , dependencies =
   [ "aff"
+  , "argonaut"
+  , "argonaut-codecs"
+  , "argonaut-core"
   , "arrays"
   , "bifunctors"
   , "codec-argonaut"

@@ -4,11 +4,18 @@ import Prelude
 
 
 import Blessed.UI.Box as Box
+import Blessed.Internal.Core (Prop, prop)
 
 import Type.Row (type (+))
 import Prim.Row (class Union, class Nub)
 import Record as Record
+import Prim.Row as R
+import Data.Argonaut.Encode (class EncodeJson)
+import Type.Proxy (Proxy(..))
+import Data.Symbol (class IsSymbol)
 
+
+import Data.Symbol (reflectSymbol, class IsSymbol)
 
 type OptionsRow r =
     ( title :: String
@@ -35,6 +42,26 @@ define ∷ forall (r ∷ Row Type)
 define rec =
     Record.merge rec default
 
+
+screenProp :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> Prop (OptionsRow + r)
+screenProp = prop
+
+
+--type ScreenProp (sym :: Symbol) = forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> Prop ( sym :: a | OptionsRow + r )
+
+
+-- title :: forall r e. String -> Prop ( title :: String | r ) e
+-- title = screenProp "title"
+
+
+--draggable :: forall r e. Boolean -> Prop ( draggable :: Boolean | r ) e
+
+title ∷ forall r. String -> Prop ( title :: String | OptionsRow + r )
+title = screenProp ( Proxy :: Proxy "title" )
+
+
+tags ∷ forall r. Boolean -> Prop ( tags :: Boolean | OptionsRow + r )
+tags = screenProp ( Proxy :: Proxy "tags" )
 
 
 {- define' :: forall r. SubRecord r -> Options
