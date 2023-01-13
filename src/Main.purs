@@ -18,8 +18,7 @@ import Blessed.UI.Screen as Screen
 main :: Effect Unit
 main = do
   Cli.run
-    (B.screen
-      ?wh
-      -- (Screen.define { title : "etst" })
+    (B.screen "main"
+      []
       []
     )
