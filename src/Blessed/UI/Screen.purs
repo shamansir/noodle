@@ -14,6 +14,7 @@ import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
 
 
+import Blessed.Core.Key (Key)
 import Blessed.Internal.Command (Command, NodeId, call, arg) as C
 import Blessed.Internal.Core (Prop, prop, Node, NodeAnd, node, nodeAnd, class Events, CoreEvent(..), handler) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
@@ -91,7 +92,7 @@ screenAnd :: forall r m. String -> C.NodeAnd ( OptionsRow + r ) m Event
 screenAnd name = C.nodeAnd name
 
 
-key :: forall r m. String -> BlessedOp m -> C.Prop (OptionsRow + r) m Event
+key :: forall r m. Array Key -> BlessedOp m -> C.Prop (OptionsRow + r) m Event
 key _ =
     screenHandler (Key unit)
 

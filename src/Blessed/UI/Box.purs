@@ -127,6 +127,13 @@ border ∷ forall r m. Border -> C.Prop ( border :: Border | OptionsRow + r ) m 
 border = boxProp ( Proxy :: Proxy "border" )
 
 
+box :: forall r m. String -> C.Node ( OptionsRow + r ) m Event
+box name = C.node name
+
+
+boxAnd :: forall r m. String -> C.NodeAnd ( OptionsRow + r ) m Event
+boxAnd name = C.nodeAnd name
+
 
 setContent :: forall m. C.NodeId -> String -> BlessedOp m
 setContent nodeId value =

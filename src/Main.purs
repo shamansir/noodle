@@ -11,8 +11,13 @@ import Effect.Console (log)
 import Cli.App as Cli
 
 import Blessed as B
+import Blessed (exit) as Blessed
+import Blessed.Core.Key as Key
+import Blessed.Core.Offset as Offset
+import Blessed.Core.Dimension as Dimension
 import Blessed.UI.Node (Node)
 import Blessed.UI.Screen as Screen
+import Blessed.UI.Box as Box
 
 
 main :: Effect Unit

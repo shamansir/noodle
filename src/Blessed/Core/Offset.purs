@@ -38,6 +38,10 @@ calc :: Coord -> Offset
 calc = Coord
 
 
+center :: Offset
+center = Center
+
+
 render ∷ Offset → String
 render Center = "center"
 render (Coord coord) = Coord.render coord

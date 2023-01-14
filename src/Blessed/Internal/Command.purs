@@ -34,3 +34,8 @@ get (NodeId target) prop = Get { target, prop }
 
 
 arg = CA.encode
+
+
+withProcess :: String -> Array Json -> Command
+withProcess cmd args =
+    Call { target : "process", cmd, args }

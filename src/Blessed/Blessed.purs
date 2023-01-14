@@ -1,6 +1,6 @@
 module Blessed where
 
-import Prelude (Unit, unit, pure, identity, (<<<), (<$>), map)
+import Prelude
 import Foreign (Foreign)
 
 import Effect (Effect)
@@ -14,8 +14,9 @@ import Type.Row (type (+))
 -- import Blessed.UI.Node (Node(..))
 import Blessed.UI.Node as Node
 import Blessed.UI.Screen as Screen
+import Blessed.UI.Box as Box
 import Blessed.Internal.Core as C
-import Blessed.Internal.Command (NodeId) as I
+import Blessed.Internal.Command (NodeId, withProcess) as I
 import Blessed.Internal.BlessedOp as I
 
 
@@ -48,5 +49,13 @@ screenAnd :: forall r m. String -> C.NodeAnd ( Screen.OptionsRow + r ) m Screen.
 screenAnd = Screen.screenAnd
 
 
--- screenAnd :: ScreenOptions () -> Array Node -> (Node -> BlessedOp m a) -> m Unit
--- screenAnd  _ _ _ = pure unit
+box :: forall r m. String -> C.Node ( Box.OptionsRow + r ) m Box.Event
+box = Box.box
+
+
+boxAnd :: forall r m. String -> C.NodeAnd ( Box.OptionsRow + r ) m Box.Event
+boxAnd = Box.boxAnd
+
+
+exit :: forall m. I.BlessedOp m
+exit = I.performOnProcess $ I.withProcess "exit" []

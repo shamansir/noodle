@@ -65,6 +65,7 @@ data BlessedOpF state m a
     | Lift (m a)
     | PerformOne I.NodeId I.Command a
     | PerformSome I.NodeId (Array I.Command) a
+    | PerformOnProcess I.Command a
 
 
 instance functorBlessedOpF :: Functor m => Functor (BlessedOpF state m) where
@@ -73,6 +74,7 @@ instance functorBlessedOpF :: Functor m => Functor (BlessedOpF state m) where
         Lift m -> Lift (map f m)
         PerformOne nid cmd a -> PerformOne nid cmd $ f a
         PerformSome nid cmds a -> PerformSome nid cmds $ f a
+        PerformOnProcess cmd a -> PerformOnProcess cmd $ f a
 
 
 type BlessedOp m = BlessedOpM Registry m Unit
@@ -123,6 +125,10 @@ performSome :: forall m. I.NodeId -> Array I.Command -> BlessedOpM Registry m Un
 performSome nid cmds = BlessedOpM $ Free.liftF $ PerformSome nid cmds unit
 
 
+performOnProcess :: forall m. I.Command -> BlessedOpM Registry m Unit
+performOnProcess cmd = BlessedOpM $ Free.liftF $ PerformOnProcess cmd unit
+
+
 lift :: forall state m. m Unit -> BlessedOpM state m Unit
 lift m = BlessedOpM $ Free.liftF $ Lift m
 
@@ -161,6 +167,9 @@ runFreeM stateRef fn = do
             pure next
 
         go (PerformSome target cmds next) = do
+            pure next
+
+        go (PerformOnProcess cmd next) = do
             pure next
 
         getUserState = liftEffect $ Ref.read stateRef
