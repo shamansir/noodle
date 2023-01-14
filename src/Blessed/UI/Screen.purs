@@ -4,7 +4,7 @@ import Prelude
 
 
 import Blessed.UI.Box as Box
-import Blessed.Internal.Core (Prop, prop)
+import Blessed.Internal.Core (Prop, prop, Node, node, class Events, CoreEvent(..)) as C
 
 import Type.Row (type (+))
 import Prim.Row (class Union, class Nub)
@@ -13,9 +13,24 @@ import Prim.Row as R
 import Data.Argonaut.Encode (class EncodeJson)
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
+import Data.Maybe (Maybe(..))
 
 
 import Data.Symbol (reflectSymbol, class IsSymbol)
+
+
+data Event
+    = Init
+    | Other
+
+
+instance events :: C.Events Event where
+    initial = Init
+    convert Init = "init"
+    convert Other = "?"
+    toCore _ = C.CoreEvent
+    fromCore _ = Nothing
+
 
 type OptionsRow r =
     ( title :: String
@@ -43,28 +58,24 @@ define rec =
     Record.merge rec default
 
 
-screenProp :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> Prop (OptionsRow + r)
-screenProp = prop
+screenProp :: forall a r r' sym m. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> C.Prop (OptionsRow + r) m Event
+screenProp = C.prop
 
-
---type ScreenProp (sym :: Symbol) = forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> Prop ( sym :: a | OptionsRow + r )
-
-
--- title :: forall r e. String -> Prop ( title :: String | r ) e
--- title = screenProp "title"
 
 
 --draggable :: forall r e. Boolean -> Prop ( draggable :: Boolean | r ) e
 
-title ∷ forall r. String -> Prop ( title :: String | OptionsRow + r )
+title ∷ forall r m. String -> C.Prop ( title :: String | OptionsRow + r ) m Event
 title = screenProp ( Proxy :: Proxy "title" )
 
 
-tags ∷ forall r. Boolean -> Prop ( tags :: Boolean | OptionsRow + r )
+tags ∷ forall r m. Boolean -> C.Prop ( tags :: Boolean | OptionsRow + r ) m Event
 tags = screenProp ( Proxy :: Proxy "tags" )
 
 
-{- define' :: forall r. SubRecord r -> Options
-define' rec =
-    withDefaults default rec
-    -- define { title : "foo" } -}
+screen :: forall r m. String -> C.Node ( OptionsRow + r ) m Event
+screen name = C.node name
+
+
+screenAnd :: forall r m. String -> C.Node ( OptionsRow + r ) m Event
+screenAnd name = C.node name
