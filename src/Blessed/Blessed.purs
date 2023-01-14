@@ -15,6 +15,7 @@ import Type.Row (type (+))
 import Blessed.UI.Node as Node
 import Blessed.UI.Screen as Screen
 import Blessed.Internal.Core as C
+import Blessed.Internal.Command (NodeId) as I
 import Blessed.Internal.BlessedOp as I
 
 
@@ -41,6 +42,10 @@ runAnd _ _ = pure unit
 
 screen :: forall r m. String -> C.Node ( Screen.OptionsRow + r ) m Screen.Event
 screen = Screen.screen
+
+
+screenAnd :: forall r m. String -> C.NodeAnd ( Screen.OptionsRow + r ) m Screen.Event
+screenAnd = Screen.screenAnd
 
 
 -- screenAnd :: ScreenOptions () -> Array Node -> (Node -> BlessedOp m a) -> m Unit

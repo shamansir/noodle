@@ -43,16 +43,13 @@ import Blessed.Internal.Command as I
 
 
 
-newtype NodeId = NodeId String
-
-
-type Registry = Map NodeId Json
+type Registry = Map I.NodeId Json
 
 
 
 data SProp = SProp String Json
 data SHandler m e = SHandler e (BlessedOp m)
-data SNode m e = SNode NodeId (Array SProp) (Array (SNode m e)) (Array (SHandler m e))
+data SNode m e = SNode I.NodeId (Array SProp) (Array (SNode m e)) (Array (SHandler m e))
 
 
 instance Functor (SHandler m) where
@@ -66,8 +63,8 @@ instance Functor (SNode m) where
 data BlessedOpF state m a
     = State (state -> a /\ state)
     | Lift (m a)
-    | PerformOne NodeId I.Command a
-    | PerformSome NodeId (Array I.Command) a
+    | PerformOne I.NodeId I.Command a
+    | PerformSome I.NodeId (Array I.Command) a
 
 
 instance functorBlessedOpF :: Functor m => Functor (BlessedOpF state m) where
@@ -118,11 +115,11 @@ instance monadRecBlessedOpM :: MonadRec (BlessedOpM state m) where
 
 {- Processing -}
 
-perform :: forall m. NodeId -> I.Command -> BlessedOpM Registry m Unit
+perform :: forall m. I.NodeId -> I.Command -> BlessedOpM Registry m Unit
 perform nid cmd = BlessedOpM $ Free.liftF $ PerformOne nid cmd unit
 
 
-performSome :: forall m. NodeId -> Array I.Command -> BlessedOpM Registry m Unit
+performSome :: forall m. I.NodeId -> Array I.Command -> BlessedOpM Registry m Unit
 performSome nid cmds = BlessedOpM $ Free.liftF $ PerformSome nid cmds unit
 
 

@@ -18,6 +18,7 @@ import Data.Argonaut.Core (Json)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 
 import Blessed.Internal.BlessedOp as I
+import Blessed.Internal.Command as I
 
 
 type NodeId = I.NodeId
@@ -57,6 +58,10 @@ prop :: forall (sym :: Symbol) (r :: Row Type) a m e. IsSymbol sym => EncodeJson
 prop sym = Prop (reflectSymbol sym) <<< encodeJson
 
 
+handler :: forall r m e. Events e => e -> I.BlessedOp m -> Prop r m e
+handler = Handler
+
+
 node :: forall r m e. String -> Node r m e
 node name props children =
     I.SNode (I.NodeId name) sprops (map toCore <$> children) (map toCore <$> handlers)
@@ -82,9 +87,9 @@ instance Events CoreEvent where
 
 
 
-nodeAnd :: forall r m e. Events e => String -> NodeAnd r m CoreEvent
+nodeAnd :: forall r m e. Events e => String -> NodeAnd r m e
 nodeAnd name props children op =
-    I.SNode (I.NodeId name) sprops children (I.SHandler initial op : handlers)
+    I.SNode (I.NodeId name) sprops (map toCore <$> children) (I.SHandler initial op : (map toCore <$> handlers))
     where sprops /\ handlers = splitProps props
 
 

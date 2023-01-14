@@ -2,6 +2,9 @@ module Blessed.Core.Style where
 
 import Prelude
 
+import Data.Argonaut.Encode (class EncodeJson)
+import Data.Codec.Argonaut as CA
+
 import Data.Maybe (Maybe(..))
 
 import Blessed.Core.Color (Color)
@@ -14,7 +17,9 @@ type StyleRow (r :: Row Type) =
     , bg :: Color
     , border :: Maybe Border
     )
-type Style = Record (StyleRow ())
+type Style =
+    Record (StyleRow ())
+
 
 
 default :: Style
