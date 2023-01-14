@@ -1,10 +1,10 @@
 module Blessed where
 
-import Prelude (Unit, unit, pure, identity)
+import Prelude (Unit, unit, pure, identity, (<<<))
 import Foreign (Foreign)
 
 import Effect (Effect)
-import Effect.Class (class MonadEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 
 import Data.Map (Map)
 import Data.Maybe (Maybe)
@@ -31,7 +31,7 @@ type State m e =
 
 
 run :: forall m. MonadEffect m => I.Blessed m Event -> m Unit
-run _ = pure unit
+run = liftEffect <<< I.execute_
 
 
 runAnd :: forall m a. MonadEffect m => I.Blessed m Event -> I.BlessedOp m a -> m Unit
@@ -39,7 +39,7 @@ runAnd _ _ = pure unit
 
 
 screen :: forall r m e. String -> I.Node ( Screen.OptionsRow + r ) m e
-screen name props children = I.SNode (I.NodeId name) [] children [] -- TODO
+screen name props children = I.SNode (I.NodeId name) (I.lockProps props) children [] -- TODO
 
 
 -- screenAnd :: ScreenOptions () -> Array Node -> (Node -> BlessedOp m a) -> m Unit

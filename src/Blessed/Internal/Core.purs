@@ -1,7 +1,8 @@
 module Blessed.Internal.Core where
 
-import Prelude (Unit, (<<<))
+import Prelude (Unit, (<<<), map)
 
+import Effect (Effect)
 import Blessed.Command (Command)
 
 import Data.Symbol (reflectSymbol, class IsSymbol)
@@ -38,5 +39,14 @@ type Node (r :: Row Type) m e = Array (Prop r) -> Array (Blessed m e) -> Blessed
 type Leaf (r :: Row Type) m e = Array (Prop r) -> Blessed m e
 
 
+
+lockProps :: forall r. Array (Prop r) -> Array SProp
+lockProps = map lockOne
+    where lockOne (Prop str json) = SProp str json
+
+
 prop :: forall (sym :: Symbol) (r :: Row Type) a. IsSymbol sym => EncodeJson a => Proxy sym -> a -> Prop r
 prop sym = Prop (reflectSymbol sym) <<< encodeJson
+
+
+foreign import execute_ :: forall m e. Blessed m e -> Effect Unit
