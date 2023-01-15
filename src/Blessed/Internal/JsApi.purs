@@ -64,3 +64,45 @@ kindToString =
     case _ of
         Box -> "box"
         Screen -> "screen"
+
+
+newtype HandlerCallEnc =
+    HandlerCallEnc
+        { nodeId :: String
+        , event :: String
+        , index :: String
+        , call :: EventJson -> Effect Unit
+        }
+
+newtype HandlerRefEnc =
+    HandlerRefEnc
+        { nodeId :: String
+        , event :: String
+        , index :: String
+        }
+
+derive instance Newtype HandlerCallEnc _
+derive instance Newtype HandlerRefEnc _
+
+newtype BlessedEnc =
+    BlessedEnc
+        { root :: Json
+        , handlersFns :: Array HandlerCallEnc
+        }
+
+
+type PropJson =
+    { name :: String, value :: Json }
+
+
+newtype NodeEnc =
+    NodeEnc
+        { kind :: String
+        , nodeId :: String
+        , props :: Map String Json
+        , children :: Array NodeEnc
+        , handlers :: Array HandlerRefEnc
+        , parent :: Maybe String
+        }
+
+derive instance Newtype NodeEnc _

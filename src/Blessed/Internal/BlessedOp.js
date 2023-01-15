@@ -8,10 +8,14 @@ const registy = {};
 function execute(program) {
     return function() {
         console.log(program);
+
+        console.log(program.root);
+        /*
         console.log('try execute once');
         program.value1[0].call();
         console.log('try execute twice');
         program.value1[0].call()();
+        */
     }
 }
 

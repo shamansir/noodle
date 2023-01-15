@@ -123,7 +123,7 @@ draggable ∷ forall r. Boolean -> BoxAttribute ( draggable :: Boolean | r )
 draggable = boxProperty ( Proxy :: Proxy "draggable" )
 
 
-style ∷ forall sr r m. Array (StyleProperty sr) -> BoxAttribute ( style :: Array (StyleProperty sr) | r )
+style ∷ forall sr r. Array (StyleProperty sr) -> BoxAttribute ( style :: Array (StyleProperty sr) | r )
 style = unsafeCoerce <<< boxProperty ( Proxy :: Proxy "style" )
 
 
@@ -155,7 +155,7 @@ boxAnd name = C.nodeAnd Kind.Box name
 setContent :: forall m. C.NodeId -> String -> BlessedOp m
 setContent nodeId value =
     Op.perform nodeId
-        $ C.call nodeId "setContent"
+        $ C.call "setContent"
             [ C.arg CA.string value
             ]
 
@@ -163,7 +163,7 @@ setContent nodeId value =
 setLine :: forall m. C.NodeId -> Int -> String -> BlessedOp m
 setLine nodeId n value =
     Op.perform nodeId
-        $ C.call nodeId "setLine"
+        $ C.call "setLine"
             [ C.arg CA.int n
             , C.arg CA.string value
             ]
@@ -172,7 +172,7 @@ setLine nodeId n value =
 insertLine :: forall m. C.NodeId -> Int -> String -> BlessedOp m
 insertLine nodeId n value =
     Op.perform nodeId
-        $ C.call nodeId "insertLine"
+        $ C.call "insertLine"
             [ C.arg CA.int n
             , C.arg CA.string value
             ]
@@ -181,4 +181,4 @@ insertLine nodeId n value =
 focus :: forall m. C.NodeId -> BlessedOp m
 focus nodeId =
     Op.perform nodeId
-        $ C.call nodeId "focus" []
+        $ C.call "focus" []

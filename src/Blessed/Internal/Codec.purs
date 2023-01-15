@@ -6,6 +6,7 @@ import Effect (Effect)
 import Effect.Console as Console
 
 import Data.Array ((:))
+import Data.Array as Array
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Profunctor (wrapIso)
 import Data.Maybe (Maybe(..))
@@ -24,50 +25,12 @@ import Data.Codec.Argonaut.Common as CAC
 import Blessed.Internal.JsApi as I
 
 
-newtype HandlerEnc =
-    HandlerEnc
-        { nodeId :: String
-        , event :: String
-        , index :: Int, lindex :: Int, strIndex :: String
-        , call :: I.EventJson -> Effect Unit
-        }
-
-newtype HandlerRefEnc =
-    HandlerRefEnc
-        { nodeId :: String
-        , event :: String
-        , index :: Int, lindex :: Int, strIndex :: String
-        }
-
-derive instance Newtype HandlerEnc _
-derive instance Newtype HandlerRefEnc _
-
-newtype BlessedEnc = BlessedEnc (Json /\ (Array HandlerEnc))
-
-
-type PropJson =
-    { name :: String, value :: Json }
-
-
-newtype NodeEnc =
-    NodeEnc
-        { kind :: String
-        , nodeId :: String
-        , props :: Map String Json
-        , children :: Array NodeEnc
-        , handlers :: Array HandlerRefEnc
-        , parent :: Maybe String
-        }
-
-derive instance Newtype NodeEnc _
-
-
 kindCodec :: CA.JsonCodec I.Kind
 kindCodec  =
     CA.prismaticCodec "Kind" I.kindFromString I.kindToString CA.string
 
 
-propertyRecCodec :: CA.JsonCodec PropJson
+propertyRecCodec :: CA.JsonCodec I.PropJson
 propertyRecCodec =
     CA.object "OnlyProperty"
         (CAR.record
@@ -77,10 +40,10 @@ propertyRecCodec =
         )
 
 
-nodeCodec :: CA.JsonCodec NodeEnc
+nodeCodec :: CA.JsonCodec I.NodeEnc
 nodeCodec =
     CA.fix \codec ->
-        wrapIso NodeEnc $ CAR.object "Node"
+        wrapIso I.NodeEnc $ CAR.object "Node"
             { kind : CA.string
             , nodeId : CA.string
             , props : CAC.map CA.string CA.json
@@ -90,33 +53,33 @@ nodeCodec =
             }
 
 
-handlerRefCodec :: CA.JsonCodec HandlerRefEnc
+handlerRefCodec :: CA.JsonCodec I.HandlerRefEnc
 handlerRefCodec =
-    wrapIso HandlerRefEnc $ CA.object "Handler'"
+    wrapIso I.HandlerRefEnc $ CA.object "HandlerRef"
         (CAR.record
             { nodeId : CA.string
             , event : CA.string
-            , index : CA.int
-            , lindex : CA.int
-            , strIndex : CA.string
+            , index : CA.string
             }
         )
 
-encode :: I.SNode -> BlessedEnc
+encode :: I.SNode -> I.BlessedEnc
 encode rootNode =
     case encodeRoot rootNode of
         nodeEnc /\ handlers ->
-            BlessedEnc $ (CA.encode nodeCodec nodeEnc) /\ handlers
+            I.BlessedEnc $
+                { root : CA.encode nodeCodec nodeEnc
+                , handlersFns : handlers
+                }
 
 
-encodeRoot :: I.SNode -> NodeEnc /\ Array HandlerEnc
-encodeRoot = encode' Nothing 0
+encodeRoot :: I.SNode -> I.NodeEnc /\ Array I.HandlerCallEnc
+encodeRoot = encode' Nothing
 
 
-encode' :: Maybe I.NodeId -> Int -> I.SNode -> NodeEnc /\ Array HandlerEnc
+encode' :: Maybe I.NodeId -> I.SNode -> I.NodeEnc /\ Array I.HandlerCallEnc
 encode'
     maybeParent
-    lastHandlerIndex
     (I.SNode kind (I.NodeId nodeId) sprops snodes shandlers)
 
     =
@@ -127,49 +90,44 @@ encode'
         propsToMap :: Array I.SProp -> Map String Json
         propsToMap = Map.fromFoldable <<< map I.unwrapProp
 
-        encodeHandler :: Int -> Int -> I.SHandler -> HandlerEnc
-        encodeHandler totalIndex localIndex (I.SHandler (I.EventId eventId) fn) =
-            HandlerEnc
+        encodeHandler :: Int -> I.SHandler -> I.HandlerCallEnc
+        encodeHandler localIndex (I.SHandler (I.EventId eventId) fn) =
+            I.HandlerCallEnc
                 { nodeId : nodeId
                 , event : eventId
-                , index : totalIndex
-                , lindex : localIndex
-                , strIndex : nodeId <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index
+                , index : nodeId <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index
                 , call : fn (I.newRegistry) (I.NodeId nodeId)
                 }
 
-        encodeHandlerRef :: Int -> Int -> I.SHandler -> HandlerRefEnc
-        encodeHandlerRef totalIndex localIndex (I.SHandler (I.EventId eventId) fn) =
-            HandlerRefEnc
+        encodeHandlerRef :: Int -> I.SHandler -> I.HandlerRefEnc
+        encodeHandlerRef localIndex (I.SHandler (I.EventId eventId) fn) =
+            I.HandlerRefEnc
                 { nodeId : nodeId
                 , event : eventId
-                , index : totalIndex
-                , lindex : localIndex
-                , strIndex : nodeId <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index?
+                , index : nodeId <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index?
                 }
 
-        nextLastHandlerIdx
-            /\ (storedHandlers :: Array HandlerRefEnc)
-            /\ (handlersCalls :: Array HandlerEnc)
+        (storedHandlers :: Array I.HandlerRefEnc) /\ (handlersCalls :: Array I.HandlerCallEnc)
             = foldrWithIndex
-                    (\localIdx handler (totalIdx /\ storedHandlers /\ handlersCalls) ->
-                        ((totalIdx + 1)
-                            /\ (encodeHandlerRef (totalIdx + 1) localIdx handler : storedHandlers)
-                            /\ (encodeHandler (totalIdx + 1) localIdx handler : handlersCalls)
+                    (\localIdx handler (storedHandlers /\ handlersCalls) ->
+                        (
+                            (encodeHandlerRef localIdx handler : storedHandlers)
+                            /\ (encodeHandler localIdx handler : handlersCalls)
                         )
-                    ) (lastHandlerIndex /\ [] /\ [])
+                    )
+                    ([] /\ [])
                     shandlers
 
-        (children :: Array NodeEnc) /\ (innerHandlersCalls :: Array HandlerEnc) =
+        (children :: Array I.NodeEnc) /\ (innerHandlersCalls :: Array I.HandlerCallEnc) =
             foldr
                 (\(child /\ itsHandlers) ( allChildren /\ allHandlers ) ->
                     (child : allChildren) /\ (itsHandlers <> allHandlers)
                 )
                 ([] /\ [])
-                (encode' (Just $ I.NodeId nodeId) nextLastHandlerIdx <$> snodes)
+                (encode' (Just $ I.NodeId nodeId) <$> snodes)
 
-        (nodeEncoded :: NodeEnc) /\ (childrenHandlers :: Array HandlerEnc) =
-            NodeEnc
+        (nodeEncoded :: I.NodeEnc) /\ (childrenHandlers :: Array I.HandlerCallEnc) =
+            I.NodeEnc
                 { kind : I.kindToString kind
                 , nodeId : nodeId
                 , props : propsToMap sprops

@@ -28,7 +28,7 @@ type Event = C.CoreEvent
 
 
 run :: C.Blessed Event -> Effect Unit
-run = liftEffect <<< C.execute_ <<< C.encode
+run = liftEffect <<< I.execute_ <<< C.encode
 
 
 runAnd :: C.Blessed Event -> I.BlessedOp Effect -> Effect Unit

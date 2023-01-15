@@ -91,6 +91,12 @@ node kind name attrs children =
     where sprops /\ handlers = splitAttributes attrs
 
 
+nodeAnd :: forall r e. Events e => I.Kind -> String -> NodeAnd r e
+nodeAnd kind name attrs children fn =
+    I.SNode kind (I.NodeId name) sprops children (I.makeHandler (I.EventId $ convert (initial :: e)) (\id _ -> fn id) : handlers)
+    where sprops /\ handlers = splitAttributes attrs
+
+
 data CoreEvent =
     CoreEvent
 
@@ -111,24 +117,10 @@ instance Events CoreEvent where
     -- extract _ = identity
 
 
-
-nodeAnd :: forall r e. Events e => I.Kind -> String -> NodeAnd r e
-nodeAnd kind name attrs children fn =
-    I.SNode kind (I.NodeId name) sprops children (I.makeHandler (I.EventId $ convert (initial :: e)) (\id _ -> fn id) : handlers)
-    where sprops /\ handlers = splitAttributes attrs
-
-
-
 instance EncodeJson (OnlyProperty r) where
     encodeJson (OnlyProperty name value)
         = CA.encode Codec.propertyRecCodec { name, value }
 
 
-
-encode :: forall e. Blessed e -> Codec.BlessedEnc
+encode :: forall e. Blessed e -> I.BlessedEnc
 encode = Codec.encode
-
-
-foreign import execute_ :: Codec.BlessedEnc -> Effect Unit
-foreign import registerNode_ :: Codec.BlessedEnc -> Effect Unit
-foreign import registerHandler_ :: Codec.HandlerEnc -> Effect Unit

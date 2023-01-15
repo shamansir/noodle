@@ -105,5 +105,4 @@ screenAnd name = C.nodeAnd Kind.Screen name
 
 render :: forall m. C.NodeId -> BlessedOp m
 render nodeId =
-    Op.perform nodeId
-        $ C.call nodeId "render" [ ]
+    Op.perform nodeId $ C.call "render" [ ]

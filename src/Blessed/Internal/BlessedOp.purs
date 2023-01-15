@@ -39,6 +39,7 @@ import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 import Data.Argonaut.Core (Json)
+
 import Blessed.Internal.Command as I
 import Blessed.Internal.JsApi as I
 
@@ -113,6 +114,9 @@ performOnProcess :: forall m. I.Command -> BlessedOpM I.Registry m Unit
 performOnProcess cmd = BlessedOpM $ Free.liftF $ PerformOnProcess cmd unit
 
 
+-- type Performer m = I.Command -> m Unit -- TODO: return m (Maybe Json), for getters
+
+
 lift :: forall state m. m Unit -> BlessedOpM state m Unit
 lift m = BlessedOpM $ Free.liftF $ Lift m
 
@@ -165,3 +169,9 @@ makeHandler eventId op =
     I.SHandler eventId
         $ \registry nodeId (I.EventJson evt) ->
             runM (I.unveilRegistry registry) $ op nodeId $ evt
+
+
+
+foreign import execute_ :: I.BlessedEnc -> Effect Unit
+foreign import registerNode_ :: I.BlessedEnc -> Effect Unit
+foreign import registerHandler_ :: I.HandlerCallEnc -> Effect Unit

@@ -11,25 +11,23 @@ import Blessed.Internal.JsApi (NodeId(..))
 
 
 data Command
-    = Call { target :: String, cmd :: String, args :: Array Json }
-    | Set { target :: String, prop :: String, value :: Json }
-    | Get { target :: String, prop :: String }
+    = Call { cmd :: String, args :: Array Json }
+    | Set { prop :: String, value :: Json }
+    | Get { prop :: String }
+    -- | Global { }
+    | WithProcess { cmd :: String, args :: Array Json }
 
 
-
--- TODO: cmd names and args count should be checked using row types ?
-
-
-call :: NodeId -> String -> Array Json -> Command
-call (NodeId target) cmd args = Call { target, cmd, args }
+call :: String -> Array Json -> Command
+call cmd args = Call { cmd, args }
 
 
-set :: NodeId -> String -> Json -> Command
-set (NodeId target) prop value = Set { target, prop, value }
+set :: String -> Json -> Command
+set prop value = Set { prop, value }
 
 
-get :: NodeId -> String -> Command
-get (NodeId target) prop = Get { target, prop }
+get :: String -> Command
+get prop = Get { prop }
 
 
 arg = CA.encode
@@ -37,4 +35,4 @@ arg = CA.encode
 
 withProcess :: String -> Array Json -> Command
 withProcess cmd args =
-    Call { target : "process", cmd, args }
+    WithProcess { cmd, args }
