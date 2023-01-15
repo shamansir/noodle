@@ -6,6 +6,8 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
+import Effect.Console as Console
+
 import Data.Either (Either)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array ((:))
@@ -133,15 +135,26 @@ instance EncodeJson (OnlyProperty r) where
         = CA.encode propCodec { name, value }
 
 
-newtype HandlerEnc = HandlerEnc { node :: String, event :: String, call :: Json -> I.BlessedOp Effect }
+newtype HandlerEnc = HandlerEnc { node :: String, event :: String, call :: I.EventJson -> Effect Unit }
 
 
 -- newtype BlessedEnc m = BlessedEnc (Json /\ Map (String /\ String) (HandlerEnc m) )
-newtype BlessedEnc = BlessedEnc Json
+newtype BlessedEnc = BlessedEnc (Json /\ (Array HandlerEnc))
 
 
 encode :: forall e. Blessed e -> BlessedEnc
-encode _ = BlessedEnc (CA.encode CA.null unit)
+encode _ = BlessedEnc (CA.encode CA.null unit /\ [ HandlerEnc { node : "test", event: "test", call: const $ Console.log "foo" }])
+
+
+encodeHandler :: I.NodeId -> I.SHandler -> HandlerEnc
+encodeHandler (I.NodeId nodeId) (I.SHandler (I.EventId eventId) fn) =
+    HandlerEnc
+        { node : nodeId
+        , event : eventId
+        , call : fn (I.newRegistry) (I.NodeId nodeId)
+        }
 
 
 foreign import execute_ :: BlessedEnc -> Effect Unit
+foreign import registerNode_ :: BlessedEnc -> Effect Unit
+foreign import registerHandler_ :: HandlerEnc -> Effect Unit
