@@ -14,7 +14,9 @@ import Blessed as B
 import Blessed (exit) as Blessed
 import Blessed.Core.Key as Key
 import Blessed.Core.Offset as Offset
+import Blessed.Core.Border as Border
 import Blessed.Core.Dimension as Dimension
+import Blessed.Core.Style as Style
 import Blessed.UI.Node (Node)
 import Blessed.UI.Screen as Screen
 import Blessed.UI.Box as Box
@@ -42,7 +44,7 @@ main = do
             , Box.content "Hello {bold}world{/bold}!"
             , Box.tags true
             , Box.draggable true
-            , Box.border Box.line
+            , Box.border Border.line
             , Box.style
                 [ Style.fg "white"
                 , Style.bg "magenta"
@@ -52,7 +54,7 @@ main = do
                 , Box.hover $ const [ Style.bg green ]
                 ]
 
-            , Box.key (Key.one Key.enter) $ \box ch key -> do
+            , Box.key (Key.only Key.enter) $ \box ch key -> do
                 Box.setContent box "{center}Some different {red-fg}content{/red-fg}.{/center}"
                 with_ "main-scr" $ \screen -> Screen.render screen
 

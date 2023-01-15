@@ -1,7 +1,7 @@
 module Blessed.UI.Box where
 
 
-import Prelude (identity, Unit, ($))
+import Prelude (identity, Unit, ($), (<<<))
 
 import Type.Row (type (+))
 import Prim.Row (class Union, class Nub)
@@ -12,13 +12,14 @@ import Data.Codec.Argonaut as CA
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
+import Unsafe.Coerce (unsafeCoerce)
 
 
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dim
 import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
-import Blessed.Core.Style (Style)
+import Blessed.Core.Style (Style, StyleProp)
 import Blessed.Core.Style as Style
 import Blessed.Core.Border (Border)
 import Blessed.Core.Border as Border
@@ -57,7 +58,7 @@ type OptionsRow r =
     , tags :: Boolean
     , draggable :: Boolean
     , hover :: (Style -> Style)
-    , style :: Style
+    , style :: (forall sr. Array (StyleProp sr))
     , border :: Border
     | r
     )
@@ -74,17 +75,9 @@ default =
     , tags : false
     , draggable : false
     , hover : identity
-    , style : Style.default
+    , style : ([] :: forall sr. Array (StyleProp sr))
     , border : Border.default
     }
-
-
-define ∷ forall (r ∷ Row Type)
-    . Union r (OptionsRow ()) (OptionsRow ())
-    ⇒ Nub r ((OptionsRow ()))
-    ⇒ Record r → Options
-define rec =
-    Record.merge rec default
 
 
 boxProp :: forall a r r' sym m. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> C.Prop (OptionsRow + r) m Event
@@ -119,8 +112,8 @@ draggable ∷ forall r m. Boolean -> C.Prop ( draggable :: Boolean | OptionsRow 
 draggable = boxProp ( Proxy :: Proxy "draggable" )
 
 
-style ∷ forall r m. Style -> C.Prop ( style :: Style | OptionsRow + r ) m Event
-style = boxProp ( Proxy :: Proxy "style" )
+style ∷ forall sr r m. Array (StyleProp sr) -> C.Prop ( style :: Array (StyleProp sr) | OptionsRow + r ) m Event
+style = unsafeCoerce <<< boxProp ( Proxy :: Proxy "style" )
 
 
 border ∷ forall r m. Border -> C.Prop ( border :: Border | OptionsRow + r ) m Event

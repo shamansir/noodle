@@ -54,12 +54,18 @@ splitProps props = Array.catMaybes (lockSProp <$> props) /\ Array.catMaybes (loc
         lockSHandler _ = Nothing
 
 
+-- FIXME: no `Cons` check here, but only above
 prop :: forall (sym :: Symbol) (r :: Row Type) a m e. IsSymbol sym => EncodeJson a => Proxy sym -> a -> Prop r m e
 prop sym = Prop (reflectSymbol sym) <<< encodeJson
 
 
 handler :: forall r m e. Events e => e -> I.BlessedOp m -> Prop r m e
 handler = Handler
+
+
+isProp :: forall r m e. Prop r m e -> Maybe (String /\ Json)
+isProp (Prop name val) = Just $ name /\ val
+isProp _ = Nothing
 
 
 node :: forall r m e. String -> Node r m e

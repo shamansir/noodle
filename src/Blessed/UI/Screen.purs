@@ -40,6 +40,7 @@ instance events :: C.Events Event where
     fromCore _ = Nothing
 
 
+type OptionsRow :: Row Type -> Row Type
 type OptionsRow r =
     ( title :: String
     , smartCSR :: Boolean
@@ -66,21 +67,24 @@ define rec =
     Record.merge rec default
 
 
-screenProp :: forall a r r' sym m. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> C.Prop (OptionsRow + r) m Event
+type ScreenProp r m = C.Prop (OptionsRow + r) m Event
+
+
+screenProp :: forall a r r' sym m. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> ScreenProp r m
 screenProp = C.prop
 
 
-screenHandler :: forall m r. Event -> BlessedOp m -> C.Prop (OptionsRow + r) m Event
+screenHandler :: forall m r. Event -> BlessedOp m -> ScreenProp r m
 screenHandler = C.handler
 
 
 --draggable :: forall r e. Boolean -> Prop ( draggable :: Boolean | r ) e
 
-title ∷ forall r m. String -> C.Prop ( title :: String | OptionsRow + r ) m Event
+title ∷ forall r m. String -> ScreenProp ( title :: String | r ) m
 title = screenProp ( Proxy :: Proxy "title" )
 
 
-smartCSR ∷ forall r m. Boolean -> C.Prop ( smartCSR :: Boolean | OptionsRow + r ) m Event
+smartCSR ∷ forall r m. Boolean -> ScreenProp ( smartCSR :: Boolean | r ) m
 smartCSR = screenProp ( Proxy :: Proxy "smartCSR" )
 
 

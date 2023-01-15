@@ -35,3 +35,11 @@ default =
     , fg : "none"
     , bg : "none"
     }
+
+
+line :: Border
+line =
+    { type : Line
+    , fg : "none"
+    , bg : "none"
+    }
