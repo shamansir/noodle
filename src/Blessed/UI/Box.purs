@@ -27,7 +27,7 @@ import Blessed.Core.Key (Key)
 
 
 import Blessed.Internal.Command (Command, NodeId, call, arg) as C
-import Blessed.Internal.Core (Prop, prop, Node, NodeAnd, node, nodeAnd, class Events, CoreEvent(..), handler) as C
+import Blessed.Internal.Core (Prop, prop, Node, NodeAnd, node, nodeAnd, class Events, CoreEvent(..), handler, Handler) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.BlessedOp (perform) as Op
 
@@ -82,13 +82,14 @@ default =
 
 
 type BoxProp r m = C.Prop (OptionsRow + r) m Event
+type BoxHandler r m = C.Handler r m Event
 
 
 boxProp :: forall a r r' sym m. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> BoxProp r m
 boxProp = C.prop
 
 
-boxHandler :: forall m r. Event -> BlessedOp m -> BoxProp r m
+boxHandler :: forall m r. Event -> BoxHandler r m
 boxHandler = C.handler
 
 
@@ -128,11 +129,11 @@ border ∷ forall r m. Border -> BoxProp ( border :: Border | r ) m
 border = boxProp ( Proxy :: Proxy "border" )
 
 
-key :: forall r m. Array Key -> BlessedOp m -> BoxProp r m
+key :: forall r m. Array Key -> BoxHandler r m
 key = boxHandler <<< Key
 
 
-on :: forall r m. Event -> BlessedOp m -> BoxProp r m
+on :: forall r m. Event -> BoxHandler r m
 on = boxHandler
 
 

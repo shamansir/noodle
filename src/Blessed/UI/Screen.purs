@@ -16,7 +16,7 @@ import Data.Maybe (Maybe(..))
 
 import Blessed.Core.Key (Key)
 import Blessed.Internal.Command (Command, NodeId, call, arg) as C
-import Blessed.Internal.Core (Prop, prop, Node, NodeAnd, node, nodeAnd, class Events, CoreEvent(..), handler) as C
+import Blessed.Internal.Core (Prop, prop, Node, NodeAnd, node, nodeAnd, class Events, CoreEvent(..), handler, Handler) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.BlessedOp (perform) as Op
 import Blessed.UI.Box as Box
@@ -68,13 +68,14 @@ define rec =
 
 
 type ScreenProp r m = C.Prop (OptionsRow + r) m Event
+type ScreenHandler r m = C.Handler r m Event
 
 
 screenProp :: forall a r r' sym m. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> ScreenProp r m
 screenProp = C.prop
 
 
-screenHandler :: forall m r. Event -> BlessedOp m -> ScreenProp r m
+screenHandler :: forall m r. Event -> ScreenHandler r m
 screenHandler = C.handler
 
 
@@ -88,7 +89,7 @@ smartCSR ∷ forall r m. Boolean -> ScreenProp ( smartCSR :: Boolean | r ) m
 smartCSR = screenProp ( Proxy :: Proxy "smartCSR" )
 
 
-key :: forall r m. Array Key -> BlessedOp m -> ScreenProp r m
+key :: forall r m. Array Key -> ScreenHandler r m
 key = screenHandler <<< Key
 
 

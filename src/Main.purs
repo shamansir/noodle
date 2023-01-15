@@ -39,12 +39,12 @@ main = do
         [ B.box "main-box"
             [ Box.top Offset.center
             , Box.left Offset.center
-            , Box.width $ Dimension.percents 50
-            , Box.height $ Dimension.percents 50
+            , Box.width $ Dimension.percents 50.0
+            , Box.height $ Dimension.percents 50.0
             , Box.content "Hello {bold}world{/bold}!"
             , Box.tags true
             , Box.draggable true
-            , Box.border Border.line
+            --, Box.border Border.line
             , Box.style
                 [ Style.fg "white"
                 , Style.bg "magenta"
@@ -62,8 +62,8 @@ main = do
 
             , Box.on Box.click $ \box cevt -> do
                 Box.setContent box "{right}Even different {black-fg}content{/black-fg}.{/right}\n"
-                Box.setLine 1 "bar"
-                Box.insertLine 1 "foo"
+                Box.setLine box 1 "bar"
+                Box.insertLine box 1 "foo"
                 B.with_ "main-scr" $ \screen -> Screen.render screen
             ]
 

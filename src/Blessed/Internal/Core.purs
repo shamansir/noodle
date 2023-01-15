@@ -30,7 +30,7 @@ type NodeId = I.NodeId
 data Prop :: Row Type -> (Type -> Type) -> Type -> Type
 data Prop (r :: Row Type) m e
     = Prop String Json
-    | Handler e (I.BlessedOp m)
+    | Handler e (NodeId -> Json -> I.BlessedOp m)
 
 
 data OnlyProp (r :: Row Type)
@@ -50,9 +50,10 @@ type Blessed m e = I.SNode m e
 
 -- see Halogen.Svg.Elements + Halogen.Svg.Properties
 type Node (r :: Row Type) m e = Events e => Array (Prop r m e) -> Array (Blessed m e) -> Blessed m CoreEvent
-type NodeAnd (r :: Row Type) m e = Array (Prop r m e) -> Array (Blessed m e) -> I.BlessedOp m -> Blessed m CoreEvent
+type NodeAnd (r :: Row Type) m e = Array (Prop r m e) -> Array (Blessed m e) -> (NodeId -> I.BlessedOp m) -> Blessed m CoreEvent
 type Leaf (r :: Row Type) m e = Array (Prop r m e) -> Blessed m CoreEvent
 type LeafAnd (r :: Row Type) m e = Array (Prop r m e) ->  I.BlessedOp m -> Blessed m CoreEvent
+type Handler (r :: Row Type) m e = (NodeId -> Json -> I.BlessedOp m) -> Prop r m e
 
 
 splitProps :: forall r m e. Array (Prop r m e) -> Array I.SProp /\ Array (I.SHandler m e)
@@ -73,7 +74,7 @@ onlyProp :: forall (sym :: Symbol) (r :: Row Type) a. IsSymbol sym => EncodeJson
 onlyProp sym = OnlyProp (reflectSymbol sym) <<< encodeJson
 
 
-handler :: forall r m e. Events e => e -> I.BlessedOp m -> Prop r m e
+handler :: forall r m e. Events e => e -> Handler r m e
 handler = Handler
 
 
@@ -92,6 +93,7 @@ class Events e where
     convert :: e -> String
     toCore :: e -> CoreEvent
     fromCore :: CoreEvent -> Maybe e
+    -- extract :: e -> Json -> Json
 
 
 instance Events CoreEvent where
@@ -99,12 +101,13 @@ instance Events CoreEvent where
     convert _ = "Core"
     toCore = identity
     fromCore = Just
+    -- extract _ = identity
 
 
 
 nodeAnd :: forall r m e. Events e => String -> NodeAnd r m e
-nodeAnd name props children op =
-    I.SNode (I.NodeId name) sprops (map toCore <$> children) (I.SHandler initial op : (map toCore <$> handlers))
+nodeAnd name props children fn =
+    I.SNode (I.NodeId name) sprops (map toCore <$> children) (I.SHandler initial (\id _ -> fn id) : (map toCore <$> handlers))
     where sprops /\ handlers = splitProps props
 
 

@@ -48,7 +48,7 @@ type Registry = Map I.NodeId Json
 
 
 data SProp = SProp String Json
-data SHandler m e = SHandler e (BlessedOp m)
+data SHandler m e = SHandler e (I.NodeId -> Json -> BlessedOp m)
 data SNode m e = SNode I.NodeId (Array SProp) (Array (SNode m e)) (Array (SHandler m e))
 
 
