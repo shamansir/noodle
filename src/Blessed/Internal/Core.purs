@@ -5,11 +5,14 @@ module Blessed.Internal.Core where
 import Prelude
 
 import Effect (Effect)
+import Effect.Class (liftEffect)
 import Data.Either (Either)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array ((:))
 import Data.Array as Array
 import Data.Maybe (Maybe(..))
+import Data.Map (Map)
+import Data.Map as Map
 
 import Data.Symbol (reflectSymbol, class IsSymbol)
 import Type.Proxy (Proxy(..))
@@ -21,67 +24,67 @@ import Data.Codec.Argonaut.Record as CAR
 
 import Blessed.Internal.BlessedOp as I
 import Blessed.Internal.Command as I
+import Blessed.Internal.JsApi as I
 import Data.Identity (Identity)
 
 
 type NodeId = I.NodeId
 
 
-data Prop :: Row Type -> (Type -> Type) -> Type -> Type
-data Prop (r :: Row Type) m e
-    = Prop String Json
-    | Handler e (NodeId -> Json -> I.BlessedOp m)
+data Attribute :: Row Type -> Type -> Type
+data Attribute (r :: Row Type) e
+    = Property String Json
+    | Handler e (NodeId -> Json -> I.BlessedOp Effect)
 
 
-data OnlyProp (r :: Row Type)
-    = OnlyProp String Json
+data OnlyProperty (r :: Row Type)
+    = OnlyProperty String Json
 
 
--- newtype OnlyProp r = OnlyProp (Prop r Identity Unit)
 
-
-instance Functor (Prop r m) where
+instance Functor (Attribute r) where
     map f (Handler e op) = Handler (f e) op
-    map _ (Prop str json) = Prop str json
+    map _ (Property str json) = Property str json
 
 
-type Blessed m e = I.SNode m e
+type Blessed e = I.SNode
 
 
 -- see Halogen.Svg.Elements + Halogen.Svg.Properties
-type Node (r :: Row Type) m e = Events e => Array (Prop r m e) -> Array (Blessed m CoreEvent) -> Blessed m CoreEvent
-type NodeAnd (r :: Row Type) m e = Array (Prop r m e) -> Array (Blessed m CoreEvent) -> (NodeId -> I.BlessedOp m) -> Blessed m CoreEvent
-type Leaf (r :: Row Type) m e = Array (Prop r m e) -> Blessed m CoreEvent
-type LeafAnd (r :: Row Type) m e = Array (Prop r m e) ->  I.BlessedOp m -> Blessed m CoreEvent
-type Handler (r :: Row Type) m e = (NodeId -> Json -> I.BlessedOp m) -> Prop r m e
+type Node (r :: Row Type) e = Events e => Array (Attribute r e) -> Array (Blessed CoreEvent) -> Blessed CoreEvent
+type NodeAnd (r :: Row Type) e = Array (Attribute r e) -> Array (Blessed CoreEvent) -> (NodeId -> I.BlessedOp Effect) -> Blessed CoreEvent
+type Leaf (r :: Row Type) e = Array (Attribute r e) -> Blessed CoreEvent
+type LeafAnd (r :: Row Type) e = Array (Attribute r e) ->  (NodeId -> I.BlessedOp Effect) -> Blessed CoreEvent
+type Handler (r :: Row Type) e = (NodeId -> Json -> I.BlessedOp Effect) -> Attribute r e
 
 
-splitProps :: forall r m e. Array (Prop r m e) -> Array I.SProp /\ Array (I.SHandler m e)
-splitProps props = Array.catMaybes (lockSProp <$> props) /\ Array.catMaybes (lockSHandler <$> props)
+splitAttributes :: forall r e. Events e => Array (Attribute r e) -> Array I.SProp /\ Array I.SHandler
+splitAttributes props = Array.catMaybes (lockSProp <$> props) /\ Array.catMaybes (lockSHandler <$> props)
     where
-        lockSProp (Prop str json) = Just $ I.SProp str json
+        lockSProp (Property str json) = Just $ I.SProp str json
         lockSProp _ = Nothing
-        lockSHandler (Handler e op) = Just $ I.SHandler e op
+        lockSHandler (Handler e op) =
+            Just $ I.makeHandler (I.EventId $ convert e) op
         lockSHandler _ = Nothing
 
 
 -- FIXME: no `Cons` check here, but only above
-prop :: forall (sym :: Symbol) (r :: Row Type) a m e. IsSymbol sym => EncodeJson a => Proxy sym -> a -> Prop r m e
-prop sym = Prop (reflectSymbol sym) <<< encodeJson
+property :: forall (sym :: Symbol) (r :: Row Type) a e. IsSymbol sym => EncodeJson a => Proxy sym -> a -> Attribute r e
+property sym = Property (reflectSymbol sym) <<< encodeJson
 
 
-onlyProp :: forall (sym :: Symbol) (r :: Row Type) a. IsSymbol sym => EncodeJson a => Proxy sym -> a -> OnlyProp r
-onlyProp sym = OnlyProp (reflectSymbol sym) <<< encodeJson
+onlyProperty :: forall (sym :: Symbol) (r :: Row Type) a. IsSymbol sym => EncodeJson a => Proxy sym -> a -> OnlyProperty r
+onlyProperty sym = OnlyProperty (reflectSymbol sym) <<< encodeJson
 
 
-handler :: forall r m e. Events e => e -> Handler r m e
+handler :: forall r e. Events e => e -> Handler r e
 handler = Handler
 
 
-node :: forall r m e. String -> Node r m e
-node name props children =
-    I.SNode (I.NodeId name) sprops (map toCore <$> children) (map toCore <$> handlers)
-    where sprops /\ handlers = splitProps props
+node :: forall r e. I.Kind -> String -> Node r e
+node kind name attrs children =
+    I.SNode kind (I.NodeId name) sprops children handlers
+    where sprops /\ handlers = splitAttributes attrs
 
 
 data CoreEvent =
@@ -105,10 +108,10 @@ instance Events CoreEvent where
 
 
 
-nodeAnd :: forall r m e. Events e => String -> NodeAnd r m e
-nodeAnd name props children fn =
-    I.SNode (I.NodeId name) sprops (map toCore <$> children) (I.SHandler initial (\id _ -> fn id) : (map toCore <$> handlers))
-    where sprops /\ handlers = splitProps props
+nodeAnd :: forall r e. Events e => I.Kind -> String -> NodeAnd r e
+nodeAnd kind name attrs children fn =
+    I.SNode kind (I.NodeId name) sprops children (I.makeHandler (I.EventId $ convert (initial :: e)) (\id _ -> fn id) : handlers)
+    where sprops /\ handlers = splitAttributes attrs
 
 
 
@@ -125,10 +128,20 @@ propCodec =
         )
 
 
-instance EncodeJson (OnlyProp r) where
-    encodeJson (OnlyProp name value)
+instance EncodeJson (OnlyProperty r) where
+    encodeJson (OnlyProperty name value)
         = CA.encode propCodec { name, value }
 
 
+newtype HandlerEnc = HandlerEnc { node :: String, event :: String, call :: Json -> I.BlessedOp Effect }
 
-foreign import execute_ :: forall m e. Blessed m e -> Effect Unit
+
+-- newtype BlessedEnc m = BlessedEnc (Json /\ Map (String /\ String) (HandlerEnc m) )
+newtype BlessedEnc = BlessedEnc Json
+
+
+encode :: forall e. Blessed e -> BlessedEnc
+encode _ = BlessedEnc (CA.encode CA.null unit)
+
+
+foreign import execute_ :: BlessedEnc -> Effect Unit

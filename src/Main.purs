@@ -17,7 +17,6 @@ import Blessed.Core.Offset as Offset
 import Blessed.Core.Border as Border
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Style as Style
-import Blessed.UI.Node (Node)
 import Blessed.UI.Screen as Screen
 import Blessed.UI.Box as Box
 

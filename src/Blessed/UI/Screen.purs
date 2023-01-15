@@ -15,9 +15,11 @@ import Data.Maybe (Maybe(..))
 
 
 import Blessed.Core.Key (Key)
-import Blessed.Internal.Command (Command, NodeId, call, arg) as C
-import Blessed.Internal.Core (Prop, prop, Node, NodeAnd, node, nodeAnd, class Events, CoreEvent(..), handler, Handler) as C
+import Blessed.Internal.Command (Command, call, arg) as C
+import Blessed.Internal.Core (Attribute, property, Node, NodeAnd, node, nodeAnd, class Events, CoreEvent(..), handler, Handler) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
+import Blessed.Internal.JsApi (NodeId) as C
+import Blessed.Internal.JsApi (Kind(..)) as Kind
 import Blessed.Internal.BlessedOp (perform) as Op
 import Blessed.UI.Box as Box
 
@@ -67,38 +69,38 @@ define rec =
     Record.merge rec default -}
 
 
-type ScreenProp r m = C.Prop (OptionsRow + r) m Event
-type ScreenHandler r m = C.Handler r m Event
+type ScreenAttribute r = C.Attribute (OptionsRow + r) Event
+type ScreenHandler r = C.Handler r Event
 
 
-screenProp :: forall a r r' sym m. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> ScreenProp r m
-screenProp = C.prop
+screenProperty :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> ScreenAttribute r
+screenProperty = C.property
 
 
-screenHandler :: forall m r. Event -> ScreenHandler r m
+screenHandler :: forall r. Event -> ScreenHandler r
 screenHandler = C.handler
 
 
 --draggable :: forall r e. Boolean -> Prop ( draggable :: Boolean | r ) e
 
-title ∷ forall r m. String -> ScreenProp ( title :: String | r ) m
-title = screenProp ( Proxy :: Proxy "title" )
+title ∷ forall r. String -> ScreenAttribute ( title :: String | r )
+title = screenProperty ( Proxy :: Proxy "title" )
 
 
-smartCSR ∷ forall r m. Boolean -> ScreenProp ( smartCSR :: Boolean | r ) m
-smartCSR = screenProp ( Proxy :: Proxy "smartCSR" )
+smartCSR ∷ forall r. Boolean -> ScreenAttribute ( smartCSR :: Boolean | r )
+smartCSR = screenProperty ( Proxy :: Proxy "smartCSR" )
 
 
-key :: forall r m. Array Key -> ScreenHandler r m
+key :: forall r. Array Key -> ScreenHandler r
 key = screenHandler <<< Key
 
 
-screen :: forall r m. String -> C.Node ( OptionsRow + r ) m Event
-screen name = C.node name
+screen :: forall r. String -> C.Node ( OptionsRow + r ) Event
+screen name = C.node Kind.Screen name
 
 
-screenAnd :: forall r m. String -> C.NodeAnd ( OptionsRow + r ) m Event
-screenAnd name = C.nodeAnd name
+screenAnd :: forall r. String -> C.NodeAnd ( OptionsRow + r ) Event
+screenAnd name = C.nodeAnd Kind.Screen name
 
 
 render :: forall m. C.NodeId -> BlessedOp m

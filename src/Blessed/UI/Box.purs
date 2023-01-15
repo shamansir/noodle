@@ -19,16 +19,18 @@ import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dim
 import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
-import Blessed.Core.Style (Style, StyleProp)
+import Blessed.Core.Style (Style, StyleProperty)
 import Blessed.Core.Style as Style
-import Blessed.Core.Border (Border, BorderProp)
+import Blessed.Core.Border (Border, BorderProperty)
 import Blessed.Core.Border as Border
 import Blessed.Core.Key (Key)
 
 
-import Blessed.Internal.Command (Command, NodeId, call, arg) as C
-import Blessed.Internal.Core (Prop, prop, Node, NodeAnd, node, nodeAnd, class Events, CoreEvent(..), handler, Handler) as C
+import Blessed.Internal.Command (Command, call, arg) as C
+import Blessed.Internal.Core (Attribute, property, Node, NodeAnd, node, nodeAnd, class Events, CoreEvent(..), handler, Handler) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
+import Blessed.Internal.JsApi (NodeId) as C
+import Blessed.Internal.JsApi (Kind(..)) as Kind
 import Blessed.Internal.BlessedOp (perform) as Op
 
 
@@ -58,9 +60,9 @@ type OptionsRow r =
     , content :: String -- a ?
     , tags :: Boolean
     , draggable :: Boolean
-    , hover :: (forall sr. Array (StyleProp sr))
-    , style :: (forall sr. Array (StyleProp sr))
-    , border :: (forall br. Array (BorderProp br))
+    , hover :: (forall sr. Array (StyleProperty sr))
+    , style :: (forall sr. Array (StyleProperty sr))
+    , border :: (forall br. Array (BorderProperty br))
     | r
     )
 type Options = Record (OptionsRow ())
@@ -75,65 +77,65 @@ default =
     , content : ""
     , tags : false
     , draggable : false
-    , hover : ([] :: forall sr. Array (StyleProp sr))
-    , style : ([] :: forall sr. Array (StyleProp sr))
-    , border : ([] :: forall br. Array (BorderProp br))
+    , hover : ([] :: forall sr. Array (StyleProperty sr))
+    , style : ([] :: forall sr. Array (StyleProperty sr))
+    , border : ([] :: forall br. Array (BorderProperty br))
     }
 
 
-type BoxProp r m = C.Prop (OptionsRow + r) m Event
-type BoxHandler r m = C.Handler r m Event
+type BoxAttribute r = C.Attribute (OptionsRow + r) Event
+type BoxHandler r = C.Handler r Event
 
 
-boxProp :: forall a r r' sym m. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> BoxProp r m
-boxProp = C.prop
+boxProperty :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> BoxAttribute r
+boxProperty = C.property
 
 
-boxHandler :: forall m r. Event -> BoxHandler r m
+boxHandler :: forall r. Event -> BoxHandler r
 boxHandler = C.handler
 
 
-top ∷ forall r m. Offset -> BoxProp ( top :: Offset | r ) m
-top = boxProp ( Proxy :: Proxy "top" )
+top ∷ forall r. Offset -> BoxAttribute ( top :: Offset | r )
+top = boxProperty ( Proxy :: Proxy "top" )
 
 
-left ∷ forall r m. Offset -> BoxProp ( left :: Offset | r ) m
-left = boxProp ( Proxy :: Proxy "left" )
+left ∷ forall r. Offset -> BoxAttribute ( left :: Offset | r )
+left = boxProperty ( Proxy :: Proxy "left" )
 
 
-width ∷ forall r m. Dimension -> BoxProp ( width :: Dimension | r ) m
-width = boxProp ( Proxy :: Proxy "width" )
+width ∷ forall r. Dimension -> BoxAttribute ( width :: Dimension | r )
+width = boxProperty ( Proxy :: Proxy "width" )
 
 
-height ∷ forall r m. Dimension -> BoxProp ( height :: Dimension | r ) m
-height = boxProp ( Proxy :: Proxy "height" )
+height ∷ forall r. Dimension -> BoxAttribute ( height :: Dimension | r )
+height = boxProperty ( Proxy :: Proxy "height" )
 
 
-content ∷ forall r m. String -> BoxProp ( content :: String | r ) m
-content = boxProp ( Proxy :: Proxy "content" )
+content ∷ forall r. String -> BoxAttribute ( content :: String | r )
+content = boxProperty ( Proxy :: Proxy "content" )
 
 
-tags ∷ forall r m. Boolean -> BoxProp ( tags :: Boolean | r ) m
-tags = boxProp ( Proxy :: Proxy "tags" )
+tags ∷ forall r. Boolean -> BoxAttribute ( tags :: Boolean | r )
+tags = boxProperty ( Proxy :: Proxy "tags" )
 
 
-draggable ∷ forall r m. Boolean -> BoxProp ( draggable :: Boolean | r ) m
-draggable = boxProp ( Proxy :: Proxy "draggable" )
+draggable ∷ forall r. Boolean -> BoxAttribute ( draggable :: Boolean | r )
+draggable = boxProperty ( Proxy :: Proxy "draggable" )
 
 
-style ∷ forall sr r m. Array (StyleProp sr) -> BoxProp ( style :: Array (StyleProp sr) | r ) m
-style = unsafeCoerce <<< boxProp ( Proxy :: Proxy "style" )
+style ∷ forall sr r m. Array (StyleProperty sr) -> BoxAttribute ( style :: Array (StyleProperty sr) | r )
+style = unsafeCoerce <<< boxProperty ( Proxy :: Proxy "style" )
 
 
-border ∷ forall r m. Border -> BoxProp ( border :: Border | r ) m
-border = boxProp ( Proxy :: Proxy "border" )
+border ∷ forall r. Border -> BoxAttribute ( border :: Border | r )
+border = boxProperty ( Proxy :: Proxy "border" )
 
 
-key :: forall r m. Array Key -> BoxHandler r m
+key :: forall r. Array Key -> BoxHandler r
 key = boxHandler <<< Key
 
 
-on :: forall r m. Event -> BoxHandler r m
+on :: forall r. Event -> BoxHandler r
 on = boxHandler
 
 
@@ -141,12 +143,12 @@ click :: Event
 click = Click
 
 
-box :: forall r m. String -> C.Node ( OptionsRow + r ) m Event
-box name = C.node name
+box :: forall r. String -> C.Node ( OptionsRow + r ) Event
+box name = C.node Kind.Box name
 
 
-boxAnd :: forall r m. String -> C.NodeAnd ( OptionsRow + r ) m Event
-boxAnd name = C.nodeAnd name
+boxAnd :: forall r. String -> C.NodeAnd ( OptionsRow + r ) Event
+boxAnd name = C.nodeAnd Kind.Box name
 
 
 

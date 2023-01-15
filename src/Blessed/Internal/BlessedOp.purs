@@ -40,24 +40,8 @@ import Unsafe.Coerce (unsafeCoerce)
 
 import Data.Argonaut.Core (Json)
 import Blessed.Internal.Command as I
+import Blessed.Internal.JsApi as I
 
-
-
-type Registry = Map I.NodeId Json
-
-
-
-data SProp = SProp String Json
-data SHandler m e = SHandler e (I.NodeId -> Json -> BlessedOp m)
-data SNode m e = SNode I.NodeId (Array SProp) (Array (SNode m e)) (Array (SHandler m e))
-
-
-instance Functor (SHandler m) where
-    map f (SHandler e op) = SHandler (f e) op
-
-
-instance Functor (SNode m) where
-    map f (SNode id sprops snodes shandlers) = SNode id sprops (map f <$> snodes) (map f <$> shandlers)
 
 
 data BlessedOpF state m a
@@ -77,7 +61,7 @@ instance functorBlessedOpF :: Functor m => Functor (BlessedOpF state m) where
         PerformOnProcess cmd a -> PerformOnProcess cmd $ f a
 
 
-type BlessedOp m = BlessedOpM Registry m Unit
+type BlessedOp m = BlessedOpM I.Registry m Unit
 
 
 
@@ -117,15 +101,15 @@ instance monadRecBlessedOpM :: MonadRec (BlessedOpM state m) where
 
 {- Processing -}
 
-perform :: forall m. I.NodeId -> I.Command -> BlessedOpM Registry m Unit
+perform :: forall m. I.NodeId -> I.Command -> BlessedOpM I.Registry m Unit
 perform nid cmd = BlessedOpM $ Free.liftF $ PerformOne nid cmd unit
 
 
-performSome :: forall m. I.NodeId -> Array I.Command -> BlessedOpM Registry m Unit
+performSome :: forall m. I.NodeId -> Array I.Command -> BlessedOpM I.Registry m Unit
 performSome nid cmds = BlessedOpM $ Free.liftF $ PerformSome nid cmds unit
 
 
-performOnProcess :: forall m. I.Command -> BlessedOpM Registry m Unit
+performOnProcess :: forall m. I.Command -> BlessedOpM I.Registry m Unit
 performOnProcess cmd = BlessedOpM $ Free.liftF $ PerformOnProcess cmd unit
 
 
@@ -174,3 +158,10 @@ runFreeM stateRef fn = do
 
         getUserState = liftEffect $ Ref.read stateRef
         writeUserState _ nextState = liftEffect $ Ref.modify_ (const nextState) stateRef
+
+
+makeHandler :: I.EventId -> (I.NodeId -> Json -> BlessedOp Effect) -> I.SHandler
+makeHandler eventId op =
+    I.SHandler eventId
+        $ \registry nodeId (I.EventJson evt) ->
+            runM (I.unveilRegistry registry) $ op nodeId $ evt

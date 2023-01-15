@@ -12,48 +12,42 @@ import Type.Row (type (+))
 
 
 -- import Blessed.UI.Node (Node(..))
-import Blessed.UI.Node as Node
 import Blessed.UI.Screen as Screen
 import Blessed.UI.Box as Box
 import Blessed.Internal.Core as C
-import Blessed.Internal.Command (NodeId, withProcess) as I
+import Blessed.Internal.Command (withProcess) as I
+import Blessed.Internal.JsApi (NodeId) as I
 import Blessed.Internal.BlessedOp as I
 
 
 type Event = C.CoreEvent
 
 
-type State m e =
-    { nodes :: Map I.NodeId (C.Blessed m e)
-    , lastId :: Int
-    }
-
-
 
 -- type B e = {}
 
 
-run :: forall m. MonadEffect m => C.Blessed m Event -> m Unit
-run = liftEffect <<< C.execute_
+run :: C.Blessed Event -> Effect Unit
+run = liftEffect <<< C.execute_ <<< C.encode
 
 
-runAnd :: forall m. MonadEffect m => C.Blessed m Event -> I.BlessedOp m -> m Unit
+runAnd :: C.Blessed Event -> I.BlessedOp Effect -> Effect Unit
 runAnd _ _ = pure unit
 
 
-screen :: forall r m. String -> C.Node ( Screen.OptionsRow + r ) m Screen.Event
+screen :: forall r. String -> C.Node ( Screen.OptionsRow + r ) Screen.Event
 screen = Screen.screen
 
 
-screenAnd :: forall r m. String -> C.NodeAnd ( Screen.OptionsRow + r ) m Screen.Event
+screenAnd :: forall r. String -> C.NodeAnd ( Screen.OptionsRow + r ) Screen.Event
 screenAnd = Screen.screenAnd
 
 
-box :: forall r m. String -> C.Node ( Box.OptionsRow + r ) m Box.Event
+box :: forall r. String -> C.Node ( Box.OptionsRow + r ) Box.Event
 box = Box.box
 
 
-boxAnd :: forall r m. String -> C.NodeAnd ( Box.OptionsRow + r ) m Box.Event
+boxAnd :: forall r. String -> C.NodeAnd ( Box.OptionsRow + r ) Box.Event
 boxAnd = Box.boxAnd
 
 
