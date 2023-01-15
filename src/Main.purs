@@ -25,7 +25,7 @@ import Blessed.UI.Box as Box
 main :: Effect Unit
 main = do
   Cli.run
-    $ B.screenAnd "main-scr"
+    (B.screenAnd "main-scr"
 
         [ Screen.title "foo"
         , Screen.smartCSR true
@@ -67,7 +67,11 @@ main = do
                 B.with_ "main-scr" $ \screen -> Screen.render screen
             ]
 
+            []
+
         ]
-    $ \screen -> do
-        B.with_ "main-box" $ \box -> Box.focus box
-        Screen.render screen
+
+        $ \screen -> do
+            B.with_ "main-box" $ \box -> Box.focus box
+            Screen.render screen
+    )
