@@ -59,3 +59,7 @@ boxAnd = Box.boxAnd
 
 exit :: forall m. I.BlessedOp m
 exit = I.performOnProcess $ I.withProcess "exit" []
+
+
+with_ :: forall m. String -> (C.NodeId -> I.BlessedOp m) -> I.BlessedOp m
+with_ id fn = pure unit -- FIXME: TODO

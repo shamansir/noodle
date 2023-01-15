@@ -31,7 +31,7 @@ main = do
         , Screen.smartCSR true
 
         , Screen.key
-            [ Key.escape, Key.alpha "q", (Key.control $ Key.alpha "C") ]
+            [ Key.escape, Key.alpha 'q', (Key.control $ Key.alpha 'C') ]
             $ \screen kevt -> do
                 Blessed.exit
         ]
@@ -58,16 +58,16 @@ main = do
 
             , Box.key (Key.only Key.enter) $ \box kevt -> do
                 Box.setContent box "{center}Some different {red-fg}content{/red-fg}.{/center}"
-                with_ "main-scr" $ \screen -> Screen.render screen
+                B.with_ "main-scr" $ \screen -> Screen.render screen
 
             , Box.on Box.click $ \box cevt -> do
                 Box.setContent box "{right}Even different {black-fg}content{/black-fg}.{/right}\n"
                 Box.setLine 1 "bar"
                 Box.insertLine 1 "foo"
-                with_ "main-scr" $ \screen -> Screen.render screen
+                B.with_ "main-scr" $ \screen -> Screen.render screen
             ]
 
         ]
     $ \screen -> do
-        with_ "main-box" $ \box -> Box.focus
+        B.with_ "main-box" $ \box -> Box.focus box
         Screen.render screen

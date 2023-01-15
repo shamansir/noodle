@@ -132,6 +132,14 @@ key :: forall r m. Array Key -> BlessedOp m -> BoxProp r m
 key = boxHandler <<< Key
 
 
+on :: forall r m. Event -> BlessedOp m -> BoxProp r m
+on = boxHandler
+
+
+click :: Event
+click = Click
+
+
 box :: forall r m. String -> C.Node ( OptionsRow + r ) m Event
 box name = C.node name
 
@@ -165,3 +173,9 @@ insertLine nodeId n value =
             [ C.arg CA.int n
             , C.arg CA.string value
             ]
+
+
+focus :: forall m. C.NodeId -> BlessedOp m
+focus nodeId =
+    Op.perform nodeId
+        $ C.call nodeId "focus" []
