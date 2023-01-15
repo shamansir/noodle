@@ -27,7 +27,7 @@ import Data.Symbol (reflectSymbol, class IsSymbol)
 
 data Event
     = Init
-    | Key Unit
+    | Key (Array Key)
     | Other
 
 
@@ -50,21 +50,21 @@ type OptionsU = OptionsRow ()
 type Options = Record (OptionsU)
 
 
-default :: Options
+{- default :: Options
 default =
     Record.merge
         { title : ""
         , smartCSR : false
         }
-        Box.default
+        Box.default -}
 
 
-define ∷ forall (r ∷ Row Type)
+{- define ∷ forall (r ∷ Row Type)
     . Union r (OptionsRow ()) (OptionsRow ())
     ⇒ Nub r ((OptionsRow ()))
     ⇒ Record r → Options
 define rec =
-    Record.merge rec default
+    Record.merge rec default -}
 
 
 type ScreenProp r m = C.Prop (OptionsRow + r) m Event
@@ -88,17 +88,16 @@ smartCSR ∷ forall r m. Boolean -> ScreenProp ( smartCSR :: Boolean | r ) m
 smartCSR = screenProp ( Proxy :: Proxy "smartCSR" )
 
 
+key :: forall r m. Array Key -> BlessedOp m -> ScreenProp r m
+key = screenHandler <<< Key
+
+
 screen :: forall r m. String -> C.Node ( OptionsRow + r ) m Event
 screen name = C.node name
 
 
 screenAnd :: forall r m. String -> C.NodeAnd ( OptionsRow + r ) m Event
 screenAnd name = C.nodeAnd name
-
-
-key :: forall r m. Array Key -> BlessedOp m -> C.Prop (OptionsRow + r) m Event
-key _ =
-    screenHandler (Key unit)
 
 
 render :: forall m. C.NodeId -> BlessedOp m

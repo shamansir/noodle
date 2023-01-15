@@ -32,7 +32,7 @@ main = do
 
         , Screen.key
             [ Key.escape, Key.alpha "q", (Key.control $ Key.alpha "C") ]
-            $ \screen ch key -> do
+            $ \screen kevt -> do
                 Blessed.exit
         ]
 
@@ -48,17 +48,19 @@ main = do
             , Box.style
                 [ Style.fg "white"
                 , Style.bg "magenta"
-                , Box.border
-                    [ Box.fg "#f0f0f0"
+                , Style.border
+                    [ Border.fg "#f0f0f0"
                     ]
-                , Box.hover $ const [ Style.bg green ]
+                , Style.hover
+                    [ Style.bg "green"
+                    ]
                 ]
 
-            , Box.key (Key.only Key.enter) $ \box ch key -> do
+            , Box.key (Key.only Key.enter) $ \box kevt -> do
                 Box.setContent box "{center}Some different {red-fg}content{/red-fg}.{/center}"
                 with_ "main-scr" $ \screen -> Screen.render screen
 
-            , Box.on Box.click $ \box -> do
+            , Box.on Box.click $ \box cevt -> do
                 Box.setContent box "{right}Even different {black-fg}content{/black-fg}.{/right}\n"
                 Box.setLine 1 "bar"
                 Box.insertLine 1 "foo"
