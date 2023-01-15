@@ -49,8 +49,8 @@ type Blessed m e = I.SNode m e
 
 
 -- see Halogen.Svg.Elements + Halogen.Svg.Properties
-type Node (r :: Row Type) m e = Events e => Array (Prop r m e) -> Array (Blessed m e) -> Blessed m CoreEvent
-type NodeAnd (r :: Row Type) m e = Array (Prop r m e) -> Array (Blessed m e) -> (NodeId -> Json -> I.BlessedOp m) -> Blessed m CoreEvent
+type Node (r :: Row Type) m e = Events e => Array (Prop r m e) -> Array (Blessed m CoreEvent) -> Blessed m CoreEvent
+type NodeAnd (r :: Row Type) m e = Array (Prop r m e) -> Array (Blessed m CoreEvent) -> (NodeId -> I.BlessedOp m) -> Blessed m CoreEvent
 type Leaf (r :: Row Type) m e = Array (Prop r m e) -> Blessed m CoreEvent
 type LeafAnd (r :: Row Type) m e = Array (Prop r m e) ->  I.BlessedOp m -> Blessed m CoreEvent
 type Handler (r :: Row Type) m e = (NodeId -> Json -> I.BlessedOp m) -> Prop r m e
@@ -107,7 +107,7 @@ instance Events CoreEvent where
 
 nodeAnd :: forall r m e. Events e => String -> NodeAnd r m e
 nodeAnd name props children fn =
-    I.SNode (I.NodeId name) sprops (map toCore <$> children) (I.SHandler initial fn : (map toCore <$> handlers))
+    I.SNode (I.NodeId name) sprops (map toCore <$> children) (I.SHandler initial (\id _ -> fn id) : (map toCore <$> handlers))
     where sprops /\ handlers = splitProps props
 
 
