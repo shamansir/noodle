@@ -31,6 +31,17 @@ function registerHandler(handler) {
     }
 }
 
+function callCommand(nodeId) {
+    return function(command) {
+        console.log('build', nodeId, command);
+        return function() {
+            console.log('call', nodeId, command);
+            return { foo : "test" };
+        }
+    }
+}
+
 exports.execute_ = execute;
 exports.registerNode_ = registerNode;
 exports.registerHandler_ = registerHandler;
+exports.callCommand_ = callCommand;

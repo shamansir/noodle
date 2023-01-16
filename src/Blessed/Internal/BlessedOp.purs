@@ -15,6 +15,7 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
 import Data.List (List)
+import Data.Traversable (traverse)
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -152,12 +153,15 @@ runFreeM stateRef fn = do
                     pure next
         go (Lift m) = m
         go (PerformOne target cmd next) = do
+            _ <- liftEffect $ callCommand_ target cmd
             pure next
 
         go (PerformSome target cmds next) = do
+            _ <- traverse (liftEffect <<< callCommand_ target) cmds
             pure next
 
         go (PerformOnProcess cmd next) = do
+            _ <- liftEffect $ callCommand_ (I.NodeId "process") cmd
             pure next
 
         getUserState = liftEffect $ Ref.read stateRef
@@ -175,3 +179,4 @@ makeHandler eventId op =
 foreign import execute_ :: I.BlessedEnc -> Effect Unit
 foreign import registerNode_ :: I.BlessedEnc -> Effect Unit
 foreign import registerHandler_ :: I.HandlerCallEnc -> Effect Unit
+foreign import callCommand_ :: I.NodeId -> I.Command -> Effect Json
