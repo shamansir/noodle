@@ -6,6 +6,15 @@ const blessed = require('blessed');
 let registry;
 let handlersFns;
 
+const BLESSED_ON = true;
+const LOG_ON = false;
+
+function ___log() {
+    if (!LOG_ON) return;
+    // to be able to disable logs at once
+    console.log.apply(this, arguments);
+}
+
 const INIT_HANDLER_KEY = 'init';
 
 function buildRecord(array, fn) {
@@ -31,15 +40,15 @@ function adaptProp(prop) {
 
 function execute(program) {
     return function() {
-        console.log(program);
+        ___log(program);
         registry = {};
         handlersFns = buildRecord(program.handlersFns, (hdl) => ({ name : hdl.index, value : hdl }));
 
         registerNode(program.root)();
         /*
-        console.log('try execute once');
+        ___log('try execute once');
         program.value1[0].call();
-        console.log('try execute twice');
+        ___log('try execute twice');
         program.value1[0].call()();
         */
     }
@@ -47,36 +56,29 @@ function execute(program) {
 
 function registerNode(node) {
     return function() {
-        console.log(node);
-        registry[node.nodeId] = node;
+        ___log(node);
 
         const props = buildRecord(node.props, adaptProp);
         const handlers = buildRecord(node.handlers, (evt) => ({ name : evt.event, value : evt }));
-        console.log(props);
-        console.log(handlers);
+        ___log(props);
+        ___log(handlers);
 
-        /*
+        let blessedObj = null;
         switch (node.kind) {
             case 'screen':
-                blessed.screen(props);
-              break;
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.screen(props);
+                break;
             case 'box':
-                blessed.box(props);
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.box(props);
+                break;
             default:
-              console.log(`Unknown node kind ${node.kind}.`);
+              ___log(`Unknown node kind ${node.kind}.`);
         }
-        */
 
-        let initEventIndex, initHandlerFn;
-        if (handlers[INIT_HANDLER_KEY]) {
-            initEventIndex = handlers[INIT_HANDLER_KEY].index;
-            initHandlerFn = handlersFns[initEventIndex];
-
-            console.log('calling ', initEventIndex);
-            if (initHandlerFn && (initHandlerFn.index === initEventIndex)) {
-                initHandlerFn.call()();
-            }
-        }
+        registry[node.nodeId] = { source : node, blessed : blessedObj };
+        ___log('registered at', node.nodeId);
 
         let handlerI, handler, handlerFn;
         for (handlerI = 0; handlerI < node.handlers.length; handlerI++) { // use forEach dude
@@ -84,33 +86,89 @@ function registerNode(node) {
             if (handler.event === 'init') continue;
             handlerFn = handlersFns[handler.index];
 
-            console.log('calling ', handler.index);
+            if (BLESSED_ON && handlerFn && (handlerFn.index === handler.index)) {
+                if (handler.event === 'key') {
+                    // blessedObj.key
+                } else {
+                    // blessedObj.on
+                }
+            }
+
+            /*
+            ___log('calling ', handler.index);
             if (handlerFn && (handlerFn.index === handler.index)) {
                 handlerFn.call()();
             }
+            */
         }
 
-        let childI, child;
+        let childI, child, childBlessed;
         for (childI = 0; childI < node.children.length; childI++) { // use forEach dude
             child = node.children[childI];
-            registerNode(child)();
+            childBlessed = registerNode(child)();
+            if (blessedObj && childBlessed) blessedObj.append(childBlessed);
         }
+
+        let initEventIndex, initHandlerFn;
+        if (handlers[INIT_HANDLER_KEY]) {
+            initEventIndex = handlers[INIT_HANDLER_KEY].index;
+            initHandlerFn = handlersFns[initEventIndex];
+
+            ___log('calling ', initEventIndex);
+            if (initHandlerFn && (initHandlerFn.index === initEventIndex)) {
+                initHandlerFn.call()();
+            }
+        }
+
+        return blessedObj;
 
     }
 }
 
 function registerHandler(handler) {
     return function() {
-        console.log(handler);
+        ___log(handler);
     }
 }
 
 function callCommand(nodeId) {
     return function(command) {
-        // console.log('build', nodeId, command);
+        // ___log('build', nodeId, command);
         return function() {
-            console.log('call', nodeId, command);
-            return { foo : "test" };
+            ___log('call', nodeId, command);
+            let returnObj = null;
+
+            if (BLESSED_ON) {
+                if (command.type === 'process') {
+                    process[command.method].apply(this, command.args);
+                } else {
+                    const blessedObj = registry[nodeId] ? registry[nodeId].blessed : null;
+                    // ___log(nodeId, registry[nodeId], blessedObj);
+
+                    if (blessedObj) {
+                        switch (command.type) {
+                            case 'call':
+                                blessedObj[command.method].apply(blessedObj, command.args);
+                                break;
+                            case 'set':
+                                blessedObj[command.property] = command.value;
+                                break;
+                            case 'get':
+                                returnObj = blessedObj[command.property];
+                                break;
+                            case 'process':
+                                // handled earlier
+                                break;
+                            default:
+                                break;
+                        }
+
+                    }
+
+                }
+            }
+
+            return returnObj;
         }
     }
 }

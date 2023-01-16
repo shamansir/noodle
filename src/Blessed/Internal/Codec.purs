@@ -23,6 +23,9 @@ import Data.Codec.Argonaut.Record as CAR
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.JsApi as I
+import Blessed.Internal.Command as C
+
+-- TODO: Consider using encodeJson-based typeclasses
 
 
 kindCodec :: CA.JsonCodec I.Kind
@@ -62,6 +65,50 @@ handlerRefCodec =
             , index : CA.string
             }
         )
+
+
+callCommandCodec :: CA.JsonCodec I.CallCommandEnc
+callCommandCodec =
+    wrapIso I.CallCommandEnc $ CA.object "CallCommand"
+        (CAR.record
+            { type : CA.string
+            , method : CA.string
+            , args : CA.array CA.json
+            }
+        )
+
+
+getCommandCodec :: CA.JsonCodec I.GetCommandEnc
+getCommandCodec =
+    wrapIso I.GetCommandEnc $ CA.object "GetCommand"
+        (CAR.record
+            { type : CA.string
+            , property : CA.string
+            }
+        )
+
+
+setCommandCodec :: CA.JsonCodec I.SetCommandEnc
+setCommandCodec =
+    wrapIso I.SetCommandEnc $ CA.object "SetCommand"
+        (CAR.record
+            { type : CA.string
+            , property : CA.string
+            , value : CA.json
+            }
+        )
+
+
+processCommandCodec :: CA.JsonCodec I.ProcessCommandEnc
+processCommandCodec =
+    wrapIso I.ProcessCommandEnc $ CA.object "ProcessCommand"
+        (CAR.record
+            { type : CA.string
+            , method : CA.string
+            , args : CA.array CA.json
+            }
+        )
+
 
 encode :: I.SNode -> I.BlessedEnc
 encode rootNode =
@@ -163,3 +210,16 @@ encode'
 --   CA.object "Person" $ CA.record
 --     # CA.recordProp (Proxy :: _ "name") CA.string
 --     # CA.recordProp (Proxy :: _ "age") CA.int
+
+
+encodeCommand :: C.Command -> I.CommandEnc
+encodeCommand =
+    case _ of
+        C.Call { cmd, args } ->
+            I.CommandEnc $ CA.encode callCommandCodec $ I.CallCommandEnc $ { args, method : cmd, type : "call" }
+        C.Get { prop } ->
+            I.CommandEnc $ CA.encode getCommandCodec $ I.GetCommandEnc $ { property : prop, type : "get" }
+        C.Set { prop, value } ->
+            I.CommandEnc $ CA.encode setCommandCodec $ I.SetCommandEnc $ { value, property : prop, type : "set" }
+        C.WithProcess { cmd, args } ->
+            I.CommandEnc $ CA.encode processCommandCodec $ I.ProcessCommandEnc $ { args, method : cmd, type : "process" }

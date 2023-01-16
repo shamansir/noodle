@@ -22,11 +22,14 @@ import Blessed.Internal.Core as C
 import Blessed.Internal.Command (withProcess) as I
 import Blessed.Internal.BlessedOp (BlessedOp, execute_, performOnProcess) as I
 
+import Data.Codec.Argonaut as CA
+
 
 type Event = C.CoreEvent
 
 
 
+infixr 0 with_ as >~
 -- type B e = {}
 
 
@@ -59,7 +62,11 @@ boxAnd = Box.boxAnd
 
 
 exit :: forall m. I.BlessedOp m
-exit = I.performOnProcess $ I.withProcess "exit" []
+exit = I.performOnProcess $ I.withProcess "exit" [ CA.encode CA.int 0 ]
+
+
+failure :: forall m. I.BlessedOp m
+failure = I.performOnProcess $ I.withProcess "exit" [ CA.encode CA.int 1 ]
 
 
 with_ :: forall m. C.NodeId -> (C.NodeId -> I.BlessedOp m) -> I.BlessedOp m

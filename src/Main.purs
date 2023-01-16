@@ -7,6 +7,7 @@ import Effect (Effect)
 
 import Cli.App as Cli
 
+import Blessed ((>~))
 import Blessed as B
 import Blessed (exit) as Blessed
 import Blessed.Core.Key as Key
@@ -56,13 +57,13 @@ main = do
 
             , Box.key (Key.only Key.enter) $ \box kevt -> do
                 box # Box.setContent "{center}Some different {red-fg}content{/red-fg}.{/center}"
-                B.with_ (B.ref "main-scr") Screen.render
+                B.ref "main-scr" >~ Screen.render
 
             , Box.on Box.click $ \box cevt -> do
                 box # Box.setContent "{right}Even different {black-fg}content{/black-fg}.{/right}\n"
                 box # Box.setLine 1 "bar"
                 box # Box.insertLine 1 "foo"
-                B.with_ (B.ref "main-scr") Screen.render
+                B.ref "main-scr" >~ Screen.render
             ]
 
             []
@@ -70,6 +71,6 @@ main = do
         ]
 
         $ \screen -> do
-            B.with_ (B.ref "main-box") Box.focus
-            Screen.render screen
+            B.ref "main-box" >~ Box.focus
+            screen # Screen.render
     )

@@ -43,6 +43,7 @@ import Data.Argonaut.Core (Json)
 
 import Blessed.Internal.Command as I
 import Blessed.Internal.JsApi as I
+import Blessed.Internal.Codec (encodeCommand)
 
 
 
@@ -153,15 +154,15 @@ runFreeM stateRef fn = do
                     pure next
         go (Lift m) = m
         go (PerformOne target cmd next) = do
-            _ <- liftEffect $ callCommand_ target cmd
+            _ <- liftEffect $ callCommand_ target $ encodeCommand cmd
             pure next
 
         go (PerformSome target cmds next) = do
-            _ <- traverse (liftEffect <<< callCommand_ target) cmds
+            _ <- traverse (liftEffect <<< callCommand_ target <<< encodeCommand) cmds
             pure next
 
         go (PerformOnProcess cmd next) = do
-            _ <- liftEffect $ callCommand_ (I.NodeId "process") cmd
+            _ <- liftEffect $ callCommand_ (I.NodeId "process") $ encodeCommand cmd
             pure next
 
         getUserState = liftEffect $ Ref.read stateRef
@@ -179,4 +180,4 @@ makeHandler eventId op =
 foreign import execute_ :: I.BlessedEnc -> Effect Unit
 foreign import registerNode_ :: I.BlessedEnc -> Effect Unit
 foreign import registerHandler_ :: I.HandlerCallEnc -> Effect Unit
-foreign import callCommand_ :: I.NodeId -> I.Command -> Effect Json
+foreign import callCommand_ :: I.NodeId -> I.CommandEnc -> Effect Json

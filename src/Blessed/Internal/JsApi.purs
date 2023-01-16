@@ -106,3 +106,51 @@ newtype NodeEnc =
         }
 
 derive instance Newtype NodeEnc _
+
+
+data CommandType
+    = Call
+    | Get
+    | Set
+    | Process
+
+
+newtype CallCommandEnc =
+    CallCommandEnc
+        { type :: String
+        , method :: String
+        , args :: Array Json
+        }
+
+
+newtype GetCommandEnc =
+    GetCommandEnc
+        { type :: String
+        , property :: String
+        }
+
+
+newtype SetCommandEnc =
+    SetCommandEnc
+        { type :: String
+        , property :: String
+        , value :: Json
+        }
+
+newtype ProcessCommandEnc =
+    ProcessCommandEnc
+        { type :: String
+        , method :: String
+        , args :: Array Json
+        }
+
+
+newtype CommandEnc =
+    CommandEnc Json
+
+
+derive instance Newtype CallCommandEnc _
+derive instance Newtype GetCommandEnc _
+derive instance Newtype SetCommandEnc _
+derive instance Newtype ProcessCommandEnc _
+derive instance Newtype CommandEnc _

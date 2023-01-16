@@ -9,6 +9,12 @@ import Type.Data.Symbol (class IsSymbol)
 import Blessed.Internal.JsApi (NodeId(..))
 
 
+{- data CommandType
+    = Call
+    | Set
+    | Get
+    | WithProcess -}
+
 
 data Command
     = Call { cmd :: String, args :: Array Json }
