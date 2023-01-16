@@ -1,23 +1,23 @@
 module Blessed where
 
 import Prelude
-import Foreign (Foreign)
 
 import Effect (Effect)
-import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Class (liftEffect)
 
-import Data.Map (Map)
-import Data.Maybe (Maybe)
 import Type.Row (type (+))
 
 
 -- import Blessed.UI.Node (Node(..))
-import Blessed.UI.Screen as Screen
-import Blessed.UI.Box as Box
+import Blessed.UI.Screen (screen, screenAnd) as Screen
+import Blessed.UI.Screen.Prop (OptionsRow) as Screen
+import Blessed.UI.Screen.Event (Event) as Screen
+import Blessed.UI.Box (box, boxAnd) as Box
+import Blessed.UI.Box.Prop (OptionsRow) as Box
+import Blessed.UI.Box.Event (Event) as Box
 import Blessed.Internal.Core as C
 import Blessed.Internal.Command (withProcess) as I
-import Blessed.Internal.JsApi (NodeId) as I
-import Blessed.Internal.BlessedOp as I
+import Blessed.Internal.BlessedOp (BlessedOp, execute_, performOnProcess) as I
 
 
 type Event = C.CoreEvent

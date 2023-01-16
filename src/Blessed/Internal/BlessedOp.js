@@ -107,7 +107,7 @@ function registerHandler(handler) {
 
 function callCommand(nodeId) {
     return function(command) {
-        console.log('build', nodeId, command);
+        // console.log('build', nodeId, command);
         return function() {
             console.log('call', nodeId, command);
             return { foo : "test" };
