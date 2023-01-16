@@ -110,6 +110,16 @@ processCommandCodec =
             }
         )
 
+commandDumpCodec :: CA.JsonCodec I.CallDump
+commandDumpCodec =
+    wrapIso I.CallDump $ CA.object "CallDump"
+        (CAR.record
+            { nodeId : CA.string
+            , event : CA.string
+            , args : CA.array CA.json
+            }
+        )
+
 
 encode :: I.SNode -> I.BlessedEnc
 encode rootNode =
@@ -215,14 +225,23 @@ encode'
 --     # CA.recordProp (Proxy :: _ "age") CA.int
 
 
-encodeCommand :: C.Command -> I.CommandEnc
-encodeCommand =
+commandToJson :: C.Command -> Json
+commandToJson =
     case _ of
         C.Call { cmd, args } ->
-            I.CommandEnc $ CA.encode callCommandCodec $ I.CallCommandEnc $ { args, method : cmd, type : "call" }
+            CA.encode callCommandCodec $ I.CallCommandEnc $ { args, method : cmd, type : "call" }
         C.Get { prop } ->
-            I.CommandEnc $ CA.encode getCommandCodec $ I.GetCommandEnc $ { property : prop, type : "get" }
+            CA.encode getCommandCodec $ I.GetCommandEnc $ { property : prop, type : "get" }
         C.Set { prop, value } ->
-            I.CommandEnc $ CA.encode setCommandCodec $ I.SetCommandEnc $ { value, property : prop, type : "set" }
+            CA.encode setCommandCodec $ I.SetCommandEnc $ { value, property : prop, type : "set" }
         C.WithProcess { cmd, args } ->
-            I.CommandEnc $ CA.encode processCommandCodec $ I.ProcessCommandEnc $ { args, method : cmd, type : "process" }
+            CA.encode processCommandCodec $ I.ProcessCommandEnc $ { args, method : cmd, type : "process" }
+
+
+encodeCommand :: C.Command -> I.CommandEnc
+encodeCommand =
+    I.CommandEnc <<< commandToJson
+
+
+encodeDump :: I.CallDump -> Json
+encodeDump = CA.encode commandDumpCodec

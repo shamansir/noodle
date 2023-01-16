@@ -45,12 +45,6 @@ function execute(program) {
         handlersFns = buildRecord(program.handlersFns, (hdl) => ({ name : hdl.index, value : hdl }));
 
         registerNode(program.root)();
-        /*
-        ___log('try execute once');
-        program.value1[0].call();
-        ___log('try execute twice');
-        program.value1[0].call()();
-        */
     }
 }
 
@@ -94,13 +88,6 @@ function registerNode(node) {
                     blessedObj.on(handler.event, (evt) => handlerFn.call(evt)());
                 }
             }
-
-            /*
-            ___log('calling ', handler.index);
-            if (handlerFn && (handlerFn.index === handler.index)) {
-                handlerFn.call()();
-            }
-            */
         }
 
         let childI, child, childBlessed;

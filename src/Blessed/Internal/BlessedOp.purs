@@ -3,7 +3,7 @@ module Blessed.Internal.BlessedOp where
 
 import Prelude
 
-import Prelude
+import Effect.Aff (launchAff_)
 
 import Data.Bifunctor (lmap)
 import Data.Map (Map)
@@ -15,7 +15,7 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
 import Data.List (List)
-import Data.Traversable (traverse)
+import Data.Traversable (traverse, traverse_)
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -40,11 +40,20 @@ import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 import Data.Argonaut.Core (Json)
+import Data.Argonaut.Core (stringify) as Json
 
 import Blessed.Internal.Command as I
 import Blessed.Internal.JsApi as I
-import Blessed.Internal.Codec (encodeCommand)
+import Blessed.Internal.Codec (encodeCommand, commandToJson, encodeDump)
 
+import Node.Encoding (Encoding(..))
+import Node.Path (FilePath)
+import Node.FS.Aff (appendTextFile)
+
+
+
+commandsDumpPath :: FilePath
+commandsDumpPath = "./commands_dump.txt"
 
 
 data BlessedOpF state m a
@@ -123,6 +132,26 @@ lift :: forall state m. m Unit -> BlessedOpM state m Unit
 lift m = BlessedOpM $ Free.liftF $ Lift m
 
 
+dumpCommand :: forall m. MonadEffect m => I.Command -> m Unit
+dumpCommand =
+    liftEffect
+        <<< launchAff_
+        <<< appendTextFile UTF8 commandsDumpPath
+        <<< (<>) "\n"
+        <<< Json.stringify
+        <<< commandToJson
+
+
+dumpHandlerCall :: forall m. MonadEffect m => I.NodeId -> I.EventId -> Array Json -> m Unit
+dumpHandlerCall (I.NodeId nodeId) (I.EventId event) args =
+    liftEffect
+        $ launchAff_
+        $ appendTextFile UTF8 commandsDumpPath
+        $ (<>) "\n"
+        $ Json.stringify
+        $ encodeDump
+        $ I.CallDump { args, event, nodeId }
+
 
 runM
     :: forall state m
@@ -155,14 +184,17 @@ runFreeM stateRef fn = do
         go (Lift m) = m
         go (PerformOne target cmd next) = do
             _ <- liftEffect $ callCommand_ target $ encodeCommand cmd
+            dumpCommand cmd
             pure next
 
         go (PerformSome target cmds next) = do
             _ <- traverse (liftEffect <<< callCommand_ target <<< encodeCommand) cmds
+            traverse_ dumpCommand cmds
             pure next
 
         go (PerformOnProcess cmd next) = do
             _ <- liftEffect $ callCommand_ (I.NodeId "process") $ encodeCommand cmd
+            dumpCommand cmd
             pure next
 
         getUserState = liftEffect $ Ref.read stateRef
@@ -172,7 +204,8 @@ runFreeM stateRef fn = do
 makeHandler :: I.EventId -> Array Json -> (I.NodeId -> Json -> BlessedOp Effect) -> I.SHandler
 makeHandler eventId arguments op =
     I.SHandler eventId arguments
-        $ \registry nodeId (I.EventJson evt) ->
+        $ \registry nodeId (I.EventJson evt) -> do
+            dumpHandlerCall nodeId eventId arguments
             runM (I.unveilRegistry registry) $ op nodeId $ evt
 
 

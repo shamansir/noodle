@@ -43,7 +43,7 @@ main = do
             , Box.content "Hello {bold}world{/bold}!"
             , Box.tags true
             , Box.draggable true
-            --, Box.border Border.line
+            -- , Box.border Border.line
             , Box.style
                 [ Style.fg "white"
                 , Style.bg "magenta"

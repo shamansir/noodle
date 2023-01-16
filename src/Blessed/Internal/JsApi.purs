@@ -151,8 +151,17 @@ newtype CommandEnc =
     CommandEnc Json
 
 
+newtype CallDump =
+    CallDump
+        { nodeId :: String
+        , event :: String
+        , args :: Array Json
+        }
+
+
 derive instance Newtype CallCommandEnc _
 derive instance Newtype GetCommandEnc _
 derive instance Newtype SetCommandEnc _
 derive instance Newtype ProcessCommandEnc _
 derive instance Newtype CommandEnc _
+derive instance Newtype CallDump _

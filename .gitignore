@@ -13,3 +13,4 @@ static
 .DS_Store
 src_
 to-production.sh
+commands_dump.txt
