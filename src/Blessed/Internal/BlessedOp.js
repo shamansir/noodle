@@ -33,6 +33,8 @@ function adaptProp(prop) {
             return { name: 'style', value : buildRecord(prop.value, adaptProp) };
         case 'hover':
             return { name: 'hover', value : buildRecord(prop.value, adaptProp) };
+        case 'parent':
+            return { name: 'parent', value : prop.tag === 'Just' ? registry[prop.value].blessed : null };
         default:
             return prop;
     }
@@ -74,13 +76,11 @@ function registerNode(node) {
         registry[node.nodeId] = { source : node, blessed : blessedObj };
         ___log('registered at', node.nodeId);
 
-        let handlerI, handler, handlerFn;
-        for (handlerI = 0; handlerI < node.handlers.length; handlerI++) { // use forEach dude
-            handler = node.handlers[handlerI];
-            if (handler.event === 'init') continue;
-            handlerFn = handlersFns[handler.index];
+        node.handlers.forEach((handler) => {
+            if (handler.event === 'init') return;
+            const handlerFn = handlersFns[handler.index];
 
-            ___log('registering handler', handler, handlerFn);
+            ___log('registering handler', handler.index, handler, handlerFn);
             if (BLESSED_ON && handlerFn && (handlerFn.index === handler.index)) {
                 if (handler.event === 'key') {
                     blessedObj.key(handler.args, (evt) => handlerFn.call(evt)());
@@ -88,14 +88,12 @@ function registerNode(node) {
                     blessedObj.on(handler.event, (evt) => handlerFn.call(evt)());
                 }
             }
-        }
+        });
 
-        let childI, child, childBlessed;
-        for (childI = 0; childI < node.children.length; childI++) { // use forEach dude
-            child = node.children[childI];
-            childBlessed = registerNode(child)();
+        node.children.forEach((child) => {
+            const childBlessed = registerNode(child)();
             if (blessedObj && childBlessed) blessedObj.append(childBlessed);
-        }
+        });
 
         let initEventIndex, initHandlerFn;
         if (handlers[INIT_HANDLER_KEY]) {

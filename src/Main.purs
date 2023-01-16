@@ -55,15 +55,16 @@ main = do
                     ]
                 ]
 
-            , Box.key (Key.only Key.enter) $ \box kevt -> do
+            , Box.on Box.click $ \box cevt -> do
                 box # Box.setContent "{center}Some different {red-fg}content{/red-fg}.{/center}"
                 B.ref "main-scr" >~ Screen.render
 
-            , Box.on Box.click $ \box cevt -> do
+            , Box.key (Key.only Key.enter) $ \box kevt -> do
                 box # Box.setContent "{right}Even different {black-fg}content{/black-fg}.{/right}\n"
                 box # Box.setLine 1 "bar"
                 box # Box.insertLine 1 "foo"
                 B.ref "main-scr" >~ Screen.render
+
             ]
 
             []
