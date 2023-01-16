@@ -2,6 +2,8 @@ module Blessed where
 
 import Prelude
 
+import Data.Function (applyFlipped)
+
 import Effect (Effect)
 import Effect.Class (liftEffect)
 
@@ -15,6 +17,7 @@ import Blessed.UI.Screen.Event (Event) as Screen
 import Blessed.UI.Box (box, boxAnd) as Box
 import Blessed.UI.Box.Property (PropertiesRow) as Box
 import Blessed.UI.Box.Event (Event) as Box
+import Blessed.Internal.JsApi as I
 import Blessed.Internal.Core as C
 import Blessed.Internal.Command (withProcess) as I
 import Blessed.Internal.BlessedOp (BlessedOp, execute_, performOnProcess) as I
@@ -25,6 +28,10 @@ type Event = C.CoreEvent
 
 
 -- type B e = {}
+
+
+ref :: String -> C.NodeId
+ref = I.NodeId
 
 
 run :: C.Blessed Event -> Effect Unit
@@ -55,5 +62,5 @@ exit :: forall m. I.BlessedOp m
 exit = I.performOnProcess $ I.withProcess "exit" []
 
 
-with_ :: forall m. String -> (C.NodeId -> I.BlessedOp m) -> I.BlessedOp m
-with_ id fn = pure unit -- FIXME: TODO
+with_ :: forall m. C.NodeId -> (C.NodeId -> I.BlessedOp m) -> I.BlessedOp m
+with_ = applyFlipped

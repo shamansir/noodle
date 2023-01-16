@@ -10,16 +10,16 @@ import Blessed.Internal.JsApi (NodeId) as C
 import Blessed.Internal.BlessedOp (perform) as Op
 
 
-setContent :: forall m. C.NodeId -> String -> BlessedOp m
-setContent nodeId value =
+setContent :: forall m. String -> C.NodeId -> BlessedOp m
+setContent value nodeId =
     Op.perform nodeId
         $ C.call "setContent"
             [ C.arg CA.string value
             ]
 
 
-setLine :: forall m. C.NodeId -> Int -> String -> BlessedOp m
-setLine nodeId n value =
+setLine :: forall m. Int -> String -> C.NodeId -> BlessedOp m
+setLine n value nodeId =
     Op.perform nodeId
         $ C.call "setLine"
             [ C.arg CA.int n
@@ -27,8 +27,8 @@ setLine nodeId n value =
             ]
 
 
-insertLine :: forall m. C.NodeId -> Int -> String -> BlessedOp m
-insertLine nodeId n value =
+insertLine :: forall m. Int -> String -> C.NodeId -> BlessedOp m
+insertLine n value nodeId =
     Op.perform nodeId
         $ C.call "insertLine"
             [ C.arg CA.int n

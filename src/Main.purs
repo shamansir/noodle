@@ -55,14 +55,14 @@ main = do
                 ]
 
             , Box.key (Key.only Key.enter) $ \box kevt -> do
-                Box.setContent box "{center}Some different {red-fg}content{/red-fg}.{/center}"
-                B.with_ "main-scr" $ \screen -> Screen.render screen
+                box # Box.setContent "{center}Some different {red-fg}content{/red-fg}.{/center}"
+                B.with_ (B.ref "main-scr") Screen.render
 
             , Box.on Box.click $ \box cevt -> do
-                Box.setContent box "{right}Even different {black-fg}content{/black-fg}.{/right}\n"
-                Box.setLine box 1 "bar"
-                Box.insertLine box 1 "foo"
-                B.with_ "main-scr" $ \screen -> Screen.render screen
+                box # Box.setContent "{right}Even different {black-fg}content{/black-fg}.{/right}\n"
+                box # Box.setLine 1 "bar"
+                box # Box.insertLine 1 "foo"
+                B.with_ (B.ref "main-scr") Screen.render
             ]
 
             []
@@ -70,6 +70,6 @@ main = do
         ]
 
         $ \screen -> do
-            B.with_ "main-box" $ \box -> Box.focus box
+            B.with_ (B.ref "main-box") Box.focus
             Screen.render screen
     )
