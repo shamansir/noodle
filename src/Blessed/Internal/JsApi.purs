@@ -99,7 +99,7 @@ newtype NodeEnc =
     NodeEnc
         { kind :: String
         , nodeId :: String
-        , props :: Map String Json
+        , props :: Array PropJson
         , children :: Array NodeEnc
         , handlers :: Array HandlerRefEnc
         , parent :: Maybe String

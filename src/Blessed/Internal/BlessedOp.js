@@ -11,18 +11,29 @@ const INIT_HANDLER_KEY = 'init';
 function buildRecord(array, fn) {
     return array.reduce((record, item, idx) => {
         const pair = fn(item, idx);
-        record[pair[0]] = pair[1];
+        record[pair.name] = pair.value;
         return record;
     }, {})
 }
 
-function identity(a) { return a; }
+function adaptProp(prop) {
+    switch (prop.name) {
+        case 'border':
+            return { name : 'border', value : buildRecord(prop.value, adaptProp) };
+        case 'style':
+            return { name: 'style', value : buildRecord(prop.value, adaptProp) };
+        case 'hover':
+            return { name: 'hover', value : buildRecord(prop.value, adaptProp) };
+        default:
+            return prop;
+    }
+}
 
 function execute(program) {
     return function() {
         console.log(program);
         registry = {};
-        handlersFns = buildRecord(program.handlersFns, (hdl) => [ hdl.index, hdl ]);
+        handlersFns = buildRecord(program.handlersFns, (hdl) => ({ name : hdl.index, value : hdl }));
 
         registerNode(program.root)();
         /*
@@ -39,8 +50,8 @@ function registerNode(node) {
         console.log(node);
         registry[node.nodeId] = node;
 
-        const props = buildRecord(node.props, identity);
-        const handlers = buildRecord(node.handlers, (evt) => [ evt.event, evt ]);
+        const props = buildRecord(node.props, adaptProp);
+        const handlers = buildRecord(node.handlers, (evt) => ({ name : evt.event, value : evt }));
         console.log(props);
         console.log(handlers);
 

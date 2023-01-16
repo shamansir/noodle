@@ -46,7 +46,7 @@ nodeCodec =
         wrapIso I.NodeEnc $ CAR.object "Node"
             { kind : CA.string
             , nodeId : CA.string
-            , props : CAC.map CA.string CA.json
+            , props : CA.array propertyRecCodec
             , children : CA.array codec
             , handlers : CA.array handlerRefCodec
             , parent : CAC.maybe CA.string
@@ -87,8 +87,11 @@ encode'
     nodeEncoded /\ (handlersCalls <> childrenHandlers)
     where
 
-        propsToMap :: Array I.SProp -> Map String Json
-        propsToMap = Map.fromFoldable <<< map I.unwrapProp
+        -- propsToMap :: Array I.SProp -> Map String Json
+        -- propsToMap = Map.fromFoldable <<< map I.unwrapProp
+
+        adaptProps :: Array I.SProp -> Array I.PropJson
+        adaptProps = map (I.unwrapProp >>> \(name /\ value ) -> { name, value })
 
         encodeHandler :: Int -> I.SHandler -> I.HandlerCallEnc
         encodeHandler localIndex (I.SHandler (I.EventId eventId) fn) =
@@ -130,7 +133,7 @@ encode'
             I.NodeEnc
                 { kind : I.kindToString kind
                 , nodeId : nodeId
-                , props : propsToMap sprops
+                , props : adaptProps sprops
                 , children : children
                 , handlers : storedHandlers
                 , parent : unwrap <$> maybeParent
