@@ -1,4 +1,4 @@
-module Blessed.UI.Screen.Prop where
+module Blessed.UI.Screen.Property where
 
 
 import Type.Row (type (+))
@@ -10,17 +10,17 @@ import Data.Symbol (class IsSymbol)
 
 import Blessed.Internal.Core (Attribute, property) as C
 import Blessed.UI.Screen.Event (Event)
-import Blessed.UI.Box.Prop as Box
+import Blessed.UI.Box.Property as Box
 
 
-type OptionsRow :: Row Type -> Row Type
-type OptionsRow r =
+type PropertiesRow :: Row Type -> Row Type
+type PropertiesRow r =
     ( title :: String
     , smartCSR :: Boolean
-    | Box.OptionsRow + r
+    | Box.PropertiesRow + r
     )
-type OptionsU = OptionsRow ()
-type Options = Record (OptionsU)
+type PropertiesU = PropertiesRow ()
+type Properties = Record (PropertiesU)
 
 
 {- default :: Options
@@ -33,15 +33,15 @@ default =
 
 
 {- define ∷ forall (r ∷ Row Type)
-    . Union r (OptionsRow ()) (OptionsRow ())
-    ⇒ Nub r ((OptionsRow ()))
+    . Union r (PropertiesRow ()) (PropertiesRow ())
+    ⇒ Nub r ((PropertiesRow ()))
     ⇒ Record r → Options
 define rec =
     Record.merge rec default -}
 
 
 
-type ScreenAttribute r = C.Attribute (OptionsRow + r) Event
+type ScreenAttribute r = C.Attribute (PropertiesRow + r) Event
 
 
 screenProperty :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> ScreenAttribute r

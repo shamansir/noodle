@@ -1,4 +1,4 @@
-module Blessed.UI.Screen.Op where
+module Blessed.UI.Screen.Method where
 
 import Prelude
 

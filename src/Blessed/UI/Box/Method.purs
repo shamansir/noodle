@@ -1,4 +1,4 @@
-module Blessed.UI.Box.Op where
+module Blessed.UI.Box.Method where
 
 import Prelude (($))
 

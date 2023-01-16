@@ -1,4 +1,4 @@
-module Blessed.UI.Box.Prop where
+module Blessed.UI.Box.Property where
 
 import Prelude ((<<<))
 
@@ -22,7 +22,7 @@ import Blessed.Internal.Core (Attribute, property) as C
 import Blessed.UI.Box.Event (Event)
 
 
-type OptionsRow r =
+type PropertiesRow r =
     ( top :: Offset
     , left :: Offset
     , width :: Dimension
@@ -35,10 +35,10 @@ type OptionsRow r =
     , border :: (forall br. Array (BorderProperty br))
     | r
     )
-type Options = Record (OptionsRow ())
+type Properties = Record (PropertiesRow ())
 
 
-default :: Options
+default :: Properties
 default =
     { top : Offset.px 0
     , left : Offset.px 0
@@ -53,7 +53,7 @@ default =
     }
 
 
-type BoxAttribute r = C.Attribute (OptionsRow + r) Event
+type BoxAttribute r = C.Attribute (PropertiesRow + r) Event
 
 
 boxProperty :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> BoxAttribute r

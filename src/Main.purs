@@ -15,13 +15,10 @@ import Blessed.Core.Border as Border
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Style as Style
 
-import Blessed.UI.Screen.Prop as Screen
-import Blessed.UI.Screen.Op as Screen
-import Blessed.UI.Screen.Event as Screen
 
-import Blessed.UI.Box.Prop as Box
-import Blessed.UI.Box.Op as Box
-import Blessed.UI.Box.Event as Box
+import Blessed.UI.Box as Box
+import Blessed.UI.Screen as Screen
+
 
 main :: Effect Unit
 main = do
