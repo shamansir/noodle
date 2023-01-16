@@ -3,13 +3,28 @@
 const blessed = require('blessed');
 // console.log(blessed);
 
-const registy = {};
+let registry;
+let handlersFns;
+
+const INIT_HANDLER_KEY = 'init';
+
+function buildRecord(array, fn) {
+    return array.reduce((record, item, idx) => {
+        const pair = fn(item, idx);
+        record[pair[0]] = pair[1];
+        return record;
+    }, {})
+}
+
+function identity(a) { return a; }
 
 function execute(program) {
     return function() {
         console.log(program);
+        registry = {};
+        handlersFns = buildRecord(program.handlersFns, (hdl) => [ hdl.index, hdl ]);
 
-        console.log(program.root);
+        registerNode(program.root)();
         /*
         console.log('try execute once');
         program.value1[0].call();
@@ -22,6 +37,54 @@ function execute(program) {
 function registerNode(node) {
     return function() {
         console.log(node);
+        registry[node.nodeId] = node;
+
+        const props = buildRecord(node.props, identity);
+        const handlers = buildRecord(node.handlers, (evt) => [ evt.event, evt ]);
+        console.log(props);
+        console.log(handlers);
+
+        /*
+        switch (node.kind) {
+            case 'screen':
+                blessed.screen(props);
+              break;
+            case 'box':
+                blessed.box(props);
+            default:
+              console.log(`Unknown node kind ${node.kind}.`);
+        }
+        */
+
+        let initEventIndex, initHandlerFn;
+        if (handlers[INIT_HANDLER_KEY]) {
+            initEventIndex = handlers[INIT_HANDLER_KEY].index;
+            initHandlerFn = handlersFns[initEventIndex];
+
+            console.log('calling ', initEventIndex);
+            if (initHandlerFn && (initHandlerFn.index === initEventIndex)) {
+                initHandlerFn.call()();
+            }
+        }
+
+        let handlerI, handler, handlerFn;
+        for (handlerI = 0; handlerI < node.handlers.length; handlerI++) { // use forEach dude
+            handler = node.handlers[handlerI];
+            if (handler.event === 'init') continue;
+            handlerFn = handlersFns[handler.index];
+
+            console.log('calling ', handler.index);
+            if (handlerFn && (handlerFn.index === handler.index)) {
+                handlerFn.call()();
+            }
+        }
+
+        let childI, child;
+        for (childI = 0; childI < node.children.length; childI++) { // use forEach dude
+            child = node.children[childI];
+            registerNode(child)();
+        }
+
     }
 }
 
