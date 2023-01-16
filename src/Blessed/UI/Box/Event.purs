@@ -4,8 +4,10 @@ import Prelude (identity, Unit, ($), (<<<))
 
 
 import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\))
 
 import Blessed.Core.Key (Key)
+import Blessed.Core.Key as Key
 
 
 import Blessed.Internal.Core (class Events, CoreEvent(..), handler, Handler) as C
@@ -20,10 +22,12 @@ data Event
 
 instance events :: C.Events Event where
     initial = Init
-    convert Init = "init"
-    convert (Key key) = "key"
-    convert Click = "click"
-    convert Other = "?"
+
+    convert Init = "init" /\ []
+    convert (Key keys) = "key" /\ Key.convertAll keys
+    convert Click = "click" /\ []
+    convert Other = "?" /\ []
+
     toCore _ = C.CoreEvent
     fromCore _ = Nothing
 

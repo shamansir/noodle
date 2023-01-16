@@ -7,7 +7,7 @@ let registry;
 let handlersFns;
 
 const BLESSED_ON = true;
-const LOG_ON = false;
+const LOG_ON = !BLESSED_ON;
 
 function ___log() {
     if (!LOG_ON) return;
@@ -86,11 +86,12 @@ function registerNode(node) {
             if (handler.event === 'init') continue;
             handlerFn = handlersFns[handler.index];
 
+            ___log('registering handler', handler, handlerFn);
             if (BLESSED_ON && handlerFn && (handlerFn.index === handler.index)) {
                 if (handler.event === 'key') {
-                    // blessedObj.key
+                    blessedObj.key(handler.args, (evt) => handlerFn.call(evt)());
                 } else {
-                    // blessedObj.on
+                    blessedObj.on(handler.event, (evt) => handlerFn.call(evt)());
                 }
             }
 
@@ -122,12 +123,6 @@ function registerNode(node) {
 
         return blessedObj;
 
-    }
-}
-
-function registerHandler(handler) {
-    return function() {
-        ___log(handler);
     }
 }
 
@@ -175,5 +170,4 @@ function callCommand(nodeId) {
 
 exports.execute_ = execute;
 exports.registerNode_ = registerNode;
-exports.registerHandler_ = registerHandler;
 exports.callCommand_ = callCommand;

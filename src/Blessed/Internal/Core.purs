@@ -68,7 +68,8 @@ splitAttributes props = Array.catMaybes (lockSProp <$> props) /\ Array.catMaybes
         lockSProp (Property str json) = Just $ I.SProp str json
         lockSProp _ = Nothing
         lockSHandler (Handler e op) =
-            Just $ I.makeHandler (I.EventId $ convert e) op
+            case convert e of
+                eventId /\ arguments -> Just $ I.makeHandler (I.EventId eventId) arguments op
         lockSHandler _ = Nothing
 
 
@@ -93,8 +94,10 @@ node kind name attrs children =
 
 nodeAnd :: forall r e. Events e => I.Kind -> String -> NodeAnd r e
 nodeAnd kind name attrs children fn =
-    I.SNode kind (I.NodeId name) sprops children (I.makeHandler (I.EventId $ convert (initial :: e)) (\id _ -> fn id) : handlers)
-    where sprops /\ handlers = splitAttributes attrs
+    I.SNode kind (I.NodeId name) sprops children (I.makeHandler (I.EventId initialId) initalArgs (\id _ -> fn id) : handlers)
+    where
+        sprops /\ handlers = splitAttributes attrs
+        initialId /\ initalArgs = convert (initial :: e)
 
 
 data CoreEvent =
@@ -103,7 +106,7 @@ data CoreEvent =
 
 class Events e where
     initial :: e
-    convert :: e -> String
+    convert :: e -> String /\ Array Json
     toCore :: e -> CoreEvent
     fromCore :: CoreEvent -> Maybe e
     -- extract :: e -> Json -> Json
@@ -111,7 +114,7 @@ class Events e where
 
 instance Events CoreEvent where
     initial = CoreEvent
-    convert _ = "Core"
+    convert _ = "Core" /\ []
     toCore = identity
     fromCore = Just
     -- extract _ = identity

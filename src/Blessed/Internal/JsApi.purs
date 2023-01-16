@@ -35,7 +35,7 @@ derive instance Newtype EventJson _
 
 
 data SProp = SProp String Json
-data SHandler = SHandler EventId (SRegistry -> NodeId -> EventJson -> Effect Unit)
+data SHandler = SHandler EventId (Array Json) (SRegistry -> NodeId -> EventJson -> Effect Unit)
 data SNode = SNode Kind NodeId (Array SProp) (Array SNode) (Array SHandler)
 
 
@@ -71,6 +71,7 @@ newtype HandlerCallEnc =
         { nodeId :: String
         , event :: String
         , index :: String
+        , args :: Array Json
         , call :: EventJson -> Effect Unit
         }
 
@@ -78,6 +79,7 @@ newtype HandlerRefEnc =
     HandlerRefEnc
         { nodeId :: String
         , event :: String
+        , args :: Array Json
         , index :: String
         }
 

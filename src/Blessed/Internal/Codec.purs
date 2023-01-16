@@ -63,6 +63,7 @@ handlerRefCodec =
             { nodeId : CA.string
             , event : CA.string
             , index : CA.string
+            , args : CA.array CA.json
             }
         )
 
@@ -141,19 +142,21 @@ encode'
         adaptProps = map (I.unwrapProp >>> \(name /\ value ) -> { name, value })
 
         encodeHandler :: Int -> I.SHandler -> I.HandlerCallEnc
-        encodeHandler localIndex (I.SHandler (I.EventId eventId) fn) =
+        encodeHandler localIndex (I.SHandler (I.EventId eventId) args fn) =
             I.HandlerCallEnc
                 { nodeId : nodeId
                 , event : eventId
+                , args
                 , index : nodeId <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index
                 , call : fn (I.newRegistry) (I.NodeId nodeId)
                 }
 
         encodeHandlerRef :: Int -> I.SHandler -> I.HandlerRefEnc
-        encodeHandlerRef localIndex (I.SHandler (I.EventId eventId) fn) =
+        encodeHandlerRef localIndex (I.SHandler (I.EventId eventId) args fn) =
             I.HandlerRefEnc
                 { nodeId : nodeId
                 , event : eventId
+                , args
                 , index : nodeId <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index?
                 }
 

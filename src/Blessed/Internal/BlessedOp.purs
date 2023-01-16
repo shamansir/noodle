@@ -169,15 +169,14 @@ runFreeM stateRef fn = do
         writeUserState _ nextState = liftEffect $ Ref.modify_ (const nextState) stateRef
 
 
-makeHandler :: I.EventId -> (I.NodeId -> Json -> BlessedOp Effect) -> I.SHandler
-makeHandler eventId op =
-    I.SHandler eventId
+makeHandler :: I.EventId -> Array Json -> (I.NodeId -> Json -> BlessedOp Effect) -> I.SHandler
+makeHandler eventId arguments op =
+    I.SHandler eventId arguments
         $ \registry nodeId (I.EventJson evt) ->
             runM (I.unveilRegistry registry) $ op nodeId $ evt
 
 
 
 foreign import execute_ :: I.BlessedEnc -> Effect Unit
-foreign import registerNode_ :: I.BlessedEnc -> Effect Unit
-foreign import registerHandler_ :: I.HandlerCallEnc -> Effect Unit
+foreign import registerNode_ :: I.NodeEnc -> Effect Unit
 foreign import callCommand_ :: I.NodeId -> I.CommandEnc -> Effect Json
