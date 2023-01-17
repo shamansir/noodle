@@ -8,6 +8,8 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Console as Console
 
+import Prim.Row as R
+
 import Data.Either (Either)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array ((:))
@@ -15,6 +17,7 @@ import Data.Array as Array
 import Data.Maybe (Maybe(..))
 import Data.Map (Map)
 import Data.Map as Map
+import Data.Identity (Identity)
 
 import Data.Symbol (reflectSymbol, class IsSymbol)
 import Type.Proxy (Proxy(..))
@@ -26,10 +29,11 @@ import Data.Codec.Argonaut.Record as CAR
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.BlessedOp as I
-import Blessed.Internal.Command as I
+import Blessed.Internal.Command as C
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Codec as Codec
-import Data.Identity (Identity)
+import Blessed.Internal.Emitter
+
 
 
 type NodeId = I.NodeId
@@ -86,6 +90,33 @@ handler :: forall r e. Events e => e -> Handler r e
 handler = Handler
 
 
+type Getter m a = I.BlessedOpG m a
+
+
+type GetterFn :: forall k. Symbol -> k -> Row Type -> (Type -> Type) -> Type -> Type
+type GetterFn (sym :: Symbol) r' (r :: Row Type) (m :: Type -> Type) a =
+    IsSymbol sym => Proxy sym -> CA.JsonCodec a -> NodeId -> Getter m a
+
+
+getter :: forall sym r' r m a. GetterFn sym r' r m a
+getter sym codec nodeId =
+    I.performGet codec nodeId $ C.get $ reflectSymbol sym
+
+
+method ∷ forall (m ∷ Type -> Type). NodeId → String → Array Json → I.BlessedOp m
+method nodeId name args =
+    I.perform nodeId $ C.call name args
+
+
+instance EncodeJson (SoleOption r) where
+    encodeJson (SoleOption name value)
+        = CA.encode Codec.optionRecCodec { name, value }
+
+
+encode :: forall e. Blessed e -> I.BlessedEnc
+encode = Codec.encode
+
+
 node :: forall r e. I.Kind -> String -> Node r e
 node kind name attrs children =
     I.SNode kind (I.NodeId name) sprops children handlers
@@ -98,32 +129,3 @@ nodeAnd kind name attrs children fn =
     where
         sprops /\ handlers = splitAttributes attrs
         initialId /\ initalArgs = convert (initial :: e)
-
-
-data CoreEvent =
-    CoreEvent
-
-
-class Events e where
-    initial :: e
-    convert :: e -> String /\ Array Json
-    toCore :: e -> CoreEvent
-    fromCore :: CoreEvent -> Maybe e
-    -- extract :: e -> Json -> Json
-
-
-instance Events CoreEvent where
-    initial = CoreEvent
-    convert _ = "Core" /\ []
-    toCore = identity
-    fromCore = Just
-    -- extract _ = identity
-
-
-instance EncodeJson (SoleOption r) where
-    encodeJson (SoleOption name value)
-        = CA.encode Codec.optionRecCodec { name, value }
-
-
-encode :: forall e. Blessed e -> I.BlessedEnc
-encode = Codec.encode

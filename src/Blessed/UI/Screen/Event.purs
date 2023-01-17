@@ -7,11 +7,9 @@ import Data.Tuple.Nested ((/\))
 
 import Blessed.Core.Key (Key)
 import Blessed.Core.Key as Key
-import Blessed.Internal.Core (class Events, CoreEvent(..), handler, Handler) as C
+import Blessed.Internal.Emitter (class Events, CoreEvent(..)) as C
+import Blessed.Internal.Core (handler, Handler) as C
 
-
--- [|=]\s+(\w+)(.*)?$
--- convert $1 = "\L$1\E" /\\ [$2]\n
 
 data Event
     = Init
@@ -27,7 +25,6 @@ data Event
     | Render
     | Warning
     | Destroy
-    | Other
 
 
 
@@ -47,7 +44,6 @@ instance events :: C.Events Event where
     convert Render = "render" /\ []
     convert Warning = "warning" /\ []
     convert Destroy = "destroy" /\ []
-    convert Other = "other" /\ []
 
     toCore _ = C.CoreEvent
     fromCore _ = Nothing

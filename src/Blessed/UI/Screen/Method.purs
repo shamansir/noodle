@@ -1,23 +1,18 @@
 module Blessed.UI.Screen.Method where
 
-import Prelude
-
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
 
 import Data.Argonaut.Core (Json)
 import Data.Codec.Argonaut as CA
-import Data.Codec.Argonaut.Common as CAC
 
-import Data.Argonaut.Encode (class EncodeJson, encodeJson)
+import Data.Argonaut.Encode (encodeJson)
 
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.BlessedOp (perform) as Op
-import Blessed.Internal.Command (Command, call, arg) as C
+import Blessed.Internal.Command (arg) as C
+import Blessed.Internal.Core (method) as C
 import Blessed.Internal.JsApi (NodeId) as C
 import Blessed.Core.Color (Color)
 import Blessed.Core.Cursor (Cursor)
-
-import Node.Stream (destroy)
 
 
 -- key
@@ -25,230 +20,230 @@ import Node.Stream (destroy)
 -- unkey
 
 
-logM :: forall m. C.NodeId -> String -> BlessedOp m
-logM nodeId msg =
-    Op.perform nodeId $ C.call "log"
-        [ CA.encode CA.string msg
+logM :: forall m. String -> C.NodeId -> BlessedOp m
+logM msg nodeId =
+    C.method nodeId "log"
+        [ C.arg CA.string msg
         ]
 
 
-debugM :: forall m. C.NodeId -> String -> BlessedOp m
-debugM nodeId msg =
-    Op.perform nodeId $ C.call "debug"
-        [ CA.encode CA.string msg
+debugM :: forall m. String -> C.NodeId -> BlessedOp m
+debugM msg nodeId =
+    C.method nodeId "debug"
+        [ C.arg CA.string msg
         ]
 
 
 alloc :: forall m. C.NodeId -> BlessedOp m
 alloc nodeId =
-    Op.perform nodeId $ C.call "alloc" [  ]
+    C.method nodeId "alloc" [  ]
 
 
 realloc :: forall m. C.NodeId -> BlessedOp m
 realloc nodeId =
-    Op.perform nodeId $ C.call "realloc" [ ]
+    C.method nodeId "realloc" [ ]
 
 
-draw :: forall m. C.NodeId -> Int -> Int -> BlessedOp m
-draw nodeId start end =
-    Op.perform nodeId $ C.call "draw"
-        [ encodeJson start
-        , encodeJson end
+draw :: forall m. Int -> Int -> C.NodeId -> BlessedOp m
+draw start end nodeId =
+    C.method nodeId "draw"
+        [ C.arg CA.int start
+        , C.arg CA.int  end
         ]
 
 
 render :: forall m. C.NodeId -> BlessedOp m
 render nodeId =
-    Op.perform nodeId $ C.call "render" [ ]
+    C.method nodeId "render" [ ]
 
 
-clearRegion :: forall m. C.NodeId -> Int -> Int -> Int -> Int -> BlessedOp m
-clearRegion nodeId x1 x2 y1 y2 =
-    Op.perform nodeId $ C.call "clearRegion"
-        [ encodeJson x1, encodeJson x2
-        , encodeJson y1, encodeJson y2
+clearRegion :: forall m. Int -> Int -> Int -> Int -> C.NodeId -> BlessedOp m
+clearRegion x1 x2 y1 y2 nodeId =
+    C.method nodeId "clearRegion"
+        [ C.arg CA.int x1, C.arg CA.int x2
+        , C.arg CA.int y1, C.arg CA.int y2
         ]
 
 
-fillRegion :: forall m. C.NodeId -> String -> Char -> Int -> Int -> Int -> Int -> BlessedOp m
-fillRegion nodeId attr ch x1 x2 y1 y2 =
-    Op.perform nodeId $ C.call "fillRegion"
-        [ encodeJson attr
-        , encodeJson ch
-        , encodeJson x1, encodeJson x2
-        , encodeJson y1, encodeJson y2
+fillRegion :: forall m. String -> Char -> Int -> Int -> Int -> Int -> C.NodeId -> BlessedOp m
+fillRegion attr ch x1 x2 y1 y2 nodeId =
+    C.method nodeId "fillRegion"
+        [ C.arg CA.string attr
+        , C.arg CA.char ch
+        , C.arg CA.int x1, C.arg CA.int x2
+        , C.arg CA.int y1, C.arg CA.int y2
         ]
 
 
-focusOffset :: forall m. C.NodeId -> Int -> BlessedOp m
-focusOffset nodeId offset =
-    Op.perform nodeId $ C.call "focusOffset"
-        [ encodeJson offset
+focusOffset :: forall m. Int -> C.NodeId -> BlessedOp m
+focusOffset offset nodeId =
+    C.method nodeId "focusOffset"
+        [ C.arg CA.int offset
         ]
 
 
 focusPrevious :: forall m. C.NodeId -> BlessedOp m
 focusPrevious nodeId =
-    Op.perform nodeId $ C.call "focusPrevious" [ ]
+    C.method nodeId "focusPrevious" [ ]
 
 
 focusNext :: forall m. C.NodeId -> BlessedOp m
 focusNext nodeId =
-    Op.perform nodeId $ C.call "focusNext" [ ]
+    C.method nodeId "focusNext" [ ]
 
 
-focusPush :: forall m. C.NodeId -> String -> BlessedOp m
-focusPush nodeId element =
-    Op.perform nodeId $ C.call "focusPush"
+focusPush :: forall m. String -> C.NodeId -> BlessedOp m
+focusPush element nodeId =
+    C.method nodeId "focusPush"
         [ encodeJson element ]
 
 
 focusPop :: forall m. C.NodeId -> BlessedOp m
 focusPop nodeId =
-    Op.perform nodeId $ C.call "focusPop" [  ]
+    C.method nodeId "focusPop" [  ]
 
 
 saveFocus :: forall m. C.NodeId -> BlessedOp m
 saveFocus nodeId =
-    Op.perform nodeId $ C.call "saveFocus" [  ]
+    C.method nodeId "saveFocus" [  ]
 
 
 restoreFocus :: forall m. C.NodeId -> BlessedOp m
 restoreFocus nodeId =
-    Op.perform nodeId $ C.call "restoreFocus" [  ]
+    C.method nodeId "restoreFocus" [  ]
 
 
 rewindFocus :: forall m. C.NodeId -> BlessedOp m
 rewindFocus nodeId =
-    Op.perform nodeId $ C.call "rewindFocus" [  ]
+    C.method nodeId "rewindFocus" [  ]
 
 
-spawn :: forall m. C.NodeId -> String -> Array Json -> Unit -> BlessedOp m
-spawn nodeId file args options =
-    Op.perform nodeId $ C.call "spawn"
-        [ encodeJson file
-        , encodeJson args
-        , encodeJson options
+spawn :: forall m. String -> Array Json -> Json -> C.NodeId -> BlessedOp m
+spawn file args options nodeId  =
+    C.method nodeId "spawn"
+        [ C.arg CA.string file
+        , C.arg (CA.array CA.json) args
+        , C.arg CA.json options
         ]
 
 
-insertLine :: forall m. C.NodeId -> Int -> Int -> Int -> BlessedOp m
-insertLine nodeId n y top =
-    Op.perform nodeId $ C.call "insertLine"
-        [ encodeJson n
-        , encodeJson y
-        , encodeJson top
+insertLine :: forall m. Int -> Int -> Int -> C.NodeId -> BlessedOp m
+insertLine n y top nodeId =
+    C.method nodeId "insertLine"
+        [ C.arg CA.int n
+        , C.arg CA.int y
+        , C.arg CA.int top
         ]
 
 
-deleteLine :: forall m. C.NodeId -> Int -> Int -> Int -> BlessedOp m
-deleteLine nodeId n y top =
-    Op.perform nodeId $ C.call "deleteLine"
-        [ encodeJson n
-        , encodeJson y
-        , encodeJson top
+deleteLine :: forall m. Int -> Int -> Int -> C.NodeId -> BlessedOp m
+deleteLine n y top nodeId =
+    C.method nodeId "deleteLine"
+        [ C.arg CA.int n
+        , C.arg CA.int y
+        , C.arg CA.int top
         ]
 
 
-insertBottom :: forall m. C.NodeId -> Int -> Int -> BlessedOp m
-insertBottom nodeId top bottom =
-    Op.perform nodeId $ C.call "insertBottom"
-        [ encodeJson top
-        , encodeJson bottom
+insertBottom :: forall m. Int -> Int -> C.NodeId -> BlessedOp m
+insertBottom top bottom nodeId =
+    C.method nodeId "insertBottom"
+        [ C.arg CA.int top
+        , C.arg CA.int bottom
         ]
 
 
-insertTop :: forall m. C.NodeId -> Int -> Int -> BlessedOp m
-insertTop nodeId top bottom =
-    Op.perform nodeId $ C.call "insertTop"
-        [ encodeJson top
-        , encodeJson bottom
+insertTop :: forall m. Int -> Int -> C.NodeId -> BlessedOp m
+insertTop top bottom nodeId =
+    C.method nodeId "insertTop"
+        [ C.arg CA.int top
+        , C.arg CA.int bottom
         ]
 
 
-deleteBottom :: forall m. C.NodeId -> Int -> Int -> BlessedOp m
-deleteBottom nodeId top bottom =
-    Op.perform nodeId $ C.call "deleteBottom"
-        [ encodeJson top
-        , encodeJson bottom
+deleteBottom :: forall m. Int -> Int -> C.NodeId -> BlessedOp m
+deleteBottom top bottom nodeId =
+    C.method nodeId "deleteBottom"
+        [ C.arg CA.int top
+        , C.arg CA.int bottom
         ]
 
 
-deleteTop :: forall m. C.NodeId -> Int -> Int -> BlessedOp m
-deleteTop nodeId top bottom =
-    Op.perform nodeId $ C.call "deleteTop"
-        [ encodeJson top
-        , encodeJson bottom
+deleteTop :: forall m. Int -> Int -> C.NodeId -> BlessedOp m
+deleteTop top bottom nodeId =
+    C.method nodeId "deleteTop"
+        [ C.arg CA.int top
+        , C.arg CA.int bottom
         ]
 
 
-enableMouse :: forall m. C.NodeId -> Maybe C.NodeId -> BlessedOp m
-enableMouse nodeId element =
-    Op.perform nodeId $ C.call "enableMouse"
+enableMouse :: forall m. Maybe C.NodeId -> C.NodeId -> BlessedOp m
+enableMouse element nodeId =
+    C.method nodeId "enableMouse"
         [ encodeJson element
         ]
 
 
-enableKeys :: forall m. C.NodeId -> Maybe C.NodeId -> BlessedOp m
-enableKeys nodeId element =
-    Op.perform nodeId $ C.call "enableKeys"
+enableKeys :: forall m. Maybe C.NodeId -> C.NodeId -> BlessedOp m
+enableKeys element nodeId =
+    C.method nodeId "enableKeys"
         [ encodeJson element
         ]
 
 
-enableInput :: forall m. C.NodeId -> Maybe C.NodeId ->BlessedOp m
-enableInput nodeId element =
-    Op.perform nodeId $ C.call "enableInput"
+enableInput :: forall m. Maybe C.NodeId -> C.NodeId -> BlessedOp m
+enableInput element nodeId =
+    C.method nodeId "enableInput"
         [ encodeJson element
         ]
 
 
-copyToClipboard :: forall m. C.NodeId -> String -> BlessedOp m
-copyToClipboard nodeId text =
-    Op.perform nodeId $ C.call "copyToClipboard"
-        [ encodeJson text
+copyToClipboard :: forall m. String -> C.NodeId -> BlessedOp m
+copyToClipboard text nodeId =
+    C.method nodeId "copyToClipboard"
+        [ C.arg CA.string text
         ]
 
 
-cursorShape :: forall m. C.NodeId -> Cursor -> Boolean -> BlessedOp m
-cursorShape nodeId cursor blink =
-    Op.perform nodeId $ C.call "cursorShape"
+cursorShape :: forall m. Cursor -> Boolean -> C.NodeId -> BlessedOp m
+cursorShape cursor blink nodeId =
+    C.method nodeId "cursorShape"
         [ encodeJson cursor
-        , encodeJson blink
+        , C.arg CA.boolean blink
         ]
 
 
-cursorColor :: forall m. C.NodeId -> Color -> BlessedOp m
-cursorColor nodeId color =
-    Op.perform nodeId $ C.call "cursorColor"
+cursorColor :: forall m. Color -> C.NodeId -> BlessedOp m
+cursorColor color nodeId =
+    C.method nodeId "cursorColor"
         [ encodeJson color
         ]
 
 
 screenshot :: forall m. C.NodeId -> BlessedOp m
 screenshot nodeId =
-    Op.perform nodeId $ C.call "screenshot" [ ]
+    C.method nodeId "screenshot" [ ]
 
 
-screenshotArea :: forall m. C.NodeId -> Int -> Int -> Int -> Int -> BlessedOp m
-screenshotArea nodeId xi xl yi yl =
-    Op.perform nodeId $ C.call "screenshot"
-        [ encodeJson xi
-        , encodeJson xl
-        , encodeJson yi
-        , encodeJson yl
+screenshotArea :: forall m. Int -> Int -> Int -> Int -> C.NodeId -> BlessedOp m
+screenshotArea xi xl yi yl nodeId =
+    C.method nodeId "screenshot"
+        [ C.arg CA.int xi
+        , C.arg CA.int xl
+        , C.arg CA.int yi
+        , C.arg CA.int yl
         ]
 
 
 destroy :: forall m. C.NodeId -> BlessedOp m
 destroy nodeId =
-    Op.perform nodeId $ C.call "destroy" [ ]
+    C.method nodeId "destroy" [ ]
 
 
-setTerminal :: forall m. C.NodeId -> String -> BlessedOp m
-setTerminal nodeId term =
-    Op.perform nodeId $ C.call "destroysetTerminal"
-        [ encodeJson term
+setTerminal :: forall m. String -> C.NodeId -> BlessedOp m
+setTerminal term nodeId =
+    C.method nodeId "destroysetTerminal"
+        [ C.arg CA.string term
         ]
 
 

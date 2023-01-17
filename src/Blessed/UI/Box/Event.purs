@@ -1,6 +1,6 @@
 module Blessed.UI.Box.Event where
 
-import Prelude (identity, Unit, ($), (<<<))
+import Prelude ((<<<))
 
 
 import Data.Maybe (Maybe(..))
@@ -10,14 +10,14 @@ import Blessed.Core.Key (Key)
 import Blessed.Core.Key as Key
 
 
-import Blessed.Internal.Core (class Events, CoreEvent(..), handler, Handler) as C
+import Blessed.Internal.Emitter (class Events, CoreEvent(..)) as C
+import Blessed.Internal.Core (handler, Handler) as C
 
 
 data Event
     = Init
     | Key (Array Key)
     | Click
-    | Other
 
 
 instance events :: C.Events Event where
@@ -26,7 +26,6 @@ instance events :: C.Events Event where
     convert Init = "init" /\ []
     convert (Key keys) = "key" /\ Key.convertAll keys
     convert Click = "click" /\ []
-    convert Other = "?" /\ []
 
     toCore _ = C.CoreEvent
     fromCore _ = Nothing

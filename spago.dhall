@@ -53,6 +53,7 @@ to generate this file without the comments in this block.
   , "node-buffer"
   , "node-fs-aff"
   , "node-path"
+  , "node-streams"
   , "nonempty"
   , "numbers"
   , "ordered-collections"

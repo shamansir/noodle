@@ -17,8 +17,9 @@ import Blessed.UI.Screen.Event (Event) as Screen
 import Blessed.UI.Box (box, boxAnd) as Box
 import Blessed.UI.Box.Option (OptionsRow) as Box
 import Blessed.UI.Box.Event (Event) as Box
-import Blessed.Internal.JsApi as I
-import Blessed.Internal.Core as C
+import Blessed.Internal.JsApi (NodeId(..)) as I
+import Blessed.Internal.Core (Blessed, Node, NodeAnd, NodeId, encode) as C
+import Blessed.Internal.Emitter (CoreEvent) as C
 import Blessed.Internal.Command (withProcess) as I
 import Blessed.Internal.BlessedOp (BlessedOp, execute_, performOnProcess) as I
 

@@ -57,9 +57,6 @@ screenOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a 
 screenOption = C.option
 
 
-
---draggable :: forall r e. Boolean -> Prop ( draggable :: Boolean | r ) e
-
 title :: forall r. String -> ScreenAttribute ( title :: String | r)
 title = screenOption (Proxy :: _ "title")
 
