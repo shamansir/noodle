@@ -27,7 +27,7 @@ type Options = Record (OptionsU)
 type NodeAttribute r = C.Attribute (OptionsRow + r) Event
 
 
-nodeOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> NodeAttribute r
+nodeOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> NodeAttribute r
 nodeOption = C.option
 
 

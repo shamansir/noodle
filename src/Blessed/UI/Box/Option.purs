@@ -30,9 +30,9 @@ type OptionsRow r =
     , content :: String -- a ?
     , tags :: Boolean
     , draggable :: Boolean
-    , hover :: (forall sr. Array (StyleOption sr))
-    , style :: (forall sr. Array (StyleOption sr))
-    , border :: (forall br. Array (BorderOption br))
+    , hover :: Array (StyleOption ())
+    , style :: Array (StyleOption ())
+    , border :: Array (BorderOption ())
     | r
     )
 type Options = Record (OptionsRow ())
@@ -47,16 +47,16 @@ default =
     , content : ""
     , tags : false
     , draggable : false
-    , hover : ([] :: forall sr. Array (StyleOption sr))
-    , style : ([] :: forall sr. Array (StyleOption sr))
-    , border : ([] :: forall br. Array (BorderOption br))
+    , hover : ([] :: Array (StyleOption ()))
+    , style : ([] :: Array (StyleOption ()))
+    , border : ([] :: Array (BorderOption ()))
     }
 
 
 type BoxAttribute r = C.Attribute (OptionsRow + r) Event
 
 
-boxOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> BoxAttribute r
+boxOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> BoxAttribute r
 boxOption = C.option
 
 
@@ -88,9 +88,12 @@ draggable ∷ forall r. Boolean -> BoxAttribute ( draggable :: Boolean | r )
 draggable = boxOption ( Proxy :: Proxy "draggable" )
 
 
-style ∷ forall sr r. Array (StyleOption sr) -> BoxAttribute ( style :: Array (StyleOption sr) | r )
-style = unsafeCoerce <<< boxOption ( Proxy :: Proxy "style" )
+-- style ∷ forall r sr. Array (StyleOption sr) -> BoxAttribute ( style :: Array (StyleOption sr) | r )
+-- style = unsafeCoerce <<< boxOption ( Proxy :: Proxy "style" )
+
+style ∷ forall r. Array (StyleOption ()) -> BoxAttribute ( style :: Array (StyleOption ()) | r )
+style = boxOption ( Proxy :: Proxy "style" )
 
 
-border ∷ forall r. Border -> BoxAttribute ( border :: Border | r )
+border ∷ forall r. Array (BorderOption ()) -> BoxAttribute ( border :: Array (BorderOption ()) | r )
 border = boxOption ( Proxy :: Proxy "border" )

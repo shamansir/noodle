@@ -53,7 +53,7 @@ type Options = Record (OptionsU)
 type ScreenAttribute r = C.Attribute (OptionsRow + r) Event
 
 
-screenOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> ScreenAttribute r
+screenOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ScreenAttribute r
 screenOption = C.option
 
 

@@ -10,8 +10,10 @@ import Cli.App as Cli
 import Blessed ((>~))
 import Blessed as B
 import Blessed (exit) as Blessed
+
 import Blessed.Core.Key as Key
 import Blessed.Core.Offset as Offset
+import Blessed.Core.FgBg as FgBg
 import Blessed.Core.Border as Border
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Style as Style
@@ -49,7 +51,8 @@ main = do
             , Box.content "Hello {bold}world{/bold}!"
             , Box.tags true
             , Box.draggable true
-            -- , Box.border Border.line
+            , Box.border [ Border.type_ Border._line, Border.fg "white" ]
+            , Box.border [ Border.type_ Border._line, Border.fg "white" ]
             , Box.style
                 [ Style.fg "white"
                 , Style.bg "magenta"
@@ -57,7 +60,7 @@ main = do
                     [ Border.fg "#f0f0f0"
                     ]
                 , Style.hover
-                    [ Style.bg "green"
+                    [ FgBg.bg "green"
                     ]
                 ]
 

@@ -22,14 +22,17 @@ import Blessed.Core.Color (Color)
 
 data BorderType
     = Line
+    | Bg
 
 
 instance Show BorderType where
     show Line = "line"
+    show Bg = "bg"
 
 
 instance EncodeJson BorderType where
     encodeJson Line = CA.encode CA.string "line"
+    encodeJson Bg = CA.encode CA.string "bg"
 
 
 type BorderRow (r :: Row Type) =
@@ -44,7 +47,7 @@ type BorderOption (r :: Row Type)
     = C.SoleOption (BorderRow + r)
 
 
-borderOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> BorderOption r
+borderOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (BorderRow + r) => Proxy sym -> a -> BorderOption r
 borderOption = C.onlyOption
 
 
@@ -56,6 +59,10 @@ bg ∷ forall r. Color -> BorderOption ( bg :: Color | r )
 bg = borderOption ( Proxy :: Proxy "bg" )
 
 
+type_ ∷ forall r. BorderType -> BorderOption ( type :: BorderType | r )
+type_ = borderOption ( Proxy :: Proxy "type" )
+
+
 default :: Border
 default =
     { type : Line
@@ -64,5 +71,9 @@ default =
     }
 
 
-line :: BorderType
-line = Line
+_line :: BorderType
+_line = Line
+
+
+_bg :: BorderType
+_bg = Bg
