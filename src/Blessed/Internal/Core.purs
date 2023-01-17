@@ -37,18 +37,18 @@ type NodeId = I.NodeId
 
 data Attribute :: Row Type -> Type -> Type
 data Attribute (r :: Row Type) e
-    = Property String Json
+    = Option String Json
     | Handler e (NodeId -> Json -> I.BlessedOp Effect)
 
 
-data OnlyProperty (r :: Row Type)
-    = OnlyProperty String Json
+data SoleOption (r :: Row Type)
+    = SoleOption String Json
 
 
 
 instance Functor (Attribute r) where
     map f (Handler e op) = Handler (f e) op
-    map _ (Property str json) = Property str json
+    map _ (Option str json) = Option str json
 
 
 type Blessed e = I.SNode
@@ -65,7 +65,7 @@ type Handler (r :: Row Type) e = (NodeId -> Json -> I.BlessedOp Effect) -> Attri
 splitAttributes :: forall r e. Events e => Array (Attribute r e) -> Array I.SProp /\ Array I.SHandler
 splitAttributes props = Array.catMaybes (lockSProp <$> props) /\ Array.catMaybes (lockSHandler <$> props)
     where
-        lockSProp (Property str json) = Just $ I.SProp str json
+        lockSProp (Option str json) = Just $ I.SProp str json
         lockSProp _ = Nothing
         lockSHandler (Handler e op) =
             case convert e of
@@ -74,12 +74,12 @@ splitAttributes props = Array.catMaybes (lockSProp <$> props) /\ Array.catMaybes
 
 
 -- FIXME: no `Cons` check here, but only above
-property :: forall (sym :: Symbol) (r :: Row Type) a e. IsSymbol sym => EncodeJson a => Proxy sym -> a -> Attribute r e
-property sym = Property (reflectSymbol sym) <<< encodeJson
+option :: forall (sym :: Symbol) (r :: Row Type) a e. IsSymbol sym => EncodeJson a => Proxy sym -> a -> Attribute r e
+option sym = Option (reflectSymbol sym) <<< encodeJson
 
 
-onlyProperty :: forall (sym :: Symbol) (r :: Row Type) a. IsSymbol sym => EncodeJson a => Proxy sym -> a -> OnlyProperty r
-onlyProperty sym = OnlyProperty (reflectSymbol sym) <<< encodeJson
+onlyOption :: forall (sym :: Symbol) (r :: Row Type) a. IsSymbol sym => EncodeJson a => Proxy sym -> a -> SoleOption r
+onlyOption sym = SoleOption (reflectSymbol sym) <<< encodeJson
 
 
 handler :: forall r e. Events e => e -> Handler r e
@@ -120,9 +120,9 @@ instance Events CoreEvent where
     -- extract _ = identity
 
 
-instance EncodeJson (OnlyProperty r) where
-    encodeJson (OnlyProperty name value)
-        = CA.encode Codec.propertyRecCodec { name, value }
+instance EncodeJson (SoleOption r) where
+    encodeJson (SoleOption name value)
+        = CA.encode Codec.optionRecCodec { name, value }
 
 
 encode :: forall e. Blessed e -> I.BlessedEnc

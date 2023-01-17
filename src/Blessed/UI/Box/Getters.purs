@@ -17,7 +17,7 @@ import Blessed.Internal.Command (get) as C
 
 
 
-type PropertiesRow =
+type OptionsRow =
     ( top :: String
     , left :: String
     , width :: String
@@ -34,7 +34,7 @@ type PropertiesRow =
 type Getter m a = Op.BlessedOpG m a
 
 
-getter :: forall sym r' (r :: Row Type) m a. IsSymbol sym => R.Cons sym a r' PropertiesRow => Proxy sym -> CA.JsonCodec a -> C.NodeId -> Getter m a
+getter :: forall sym r' (r :: Row Type) m a. IsSymbol sym => R.Cons sym a r' OptionsRow => Proxy sym -> CA.JsonCodec a -> C.NodeId -> Getter m a
 getter sym codec nodeId =
     Op.performGet codec nodeId $ C.get $ reflectSymbol sym
 

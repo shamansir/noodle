@@ -20,7 +20,7 @@ import Data.Maybe (Maybe(..))
 
 import Blessed.Internal.Core as C
 import Blessed.Core.Color (Color)
-import Blessed.Core.Border (Border, BorderProperty)
+import Blessed.Core.Border (Border, BorderOption)
 import Blessed.Core.Border as Border
 
 
@@ -29,26 +29,26 @@ import Blessed.Core.Border as Border
 type StyleRow (r :: Row Type) =
     ( fg :: Color
     , bg :: Color
-    , border :: (forall br. Array (BorderProperty br))
-    , hover :: (forall sr. Array (StyleProperty sr))
+    , border :: (forall br. Array (BorderOption br))
+    , hover :: (forall sr. Array (StyleOption sr))
     )
 type Style =
     Record (StyleRow ())
 
 
-instance EncodeJson (StyleProperty r) where
-    encodeJson (StyleProperty onlyProp) = encodeJson onlyProp
+instance EncodeJson (StyleOption r) where
+    encodeJson (StyleOption onlyProp) = encodeJson onlyProp
 
 
-newtype StyleProperty (r :: Row Type)
-    = StyleProperty (C.OnlyProperty (StyleRow + r))
+newtype StyleOption (r :: Row Type)
+    = StyleOption (C.SoleOption (StyleRow + r))
 
 
 -- we have to use `newtype` since we have a loop in the row type
 
 
-styleProp :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> StyleProperty r
-styleProp sym = StyleProperty <<< C.onlyProperty sym
+styleOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> StyleOption r
+styleOption sym = StyleOption <<< C.onlyOption sym
 
 
 default :: Style
@@ -60,17 +60,17 @@ default =
     }
 
 
-fg ∷ forall r. Color -> StyleProperty ( fg :: Color | r )
-fg = styleProp ( Proxy :: Proxy "fg" )
+fg ∷ forall r. Color -> StyleOption ( fg :: Color | r )
+fg = styleOption ( Proxy :: Proxy "fg" )
 
 
-bg ∷ forall r. Color -> StyleProperty ( bg :: Color | r )
-bg = styleProp ( Proxy :: Proxy "bg" )
+bg ∷ forall r. Color -> StyleOption ( bg :: Color | r )
+bg = styleOption ( Proxy :: Proxy "bg" )
 
 
-border ∷ forall br r. Array (BorderProperty br) -> StyleProperty ( border :: Array (BorderProperty br) | r )
-border = unsafeCoerce <<< styleProp ( Proxy :: Proxy "border" )
+border ∷ forall br r. Array (BorderOption br) -> StyleOption ( border :: Array (BorderOption br) | r )
+border = unsafeCoerce <<< styleOption ( Proxy :: Proxy "border" )
 
 
-hover ∷ forall sr r. Array (StyleProperty sr) -> StyleProperty ( hover :: Array (BorderProperty sr) | r )
-hover = unsafeCoerce <<< styleProp ( Proxy :: Proxy "hover" )
+hover ∷ forall sr r. Array (StyleOption sr) -> StyleOption ( hover :: Array (BorderOption sr) | r )
+hover = unsafeCoerce <<< styleOption ( Proxy :: Proxy "hover" )

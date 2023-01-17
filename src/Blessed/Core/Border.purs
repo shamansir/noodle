@@ -40,20 +40,20 @@ type BorderRow (r :: Row Type) =
 type Border = Record (BorderRow ())
 
 
-type BorderProperty (r :: Row Type)
-    = C.OnlyProperty (BorderRow + r)
+type BorderOption (r :: Row Type)
+    = C.SoleOption (BorderRow + r)
 
 
-borderProperty :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> BorderProperty r
-borderProperty = C.onlyProperty
+borderOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> BorderOption r
+borderOption = C.onlyOption
 
 
-fg ∷ forall r. Color -> BorderProperty ( fg :: Color | r )
-fg = borderProperty ( Proxy :: Proxy "fg" )
+fg ∷ forall r. Color -> BorderOption ( fg :: Color | r )
+fg = borderOption ( Proxy :: Proxy "fg" )
 
 
-bg ∷ forall r. Color -> BorderProperty ( bg :: Color | r )
-bg = borderProperty ( Proxy :: Proxy "bg" )
+bg ∷ forall r. Color -> BorderOption ( bg :: Color | r )
+bg = borderOption ( Proxy :: Proxy "bg" )
 
 
 default :: Border

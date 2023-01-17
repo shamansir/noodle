@@ -12,10 +12,10 @@ import Type.Row (type (+))
 
 -- import Blessed.UI.Node (Node(..))
 import Blessed.UI.Screen (screen, screenAnd) as Screen
-import Blessed.UI.Screen.Property (PropertiesRow) as Screen
+import Blessed.UI.Screen.Option (OptionsRow) as Screen
 import Blessed.UI.Screen.Event (Event) as Screen
 import Blessed.UI.Box (box, boxAnd) as Box
-import Blessed.UI.Box.Property (PropertiesRow) as Box
+import Blessed.UI.Box.Option (OptionsRow) as Box
 import Blessed.UI.Box.Event (Event) as Box
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Core as C
@@ -45,19 +45,19 @@ runAnd :: C.Blessed Event -> I.BlessedOp Effect -> Effect Unit
 runAnd _ _ = pure unit
 
 
-screen :: forall r. String -> C.Node ( Screen.PropertiesRow + r ) Screen.Event
+screen :: forall r. String -> C.Node ( Screen.OptionsRow + r ) Screen.Event
 screen = Screen.screen
 
 
-screenAnd :: forall r. String -> C.NodeAnd ( Screen.PropertiesRow + r ) Screen.Event
+screenAnd :: forall r. String -> C.NodeAnd ( Screen.OptionsRow + r ) Screen.Event
 screenAnd = Screen.screenAnd
 
 
-box :: forall r. String -> C.Node ( Box.PropertiesRow + r ) Box.Event
+box :: forall r. String -> C.Node ( Box.OptionsRow + r ) Box.Event
 box = Box.box
 
 
-boxAnd :: forall r. String -> C.NodeAnd ( Box.PropertiesRow + r ) Box.Event
+boxAnd :: forall r. String -> C.NodeAnd ( Box.OptionsRow + r ) Box.Event
 boxAnd = Box.boxAnd
 
 

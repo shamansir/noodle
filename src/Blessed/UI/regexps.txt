@@ -1,7 +1,7 @@
 -- Options -- (Properties)
 
 [(,]\s+(\w+)\s+::\s+(.*)$
-$1 :: forall r. $2 -> ScreenAttribute ( $1 :: $2 | r) \n$1 = screenProperty (Proxy :: _ "$1")\n\n\n
+$1 :: forall r. $2 -> ScreenAttribute ( $1 :: $2 | r) \n$1 = screenOption (Proxy :: _ "$1")\n\n\n
 
 
 -- Methods --

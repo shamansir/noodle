@@ -33,9 +33,9 @@ kindCodec  =
     CA.prismaticCodec "Kind" I.kindFromString I.kindToString CA.string
 
 
-propertyRecCodec :: CA.JsonCodec I.PropJson
-propertyRecCodec =
-    CA.object "OnlyProperty"
+optionRecCodec :: CA.JsonCodec I.PropJson
+optionRecCodec =
+    CA.object "SoleOption"
         (CAR.record
             { name : CA.string
             , value : CA.json
@@ -49,7 +49,7 @@ nodeCodec =
         wrapIso I.NodeEnc $ CAR.object "Node"
             { kind : CA.string
             , nodeId : CA.string
-            , props : CA.array propertyRecCodec
+            , props : CA.array optionRecCodec
             , children : CA.array codec
             , handlers : CA.array handlerRefCodec
             , parent : CAC.maybe CA.string

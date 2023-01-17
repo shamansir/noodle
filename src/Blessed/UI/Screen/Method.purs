@@ -25,15 +25,15 @@ import Node.Stream (destroy)
 -- unkey
 
 
-log :: forall m. C.NodeId -> String -> BlessedOp m
-log nodeId msg =
+logM :: forall m. C.NodeId -> String -> BlessedOp m
+logM nodeId msg =
     Op.perform nodeId $ C.call "log"
         [ CA.encode CA.string msg
         ]
 
 
-debug :: forall m. C.NodeId -> String -> BlessedOp m
-debug nodeId msg =
+debugM :: forall m. C.NodeId -> String -> BlessedOp m
+debugM nodeId msg =
     Op.perform nodeId $ C.call "debug"
         [ CA.encode CA.string msg
         ]
@@ -232,7 +232,7 @@ screenshot nodeId =
 
 screenshotArea :: forall m. C.NodeId -> Int -> Int -> Int -> Int -> BlessedOp m
 screenshotArea nodeId xi xl yi yl =
-    Op.perform nodeId $ C.call "screenshotArea"
+    Op.perform nodeId $ C.call "screenshot"
         [ encodeJson xi
         , encodeJson xl
         , encodeJson yi

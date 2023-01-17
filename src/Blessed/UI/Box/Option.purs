@@ -1,4 +1,4 @@
-module Blessed.UI.Box.Property where
+module Blessed.UI.Box.Option where
 
 import Prelude ((<<<))
 
@@ -14,15 +14,15 @@ import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dim
 import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
-import Blessed.Core.Style (StyleProperty)
-import Blessed.Core.Border (Border, BorderProperty)
+import Blessed.Core.Style (StyleOption)
+import Blessed.Core.Border (Border, BorderOption)
 
-import Blessed.Internal.Core (Attribute, property) as C
+import Blessed.Internal.Core (Attribute, option) as C
 
 import Blessed.UI.Box.Event (Event)
 
 
-type PropertiesRow r =
+type OptionsRow r =
     ( top :: Offset
     , left :: Offset
     , width :: Dimension
@@ -30,15 +30,15 @@ type PropertiesRow r =
     , content :: String -- a ?
     , tags :: Boolean
     , draggable :: Boolean
-    , hover :: (forall sr. Array (StyleProperty sr))
-    , style :: (forall sr. Array (StyleProperty sr))
-    , border :: (forall br. Array (BorderProperty br))
+    , hover :: (forall sr. Array (StyleOption sr))
+    , style :: (forall sr. Array (StyleOption sr))
+    , border :: (forall br. Array (BorderOption br))
     | r
     )
-type Properties = Record (PropertiesRow ())
+type Options = Record (OptionsRow ())
 
 
-default :: Properties
+default :: Options
 default =
     { top : Offset.px 0
     , left : Offset.px 0
@@ -47,50 +47,50 @@ default =
     , content : ""
     , tags : false
     , draggable : false
-    , hover : ([] :: forall sr. Array (StyleProperty sr))
-    , style : ([] :: forall sr. Array (StyleProperty sr))
-    , border : ([] :: forall br. Array (BorderProperty br))
+    , hover : ([] :: forall sr. Array (StyleOption sr))
+    , style : ([] :: forall sr. Array (StyleOption sr))
+    , border : ([] :: forall br. Array (BorderOption br))
     }
 
 
-type BoxAttribute r = C.Attribute (PropertiesRow + r) Event
+type BoxAttribute r = C.Attribute (OptionsRow + r) Event
 
 
-boxProperty :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> BoxAttribute r
-boxProperty = C.property
+boxOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' r => Proxy sym -> a -> BoxAttribute r
+boxOption = C.option
 
 
 top ∷ forall r. Offset -> BoxAttribute ( top :: Offset | r )
-top = boxProperty ( Proxy :: Proxy "top" )
+top = boxOption ( Proxy :: Proxy "top" )
 
 
 left ∷ forall r. Offset -> BoxAttribute ( left :: Offset | r )
-left = boxProperty ( Proxy :: Proxy "left" )
+left = boxOption ( Proxy :: Proxy "left" )
 
 
 width ∷ forall r. Dimension -> BoxAttribute ( width :: Dimension | r )
-width = boxProperty ( Proxy :: Proxy "width" )
+width = boxOption ( Proxy :: Proxy "width" )
 
 
 height ∷ forall r. Dimension -> BoxAttribute ( height :: Dimension | r )
-height = boxProperty ( Proxy :: Proxy "height" )
+height = boxOption ( Proxy :: Proxy "height" )
 
 
 content ∷ forall r. String -> BoxAttribute ( content :: String | r )
-content = boxProperty ( Proxy :: Proxy "content" )
+content = boxOption ( Proxy :: Proxy "content" )
 
 
 tags ∷ forall r. Boolean -> BoxAttribute ( tags :: Boolean | r )
-tags = boxProperty ( Proxy :: Proxy "tags" )
+tags = boxOption ( Proxy :: Proxy "tags" )
 
 
 draggable ∷ forall r. Boolean -> BoxAttribute ( draggable :: Boolean | r )
-draggable = boxProperty ( Proxy :: Proxy "draggable" )
+draggable = boxOption ( Proxy :: Proxy "draggable" )
 
 
-style ∷ forall sr r. Array (StyleProperty sr) -> BoxAttribute ( style :: Array (StyleProperty sr) | r )
-style = unsafeCoerce <<< boxProperty ( Proxy :: Proxy "style" )
+style ∷ forall sr r. Array (StyleOption sr) -> BoxAttribute ( style :: Array (StyleOption sr) | r )
+style = unsafeCoerce <<< boxOption ( Proxy :: Proxy "style" )
 
 
 border ∷ forall r. Border -> BoxAttribute ( border :: Border | r )
-border = boxProperty ( Proxy :: Proxy "border" )
+border = boxOption ( Proxy :: Proxy "border" )
