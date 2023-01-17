@@ -39,6 +39,16 @@ type Style =
     Record (StyleRow ())
 
 
+type Evaluated =
+    ( fg :: Int
+    , bg :: Int
+    , border :: Record Border.Evaluated
+    , scrollbar :: Record Border.Evaluated
+    , hover :: Record FgBg.Evaluated
+    , focus :: Record FgBg.Evaluated
+    )
+
+
 -- instance EncodeJson (StyleOption r) where
 --     encodeJson (StyleOption onlyProp) = encodeJson onlyProp
 
@@ -80,5 +90,13 @@ border ∷ forall r. Array (BorderOption ()) -> StyleOption ( border :: Array (B
 border = styleOption ( Proxy :: Proxy "border" )
 
 
+scrollbar ∷ forall r. Array (BorderOption ()) -> StyleOption ( scrollbar :: Array (BorderOption ()) | r )
+scrollbar = styleOption ( Proxy :: Proxy "scrollbar" )
+
+
 hover ∷ forall r. Array (FgBgOption ()) -> StyleOption ( hover :: Array (FgBgOption ()) | r )
 hover = styleOption ( Proxy :: Proxy "hover" )
+
+
+focus ∷ forall r. Array (FgBgOption ()) -> StyleOption ( focus :: Array (FgBgOption ()) | r )
+focus = styleOption ( Proxy :: Proxy "focus" )

@@ -24,6 +24,7 @@ import Type.Proxy (Proxy(..))
 
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
+import Data.Argonaut.Decode (class DecodeJson)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Record as CAR
 import Data.Codec.Argonaut.Common as CAC
@@ -98,9 +99,19 @@ type GetterFn (sym :: Symbol) r' (r :: Row Type) (m :: Type -> Type) a =
     IsSymbol sym => Proxy sym -> CA.JsonCodec a -> NodeId -> Getter m a
 
 
+type GetterFn' :: forall k. Symbol -> k -> Row Type -> (Type -> Type) -> Type -> Type
+type GetterFn' (sym :: Symbol) r' (r :: Row Type) (m :: Type -> Type) a =
+    IsSymbol sym => EncodeJson a => Proxy sym -> NodeId -> Getter m a
+
+
 getter :: forall sym r' r m a. GetterFn sym r' r m a
 getter sym codec nodeId =
     I.performGet codec nodeId $ C.get $ reflectSymbol sym
+
+
+getter' :: forall sym r' r m a. DecodeJson a => GetterFn' sym r' r m a
+getter' sym nodeId =
+    I.performGet' nodeId $ C.get $ reflectSymbol sym
 
 
 method ∷ forall (m ∷ Type -> Type). NodeId → String → Array Json → I.BlessedOp m

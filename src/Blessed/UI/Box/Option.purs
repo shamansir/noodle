@@ -7,50 +7,25 @@ import Prim.Row as R
 import Data.Argonaut.Encode (class EncodeJson)
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
-import Unsafe.Coerce (unsafeCoerce)
 
 
 import Blessed.Core.Dimension (Dimension)
-import Blessed.Core.Dimension as Dim
 import Blessed.Core.Offset (Offset)
-import Blessed.Core.Offset as Offset
+import Blessed.Core.Color (Color)
+import Blessed.Core.Padding (Padding)
+import Blessed.Core.Flex (Flex)
+import Blessed.Core.Align (HAlign, VAlign)
 import Blessed.Core.Style (StyleOption)
-import Blessed.Core.Border (Border, BorderOption)
+import Blessed.Core.Border (BorderOption)
 
 import Blessed.Internal.Core (Attribute, option) as C
 
 import Blessed.UI.Box.Event (Event)
+import Blessed.UI.Element.Option as E
 
 
-type OptionsRow r =
-    ( top :: Offset
-    , left :: Offset
-    , width :: Dimension
-    , height :: Dimension
-    , content :: String -- a ?
-    , tags :: Boolean
-    , draggable :: Boolean
-    , hover :: Array (StyleOption ())
-    , style :: Array (StyleOption ())
-    , border :: Array (BorderOption ())
-    | r
-    )
+type OptionsRow r = E.OptionsRow r
 type Options = Record (OptionsRow ())
-
-
-default :: Options
-default =
-    { top : Offset.px 0
-    , left : Offset.px 0
-    , width : Dim.percents 100.0
-    , height : Dim.percents 100.0
-    , content : ""
-    , tags : false
-    , draggable : false
-    , hover : ([] :: Array (StyleOption ()))
-    , style : ([] :: Array (StyleOption ()))
-    , border : ([] :: Array (BorderOption ()))
-    }
 
 
 type BoxAttribute r = C.Attribute (OptionsRow + r) Event
@@ -60,40 +35,113 @@ boxOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' 
 boxOption = C.option
 
 
-top ∷ forall r. Offset -> BoxAttribute ( top :: Offset | r )
-top = boxOption ( Proxy :: Proxy "top" )
+fg :: forall r. Color -> BoxAttribute ( fg :: Color | r)
+fg = E.fg
 
 
-left ∷ forall r. Offset -> BoxAttribute ( left :: Offset | r )
-left = boxOption ( Proxy :: Proxy "left" )
+bg :: forall r. Color -> BoxAttribute ( bg :: Color | r)
+bg = E.bg
 
 
-width ∷ forall r. Dimension -> BoxAttribute ( width :: Dimension | r )
-width = boxOption ( Proxy :: Proxy "width" )
+bold :: forall r. Boolean -> BoxAttribute ( bold :: Boolean | r)
+bold = E.bold
 
 
-height ∷ forall r. Dimension -> BoxAttribute ( height :: Dimension | r )
-height = boxOption ( Proxy :: Proxy "height" )
+underline :: forall r. Boolean -> BoxAttribute ( underline :: Boolean | r)
+underline = E.underline
 
 
-content ∷ forall r. String -> BoxAttribute ( content :: String | r )
-content = boxOption ( Proxy :: Proxy "content" )
+style :: forall r. Array (StyleOption ()) -> BoxAttribute ( style :: Array (StyleOption ()) | r)
+style = E.style
 
 
-tags ∷ forall r. Boolean -> BoxAttribute ( tags :: Boolean | r )
-tags = boxOption ( Proxy :: Proxy "tags" )
+border :: forall r. Array (BorderOption ()) -> BoxAttribute ( border :: Array (BorderOption ()) | r)
+border = E.border
 
 
-draggable ∷ forall r. Boolean -> BoxAttribute ( draggable :: Boolean | r )
-draggable = boxOption ( Proxy :: Proxy "draggable" )
+content :: forall r. String -> BoxAttribute ( content :: String | r)
+content = E.content
 
 
--- style ∷ forall r sr. Array (StyleOption sr) -> BoxAttribute ( style :: Array (StyleOption sr) | r )
--- style = unsafeCoerce <<< boxOption ( Proxy :: Proxy "style" )
-
-style ∷ forall r. Array (StyleOption ()) -> BoxAttribute ( style :: Array (StyleOption ()) | r )
-style = boxOption ( Proxy :: Proxy "style" )
+clickable :: forall r. Boolean -> BoxAttribute ( clickable :: Boolean | r)
+clickable = E.clickable
 
 
-border ∷ forall r. Array (BorderOption ()) -> BoxAttribute ( border :: Array (BorderOption ()) | r )
-border = boxOption ( Proxy :: Proxy "border" )
+input :: forall r. Boolean -> BoxAttribute ( input :: Boolean | r)
+input = E.input
+
+
+keyable :: forall r. Boolean -> BoxAttribute ( keyable :: Boolean | r)
+keyable = E.keyable
+
+
+focused :: forall r. Boolean -> BoxAttribute ( focused :: Boolean | r)
+focused = E.focused
+
+
+hidden :: forall r. Boolean -> BoxAttribute ( hidden :: Boolean | r)
+hidden = E.hidden
+
+
+label :: forall r. String -> BoxAttribute ( label :: String | r)
+label = E.label
+
+
+hoverText :: forall r. String -> BoxAttribute ( hoverText :: String | r)
+hoverText = E.hoverText
+
+
+align :: forall r. HAlign -> BoxAttribute ( align :: HAlign | r)
+align = E.align
+
+
+valign :: forall r. VAlign -> BoxAttribute ( valign :: VAlign | r)
+valign = E.valign
+
+
+shrink :: forall r. Flex -> BoxAttribute ( shrink :: Flex | r)
+shrink = E.shrink
+
+
+padding :: forall r. Padding -> BoxAttribute ( padding :: Padding | r)
+padding = E.padding
+
+
+width :: forall r. Dimension -> BoxAttribute ( width :: Dimension | r)
+width = E.width
+
+
+height :: forall r. Dimension -> BoxAttribute ( height :: Dimension | r)
+height = E.height
+
+
+left :: forall r. Offset -> BoxAttribute ( left :: Offset | r)
+left = E.left
+
+
+right :: forall r. Offset -> BoxAttribute ( right :: Offset | r)
+right = E.right
+
+
+top :: forall r. Offset -> BoxAttribute ( top :: Offset | r)
+top = E.top
+
+
+bottom :: forall r. Offset -> BoxAttribute ( bottom :: Offset | r)
+bottom = E.bottom
+
+
+ch :: forall r. Char -> BoxAttribute ( ch :: Char | r)
+ch = E.ch
+
+
+draggable :: forall r. Boolean -> BoxAttribute ( draggable :: Boolean | r)
+draggable = E.draggable
+
+
+shadow :: forall r. Boolean -> BoxAttribute ( shadow :: Boolean | r)
+shadow = E.shadow
+
+
+tags :: forall r. Boolean -> BoxAttribute ( tags :: Boolean | r)
+tags = E.tags

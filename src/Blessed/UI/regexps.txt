@@ -1,7 +1,7 @@
 -- Options --
 
 [(,]\s+(\w+)\s+::\s+(.*)$
-$1 :: forall r. $2 -> ScreenAttribute ( $1 :: $2 | r) \n$1 = screenOption (Proxy :: _ "$1")\n\n\n
+$1 :: forall r. $2 -> ElementAttribute ( $1 :: $2 | r) \n$1 = elmOption (Proxy :: _ "$1")\n\n
 
 
 -- Methods --
@@ -14,7 +14,7 @@ $1 :: forall m. $3 -> $5 -> $7 -> $9 -> $11 C.NodeId -> BlessedOp m\n$1 $2 $4 $6
 -- Properties --
 
 [(,]\s+(\w+)\s+::\s+(.*)?$
-$1 :: forall m. C.NodeId -> Getter m $2\n$1 = getter (Proxy :: _ "$1") CA.\L$2\E\n\n\n
+$1 :: forall m. C.NodeId -> C.Getter m $2\n$1 = getter (Proxy :: _ "$1") CA.\L$2\E\n\n
 
 
 -- Events --

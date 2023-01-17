@@ -3,12 +3,25 @@ module Blessed.Internal.BlessedOp where
 
 import Prelude
 
-import Effect.Aff (launchAff_)
 
-import Data.Bifunctor (lmap)
+import Effect (Effect)
+import Effect.Aff (launchAff_)
+import Effect.Aff.Class (class MonadAff, liftAff)
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
+
+import Data.Bifunctor (lmap, rmap)
 import Data.Either (Either)
-import Data.Tuple.Nested ((/\), type (/\))
+import Data.Either as Either
 import Data.Traversable (traverse, traverse_)
+import Data.Tuple.Nested ((/\), type (/\))
+
+import Data.Codec.Argonaut (JsonCodec, JsonDecodeError(..), decode) as CA
+import Data.Argonaut.Core (Json)
+import Data.Argonaut.Core (stringify) as Json
+import Data.Argonaut.Decode (class DecodeJson, decodeJson)
+import Data.Argonaut.Decode.Error as ADE
 
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.Free (Free)
@@ -16,24 +29,13 @@ import Control.Monad.Free as Free
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.State.Class (class MonadState)
 
-import Effect (Effect)
-import Effect.Aff.Class (class MonadAff, liftAff)
-import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Ref (Ref)
-import Effect.Ref as Ref
--- import Noodle.Fn.Protocol (Protocol)
+import Node.Encoding (Encoding(..))
+import Node.FS.Aff (appendTextFile)
+import Node.Path (FilePath)
 
-import Data.Argonaut.Core (Json)
-import Data.Argonaut.Core (stringify) as Json
-import Data.Codec.Argonaut as CA
-
+import Blessed.Internal.Codec (encodeCommand, commandToJson, encodeDump)
 import Blessed.Internal.Command (Command) as I
 import Blessed.Internal.JsApi as I
-import Blessed.Internal.Codec (encodeCommand, commandToJson, encodeDump)
-
-import Node.Encoding (Encoding(..))
-import Node.Path (FilePath)
-import Node.FS.Aff (appendTextFile)
 
 
 
@@ -107,6 +109,10 @@ perform nid cmd = BlessedOpM $ Free.liftF $ PerformOne nid cmd unit
 
 performGet :: forall m a. CA.JsonCodec a -> I.NodeId -> I.Command -> BlessedOpG m a
 performGet codec nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ CA.decode codec
+
+
+performGet' :: forall m a. DecodeJson a => I.NodeId -> I.Command -> BlessedOpG m a
+performGet' nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ (decodeJson >>> lmap convertJsonError)
 
 
 performSome :: forall m. I.NodeId -> Array I.Command -> BlessedOp m
@@ -210,3 +216,13 @@ makeHandler eventId arguments op =
 foreign import execute_ :: I.BlessedEnc -> Effect Unit
 foreign import registerNode_ :: I.NodeEnc -> Effect Unit
 foreign import callCommand_ :: I.NodeId -> I.CommandEnc -> Effect Json
+
+
+convertJsonError :: ADE.JsonDecodeError -> CA.JsonDecodeError
+convertJsonError = case _ of
+    ADE.TypeMismatch s -> CA.TypeMismatch s
+    ADE.UnexpectedValue json -> CA.UnexpectedValue json
+    ADE.AtIndex n jde -> CA.AtIndex n $ convertJsonError jde
+    ADE.AtKey n jde -> CA.AtKey n $ convertJsonError jde
+    ADE.Named n jde -> CA.Named n $ convertJsonError jde
+    ADE.MissingValue -> CA.MissingValue

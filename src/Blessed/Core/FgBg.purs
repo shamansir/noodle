@@ -18,6 +18,12 @@ type FgBgRow (r :: Row Type) =
 type FgBg = Record (FgBgRow ())
 
 
+type Evaluated =
+    ( fg :: Int
+    , bg :: Int
+    )
+
+
 type FgBgOption (r :: Row Type)
     = C.SoleOption (FgBgRow + r)
 

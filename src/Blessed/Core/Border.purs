@@ -39,8 +39,19 @@ type BorderRow (r :: Row Type) =
     ( type :: BorderType
     , fg :: Color
     , bg :: Color
+    , bold :: Boolean
+    , underline :: Boolean
     )
 type Border = Record (BorderRow ())
+
+
+type Evaluated =
+    ( type :: String
+    , fg :: Int
+    , bg :: Int
+    , bold :: Boolean
+    , underline :: Boolean
+    )
 
 
 type BorderOption (r :: Row Type)
@@ -63,12 +74,13 @@ type_ ∷ forall r. BorderType -> BorderOption ( type :: BorderType | r )
 type_ = borderOption ( Proxy :: Proxy "type" )
 
 
-default :: Border
-default =
-    { type : Line
-    , fg : "none"
-    , bg : "none"
-    }
+bold ∷ forall r. Boolean -> BorderOption ( bold :: Boolean | r )
+bold = borderOption ( Proxy :: Proxy "bold" )
+
+
+underline ∷ forall r. Boolean -> BorderOption ( underline :: Boolean | r )
+underline = borderOption ( Proxy :: Proxy "underline" )
+
 
 
 _line :: BorderType
