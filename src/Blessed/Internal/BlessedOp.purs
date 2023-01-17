@@ -6,22 +6,12 @@ import Prelude
 import Effect.Aff (launchAff_)
 
 import Data.Bifunctor (lmap)
-import Data.Map (Map)
-import Data.Map as Map
-import Data.Maybe (Maybe(..))
-import Data.Maybe as Maybe
-import Data.Tuple (Tuple(..))
-import Data.Tuple as Tuple
+import Data.Either (Either)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
-import Data.List (List)
 import Data.Traversable (traverse, traverse_)
 
-import Prim.RowList as RL
-import Record.Extra (class Keys, keys)
-
 import Control.Monad.Error.Class (class MonadThrow, throwError)
-import Control.Monad.Free (Free, foldFree)
+import Control.Monad.Free (Free)
 import Control.Monad.Free as Free
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.State.Class (class MonadState)
@@ -33,16 +23,11 @@ import Effect.Ref (Ref)
 import Effect.Ref as Ref
 -- import Noodle.Fn.Protocol (Protocol)
 
-import Prim.Row (class Cons)
-import Record as Record
-import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
-import Type.Proxy (Proxy(..))
-import Unsafe.Coerce (unsafeCoerce)
-
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Core (stringify) as Json
+import Data.Codec.Argonaut as CA
 
-import Blessed.Internal.Command as I
+import Blessed.Internal.Command (Command) as I
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Codec (encodeCommand, commandToJson, encodeDump)
 
@@ -61,6 +46,7 @@ data BlessedOpF state m a
     | Lift (m a)
     | PerformOne I.NodeId I.Command a
     | PerformSome I.NodeId (Array I.Command) a
+    | PerformGet I.NodeId I.Command (Json -> a)
     | PerformOnProcess I.Command a
 
 
@@ -70,10 +56,12 @@ instance functorBlessedOpF :: Functor m => Functor (BlessedOpF state m) where
         Lift m -> Lift (map f m)
         PerformOne nid cmd a -> PerformOne nid cmd $ f a
         PerformSome nid cmds a -> PerformSome nid cmds $ f a
+        PerformGet nid getCmd k -> PerformGet nid getCmd $ map f k
         PerformOnProcess cmd a -> PerformOnProcess cmd $ f a
 
 
 type BlessedOp m = BlessedOpM I.Registry m Unit
+type BlessedOpG m a = BlessedOpM I.Registry m (Either CA.JsonDecodeError a)
 
 
 
@@ -113,15 +101,19 @@ instance monadRecBlessedOpM :: MonadRec (BlessedOpM state m) where
 
 {- Processing -}
 
-perform :: forall m. I.NodeId -> I.Command -> BlessedOpM I.Registry m Unit
+perform :: forall m. I.NodeId -> I.Command -> BlessedOp m
 perform nid cmd = BlessedOpM $ Free.liftF $ PerformOne nid cmd unit
 
 
-performSome :: forall m. I.NodeId -> Array I.Command -> BlessedOpM I.Registry m Unit
+performGet :: forall m a. CA.JsonCodec a -> I.NodeId -> I.Command -> BlessedOpG m a
+performGet codec nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ CA.decode codec
+
+
+performSome :: forall m. I.NodeId -> Array I.Command -> BlessedOp m
 performSome nid cmds = BlessedOpM $ Free.liftF $ PerformSome nid cmds unit
 
 
-performOnProcess :: forall m. I.Command -> BlessedOpM I.Registry m Unit
+performOnProcess :: forall m. I.Command -> BlessedOp m
 performOnProcess cmd = BlessedOpM $ Free.liftF $ PerformOnProcess cmd unit
 
 
@@ -191,6 +183,11 @@ runFreeM stateRef fn = do
             _ <- traverse (liftEffect <<< callCommand_ target <<< encodeCommand) cmds
             traverse_ dumpCommand cmds
             pure next
+
+        go (PerformGet target cmd getV) = do
+            value <- liftEffect $ callCommand_ target $ encodeCommand cmd
+            dumpCommand cmd
+            pure $ getV $ value
 
         go (PerformOnProcess cmd next) = do
             _ <- liftEffect $ callCommand_ (I.NodeId "process") $ encodeCommand cmd
