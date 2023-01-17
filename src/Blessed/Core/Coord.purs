@@ -10,6 +10,7 @@ data Coord
     | Percent Number
     | Sum Coord Coord
     | Sub Coord Coord
+    | Center
 
 
 instance Show Coord where
@@ -17,6 +18,7 @@ instance Show Coord where
     show (Percent pc) = show pc <> "%"
     show (Sum cA cB) = show cA <> "+" <> show cB
     show (Sub cA cB) = show cA <> "-" <> show cB
+    show (Center) = "center"
 
 
 instance EncodeJson Coord where
@@ -48,6 +50,7 @@ render (Px i) = show i
 render (Percent n) = show n <> "%"
 render (Sum a b) = render a <> "+" <> render b
 render (Sub a b) = render a <> "-" <> render b
+render (Center) = "center"
 
 
 -- instance Semiring Coord where
