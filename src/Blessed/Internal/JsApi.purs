@@ -10,7 +10,7 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Newtype (class Newtype)
 import Data.Argonaut.Core (Json)
--- import Data.Argonaut.Encode (class EncodeJson, encodeJson)
+import Data.Argonaut.Encode (class EncodeJson)
 import Data.Codec.Argonaut as CA
 
 
@@ -32,6 +32,11 @@ derive instance Newtype NodeId _
 derive instance Newtype EventId _
 derive instance Newtype SRegistry _
 derive instance Newtype EventJson _
+
+derive newtype instance EncodeJson NodeId
+derive newtype instance EncodeJson EventId
+derive newtype instance EncodeJson SRegistry
+derive newtype instance EncodeJson EventJson
 
 
 data SProp = SProp String Json

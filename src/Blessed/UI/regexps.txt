@@ -1,0 +1,23 @@
+-- Options -- (Properties)
+
+[(,]\s+(\w+)\s+::\s+(.*)$
+$1 :: forall r. $2 -> ScreenAttribute ( $1 :: $2 | r) \n$1 = screenProperty (Proxy :: _ "$1")\n\n\n
+
+
+-- Methods --
+
+(\w+)(?:\s(\w+):(\w+))?(?:\s(\w+):(\w+))?(?:\s(\w+):(\w+))?(?:\s(\w+):(\w+))?(?:\s(\w+):(\w+))?(?:\s(\w+):(\w+))?(?:\s(\w+):(\w+))?(?:\s(\w+):(\w+))?(?:\s(\w+):(\w+))?(?:\s(\w+):(\w+))?(?:\s(\w+):(\w+))?(?:\s(\w+):(\w+))?$
+$1 :: forall m. C.NodeId -> $3 -> $5 -> $7 -> $9 -> $11 BlessedOp m\n$1 nodeId $2 $4 $6 $8 $10 $12 $14 = \n    Op.perform nodeId \$ C.call "$1" [ $2, $4, $6, $8, $10, $12, $14 ]\n\n\n
+(\s\s->)|(\s,)|(\s{2,10}(?=\=$))
+
+
+-- Properties -- (Getter)
+
+[(,]\s+(\w+)\s+::\s+(.*)?$
+$1 :: forall m. C.NodeId -> Getter m $2\n$1 = getter (Proxy :: _ "$1") CA.\L$2\E\n\n\n
+
+
+-- Events --
+
+[|=]\s+(\w+)(.*)?$
+convert $1 = "\L$1\E" /\\ [$2]\n
