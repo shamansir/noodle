@@ -1,4 +1,4 @@
--- Options -- (Properties)
+-- Options --
 
 [(,]\s+(\w+)\s+::\s+(.*)$
 $1 :: forall r. $2 -> ScreenAttribute ( $1 :: $2 | r) \n$1 = screenOption (Proxy :: _ "$1")\n\n\n
@@ -11,7 +11,7 @@ $1 :: forall m. C.NodeId -> $3 -> $5 -> $7 -> $9 -> $11 BlessedOp m\n$1 nodeId $
 (\s\s->)|(\s,)|(\s{2,10}(?=\=$))
 
 
--- Properties -- (Getter)
+-- Properties --
 
 [(,]\s+(\w+)\s+::\s+(.*)?$
 $1 :: forall m. C.NodeId -> Getter m $2\n$1 = getter (Proxy :: _ "$1") CA.\L$2\E\n\n\n

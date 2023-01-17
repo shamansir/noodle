@@ -1,8 +1,5 @@
 module Blessed.UI.Screen
-    ( module Blessed.UI.Screen.Option
-    , module Blessed.UI.Screen.Event
-    , module Blessed.UI.Screen.Method
-    , screen
+    ( screen
     , screenAnd
     ) where
 
@@ -12,11 +9,8 @@ import Type.Row (type (+))
 
 import Blessed.Internal.Core (Node, NodeAnd, node, nodeAnd) as C
 import Blessed.Internal.JsApi (Kind(..)) as Kind
-
-import Blessed.UI.Screen.Option
-import Blessed.UI.Screen.Event
-import Blessed.UI.Screen.Method
-
+import Blessed.UI.Screen.Option (OptionsRow)
+import Blessed.UI.Screen.Event (Event)
 
 
 screen :: forall r. String -> C.Node ( OptionsRow + r ) Event

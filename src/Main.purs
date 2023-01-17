@@ -19,6 +19,12 @@ import Blessed.Core.Style as Style
 
 import Blessed.UI.Box as Box
 import Blessed.UI.Screen as Screen
+import Blessed.UI.Screen.Option as Screen
+import Blessed.UI.Screen.Event as Screen
+import Blessed.UI.Screen.Method as Screen
+import Blessed.UI.Box.Option as Box
+import Blessed.UI.Box.Event as Box
+import Blessed.UI.Box.Method as Box
 
 
 main :: Effect Unit

@@ -1,17 +1,13 @@
 module Blessed.UI.Box
-    ( module Blessed.UI.Box.Option
-    , module Blessed.UI.Box.Event
-    , module Blessed.UI.Box.Method
-    , box
+    ( box
     , boxAnd
     ) where
 
 
 import Type.Row (type (+))
 
-import Blessed.UI.Box.Option
-import Blessed.UI.Box.Event
-import Blessed.UI.Box.Method
+import Blessed.UI.Box.Option (OptionsRow)
+import Blessed.UI.Box.Event (Event)
 
 
 import Blessed.Internal.Core (Node, NodeAnd, node, nodeAnd) as C
