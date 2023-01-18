@@ -2,10 +2,14 @@ var blessed = require('blessed');
 
 // Create a screen object.
 var screen = blessed.screen({
-  smartCSR: true
+  smartCSR: true,
+  // terminal: 'xterm-256color',
+  fullUnicode: true
 });
 
 screen.title = 'Noodle';
+
+let lastClickedOutlet = null;
 
 // Create a box perfectly centered horizontally and vertically.
 var patchBox = blessed.box({
@@ -23,11 +27,23 @@ var patchBox = blessed.box({
     bg: 'black',
     border: {
       fg: '#f0f0f0'
-    },
+    }/*,
     hover: {
       bg: '#111'
-    }
+    } */
   }
+});
+
+function log(text) {
+  patchBox.setContent('                ' + text);
+}
+
+patchBox.on('focus', () => {
+  lastClickedOutlet = null;
+});
+
+patchBox.on('click', () => {
+  lastClickedOutlet = null;
 });
 
 const items = [ 'foo', 'bar', 'ololo', 'hello', 'foo1', 'bar1', 'ololo1', 'hello1', 'foo2', 'bar2', 'ololo2', 'hello2' ]
@@ -53,15 +69,26 @@ nodeList = blessed.list({
 let lastShiftX = -1;
 let lastShiftY = -1;
 
-nodeList.on('select', () => {
-  nodeBox = blessed.box({
+let nodes = {};
+let lastNodeId = 0;
+
+nodeList.on('select', (item, index) => {
+
+  log(nodeList.selected + ':' + index + ':' + items[nodeList.selected]);
+
+  const top = lastShiftX + 2;
+  const left = 16 + lastShiftY + 2;
+
+  const nodeId = lastNodeId;
+
+  const nodeBox = blessed.box({
     // content : items[nodeList.selected],
     draggable : true,
-    top : lastShiftX + 2,
-    left : 16 + lastShiftY + 2,
+    top : top,
+    left : left,
     width : 25,
     height : 5,
-    border : { type : 'line', fg : 'blue' },
+    border : { type : 'line', fg : 'blue', ch : '∶' },
     style :
         { focus : { border : { fg : 'white' } }
         }
@@ -70,88 +97,94 @@ nodeList.on('select', () => {
   lastShiftX = lastShiftX + 1;
   lastShiftY = lastShiftY + 1;
 
+  const is = [ 'a', 'b', 'c' ];
+  const os = [ 'sum', 'x' ];
+
   const inlets = blessed.listbar({
     width : '90%',
     height : 1,
-    items : [ 'a', 'b', 'c' ],
+    items : is,
     mouse: true,
-    style : { item : { fg : '#006600' }, selected : { fg : '#00ff00' } }
+    keys : true,
+    style : { bg : '#111', item : { fg : '#006600', bg : '#111' }, selected : { fg : '#00ff00', bg : '#111' } }
   });
 
   const outlets = blessed.listbar({
     width : '90%',
     top : 2,
     height : 1,
-    items : [ 'sum' ],
+    items : os,
     mouse: true,
-    style : { item : { fg : '#006600' }, selected : { fg : '#00ff00' } }
+    keys : true,
+    style : { bg : '#111', item : { fg : '#006600', bg : '#111' }, selected : { fg : '#00ff00', bg : '#111' } }
   });
+
+  const family = items[nodeList.selected];
+
+  nodes[nodeId] = { box : nodeBox, top, left, inlets, outlets, family, index : nodeId };
+
+  nodeBox.data = { index : nodeId };
+
+  inlets.on('select', (item, index) => {
+
+    const selectedInlet = parseInt(item.getText().split(':')[0]) - 1; // not inlets.selected or index!
+    log('I' + nodeId + ':' + inlets.selected + ':' + index + ' ' + item.getText() + '      ' + selectedInlet);
+    if (lastClickedOutlet && (lastClickedOutlet.node != nodeId)) {
+      const link = buildLink(lastClickedOutlet.node, lastClickedOutlet.index, nodes[nodeId].index, selectedInlet);
+      patchBox.append(link.a);
+      patchBox.append(link.b);
+      lastClickedOutlet = null;
+      screen.render();
+    }
+  });
+
+  outlets.on('select', (item, index) => {
+    const selectedOutlet = parseInt(item.getText().split(':')[0]) - 1; // not outlets.selected or index!
+    log('O' + nodeId + ':' + outlets.selected + ':' + index + ' ' + item.getText() + '      ' + selectedOutlet);
+    lastClickedOutlet = { node : nodeId, index : selectedOutlet, subj : os[selectedOutlet] };
+    screen.render();
+  });
+
+  lastNodeId = lastNodeId + 1;
 
   nodeBox.append(inlets);
   nodeBox.append(outlets);
 
   patchBox.append(nodeBox);
 
-  nodeBox.setLine(1, blessed.parseTags('{blue-fg}>{/blue-fg} ' + items[nodeList.selected]));
+  nodeBox.setLine(1, blessed.parseTags('{#000033-fg}>{/#000033-fg} ' + family));
 
-  //patchBox.setContent('OOOOOOOOOOOOOOOOOOOOOOOOOO' + nodeList.selected);
   screen.render();
 });
 
 patchBox.append(nodeList);
 
-lineA = blessed.line({ top : 3, left : 0, width : 50, height : 1, orientation : 'horizontal', type : 'bg', ch : '>', fg : 'green' });
-lineB = blessed.line({ top : 3, left : 50, width : 1, height : 50, orientation : 'vertical', type : 'bg', ch : 'v', fg : 'green' });
-patchBox.append(lineA);
-patchBox.append(lineB);
-
-// Append our box to the screen.
 screen.append(patchBox);
-
-/*
-// If our box is clicked, change the content.
-patchBox.on('click', function(data) {
-  box.setContent('{center}Some different {red-fg}content{/red-fg}.{/center}');
-  screen.render();
-});
-
-// If box is focused, handle `enter`/`return` and give us some more content.
-patchBox.key('enter', function(ch, key) {
-  box.setContent('{right}Even different {black-fg}content{/black-fg}.{/right}\n');
-  box.setLine(1, 'bar');
-  box.insertLine(1, 'foo');
-  screen.render();
-});
-*/
-
 
 // Quit on Escape, q, or Control-C.
 screen.key(['escape', 'q', 'C-c'], function(ch, key) {
   return process.exit(0);
 });
 
-// Focus our element.
 nodeList.focus();
 
-// Render the screen.
 screen.render();
 
-/*
-var c = new Canvas(160, 160);
 
-function draw() {
-  c.clear();
-  var t = new Date();
-  var sin = function(i, l) {
-    return Math.floor(Math.sin(i*2*Math.PI)*l+80);
-  }, cos = function(i, l) {
-    return Math.floor(Math.cos(i*2*Math.PI)*l+80);
-  };
-  line(80, 80, sin(t.getHours()/24, 30), 160-cos(t.getHours()/24, 30), c.set.bind(c));
-  line(80, 80, sin(t.getMinutes()/60, 50), 160-cos(t.getMinutes()/60, 50), c.set.bind(c));
-  line(80, 80, sin(t.getSeconds()/60+(+t%1000)/60000, 75), 160-cos(t.getSeconds()/60+(+t%1000)/60000, 75), c.set.bind(c));
-  process.stdout.write(c.frame());
+function buildLink(scrNodeIndex, outletIndex, dstNodeIndex, inletIndex) {
+    const outletNode = nodes[scrNodeIndex];
+    const inletNode = nodes[dstNodeIndex];
+    const outletPosX = outletNode.box.aleft + (outletIndex * 4);
+    const outletPosY = outletNode.box.atop + 3;
+    const inletPosX = inletNode.box.aleft + (inletIndex * 4)
+    const inletPosY = inletNode.box.atop + 3;
+    const lineStartX = Math.min(outletPosX, inletPosX);
+    const lineStartY = Math.min(outletPosY, inletPosY);
+    const lineEndX = Math.max(outletPosX, inletPosX);
+    const lineEndY = Math.max(outletPosY, inletPosY);
+    log(scrNodeIndex + ':' + outletIndex + ' ' + dstNodeIndex + ':' + inletIndex + ' sx:' + lineStartX + ' sy:' + lineStartY + ' ex:' + lineEndX + ' ey:' + lineEndY);
+    // ⊲ ⊳ ⋎ ⋏ ≺ ≻ ⊽ ⋀ ⋁ ∻ ∶ ∼ ∽ ∾ ∷ ∻ ∼ ∽ ≀ ⊶ ⊷ ⊸ ⋮ ⋯ ⋰ ⋱ ⊺ ⊢ ⊣ ⊤ ⊥ ⊦ ∣ ∤ ∥ ∦ ∗ ∘ ∙ ⋄ ⋅ ⋆ ⋇ > ⋁
+    const lineA = blessed.line({ left : lineStartX, top : lineStartY, width : lineEndX - lineStartX, height : 1, orientation : 'horizontal', type : 'bg', ch : '∼', fg : 'green' });
+    const lineB = blessed.line({ left : lineEndX, top : lineStartY, width : 1, height : lineEndY - lineStartY, orientation : 'vertical', type : 'bg', ch : '≀', fg : 'green' });
+    return { a : lineA, b : lineB };
 }
-*/
-
-// setInterval(draw, 1000/24);
