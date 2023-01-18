@@ -13,40 +13,34 @@ import Blessed.Internal.JsApi (NodeId) as C
 import Blessed.Internal.Core (method) as C
 
 
-prepend :: forall m. String ->  C.NodeId -> BlessedOp m
+prepend :: forall m. String -> C.NodeId -> BlessedOp m
 prepend node nodeId =
     C.method nodeId "prepend" [ C.arg CA.string node ]
 
 
-
-append :: forall m. String ->  C.NodeId -> BlessedOp m
+append :: forall m. String -> C.NodeId -> BlessedOp m
 append node nodeId =
     C.method nodeId "append" [ C.arg CA.string node ]
 
 
-
-remove :: forall m. String ->  C.NodeId -> BlessedOp m
+remove :: forall m. String -> C.NodeId -> BlessedOp m
 remove node nodeId =
     C.method nodeId "remove" [ C.arg CA.string node ]
 
 
-
-insert :: forall m. String -> Int ->  C.NodeId -> BlessedOp m
+insert :: forall m. String -> Int -> C.NodeId -> BlessedOp m
 insert node i nodeId =
     C.method nodeId "insert" [ C.arg CA.string node, C.arg CA.int i ]
 
 
-
-insertBefore :: forall m. String -> String ->  C.NodeId -> BlessedOp m
+insertBefore :: forall m. String -> String -> C.NodeId -> BlessedOp m
 insertBefore node refNode nodeId =
     C.method nodeId "insertBefore" [ C.arg CA.string node, C.arg CA.string refNode ]
 
 
-
-insertAfter :: forall m. String -> String ->  C.NodeId -> BlessedOp m
+insertAfter :: forall m. String -> String -> C.NodeId -> BlessedOp m
 insertAfter node refNode nodeId =
     C.method nodeId "insertAfter" [ C.arg CA.string node, C.arg CA.string refNode ]
-
 
 
 detach :: forall m.  C.NodeId -> BlessedOp m
@@ -54,20 +48,17 @@ detach nodeId =
     C.method nodeId "detach" [ ]
 
 
-
 emitDescandants :: forall m.  C.NodeId -> BlessedOp m
 emitDescandants nodeId =
     C.method nodeId "emitDescandants" [ ]
 
 
-
-get :: forall m. String -> Maybe Json ->  C.NodeId -> BlessedOp m
+get :: forall m. String -> Maybe Json -> C.NodeId -> BlessedOp m
 get name value nodeId =
     C.method nodeId "get" [ C.arg CA.string name, C.arg (CAC.maybe CA.json) value ]
 
 
-
-set :: forall m. String -> Json ->  C.NodeId -> BlessedOp m
+set :: forall m. String -> Json -> C.NodeId -> BlessedOp m
 set name value nodeId =
     C.method nodeId "set" [ C.arg CA.string name, C.arg CA.json value ]
 

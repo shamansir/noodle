@@ -1,4 +1,4 @@
-module Blessed.UI.Box.Event where
+module Blessed.UI.Element.Event where
 
 import Prelude ((<<<))
 
