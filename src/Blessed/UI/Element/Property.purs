@@ -6,9 +6,7 @@ import Prim.Row as R
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol, reflectSymbol)
 
-import Blessed.Core.Style (Style)
 import Blessed.Core.Style as Style
-import Blessed.Core.Border (Border)
 import Blessed.Core.Border as Border
 -- import Blessed.Core.Position (Position)
 

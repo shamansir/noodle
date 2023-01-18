@@ -29,7 +29,7 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Record as CAR
 import Data.Codec.Argonaut.Common as CAC
 
-import Blessed.Internal.BlessedOp as I
+import Blessed.Internal.BlessedOp as Op
 import Blessed.Internal.Command as C
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Codec as Codec
@@ -43,7 +43,7 @@ type NodeId = I.NodeId
 data Attribute :: Row Type -> Type -> Type
 data Attribute (r :: Row Type) e
     = Option String Json
-    | Handler e (NodeId -> Json -> I.BlessedOp Effect)
+    | Handler e (NodeId -> Json -> Op.BlessedOp Effect)
 
 
 data SoleOption (r :: Row Type)
@@ -61,10 +61,10 @@ type Blessed e = I.SNode
 
 -- see Halogen.Svg.Elements + Halogen.Svg.Properties
 type Node (r :: Row Type) e = Events e => Array (Attribute r e) -> Array (Blessed CoreEvent) -> Blessed CoreEvent
-type NodeAnd (r :: Row Type) e = Array (Attribute r e) -> Array (Blessed CoreEvent) -> (NodeId -> I.BlessedOp Effect) -> Blessed CoreEvent
+type NodeAnd (r :: Row Type) e = Array (Attribute r e) -> Array (Blessed CoreEvent) -> (NodeId -> Op.BlessedOp Effect) -> Blessed CoreEvent
 type Leaf (r :: Row Type) e = Array (Attribute r e) -> Blessed CoreEvent
-type LeafAnd (r :: Row Type) e = Array (Attribute r e) ->  (NodeId -> I.BlessedOp Effect) -> Blessed CoreEvent
-type Handler (r :: Row Type) e = (NodeId -> Json -> I.BlessedOp Effect) -> Attribute r e
+type LeafAnd (r :: Row Type) e = Array (Attribute r e) ->  (NodeId -> Op.BlessedOp Effect) -> Blessed CoreEvent
+type Handler (r :: Row Type) e = (NodeId -> Json -> Op.BlessedOp Effect) -> Attribute r e
 
 
 splitAttributes :: forall r e. Events e => Array (Attribute r e) -> Array I.SProp /\ Array I.SHandler
@@ -74,7 +74,7 @@ splitAttributes props = Array.catMaybes (lockSProp <$> props) /\ Array.catMaybes
         lockSProp _ = Nothing
         lockSHandler (Handler e op) =
             case convert e of
-                eventId /\ arguments -> Just $ I.makeHandler (I.EventId eventId) arguments op
+                eventId /\ arguments -> Just $ Op.makeHandler (I.EventId eventId) arguments op
         lockSHandler _ = Nothing
 
 
@@ -91,7 +91,7 @@ handler :: forall r e. Events e => e -> Handler r e
 handler = Handler
 
 
-type Getter m a = I.BlessedOpG m a
+type Getter m a = Op.BlessedOpG m a
 
 
 type GetterFn :: forall k. Symbol -> k -> Row Type -> (Type -> Type) -> Type -> Type
@@ -106,17 +106,17 @@ type GetterFn' (sym :: Symbol) r' (r :: Row Type) (m :: Type -> Type) a =
 
 getter :: forall sym r' r m a. GetterFn sym r' r m a
 getter sym codec nodeId =
-    I.performGet codec nodeId $ C.get $ reflectSymbol sym
+    Op.performGet codec nodeId $ C.get $ reflectSymbol sym
 
 
 getter' :: forall sym r' r m a. DecodeJson a => GetterFn' sym r' r m a
 getter' sym nodeId =
-    I.performGet' nodeId $ C.get $ reflectSymbol sym
+    Op.performGet' nodeId $ C.get $ reflectSymbol sym
 
 
-method ∷ forall (m ∷ Type -> Type). NodeId → String → Array Json → I.BlessedOp m
+method ∷ forall (m ∷ Type -> Type). NodeId → String → Array Json → Op.BlessedOp m
 method nodeId name args =
-    I.perform nodeId $ C.call name args
+    Op.perform nodeId $ C.call name args
 
 
 instance EncodeJson (SoleOption r) where
@@ -136,7 +136,7 @@ node kind name attrs children =
 
 nodeAnd :: forall r e. Events e => I.Kind -> String -> NodeAnd r e
 nodeAnd kind name attrs children fn =
-    I.SNode kind (I.NodeId name) sprops children (I.makeHandler (I.EventId initialId) initalArgs (\id _ -> fn id) : handlers)
+    I.SNode kind (I.NodeId name) sprops children (Op.makeHandler (I.EventId initialId) initalArgs (\id _ -> fn id) : handlers)
     where
         sprops /\ handlers = splitAttributes attrs
         initialId /\ initalArgs = convert (initial :: e)

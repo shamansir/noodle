@@ -8,27 +8,21 @@ import Data.Symbol (class IsSymbol, reflectSymbol)
 
 import Blessed.Core.Style (Style)
 import Blessed.Core.Border (Border)
+import Blessed.Core.Style as Style
+import Blessed.Core.Border as Border
+
 
 import Data.Codec.Argonaut as CA
+import Data.Argonaut.Decode (class DecodeJson)
 
-import Blessed.Internal.Core (NodeId, GetterFn, Getter, getter) as C
+import Blessed.Internal.Core (NodeId, GetterFn, GetterFn', Getter, getter, getter') as C
 import Blessed.Internal.BlessedOp as Op
 import Blessed.Internal.Command (get) as C
 
+import Blessed.UI.Element.Property as E
 
 
-type PropertiesRow =
-    ( top :: String
-    , left :: String
-    , width :: String
-    , height :: String
-    , content :: String -- a ?
-    , tags :: Boolean
-    , draggable :: Boolean
-    , hover :: Style
-    , style :: Style
-    , border :: Border
-    )
+type PropertiesRow = E.PropertiesRow
 
 
 getter :: forall sym r' m a. R.Cons sym a r' PropertiesRow => C.GetterFn sym r' PropertiesRow m a
@@ -36,37 +30,99 @@ getter =
     C.getter
 
 
-top :: forall m. C.NodeId -> C.Getter m String
-top = getter ( Proxy :: _ "top" ) CA.string
+getter' :: forall sym r' m a. DecodeJson a => R.Cons sym a r' PropertiesRow => C.GetterFn' sym r' PropertiesRow m a
+getter' =
+    C.getter'
 
 
-left :: forall m. C.NodeId -> C.Getter m String
-left = getter ( Proxy :: _ "left" ) CA.string
+name :: forall m. C.NodeId -> C.Getter m String
+name = E.name
 
 
-width :: forall m. C.NodeId -> C.Getter m String
-width = getter ( Proxy :: _ "width" ) CA.string
+border :: forall m. C.NodeId -> C.Getter m (Record Border.Evaluated)
+border = E.border
 
 
-height :: forall m. C.NodeId -> C.Getter m String
-height = getter ( Proxy :: _ "height" ) CA.string
+style :: forall m. C.NodeId -> C.Getter m (Record Style.Evaluated)
+style = E.style
 
 
 content :: forall m. C.NodeId -> C.Getter m String
-content = getter ( Proxy :: _ "content" ) CA.string
+content = E.content
+
+
+hidden :: forall m. C.NodeId -> C.Getter m Boolean
+hidden = E.hidden
+
+
+visible :: forall m. C.NodeId -> C.Getter m Boolean
+visible = E.visible
+
+
+detached :: forall m. C.NodeId -> C.Getter m Boolean
+detached = E.detached
+
+
+fg :: forall m. C.NodeId -> C.Getter m Int
+fg = E.fg
+
+
+bg :: forall m. C.NodeId -> C.Getter m Int
+bg = E.bg
+
+
+bold :: forall m. C.NodeId -> C.Getter m Boolean
+bold = E.bold
+
+
+underline :: forall m. C.NodeId -> C.Getter m Boolean
+underline = E.underline
+
+
+width :: forall m. C.NodeId -> C.Getter m Int
+width = E.width
+
+
+height :: forall m. C.NodeId -> C.Getter m Int
+height = E.height
+
+
+left :: forall m. C.NodeId -> C.Getter m Int
+left = E.left
+
+
+right :: forall m. C.NodeId -> C.Getter m Int
+right = E.right
+
+
+top :: forall m. C.NodeId -> C.Getter m Int
+top = E.top
+
+
+bottom :: forall m. C.NodeId -> C.Getter m Int
+bottom = E.bottom
+
+
+aleft :: forall m. C.NodeId -> C.Getter m Int
+aleft = E.aleft
+
+
+aright :: forall m. C.NodeId -> C.Getter m Int
+aright = E.aright
+
+
+atop :: forall m. C.NodeId -> C.Getter m Int
+atop = E.atop
+
+
+abottom :: forall m. C.NodeId -> C.Getter m Int
+abottom = E.abottom
 
 
 tags :: forall m. C.NodeId -> C.Getter m Boolean
-tags = getter ( Proxy :: _ "tags" ) CA.boolean
+tags = E.tags
 
 
--- hover :: forall m. C.NodeId -> C.Getter m Style
--- hover = getter ( Proxy :: _ "hover" ) CA._
 
-
--- style :: forall m. C.NodeId -> C.Getter m Style
--- style = getter ( Proxy :: _ "style" ) CA._
-
-
--- border :: forall m. C.NodeId -> C.Getter m Style
--- border = getter ( Proxy :: _ "border" ) CA._
+draggable :: forall m. C.NodeId -> C.Getter m Boolean
+draggable = E.draggable

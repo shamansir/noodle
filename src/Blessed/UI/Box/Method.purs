@@ -8,6 +8,9 @@ import Blessed.Internal.JsApi (NodeId) as C
 import Blessed.Internal.Core (method) as C
 
 
+-- FIXME: Methods from Element
+
+
 setContent :: forall m. String -> C.NodeId -> BlessedOp m
 setContent value nodeId =
     C.method nodeId "setContent"

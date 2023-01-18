@@ -18,6 +18,7 @@ data Event
     = Init
     | Key (Array Key)
     | Click
+    -- FIXME: Node + Element events
 
 
 instance events :: C.Events Event where
