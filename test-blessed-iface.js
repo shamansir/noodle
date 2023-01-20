@@ -1,4 +1,5 @@
 var blessed = require('blessed');
+const { init } = require('hydra-synth/src/lib/array-utils');
 
 // Create a screen object.
 var screen = blessed.screen({
@@ -70,6 +71,7 @@ let lastShiftX = -1;
 let lastShiftY = -1;
 
 let nodes = {};
+let links = {};
 let lastNodeId = 0;
 
 nodeList.on('select', (item, index) => {
@@ -130,9 +132,12 @@ nodeList.on('select', (item, index) => {
     const selectedInlet = parseInt(item.getText().split(':')[0]) - 1; // not inlets.selected or index!
     log('I' + nodeId + ':' + inlets.selected + ':' + index + ' ' + item.getText() + '      ' + selectedInlet);
     if (lastClickedOutlet && (lastClickedOutlet.node != nodeId)) {
-      const link = buildLink(lastClickedOutlet.node, lastClickedOutlet.index, nodes[nodeId].index, selectedInlet);
-      patchBox.append(link.a);
-      patchBox.append(link.b);
+      const link = new Link(lastClickedOutlet.node, lastClickedOutlet.index, nodes[nodeId].index, selectedInlet);
+      link.add(patchBox);
+      link.on('click', () => {
+        link.remove(patchBox);
+        screen.render();
+      });
       lastClickedOutlet = null;
       screen.render();
     }
@@ -170,21 +175,111 @@ nodeList.focus();
 
 screen.render();
 
+function pipeByH(x0, y0, x1, y1) {
+  var mx = (x1 - x0) / 2;
 
-function buildLink(scrNodeIndex, outletIndex, dstNodeIndex, inletIndex) {
+  return 'M' + x0 + ' ' + y0 + ' '
+       + 'L' + (x0 + mx - (mx / 2)) + ' ' + y0 + ' '
+       + 'L' + (x0 + mx + (mx / 2)) + ' ' + y1 + ' '
+       + 'L' + x1 + ' ' + y1;
+}
+
+
+class Link {
+
+  constructor(fromNode, outletIndex, toNode, inletIndex) {
+    this.fromNode = fromNode;
+    this.outletIndex = outletIndex;
+    this.toNode = toNode;
+    this.inletIndex = inletIndex;
+    const calc = calcLink(fromNode, outletIndex, toNode, inletIndex);
+    this.init(calc);
+  }
+
+  init(calc) {
+    this.link = {};
+    this.link.a = blessed.line({ left : calc.a.left, top : calc.a.top, width : calc.a.width, height : calc.a.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : 'green' });
+    this.link.b = blessed.line({ left : calc.b.left, top : calc.b.top, width : calc.b.width, height : calc.b.height, orientation : 'horizontal', type : 'bg', ch : '∼', fg : 'green' });
+    this.link.c = blessed.line({ left : calc.c.left, top : calc.c.top, width : calc.c.width, height : calc.c.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : 'green' });
+  }
+
+  add(patchBox) {
+    patchBox.append(this.link.a);
+    patchBox.append(this.link.b);
+    patchBox.append(this.link.c);
+  }
+
+  remove(patchBox) {
+    patchBox.remove(this.link.a);
+    patchBox.remove(this.link.b);
+    patchBox.remove(this.link.c);
+  }
+
+  on(event, handler) {
+    this.link.a.on(event, handler);
+    this.link.b.on(event, handler);
+    this.link.c.on(event, handler);
+  }
+
+  update(patchBox) {
+    const calc = calcLink(this.fromNode, this.outletIndex, this.toNode, this.inletIndex);
+
+    this.link.a.left = calc.a.left;
+    this.link.a.top = calc.a.top;
+    this.link.a.width = calc.a.width;
+    this.link.a.height = calc.a.height;
+
+    this.link.b.left = calc.b.left;
+    this.link.b.top = calc.b.top;
+    this.link.b.width = calc.b.width;
+    this.link.b.height = calc.b.height;
+
+    this.link.c.left = calc.c.left;
+    this.link.c.top = calc.c.top;
+    this.link.c.width = calc.c.width;
+    this.link.c.height = calc.c.height;
+  }
+
+}
+
+
+function calcLink(scrNodeIndex, outletIndex, dstNodeIndex, inletIndex) {
     const outletNode = nodes[scrNodeIndex];
     const inletNode = nodes[dstNodeIndex];
-    const outletPosX = outletNode.box.aleft + (outletIndex * 4);
-    const outletPosY = outletNode.box.atop + 3;
-    const inletPosX = inletNode.box.aleft + (inletIndex * 4)
-    const inletPosY = inletNode.box.atop + 3;
-    const lineStartX = Math.min(outletPosX, inletPosX);
-    const lineStartY = Math.min(outletPosY, inletPosY);
-    const lineEndX = Math.max(outletPosX, inletPosX);
-    const lineEndY = Math.max(outletPosY, inletPosY);
-    log(scrNodeIndex + ':' + outletIndex + ' ' + dstNodeIndex + ':' + inletIndex + ' sx:' + lineStartX + ' sy:' + lineStartY + ' ex:' + lineEndX + ' ey:' + lineEndY);
+    const outletPosX = outletNode.box.left + (outletIndex * 6);
+    const outletPosY = outletNode.box.top + 3;
+    const inletPosX = inletNode.box.left + (inletIndex * 6)
+    const inletPosY = inletNode.box.top + 1;
+    let xo = outletPosX, yo = outletPosY;
+    let xi = inletPosX, yi = inletPosY;
+    let my = Math.floor(Math.abs(yi - yo) / 2);
+    let lineA, lineB, lineC;
+    if (outletPosY <= inletPosY) { // outlet is higher than inlet,
+        //lineA = blessed.line({ left : xo, top : yo, width : 1, height : my, orientation : 'vertical', type : 'bg', ch : '≀', fg : 'green' });
+        lineA =              { left : xo, top : yo, width : 1, height : my };
+        if (outletPosX <= inletPosX) { // outlet is on the left side from the inlet
+          //lineB = blessed.line({ left : xo, top : yo + my, width : xi - xo, height : 1, orientation : 'horizontal', type : 'bg', ch : '∼', fg : 'green' });
+          lineB =              { left : xo, top : yo + my, width : xi - xo, height : 1 };
+        } else { // outlet is on the right side from the inlet
+          //lineB = blessed.line({ left : xi, top : yo + my, width : xo - xi, height : 1, orientation : 'horizontal', type : 'bg', ch : '∼', fg : 'green' });
+          lineB =              { left : xi, top : yo + my, width : xo - xi, height : 1 };
+        }
+        //lineC = blessed.line({ left : xi, top : yo + my, width : 1, height : my, orientation : 'vertical', type : 'bg', ch : '≀', fg : 'green' });
+        lineC =              { left : xi, top : yo + my, width : 1, height : my };
+    } else { // outlet is lower than inlet
+        //lineA = blessed.line({ left : xi, top : yi, width : 1, height : my, orientation : 'vertical', type : 'bg', ch : '≀', fg : 'green' });
+        lineA =              { left : xi, top : yi, width : 1, height : my };
+        if (inletPosX <= outletPosX) { // inlet is on the left side from the outlet
+          //lineB = blessed.line({ left : xi, top : yi + my, width : xo - xi, height : 1, orientation : 'horizontal', type : 'bg', ch : '∼', fg : 'green' });
+          lineB =              { left : xi, top : yi + my, width : xo - xi, height : 1 };
+        } else {  // inlet is on the right side from the outlet
+          //lineB = blessed.line({ left : xo, top : yi + my, width : xi - xo, height : 1, orientation : 'horizontal', type : 'bg', ch : '∼', fg : 'green' });
+          lineB =              { left : xo, top : yi + my, width : xi - xo, height : 1 };
+        }
+        //lineC = blessed.line({ left : xo, top : yi + my, width : 1, height : my, orientation : 'vertical', type : 'bg', ch : '≀', fg : 'green' });
+        lineC =              { left : xo, top : yi + my, width : 1, height : my };
+    }
+    log(scrNodeIndex + ':' + outletIndex + ' ' + dstNodeIndex + ':' + inletIndex + ' xo:' + xo + ' yo: ' + yo + ' xi:' + xi + ' yi: ' + yi);
     // ⊲ ⊳ ⋎ ⋏ ≺ ≻ ⊽ ⋀ ⋁ ∻ ∶ ∼ ∽ ∾ ∷ ∻ ∼ ∽ ≀ ⊶ ⊷ ⊸ ⋮ ⋯ ⋰ ⋱ ⊺ ⊢ ⊣ ⊤ ⊥ ⊦ ∣ ∤ ∥ ∦ ∗ ∘ ∙ ⋄ ⋅ ⋆ ⋇ > ⋁
-    const lineA = blessed.line({ left : lineStartX, top : lineStartY, width : lineEndX - lineStartX, height : 1, orientation : 'horizontal', type : 'bg', ch : '∼', fg : 'green' });
-    const lineB = blessed.line({ left : lineEndX, top : lineStartY, width : 1, height : lineEndY - lineStartY, orientation : 'vertical', type : 'bg', ch : '≀', fg : 'green' });
-    return { a : lineA, b : lineB };
+    return { a : lineA, b : lineB, c : lineC };
 }
