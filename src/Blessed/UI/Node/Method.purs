@@ -53,7 +53,7 @@ emitDescandants nodeId =
     C.method nodeId "emitDescandants" [ ]
 
 
-get :: forall m. String -> Maybe Json -> C.NodeId -> BlessedOp m
+get :: forall m. String -> Maybe Json -> C.NodeId -> BlessedOp m -- FIXME
 get name value nodeId =
     C.method nodeId "get" [ C.arg CA.string name, C.arg (CAC.maybe CA.json) value ]
 

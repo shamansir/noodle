@@ -1,55 +1,31 @@
 module Blessed.UI.Box.Event where
 
-import Prelude ((<<<))
-
-
-import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested ((/\))
-
 import Blessed.Core.Key (Key)
-import Blessed.Core.Key as Key
 
 
-import Blessed.Internal.Emitter (class Events, CoreEvent(..)) as C
-import Blessed.Internal.Core (handler, Handler) as C
+import Blessed.Internal.Core (handler) as C
+import Blessed.UI.Element.Event as E
 
 
-data Event
-    = Init
-    | Key (Array Key)
-    | Click
-    -- FIXME: Node + Element events
+type Event = E.Event
 
 
-instance events :: C.Events Event where
-    initial = Init
-
-    convert Init = "init" /\ []
-    convert (Key keys) = "key" /\ Key.convertAll keys
-    convert Click = "click" /\ []
-
-    toCore _ = C.CoreEvent
-    fromCore _ = Nothing
+type Handler r = E.Handler r
 
 
-
-type BoxHandler r = C.Handler r Event
-
-
-boxHandler :: forall r. Event -> BoxHandler r
+boxHandler :: forall r. Event -> Handler r
 boxHandler = C.handler
 
 
 
 
+key :: forall r. Array Key -> Handler r
+key = E.key
 
-key :: forall r. Array Key -> BoxHandler r
-key = boxHandler <<< Key
 
-
-on :: forall r. Event -> BoxHandler r
-on = boxHandler
+on :: forall r. Event -> Handler r
+on = E.on
 
 
 click :: Event
-click = Click
+click = E.click

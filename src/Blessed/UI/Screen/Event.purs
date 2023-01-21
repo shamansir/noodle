@@ -49,12 +49,12 @@ instance events :: C.Events Event where
     fromCore _ = Nothing
 
 
-type ScreenHandler r = C.Handler r Event
+type Handler r = C.Handler r Event
 
 
-screenHandler :: forall r. Event -> ScreenHandler r
+screenHandler :: forall r. Event -> Handler r
 screenHandler = C.handler
 
 
-key :: forall r. Array Key -> ScreenHandler r
+key :: forall r. Array Key -> Handler r
 key = screenHandler <<< Key

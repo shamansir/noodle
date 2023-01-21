@@ -67,21 +67,21 @@ instance events :: C.Events Event where
 
 
 
-type ElementHandler r = C.Handler r Event
+type Handler r = C.Handler r Event
 
 
-elmHandler :: forall r. Event -> ElementHandler r
+elmHandler :: forall r. Event -> Handler r
 elmHandler = C.handler
 
 
 
 
 
-key :: forall r. Array Key -> ElementHandler r
+key :: forall r. Array Key -> Handler r
 key = elmHandler <<< Key
 
 
-on :: forall r. Event -> ElementHandler r
+on :: forall r. Event -> Handler r
 on = elmHandler
 
 
