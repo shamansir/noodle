@@ -132,13 +132,19 @@ nodeList.on('select', (item, index) => {
     const selectedInlet = parseInt(item.getText().split(':')[0]) - 1; // not inlets.selected or index!
     log('I' + nodeId + ':' + inlets.selected + ':' + index + ' ' + item.getText() + '      ' + selectedInlet);
     if (lastClickedOutlet && (lastClickedOutlet.node != nodeId)) {
-      const link = new Link(lastClickedOutlet.node, lastClickedOutlet.index, nodes[nodeId].index, selectedInlet);
+      const fromNode = lastClickedOutlet.node;
+      const toNode = nodes[nodeId].index;
+      const link = new Link(fromNode, lastClickedOutlet.index, toNode, selectedInlet);
       link.add(patchBox);
       link.on('click', () => {
         link.remove(patchBox);
         screen.render();
       });
       lastClickedOutlet = null;
+      if (!links[fromNode]) { links[fromNode] = [] };
+      links[fromNode].push(link);
+      if (!links[toNode]) { links[toNode] = [] };
+      links[toNode].push(link);
       screen.render();
     }
   });
@@ -156,6 +162,15 @@ nodeList.on('select', (item, index) => {
   nodeBox.append(outlets);
 
   patchBox.append(nodeBox);
+
+  nodeBox.on('move', () => {
+    if (links[nodeId]) {
+      links[nodeId].forEach((link) => {
+        link.update();
+        screen.render();
+      });
+    }
+  });
 
   nodeBox.setLine(1, blessed.parseTags('{#000033-fg}>{/#000033-fg} ' + family));
 
