@@ -12,6 +12,18 @@ screen.title = 'Noodle';
 
 let lastClickedOutlet = null;
 
+const PALETTE =
+  [ '#111' // 0; background
+  , '#006600' // 1; item not selected
+  , '#00ff00' // 2; item selected
+  , '#f0f0f0' // 3; border
+  , '#666' // 4; node list fg
+  , 'white' // 5; node list selected fg, focused border
+  , 'blue' // 6; node box border
+  , '#000033' // 7; family marker
+  , 'green' // 8; link color
+  ]
+
 const patches = [ 'Patch1', 'Patch2', '+' ];
 const patchesBar = blessed.listbar({
   top: 0,
@@ -21,7 +33,7 @@ const patchesBar = blessed.listbar({
   items : patches,
   mouse: true,
   keys : true,
-  style : { bg : '#111', item : { fg : '#006600', bg : '#111' }, selected : { fg : '#00ff00', bg : '#111' } }
+  style : { bg : PALETTE[0], item : { fg : PALETTE[1], bg : PALETTE[0] }, selected : { fg : PALETTE[2], bg : PALETTE[0] } }
 });
 screen.append(patchesBar);
 
@@ -41,7 +53,7 @@ var patchBox = blessed.box({
     fg: 'white',
     bg: 'black',
     border: {
-      fg: '#f0f0f0'
+      fg: PALETTE[3]
     }/*,
     hover: {
       bg: '#111'
@@ -74,10 +86,10 @@ nodeList = blessed.list({
   // interactive : true,
   mouse : true,
   keys : true,
-  border : { type : 'line', fg : '#666' },
+  border : { type : 'line', fg : PALETTE[4] },
   style : {
-      selected : { fg : 'white' },
-      item : { fg : '#666' }
+      selected : { fg : PALETTE[5] },
+      item : { fg : PALETTE[4] }
   }
 });
 
@@ -104,9 +116,9 @@ nodeList.on('select', (item, index) => {
     left : left,
     width : 25,
     height : 5,
-    border : { type : 'line', fg : 'blue', ch : '∶' },
+    border : { type : 'line', fg : PALETTE[6], ch : '∶' },
     style :
-        { focus : { border : { fg : 'white' } }
+        { focus : { border : { fg : PALETTE[5] } }
         }
   });
 
@@ -122,7 +134,7 @@ nodeList.on('select', (item, index) => {
     items : is,
     mouse: true,
     keys : true,
-    style : { bg : '#111', item : { fg : '#006600', bg : '#111' }, selected : { fg : '#00ff00', bg : '#111' } }
+    style : { bg : '#111', item : { fg : PALETTE[1], bg : PALETTE[0] }, selected : { fg : PALETTE[1], bg : PALETTE[0] } }
   });
 
   const outlets = blessed.listbar({
@@ -132,7 +144,7 @@ nodeList.on('select', (item, index) => {
     items : os,
     mouse: true,
     keys : true,
-    style : { bg : '#111', item : { fg : '#006600', bg : '#111' }, selected : { fg : '#00ff00', bg : '#111' } }
+    style : { bg : '#111', item : { fg : PALETTE[1], bg : PALETTE[0] }, selected : { fg : PALETTE[1], bg : PALETTE[0] } }
   });
 
   const family = items[nodeList.selected];
@@ -191,7 +203,7 @@ nodeList.on('select', (item, index) => {
     }
   });
 
-  nodeBox.setLine(1, blessed.parseTags('{#000033-fg}>{/#000033-fg} ' + family));
+  nodeBox.setLine(1, blessed.parseTags('{' + PALETTE[7] + '-fg}>{/' + PALETTE[7] + '-fg} ' + family));
 
   screen.render();
 });
@@ -224,9 +236,9 @@ class Link {
 
   init(calc) {
     this.link = {};
-    this.link.a = blessed.line({ left : calc.a.left, top : calc.a.top, width : calc.a.width, height : calc.a.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : 'green' });
-    this.link.b = blessed.line({ left : calc.b.left, top : calc.b.top, width : calc.b.width, height : calc.b.height, orientation : 'horizontal', type : 'bg', ch : '∼', fg : 'green' });
-    this.link.c = blessed.line({ left : calc.c.left, top : calc.c.top, width : calc.c.width, height : calc.c.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : 'green' });
+    this.link.a = blessed.line({ left : calc.a.left, top : calc.a.top, width : calc.a.width, height : calc.a.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
+    this.link.b = blessed.line({ left : calc.b.left, top : calc.b.top, width : calc.b.width, height : calc.b.height, orientation : 'horizontal', type : 'bg', ch : '∼', fg : PALETTE[8] });
+    this.link.c = blessed.line({ left : calc.c.left, top : calc.c.top, width : calc.c.width, height : calc.c.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
   }
 
   add(patchBox) {
