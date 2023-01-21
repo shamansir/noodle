@@ -12,12 +12,26 @@ screen.title = 'Noodle';
 
 let lastClickedOutlet = null;
 
+const patches = [ 'Patch1', 'Patch2', '+' ];
+const patchesBar = blessed.listbar({
+  top: 0,
+  left : 0,
+  width : '100%',
+  height : 1,
+  items : patches,
+  mouse: true,
+  keys : true,
+  style : { bg : '#111', item : { fg : '#006600', bg : '#111' }, selected : { fg : '#00ff00', bg : '#111' } }
+});
+screen.append(patchesBar);
+
+
 // Create a box perfectly centered horizontally and vertically.
 var patchBox = blessed.box({
-  top: 'center',
+  top: 'center+1',
   left: 'center',
   width: '100%',
-  height: '100%',
+  height: '100%-1',
   content: 'Patch',
   tags: true,
   border: {
@@ -130,7 +144,6 @@ nodeList.on('select', (item, index) => {
   inlets.on('select', (item, index) => {
 
     const selectedInlet = parseInt(item.getText().split(':')[0]) - 1; // not inlets.selected or index!
-
 
     if (lastClickedOutlet && (lastClickedOutlet.node != nodeId)) {
       const fromNode = lastClickedOutlet.node;
