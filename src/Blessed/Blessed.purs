@@ -10,13 +10,13 @@ import Effect.Class (liftEffect)
 import Type.Row (type (+))
 
 
--- import Blessed.UI.Node (Node(..))
-import Blessed.UI.Screen (screen, screenAnd) as Screen
-import Blessed.UI.Screen.Option (OptionsRow) as Screen
-import Blessed.UI.Screen.Event (Event) as Screen
-import Blessed.UI.Box (box, boxAnd) as Box
-import Blessed.UI.Box.Option (OptionsRow) as Box
-import Blessed.UI.Box.Event (Event) as Box
+-- import Blessed.UI.Base.Node (Node(..))
+import Blessed.UI.Base.Screen (screen, screenAnd) as Screen
+import Blessed.UI.Base.Screen.Option (OptionsRow) as Screen
+import Blessed.UI.Base.Screen.Event (Event) as Screen
+import Blessed.UI.Boxes.Box (box, boxAnd) as Box
+import Blessed.UI.Boxes.Box.Option (OptionsRow) as Box
+import Blessed.UI.Boxes.Box.Event (Event) as Box
 import Blessed.Internal.JsApi (NodeId(..)) as I
 import Blessed.Internal.Core (Blessed, Node, NodeAnd, NodeId, encode) as C
 import Blessed.Internal.Emitter (CoreEvent) as C

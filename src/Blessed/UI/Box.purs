@@ -1,4 +1,4 @@
-module Blessed.UI.Box
+module Blessed.UI.Boxes.Box
     ( box
     , boxAnd
     ) where
@@ -6,8 +6,8 @@ module Blessed.UI.Box
 
 import Type.Row (type (+))
 
-import Blessed.UI.Box.Option (OptionsRow)
-import Blessed.UI.Box.Event (Event)
+import Blessed.UI.Boxes.Box.Option (OptionsRow)
+import Blessed.UI.Boxes.Box.Event (Event)
 
 
 import Blessed.Internal.Core (Node, NodeAnd, node, nodeAnd) as C

@@ -19,14 +19,14 @@ import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Style as Style
 
 
-import Blessed.UI.Box as Box
-import Blessed.UI.Screen as Screen
-import Blessed.UI.Screen.Option as Screen
-import Blessed.UI.Screen.Event as Screen
-import Blessed.UI.Screen.Method as Screen
-import Blessed.UI.Box.Option as Box
-import Blessed.UI.Box.Event as Box
-import Blessed.UI.Box.Method as Box
+import Blessed.UI.Boxes.Box as Box
+import Blessed.UI.Base.Screen as Screen
+import Blessed.UI.Base.Screen.Option as Screen
+import Blessed.UI.Base.Screen.Event as Screen
+import Blessed.UI.Base.Screen.Method as Screen
+import Blessed.UI.Boxes.Box.Option as Box
+import Blessed.UI.Boxes.Box.Event as Box
+import Blessed.UI.Boxes.Box.Method as Box
 
 
 main :: Effect Unit
