@@ -1,4 +1,4 @@
-module Blessed.UI.Lists.ListTable.Method where
+module Blessed.UI.DataDisplay.Table.Method where
 
 
 import Data.Maybe (Maybe)

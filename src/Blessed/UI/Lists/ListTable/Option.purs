@@ -1,8 +1,5 @@
 module Blessed.UI.Lists.ListTable.Option where
 
-import Prelude (Unit)
-
-import Effect (Effect)
 import Type.Row (type (+))
 import Prim.Row as R
 import Data.Argonaut.Encode (class EncodeJson)
@@ -10,11 +7,7 @@ import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
 
 
-import Blessed.Core.Color (Color)
-import Blessed.Core.Orientation (Orientation)
-import Blessed.Core.Border (BorderType) as B
 import Blessed.Core.FgBg (FgBgOption)
-import Blessed.Core.FgBg (Evaluated) as FgBg
 
 import Blessed.Internal.Core (Attribute, option) as C
 
