@@ -38,17 +38,17 @@ lineOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r'
 lineOption = C.option
 
 
-fg :: forall r. Color -> LineAttribute ( fg :: Color | r)
+fg :: forall r. Color -> LineAttribute ( fg :: Color | r )
 fg = lineOption (Proxy :: _ "fg")
 
 
-bg :: forall r. Color -> LineAttribute ( bg :: Color | r)
+bg :: forall r. Color -> LineAttribute ( bg :: Color | r )
 bg = lineOption (Proxy :: _ "bg")
 
 
-ch :: forall r. Char -> LineAttribute ( ch :: Char | r)
+ch :: forall r. Char -> LineAttribute ( ch :: Char | r )
 ch = lineOption (Proxy :: _ "ch")
 
 
-orientation :: forall r. Orientation -> LineAttribute ( orientation :: Orientation | r)
+orientation :: forall r. Orientation -> LineAttribute ( orientation :: Orientation | r )
 orientation = lineOption (Proxy :: _ "orientation")

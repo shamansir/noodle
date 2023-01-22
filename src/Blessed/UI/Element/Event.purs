@@ -74,9 +74,6 @@ elmHandler :: forall r. Event -> Handler r
 elmHandler = C.handler
 
 
-
-
-
 key :: forall r. Array Key -> Handler r
 key = elmHandler <<< Key
 
