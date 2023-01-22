@@ -32,5 +32,5 @@ nodeOption = C.option
 
 
 
-screen :: forall r. String -> NodeAttribute ( screen :: String | r)
+screen :: forall r. String -> NodeAttribute ( screen :: String | r )
 screen = nodeOption (Proxy :: _ "screen")

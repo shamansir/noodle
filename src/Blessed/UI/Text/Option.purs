@@ -34,9 +34,9 @@ textOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r'
 textOption = C.option
 
 
-fill :: forall r. Color -> TextAttribute ( fill :: Color | r)
+fill :: forall r. Color -> TextAttribute ( fill :: Color | r )
 fill = textOption (Proxy :: _ "fill")
 
 
-align :: forall r. HAlign -> TextAttribute ( align :: HAlign | r)
+align :: forall r. HAlign -> TextAttribute ( align :: HAlign | r )
 align = textOption (Proxy :: _ "align")

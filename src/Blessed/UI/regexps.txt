@@ -1,7 +1,7 @@
 -- Options --
 
 [(,]\s+(\w+)\s+::\s+(.*)$
-$1 :: forall r. $2 -> ElementAttribute ( $1 :: $2 | r) \n$1 = elmOption (Proxy :: _ "$1")\n\n
+$1 :: forall r. $2 -> ElementAttribute ( $1 :: $2 | r ) \n$1 = elmOption (Proxy :: _ "$1")\n\n
 
 
 -- Methods --

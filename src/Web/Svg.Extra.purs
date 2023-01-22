@@ -12,5 +12,5 @@ translateTo :: Vec2 -> HSA.Transform
 translateTo vec = HSA.Translate (V2.x vec) (V2.y vec)
 
 
-translateTo' :: forall r i. Vec2 -> HP.IProp (transform :: String | r) i
+translateTo' :: forall r i. Vec2 -> HP.IProp (transform :: String | r ) i
 translateTo' vec = HSA.transform [ translateTo vec ]

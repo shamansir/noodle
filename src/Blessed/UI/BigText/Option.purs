@@ -42,13 +42,13 @@ bdf :: String -> BDFSource
 bdf = BDFSource
 
 
-font :: forall r. BDFSource -> BigTextAttribute ( font :: BDFSource | r)
+font :: forall r. BDFSource -> BigTextAttribute ( font :: BDFSource | r )
 font = bigTextOption (Proxy :: _ "font")
 
 
-fontBold :: forall r. BDFSource -> BigTextAttribute ( fontBold :: BDFSource | r)
+fontBold :: forall r. BDFSource -> BigTextAttribute ( fontBold :: BDFSource | r )
 fontBold = bigTextOption (Proxy :: _ "fontBold")
 
 
-fch :: forall r. Char -> BigTextAttribute ( fch :: Char | r)
+fch :: forall r. Char -> BigTextAttribute ( fch :: Char | r )
 fch = bigTextOption (Proxy :: _ "fch")
