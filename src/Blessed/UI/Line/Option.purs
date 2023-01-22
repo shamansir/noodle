@@ -16,8 +16,8 @@ import Blessed.Core.Border (BorderType) as B
 import Blessed.Internal.Core (Attribute, option) as C
 
 
-import Blessed.UI.Element.Event (Event)
-import Blessed.UI.Element.Option (OptionsRow) as Box
+import Blessed.UI.Box.Event (Event)
+import Blessed.UI.Box.Option (OptionsRow) as Box
 
 
 type OptionsRow r =

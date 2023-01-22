@@ -13,6 +13,8 @@ import Data.Symbol (class IsSymbol)
 import Blessed.Core.Color (Color)
 import Blessed.Core.Orientation (Orientation)
 import Blessed.Core.Border (BorderType) as B
+import Blessed.Core.FgBg (FgBgOption)
+import Blessed.Core.FgBg (Evaluated) as FgBg
 
 import Blessed.Internal.Core (Attribute, option) as C
 
@@ -30,8 +32,8 @@ type OptionsRow r =
     , search :: String -> Effect Unit
     , interactive :: Boolean
     , invertSelected :: Boolean
-    -- TODO: style.selected
-    -- TODO: style.item
+    , style_selected :: Array (FgBgOption ())
+    , style_item :: Array (FgBgOption ())
     | r
     )
 type Options = Record (OptionsRow ())
@@ -75,3 +77,11 @@ interactive = listOption (Proxy :: _ "interactive")
 
 invertSelected :: forall r. Boolean -> ListAttribute ( invertSelected :: Boolean | r )
 invertSelected = listOption (Proxy :: _ "invertSelected")
+
+
+style_selected ∷ forall r. Array (FgBgOption ()) -> ListAttribute ( style_selected :: Array (FgBgOption ()) | r )
+style_selected = listOption ( Proxy :: Proxy "style_selected" )
+
+
+style_item ∷ forall r. Array (FgBgOption ()) -> ListAttribute ( style_item :: Array (FgBgOption ()) | r )
+style_item = listOption ( Proxy :: Proxy "style_item" )
