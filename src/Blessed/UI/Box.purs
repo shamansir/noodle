@@ -11,7 +11,7 @@ import Blessed.UI.Boxes.Box.Event (Event)
 
 
 import Blessed.Internal.Core (Node, NodeAnd, node, nodeAnd) as C
-import Blessed.Internal.JsApi (Kind(..)) as Kind
+import Blessed.Internal.BlessedKind (NKind(..)) as Kind
 
 
 

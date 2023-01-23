@@ -8,7 +8,7 @@ import Type.Row (type (+))
 
 
 import Blessed.Internal.Core (Node, NodeAnd, node, nodeAnd) as C
-import Blessed.Internal.JsApi (Kind(..)) as Kind
+import Blessed.Internal.BlessedKind (NKind(..)) as Kind
 import Blessed.UI.Base.Screen.Option (OptionsRow)
 import Blessed.UI.Base.Screen.Event (Event)
 

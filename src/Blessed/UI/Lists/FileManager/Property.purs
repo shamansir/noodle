@@ -12,7 +12,6 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.Core as C
-import Blessed.Internal.JsApi (Kind) as C
 import Blessed.Internal.BlessedOp as Op
 import Blessed.Internal.Command (get) as C
 import Blessed.Internal.Codec (kindCodec)

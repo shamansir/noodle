@@ -3,6 +3,7 @@ module Blessed where
 import Prelude
 
 import Data.Function (applyFlipped)
+import Data.Tuple.Nested ((/\))
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
@@ -17,6 +18,7 @@ import Blessed.UI.Base.Screen.Event (Event) as Screen
 import Blessed.UI.Boxes.Box (box, boxAnd) as Box
 import Blessed.UI.Boxes.Box.Option (OptionsRow) as Box
 import Blessed.UI.Boxes.Box.Event (Event) as Box
+-- import Blessed.Internal.BlessedKind (NKind(..)) as I
 import Blessed.Internal.JsApi (NodeId(..)) as I
 import Blessed.Internal.Core (Blessed, Node, NodeAnd, NodeId, encode) as C
 import Blessed.Internal.Emitter (CoreEvent) as C
@@ -35,7 +37,7 @@ infixr 0 with_ as >~
 
 
 ref :: String -> C.NodeId
-ref = I.NodeId
+ref id = I.NodeId id
 
 
 run :: C.Blessed Event -> Effect Unit

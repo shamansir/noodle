@@ -12,7 +12,7 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.Core as C
-import Blessed.Internal.JsApi (Kind) as C
+import Blessed.Internal.BlessedKind (NKind) as C
 import Blessed.Internal.BlessedOp as Op
 import Blessed.Internal.Command (get) as C
 import Blessed.Internal.Codec (kindCodec)
@@ -24,7 +24,7 @@ import Blessed.Internal.Codec (kindCodec)
 type PropertiesRow =
     -- program ::
     -- tput ::
-    ( type :: C.Kind -- FIXME: should access `type`
+    ( type :: C.NKind -- FIXME: should access `type`
     , options :: Json
     , parent :: Json
     , screen :: Json
@@ -39,7 +39,7 @@ getter =
     C.getter
 
 
-type_ :: forall m. C.NodeId -> C.Getter m C.Kind
+type_ :: forall m. C.NodeId -> C.Getter m C.NKind
 type_ = getter (Proxy :: _ "type") kindCodec
 
 

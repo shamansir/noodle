@@ -60,7 +60,7 @@ function registerNode(node) {
         ___log(handlers);
 
         let blessedObj = null;
-        switch (node.kind) {
+        switch (node.nodeKind) {
             case 'screen':
                 if (!BLESSED_ON) break;
                 blessedObj = blessed.screen(props);
@@ -70,7 +70,7 @@ function registerNode(node) {
                 blessedObj = blessed.box(props);
                 break;
             default:
-              ___log(`Unknown node kind ${node.kind}.`);
+              ___log(`Unknown node kind ${node.nodeKind}.`);
         }
 
         registry[node.nodeId] = { source : node, blessed : blessedObj };

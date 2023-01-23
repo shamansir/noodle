@@ -36,6 +36,7 @@ import Node.Path (FilePath)
 import Blessed.Internal.Codec (encodeCommand, commandToJson, encodeDump)
 import Blessed.Internal.Command (Command) as I
 import Blessed.Internal.JsApi as I
+import Blessed.Internal.BlessedKind as K
 
 
 
@@ -140,15 +141,18 @@ dumpCommand =
         <<< commandToJson
 
 
-dumpHandlerCall :: forall m. MonadEffect m => I.NodeId -> I.EventId -> Array Json -> m Unit
-dumpHandlerCall (I.NodeId nodeId) (I.EventId event) args =
+dumpHandlerCall :: forall m. MonadEffect m => K.NKind -> I.NodeId -> I.EventId -> Array Json -> m Unit
+dumpHandlerCall nodeKind (I.NodeId nodeId) (I.EventId event) args =
     liftEffect
         $ launchAff_
         $ appendTextFile UTF8 commandsDumpPath
         $ (<>) "\n"
         $ Json.stringify
         $ encodeDump
-        $ I.CallDump { args, event, nodeId }
+        $ I.CallDump
+            { args, event, nodeId
+            , nodeKind : K.toString nodeKind
+            }
 
 
 runM
@@ -207,8 +211,8 @@ runFreeM stateRef fn = do
 makeHandler :: I.EventId -> Array Json -> (I.NodeId -> Json -> BlessedOp Effect) -> I.SHandler
 makeHandler eventId arguments op =
     I.SHandler eventId arguments
-        $ \registry nodeId (I.EventJson evt) -> do
-            dumpHandlerCall nodeId eventId arguments
+        $ \registry nodeKind nodeId (I.EventJson evt) -> do
+            dumpHandlerCall nodeKind nodeId eventId arguments
             runM (I.unveilRegistry registry) $ op nodeId $ evt
 
 
