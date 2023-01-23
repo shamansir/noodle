@@ -18,7 +18,7 @@ data NKind
     | List
     | FileManager
     | ListTable
-    | Listbar
+    | ListBar
     | Form
     | Input
     | TextArea
@@ -57,7 +57,7 @@ fromString =
         "list" -> Just List
         "filemanager" -> Just FileManager
         "listtable" -> Just ListTable
-        "listbar" -> Just Listbar
+        "listbar" -> Just ListBar
         "form" -> Just Form
         "input" -> Just Input
         "textarea" -> Just TextArea
@@ -93,7 +93,7 @@ toString =
         List -> "list"
         FileManager -> "filemanager"
         ListTable -> "listtable"
-        Listbar -> "listbar"
+        ListBar -> "listbar"
         Form -> "form"
         Input -> "input"
         TextArea -> "textarea"

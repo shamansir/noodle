@@ -47,6 +47,8 @@ main = do
         , B.listAnd "node-list"
             []
             []
+            \_ ->
+                pure unit
         ]
 
         $ \screen ->
