@@ -1,0 +1,124 @@
+graph blessed {
+
+    fontname="sans-serif";
+
+    ee [shape=Mrecord label="{EventEmitter}"];
+
+    # Base nodes
+    subgraph base {
+        label="Base";
+
+        node_ [shape=Mrecord label="{Node|(abstract)|adopt| remove|reparent|attach|detach}" fontcolor="#990000"];
+        screen [shape=Mrecord label="{Screen|resize|mouse|keypress|element [name]|key [name]|focus|blur|prerender|render|warning|destroy}" fontcolor="#990000"];
+        elm [shape=Mrecord label="{Element|(abstract)|focus|blur|mouse [event]|-mousedown|-mouseup|-wheeldown|-wheelup|-mouseover|-mouseout|-mousemove|-click|keypress|move|resize|key [name]|prerender|render|hide|show|destroy}" fontcolor="#990000"];
+    }
+
+    # Boxes
+    subgraph boxes {
+        label="Boxes";
+
+        box_ [shape=Mrecord label="Box" fontcolor="#000099"];
+        text [shape=Mrecord label="Text" fontcolor="#000099"];
+        line [shape=Mrecord label="Line" fontcolor="#000099"];
+        scrbox [shape=Mrecord label="{ScrollableBox|(deprecated)|scroll}" fontcolor="#000099"];
+        scrtext [shape=Mrecord label="{ScrollableText|(deprecated)}" fontcolor="#000099"];
+        bigtext [shape=Mrecord label="BigText" fontcolor="#000099"];
+    }
+
+    # Lists
+    subgraph lists {
+        label="Lists";
+
+        list [shape=Mrecord label="{List|select|cancel|action}" fontcolor="#009900"];
+        filemanager [shape=Mrecord label="{FileManager|cd|file}" fontcolor="#009900"];
+        listtable [shape=Mrecord label="ListTable" fontcolor="#009900"];
+        listbar [shape=Mrecord label="ListBar" fontcolor="#009900"];
+    }
+
+    # Forms
+    subgraph forms {
+        label="Forms";
+
+        form [shape=Mrecord label="{Form|submit|cancel|reset}" fontcolor="#990099"];
+        input [shape=Mrecord label="{Input|(abstract)}" fontcolor="#990099"];
+        textarea [shape=Mrecord label="{TextArea|submit|cancel|action}" fontcolor="#990099"];
+        textbox [shape=Mrecord label="TextBos" fontcolor="#990099"];
+        button [shape=Mrecord label="{Button|press}" fontcolor="#990099"];
+        checkbox [shape=Mrecord label="{Checkbox|check|uncheck}" fontcolor="#990099"];
+        radioset [shape=Mrecord label="RadioSet" fontcolor="#990099"];
+        radiobutton [shape=Mrecord label="RadioButton" fontcolor="#990099"];
+    }
+
+    # Prompts
+    subgraph prompts {
+        label="Prompts";
+
+        prompt [shape=Mrecord label="Prompt" fontcolor="#999900"];
+        question [shape=Mrecord label="Question" fontcolor="#999900"];
+        message [shape=Mrecord label="Message" fontcolor="#999900"];
+        loading [shape=Mrecord label="Loading" fontcolor="#999900"];
+    }
+
+    # Data Display
+    subgraph data_display {
+        label="Data Display";
+
+        progressbar [shape=Mrecord label="{ProgressBar|reset|complete}" fontcolor="#999999"];
+        log [shape=Mrecord label="{Log|log}" fontcolor="#999999"];
+        table [shape=Mrecord label="Table" fontcolor="#999999"];
+    }
+
+    # Special elements
+    subgraph special {
+        label="Special";
+
+        terminal [shape=Mrecord label="{Terminal|...}" fontcolor="#009999"];
+        image [shape=Mrecord label="Image" fontcolor="#009999"];
+        ansiimage [shape=Mrecord label="ANSIImage" fontcolor="#009999"];
+        overlayimage [shape=Mrecord label="OverlayImage" fontcolor="#009999"];
+        video [shape=Mrecord label="Video" fontcolor="#009999"];
+        layout [shape=Mrecord label="Layout" fontcolor="#009999"];
+    }
+
+    ee -- node_;
+    node_ -- screen;
+    node_ -- elm;
+
+    elm -- box_;
+    elm -- text;
+    box_ -- line;
+    box_ -- scrbox;
+    box_ -- scrtext;
+    box_ -- bigtext;
+
+    box_ -- list;
+    list -- filemanager;
+    list -- listtable;
+    box_ -- listbar;
+
+    box_ -- form;
+    box_ -- input;
+    input -- textarea;
+    textarea -- textbox;
+    input -- button;
+    input -- checkbox;
+    box_ -- radioset;
+    checkbox -- radiobutton;
+
+    box_ -- prompt;
+    box_ -- question;
+    box_ -- message;
+    box_ -- loading;
+
+    input -- progressbar;
+    scrtext -- log;
+    box_ -- table;
+
+    box_ -- terminal;
+    box_ -- image;
+    box_ -- ansiimage;
+    box_ -- overlayimage;
+    box_ -- video;
+    elm -- layout;
+
+}
