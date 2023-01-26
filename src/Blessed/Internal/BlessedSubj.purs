@@ -35,6 +35,11 @@ data Subject
     | Log
     | Table
     | Terminal
+    | Image
+    | AnsiImage
+    | OverlayImage
+    | Video
+    | Layout
     | Ext String
 
 
@@ -74,6 +79,11 @@ fromString =
         "log" -> Just Log
         "table" -> Just Table
         "terminal" -> Just Terminal
+        "image" -> Just Image
+        "ansiimage" -> Just AnsiImage
+        "overlayimage" -> Just OverlayImage
+        "video" -> Just Video
+        "layout" -> Just Layout
         k ->
             if (String.take 3 k == "ext")
                 then  Just $ Ext $ String.drop 4 k
@@ -110,6 +120,11 @@ toString =
         Log -> "log"
         Table -> "table"
         Terminal -> "terminal"
+        Image -> "image"
+        AnsiImage -> "ansiimage"
+        OverlayImage -> "overlayimage"
+        Video -> "video"
+        Layout -> "layout"
         Ext str -> "ext:" <> str
 
 
@@ -118,6 +133,7 @@ data SubjectKind
 data ExtSubjectKind
 
 
+foreign import data NodeK :: SubjectKind
 foreign import data ScreenK :: SubjectKind
 foreign import data ElementK :: SubjectKind
 foreign import data BoxK :: SubjectKind
@@ -144,10 +160,18 @@ foreign import data ProgressBarK :: SubjectKind
 foreign import data LogK :: SubjectKind
 foreign import data TableK :: SubjectKind
 foreign import data TerminalK :: SubjectKind
+foreign import data ImageK :: SubjectKind
+foreign import data AnsiImageK :: SubjectKind
+foreign import data OverlayImageK :: SubjectKind
+foreign import data VideoK :: SubjectKind
+foreign import data LayoutK :: SubjectKind
 foreign import data ExtK :: ExtSubjectKind -> SubjectKind
 foreign import data ProcessK :: ExtSubjectKind
 
 
+
+nodeK :: Proxy NodeK
+nodeK = Proxy
 
 screenK :: Proxy ScreenK
 screenK = Proxy
@@ -227,6 +251,21 @@ tableK = Proxy
 terminalK :: Proxy TerminalK
 terminalK = Proxy
 
+imageK :: Proxy ImageK
+imageK = Proxy
+
+ansiimageK :: Proxy AnsiImageK
+ansiimageK = Proxy
+
+overlayimageK :: Proxy OverlayImageK
+overlayimageK = Proxy
+
+videoK :: Proxy VideoK
+videoK = Proxy
+
+layoutK :: Proxy LayoutK
+layoutK = Proxy
+
 processK :: Proxy (ExtK ProcessK)
 processK = Proxy
 
@@ -236,6 +275,7 @@ class IsSubject a where
   reflectSubject :: Proxy a -> Subject
 
 
+instance IsSubject NodeK where reflectSubject _ = Node
 instance IsSubject ScreenK where reflectSubject _ = Screen
 instance IsSubject ElementK where reflectSubject _ = Element
 instance IsSubject BoxK where reflectSubject _ = Box
@@ -264,64 +304,131 @@ instance IsSubject TableK where reflectSubject _ = Table
 instance IsSubject TerminalK where reflectSubject _ = Terminal
 
 
+class Fires :: forall k. SubjectKind -> k -> Constraint
+class Fires (subj :: SubjectKind) event
 
 
--- An example using the Boolean-like data type YesNo:
-data YesNo = Yes | No
-
-data YesNoKind
-foreign import data YesK :: YesNoKind
-foreign import data NoK  :: YesNoKind
-
-{-
-Read yesK and noK as:
-  yesK = (YesNoProxyValue :: YesNoProxy Yes) - a value of type "YesNoProxy Yes"
-  noK  = (YesNoProxyValue :: YesNoProxy No)  - a value of type "YesNoProxy No" -}
-yesK :: Proxy YesK
-yesK = Proxy
-
-noK :: Proxy NoK
-noK = Proxy
-
-class IsYesNoKind :: YesNoKind -> Constraint
-class IsYesNoKind a where
-  reflectYesNo :: Proxy a -> YesNo
-
-instance IsYesNoKind YesK where
--- reflectYesNo (Proxy :: Proxy Yes) = Yes
-   reflectYesNo _                    = Yes
-
-instance IsYesNoKind NoK where
--- reflectYesNo (Proxy :: Proxy No) = No
-   reflectYesNo _                   = No
+class Extends (parent :: SubjectKind) (child :: SubjectKind)
 
 
--- We can also use instance chains here to distinguish
--- one from another
+instance Extends NodeK ScreenK
+instance Extends NodeK ElementK
 
-class IsYes :: YesNoKind -> Constraint
-class IsYes a where
-  isYes :: Proxy a -> YesNo
+instance Extends NodeK BoxK
+instance Extends ElementK BoxK
 
-instance IsYes YesK where
-  isYes _ = Yes
-else instance IsYes a where
-  isYes _ = No
+instance Extends NodeK TextK
+instance Extends ElementK TextK
 
--- Using instance chains here is more convenient if we had
--- a lot more type-level values than just 2. In some cases,
--- it is needed in cases where a type-level type can have an
--- infinite number of values, such as a type-level String
+instance Extends NodeK LayoutK
+instance Extends ElementK LayoutK
 
--- Open a REPL, import this module, and then run this code:
---    reflectYesNo yesK
---    reflectYesNo noK
---    isYes yesK
---    isYes noK
+instance Extends NodeK LineK
+instance Extends ElementK LineK
+instance Extends BoxK LineK
 
+instance Extends NodeK BigTextK
+instance Extends ElementK BigTextK
+instance Extends BoxK BigTextK
 
--- necessary for not getting errors while trying the functions in the REPL
+instance Extends NodeK ListK
+instance Extends ElementK ListK
+instance Extends BoxK ListK
 
-instance Show YesNo where
-    show Yes = "Yes"
-    show No  = "No"
+instance Extends NodeK ListBarK
+instance Extends ElementK ListBarK
+instance Extends BoxK ListBarK
+
+instance Extends NodeK FormK
+instance Extends ElementK FormK
+instance Extends BoxK FormK
+
+instance Extends NodeK InputK
+instance Extends ElementK InputK
+instance Extends BoxK InputK
+
+instance Extends NodeK RadioSetK
+instance Extends ElementK RadioSetK
+instance Extends BoxK RadioSetK
+
+instance Extends NodeK PromptK
+instance Extends ElementK PromptK
+instance Extends BoxK PromptK
+
+instance Extends NodeK QuestionK
+instance Extends ElementK QuestionK
+instance Extends BoxK QuestionK
+
+instance Extends NodeK MessageK
+instance Extends ElementK MessageK
+instance Extends BoxK MessageK
+
+instance Extends NodeK LoadingK
+instance Extends ElementK LoadingK
+instance Extends BoxK LoadingK
+
+instance Extends NodeK TableK
+instance Extends ElementK TableK
+instance Extends BoxK TableK
+
+instance Extends NodeK TerminalK
+instance Extends ElementK TerminalK
+instance Extends BoxK TerminalK
+
+instance Extends NodeK ImageK
+instance Extends ElementK ImageK
+instance Extends BoxK ImageK
+
+instance Extends NodeK AnsiImageK
+instance Extends ElementK AnsiImageK
+instance Extends BoxK AnsiImageK
+
+instance Extends NodeK OverlayImageK
+instance Extends ElementK OverlayImageK
+instance Extends BoxK OverlayImageK
+
+instance Extends NodeK VideoK
+instance Extends ElementK VideoK
+instance Extends BoxK VideoK
+
+instance Extends NodeK FileManagerK
+instance Extends ElementK FileManagerK
+instance Extends BoxK FileManagerK
+instance Extends ListK FileManagerK
+
+instance Extends NodeK ListTableK
+instance Extends ElementK ListTableK
+instance Extends BoxK ListTableK
+instance Extends ListK ListTableK
+
+instance Extends NodeK TextAreaK
+instance Extends ElementK TextAreaK
+instance Extends BoxK TextAreaK
+instance Extends InputK TextAreaK
+
+instance Extends NodeK ButtonK
+instance Extends ElementK ButtonK
+instance Extends BoxK ButtonK
+instance Extends InputK ButtonK
+
+instance Extends NodeK CheckboxK
+instance Extends ElementK CheckboxK
+instance Extends BoxK CheckboxK
+instance Extends InputK CheckboxK
+
+instance Extends NodeK ProgressBarK
+instance Extends ElementK ProgressBarK
+instance Extends BoxK ProgressBarK
+instance Extends InputK ProgressBarK
+
+instance Extends NodeK TextBoxK
+instance Extends ElementK TextBoxK
+instance Extends BoxK TextBoxK
+instance Extends InputK TextBoxK
+instance Extends TextAreaK TextBoxK
+
+instance Extends NodeK RadioButtonK
+instance Extends ElementK RadioButtonK
+instance Extends BoxK RadioButtonK
+instance Extends InputK RadioButtonK
+instance Extends CheckboxK RadioButtonK

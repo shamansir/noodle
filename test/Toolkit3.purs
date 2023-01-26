@@ -14,7 +14,7 @@ import Effect.Console (log) as Console
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Family(..), Family', class HasInputs, class HasInputsAt) as Node
-import Noodle.Id (InputR) as Fn
+import Noodle.Id (Input(..), Output(..), InputR) as Fn
 import Noodle.Id (inputs) as Def
 import Noodle.Id (reflect', keysToInputsR, keysToOutputsR, reflectInputR, reflectOutputR)
 import Noodle.Node2 (Node)
@@ -38,6 +38,7 @@ import Record.Extra as Record
 import Prim.RowList as RL
 import Unsafe.Coerce (unsafeCoerce)
 import Type.Proxy (Proxy(..))
+import Effect.Random (randomInt)
 
 import Test.Repr.Toolkit3 (MyRepr(..))
 
@@ -103,6 +104,8 @@ spec = do
                             { sum : 42 }
                             $ Fn.make "sumFn" $ pure unit
                     }
+
+        -- TODO: add `Random` effect
 
         it "spawning works" $ do
 

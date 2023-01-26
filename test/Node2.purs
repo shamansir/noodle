@@ -72,8 +72,6 @@ spec = do
 
         it "function is performed properly" $ do
 
-            -- let (test :: _) = _ { foo = _ }
-
             node <-
                 Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
                     $ do

@@ -40,7 +40,7 @@ main = do
         ]
 
         [ B.listbar "patches-bar"
-            [ ListBar.top $ Offset.px 0 ]
+            [ Box.top $ Offset.px 0 ]
             []
         , B.box "patch-box"
             []
