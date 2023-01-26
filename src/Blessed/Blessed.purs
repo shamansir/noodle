@@ -27,7 +27,7 @@ import Blessed.UI.Lists.List.Event (Event) as List
 import Blessed.UI.Lists.ListBar (listbar, listbarAnd) as ListBar
 import Blessed.UI.Lists.ListBar.Option (OptionsRow) as ListBar
 import Blessed.UI.Lists.ListBar.Event (Event) as ListBar
--- import Blessed.Internal.BlessedKind (NKind(..)) as I
+-- import Blessed.Internal.BlessedSubj (Subject(..)) as I
 import Blessed.Internal.JsApi (NodeId(..)) as I
 import Blessed.Internal.Core (Blessed, Node, NodeAnd, NodeId, encode) as C
 import Blessed.Internal.Emitter (CoreEvent) as C

@@ -28,8 +28,6 @@ data ProcessF i o state d m a
     | Send' o d a
     | SendIn i d a
     | Receive' i (d -> a)
-    -- Connect
-    -- Disconnect etc.
 
 
 instance functorProcessF :: Functor m => Functor (ProcessF i o state d m) where
@@ -198,7 +196,7 @@ runFreeM protocol default stateRef fn =
             maybeVal <- liftEffect $ protocol.receive iid
             pure
                 $ getV
-                $ Maybe.fromMaybe default -- FIXME: should either be Maybe or default of particular input channel
+                $ Maybe.fromMaybe default
                 $ maybeVal
         go (Send' output v next) = do
             liftEffect $ protocol.send output v

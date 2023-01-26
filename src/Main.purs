@@ -27,6 +27,7 @@ import Blessed.UI.Base.Screen.Method as Screen
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Event as Box
 import Blessed.UI.Boxes.Box.Method as Box
+import Blessed.UI.Lists.ListBar.Option as ListBar
 
 
 main :: Effect Unit
@@ -39,7 +40,7 @@ main = do
         ]
 
         [ B.listbar "patches-bar"
-            []
+            [ ListBar.top $ Offset.px 0 ]
             []
         , B.box "patch-box"
             []

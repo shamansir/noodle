@@ -30,7 +30,7 @@ import Data.Codec.Argonaut.Record as CAR
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.BlessedOp as Op
-import Blessed.Internal.BlessedKind as K
+import Blessed.Internal.BlessedSubj as K
 import Blessed.Internal.Command as C
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Codec as Codec
@@ -129,13 +129,13 @@ encode :: forall e. Blessed e -> I.BlessedEnc
 encode = Codec.encode
 
 
-node :: forall r e. K.NKind -> String -> Node r e
+node :: forall r e. K.Subject -> String -> Node r e
 node kind name attrs children =
     I.SNode kind (I.NodeId name) sprops children handlers
     where sprops /\ handlers = splitAttributes attrs
 
 
-nodeAnd :: forall r e. Events e => K.NKind -> String -> NodeAnd r e
+nodeAnd :: forall r e. Events e => K.Subject -> String -> NodeAnd r e
 nodeAnd kind name attrs children fn =
     I.SNode kind (I.NodeId name) sprops children (Op.makeHandler (I.EventId initialId) initalArgs (\id _ -> fn id) : handlers)
     where
