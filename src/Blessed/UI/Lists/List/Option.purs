@@ -39,49 +39,49 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type ListAttribute r = C.Attribute (Box.OptionsRow + OptionsRow + r) Event
+type ListAttribute r e = C.Attribute (Box.OptionsRow + OptionsRow + r) e
 
 
-listOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ListAttribute r
+listOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ListAttribute r e
 listOption = C.option
 
 
-orientation :: forall r. Orientation -> ListAttribute ( orientation :: Orientation | r )
+orientation :: forall r e. Orientation -> ListAttribute ( orientation :: Orientation | r ) e
 orientation = listOption (Proxy :: _ "orientation")
 
 
-mouse :: forall r. Boolean -> ListAttribute ( mouse :: Boolean | r )
+mouse :: forall r e. Boolean -> ListAttribute ( mouse :: Boolean | r ) e
 mouse = listOption (Proxy :: _ "mouse")
 
 
-keys :: forall r. Boolean -> ListAttribute ( keys :: Boolean | r )
+keys :: forall r e. Boolean -> ListAttribute ( keys :: Boolean | r ) e
 keys = listOption (Proxy :: _ "keys")
 
 
-vi :: forall r. Boolean -> ListAttribute ( vi :: Boolean | r )
+vi :: forall r e. Boolean -> ListAttribute ( vi :: Boolean | r ) e
 vi = listOption (Proxy :: _ "vi")
 
 
-items :: forall r. Array String -> ListAttribute ( items :: Array String | r )
+items :: forall r e. Array String -> ListAttribute ( items :: Array String | r ) e
 items = listOption (Proxy :: _ "items")
 
 
 -- TODO:
--- search :: forall r. (String -> Effect Unit) -> ListAttribute ( search :: (String -> Effect Unit) | r )
+-- search :: forall r e. (String -> Effect Unit) -> ListAttribute ( search :: (String -> Effect Unit) | r ) e
 -- search = listOption (Proxy :: _ "search")
 
 
-interactive :: forall r. Boolean -> ListAttribute ( interactive :: Boolean | r )
+interactive :: forall r e. Boolean -> ListAttribute ( interactive :: Boolean | r ) e
 interactive = listOption (Proxy :: _ "interactive")
 
 
-invertSelected :: forall r. Boolean -> ListAttribute ( invertSelected :: Boolean | r )
+invertSelected :: forall r e. Boolean -> ListAttribute ( invertSelected :: Boolean | r ) e
 invertSelected = listOption (Proxy :: _ "invertSelected")
 
 
-style_selected ∷ forall r. Array (FgBgOption ()) -> ListAttribute ( style_selected :: Array (FgBgOption ()) | r )
+style_selected ∷ forall r e. Array (FgBgOption ()) -> ListAttribute ( style_selected :: Array (FgBgOption ()) | r ) e
 style_selected = listOption ( Proxy :: Proxy "style_selected" )
 
 
-style_item ∷ forall r. Array (FgBgOption ()) -> ListAttribute ( style_item :: Array (FgBgOption ()) | r )
+style_item ∷ forall r e. Array (FgBgOption ()) -> ListAttribute ( style_item :: Array (FgBgOption ()) | r ) e
 style_item = listOption ( Proxy :: Proxy "style_item" )

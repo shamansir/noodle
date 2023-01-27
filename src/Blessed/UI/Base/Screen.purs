@@ -13,9 +13,9 @@ import Blessed.UI.Base.Screen.Option (OptionsRow)
 import Blessed.UI.Base.Screen.Event (Event)
 
 
-screen :: forall r. String -> C.Node ( OptionsRow + r ) Event
+screen :: forall r e. String -> C.Node ( OptionsRow + r ) Event
 screen name = C.node Subject.Screen name
 
 
-screenAnd :: forall r. String -> C.NodeAnd ( OptionsRow + r ) Event
+screenAnd :: forall r e. String -> C.NodeAnd ( OptionsRow + r ) Event
 screenAnd name = C.nodeAnd Subject.Screen name

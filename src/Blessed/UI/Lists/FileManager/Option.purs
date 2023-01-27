@@ -14,7 +14,6 @@ import Blessed.Core.Color (Color)
 import Blessed.Internal.Core (Attribute, option) as C
 
 
-import Blessed.UI.Base.Element.Event (Event)
 import Blessed.UI.Lists.List.Option (OptionsRow) as List
 
 
@@ -25,12 +24,12 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type FileManagerAttribute r = C.Attribute (List.OptionsRow + OptionsRow + r) Event
+type FileManagerAttribute r e = C.Attribute (List.OptionsRow + OptionsRow + r) e
 
 
-fmOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> FileManagerAttribute r
+fmOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> FileManagerAttribute r e
 fmOption = C.option
 
 
-cwd :: forall r. Color -> FileManagerAttribute ( cwd :: String | r )
+cwd :: forall r e. Color -> FileManagerAttribute ( cwd :: String | r ) e
 cwd = fmOption (Proxy :: _ "cwd")

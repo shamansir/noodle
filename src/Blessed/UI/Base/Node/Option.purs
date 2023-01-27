@@ -9,7 +9,6 @@ import Data.Symbol (class IsSymbol)
 import Data.Argonaut.Encode (class EncodeJson)
 
 import Blessed.Internal.Core (Attribute, option) as C
-import Blessed.UI.Base.Screen.Event (Event)
 
 
 
@@ -24,13 +23,13 @@ type Options = Record (OptionsU)
 
 
 
-type NodeAttribute r = C.Attribute (OptionsRow + r) Event
+type NodeAttribute r e = C.Attribute (OptionsRow + r) e
 
 
-nodeOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> NodeAttribute r
+nodeOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> NodeAttribute r e
 nodeOption = C.option
 
 
 
-screen :: forall r. String -> NodeAttribute ( screen :: String | r )
+screen :: forall r e. String -> NodeAttribute ( screen :: String | r ) e
 screen = nodeOption (Proxy :: _ "screen")

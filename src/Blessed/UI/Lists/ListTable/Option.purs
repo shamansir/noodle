@@ -27,28 +27,28 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type ListTableAttribute r = C.Attribute (List.OptionsRow + OptionsRow + r) Event
+type ListTableAttribute r e = C.Attribute (List.OptionsRow + OptionsRow + r) e
 
 
-ltOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ListTableAttribute r
+ltOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ListTableAttribute r e
 ltOption = C.option
 
 
-rows :: forall r. Array (Array String) -> ListTableAttribute ( rows :: Array (Array String) | r )
+rows :: forall r e. Array (Array String) -> ListTableAttribute ( rows :: Array (Array String) | r ) e
 rows = ltOption (Proxy :: _ "rows")
 
 
-pad :: forall r. Int -> ListTableAttribute ( pad :: Int | r )
+pad :: forall r e. Int -> ListTableAttribute ( pad :: Int | r ) e
 pad = ltOption (Proxy :: _ "pad")
 
 
-noCellBorders :: forall r. Boolean -> ListTableAttribute ( noCellBorders :: Boolean | r )
+noCellBorders :: forall r e. Boolean -> ListTableAttribute ( noCellBorders :: Boolean | r ) e
 noCellBorders = ltOption (Proxy :: _ "noCellBorders")
 
 
-style_header :: forall r. Array (FgBgOption ()) -> ListTableAttribute ( style_header :: Array (FgBgOption ()) | r )
+style_header :: forall r e. Array (FgBgOption ()) -> ListTableAttribute ( style_header :: Array (FgBgOption ()) | r ) e
 style_header = ltOption (Proxy :: _ "style_header")
 
 
-style_cell :: forall r. Array (FgBgOption ()) -> ListTableAttribute ( style_cell :: Array (FgBgOption ()) | r )
+style_cell :: forall r e. Array (FgBgOption ()) -> ListTableAttribute ( style_cell :: Array (FgBgOption ()) | r ) e
 style_cell = ltOption (Proxy :: _ "style_cell")

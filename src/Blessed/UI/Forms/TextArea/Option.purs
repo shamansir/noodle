@@ -25,20 +25,20 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type TextAreaAttribute r = C.Attribute (Input.OptionsRow + OptionsRow + r) Event
+type TextAreaAttribute r e = C.Attribute (Input.OptionsRow + OptionsRow + r) e
 
 
-textAreaOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> TextAreaAttribute r
+textAreaOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> TextAreaAttribute r e
 textAreaOption = C.option
 
 
-mouse :: forall r. Boolean -> TextAreaAttribute ( mouse :: Boolean | r )
+mouse :: forall r e. Boolean -> TextAreaAttribute ( mouse :: Boolean | r ) e
 mouse = textAreaOption (Proxy :: _ "mouse")
 
 
-keys :: forall r. Boolean -> TextAreaAttribute ( keys :: Boolean | r )
+keys :: forall r e. Boolean -> TextAreaAttribute ( keys :: Boolean | r ) e
 keys = textAreaOption (Proxy :: _ "keys")
 
 
-inputOnFocus :: forall r. Boolean -> TextAreaAttribute ( inputOnFocus :: Boolean | r )
+inputOnFocus :: forall r e. Boolean -> TextAreaAttribute ( inputOnFocus :: Boolean | r ) e
 inputOnFocus = textAreaOption (Proxy :: _ "inputOnFocus")

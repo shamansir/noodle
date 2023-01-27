@@ -13,7 +13,6 @@ import Blessed.Core.FgBg (FgBgOption)
 import Blessed.Internal.Core (Attribute, option) as C
 
 
-import Blessed.UI.Lists.List.Event (Event)
 import Blessed.UI.Lists.List.Option (OptionsRow) as List
 
 
@@ -25,16 +24,16 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type LogAttribute r = C.Attribute (List.OptionsRow + OptionsRow + r) Event
+type LogAttribute r e = C.Attribute (List.OptionsRow + OptionsRow + r) e
 
 
-logOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> LogAttribute r
+logOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> LogAttribute r e
 logOption = C.option
 
 
-scrollback :: forall r. Int -> LogAttribute ( pad :: Int | r )
+scrollback :: forall r e. Int -> LogAttribute ( pad :: Int | r ) e
 scrollback = logOption (Proxy :: _ "pad")
 
 
-scrollbackOnInput :: forall r. Boolean -> LogAttribute ( scrollbackOnInput :: Boolean | r )
+scrollbackOnInput :: forall r e. Boolean -> LogAttribute ( scrollbackOnInput :: Boolean | r ) e
 scrollbackOnInput = logOption (Proxy :: _ "scrollbackOnInput")

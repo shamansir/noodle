@@ -35,32 +35,32 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type ProgressBarAttribute r = C.Attribute (Input.OptionsRow + OptionsRow + r) Event
+type ProgressBarAttribute r e = C.Attribute (Input.OptionsRow + OptionsRow + r) e
 
 
-pbOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ProgressBarAttribute r
+pbOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ProgressBarAttribute r e
 pbOption = C.option
 
 
-orientation :: forall r. Orientation -> ProgressBarAttribute ( orientation :: Orientation | r )
+orientation :: forall r e. Orientation -> ProgressBarAttribute ( orientation :: Orientation | r ) e
 orientation = pbOption (Proxy :: _ "orientation")
 
 
-mouse :: forall r. Boolean -> ProgressBarAttribute ( mouse :: Boolean | r )
+mouse :: forall r e. Boolean -> ProgressBarAttribute ( mouse :: Boolean | r ) e
 mouse = pbOption (Proxy :: _ "mouse")
 
 
-keys :: forall r. Boolean -> ProgressBarAttribute ( keys :: Boolean | r )
+keys :: forall r e. Boolean -> ProgressBarAttribute ( keys :: Boolean | r ) e
 keys = pbOption (Proxy :: _ "keys")
 
 
-filled :: forall r. Int -> ProgressBarAttribute ( filled :: Int | r )
+filled :: forall r e. Int -> ProgressBarAttribute ( filled :: Int | r ) e
 filled = pbOption (Proxy :: _ "filled")
 
 
-pch :: forall r. Char -> ProgressBarAttribute ( pch :: Char | r )
+pch :: forall r e. Char -> ProgressBarAttribute ( pch :: Char | r ) e
 pch = pbOption (Proxy :: _ "pch")
 
 
-style_bar ∷ forall r. Array (FgBgOption ()) -> ProgressBarAttribute ( style_bar :: Array (FgBgOption ()) | r )
+style_bar ∷ forall r e. Array (FgBgOption ()) -> ProgressBarAttribute ( style_bar :: Array (FgBgOption ()) | r ) e
 style_bar = pbOption ( Proxy :: Proxy "style_bar" )

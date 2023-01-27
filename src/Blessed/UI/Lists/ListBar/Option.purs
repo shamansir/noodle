@@ -34,24 +34,24 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type ListBarAttribute r = C.Attribute (List.OptionsRow + OptionsRow + r) Event
+type ListBarAttribute r e = C.Attribute (List.OptionsRow + OptionsRow + r) e
 
 
-lbOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ListBarAttribute r
+lbOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ListBarAttribute r e
 lbOption = C.option
 
 
-items :: forall r. Array String -> ListBarAttribute ( items :: Array String | r )
+items :: forall r e. Array String -> ListBarAttribute ( items :: Array String | r ) e
 items = lbOption (Proxy :: _ "items")
 
 
-autoCommandKeys :: forall r. Boolean -> ListBarAttribute ( autoCommandKeys :: Boolean | r )
+autoCommandKeys :: forall r e. Boolean -> ListBarAttribute ( autoCommandKeys :: Boolean | r ) e
 autoCommandKeys = lbOption (Proxy :: _ "autoCommandKeys")
 
 
-style_selected :: forall r. Array (FgBgOption ()) -> ListBarAttribute ( style_selected :: Array (FgBgOption ()) | r )
+style_selected :: forall r e. Array (FgBgOption ()) -> ListBarAttribute ( style_selected :: Array (FgBgOption ()) | r ) e
 style_selected = lbOption (Proxy :: _ "style_selected")
 
 
-style_item :: forall r. Array (FgBgOption ()) -> ListBarAttribute ( style_item :: Array (FgBgOption ()) | r )
+style_item :: forall r e. Array (FgBgOption ()) -> ListBarAttribute ( style_item :: Array (FgBgOption ()) | r ) e
 style_item = lbOption (Proxy :: _ "style_item")

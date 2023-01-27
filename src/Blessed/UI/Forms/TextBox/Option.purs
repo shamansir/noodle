@@ -24,16 +24,16 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type TextBoxAttribute r = C.Attribute (Input.OptionsRow + OptionsRow + r) Event
+type TextBoxAttribute r e = C.Attribute (Input.OptionsRow + OptionsRow + r) e
 
 
-textBoxOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> TextBoxAttribute r
+textBoxOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> TextBoxAttribute r e
 textBoxOption = C.option
 
 
-secret :: forall r. String -> TextBoxAttribute ( secret :: String | r )
+secret :: forall r e. String -> TextBoxAttribute ( secret :: String | r ) e
 secret = textBoxOption (Proxy :: _ "secret")
 
 
-censor :: forall r. String -> TextBoxAttribute ( censor :: String | r )
+censor :: forall r e. String -> TextBoxAttribute ( censor :: String | r ) e
 censor = textBoxOption (Proxy :: _ "censor")

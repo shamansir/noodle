@@ -31,10 +31,10 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type BigTextAttribute r = C.Attribute (Box.OptionsRow + OptionsRow + r) Event
+type BigTextAttribute r e = C.Attribute (Box.OptionsRow + OptionsRow + r) e
 
 
-bigTextOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> BigTextAttribute r
+bigTextOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> BigTextAttribute r e
 bigTextOption = C.option
 
 
@@ -42,13 +42,13 @@ bdf :: String -> BDFSource
 bdf = BDFSource
 
 
-font :: forall r. BDFSource -> BigTextAttribute ( font :: BDFSource | r )
+font :: forall r e. BDFSource -> BigTextAttribute ( font :: BDFSource | r ) e
 font = bigTextOption (Proxy :: _ "font")
 
 
-fontBold :: forall r. BDFSource -> BigTextAttribute ( fontBold :: BDFSource | r )
+fontBold :: forall r e. BDFSource -> BigTextAttribute ( fontBold :: BDFSource | r ) e
 fontBold = bigTextOption (Proxy :: _ "fontBold")
 
 
-fch :: forall r. Char -> BigTextAttribute ( fch :: Char | r )
+fch :: forall r e. Char -> BigTextAttribute ( fch :: Char | r ) e
 fch = bigTextOption (Proxy :: _ "fch")

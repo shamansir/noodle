@@ -15,8 +15,6 @@ import Blessed.Core.Border (BorderType) as B
 
 import Blessed.Internal.Core (Attribute, option) as C
 
-
-import Blessed.UI.Boxes.Box.Event (Event)
 import Blessed.UI.Boxes.Box.Option (OptionsRow) as Box
 
 
@@ -28,16 +26,16 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type FormAttribute r = C.Attribute (Box.OptionsRow + OptionsRow + r) Event
+type FormAttribute r e = C.Attribute (Box.OptionsRow + OptionsRow + r) e
 
 
-formOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> FormAttribute r
+formOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> FormAttribute r e
 formOption = C.option
 
 
-keys :: forall r. Boolean -> FormAttribute ( keys :: Boolean | r )
+keys :: forall r e. Boolean -> FormAttribute ( keys :: Boolean | r ) e
 keys = formOption (Proxy :: _ "keys")
 
 
-vi :: forall r. Boolean -> FormAttribute ( keys :: Boolean | r )
+vi :: forall r e. Boolean -> FormAttribute ( keys :: Boolean | r ) e
 vi = formOption (Proxy :: _ "keys")

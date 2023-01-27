@@ -34,28 +34,28 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type TerminalAttribute r = C.Attribute (List.OptionsRow + OptionsRow + r) Event
+type TerminalAttribute r e = C.Attribute (List.OptionsRow + OptionsRow + r) e
 
 
-terminalOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> TerminalAttribute r
+terminalOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> TerminalAttribute r e
 terminalOption = C.option
 
 
-handler :: forall r. Unit -> TerminalAttribute ( handler :: Unit | r )
+handler :: forall r e. Unit -> TerminalAttribute ( handler :: Unit | r ) e
 handler = terminalOption (Proxy :: _ "handler")
 
 
-shell :: forall r. String -> TerminalAttribute ( shell :: String | r )
+shell :: forall r e. String -> TerminalAttribute ( shell :: String | r ) e
 shell = terminalOption (Proxy :: _ "shell")
 
 
-args :: forall r. Array Json -> TerminalAttribute ( args :: Array Json | r )
+args :: forall r e. Array Json -> TerminalAttribute ( args :: Array Json | r ) e
 args = terminalOption (Proxy :: _ "args")
 
 
-cursor :: forall r. Cursor -> TerminalAttribute ( cursor :: Cursor | r )
+cursor :: forall r e. Cursor -> TerminalAttribute ( cursor :: Cursor | r ) e
 cursor = terminalOption (Proxy :: _ "cursor")
 
 
-terminal :: forall r. Terminal -> TerminalAttribute ( terminal :: Terminal | r )
+terminal :: forall r e. Terminal -> TerminalAttribute ( terminal :: Terminal | r ) e
 terminal = terminalOption (Proxy :: _ "terminal")

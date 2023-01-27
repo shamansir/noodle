@@ -60,120 +60,120 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type ElementAttribute r = C.Attribute (OptionsRow + r) Event
+type ElementAttribute r e = C.Attribute (OptionsRow + r) e
 
 
-elmOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ElementAttribute r
+elmOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ElementAttribute r e
 elmOption = C.option
 
 
-fg :: forall r. Color -> ElementAttribute ( fg :: Color | r )
+fg :: forall r e. Color -> ElementAttribute ( fg :: Color | r ) e
 fg = elmOption (Proxy :: _ "fg")
 
 
-bg :: forall r. Color -> ElementAttribute ( bg :: Color | r )
+bg :: forall r e. Color -> ElementAttribute ( bg :: Color | r ) e
 bg = elmOption (Proxy :: _ "bg")
 
 
-bold :: forall r. Boolean -> ElementAttribute ( bold :: Boolean | r )
+bold :: forall r e. Boolean -> ElementAttribute ( bold :: Boolean | r ) e
 bold = elmOption (Proxy :: _ "bold")
 
 
-underline :: forall r. Boolean -> ElementAttribute ( underline :: Boolean | r )
+underline :: forall r e. Boolean -> ElementAttribute ( underline :: Boolean | r ) e
 underline = elmOption (Proxy :: _ "underline")
 
 
-style :: forall r. Array (StyleOption ()) -> ElementAttribute ( style :: Array (StyleOption ()) | r )
+style :: forall r e. Array (StyleOption ()) -> ElementAttribute ( style :: Array (StyleOption ()) | r ) e
 style = elmOption (Proxy :: _ "style")
 
 
-border :: forall r. Array (BorderOption ()) -> ElementAttribute ( border :: Array (BorderOption ()) | r )
+border :: forall r e. Array (BorderOption ()) -> ElementAttribute ( border :: Array (BorderOption ()) | r ) e
 border = elmOption (Proxy :: _ "border")
 
 
-content :: forall r. String -> ElementAttribute ( content :: String | r )
+content :: forall r e. String -> ElementAttribute ( content :: String | r ) e
 content = elmOption (Proxy :: _ "content")
 
 
-clickable :: forall r. Boolean -> ElementAttribute ( clickable :: Boolean | r )
+clickable :: forall r e. Boolean -> ElementAttribute ( clickable :: Boolean | r ) e
 clickable = elmOption (Proxy :: _ "clickable")
 
 
-input :: forall r. Boolean -> ElementAttribute ( input :: Boolean | r )
+input :: forall r e. Boolean -> ElementAttribute ( input :: Boolean | r ) e
 input = elmOption (Proxy :: _ "input")
 
 
-keyable :: forall r. Boolean -> ElementAttribute ( keyable :: Boolean | r )
+keyable :: forall r e. Boolean -> ElementAttribute ( keyable :: Boolean | r ) e
 keyable = elmOption (Proxy :: _ "keyable")
 
 
-focused :: forall r. Boolean -> ElementAttribute ( focused :: Boolean | r )
+focused :: forall r e. Boolean -> ElementAttribute ( focused :: Boolean | r ) e
 focused = elmOption (Proxy :: _ "focused")
 
 
-hidden :: forall r. Boolean -> ElementAttribute ( hidden :: Boolean | r )
+hidden :: forall r e. Boolean -> ElementAttribute ( hidden :: Boolean | r ) e
 hidden = elmOption (Proxy :: _ "hidden")
 
 
-label :: forall r. String -> ElementAttribute ( label :: String | r )
+label :: forall r e. String -> ElementAttribute ( label :: String | r ) e
 label = elmOption (Proxy :: _ "label")
 
 
-hoverText :: forall r. String -> ElementAttribute ( hoverText :: String | r )
+hoverText :: forall r e. String -> ElementAttribute ( hoverText :: String | r ) e
 hoverText = elmOption (Proxy :: _ "hoverText")
 
 
-align :: forall r. HAlign -> ElementAttribute ( align :: HAlign | r )
+align :: forall r e. HAlign -> ElementAttribute ( align :: HAlign | r ) e
 align = elmOption (Proxy :: _ "align")
 
 
-valign :: forall r. VAlign -> ElementAttribute ( valign :: VAlign | r )
+valign :: forall r e. VAlign -> ElementAttribute ( valign :: VAlign | r ) e
 valign = elmOption (Proxy :: _ "valign")
 
 
-shrink :: forall r. Flex -> ElementAttribute ( shrink :: Flex | r )
+shrink :: forall r e. Flex -> ElementAttribute ( shrink :: Flex | r ) e
 shrink = elmOption (Proxy :: _ "shrink")
 
 
-padding :: forall r. Padding -> ElementAttribute ( padding :: Padding | r )
+padding :: forall r e. Padding -> ElementAttribute ( padding :: Padding | r ) e
 padding = elmOption (Proxy :: _ "padding")
 
 
-width :: forall r. Dimension -> ElementAttribute ( width :: Dimension | r )
+width :: forall r e. Dimension -> ElementAttribute ( width :: Dimension | r ) e
 width = elmOption (Proxy :: _ "width")
 
 
-height :: forall r. Dimension -> ElementAttribute ( height :: Dimension | r )
+height :: forall r e. Dimension -> ElementAttribute ( height :: Dimension | r ) e
 height = elmOption (Proxy :: _ "height")
 
 
-left :: forall r. Offset -> ElementAttribute ( left :: Offset | r )
+left :: forall r e. Offset -> ElementAttribute ( left :: Offset | r ) e
 left = elmOption (Proxy :: _ "left")
 
 
-right :: forall r. Offset -> ElementAttribute ( right :: Offset | r )
+right :: forall r e. Offset -> ElementAttribute ( right :: Offset | r ) e
 right = elmOption (Proxy :: _ "right")
 
 
-top :: forall r. Offset -> ElementAttribute ( top :: Offset | r )
+top :: forall r e. Offset -> ElementAttribute ( top :: Offset | r ) e
 top = elmOption (Proxy :: _ "top")
 
 
-bottom :: forall r. Offset -> ElementAttribute ( bottom :: Offset | r )
+bottom :: forall r e. Offset -> ElementAttribute ( bottom :: Offset | r ) e
 bottom = elmOption (Proxy :: _ "bottom")
 
 
-ch :: forall r. Char -> ElementAttribute ( ch :: Char | r )
+ch :: forall r e. Char -> ElementAttribute ( ch :: Char | r ) e
 ch = elmOption (Proxy :: _ "ch")
 
 
-draggable :: forall r. Boolean -> ElementAttribute ( draggable :: Boolean | r )
+draggable :: forall r e. Boolean -> ElementAttribute ( draggable :: Boolean | r ) e
 draggable = elmOption (Proxy :: _ "draggable")
 
 
-shadow :: forall r. Boolean -> ElementAttribute ( shadow :: Boolean | r )
+shadow :: forall r e. Boolean -> ElementAttribute ( shadow :: Boolean | r ) e
 shadow = elmOption (Proxy :: _ "shadow")
 
 
-tags :: forall r. Boolean -> ElementAttribute ( tags :: Boolean | r )
+tags :: forall r e. Boolean -> ElementAttribute ( tags :: Boolean | r ) e
 tags = elmOption (Proxy :: _ "tags")

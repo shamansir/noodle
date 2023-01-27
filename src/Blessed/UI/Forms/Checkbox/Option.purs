@@ -29,20 +29,20 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type CheckboxAttribute r = C.Attribute (Input.OptionsRow + OptionsRow + r) Event
+type CheckboxAttribute r e = C.Attribute (Input.OptionsRow + OptionsRow + r) e
 
 
-cbOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> CheckboxAttribute r
+cbOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> CheckboxAttribute r e
 cbOption = C.option
 
 
-text :: forall r. String -> CheckboxAttribute ( text :: String | r )
+text :: forall r e. String -> CheckboxAttribute ( text :: String | r ) e
 text = cbOption (Proxy :: _ "text")
 
 
-checked :: forall r. Boolean -> CheckboxAttribute ( checked :: Boolean | r )
+checked :: forall r e. Boolean -> CheckboxAttribute ( checked :: Boolean | r ) e
 checked = cbOption (Proxy :: _ "checked")
 
 
-mouse :: forall r. Boolean -> CheckboxAttribute ( mouse :: Boolean | r )
+mouse :: forall r e. Boolean -> CheckboxAttribute ( mouse :: Boolean | r ) e
 mouse = cbOption (Proxy :: _ "mouse")

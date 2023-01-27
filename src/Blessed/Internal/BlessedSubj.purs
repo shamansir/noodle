@@ -304,7 +304,7 @@ instance IsSubject TableK where reflectSubject _ = Table
 instance IsSubject TerminalK where reflectSubject _ = Terminal
 
 
-class Fires :: forall k. SubjectKind -> k -> Constraint
+class Fires :: forall event'. SubjectKind -> event' -> Constraint
 class Fires (subj :: SubjectKind) event
 
 

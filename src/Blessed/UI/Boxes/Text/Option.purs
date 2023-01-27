@@ -15,7 +15,6 @@ import Blessed.Core.Align (HAlign)
 import Blessed.Internal.Core (Attribute, option) as C
 
 
-import Blessed.UI.Base.Element.Event (Event)
 import Blessed.UI.Base.Element.Option (OptionsRow) as Element
 
 
@@ -27,16 +26,16 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type TextAttribute r = C.Attribute (Element.OptionsRow + OptionsRow + r) Event
+type TextAttribute r e = C.Attribute (Element.OptionsRow + OptionsRow + r) e
 
 
-textOption :: forall a r r' sym. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> TextAttribute r
+textOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> TextAttribute r e
 textOption = C.option
 
 
-fill :: forall r. Color -> TextAttribute ( fill :: Color | r )
+fill :: forall r e. Color -> TextAttribute ( fill :: Color | r ) e
 fill = textOption (Proxy :: _ "fill")
 
 
-align :: forall r. HAlign -> TextAttribute ( align :: HAlign | r )
+align :: forall r e. HAlign -> TextAttribute ( align :: HAlign | r ) e
 align = textOption (Proxy :: _ "align")
