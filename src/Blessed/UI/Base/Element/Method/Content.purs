@@ -8,14 +8,14 @@ import Data.Symbol (class IsSymbol)
 import Blessed.Internal.Command (arg) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.BlessedSubj (class Extends, Element, Subject, class IsSubject)
-import Blessed.Internal.NodeKey (NodeKey, class Represents)
+import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.Core (method) as C
 
 
 
 setContent
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => String -> NodeKey subj id -> BlessedOp m
 setContent text nodeId =
     C.method nodeId "setContent" [ C.arg CA.string text ]
@@ -24,7 +24,7 @@ setContent text nodeId =
 
 getContent
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 getContent nodeId =
     C.method nodeId "getContent" [ ]
@@ -33,7 +33,7 @@ getContent nodeId =
 
 setText
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => String -> NodeKey subj id -> BlessedOp m
 setText text nodeId =
     C.method nodeId "setText" [ C.arg CA.string text ]
@@ -42,7 +42,7 @@ setText text nodeId =
 
 getText
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 getText nodeId =
     C.method nodeId "getText" [ ]
@@ -51,7 +51,7 @@ getText nodeId =
 
 insertLine
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Int -> String -> NodeKey subj id -> BlessedOp m
 insertLine i line nodeId =
     C.method nodeId "insertLine" [ C.arg CA.int i, C.arg CA.string line ]
@@ -60,7 +60,7 @@ insertLine i line nodeId =
 
 insertLines
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Int -> Array String -> NodeKey subj id -> BlessedOp m
 insertLines i lines nodeId =
     C.method nodeId "insertLines" [ C.arg CA.int i, C.arg (CA.array CA.string) lines ]
@@ -69,7 +69,7 @@ insertLines i lines nodeId =
 
 deleteLine
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Int -> NodeKey subj id -> BlessedOp m
 deleteLine i nodeId =
     C.method nodeId "deleteLine" [ C.arg CA.int i ]
@@ -78,7 +78,7 @@ deleteLine i nodeId =
 
 getLine
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Int -> NodeKey subj id -> BlessedOp m
 getLine i nodeId =
     C.method nodeId "getLine" [ C.arg CA.int i ]
@@ -87,7 +87,7 @@ getLine i nodeId =
 
 getBaseLine
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Int -> NodeKey subj id -> BlessedOp m
 getBaseLine i nodeId =
     C.method nodeId "getBaseLine" [ C.arg CA.int i ]
@@ -96,7 +96,7 @@ getBaseLine i nodeId =
 
 setLine
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Int -> String -> NodeKey subj id -> BlessedOp m
 setLine i line nodeId =
     C.method nodeId "setLine" [ C.arg CA.int i, C.arg CA.string line ]
@@ -105,7 +105,7 @@ setLine i line nodeId =
 
 setBaseLine
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Int -> String -> NodeKey subj id -> BlessedOp m
 setBaseLine i line nodeId =
     C.method nodeId "setBaseLine" [ C.arg CA.int i, C.arg CA.string line ]
@@ -114,7 +114,7 @@ setBaseLine i line nodeId =
 
 clearLine
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Int -> NodeKey subj id -> BlessedOp m
 clearLine i nodeId =
     C.method nodeId "clearLine" [ C.arg CA.int i ]
@@ -123,7 +123,7 @@ clearLine i nodeId =
 
 clearBaseLine
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Int -> NodeKey subj id -> BlessedOp m
 clearBaseLine i nodeId =
     C.method nodeId "clearBaseLine" [ C.arg CA.int i ]
@@ -132,7 +132,7 @@ clearBaseLine i nodeId =
 
 insertTop
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => String -> NodeKey subj id -> BlessedOp m
 insertTop line nodeId =
     C.method nodeId "insertTop" [ C.arg CA.string line ]
@@ -141,7 +141,7 @@ insertTop line nodeId =
 
 insertTops
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Array String -> NodeKey subj id -> BlessedOp m
 insertTops lines nodeId =
     C.method nodeId "insertTop" [ C.arg (CA.array CA.string) lines ]
@@ -150,7 +150,7 @@ insertTops lines nodeId =
 
 insertBottom
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => String -> NodeKey subj id -> BlessedOp m
 insertBottom line nodeId =
     C.method nodeId "insertBottom" [ C.arg CA.string line ]
@@ -159,7 +159,7 @@ insertBottom line nodeId =
 
 insertBottoms
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Array String -> NodeKey subj id -> BlessedOp m
 insertBottoms lines nodeId =
     C.method nodeId "insertBottom" [ C.arg (CA.array CA.string) lines ]
@@ -168,7 +168,7 @@ insertBottoms lines nodeId =
 
 deleteTop
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 deleteTop nodeId =
     C.method nodeId "deleteTop" [ ]
@@ -177,7 +177,7 @@ deleteTop nodeId =
 
 deleteBottom
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 deleteBottom nodeId =
     C.method nodeId "deleteBottom" [ ]
@@ -185,7 +185,7 @@ deleteBottom nodeId =
 
 unshiftLine
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => String -> NodeKey subj id -> BlessedOp m
 unshiftLine line nodeId =
     C.method nodeId "unshiftLine" [ C.arg CA.string line ]
@@ -193,7 +193,7 @@ unshiftLine line nodeId =
 
 unshiftLines
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Array String -> NodeKey subj id -> BlessedOp m
 unshiftLines lines nodeId =
     C.method nodeId "unshiftLine" [ C.arg (CA.array CA.string) lines ]
@@ -202,7 +202,7 @@ unshiftLines lines nodeId =
 
 shiftLine
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Int -> NodeKey subj id -> BlessedOp m
 shiftLine i nodeId =
     C.method nodeId "shiftLine" [ C.arg CA.int i ]
@@ -211,7 +211,7 @@ shiftLine i nodeId =
 
 pushLine
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => String -> NodeKey subj id -> BlessedOp m
 pushLine line nodeId =
     C.method nodeId "pushLine" [ C.arg CA.string line ]
@@ -220,7 +220,7 @@ pushLine line nodeId =
 
 pushLines
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Array String -> NodeKey subj id -> BlessedOp m
 pushLines lines nodeId =
     C.method nodeId "pushLine" [ C.arg (CA.array CA.string) lines ]
@@ -229,7 +229,7 @@ pushLines lines nodeId =
 
 popLine
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Int -> NodeKey subj id -> BlessedOp m
 popLine i nodeId =
     C.method nodeId "popLine" [ C.arg CA.int i ]
@@ -238,7 +238,7 @@ popLine i nodeId =
 
 getLines
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 getLines nodeId =
     C.method nodeId "getLines" [ ]
@@ -247,7 +247,7 @@ getLines nodeId =
 
 getScreenLines
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 getScreenLines nodeId =
     C.method nodeId "getScreenLines" [ ]
@@ -256,7 +256,7 @@ getScreenLines nodeId =
 
 strWidth
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => String -> NodeKey subj id -> BlessedOp m
 strWidth text nodeId =
     C.method nodeId "strWidth" [ C.arg CA.string text ]

@@ -59,5 +59,14 @@ toString :: forall subj sym. K.IsSubject subj => IsSymbol sym => NodeKey subj sy
 toString _ = reflectSymbol (Proxy :: _ sym) <> ":" <> K.toString (K.reflectSubject (Proxy :: _ subj))
 
 
-class (K.Extends parent subj, K.IsSubject parent, K.IsSubject subj, IsSymbol id) <= Represents parent subj id
-instance (K.Extends parent subj, K.IsSubject parent, K.IsSubject subj, IsSymbol id) => Represents parent subj id
+getId :: forall subj sym. IsSymbol sym => NodeKey subj sym -> String
+getId _ = reflectSymbol (Proxy :: _ sym)
+
+
+getSubject :: forall subj sym. K.IsSubject subj => IsSymbol sym => NodeKey subj sym -> K.Subject_
+getSubject _ = K.reflectSubject (Proxy :: _ subj)
+
+
+-- FIXME: `Belongs`?
+class (K.Extends parent subj, K.IsSubject parent, K.IsSubject subj, IsSymbol id) <= Respresents parent subj id
+instance (K.Extends parent subj, K.IsSubject parent, K.IsSubject subj, IsSymbol id) => Respresents parent subj id

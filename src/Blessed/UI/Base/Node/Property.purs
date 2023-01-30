@@ -12,9 +12,8 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.Core as C
-import Blessed.Internal.BlessedSubj (Subject) as C
-import Blessed.Internal.BlessedOp as Op
-import Blessed.Internal.Command (get) as C
+import Blessed.Internal.NodeKey (NodeKey, class Respresents)
+import Blessed.Internal.BlessedSubj (Node, Subject, Subject_)
 import Blessed.Internal.Codec (kindCodec)
 
 
@@ -24,7 +23,7 @@ import Blessed.Internal.Codec (kindCodec)
 type PropertiesRow =
     -- program ::
     -- tput ::
-    ( type :: C.Subject -- FIXME: should access `type`
+    ( type :: Subject_ -- FIXME: should access `type`
     , options :: Json
     , parent :: Json
     , screen :: Json
@@ -34,34 +33,59 @@ type PropertiesRow =
     )
 
 
-getter :: forall sym r' m a. R.Cons sym a r' PropertiesRow => C.GetterFn sym r' PropertiesRow m a
+getter
+    :: forall subj id sym r' m a
+     . Respresents Node subj id
+    => R.Cons sym a r' PropertiesRow
+    => C.GetterFn subj id sym r' PropertiesRow m a
 getter =
     C.getter
 
 
-type_ :: forall m. C.NodeId -> C.Getter m C.Subject
+type_
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Node subj id
+    => NodeKey subj id -> C.Getter m Subject_
 type_ = getter (Proxy :: _ "type") kindCodec
 
 
-options :: forall m. C.NodeId -> C.Getter m Json
+options
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Node subj id
+    => NodeKey subj id -> C.Getter m Json
 options = getter (Proxy :: _ "options") CA.json
 
 
-parent :: forall m. C.NodeId -> C.Getter m Json
+parent
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Node subj id
+    => NodeKey subj id -> C.Getter m Json
 parent = getter (Proxy :: _ "parent") CA.json
 
 
-screen :: forall m. C.NodeId -> C.Getter m Json
+screen
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Node subj id
+    => NodeKey subj id -> C.Getter m Json
 screen = getter (Proxy :: _ "screen") CA.json
 
 
-children :: forall m. C.NodeId -> C.Getter m (Array Json)
+children
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Node subj id
+    => NodeKey subj id -> C.Getter m (Array Json)
 children = getter (Proxy :: _ "children") $ CA.array CA.json
 
 
-data_ :: forall m. C.NodeId -> C.Getter m Json
+data_
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Node subj id
+    => NodeKey subj id -> C.Getter m Json
 data_ = getter (Proxy :: _ "data") CA.json
 
 
-index :: forall m. C.NodeId -> C.Getter m Int
+index
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Node subj id
+    => NodeKey subj id -> C.Getter m Int
 index = getter (Proxy :: _ "index") CA.int

@@ -14,7 +14,7 @@ import Blessed.Core.Label (Label)
 import Blessed.Internal.Command (arg) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.BlessedSubj (Element, Subject)
-import Blessed.Internal.NodeKey (NodeKey, class Represents)
+import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.Core (method) as C
 
 
@@ -30,7 +30,7 @@ import Blessed.Internal.Core (method) as C
 
 render
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 render nodeId =
     C.method nodeId "render" [ ]
@@ -38,7 +38,7 @@ render nodeId =
 
 hide
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 hide nodeId =
     C.method nodeId "hide" [ ]
@@ -47,7 +47,7 @@ hide nodeId =
 
 show
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 show nodeId =
     C.method nodeId "show" [ ]
@@ -56,7 +56,7 @@ show nodeId =
 
 toggle
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 toggle nodeId =
     C.method nodeId "toggle" [ ]
@@ -65,7 +65,7 @@ toggle nodeId =
 
 focus
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 focus nodeId =
     C.method nodeId "focus" [ ]
@@ -74,7 +74,7 @@ focus nodeId =
 
 free
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 free nodeId =
     C.method nodeId "free" [ ]
@@ -83,7 +83,7 @@ free nodeId =
 
 destroy
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 destroy nodeId =
     C.method nodeId "destroy" [ ]
@@ -92,7 +92,7 @@ destroy nodeId =
 
 setIndex
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Int -> NodeKey subj id -> BlessedOp m
 setIndex z nodeId =
     C.method nodeId "setIndex" [ C.arg CA.int z ]
@@ -101,7 +101,7 @@ setIndex z nodeId =
 
 setFront
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 setFront nodeId =
     C.method nodeId "setFront" [ ]
@@ -110,7 +110,7 @@ setFront nodeId =
 
 setBack
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 setBack nodeId =
     C.method nodeId "setBack" [ ]
@@ -119,7 +119,7 @@ setBack nodeId =
 
 setLabel
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Label -> NodeKey subj id -> BlessedOp m
 setLabel label nodeId =
     C.method nodeId "setLabel" [ encodeJson label ]
@@ -128,7 +128,7 @@ setLabel label nodeId =
 
 removeLabel
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 removeLabel nodeId =
     C.method nodeId "removeLabel" [ ]
@@ -138,7 +138,7 @@ removeLabel nodeId =
 {- TODO
 setHover
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Options -> NodeKey subj id -> BlessedOp m
 setHover options nodeId =
     C.method nodeId "setHover" [ C.arg CA.options options ]
@@ -147,7 +147,7 @@ setHover options nodeId =
 
 removeHover
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 removeHover nodeId =
     C.method nodeId "removeHover" [ ]
@@ -156,7 +156,7 @@ removeHover nodeId =
 
 enableMouse
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 enableMouse nodeId =
     C.method nodeId "enableMouse" [ ]
@@ -165,7 +165,7 @@ enableMouse nodeId =
 
 enableKeys
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 enableKeys nodeId =
     C.method nodeId "enableKeys" [ ]
@@ -174,7 +174,7 @@ enableKeys nodeId =
 
 enableInput
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 enableInput nodeId =
     C.method nodeId "enableInput" [ ]
@@ -183,7 +183,7 @@ enableInput nodeId =
 
 enableDrag
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 enableDrag nodeId =
     C.method nodeId "enableDrag" [ ]
@@ -192,7 +192,7 @@ enableDrag nodeId =
 
 disableDrag
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 disableDrag nodeId =
     C.method nodeId "disableDrag" [ ]
@@ -201,7 +201,7 @@ disableDrag nodeId =
 
 screenshot
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id -> BlessedOp m
 screenshot nodeId =
     C.method nodeId "screenshot" [ ]
@@ -210,7 +210,7 @@ screenshot nodeId =
 
 screenshotArea
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => Int -> Int -> Int -> Int -> NodeKey subj id -> BlessedOp m
 screenshotArea xi xl yi yl nodeId =
     C.method nodeId "screenshot" [ C.arg CA.int xi, C.arg CA.int xl, C.arg CA.int yi, C.arg CA.int yl ]

@@ -1,6 +1,9 @@
 module Blessed.UI.Base.Screen.Method where
 
+import Prelude (($), (<$>))
+
 import Data.Maybe (Maybe)
+import Data.Symbol (class IsSymbol)
 
 import Data.Argonaut.Core (Json)
 import Data.Codec.Argonaut as CA
@@ -8,9 +11,12 @@ import Data.Codec.Argonaut as CA
 import Data.Argonaut.Encode (encodeJson)
 
 import Blessed.Internal.BlessedOp (BlessedOp)
+import Blessed.Internal.BlessedSubj (Subject, Screen)
+import Blessed.Internal.NodeKey (NodeKey, class Respresents)
+import Blessed.Internal.NodeKey (getId) as NodeKey
 import Blessed.Internal.Command (arg) as C
 import Blessed.Internal.Core (method) as C
-import Blessed.Internal.JsApi (NodeId) as C
+
 import Blessed.Core.Color (Color)
 import Blessed.Core.Cursor (Cursor)
 
@@ -20,31 +26,46 @@ import Blessed.Core.Cursor (Cursor)
 -- unkey
 
 
-logM :: forall m. String -> C.NodeId -> BlessedOp m
+logM
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => String -> NodeKey subj id -> BlessedOp m
 logM msg nodeId =
     C.method nodeId "log"
         [ C.arg CA.string msg
         ]
 
 
-debugM :: forall m. String -> C.NodeId -> BlessedOp m
+debugM
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => String -> NodeKey subj id -> BlessedOp m
 debugM msg nodeId =
     C.method nodeId "debug"
         [ C.arg CA.string msg
         ]
 
 
-alloc :: forall m. C.NodeId -> BlessedOp m
+alloc
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> BlessedOp m
 alloc nodeId =
     C.method nodeId "alloc" [  ]
 
 
-realloc :: forall m. C.NodeId -> BlessedOp m
+realloc
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> BlessedOp m
 realloc nodeId =
     C.method nodeId "realloc" [ ]
 
 
-draw :: forall m. Int -> Int -> C.NodeId -> BlessedOp m
+draw
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => Int -> Int -> NodeKey subj id -> BlessedOp m
 draw start end nodeId =
     C.method nodeId "draw"
         [ C.arg CA.int start
@@ -52,12 +73,18 @@ draw start end nodeId =
         ]
 
 
-render :: forall m. C.NodeId -> BlessedOp m
+render
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> BlessedOp m
 render nodeId =
     C.method nodeId "render" [ ]
 
 
-clearRegion :: forall m. Int -> Int -> Int -> Int -> C.NodeId -> BlessedOp m
+clearRegion
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => Int -> Int -> Int -> Int -> NodeKey subj id -> BlessedOp m
 clearRegion x1 x2 y1 y2 nodeId =
     C.method nodeId "clearRegion"
         [ C.arg CA.int x1, C.arg CA.int x2
@@ -65,7 +92,10 @@ clearRegion x1 x2 y1 y2 nodeId =
         ]
 
 
-fillRegion :: forall m. String -> Char -> Int -> Int -> Int -> Int -> C.NodeId -> BlessedOp m
+fillRegion
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => String -> Char -> Int -> Int -> Int -> Int -> NodeKey subj id -> BlessedOp m
 fillRegion attr ch x1 x2 y1 y2 nodeId =
     C.method nodeId "fillRegion"
         [ C.arg CA.string attr
@@ -75,50 +105,77 @@ fillRegion attr ch x1 x2 y1 y2 nodeId =
         ]
 
 
-focusOffset :: forall m. Int -> C.NodeId -> BlessedOp m
+focusOffset
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => Int -> NodeKey subj id -> BlessedOp m
 focusOffset offset nodeId =
     C.method nodeId "focusOffset"
         [ C.arg CA.int offset
         ]
 
 
-focusPrevious :: forall m. C.NodeId -> BlessedOp m
+focusPrevious
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> BlessedOp m
 focusPrevious nodeId =
     C.method nodeId "focusPrevious" [ ]
 
 
-focusNext :: forall m. C.NodeId -> BlessedOp m
+focusNext
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> BlessedOp m
 focusNext nodeId =
     C.method nodeId "focusNext" [ ]
 
 
-focusPush :: forall m. String -> C.NodeId -> BlessedOp m
+focusPush
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => String -> NodeKey subj id -> BlessedOp m
 focusPush element nodeId =
     C.method nodeId "focusPush"
         [ encodeJson element ]
 
 
-focusPop :: forall m. C.NodeId -> BlessedOp m
+focusPop
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> BlessedOp m
 focusPop nodeId =
     C.method nodeId "focusPop" [  ]
 
 
-saveFocus :: forall m. C.NodeId -> BlessedOp m
+saveFocus
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> BlessedOp m
 saveFocus nodeId =
     C.method nodeId "saveFocus" [  ]
 
 
-restoreFocus :: forall m. C.NodeId -> BlessedOp m
+restoreFocus
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> BlessedOp m
 restoreFocus nodeId =
     C.method nodeId "restoreFocus" [  ]
 
 
-rewindFocus :: forall m. C.NodeId -> BlessedOp m
+rewindFocus
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> BlessedOp m
 rewindFocus nodeId =
     C.method nodeId "rewindFocus" [  ]
 
 
-spawn :: forall m. String -> Array Json -> Json -> C.NodeId -> BlessedOp m
+spawn
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => String -> Array Json -> Json -> NodeKey subj id -> BlessedOp m
 spawn file args options nodeId  =
     C.method nodeId "spawn"
         [ C.arg CA.string file
@@ -127,7 +184,10 @@ spawn file args options nodeId  =
         ]
 
 
-insertLine :: forall m. Int -> Int -> Int -> C.NodeId -> BlessedOp m
+insertLine
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => Int -> Int -> Int -> NodeKey subj id -> BlessedOp m
 insertLine n y top nodeId =
     C.method nodeId "insertLine"
         [ C.arg CA.int n
@@ -136,7 +196,10 @@ insertLine n y top nodeId =
         ]
 
 
-deleteLine :: forall m. Int -> Int -> Int -> C.NodeId -> BlessedOp m
+deleteLine
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => Int -> Int -> Int -> NodeKey subj id -> BlessedOp m
 deleteLine n y top nodeId =
     C.method nodeId "deleteLine"
         [ C.arg CA.int n
@@ -145,7 +208,10 @@ deleteLine n y top nodeId =
         ]
 
 
-insertBottom :: forall m. Int -> Int -> C.NodeId -> BlessedOp m
+insertBottom
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => Int -> Int -> NodeKey subj id -> BlessedOp m
 insertBottom top bottom nodeId =
     C.method nodeId "insertBottom"
         [ C.arg CA.int top
@@ -153,7 +219,10 @@ insertBottom top bottom nodeId =
         ]
 
 
-insertTop :: forall m. Int -> Int -> C.NodeId -> BlessedOp m
+insertTop
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => Int -> Int -> NodeKey subj id -> BlessedOp m
 insertTop top bottom nodeId =
     C.method nodeId "insertTop"
         [ C.arg CA.int top
@@ -161,7 +230,10 @@ insertTop top bottom nodeId =
         ]
 
 
-deleteBottom :: forall m. Int -> Int -> C.NodeId -> BlessedOp m
+deleteBottom
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => Int -> Int -> NodeKey subj id -> BlessedOp m
 deleteBottom top bottom nodeId =
     C.method nodeId "deleteBottom"
         [ C.arg CA.int top
@@ -169,7 +241,10 @@ deleteBottom top bottom nodeId =
         ]
 
 
-deleteTop :: forall m. Int -> Int -> C.NodeId -> BlessedOp m
+deleteTop
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => Int -> Int -> NodeKey subj id -> BlessedOp m
 deleteTop top bottom nodeId =
     C.method nodeId "deleteTop"
         [ C.arg CA.int top
@@ -177,35 +252,50 @@ deleteTop top bottom nodeId =
         ]
 
 
-enableMouse :: forall m. Maybe C.NodeId -> C.NodeId -> BlessedOp m
+enableMouse
+    :: forall subj' id' (subj :: Subject) (id :: Symbol) m
+     . IsSymbol id' => Respresents Screen subj id
+    => Maybe (NodeKey subj' id') -> NodeKey subj id -> BlessedOp m
 enableMouse element nodeId =
     C.method nodeId "enableMouse"
-        [ encodeJson element
+        [ encodeJson $ NodeKey.getId <$> element
         ]
 
 
-enableKeys :: forall m. Maybe C.NodeId -> C.NodeId -> BlessedOp m
+enableKeys
+    :: forall subj' id' (subj :: Subject) (id :: Symbol) m
+     . IsSymbol id' => Respresents Screen subj id
+    => Maybe (NodeKey subj' id') -> NodeKey subj id -> BlessedOp m
 enableKeys element nodeId =
     C.method nodeId "enableKeys"
-        [ encodeJson element
+        [ encodeJson $ NodeKey.getId <$> element
         ]
 
 
-enableInput :: forall m. Maybe C.NodeId -> C.NodeId -> BlessedOp m
+enableInput
+    :: forall subj' id' (subj :: Subject) (id :: Symbol) m
+     . IsSymbol id' => Respresents Screen subj id
+    => Maybe (NodeKey subj' id') -> NodeKey subj id -> BlessedOp m
 enableInput element nodeId =
     C.method nodeId "enableInput"
-        [ encodeJson element
+        [ encodeJson $ NodeKey.getId <$> element
         ]
 
 
-copyToClipboard :: forall m. String -> C.NodeId -> BlessedOp m
+copyToClipboard
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => String -> NodeKey subj id -> BlessedOp m
 copyToClipboard text nodeId =
     C.method nodeId "copyToClipboard"
         [ C.arg CA.string text
         ]
 
 
-cursorShape :: forall m. Cursor -> Boolean -> C.NodeId -> BlessedOp m
+cursorShape
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => Cursor -> Boolean -> NodeKey subj id -> BlessedOp m
 cursorShape cursor blink nodeId =
     C.method nodeId "cursorShape"
         [ encodeJson cursor
@@ -213,19 +303,28 @@ cursorShape cursor blink nodeId =
         ]
 
 
-cursorColor :: forall m. Color -> C.NodeId -> BlessedOp m
+cursorColor
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => Color -> NodeKey subj id -> BlessedOp m
 cursorColor color nodeId =
     C.method nodeId "cursorColor"
         [ encodeJson color
         ]
 
 
-screenshot :: forall m. C.NodeId -> BlessedOp m
+screenshot
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> BlessedOp m
 screenshot nodeId =
     C.method nodeId "screenshot" [ ]
 
 
-screenshotArea :: forall m. Int -> Int -> Int -> Int -> C.NodeId -> BlessedOp m
+screenshotArea
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => Int -> Int -> Int -> Int -> NodeKey subj id -> BlessedOp m
 screenshotArea xi xl yi yl nodeId =
     C.method nodeId "screenshot"
         [ C.arg CA.int xi
@@ -235,12 +334,18 @@ screenshotArea xi xl yi yl nodeId =
         ]
 
 
-destroy :: forall m. C.NodeId -> BlessedOp m
+destroy
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> BlessedOp m
 destroy nodeId =
     C.method nodeId "destroy" [ ]
 
 
-setTerminal :: forall m. String -> C.NodeId -> BlessedOp m
+setTerminal
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => String -> NodeKey subj id -> BlessedOp m
 setTerminal term nodeId =
     C.method nodeId "destroysetTerminal"
         [ C.arg CA.string term

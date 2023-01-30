@@ -9,56 +9,87 @@ import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.Command (arg) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.JsApi (NodeId) as C
+import Blessed.Internal.BlessedSubj (Element, Subject)
+import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.Core (method) as C
 
 
-prepend :: forall m. String -> C.NodeId -> BlessedOp m
+prepend
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Element subj id
+    => String -> NodeKey subj id -> BlessedOp m
 prepend node nodeId =
     C.method nodeId "prepend" [ C.arg CA.string node ]
 
 
-append :: forall m. String -> C.NodeId -> BlessedOp m
+append
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Element subj id
+    => String -> NodeKey subj id -> BlessedOp m
 append node nodeId =
     C.method nodeId "append" [ C.arg CA.string node ]
 
 
-remove :: forall m. String -> C.NodeId -> BlessedOp m
+remove
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Element subj id
+    => String -> NodeKey subj id -> BlessedOp m
 remove node nodeId =
     C.method nodeId "remove" [ C.arg CA.string node ]
 
 
-insert :: forall m. String -> Int -> C.NodeId -> BlessedOp m
+insert
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Element subj id
+    => String -> Int -> NodeKey subj id -> BlessedOp m
 insert node i nodeId =
     C.method nodeId "insert" [ C.arg CA.string node, C.arg CA.int i ]
 
 
-insertBefore :: forall m. String -> String -> C.NodeId -> BlessedOp m
+insertBefore
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Element subj id
+    => String -> String -> NodeKey subj id -> BlessedOp m
 insertBefore node refNode nodeId =
     C.method nodeId "insertBefore" [ C.arg CA.string node, C.arg CA.string refNode ]
 
 
-insertAfter :: forall m. String -> String -> C.NodeId -> BlessedOp m
+insertAfter
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Element subj id
+    => String -> String -> NodeKey subj id -> BlessedOp m
 insertAfter node refNode nodeId =
     C.method nodeId "insertAfter" [ C.arg CA.string node, C.arg CA.string refNode ]
 
 
-detach :: forall m.  C.NodeId -> BlessedOp m
+detach
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Element subj id
+    =>  NodeKey subj id -> BlessedOp m
 detach nodeId =
     C.method nodeId "detach" [ ]
 
 
-emitDescandants :: forall m.  C.NodeId -> BlessedOp m
+emitDescandants
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Element subj id
+    =>  NodeKey subj id -> BlessedOp m
 emitDescandants nodeId =
     C.method nodeId "emitDescandants" [ ]
 
 
-get :: forall m. String -> Maybe Json -> C.NodeId -> BlessedOp m -- FIXME
+get
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Element subj id
+    => String -> Maybe Json -> NodeKey subj id -> BlessedOp m -- FIXME
 get name value nodeId =
     C.method nodeId "get" [ C.arg CA.string name, C.arg (CAC.maybe CA.json) value ]
 
 
-set :: forall m. String -> Json -> C.NodeId -> BlessedOp m
+set
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Element subj id
+    => String -> Json -> NodeKey subj id -> BlessedOp m
 set name value nodeId =
     C.method nodeId "set" [ C.arg CA.string name, C.arg CA.json value ]
 

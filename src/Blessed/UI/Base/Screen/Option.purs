@@ -4,7 +4,6 @@ module Blessed.UI.Base.Screen.Option where
 import Prim.Row as R
 import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
-import Data.Time.Duration (Milliseconds(..))
 import Data.Symbol (class IsSymbol)
 
 import Data.Argonaut.Encode (class EncodeJson)
@@ -13,7 +12,8 @@ import Blessed.Internal.Core (Attribute, option) as C
 import Blessed.Core.Cursor (Cursor)
 import Blessed.Core.Key (Key)
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Base.Screen.Event (Event)
+import Blessed.Internal.BlessedSubj (Subject, Screen)
+import Blessed.Internal.NodeKey (class Respresents)
 
 
 -- instance EncodeJson (Milliseconds) where
@@ -50,84 +50,148 @@ type Options = Record (OptionsU)
 
 
 
-type ScreenAttribute r e = C.Attribute (OptionsRow + r) e
+type ScreenAttribute subj id r e = C.Attribute subj id (OptionsRow + r) e
 
 
-screenOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ScreenAttribute r e
+screenOption
+    :: forall subj id a r r' sym e
+     . Respresents Screen subj id
+    => EncodeJson a
+    => IsSymbol sym
+    => R.Cons sym a r' (OptionsRow + r)
+    => Proxy sym -> a -> ScreenAttribute subj id r e
 screenOption = C.option
 
 
-title :: forall r e. String -> ScreenAttribute ( title :: String | r ) e
+title
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => String -> ScreenAttribute subj id ( title :: String | r ) e
 title = screenOption (Proxy :: _ "title")
 
 
-smartCSR :: forall r e. Boolean -> ScreenAttribute ( smartCSR :: Boolean | r ) e
+smartCSR
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Boolean -> ScreenAttribute subj id ( smartCSR :: Boolean | r ) e
 smartCSR = screenOption (Proxy :: _ "smartCSR")
 
 
-fastCSR :: forall r e. Boolean -> ScreenAttribute ( fastCSR :: Boolean | r ) e
+fastCSR
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Boolean -> ScreenAttribute subj id ( fastCSR :: Boolean | r ) e
 fastCSR = screenOption (Proxy :: _ "fastCSR")
 
 
-useBCE :: forall r e. Boolean -> ScreenAttribute ( useBCE :: Boolean | r ) e
+useBCE
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Boolean -> ScreenAttribute subj id ( useBCE :: Boolean | r ) e
 useBCE = screenOption (Proxy :: _ "useBCE")
 
 
--- resizeTimout :: forall r e. Milliseconds -> ScreenAttribute ( resizeTimout :: Milliseconds | r ) e
--- resizeTimout = screenOption (Proxy :: _ "resizeTimout")
+{- resizeTimout
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Milliseconds -> ScreenAttribute subj id ( resizeTimout :: Milliseconds | r ) e
+resizeTimout = screenOption (Proxy :: _ "resizeTimout")
+-}
 
 
-resizeTimout :: forall r e. Int -> ScreenAttribute ( resizeTimout :: Int | r ) e
+resizeTimout
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Int -> ScreenAttribute subj id ( resizeTimout :: Int | r ) e
 resizeTimout = screenOption (Proxy :: _ "resizeTimout")
 
 
-tabSize :: forall r e. Int -> ScreenAttribute ( tabSize :: Int | r ) e
+tabSize
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Int -> ScreenAttribute subj id ( tabSize :: Int | r ) e
 tabSize = screenOption (Proxy :: _ "tabSize")
 
 
-autoPadding :: forall r e. Boolean -> ScreenAttribute ( autoPadding :: Boolean | r ) e
+autoPadding
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Boolean -> ScreenAttribute subj id ( autoPadding :: Boolean | r ) e
 autoPadding = screenOption (Proxy :: _ "autoPadding")
 
 
-cursor :: forall r e. Cursor -> ScreenAttribute ( cursor :: Cursor | r ) e
+cursor
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Cursor -> ScreenAttribute subj id ( cursor :: Cursor | r ) e
 cursor = screenOption (Proxy :: _ "cursor")
 
 
-log :: forall r e. Boolean  -> ScreenAttribute ( log :: Boolean  | r ) e
+log
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Boolean  -> ScreenAttribute subj id ( log :: Boolean  | r ) e
 log = screenOption (Proxy :: _ "log")
 
 
-dump :: forall r e. Boolean  -> ScreenAttribute ( dump :: Boolean  | r ) e
+dump
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Boolean  -> ScreenAttribute subj id ( dump :: Boolean  | r ) e
 dump = screenOption (Proxy :: _ "dump")
 
 
-debug :: forall r e. Boolean -> ScreenAttribute ( debug :: Boolean | r ) e
+debug
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Boolean -> ScreenAttribute subj id ( debug :: Boolean | r ) e
 debug = screenOption (Proxy :: _ "debug")
 
 
-ignoreLocked :: forall r e. Array Key -> ScreenAttribute ( ignoreLocked :: Array Key | r ) e
+ignoreLocked
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Array Key -> ScreenAttribute subj id ( ignoreLocked :: Array Key | r ) e
 ignoreLocked = screenOption (Proxy :: _ "ignoreLocked")
 
 
-dockBorders :: forall r e. Boolean -> ScreenAttribute ( dockBorders :: Boolean | r ) e
+dockBorders
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Boolean -> ScreenAttribute subj id ( dockBorders :: Boolean | r ) e
 dockBorders = screenOption (Proxy :: _ "dockBorders")
 
 
-ignoreDockContrast :: forall r e. Boolean -> ScreenAttribute ( ignoreDockContrast :: Boolean | r ) e
+ignoreDockContrast
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Boolean -> ScreenAttribute subj id ( ignoreDockContrast :: Boolean | r ) e
 ignoreDockContrast = screenOption (Proxy :: _ "ignoreDockContrast")
 
 
-fullUnicode :: forall r e. Boolean -> ScreenAttribute ( fullUnicode :: Boolean | r ) e
+fullUnicode
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Boolean -> ScreenAttribute subj id ( fullUnicode :: Boolean | r ) e
 fullUnicode = screenOption (Proxy :: _ "fullUnicode")
 
 
-sendFocus :: forall r e. Boolean -> ScreenAttribute ( sendFocus :: Boolean | r ) e
+sendFocus
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Boolean -> ScreenAttribute subj id ( sendFocus :: Boolean | r ) e
 sendFocus = screenOption (Proxy :: _ "sendFocus")
 
 
-warnings :: forall r e. Boolean -> ScreenAttribute ( warnings :: Boolean | r ) e
+warnings
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => Boolean -> ScreenAttribute subj id ( warnings :: Boolean | r ) e
 warnings = screenOption (Proxy :: _ "warnings")
 
 
-terminal :: forall r e. String  -> ScreenAttribute ( terminal :: String  | r ) e
+terminal
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Screen subj id
+    => String  -> ScreenAttribute subj id ( terminal :: String  | r ) e
 terminal = screenOption (Proxy :: _ "terminal")

@@ -8,7 +8,9 @@ import Data.Symbol (class IsSymbol)
 
 import Data.Argonaut.Encode (class EncodeJson)
 
+import Blessed.Internal.BlessedSubj (Subject, Node)
 import Blessed.Internal.Core (Attribute, option) as C
+import Blessed.Internal.NodeKey (class Respresents)
 
 
 
@@ -23,13 +25,21 @@ type Options = Record (OptionsU)
 
 
 
-type NodeAttribute r e = C.Attribute (OptionsRow + r) e
+type NodeAttribute subj id r e = C.Attribute subj id (OptionsRow + r) e
 
 
-nodeOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> NodeAttribute r e
+nodeOption
+    :: forall subj id a r r' sym e
+     . Respresents Node subj id
+    => EncodeJson a
+    => IsSymbol sym
+    => R.Cons sym a r' (OptionsRow + r)
+    => Proxy sym -> a -> NodeAttribute subj id r e
 nodeOption = C.option
 
 
-
-screen :: forall r e. String -> NodeAttribute ( screen :: String | r ) e
+screen
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Node subj id
+    => String -> NodeAttribute subj id ( screen :: String | r ) e
 screen = nodeOption (Proxy :: _ "screen")

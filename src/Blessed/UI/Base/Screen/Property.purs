@@ -10,9 +10,9 @@ import Data.Maybe (Maybe(..))
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Common as CAC
 
-import Blessed.Internal.Core as C
-import Blessed.Internal.BlessedOp as Op
-import Blessed.Internal.Command (get) as C
+import Blessed.Internal.Core (Getter, GetterFn, getter) as C
+import Blessed.Internal.NodeKey (NodeKey, class Respresents)
+import Blessed.Internal.BlessedSubj (Screen, Subject)
 
 
 -- newtype Focused = Focused String
@@ -42,78 +42,136 @@ type PropertiesRow =
     )
 
 
-getter :: forall sym r' m a. R.Cons sym a r' PropertiesRow => C.GetterFn sym r' PropertiesRow m a
+getter
+    :: forall subj id sym r' m a
+     . Respresents Screen subj id
+    => R.Cons sym a r' PropertiesRow
+    => C.GetterFn subj id sym r' PropertiesRow m a
 getter =
     C.getter
 
 
-focused :: forall m. C.NodeId -> C.Getter m (Maybe String)
+focused
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m (Maybe String)
 focused = getter (Proxy :: _ "focused") (CAC.maybe CA.string)
 
 
-width :: forall m. C.NodeId -> C.Getter m Int
+width
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Int
 width = getter (Proxy :: _ "width") CA.int
 
 
-height :: forall m. C.NodeId -> C.Getter m Int
+height
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Int
 height = getter (Proxy :: _ "height") CA.int
 
 
-cols :: forall m. C.NodeId -> C.Getter m Int
+cols
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Int
 cols = getter (Proxy :: _ "cols") CA.int
 
 
-rows :: forall m. C.NodeId -> C.Getter m Int
+rows
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Int
 rows = getter (Proxy :: _ "rows") CA.int
 
 
-left :: forall m. C.NodeId -> C.Getter m Int
+left
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Int
 left = getter (Proxy :: _ "left") CA.int
 
 
-right :: forall m. C.NodeId -> C.Getter m Int
+right
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Int
 right = getter (Proxy :: _ "right") CA.int
 
 
-top :: forall m. C.NodeId -> C.Getter m Int
+top
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Int
 top = getter (Proxy :: _ "top") CA.int
 
 
-bottom :: forall m. C.NodeId -> C.Getter m Int
+bottom
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Int
 bottom = getter (Proxy :: _ "bottom") CA.int
 
 
-aleft :: forall m. C.NodeId -> C.Getter m Int
+aleft
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Int
 aleft = getter (Proxy :: _ "aleft") CA.int
 
 
-aright :: forall m. C.NodeId -> C.Getter m Int
+aright
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Int
 aright = getter (Proxy :: _ "aright") CA.int
 
 
-atop :: forall m. C.NodeId -> C.Getter m Int
+atop
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Int
 atop = getter (Proxy :: _ "atop") CA.int
 
 
-abottom :: forall m. C.NodeId -> C.Getter m Int
+abottom
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Int
 abottom = getter (Proxy :: _ "abottom") CA.int
 
 
-grabKeys :: forall m. C.NodeId -> C.Getter m Boolean
+grabKeys
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Boolean
 grabKeys = getter (Proxy :: _ "grabKeys") CA.boolean
 
 
-lockKeys :: forall m. C.NodeId -> C.Getter m Boolean
+lockKeys
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m Boolean
 lockKeys = getter (Proxy :: _ "lockKeys") CA.boolean
 
 
-hover :: forall m. C.NodeId -> C.Getter m (Maybe String)
+hover
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m (Maybe String)
 hover = getter (Proxy :: _ "hover") (CAC.maybe CA.string)
 
 
-terminal :: forall m. C.NodeId -> C.Getter m String
+terminal
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m String
 terminal = getter (Proxy :: _ "terminal") CA.string
 
 
-title :: forall m. C.NodeId -> C.Getter m String
+title
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Screen subj id
+    => NodeKey subj id -> C.Getter m String
 title = getter (Proxy :: _ "title") CA.string

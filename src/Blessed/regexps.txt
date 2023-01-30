@@ -41,19 +41,19 @@ foreign import data $1K :: SubjectKind\n
 
 
     :: forall (subj :: Subject) (id :: Symbol) m
-     . Represents Element subj id
+     . Respresents Element subj id
     => _
 
 
 
 
     :: forall subj id r e
-     . Represents Element subj id
+     . Respresents Element subj id
     => _
 
 
 :: forall m. C.NodeId
 
     :: forall subj id m
-     . Represents Element subj id
+     . Respresents Element subj id
     => NodeKey subj id _
