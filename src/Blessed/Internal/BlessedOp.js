@@ -111,10 +111,11 @@ function registerNode(node) {
     }
 }
 
-function callCommand(nodeId) {
+function callCommand(rawNodeKey) {
     return function(command) {
         // ___log('build', nodeId, command);
         return function() {
+            const nodeId = rawNodeKey.id;
             ___log('call', nodeId, command);
             let returnObj = null;
 

@@ -35,6 +35,7 @@ import Node.Path (FilePath)
 
 import Blessed.Internal.Codec (encodeCommand, commandToJson, encodeDump)
 import Blessed.Internal.Command (Command) as I
+import Blessed.Internal.NodeKey as I
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.BlessedSubj as K
 
@@ -47,9 +48,9 @@ commandsDumpPath = "./commands_dump.txt"
 data BlessedOpF state m a
     = State (state -> a /\ state)
     | Lift (m a)
-    | PerformOne I.NodeId I.Command a
-    | PerformSome I.NodeId (Array I.Command) a
-    | PerformGet I.NodeId I.Command (Json -> a)
+    | PerformOne I.RawNodeKey I.Command a
+    | PerformSome I.RawNodeKey (Array I.Command) a
+    | PerformGet I.RawNodeKey I.Command (Json -> a)
     | PerformOnProcess I.Command a
 
 
@@ -104,19 +105,19 @@ instance monadRecBlessedOpM :: MonadRec (BlessedOpM state m) where
 
 {- Processing -}
 
-perform :: forall m. I.NodeId -> I.Command -> BlessedOp m
+perform :: forall m. I.RawNodeKey -> I.Command -> BlessedOp m
 perform nid cmd = BlessedOpM $ Free.liftF $ PerformOne nid cmd unit
 
 
-performGet :: forall m a. CA.JsonCodec a -> I.NodeId -> I.Command -> BlessedOpG m a
+performGet :: forall m a. CA.JsonCodec a -> I.RawNodeKey -> I.Command -> BlessedOpG m a
 performGet codec nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ CA.decode codec
 
 
-performGet' :: forall m a. DecodeJson a => I.NodeId -> I.Command -> BlessedOpG m a
+performGet' :: forall m a. DecodeJson a => I.RawNodeKey -> I.Command -> BlessedOpG m a
 performGet' nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ (decodeJson >>> lmap convertJsonError)
 
 
-performSome :: forall m. I.NodeId -> Array I.Command -> BlessedOp m
+performSome :: forall m. I.RawNodeKey -> Array I.Command -> BlessedOp m
 performSome nid cmds = BlessedOpM $ Free.liftF $ PerformSome nid cmds unit
 
 
@@ -141,8 +142,8 @@ dumpCommand =
         <<< commandToJson
 
 
-dumpHandlerCall :: forall m. MonadEffect m => K.Subject -> I.NodeId -> I.EventId -> Array Json -> m Unit
-dumpHandlerCall nodeSubj (I.NodeId nodeId) (I.EventId event) args =
+dumpHandlerCall :: forall m. MonadEffect m => I.RawNodeKey -> I.EventId -> Array Json -> m Unit
+dumpHandlerCall (I.RawNodeKey nodeKey) (I.EventId event) args =
     liftEffect
         $ launchAff_
         $ appendTextFile UTF8 commandsDumpPath
@@ -150,8 +151,8 @@ dumpHandlerCall nodeSubj (I.NodeId nodeId) (I.EventId event) args =
         $ Json.stringify
         $ encodeDump
         $ I.CallDump
-            { args, event, nodeId
-            , nodeSubj : K.toString nodeSubj
+            { args, event, nodeId : nodeKey.id
+            , nodeSubj : K.toString nodeKey.subject
             }
 
 
@@ -200,7 +201,7 @@ runFreeM stateRef fn = do
             pure $ getV $ value
 
         go (PerformOnProcess cmd next) = do
-            _ <- liftEffect $ callCommand_ (I.NodeId "process") $ encodeCommand cmd
+            _ <- liftEffect $ callCommand_ (I.rawify I.process) $ encodeCommand cmd
             dumpCommand cmd
             pure next
 
@@ -208,18 +209,18 @@ runFreeM stateRef fn = do
         writeUserState _ nextState = liftEffect $ Ref.modify_ (const nextState) stateRef
 
 
-makeHandler :: I.EventId -> Array Json -> (I.NodeId -> Json -> BlessedOp Effect) -> I.SHandler
-makeHandler eventId arguments op =
+makeHandler :: forall subj sym. I.NodeKey subj sym -> I.EventId -> Array Json -> (I.NodeKey subj sym -> Json -> BlessedOp Effect) -> I.SHandler
+makeHandler nodeKey eventId arguments op =
     I.SHandler eventId arguments
-        $ \registry nodeSubj nodeId (I.EventJson evt) -> do
-            dumpHandlerCall nodeSubj nodeId eventId arguments
-            runM (I.unveilRegistry registry) $ op nodeId $ evt
-
+        $ \registry rawNodeKey (I.EventJson evt) -> do
+            -- TODO: check IDs match?
+            dumpHandlerCall rawNodeKey eventId arguments
+            runM (I.unveilRegistry registry) $ op nodeKey $ evt
 
 
 foreign import execute_ :: I.BlessedEnc -> Effect Unit
 foreign import registerNode_ :: I.NodeEnc -> Effect Unit
-foreign import callCommand_ :: I.NodeId -> I.CommandEnc -> Effect Json
+foreign import callCommand_ :: I.RawNodeKey -> I.CommandEnc -> Effect Json
 
 
 convertJsonError :: ADE.JsonDecodeError -> CA.JsonDecodeError

@@ -3,6 +3,8 @@ module Blessed.Internal.JsApi where
 import Prelude
 
 import Effect (Effect)
+import Type.Proxy (Proxy(..))
+import Data.Symbol (class IsSymbol, reflectSymbol)
 
 import Data.Map (Map)
 import Data.Map as Map
@@ -11,40 +13,34 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Newtype (class Newtype)
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Encode (class EncodeJson, encodeJson)
+import Data.Argonaut.Encode (class EncodeJson)
 import Data.Codec.Argonaut as CA
 
 import Blessed.Internal.BlessedSubj as K
+import Blessed.Internal.NodeKey as NK
 
 
-
--- newtype NodeId (kind :: Subject) = NodeId String
-newtype NodeId = NodeId String
 newtype EventId = EventId String
 
 
-type Registry = Map NodeId Json
+type Registry = Map NK.RawNodeKey Json
 newtype SRegistry = SRegistry Json
 newtype EventJson = EventJson Json
 
 
 
-derive instance Newtype NodeId _
 derive instance Newtype EventId _
 derive instance Newtype SRegistry _
 derive instance Newtype EventJson _
 
-derive newtype instance EncodeJson NodeId
 derive newtype instance EncodeJson EventId
 derive newtype instance EncodeJson SRegistry
 derive newtype instance EncodeJson EventJson
 
 
-
-
 data SProp = SProp String Json
-data SHandler = SHandler EventId (Array Json) (SRegistry -> K.Subject -> NodeId -> EventJson -> Effect Unit)
-data SNode = SNode K.Subject NodeId (Array SProp) (Array SNode) (Array SHandler)
+data SHandler = SHandler EventId (Array Json) (SRegistry -> NK.RawNodeKey -> EventJson -> Effect Unit)
+data SNode = SNode NK.RawNodeKey (Array SProp) (Array SNode) (Array SHandler)
 
 
 newRegistry :: SRegistry
@@ -62,7 +58,7 @@ unwrapProp (SProp name json) = name /\ json
 {-
 data NodeId_ (x :: Subject) (sym :: Symbol)
 
-foreign import data NodeId' :: forall (x :: Subject) (sym :: Symbol). Proxy sym -> Proxy x -> NodeId_ x sym
+foreign import data RawNodeKey :: forall (x :: Subject) (sym :: Symbol). Proxy sym -> Proxy x -> NodeId_ x sym
 
 
 reflectNodeId :: forall x sym. NodeId_ x sym -> NodeId

@@ -6,8 +6,6 @@ import Data.Argonaut.Core (Json)
 import Data.Codec.Argonaut as CA
 import Type.Data.Symbol (class IsSymbol)
 
-import Blessed.Internal.JsApi (NodeId(..))
-
 
 {- data CommandType
     = Call

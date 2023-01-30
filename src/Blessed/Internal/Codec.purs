@@ -24,13 +24,14 @@ import Data.Codec.Argonaut.Record as CAR
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.BlessedSubj as K
+import Blessed.Internal.NodeKey as NK
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Command as C
 
 -- TODO: Consider using encodeJson-based typeclasses
 
 
-kindCodec :: CA.JsonCodec K.Subject
+kindCodec :: CA.JsonCodec K.Subject_
 kindCodec  =
     CA.prismaticCodec "Kind" K.fromString K.toString CA.string
 
@@ -139,10 +140,10 @@ encodeRoot :: I.SNode -> I.NodeEnc /\ Array I.HandlerCallEnc
 encodeRoot = encode' Nothing
 
 
-encode' :: Maybe I.NodeId -> I.SNode -> I.NodeEnc /\ Array I.HandlerCallEnc
+encode' :: Maybe NK.RawNodeKey -> I.SNode -> I.NodeEnc /\ Array I.HandlerCallEnc
 encode'
     maybeParent
-    (I.SNode nodeSubj (I.NodeId nodeId) sprops snodes shandlers)
+    (I.SNode (NK.RawNodeKey rawNodeKey) sprops snodes shandlers)
 
     =
     -- BlessedEnc (CA.encode CA.null unit /\ [ HandlerEnc { nodeId : "test", event: "test", index : -1, call: const $ Console.log "foo" }])
@@ -158,22 +159,22 @@ encode'
         encodeHandler :: Int -> I.SHandler -> I.HandlerCallEnc
         encodeHandler localIndex (I.SHandler (I.EventId eventId) args fn) =
             I.HandlerCallEnc
-                { nodeId : nodeId
-                , nodeSubj : K.toString nodeSubj
+                { nodeId : rawNodeKey.id
+                , nodeSubj : K.toString rawNodeKey.subject
                 , event : eventId
                 , args
-                , index : nodeId <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index
-                , call : fn (I.newRegistry) nodeSubj (I.NodeId nodeId)
+                , index : rawNodeKey.id <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index
+                , call : fn (I.newRegistry) (NK.RawNodeKey rawNodeKey)
                 }
 
         encodeHandlerRef :: Int -> I.SHandler -> I.HandlerRefEnc
         encodeHandlerRef localIndex (I.SHandler (I.EventId eventId) args fn) =
             I.HandlerRefEnc
-                { nodeId : nodeId
-                , nodeSubj : K.toString nodeSubj
+                { nodeId : rawNodeKey.id
+                , nodeSubj : K.toString rawNodeKey.subject
                 , event : eventId
                 , args
-                , index : nodeId <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index?
+                , index : rawNodeKey.id <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index?
                 }
 
         (storedHandlers :: Array I.HandlerRefEnc) /\ (handlersCalls :: Array I.HandlerCallEnc)
@@ -193,16 +194,16 @@ encode'
                     (child : allChildren) /\ (itsHandlers <> allHandlers)
                 )
                 ([] /\ [])
-                (encode' (Just $ I.NodeId nodeId) <$> snodes)
+                (encode' (Just $ NK.RawNodeKey rawNodeKey) <$> snodes)
 
         (nodeEncoded :: I.NodeEnc) /\ (childrenHandlers :: Array I.HandlerCallEnc) =
             I.NodeEnc
-                { nodeId : nodeId
-                , nodeSubj : K.toString nodeSubj
+                { nodeId : rawNodeKey.id
+                , nodeSubj : K.toString rawNodeKey.subject
                 , props : adaptProps sprops
                 , children : children
                 , handlers : storedHandlers
-                , parent : unwrap <$> maybeParent
+                , parent : _.id <$> unwrap <$> maybeParent
                 }
             /\ innerHandlersCalls
 

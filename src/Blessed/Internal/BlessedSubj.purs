@@ -7,428 +7,448 @@ import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 
-data Subject
-    = Node
-    | Screen
-    | Element
-    | Box
-    | Text
-    | Line
-    | BigText
-    | List
-    | FileManager
-    | ListTable
-    | ListBar
-    | Form
-    | Input
-    | TextArea
-    | TextBox
-    | Button
-    | Checkbox
-    | RadioSet
-    | RadioButton
-    | Prompt
-    | Question
-    | Message
-    | Loading
-    | ProgressBar
-    | Log
-    | Table
-    | Terminal
-    | Image
-    | AnsiImage
-    | OverlayImage
-    | Video
-    | Layout
-    | Ext String
+data Subject_
+    = Node_
+    | Screen_
+    | Element_
+    | Box_
+    | Text_
+    | Line_
+    | BigText_
+    | List_
+    | FileManager_
+    | ListTable_
+    | ListBar_
+    | Form_
+    | Input_
+    | TextArea_
+    | TextBox_
+    | Button_
+    | Checkbox_
+    | RadioSet_
+    | RadioButton_
+    | Prompt_
+    | Question_
+    | Message_
+    | Loading_
+    | ProgressBar_
+    | Log_
+    | Table_
+    | Terminal_
+    | Image_
+    | AnsiImage_
+    | OverlayImage_
+    | Video_
+    | Layout_
+    | Ext_ String
 
 
 
-instance EncodeJson Subject where
+instance EncodeJson Subject_ where
     encodeJson = encodeJson <<< toString
 
 
 
-fromString ∷ String → Maybe Subject
+fromString ∷ String → Maybe Subject_
 fromString =
     case _ of
-        "node" -> Just Node
-        "screen" -> Just Screen
-        "element" -> Just Element
-        "box" -> Just Box
-        "text" -> Just Text
-        "line" -> Just Line
-        "bigtext" -> Just BigText
-        "list" -> Just List
-        "filemanager" -> Just FileManager
-        "listtable" -> Just ListTable
-        "listbar" -> Just ListBar
-        "form" -> Just Form
-        "input" -> Just Input
-        "textarea" -> Just TextArea
-        "textbox" -> Just TextBox
-        "button" -> Just Button
-        "checkbox" -> Just Checkbox
-        "radioset" -> Just RadioSet
-        "radiobutton" -> Just RadioButton
-        "prompt" -> Just Prompt
-        "question" -> Just Question
-        "message" -> Just Message
-        "loading" -> Just Loading
-        "progressbar" -> Just ProgressBar
-        "log" -> Just Log
-        "table" -> Just Table
-        "terminal" -> Just Terminal
-        "image" -> Just Image
-        "ansiimage" -> Just AnsiImage
-        "overlayimage" -> Just OverlayImage
-        "video" -> Just Video
-        "layout" -> Just Layout
+        "node" -> Just Node_
+        "screen" -> Just Screen_
+        "element" -> Just Element_
+        "box" -> Just Box_
+        "text" -> Just Text_
+        "line" -> Just Line_
+        "bigtext" -> Just BigText_
+        "list" -> Just List_
+        "filemanager" -> Just FileManager_
+        "listtable" -> Just ListTable_
+        "listbar" -> Just ListBar_
+        "form" -> Just Form_
+        "input" -> Just Input_
+        "textarea" -> Just TextArea_
+        "textbox" -> Just TextBox_
+        "button" -> Just Button_
+        "checkbox" -> Just Checkbox_
+        "radioset" -> Just RadioSet_
+        "radiobutton" -> Just RadioButton_
+        "prompt" -> Just Prompt_
+        "question" -> Just Question_
+        "message" -> Just Message_
+        "loading" -> Just Loading_
+        "progressbar" -> Just ProgressBar_
+        "log" -> Just Log_
+        "table" -> Just Table_
+        "terminal" -> Just Terminal_
+        "image" -> Just Image_
+        "ansiimage" -> Just AnsiImage_
+        "overlayimage" -> Just OverlayImage_
+        "video" -> Just Video_
+        "layout" -> Just Layout_
         k ->
             if (String.take 3 k == "ext")
-                then  Just $ Ext $ String.drop 4 k
+                then  Just $ Ext_ $ String.drop 4 k
                 else Nothing
 
 
-toString ∷ Subject → String
+toString ∷ Subject_ → String
 toString =
     case _ of
-        Node -> "node"
-        Screen -> "screen"
-        Element -> "element"
-        Box -> "box"
-        Text -> "text"
-        Line -> "line"
-        BigText -> "bigtext"
-        List -> "list"
-        FileManager -> "filemanager"
-        ListTable -> "listtable"
-        ListBar -> "listbar"
-        Form -> "form"
-        Input -> "input"
-        TextArea -> "textarea"
-        TextBox -> "textbox"
-        Button -> "button"
-        Checkbox -> "checkbox"
-        RadioSet -> "radioset"
-        RadioButton -> "radiobutton"
-        Prompt -> "prompt"
-        Question -> "question"
-        Message -> "message"
-        Loading -> "loading"
-        ProgressBar -> "progressbar"
-        Log -> "log"
-        Table -> "table"
-        Terminal -> "terminal"
-        Image -> "image"
-        AnsiImage -> "ansiimage"
-        OverlayImage -> "overlayimage"
-        Video -> "video"
-        Layout -> "layout"
-        Ext str -> "ext:" <> str
+        Node_ -> "node"
+        Screen_ -> "screen"
+        Element_ -> "element"
+        Box_ -> "box"
+        Text_ -> "text"
+        Line_ -> "line"
+        BigText_ -> "bigtext"
+        List_ -> "list"
+        FileManager_ -> "filemanager"
+        ListTable_ -> "listtable"
+        ListBar_ -> "listbar"
+        Form_ -> "form"
+        Input_ -> "input"
+        TextArea_ -> "textarea"
+        TextBox_ -> "textbox"
+        Button_ -> "button"
+        Checkbox_ -> "checkbox"
+        RadioSet_ -> "radioset"
+        RadioButton_ -> "radiobutton"
+        Prompt_ -> "prompt"
+        Question_ -> "question"
+        Message_ -> "message"
+        Loading_ -> "loading"
+        ProgressBar_ -> "progressbar"
+        Log_ -> "log"
+        Table_ -> "table"
+        Terminal_ -> "terminal"
+        Image_ -> "image"
+        AnsiImage_ -> "ansiimage"
+        OverlayImage_ -> "overlayimage"
+        Video_ -> "video"
+        Layout_ -> "layout"
+        Ext_ str -> "ext:" <> str
 
 
 
-data SubjectKind
-data ExtSubjectKind
+data Subject
+data ExtSubject
 
 
-foreign import data NodeK :: SubjectKind
-foreign import data ScreenK :: SubjectKind
-foreign import data ElementK :: SubjectKind
-foreign import data BoxK :: SubjectKind
-foreign import data TextK :: SubjectKind
-foreign import data LineK :: SubjectKind
-foreign import data BigTextK :: SubjectKind
-foreign import data ListK :: SubjectKind
-foreign import data FileManagerK :: SubjectKind
-foreign import data ListTableK :: SubjectKind
-foreign import data ListBarK :: SubjectKind
-foreign import data FormK :: SubjectKind
-foreign import data InputK :: SubjectKind
-foreign import data TextAreaK :: SubjectKind
-foreign import data TextBoxK :: SubjectKind
-foreign import data ButtonK :: SubjectKind
-foreign import data CheckboxK :: SubjectKind
-foreign import data RadioSetK :: SubjectKind
-foreign import data RadioButtonK :: SubjectKind
-foreign import data PromptK :: SubjectKind
-foreign import data QuestionK :: SubjectKind
-foreign import data MessageK :: SubjectKind
-foreign import data LoadingK :: SubjectKind
-foreign import data ProgressBarK :: SubjectKind
-foreign import data LogK :: SubjectKind
-foreign import data TableK :: SubjectKind
-foreign import data TerminalK :: SubjectKind
-foreign import data ImageK :: SubjectKind
-foreign import data AnsiImageK :: SubjectKind
-foreign import data OverlayImageK :: SubjectKind
-foreign import data VideoK :: SubjectKind
-foreign import data LayoutK :: SubjectKind
-foreign import data ExtK :: ExtSubjectKind -> SubjectKind
-foreign import data ProcessK :: ExtSubjectKind
+-- foreign import data Node :: Node
+
+foreign import data Node :: Subject
+foreign import data Screen :: Subject
+foreign import data Element :: Subject
+foreign import data Box :: Subject
+foreign import data Text :: Subject
+foreign import data Line :: Subject
+foreign import data BigText :: Subject
+foreign import data List :: Subject
+foreign import data FileManager :: Subject
+foreign import data ListTable :: Subject
+foreign import data ListBar :: Subject
+foreign import data Form :: Subject
+foreign import data Input :: Subject
+foreign import data TextArea :: Subject
+foreign import data TextBox :: Subject
+foreign import data Button :: Subject
+foreign import data Checkbox :: Subject
+foreign import data RadioSet :: Subject
+foreign import data RadioButton :: Subject
+foreign import data Prompt :: Subject
+foreign import data Question :: Subject
+foreign import data Message :: Subject
+foreign import data Loading :: Subject
+foreign import data ProgressBar :: Subject
+foreign import data Log :: Subject
+foreign import data Table :: Subject
+foreign import data Terminal :: Subject
+foreign import data Image :: Subject
+foreign import data AnsiImage :: Subject
+foreign import data OverlayImage :: Subject
+foreign import data Video :: Subject
+foreign import data Layout :: Subject
+foreign import data Ext :: ExtSubject -> Subject
+foreign import data Process :: ExtSubject
 
 
+node :: Proxy Node
+node = Proxy
 
-nodeK :: Proxy NodeK
-nodeK = Proxy
+screen :: Proxy Screen
+screen = Proxy
 
-screenK :: Proxy ScreenK
-screenK = Proxy
+element :: Proxy Element
+element = Proxy
 
-elementK :: Proxy ElementK
-elementK = Proxy
+box :: Proxy Box
+box = Proxy
 
-boxK :: Proxy BoxK
-boxK = Proxy
+text :: Proxy Text
+text = Proxy
 
-textK :: Proxy TextK
-textK = Proxy
+line :: Proxy Line
+line = Proxy
 
-lineK :: Proxy LineK
-lineK = Proxy
+bigtext :: Proxy BigText
+bigtext = Proxy
 
-bigtextK :: Proxy BigTextK
-bigtextK = Proxy
+list :: Proxy List
+list = Proxy
 
-listK :: Proxy ListK
-listK = Proxy
+filemanager :: Proxy FileManager
+filemanager = Proxy
 
-filemanagerK :: Proxy FileManagerK
-filemanagerK = Proxy
+listtable :: Proxy ListTable
+listtable = Proxy
 
-listtableK :: Proxy ListTableK
-listtableK = Proxy
+listbar :: Proxy ListBar
+listbar = Proxy
 
-listbarK :: Proxy ListBarK
-listbarK = Proxy
+form :: Proxy Form
+form = Proxy
 
-formK :: Proxy FormK
-formK = Proxy
+input :: Proxy Input
+input = Proxy
 
-inputK :: Proxy InputK
-inputK = Proxy
+textarea :: Proxy TextArea
+textarea = Proxy
 
-textareaK :: Proxy TextAreaK
-textareaK = Proxy
+textbox :: Proxy TextBox
+textbox = Proxy
 
-textboxK :: Proxy TextBoxK
-textboxK = Proxy
+button :: Proxy Button
+button = Proxy
 
-buttonK :: Proxy ButtonK
-buttonK = Proxy
+checkbox :: Proxy Checkbox
+checkbox = Proxy
 
-checkboxK :: Proxy CheckboxK
-checkboxK = Proxy
+radioset :: Proxy RadioSet
+radioset = Proxy
 
-radiosetK :: Proxy RadioSetK
-radiosetK = Proxy
+radiobutton :: Proxy RadioButton
+radiobutton = Proxy
 
-radiobuttonK :: Proxy RadioButtonK
-radiobuttonK = Proxy
+prompt :: Proxy Prompt
+prompt = Proxy
 
-promptK :: Proxy PromptK
-promptK = Proxy
+question :: Proxy Question
+question = Proxy
 
-questionK :: Proxy QuestionK
-questionK = Proxy
+message :: Proxy Message
+message = Proxy
 
-messageK :: Proxy MessageK
-messageK = Proxy
+loading :: Proxy Loading
+loading = Proxy
 
-loadingK :: Proxy LoadingK
-loadingK = Proxy
+progressbar :: Proxy ProgressBar
+progressbar = Proxy
 
-progressbarK :: Proxy ProgressBarK
-progressbarK = Proxy
+log :: Proxy Log
+log = Proxy
 
-logK :: Proxy LogK
-logK = Proxy
+table :: Proxy Table
+table = Proxy
 
-tableK :: Proxy TableK
-tableK = Proxy
+terminal :: Proxy Terminal
+terminal = Proxy
 
-terminalK :: Proxy TerminalK
-terminalK = Proxy
+image :: Proxy Image
+image = Proxy
 
-imageK :: Proxy ImageK
-imageK = Proxy
+ansiimage :: Proxy AnsiImage
+ansiimage = Proxy
 
-ansiimageK :: Proxy AnsiImageK
-ansiimageK = Proxy
+overlayimage :: Proxy OverlayImage
+overlayimage = Proxy
 
-overlayimageK :: Proxy OverlayImageK
-overlayimageK = Proxy
+video :: Proxy Video
+video = Proxy
 
-videoK :: Proxy VideoK
-videoK = Proxy
+layout :: Proxy Layout
+layout = Proxy
 
-layoutK :: Proxy LayoutK
-layoutK = Proxy
-
-processK :: Proxy (ExtK ProcessK)
-processK = Proxy
+process :: Proxy (Ext Process)
+process = Proxy
 
 
-class IsSubject :: SubjectKind -> Constraint
+class IsSubject :: Subject -> Constraint
 class IsSubject a where
-  reflectSubject :: Proxy a -> Subject
+  reflectSubject :: Proxy a -> Subject_
+
+{-
+class IsSubject :: Subject -> Constraint
+class IsSubject a where
+  reflectSubject :: Proxy a -> Subject_
+  reify :: Subject_ -> Maybe (Proxy a)
 
 
-instance IsSubject NodeK where reflectSubject _ = Node
-instance IsSubject ScreenK where reflectSubject _ = Screen
-instance IsSubject ElementK where reflectSubject _ = Element
-instance IsSubject BoxK where reflectSubject _ = Box
-instance IsSubject TextK where reflectSubject _ = Text
-instance IsSubject LineK where reflectSubject _ = Line
-instance IsSubject BigTextK where reflectSubject _ = BigText
-instance IsSubject ListK where reflectSubject _ = List
-instance IsSubject FileManagerK where reflectSubject _ = FileManager
-instance IsSubject ListTableK where reflectSubject _ = ListTable
-instance IsSubject ListBarK where reflectSubject _ = ListBar
-instance IsSubject FormK where reflectSubject _ = Form
-instance IsSubject InputK where reflectSubject _ = Input
-instance IsSubject TextAreaK where reflectSubject _ = TextArea
-instance IsSubject TextBoxK where reflectSubject _ = TextBox
-instance IsSubject ButtonK where reflectSubject _ = Button
-instance IsSubject CheckboxK where reflectSubject _ = Checkbox
-instance IsSubject RadioSetK where reflectSubject _ = RadioSet
-instance IsSubject RadioButtonK where reflectSubject _ = RadioButton
-instance IsSubject PromptK where reflectSubject _ = Prompt
-instance IsSubject QuestionK where reflectSubject _ = Question
-instance IsSubject MessageK where reflectSubject _ = Message
-instance IsSubject LoadingK where reflectSubject _ = Loading
-instance IsSubject ProgressBarK where reflectSubject _ = ProgressBar
-instance IsSubject LogK where reflectSubject _ = Log
-instance IsSubject TableK where reflectSubject _ = Table
-instance IsSubject TerminalK where reflectSubject _ = Terminal
+instance IsSubject Node where
+    reflectSubject _ = Node_
+    reify Node_ = Just node
+    reify _ = Nothing
+
+instance IsSubject Screen where
+    reflectSubject _ = Screen_
+    reify Screen_ = Just screen
+    reify _ = Nothing
+-}
+
+instance IsSubject Node where reflectSubject _ = Node_
+instance IsSubject Screen where reflectSubject _ = Screen_
+instance IsSubject Element where reflectSubject _ = Element_
+instance IsSubject Box where reflectSubject _ = Box_
+instance IsSubject Text where reflectSubject _ = Text_
+instance IsSubject Line where reflectSubject _ = Line_
+instance IsSubject BigText where reflectSubject _ = BigText_
+instance IsSubject List where reflectSubject _ = List_
+instance IsSubject FileManager where reflectSubject _ = FileManager_
+instance IsSubject ListTable where reflectSubject _ = ListTable_
+instance IsSubject ListBar where reflectSubject _ = ListBar_
+instance IsSubject Form where reflectSubject _ = Form_
+instance IsSubject Input where reflectSubject _ = Input_
+instance IsSubject TextArea where reflectSubject _ = TextArea_
+instance IsSubject TextBox where reflectSubject _ = TextBox_
+instance IsSubject Button where reflectSubject _ = Button_
+instance IsSubject Checkbox where reflectSubject _ = Checkbox_
+instance IsSubject RadioSet where reflectSubject _ = RadioSet_
+instance IsSubject RadioButton where reflectSubject _ = RadioButton_
+instance IsSubject Prompt where reflectSubject _ = Prompt_
+instance IsSubject Question where reflectSubject _ = Question_
+instance IsSubject Message where reflectSubject _ = Message_
+instance IsSubject Loading where reflectSubject _ = Loading_
+instance IsSubject ProgressBar where reflectSubject _ = ProgressBar_
+instance IsSubject Log where reflectSubject _ = Log_
+instance IsSubject Table where reflectSubject _ = Table_
+instance IsSubject Terminal where reflectSubject _ = Terminal_
+instance IsSubject (Ext Process) where reflectSubject _ = Ext_ "process"
 
 
-class Fires :: forall event'. SubjectKind -> event' -> Constraint
-class Fires (subj :: SubjectKind) event
+class Fires :: forall event'. Subject -> event' -> Constraint
+class Fires (subj :: Subject) event
 
 
-class Extends (parent :: SubjectKind) (child :: SubjectKind)
+
+class Extends (parent :: Subject) (child :: Subject)
 
 
-instance Extends NodeK ScreenK
-instance Extends NodeK ElementK
+instance Extends Node Screen
+instance Extends Node Element
 
-instance Extends NodeK BoxK
-instance Extends ElementK BoxK
+instance Extends Node Box
+instance Extends Element Box
 
-instance Extends NodeK TextK
-instance Extends ElementK TextK
+instance Extends Node Text
+instance Extends Element Text
 
-instance Extends NodeK LayoutK
-instance Extends ElementK LayoutK
+instance Extends Node Layout
+instance Extends Element Layout
 
-instance Extends NodeK LineK
-instance Extends ElementK LineK
-instance Extends BoxK LineK
+instance Extends Node Line
+instance Extends Element Line
+instance Extends Box Line
 
-instance Extends NodeK BigTextK
-instance Extends ElementK BigTextK
-instance Extends BoxK BigTextK
+instance Extends Node BigText
+instance Extends Element BigText
+instance Extends Box BigText
 
-instance Extends NodeK ListK
-instance Extends ElementK ListK
-instance Extends BoxK ListK
+instance Extends Node List
+instance Extends Element List
+instance Extends Box List
 
-instance Extends NodeK ListBarK
-instance Extends ElementK ListBarK
-instance Extends BoxK ListBarK
+instance Extends Node ListBar
+instance Extends Element ListBar
+instance Extends Box ListBar
 
-instance Extends NodeK FormK
-instance Extends ElementK FormK
-instance Extends BoxK FormK
+instance Extends Node Form
+instance Extends Element Form
+instance Extends Box Form
 
-instance Extends NodeK InputK
-instance Extends ElementK InputK
-instance Extends BoxK InputK
+instance Extends Node Input
+instance Extends Element Input
+instance Extends Box Input
 
-instance Extends NodeK RadioSetK
-instance Extends ElementK RadioSetK
-instance Extends BoxK RadioSetK
+instance Extends Node RadioSet
+instance Extends Element RadioSet
+instance Extends Box RadioSet
 
-instance Extends NodeK PromptK
-instance Extends ElementK PromptK
-instance Extends BoxK PromptK
+instance Extends Node Prompt
+instance Extends Element Prompt
+instance Extends Box Prompt
 
-instance Extends NodeK QuestionK
-instance Extends ElementK QuestionK
-instance Extends BoxK QuestionK
+instance Extends Node Question
+instance Extends Element Question
+instance Extends Box Question
 
-instance Extends NodeK MessageK
-instance Extends ElementK MessageK
-instance Extends BoxK MessageK
+instance Extends Node Message
+instance Extends Element Message
+instance Extends Box Message
 
-instance Extends NodeK LoadingK
-instance Extends ElementK LoadingK
-instance Extends BoxK LoadingK
+instance Extends Node Loading
+instance Extends Element Loading
+instance Extends Box Loading
 
-instance Extends NodeK TableK
-instance Extends ElementK TableK
-instance Extends BoxK TableK
+instance Extends Node Table
+instance Extends Element Table
+instance Extends Box Table
 
-instance Extends NodeK TerminalK
-instance Extends ElementK TerminalK
-instance Extends BoxK TerminalK
+instance Extends Node Terminal
+instance Extends Element Terminal
+instance Extends Box Terminal
 
-instance Extends NodeK ImageK
-instance Extends ElementK ImageK
-instance Extends BoxK ImageK
+instance Extends Node Image
+instance Extends Element Image
+instance Extends Box Image
 
-instance Extends NodeK AnsiImageK
-instance Extends ElementK AnsiImageK
-instance Extends BoxK AnsiImageK
+instance Extends Node AnsiImage
+instance Extends Element AnsiImage
+instance Extends Box AnsiImage
 
-instance Extends NodeK OverlayImageK
-instance Extends ElementK OverlayImageK
-instance Extends BoxK OverlayImageK
+instance Extends Node OverlayImage
+instance Extends Element OverlayImage
+instance Extends Box OverlayImage
 
-instance Extends NodeK VideoK
-instance Extends ElementK VideoK
-instance Extends BoxK VideoK
+instance Extends Node Video
+instance Extends Element Video
+instance Extends Box Video
 
-instance Extends NodeK FileManagerK
-instance Extends ElementK FileManagerK
-instance Extends BoxK FileManagerK
-instance Extends ListK FileManagerK
+instance Extends Node FileManager
+instance Extends Element FileManager
+instance Extends Box FileManager
+instance Extends List FileManager
 
-instance Extends NodeK ListTableK
-instance Extends ElementK ListTableK
-instance Extends BoxK ListTableK
-instance Extends ListK ListTableK
+instance Extends Node ListTable
+instance Extends Element ListTable
+instance Extends Box ListTable
+instance Extends List ListTable
 
-instance Extends NodeK TextAreaK
-instance Extends ElementK TextAreaK
-instance Extends BoxK TextAreaK
-instance Extends InputK TextAreaK
+instance Extends Node TextArea
+instance Extends Element TextArea
+instance Extends Box TextArea
+instance Extends Input TextArea
 
-instance Extends NodeK ButtonK
-instance Extends ElementK ButtonK
-instance Extends BoxK ButtonK
-instance Extends InputK ButtonK
+instance Extends Node Button
+instance Extends Element Button
+instance Extends Box Button
+instance Extends Input Button
 
-instance Extends NodeK CheckboxK
-instance Extends ElementK CheckboxK
-instance Extends BoxK CheckboxK
-instance Extends InputK CheckboxK
+instance Extends Node Checkbox
+instance Extends Element Checkbox
+instance Extends Box Checkbox
+instance Extends Input Checkbox
 
-instance Extends NodeK ProgressBarK
-instance Extends ElementK ProgressBarK
-instance Extends BoxK ProgressBarK
-instance Extends InputK ProgressBarK
+instance Extends Node ProgressBar
+instance Extends Element ProgressBar
+instance Extends Box ProgressBar
+instance Extends Input ProgressBar
 
-instance Extends NodeK TextBoxK
-instance Extends ElementK TextBoxK
-instance Extends BoxK TextBoxK
-instance Extends InputK TextBoxK
-instance Extends TextAreaK TextBoxK
+instance Extends Node TextBox
+instance Extends Element TextBox
+instance Extends Box TextBox
+instance Extends Input TextBox
+instance Extends TextArea TextBox
 
-instance Extends NodeK RadioButtonK
-instance Extends ElementK RadioButtonK
-instance Extends BoxK RadioButtonK
-instance Extends InputK RadioButtonK
-instance Extends CheckboxK RadioButtonK
+instance Extends Node RadioButton
+instance Extends Element RadioButton
+instance Extends Box RadioButton
+instance Extends Input RadioButton
+instance Extends Checkbox RadioButton
