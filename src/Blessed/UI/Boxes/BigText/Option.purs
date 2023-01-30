@@ -10,6 +10,8 @@ import Data.Symbol (class IsSymbol)
 import Data.Newtype (class Newtype)
 
 import Blessed.Internal.Core (Attribute, option) as C
+import Blessed.Internal.BlessedSubj (Subject, BigText)
+import Blessed.Internal.NodeKey (class Respresents)
 
 
 import Blessed.UI.Base.Element.Event (Event)
@@ -31,10 +33,16 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type BigTextAttribute r e = C.Attribute (Box.OptionsRow + OptionsRow + r) e
+type BigTextAttribute subj id r e = C.Attribute subj id (Box.OptionsRow + OptionsRow + r) e
 
 
-bigTextOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> BigTextAttribute r e
+bigTextOption
+    :: forall subj id a r r' sym e
+     . Respresents BigText subj id
+    => EncodeJson a
+    => IsSymbol sym
+    => R.Cons sym a r' (Box.OptionsRow + OptionsRow + r)
+    => Proxy sym -> a -> BigTextAttribute subj id r e
 bigTextOption = C.option
 
 
@@ -42,13 +50,22 @@ bdf :: String -> BDFSource
 bdf = BDFSource
 
 
-font :: forall r e. BDFSource -> BigTextAttribute ( font :: BDFSource | r ) e
+font
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents BigText subj id
+    => BDFSource -> BigTextAttribute subj id ( font :: BDFSource | r ) e
 font = bigTextOption (Proxy :: _ "font")
 
 
-fontBold :: forall r e. BDFSource -> BigTextAttribute ( fontBold :: BDFSource | r ) e
+fontBold
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents BigText subj id
+    => BDFSource -> BigTextAttribute subj id ( fontBold :: BDFSource | r ) e
 fontBold = bigTextOption (Proxy :: _ "fontBold")
 
 
-fch :: forall r e. Char -> BigTextAttribute ( fch :: Char | r ) e
+fch
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents BigText subj id
+    => Char -> BigTextAttribute subj id ( fch :: Char | r ) e
 fch = bigTextOption (Proxy :: _ "fch")

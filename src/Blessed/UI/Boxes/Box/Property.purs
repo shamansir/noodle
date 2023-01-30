@@ -15,9 +15,11 @@ import Blessed.Core.Border as Border
 import Data.Codec.Argonaut as CA
 import Data.Argonaut.Decode (class DecodeJson)
 
-import Blessed.Internal.Core (NodeId, GetterFn, GetterFn', Getter, getter, getter') as C
 import Blessed.Internal.BlessedOp as Op
 import Blessed.Internal.Command (get) as C
+import Blessed.Internal.Core (Getter, GetterFn, GetterFn', getter, getter') as C
+import Blessed.Internal.NodeKey (NodeKey, class Respresents)
+import Blessed.Internal.BlessedSubj (Box, Element, Subject, class Extends)
 
 import Blessed.UI.Base.Element.Property as E
 
@@ -25,104 +27,182 @@ import Blessed.UI.Base.Element.Property as E
 type PropertiesRow = E.PropertiesRow
 
 
-getter :: forall sym r' m a. R.Cons sym a r' PropertiesRow => C.GetterFn sym r' PropertiesRow m a
+getter
+    :: forall subj id sym r' m a
+     . Respresents Box subj id
+    => R.Cons sym a r' PropertiesRow
+    => C.GetterFn subj id sym r' PropertiesRow m a
 getter =
     C.getter
 
 
-getter' :: forall sym r' m a. DecodeJson a => R.Cons sym a r' PropertiesRow => C.GetterFn' sym r' PropertiesRow m a
+getter'
+    :: forall subj id sym r' m a
+     . DecodeJson a
+    => Respresents Box subj id
+    => R.Cons sym a r' PropertiesRow
+    => C.GetterFn' subj id sym r' PropertiesRow m a
 getter' =
     C.getter'
 
 
-name :: forall m. C.NodeId -> C.Getter m String
+name
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m String
 name = E.name
 
 
-border :: forall m. C.NodeId -> C.Getter m (Record Border.Evaluated)
+border
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m (Record Border.Evaluated)
 border = E.border
 
 
-style :: forall m. C.NodeId -> C.Getter m (Record Style.Evaluated)
+style
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m (Record Style.Evaluated)
 style = E.style
 
 
-content :: forall m. C.NodeId -> C.Getter m String
+content
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m String
 content = E.content
 
 
-hidden :: forall m. C.NodeId -> C.Getter m Boolean
+hidden
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Boolean
 hidden = E.hidden
 
 
-visible :: forall m. C.NodeId -> C.Getter m Boolean
+visible
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Boolean
 visible = E.visible
 
 
-detached :: forall m. C.NodeId -> C.Getter m Boolean
+detached
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Boolean
 detached = E.detached
 
 
-fg :: forall m. C.NodeId -> C.Getter m Int
+fg
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Int
 fg = E.fg
 
 
-bg :: forall m. C.NodeId -> C.Getter m Int
+bg
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Int
 bg = E.bg
 
 
-bold :: forall m. C.NodeId -> C.Getter m Boolean
+bold
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Boolean
 bold = E.bold
 
 
-underline :: forall m. C.NodeId -> C.Getter m Boolean
+underline
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Boolean
 underline = E.underline
 
 
-width :: forall m. C.NodeId -> C.Getter m Int
+width
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Int
 width = E.width
 
 
-height :: forall m. C.NodeId -> C.Getter m Int
+height
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Int
 height = E.height
 
 
-left :: forall m. C.NodeId -> C.Getter m Int
+left
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Int
 left = E.left
 
 
-right :: forall m. C.NodeId -> C.Getter m Int
+right
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Int
 right = E.right
 
 
-top :: forall m. C.NodeId -> C.Getter m Int
+top
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Int
 top = E.top
 
 
-bottom :: forall m. C.NodeId -> C.Getter m Int
+bottom
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Int
 bottom = E.bottom
 
 
-aleft :: forall m. C.NodeId -> C.Getter m Int
+aleft
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Int
 aleft = E.aleft
 
 
-aright :: forall m. C.NodeId -> C.Getter m Int
+aright
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Int
 aright = E.aright
 
 
-atop :: forall m. C.NodeId -> C.Getter m Int
+atop
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Int
 atop = E.atop
 
 
-abottom :: forall m. C.NodeId -> C.Getter m Int
+abottom
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Int
 abottom = E.abottom
 
 
-tags :: forall m. C.NodeId -> C.Getter m Boolean
+tags
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Boolean
 tags = E.tags
 
 
 
-draggable :: forall m. C.NodeId -> C.Getter m Boolean
+draggable
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Extends Element subj => Respresents Box subj id
+    => NodeKey subj id -> C.Getter m Boolean
 draggable = E.draggable

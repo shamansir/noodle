@@ -19,6 +19,8 @@ import Blessed.Core.Style (StyleOption)
 import Blessed.Core.Border (BorderOption)
 
 import Blessed.Internal.Core (Attribute, option) as C
+import Blessed.Internal.BlessedSubj (Subject, Element, Box, class Extends)
+import Blessed.Internal.NodeKey (class Respresents)
 
 import Blessed.UI.Base.Element.Option as E
 
@@ -27,121 +29,211 @@ type OptionsRow r = E.OptionsRow r
 type Options = Record (OptionsRow ())
 
 
-type BoxAttribute r e = C.Attribute (OptionsRow + r) e
+type BoxAttribute subj id r e = C.Attribute subj id (OptionsRow + r) e
 -- don't lock to the Box events here (and to their own events everywhere), locking is only needed for event handlers?
 
 
-boxOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> BoxAttribute r e
+boxOption
+    :: forall subj id a r r' sym e
+     . Extends Element subj => Respresents Box subj id
+    => EncodeJson a
+    => IsSymbol sym
+    => R.Cons sym a r' (OptionsRow + r)
+    => Proxy sym -> a -> BoxAttribute subj id r e
 boxOption = C.option
 
 
-fg :: forall r e. Color -> BoxAttribute ( fg :: Color | r ) e
+fg
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Color -> BoxAttribute subj id ( fg :: Color | r ) e
 fg = E.fg
 
 
-bg :: forall r e. Color -> BoxAttribute ( bg :: Color | r ) e
+bg
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Color -> BoxAttribute subj id ( bg :: Color | r ) e
 bg = E.bg
 
 
-bold :: forall r e. Boolean -> BoxAttribute ( bold :: Boolean | r ) e
+bold
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Boolean -> BoxAttribute subj id ( bold :: Boolean | r ) e
 bold = E.bold
 
 
-underline :: forall r e. Boolean -> BoxAttribute ( underline :: Boolean | r ) e
+underline
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Boolean -> BoxAttribute subj id ( underline :: Boolean | r ) e
 underline = E.underline
 
 
-style :: forall r e. Array (StyleOption ()) -> BoxAttribute ( style :: Array (StyleOption ()) | r ) e
+style
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Array (StyleOption ()) -> BoxAttribute subj id ( style :: Array (StyleOption ()) | r ) e
 style = E.style
 
 
-border :: forall r e. Array (BorderOption ()) -> BoxAttribute ( border :: Array (BorderOption ()) | r ) e
+border
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Array (BorderOption ()) -> BoxAttribute subj id ( border :: Array (BorderOption ()) | r ) e
 border = E.border
 
 
-content :: forall r e. String -> BoxAttribute ( content :: String | r ) e
+content
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => String -> BoxAttribute subj id ( content :: String | r ) e
 content = E.content
 
 
-clickable :: forall r e. Boolean -> BoxAttribute ( clickable :: Boolean | r ) e
+clickable
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Boolean -> BoxAttribute subj id ( clickable :: Boolean | r ) e
 clickable = E.clickable
 
 
-input :: forall r e. Boolean -> BoxAttribute ( input :: Boolean | r ) e
+input
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Boolean -> BoxAttribute subj id ( input :: Boolean | r ) e
 input = E.input
 
 
-keyable :: forall r e. Boolean -> BoxAttribute ( keyable :: Boolean | r ) e
+keyable
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Boolean -> BoxAttribute subj id ( keyable :: Boolean | r ) e
 keyable = E.keyable
 
 
-focused :: forall r e. Boolean -> BoxAttribute ( focused :: Boolean | r ) e
+focused
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Boolean -> BoxAttribute subj id ( focused :: Boolean | r ) e
 focused = E.focused
 
 
-hidden :: forall r e. Boolean -> BoxAttribute ( hidden :: Boolean | r ) e
+hidden
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Boolean -> BoxAttribute subj id ( hidden :: Boolean | r ) e
 hidden = E.hidden
 
 
-label :: forall r e. String -> BoxAttribute ( label :: String | r ) e
+label
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => String -> BoxAttribute subj id ( label :: String | r ) e
 label = E.label
 
 
-hoverText :: forall r e. String -> BoxAttribute ( hoverText :: String | r ) e
+hoverText
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => String -> BoxAttribute subj id ( hoverText :: String | r ) e
 hoverText = E.hoverText
 
 
-align :: forall r e. HAlign -> BoxAttribute ( align :: HAlign | r ) e
+align
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => HAlign -> BoxAttribute subj id ( align :: HAlign | r ) e
 align = E.align
 
 
-valign :: forall r e. VAlign -> BoxAttribute ( valign :: VAlign | r ) e
+valign
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => VAlign -> BoxAttribute subj id ( valign :: VAlign | r ) e
 valign = E.valign
 
 
-shrink :: forall r e. Flex -> BoxAttribute ( shrink :: Flex | r ) e
+shrink
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Flex -> BoxAttribute subj id ( shrink :: Flex | r ) e
 shrink = E.shrink
 
 
-padding :: forall r e. Padding -> BoxAttribute ( padding :: Padding | r ) e
+padding
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Padding -> BoxAttribute subj id ( padding :: Padding | r ) e
 padding = E.padding
 
 
-width :: forall r e. Dimension -> BoxAttribute ( width :: Dimension | r ) e
+width
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Dimension -> BoxAttribute subj id ( width :: Dimension | r ) e
 width = E.width
 
 
-height :: forall r e. Dimension -> BoxAttribute ( height :: Dimension | r ) e
+height
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Dimension -> BoxAttribute subj id ( height :: Dimension | r ) e
 height = E.height
 
 
-left :: forall r e. Offset -> BoxAttribute ( left :: Offset | r ) e
+left
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Offset -> BoxAttribute subj id ( left :: Offset | r ) e
 left = E.left
 
 
-right :: forall r e. Offset -> BoxAttribute ( right :: Offset | r ) e
+right
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Offset -> BoxAttribute subj id ( right :: Offset | r ) e
 right = E.right
 
 
-top :: forall r e. Offset -> BoxAttribute ( top :: Offset | r ) e
+top
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Offset -> BoxAttribute subj id ( top :: Offset | r ) e
 top = E.top
 
 
-bottom :: forall r e. Offset -> BoxAttribute ( bottom :: Offset | r ) e
+bottom
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Offset -> BoxAttribute subj id ( bottom :: Offset | r ) e
 bottom = E.bottom
 
 
-ch :: forall r e. Char -> BoxAttribute ( ch :: Char | r ) e
+ch
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Char -> BoxAttribute subj id ( ch :: Char | r ) e
 ch = E.ch
 
 
-draggable :: forall r e. Boolean -> BoxAttribute ( draggable :: Boolean | r ) e
+draggable
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Boolean -> BoxAttribute subj id ( draggable :: Boolean | r ) e
 draggable = E.draggable
 
 
-shadow :: forall r e. Boolean -> BoxAttribute ( shadow :: Boolean | r ) e
+shadow
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Boolean -> BoxAttribute subj id ( shadow :: Boolean | r ) e
 shadow = E.shadow
 
 
-tags :: forall r e. Boolean -> BoxAttribute ( tags :: Boolean | r ) e
+tags
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Boolean -> BoxAttribute subj id ( tags :: Boolean | r ) e
 tags = E.tags

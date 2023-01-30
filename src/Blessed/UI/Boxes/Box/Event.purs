@@ -10,20 +10,20 @@ import Blessed.UI.Base.Element.Event as E
 type Event = E.Event
 
 
-type Handler r = E.Handler r
+type Handler subj id r = E.Handler subj id r
 
 
-boxHandler :: forall r. Event -> Handler r
+boxHandler :: forall subj id r. Event -> Handler subj id r
 boxHandler = C.handler
 
 
 
 
-key :: forall r. Array Key -> Handler r
+key :: forall subj id r. Array Key -> Handler subj id r
 key = E.key
 
 
-on :: forall r. Event -> Handler r
+on :: forall subj id r. Event -> Handler subj id r
 on = E.on
 
 

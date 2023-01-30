@@ -4,21 +4,28 @@ import Data.Codec.Argonaut as CA
 
 import Blessed.Internal.Command (arg) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.JsApi (NodeId) as C
+import Blessed.Internal.BlessedSubj (Subject, Box)
+import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.Core (method) as C
 
 
 -- FIXME: Methods from Element
 
 
-setContent :: forall m. String -> C.NodeId -> BlessedOp m
+setContent
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Box subj id
+    => String -> NodeKey subj id -> BlessedOp m
 setContent value nodeId =
     C.method nodeId "setContent"
         [ C.arg CA.string value
         ]
 
 
-setLine :: forall m. Int -> String -> C.NodeId -> BlessedOp m
+setLine
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Box subj id
+    => Int -> String -> NodeKey subj id -> BlessedOp m
 setLine n value nodeId =
     C.method nodeId "setLine"
         [ C.arg CA.int n
@@ -26,7 +33,10 @@ setLine n value nodeId =
         ]
 
 
-insertLine :: forall m. Int -> String -> C.NodeId -> BlessedOp m
+insertLine
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Box subj id
+    => Int -> String -> NodeKey subj id -> BlessedOp m
 insertLine n value nodeId =
     C.method nodeId "insertLine"
         [ C.arg CA.int n
@@ -34,7 +44,10 @@ insertLine n value nodeId =
         ]
 
 
-focus :: forall m. C.NodeId -> BlessedOp m
+focus
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Box subj id
+    => NodeKey subj id -> BlessedOp m
 focus nodeId =
     C.method nodeId "focus" []
 

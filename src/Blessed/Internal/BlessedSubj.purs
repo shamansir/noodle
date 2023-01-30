@@ -333,122 +333,151 @@ class Extends (parent :: Subject) (child :: Subject)
 
 instance Extends Node Screen
 instance Extends Node Element
+instance Extends Node Node
 
 instance Extends Node Box
 instance Extends Element Box
+instance Extends Box Box
 
 instance Extends Node Text
 instance Extends Element Text
+instance Extends Text Text
 
 instance Extends Node Layout
 instance Extends Element Layout
+instance Extends Layout Layout
 
 instance Extends Node Line
 instance Extends Element Line
 instance Extends Box Line
+instance Extends Line Line
 
 instance Extends Node BigText
 instance Extends Element BigText
 instance Extends Box BigText
+instance Extends BigText BigText
 
 instance Extends Node List
 instance Extends Element List
 instance Extends Box List
+instance Extends List List
 
 instance Extends Node ListBar
 instance Extends Element ListBar
 instance Extends Box ListBar
+instance Extends ListBar ListBar
 
 instance Extends Node Form
 instance Extends Element Form
 instance Extends Box Form
+instance Extends Form Form
 
 instance Extends Node Input
 instance Extends Element Input
 instance Extends Box Input
+instance Extends Input Input
 
 instance Extends Node RadioSet
 instance Extends Element RadioSet
 instance Extends Box RadioSet
+instance Extends RadioSet RadioSet
 
 instance Extends Node Prompt
 instance Extends Element Prompt
 instance Extends Box Prompt
+instance Extends Prompt Prompt
 
 instance Extends Node Question
 instance Extends Element Question
 instance Extends Box Question
+instance Extends Question Question
 
 instance Extends Node Message
 instance Extends Element Message
 instance Extends Box Message
+instance Extends Message Message
 
 instance Extends Node Loading
 instance Extends Element Loading
 instance Extends Box Loading
+instance Extends Loading Loading
 
 instance Extends Node Table
 instance Extends Element Table
 instance Extends Box Table
+instance Extends Table Table
 
 instance Extends Node Terminal
 instance Extends Element Terminal
 instance Extends Box Terminal
+instance Extends Terminal Terminal
 
 instance Extends Node Image
 instance Extends Element Image
 instance Extends Box Image
+instance Extends Image Image
 
 instance Extends Node AnsiImage
 instance Extends Element AnsiImage
 instance Extends Box AnsiImage
+instance Extends AnsiImage AnsiImage
 
 instance Extends Node OverlayImage
 instance Extends Element OverlayImage
 instance Extends Box OverlayImage
+instance Extends OverlayImage OverlayImage
 
 instance Extends Node Video
 instance Extends Element Video
 instance Extends Box Video
+instance Extends Video Video
 
 instance Extends Node FileManager
 instance Extends Element FileManager
 instance Extends Box FileManager
 instance Extends List FileManager
+instance Extends FileManager FileManager
 
 instance Extends Node ListTable
 instance Extends Element ListTable
 instance Extends Box ListTable
 instance Extends List ListTable
+instance Extends ListTable ListTable
 
 instance Extends Node TextArea
 instance Extends Element TextArea
 instance Extends Box TextArea
 instance Extends Input TextArea
+instance Extends TextArea TextArea
 
 instance Extends Node Button
 instance Extends Element Button
 instance Extends Box Button
 instance Extends Input Button
+instance Extends Button Button
 
 instance Extends Node Checkbox
 instance Extends Element Checkbox
 instance Extends Box Checkbox
 instance Extends Input Checkbox
+instance Extends Checkbox Checkbox
 
 instance Extends Node ProgressBar
 instance Extends Element ProgressBar
 instance Extends Box ProgressBar
 instance Extends Input ProgressBar
+instance Extends ProgressBar ProgressBar
 
 instance Extends Node TextBox
 instance Extends Element TextBox
 instance Extends Box TextBox
 instance Extends Input TextBox
 instance Extends TextArea TextBox
+instance Extends TextBox ProgressBar
 
 instance Extends Node RadioButton
 instance Extends Element RadioButton
 instance Extends Box RadioButton
 instance Extends Input RadioButton
 instance Extends Checkbox RadioButton
+instance Extends RadioButton RadioButton
