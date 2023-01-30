@@ -3,6 +3,7 @@ module Blessed.UI.Base.Element.Method where
 import Prelude
 
 import Data.Maybe (Maybe)
+import Data.Symbol (class IsSymbol)
 
 import Data.Argonaut.Core (Json)
 import Data.Codec.Argonaut as CA
@@ -12,7 +13,8 @@ import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Blessed.Core.Label (Label)
 import Blessed.Internal.Command (arg) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.JsApi (NodeId) as C
+import Blessed.Internal.BlessedSubj (Element, Subject)
+import Blessed.Internal.NodeKey (NodeKey, class Represents)
 import Blessed.Internal.Core (method) as C
 
 
@@ -26,128 +28,190 @@ import Blessed.Internal.Core (method) as C
 -- on 'keypress'
 
 
-render :: forall m. C.NodeId -> BlessedOp m
+render
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 render nodeId =
     C.method nodeId "render" [ ]
 
 
-
-hide :: forall m. C.NodeId -> BlessedOp m
+hide
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 hide nodeId =
     C.method nodeId "hide" [ ]
 
 
 
-show :: forall m. C.NodeId -> BlessedOp m
+show
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 show nodeId =
     C.method nodeId "show" [ ]
 
 
 
-toggle :: forall m. C.NodeId -> BlessedOp m
+toggle
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 toggle nodeId =
     C.method nodeId "toggle" [ ]
 
 
 
-focus :: forall m. C.NodeId -> BlessedOp m
+focus
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 focus nodeId =
     C.method nodeId "focus" [ ]
 
 
 
-free :: forall m. C.NodeId -> BlessedOp m
+free
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 free nodeId =
     C.method nodeId "free" [ ]
 
 
 
-destroy :: forall m. C.NodeId -> BlessedOp m
+destroy
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 destroy nodeId =
     C.method nodeId "destroy" [ ]
 
 
 
-setIndex :: forall m. Int -> C.NodeId -> BlessedOp m
+setIndex
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => Int -> NodeKey subj id -> BlessedOp m
 setIndex z nodeId =
     C.method nodeId "setIndex" [ C.arg CA.int z ]
 
 
 
-setFront :: forall m. C.NodeId -> BlessedOp m
+setFront
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 setFront nodeId =
     C.method nodeId "setFront" [ ]
 
 
 
-setBack :: forall m. C.NodeId -> BlessedOp m
+setBack
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 setBack nodeId =
     C.method nodeId "setBack" [ ]
 
 
 
-setLabel :: forall m. Label -> C.NodeId -> BlessedOp m
+setLabel
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => Label -> NodeKey subj id -> BlessedOp m
 setLabel label nodeId =
     C.method nodeId "setLabel" [ encodeJson label ]
 
 
 
-removeLabel :: forall m. C.NodeId -> BlessedOp m
+removeLabel
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 removeLabel nodeId =
     C.method nodeId "removeLabel" [ ]
 
 
 
 {- TODO
-setHover :: forall m. Options -> C.NodeId -> BlessedOp m
+setHover
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => Options -> NodeKey subj id -> BlessedOp m
 setHover options nodeId =
     C.method nodeId "setHover" [ C.arg CA.options options ]
 -}
 
 
-removeHover :: forall m. C.NodeId -> BlessedOp m
+removeHover
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 removeHover nodeId =
     C.method nodeId "removeHover" [ ]
 
 
 
-enableMouse :: forall m. C.NodeId -> BlessedOp m
+enableMouse
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 enableMouse nodeId =
     C.method nodeId "enableMouse" [ ]
 
 
 
-enableKeys :: forall m. C.NodeId -> BlessedOp m
+enableKeys
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 enableKeys nodeId =
     C.method nodeId "enableKeys" [ ]
 
 
 
-enableInput :: forall m. C.NodeId -> BlessedOp m
+enableInput
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 enableInput nodeId =
     C.method nodeId "enableInput" [ ]
 
 
 
-enableDrag :: forall m. C.NodeId -> BlessedOp m
+enableDrag
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 enableDrag nodeId =
     C.method nodeId "enableDrag" [ ]
 
 
 
-disableDrag :: forall m. C.NodeId -> BlessedOp m
+disableDrag
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 disableDrag nodeId =
     C.method nodeId "disableDrag" [ ]
 
 
 
-screenshot :: forall m. C.NodeId -> BlessedOp m
+screenshot
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => NodeKey subj id -> BlessedOp m
 screenshot nodeId =
     C.method nodeId "screenshot" [ ]
 
 
 
-screenshotArea :: forall m. Int -> Int -> Int -> Int -> C.NodeId -> BlessedOp m
+screenshotArea
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => Int -> Int -> Int -> Int -> NodeKey subj id -> BlessedOp m
 screenshotArea xi xl yi yl nodeId =
     C.method nodeId "screenshot" [ C.arg CA.int xi, C.arg CA.int xl, C.arg CA.int yi, C.arg CA.int yl ]
 

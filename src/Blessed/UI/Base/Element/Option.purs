@@ -17,6 +17,8 @@ import Blessed.Core.Style (StyleOption)
 import Blessed.Core.Border (BorderOption)
 
 import Blessed.Internal.Core (Attribute, option) as C
+import Blessed.Internal.BlessedSubj (class Extends, Element)
+import Blessed.Internal.NodeKey (class Represents)
 
 import Blessed.UI.Boxes.Box.Event (Event)
 
@@ -60,120 +62,204 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type ElementAttribute r e = C.Attribute (OptionsRow + r) e
+type ElementAttribute subj id r e = C.Attribute subj id (OptionsRow + r) e
 
 
-elmOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ElementAttribute r e
+elmOption :: forall subj id a r r' sym e. Represents Element subj id => EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ElementAttribute subj id r e
 elmOption = C.option
 
 
-fg :: forall r e. Color -> ElementAttribute ( fg :: Color | r ) e
+fg
+    :: forall subj id r e
+     . Represents Element subj id
+    => Color -> ElementAttribute subj id ( fg :: Color | r ) e
 fg = elmOption (Proxy :: _ "fg")
 
 
-bg :: forall r e. Color -> ElementAttribute ( bg :: Color | r ) e
+bg
+    :: forall subj id r e
+     . Represents Element subj id
+    => Color -> ElementAttribute subj id ( bg :: Color | r ) e
 bg = elmOption (Proxy :: _ "bg")
 
 
-bold :: forall r e. Boolean -> ElementAttribute ( bold :: Boolean | r ) e
+bold
+    :: forall subj id r e
+     . Represents Element subj id
+    => Boolean -> ElementAttribute subj id ( bold :: Boolean | r ) e
 bold = elmOption (Proxy :: _ "bold")
 
 
-underline :: forall r e. Boolean -> ElementAttribute ( underline :: Boolean | r ) e
+underline
+    :: forall subj id r e
+     . Represents Element subj id
+    => Boolean -> ElementAttribute subj id ( underline :: Boolean | r ) e
 underline = elmOption (Proxy :: _ "underline")
 
 
-style :: forall r e. Array (StyleOption ()) -> ElementAttribute ( style :: Array (StyleOption ()) | r ) e
+style
+    :: forall subj id r e
+     . Represents Element subj id
+    => Array (StyleOption ()) -> ElementAttribute subj id ( style :: Array (StyleOption ()) | r ) e
 style = elmOption (Proxy :: _ "style")
 
 
-border :: forall r e. Array (BorderOption ()) -> ElementAttribute ( border :: Array (BorderOption ()) | r ) e
+border
+    :: forall subj id r e
+     . Represents Element subj id
+    => Array (BorderOption ()) -> ElementAttribute subj id ( border :: Array (BorderOption ()) | r ) e
 border = elmOption (Proxy :: _ "border")
 
 
-content :: forall r e. String -> ElementAttribute ( content :: String | r ) e
+content
+    :: forall subj id r e
+     . Represents Element subj id
+    => String -> ElementAttribute subj id ( content :: String | r ) e
 content = elmOption (Proxy :: _ "content")
 
 
-clickable :: forall r e. Boolean -> ElementAttribute ( clickable :: Boolean | r ) e
+clickable
+    :: forall subj id r e
+     . Represents Element subj id
+    => Boolean -> ElementAttribute subj id ( clickable :: Boolean | r ) e
 clickable = elmOption (Proxy :: _ "clickable")
 
 
-input :: forall r e. Boolean -> ElementAttribute ( input :: Boolean | r ) e
+input
+    :: forall subj id r e
+     . Represents Element subj id
+    => Boolean -> ElementAttribute subj id ( input :: Boolean | r ) e
 input = elmOption (Proxy :: _ "input")
 
 
-keyable :: forall r e. Boolean -> ElementAttribute ( keyable :: Boolean | r ) e
+keyable
+    :: forall subj id r e
+     . Represents Element subj id
+    => Boolean -> ElementAttribute subj id ( keyable :: Boolean | r ) e
 keyable = elmOption (Proxy :: _ "keyable")
 
 
-focused :: forall r e. Boolean -> ElementAttribute ( focused :: Boolean | r ) e
+focused
+    :: forall subj id r e
+     . Represents Element subj id
+    => Boolean -> ElementAttribute subj id ( focused :: Boolean | r ) e
 focused = elmOption (Proxy :: _ "focused")
 
 
-hidden :: forall r e. Boolean -> ElementAttribute ( hidden :: Boolean | r ) e
+hidden
+    :: forall subj id r e
+     . Represents Element subj id
+    => Boolean -> ElementAttribute subj id ( hidden :: Boolean | r ) e
 hidden = elmOption (Proxy :: _ "hidden")
 
 
-label :: forall r e. String -> ElementAttribute ( label :: String | r ) e
+label
+    :: forall subj id r e
+     . Represents Element subj id
+    => String -> ElementAttribute subj id ( label :: String | r ) e
 label = elmOption (Proxy :: _ "label")
 
 
-hoverText :: forall r e. String -> ElementAttribute ( hoverText :: String | r ) e
+hoverText
+    :: forall subj id r e
+     . Represents Element subj id
+    => String -> ElementAttribute subj id ( hoverText :: String | r ) e
 hoverText = elmOption (Proxy :: _ "hoverText")
 
 
-align :: forall r e. HAlign -> ElementAttribute ( align :: HAlign | r ) e
+align
+    :: forall subj id r e
+     . Represents Element subj id
+    => HAlign -> ElementAttribute subj id ( align :: HAlign | r ) e
 align = elmOption (Proxy :: _ "align")
 
 
-valign :: forall r e. VAlign -> ElementAttribute ( valign :: VAlign | r ) e
+valign
+    :: forall subj id r e
+     . Represents Element subj id
+    => VAlign -> ElementAttribute subj id ( valign :: VAlign | r ) e
 valign = elmOption (Proxy :: _ "valign")
 
 
-shrink :: forall r e. Flex -> ElementAttribute ( shrink :: Flex | r ) e
+shrink
+    :: forall subj id r e
+     . Represents Element subj id
+    => Flex -> ElementAttribute subj id ( shrink :: Flex | r ) e
 shrink = elmOption (Proxy :: _ "shrink")
 
 
-padding :: forall r e. Padding -> ElementAttribute ( padding :: Padding | r ) e
+padding
+    :: forall subj id r e
+     . Represents Element subj id
+    => Padding -> ElementAttribute subj id ( padding :: Padding | r ) e
 padding = elmOption (Proxy :: _ "padding")
 
 
-width :: forall r e. Dimension -> ElementAttribute ( width :: Dimension | r ) e
+width
+    :: forall subj id r e
+     . Represents Element subj id
+    => Dimension -> ElementAttribute subj id ( width :: Dimension | r ) e
 width = elmOption (Proxy :: _ "width")
 
 
-height :: forall r e. Dimension -> ElementAttribute ( height :: Dimension | r ) e
+height
+    :: forall subj id r e
+     . Represents Element subj id
+    => Dimension -> ElementAttribute subj id ( height :: Dimension | r ) e
 height = elmOption (Proxy :: _ "height")
 
 
-left :: forall r e. Offset -> ElementAttribute ( left :: Offset | r ) e
+left
+    :: forall subj id r e
+     . Represents Element subj id
+    => Offset -> ElementAttribute subj id ( left :: Offset | r ) e
 left = elmOption (Proxy :: _ "left")
 
 
-right :: forall r e. Offset -> ElementAttribute ( right :: Offset | r ) e
+right
+    :: forall subj id r e
+     . Represents Element subj id
+    => Offset -> ElementAttribute subj id ( right :: Offset | r ) e
 right = elmOption (Proxy :: _ "right")
 
 
-top :: forall r e. Offset -> ElementAttribute ( top :: Offset | r ) e
+top
+    :: forall subj id r e
+     . Represents Element subj id
+    => Offset -> ElementAttribute subj id ( top :: Offset | r ) e
 top = elmOption (Proxy :: _ "top")
 
 
-bottom :: forall r e. Offset -> ElementAttribute ( bottom :: Offset | r ) e
+bottom
+    :: forall subj id r e
+     . Represents Element subj id
+    => Offset -> ElementAttribute subj id ( bottom :: Offset | r ) e
 bottom = elmOption (Proxy :: _ "bottom")
 
 
-ch :: forall r e. Char -> ElementAttribute ( ch :: Char | r ) e
+ch
+    :: forall subj id r e
+     . Represents Element subj id
+    => Char -> ElementAttribute subj id ( ch :: Char | r ) e
 ch = elmOption (Proxy :: _ "ch")
 
 
-draggable :: forall r e. Boolean -> ElementAttribute ( draggable :: Boolean | r ) e
+draggable
+    :: forall subj id r e
+     . Represents Element subj id
+    => Boolean -> ElementAttribute subj id ( draggable :: Boolean | r ) e
 draggable = elmOption (Proxy :: _ "draggable")
 
 
-shadow :: forall r e. Boolean -> ElementAttribute ( shadow :: Boolean | r ) e
+shadow
+    :: forall subj id r e
+     . Represents Element subj id
+    => Boolean -> ElementAttribute subj id ( shadow :: Boolean | r ) e
 shadow = elmOption (Proxy :: _ "shadow")
 
 
-tags :: forall r e. Boolean -> ElementAttribute ( tags :: Boolean | r ) e
+tags
+    :: forall subj id r e
+     . Represents Element subj id
+    => Boolean -> ElementAttribute subj id ( tags :: Boolean | r ) e
 tags = elmOption (Proxy :: _ "tags")

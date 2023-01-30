@@ -32,3 +32,28 @@ $1 -> \"\L$1\E\"\n
 \"\L$1\E\" -> Just $1\n
 foreign import data $1K :: SubjectKind\n
 \L$1\EK :: Proxy $1K\n\L$1\EK = Proxy\n\n
+
+
+
+
+
+:: forall m. _
+
+
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Represents Element subj id
+    => _
+
+
+
+
+    :: forall subj id r e
+     . Represents Element subj id
+    => _
+
+
+:: forall m. C.NodeId
+
+    :: forall subj id m
+     . Represents Element subj id
+    => NodeKey subj id _

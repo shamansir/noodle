@@ -57,3 +57,7 @@ process = NodeKey
 
 toString :: forall subj sym. K.IsSubject subj => IsSymbol sym => NodeKey subj sym -> String
 toString _ = reflectSymbol (Proxy :: _ sym) <> ":" <> K.toString (K.reflectSubject (Proxy :: _ subj))
+
+
+class (K.Extends parent subj, K.IsSubject parent, K.IsSubject subj, IsSymbol id) <= Represents parent subj id
+instance (K.Extends parent subj, K.IsSubject parent, K.IsSubject subj, IsSymbol id) => Represents parent subj id

@@ -67,18 +67,18 @@ instance events :: C.Events Event where
 
 
 
-type Handler r = C.Handler r Event
+type Handler subj id r = C.Handler subj id r Event
 
 
-elmHandler :: forall r e. Event -> Handler r
+elmHandler :: forall subj id r. Event -> Handler subj id r
 elmHandler = C.handler
 
 
-key :: forall r e. Array Key -> Handler r
+key :: forall subj id r. Array Key -> Handler subj id r
 key = elmHandler <<< Key
 
 
-on :: forall r e. Event -> Handler r
+on :: forall subj id r. Event -> Handler subj id r
 on = elmHandler
 
 
