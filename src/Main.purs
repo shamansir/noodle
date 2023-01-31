@@ -17,6 +17,8 @@ import Blessed.Core.FgBg as FgBg
 import Blessed.Core.Border as Border
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Style as Style
+import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List)
+import Blessed.Internal.NodeKey (NodeKey(..), type (<^>))
 
 
 import Blessed.UI.Boxes.Box as Box
@@ -30,22 +32,28 @@ import Blessed.UI.Boxes.Box.Method as Box
 import Blessed.UI.Lists.ListBar.Option as ListBar
 
 
+mainScreen = NodeKey :: Screen <^> "main-scr"
+patchesBar = NodeKey :: ListBar <^> "patches-bar"
+patchBox = NodeKey :: Box <^> "patch-box"
+nodeList = NodeKey :: List <^> "node-list"
+
+
 main :: Effect Unit
 main = do
   Cli.run
-    (B.screenAnd "main-scr"
+    (B.screenAnd mainScreen
 
         [ Screen.title "foo"
         , Screen.smartCSR true
         ]
 
-        [ B.listbar "patches-bar"
+        [ B.listbar patchesBar
             [ Box.top $ Offset.px 0 ]
             []
-        , B.box "patch-box"
+        , B.box patchBox
             []
             $ []
-        , B.listAnd "node-list"
+        , B.listAnd nodeList
             []
             []
             \_ ->

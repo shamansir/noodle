@@ -334,6 +334,7 @@ class Extends (parent :: Subject) (child :: Subject)
 instance Extends Node Screen
 instance Extends Node Element
 instance Extends Node Node
+instance Extends Screen Screen
 
 instance Extends Node Box
 instance Extends Element Box

@@ -17,6 +17,8 @@ import Blessed.Core.FgBg as FgBg
 import Blessed.Core.Border as Border
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Style as Style
+import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List)
+import Blessed.Internal.NodeKey (NodeKey(..), type (<^>))
 
 
 import Blessed.UI.Boxes.Box as Box
@@ -29,10 +31,14 @@ import Blessed.UI.Boxes.Box.Event as Box
 import Blessed.UI.Boxes.Box.Method as Box
 
 
+mainScreen = NodeKey :: Screen <^> "main-scr"
+mainBox = NodeKey :: Box <^> "main-box"
+
+
 main :: Effect Unit
 main = do
   Cli.run
-    (B.screenAnd "main-scr"
+    (B.screenAnd mainScreen
 
         [ Screen.title "foo"
         , Screen.smartCSR true
@@ -43,7 +49,7 @@ main = do
                 Blessed.exit
         ]
 
-        [ B.box "main-box"
+        [ B.box mainBox
             [ Box.top Offset.center
             , Box.left Offset.center
             , Box.width $ Dimension.percents 50.0
@@ -66,13 +72,13 @@ main = do
 
             , Box.on Box.click $ \box cevt -> do
                 box # Box.setContent "{center}Some different {red-fg}content{/red-fg}.{/center}"
-                B.ref {- B.screen -} "main-scr" >~ Screen.render
+                mainScreen >~ Screen.render
 
             , Box.key (Key.only Key.enter) $ \box kevt -> do
                 box # Box.setContent "{right}Even different {black-fg}content{/black-fg}.{/right}\n"
                 box # Box.setLine 1 "bar"
                 box # Box.insertLine 1 "foo"
-                B.ref {- B.screen -} "main-scr" >~ Screen.render
+                mainScreen >~ Screen.render
 
             ]
 
@@ -81,6 +87,6 @@ main = do
         ]
 
         $ \screen -> do
-            B.ref "main-box" >~ Box.focus
+            mainBox >~ Box.focus
             screen # Screen.render
     )

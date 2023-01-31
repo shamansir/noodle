@@ -2,12 +2,12 @@ module Blessed.UI.Lists.List.Method where
 
 import Prelude
 
-import Blessed.Internal.JsApi as I
+import Blessed.Internal.NodeKey (RawNodeKey)
 
 
 data Item
     = AtIndex Int
-    | Element I.NodeId
+    | Element RawNodeKey
     -- TODO: Node
 
 -- Item : ElementId | Element | Index | String
