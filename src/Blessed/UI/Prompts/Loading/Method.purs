@@ -8,18 +8,25 @@ import Data.Codec.Argonaut as CA
 
 import Blessed.Internal.Command (arg) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.JsApi (NodeId) as C
+import Blessed.Internal.BlessedSubj (Subject, Loading)
+import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.Core (method) as C
 
 
 
-load :: forall m. String -> C.NodeId -> BlessedOp m
+load
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Loading subj id
+    => String -> NodeKey subj id -> BlessedOp m
 load text nodeId =
     C.method nodeId "load"
         [ C.arg CA.string text
         ]
 
 
-stop :: forall m. C.NodeId -> BlessedOp m
+stop
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Loading subj id
+    => NodeKey subj id-> BlessedOp m
 stop nodeId =
     C.method nodeId "stop" [ ]

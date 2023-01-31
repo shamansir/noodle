@@ -12,6 +12,8 @@ import Data.Symbol (class IsSymbol)
 import Blessed.Core.Color (Color)
 
 import Blessed.Internal.Core (Attribute, option) as C
+import Blessed.Internal.BlessedSubj (Subject, FileManager)
+import Blessed.Internal.NodeKey (class Respresents)
 
 
 import Blessed.UI.Lists.List.Option (OptionsRow) as List
@@ -24,12 +26,21 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type FileManagerAttribute r e = C.Attribute (List.OptionsRow + OptionsRow + r) e
+type FileManagerAttribute subj id r e = C.Attribute subj id (List.OptionsRow + OptionsRow + r) e
 
 
-fmOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> FileManagerAttribute r e
+fmOption
+    :: forall subj id a r r' sym e
+     . Respresents FileManager subj id
+    => EncodeJson a
+    => IsSymbol sym
+    => R.Cons sym a r' (OptionsRow + r)
+    => Proxy sym -> a -> FileManagerAttribute subj id r e
 fmOption = C.option
 
 
-cwd :: forall r e. Color -> FileManagerAttribute ( cwd :: String | r ) e
+cwd
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents FileManager subj id
+    => Color -> FileManagerAttribute subj id ( cwd :: String | r ) e
 cwd = fmOption (Proxy :: _ "cwd")

@@ -36,13 +36,13 @@ instance events :: C.Events Event where
 
 
 
-type Handler r = C.Handler r Event
+type Handler subj id r = C.Handler subj id r Event
 
 
-listHandler :: forall r. Event -> Handler r
+listHandler :: forall subj id r. Event -> Handler subj id r
 listHandler = C.handler
 
 
 
-on :: forall r. Event -> Handler r
+on :: forall subj id r. Event -> Handler subj id r
 on = listHandler

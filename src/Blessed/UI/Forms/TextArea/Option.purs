@@ -10,7 +10,8 @@ import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
 
 import Blessed.Internal.Core (Attribute, option) as C
-
+import Blessed.Internal.BlessedSubj (Subject, TextArea)
+import Blessed.Internal.NodeKey (class Respresents)
 
 import Blessed.UI.Boxes.Box.Event (Event)
 import Blessed.UI.Boxes.Box.Option (OptionsRow) as Input
@@ -25,20 +26,35 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type TextAreaAttribute r e = C.Attribute (Input.OptionsRow + OptionsRow + r) e
+type TextAreaAttribute subj id r e = C.Attribute subj id (Input.OptionsRow + OptionsRow + r) e
 
 
-textAreaOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> TextAreaAttribute r e
+textAreaOption
+    :: forall subj id a r r' sym e
+     . Respresents TextArea subj id
+    => EncodeJson a
+    => IsSymbol sym
+    => R.Cons sym a r' (OptionsRow + r)
+    => Proxy sym -> a -> TextAreaAttribute subj id r e
 textAreaOption = C.option
 
 
-mouse :: forall r e. Boolean -> TextAreaAttribute ( mouse :: Boolean | r ) e
+mouse
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents TextArea subj id
+    => Boolean -> TextAreaAttribute subj id ( mouse :: Boolean | r ) e
 mouse = textAreaOption (Proxy :: _ "mouse")
 
 
-keys :: forall r e. Boolean -> TextAreaAttribute ( keys :: Boolean | r ) e
+keys
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents TextArea subj id
+    => Boolean -> TextAreaAttribute subj id ( keys :: Boolean | r ) e
 keys = textAreaOption (Proxy :: _ "keys")
 
 
-inputOnFocus :: forall r e. Boolean -> TextAreaAttribute ( inputOnFocus :: Boolean | r ) e
+inputOnFocus
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents TextArea subj id
+    => Boolean -> TextAreaAttribute subj id ( inputOnFocus :: Boolean | r ) e
 inputOnFocus = textAreaOption (Proxy :: _ "inputOnFocus")

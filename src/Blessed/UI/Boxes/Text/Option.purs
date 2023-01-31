@@ -13,7 +13,8 @@ import Blessed.Core.Color (Color)
 import Blessed.Core.Align (HAlign)
 
 import Blessed.Internal.Core (Attribute, option) as C
-
+import Blessed.Internal.BlessedSubj (Subject, Text)
+import Blessed.Internal.NodeKey (class Respresents)
 
 import Blessed.UI.Base.Element.Option (OptionsRow) as Element
 
@@ -26,16 +27,28 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type TextAttribute r e = C.Attribute (Element.OptionsRow + OptionsRow + r) e
+type TextAttribute subj id r e = C.Attribute subj id (Element.OptionsRow + OptionsRow + r) e
 
 
-textOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> TextAttribute r e
+textOption
+    :: forall subj id a r r' sym e
+     . Respresents Text subj id
+    => EncodeJson a
+    => IsSymbol sym
+    => R.Cons sym a r' (OptionsRow + r)
+    => Proxy sym -> a -> TextAttribute subj id r e
 textOption = C.option
 
 
-fill :: forall r e. Color -> TextAttribute ( fill :: Color | r ) e
+fill
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Text subj id
+    => Color -> TextAttribute subj id ( fill :: Color | r ) e
 fill = textOption (Proxy :: _ "fill")
 
 
-align :: forall r e. HAlign -> TextAttribute ( align :: HAlign | r ) e
+align
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Text subj id
+    => HAlign -> TextAttribute subj id ( align :: HAlign | r ) e
 align = textOption (Proxy :: _ "align")

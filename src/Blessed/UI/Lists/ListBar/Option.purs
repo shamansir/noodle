@@ -17,6 +17,8 @@ import Blessed.Core.FgBg (FgBgOption)
 import Blessed.Core.FgBg (Evaluated) as FgBg
 
 import Blessed.Internal.Core (Attribute, option) as C
+import Blessed.Internal.BlessedSubj (Subject, ListBar)
+import Blessed.Internal.NodeKey (class Respresents)
 
 
 import Blessed.UI.Lists.List.Event (Event)
@@ -34,24 +36,42 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type ListBarAttribute r e = C.Attribute (List.OptionsRow + OptionsRow + r) e
+type ListBarAttribute subj id r e = C.Attribute subj id (List.OptionsRow + OptionsRow + r) e
 
 
-lbOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> ListBarAttribute r e
+lbOption
+    :: forall subj id a r r' sym e
+     . Respresents ListBar subj id
+    => EncodeJson a
+    => IsSymbol sym
+    => R.Cons sym a r' (OptionsRow + r)
+    => Proxy sym -> a -> ListBarAttribute subj id r e
 lbOption = C.option
 
 
-items :: forall r e. Array String -> ListBarAttribute ( items :: Array String | r ) e
+items
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents ListBar subj id
+    => Array String -> ListBarAttribute subj id ( items :: Array String | r ) e
 items = lbOption (Proxy :: _ "items")
 
 
-autoCommandKeys :: forall r e. Boolean -> ListBarAttribute ( autoCommandKeys :: Boolean | r ) e
+autoCommandKeys
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents ListBar subj id
+    => Boolean -> ListBarAttribute subj id ( autoCommandKeys :: Boolean | r ) e
 autoCommandKeys = lbOption (Proxy :: _ "autoCommandKeys")
 
 
-style_selected :: forall r e. Array (FgBgOption ()) -> ListBarAttribute ( style_selected :: Array (FgBgOption ()) | r ) e
+style_selected
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents ListBar subj id
+    => Array (FgBgOption ()) -> ListBarAttribute subj id ( style_selected :: Array (FgBgOption ()) | r ) e
 style_selected = lbOption (Proxy :: _ "style_selected")
 
 
-style_item :: forall r e. Array (FgBgOption ()) -> ListBarAttribute ( style_item :: Array (FgBgOption ()) | r ) e
+style_item
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents ListBar subj id
+    => Array (FgBgOption ()) -> ListBarAttribute subj id ( style_item :: Array (FgBgOption ()) | r ) e
 style_item = lbOption (Proxy :: _ "style_item")

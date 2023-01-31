@@ -14,6 +14,8 @@ import Blessed.Core.Orientation (Orientation)
 import Blessed.Core.Border (BorderType) as B
 
 import Blessed.Internal.Core (Attribute, option) as C
+import Blessed.Internal.BlessedSubj (Subject, Line)
+import Blessed.Internal.NodeKey (class Respresents)
 
 
 import Blessed.UI.Boxes.Box.Option (OptionsRow) as Box
@@ -30,24 +32,42 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type LineAttribute r e = C.Attribute (Box.OptionsRow + OptionsRow + r) e
+type LineAttribute subj id r e = C.Attribute subj id (Box.OptionsRow + OptionsRow + r) e
 
 
-lineOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> LineAttribute r e
+lineOption
+    :: forall subj id a r r' sym e
+     . Respresents Line subj id
+    => EncodeJson a
+    => IsSymbol sym
+    => R.Cons sym a r' (OptionsRow + r)
+    => Proxy sym -> a -> LineAttribute subj id r e
 lineOption = C.option
 
 
-fg :: forall r e. Color -> LineAttribute ( fg :: Color | r ) e
+fg
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Line subj id
+    => Color -> LineAttribute subj id ( fg :: Color | r ) e
 fg = lineOption (Proxy :: _ "fg")
 
 
-bg :: forall r e. Color -> LineAttribute ( bg :: Color | r ) e
+bg
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Line subj id
+    => Color -> LineAttribute subj id ( bg :: Color | r ) e
 bg = lineOption (Proxy :: _ "bg")
 
 
-ch :: forall r e. Char -> LineAttribute ( ch :: Char | r ) e
+ch
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Line subj id
+    => Char -> LineAttribute subj id ( ch :: Char | r ) e
 ch = lineOption (Proxy :: _ "ch")
 
 
-orientation :: forall r e. Orientation -> LineAttribute ( orientation :: Orientation | r ) e
+orientation
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Line subj id
+    => Orientation -> LineAttribute subj id ( orientation :: Orientation | r ) e
 orientation = lineOption (Proxy :: _ "orientation")

@@ -11,6 +11,8 @@ import Data.Symbol (class IsSymbol)
 import Blessed.Core.FgBg (FgBgOption)
 
 import Blessed.Internal.Core (Attribute, option) as C
+import Blessed.Internal.BlessedSubj (Subject, Table)
+import Blessed.Internal.NodeKey (class Respresents)
 
 
 import Blessed.UI.Lists.List.Event (Event)
@@ -29,32 +31,56 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type TableAttribute r e = C.Attribute (List.OptionsRow + OptionsRow + r) e
+type TableAttribute subj id r e = C.Attribute subj id (List.OptionsRow + OptionsRow + r) e
 
 
-tableOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> TableAttribute r e
+tableOption
+    :: forall subj id a r r' sym e
+     . Respresents Table subj id
+    => EncodeJson a
+    => IsSymbol sym
+    => R.Cons sym a r' (OptionsRow + r)
+    => Proxy sym -> a -> TableAttribute subj id r e
 tableOption = C.option
 
 
-rows :: forall r e. Array (Array String) -> TableAttribute ( rows :: Array (Array String) | r ) e
+rows
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Table subj id
+    => Array (Array String) -> TableAttribute subj id ( rows :: Array (Array String) | r ) e
 rows = tableOption (Proxy :: _ "rows")
 
 
-pad :: forall r e. Int -> TableAttribute ( pad :: Int | r ) e
+pad
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Table subj id
+    => Int -> TableAttribute subj id ( pad :: Int | r ) e
 pad = tableOption (Proxy :: _ "pad")
 
 
-noCellBorders :: forall r e. Boolean -> TableAttribute ( noCellBorders :: Boolean | r ) e
+noCellBorders
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Table subj id
+    => Boolean -> TableAttribute subj id ( noCellBorders :: Boolean | r ) e
 noCellBorders = tableOption (Proxy :: _ "noCellBorders")
 
 
-fillCellBorders :: forall r e. Boolean -> TableAttribute ( fillCellBorders :: Boolean | r ) e
+fillCellBorders
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Table subj id
+    => Boolean -> TableAttribute subj id ( fillCellBorders :: Boolean | r ) e
 fillCellBorders = tableOption (Proxy :: _ "fillCellBorders")
 
 
-style_header :: forall r e. Array (FgBgOption ()) -> TableAttribute ( style_header :: Array (FgBgOption ()) | r ) e
+style_header
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Table subj id
+    => Array (FgBgOption ()) -> TableAttribute subj id ( style_header :: Array (FgBgOption ()) | r ) e
 style_header = tableOption (Proxy :: _ "style_header")
 
 
-style_cell :: forall r e. Array (FgBgOption ()) -> TableAttribute ( style_cell :: Array (FgBgOption ()) | r ) e
+style_cell
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Table subj id
+    => Array (FgBgOption ()) -> TableAttribute subj id ( style_cell :: Array (FgBgOption ()) | r ) e
 style_cell = tableOption (Proxy :: _ "style_cell")

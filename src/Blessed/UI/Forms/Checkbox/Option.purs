@@ -14,6 +14,8 @@ import Blessed.Core.FgBg (FgBgOption)
 import Blessed.Core.FgBg (Evaluated) as FgBg
 
 import Blessed.Internal.Core (Attribute, option) as C
+import Blessed.Internal.BlessedSubj (Subject, Checkbox)
+import Blessed.Internal.NodeKey (class Respresents)
 
 
 import Blessed.UI.Boxes.Box.Event (Event)
@@ -29,20 +31,35 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type CheckboxAttribute r e = C.Attribute (Input.OptionsRow + OptionsRow + r) e
+type CheckboxAttribute subj id r e = C.Attribute subj id (Input.OptionsRow + OptionsRow + r) e
 
 
-cbOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> CheckboxAttribute r e
+cbOption
+    :: forall subj id a r r' sym e
+     . Respresents Checkbox subj id
+    => EncodeJson a
+    => IsSymbol sym
+    => R.Cons sym a r' (OptionsRow + r)
+    => Proxy sym -> a -> CheckboxAttribute subj id r e
 cbOption = C.option
 
 
-text :: forall r e. String -> CheckboxAttribute ( text :: String | r ) e
+text
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Checkbox subj id
+    => String -> CheckboxAttribute subj id ( text :: String | r ) e
 text = cbOption (Proxy :: _ "text")
 
 
-checked :: forall r e. Boolean -> CheckboxAttribute ( checked :: Boolean | r ) e
+checked
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Checkbox subj id
+    => Boolean -> CheckboxAttribute subj id ( checked :: Boolean | r ) e
 checked = cbOption (Proxy :: _ "checked")
 
 
-mouse :: forall r e. Boolean -> CheckboxAttribute ( mouse :: Boolean | r ) e
+mouse
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Checkbox subj id
+    => Boolean -> CheckboxAttribute subj id ( mouse :: Boolean | r ) e
 mouse = cbOption (Proxy :: _ "mouse")

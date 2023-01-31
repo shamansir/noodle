@@ -4,13 +4,17 @@ import Data.Codec.Argonaut as CA
 
 import Blessed.Internal.Command (arg) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.JsApi (NodeId) as C
+import Blessed.Internal.BlessedSubj (Subject, Button)
+import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.Core (method) as C
 
 
 -- FIXME: Methods from Element
 
 
-press :: forall m. C.NodeId -> BlessedOp m
+press
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Button subj id
+    => NodeKey subj id -> BlessedOp m
 press nodeId =
     C.method nodeId "press" [ ]

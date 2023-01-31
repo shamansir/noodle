@@ -7,11 +7,15 @@ import Data.Codec.Argonaut as CA
 
 import Blessed.Internal.Command (arg) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.JsApi (NodeId) as C
+import Blessed.Internal.BlessedSubj (Subject, Prompt)
+import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.Core (method) as C
 
 
-input :: forall m. String -> String -> C.NodeId -> BlessedOp m
+input
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Prompt subj id
+    => String -> String -> NodeKey subj id -> BlessedOp m
 input text value nodeId =
     C.method nodeId "input"
         [ C.arg CA.string text

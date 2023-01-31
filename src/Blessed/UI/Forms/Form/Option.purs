@@ -14,6 +14,8 @@ import Blessed.Core.Orientation (Orientation)
 import Blessed.Core.Border (BorderType) as B
 
 import Blessed.Internal.Core (Attribute, option) as C
+import Blessed.Internal.BlessedSubj (Subject, Form)
+import Blessed.Internal.NodeKey (class Respresents)
 
 import Blessed.UI.Boxes.Box.Option (OptionsRow) as Box
 
@@ -26,16 +28,28 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type FormAttribute r e = C.Attribute (Box.OptionsRow + OptionsRow + r) e
+type FormAttribute subj id r e = C.Attribute subj id (Box.OptionsRow + OptionsRow + r) e
 
 
-formOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> FormAttribute r e
+formOption
+    :: forall subj id a r r' sym e
+     . Respresents Form subj id
+    => EncodeJson a
+    => IsSymbol sym
+    => R.Cons sym a r' (OptionsRow + r)
+    => Proxy sym -> a -> FormAttribute subj id r e
 formOption = C.option
 
 
-keys :: forall r e. Boolean -> FormAttribute ( keys :: Boolean | r ) e
+keys
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Form subj id
+    => Boolean -> FormAttribute subj id ( keys :: Boolean | r ) e
 keys = formOption (Proxy :: _ "keys")
 
 
-vi :: forall r e. Boolean -> FormAttribute ( keys :: Boolean | r ) e
+vi
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Form subj id
+    => Boolean -> FormAttribute subj id ( keys :: Boolean | r ) e
 vi = formOption (Proxy :: _ "keys")

@@ -10,6 +10,8 @@ import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
 
 import Blessed.Internal.Core (Attribute, option) as C
+import Blessed.Internal.BlessedSubj (Subject, TextBox)
+import Blessed.Internal.NodeKey (class Respresents)
 
 
 import Blessed.UI.Boxes.Box.Event (Event)
@@ -24,16 +26,28 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type TextBoxAttribute r e = C.Attribute (Input.OptionsRow + OptionsRow + r) e
+type TextBoxAttribute subj id r e = C.Attribute subj id (Input.OptionsRow + OptionsRow + r) e
 
 
-textBoxOption :: forall a r r' sym e. EncodeJson a => IsSymbol sym => R.Cons sym a r' (OptionsRow + r) => Proxy sym -> a -> TextBoxAttribute r e
+textBoxOption
+    :: forall subj id a r r' sym e
+     . Respresents TextBox subj id
+    => EncodeJson a
+    => IsSymbol sym
+    => R.Cons sym a r' (OptionsRow + r)
+    => Proxy sym -> a -> TextBoxAttribute subj id r e
 textBoxOption = C.option
 
 
-secret :: forall r e. String -> TextBoxAttribute ( secret :: String | r ) e
+secret
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents TextBox subj id
+    => String -> TextBoxAttribute subj id ( secret :: String | r ) e
 secret = textBoxOption (Proxy :: _ "secret")
 
 
-censor :: forall r e. String -> TextBoxAttribute ( censor :: String | r ) e
+censor
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents TextBox subj id
+    => String -> TextBoxAttribute subj id ( censor :: String | r ) e
 censor = textBoxOption (Proxy :: _ "censor")

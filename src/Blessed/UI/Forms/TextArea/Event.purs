@@ -35,12 +35,12 @@ instance events :: C.Events Event where
     fromCore _ = Nothing
 
 
-type Handler r = C.Handler r Event
+type Handler subj id r = C.Handler subj id r Event
 
 
-textAreaHandler :: forall r. Event -> Handler r
+textAreaHandler :: forall subj id r. Event -> Handler subj id r
 textAreaHandler = C.handler
 
 
-on :: forall r. Event -> Handler r
+on :: forall subj id r. Event -> Handler subj id r
 on = textAreaHandler
