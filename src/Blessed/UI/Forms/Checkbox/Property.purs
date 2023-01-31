@@ -12,6 +12,8 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.Core as C
+import Blessed.Internal.BlessedSubj (Subject, Checkbox)
+import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 
 
 -- newtype Focused = Focused String
@@ -25,14 +27,24 @@ type PropertiesRow =
     )
 
 
-getter :: forall sym r' m a. R.Cons sym a r' PropertiesRow => C.GetterFn sym r' PropertiesRow m a
+getter
+    :: forall subj id sym r' m a
+     . Respresents Checkbox subj id
+    => R.Cons sym a r' PropertiesRow
+    => C.GetterFn subj id sym r' PropertiesRow m a
 getter =
     C.getter
 
 
-text :: forall m. C.NodeId -> C.Getter m String
+text
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Checkbox subj id
+    => NodeKey subj id -> C.Getter m String
 text = getter (Proxy :: _ "text") CA.string
 
 
-checked :: forall m. C.NodeId -> C.Getter m Boolean
+checked
+    :: forall (subj :: Subject) (id :: Symbol) m
+     . Respresents Checkbox subj id
+    => NodeKey subj id -> C.Getter m Boolean
 checked = getter (Proxy :: _ "checked") CA.boolean

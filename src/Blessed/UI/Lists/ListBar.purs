@@ -5,17 +5,19 @@ module Blessed.UI.Lists.ListBar
 
 
 import Type.Row (type (+))
+import Data.Symbol (class IsSymbol)
 
 
 import Blessed.Internal.Core (Node, NodeAnd, node, nodeAnd) as C
-import Blessed.Internal.BlessedSubj (Subject(..)) as Subject
+import Blessed.Internal.BlessedSubj (ListBar) as Subject
+import Blessed.Internal.NodeKey (NodeKey)
 import Blessed.UI.Lists.ListBar.Option (OptionsRow)
 import Blessed.UI.Lists.ListBar.Event (Event)
 
 
-listbar :: forall r. String -> C.Node ( OptionsRow + r ) Event
-listbar name = C.node Subject.ListBar name
+listbar :: forall id r. IsSymbol id => NodeKey Subject.ListBar id -> C.Node Subject.ListBar id ( OptionsRow + r ) Event
+listbar nodeKey = C.node nodeKey
 
 
-listbarAnd :: forall r. String -> C.NodeAnd ( OptionsRow + r ) Event
-listbarAnd name = C.nodeAnd Subject.ListBar name
+listbarAnd :: forall id r. IsSymbol id => NodeKey Subject.ListBar id -> C.NodeAnd Subject.ListBar id ( OptionsRow + r ) Event
+listbarAnd nodeKey = C.nodeAnd nodeKey

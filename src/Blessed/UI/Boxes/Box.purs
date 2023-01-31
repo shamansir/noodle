@@ -5,19 +5,19 @@ module Blessed.UI.Boxes.Box
 
 
 import Type.Row (type (+))
+import Data.Symbol (class IsSymbol)
 
 import Blessed.UI.Boxes.Box.Option (OptionsRow)
 import Blessed.UI.Boxes.Box.Event (Event)
 
-
 import Blessed.Internal.Core (Node, NodeAnd, node, nodeAnd) as C
-import Blessed.Internal.BlessedSubj (Subject(..)) as Subject
+import Blessed.Internal.BlessedSubj (Box) as Subject
+import Blessed.Internal.NodeKey (NodeKey)
 
 
+box :: forall id r. IsSymbol id => NodeKey Subject.Box id -> C.Node Subject.Box id ( OptionsRow + r ) Event
+box nodeKey = C.node nodeKey
 
-box :: forall r. String -> C.Node ( OptionsRow + r ) Event
-box name = C.node Subject.Box name
 
-
-boxAnd :: forall r. String -> C.NodeAnd ( OptionsRow + r ) Event
-boxAnd name = C.nodeAnd Subject.Box name
+boxAnd :: forall id r. IsSymbol id => NodeKey Subject.Box id -> C.NodeAnd Subject.Box id ( OptionsRow + r ) Event
+boxAnd nodeKey = C.nodeAnd nodeKey

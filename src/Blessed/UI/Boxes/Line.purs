@@ -5,17 +5,19 @@ module Blessed.UI.Boxes.Line
 
 
 import Type.Row (type (+))
+import Data.Symbol (class IsSymbol)
 
 
 import Blessed.Internal.Core (Node, NodeAnd, node, nodeAnd) as C
-import Blessed.Internal.BlessedSubj (Subject(..)) as Subject
+import Blessed.Internal.BlessedSubj (Line) as Subject
+import Blessed.Internal.NodeKey (NodeKey)
 import Blessed.UI.Boxes.Line.Option (OptionsRow)
 import Blessed.UI.Boxes.Line.Event (Event)
 
 
-line :: forall r. String -> C.Node ( OptionsRow + r ) Event
-line name = C.node Subject.Line name
+line :: forall id r. IsSymbol id => NodeKey Subject.Line id -> C.Node Subject.Line id ( OptionsRow + r ) Event
+line nodeKey = C.node nodeKey
 
 
-lineAnd :: forall r. String -> C.NodeAnd ( OptionsRow + r ) Event
-lineAnd name = C.nodeAnd Subject.Line name
+lineAnd :: forall id r. IsSymbol id => NodeKey Subject.Line id -> C.NodeAnd Subject.Line id ( OptionsRow + r ) Event
+lineAnd nodeKey = C.nodeAnd nodeKey
