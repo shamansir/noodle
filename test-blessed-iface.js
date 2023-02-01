@@ -33,7 +33,11 @@ const patchesBar = blessed.listbar({
   items : patches,
   mouse: true,
   keys : true,
-  style : { bg : PALETTE[0], item : { fg : PALETTE[1], bg : PALETTE[0] }, selected : { fg : PALETTE[2], bg : PALETTE[0] } }
+  style :
+    { bg : PALETTE[0]
+    , item : { fg : PALETTE[1], bg : PALETTE[0] }
+    , selected : { fg : PALETTE[2], bg : PALETTE[0] }
+    }
 });
 screen.append(patchesBar);
 

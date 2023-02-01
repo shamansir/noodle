@@ -33,6 +33,9 @@ percents :: Number -> Coord
 percents = Percent
 
 
+-- TODO: Semiring, Ring
+
+
 sum :: Coord -> Coord -> Coord
 sum = Sum
 
@@ -41,7 +44,11 @@ sub :: Coord -> Coord -> Coord
 sub = Sub
 
 
-infixl 6 add as <+>
+center :: Coord
+center = Center
+
+
+infixl 6 sum as <+>
 infixl 6 sub as <->
 
 

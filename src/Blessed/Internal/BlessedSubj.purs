@@ -366,6 +366,7 @@ instance Extends List List
 instance Extends Node ListBar
 instance Extends Element ListBar
 instance Extends Box ListBar
+instance Extends List ListBar -- FIXME: not documented
 instance Extends ListBar ListBar
 
 instance Extends Node Form

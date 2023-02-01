@@ -15,6 +15,7 @@ import Blessed.Core.Orientation (Orientation)
 import Blessed.Core.Border (BorderType) as B
 import Blessed.Core.FgBg (FgBgOption)
 import Blessed.Core.FgBg (Evaluated) as FgBg
+import Blessed.Core.ListStyle (ListStyle, ListStyleOption) as LS
 
 import Blessed.Internal.Core (Attribute, option) as C
 import Blessed.Internal.BlessedSubj (Subject, List)
@@ -34,8 +35,7 @@ type OptionsRow r =
     , search :: String -> Effect Unit
     , interactive :: Boolean
     , invertSelected :: Boolean
-    , style_selected :: Array (FgBgOption ())
-    , style_item :: Array (FgBgOption ())
+    , style :: Array (LS.ListStyleOption ())
     | r
     )
 type Options = Record (OptionsRow ())
@@ -113,15 +113,8 @@ invertSelected
 invertSelected = listOption (Proxy :: _ "invertSelected")
 
 
-style_selected
+style
     :: forall (subj :: Subject) (id :: Symbol) r e
      . Respresents List subj id
-    => Array (FgBgOption ()) -> ListAttribute subj id ( style_selected :: Array (FgBgOption ()) | r ) e
-style_selected = listOption ( Proxy :: Proxy "style_selected" )
-
-
-style_item
-    :: forall (subj :: Subject) (id :: Symbol) r e
-     . Respresents List subj id
-    => Array (FgBgOption ()) -> ListAttribute subj id ( style_item :: Array (FgBgOption ()) | r ) e
-style_item = listOption ( Proxy :: Proxy "style_item" )
+    => Array (LS.ListStyleOption ()) -> ListAttribute subj id ( style :: Array (LS.ListStyleOption ()) | r ) e
+style = listOption (Proxy :: _ "style")
