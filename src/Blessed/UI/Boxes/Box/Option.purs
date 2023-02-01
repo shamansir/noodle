@@ -225,6 +225,13 @@ draggable
 draggable = E.draggable
 
 
+scrollable
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Extends Element subj => Respresents Box subj id
+    => Boolean -> BoxAttribute subj id ( scrollable :: Boolean | r ) e
+scrollable = E.scrollable
+
+
 shadow
     :: forall (subj :: Subject) (id :: Symbol) r e
      . Extends Element subj => Respresents Box subj id

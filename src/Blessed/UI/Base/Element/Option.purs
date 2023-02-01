@@ -52,6 +52,7 @@ type OptionsRow r =
     , scrollable :: Boolean
     , ch :: Char
     , draggable :: Boolean
+    , scrollable :: Boolean
     , shadow :: Boolean
 
 
@@ -255,6 +256,13 @@ draggable
      . Respresents Element subj id
     => Boolean -> ElementAttribute subj id ( draggable :: Boolean | r ) e
 draggable = elmOption (Proxy :: _ "draggable")
+
+
+scrollable
+    :: forall (subj :: Subject) (id :: Symbol) r e
+     . Respresents Element subj id
+    => Boolean -> ElementAttribute subj id ( scrollable :: Boolean | r ) e
+scrollable = elmOption (Proxy :: _ "scrollable")
 
 
 shadow

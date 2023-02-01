@@ -10,6 +10,7 @@ import Cli.App as Cli
 import Blessed ((>~))
 import Blessed as B
 import Blessed (exit) as Blessed
+import Type.Proxy (Proxy(..))
 
 import Blessed.Core.Key as Key
 import Blessed.Core.Offset as Offset
@@ -22,7 +23,8 @@ import Blessed.Core.Coord as Coord
 import Blessed.Core.ListStyle as LStyle
 
 import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List)
-import Blessed.Internal.NodeKey (NodeKey(..), type (<^>))
+import Blessed.Internal.NodeKey (nk, NodeKey(..), type (<^>))
+import Blessed.Internal.NodeKey as NodeKey
 
 
 import Blessed.UI.Boxes.Box as Box
@@ -36,10 +38,13 @@ import Blessed.UI.Boxes.Box.Method as Box
 import Blessed.UI.Lists.List.Option as List
 
 
-mainScreen = NodeKey :: Screen <^> "main-scr"
-patchesBar = NodeKey :: ListBar <^> "patches-bar"
-patchBox = NodeKey :: Box <^> "patch-box"
-nodeList = NodeKey :: List <^> "node-list"
+mainScreen = nk :: Screen <^> "main-scr"
+patchesBar = nk :: ListBar <^> "patches-bar"
+patchBox = nk :: Box <^> "patch-box"
+nodeList = nk :: List <^> "node-list"
+nodeBox = nk :: Box <^> "node-box"
+inlets = nk :: ListBar <^> "inlets"
+outlets = nk :: ListBar <^> "outlets"
 
 
 palette =
@@ -59,6 +64,8 @@ palette =
 
 
 patches = [ "Patch1", "Patch2", "+" ]
+
+items = [ "foo", "bar", "ololo", "hello", "foo1", "bar1", "ololo1", "hello1", "foo2", "bar2", "ololo2", "hello2" ]
 
 
 main :: Effect Unit
@@ -109,7 +116,17 @@ main = do
             []
 
         , B.listAnd nodeList
-            []
+            [ Box.top $ Offset.px 0
+            , Box.left $ Offset.px 0
+            , Box.width $ Dimension.px 0
+            , Box.height $ Dimension.percents 40.0
+            , Box.draggable true
+            , Box.scrollable true
+            , List.items items
+            , List.mouse true
+            , List.keys true
+            , Box.border [ Border.type_ Border._line, Border.fg palette.nodeListFg ]
+            ]
             []
             \_ ->
                 pure unit
