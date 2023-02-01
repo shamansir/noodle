@@ -12,7 +12,8 @@ import Blessed.Core.Key (Key)
 import Blessed.Core.Key as Key
 
 
-import Blessed.Internal.Emitter (class Events, CoreEvent(..)) as C
+import Blessed.Internal.Emitter (class Events, CoreEvent(..), class Fires) as C
+import Blessed.Internal.BlessedSubj (Element, Box, List, ListBar, class Extends)
 import Blessed.Internal.Core (handler, Handler) as C
 
 
@@ -35,14 +36,25 @@ instance events :: C.Events Event where
     fromCore _ = Nothing
 
 
+instance C.Fires List Event
+instance C.Fires ListBar Event
+
 
 type Handler subj id r = C.Handler subj id r Event
 
 
-listHandler :: forall subj id r. Event -> Handler subj id r
+listHandler
+    :: forall subj id r
+     . Extends List subj
+    => C.Fires subj Event
+    => Event -> Handler subj id r
 listHandler = C.handler
 
 
 
-on :: forall subj id r. Event -> Handler subj id r
+on
+    :: forall subj id r
+     . Extends List subj
+    => C.Fires subj Event
+    => Event -> Handler subj id r
 on = listHandler

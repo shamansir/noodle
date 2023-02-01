@@ -25,6 +25,7 @@ import Blessed.Core.ListStyle as LStyle
 import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List)
 import Blessed.Internal.NodeKey (nk, NodeKey(..), type (<^>))
 import Blessed.Internal.NodeKey as NodeKey
+import Blessed.Internal.Core as Core
 
 
 import Blessed.UI.Boxes.Box as Box
@@ -36,6 +37,7 @@ import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Event as Box
 import Blessed.UI.Boxes.Box.Method as Box
 import Blessed.UI.Lists.List.Option as List
+import Blessed.UI.Lists.List.Event as List
 
 
 mainScreen = nk :: Screen <^> "main-scr"
@@ -126,6 +128,7 @@ main = do
             , List.mouse true
             , List.keys true
             , Box.border [ Border.type_ Border._line, Border.fg palette.nodeListFg ]
+            , Core.on List.Select \_ _ -> pure unit
             ]
             []
             \_ ->

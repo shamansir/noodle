@@ -6,6 +6,8 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Argonaut.Core (Json)
 
+import Blessed.Internal.BlessedSubj (Subject)
+
 data CoreEvent
     = CoreEvent -- stub for the moment
 
@@ -24,3 +26,6 @@ instance Events CoreEvent where
     toCore = identity
     fromCore = Just
     -- extract _ = identity
+
+
+class Events e <= Fires (subj :: Subject) e

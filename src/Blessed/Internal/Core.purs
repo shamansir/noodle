@@ -87,8 +87,12 @@ onlyOption :: forall (sym :: Symbol) (r :: Row Type) a. IsSymbol sym => EncodeJs
 onlyOption sym = SoleOption (reflectSymbol sym) <<< encodeJson
 
 
-handler :: forall subj id r e. Events e => e -> Handler subj id r e
+handler :: forall subj id r e. Fires subj e => e -> Handler subj id r e
 handler = Handler
+
+
+on :: forall subj id r e. Fires subj e => e -> Handler subj id r e
+on = handler
 
 
 type Getter m a = Op.BlessedOpG m a
