@@ -39,6 +39,8 @@ import Blessed.UI.Boxes.Box.Method as Box
 import Blessed.UI.Lists.List.Option as List
 import Blessed.UI.Lists.List.Event as List
 
+import Control.Monad.State as State
+
 
 mainScreen = nk :: Screen <^> "main-scr"
 patchesBar = nk :: ListBar <^> "patches-bar"
@@ -70,9 +72,14 @@ patches = [ "Patch1", "Patch2", "+" ]
 items = [ "foo", "bar", "ololo", "hello", "foo1", "bar1", "ololo1", "hello1", "foo2", "bar2", "ololo2", "hello2" ]
 
 
+initialState =
+    { lastShiftX : 0
+    }
+
+
 main :: Effect Unit
 main = do
-  Cli.run
+  Cli.run initialState
     (B.screenAnd mainScreen
 
         [ Screen.title "Noodle"
@@ -128,7 +135,10 @@ main = do
             , List.mouse true
             , List.keys true
             , Box.border [ Border.type_ Border._line, Border.fg palette.nodeListFg ]
-            , Core.on List.Select \_ _ -> pure unit
+            , Core.on List.Select
+                \_ _ -> do
+                    lastShiftX <- _.lastShiftX <$> State.get
+                    pure unit
             ]
             []
             \_ ->

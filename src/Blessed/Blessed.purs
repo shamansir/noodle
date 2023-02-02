@@ -30,7 +30,7 @@ import Blessed.UI.Lists.ListBar.Option (OptionsRow) as ListBar
 import Blessed.UI.Lists.ListBar.Event (Event) as ListBar
 -- import Blessed.Internal.BlessedSubj (Subject(..)) as I
 import Blessed.Internal.NodeKey (NodeKey)
-import Blessed.Internal.Core (Blessed, Node, NodeAnd, encode) as C
+import Blessed.Internal.Core (Blessed, Node, NodeAnd, encode, run, runAnd) as C
 import Blessed.Internal.Emitter (CoreEvent) as C
 import Blessed.Internal.Command (withProcess) as I
 import Blessed.Internal.BlessedSubj (Screen, Box, Line, List, ListBar) as Subject
@@ -51,12 +51,12 @@ infixr 0 with_ as >~
 -- ref id = I.NodeId id
 
 
-run :: C.Blessed Event -> Effect Unit
-run = liftEffect <<< I.execute_ <<< C.encode
+run :: forall state. state -> C.Blessed state Event -> Effect Unit
+run = C.run
 
 
-runAnd :: C.Blessed Event -> I.BlessedOp Effect -> Effect Unit
-runAnd _ _ = pure unit
+runAnd :: forall state. state -> C.Blessed state Event -> I.BlessedOp state Effect -> Effect Unit
+runAnd = C.runAnd
 
 
 screen
@@ -147,5 +147,5 @@ failure :: forall m. I.BlessedOp m
 failure = I.performOnProcess $ I.withProcess "exit" [ CA.encode CA.int 1 ]
 
 
-with_ :: forall subj id m. NodeKey subj id -> (NodeKey subj id -> I.BlessedOp m) -> I.BlessedOp m
+with_ :: forall subj id state m. NodeKey subj id -> (NodeKey subj id -> I.BlessedOp state m) -> I.BlessedOp state m
 with_ = applyFlipped

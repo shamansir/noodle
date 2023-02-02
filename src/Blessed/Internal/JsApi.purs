@@ -3,6 +3,7 @@ module Blessed.Internal.JsApi where
 import Prelude
 
 import Effect (Effect)
+import Effect.Ref (Ref)
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol, reflectSymbol)
 
@@ -23,7 +24,7 @@ import Blessed.Internal.NodeKey as NK
 newtype EventId = EventId String
 
 
-type Registry = Map NK.RawNodeKey Json
+type Registry = Map NK.RawNodeKey Unit
 newtype SRegistry = SRegistry Json
 newtype EventJson = EventJson Json
 
@@ -38,9 +39,10 @@ derive newtype instance EncodeJson SRegistry
 derive newtype instance EncodeJson EventJson
 
 
+-- encode state to Json as well?
 data SProp = SProp String Json
-data SHandler = SHandler EventId (Array Json) (SRegistry -> NK.RawNodeKey -> EventJson -> Effect Unit)
-data SNode = SNode NK.RawNodeKey (Array SProp) (Array SNode) (Array SHandler)
+data SHandler s = SHandler EventId (Array Json) (Ref s -> NK.RawNodeKey -> EventJson -> Effect Unit)
+data SNode s = SNode NK.RawNodeKey (Array SProp) (Array (SNode s)) (Array (SHandler s))
 
 
 newRegistry :: SRegistry

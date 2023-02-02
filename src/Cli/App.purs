@@ -10,9 +10,9 @@ import Blessed.Internal.Core (Blessed)
 import Blessed (Event, run, runAnd) as Blessed
 
 
-run :: Blessed Blessed.Event -> Effect Unit
+run :: forall state. state -> Blessed state Blessed.Event -> Effect Unit
 run = Blessed.run
 
 
-runAnd :: Blessed Blessed.Event -> BlessedOp Effect -> Effect Unit
+runAnd :: forall state. state -> Blessed Blessed.Event -> BlessedOp state Effect -> Effect Unit
 runAnd = Blessed.runAnd

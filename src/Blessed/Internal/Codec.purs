@@ -4,6 +4,9 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Console as Console
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
+
 
 import Data.Array ((:))
 import Data.Array as Array
@@ -126,9 +129,9 @@ commandDumpCodec =
         )
 
 
-encode :: I.SNode -> I.BlessedEnc
-encode rootNode =
-    case encodeRoot rootNode of
+encode :: forall state. Ref state -> I.SNode state -> I.BlessedEnc
+encode stateRef rootNode =
+    case encodeRoot stateRef rootNode of
         nodeEnc /\ handlers ->
             I.BlessedEnc $
                 { root : CA.encode nodeCodec nodeEnc
@@ -136,12 +139,13 @@ encode rootNode =
                 }
 
 
-encodeRoot :: I.SNode -> I.NodeEnc /\ Array I.HandlerCallEnc
-encodeRoot = encode' Nothing
+encodeRoot :: forall state. Ref state -> I.SNode state -> I.NodeEnc /\ Array I.HandlerCallEnc
+encodeRoot stateRef = encode' stateRef Nothing
 
 
-encode' :: Maybe NK.RawNodeKey -> I.SNode -> I.NodeEnc /\ Array I.HandlerCallEnc
+encode' :: forall state. Ref state -> Maybe NK.RawNodeKey -> I.SNode state -> I.NodeEnc /\ Array I.HandlerCallEnc
 encode'
+    stateRef
     maybeParent
     (I.SNode (NK.RawNodeKey rawNodeKey) sprops snodes shandlers)
 
@@ -156,7 +160,7 @@ encode'
         adaptProps :: Array I.SProp -> Array I.PropJson
         adaptProps = map (I.unwrapProp >>> \(name /\ value ) -> { name, value })
 
-        encodeHandler :: Int -> I.SHandler -> I.HandlerCallEnc
+        encodeHandler :: Int -> I.SHandler state -> I.HandlerCallEnc
         encodeHandler localIndex (I.SHandler (I.EventId eventId) args fn) =
             I.HandlerCallEnc
                 { nodeId : rawNodeKey.id
@@ -164,10 +168,10 @@ encode'
                 , event : eventId
                 , args
                 , index : rawNodeKey.id <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index
-                , call : fn (I.newRegistry) (NK.RawNodeKey rawNodeKey)
+                , call : fn stateRef $ NK.RawNodeKey rawNodeKey
                 }
 
-        encodeHandlerRef :: Int -> I.SHandler -> I.HandlerRefEnc
+        encodeHandlerRef :: Int -> I.SHandler state -> I.HandlerRefEnc
         encodeHandlerRef localIndex (I.SHandler (I.EventId eventId) args fn) =
             I.HandlerRefEnc
                 { nodeId : rawNodeKey.id
@@ -194,7 +198,7 @@ encode'
                     (child : allChildren) /\ (itsHandlers <> allHandlers)
                 )
                 ([] /\ [])
-                (encode' (Just $ NK.RawNodeKey rawNodeKey) <$> snodes)
+                (encode' stateRef (Just $ NK.RawNodeKey rawNodeKey) <$> snodes)
 
         (nodeEncoded :: I.NodeEnc) /\ (childrenHandlers :: Array I.HandlerCallEnc) =
             I.NodeEnc

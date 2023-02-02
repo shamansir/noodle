@@ -11,6 +11,8 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
+import Control.Monad.State as State
+
 import Data.Bifunctor (lmap, rmap)
 import Data.Either (Either)
 import Data.Either as Either
@@ -64,8 +66,8 @@ instance functorBlessedOpF :: Functor m => Functor (BlessedOpF state m) where
         PerformOnProcess cmd a -> PerformOnProcess cmd $ f a
 
 
-type BlessedOp m = BlessedOpM I.Registry m Unit
-type BlessedOpG m a = BlessedOpM I.Registry m (Either CA.JsonDecodeError a)
+type BlessedOp state m = BlessedOpM state m Unit
+type BlessedOpG state m a = BlessedOpM state m (Either CA.JsonDecodeError a)
 
 
 
@@ -105,23 +107,23 @@ instance monadRecBlessedOpM :: MonadRec (BlessedOpM state m) where
 
 {- Processing -}
 
-perform :: forall m. I.RawNodeKey -> I.Command -> BlessedOp m
+perform :: forall state m. I.RawNodeKey -> I.Command -> BlessedOp state m
 perform nid cmd = BlessedOpM $ Free.liftF $ PerformOne nid cmd unit
 
 
-performGet :: forall m a. CA.JsonCodec a -> I.RawNodeKey -> I.Command -> BlessedOpG m a
+performGet :: forall state m a. CA.JsonCodec a -> I.RawNodeKey -> I.Command -> BlessedOpG state m a
 performGet codec nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ CA.decode codec
 
 
-performGet' :: forall m a. DecodeJson a => I.RawNodeKey -> I.Command -> BlessedOpG m a
+performGet' :: forall state m a. DecodeJson a => I.RawNodeKey -> I.Command -> BlessedOpG state m a
 performGet' nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ (decodeJson >>> lmap convertJsonError)
 
 
-performSome :: forall m. I.RawNodeKey -> Array I.Command -> BlessedOp m
+performSome :: forall state m. I.RawNodeKey -> Array I.Command -> BlessedOp state m
 performSome nid cmds = BlessedOpM $ Free.liftF $ PerformSome nid cmds unit
 
 
-performOnProcess :: forall m. I.Command -> BlessedOp m
+performOnProcess :: forall state m. I.Command -> BlessedOp state m
 performOnProcess cmd = BlessedOpM $ Free.liftF $ PerformOnProcess cmd unit
 
 
@@ -163,8 +165,19 @@ runM
     => state
     -> BlessedOpM state m
     ~> m
-runM state (BlessedOpM blessedFree) =
-    liftEffect (Ref.new state) >>= \stateRef -> runFreeM stateRef blessedFree
+runM state blessedFree =
+    liftEffect (Ref.new state) >>= \stateRef -> runM' stateRef blessedFree -- flip?
+
+
+runM'
+    :: forall state m
+     . MonadEffect m
+    => MonadRec m
+    => Ref state
+    -> BlessedOpM state m
+    ~> m
+runM' stateRef (BlessedOpM blessedFree) =
+    runFreeM stateRef blessedFree
 
 
 runFreeM
@@ -178,13 +191,16 @@ runFreeM stateRef fn = do
     Free.runFreeM go fn
     where
         go :: forall a. BlessedOpF state m a -> m a
+
         go (State f) = do
             state <- getUserState
             case f state of
                 next /\ nextState -> do
                     writeUserState state nextState
                     pure next
+
         go (Lift m) = m
+
         go (PerformOne target cmd next) = do
             _ <- liftEffect $ callCommand_ target $ encodeCommand cmd
             dumpCommand cmd
@@ -209,13 +225,13 @@ runFreeM stateRef fn = do
         writeUserState _ nextState = liftEffect $ Ref.modify_ (const nextState) stateRef
 
 
-makeHandler :: forall subj sym. I.NodeKey subj sym -> I.EventId -> Array Json -> (I.NodeKey subj sym -> Json -> BlessedOp Effect) -> I.SHandler
+makeHandler :: forall state subj sym. I.NodeKey subj sym -> I.EventId -> Array Json -> (I.NodeKey subj sym -> I.EventJson -> BlessedOp state Effect) -> I.SHandler state
 makeHandler nodeKey eventId arguments op =
     I.SHandler eventId arguments
-        $ \registry rawNodeKey (I.EventJson evt) -> do
+        $ \stateRef rawNodeKey evtJson -> do
             -- TODO: check IDs match?
             dumpHandlerCall rawNodeKey eventId arguments
-            runM (I.unveilRegistry registry) $ op nodeKey $ evt
+            runM' stateRef $ op nodeKey evtJson
 
 
 foreign import execute_ :: I.BlessedEnc -> Effect Unit
