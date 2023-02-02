@@ -111,7 +111,7 @@ list
     :: forall id r state
      . IsSymbol id
     => NodeKey Subject.List id
-    -> C.Node Subject.List id ( List.OptionsRow + r ) state List.Event
+    -> C.Node Subject.List id ( Box.OptionsRow + List.OptionsRow + r ) state List.Event
 list = List.list
 
 
@@ -119,7 +119,7 @@ listAnd
     :: forall id r state
      . IsSymbol id
     => NodeKey Subject.List id
-    -> C.NodeAnd Subject.List id ( List.OptionsRow + r ) state List.Event
+    -> C.NodeAnd Subject.List id ( Box.OptionsRow + List.OptionsRow + r ) state List.Event
 listAnd = List.listAnd
 
 

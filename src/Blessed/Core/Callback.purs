@@ -6,7 +6,7 @@ import Effect (Effect)
 import Blessed.Internal.BlessedOp (BlessedOp)
 
 
-newtype Callback = Callback (BlessedOp Effect)
+newtype Callback state = Callback (BlessedOp state Effect)
 
 
 -- TODO

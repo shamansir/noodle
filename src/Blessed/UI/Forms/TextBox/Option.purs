@@ -26,28 +26,28 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type TextBoxAttribute subj id r e = C.Attribute subj id (Input.OptionsRow + OptionsRow + r) e
+type TextBoxAttribute subj id r state e = C.Attribute subj id (Input.OptionsRow + OptionsRow + r) state e
 
 
 textBoxOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents TextBox subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> TextBoxAttribute subj id r e
+    => Proxy sym -> a -> TextBoxAttribute subj id r state e
 textBoxOption = C.option
 
 
 secret
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents TextBox subj id
-    => String -> TextBoxAttribute subj id ( secret :: String | r ) e
+    => String -> TextBoxAttribute subj id ( secret :: String | r ) state e
 secret = textBoxOption (Proxy :: _ "secret")
 
 
 censor
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents TextBox subj id
-    => String -> TextBoxAttribute subj id ( censor :: String | r ) e
+    => String -> TextBoxAttribute subj id ( censor :: String | r ) state e
 censor = textBoxOption (Proxy :: _ "censor")

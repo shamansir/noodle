@@ -18,7 +18,7 @@ import Blessed.Core.Border as Border
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Style as Style
 import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List)
-import Blessed.Internal.NodeKey (NodeKey(..), type (<^>))
+import Blessed.Internal.NodeKey (NodeKey(..), type (<^>), nk)
 
 
 import Blessed.UI.Boxes.Box as Box
@@ -31,13 +31,13 @@ import Blessed.UI.Boxes.Box.Event as Box
 import Blessed.UI.Boxes.Box.Method as Box
 
 
-mainScreen = NodeKey :: Screen <^> "main-scr"
-mainBox = NodeKey :: Box <^> "main-box"
+mainScreen = nk :: Screen <^> "main-scr"
+mainBox = nk :: Box <^> "main-box"
 
 
 main :: Effect Unit
 main = do
-  Cli.run
+  Cli.run unit
     (B.screenAnd mainScreen
 
         [ Screen.title "foo"
