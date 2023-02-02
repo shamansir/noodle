@@ -15,9 +15,9 @@ import Blessed.Internal.BlessedSubj (Box) as Subject
 import Blessed.Internal.NodeKey (NodeKey)
 
 
-box :: forall id r. IsSymbol id => NodeKey Subject.Box id -> C.Node Subject.Box id ( OptionsRow + r ) Event
+box :: forall id r state. IsSymbol id => NodeKey Subject.Box id -> C.Node Subject.Box id ( OptionsRow + r ) state Event
 box nodeKey = C.node nodeKey
 
 
-boxAnd :: forall id r. IsSymbol id => NodeKey Subject.Box id -> C.NodeAnd Subject.Box id ( OptionsRow + r ) Event
+boxAnd :: forall id r state. IsSymbol id => NodeKey Subject.Box id -> C.NodeAnd Subject.Box id ( OptionsRow + r ) state Event
 boxAnd nodeKey = C.nodeAnd nodeKey

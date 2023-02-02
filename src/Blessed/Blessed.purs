@@ -60,90 +60,90 @@ runAnd = C.runAnd
 
 
 screen
-    :: forall id r
+    :: forall id r state
      . IsSymbol id
     => NodeKey Subject.Screen id
-    -> C.Node Subject.Screen id ( Screen.OptionsRow + r ) Screen.Event
+    -> C.Node Subject.Screen id ( Screen.OptionsRow + r ) state Screen.Event
 screen = Screen.screen
 
 
 screenAnd
-    :: forall id r
+    :: forall id r state
      . IsSymbol id
     => NodeKey Subject.Screen id
-    -> C.NodeAnd Subject.Screen id ( Screen.OptionsRow + r ) Screen.Event
+    -> C.NodeAnd Subject.Screen id ( Screen.OptionsRow + r ) state Screen.Event
 screenAnd = Screen.screenAnd
 
 
 box
-    :: forall id r
+    :: forall id r state
      . IsSymbol id
     => NodeKey Subject.Box id
-    -> C.Node Subject.Box id ( Box.OptionsRow + r ) Box.Event
+    -> C.Node Subject.Box id ( Box.OptionsRow + r ) state Box.Event
 box = Box.box
 
 
 boxAnd
-    :: forall id r
+    :: forall id r state
      . IsSymbol id
     => NodeKey Subject.Box id
-    -> C.NodeAnd Subject.Box id ( Box.OptionsRow + r ) Box.Event
+    -> C.NodeAnd Subject.Box id ( Box.OptionsRow + r ) state Box.Event
 boxAnd = Box.boxAnd
 
 
 line
-    :: forall id r
+    :: forall id r state
      . IsSymbol id
     => NodeKey Subject.Line id
-    -> C.Node Subject.Line id ( Line.OptionsRow + r ) Line.Event
+    -> C.Node Subject.Line id ( Line.OptionsRow + r ) state Line.Event
 line = Line.line
 
 
 lineAnd
-    :: forall id r
+    :: forall id r state
      . IsSymbol id
     => NodeKey Subject.Line id
-    -> C.NodeAnd Subject.Line id ( Line.OptionsRow + r ) Line.Event
+    -> C.NodeAnd Subject.Line id ( Line.OptionsRow + r ) state Line.Event
 lineAnd = Line.lineAnd
 
 
 list
-    :: forall id r
+    :: forall id r state
      . IsSymbol id
     => NodeKey Subject.List id
-    -> C.Node Subject.List id ( List.OptionsRow + r ) List.Event
+    -> C.Node Subject.List id ( List.OptionsRow + r ) state List.Event
 list = List.list
 
 
 listAnd
-    :: forall id r
+    :: forall id r state
      . IsSymbol id
     => NodeKey Subject.List id
-    -> C.NodeAnd Subject.List id ( List.OptionsRow + r ) List.Event
+    -> C.NodeAnd Subject.List id ( List.OptionsRow + r ) state List.Event
 listAnd = List.listAnd
 
 
 listbar
-    :: forall id r
+    :: forall id r state
      . IsSymbol id
     => NodeKey Subject.ListBar id
-    -> C.Node Subject.ListBar id ( ListBar.OptionsRow + r ) ListBar.Event
+    -> C.Node Subject.ListBar id ( ListBar.OptionsRow + r ) state ListBar.Event
 listbar = ListBar.listbar
 
 
 listbarAnd
-    :: forall id r
+    :: forall id r state
      . IsSymbol id
     => NodeKey Subject.ListBar id
-    -> C.NodeAnd Subject.ListBar id ( ListBar.OptionsRow + r ) ListBar.Event
+    -> C.NodeAnd Subject.ListBar id ( ListBar.OptionsRow + r ) state ListBar.Event
 listbarAnd = ListBar.listbarAnd
 
 
-exit :: forall m. I.BlessedOp m
+exit :: forall state m. I.BlessedOp state m
 exit = I.performOnProcess $ I.withProcess "exit" [ CA.encode CA.int 0 ]
 
 
-failure :: forall m. I.BlessedOp m
+failure :: forall state m. I.BlessedOp state m
 failure = I.performOnProcess $ I.withProcess "exit" [ CA.encode CA.int 1 ]
 
 

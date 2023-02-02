@@ -15,9 +15,9 @@ import Blessed.UI.Boxes.Line.Option (OptionsRow)
 import Blessed.UI.Boxes.Line.Event (Event)
 
 
-line :: forall id r. IsSymbol id => NodeKey Subject.Line id -> C.Node Subject.Line id ( OptionsRow + r ) Event
+line :: forall id r state. IsSymbol id => NodeKey Subject.Line id -> C.Node Subject.Line id ( OptionsRow + r ) state Event
 line nodeKey = C.node nodeKey
 
 
-lineAnd :: forall id r. IsSymbol id => NodeKey Subject.Line id -> C.NodeAnd Subject.Line id ( OptionsRow + r ) Event
+lineAnd :: forall id r state. IsSymbol id => NodeKey Subject.Line id -> C.NodeAnd Subject.Line id ( OptionsRow + r ) state Event
 lineAnd nodeKey = C.nodeAnd nodeKey

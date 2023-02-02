@@ -14,5 +14,5 @@ run :: forall state. state -> Blessed state Blessed.Event -> Effect Unit
 run = Blessed.run
 
 
-runAnd :: forall state. state -> Blessed Blessed.Event -> BlessedOp state Effect -> Effect Unit
+runAnd :: forall state. state -> Blessed state Blessed.Event -> BlessedOp state Effect -> Effect Unit
 runAnd = Blessed.runAnd

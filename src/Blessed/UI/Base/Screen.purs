@@ -14,9 +14,9 @@ import Blessed.UI.Base.Screen.Option (OptionsRow)
 import Blessed.UI.Base.Screen.Event (Event)
 
 
-screen :: forall id r. IsSymbol id => NodeKey Subject.Screen id -> C.Node Subject.Screen id ( OptionsRow + r ) Event
+screen :: forall id r state. IsSymbol id => NodeKey Subject.Screen id -> C.Node Subject.Screen id ( OptionsRow + r ) state Event
 screen nodeKey = C.node nodeKey
 
 
-screenAnd :: forall id r. IsSymbol id => NodeKey Subject.Screen id -> C.NodeAnd Subject.Screen id ( OptionsRow + r ) Event
+screenAnd :: forall id r state. IsSymbol id => NodeKey Subject.Screen id -> C.NodeAnd Subject.Screen id ( OptionsRow + r ) state Event
 screenAnd nodeKey = C.nodeAnd nodeKey
