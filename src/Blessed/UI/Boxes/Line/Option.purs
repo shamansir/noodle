@@ -32,42 +32,42 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type LineAttribute subj id r e = C.Attribute subj id (Box.OptionsRow + OptionsRow + r) e
+type LineAttribute subj id r state e = C.Attribute subj id (Box.OptionsRow + OptionsRow + r) state e
 
 
 lineOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents Line subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> LineAttribute subj id r e
+    => Proxy sym -> a -> LineAttribute subj id r state e
 lineOption = C.option
 
 
 fg
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Line subj id
-    => Color -> LineAttribute subj id ( fg :: Color | r ) e
+    => Color -> LineAttribute subj id ( fg :: Color | r ) state e
 fg = lineOption (Proxy :: _ "fg")
 
 
 bg
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Line subj id
-    => Color -> LineAttribute subj id ( bg :: Color | r ) e
+    => Color -> LineAttribute subj id ( bg :: Color | r ) state e
 bg = lineOption (Proxy :: _ "bg")
 
 
 ch
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Line subj id
-    => Char -> LineAttribute subj id ( ch :: Char | r ) e
+    => Char -> LineAttribute subj id ( ch :: Char | r ) state e
 ch = lineOption (Proxy :: _ "ch")
 
 
 orientation
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Line subj id
-    => Orientation -> LineAttribute subj id ( orientation :: Orientation | r ) e
+    => Orientation -> LineAttribute subj id ( orientation :: Orientation | r ) state e
 orientation = lineOption (Proxy :: _ "orientation")

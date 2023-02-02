@@ -33,16 +33,16 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type BigTextAttribute subj id r e = C.Attribute subj id (Box.OptionsRow + OptionsRow + r) e
+type BigTextAttribute subj id r state e = C.Attribute subj id (Box.OptionsRow + OptionsRow + r) state e
 
 
 bigTextOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents BigText subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (Box.OptionsRow + OptionsRow + r)
-    => Proxy sym -> a -> BigTextAttribute subj id r e
+    => Proxy sym -> a -> BigTextAttribute subj id r state e
 bigTextOption = C.option
 
 
@@ -51,21 +51,21 @@ bdf = BDFSource
 
 
 font
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents BigText subj id
-    => BDFSource -> BigTextAttribute subj id ( font :: BDFSource | r ) e
+    => BDFSource -> BigTextAttribute subj id ( font :: BDFSource | r ) state e
 font = bigTextOption (Proxy :: _ "font")
 
 
 fontBold
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents BigText subj id
-    => BDFSource -> BigTextAttribute subj id ( fontBold :: BDFSource | r ) e
+    => BDFSource -> BigTextAttribute subj id ( fontBold :: BDFSource | r ) state e
 fontBold = bigTextOption (Proxy :: _ "fontBold")
 
 
 fch
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents BigText subj id
-    => Char -> BigTextAttribute subj id ( fch :: Char | r ) e
+    => Char -> BigTextAttribute subj id ( fch :: Char | r ) state e
 fch = bigTextOption (Proxy :: _ "fch")

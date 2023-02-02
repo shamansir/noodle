@@ -40,21 +40,21 @@ instance C.Fires List Event
 instance C.Fires ListBar Event
 
 
-type Handler subj id r = C.Handler subj id r Event
+type Handler subj id r state = C.Handler subj id r state Event
 
 
 listHandler
-    :: forall subj id r
+    :: forall subj id r state
      . Extends List subj
     => C.Fires subj Event
-    => Event -> Handler subj id r
+    => Event -> Handler subj id r state
 listHandler = C.handler
 
 
 
 on
-    :: forall subj id r
+    :: forall subj id r state
      . Extends List subj
     => C.Fires subj Event
-    => Event -> Handler subj id r
+    => Event -> Handler subj id r state
 on = listHandler

@@ -41,80 +41,80 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type ListAttribute subj id r e = C.Attribute subj id (Box.OptionsRow + OptionsRow + r) e
+type ListAttribute subj id r state e = C.Attribute subj id (Box.OptionsRow + OptionsRow + r) state e
 
 
 listOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents List subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> ListAttribute subj id r e
+    => Proxy sym -> a -> ListAttribute subj id r state e
 listOption = C.option
 
 
 orientation
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents List subj id
-    => Orientation -> ListAttribute subj id ( orientation :: Orientation | r ) e
+    => Orientation -> ListAttribute subj id ( orientation :: Orientation | r ) state e
 orientation = listOption (Proxy :: _ "orientation")
 
 
 mouse
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents List subj id
-    => Boolean -> ListAttribute subj id ( mouse :: Boolean | r ) e
+    => Boolean -> ListAttribute subj id ( mouse :: Boolean | r ) state e
 mouse = listOption (Proxy :: _ "mouse")
 
 
 keys
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents List subj id
-    => Boolean -> ListAttribute subj id ( keys :: Boolean | r ) e
+    => Boolean -> ListAttribute subj id ( keys :: Boolean | r ) state e
 keys = listOption (Proxy :: _ "keys")
 
 
 vi
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents List subj id
-    => Boolean -> ListAttribute subj id ( vi :: Boolean | r ) e
+    => Boolean -> ListAttribute subj id ( vi :: Boolean | r ) state e
 vi = listOption (Proxy :: _ "vi")
 
 
 items
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents List subj id
-    => Array String -> ListAttribute subj id ( items :: Array String | r ) e
+    => Array String -> ListAttribute subj id ( items :: Array String | r ) state e
 items = listOption (Proxy :: _ "items")
 
 
 -- TODO:
 {-
 search
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents List subj id
-    => (String -> Effect Unit) -> ListAttribute subj id ( search :: (String -> Effect Unit) | r ) e
+    => (String -> Effect Unit) -> ListAttribute subj id ( search :: (String -> Effect Unit) | r ) state e
 search = listOption (Proxy :: _ "search")
 -}
 
 
 interactive
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents List subj id
-    => Boolean -> ListAttribute subj id ( interactive :: Boolean | r ) e
+    => Boolean -> ListAttribute subj id ( interactive :: Boolean | r ) state e
 interactive = listOption (Proxy :: _ "interactive")
 
 
 invertSelected
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents List subj id
-    => Boolean -> ListAttribute subj id ( invertSelected :: Boolean | r ) e
+    => Boolean -> ListAttribute subj id ( invertSelected :: Boolean | r ) state e
 invertSelected = listOption (Proxy :: _ "invertSelected")
 
 
 style
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents List subj id
-    => Array (LS.ListStyleOption ()) -> ListAttribute subj id ( style :: Array (LS.ListStyleOption ()) | r ) e
+    => Array (LS.ListStyleOption ()) -> ListAttribute subj id ( style :: Array (LS.ListStyleOption ()) | r ) state e
 style = listOption (Proxy :: _ "style")

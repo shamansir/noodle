@@ -15,8 +15,8 @@ import Blessed.Internal.Core (method) as C
 
 
 setRows
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Table subj id
-    => Array (Array String) -> NodeKey subj id -> BlessedOp m
+    => Array (Array String) -> NodeKey subj id -> BlessedOp state m
 setRows data_ nodeId =
     C.method nodeId "setRows" [ C.arg (CA.array (CA.array CA.string)) data_ ]

@@ -14,17 +14,17 @@ import Blessed.Internal.Core (method) as C
 -- FIXME: Methods from Element
 
 progress
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents ProgressBar subj id
-    => Int -> NodeKey subj id -> BlessedOp m
+    => Int -> NodeKey subj id -> BlessedOp state m
 progress amount nodeId =
     C.method nodeId "progress"
         [ C.arg CA.int amount ]
 
 
 reset
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents ProgressBar subj id
-    => NodeKey subj id -> BlessedOp m
+    => NodeKey subj id -> BlessedOp state m
 reset nodeId =
     C.method nodeId "reset" [ ]

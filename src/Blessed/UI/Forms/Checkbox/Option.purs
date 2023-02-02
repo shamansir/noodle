@@ -31,35 +31,35 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type CheckboxAttribute subj id r e = C.Attribute subj id (Input.OptionsRow + OptionsRow + r) e
+type CheckboxAttribute subj id r state e = C.Attribute subj id (Input.OptionsRow + OptionsRow + r) state e
 
 
 cbOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents Checkbox subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> CheckboxAttribute subj id r e
+    => Proxy sym -> a -> CheckboxAttribute subj id r state e
 cbOption = C.option
 
 
 text
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Checkbox subj id
-    => String -> CheckboxAttribute subj id ( text :: String | r ) e
+    => String -> CheckboxAttribute subj id ( text :: String | r ) state e
 text = cbOption (Proxy :: _ "text")
 
 
 checked
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Checkbox subj id
-    => Boolean -> CheckboxAttribute subj id ( checked :: Boolean | r ) e
+    => Boolean -> CheckboxAttribute subj id ( checked :: Boolean | r ) state e
 checked = cbOption (Proxy :: _ "checked")
 
 
 mouse
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Checkbox subj id
-    => Boolean -> CheckboxAttribute subj id ( mouse :: Boolean | r ) e
+    => Boolean -> CheckboxAttribute subj id ( mouse :: Boolean | r ) state e
 mouse = cbOption (Proxy :: _ "mouse")

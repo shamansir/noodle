@@ -5,8 +5,9 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 
 
-import Blessed.Internal.Emitter (class Events, CoreEvent(..)) as C
 import Blessed.Internal.Core (handler, Handler) as C
+import Blessed.Internal.BlessedSubj (Line, class Extends)
+import Blessed.Internal.Emitter (class Events, CoreEvent(..), class Fires) as C
 
 
 data Event
@@ -22,14 +23,16 @@ instance events :: C.Events Event where
     fromCore _ = Nothing
 
 
+instance C.Fires Line Event
 
-type Handler subj id r = C.Handler subj id r Event
+
+type Handler subj id r state = C.Handler subj id r state Event
 
 
-lineHandler :: forall subj id r. Event -> Handler subj id r
+lineHandler :: forall subj id r state. Extends Line subj => C.Fires subj Event => Event -> Handler subj id r state
 lineHandler = C.handler
 
 
 
-on :: forall subj id r. Event -> Handler subj id r
+on :: forall subj id r state. Extends Line subj => C.Fires subj Event => Event -> Handler subj id r state
 on = lineHandler

@@ -25,28 +25,28 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type LogAttribute subj id r e = C.Attribute subj id (List.OptionsRow + OptionsRow + r) e
+type LogAttribute subj id r state e = C.Attribute subj id (List.OptionsRow + OptionsRow + r) state e
 
 
 logOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents Log subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> LogAttribute subj id r e
+    => Proxy sym -> a -> LogAttribute subj id r state e
 logOption = C.option
 
 
 scrollback
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Log subj id
-    => Int -> LogAttribute subj id ( pad :: Int | r ) e
+    => Int -> LogAttribute subj id ( pad :: Int | r ) state e
 scrollback = logOption (Proxy :: _ "pad")
 
 
 scrollbackOnInput
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Log subj id
-    => Boolean -> LogAttribute subj id ( scrollbackOnInput :: Boolean | r ) e
+    => Boolean -> LogAttribute subj id ( scrollbackOnInput :: Boolean | r ) state e
 scrollbackOnInput = logOption (Proxy :: _ "scrollbackOnInput")

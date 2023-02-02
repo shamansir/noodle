@@ -14,8 +14,8 @@ import Blessed.Internal.Core (method) as C
 
 
 log
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Log subj id
-    => String -> NodeKey subj id -> BlessedOp m
+    => String -> NodeKey subj id -> BlessedOp state m
 log what nodeId =
     C.method nodeId "log" [ C.arg CA.string what ]

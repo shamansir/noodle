@@ -7,7 +7,8 @@ import Data.Tuple.Nested ((/\))
 
 import Blessed.Core.Key (Key)
 import Blessed.Core.Key as Key
-import Blessed.Internal.Emitter (class Events, CoreEvent(..)) as C
+import Blessed.Internal.BlessedSubj (Screen, class Extends)
+import Blessed.Internal.Emitter (class Events, CoreEvent(..), class Fires) as C
 import Blessed.Internal.Core (handler, Handler) as C
 
 
@@ -49,12 +50,15 @@ instance events :: C.Events Event where
     fromCore _ = Nothing
 
 
-type Handler subj id r = C.Handler subj id r Event
+type Handler subj id r state = C.Handler subj id r state Event
 
 
-screenHandler :: forall subj id r. Event -> Handler subj id r
+instance C.Fires Screen Event
+
+
+screenHandler :: forall subj id r state. Extends Screen subj => C.Fires subj Event => Event -> Handler subj id r state
 screenHandler = C.handler
 
 
-key :: forall subj id r. Array Key -> Handler subj id r
+key :: forall subj id r state. Extends Screen subj => C.Fires subj Event => Array Key -> Handler subj id r state
 key = screenHandler <<< Key

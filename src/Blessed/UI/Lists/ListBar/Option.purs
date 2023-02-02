@@ -37,28 +37,28 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type ListBarAttribute subj id r e = C.Attribute subj id (List.OptionsRow + OptionsRow + r) e
+type ListBarAttribute subj id r state e = C.Attribute subj id (List.OptionsRow + OptionsRow + r) state e
 
 
 lbOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents ListBar subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> ListBarAttribute subj id r e
+    => Proxy sym -> a -> ListBarAttribute subj id r state e
 lbOption = C.option
 
 
 items
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ListBar subj id
-    => Array String -> ListBarAttribute subj id ( items :: Array String | r ) e
+    => Array String -> ListBarAttribute subj id ( items :: Array String | r ) state e
 items = lbOption (Proxy :: _ "items")
 
 
 autoCommandKeys
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ListBar subj id
-    => Boolean -> ListBarAttribute subj id ( autoCommandKeys :: Boolean | r ) e
+    => Boolean -> ListBarAttribute subj id ( autoCommandKeys :: Boolean | r ) state e
 autoCommandKeys = lbOption (Proxy :: _ "autoCommandKeys")

@@ -68,7 +68,7 @@ instance events :: C.Events Event where
 
 
 
-type Handler subj id r = C.Handler subj id r Event
+type Handler subj id r state = C.Handler subj id r state Event
 
 
 instance C.Fires Element Event
@@ -78,26 +78,26 @@ instance C.Fires ListBar Event
 
 
 elmHandler
-    :: forall subj id r
+    :: forall subj id r state
      . Extends Element subj
     => C.Fires subj Event
-    => Event -> Handler subj id r
+    => Event -> Handler subj id r state
 elmHandler = C.handler
 
 
 key
-    :: forall subj id r
+    :: forall subj id r state
      . Extends Element subj
     => C.Fires subj Event
-    => Array Key -> Handler subj id r
+    => Array Key -> Handler subj id r state
 key = elmHandler <<< Key
 
 
 on
-    :: forall subj id r
+    :: forall subj id r state
      . Extends Element subj
     => C.Fires subj Event
-    => Event -> Handler subj id r
+    => Event -> Handler subj id r state
 on = elmHandler
 
 

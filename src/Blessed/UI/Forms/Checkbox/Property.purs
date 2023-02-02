@@ -28,23 +28,23 @@ type PropertiesRow =
 
 
 getter
-    :: forall subj id sym r' m a
+    :: forall subj id sym r' state m a
      . Respresents Checkbox subj id
     => R.Cons sym a r' PropertiesRow
-    => C.GetterFn subj id sym r' PropertiesRow m a
+    => C.GetterFn subj id sym r' PropertiesRow state m a
 getter =
     C.getter
 
 
 text
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Checkbox subj id
-    => NodeKey subj id -> C.Getter m String
+    => NodeKey subj id -> C.Getter state m String
 text = getter (Proxy :: _ "text") CA.string
 
 
 checked
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Checkbox subj id
-    => NodeKey subj id -> C.Getter m Boolean
+    => NodeKey subj id -> C.Getter state m Boolean
 checked = getter (Proxy :: _ "checked") CA.boolean

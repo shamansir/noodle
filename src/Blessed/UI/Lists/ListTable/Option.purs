@@ -29,49 +29,49 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type ListTableAttribute subj id r e = C.Attribute subj id (List.OptionsRow + OptionsRow + r) e
+type ListTableAttribute subj id r state e = C.Attribute subj id (List.OptionsRow + OptionsRow + r) state e
 
 
 ltOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents ListTable subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> ListTableAttribute subj id r e
+    => Proxy sym -> a -> ListTableAttribute subj id r state e
 ltOption = C.option
 
 
 rows
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ListTable subj id
-    => Array (Array String) -> ListTableAttribute subj id ( rows :: Array (Array String) | r ) e
+    => Array (Array String) -> ListTableAttribute subj id ( rows :: Array (Array String) | r ) state e
 rows = ltOption (Proxy :: _ "rows")
 
 
 pad
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ListTable subj id
-    => Int -> ListTableAttribute subj id ( pad :: Int | r ) e
+    => Int -> ListTableAttribute subj id ( pad :: Int | r ) state e
 pad = ltOption (Proxy :: _ "pad")
 
 
 noCellBorders
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ListTable subj id
-    => Boolean -> ListTableAttribute subj id ( noCellBorders :: Boolean | r ) e
+    => Boolean -> ListTableAttribute subj id ( noCellBorders :: Boolean | r ) state e
 noCellBorders = ltOption (Proxy :: _ "noCellBorders")
 
 
 style_header
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ListTable subj id
-    => Array (FgBgOption ()) -> ListTableAttribute subj id ( style_header :: Array (FgBgOption ()) | r ) e
+    => Array (FgBgOption ()) -> ListTableAttribute subj id ( style_header :: Array (FgBgOption ()) | r ) state e
 style_header = ltOption (Proxy :: _ "style_header")
 
 
 style_cell
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ListTable subj id
-    => Array (FgBgOption ()) -> ListTableAttribute subj id ( style_cell :: Array (FgBgOption ()) | r ) e
+    => Array (FgBgOption ()) -> ListTableAttribute subj id ( style_cell :: Array (FgBgOption ()) | r ) state e
 style_cell = ltOption (Proxy :: _ "style_cell")

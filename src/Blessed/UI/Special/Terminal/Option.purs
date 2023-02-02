@@ -37,49 +37,49 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type TerminalAttribute subj id r e = C.Attribute subj id (List.OptionsRow + OptionsRow + r) e
+type TerminalAttribute subj id r state e = C.Attribute subj id (List.OptionsRow + OptionsRow + r) state e
 
 
 terminalOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents Subj.Terminal subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> TerminalAttribute subj id r e
+    => Proxy sym -> a -> TerminalAttribute subj id r state e
 terminalOption = C.option
 
 
 handler
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Subj.Terminal subj id
-    => Unit -> TerminalAttribute subj id ( handler :: Unit | r ) e
+    => Unit -> TerminalAttribute subj id ( handler :: Unit | r ) state e
 handler = terminalOption (Proxy :: _ "handler")
 
 
 shell
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Subj.Terminal subj id
-    => String -> TerminalAttribute subj id ( shell :: String | r ) e
+    => String -> TerminalAttribute subj id ( shell :: String | r ) state e
 shell = terminalOption (Proxy :: _ "shell")
 
 
 args
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Subj.Terminal subj id
-    => Array Json -> TerminalAttribute subj id ( args :: Array Json | r ) e
+    => Array Json -> TerminalAttribute subj id ( args :: Array Json | r ) state e
 args = terminalOption (Proxy :: _ "args")
 
 
 cursor
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Subj.Terminal subj id
-    => Cursor -> TerminalAttribute subj id ( cursor :: Cursor | r ) e
+    => Cursor -> TerminalAttribute subj id ( cursor :: Cursor | r ) state e
 cursor = terminalOption (Proxy :: _ "cursor")
 
 
 terminal
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Subj.Terminal subj id
-    => Terminal -> TerminalAttribute subj id ( terminal :: Terminal | r ) e
+    => Terminal -> TerminalAttribute subj id ( terminal :: Terminal | r ) state e
 terminal = terminalOption (Proxy :: _ "terminal")

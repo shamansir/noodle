@@ -34,58 +34,58 @@ type PropertiesRow =
 
 
 getter
-    :: forall subj id sym r' m a
+    :: forall subj id sym r' state m a
      . Respresents Node subj id
     => R.Cons sym a r' PropertiesRow
-    => C.GetterFn subj id sym r' PropertiesRow m a
+    => C.GetterFn subj id sym r' PropertiesRow state m a
 getter =
     C.getter
 
 
 type_
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Node subj id
-    => NodeKey subj id -> C.Getter m Subject_
+    => NodeKey subj id -> C.Getter state m Subject_
 type_ = getter (Proxy :: _ "type") kindCodec
 
 
 options
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Node subj id
-    => NodeKey subj id -> C.Getter m Json
+    => NodeKey subj id -> C.Getter state m Json
 options = getter (Proxy :: _ "options") CA.json
 
 
 parent
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Node subj id
-    => NodeKey subj id -> C.Getter m Json
+    => NodeKey subj id -> C.Getter state m Json
 parent = getter (Proxy :: _ "parent") CA.json
 
 
 screen
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Node subj id
-    => NodeKey subj id -> C.Getter m Json
+    => NodeKey subj id -> C.Getter state m Json
 screen = getter (Proxy :: _ "screen") CA.json
 
 
 children
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Node subj id
-    => NodeKey subj id -> C.Getter m (Array Json)
+    => NodeKey subj id -> C.Getter state m (Array Json)
 children = getter (Proxy :: _ "children") $ CA.array CA.json
 
 
 data_
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Node subj id
-    => NodeKey subj id -> C.Getter m Json
+    => NodeKey subj id -> C.Getter state m Json
 data_ = getter (Proxy :: _ "data") CA.json
 
 
 index
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Node subj id
-    => NodeKey subj id -> C.Getter m Int
+    => NodeKey subj id -> C.Getter state m Int
 index = getter (Proxy :: _ "index") CA.int

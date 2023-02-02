@@ -25,21 +25,21 @@ type Options = Record (OptionsU)
 
 
 
-type NodeAttribute subj id r e = C.Attribute subj id (OptionsRow + r) e
+type NodeAttribute subj id r state e = C.Attribute subj id (OptionsRow + r) state e
 
 
 nodeOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents Node subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> NodeAttribute subj id r e
+    => Proxy sym -> a -> NodeAttribute subj id r state e
 nodeOption = C.option
 
 
 screen
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Node subj id
-    => String -> NodeAttribute subj id ( screen :: String | r ) e
+    => String -> NodeAttribute subj id ( screen :: String | r ) state e
 screen = nodeOption (Proxy :: _ "screen")

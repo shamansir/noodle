@@ -2,6 +2,8 @@ module Blessed.UI.Lists.ListBar.Method where
 
 import Prelude
 
+{- TODO -}
+
 {-
 setItems items:ArrayString
 setCommands commands:ArrayStringBlessed

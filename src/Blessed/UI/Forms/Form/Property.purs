@@ -27,16 +27,16 @@ type PropertiesRow =
 
 
 getter
-    :: forall subj id sym r' m a
+    :: forall subj id sym r' state m a
      . Respresents Form subj id
     => R.Cons sym a r' PropertiesRow
-    => C.GetterFn subj id sym r' PropertiesRow m a
+    => C.GetterFn subj id sym r' PropertiesRow state m a
 getter =
     C.getter
 
 
 submission
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Form subj id
-    => NodeKey subj id -> C.Getter m Json
+    => NodeKey subj id -> C.Getter state m Json
 submission = getter (Proxy :: _ "submission") CA.json

@@ -37,56 +37,56 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type ProgressBarAttribute subj id r e = C.Attribute subj id (Input.OptionsRow + OptionsRow + r) e
+type ProgressBarAttribute subj id r state e = C.Attribute subj id (Input.OptionsRow + OptionsRow + r) state e
 
 
 pbOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents ProgressBar subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> ProgressBarAttribute subj id r e
+    => Proxy sym -> a -> ProgressBarAttribute subj id r state e
 pbOption = C.option
 
 
 orientation
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ProgressBar subj id
-    => Orientation -> ProgressBarAttribute subj id ( orientation :: Orientation | r ) e
+    => Orientation -> ProgressBarAttribute subj id ( orientation :: Orientation | r ) state e
 orientation = pbOption (Proxy :: _ "orientation")
 
 
 mouse
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ProgressBar subj id
-    => Boolean -> ProgressBarAttribute subj id ( mouse :: Boolean | r ) e
+    => Boolean -> ProgressBarAttribute subj id ( mouse :: Boolean | r ) state e
 mouse = pbOption (Proxy :: _ "mouse")
 
 
 keys
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ProgressBar subj id
-    => Boolean -> ProgressBarAttribute subj id ( keys :: Boolean | r ) e
+    => Boolean -> ProgressBarAttribute subj id ( keys :: Boolean | r ) state e
 keys = pbOption (Proxy :: _ "keys")
 
 
 filled
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ProgressBar subj id
-    => Int -> ProgressBarAttribute subj id ( filled :: Int | r ) e
+    => Int -> ProgressBarAttribute subj id ( filled :: Int | r ) state e
 filled = pbOption (Proxy :: _ "filled")
 
 
 pch
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ProgressBar subj id
-    => Char -> ProgressBarAttribute subj id ( pch :: Char | r ) e
+    => Char -> ProgressBarAttribute subj id ( pch :: Char | r ) state e
 pch = pbOption (Proxy :: _ "pch")
 
 
 style_bar
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ProgressBar subj id
-    => Array (FgBgOption ()) -> ProgressBarAttribute subj id ( style_bar :: Array (FgBgOption ()) | r ) e
+    => Array (FgBgOption ()) -> ProgressBarAttribute subj id ( style_bar :: Array (FgBgOption ()) | r ) state e
 style_bar = pbOption ( Proxy :: Proxy "style_bar" )

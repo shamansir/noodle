@@ -15,9 +15,9 @@ import Blessed.Internal.Core (method) as C
 
 
 load
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Loading subj id
-    => String -> NodeKey subj id -> BlessedOp m
+    => String -> NodeKey subj id -> BlessedOp state m
 load text nodeId =
     C.method nodeId "load"
         [ C.arg CA.string text
@@ -25,8 +25,8 @@ load text nodeId =
 
 
 stop
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Loading subj id
-    => NodeKey subj id-> BlessedOp m
+    => NodeKey subj id-> BlessedOp state m
 stop nodeId =
     C.method nodeId "stop" [ ]

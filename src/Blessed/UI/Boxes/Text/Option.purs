@@ -27,28 +27,28 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type TextAttribute subj id r e = C.Attribute subj id (Element.OptionsRow + OptionsRow + r) e
+type TextAttribute subj id r state e = C.Attribute subj id (Element.OptionsRow + OptionsRow + r) state e
 
 
 textOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents Text subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> TextAttribute subj id r e
+    => Proxy sym -> a -> TextAttribute subj id r state e
 textOption = C.option
 
 
 fill
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Text subj id
-    => Color -> TextAttribute subj id ( fill :: Color | r ) e
+    => Color -> TextAttribute subj id ( fill :: Color | r ) state e
 fill = textOption (Proxy :: _ "fill")
 
 
 align
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Text subj id
-    => HAlign -> TextAttribute subj id ( align :: HAlign | r ) e
+    => HAlign -> TextAttribute subj id ( align :: HAlign | r ) state e
 align = textOption (Proxy :: _ "align")

@@ -26,21 +26,21 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type FileManagerAttribute subj id r e = C.Attribute subj id (List.OptionsRow + OptionsRow + r) e
+type FileManagerAttribute subj id r state e = C.Attribute subj id (List.OptionsRow + OptionsRow + r) state e
 
 
 fmOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents FileManager subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> FileManagerAttribute subj id r e
+    => Proxy sym -> a -> FileManagerAttribute subj id r state e
 fmOption = C.option
 
 
 cwd
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents FileManager subj id
-    => Color -> FileManagerAttribute subj id ( cwd :: String | r ) e
+    => Color -> FileManagerAttribute subj id ( cwd :: String | r ) state e
 cwd = fmOption (Proxy :: _ "cwd")

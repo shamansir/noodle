@@ -28,28 +28,28 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type FormAttribute subj id r e = C.Attribute subj id (Box.OptionsRow + OptionsRow + r) e
+type FormAttribute subj id r state e = C.Attribute subj id (Box.OptionsRow + OptionsRow + r) state e
 
 
 formOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents Form subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> FormAttribute subj id r e
+    => Proxy sym -> a -> FormAttribute subj id r state e
 formOption = C.option
 
 
 keys
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Form subj id
-    => Boolean -> FormAttribute subj id ( keys :: Boolean | r ) e
+    => Boolean -> FormAttribute subj id ( keys :: Boolean | r ) state e
 keys = formOption (Proxy :: _ "keys")
 
 
 vi
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Form subj id
-    => Boolean -> FormAttribute subj id ( keys :: Boolean | r ) e
+    => Boolean -> FormAttribute subj id ( keys :: Boolean | r ) state e
 vi = formOption (Proxy :: _ "keys")

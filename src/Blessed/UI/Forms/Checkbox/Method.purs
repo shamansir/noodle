@@ -13,24 +13,24 @@ import Blessed.Internal.Core (method) as C
 
 
 check
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Checkbox subj id
-    => NodeKey subj id -> BlessedOp m
+    => NodeKey subj id -> BlessedOp state m
 check nodeId =
     C.method nodeId "check" [ ]
 
 
 uncheck
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Checkbox subj id
-    => NodeKey subj id -> BlessedOp m
+    => NodeKey subj id -> BlessedOp state m
 uncheck nodeId =
     C.method nodeId "uncheck" [ ]
 
 
 toggle
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Checkbox subj id
-    => NodeKey subj id -> BlessedOp m
+    => NodeKey subj id -> BlessedOp state m
 toggle nodeId =
     C.method nodeId "toggle" [ ]

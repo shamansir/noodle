@@ -26,35 +26,35 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type TextAreaAttribute subj id r e = C.Attribute subj id (Input.OptionsRow + OptionsRow + r) e
+type TextAreaAttribute subj id r state e = C.Attribute subj id (Input.OptionsRow + OptionsRow + r) state e
 
 
 textAreaOption
-    :: forall subj id a r r' sym e
+    :: forall subj id a r r' sym state e
      . Respresents TextArea subj id
     => EncodeJson a
     => IsSymbol sym
     => R.Cons sym a r' (OptionsRow + r)
-    => Proxy sym -> a -> TextAreaAttribute subj id r e
+    => Proxy sym -> a -> TextAreaAttribute subj id r state e
 textAreaOption = C.option
 
 
 mouse
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents TextArea subj id
-    => Boolean -> TextAreaAttribute subj id ( mouse :: Boolean | r ) e
+    => Boolean -> TextAreaAttribute subj id ( mouse :: Boolean | r ) state e
 mouse = textAreaOption (Proxy :: _ "mouse")
 
 
 keys
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents TextArea subj id
-    => Boolean -> TextAreaAttribute subj id ( keys :: Boolean | r ) e
+    => Boolean -> TextAreaAttribute subj id ( keys :: Boolean | r ) state e
 keys = textAreaOption (Proxy :: _ "keys")
 
 
 inputOnFocus
-    :: forall (subj :: Subject) (id :: Symbol) r e
+    :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents TextArea subj id
-    => Boolean -> TextAreaAttribute subj id ( inputOnFocus :: Boolean | r ) e
+    => Boolean -> TextAreaAttribute subj id ( inputOnFocus :: Boolean | r ) state e
 inputOnFocus = textAreaOption (Proxy :: _ "inputOnFocus")

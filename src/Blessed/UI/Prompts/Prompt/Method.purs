@@ -13,9 +13,9 @@ import Blessed.Internal.Core (method) as C
 
 
 input
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Prompt subj id
-    => String -> String -> NodeKey subj id -> BlessedOp m
+    => String -> String -> NodeKey subj id -> BlessedOp state m
 input text value nodeId =
     C.method nodeId "input"
         [ C.arg CA.string text
@@ -24,7 +24,7 @@ input text value nodeId =
 
 
 {-
-input' :: forall m. String -> String -> Callback -> C.NodeId -> BlessedOp m
+input' :: forall m. String -> String -> Callback -> C.NodeId -> BlessedOp state m
 input' text value nodeId =
     C.method nodeId "input"
         [ C.arg CA.string text

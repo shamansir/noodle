@@ -13,9 +13,9 @@ import Blessed.Internal.Core (method) as C
 
 
 setContent
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Box subj id
-    => String -> NodeKey subj id -> BlessedOp m
+    => String -> NodeKey subj id -> BlessedOp state m
 setContent value nodeId =
     C.method nodeId "setContent"
         [ C.arg CA.string value
@@ -23,9 +23,9 @@ setContent value nodeId =
 
 
 setLine
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Box subj id
-    => Int -> String -> NodeKey subj id -> BlessedOp m
+    => Int -> String -> NodeKey subj id -> BlessedOp state m
 setLine n value nodeId =
     C.method nodeId "setLine"
         [ C.arg CA.int n
@@ -34,9 +34,9 @@ setLine n value nodeId =
 
 
 insertLine
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Box subj id
-    => Int -> String -> NodeKey subj id -> BlessedOp m
+    => Int -> String -> NodeKey subj id -> BlessedOp state m
 insertLine n value nodeId =
     C.method nodeId "insertLine"
         [ C.arg CA.int n
@@ -45,9 +45,9 @@ insertLine n value nodeId =
 
 
 focus
-    :: forall (subj :: Subject) (id :: Symbol) m
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Box subj id
-    => NodeKey subj id -> BlessedOp m
+    => NodeKey subj id -> BlessedOp state m
 focus nodeId =
     C.method nodeId "focus" []
 
