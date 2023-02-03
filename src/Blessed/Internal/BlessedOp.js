@@ -60,15 +60,137 @@ function registerNode(node) {
         ___log(handlers);
 
         let blessedObj = null;
+
         switch (node.nodeSubj) {
+            case 'node':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.node(props);
+                break;
             case 'screen':
                 if (!BLESSED_ON) break;
                 blessedObj = blessed.screen(props);
+                break;
+            case 'element':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.element(props);
                 break;
             case 'box':
                 if (!BLESSED_ON) break;
                 blessedObj = blessed.box(props);
                 break;
+            case 'text':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.text(props);
+                break;
+            case 'line':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.line(props);
+                break;
+            case 'bigtext':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.bigtext(props);
+                break;
+            case 'list':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.list(props);
+                break;
+            case 'filemanager':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.filemanager(props);
+                break;
+            case 'listtable':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.listtable(props);
+                break;
+            case 'listbar':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.listbar(props);
+                break;
+            case 'form':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.form(props);
+                break;
+            case 'input':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.input(props);
+                break;
+            case 'textarea':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.textarea(props);
+                break;
+            case 'textbox':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.textbox(props);
+                break;
+            case 'button':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.button(props);
+                break;
+            case 'checkbox':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.checkbox(props);
+                break;
+            case 'radioset':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.radioset(props);
+                break;
+            case 'radiobutton':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.radiobutton(props);
+                break;
+            case 'prompt':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.prompt(props);
+                break;
+            case 'question':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.question(props);
+                break;
+            case 'message':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.message(props);
+                break;
+            case 'loading':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.loading(props);
+                break;
+            case 'progressbar':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.progressbar(props);
+                break;
+            case 'log':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.log(props);
+                break;
+            case 'table':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.table(props);
+                break;
+            case 'terminal':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.terminal(props);
+                break;
+            case 'image':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.image(props);
+                break;
+            case 'ansiimage':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.ansiimage(props);
+                break;
+            case 'overlayimage':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.overlayimage(props);
+                break;
+            case 'video':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.video(props);
+                break;
+            case 'layout':
+                if (!BLESSED_ON) break;
+                blessedObj = blessed.layout(props);
+                break;
+
             default:
               ___log(`Unknown node kind ${node.nodeSubj}.`);
         }
