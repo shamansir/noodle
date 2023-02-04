@@ -4,6 +4,8 @@ import Prelude
 
 
 import Effect (Effect)
+import Effect.Class (liftEffect)
+import Effect.Console as Console
 
 import Cli.App as Cli
 
@@ -33,11 +35,13 @@ import Blessed.UI.Base.Screen as Screen
 import Blessed.UI.Base.Screen.Option as Screen
 import Blessed.UI.Base.Screen.Event as Screen
 import Blessed.UI.Base.Screen.Method as Screen
+import Blessed.UI.Base.Node.Method as Node
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Event as Box
 import Blessed.UI.Boxes.Box.Method as Box
 import Blessed.UI.Lists.List.Option as List
 import Blessed.UI.Lists.List.Event as List
+import Blessed.UI.Lists.List.Property as List
 
 import Control.Monad.State as State
 
@@ -77,6 +81,8 @@ items =
 
 initialState =
     { lastShiftX : 0
+    , lastShiftY : 0
+    , lastNodeBoxKey : nodeBox
     }
 
 
@@ -146,7 +152,32 @@ main = do
                     ]
                 , Core.on List.Select
                     \_ _ -> do
-                        lastShiftX <- _.lastShiftX <$> State.get
+                        -- lastShiftX <- _.lastShiftX <$> State.get
+                        -- lastShiftY <- _.lastShiftY <$> State.get
+                        -- lastNodeBoxKey <- _.lastNodeBoxKey <$> State.get
+                        state <- State.get
+
+                        let top = state.lastShiftX + 2
+                        let left = 16 + state.lastShiftY + 2
+                        let curNodeBoxKey = NodeKey.next state.lastNodeBoxKey
+
+                        -- selected <- List.selected ~< nodeList
+                        selected <- List.selected nodeList
+
+                        let is = [ "a", "b", "c" ]
+                        let os = [ "sum", "x" ]
+
+                        let nodeBox =
+                                B.box curNodeBoxKey [] []
+
+                        patchBox >~ Node.append nodeBox
+
+                        State.modify_ (_
+                            { lastShiftX = state.lastShiftX + 1
+                            , lastShiftY = state.lastShiftY + 1
+                            , lastNodeBoxKey = curNodeBoxKey
+                            } )
+
                         pure unit
                 ]
                 []
@@ -159,5 +190,5 @@ main = do
 
         $ \_ -> do
             nodeList >~ Box.focus
-            mainScreen # Screen.render
+            mainScreen >~ Screen.render
         )

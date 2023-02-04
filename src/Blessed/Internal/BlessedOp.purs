@@ -48,7 +48,8 @@ commandsDumpPath = "./commands_dump.txt"
 
 
 data BlessedOpF state m a
-    = State (state -> a /\ state)
+    = GetStateRef (Ref state -> a)
+    | State (state -> a /\ state)
     | Lift (m a)
     | PerformOne I.RawNodeKey I.Command a
     | PerformSome I.RawNodeKey (Array I.Command) a
@@ -58,8 +59,9 @@ data BlessedOpF state m a
 
 instance functorBlessedOpF :: Functor m => Functor (BlessedOpF state m) where
     map f = case _ of
-        State k -> State (lmap f <<< k)
-        Lift m -> Lift (map f m)
+        GetStateRef k -> GetStateRef $ map f k
+        State k -> State $ lmap f <<< k
+        Lift m -> Lift $ map f m
         PerformOne nid cmd a -> PerformOne nid cmd $ f a
         PerformSome nid cmds a -> PerformSome nid cmds $ f a
         PerformGet nid getCmd k -> PerformGet nid getCmd $ map f k
@@ -67,7 +69,8 @@ instance functorBlessedOpF :: Functor m => Functor (BlessedOpF state m) where
 
 
 type BlessedOp state m = BlessedOpM state m Unit
-type BlessedOpG state m a = BlessedOpM state m (Either CA.JsonDecodeError a)
+type BlessedOpJsonGet state m a = BlessedOpM state m (Either CA.JsonDecodeError a)
+type BlessedOpGet state m a = BlessedOpM state m a
 
 
 
@@ -105,17 +108,22 @@ instance monadRecBlessedOpM :: MonadRec (BlessedOpM state m) where
     Done y -> pure y
 
 
+getStateRef :: forall state m. BlessedOpGet state m (Ref state)
+getStateRef = BlessedOpM $ Free.liftF $ GetStateRef identity
+
+
 {- Processing -}
+
 
 perform :: forall state m. I.RawNodeKey -> I.Command -> BlessedOp state m
 perform nid cmd = BlessedOpM $ Free.liftF $ PerformOne nid cmd unit
 
 
-performGet :: forall state m a. CA.JsonCodec a -> I.RawNodeKey -> I.Command -> BlessedOpG state m a
+performGet :: forall state m a. CA.JsonCodec a -> I.RawNodeKey -> I.Command -> BlessedOpJsonGet state m a
 performGet codec nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ CA.decode codec
 
 
-performGet' :: forall state m a. DecodeJson a => I.RawNodeKey -> I.Command -> BlessedOpG state m a
+performGet' :: forall state m a. DecodeJson a => I.RawNodeKey -> I.Command -> BlessedOpJsonGet state m a
 performGet' nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ (decodeJson >>> lmap convertJsonError)
 
 
@@ -192,6 +200,9 @@ runFreeM stateRef fn = do
     where
         go :: forall a. BlessedOpF state m a -> m a
 
+        go (GetStateRef getV) =
+            pure $ getV stateRef
+
         go (State f) = do
             state <- getUserState
             case f state of
@@ -214,7 +225,7 @@ runFreeM stateRef fn = do
         go (PerformGet target cmd getV) = do
             value <- liftEffect $ callCommand_ target $ encodeCommand cmd
             dumpCommand cmd
-            pure $ getV $ value
+            pure $ getV value
 
         go (PerformOnProcess cmd next) = do
             _ <- liftEffect $ callCommand_ (I.rawify I.process) $ encodeCommand cmd
