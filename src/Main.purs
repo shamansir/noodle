@@ -140,6 +140,10 @@ main = do
                 , List.mouse true
                 , List.keys true
                 , Box.border [ Border.type_ Border._line, Border.fg palette.nodeListFg ]
+                , List.style
+                    [ LStyle.item [ FgBg.fg palette.nodeListFg ]
+                    , LStyle.selected [ FgBg.fg palette.nodeListSelFg ]
+                    ]
                 , Core.on List.Select
                     \_ _ -> do
                         lastShiftX <- _.lastShiftX <$> State.get

@@ -25,18 +25,24 @@ function buildRecord(array, fn) {
     }, {})
 }
 
-function adaptProp(prop) {
-    switch (prop.name) {
-        case 'border':
-            return { name : 'border', value : buildRecord(prop.value, adaptProp) };
-        case 'style':
-            return { name: 'style', value : buildRecord(prop.value, adaptProp) };
-        case 'hover':
-            return { name: 'hover', value : buildRecord(prop.value, adaptProp) };
-        case 'parent':
-            return { name: 'parent', value : prop.tag === 'Just' ? registry[prop.value].blessed : null };
-        default:
-            return prop;
+function adaptProp(parentProp) {
+    return function(prop) {
+        switch (prop.name) {
+            case 'border':
+                return { name : 'border', value : buildRecord(prop.value, adaptProp('border')) };
+            case 'style':
+                return { name: 'style', value : buildRecord(prop.value, adaptProp('style')) };
+            case 'item':
+                return { name: 'item', value : buildRecord(prop.value, adaptProp('item')) };
+            case 'selected':
+                return { name: 'selected', value : buildRecord(prop.value, adaptProp('selected')) };
+            case 'hover':
+                return { name: 'hover', value : buildRecord(prop.value, adaptProp('hover')) };
+            case 'parent':
+                return { name: 'parent', value : prop.tag === 'Just' ? registry[prop.value].blessed : null };
+            default:
+                return prop;
+        }
     }
 }
 
@@ -54,7 +60,7 @@ function registerNode(node) {
     return function() {
         ___log(node);
 
-        const props = buildRecord(node.props, adaptProp);
+        const props = buildRecord(node.props, adaptProp(null));
         const handlers = buildRecord(node.handlers, (evt) => ({ name : evt.event, value : evt }));
         ___log(props);
         ___log(handlers);

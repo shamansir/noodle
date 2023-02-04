@@ -48,6 +48,8 @@ type Evaluated =
     , scrollbar :: Record Border.Evaluated
     , hover :: Record FgBg.Evaluated
     , focus :: Record FgBg.Evaluated
+    , item :: Record FgBg.Evaluated
+    , selected :: Record FgBg.Evaluated
     )
 
 
