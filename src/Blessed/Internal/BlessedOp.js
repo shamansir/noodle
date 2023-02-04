@@ -62,6 +62,7 @@ function registerNode(node) {
         let blessedObj = null;
 
         switch (node.nodeSubj) {
+            // FIXME just call blessed[node.nodeSubj](props)]
             case 'node':
                 if (!BLESSED_ON) break;
                 blessedObj = blessed.node(props);

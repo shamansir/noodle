@@ -18,7 +18,7 @@ import Blessed.Core.FgBg as FgBg
 import Blessed.Core.Border as Border
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Style as Style
-import Blessed.Core.Coord ((<+>))
+import Blessed.Core.Coord ((<+>), (<->))
 import Blessed.Core.Coord as Coord
 import Blessed.Core.ListStyle as LStyle
 
@@ -67,9 +67,12 @@ palette =
     }
 
 
-patches = [ "Patch1", "Patch2", "+" ]
+patches =
+    [ "Patch1", "Patch2", "+" ]
 
-items = [ "foo", "bar", "ololo", "hello", "foo1", "bar1", "ololo1", "hello1", "foo2", "bar2", "ololo2", "hello2" ]
+
+items =
+    [ "foo", "bar", "ololo", "hello", "foo1", "bar1", "ololo1", "hello1", "foo2", "bar2", "ololo2", "hello2" ]
 
 
 initialState =
@@ -85,6 +88,10 @@ main = do
         [ Screen.title "Noodle"
         , Screen.smartCSR true
         , Screen.fullUnicode true
+        , Screen.key
+            [ Key.escape, Key.alpha 'q', (Key.control $ Key.alpha 'C') ]
+            $ \_ kevt -> do
+                Blessed.exit
         ]
 
         [ B.listbar patchesBar
@@ -112,7 +119,7 @@ main = do
             [ Box.top $ Offset.calc $ Coord.center <+> Coord.px 1
             , Box.left $ Offset.center
             , Box.width $ Dimension.percents 100.0
-            , Box.height $ Dimension.calc $ Coord.percents 100.0 <+> Coord.px 1
+            , Box.height $ Dimension.calc $ Coord.percents 100.0 <-> Coord.px 1
             , Box.content "Patch"
             , Box.tags true
             , Box.border [ Border.type_ Border._line ]
@@ -122,29 +129,31 @@ main = do
                 , Style.border [ Border.fg palette.border ]
                 ]
             ]
-            []
-
-        , B.listAnd nodeList
-            [ Box.top $ Offset.px 0
-            , Box.left $ Offset.px 0
-            , Box.width $ Dimension.px 0
-            , Box.height $ Dimension.percents 40.0
-            , Box.draggable true
-            , Box.scrollable true
-            , List.items items
-            , List.mouse true
-            , List.keys true
-            , Box.border [ Border.type_ Border._line, Border.fg palette.nodeListFg ]
-            , Core.on List.Select
-                \_ _ -> do
-                    lastShiftX <- _.lastShiftX <$> State.get
+            [ B.listAnd nodeList
+                [ Box.top $ Offset.px 0
+                , Box.left $ Offset.px 0
+                , Box.width $ Dimension.px 14
+                , Box.height $ Dimension.percents 40.0
+                , Box.draggable true
+                , Box.scrollable true
+                , List.items items
+                , List.mouse true
+                , List.keys true
+                , Box.border [ Border.type_ Border._line, Border.fg palette.nodeListFg ]
+                , Core.on List.Select
+                    \_ _ -> do
+                        lastShiftX <- _.lastShiftX <$> State.get
+                        pure unit
+                ]
+                []
+                \_ ->
                     pure unit
             ]
-            []
-            \_ ->
-                pure unit
+
         ]
 
-        $ \screen ->
-            pure unit
+
+        $ \_ -> do
+            nodeList >~ Box.focus
+            mainScreen # Screen.render
         )

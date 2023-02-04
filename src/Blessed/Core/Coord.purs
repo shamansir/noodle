@@ -22,6 +22,7 @@ instance Show Coord where
 
 
 instance EncodeJson Coord where
+    encodeJson (Px px) = CA.encode CA.int px
     encodeJson coord = CA.encode CA.string $ show coord
 
 
