@@ -161,7 +161,7 @@ main = do
                         let left = 16 + state.lastShiftY + 2
                         let curNodeBoxKey = NodeKey.next state.lastNodeBoxKey
 
-                        -- selected <- List.selected ~< nodeList
+                        -- TODO: inverse operator for (>~) : selected <- List.selected ~< nodeList
                         selected <- List.selected nodeList
 
                         let is = [ "a", "b", "c" ]

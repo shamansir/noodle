@@ -14,7 +14,7 @@ import Data.Codec.Argonaut.Common as CAC
 import Blessed.Internal.Core as C
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.BlessedSubj (Node, Subject, Subject_)
-import Blessed.Internal.Codec (kindCodec)
+import Blessed.Internal.Codec (subject_) as Codec
 
 
 -- newtype Focused = Focused String
@@ -46,7 +46,7 @@ type_
     :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Node subj id
     => NodeKey subj id -> C.Getter state m Subject_
-type_ = getter (Proxy :: _ "type") kindCodec
+type_ = getter (Proxy :: _ "type") Codec.subject_
 
 
 options

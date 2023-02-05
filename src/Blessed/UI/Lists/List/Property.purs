@@ -17,7 +17,6 @@ import Blessed.Internal.BlessedSubj (Subject, List)
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.BlessedOp as Op
 import Blessed.Internal.Command (get) as C
-import Blessed.Internal.Codec (kindCodec)
 
 
 -- newtype Focused = Focused String

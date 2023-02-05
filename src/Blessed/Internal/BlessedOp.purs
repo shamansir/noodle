@@ -35,7 +35,7 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Aff (appendTextFile)
 import Node.Path (FilePath)
 
-import Blessed.Internal.Codec (encodeCommand, commandToJson, encodeDump)
+import Blessed.Internal.Foreign (encodeCommand, commandToJson, encodeDump) as Foreign
 import Blessed.Internal.Command (Command) as I
 import Blessed.Internal.NodeKey as I
 import Blessed.Internal.JsApi as I
@@ -149,7 +149,7 @@ dumpCommand =
         <<< appendTextFile UTF8 commandsDumpPath
         <<< (<>) "\n"
         <<< Json.stringify
-        <<< commandToJson
+        <<< Foreign.commandToJson
 
 
 dumpHandlerCall :: forall m. MonadEffect m => I.RawNodeKey -> I.EventId -> Array Json -> m Unit
@@ -159,7 +159,7 @@ dumpHandlerCall (I.RawNodeKey nodeKey) (I.EventId event) args =
         $ appendTextFile UTF8 commandsDumpPath
         $ (<>) "\n"
         $ Json.stringify
-        $ encodeDump
+        $ Foreign.encodeDump
         $ I.CallDump
             { args, event, nodeId : nodeKey.id
             , nodeSubj : K.toString nodeKey.subject
@@ -213,22 +213,22 @@ runFreeM stateRef fn = do
         go (Lift m) = m
 
         go (PerformOne target cmd next) = do
-            _ <- liftEffect $ callCommand_ target $ encodeCommand cmd
+            _ <- liftEffect $ callCommand_ target $ Foreign.encodeCommand cmd
             dumpCommand cmd
             pure next
 
         go (PerformSome target cmds next) = do
-            _ <- traverse (liftEffect <<< callCommand_ target <<< encodeCommand) cmds
+            _ <- traverse (liftEffect <<< callCommand_ target <<< Foreign.encodeCommand) cmds
             traverse_ dumpCommand cmds
             pure next
 
         go (PerformGet target cmd getV) = do
-            value <- liftEffect $ callCommand_ target $ encodeCommand cmd
+            value <- liftEffect $ callCommand_ target $ Foreign.encodeCommand cmd
             dumpCommand cmd
             pure $ getV value
 
         go (PerformOnProcess cmd next) = do
-            _ <- liftEffect $ callCommand_ (I.rawify I.process) $ encodeCommand cmd
+            _ <- liftEffect $ callCommand_ (I.rawify I.process) $ Foreign.encodeCommand cmd
             dumpCommand cmd
             pure next
 

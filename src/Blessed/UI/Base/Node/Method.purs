@@ -18,12 +18,15 @@ import Blessed.Internal.BlessedSubj (Element, Subject)
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.NodeKey (rawify) as NodeKey
 import Blessed.Internal.Core (method, Blessed) as C
-import Blessed.Internal.Codec as Codec
+import Blessed.Internal.Codec (nodeEnc) as Codec
+import Blessed.Internal.Foreign (encode') as Foreign
 import Blessed.Internal.Emitter (CoreEvent) as C
 
 
 nodeAsArg stateRef parentNodeKey node =
-    C.arg (Codec.nodeCodec) (Tuple.fst $ Codec.encode' stateRef (Just $ NodeKey.rawify parentNodeKey) node) -- FIXME: handlers returned from `encoe'`!!
+    C.arg (Codec.nodeEnc) (Tuple.fst $ Foreign.encode' stateRef (Just $ NodeKey.rawify parentNodeKey) node)
+    -- FIXME: handlers returned from `encode'`!!
+    -- FIXME: ensure to append and encode properly in BlessedOp.js
 
 
 -- refHelper fn nodeId node =

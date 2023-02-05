@@ -39,6 +39,8 @@ import Blessed.Internal.NodeKey as NK
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Codec as Codec
 import Blessed.Internal.Emitter
+import Blessed.Internal.Foreign (encode, encodeCommand, commandToJson, encodeDump) as Foreign
+import Blessed.Internal.Codec as Codec
 
 
 
@@ -98,7 +100,7 @@ on :: forall subj id r state e. Fires subj e => e -> Handler subj id r state e
 on = handler
 
 
-type Getter state m a = Op.BlessedOpG state m a
+type Getter state m a = Op.BlessedOpJsonGet state m a
 
 
 type GetterFn :: forall k. K.Subject -> Symbol -> Symbol -> k -> Row Type -> Type -> (Type -> Type) -> Type -> Type
@@ -128,11 +130,11 @@ method nodeKey name args =
 
 instance EncodeJson (SoleOption r) where
     encodeJson (SoleOption name value)
-        = CA.encode Codec.optionRecCodec { name, value }
+        = CA.encode Codec.propJson { name, value }
 
 
 encode :: forall state e. Ref state -> Blessed state e -> I.BlessedEnc
-encode = Codec.encode
+encode = Foreign.encode
 
 
 node :: forall subj id state r e. K.IsSubject subj => IsSymbol id => NodeKey subj id -> Node subj id state r e
@@ -157,5 +159,5 @@ run state blessed =
 runAnd :: forall state e. state -> Blessed state e -> Op.BlessedOp state Effect -> Effect Unit
 runAnd state blessed op = do
     stateRef <- Ref.new state
-    liftEffect $ Op.execute_ $ Codec.encode stateRef blessed
+    liftEffect $ Op.execute_ $ Foreign.encode stateRef blessed
     Op.runM' stateRef op
