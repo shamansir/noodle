@@ -24,8 +24,6 @@ import Data.Bifunctor (lmap)
 import Data.Argonaut.Core (Json)
 -- import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Codec.Argonaut as CA
-import Data.Codec.Argonaut.Record as CAR
-import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.BlessedSubj as K
 import Blessed.Internal.NodeKey as NK
@@ -39,7 +37,8 @@ encode stateRef rootNode =
     case encodeRoot stateRef rootNode of
         nodeEnc /\ handlers ->
             I.BlessedEnc $
-                { root : CA.encode Codec.nodeEnc nodeEnc
+                { marker : "Blessed"
+                , root : CA.encode Codec.nodeEnc nodeEnc
                 , handlersFns : handlers
                 }
 
@@ -68,7 +67,8 @@ encode'
         encodeHandler :: Int -> I.SHandler state -> I.HandlerCallEnc
         encodeHandler localIndex (I.SHandler (I.EventId eventId) args fn) =
             I.HandlerCallEnc
-                { nodeId : rawNodeKey.id
+                { marker : "HandlerCall"
+                , nodeId : rawNodeKey.id
                 , nodeSubj : K.toString rawNodeKey.subject
                 , event : eventId
                 , args
@@ -79,7 +79,8 @@ encode'
         encodeHandlerRef :: Int -> I.SHandler state -> I.HandlerRefEnc
         encodeHandlerRef localIndex (I.SHandler (I.EventId eventId) _ fn) =
             I.HandlerRefEnc
-                { nodeId : rawNodeKey.id
+                { marker : "HandlerRef"
+                , nodeId : rawNodeKey.id
                 , nodeSubj : K.toString rawNodeKey.subject
                 , event : eventId
                 , index : rawNodeKey.id <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index?
@@ -106,7 +107,8 @@ encode'
 
         (nodeEncoded :: I.NodeEnc) /\ (childrenHandlers :: Array I.HandlerCallEnc) =
             I.NodeEnc
-                { nodeId : rawNodeKey.id
+                { marker : "Node"
+                , nodeId : rawNodeKey.id
                 , nodeSubj : K.toString rawNodeKey.subject
                 , props : adaptProps sprops
                 , children : children
@@ -144,21 +146,17 @@ commandToJson :: C.Command -> Json /\ Array I.HandlerCallEnc
 commandToJson =
     case _ of
         C.Call { cmd, args } ->
-            (CA.encode Codec.callCommandEnc $ I.CallCommandEnc $ { args, method : cmd, type : "call" }) /\ []
+            (CA.encode Codec.callCommandEnc $ I.CallCommandEnc $ { marker : "CallCommand", args, method : cmd, type : "call" }) /\ []
         C.CallEx { cmd, args, handlers } ->
-            (CA.encode Codec.callCommandEnc $ I.CallCommandEnc $ { args, method : cmd, type : "call" }) /\ handlers
+            (CA.encode Codec.callCommandEnc $ I.CallCommandEnc $ { marker : "CallCommandEx", args, method : cmd, type : "call" }) /\ handlers
         C.Get { prop } ->
-            (CA.encode Codec.getCommandEnc $ I.GetCommandEnc $ { property : prop, type : "get" }) /\ []
+            (CA.encode Codec.getCommandEnc $ I.GetCommandEnc $ { marker : "GetCommand", property : prop, type : "get" }) /\ []
         C.Set { prop, value } ->
-            (CA.encode Codec.setCommandEnc $ I.SetCommandEnc $ { value, property : prop, type : "set" }) /\ []
+            (CA.encode Codec.setCommandEnc $ I.SetCommandEnc $ { marker : "SetCommand", value, property : prop, type : "set" }) /\ []
         C.WithProcess { cmd, args } ->
-            (CA.encode Codec.processCommandEnc $ I.ProcessCommandEnc $ { args, method : cmd, type : "process" }) /\ []
+            (CA.encode Codec.processCommandEnc $ I.ProcessCommandEnc $ { marker : "ProcessCommand", args, method : cmd, type : "process" }) /\ []
 
 
 encodeCommand :: C.Command -> I.CommandEnc /\ Array I.HandlerCallEnc
 encodeCommand =
     lmap I.CommandEnc <<< commandToJson
-
-
-encodeDump :: I.CallDump -> Json
-encodeDump = CA.encode Codec.callDump

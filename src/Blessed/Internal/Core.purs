@@ -28,8 +28,6 @@ import Data.Argonaut.Core (Json)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Argonaut.Decode (class DecodeJson)
 import Data.Codec.Argonaut as CA
-import Data.Codec.Argonaut.Record as CAR
-import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.BlessedOp as Op
 import Blessed.Internal.BlessedSubj as K
@@ -39,8 +37,7 @@ import Blessed.Internal.NodeKey as NK
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Codec as Codec
 import Blessed.Internal.Emitter
-import Blessed.Internal.Foreign (encode, encodeCommand, commandToJson, encodeDump) as Foreign
-import Blessed.Internal.Codec as Codec
+import Blessed.Internal.Foreign (encode) as Foreign
 
 
 

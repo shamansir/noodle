@@ -53,7 +53,8 @@ nodeEnc :: CA.JsonCodec I.NodeEnc
 nodeEnc =
     CA.fix \codec ->
         wrapIso I.NodeEnc $ CAR.object "Node"
-            { nodeSubj : CA.string
+            { marker : CA.string
+            , nodeSubj : CA.string
             , nodeId : CA.string
             , props : CA.array propJson
             , children : CA.array codec
@@ -66,7 +67,8 @@ handlerRefEnc :: CA.JsonCodec I.HandlerRefEnc
 handlerRefEnc =
     wrapIso I.HandlerRefEnc $ CA.object "HandlerRef"
         (CAR.record
-            { nodeId : CA.string
+            { marker : CA.string
+            , nodeId : CA.string
             , nodeSubj : CA.string
             , event : CA.string
             , index : CA.string
@@ -78,7 +80,8 @@ callCommandEnc :: CA.JsonCodec I.CallCommandEnc
 callCommandEnc =
     wrapIso I.CallCommandEnc $ CA.object "CallCommand"
         (CAR.record
-            { type : CA.string
+            { marker : CA.string
+            , type : CA.string
             , method : CA.string
             , args : CA.array CA.json
             }
@@ -89,7 +92,8 @@ getCommandEnc :: CA.JsonCodec I.GetCommandEnc
 getCommandEnc =
     wrapIso I.GetCommandEnc $ CA.object "GetCommand"
         (CAR.record
-            { type : CA.string
+            { marker : CA.string
+            , type : CA.string
             , property : CA.string
             }
         )
@@ -99,7 +103,8 @@ setCommandEnc :: CA.JsonCodec I.SetCommandEnc
 setCommandEnc =
     wrapIso I.SetCommandEnc $ CA.object "SetCommand"
         (CAR.record
-            { type : CA.string
+            { marker : CA.string
+            , type : CA.string
             , property : CA.string
             , value : CA.json
             }
@@ -110,19 +115,9 @@ processCommandEnc :: CA.JsonCodec I.ProcessCommandEnc
 processCommandEnc =
     wrapIso I.ProcessCommandEnc $ CA.object "ProcessCommand"
         (CAR.record
-            { type : CA.string
+            { marker : CA.string
+            , type : CA.string
             , method : CA.string
-            , args : CA.array CA.json
-            }
-        )
-
-callDump :: CA.JsonCodec I.CallDump
-callDump =
-    wrapIso I.CallDump $ CA.object "CallDump"
-        (CAR.record
-            { nodeId : CA.string
-            , nodeSubj : CA.string
-            , event : CA.string
             , args : CA.array CA.json
             }
         )

@@ -32,20 +32,13 @@ import Control.Monad.Free as Free
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.State.Class (class MonadState)
 
-import Node.Encoding (Encoding(..))
-import Node.FS.Aff (appendTextFile)
-import Node.Path (FilePath)
-
-import Blessed.Internal.Foreign (encodeCommand, commandToJson, encodeDump) as Foreign
+import Blessed.Internal.Foreign (encodeCommand, commandToJson) as Foreign
 import Blessed.Internal.Command (Command) as I
 import Blessed.Internal.NodeKey as I
 import Blessed.Internal.JsApi as I
+import Blessed.Internal.Dump as Dump
 import Blessed.Internal.BlessedSubj as K
 
-
-
-commandsDumpPath :: FilePath
-commandsDumpPath = "./commands_dump.txt"
 
 
 data BlessedOpF state m a
@@ -143,33 +136,6 @@ lift :: forall state m. m Unit -> BlessedOpM state m Unit
 lift m = BlessedOpM $ Free.liftF $ Lift m
 
 
-dumpCommand :: forall m. MonadEffect m => I.Command -> m Unit
-dumpCommand =
-    liftEffect
-        <<< launchAff_
-        <<< appendTextFile UTF8 commandsDumpPath
-        <<< cmdTupleToLine
-        <<< bimap Json.stringify (Array.length >>> show)
-        <<< Foreign.commandToJson
-    where
-        cmdTupleToLine (callDump /\ handlersCountStr) = callDump <> " (" <> handlersCountStr <> ")" <> "\n"
-
-
-
-dumpHandlerCall :: forall m. MonadEffect m => I.RawNodeKey -> I.EventId -> Array Json -> m Unit
-dumpHandlerCall (I.RawNodeKey nodeKey) (I.EventId event) args =
-    liftEffect
-        $ launchAff_
-        $ appendTextFile UTF8 commandsDumpPath
-        $ (<>) "\n"
-        $ Json.stringify
-        $ Foreign.encodeDump
-        $ I.CallDump
-            { args, event, nodeId : nodeKey.id
-            , nodeSubj : K.toString nodeKey.subject
-            }
-
-
 runM
     :: forall state m
      . MonadEffect m
@@ -218,22 +184,22 @@ runFreeM stateRef fn = do
 
         go (PerformOne target cmd next) = do
             _ <- liftEffect $ callForeignCommand target cmd
-            dumpCommand cmd
+            Dump.command cmd
             pure next
 
         go (PerformSome target cmds next) = do
             _ <- traverse (liftEffect <<< callForeignCommand target) cmds
-            traverse_ dumpCommand cmds
+            traverse_ Dump.command cmds
             pure next
 
         go (PerformGet target cmd getV) = do
             value <- liftEffect $ callForeignCommand target cmd
-            dumpCommand cmd
+            Dump.command cmd
             pure $ getV value
 
         go (PerformOnProcess cmd next) = do
             _ <- liftEffect $ callForeignCommand (I.rawify I.process) cmd
-            dumpCommand cmd
+            Dump.command cmd
             pure next
 
         getUserState = liftEffect $ Ref.read stateRef
@@ -249,7 +215,7 @@ makeHandler nodeKey eventId arguments op =
     I.SHandler eventId arguments
         $ \stateRef rawNodeKey evtJson -> do
             -- TODO: check IDs match?
-            dumpHandlerCall rawNodeKey eventId arguments
+            Dump.handlerCall rawNodeKey eventId arguments
             runM' stateRef $ op nodeKey evtJson
 
 

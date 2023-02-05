@@ -28,6 +28,10 @@ call :: String -> Array Json -> Command
 call cmd args = Call { cmd, args }
 
 
+callEx :: String -> Array Json -> Array HandlerCallEnc -> Command
+callEx cmd args handlers = CallEx { cmd, args, handlers }
+
+
 set :: String -> Json -> Command
 set prop value = Set { prop, value }
 

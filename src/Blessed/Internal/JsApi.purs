@@ -71,7 +71,8 @@ reflectNodeId _ = NodeId ((_ :: x) /\ reflectSymbol (Proxy :: _ sym))
 
 newtype HandlerCallEnc =
     HandlerCallEnc
-        { nodeId :: String
+        { marker :: String
+        , nodeId :: String
         , nodeSubj :: String
         , event :: String
         , index :: String
@@ -81,7 +82,8 @@ newtype HandlerCallEnc =
 
 newtype HandlerRefEnc =
     HandlerRefEnc
-        { nodeId :: String
+        { marker :: String
+        , nodeId :: String
         , nodeSubj :: String
         , event :: String
         , index :: String
@@ -92,7 +94,8 @@ derive instance Newtype HandlerRefEnc _
 
 newtype BlessedEnc =
     BlessedEnc
-        { root :: Json
+        { marker :: String
+        , root :: Json
         , handlersFns :: Array HandlerCallEnc
         }
 
@@ -103,7 +106,8 @@ type PropJson =
 
 newtype NodeEnc =
     NodeEnc
-        { nodeSubj :: String
+        { marker :: String
+        , nodeSubj :: String
         , nodeId :: String
         , props :: Array PropJson
         , children :: Array NodeEnc
@@ -123,7 +127,8 @@ data CommandType
 
 newtype CallCommandEnc =
     CallCommandEnc
-        { type :: String
+        { marker :: String
+        , type :: String
         , method :: String
         , args :: Array Json
         }
@@ -131,21 +136,24 @@ newtype CallCommandEnc =
 
 newtype GetCommandEnc =
     GetCommandEnc
-        { type :: String
+        { marker :: String
+        , type :: String
         , property :: String
         }
 
 
 newtype SetCommandEnc =
     SetCommandEnc
-        { type :: String
+        { marker :: String
+        , type :: String
         , property :: String
         , value :: Json
         }
 
 newtype ProcessCommandEnc =
     ProcessCommandEnc
-        { type :: String
+        { marker :: String
+        , type :: String
         , method :: String
         , args :: Array Json
         }
@@ -155,18 +163,8 @@ newtype CommandEnc =
     CommandEnc Json
 
 
-newtype CallDump =
-    CallDump
-        { nodeId :: String
-        , nodeSubj :: String
-        , event :: String
-        , args :: Array Json
-        }
-
-
 derive instance Newtype CallCommandEnc _
 derive instance Newtype GetCommandEnc _
 derive instance Newtype SetCommandEnc _
 derive instance Newtype ProcessCommandEnc _
 derive instance Newtype CommandEnc _
-derive instance Newtype CallDump _
