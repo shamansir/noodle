@@ -212,7 +212,7 @@ function registerNode(node) {
             ___log('registering handler', handler.index, handler, handlerFn);
             if (BLESSED_ON && handlerFn && (handlerFn.index === handler.index)) {
                 if (handler.event === 'key') {
-                    blessedObj.key(handler.args, (evt) => handlerFn.call(evt)());
+                    blessedObj.key(handlerFn.args, (evt) => handlerFn.call(evt)());
                 } else {
                     blessedObj.on(handler.event, (evt) => handlerFn.call(evt)());
                 }
@@ -283,6 +283,18 @@ function callCommand(rawNodeKey) {
     }
 }
 
+function callCommandEx(rawNodeKey) {
+    return function(command) {
+        return function(handlers) {
+            // TODO
+            return function() {
+                callCommand(rawNodeKey)(command)();
+            }
+        }
+    }
+}
+
 exports.execute_ = execute;
 exports.registerNode_ = registerNode;
 exports.callCommand_ = callCommand;
+exports.callCommandEx_ = callCommandEx;

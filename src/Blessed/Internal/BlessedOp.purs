@@ -13,11 +13,12 @@ import Effect.Ref as Ref
 
 import Control.Monad.State as State
 
-import Data.Bifunctor (lmap, rmap)
+import Data.Bifunctor (lmap, rmap, bimap)
 import Data.Either (Either)
 import Data.Either as Either
 import Data.Traversable (traverse, traverse_)
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Array as Array
 
 import Data.Codec.Argonaut (JsonCodec, JsonDecodeError(..), decode) as CA
 import Data.Argonaut.Core (Json)
@@ -147,9 +148,12 @@ dumpCommand =
     liftEffect
         <<< launchAff_
         <<< appendTextFile UTF8 commandsDumpPath
-        <<< (<>) "\n"
-        <<< Json.stringify
+        <<< cmdTupleToLine
+        <<< bimap Json.stringify (Array.length >>> show)
         <<< Foreign.commandToJson
+    where
+        cmdTupleToLine (callDump /\ handlersCountStr) = callDump <> " (" <> handlersCountStr <> ")" <> "\n"
+
 
 
 dumpHandlerCall :: forall m. MonadEffect m => I.RawNodeKey -> I.EventId -> Array Json -> m Unit
@@ -213,27 +217,31 @@ runFreeM stateRef fn = do
         go (Lift m) = m
 
         go (PerformOne target cmd next) = do
-            _ <- liftEffect $ callCommand_ target $ Foreign.encodeCommand cmd
+            _ <- liftEffect $ callForeignCommand target cmd
             dumpCommand cmd
             pure next
 
         go (PerformSome target cmds next) = do
-            _ <- traverse (liftEffect <<< callCommand_ target <<< Foreign.encodeCommand) cmds
+            _ <- traverse (liftEffect <<< callForeignCommand target) cmds
             traverse_ dumpCommand cmds
             pure next
 
         go (PerformGet target cmd getV) = do
-            value <- liftEffect $ callCommand_ target $ Foreign.encodeCommand cmd
+            value <- liftEffect $ callForeignCommand target cmd
             dumpCommand cmd
             pure $ getV value
 
         go (PerformOnProcess cmd next) = do
-            _ <- liftEffect $ callCommand_ (I.rawify I.process) $ Foreign.encodeCommand cmd
+            _ <- liftEffect $ callForeignCommand (I.rawify I.process) cmd
             dumpCommand cmd
             pure next
 
         getUserState = liftEffect $ Ref.read stateRef
         writeUserState _ nextState = liftEffect $ Ref.modify_ (const nextState) stateRef
+        callForeignCommand target cmd =
+            case Foreign.encodeCommand cmd of
+                cmd_ /\ [] -> callCommand_ target cmd_
+                cmd_ /\ handlers -> callCommandEx_ target cmd_ handlers
 
 
 makeHandler :: forall state subj sym. I.NodeKey subj sym -> I.EventId -> Array Json -> (I.NodeKey subj sym -> I.EventJson -> BlessedOp state Effect) -> I.SHandler state
@@ -245,11 +253,6 @@ makeHandler nodeKey eventId arguments op =
             runM' stateRef $ op nodeKey evtJson
 
 
-foreign import execute_ :: I.BlessedEnc -> Effect Unit
-foreign import registerNode_ :: I.NodeEnc -> Effect Unit
-foreign import callCommand_ :: I.RawNodeKey -> I.CommandEnc -> Effect Json
-
-
 convertJsonError :: ADE.JsonDecodeError -> CA.JsonDecodeError
 convertJsonError = case _ of
     ADE.TypeMismatch s -> CA.TypeMismatch s
@@ -258,3 +261,9 @@ convertJsonError = case _ of
     ADE.AtKey n jde -> CA.AtKey n $ convertJsonError jde
     ADE.Named n jde -> CA.Named n $ convertJsonError jde
     ADE.MissingValue -> CA.MissingValue
+
+
+foreign import execute_ :: I.BlessedEnc -> Effect Unit
+foreign import registerNode_ :: I.NodeEnc -> Effect Unit
+foreign import callCommand_ :: I.RawNodeKey -> I.CommandEnc -> Effect Json
+foreign import callCommandEx_ :: I.RawNodeKey -> I.CommandEnc -> Array I.HandlerCallEnc -> Effect Json

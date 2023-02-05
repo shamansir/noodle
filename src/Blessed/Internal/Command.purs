@@ -5,6 +5,7 @@ import Foreign (Foreign)
 import Data.Argonaut.Core (Json)
 import Data.Codec.Argonaut as CA
 import Type.Data.Symbol (class IsSymbol)
+import Blessed.Internal.JsApi (HandlerCallEnc)
 
 
 {- data CommandType
@@ -16,6 +17,7 @@ import Type.Data.Symbol (class IsSymbol)
 
 data Command
     = Call { cmd :: String, args :: Array Json }
+    | CallEx { cmd :: String, args :: Array Json, handlers :: Array HandlerCallEnc }
     | Set { prop :: String, value :: Json }
     | Get { prop :: String }
     -- | Global { }

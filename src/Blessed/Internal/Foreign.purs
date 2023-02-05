@@ -19,6 +19,7 @@ import Data.Map as Map
 import Data.Newtype (class Newtype, unwrap)
 import Data.Foldable (foldr)
 import Data.FoldableWithIndex (foldrWithIndex)
+import Data.Bifunctor (lmap)
 
 import Data.Argonaut.Core (Json)
 -- import Data.Argonaut.Encode (class EncodeJson, encodeJson)
@@ -76,12 +77,11 @@ encode'
                 }
 
         encodeHandlerRef :: Int -> I.SHandler state -> I.HandlerRefEnc
-        encodeHandlerRef localIndex (I.SHandler (I.EventId eventId) args fn) =
+        encodeHandlerRef localIndex (I.SHandler (I.EventId eventId) _ fn) =
             I.HandlerRefEnc
                 { nodeId : rawNodeKey.id
                 , nodeSubj : K.toString rawNodeKey.subject
                 , event : eventId
-                , args
                 , index : rawNodeKey.id <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index?
                 }
 
@@ -140,22 +140,24 @@ encode'
 --     # CA.recordProp (Proxy :: _ "age") CA.int
 
 
-commandToJson :: C.Command -> Json
+commandToJson :: C.Command -> Json /\ Array I.HandlerCallEnc
 commandToJson =
     case _ of
         C.Call { cmd, args } ->
-            CA.encode Codec.callCommandEnc $ I.CallCommandEnc $ { args, method : cmd, type : "call" }
+            (CA.encode Codec.callCommandEnc $ I.CallCommandEnc $ { args, method : cmd, type : "call" }) /\ []
+        C.CallEx { cmd, args, handlers } ->
+            (CA.encode Codec.callCommandEnc $ I.CallCommandEnc $ { args, method : cmd, type : "call" }) /\ handlers
         C.Get { prop } ->
-            CA.encode Codec.getCommandEnc $ I.GetCommandEnc $ { property : prop, type : "get" }
+            (CA.encode Codec.getCommandEnc $ I.GetCommandEnc $ { property : prop, type : "get" }) /\ []
         C.Set { prop, value } ->
-            CA.encode Codec.setCommandEnc $ I.SetCommandEnc $ { value, property : prop, type : "set" }
+            (CA.encode Codec.setCommandEnc $ I.SetCommandEnc $ { value, property : prop, type : "set" }) /\ []
         C.WithProcess { cmd, args } ->
-            CA.encode Codec.processCommandEnc $ I.ProcessCommandEnc $ { args, method : cmd, type : "process" }
+            (CA.encode Codec.processCommandEnc $ I.ProcessCommandEnc $ { args, method : cmd, type : "process" }) /\ []
 
 
-encodeCommand :: C.Command -> I.CommandEnc
+encodeCommand :: C.Command -> I.CommandEnc /\ Array I.HandlerCallEnc
 encodeCommand =
-    I.CommandEnc <<< commandToJson
+    lmap I.CommandEnc <<< commandToJson
 
 
 encodeDump :: I.CallDump -> Json

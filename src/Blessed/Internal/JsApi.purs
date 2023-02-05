@@ -84,7 +84,6 @@ newtype HandlerRefEnc =
         { nodeId :: String
         , nodeSubj :: String
         , event :: String
-        , args :: Array Json
         , index :: String
         }
 

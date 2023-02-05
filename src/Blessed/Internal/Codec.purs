@@ -70,7 +70,6 @@ handlerRefEnc =
             , nodeSubj : CA.string
             , event : CA.string
             , index : CA.string
-            , args : CA.array CA.json
             }
         )
 
