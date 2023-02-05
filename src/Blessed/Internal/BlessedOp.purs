@@ -63,6 +63,7 @@ instance functorBlessedOpF :: Functor m => Functor (BlessedOpF state m) where
 
 
 type BlessedOp state m = BlessedOpM state m Unit
+type BlessedOpDef state m = Ref state -> BlessedOpM state m Unit
 type BlessedOpJsonGet state m a = BlessedOpM state m (Either CA.JsonDecodeError a)
 type BlessedOpGet state m a = BlessedOpM state m a
 

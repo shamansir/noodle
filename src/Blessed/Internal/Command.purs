@@ -1,11 +1,17 @@
 module Blessed.Internal.Command where
 
+import Prelude ((>>>))
+
 import Foreign.JSON
 import Foreign (Foreign)
+
+import Data.Codec (Codec) as CA
 import Data.Argonaut.Core (Json)
 import Data.Codec.Argonaut as CA
+
 import Type.Data.Symbol (class IsSymbol)
-import Blessed.Internal.JsApi (HandlerCallEnc)
+
+import Blessed.Internal.JsApi (HandlerCallEnc, SNode)
 
 
 {- data CommandType
@@ -40,9 +46,23 @@ get :: String -> Command
 get prop = Get { prop }
 
 
+arg :: forall m a value d. CA.Codec m a Json value d → value → Json
 arg = CA.encode
 
 
 withProcess :: String -> Array Json -> Command
 withProcess cmd args =
     WithProcess { cmd, args }
+
+
+data CouldBeNodeOrJson state
+    = NodeArg (SNode state)
+    | JsonArg Json
+
+
+node :: forall state. SNode state -> CouldBeNodeOrJson state
+node = NodeArg
+
+
+narg :: forall m a value d state. CA.Codec m a Json value d → value → CouldBeNodeOrJson state
+narg codec = arg codec >>> JsonArg

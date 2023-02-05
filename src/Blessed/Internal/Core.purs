@@ -20,6 +20,7 @@ import Data.Maybe (Maybe(..))
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Identity (Identity)
+import Data.Foldable (foldr)
 
 import Data.Symbol (reflectSymbol, class IsSymbol)
 import Type.Proxy (Proxy(..))
@@ -31,13 +32,13 @@ import Data.Codec.Argonaut as CA
 
 import Blessed.Internal.BlessedOp as Op
 import Blessed.Internal.BlessedSubj as K
-import Blessed.Internal.Command as C
+import Blessed.Internal.Command as Cmd
 import Blessed.Internal.NodeKey (NodeKey)
 import Blessed.Internal.NodeKey as NK
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Codec as Codec
 import Blessed.Internal.Emitter
-import Blessed.Internal.Foreign (encode) as Foreign
+import Blessed.Internal.Foreign (encode, encode') as Foreign
 
 
 
@@ -112,17 +113,29 @@ type GetterFn' (subj :: K.Subject) (id :: Symbol) (sym :: Symbol) r' (r :: Row T
 
 getter :: forall subj id sym r' r state m a. K.IsSubject subj => IsSymbol id => GetterFn subj id sym r' r state m a
 getter sym codec nodeKey =
-    Op.performGet codec (NK.rawify nodeKey) $ C.get $ reflectSymbol sym
+    Op.performGet codec (NK.rawify nodeKey) $ Cmd.get $ reflectSymbol sym
 
 
 getter' :: forall subj id sym r' r state m a. K.IsSubject subj => IsSymbol id => DecodeJson a => GetterFn' subj id sym r' r state m a
 getter' sym nodeKey =
-    Op.performGet' (NK.rawify nodeKey) $ C.get $ reflectSymbol sym
+    Op.performGet' (NK.rawify nodeKey) $ Cmd.get $ reflectSymbol sym
 
 
 method ∷ forall subj id state (m ∷ Type -> Type). K.IsSubject subj => IsSymbol id => NodeKey subj id → String → Array Json → Op.BlessedOp state m
 method nodeKey name args =
-    Op.perform (NK.rawify nodeKey) $ C.call name args
+    Op.perform (NK.rawify nodeKey) $ Cmd.call name args
+
+
+nmethod ∷ forall subj id state (m ∷ Type -> Type). K.IsSubject subj => IsSymbol id => NodeKey subj id → String → Array (Cmd.CouldBeNodeOrJson state) → Op.BlessedOpDef state m
+nmethod nodeKey name args stateRef =
+    Op.perform (NK.rawify nodeKey) $ Cmd.callEx name jsonArgs handlers
+    where
+        foldF (Cmd.JsonArg json) (jsons /\ handlers) = Array.snoc jsons json /\ handlers
+        foldF (Cmd.NodeArg node) (jsons /\ handlers) =
+            case Foreign.encode' stateRef (Just $ NK.rawify nodeKey) node of
+                nodeEnc /\ nHandlers -> Array.snoc jsons (CA.encode Codec.nodeEnc nodeEnc) /\ (handlers <> nHandlers)
+        jsonArgs /\ handlers = foldr foldF ([] /\ []) args
+
 
 
 instance EncodeJson (SoleOption r) where
