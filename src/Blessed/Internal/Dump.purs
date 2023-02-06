@@ -49,9 +49,13 @@ newtype CallDump =
 derive instance Newtype CallDump _
 
 
+commandToPerform :: forall m. MonadEffect m => I.Command -> m Unit
+commandToPerform =
+    commandWasPerformed
 
-command :: forall m. MonadEffect m => I.Command -> m Unit
-command =
+
+commandWasPerformed :: forall m. MonadEffect m => I.Command -> m Unit
+commandWasPerformed =
     liftEffect
         <<< launchAff_
         <<< appendTextFile UTF8 commandsDumpPath
@@ -60,7 +64,6 @@ command =
         <<< Foreign.commandToJson
     where
         cmdTupleToLine (callDump /\ handlersCountStr) = callDump <> " (" <> handlersCountStr <> ")" <> "\n"
-
 
 
 handlerCall :: forall m. MonadEffect m => I.RawNodeKey -> I.EventId -> Array Json -> m Unit

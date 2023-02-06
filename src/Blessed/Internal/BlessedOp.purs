@@ -18,6 +18,7 @@ import Data.Either (Either)
 import Data.Either as Either
 import Data.Traversable (traverse, traverse_)
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Tuple (uncurry)
 import Data.Array as Array
 
 import Data.Codec.Argonaut (JsonCodec, JsonDecodeError(..), decode) as CA
@@ -34,6 +35,7 @@ import Control.Monad.State.Class (class MonadState)
 
 import Blessed.Internal.Foreign (encodeCommand, commandToJson) as Foreign
 import Blessed.Internal.Command (Command) as I
+import Blessed.Internal.Command as Cmd
 import Blessed.Internal.NodeKey as I
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Dump as Dump
@@ -184,31 +186,36 @@ runFreeM stateRef fn = do
         go (Lift m) = m
 
         go (PerformOne target cmd next) = do
+            Dump.commandToPerform cmd
             _ <- liftEffect $ callForeignCommand target cmd
-            Dump.command cmd
+            Dump.commandWasPerformed cmd
             pure next
 
         go (PerformSome target cmds next) = do
+            traverse_ Dump.commandToPerform cmds
             _ <- traverse (liftEffect <<< callForeignCommand target) cmds
-            traverse_ Dump.command cmds
+            traverse_ Dump.commandWasPerformed cmds
             pure next
 
         go (PerformGet target cmd getV) = do
+            Dump.commandToPerform cmd
             value <- liftEffect $ callForeignCommand target cmd
-            Dump.command cmd
+            Dump.commandWasPerformed cmd
             pure $ getV value
 
         go (PerformOnProcess cmd next) = do
+            Dump.commandToPerform cmd
             _ <- liftEffect $ callForeignCommand (I.rawify I.process) cmd
-            Dump.command cmd
+            Dump.commandWasPerformed cmd
             pure next
 
         getUserState = liftEffect $ Ref.read stateRef
         writeUserState _ nextState = liftEffect $ Ref.modify_ (const nextState) stateRef
-        callForeignCommand target cmd =
-            case Foreign.encodeCommand cmd of
-                cmd_ /\ [] -> callCommand_ target cmd_
-                cmd_ /\ handlers -> callCommandEx_ target cmd_ handlers
+        callForeignCommand target = Foreign.encodeCommand >>> uncurry (callCommandEx_ target)
+            -- FIXME: always calls `CallCommandEx_` now, add some flag to easily distinguish if we really need it
+            -- case Foreign.encodeCommand cmd of
+            --     cmd_ /\ [] -> callCommand_ target cmd_
+            --     cmd_ /\ handlers -> callCommandEx_ target cmd_ handlers
 
 
 makeHandler :: forall state subj sym. I.NodeKey subj sym -> I.EventId -> Array Json -> (I.NodeKey subj sym -> I.EventJson -> BlessedOp state Effect) -> I.SHandler state

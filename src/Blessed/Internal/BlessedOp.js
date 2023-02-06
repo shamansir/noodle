@@ -258,7 +258,11 @@ function callCommand(rawNodeKey) {
                     if (blessedObj) {
                         switch (command.type) {
                             case 'call':
-                                blessedObj[command.method].apply(blessedObj, command.args);
+                                if (command.marker == 'CallCommandEx') {
+                                    blessedObj[command.method].apply(blessedObj, checkForNodes(command.args));
+                                } else {
+                                    blessedObj[command.method].apply(blessedObj, command.args);
+                                }
                                 break;
                             case 'set':
                                 blessedObj[command.property] = command.value;
@@ -281,6 +285,19 @@ function callCommand(rawNodeKey) {
             return returnObj;
         }
     }
+}
+
+function checkForNodes(cmdArgs) {
+    return cmdArgs.map((arg) => {
+        if (arg && arg['marker'] && arg['marker'] == 'Node') {
+            const node = arg;
+            const blessedNode = registerNode(node)();
+            // TODO: check registry[node.nodeId].blessed?
+            return blessedNode;
+        } else {
+            return arg;
+        }
+    });
 }
 
 function callCommandEx(rawNodeKey) {

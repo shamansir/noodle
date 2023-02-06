@@ -11,20 +11,17 @@ import Data.Codec.Argonaut.Common as CAC
 import Data.Tuple (fst) as Tuple
 import Data.Tuple.Nested ((/\))
 
-import Blessed.Internal.Command (arg) as C
+import Blessed.Internal.Command (arg, narg, node) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.BlessedOp (getStateRef) as BlessedOp
 import Blessed.Internal.BlessedSubj (Element, Subject)
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.NodeKey (rawify) as NodeKey
-import Blessed.Internal.Core (method, Blessed) as C
+import Blessed.Internal.Core (method, nmethod, Blessed) as C
 import Blessed.Internal.Codec (nodeEnc) as Codec
 import Blessed.Internal.Foreign (encode') as Foreign
 import Blessed.Internal.Emitter (CoreEvent) as C
 
-
-nodeAsArg stateRef parentNodeKey node =
-    C.arg (Codec.nodeEnc) (Tuple.fst $ Foreign.encode' stateRef (Just $ NodeKey.rawify parentNodeKey) node)
     -- FIXME: handlers returned from `encode'`!!
     -- FIXME: ensure to append and encode properly in BlessedOp.js
 
@@ -39,8 +36,7 @@ prepend
      . Respresents Element subj id
     => C.Blessed state C.CoreEvent -> NodeKey subj id -> BlessedOp state m
 prepend node nodeId =
-    BlessedOp.getStateRef >>=
-        \stateRef -> C.method nodeId "prepend" [ nodeAsArg stateRef nodeId node ]
+    C.nmethod nodeId "prepend" [ C.node node ]
 
 
 append
@@ -48,8 +44,7 @@ append
      . Respresents Element subj id
     => C.Blessed state C.CoreEvent -> NodeKey subj id -> BlessedOp state m
 append node nodeId =
-    BlessedOp.getStateRef >>=
-        \stateRef -> C.method nodeId "append" [ nodeAsArg stateRef nodeId node ]
+    C.nmethod nodeId "append" [ C.node node ]
 
 
 remove
@@ -57,8 +52,7 @@ remove
      . Respresents Element subj id
     => C.Blessed state C.CoreEvent -> NodeKey subj id -> BlessedOp state m
 remove node nodeId =
-    BlessedOp.getStateRef >>=
-        \stateRef -> C.method nodeId "remove" [ nodeAsArg stateRef nodeId node ]
+    C.nmethod nodeId "remove" [ C.node node ]
 
 
 insert
@@ -66,8 +60,7 @@ insert
      . Respresents Element subj id
     => C.Blessed state C.CoreEvent -> Int -> NodeKey subj id -> BlessedOp state m
 insert node i nodeId =
-    BlessedOp.getStateRef >>=
-        \stateRef -> C.method nodeId "insert" [ nodeAsArg stateRef nodeId node, C.arg CA.int i ]
+    C.nmethod nodeId "insert" [ C.node node, C.narg CA.int i ]
 
 
 insertBefore
@@ -75,8 +68,7 @@ insertBefore
      . Respresents Element subj id
     => C.Blessed state C.CoreEvent -> C.Blessed state C.CoreEvent -> NodeKey subj id -> BlessedOp state m
 insertBefore node refNode nodeId =
-    BlessedOp.getStateRef >>=
-        \stateRef -> C.method nodeId "insertBefore" [ nodeAsArg stateRef nodeId node, nodeAsArg stateRef nodeId refNode ]
+    C.nmethod nodeId "insertBefore" [ C.node node, C.node refNode ]
 
 
 insertAfter
@@ -84,14 +76,13 @@ insertAfter
      . Respresents Element subj id
     => C.Blessed state C.CoreEvent -> C.Blessed state C.CoreEvent -> NodeKey subj id -> BlessedOp state m
 insertAfter node refNode nodeId =
-    BlessedOp.getStateRef >>=
-        \stateRef -> C.method nodeId "insertAfter" [ nodeAsArg stateRef nodeId node, nodeAsArg stateRef nodeId refNode ]
+    C.nmethod nodeId "insertAfter" [ C.node node, C.node refNode ]
 
 
 detach
     :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Element subj id
-    =>  NodeKey subj id -> BlessedOp state m
+    => NodeKey subj id -> BlessedOp state m
 detach nodeId =
     C.method nodeId "detach" [ ]
 

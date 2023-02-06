@@ -55,14 +55,14 @@ withProcess cmd args =
     WithProcess { cmd, args }
 
 
-data CouldBeNodeOrJson state
+data NodeOrJson state
     = NodeArg (SNode state)
     | JsonArg Json
 
 
-node :: forall state. SNode state -> CouldBeNodeOrJson state
+node :: forall state. SNode state -> NodeOrJson state
 node = NodeArg
 
 
-narg :: forall m a value d state. CA.Codec m a Json value d → value → CouldBeNodeOrJson state
+narg :: forall m a value d state. CA.Codec m a Json value d → value → NodeOrJson state
 narg codec = arg codec >>> JsonArg
