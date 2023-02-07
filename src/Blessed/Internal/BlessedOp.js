@@ -253,8 +253,8 @@ function callCommand(rawNodeKey) {
                     process[command.method].apply(this, command.args);
                 } else {
                     const blessedObj = registry[nodeId] ? registry[nodeId].blessed : null;
-                    // ___log(nodeId, registry[nodeId], blessedObj);
 
+                    //console.log(blessedObj, blessedObj['selected']);
                     if (blessedObj) {
                         switch (command.type) {
                             case 'call':
@@ -268,7 +268,9 @@ function callCommand(rawNodeKey) {
                                 blessedObj[command.property] = command.value;
                                 break;
                             case 'get':
+                                console.error('get', blessedObj['selected'], blessedObj[command.property]);
                                 returnObj = blessedObj[command.property];
+                                console.error('get', returnObj);
                                 break;
                             case 'process':
                                 // handled earlier
@@ -303,9 +305,9 @@ function checkForNodes(cmdArgs) {
 function callCommandEx(rawNodeKey) {
     return function(command) {
         return function(handlers) {
-            // TODO
+            // TODO: handlers
             return function() {
-                callCommand(rawNodeKey)(command)();
+                return callCommand(rawNodeKey)(command)();
             }
         }
     }

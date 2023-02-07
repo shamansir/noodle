@@ -79,7 +79,6 @@ main = do
                 box # Box.setLine 1 "bar"
                 box # Box.insertLine 1 "foo"
                 mainScreen >~ Screen.render
-
             ]
 
             []
