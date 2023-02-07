@@ -90,6 +90,20 @@ initialState =
     }
 
 
+inletsOutletsStyle =
+    List.style
+        [ LStyle.bg palette.background
+        , LStyle.item
+            [ ES.fg palette.itemNotSelected
+            , ES.bg palette.background
+            ]
+        , LStyle.selected
+            [ ES.fg palette.itemSelected
+            , ES.bg palette.background
+            ]
+        ]
+
+
 main :: Effect Unit
 main = do
   Cli.run initialState
@@ -165,19 +179,20 @@ main = do
 
                         let top = Offset.px $ state.lastShiftX + 2
                         let left = Offset.px $ 16 + state.lastShiftY + 2
-                        let nextNodeBoxKey = NodeKey.next state.lastNodeBoxKey
-                        let nextInletsBarKey = NodeKey.next state.lastInletsBarKey
-                        let nextOutletsBarKey = NodeKey.next state.lastOutletsBarKey
+                        let nextNodeBox = NodeKey.next state.lastNodeBoxKey
+                        let nextInletsBar = NodeKey.next state.lastInletsBarKey
+                        let nextOutletsBar = NodeKey.next state.lastOutletsBarKey
 
                         -- TODO: inverse operator for (>~) : selected <- List.selected ~< nodeList
                         selected <- List.selected nodeList
+                        liftEffect $ Console.log $ show selected
 
                         let is = [ "a", "b", "c" ]
                         let os = [ "sum", "x" ]
 
                         let
-                            nextNodeBox =
-                                B.box nextNodeBoxKey
+                            nextNodeBoxN =
+                                B.box nextNodeBox
                                     [ Box.draggable true
                                     , Box.top top
                                     , Box.left left
@@ -198,12 +213,40 @@ main = do
                                     ]
                                     []
 
-                        patchBox >~ Node.append nextNodeBox
+                        let
+                            inletsBarN =
+                                B.listbar nextInletsBar
+                                    [ Box.width $ Dimension.percents 90.0
+                                    , Box.height $ Dimension.px 1
+                                    , List.items is
+                                    , List.mouse true
+                                    , List.keys true
+                                    , inletsOutletsStyle
+                                    ]
+                                    [ ]
+
+
+                        let
+                            outletsBarN =
+                                B.listbar nextOutletsBar
+                                    [ Box.width $ Dimension.percents 90.0
+                                    , Box.height $ Dimension.px 1
+                                    , Box.top $ Offset.px 2
+                                    , List.items os
+                                    , List.mouse true
+                                    , List.keys true
+                                    , inletsOutletsStyle
+                                    ]
+                                    [ ]
+
+                        nextNodeBox >~ Node.append inletsBarN
+                        nextNodeBox >~ Node.append outletsBarN
+                        patchBox >~ Node.append nextNodeBoxN
 
                         State.modify_ (_
                             { lastShiftX = state.lastShiftX + 1
                             , lastShiftY = state.lastShiftY + 1
-                            , lastNodeBoxKey = nextNodeBoxKey
+                            , lastNodeBoxKey = nextNodeBox
                             } )
 
                         mainScreen >~ Screen.render
