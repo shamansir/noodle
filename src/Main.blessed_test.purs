@@ -13,7 +13,7 @@ import Blessed (exit) as Blessed
 
 import Blessed.Core.Key as Key
 import Blessed.Core.Offset as Offset
-import Blessed.Core.FgBg as FgBg
+import Blessed.Core.EndStyle as ES
 import Blessed.Core.Border as Border
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Style as Style
@@ -66,7 +66,7 @@ main = do
                     [ Border.fg "#f0f0f0"
                     ]
                 , Style.hover
-                    [ FgBg.bg "green"
+                    [ ES.bg "green"
                     ]
                 ]
 

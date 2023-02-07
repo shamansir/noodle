@@ -13,8 +13,8 @@ import Data.Symbol (class IsSymbol)
 import Blessed.Core.Color (Color)
 import Blessed.Core.Orientation (Orientation)
 import Blessed.Core.Border (BorderType) as B
-import Blessed.Core.FgBg (FgBgOption)
-import Blessed.Core.FgBg (Evaluated) as FgBg
+import Blessed.Core.EndStyle (EndStyleOption)
+import Blessed.Core.EndStyle (Evaluated) as EndStyle
 
 import Blessed.Internal.Core (Attribute, option) as C
 import Blessed.Internal.BlessedSubj (Subject, ProgressBar)
@@ -27,7 +27,7 @@ import Blessed.UI.Boxes.Box.Option (OptionsRow) as Input
 
 type OptionsRow r =
     ( orientation :: Orientation
-    , style_bar :: Array (FgBgOption ())
+    , style_bar :: Array (EndStyleOption ())
     , filled :: Int
     , pch :: Char
     , keys :: Boolean
@@ -88,5 +88,5 @@ pch = pbOption (Proxy :: _ "pch")
 style_bar
     :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ProgressBar subj id
-    => Array (FgBgOption ()) -> ProgressBarAttribute subj id ( style_bar :: Array (FgBgOption ()) | r ) state e
+    => Array (EndStyleOption ()) -> ProgressBarAttribute subj id ( style_bar :: Array (EndStyleOption ()) | r ) state e
 style_bar = pbOption ( Proxy :: Proxy "style_bar" )

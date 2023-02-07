@@ -16,7 +16,7 @@ import Type.Proxy (Proxy(..))
 
 import Blessed.Core.Key as Key
 import Blessed.Core.Offset as Offset
-import Blessed.Core.FgBg as FgBg
+import Blessed.Core.EndStyle as ES
 import Blessed.Core.Border as Border
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Style as Style
@@ -51,6 +51,8 @@ patchesBar = nk :: ListBar <^> "patches-bar"
 patchBox = nk :: Box <^> "patch-box"
 nodeList = nk :: List <^> "node-list"
 nodeBox = nk :: Box <^> "node-box"
+inletsBar = nk :: ListBar <^> "node-inlets-bar"
+outletsBar = nk :: ListBar <^> "node-outlets-bar"
 inlets = nk :: ListBar <^> "inlets"
 outlets = nk :: ListBar <^> "outlets"
 
@@ -83,6 +85,8 @@ initialState =
     { lastShiftX : 0
     , lastShiftY : 0
     , lastNodeBoxKey : nodeBox
+    , lastInletsBarKey : inletsBar
+    , lastOutletsBarKey : outletsBar
     }
 
 
@@ -110,12 +114,12 @@ main = do
             , List.style
                 [ LStyle.bg palette.background
                 , LStyle.item
-                    [ FgBg.fg palette.itemNotSelected
-                    , FgBg.bg palette.background
+                    [ ES.fg palette.itemNotSelected
+                    , ES.bg palette.background
                     ]
                 , LStyle.selected
-                    [ FgBg.fg palette.itemSelected
-                    , FgBg.bg palette.background
+                    [ ES.fg palette.itemSelected
+                    , ES.bg palette.background
                     ]
                 ]
             ]
@@ -128,7 +132,9 @@ main = do
             , Box.height $ Dimension.calc $ Coord.percents 100.0 <-> Coord.px 1
             , Box.content "Patch"
             , Box.tags true
-            , Box.border [ Border.type_ Border._line ]
+            , Box.border
+                [ Border.type_ Border._line
+                ]
             , Box.style
                 [ Style.fg palette.foreground
                 , Style.bg palette.background2
@@ -147,8 +153,8 @@ main = do
                 , List.keys true
                 , Box.border [ Border.type_ Border._line, Border.fg palette.nodeListFg ]
                 , List.style
-                    [ LStyle.item [ FgBg.fg palette.nodeListFg ]
-                    , LStyle.selected [ FgBg.fg palette.nodeListSelFg ]
+                    [ LStyle.item [ ES.fg palette.nodeListFg ]
+                    , LStyle.selected [ ES.fg palette.nodeListSelFg ]
                     ]
                 , Core.on List.Select
                     \_ _ -> do
@@ -157,9 +163,11 @@ main = do
                         -- lastNodeBoxKey <- _.lastNodeBoxKey <$> State.get
                         state <- State.get
 
-                        let top = state.lastShiftX + 2
-                        let left = 16 + state.lastShiftY + 2
-                        let curNodeBoxKey = NodeKey.next state.lastNodeBoxKey
+                        let top = Offset.px $ state.lastShiftX + 2
+                        let left = Offset.px $ 16 + state.lastShiftY + 2
+                        let nextNodeBoxKey = NodeKey.next state.lastNodeBoxKey
+                        let nextInletsBarKey = NodeKey.next state.lastInletsBarKey
+                        let nextOutletsBarKey = NodeKey.next state.lastOutletsBarKey
 
                         -- TODO: inverse operator for (>~) : selected <- List.selected ~< nodeList
                         selected <- List.selected nodeList
@@ -167,16 +175,38 @@ main = do
                         let is = [ "a", "b", "c" ]
                         let os = [ "sum", "x" ]
 
-                        let nodeBox =
-                                B.box curNodeBoxKey [] []
+                        let
+                            nextNodeBox =
+                                B.box nextNodeBoxKey
+                                    [ Box.draggable true
+                                    , Box.top top
+                                    , Box.left left
+                                    , Box.width $ Dimension.px 25
+                                    , Box.height $ Dimension.px 5
+                                    , Box.border
+                                        [ Border.type_ Border._line
+                                        , Border.fg palette.nodeBoxBorder
+                                        , Border.ch $ Border.fill ':'
+                                        ]
+                                    , Box.style
+                                        [ Style.focus
+                                            [ ES.border
+                                                [ Border.fg palette.nodeListSelFg
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                    []
 
-                        patchBox >~ Node.append nodeBox
+                        patchBox >~ Node.append nextNodeBox
 
                         State.modify_ (_
                             { lastShiftX = state.lastShiftX + 1
                             , lastShiftY = state.lastShiftY + 1
-                            , lastNodeBoxKey = curNodeBoxKey
+                            , lastNodeBoxKey = nextNodeBoxKey
                             } )
+
+                        mainScreen >~ Screen.render
 
                         pure unit
                 ]

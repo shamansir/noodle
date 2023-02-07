@@ -22,8 +22,8 @@ import Blessed.Internal.Core as C
 import Blessed.Core.Color (Color)
 import Blessed.Core.Border (Border, BorderOption)
 import Blessed.Core.Border as Border
-import Blessed.Core.FgBg (FgBg, FgBgOption)
-import Blessed.Core.FgBg as FgBg
+import Blessed.Core.EndStyle (EndStyle, EndStyleOption)
+import Blessed.Core.EndStyle as EndStyle
 
 
 
@@ -32,10 +32,10 @@ type ListStyleRow (r :: Row Type) =
     , bg :: Color
     , border :: Array (BorderOption ())
     , scrollbar :: Array (BorderOption ())
-    , hover :: Array (FgBgOption ())
-    , focus :: Array (FgBgOption ())
-    , item :: Array (FgBgOption ())
-    , selected :: Array (FgBgOption ())
+    , hover :: Array (EndStyleOption ())
+    , focus :: Array (EndStyleOption ())
+    , item :: Array (EndStyleOption ())
+    , selected :: Array (EndStyleOption ())
     )
 type ListStyle =
     Record (ListStyleRow ())
@@ -46,10 +46,10 @@ type Evaluated =
     , bg :: Int
     , border :: Record Border.Evaluated
     , scrollbar :: Record Border.Evaluated
-    , hover :: Record FgBg.Evaluated
-    , focus :: Record FgBg.Evaluated
-    , item :: Record FgBg.Evaluated
-    , selected :: Record FgBg.Evaluated
+    , hover :: Record EndStyle.Evaluated
+    , focus :: Record EndStyle.Evaluated
+    , item :: Record EndStyle.Evaluated
+    , selected :: Record EndStyle.Evaluated
     )
 
 
@@ -90,17 +90,17 @@ scrollbar ∷ forall r. Array (BorderOption ()) -> ListStyleOption ( scrollbar :
 scrollbar = listStyleOption ( Proxy :: Proxy "scrollbar" )
 
 
-hover ∷ forall r. Array (FgBgOption ()) -> ListStyleOption ( hover :: Array (FgBgOption ()) | r )
+hover ∷ forall r. Array (EndStyleOption ()) -> ListStyleOption ( hover :: Array (EndStyleOption ()) | r )
 hover = listStyleOption ( Proxy :: Proxy "hover" )
 
 
-focus ∷ forall r. Array (FgBgOption ()) -> ListStyleOption ( focus :: Array (FgBgOption ()) | r )
+focus ∷ forall r. Array (EndStyleOption ()) -> ListStyleOption ( focus :: Array (EndStyleOption ()) | r )
 focus = listStyleOption ( Proxy :: Proxy "focus" )
 
 
-item ∷ forall r. Array (FgBgOption ()) -> ListStyleOption ( item :: Array (FgBgOption ()) | r )
+item ∷ forall r. Array (EndStyleOption ()) -> ListStyleOption ( item :: Array (EndStyleOption ()) | r )
 item = listStyleOption ( Proxy :: Proxy "item" )
 
 
-selected ∷ forall r. Array (FgBgOption ()) -> ListStyleOption ( selected :: Array (FgBgOption ()) | r )
+selected ∷ forall r. Array (EndStyleOption ()) -> ListStyleOption ( selected :: Array (EndStyleOption ()) | r )
 selected = listStyleOption ( Proxy :: Proxy "selected" )

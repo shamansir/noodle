@@ -12,7 +12,7 @@ import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
 
 
-import Blessed.Core.FgBg (FgBgOption)
+import Blessed.Core.EndStyle (EndStyleOption)
 import Blessed.Core.Cursor (Cursor)
 import Blessed.Core.Terminal (Terminal)
 

@@ -8,11 +8,16 @@ import Type.Proxy (Proxy(..))
 import Type.Data.Symbol (class IsSymbol)
 import Data.Tuple.Nested ((/\))
 import Data.Identity (Identity)
+import Data.Newtype (class Newtype)
 
+import Data.Bifunctor (lmap, rmap)
+
+import Data.Argonaut.Decode (class DecodeJson)
 import Data.Argonaut.Encode (class EncodeJson)
 import Data.Argonaut.Core (Json)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Record as CAR
+import Blessed.Internal.ArgonautCodecExtra as ACX
 
 import Data.Maybe (Maybe(..))
 
@@ -25,6 +30,12 @@ data BorderType
     | Bg
 
 
+newtype BorderChar = BorderChar Char
+
+
+derive instance Newtype BorderChar _
+
+
 instance Show BorderType where
     show Line = "line"
     show Bg = "bg"
@@ -35,12 +46,21 @@ instance EncodeJson BorderType where
     encodeJson Bg = CA.encode CA.string "bg"
 
 
+instance EncodeJson BorderChar where
+    encodeJson (BorderChar ch_) = CA.encode CA.char ch_
+
+
+instance DecodeJson BorderChar where
+    decodeJson = lmap ACX.convertJsonError' <$> map BorderChar <$> CA.decode CA.char
+
+
 type BorderRow (r :: Row Type) =
     ( type :: BorderType
     , fg :: Color
     , bg :: Color
     , bold :: Boolean
     , underline :: Boolean
+    , ch :: BorderChar
     )
 type Border = Record (BorderRow ())
 
@@ -51,6 +71,7 @@ type Evaluated =
     , bg :: Int
     , bold :: Boolean
     , underline :: Boolean
+    , ch :: BorderChar
     )
 
 
@@ -82,6 +103,9 @@ underline ∷ forall r. Boolean -> BorderOption ( underline :: Boolean | r )
 underline = borderOption ( Proxy :: Proxy "underline" )
 
 
+ch ∷ forall r. BorderChar -> BorderOption ( ch :: BorderChar | r )
+ch = borderOption ( Proxy :: Proxy "ch" )
+
 
 _line :: BorderType
 _line = Line
@@ -89,3 +113,7 @@ _line = Line
 
 _bg :: BorderType
 _bg = Bg
+
+
+fill :: Char -> BorderChar
+fill = BorderChar

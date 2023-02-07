@@ -22,8 +22,8 @@ import Blessed.Internal.Core as C
 import Blessed.Core.Color (Color)
 import Blessed.Core.Border (Border, BorderOption)
 import Blessed.Core.Border as Border
-import Blessed.Core.FgBg (FgBg, FgBgOption)
-import Blessed.Core.FgBg as FgBg
+import Blessed.Core.EndStyle (EndStyle, EndStyleOption)
+import Blessed.Core.EndStyle as EndStyle
 
 
 
@@ -32,8 +32,8 @@ type StyleRow (r :: Row Type) =
     , bg :: Color
     , border :: Array (BorderOption ())
     , scrollbar :: Array (BorderOption ())
-    , hover :: Array (FgBgOption ())
-    , focus :: Array (FgBgOption ())
+    , hover :: Array (EndStyleOption ())
+    , focus :: Array (EndStyleOption ())
     )
 type Style =
     Record (StyleRow ())
@@ -44,8 +44,8 @@ type Evaluated =
     , bg :: Int
     , border :: Record Border.Evaluated
     , scrollbar :: Record Border.Evaluated
-    , hover :: Record FgBg.Evaluated
-    , focus :: Record FgBg.Evaluated
+    , hover :: Record EndStyle.Evaluated
+    , focus :: Record EndStyle.Evaluated
     )
 
 
@@ -94,9 +94,9 @@ scrollbar ∷ forall r. Array (BorderOption ()) -> StyleOption ( scrollbar :: Ar
 scrollbar = styleOption ( Proxy :: Proxy "scrollbar" )
 
 
-hover ∷ forall r. Array (FgBgOption ()) -> StyleOption ( hover :: Array (FgBgOption ()) | r )
+hover ∷ forall r. Array (EndStyleOption ()) -> StyleOption ( hover :: Array (EndStyleOption ()) | r )
 hover = styleOption ( Proxy :: Proxy "hover" )
 
 
-focus ∷ forall r. Array (FgBgOption ()) -> StyleOption ( focus :: Array (FgBgOption ()) | r )
+focus ∷ forall r. Array (EndStyleOption ()) -> StyleOption ( focus :: Array (EndStyleOption ()) | r )
 focus = styleOption ( Proxy :: Proxy "focus" )

@@ -25,7 +25,6 @@ import Data.Codec.Argonaut (JsonCodec, JsonDecodeError(..), decode) as CA
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Core (stringify) as Json
 import Data.Argonaut.Decode (class DecodeJson, decodeJson)
-import Data.Argonaut.Decode.Error as ADE
 
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.Free (Free)
@@ -40,6 +39,7 @@ import Blessed.Internal.NodeKey as I
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Dump as Dump
 import Blessed.Internal.BlessedSubj as K
+import Blessed.Internal.ArgonautCodecExtra as ACX
 
 
 
@@ -121,7 +121,7 @@ performGet codec nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ CA.dec
 
 
 performGet' :: forall state m a. DecodeJson a => I.RawNodeKey -> I.Command -> BlessedOpJsonGet state m a
-performGet' nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ (decodeJson >>> lmap convertJsonError)
+performGet' nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ (decodeJson >>> lmap ACX.convertJsonError)
 
 
 performSome :: forall state m. I.RawNodeKey -> Array I.Command -> BlessedOp state m
@@ -225,16 +225,6 @@ makeHandler nodeKey eventId arguments op =
             -- TODO: check IDs match?
             Dump.handlerCall rawNodeKey eventId arguments
             runM' stateRef $ op nodeKey evtJson
-
-
-convertJsonError :: ADE.JsonDecodeError -> CA.JsonDecodeError
-convertJsonError = case _ of
-    ADE.TypeMismatch s -> CA.TypeMismatch s
-    ADE.UnexpectedValue json -> CA.UnexpectedValue json
-    ADE.AtIndex n jde -> CA.AtIndex n $ convertJsonError jde
-    ADE.AtKey n jde -> CA.AtKey n $ convertJsonError jde
-    ADE.Named n jde -> CA.Named n $ convertJsonError jde
-    ADE.MissingValue -> CA.MissingValue
 
 
 foreign import execute_ :: I.BlessedEnc -> Effect Unit

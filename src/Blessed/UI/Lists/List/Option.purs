@@ -13,8 +13,8 @@ import Data.Symbol (class IsSymbol)
 import Blessed.Core.Color (Color)
 import Blessed.Core.Orientation (Orientation)
 import Blessed.Core.Border (BorderType) as B
-import Blessed.Core.FgBg (FgBgOption)
-import Blessed.Core.FgBg (Evaluated) as FgBg
+import Blessed.Core.EndStyle (EndStyleOption)
+import Blessed.Core.EndStyle (Evaluated) as EndStyle
 import Blessed.Core.ListStyle (ListStyle, ListStyleOption) as LS
 
 import Blessed.Internal.Core (Attribute, option) as C

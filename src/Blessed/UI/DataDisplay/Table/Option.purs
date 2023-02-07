@@ -8,7 +8,7 @@ import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
 
 
-import Blessed.Core.FgBg (FgBgOption)
+import Blessed.Core.EndStyle (EndStyleOption)
 
 import Blessed.Internal.Core (Attribute, option) as C
 import Blessed.Internal.BlessedSubj (Subject, Table)
@@ -24,8 +24,8 @@ type OptionsRow r =
     , pad :: Int
     , noCellBorders :: Boolean
     , fillCellBorders :: Boolean
-    , style_header :: Array (FgBgOption ())
-    , style_cell :: Array (FgBgOption ())
+    , style_header :: Array (EndStyleOption ())
+    , style_cell :: Array (EndStyleOption ())
     | r
     )
 type Options = Record (OptionsRow ())
@@ -75,12 +75,12 @@ fillCellBorders = tableOption (Proxy :: _ "fillCellBorders")
 style_header
     :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Table subj id
-    => Array (FgBgOption ()) -> TableAttribute subj id ( style_header :: Array (FgBgOption ()) | r ) state e
+    => Array (EndStyleOption ()) -> TableAttribute subj id ( style_header :: Array (EndStyleOption ()) | r ) state e
 style_header = tableOption (Proxy :: _ "style_header")
 
 
 style_cell
     :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Table subj id
-    => Array (FgBgOption ()) -> TableAttribute subj id ( style_cell :: Array (FgBgOption ()) | r ) state e
+    => Array (EndStyleOption ()) -> TableAttribute subj id ( style_cell :: Array (EndStyleOption ()) | r ) state e
 style_cell = tableOption (Proxy :: _ "style_cell")

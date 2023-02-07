@@ -10,8 +10,8 @@ import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
 
 
-import Blessed.Core.FgBg (FgBgOption)
-import Blessed.Core.FgBg (Evaluated) as FgBg
+import Blessed.Core.EndStyle (EndStyleOption)
+import Blessed.Core.EndStyle (Evaluated) as EndStyle
 
 import Blessed.Internal.Core (Attribute, option) as C
 import Blessed.Internal.BlessedSubj (Subject, Checkbox)

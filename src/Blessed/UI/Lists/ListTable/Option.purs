@@ -7,7 +7,7 @@ import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
 
 
-import Blessed.Core.FgBg (FgBgOption)
+import Blessed.Core.EndStyle (EndStyleOption)
 
 import Blessed.Internal.Core (Attribute, option) as C
 import Blessed.Internal.BlessedSubj (Subject, ListTable)
@@ -22,8 +22,8 @@ type OptionsRow r =
     ( rows :: Array (Array String)
     , pad :: Int
     , noCellBorders :: Boolean
-    , style_header :: Array (FgBgOption ())
-    , style_cell :: Array (FgBgOption ())
+    , style_header :: Array (EndStyleOption ())
+    , style_cell :: Array (EndStyleOption ())
     | r
     )
 type Options = Record (OptionsRow ())
@@ -66,12 +66,12 @@ noCellBorders = ltOption (Proxy :: _ "noCellBorders")
 style_header
     :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ListTable subj id
-    => Array (FgBgOption ()) -> ListTableAttribute subj id ( style_header :: Array (FgBgOption ()) | r ) state e
+    => Array (EndStyleOption ()) -> ListTableAttribute subj id ( style_header :: Array (EndStyleOption ()) | r ) state e
 style_header = ltOption (Proxy :: _ "style_header")
 
 
 style_cell
     :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents ListTable subj id
-    => Array (FgBgOption ()) -> ListTableAttribute subj id ( style_cell :: Array (FgBgOption ()) | r ) state e
+    => Array (EndStyleOption ()) -> ListTableAttribute subj id ( style_cell :: Array (EndStyleOption ()) | r ) state e
 style_cell = ltOption (Proxy :: _ "style_cell")
