@@ -31,6 +31,7 @@ import Blessed.Internal.Core as Core
 
 
 import Blessed.UI.Boxes.Box as Box
+import Blessed.UI.Base.Element.Event as Element
 import Blessed.UI.Base.Screen as Screen
 import Blessed.UI.Base.Screen.Option as Screen
 import Blessed.UI.Base.Screen.Event as Screen
@@ -210,18 +211,26 @@ main = do
                                                 ]
                                             ]
                                         ]
+                                    , Core.on Element.Move
+                                        \_ _ ->
+                                            liftEffect $ Console.log "move"
                                     ]
-                                    []
+                                    [ ]
 
                         let
                             inletsBarN =
                                 B.listbar nextInletsBar
                                     [ Box.width $ Dimension.percents 90.0
                                     , Box.height $ Dimension.px 1
+                                    , Box.top $ Offset.px 0
+                                    , Box.left $ Offset.px 0
                                     , List.items is
                                     , List.mouse true
                                     , List.keys true
                                     , inletsOutletsStyle
+                                    -- , Core.on List.Select
+                                    --     \_ _ ->
+                                    --         liftEffect $ Console.log "intlet"
                                     ]
                                     [ ]
 
@@ -232,16 +241,21 @@ main = do
                                     [ Box.width $ Dimension.percents 90.0
                                     , Box.height $ Dimension.px 1
                                     , Box.top $ Offset.px 2
+                                    , Box.left $ Offset.px 0
                                     , List.items os
                                     , List.mouse true
                                     , List.keys true
                                     , inletsOutletsStyle
+                                    , Core.on List.Select
+                                        \_ _ ->
+                                            liftEffect $ Console.log "outlet"
                                     ]
-                                    [ ]
+                                    [
+                                    ]
 
+                        patchBox >~ Node.append nextNodeBoxN
                         nextNodeBox >~ Node.append inletsBarN
                         nextNodeBox >~ Node.append outletsBarN
-                        patchBox >~ Node.append nextNodeBoxN
 
                         State.modify_ (_
                             { lastShiftX = state.lastShiftX + 1

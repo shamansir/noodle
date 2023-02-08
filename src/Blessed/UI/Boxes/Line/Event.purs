@@ -7,7 +7,7 @@ import Data.Tuple.Nested ((/\))
 
 import Blessed.Internal.Core (handler, Handler) as C
 import Blessed.Internal.BlessedSubj (Line, class Extends)
-import Blessed.Internal.Emitter (class Events, CoreEvent(..), class Fires) as C
+import Blessed.Internal.Emitter (class Events, class Fires) as C
 
 
 data Event
@@ -18,9 +18,6 @@ instance events :: C.Events Event where
     initial = Init
 
     convert Init = "init" /\ []
-
-    toCore _ = C.CoreEvent
-    fromCore _ = Nothing
 
 
 instance C.Fires Line Event

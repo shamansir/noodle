@@ -6,7 +6,7 @@ import Data.Tuple.Nested ((/\))
 
 
 import Blessed.Internal.BlessedSubj (Form, class Extends)
-import Blessed.Internal.Emitter (class Events, CoreEvent(..), class Fires) as C
+import Blessed.Internal.Emitter (class Events, class Fires) as C
 import Blessed.Internal.Core (handler, Handler) as C
 
 
@@ -24,9 +24,6 @@ instance events :: C.Events Event where
     convert Submit = "submit" /\ []
     convert Cancel = "cancel" /\ []
     convert Reset = "reset" /\ []
-
-    toCore _ = C.CoreEvent
-    fromCore _ = Nothing
 
 
 instance C.Fires Form Event

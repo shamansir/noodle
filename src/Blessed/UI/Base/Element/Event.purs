@@ -10,7 +10,7 @@ import Blessed.Core.Key (Key)
 import Blessed.Core.Key as Key
 
 
-import Blessed.Internal.Emitter (class Events, CoreEvent(..), class Fires) as C
+import Blessed.Internal.Emitter (class Events, class Fires) as C
 import Blessed.Internal.BlessedSubj (Element, Box, List, ListBar, class Extends)
 import Blessed.Internal.Core (handler, Handler) as C
 
@@ -62,10 +62,6 @@ instance events :: C.Events Event where
     convert Hide = "hide" /\ []
     convert Show = "show" /\ []
     convert Destroy = "destroy" /\ []
-
-    toCore _ = C.CoreEvent
-    fromCore _ = Nothing
-
 
 
 type Handler subj id r state = C.Handler subj id r state Event

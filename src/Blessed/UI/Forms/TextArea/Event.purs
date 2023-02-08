@@ -13,7 +13,7 @@ import Blessed.Core.Key as Key
 
 
 import Blessed.Internal.BlessedSubj (TextArea, class Extends)
-import Blessed.Internal.Emitter (class Events, CoreEvent(..), class Fires) as C
+import Blessed.Internal.Emitter (class Events, class Fires) as C
 import Blessed.Internal.Core (handler, Handler) as C
 
 
@@ -31,9 +31,6 @@ instance events :: C.Events Event where
     convert Submit = "submit" /\ []
     convert Cancel = "cancel" /\ []
     convert Action = "action" /\ []
-
-    toCore _ = C.CoreEvent
-    fromCore _ = Nothing
 
 
 instance C.Fires TextArea Event

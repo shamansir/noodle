@@ -40,9 +40,9 @@ prepend node nodeId =
 
 
 append
-    :: forall (subj :: Subject) (id :: Symbol) state m
+    :: forall (subj :: Subject) (id :: Symbol) state m e
      . Respresents Element subj id
-    => C.Blessed state C.CoreEvent -> NodeKey subj id -> BlessedOp state m
+    => C.Blessed state e -> NodeKey subj id -> BlessedOp state m
 append node nodeId =
     C.nmethod nodeId "append" [ C.node node ]
 

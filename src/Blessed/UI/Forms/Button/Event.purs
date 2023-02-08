@@ -6,7 +6,7 @@ import Data.Tuple.Nested ((/\))
 
 
 import Blessed.Internal.BlessedSubj (Button, class Extends)
-import Blessed.Internal.Emitter (class Events, CoreEvent(..), class Fires) as C
+import Blessed.Internal.Emitter (class Events, class Fires) as C
 import Blessed.Internal.Core (handler, Handler) as C
 
 
@@ -20,9 +20,6 @@ instance events :: C.Events Event where
 
     convert Init = "init" /\ []
     convert Press = "press" /\ []
-
-    toCore _ = C.CoreEvent
-    fromCore _ = Nothing
 
 
 instance C.Fires Button Event

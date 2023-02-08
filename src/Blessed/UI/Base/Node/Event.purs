@@ -1,11 +1,10 @@
 module Blessed.UI.Base.Node.Event where
 
 
-import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 
 
-import Blessed.Internal.Emitter (class Events, CoreEvent(..)) as C
+import Blessed.Internal.Emitter (class Events) as C
 
 
 data Event
@@ -26,6 +25,3 @@ instance events :: C.Events Event where
     convert Reparent = "reparent" /\ []
     convert Attach = "attach" /\ []
     convert Detach = "detach" /\ []
-
-    toCore _ = C.CoreEvent
-    fromCore _ = Nothing
