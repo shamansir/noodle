@@ -12,7 +12,7 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.Core as C
-import Blessed.Internal.BlessedSubj (Subject, FileManager)
+import Blessed.Internal.BlessedSubj (Subject, FileManager, filemanager)
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.BlessedOp as Op
 import Blessed.Internal.Command (get) as C
@@ -27,16 +27,25 @@ type PropertiesRow =
 
 
 getter
-    :: forall subj id sym r' state m a
-     . Respresents FileManager subj id
-    => R.Cons sym a r' PropertiesRow
-    => C.GetterFn subj id sym r' PropertiesRow state m a
+    :: forall subj id prop r' state m a
+     . C.Gets FileManager subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFn subj id prop state m a
 getter =
-    C.getter
+    C.getter filemanager
+
+
+getterC
+    :: forall subj id prop r' state m a
+     . C.GetsC FileManager subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFnC subj id prop state m a
+getterC =
+    C.getterC filemanager
 
 
 cwd
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents FileManager subj id
+     . C.GetsC FileManager subj id "cwd" m String
     => NodeKey subj id -> C.Getter state m String
-cwd = getter (Proxy :: _ "cwd") CA.string
+cwd = getterC (Proxy :: _ "cwd") CA.string

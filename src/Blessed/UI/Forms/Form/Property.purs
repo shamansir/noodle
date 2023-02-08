@@ -12,7 +12,7 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.Core as C
-import Blessed.Internal.BlessedSubj (Subject, Form)
+import Blessed.Internal.BlessedSubj (Subject, Form, form)
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 
 
@@ -27,16 +27,25 @@ type PropertiesRow =
 
 
 getter
-    :: forall subj id sym r' state m a
-     . Respresents Form subj id
-    => R.Cons sym a r' PropertiesRow
-    => C.GetterFn subj id sym r' PropertiesRow state m a
+    :: forall subj id prop r' state m a
+     . C.Gets Form subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFn subj id prop state m a
 getter =
-    C.getter
+    C.getter form
+
+
+getterC
+    :: forall subj id prop r' state m a
+     . C.GetsC Form subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFnC subj id prop state m a
+getterC =
+    C.getterC form
 
 
 submission
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Form subj id
+     . C.GetsC Form subj id "submission" m Json
     => NodeKey subj id -> C.Getter state m Json
-submission = getter (Proxy :: _ "submission") CA.json
+submission = getterC (Proxy :: _ "submission") CA.json

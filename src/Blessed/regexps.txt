@@ -63,3 +63,15 @@ case '$1':\n    if (!BLESSED_ON) break;\n    blessedObj = blessed.$1(props);\n  
     :: forall subj id m
      . Respresents Element subj id
     => NodeKey subj id _
+
+
+
+
+
+\w+\n\s+:: forall \(subj :: Subject\) \(id :: Symbol\) state m\n\s+\. Respresents (\w+) subj id\n\s+=> NodeKey subj id -> C.Getter state m (\w+)\n\w+\s=\s+getter\s+\(Proxy\s+::\s+_\s+"(\w+)"\) CA.(\w+)$
+$3\n    :: forall (subj :: Subject) (id :: Symbol) state m\n     . C.GetsC $1 subj id "$3" m $2\n    => NodeKey subj id -> C.Getter state m $2\n$3 = getterC (Proxy :: _ "$3") CA.$4
+
+
+
+(\w+)\n\s+:: forall \(subj :: Subject\) \(id :: Symbol\) state m\n\s+\. Extends Element subj => Respresents (\w+) subj id\n\s+=> NodeKey subj id -> C.Getter state m (\w+)\n\w+ = E\.\w+$
+$1\n    :: forall (subj :: Subject) (id :: Symbol) state m\n     . C.GetsC Element subj id "$1" m $3\n    => C.GetsC $2 subj id "$1" m $3\n    => NodeKey subj id -> C.Getter state m $3\n$1 = E.$1

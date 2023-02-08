@@ -12,7 +12,7 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.Core as C
-import Blessed.Internal.BlessedSubj (Subject, TextArea)
+import Blessed.Internal.BlessedSubj (Subject, TextArea, textarea)
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 
 
@@ -25,16 +25,25 @@ type PropertiesRow =
 
 
 getter
-    :: forall subj id sym r' state m a
-     . Respresents TextArea subj id
-    => R.Cons sym a r' PropertiesRow
-    => C.GetterFn subj id sym r' PropertiesRow state m a
+    :: forall subj id prop r' state m a
+     . C.Gets TextArea subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFn subj id prop state m a
 getter =
-    C.getter
+    C.getter textarea
+
+
+getterC
+    :: forall subj id prop r' state m a
+     . C.GetsC TextArea subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFnC subj id prop state m a
+getterC =
+    C.getterC textarea
 
 
 value
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents TextArea subj id
+     . C.GetsC TextArea subj id "value" m String
     => NodeKey subj id -> C.Getter state m String
-value = getter (Proxy :: _ "value") CA.string
+value = getterC (Proxy :: _ "value") CA.string

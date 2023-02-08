@@ -14,8 +14,8 @@ import Data.Codec.Argonaut as CA
 import Data.Argonaut.Decode (class DecodeJson)
 
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
-import Blessed.Internal.BlessedSubj (Subject, Element, class IsSubject)
-import Blessed.Internal.Core (GetterFn, GetterFn', Getter, getter, getter') as C
+import Blessed.Internal.BlessedSubj (Subject, Element, class IsSubject, class Extends, element)
+import Blessed.Internal.Core (GetterFn, GetterFnC, Getter, getter, getterC, class Gets, class GetsC) as C
 
 
 
@@ -50,181 +50,180 @@ type PropertiesRow =
 
 
 getter
-    :: forall subj id sym r' state m a
-     . Respresents Element subj id
-    => R.Cons sym a r' PropertiesRow
-    => C.GetterFn subj id sym r' PropertiesRow state m a
+    :: forall subj id prop r' state m a
+     . C.Gets Element subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFn subj id prop state m a
 getter =
-    C.getter
+    C.getter element
 
 
-getter'
-    :: forall subj id sym r' state m a
-     . Respresents Element subj id
-    => DecodeJson a
-    => R.Cons sym a r' PropertiesRow
-    => C.GetterFn' subj id sym r' PropertiesRow state m a
-getter' =
-    C.getter'
+getterC
+    :: forall subj id prop r' state m a
+     . C.GetsC Element subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFnC subj id prop state m a
+getterC =
+    C.getterC element
 
 
 name
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "name" m String
     => NodeKey subj id -> C.Getter state m String
-name = getter (Proxy :: _ "name") CA.string
+name = getterC (Proxy :: _ "name") CA.string
 
 
 border
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.Gets Element subj id "border" m String
     => NodeKey subj id -> C.Getter state m (Record Border.Evaluated)
-border = getter' (Proxy :: _ "border")
+border = getter (Proxy :: _ "border")
 
 
 style
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.Gets Element subj id "style" m (Record Style.Evaluated)
     => NodeKey subj id -> C.Getter state m (Record Style.Evaluated)
-style = getter' (Proxy :: _ "style")
+style = getter (Proxy :: _ "style")
+
 
 
 content
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "content" m String
     => NodeKey subj id -> C.Getter state m String
-content = getter (Proxy :: _ "content") CA.string
+content = getterC (Proxy :: _ "content") CA.string
 
 
 hidden
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "hidden" m Boolean
     => NodeKey subj id -> C.Getter state m Boolean
-hidden = getter (Proxy :: _ "hidden") CA.boolean
+hidden = getterC (Proxy :: _ "hidden") CA.boolean
 
 
 visible
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "visible" m Boolean
     => NodeKey subj id -> C.Getter state m Boolean
-visible = getter (Proxy :: _ "visible") CA.boolean
+visible = getterC (Proxy :: _ "visible") CA.boolean
 
 
 detached
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "detached" m Boolean
     => NodeKey subj id -> C.Getter state m Boolean
-detached = getter (Proxy :: _ "detached") CA.boolean
+detached = getterC (Proxy :: _ "detached") CA.boolean
 
 
 fg
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "fg" m Int
     => NodeKey subj id -> C.Getter state m Int
-fg = getter (Proxy :: _ "fg") CA.int
+fg = getterC (Proxy :: _ "fg") CA.int
 
 
 bg
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "bg" m Int
     => NodeKey subj id -> C.Getter state m Int
-bg = getter (Proxy :: _ "bg") CA.int
+bg = getterC (Proxy :: _ "bg") CA.int
 
 
 bold
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "bold" m Boolean
     => NodeKey subj id -> C.Getter state m Boolean
-bold = getter (Proxy :: _ "bold") CA.boolean
+bold = getterC (Proxy :: _ "bold") CA.boolean
 
 
 underline
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "underline" m Boolean
     => NodeKey subj id -> C.Getter state m Boolean
-underline = getter (Proxy :: _ "underline") CA.boolean
+underline = getterC (Proxy :: _ "underline") CA.boolean
 
 
 width
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "width" m Int
     => NodeKey subj id -> C.Getter state m Int
-width = getter (Proxy :: _ "width") CA.int
+width = getterC (Proxy :: _ "width") CA.int
 
 
 height
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "height" m Int
     => NodeKey subj id -> C.Getter state m Int
-height = getter (Proxy :: _ "height") CA.int
+height = getterC (Proxy :: _ "height") CA.int
 
 
 left
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "left" m Int
     => NodeKey subj id -> C.Getter state m Int
-left = getter (Proxy :: _ "left") CA.int
+left = getterC (Proxy :: _ "left") CA.int
 
 
 right
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "right" m Int
     => NodeKey subj id -> C.Getter state m Int
-right = getter (Proxy :: _ "right") CA.int
+right = getterC (Proxy :: _ "right") CA.int
 
 
 top
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "top" m Int
     => NodeKey subj id -> C.Getter state m Int
-top = getter (Proxy :: _ "top") CA.int
+top = getterC (Proxy :: _ "top") CA.int
 
 
 bottom
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "bottom" m Int
     => NodeKey subj id -> C.Getter state m Int
-bottom = getter (Proxy :: _ "bottom") CA.int
+bottom = getterC (Proxy :: _ "bottom") CA.int
 
 
 aleft
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "aleft" m Int
     => NodeKey subj id -> C.Getter state m Int
-aleft = getter (Proxy :: _ "aleft") CA.int
+aleft = getterC (Proxy :: _ "aleft") CA.int
 
 
 aright
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "aright" m Int
     => NodeKey subj id -> C.Getter state m Int
-aright = getter (Proxy :: _ "aright") CA.int
+aright = getterC (Proxy :: _ "aright") CA.int
 
 
 atop
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "atop" m Int
     => NodeKey subj id -> C.Getter state m Int
-atop = getter (Proxy :: _ "atop") CA.int
+atop = getterC (Proxy :: _ "atop") CA.int
 
 
 abottom
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "abottom" m Int
     => NodeKey subj id -> C.Getter state m Int
-abottom = getter (Proxy :: _ "abottom") CA.int
+abottom = getterC (Proxy :: _ "abottom") CA.int
 
 
 tags
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "tags" m Boolean
     => NodeKey subj id -> C.Getter state m Boolean
-tags = getter (Proxy :: _ "tags") CA.boolean
-
+tags = getterC (Proxy :: _ "tags") CA.boolean
 
 
 draggable
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Element subj id
+     . C.GetsC Element subj id "draggable" m Boolean
     => NodeKey subj id -> C.Getter state m Boolean
-draggable = getter (Proxy :: _ "draggable") CA.boolean
+draggable = getterC (Proxy :: _ "draggable") CA.boolean

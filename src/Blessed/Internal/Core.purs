@@ -12,6 +12,8 @@ import Effect.Ref (new) as Ref
 
 import Prim.Row as R
 
+import Control.Monad.Error.Class (class MonadThrow, throwError)
+
 import Data.Either (Either)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array ((:))
@@ -98,27 +100,37 @@ on :: forall subj id r state e. Fires subj e => e -> Handler subj id r state e
 on = handler
 
 
-type Getter state m a = Op.BlessedOpJsonGet state m a
+type Getter state m a = Op.BlessedOpGet state m a
 
 
-type GetterFn :: forall k. K.Subject -> Symbol -> Symbol -> k -> Row Type -> Type -> (Type -> Type) -> Type -> Type
-type GetterFn (subj :: K.Subject) (id :: Symbol) (sym :: Symbol) r' (r :: Row Type) state (m :: Type -> Type) a =
-    IsSymbol sym => Proxy sym -> CA.JsonCodec a -> NodeKey subj id -> Getter state m a
+class Gets :: K.Subject -> K.Subject -> Symbol -> Symbol -> (Type -> Type) -> Type -> Constraint
+class (K.Extends parent subj, K.IsSubject subj,  IsSymbol prop, IsSymbol id, Op.Gets m a) <= Gets parent subj id prop m a
+instance (K.Extends parent subj, K.IsSubject subj,  IsSymbol prop, IsSymbol id, Op.Gets m a) => Gets parent subj id prop m a
 
 
-type GetterFn' :: forall k. K.Subject -> Symbol -> Symbol -> k -> Row Type -> Type -> (Type -> Type) -> Type -> Type
-type GetterFn' (subj :: K.Subject) (id :: Symbol) (sym :: Symbol) r' (r :: Row Type) state (m :: Type -> Type) a =
-    IsSymbol sym => EncodeJson a => Proxy sym -> NodeKey subj id -> Getter state m a
+class GetsC :: forall k. K.Subject -> K.Subject -> Symbol -> Symbol -> (Type -> Type) -> k -> Constraint
+class (K.Extends parent subj, K.IsSubject subj,  IsSymbol prop, IsSymbol id, Op.GetsC m a) <= GetsC parent subj id prop m a
+instance (K.Extends parent subj, K.IsSubject subj,  IsSymbol prop, IsSymbol id, Op.GetsC m a) => GetsC parent subj id prop m a
 
 
-getter :: forall subj id sym r' r state m a. K.IsSubject subj => IsSymbol id => GetterFn subj id sym r' r state m a
-getter sym codec nodeKey =
-    Op.performGet codec (NK.rawify nodeKey) $ Cmd.get $ reflectSymbol sym
+-- type GetterFn :: forall k. K.Subject -> K.Subject -> Symbol -> Symbol -> k -> Row Type -> Type -> (Type -> Type) -> Type -> Type
+type GetterFn (subj :: K.Subject) (id :: Symbol) (prop :: Symbol) state (m :: Type -> Type) a =
+    Proxy prop -> NodeKey subj id -> Getter state m a
 
 
-getter' :: forall subj id sym r' r state m a. K.IsSubject subj => IsSymbol id => DecodeJson a => GetterFn' subj id sym r' r state m a
-getter' sym nodeKey =
-    Op.performGet' (NK.rawify nodeKey) $ Cmd.get $ reflectSymbol sym
+-- type GetterFnC :: forall k. K.Subject -> K.Subject -> Symbol -> Symbol -> k -> Row Type -> Type -> (Type -> Type) -> Type -> Type
+type GetterFnC (subj :: K.Subject) (id :: Symbol) (prop :: Symbol) state (m :: Type -> Type) a =
+    Proxy prop -> CA.JsonCodec a -> NodeKey subj id -> Getter state m a
+
+
+getter :: forall parent subj id prop state m a. Gets parent subj id prop m a => Proxy parent -> GetterFn subj id prop state m a
+getter _ prop nodeKey =
+    Op.performGet (NK.rawify nodeKey) $ Cmd.get $ reflectSymbol prop
+
+
+getterC :: forall parent subj id prop state m a. GetsC parent subj id prop m a => Proxy parent -> GetterFnC subj id prop state m a
+getterC _ prop codec nodeKey =
+    Op.performGetC codec (NK.rawify nodeKey) $ Cmd.get $ reflectSymbol prop
 
 
 method ∷ forall subj id state (m ∷ Type -> Type). K.IsSubject subj => IsSymbol id => NodeKey subj id → String → Array Json → Op.BlessedOp state m

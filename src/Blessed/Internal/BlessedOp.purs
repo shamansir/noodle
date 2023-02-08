@@ -10,6 +10,8 @@ import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
+import Effect.Exception (Error)
+import Effect.Exception as Error
 
 import Control.Monad.State as State
 
@@ -21,16 +23,18 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Tuple (uncurry)
 import Data.Array as Array
 
-import Data.Codec.Argonaut (JsonCodec, JsonDecodeError(..), decode) as CA
+import Data.Codec.Argonaut (JsonCodec, JsonDecodeError(..), decode, printJsonDecodeError) as CA
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Core (stringify) as Json
 import Data.Argonaut.Decode (class DecodeJson, decodeJson)
+import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 import Control.Monad.Free (Free)
 import Control.Monad.Free as Free
 import Control.Monad.Rec.Class (class MonadRec, tailRecM, Step(..))
 import Control.Monad.State.Class (class MonadState)
+import Control.Monad.Error.Class (class MonadError, class MonadThrow)
 
 import Blessed.Internal.Foreign (encodeCommand, commandToJson) as Foreign
 import Blessed.Internal.Command (Command) as I
@@ -66,7 +70,7 @@ instance functorBlessedOpF :: Functor m => Functor (BlessedOpF state m) where
 
 type BlessedOp state m = BlessedOpM state m Unit
 type BlessedOpDef state m = Ref state -> BlessedOpM state m Unit
-type BlessedOpJsonGet state m a = BlessedOpM state m (Either CA.JsonDecodeError a)
+-- type BlessedOpJsonGet state m a = BlessedOpM state m a
 type BlessedOpGet state m a = BlessedOpM state m a
 
 
@@ -111,17 +115,42 @@ getStateRef = BlessedOpM $ Free.liftF $ GetStateRef identity
 
 {- Processing -}
 
+data BlessedError =
+    FromJson CA.JsonDecodeError
+
+
+toError :: BlessedError -> Error
+toError (FromJson jsonError) = Error.error $ CA.printJsonDecodeError jsonError
+
+
+class Gets :: (Type -> Type) -> Type -> Constraint
+-- class (MonadThrow BlessedError m, EncodeJson a, DecodeJson a) <= Gets m a
+-- instance (MonadThrow BlessedError m, EncodeJson a, DecodeJson a) => Gets m a
+class (MonadThrow Error m, EncodeJson a, DecodeJson a) <= Gets m a
+instance (MonadThrow Error m, EncodeJson a, DecodeJson a) => Gets m a
+
+
+class GetsC :: forall k. (Type -> Type) -> k -> Constraint
+-- class (MonadThrow BlessedError m) <= GetsC m a
+-- instance (MonadThrow BlessedError m) => GetsC m a
+class (MonadThrow Error m) <= GetsC m a
+instance (MonadThrow Error m) => GetsC m a
+
 
 perform :: forall state m. I.RawNodeKey -> I.Command -> BlessedOp state m
 perform nid cmd = BlessedOpM $ Free.liftF $ PerformOne nid cmd unit
 
 
-performGet :: forall state m a. CA.JsonCodec a -> I.RawNodeKey -> I.Command -> BlessedOpJsonGet state m a
-performGet codec nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ CA.decode codec
+performGet :: forall state m a. Gets m a => I.RawNodeKey -> I.Command -> BlessedOpGet state m a
+performGet nid cmd = do -- ?wh <$> (BlessedOpM $ Free.liftF $ PerformGet nid cmd $ (decodeJson >>> lmap ACX.convertJsonError))
+    val <- BlessedOpM $ Free.liftF $ PerformGet nid cmd $ (decodeJson >>> lmap ACX.convertJsonError)
+    Either.either (FromJson >>> toError >>> throwError) pure val -- should be resolved by instances of `MonadThrow`?
 
 
-performGet' :: forall state m a. DecodeJson a => I.RawNodeKey -> I.Command -> BlessedOpJsonGet state m a
-performGet' nid cmd = BlessedOpM $ Free.liftF $ PerformGet nid cmd $ (decodeJson >>> lmap ACX.convertJsonError)
+performGetC :: forall state m a. GetsC m a => CA.JsonCodec a -> I.RawNodeKey -> I.Command -> BlessedOpGet state m a
+performGetC codec nid cmd = do
+    val <- BlessedOpM $ Free.liftF $ PerformGet nid cmd $ CA.decode codec
+    Either.either (FromJson >>> toError >>> throwError) pure val -- should be resolved by instances of `MonadThrow`?
 
 
 performSome :: forall state m. I.RawNodeKey -> Array I.Command -> BlessedOp state m

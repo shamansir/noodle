@@ -13,7 +13,7 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.Core as C
-import Blessed.Internal.BlessedSubj (Subject, Log)
+import Blessed.Internal.BlessedSubj (Subject, Log, log)
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 
 -- newtype Focused = Focused String
@@ -26,23 +26,32 @@ type PropertiesRow =
 
 
 getter
-    :: forall subj id sym r' state m a
-     . Respresents Log subj id
-    => R.Cons sym a r' PropertiesRow
-    => C.GetterFn subj id sym r' PropertiesRow state m a
+    :: forall subj id prop r' state m a
+     . C.Gets Log subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFn subj id prop state m a
 getter =
-    C.getter
+    C.getter log
+
+
+getterC
+    :: forall subj id prop r' state m a
+     . C.GetsC Log subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFnC subj id prop state m a
+getterC =
+    C.getterC log
 
 
 scrollback
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Log subj id
+     . C.GetsC Log subj id "scrollback" m Int
     => NodeKey subj id -> C.Getter state m Int
-scrollback = getter (Proxy :: _ "scrollback") CA.int
+scrollback = getterC (Proxy :: _ "scrollback") CA.int
 
 
 scrollOnInput
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Log subj id
+     . C.GetsC Log subj id "scrollOnInput" m Boolean
     => NodeKey subj id -> C.Getter state m Boolean
-scrollOnInput = getter (Proxy :: _ "scrollOnInput") CA.boolean
+scrollOnInput = getterC (Proxy :: _ "scrollOnInput") CA.boolean

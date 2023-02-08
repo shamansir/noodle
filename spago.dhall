@@ -31,6 +31,7 @@ to generate this file without the comments in this block.
   , "dom-indexed"
   , "effect"
   , "either"
+  , "exceptions"
   , "exists"
   , "foldable-traversable"
   , "foreign"

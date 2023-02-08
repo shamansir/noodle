@@ -13,7 +13,7 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.Core as C
-import Blessed.Internal.BlessedSubj (Subject, List)
+import Blessed.Internal.BlessedSubj (Subject, List, list)
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.BlessedOp as Op
 import Blessed.Internal.Command (get) as C
@@ -28,16 +28,25 @@ type PropertiesRow =
 
 
 getter
-    :: forall subj id sym r' state m a
-     . Respresents List subj id
-    => R.Cons sym a r' PropertiesRow
-    => C.GetterFn subj id sym r' PropertiesRow state m a
+    :: forall subj id prop r' state m a
+     . C.Gets List subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFn subj id prop state m a
 getter =
-    C.getter
+    C.getter list
+
+
+getterC
+    :: forall subj id prop r' state m a
+     . C.GetsC List subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFnC subj id prop state m a
+getterC =
+    C.getterC list
 
 
 selected
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents List subj id
+     . C.GetsC List subj id "selected" m Int
     => NodeKey subj id -> C.Getter state m Int
-selected = getter (Proxy :: _ "selected") CA.int
+selected = getterC (Proxy :: _ "selected") CA.int

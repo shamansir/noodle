@@ -12,7 +12,7 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Common as CAC
 
 import Blessed.Internal.Core as C
-import Blessed.Internal.BlessedSubj (Subject, Checkbox)
+import Blessed.Internal.BlessedSubj (Subject, Checkbox, checkbox)
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 
 
@@ -28,23 +28,32 @@ type PropertiesRow =
 
 
 getter
-    :: forall subj id sym r' state m a
-     . Respresents Checkbox subj id
-    => R.Cons sym a r' PropertiesRow
-    => C.GetterFn subj id sym r' PropertiesRow state m a
+    :: forall subj id prop r' state m a
+     . C.Gets Checkbox subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFn subj id prop state m a
 getter =
-    C.getter
+    C.getter checkbox
+
+
+getterC
+    :: forall subj id prop r' state m a
+     . C.GetsC Checkbox subj id prop m a
+    => R.Cons prop a r' PropertiesRow
+    => C.GetterFnC subj id prop state m a
+getterC =
+    C.getterC checkbox
 
 
 text
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Checkbox subj id
+     . C.GetsC Checkbox subj id "text" m String
     => NodeKey subj id -> C.Getter state m String
-text = getter (Proxy :: _ "text") CA.string
+text = getterC (Proxy :: _ "text") CA.string
 
 
 checked
     :: forall (subj :: Subject) (id :: Symbol) state m
-     . Respresents Checkbox subj id
+     . C.GetsC Checkbox subj id "checked" m Boolean
     => NodeKey subj id -> C.Getter state m Boolean
-checked = getter (Proxy :: _ "checked") CA.boolean
+checked = getterC (Proxy :: _ "checked") CA.boolean
