@@ -32,9 +32,9 @@ import Blessed.Internal.Emitter (CoreEvent) as C
 
 
 prepend
-    :: forall (subj :: Subject) (id :: Symbol) state m
+    :: forall (subj :: Subject) (id :: Symbol) state m e
      . Respresents Element subj id
-    => C.Blessed state C.CoreEvent -> NodeKey subj id -> BlessedOp state m
+    => C.Blessed state e -> NodeKey subj id -> BlessedOp state m
 prepend node nodeId =
     C.nmethod nodeId "prepend" [ C.node node ]
 
@@ -48,33 +48,33 @@ append node nodeId =
 
 
 remove
-    :: forall (subj :: Subject) (id :: Symbol) state m
+    :: forall (subj :: Subject) (id :: Symbol) state m e
      . Respresents Element subj id
-    => C.Blessed state C.CoreEvent -> NodeKey subj id -> BlessedOp state m
+    => C.Blessed state e -> NodeKey subj id -> BlessedOp state m
 remove node nodeId =
     C.nmethod nodeId "remove" [ C.node node ]
 
 
 insert
-    :: forall (subj :: Subject) (id :: Symbol) state m
+    :: forall (subj :: Subject) (id :: Symbol) state m e
      . Respresents Element subj id
-    => C.Blessed state C.CoreEvent -> Int -> NodeKey subj id -> BlessedOp state m
+    => C.Blessed state e -> Int -> NodeKey subj id -> BlessedOp state m
 insert node i nodeId =
     C.nmethod nodeId "insert" [ C.node node, C.narg CA.int i ]
 
 
 insertBefore
-    :: forall (subj :: Subject) (id :: Symbol) state m
+    :: forall (subj :: Subject) (id :: Symbol) state m e e'
      . Respresents Element subj id
-    => C.Blessed state C.CoreEvent -> C.Blessed state C.CoreEvent -> NodeKey subj id -> BlessedOp state m
+    => C.Blessed state e -> C.Blessed state e' -> NodeKey subj id -> BlessedOp state m
 insertBefore node refNode nodeId =
     C.nmethod nodeId "insertBefore" [ C.node node, C.node refNode ]
 
 
 insertAfter
-    :: forall (subj :: Subject) (id :: Symbol) state m
+    :: forall (subj :: Subject) (id :: Symbol) state m e e'
      . Respresents Element subj id
-    => C.Blessed state C.CoreEvent -> C.Blessed state C.CoreEvent -> NodeKey subj id -> BlessedOp state m
+    => C.Blessed state e -> C.Blessed state e' -> NodeKey subj id -> BlessedOp state m
 insertAfter node refNode nodeId =
     C.nmethod nodeId "insertAfter" [ C.node node, C.node refNode ]
 

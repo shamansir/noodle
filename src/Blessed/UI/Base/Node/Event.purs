@@ -7,7 +7,10 @@ import Data.Tuple.Nested ((/\))
 import Blessed.Internal.Emitter (class Events) as C
 
 
-data Event
+type Event = NodeEvent
+
+
+data NodeEvent
     = Init
     | Adopt
     | Remove
@@ -16,7 +19,7 @@ data Event
     | Detach
 
 
-instance events :: C.Events Event where
+instance events :: C.Events NodeEvent where
     initial = Init
 
     convert Init = "init" /\ []

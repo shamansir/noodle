@@ -21,7 +21,6 @@ import Blessed.Internal.BlessedSubj (Subject, ProgressBar)
 import Blessed.Internal.NodeKey (class Respresents)
 
 
-import Blessed.UI.Boxes.Box.Event (Event)
 import Blessed.UI.Boxes.Box.Option (OptionsRow) as Input
 
 

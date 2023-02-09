@@ -10,26 +10,29 @@ import Blessed.Internal.BlessedSubj (Line, class Extends)
 import Blessed.Internal.Emitter (class Events, class Fires) as C
 
 
-data Event
+type Event = LineEvent
+
+
+data LineEvent
     = Init
 
 
-instance events :: C.Events Event where
+instance events :: C.Events LineEvent where
     initial = Init
 
     convert Init = "init" /\ []
 
 
-instance C.Fires Line Event
+instance C.Fires Line LineEvent
 
 
-type Handler subj id r state = C.Handler subj id r state Event
+type Handler subj id r state = C.Handler subj id r state LineEvent
 
 
-lineHandler :: forall subj id r state. Extends Line subj => C.Fires subj Event => Event -> Handler subj id r state
+lineHandler :: forall subj id r state. Extends Line subj => C.Fires subj LineEvent => LineEvent -> Handler subj id r state
 lineHandler = C.handler
 
 
 
-on :: forall subj id r state. Extends Line subj => C.Fires subj Event => Event -> Handler subj id r state
+on :: forall subj id r state. Extends Line subj => C.Fires subj LineEvent => LineEvent -> Handler subj id r state
 on = lineHandler

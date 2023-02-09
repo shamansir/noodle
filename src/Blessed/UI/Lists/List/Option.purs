@@ -22,7 +22,6 @@ import Blessed.Internal.BlessedSubj (Subject, List)
 import Blessed.Internal.NodeKey (class Respresents)
 
 
-import Blessed.UI.Base.Element.Event (Event)
 import Blessed.UI.Base.Element.Option (OptionsRow) as Box
 
 

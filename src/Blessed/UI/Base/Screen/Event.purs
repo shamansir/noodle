@@ -12,7 +12,10 @@ import Blessed.Internal.Emitter (class Events, class Fires) as C
 import Blessed.Internal.Core (handler, Handler) as C
 
 
-data Event
+type Event = ScreenEvent
+
+
+data ScreenEvent
     = Init
     | Key (Array Key)
     | Resize
@@ -29,7 +32,7 @@ data Event
 
 
 
-instance events :: C.Events Event where
+instance events :: C.Events ScreenEvent where
     initial = Init
 
     convert Init = "init" /\ []
@@ -47,15 +50,15 @@ instance events :: C.Events Event where
     convert Destroy = "destroy" /\ []
 
 
-type Handler subj id r state = C.Handler subj id r state Event
+type Handler subj id r state = C.Handler subj id r state ScreenEvent
 
 
-instance C.Fires Screen Event
+instance C.Fires Screen ScreenEvent
 
 
-screenHandler :: forall subj id r state. Extends Screen subj => C.Fires subj Event => Event -> Handler subj id r state
+screenHandler :: forall subj id r state. Extends Screen subj => C.Fires subj ScreenEvent => ScreenEvent -> Handler subj id r state
 screenHandler = C.handler
 
 
-key :: forall subj id r state. Extends Screen subj => C.Fires subj Event => Array Key -> Handler subj id r state
+key :: forall subj id r state. Extends Screen subj => C.Fires subj ScreenEvent => Array Key -> Handler subj id r state
 key = screenHandler <<< Key

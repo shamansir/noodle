@@ -10,13 +10,16 @@ import Blessed.Internal.Emitter (class Events, class Fires) as C
 import Blessed.Internal.Core (handler, Handler) as C
 
 
-data Event
+type Event = CheckboxEvent
+
+
+data CheckboxEvent
     = Init
     | Check
     | Uncheck
 
 
-instance events :: C.Events Event where
+instance events :: C.Events CheckboxEvent where
     initial = Init
 
     convert Init = "init" /\ []
@@ -24,17 +27,17 @@ instance events :: C.Events Event where
     convert Uncheck = "uncheck" /\ []
 
 
-instance C.Fires Checkbox Event
+instance C.Fires Checkbox CheckboxEvent
 
 
 
-type Handler subj id r state = C.Handler subj id r state Event
+type Handler subj id r state = C.Handler subj id r state CheckboxEvent
 
 
-cbHandler :: forall subj id r state. Extends Checkbox subj => C.Fires subj Event => Event -> Handler subj id r state
+cbHandler :: forall subj id r state. Extends Checkbox subj => C.Fires subj CheckboxEvent => CheckboxEvent -> Handler subj id r state
 cbHandler = C.handler
 
 
 
-on :: forall subj id r state. Extends Checkbox subj => C.Fires subj Event => Event -> Handler subj id r state
+on :: forall subj id r state. Extends Checkbox subj => C.Fires subj CheckboxEvent => CheckboxEvent -> Handler subj id r state
 on = cbHandler

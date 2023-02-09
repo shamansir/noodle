@@ -1,4 +1,4 @@
-module Blessed.UI.Lists.List.ListEvent where
+module Blessed.UI.Lists.List.Event where
 
 import Prelude
 
@@ -15,6 +15,9 @@ import Blessed.Core.Key as Key
 import Blessed.Internal.Emitter (class Events, class Fires) as C
 import Blessed.Internal.BlessedSubj (List, ListBar, class Extends)
 import Blessed.Internal.Core (handler, Handler) as C
+
+
+type Event = ListEvent
 
 
 data ListEvent

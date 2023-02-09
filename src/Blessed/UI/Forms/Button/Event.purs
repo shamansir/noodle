@@ -10,28 +10,31 @@ import Blessed.Internal.Emitter (class Events, class Fires) as C
 import Blessed.Internal.Core (handler, Handler) as C
 
 
-data Event
+type Event = ButtonEvent
+
+
+data ButtonEvent
     = Init
     | Press
 
 
-instance events :: C.Events Event where
+instance events :: C.Events ButtonEvent where
     initial = Init
 
     convert Init = "init" /\ []
     convert Press = "press" /\ []
 
 
-instance C.Fires Button Event
+instance C.Fires Button ButtonEvent
 
 
-type Handler subj id r state = C.Handler subj id r state Event
+type Handler subj id r state = C.Handler subj id r state ButtonEvent
 
 
-formHandler :: forall subj id r state. Extends Button subj => C.Fires subj Event => Event -> Handler subj id r state
+formHandler :: forall subj id r state. Extends Button subj => C.Fires subj ButtonEvent => ButtonEvent -> Handler subj id r state
 formHandler = C.handler
 
 
 
-on :: forall subj id r state. Extends Button subj => C.Fires subj Event => Event -> Handler subj id r state
+on :: forall subj id r state. Extends Button subj => C.Fires subj ButtonEvent => ButtonEvent -> Handler subj id r state
 on = formHandler

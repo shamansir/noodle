@@ -15,7 +15,6 @@ import Blessed.Internal.BlessedSubj (Subject, Table)
 import Blessed.Internal.NodeKey (class Respresents)
 
 
-import Blessed.UI.Lists.List.Event (Event)
 import Blessed.UI.Lists.List.Option (OptionsRow) as List
 
 

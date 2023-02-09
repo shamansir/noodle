@@ -43,6 +43,8 @@ import Blessed.UI.Boxes.Box.Method as Box
 import Blessed.UI.Lists.List.Option as List
 import Blessed.UI.Lists.List.Event as List
 import Blessed.UI.Lists.List.Property as List
+import Blessed.UI.Lists.ListBar.Option as ListBar
+import Blessed.UI.Lists.ListBar.Event as ListBar
 
 import Control.Monad.State as State
 
@@ -246,7 +248,7 @@ main = do
                                     , List.mouse true
                                     , List.keys true
                                     , inletsOutletsStyle
-                                    , Core.on List.Select
+                                    , Core.on ListBar.Select
                                         \_ _ ->
                                             liftEffect $ Console.log "outlet"
                                     ]

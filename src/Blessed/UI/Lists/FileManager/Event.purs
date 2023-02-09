@@ -17,13 +17,16 @@ import Blessed.Internal.Emitter (class Events, class Fires) as C
 import Blessed.Internal.Core (handler, Handler) as C
 
 
-data Event
+type Event = FileManagerEvent
+
+
+data FileManagerEvent
     = Init
     | Cd
     | File
 
 
-instance events :: C.Events Event where
+instance events :: C.Events FileManagerEvent where
     initial = Init
 
     convert Init = "init" /\ []
@@ -31,16 +34,16 @@ instance events :: C.Events Event where
     convert File = "file" /\ []
 
 
-instance C.Fires FileManager Event
+instance C.Fires FileManager FileManagerEvent
 
 
-type Handler subj id r state = C.Handler subj id r state Event
+type Handler subj id r state = C.Handler subj id r state FileManagerEvent
 
 
-fmHandler :: forall subj id r state. Extends FileManager subj => C.Fires subj Event => Event -> Handler subj id r state
+fmHandler :: forall subj id r state. Extends FileManager subj => C.Fires subj FileManagerEvent => FileManagerEvent -> Handler subj id r state
 fmHandler = C.handler
 
 
 
-on :: forall subj id r state. Extends FileManager subj => C.Fires subj Event => Event -> Handler subj id r state
+on :: forall subj id r state. Extends FileManager subj => C.Fires subj FileManagerEvent => FileManagerEvent -> Handler subj id r state
 on = fmHandler

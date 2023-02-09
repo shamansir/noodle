@@ -20,8 +20,6 @@ import Blessed.Internal.Core (Attribute, option) as C
 import Blessed.Internal.BlessedSubj (Subject, Element)
 import Blessed.Internal.NodeKey (class Respresents)
 
-import Blessed.UI.Boxes.Box.Event (Event)
-
 
 type OptionsRow r =
     ( fg :: Color

@@ -15,7 +15,10 @@ import Blessed.Internal.BlessedSubj (Element, Box, List, ListBar, class Extends)
 import Blessed.Internal.Core (handler, Handler) as C
 
 
-data Event
+type Event = ElementEvent
+
+
+data ElementEvent
     = Init
     | Blur
     | Focus
@@ -39,7 +42,7 @@ data Event
     -- | Key String
 
 
-instance events :: C.Events Event where
+instance events :: C.Events ElementEvent where
     initial = Init
 
     convert Init = "init" /\ []
@@ -64,27 +67,27 @@ instance events :: C.Events Event where
     convert Destroy = "destroy" /\ []
 
 
-type Handler subj id r state = C.Handler subj id r state Event
+type Handler subj id r state = C.Handler subj id r state ElementEvent
 
 
-instance C.Fires Element Event
-instance C.Fires Box Event
-instance C.Fires List Event
-instance C.Fires ListBar Event
+instance C.Fires Element ElementEvent
+instance C.Fires Box ElementEvent
+instance C.Fires List ElementEvent
+instance C.Fires ListBar ElementEvent
 
 
 elmHandler
     :: forall subj id r state
      . Extends Element subj
-    => C.Fires subj Event
-    => Event -> Handler subj id r state
+    => C.Fires subj ElementEvent
+    => ElementEvent -> Handler subj id r state
 elmHandler = C.handler
 
 
 key
     :: forall subj id r state
      . Extends Element subj
-    => C.Fires subj Event
+    => C.Fires subj ElementEvent
     => Array Key -> Handler subj id r state
 key = elmHandler <<< Key
 
@@ -92,10 +95,10 @@ key = elmHandler <<< Key
 on
     :: forall subj id r state
      . Extends Element subj
-    => C.Fires subj Event
-    => Event -> Handler subj id r state
+    => C.Fires subj ElementEvent
+    => ElementEvent -> Handler subj id r state
 on = elmHandler
 
 
-click :: Event
+click :: ElementEvent
 click = Click
