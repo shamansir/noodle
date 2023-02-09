@@ -230,9 +230,9 @@ main = do
                                     , List.mouse true
                                     , List.keys true
                                     , inletsOutletsStyle
-                                    -- , Core.on List.Select
-                                    --     \_ _ ->
-                                    --         liftEffect $ Console.log "intlet"
+                                    , Core.on ListBar.Select
+                                        \_ _ ->
+                                            liftEffect $ Console.log "inlet"
                                     ]
                                     [ ]
 

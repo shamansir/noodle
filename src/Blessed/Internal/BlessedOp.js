@@ -22,7 +22,7 @@ function buildRecord(array, fn) {
         const pair = fn(item, idx);
         record[pair.name] = pair.value;
         return record;
-    }, {})
+    }, {});
 }
 
 function adaptProp(parentProp) {
@@ -53,6 +53,33 @@ function execute(program) {
         handlersFns = buildRecord(program.handlersFns, (hdl) => ({ name : hdl.index, value : hdl }));
 
         registerNode(program.root)();
+    }
+}
+
+function performInit(handlerDef) {
+    let initEventIndex, initHandlerFn;
+    if (handlerDef) {
+        initEventIndex = handlerDef.index;
+        initHandlerFn = handlersFns[initEventIndex];
+
+        ___log('calling ', initEventIndex);
+        if (initHandlerFn && (initHandlerFn.index === initEventIndex)) {
+            initHandlerFn.call()();
+        }
+    }
+}
+
+function bindHandler(blessedObj, handler) {
+    if (handler.event === 'init') return;
+    const handlerFn = handlersFns[handler.index];
+
+    ___log('registering handler', handler.index, handler, handlerFn);
+    if (BLESSED_ON && handlerFn && (handlerFn.index === handler.index)) {
+        if (handler.event === 'key') {
+            blessedObj.key(handlerFn.args, (evt) => handlerFn.call(evt)());
+        } else {
+            blessedObj.on(handler.event, (evt) => handlerFn.call(evt)());
+        }
     }
 }
 
@@ -206,17 +233,7 @@ function registerNode(node) {
         ___log('registered at', node.nodeId);
 
         node.handlers.forEach((handler) => {
-            if (handler.event === 'init') return;
-            const handlerFn = handlersFns[handler.index];
-
-            ___log('registering handler', handler.index, handler, handlerFn);
-            if (BLESSED_ON && handlerFn && (handlerFn.index === handler.index)) {
-                if (handler.event === 'key') {
-                    blessedObj.key(handlerFn.args, (evt) => handlerFn.call(evt)());
-                } else {
-                    blessedObj.on(handler.event, (evt) => handlerFn.call(evt)());
-                }
-            }
+            bindHandler(blessedObj, handler);
         });
 
         node.children.forEach((child) => {
@@ -224,15 +241,8 @@ function registerNode(node) {
             if (blessedObj && childBlessed) blessedObj.append(childBlessed);
         });
 
-        let initEventIndex, initHandlerFn;
         if (handlers[INIT_HANDLER_KEY]) {
-            initEventIndex = handlers[INIT_HANDLER_KEY].index;
-            initHandlerFn = handlersFns[initEventIndex];
-
-            ___log('calling ', initEventIndex);
-            if (initHandlerFn && (initHandlerFn.index === initEventIndex)) {
-                initHandlerFn.call()();
-            }
+            performInit(handlers[INIT_HANDLER_KEY]);
         }
 
         return blessedObj;
@@ -268,9 +278,7 @@ function callCommand(rawNodeKey) {
                                 blessedObj[command.property] = command.value;
                                 break;
                             case 'get':
-                                console.error('get', blessedObj['selected'], blessedObj[command.property]);
                                 returnObj = blessedObj[command.property];
-                                console.error('get', returnObj);
                                 break;
                             case 'process':
                                 // handled earlier
@@ -305,9 +313,21 @@ function checkForNodes(cmdArgs) {
 function callCommandEx(rawNodeKey) {
     return function(command) {
         return function(handlers) {
-            // TODO: handlers
+
+            handlers.forEach((handler) => {
+                handlersFns[handler.index] = handler;
+            });
+
             return function() {
-                return callCommand(rawNodeKey)(command)();
+                const commandResult = callCommand(rawNodeKey)(command)();
+                handlers.forEach((handler) => {
+                    const blessedObj = registry[handler.nodeId] ? registry[handler.nodeId].blessed : null;
+                    if (blessedObj) {
+                        // console.log('registering', handler.nodeId, handler);
+                        bindHandler(blessedObj, handler);
+                    }
+                });
+                return commandResult;
             }
         }
     }
