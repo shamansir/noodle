@@ -15,6 +15,7 @@ import Prim.Row as R
 import Control.Monad.Error.Class (class MonadThrow, throwError)
 
 import Data.Either (Either)
+import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array ((:))
 import Data.Array as Array
@@ -23,6 +24,7 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Identity (Identity)
 import Data.Foldable (foldr)
+import Data.Bifunctor (lmap)
 
 import Data.Symbol (reflectSymbol, class IsSymbol)
 import Type.Proxy (Proxy(..))
@@ -47,17 +49,20 @@ import Blessed.Internal.Foreign (encode, encode') as Foreign
 data Attribute :: K.Subject -> Symbol -> Row Type -> Type -> Type -> Type
 data Attribute (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e
     = Option String Json
+    -- | Handler e (NodeKey subj id) (I.EventJson -> Op.BlessedOp state Effect)
+    -- | Handlers (Array (e /\ NodeKey subj id /\ (I.EventJson -> Op.BlessedOp state Effect)))
     | Handler e (NodeKey subj id -> I.EventJson -> Op.BlessedOp state Effect)
+    | OptionWithHandlers String Json (Array (e /\ (NodeKey subj id -> I.EventJson -> Op.BlessedOp state Effect)))
 
 
 data SoleOption (r :: Row Type)
     = SoleOption String Json
 
 
-
 instance Functor (Attribute subj id r state) where
-    map f (Handler e op) = Handler (f e) op
     map _ (Option str json) = Option str json
+    map f (Handler e op) = Handler (f e) op
+    map f (OptionWithHandlers str json handlersArray) = OptionWithHandlers str json $ lmap f <$> handlersArray
 
 
 -- type Blessed state e = Ref state -> I.SNode state
@@ -73,14 +78,18 @@ type Handler (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = (NodeK
 
 
 splitAttributes :: forall subj id r state e. K.IsSubject subj => IsSymbol id => Events e => Array (Attribute subj id r state e) -> Array I.SProp /\ Array (I.SHandler state)
-splitAttributes props = Array.catMaybes (lockSProp <$> props) /\ Array.catMaybes (lockSHandler <$> props)
+splitAttributes props = Array.catMaybes (lockSProp <$> props) /\ Array.concat (lockSHandler <$> props)
     where
+        nodeKey = NK.make (Proxy :: _ subj) (Proxy :: _ id)
         lockSProp (Option str json) = Just $ I.SProp str json
+        lockSProp (OptionWithHandlers str json _) = Just $ I.SProp str json
         lockSProp _ = Nothing
         lockSHandler (Handler e op) =
             case convert e of
-                eventId /\ arguments -> Just $ Op.makeHandler (NK.make (Proxy :: _ subj) (Proxy :: _ id)) (I.EventId eventId) arguments op
-        lockSHandler _ = Nothing
+                eventId /\ arguments -> [ Op.makeHandler nodeKey (I.EventId eventId) arguments op ]
+        lockSHandler (OptionWithHandlers _ _ handlersArray) =
+            Array.concat $ lockSHandler <$> uncurry Handler <$> handlersArray
+        lockSHandler _ = []
 
 
 -- FIXME: no `Cons` check here, but only above

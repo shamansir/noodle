@@ -3,6 +3,7 @@ module Blessed.Internal.Emitter where
 import Prelude
 
 import Data.Tuple (uncurry)
+import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Argonaut.Core (Json)
 
@@ -15,6 +16,7 @@ data CoreEvent
 class Events e where
     initial :: e
     convert :: e -> String /\ Array Json
+    -- response :: e -> (forall a. Json -> Maybe a)
 
 
 instance Events CoreEvent where

@@ -231,8 +231,10 @@ main = do
                                     , List.keys true
                                     , inletsOutletsStyle
                                     , Core.on ListBar.Select
-                                        \_ _ ->
+                                        \_ _ -> do
                                             liftEffect $ Console.log "inlet"
+                                            inletSelected <- List.selected nextInletsBar
+                                            liftEffect $ Console.log $ show inletSelected
                                     ]
                                     [ ]
 
@@ -249,8 +251,10 @@ main = do
                                     , List.keys true
                                     , inletsOutletsStyle
                                     , Core.on ListBar.Select
-                                        \_ _ ->
+                                        \_ _ -> do
                                             liftEffect $ Console.log "outlet"
+                                            outletSelected <- List.selected nextOutletsBar
+                                            liftEffect $ Console.log $ show outletSelected
                                     ]
                                     [
                                     ]
