@@ -46,13 +46,17 @@ import Blessed.Internal.Foreign (encode, encode') as Foreign
 
 
 
+type InitFn subj id state = (NodeKey subj id -> Op.BlessedOp state Effect)
+type HandlerFn subj id state = (NodeKey subj id -> I.EventJson -> Op.BlessedOp state Effect)
+
+
 data Attribute :: K.Subject -> Symbol -> Row Type -> Type -> Type -> Type
 data Attribute (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e
     = Option String Json
     -- | Handler e (NodeKey subj id) (I.EventJson -> Op.BlessedOp state Effect)
     -- | Handlers (Array (e /\ NodeKey subj id /\ (I.EventJson -> Op.BlessedOp state Effect)))
-    | Handler e (NodeKey subj id -> I.EventJson -> Op.BlessedOp state Effect)
-    | OptionWithHandlers String Json (Array (e /\ (NodeKey subj id -> I.EventJson -> Op.BlessedOp state Effect)))
+    | Handler e (HandlerFn subj id state)
+    | OptionWithHandlers String Json (Array (e /\ HandlerFn subj id state))
 
 
 data SoleOption (r :: Row Type)
@@ -71,10 +75,10 @@ type Blessed state e = I.SNode state
 
 -- see Halogen.Svg.Elements + Halogen.Svg.Properties
 type Node (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = Events e => Array (Attribute subj id r state e) -> Array (Blessed state CoreEvent) -> Blessed state CoreEvent
-type NodeAnd (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = Array (Attribute subj id r state e) -> Array (Blessed state CoreEvent) -> (NodeKey subj id -> Op.BlessedOp state Effect) -> Blessed state CoreEvent
+type NodeAnd (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = Array (Attribute subj id r state e) -> Array (Blessed state CoreEvent) -> InitFn subj id state -> Blessed state CoreEvent
 type Leaf (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = Array (Attribute subj id r state e) -> Blessed state CoreEvent
-type LeafAnd (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = Array (Attribute subj id r state e) ->  (NodeKey subj id -> Op.BlessedOp state Effect) -> Blessed state CoreEvent
-type Handler (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = (NodeKey subj id -> I.EventJson -> Op.BlessedOp state Effect) -> Attribute subj id r state e
+type LeafAnd (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = Array (Attribute subj id r state e) -> InitFn subj id state -> Blessed state CoreEvent
+type Handler (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = HandlerFn subj id state -> Attribute subj id r state e
 
 
 splitAttributes :: forall subj id r state e. K.IsSubject subj => IsSymbol id => Events e => Array (Attribute subj id r state e) -> Array I.SProp /\ Array (I.SHandler state)
@@ -95,6 +99,10 @@ splitAttributes props = Array.catMaybes (lockSProp <$> props) /\ Array.concat (l
 -- FIXME: no `Cons` check here, but only above
 option :: forall (subj :: K.Subject) (id :: Symbol) (sym :: Symbol) (r :: Row Type) state a e. IsSymbol sym => EncodeJson a => Proxy sym -> a -> Attribute subj id r state e
 option sym = Option (reflectSymbol sym) <<< encodeJson
+
+
+optionWithHandlers :: forall (subj :: K.Subject) (id :: Symbol) (sym :: Symbol) (r :: Row Type) state a e. IsSymbol sym => EncodeJson a => Proxy sym -> a -> Array (e /\ HandlerFn subj id state) -> Attribute subj id r state e
+optionWithHandlers sym json = OptionWithHandlers (reflectSymbol sym) (encodeJson json)
 
 
 onlyOption :: forall (sym :: Symbol) (r :: Row Type) a. IsSymbol sym => EncodeJson a => Proxy sym -> a -> SoleOption r
