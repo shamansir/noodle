@@ -2,6 +2,7 @@ module Main where
 
 import Prelude
 
+import Data.Tuple.Nested ((/\))
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
@@ -220,15 +221,18 @@ main = do
                                     [ ]
 
                         let
+                            inletHandler iname = iname /\ [] /\ \_ _ -> do liftEffect $ Console.log iname
                             inletsBarN =
                                 B.listbar nextInletsBar
                                     [ Box.width $ Dimension.percents 90.0
                                     , Box.height $ Dimension.px 1
                                     , Box.top $ Offset.px 0
                                     , Box.left $ Offset.px 0
-                                    , List.items is
+                                    -- , List.items is
+                                    , ListBar.commands $ inletHandler <$> is
                                     , List.mouse true
                                     , List.keys true
+                                    , ListBar.autoCommandKeys true
                                     , inletsOutletsStyle
                                     , Core.on ListBar.Select
                                         \_ _ -> do
@@ -240,13 +244,15 @@ main = do
 
 
                         let
+                            outletHandler oname = oname /\ [] /\ \_ _ -> do liftEffect $ Console.log oname
                             outletsBarN =
                                 B.listbar nextOutletsBar
                                     [ Box.width $ Dimension.percents 90.0
                                     , Box.height $ Dimension.px 1
                                     , Box.top $ Offset.px 2
                                     , Box.left $ Offset.px 0
-                                    , List.items os
+                                    -- , List.items os
+                                    , ListBar.commands $ outletHandler <$> os
                                     , List.mouse true
                                     , List.keys true
                                     , inletsOutletsStyle
