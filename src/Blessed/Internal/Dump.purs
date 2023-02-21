@@ -41,7 +41,8 @@ newtype CallDump =
         { marker :: String
         , nodeId :: String
         , nodeSubj :: String
-        , event :: String
+        , eventType :: String
+        , eventUID :: String
         , args :: Array Json
         }
 
@@ -67,7 +68,7 @@ commandWasPerformed =
 
 
 handlerCall :: forall m. MonadEffect m => I.RawNodeKey -> I.EventId -> Array Json -> m Unit
-handlerCall (I.RawNodeKey nodeKey) (I.EventId event) args =
+handlerCall (I.RawNodeKey nodeKey) (I.EventId e) args =
     liftEffect
         $ launchAff_
         $ appendTextFile UTF8 commandsDumpPath
@@ -76,7 +77,9 @@ handlerCall (I.RawNodeKey nodeKey) (I.EventId event) args =
         $ encode
         $ CallDump
             { marker : "CallDump"
-            , args, event, nodeId : nodeKey.id
+            , args
+            , eventType : e.type, eventUID : e.uniqueId
+            , nodeId : nodeKey.id
             , nodeSubj : K.toString nodeKey.subject
             }
 
@@ -92,7 +95,8 @@ codec =
             { marker : CA.string
             , nodeId : CA.string
             , nodeSubj : CA.string
-            , event : CA.string
+            , eventType : CA.string
+            , eventUID : CA.string
             , args : CA.array CA.json
             }
         )

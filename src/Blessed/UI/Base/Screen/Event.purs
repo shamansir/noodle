@@ -49,6 +49,7 @@ instance events :: C.Events ScreenEvent where
     convert Warning = "warning" /\ []
     convert Destroy = "destroy" /\ []
 
+    uniqueId (Key []) = "key"
     uniqueId (Key keys) = "key-" <> String.joinWith "-" (Key.toString <$> keys)
     uniqueId e = C.defaultUniqueId e
 

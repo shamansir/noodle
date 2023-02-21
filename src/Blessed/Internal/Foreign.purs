@@ -30,6 +30,7 @@ import Blessed.Internal.NodeKey as NK
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Command as C
 import Blessed.Internal.Codec as Codec
+import Blessed.Internal.Emitter as E
 
 
 encode :: forall state. Ref state -> I.SNode state -> I.BlessedEnc
@@ -64,26 +65,30 @@ encode'
         adaptProps :: Array I.SProp -> Array I.PropJson
         adaptProps = map (I.unwrapProp >>> \(name /\ value ) -> { name, value })
 
+        uniqueIndex e localIndex = rawNodeKey.id <> "-" <> e.uniqueId <> "-" <> show localIndex
+
         encodeHandler :: Int -> I.SHandler state -> I.HandlerCallEnc
-        encodeHandler localIndex (I.SHandler (I.EventId eventId) args fn) =
+        encodeHandler localIndex (I.SHandler (E.EventId e) args fn) =
             I.HandlerCallEnc
                 { marker : "HandlerCall"
                 , nodeId : rawNodeKey.id
                 , nodeSubj : K.toString rawNodeKey.subject
-                , event : eventId
+                , event : e.type
+                , eventUniqueId : e.uniqueId
                 , args
-                , index : rawNodeKey.id <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index
+                , index : uniqueIndex e localIndex -- include parent id & total index
                 , call : fn stateRef $ NK.RawNodeKey rawNodeKey
                 }
 
         encodeHandlerRef :: Int -> I.SHandler state -> I.HandlerRefEnc
-        encodeHandlerRef localIndex (I.SHandler (I.EventId eventId) _ fn) =
+        encodeHandlerRef localIndex (I.SHandler (E.EventId e) _ fn) =
             I.HandlerRefEnc
                 { marker : "HandlerRef"
                 , nodeId : rawNodeKey.id
                 , nodeSubj : K.toString rawNodeKey.subject
-                , event : eventId
-                , index : rawNodeKey.id <> "-" <> eventId <> "-" <> show localIndex -- include parent id & total index?
+                , event : e.type
+                , eventUniqueId : e.uniqueId
+                , index : uniqueIndex e localIndex -- include parent id & total index?
                 }
 
         (storedHandlers :: Array I.HandlerRefEnc) /\ (handlersCalls :: Array I.HandlerCallEnc)

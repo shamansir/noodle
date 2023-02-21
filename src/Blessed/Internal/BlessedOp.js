@@ -89,7 +89,7 @@ function registerNode(node) {
         ___log('node', node);
 
         const props = buildRecord(node.props, adaptProp(node.handlers, null));
-        const handlers = buildRecord(node.handlers, (evt) => ({ name : evt.event, value : evt }));
+        const handlers = buildRecord(node.handlers, (evt) => ({ name : evt.eventUniqueId, value : evt }));
 
         ___log('props', props);
         ___log('handlers', handlers);

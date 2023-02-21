@@ -67,6 +67,7 @@ instance events :: C.Events ElementEvent where
     convert Show = "show" /\ []
     convert Destroy = "destroy" /\ []
 
+    uniqueId (Key []) = "key"
     uniqueId (Key keys) = "key-" <> String.joinWith "-" (Key.toString <$> keys)
     uniqueId e = C.defaultUniqueId e
 

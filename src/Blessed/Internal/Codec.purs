@@ -71,6 +71,7 @@ handlerRefEnc =
             , nodeId : CA.string
             , nodeSubj : CA.string
             , event : CA.string
+            , eventUniqueId : CA.string
             , index : CA.string
             }
         )

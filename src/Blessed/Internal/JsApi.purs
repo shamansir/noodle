@@ -19,9 +19,7 @@ import Data.Codec.Argonaut as CA
 
 import Blessed.Internal.BlessedSubj as K
 import Blessed.Internal.NodeKey as NK
-
-
-newtype EventId = EventId String
+import Blessed.Internal.Emitter as E
 
 
 type Registry = Map NK.RawNodeKey Unit
@@ -30,18 +28,16 @@ newtype EventJson = EventJson Json
 
 
 
-derive instance Newtype EventId _
 derive instance Newtype SRegistry _
 derive instance Newtype EventJson _
 
-derive newtype instance EncodeJson EventId
 derive newtype instance EncodeJson SRegistry
 derive newtype instance EncodeJson EventJson
 
 
 -- encode state to Json as well?
 data SProp = SProp String Json
-data SHandler s = SHandler EventId (Array Json) (Ref s -> NK.RawNodeKey -> EventJson -> Effect Unit)
+data SHandler s = SHandler E.EventId (Array Json) (Ref s -> NK.RawNodeKey -> EventJson -> Effect Unit)
 data SNode s = SNode NK.RawNodeKey (Array SProp) (Array (SNode s)) (Array (SHandler s))
 
 
@@ -75,6 +71,7 @@ newtype HandlerCallEnc =
         , nodeId :: String
         , nodeSubj :: String
         , event :: String
+        , eventUniqueId :: String
         , index :: String
         , args :: Array Json
         , call :: EventJson -> Effect Unit
@@ -86,6 +83,7 @@ newtype HandlerRefEnc =
         , nodeId :: String
         , nodeSubj :: String
         , event :: String
+        , eventUniqueId :: String
         , index :: String
         }
 

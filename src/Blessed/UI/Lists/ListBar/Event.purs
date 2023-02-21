@@ -34,6 +34,7 @@ instance events :: C.Events ListBarEvent where
     convert Select = "select" /\ []
     convert (Command cmd keys) = "command" /\ encodeJson cmd : Key.convertAll keys
 
+    uniqueId (Command cmd []) = "command-" <> cmd
     uniqueId (Command cmd keys) = "command-" <> cmd <> "-" <> String.joinWith "-" (Key.toString <$> keys)
     uniqueId e = C.defaultUniqueId e
 

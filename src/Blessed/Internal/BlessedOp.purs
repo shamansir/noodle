@@ -44,6 +44,7 @@ import Blessed.Internal.JsApi as I
 import Blessed.Internal.Dump as Dump
 import Blessed.Internal.BlessedSubj as K
 import Blessed.Internal.ArgonautCodecExtra as ACX
+import Blessed.Internal.Emitter as E
 
 
 
@@ -247,7 +248,7 @@ runFreeM stateRef fn = do
             --     cmd_ /\ handlers -> callCommandEx_ target cmd_ handlers
 
 
-makeHandler :: forall state subj sym. I.NodeKey subj sym -> I.EventId -> Array Json -> (I.NodeKey subj sym -> I.EventJson -> BlessedOp state Effect) -> I.SHandler state
+makeHandler :: forall state subj sym. I.NodeKey subj sym -> E.EventId -> Array Json -> (I.NodeKey subj sym -> I.EventJson -> BlessedOp state Effect) -> I.SHandler state
 makeHandler nodeKey eventId arguments op =
     I.SHandler eventId arguments
         $ \stateRef rawNodeKey evtJson -> do

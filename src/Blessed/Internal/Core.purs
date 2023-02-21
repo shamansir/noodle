@@ -41,7 +41,7 @@ import Blessed.Internal.NodeKey (NodeKey)
 import Blessed.Internal.NodeKey as NK
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Codec as Codec
-import Blessed.Internal.Emitter
+import Blessed.Internal.Emitter (class Fires, class Events, EventId, initial, convert, CoreEvent, split)
 import Blessed.Internal.Foreign (encode, encode') as Foreign
 
 
@@ -89,8 +89,8 @@ splitAttributes props = Array.catMaybes (lockSProp <$> props) /\ Array.concat (l
         lockSProp (OptionWithHandlers str json _) = Just $ I.SProp str json
         lockSProp _ = Nothing
         lockSHandler (Handler e op) =
-            case convert e of
-                eventId /\ arguments -> [ Op.makeHandler nodeKey (I.EventId eventId) arguments op ]
+            case split e of
+                eventId /\ arguments -> [ Op.makeHandler nodeKey eventId arguments op ]
         lockSHandler (OptionWithHandlers _ _ handlersArray) =
             Array.concat $ lockSHandler <$> uncurry Handler <$> handlersArray
         lockSHandler _ = []
@@ -184,10 +184,10 @@ node nodeKey attrs children =
 
 nodeAnd :: forall subj id state r e. K.IsSubject subj => IsSymbol id => Events e => NodeKey subj id -> NodeAnd subj id state r e
 nodeAnd nodeKey attrs children fn =
-    I.SNode (NK.rawify nodeKey) sprops children (Op.makeHandler nodeKey (I.EventId initialId) initalArgs (\id _ -> fn id) : handlers)
+    I.SNode (NK.rawify nodeKey) sprops children (Op.makeHandler nodeKey initialId initalArgs (\id _ -> fn id) : handlers)
     where
         sprops /\ handlers = splitAttributes attrs
-        initialId /\ initalArgs = convert (initial :: e)
+        initialId /\ initalArgs = split (initial :: e)
 
 
 run :: forall state e. state -> Blessed state e -> Effect Unit
