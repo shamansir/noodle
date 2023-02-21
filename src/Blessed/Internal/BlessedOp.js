@@ -6,7 +6,7 @@ const blessed = require('blessed');
 let registry;
 let handlersFns;
 
-const BLESSED_ON = true;
+const BLESSED_ON = false;
 const LOG_ON = !BLESSED_ON;
 
 function ___log() {
@@ -25,19 +25,19 @@ function buildRecord(array, fn) {
     }, {});
 }
 
-function adaptProp(parentProp) {
+function adaptProp(hs, parentProp) {
     return function(prop) {
         switch (prop.name) {
             case 'border':
-                return { name : 'border', value : buildRecord(prop.value, adaptProp('border')) };
+                return { name : 'border', value : buildRecord(prop.value, adaptProp(hs, 'border')) };
             case 'style':
-                return { name: 'style', value : buildRecord(prop.value, adaptProp('style')) };
+                return { name: 'style', value : buildRecord(prop.value, adaptProp(hs, 'style')) };
             case 'item':
-                return { name: 'item', value : buildRecord(prop.value, adaptProp('item')) };
+                return { name: 'item', value : buildRecord(prop.value, adaptProp(hs, 'item')) };
             case 'selected':
-                return { name: 'selected', value : buildRecord(prop.value, adaptProp('selected')) };
+                return { name: 'selected', value : buildRecord(prop.value, adaptProp(hs, 'selected')) };
             case 'hover':
-                return { name: 'hover', value : buildRecord(prop.value, adaptProp('hover')) };
+                return { name: 'hover', value : buildRecord(prop.value, adaptProp(hs, 'hover')) };
             case 'parent':
                 return { name: 'parent', value : prop.tag === 'Just' ? registry[prop.value].blessed : null };
             default:
@@ -48,7 +48,7 @@ function adaptProp(parentProp) {
 
 function execute(program) {
     return function() {
-        ___log(program);
+        ___log('program', program);
         registry = {};
         handlersFns = buildRecord(program.handlersFns, (hdl) => ({ name : hdl.index, value : hdl }));
 
@@ -71,6 +71,7 @@ function performInit(handlerDef) {
 
 function bindHandler(blessedObj, handler) {
     if (handler.event === 'init') return;
+    if (handler.event === 'command') return;
     const handlerFn = handlersFns[handler.index];
 
     ___log('registering handler', handler.index, handler, handlerFn);
@@ -85,12 +86,13 @@ function bindHandler(blessedObj, handler) {
 
 function registerNode(node) {
     return function() {
-        ___log(node);
+        ___log('node', node);
 
-        const props = buildRecord(node.props, adaptProp(null));
+        const props = buildRecord(node.props, adaptProp(node.handlers, null));
         const handlers = buildRecord(node.handlers, (evt) => ({ name : evt.event, value : evt }));
-        ___log(props);
-        ___log(handlers);
+
+        ___log('props', props);
+        ___log('handlers', handlers);
 
         let blessedObj = null;
 

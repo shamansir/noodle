@@ -4,7 +4,7 @@ module Blessed.UI.Base.Node.Event where
 import Data.Tuple.Nested ((/\))
 
 
-import Blessed.Internal.Emitter (class Events) as C
+import Blessed.Internal.Emitter (class Events, defaultUniqueId) as C
 
 
 type Event = NodeEvent
@@ -19,7 +19,7 @@ data NodeEvent
     | Detach
 
 
-instance events :: C.Events NodeEvent where
+instance events :: C.Events Event where
     initial = Init
 
     convert Init = "init" /\ []
@@ -28,3 +28,5 @@ instance events :: C.Events NodeEvent where
     convert Reparent = "reparent" /\ []
     convert Attach = "attach" /\ []
     convert Detach = "detach" /\ []
+
+    uniqueId e = C.defaultUniqueId e

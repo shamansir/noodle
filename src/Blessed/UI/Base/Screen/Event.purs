@@ -2,13 +2,13 @@ module Blessed.UI.Base.Screen.Event where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
+import Data.String as String
 
 import Blessed.Core.Key (Key)
 import Blessed.Core.Key as Key
 import Blessed.Internal.BlessedSubj (Screen, class Extends)
-import Blessed.Internal.Emitter (class Events, class Fires) as C
+import Blessed.Internal.Emitter (class Events, class Fires, defaultUniqueId) as C
 import Blessed.Internal.Core (handler, Handler) as C
 
 
@@ -48,6 +48,9 @@ instance events :: C.Events ScreenEvent where
     convert Render = "render" /\ []
     convert Warning = "warning" /\ []
     convert Destroy = "destroy" /\ []
+
+    uniqueId (Key keys) = "key-" <> String.joinWith "-" (Key.toString <$> keys)
+    uniqueId e = C.defaultUniqueId e
 
 
 type Handler subj id r state = C.Handler subj id r state ScreenEvent

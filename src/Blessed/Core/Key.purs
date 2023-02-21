@@ -47,5 +47,13 @@ convertAll :: Array Key -> Array Json
 convertAll = map convertOne
 
 
+toString :: Key -> String
+toString (Key str) = str
+
+
+instance Show Key where
+    show = toString
+
+
 instance EncodeJson Key where
     encodeJson = convertOne

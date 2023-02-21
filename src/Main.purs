@@ -108,8 +108,8 @@ inletsOutletsStyle =
         ]
 
 
-main :: Effect Unit
-main = do
+main1 :: Effect Unit
+main1 = do
   Cli.run initialState
     (B.screenAnd mainScreen
 
@@ -291,3 +291,51 @@ main = do
             nodeList >~ Box.focus
             mainScreen >~ Screen.render
         )
+
+
+main2 :: Effect Unit
+main2 = do
+  Cli.run initialState
+    (B.screenAnd mainScreen
+
+        [ Screen.title "Noodle"
+        , Screen.smartCSR true
+        , Screen.fullUnicode true
+        , Screen.key
+            [ Key.escape, Key.alpha 'q', (Key.control $ Key.alpha 'C') ]
+            $ \_ kevt -> do
+                Blessed.exit
+        ]
+
+        [
+            let
+                lbKey = (nk :: ListBar <^> "test")
+                inletHandler iname = iname /\ [] /\ \_ _ -> do liftEffect $ Console.log $ "cmd " <> iname
+                inletsBarN =
+                    B.listbar lbKey
+                        [ Box.width $ Dimension.percents 90.0
+                        , Box.height $ Dimension.px 1
+                        , Box.top $ Offset.px 0
+                        , Box.left $ Offset.px 0
+                        , ListBar.commands $ inletHandler <$> [ "a", "b", "c" ]
+                        , List.mouse true
+                        , List.keys true
+                        , ListBar.autoCommandKeys true
+                        , inletsOutletsStyle
+                        , Core.on ListBar.Select
+                            \_ _ -> do
+                                liftEffect $ Console.log "inlet"
+                                inletSelected <- List.selected lbKey
+                                liftEffect $ Console.log $ show inletSelected
+                        ]
+                        [ ]
+            in inletsBarN
+        ]
+
+        $ \_ -> do
+            mainScreen >~ Screen.render
+    )
+
+
+main :: Effect Unit
+main = main2

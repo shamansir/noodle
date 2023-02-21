@@ -12,7 +12,7 @@ import Blessed.Core.Key (Key)
 import Blessed.Core.Key as Key
 
 
-import Blessed.Internal.Emitter (class Events, class Fires) as C
+import Blessed.Internal.Emitter (class Events, class Fires, defaultUniqueId) as C
 import Blessed.Internal.BlessedSubj (List, ListBar, class Extends)
 import Blessed.Internal.Core (handler, Handler) as C
 
@@ -34,6 +34,8 @@ instance events :: C.Events ListEvent where
     convert Select = "select" /\ []
     convert Cancel = "cancel" /\ []
     convert Action = "action" /\ []
+
+    uniqueId e = C.defaultUniqueId e
 
 
 instance C.Fires List ListEvent

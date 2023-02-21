@@ -1,8 +1,9 @@
 module Blessed.UI.Base.Element.Event where
 
-import Prelude ((<<<))
+import Prelude ((<<<), (<$>), (<>))
 
 
+import Data.String as String
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 
@@ -10,7 +11,7 @@ import Blessed.Core.Key (Key)
 import Blessed.Core.Key as Key
 
 
-import Blessed.Internal.Emitter (class Events, class Fires) as C
+import Blessed.Internal.Emitter (class Events, class Fires, defaultUniqueId) as C
 import Blessed.Internal.BlessedSubj (Element, Box, List, ListBar, class Extends)
 import Blessed.Internal.Core (handler, Handler) as C
 
@@ -65,6 +66,9 @@ instance events :: C.Events ElementEvent where
     convert Hide = "hide" /\ []
     convert Show = "show" /\ []
     convert Destroy = "destroy" /\ []
+
+    uniqueId (Key keys) = "key-" <> String.joinWith "-" (Key.toString <$> keys)
+    uniqueId e = C.defaultUniqueId e
 
 
 type Handler subj id r state = C.Handler subj id r state ElementEvent

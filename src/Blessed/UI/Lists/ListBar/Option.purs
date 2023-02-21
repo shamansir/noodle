@@ -1,17 +1,21 @@
 module Blessed.UI.Lists.ListBar.Option where
 
-import Prelude (Unit, unit, ($), (<<<), map)
+import Prelude (Unit, unit, ($), (<<<), map, (<$>))
 
 import Effect (Effect)
+
 import Type.Row (type (+))
 import Prim.Row as R
-import Data.Argonaut.Encode (class EncodeJson)
 import Type.Proxy (Proxy(..))
+
 import Data.Symbol (class IsSymbol)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Profunctor (wrapIso)
-import Data.Codec.Argonaut as CA
 import Data.Newtype (class Newtype)
+import Data.Tuple as Tuple
+
+import Data.Argonaut.Encode (class EncodeJson)
+import Data.Codec.Argonaut as CA
 
 import Blessed.Core.Key (Key)
 import Blessed.Core.Color (Color)
@@ -25,18 +29,17 @@ import Blessed.Internal.Core (Attribute, option, optionWithHandlers, HandlerFn) 
 import Blessed.Internal.BlessedSubj (Subject, ListBar)
 import Blessed.Internal.NodeKey (class Respresents)
 
-
 import Blessed.UI.Lists.List.Option (OptionsRow) as List
 import Blessed.UI.Lists.ListBar.Event as ListBar
 import Blessed.UI.Base.Element.Option (OptionsRow) as Box
 
 
-newtype Commands = Commands Unit
+newtype Commands = Commands (Array String)
 
 derive instance Newtype Commands _
 
 instance EncodeJson Commands where
-    encodeJson cmds = CA.encode (wrapIso Commands $ CA.null) cmds
+    encodeJson cmds = CA.encode (wrapIso Commands $ CA.array CA.string) cmds
 
 
 type OptionsRow r =
@@ -82,6 +85,6 @@ commands
     :: forall (subj :: Subject) (id :: Symbol) r state
      . Respresents ListBar subj id
     => Array (String /\ Array Key /\ C.HandlerFn subj id state) -> ListBarAttribute subj id ( commands :: Commands | r ) state ListBar.Event
-commands = C.optionWithHandlers (Proxy :: _ "commands") (Commands unit) <<< map toCmdEvent
-    where
-        toCmdEvent (cmd /\ keys /\ handler) = ListBar.Command cmd keys /\ handler
+commands cmds =
+    C.optionWithHandlers (Proxy :: _ "commands") (Commands $ Tuple.fst <$> cmds) $ map toCmdEvent cmds
+    where toCmdEvent (cmd /\ keys /\ handler) = ListBar.Command cmd keys /\ handler
