@@ -6,7 +6,7 @@ const blessed = require('blessed');
 let registry;
 let handlersFns;
 
-const BLESSED_ON = false;
+const BLESSED_ON = true;
 const LOG_ON = !BLESSED_ON;
 
 function ___log() {
@@ -40,6 +40,8 @@ function adaptProp(hs, parentProp) {
                 return { name: 'hover', value : buildRecord(prop.value, adaptProp(hs, 'hover')) };
             case 'parent':
                 return { name: 'parent', value : prop.tag === 'Just' ? registry[prop.value].blessed : null };
+            case 'commands':
+                return { name: 'commands', value : buildRecord(prop.value, adaptListBarCommandValue(hs)) }
             default:
                 return prop;
         }
@@ -88,8 +90,8 @@ function registerNode(node) {
     return function() {
         ___log('node', node);
 
-        const props = buildRecord(node.props, adaptProp(node.handlers, null));
         const handlers = buildRecord(node.handlers, (evt) => ({ name : evt.eventUniqueId, value : evt }));
+        const props = buildRecord(node.props, adaptProp(handlers, null));
 
         ___log('props', props);
         ___log('handlers', handlers);
@@ -331,6 +333,27 @@ function callCommandEx(rawNodeKey) {
                 });
                 return commandResult;
             }
+        }
+    }
+}
+
+function adaptListBarCommandValue(hs) {
+    return function(cmd, idx) {
+        ___log('command', cmd);
+        const localHandlerId = cmd.eventUID;
+        const handlerRef = hs[localHandlerId];
+        if (handlerRef) {
+            const handlerIndex = handlerRef.index;
+            const handlerFn = handlersFns[handlerIndex];
+            if (handlerFn) {
+                ___log('command handler', localHandlerId, handlerIndex, handlerFn);
+                return { name : cmd.command, value : { keys : cmd.keys, callback : (evt) => handlerFn.call(evt)() } };
+            } else {
+                ___log('handler at', handlerIndex, ' not found');
+                return { name : cmd.command, value : { keys : cmd.keys, callback : () => {} }};
+            }
+        } else {
+            ___log('local handler ', localHandlerId, ' not found');
         }
     }
 }

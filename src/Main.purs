@@ -2,52 +2,44 @@ module Main where
 
 import Prelude
 
+import Blessed ((>~))
+import Blessed (exit) as Blessed
+import Blessed as B
+import Blessed.Core.Border as Border
+import Blessed.Core.Coord ((<+>), (<->))
+import Blessed.Core.Coord as Coord
+import Blessed.Core.Dimension as Dimension
+import Blessed.Core.EndStyle as ES
+import Blessed.Core.Key as Key
+import Blessed.Core.ListStyle as LStyle
+import Blessed.Core.Offset as Offset
+import Blessed.Core.Style as Style
+import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List)
+import Blessed.Internal.Core as Core
+import Blessed.Internal.NodeKey (nk, NodeKey(..), type (<^>))
+import Blessed.Internal.NodeKey as NodeKey
+import Blessed.UI.Base.Element.Event as Element
+import Blessed.UI.Base.Node.Method as Node
+import Blessed.UI.Base.Screen as Screen
+import Blessed.UI.Base.Screen.Event as Screen
+import Blessed.UI.Base.Screen.Method as Screen
+import Blessed.UI.Base.Screen.Option as Screen
+import Blessed.UI.Boxes.Box as Box
+import Blessed.UI.Boxes.Box.Event as Box
+import Blessed.UI.Boxes.Box.Method as Box
+import Blessed.UI.Boxes.Box.Option as Box
+import Blessed.UI.Lists.List.Event as List
+import Blessed.UI.Lists.List.Option as List
+import Blessed.UI.Lists.List.Property as List
+import Blessed.UI.Lists.ListBar.Event as ListBar
+import Blessed.UI.Lists.ListBar.Option as ListBar
+import Cli.App as Cli
+import Control.Monad.State as State
 import Data.Tuple.Nested ((/\))
-
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Console as Console
-
-import Cli.App as Cli
-
-import Blessed ((>~))
-import Blessed as B
-import Blessed (exit) as Blessed
 import Type.Proxy (Proxy(..))
-
-import Blessed.Core.Key as Key
-import Blessed.Core.Offset as Offset
-import Blessed.Core.EndStyle as ES
-import Blessed.Core.Border as Border
-import Blessed.Core.Dimension as Dimension
-import Blessed.Core.Style as Style
-import Blessed.Core.Coord ((<+>), (<->))
-import Blessed.Core.Coord as Coord
-import Blessed.Core.ListStyle as LStyle
-
-import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List)
-import Blessed.Internal.NodeKey (nk, NodeKey(..), type (<^>))
-import Blessed.Internal.NodeKey as NodeKey
-import Blessed.Internal.Core as Core
-
-
-import Blessed.UI.Boxes.Box as Box
-import Blessed.UI.Base.Element.Event as Element
-import Blessed.UI.Base.Screen as Screen
-import Blessed.UI.Base.Screen.Option as Screen
-import Blessed.UI.Base.Screen.Event as Screen
-import Blessed.UI.Base.Screen.Method as Screen
-import Blessed.UI.Base.Node.Method as Node
-import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Boxes.Box.Event as Box
-import Blessed.UI.Boxes.Box.Method as Box
-import Blessed.UI.Lists.List.Option as List
-import Blessed.UI.Lists.List.Event as List
-import Blessed.UI.Lists.List.Property as List
-import Blessed.UI.Lists.ListBar.Option as ListBar
-import Blessed.UI.Lists.ListBar.Event as ListBar
-
-import Control.Monad.State as State
 
 
 mainScreen = nk :: Screen <^> "main-scr"
@@ -310,7 +302,7 @@ main2 = do
         [
             let
                 lbKey = (nk :: ListBar <^> "test")
-                inletHandler iname = iname /\ [] /\ \_ _ -> do liftEffect $ Console.log $ "cmd " <> iname
+                inletHandler iname = iname /\ [ ] /\ \_ _ -> do liftEffect $ Console.log $ "cmd " <> iname
                 inletsBarN =
                     B.listbar lbKey
                         [ Box.width $ Dimension.percents 90.0

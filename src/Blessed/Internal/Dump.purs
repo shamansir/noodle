@@ -90,8 +90,9 @@ encode = CA.encode codec -- TODO: prettify
 
 codec :: CA.JsonCodec CallDump
 codec =
-    wrapIso CallDump $ CA.object "CallDump"
-        (CAR.record
+    wrapIso CallDump
+        $ CA.object "CallDump"
+        $ CAR.record
             { marker : CA.string
             , nodeId : CA.string
             , nodeSubj : CA.string
@@ -99,4 +100,3 @@ codec =
             , eventUID : CA.string
             , args : CA.array CA.json
             }
-        )

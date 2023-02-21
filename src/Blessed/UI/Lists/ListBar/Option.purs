@@ -16,8 +16,10 @@ import Data.Tuple as Tuple
 
 import Data.Argonaut.Encode (class EncodeJson)
 import Data.Codec.Argonaut as CA
+import Data.Codec.Argonaut.Record as CAR
 
 import Blessed.Core.Key (Key)
+import Blessed.Core.Key (toString) as Key
 import Blessed.Core.Color (Color)
 import Blessed.Core.Orientation (Orientation)
 import Blessed.Core.Border (BorderType) as B
@@ -28,18 +30,24 @@ import Blessed.Core.ListStyle (ListStyle, ListStyleOption) as LS
 import Blessed.Internal.Core (Attribute, option, optionWithHandlers, HandlerFn) as C
 import Blessed.Internal.BlessedSubj (Subject, ListBar)
 import Blessed.Internal.NodeKey (class Respresents)
+import Blessed.Internal.Emitter as E
 
 import Blessed.UI.Lists.List.Option (OptionsRow) as List
 import Blessed.UI.Lists.ListBar.Event as ListBar
 import Blessed.UI.Base.Element.Option (OptionsRow) as Box
 
 
-newtype Commands = Commands (Array String)
+newtype Commands = Commands (Array { command :: String, eventUID :: String, keys :: Array String })
 
 derive instance Newtype Commands _
 
 instance EncodeJson Commands where
-    encodeJson cmds = CA.encode (wrapIso Commands $ CA.array CA.string) cmds
+    encodeJson =
+        CA.encode $ wrapIso Commands $ CA.array $ CA.object "Commands" $ CAR.record
+            { command : CA.string
+            , eventUID : CA.string
+            , keys : CA.array CA.string
+            }
 
 
 type OptionsRow r =
@@ -51,7 +59,7 @@ type OptionsRow r =
     -- , style_item :: Array (EndStyleOption ())
     | r
     )
-type Options subj id state e = Record (OptionsRow ())
+type Options = Record (OptionsRow ())
 
 
 type ListBarAttribute subj id r state e = C.Attribute subj id (Box.OptionsRow + List.OptionsRow + OptionsRow + r) state e
@@ -86,5 +94,8 @@ commands
      . Respresents ListBar subj id
     => Array (String /\ Array Key /\ C.HandlerFn subj id state) -> ListBarAttribute subj id ( commands :: Commands | r ) state ListBar.Event
 commands cmds =
-    C.optionWithHandlers (Proxy :: _ "commands") (Commands $ Tuple.fst <$> cmds) $ map toCmdEvent cmds
+    C.optionWithHandlers (Proxy :: _ "commands") (Commands commands_) cmdsEvents
     where toCmdEvent (cmd /\ keys /\ handler) = ListBar.Command cmd keys /\ handler
+          cmdsEvents = toCmdEvent <$> cmds
+          toCommand triple = { eventUID : E.uniqueId $ Tuple.fst $ toCmdEvent triple, command : Tuple.fst triple, keys : map Key.toString $ Tuple.fst $ Tuple.snd triple }
+          commands_ = toCommand <$> cmds
