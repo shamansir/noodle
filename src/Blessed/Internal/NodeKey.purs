@@ -52,8 +52,11 @@ next (NodeKey maybeN) = NodeKey $ nextN maybeN
         nextN Nothing = Just 0
 
 
--- make' :: forall subj. K.IsSubject subj => Proxy subj -> String -> (forall sym. IsSymbol sym => NodeKey subj sym)
--- make' subj n = reifySymbol n (unsafeCoerce <<< make subj)
+-- TODO: join, two node keys concatenated in one
+
+
+makeUnsafe :: forall subj sym. IsSymbol sym => K.IsSubject subj => Proxy subj -> String -> NodeKey subj sym
+makeUnsafe subj s = unsafeCoerce $ reifySymbol s \sym -> unsafeCoerce $ make subj sym
 
 
 rawify :: forall subj sym. K.IsSubject subj => IsSymbol sym => NodeKey subj sym -> RawNodeKey

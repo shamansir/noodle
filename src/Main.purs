@@ -14,9 +14,9 @@ import Blessed.Core.Key as Key
 import Blessed.Core.ListStyle as LStyle
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Style as Style
-import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List)
+import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line)
 import Blessed.Internal.Core as Core
-import Blessed.Internal.NodeKey (nk, NodeKey(..), type (<^>))
+import Blessed.Internal.NodeKey (nk, NodeKey(..), type (<^>), RawNodeKey)
 import Blessed.Internal.NodeKey as NodeKey
 import Blessed.UI.Base.Element.Event as Element
 import Blessed.UI.Base.Node.Method as Node
@@ -33,6 +33,8 @@ import Blessed.UI.Lists.List.Option as List
 import Blessed.UI.Lists.List.Property as List
 import Blessed.UI.Lists.ListBar.Event as ListBar
 import Blessed.UI.Lists.ListBar.Option as ListBar
+-- import Blessed.UI.Line.Li ()
+
 import Cli.App as Cli
 import Control.Monad.State as State
 import Data.Tuple.Nested ((/\))
@@ -208,12 +210,13 @@ main1 = do
                                         ]
                                     , Core.on Element.Move
                                         \_ _ ->
-                                            liftEffect $ Console.log "move"
+                                            -- liftEffect $ Console.log "move"
+                                            pure unit
                                     ]
                                     [ ]
 
                         let
-                            inletHandler iname = iname /\ [] /\ \_ _ -> do liftEffect $ Console.log iname
+                            inletHandler iname = iname /\ [] /\ \_ _ -> do liftEffect $ Console.log $ "handler " <> iname
                             inletsBarN =
                                 B.listbar nextInletsBar
                                     [ Box.width $ Dimension.percents 90.0
@@ -236,7 +239,7 @@ main1 = do
 
 
                         let
-                            outletHandler oname = oname /\ [] /\ \_ _ -> do liftEffect $ Console.log oname
+                            outletHandler oname = oname /\ [] /\ \_ _ -> do liftEffect $ Console.log $ "handler " <> oname
                             outletsBarN =
                                 B.listbar nextOutletsBar
                                     [ Box.width $ Dimension.percents 90.0
@@ -285,6 +288,54 @@ main1 = do
         )
 
 
+type LinkLineParams =
+    { top :: Number
+    , left :: Number
+    , width :: Number
+    , height :: Number
+    }
+
+
+type LinkCalc =
+    { a :: LinkLineParams
+    , b :: LinkLineParams
+    , c :: LinkLineParams
+    }
+
+
+type Link sa ia sb ib state e =
+    { blessed :: { a :: Core.Blessed state e, b :: Core.Blessed state e, c :: Core.Blessed state e }
+    , fromNode :: NodeKey sa ia
+    , toNode :: NodeKey sb ib
+    , outletIndex :: Int
+    , inletIndex :: Int
+    }
+
+
+newtype OutletIndex = OutletIndex Int
+newtype InletIndex = InletIndex Int
+
+
+lineA = nk :: Line <^> "line-a"
+lineB = nk :: Line <^> "line-b"
+lineC = nk :: Line <^> "line-c"
+
+
+createLink :: forall subjFrom subjTo idFrom idTo state e. NodeKey subjFrom idFrom -> OutletIndex -> NodeKey subjTo idTo -> InletIndex -> Link subjFrom idFrom subjTo idTo state e
+createLink fromKey (OutletIndex outletIdx) toKey (InletIndex intletIdx) =
+    let
+        linkA = B.line lineA [] []
+        linkB = B.line lineB [] []
+        linkC = B.line lineC [] []
+    in
+        { fromNode : fromKey
+        , toNode : toKey
+        , outletIndex : outletIdx
+        , inletIndex : intletIdx
+        , blessed : { a : linkA, b : linkB, c : linkC }
+        }
+
+
 main2 :: Effect Unit
 main2 = do
   Cli.run initialState
@@ -330,4 +381,4 @@ main2 = do
 
 
 main :: Effect Unit
-main = main2
+main = main1
