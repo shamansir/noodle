@@ -32,7 +32,7 @@ import Blessed.Core.Style as Style
 
 import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line)
 import Blessed.Internal.Core as Core
-import Blessed.Internal.BlessedOp (BlessedOpGet)
+import Blessed.Internal.BlessedOp (BlessedOpGet, BlessedOp)
 import Blessed.Internal.NodeKey (nk, NodeKey(..), type (<^>), RawNodeKey)
 import Blessed.Internal.NodeKey as NodeKey
 
@@ -301,10 +301,18 @@ main1 = do
 
 
 type LinkLineParams =
-    { top :: Number
-    , left :: Number
-    , width :: Number
-    , height :: Number
+    { top :: Int
+    , left :: Int
+    , width :: Int
+    , height :: Int
+    }
+
+
+type NodePositions =
+    { fromNodeLeft :: Int
+    , fromNodeTop :: Int
+    , toNodeLeft :: Int
+    , toNodeTop :: Int
     }
 
 
@@ -334,16 +342,25 @@ lineB = nk :: Line <^> "line-b"
 lineC = nk :: Line <^> "line-c"
 
 
+calcLink :: NodePositions -> OutletIndex -> InletIndex -> LinkCalc
+calcLink np (OutletIndex outletIdx) (InletIndex intletIdx) =
+    { a : { top : 0, left : 0, width : 0, height : 0 }
+    , b : { top : 0, left : 0, width : 0, height : 0 }
+    , c : { top : 0, left : 0, width : 0, height : 0 }
+    }
+
+
 createLink :: forall state e. Maybe (Link state e) -> NodeKey Box "node-box" -> OutletIndex -> NodeKey Box "node-box" -> InletIndex -> BlessedOpGet state Effect (Link state e)
 createLink maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) = do
-    leftF <- Element.boxLeft fromNode
-    topF <- Element.boxTop fromNode
-    leftT <- Element.boxLeft toNode
-    topT <- Element.boxTop toNode
+    fromNodeLeft <- Element.boxLeft fromNode
+    fromNodeTop <- Element.boxTop fromNode
+    toNodeLeft <- Element.boxLeft toNode
+    toNodeTop <- Element.boxTop toNode
     let
         keyLinkA = fromMaybe lineA $ NodeKey.next <$> _.a <$> _.keys <$> maybePrev
         keyLinkB = fromMaybe lineB $ NodeKey.next <$> _.b <$> _.keys <$> maybePrev
         keyLinkC = fromMaybe lineC $ NodeKey.next <$> _.c <$> _.keys <$> maybePrev
+        calc = calcLink { fromNodeLeft, fromNodeTop, toNodeLeft, toNodeTop } (OutletIndex outletIdx) (InletIndex intletIdx)
         linkA = B.line keyLinkA [] []
         linkB = B.line keyLinkB [] []
         linkC = B.line keyLinkC [] []
@@ -355,6 +372,13 @@ createLink maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletI
         , blessed : { a : linkA, b : linkB, c : linkC }
         , keys : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
         }
+
+
+appendLink :: forall state e m. Link state e -> NodeKey Box "patch-box" -> BlessedOp state m
+appendLink link pnk = do
+    pnk >~ Node.append link.blessed.a
+    pnk >~ Node.append link.blessed.b
+    pnk >~ Node.append link.blessed.c
 
 
 main2 :: Effect Unit
