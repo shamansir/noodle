@@ -112,6 +112,29 @@ setCommandEnc =
         )
 
 
+getPCommandEnc :: CA.JsonCodec I.GetPCommandEnc
+getPCommandEnc =
+    wrapIso I.GetPCommandEnc $ CA.object "GetPCommand"
+        (CAR.record
+            { marker : CA.string
+            , type : CA.string
+            , path : CA.array CA.string
+            }
+        )
+
+
+setPCommandEnc :: CA.JsonCodec I.SetPCommandEnc
+setPCommandEnc =
+    wrapIso I.SetPCommandEnc $ CA.object "SetPCommand"
+        (CAR.record
+            { marker : CA.string
+            , type : CA.string
+            , path : CA.array CA.string
+            , value : CA.json
+            }
+        )
+
+
 processCommandEnc :: CA.JsonCodec I.ProcessCommandEnc
 processCommandEnc =
     wrapIso I.ProcessCommandEnc $ CA.object "ProcessCommand"

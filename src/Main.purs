@@ -2,9 +2,24 @@ module Main where
 
 import Prelude
 
+import Effect (Effect)
+import Effect.Class (liftEffect)
+import Effect.Console as Console
+
+import Control.Monad.State as State
+
+import Data.Maybe (Maybe, fromMaybe)
+import Data.Tuple.Nested ((/\))
+import Type.Proxy (Proxy(..))
+import Data.Symbol (class IsSymbol)
+import Prim.Symbol (class Append) as S
+
+import Cli.App as Cli
+
 import Blessed ((>~))
 import Blessed (exit) as Blessed
 import Blessed as B
+
 import Blessed.Core.Border as Border
 import Blessed.Core.Coord ((<+>), (<->))
 import Blessed.Core.Coord as Coord
@@ -14,11 +29,15 @@ import Blessed.Core.Key as Key
 import Blessed.Core.ListStyle as LStyle
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Style as Style
+
 import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line)
 import Blessed.Internal.Core as Core
+import Blessed.Internal.BlessedOp (BlessedOpGet)
 import Blessed.Internal.NodeKey (nk, NodeKey(..), type (<^>), RawNodeKey)
 import Blessed.Internal.NodeKey as NodeKey
+
 import Blessed.UI.Base.Element.Event as Element
+import Blessed.UI.Base.Element.Property as Element
 import Blessed.UI.Base.Node.Method as Node
 import Blessed.UI.Base.Screen as Screen
 import Blessed.UI.Base.Screen.Event as Screen
@@ -35,13 +54,6 @@ import Blessed.UI.Lists.ListBar.Event as ListBar
 import Blessed.UI.Lists.ListBar.Option as ListBar
 -- import Blessed.UI.Line.Li ()
 
-import Cli.App as Cli
-import Control.Monad.State as State
-import Data.Tuple.Nested ((/\))
-import Effect (Effect)
-import Effect.Class (liftEffect)
-import Effect.Console as Console
-import Type.Proxy (Proxy(..))
 
 
 mainScreen = nk :: Screen <^> "main-scr"
@@ -303,12 +315,13 @@ type LinkCalc =
     }
 
 
-type Link sa ia sb ib state e =
+type Link state e =
     { blessed :: { a :: Core.Blessed state e, b :: Core.Blessed state e, c :: Core.Blessed state e }
-    , fromNode :: NodeKey sa ia
-    , toNode :: NodeKey sb ib
+    , fromNode :: NodeKey Box "node-box"
+    , toNode :: NodeKey Box "node-box"
     , outletIndex :: Int
     , inletIndex :: Int
+    , keys :: { a :: NodeKey Line "line-a", b :: NodeKey Line "line-b", c :: NodeKey Line "line-c" }
     }
 
 
@@ -321,18 +334,26 @@ lineB = nk :: Line <^> "line-b"
 lineC = nk :: Line <^> "line-c"
 
 
-createLink :: forall subjFrom subjTo idFrom idTo state e. NodeKey subjFrom idFrom -> OutletIndex -> NodeKey subjTo idTo -> InletIndex -> Link subjFrom idFrom subjTo idTo state e
-createLink fromKey (OutletIndex outletIdx) toKey (InletIndex intletIdx) =
+createLink :: forall state e. Maybe (Link state e) -> NodeKey Box "node-box" -> OutletIndex -> NodeKey Box "node-box" -> InletIndex -> BlessedOpGet state Effect (Link state e)
+createLink maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) = do
+    leftF <- Element.boxLeft fromNode
+    topF <- Element.boxTop fromNode
+    leftT <- Element.boxLeft toNode
+    topT <- Element.boxTop toNode
     let
-        linkA = B.line lineA [] []
-        linkB = B.line lineB [] []
-        linkC = B.line lineC [] []
-    in
-        { fromNode : fromKey
-        , toNode : toKey
+        keyLinkA = fromMaybe lineA $ NodeKey.next <$> _.a <$> _.keys <$> maybePrev
+        keyLinkB = fromMaybe lineB $ NodeKey.next <$> _.b <$> _.keys <$> maybePrev
+        keyLinkC = fromMaybe lineC $ NodeKey.next <$> _.c <$> _.keys <$> maybePrev
+        linkA = B.line keyLinkA [] []
+        linkB = B.line keyLinkB [] []
+        linkC = B.line keyLinkC [] []
+    pure
+        { fromNode
+        , toNode
         , outletIndex : outletIdx
         , inletIndex : intletIdx
         , blessed : { a : linkA, b : linkB, c : linkC }
+        , keys : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
         }
 
 

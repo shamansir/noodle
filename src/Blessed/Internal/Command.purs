@@ -25,7 +25,9 @@ data Command
     = Call { cmd :: String, args :: Array Json }
     | CallEx { cmd :: String, args :: Array Json, handlers :: Array HandlerCallEnc }
     | Set { prop :: String, value :: Json }
+    | SetP { path :: Array String, value :: Json }
     | Get { prop :: String }
+    | GetP { path :: Array String }
     -- | Global { }
     | WithProcess { cmd :: String, args :: Array Json }
 
@@ -44,6 +46,14 @@ set prop value = Set { prop, value }
 
 get :: String -> Command
 get prop = Get { prop }
+
+
+setP :: Array String -> Json -> Command
+setP path value = SetP { path, value }
+
+
+getP :: Array String -> Command
+getP path = GetP { path }
 
 
 arg :: forall m a value d. CA.Codec m a Json value d → value → Json

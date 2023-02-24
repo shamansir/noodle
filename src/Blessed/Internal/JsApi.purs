@@ -140,6 +140,14 @@ newtype GetCommandEnc =
         }
 
 
+newtype GetPCommandEnc =
+    GetPCommandEnc
+        { marker :: String
+        , type :: String
+        , path :: Array String
+        }
+
+
 newtype SetCommandEnc =
     SetCommandEnc
         { marker :: String
@@ -147,6 +155,16 @@ newtype SetCommandEnc =
         , property :: String
         , value :: Json
         }
+
+
+newtype SetPCommandEnc =
+    SetPCommandEnc
+        { marker :: String
+        , type :: String
+        , path :: Array String
+        , value :: Json
+        }
+
 
 newtype ProcessCommandEnc =
     ProcessCommandEnc
@@ -164,5 +182,7 @@ newtype CommandEnc =
 derive instance Newtype CallCommandEnc _
 derive instance Newtype GetCommandEnc _
 derive instance Newtype SetCommandEnc _
+derive instance Newtype GetPCommandEnc _
+derive instance Newtype SetPCommandEnc _
 derive instance Newtype ProcessCommandEnc _
 derive instance Newtype CommandEnc _

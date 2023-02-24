@@ -1,6 +1,7 @@
 module Blessed.Internal.NodeKey where
 
 import Prelude
+import Prim.Symbol (class Append) as S
 
 import Data.Newtype (class Newtype)
 import Data.Symbol (class IsSymbol, reflectSymbol, reifySymbol)
@@ -52,7 +53,16 @@ next (NodeKey maybeN) = NodeKey $ nextN maybeN
         nextN Nothing = Just 0
 
 
--- TODO: join, two node keys concatenated in one
+-- private
+setN :: forall subj sym. Int -> NodeKey subj sym -> NodeKey subj sym
+setN n _ = NodeKey $ Just n
+
+
+append :: forall subjA symA subjB symB symC. S.Append symA symB symC => NodeKey subjA symA -> NodeKey subjB symB -> NodeKey subjA symC
+append (NodeKey (Just nA)) (NodeKey (Just nB)) = nk # setN (nA * 1000 + nB)
+append (NodeKey Nothing) (NodeKey (Just nB)) = nk # setN nB
+append (NodeKey (Just nA)) (NodeKey Nothing) = nk # setN (nA * 1000)
+append (NodeKey Nothing) (NodeKey Nothing) = nk
 
 
 makeUnsafe :: forall subj sym. IsSymbol sym => K.IsSubject subj => Proxy subj -> String -> NodeKey subj sym

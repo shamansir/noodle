@@ -156,8 +156,12 @@ commandToJson =
             (CA.encode Codec.callCommandEnc $ I.CallCommandEnc $ { marker : "CallCommandEx", args, method : cmd, type : "call" }) /\ handlers
         C.Get { prop } ->
             (CA.encode Codec.getCommandEnc $ I.GetCommandEnc $ { marker : "GetCommand", property : prop, type : "get" }) /\ []
+        C.GetP { path } ->
+            (CA.encode Codec.getPCommandEnc $ I.GetPCommandEnc $ { marker : "GetPCommand", path, type : "getP" }) /\ []
         C.Set { prop, value } ->
             (CA.encode Codec.setCommandEnc $ I.SetCommandEnc $ { marker : "SetCommand", value, property : prop, type : "set" }) /\ []
+        C.SetP { path, value } ->
+            (CA.encode Codec.setPCommandEnc $ I.SetPCommandEnc $ { marker : "SetPCommand", value, path, type : "setP" }) /\ []
         C.WithProcess { cmd, args } ->
             (CA.encode Codec.processCommandEnc $ I.ProcessCommandEnc $ { marker : "ProcessCommand", args, method : cmd, type : "process" }) /\ []
 

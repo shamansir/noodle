@@ -121,13 +121,23 @@ type Getter state m a = Op.BlessedOpGet state m a
 
 
 class Gets :: K.Subject -> K.Subject -> Symbol -> Symbol -> (Type -> Type) -> Type -> Constraint
-class (K.Extends parent subj, K.IsSubject subj,  IsSymbol prop, IsSymbol id, Op.Gets m a) <= Gets parent subj id prop m a
-instance (K.Extends parent subj, K.IsSubject subj,  IsSymbol prop, IsSymbol id, Op.Gets m a) => Gets parent subj id prop m a
+class (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol prop, Op.Gets m a) <= Gets parent subj id prop m a
+instance (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol prop, Op.Gets m a) => Gets parent subj id prop m a
+
+
+class Gets2 :: K.Subject -> K.Subject -> Symbol -> Symbol -> Symbol -> (Type -> Type) -> Type -> Constraint
+class (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol propA, IsSymbol propB, Op.Gets m a) <= Gets2 parent subj id propA propB m a
+instance (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol propA, IsSymbol propB, Op.Gets m a) => Gets2 parent subj id propA propB m a
 
 
 class GetsC :: forall k. K.Subject -> K.Subject -> Symbol -> Symbol -> (Type -> Type) -> k -> Constraint
-class (K.Extends parent subj, K.IsSubject subj,  IsSymbol prop, IsSymbol id, Op.GetsC m a) <= GetsC parent subj id prop m a
+class (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol prop, Op.GetsC m a) <= GetsC parent subj id prop m a
 instance (K.Extends parent subj, K.IsSubject subj,  IsSymbol prop, IsSymbol id, Op.GetsC m a) => GetsC parent subj id prop m a
+
+
+class GetsC2 :: forall k. K.Subject -> K.Subject -> Symbol -> Symbol -> Symbol -> (Type -> Type) -> k -> Constraint
+class (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol propA, IsSymbol propB, Op.GetsC m a) <= GetsC2 parent subj id propA propB m a
+instance (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol propA, IsSymbol propB, Op.GetsC m a) => GetsC2 parent subj id propA propB m a
 
 
 -- type GetterFn :: forall k. K.Subject -> K.Subject -> Symbol -> Symbol -> k -> Row Type -> Type -> (Type -> Type) -> Type -> Type
@@ -135,9 +145,17 @@ type GetterFn (subj :: K.Subject) (id :: Symbol) (prop :: Symbol) state (m :: Ty
     Proxy prop -> NodeKey subj id -> Getter state m a
 
 
+type GetterFn2 (subj :: K.Subject) (id :: Symbol) (propA :: Symbol) (propB :: Symbol) state (m :: Type -> Type) a =
+    Proxy propA -> Proxy propB -> NodeKey subj id -> Getter state m a
+
+
 -- type GetterFnC :: forall k. K.Subject -> K.Subject -> Symbol -> Symbol -> k -> Row Type -> Type -> (Type -> Type) -> Type -> Type
 type GetterFnC (subj :: K.Subject) (id :: Symbol) (prop :: Symbol) state (m :: Type -> Type) a =
     Proxy prop -> CA.JsonCodec a -> NodeKey subj id -> Getter state m a
+
+
+type GetterFnC2 (subj :: K.Subject) (id :: Symbol) (propA :: Symbol) (propB :: Symbol) state (m :: Type -> Type) a =
+    Proxy propA -> Proxy propB -> CA.JsonCodec a -> NodeKey subj id -> Getter state m a
 
 
 getter :: forall parent subj id prop state m a. Gets parent subj id prop m a => Proxy parent -> GetterFn subj id prop state m a
@@ -148,6 +166,16 @@ getter _ prop nodeKey =
 getterC :: forall parent subj id prop state m a. GetsC parent subj id prop m a => Proxy parent -> GetterFnC subj id prop state m a
 getterC _ prop codec nodeKey =
     Op.performGetC codec (NK.rawify nodeKey) $ Cmd.get $ reflectSymbol prop
+
+
+getter2 :: forall parent subj id propA propB state m a. Gets2 parent subj id propA propB m a => Proxy parent -> GetterFn2 subj id propA propB state m a
+getter2 _ propA propB nodeKey =
+    Op.performGet (NK.rawify nodeKey) $ Cmd.getP [ reflectSymbol propA, reflectSymbol propB ]
+
+
+getterC2 :: forall parent subj id propA propB state m a. GetsC2 parent subj id propA propB m a => Proxy parent -> GetterFnC2 subj id propA propB state m a
+getterC2 _ propA propB codec nodeKey =
+    Op.performGetC codec (NK.rawify nodeKey) $ Cmd.getP [ reflectSymbol propA, reflectSymbol propB ]
 
 
 method ∷ forall subj id state (m ∷ Type -> Type). K.IsSubject subj => IsSymbol id => NodeKey subj id → String → Array Json → Op.BlessedOp state m

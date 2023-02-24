@@ -15,7 +15,12 @@ import Data.Argonaut.Decode (class DecodeJson)
 
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.BlessedSubj (Subject, Element, class IsSubject, class Extends, element)
-import Blessed.Internal.Core (GetterFn, GetterFnC, Getter, getter, getterC, class Gets, class GetsC) as C
+import Blessed.Internal.Core
+    ( Getter
+    , GetterFn, GetterFnC, GetterFn2, GetterFnC2
+    , getter, getter2, getterC, getterC2
+    , class Gets, class GetsC, class Gets2, class GetsC2
+    ) as C
 
 
 
@@ -43,6 +48,12 @@ type PropertiesRow =
     , atop :: Int
     , abottom :: Int
     , tags :: Boolean
+    , box ::
+        { left :: Int
+        , top :: Int
+        , bottom :: Int
+        , right :: Int
+        }
 
     , draggable :: Boolean
     , hover :: Record Style.Evaluated
@@ -65,6 +76,26 @@ getterC
     => C.GetterFnC subj id prop state m a
 getterC =
     C.getterC element
+
+
+getter2
+    :: forall subj id propA propB ir' ir r' state m a
+     . C.Gets2 Element subj id propA propB m a
+    => R.Cons propA (Record ir) r' PropertiesRow
+    => R.Cons propB a ir' ir
+    => C.GetterFn2 subj id propA propB state m a
+getter2 =
+    C.getter2 element
+
+
+getterC2
+    :: forall subj id propA propB ir' ir r' state m a
+     . C.GetsC2 Element subj id propA propB m a
+    => R.Cons propA (Record ir) r' PropertiesRow
+    => R.Cons propB a ir' ir
+    => C.GetterFnC2 subj id propA propB state m a
+getterC2 =
+    C.getterC2 element
 
 
 name
@@ -227,3 +258,31 @@ draggable
      . C.GetsC Element subj id "draggable" m Boolean
     => NodeKey subj id -> C.Getter state m Boolean
 draggable = getterC (Proxy :: _ "draggable") CA.boolean
+
+
+boxLeft
+    :: forall (subj :: Subject) (id :: Symbol) state m
+     . C.GetsC2 Element subj id "box" "left" m Int
+    => NodeKey subj id -> C.Getter state m Int
+boxLeft = getterC2 (Proxy :: _ "box") (Proxy :: _ "left") CA.int
+
+
+boxRight
+    :: forall (subj :: Subject) (id :: Symbol) state m
+     . C.GetsC2 Element subj id "box" "right" m Int
+    => NodeKey subj id -> C.Getter state m Int
+boxRight = getterC2 (Proxy :: _ "box") (Proxy :: _ "right") CA.int
+
+
+boxTop
+    :: forall (subj :: Subject) (id :: Symbol) state m
+     . C.GetsC2 Element subj id "box" "top" m Int
+    => NodeKey subj id -> C.Getter state m Int
+boxTop = getterC2 (Proxy :: _ "box") (Proxy :: _ "top") CA.int
+
+
+boxBottom
+    :: forall (subj :: Subject) (id :: Symbol) state m
+     . C.GetsC2 Element subj id "box" "bottom" m Int
+    => NodeKey subj id -> C.Getter state m Int
+boxBottom = getterC2 (Proxy :: _ "box") (Proxy :: _ "bottom") CA.int

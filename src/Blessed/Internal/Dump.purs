@@ -73,8 +73,9 @@ handlerCall (I.RawNodeKey nodeKey) (I.EventId e) args =
         $ launchAff_
         $ appendTextFile UTF8 commandsDumpPath
         $ (<>) "\n"
-        $ Json.stringify
-        $ encode
+        -- $ Json.stringify
+        -- $ encode
+        $ encodePretty
         $ CallDump
             { marker : "CallDump"
             , args
@@ -86,6 +87,11 @@ handlerCall (I.RawNodeKey nodeKey) (I.EventId e) args =
 
 encode :: CallDump -> Json
 encode = CA.encode codec -- TODO: prettify
+
+
+encodePretty :: CallDump -> String
+encodePretty (CallDump cd) =
+    cd.nodeSubj <> "::" <> cd.nodeId <> " " <> "{" <> cd.marker <> "}" <> " " <> cd.eventType <> " " <> cd.eventUID <> " " <> Json.stringify (CA.encode (CA.array CA.json) cd.args)
 
 
 codec :: CA.JsonCodec CallDump
