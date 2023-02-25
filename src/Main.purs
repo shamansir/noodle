@@ -13,6 +13,8 @@ import Data.Tuple.Nested ((/\))
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
 import Prim.Symbol (class Append) as S
+import Data.Int (floor, toNumber)
+import Data.Ord (abs)
 
 import Cli.App as Cli
 
@@ -29,6 +31,7 @@ import Blessed.Core.Key as Key
 import Blessed.Core.ListStyle as LStyle
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Style as Style
+import Blessed.Core.Orientation as Orientation
 
 import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line)
 import Blessed.Internal.Core as Core
@@ -52,6 +55,7 @@ import Blessed.UI.Lists.List.Option as List
 import Blessed.UI.Lists.List.Property as List
 import Blessed.UI.Lists.ListBar.Event as ListBar
 import Blessed.UI.Lists.ListBar.Option as ListBar
+import Blessed.UI.Boxes.Line.Option as Line
 -- import Blessed.UI.Line.Li ()
 
 
@@ -344,9 +348,37 @@ lineC = nk :: Line <^> "line-c"
 
 calcLink :: NodePositions -> OutletIndex -> InletIndex -> LinkCalc
 calcLink np (OutletIndex outletIdx) (InletIndex intletIdx) =
-    { a : { top : 0, left : 0, width : 0, height : 0 }
-    , b : { top : 0, left : 0, width : 0, height : 0 }
-    , c : { top : 0, left : 0, width : 0, height : 0 }
+    let
+        xo = np.fromNodeLeft + (outletIdx * 6)
+        yo = np.fromNodeTop + 3
+        xi = np.toNodeLeft + (intletIdx * 6)
+        yi = np.toNodeTop + 1
+        my = floor $ abs (toNumber yi - toNumber yo) / 2.0
+        acalc =
+            if yo <= yi then -- outlet above inlet
+                { left : xo, top : yo, width : 1, height : my }
+            else
+                { left : xi, top : yi, width : 1, height : my }
+        bcalc =
+            if yo <= yi then -- outlet above inlet
+                if xo <= xi then -- outlet on the left from inlet
+                    { left : xo, top : yo + my, width : xi - xo, height : 1 }
+                else
+                    { left : xi, top : yo + my, width : xo - xi, height : 1 }
+            else
+                if xi <= xo then -- inlet on the left from outlet
+                    { left : xi, top : yi + my, width : xo - xi, height : 1 }
+                else
+                    { left : xo, top : yi + my, width : xi - xo, height : 1 }
+        ccalc =
+            if yo <= yi then -- outlet above inlet
+                { left : xi, top : yo + my, width : 1, height : my }
+            else
+                { left : xo, top : yi + my, width : 1, height : my }
+    in
+    { a : acalc
+    , b : bcalc
+    , c : ccalc
     }
 
 
@@ -361,15 +393,41 @@ createLink maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletI
         keyLinkB = fromMaybe lineB $ NodeKey.next <$> _.b <$> _.keys <$> maybePrev
         keyLinkC = fromMaybe lineC $ NodeKey.next <$> _.c <$> _.keys <$> maybePrev
         calc = calcLink { fromNodeLeft, fromNodeTop, toNodeLeft, toNodeTop } (OutletIndex outletIdx) (InletIndex intletIdx)
-        linkA = B.line keyLinkA [] []
-        linkB = B.line keyLinkB [] []
-        linkC = B.line keyLinkC [] []
+        -- this.link.a = blessed.line({ left : calc.a.left, top : calc.a.top, width : calc.a.width, height : calc.a.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
+        -- this.link.b = blessed.line({ left : calc.b.left, top : calc.b.top, width : calc.b.width, height : calc.b.height, orientation : 'horizontal', type : 'bg', ch : '∼', fg : PALETTE[8] });
+        -- this.link.c = blessed.line({ left : calc.c.left, top : calc.c.top, width : calc.c.width, height : calc.c.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
+        linkA = B.line keyLinkA
+                    [ Box.left $ Offset.px calc.a.left
+                    , Box.top $ Offset.px calc.a.top
+                    , Box.width $ Dimension.px calc.a.width
+                    , Box.height $ Dimension.px calc.a.height
+                    , Line.orientation $ Orientation.Vertical
+                    , Line.ch '≀'
+                    ]
+        linkB = B.line keyLinkB
+                    [ Box.left $ Offset.px calc.b.left
+                    , Box.top $ Offset.px calc.b.top
+                    , Box.width $ Dimension.px calc.b.width
+                    , Box.height $ Dimension.px calc.b.height
+                    , Line.orientation $ Orientation.Horizontal
+                    , Line.type_ $ Border._bg
+                    , Line.ch '∼'
+                    ]
+        linkC = B.line keyLinkC
+                    [ Box.left $ Offset.px calc.c.left
+                    , Box.top $ Offset.px calc.c.top
+                    , Box.width $ Dimension.px calc.c.width
+                    , Box.height $ Dimension.px calc.c.height
+                    , Line.orientation $ Orientation.Vertical
+                    , Line.type_ $ Border._bg
+                    , Line.ch '≀'
+                    ]
     pure
         { fromNode
         , toNode
         , outletIndex : outletIdx
         , inletIndex : intletIdx
-        , blessed : { a : linkA, b : linkB, c : linkC }
+        , blessed : { a : linkA [], b : linkB [], c : linkC [] }
         , keys : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
         }
 
@@ -379,6 +437,16 @@ appendLink link pnk = do
     pnk >~ Node.append link.blessed.a
     pnk >~ Node.append link.blessed.b
     pnk >~ Node.append link.blessed.c
+
+
+removeLink :: forall state e m. Link state e -> NodeKey Box "patch-box" -> BlessedOp state m
+removeLink link pnk = do
+    pnk >~ Node.remove link.blessed.a
+    pnk >~ Node.remove link.blessed.b
+    pnk >~ Node.remove link.blessed.c
+
+
+-- ⊲ ⊳ ⋎ ⋏ ≺ ≻ ⊽ ⋀ ⋁ ∻ ∶ ∼ ∽ ∾ ∷ ∻ ∼ ∽ ≀ ⊶ ⊷ ⊸ ⋮ ⋯ ⋰ ⋱ ⊺ ⊢ ⊣ ⊤ ⊥ ⊦ ∣ ∤ ∥ ∦ ∗ ∘ ∙ ⋄ ⋅ ⋆ ⋇ > ⋁
 
 
 main2 :: Effect Unit

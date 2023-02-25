@@ -66,6 +66,13 @@ ch
 ch = lineOption (Proxy :: _ "ch")
 
 
+type_
+    :: forall (subj :: Subject) (id :: Symbol) r state e
+     . Respresents Line subj id
+    => B.BorderType -> LineAttribute subj id ( type :: B.BorderType | r ) state e
+type_ = lineOption (Proxy :: _ "type")
+
+
 orientation
     :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents Line subj id

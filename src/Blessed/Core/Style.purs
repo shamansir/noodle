@@ -77,6 +77,37 @@ default =
     , bg : "none"
     }
 
+{- TODO
+  style: {
+    fg: 'blue',
+    bg: 'black',
+    bold: true,
+    underline: false,
+    blink: false,
+    inverse: false,
+    invisible: false,
+    transparent: false,
+    border: {
+      fg: 'blue',
+      bg: 'red'
+    },
+    scrollbar: {
+      bg: 'blue'
+      ch: ' '
+    },
+    scrollbar : true,
+    focus: {
+      bg: 'red'
+    },
+    hover: {
+      bg: 'red'
+    }
+  }
+
+  cursor
+-}
+
+
 
 fg ∷ forall r. Color -> StyleOption ( fg :: Color | r )
 fg = styleOption ( Proxy :: Proxy "fg" )
