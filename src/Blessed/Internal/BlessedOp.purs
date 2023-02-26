@@ -73,6 +73,7 @@ type BlessedOp state m = BlessedOpM state m Unit
 type BlessedOpDef state m = Ref state -> BlessedOpM state m Unit
 -- type BlessedOpJsonGet state m a = BlessedOpM state m a
 type BlessedOpGet state m a = BlessedOpM state m a
+type BlessedOpSet state m = BlessedOpM state m Unit
 
 
 
@@ -124,18 +125,26 @@ toError :: BlessedError -> Error
 toError (FromJson jsonError) = Error.error $ CA.printJsonDecodeError jsonError
 
 
+-- FIXME: simplify the chain of classes
+
 class Gets :: (Type -> Type) -> Type -> Constraint
--- class (MonadThrow BlessedError m, EncodeJson a, DecodeJson a) <= Gets m a
--- instance (MonadThrow BlessedError m, EncodeJson a, DecodeJson a) => Gets m a
-class (MonadThrow Error m, EncodeJson a, DecodeJson a) <= Gets m a
-instance (MonadThrow Error m, EncodeJson a, DecodeJson a) => Gets m a
+class (MonadThrow Error m, DecodeJson a) <= Gets m a
+instance (MonadThrow Error m, DecodeJson a) => Gets m a
 
 
 class GetsC :: forall k. (Type -> Type) -> k -> Constraint
--- class (MonadThrow BlessedError m) <= GetsC m a
--- instance (MonadThrow BlessedError m) => GetsC m a
 class (MonadThrow Error m) <= GetsC m a
 instance (MonadThrow Error m) => GetsC m a
+
+
+class Sets :: (Type -> Type) -> Type -> Constraint
+class (MonadThrow Error m, EncodeJson a) <= Sets m a
+instance (MonadThrow Error m, EncodeJson a) => Sets m a
+
+
+class SetsC :: forall k. (Type -> Type) -> k -> Constraint
+class (MonadThrow Error m) <= SetsC m a
+instance (MonadThrow Error m) => SetsC m a
 
 
 perform :: forall state m. I.RawNodeKey -> I.Command -> BlessedOp state m

@@ -24,10 +24,10 @@ import Blessed.Internal.JsApi (HandlerCallEnc, SNode)
 data Command
     = Call { cmd :: String, args :: Array Json }
     | CallEx { cmd :: String, args :: Array Json, handlers :: Array HandlerCallEnc }
-    | Set { prop :: String, value :: Json }
-    | SetP { path :: Array String, value :: Json }
     | Get { prop :: String }
     | GetP { path :: Array String }
+    | Set { prop :: String, value :: Json }
+    | SetP { path :: Array String, value :: Json }
     -- | Global { }
     | WithProcess { cmd :: String, args :: Array Json }
 

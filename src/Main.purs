@@ -41,6 +41,7 @@ import Blessed.Internal.NodeKey as NodeKey
 
 import Blessed.UI.Base.Element.Event as Element
 import Blessed.UI.Base.Element.Property as Element
+import Blessed.UI.Base.Element.PropertySet as Element
 import Blessed.UI.Base.Node.Method as Node
 import Blessed.UI.Base.Screen as Screen
 import Blessed.UI.Base.Screen.Event as Screen
@@ -154,6 +155,7 @@ main1 = do
             []
 
         , B.box patchBox
+
             [ Box.top $ Offset.calc $ Coord.center <+> Coord.px 1
             , Box.left $ Offset.center
             , Box.width $ Dimension.percents 100.0
@@ -169,6 +171,7 @@ main1 = do
                 , Style.border [ Border.fg palette.border ]
                 ]
             ]
+
             [ B.listAnd nodeList
                 [ Box.top $ Offset.px 0
                 , Box.left $ Offset.px 0
@@ -346,6 +349,65 @@ lineB = nk :: Line <^> "line-b"
 lineC = nk :: Line <^> "line-c"
 
 
+createLink :: forall state e. Maybe (Link state e) -> NodeKey Box "node-box" -> OutletIndex -> NodeKey Box "node-box" -> InletIndex -> BlessedOpGet state Effect (Link state e)
+createLink maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) = do
+    fromNodeLeft <- Element.boxLeft fromNode
+    fromNodeTop <- Element.boxTop fromNode
+    toNodeLeft <- Element.boxLeft toNode
+    toNodeTop <- Element.boxTop toNode
+    let
+
+        keyLinkA = fromMaybe lineA $ NodeKey.next <$> _.a <$> _.keys <$> maybePrev
+        keyLinkB = fromMaybe lineB $ NodeKey.next <$> _.b <$> _.keys <$> maybePrev
+        keyLinkC = fromMaybe lineC $ NodeKey.next <$> _.c <$> _.keys <$> maybePrev
+        calc = calcLink { fromNodeLeft, fromNodeTop, toNodeLeft, toNodeTop } (OutletIndex outletIdx) (InletIndex intletIdx)
+
+        -- this.link.a = blessed.line({ left : calc.a.left, top : calc.a.top, width : calc.a.width, height : calc.a.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
+        -- this.link.b = blessed.line({ left : calc.b.left, top : calc.b.top, width : calc.b.width, height : calc.b.height, orientation : 'horizontal', type : 'bg', ch : '∼', fg : PALETTE[8] });
+        -- this.link.c = blessed.line({ left : calc.c.left, top : calc.c.top, width : calc.c.width, height : calc.c.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
+
+        linkA = B.line keyLinkA
+                    [ Box.left $ Offset.px calc.a.left
+                    , Box.top $ Offset.px calc.a.top
+                    , Box.width $ Dimension.px calc.a.width
+                    , Box.height $ Dimension.px calc.a.height
+                    , Line.orientation $ Orientation.Vertical
+                    , Line.ch '≀'
+                    , Line.fg $ palette.linkColor
+                    ]
+
+        linkB = B.line keyLinkB
+                    [ Box.left $ Offset.px calc.b.left
+                    , Box.top $ Offset.px calc.b.top
+                    , Box.width $ Dimension.px calc.b.width
+                    , Box.height $ Dimension.px calc.b.height
+                    , Line.orientation $ Orientation.Horizontal
+                    , Line.type_ $ Border._bg
+                    , Line.ch '∼'
+                    , Line.fg $ palette.linkColor
+                    ]
+
+        linkC = B.line keyLinkC
+                    [ Box.left $ Offset.px calc.c.left
+                    , Box.top $ Offset.px calc.c.top
+                    , Box.width $ Dimension.px calc.c.width
+                    , Box.height $ Dimension.px calc.c.height
+                    , Line.orientation $ Orientation.Vertical
+                    , Line.type_ $ Border._bg
+                    , Line.ch '≀'
+                    , Line.fg $ palette.linkColor
+                    ]
+
+    pure
+        { fromNode
+        , toNode
+        , outletIndex : outletIdx
+        , inletIndex : intletIdx
+        , blessed : { a : linkA [], b : linkB [], c : linkC [] }
+        , keys : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
+        }
+
+
 calcLink :: NodePositions -> OutletIndex -> InletIndex -> LinkCalc
 calcLink np (OutletIndex outletIdx) (InletIndex intletIdx) =
     let
@@ -382,56 +444,6 @@ calcLink np (OutletIndex outletIdx) (InletIndex intletIdx) =
     }
 
 
-createLink :: forall state e. Maybe (Link state e) -> NodeKey Box "node-box" -> OutletIndex -> NodeKey Box "node-box" -> InletIndex -> BlessedOpGet state Effect (Link state e)
-createLink maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) = do
-    fromNodeLeft <- Element.boxLeft fromNode
-    fromNodeTop <- Element.boxTop fromNode
-    toNodeLeft <- Element.boxLeft toNode
-    toNodeTop <- Element.boxTop toNode
-    let
-        keyLinkA = fromMaybe lineA $ NodeKey.next <$> _.a <$> _.keys <$> maybePrev
-        keyLinkB = fromMaybe lineB $ NodeKey.next <$> _.b <$> _.keys <$> maybePrev
-        keyLinkC = fromMaybe lineC $ NodeKey.next <$> _.c <$> _.keys <$> maybePrev
-        calc = calcLink { fromNodeLeft, fromNodeTop, toNodeLeft, toNodeTop } (OutletIndex outletIdx) (InletIndex intletIdx)
-        -- this.link.a = blessed.line({ left : calc.a.left, top : calc.a.top, width : calc.a.width, height : calc.a.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
-        -- this.link.b = blessed.line({ left : calc.b.left, top : calc.b.top, width : calc.b.width, height : calc.b.height, orientation : 'horizontal', type : 'bg', ch : '∼', fg : PALETTE[8] });
-        -- this.link.c = blessed.line({ left : calc.c.left, top : calc.c.top, width : calc.c.width, height : calc.c.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
-        linkA = B.line keyLinkA
-                    [ Box.left $ Offset.px calc.a.left
-                    , Box.top $ Offset.px calc.a.top
-                    , Box.width $ Dimension.px calc.a.width
-                    , Box.height $ Dimension.px calc.a.height
-                    , Line.orientation $ Orientation.Vertical
-                    , Line.ch '≀'
-                    ]
-        linkB = B.line keyLinkB
-                    [ Box.left $ Offset.px calc.b.left
-                    , Box.top $ Offset.px calc.b.top
-                    , Box.width $ Dimension.px calc.b.width
-                    , Box.height $ Dimension.px calc.b.height
-                    , Line.orientation $ Orientation.Horizontal
-                    , Line.type_ $ Border._bg
-                    , Line.ch '∼'
-                    ]
-        linkC = B.line keyLinkC
-                    [ Box.left $ Offset.px calc.c.left
-                    , Box.top $ Offset.px calc.c.top
-                    , Box.width $ Dimension.px calc.c.width
-                    , Box.height $ Dimension.px calc.c.height
-                    , Line.orientation $ Orientation.Vertical
-                    , Line.type_ $ Border._bg
-                    , Line.ch '≀'
-                    ]
-    pure
-        { fromNode
-        , toNode
-        , outletIndex : outletIdx
-        , inletIndex : intletIdx
-        , blessed : { a : linkA [], b : linkB [], c : linkC [] }
-        , keys : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
-        }
-
-
 appendLink :: forall state e m. Link state e -> NodeKey Box "patch-box" -> BlessedOp state m
 appendLink link pnk = do
     pnk >~ Node.append link.blessed.a
@@ -444,6 +456,35 @@ removeLink link pnk = do
     pnk >~ Node.remove link.blessed.a
     pnk >~ Node.remove link.blessed.b
     pnk >~ Node.remove link.blessed.c
+
+
+updateLink :: forall state e. Link state e -> BlessedOp state Effect
+updateLink link = do
+    fromNodeLeft <- Element.boxLeft link.fromNode
+    fromNodeTop <- Element.boxTop link.fromNode
+    toNodeLeft <- Element.boxLeft link.toNode
+    toNodeTop <- Element.boxTop link.toNode
+
+    let calc =
+            calcLink
+            { fromNodeLeft, fromNodeTop, toNodeLeft, toNodeTop }
+            (OutletIndex link.outletIndex)
+            (InletIndex link.inletIndex)
+
+    link.keys.a >~ Element.setLeft $ Offset.px calc.a.left
+    link.keys.a >~ Element.setTop $ Offset.px calc.a.top
+    link.keys.a >~ Element.setWidth $ Dimension.px calc.a.width
+    link.keys.a >~ Element.setHeight $ Dimension.px calc.a.height
+
+    link.keys.b >~ Element.setLeft $ Offset.px calc.b.left
+    link.keys.b >~ Element.setTop $ Offset.px calc.b.top
+    link.keys.b >~ Element.setWidth $ Dimension.px calc.b.width
+    link.keys.b >~ Element.setHeight $ Dimension.px calc.b.height
+
+    link.keys.c >~ Element.setLeft $ Offset.px calc.c.left
+    link.keys.c >~ Element.setTop $ Offset.px calc.c.top
+    link.keys.c >~ Element.setWidth $ Dimension.px calc.c.width
+    link.keys.c >~ Element.setHeight $ Dimension.px calc.c.height
 
 
 -- ⊲ ⊳ ⋎ ⋏ ≺ ≻ ⊽ ⋀ ⋁ ∻ ∶ ∼ ∽ ∾ ∷ ∻ ∼ ∽ ≀ ⊶ ⊷ ⊸ ⋮ ⋯ ⋰ ⋱ ⊺ ⊢ ⊣ ⊤ ⊥ ⊦ ∣ ∤ ∥ ∦ ∗ ∘ ∙ ⋄ ⋅ ⋆ ⋇ > ⋁

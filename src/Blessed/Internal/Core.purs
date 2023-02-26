@@ -118,6 +118,10 @@ on = handler
 
 
 type Getter state m a = Op.BlessedOpGet state m a
+type Setter state m a = Op.BlessedOpSet state m
+
+
+-- FIXME: simplify the types and the chain of classes (lenses?)
 
 
 class Gets :: K.Subject -> K.Subject -> Symbol -> Symbol -> (Type -> Type) -> Type -> Constraint
@@ -140,6 +144,29 @@ class (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol propA, IsS
 instance (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol propA, IsSymbol propB, Op.GetsC m a) => GetsC2 parent subj id propA propB m a
 
 
+class Sets :: K.Subject -> K.Subject -> Symbol -> Symbol -> (Type -> Type) -> Type -> Constraint
+class (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol prop, Op.Sets m a) <= Sets parent subj id prop m a
+instance (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol prop, Op.Sets m a) => Sets parent subj id prop m a
+
+
+class Sets2 :: K.Subject -> K.Subject -> Symbol -> Symbol -> Symbol -> (Type -> Type) -> Type -> Constraint
+class (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol propA, IsSymbol propB, Op.Sets m a) <= Sets2 parent subj id propA propB m a
+instance (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol propA, IsSymbol propB, Op.Sets m a) => Sets2 parent subj id propA propB m a
+
+
+class SetsC :: forall k. K.Subject -> K.Subject -> Symbol -> Symbol -> (Type -> Type) -> k -> Constraint
+class (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol prop, Op.SetsC m a) <= SetsC parent subj id prop m a
+instance (K.Extends parent subj, K.IsSubject subj,  IsSymbol prop, IsSymbol id, Op.SetsC m a) => SetsC parent subj id prop m a
+
+
+class SetsC2 :: forall k. K.Subject -> K.Subject -> Symbol -> Symbol -> Symbol -> (Type -> Type) -> k -> Constraint
+class (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol propA, IsSymbol propB, Op.SetsC m a) <= SetsC2 parent subj id propA propB m a
+instance (K.Extends parent subj, K.IsSubject subj, IsSymbol id, IsSymbol propA, IsSymbol propB, Op.SetsC m a) => SetsC2 parent subj id propA propB m a
+
+
+-- FIXME: simplify the types and the chain of classes (lenses?)
+
+
 -- type GetterFn :: forall k. K.Subject -> K.Subject -> Symbol -> Symbol -> k -> Row Type -> Type -> (Type -> Type) -> Type -> Type
 type GetterFn (subj :: K.Subject) (id :: Symbol) (prop :: Symbol) state (m :: Type -> Type) a =
     Proxy prop -> NodeKey subj id -> Getter state m a
@@ -156,6 +183,22 @@ type GetterFnC (subj :: K.Subject) (id :: Symbol) (prop :: Symbol) state (m :: T
 
 type GetterFnC2 (subj :: K.Subject) (id :: Symbol) (propA :: Symbol) (propB :: Symbol) state (m :: Type -> Type) a =
     Proxy propA -> Proxy propB -> CA.JsonCodec a -> NodeKey subj id -> Getter state m a
+
+
+type SetterFn (subj :: K.Subject) (id :: Symbol) (prop :: Symbol) state (m :: Type -> Type) a =
+    Proxy prop -> a -> NodeKey subj id -> Setter state m a
+
+
+type SetterFn2 (subj :: K.Subject) (id :: Symbol) (propA :: Symbol) (propB :: Symbol) state (m :: Type -> Type) a =
+    Proxy propA -> Proxy propB -> a -> NodeKey subj id -> Setter state m a
+
+
+type SetterFnC (subj :: K.Subject) (id :: Symbol) (prop :: Symbol) state (m :: Type -> Type) a =
+    Proxy prop -> CA.JsonCodec a -> a -> NodeKey subj id -> Setter state m a
+
+
+type SetterFnC2 (subj :: K.Subject) (id :: Symbol) (propA :: Symbol) (propB :: Symbol) state (m :: Type -> Type) a =
+    Proxy propA -> Proxy propB -> CA.JsonCodec a -> a -> NodeKey subj id -> Setter state m a
 
 
 getter :: forall parent subj id prop state m a. Gets parent subj id prop m a => Proxy parent -> GetterFn subj id prop state m a
@@ -193,6 +236,26 @@ nmethod nodeKey name args =
                     nodeEnc /\ nodeHandlers -> Array.snoc allJsons (CA.encode Codec.nodeEnc nodeEnc) /\ (allHandlers <> nodeHandlers)
             jsonArgs /\ handlers = foldr foldF ([] /\ []) args
         in Op.perform (NK.rawify nodeKey) $ Cmd.callEx name jsonArgs handlers
+
+
+setter ∷ forall parent subj id prop state (m ∷ Type -> Type) a. Sets parent subj id prop m a => Proxy parent -> SetterFn subj id prop state m a
+setter _ prop cvalue nodeKey =
+    Op.perform (NK.rawify nodeKey) $ Cmd.set (reflectSymbol prop) $ encodeJson cvalue
+
+
+setter2 ∷ forall parent subj id propA propB state (m ∷ Type -> Type) a. Sets2 parent subj id propA propB m a => Proxy parent -> SetterFn2 subj id propA propB state m a
+setter2 _ propA propB cvalue nodeKey =
+    Op.perform (NK.rawify nodeKey) $ Cmd.setP [ reflectSymbol propA, reflectSymbol propB ] $ encodeJson cvalue
+
+
+setterC ∷ forall parent subj id prop state (m ∷ Type -> Type) a. SetsC parent subj id prop m a => Proxy parent -> SetterFnC subj id prop state m a
+setterC _ prop codec cvalue nodeKey =
+    Op.perform (NK.rawify nodeKey) $ Cmd.set (reflectSymbol prop) $ CA.encode codec cvalue
+
+
+setterC2 ∷ forall parent subj id propA propB state (m ∷ Type -> Type) a. SetsC2 parent subj id propA propB m a => Proxy parent -> SetterFnC2 subj id propA propB state m a
+setterC2 _ propA propB codec cvalue nodeKey =
+    Op.perform (NK.rawify nodeKey) $ Cmd.setP [ reflectSymbol propA, reflectSymbol propB ] $ CA.encode codec cvalue
 
 
 instance EncodeJson (SoleOption r) where
