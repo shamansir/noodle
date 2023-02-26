@@ -267,6 +267,7 @@ function callCommand(rawNodeKey) {
                     process[command.method].apply(this, command.args);
                 } else {
                     const blessedObj = registry[nodeId] ? registry[nodeId].blessed : null;
+                    let path, pathLen;
 
                     //console.log(blessedObj, blessedObj['selected']);
                     if (blessedObj) {
@@ -278,11 +279,31 @@ function callCommand(rawNodeKey) {
                                     blessedObj[command.method].apply(blessedObj, command.args);
                                 }
                                 break;
+                            case 'get':
+                                returnObj = blessedObj[command.property];
+                                break;
+                            case 'getp':
+                                path = command.path;
+                                if (path) {
+                                    returnObj = path.reduce((trg, pitem) => trg[pitem], blessedObj);
+                                }
+                                break;
                             case 'set':
                                 blessedObj[command.property] = command.value;
                                 break;
-                            case 'get':
-                                returnObj = blessedObj[command.property];
+                            case 'setp':
+                                path = command.path;
+                                pathLen = path.length;
+                                if (path) {
+                                    path.reduce((trg, pitem, idx) => {
+                                        if (idx == (pathLen - 1)) {
+                                            trg[pitem] = command.value;
+                                            return null;
+                                        } else {
+                                            return trg[pitem];
+                                        }
+                                    }, blessedObj);
+                                }
                                 break;
                             case 'process':
                                 // handled earlier
