@@ -8,17 +8,19 @@ import Effect.Console as Console
 
 import Control.Monad.State as State
 
-import Data.Maybe (Maybe, fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested ((/\))
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
 import Prim.Symbol (class Append) as S
 import Data.Int (floor, toNumber)
 import Data.Ord (abs)
+import Data.FunctorWithIndex (mapWithIndex)
+import Data.Newtype (class Newtype, unwrap)
 
 import Cli.App as Cli
 
-import Blessed ((>~))
+import Blessed ((>~), (~<))
 import Blessed (exit) as Blessed
 import Blessed as B
 
@@ -35,6 +37,7 @@ import Blessed.Core.Orientation as Orientation
 
 import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line)
 import Blessed.Internal.Core as Core
+import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOpGet, BlessedOp)
 import Blessed.Internal.NodeKey (nk, NodeKey(..), type (<^>), RawNodeKey)
 import Blessed.Internal.NodeKey as NodeKey
@@ -54,9 +57,11 @@ import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Lists.List.Event as List
 import Blessed.UI.Lists.List.Option as List
 import Blessed.UI.Lists.List.Property as List
+
 import Blessed.UI.Lists.ListBar.Event as ListBar
 import Blessed.UI.Lists.ListBar.Option as ListBar
 import Blessed.UI.Boxes.Line.Option as Line
+import Blessed.UI.Boxes.Line.Event as Line
 -- import Blessed.UI.Line.Li ()
 
 
@@ -72,6 +77,23 @@ inlets = nk :: ListBar <^> "inlets"
 outlets = nk :: ListBar <^> "outlets"
 
 
+type Palette =
+    { background :: String
+    , background2 :: String
+    , border :: String
+    , familyMarker :: String
+    , focusedBorder :: String
+    , foreground :: String
+    , itemNotSelected :: String
+    , itemSelected :: String
+    , linkColor :: String
+    , nodeBoxBorder :: String
+    , nodeListFg :: String
+    , nodeListSelFg :: String
+    }
+
+
+palette :: Palette
 palette =
     { background : "#111" -- 0
     , itemNotSelected : "#006600" -- 1
@@ -88,20 +110,42 @@ palette =
     }
 
 
+patches :: Array String
 patches =
     [ "Patch1", "Patch2", "+" ]
 
 
+items :: Array String
 items =
     [ "foo", "bar", "ololo", "hello", "foo1", "bar1", "ololo1", "hello1", "foo2", "bar2", "ololo2", "hello2" ]
 
 
+type InletsBarKey = ListBar <^> "node-inlets-bar"
+type OutletsBarKey = ListBar <^> "node-outlets-bar"
+type NodeBoxKey = Box <^> "node-box"
+type PatchBoxKey = Box <^> "patch-box"
+
+
+type State =
+    { lastInletsBarKey :: InletsBarKey
+    , lastNodeBoxKey :: NodeBoxKey
+    , lastOutletsBarKey :: OutletsBarKey
+    , lastShiftX :: Int
+    , lastShiftY :: Int
+    , lastClickedOutlet :: Maybe { node :: NodeBoxKey, index :: Int, subj :: String }
+    , lastLink :: Maybe Link
+    }
+
+
+initialState :: State
 initialState =
     { lastShiftX : 0
     , lastShiftY : 0
     , lastNodeBoxKey : nodeBox
     , lastInletsBarKey : inletsBar
     , lastOutletsBarKey : outletsBar
+    , lastClickedOutlet : Nothing
+    , lastLink : Nothing
     }
 
 
@@ -120,7 +164,7 @@ inletsOutletsStyle =
 
 
 main1 :: Effect Unit
-main1 = do
+main1 =
   Cli.run initialState
     (B.screenAnd mainScreen
 
@@ -200,8 +244,7 @@ main1 = do
                         let nextInletsBar = NodeKey.next state.lastInletsBarKey
                         let nextOutletsBar = NodeKey.next state.lastOutletsBarKey
 
-                        -- TODO: inverse operator for (>~) : selected <- List.selected ~< nodeList
-                        selected <- List.selected nodeList
+                        selected <- List.selected ~< nodeList
                         liftEffect $ Console.log $ show selected
 
                         let is = [ "a", "b", "c" ]
@@ -221,21 +264,20 @@ main1 = do
                                         , Border.ch $ Border.fill ':'
                                         ]
                                     , Box.style
-                                        [ Style.focus
-                                            [ ES.border
-                                                [ Border.fg palette.nodeListSelFg
-                                                ]
-                                            ]
-                                        ]
-                                    , Core.on Element.Move
-                                        \_ _ ->
-                                            -- liftEffect $ Console.log "move"
-                                            pure unit
+                                        -- [ Style.focus -- FIXME: makes it fail on drag
+                                        --     [ ES.border
+                                        --         [ Border.fg palette.nodeListSelFg
+                                        --         ]
+                                        --     ]
+                                        -- ]
+                                        []
+                                    , Core.on Element.Move onNodeMove
                                     ]
                                     [ ]
 
                         let
-                            inletHandler iname = iname /\ [] /\ \_ _ -> do liftEffect $ Console.log $ "handler " <> iname
+                            inletHandler idx iname =
+                                iname /\ [] /\ onInletSelect nextNodeBox idx iname
                             inletsBarN =
                                 B.listbar nextInletsBar
                                     [ Box.width $ Dimension.percents 90.0
@@ -243,22 +285,24 @@ main1 = do
                                     , Box.top $ Offset.px 0
                                     , Box.left $ Offset.px 0
                                     -- , List.items is
-                                    , ListBar.commands $ inletHandler <$> is
+                                    , ListBar.commands $ mapWithIndex inletHandler is
                                     , List.mouse true
                                     , List.keys true
                                     , ListBar.autoCommandKeys true
                                     , inletsOutletsStyle
-                                    , Core.on ListBar.Select
+                                    {- , Core.on ListBar.Select
                                         \_ _ -> do
                                             liftEffect $ Console.log "inlet"
-                                            inletSelected <- List.selected nextInletsBar
+                                            inletSelected <- List.selected ~< nextInletsBar
                                             liftEffect $ Console.log $ show inletSelected
+                                    -}
                                     ]
                                     [ ]
 
 
                         let
-                            outletHandler oname = oname /\ [] /\ \_ _ -> do liftEffect $ Console.log $ "handler " <> oname
+                            outletHandler idx oname =
+                                oname /\ [] /\ onOutletSelect nextNodeBox idx oname
                             outletsBarN =
                                 B.listbar nextOutletsBar
                                     [ Box.width $ Dimension.percents 90.0
@@ -266,15 +310,16 @@ main1 = do
                                     , Box.top $ Offset.px 2
                                     , Box.left $ Offset.px 0
                                     -- , List.items os
-                                    , ListBar.commands $ outletHandler <$> os
+                                    , ListBar.commands $  mapWithIndex outletHandler os
                                     , List.mouse true
                                     , List.keys true
                                     , inletsOutletsStyle
-                                    , Core.on ListBar.Select
+                                    {- , Core.on ListBar.Select
                                         \_ _ -> do
                                             liftEffect $ Console.log "outlet"
-                                            outletSelected <- List.selected nextOutletsBar
+                                            outletSelected <- List.selected ~< nextOutletsBar
                                             liftEffect $ Console.log $ show outletSelected
+                                    -}
                                     ]
                                     [
                                     ]
@@ -306,6 +351,37 @@ main1 = do
             mainScreen >~ Screen.render
         )
 
+    where
+
+        onOutletSelect :: NodeBoxKey -> Int -> String -> OutletsBarKey → EventJson → BlessedOp State Effect
+        onOutletSelect onode index oname _ _ = do
+            state <- State.get
+            liftEffect $ Console.log $ "handler " <> oname
+            State.modify_
+                (_ { lastClickedOutlet = Just { index, subj : oname, node : onode } })
+
+
+        onInletSelect :: NodeBoxKey -> Int -> String -> InletsBarKey → EventJson → BlessedOp State Effect
+        onInletSelect inode idx iname ikey _ = do
+            state <- State.get
+            liftEffect $ Console.log $ "handler " <> iname
+            case state.lastClickedOutlet of
+                Just lco ->
+                    if inode /= lco.node then do
+                        link <- createLink state.lastLink lco.node (OutletIndex lco.index) inode (InletIndex idx)
+                        State.modify_ (_ { lastLink = Just link })
+                        patchBox >~ appendLink link
+                        pure unit
+                    else pure unit
+                Nothing -> pure unit
+            State.modify_
+                (_ { lastClickedOutlet = Nothing })
+
+
+        onNodeMove :: NodeBoxKey → EventJson → BlessedOp State Effect
+        onNodeMove _ _ = do
+            pure unit
+
 
 type LinkLineParams =
     { top :: Int
@@ -330,14 +406,21 @@ type LinkCalc =
     }
 
 
-type Link state e =
-    { blessed :: { a :: Core.Blessed state e, b :: Core.Blessed state e, c :: Core.Blessed state e }
-    , fromNode :: NodeKey Box "node-box"
-    , toNode :: NodeKey Box "node-box"
+newtype Link =
+    Link
+    { blessed :: { a :: Core.Blessed State Line.Event, b :: Core.Blessed State Line.Event, c :: Core.Blessed State Line.Event }
+    , fromNode :: NodeBoxKey
+    , toNode :: NodeBoxKey
     , outletIndex :: Int
     , inletIndex :: Int
-    , keys :: { a :: NodeKey Line "line-a", b :: NodeKey Line "line-b", c :: NodeKey Line "line-c" }
+    , keys ::
+        { a :: Line <^> "line-a"
+        , b :: Line <^> "line-b"
+        , c :: Line <^> "line-c"
+        }
     }
+
+derive instance Newtype Link _
 
 
 newtype OutletIndex = OutletIndex Int
@@ -349,17 +432,17 @@ lineB = nk :: Line <^> "line-b"
 lineC = nk :: Line <^> "line-c"
 
 
-createLink :: forall state e. Maybe (Link state e) -> NodeKey Box "node-box" -> OutletIndex -> NodeKey Box "node-box" -> InletIndex -> BlessedOpGet state Effect (Link state e)
+createLink :: Maybe Link -> NodeBoxKey -> OutletIndex -> NodeBoxKey -> InletIndex -> BlessedOpGet State Effect Link
 createLink maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) = do
-    fromNodeLeft <- Element.boxLeft fromNode
-    fromNodeTop <- Element.boxTop fromNode
-    toNodeLeft <- Element.boxLeft toNode
-    toNodeTop <- Element.boxTop toNode
+    fromNodeLeft <- Element.left ~< fromNode
+    fromNodeTop <- Element.top ~< fromNode
+    toNodeLeft <- Element.left ~< toNode
+    toNodeTop <- Element.top ~< toNode
     let
 
-        keyLinkA = fromMaybe lineA $ NodeKey.next <$> _.a <$> _.keys <$> maybePrev
-        keyLinkB = fromMaybe lineB $ NodeKey.next <$> _.b <$> _.keys <$> maybePrev
-        keyLinkC = fromMaybe lineC $ NodeKey.next <$> _.c <$> _.keys <$> maybePrev
+        keyLinkA = fromMaybe lineA $ NodeKey.next <$> _.a <$> _.keys <$> unwrap <$> maybePrev
+        keyLinkB = fromMaybe lineB $ NodeKey.next <$> _.b <$> _.keys <$> unwrap <$> maybePrev
+        keyLinkC = fromMaybe lineC $ NodeKey.next <$> _.c <$> _.keys <$> unwrap <$> maybePrev
         calc = calcLink { fromNodeLeft, fromNodeTop, toNodeLeft, toNodeTop } (OutletIndex outletIdx) (InletIndex intletIdx)
 
         -- this.link.a = blessed.line({ left : calc.a.left, top : calc.a.top, width : calc.a.width, height : calc.a.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
@@ -398,7 +481,7 @@ createLink maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletI
                     , Line.fg $ palette.linkColor
                     ]
 
-    pure
+    pure $ Link
         { fromNode
         , toNode
         , outletIndex : outletIdx
@@ -444,26 +527,26 @@ calcLink np (OutletIndex outletIdx) (InletIndex intletIdx) =
     }
 
 
-appendLink :: forall state e m. Link state e -> NodeKey Box "patch-box" -> BlessedOp state m
-appendLink link pnk = do
+appendLink :: Link -> PatchBoxKey -> BlessedOp State Effect
+appendLink (Link link) pnk = do
     pnk >~ Node.append link.blessed.a
     pnk >~ Node.append link.blessed.b
     pnk >~ Node.append link.blessed.c
 
 
-removeLink :: forall state e m. Link state e -> NodeKey Box "patch-box" -> BlessedOp state m
-removeLink link pnk = do
+removeLink :: Link -> PatchBoxKey -> BlessedOp State Effect
+removeLink (Link link) pnk = do
     pnk >~ Node.remove link.blessed.a
     pnk >~ Node.remove link.blessed.b
     pnk >~ Node.remove link.blessed.c
 
 
-updateLink :: forall state e. Link state e -> BlessedOp state Effect
-updateLink link = do
-    fromNodeLeft <- Element.boxLeft link.fromNode
-    fromNodeTop <- Element.boxTop link.fromNode
-    toNodeLeft <- Element.boxLeft link.toNode
-    toNodeTop <- Element.boxTop link.toNode
+updateLink :: Link -> BlessedOp State Effect
+updateLink (Link link) = do
+    fromNodeLeft <- Element.left ~< link.fromNode
+    fromNodeTop <- Element.top ~< link.fromNode
+    toNodeLeft <- Element.left ~< link.toNode
+    toNodeTop <- Element.top ~< link.toNode
 
     let calc =
             calcLink
@@ -487,7 +570,7 @@ updateLink link = do
     link.keys.c >~ Element.setHeight $ Dimension.px calc.c.height
 
 
--- ⊲ ⊳ ⋎ ⋏ ≺ ≻ ⊽ ⋀ ⋁ ∻ ∶ ∼ ∽ ∾ ∷ ∻ ∼ ∽ ≀ ⊶ ⊷ ⊸ ⋮ ⋯ ⋰ ⋱ ⊺ ⊢ ⊣ ⊤ ⊥ ⊦ ∣ ∤ ∥ ∦ ∗ ∘ ∙ ⋄ ⋅ ⋆ ⋇ > ⋁
+-- ⊲ ⊳ ⋎ ⋏ ≺ ≻ ⊽ ⋀ ⋁ ∻ ∶ ∼ ∽ ∾ :: ∻ ∼ ∽ ≀ ⊶ ⊷ ⊸ ⋮ ⋯ ⋰ ⋱ ⊺ ⊢ ⊣ ⊤ ⊥ ⊦ ∣ ∤ ∥ ∦ ∗ ∘ ∙ ⋄ ⋅ ⋆ ⋇ > ⋁
 
 
 main2 :: Effect Unit
@@ -522,7 +605,7 @@ main2 = do
                         , Core.on ListBar.Select
                             \_ _ -> do
                                 liftEffect $ Console.log "inlet"
-                                inletSelected <- List.selected lbKey
+                                inletSelected <- List.selected ~< lbKey
                                 liftEffect $ Console.log $ show inletSelected
                         ]
                         [ ]

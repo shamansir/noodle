@@ -50,12 +50,12 @@ type PropertiesRow =
     , atop :: Int
     , abottom :: Int
     , tags :: Boolean
-    , box ::
+    {- , box ::
         { left :: Int
         , top :: Int
         , bottom :: Int
         , right :: Int
-        }
+        } -}
 
     , draggable :: Boolean
     , hover :: Record Style.Evaluated
@@ -262,6 +262,7 @@ draggable
 draggable = getterC (Proxy :: _ "draggable") CA.boolean
 
 
+{- there's no such properties
 boxLeft
     :: forall (subj :: Subject) (id :: Symbol) state m
      . C.GetsC2 Element subj id "box" "left" m Int
@@ -288,3 +289,4 @@ boxBottom
      . C.GetsC2 Element subj id "box" "bottom" m Int
     => NodeKey subj id -> C.Getter state m Int
 boxBottom = getterC2 (Proxy :: _ "box") (Proxy :: _ "bottom") CA.int
+-}

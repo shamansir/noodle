@@ -104,3 +104,7 @@ getSubject _ = K.reflectSubject (Proxy :: _ subj)
 -- FIXME: `Belongs`?
 class (K.Extends parent subj, K.IsSubject parent, K.IsSubject subj, IsSymbol id) <= Respresents parent subj id
 instance (K.Extends parent subj, K.IsSubject parent, K.IsSubject subj, IsSymbol id) => Respresents parent subj id
+
+
+instance Eq (NodeKey subj id) where
+    eq (NodeKey nA) (NodeKey nB) = nA == nB

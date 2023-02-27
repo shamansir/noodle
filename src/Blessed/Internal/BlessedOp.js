@@ -284,6 +284,7 @@ function callCommand(rawNodeKey) {
                                 break;
                             case 'getp':
                                 path = command.path;
+                                console.log(path, blessedObj);
                                 if (path) {
                                     returnObj = path.reduce((trg, pitem) => trg[pitem], blessedObj);
                                 }

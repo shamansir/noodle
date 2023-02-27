@@ -70,10 +70,13 @@ instance functorBlessedOpF :: Functor m => Functor (BlessedOpF state m) where
 
 
 type BlessedOp state m = BlessedOpM state m Unit
-type BlessedOpDef state m = Ref state -> BlessedOpM state m Unit
+type BlessedOp' state m a = BlessedOpM state m a
+
+-- FIXME: these are not needed to distinguish between
+type BlessedOpDef state m = Ref state -> BlessedOp state m
 -- type BlessedOpJsonGet state m a = BlessedOpM state m a
-type BlessedOpGet state m a = BlessedOpM state m a
-type BlessedOpSet state m = BlessedOpM state m Unit
+type BlessedOpGet state m a = BlessedOp' state m a
+type BlessedOpSet state m = BlessedOp state m
 
 
 

@@ -2,7 +2,7 @@ module Blessed where
 
 import Prelude
 
-import Data.Function (applyFlipped)
+import Data.Function (apply, applyFlipped)
 import Data.Tuple.Nested ((/\))
 
 import Effect (Effect)
@@ -34,7 +34,7 @@ import Blessed.Internal.Core (Blessed, Node, NodeAnd, encode, run, runAnd) as C
 import Blessed.Internal.Emitter (CoreEvent) as C
 import Blessed.Internal.Command (withProcess) as I
 import Blessed.Internal.BlessedSubj (Screen, Box, Line, List, ListBar) as Subject
-import Blessed.Internal.BlessedOp (BlessedOp, execute_, performOnProcess) as I
+import Blessed.Internal.BlessedOp (BlessedOp, BlessedOp', execute_, performOnProcess) as I
 
 import Data.Codec.Argonaut as CA
 
@@ -45,6 +45,7 @@ type Event = C.CoreEvent
 
 infixr 0 with_ as >~
 -- type B e = {}
+infixr 0 _with as ~<
 
 
 -- ref :: String -> C.NodeId
@@ -149,3 +150,7 @@ failure = I.performOnProcess $ I.withProcess "exit" [ CA.encode CA.int 1 ]
 
 with_ :: forall subj id state m. NodeKey subj id -> (NodeKey subj id -> I.BlessedOp state m) -> I.BlessedOp state m
 with_ = applyFlipped
+
+
+_with :: forall subj id state m a. (NodeKey subj id -> I.BlessedOp' state m a) -> NodeKey subj id -> I.BlessedOp' state m a
+_with = apply
