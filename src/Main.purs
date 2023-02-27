@@ -8,7 +8,7 @@ import Effect.Console as Console
 
 import Control.Monad.State as State
 
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe')
 import Data.Tuple.Nested ((/\))
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
@@ -17,6 +17,11 @@ import Data.Int (floor, toNumber)
 import Data.Ord (abs)
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Newtype (class Newtype, unwrap)
+import Data.Map (Map)
+import Data.Map as Map
+import Data.Array ((:))
+import Data.Array as Array
+import Data.Foldable (for_, traverse_)
 
 import Cli.App as Cli
 
@@ -134,6 +139,8 @@ type State =
     , lastShiftY :: Int
     , lastClickedOutlet :: Maybe { node :: NodeBoxKey, index :: Int, subj :: String }
     , lastLink :: Maybe Link
+    , linksFrom :: Map RawNodeKey (Array Link)
+    , linksTo :: Map RawNodeKey (Array Link)
     }
 
 
@@ -146,6 +153,8 @@ initialState =
     , lastOutletsBarKey : outletsBar
     , lastClickedOutlet : Nothing
     , lastLink : Nothing
+    , linksFrom : Map.empty
+    , linksTo : Map.empty
     }
 
 
@@ -270,7 +279,7 @@ main1 =
                                                 ]
                                             ]
                                         ]
-                                    , Core.on Element.Move onNodeMove
+                                    , Core.on Element.Move $ onNodeMove nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
                                     ]
                                     [ ]
 
@@ -352,33 +361,47 @@ main1 =
 
     where
 
+        pushLink :: Link -> Maybe (Array Link) -> Maybe (Array Link)
+        pushLink link (Just arr) = Just $ link : arr
+        pushLink link Nothing = Just [ link ]
+
+        storeLink :: Link -> State -> State
+        storeLink link@(Link props) state =
+            state
+                { linksFrom =
+                    Map.alter (pushLink link) (NodeKey.rawify props.fromNode) state.linksFrom
+                , linksTo =
+                    Map.alter (pushLink link) (NodeKey.rawify props.toNode) state.linksTo
+                , lastLink = Just link
+                }
+
         onOutletSelect :: NodeBoxKey -> Int -> String -> OutletsBarKey → EventJson → BlessedOp State Effect
         onOutletSelect onode index oname _ _ = do
-            state <- State.get
             liftEffect $ Console.log $ "handler " <> oname
             State.modify_
                 (_ { lastClickedOutlet = Just { index, subj : oname, node : onode } })
 
-
         onInletSelect :: NodeBoxKey -> Int -> String -> InletsBarKey → EventJson → BlessedOp State Effect
-        onInletSelect inode idx iname ikey _ = do
+        onInletSelect inode idx iname _ _ = do
             state <- State.get
             liftEffect $ Console.log $ "handler " <> iname
             case state.lastClickedOutlet of
                 Just lco ->
                     if inode /= lco.node then do
                         link <- createLink state.lastLink lco.node (OutletIndex lco.index) inode (InletIndex idx)
-                        State.modify_ (_ { lastLink = Just link })
+                        State.modify_ $ storeLink link
                         patchBox >~ appendLink link
                     else pure unit
                 Nothing -> pure unit
             State.modify_
                 (_ { lastClickedOutlet = Nothing })
 
-
-        onNodeMove :: NodeBoxKey → EventJson → BlessedOp State Effect
-        onNodeMove _ _ = do
-            pure unit
+        onNodeMove :: NodeBoxKey -> NodeBoxKey → EventJson → BlessedOp State Effect
+        onNodeMove nodeKey _ _ = do
+            state <- State.get
+            let rawNk = NodeKey.rawify nodeKey
+            for_ (fromMaybe [] $ Map.lookup rawNk state.linksFrom) updateLink
+            for_ (fromMaybe [] $ Map.lookup rawNk state.linksTo) updateLink
 
 
 type LinkLineParams =

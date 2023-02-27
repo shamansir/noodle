@@ -19,13 +19,14 @@ import Blessed.Internal.BlessedSubj as K
 
 
 data NodeKey (kind :: K.Subject) (symbol :: Symbol) = NodeKey (Maybe Int)
-newtype RawNodeKey = RawNodeKey { subject :: K.Subject_, id :: String }
+newtype RawNodeKey = RawNodeKey { subject :: K.Subject_, id :: String } -- FIXME: include index separately, not in `id`
 
 
 derive instance Newtype RawNodeKey _
 derive newtype instance EncodeJson RawNodeKey
 
 
+-- private
 raw :: K.Subject_ -> String -> RawNodeKey
 raw subject id = RawNodeKey { subject, id }
 
@@ -91,7 +92,7 @@ toString nodeKey =
 
 
 getId :: forall subj sym. IsSymbol sym => NodeKey subj sym -> String
-getId (NodeKey maybeN) = reflectSymbol (Proxy :: _ sym) <> rawNPostfix maybeN
+getId (NodeKey maybeN) = reflectSymbol (Proxy :: _ sym) <> "__" <> rawNPostfix maybeN
     where
         rawNPostfix (Just n) = show n
         rawNPostfix Nothing = ""
@@ -108,3 +109,23 @@ instance (K.Extends parent subj, K.IsSubject parent, K.IsSubject subj, IsSymbol 
 
 instance Eq (NodeKey subj id) where
     eq (NodeKey nA) (NodeKey nB) = nA == nB
+
+
+instance (K.IsSubject subj, IsSymbol id) => Show (NodeKey subj id) where
+    show = toString
+
+
+instance Eq RawNodeKey where
+    eq (RawNodeKey nkA) (RawNodeKey nkB) =
+        (K.toString nkA.subject == K.toString nkB.subject)
+        && (nkA.id == nkB.id)
+
+
+instance Ord RawNodeKey where
+    compare (RawNodeKey nkA) (RawNodeKey nkB) =
+        compare (K.toString nkA.subject) (K.toString nkB.subject) <> compare nkA.id nkB.id
+
+
+instance Show RawNodeKey where
+    show (RawNodeKey nk) =
+        K.toString nk.subject <> ":" <> nk.id
