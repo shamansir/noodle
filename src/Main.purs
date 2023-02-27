@@ -264,13 +264,12 @@ main1 =
                                         , Border.ch $ Border.fill ':'
                                         ]
                                     , Box.style
-                                        -- [ Style.focus -- FIXME: makes it fail on drag
-                                        --     [ ES.border
-                                        --         [ Border.fg palette.nodeListSelFg
-                                        --         ]
-                                        --     ]
-                                        -- ]
-                                        []
+                                        [ Style.focus
+                                            [ ES.border
+                                                [ Border.fg palette.nodeListSelFg
+                                                ]
+                                            ]
+                                        ]
                                     , Core.on Element.Move onNodeMove
                                     ]
                                     [ ]
@@ -371,7 +370,6 @@ main1 =
                         link <- createLink state.lastLink lco.node (OutletIndex lco.index) inode (InletIndex idx)
                         State.modify_ (_ { lastLink = Just link })
                         patchBox >~ appendLink link
-                        pure unit
                     else pure unit
                 Nothing -> pure unit
             State.modify_
@@ -610,6 +608,32 @@ main2 = do
                         ]
                         [ ]
             in inletsBarN
+
+        ,
+
+            let
+                nbKey = (nk :: Box <^> "node-box")
+            in B.box nbKey
+                    [ Box.draggable true
+                    , Box.top $ Offset.px 10
+                    , Box.left $ Offset.px 10
+                    , Box.width $ Dimension.px 25
+                    , Box.height $ Dimension.px 5
+                    , Box.border
+                        [ Border.type_ Border._line
+                        , Border.fg palette.nodeBoxBorder
+                        , Border.ch $ Border.fill ':'
+                        ]
+                    , Box.style
+                        [ Style.focus -- FIXME: makes it fail on drag
+                            [ ES.border
+                                [ Border.fg palette.nodeListSelFg
+                                ]
+                            ]
+                        ]
+                        -- []
+                    ]
+                    [ ]
         ]
 
         $ \_ -> do

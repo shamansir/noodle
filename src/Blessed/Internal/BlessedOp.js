@@ -38,6 +38,8 @@ function adaptProp(hs, parentProp) {
                 return { name: 'selected', value : buildRecord(prop.value, adaptProp(hs, 'selected')) };
             case 'hover':
                 return { name: 'hover', value : buildRecord(prop.value, adaptProp(hs, 'hover')) };
+            case 'focus':
+                return { name: 'focus', value : buildRecord(prop.value, adaptProp(hs, 'focus')) };
             case 'parent':
                 return { name: 'parent', value : prop.tag === 'Just' ? registry[prop.value].blessed : null };
             case 'commands':
