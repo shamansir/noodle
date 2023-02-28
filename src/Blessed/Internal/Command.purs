@@ -28,7 +28,7 @@ data Command
     | GetP { path :: Array String }
     | Set { prop :: String, value :: Json }
     | SetP { path :: Array String, value :: Json }
-    -- | Global { }
+    | Sub { event :: String, args :: Array Json, handler :: HandlerCallEnc }
     | WithProcess { cmd :: String, args :: Array Json }
 
 
@@ -56,6 +56,10 @@ getP :: Array String -> Command
 getP path = GetP { path }
 
 
+sub :: String -> Array Json -> HandlerCallEnc -> Command
+sub event args handler = Sub { event, args, handler }
+
+
 arg :: forall m a value d. CA.Codec m a Json value d → value → Json
 arg = CA.encode
 
@@ -67,6 +71,7 @@ withProcess cmd args =
 
 data NodeOrJson state
     = NodeArg (SNode state)
+    -- TODO: by Key as well
     | JsonArg Json
 
 

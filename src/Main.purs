@@ -8,7 +8,7 @@ import Effect.Console as Console
 
 import Control.Monad.State as State
 
-import Data.Maybe (Maybe(..), fromMaybe, maybe')
+import Data.Maybe (Maybe(..), fromMaybe, maybe, maybe')
 import Data.Tuple.Nested ((/\))
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
@@ -139,8 +139,8 @@ type State =
     , lastShiftY :: Int
     , lastClickedOutlet :: Maybe { node :: NodeBoxKey, index :: Int, subj :: String }
     , lastLink :: Maybe Link
-    , linksFrom :: Map RawNodeKey (Array Link)
-    , linksTo :: Map RawNodeKey (Array Link)
+    , linksFrom :: Map RawNodeKey (Map Int Link)
+    , linksTo :: Map RawNodeKey (Map Int Link)
     }
 
 
@@ -361,17 +361,26 @@ main1 =
 
     where
 
-        pushLink :: Link -> Maybe (Array Link) -> Maybe (Array Link)
-        pushLink link (Just arr) = Just $ link : arr
-        pushLink link Nothing = Just [ link ]
+        forgetLink :: Link -> State -> State
+        forgetLink link@(Link props) state =
+            state
+                { linksFrom =
+                    Map.update (Map.delete props.id >>> Just) (NodeKey.rawify props.fromNode) state.linksFrom
+                , linksTo =
+                    Map.update (Map.delete props.id >>> Just) (NodeKey.rawify props.toNode) state.linksTo
+                }
+
+        pushLink :: Int -> Link -> Maybe (Map Int Link) -> Maybe (Map Int Link)
+        pushLink id link (Just map) = Just $ Map.insert id link map
+        pushLink id link Nothing = Just $ Map.singleton id link
 
         storeLink :: Link -> State -> State
         storeLink link@(Link props) state =
             state
                 { linksFrom =
-                    Map.alter (pushLink link) (NodeKey.rawify props.fromNode) state.linksFrom
+                    Map.alter (pushLink props.id link) (NodeKey.rawify props.fromNode) state.linksFrom
                 , linksTo =
-                    Map.alter (pushLink link) (NodeKey.rawify props.toNode) state.linksTo
+                    Map.alter (pushLink props.id link) (NodeKey.rawify props.toNode) state.linksTo
                 , lastLink = Just link
                 }
 
@@ -388,7 +397,13 @@ main1 =
             case state.lastClickedOutlet of
                 Just lco ->
                     if inode /= lco.node then do
-                        link <- createLink state.lastLink lco.node (OutletIndex lco.index) inode (InletIndex idx)
+                        link <- createLink
+                                    state.lastLink
+                                    (onLinkClick patchBox)
+                                    lco.node
+                                    (OutletIndex lco.index)
+                                    inode
+                                    (InletIndex idx)
                         State.modify_ $ storeLink link
                         patchBox >~ appendLink link
                     else pure unit
@@ -400,8 +415,13 @@ main1 =
         onNodeMove nodeKey _ _ = do
             state <- State.get
             let rawNk = NodeKey.rawify nodeKey
-            for_ (fromMaybe [] $ Map.lookup rawNk state.linksFrom) updateLink
-            for_ (fromMaybe [] $ Map.lookup rawNk state.linksTo) updateLink
+            for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) updateLink
+            for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) updateLink
+
+        onLinkClick :: PatchBoxKey -> Link -> NodeBoxKey → EventJson → BlessedOp State Effect
+        onLinkClick patchBox link _ _ = do
+            patchBox >~ removeLink link
+            State.modify_ $ forgetLink link
 
 
 type LinkLineParams =
@@ -429,7 +449,8 @@ type LinkCalc =
 
 newtype Link =
     Link
-    { blessed :: { a :: Core.Blessed State Line.Event, b :: Core.Blessed State Line.Event, c :: Core.Blessed State Line.Event }
+    { id :: Int
+    , blessed :: { a :: Core.Blessed State Line.Event, b :: Core.Blessed State Line.Event, c :: Core.Blessed State Line.Event }
     , fromNode :: NodeBoxKey
     , toNode :: NodeBoxKey
     , outletIndex :: Int
@@ -453,8 +474,11 @@ lineB = nk :: Line <^> "line-b"
 lineC = nk :: Line <^> "line-c"
 
 
-createLink :: Maybe Link -> NodeBoxKey -> OutletIndex -> NodeBoxKey -> InletIndex -> BlessedOpGet State Effect Link
-createLink maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) = do
+type LinkHandler = Link -> NodeBoxKey → EventJson → BlessedOp State Effect
+
+
+createLink :: Maybe Link -> LinkHandler -> NodeBoxKey -> OutletIndex -> NodeBoxKey -> InletIndex -> BlessedOpGet State Effect Link
+createLink maybePrev onClick fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) = do
     fromNodeLeft <- Element.left ~< fromNode
     fromNodeTop <- Element.top ~< fromNode
     toNodeLeft <- Element.left ~< toNode
@@ -502,14 +526,22 @@ createLink maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletI
                     , Line.fg $ palette.linkColor
                     ]
 
-    pure $ Link
-        { fromNode
-        , toNode
-        , outletIndex : outletIdx
-        , inletIndex : intletIdx
-        , blessed : { a : linkA [], b : linkB [], c : linkC [] }
-        , keys : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
-        }
+        link =
+            Link
+                { id : maybe 0 ((+) 1) $ _.id <$> unwrap <$> maybePrev
+                , fromNode
+                , toNode
+                , outletIndex : outletIdx
+                , inletIndex : intletIdx
+                , blessed : { a : linkA [], b : linkB [], c : linkC [] }
+                , keys : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
+                }
+
+    keyLinkA >~ Core.on' Element.Click $ onClick link
+    keyLinkB >~ Core.on' Element.Click $ onClick link
+    keyLinkC >~ Core.on' Element.Click $ onClick link
+
+    pure link
 
 
 calcLink :: NodePositions -> OutletIndex -> InletIndex -> LinkCalc
@@ -560,6 +592,14 @@ removeLink (Link link) pnk = do
     pnk >~ Node.remove link.blessed.a
     pnk >~ Node.remove link.blessed.b
     pnk >~ Node.remove link.blessed.c
+
+
+{-
+linkOn (Link link) evt handler = do
+    link.keys.a >~ Line.on evt handler
+    link.keys.b >~ Line.on evt handler
+    link.keys.c >~ Line.on evt handler
+-}
 
 
 updateLink :: Link -> BlessedOp State Effect

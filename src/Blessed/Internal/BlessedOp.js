@@ -384,5 +384,4 @@ function adaptListBarCommandValue(hs) {
 
 exports.execute_ = execute;
 exports.registerNode_ = registerNode;
-exports.callCommand_ = callCommand;
 exports.callCommandEx_ = callCommandEx;

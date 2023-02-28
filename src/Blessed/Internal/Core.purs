@@ -41,8 +41,9 @@ import Blessed.Internal.NodeKey (NodeKey)
 import Blessed.Internal.NodeKey as NK
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Codec as Codec
-import Blessed.Internal.Emitter (class Fires, class Events, EventId, initial, convert, CoreEvent, split)
-import Blessed.Internal.Foreign (encode, encode') as Foreign
+import Blessed.Internal.Emitter (class Fires, class Events, CoreEvent)
+import Blessed.Internal.Emitter (initial, split, typeOf) as E
+import Blessed.Internal.Foreign (encode, encode', encodeHandler, HandlerIndex(..)) as Foreign
 
 
 
@@ -53,8 +54,6 @@ type HandlerFn subj id state = (NodeKey subj id -> I.EventJson -> Op.BlessedOp s
 data Attribute :: K.Subject -> Symbol -> Row Type -> Type -> Type -> Type
 data Attribute (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e
     = Option String Json
-    -- | Handler e (NodeKey subj id) (I.EventJson -> Op.BlessedOp state Effect)
-    -- | Handlers (Array (e /\ NodeKey subj id /\ (I.EventJson -> Op.BlessedOp state Effect)))
     | Handler e (HandlerFn subj id state)
     | OptionWithHandlers String Json (Array (e /\ HandlerFn subj id state))
 
@@ -89,7 +88,7 @@ splitAttributes props = Array.catMaybes (lockSProp <$> props) /\ Array.concat (l
         lockSProp (OptionWithHandlers str json _) = Just $ I.SProp str json
         lockSProp _ = Nothing
         lockSHandler (Handler e op) =
-            case split e of
+            case E.split e of
                 eventId /\ arguments -> [ Op.makeHandler nodeKey eventId arguments op ]
         lockSHandler (OptionWithHandlers _ _ handlersArray) =
             Array.concat $ lockSHandler <$> uncurry Handler <$> handlersArray
@@ -238,6 +237,21 @@ nmethod nodeKey name args =
         in Op.perform (NK.rawify nodeKey) $ Cmd.callEx name jsonArgs handlers
 
 
+subscription ∷ forall subj id state (m ∷ Type -> Type) e. K.IsSubject subj => IsSymbol id => Fires subj e => NodeKey subj id → e → HandlerFn subj id state -> Op.BlessedOp state m
+subscription nodeKey event op =
+    Op.getStateRef >>= \stateRef ->
+        case E.split event of
+            eventId /\ arguments ->
+                Op.perform (NK.rawify nodeKey)
+                    $ Cmd.sub (E.typeOf eventId) arguments
+                    $ Foreign.encodeHandler stateRef (NK.rawify nodeKey) (Foreign.HandlerIndex 0)
+                    $ Op.makeHandler nodeKey eventId arguments op
+
+
+on' :: forall subj id state (m ∷ Type -> Type) e. K.IsSubject subj => IsSymbol id => Fires subj e => e → HandlerFn subj id state -> NodeKey subj id → Op.BlessedOp state m
+on' e h key = subscription key e h
+
+
 setter ∷ forall parent subj id prop state (m ∷ Type -> Type) a. Sets parent subj id prop m a => Proxy parent -> SetterFn subj id prop state m a
 setter _ prop cvalue nodeKey =
     Op.perform (NK.rawify nodeKey) $ Cmd.set (reflectSymbol prop) $ encodeJson cvalue
@@ -278,7 +292,7 @@ nodeAnd nodeKey attrs children fn =
     I.SNode (NK.rawify nodeKey) sprops children (Op.makeHandler nodeKey initialId initalArgs (\id _ -> fn id) : handlers)
     where
         sprops /\ handlers = splitAttributes attrs
-        initialId /\ initalArgs = split (initial :: e)
+        initialId /\ initalArgs = E.split (E.initial :: e)
 
 
 run :: forall state e. state -> Blessed state e -> Effect Unit

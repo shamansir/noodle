@@ -120,6 +120,7 @@ data CommandType
     = Call
     | Get
     | Set
+    | Sub
     | Process
 
 
@@ -166,6 +167,16 @@ newtype SetPCommandEnc =
         }
 
 
+newtype SubCommandEnc =
+    SubCommandEnc
+        { marker :: String
+        , type :: String
+        , event :: String
+        , args :: Array Json
+        -- , handler :: HandlerRefEnc
+        }
+
+
 newtype ProcessCommandEnc =
     ProcessCommandEnc
         { marker :: String
@@ -184,5 +195,6 @@ derive instance Newtype GetCommandEnc _
 derive instance Newtype SetCommandEnc _
 derive instance Newtype GetPCommandEnc _
 derive instance Newtype SetPCommandEnc _
+derive instance Newtype SubCommandEnc _
 derive instance Newtype ProcessCommandEnc _
 derive instance Newtype CommandEnc _

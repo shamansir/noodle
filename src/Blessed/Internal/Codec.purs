@@ -135,6 +135,19 @@ setPCommandEnc =
         )
 
 
+subCommandEnc :: CA.JsonCodec I.SubCommandEnc
+subCommandEnc =
+    wrapIso I.SubCommandEnc $ CA.object "SubCommandEnc"
+        (CAR.record
+            { marker : CA.string
+            , type : CA.string
+            , event : CA.string
+            , args : CA.array CA.json
+            -- , handler : handlerRefEnc
+            }
+        )
+
+
 processCommandEnc :: CA.JsonCodec I.ProcessCommandEnc
 processCommandEnc =
     wrapIso I.ProcessCommandEnc $ CA.object "ProcessCommand"

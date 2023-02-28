@@ -271,5 +271,4 @@ makeHandler nodeKey eventId arguments op =
 
 foreign import execute_ :: I.BlessedEnc -> Effect Unit
 foreign import registerNode_ :: I.NodeEnc -> Effect Unit
-foreign import callCommand_ :: I.RawNodeKey -> I.CommandEnc -> Effect Json
 foreign import callCommandEx_ :: I.RawNodeKey -> I.CommandEnc -> Array I.HandlerCallEnc -> Effect Json

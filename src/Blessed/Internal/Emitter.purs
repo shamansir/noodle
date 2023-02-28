@@ -6,7 +6,7 @@ import Data.Tuple (uncurry)
 import Data.Tuple (fst, snd) as Tuple
 import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Newtype (class Newtype)
+import Data.Newtype (class Newtype, unwrap)
 
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Encode (class EncodeJson)
@@ -42,6 +42,10 @@ defaultUniqueId = convert >>> Tuple.fst
 
 
 newtype EventId = EventId { "type" :: String, uniqueId :: String }
+
+
+typeOf :: EventId -> String
+typeOf = unwrap >>> _.type
 
 
 derive instance Newtype EventId _

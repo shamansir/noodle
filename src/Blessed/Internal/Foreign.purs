@@ -48,6 +48,38 @@ encodeRoot :: forall state. Ref state -> I.SNode state -> I.NodeEnc /\ Array I.H
 encodeRoot stateRef = encode' stateRef Nothing
 
 
+newtype HandlerIndex = HandlerIndex Int
+
+
+uniqueIndex :: NK.RawNodeKey -> E.EventId -> HandlerIndex -> String
+uniqueIndex (NK.RawNodeKey rawNodeKey) (E.EventId e) (HandlerIndex localIndex) = rawNodeKey.id <> "-" <> e.uniqueId <> "-" <> show localIndex
+
+
+encodeHandler :: forall state. Ref state -> NK.RawNodeKey -> HandlerIndex -> I.SHandler state -> I.HandlerCallEnc
+encodeHandler stateRef (NK.RawNodeKey rawNodeKey) localIndex (I.SHandler (E.EventId e) args fn) =
+    I.HandlerCallEnc
+        { marker : "HandlerCall"
+        , nodeId : rawNodeKey.id
+        , nodeSubj : K.toString rawNodeKey.subject
+        , event : e.type
+        , eventUniqueId : e.uniqueId
+        , args
+        , index : uniqueIndex (NK.RawNodeKey rawNodeKey) (E.EventId e) localIndex -- include parent id & total index?
+        , call : fn stateRef $ NK.RawNodeKey rawNodeKey
+        }
+
+encodeHandlerRef :: forall state. NK.RawNodeKey -> HandlerIndex -> I.SHandler state -> I.HandlerRefEnc
+encodeHandlerRef (NK.RawNodeKey rawNodeKey) localIndex (I.SHandler (E.EventId e) _ _) =
+    I.HandlerRefEnc
+        { marker : "HandlerRef"
+        , nodeId : rawNodeKey.id
+        , nodeSubj : K.toString rawNodeKey.subject
+        , event : e.type
+        , eventUniqueId : e.uniqueId
+        , index : uniqueIndex (NK.RawNodeKey rawNodeKey) (E.EventId e) localIndex -- include parent id & total index?
+        }
+
+
 encode' :: forall state. Ref state -> Maybe NK.RawNodeKey -> I.SNode state -> I.NodeEnc /\ Array I.HandlerCallEnc
 encode'
     stateRef
@@ -65,38 +97,20 @@ encode'
         adaptProps :: Array I.SProp -> Array I.PropJson
         adaptProps = map (I.unwrapProp >>> \(name /\ value ) -> { name, value })
 
-        uniqueIndex e localIndex = rawNodeKey.id <> "-" <> e.uniqueId <> "-" <> show localIndex
+        encodeHandler' :: HandlerIndex -> I.SHandler state -> I.HandlerCallEnc
+        encodeHandler' =
+            encodeHandler stateRef $ NK.RawNodeKey rawNodeKey
 
-        encodeHandler :: Int -> I.SHandler state -> I.HandlerCallEnc
-        encodeHandler localIndex (I.SHandler (E.EventId e) args fn) =
-            I.HandlerCallEnc
-                { marker : "HandlerCall"
-                , nodeId : rawNodeKey.id
-                , nodeSubj : K.toString rawNodeKey.subject
-                , event : e.type
-                , eventUniqueId : e.uniqueId
-                , args
-                , index : uniqueIndex e localIndex -- include parent id & total index
-                , call : fn stateRef $ NK.RawNodeKey rawNodeKey
-                }
-
-        encodeHandlerRef :: Int -> I.SHandler state -> I.HandlerRefEnc
-        encodeHandlerRef localIndex (I.SHandler (E.EventId e) _ fn) =
-            I.HandlerRefEnc
-                { marker : "HandlerRef"
-                , nodeId : rawNodeKey.id
-                , nodeSubj : K.toString rawNodeKey.subject
-                , event : e.type
-                , eventUniqueId : e.uniqueId
-                , index : uniqueIndex e localIndex -- include parent id & total index?
-                }
+        encodeHandlerRef' :: HandlerIndex -> I.SHandler state -> I.HandlerRefEnc
+        encodeHandlerRef' =
+            encodeHandlerRef $ NK.RawNodeKey rawNodeKey
 
         (storedHandlers :: Array I.HandlerRefEnc) /\ (handlersCalls :: Array I.HandlerCallEnc)
             = foldrWithIndex
                     (\localIdx handler (storedHandlers /\ handlersCalls) ->
                         (
-                            (encodeHandlerRef localIdx handler : storedHandlers)
-                            /\ (encodeHandler localIdx handler : handlersCalls)
+                            (encodeHandlerRef' (HandlerIndex localIdx) handler : storedHandlers)
+                            /\ (encodeHandler' (HandlerIndex localIdx) handler : handlersCalls)
                         )
                     )
                     ([] /\ [])
@@ -162,6 +176,8 @@ commandToJson =
             (CA.encode Codec.setCommandEnc $ I.SetCommandEnc $ { marker : "SetCommand", value, property : prop, type : "set" }) /\ []
         C.SetP { path, value } ->
             (CA.encode Codec.setPCommandEnc $ I.SetPCommandEnc $ { marker : "SetPCommand", value, path, type : "setp" }) /\ []
+        C.Sub { args, event, handler } ->
+            (CA.encode Codec.subCommandEnc $ I.SubCommandEnc $ { marker : "SubCommand", args, event, type : "sub" }) /\ [ handler ]
         C.WithProcess { cmd, args } ->
             (CA.encode Codec.processCommandEnc $ I.ProcessCommandEnc $ { marker : "ProcessCommand", args, method : cmd, type : "process" }) /\ []
 
