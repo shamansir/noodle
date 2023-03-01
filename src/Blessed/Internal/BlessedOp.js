@@ -1,6 +1,9 @@
 // "use strict";
 
 const blessed = require('blessed');
+const fs = require('fs');
+const util = require('util');
+
 // console.log(blessed);
 
 let registry;
@@ -8,11 +11,27 @@ let handlersFns;
 
 const BLESSED_ON = true;
 const LOG_ON = !BLESSED_ON;
+const LOG_TO_FILE_ON = true;
+const LOG_FILE_PATH = './blessed_op_log.txt';
+const logFile = fs.createWriteStream(LOG_FILE_PATH, { flags: 'a' });
+
 
 function ___log() {
-    if (!LOG_ON) return;
-    // to be able to disable logs at once
-    console.log.apply(this, arguments);
+    if (LOG_ON) {;
+        // to be able to disable logs at once
+        console.log.apply(this, arguments);
+    }
+
+    if (LOG_TO_FILE_ON) {
+        logFile.write(util.format.apply(null, arguments) + '\n');
+        /*
+        fs.appendFileSync(LOG_FILE, Array.prototype.join.call(arguments, ' | '), err => {
+            if (err) {
+            console.error(err);
+            }
+            // done!
+        }); */
+    }
 }
 
 const INIT_HANDLER_KEY = 'init';
@@ -311,6 +330,9 @@ function callCommand(rawNodeKey) {
                             case 'process':
                                 // handled earlier
                                 break;
+                            case 'sub':
+                                // handled earlier
+                                break;
                             default:
                                 break;
                         }
@@ -342,6 +364,9 @@ function callCommandEx(rawNodeKey) {
     return function(command) {
         return function(handlers) {
 
+            // ___log('ccex', 'command', command);
+            // ___log('ccex', 'handlers', handlers);
+
             handlers.forEach((handler) => {
                 handlersFns[handler.index] = handler;
             });
@@ -350,8 +375,11 @@ function callCommandEx(rawNodeKey) {
                 const commandResult = callCommand(rawNodeKey)(command)();
                 handlers.forEach((handler) => {
                     const blessedObj = registry[handler.nodeId] ? registry[handler.nodeId].blessed : null;
+                    ___log(handler.nodeId, handler.event, handler.index, blessedObj ? 'found' : 'not found');
+                    // FIXME: for links, blessed is not found, also node ID is improper for the newly created nodes, but ok for newly created links
+                    // ___log('ccex', 'bindHandler before', handler.nodeId, registry[handler.nodeId], handlersFns[handler.index]);
                     if (blessedObj) {
-                        // console.log('registering', handler.nodeId, handler);
+                        // ___log('ccex', 'bindHandler after', handler.nodeId, handler);
                         bindHandler(blessedObj, handler);
                     }
                 });

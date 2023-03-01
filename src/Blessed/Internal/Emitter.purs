@@ -13,8 +13,8 @@ import Data.Argonaut.Encode (class EncodeJson)
 
 import Blessed.Internal.BlessedSubj (Subject)
 
-data CoreEvent ie
-    = CoreEvent (Maybe ie) String (Array Json)
+data CoreEvent
+    = CoreEvent EventId (Array Json)
 
 
 class Events e where
@@ -24,24 +24,36 @@ class Events e where
     -- response :: e -> (forall a. Json -> Maybe a)
 
 
-instance Events ie => Events (CoreEvent ie) where
-    initial = CoreEvent Nothing "Core" []
-    convert (CoreEvent _ name args) = name /\ args
-    uniqueId (CoreEvent maybeIE name _) = maybe name uniqueId maybeIE
+-- instance Events ie => Events (CoreEvent ie) where
+instance Events CoreEvent where
+    initial = initialCore
+    convert (CoreEvent (EventId eventId) args) = eventId.type /\ args
+    uniqueId (CoreEvent (EventId { uniqueId }) _) = uniqueId
 
 
 class Events e <= Fires (subj :: Subject) e
 
 
-toCore :: forall e. Events e => e -> CoreEvent e
-toCore ie = uncurry (CoreEvent $ Just ie) $ convert ie
+toCore :: forall e. Events e => e -> CoreEvent
+toCore = uncurry CoreEvent <<< split
+    -- case split ie of
+    --     eventId /\ args ->
+    --         CoreEvent eventId args
+        -- else uncurry (CoreEvent $ Just ie) $ convert ie
 
 
 defaultUniqueId :: forall e. Events e => e -> String
 defaultUniqueId = convert >>> Tuple.fst
 
 
-newtype EventId = EventId { "type" :: String, uniqueId :: String }
+initialCore :: CoreEvent
+initialCore =
+    CoreEvent
+        (EventId { initial : true, type : "init", uniqueId : "core-init" })
+        []
+
+
+newtype EventId = EventId { initial :: Boolean, "type" :: String, uniqueId :: String }
 
 
 typeOf :: EventId -> String
@@ -57,7 +69,12 @@ derive newtype instance EncodeJson EventId
 
 
 toEventId :: forall e. Events e => e -> EventId
-toEventId e = EventId { type : Tuple.fst $ convert e, uniqueId : uniqueId e }
+toEventId e =
+    EventId
+        { initial : uniqueId (initial :: e) == uniqueId e
+        , type : Tuple.fst $ convert e
+        , uniqueId : uniqueId e
+        }
 
 
 split :: forall e. Events e => e -> EventId /\ Array Json

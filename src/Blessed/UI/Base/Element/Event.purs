@@ -12,7 +12,7 @@ import Blessed.Core.Key as Key
 
 
 import Blessed.Internal.Emitter (class Events, class Fires, defaultUniqueId) as C
-import Blessed.Internal.BlessedSubj (Element, Box, List, ListBar, class Extends)
+import Blessed.Internal.BlessedSubj (Element, Box, List, ListBar, Line, class Extends)
 import Blessed.Internal.Core (handler, Handler) as C
 
 
@@ -79,6 +79,7 @@ instance C.Fires Element ElementEvent
 instance C.Fires Box ElementEvent
 instance C.Fires List ElementEvent
 instance C.Fires ListBar ElementEvent
+instance C.Fires Line ElementEvent
 
 
 elmHandler

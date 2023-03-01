@@ -46,6 +46,7 @@ import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOpGet, BlessedOp)
 import Blessed.Internal.NodeKey (nk, NodeKey(..), type (<^>), RawNodeKey)
 import Blessed.Internal.NodeKey as NodeKey
+import Blessed.Internal.Emitter (class Fires) as E
 
 import Blessed.UI.Base.Element.Event as Element
 import Blessed.UI.Base.Element.Property as Element
@@ -340,6 +341,8 @@ main1 =
                             { lastShiftX = state.lastShiftX + 1
                             , lastShiftY = state.lastShiftY + 1
                             , lastNodeBoxKey = nextNodeBox
+                            , lastInletsBarKey = nextInletsBar
+                            , lastOutletsBarKey = nextOutletsBar
                             } )
 
                         mainScreen >~ Screen.render
@@ -399,13 +402,13 @@ main1 =
                     if inode /= lco.node then do
                         link <- createLink
                                     state.lastLink
-                                    (onLinkClick patchBox)
                                     lco.node
                                     (OutletIndex lco.index)
                                     inode
                                     (InletIndex idx)
                         State.modify_ $ storeLink link
                         patchBox >~ appendLink link
+                        link # linkOn Element.Click onLinkClick
                     else pure unit
                 Nothing -> pure unit
             State.modify_
@@ -418,10 +421,12 @@ main1 =
             for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) updateLink
             for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) updateLink
 
-        onLinkClick :: PatchBoxKey -> Link -> NodeBoxKey → EventJson → BlessedOp State Effect
-        onLinkClick patchBox link _ _ = do
+        onLinkClick :: forall id. Link -> Line <^> id → EventJson → BlessedOp State Effect
+        onLinkClick link _ _ = do
+            liftEffect $ Console.log "click link"
             patchBox >~ removeLink link
             State.modify_ $ forgetLink link
+            mainScreen >~ Screen.render
 
 
 type LinkLineParams =
@@ -474,11 +479,11 @@ lineB = nk :: Line <^> "line-b"
 lineC = nk :: Line <^> "line-c"
 
 
-type LinkHandler = Link -> NodeBoxKey → EventJson → BlessedOp State Effect
+type LinkHandler = forall id. IsSymbol id => Link -> Line <^> id → EventJson → BlessedOp State Effect
 
 
-createLink :: Maybe Link -> LinkHandler -> NodeBoxKey -> OutletIndex -> NodeBoxKey -> InletIndex -> BlessedOpGet State Effect Link
-createLink maybePrev onClick fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) = do
+createLink :: Maybe Link -> NodeBoxKey -> OutletIndex -> NodeBoxKey -> InletIndex -> BlessedOpGet State Effect Link
+createLink maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) = do
     fromNodeLeft <- Element.left ~< fromNode
     fromNodeTop <- Element.top ~< fromNode
     toNodeLeft <- Element.left ~< toNode
@@ -537,10 +542,6 @@ createLink maybePrev onClick fromNode (OutletIndex outletIdx) toNode (InletIndex
                 , keys : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
                 }
 
-    keyLinkA >~ Core.on' Element.Click $ onClick link
-    keyLinkB >~ Core.on' Element.Click $ onClick link
-    keyLinkC >~ Core.on' Element.Click $ onClick link
-
     pure link
 
 
@@ -594,12 +595,12 @@ removeLink (Link link) pnk = do
     pnk >~ Node.remove link.blessed.c
 
 
-{-
-linkOn (Link link) evt handler = do
-    link.keys.a >~ Line.on evt handler
-    link.keys.b >~ Line.on evt handler
-    link.keys.c >~ Line.on evt handler
--}
+
+linkOn :: forall e. E.Fires Line e => e -> LinkHandler -> Link -> BlessedOp State Effect
+linkOn evt handler (Link link) = do
+    link.keys.a >~ Core.on' evt (handler $ Link link)
+    link.keys.b >~ Core.on' evt (handler $ Link link)
+    link.keys.c >~ Core.on' evt (handler $ Link link)
 
 
 updateLink :: Link -> BlessedOp State Effect
@@ -635,8 +636,58 @@ updateLink (Link link) = do
 
 
 main2 :: Effect Unit
-main2 = do
-  Cli.run initialState
+main2 =
+    let
+        lbKey = (nk :: ListBar <^> "test")
+        inletHandler iname = iname /\ [ ] /\ \_ _ -> do liftEffect $ Console.log $ "cmd " <> iname
+        inletsBarN =
+            B.listbar lbKey
+                [ Box.width $ Dimension.percents 90.0
+                , Box.height $ Dimension.px 1
+                , Box.top $ Offset.px 0
+                , Box.left $ Offset.px 0
+                , ListBar.commands $ inletHandler <$> [ "a", "b", "c" ]
+                , List.mouse true
+                , List.keys true
+                , ListBar.autoCommandKeys true
+                , inletsOutletsStyle
+                , Core.on ListBar.Select
+                    \_ _ -> do
+                        liftEffect $ Console.log "inlet"
+                        inletSelected <- List.selected ~< lbKey
+                        liftEffect $ Console.log $ show inletSelected
+                -- FIXME: it is only possible to assign to one type of events
+                -- FIXME: make all B.listBar, B.box methods and so on return object with `Blessed.Event == Blessed.CoreEvent`
+                -- FIXME: and/or don't restrict Blessed.* methods to particular events
+                -- , Core.on Element.Click
+                --     \_ _ -> do
+                --         liftEffect $ Console.log "preassigned click"
+                ]
+                [ ]
+        nbKey = (nk :: Box <^> "node-box")
+        testNodeBox =
+            B.box nbKey
+                [ Box.draggable true
+                , Box.top $ Offset.px 10
+                , Box.left $ Offset.px 10
+                , Box.width $ Dimension.px 25
+                , Box.height $ Dimension.px 5
+                , Box.border
+                    [ Border.type_ Border._line
+                    , Border.fg palette.nodeBoxBorder
+                    , Border.ch $ Border.fill ':'
+                    ]
+                , Box.style
+                    [ Style.focus -- FIXME: makes it fail on drag
+                        [ ES.border
+                            [ Border.fg palette.nodeListSelFg
+                            ]
+                        ]
+                    ]
+                    -- []
+                ]
+                [ ]
+  in Cli.run initialState
     (B.screenAnd mainScreen
 
         [ Screen.title "Noodle"
@@ -648,58 +699,12 @@ main2 = do
                 Blessed.exit
         ]
 
-        [
-            let
-                lbKey = (nk :: ListBar <^> "test")
-                inletHandler iname = iname /\ [ ] /\ \_ _ -> do liftEffect $ Console.log $ "cmd " <> iname
-                inletsBarN =
-                    B.listbar lbKey
-                        [ Box.width $ Dimension.percents 90.0
-                        , Box.height $ Dimension.px 1
-                        , Box.top $ Offset.px 0
-                        , Box.left $ Offset.px 0
-                        , ListBar.commands $ inletHandler <$> [ "a", "b", "c" ]
-                        , List.mouse true
-                        , List.keys true
-                        , ListBar.autoCommandKeys true
-                        , inletsOutletsStyle
-                        , Core.on ListBar.Select
-                            \_ _ -> do
-                                liftEffect $ Console.log "inlet"
-                                inletSelected <- List.selected ~< lbKey
-                                liftEffect $ Console.log $ show inletSelected
-                        ]
-                        [ ]
-            in inletsBarN
-
-        ,
-
-            let
-                nbKey = (nk :: Box <^> "node-box")
-            in B.box nbKey
-                    [ Box.draggable true
-                    , Box.top $ Offset.px 10
-                    , Box.left $ Offset.px 10
-                    , Box.width $ Dimension.px 25
-                    , Box.height $ Dimension.px 5
-                    , Box.border
-                        [ Border.type_ Border._line
-                        , Border.fg palette.nodeBoxBorder
-                        , Border.ch $ Border.fill ':'
-                        ]
-                    , Box.style
-                        [ Style.focus -- FIXME: makes it fail on drag
-                            [ ES.border
-                                [ Border.fg palette.nodeListSelFg
-                                ]
-                            ]
-                        ]
-                        -- []
-                    ]
-                    [ ]
+        [ inletsBarN
+        , testNodeBox
         ]
 
         $ \_ -> do
+            lbKey >~ Core.on' ListBar.Select $ \_ _ -> liftEffect $ Console.log "click assigned after"
             mainScreen >~ Screen.render
     )
 

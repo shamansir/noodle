@@ -42,7 +42,7 @@ import Blessed.Internal.NodeKey as NK
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Codec as Codec
 import Blessed.Internal.Emitter (class Fires, class Events, CoreEvent)
-import Blessed.Internal.Emitter (initial, split, typeOf) as E
+import Blessed.Internal.Emitter (initial, split, typeOf, toCore) as E
 import Blessed.Internal.Foreign (encode, encode', encodeHandler, HandlerIndex(..)) as Foreign
 
 
@@ -108,8 +108,16 @@ onlyOption :: forall (sym :: Symbol) (r :: Row Type) a. IsSymbol sym => EncodeJs
 onlyOption sym = SoleOption (reflectSymbol sym) <<< encodeJson
 
 
+-- handler :: forall subj id r state e. Fires subj e => e -> Handler subj id r state CoreEvent
+-- handler e handler = E.toCore <$> Handler e handler
+
+
 handler :: forall subj id r state e. Fires subj e => e -> Handler subj id r state e
 handler = Handler
+
+
+-- on :: forall subj id r state e. Fires subj e => e -> Handler subj id r state CoreEvent
+-- on = handler
 
 
 on :: forall subj id r state e. Fires subj e => e -> Handler subj id r state e
