@@ -92,7 +92,7 @@ autoCommandKeys = lbOption (Proxy :: _ "autoCommandKeys")
 commands
     :: forall (subj :: Subject) (id :: Symbol) r state
      . Respresents ListBar subj id
-    => Array (String /\ Array Key /\ C.HandlerFn subj id state) -> ListBarAttribute subj id ( commands :: Commands | r ) state E.CoreEvent
+    => Array (String /\ Array Key /\ C.HandlerFn subj id state) -> ListBarAttribute subj id ( commands :: Commands | r ) state E.BlessedEvent
 commands cmds =
     E.toCore <$> C.optionWithHandlers (Proxy :: _ "commands") (Commands commands_) cmdsEvents
     where toCmdEvent (cmd /\ keys /\ handler) = ListBar.Command cmd keys /\ handler

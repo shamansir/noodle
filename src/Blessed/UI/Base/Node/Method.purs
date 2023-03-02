@@ -1,26 +1,17 @@
 module Blessed.UI.Base.Node.Method where
 
 
-import Prelude ((>>=), ($))
-
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
 
 import Data.Argonaut.Core (Json)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Common as CAC
-import Data.Tuple (fst) as Tuple
-import Data.Tuple.Nested ((/\))
 
 import Blessed.Internal.Command (arg, narg, node) as C
 import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.BlessedOp (getStateRef) as BlessedOp
 import Blessed.Internal.BlessedSubj (Element, Subject)
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
-import Blessed.Internal.NodeKey (rawify) as NodeKey
 import Blessed.Internal.Core (method, nmethod, Blessed) as C
-import Blessed.Internal.Codec (nodeEnc) as Codec
-import Blessed.Internal.Foreign (encode') as Foreign
-import Blessed.Internal.Emitter (CoreEvent) as C
 
     -- FIXME: handlers returned from `encode'`!!
     -- FIXME: ensure to append and encode properly in BlessedOp.js
@@ -32,49 +23,49 @@ import Blessed.Internal.Emitter (CoreEvent) as C
 
 
 prepend
-    :: forall (subj :: Subject) (id :: Symbol) state m e
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Element subj id
-    => C.Blessed state e -> NodeKey subj id -> BlessedOp state m
+    => C.Blessed state -> NodeKey subj id -> BlessedOp state m
 prepend node nodeId =
     C.nmethod nodeId "prepend" [ C.node node ]
 
 
 append
-    :: forall (subj :: Subject) (id :: Symbol) state m e
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Element subj id
-    => C.Blessed state e -> NodeKey subj id -> BlessedOp state m
+    => C.Blessed state -> NodeKey subj id -> BlessedOp state m
 append node nodeId =
     C.nmethod nodeId "append" [ C.node node ]
 
 
 remove
-    :: forall (subj :: Subject) (id :: Symbol) state m e
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Element subj id
-    => C.Blessed state e -> NodeKey subj id -> BlessedOp state m
+    => C.Blessed state -> NodeKey subj id -> BlessedOp state m
 remove node nodeId =
     C.nmethod nodeId "remove" [ C.node node ]
 
 
 insert
-    :: forall (subj :: Subject) (id :: Symbol) state m e
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Element subj id
-    => C.Blessed state e -> Int -> NodeKey subj id -> BlessedOp state m
+    => C.Blessed state -> Int -> NodeKey subj id -> BlessedOp state m
 insert node i nodeId =
     C.nmethod nodeId "insert" [ C.node node, C.narg CA.int i ]
 
 
 insertBefore
-    :: forall (subj :: Subject) (id :: Symbol) state m e e'
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Element subj id
-    => C.Blessed state e -> C.Blessed state e' -> NodeKey subj id -> BlessedOp state m
+    => C.Blessed state -> C.Blessed state -> NodeKey subj id -> BlessedOp state m
 insertBefore node refNode nodeId =
     C.nmethod nodeId "insertBefore" [ C.node node, C.node refNode ]
 
 
 insertAfter
-    :: forall (subj :: Subject) (id :: Symbol) state m e e'
+    :: forall (subj :: Subject) (id :: Symbol) state m
      . Respresents Element subj id
-    => C.Blessed state e -> C.Blessed state e' -> NodeKey subj id -> BlessedOp state m
+    => C.Blessed state -> C.Blessed state -> NodeKey subj id -> BlessedOp state m
 insertAfter node refNode nodeId =
     C.nmethod nodeId "insertAfter" [ C.node node, C.node refNode ]
 

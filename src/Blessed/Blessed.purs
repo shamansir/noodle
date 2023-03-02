@@ -1,45 +1,42 @@
 module Blessed where
 
-import Prelude
+import Prelude (($), Unit)
 
 import Data.Function (apply, applyFlipped)
-import Data.Tuple.Nested ((/\))
 
 import Effect (Effect)
-import Effect.Class (liftEffect)
 
 import Type.Row (type (+))
 import Data.Symbol (class IsSymbol)
 
 
+-- import Blessed.Internal.BlessedSubj (Subject(..)) as I
+import Blessed.Internal.NodeKey (NodeKey)
+import Blessed.Internal.Core (Blessed, Node, NodeAnd, run, runAnd) as C
+import Blessed.Internal.Emitter (BlessedEvent) as C
+import Blessed.Internal.Command (withProcess) as I
+import Blessed.Internal.BlessedSubj (Screen, Box, Line, List, ListBar) as Subject
+import Blessed.Internal.BlessedOp (BlessedOp, BlessedOp', performOnProcess) as I
+
+
 -- import Blessed.UI.Base.Node (Node(..))
 import Blessed.UI.Base.Screen (screen, screenAnd) as Screen
 import Blessed.UI.Base.Screen.Option (OptionsRow) as Screen
-import Blessed.UI.Base.Screen.Event (Event) as Screen
 import Blessed.UI.Boxes.Box (box, boxAnd) as Box
 import Blessed.UI.Boxes.Box.Option (OptionsRow) as Box
-import Blessed.UI.Boxes.Box.Event (Event) as Box
 import Blessed.UI.Boxes.Line (line, lineAnd) as Line
 import Blessed.UI.Boxes.Line.Option (OptionsRow) as Line
-import Blessed.UI.Boxes.Line.Event (Event) as Line
 import Blessed.UI.Lists.List (list, listAnd) as List
 import Blessed.UI.Lists.List.Option (OptionsRow) as List
-import Blessed.UI.Lists.List.Event (Event) as List
 import Blessed.UI.Lists.ListBar (listbar, listbarAnd) as ListBar
 import Blessed.UI.Lists.ListBar.Option (OptionsRow) as ListBar
-import Blessed.UI.Lists.ListBar.Event (Event) as ListBar
--- import Blessed.Internal.BlessedSubj (Subject(..)) as I
-import Blessed.Internal.NodeKey (NodeKey)
-import Blessed.Internal.Core (Blessed, Node, NodeAnd, encode, run, runAnd) as C
-import Blessed.Internal.Emitter (CoreEvent) as C
-import Blessed.Internal.Command (withProcess) as I
-import Blessed.Internal.BlessedSubj (Screen, Box, Line, List, ListBar) as Subject
-import Blessed.Internal.BlessedOp (BlessedOp, BlessedOp', execute_, performOnProcess) as I
+
+
 
 import Data.Codec.Argonaut as CA
 
 
-type Event = C.CoreEvent
+type Event = C.BlessedEvent
 
 
 
@@ -52,11 +49,11 @@ infixr 0 _with as ~<
 -- ref id = I.NodeId id
 
 
-run :: forall state. state -> C.Blessed state Event -> Effect Unit
+run :: forall state. state -> C.Blessed state -> Effect Unit
 run = C.run
 
 
-runAnd :: forall state. state -> C.Blessed state Event -> I.BlessedOp state Effect -> Effect Unit
+runAnd :: forall state. state -> C.Blessed state -> I.BlessedOp state Effect -> Effect Unit
 runAnd = C.runAnd
 
 

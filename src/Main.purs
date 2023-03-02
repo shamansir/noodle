@@ -455,7 +455,7 @@ type LinkCalc =
 newtype Link =
     Link
     { id :: Int
-    , blessed :: { a :: Core.Blessed State Line.Event, b :: Core.Blessed State Line.Event, c :: Core.Blessed State Line.Event }
+    , blessed :: { a :: Core.Blessed State, b :: Core.Blessed State, c :: Core.Blessed State }
     , fromNode :: NodeBoxKey
     , toNode :: NodeBoxKey
     , outletIndex :: Int

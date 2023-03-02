@@ -13,8 +13,8 @@ import Data.Argonaut.Encode (class EncodeJson)
 
 import Blessed.Internal.BlessedSubj (Subject)
 
-data CoreEvent
-    = CoreEvent EventId (Array Json)
+data BlessedEvent
+    = BlessedEvent EventId (Array Json)
 
 
 class Events e where
@@ -24,31 +24,31 @@ class Events e where
     -- response :: e -> (forall a. Json -> Maybe a)
 
 
--- instance Events ie => Events (CoreEvent ie) where
-instance Events CoreEvent where
+-- instance Events ie => Events (BlessedEvent ie) where
+instance Events BlessedEvent where
     initial = initialCore
-    convert (CoreEvent (EventId eventId) args) = eventId.type /\ args
-    uniqueId (CoreEvent (EventId { uniqueId }) _) = uniqueId
+    convert (BlessedEvent (EventId eventId) args) = eventId.type /\ args
+    uniqueId (BlessedEvent (EventId { uniqueId }) _) = uniqueId
 
 
 class Events e <= Fires (subj :: Subject) e
 
 
-toCore :: forall e. Events e => e -> CoreEvent
-toCore = uncurry CoreEvent <<< split
+toCore :: forall e. Events e => e -> BlessedEvent
+toCore = uncurry BlessedEvent <<< split
     -- case split ie of
     --     eventId /\ args ->
-    --         CoreEvent eventId args
-        -- else uncurry (CoreEvent $ Just ie) $ convert ie
+    --         BlessedEvent eventId args
+        -- else uncurry (BlessedEvent $ Just ie) $ convert ie
 
 
 defaultUniqueId :: forall e. Events e => e -> String
 defaultUniqueId = convert >>> Tuple.fst
 
 
-initialCore :: CoreEvent
+initialCore :: BlessedEvent
 initialCore =
-    CoreEvent
+    BlessedEvent
         (EventId { initial : true, type : "init", uniqueId : "core-init" })
         []
 

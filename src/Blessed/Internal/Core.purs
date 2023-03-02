@@ -41,10 +41,8 @@ import Blessed.Internal.NodeKey (NodeKey)
 import Blessed.Internal.NodeKey as NK
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Codec as Codec
-import Blessed.Internal.Emitter (class Fires, class Events, CoreEvent)
-import Blessed.Internal.Emitter (initial, split, typeOf, toCore) as E
+import Blessed.Internal.Emitter (initial, split, typeOf, toCore, class Fires, class Events, BlessedEvent) as E
 import Blessed.Internal.Foreign (encode, encode', encodeHandler, HandlerIndex(..)) as Foreign
-
 
 
 type InitFn subj id state = (NodeKey subj id -> Op.BlessedOp state Effect)
@@ -69,18 +67,18 @@ instance Functor (Attribute subj id r state) where
 
 
 -- type Blessed state e = Ref state -> I.SNode state
-type Blessed state e = I.SNode state
+type Blessed state = I.SNode state
 
 
 -- see Halogen.Svg.Elements + Halogen.Svg.Properties
-type Node (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state CoreEvent) -> Array (Blessed state CoreEvent) -> Blessed state CoreEvent
-type NodeAnd (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state CoreEvent) -> Array (Blessed state CoreEvent) -> InitFn subj id state -> Blessed state CoreEvent
-type Leaf (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state CoreEvent) -> Blessed state CoreEvent
-type LeafAnd (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state CoreEvent) -> InitFn subj id state -> Blessed state CoreEvent
-type Handler (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = HandlerFn subj id state -> Attribute subj id r state CoreEvent
+type Node (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state E.BlessedEvent) -> Array (Blessed state) -> Blessed state
+type NodeAnd (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state E.BlessedEvent) -> Array (Blessed state) -> InitFn subj id state -> Blessed state
+type Leaf (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state E.BlessedEvent) -> Blessed state
+type LeafAnd (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state E.BlessedEvent) -> InitFn subj id state -> Blessed state
+type Handler (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = HandlerFn subj id state -> Attribute subj id r state E.BlessedEvent
 
 
-splitAttributes :: forall subj id r state e. K.IsSubject subj => IsSymbol id => Events e => Array (Attribute subj id r state e) -> Array I.SProp /\ Array (I.SHandler state)
+splitAttributes :: forall subj id r state e. K.IsSubject subj => IsSymbol id => E.Events e => Array (Attribute subj id r state e) -> Array I.SProp /\ Array (I.SHandler state)
 splitAttributes props = Array.catMaybes (lockSProp <$> props) /\ Array.concat (lockSHandler <$> props)
     where
         nodeKey = NK.make (Proxy :: _ subj) (Proxy :: _ id)
@@ -108,19 +106,19 @@ onlyOption :: forall (sym :: Symbol) (r :: Row Type) a. IsSymbol sym => EncodeJs
 onlyOption sym = SoleOption (reflectSymbol sym) <<< encodeJson
 
 
--- handler :: forall subj id r state e. Fires subj e => e -> Handler subj id r state CoreEvent
+-- handler :: forall subj id r state e. Fires subj e => e -> Handler subj id r state E.BlessedEvent
 -- handler e handler = E.toCore <$> Handler e handler
 
 
-handler :: forall subj id r state e. Fires subj e => e -> Handler subj id r state
+handler :: forall subj id r state e. E.Fires subj e => e -> Handler subj id r state
 handler e fn = E.toCore <$> Handler e fn
 
 
--- on :: forall subj id r state e. Fires subj e => e -> Handler subj id r state CoreEvent
+-- on :: forall subj id r state e. Fires subj e => e -> Handler subj id r state E.BlessedEvent
 -- on = handler
 
 
-on :: forall subj id r state e. Fires subj e => e -> Handler subj id r state
+on :: forall subj id r state e. E.Fires subj e => e -> Handler subj id r state
 on = handler
 
 
@@ -245,7 +243,7 @@ nmethod nodeKey name args =
         in Op.perform (NK.rawify nodeKey) $ Cmd.callEx name jsonArgs handlers
 
 
-subscription ∷ forall subj id state (m ∷ Type -> Type) e. K.IsSubject subj => IsSymbol id => Fires subj e => NodeKey subj id → e → HandlerFn subj id state -> Op.BlessedOp state m
+subscription ∷ forall subj id state (m ∷ Type -> Type) e. K.IsSubject subj => IsSymbol id => E.Fires subj e => NodeKey subj id → e → HandlerFn subj id state -> Op.BlessedOp state m
 subscription nodeKey event op =
     Op.getStateRef >>= \stateRef ->
         case E.split event of
@@ -256,7 +254,7 @@ subscription nodeKey event op =
                     $ Op.makeHandler nodeKey eventId arguments op
 
 
-on' :: forall subj id state (m ∷ Type -> Type) e. K.IsSubject subj => IsSymbol id => Fires subj e => e → HandlerFn subj id state -> NodeKey subj id → Op.BlessedOp state m
+on' :: forall subj id state (m ∷ Type -> Type) e. K.IsSubject subj => IsSymbol id => E.Fires subj e => e → HandlerFn subj id state -> NodeKey subj id → Op.BlessedOp state m
 on' e h key = subscription key e h
 
 
@@ -285,7 +283,7 @@ instance EncodeJson (SoleOption r) where
         = CA.encode Codec.propJson { name, value }
 
 
-encode :: forall state e. Ref state -> Blessed state e -> I.BlessedEnc
+encode :: forall state. Ref state -> Blessed state -> I.BlessedEnc
 encode = Foreign.encode
 
 
@@ -295,7 +293,7 @@ node nodeKey attrs children =
     where sprops /\ handlers = splitAttributes attrs
 
 
-nodeAnd :: forall subj id state r e. K.IsSubject subj => IsSymbol id => Events e => Proxy e -> NodeKey subj id -> NodeAnd subj id state r
+nodeAnd :: forall subj id state r e. K.IsSubject subj => IsSymbol id => E.Events e => Proxy e -> NodeKey subj id -> NodeAnd subj id state r
 nodeAnd _ nodeKey attrs children fn =
     I.SNode (NK.rawify nodeKey) sprops children (Op.makeHandler nodeKey initialId initalArgs (\id _ -> fn id) : handlers)
     where
@@ -303,12 +301,12 @@ nodeAnd _ nodeKey attrs children fn =
         initialId /\ initalArgs = E.split (E.initial :: e)
 
 
-run :: forall state e. state -> Blessed state e -> Effect Unit
+run :: forall state. state -> Blessed state -> Effect Unit
 run state blessed =
     runAnd state blessed $ pure unit
 
 
-runAnd :: forall state e. state -> Blessed state e -> Op.BlessedOp state Effect -> Effect Unit
+runAnd :: forall state. state -> Blessed state -> Op.BlessedOp state Effect -> Effect Unit
 runAnd state blessed op = do
     stateRef <- Ref.new state
     liftEffect $ Op.execute_ $ Foreign.encode stateRef blessed
