@@ -2,6 +2,14 @@ module Test.Toolkit3 where
 
 import Prelude
 
+import Record.Extra (class Keys)
+import Record.Extra as Record
+import Prim.RowList as RL
+import Unsafe.Coerce (unsafeCoerce)
+import Type.Proxy (Proxy(..))
+import Effect.Random (randomInt)
+
+
 import Data.List ((:), List)
 import Data.List as List
 import Data.Array as Array
@@ -11,6 +19,8 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Console (log) as Console
+
+
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Family(..), Family', class HasInputs, class HasInputsAt) as Node
@@ -25,20 +35,17 @@ import Noodle.Toolkit3.MapsFolds as TMF
 import Noodle.Toolkit3.MapsFolds.Repr as TMF
 import Noodle.Fn2.Process as Fn
 import Noodle.Family.Def as Family
+
 import Signal ((~>), Signal)
 import Signal as Signal
 import Signal.Channel as Ch
 import Signal.Time as SignalT
+
 import Test.Signal (expectFn, expect)
 import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
 import Type.Data.Symbol (reflectSymbol, class IsSymbol)
-import Record.Extra (class Keys)
-import Record.Extra as Record
-import Prim.RowList as RL
-import Unsafe.Coerce (unsafeCoerce)
-import Type.Proxy (Proxy(..))
-import Effect.Random (randomInt)
+
 
 import Test.Repr.Toolkit3 (MyRepr(..))
 
