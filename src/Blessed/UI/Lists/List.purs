@@ -6,6 +6,7 @@ module Blessed.UI.Lists.List
 
 import Type.Row (type (+))
 import Data.Symbol (class IsSymbol)
+import Type.Proxy (Proxy(..))
 
 
 import Blessed.Internal.Core (Node, NodeAnd, node, nodeAnd) as C
@@ -16,9 +17,9 @@ import Blessed.UI.Lists.List.Event (ListEvent)
 import Blessed.UI.Lists.List.Option (OptionsRow)
 
 
-list :: forall id r state. IsSymbol id => NodeKey Subject.List id -> C.Node Subject.List id ( Box.OptionsRow + OptionsRow + r ) state ListEvent
+list :: forall id r state. IsSymbol id => NodeKey Subject.List id -> C.Node Subject.List id ( Box.OptionsRow + OptionsRow + r ) state
 list nodeKey = C.node nodeKey
 
 
-listAnd :: forall id r state. IsSymbol id => NodeKey Subject.List id -> C.NodeAnd Subject.List id ( Box.OptionsRow + OptionsRow + r ) state ListEvent
-listAnd nodeKey = C.nodeAnd nodeKey
+listAnd :: forall id r state. IsSymbol id => NodeKey Subject.List id -> C.NodeAnd Subject.List id ( Box.OptionsRow + OptionsRow + r ) state
+listAnd nodeKey = C.nodeAnd ( Proxy :: _ ListEvent ) nodeKey

@@ -255,7 +255,7 @@ main1 =
                         let nextOutletsBar = NodeKey.next state.lastOutletsBarKey
 
                         selected <- List.selected ~< nodeList
-                        liftEffect $ Console.log $ show selected
+                        -- liftEffect $ Console.log $ show selected
 
                         let is = [ "a", "b", "c" ]
                         let os = [ "sum", "x" ]
@@ -389,14 +389,14 @@ main1 =
 
         onOutletSelect :: NodeBoxKey -> Int -> String -> OutletsBarKey → EventJson → BlessedOp State Effect
         onOutletSelect onode index oname _ _ = do
-            liftEffect $ Console.log $ "handler " <> oname
+            -- liftEffect $ Console.log $ "handler " <> oname
             State.modify_
                 (_ { lastClickedOutlet = Just { index, subj : oname, node : onode } })
 
         onInletSelect :: NodeBoxKey -> Int -> String -> InletsBarKey → EventJson → BlessedOp State Effect
         onInletSelect inode idx iname _ _ = do
             state <- State.get
-            liftEffect $ Console.log $ "handler " <> iname
+            -- liftEffect $ Console.log $ "handler " <> iname
             case state.lastClickedOutlet of
                 Just lco ->
                     if inode /= lco.node then do
@@ -423,7 +423,7 @@ main1 =
 
         onLinkClick :: forall id. Link -> Line <^> id → EventJson → BlessedOp State Effect
         onLinkClick link _ _ = do
-            liftEffect $ Console.log "click link"
+            -- liftEffect $ Console.log "click link"
             patchBox >~ removeLink link
             State.modify_ $ forgetLink link
             mainScreen >~ Screen.render
@@ -639,7 +639,7 @@ main2 :: Effect Unit
 main2 =
     let
         lbKey = (nk :: ListBar <^> "test")
-        inletHandler iname = iname /\ [ ] /\ \_ _ -> do liftEffect $ Console.log $ "cmd " <> iname
+        inletHandler iname = iname /\ [ ] /\ \_ _ -> do pure unit -- liftEffect $ Console.log $ "cmd " <> iname
         inletsBarN =
             B.listbar lbKey
                 [ Box.width $ Dimension.percents 90.0
@@ -653,15 +653,16 @@ main2 =
                 , inletsOutletsStyle
                 , Core.on ListBar.Select
                     \_ _ -> do
-                        liftEffect $ Console.log "inlet"
+                        -- liftEffect $ Console.log "inlet"
                         inletSelected <- List.selected ~< lbKey
-                        liftEffect $ Console.log $ show inletSelected
+                        -- liftEffect $ Console.log $ show inletSelected
+                        pure unit
                 -- FIXME: this way it is only possible to assign to one type of events
                 -- FIXME: make all B.listBar, B.box methods and so on return object with `Blessed.Event == Blessed.CoreEvent`
                 -- FIXME: and/or don't restrict Blessed.* methods to particular events
-                -- , Core.on Element.Click
-                --     \_ _ -> do
-                --         liftEffect $ Console.log "preassigned click"
+                , Core.on Element.Click
+                    \_ _ -> do
+                        liftEffect $ Console.log "preassigned click"
                 ]
                 [ ]
         nbKey = (nk :: Box <^> "node-box")

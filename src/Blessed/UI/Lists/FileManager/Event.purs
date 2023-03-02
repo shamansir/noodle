@@ -39,13 +39,10 @@ instance events :: C.Events FileManagerEvent where
 instance C.Fires FileManager FileManagerEvent
 
 
-type Handler subj id r state = C.Handler subj id r state FileManagerEvent
-
-
-fmHandler :: forall subj id r state. Extends FileManager subj => C.Fires subj FileManagerEvent => FileManagerEvent -> Handler subj id r state
+fmHandler :: forall subj id r state. Extends FileManager subj => C.Fires subj FileManagerEvent => FileManagerEvent -> C.Handler subj id r state
 fmHandler = C.handler
 
 
 
-on :: forall subj id r state. Extends FileManager subj => C.Fires subj FileManagerEvent => FileManagerEvent -> Handler subj id r state
+on :: forall subj id r state. Extends FileManager subj => C.Fires subj FileManagerEvent => FileManagerEvent -> C.Handler subj id r state
 on = fmHandler

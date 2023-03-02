@@ -54,15 +54,12 @@ instance events :: C.Events ScreenEvent where
     uniqueId e = C.defaultUniqueId e
 
 
-type Handler subj id r state = C.Handler subj id r state ScreenEvent
-
-
 instance C.Fires Screen ScreenEvent
 
 
-screenHandler :: forall subj id r state. Extends Screen subj => C.Fires subj ScreenEvent => ScreenEvent -> Handler subj id r state
+screenHandler :: forall subj id r state. Extends Screen subj => C.Fires subj ScreenEvent => ScreenEvent -> C.Handler subj id r state
 screenHandler = C.handler
 
 
-key :: forall subj id r state. Extends Screen subj => C.Fires subj ScreenEvent => Array Key -> Handler subj id r state
+key :: forall subj id r state. Extends Screen subj => C.Fires subj ScreenEvent => Array Key -> C.Handler subj id r state
 key = screenHandler <<< Key

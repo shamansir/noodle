@@ -41,12 +41,9 @@ instance events :: C.Events TextAreaEvent where
 instance C.Fires TextArea TextAreaEvent
 
 
-type Handler subj id r state = C.Handler subj id r state TextAreaEvent
-
-
-textAreaHandler :: forall subj id r state. Extends TextArea subj => C.Fires subj TextAreaEvent => TextAreaEvent -> Handler subj id r state
+textAreaHandler :: forall subj id r state. Extends TextArea subj => C.Fires subj TextAreaEvent => TextAreaEvent -> C.Handler subj id r state
 textAreaHandler = C.handler
 
 
-on :: forall subj id r state. Extends TextArea subj => C.Fires subj TextAreaEvent => TextAreaEvent -> Handler subj id r state
+on :: forall subj id r state. Extends TextArea subj => C.Fires subj TextAreaEvent => TextAreaEvent -> C.Handler subj id r state
 on = textAreaHandler

@@ -72,9 +72,6 @@ instance events :: C.Events ElementEvent where
     uniqueId e = C.defaultUniqueId e
 
 
-type Handler subj id r state = C.Handler subj id r state ElementEvent
-
-
 instance C.Fires Element ElementEvent
 instance C.Fires Box ElementEvent
 instance C.Fires List ElementEvent
@@ -86,7 +83,7 @@ elmHandler
     :: forall subj id r state
      . Extends Element subj
     => C.Fires subj ElementEvent
-    => ElementEvent -> Handler subj id r state
+    => ElementEvent -> C.Handler subj id r state
 elmHandler = C.handler
 
 
@@ -94,7 +91,7 @@ key
     :: forall subj id r state
      . Extends Element subj
     => C.Fires subj ElementEvent
-    => Array Key -> Handler subj id r state
+    => Array Key -> C.Handler subj id r state
 key = elmHandler <<< Key
 
 
@@ -102,7 +99,7 @@ on
     :: forall subj id r state
      . Extends Element subj
     => C.Fires subj ElementEvent
-    => ElementEvent -> Handler subj id r state
+    => ElementEvent -> C.Handler subj id r state
 on = elmHandler
 
 

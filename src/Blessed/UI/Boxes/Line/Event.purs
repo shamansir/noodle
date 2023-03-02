@@ -28,13 +28,10 @@ instance events :: C.Events LineEvent where
 instance C.Fires Line LineEvent
 
 
-type Handler subj id r state = C.Handler subj id r state LineEvent
-
-
-lineHandler :: forall subj id r state. Extends Line subj => C.Fires subj LineEvent => LineEvent -> Handler subj id r state
+lineHandler :: forall subj id r state. Extends Line subj => C.Fires subj LineEvent => LineEvent -> C.Handler subj id r state
 lineHandler = C.handler
 
 
 
-on :: forall subj id r state. Extends Line subj => C.Fires subj LineEvent => LineEvent -> Handler subj id r state
+on :: forall subj id r state. Extends Line subj => C.Fires subj LineEvent => LineEvent -> C.Handler subj id r state
 on = lineHandler

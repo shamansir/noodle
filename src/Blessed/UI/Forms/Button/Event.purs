@@ -30,13 +30,10 @@ instance events :: C.Events ButtonEvent where
 instance C.Fires Button ButtonEvent
 
 
-type Handler subj id r state = C.Handler subj id r state ButtonEvent
-
-
-formHandler :: forall subj id r state. Extends Button subj => C.Fires subj ButtonEvent => ButtonEvent -> Handler subj id r state
+formHandler :: forall subj id r state. Extends Button subj => C.Fires subj ButtonEvent => ButtonEvent -> C.Handler subj id r state
 formHandler = C.handler
 
 
 
-on :: forall subj id r state. Extends Button subj => C.Fires subj ButtonEvent => ButtonEvent -> Handler subj id r state
+on :: forall subj id r state. Extends Button subj => C.Fires subj ButtonEvent => ButtonEvent -> C.Handler subj id r state
 on = formHandler

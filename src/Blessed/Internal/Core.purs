@@ -73,11 +73,11 @@ type Blessed state e = I.SNode state
 
 
 -- see Halogen.Svg.Elements + Halogen.Svg.Properties
-type Node (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = Events e => Array (Attribute subj id r state e) -> Array (Blessed state CoreEvent) -> Blessed state CoreEvent
-type NodeAnd (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = Array (Attribute subj id r state e) -> Array (Blessed state CoreEvent) -> InitFn subj id state -> Blessed state CoreEvent
-type Leaf (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = Array (Attribute subj id r state e) -> Blessed state CoreEvent
-type LeafAnd (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = Array (Attribute subj id r state e) -> InitFn subj id state -> Blessed state CoreEvent
-type Handler (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state e = HandlerFn subj id state -> Attribute subj id r state e
+type Node (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state CoreEvent) -> Array (Blessed state CoreEvent) -> Blessed state CoreEvent
+type NodeAnd (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state CoreEvent) -> Array (Blessed state CoreEvent) -> InitFn subj id state -> Blessed state CoreEvent
+type Leaf (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state CoreEvent) -> Blessed state CoreEvent
+type LeafAnd (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state CoreEvent) -> InitFn subj id state -> Blessed state CoreEvent
+type Handler (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = HandlerFn subj id state -> Attribute subj id r state CoreEvent
 
 
 splitAttributes :: forall subj id r state e. K.IsSubject subj => IsSymbol id => Events e => Array (Attribute subj id r state e) -> Array I.SProp /\ Array (I.SHandler state)
@@ -112,15 +112,15 @@ onlyOption sym = SoleOption (reflectSymbol sym) <<< encodeJson
 -- handler e handler = E.toCore <$> Handler e handler
 
 
-handler :: forall subj id r state e. Fires subj e => e -> Handler subj id r state e
-handler = Handler
+handler :: forall subj id r state e. Fires subj e => e -> Handler subj id r state
+handler e fn = E.toCore <$> Handler e fn
 
 
 -- on :: forall subj id r state e. Fires subj e => e -> Handler subj id r state CoreEvent
 -- on = handler
 
 
-on :: forall subj id r state e. Fires subj e => e -> Handler subj id r state e
+on :: forall subj id r state e. Fires subj e => e -> Handler subj id r state
 on = handler
 
 
@@ -289,14 +289,14 @@ encode :: forall state e. Ref state -> Blessed state e -> I.BlessedEnc
 encode = Foreign.encode
 
 
-node :: forall subj id state r e. K.IsSubject subj => IsSymbol id => NodeKey subj id -> Node subj id state r e
+node :: forall subj id state r. K.IsSubject subj => IsSymbol id => NodeKey subj id -> Node subj id state r
 node nodeKey attrs children =
     I.SNode (NK.rawify nodeKey) sprops children handlers
     where sprops /\ handlers = splitAttributes attrs
 
 
-nodeAnd :: forall subj id state r e. K.IsSubject subj => IsSymbol id => Events e => NodeKey subj id -> NodeAnd subj id state r e
-nodeAnd nodeKey attrs children fn =
+nodeAnd :: forall subj id state r e. K.IsSubject subj => IsSymbol id => Events e => Proxy e -> NodeKey subj id -> NodeAnd subj id state r
+nodeAnd _ nodeKey attrs children fn =
     I.SNode (NK.rawify nodeKey) sprops children (Op.makeHandler nodeKey initialId initalArgs (\id _ -> fn id) : handlers)
     where
         sprops /\ handlers = splitAttributes attrs

@@ -33,13 +33,10 @@ instance C.Fires Checkbox CheckboxEvent
 
 
 
-type Handler subj id r state = C.Handler subj id r state CheckboxEvent
-
-
-cbHandler :: forall subj id r state. Extends Checkbox subj => C.Fires subj CheckboxEvent => CheckboxEvent -> Handler subj id r state
+cbHandler :: forall subj id r state. Extends Checkbox subj => C.Fires subj CheckboxEvent => CheckboxEvent -> C.Handler subj id r state
 cbHandler = C.handler
 
 
 
-on :: forall subj id r state. Extends Checkbox subj => C.Fires subj CheckboxEvent => CheckboxEvent -> Handler subj id r state
+on :: forall subj id r state. Extends Checkbox subj => C.Fires subj CheckboxEvent => CheckboxEvent -> C.Handler subj id r state
 on = cbHandler

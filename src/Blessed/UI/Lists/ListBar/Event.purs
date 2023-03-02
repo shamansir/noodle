@@ -42,13 +42,10 @@ instance events :: C.Events ListBarEvent where
 instance C.Fires ListBar ListBarEvent
 
 
-type Handler subj id r state = C.Handler subj id r state ListBarEvent
-
-
-lbHandler :: forall subj id r state. Extends ListBar subj => C.Fires subj ListBarEvent => ListBarEvent -> Handler subj id r state
+lbHandler :: forall subj id r state. Extends ListBar subj => C.Fires subj ListBarEvent => ListBarEvent -> C.Handler subj id r state
 lbHandler = C.handler
 
 
 
-on :: forall subj id r state. Extends ListBar subj => C.Fires subj ListBarEvent => ListBarEvent -> Handler subj id r state
+on :: forall subj id r state. Extends ListBar subj => C.Fires subj ListBarEvent => ListBarEvent -> C.Handler subj id r state
 on = lbHandler
