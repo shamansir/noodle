@@ -656,7 +656,7 @@ main2 =
                         liftEffect $ Console.log "inlet"
                         inletSelected <- List.selected ~< lbKey
                         liftEffect $ Console.log $ show inletSelected
-                -- FIXME: it is only possible to assign to one type of events
+                -- FIXME: this way it is only possible to assign to one type of events
                 -- FIXME: make all B.listBar, B.box methods and so on return object with `Blessed.Event == Blessed.CoreEvent`
                 -- FIXME: and/or don't restrict Blessed.* methods to particular events
                 -- , Core.on Element.Click
@@ -707,6 +707,8 @@ main2 =
             lbKey >~ Core.on' ListBar.Select $ \_ _ -> liftEffect $ Console.log "click assigned after"
             mainScreen >~ Screen.render
     )
+
+-- FIXME: removing links isn't working yet, click works now
 
 
 main :: Effect Unit

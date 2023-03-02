@@ -36,6 +36,8 @@ function ___log() {
 
 const INIT_HANDLER_KEY = 'init';
 
+// FIXME: move more logic to PureScript and for JS it should be just simple functions
+
 function buildRecord(array, fn) {
     return array.reduce((record, item, idx) => {
         const pair = fn(item, idx);
@@ -295,6 +297,7 @@ function callCommand(rawNodeKey) {
                         switch (command.type) {
                             case 'call':
                                 if (command.marker == 'CallCommandEx') {
+                                    ___log('ex', command.method, command.args);
                                     blessedObj[command.method].apply(blessedObj, checkForNodes(command.args));
                                 } else {
                                     blessedObj[command.method].apply(blessedObj, command.args);
@@ -351,7 +354,7 @@ function checkForNodes(cmdArgs) {
     return cmdArgs.map((arg) => {
         if (arg && arg['marker'] && arg['marker'] == 'Node') {
             const node = arg;
-            const blessedNode = registerNode(node)();
+            const blessedNode = registry[node.nodeId] ? registry[node.nodeId].blessed : registerNode(node)();
             // TODO: check registry[node.nodeId].blessed?
             return blessedNode;
         } else {

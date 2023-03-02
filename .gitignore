@@ -14,3 +14,4 @@ static
 src_
 to-production.sh
 commands_dump.txt
+blessed_op_log.txt
