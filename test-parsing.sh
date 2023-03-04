@@ -1,0 +1,1 @@
+spago -x ./test.dhall run -m Test.Parsing

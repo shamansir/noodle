@@ -1,17 +1,3 @@
-Context :: { time :: Float, ... }
-Value :: Number | Array Number | (Context -> Number) | Fast Array Number | Smooth Array Number | ... | Time | Mouse | Width | Height | ... | Harmonic Harmonic
-Array :: Array Value
-Texture :: Solid | Dynamic | Video | Camera | ...
-Source :: Source0 | Source1 | Source2 | ...
-Output :: Output0 | Output1 | Output2 | ...
-Ease :: Linear | InOutCubic | ...
-From :: All | Output Output
-Audio :: Mic | File | ...
-AudioBin :: H0 | H1 | H2 | H3 | H4 ..
-UpdateFn :: Context -> Effect Unit
-SourceOptions :: { src :: Canvas, ... }
-GlslFn :: see below
-
 source : hsl(10, 100%, 70%)
 geometry : hsl(50, 100%, 70%)
 color : hsl(90, 100%, 70%)
@@ -115,36 +101,3 @@ audio : hide :: a:Audio -> ? -> Unit
 audio : show :: a:Audio -> ? -> Unit
 
 out : out : what:Texture :: where:Output -> Unit
-
-https://hydra.ojack.xyz/functions/
-
-
-
-// from https://www.shadertoy.com/view/XsfGzn
-setFunction({
-  name: 'chroma',
-  type: 'color',
-  inputs: [
-    ],
-  glsl: `
-   float maxrb = max( _c0.r, _c0.b );
-   float k = clamp( (_c0.g-maxrb)*5.0, 0.0, 1.0 );
-   float dg = _c0.g;
-   _c0.g = min( _c0.g, maxrb*0.8 );
-   _c0 += vec4(dg - _c0.g);
-   return vec4(_c0.rgb, 1.0 - k);
-`})
-osc(60,0.1,1.5).chroma().out(o0)
-
-
-
-
-(\w+)\s:\s(\w+)\s::\s
-  (\w+:\w+(\s\([\w\.]+\))?\s->\s)?
-  (\w+:\w+(\s\([\w\.]+\))?\s->\s)?
-  (\w+:\w+(\s\([\w\.]+\))?\s->\s)?
-  (\w+:\w+(\s\([\w\.]+\))?\s->\s)?
-  (\w+:\w+(\s\([\w\.]+\))?\s->\s)?
-(\w+)
-
-$1 $2 $3 $4 $5 >>>
