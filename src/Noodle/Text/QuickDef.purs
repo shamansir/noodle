@@ -6,8 +6,8 @@ import Data.Maybe (Maybe(..))
 
 
 newtype FN = FN
-  { family :: String
-  , name :: String
+  { tag :: String
+  , family :: String
   , args :: Array (Maybe Argument)
   , returns :: String
   }
@@ -17,10 +17,10 @@ type Argument =
 
 
 qfn :: String -> String -> Array Argument -> String -> FN
-qfn family name args = qfn' family name $ Just <$> args
+qfn tag family args = qfn' tag family $ Just <$> args
 
 qfn' :: String -> String -> Array (Maybe Argument) -> String -> FN
-qfn' family name args returns = FN { family, name, args, returns }
+qfn' tag family args returns = FN { tag, family, args, returns }
 
 qarg :: String -> Argument
 qarg name = { name, type : Nothing, default : Nothing }
@@ -42,7 +42,7 @@ qargtd' n t = qargtd n t >>> Just
 
 
 -- instance Show FN where
---   show (FN { family, name, args, returns }) = ""
+--   show (FN { tag, name, args, returns }) = ""
 
 
 derive newtype instance Show FN

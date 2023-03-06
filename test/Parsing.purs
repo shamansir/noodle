@@ -26,10 +26,16 @@ import Text.Parsing.Parser.Token as P
 import Text.Parsing.Parser.Combinators (choice, sepBy) as P
 
 import Node.Encoding (Encoding(..))
-import Node.FS.Aff (readTextFile)
+import Node.FS.Aff (readTextFile, writeTextFile, appendTextFile)
 
 import Noodle.Text.QuickDef as QD
 import Noodle.Text.QuickDefParser as QDP
+import Noodle.Text.ToolkitGen as QTG
+
+
+in_file_path = "./hydra.fn.clean.list"
+out_file_path = "./hydra.toolkit.prepurs"
+out_file_path_sample = "./hydra.toolkit.prepurs.sample"
 
 
 {-
@@ -52,7 +58,9 @@ parses string expected parser =
 
 main :: Effect Unit
 main = launchAff_ $ runSpec [consoleReporter] do
+
   describe "Toolkit Defs to code" $ do
+
     it "parsing works" $
       parses "x" 'x' $ P.char 'x'
 
@@ -143,10 +151,26 @@ main = launchAff_ $ runSpec [consoleReporter] do
         QDP.fnParser
 
     it "parses file" $ do
-        file <- readTextFile UTF8 "./hydra.fn.clean.list"
+        file <- readTextFile UTF8 in_file_path
         let parseResult = P.runParser file QDP.fnListParser
         case parseResult of
           Right result ->
             Array.length result `shouldEqual` 84
+          Left error ->
+            fail $ show error
+
+    it "converts properly" $ do
+        file <- readTextFile UTF8 in_file_path
+        let parseResult = P.runParser file QDP.fnListParser
+        sample <- readTextFile UTF8 out_file_path_sample
+        case parseResult of
+          Right fnsList -> do
+            let typeDef = QTG.genTypeDefs "hydra" fnsList
+            let toolkitDef = QTG.genToolkitDef "hydra" fnsList
+            writeTextFile UTF8 out_file_path ""
+            appendTextFile UTF8 out_file_path typeDef
+            appendTextFile UTF8 out_file_path "\n\n"
+            appendTextFile UTF8 out_file_path toolkitDef
+            (typeDef <> "\n\n" <> toolkitDef) `shouldEqual` sample
           Left error ->
             fail $ show error
