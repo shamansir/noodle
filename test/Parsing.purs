@@ -38,19 +38,41 @@ loadFile =
         $ readTextFile UTF8 "./hydra.fn.clean.list"
 -}
 
+
 newtype FN = FN
   { family :: String
   , name :: String
-  , args :: Array (Maybe { name :: String, type :: String, default :: Maybe String })
+  , args :: Array (Maybe Argument)
   , returns :: String
   }
 
+type Argument =
+  { name :: String, type :: Maybe String, default :: Maybe String }
 
-qfn :: String -> String -> Array { name :: String, type :: String, default :: Maybe String } -> String -> FN
+
+qfn :: String -> String -> Array Argument -> String -> FN
 qfn family name args = qfn' family name $ Just <$> args
 
-qfn' :: String -> String -> Array (Maybe { name :: String, type :: String, default :: Maybe String }) -> String -> FN
+qfn' :: String -> String -> Array (Maybe Argument) -> String -> FN
 qfn' family name args returns = FN { family, name, args, returns }
+
+qarg :: String -> Argument
+qarg name = { name, type : Nothing, default : Nothing }
+
+qarg' :: String -> Maybe Argument
+qarg' = qarg >>> Just
+
+qargt :: String -> String -> Argument
+qargt name t = { name, type : Just t, default : Nothing }
+
+qargt' :: String -> String -> Maybe Argument
+qargt' n = qargt n >>> Just
+
+qargtd :: String -> String -> String -> Argument
+qargtd name t d = { name, type : Just t, default : Just d }
+
+qargtd' :: String -> String -> String -> Maybe Argument
+qargtd' n t = qargtd n t >>> Just
 
 
 parses :: forall (s :: Type) (m :: Type -> Type) (a :: Type). MonadThrow Error m => Show a => Eq a => s -> a -> P.ParserT s Identity a -> m Unit
@@ -81,9 +103,20 @@ myParser = do
 
   where
     validToken = String.fromCharArray <$> Array.some P.alphaNum
+    validDefaultValue = String.fromCharArray <$> Array.some (P.choice [ P.alphaNum, P.char '.' ])
     validArgument = do
       P.choice
         [ P.char '?' *> pure Nothing
+        , Just <$> do
+            name <- validToken
+            maybeType <- P.optionMaybe $ P.char ':' *> validToken
+            _ <- Array.many P.space
+            maybeDefault <- P.optionMaybe
+                              $ P.between
+                                (P.char '{')
+                                (P.char '}')
+                                validDefaultValue
+            pure { name, type : maybeType, default : maybeDefault }
         ]
       -- _ <- validToken
       -- pure $ Just { name : "", type : "", default : Nothing }
@@ -94,8 +127,8 @@ myParser = do
       pure unit
     argumentsP =
       P.between
-        (P.char '(')
-        (P.char ')')
+        (P.char '<')
+        (P.char '>')
         $ Array.fromFoldable <$> P.sepBy validArgument arrowSep
 
 
@@ -135,28 +168,46 @@ main = launchAff_ $ runSpec [consoleReporter] do
       parses "?->? ->?" [ '?', '?', '?' ] qParser
       parses "? -> ? -> ?" [ '?', '?', '?' ] qParser
 
-    it "parsing one function with no arguments works" $
+    it "parsing one function with no arguments works" $ do
       parses
         "test : foo :: => Result"
+        (qfn "test" "foo" [] "Result")
+        myParser
+      parses
+        "test : foo :: <> => Result"
         (qfn "test" "foo" [] "Result")
         myParser
 
     it "parsing one function with an unkwown argument works" $
       parses
-        "test : foo :: (?) => Result"
+        "test : foo :: <?> => Result"
         (qfn' "test" "foo" [ Nothing ] "Result")
         myParser
 
     it "parsing one function with two unkwown arguments works" $ do
       parses
-        "test : foo :: (?->?) => Result"
+        "test : foo :: <?->?> => Result"
         (qfn' "test" "foo" [ Nothing, Nothing ] "Result")
         myParser
       parses
-        "test : foo :: (? -> ?) => Result"
+        "test : foo :: <? -> ?> => Result"
         (qfn' "test" "foo" [ Nothing, Nothing ] "Result")
         myParser
       parses
-        "test : foo :: (? ->?) => Result"
+        "test : foo :: <? ->?> => Result"
         (qfn' "test" "foo" [ Nothing, Nothing ] "Result")
+        myParser
+
+    it "parsing one function with arguments works" $ do
+      parses
+        "test : foo :: <bar->?> => Result"
+        (qfn' "test" "foo" [ Just (qarg "bar"), Nothing ] "Result")
+        myParser
+      parses
+        "test : foo :: <? -> bar> => Result"
+        (qfn' "test" "foo" [ Nothing, Just (qarg "bar") ] "Result")
+        myParser
+      parses
+        "test : foo :: <bar:Number -> buz:Number {20}> => Result"
+        (qfn "test" "foo" [ qargt "bar" "Number", qargtd "buz" "Number" "20" ] "Result")
         myParser
