@@ -51,7 +51,7 @@ modulate : modulateScale :: <what:Texture -> with:Texture -> multiple:Value {1} 
 modulate : modulatePixelate :: <what:Texture -> with:Texture -> multiple:Value {10} -> offset:Value {3}> => Texture
 modulate : modulateRotate :: <what:Texture -> with:Texture -> multiple:Value {1} -> offset:Value> => Texture
 modulate : modulateHue :: <what:Texture -> with:Texture -> amount:Value {1}> => Texture
-synth : render :: <from:From (All)> => Unit
+synth : render :: <from:From {All}> => Unit
 synth : update :: <fn:UpdateFn> => Unit
 synth : setResolution :: <width:Value -> height:Value> => Unit
 synth : hush :: <Unit> => Unit
@@ -71,7 +71,7 @@ extsource : initStream :: <where:Source -> ?> => Unit
 extsource : initScreen :: <where:Source> => Unit
 array : fast :: <a:Array -> speed:Value {1}> => Value
 array : smooth :: <a:Array -> smooth:Value {1}> => Value
-array : ease :: <a:Array -> ease:Ease (Linear)> => Value
+array : ease :: <a:Array -> ease:Ease {Linear}> => Value
 array : offset :: <a:Array -> offset:Value {0.5}> => Value
 array : fit :: <a:Array -> low:Value {0} -> high:Value {1}> => Value
 audio : fft :: <a:Audio -> h:Harmonic> => Value

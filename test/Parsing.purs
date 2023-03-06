@@ -215,8 +215,27 @@ main = launchAff_ $ runSpec [consoleReporter] do
           ]
         "Texture")
         myParser
+      parses
+        "synth : render :: <from:From {All}> => Unit"
+        (qfn "synth" "render"
+          [ qargtd "from" "From" "All"
+          ]
+        "Unit")
+        myParser
+      parses
+        "synth : update :: <fn:UpdateFn> => Unit"
+        (qfn "synth" "update"
+          [ qargt "fn" "UpdateFn"
+          ]
+        "Unit")
+        myParser
 
 
-        -- file <- readTextFile UTF8 "./hydra.fn.clean.list"
-        -- source : shape :: sides:Value (60) -> radius:Value (0.3) -> smoothing:Value (0.01) -> Result
-        -- let parseResult = P.runParser "x" $ P.char 'x'
+    it "parses file" $ do
+        file <- readTextFile UTF8 "./hydra.fn.clean.list"
+        let parseResult = P.runParser file $ Array.many $ myParser >>= \fn -> P.char '\n' *> pure fn
+        case parseResult of
+          Right result ->
+            Array.length result `shouldEqual` 84
+          Left error ->
+            fail $ show error
