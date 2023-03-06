@@ -118,8 +118,6 @@ myParser = do
                                 validDefaultValue
             pure { name, type : maybeType, default : maybeDefault }
         ]
-      -- _ <- validToken
-      -- pure $ Just { name : "", type : "", default : Nothing }
     arrowSep = do
       _ <- Array.many P.space
       _ <- P.choice [ P.string "->", String.singleton <$> P.char '→' ]
@@ -144,15 +142,9 @@ main :: Effect Unit
 main = launchAff_ $ runSpec [consoleReporter] do
   describe "Toolkit Defs to code" $ do
     it "parsing works" $
-        -- file <- readTextFile UTF8 "./hydra.fn.clean.list"
-        -- source : shape :: sides:Value (60) -> radius:Value (0.3) -> smoothing:Value (0.01) -> Result
-        -- let parseResult = P.runParser "x" $ P.char 'x'
       parses "x" 'x' $ P.char 'x'
 
     it "parsing with sep works" $ do
-        -- file <- readTextFile UTF8 "./hydra.fn.clean.list"
-        -- source : shape :: sides:Value (60) -> radius:Value (0.3) -> smoothing:Value (0.01) -> Result
-        -- let parseResult = P.runParser "x" $ P.char 'x'
       let
         arrowSep = do
           _ <- Array.many P.space
@@ -211,3 +203,20 @@ main = launchAff_ $ runSpec [consoleReporter] do
         "test : foo :: <bar:Number -> buz:Number {20}> => Result"
         (qfn "test" "foo" [ qargt "bar" "Number", qargtd "buz" "Number" "20" ] "Result")
         myParser
+      parses
+        "modulate : modulateRepeat :: <what:Texture -> with:Texture -> repeatX:Value {3} -> repeatY:Value {3} -> offsetX:Value {0.5} -> offsetY:Value {0.5}> => Texture"
+        (qfn "modulate" "modulateRepeat"
+          [ qargt "what" "Texture"
+          , qargt "with" "Texture"
+          , qargtd "repeatX" "Value" "3"
+          , qargtd "repeatY" "Value" "3"
+          , qargtd "offsetX" "Value" "0.5"
+          , qargtd "offsetY" "Value" "0.5"
+          ]
+        "Texture")
+        myParser
+
+
+        -- file <- readTextFile UTF8 "./hydra.fn.clean.list"
+        -- source : shape :: sides:Value (60) -> radius:Value (0.3) -> smoothing:Value (0.01) -> Result
+        -- let parseResult = P.runParser "x" $ P.char 'x'
