@@ -23,11 +23,13 @@ import Test.Spec.Runner (runSpec)
 import Text.Parsing.Parser as P
 import Text.Parsing.Parser.String as P
 import Text.Parsing.Parser.Token as P
-import Text.Parsing.Parser.Combinators as P
+import Text.Parsing.Parser.Combinators (choice, sepBy) as P
 
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile)
-import Node.Path (FilePath)
+
+import Noodle.Text.QuickDef as QD
+import Noodle.Text.QuickDefParser as QDP
 
 
 {-
@@ -39,42 +41,6 @@ loadFile =
 -}
 
 
-newtype FN = FN
-  { family :: String
-  , name :: String
-  , args :: Array (Maybe Argument)
-  , returns :: String
-  }
-
-type Argument =
-  { name :: String, type :: Maybe String, default :: Maybe String }
-
-
-qfn :: String -> String -> Array Argument -> String -> FN
-qfn family name args = qfn' family name $ Just <$> args
-
-qfn' :: String -> String -> Array (Maybe Argument) -> String -> FN
-qfn' family name args returns = FN { family, name, args, returns }
-
-qarg :: String -> Argument
-qarg name = { name, type : Nothing, default : Nothing }
-
-qarg' :: String -> Maybe Argument
-qarg' = qarg >>> Just
-
-qargt :: String -> String -> Argument
-qargt name t = { name, type : Just t, default : Nothing }
-
-qargt' :: String -> String -> Maybe Argument
-qargt' n = qargt n >>> Just
-
-qargtd :: String -> String -> String -> Argument
-qargtd name t d = { name, type : Just t, default : Just d }
-
-qargtd' :: String -> String -> String -> Maybe Argument
-qargtd' n t = qargtd n t >>> Just
-
-
 parses :: forall (s :: Type) (m :: Type -> Type) (a :: Type). MonadThrow Error m => Show a => Eq a => s -> a -> P.ParserT s Identity a -> m Unit
 parses string expected parser =
   case P.runParser string parser of
@@ -82,60 +48,6 @@ parses string expected parser =
       result `shouldEqual` expected
     Left error ->
       fail $ show error
-
-
-myParser :: forall (m :: Type -> Type). Functor m => Monad m => P.ParserT String m FN
-myParser = do
-  family <- validToken
-  _ <- Array.some P.space
-  _ <- P.char ':'
-  _ <- Array.some P.space
-  fnName <- validToken
-  _ <- Array.some P.space
-  _ <- P.string "::"
-  _ <- Array.many P.space
-  args <- P.option [] argumentsP
-  _ <- Array.many P.space
-  _ <- P.string "=>"
-  _ <- Array.some P.space
-  returnVal <- validToken
-  pure $ qfn' family fnName args returnVal
-
-  where
-    validToken = String.fromCharArray <$> Array.some P.alphaNum
-    validDefaultValue = String.fromCharArray <$> Array.some (P.choice [ P.alphaNum, P.char '.' ])
-    validArgument = do
-      P.choice
-        [ P.char '?' *> pure Nothing
-        , Just <$> do
-            name <- validToken
-            maybeType <- P.optionMaybe $ P.char ':' *> validToken
-            _ <- Array.many P.space
-            maybeDefault <- P.optionMaybe
-                              $ P.between
-                                (P.char '{')
-                                (P.char '}')
-                                validDefaultValue
-            pure { name, type : maybeType, default : maybeDefault }
-        ]
-    arrowSep = do
-      _ <- Array.many P.space
-      _ <- P.choice [ P.string "->", String.singleton <$> P.char '→' ]
-      _ <- Array.many P.space
-      pure unit
-    argumentsP =
-      P.between
-        (P.char '<')
-        (P.char '>')
-        $ Array.fromFoldable <$> P.sepBy validArgument arrowSep
-
-
--- instance Show FN where
---   show (FN { family, name, args, returns }) = ""
-
-
-derive newtype instance Show FN
-derive newtype instance Eq FN
 
 
 main :: Effect Unit
@@ -163,77 +75,76 @@ main = launchAff_ $ runSpec [consoleReporter] do
     it "parsing one function with no arguments works" $ do
       parses
         "test : foo :: => Result"
-        (qfn "test" "foo" [] "Result")
-        myParser
+        (QD.qfn "test" "foo" [] "Result")
+        QDP.fnParser
       parses
         "test : foo :: <> => Result"
-        (qfn "test" "foo" [] "Result")
-        myParser
+        (QD.qfn "test" "foo" [] "Result")
+        QDP.fnParser
 
     it "parsing one function with an unkwown argument works" $
       parses
         "test : foo :: <?> => Result"
-        (qfn' "test" "foo" [ Nothing ] "Result")
-        myParser
+        (QD.qfn' "test" "foo" [ Nothing ] "Result")
+        QDP.fnParser
 
     it "parsing one function with two unkwown arguments works" $ do
       parses
         "test : foo :: <?->?> => Result"
-        (qfn' "test" "foo" [ Nothing, Nothing ] "Result")
-        myParser
+        (QD.qfn' "test" "foo" [ Nothing, Nothing ] "Result")
+        QDP.fnParser
       parses
         "test : foo :: <? -> ?> => Result"
-        (qfn' "test" "foo" [ Nothing, Nothing ] "Result")
-        myParser
+        (QD.qfn' "test" "foo" [ Nothing, Nothing ] "Result")
+        QDP.fnParser
       parses
         "test : foo :: <? ->?> => Result"
-        (qfn' "test" "foo" [ Nothing, Nothing ] "Result")
-        myParser
+        (QD.qfn' "test" "foo" [ Nothing, Nothing ] "Result")
+        QDP.fnParser
 
     it "parsing one function with arguments works" $ do
       parses
         "test : foo :: <bar->?> => Result"
-        (qfn' "test" "foo" [ Just (qarg "bar"), Nothing ] "Result")
-        myParser
+        (QD.qfn' "test" "foo" [ Just (QD.qarg "bar"), Nothing ] "Result")
+        QDP.fnParser
       parses
         "test : foo :: <? -> bar> => Result"
-        (qfn' "test" "foo" [ Nothing, Just (qarg "bar") ] "Result")
-        myParser
+        (QD.qfn' "test" "foo" [ Nothing, Just (QD.qarg "bar") ] "Result")
+        QDP.fnParser
       parses
         "test : foo :: <bar:Number -> buz:Number {20}> => Result"
-        (qfn "test" "foo" [ qargt "bar" "Number", qargtd "buz" "Number" "20" ] "Result")
-        myParser
+        (QD.qfn "test" "foo" [ QD.qargt "bar" "Number", QD.qargtd "buz" "Number" "20" ] "Result")
+        QDP.fnParser
       parses
         "modulate : modulateRepeat :: <what:Texture -> with:Texture -> repeatX:Value {3} -> repeatY:Value {3} -> offsetX:Value {0.5} -> offsetY:Value {0.5}> => Texture"
-        (qfn "modulate" "modulateRepeat"
-          [ qargt "what" "Texture"
-          , qargt "with" "Texture"
-          , qargtd "repeatX" "Value" "3"
-          , qargtd "repeatY" "Value" "3"
-          , qargtd "offsetX" "Value" "0.5"
-          , qargtd "offsetY" "Value" "0.5"
+        (QD.qfn "modulate" "modulateRepeat"
+          [ QD.qargt "what" "Texture"
+          , QD.qargt "with" "Texture"
+          , QD.qargtd "repeatX" "Value" "3"
+          , QD.qargtd "repeatY" "Value" "3"
+          , QD.qargtd "offsetX" "Value" "0.5"
+          , QD.qargtd "offsetY" "Value" "0.5"
           ]
         "Texture")
-        myParser
+        QDP.fnParser
       parses
         "synth : render :: <from:From {All}> => Unit"
-        (qfn "synth" "render"
-          [ qargtd "from" "From" "All"
+        (QD.qfn "synth" "render"
+          [ QD.qargtd "from" "From" "All"
           ]
         "Unit")
-        myParser
+        QDP.fnParser
       parses
         "synth : update :: <fn:UpdateFn> => Unit"
-        (qfn "synth" "update"
-          [ qargt "fn" "UpdateFn"
+        (QD.qfn "synth" "update"
+          [ QD.qargt "fn" "UpdateFn"
           ]
         "Unit")
-        myParser
-
+        QDP.fnParser
 
     it "parses file" $ do
         file <- readTextFile UTF8 "./hydra.fn.clean.list"
-        let parseResult = P.runParser file $ Array.many $ myParser >>= \fn -> P.char '\n' *> pure fn
+        let parseResult = P.runParser file QDP.fnListParser
         case parseResult of
           Right result ->
             Array.length result `shouldEqual` 84

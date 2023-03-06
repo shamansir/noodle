@@ -1,9 +1,9 @@
 Context :: { time :: Float, ... }
-Value :: Number | Array Number | (Context -> Number) | Fast Array Number | Smooth Array Number | ... | Time | Mouse | Width | Height | ... | Harmonic Harmonic
+Value :: Number | Array Number | (Context -> Number) | Fast Array Number | Smooth Array Number | ... | Time | Mouse | Width | Height | ... | Harmonic AudioBin
 Array :: Array Value
 Texture :: Solid | Dynamic | Video | Camera | ...
 Source :: Source0 | Source1 | Source2 | ...
-Output :: Output0 | Output1 | Output2 | ...
+Output :: Screen | Output0 | Output1 | Output2 | ...
 Ease :: Linear | InOutCubic | ...
 From :: All | Output Output
 Audio :: Mic | File | ...
@@ -27,7 +27,7 @@ source : voronoi :: scale:Value (5) -> speed:Value (0.3) -> blending:Value (0.3)
 source : osc :: frequency:Value (60) -> sync:Value (0.1) -> offset:Value -> Texture
 source : shape :: sides:Value (60) -> radius:Value (0.3) -> smoothing:Value (0.01) -> Texture
 source : gradient :: speed:Value -> Texture
-source : src :: tex:Texture -> Texture
+source : srctex :: tex:Texture -> Texture
 source : solid :: r:Value -> g:Value -> b:Value -> a:Value (1) -> Texture
 source : src :: src:Source -> Texture
 source : prev :: ? -> Texture
