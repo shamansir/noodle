@@ -19,9 +19,19 @@ inBrackets =
     wrap "(" ")"
 
 
+inBrackets' :: forall a. (a → String) → String → Array a → String
+inBrackets' =
+    wrap "(" $ "\n" <> i2 <> ")"
+
+
 inCBraces :: forall a. (a → String) → String → Array a → String
 inCBraces =
     wrap "{" "}"
+
+
+inCBraces' :: forall a. (a → String) → String → Array a → String
+inCBraces' =
+    wrap "{" $ "\n" <> i2 <> "}"
 
 
 i = "    "
@@ -30,38 +40,55 @@ i3 = i2 <> i
 i4 = i3 <> i
 
 
-genTypeDefs :: String -> Array QD.FN -> String
-genTypeDefs tkName fns =
+genSeparateImports :: String -> Array QD.FN -> String
+genSeparateImports _ fns =
+    String.joinWith "\n" (genModuleImport <$> fns)
+
+
+genTypeDefInline :: String -> Array QD.FN -> String
+genTypeDefInline _ fns =
     "type Toolkit m\n" <> i <> "= Toolkit Unit\n"
-        <> i2 <> inBrackets genFnTypeDef ("\n" <> i2 <> ", ") fns
+        <> i2 <> inBrackets' genFamilyTypeDef ("\n" <> i2 <> ", ") fns
+
+
+genSeparateFamilyTypes :: String -> Array QD.FN -> String
+genSeparateFamilyTypes _ fns =
+    String.joinWith "\n" (genFamilyTypeSepDef <$> fns) <> "\n\n"
+
+
+genSeparateFamilyImpls :: String -> Array QD.FN -> String
+genSeparateFamilyImpls _ fns =
+    String.joinWith "\n" (genFamilyToolkitSeparateImpl <$> fns) <> "\n\n"
+
+
+genTypeDefSeparate :: String -> Array QD.FN -> String
+genTypeDefSeparate _ fns =
+    "type Toolkit m\n" <> i <> "= Toolkit Unit\n"
+        <> i2 <> inBrackets' genFamilyTypeDefRef ("\n" <> i2 <> ", ") fns
+
+
+moduleName :: String -> String
+moduleName family = "M" <> family
+
+
+familyTypeName :: String -> String
+familyTypeName family = "T" <> family
 
 
 genToolkitDef :: String -> Array QD.FN -> String
 genToolkitDef tkName fns =
-    "Toolkit.from \"" <> tkName <> "\"\n" <> i <>
-        inCBraces genFnToolkitDef ("\n" <> i <> ", ") fns
+    "toolkit =\n"
+        <> i <> "Toolkit.from \"" <> tkName <> "\"\n"
+        <> i2 <> inCBraces' genFamilyToolkitDef ("\n" <> i2 <> ", ") fns
 
 
-{-
-    """
-    Toolkit.from "test"
-        { foo :
-            Family.def
-                unit
-                { foo : "aaa", bar : "bbb", c : 32 }
-                { out : false }
-                $ Fn.make "foo" $ pure unit"
-        ,
-    }
-    """
+genModuleImport :: QD.FN -> String
+genModuleImport (QD.FN fn) =
+   "import Toolkit.Families." <> moduleName fn.family <> " as " <> moduleName fn.family
 
 
-
--}
-
-
-genFnTypeDef :: QD.FN -> String
-genFnTypeDef (QD.FN fn) =
+genFamilyTypeDef :: QD.FN -> String
+genFamilyTypeDef (QD.FN fn) =
     fn.family <> " :: -- {-> " <> fn.tag <> " <-} \n"
         <> i3 <> "Family.Def Unit \n"
         <> i4 <> (inBrackets genArgToolkitDef ", " fn.args) <> "\n"
@@ -69,14 +96,41 @@ genFnTypeDef (QD.FN fn) =
         <> i4 <> "m"
 
 
-genFnToolkitDef :: QD.FN -> String
-genFnToolkitDef (QD.FN fn) =
+genFamilyTypeDefRef :: QD.FN -> String
+genFamilyTypeDefRef (QD.FN fn) =
+    fn.family <> " :: "
+        <> i3 <> moduleName fn.family <> ".Family"
+        <> "-- {-> " <> fn.tag <> " <-}"
+
+
+genFamilyTypeSepDef :: QD.FN -> String
+genFamilyTypeSepDef (QD.FN fn) =
+    "type " <> moduleName fn.family <> ".Family" <> " m = -- {-> " <> fn.tag <> " <-} \n"
+        <> i <> "Family.Def Unit \n"
+        <> i2 <> (inBrackets genArgToolkitDef ", " fn.args) <> "\n"
+        <> i2 <> "( out :: " <> fn.returns <> " )\n"
+        <> i2 <> "m"
+
+
+genFamilyToolkitDef :: QD.FN -> String
+genFamilyToolkitDef (QD.FN fn) =
     fn.family <> " : -- {-> " <> fn.tag <> " <-} \n"
-        <> i2 <> "Family.def\n"
-        <> i3 <> "unit\n"
-        <> i3 <> (inCBraces genArgToolkitDef ", " fn.args) <> "\n"
-        <> i3 <> "{ out : " <> fn.returns <> " }\n"
-        <> i3 <> "$ Fn.make $ pure unit"
+        <> i3 <> "Family.def\n"
+        <> i4 <> "unit\n"
+        <> i4 <> (inCBraces genArgToolkitDef ", " fn.args) <> "\n"
+        <> i4 <> "{ out : " <> fn.returns <> " }\n"
+        <> i4 <> "$ Fn.make $ pure unit"
+
+
+genFamilyToolkitSeparateImpl :: QD.FN -> String
+genFamilyToolkitSeparateImpl (QD.FN fn) =
+    moduleName fn.family <> ".fn :: forall m. " <> moduleName fn.family <> ".Family m\n"
+    <> moduleName fn.family <> ".fn = -- {-> " <> fn.tag <> " <-} \n"
+        <> i <> "Family.def\n"
+        <> i2 <> "unit\n"
+        <> i2 <> (inCBraces genArgToolkitDef ", " fn.args) <> "\n"
+        <> i2 <> "{ out : " <> fn.returns <> " }\n"
+        <> i <> "$ Fn.make $ pure unit"
 
 
 genArgToolkitDef :: Maybe QD.Argument -> String

@@ -6,6 +6,7 @@ import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Identity (Identity)
 import Data.String.CodeUnits as String
+import Data.String (joinWith) as String
 import Data.Array as Array
 
 import Control.Monad.Error.Class (class MonadThrow)
@@ -162,15 +163,25 @@ main = launchAff_ $ runSpec [consoleReporter] do
     it "converts properly" $ do
         file <- readTextFile UTF8 in_file_path
         let parseResult = P.runParser file QDP.fnListParser
-        sample <- readTextFile UTF8 out_file_path_sample
+        sampleContent <- readTextFile UTF8 out_file_path_sample
         case parseResult of
           Right fnsList -> do
-            let typeDef = QTG.genTypeDefs "hydra" fnsList
+            let sepImports = QTG.genSeparateImports "hydra" fnsList
+            let sepNodesTypes = QTG.genSeparateFamilyTypes "hydra" fnsList
+            let sepImpls = QTG.genSeparateFamilyImpls "hydra" fnsList
+            let sepTypeDef = QTG.genTypeDefSeparate "hydra" fnsList
+            let inlineTypeDef = QTG.genTypeDefInline "hydra" fnsList
             let toolkitDef = QTG.genToolkitDef "hydra" fnsList
-            writeTextFile UTF8 out_file_path ""
-            appendTextFile UTF8 out_file_path typeDef
-            appendTextFile UTF8 out_file_path "\n\n"
-            appendTextFile UTF8 out_file_path toolkitDef
-            (typeDef <> "\n\n" <> toolkitDef) `shouldEqual` sample
+            let fileContent =
+                    String.joinWith "\n\n\n"
+                      [ sepImports
+                      , sepNodesTypes
+                      , sepImpls
+                      , sepTypeDef
+                      , inlineTypeDef
+                      , toolkitDef
+                      ]
+            writeTextFile UTF8 out_file_path fileContent
+            fileContent `shouldEqual` sampleContent
           Left error ->
             fail $ show error
