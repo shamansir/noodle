@@ -8,30 +8,30 @@ import Data.Maybe (Maybe(..), fromMaybe)
 
 import Noodle.Text.QuickDef as QD
 
-wrap :: forall a. String → String → (a → String) → String → Array a → String
-wrap start end fn sep items =
-    if Array.length items == 0 then start <> " " <> end
-    else start <> " " <> String.joinWith sep (fn <$> items) <> " " <> end
+wrap :: forall a. String -> String → String → (a → String) → String → Array a → String
+wrap empty start end fn sep items =
+    if Array.length items == 0 then empty
+    else start <> String.joinWith sep (fn <$> items) <> end
 
 
 inBrackets :: forall a. (a → String) → String → Array a → String
 inBrackets =
-    wrap "(" ")"
+    wrap "( )" "( " " )"
 
 
 inBrackets' :: forall a. (a → String) → String → Array a → String
 inBrackets' =
-    wrap "(" $ "\n" <> i2 <> ")"
+    wrap "( )" "( " $ "\n" <> i2 <> ")"
 
 
 inCBraces :: forall a. (a → String) → String → Array a → String
 inCBraces =
-    wrap "{" "}"
+    wrap "{ }" "{ " " }"
 
 
 inCBraces' :: forall a. (a → String) → String → Array a → String
 inCBraces' =
-    wrap "{" $ "\n" <> i2 <> "}"
+    wrap "{ }" "{ " $ "\n" <> i2 <> "}"
 
 
 i = "    "
@@ -53,12 +53,12 @@ genTypeDefInline _ fns =
 
 genSeparateFamilyTypes :: String -> Array QD.FN -> String
 genSeparateFamilyTypes _ fns =
-    String.joinWith "\n" (genFamilyTypeSepDef <$> fns) <> "\n\n"
+    String.joinWith "\n\n" (genFamilyTypeSepDef <$> fns) <> "\n\n"
 
 
 genSeparateFamilyImpls :: String -> Array QD.FN -> String
 genSeparateFamilyImpls _ fns =
-    String.joinWith "\n" (genFamilyToolkitSeparateImpl <$> fns) <> "\n\n"
+    String.joinWith "\n\n" (genFamilyToolkitSeparateImpl <$> fns) <> "\n\n"
 
 
 genTypeDefSeparate :: String -> Array QD.FN -> String
@@ -67,12 +67,20 @@ genTypeDefSeparate _ fns =
         <> i2 <> inBrackets' genFamilyTypeDefRef ("\n" <> i2 <> ", ") fns
 
 
+ensureStartsFromCapitalLetter :: String -> String
+ensureStartsFromCapitalLetter str =
+    case String.splitAt 1 str of
+        { before, after } -> String.toUpper before <> after
+
+
 moduleName :: String -> String
-moduleName family = "M" <> family
+moduleName family =
+    "M" <> ensureStartsFromCapitalLetter family
 
 
 familyTypeName :: String -> String
-familyTypeName family = "T" <> family
+familyTypeName family =
+    "T" <> ensureStartsFromCapitalLetter family
 
 
 genToolkitDef :: String -> Array QD.FN -> String
@@ -89,8 +97,8 @@ genModuleImport (QD.FN fn) =
 
 genFamilyTypeDef :: QD.FN -> String
 genFamilyTypeDef (QD.FN fn) =
-    fn.family <> " :: -- {-> " <> fn.tag <> " <-} \n"
-        <> i3 <> "Family.Def Unit \n"
+    fn.family <> " :: -- {-> " <> fn.tag <> " <-}\n"
+        <> i3 <> "Family.Def Unit\n"
         <> i4 <> (inBrackets genArgToolkitDef ", " fn.args) <> "\n"
         <> i4 <> "( out :: " <> fn.returns <> " )\n"
         <> i4 <> "m"
@@ -99,14 +107,14 @@ genFamilyTypeDef (QD.FN fn) =
 genFamilyTypeDefRef :: QD.FN -> String
 genFamilyTypeDefRef (QD.FN fn) =
     fn.family <> " :: "
-        <> i3 <> moduleName fn.family <> ".Family"
-        <> "-- {-> " <> fn.tag <> " <-}"
+        <> moduleName fn.family <> ".Family"
+        <> " -- {-> " <> fn.tag <> " <-}"
 
 
 genFamilyTypeSepDef :: QD.FN -> String
 genFamilyTypeSepDef (QD.FN fn) =
-    "type " <> moduleName fn.family <> ".Family" <> " m = -- {-> " <> fn.tag <> " <-} \n"
-        <> i <> "Family.Def Unit \n"
+    "type " <> moduleName fn.family <> ".Family" <> " m = -- {-> " <> fn.tag <> " <-}\n"
+        <> i <> "Family.Def Unit\n"
         <> i2 <> (inBrackets genArgToolkitDef ", " fn.args) <> "\n"
         <> i2 <> "( out :: " <> fn.returns <> " )\n"
         <> i2 <> "m"
@@ -114,7 +122,7 @@ genFamilyTypeSepDef (QD.FN fn) =
 
 genFamilyToolkitDef :: QD.FN -> String
 genFamilyToolkitDef (QD.FN fn) =
-    fn.family <> " : -- {-> " <> fn.tag <> " <-} \n"
+    fn.family <> " : -- {-> " <> fn.tag <> " <-}\n"
         <> i3 <> "Family.def\n"
         <> i4 <> "unit\n"
         <> i4 <> (inCBraces genArgToolkitDef ", " fn.args) <> "\n"
@@ -125,7 +133,7 @@ genFamilyToolkitDef (QD.FN fn) =
 genFamilyToolkitSeparateImpl :: QD.FN -> String
 genFamilyToolkitSeparateImpl (QD.FN fn) =
     moduleName fn.family <> ".fn :: forall m. " <> moduleName fn.family <> ".Family m\n"
-    <> moduleName fn.family <> ".fn = -- {-> " <> fn.tag <> " <-} \n"
+    <> moduleName fn.family <> ".fn = -- {-> " <> fn.tag <> " <-}\n"
         <> i <> "Family.def\n"
         <> i2 <> "unit\n"
         <> i2 <> (inCBraces genArgToolkitDef ", " fn.args) <> "\n"

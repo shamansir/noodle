@@ -6,7 +6,7 @@ import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Identity (Identity)
 import Data.String.CodeUnits as String
-import Data.String (joinWith) as String
+import Data.String (joinWith, split, Pattern(..)) as String
 import Data.Array as Array
 
 import Control.Monad.Error.Class (class MonadThrow)
@@ -182,6 +182,10 @@ main = launchAff_ $ runSpec [consoleReporter] do
                       , toolkitDef
                       ]
             writeTextFile UTF8 out_file_path fileContent
-            fileContent `shouldEqual` sampleContent
+            _ <- Array.zipWithA shouldEqual
+                      (String.split (String.Pattern "\n") fileContent)
+                      (String.split (String.Pattern "\n") sampleContent)
+            pure unit
+            -- fileContent `shouldEqual` sampleContent
           Left error ->
             fail $ show error

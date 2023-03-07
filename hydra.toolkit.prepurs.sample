@@ -1,505 +1,588 @@
-import Toolkit.Families.Mnoise as Mnoise
-import Toolkit.Families.Mvoronoi as Mvoronoi
-import Toolkit.Families.Mosc as Mosc
-import Toolkit.Families.Mshape as Mshape
-import Toolkit.Families.Mgradient as Mgradient
-import Toolkit.Families.Msrc as Msrc
-import Toolkit.Families.Msolid as Msolid
-import Toolkit.Families.Msrc as Msrc
-import Toolkit.Families.Mprev as Mprev
-import Toolkit.Families.Mrotate as Mrotate
-import Toolkit.Families.Mscale as Mscale
-import Toolkit.Families.Mpixelate as Mpixelate
-import Toolkit.Families.Mrepeat as Mrepeat
-import Toolkit.Families.MrepeatX as MrepeatX
-import Toolkit.Families.MrepeatY as MrepeatY
-import Toolkit.Families.Mkaleid as Mkaleid
-import Toolkit.Families.Mscroll as Mscroll
-import Toolkit.Families.MscrollX as MscrollX
-import Toolkit.Families.MscrollY as MscrollY
-import Toolkit.Families.Mposterize as Mposterize
-import Toolkit.Families.Mshift as Mshift
-import Toolkit.Families.Minvert as Minvert
-import Toolkit.Families.Mcontrast as Mcontrast
-import Toolkit.Families.Mbrightness as Mbrightness
-import Toolkit.Families.Mluma as Mluma
-import Toolkit.Families.Mtresh as Mtresh
-import Toolkit.Families.Mcolor as Mcolor
-import Toolkit.Families.Msaturate as Msaturate
-import Toolkit.Families.Mhue as Mhue
-import Toolkit.Families.Mcolorama as Mcolorama
-import Toolkit.Families.Msum as Msum
-import Toolkit.Families.Mr as Mr
-import Toolkit.Families.Mg as Mg
-import Toolkit.Families.Mb as Mb
-import Toolkit.Families.Ma as Ma
-import Toolkit.Families.Madd as Madd
-import Toolkit.Families.Msub as Msub
-import Toolkit.Families.Mlayer as Mlayer
-import Toolkit.Families.Mblend as Mblend
-import Toolkit.Families.Mmult as Mmult
-import Toolkit.Families.Mdiff as Mdiff
-import Toolkit.Families.Mmask as Mmask
-import Toolkit.Families.MmodulateRepeat as MmodulateRepeat
-import Toolkit.Families.MmodulateRepeatX as MmodulateRepeatX
-import Toolkit.Families.MmodulateRepeatY as MmodulateRepeatY
-import Toolkit.Families.MmodulateKaleid as MmodulateKaleid
-import Toolkit.Families.MmodulateScrollX as MmodulateScrollX
-import Toolkit.Families.MmodulateScrollY as MmodulateScrollY
-import Toolkit.Families.Mmodulate as Mmodulate
-import Toolkit.Families.MmodulateScale as MmodulateScale
-import Toolkit.Families.MmodulatePixelate as MmodulatePixelate
-import Toolkit.Families.MmodulateRotate as MmodulateRotate
-import Toolkit.Families.MmodulateHue as MmodulateHue
-import Toolkit.Families.Mrender as Mrender
-import Toolkit.Families.Mupdate as Mupdate
-import Toolkit.Families.MsetResolution as MsetResolution
-import Toolkit.Families.Mhush as Mhush
-import Toolkit.Families.MsetFunction as MsetFunction
-import Toolkit.Families.Mspeed as Mspeed
-import Toolkit.Families.Mbpm as Mbpm
-import Toolkit.Families.Mwidth as Mwidth
-import Toolkit.Families.Mheight as Mheight
-import Toolkit.Families.Mpi as Mpi
-import Toolkit.Families.Mtime as Mtime
-import Toolkit.Families.Mmouse as Mmouse
-import Toolkit.Families.MinitCam as MinitCam
-import Toolkit.Families.MinitImage as MinitImage
-import Toolkit.Families.MinitVideo as MinitVideo
-import Toolkit.Families.Minit as Minit
-import Toolkit.Families.MinitStream as MinitStream
-import Toolkit.Families.MinitScreen as MinitScreen
-import Toolkit.Families.Mfast as Mfast
-import Toolkit.Families.Msmooth as Msmooth
-import Toolkit.Families.Mease as Mease
-import Toolkit.Families.Moffset as Moffset
-import Toolkit.Families.Mfit as Mfit
-import Toolkit.Families.Mfft as Mfft
-import Toolkit.Families.MsetSmooth as MsetSmooth
-import Toolkit.Families.MsetCutoff as MsetCutoff
-import Toolkit.Families.MsetBins as MsetBins
-import Toolkit.Families.MsetScale as MsetScale
-import Toolkit.Families.Mhide as Mhide
-import Toolkit.Families.Mshow as Mshow
-import Toolkit.Families.Mout as Mout
+import Toolkit.Families.MNoise as MNoise
+import Toolkit.Families.MVoronoi as MVoronoi
+import Toolkit.Families.MOsc as MOsc
+import Toolkit.Families.MShape as MShape
+import Toolkit.Families.MGradient as MGradient
+import Toolkit.Families.MSrc as MSrc
+import Toolkit.Families.MSolid as MSolid
+import Toolkit.Families.MSrc as MSrc
+import Toolkit.Families.MPrev as MPrev
+import Toolkit.Families.MRotate as MRotate
+import Toolkit.Families.MScale as MScale
+import Toolkit.Families.MPixelate as MPixelate
+import Toolkit.Families.MRepeat as MRepeat
+import Toolkit.Families.MRepeatX as MRepeatX
+import Toolkit.Families.MRepeatY as MRepeatY
+import Toolkit.Families.MKaleid as MKaleid
+import Toolkit.Families.MScroll as MScroll
+import Toolkit.Families.MScrollX as MScrollX
+import Toolkit.Families.MScrollY as MScrollY
+import Toolkit.Families.MPosterize as MPosterize
+import Toolkit.Families.MShift as MShift
+import Toolkit.Families.MInvert as MInvert
+import Toolkit.Families.MContrast as MContrast
+import Toolkit.Families.MBrightness as MBrightness
+import Toolkit.Families.MLuma as MLuma
+import Toolkit.Families.MTresh as MTresh
+import Toolkit.Families.MColor as MColor
+import Toolkit.Families.MSaturate as MSaturate
+import Toolkit.Families.MHue as MHue
+import Toolkit.Families.MColorama as MColorama
+import Toolkit.Families.MSum as MSum
+import Toolkit.Families.MR as MR
+import Toolkit.Families.MG as MG
+import Toolkit.Families.MB as MB
+import Toolkit.Families.MA as MA
+import Toolkit.Families.MAdd as MAdd
+import Toolkit.Families.MSub as MSub
+import Toolkit.Families.MLayer as MLayer
+import Toolkit.Families.MBlend as MBlend
+import Toolkit.Families.MMult as MMult
+import Toolkit.Families.MDiff as MDiff
+import Toolkit.Families.MMask as MMask
+import Toolkit.Families.MModulateRepeat as MModulateRepeat
+import Toolkit.Families.MModulateRepeatX as MModulateRepeatX
+import Toolkit.Families.MModulateRepeatY as MModulateRepeatY
+import Toolkit.Families.MModulateKaleid as MModulateKaleid
+import Toolkit.Families.MModulateScrollX as MModulateScrollX
+import Toolkit.Families.MModulateScrollY as MModulateScrollY
+import Toolkit.Families.MModulate as MModulate
+import Toolkit.Families.MModulateScale as MModulateScale
+import Toolkit.Families.MModulatePixelate as MModulatePixelate
+import Toolkit.Families.MModulateRotate as MModulateRotate
+import Toolkit.Families.MModulateHue as MModulateHue
+import Toolkit.Families.MRender as MRender
+import Toolkit.Families.MUpdate as MUpdate
+import Toolkit.Families.MSetResolution as MSetResolution
+import Toolkit.Families.MHush as MHush
+import Toolkit.Families.MSetFunction as MSetFunction
+import Toolkit.Families.MSpeed as MSpeed
+import Toolkit.Families.MBpm as MBpm
+import Toolkit.Families.MWidth as MWidth
+import Toolkit.Families.MHeight as MHeight
+import Toolkit.Families.MPi as MPi
+import Toolkit.Families.MTime as MTime
+import Toolkit.Families.MMouse as MMouse
+import Toolkit.Families.MInitCam as MInitCam
+import Toolkit.Families.MInitImage as MInitImage
+import Toolkit.Families.MInitVideo as MInitVideo
+import Toolkit.Families.MInit as MInit
+import Toolkit.Families.MInitStream as MInitStream
+import Toolkit.Families.MInitScreen as MInitScreen
+import Toolkit.Families.MFast as MFast
+import Toolkit.Families.MSmooth as MSmooth
+import Toolkit.Families.MEase as MEase
+import Toolkit.Families.MOffset as MOffset
+import Toolkit.Families.MFit as MFit
+import Toolkit.Families.MFft as MFft
+import Toolkit.Families.MSetSmooth as MSetSmooth
+import Toolkit.Families.MSetCutoff as MSetCutoff
+import Toolkit.Families.MSetBins as MSetBins
+import Toolkit.Families.MSetScale as MSetScale
+import Toolkit.Families.MHide as MHide
+import Toolkit.Families.MShow as MShow
+import Toolkit.Families.MOut as MOut
 
 
-type Mnoise.Family m = -- {-> source <-}
+type MNoise.Family m = -- {-> source <-}
     Family.Def Unit
         ( scale : 10, offset : 0.1 )
         ( out :: Texture )
         m
-type Mvoronoi.Family m = -- {-> source <-}
+
+type MVoronoi.Family m = -- {-> source <-}
     Family.Def Unit
         ( scale : 5, speed : 0.3, blending : 0.3 )
         ( out :: Texture )
         m
-type Mosc.Family m = -- {-> source <-}
+
+type MOsc.Family m = -- {-> source <-}
     Family.Def Unit
         ( frequency : 60, sync : 0.1, offset : ? )
         ( out :: Texture )
         m
-type Mshape.Family m = -- {-> source <-}
+
+type MShape.Family m = -- {-> source <-}
     Family.Def Unit
         ( sides : 60, radius : 0.3, smoothing : 0.01 )
         ( out :: Texture )
         m
-type Mgradient.Family m = -- {-> source <-}
+
+type MGradient.Family m = -- {-> source <-}
     Family.Def Unit
         ( speed : ? )
         ( out :: Texture )
         m
-type Msrc.Family m = -- {-> source <-}
+
+type MSrc.Family m = -- {-> source <-}
     Family.Def Unit
         ( tex : ? )
         ( out :: Texture )
         m
-type Msolid.Family m = -- {-> source <-}
+
+type MSolid.Family m = -- {-> source <-}
     Family.Def Unit
         ( r : ?, g : ?, b : ?, a : 1 )
         ( out :: Texture )
         m
-type Msrc.Family m = -- {-> source <-}
+
+type MSrc.Family m = -- {-> source <-}
     Family.Def Unit
         ( src : ? )
         ( out :: Texture )
         m
-type Mprev.Family m = -- {-> source <-}
+
+type MPrev.Family m = -- {-> source <-}
     Family.Def Unit
         ( ? )
         ( out :: Texture )
         m
-type Mrotate.Family m = -- {-> geometry <-}
+
+type MRotate.Family m = -- {-> geometry <-}
     Family.Def Unit
         ( what : ?, angle : 10, speed : ? )
         ( out :: Texture )
         m
-type Mscale.Family m = -- {-> geometry <-}
+
+type MScale.Family m = -- {-> geometry <-}
     Family.Def Unit
         ( what : ?, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 )
         ( out :: Texture )
         m
-type Mpixelate.Family m = -- {-> geometry <-}
+
+type MPixelate.Family m = -- {-> geometry <-}
     Family.Def Unit
         ( what : ?, pixelX : 20, pixelY : 20 )
         ( out :: Texture )
         m
-type Mrepeat.Family m = -- {-> geometry <-}
+
+type MRepeat.Family m = -- {-> geometry <-}
     Family.Def Unit
         ( what : ?, repeatX : 3, repeatY : 3, offsetX : ?, offsetY : ? )
         ( out :: Texture )
         m
-type MrepeatX.Family m = -- {-> geometry <-}
+
+type MRepeatX.Family m = -- {-> geometry <-}
     Family.Def Unit
         ( what : ?, reps : 3, offset : ? )
         ( out :: Texture )
         m
-type MrepeatY.Family m = -- {-> geometry <-}
+
+type MRepeatY.Family m = -- {-> geometry <-}
     Family.Def Unit
         ( what : ?, reps : 3, offset : ? )
         ( out :: Texture )
         m
-type Mkaleid.Family m = -- {-> geometry <-}
+
+type MKaleid.Family m = -- {-> geometry <-}
     Family.Def Unit
         ( what : ?, nSides : 3 )
         ( out :: Texture )
         m
-type Mscroll.Family m = -- {-> geometry <-}
+
+type MScroll.Family m = -- {-> geometry <-}
     Family.Def Unit
         ( what : ?, scrollX : 0.5, scrollY : 0.5, speedX : ?, speedY : ? )
         ( out :: Texture )
         m
-type MscrollX.Family m = -- {-> geometry <-}
+
+type MScrollX.Family m = -- {-> geometry <-}
     Family.Def Unit
         ( what : ?, scrollX : 0.5, speed : ? )
         ( out :: Texture )
         m
-type MscrollY.Family m = -- {-> geometry <-}
+
+type MScrollY.Family m = -- {-> geometry <-}
     Family.Def Unit
         ( what : ?, scrollY : 0.5, speed : ? )
         ( out :: Texture )
         m
-type Mposterize.Family m = -- {-> color <-}
+
+type MPosterize.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, bins : 3, gamma : 0.6 )
         ( out :: Texture )
         m
-type Mshift.Family m = -- {-> color <-}
+
+type MShift.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, r : 0.5, g : ?, b : ?, a : ? )
         ( out :: Texture )
         m
-type Minvert.Family m = -- {-> color <-}
+
+type MInvert.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, amount : 1 )
         ( out :: Texture )
         m
-type Mcontrast.Family m = -- {-> color <-}
+
+type MContrast.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, amount : 1.6 )
         ( out :: Texture )
         m
-type Mbrightness.Family m = -- {-> color <-}
+
+type MBrightness.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, amount : 0.4 )
         ( out :: Texture )
         m
-type Mluma.Family m = -- {-> color <-}
+
+type MLuma.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, treshold : 0.5, tolerance : 0.1 )
         ( out :: Texture )
         m
-type Mtresh.Family m = -- {-> color <-}
+
+type MTresh.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, treshold : 0.5, tolerance : 0.1 )
         ( out :: Texture )
         m
-type Mcolor.Family m = -- {-> color <-}
+
+type MColor.Family m = -- {-> color <-}
     Family.Def Unit
         ( r : 1, g : 1, b : 1, a : 1 )
         ( out :: Texture )
         m
-type Msaturate.Family m = -- {-> color <-}
+
+type MSaturate.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, amount : 2 )
         ( out :: Texture )
         m
-type Mhue.Family m = -- {-> color <-}
+
+type MHue.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, hue : 0.4 )
         ( out :: Texture )
         m
-type Mcolorama.Family m = -- {-> color <-}
+
+type MColorama.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, amount : 0.005 )
         ( out :: Texture )
         m
-type Msum.Family m = -- {-> color <-}
+
+type MSum.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, ? )
         ( out :: Texture )
         m
-type Mr.Family m = -- {-> color <-}
+
+type MR.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, scale : 1, offset : ? )
         ( out :: Texture )
         m
-type Mg.Family m = -- {-> color <-}
+
+type MG.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, scale : 1, offset : ? )
         ( out :: Texture )
         m
-type Mb.Family m = -- {-> color <-}
+
+type MB.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, scale : 1, offset : ? )
         ( out :: Texture )
         m
-type Ma.Family m = -- {-> color <-}
+
+type MA.Family m = -- {-> color <-}
     Family.Def Unit
         ( what : ?, scale : 1, offset : ? )
         ( out :: Texture )
         m
-type Madd.Family m = -- {-> blend <-}
+
+type MAdd.Family m = -- {-> blend <-}
     Family.Def Unit
         ( what : ?, with : ?, amount : 1 )
         ( out :: Texture )
         m
-type Msub.Family m = -- {-> blend <-}
+
+type MSub.Family m = -- {-> blend <-}
     Family.Def Unit
         ( what : ?, with : ?, amount : 1 )
         ( out :: Texture )
         m
-type Mlayer.Family m = -- {-> blend <-}
+
+type MLayer.Family m = -- {-> blend <-}
     Family.Def Unit
         ( what : ?, with : ?, amount : 1 )
         ( out :: Texture )
         m
-type Mblend.Family m = -- {-> blend <-}
+
+type MBlend.Family m = -- {-> blend <-}
     Family.Def Unit
         ( what : ?, with : ?, amount : 0.5 )
         ( out :: Texture )
         m
-type Mmult.Family m = -- {-> blend <-}
+
+type MMult.Family m = -- {-> blend <-}
     Family.Def Unit
         ( what : ?, with : ?, amount : 1 )
         ( out :: Texture )
         m
-type Mdiff.Family m = -- {-> blend <-}
+
+type MDiff.Family m = -- {-> blend <-}
     Family.Def Unit
         ( what : ?, with : ? )
         ( out :: Texture )
         m
-type Mmask.Family m = -- {-> blend <-}
+
+type MMask.Family m = -- {-> blend <-}
     Family.Def Unit
         ( what : ?, with : ? )
         ( out :: Texture )
         m
-type MmodulateRepeat.Family m = -- {-> modulate <-}
+
+type MModulateRepeat.Family m = -- {-> modulate <-}
     Family.Def Unit
         ( what : ?, with : ?, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 )
         ( out :: Texture )
         m
-type MmodulateRepeatX.Family m = -- {-> modulate <-}
+
+type MModulateRepeatX.Family m = -- {-> modulate <-}
     Family.Def Unit
         ( what : ?, with : ?, reps : 3, offset : 0.5 )
         ( out :: Texture )
         m
-type MmodulateRepeatY.Family m = -- {-> modulate <-}
+
+type MModulateRepeatY.Family m = -- {-> modulate <-}
     Family.Def Unit
         ( what : ?, with : ?, reps : 3, offset : 0.5 )
         ( out :: Texture )
         m
-type MmodulateKaleid.Family m = -- {-> modulate <-}
+
+type MModulateKaleid.Family m = -- {-> modulate <-}
     Family.Def Unit
         ( what : ?, with : ?, nSides : 3 )
         ( out :: Texture )
         m
-type MmodulateScrollX.Family m = -- {-> modulate <-}
+
+type MModulateScrollX.Family m = -- {-> modulate <-}
     Family.Def Unit
         ( what : ?, with : ?, scrollX : 0.5, speed : ? )
         ( out :: Texture )
         m
-type MmodulateScrollY.Family m = -- {-> modulate <-}
+
+type MModulateScrollY.Family m = -- {-> modulate <-}
     Family.Def Unit
         ( what : ?, with : ?, scrollY : 0.5, speed : ? )
         ( out :: Texture )
         m
-type Mmodulate.Family m = -- {-> modulate <-}
+
+type MModulate.Family m = -- {-> modulate <-}
     Family.Def Unit
         ( what : ?, with : ?, amount : 0.1 )
         ( out :: Texture )
         m
-type MmodulateScale.Family m = -- {-> modulate <-}
+
+type MModulateScale.Family m = -- {-> modulate <-}
     Family.Def Unit
         ( what : ?, with : ?, multiple : 1, offset : 1 )
         ( out :: Texture )
         m
-type MmodulatePixelate.Family m = -- {-> modulate <-}
+
+type MModulatePixelate.Family m = -- {-> modulate <-}
     Family.Def Unit
         ( what : ?, with : ?, multiple : 10, offset : 3 )
         ( out :: Texture )
         m
-type MmodulateRotate.Family m = -- {-> modulate <-}
+
+type MModulateRotate.Family m = -- {-> modulate <-}
     Family.Def Unit
         ( what : ?, with : ?, multiple : 1, offset : ? )
         ( out :: Texture )
         m
-type MmodulateHue.Family m = -- {-> modulate <-}
+
+type MModulateHue.Family m = -- {-> modulate <-}
     Family.Def Unit
         ( what : ?, with : ?, amount : 1 )
         ( out :: Texture )
         m
-type Mrender.Family m = -- {-> synth <-}
+
+type MRender.Family m = -- {-> synth <-}
     Family.Def Unit
         ( from : All )
         ( out :: Unit )
         m
-type Mupdate.Family m = -- {-> synth <-}
+
+type MUpdate.Family m = -- {-> synth <-}
     Family.Def Unit
         ( fn : ? )
         ( out :: Unit )
         m
-type MsetResolution.Family m = -- {-> synth <-}
+
+type MSetResolution.Family m = -- {-> synth <-}
     Family.Def Unit
         ( width : ?, height : ? )
         ( out :: Unit )
         m
-type Mhush.Family m = -- {-> synth <-}
+
+type MHush.Family m = -- {-> synth <-}
     Family.Def Unit
         ( Unit : ? )
         ( out :: Unit )
         m
-type MsetFunction.Family m = -- {-> synth <-}
+
+type MSetFunction.Family m = -- {-> synth <-}
     Family.Def Unit
         ( fn : ? )
         ( out :: Unit )
         m
-type Mspeed.Family m = -- {-> synth <-}
+
+type MSpeed.Family m = -- {-> synth <-}
     Family.Def Unit
         ( v : 1 )
         ( out :: Unit )
         m
-type Mbpm.Family m = -- {-> synth <-}
+
+type MBpm.Family m = -- {-> synth <-}
     Family.Def Unit
         ( v : 30 )
         ( out :: Unit )
         m
-type Mwidth.Family m = -- {-> synth <-}
+
+type MWidth.Family m = -- {-> synth <-}
     Family.Def Unit
         ( )
         ( out :: Value )
         m
-type Mheight.Family m = -- {-> synth <-}
+
+type MHeight.Family m = -- {-> synth <-}
     Family.Def Unit
         ( )
         ( out :: Value )
         m
-type Mpi.Family m = -- {-> synth <-}
+
+type MPi.Family m = -- {-> synth <-}
     Family.Def Unit
         ( )
         ( out :: Value )
         m
-type Mtime.Family m = -- {-> synth <-}
+
+type MTime.Family m = -- {-> synth <-}
     Family.Def Unit
         ( )
         ( out :: Value )
         m
-type Mmouse.Family m = -- {-> synth <-}
+
+type MMouse.Family m = -- {-> synth <-}
     Family.Def Unit
         ( )
         ( out :: Value )
         m
-type MinitCam.Family m = -- {-> extsource <-}
+
+type MInitCam.Family m = -- {-> extsource <-}
     Family.Def Unit
         ( where : ?, index : ? )
         ( out :: Unit )
         m
-type MinitImage.Family m = -- {-> extsource <-}
+
+type MInitImage.Family m = -- {-> extsource <-}
     Family.Def Unit
         ( where : ?, url : ? )
         ( out :: Unit )
         m
-type MinitVideo.Family m = -- {-> extsource <-}
+
+type MInitVideo.Family m = -- {-> extsource <-}
     Family.Def Unit
         ( where : ?, url : ? )
         ( out :: Unit )
         m
-type Minit.Family m = -- {-> extsource <-}
+
+type MInit.Family m = -- {-> extsource <-}
     Family.Def Unit
         ( where : ? )
         ( out :: Unit )
         m
-type MinitStream.Family m = -- {-> extsource <-}
+
+type MInitStream.Family m = -- {-> extsource <-}
     Family.Def Unit
         ( where : ?, ? )
         ( out :: Unit )
         m
-type MinitScreen.Family m = -- {-> extsource <-}
+
+type MInitScreen.Family m = -- {-> extsource <-}
     Family.Def Unit
         ( where : ? )
         ( out :: Unit )
         m
-type Mfast.Family m = -- {-> array <-}
+
+type MFast.Family m = -- {-> array <-}
     Family.Def Unit
         ( a : ?, speed : 1 )
         ( out :: Value )
         m
-type Msmooth.Family m = -- {-> array <-}
+
+type MSmooth.Family m = -- {-> array <-}
     Family.Def Unit
         ( a : ?, smooth : 1 )
         ( out :: Value )
         m
-type Mease.Family m = -- {-> array <-}
+
+type MEase.Family m = -- {-> array <-}
     Family.Def Unit
         ( a : ?, ease : Linear )
         ( out :: Value )
         m
-type Moffset.Family m = -- {-> array <-}
+
+type MOffset.Family m = -- {-> array <-}
     Family.Def Unit
         ( a : ?, offset : 0.5 )
         ( out :: Value )
         m
-type Mfit.Family m = -- {-> array <-}
+
+type MFit.Family m = -- {-> array <-}
     Family.Def Unit
         ( a : ?, low : 0, high : 1 )
         ( out :: Value )
         m
-type Mfft.Family m = -- {-> audio <-}
+
+type MFft.Family m = -- {-> audio <-}
     Family.Def Unit
         ( a : ?, h : ? )
         ( out :: Value )
         m
-type MsetSmooth.Family m = -- {-> audio <-}
+
+type MSetSmooth.Family m = -- {-> audio <-}
     Family.Def Unit
         ( a : ?, smooth : 0.4 )
         ( out :: Unit )
         m
-type MsetCutoff.Family m = -- {-> audio <-}
+
+type MSetCutoff.Family m = -- {-> audio <-}
     Family.Def Unit
         ( a : ?, cutoff : 2 )
         ( out :: Unit )
         m
-type MsetBins.Family m = -- {-> audio <-}
+
+type MSetBins.Family m = -- {-> audio <-}
     Family.Def Unit
         ( a : ?, numBins : 4 )
         ( out :: Unit )
         m
-type MsetScale.Family m = -- {-> audio <-}
+
+type MSetScale.Family m = -- {-> audio <-}
     Family.Def Unit
         ( a : ?, scale : 10 )
         ( out :: Unit )
         m
-type Mhide.Family m = -- {-> audio <-}
+
+type MHide.Family m = -- {-> audio <-}
     Family.Def Unit
         ( a : ?, ? )
         ( out :: Unit )
         m
-type Mshow.Family m = -- {-> audio <-}
+
+type MShow.Family m = -- {-> audio <-}
     Family.Def Unit
         ( a : ?, ? )
         ( out :: Unit )
         m
-type Mout.Family m = -- {-> out <-}
+
+type MOut.Family m = -- {-> out <-}
     Family.Def Unit
         ( what : ?, where : ? )
         ( out :: Unit )
@@ -508,589 +591,672 @@ type Mout.Family m = -- {-> out <-}
 
 
 
-Mnoise.fn :: forall m. Mnoise.Family m
-Mnoise.fn = -- {-> source <-}
+MNoise.fn :: forall m. MNoise.Family m
+MNoise.fn = -- {-> source <-}
     Family.def
         unit
         { scale : 10, offset : 0.1 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mvoronoi.fn :: forall m. Mvoronoi.Family m
-Mvoronoi.fn = -- {-> source <-}
+
+MVoronoi.fn :: forall m. MVoronoi.Family m
+MVoronoi.fn = -- {-> source <-}
     Family.def
         unit
         { scale : 5, speed : 0.3, blending : 0.3 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mosc.fn :: forall m. Mosc.Family m
-Mosc.fn = -- {-> source <-}
+
+MOsc.fn :: forall m. MOsc.Family m
+MOsc.fn = -- {-> source <-}
     Family.def
         unit
         { frequency : 60, sync : 0.1, offset : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Mshape.fn :: forall m. Mshape.Family m
-Mshape.fn = -- {-> source <-}
+
+MShape.fn :: forall m. MShape.Family m
+MShape.fn = -- {-> source <-}
     Family.def
         unit
         { sides : 60, radius : 0.3, smoothing : 0.01 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mgradient.fn :: forall m. Mgradient.Family m
-Mgradient.fn = -- {-> source <-}
+
+MGradient.fn :: forall m. MGradient.Family m
+MGradient.fn = -- {-> source <-}
     Family.def
         unit
         { speed : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Msrc.fn :: forall m. Msrc.Family m
-Msrc.fn = -- {-> source <-}
+
+MSrc.fn :: forall m. MSrc.Family m
+MSrc.fn = -- {-> source <-}
     Family.def
         unit
         { tex : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Msolid.fn :: forall m. Msolid.Family m
-Msolid.fn = -- {-> source <-}
+
+MSolid.fn :: forall m. MSolid.Family m
+MSolid.fn = -- {-> source <-}
     Family.def
         unit
         { r : ?, g : ?, b : ?, a : 1 }
         { out : Texture }
     $ Fn.make $ pure unit
-Msrc.fn :: forall m. Msrc.Family m
-Msrc.fn = -- {-> source <-}
+
+MSrc.fn :: forall m. MSrc.Family m
+MSrc.fn = -- {-> source <-}
     Family.def
         unit
         { src : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Mprev.fn :: forall m. Mprev.Family m
-Mprev.fn = -- {-> source <-}
+
+MPrev.fn :: forall m. MPrev.Family m
+MPrev.fn = -- {-> source <-}
     Family.def
         unit
         { ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Mrotate.fn :: forall m. Mrotate.Family m
-Mrotate.fn = -- {-> geometry <-}
+
+MRotate.fn :: forall m. MRotate.Family m
+MRotate.fn = -- {-> geometry <-}
     Family.def
         unit
         { what : ?, angle : 10, speed : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Mscale.fn :: forall m. Mscale.Family m
-Mscale.fn = -- {-> geometry <-}
+
+MScale.fn :: forall m. MScale.Family m
+MScale.fn = -- {-> geometry <-}
     Family.def
         unit
         { what : ?, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mpixelate.fn :: forall m. Mpixelate.Family m
-Mpixelate.fn = -- {-> geometry <-}
+
+MPixelate.fn :: forall m. MPixelate.Family m
+MPixelate.fn = -- {-> geometry <-}
     Family.def
         unit
         { what : ?, pixelX : 20, pixelY : 20 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mrepeat.fn :: forall m. Mrepeat.Family m
-Mrepeat.fn = -- {-> geometry <-}
+
+MRepeat.fn :: forall m. MRepeat.Family m
+MRepeat.fn = -- {-> geometry <-}
     Family.def
         unit
         { what : ?, repeatX : 3, repeatY : 3, offsetX : ?, offsetY : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-MrepeatX.fn :: forall m. MrepeatX.Family m
-MrepeatX.fn = -- {-> geometry <-}
+
+MRepeatX.fn :: forall m. MRepeatX.Family m
+MRepeatX.fn = -- {-> geometry <-}
     Family.def
         unit
         { what : ?, reps : 3, offset : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-MrepeatY.fn :: forall m. MrepeatY.Family m
-MrepeatY.fn = -- {-> geometry <-}
+
+MRepeatY.fn :: forall m. MRepeatY.Family m
+MRepeatY.fn = -- {-> geometry <-}
     Family.def
         unit
         { what : ?, reps : 3, offset : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Mkaleid.fn :: forall m. Mkaleid.Family m
-Mkaleid.fn = -- {-> geometry <-}
+
+MKaleid.fn :: forall m. MKaleid.Family m
+MKaleid.fn = -- {-> geometry <-}
     Family.def
         unit
         { what : ?, nSides : 3 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mscroll.fn :: forall m. Mscroll.Family m
-Mscroll.fn = -- {-> geometry <-}
+
+MScroll.fn :: forall m. MScroll.Family m
+MScroll.fn = -- {-> geometry <-}
     Family.def
         unit
         { what : ?, scrollX : 0.5, scrollY : 0.5, speedX : ?, speedY : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-MscrollX.fn :: forall m. MscrollX.Family m
-MscrollX.fn = -- {-> geometry <-}
+
+MScrollX.fn :: forall m. MScrollX.Family m
+MScrollX.fn = -- {-> geometry <-}
     Family.def
         unit
         { what : ?, scrollX : 0.5, speed : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-MscrollY.fn :: forall m. MscrollY.Family m
-MscrollY.fn = -- {-> geometry <-}
+
+MScrollY.fn :: forall m. MScrollY.Family m
+MScrollY.fn = -- {-> geometry <-}
     Family.def
         unit
         { what : ?, scrollY : 0.5, speed : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Mposterize.fn :: forall m. Mposterize.Family m
-Mposterize.fn = -- {-> color <-}
+
+MPosterize.fn :: forall m. MPosterize.Family m
+MPosterize.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, bins : 3, gamma : 0.6 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mshift.fn :: forall m. Mshift.Family m
-Mshift.fn = -- {-> color <-}
+
+MShift.fn :: forall m. MShift.Family m
+MShift.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, r : 0.5, g : ?, b : ?, a : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Minvert.fn :: forall m. Minvert.Family m
-Minvert.fn = -- {-> color <-}
+
+MInvert.fn :: forall m. MInvert.Family m
+MInvert.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, amount : 1 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mcontrast.fn :: forall m. Mcontrast.Family m
-Mcontrast.fn = -- {-> color <-}
+
+MContrast.fn :: forall m. MContrast.Family m
+MContrast.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, amount : 1.6 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mbrightness.fn :: forall m. Mbrightness.Family m
-Mbrightness.fn = -- {-> color <-}
+
+MBrightness.fn :: forall m. MBrightness.Family m
+MBrightness.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, amount : 0.4 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mluma.fn :: forall m. Mluma.Family m
-Mluma.fn = -- {-> color <-}
+
+MLuma.fn :: forall m. MLuma.Family m
+MLuma.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, treshold : 0.5, tolerance : 0.1 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mtresh.fn :: forall m. Mtresh.Family m
-Mtresh.fn = -- {-> color <-}
+
+MTresh.fn :: forall m. MTresh.Family m
+MTresh.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, treshold : 0.5, tolerance : 0.1 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mcolor.fn :: forall m. Mcolor.Family m
-Mcolor.fn = -- {-> color <-}
+
+MColor.fn :: forall m. MColor.Family m
+MColor.fn = -- {-> color <-}
     Family.def
         unit
         { r : 1, g : 1, b : 1, a : 1 }
         { out : Texture }
     $ Fn.make $ pure unit
-Msaturate.fn :: forall m. Msaturate.Family m
-Msaturate.fn = -- {-> color <-}
+
+MSaturate.fn :: forall m. MSaturate.Family m
+MSaturate.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, amount : 2 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mhue.fn :: forall m. Mhue.Family m
-Mhue.fn = -- {-> color <-}
+
+MHue.fn :: forall m. MHue.Family m
+MHue.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, hue : 0.4 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mcolorama.fn :: forall m. Mcolorama.Family m
-Mcolorama.fn = -- {-> color <-}
+
+MColorama.fn :: forall m. MColorama.Family m
+MColorama.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, amount : 0.005 }
         { out : Texture }
     $ Fn.make $ pure unit
-Msum.fn :: forall m. Msum.Family m
-Msum.fn = -- {-> color <-}
+
+MSum.fn :: forall m. MSum.Family m
+MSum.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Mr.fn :: forall m. Mr.Family m
-Mr.fn = -- {-> color <-}
+
+MR.fn :: forall m. MR.Family m
+MR.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, scale : 1, offset : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Mg.fn :: forall m. Mg.Family m
-Mg.fn = -- {-> color <-}
+
+MG.fn :: forall m. MG.Family m
+MG.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, scale : 1, offset : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Mb.fn :: forall m. Mb.Family m
-Mb.fn = -- {-> color <-}
+
+MB.fn :: forall m. MB.Family m
+MB.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, scale : 1, offset : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Ma.fn :: forall m. Ma.Family m
-Ma.fn = -- {-> color <-}
+
+MA.fn :: forall m. MA.Family m
+MA.fn = -- {-> color <-}
     Family.def
         unit
         { what : ?, scale : 1, offset : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Madd.fn :: forall m. Madd.Family m
-Madd.fn = -- {-> blend <-}
+
+MAdd.fn :: forall m. MAdd.Family m
+MAdd.fn = -- {-> blend <-}
     Family.def
         unit
         { what : ?, with : ?, amount : 1 }
         { out : Texture }
     $ Fn.make $ pure unit
-Msub.fn :: forall m. Msub.Family m
-Msub.fn = -- {-> blend <-}
+
+MSub.fn :: forall m. MSub.Family m
+MSub.fn = -- {-> blend <-}
     Family.def
         unit
         { what : ?, with : ?, amount : 1 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mlayer.fn :: forall m. Mlayer.Family m
-Mlayer.fn = -- {-> blend <-}
+
+MLayer.fn :: forall m. MLayer.Family m
+MLayer.fn = -- {-> blend <-}
     Family.def
         unit
         { what : ?, with : ?, amount : 1 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mblend.fn :: forall m. Mblend.Family m
-Mblend.fn = -- {-> blend <-}
+
+MBlend.fn :: forall m. MBlend.Family m
+MBlend.fn = -- {-> blend <-}
     Family.def
         unit
         { what : ?, with : ?, amount : 0.5 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mmult.fn :: forall m. Mmult.Family m
-Mmult.fn = -- {-> blend <-}
+
+MMult.fn :: forall m. MMult.Family m
+MMult.fn = -- {-> blend <-}
     Family.def
         unit
         { what : ?, with : ?, amount : 1 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mdiff.fn :: forall m. Mdiff.Family m
-Mdiff.fn = -- {-> blend <-}
+
+MDiff.fn :: forall m. MDiff.Family m
+MDiff.fn = -- {-> blend <-}
     Family.def
         unit
         { what : ?, with : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Mmask.fn :: forall m. Mmask.Family m
-Mmask.fn = -- {-> blend <-}
+
+MMask.fn :: forall m. MMask.Family m
+MMask.fn = -- {-> blend <-}
     Family.def
         unit
         { what : ?, with : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-MmodulateRepeat.fn :: forall m. MmodulateRepeat.Family m
-MmodulateRepeat.fn = -- {-> modulate <-}
+
+MModulateRepeat.fn :: forall m. MModulateRepeat.Family m
+MModulateRepeat.fn = -- {-> modulate <-}
     Family.def
         unit
         { what : ?, with : ?, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 }
         { out : Texture }
     $ Fn.make $ pure unit
-MmodulateRepeatX.fn :: forall m. MmodulateRepeatX.Family m
-MmodulateRepeatX.fn = -- {-> modulate <-}
+
+MModulateRepeatX.fn :: forall m. MModulateRepeatX.Family m
+MModulateRepeatX.fn = -- {-> modulate <-}
     Family.def
         unit
         { what : ?, with : ?, reps : 3, offset : 0.5 }
         { out : Texture }
     $ Fn.make $ pure unit
-MmodulateRepeatY.fn :: forall m. MmodulateRepeatY.Family m
-MmodulateRepeatY.fn = -- {-> modulate <-}
+
+MModulateRepeatY.fn :: forall m. MModulateRepeatY.Family m
+MModulateRepeatY.fn = -- {-> modulate <-}
     Family.def
         unit
         { what : ?, with : ?, reps : 3, offset : 0.5 }
         { out : Texture }
     $ Fn.make $ pure unit
-MmodulateKaleid.fn :: forall m. MmodulateKaleid.Family m
-MmodulateKaleid.fn = -- {-> modulate <-}
+
+MModulateKaleid.fn :: forall m. MModulateKaleid.Family m
+MModulateKaleid.fn = -- {-> modulate <-}
     Family.def
         unit
         { what : ?, with : ?, nSides : 3 }
         { out : Texture }
     $ Fn.make $ pure unit
-MmodulateScrollX.fn :: forall m. MmodulateScrollX.Family m
-MmodulateScrollX.fn = -- {-> modulate <-}
+
+MModulateScrollX.fn :: forall m. MModulateScrollX.Family m
+MModulateScrollX.fn = -- {-> modulate <-}
     Family.def
         unit
         { what : ?, with : ?, scrollX : 0.5, speed : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-MmodulateScrollY.fn :: forall m. MmodulateScrollY.Family m
-MmodulateScrollY.fn = -- {-> modulate <-}
+
+MModulateScrollY.fn :: forall m. MModulateScrollY.Family m
+MModulateScrollY.fn = -- {-> modulate <-}
     Family.def
         unit
         { what : ?, with : ?, scrollY : 0.5, speed : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-Mmodulate.fn :: forall m. Mmodulate.Family m
-Mmodulate.fn = -- {-> modulate <-}
+
+MModulate.fn :: forall m. MModulate.Family m
+MModulate.fn = -- {-> modulate <-}
     Family.def
         unit
         { what : ?, with : ?, amount : 0.1 }
         { out : Texture }
     $ Fn.make $ pure unit
-MmodulateScale.fn :: forall m. MmodulateScale.Family m
-MmodulateScale.fn = -- {-> modulate <-}
+
+MModulateScale.fn :: forall m. MModulateScale.Family m
+MModulateScale.fn = -- {-> modulate <-}
     Family.def
         unit
         { what : ?, with : ?, multiple : 1, offset : 1 }
         { out : Texture }
     $ Fn.make $ pure unit
-MmodulatePixelate.fn :: forall m. MmodulatePixelate.Family m
-MmodulatePixelate.fn = -- {-> modulate <-}
+
+MModulatePixelate.fn :: forall m. MModulatePixelate.Family m
+MModulatePixelate.fn = -- {-> modulate <-}
     Family.def
         unit
         { what : ?, with : ?, multiple : 10, offset : 3 }
         { out : Texture }
     $ Fn.make $ pure unit
-MmodulateRotate.fn :: forall m. MmodulateRotate.Family m
-MmodulateRotate.fn = -- {-> modulate <-}
+
+MModulateRotate.fn :: forall m. MModulateRotate.Family m
+MModulateRotate.fn = -- {-> modulate <-}
     Family.def
         unit
         { what : ?, with : ?, multiple : 1, offset : ? }
         { out : Texture }
     $ Fn.make $ pure unit
-MmodulateHue.fn :: forall m. MmodulateHue.Family m
-MmodulateHue.fn = -- {-> modulate <-}
+
+MModulateHue.fn :: forall m. MModulateHue.Family m
+MModulateHue.fn = -- {-> modulate <-}
     Family.def
         unit
         { what : ?, with : ?, amount : 1 }
         { out : Texture }
     $ Fn.make $ pure unit
-Mrender.fn :: forall m. Mrender.Family m
-Mrender.fn = -- {-> synth <-}
+
+MRender.fn :: forall m. MRender.Family m
+MRender.fn = -- {-> synth <-}
     Family.def
         unit
         { from : All }
         { out : Unit }
     $ Fn.make $ pure unit
-Mupdate.fn :: forall m. Mupdate.Family m
-Mupdate.fn = -- {-> synth <-}
+
+MUpdate.fn :: forall m. MUpdate.Family m
+MUpdate.fn = -- {-> synth <-}
     Family.def
         unit
         { fn : ? }
         { out : Unit }
     $ Fn.make $ pure unit
-MsetResolution.fn :: forall m. MsetResolution.Family m
-MsetResolution.fn = -- {-> synth <-}
+
+MSetResolution.fn :: forall m. MSetResolution.Family m
+MSetResolution.fn = -- {-> synth <-}
     Family.def
         unit
         { width : ?, height : ? }
         { out : Unit }
     $ Fn.make $ pure unit
-Mhush.fn :: forall m. Mhush.Family m
-Mhush.fn = -- {-> synth <-}
+
+MHush.fn :: forall m. MHush.Family m
+MHush.fn = -- {-> synth <-}
     Family.def
         unit
         { Unit : ? }
         { out : Unit }
     $ Fn.make $ pure unit
-MsetFunction.fn :: forall m. MsetFunction.Family m
-MsetFunction.fn = -- {-> synth <-}
+
+MSetFunction.fn :: forall m. MSetFunction.Family m
+MSetFunction.fn = -- {-> synth <-}
     Family.def
         unit
         { fn : ? }
         { out : Unit }
     $ Fn.make $ pure unit
-Mspeed.fn :: forall m. Mspeed.Family m
-Mspeed.fn = -- {-> synth <-}
+
+MSpeed.fn :: forall m. MSpeed.Family m
+MSpeed.fn = -- {-> synth <-}
     Family.def
         unit
         { v : 1 }
         { out : Unit }
     $ Fn.make $ pure unit
-Mbpm.fn :: forall m. Mbpm.Family m
-Mbpm.fn = -- {-> synth <-}
+
+MBpm.fn :: forall m. MBpm.Family m
+MBpm.fn = -- {-> synth <-}
     Family.def
         unit
         { v : 30 }
         { out : Unit }
     $ Fn.make $ pure unit
-Mwidth.fn :: forall m. Mwidth.Family m
-Mwidth.fn = -- {-> synth <-}
+
+MWidth.fn :: forall m. MWidth.Family m
+MWidth.fn = -- {-> synth <-}
     Family.def
         unit
         { }
         { out : Value }
     $ Fn.make $ pure unit
-Mheight.fn :: forall m. Mheight.Family m
-Mheight.fn = -- {-> synth <-}
+
+MHeight.fn :: forall m. MHeight.Family m
+MHeight.fn = -- {-> synth <-}
     Family.def
         unit
         { }
         { out : Value }
     $ Fn.make $ pure unit
-Mpi.fn :: forall m. Mpi.Family m
-Mpi.fn = -- {-> synth <-}
+
+MPi.fn :: forall m. MPi.Family m
+MPi.fn = -- {-> synth <-}
     Family.def
         unit
         { }
         { out : Value }
     $ Fn.make $ pure unit
-Mtime.fn :: forall m. Mtime.Family m
-Mtime.fn = -- {-> synth <-}
+
+MTime.fn :: forall m. MTime.Family m
+MTime.fn = -- {-> synth <-}
     Family.def
         unit
         { }
         { out : Value }
     $ Fn.make $ pure unit
-Mmouse.fn :: forall m. Mmouse.Family m
-Mmouse.fn = -- {-> synth <-}
+
+MMouse.fn :: forall m. MMouse.Family m
+MMouse.fn = -- {-> synth <-}
     Family.def
         unit
         { }
         { out : Value }
     $ Fn.make $ pure unit
-MinitCam.fn :: forall m. MinitCam.Family m
-MinitCam.fn = -- {-> extsource <-}
+
+MInitCam.fn :: forall m. MInitCam.Family m
+MInitCam.fn = -- {-> extsource <-}
     Family.def
         unit
         { where : ?, index : ? }
         { out : Unit }
     $ Fn.make $ pure unit
-MinitImage.fn :: forall m. MinitImage.Family m
-MinitImage.fn = -- {-> extsource <-}
+
+MInitImage.fn :: forall m. MInitImage.Family m
+MInitImage.fn = -- {-> extsource <-}
     Family.def
         unit
         { where : ?, url : ? }
         { out : Unit }
     $ Fn.make $ pure unit
-MinitVideo.fn :: forall m. MinitVideo.Family m
-MinitVideo.fn = -- {-> extsource <-}
+
+MInitVideo.fn :: forall m. MInitVideo.Family m
+MInitVideo.fn = -- {-> extsource <-}
     Family.def
         unit
         { where : ?, url : ? }
         { out : Unit }
     $ Fn.make $ pure unit
-Minit.fn :: forall m. Minit.Family m
-Minit.fn = -- {-> extsource <-}
+
+MInit.fn :: forall m. MInit.Family m
+MInit.fn = -- {-> extsource <-}
     Family.def
         unit
         { where : ? }
         { out : Unit }
     $ Fn.make $ pure unit
-MinitStream.fn :: forall m. MinitStream.Family m
-MinitStream.fn = -- {-> extsource <-}
+
+MInitStream.fn :: forall m. MInitStream.Family m
+MInitStream.fn = -- {-> extsource <-}
     Family.def
         unit
         { where : ?, ? }
         { out : Unit }
     $ Fn.make $ pure unit
-MinitScreen.fn :: forall m. MinitScreen.Family m
-MinitScreen.fn = -- {-> extsource <-}
+
+MInitScreen.fn :: forall m. MInitScreen.Family m
+MInitScreen.fn = -- {-> extsource <-}
     Family.def
         unit
         { where : ? }
         { out : Unit }
     $ Fn.make $ pure unit
-Mfast.fn :: forall m. Mfast.Family m
-Mfast.fn = -- {-> array <-}
+
+MFast.fn :: forall m. MFast.Family m
+MFast.fn = -- {-> array <-}
     Family.def
         unit
         { a : ?, speed : 1 }
         { out : Value }
     $ Fn.make $ pure unit
-Msmooth.fn :: forall m. Msmooth.Family m
-Msmooth.fn = -- {-> array <-}
+
+MSmooth.fn :: forall m. MSmooth.Family m
+MSmooth.fn = -- {-> array <-}
     Family.def
         unit
         { a : ?, smooth : 1 }
         { out : Value }
     $ Fn.make $ pure unit
-Mease.fn :: forall m. Mease.Family m
-Mease.fn = -- {-> array <-}
+
+MEase.fn :: forall m. MEase.Family m
+MEase.fn = -- {-> array <-}
     Family.def
         unit
         { a : ?, ease : Linear }
         { out : Value }
     $ Fn.make $ pure unit
-Moffset.fn :: forall m. Moffset.Family m
-Moffset.fn = -- {-> array <-}
+
+MOffset.fn :: forall m. MOffset.Family m
+MOffset.fn = -- {-> array <-}
     Family.def
         unit
         { a : ?, offset : 0.5 }
         { out : Value }
     $ Fn.make $ pure unit
-Mfit.fn :: forall m. Mfit.Family m
-Mfit.fn = -- {-> array <-}
+
+MFit.fn :: forall m. MFit.Family m
+MFit.fn = -- {-> array <-}
     Family.def
         unit
         { a : ?, low : 0, high : 1 }
         { out : Value }
     $ Fn.make $ pure unit
-Mfft.fn :: forall m. Mfft.Family m
-Mfft.fn = -- {-> audio <-}
+
+MFft.fn :: forall m. MFft.Family m
+MFft.fn = -- {-> audio <-}
     Family.def
         unit
         { a : ?, h : ? }
         { out : Value }
     $ Fn.make $ pure unit
-MsetSmooth.fn :: forall m. MsetSmooth.Family m
-MsetSmooth.fn = -- {-> audio <-}
+
+MSetSmooth.fn :: forall m. MSetSmooth.Family m
+MSetSmooth.fn = -- {-> audio <-}
     Family.def
         unit
         { a : ?, smooth : 0.4 }
         { out : Unit }
     $ Fn.make $ pure unit
-MsetCutoff.fn :: forall m. MsetCutoff.Family m
-MsetCutoff.fn = -- {-> audio <-}
+
+MSetCutoff.fn :: forall m. MSetCutoff.Family m
+MSetCutoff.fn = -- {-> audio <-}
     Family.def
         unit
         { a : ?, cutoff : 2 }
         { out : Unit }
     $ Fn.make $ pure unit
-MsetBins.fn :: forall m. MsetBins.Family m
-MsetBins.fn = -- {-> audio <-}
+
+MSetBins.fn :: forall m. MSetBins.Family m
+MSetBins.fn = -- {-> audio <-}
     Family.def
         unit
         { a : ?, numBins : 4 }
         { out : Unit }
     $ Fn.make $ pure unit
-MsetScale.fn :: forall m. MsetScale.Family m
-MsetScale.fn = -- {-> audio <-}
+
+MSetScale.fn :: forall m. MSetScale.Family m
+MSetScale.fn = -- {-> audio <-}
     Family.def
         unit
         { a : ?, scale : 10 }
         { out : Unit }
     $ Fn.make $ pure unit
-Mhide.fn :: forall m. Mhide.Family m
-Mhide.fn = -- {-> audio <-}
+
+MHide.fn :: forall m. MHide.Family m
+MHide.fn = -- {-> audio <-}
     Family.def
         unit
         { a : ?, ? }
         { out : Unit }
     $ Fn.make $ pure unit
-Mshow.fn :: forall m. Mshow.Family m
-Mshow.fn = -- {-> audio <-}
+
+MShow.fn :: forall m. MShow.Family m
+MShow.fn = -- {-> audio <-}
     Family.def
         unit
         { a : ?, ? }
         { out : Unit }
     $ Fn.make $ pure unit
-Mout.fn :: forall m. Mout.Family m
-Mout.fn = -- {-> out <-}
+
+MOut.fn :: forall m. MOut.Family m
+MOut.fn = -- {-> out <-}
     Family.def
         unit
         { what : ?, where : ? }
@@ -1102,90 +1268,90 @@ Mout.fn = -- {-> out <-}
 
 type Toolkit m
     = Toolkit Unit
-        ( noise ::             Mnoise.Family-- {-> source <-}
-        , voronoi ::             Mvoronoi.Family-- {-> source <-}
-        , osc ::             Mosc.Family-- {-> source <-}
-        , shape ::             Mshape.Family-- {-> source <-}
-        , gradient ::             Mgradient.Family-- {-> source <-}
-        , src ::             Msrc.Family-- {-> source <-}
-        , solid ::             Msolid.Family-- {-> source <-}
-        , src ::             Msrc.Family-- {-> source <-}
-        , prev ::             Mprev.Family-- {-> source <-}
-        , rotate ::             Mrotate.Family-- {-> geometry <-}
-        , scale ::             Mscale.Family-- {-> geometry <-}
-        , pixelate ::             Mpixelate.Family-- {-> geometry <-}
-        , repeat ::             Mrepeat.Family-- {-> geometry <-}
-        , repeatX ::             MrepeatX.Family-- {-> geometry <-}
-        , repeatY ::             MrepeatY.Family-- {-> geometry <-}
-        , kaleid ::             Mkaleid.Family-- {-> geometry <-}
-        , scroll ::             Mscroll.Family-- {-> geometry <-}
-        , scrollX ::             MscrollX.Family-- {-> geometry <-}
-        , scrollY ::             MscrollY.Family-- {-> geometry <-}
-        , posterize ::             Mposterize.Family-- {-> color <-}
-        , shift ::             Mshift.Family-- {-> color <-}
-        , invert ::             Minvert.Family-- {-> color <-}
-        , contrast ::             Mcontrast.Family-- {-> color <-}
-        , brightness ::             Mbrightness.Family-- {-> color <-}
-        , luma ::             Mluma.Family-- {-> color <-}
-        , tresh ::             Mtresh.Family-- {-> color <-}
-        , color ::             Mcolor.Family-- {-> color <-}
-        , saturate ::             Msaturate.Family-- {-> color <-}
-        , hue ::             Mhue.Family-- {-> color <-}
-        , colorama ::             Mcolorama.Family-- {-> color <-}
-        , sum ::             Msum.Family-- {-> color <-}
-        , r ::             Mr.Family-- {-> color <-}
-        , g ::             Mg.Family-- {-> color <-}
-        , b ::             Mb.Family-- {-> color <-}
-        , a ::             Ma.Family-- {-> color <-}
-        , add ::             Madd.Family-- {-> blend <-}
-        , sub ::             Msub.Family-- {-> blend <-}
-        , layer ::             Mlayer.Family-- {-> blend <-}
-        , blend ::             Mblend.Family-- {-> blend <-}
-        , mult ::             Mmult.Family-- {-> blend <-}
-        , diff ::             Mdiff.Family-- {-> blend <-}
-        , mask ::             Mmask.Family-- {-> blend <-}
-        , modulateRepeat ::             MmodulateRepeat.Family-- {-> modulate <-}
-        , modulateRepeatX ::             MmodulateRepeatX.Family-- {-> modulate <-}
-        , modulateRepeatY ::             MmodulateRepeatY.Family-- {-> modulate <-}
-        , modulateKaleid ::             MmodulateKaleid.Family-- {-> modulate <-}
-        , modulateScrollX ::             MmodulateScrollX.Family-- {-> modulate <-}
-        , modulateScrollY ::             MmodulateScrollY.Family-- {-> modulate <-}
-        , modulate ::             Mmodulate.Family-- {-> modulate <-}
-        , modulateScale ::             MmodulateScale.Family-- {-> modulate <-}
-        , modulatePixelate ::             MmodulatePixelate.Family-- {-> modulate <-}
-        , modulateRotate ::             MmodulateRotate.Family-- {-> modulate <-}
-        , modulateHue ::             MmodulateHue.Family-- {-> modulate <-}
-        , render ::             Mrender.Family-- {-> synth <-}
-        , update ::             Mupdate.Family-- {-> synth <-}
-        , setResolution ::             MsetResolution.Family-- {-> synth <-}
-        , hush ::             Mhush.Family-- {-> synth <-}
-        , setFunction ::             MsetFunction.Family-- {-> synth <-}
-        , speed ::             Mspeed.Family-- {-> synth <-}
-        , bpm ::             Mbpm.Family-- {-> synth <-}
-        , width ::             Mwidth.Family-- {-> synth <-}
-        , height ::             Mheight.Family-- {-> synth <-}
-        , pi ::             Mpi.Family-- {-> synth <-}
-        , time ::             Mtime.Family-- {-> synth <-}
-        , mouse ::             Mmouse.Family-- {-> synth <-}
-        , initCam ::             MinitCam.Family-- {-> extsource <-}
-        , initImage ::             MinitImage.Family-- {-> extsource <-}
-        , initVideo ::             MinitVideo.Family-- {-> extsource <-}
-        , init ::             Minit.Family-- {-> extsource <-}
-        , initStream ::             MinitStream.Family-- {-> extsource <-}
-        , initScreen ::             MinitScreen.Family-- {-> extsource <-}
-        , fast ::             Mfast.Family-- {-> array <-}
-        , smooth ::             Msmooth.Family-- {-> array <-}
-        , ease ::             Mease.Family-- {-> array <-}
-        , offset ::             Moffset.Family-- {-> array <-}
-        , fit ::             Mfit.Family-- {-> array <-}
-        , fft ::             Mfft.Family-- {-> audio <-}
-        , setSmooth ::             MsetSmooth.Family-- {-> audio <-}
-        , setCutoff ::             MsetCutoff.Family-- {-> audio <-}
-        , setBins ::             MsetBins.Family-- {-> audio <-}
-        , setScale ::             MsetScale.Family-- {-> audio <-}
-        , hide ::             Mhide.Family-- {-> audio <-}
-        , show ::             Mshow.Family-- {-> audio <-}
-        , out ::             Mout.Family-- {-> out <-}
+        ( noise :: MNoise.Family -- {-> source <-}
+        , voronoi :: MVoronoi.Family -- {-> source <-}
+        , osc :: MOsc.Family -- {-> source <-}
+        , shape :: MShape.Family -- {-> source <-}
+        , gradient :: MGradient.Family -- {-> source <-}
+        , src :: MSrc.Family -- {-> source <-}
+        , solid :: MSolid.Family -- {-> source <-}
+        , src :: MSrc.Family -- {-> source <-}
+        , prev :: MPrev.Family -- {-> source <-}
+        , rotate :: MRotate.Family -- {-> geometry <-}
+        , scale :: MScale.Family -- {-> geometry <-}
+        , pixelate :: MPixelate.Family -- {-> geometry <-}
+        , repeat :: MRepeat.Family -- {-> geometry <-}
+        , repeatX :: MRepeatX.Family -- {-> geometry <-}
+        , repeatY :: MRepeatY.Family -- {-> geometry <-}
+        , kaleid :: MKaleid.Family -- {-> geometry <-}
+        , scroll :: MScroll.Family -- {-> geometry <-}
+        , scrollX :: MScrollX.Family -- {-> geometry <-}
+        , scrollY :: MScrollY.Family -- {-> geometry <-}
+        , posterize :: MPosterize.Family -- {-> color <-}
+        , shift :: MShift.Family -- {-> color <-}
+        , invert :: MInvert.Family -- {-> color <-}
+        , contrast :: MContrast.Family -- {-> color <-}
+        , brightness :: MBrightness.Family -- {-> color <-}
+        , luma :: MLuma.Family -- {-> color <-}
+        , tresh :: MTresh.Family -- {-> color <-}
+        , color :: MColor.Family -- {-> color <-}
+        , saturate :: MSaturate.Family -- {-> color <-}
+        , hue :: MHue.Family -- {-> color <-}
+        , colorama :: MColorama.Family -- {-> color <-}
+        , sum :: MSum.Family -- {-> color <-}
+        , r :: MR.Family -- {-> color <-}
+        , g :: MG.Family -- {-> color <-}
+        , b :: MB.Family -- {-> color <-}
+        , a :: MA.Family -- {-> color <-}
+        , add :: MAdd.Family -- {-> blend <-}
+        , sub :: MSub.Family -- {-> blend <-}
+        , layer :: MLayer.Family -- {-> blend <-}
+        , blend :: MBlend.Family -- {-> blend <-}
+        , mult :: MMult.Family -- {-> blend <-}
+        , diff :: MDiff.Family -- {-> blend <-}
+        , mask :: MMask.Family -- {-> blend <-}
+        , modulateRepeat :: MModulateRepeat.Family -- {-> modulate <-}
+        , modulateRepeatX :: MModulateRepeatX.Family -- {-> modulate <-}
+        , modulateRepeatY :: MModulateRepeatY.Family -- {-> modulate <-}
+        , modulateKaleid :: MModulateKaleid.Family -- {-> modulate <-}
+        , modulateScrollX :: MModulateScrollX.Family -- {-> modulate <-}
+        , modulateScrollY :: MModulateScrollY.Family -- {-> modulate <-}
+        , modulate :: MModulate.Family -- {-> modulate <-}
+        , modulateScale :: MModulateScale.Family -- {-> modulate <-}
+        , modulatePixelate :: MModulatePixelate.Family -- {-> modulate <-}
+        , modulateRotate :: MModulateRotate.Family -- {-> modulate <-}
+        , modulateHue :: MModulateHue.Family -- {-> modulate <-}
+        , render :: MRender.Family -- {-> synth <-}
+        , update :: MUpdate.Family -- {-> synth <-}
+        , setResolution :: MSetResolution.Family -- {-> synth <-}
+        , hush :: MHush.Family -- {-> synth <-}
+        , setFunction :: MSetFunction.Family -- {-> synth <-}
+        , speed :: MSpeed.Family -- {-> synth <-}
+        , bpm :: MBpm.Family -- {-> synth <-}
+        , width :: MWidth.Family -- {-> synth <-}
+        , height :: MHeight.Family -- {-> synth <-}
+        , pi :: MPi.Family -- {-> synth <-}
+        , time :: MTime.Family -- {-> synth <-}
+        , mouse :: MMouse.Family -- {-> synth <-}
+        , initCam :: MInitCam.Family -- {-> extsource <-}
+        , initImage :: MInitImage.Family -- {-> extsource <-}
+        , initVideo :: MInitVideo.Family -- {-> extsource <-}
+        , init :: MInit.Family -- {-> extsource <-}
+        , initStream :: MInitStream.Family -- {-> extsource <-}
+        , initScreen :: MInitScreen.Family -- {-> extsource <-}
+        , fast :: MFast.Family -- {-> array <-}
+        , smooth :: MSmooth.Family -- {-> array <-}
+        , ease :: MEase.Family -- {-> array <-}
+        , offset :: MOffset.Family -- {-> array <-}
+        , fit :: MFit.Family -- {-> array <-}
+        , fft :: MFft.Family -- {-> audio <-}
+        , setSmooth :: MSetSmooth.Family -- {-> audio <-}
+        , setCutoff :: MSetCutoff.Family -- {-> audio <-}
+        , setBins :: MSetBins.Family -- {-> audio <-}
+        , setScale :: MSetScale.Family -- {-> audio <-}
+        , hide :: MHide.Family -- {-> audio <-}
+        , show :: MShow.Family -- {-> audio <-}
+        , out :: MOut.Family -- {-> out <-}
         )
 
 
