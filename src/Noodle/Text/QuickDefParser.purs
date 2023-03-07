@@ -14,7 +14,7 @@ import Text.Parsing.Parser.Combinators (between, choice, option, optionMaybe, se
 import Noodle.Text.QuickDef as QD
 
 
-fnParser :: forall (m :: Type -> Type). Functor m => Monad m => P.ParserT String m QD.FN
+fnParser :: forall (m :: Type -> Type). Functor m => Monad m => P.ParserT String m QD.QFamily
 fnParser = do
   family <- validToken
   _ <- Array.some P.space
@@ -24,12 +24,16 @@ fnParser = do
   _ <- Array.some P.space
   _ <- P.string "::"
   _ <- Array.many P.space
-  args <- P.option [] argumentsP
+  inputs <- P.option [] channelsP
   _ <- Array.many P.space
   _ <- P.string "=>"
   _ <- Array.some P.space
-  returnVal <- validToken
-  pure $ QD.qfn' family fnName args returnVal
+  outputs <-
+    P.choice
+      [ Array.singleton <$> QD.qout <$> validToken
+      , P.option [] channelsP
+      ]
+  pure $ QD.qfmo' family fnName inputs outputs
 
   where
     validToken = String.fromCharArray <$> Array.some P.alphaNum
@@ -53,12 +57,12 @@ fnParser = do
       _ <- P.choice [ P.string "->", String.singleton <$> P.char '→' ]
       _ <- Array.many P.space
       pure unit
-    argumentsP =
+    channelsP =
       P.between
         (P.char '<')
         (P.char '>')
         $ Array.fromFoldable <$> P.sepBy validArgument arrowSep
 
 
-fnListParser :: forall (m :: Type -> Type). Functor m => Monad m => P.ParserT String m (Array QD.FN)
-fnListParser = Array.many $ fnParser >>= \fn -> P.char '\n' *> pure fn
+familyListParser :: forall (m :: Type -> Type). Functor m => Monad m => P.ParserT String m (Array QD.QFamily)
+familyListParser = Array.many $ fnParser >>= \fn -> P.char '\n' *> pure fn

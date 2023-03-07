@@ -5,45 +5,56 @@ import Prelude (($), (>>>), (<$>), class Show, class Eq)
 import Data.Maybe (Maybe(..))
 
 
-newtype FN = FN
+newtype QFamily = QFamily
   { tag :: String
   , family :: String
-  , args :: Array (Maybe Argument)
-  , returns :: String
+  , inputs :: Array (Maybe Channel)
+  , outputs :: Array (Maybe Channel)
   }
 
-type Argument =
+type Channel =
   { name :: String, type :: Maybe String, default :: Maybe String }
 
 
-qfn :: String -> String -> Array Argument -> String -> FN
-qfn tag family args = qfn' tag family $ Just <$> args
+qfm :: String -> String -> Array Channel -> String -> QFamily
+qfm tag family inputs = qfm' tag family $ Just <$> inputs
 
-qfn' :: String -> String -> Array (Maybe Argument) -> String -> FN
-qfn' tag family args returns = FN { tag, family, args, returns }
+qfm' :: String -> String -> Array (Maybe Channel) -> String -> QFamily
+qfm' tag family inputs returns = QFamily { tag, family, inputs, outputs : [ qout returns ] }
 
-qarg :: String -> Argument
-qarg name = { name, type : Nothing, default : Nothing }
+qfmo :: String -> String -> Array Channel -> Array Channel -> QFamily
+qfmo tag family inputs outputs = qfmo' tag family (Just <$> inputs) (Just <$> outputs)
 
-qarg' :: String -> Maybe Argument
-qarg' = qarg >>> Just
+qfmo' :: String -> String -> Array (Maybe Channel) -> Array (Maybe Channel) -> QFamily
+qfmo' tag family inputs outputs = QFamily { tag, family, inputs, outputs }
 
-qargt :: String -> String -> Argument
-qargt name t = { name, type : Just t, default : Nothing }
+qchan :: String -> Channel
+qchan name = { name, type : Nothing, default : Nothing }
 
-qargt' :: String -> String -> Maybe Argument
-qargt' n = qargt n >>> Just
+qchand :: String -> String -> Channel
+qchand name def = { name, type : Nothing, default : Just def }
 
-qargtd :: String -> String -> String -> Argument
-qargtd name t d = { name, type : Just t, default : Just d }
+qchan' :: String -> Maybe Channel
+qchan' = qchan >>> Just
 
-qargtd' :: String -> String -> String -> Maybe Argument
-qargtd' n t = qargtd n t >>> Just
+qchant :: String -> String -> Channel
+qchant name t = { name, type : Just t, default : Nothing }
+
+qchant' :: String -> String -> Maybe Channel
+qchant' n = qchant n >>> Just
+
+qchantd :: String -> String -> String -> Channel
+qchantd name t d = { name, type : Just t, default : Just d }
+
+qchantd' :: String -> String -> String -> Maybe Channel
+qchantd' n t = qchantd n t >>> Just
+
+qout :: String -> Maybe Channel
+qout type_ = Just { name : "out", type : Just type_, default : Nothing }
+
+-- instance Show QFamily where
+--   show (QFamily { tag, name, args, returns }) = ""
 
 
--- instance Show FN where
---   show (FN { tag, name, args, returns }) = ""
-
-
-derive newtype instance Show FN
-derive newtype instance Eq FN
+derive newtype instance Show QFamily
+derive newtype instance Eq QFamily

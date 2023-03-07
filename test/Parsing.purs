@@ -84,76 +84,89 @@ main = launchAff_ $ runSpec [consoleReporter] do
     it "parsing one function with no arguments works" $ do
       parses
         "test : foo :: => Result"
-        (QD.qfn "test" "foo" [] "Result")
+        (QD.qfm "test" "foo" [] "Result")
         QDP.fnParser
       parses
         "test : foo :: <> => Result"
-        (QD.qfn "test" "foo" [] "Result")
+        (QD.qfm "test" "foo" [] "Result")
         QDP.fnParser
 
     it "parsing one function with an unkwown argument works" $
       parses
         "test : foo :: <?> => Result"
-        (QD.qfn' "test" "foo" [ Nothing ] "Result")
+        (QD.qfm' "test" "foo" [ Nothing ] "Result")
         QDP.fnParser
 
     it "parsing one function with two unkwown arguments works" $ do
       parses
         "test : foo :: <?->?> => Result"
-        (QD.qfn' "test" "foo" [ Nothing, Nothing ] "Result")
+        (QD.qfm' "test" "foo" [ Nothing, Nothing ] "Result")
         QDP.fnParser
       parses
         "test : foo :: <? -> ?> => Result"
-        (QD.qfn' "test" "foo" [ Nothing, Nothing ] "Result")
+        (QD.qfm' "test" "foo" [ Nothing, Nothing ] "Result")
         QDP.fnParser
       parses
         "test : foo :: <? ->?> => Result"
-        (QD.qfn' "test" "foo" [ Nothing, Nothing ] "Result")
+        (QD.qfm' "test" "foo" [ Nothing, Nothing ] "Result")
         QDP.fnParser
 
     it "parsing one function with arguments works" $ do
       parses
         "test : foo :: <bar->?> => Result"
-        (QD.qfn' "test" "foo" [ Just (QD.qarg "bar"), Nothing ] "Result")
+        (QD.qfm' "test" "foo" [ Just (QD.qchan "bar"), Nothing ] "Result")
         QDP.fnParser
       parses
         "test : foo :: <? -> bar> => Result"
-        (QD.qfn' "test" "foo" [ Nothing, Just (QD.qarg "bar") ] "Result")
+        (QD.qfm' "test" "foo" [ Nothing, Just (QD.qchan "bar") ] "Result")
         QDP.fnParser
       parses
         "test : foo :: <bar:Number -> buz:Number {20}> => Result"
-        (QD.qfn "test" "foo" [ QD.qargt "bar" "Number", QD.qargtd "buz" "Number" "20" ] "Result")
+        (QD.qfm "test" "foo" [ QD.qchant "bar" "Number", QD.qchantd "buz" "Number" "20" ] "Result")
         QDP.fnParser
       parses
         "modulate : modulateRepeat :: <what:Texture -> with:Texture -> repeatX:Value {3} -> repeatY:Value {3} -> offsetX:Value {0.5} -> offsetY:Value {0.5}> => Texture"
-        (QD.qfn "modulate" "modulateRepeat"
-          [ QD.qargt "what" "Texture"
-          , QD.qargt "with" "Texture"
-          , QD.qargtd "repeatX" "Value" "3"
-          , QD.qargtd "repeatY" "Value" "3"
-          , QD.qargtd "offsetX" "Value" "0.5"
-          , QD.qargtd "offsetY" "Value" "0.5"
+        (QD.qfm "modulate" "modulateRepeat"
+          [ QD.qchant "what" "Texture"
+          , QD.qchant "with" "Texture"
+          , QD.qchantd "repeatX" "Value" "3"
+          , QD.qchantd "repeatY" "Value" "3"
+          , QD.qchantd "offsetX" "Value" "0.5"
+          , QD.qchantd "offsetY" "Value" "0.5"
           ]
         "Texture")
         QDP.fnParser
       parses
         "synth : render :: <from:From {All}> => Unit"
-        (QD.qfn "synth" "render"
-          [ QD.qargtd "from" "From" "All"
+        (QD.qfm "synth" "render"
+          [ QD.qchantd "from" "From" "All"
           ]
         "Unit")
         QDP.fnParser
       parses
         "synth : update :: <fn:UpdateFn> => Unit"
-        (QD.qfn "synth" "update"
-          [ QD.qargt "fn" "UpdateFn"
+        (QD.qfm "synth" "update"
+          [ QD.qchant "fn" "UpdateFn"
           ]
         "Unit")
         QDP.fnParser
 
+    it "parsing one function with several outputs works" $ do
+      parses
+        "synth : update :: <fn:UpdateFn> => <foo:UpdateFn {20} -> bar {5} -> buz -> bzr:Unit {Test}>"
+        (QD.qfmo "synth" "update"
+          [ QD.qchant "fn" "UpdateFn"
+          ]
+          [ QD.qchantd "foo" "UpdateFn" "20"
+          , QD.qchand "bar" "5"
+          , QD.qchan "buz"
+          , QD.qchantd "bzr" "Unit" "Test"
+          ])
+        QDP.fnParser
+
     it "parses file" $ do
         file <- readTextFile UTF8 in_file_path
-        let parseResult = P.runParser file QDP.fnListParser
+        let parseResult = P.runParser file QDP.familyListParser
         case parseResult of
           Right result ->
             Array.length result `shouldEqual` 84
@@ -162,16 +175,16 @@ main = launchAff_ $ runSpec [consoleReporter] do
 
     it "converts properly" $ do
         file <- readTextFile UTF8 in_file_path
-        let parseResult = P.runParser file QDP.fnListParser
+        let parseResult = P.runParser file QDP.familyListParser
         sampleContent <- readTextFile UTF8 out_file_path_sample
         case parseResult of
-          Right fnsList -> do
-            let sepImports = QTG.genSeparateImports "hydra" fnsList
-            let sepNodesTypes = QTG.genSeparateFamilyTypes "hydra" fnsList
-            let sepImpls = QTG.genSeparateFamilyImpls "hydra" fnsList
-            let sepTypeDef = QTG.genTypeDefSeparate "hydra" fnsList
-            let inlineTypeDef = QTG.genTypeDefInline "hydra" fnsList
-            let toolkitDef = QTG.genToolkitDef "hydra" fnsList
+          Right familiesList -> do
+            let sepImports = QTG.genSeparateImports "hydra" familiesList
+            let sepNodesTypes = QTG.genSeparateFamilyTypes "hydra" familiesList
+            let sepImpls = QTG.genSeparateFamilyImpls "hydra" familiesList
+            let sepTypeDef = QTG.genTypeDefSeparate "hydra" familiesList
+            let inlineTypeDef = QTG.genTypeDefInline "hydra" familiesList
+            let toolkitDef = QTG.genToolkitDef "hydra" familiesList
             let fileContent =
                     String.joinWith "\n\n\n"
                       [ sepImports
