@@ -180,9 +180,9 @@ main = launchAff_ $ runSpec [consoleReporter] do
         case parseResult of
           Right familiesList -> do
             let sepImports = QTG.genSeparateImports "hydra" familiesList
-            let sepNodesTypes = QTG.genSeparateFamilyTypes "hydra" familiesList
+            let sepNodesTypes = QTG.genSeparateFamilyTypes true "hydra" familiesList
             let sepImpls = QTG.genSeparateFamilyImpls "hydra" familiesList
-            let sepTypeDef = QTG.genTypeDefSeparate "hydra" familiesList
+            let sepTypeDef = QTG.genTypeDefSeparate true "hydra" familiesList
             let inlineTypeDef = QTG.genTypeDefInline "hydra" familiesList
             let toolkitDef = QTG.genToolkitDef "hydra" familiesList
             let fileContent =

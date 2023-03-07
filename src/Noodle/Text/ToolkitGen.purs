@@ -52,9 +52,9 @@ genTypeDefInline _ fns =
         <> i2 <> inBrackets' genFamilyTypeDef ("\n" <> i2 <> ", ") fns
 
 
-genSeparateFamilyTypes :: String -> Array QD.QFamily -> String
-genSeparateFamilyTypes _ fns =
-    String.joinWith "\n\n" (genFamilyTypeSepDef <$> fns) <> "\n\n"
+genSeparateFamilyTypes :: Boolean -> String -> Array QD.QFamily -> String
+genSeparateFamilyTypes withModule _ fns =
+    String.joinWith "\n\n" (genFamilyTypeSepDef withModule <$> fns) <> "\n\n"
 
 
 genSeparateFamilyImpls :: String -> Array QD.QFamily -> String
@@ -62,10 +62,10 @@ genSeparateFamilyImpls _ fns =
     String.joinWith "\n\n" (genFamilyToolkitSeparateImpl <$> fns) <> "\n\n"
 
 
-genTypeDefSeparate :: String -> Array QD.QFamily -> String
-genTypeDefSeparate _ fns =
+genTypeDefSeparate :: Boolean -> String -> Array QD.QFamily -> String
+genTypeDefSeparate withModule _ fns =
     "type Toolkit m\n" <> i <> "= Toolkit Unit\n"
-        <> i2 <> inBrackets' genFamilyTypeDefRef ("\n" <> i2 <> ", ") fns
+        <> i2 <> inBrackets' (genFamilyTypeDefRef withModule) ("\n" <> i2 <> ", ") fns
 
 
 ensureStartsFromCapitalLetter :: String -> String
@@ -105,16 +105,17 @@ genFamilyTypeDef (QD.QFamily fn) =
         <> i4 <> "m"
 
 
-genFamilyTypeDefRef :: QD.QFamily -> String
-genFamilyTypeDefRef (QD.QFamily fn) =
+genFamilyTypeDefRef :: Boolean -> QD.QFamily -> String
+genFamilyTypeDefRef withModule (QD.QFamily fn) =
     fn.family <> " :: "
-        <> moduleName fn.family <> ".Family"
+        <> (if withModule then moduleName fn.family <> ".Family" else "Family")
         <> " -- {-> " <> fn.tag <> " <-}"
 
 
-genFamilyTypeSepDef :: QD.QFamily -> String
-genFamilyTypeSepDef (QD.QFamily fn) =
-    "type " <> moduleName fn.family <> ".Family" <> " m = -- {-> " <> fn.tag <> " <-}\n"
+genFamilyTypeSepDef :: Boolean -> QD.QFamily -> String
+genFamilyTypeSepDef withModule (QD.QFamily fn) =
+    "type " <> (if withModule then moduleName fn.family <> ".Family" else "Family")
+        <> " m = -- {-> " <> fn.tag <> " <-}\n"
         <> i <> "Family.Def Unit\n"
         <> i2 <> (inBrackets genChanTypeDef ", " fn.inputs) <> "\n"
         <> i2 <> (inBrackets genChanTypeDef ", " fn.outputs) <> "\n"
