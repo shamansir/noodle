@@ -134,7 +134,7 @@ type MSrc.Family m = -- {-> source <-}
 
 type MPrev.Family m = -- {-> source <-}
     Family.Def Unit
-        ( ? )
+        ( ?ch_type )
         ( out :: Texture )
         m
 
@@ -266,7 +266,7 @@ type MColorama.Family m = -- {-> color <-}
 
 type MSum.Family m = -- {-> color <-}
     Family.Def Unit
-        ( what :: Texture, ? )
+        ( what :: Texture, ?ch_type )
         ( out :: Texture )
         m
 
@@ -500,7 +500,7 @@ type MInit.Family m = -- {-> extsource <-}
 
 type MInitStream.Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( where :: Source, ? )
+        ( where :: Source, ?ch_type )
         ( out :: Unit )
         m
 
@@ -572,13 +572,13 @@ type MSetScale.Family m = -- {-> audio <-}
 
 type MHide.Family m = -- {-> audio <-}
     Family.Def Unit
-        ( a :: Audio, ? )
+        ( a :: Audio, ?ch_type )
         ( out :: Unit )
         m
 
 type MShow.Family m = -- {-> audio <-}
     Family.Def Unit
-        ( a :: Audio, ? )
+        ( a :: Audio, ?ch_type )
         ( out :: Unit )
         m
 
@@ -591,677 +591,341 @@ type MOut.Family m = -- {-> out <-}
 
 
 
-MNoise.fn :: forall m. MNoise.Family m
-MNoise.fn = -- {-> source <-}
-    Family.def
-        unit
-        { scale : 10, offset : 0.1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MVoronoi.fn :: forall m. MVoronoi.Family m
-MVoronoi.fn = -- {-> source <-}
-    Family.def
-        unit
-        { scale : 5, speed : 0.3, blending : 0.3 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MOsc.fn :: forall m. MOsc.Family m
-MOsc.fn = -- {-> source <-}
-    Family.def
-        unit
-        { frequency : 60, sync : 0.1, offset : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MShape.fn :: forall m. MShape.Family m
-MShape.fn = -- {-> source <-}
-    Family.def
-        unit
-        { sides : 60, radius : 0.3, smoothing : 0.01 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MGradient.fn :: forall m. MGradient.Family m
-MGradient.fn = -- {-> source <-}
-    Family.def
-        unit
-        { speed : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSrc.fn :: forall m. MSrc.Family m
-MSrc.fn = -- {-> source <-}
-    Family.def
-        unit
-        { tex : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSolid.fn :: forall m. MSolid.Family m
-MSolid.fn = -- {-> source <-}
-    Family.def
-        unit
-        { r : ?, g : ?, b : ?, a : 1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSrc.fn :: forall m. MSrc.Family m
-MSrc.fn = -- {-> source <-}
-    Family.def
-        unit
-        { src : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MPrev.fn :: forall m. MPrev.Family m
-MPrev.fn = -- {-> source <-}
-    Family.def
-        unit
-        { ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MRotate.fn :: forall m. MRotate.Family m
-MRotate.fn = -- {-> geometry <-}
-    Family.def
-        unit
-        { what : ?, angle : 10, speed : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MScale.fn :: forall m. MScale.Family m
-MScale.fn = -- {-> geometry <-}
-    Family.def
-        unit
-        { what : ?, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MPixelate.fn :: forall m. MPixelate.Family m
-MPixelate.fn = -- {-> geometry <-}
-    Family.def
-        unit
-        { what : ?, pixelX : 20, pixelY : 20 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MRepeat.fn :: forall m. MRepeat.Family m
-MRepeat.fn = -- {-> geometry <-}
-    Family.def
-        unit
-        { what : ?, repeatX : 3, repeatY : 3, offsetX : ?, offsetY : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MRepeatX.fn :: forall m. MRepeatX.Family m
-MRepeatX.fn = -- {-> geometry <-}
-    Family.def
-        unit
-        { what : ?, reps : 3, offset : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MRepeatY.fn :: forall m. MRepeatY.Family m
-MRepeatY.fn = -- {-> geometry <-}
-    Family.def
-        unit
-        { what : ?, reps : 3, offset : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MKaleid.fn :: forall m. MKaleid.Family m
-MKaleid.fn = -- {-> geometry <-}
-    Family.def
-        unit
-        { what : ?, nSides : 3 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MScroll.fn :: forall m. MScroll.Family m
-MScroll.fn = -- {-> geometry <-}
-    Family.def
-        unit
-        { what : ?, scrollX : 0.5, scrollY : 0.5, speedX : ?, speedY : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MScrollX.fn :: forall m. MScrollX.Family m
-MScrollX.fn = -- {-> geometry <-}
-    Family.def
-        unit
-        { what : ?, scrollX : 0.5, speed : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MScrollY.fn :: forall m. MScrollY.Family m
-MScrollY.fn = -- {-> geometry <-}
-    Family.def
-        unit
-        { what : ?, scrollY : 0.5, speed : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MPosterize.fn :: forall m. MPosterize.Family m
-MPosterize.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, bins : 3, gamma : 0.6 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MShift.fn :: forall m. MShift.Family m
-MShift.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, r : 0.5, g : ?, b : ?, a : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MInvert.fn :: forall m. MInvert.Family m
-MInvert.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, amount : 1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MContrast.fn :: forall m. MContrast.Family m
-MContrast.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, amount : 1.6 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MBrightness.fn :: forall m. MBrightness.Family m
-MBrightness.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, amount : 0.4 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MLuma.fn :: forall m. MLuma.Family m
-MLuma.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, treshold : 0.5, tolerance : 0.1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MTresh.fn :: forall m. MTresh.Family m
-MTresh.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, treshold : 0.5, tolerance : 0.1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MColor.fn :: forall m. MColor.Family m
-MColor.fn = -- {-> color <-}
-    Family.def
-        unit
-        { r : 1, g : 1, b : 1, a : 1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSaturate.fn :: forall m. MSaturate.Family m
-MSaturate.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, amount : 2 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MHue.fn :: forall m. MHue.Family m
-MHue.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, hue : 0.4 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MColorama.fn :: forall m. MColorama.Family m
-MColorama.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, amount : 0.005 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSum.fn :: forall m. MSum.Family m
-MSum.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MR.fn :: forall m. MR.Family m
-MR.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, scale : 1, offset : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MG.fn :: forall m. MG.Family m
-MG.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, scale : 1, offset : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MB.fn :: forall m. MB.Family m
-MB.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, scale : 1, offset : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MA.fn :: forall m. MA.Family m
-MA.fn = -- {-> color <-}
-    Family.def
-        unit
-        { what : ?, scale : 1, offset : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MAdd.fn :: forall m. MAdd.Family m
-MAdd.fn = -- {-> blend <-}
-    Family.def
-        unit
-        { what : ?, with : ?, amount : 1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSub.fn :: forall m. MSub.Family m
-MSub.fn = -- {-> blend <-}
-    Family.def
-        unit
-        { what : ?, with : ?, amount : 1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MLayer.fn :: forall m. MLayer.Family m
-MLayer.fn = -- {-> blend <-}
-    Family.def
-        unit
-        { what : ?, with : ?, amount : 1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MBlend.fn :: forall m. MBlend.Family m
-MBlend.fn = -- {-> blend <-}
-    Family.def
-        unit
-        { what : ?, with : ?, amount : 0.5 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MMult.fn :: forall m. MMult.Family m
-MMult.fn = -- {-> blend <-}
-    Family.def
-        unit
-        { what : ?, with : ?, amount : 1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MDiff.fn :: forall m. MDiff.Family m
-MDiff.fn = -- {-> blend <-}
-    Family.def
-        unit
-        { what : ?, with : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MMask.fn :: forall m. MMask.Family m
-MMask.fn = -- {-> blend <-}
-    Family.def
-        unit
-        { what : ?, with : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MModulateRepeat.fn :: forall m. MModulateRepeat.Family m
-MModulateRepeat.fn = -- {-> modulate <-}
-    Family.def
-        unit
-        { what : ?, with : ?, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MModulateRepeatX.fn :: forall m. MModulateRepeatX.Family m
-MModulateRepeatX.fn = -- {-> modulate <-}
-    Family.def
-        unit
-        { what : ?, with : ?, reps : 3, offset : 0.5 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MModulateRepeatY.fn :: forall m. MModulateRepeatY.Family m
-MModulateRepeatY.fn = -- {-> modulate <-}
-    Family.def
-        unit
-        { what : ?, with : ?, reps : 3, offset : 0.5 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MModulateKaleid.fn :: forall m. MModulateKaleid.Family m
-MModulateKaleid.fn = -- {-> modulate <-}
-    Family.def
-        unit
-        { what : ?, with : ?, nSides : 3 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MModulateScrollX.fn :: forall m. MModulateScrollX.Family m
-MModulateScrollX.fn = -- {-> modulate <-}
-    Family.def
-        unit
-        { what : ?, with : ?, scrollX : 0.5, speed : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MModulateScrollY.fn :: forall m. MModulateScrollY.Family m
-MModulateScrollY.fn = -- {-> modulate <-}
-    Family.def
-        unit
-        { what : ?, with : ?, scrollY : 0.5, speed : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MModulate.fn :: forall m. MModulate.Family m
-MModulate.fn = -- {-> modulate <-}
-    Family.def
-        unit
-        { what : ?, with : ?, amount : 0.1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MModulateScale.fn :: forall m. MModulateScale.Family m
-MModulateScale.fn = -- {-> modulate <-}
-    Family.def
-        unit
-        { what : ?, with : ?, multiple : 1, offset : 1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MModulatePixelate.fn :: forall m. MModulatePixelate.Family m
-MModulatePixelate.fn = -- {-> modulate <-}
-    Family.def
-        unit
-        { what : ?, with : ?, multiple : 10, offset : 3 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MModulateRotate.fn :: forall m. MModulateRotate.Family m
-MModulateRotate.fn = -- {-> modulate <-}
-    Family.def
-        unit
-        { what : ?, with : ?, multiple : 1, offset : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MModulateHue.fn :: forall m. MModulateHue.Family m
-MModulateHue.fn = -- {-> modulate <-}
-    Family.def
-        unit
-        { what : ?, with : ?, amount : 1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MRender.fn :: forall m. MRender.Family m
-MRender.fn = -- {-> synth <-}
-    Family.def
-        unit
-        { from : All }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MUpdate.fn :: forall m. MUpdate.Family m
-MUpdate.fn = -- {-> synth <-}
-    Family.def
-        unit
-        { fn : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSetResolution.fn :: forall m. MSetResolution.Family m
-MSetResolution.fn = -- {-> synth <-}
-    Family.def
-        unit
-        { width : ?, height : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MHush.fn :: forall m. MHush.Family m
-MHush.fn = -- {-> synth <-}
-    Family.def
-        unit
-        { Unit : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSetFunction.fn :: forall m. MSetFunction.Family m
-MSetFunction.fn = -- {-> synth <-}
-    Family.def
-        unit
-        { fn : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSpeed.fn :: forall m. MSpeed.Family m
-MSpeed.fn = -- {-> synth <-}
-    Family.def
-        unit
-        { v : 1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MBpm.fn :: forall m. MBpm.Family m
-MBpm.fn = -- {-> synth <-}
-    Family.def
-        unit
-        { v : 30 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MWidth.fn :: forall m. MWidth.Family m
-MWidth.fn = -- {-> synth <-}
-    Family.def
-        unit
-        { }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MHeight.fn :: forall m. MHeight.Family m
-MHeight.fn = -- {-> synth <-}
-    Family.def
-        unit
-        { }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MPi.fn :: forall m. MPi.Family m
-MPi.fn = -- {-> synth <-}
-    Family.def
-        unit
-        { }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MTime.fn :: forall m. MTime.Family m
-MTime.fn = -- {-> synth <-}
-    Family.def
-        unit
-        { }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MMouse.fn :: forall m. MMouse.Family m
-MMouse.fn = -- {-> synth <-}
-    Family.def
-        unit
-        { }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MInitCam.fn :: forall m. MInitCam.Family m
-MInitCam.fn = -- {-> extsource <-}
-    Family.def
-        unit
-        { where : ?, index : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MInitImage.fn :: forall m. MInitImage.Family m
-MInitImage.fn = -- {-> extsource <-}
-    Family.def
-        unit
-        { where : ?, url : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MInitVideo.fn :: forall m. MInitVideo.Family m
-MInitVideo.fn = -- {-> extsource <-}
-    Family.def
-        unit
-        { where : ?, url : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MInit.fn :: forall m. MInit.Family m
-MInit.fn = -- {-> extsource <-}
-    Family.def
-        unit
-        { where : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MInitStream.fn :: forall m. MInitStream.Family m
-MInitStream.fn = -- {-> extsource <-}
-    Family.def
-        unit
-        { where : ?, ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MInitScreen.fn :: forall m. MInitScreen.Family m
-MInitScreen.fn = -- {-> extsource <-}
-    Family.def
-        unit
-        { where : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MFast.fn :: forall m. MFast.Family m
-MFast.fn = -- {-> array <-}
-    Family.def
-        unit
-        { a : ?, speed : 1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSmooth.fn :: forall m. MSmooth.Family m
-MSmooth.fn = -- {-> array <-}
-    Family.def
-        unit
-        { a : ?, smooth : 1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MEase.fn :: forall m. MEase.Family m
-MEase.fn = -- {-> array <-}
-    Family.def
-        unit
-        { a : ?, ease : Linear }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MOffset.fn :: forall m. MOffset.Family m
-MOffset.fn = -- {-> array <-}
-    Family.def
-        unit
-        { a : ?, offset : 0.5 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MFit.fn :: forall m. MFit.Family m
-MFit.fn = -- {-> array <-}
-    Family.def
-        unit
-        { a : ?, low : 0, high : 1 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MFft.fn :: forall m. MFft.Family m
-MFft.fn = -- {-> audio <-}
-    Family.def
-        unit
-        { a : ?, h : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSetSmooth.fn :: forall m. MSetSmooth.Family m
-MSetSmooth.fn = -- {-> audio <-}
-    Family.def
-        unit
-        { a : ?, smooth : 0.4 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSetCutoff.fn :: forall m. MSetCutoff.Family m
-MSetCutoff.fn = -- {-> audio <-}
-    Family.def
-        unit
-        { a : ?, cutoff : 2 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSetBins.fn :: forall m. MSetBins.Family m
-MSetBins.fn = -- {-> audio <-}
-    Family.def
-        unit
-        { a : ?, numBins : 4 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MSetScale.fn :: forall m. MSetScale.Family m
-MSetScale.fn = -- {-> audio <-}
-    Family.def
-        unit
-        { a : ?, scale : 10 }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MHide.fn :: forall m. MHide.Family m
-MHide.fn = -- {-> audio <-}
-    Family.def
-        unit
-        { a : ?, ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MShow.fn :: forall m. MShow.Family m
-MShow.fn = -- {-> audio <-}
-    Family.def
-        unit
-        { a : ?, ? }
-        { out : ? }
-    $ Fn.make $ pure unit
-
-MOut.fn :: forall m. MOut.Family m
-MOut.fn = -- {-> out <-}
-    Family.def
-        unit
-        { what : ?, where : ? }
-        { out : ? }
-    $ Fn.make $ pure unit
+MNoise.fml :: forall m. MNoise.Family m
+MNoise.fml = -- {-> source <-}
+
+
+MVoronoi.fml :: forall m. MVoronoi.Family m
+MVoronoi.fml = -- {-> source <-}
+
+
+MOsc.fml :: forall m. MOsc.Family m
+MOsc.fml = -- {-> source <-}
+
+
+MShape.fml :: forall m. MShape.Family m
+MShape.fml = -- {-> source <-}
+
+
+MGradient.fml :: forall m. MGradient.Family m
+MGradient.fml = -- {-> source <-}
+
+
+MSrc.fml :: forall m. MSrc.Family m
+MSrc.fml = -- {-> source <-}
+
+
+MSolid.fml :: forall m. MSolid.Family m
+MSolid.fml = -- {-> source <-}
+
+
+MSrc.fml :: forall m. MSrc.Family m
+MSrc.fml = -- {-> source <-}
+
+
+MPrev.fml :: forall m. MPrev.Family m
+MPrev.fml = -- {-> source <-}
+
+
+MRotate.fml :: forall m. MRotate.Family m
+MRotate.fml = -- {-> geometry <-}
+
+
+MScale.fml :: forall m. MScale.Family m
+MScale.fml = -- {-> geometry <-}
+
+
+MPixelate.fml :: forall m. MPixelate.Family m
+MPixelate.fml = -- {-> geometry <-}
+
+
+MRepeat.fml :: forall m. MRepeat.Family m
+MRepeat.fml = -- {-> geometry <-}
+
+
+MRepeatX.fml :: forall m. MRepeatX.Family m
+MRepeatX.fml = -- {-> geometry <-}
+
+
+MRepeatY.fml :: forall m. MRepeatY.Family m
+MRepeatY.fml = -- {-> geometry <-}
+
+
+MKaleid.fml :: forall m. MKaleid.Family m
+MKaleid.fml = -- {-> geometry <-}
+
+
+MScroll.fml :: forall m. MScroll.Family m
+MScroll.fml = -- {-> geometry <-}
+
+
+MScrollX.fml :: forall m. MScrollX.Family m
+MScrollX.fml = -- {-> geometry <-}
+
+
+MScrollY.fml :: forall m. MScrollY.Family m
+MScrollY.fml = -- {-> geometry <-}
+
+
+MPosterize.fml :: forall m. MPosterize.Family m
+MPosterize.fml = -- {-> color <-}
+
+
+MShift.fml :: forall m. MShift.Family m
+MShift.fml = -- {-> color <-}
+
+
+MInvert.fml :: forall m. MInvert.Family m
+MInvert.fml = -- {-> color <-}
+
+
+MContrast.fml :: forall m. MContrast.Family m
+MContrast.fml = -- {-> color <-}
+
+
+MBrightness.fml :: forall m. MBrightness.Family m
+MBrightness.fml = -- {-> color <-}
+
+
+MLuma.fml :: forall m. MLuma.Family m
+MLuma.fml = -- {-> color <-}
+
+
+MTresh.fml :: forall m. MTresh.Family m
+MTresh.fml = -- {-> color <-}
+
+
+MColor.fml :: forall m. MColor.Family m
+MColor.fml = -- {-> color <-}
+
+
+MSaturate.fml :: forall m. MSaturate.Family m
+MSaturate.fml = -- {-> color <-}
+
+
+MHue.fml :: forall m. MHue.Family m
+MHue.fml = -- {-> color <-}
+
+
+MColorama.fml :: forall m. MColorama.Family m
+MColorama.fml = -- {-> color <-}
+
+
+MSum.fml :: forall m. MSum.Family m
+MSum.fml = -- {-> color <-}
+
+
+MR.fml :: forall m. MR.Family m
+MR.fml = -- {-> color <-}
+
+
+MG.fml :: forall m. MG.Family m
+MG.fml = -- {-> color <-}
+
+
+MB.fml :: forall m. MB.Family m
+MB.fml = -- {-> color <-}
+
+
+MA.fml :: forall m. MA.Family m
+MA.fml = -- {-> color <-}
+
+
+MAdd.fml :: forall m. MAdd.Family m
+MAdd.fml = -- {-> blend <-}
+
+
+MSub.fml :: forall m. MSub.Family m
+MSub.fml = -- {-> blend <-}
+
+
+MLayer.fml :: forall m. MLayer.Family m
+MLayer.fml = -- {-> blend <-}
+
+
+MBlend.fml :: forall m. MBlend.Family m
+MBlend.fml = -- {-> blend <-}
+
+
+MMult.fml :: forall m. MMult.Family m
+MMult.fml = -- {-> blend <-}
+
+
+MDiff.fml :: forall m. MDiff.Family m
+MDiff.fml = -- {-> blend <-}
+
+
+MMask.fml :: forall m. MMask.Family m
+MMask.fml = -- {-> blend <-}
+
+
+MModulateRepeat.fml :: forall m. MModulateRepeat.Family m
+MModulateRepeat.fml = -- {-> modulate <-}
+
+
+MModulateRepeatX.fml :: forall m. MModulateRepeatX.Family m
+MModulateRepeatX.fml = -- {-> modulate <-}
+
+
+MModulateRepeatY.fml :: forall m. MModulateRepeatY.Family m
+MModulateRepeatY.fml = -- {-> modulate <-}
+
+
+MModulateKaleid.fml :: forall m. MModulateKaleid.Family m
+MModulateKaleid.fml = -- {-> modulate <-}
+
+
+MModulateScrollX.fml :: forall m. MModulateScrollX.Family m
+MModulateScrollX.fml = -- {-> modulate <-}
+
+
+MModulateScrollY.fml :: forall m. MModulateScrollY.Family m
+MModulateScrollY.fml = -- {-> modulate <-}
+
+
+MModulate.fml :: forall m. MModulate.Family m
+MModulate.fml = -- {-> modulate <-}
+
+
+MModulateScale.fml :: forall m. MModulateScale.Family m
+MModulateScale.fml = -- {-> modulate <-}
+
+
+MModulatePixelate.fml :: forall m. MModulatePixelate.Family m
+MModulatePixelate.fml = -- {-> modulate <-}
+
+
+MModulateRotate.fml :: forall m. MModulateRotate.Family m
+MModulateRotate.fml = -- {-> modulate <-}
+
+
+MModulateHue.fml :: forall m. MModulateHue.Family m
+MModulateHue.fml = -- {-> modulate <-}
+
+
+MRender.fml :: forall m. MRender.Family m
+MRender.fml = -- {-> synth <-}
+
+
+MUpdate.fml :: forall m. MUpdate.Family m
+MUpdate.fml = -- {-> synth <-}
+
+
+MSetResolution.fml :: forall m. MSetResolution.Family m
+MSetResolution.fml = -- {-> synth <-}
+
+
+MHush.fml :: forall m. MHush.Family m
+MHush.fml = -- {-> synth <-}
+
+
+MSetFunction.fml :: forall m. MSetFunction.Family m
+MSetFunction.fml = -- {-> synth <-}
+
+
+MSpeed.fml :: forall m. MSpeed.Family m
+MSpeed.fml = -- {-> synth <-}
+
+
+MBpm.fml :: forall m. MBpm.Family m
+MBpm.fml = -- {-> synth <-}
+
+
+MWidth.fml :: forall m. MWidth.Family m
+MWidth.fml = -- {-> synth <-}
+
+
+MHeight.fml :: forall m. MHeight.Family m
+MHeight.fml = -- {-> synth <-}
+
+
+MPi.fml :: forall m. MPi.Family m
+MPi.fml = -- {-> synth <-}
+
+
+MTime.fml :: forall m. MTime.Family m
+MTime.fml = -- {-> synth <-}
+
+
+MMouse.fml :: forall m. MMouse.Family m
+MMouse.fml = -- {-> synth <-}
+
+
+MInitCam.fml :: forall m. MInitCam.Family m
+MInitCam.fml = -- {-> extsource <-}
+
+
+MInitImage.fml :: forall m. MInitImage.Family m
+MInitImage.fml = -- {-> extsource <-}
+
+
+MInitVideo.fml :: forall m. MInitVideo.Family m
+MInitVideo.fml = -- {-> extsource <-}
+
+
+MInit.fml :: forall m. MInit.Family m
+MInit.fml = -- {-> extsource <-}
+
+
+MInitStream.fml :: forall m. MInitStream.Family m
+MInitStream.fml = -- {-> extsource <-}
+
+
+MInitScreen.fml :: forall m. MInitScreen.Family m
+MInitScreen.fml = -- {-> extsource <-}
+
+
+MFast.fml :: forall m. MFast.Family m
+MFast.fml = -- {-> array <-}
+
+
+MSmooth.fml :: forall m. MSmooth.Family m
+MSmooth.fml = -- {-> array <-}
+
+
+MEase.fml :: forall m. MEase.Family m
+MEase.fml = -- {-> array <-}
+
+
+MOffset.fml :: forall m. MOffset.Family m
+MOffset.fml = -- {-> array <-}
+
+
+MFit.fml :: forall m. MFit.Family m
+MFit.fml = -- {-> array <-}
+
+
+MFft.fml :: forall m. MFft.Family m
+MFft.fml = -- {-> audio <-}
+
+
+MSetSmooth.fml :: forall m. MSetSmooth.Family m
+MSetSmooth.fml = -- {-> audio <-}
+
+
+MSetCutoff.fml :: forall m. MSetCutoff.Family m
+MSetCutoff.fml = -- {-> audio <-}
+
+
+MSetBins.fml :: forall m. MSetBins.Family m
+MSetBins.fml = -- {-> audio <-}
+
+
+MSetScale.fml :: forall m. MSetScale.Family m
+MSetScale.fml = -- {-> audio <-}
+
+
+MHide.fml :: forall m. MHide.Family m
+MHide.fml = -- {-> audio <-}
+
+
+MShow.fml :: forall m. MShow.Family m
+MShow.fml = -- {-> audio <-}
+
+
+MOut.fml :: forall m. MOut.Family m
+MOut.fml = -- {-> out <-}
+
 
 
 
@@ -1355,6 +1019,770 @@ type Toolkit m
         )
 
 
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { scale : 10, offset : 0.1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { scale : 5, speed : 0.3, blending : 0.3 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { frequency : 60, sync : 0.1, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { sides : 60, radius : 0.3, smoothing : 0.01 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { speed : ?speed_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { tex : ?tex_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { r : ?r_default, g : ?g_default, b : ?b_default, a : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { src : ?src_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { ?ch_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, angle : 10, speed : ?speed_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, pixelX : 20, pixelY : 20 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, repeatX : 3, repeatY : 3, offsetX : ?offsetX_default, offsetY : ?offsetY_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, reps : 3, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, reps : 3, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, nSides : 3 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, scrollX : 0.5, scrollY : 0.5, speedX : ?speedX_default, speedY : ?speedY_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, scrollX : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, scrollY : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, bins : 3, gamma : 0.6 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, r : 0.5, g : ?g_default, b : ?b_default, a : ?a_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, amount : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, amount : 1.6 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, amount : 0.4 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { r : 1, g : 1, b : 1, a : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, amount : 2 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, hue : 0.4 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, amount : 0.005 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, ?ch_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 0.5 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, nSides : 3 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, scrollX : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, scrollY : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 0.1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, multiple : 1, offset : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, multiple : 10, offset : 3 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, multiple : 1, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { from : All }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { fn : ?fn_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { width : ?width_default, height : ?height_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { Unit : ?Unit_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { fn : ?fn_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { v : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { v : 30 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> extsource <-}
+    Family.def
+        unit
+        { where : ?where_default, index : ?index_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> extsource <-}
+    Family.def
+        unit
+        { where : ?where_default, url : ?url_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> extsource <-}
+    Family.def
+        unit
+        { where : ?where_default, url : ?url_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> extsource <-}
+    Family.def
+        unit
+        { where : ?where_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> extsource <-}
+    Family.def
+        unit
+        { where : ?where_default, ?ch_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> extsource <-}
+    Family.def
+        unit
+        { where : ?where_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> array <-}
+    Family.def
+        unit
+        { a : ?a_default, speed : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> array <-}
+    Family.def
+        unit
+        { a : ?a_default, smooth : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> array <-}
+    Family.def
+        unit
+        { a : ?a_default, ease : Linear }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> array <-}
+    Family.def
+        unit
+        { a : ?a_default, offset : 0.5 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> array <-}
+    Family.def
+        unit
+        { a : ?a_default, low : 0, high : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, h : ?h_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, smooth : 0.4 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, cutoff : 2 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, numBins : 4 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, scale : 10 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, ?ch_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, ?ch_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+fml :: forall m. Family m
+fml = -- {-> out <-}
+    Family.def
+        unit
+        { what : ?what_default, where : ?where_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+
+
+
+type Toolkit m
+    = Toolkit Unit
+        ( noise :: Family -- {-> source <-}
+        , voronoi :: Family -- {-> source <-}
+        , osc :: Family -- {-> source <-}
+        , shape :: Family -- {-> source <-}
+        , gradient :: Family -- {-> source <-}
+        , src :: Family -- {-> source <-}
+        , solid :: Family -- {-> source <-}
+        , src :: Family -- {-> source <-}
+        , prev :: Family -- {-> source <-}
+        , rotate :: Family -- {-> geometry <-}
+        , scale :: Family -- {-> geometry <-}
+        , pixelate :: Family -- {-> geometry <-}
+        , repeat :: Family -- {-> geometry <-}
+        , repeatX :: Family -- {-> geometry <-}
+        , repeatY :: Family -- {-> geometry <-}
+        , kaleid :: Family -- {-> geometry <-}
+        , scroll :: Family -- {-> geometry <-}
+        , scrollX :: Family -- {-> geometry <-}
+        , scrollY :: Family -- {-> geometry <-}
+        , posterize :: Family -- {-> color <-}
+        , shift :: Family -- {-> color <-}
+        , invert :: Family -- {-> color <-}
+        , contrast :: Family -- {-> color <-}
+        , brightness :: Family -- {-> color <-}
+        , luma :: Family -- {-> color <-}
+        , tresh :: Family -- {-> color <-}
+        , color :: Family -- {-> color <-}
+        , saturate :: Family -- {-> color <-}
+        , hue :: Family -- {-> color <-}
+        , colorama :: Family -- {-> color <-}
+        , sum :: Family -- {-> color <-}
+        , r :: Family -- {-> color <-}
+        , g :: Family -- {-> color <-}
+        , b :: Family -- {-> color <-}
+        , a :: Family -- {-> color <-}
+        , add :: Family -- {-> blend <-}
+        , sub :: Family -- {-> blend <-}
+        , layer :: Family -- {-> blend <-}
+        , blend :: Family -- {-> blend <-}
+        , mult :: Family -- {-> blend <-}
+        , diff :: Family -- {-> blend <-}
+        , mask :: Family -- {-> blend <-}
+        , modulateRepeat :: Family -- {-> modulate <-}
+        , modulateRepeatX :: Family -- {-> modulate <-}
+        , modulateRepeatY :: Family -- {-> modulate <-}
+        , modulateKaleid :: Family -- {-> modulate <-}
+        , modulateScrollX :: Family -- {-> modulate <-}
+        , modulateScrollY :: Family -- {-> modulate <-}
+        , modulate :: Family -- {-> modulate <-}
+        , modulateScale :: Family -- {-> modulate <-}
+        , modulatePixelate :: Family -- {-> modulate <-}
+        , modulateRotate :: Family -- {-> modulate <-}
+        , modulateHue :: Family -- {-> modulate <-}
+        , render :: Family -- {-> synth <-}
+        , update :: Family -- {-> synth <-}
+        , setResolution :: Family -- {-> synth <-}
+        , hush :: Family -- {-> synth <-}
+        , setFunction :: Family -- {-> synth <-}
+        , speed :: Family -- {-> synth <-}
+        , bpm :: Family -- {-> synth <-}
+        , width :: Family -- {-> synth <-}
+        , height :: Family -- {-> synth <-}
+        , pi :: Family -- {-> synth <-}
+        , time :: Family -- {-> synth <-}
+        , mouse :: Family -- {-> synth <-}
+        , initCam :: Family -- {-> extsource <-}
+        , initImage :: Family -- {-> extsource <-}
+        , initVideo :: Family -- {-> extsource <-}
+        , init :: Family -- {-> extsource <-}
+        , initStream :: Family -- {-> extsource <-}
+        , initScreen :: Family -- {-> extsource <-}
+        , fast :: Family -- {-> array <-}
+        , smooth :: Family -- {-> array <-}
+        , ease :: Family -- {-> array <-}
+        , offset :: Family -- {-> array <-}
+        , fit :: Family -- {-> array <-}
+        , fft :: Family -- {-> audio <-}
+        , setSmooth :: Family -- {-> audio <-}
+        , setCutoff :: Family -- {-> audio <-}
+        , setBins :: Family -- {-> audio <-}
+        , setScale :: Family -- {-> audio <-}
+        , hide :: Family -- {-> audio <-}
+        , show :: Family -- {-> audio <-}
+        , out :: Family -- {-> out <-}
+        )
+
+
 type Toolkit m
     = Toolkit Unit
         ( noise :: -- {-> source <-}
@@ -1399,7 +1827,7 @@ type Toolkit m
                 m
         , prev :: -- {-> source <-}
             Family.Def Unit
-                ( ? )
+                ( ?ch_type )
                 ( out :: Texture )
                 m
         , rotate :: -- {-> geometry <-}
@@ -1509,7 +1937,7 @@ type Toolkit m
                 m
         , sum :: -- {-> color <-}
             Family.Def Unit
-                ( what :: Texture, ? )
+                ( what :: Texture, ?ch_type )
                 ( out :: Texture )
                 m
         , r :: -- {-> color <-}
@@ -1704,7 +2132,7 @@ type Toolkit m
                 m
         , initStream :: -- {-> extsource <-}
             Family.Def Unit
-                ( where :: Source, ? )
+                ( where :: Source, ?ch_type )
                 ( out :: Unit )
                 m
         , initScreen :: -- {-> extsource <-}
@@ -1764,12 +2192,12 @@ type Toolkit m
                 m
         , hide :: -- {-> audio <-}
             Family.Def Unit
-                ( a :: Audio, ? )
+                ( a :: Audio, ?ch_type )
                 ( out :: Unit )
                 m
         , show :: -- {-> audio <-}
             Family.Def Unit
-                ( a :: Audio, ? )
+                ( a :: Audio, ?ch_type )
                 ( out :: Unit )
                 m
         , out :: -- {-> out <-}
@@ -1786,504 +2214,2646 @@ toolkit =
             Family.def
                 unit
                 { scale : 10, offset : 0.1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , voronoi : -- {-> source <-}
             Family.def
                 unit
                 { scale : 5, speed : 0.3, blending : 0.3 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , osc : -- {-> source <-}
             Family.def
                 unit
-                { frequency : 60, sync : 0.1, offset : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { frequency : 60, sync : 0.1, offset : ?offset_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , shape : -- {-> source <-}
             Family.def
                 unit
                 { sides : 60, radius : 0.3, smoothing : 0.01 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , gradient : -- {-> source <-}
             Family.def
                 unit
-                { speed : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { speed : ?speed_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , src : -- {-> source <-}
             Family.def
                 unit
-                { tex : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { tex : ?tex_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , solid : -- {-> source <-}
             Family.def
                 unit
-                { r : ?, g : ?, b : ?, a : 1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { r : ?r_default, g : ?g_default, b : ?b_default, a : 1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , src : -- {-> source <-}
             Family.def
                 unit
-                { src : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { src : ?src_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , prev : -- {-> source <-}
             Family.def
                 unit
-                { ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { ?ch_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , rotate : -- {-> geometry <-}
             Family.def
                 unit
-                { what : ?, angle : 10, speed : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, angle : 10, speed : ?speed_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , scale : -- {-> geometry <-}
             Family.def
                 unit
-                { what : ?, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , pixelate : -- {-> geometry <-}
             Family.def
                 unit
-                { what : ?, pixelX : 20, pixelY : 20 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, pixelX : 20, pixelY : 20 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , repeat : -- {-> geometry <-}
             Family.def
                 unit
-                { what : ?, repeatX : 3, repeatY : 3, offsetX : ?, offsetY : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, repeatX : 3, repeatY : 3, offsetX : ?offsetX_default, offsetY : ?offsetY_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , repeatX : -- {-> geometry <-}
             Family.def
                 unit
-                { what : ?, reps : 3, offset : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, reps : 3, offset : ?offset_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , repeatY : -- {-> geometry <-}
             Family.def
                 unit
-                { what : ?, reps : 3, offset : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, reps : 3, offset : ?offset_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , kaleid : -- {-> geometry <-}
             Family.def
                 unit
-                { what : ?, nSides : 3 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, nSides : 3 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , scroll : -- {-> geometry <-}
             Family.def
                 unit
-                { what : ?, scrollX : 0.5, scrollY : 0.5, speedX : ?, speedY : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, scrollX : 0.5, scrollY : 0.5, speedX : ?speedX_default, speedY : ?speedY_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , scrollX : -- {-> geometry <-}
             Family.def
                 unit
-                { what : ?, scrollX : 0.5, speed : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, scrollX : 0.5, speed : ?speed_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , scrollY : -- {-> geometry <-}
             Family.def
                 unit
-                { what : ?, scrollY : 0.5, speed : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, scrollY : 0.5, speed : ?speed_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , posterize : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, bins : 3, gamma : 0.6 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, bins : 3, gamma : 0.6 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , shift : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, r : 0.5, g : ?, b : ?, a : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, r : 0.5, g : ?g_default, b : ?b_default, a : ?a_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , invert : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, amount : 1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, amount : 1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , contrast : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, amount : 1.6 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, amount : 1.6 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , brightness : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, amount : 0.4 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, amount : 0.4 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , luma : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, treshold : 0.5, tolerance : 0.1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , tresh : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, treshold : 0.5, tolerance : 0.1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , color : -- {-> color <-}
             Family.def
                 unit
                 { r : 1, g : 1, b : 1, a : 1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , saturate : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, amount : 2 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, amount : 2 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , hue : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, hue : 0.4 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, hue : 0.4 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , colorama : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, amount : 0.005 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, amount : 0.005 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , sum : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, ?ch_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , r : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, scale : 1, offset : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, scale : 1, offset : ?offset_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , g : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, scale : 1, offset : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, scale : 1, offset : ?offset_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , b : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, scale : 1, offset : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, scale : 1, offset : ?offset_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , a : -- {-> color <-}
             Family.def
                 unit
-                { what : ?, scale : 1, offset : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, scale : 1, offset : ?offset_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , add : -- {-> blend <-}
             Family.def
                 unit
-                { what : ?, with : ?, amount : 1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, amount : 1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , sub : -- {-> blend <-}
             Family.def
                 unit
-                { what : ?, with : ?, amount : 1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, amount : 1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , layer : -- {-> blend <-}
             Family.def
                 unit
-                { what : ?, with : ?, amount : 1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, amount : 1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , blend : -- {-> blend <-}
             Family.def
                 unit
-                { what : ?, with : ?, amount : 0.5 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, amount : 0.5 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , mult : -- {-> blend <-}
             Family.def
                 unit
-                { what : ?, with : ?, amount : 1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, amount : 1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , diff : -- {-> blend <-}
             Family.def
                 unit
-                { what : ?, with : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , mask : -- {-> blend <-}
             Family.def
                 unit
-                { what : ?, with : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , modulateRepeat : -- {-> modulate <-}
             Family.def
                 unit
-                { what : ?, with : ?, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , modulateRepeatX : -- {-> modulate <-}
             Family.def
                 unit
-                { what : ?, with : ?, reps : 3, offset : 0.5 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , modulateRepeatY : -- {-> modulate <-}
             Family.def
                 unit
-                { what : ?, with : ?, reps : 3, offset : 0.5 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , modulateKaleid : -- {-> modulate <-}
             Family.def
                 unit
-                { what : ?, with : ?, nSides : 3 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, nSides : 3 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , modulateScrollX : -- {-> modulate <-}
             Family.def
                 unit
-                { what : ?, with : ?, scrollX : 0.5, speed : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, scrollX : 0.5, speed : ?speed_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , modulateScrollY : -- {-> modulate <-}
             Family.def
                 unit
-                { what : ?, with : ?, scrollY : 0.5, speed : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, scrollY : 0.5, speed : ?speed_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , modulate : -- {-> modulate <-}
             Family.def
                 unit
-                { what : ?, with : ?, amount : 0.1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, amount : 0.1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , modulateScale : -- {-> modulate <-}
             Family.def
                 unit
-                { what : ?, with : ?, multiple : 1, offset : 1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, multiple : 1, offset : 1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , modulatePixelate : -- {-> modulate <-}
             Family.def
                 unit
-                { what : ?, with : ?, multiple : 10, offset : 3 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, multiple : 10, offset : 3 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , modulateRotate : -- {-> modulate <-}
             Family.def
                 unit
-                { what : ?, with : ?, multiple : 1, offset : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, multiple : 1, offset : ?offset_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , modulateHue : -- {-> modulate <-}
             Family.def
                 unit
-                { what : ?, with : ?, amount : 1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, with : ?with_default, amount : 1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , render : -- {-> synth <-}
             Family.def
                 unit
                 { from : All }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , update : -- {-> synth <-}
             Family.def
                 unit
-                { fn : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { fn : ?fn_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , setResolution : -- {-> synth <-}
             Family.def
                 unit
-                { width : ?, height : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { width : ?width_default, height : ?height_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , hush : -- {-> synth <-}
             Family.def
                 unit
-                { Unit : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { Unit : ?Unit_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , setFunction : -- {-> synth <-}
             Family.def
                 unit
-                { fn : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { fn : ?fn_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , speed : -- {-> synth <-}
             Family.def
                 unit
                 { v : 1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , bpm : -- {-> synth <-}
             Family.def
                 unit
                 { v : 30 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , width : -- {-> synth <-}
             Family.def
                 unit
                 { }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , height : -- {-> synth <-}
             Family.def
                 unit
                 { }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , pi : -- {-> synth <-}
             Family.def
                 unit
                 { }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , time : -- {-> synth <-}
             Family.def
                 unit
                 { }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , mouse : -- {-> synth <-}
             Family.def
                 unit
                 { }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , initCam : -- {-> extsource <-}
             Family.def
                 unit
-                { where : ?, index : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { where : ?where_default, index : ?index_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , initImage : -- {-> extsource <-}
             Family.def
                 unit
-                { where : ?, url : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { where : ?where_default, url : ?url_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , initVideo : -- {-> extsource <-}
             Family.def
                 unit
-                { where : ?, url : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { where : ?where_default, url : ?url_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , init : -- {-> extsource <-}
             Family.def
                 unit
-                { where : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { where : ?where_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , initStream : -- {-> extsource <-}
             Family.def
                 unit
-                { where : ?, ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { where : ?where_default, ?ch_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , initScreen : -- {-> extsource <-}
             Family.def
                 unit
-                { where : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { where : ?where_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , fast : -- {-> array <-}
             Family.def
                 unit
-                { a : ?, speed : 1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { a : ?a_default, speed : 1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , smooth : -- {-> array <-}
             Family.def
                 unit
-                { a : ?, smooth : 1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { a : ?a_default, smooth : 1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , ease : -- {-> array <-}
             Family.def
                 unit
-                { a : ?, ease : Linear }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { a : ?a_default, ease : Linear }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , offset : -- {-> array <-}
             Family.def
                 unit
-                { a : ?, offset : 0.5 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { a : ?a_default, offset : 0.5 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , fit : -- {-> array <-}
             Family.def
                 unit
-                { a : ?, low : 0, high : 1 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { a : ?a_default, low : 0, high : 1 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , fft : -- {-> audio <-}
             Family.def
                 unit
-                { a : ?, h : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { a : ?a_default, h : ?h_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , setSmooth : -- {-> audio <-}
             Family.def
                 unit
-                { a : ?, smooth : 0.4 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { a : ?a_default, smooth : 0.4 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , setCutoff : -- {-> audio <-}
             Family.def
                 unit
-                { a : ?, cutoff : 2 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { a : ?a_default, cutoff : 2 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , setBins : -- {-> audio <-}
             Family.def
                 unit
-                { a : ?, numBins : 4 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { a : ?a_default, numBins : 4 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , setScale : -- {-> audio <-}
             Family.def
                 unit
-                { a : ?, scale : 10 }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { a : ?a_default, scale : 10 }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , hide : -- {-> audio <-}
             Family.def
                 unit
-                { a : ?, ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { a : ?a_default, ?ch_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , show : -- {-> audio <-}
             Family.def
                 unit
-                { a : ?, ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { a : ?a_default, ?ch_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         , out : -- {-> out <-}
             Family.def
                 unit
-                { what : ?, where : ? }
-                { out : ? }
-                $ Fn.make $ pure unit
+                { what : ?what_default, where : ?where_default }
+                { out : ?out_default }
+                $ fml.make $ pure unit
         }
+
+
+module MNoise where
+
+import Prelude
+
+_in_scale = Proxy :: _ "scale"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> source <-}
+    Family.Def Unit
+        ( scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { scale : 10, offset : 0.1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MVoronoi where
+
+import Prelude
+
+_in_scale = Proxy :: _ "scale"
+_in_speed = Proxy :: _ "speed"
+_in_blending = Proxy :: _ "blending"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> source <-}
+    Family.Def Unit
+        ( scale :: Value, speed :: Value, blending :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { scale : 5, speed : 0.3, blending : 0.3 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MOsc where
+
+import Prelude
+
+_in_frequency = Proxy :: _ "frequency"
+_in_sync = Proxy :: _ "sync"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> source <-}
+    Family.Def Unit
+        ( frequency :: Value, sync :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { frequency : 60, sync : 0.1, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MShape where
+
+import Prelude
+
+_in_sides = Proxy :: _ "sides"
+_in_radius = Proxy :: _ "radius"
+_in_smoothing = Proxy :: _ "smoothing"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> source <-}
+    Family.Def Unit
+        ( sides :: Value, radius :: Value, smoothing :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { sides : 60, radius : 0.3, smoothing : 0.01 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MGradient where
+
+import Prelude
+
+_in_speed = Proxy :: _ "speed"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> source <-}
+    Family.Def Unit
+        ( speed :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { speed : ?speed_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSrc where
+
+import Prelude
+
+_in_tex = Proxy :: _ "tex"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> source <-}
+    Family.Def Unit
+        ( tex :: Texture )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { tex : ?tex_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSolid where
+
+import Prelude
+
+_in_r = Proxy :: _ "r"
+_in_g = Proxy :: _ "g"
+_in_b = Proxy :: _ "b"
+_in_a = Proxy :: _ "a"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> source <-}
+    Family.Def Unit
+        ( r :: Value, g :: Value, b :: Value, a :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { r : ?r_default, g : ?g_default, b : ?b_default, a : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSrc where
+
+import Prelude
+
+_in_src = Proxy :: _ "src"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> source <-}
+    Family.Def Unit
+        ( src :: Source )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { src : ?src_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MPrev where
+
+import Prelude
+
+
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> source <-}
+    Family.Def Unit
+        ( ?ch_type )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> source <-}
+    Family.def
+        unit
+        { ?ch_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MRotate where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_angle = Proxy :: _ "angle"
+_in_speed = Proxy :: _ "speed"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> geometry <-}
+    Family.Def Unit
+        ( what :: Texture, angle :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, angle : 10, speed : ?speed_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MScale where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_amount = Proxy :: _ "amount"
+_in_xMult = Proxy :: _ "xMult"
+_in_yMult = Proxy :: _ "yMult"
+_in_offsetX = Proxy :: _ "offsetX"
+_in_offsetY = Proxy :: _ "offsetY"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> geometry <-}
+    Family.Def Unit
+        ( what :: Texture, amount :: Value, xMult :: Value, yMult :: Value, offsetX :: Value, offsetY :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MPixelate where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_pixelX = Proxy :: _ "pixelX"
+_in_pixelY = Proxy :: _ "pixelY"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> geometry <-}
+    Family.Def Unit
+        ( what :: Texture, pixelX :: Value, pixelY :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, pixelX : 20, pixelY : 20 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MRepeat where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_repeatX = Proxy :: _ "repeatX"
+_in_repeatY = Proxy :: _ "repeatY"
+_in_offsetX = Proxy :: _ "offsetX"
+_in_offsetY = Proxy :: _ "offsetY"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> geometry <-}
+    Family.Def Unit
+        ( what :: Texture, repeatX :: Value, repeatY :: Value, offsetX :: Value, offsetY :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, repeatX : 3, repeatY : 3, offsetX : ?offsetX_default, offsetY : ?offsetY_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MRepeatX where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_reps = Proxy :: _ "reps"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> geometry <-}
+    Family.Def Unit
+        ( what :: Texture, reps :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, reps : 3, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MRepeatY where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_reps = Proxy :: _ "reps"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> geometry <-}
+    Family.Def Unit
+        ( what :: Texture, reps :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, reps : 3, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MKaleid where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_nSides = Proxy :: _ "nSides"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> geometry <-}
+    Family.Def Unit
+        ( what :: Texture, nSides :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, nSides : 3 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MScroll where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_scrollX = Proxy :: _ "scrollX"
+_in_scrollY = Proxy :: _ "scrollY"
+_in_speedX = Proxy :: _ "speedX"
+_in_speedY = Proxy :: _ "speedY"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> geometry <-}
+    Family.Def Unit
+        ( what :: Texture, scrollX :: Value, scrollY :: Value, speedX :: Value, speedY :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, scrollX : 0.5, scrollY : 0.5, speedX : ?speedX_default, speedY : ?speedY_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MScrollX where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_scrollX = Proxy :: _ "scrollX"
+_in_speed = Proxy :: _ "speed"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> geometry <-}
+    Family.Def Unit
+        ( what :: Texture, scrollX :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, scrollX : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MScrollY where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_scrollY = Proxy :: _ "scrollY"
+_in_speed = Proxy :: _ "speed"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> geometry <-}
+    Family.Def Unit
+        ( what :: Texture, scrollY :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> geometry <-}
+    Family.def
+        unit
+        { what : ?what_default, scrollY : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MPosterize where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_bins = Proxy :: _ "bins"
+_in_gamma = Proxy :: _ "gamma"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, bins :: Value, gamma :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, bins : 3, gamma : 0.6 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MShift where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_r = Proxy :: _ "r"
+_in_g = Proxy :: _ "g"
+_in_b = Proxy :: _ "b"
+_in_a = Proxy :: _ "a"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, r :: Value, g :: Value, b :: Value, a :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, r : 0.5, g : ?g_default, b : ?b_default, a : ?a_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MInvert where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_amount = Proxy :: _ "amount"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, amount : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MContrast where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_amount = Proxy :: _ "amount"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, amount : 1.6 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MBrightness where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_amount = Proxy :: _ "amount"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, amount : 0.4 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MLuma where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_treshold = Proxy :: _ "treshold"
+_in_tolerance = Proxy :: _ "tolerance"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, treshold :: Value, tolerance :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MTresh where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_treshold = Proxy :: _ "treshold"
+_in_tolerance = Proxy :: _ "tolerance"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, treshold :: Value, tolerance :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MColor where
+
+import Prelude
+
+_in_r = Proxy :: _ "r"
+_in_g = Proxy :: _ "g"
+_in_b = Proxy :: _ "b"
+_in_a = Proxy :: _ "a"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( r :: Value, g :: Value, b :: Value, a :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { r : 1, g : 1, b : 1, a : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSaturate where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_amount = Proxy :: _ "amount"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, amount : 2 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MHue where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_hue = Proxy :: _ "hue"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, hue :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, hue : 0.4 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MColorama where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_amount = Proxy :: _ "amount"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, amount : 0.005 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSum where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, ?ch_type )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, ?ch_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MR where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_scale = Proxy :: _ "scale"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MG where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_scale = Proxy :: _ "scale"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MB where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_scale = Proxy :: _ "scale"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MA where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_scale = Proxy :: _ "scale"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> color <-}
+    Family.Def Unit
+        ( what :: Texture, scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> color <-}
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MAdd where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_amount = Proxy :: _ "amount"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> blend <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSub where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_amount = Proxy :: _ "amount"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> blend <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MLayer where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_amount = Proxy :: _ "amount"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> blend <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MBlend where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_amount = Proxy :: _ "amount"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> blend <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 0.5 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MMult where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_amount = Proxy :: _ "amount"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> blend <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MDiff where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> blend <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MMask where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> blend <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> blend <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MModulateRepeat where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_repeatX = Proxy :: _ "repeatX"
+_in_repeatY = Proxy :: _ "repeatY"
+_in_offsetX = Proxy :: _ "offsetX"
+_in_offsetY = Proxy :: _ "offsetY"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> modulate <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, repeatX :: Value, repeatY :: Value, offsetX :: Value, offsetY :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MModulateRepeatX where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_reps = Proxy :: _ "reps"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> modulate <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, reps :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MModulateRepeatY where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_reps = Proxy :: _ "reps"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> modulate <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, reps :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MModulateKaleid where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_nSides = Proxy :: _ "nSides"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> modulate <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, nSides :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, nSides : 3 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MModulateScrollX where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_scrollX = Proxy :: _ "scrollX"
+_in_speed = Proxy :: _ "speed"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> modulate <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, scrollX :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, scrollX : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MModulateScrollY where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_scrollY = Proxy :: _ "scrollY"
+_in_speed = Proxy :: _ "speed"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> modulate <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, scrollY :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, scrollY : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MModulate where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_amount = Proxy :: _ "amount"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> modulate <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 0.1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MModulateScale where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_multiple = Proxy :: _ "multiple"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> modulate <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, multiple :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, multiple : 1, offset : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MModulatePixelate where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_multiple = Proxy :: _ "multiple"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> modulate <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, multiple :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, multiple : 10, offset : 3 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MModulateRotate where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_multiple = Proxy :: _ "multiple"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> modulate <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, multiple :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, multiple : 1, offset : ?offset_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MModulateHue where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_with = Proxy :: _ "with"
+_in_amount = Proxy :: _ "amount"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> modulate <-}
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> modulate <-}
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MRender where
+
+import Prelude
+
+_in_from = Proxy :: _ "from"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        ( from :: From )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { from : All }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MUpdate where
+
+import Prelude
+
+_in_fn = Proxy :: _ "fn"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        ( fn :: UpdateFn )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { fn : ?fn_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSetResolution where
+
+import Prelude
+
+_in_width = Proxy :: _ "width"
+_in_height = Proxy :: _ "height"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        ( width :: Value, height :: Value )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { width : ?width_default, height : ?height_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MHush where
+
+import Prelude
+
+_in_Unit = Proxy :: _ "Unit"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        ( Unit :: Unknown )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { Unit : ?Unit_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSetFunction where
+
+import Prelude
+
+_in_fn = Proxy :: _ "fn"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        ( fn :: GlslFn )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { fn : ?fn_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSpeed where
+
+import Prelude
+
+_in_v = Proxy :: _ "v"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        ( v :: Value )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { v : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MBpm where
+
+import Prelude
+
+_in_v = Proxy :: _ "v"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        ( v :: Value )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { v : 30 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MWidth where
+
+import Prelude
+
+
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MHeight where
+
+import Prelude
+
+
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MPi where
+
+import Prelude
+
+
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MTime where
+
+import Prelude
+
+
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MMouse where
+
+import Prelude
+
+
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> synth <-}
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MInitCam where
+
+import Prelude
+
+_in_where = Proxy :: _ "where"
+_in_index = Proxy :: _ "index"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> extsource <-}
+    Family.Def Unit
+        ( where :: Source, index :: Value )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> extsource <-}
+    Family.def
+        unit
+        { where : ?where_default, index : ?index_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MInitImage where
+
+import Prelude
+
+_in_where = Proxy :: _ "where"
+_in_url = Proxy :: _ "url"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> extsource <-}
+    Family.Def Unit
+        ( where :: Source, url :: String )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> extsource <-}
+    Family.def
+        unit
+        { where : ?where_default, url : ?url_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MInitVideo where
+
+import Prelude
+
+_in_where = Proxy :: _ "where"
+_in_url = Proxy :: _ "url"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> extsource <-}
+    Family.Def Unit
+        ( where :: Source, url :: String )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> extsource <-}
+    Family.def
+        unit
+        { where : ?where_default, url : ?url_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MInit where
+
+import Prelude
+
+_in_where = Proxy :: _ "where"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> extsource <-}
+    Family.Def Unit
+        ( where :: SourceOptions )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> extsource <-}
+    Family.def
+        unit
+        { where : ?where_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MInitStream where
+
+import Prelude
+
+_in_where = Proxy :: _ "where"
+
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> extsource <-}
+    Family.Def Unit
+        ( where :: Source, ?ch_type )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> extsource <-}
+    Family.def
+        unit
+        { where : ?where_default, ?ch_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MInitScreen where
+
+import Prelude
+
+_in_where = Proxy :: _ "where"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> extsource <-}
+    Family.Def Unit
+        ( where :: Source )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> extsource <-}
+    Family.def
+        unit
+        { where : ?where_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MFast where
+
+import Prelude
+
+_in_a = Proxy :: _ "a"
+_in_speed = Proxy :: _ "speed"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> array <-}
+    Family.Def Unit
+        ( a :: Array, speed :: Value )
+        ( out :: Value )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> array <-}
+    Family.def
+        unit
+        { a : ?a_default, speed : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSmooth where
+
+import Prelude
+
+_in_a = Proxy :: _ "a"
+_in_smooth = Proxy :: _ "smooth"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> array <-}
+    Family.Def Unit
+        ( a :: Array, smooth :: Value )
+        ( out :: Value )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> array <-}
+    Family.def
+        unit
+        { a : ?a_default, smooth : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MEase where
+
+import Prelude
+
+_in_a = Proxy :: _ "a"
+_in_ease = Proxy :: _ "ease"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> array <-}
+    Family.Def Unit
+        ( a :: Array, ease :: Ease )
+        ( out :: Value )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> array <-}
+    Family.def
+        unit
+        { a : ?a_default, ease : Linear }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MOffset where
+
+import Prelude
+
+_in_a = Proxy :: _ "a"
+_in_offset = Proxy :: _ "offset"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> array <-}
+    Family.Def Unit
+        ( a :: Array, offset :: Value )
+        ( out :: Value )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> array <-}
+    Family.def
+        unit
+        { a : ?a_default, offset : 0.5 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MFit where
+
+import Prelude
+
+_in_a = Proxy :: _ "a"
+_in_low = Proxy :: _ "low"
+_in_high = Proxy :: _ "high"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> array <-}
+    Family.Def Unit
+        ( a :: Array, low :: Value, high :: Value )
+        ( out :: Value )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> array <-}
+    Family.def
+        unit
+        { a : ?a_default, low : 0, high : 1 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MFft where
+
+import Prelude
+
+_in_a = Proxy :: _ "a"
+_in_h = Proxy :: _ "h"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> audio <-}
+    Family.Def Unit
+        ( a :: Audio, h :: AudioBin )
+        ( out :: Value )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, h : ?h_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSetSmooth where
+
+import Prelude
+
+_in_a = Proxy :: _ "a"
+_in_smooth = Proxy :: _ "smooth"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> audio <-}
+    Family.Def Unit
+        ( a :: Audio, smooth :: Value )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, smooth : 0.4 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSetCutoff where
+
+import Prelude
+
+_in_a = Proxy :: _ "a"
+_in_cutoff = Proxy :: _ "cutoff"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> audio <-}
+    Family.Def Unit
+        ( a :: Audio, cutoff :: Value )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, cutoff : 2 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSetBins where
+
+import Prelude
+
+_in_a = Proxy :: _ "a"
+_in_numBins = Proxy :: _ "numBins"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> audio <-}
+    Family.Def Unit
+        ( a :: Audio, numBins :: Value )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, numBins : 4 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MSetScale where
+
+import Prelude
+
+_in_a = Proxy :: _ "a"
+_in_scale = Proxy :: _ "scale"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> audio <-}
+    Family.Def Unit
+        ( a :: Audio, scale :: Value )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, scale : 10 }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MHide where
+
+import Prelude
+
+_in_a = Proxy :: _ "a"
+
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> audio <-}
+    Family.Def Unit
+        ( a :: Audio, ?ch_type )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, ?ch_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MShow where
+
+import Prelude
+
+_in_a = Proxy :: _ "a"
+
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> audio <-}
+    Family.Def Unit
+        ( a :: Audio, ?ch_type )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> audio <-}
+    Family.def
+        unit
+        { a : ?a_default, ?ch_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit
+
+{- MODULE -}
+
+module MOut where
+
+import Prelude
+
+_in_what = Proxy :: _ "what"
+_in_where = Proxy :: _ "where"
+
+_out_out = Proxy :: _ "out"
+
+type Family m = -- {-> out <-}
+    Family.Def Unit
+        ( what :: Texture, where :: Output )
+        ( out :: Unit )
+        m
+
+fml :: forall m. Family m
+fml = -- {-> out <-}
+    Family.def
+        unit
+        { what : ?what_default, where : ?where_default }
+        { out : ?out_default }
+    $ fml.make $ pure unit

@@ -181,8 +181,11 @@ main = launchAff_ $ runSpec [consoleReporter] do
           Right familiesList -> do
             let sepImports = QTG.genSeparateImports "hydra" familiesList
             let sepNodesTypes = QTG.genSeparateFamilyTypes true "hydra" familiesList
-            let sepImpls = QTG.genSeparateFamilyImpls "hydra" familiesList
+            let sepImpls = QTG.genSeparateFamilyImpls true "hydra" familiesList
             let sepTypeDef = QTG.genTypeDefSeparate true "hydra" familiesList
+            let familyModules = String.joinWith "\n\n{- MODULE -}\n\n" (QTG.genFamilyModule "hydra" <$> familiesList)
+            let sepImpls' = QTG.genSeparateFamilyImpls false "hydra" familiesList
+            let sepTypeDef' = QTG.genTypeDefSeparate false "hydra" familiesList
             let inlineTypeDef = QTG.genTypeDefInline "hydra" familiesList
             let toolkitDef = QTG.genToolkitDef "hydra" familiesList
             let fileContent =
@@ -191,8 +194,11 @@ main = launchAff_ $ runSpec [consoleReporter] do
                       , sepNodesTypes
                       , sepImpls
                       , sepTypeDef
+                      , sepImpls'
+                      , sepTypeDef'
                       , inlineTypeDef
                       , toolkitDef
+                      , familyModules
                       ]
             writeTextFile UTF8 out_file_path fileContent
             _ <- Array.zipWithA shouldEqual
