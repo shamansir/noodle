@@ -35,8 +35,8 @@ import Noodle.Text.ToolkitGen as QTG
 
 
 in_file_path = "./hydra.fn.clean.list"
-out_file_path = "./hydra.toolkit.prepurs"
-out_file_path_sample = "./hydra.toolkit.prepurs.sample"
+out_file_path = "./test/hydra.toolkit.prepurs"
+out_file_path_sample = "./test/hydra.toolkit.prepurs.sample"
 
 
 {-

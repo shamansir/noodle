@@ -1882,7 +1882,6 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
-
             P.send _out_out ?out_out
 
 
@@ -1893,7 +1892,6 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
-
             P.send _out_out ?out_out
 
 
@@ -1904,7 +1902,6 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
-
             P.send _out_out ?out_out
 
 
@@ -1915,7 +1912,6 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
-
             P.send _out_out ?out_out
 
 
@@ -1926,7 +1922,6 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
-
             P.send _out_out ?out_out
 
 
@@ -3331,7 +3326,6 @@ toolkit =
                 { }
                 { out : ?out_default }
                 $ fml.make $ do
-
                     P.send _out_out ?out_out
 
         , height : -- {-> synth <-}
@@ -3340,7 +3334,6 @@ toolkit =
                 { }
                 { out : ?out_default }
                 $ fml.make $ do
-
                     P.send _out_out ?out_out
 
         , pi : -- {-> synth <-}
@@ -3349,7 +3342,6 @@ toolkit =
                 { }
                 { out : ?out_default }
                 $ fml.make $ do
-
                     P.send _out_out ?out_out
 
         , time : -- {-> synth <-}
@@ -3358,7 +3350,6 @@ toolkit =
                 { }
                 { out : ?out_default }
                 $ fml.make $ do
-
                     P.send _out_out ?out_out
 
         , mouse : -- {-> synth <-}
@@ -3367,7 +3358,6 @@ toolkit =
                 { }
                 { out : ?out_default }
                 $ fml.make $ do
-
                     P.send _out_out ?out_out
 
         , initCam : -- {-> extsource <-}
@@ -5421,7 +5411,6 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
-
             P.send _out_out ?out_out
 
 
@@ -5448,7 +5437,6 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
-
             P.send _out_out ?out_out
 
 
@@ -5475,7 +5463,6 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
-
             P.send _out_out ?out_out
 
 
@@ -5502,7 +5489,6 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
-
             P.send _out_out ?out_out
 
 
@@ -5529,7 +5515,6 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
-
             P.send _out_out ?out_out
 
 
