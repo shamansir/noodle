@@ -3,9 +3,8 @@ module Noodle.Text.ToolkitGen where
 import Prelude
 
 import Data.Array as Array
-import Data.String as String
 import Data.Maybe (Maybe(..), fromMaybe)
-
+import Data.String as String
 import Noodle.Text.QuickDef as QD
 
 
@@ -39,6 +38,8 @@ i = "    "
 i2 = i <> i
 i3 = i2 <> i
 i4 = i3 <> i
+i5 = i4 <> i
+i6 = i5 <> i
 
 
 genSeparateImports :: String -> Array QD.QFamily -> String
@@ -61,11 +62,24 @@ genFamilyModule tkName (QD.QFamily fml) =
     <> "\n\n"
     <> genFamilyToolkitSeparateImpl false (QD.QFamily fml)
     where
-        inputProxyCode (Just ch) = "_in_" <> ch.name <> " = Proxy :: _ \"" <> ch.name <> "\""
+        inputProxyCode (Just ch) = "_in_" <> ch.name <> " = Fn.Input :: _ \"" <> ch.name <> "\""
         inputProxyCode Nothing = ""
-        outputProxyCode (Just ch) = "_out_" <> ch.name <> " = Proxy :: _ \"" <> ch.name <> "\""
+        outputProxyCode (Just ch) = "_out_" <> ch.name <> " = Fn.Output :: _ \"" <> ch.name <> "\""
         outputProxyCode Nothing = ""
 
+
+genSumType :: String -> Array QD.QFamily -> String
+genSumType tkName families =
+    "data " <> ensureStartsFromCapitalLetter tkName <> "\n"
+    <> i <> "= " <> String.joinWith ("\n" <> i <> "| ") (familyOption <$> families)
+    where
+        familyOption (QD.QFamily fml) =
+            ensureStartsFromCapitalLetter fml.family
+                <> if Array.length fml.inputs > 0
+                        then " " <> (String.joinWith " " (argType <$> fml.inputs))
+                        else ""
+        argType Nothing = "?ArgType"
+        argType (Just arg) = fromMaybe ("?" <> arg.name <> "_Type") arg.type
 
 
 genTypeDefInline :: String -> Array QD.QFamily -> String
@@ -151,7 +165,27 @@ genFamilyToolkitDef (QD.QFamily fml) =
         <> i4 <> "unit\n"
         <> i4 <> (inCBraces genChanToolkitDef ", " fml.inputs) <> "\n"
         <> i4 <> (inCBraces genChanToolkitDef ", " fml.outputs) <> "\n"
-        <> i4 <> "$ fml.make $ pure unit"
+        <> i4 <> "$ fml.make $ " <> processBody i5 (QD.QFamily fml)
+
+
+processBody :: String -> QD.QFamily -> String
+processBody indent (QD.QFamily fml) =
+    if (Array.length fml.inputs > 0) || (Array.length fml.outputs > 0) then
+        ("do\n"
+            <> (if Array.length fml.inputs > 0 then
+                    (indent <> String.joinWith ("\n" <> indent) (inputReceive <$> fml.inputs) <> "\n")
+                else "")
+            <> (if Array.length fml.outputs > 0 then
+                    (indent <> String.joinWith ("\n" <> indent) (outputSend <$> fml.outputs) <> "\n")
+                else (indent <> "pure unit\n"))
+        )
+    else (indent <> "pure unit\n")
+    where
+        inputReceive Nothing = "--"
+        inputReceive (Just ch) = ch.name <> " <- P.receive _in_" <> ch.name
+        outputSend Nothing = "--"
+        outputSend (Just ch) = "P.send _out_" <> ch.name <> " ?out_" <> ch.name
+
 
 
 genFamilyToolkitSeparateImpl :: Boolean -> QD.QFamily -> String
@@ -168,7 +202,7 @@ genFamilyToolkitSeparateImpl withModule (QD.QFamily fml) =
         <> i2 <> "unit\n"
         <> i2 <> (inCBraces genChanToolkitDef ", " fml.inputs) <> "\n"
         <> i2 <> (inCBraces genChanToolkitDef ", " fml.outputs) <> "\n"
-        <> i <> "$ fml.make $ pure unit"
+        <> i2 <> "$ fml.make $ " <> processBody i3 (QD.QFamily fml)
 
 
 genChanToolkitDef :: Maybe QD.Channel -> String

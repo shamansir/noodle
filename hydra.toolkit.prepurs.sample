@@ -1,3 +1,90 @@
+data Hydra
+    = Noise Value Value
+    | Voronoi Value Value Value
+    | Osc Value Value Value
+    | Shape Value Value Value
+    | Gradient Value
+    | Src Texture
+    | Solid Value Value Value Value
+    | Src Source
+    | Prev ?ArgType
+    | Rotate Texture Value Value
+    | Scale Texture Value Value Value Value Value
+    | Pixelate Texture Value Value
+    | Repeat Texture Value Value Value Value
+    | RepeatX Texture Value Value
+    | RepeatY Texture Value Value
+    | Kaleid Texture Value
+    | Scroll Texture Value Value Value Value
+    | ScrollX Texture Value Value
+    | ScrollY Texture Value Value
+    | Posterize Texture Value Value
+    | Shift Texture Value Value Value Value
+    | Invert Texture Value
+    | Contrast Texture Value
+    | Brightness Texture Value
+    | Luma Texture Value Value
+    | Tresh Texture Value Value
+    | Color Value Value Value Value
+    | Saturate Texture Value
+    | Hue Texture Value
+    | Colorama Texture Value
+    | Sum Texture ?ArgType
+    | R Texture Value Value
+    | G Texture Value Value
+    | B Texture Value Value
+    | A Texture Value Value
+    | Add Texture Texture Value
+    | Sub Texture Texture Value
+    | Layer Texture Texture Value
+    | Blend Texture Texture Value
+    | Mult Texture Texture Value
+    | Diff Texture Texture
+    | Mask Texture Texture
+    | ModulateRepeat Texture Texture Value Value Value Value
+    | ModulateRepeatX Texture Texture Value Value
+    | ModulateRepeatY Texture Texture Value Value
+    | ModulateKaleid Texture Texture Value
+    | ModulateScrollX Texture Texture Value Value
+    | ModulateScrollY Texture Texture Value Value
+    | Modulate Texture Texture Value
+    | ModulateScale Texture Texture Value Value
+    | ModulatePixelate Texture Texture Value Value
+    | ModulateRotate Texture Texture Value Value
+    | ModulateHue Texture Texture Value
+    | Render From
+    | Update UpdateFn
+    | SetResolution Value Value
+    | Hush ?Unit_Type
+    | SetFunction GlslFn
+    | Speed Value
+    | Bpm Value
+    | Width
+    | Height
+    | Pi
+    | Time
+    | Mouse
+    | InitCam Source Value
+    | InitImage Source String
+    | InitVideo Source String
+    | Init SourceOptions
+    | InitStream Source ?ArgType
+    | InitScreen Source
+    | Fast Array Value
+    | Smooth Array Value
+    | Ease Array Ease
+    | Offset Array Value
+    | Fit Array Value Value
+    | Fft Audio AudioBin
+    | SetSmooth Audio Value
+    | SetCutoff Audio Value
+    | SetBins Audio Value
+    | SetScale Audio Value
+    | Hide Audio ?ArgType
+    | Show Audio ?ArgType
+    | Out Texture Output
+
+
 import Toolkit.Families.MNoise as MNoise
 import Toolkit.Families.MVoronoi as MVoronoi
 import Toolkit.Families.MOsc as MOsc
@@ -1025,7 +1112,11 @@ fml = -- {-> source <-}
         unit
         { scale : 10, offset : 0.1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> source <-}
@@ -1033,7 +1124,12 @@ fml = -- {-> source <-}
         unit
         { scale : 5, speed : 0.3, blending : 0.3 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            scale <- P.receive _in_scale
+            speed <- P.receive _in_speed
+            blending <- P.receive _in_blending
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> source <-}
@@ -1041,7 +1137,12 @@ fml = -- {-> source <-}
         unit
         { frequency : 60, sync : 0.1, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            frequency <- P.receive _in_frequency
+            sync <- P.receive _in_sync
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> source <-}
@@ -1049,7 +1150,12 @@ fml = -- {-> source <-}
         unit
         { sides : 60, radius : 0.3, smoothing : 0.01 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            sides <- P.receive _in_sides
+            radius <- P.receive _in_radius
+            smoothing <- P.receive _in_smoothing
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> source <-}
@@ -1057,7 +1163,10 @@ fml = -- {-> source <-}
         unit
         { speed : ?speed_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> source <-}
@@ -1065,7 +1174,10 @@ fml = -- {-> source <-}
         unit
         { tex : ?tex_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            tex <- P.receive _in_tex
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> source <-}
@@ -1073,7 +1185,13 @@ fml = -- {-> source <-}
         unit
         { r : ?r_default, g : ?g_default, b : ?b_default, a : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            r <- P.receive _in_r
+            g <- P.receive _in_g
+            b <- P.receive _in_b
+            a <- P.receive _in_a
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> source <-}
@@ -1081,7 +1199,10 @@ fml = -- {-> source <-}
         unit
         { src : ?src_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            src <- P.receive _in_src
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> source <-}
@@ -1089,7 +1210,10 @@ fml = -- {-> source <-}
         unit
         { ?ch_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            --
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> geometry <-}
@@ -1097,7 +1221,12 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, angle : 10, speed : ?speed_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            angle <- P.receive _in_angle
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> geometry <-}
@@ -1105,7 +1234,15 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            xMult <- P.receive _in_xMult
+            yMult <- P.receive _in_yMult
+            offsetX <- P.receive _in_offsetX
+            offsetY <- P.receive _in_offsetY
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> geometry <-}
@@ -1113,7 +1250,12 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, pixelX : 20, pixelY : 20 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            pixelX <- P.receive _in_pixelX
+            pixelY <- P.receive _in_pixelY
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> geometry <-}
@@ -1121,7 +1263,14 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, repeatX : 3, repeatY : 3, offsetX : ?offsetX_default, offsetY : ?offsetY_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            repeatX <- P.receive _in_repeatX
+            repeatY <- P.receive _in_repeatY
+            offsetX <- P.receive _in_offsetX
+            offsetY <- P.receive _in_offsetY
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> geometry <-}
@@ -1129,7 +1278,12 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, reps : 3, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> geometry <-}
@@ -1137,7 +1291,12 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, reps : 3, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> geometry <-}
@@ -1145,7 +1304,11 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, nSides : 3 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            nSides <- P.receive _in_nSides
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> geometry <-}
@@ -1153,7 +1316,14 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, scrollX : 0.5, scrollY : 0.5, speedX : ?speedX_default, speedY : ?speedY_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scrollX <- P.receive _in_scrollX
+            scrollY <- P.receive _in_scrollY
+            speedX <- P.receive _in_speedX
+            speedY <- P.receive _in_speedY
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> geometry <-}
@@ -1161,7 +1331,12 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, scrollX : 0.5, speed : ?speed_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scrollX <- P.receive _in_scrollX
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> geometry <-}
@@ -1169,7 +1344,12 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, scrollY : 0.5, speed : ?speed_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scrollY <- P.receive _in_scrollY
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1177,7 +1357,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, bins : 3, gamma : 0.6 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            bins <- P.receive _in_bins
+            gamma <- P.receive _in_gamma
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1185,7 +1370,14 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, r : 0.5, g : ?g_default, b : ?b_default, a : ?a_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            r <- P.receive _in_r
+            g <- P.receive _in_g
+            b <- P.receive _in_b
+            a <- P.receive _in_a
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1193,7 +1385,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, amount : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1201,7 +1397,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, amount : 1.6 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1209,7 +1409,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, amount : 0.4 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1217,7 +1421,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            treshold <- P.receive _in_treshold
+            tolerance <- P.receive _in_tolerance
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1225,7 +1434,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            treshold <- P.receive _in_treshold
+            tolerance <- P.receive _in_tolerance
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1233,7 +1447,13 @@ fml = -- {-> color <-}
         unit
         { r : 1, g : 1, b : 1, a : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            r <- P.receive _in_r
+            g <- P.receive _in_g
+            b <- P.receive _in_b
+            a <- P.receive _in_a
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1241,7 +1461,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, amount : 2 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1249,7 +1473,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, hue : 0.4 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            hue <- P.receive _in_hue
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1257,7 +1485,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, amount : 0.005 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1265,7 +1497,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, ?ch_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            --
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1273,7 +1509,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1281,7 +1522,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1289,7 +1535,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> color <-}
@@ -1297,7 +1548,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> blend <-}
@@ -1305,7 +1561,12 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> blend <-}
@@ -1313,7 +1574,12 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> blend <-}
@@ -1321,7 +1587,12 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> blend <-}
@@ -1329,7 +1600,12 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 0.5 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> blend <-}
@@ -1337,7 +1613,12 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> blend <-}
@@ -1345,7 +1626,11 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> blend <-}
@@ -1353,7 +1638,11 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> modulate <-}
@@ -1361,7 +1650,15 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            repeatX <- P.receive _in_repeatX
+            repeatY <- P.receive _in_repeatY
+            offsetX <- P.receive _in_offsetX
+            offsetY <- P.receive _in_offsetY
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> modulate <-}
@@ -1369,7 +1666,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> modulate <-}
@@ -1377,7 +1680,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> modulate <-}
@@ -1385,7 +1694,12 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, nSides : 3 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            nSides <- P.receive _in_nSides
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> modulate <-}
@@ -1393,7 +1707,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, scrollX : 0.5, speed : ?speed_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            scrollX <- P.receive _in_scrollX
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> modulate <-}
@@ -1401,7 +1721,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, scrollY : 0.5, speed : ?speed_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            scrollY <- P.receive _in_scrollY
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> modulate <-}
@@ -1409,7 +1735,12 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 0.1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> modulate <-}
@@ -1417,7 +1748,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, multiple : 1, offset : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            multiple <- P.receive _in_multiple
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> modulate <-}
@@ -1425,7 +1762,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, multiple : 10, offset : 3 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            multiple <- P.receive _in_multiple
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> modulate <-}
@@ -1433,7 +1776,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, multiple : 1, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            multiple <- P.receive _in_multiple
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> modulate <-}
@@ -1441,7 +1790,12 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> synth <-}
@@ -1449,7 +1803,10 @@ fml = -- {-> synth <-}
         unit
         { from : All }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            from <- P.receive _in_from
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> synth <-}
@@ -1457,7 +1814,10 @@ fml = -- {-> synth <-}
         unit
         { fn : ?fn_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            fn <- P.receive _in_fn
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> synth <-}
@@ -1465,7 +1825,11 @@ fml = -- {-> synth <-}
         unit
         { width : ?width_default, height : ?height_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            width <- P.receive _in_width
+            height <- P.receive _in_height
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> synth <-}
@@ -1473,7 +1837,10 @@ fml = -- {-> synth <-}
         unit
         { Unit : ?Unit_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            Unit <- P.receive _in_Unit
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> synth <-}
@@ -1481,7 +1848,10 @@ fml = -- {-> synth <-}
         unit
         { fn : ?fn_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            fn <- P.receive _in_fn
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> synth <-}
@@ -1489,7 +1859,10 @@ fml = -- {-> synth <-}
         unit
         { v : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            v <- P.receive _in_v
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> synth <-}
@@ -1497,7 +1870,10 @@ fml = -- {-> synth <-}
         unit
         { v : 30 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            v <- P.receive _in_v
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> synth <-}
@@ -1505,7 +1881,10 @@ fml = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> synth <-}
@@ -1513,7 +1892,10 @@ fml = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> synth <-}
@@ -1521,7 +1903,10 @@ fml = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> synth <-}
@@ -1529,7 +1914,10 @@ fml = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> synth <-}
@@ -1537,7 +1925,10 @@ fml = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> extsource <-}
@@ -1545,7 +1936,11 @@ fml = -- {-> extsource <-}
         unit
         { where : ?where_default, index : ?index_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            where <- P.receive _in_where
+            index <- P.receive _in_index
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> extsource <-}
@@ -1553,7 +1948,11 @@ fml = -- {-> extsource <-}
         unit
         { where : ?where_default, url : ?url_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            where <- P.receive _in_where
+            url <- P.receive _in_url
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> extsource <-}
@@ -1561,7 +1960,11 @@ fml = -- {-> extsource <-}
         unit
         { where : ?where_default, url : ?url_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            where <- P.receive _in_where
+            url <- P.receive _in_url
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> extsource <-}
@@ -1569,7 +1972,10 @@ fml = -- {-> extsource <-}
         unit
         { where : ?where_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            where <- P.receive _in_where
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> extsource <-}
@@ -1577,7 +1983,11 @@ fml = -- {-> extsource <-}
         unit
         { where : ?where_default, ?ch_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            where <- P.receive _in_where
+            --
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> extsource <-}
@@ -1585,7 +1995,10 @@ fml = -- {-> extsource <-}
         unit
         { where : ?where_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            where <- P.receive _in_where
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> array <-}
@@ -1593,7 +2006,11 @@ fml = -- {-> array <-}
         unit
         { a : ?a_default, speed : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> array <-}
@@ -1601,7 +2018,11 @@ fml = -- {-> array <-}
         unit
         { a : ?a_default, smooth : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            smooth <- P.receive _in_smooth
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> array <-}
@@ -1609,7 +2030,11 @@ fml = -- {-> array <-}
         unit
         { a : ?a_default, ease : Linear }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            ease <- P.receive _in_ease
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> array <-}
@@ -1617,7 +2042,11 @@ fml = -- {-> array <-}
         unit
         { a : ?a_default, offset : 0.5 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> array <-}
@@ -1625,7 +2054,12 @@ fml = -- {-> array <-}
         unit
         { a : ?a_default, low : 0, high : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            low <- P.receive _in_low
+            high <- P.receive _in_high
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> audio <-}
@@ -1633,7 +2067,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, h : ?h_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            h <- P.receive _in_h
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> audio <-}
@@ -1641,7 +2079,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, smooth : 0.4 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            smooth <- P.receive _in_smooth
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> audio <-}
@@ -1649,7 +2091,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, cutoff : 2 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            cutoff <- P.receive _in_cutoff
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> audio <-}
@@ -1657,7 +2103,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, numBins : 4 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            numBins <- P.receive _in_numBins
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> audio <-}
@@ -1665,7 +2115,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, scale : 10 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            scale <- P.receive _in_scale
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> audio <-}
@@ -1673,7 +2127,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, ?ch_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            --
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> audio <-}
@@ -1681,7 +2139,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, ?ch_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            --
+            P.send _out_out ?out_out
+
 
 fml :: forall m. Family m
 fml = -- {-> out <-}
@@ -1689,7 +2151,11 @@ fml = -- {-> out <-}
         unit
         { what : ?what_default, where : ?where_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            where <- P.receive _in_where
+            P.send _out_out ?out_out
+
 
 
 
@@ -2215,505 +2681,884 @@ toolkit =
                 unit
                 { scale : 10, offset : 0.1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    scale <- P.receive _in_scale
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , voronoi : -- {-> source <-}
             Family.def
                 unit
                 { scale : 5, speed : 0.3, blending : 0.3 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    scale <- P.receive _in_scale
+                    speed <- P.receive _in_speed
+                    blending <- P.receive _in_blending
+                    P.send _out_out ?out_out
+
         , osc : -- {-> source <-}
             Family.def
                 unit
                 { frequency : 60, sync : 0.1, offset : ?offset_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    frequency <- P.receive _in_frequency
+                    sync <- P.receive _in_sync
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , shape : -- {-> source <-}
             Family.def
                 unit
                 { sides : 60, radius : 0.3, smoothing : 0.01 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    sides <- P.receive _in_sides
+                    radius <- P.receive _in_radius
+                    smoothing <- P.receive _in_smoothing
+                    P.send _out_out ?out_out
+
         , gradient : -- {-> source <-}
             Family.def
                 unit
                 { speed : ?speed_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    speed <- P.receive _in_speed
+                    P.send _out_out ?out_out
+
         , src : -- {-> source <-}
             Family.def
                 unit
                 { tex : ?tex_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    tex <- P.receive _in_tex
+                    P.send _out_out ?out_out
+
         , solid : -- {-> source <-}
             Family.def
                 unit
                 { r : ?r_default, g : ?g_default, b : ?b_default, a : 1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    r <- P.receive _in_r
+                    g <- P.receive _in_g
+                    b <- P.receive _in_b
+                    a <- P.receive _in_a
+                    P.send _out_out ?out_out
+
         , src : -- {-> source <-}
             Family.def
                 unit
                 { src : ?src_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    src <- P.receive _in_src
+                    P.send _out_out ?out_out
+
         , prev : -- {-> source <-}
             Family.def
                 unit
                 { ?ch_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    --
+                    P.send _out_out ?out_out
+
         , rotate : -- {-> geometry <-}
             Family.def
                 unit
                 { what : ?what_default, angle : 10, speed : ?speed_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    angle <- P.receive _in_angle
+                    speed <- P.receive _in_speed
+                    P.send _out_out ?out_out
+
         , scale : -- {-> geometry <-}
             Family.def
                 unit
                 { what : ?what_default, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    amount <- P.receive _in_amount
+                    xMult <- P.receive _in_xMult
+                    yMult <- P.receive _in_yMult
+                    offsetX <- P.receive _in_offsetX
+                    offsetY <- P.receive _in_offsetY
+                    P.send _out_out ?out_out
+
         , pixelate : -- {-> geometry <-}
             Family.def
                 unit
                 { what : ?what_default, pixelX : 20, pixelY : 20 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    pixelX <- P.receive _in_pixelX
+                    pixelY <- P.receive _in_pixelY
+                    P.send _out_out ?out_out
+
         , repeat : -- {-> geometry <-}
             Family.def
                 unit
                 { what : ?what_default, repeatX : 3, repeatY : 3, offsetX : ?offsetX_default, offsetY : ?offsetY_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    repeatX <- P.receive _in_repeatX
+                    repeatY <- P.receive _in_repeatY
+                    offsetX <- P.receive _in_offsetX
+                    offsetY <- P.receive _in_offsetY
+                    P.send _out_out ?out_out
+
         , repeatX : -- {-> geometry <-}
             Family.def
                 unit
                 { what : ?what_default, reps : 3, offset : ?offset_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    reps <- P.receive _in_reps
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , repeatY : -- {-> geometry <-}
             Family.def
                 unit
                 { what : ?what_default, reps : 3, offset : ?offset_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    reps <- P.receive _in_reps
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , kaleid : -- {-> geometry <-}
             Family.def
                 unit
                 { what : ?what_default, nSides : 3 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    nSides <- P.receive _in_nSides
+                    P.send _out_out ?out_out
+
         , scroll : -- {-> geometry <-}
             Family.def
                 unit
                 { what : ?what_default, scrollX : 0.5, scrollY : 0.5, speedX : ?speedX_default, speedY : ?speedY_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    scrollX <- P.receive _in_scrollX
+                    scrollY <- P.receive _in_scrollY
+                    speedX <- P.receive _in_speedX
+                    speedY <- P.receive _in_speedY
+                    P.send _out_out ?out_out
+
         , scrollX : -- {-> geometry <-}
             Family.def
                 unit
                 { what : ?what_default, scrollX : 0.5, speed : ?speed_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    scrollX <- P.receive _in_scrollX
+                    speed <- P.receive _in_speed
+                    P.send _out_out ?out_out
+
         , scrollY : -- {-> geometry <-}
             Family.def
                 unit
                 { what : ?what_default, scrollY : 0.5, speed : ?speed_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    scrollY <- P.receive _in_scrollY
+                    speed <- P.receive _in_speed
+                    P.send _out_out ?out_out
+
         , posterize : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, bins : 3, gamma : 0.6 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    bins <- P.receive _in_bins
+                    gamma <- P.receive _in_gamma
+                    P.send _out_out ?out_out
+
         , shift : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, r : 0.5, g : ?g_default, b : ?b_default, a : ?a_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    r <- P.receive _in_r
+                    g <- P.receive _in_g
+                    b <- P.receive _in_b
+                    a <- P.receive _in_a
+                    P.send _out_out ?out_out
+
         , invert : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, amount : 1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    amount <- P.receive _in_amount
+                    P.send _out_out ?out_out
+
         , contrast : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, amount : 1.6 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    amount <- P.receive _in_amount
+                    P.send _out_out ?out_out
+
         , brightness : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, amount : 0.4 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    amount <- P.receive _in_amount
+                    P.send _out_out ?out_out
+
         , luma : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    treshold <- P.receive _in_treshold
+                    tolerance <- P.receive _in_tolerance
+                    P.send _out_out ?out_out
+
         , tresh : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    treshold <- P.receive _in_treshold
+                    tolerance <- P.receive _in_tolerance
+                    P.send _out_out ?out_out
+
         , color : -- {-> color <-}
             Family.def
                 unit
                 { r : 1, g : 1, b : 1, a : 1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    r <- P.receive _in_r
+                    g <- P.receive _in_g
+                    b <- P.receive _in_b
+                    a <- P.receive _in_a
+                    P.send _out_out ?out_out
+
         , saturate : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, amount : 2 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    amount <- P.receive _in_amount
+                    P.send _out_out ?out_out
+
         , hue : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, hue : 0.4 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    hue <- P.receive _in_hue
+                    P.send _out_out ?out_out
+
         , colorama : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, amount : 0.005 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    amount <- P.receive _in_amount
+                    P.send _out_out ?out_out
+
         , sum : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, ?ch_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    --
+                    P.send _out_out ?out_out
+
         , r : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, scale : 1, offset : ?offset_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    scale <- P.receive _in_scale
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , g : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, scale : 1, offset : ?offset_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    scale <- P.receive _in_scale
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , b : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, scale : 1, offset : ?offset_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    scale <- P.receive _in_scale
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , a : -- {-> color <-}
             Family.def
                 unit
                 { what : ?what_default, scale : 1, offset : ?offset_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    scale <- P.receive _in_scale
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , add : -- {-> blend <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, amount : 1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    amount <- P.receive _in_amount
+                    P.send _out_out ?out_out
+
         , sub : -- {-> blend <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, amount : 1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    amount <- P.receive _in_amount
+                    P.send _out_out ?out_out
+
         , layer : -- {-> blend <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, amount : 1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    amount <- P.receive _in_amount
+                    P.send _out_out ?out_out
+
         , blend : -- {-> blend <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, amount : 0.5 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    amount <- P.receive _in_amount
+                    P.send _out_out ?out_out
+
         , mult : -- {-> blend <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, amount : 1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    amount <- P.receive _in_amount
+                    P.send _out_out ?out_out
+
         , diff : -- {-> blend <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    P.send _out_out ?out_out
+
         , mask : -- {-> blend <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    P.send _out_out ?out_out
+
         , modulateRepeat : -- {-> modulate <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    repeatX <- P.receive _in_repeatX
+                    repeatY <- P.receive _in_repeatY
+                    offsetX <- P.receive _in_offsetX
+                    offsetY <- P.receive _in_offsetY
+                    P.send _out_out ?out_out
+
         , modulateRepeatX : -- {-> modulate <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    reps <- P.receive _in_reps
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , modulateRepeatY : -- {-> modulate <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    reps <- P.receive _in_reps
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , modulateKaleid : -- {-> modulate <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, nSides : 3 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    nSides <- P.receive _in_nSides
+                    P.send _out_out ?out_out
+
         , modulateScrollX : -- {-> modulate <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, scrollX : 0.5, speed : ?speed_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    scrollX <- P.receive _in_scrollX
+                    speed <- P.receive _in_speed
+                    P.send _out_out ?out_out
+
         , modulateScrollY : -- {-> modulate <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, scrollY : 0.5, speed : ?speed_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    scrollY <- P.receive _in_scrollY
+                    speed <- P.receive _in_speed
+                    P.send _out_out ?out_out
+
         , modulate : -- {-> modulate <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, amount : 0.1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    amount <- P.receive _in_amount
+                    P.send _out_out ?out_out
+
         , modulateScale : -- {-> modulate <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, multiple : 1, offset : 1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    multiple <- P.receive _in_multiple
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , modulatePixelate : -- {-> modulate <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, multiple : 10, offset : 3 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    multiple <- P.receive _in_multiple
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , modulateRotate : -- {-> modulate <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, multiple : 1, offset : ?offset_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    multiple <- P.receive _in_multiple
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , modulateHue : -- {-> modulate <-}
             Family.def
                 unit
                 { what : ?what_default, with : ?with_default, amount : 1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    with <- P.receive _in_with
+                    amount <- P.receive _in_amount
+                    P.send _out_out ?out_out
+
         , render : -- {-> synth <-}
             Family.def
                 unit
                 { from : All }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    from <- P.receive _in_from
+                    P.send _out_out ?out_out
+
         , update : -- {-> synth <-}
             Family.def
                 unit
                 { fn : ?fn_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    fn <- P.receive _in_fn
+                    P.send _out_out ?out_out
+
         , setResolution : -- {-> synth <-}
             Family.def
                 unit
                 { width : ?width_default, height : ?height_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    width <- P.receive _in_width
+                    height <- P.receive _in_height
+                    P.send _out_out ?out_out
+
         , hush : -- {-> synth <-}
             Family.def
                 unit
                 { Unit : ?Unit_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    Unit <- P.receive _in_Unit
+                    P.send _out_out ?out_out
+
         , setFunction : -- {-> synth <-}
             Family.def
                 unit
                 { fn : ?fn_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    fn <- P.receive _in_fn
+                    P.send _out_out ?out_out
+
         , speed : -- {-> synth <-}
             Family.def
                 unit
                 { v : 1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    v <- P.receive _in_v
+                    P.send _out_out ?out_out
+
         , bpm : -- {-> synth <-}
             Family.def
                 unit
                 { v : 30 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    v <- P.receive _in_v
+                    P.send _out_out ?out_out
+
         , width : -- {-> synth <-}
             Family.def
                 unit
                 { }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+
+                    P.send _out_out ?out_out
+
         , height : -- {-> synth <-}
             Family.def
                 unit
                 { }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+
+                    P.send _out_out ?out_out
+
         , pi : -- {-> synth <-}
             Family.def
                 unit
                 { }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+
+                    P.send _out_out ?out_out
+
         , time : -- {-> synth <-}
             Family.def
                 unit
                 { }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+
+                    P.send _out_out ?out_out
+
         , mouse : -- {-> synth <-}
             Family.def
                 unit
                 { }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+
+                    P.send _out_out ?out_out
+
         , initCam : -- {-> extsource <-}
             Family.def
                 unit
                 { where : ?where_default, index : ?index_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    where <- P.receive _in_where
+                    index <- P.receive _in_index
+                    P.send _out_out ?out_out
+
         , initImage : -- {-> extsource <-}
             Family.def
                 unit
                 { where : ?where_default, url : ?url_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    where <- P.receive _in_where
+                    url <- P.receive _in_url
+                    P.send _out_out ?out_out
+
         , initVideo : -- {-> extsource <-}
             Family.def
                 unit
                 { where : ?where_default, url : ?url_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    where <- P.receive _in_where
+                    url <- P.receive _in_url
+                    P.send _out_out ?out_out
+
         , init : -- {-> extsource <-}
             Family.def
                 unit
                 { where : ?where_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    where <- P.receive _in_where
+                    P.send _out_out ?out_out
+
         , initStream : -- {-> extsource <-}
             Family.def
                 unit
                 { where : ?where_default, ?ch_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    where <- P.receive _in_where
+                    --
+                    P.send _out_out ?out_out
+
         , initScreen : -- {-> extsource <-}
             Family.def
                 unit
                 { where : ?where_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    where <- P.receive _in_where
+                    P.send _out_out ?out_out
+
         , fast : -- {-> array <-}
             Family.def
                 unit
                 { a : ?a_default, speed : 1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    a <- P.receive _in_a
+                    speed <- P.receive _in_speed
+                    P.send _out_out ?out_out
+
         , smooth : -- {-> array <-}
             Family.def
                 unit
                 { a : ?a_default, smooth : 1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    a <- P.receive _in_a
+                    smooth <- P.receive _in_smooth
+                    P.send _out_out ?out_out
+
         , ease : -- {-> array <-}
             Family.def
                 unit
                 { a : ?a_default, ease : Linear }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    a <- P.receive _in_a
+                    ease <- P.receive _in_ease
+                    P.send _out_out ?out_out
+
         , offset : -- {-> array <-}
             Family.def
                 unit
                 { a : ?a_default, offset : 0.5 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    a <- P.receive _in_a
+                    offset <- P.receive _in_offset
+                    P.send _out_out ?out_out
+
         , fit : -- {-> array <-}
             Family.def
                 unit
                 { a : ?a_default, low : 0, high : 1 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    a <- P.receive _in_a
+                    low <- P.receive _in_low
+                    high <- P.receive _in_high
+                    P.send _out_out ?out_out
+
         , fft : -- {-> audio <-}
             Family.def
                 unit
                 { a : ?a_default, h : ?h_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    a <- P.receive _in_a
+                    h <- P.receive _in_h
+                    P.send _out_out ?out_out
+
         , setSmooth : -- {-> audio <-}
             Family.def
                 unit
                 { a : ?a_default, smooth : 0.4 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    a <- P.receive _in_a
+                    smooth <- P.receive _in_smooth
+                    P.send _out_out ?out_out
+
         , setCutoff : -- {-> audio <-}
             Family.def
                 unit
                 { a : ?a_default, cutoff : 2 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    a <- P.receive _in_a
+                    cutoff <- P.receive _in_cutoff
+                    P.send _out_out ?out_out
+
         , setBins : -- {-> audio <-}
             Family.def
                 unit
                 { a : ?a_default, numBins : 4 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    a <- P.receive _in_a
+                    numBins <- P.receive _in_numBins
+                    P.send _out_out ?out_out
+
         , setScale : -- {-> audio <-}
             Family.def
                 unit
                 { a : ?a_default, scale : 10 }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    a <- P.receive _in_a
+                    scale <- P.receive _in_scale
+                    P.send _out_out ?out_out
+
         , hide : -- {-> audio <-}
             Family.def
                 unit
                 { a : ?a_default, ?ch_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    a <- P.receive _in_a
+                    --
+                    P.send _out_out ?out_out
+
         , show : -- {-> audio <-}
             Family.def
                 unit
                 { a : ?a_default, ?ch_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    a <- P.receive _in_a
+                    --
+                    P.send _out_out ?out_out
+
         , out : -- {-> out <-}
             Family.def
                 unit
                 { what : ?what_default, where : ?where_default }
                 { out : ?out_default }
-                $ fml.make $ pure unit
+                $ fml.make $ do
+                    what <- P.receive _in_what
+                    where <- P.receive _in_where
+                    P.send _out_out ?out_out
+
         }
 
 
@@ -2721,10 +3566,10 @@ module MNoise where
 
 import Prelude
 
-_in_scale = Proxy :: _ "scale"
-_in_offset = Proxy :: _ "offset"
+_in_scale = Fn.Input :: _ "scale"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
@@ -2738,7 +3583,11 @@ fml = -- {-> source <-}
         unit
         { scale : 10, offset : 0.1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -2746,11 +3595,11 @@ module MVoronoi where
 
 import Prelude
 
-_in_scale = Proxy :: _ "scale"
-_in_speed = Proxy :: _ "speed"
-_in_blending = Proxy :: _ "blending"
+_in_scale = Fn.Input :: _ "scale"
+_in_speed = Fn.Input :: _ "speed"
+_in_blending = Fn.Input :: _ "blending"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
@@ -2764,7 +3613,12 @@ fml = -- {-> source <-}
         unit
         { scale : 5, speed : 0.3, blending : 0.3 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            scale <- P.receive _in_scale
+            speed <- P.receive _in_speed
+            blending <- P.receive _in_blending
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -2772,11 +3626,11 @@ module MOsc where
 
 import Prelude
 
-_in_frequency = Proxy :: _ "frequency"
-_in_sync = Proxy :: _ "sync"
-_in_offset = Proxy :: _ "offset"
+_in_frequency = Fn.Input :: _ "frequency"
+_in_sync = Fn.Input :: _ "sync"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
@@ -2790,7 +3644,12 @@ fml = -- {-> source <-}
         unit
         { frequency : 60, sync : 0.1, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            frequency <- P.receive _in_frequency
+            sync <- P.receive _in_sync
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -2798,11 +3657,11 @@ module MShape where
 
 import Prelude
 
-_in_sides = Proxy :: _ "sides"
-_in_radius = Proxy :: _ "radius"
-_in_smoothing = Proxy :: _ "smoothing"
+_in_sides = Fn.Input :: _ "sides"
+_in_radius = Fn.Input :: _ "radius"
+_in_smoothing = Fn.Input :: _ "smoothing"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
@@ -2816,7 +3675,12 @@ fml = -- {-> source <-}
         unit
         { sides : 60, radius : 0.3, smoothing : 0.01 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            sides <- P.receive _in_sides
+            radius <- P.receive _in_radius
+            smoothing <- P.receive _in_smoothing
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -2824,9 +3688,9 @@ module MGradient where
 
 import Prelude
 
-_in_speed = Proxy :: _ "speed"
+_in_speed = Fn.Input :: _ "speed"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
@@ -2840,7 +3704,10 @@ fml = -- {-> source <-}
         unit
         { speed : ?speed_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -2848,9 +3715,9 @@ module MSrc where
 
 import Prelude
 
-_in_tex = Proxy :: _ "tex"
+_in_tex = Fn.Input :: _ "tex"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
@@ -2864,7 +3731,10 @@ fml = -- {-> source <-}
         unit
         { tex : ?tex_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            tex <- P.receive _in_tex
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -2872,12 +3742,12 @@ module MSolid where
 
 import Prelude
 
-_in_r = Proxy :: _ "r"
-_in_g = Proxy :: _ "g"
-_in_b = Proxy :: _ "b"
-_in_a = Proxy :: _ "a"
+_in_r = Fn.Input :: _ "r"
+_in_g = Fn.Input :: _ "g"
+_in_b = Fn.Input :: _ "b"
+_in_a = Fn.Input :: _ "a"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
@@ -2891,7 +3761,13 @@ fml = -- {-> source <-}
         unit
         { r : ?r_default, g : ?g_default, b : ?b_default, a : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            r <- P.receive _in_r
+            g <- P.receive _in_g
+            b <- P.receive _in_b
+            a <- P.receive _in_a
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -2899,9 +3775,9 @@ module MSrc where
 
 import Prelude
 
-_in_src = Proxy :: _ "src"
+_in_src = Fn.Input :: _ "src"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
@@ -2915,7 +3791,10 @@ fml = -- {-> source <-}
         unit
         { src : ?src_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            src <- P.receive _in_src
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -2925,7 +3804,7 @@ import Prelude
 
 
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
@@ -2939,7 +3818,10 @@ fml = -- {-> source <-}
         unit
         { ?ch_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            --
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -2947,11 +3829,11 @@ module MRotate where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_angle = Proxy :: _ "angle"
-_in_speed = Proxy :: _ "speed"
+_in_what = Fn.Input :: _ "what"
+_in_angle = Fn.Input :: _ "angle"
+_in_speed = Fn.Input :: _ "speed"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit
@@ -2965,7 +3847,12 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, angle : 10, speed : ?speed_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            angle <- P.receive _in_angle
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -2973,14 +3860,14 @@ module MScale where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_amount = Proxy :: _ "amount"
-_in_xMult = Proxy :: _ "xMult"
-_in_yMult = Proxy :: _ "yMult"
-_in_offsetX = Proxy :: _ "offsetX"
-_in_offsetY = Proxy :: _ "offsetY"
+_in_what = Fn.Input :: _ "what"
+_in_amount = Fn.Input :: _ "amount"
+_in_xMult = Fn.Input :: _ "xMult"
+_in_yMult = Fn.Input :: _ "yMult"
+_in_offsetX = Fn.Input :: _ "offsetX"
+_in_offsetY = Fn.Input :: _ "offsetY"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit
@@ -2994,7 +3881,15 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            xMult <- P.receive _in_xMult
+            yMult <- P.receive _in_yMult
+            offsetX <- P.receive _in_offsetX
+            offsetY <- P.receive _in_offsetY
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3002,11 +3897,11 @@ module MPixelate where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_pixelX = Proxy :: _ "pixelX"
-_in_pixelY = Proxy :: _ "pixelY"
+_in_what = Fn.Input :: _ "what"
+_in_pixelX = Fn.Input :: _ "pixelX"
+_in_pixelY = Fn.Input :: _ "pixelY"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit
@@ -3020,7 +3915,12 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, pixelX : 20, pixelY : 20 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            pixelX <- P.receive _in_pixelX
+            pixelY <- P.receive _in_pixelY
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3028,13 +3928,13 @@ module MRepeat where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_repeatX = Proxy :: _ "repeatX"
-_in_repeatY = Proxy :: _ "repeatY"
-_in_offsetX = Proxy :: _ "offsetX"
-_in_offsetY = Proxy :: _ "offsetY"
+_in_what = Fn.Input :: _ "what"
+_in_repeatX = Fn.Input :: _ "repeatX"
+_in_repeatY = Fn.Input :: _ "repeatY"
+_in_offsetX = Fn.Input :: _ "offsetX"
+_in_offsetY = Fn.Input :: _ "offsetY"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit
@@ -3048,7 +3948,14 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, repeatX : 3, repeatY : 3, offsetX : ?offsetX_default, offsetY : ?offsetY_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            repeatX <- P.receive _in_repeatX
+            repeatY <- P.receive _in_repeatY
+            offsetX <- P.receive _in_offsetX
+            offsetY <- P.receive _in_offsetY
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3056,11 +3963,11 @@ module MRepeatX where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_reps = Proxy :: _ "reps"
-_in_offset = Proxy :: _ "offset"
+_in_what = Fn.Input :: _ "what"
+_in_reps = Fn.Input :: _ "reps"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit
@@ -3074,7 +3981,12 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, reps : 3, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3082,11 +3994,11 @@ module MRepeatY where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_reps = Proxy :: _ "reps"
-_in_offset = Proxy :: _ "offset"
+_in_what = Fn.Input :: _ "what"
+_in_reps = Fn.Input :: _ "reps"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit
@@ -3100,7 +4012,12 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, reps : 3, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3108,10 +4025,10 @@ module MKaleid where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_nSides = Proxy :: _ "nSides"
+_in_what = Fn.Input :: _ "what"
+_in_nSides = Fn.Input :: _ "nSides"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit
@@ -3125,7 +4042,11 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, nSides : 3 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            nSides <- P.receive _in_nSides
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3133,13 +4054,13 @@ module MScroll where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_scrollX = Proxy :: _ "scrollX"
-_in_scrollY = Proxy :: _ "scrollY"
-_in_speedX = Proxy :: _ "speedX"
-_in_speedY = Proxy :: _ "speedY"
+_in_what = Fn.Input :: _ "what"
+_in_scrollX = Fn.Input :: _ "scrollX"
+_in_scrollY = Fn.Input :: _ "scrollY"
+_in_speedX = Fn.Input :: _ "speedX"
+_in_speedY = Fn.Input :: _ "speedY"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit
@@ -3153,7 +4074,14 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, scrollX : 0.5, scrollY : 0.5, speedX : ?speedX_default, speedY : ?speedY_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scrollX <- P.receive _in_scrollX
+            scrollY <- P.receive _in_scrollY
+            speedX <- P.receive _in_speedX
+            speedY <- P.receive _in_speedY
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3161,11 +4089,11 @@ module MScrollX where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_scrollX = Proxy :: _ "scrollX"
-_in_speed = Proxy :: _ "speed"
+_in_what = Fn.Input :: _ "what"
+_in_scrollX = Fn.Input :: _ "scrollX"
+_in_speed = Fn.Input :: _ "speed"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit
@@ -3179,7 +4107,12 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, scrollX : 0.5, speed : ?speed_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scrollX <- P.receive _in_scrollX
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3187,11 +4120,11 @@ module MScrollY where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_scrollY = Proxy :: _ "scrollY"
-_in_speed = Proxy :: _ "speed"
+_in_what = Fn.Input :: _ "what"
+_in_scrollY = Fn.Input :: _ "scrollY"
+_in_speed = Fn.Input :: _ "speed"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit
@@ -3205,7 +4138,12 @@ fml = -- {-> geometry <-}
         unit
         { what : ?what_default, scrollY : 0.5, speed : ?speed_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scrollY <- P.receive _in_scrollY
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3213,11 +4151,11 @@ module MPosterize where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_bins = Proxy :: _ "bins"
-_in_gamma = Proxy :: _ "gamma"
+_in_what = Fn.Input :: _ "what"
+_in_bins = Fn.Input :: _ "bins"
+_in_gamma = Fn.Input :: _ "gamma"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3231,7 +4169,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, bins : 3, gamma : 0.6 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            bins <- P.receive _in_bins
+            gamma <- P.receive _in_gamma
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3239,13 +4182,13 @@ module MShift where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_r = Proxy :: _ "r"
-_in_g = Proxy :: _ "g"
-_in_b = Proxy :: _ "b"
-_in_a = Proxy :: _ "a"
+_in_what = Fn.Input :: _ "what"
+_in_r = Fn.Input :: _ "r"
+_in_g = Fn.Input :: _ "g"
+_in_b = Fn.Input :: _ "b"
+_in_a = Fn.Input :: _ "a"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3259,7 +4202,14 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, r : 0.5, g : ?g_default, b : ?b_default, a : ?a_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            r <- P.receive _in_r
+            g <- P.receive _in_g
+            b <- P.receive _in_b
+            a <- P.receive _in_a
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3267,10 +4217,10 @@ module MInvert where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_amount = Proxy :: _ "amount"
+_in_what = Fn.Input :: _ "what"
+_in_amount = Fn.Input :: _ "amount"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3284,7 +4234,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, amount : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3292,10 +4246,10 @@ module MContrast where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_amount = Proxy :: _ "amount"
+_in_what = Fn.Input :: _ "what"
+_in_amount = Fn.Input :: _ "amount"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3309,7 +4263,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, amount : 1.6 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3317,10 +4275,10 @@ module MBrightness where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_amount = Proxy :: _ "amount"
+_in_what = Fn.Input :: _ "what"
+_in_amount = Fn.Input :: _ "amount"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3334,7 +4292,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, amount : 0.4 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3342,11 +4304,11 @@ module MLuma where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_treshold = Proxy :: _ "treshold"
-_in_tolerance = Proxy :: _ "tolerance"
+_in_what = Fn.Input :: _ "what"
+_in_treshold = Fn.Input :: _ "treshold"
+_in_tolerance = Fn.Input :: _ "tolerance"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3360,7 +4322,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            treshold <- P.receive _in_treshold
+            tolerance <- P.receive _in_tolerance
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3368,11 +4335,11 @@ module MTresh where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_treshold = Proxy :: _ "treshold"
-_in_tolerance = Proxy :: _ "tolerance"
+_in_what = Fn.Input :: _ "what"
+_in_treshold = Fn.Input :: _ "treshold"
+_in_tolerance = Fn.Input :: _ "tolerance"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3386,7 +4353,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            treshold <- P.receive _in_treshold
+            tolerance <- P.receive _in_tolerance
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3394,12 +4366,12 @@ module MColor where
 
 import Prelude
 
-_in_r = Proxy :: _ "r"
-_in_g = Proxy :: _ "g"
-_in_b = Proxy :: _ "b"
-_in_a = Proxy :: _ "a"
+_in_r = Fn.Input :: _ "r"
+_in_g = Fn.Input :: _ "g"
+_in_b = Fn.Input :: _ "b"
+_in_a = Fn.Input :: _ "a"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3413,7 +4385,13 @@ fml = -- {-> color <-}
         unit
         { r : 1, g : 1, b : 1, a : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            r <- P.receive _in_r
+            g <- P.receive _in_g
+            b <- P.receive _in_b
+            a <- P.receive _in_a
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3421,10 +4399,10 @@ module MSaturate where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_amount = Proxy :: _ "amount"
+_in_what = Fn.Input :: _ "what"
+_in_amount = Fn.Input :: _ "amount"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3438,7 +4416,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, amount : 2 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3446,10 +4428,10 @@ module MHue where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_hue = Proxy :: _ "hue"
+_in_what = Fn.Input :: _ "what"
+_in_hue = Fn.Input :: _ "hue"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3463,7 +4445,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, hue : 0.4 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            hue <- P.receive _in_hue
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3471,10 +4457,10 @@ module MColorama where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_amount = Proxy :: _ "amount"
+_in_what = Fn.Input :: _ "what"
+_in_amount = Fn.Input :: _ "amount"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3488,7 +4474,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, amount : 0.005 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3496,10 +4486,10 @@ module MSum where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
+_in_what = Fn.Input :: _ "what"
 
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3513,7 +4503,11 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, ?ch_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            --
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3521,11 +4515,11 @@ module MR where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_scale = Proxy :: _ "scale"
-_in_offset = Proxy :: _ "offset"
+_in_what = Fn.Input :: _ "what"
+_in_scale = Fn.Input :: _ "scale"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3539,7 +4533,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3547,11 +4546,11 @@ module MG where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_scale = Proxy :: _ "scale"
-_in_offset = Proxy :: _ "offset"
+_in_what = Fn.Input :: _ "what"
+_in_scale = Fn.Input :: _ "scale"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3565,7 +4564,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3573,11 +4577,11 @@ module MB where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_scale = Proxy :: _ "scale"
-_in_offset = Proxy :: _ "offset"
+_in_what = Fn.Input :: _ "what"
+_in_scale = Fn.Input :: _ "scale"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3591,7 +4595,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3599,11 +4608,11 @@ module MA where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_scale = Proxy :: _ "scale"
-_in_offset = Proxy :: _ "offset"
+_in_what = Fn.Input :: _ "what"
+_in_scale = Fn.Input :: _ "scale"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
@@ -3617,7 +4626,12 @@ fml = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3625,11 +4639,11 @@ module MAdd where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_amount = Proxy :: _ "amount"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> blend <-}
     Family.Def Unit
@@ -3643,7 +4657,12 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3651,11 +4670,11 @@ module MSub where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_amount = Proxy :: _ "amount"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> blend <-}
     Family.Def Unit
@@ -3669,7 +4688,12 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3677,11 +4701,11 @@ module MLayer where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_amount = Proxy :: _ "amount"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> blend <-}
     Family.Def Unit
@@ -3695,7 +4719,12 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3703,11 +4732,11 @@ module MBlend where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_amount = Proxy :: _ "amount"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> blend <-}
     Family.Def Unit
@@ -3721,7 +4750,12 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 0.5 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3729,11 +4763,11 @@ module MMult where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_amount = Proxy :: _ "amount"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> blend <-}
     Family.Def Unit
@@ -3747,7 +4781,12 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3755,10 +4794,10 @@ module MDiff where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> blend <-}
     Family.Def Unit
@@ -3772,7 +4811,11 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3780,10 +4823,10 @@ module MMask where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> blend <-}
     Family.Def Unit
@@ -3797,7 +4840,11 @@ fml = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3805,14 +4852,14 @@ module MModulateRepeat where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_repeatX = Proxy :: _ "repeatX"
-_in_repeatY = Proxy :: _ "repeatY"
-_in_offsetX = Proxy :: _ "offsetX"
-_in_offsetY = Proxy :: _ "offsetY"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_repeatX = Fn.Input :: _ "repeatX"
+_in_repeatY = Fn.Input :: _ "repeatY"
+_in_offsetX = Fn.Input :: _ "offsetX"
+_in_offsetY = Fn.Input :: _ "offsetY"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
@@ -3826,7 +4873,15 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            repeatX <- P.receive _in_repeatX
+            repeatY <- P.receive _in_repeatY
+            offsetX <- P.receive _in_offsetX
+            offsetY <- P.receive _in_offsetY
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3834,12 +4889,12 @@ module MModulateRepeatX where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_reps = Proxy :: _ "reps"
-_in_offset = Proxy :: _ "offset"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_reps = Fn.Input :: _ "reps"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
@@ -3853,7 +4908,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3861,12 +4922,12 @@ module MModulateRepeatY where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_reps = Proxy :: _ "reps"
-_in_offset = Proxy :: _ "offset"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_reps = Fn.Input :: _ "reps"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
@@ -3880,7 +4941,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3888,11 +4955,11 @@ module MModulateKaleid where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_nSides = Proxy :: _ "nSides"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_nSides = Fn.Input :: _ "nSides"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
@@ -3906,7 +4973,12 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, nSides : 3 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            nSides <- P.receive _in_nSides
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3914,12 +4986,12 @@ module MModulateScrollX where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_scrollX = Proxy :: _ "scrollX"
-_in_speed = Proxy :: _ "speed"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_scrollX = Fn.Input :: _ "scrollX"
+_in_speed = Fn.Input :: _ "speed"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
@@ -3933,7 +5005,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, scrollX : 0.5, speed : ?speed_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            scrollX <- P.receive _in_scrollX
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3941,12 +5019,12 @@ module MModulateScrollY where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_scrollY = Proxy :: _ "scrollY"
-_in_speed = Proxy :: _ "speed"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_scrollY = Fn.Input :: _ "scrollY"
+_in_speed = Fn.Input :: _ "speed"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
@@ -3960,7 +5038,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, scrollY : 0.5, speed : ?speed_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            scrollY <- P.receive _in_scrollY
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3968,11 +5052,11 @@ module MModulate where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_amount = Proxy :: _ "amount"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
@@ -3986,7 +5070,12 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 0.1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -3994,12 +5083,12 @@ module MModulateScale where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_multiple = Proxy :: _ "multiple"
-_in_offset = Proxy :: _ "offset"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_multiple = Fn.Input :: _ "multiple"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
@@ -4013,7 +5102,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, multiple : 1, offset : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            multiple <- P.receive _in_multiple
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4021,12 +5116,12 @@ module MModulatePixelate where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_multiple = Proxy :: _ "multiple"
-_in_offset = Proxy :: _ "offset"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_multiple = Fn.Input :: _ "multiple"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
@@ -4040,7 +5135,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, multiple : 10, offset : 3 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            multiple <- P.receive _in_multiple
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4048,12 +5149,12 @@ module MModulateRotate where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_multiple = Proxy :: _ "multiple"
-_in_offset = Proxy :: _ "offset"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_multiple = Fn.Input :: _ "multiple"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
@@ -4067,7 +5168,13 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, multiple : 1, offset : ?offset_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            multiple <- P.receive _in_multiple
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4075,11 +5182,11 @@ module MModulateHue where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_with = Proxy :: _ "with"
-_in_amount = Proxy :: _ "amount"
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
@@ -4093,7 +5200,12 @@ fml = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4101,9 +5213,9 @@ module MRender where
 
 import Prelude
 
-_in_from = Proxy :: _ "from"
+_in_from = Fn.Input :: _ "from"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
@@ -4117,7 +5229,10 @@ fml = -- {-> synth <-}
         unit
         { from : All }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            from <- P.receive _in_from
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4125,9 +5240,9 @@ module MUpdate where
 
 import Prelude
 
-_in_fn = Proxy :: _ "fn"
+_in_fn = Fn.Input :: _ "fn"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
@@ -4141,7 +5256,10 @@ fml = -- {-> synth <-}
         unit
         { fn : ?fn_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            fn <- P.receive _in_fn
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4149,10 +5267,10 @@ module MSetResolution where
 
 import Prelude
 
-_in_width = Proxy :: _ "width"
-_in_height = Proxy :: _ "height"
+_in_width = Fn.Input :: _ "width"
+_in_height = Fn.Input :: _ "height"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
@@ -4166,7 +5284,11 @@ fml = -- {-> synth <-}
         unit
         { width : ?width_default, height : ?height_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            width <- P.receive _in_width
+            height <- P.receive _in_height
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4174,9 +5296,9 @@ module MHush where
 
 import Prelude
 
-_in_Unit = Proxy :: _ "Unit"
+_in_Unit = Fn.Input :: _ "Unit"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
@@ -4190,7 +5312,10 @@ fml = -- {-> synth <-}
         unit
         { Unit : ?Unit_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            Unit <- P.receive _in_Unit
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4198,9 +5323,9 @@ module MSetFunction where
 
 import Prelude
 
-_in_fn = Proxy :: _ "fn"
+_in_fn = Fn.Input :: _ "fn"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
@@ -4214,7 +5339,10 @@ fml = -- {-> synth <-}
         unit
         { fn : ?fn_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            fn <- P.receive _in_fn
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4222,9 +5350,9 @@ module MSpeed where
 
 import Prelude
 
-_in_v = Proxy :: _ "v"
+_in_v = Fn.Input :: _ "v"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
@@ -4238,7 +5366,10 @@ fml = -- {-> synth <-}
         unit
         { v : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            v <- P.receive _in_v
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4246,9 +5377,9 @@ module MBpm where
 
 import Prelude
 
-_in_v = Proxy :: _ "v"
+_in_v = Fn.Input :: _ "v"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
@@ -4262,7 +5393,10 @@ fml = -- {-> synth <-}
         unit
         { v : 30 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            v <- P.receive _in_v
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4272,7 +5406,7 @@ import Prelude
 
 
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
@@ -4286,7 +5420,10 @@ fml = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4296,7 +5433,7 @@ import Prelude
 
 
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
@@ -4310,7 +5447,10 @@ fml = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4320,7 +5460,7 @@ import Prelude
 
 
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
@@ -4334,7 +5474,10 @@ fml = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4344,7 +5487,7 @@ import Prelude
 
 
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
@@ -4358,7 +5501,10 @@ fml = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4368,7 +5514,7 @@ import Prelude
 
 
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
@@ -4382,7 +5528,10 @@ fml = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4390,10 +5539,10 @@ module MInitCam where
 
 import Prelude
 
-_in_where = Proxy :: _ "where"
-_in_index = Proxy :: _ "index"
+_in_where = Fn.Input :: _ "where"
+_in_index = Fn.Input :: _ "index"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
@@ -4407,7 +5556,11 @@ fml = -- {-> extsource <-}
         unit
         { where : ?where_default, index : ?index_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            where <- P.receive _in_where
+            index <- P.receive _in_index
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4415,10 +5568,10 @@ module MInitImage where
 
 import Prelude
 
-_in_where = Proxy :: _ "where"
-_in_url = Proxy :: _ "url"
+_in_where = Fn.Input :: _ "where"
+_in_url = Fn.Input :: _ "url"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
@@ -4432,7 +5585,11 @@ fml = -- {-> extsource <-}
         unit
         { where : ?where_default, url : ?url_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            where <- P.receive _in_where
+            url <- P.receive _in_url
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4440,10 +5597,10 @@ module MInitVideo where
 
 import Prelude
 
-_in_where = Proxy :: _ "where"
-_in_url = Proxy :: _ "url"
+_in_where = Fn.Input :: _ "where"
+_in_url = Fn.Input :: _ "url"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
@@ -4457,7 +5614,11 @@ fml = -- {-> extsource <-}
         unit
         { where : ?where_default, url : ?url_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            where <- P.receive _in_where
+            url <- P.receive _in_url
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4465,9 +5626,9 @@ module MInit where
 
 import Prelude
 
-_in_where = Proxy :: _ "where"
+_in_where = Fn.Input :: _ "where"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
@@ -4481,7 +5642,10 @@ fml = -- {-> extsource <-}
         unit
         { where : ?where_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            where <- P.receive _in_where
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4489,10 +5653,10 @@ module MInitStream where
 
 import Prelude
 
-_in_where = Proxy :: _ "where"
+_in_where = Fn.Input :: _ "where"
 
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
@@ -4506,7 +5670,11 @@ fml = -- {-> extsource <-}
         unit
         { where : ?where_default, ?ch_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            where <- P.receive _in_where
+            --
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4514,9 +5682,9 @@ module MInitScreen where
 
 import Prelude
 
-_in_where = Proxy :: _ "where"
+_in_where = Fn.Input :: _ "where"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
@@ -4530,7 +5698,10 @@ fml = -- {-> extsource <-}
         unit
         { where : ?where_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            where <- P.receive _in_where
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4538,10 +5709,10 @@ module MFast where
 
 import Prelude
 
-_in_a = Proxy :: _ "a"
-_in_speed = Proxy :: _ "speed"
+_in_a = Fn.Input :: _ "a"
+_in_speed = Fn.Input :: _ "speed"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
@@ -4555,7 +5726,11 @@ fml = -- {-> array <-}
         unit
         { a : ?a_default, speed : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            speed <- P.receive _in_speed
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4563,10 +5738,10 @@ module MSmooth where
 
 import Prelude
 
-_in_a = Proxy :: _ "a"
-_in_smooth = Proxy :: _ "smooth"
+_in_a = Fn.Input :: _ "a"
+_in_smooth = Fn.Input :: _ "smooth"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
@@ -4580,7 +5755,11 @@ fml = -- {-> array <-}
         unit
         { a : ?a_default, smooth : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            smooth <- P.receive _in_smooth
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4588,10 +5767,10 @@ module MEase where
 
 import Prelude
 
-_in_a = Proxy :: _ "a"
-_in_ease = Proxy :: _ "ease"
+_in_a = Fn.Input :: _ "a"
+_in_ease = Fn.Input :: _ "ease"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
@@ -4605,7 +5784,11 @@ fml = -- {-> array <-}
         unit
         { a : ?a_default, ease : Linear }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            ease <- P.receive _in_ease
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4613,10 +5796,10 @@ module MOffset where
 
 import Prelude
 
-_in_a = Proxy :: _ "a"
-_in_offset = Proxy :: _ "offset"
+_in_a = Fn.Input :: _ "a"
+_in_offset = Fn.Input :: _ "offset"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
@@ -4630,7 +5813,11 @@ fml = -- {-> array <-}
         unit
         { a : ?a_default, offset : 0.5 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            offset <- P.receive _in_offset
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4638,11 +5825,11 @@ module MFit where
 
 import Prelude
 
-_in_a = Proxy :: _ "a"
-_in_low = Proxy :: _ "low"
-_in_high = Proxy :: _ "high"
+_in_a = Fn.Input :: _ "a"
+_in_low = Fn.Input :: _ "low"
+_in_high = Fn.Input :: _ "high"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
@@ -4656,7 +5843,12 @@ fml = -- {-> array <-}
         unit
         { a : ?a_default, low : 0, high : 1 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            low <- P.receive _in_low
+            high <- P.receive _in_high
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4664,10 +5856,10 @@ module MFft where
 
 import Prelude
 
-_in_a = Proxy :: _ "a"
-_in_h = Proxy :: _ "h"
+_in_a = Fn.Input :: _ "a"
+_in_h = Fn.Input :: _ "h"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
@@ -4681,7 +5873,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, h : ?h_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            h <- P.receive _in_h
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4689,10 +5885,10 @@ module MSetSmooth where
 
 import Prelude
 
-_in_a = Proxy :: _ "a"
-_in_smooth = Proxy :: _ "smooth"
+_in_a = Fn.Input :: _ "a"
+_in_smooth = Fn.Input :: _ "smooth"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
@@ -4706,7 +5902,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, smooth : 0.4 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            smooth <- P.receive _in_smooth
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4714,10 +5914,10 @@ module MSetCutoff where
 
 import Prelude
 
-_in_a = Proxy :: _ "a"
-_in_cutoff = Proxy :: _ "cutoff"
+_in_a = Fn.Input :: _ "a"
+_in_cutoff = Fn.Input :: _ "cutoff"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
@@ -4731,7 +5931,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, cutoff : 2 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            cutoff <- P.receive _in_cutoff
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4739,10 +5943,10 @@ module MSetBins where
 
 import Prelude
 
-_in_a = Proxy :: _ "a"
-_in_numBins = Proxy :: _ "numBins"
+_in_a = Fn.Input :: _ "a"
+_in_numBins = Fn.Input :: _ "numBins"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
@@ -4756,7 +5960,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, numBins : 4 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            numBins <- P.receive _in_numBins
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4764,10 +5972,10 @@ module MSetScale where
 
 import Prelude
 
-_in_a = Proxy :: _ "a"
-_in_scale = Proxy :: _ "scale"
+_in_a = Fn.Input :: _ "a"
+_in_scale = Fn.Input :: _ "scale"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
@@ -4781,7 +5989,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, scale : 10 }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            scale <- P.receive _in_scale
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4789,10 +6001,10 @@ module MHide where
 
 import Prelude
 
-_in_a = Proxy :: _ "a"
+_in_a = Fn.Input :: _ "a"
 
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
@@ -4806,7 +6018,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, ?ch_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            --
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4814,10 +6030,10 @@ module MShow where
 
 import Prelude
 
-_in_a = Proxy :: _ "a"
+_in_a = Fn.Input :: _ "a"
 
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
@@ -4831,7 +6047,11 @@ fml = -- {-> audio <-}
         unit
         { a : ?a_default, ?ch_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            a <- P.receive _in_a
+            --
+            P.send _out_out ?out_out
+
 
 {- MODULE -}
 
@@ -4839,10 +6059,10 @@ module MOut where
 
 import Prelude
 
-_in_what = Proxy :: _ "what"
-_in_where = Proxy :: _ "where"
+_in_what = Fn.Input :: _ "what"
+_in_where = Fn.Input :: _ "where"
 
-_out_out = Proxy :: _ "out"
+_out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> out <-}
     Family.Def Unit
@@ -4856,4 +6076,7 @@ fml = -- {-> out <-}
         unit
         { what : ?what_default, where : ?where_default }
         { out : ?out_default }
-    $ fml.make $ pure unit
+        $ fml.make $ do
+            what <- P.receive _in_what
+            where <- P.receive _in_where
+            P.send _out_out ?out_out

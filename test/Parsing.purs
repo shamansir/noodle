@@ -179,6 +179,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
         sampleContent <- readTextFile UTF8 out_file_path_sample
         case parseResult of
           Right familiesList -> do
+            let genSumType = QTG.genSumType "hydra" familiesList
             let sepImports = QTG.genSeparateImports "hydra" familiesList
             let sepNodesTypes = QTG.genSeparateFamilyTypes true "hydra" familiesList
             let sepImpls = QTG.genSeparateFamilyImpls true "hydra" familiesList
@@ -190,7 +191,8 @@ main = launchAff_ $ runSpec [consoleReporter] do
             let toolkitDef = QTG.genToolkitDef "hydra" familiesList
             let fileContent =
                     String.joinWith "\n\n\n"
-                      [ sepImports
+                      [ genSumType
+                      , sepImports
                       , sepNodesTypes
                       , sepImpls
                       , sepTypeDef
