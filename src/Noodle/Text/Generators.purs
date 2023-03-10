@@ -1,9 +1,21 @@
-module Noodle.Text.ToolkitGen where
+module Noodle.Text.Generators
+    ( genSumType
+    , genSeparateImports
+    , genSeparateFamilyTypes
+    , genSeparateFamilyImpls
+    , genTypeDefSeparate
+    , genFamilyModule
+    , genTypeDefInline
+    , genToolkitDef
+    , moduleName, familyTypeName, typeConstructor
+    )
+    where
 
 import Prelude
 
 import Data.Array as Array
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Newtype (unwrap)
 import Data.String as String
 import Noodle.Text.QuickDef as QD
 
@@ -52,7 +64,7 @@ genSeparateImports _ fmls =
 
 genFamilyModule :: String -> QD.QFamily -> String
 genFamilyModule tkName (QD.QFamily fml) =
-    "module " <> moduleName fml.family <> " where\n\n"
+    "module " <> moduleName' fml.family <> " where\n\n"
     <> "import Prelude\n\n"
     <> String.joinWith "\n" (inputProxyCode <$> fml.inputs)
     <> "\n\n"
@@ -74,7 +86,7 @@ genSumType tkName families =
     <> i <> "= " <> String.joinWith ("\n" <> i <> "| ") (familyOption <$> families)
     where
         familyOption (QD.QFamily fml) =
-            ensureStartsFromCapitalLetter fml.family
+            typeConstructor' fml.family
                 <> if Array.length fml.inputs > 0
                         then " " <> (String.joinWith " " (argType <$> fml.inputs))
                         else ""
@@ -110,13 +122,33 @@ ensureStartsFromCapitalLetter str =
         { before, after } -> String.toUpper before <> after
 
 
-moduleName :: String -> String
-moduleName family =
+typeConstructor :: QD.QFamily -> String
+typeConstructor =
+    unwrap >>> _.family >>> moduleName'
+
+
+typeConstructor' :: String -> String
+typeConstructor' =
+    ensureStartsFromCapitalLetter
+
+
+moduleName :: QD.QFamily -> String
+moduleName =
+    unwrap >>> _.family >>> moduleName'
+
+
+moduleName' :: String -> String
+moduleName' family =
     "M" <> ensureStartsFromCapitalLetter family
 
 
-familyTypeName :: String -> String
-familyTypeName family =
+familyTypeName :: QD.QFamily -> String
+familyTypeName =
+    unwrap >>> _.family >>> familyTypeName'
+
+
+familyTypeName' :: String -> String
+familyTypeName' family =
     "T" <> ensureStartsFromCapitalLetter family
 
 
@@ -129,7 +161,7 @@ genToolkitDef tkName fmls =
 
 genModuleImport :: QD.QFamily -> String
 genModuleImport (QD.QFamily fml) =
-   "import Toolkit.Families." <> moduleName fml.family <> " as " <> moduleName fml.family
+   "import Toolkit.Families." <> moduleName' fml.family <> " as " <> moduleName' fml.family
 
 
 genFamilyTypeDef :: QD.QFamily -> String
@@ -144,13 +176,13 @@ genFamilyTypeDef (QD.QFamily fml) =
 genFamilyTypeDefRef :: Boolean -> QD.QFamily -> String
 genFamilyTypeDefRef withModule (QD.QFamily fml) =
     fml.family <> " :: "
-        <> (if withModule then moduleName fml.family <> ".Family" else "Family")
+        <> (if withModule then moduleName' fml.family <> ".Family" else "Family")
         <> " -- {-> " <> fml.tag <> " <-}"
 
 
 genFamilyTypeSepDef :: Boolean -> QD.QFamily -> String
 genFamilyTypeSepDef withModule (QD.QFamily fml) =
-    "type " <> (if withModule then moduleName fml.family <> ".Family" else "Family")
+    "type " <> (if withModule then moduleName' fml.family <> ".Family" else "Family")
         <> " m = -- {-> " <> fml.tag <> " <-}\n"
         <> i <> "Family.Def Unit\n"
         <> i2 <> (inBrackets genChanTypeDef ", " fml.inputs) <> "\n"
@@ -175,12 +207,21 @@ processBody indent (QD.QFamily fml) =
             <> (if Array.length fml.inputs > 0 then
                     (indent <> String.joinWith ("\n" <> indent) (inputReceive <$> fml.inputs) <> "\n")
                 else "")
+            <> indent <> outputComment <> "\n"
             <> (if Array.length fml.outputs > 0 then
                     (indent <> String.joinWith ("\n" <> indent) (outputSend <$> fml.outputs) <> "\n")
                 else (indent <> "pure unit\n"))
         )
-    else (indent <> "pure unit\n")
+    else (indent <> outputComment <> "\n" <> indent <> "pure unit\n")
     where
+        outputComment =
+            "-- " <> typeConstructor' fml.family <>
+                (if (Array.length fml.inputs > 0)
+                    then " " <> String.joinWith " " (inputName <$> fml.inputs)
+                    else ""
+                )
+        inputName Nothing = "?input"
+        inputName (Just ch) = "_in_" <> ch.name
         inputReceive Nothing = "--"
         inputReceive (Just ch) = ch.name <> " <- P.receive _in_" <> ch.name
         outputSend Nothing = "--"
@@ -191,8 +232,8 @@ processBody indent (QD.QFamily fml) =
 genFamilyToolkitSeparateImpl :: Boolean -> QD.QFamily -> String
 genFamilyToolkitSeparateImpl withModule (QD.QFamily fml) =
     if withModule then
-        ( moduleName fml.family <> ".fml :: forall m. " <> moduleName fml.family <> ".Family m\n"
-        <> moduleName fml.family <> ".fml = -- {-> " <> fml.tag <> " <-}\n"
+        ( moduleName' fml.family <> ".fml :: forall m. " <> moduleName' fml.family <> ".Family m\n"
+        <> moduleName' fml.family <> ".fml = -- {-> " <> fml.tag <> " <-}\n"
         )
     else
         ( "fml :: forall m. Family m\n"

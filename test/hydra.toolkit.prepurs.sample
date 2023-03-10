@@ -1115,6 +1115,7 @@ fml = -- {-> source <-}
         $ fml.make $ do
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
+            -- Noise _in_scale _in_offset
             P.send _out_out ?out_out
 
 
@@ -1128,6 +1129,7 @@ fml = -- {-> source <-}
             scale <- P.receive _in_scale
             speed <- P.receive _in_speed
             blending <- P.receive _in_blending
+            -- Voronoi _in_scale _in_speed _in_blending
             P.send _out_out ?out_out
 
 
@@ -1141,6 +1143,7 @@ fml = -- {-> source <-}
             frequency <- P.receive _in_frequency
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset
+            -- Osc _in_frequency _in_sync _in_offset
             P.send _out_out ?out_out
 
 
@@ -1154,6 +1157,7 @@ fml = -- {-> source <-}
             sides <- P.receive _in_sides
             radius <- P.receive _in_radius
             smoothing <- P.receive _in_smoothing
+            -- Shape _in_sides _in_radius _in_smoothing
             P.send _out_out ?out_out
 
 
@@ -1165,6 +1169,7 @@ fml = -- {-> source <-}
         { out : ?out_default }
         $ fml.make $ do
             speed <- P.receive _in_speed
+            -- Gradient _in_speed
             P.send _out_out ?out_out
 
 
@@ -1176,6 +1181,7 @@ fml = -- {-> source <-}
         { out : ?out_default }
         $ fml.make $ do
             tex <- P.receive _in_tex
+            -- Src _in_tex
             P.send _out_out ?out_out
 
 
@@ -1190,6 +1196,7 @@ fml = -- {-> source <-}
             g <- P.receive _in_g
             b <- P.receive _in_b
             a <- P.receive _in_a
+            -- Solid _in_r _in_g _in_b _in_a
             P.send _out_out ?out_out
 
 
@@ -1201,6 +1208,7 @@ fml = -- {-> source <-}
         { out : ?out_default }
         $ fml.make $ do
             src <- P.receive _in_src
+            -- Src _in_src
             P.send _out_out ?out_out
 
 
@@ -1212,6 +1220,7 @@ fml = -- {-> source <-}
         { out : ?out_default }
         $ fml.make $ do
             --
+            -- Prev ?input
             P.send _out_out ?out_out
 
 
@@ -1225,6 +1234,7 @@ fml = -- {-> geometry <-}
             what <- P.receive _in_what
             angle <- P.receive _in_angle
             speed <- P.receive _in_speed
+            -- Rotate _in_what _in_angle _in_speed
             P.send _out_out ?out_out
 
 
@@ -1241,6 +1251,7 @@ fml = -- {-> geometry <-}
             yMult <- P.receive _in_yMult
             offsetX <- P.receive _in_offsetX
             offsetY <- P.receive _in_offsetY
+            -- Scale _in_what _in_amount _in_xMult _in_yMult _in_offsetX _in_offsetY
             P.send _out_out ?out_out
 
 
@@ -1254,6 +1265,7 @@ fml = -- {-> geometry <-}
             what <- P.receive _in_what
             pixelX <- P.receive _in_pixelX
             pixelY <- P.receive _in_pixelY
+            -- Pixelate _in_what _in_pixelX _in_pixelY
             P.send _out_out ?out_out
 
 
@@ -1269,6 +1281,7 @@ fml = -- {-> geometry <-}
             repeatY <- P.receive _in_repeatY
             offsetX <- P.receive _in_offsetX
             offsetY <- P.receive _in_offsetY
+            -- Repeat _in_what _in_repeatX _in_repeatY _in_offsetX _in_offsetY
             P.send _out_out ?out_out
 
 
@@ -1282,6 +1295,7 @@ fml = -- {-> geometry <-}
             what <- P.receive _in_what
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
+            -- RepeatX _in_what _in_reps _in_offset
             P.send _out_out ?out_out
 
 
@@ -1295,6 +1309,7 @@ fml = -- {-> geometry <-}
             what <- P.receive _in_what
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
+            -- RepeatY _in_what _in_reps _in_offset
             P.send _out_out ?out_out
 
 
@@ -1307,6 +1322,7 @@ fml = -- {-> geometry <-}
         $ fml.make $ do
             what <- P.receive _in_what
             nSides <- P.receive _in_nSides
+            -- Kaleid _in_what _in_nSides
             P.send _out_out ?out_out
 
 
@@ -1322,6 +1338,7 @@ fml = -- {-> geometry <-}
             scrollY <- P.receive _in_scrollY
             speedX <- P.receive _in_speedX
             speedY <- P.receive _in_speedY
+            -- Scroll _in_what _in_scrollX _in_scrollY _in_speedX _in_speedY
             P.send _out_out ?out_out
 
 
@@ -1335,6 +1352,7 @@ fml = -- {-> geometry <-}
             what <- P.receive _in_what
             scrollX <- P.receive _in_scrollX
             speed <- P.receive _in_speed
+            -- ScrollX _in_what _in_scrollX _in_speed
             P.send _out_out ?out_out
 
 
@@ -1348,6 +1366,7 @@ fml = -- {-> geometry <-}
             what <- P.receive _in_what
             scrollY <- P.receive _in_scrollY
             speed <- P.receive _in_speed
+            -- ScrollY _in_what _in_scrollY _in_speed
             P.send _out_out ?out_out
 
 
@@ -1361,6 +1380,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             bins <- P.receive _in_bins
             gamma <- P.receive _in_gamma
+            -- Posterize _in_what _in_bins _in_gamma
             P.send _out_out ?out_out
 
 
@@ -1376,6 +1396,7 @@ fml = -- {-> color <-}
             g <- P.receive _in_g
             b <- P.receive _in_b
             a <- P.receive _in_a
+            -- Shift _in_what _in_r _in_g _in_b _in_a
             P.send _out_out ?out_out
 
 
@@ -1388,6 +1409,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
+            -- Invert _in_what _in_amount
             P.send _out_out ?out_out
 
 
@@ -1400,6 +1422,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
+            -- Contrast _in_what _in_amount
             P.send _out_out ?out_out
 
 
@@ -1412,6 +1435,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
+            -- Brightness _in_what _in_amount
             P.send _out_out ?out_out
 
 
@@ -1425,6 +1449,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             treshold <- P.receive _in_treshold
             tolerance <- P.receive _in_tolerance
+            -- Luma _in_what _in_treshold _in_tolerance
             P.send _out_out ?out_out
 
 
@@ -1438,6 +1463,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             treshold <- P.receive _in_treshold
             tolerance <- P.receive _in_tolerance
+            -- Tresh _in_what _in_treshold _in_tolerance
             P.send _out_out ?out_out
 
 
@@ -1452,6 +1478,7 @@ fml = -- {-> color <-}
             g <- P.receive _in_g
             b <- P.receive _in_b
             a <- P.receive _in_a
+            -- Color _in_r _in_g _in_b _in_a
             P.send _out_out ?out_out
 
 
@@ -1464,6 +1491,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
+            -- Saturate _in_what _in_amount
             P.send _out_out ?out_out
 
 
@@ -1476,6 +1504,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             hue <- P.receive _in_hue
+            -- Hue _in_what _in_hue
             P.send _out_out ?out_out
 
 
@@ -1488,6 +1517,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
+            -- Colorama _in_what _in_amount
             P.send _out_out ?out_out
 
 
@@ -1500,6 +1530,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             --
+            -- Sum _in_what ?input
             P.send _out_out ?out_out
 
 
@@ -1513,6 +1544,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
+            -- R _in_what _in_scale _in_offset
             P.send _out_out ?out_out
 
 
@@ -1526,6 +1558,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
+            -- G _in_what _in_scale _in_offset
             P.send _out_out ?out_out
 
 
@@ -1539,6 +1572,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
+            -- B _in_what _in_scale _in_offset
             P.send _out_out ?out_out
 
 
@@ -1552,6 +1586,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
+            -- A _in_what _in_scale _in_offset
             P.send _out_out ?out_out
 
 
@@ -1565,6 +1600,7 @@ fml = -- {-> blend <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- Add _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -1578,6 +1614,7 @@ fml = -- {-> blend <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- Sub _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -1591,6 +1628,7 @@ fml = -- {-> blend <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- Layer _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -1604,6 +1642,7 @@ fml = -- {-> blend <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- Blend _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -1617,6 +1656,7 @@ fml = -- {-> blend <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- Mult _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -1629,6 +1669,7 @@ fml = -- {-> blend <-}
         $ fml.make $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
+            -- Diff _in_what _in_with
             P.send _out_out ?out_out
 
 
@@ -1641,6 +1682,7 @@ fml = -- {-> blend <-}
         $ fml.make $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
+            -- Mask _in_what _in_with
             P.send _out_out ?out_out
 
 
@@ -1657,6 +1699,7 @@ fml = -- {-> modulate <-}
             repeatY <- P.receive _in_repeatY
             offsetX <- P.receive _in_offsetX
             offsetY <- P.receive _in_offsetY
+            -- ModulateRepeat _in_what _in_with _in_repeatX _in_repeatY _in_offsetX _in_offsetY
             P.send _out_out ?out_out
 
 
@@ -1671,6 +1714,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
+            -- ModulateRepeatX _in_what _in_with _in_reps _in_offset
             P.send _out_out ?out_out
 
 
@@ -1685,6 +1729,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
+            -- ModulateRepeatY _in_what _in_with _in_reps _in_offset
             P.send _out_out ?out_out
 
 
@@ -1698,6 +1743,7 @@ fml = -- {-> modulate <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             nSides <- P.receive _in_nSides
+            -- ModulateKaleid _in_what _in_with _in_nSides
             P.send _out_out ?out_out
 
 
@@ -1712,6 +1758,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             scrollX <- P.receive _in_scrollX
             speed <- P.receive _in_speed
+            -- ModulateScrollX _in_what _in_with _in_scrollX _in_speed
             P.send _out_out ?out_out
 
 
@@ -1726,6 +1773,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             scrollY <- P.receive _in_scrollY
             speed <- P.receive _in_speed
+            -- ModulateScrollY _in_what _in_with _in_scrollY _in_speed
             P.send _out_out ?out_out
 
 
@@ -1739,6 +1787,7 @@ fml = -- {-> modulate <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- Modulate _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -1753,6 +1802,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple
             offset <- P.receive _in_offset
+            -- ModulateScale _in_what _in_with _in_multiple _in_offset
             P.send _out_out ?out_out
 
 
@@ -1767,6 +1817,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple
             offset <- P.receive _in_offset
+            -- ModulatePixelate _in_what _in_with _in_multiple _in_offset
             P.send _out_out ?out_out
 
 
@@ -1781,6 +1832,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple
             offset <- P.receive _in_offset
+            -- ModulateRotate _in_what _in_with _in_multiple _in_offset
             P.send _out_out ?out_out
 
 
@@ -1794,6 +1846,7 @@ fml = -- {-> modulate <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- ModulateHue _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -1805,6 +1858,7 @@ fml = -- {-> synth <-}
         { out : ?out_default }
         $ fml.make $ do
             from <- P.receive _in_from
+            -- Render _in_from
             P.send _out_out ?out_out
 
 
@@ -1816,6 +1870,7 @@ fml = -- {-> synth <-}
         { out : ?out_default }
         $ fml.make $ do
             fn <- P.receive _in_fn
+            -- Update _in_fn
             P.send _out_out ?out_out
 
 
@@ -1828,6 +1883,7 @@ fml = -- {-> synth <-}
         $ fml.make $ do
             width <- P.receive _in_width
             height <- P.receive _in_height
+            -- SetResolution _in_width _in_height
             P.send _out_out ?out_out
 
 
@@ -1839,6 +1895,7 @@ fml = -- {-> synth <-}
         { out : ?out_default }
         $ fml.make $ do
             Unit <- P.receive _in_Unit
+            -- Hush _in_Unit
             P.send _out_out ?out_out
 
 
@@ -1850,6 +1907,7 @@ fml = -- {-> synth <-}
         { out : ?out_default }
         $ fml.make $ do
             fn <- P.receive _in_fn
+            -- SetFunction _in_fn
             P.send _out_out ?out_out
 
 
@@ -1861,6 +1919,7 @@ fml = -- {-> synth <-}
         { out : ?out_default }
         $ fml.make $ do
             v <- P.receive _in_v
+            -- Speed _in_v
             P.send _out_out ?out_out
 
 
@@ -1872,6 +1931,7 @@ fml = -- {-> synth <-}
         { out : ?out_default }
         $ fml.make $ do
             v <- P.receive _in_v
+            -- Bpm _in_v
             P.send _out_out ?out_out
 
 
@@ -1882,6 +1942,7 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
+            -- Width
             P.send _out_out ?out_out
 
 
@@ -1892,6 +1953,7 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
+            -- Height
             P.send _out_out ?out_out
 
 
@@ -1902,6 +1964,7 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
+            -- Pi
             P.send _out_out ?out_out
 
 
@@ -1912,6 +1975,7 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
+            -- Time
             P.send _out_out ?out_out
 
 
@@ -1922,6 +1986,7 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
+            -- Mouse
             P.send _out_out ?out_out
 
 
@@ -1934,6 +1999,7 @@ fml = -- {-> extsource <-}
         $ fml.make $ do
             where <- P.receive _in_where
             index <- P.receive _in_index
+            -- InitCam _in_where _in_index
             P.send _out_out ?out_out
 
 
@@ -1946,6 +2012,7 @@ fml = -- {-> extsource <-}
         $ fml.make $ do
             where <- P.receive _in_where
             url <- P.receive _in_url
+            -- InitImage _in_where _in_url
             P.send _out_out ?out_out
 
 
@@ -1958,6 +2025,7 @@ fml = -- {-> extsource <-}
         $ fml.make $ do
             where <- P.receive _in_where
             url <- P.receive _in_url
+            -- InitVideo _in_where _in_url
             P.send _out_out ?out_out
 
 
@@ -1969,6 +2037,7 @@ fml = -- {-> extsource <-}
         { out : ?out_default }
         $ fml.make $ do
             where <- P.receive _in_where
+            -- Init _in_where
             P.send _out_out ?out_out
 
 
@@ -1981,6 +2050,7 @@ fml = -- {-> extsource <-}
         $ fml.make $ do
             where <- P.receive _in_where
             --
+            -- InitStream _in_where ?input
             P.send _out_out ?out_out
 
 
@@ -1992,6 +2062,7 @@ fml = -- {-> extsource <-}
         { out : ?out_default }
         $ fml.make $ do
             where <- P.receive _in_where
+            -- InitScreen _in_where
             P.send _out_out ?out_out
 
 
@@ -2004,6 +2075,7 @@ fml = -- {-> array <-}
         $ fml.make $ do
             a <- P.receive _in_a
             speed <- P.receive _in_speed
+            -- Fast _in_a _in_speed
             P.send _out_out ?out_out
 
 
@@ -2016,6 +2088,7 @@ fml = -- {-> array <-}
         $ fml.make $ do
             a <- P.receive _in_a
             smooth <- P.receive _in_smooth
+            -- Smooth _in_a _in_smooth
             P.send _out_out ?out_out
 
 
@@ -2028,6 +2101,7 @@ fml = -- {-> array <-}
         $ fml.make $ do
             a <- P.receive _in_a
             ease <- P.receive _in_ease
+            -- Ease _in_a _in_ease
             P.send _out_out ?out_out
 
 
@@ -2040,6 +2114,7 @@ fml = -- {-> array <-}
         $ fml.make $ do
             a <- P.receive _in_a
             offset <- P.receive _in_offset
+            -- Offset _in_a _in_offset
             P.send _out_out ?out_out
 
 
@@ -2053,6 +2128,7 @@ fml = -- {-> array <-}
             a <- P.receive _in_a
             low <- P.receive _in_low
             high <- P.receive _in_high
+            -- Fit _in_a _in_low _in_high
             P.send _out_out ?out_out
 
 
@@ -2065,6 +2141,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             h <- P.receive _in_h
+            -- Fft _in_a _in_h
             P.send _out_out ?out_out
 
 
@@ -2077,6 +2154,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             smooth <- P.receive _in_smooth
+            -- SetSmooth _in_a _in_smooth
             P.send _out_out ?out_out
 
 
@@ -2089,6 +2167,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             cutoff <- P.receive _in_cutoff
+            -- SetCutoff _in_a _in_cutoff
             P.send _out_out ?out_out
 
 
@@ -2101,6 +2180,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             numBins <- P.receive _in_numBins
+            -- SetBins _in_a _in_numBins
             P.send _out_out ?out_out
 
 
@@ -2113,6 +2193,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             scale <- P.receive _in_scale
+            -- SetScale _in_a _in_scale
             P.send _out_out ?out_out
 
 
@@ -2125,6 +2206,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             --
+            -- Hide _in_a ?input
             P.send _out_out ?out_out
 
 
@@ -2137,6 +2219,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             --
+            -- Show _in_a ?input
             P.send _out_out ?out_out
 
 
@@ -2149,6 +2232,7 @@ fml = -- {-> out <-}
         $ fml.make $ do
             what <- P.receive _in_what
             where <- P.receive _in_where
+            -- Out _in_what _in_where
             P.send _out_out ?out_out
 
 
@@ -2679,6 +2763,7 @@ toolkit =
                 $ fml.make $ do
                     scale <- P.receive _in_scale
                     offset <- P.receive _in_offset
+                    -- Noise _in_scale _in_offset
                     P.send _out_out ?out_out
 
         , voronoi : -- {-> source <-}
@@ -2690,6 +2775,7 @@ toolkit =
                     scale <- P.receive _in_scale
                     speed <- P.receive _in_speed
                     blending <- P.receive _in_blending
+                    -- Voronoi _in_scale _in_speed _in_blending
                     P.send _out_out ?out_out
 
         , osc : -- {-> source <-}
@@ -2701,6 +2787,7 @@ toolkit =
                     frequency <- P.receive _in_frequency
                     sync <- P.receive _in_sync
                     offset <- P.receive _in_offset
+                    -- Osc _in_frequency _in_sync _in_offset
                     P.send _out_out ?out_out
 
         , shape : -- {-> source <-}
@@ -2712,6 +2799,7 @@ toolkit =
                     sides <- P.receive _in_sides
                     radius <- P.receive _in_radius
                     smoothing <- P.receive _in_smoothing
+                    -- Shape _in_sides _in_radius _in_smoothing
                     P.send _out_out ?out_out
 
         , gradient : -- {-> source <-}
@@ -2721,6 +2809,7 @@ toolkit =
                 { out : ?out_default }
                 $ fml.make $ do
                     speed <- P.receive _in_speed
+                    -- Gradient _in_speed
                     P.send _out_out ?out_out
 
         , src : -- {-> source <-}
@@ -2730,6 +2819,7 @@ toolkit =
                 { out : ?out_default }
                 $ fml.make $ do
                     tex <- P.receive _in_tex
+                    -- Src _in_tex
                     P.send _out_out ?out_out
 
         , solid : -- {-> source <-}
@@ -2742,6 +2832,7 @@ toolkit =
                     g <- P.receive _in_g
                     b <- P.receive _in_b
                     a <- P.receive _in_a
+                    -- Solid _in_r _in_g _in_b _in_a
                     P.send _out_out ?out_out
 
         , src : -- {-> source <-}
@@ -2751,6 +2842,7 @@ toolkit =
                 { out : ?out_default }
                 $ fml.make $ do
                     src <- P.receive _in_src
+                    -- Src _in_src
                     P.send _out_out ?out_out
 
         , prev : -- {-> source <-}
@@ -2760,6 +2852,7 @@ toolkit =
                 { out : ?out_default }
                 $ fml.make $ do
                     --
+                    -- Prev ?input
                     P.send _out_out ?out_out
 
         , rotate : -- {-> geometry <-}
@@ -2771,6 +2864,7 @@ toolkit =
                     what <- P.receive _in_what
                     angle <- P.receive _in_angle
                     speed <- P.receive _in_speed
+                    -- Rotate _in_what _in_angle _in_speed
                     P.send _out_out ?out_out
 
         , scale : -- {-> geometry <-}
@@ -2785,6 +2879,7 @@ toolkit =
                     yMult <- P.receive _in_yMult
                     offsetX <- P.receive _in_offsetX
                     offsetY <- P.receive _in_offsetY
+                    -- Scale _in_what _in_amount _in_xMult _in_yMult _in_offsetX _in_offsetY
                     P.send _out_out ?out_out
 
         , pixelate : -- {-> geometry <-}
@@ -2796,6 +2891,7 @@ toolkit =
                     what <- P.receive _in_what
                     pixelX <- P.receive _in_pixelX
                     pixelY <- P.receive _in_pixelY
+                    -- Pixelate _in_what _in_pixelX _in_pixelY
                     P.send _out_out ?out_out
 
         , repeat : -- {-> geometry <-}
@@ -2809,6 +2905,7 @@ toolkit =
                     repeatY <- P.receive _in_repeatY
                     offsetX <- P.receive _in_offsetX
                     offsetY <- P.receive _in_offsetY
+                    -- Repeat _in_what _in_repeatX _in_repeatY _in_offsetX _in_offsetY
                     P.send _out_out ?out_out
 
         , repeatX : -- {-> geometry <-}
@@ -2820,6 +2917,7 @@ toolkit =
                     what <- P.receive _in_what
                     reps <- P.receive _in_reps
                     offset <- P.receive _in_offset
+                    -- RepeatX _in_what _in_reps _in_offset
                     P.send _out_out ?out_out
 
         , repeatY : -- {-> geometry <-}
@@ -2831,6 +2929,7 @@ toolkit =
                     what <- P.receive _in_what
                     reps <- P.receive _in_reps
                     offset <- P.receive _in_offset
+                    -- RepeatY _in_what _in_reps _in_offset
                     P.send _out_out ?out_out
 
         , kaleid : -- {-> geometry <-}
@@ -2841,6 +2940,7 @@ toolkit =
                 $ fml.make $ do
                     what <- P.receive _in_what
                     nSides <- P.receive _in_nSides
+                    -- Kaleid _in_what _in_nSides
                     P.send _out_out ?out_out
 
         , scroll : -- {-> geometry <-}
@@ -2854,6 +2954,7 @@ toolkit =
                     scrollY <- P.receive _in_scrollY
                     speedX <- P.receive _in_speedX
                     speedY <- P.receive _in_speedY
+                    -- Scroll _in_what _in_scrollX _in_scrollY _in_speedX _in_speedY
                     P.send _out_out ?out_out
 
         , scrollX : -- {-> geometry <-}
@@ -2865,6 +2966,7 @@ toolkit =
                     what <- P.receive _in_what
                     scrollX <- P.receive _in_scrollX
                     speed <- P.receive _in_speed
+                    -- ScrollX _in_what _in_scrollX _in_speed
                     P.send _out_out ?out_out
 
         , scrollY : -- {-> geometry <-}
@@ -2876,6 +2978,7 @@ toolkit =
                     what <- P.receive _in_what
                     scrollY <- P.receive _in_scrollY
                     speed <- P.receive _in_speed
+                    -- ScrollY _in_what _in_scrollY _in_speed
                     P.send _out_out ?out_out
 
         , posterize : -- {-> color <-}
@@ -2887,6 +2990,7 @@ toolkit =
                     what <- P.receive _in_what
                     bins <- P.receive _in_bins
                     gamma <- P.receive _in_gamma
+                    -- Posterize _in_what _in_bins _in_gamma
                     P.send _out_out ?out_out
 
         , shift : -- {-> color <-}
@@ -2900,6 +3004,7 @@ toolkit =
                     g <- P.receive _in_g
                     b <- P.receive _in_b
                     a <- P.receive _in_a
+                    -- Shift _in_what _in_r _in_g _in_b _in_a
                     P.send _out_out ?out_out
 
         , invert : -- {-> color <-}
@@ -2910,6 +3015,7 @@ toolkit =
                 $ fml.make $ do
                     what <- P.receive _in_what
                     amount <- P.receive _in_amount
+                    -- Invert _in_what _in_amount
                     P.send _out_out ?out_out
 
         , contrast : -- {-> color <-}
@@ -2920,6 +3026,7 @@ toolkit =
                 $ fml.make $ do
                     what <- P.receive _in_what
                     amount <- P.receive _in_amount
+                    -- Contrast _in_what _in_amount
                     P.send _out_out ?out_out
 
         , brightness : -- {-> color <-}
@@ -2930,6 +3037,7 @@ toolkit =
                 $ fml.make $ do
                     what <- P.receive _in_what
                     amount <- P.receive _in_amount
+                    -- Brightness _in_what _in_amount
                     P.send _out_out ?out_out
 
         , luma : -- {-> color <-}
@@ -2941,6 +3049,7 @@ toolkit =
                     what <- P.receive _in_what
                     treshold <- P.receive _in_treshold
                     tolerance <- P.receive _in_tolerance
+                    -- Luma _in_what _in_treshold _in_tolerance
                     P.send _out_out ?out_out
 
         , tresh : -- {-> color <-}
@@ -2952,6 +3061,7 @@ toolkit =
                     what <- P.receive _in_what
                     treshold <- P.receive _in_treshold
                     tolerance <- P.receive _in_tolerance
+                    -- Tresh _in_what _in_treshold _in_tolerance
                     P.send _out_out ?out_out
 
         , color : -- {-> color <-}
@@ -2964,6 +3074,7 @@ toolkit =
                     g <- P.receive _in_g
                     b <- P.receive _in_b
                     a <- P.receive _in_a
+                    -- Color _in_r _in_g _in_b _in_a
                     P.send _out_out ?out_out
 
         , saturate : -- {-> color <-}
@@ -2974,6 +3085,7 @@ toolkit =
                 $ fml.make $ do
                     what <- P.receive _in_what
                     amount <- P.receive _in_amount
+                    -- Saturate _in_what _in_amount
                     P.send _out_out ?out_out
 
         , hue : -- {-> color <-}
@@ -2984,6 +3096,7 @@ toolkit =
                 $ fml.make $ do
                     what <- P.receive _in_what
                     hue <- P.receive _in_hue
+                    -- Hue _in_what _in_hue
                     P.send _out_out ?out_out
 
         , colorama : -- {-> color <-}
@@ -2994,6 +3107,7 @@ toolkit =
                 $ fml.make $ do
                     what <- P.receive _in_what
                     amount <- P.receive _in_amount
+                    -- Colorama _in_what _in_amount
                     P.send _out_out ?out_out
 
         , sum : -- {-> color <-}
@@ -3004,6 +3118,7 @@ toolkit =
                 $ fml.make $ do
                     what <- P.receive _in_what
                     --
+                    -- Sum _in_what ?input
                     P.send _out_out ?out_out
 
         , r : -- {-> color <-}
@@ -3015,6 +3130,7 @@ toolkit =
                     what <- P.receive _in_what
                     scale <- P.receive _in_scale
                     offset <- P.receive _in_offset
+                    -- R _in_what _in_scale _in_offset
                     P.send _out_out ?out_out
 
         , g : -- {-> color <-}
@@ -3026,6 +3142,7 @@ toolkit =
                     what <- P.receive _in_what
                     scale <- P.receive _in_scale
                     offset <- P.receive _in_offset
+                    -- G _in_what _in_scale _in_offset
                     P.send _out_out ?out_out
 
         , b : -- {-> color <-}
@@ -3037,6 +3154,7 @@ toolkit =
                     what <- P.receive _in_what
                     scale <- P.receive _in_scale
                     offset <- P.receive _in_offset
+                    -- B _in_what _in_scale _in_offset
                     P.send _out_out ?out_out
 
         , a : -- {-> color <-}
@@ -3048,6 +3166,7 @@ toolkit =
                     what <- P.receive _in_what
                     scale <- P.receive _in_scale
                     offset <- P.receive _in_offset
+                    -- A _in_what _in_scale _in_offset
                     P.send _out_out ?out_out
 
         , add : -- {-> blend <-}
@@ -3059,6 +3178,7 @@ toolkit =
                     what <- P.receive _in_what
                     with <- P.receive _in_with
                     amount <- P.receive _in_amount
+                    -- Add _in_what _in_with _in_amount
                     P.send _out_out ?out_out
 
         , sub : -- {-> blend <-}
@@ -3070,6 +3190,7 @@ toolkit =
                     what <- P.receive _in_what
                     with <- P.receive _in_with
                     amount <- P.receive _in_amount
+                    -- Sub _in_what _in_with _in_amount
                     P.send _out_out ?out_out
 
         , layer : -- {-> blend <-}
@@ -3081,6 +3202,7 @@ toolkit =
                     what <- P.receive _in_what
                     with <- P.receive _in_with
                     amount <- P.receive _in_amount
+                    -- Layer _in_what _in_with _in_amount
                     P.send _out_out ?out_out
 
         , blend : -- {-> blend <-}
@@ -3092,6 +3214,7 @@ toolkit =
                     what <- P.receive _in_what
                     with <- P.receive _in_with
                     amount <- P.receive _in_amount
+                    -- Blend _in_what _in_with _in_amount
                     P.send _out_out ?out_out
 
         , mult : -- {-> blend <-}
@@ -3103,6 +3226,7 @@ toolkit =
                     what <- P.receive _in_what
                     with <- P.receive _in_with
                     amount <- P.receive _in_amount
+                    -- Mult _in_what _in_with _in_amount
                     P.send _out_out ?out_out
 
         , diff : -- {-> blend <-}
@@ -3113,6 +3237,7 @@ toolkit =
                 $ fml.make $ do
                     what <- P.receive _in_what
                     with <- P.receive _in_with
+                    -- Diff _in_what _in_with
                     P.send _out_out ?out_out
 
         , mask : -- {-> blend <-}
@@ -3123,6 +3248,7 @@ toolkit =
                 $ fml.make $ do
                     what <- P.receive _in_what
                     with <- P.receive _in_with
+                    -- Mask _in_what _in_with
                     P.send _out_out ?out_out
 
         , modulateRepeat : -- {-> modulate <-}
@@ -3137,6 +3263,7 @@ toolkit =
                     repeatY <- P.receive _in_repeatY
                     offsetX <- P.receive _in_offsetX
                     offsetY <- P.receive _in_offsetY
+                    -- ModulateRepeat _in_what _in_with _in_repeatX _in_repeatY _in_offsetX _in_offsetY
                     P.send _out_out ?out_out
 
         , modulateRepeatX : -- {-> modulate <-}
@@ -3149,6 +3276,7 @@ toolkit =
                     with <- P.receive _in_with
                     reps <- P.receive _in_reps
                     offset <- P.receive _in_offset
+                    -- ModulateRepeatX _in_what _in_with _in_reps _in_offset
                     P.send _out_out ?out_out
 
         , modulateRepeatY : -- {-> modulate <-}
@@ -3161,6 +3289,7 @@ toolkit =
                     with <- P.receive _in_with
                     reps <- P.receive _in_reps
                     offset <- P.receive _in_offset
+                    -- ModulateRepeatY _in_what _in_with _in_reps _in_offset
                     P.send _out_out ?out_out
 
         , modulateKaleid : -- {-> modulate <-}
@@ -3172,6 +3301,7 @@ toolkit =
                     what <- P.receive _in_what
                     with <- P.receive _in_with
                     nSides <- P.receive _in_nSides
+                    -- ModulateKaleid _in_what _in_with _in_nSides
                     P.send _out_out ?out_out
 
         , modulateScrollX : -- {-> modulate <-}
@@ -3184,6 +3314,7 @@ toolkit =
                     with <- P.receive _in_with
                     scrollX <- P.receive _in_scrollX
                     speed <- P.receive _in_speed
+                    -- ModulateScrollX _in_what _in_with _in_scrollX _in_speed
                     P.send _out_out ?out_out
 
         , modulateScrollY : -- {-> modulate <-}
@@ -3196,6 +3327,7 @@ toolkit =
                     with <- P.receive _in_with
                     scrollY <- P.receive _in_scrollY
                     speed <- P.receive _in_speed
+                    -- ModulateScrollY _in_what _in_with _in_scrollY _in_speed
                     P.send _out_out ?out_out
 
         , modulate : -- {-> modulate <-}
@@ -3207,6 +3339,7 @@ toolkit =
                     what <- P.receive _in_what
                     with <- P.receive _in_with
                     amount <- P.receive _in_amount
+                    -- Modulate _in_what _in_with _in_amount
                     P.send _out_out ?out_out
 
         , modulateScale : -- {-> modulate <-}
@@ -3219,6 +3352,7 @@ toolkit =
                     with <- P.receive _in_with
                     multiple <- P.receive _in_multiple
                     offset <- P.receive _in_offset
+                    -- ModulateScale _in_what _in_with _in_multiple _in_offset
                     P.send _out_out ?out_out
 
         , modulatePixelate : -- {-> modulate <-}
@@ -3231,6 +3365,7 @@ toolkit =
                     with <- P.receive _in_with
                     multiple <- P.receive _in_multiple
                     offset <- P.receive _in_offset
+                    -- ModulatePixelate _in_what _in_with _in_multiple _in_offset
                     P.send _out_out ?out_out
 
         , modulateRotate : -- {-> modulate <-}
@@ -3243,6 +3378,7 @@ toolkit =
                     with <- P.receive _in_with
                     multiple <- P.receive _in_multiple
                     offset <- P.receive _in_offset
+                    -- ModulateRotate _in_what _in_with _in_multiple _in_offset
                     P.send _out_out ?out_out
 
         , modulateHue : -- {-> modulate <-}
@@ -3254,6 +3390,7 @@ toolkit =
                     what <- P.receive _in_what
                     with <- P.receive _in_with
                     amount <- P.receive _in_amount
+                    -- ModulateHue _in_what _in_with _in_amount
                     P.send _out_out ?out_out
 
         , render : -- {-> synth <-}
@@ -3263,6 +3400,7 @@ toolkit =
                 { out : ?out_default }
                 $ fml.make $ do
                     from <- P.receive _in_from
+                    -- Render _in_from
                     P.send _out_out ?out_out
 
         , update : -- {-> synth <-}
@@ -3272,6 +3410,7 @@ toolkit =
                 { out : ?out_default }
                 $ fml.make $ do
                     fn <- P.receive _in_fn
+                    -- Update _in_fn
                     P.send _out_out ?out_out
 
         , setResolution : -- {-> synth <-}
@@ -3282,6 +3421,7 @@ toolkit =
                 $ fml.make $ do
                     width <- P.receive _in_width
                     height <- P.receive _in_height
+                    -- SetResolution _in_width _in_height
                     P.send _out_out ?out_out
 
         , hush : -- {-> synth <-}
@@ -3291,6 +3431,7 @@ toolkit =
                 { out : ?out_default }
                 $ fml.make $ do
                     Unit <- P.receive _in_Unit
+                    -- Hush _in_Unit
                     P.send _out_out ?out_out
 
         , setFunction : -- {-> synth <-}
@@ -3300,6 +3441,7 @@ toolkit =
                 { out : ?out_default }
                 $ fml.make $ do
                     fn <- P.receive _in_fn
+                    -- SetFunction _in_fn
                     P.send _out_out ?out_out
 
         , speed : -- {-> synth <-}
@@ -3309,6 +3451,7 @@ toolkit =
                 { out : ?out_default }
                 $ fml.make $ do
                     v <- P.receive _in_v
+                    -- Speed _in_v
                     P.send _out_out ?out_out
 
         , bpm : -- {-> synth <-}
@@ -3318,6 +3461,7 @@ toolkit =
                 { out : ?out_default }
                 $ fml.make $ do
                     v <- P.receive _in_v
+                    -- Bpm _in_v
                     P.send _out_out ?out_out
 
         , width : -- {-> synth <-}
@@ -3326,6 +3470,7 @@ toolkit =
                 { }
                 { out : ?out_default }
                 $ fml.make $ do
+                    -- Width
                     P.send _out_out ?out_out
 
         , height : -- {-> synth <-}
@@ -3334,6 +3479,7 @@ toolkit =
                 { }
                 { out : ?out_default }
                 $ fml.make $ do
+                    -- Height
                     P.send _out_out ?out_out
 
         , pi : -- {-> synth <-}
@@ -3342,6 +3488,7 @@ toolkit =
                 { }
                 { out : ?out_default }
                 $ fml.make $ do
+                    -- Pi
                     P.send _out_out ?out_out
 
         , time : -- {-> synth <-}
@@ -3350,6 +3497,7 @@ toolkit =
                 { }
                 { out : ?out_default }
                 $ fml.make $ do
+                    -- Time
                     P.send _out_out ?out_out
 
         , mouse : -- {-> synth <-}
@@ -3358,6 +3506,7 @@ toolkit =
                 { }
                 { out : ?out_default }
                 $ fml.make $ do
+                    -- Mouse
                     P.send _out_out ?out_out
 
         , initCam : -- {-> extsource <-}
@@ -3368,6 +3517,7 @@ toolkit =
                 $ fml.make $ do
                     where <- P.receive _in_where
                     index <- P.receive _in_index
+                    -- InitCam _in_where _in_index
                     P.send _out_out ?out_out
 
         , initImage : -- {-> extsource <-}
@@ -3378,6 +3528,7 @@ toolkit =
                 $ fml.make $ do
                     where <- P.receive _in_where
                     url <- P.receive _in_url
+                    -- InitImage _in_where _in_url
                     P.send _out_out ?out_out
 
         , initVideo : -- {-> extsource <-}
@@ -3388,6 +3539,7 @@ toolkit =
                 $ fml.make $ do
                     where <- P.receive _in_where
                     url <- P.receive _in_url
+                    -- InitVideo _in_where _in_url
                     P.send _out_out ?out_out
 
         , init : -- {-> extsource <-}
@@ -3397,6 +3549,7 @@ toolkit =
                 { out : ?out_default }
                 $ fml.make $ do
                     where <- P.receive _in_where
+                    -- Init _in_where
                     P.send _out_out ?out_out
 
         , initStream : -- {-> extsource <-}
@@ -3407,6 +3560,7 @@ toolkit =
                 $ fml.make $ do
                     where <- P.receive _in_where
                     --
+                    -- InitStream _in_where ?input
                     P.send _out_out ?out_out
 
         , initScreen : -- {-> extsource <-}
@@ -3416,6 +3570,7 @@ toolkit =
                 { out : ?out_default }
                 $ fml.make $ do
                     where <- P.receive _in_where
+                    -- InitScreen _in_where
                     P.send _out_out ?out_out
 
         , fast : -- {-> array <-}
@@ -3426,6 +3581,7 @@ toolkit =
                 $ fml.make $ do
                     a <- P.receive _in_a
                     speed <- P.receive _in_speed
+                    -- Fast _in_a _in_speed
                     P.send _out_out ?out_out
 
         , smooth : -- {-> array <-}
@@ -3436,6 +3592,7 @@ toolkit =
                 $ fml.make $ do
                     a <- P.receive _in_a
                     smooth <- P.receive _in_smooth
+                    -- Smooth _in_a _in_smooth
                     P.send _out_out ?out_out
 
         , ease : -- {-> array <-}
@@ -3446,6 +3603,7 @@ toolkit =
                 $ fml.make $ do
                     a <- P.receive _in_a
                     ease <- P.receive _in_ease
+                    -- Ease _in_a _in_ease
                     P.send _out_out ?out_out
 
         , offset : -- {-> array <-}
@@ -3456,6 +3614,7 @@ toolkit =
                 $ fml.make $ do
                     a <- P.receive _in_a
                     offset <- P.receive _in_offset
+                    -- Offset _in_a _in_offset
                     P.send _out_out ?out_out
 
         , fit : -- {-> array <-}
@@ -3467,6 +3626,7 @@ toolkit =
                     a <- P.receive _in_a
                     low <- P.receive _in_low
                     high <- P.receive _in_high
+                    -- Fit _in_a _in_low _in_high
                     P.send _out_out ?out_out
 
         , fft : -- {-> audio <-}
@@ -3477,6 +3637,7 @@ toolkit =
                 $ fml.make $ do
                     a <- P.receive _in_a
                     h <- P.receive _in_h
+                    -- Fft _in_a _in_h
                     P.send _out_out ?out_out
 
         , setSmooth : -- {-> audio <-}
@@ -3487,6 +3648,7 @@ toolkit =
                 $ fml.make $ do
                     a <- P.receive _in_a
                     smooth <- P.receive _in_smooth
+                    -- SetSmooth _in_a _in_smooth
                     P.send _out_out ?out_out
 
         , setCutoff : -- {-> audio <-}
@@ -3497,6 +3659,7 @@ toolkit =
                 $ fml.make $ do
                     a <- P.receive _in_a
                     cutoff <- P.receive _in_cutoff
+                    -- SetCutoff _in_a _in_cutoff
                     P.send _out_out ?out_out
 
         , setBins : -- {-> audio <-}
@@ -3507,6 +3670,7 @@ toolkit =
                 $ fml.make $ do
                     a <- P.receive _in_a
                     numBins <- P.receive _in_numBins
+                    -- SetBins _in_a _in_numBins
                     P.send _out_out ?out_out
 
         , setScale : -- {-> audio <-}
@@ -3517,6 +3681,7 @@ toolkit =
                 $ fml.make $ do
                     a <- P.receive _in_a
                     scale <- P.receive _in_scale
+                    -- SetScale _in_a _in_scale
                     P.send _out_out ?out_out
 
         , hide : -- {-> audio <-}
@@ -3527,6 +3692,7 @@ toolkit =
                 $ fml.make $ do
                     a <- P.receive _in_a
                     --
+                    -- Hide _in_a ?input
                     P.send _out_out ?out_out
 
         , show : -- {-> audio <-}
@@ -3537,6 +3703,7 @@ toolkit =
                 $ fml.make $ do
                     a <- P.receive _in_a
                     --
+                    -- Show _in_a ?input
                     P.send _out_out ?out_out
 
         , out : -- {-> out <-}
@@ -3547,6 +3714,7 @@ toolkit =
                 $ fml.make $ do
                     what <- P.receive _in_what
                     where <- P.receive _in_where
+                    -- Out _in_what _in_where
                     P.send _out_out ?out_out
 
         }
@@ -3576,6 +3744,7 @@ fml = -- {-> source <-}
         $ fml.make $ do
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
+            -- Noise _in_scale _in_offset
             P.send _out_out ?out_out
 
 
@@ -3607,6 +3776,7 @@ fml = -- {-> source <-}
             scale <- P.receive _in_scale
             speed <- P.receive _in_speed
             blending <- P.receive _in_blending
+            -- Voronoi _in_scale _in_speed _in_blending
             P.send _out_out ?out_out
 
 
@@ -3638,6 +3808,7 @@ fml = -- {-> source <-}
             frequency <- P.receive _in_frequency
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset
+            -- Osc _in_frequency _in_sync _in_offset
             P.send _out_out ?out_out
 
 
@@ -3669,6 +3840,7 @@ fml = -- {-> source <-}
             sides <- P.receive _in_sides
             radius <- P.receive _in_radius
             smoothing <- P.receive _in_smoothing
+            -- Shape _in_sides _in_radius _in_smoothing
             P.send _out_out ?out_out
 
 
@@ -3696,6 +3868,7 @@ fml = -- {-> source <-}
         { out : ?out_default }
         $ fml.make $ do
             speed <- P.receive _in_speed
+            -- Gradient _in_speed
             P.send _out_out ?out_out
 
 
@@ -3723,6 +3896,7 @@ fml = -- {-> source <-}
         { out : ?out_default }
         $ fml.make $ do
             tex <- P.receive _in_tex
+            -- Src _in_tex
             P.send _out_out ?out_out
 
 
@@ -3756,6 +3930,7 @@ fml = -- {-> source <-}
             g <- P.receive _in_g
             b <- P.receive _in_b
             a <- P.receive _in_a
+            -- Solid _in_r _in_g _in_b _in_a
             P.send _out_out ?out_out
 
 
@@ -3783,6 +3958,7 @@ fml = -- {-> source <-}
         { out : ?out_default }
         $ fml.make $ do
             src <- P.receive _in_src
+            -- Src _in_src
             P.send _out_out ?out_out
 
 
@@ -3810,6 +3986,7 @@ fml = -- {-> source <-}
         { out : ?out_default }
         $ fml.make $ do
             --
+            -- Prev ?input
             P.send _out_out ?out_out
 
 
@@ -3841,6 +4018,7 @@ fml = -- {-> geometry <-}
             what <- P.receive _in_what
             angle <- P.receive _in_angle
             speed <- P.receive _in_speed
+            -- Rotate _in_what _in_angle _in_speed
             P.send _out_out ?out_out
 
 
@@ -3878,6 +4056,7 @@ fml = -- {-> geometry <-}
             yMult <- P.receive _in_yMult
             offsetX <- P.receive _in_offsetX
             offsetY <- P.receive _in_offsetY
+            -- Scale _in_what _in_amount _in_xMult _in_yMult _in_offsetX _in_offsetY
             P.send _out_out ?out_out
 
 
@@ -3909,6 +4088,7 @@ fml = -- {-> geometry <-}
             what <- P.receive _in_what
             pixelX <- P.receive _in_pixelX
             pixelY <- P.receive _in_pixelY
+            -- Pixelate _in_what _in_pixelX _in_pixelY
             P.send _out_out ?out_out
 
 
@@ -3944,6 +4124,7 @@ fml = -- {-> geometry <-}
             repeatY <- P.receive _in_repeatY
             offsetX <- P.receive _in_offsetX
             offsetY <- P.receive _in_offsetY
+            -- Repeat _in_what _in_repeatX _in_repeatY _in_offsetX _in_offsetY
             P.send _out_out ?out_out
 
 
@@ -3975,6 +4156,7 @@ fml = -- {-> geometry <-}
             what <- P.receive _in_what
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
+            -- RepeatX _in_what _in_reps _in_offset
             P.send _out_out ?out_out
 
 
@@ -4006,6 +4188,7 @@ fml = -- {-> geometry <-}
             what <- P.receive _in_what
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
+            -- RepeatY _in_what _in_reps _in_offset
             P.send _out_out ?out_out
 
 
@@ -4035,6 +4218,7 @@ fml = -- {-> geometry <-}
         $ fml.make $ do
             what <- P.receive _in_what
             nSides <- P.receive _in_nSides
+            -- Kaleid _in_what _in_nSides
             P.send _out_out ?out_out
 
 
@@ -4070,6 +4254,7 @@ fml = -- {-> geometry <-}
             scrollY <- P.receive _in_scrollY
             speedX <- P.receive _in_speedX
             speedY <- P.receive _in_speedY
+            -- Scroll _in_what _in_scrollX _in_scrollY _in_speedX _in_speedY
             P.send _out_out ?out_out
 
 
@@ -4101,6 +4286,7 @@ fml = -- {-> geometry <-}
             what <- P.receive _in_what
             scrollX <- P.receive _in_scrollX
             speed <- P.receive _in_speed
+            -- ScrollX _in_what _in_scrollX _in_speed
             P.send _out_out ?out_out
 
 
@@ -4132,6 +4318,7 @@ fml = -- {-> geometry <-}
             what <- P.receive _in_what
             scrollY <- P.receive _in_scrollY
             speed <- P.receive _in_speed
+            -- ScrollY _in_what _in_scrollY _in_speed
             P.send _out_out ?out_out
 
 
@@ -4163,6 +4350,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             bins <- P.receive _in_bins
             gamma <- P.receive _in_gamma
+            -- Posterize _in_what _in_bins _in_gamma
             P.send _out_out ?out_out
 
 
@@ -4198,6 +4386,7 @@ fml = -- {-> color <-}
             g <- P.receive _in_g
             b <- P.receive _in_b
             a <- P.receive _in_a
+            -- Shift _in_what _in_r _in_g _in_b _in_a
             P.send _out_out ?out_out
 
 
@@ -4227,6 +4416,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
+            -- Invert _in_what _in_amount
             P.send _out_out ?out_out
 
 
@@ -4256,6 +4446,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
+            -- Contrast _in_what _in_amount
             P.send _out_out ?out_out
 
 
@@ -4285,6 +4476,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
+            -- Brightness _in_what _in_amount
             P.send _out_out ?out_out
 
 
@@ -4316,6 +4508,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             treshold <- P.receive _in_treshold
             tolerance <- P.receive _in_tolerance
+            -- Luma _in_what _in_treshold _in_tolerance
             P.send _out_out ?out_out
 
 
@@ -4347,6 +4540,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             treshold <- P.receive _in_treshold
             tolerance <- P.receive _in_tolerance
+            -- Tresh _in_what _in_treshold _in_tolerance
             P.send _out_out ?out_out
 
 
@@ -4380,6 +4574,7 @@ fml = -- {-> color <-}
             g <- P.receive _in_g
             b <- P.receive _in_b
             a <- P.receive _in_a
+            -- Color _in_r _in_g _in_b _in_a
             P.send _out_out ?out_out
 
 
@@ -4409,6 +4604,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
+            -- Saturate _in_what _in_amount
             P.send _out_out ?out_out
 
 
@@ -4438,6 +4634,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             hue <- P.receive _in_hue
+            -- Hue _in_what _in_hue
             P.send _out_out ?out_out
 
 
@@ -4467,6 +4664,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
+            -- Colorama _in_what _in_amount
             P.send _out_out ?out_out
 
 
@@ -4496,6 +4694,7 @@ fml = -- {-> color <-}
         $ fml.make $ do
             what <- P.receive _in_what
             --
+            -- Sum _in_what ?input
             P.send _out_out ?out_out
 
 
@@ -4527,6 +4726,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
+            -- R _in_what _in_scale _in_offset
             P.send _out_out ?out_out
 
 
@@ -4558,6 +4758,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
+            -- G _in_what _in_scale _in_offset
             P.send _out_out ?out_out
 
 
@@ -4589,6 +4790,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
+            -- B _in_what _in_scale _in_offset
             P.send _out_out ?out_out
 
 
@@ -4620,6 +4822,7 @@ fml = -- {-> color <-}
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
+            -- A _in_what _in_scale _in_offset
             P.send _out_out ?out_out
 
 
@@ -4651,6 +4854,7 @@ fml = -- {-> blend <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- Add _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -4682,6 +4886,7 @@ fml = -- {-> blend <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- Sub _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -4713,6 +4918,7 @@ fml = -- {-> blend <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- Layer _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -4744,6 +4950,7 @@ fml = -- {-> blend <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- Blend _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -4775,6 +4982,7 @@ fml = -- {-> blend <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- Mult _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -4804,6 +5012,7 @@ fml = -- {-> blend <-}
         $ fml.make $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
+            -- Diff _in_what _in_with
             P.send _out_out ?out_out
 
 
@@ -4833,6 +5042,7 @@ fml = -- {-> blend <-}
         $ fml.make $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
+            -- Mask _in_what _in_with
             P.send _out_out ?out_out
 
 
@@ -4870,6 +5080,7 @@ fml = -- {-> modulate <-}
             repeatY <- P.receive _in_repeatY
             offsetX <- P.receive _in_offsetX
             offsetY <- P.receive _in_offsetY
+            -- ModulateRepeat _in_what _in_with _in_repeatX _in_repeatY _in_offsetX _in_offsetY
             P.send _out_out ?out_out
 
 
@@ -4903,6 +5114,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
+            -- ModulateRepeatX _in_what _in_with _in_reps _in_offset
             P.send _out_out ?out_out
 
 
@@ -4936,6 +5148,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
+            -- ModulateRepeatY _in_what _in_with _in_reps _in_offset
             P.send _out_out ?out_out
 
 
@@ -4967,6 +5180,7 @@ fml = -- {-> modulate <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             nSides <- P.receive _in_nSides
+            -- ModulateKaleid _in_what _in_with _in_nSides
             P.send _out_out ?out_out
 
 
@@ -5000,6 +5214,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             scrollX <- P.receive _in_scrollX
             speed <- P.receive _in_speed
+            -- ModulateScrollX _in_what _in_with _in_scrollX _in_speed
             P.send _out_out ?out_out
 
 
@@ -5033,6 +5248,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             scrollY <- P.receive _in_scrollY
             speed <- P.receive _in_speed
+            -- ModulateScrollY _in_what _in_with _in_scrollY _in_speed
             P.send _out_out ?out_out
 
 
@@ -5064,6 +5280,7 @@ fml = -- {-> modulate <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- Modulate _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -5097,6 +5314,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple
             offset <- P.receive _in_offset
+            -- ModulateScale _in_what _in_with _in_multiple _in_offset
             P.send _out_out ?out_out
 
 
@@ -5130,6 +5348,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple
             offset <- P.receive _in_offset
+            -- ModulatePixelate _in_what _in_with _in_multiple _in_offset
             P.send _out_out ?out_out
 
 
@@ -5163,6 +5382,7 @@ fml = -- {-> modulate <-}
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple
             offset <- P.receive _in_offset
+            -- ModulateRotate _in_what _in_with _in_multiple _in_offset
             P.send _out_out ?out_out
 
 
@@ -5194,6 +5414,7 @@ fml = -- {-> modulate <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
+            -- ModulateHue _in_what _in_with _in_amount
             P.send _out_out ?out_out
 
 
@@ -5221,6 +5442,7 @@ fml = -- {-> synth <-}
         { out : ?out_default }
         $ fml.make $ do
             from <- P.receive _in_from
+            -- Render _in_from
             P.send _out_out ?out_out
 
 
@@ -5248,6 +5470,7 @@ fml = -- {-> synth <-}
         { out : ?out_default }
         $ fml.make $ do
             fn <- P.receive _in_fn
+            -- Update _in_fn
             P.send _out_out ?out_out
 
 
@@ -5277,6 +5500,7 @@ fml = -- {-> synth <-}
         $ fml.make $ do
             width <- P.receive _in_width
             height <- P.receive _in_height
+            -- SetResolution _in_width _in_height
             P.send _out_out ?out_out
 
 
@@ -5304,6 +5528,7 @@ fml = -- {-> synth <-}
         { out : ?out_default }
         $ fml.make $ do
             Unit <- P.receive _in_Unit
+            -- Hush _in_Unit
             P.send _out_out ?out_out
 
 
@@ -5331,6 +5556,7 @@ fml = -- {-> synth <-}
         { out : ?out_default }
         $ fml.make $ do
             fn <- P.receive _in_fn
+            -- SetFunction _in_fn
             P.send _out_out ?out_out
 
 
@@ -5358,6 +5584,7 @@ fml = -- {-> synth <-}
         { out : ?out_default }
         $ fml.make $ do
             v <- P.receive _in_v
+            -- Speed _in_v
             P.send _out_out ?out_out
 
 
@@ -5385,6 +5612,7 @@ fml = -- {-> synth <-}
         { out : ?out_default }
         $ fml.make $ do
             v <- P.receive _in_v
+            -- Bpm _in_v
             P.send _out_out ?out_out
 
 
@@ -5411,6 +5639,7 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
+            -- Width
             P.send _out_out ?out_out
 
 
@@ -5437,6 +5666,7 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
+            -- Height
             P.send _out_out ?out_out
 
 
@@ -5463,6 +5693,7 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
+            -- Pi
             P.send _out_out ?out_out
 
 
@@ -5489,6 +5720,7 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
+            -- Time
             P.send _out_out ?out_out
 
 
@@ -5515,6 +5747,7 @@ fml = -- {-> synth <-}
         { }
         { out : ?out_default }
         $ fml.make $ do
+            -- Mouse
             P.send _out_out ?out_out
 
 
@@ -5544,6 +5777,7 @@ fml = -- {-> extsource <-}
         $ fml.make $ do
             where <- P.receive _in_where
             index <- P.receive _in_index
+            -- InitCam _in_where _in_index
             P.send _out_out ?out_out
 
 
@@ -5573,6 +5807,7 @@ fml = -- {-> extsource <-}
         $ fml.make $ do
             where <- P.receive _in_where
             url <- P.receive _in_url
+            -- InitImage _in_where _in_url
             P.send _out_out ?out_out
 
 
@@ -5602,6 +5837,7 @@ fml = -- {-> extsource <-}
         $ fml.make $ do
             where <- P.receive _in_where
             url <- P.receive _in_url
+            -- InitVideo _in_where _in_url
             P.send _out_out ?out_out
 
 
@@ -5629,6 +5865,7 @@ fml = -- {-> extsource <-}
         { out : ?out_default }
         $ fml.make $ do
             where <- P.receive _in_where
+            -- Init _in_where
             P.send _out_out ?out_out
 
 
@@ -5658,6 +5895,7 @@ fml = -- {-> extsource <-}
         $ fml.make $ do
             where <- P.receive _in_where
             --
+            -- InitStream _in_where ?input
             P.send _out_out ?out_out
 
 
@@ -5685,6 +5923,7 @@ fml = -- {-> extsource <-}
         { out : ?out_default }
         $ fml.make $ do
             where <- P.receive _in_where
+            -- InitScreen _in_where
             P.send _out_out ?out_out
 
 
@@ -5714,6 +5953,7 @@ fml = -- {-> array <-}
         $ fml.make $ do
             a <- P.receive _in_a
             speed <- P.receive _in_speed
+            -- Fast _in_a _in_speed
             P.send _out_out ?out_out
 
 
@@ -5743,6 +5983,7 @@ fml = -- {-> array <-}
         $ fml.make $ do
             a <- P.receive _in_a
             smooth <- P.receive _in_smooth
+            -- Smooth _in_a _in_smooth
             P.send _out_out ?out_out
 
 
@@ -5772,6 +6013,7 @@ fml = -- {-> array <-}
         $ fml.make $ do
             a <- P.receive _in_a
             ease <- P.receive _in_ease
+            -- Ease _in_a _in_ease
             P.send _out_out ?out_out
 
 
@@ -5801,6 +6043,7 @@ fml = -- {-> array <-}
         $ fml.make $ do
             a <- P.receive _in_a
             offset <- P.receive _in_offset
+            -- Offset _in_a _in_offset
             P.send _out_out ?out_out
 
 
@@ -5832,6 +6075,7 @@ fml = -- {-> array <-}
             a <- P.receive _in_a
             low <- P.receive _in_low
             high <- P.receive _in_high
+            -- Fit _in_a _in_low _in_high
             P.send _out_out ?out_out
 
 
@@ -5861,6 +6105,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             h <- P.receive _in_h
+            -- Fft _in_a _in_h
             P.send _out_out ?out_out
 
 
@@ -5890,6 +6135,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             smooth <- P.receive _in_smooth
+            -- SetSmooth _in_a _in_smooth
             P.send _out_out ?out_out
 
 
@@ -5919,6 +6165,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             cutoff <- P.receive _in_cutoff
+            -- SetCutoff _in_a _in_cutoff
             P.send _out_out ?out_out
 
 
@@ -5948,6 +6195,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             numBins <- P.receive _in_numBins
+            -- SetBins _in_a _in_numBins
             P.send _out_out ?out_out
 
 
@@ -5977,6 +6225,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             scale <- P.receive _in_scale
+            -- SetScale _in_a _in_scale
             P.send _out_out ?out_out
 
 
@@ -6006,6 +6255,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             --
+            -- Hide _in_a ?input
             P.send _out_out ?out_out
 
 
@@ -6035,6 +6285,7 @@ fml = -- {-> audio <-}
         $ fml.make $ do
             a <- P.receive _in_a
             --
+            -- Show _in_a ?input
             P.send _out_out ?out_out
 
 
@@ -6064,4 +6315,5 @@ fml = -- {-> out <-}
         $ fml.make $ do
             what <- P.receive _in_what
             where <- P.receive _in_where
+            -- Out _in_what _in_where
             P.send _out_out ?out_out

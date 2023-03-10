@@ -18,6 +18,7 @@ import Test.Protocol2 (spec) as Protocol2
 import Test.Patch4 (spec) as Patch4
 import Test.Flex (spec) as Flex
 import Test.UniqueHash (spec) as UniqueHash
+import Test.Parsing (spec) as Parsing
 
 
 main :: Effect Unit
@@ -40,5 +41,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Toolkit3.spec
   describe "Protocol2"
     Protocol2.spec
+  describe "Parsing / Generating"
+    Parsing.spec
   -- describe "Flex"
   --   Flex.spec

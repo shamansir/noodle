@@ -16,7 +16,7 @@ import Effect.Aff (launchAff, launchAff_, runAff_)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (Error)
 
-import Test.Spec (describe, it)
+import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, fail)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
@@ -31,7 +31,7 @@ import Node.FS.Aff (readTextFile, writeTextFile, appendTextFile)
 
 import Noodle.Text.QuickDef as QD
 import Noodle.Text.QuickDefParser as QDP
-import Noodle.Text.ToolkitGen as QTG
+import Noodle.Text.Generators as QTG
 
 
 in_file_path = "./hydra.fn.clean.list"
@@ -57,10 +57,10 @@ parses string expected parser =
       fail $ show error
 
 
-main :: Effect Unit
-main = launchAff_ $ runSpec [consoleReporter] do
+spec :: Spec Unit
+spec = do
 
-  describe "Toolkit Defs to code" $ do
+  describe "Parse Toolkit definition from plain text description / Generate Toolkit code" $ do
 
     it "parsing works" $
       parses "x" 'x' $ P.char 'x'
@@ -210,3 +210,8 @@ main = launchAff_ $ runSpec [consoleReporter] do
             -- fileContent `shouldEqual` sampleContent
           Left error ->
             fail $ show error
+
+
+
+main :: Effect Unit
+main = launchAff_ $ runSpec [consoleReporter] spec

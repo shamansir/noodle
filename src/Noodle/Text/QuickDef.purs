@@ -3,6 +3,7 @@ module Noodle.Text.QuickDef where
 import Prelude (($), (>>>), (<$>), class Show, class Eq)
 
 import Data.Maybe (Maybe(..))
+import Data.Newtype (class Newtype)
 
 
 newtype QFamily = QFamily
@@ -11,6 +12,8 @@ newtype QFamily = QFamily
   , inputs :: Array (Maybe Channel)
   , outputs :: Array (Maybe Channel)
   }
+
+derive instance Newtype QFamily _
 
 type Channel =
   { name :: String, type :: Maybe String, default :: Maybe String }
