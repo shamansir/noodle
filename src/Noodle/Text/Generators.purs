@@ -4,6 +4,8 @@ module Noodle.Text.Generators
     , genSeparateFamilyTypes
     , genSeparateFamilyImpls
     , genTypeDefSeparate
+    , genToolkitModule
+    , genToolkitDataModule
     , genFamilyModule
     , genTypeDefInline
     , genToolkitDef
@@ -41,7 +43,7 @@ inCBraces =
     wrap "{ }" "{ " " }"
 
 
-inCBraces' :: forall a. (a → String) → String → Array a → String
+inCBraces' :: forall a. (a -> String) -> String -> Array a -> String
 inCBraces' =
     wrap "{ }" "{ " $ "\n" <> i2 <> "}"
 
@@ -78,6 +80,20 @@ genFamilyModule tkName (QD.QFamily fml) =
         inputProxyCode Nothing = ""
         outputProxyCode (Just ch) = "_out_" <> ch.name <> " = Fn.Output :: _ \"" <> ch.name <> "\""
         outputProxyCode Nothing = ""
+
+
+genToolkitModule :: String -> Array QD.QFamily -> String
+genToolkitModule tkName families =
+    "module " <> ensureStartsFromCapitalLetter tkName <> " where\n\n"
+    <> genSeparateImports tkName families <> "\n\n"
+    -- <> genSeparateFamilyTypes true tkName families
+    <> genTypeDefSeparate true tkName families
+
+
+genToolkitDataModule :: String -> Array QD.QFamily -> String
+genToolkitDataModule tkName families =
+    "module " <> ensureStartsFromCapitalLetter tkName <> "Data where\n\n"
+    <> genSumType tkName families
 
 
 genSumType :: String -> Array QD.QFamily -> String
