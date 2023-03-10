@@ -35,13 +35,14 @@ main :: Effect Unit
 main =
     launchAff_ $ do
         mkdir toolkitPath
+        mkdir $ toolkitPath <> "/Family"
         quickDefsFile <- readTextFile UTF8 toolkitDefPath
         let parseResult = P.runParser quickDefsFile QDP.familyListParser
         case parseResult of
             Right familiesList -> do
                 traverse_ genFamilyFile familiesList
-                writeTextFile UTF8 (toolkitPath <> "/" <> toolkitNameCC <> "Data.purs") $ QTG.genToolkitDataModule familiesList
-                writeTextFile UTF8 (toolkitPath <> "/" <> toolkitNameCC <> ".purs") $ QTG.genToolkitModule familiesList
+                writeTextFile UTF8 (toolkitPath <> "/" <> toolkitNameCC <> "Data.purs") $ QTG.genToolkitDataModule toolkitName familiesList
+                writeTextFile UTF8 (toolkitPath <> "/" <> toolkitNameCC <> ".purs") $ QTG.genToolkitModule toolkitName familiesList
             Left error ->
                 liftEffect $ Console.log $ show error
     where
