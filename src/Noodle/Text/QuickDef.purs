@@ -6,14 +6,12 @@ import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 
 
-newtype QFamily = QFamily
+type QFamily =
   { tag :: String
   , family :: String
   , inputs :: Array (Maybe Channel)
   , outputs :: Array (Maybe Channel)
   }
-
-derive instance Newtype QFamily _
 
 type Channel =
   { name :: String, type :: Maybe String, default :: Maybe String }
@@ -23,13 +21,13 @@ qfm :: String -> String -> Array Channel -> String -> QFamily
 qfm tag family inputs = qfm' tag family $ Just <$> inputs
 
 qfm' :: String -> String -> Array (Maybe Channel) -> String -> QFamily
-qfm' tag family inputs returns = QFamily { tag, family, inputs, outputs : [ qout returns ] }
+qfm' tag family inputs returns = { tag, family, inputs, outputs : [ qout returns ] }
 
 qfmo :: String -> String -> Array Channel -> Array Channel -> QFamily
 qfmo tag family inputs outputs = qfmo' tag family (Just <$> inputs) (Just <$> outputs)
 
 qfmo' :: String -> String -> Array (Maybe Channel) -> Array (Maybe Channel) -> QFamily
-qfmo' tag family inputs outputs = QFamily { tag, family, inputs, outputs }
+qfmo' tag family inputs outputs = { tag, family, inputs, outputs }
 
 qchan :: String -> Channel
 qchan name = { name, type : Nothing, default : Nothing }
@@ -59,5 +57,5 @@ qout type_ = Just { name : "out", type : Just type_, default : Nothing }
 --   show (QFamily { tag, name, args, returns }) = ""
 
 
-derive newtype instance Show QFamily
-derive newtype instance Eq QFamily
+-- derive newtype instance Show QFamily
+-- derive newtype instance Eq QFamily

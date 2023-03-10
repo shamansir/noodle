@@ -9,6 +9,7 @@ module Noodle.Text.Generators
     , genFamilyModule
     , genTypeDefInline
     , genToolkitDef
+    , genSepToolkitDef
     , moduleName, familyTypeName, typeConstructor
     )
     where
@@ -48,6 +49,10 @@ inCBraces' =
     wrap "{ }" "{ " $ "\n" <> i2 <> "}"
 
 
+modulePrefix = "M"
+typePrefix = "T"
+
+
 i = "    "
 i2 = i <> i
 i3 = i2 <> i
@@ -65,16 +70,21 @@ genSeparateImports _ fmls =
 
 
 genFamilyModule :: String -> QD.QFamily -> String
-genFamilyModule tkName (QD.QFamily fml) =
-    "module " <> moduleName' fml.family <> " where\n\n"
-    <> "import Prelude\n\n"
-    <> String.joinWith "\n" (inputProxyCode <$> fml.inputs)
+genFamilyModule tkName qfml =
+    "module " <> moduleName qfml <> " where\n\n"
+    <> "import Prelude\n"
+    <> "\n"
+    <> "import Noodle.Fn2 as Fn\n"
+    <> "import Noodle.Fn2.Process as P\n"
+    <> "import Noodle.Family.Def as Family\n"
+    <> "\n"
+    <> String.joinWith "\n" (inputProxyCode <$> qfml.inputs)
     <> "\n\n"
-    <> String.joinWith "\n" (outputProxyCode <$> fml.outputs)
+    <> String.joinWith "\n" (outputProxyCode <$> qfml.outputs)
     <> "\n\n"
-    <> genFamilyTypeSepDef false (QD.QFamily fml)
+    <> genFamilyTypeSepDef false qfml
     <> "\n\n"
-    <> genFamilyToolkitSeparateImpl false (QD.QFamily fml)
+    <> genFamilyToolkitSeparateImpl false qfml
     where
         inputProxyCode (Just ch) = "_in_" <> ch.name <> " = Fn.Input :: _ \"" <> ch.name <> "\""
         inputProxyCode Nothing = ""
@@ -84,15 +94,16 @@ genFamilyModule tkName (QD.QFamily fml) =
 
 genToolkitModule :: String -> Array QD.QFamily -> String
 genToolkitModule tkName families =
-    "module " <> ensureStartsFromCapitalLetter tkName <> " where\n\n"
+    "module Toolkit." <> ensureStartsFromCapitalLetter tkName <> "Gen where\n\n"
     <> genSeparateImports tkName families <> "\n\n\n"
     -- <> genSeparateFamilyTypes true tkName families
-    <> genTypeDefSeparate true tkName families
+    <> genTypeDefSeparate true tkName families <> "\n\n\n"
+    <> genSepToolkitDef tkName families
 
 
 genToolkitDataModule :: String -> Array QD.QFamily -> String
 genToolkitDataModule tkName families =
-    "module " <> ensureStartsFromCapitalLetter tkName <> "Data where\n\n\n"
+    "module " <> ensureStartsFromCapitalLetter tkName <> "GenData where\n\n\n"
     <> genSumType tkName families
 
 
@@ -101,10 +112,10 @@ genSumType tkName families =
     "data " <> ensureStartsFromCapitalLetter tkName <> "\n"
     <> i <> "= " <> String.joinWith ("\n" <> i <> "| ") (familyOption <$> families)
     where
-        familyOption (QD.QFamily fml) =
-            typeConstructor' fml.family
-                <> if Array.length fml.inputs > 0
-                        then " " <> (String.joinWith " " (argType <$> fml.inputs))
+        familyOption qfml =
+            typeConstructor qfml
+                <> if Array.length qfml.inputs > 0
+                        then " " <> (String.joinWith " " (argType <$> qfml.inputs))
                         else ""
         argType Nothing = "?ArgType"
         argType (Just arg) = fromMaybe ("?" <> arg.name <> "_Type") arg.type
@@ -139,33 +150,19 @@ ensureStartsFromCapitalLetter str =
 
 
 typeConstructor :: QD.QFamily -> String
-typeConstructor =
-    unwrap >>> _.family >>> moduleName'
-
-
-typeConstructor' :: String -> String
-typeConstructor' =
-    ensureStartsFromCapitalLetter
+typeConstructor qfml =
+    -- unwrap >>> _.family >>> moduleName'
+    ensureStartsFromCapitalLetter qfml.family
 
 
 moduleName :: QD.QFamily -> String
-moduleName =
-    unwrap >>> _.family >>> moduleName' -- TODO : group by `family.tag``
-
-
-moduleName' :: String -> String
-moduleName' family =
-    "M" <> ensureStartsFromCapitalLetter family -- TODO : group by `family.tag``
+moduleName qfml =
+    ensureStartsFromCapitalLetter qfml.tag <> "." <> modulePrefix <> ensureStartsFromCapitalLetter qfml.family
 
 
 familyTypeName :: QD.QFamily -> String
-familyTypeName =
-    unwrap >>> _.family >>> familyTypeName'
-
-
-familyTypeName' :: String -> String
-familyTypeName' family =
-    "T" <> ensureStartsFromCapitalLetter family
+familyTypeName qfml =
+    typePrefix <> ensureStartsFromCapitalLetter qfml.family
 
 
 genToolkitDef :: String -> Array QD.QFamily -> String
@@ -175,69 +172,76 @@ genToolkitDef tkName fmls =
         <> i2 <> inCBraces' genFamilyToolkitDef ("\n" <> i2 <> ", ") fmls
 
 
+genSepToolkitDef :: String -> Array QD.QFamily -> String
+genSepToolkitDef tkName fmls =
+    "toolkit =\n"
+        <> i <> "Toolkit.from \"" <> tkName <> "\"\n"
+        <> i2 <> inCBraces' genFamilyToolkitDefRef ("\n" <> i2 <> ", ") fmls
+
+
 genModuleImport :: QD.QFamily -> String
-genModuleImport (QD.QFamily fml) =
-   "import Toolkit.Families." <> moduleName' fml.family <> " as " <> moduleName' fml.family
+genModuleImport family =
+   "import Toolkit.Families." <> moduleName family <> " as " <> moduleName family
 
 
 genFamilyTypeDef :: QD.QFamily -> String
-genFamilyTypeDef (QD.QFamily fml) =
-    fml.family <> " :: -- {-> " <> fml.tag <> " <-}\n"
+genFamilyTypeDef qfml =
+    qfml.family <> " :: -- {-> " <> qfml.tag <> " <-}\n"
         <> i3 <> "Family.Def Unit\n"
-        <> i4 <> (inBrackets genChanTypeDef ", " fml.inputs) <> "\n"
-        <> i4 <> (inBrackets genChanTypeDef ", " fml.outputs) <> "\n"
+        <> i4 <> (inBrackets genChanTypeDef ", " qfml.inputs) <> "\n"
+        <> i4 <> (inBrackets genChanTypeDef ", " qfml.outputs) <> "\n"
         <> i4 <> "m"
 
 
 genFamilyTypeDefRef :: Boolean -> QD.QFamily -> String
-genFamilyTypeDefRef withModule (QD.QFamily fml) =
-    fml.family <> " :: "
-        <> (if withModule then moduleName' fml.family <> ".Family" else "Family")
-        <> " -- {-> " <> fml.tag <> " <-}"
+genFamilyTypeDefRef withModule qfml =
+    qfml.family <> " :: "
+        <> (if withModule then moduleName qfml <> ".Family" else "Family")
+        <> " -- {-> " <> qfml.tag <> " <-}"
 
 
 genFamilyTypeSepDef :: Boolean -> QD.QFamily -> String
-genFamilyTypeSepDef withModule (QD.QFamily fml) =
-    "type " <> (if withModule then moduleName' fml.family <> ".Family" else "Family")
-        <> " m = -- {-> " <> fml.tag <> " <-}\n"
+genFamilyTypeSepDef withModule qfml =
+    "type " <> (if withModule then moduleName qfml <> ".Family" else "Family")
+        <> " m = -- {-> " <> qfml.tag <> " <-}\n"
         <> i <> "Family.Def Unit\n"
-        <> i2 <> (inBrackets genChanTypeDef ", " fml.inputs) <> "\n"
-        <> i2 <> (inBrackets genChanTypeDef ", " fml.outputs) <> "\n"
+        <> i2 <> (inBrackets genChanTypeDef ", " qfml.inputs) <> "\n"
+        <> i2 <> (inBrackets genChanTypeDef ", " qfml.outputs) <> "\n"
         <> i2 <> "m"
 
 
 genFamilyToolkitDef :: QD.QFamily -> String
-genFamilyToolkitDef (QD.QFamily fml) =
-    fml.family <> " : -- {-> " <> fml.tag <> " <-}\n"
-        <> i3 <> "Family.def\n"
-        <> i4 <> "unit\n"
-        <> i4 <> (inCBraces genChanToolkitDef ", " fml.inputs) <> "\n"
-        <> i4 <> (inCBraces genChanToolkitDef ", " fml.outputs) <> "\n"
-        <> i4 <> "$ Fn.make $ " <> processBody i5 (QD.QFamily fml)
+genFamilyToolkitDef qfml =
+    qfml.family <> " : -- {-> " <> qfml.tag <> " <-}\n" <> moduleName qfml
+
+
+genFamilyToolkitDefRef :: QD.QFamily -> String
+genFamilyToolkitDefRef qfml =
+    qfml.family <> " : " <> moduleName qfml <> ".family"
 
 
 processBody :: String -> QD.QFamily -> String
-processBody indent (QD.QFamily fml) =
-    if (Array.length fml.inputs > 0) || (Array.length fml.outputs > 0) then
+processBody indent qfml =
+    if (Array.length qfml.inputs > 0) || (Array.length qfml.outputs > 0) then
         ("do\n"
-            <> (if Array.length fml.inputs > 0 then
-                    (indent <> String.joinWith ("\n" <> indent) (inputReceive <$> fml.inputs) <> "\n")
+            <> (if Array.length qfml.inputs > 0 then
+                    (indent <> String.joinWith ("\n" <> indent) (inputReceive <$> qfml.inputs) <> "\n")
                 else "")
             <> indent <> outputComment <> "\n"
-            <> (if Array.length fml.outputs > 0 then
-                    (indent <> String.joinWith ("\n" <> indent) (outputSend <$> fml.outputs) <> "\n")
+            <> (if Array.length qfml.outputs > 0 then
+                    (indent <> String.joinWith ("\n" <> indent) (outputSend <$> qfml.outputs) <> "\n")
                 else (indent <> "pure unit\n"))
         )
     else (indent <> outputComment <> "\n" <> indent <> "pure unit\n")
     where
         outputComment =
-            "-- " <> typeConstructor' fml.family <>
-                (if (Array.length fml.inputs > 0)
-                    then " " <> String.joinWith " " (inputName <$> fml.inputs)
+            "-- " <> typeConstructor qfml <>
+                (if (Array.length qfml.inputs > 0)
+                    then " " <> String.joinWith " " (inputVarName <$> qfml.inputs)
                     else ""
                 )
-        inputName Nothing = "?input"
-        inputName (Just ch) = "_in_" <> ch.name
+        inputVarName Nothing = "?input"
+        inputVarName (Just ch) = ch.name -- "_in_" <> ch.name
         inputReceive Nothing = "--"
         inputReceive (Just ch) = ch.name <> " <- P.receive _in_" <> ch.name
         outputSend Nothing = "--"
@@ -246,20 +250,20 @@ processBody indent (QD.QFamily fml) =
 
 
 genFamilyToolkitSeparateImpl :: Boolean -> QD.QFamily -> String
-genFamilyToolkitSeparateImpl withModule (QD.QFamily fml) =
+genFamilyToolkitSeparateImpl withModule qfml =
     if withModule then
-        ( moduleName' fml.family <> ".family :: forall m. " <> moduleName' fml.family <> ".Family m\n"
-        <> moduleName' fml.family <> ".family = -- {-> " <> fml.tag <> " <-}\n"
+        ( moduleName qfml <> ".family :: forall m. " <> moduleName qfml <> ".Family m\n"
+        <> moduleName qfml <> ".family = -- {-> " <> qfml.tag <> " <-}\n"
         )
     else
         ( "family :: forall m. Family m\n"
-        <> "family = -- {-> " <> fml.tag <> " <-}\n"
+        <> "family = -- {-> " <> qfml.tag <> " <-}\n"
         )
         <> i <> "Family.def\n"
         <> i2 <> "unit\n"
-        <> i2 <> (inCBraces genChanToolkitDef ", " fml.inputs) <> "\n"
-        <> i2 <> (inCBraces genChanToolkitDef ", " fml.outputs) <> "\n"
-        <> i2 <> "$ Fn.make $ " <> processBody i3 (QD.QFamily fml)
+        <> i2 <> (inCBraces genChanToolkitDef ", " qfml.inputs) <> "\n"
+        <> i2 <> (inCBraces genChanToolkitDef ", " qfml.outputs) <> "\n"
+        <> i2 <> "$ Fn.make $ " <> processBody i3 qfml
 
 
 genChanToolkitDef :: Maybe QD.Channel -> String
