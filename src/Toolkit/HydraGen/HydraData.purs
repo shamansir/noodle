@@ -1,4 +1,5 @@
-module HydraData where
+module HydraGenData where
+
 
 data Hydra
     = Noise Value Value

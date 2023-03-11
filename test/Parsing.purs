@@ -31,10 +31,10 @@ import Node.FS.Aff (readTextFile, writeTextFile, appendTextFile)
 
 import Noodle.Text.QuickDef as QD
 import Noodle.Text.QuickDefParser as QDP
-import Noodle.Text.Generators as QTG
+import Noodle.Text.Generators as QTGen
 
 
-in_file_path = "./hydra.fn.clean.list"
+in_file_path = "./hydra.toolkit"
 out_file_path = "./test/hydra.toolkit.prepurs"
 out_file_path_sample = "./test/hydra.toolkit.prepurs.sample"
 
@@ -179,27 +179,51 @@ spec = do
         sampleContent <- readTextFile UTF8 out_file_path_sample
         case parseResult of
           Right familiesList -> do
-            let genSumType = QTG.genSumType "hydra" familiesList
-            let sepImports = QTG.genSeparateImports "hydra" familiesList
-            let sepNodesTypes = QTG.genSeparateFamilyTypes true "hydra" familiesList
-            let sepImpls = QTG.genSeparateFamilyImpls true "hydra" familiesList
-            let sepTypeDef = QTG.genTypeDefSeparate true "hydra" familiesList
-            let familyModules = String.joinWith "\n\n{- MODULE -}\n\n" (QTG.genFamilyModule "hydra" <$> familiesList)
-            let sepImpls' = QTG.genSeparateFamilyImpls false "hydra" familiesList
-            let sepTypeDef' = QTG.genTypeDefSeparate false "hydra" familiesList
-            let inlineTypeDef = QTG.genTypeDefInline "hydra" familiesList
-            let toolkitDef = QTG.genToolkitDef "hydra" familiesList
+            {-
+    ( toolkitSumType
+    , toolkitDataModule
+    , toolkitTypeFromFamilyModules
+    , toolkitModule
+    , toolkitTypeInline
+    , toolkitImplementation
+    , toolkitImplementationFromFamilyModules
+
+    , importAllFamilies
+    , familiesTypes
+    , familiesImplementations
+    , familyModule
+
+    , familyModuleName, familyTypeName, familyTypeConstructor
+            -}
+
+            let toolkit = QTGen.ToolkitName "hydra"
+
+            let toolkitSumType = QTGen.toolkitSumType toolkit familiesList
+            let toolkitDataModule = QTGen.toolkitDataModule toolkit familiesList
+            let toolkitModule = QTGen.toolkitModule toolkit familiesList
+            let toolkitType = QTGen.toolkitType familiesList
+            let toolkitTypeInline = QTGen.toolkitTypeInline toolkit familiesList
+            let toolkitImplementation = QTGen.toolkitImplementation toolkit familiesList
+            let toolkitImplementationInline = QTGen.toolkitImplementationInline toolkit familiesList
+
+            let importAllFamilies = QTGen.importAllFamilies familiesList
+            let familiesTypes = QTGen.familiesTypes familiesList
+            let familiesImplementations = QTGen.familiesImplementations familiesList
+            let familyModules = String.joinWith "\n\n{- MODULE -}\n\n" (QTGen.familyModule toolkit <$> familiesList)
+
             let fileContent =
                     String.joinWith "\n\n\n"
-                      [ genSumType
-                      , sepImports
-                      , sepNodesTypes
-                      , sepImpls
-                      , sepTypeDef
-                      , sepImpls'
-                      , sepTypeDef'
-                      , inlineTypeDef
-                      , toolkitDef
+                      [ toolkitSumType
+                      , toolkitDataModule
+                      , toolkitModule
+                      , toolkitType
+                      , toolkitTypeInline
+                      , toolkitImplementation
+                      , toolkitImplementationInline
+
+                      , importAllFamilies
+                      , familiesTypes
+                      , familiesImplementations
                       , familyModules
                       ]
             writeTextFile UTF8 out_file_path fileContent

@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Either (Either(..))
 import Data.Traversable (traverse, traverse_)
+import Data.Newtype (unwrap)
 
 import Effect (Effect)
 import Effect.Aff (launchAff, launchAff_, runAff_)
@@ -25,8 +26,8 @@ import Noodle.Text.QuickDef as QD
 import Noodle.Text.QuickDefParser as QDP
 
 
-toolkitName = "hydra"
-toolkitNameCC = "Hydra"
+toolkitName = QTG.ToolkitName "hydra"
+toolkitNameCC = QTG.ToolkitName "Hydra"
 toolkitPath = "./src/Toolkit/HydraGen"
 toolkitDefPath = "./hydra.fn.clean.list"
 
@@ -41,10 +42,10 @@ main =
         case parseResult of
             Right familiesList -> do
                 traverse_ genFamilyFile familiesList
-                writeTextFile UTF8 (toolkitPath <> "/" <> toolkitNameCC <> "Data.purs") $ QTG.genToolkitDataModule toolkitName familiesList
-                writeTextFile UTF8 (toolkitPath <> "/" <> toolkitNameCC <> ".purs") $ QTG.genToolkitModule toolkitName familiesList
+                writeTextFile UTF8 (toolkitPath <> "/" <> unwrap toolkitNameCC <> "Data.purs") $ QTG.toolkitDataModule toolkitName familiesList
+                writeTextFile UTF8 (toolkitPath <> "/" <> unwrap toolkitNameCC <> ".purs") $ QTG.toolkitModule toolkitName familiesList
             Left error ->
                 liftEffect $ Console.log $ show error
     where
         genFamilyFile family =
-            writeTextFile UTF8 (toolkitPath <> "/Family/" <> QTG.moduleName family <> ".purs") $ QTG.genFamilyModule "hydra" family
+            writeTextFile UTF8 (toolkitPath <> "/Family/" <> QTG.familyModuleName family <> ".purs") $ QTG.familyModule toolkitName family

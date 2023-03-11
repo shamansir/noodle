@@ -1,0 +1,27 @@
+module Synth.MMouse where
+
+import Prelude
+
+import Noodle.Fn2 as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+
+_out_out = Fn.Output :: _ "out"
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+family :: forall m. Family m
+family = -- {-> synth <-}
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+        $ Fn.make $ do
+            -- Mouse
+            P.send _out_out ?out_out
