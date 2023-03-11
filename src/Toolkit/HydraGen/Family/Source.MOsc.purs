@@ -1,11 +1,10 @@
-module Source.MOsc where
+module Toolkit.HydraGen.Family.Source.FOsc where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_frequency = Fn.Input :: _ "frequency"
 _in_sync = Fn.Input :: _ "sync"
 _in_offset = Fn.Input :: _ "offset"

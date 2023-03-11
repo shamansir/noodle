@@ -1,4 +1,4 @@
-module HydraGenData where
+module Toolkit.HydraGenData where
 
 
 data Hydra

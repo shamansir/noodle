@@ -1,263 +1,268 @@
 module Toolkit.HydraGen where
 
-import Toolkit.Families.Source.MNoise as Source.MNoise
-import Toolkit.Families.Source.MVoronoi as Source.MVoronoi
-import Toolkit.Families.Source.MOsc as Source.MOsc
-import Toolkit.Families.Source.MShape as Source.MShape
-import Toolkit.Families.Source.MGradient as Source.MGradient
-import Toolkit.Families.Source.MSrc as Source.MSrc
-import Toolkit.Families.Source.MSolid as Source.MSolid
-import Toolkit.Families.Source.MSrc as Source.MSrc
-import Toolkit.Families.Source.MPrev as Source.MPrev
-import Toolkit.Families.Geometry.MRotate as Geometry.MRotate
-import Toolkit.Families.Geometry.MScale as Geometry.MScale
-import Toolkit.Families.Geometry.MPixelate as Geometry.MPixelate
-import Toolkit.Families.Geometry.MRepeat as Geometry.MRepeat
-import Toolkit.Families.Geometry.MRepeatX as Geometry.MRepeatX
-import Toolkit.Families.Geometry.MRepeatY as Geometry.MRepeatY
-import Toolkit.Families.Geometry.MKaleid as Geometry.MKaleid
-import Toolkit.Families.Geometry.MScroll as Geometry.MScroll
-import Toolkit.Families.Geometry.MScrollX as Geometry.MScrollX
-import Toolkit.Families.Geometry.MScrollY as Geometry.MScrollY
-import Toolkit.Families.Color.MPosterize as Color.MPosterize
-import Toolkit.Families.Color.MShift as Color.MShift
-import Toolkit.Families.Color.MInvert as Color.MInvert
-import Toolkit.Families.Color.MContrast as Color.MContrast
-import Toolkit.Families.Color.MBrightness as Color.MBrightness
-import Toolkit.Families.Color.MLuma as Color.MLuma
-import Toolkit.Families.Color.MTresh as Color.MTresh
-import Toolkit.Families.Color.MColor as Color.MColor
-import Toolkit.Families.Color.MSaturate as Color.MSaturate
-import Toolkit.Families.Color.MHue as Color.MHue
-import Toolkit.Families.Color.MColorama as Color.MColorama
-import Toolkit.Families.Color.MSum as Color.MSum
-import Toolkit.Families.Color.MR as Color.MR
-import Toolkit.Families.Color.MG as Color.MG
-import Toolkit.Families.Color.MB as Color.MB
-import Toolkit.Families.Color.MA as Color.MA
-import Toolkit.Families.Blend.MAdd as Blend.MAdd
-import Toolkit.Families.Blend.MSub as Blend.MSub
-import Toolkit.Families.Blend.MLayer as Blend.MLayer
-import Toolkit.Families.Blend.MBlend as Blend.MBlend
-import Toolkit.Families.Blend.MMult as Blend.MMult
-import Toolkit.Families.Blend.MDiff as Blend.MDiff
-import Toolkit.Families.Blend.MMask as Blend.MMask
-import Toolkit.Families.Modulate.MModulateRepeat as Modulate.MModulateRepeat
-import Toolkit.Families.Modulate.MModulateRepeatX as Modulate.MModulateRepeatX
-import Toolkit.Families.Modulate.MModulateRepeatY as Modulate.MModulateRepeatY
-import Toolkit.Families.Modulate.MModulateKaleid as Modulate.MModulateKaleid
-import Toolkit.Families.Modulate.MModulateScrollX as Modulate.MModulateScrollX
-import Toolkit.Families.Modulate.MModulateScrollY as Modulate.MModulateScrollY
-import Toolkit.Families.Modulate.MModulate as Modulate.MModulate
-import Toolkit.Families.Modulate.MModulateScale as Modulate.MModulateScale
-import Toolkit.Families.Modulate.MModulatePixelate as Modulate.MModulatePixelate
-import Toolkit.Families.Modulate.MModulateRotate as Modulate.MModulateRotate
-import Toolkit.Families.Modulate.MModulateHue as Modulate.MModulateHue
-import Toolkit.Families.Synth.MRender as Synth.MRender
-import Toolkit.Families.Synth.MUpdate as Synth.MUpdate
-import Toolkit.Families.Synth.MSetResolution as Synth.MSetResolution
-import Toolkit.Families.Synth.MHush as Synth.MHush
-import Toolkit.Families.Synth.MSetFunction as Synth.MSetFunction
-import Toolkit.Families.Synth.MSpeed as Synth.MSpeed
-import Toolkit.Families.Synth.MBpm as Synth.MBpm
-import Toolkit.Families.Synth.MWidth as Synth.MWidth
-import Toolkit.Families.Synth.MHeight as Synth.MHeight
-import Toolkit.Families.Synth.MPi as Synth.MPi
-import Toolkit.Families.Synth.MTime as Synth.MTime
-import Toolkit.Families.Synth.MMouse as Synth.MMouse
-import Toolkit.Families.Extsource.MInitCam as Extsource.MInitCam
-import Toolkit.Families.Extsource.MInitImage as Extsource.MInitImage
-import Toolkit.Families.Extsource.MInitVideo as Extsource.MInitVideo
-import Toolkit.Families.Extsource.MInit as Extsource.MInit
-import Toolkit.Families.Extsource.MInitStream as Extsource.MInitStream
-import Toolkit.Families.Extsource.MInitScreen as Extsource.MInitScreen
-import Toolkit.Families.Array.MFast as Array.MFast
-import Toolkit.Families.Array.MSmooth as Array.MSmooth
-import Toolkit.Families.Array.MEase as Array.MEase
-import Toolkit.Families.Array.MOffset as Array.MOffset
-import Toolkit.Families.Array.MFit as Array.MFit
-import Toolkit.Families.Audio.MFft as Audio.MFft
-import Toolkit.Families.Audio.MSetSmooth as Audio.MSetSmooth
-import Toolkit.Families.Audio.MSetCutoff as Audio.MSetCutoff
-import Toolkit.Families.Audio.MSetBins as Audio.MSetBins
-import Toolkit.Families.Audio.MSetScale as Audio.MSetScale
-import Toolkit.Families.Audio.MHide as Audio.MHide
-import Toolkit.Families.Audio.MShow as Audio.MShow
-import Toolkit.Families.Out.MOut as Out.MOut
+import Toolkit.HydraGen.Family.Source.FNoise as FNoise
+import Toolkit.HydraGen.Family.Source.FVoronoi as FVoronoi
+import Toolkit.HydraGen.Family.Source.FOsc as FOsc
+import Toolkit.HydraGen.Family.Source.FShape as FShape
+import Toolkit.HydraGen.Family.Source.FGradient as FGradient
+import Toolkit.HydraGen.Family.Source.FSrc as FSrc
+import Toolkit.HydraGen.Family.Source.FSolid as FSolid
+import Toolkit.HydraGen.Family.Source.FSrc as FSrc
+import Toolkit.HydraGen.Family.Source.FPrev as FPrev
+import Toolkit.HydraGen.Family.Geometry.FRotate as FRotate
+import Toolkit.HydraGen.Family.Geometry.FScale as FScale
+import Toolkit.HydraGen.Family.Geometry.FPixelate as FPixelate
+import Toolkit.HydraGen.Family.Geometry.FRepeat as FRepeat
+import Toolkit.HydraGen.Family.Geometry.FRepeatX as FRepeatX
+import Toolkit.HydraGen.Family.Geometry.FRepeatY as FRepeatY
+import Toolkit.HydraGen.Family.Geometry.FKaleid as FKaleid
+import Toolkit.HydraGen.Family.Geometry.FScroll as FScroll
+import Toolkit.HydraGen.Family.Geometry.FScrollX as FScrollX
+import Toolkit.HydraGen.Family.Geometry.FScrollY as FScrollY
+import Toolkit.HydraGen.Family.Color.FPosterize as FPosterize
+import Toolkit.HydraGen.Family.Color.FShift as FShift
+import Toolkit.HydraGen.Family.Color.FInvert as FInvert
+import Toolkit.HydraGen.Family.Color.FContrast as FContrast
+import Toolkit.HydraGen.Family.Color.FBrightness as FBrightness
+import Toolkit.HydraGen.Family.Color.FLuma as FLuma
+import Toolkit.HydraGen.Family.Color.FTresh as FTresh
+import Toolkit.HydraGen.Family.Color.FColor as FColor
+import Toolkit.HydraGen.Family.Color.FSaturate as FSaturate
+import Toolkit.HydraGen.Family.Color.FHue as FHue
+import Toolkit.HydraGen.Family.Color.FColorama as FColorama
+import Toolkit.HydraGen.Family.Color.FSum as FSum
+import Toolkit.HydraGen.Family.Color.FR as FR
+import Toolkit.HydraGen.Family.Color.FG as FG
+import Toolkit.HydraGen.Family.Color.FB as FB
+import Toolkit.HydraGen.Family.Color.FA as FA
+import Toolkit.HydraGen.Family.Blend.FAdd as FAdd
+import Toolkit.HydraGen.Family.Blend.FSub as FSub
+import Toolkit.HydraGen.Family.Blend.FLayer as FLayer
+import Toolkit.HydraGen.Family.Blend.FBlend as FBlend
+import Toolkit.HydraGen.Family.Blend.FMult as FMult
+import Toolkit.HydraGen.Family.Blend.FDiff as FDiff
+import Toolkit.HydraGen.Family.Blend.FMask as FMask
+import Toolkit.HydraGen.Family.Modulate.FModulateRepeat as FModulateRepeat
+import Toolkit.HydraGen.Family.Modulate.FModulateRepeatX as FModulateRepeatX
+import Toolkit.HydraGen.Family.Modulate.FModulateRepeatY as FModulateRepeatY
+import Toolkit.HydraGen.Family.Modulate.FModulateKaleid as FModulateKaleid
+import Toolkit.HydraGen.Family.Modulate.FModulateScrollX as FModulateScrollX
+import Toolkit.HydraGen.Family.Modulate.FModulateScrollY as FModulateScrollY
+import Toolkit.HydraGen.Family.Modulate.FModulate as FModulate
+import Toolkit.HydraGen.Family.Modulate.FModulateScale as FModulateScale
+import Toolkit.HydraGen.Family.Modulate.FModulatePixelate as FModulatePixelate
+import Toolkit.HydraGen.Family.Modulate.FModulateRotate as FModulateRotate
+import Toolkit.HydraGen.Family.Modulate.FModulateHue as FModulateHue
+import Toolkit.HydraGen.Family.Synth.FRender as FRender
+import Toolkit.HydraGen.Family.Synth.FUpdate as FUpdate
+import Toolkit.HydraGen.Family.Synth.FSetResolution as FSetResolution
+import Toolkit.HydraGen.Family.Synth.FHush as FHush
+import Toolkit.HydraGen.Family.Synth.FSetFunction as FSetFunction
+import Toolkit.HydraGen.Family.Synth.FSpeed as FSpeed
+import Toolkit.HydraGen.Family.Synth.FBpm as FBpm
+import Toolkit.HydraGen.Family.Synth.FWidth as FWidth
+import Toolkit.HydraGen.Family.Synth.FHeight as FHeight
+import Toolkit.HydraGen.Family.Synth.FPi as FPi
+import Toolkit.HydraGen.Family.Synth.FTime as FTime
+import Toolkit.HydraGen.Family.Synth.FMouse as FMouse
+import Toolkit.HydraGen.Family.Extsource.FInitCam as FInitCam
+import Toolkit.HydraGen.Family.Extsource.FInitImage as FInitImage
+import Toolkit.HydraGen.Family.Extsource.FInitVideo as FInitVideo
+import Toolkit.HydraGen.Family.Extsource.FInit as FInit
+import Toolkit.HydraGen.Family.Extsource.FInitStream as FInitStream
+import Toolkit.HydraGen.Family.Extsource.FInitScreen as FInitScreen
+import Toolkit.HydraGen.Family.Array.FFast as FFast
+import Toolkit.HydraGen.Family.Array.FSmooth as FSmooth
+import Toolkit.HydraGen.Family.Array.FEase as FEase
+import Toolkit.HydraGen.Family.Array.FOffset as FOffset
+import Toolkit.HydraGen.Family.Array.FFit as FFit
+import Toolkit.HydraGen.Family.Audio.FFft as FFft
+import Toolkit.HydraGen.Family.Audio.FSetSmooth as FSetSmooth
+import Toolkit.HydraGen.Family.Audio.FSetCutoff as FSetCutoff
+import Toolkit.HydraGen.Family.Audio.FSetBins as FSetBins
+import Toolkit.HydraGen.Family.Audio.FSetScale as FSetScale
+import Toolkit.HydraGen.Family.Audio.FHide as FHide
+import Toolkit.HydraGen.Family.Audio.FShow as FShow
+import Toolkit.HydraGen.Family.Out.FOut as FOut
 
 
-type Toolkit m
-    = Toolkit Unit
-        ( noise :: Source.MNoise.Family -- {-> source <-}
-        , voronoi :: Source.MVoronoi.Family -- {-> source <-}
-        , osc :: Source.MOsc.Family -- {-> source <-}
-        , shape :: Source.MShape.Family -- {-> source <-}
-        , gradient :: Source.MGradient.Family -- {-> source <-}
-        , src :: Source.MSrc.Family -- {-> source <-}
-        , solid :: Source.MSolid.Family -- {-> source <-}
-        , src :: Source.MSrc.Family -- {-> source <-}
-        , prev :: Source.MPrev.Family -- {-> source <-}
-        , rotate :: Geometry.MRotate.Family -- {-> geometry <-}
-        , scale :: Geometry.MScale.Family -- {-> geometry <-}
-        , pixelate :: Geometry.MPixelate.Family -- {-> geometry <-}
-        , repeat :: Geometry.MRepeat.Family -- {-> geometry <-}
-        , repeatX :: Geometry.MRepeatX.Family -- {-> geometry <-}
-        , repeatY :: Geometry.MRepeatY.Family -- {-> geometry <-}
-        , kaleid :: Geometry.MKaleid.Family -- {-> geometry <-}
-        , scroll :: Geometry.MScroll.Family -- {-> geometry <-}
-        , scrollX :: Geometry.MScrollX.Family -- {-> geometry <-}
-        , scrollY :: Geometry.MScrollY.Family -- {-> geometry <-}
-        , posterize :: Color.MPosterize.Family -- {-> color <-}
-        , shift :: Color.MShift.Family -- {-> color <-}
-        , invert :: Color.MInvert.Family -- {-> color <-}
-        , contrast :: Color.MContrast.Family -- {-> color <-}
-        , brightness :: Color.MBrightness.Family -- {-> color <-}
-        , luma :: Color.MLuma.Family -- {-> color <-}
-        , tresh :: Color.MTresh.Family -- {-> color <-}
-        , color :: Color.MColor.Family -- {-> color <-}
-        , saturate :: Color.MSaturate.Family -- {-> color <-}
-        , hue :: Color.MHue.Family -- {-> color <-}
-        , colorama :: Color.MColorama.Family -- {-> color <-}
-        , sum :: Color.MSum.Family -- {-> color <-}
-        , r :: Color.MR.Family -- {-> color <-}
-        , g :: Color.MG.Family -- {-> color <-}
-        , b :: Color.MB.Family -- {-> color <-}
-        , a :: Color.MA.Family -- {-> color <-}
-        , add :: Blend.MAdd.Family -- {-> blend <-}
-        , sub :: Blend.MSub.Family -- {-> blend <-}
-        , layer :: Blend.MLayer.Family -- {-> blend <-}
-        , blend :: Blend.MBlend.Family -- {-> blend <-}
-        , mult :: Blend.MMult.Family -- {-> blend <-}
-        , diff :: Blend.MDiff.Family -- {-> blend <-}
-        , mask :: Blend.MMask.Family -- {-> blend <-}
-        , modulateRepeat :: Modulate.MModulateRepeat.Family -- {-> modulate <-}
-        , modulateRepeatX :: Modulate.MModulateRepeatX.Family -- {-> modulate <-}
-        , modulateRepeatY :: Modulate.MModulateRepeatY.Family -- {-> modulate <-}
-        , modulateKaleid :: Modulate.MModulateKaleid.Family -- {-> modulate <-}
-        , modulateScrollX :: Modulate.MModulateScrollX.Family -- {-> modulate <-}
-        , modulateScrollY :: Modulate.MModulateScrollY.Family -- {-> modulate <-}
-        , modulate :: Modulate.MModulate.Family -- {-> modulate <-}
-        , modulateScale :: Modulate.MModulateScale.Family -- {-> modulate <-}
-        , modulatePixelate :: Modulate.MModulatePixelate.Family -- {-> modulate <-}
-        , modulateRotate :: Modulate.MModulateRotate.Family -- {-> modulate <-}
-        , modulateHue :: Modulate.MModulateHue.Family -- {-> modulate <-}
-        , render :: Synth.MRender.Family -- {-> synth <-}
-        , update :: Synth.MUpdate.Family -- {-> synth <-}
-        , setResolution :: Synth.MSetResolution.Family -- {-> synth <-}
-        , hush :: Synth.MHush.Family -- {-> synth <-}
-        , setFunction :: Synth.MSetFunction.Family -- {-> synth <-}
-        , speed :: Synth.MSpeed.Family -- {-> synth <-}
-        , bpm :: Synth.MBpm.Family -- {-> synth <-}
-        , width :: Synth.MWidth.Family -- {-> synth <-}
-        , height :: Synth.MHeight.Family -- {-> synth <-}
-        , pi :: Synth.MPi.Family -- {-> synth <-}
-        , time :: Synth.MTime.Family -- {-> synth <-}
-        , mouse :: Synth.MMouse.Family -- {-> synth <-}
-        , initCam :: Extsource.MInitCam.Family -- {-> extsource <-}
-        , initImage :: Extsource.MInitImage.Family -- {-> extsource <-}
-        , initVideo :: Extsource.MInitVideo.Family -- {-> extsource <-}
-        , init :: Extsource.MInit.Family -- {-> extsource <-}
-        , initStream :: Extsource.MInitStream.Family -- {-> extsource <-}
-        , initScreen :: Extsource.MInitScreen.Family -- {-> extsource <-}
-        , fast :: Array.MFast.Family -- {-> array <-}
-        , smooth :: Array.MSmooth.Family -- {-> array <-}
-        , ease :: Array.MEase.Family -- {-> array <-}
-        , offset :: Array.MOffset.Family -- {-> array <-}
-        , fit :: Array.MFit.Family -- {-> array <-}
-        , fft :: Audio.MFft.Family -- {-> audio <-}
-        , setSmooth :: Audio.MSetSmooth.Family -- {-> audio <-}
-        , setCutoff :: Audio.MSetCutoff.Family -- {-> audio <-}
-        , setBins :: Audio.MSetBins.Family -- {-> audio <-}
-        , setScale :: Audio.MSetScale.Family -- {-> audio <-}
-        , hide :: Audio.MHide.Family -- {-> audio <-}
-        , show :: Audio.MShow.Family -- {-> audio <-}
-        , out :: Out.MOut.Family -- {-> out <-}
+type HydraToolkit m
+    = Noodle.Toolkit Unit
+        ( noise :: FNoise.Family -- {-> source <-}
+        , voronoi :: FVoronoi.Family -- {-> source <-}
+        , osc :: FOsc.Family -- {-> source <-}
+        , shape :: FShape.Family -- {-> source <-}
+        , gradient :: FGradient.Family -- {-> source <-}
+        , src :: FSrc.Family -- {-> source <-}
+        , solid :: FSolid.Family -- {-> source <-}
+        , src :: FSrc.Family -- {-> source <-}
+        , prev :: FPrev.Family -- {-> source <-}
+        , rotate :: FRotate.Family -- {-> geometry <-}
+        , scale :: FScale.Family -- {-> geometry <-}
+        , pixelate :: FPixelate.Family -- {-> geometry <-}
+        , repeat :: FRepeat.Family -- {-> geometry <-}
+        , repeatX :: FRepeatX.Family -- {-> geometry <-}
+        , repeatY :: FRepeatY.Family -- {-> geometry <-}
+        , kaleid :: FKaleid.Family -- {-> geometry <-}
+        , scroll :: FScroll.Family -- {-> geometry <-}
+        , scrollX :: FScrollX.Family -- {-> geometry <-}
+        , scrollY :: FScrollY.Family -- {-> geometry <-}
+        , posterize :: FPosterize.Family -- {-> color <-}
+        , shift :: FShift.Family -- {-> color <-}
+        , invert :: FInvert.Family -- {-> color <-}
+        , contrast :: FContrast.Family -- {-> color <-}
+        , brightness :: FBrightness.Family -- {-> color <-}
+        , luma :: FLuma.Family -- {-> color <-}
+        , tresh :: FTresh.Family -- {-> color <-}
+        , color :: FColor.Family -- {-> color <-}
+        , saturate :: FSaturate.Family -- {-> color <-}
+        , hue :: FHue.Family -- {-> color <-}
+        , colorama :: FColorama.Family -- {-> color <-}
+        , sum :: FSum.Family -- {-> color <-}
+        , r :: FR.Family -- {-> color <-}
+        , g :: FG.Family -- {-> color <-}
+        , b :: FB.Family -- {-> color <-}
+        , a :: FA.Family -- {-> color <-}
+        , add :: FAdd.Family -- {-> blend <-}
+        , sub :: FSub.Family -- {-> blend <-}
+        , layer :: FLayer.Family -- {-> blend <-}
+        , blend :: FBlend.Family -- {-> blend <-}
+        , mult :: FMult.Family -- {-> blend <-}
+        , diff :: FDiff.Family -- {-> blend <-}
+        , mask :: FMask.Family -- {-> blend <-}
+        , modulateRepeat :: FModulateRepeat.Family -- {-> modulate <-}
+        , modulateRepeatX :: FModulateRepeatX.Family -- {-> modulate <-}
+        , modulateRepeatY :: FModulateRepeatY.Family -- {-> modulate <-}
+        , modulateKaleid :: FModulateKaleid.Family -- {-> modulate <-}
+        , modulateScrollX :: FModulateScrollX.Family -- {-> modulate <-}
+        , modulateScrollY :: FModulateScrollY.Family -- {-> modulate <-}
+        , modulate :: FModulate.Family -- {-> modulate <-}
+        , modulateScale :: FModulateScale.Family -- {-> modulate <-}
+        , modulatePixelate :: FModulatePixelate.Family -- {-> modulate <-}
+        , modulateRotate :: FModulateRotate.Family -- {-> modulate <-}
+        , modulateHue :: FModulateHue.Family -- {-> modulate <-}
+        , render :: FRender.Family -- {-> synth <-}
+        , update :: FUpdate.Family -- {-> synth <-}
+        , setResolution :: FSetResolution.Family -- {-> synth <-}
+        , hush :: FHush.Family -- {-> synth <-}
+        , setFunction :: FSetFunction.Family -- {-> synth <-}
+        , speed :: FSpeed.Family -- {-> synth <-}
+        , bpm :: FBpm.Family -- {-> synth <-}
+        , width :: FWidth.Family -- {-> synth <-}
+        , height :: FHeight.Family -- {-> synth <-}
+        , pi :: FPi.Family -- {-> synth <-}
+        , time :: FTime.Family -- {-> synth <-}
+        , mouse :: FMouse.Family -- {-> synth <-}
+        , initCam :: FInitCam.Family -- {-> extsource <-}
+        , initImage :: FInitImage.Family -- {-> extsource <-}
+        , initVideo :: FInitVideo.Family -- {-> extsource <-}
+        , init :: FInit.Family -- {-> extsource <-}
+        , initStream :: FInitStream.Family -- {-> extsource <-}
+        , initScreen :: FInitScreen.Family -- {-> extsource <-}
+        , fast :: FFast.Family -- {-> array <-}
+        , smooth :: FSmooth.Family -- {-> array <-}
+        , ease :: FEase.Family -- {-> array <-}
+        , offset :: FOffset.Family -- {-> array <-}
+        , fit :: FFit.Family -- {-> array <-}
+        , fft :: FFft.Family -- {-> audio <-}
+        , setSmooth :: FSetSmooth.Family -- {-> audio <-}
+        , setCutoff :: FSetCutoff.Family -- {-> audio <-}
+        , setBins :: FSetBins.Family -- {-> audio <-}
+        , setScale :: FSetScale.Family -- {-> audio <-}
+        , hide :: FHide.Family -- {-> audio <-}
+        , show :: FShow.Family -- {-> audio <-}
+        , out :: FOut.Family -- {-> out <-}
         )
 
+
+toolkit :: forall m. HydraToolkit m
 toolkit =
     Toolkit.from "hydra"
-        { noise : Source.MNoise.family
-        , voronoi : Source.MVoronoi.family
-        , osc : Source.MOsc.family
-        , shape : Source.MShape.family
-        , gradient : Source.MGradient.family
-        , src : Source.MSrc.family
-        , solid : Source.MSolid.family
-        , src : Source.MSrc.family
-        , prev : Source.MPrev.family
-        , rotate : Geometry.MRotate.family
-        , scale : Geometry.MScale.family
-        , pixelate : Geometry.MPixelate.family
-        , repeat : Geometry.MRepeat.family
-        , repeatX : Geometry.MRepeatX.family
-        , repeatY : Geometry.MRepeatY.family
-        , kaleid : Geometry.MKaleid.family
-        , scroll : Geometry.MScroll.family
-        , scrollX : Geometry.MScrollX.family
-        , scrollY : Geometry.MScrollY.family
-        , posterize : Color.MPosterize.family
-        , shift : Color.MShift.family
-        , invert : Color.MInvert.family
-        , contrast : Color.MContrast.family
-        , brightness : Color.MBrightness.family
-        , luma : Color.MLuma.family
-        , tresh : Color.MTresh.family
-        , color : Color.MColor.family
-        , saturate : Color.MSaturate.family
-        , hue : Color.MHue.family
-        , colorama : Color.MColorama.family
-        , sum : Color.MSum.family
-        , r : Color.MR.family
-        , g : Color.MG.family
-        , b : Color.MB.family
-        , a : Color.MA.family
-        , add : Blend.MAdd.family
-        , sub : Blend.MSub.family
-        , layer : Blend.MLayer.family
-        , blend : Blend.MBlend.family
-        , mult : Blend.MMult.family
-        , diff : Blend.MDiff.family
-        , mask : Blend.MMask.family
-        , modulateRepeat : Modulate.MModulateRepeat.family
-        , modulateRepeatX : Modulate.MModulateRepeatX.family
-        , modulateRepeatY : Modulate.MModulateRepeatY.family
-        , modulateKaleid : Modulate.MModulateKaleid.family
-        , modulateScrollX : Modulate.MModulateScrollX.family
-        , modulateScrollY : Modulate.MModulateScrollY.family
-        , modulate : Modulate.MModulate.family
-        , modulateScale : Modulate.MModulateScale.family
-        , modulatePixelate : Modulate.MModulatePixelate.family
-        , modulateRotate : Modulate.MModulateRotate.family
-        , modulateHue : Modulate.MModulateHue.family
-        , render : Synth.MRender.family
-        , update : Synth.MUpdate.family
-        , setResolution : Synth.MSetResolution.family
-        , hush : Synth.MHush.family
-        , setFunction : Synth.MSetFunction.family
-        , speed : Synth.MSpeed.family
-        , bpm : Synth.MBpm.family
-        , width : Synth.MWidth.family
-        , height : Synth.MHeight.family
-        , pi : Synth.MPi.family
-        , time : Synth.MTime.family
-        , mouse : Synth.MMouse.family
-        , initCam : Extsource.MInitCam.family
-        , initImage : Extsource.MInitImage.family
-        , initVideo : Extsource.MInitVideo.family
-        , init : Extsource.MInit.family
-        , initStream : Extsource.MInitStream.family
-        , initScreen : Extsource.MInitScreen.family
-        , fast : Array.MFast.family
-        , smooth : Array.MSmooth.family
-        , ease : Array.MEase.family
-        , offset : Array.MOffset.family
-        , fit : Array.MFit.family
-        , fft : Audio.MFft.family
-        , setSmooth : Audio.MSetSmooth.family
-        , setCutoff : Audio.MSetCutoff.family
-        , setBins : Audio.MSetBins.family
-        , setScale : Audio.MSetScale.family
-        , hide : Audio.MHide.family
-        , show : Audio.MShow.family
-        , out : Out.MOut.family
+        { noise : FNoise.family
+        , voronoi : FVoronoi.family
+        , osc : FOsc.family
+        , shape : FShape.family
+        , gradient : FGradient.family
+        , src : FSrc.family
+        , solid : FSolid.family
+        , src : FSrc.family
+        , prev : FPrev.family
+        , rotate : FRotate.family
+        , scale : FScale.family
+        , pixelate : FPixelate.family
+        , repeat : FRepeat.family
+        , repeatX : FRepeatX.family
+        , repeatY : FRepeatY.family
+        , kaleid : FKaleid.family
+        , scroll : FScroll.family
+        , scrollX : FScrollX.family
+        , scrollY : FScrollY.family
+        , posterize : FPosterize.family
+        , shift : FShift.family
+        , invert : FInvert.family
+        , contrast : FContrast.family
+        , brightness : FBrightness.family
+        , luma : FLuma.family
+        , tresh : FTresh.family
+        , color : FColor.family
+        , saturate : FSaturate.family
+        , hue : FHue.family
+        , colorama : FColorama.family
+        , sum : FSum.family
+        , r : FR.family
+        , g : FG.family
+        , b : FB.family
+        , a : FA.family
+        , add : FAdd.family
+        , sub : FSub.family
+        , layer : FLayer.family
+        , blend : FBlend.family
+        , mult : FMult.family
+        , diff : FDiff.family
+        , mask : FMask.family
+        , modulateRepeat : FModulateRepeat.family
+        , modulateRepeatX : FModulateRepeatX.family
+        , modulateRepeatY : FModulateRepeatY.family
+        , modulateKaleid : FModulateKaleid.family
+        , modulateScrollX : FModulateScrollX.family
+        , modulateScrollY : FModulateScrollY.family
+        , modulate : FModulate.family
+        , modulateScale : FModulateScale.family
+        , modulatePixelate : FModulatePixelate.family
+        , modulateRotate : FModulateRotate.family
+        , modulateHue : FModulateHue.family
+        , render : FRender.family
+        , update : FUpdate.family
+        , setResolution : FSetResolution.family
+        , hush : FHush.family
+        , setFunction : FSetFunction.family
+        , speed : FSpeed.family
+        , bpm : FBpm.family
+        , width : FWidth.family
+        , height : FHeight.family
+        , pi : FPi.family
+        , time : FTime.family
+        , mouse : FMouse.family
+        , initCam : FInitCam.family
+        , initImage : FInitImage.family
+        , initVideo : FInitVideo.family
+        , init : FInit.family
+        , initStream : FInitStream.family
+        , initScreen : FInitScreen.family
+        , fast : FFast.family
+        , smooth : FSmooth.family
+        , ease : FEase.family
+        , offset : FOffset.family
+        , fit : FFit.family
+        , fft : FFft.family
+        , setSmooth : FSetSmooth.family
+        , setCutoff : FSetCutoff.family
+        , setBins : FSetBins.family
+        , setScale : FSetScale.family
+        , hide : FHide.family
+        , show : FShow.family
+        , out : FOut.family
         }
+
+
+type Toolkit m = HydraToolkit m

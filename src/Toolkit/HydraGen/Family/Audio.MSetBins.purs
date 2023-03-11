@@ -1,11 +1,10 @@
-module Audio.MSetBins where
+module Toolkit.HydraGen.Family.Audio.FSetBins where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_a = Fn.Input :: _ "a"
 _in_numBins = Fn.Input :: _ "numBins"
 

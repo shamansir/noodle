@@ -1,11 +1,10 @@
-module Blend.MSub where
+module Toolkit.HydraGen.Family.Blend.FSub where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_what = Fn.Input :: _ "what"
 _in_with = Fn.Input :: _ "with"
 _in_amount = Fn.Input :: _ "amount"

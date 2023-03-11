@@ -179,36 +179,14 @@ spec = do
         sampleContent <- readTextFile UTF8 out_file_path_sample
         case parseResult of
           Right familiesList -> do
-            {-
-    ( toolkitSumType
-    , toolkitDataModule
-    , toolkitTypeFromFamilyModules
-    , toolkitModule
-    , toolkitTypeInline
-    , toolkitImplementation
-    , toolkitImplementationFromFamilyModules
-
-    , importAllFamilies
-    , familiesTypes
-    , familiesImplementations
-    , familyModule
-
-    , familyModuleName, familyTypeName, familyTypeConstructor
-            -}
 
             let toolkit = QTGen.ToolkitName "hydra"
 
             let toolkitSumType = QTGen.toolkitSumType toolkit familiesList
             let toolkitDataModule = QTGen.toolkitDataModule toolkit familiesList
-            let toolkitModule = QTGen.toolkitModule toolkit familiesList
-            let toolkitType = QTGen.toolkitType familiesList
-            let toolkitTypeInline = QTGen.toolkitTypeInline toolkit familiesList
-            let toolkitImplementation = QTGen.toolkitImplementation toolkit familiesList
-            let toolkitImplementationInline = QTGen.toolkitImplementationInline toolkit familiesList
+            let toolkitModule = QTGen.toolkitModule QTGen.FamiliesAsModules toolkit familiesList
+            let toolkitModule' = QTGen.toolkitModule QTGen.FamiliesInline toolkit familiesList
 
-            let importAllFamilies = QTGen.importAllFamilies familiesList
-            let familiesTypes = QTGen.familiesTypes familiesList
-            let familiesImplementations = QTGen.familiesImplementations familiesList
             let familyModules = String.joinWith "\n\n{- MODULE -}\n\n" (QTGen.familyModule toolkit <$> familiesList)
 
             let fileContent =
@@ -216,14 +194,8 @@ spec = do
                       [ toolkitSumType
                       , toolkitDataModule
                       , toolkitModule
-                      , toolkitType
-                      , toolkitTypeInline
-                      , toolkitImplementation
-                      , toolkitImplementationInline
+                      , toolkitModule'
 
-                      , importAllFamilies
-                      , familiesTypes
-                      , familiesImplementations
                       , familyModules
                       ]
             writeTextFile UTF8 out_file_path fileContent

@@ -26,26 +26,25 @@ import Noodle.Text.QuickDef as QD
 import Noodle.Text.QuickDefParser as QDP
 
 
-toolkitName = QTG.ToolkitName "hydra"
-toolkitNameCC = QTG.ToolkitName "Hydra"
-toolkitPath = "./src/Toolkit/HydraGen"
-toolkitDefPath = "./hydra.fn.clean.list"
+toolkitName = QTG.ToolkitName "hydra" :: QTG.ToolkitName
+rootPath = "./src/Toolkit/HydraGen" :: String
+toolkitDefPath = "./hydra.toolkit" :: String
 
 
 main :: Effect Unit
 main =
     launchAff_ $ do
-        mkdir toolkitPath
-        mkdir $ toolkitPath <> "/Family"
+        mkdir rootPath
+        mkdir $ rootPath <> QTG.familiesModulesDirectoryPath
         quickDefsFile <- readTextFile UTF8 toolkitDefPath
         let parseResult = P.runParser quickDefsFile QDP.familyListParser
         case parseResult of
             Right familiesList -> do
                 traverse_ genFamilyFile familiesList
-                writeTextFile UTF8 (toolkitPath <> "/" <> unwrap toolkitNameCC <> "Data.purs") $ QTG.toolkitDataModule toolkitName familiesList
-                writeTextFile UTF8 (toolkitPath <> "/" <> unwrap toolkitNameCC <> ".purs") $ QTG.toolkitModule toolkitName familiesList
+                writeTextFile UTF8 (rootPath <> QTG.toolkitDataModulePath toolkitName) $ QTG.toolkitDataModule toolkitName familiesList
+                writeTextFile UTF8 (rootPath <> QTG.toolkitModulePath toolkitName) $ QTG.toolkitModule QTG.FamiliesAsModules toolkitName familiesList
             Left error ->
                 liftEffect $ Console.log $ show error
     where
         genFamilyFile family =
-            writeTextFile UTF8 (toolkitPath <> "/Family/" <> QTG.familyModuleName family <> ".purs") $ QTG.familyModule toolkitName family
+            writeTextFile UTF8 (rootPath <> QTG.familyModulePath family) $ QTG.familyModule toolkitName family

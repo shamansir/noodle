@@ -1,11 +1,10 @@
-module Geometry.MRotate where
+module Toolkit.HydraGen.Family.Geometry.FRotate where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_what = Fn.Input :: _ "what"
 _in_angle = Fn.Input :: _ "angle"
 _in_speed = Fn.Input :: _ "speed"

@@ -1,11 +1,10 @@
-module Synth.MRender where
+module Toolkit.HydraGen.Family.Synth.FRender where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_from = Fn.Input :: _ "from"
 
 _out_out = Fn.Output :: _ "out"

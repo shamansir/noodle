@@ -1,11 +1,10 @@
-module Geometry.MScrollX where
+module Toolkit.HydraGen.Family.Geometry.FScrollX where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_what = Fn.Input :: _ "what"
 _in_scrollX = Fn.Input :: _ "scrollX"
 _in_speed = Fn.Input :: _ "speed"

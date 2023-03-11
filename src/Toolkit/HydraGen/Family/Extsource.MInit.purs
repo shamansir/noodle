@@ -1,11 +1,10 @@
-module Extsource.MInit where
+module Toolkit.HydraGen.Family.Extsource.FInit where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_where = Fn.Input :: _ "where"
 
 _out_out = Fn.Output :: _ "out"

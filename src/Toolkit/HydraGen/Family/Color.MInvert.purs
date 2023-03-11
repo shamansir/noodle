@@ -1,11 +1,10 @@
-module Color.MInvert where
+module Toolkit.HydraGen.Family.Color.FInvert where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_what = Fn.Input :: _ "what"
 _in_amount = Fn.Input :: _ "amount"
 

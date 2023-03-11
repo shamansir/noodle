@@ -1,11 +1,10 @@
-module Array.MEase where
+module Toolkit.HydraGen.Family.Array.FEase where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_a = Fn.Input :: _ "a"
 _in_ease = Fn.Input :: _ "ease"
 

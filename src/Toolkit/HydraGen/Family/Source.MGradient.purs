@@ -1,11 +1,10 @@
-module Source.MGradient where
+module Toolkit.HydraGen.Family.Source.FGradient where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_speed = Fn.Input :: _ "speed"
 
 _out_out = Fn.Output :: _ "out"

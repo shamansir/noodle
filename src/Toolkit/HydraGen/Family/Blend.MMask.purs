@@ -1,11 +1,10 @@
-module Blend.MMask where
+module Toolkit.HydraGen.Family.Blend.FMask where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_what = Fn.Input :: _ "what"
 _in_with = Fn.Input :: _ "with"
 

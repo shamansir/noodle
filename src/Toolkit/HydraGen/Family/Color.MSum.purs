@@ -1,11 +1,10 @@
-module Color.MSum where
+module Toolkit.HydraGen.Family.Color.FSum where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_what = Fn.Input :: _ "what"
 
 

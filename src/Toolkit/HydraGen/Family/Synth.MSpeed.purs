@@ -1,11 +1,10 @@
-module Synth.MSpeed where
+module Toolkit.HydraGen.Family.Synth.FSpeed where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_v = Fn.Input :: _ "v"
 
 _out_out = Fn.Output :: _ "out"

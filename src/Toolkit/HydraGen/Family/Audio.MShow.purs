@@ -1,11 +1,10 @@
-module Audio.MShow where
+module Toolkit.HydraGen.Family.Audio.FShow where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_a = Fn.Input :: _ "a"
 
 

@@ -1,11 +1,10 @@
-module Audio.MSetSmooth where
+module Toolkit.HydraGen.Family.Audio.FSetSmooth where
 
 import Prelude
 
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
 _in_a = Fn.Input :: _ "a"
 _in_smooth = Fn.Input :: _ "smooth"
 
