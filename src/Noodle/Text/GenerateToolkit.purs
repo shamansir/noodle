@@ -42,9 +42,9 @@ main =
             Right familiesList -> do
                 traverse_ genFamilyFile familiesList
                 writeTextFile UTF8 (rootPath <> QTG.toolkitDataModulePath toolkitName) $ QTG.toolkitDataModule toolkitName familiesList
-                writeTextFile UTF8 (rootPath <> QTG.toolkitModulePath toolkitName) $ QTG.toolkitModule QTG.FamiliesAsModules toolkitName familiesList
+                writeTextFile UTF8 (rootPath <> QTG.toolkitModulePath toolkitName) $ QTG.toolkitModule QTG.FamiliesAsModules [] toolkitName familiesList
             Left error ->
                 liftEffect $ Console.log $ show error
     where
         genFamilyFile family =
-            writeTextFile UTF8 (rootPath <> QTG.familyModulePath family) $ QTG.familyModule toolkitName family
+            writeTextFile UTF8 (rootPath <> QTG.familyModulePath family) $ QTG.familyModule toolkitName [] family

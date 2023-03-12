@@ -1,10 +1,15 @@
 module Toolkit.HydraGen.Family.Geometry.FScale where
 
-import Prelude
 
+
+
+
+import Prelude
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+
+
 _in_what = Fn.Input :: _ "what"
 _in_amount = Fn.Input :: _ "amount"
 _in_xMult = Fn.Input :: _ "xMult"
@@ -13,6 +18,7 @@ _in_offsetX = Fn.Input :: _ "offsetX"
 _in_offsetY = Fn.Input :: _ "offsetY"
 
 _out_out = Fn.Output :: _ "out"
+
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit

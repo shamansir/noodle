@@ -1,10 +1,15 @@
 module Toolkit.HydraGen.Family.Geometry.FScroll where
 
-import Prelude
 
+
+
+
+import Prelude
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+
+
 _in_what = Fn.Input :: _ "what"
 _in_scrollX = Fn.Input :: _ "scrollX"
 _in_scrollY = Fn.Input :: _ "scrollY"
@@ -12,6 +17,7 @@ _in_speedX = Fn.Input :: _ "speedX"
 _in_speedY = Fn.Input :: _ "speedY"
 
 _out_out = Fn.Output :: _ "out"
+
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit

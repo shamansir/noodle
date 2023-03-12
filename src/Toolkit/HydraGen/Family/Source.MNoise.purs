@@ -1,14 +1,20 @@
 module Toolkit.HydraGen.Family.Source.FNoise where
 
-import Prelude
 
+
+
+
+import Prelude
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+
+
 _in_scale = Fn.Input :: _ "scale"
 _in_offset = Fn.Input :: _ "offset"
 
 _out_out = Fn.Output :: _ "out"
+
 
 type Family m = -- {-> source <-}
     Family.Def Unit

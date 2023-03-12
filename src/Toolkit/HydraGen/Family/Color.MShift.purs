@@ -1,10 +1,15 @@
 module Toolkit.HydraGen.Family.Color.FShift where
 
-import Prelude
 
+
+
+
+import Prelude
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+
+
 _in_what = Fn.Input :: _ "what"
 _in_r = Fn.Input :: _ "r"
 _in_g = Fn.Input :: _ "g"
@@ -12,6 +17,7 @@ _in_b = Fn.Input :: _ "b"
 _in_a = Fn.Input :: _ "a"
 
 _out_out = Fn.Output :: _ "out"
+
 
 type Family m = -- {-> color <-}
     Family.Def Unit

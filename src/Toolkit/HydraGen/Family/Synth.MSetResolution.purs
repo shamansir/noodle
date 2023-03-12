@@ -1,14 +1,20 @@
 module Toolkit.HydraGen.Family.Synth.FSetResolution where
 
-import Prelude
 
+
+
+
+import Prelude
 import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+
+
 _in_width = Fn.Input :: _ "width"
 _in_height = Fn.Input :: _ "height"
 
 _out_out = Fn.Output :: _ "out"
+
 
 type Family m = -- {-> synth <-}
     Family.Def Unit

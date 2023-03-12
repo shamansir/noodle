@@ -136,35 +136,39 @@ i3 = i2 <> i :: String
 -- i6 = i5 <> i :: String
 
 
-type Imports = Array (String /\ String)
+type Imports = Array (String /\ Maybe String)
 
 
 familyModuleImports :: Imports
 familyModuleImports =
-    [ "Noodle.Fn2" /\ "Fn"
-    , "Noodle.Fn2.Process" /\ "P"
-    , "Noodle.Family.Def" /\ "Family"
+    [ "Prelude" /\ Nothing
+    , "Noodle.Fn2" /\ Just "Fn"
+    , "Noodle.Fn2.Process" /\ Just "P"
+    , "Noodle.Family.Def" /\ Just "Family"
+    ]
+
+
+toolkitModuleImports :: Imports
+toolkitModuleImports =
+    [
     ]
 
 
 allImports :: Imports -> String
 allImports = map toImport >>> String.joinWith "\n"
-    where toImport (module_ /\ alias) = "import " <> module_ <> " as " <> alias
+    where
+        toImport (module_ /\ Just alias) = "import " <> module_ <> " as " <> alias
+        toImport (module_ /\ Nothing) = "import " <> module_
 
 
-familyModule :: ToolkitName -> QD.QFamily -> String
-familyModule tkName qfml =
-    "module " <> familyModuleName tkName qfml <> " where\n\n"
-    <> "import Prelude\n"
-    <> "\n"
-    <> allImports familyModuleImports
-    <> "\n"
-    <> String.joinWith "\n" (inputProxyCode <$> qfml.inputs)
-    <> "\n\n"
-    <> String.joinWith "\n" (outputProxyCode <$> qfml.outputs)
-    <> "\n\n"
-    <> familyType qfml
-    <> "\n\n"
+familyModule :: ToolkitName -> Imports -> QD.QFamily -> String
+familyModule tkName fmlUserImports qfml =
+    "module " <> familyModuleName tkName qfml <> " where\n\n\n"
+    <> allImports fmlUserImports <> "\n\n\n"
+    <> allImports familyModuleImports <> "\n\n\n"
+    <> String.joinWith "\n" (inputProxyCode <$> qfml.inputs) <> "\n\n"
+    <> String.joinWith "\n" (outputProxyCode <$> qfml.outputs) <> "\n\n\n"
+    <> familyType qfml <> "\n\n"
     <> familyImplementation qfml
     where
         inputProxyCode (Just ch) = "_in_" <> ch.name <> " = Fn.Input :: _ \"" <> ch.name <> "\""
@@ -173,15 +177,19 @@ familyModule tkName qfml =
         outputProxyCode Nothing = ""
 
 
-toolkitModule :: Way -> ToolkitName -> Array QD.QFamily -> String
-toolkitModule FamiliesAsModules tkName families =
-    "module " <> toolkitModuleName tkName <> " where\n\n"
+toolkitModule :: Way -> Imports -> ToolkitName -> Array QD.QFamily -> String
+toolkitModule FamiliesAsModules tkUserImports tkName families =
+    "module " <> toolkitModuleName tkName <> " where\n\n\n"
+    <> allImports tkUserImports <> "\n\n\n"
+    <> allImports toolkitModuleImports <> "\n\n\n"
     <> importAllFamilies tkName families <> "\n\n\n"
     <> toolkitType tkName families <> "\n\n\n"
     <> toolkitImplementation tkName families <> "\n\n\n"
     <> "type Toolkit m = " <> toolkitTypeName tkName <> " m"
-toolkitModule FamiliesInline tkName families =
+toolkitModule FamiliesInline tkUserImports tkName families =
     "module " <> toolkitModuleName tkName <> " where\n\n"
+    <> allImports tkUserImports <> "\n\n\n"
+    <> allImports toolkitModuleImports <> "\n\n\n"
     <> familiesInlineImplementations families <> "\n\n\n"
     <> toolkitTypeInline tkName families <> "\n\n\n"
     <> toolkitImplementationInline tkName families <> "\n\n\n"
