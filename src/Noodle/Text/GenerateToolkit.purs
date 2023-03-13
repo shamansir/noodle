@@ -22,26 +22,21 @@ import Options.Applicative as OA
 import Options.Applicative ((<**>))
 
 import Node.Encoding (Encoding(..))
-import Node.FS.Aff (mkdir, readTextFile, writeTextFile, appendTextFile)
+import Node.FS.Aff (mkdir, rmdir, readTextFile, writeTextFile, appendTextFile)
 
 import Noodle.Text.Generators as QTG
 import Noodle.Text.QuickDef as QD
 import Noodle.Text.QuickDefParser as QDP
 
 
-toolkitName = QTG.ToolkitName "hydra" :: QTG.ToolkitName
-rootPath = "./src/Toolkit/HydraGen" :: String
-toolkitDefPath = "./hydra.toolkit" :: String
-
-
 type Options =
-    { name :: String
-    , root :: String
-    , def :: String
-    , keepRootDir :: Boolean
-    , keepFamiliesDir :: Boolean
-    , toolkitImports :: Array String
-    , familyImports :: Array String
+    { toolkitName :: String
+    , rootDirectory :: String
+    , definitionFile :: String
+    , keepRootDirectory :: Boolean
+    , keepFamiliesDirectory :: Boolean
+    , toolkitModuleImports :: Array String
+    , familyModuleImports :: Array String
     }
 
 
@@ -51,28 +46,33 @@ main = run =<< OA.execParser opts
     opts = OA.info (options <**> OA.helper)
       ( OA.fullDesc
      <> OA.progDesc "Generate PureScript sources for TOOLKIT node families using SOURCE text definition in special format (see ToolkitTextGen.md)"
-     <> OA.header "generate-toolkit - toolkits code generator" )
+     <> OA.header "generate-toolkit - toolkits code generator"
+      )
 
 
 run :: Options -> Effect Unit
-run options =
+run opts =
     launchAff_ $ do
         liftEffect $ do
             traverse_ Console.log
                 [ "generate-toolkit - toolkits code generator"
                 , "--help for help"
                 , "\n----------------\n"
-                , "Definition file: " <> options.def
-                , "Toolkit: " <> options.name
-                , "Root: " <> options.root
-                , "Keep root directory: " <> show options.keepRootDir
-                , "Keep families directory: " <> show options.keepFamiliesDir
-                , "Additional toolkit module imports: " <> show options.toolkitImports
-                , "Additional family module imports: " <> show options.familyImports
+                , "Definition file: " <> opts.definitionFile
+                , "Toolkit: " <> opts.toolkitName
+                , "Root: " <> opts.rootDirectory
+                , "Keep root directory: " <> show opts.keepRootDirectory
+                , "Keep families directory: " <> show opts.keepFamiliesDirectory
+                , "Additional toolkit module imports: " <> show opts.toolkitModuleImports
+                , "Additional family module imports: " <> show opts.familyModuleImports
                 ]
-        mkdir rootPath
-        mkdir $ rootPath <> QTG.familiesModulesDirectoryPath
-        quickDefsFile <- readTextFile UTF8 toolkitDefPath
+        when (not opts.keepRootDirectory) $ do
+            rmdir rootPath
+            mkdir rootPath
+        when (not opts.keepFamiliesDirectory) $ do
+            rmdir $ rootPath <> QTG.familiesModulesDirectoryPath
+            mkdir $ rootPath <> QTG.familiesModulesDirectoryPath
+        quickDefsFile <- readTextFile UTF8 opts.definitionFile
         let parseResult = P.runParser quickDefsFile QDP.familyListParser
         case parseResult of
             Right familiesList -> do
@@ -82,6 +82,8 @@ run options =
             Left error ->
                 liftEffect $ Console.log $ show error
     where
+        toolkitName = QTG.ToolkitName opts.toolkitName
+        rootPath = opts.rootDirectory
         genFamilyFile family =
             writeTextFile UTF8 (rootPath <> QTG.familyModulePath family) $ QTG.familyModule toolkitName [] family
 
@@ -149,4 +151,12 @@ options = ado
     , OA.metavar "FAMILY_IMPORT"
     ]
 
-  in { name, root, def, keepRootDir, keepFamiliesDir, toolkitImports, familyImports }
+  in
+    { toolkitName : name
+    , rootDirectory : root
+    , definitionFile : def
+    , keepRootDirectory : keepRootDir
+    , keepFamiliesDirectory : keepFamiliesDir
+    , toolkitModuleImports : toolkitImports
+    , familyModuleImports : familyImports
+    }
