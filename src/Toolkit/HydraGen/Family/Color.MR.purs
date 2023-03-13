@@ -6,6 +6,7 @@ module Toolkit.HydraGen.Family.Color.FR where
 
 import Prelude
 import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 

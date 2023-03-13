@@ -143,6 +143,7 @@ familyModuleImports :: Imports
 familyModuleImports =
     [ "Prelude" /\ Nothing
     , "Noodle.Fn2" /\ Just "Fn"
+    , "Noodle.Id (Input(..), Output(..))" /\ Just "Fn"
     , "Noodle.Fn2.Process" /\ Just "P"
     , "Noodle.Family.Def" /\ Just "Family"
     ]
