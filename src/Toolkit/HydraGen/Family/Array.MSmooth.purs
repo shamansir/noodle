@@ -19,7 +19,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
-        ( a :: H.Array, smooth :: H.Value )
+        ( a :: H.VArray, smooth :: H.Value )
         ( out :: H.Value )
         m
 
@@ -27,10 +27,9 @@ family :: forall m. Family m
 family = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, smooth : H.1 }
-        { out : ?out_default }
+        { a : H.noValues, smooth : H.Number 1.0 }
+        { out : H.None }
         $ Fn.make "smooth" $ do
             a <- P.receive _in_a
             smooth <- P.receive _in_smooth
-            -- Smooth a smooth
-            P.send _out_out ?out_out
+            P.send _out_out $ H.VArray a $ H.Smooth smooth

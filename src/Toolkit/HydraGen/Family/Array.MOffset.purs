@@ -19,7 +19,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
-        ( a :: H.Array, offset :: H.Value )
+        ( a :: H.VArray, offset :: H.Value )
         ( out :: H.Value )
         m
 
@@ -27,10 +27,9 @@ family :: forall m. Family m
 family = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, offset : H.0.5 }
-        { out : ?out_default }
+        { a : H.noValues, offset : H.Number 0.5 }
+        { out : H.None }
         $ Fn.make "offset" $ do
             a <- P.receive _in_a
             offset <- P.receive _in_offset
-            -- Offset a offset
-            P.send _out_out ?out_out
+            P.send _out_out $ H.VArray a $ H.Offset offset

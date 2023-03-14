@@ -73,11 +73,11 @@ data Hydra
     | Init SourceOptions
     | InitStream Source ?ArgType
     | InitScreen Source
-    | Fast Array Value
-    | Smooth Array Value
-    | Ease Array Ease
-    | Offset Array Value
-    | Fit Array Value Value
+    | Fast VArray Value
+    | Smooth VArray Value
+    | Ease VArray Ease
+    | Offset VArray Value
+    | Fit VArray Value Value
     | Fft Audio AudioBin
     | SetSmooth Audio Value
     | SetCutoff Audio Value

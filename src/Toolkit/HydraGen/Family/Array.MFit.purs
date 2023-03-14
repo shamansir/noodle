@@ -20,7 +20,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
-        ( a :: H.Array, low :: H.Value, high :: H.Value )
+        ( a :: H.VArray, low :: H.Value, high :: H.Value )
         ( out :: H.Value )
         m
 
@@ -28,11 +28,10 @@ family :: forall m. Family m
 family = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, low : H.0, high : H.1 }
-        { out : ?out_default }
+        { a : H.noValues, low : H.Number 0.0, high : H.Number 1.1 }
+        { out : H.None }
         $ Fn.make "fit" $ do
             a <- P.receive _in_a
             low <- P.receive _in_low
             high <- P.receive _in_high
-            -- Fit a low high
-            P.send _out_out ?out_out
+            P.send _out_out $ H.VArray a $ H.Fit low high

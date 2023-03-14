@@ -19,7 +19,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
-        ( a :: H.Array, ease :: H.Ease )
+        ( a :: H.VArray, ease :: H.Ease )
         ( out :: H.Value )
         m
 
@@ -27,10 +27,9 @@ family :: forall m. Family m
 family = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, ease : H.Linear }
-        { out : ?out_default }
+        { a : H.noValues, ease : H.Linear }
+        { out : H.None }
         $ Fn.make "ease" $ do
             a <- P.receive _in_a
             ease <- P.receive _in_ease
-            -- Ease a ease
-            P.send _out_out ?out_out
+            P.send _out_out $ H.VArray a ease
