@@ -27,10 +27,10 @@ family :: forall m. Family m
 family = -- {-> blend <-}
     Family.def
         unit
-        { what : ?what_default, with : ?with_default }
-        { out : ?out_default }
+        { what : H.Empty, with : H.Empty }
+        { out : H.Empty }
         $ Fn.make "mask" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             -- Mask what with
-            P.send _out_out ?out_out
+            P.send _out_out $ H.BlendOf what with $ H.Mask

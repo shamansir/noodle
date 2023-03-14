@@ -19,8 +19,6 @@ data Value
     | Number Number
     | VArray (Array Value) Ease
     | Dep (Context -> Number)
-    -- | Fast Array Number
-    -- | Smooth Array Number
     -- | ...
     | Time
     | MouseX
@@ -34,12 +32,28 @@ data Value
 type VArray = Array Value
 
 
-data Texture
+data TextureSource
     = Solid
     | Dynamic
     | Video
     | Camera
     -- | ...
+
+data Blend
+    = Blend Value
+    | Add Value
+    | Diff
+    | Layer Value
+    | Mask
+    | Mult Value
+    | Sub Value
+
+
+data Texture
+    = Empty
+    | From TextureSource
+    | BlendOf Texture Texture Blend
+
 
 data Source
     = Source0

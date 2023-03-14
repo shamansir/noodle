@@ -28,11 +28,10 @@ family :: forall m. Family m
 family = -- {-> blend <-}
     Family.def
         unit
-        { what : ?what_default, with : ?with_default, amount : H.0.5 }
-        { out : ?out_default }
+        { what : H.Empty, with : H.Empty, amount : H.Number 0.5 }
+        { out : H.Empty }
         $ Fn.make "blend" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
-            -- Blend what with amount
-            P.send _out_out ?out_out
+            P.send _out_out $ H.BlendOf what with $ H.Blend amount
