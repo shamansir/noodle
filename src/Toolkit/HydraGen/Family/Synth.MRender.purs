@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Synth.FRender where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -18,17 +18,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
-        ( from :: From )
-        ( out :: Unit )
+        ( from :: H.From )
+        ( out :: H.Unit )
         m
 
 family :: forall m. Family m
 family = -- {-> synth <-}
     Family.def
         unit
-        { from : All }
+        { from : H.All }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "render" $ do
             from <- P.receive _in_from
             -- Render from
             P.send _out_out ?out_out

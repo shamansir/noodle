@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Modulate.FModulateKaleid where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -20,17 +20,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
-        ( what :: Texture, with :: Texture, nSides :: Value )
-        ( out :: Texture )
+        ( what :: H.Texture, with :: H.Texture, nSides :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> modulate <-}
     Family.def
         unit
-        { what : ?what_default, with : ?with_default, nSides : 3 }
+        { what : ?what_default, with : ?with_default, nSides : H.3 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateKaleid" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             nSides <- P.receive _in_nSides

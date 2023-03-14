@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Blend.FLayer where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -20,17 +20,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> blend <-}
     Family.Def Unit
-        ( what :: Texture, with :: Texture, amount :: Value )
-        ( out :: Texture )
+        ( what :: H.Texture, with :: H.Texture, amount :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> blend <-}
     Family.def
         unit
-        { what : ?what_default, with : ?with_default, amount : 1 }
+        { what : ?what_default, with : ?with_default, amount : H.1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "layer" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount

@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Modulate.FModulateScale where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -21,17 +21,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
-        ( what :: Texture, with :: Texture, multiple :: Value, offset :: Value )
-        ( out :: Texture )
+        ( what :: H.Texture, with :: H.Texture, multiple :: H.Value, offset :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> modulate <-}
     Family.def
         unit
-        { what : ?what_default, with : ?with_default, multiple : 1, offset : 1 }
+        { what : ?what_default, with : ?with_default, multiple : H.1, offset : H.1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateScale" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple

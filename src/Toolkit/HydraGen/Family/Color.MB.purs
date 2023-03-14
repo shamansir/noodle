@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Color.FB where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -20,17 +20,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
-        ( what :: Texture, scale :: Value, offset :: Value )
-        ( out :: Texture )
+        ( what :: H.Texture, scale :: H.Value, offset :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { what : ?what_default, scale : H.1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "b" $ do
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset

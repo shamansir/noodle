@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Modulate.FModulateScrollY where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -21,17 +21,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> modulate <-}
     Family.Def Unit
-        ( what :: Texture, with :: Texture, scrollY :: Value, speed :: Value )
-        ( out :: Texture )
+        ( what :: H.Texture, with :: H.Texture, scrollY :: H.Value, speed :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> modulate <-}
     Family.def
         unit
-        { what : ?what_default, with : ?with_default, scrollY : 0.5, speed : ?speed_default }
+        { what : ?what_default, with : ?with_default, scrollY : H.0.5, speed : ?speed_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateScrollY" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             scrollY <- P.receive _in_scrollY

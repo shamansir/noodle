@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Color.FInvert where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -19,17 +19,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
-        ( what :: Texture, amount :: Value )
-        ( out :: Texture )
+        ( what :: H.Texture, amount :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : ?what_default, amount : 1 }
+        { what : ?what_default, amount : H.1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "invert" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Invert what amount

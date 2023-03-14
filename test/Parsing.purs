@@ -182,13 +182,14 @@ spec = do
           Right familiesList -> do
 
             let toolkit = QTGen.ToolkitName "hydra"
+            let localsPrefix = QTGen.LocalsPrefix ""
 
             let toolkitSumType = QTGen.toolkitSumType toolkit familiesList
             let toolkitDataModule = QTGen.toolkitDataModule toolkit familiesList
-            let toolkitModule = QTGen.toolkitModule QTGen.FamiliesAsModules [ "ModuleImport" /\ Just "MI" ] toolkit familiesList
-            let toolkitModule' = QTGen.toolkitModule QTGen.FamiliesInline [ "ModuleImport" /\ Just "MI" ] toolkit familiesList
+            let toolkitModule = QTGen.toolkitModule QTGen.FamiliesAsModules toolkit localsPrefix [ "ModuleImport as MI" ] familiesList
+            let toolkitModule' = QTGen.toolkitModule QTGen.FamiliesInline  toolkit localsPrefix [ "ModuleImport as MI" ] familiesList
 
-            let familyModules = String.joinWith "\n\n{- MODULE -}\n\n" (QTGen.familyModule toolkit [ "FamilyImport" /\ Just "FI" ] <$> familiesList)
+            let familyModules = String.joinWith "\n\n{- MODULE -}\n\n" (QTGen.familyModule toolkit localsPrefix [ "FamilyImport as FI" ] <$> familiesList)
 
             let fileContent =
                     String.joinWith "\n\n\n"

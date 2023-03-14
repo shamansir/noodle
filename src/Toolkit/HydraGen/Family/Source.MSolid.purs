@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Source.FSolid where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -21,17 +21,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
-        ( r :: Value, g :: Value, b :: Value, a :: Value )
-        ( out :: Texture )
+        ( r :: H.Value, g :: H.Value, b :: H.Value, a :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> source <-}
     Family.def
         unit
-        { r : ?r_default, g : ?g_default, b : ?b_default, a : 1 }
+        { r : ?r_default, g : ?g_default, b : ?b_default, a : H.1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "solid" $ do
             r <- P.receive _in_r
             g <- P.receive _in_g
             b <- P.receive _in_b

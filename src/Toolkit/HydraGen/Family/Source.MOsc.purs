@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Source.FOsc where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -20,17 +20,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
-        ( frequency :: Value, sync :: Value, offset :: Value )
-        ( out :: Texture )
+        ( frequency :: H.Value, sync :: H.Value, offset :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> source <-}
     Family.def
         unit
-        { frequency : 60, sync : 0.1, offset : ?offset_default }
+        { frequency : H.60, sync : H.0.1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "osc" $ do
             frequency <- P.receive _in_frequency
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset

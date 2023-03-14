@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Color.FPosterize where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -20,17 +20,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
-        ( what :: Texture, bins :: Value, gamma :: Value )
-        ( out :: Texture )
+        ( what :: H.Texture, bins :: H.Value, gamma :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : ?what_default, bins : 3, gamma : 0.6 }
+        { what : ?what_default, bins : H.3, gamma : H.0.6 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "posterize" $ do
             what <- P.receive _in_what
             bins <- P.receive _in_bins
             gamma <- P.receive _in_gamma

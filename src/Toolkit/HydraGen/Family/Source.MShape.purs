@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Source.FShape where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -20,17 +20,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
-        ( sides :: Value, radius :: Value, smoothing :: Value )
-        ( out :: Texture )
+        ( sides :: H.Value, radius :: H.Value, smoothing :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> source <-}
     Family.def
         unit
-        { sides : 60, radius : 0.3, smoothing : 0.01 }
+        { sides : H.60, radius : H.0.3, smoothing : H.0.01 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "shape" $ do
             sides <- P.receive _in_sides
             radius <- P.receive _in_radius
             smoothing <- P.receive _in_smoothing

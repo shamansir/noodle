@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Geometry.FScroll where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -22,17 +22,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit
-        ( what :: Texture, scrollX :: Value, scrollY :: Value, speedX :: Value, speedY :: Value )
-        ( out :: Texture )
+        ( what :: H.Texture, scrollX :: H.Value, scrollY :: H.Value, speedX :: H.Value, speedY :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> geometry <-}
     Family.def
         unit
-        { what : ?what_default, scrollX : 0.5, scrollY : 0.5, speedX : ?speedX_default, speedY : ?speedY_default }
+        { what : ?what_default, scrollX : H.0.5, scrollY : H.0.5, speedX : ?speedX_default, speedY : ?speedY_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "scroll" $ do
             what <- P.receive _in_what
             scrollX <- P.receive _in_scrollX
             scrollY <- P.receive _in_scrollY

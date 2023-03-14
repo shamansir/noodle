@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Geometry.FRepeat where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -22,17 +22,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> geometry <-}
     Family.Def Unit
-        ( what :: Texture, repeatX :: Value, repeatY :: Value, offsetX :: Value, offsetY :: Value )
-        ( out :: Texture )
+        ( what :: H.Texture, repeatX :: H.Value, repeatY :: H.Value, offsetX :: H.Value, offsetY :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> geometry <-}
     Family.def
         unit
-        { what : ?what_default, repeatX : 3, repeatY : 3, offsetX : ?offsetX_default, offsetY : ?offsetY_default }
+        { what : ?what_default, repeatX : H.3, repeatY : H.3, offsetX : ?offsetX_default, offsetY : ?offsetY_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "repeat" $ do
             what <- P.receive _in_what
             repeatX <- P.receive _in_repeatX
             repeatY <- P.receive _in_repeatY

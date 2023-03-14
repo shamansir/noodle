@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Blend.FDiff where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -19,8 +19,8 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> blend <-}
     Family.Def Unit
-        ( what :: Texture, with :: Texture )
-        ( out :: Texture )
+        ( what :: H.Texture, with :: H.Texture )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
@@ -29,7 +29,7 @@ family = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "diff" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             -- Diff what with

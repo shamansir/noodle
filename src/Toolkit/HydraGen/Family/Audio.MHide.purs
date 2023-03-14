@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Audio.FHide where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -19,8 +19,8 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
-        ( a :: Audio, ?ch_type )
-        ( out :: Unit )
+        ( a :: H.Audio, ?ch_type )
+        ( out :: H.Unit )
         m
 
 family :: forall m. Family m
@@ -29,7 +29,7 @@ family = -- {-> audio <-}
         unit
         { a : ?a_default, ?ch_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "hide" $ do
             a <- P.receive _in_a
             --
             -- Hide a ?input

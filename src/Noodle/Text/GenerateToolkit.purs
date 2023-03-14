@@ -7,6 +7,7 @@ import Data.Traversable (traverse, traverse_)
 import Data.Newtype (unwrap)
 import Data.Array (fromFoldable)
 import Data.Foldable (fold)
+import Data.String as String
 
 import Effect (Effect)
 import Effect.Aff (launchAff, launchAff_, runAff_)
@@ -37,6 +38,7 @@ type Options =
     , keepFamiliesDirectory :: Boolean
     , toolkitModuleImports :: Array String
     , familyModuleImports :: Array String
+    , localsPrefix :: String
     }
 
 
@@ -65,6 +67,7 @@ run opts =
                 , "Keep families directory: " <> show opts.keepFamiliesDirectory
                 , "Additional toolkit module imports: " <> show opts.toolkitModuleImports
                 , "Additional family module imports: " <> show opts.familyModuleImports
+                , "LocalsPrefix: " <> if String.null opts.localsPrefix then "none" else "\'" <> opts.localsPrefix <> "\'"
                 ]
         when (not opts.keepRootDirectory) $ do
             rootDirExists <- exists rootDirPath
@@ -81,14 +84,15 @@ run opts =
             Right familiesList -> do
                 traverse_ genFamilyFile familiesList
                 writeTextFile UTF8 (rootDirPath <> QTG.toolkitDataModulePath toolkitName) $ QTG.toolkitDataModule toolkitName familiesList
-                writeTextFile UTF8 (rootDirPath <> QTG.toolkitModulePath toolkitName) $ QTG.toolkitModule QTG.FamiliesAsModules [] toolkitName familiesList
+                writeTextFile UTF8 (rootDirPath <> QTG.toolkitModulePath toolkitName) $ QTG.toolkitModule QTG.FamiliesAsModules toolkitName localsPrefix opts.toolkitModuleImports familiesList
             Left error ->
                 liftEffect $ Console.log $ show error
     where
         toolkitName = QTG.ToolkitName opts.toolkitName
+        localsPrefix = QTG.LocalsPrefix opts.localsPrefix
         rootDirPath = opts.rootDirectory
         genFamilyFile family =
-            writeTextFile UTF8 (rootDirPath <> QTG.familyModulePath family) $ QTG.familyModule toolkitName [] family
+            writeTextFile UTF8 (rootDirPath <> QTG.familyModulePath family) $ QTG.familyModule toolkitName localsPrefix opts.familyModuleImports family
 
 
 options :: OA.Parser Options
@@ -154,6 +158,15 @@ options = ado
     , OA.metavar "FAMILY_IMPORT"
     ]
 
+  localsPrefix <- OA.strOption $ fold
+    [ OA.long "locals-prefix"
+    , OA.short 'l'
+    , OA.metavar "LOCALS_PREFIX"
+    , OA.value ""
+    , OA.help "The prefix to add to all the local types and values, empty by default, could be, for example, `MT.` and this would help with family import `ToolkitTypesAndValues as MT`"
+    , OA.showDefault
+    ]
+
   in
     { toolkitName : name
     , rootDirectory : root
@@ -162,4 +175,5 @@ options = ado
     , keepFamiliesDirectory : keepFamiliesDir
     , toolkitModuleImports : toolkitImports
     , familyModuleImports : familyImports
+    , localsPrefix
     }

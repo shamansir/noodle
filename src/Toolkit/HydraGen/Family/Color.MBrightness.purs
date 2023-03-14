@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Color.FBrightness where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -19,17 +19,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
-        ( what :: Texture, amount :: Value )
-        ( out :: Texture )
+        ( what :: H.Texture, amount :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : ?what_default, amount : 0.4 }
+        { what : ?what_default, amount : H.0.4 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "brightness" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Brightness what amount

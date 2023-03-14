@@ -1,10 +1,10 @@
 module Toolkit.HydraGen.Family.Source.FNoise where
 
 
+import Toolkit.HydraGen.Types as H
 
 
-
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -19,17 +19,17 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
-        ( scale :: Value, offset :: Value )
-        ( out :: Texture )
+        ( scale :: H.Value, offset :: H.Value )
+        ( out :: H.Texture )
         m
 
 family :: forall m. Family m
 family = -- {-> source <-}
     Family.def
         unit
-        { scale : 10, offset : 0.1 }
+        { scale : H.10, offset : H.0.1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "noise" $ do
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             -- Noise scale offset
