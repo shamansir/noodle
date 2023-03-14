@@ -11,26 +11,26 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_a = Fn.Input :: _ "a"
-
+_in_audio = Fn.Input :: _ "audio"
 
 _out_out = Fn.Output :: _ "out"
 
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
-        ( a :: H.Audio, ?ch_type )
-        ( out :: H.Unit )
+        ( audio :: H.Audio, todo :: H.TODO )
+        ( out :: H.TODO )
         m
 
 family :: forall m. Family m
 family = -- {-> audio <-}
     Family.def
         unit
-        { a : ?a_default, ?ch_default }
-        { out : ?out_default }
+        { audio : H.Silence, todo : H.TODO }
+        { out : H.TODO }
         $ Fn.make "hide" $ do
-            a <- P.receive _in_a
+            audio <- P.receive _in_audio
             --
             -- Hide a ?input
-            P.send _out_out ?out_out
+            -- P.send _out_out ?out_out
+            pure unit

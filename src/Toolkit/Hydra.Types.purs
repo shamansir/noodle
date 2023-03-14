@@ -6,6 +6,9 @@ import Prelude
 import Effect (Effect)
 
 
+data TODO = TODO
+
+
 type Context =
     { time :: Number
     -- , ...
@@ -25,7 +28,7 @@ data Value
     | Width
     | Height
     -- | ...
-    | Harmonic AudioBin
+    | Audio Audio AudioBin
 
 
 type VArray = Array Value
@@ -66,7 +69,8 @@ data From
     | Output Output
 
 data Audio
-    = Mic
+    = Silence
+    | Mic
     | File
     -- | ...
 

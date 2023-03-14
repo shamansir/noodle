@@ -11,26 +11,23 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_a = Fn.Input :: _ "a"
+_in_audio = Fn.Input :: _ "audio"
 _in_scale = Fn.Input :: _ "scale"
-
-_out_out = Fn.Output :: _ "out"
 
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
-        ( a :: H.Audio, scale :: H.Value )
-        ( out :: H.Unit )
+        ( audio :: H.Audio, scale :: H.Value )
+        ( )
         m
 
 family :: forall m. Family m
 family = -- {-> audio <-}
     Family.def
         unit
-        { a : ?a_default, scale : H.10 }
-        { out : ?out_default }
+        { audio : H.Silence, scale : H.Number 10.0 }
+        { }
         $ Fn.make "setScale" $ do
-            a <- P.receive _in_a
+            audio <- P.receive _in_audio
             scale <- P.receive _in_scale
-            -- SetScale a scale
-            P.send _out_out ?out_out
+            pure unit

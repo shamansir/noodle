@@ -11,7 +11,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_a = Fn.Input :: _ "a"
+_in_arr = Fn.Input :: _ "arr"
 _in_smooth = Fn.Input :: _ "smooth"
 
 _out_out = Fn.Output :: _ "out"
@@ -19,7 +19,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
-        ( a :: H.VArray, smooth :: H.Value )
+        ( arr :: H.VArray, smooth :: H.Value )
         ( out :: H.Value )
         m
 
@@ -27,9 +27,9 @@ family :: forall m. Family m
 family = -- {-> array <-}
     Family.def
         unit
-        { a : H.noValues, smooth : H.Number 1.0 }
+        { arr : H.noValues, smooth : H.Number 1.0 }
         { out : H.None }
         $ Fn.make "smooth" $ do
-            a <- P.receive _in_a
+            a <- P.receive _in_arr
             smooth <- P.receive _in_smooth
             P.send _out_out $ H.VArray a $ H.Smooth smooth
