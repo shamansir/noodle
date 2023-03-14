@@ -8,6 +8,7 @@ import Data.Identity (Identity)
 import Data.String.CodeUnits as String
 import Data.String (joinWith, split, Pattern(..)) as String
 import Data.Array as Array
+import Data.Tuple.Nested ((/\))
 
 import Control.Monad.Error.Class (class MonadThrow)
 
@@ -184,10 +185,10 @@ spec = do
 
             let toolkitSumType = QTGen.toolkitSumType toolkit familiesList
             let toolkitDataModule = QTGen.toolkitDataModule toolkit familiesList
-            let toolkitModule = QTGen.toolkitModule QTGen.FamiliesAsModules toolkit familiesList
-            let toolkitModule' = QTGen.toolkitModule QTGen.FamiliesInline toolkit familiesList
+            let toolkitModule = QTGen.toolkitModule QTGen.FamiliesAsModules [ "ModuleImport" /\ Just "MI" ] toolkit familiesList
+            let toolkitModule' = QTGen.toolkitModule QTGen.FamiliesInline [ "ModuleImport" /\ Just "MI" ] toolkit familiesList
 
-            let familyModules = String.joinWith "\n\n{- MODULE -}\n\n" (QTGen.familyModule toolkit <$> familiesList)
+            let familyModules = String.joinWith "\n\n{- MODULE -}\n\n" (QTGen.familyModule toolkit [ "FamilyImport" /\ Just "FI" ] <$> familiesList)
 
             let fileContent =
                     String.joinWith "\n\n\n"

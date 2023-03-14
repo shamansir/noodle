@@ -22,7 +22,7 @@ import Options.Applicative as OA
 import Options.Applicative ((<**>))
 
 import Node.Encoding (Encoding(..))
-import Node.FS.Aff (mkdir, rmdir, readTextFile, writeTextFile, appendTextFile)
+import Node.FS.Aff (mkdir, rmdir, readTextFile, writeTextFile, appendTextFile, exists)
 
 import Noodle.Text.Generators as QTG
 import Noodle.Text.QuickDef as QD
@@ -67,25 +67,28 @@ run opts =
                 , "Additional family module imports: " <> show opts.familyModuleImports
                 ]
         when (not opts.keepRootDirectory) $ do
-            rmdir rootPath
-            mkdir rootPath
+            rootDirExists <- exists rootDirPath
+            when rootDirExists $ rmdir rootDirPath
+            mkdir rootDirPath
         when (not opts.keepFamiliesDirectory) $ do
-            rmdir $ rootPath <> QTG.familiesModulesDirectoryPath
-            mkdir $ rootPath <> QTG.familiesModulesDirectoryPath
+            let familyDirPath = rootDirPath <> QTG.familiesModulesDirectoryPath
+            familyDirExists <- exists familyDirPath
+            when familyDirExists $ rmdir familyDirPath
+            mkdir familyDirPath
         quickDefsFile <- readTextFile UTF8 opts.definitionFile
         let parseResult = P.runParser quickDefsFile QDP.familyListParser
         case parseResult of
             Right familiesList -> do
                 traverse_ genFamilyFile familiesList
-                writeTextFile UTF8 (rootPath <> QTG.toolkitDataModulePath toolkitName) $ QTG.toolkitDataModule toolkitName familiesList
-                writeTextFile UTF8 (rootPath <> QTG.toolkitModulePath toolkitName) $ QTG.toolkitModule QTG.FamiliesAsModules [] toolkitName familiesList
+                writeTextFile UTF8 (rootDirPath <> QTG.toolkitDataModulePath toolkitName) $ QTG.toolkitDataModule toolkitName familiesList
+                writeTextFile UTF8 (rootDirPath <> QTG.toolkitModulePath toolkitName) $ QTG.toolkitModule QTG.FamiliesAsModules [] toolkitName familiesList
             Left error ->
                 liftEffect $ Console.log $ show error
     where
         toolkitName = QTG.ToolkitName opts.toolkitName
-        rootPath = opts.rootDirectory
+        rootDirPath = opts.rootDirectory
         genFamilyFile family =
-            writeTextFile UTF8 (rootPath <> QTG.familyModulePath family) $ QTG.familyModule toolkitName [] family
+            writeTextFile UTF8 (rootDirPath <> QTG.familyModulePath family) $ QTG.familyModule toolkitName [] family
 
 
 options :: OA.Parser Options
