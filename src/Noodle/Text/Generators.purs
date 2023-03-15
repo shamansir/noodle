@@ -158,7 +158,9 @@ familyModuleImports =
 
 toolkitModuleImports :: Imports
 toolkitModuleImports =
-    [
+    [ "Prelude (Unit)"
+    , "Noodle.Toolkit3 (Toolkit) as Noodle"
+    , "Noodle.Toolkit3 as Toolkit"
     ]
 
 
@@ -293,7 +295,7 @@ familyType lp qfml =
 familyTypeReference :: QD.QFamily -> String
 familyTypeReference qfml =
     qfml.family <> " :: "
-        <> familyModuleAlias qfml <> ".Family"
+        <> familyModuleAlias qfml <> ".Family m"
         <> " -- {-> " <> qfml.tag <> " <-}"
 
 

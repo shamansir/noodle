@@ -1,9 +1,10 @@
 module Toolkit.HydraGen where
 
 
+import Prelude (Unit)
 
-
-
+import Noodle.Toolkit3 (Toolkit) as Noodle
+import Noodle.Toolkit3 as Toolkit
 
 
 
@@ -14,7 +15,6 @@ import Toolkit.HydraGen.Family.Source.FShape as FShape
 import Toolkit.HydraGen.Family.Source.FGradient as FGradient
 import Toolkit.HydraGen.Family.Source.FSrc as FSrc
 import Toolkit.HydraGen.Family.Source.FSolid as FSolid
-import Toolkit.HydraGen.Family.Source.FSrc as FSrc
 import Toolkit.HydraGen.Family.Source.FPrev as FPrev
 import Toolkit.HydraGen.Family.Geometry.FRotate as FRotate
 import Toolkit.HydraGen.Family.Geometry.FScale as FScale
@@ -95,90 +95,89 @@ import Toolkit.HydraGen.Family.Out.FOut as FOut
 
 type HydraToolkit m
     = Noodle.Toolkit Unit
-        ( noise :: FNoise.Family -- {-> source <-}
-        , voronoi :: FVoronoi.Family -- {-> source <-}
-        , osc :: FOsc.Family -- {-> source <-}
-        , shape :: FShape.Family -- {-> source <-}
-        , gradient :: FGradient.Family -- {-> source <-}
-        , src :: FSrc.Family -- {-> source <-}
-        , solid :: FSolid.Family -- {-> source <-}
-        , src :: FSrc.Family -- {-> source <-}
-        , prev :: FPrev.Family -- {-> source <-}
-        , rotate :: FRotate.Family -- {-> geometry <-}
-        , scale :: FScale.Family -- {-> geometry <-}
-        , pixelate :: FPixelate.Family -- {-> geometry <-}
-        , repeat :: FRepeat.Family -- {-> geometry <-}
-        , repeatX :: FRepeatX.Family -- {-> geometry <-}
-        , repeatY :: FRepeatY.Family -- {-> geometry <-}
-        , kaleid :: FKaleid.Family -- {-> geometry <-}
-        , scroll :: FScroll.Family -- {-> geometry <-}
-        , scrollX :: FScrollX.Family -- {-> geometry <-}
-        , scrollY :: FScrollY.Family -- {-> geometry <-}
-        , posterize :: FPosterize.Family -- {-> color <-}
-        , shift :: FShift.Family -- {-> color <-}
-        , invert :: FInvert.Family -- {-> color <-}
-        , contrast :: FContrast.Family -- {-> color <-}
-        , brightness :: FBrightness.Family -- {-> color <-}
-        , luma :: FLuma.Family -- {-> color <-}
-        , tresh :: FTresh.Family -- {-> color <-}
-        , color :: FColor.Family -- {-> color <-}
-        , saturate :: FSaturate.Family -- {-> color <-}
-        , hue :: FHue.Family -- {-> color <-}
-        , colorama :: FColorama.Family -- {-> color <-}
-        , sum :: FSum.Family -- {-> color <-}
-        , r :: FR.Family -- {-> color <-}
-        , g :: FG.Family -- {-> color <-}
-        , b :: FB.Family -- {-> color <-}
-        , a :: FA.Family -- {-> color <-}
-        , add :: FAdd.Family -- {-> blend <-}
-        , sub :: FSub.Family -- {-> blend <-}
-        , layer :: FLayer.Family -- {-> blend <-}
-        , blend :: FBlend.Family -- {-> blend <-}
-        , mult :: FMult.Family -- {-> blend <-}
-        , diff :: FDiff.Family -- {-> blend <-}
-        , mask :: FMask.Family -- {-> blend <-}
-        , modulateRepeat :: FModulateRepeat.Family -- {-> modulate <-}
-        , modulateRepeatX :: FModulateRepeatX.Family -- {-> modulate <-}
-        , modulateRepeatY :: FModulateRepeatY.Family -- {-> modulate <-}
-        , modulateKaleid :: FModulateKaleid.Family -- {-> modulate <-}
-        , modulateScrollX :: FModulateScrollX.Family -- {-> modulate <-}
-        , modulateScrollY :: FModulateScrollY.Family -- {-> modulate <-}
-        , modulate :: FModulate.Family -- {-> modulate <-}
-        , modulateScale :: FModulateScale.Family -- {-> modulate <-}
-        , modulatePixelate :: FModulatePixelate.Family -- {-> modulate <-}
-        , modulateRotate :: FModulateRotate.Family -- {-> modulate <-}
-        , modulateHue :: FModulateHue.Family -- {-> modulate <-}
-        , render :: FRender.Family -- {-> synth <-}
-        , update :: FUpdate.Family -- {-> synth <-}
-        , setResolution :: FSetResolution.Family -- {-> synth <-}
-        , hush :: FHush.Family -- {-> synth <-}
-        , setFunction :: FSetFunction.Family -- {-> synth <-}
-        , speed :: FSpeed.Family -- {-> synth <-}
-        , bpm :: FBpm.Family -- {-> synth <-}
-        , width :: FWidth.Family -- {-> synth <-}
-        , height :: FHeight.Family -- {-> synth <-}
-        , pi :: FPi.Family -- {-> synth <-}
-        , time :: FTime.Family -- {-> synth <-}
-        , mouse :: FMouse.Family -- {-> synth <-}
-        , initCam :: FInitCam.Family -- {-> extsource <-}
-        , initImage :: FInitImage.Family -- {-> extsource <-}
-        , initVideo :: FInitVideo.Family -- {-> extsource <-}
-        , init :: FInit.Family -- {-> extsource <-}
-        , initStream :: FInitStream.Family -- {-> extsource <-}
-        , initScreen :: FInitScreen.Family -- {-> extsource <-}
-        , fast :: FFast.Family -- {-> array <-}
-        , smooth :: FSmooth.Family -- {-> array <-}
-        , ease :: FEase.Family -- {-> array <-}
-        , offset :: FOffset.Family -- {-> array <-}
-        , fit :: FFit.Family -- {-> array <-}
-        , fft :: FFft.Family -- {-> audio <-}
-        , setSmooth :: FSetSmooth.Family -- {-> audio <-}
-        , setCutoff :: FSetCutoff.Family -- {-> audio <-}
-        , setBins :: FSetBins.Family -- {-> audio <-}
-        , setScale :: FSetScale.Family -- {-> audio <-}
-        , hide :: FHide.Family -- {-> audio <-}
-        , show :: FShow.Family -- {-> audio <-}
-        , out :: FOut.Family -- {-> out <-}
+        ( noise :: FNoise.Family m  -- {-> source <-}
+        , voronoi :: FVoronoi.Family m  -- {-> source <-}
+        , osc :: FOsc.Family m -- {-> source <-}
+        , shape :: FShape.Family m  -- {-> source <-}
+        , gradient :: FGradient.Family m  -- {-> source <-}
+        , src :: FSrc.Family m  -- {-> source <-}
+        , solid :: FSolid.Family m  -- {-> source <-}
+        , prev :: FPrev.Family m  -- {-> source <-}
+        , rotate :: FRotate.Family m  -- {-> geometry <-}
+        , scale :: FScale.Family m  -- {-> geometry <-}
+        , pixelate :: FPixelate.Family m  -- {-> geometry <-}
+        , repeat :: FRepeat.Family m  -- {-> geometry <-}
+        , repeatX :: FRepeatX.Family m  -- {-> geometry <-}
+        , repeatY :: FRepeatY.Family m  -- {-> geometry <-}
+        , kaleid :: FKaleid.Family m  -- {-> geometry <-}
+        , scroll :: FScroll.Family m  -- {-> geometry <-}
+        , scrollX :: FScrollX.Family m  -- {-> geometry <-}
+        , scrollY :: FScrollY.Family m  -- {-> geometry <-}
+        , posterize :: FPosterize.Family m  -- {-> color <-}
+        , shift :: FShift.Family m  -- {-> color <-}
+        , invert :: FInvert.Family m  -- {-> color <-}
+        , contrast :: FContrast.Family m  -- {-> color <-}
+        , brightness :: FBrightness.Family m  -- {-> color <-}
+        , luma :: FLuma.Family m  -- {-> color <-}
+        , tresh :: FTresh.Family m  -- {-> color <-}
+        , color :: FColor.Family m  -- {-> color <-}
+        , saturate :: FSaturate.Family m  -- {-> color <-}
+        , hue :: FHue.Family m  -- {-> color <-}
+        , colorama :: FColorama.Family m  -- {-> color <-}
+        , sum :: FSum.Family m  -- {-> color <-}
+        , r :: FR.Family m  -- {-> color <-}
+        , g :: FG.Family m  -- {-> color <-}
+        , b :: FB.Family m  -- {-> color <-}
+        , a :: FA.Family m  -- {-> color <-}
+        , add :: FAdd.Family m  -- {-> blend <-}
+        , sub :: FSub.Family m  -- {-> blend <-}
+        , layer :: FLayer.Family m  -- {-> blend <-}
+        , blend :: FBlend.Family m  -- {-> blend <-}
+        , mult :: FMult.Family m  -- {-> blend <-}
+        , diff :: FDiff.Family m  -- {-> blend <-}
+        , mask :: FMask.Family m  -- {-> blend <-}
+        , modulateRepeat :: FModulateRepeat.Family m  -- {-> modulate <-}
+        , modulateRepeatX :: FModulateRepeatX.Family m  -- {-> modulate <-}
+        , modulateRepeatY :: FModulateRepeatY.Family m  -- {-> modulate <-}
+        , modulateKaleid :: FModulateKaleid.Family m  -- {-> modulate <-}
+        , modulateScrollX :: FModulateScrollX.Family m  -- {-> modulate <-}
+        , modulateScrollY :: FModulateScrollY.Family m  -- {-> modulate <-}
+        , modulate :: FModulate.Family m  -- {-> modulate <-}
+        , modulateScale :: FModulateScale.Family m  -- {-> modulate <-}
+        , modulatePixelate :: FModulatePixelate.Family m  -- {-> modulate <-}
+        , modulateRotate :: FModulateRotate.Family m  -- {-> modulate <-}
+        , modulateHue :: FModulateHue.Family m  -- {-> modulate <-}
+        , render :: FRender.Family m  -- {-> synth <-}
+        , update :: FUpdate.Family m  -- {-> synth <-}
+        , setResolution :: FSetResolution.Family m  -- {-> synth <-}
+        , hush :: FHush.Family m  -- {-> synth <-}
+        , setFunction :: FSetFunction.Family m  -- {-> synth <-}
+        , speed :: FSpeed.Family m  -- {-> synth <-}
+        , bpm :: FBpm.Family m  -- {-> synth <-}
+        , width :: FWidth.Family m  -- {-> synth <-}
+        , height :: FHeight.Family m  -- {-> synth <-}
+        , pi :: FPi.Family m  -- {-> synth <-}
+        , time :: FTime.Family m  -- {-> synth <-}
+        , mouse :: FMouse.Family m  -- {-> synth <-}
+        , initCam :: FInitCam.Family m  -- {-> extsource <-}
+        , initImage :: FInitImage.Family m  -- {-> extsource <-}
+        , initVideo :: FInitVideo.Family m  -- {-> extsource <-}
+        , init :: FInit.Family m  -- {-> extsource <-}
+        , initStream :: FInitStream.Family m  -- {-> extsource <-}
+        , initScreen :: FInitScreen.Family m  -- {-> extsource <-}
+        , fast :: FFast.Family m  -- {-> array <-}
+        , smooth :: FSmooth.Family m  -- {-> array <-}
+        , ease :: FEase.Family m  -- {-> array <-}
+        , offset :: FOffset.Family m  -- {-> array <-}
+        , fit :: FFit.Family m  -- {-> array <-}
+        , fft :: FFft.Family m  -- {-> audio <-}
+        , setSmooth :: FSetSmooth.Family m  -- {-> audio <-}
+        , setCutoff :: FSetCutoff.Family m  -- {-> audio <-}
+        , setBins :: FSetBins.Family m  -- {-> audio <-}
+        , setScale :: FSetScale.Family m  -- {-> audio <-}
+        , hide :: FHide.Family m  -- {-> audio <-}
+        , show :: FShow.Family m  -- {-> audio <-}
+        , out :: FOut.Family m  -- {-> out <-}
         )
 
 
@@ -192,7 +191,6 @@ toolkit =
         , gradient : FGradient.family
         , src : FSrc.family
         , solid : FSolid.family
-        , src : FSrc.family
         , prev : FPrev.family
         , rotate : FRotate.family
         , scale : FScale.family
