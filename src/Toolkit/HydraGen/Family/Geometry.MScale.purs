@@ -31,8 +31,8 @@ family :: forall m. Family m
 family = -- {-> geometry <-}
     Family.def
         unit
-        { what : ?what_default, amount : H.1.5, xMult : H.1, yMult : H.1, offsetX : H.0.5, offsetY : H.0.5 }
-        { out : ?out_default }
+        { what : H.Empty, amount : H.Number 1.5, xMult : H.Number 1.0, yMult : H.Number 1.0, offsetX : H.Number 0.5, offsetY : H.Number 0.5 }
+        { out : H.Empty }
         $ Fn.make "scale" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
@@ -40,5 +40,4 @@ family = -- {-> geometry <-}
             yMult <- P.receive _in_yMult
             offsetX <- P.receive _in_offsetX
             offsetY <- P.receive _in_offsetY
-            -- Scale what amount xMult yMult offsetX offsetY
-            P.send _out_out ?out_out
+            P.send _out_out $ H.Geometry what $ H.GScale { amount, xMult, yMult, offsetX, offsetY }

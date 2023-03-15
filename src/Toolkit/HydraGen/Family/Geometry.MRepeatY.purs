@@ -28,11 +28,11 @@ family :: forall m. Family m
 family = -- {-> geometry <-}
     Family.def
         unit
-        { what : ?what_default, reps : H.3, offset : ?offset_default }
-        { out : ?out_default }
+        { what : H.Empty, reps : H.Number 3.0, offset : H.Number 0.0 }
+        { out : H.Empty }
         $ Fn.make "repeatY" $ do
             what <- P.receive _in_what
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
             -- RepeatY what reps offset
-            P.send _out_out ?out_out
+            P.send _out_out $ H.Geometry what $ H.GRepeatY { reps, offset }

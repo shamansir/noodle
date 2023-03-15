@@ -28,11 +28,11 @@ family :: forall m. Family m
 family = -- {-> geometry <-}
     Family.def
         unit
-        { what : ?what_default, pixelX : H.20, pixelY : H.20 }
-        { out : ?out_default }
+        { what : H.Empty, pixelX : H.Number 20.0, pixelY : H.Number 20.0 }
+        { out : H.Empty }
         $ Fn.make "pixelate" $ do
             what <- P.receive _in_what
             pixelX <- P.receive _in_pixelX
             pixelY <- P.receive _in_pixelY
             -- Pixelate what pixelX pixelY
-            P.send _out_out ?out_out
+            P.send _out_out $ H.Geometry what $ H.GPixelate { pixelX, pixelY }

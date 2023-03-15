@@ -38,7 +38,7 @@ data Texture
     | BlendOf { what :: Texture, with :: Texture } Blend
     | WithColor Texture ColorOp
     | ModulateWith { what :: Texture, with :: Texture } Modulate
-    | Modify { what :: Texture, with :: Texture } Geometry
+    | Geometry Texture Geometry
 
 
 data Source
@@ -93,13 +93,22 @@ data Modulate
     | ModRepeatY { offset :: Value, reps :: Value } -- TODO: join with `ModRepeat`
     | ModRotate { multiple :: Value, offset :: Value }
     | ModScale { multiple :: Value, offset :: Value }
-    | ModScrollX { scrollX :: Value, speed :: Value }
-    | ModScrollY { scrollY :: Value, speed :: Value }
+    | ModScroll { scrollX :: Value, scrollY :: Value, speedX :: Value, speedY :: Value }
+    | ModScrollX { scrollX :: Value, speed :: Value } -- TODO: join with `Scroll`
+    | ModScrollY { scrollY :: Value, speed :: Value } -- TODO: join with `Scroll`
 
 
 data Geometry
-    = Kaleid
-    | Pixelate
+    = GKaleid { nSides :: Value }
+    | GPixelate { pixelX :: Value, pixelY :: Value }
+    | GRepeat { offsetX :: Value, offsetY :: Value, repeatX :: Value, repeatY :: Value }
+    | GRepeatX { offset :: Value, reps :: Value } -- TODO: join with `Repeat`
+    | GRepeatY { offset :: Value, reps :: Value } -- TODO: join with `Repeat`
+    | GRotate { angle :: Value, speed :: Value }
+    | GScale { amount :: Value, xMult :: Value, yMult :: Value, offsetX :: Value, offsetY :: Value }
+    | GScroll { scrollX :: Value, scrollY :: Value, speedX :: Value, speedY :: Value }
+    | GScrollX { scrollX :: Value, speed :: Value } -- TODO: join with `Scroll`
+    | GScrollY { scrollY :: Value, speed :: Value } -- TODO: join with `Scroll`
 
 
 data Output

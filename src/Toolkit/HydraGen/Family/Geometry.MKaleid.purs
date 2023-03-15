@@ -27,10 +27,9 @@ family :: forall m. Family m
 family = -- {-> geometry <-}
     Family.def
         unit
-        { what : ?what_default, nSides : H.3 }
-        { out : ?out_default }
+        { what : H.Empty, nSides : H.Number 3.0 }
+        { out : H.Empty }
         $ Fn.make "kaleid" $ do
             what <- P.receive _in_what
             nSides <- P.receive _in_nSides
-            -- Kaleid what nSides
-            P.send _out_out ?out_out
+            P.send _out_out $ H.Geometry what $ H.GKaleid { nSides }

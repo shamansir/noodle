@@ -28,11 +28,11 @@ family :: forall m. Family m
 family = -- {-> geometry <-}
     Family.def
         unit
-        { what : ?what_default, angle : H.10, speed : ?speed_default }
-        { out : ?out_default }
+        { what : H.Empty, angle : H.Number 10.0, speed : H.Number 1.0 }
+        { out : H.Empty }
         $ Fn.make "rotate" $ do
             what <- P.receive _in_what
             angle <- P.receive _in_angle
             speed <- P.receive _in_speed
             -- Rotate what angle speed
-            P.send _out_out ?out_out
+            P.send _out_out $ H.Geometry what $ H.GRotate { angle, speed }

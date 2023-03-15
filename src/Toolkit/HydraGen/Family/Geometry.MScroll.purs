@@ -30,13 +30,12 @@ family :: forall m. Family m
 family = -- {-> geometry <-}
     Family.def
         unit
-        { what : ?what_default, scrollX : H.0.5, scrollY : H.0.5, speedX : ?speedX_default, speedY : ?speedY_default }
-        { out : ?out_default }
+        { what : H.Empty, scrollX : H.Number 0.5, scrollY : H.Number 0.5, speedX : H.Number 1.0, speedY : H.Number 1.0 }
+        { out : H.Empty }
         $ Fn.make "scroll" $ do
             what <- P.receive _in_what
             scrollX <- P.receive _in_scrollX
             scrollY <- P.receive _in_scrollY
             speedX <- P.receive _in_speedX
             speedY <- P.receive _in_speedY
-            -- Scroll what scrollX scrollY speedX speedY
-            P.send _out_out ?out_out
+            P.send _out_out $ H.Geometry what $ H.GScroll { scrollX, scrollY, speedX, speedY }

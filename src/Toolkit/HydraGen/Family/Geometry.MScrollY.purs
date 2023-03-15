@@ -28,11 +28,10 @@ family :: forall m. Family m
 family = -- {-> geometry <-}
     Family.def
         unit
-        { what : ?what_default, scrollY : H.0.5, speed : ?speed_default }
-        { out : ?out_default }
+        { what : H.Empty, scrollY : H.Number 0.5, speed : H.Number 1.0 }
+        { out : H.Empty }
         $ Fn.make "scrollY" $ do
             what <- P.receive _in_what
             scrollY <- P.receive _in_scrollY
             speed <- P.receive _in_speed
-            -- ScrollY what scrollY speed
-            P.send _out_out ?out_out
+            P.send _out_out $ H.Geometry what $ H.GScrollY { scrollY, speed }

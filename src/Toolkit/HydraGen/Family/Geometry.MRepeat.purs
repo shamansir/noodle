@@ -30,8 +30,8 @@ family :: forall m. Family m
 family = -- {-> geometry <-}
     Family.def
         unit
-        { what : ?what_default, repeatX : H.3, repeatY : H.3, offsetX : ?offsetX_default, offsetY : ?offsetY_default }
-        { out : ?out_default }
+        { what : H.Empty, repeatX : H.Number 3.0, repeatY : H.Number 3.0, offsetX : H.Number 0.0, offsetY : H.Number 0.0 }
+        { out : H.Empty }
         $ Fn.make "repeat" $ do
             what <- P.receive _in_what
             repeatX <- P.receive _in_repeatX
@@ -39,4 +39,4 @@ family = -- {-> geometry <-}
             offsetX <- P.receive _in_offsetX
             offsetY <- P.receive _in_offsetY
             -- Repeat what repeatX repeatY offsetX offsetY
-            P.send _out_out ?out_out
+            P.send _out_out $ H.Geometry what $ H.GRepeat { repeatX, repeatY, offsetX, offsetY }
