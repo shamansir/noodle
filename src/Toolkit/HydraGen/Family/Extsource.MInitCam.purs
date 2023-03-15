@@ -11,26 +11,23 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_where = Fn.Input :: _ "where"
+_in_src = Fn.Input :: _ "src"
 _in_index = Fn.Input :: _ "index"
-
-_out_out = Fn.Output :: _ "out"
 
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( where :: H.Source, index :: H.Value )
-        ( out :: H.Unit )
+        ( src :: H.Source, index :: H.Value )
+        ( )
         m
 
 family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default, index : ?index_default }
-        { out : ?out_default }
+        { src : H.Source0, index : H.Number 0.0 }
+        { }
         $ Fn.make "initCam" $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             index <- P.receive _in_index
-            -- InitCam where index
-            P.send _out_out ?out_out
+            pure unit

@@ -11,24 +11,20 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_where = Fn.Input :: _ "where"
-
-_out_out = Fn.Output :: _ "out"
-
+_in_src = Fn.Input :: _ "src"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( where :: H.Source )
-        ( out :: H.Unit )
+        ( src :: H.Source )
+        ( )
         m
 
 family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default }
-        { out : ?out_default }
+        { src : H.Source0 }
+        { }
         $ Fn.make "initScreen" $ do
-            where <- P.receive _in_where
-            -- InitScreen where
-            P.send _out_out ?out_out
+            src <- P.receive _in_src
+            pure unit

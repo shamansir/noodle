@@ -1736,7 +1736,7 @@ mouse = -- {-> synth <-}
 
 type FInitCam m =
     Family.Def Unit
-        ( where :: Source, index :: Value )
+        ( src :: Source, index :: Value )
         ( out :: Unit )
         m
 
@@ -1744,10 +1744,10 @@ initCam :: forall m. FInitCam m
 initCam = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default, index : ?index_default }
+        { src : ?src_default, index : ?index_default }
         { out : ?out_default }
         $ Fn.make $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             index <- P.receive _in_index
             -- InitCam where index
             P.send _out_out ?out_out
@@ -1755,7 +1755,7 @@ initCam = -- {-> extsource <-}
 
 type FInitImage m =
     Family.Def Unit
-        ( where :: Source, url :: String )
+        ( src :: Source, url :: String )
         ( out :: Unit )
         m
 
@@ -1763,10 +1763,10 @@ initImage :: forall m. FInitImage m
 initImage = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default, url : ?url_default }
+        { src : ?src_default, url : ?url_default }
         { out : ?out_default }
         $ Fn.make $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             url <- P.receive _in_url
             -- InitImage where url
             P.send _out_out ?out_out
@@ -1774,7 +1774,7 @@ initImage = -- {-> extsource <-}
 
 type FInitVideo m =
     Family.Def Unit
-        ( where :: Source, url :: String )
+        ( src :: Source, url :: String )
         ( out :: Unit )
         m
 
@@ -1782,10 +1782,10 @@ initVideo :: forall m. FInitVideo m
 initVideo = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default, url : ?url_default }
+        { src : ?src_default, url : ?url_default }
         { out : ?out_default }
         $ Fn.make $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             url <- P.receive _in_url
             -- InitVideo where url
             P.send _out_out ?out_out
@@ -1793,7 +1793,7 @@ initVideo = -- {-> extsource <-}
 
 type FInit m =
     Family.Def Unit
-        ( where :: SourceOptions )
+        ( src :: SourceOptions )
         ( out :: Unit )
         m
 
@@ -1801,17 +1801,17 @@ init :: forall m. FInit m
 init = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default }
+        { src : ?src_default }
         { out : ?out_default }
         $ Fn.make $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             -- Init where
             P.send _out_out ?out_out
 
 
 type FInitStream m =
     Family.Def Unit
-        ( where :: Source, ?ch_type )
+        ( src :: Source, ?ch_type )
         ( out :: Unit )
         m
 
@@ -1819,10 +1819,10 @@ initStream :: forall m. FInitStream m
 initStream = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default, ?ch_default }
+        { src : ?src_default, ?ch_default }
         { out : ?out_default }
         $ Fn.make $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             --
             -- InitStream where ?input
             P.send _out_out ?out_out
@@ -1830,7 +1830,7 @@ initStream = -- {-> extsource <-}
 
 type FInitScreen m =
     Family.Def Unit
-        ( where :: Source )
+        ( src :: Source )
         ( out :: Unit )
         m
 
@@ -1838,10 +1838,10 @@ initScreen :: forall m. FInitScreen m
 initScreen = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default }
+        { src : ?src_default }
         { out : ?out_default }
         $ Fn.make $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             -- InitScreen where
             P.send _out_out ?out_out
 
@@ -2077,7 +2077,7 @@ show = -- {-> audio <-}
 
 type FOut m =
     Family.Def Unit
-        ( what :: Texture, where :: Output )
+        ( what :: Texture, src :: Output )
         ( out :: Unit )
         m
 
@@ -2085,11 +2085,11 @@ out :: forall m. FOut m
 out = -- {-> out <-}
     Family.def
         unit
-        { what : ?what_default, where : ?where_default }
+        { what : ?what_default, src : ?src_default }
         { out : ?out_default }
         $ Fn.make $ do
             what <- P.receive _in_what
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             -- Out what where
             P.send _out_out ?out_out
 
@@ -4975,7 +4975,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_where = Fn.Input :: _ "where"
+_in_src = Fn.Input :: _ "src"
 _in_index = Fn.Input :: _ "index"
 
 _out_out = Fn.Output :: _ "out"
@@ -4983,7 +4983,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( where :: Source, index :: Value )
+        ( src :: Source, index :: Value )
         ( out :: Unit )
         m
 
@@ -4991,10 +4991,10 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default, index : ?index_default }
+        { src : ?src_default, index : ?index_default }
         { out : ?out_default }
         $ Fn.make $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             index <- P.receive _in_index
             -- InitCam where index
             P.send _out_out ?out_out
@@ -5015,7 +5015,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_where = Fn.Input :: _ "where"
+_in_src = Fn.Input :: _ "src"
 _in_url = Fn.Input :: _ "url"
 
 _out_out = Fn.Output :: _ "out"
@@ -5023,7 +5023,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( where :: Source, url :: String )
+        ( src :: Source, url :: String )
         ( out :: Unit )
         m
 
@@ -5031,10 +5031,10 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default, url : ?url_default }
+        { src : ?src_default, url : ?url_default }
         { out : ?out_default }
         $ Fn.make $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             url <- P.receive _in_url
             -- InitImage where url
             P.send _out_out ?out_out
@@ -5055,7 +5055,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_where = Fn.Input :: _ "where"
+_in_src = Fn.Input :: _ "src"
 _in_url = Fn.Input :: _ "url"
 
 _out_out = Fn.Output :: _ "out"
@@ -5063,7 +5063,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( where :: Source, url :: String )
+        ( src :: Source, url :: String )
         ( out :: Unit )
         m
 
@@ -5071,10 +5071,10 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default, url : ?url_default }
+        { src : ?src_default, url : ?url_default }
         { out : ?out_default }
         $ Fn.make $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             url <- P.receive _in_url
             -- InitVideo where url
             P.send _out_out ?out_out
@@ -5095,14 +5095,14 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_where = Fn.Input :: _ "where"
+_in_src = Fn.Input :: _ "src"
 
 _out_out = Fn.Output :: _ "out"
 
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( where :: SourceOptions )
+        ( src :: SourceOptions )
         ( out :: Unit )
         m
 
@@ -5110,10 +5110,10 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default }
+        { src : ?src_default }
         { out : ?out_default }
         $ Fn.make $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             -- Init where
             P.send _out_out ?out_out
 
@@ -5133,7 +5133,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_where = Fn.Input :: _ "where"
+_in_src = Fn.Input :: _ "src"
 
 
 _out_out = Fn.Output :: _ "out"
@@ -5141,7 +5141,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( where :: Source, ?ch_type )
+        ( src :: Source, ?ch_type )
         ( out :: Unit )
         m
 
@@ -5149,10 +5149,10 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default, ?ch_default }
+        { src : ?src_default, ?ch_default }
         { out : ?out_default }
         $ Fn.make $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             --
             -- InitStream where ?input
             P.send _out_out ?out_out
@@ -5173,14 +5173,14 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_where = Fn.Input :: _ "where"
+_in_src = Fn.Input :: _ "src"
 
 _out_out = Fn.Output :: _ "out"
 
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( where :: Source )
+        ( src :: Source )
         ( out :: Unit )
         m
 
@@ -5188,10 +5188,10 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default }
+        { src : ?src_default }
         { out : ?out_default }
         $ Fn.make $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             -- InitScreen where
             P.send _out_out ?out_out
 
@@ -5694,14 +5694,14 @@ import Noodle.Family.Def as Family
 
 
 _in_what = Fn.Input :: _ "what"
-_in_where = Fn.Input :: _ "where"
+_in_src = Fn.Input :: _ "src"
 
 _out_out = Fn.Output :: _ "out"
 
 
 type Family m = -- {-> out <-}
     Family.Def Unit
-        ( what :: Texture, where :: Output )
+        ( what :: Texture, src :: Output )
         ( out :: Unit )
         m
 
@@ -5709,10 +5709,10 @@ family :: forall m. Family m
 family = -- {-> out <-}
     Family.def
         unit
-        { what : ?what_default, where : ?where_default }
+        { what : ?what_default, src : ?src_default }
         { out : ?out_default }
         $ Fn.make $ do
             what <- P.receive _in_what
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             -- Out what where
             P.send _out_out ?out_out

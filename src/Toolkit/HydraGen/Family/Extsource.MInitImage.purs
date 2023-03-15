@@ -11,26 +11,23 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_where = Fn.Input :: _ "where"
+_in_src = Fn.Input :: _ "src"
 _in_url = Fn.Input :: _ "url"
-
-_out_out = Fn.Output :: _ "out"
 
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( where :: H.Source, url :: H.String )
-        ( out :: H.Unit )
+        ( src :: H.Source, url :: String )
+        ( )
         m
 
 family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default, url : ?url_default }
-        { out : ?out_default }
+        { src : H.Source0, url : "" }
+        { }
         $ Fn.make "initImage" $ do
-            where <- P.receive _in_where
+            src <- P.receive _in_src
             url <- P.receive _in_url
-            -- InitImage where url
-            P.send _out_out ?out_out
+            pure unit

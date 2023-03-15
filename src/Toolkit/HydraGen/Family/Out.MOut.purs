@@ -12,25 +12,24 @@ import Noodle.Family.Def as Family
 
 
 _in_what = Fn.Input :: _ "what"
-_in_where = Fn.Input :: _ "where"
+_in_target = Fn.Input :: _ "target"
 
 _out_out = Fn.Output :: _ "out"
 
 
 type Family m = -- {-> out <-}
     Family.Def Unit
-        ( what :: H.Texture, where :: H.Output )
-        ( out :: H.Unit )
+        ( what :: H.Texture, target :: H.Output )
+        ( )
         m
 
 family :: forall m. Family m
 family = -- {-> out <-}
     Family.def
         unit
-        { what : ?what_default, where : ?where_default }
-        { out : ?out_default }
+        { what : H.Empty, target : H.Screen }
+        { }
         $ Fn.make "out" $ do
             what <- P.receive _in_what
-            where <- P.receive _in_where
-            -- Out what where
-            P.send _out_out ?out_out
+            target <- P.receive _in_target
+            pure unit

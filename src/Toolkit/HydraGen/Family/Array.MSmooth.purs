@@ -30,6 +30,6 @@ family = -- {-> array <-}
         { arr : H.noValues, smooth : H.Number 1.0 }
         { out : H.None }
         $ Fn.make "smooth" $ do
-            a <- P.receive _in_arr
+            arr <- P.receive _in_arr
             smooth <- P.receive _in_smooth
-            P.send _out_out $ H.VArray a $ H.Smooth smooth
+            P.send _out_out $ H.VArray arr $ H.Smooth smooth

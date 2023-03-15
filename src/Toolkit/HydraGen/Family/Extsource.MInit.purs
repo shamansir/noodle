@@ -11,24 +11,21 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_where = Fn.Input :: _ "where"
-
-_out_out = Fn.Output :: _ "out"
+_in_options = Fn.Input :: _ "options"
 
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( where :: H.SourceOptions )
-        ( out :: H.Unit )
+        ( options :: H.SourceOptions )
+        ( )
         m
 
 family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { where : ?where_default }
-        { out : ?out_default }
+        { options : { src : H.Canvas } }
+        { }
         $ Fn.make "init" $ do
-            where <- P.receive _in_where
-            -- Init where
-            P.send _out_out ?out_out
+            options <- P.receive _in_options
+            pure unit
