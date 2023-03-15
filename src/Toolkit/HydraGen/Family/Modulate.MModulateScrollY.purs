@@ -29,12 +29,11 @@ family :: forall m. Family m
 family = -- {-> modulate <-}
     Family.def
         unit
-        { what : ?what_default, with : ?with_default, scrollY : H.0.5, speed : ?speed_default }
-        { out : ?out_default }
+        { what : H.Empty, with : H.Empty, scrollY : H.Number 0.5, speed : H.Number 1.0 }
+        { out : H.Empty }
         $ Fn.make "modulateScrollY" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             scrollY <- P.receive _in_scrollY
             speed <- P.receive _in_speed
-            -- ModulateScrollY what with scrollY speed
-            P.send _out_out ?out_out
+            P.send _out_out $ H.ModulateWith { what, with } $ H.ModScrollY { scrollY, speed }

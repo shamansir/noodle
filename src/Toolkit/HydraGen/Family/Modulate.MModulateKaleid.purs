@@ -28,11 +28,10 @@ family :: forall m. Family m
 family = -- {-> modulate <-}
     Family.def
         unit
-        { what : ?what_default, with : ?with_default, nSides : H.3 }
-        { out : ?out_default }
+        { what : H.Empty, with : H.Empty, nSides : H.Number 3.0 }
+        { out : H.Empty }
         $ Fn.make "modulateKaleid" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             nSides <- P.receive _in_nSides
-            -- ModulateKaleid what with nSides
-            P.send _out_out ?out_out
+            P.send _out_out $ H.ModulateWith { what, with } $ H.ModKaleid { nSides }

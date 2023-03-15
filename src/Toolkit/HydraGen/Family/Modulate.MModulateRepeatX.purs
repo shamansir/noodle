@@ -29,12 +29,11 @@ family :: forall m. Family m
 family = -- {-> modulate <-}
     Family.def
         unit
-        { what : ?what_default, with : ?with_default, reps : H.3, offset : H.0.5 }
-        { out : ?out_default }
+        { what : H.Empty, with : H.Empty, reps : H.Number 3.0, offset : H.Number 0.5 }
+        { out : H.Empty }
         $ Fn.make "modulateRepeatX" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
-            -- ModulateRepeatX what with reps offset
-            P.send _out_out ?out_out
+            P.send _out_out $ H.ModulateWith { what, with } $ H.ModRepeatX { reps, offset }

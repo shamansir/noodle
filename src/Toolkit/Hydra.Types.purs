@@ -15,7 +15,7 @@ type Context =
 
 data Value
     = None
-    | Required
+    | Required -- a.k.a. Undefined
     | Number Number
     | VArray (Array Value) Ease
     | Dep (Context -> Number)
@@ -42,13 +42,13 @@ data TextureSource
     -- | ...
 
 data Blend
-    = Blend Value
-    | Add Value
+    = Blend Value -- amount
+    | Add Value -- amount
     | Diff
-    | Layer Value
+    | Layer Value -- amount
     | Mask
-    | Mult Value
-    | Sub Value
+    | Mult Value -- amount
+    | Sub Value -- amount
 
 
 data ColorOp
@@ -58,15 +58,34 @@ data ColorOp
     | A { scale :: Value, offset :: Value }
     | Posterize { bins :: Value, gamma :: Value }
     | Shift { r :: Value, g :: Value, b :: Value, a :: Value }
-    | Invert Value
-    | Contrast Value
-    | Brightness Value
+    | Invert Value -- amount
+    | Contrast Value -- amount
+    | Brightness Value -- amount
     | Luma { treshold :: Value, tolerance :: Value }
     | Tresh { treshold :: Value, tolerance :: Value }
     | Color { r :: Value, g :: Value, b :: Value, a :: Value }
-    | Saturate Value
-    | Hue Value
-    | Colorama Value
+    | Saturate Value -- amount
+    | Hue Value -- amount
+    | Colorama Value -- amount
+
+
+data Modulate
+    = Modulate Value -- amount
+    | ModHue Value -- amount
+    | ModKaleid { nSides :: Value }
+    | ModPixelate { multiple :: Value, offset :: Value }
+    | ModRepeat { offsetX :: Value, offsetY :: Value, repeatX :: Value, repeatY :: Value }
+    | ModRepeatX { offset :: Value, reps :: Value } -- TODO: join with `ModRepeat`
+    | ModRepeatY { offset :: Value, reps :: Value } -- TODO: join with `ModRepeat`
+    | ModRotate { multiple :: Value, offset :: Value }
+    | ModScale { multiple :: Value, offset :: Value }
+    | ModScrollX { scrollX :: Value, speed :: Value }
+    | ModScrollY { scrollY :: Value, speed :: Value }
+
+
+data Geometry
+    = Kaleid
+    | Pixelate
 
 
 data Texture
@@ -74,6 +93,8 @@ data Texture
     | From TextureSource
     | BlendOf { what :: Texture, with :: Texture } Blend
     | WithColor Texture ColorOp
+    | ModulateWith { what :: Texture, with :: Texture } Modulate
+    | Modify { what :: Texture, with :: Texture } Geometry
 
 
 data Source

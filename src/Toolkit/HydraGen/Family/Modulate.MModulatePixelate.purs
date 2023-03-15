@@ -29,12 +29,12 @@ family :: forall m. Family m
 family = -- {-> modulate <-}
     Family.def
         unit
-        { what : ?what_default, with : ?with_default, multiple : H.10, offset : H.3 }
-        { out : ?out_default }
+        { what : H.Empty, with : H.Empty, multiple : H.Number 10.0, offset : H.Number 3.0 }
+        { out : H.Empty }
         $ Fn.make "modulatePixelate" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple
             offset <- P.receive _in_offset
             -- ModulatePixelate what with multiple offset
-            P.send _out_out ?out_out
+            P.send _out_out $ H.ModulateWith { what, with } $ H.ModPixelate { multiple, offset }

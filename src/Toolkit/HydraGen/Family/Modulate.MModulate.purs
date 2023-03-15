@@ -28,11 +28,10 @@ family :: forall m. Family m
 family = -- {-> modulate <-}
     Family.def
         unit
-        { what : ?what_default, with : ?with_default, amount : H.0.1 }
-        { out : ?out_default }
+        { what : H.Empty, with : H.Empty, amount : H.Number 0.1 }
+        { out : H.Empty }
         $ Fn.make "modulate" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
-            -- Modulate what with amount
-            P.send _out_out ?out_out
+            P.send _out_out $ H.ModulateWith { what, with } $ H.Modulate amount

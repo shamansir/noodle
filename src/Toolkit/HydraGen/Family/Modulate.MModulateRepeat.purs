@@ -31,8 +31,8 @@ family :: forall m. Family m
 family = -- {-> modulate <-}
     Family.def
         unit
-        { what : ?what_default, with : ?with_default, repeatX : H.3, repeatY : H.3, offsetX : H.0.5, offsetY : H.0.5 }
-        { out : ?out_default }
+        { what : H.Empty, with : H.Empty, repeatX : H.Number 3.0, repeatY : H.Number 3.0, offsetX : H.Number 0.5, offsetY : H.Number 0.5 }
+        { out : H.Empty }
         $ Fn.make "modulateRepeat" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
@@ -40,5 +40,4 @@ family = -- {-> modulate <-}
             repeatY <- P.receive _in_repeatY
             offsetX <- P.receive _in_offsetX
             offsetY <- P.receive _in_offsetY
-            -- ModulateRepeat what with repeatX repeatY offsetX offsetY
-            P.send _out_out ?out_out
+            P.send _out_out $ H.ModulateWith { what, with } $ H.ModRepeat { repeatX, repeatY, offsetX, offsetY }
