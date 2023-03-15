@@ -19,16 +19,16 @@ _out_out = Fn.Output :: _ "out"
 type Family m = -- {-> synth <-}
     Family.Def Unit
         ( fn :: H.UpdateFn )
-        ( out :: H.Unit )
+        ( )
         m
 
 family :: forall m. Family m
 family = -- {-> synth <-}
     Family.def
         unit
-        { fn : ?fn_default }
-        { out : ?out_default }
+        { fn : H.defaultUpdateFn }
+        { }
         $ Fn.make "update" $ do
             fn <- P.receive _in_fn
-            -- Update fn
-            P.send _out_out ?out_out
+            -- TODO
+            pure unit

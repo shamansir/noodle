@@ -27,7 +27,7 @@ family = -- {-> synth <-}
     Family.def
         unit
         { }
-        { out : ?out_default }
+        { out : H.Time }
         $ Fn.make "time" $ do
             -- Time
-            P.send _out_out ?out_out
+            P.send _out_out H.Time

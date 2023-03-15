@@ -27,7 +27,6 @@ family = -- {-> synth <-}
     Family.def
         unit
         { }
-        { out : ?out_default }
-        $ Fn.make "height" $ do
-            -- Height
-            P.send _out_out ?out_out
+        { out : H.Height }
+        $ Fn.make "height"
+        $ P.send _out_out H.Height

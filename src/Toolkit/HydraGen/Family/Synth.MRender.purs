@@ -13,13 +13,11 @@ import Noodle.Family.Def as Family
 
 _in_from = Fn.Input :: _ "from"
 
-_out_out = Fn.Output :: _ "out"
-
 
 type Family m = -- {-> synth <-}
     Family.Def Unit
         ( from :: H.From )
-        ( out :: H.Unit )
+        ( )
         m
 
 family :: forall m. Family m
@@ -27,8 +25,8 @@ family = -- {-> synth <-}
     Family.def
         unit
         { from : H.All }
-        { out : ?out_default }
+        { }
         $ Fn.make "render" $ do
             from <- P.receive _in_from
-            -- Render from
-            P.send _out_out ?out_out
+            -- TODO
+            pure unit

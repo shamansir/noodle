@@ -25,6 +25,7 @@ data Value
     | MouseY
     | Width
     | Height
+    | Pi
     -- | ...
     | Audio Audio AudioBin
 
@@ -159,6 +160,14 @@ type SourceOptions =
     }
 
 type GlslFn = Unit -- TODO
+
+
+defaultGlslFn :: GlslFn
+defaultGlslFn = unit
+
+
+defaultUpdateFn :: UpdateFn
+defaultUpdateFn = const $ pure unit
 
 
 noValues :: VArray
