@@ -32,14 +32,28 @@ data Value
 type VArray = Array Value
 
 
-data TextureSource
-    = Solid
-    | Dynamic
+data Texture
+    = Empty
+    | From Source
+    | BlendOf { what :: Texture, with :: Texture } Blend
+    | WithColor Texture ColorOp
+    | ModulateWith { what :: Texture, with :: Texture } Modulate
+    | Modify { what :: Texture, with :: Texture } Geometry
+
+
+data Source
+    = Dynamic
     | Video
     | Camera
-    -- | Osc ...
-    -- | Noise ...
-    -- | ...
+    | Gradient { speed :: Value }
+    | Noise { scale :: Value, offset :: Value }
+    | Osc { frequency :: Value, sync :: Value, offset :: Value }
+    | Shape { sides :: Value, radius :: Value, smoothing :: Value }
+    | Solid { r :: Value, g :: Value, b :: Value, a :: Value }
+    | Source From -- Output?
+    | Voronoi { scale :: Value, speed :: Value, blending :: Value }
+    -- | ..
+
 
 data Blend
     = Blend Value -- amount
@@ -88,27 +102,13 @@ data Geometry
     | Pixelate
 
 
-data Texture
-    = Empty
-    | From TextureSource
-    | BlendOf { what :: Texture, with :: Texture } Blend
-    | WithColor Texture ColorOp
-    | ModulateWith { what :: Texture, with :: Texture } Modulate
-    | Modify { what :: Texture, with :: Texture } Geometry
-
-
-data Source
-    = Source0
-    | Source1
-    | Source2
-    -- | ...
-
 data Output
     = Screen
     | Output0
     | Output1
     | Output2
     -- | ...
+
 
 data Ease
     = Linear

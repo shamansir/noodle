@@ -28,11 +28,10 @@ family :: forall m. Family m
 family = -- {-> source <-}
     Family.def
         unit
-        { scale : H.5, speed : H.0.3, blending : H.0.3 }
-        { out : ?out_default }
+        { scale : H.Number 5.0, speed : H.Number 0.3, blending : H.Number 0.3 }
+        { out : H.Empty }
         $ Fn.make "voronoi" $ do
             scale <- P.receive _in_scale
             speed <- P.receive _in_speed
             blending <- P.receive _in_blending
-            -- Voronoi scale speed blending
-            P.send _out_out ?out_out
+            P.send _out_out $ H.From $ H.Voronoi { scale, speed, blending }

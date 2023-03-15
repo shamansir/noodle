@@ -18,7 +18,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
-        ( src :: H.Source )
+        ( src :: H.From )
         ( out :: H.Texture )
         m
 
@@ -26,9 +26,8 @@ family :: forall m. Family m
 family = -- {-> source <-}
     Family.def
         unit
-        { src : ?src_default }
-        { out : ?out_default }
+        { src : H.All }
+        { out : H.Empty }
         $ Fn.make "src" $ do
             src <- P.receive _in_src
-            -- Src src
-            P.send _out_out ?out_out
+            P.send _out_out $ H.From $ H.Source src

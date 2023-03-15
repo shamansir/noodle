@@ -29,12 +29,11 @@ family :: forall m. Family m
 family = -- {-> source <-}
     Family.def
         unit
-        { r : ?r_default, g : ?g_default, b : ?b_default, a : H.1 }
-        { out : ?out_default }
+        { r : H.Number 1.0, g : H.Number 1.0, b : H.Number 1.0, a : H.Number 1.0 }
+        { out : H.Empty }
         $ Fn.make "solid" $ do
             r <- P.receive _in_r
             g <- P.receive _in_g
             b <- P.receive _in_b
             a <- P.receive _in_a
-            -- Solid r g b a
-            P.send _out_out ?out_out
+            P.send _out_out $ H.From $ H.Solid { r, g, b, a }

@@ -26,9 +26,8 @@ family :: forall m. Family m
 family = -- {-> source <-}
     Family.def
         unit
-        { speed : ?speed_default }
-        { out : ?out_default }
+        { speed : H.Number 1.0 }
+        { out : H.Empty }
         $ Fn.make "gradient" $ do
             speed <- P.receive _in_speed
-            -- Gradient speed
-            P.send _out_out ?out_out
+            P.send _out_out $ H.From $ H.Gradient { speed }

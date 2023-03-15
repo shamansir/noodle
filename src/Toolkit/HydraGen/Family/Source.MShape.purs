@@ -28,11 +28,10 @@ family :: forall m. Family m
 family = -- {-> source <-}
     Family.def
         unit
-        { sides : H.60, radius : H.0.3, smoothing : H.0.01 }
-        { out : ?out_default }
+        { sides : H.Number 60.0, radius : H.Number 0.3, smoothing : H.Number 0.01 }
+        { out : H.Empty }
         $ Fn.make "shape" $ do
             sides <- P.receive _in_sides
             radius <- P.receive _in_radius
             smoothing <- P.receive _in_smoothing
-            -- Shape sides radius smoothing
-            P.send _out_out ?out_out
+            P.send _out_out $ H.From $ H.Shape { sides, radius, smoothing }

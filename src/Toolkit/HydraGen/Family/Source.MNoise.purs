@@ -27,10 +27,9 @@ family :: forall m. Family m
 family = -- {-> source <-}
     Family.def
         unit
-        { scale : H.10, offset : H.0.1 }
-        { out : ?out_default }
+        { scale : H.Number 10.0, offset : H.Number 0.1 }
+        { out : H.Empty }
         $ Fn.make "noise" $ do
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
-            -- Noise scale offset
-            P.send _out_out ?out_out
+            P.send _out_out $ H.From $ H.Noise { scale, offset }

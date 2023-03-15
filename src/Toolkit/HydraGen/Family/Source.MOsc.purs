@@ -28,11 +28,10 @@ family :: forall m. Family m
 family = -- {-> source <-}
     Family.def
         unit
-        { frequency : H.60, sync : H.0.1, offset : ?offset_default }
-        { out : ?out_default }
+        { frequency : H.Number 60.0, sync : H.Number 0.1, offset : H.Number 0.0 }
+        { out : H.Empty }
         $ Fn.make "osc" $ do
             frequency <- P.receive _in_frequency
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset
-            -- Osc frequency sync offset
-            P.send _out_out ?out_out
+            P.send _out_out $ H.From $ H.Osc { frequency, sync, offset }

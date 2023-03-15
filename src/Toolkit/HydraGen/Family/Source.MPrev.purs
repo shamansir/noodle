@@ -18,7 +18,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> source <-}
     Family.Def Unit
-        ( ?ch_type )
+        ( todo :: H.TODO )
         ( out :: H.Texture )
         m
 
@@ -26,9 +26,7 @@ family :: forall m. Family m
 family = -- {-> source <-}
     Family.def
         unit
-        { ?ch_default }
-        { out : ?out_default }
+        { todo : H.TODO }
+        { out : H.Empty }
         $ Fn.make "prev" $ do
-            --
-            -- Prev ?input
-            P.send _out_out ?out_out
+            P.send _out_out $ H.Empty
