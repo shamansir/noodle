@@ -28,11 +28,10 @@ family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : ?what_default, scale : H.1, offset : ?offset_default }
-        { out : ?out_default }
+        { what : H.Empty, scale : H.Number 1.0, offset : H.Number 0.0 }
+        { out : H.Empty }
         $ Fn.make "g" $ do
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
-            -- G what scale offset
-            P.send _out_out ?out_out
+            P.send _out_out $ H.WithColor what $ H.G { scale, offset }

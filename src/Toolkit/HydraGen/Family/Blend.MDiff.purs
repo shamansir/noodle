@@ -33,4 +33,4 @@ family = -- {-> blend <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             -- Diff what with
-            P.send _out_out $ H.BlendOf what with $ H.Diff
+            P.send _out_out $ H.BlendOf { what, with } $ H.Diff

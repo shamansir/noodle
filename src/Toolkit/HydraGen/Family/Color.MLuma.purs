@@ -28,11 +28,10 @@ family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : ?what_default, treshold : H.0.5, tolerance : H.0.1 }
-        { out : ?out_default }
+        { what : H.Empty, treshold : H.Number 0.5, tolerance : H.Number 0.1 }
+        { out : H.Empty }
         $ Fn.make "luma" $ do
             what <- P.receive _in_what
             treshold <- P.receive _in_treshold
             tolerance <- P.receive _in_tolerance
-            -- Luma what treshold tolerance
-            P.send _out_out ?out_out
+            P.send _out_out $ H.WithColor what $ H.Luma { treshold, tolerance }

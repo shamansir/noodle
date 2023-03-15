@@ -1,7 +1,6 @@
 module Toolkit.HydraGen.Types where -- FIXME: should be inside `HydraGen`
 
 import Prelude
--- import Data.Array (Array)
 
 import Effect (Effect)
 
@@ -16,6 +15,7 @@ type Context =
 
 data Value
     = None
+    | Required
     | Number Number
     | VArray (Array Value) Ease
     | Dep (Context -> Number)
@@ -37,6 +37,8 @@ data TextureSource
     | Dynamic
     | Video
     | Camera
+    -- | Osc ...
+    -- | Noise ...
     -- | ...
 
 data Blend
@@ -49,10 +51,29 @@ data Blend
     | Sub Value
 
 
+data ColorOp
+    = R { scale :: Value, offset :: Value }
+    | G { scale :: Value, offset :: Value }
+    | B { scale :: Value, offset :: Value }
+    | A { scale :: Value, offset :: Value }
+    | Posterize { bins :: Value, gamma :: Value }
+    | Shift { r :: Value, g :: Value, b :: Value, a :: Value }
+    | Invert Value
+    | Contrast Value
+    | Brightness Value
+    | Luma { treshold :: Value, tolerance :: Value }
+    | Tresh { treshold :: Value, tolerance :: Value }
+    | Color { r :: Value, g :: Value, b :: Value, a :: Value }
+    | Saturate Value
+    | Hue Value
+    | Colorama Value
+
+
 data Texture
     = Empty
     | From TextureSource
-    | BlendOf Texture Texture Blend
+    | BlendOf { what :: Texture, with :: Texture } Blend
+    | WithColor Texture ColorOp
 
 
 data Source

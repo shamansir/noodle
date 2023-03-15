@@ -28,11 +28,10 @@ family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : ?what_default, bins : H.3, gamma : H.0.6 }
-        { out : ?out_default }
+        { what : H.Empty, bins : H.Number 3.0, gamma : H.Number 0.6 }
+        { out : H.Empty }
         $ Fn.make "posterize" $ do
             what <- P.receive _in_what
             bins <- P.receive _in_bins
             gamma <- P.receive _in_gamma
-            -- Posterize what bins gamma
-            P.send _out_out ?out_out
+            P.send _out_out $ H.WithColor what $ H.Posterize { bins, gamma }

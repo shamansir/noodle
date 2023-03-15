@@ -30,13 +30,12 @@ family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : ?what_default, r : H.0.5, g : ?g_default, b : ?b_default, a : ?a_default }
-        { out : ?out_default }
+        { what : H.Empty, r : H.Number 0.5, g : H.Number 0.5, b : H.Number 0.5, a : H.Number 0.5 }
+        { out : H.Empty }
         $ Fn.make "shift" $ do
             what <- P.receive _in_what
             r <- P.receive _in_r
             g <- P.receive _in_g
             b <- P.receive _in_b
             a <- P.receive _in_a
-            -- Shift what r g b a
-            P.send _out_out ?out_out
+            P.send _out_out $ H.WithColor what $ H.Shift { r, g, b, a }

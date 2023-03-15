@@ -27,10 +27,9 @@ family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : ?what_default, amount : H.2 }
-        { out : ?out_default }
+        { what : H.Empty, amount : H.Number 2.0 }
+        { out : H.Empty }
         $ Fn.make "saturate" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
-            -- Saturate what amount
-            P.send _out_out ?out_out
+            P.send _out_out $ H.WithColor what $ H.Saturate amount

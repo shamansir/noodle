@@ -27,10 +27,9 @@ family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : ?what_default, amount : H.1.6 }
-        { out : ?out_default }
+        { what : H.Empty, amount : H.Number 1.6 }
+        { out : H.Empty }
         $ Fn.make "contrast" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
-            -- Contrast what amount
-            P.send _out_out ?out_out
+            P.send _out_out $ H.WithColor what $ H.Contrast amount

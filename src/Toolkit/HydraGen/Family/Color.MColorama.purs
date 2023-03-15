@@ -27,10 +27,9 @@ family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : ?what_default, amount : H.0.005 }
-        { out : ?out_default }
+        { what : H.Empty, amount : H.Number 0.005 }
+        { out : H.Empty }
         $ Fn.make "colorama" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
-            -- Colorama what amount
-            P.send _out_out ?out_out
+            P.send _out_out $ H.WithColor what $ H.Colorama amount

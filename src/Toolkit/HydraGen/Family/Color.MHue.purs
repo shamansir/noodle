@@ -27,10 +27,9 @@ family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : ?what_default, hue : H.0.4 }
-        { out : ?out_default }
+        { what : H.Empty, hue : H.Number 0.4 }
+        { out : H.Empty }
         $ Fn.make "hue" $ do
             what <- P.receive _in_what
             hue <- P.receive _in_hue
-            -- Hue what hue
-            P.send _out_out ?out_out
+            P.send _out_out $ H.WithColor what $ H.Hue hue

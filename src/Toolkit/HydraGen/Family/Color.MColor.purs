@@ -11,6 +11,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
+_in_what = Fn.Input :: _ "what"
 _in_r = Fn.Input :: _ "r"
 _in_g = Fn.Input :: _ "g"
 _in_b = Fn.Input :: _ "b"
@@ -21,7 +22,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
-        ( r :: H.Value, g :: H.Value, b :: H.Value, a :: H.Value )
+        ( what :: H.Texture, r :: H.Value, g :: H.Value, b :: H.Value, a :: H.Value )
         ( out :: H.Texture )
         m
 
@@ -29,12 +30,12 @@ family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { r : H.1, g : H.1, b : H.1, a : H.1 }
-        { out : ?out_default }
+        { what : H.Empty, r : H.Number 1.0, g : H.Number 1.0, b : H.Number 1.0, a : H.Number 1.0 }
+        { out : H.Empty }
         $ Fn.make "color" $ do
+            what <- P.receive _in_what
             r <- P.receive _in_r
             g <- P.receive _in_g
             b <- P.receive _in_b
             a <- P.receive _in_a
-            -- Color r g b a
-            P.send _out_out ?out_out
+            P.send _out_out $ H.WithColor what $ H.Color { r, g, b, a }

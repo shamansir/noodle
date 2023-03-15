@@ -19,18 +19,16 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
-        ( what :: H.Texture, ?ch_type )
-        ( out :: H.Texture )
+        ( what :: H.Texture, todo :: H.TODO )
+        ( )
         m
 
 family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : ?what_default, ?ch_default }
-        { out : ?out_default }
+        { what : H.Empty, todo : H.TODO }
+        { }
         $ Fn.make "sum" $ do
             what <- P.receive _in_what
-            --
-            -- Sum what ?input
-            P.send _out_out ?out_out
+            pure unit

@@ -33,4 +33,4 @@ family = -- {-> blend <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             -- Mask what with
-            P.send _out_out $ H.BlendOf what with $ H.Mask
+            P.send _out_out $ H.BlendOf { what, with } $ H.Mask

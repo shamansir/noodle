@@ -34,4 +34,4 @@ family = -- {-> blend <-}
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
-            P.send _out_out $ H.BlendOf what with $ H.Add amount
+            P.send _out_out $ H.BlendOf { what, with } $ H.Add amount
