@@ -25,7 +25,7 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { src : H.Source0, index : H.Number 0.0 }
+        { src : H.defaultSource, index : H.Number 0.0 }
         { }
         $ Fn.make "initCam" $ do
             src <- P.receive _in_src

@@ -23,7 +23,7 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { src : H.Source0 }
+        { src : H.defaultSource }
         { }
         $ Fn.make "initScreen" $ do
             src <- P.receive _in_src

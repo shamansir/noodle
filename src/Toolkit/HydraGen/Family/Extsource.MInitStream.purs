@@ -24,7 +24,7 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { src : H.Source0, todo : H.TODO }
+        { src : H.defaultSource, todo : H.TODO }
         { }
         $ Fn.make "initStream" $ do
             src <- P.receive _in_src

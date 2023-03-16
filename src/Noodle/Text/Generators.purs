@@ -306,7 +306,7 @@ familyInlineImplementationReferenceAndLabel qfml =
 
 familyModuleImplementationReferenceAndLabel :: QD.QFamily -> String
 familyModuleImplementationReferenceAndLabel qfml =
-    qfml.family <> " : " <> familyModuleAlias qfml <> ".family"
+    qfml.family <> " : (" <> familyModuleAlias qfml <> ".family :: " <> familyModuleAlias qfml <> ".Family m )"
 
 
 processBody :: String -> QD.QFamily -> String

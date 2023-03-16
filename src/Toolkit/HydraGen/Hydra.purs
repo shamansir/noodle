@@ -184,90 +184,89 @@ type HydraToolkit m
 toolkit :: forall m. HydraToolkit m
 toolkit =
     Toolkit.from "hydra"
-        { noise : FNoise.family
-        , voronoi : FVoronoi.family
-        , osc : FOsc.family
-        , shape : FShape.family
-        , gradient : FGradient.family
-        , src : FSrc.family
-        , solid : FSolid.family
-        , prev : FPrev.family
-        , rotate : FRotate.family
-        , scale : FScale.family
-        , pixelate : FPixelate.family
-        , repeat : FRepeat.family
-        , repeatX : FRepeatX.family
-        , repeatY : FRepeatY.family
-        , kaleid : FKaleid.family
-        , scroll : FScroll.family
-        , scrollX : FScrollX.family
-        , scrollY : FScrollY.family
-        , posterize : FPosterize.family
-        , shift : FShift.family
-        , invert : FInvert.family
-        , contrast : FContrast.family
-        , brightness : FBrightness.family
-        , luma : FLuma.family
-        , tresh : FTresh.family
-        , color : FColor.family
-        , saturate : FSaturate.family
-        , hue : FHue.family
-        , colorama : FColorama.family
-        , sum : FSum.family
-        , r : FR.family
-        , g : FG.family
-        , b : FB.family
-        , a : FA.family
-        , add : FAdd.family
-        , sub : FSub.family
-        , layer : FLayer.family
-        , blend : FBlend.family
-        , mult : FMult.family
-        , diff : FDiff.family
-        , mask : FMask.family
-        , modulateRepeat : FModulateRepeat.family
-        , modulateRepeatX : FModulateRepeatX.family
-        , modulateRepeatY : FModulateRepeatY.family
-        , modulateKaleid : FModulateKaleid.family
-        , modulateScrollX : FModulateScrollX.family
-        , modulateScrollY : FModulateScrollY.family
-        , modulate : FModulate.family
-        , modulateScale : FModulateScale.family
-        , modulatePixelate : FModulatePixelate.family
-        , modulateRotate : FModulateRotate.family
-        , modulateHue : FModulateHue.family
-        , render : FRender.family
-        , update : FUpdate.family
-        , setResolution : FSetResolution.family
-        , hush : FHush.family
-        , setFunction : FSetFunction.family
-        , speed : FSpeed.family
-        , bpm : FBpm.family
-        , width : FWidth.family
-        , height : FHeight.family
-        , pi : FPi.family
-        , time : FTime.family
-        , mouse : FMouse.family
-        , initCam : FInitCam.family
-        , initImage : FInitImage.family
-        , initVideo : FInitVideo.family
-        , init : FInit.family
-        , initStream : FInitStream.family
-        , initScreen : FInitScreen.family
-        , fast : FFast.family
-        , smooth : FSmooth.family
-        , ease : FEase.family
-        , offset : FOffset.family
-        , fit : FFit.family
-        , fft : FFft.family
-        , setSmooth : FSetSmooth.family
-        , setCutoff : FSetCutoff.family
-        , setBins : FSetBins.family
-        , setScale : FSetScale.family
-        , hide : FHide.family
-        , show : FShow.family
-        , out : FOut.family
+        { noise : (FNoise.family :: FNoise.Family m)
+        , voronoi : (FVoronoi.family :: FVoronoi.Family m)
+        , osc : (FOsc.family :: FOsc.Family m)
+        , shape : (FShape.family :: FShape.Family m)
+        , gradient : (FGradient.family :: FGradient.Family m)
+        , src : (FSrc.family :: FSrc.Family m)
+        , solid : (FSolid.family :: FSolid.Family m)
+        , prev : (FPrev.family :: FPrev.Family m)
+        , rotate : (FRotate.family :: FRotate.Family m)
+        , scale : (FScale.family :: FScale.Family m)
+        , pixelate : (FPixelate.family :: FPixelate.Family m)
+        , repeat : (FRepeat.family :: FRepeat.Family m)
+        , repeatX : (FRepeatX.family :: FRepeatX.Family m)
+        , repeatY : (FRepeatY.family :: FRepeatY.Family m)
+        , kaleid : (FKaleid.family :: FKaleid.Family m)
+        , scroll : (FScroll.family :: FScroll.Family m)
+        , scrollX : (FScrollX.family :: FScrollX.Family m)
+        , scrollY : (FScrollY.family :: FScrollY.Family m)
+        , posterize : (FPosterize.family :: FPosterize.Family m)
+        , shift : (FShift.family :: FShift.Family m)
+        , invert : (FInvert.family :: FInvert.Family m)
+        , contrast : (FContrast.family :: FContrast.Family m)
+        , brightness : (FBrightness.family :: FBrightness.Family m)
+        , luma : (FLuma.family :: FLuma.Family m)
+        , tresh : (FTresh.family :: FTresh.Family m)
+        , color : (FColor.family :: FColor.Family m)
+        , saturate : (FSaturate.family :: FSaturate.Family m)
+        , hue : (FHue.family :: FHue.Family m)
+        , colorama : (FColorama.family :: FColorama.Family m)
+        , sum : (FSum.family :: FSum.Family m)
+        , r : (FR.family :: FR.Family m)
+        , g : (FG.family :: FG.Family m)
+        , b : (FB.family :: FB.Family m)
+        , a : (FA.family :: FA.Family m)
+        , add : (FAdd.family :: FAdd.Family m)
+        , sub : (FSub.family :: FSub.Family m)
+        , layer : (FLayer.family :: FLayer.Family m)
+        , blend : (FBlend.family :: FBlend.Family m)
+        , mult : (FMult.family :: FMult.Family m)
+        , diff : (FDiff.family :: FDiff.Family m)
+        , mask : (FMask.family :: FMask.Family m)
+        , modulateRepeat : (FModulateRepeat.family :: FModulateRepeat.Family m)
+        , modulateRepeatX : (FModulateRepeatX.family :: FModulateRepeatX.Family m)
+        , modulateRepeatY : (FModulateRepeatY.family :: FModulateRepeatY.Family m)
+        , modulateKaleid : (FModulateKaleid.family :: FModulateKaleid.Family m)
+        , modulateScrollX : (FModulateScrollX.family :: FModulateScrollX.Family m)
+        , modulateScrollY : (FModulateScrollY.family :: FModulateScrollY.Family m)
+        , modulate : (FModulate.family :: FModulate.Family m)
+        , modulateScale : (FModulateScale.family :: FModulateScale.Family m)
+        , modulatePixelate : (FModulatePixelate.family :: FModulatePixelate.Family m)
+        , modulateRotate : (FModulateRotate.family :: FModulateRotate.Family m)
+        , modulateHue : (FModulateHue.family :: FModulateHue.Family m)
+        , render : (FRender.family :: FRender.Family m)
+        , update : (FUpdate.family :: FUpdate.Family m)
+        , setResolution : (FSetResolution.family :: FSetResolution.Family m)
+        , hush : (FHush.family :: FHush.Family m)
+        , setFunction : (FSetFunction.family :: FSetFunction.Family m)
+        , speed : (FSpeed.family :: FSpeed.Family m)
+        , bpm : (FBpm.family :: FBpm.Family m)
+        , width : (FWidth.family :: FWidth.Family m)
+        , height : (FHeight.family :: FHeight.Family m)
+        , pi : (FPi.family :: FPi.Family m)
+        , time : (FTime.family :: FTime.Family m)
+        , mouse : (FMouse.family :: FMouse.Family m)
+        , initCam : (FInitCam.family :: FInitCam.Family m)
+        , initImage : (FInitImage.family :: FInitImage.Family m)
+        , initVideo : (FInitVideo.family :: FInitVideo.Family m)
+        , init : (FInit.family :: FInit.Family m)
+        , initStream : (FInitStream.family :: FInitStream.Family m)
+        , initScreen : (FInitScreen.family :: FInitScreen.Family m)
+        , fast : (FFast.family :: FFast.Family m)
+        , smooth : (FSmooth.family :: FSmooth.Family m)
+        , ease : (FEase.family :: FEase.Family m)
+        , offset : (FOffset.family :: FOffset.Family m)
+        , fit : (FFit.family :: FFit.Family m)
+        , fft : (FFft.family :: FFft.Family m)
+        , setSmooth : (FSetSmooth.family :: FSetSmooth.Family m)
+        , setCutoff : (FSetCutoff.family :: FSetCutoff.Family m)
+        , setBins : (FSetBins.family :: FSetBins.Family m)
+        , setScale : (FSetScale.family :: FSetScale.Family m)
+        , hide : (FHide.family :: FHide.Family m)
+        , show : (FShow.family :: FShow.Family m)
+        , out : (FOut.family :: FOut.Family m)
         }
-
 
 type Toolkit m = HydraToolkit m

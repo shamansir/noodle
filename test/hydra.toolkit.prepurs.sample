@@ -25,7 +25,7 @@ data Hydra
     | Brightness Texture Value
     | Luma Texture Value Value
     | Tresh Texture Value Value
-    | Color Value Value Value Value
+    | Color Texture Value Value Value Value
     | Saturate Texture Value
     | Hue Texture Value
     | Colorama Texture Value
@@ -70,11 +70,11 @@ data Hydra
     | Init SourceOptions
     | InitStream Source ?ArgType
     | InitScreen Source
-    | Fast Array Value
-    | Smooth Array Value
-    | Ease Array Ease
-    | Offset Array Value
-    | Fit Array Value Value
+    | Fast VArray Value
+    | Smooth VArray Value
+    | Ease VArray Ease
+    | Offset VArray Value
+    | Fit VArray Value Value
     | Fft Audio AudioBin
     | SetSmooth Audio Value
     | SetCutoff Audio Value
@@ -115,7 +115,7 @@ data Hydra
     | Brightness Texture Value
     | Luma Texture Value Value
     | Tresh Texture Value Value
-    | Color Value Value Value Value
+    | Color Texture Value Value Value Value
     | Saturate Texture Value
     | Hue Texture Value
     | Colorama Texture Value
@@ -160,11 +160,11 @@ data Hydra
     | Init SourceOptions
     | InitStream Source ?ArgType
     | InitScreen Source
-    | Fast Array Value
-    | Smooth Array Value
-    | Ease Array Ease
-    | Offset Array Value
-    | Fit Array Value Value
+    | Fast VArray Value
+    | Smooth VArray Value
+    | Ease VArray Ease
+    | Offset VArray Value
+    | Fit VArray Value Value
     | Fft Audio AudioBin
     | SetSmooth Audio Value
     | SetCutoff Audio Value
@@ -181,7 +181,9 @@ module Toolkit.HydraGen where
 import ModuleImport as MI
 
 
-
+import Prelude (Unit)
+import Noodle.Toolkit3 (Toolkit) as Noodle
+import Noodle.Toolkit3 as Toolkit
 
 
 import Toolkit.HydraGen.Family.Source.FNoise as FNoise
@@ -272,180 +274,180 @@ import Toolkit.HydraGen.Family.Out.FOut as FOut
 
 type HydraToolkit m
     = Noodle.Toolkit Unit
-        ( noise :: FNoise.Family -- {-> source <-}
-        , voronoi :: FVoronoi.Family -- {-> source <-}
-        , osc :: FOsc.Family -- {-> source <-}
-        , shape :: FShape.Family -- {-> source <-}
-        , gradient :: FGradient.Family -- {-> source <-}
-        , src :: FSrc.Family -- {-> source <-}
-        , solid :: FSolid.Family -- {-> source <-}
-        , src :: FSrc.Family -- {-> source <-}
-        , prev :: FPrev.Family -- {-> source <-}
-        , rotate :: FRotate.Family -- {-> geometry <-}
-        , scale :: FScale.Family -- {-> geometry <-}
-        , pixelate :: FPixelate.Family -- {-> geometry <-}
-        , repeat :: FRepeat.Family -- {-> geometry <-}
-        , repeatX :: FRepeatX.Family -- {-> geometry <-}
-        , repeatY :: FRepeatY.Family -- {-> geometry <-}
-        , kaleid :: FKaleid.Family -- {-> geometry <-}
-        , scroll :: FScroll.Family -- {-> geometry <-}
-        , scrollX :: FScrollX.Family -- {-> geometry <-}
-        , scrollY :: FScrollY.Family -- {-> geometry <-}
-        , posterize :: FPosterize.Family -- {-> color <-}
-        , shift :: FShift.Family -- {-> color <-}
-        , invert :: FInvert.Family -- {-> color <-}
-        , contrast :: FContrast.Family -- {-> color <-}
-        , brightness :: FBrightness.Family -- {-> color <-}
-        , luma :: FLuma.Family -- {-> color <-}
-        , tresh :: FTresh.Family -- {-> color <-}
-        , color :: FColor.Family -- {-> color <-}
-        , saturate :: FSaturate.Family -- {-> color <-}
-        , hue :: FHue.Family -- {-> color <-}
-        , colorama :: FColorama.Family -- {-> color <-}
-        , sum :: FSum.Family -- {-> color <-}
-        , r :: FR.Family -- {-> color <-}
-        , g :: FG.Family -- {-> color <-}
-        , b :: FB.Family -- {-> color <-}
-        , a :: FA.Family -- {-> color <-}
-        , add :: FAdd.Family -- {-> blend <-}
-        , sub :: FSub.Family -- {-> blend <-}
-        , layer :: FLayer.Family -- {-> blend <-}
-        , blend :: FBlend.Family -- {-> blend <-}
-        , mult :: FMult.Family -- {-> blend <-}
-        , diff :: FDiff.Family -- {-> blend <-}
-        , mask :: FMask.Family -- {-> blend <-}
-        , modulateRepeat :: FModulateRepeat.Family -- {-> modulate <-}
-        , modulateRepeatX :: FModulateRepeatX.Family -- {-> modulate <-}
-        , modulateRepeatY :: FModulateRepeatY.Family -- {-> modulate <-}
-        , modulateKaleid :: FModulateKaleid.Family -- {-> modulate <-}
-        , modulateScrollX :: FModulateScrollX.Family -- {-> modulate <-}
-        , modulateScrollY :: FModulateScrollY.Family -- {-> modulate <-}
-        , modulate :: FModulate.Family -- {-> modulate <-}
-        , modulateScale :: FModulateScale.Family -- {-> modulate <-}
-        , modulatePixelate :: FModulatePixelate.Family -- {-> modulate <-}
-        , modulateRotate :: FModulateRotate.Family -- {-> modulate <-}
-        , modulateHue :: FModulateHue.Family -- {-> modulate <-}
-        , render :: FRender.Family -- {-> synth <-}
-        , update :: FUpdate.Family -- {-> synth <-}
-        , setResolution :: FSetResolution.Family -- {-> synth <-}
-        , hush :: FHush.Family -- {-> synth <-}
-        , setFunction :: FSetFunction.Family -- {-> synth <-}
-        , speed :: FSpeed.Family -- {-> synth <-}
-        , bpm :: FBpm.Family -- {-> synth <-}
-        , width :: FWidth.Family -- {-> synth <-}
-        , height :: FHeight.Family -- {-> synth <-}
-        , pi :: FPi.Family -- {-> synth <-}
-        , time :: FTime.Family -- {-> synth <-}
-        , mouse :: FMouse.Family -- {-> synth <-}
-        , initCam :: FInitCam.Family -- {-> extsource <-}
-        , initImage :: FInitImage.Family -- {-> extsource <-}
-        , initVideo :: FInitVideo.Family -- {-> extsource <-}
-        , init :: FInit.Family -- {-> extsource <-}
-        , initStream :: FInitStream.Family -- {-> extsource <-}
-        , initScreen :: FInitScreen.Family -- {-> extsource <-}
-        , fast :: FFast.Family -- {-> array <-}
-        , smooth :: FSmooth.Family -- {-> array <-}
-        , ease :: FEase.Family -- {-> array <-}
-        , offset :: FOffset.Family -- {-> array <-}
-        , fit :: FFit.Family -- {-> array <-}
-        , fft :: FFft.Family -- {-> audio <-}
-        , setSmooth :: FSetSmooth.Family -- {-> audio <-}
-        , setCutoff :: FSetCutoff.Family -- {-> audio <-}
-        , setBins :: FSetBins.Family -- {-> audio <-}
-        , setScale :: FSetScale.Family -- {-> audio <-}
-        , hide :: FHide.Family -- {-> audio <-}
-        , show :: FShow.Family -- {-> audio <-}
-        , out :: FOut.Family -- {-> out <-}
+        ( noise :: FNoise.Family m -- {-> source <-}
+        , voronoi :: FVoronoi.Family m -- {-> source <-}
+        , osc :: FOsc.Family m -- {-> source <-}
+        , shape :: FShape.Family m -- {-> source <-}
+        , gradient :: FGradient.Family m -- {-> source <-}
+        , src :: FSrc.Family m -- {-> source <-}
+        , solid :: FSolid.Family m -- {-> source <-}
+        , src :: FSrc.Family m -- {-> source <-}
+        , prev :: FPrev.Family m -- {-> source <-}
+        , rotate :: FRotate.Family m -- {-> geometry <-}
+        , scale :: FScale.Family m -- {-> geometry <-}
+        , pixelate :: FPixelate.Family m -- {-> geometry <-}
+        , repeat :: FRepeat.Family m -- {-> geometry <-}
+        , repeatX :: FRepeatX.Family m -- {-> geometry <-}
+        , repeatY :: FRepeatY.Family m -- {-> geometry <-}
+        , kaleid :: FKaleid.Family m -- {-> geometry <-}
+        , scroll :: FScroll.Family m -- {-> geometry <-}
+        , scrollX :: FScrollX.Family m -- {-> geometry <-}
+        , scrollY :: FScrollY.Family m -- {-> geometry <-}
+        , posterize :: FPosterize.Family m -- {-> color <-}
+        , shift :: FShift.Family m -- {-> color <-}
+        , invert :: FInvert.Family m -- {-> color <-}
+        , contrast :: FContrast.Family m -- {-> color <-}
+        , brightness :: FBrightness.Family m -- {-> color <-}
+        , luma :: FLuma.Family m -- {-> color <-}
+        , tresh :: FTresh.Family m -- {-> color <-}
+        , color :: FColor.Family m -- {-> color <-}
+        , saturate :: FSaturate.Family m -- {-> color <-}
+        , hue :: FHue.Family m -- {-> color <-}
+        , colorama :: FColorama.Family m -- {-> color <-}
+        , sum :: FSum.Family m -- {-> color <-}
+        , r :: FR.Family m -- {-> color <-}
+        , g :: FG.Family m -- {-> color <-}
+        , b :: FB.Family m -- {-> color <-}
+        , a :: FA.Family m -- {-> color <-}
+        , add :: FAdd.Family m -- {-> blend <-}
+        , sub :: FSub.Family m -- {-> blend <-}
+        , layer :: FLayer.Family m -- {-> blend <-}
+        , blend :: FBlend.Family m -- {-> blend <-}
+        , mult :: FMult.Family m -- {-> blend <-}
+        , diff :: FDiff.Family m -- {-> blend <-}
+        , mask :: FMask.Family m -- {-> blend <-}
+        , modulateRepeat :: FModulateRepeat.Family m -- {-> modulate <-}
+        , modulateRepeatX :: FModulateRepeatX.Family m -- {-> modulate <-}
+        , modulateRepeatY :: FModulateRepeatY.Family m -- {-> modulate <-}
+        , modulateKaleid :: FModulateKaleid.Family m -- {-> modulate <-}
+        , modulateScrollX :: FModulateScrollX.Family m -- {-> modulate <-}
+        , modulateScrollY :: FModulateScrollY.Family m -- {-> modulate <-}
+        , modulate :: FModulate.Family m -- {-> modulate <-}
+        , modulateScale :: FModulateScale.Family m -- {-> modulate <-}
+        , modulatePixelate :: FModulatePixelate.Family m -- {-> modulate <-}
+        , modulateRotate :: FModulateRotate.Family m -- {-> modulate <-}
+        , modulateHue :: FModulateHue.Family m -- {-> modulate <-}
+        , render :: FRender.Family m -- {-> synth <-}
+        , update :: FUpdate.Family m -- {-> synth <-}
+        , setResolution :: FSetResolution.Family m -- {-> synth <-}
+        , hush :: FHush.Family m -- {-> synth <-}
+        , setFunction :: FSetFunction.Family m -- {-> synth <-}
+        , speed :: FSpeed.Family m -- {-> synth <-}
+        , bpm :: FBpm.Family m -- {-> synth <-}
+        , width :: FWidth.Family m -- {-> synth <-}
+        , height :: FHeight.Family m -- {-> synth <-}
+        , pi :: FPi.Family m -- {-> synth <-}
+        , time :: FTime.Family m -- {-> synth <-}
+        , mouse :: FMouse.Family m -- {-> synth <-}
+        , initCam :: FInitCam.Family m -- {-> extsource <-}
+        , initImage :: FInitImage.Family m -- {-> extsource <-}
+        , initVideo :: FInitVideo.Family m -- {-> extsource <-}
+        , init :: FInit.Family m -- {-> extsource <-}
+        , initStream :: FInitStream.Family m -- {-> extsource <-}
+        , initScreen :: FInitScreen.Family m -- {-> extsource <-}
+        , fast :: FFast.Family m -- {-> array <-}
+        , smooth :: FSmooth.Family m -- {-> array <-}
+        , ease :: FEase.Family m -- {-> array <-}
+        , offset :: FOffset.Family m -- {-> array <-}
+        , fit :: FFit.Family m -- {-> array <-}
+        , fft :: FFft.Family m -- {-> audio <-}
+        , setSmooth :: FSetSmooth.Family m -- {-> audio <-}
+        , setCutoff :: FSetCutoff.Family m -- {-> audio <-}
+        , setBins :: FSetBins.Family m -- {-> audio <-}
+        , setScale :: FSetScale.Family m -- {-> audio <-}
+        , hide :: FHide.Family m -- {-> audio <-}
+        , show :: FShow.Family m -- {-> audio <-}
+        , out :: FOut.Family m -- {-> out <-}
         )
 
 
 toolkit :: forall m. HydraToolkit m
 toolkit =
     Toolkit.from "hydra"
-        { noise : FNoise.family
-        , voronoi : FVoronoi.family
-        , osc : FOsc.family
-        , shape : FShape.family
-        , gradient : FGradient.family
-        , src : FSrc.family
-        , solid : FSolid.family
-        , src : FSrc.family
-        , prev : FPrev.family
-        , rotate : FRotate.family
-        , scale : FScale.family
-        , pixelate : FPixelate.family
-        , repeat : FRepeat.family
-        , repeatX : FRepeatX.family
-        , repeatY : FRepeatY.family
-        , kaleid : FKaleid.family
-        , scroll : FScroll.family
-        , scrollX : FScrollX.family
-        , scrollY : FScrollY.family
-        , posterize : FPosterize.family
-        , shift : FShift.family
-        , invert : FInvert.family
-        , contrast : FContrast.family
-        , brightness : FBrightness.family
-        , luma : FLuma.family
-        , tresh : FTresh.family
-        , color : FColor.family
-        , saturate : FSaturate.family
-        , hue : FHue.family
-        , colorama : FColorama.family
-        , sum : FSum.family
-        , r : FR.family
-        , g : FG.family
-        , b : FB.family
-        , a : FA.family
-        , add : FAdd.family
-        , sub : FSub.family
-        , layer : FLayer.family
-        , blend : FBlend.family
-        , mult : FMult.family
-        , diff : FDiff.family
-        , mask : FMask.family
-        , modulateRepeat : FModulateRepeat.family
-        , modulateRepeatX : FModulateRepeatX.family
-        , modulateRepeatY : FModulateRepeatY.family
-        , modulateKaleid : FModulateKaleid.family
-        , modulateScrollX : FModulateScrollX.family
-        , modulateScrollY : FModulateScrollY.family
-        , modulate : FModulate.family
-        , modulateScale : FModulateScale.family
-        , modulatePixelate : FModulatePixelate.family
-        , modulateRotate : FModulateRotate.family
-        , modulateHue : FModulateHue.family
-        , render : FRender.family
-        , update : FUpdate.family
-        , setResolution : FSetResolution.family
-        , hush : FHush.family
-        , setFunction : FSetFunction.family
-        , speed : FSpeed.family
-        , bpm : FBpm.family
-        , width : FWidth.family
-        , height : FHeight.family
-        , pi : FPi.family
-        , time : FTime.family
-        , mouse : FMouse.family
-        , initCam : FInitCam.family
-        , initImage : FInitImage.family
-        , initVideo : FInitVideo.family
-        , init : FInit.family
-        , initStream : FInitStream.family
-        , initScreen : FInitScreen.family
-        , fast : FFast.family
-        , smooth : FSmooth.family
-        , ease : FEase.family
-        , offset : FOffset.family
-        , fit : FFit.family
-        , fft : FFft.family
-        , setSmooth : FSetSmooth.family
-        , setCutoff : FSetCutoff.family
-        , setBins : FSetBins.family
-        , setScale : FSetScale.family
-        , hide : FHide.family
-        , show : FShow.family
-        , out : FOut.family
+        { noise : (FNoise.family :: FNoise.Family m )
+        , voronoi : (FVoronoi.family :: FVoronoi.Family m )
+        , osc : (FOsc.family :: FOsc.Family m )
+        , shape : (FShape.family :: FShape.Family m )
+        , gradient : (FGradient.family :: FGradient.Family m )
+        , src : (FSrc.family :: FSrc.Family m )
+        , solid : (FSolid.family :: FSolid.Family m )
+        , src : (FSrc.family :: FSrc.Family m )
+        , prev : (FPrev.family :: FPrev.Family m )
+        , rotate : (FRotate.family :: FRotate.Family m )
+        , scale : (FScale.family :: FScale.Family m )
+        , pixelate : (FPixelate.family :: FPixelate.Family m )
+        , repeat : (FRepeat.family :: FRepeat.Family m )
+        , repeatX : (FRepeatX.family :: FRepeatX.Family m )
+        , repeatY : (FRepeatY.family :: FRepeatY.Family m )
+        , kaleid : (FKaleid.family :: FKaleid.Family m )
+        , scroll : (FScroll.family :: FScroll.Family m )
+        , scrollX : (FScrollX.family :: FScrollX.Family m )
+        , scrollY : (FScrollY.family :: FScrollY.Family m )
+        , posterize : (FPosterize.family :: FPosterize.Family m )
+        , shift : (FShift.family :: FShift.Family m )
+        , invert : (FInvert.family :: FInvert.Family m )
+        , contrast : (FContrast.family :: FContrast.Family m )
+        , brightness : (FBrightness.family :: FBrightness.Family m )
+        , luma : (FLuma.family :: FLuma.Family m )
+        , tresh : (FTresh.family :: FTresh.Family m )
+        , color : (FColor.family :: FColor.Family m )
+        , saturate : (FSaturate.family :: FSaturate.Family m )
+        , hue : (FHue.family :: FHue.Family m )
+        , colorama : (FColorama.family :: FColorama.Family m )
+        , sum : (FSum.family :: FSum.Family m )
+        , r : (FR.family :: FR.Family m )
+        , g : (FG.family :: FG.Family m )
+        , b : (FB.family :: FB.Family m )
+        , a : (FA.family :: FA.Family m )
+        , add : (FAdd.family :: FAdd.Family m )
+        , sub : (FSub.family :: FSub.Family m )
+        , layer : (FLayer.family :: FLayer.Family m )
+        , blend : (FBlend.family :: FBlend.Family m )
+        , mult : (FMult.family :: FMult.Family m )
+        , diff : (FDiff.family :: FDiff.Family m )
+        , mask : (FMask.family :: FMask.Family m )
+        , modulateRepeat : (FModulateRepeat.family :: FModulateRepeat.Family m )
+        , modulateRepeatX : (FModulateRepeatX.family :: FModulateRepeatX.Family m )
+        , modulateRepeatY : (FModulateRepeatY.family :: FModulateRepeatY.Family m )
+        , modulateKaleid : (FModulateKaleid.family :: FModulateKaleid.Family m )
+        , modulateScrollX : (FModulateScrollX.family :: FModulateScrollX.Family m )
+        , modulateScrollY : (FModulateScrollY.family :: FModulateScrollY.Family m )
+        , modulate : (FModulate.family :: FModulate.Family m )
+        , modulateScale : (FModulateScale.family :: FModulateScale.Family m )
+        , modulatePixelate : (FModulatePixelate.family :: FModulatePixelate.Family m )
+        , modulateRotate : (FModulateRotate.family :: FModulateRotate.Family m )
+        , modulateHue : (FModulateHue.family :: FModulateHue.Family m )
+        , render : (FRender.family :: FRender.Family m )
+        , update : (FUpdate.family :: FUpdate.Family m )
+        , setResolution : (FSetResolution.family :: FSetResolution.Family m )
+        , hush : (FHush.family :: FHush.Family m )
+        , setFunction : (FSetFunction.family :: FSetFunction.Family m )
+        , speed : (FSpeed.family :: FSpeed.Family m )
+        , bpm : (FBpm.family :: FBpm.Family m )
+        , width : (FWidth.family :: FWidth.Family m )
+        , height : (FHeight.family :: FHeight.Family m )
+        , pi : (FPi.family :: FPi.Family m )
+        , time : (FTime.family :: FTime.Family m )
+        , mouse : (FMouse.family :: FMouse.Family m )
+        , initCam : (FInitCam.family :: FInitCam.Family m )
+        , initImage : (FInitImage.family :: FInitImage.Family m )
+        , initVideo : (FInitVideo.family :: FInitVideo.Family m )
+        , init : (FInit.family :: FInit.Family m )
+        , initStream : (FInitStream.family :: FInitStream.Family m )
+        , initScreen : (FInitScreen.family :: FInitScreen.Family m )
+        , fast : (FFast.family :: FFast.Family m )
+        , smooth : (FSmooth.family :: FSmooth.Family m )
+        , ease : (FEase.family :: FEase.Family m )
+        , offset : (FOffset.family :: FOffset.Family m )
+        , fit : (FFit.family :: FFit.Family m )
+        , fft : (FFft.family :: FFft.Family m )
+        , setSmooth : (FSetSmooth.family :: FSetSmooth.Family m )
+        , setCutoff : (FSetCutoff.family :: FSetCutoff.Family m )
+        , setBins : (FSetBins.family :: FSetBins.Family m )
+        , setScale : (FSetScale.family :: FSetScale.Family m )
+        , hide : (FHide.family :: FHide.Family m )
+        , show : (FShow.family :: FShow.Family m )
+        , out : (FOut.family :: FOut.Family m )
         }
 
 
@@ -457,7 +459,9 @@ module Toolkit.HydraGen where
 import ModuleImport as MI
 
 
-
+import Prelude (Unit)
+import Noodle.Toolkit3 (Toolkit) as Noodle
+import Noodle.Toolkit3 as Toolkit
 
 
 type FNoise m =
@@ -472,7 +476,7 @@ noise = -- {-> source <-}
         unit
         { scale : 10, offset : 0.1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "noise" $ do
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             -- Noise scale offset
@@ -491,7 +495,7 @@ voronoi = -- {-> source <-}
         unit
         { scale : 5, speed : 0.3, blending : 0.3 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "voronoi" $ do
             scale <- P.receive _in_scale
             speed <- P.receive _in_speed
             blending <- P.receive _in_blending
@@ -511,7 +515,7 @@ osc = -- {-> source <-}
         unit
         { frequency : 60, sync : 0.1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "osc" $ do
             frequency <- P.receive _in_frequency
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset
@@ -531,7 +535,7 @@ shape = -- {-> source <-}
         unit
         { sides : 60, radius : 0.3, smoothing : 0.01 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "shape" $ do
             sides <- P.receive _in_sides
             radius <- P.receive _in_radius
             smoothing <- P.receive _in_smoothing
@@ -551,7 +555,7 @@ gradient = -- {-> source <-}
         unit
         { speed : ?speed_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "gradient" $ do
             speed <- P.receive _in_speed
             -- Gradient speed
             P.send _out_out ?out_out
@@ -569,7 +573,7 @@ src = -- {-> source <-}
         unit
         { tex : ?tex_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "src" $ do
             tex <- P.receive _in_tex
             -- Src tex
             P.send _out_out ?out_out
@@ -587,7 +591,7 @@ solid = -- {-> source <-}
         unit
         { r : ?r_default, g : ?g_default, b : ?b_default, a : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "solid" $ do
             r <- P.receive _in_r
             g <- P.receive _in_g
             b <- P.receive _in_b
@@ -608,7 +612,7 @@ src = -- {-> source <-}
         unit
         { src : ?src_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "src" $ do
             src <- P.receive _in_src
             -- Src src
             P.send _out_out ?out_out
@@ -626,7 +630,7 @@ prev = -- {-> source <-}
         unit
         { ?ch_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "prev" $ do
             --
             -- Prev ?input
             P.send _out_out ?out_out
@@ -644,7 +648,7 @@ rotate = -- {-> geometry <-}
         unit
         { what : ?what_default, angle : 10, speed : ?speed_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "rotate" $ do
             what <- P.receive _in_what
             angle <- P.receive _in_angle
             speed <- P.receive _in_speed
@@ -664,7 +668,7 @@ scale = -- {-> geometry <-}
         unit
         { what : ?what_default, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "scale" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             xMult <- P.receive _in_xMult
@@ -687,7 +691,7 @@ pixelate = -- {-> geometry <-}
         unit
         { what : ?what_default, pixelX : 20, pixelY : 20 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "pixelate" $ do
             what <- P.receive _in_what
             pixelX <- P.receive _in_pixelX
             pixelY <- P.receive _in_pixelY
@@ -707,7 +711,7 @@ repeat = -- {-> geometry <-}
         unit
         { what : ?what_default, repeatX : 3, repeatY : 3, offsetX : ?offsetX_default, offsetY : ?offsetY_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "repeat" $ do
             what <- P.receive _in_what
             repeatX <- P.receive _in_repeatX
             repeatY <- P.receive _in_repeatY
@@ -729,7 +733,7 @@ repeatX = -- {-> geometry <-}
         unit
         { what : ?what_default, reps : 3, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "repeatX" $ do
             what <- P.receive _in_what
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
@@ -749,7 +753,7 @@ repeatY = -- {-> geometry <-}
         unit
         { what : ?what_default, reps : 3, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "repeatY" $ do
             what <- P.receive _in_what
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
@@ -769,7 +773,7 @@ kaleid = -- {-> geometry <-}
         unit
         { what : ?what_default, nSides : 3 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "kaleid" $ do
             what <- P.receive _in_what
             nSides <- P.receive _in_nSides
             -- Kaleid what nSides
@@ -788,7 +792,7 @@ scroll = -- {-> geometry <-}
         unit
         { what : ?what_default, scrollX : 0.5, scrollY : 0.5, speedX : ?speedX_default, speedY : ?speedY_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "scroll" $ do
             what <- P.receive _in_what
             scrollX <- P.receive _in_scrollX
             scrollY <- P.receive _in_scrollY
@@ -810,7 +814,7 @@ scrollX = -- {-> geometry <-}
         unit
         { what : ?what_default, scrollX : 0.5, speed : ?speed_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "scrollX" $ do
             what <- P.receive _in_what
             scrollX <- P.receive _in_scrollX
             speed <- P.receive _in_speed
@@ -830,7 +834,7 @@ scrollY = -- {-> geometry <-}
         unit
         { what : ?what_default, scrollY : 0.5, speed : ?speed_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "scrollY" $ do
             what <- P.receive _in_what
             scrollY <- P.receive _in_scrollY
             speed <- P.receive _in_speed
@@ -850,7 +854,7 @@ posterize = -- {-> color <-}
         unit
         { what : ?what_default, bins : 3, gamma : 0.6 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "posterize" $ do
             what <- P.receive _in_what
             bins <- P.receive _in_bins
             gamma <- P.receive _in_gamma
@@ -870,7 +874,7 @@ shift = -- {-> color <-}
         unit
         { what : ?what_default, r : 0.5, g : ?g_default, b : ?b_default, a : ?a_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "shift" $ do
             what <- P.receive _in_what
             r <- P.receive _in_r
             g <- P.receive _in_g
@@ -892,7 +896,7 @@ invert = -- {-> color <-}
         unit
         { what : ?what_default, amount : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "invert" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Invert what amount
@@ -911,7 +915,7 @@ contrast = -- {-> color <-}
         unit
         { what : ?what_default, amount : 1.6 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "contrast" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Contrast what amount
@@ -930,7 +934,7 @@ brightness = -- {-> color <-}
         unit
         { what : ?what_default, amount : 0.4 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "brightness" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Brightness what amount
@@ -949,7 +953,7 @@ luma = -- {-> color <-}
         unit
         { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "luma" $ do
             what <- P.receive _in_what
             treshold <- P.receive _in_treshold
             tolerance <- P.receive _in_tolerance
@@ -969,7 +973,7 @@ tresh = -- {-> color <-}
         unit
         { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "tresh" $ do
             what <- P.receive _in_what
             treshold <- P.receive _in_treshold
             tolerance <- P.receive _in_tolerance
@@ -979,7 +983,7 @@ tresh = -- {-> color <-}
 
 type FColor m =
     Family.Def Unit
-        ( r :: Value, g :: Value, b :: Value, a :: Value )
+        ( what :: Texture, r :: Value, g :: Value, b :: Value, a :: Value )
         ( out :: Texture )
         m
 
@@ -987,14 +991,15 @@ color :: forall m. FColor m
 color = -- {-> color <-}
     Family.def
         unit
-        { r : 1, g : 1, b : 1, a : 1 }
+        { what : ?what_default, r : 1, g : 1, b : 1, a : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "color" $ do
+            what <- P.receive _in_what
             r <- P.receive _in_r
             g <- P.receive _in_g
             b <- P.receive _in_b
             a <- P.receive _in_a
-            -- Color r g b a
+            -- Color what r g b a
             P.send _out_out ?out_out
 
 
@@ -1010,7 +1015,7 @@ saturate = -- {-> color <-}
         unit
         { what : ?what_default, amount : 2 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "saturate" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Saturate what amount
@@ -1029,7 +1034,7 @@ hue = -- {-> color <-}
         unit
         { what : ?what_default, hue : 0.4 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "hue" $ do
             what <- P.receive _in_what
             hue <- P.receive _in_hue
             -- Hue what hue
@@ -1048,7 +1053,7 @@ colorama = -- {-> color <-}
         unit
         { what : ?what_default, amount : 0.005 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "colorama" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Colorama what amount
@@ -1067,7 +1072,7 @@ sum = -- {-> color <-}
         unit
         { what : ?what_default, ?ch_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "sum" $ do
             what <- P.receive _in_what
             --
             -- Sum what ?input
@@ -1086,7 +1091,7 @@ r = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "r" $ do
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
@@ -1106,7 +1111,7 @@ g = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "g" $ do
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
@@ -1126,7 +1131,7 @@ b = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "b" $ do
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
@@ -1146,7 +1151,7 @@ a = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "a" $ do
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
@@ -1166,7 +1171,7 @@ add = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "add" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -1186,7 +1191,7 @@ sub = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "sub" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -1206,7 +1211,7 @@ layer = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "layer" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -1226,7 +1231,7 @@ blend = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 0.5 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "blend" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -1246,7 +1251,7 @@ mult = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "mult" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -1266,7 +1271,7 @@ diff = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "diff" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             -- Diff what with
@@ -1285,7 +1290,7 @@ mask = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "mask" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             -- Mask what with
@@ -1304,7 +1309,7 @@ modulateRepeat = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateRepeat" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             repeatX <- P.receive _in_repeatX
@@ -1327,7 +1332,7 @@ modulateRepeatX = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateRepeatX" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             reps <- P.receive _in_reps
@@ -1348,7 +1353,7 @@ modulateRepeatY = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateRepeatY" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             reps <- P.receive _in_reps
@@ -1369,7 +1374,7 @@ modulateKaleid = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, nSides : 3 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateKaleid" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             nSides <- P.receive _in_nSides
@@ -1389,7 +1394,7 @@ modulateScrollX = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, scrollX : 0.5, speed : ?speed_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateScrollX" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             scrollX <- P.receive _in_scrollX
@@ -1410,7 +1415,7 @@ modulateScrollY = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, scrollY : 0.5, speed : ?speed_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateScrollY" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             scrollY <- P.receive _in_scrollY
@@ -1431,7 +1436,7 @@ modulate = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 0.1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulate" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -1451,7 +1456,7 @@ modulateScale = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, multiple : 1, offset : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateScale" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple
@@ -1472,7 +1477,7 @@ modulatePixelate = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, multiple : 10, offset : 3 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulatePixelate" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple
@@ -1493,7 +1498,7 @@ modulateRotate = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, multiple : 1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateRotate" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple
@@ -1514,7 +1519,7 @@ modulateHue = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateHue" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -1534,7 +1539,7 @@ render = -- {-> synth <-}
         unit
         { from : All }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "render" $ do
             from <- P.receive _in_from
             -- Render from
             P.send _out_out ?out_out
@@ -1552,7 +1557,7 @@ update = -- {-> synth <-}
         unit
         { fn : ?fn_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "update" $ do
             fn <- P.receive _in_fn
             -- Update fn
             P.send _out_out ?out_out
@@ -1570,7 +1575,7 @@ setResolution = -- {-> synth <-}
         unit
         { width : ?width_default, height : ?height_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "setResolution" $ do
             width <- P.receive _in_width
             height <- P.receive _in_height
             -- SetResolution width height
@@ -1589,7 +1594,7 @@ hush = -- {-> synth <-}
         unit
         { Unit : ?Unit_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "hush" $ do
             Unit <- P.receive _in_Unit
             -- Hush Unit
             P.send _out_out ?out_out
@@ -1607,7 +1612,7 @@ setFunction = -- {-> synth <-}
         unit
         { fn : ?fn_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "setFunction" $ do
             fn <- P.receive _in_fn
             -- SetFunction fn
             P.send _out_out ?out_out
@@ -1625,7 +1630,7 @@ speed = -- {-> synth <-}
         unit
         { v : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "speed" $ do
             v <- P.receive _in_v
             -- Speed v
             P.send _out_out ?out_out
@@ -1643,7 +1648,7 @@ bpm = -- {-> synth <-}
         unit
         { v : 30 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "bpm" $ do
             v <- P.receive _in_v
             -- Bpm v
             P.send _out_out ?out_out
@@ -1661,7 +1666,7 @@ width = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "width" $ do
             -- Width
             P.send _out_out ?out_out
 
@@ -1678,7 +1683,7 @@ height = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "height" $ do
             -- Height
             P.send _out_out ?out_out
 
@@ -1695,7 +1700,7 @@ pi = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "pi" $ do
             -- Pi
             P.send _out_out ?out_out
 
@@ -1712,7 +1717,7 @@ time = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "time" $ do
             -- Time
             P.send _out_out ?out_out
 
@@ -1729,14 +1734,14 @@ mouse = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "mouse" $ do
             -- Mouse
             P.send _out_out ?out_out
 
 
 type FInitCam m =
     Family.Def Unit
-        ( src :: Source, index :: Value )
+        ( where :: Source, index :: Value )
         ( out :: Unit )
         m
 
@@ -1744,10 +1749,10 @@ initCam :: forall m. FInitCam m
 initCam = -- {-> extsource <-}
     Family.def
         unit
-        { src : ?src_default, index : ?index_default }
+        { where : ?where_default, index : ?index_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            src <- P.receive _in_src
+        $ Fn.make "initCam" $ do
+            where <- P.receive _in_where
             index <- P.receive _in_index
             -- InitCam where index
             P.send _out_out ?out_out
@@ -1755,7 +1760,7 @@ initCam = -- {-> extsource <-}
 
 type FInitImage m =
     Family.Def Unit
-        ( src :: Source, url :: String )
+        ( where :: Source, url :: String )
         ( out :: Unit )
         m
 
@@ -1763,10 +1768,10 @@ initImage :: forall m. FInitImage m
 initImage = -- {-> extsource <-}
     Family.def
         unit
-        { src : ?src_default, url : ?url_default }
+        { where : ?where_default, url : ?url_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            src <- P.receive _in_src
+        $ Fn.make "initImage" $ do
+            where <- P.receive _in_where
             url <- P.receive _in_url
             -- InitImage where url
             P.send _out_out ?out_out
@@ -1774,7 +1779,7 @@ initImage = -- {-> extsource <-}
 
 type FInitVideo m =
     Family.Def Unit
-        ( src :: Source, url :: String )
+        ( where :: Source, url :: String )
         ( out :: Unit )
         m
 
@@ -1782,10 +1787,10 @@ initVideo :: forall m. FInitVideo m
 initVideo = -- {-> extsource <-}
     Family.def
         unit
-        { src : ?src_default, url : ?url_default }
+        { where : ?where_default, url : ?url_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            src <- P.receive _in_src
+        $ Fn.make "initVideo" $ do
+            where <- P.receive _in_where
             url <- P.receive _in_url
             -- InitVideo where url
             P.send _out_out ?out_out
@@ -1793,7 +1798,7 @@ initVideo = -- {-> extsource <-}
 
 type FInit m =
     Family.Def Unit
-        ( src :: SourceOptions )
+        ( where :: SourceOptions )
         ( out :: Unit )
         m
 
@@ -1801,17 +1806,17 @@ init :: forall m. FInit m
 init = -- {-> extsource <-}
     Family.def
         unit
-        { src : ?src_default }
+        { where : ?where_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            src <- P.receive _in_src
+        $ Fn.make "init" $ do
+            where <- P.receive _in_where
             -- Init where
             P.send _out_out ?out_out
 
 
 type FInitStream m =
     Family.Def Unit
-        ( src :: Source, ?ch_type )
+        ( where :: Source, ?ch_type )
         ( out :: Unit )
         m
 
@@ -1819,10 +1824,10 @@ initStream :: forall m. FInitStream m
 initStream = -- {-> extsource <-}
     Family.def
         unit
-        { src : ?src_default, ?ch_default }
+        { where : ?where_default, ?ch_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            src <- P.receive _in_src
+        $ Fn.make "initStream" $ do
+            where <- P.receive _in_where
             --
             -- InitStream where ?input
             P.send _out_out ?out_out
@@ -1830,7 +1835,7 @@ initStream = -- {-> extsource <-}
 
 type FInitScreen m =
     Family.Def Unit
-        ( src :: Source )
+        ( where :: Source )
         ( out :: Unit )
         m
 
@@ -1838,17 +1843,17 @@ initScreen :: forall m. FInitScreen m
 initScreen = -- {-> extsource <-}
     Family.def
         unit
-        { src : ?src_default }
+        { where : ?where_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            src <- P.receive _in_src
+        $ Fn.make "initScreen" $ do
+            where <- P.receive _in_where
             -- InitScreen where
             P.send _out_out ?out_out
 
 
 type FFast m =
     Family.Def Unit
-        ( a :: Array, speed :: Value )
+        ( arr :: VArray, speed :: Value )
         ( out :: Value )
         m
 
@@ -1856,18 +1861,18 @@ fast :: forall m. FFast m
 fast = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, speed : 1 }
+        { arr : ?arr_default, speed : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "fast" $ do
+            arr <- P.receive _in_arr
             speed <- P.receive _in_speed
-            -- Fast a speed
+            -- Fast arr speed
             P.send _out_out ?out_out
 
 
 type FSmooth m =
     Family.Def Unit
-        ( a :: Array, smooth :: Value )
+        ( arr :: VArray, smooth :: Value )
         ( out :: Value )
         m
 
@@ -1875,18 +1880,18 @@ smooth :: forall m. FSmooth m
 smooth = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, smooth : 1 }
+        { arr : ?arr_default, smooth : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "smooth" $ do
+            arr <- P.receive _in_arr
             smooth <- P.receive _in_smooth
-            -- Smooth a smooth
+            -- Smooth arr smooth
             P.send _out_out ?out_out
 
 
 type FEase m =
     Family.Def Unit
-        ( a :: Array, ease :: Ease )
+        ( arr :: VArray, ease :: Ease )
         ( out :: Value )
         m
 
@@ -1894,18 +1899,18 @@ ease :: forall m. FEase m
 ease = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, ease : Linear }
+        { arr : ?arr_default, ease : Linear }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "ease" $ do
+            arr <- P.receive _in_arr
             ease <- P.receive _in_ease
-            -- Ease a ease
+            -- Ease arr ease
             P.send _out_out ?out_out
 
 
 type FOffset m =
     Family.Def Unit
-        ( a :: Array, offset :: Value )
+        ( arr :: VArray, offset :: Value )
         ( out :: Value )
         m
 
@@ -1913,18 +1918,18 @@ offset :: forall m. FOffset m
 offset = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, offset : 0.5 }
+        { arr : ?arr_default, offset : 0.5 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "offset" $ do
+            arr <- P.receive _in_arr
             offset <- P.receive _in_offset
-            -- Offset a offset
+            -- Offset arr offset
             P.send _out_out ?out_out
 
 
 type FFit m =
     Family.Def Unit
-        ( a :: Array, low :: Value, high :: Value )
+        ( arr :: VArray, low :: Value, high :: Value )
         ( out :: Value )
         m
 
@@ -1932,13 +1937,13 @@ fit :: forall m. FFit m
 fit = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, low : 0, high : 1 }
+        { arr : ?arr_default, low : 0, high : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "fit" $ do
+            arr <- P.receive _in_arr
             low <- P.receive _in_low
             high <- P.receive _in_high
-            -- Fit a low high
+            -- Fit arr low high
             P.send _out_out ?out_out
 
 
@@ -1954,7 +1959,7 @@ fft = -- {-> audio <-}
         unit
         { a : ?a_default, h : ?h_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "fft" $ do
             a <- P.receive _in_a
             h <- P.receive _in_h
             -- Fft a h
@@ -1963,7 +1968,7 @@ fft = -- {-> audio <-}
 
 type FSetSmooth m =
     Family.Def Unit
-        ( a :: Audio, smooth :: Value )
+        ( audio :: Audio, smooth :: Value )
         ( out :: Unit )
         m
 
@@ -1971,12 +1976,12 @@ setSmooth :: forall m. FSetSmooth m
 setSmooth = -- {-> audio <-}
     Family.def
         unit
-        { a : ?a_default, smooth : 0.4 }
+        { audio : ?audio_default, smooth : 0.4 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "setSmooth" $ do
+            audio <- P.receive _in_audio
             smooth <- P.receive _in_smooth
-            -- SetSmooth a smooth
+            -- SetSmooth audio smooth
             P.send _out_out ?out_out
 
 
@@ -1992,7 +1997,7 @@ setCutoff = -- {-> audio <-}
         unit
         { a : ?a_default, cutoff : 2 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "setCutoff" $ do
             a <- P.receive _in_a
             cutoff <- P.receive _in_cutoff
             -- SetCutoff a cutoff
@@ -2001,7 +2006,7 @@ setCutoff = -- {-> audio <-}
 
 type FSetBins m =
     Family.Def Unit
-        ( a :: Audio, numBins :: Value )
+        ( audio :: Audio, numBins :: Value )
         ( out :: Unit )
         m
 
@@ -2009,18 +2014,18 @@ setBins :: forall m. FSetBins m
 setBins = -- {-> audio <-}
     Family.def
         unit
-        { a : ?a_default, numBins : 4 }
+        { audio : ?audio_default, numBins : 4 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "setBins" $ do
+            audio <- P.receive _in_audio
             numBins <- P.receive _in_numBins
-            -- SetBins a numBins
+            -- SetBins audio numBins
             P.send _out_out ?out_out
 
 
 type FSetScale m =
     Family.Def Unit
-        ( a :: Audio, scale :: Value )
+        ( audio :: Audio, scale :: Value )
         ( out :: Unit )
         m
 
@@ -2028,18 +2033,18 @@ setScale :: forall m. FSetScale m
 setScale = -- {-> audio <-}
     Family.def
         unit
-        { a : ?a_default, scale : 10 }
+        { audio : ?audio_default, scale : 10 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "setScale" $ do
+            audio <- P.receive _in_audio
             scale <- P.receive _in_scale
-            -- SetScale a scale
+            -- SetScale audio scale
             P.send _out_out ?out_out
 
 
 type FHide m =
     Family.Def Unit
-        ( a :: Audio, ?ch_type )
+        ( audio :: Audio, ?ch_type )
         ( out :: Unit )
         m
 
@@ -2047,18 +2052,18 @@ hide :: forall m. FHide m
 hide = -- {-> audio <-}
     Family.def
         unit
-        { a : ?a_default, ?ch_default }
+        { audio : ?audio_default, ?ch_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "hide" $ do
+            audio <- P.receive _in_audio
             --
-            -- Hide a ?input
+            -- Hide audio ?input
             P.send _out_out ?out_out
 
 
 type FShow m =
     Family.Def Unit
-        ( a :: Audio, ?ch_type )
+        ( audio :: Audio, ?ch_type )
         ( out :: Unit )
         m
 
@@ -2066,18 +2071,18 @@ show :: forall m. FShow m
 show = -- {-> audio <-}
     Family.def
         unit
-        { a : ?a_default, ?ch_default }
+        { audio : ?audio_default, ?ch_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "show" $ do
+            audio <- P.receive _in_audio
             --
-            -- Show a ?input
+            -- Show audio ?input
             P.send _out_out ?out_out
 
 
 type FOut m =
     Family.Def Unit
-        ( what :: Texture, src :: Output )
+        ( what :: Texture, where :: Output )
         ( out :: Unit )
         m
 
@@ -2085,11 +2090,11 @@ out :: forall m. FOut m
 out = -- {-> out <-}
     Family.def
         unit
-        { what : ?what_default, src : ?src_default }
+        { what : ?what_default, where : ?where_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "out" $ do
             what <- P.receive _in_what
-            src <- P.receive _in_src
+            where <- P.receive _in_where
             -- Out what where
             P.send _out_out ?out_out
 
@@ -2285,7 +2290,7 @@ module Toolkit.HydraGen.Family.Source.FNoise where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2310,7 +2315,7 @@ family = -- {-> source <-}
         unit
         { scale : 10, offset : 0.1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "noise" $ do
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             -- Noise scale offset
@@ -2325,7 +2330,7 @@ module Toolkit.HydraGen.Family.Source.FVoronoi where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2351,7 +2356,7 @@ family = -- {-> source <-}
         unit
         { scale : 5, speed : 0.3, blending : 0.3 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "voronoi" $ do
             scale <- P.receive _in_scale
             speed <- P.receive _in_speed
             blending <- P.receive _in_blending
@@ -2367,7 +2372,7 @@ module Toolkit.HydraGen.Family.Source.FOsc where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2393,7 +2398,7 @@ family = -- {-> source <-}
         unit
         { frequency : 60, sync : 0.1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "osc" $ do
             frequency <- P.receive _in_frequency
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset
@@ -2409,7 +2414,7 @@ module Toolkit.HydraGen.Family.Source.FShape where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2435,7 +2440,7 @@ family = -- {-> source <-}
         unit
         { sides : 60, radius : 0.3, smoothing : 0.01 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "shape" $ do
             sides <- P.receive _in_sides
             radius <- P.receive _in_radius
             smoothing <- P.receive _in_smoothing
@@ -2451,7 +2456,7 @@ module Toolkit.HydraGen.Family.Source.FGradient where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2475,7 +2480,7 @@ family = -- {-> source <-}
         unit
         { speed : ?speed_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "gradient" $ do
             speed <- P.receive _in_speed
             -- Gradient speed
             P.send _out_out ?out_out
@@ -2489,7 +2494,7 @@ module Toolkit.HydraGen.Family.Source.FSrc where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2513,7 +2518,7 @@ family = -- {-> source <-}
         unit
         { tex : ?tex_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "src" $ do
             tex <- P.receive _in_tex
             -- Src tex
             P.send _out_out ?out_out
@@ -2527,7 +2532,7 @@ module Toolkit.HydraGen.Family.Source.FSolid where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2554,7 +2559,7 @@ family = -- {-> source <-}
         unit
         { r : ?r_default, g : ?g_default, b : ?b_default, a : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "solid" $ do
             r <- P.receive _in_r
             g <- P.receive _in_g
             b <- P.receive _in_b
@@ -2571,7 +2576,7 @@ module Toolkit.HydraGen.Family.Source.FSrc where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2595,7 +2600,7 @@ family = -- {-> source <-}
         unit
         { src : ?src_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "src" $ do
             src <- P.receive _in_src
             -- Src src
             P.send _out_out ?out_out
@@ -2609,7 +2614,7 @@ module Toolkit.HydraGen.Family.Source.FPrev where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2633,7 +2638,7 @@ family = -- {-> source <-}
         unit
         { ?ch_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "prev" $ do
             --
             -- Prev ?input
             P.send _out_out ?out_out
@@ -2647,7 +2652,7 @@ module Toolkit.HydraGen.Family.Geometry.FRotate where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2673,7 +2678,7 @@ family = -- {-> geometry <-}
         unit
         { what : ?what_default, angle : 10, speed : ?speed_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "rotate" $ do
             what <- P.receive _in_what
             angle <- P.receive _in_angle
             speed <- P.receive _in_speed
@@ -2689,7 +2694,7 @@ module Toolkit.HydraGen.Family.Geometry.FScale where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2718,7 +2723,7 @@ family = -- {-> geometry <-}
         unit
         { what : ?what_default, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "scale" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             xMult <- P.receive _in_xMult
@@ -2737,7 +2742,7 @@ module Toolkit.HydraGen.Family.Geometry.FPixelate where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2763,7 +2768,7 @@ family = -- {-> geometry <-}
         unit
         { what : ?what_default, pixelX : 20, pixelY : 20 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "pixelate" $ do
             what <- P.receive _in_what
             pixelX <- P.receive _in_pixelX
             pixelY <- P.receive _in_pixelY
@@ -2779,7 +2784,7 @@ module Toolkit.HydraGen.Family.Geometry.FRepeat where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2807,7 +2812,7 @@ family = -- {-> geometry <-}
         unit
         { what : ?what_default, repeatX : 3, repeatY : 3, offsetX : ?offsetX_default, offsetY : ?offsetY_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "repeat" $ do
             what <- P.receive _in_what
             repeatX <- P.receive _in_repeatX
             repeatY <- P.receive _in_repeatY
@@ -2825,7 +2830,7 @@ module Toolkit.HydraGen.Family.Geometry.FRepeatX where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2851,7 +2856,7 @@ family = -- {-> geometry <-}
         unit
         { what : ?what_default, reps : 3, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "repeatX" $ do
             what <- P.receive _in_what
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
@@ -2867,7 +2872,7 @@ module Toolkit.HydraGen.Family.Geometry.FRepeatY where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2893,7 +2898,7 @@ family = -- {-> geometry <-}
         unit
         { what : ?what_default, reps : 3, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "repeatY" $ do
             what <- P.receive _in_what
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset
@@ -2909,7 +2914,7 @@ module Toolkit.HydraGen.Family.Geometry.FKaleid where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2934,7 +2939,7 @@ family = -- {-> geometry <-}
         unit
         { what : ?what_default, nSides : 3 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "kaleid" $ do
             what <- P.receive _in_what
             nSides <- P.receive _in_nSides
             -- Kaleid what nSides
@@ -2949,7 +2954,7 @@ module Toolkit.HydraGen.Family.Geometry.FScroll where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -2977,7 +2982,7 @@ family = -- {-> geometry <-}
         unit
         { what : ?what_default, scrollX : 0.5, scrollY : 0.5, speedX : ?speedX_default, speedY : ?speedY_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "scroll" $ do
             what <- P.receive _in_what
             scrollX <- P.receive _in_scrollX
             scrollY <- P.receive _in_scrollY
@@ -2995,7 +3000,7 @@ module Toolkit.HydraGen.Family.Geometry.FScrollX where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3021,7 +3026,7 @@ family = -- {-> geometry <-}
         unit
         { what : ?what_default, scrollX : 0.5, speed : ?speed_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "scrollX" $ do
             what <- P.receive _in_what
             scrollX <- P.receive _in_scrollX
             speed <- P.receive _in_speed
@@ -3037,7 +3042,7 @@ module Toolkit.HydraGen.Family.Geometry.FScrollY where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3063,7 +3068,7 @@ family = -- {-> geometry <-}
         unit
         { what : ?what_default, scrollY : 0.5, speed : ?speed_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "scrollY" $ do
             what <- P.receive _in_what
             scrollY <- P.receive _in_scrollY
             speed <- P.receive _in_speed
@@ -3079,7 +3084,7 @@ module Toolkit.HydraGen.Family.Color.FPosterize where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3105,7 +3110,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, bins : 3, gamma : 0.6 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "posterize" $ do
             what <- P.receive _in_what
             bins <- P.receive _in_bins
             gamma <- P.receive _in_gamma
@@ -3121,7 +3126,7 @@ module Toolkit.HydraGen.Family.Color.FShift where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3149,7 +3154,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, r : 0.5, g : ?g_default, b : ?b_default, a : ?a_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "shift" $ do
             what <- P.receive _in_what
             r <- P.receive _in_r
             g <- P.receive _in_g
@@ -3167,7 +3172,7 @@ module Toolkit.HydraGen.Family.Color.FInvert where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3192,7 +3197,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, amount : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "invert" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Invert what amount
@@ -3207,7 +3212,7 @@ module Toolkit.HydraGen.Family.Color.FContrast where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3232,7 +3237,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, amount : 1.6 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "contrast" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Contrast what amount
@@ -3247,7 +3252,7 @@ module Toolkit.HydraGen.Family.Color.FBrightness where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3272,7 +3277,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, amount : 0.4 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "brightness" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Brightness what amount
@@ -3287,7 +3292,7 @@ module Toolkit.HydraGen.Family.Color.FLuma where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3313,7 +3318,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "luma" $ do
             what <- P.receive _in_what
             treshold <- P.receive _in_treshold
             tolerance <- P.receive _in_tolerance
@@ -3329,7 +3334,7 @@ module Toolkit.HydraGen.Family.Color.FTresh where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3355,7 +3360,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "tresh" $ do
             what <- P.receive _in_what
             treshold <- P.receive _in_treshold
             tolerance <- P.receive _in_tolerance
@@ -3371,13 +3376,14 @@ module Toolkit.HydraGen.Family.Color.FColor where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
+_in_what = Fn.Input :: _ "what"
 _in_r = Fn.Input :: _ "r"
 _in_g = Fn.Input :: _ "g"
 _in_b = Fn.Input :: _ "b"
@@ -3388,7 +3394,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> color <-}
     Family.Def Unit
-        ( r :: Value, g :: Value, b :: Value, a :: Value )
+        ( what :: Texture, r :: Value, g :: Value, b :: Value, a :: Value )
         ( out :: Texture )
         m
 
@@ -3396,14 +3402,15 @@ family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { r : 1, g : 1, b : 1, a : 1 }
+        { what : ?what_default, r : 1, g : 1, b : 1, a : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "color" $ do
+            what <- P.receive _in_what
             r <- P.receive _in_r
             g <- P.receive _in_g
             b <- P.receive _in_b
             a <- P.receive _in_a
-            -- Color r g b a
+            -- Color what r g b a
             P.send _out_out ?out_out
 
 
@@ -3415,7 +3422,7 @@ module Toolkit.HydraGen.Family.Color.FSaturate where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3440,7 +3447,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, amount : 2 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "saturate" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Saturate what amount
@@ -3455,7 +3462,7 @@ module Toolkit.HydraGen.Family.Color.FHue where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3480,7 +3487,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, hue : 0.4 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "hue" $ do
             what <- P.receive _in_what
             hue <- P.receive _in_hue
             -- Hue what hue
@@ -3495,7 +3502,7 @@ module Toolkit.HydraGen.Family.Color.FColorama where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3520,7 +3527,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, amount : 0.005 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "colorama" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
             -- Colorama what amount
@@ -3535,7 +3542,7 @@ module Toolkit.HydraGen.Family.Color.FSum where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3560,7 +3567,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, ?ch_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "sum" $ do
             what <- P.receive _in_what
             --
             -- Sum what ?input
@@ -3575,7 +3582,7 @@ module Toolkit.HydraGen.Family.Color.FR where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3601,7 +3608,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "r" $ do
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
@@ -3617,7 +3624,7 @@ module Toolkit.HydraGen.Family.Color.FG where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3643,7 +3650,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "g" $ do
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
@@ -3659,7 +3666,7 @@ module Toolkit.HydraGen.Family.Color.FB where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3685,7 +3692,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "b" $ do
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
@@ -3701,7 +3708,7 @@ module Toolkit.HydraGen.Family.Color.FA where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3727,7 +3734,7 @@ family = -- {-> color <-}
         unit
         { what : ?what_default, scale : 1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "a" $ do
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
@@ -3743,7 +3750,7 @@ module Toolkit.HydraGen.Family.Blend.FAdd where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3769,7 +3776,7 @@ family = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "add" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -3785,7 +3792,7 @@ module Toolkit.HydraGen.Family.Blend.FSub where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3811,7 +3818,7 @@ family = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "sub" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -3827,7 +3834,7 @@ module Toolkit.HydraGen.Family.Blend.FLayer where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3853,7 +3860,7 @@ family = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "layer" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -3869,7 +3876,7 @@ module Toolkit.HydraGen.Family.Blend.FBlend where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3895,7 +3902,7 @@ family = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 0.5 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "blend" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -3911,7 +3918,7 @@ module Toolkit.HydraGen.Family.Blend.FMult where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3937,7 +3944,7 @@ family = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "mult" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -3953,7 +3960,7 @@ module Toolkit.HydraGen.Family.Blend.FDiff where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -3978,7 +3985,7 @@ family = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "diff" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             -- Diff what with
@@ -3993,7 +4000,7 @@ module Toolkit.HydraGen.Family.Blend.FMask where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4018,7 +4025,7 @@ family = -- {-> blend <-}
         unit
         { what : ?what_default, with : ?with_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "mask" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             -- Mask what with
@@ -4033,7 +4040,7 @@ module Toolkit.HydraGen.Family.Modulate.FModulateRepeat where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4062,7 +4069,7 @@ family = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateRepeat" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             repeatX <- P.receive _in_repeatX
@@ -4081,7 +4088,7 @@ module Toolkit.HydraGen.Family.Modulate.FModulateRepeatX where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4108,7 +4115,7 @@ family = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateRepeatX" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             reps <- P.receive _in_reps
@@ -4125,7 +4132,7 @@ module Toolkit.HydraGen.Family.Modulate.FModulateRepeatY where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4152,7 +4159,7 @@ family = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateRepeatY" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             reps <- P.receive _in_reps
@@ -4169,7 +4176,7 @@ module Toolkit.HydraGen.Family.Modulate.FModulateKaleid where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4195,7 +4202,7 @@ family = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, nSides : 3 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateKaleid" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             nSides <- P.receive _in_nSides
@@ -4211,7 +4218,7 @@ module Toolkit.HydraGen.Family.Modulate.FModulateScrollX where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4238,7 +4245,7 @@ family = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, scrollX : 0.5, speed : ?speed_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateScrollX" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             scrollX <- P.receive _in_scrollX
@@ -4255,7 +4262,7 @@ module Toolkit.HydraGen.Family.Modulate.FModulateScrollY where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4282,7 +4289,7 @@ family = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, scrollY : 0.5, speed : ?speed_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateScrollY" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             scrollY <- P.receive _in_scrollY
@@ -4299,7 +4306,7 @@ module Toolkit.HydraGen.Family.Modulate.FModulate where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4325,7 +4332,7 @@ family = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 0.1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulate" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -4341,7 +4348,7 @@ module Toolkit.HydraGen.Family.Modulate.FModulateScale where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4368,7 +4375,7 @@ family = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, multiple : 1, offset : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateScale" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple
@@ -4385,7 +4392,7 @@ module Toolkit.HydraGen.Family.Modulate.FModulatePixelate where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4412,7 +4419,7 @@ family = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, multiple : 10, offset : 3 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulatePixelate" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple
@@ -4429,7 +4436,7 @@ module Toolkit.HydraGen.Family.Modulate.FModulateRotate where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4456,7 +4463,7 @@ family = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, multiple : 1, offset : ?offset_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateRotate" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple
@@ -4473,7 +4480,7 @@ module Toolkit.HydraGen.Family.Modulate.FModulateHue where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4499,7 +4506,7 @@ family = -- {-> modulate <-}
         unit
         { what : ?what_default, with : ?with_default, amount : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "modulateHue" $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             amount <- P.receive _in_amount
@@ -4515,7 +4522,7 @@ module Toolkit.HydraGen.Family.Synth.FRender where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4539,7 +4546,7 @@ family = -- {-> synth <-}
         unit
         { from : All }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "render" $ do
             from <- P.receive _in_from
             -- Render from
             P.send _out_out ?out_out
@@ -4553,7 +4560,7 @@ module Toolkit.HydraGen.Family.Synth.FUpdate where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4577,7 +4584,7 @@ family = -- {-> synth <-}
         unit
         { fn : ?fn_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "update" $ do
             fn <- P.receive _in_fn
             -- Update fn
             P.send _out_out ?out_out
@@ -4591,7 +4598,7 @@ module Toolkit.HydraGen.Family.Synth.FSetResolution where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4616,7 +4623,7 @@ family = -- {-> synth <-}
         unit
         { width : ?width_default, height : ?height_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "setResolution" $ do
             width <- P.receive _in_width
             height <- P.receive _in_height
             -- SetResolution width height
@@ -4631,7 +4638,7 @@ module Toolkit.HydraGen.Family.Synth.FHush where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4655,7 +4662,7 @@ family = -- {-> synth <-}
         unit
         { Unit : ?Unit_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "hush" $ do
             Unit <- P.receive _in_Unit
             -- Hush Unit
             P.send _out_out ?out_out
@@ -4669,7 +4676,7 @@ module Toolkit.HydraGen.Family.Synth.FSetFunction where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4693,7 +4700,7 @@ family = -- {-> synth <-}
         unit
         { fn : ?fn_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "setFunction" $ do
             fn <- P.receive _in_fn
             -- SetFunction fn
             P.send _out_out ?out_out
@@ -4707,7 +4714,7 @@ module Toolkit.HydraGen.Family.Synth.FSpeed where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4731,7 +4738,7 @@ family = -- {-> synth <-}
         unit
         { v : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "speed" $ do
             v <- P.receive _in_v
             -- Speed v
             P.send _out_out ?out_out
@@ -4745,7 +4752,7 @@ module Toolkit.HydraGen.Family.Synth.FBpm where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4769,7 +4776,7 @@ family = -- {-> synth <-}
         unit
         { v : 30 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "bpm" $ do
             v <- P.receive _in_v
             -- Bpm v
             P.send _out_out ?out_out
@@ -4783,7 +4790,7 @@ module Toolkit.HydraGen.Family.Synth.FWidth where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4807,7 +4814,7 @@ family = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "width" $ do
             -- Width
             P.send _out_out ?out_out
 
@@ -4820,7 +4827,7 @@ module Toolkit.HydraGen.Family.Synth.FHeight where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4844,7 +4851,7 @@ family = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "height" $ do
             -- Height
             P.send _out_out ?out_out
 
@@ -4857,7 +4864,7 @@ module Toolkit.HydraGen.Family.Synth.FPi where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4881,7 +4888,7 @@ family = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "pi" $ do
             -- Pi
             P.send _out_out ?out_out
 
@@ -4894,7 +4901,7 @@ module Toolkit.HydraGen.Family.Synth.FTime where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4918,7 +4925,7 @@ family = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "time" $ do
             -- Time
             P.send _out_out ?out_out
 
@@ -4931,7 +4938,7 @@ module Toolkit.HydraGen.Family.Synth.FMouse where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -4955,7 +4962,7 @@ family = -- {-> synth <-}
         unit
         { }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "mouse" $ do
             -- Mouse
             P.send _out_out ?out_out
 
@@ -4968,14 +4975,14 @@ module Toolkit.HydraGen.Family.Extsource.FInitCam where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_src = Fn.Input :: _ "src"
+_in_where = Fn.Input :: _ "where"
 _in_index = Fn.Input :: _ "index"
 
 _out_out = Fn.Output :: _ "out"
@@ -4983,7 +4990,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( src :: Source, index :: Value )
+        ( where :: Source, index :: Value )
         ( out :: Unit )
         m
 
@@ -4991,10 +4998,10 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { src : ?src_default, index : ?index_default }
+        { where : ?where_default, index : ?index_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            src <- P.receive _in_src
+        $ Fn.make "initCam" $ do
+            where <- P.receive _in_where
             index <- P.receive _in_index
             -- InitCam where index
             P.send _out_out ?out_out
@@ -5008,14 +5015,14 @@ module Toolkit.HydraGen.Family.Extsource.FInitImage where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_src = Fn.Input :: _ "src"
+_in_where = Fn.Input :: _ "where"
 _in_url = Fn.Input :: _ "url"
 
 _out_out = Fn.Output :: _ "out"
@@ -5023,7 +5030,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( src :: Source, url :: String )
+        ( where :: Source, url :: String )
         ( out :: Unit )
         m
 
@@ -5031,10 +5038,10 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { src : ?src_default, url : ?url_default }
+        { where : ?where_default, url : ?url_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            src <- P.receive _in_src
+        $ Fn.make "initImage" $ do
+            where <- P.receive _in_where
             url <- P.receive _in_url
             -- InitImage where url
             P.send _out_out ?out_out
@@ -5048,14 +5055,14 @@ module Toolkit.HydraGen.Family.Extsource.FInitVideo where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_src = Fn.Input :: _ "src"
+_in_where = Fn.Input :: _ "where"
 _in_url = Fn.Input :: _ "url"
 
 _out_out = Fn.Output :: _ "out"
@@ -5063,7 +5070,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( src :: Source, url :: String )
+        ( where :: Source, url :: String )
         ( out :: Unit )
         m
 
@@ -5071,10 +5078,10 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { src : ?src_default, url : ?url_default }
+        { where : ?where_default, url : ?url_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            src <- P.receive _in_src
+        $ Fn.make "initVideo" $ do
+            where <- P.receive _in_where
             url <- P.receive _in_url
             -- InitVideo where url
             P.send _out_out ?out_out
@@ -5088,21 +5095,21 @@ module Toolkit.HydraGen.Family.Extsource.FInit where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_src = Fn.Input :: _ "src"
+_in_where = Fn.Input :: _ "where"
 
 _out_out = Fn.Output :: _ "out"
 
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( src :: SourceOptions )
+        ( where :: SourceOptions )
         ( out :: Unit )
         m
 
@@ -5110,10 +5117,10 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { src : ?src_default }
+        { where : ?where_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            src <- P.receive _in_src
+        $ Fn.make "init" $ do
+            where <- P.receive _in_where
             -- Init where
             P.send _out_out ?out_out
 
@@ -5126,14 +5133,14 @@ module Toolkit.HydraGen.Family.Extsource.FInitStream where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_src = Fn.Input :: _ "src"
+_in_where = Fn.Input :: _ "where"
 
 
 _out_out = Fn.Output :: _ "out"
@@ -5141,7 +5148,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( src :: Source, ?ch_type )
+        ( where :: Source, ?ch_type )
         ( out :: Unit )
         m
 
@@ -5149,10 +5156,10 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { src : ?src_default, ?ch_default }
+        { where : ?where_default, ?ch_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            src <- P.receive _in_src
+        $ Fn.make "initStream" $ do
+            where <- P.receive _in_where
             --
             -- InitStream where ?input
             P.send _out_out ?out_out
@@ -5166,21 +5173,21 @@ module Toolkit.HydraGen.Family.Extsource.FInitScreen where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_src = Fn.Input :: _ "src"
+_in_where = Fn.Input :: _ "where"
 
 _out_out = Fn.Output :: _ "out"
 
 
 type Family m = -- {-> extsource <-}
     Family.Def Unit
-        ( src :: Source )
+        ( where :: Source )
         ( out :: Unit )
         m
 
@@ -5188,10 +5195,10 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { src : ?src_default }
+        { where : ?where_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            src <- P.receive _in_src
+        $ Fn.make "initScreen" $ do
+            where <- P.receive _in_where
             -- InitScreen where
             P.send _out_out ?out_out
 
@@ -5204,14 +5211,14 @@ module Toolkit.HydraGen.Family.Array.FFast where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_a = Fn.Input :: _ "a"
+_in_arr = Fn.Input :: _ "arr"
 _in_speed = Fn.Input :: _ "speed"
 
 _out_out = Fn.Output :: _ "out"
@@ -5219,7 +5226,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
-        ( a :: Array, speed :: Value )
+        ( arr :: VArray, speed :: Value )
         ( out :: Value )
         m
 
@@ -5227,12 +5234,12 @@ family :: forall m. Family m
 family = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, speed : 1 }
+        { arr : ?arr_default, speed : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "fast" $ do
+            arr <- P.receive _in_arr
             speed <- P.receive _in_speed
-            -- Fast a speed
+            -- Fast arr speed
             P.send _out_out ?out_out
 
 
@@ -5244,14 +5251,14 @@ module Toolkit.HydraGen.Family.Array.FSmooth where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_a = Fn.Input :: _ "a"
+_in_arr = Fn.Input :: _ "arr"
 _in_smooth = Fn.Input :: _ "smooth"
 
 _out_out = Fn.Output :: _ "out"
@@ -5259,7 +5266,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
-        ( a :: Array, smooth :: Value )
+        ( arr :: VArray, smooth :: Value )
         ( out :: Value )
         m
 
@@ -5267,12 +5274,12 @@ family :: forall m. Family m
 family = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, smooth : 1 }
+        { arr : ?arr_default, smooth : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "smooth" $ do
+            arr <- P.receive _in_arr
             smooth <- P.receive _in_smooth
-            -- Smooth a smooth
+            -- Smooth arr smooth
             P.send _out_out ?out_out
 
 
@@ -5284,14 +5291,14 @@ module Toolkit.HydraGen.Family.Array.FEase where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_a = Fn.Input :: _ "a"
+_in_arr = Fn.Input :: _ "arr"
 _in_ease = Fn.Input :: _ "ease"
 
 _out_out = Fn.Output :: _ "out"
@@ -5299,7 +5306,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
-        ( a :: Array, ease :: Ease )
+        ( arr :: VArray, ease :: Ease )
         ( out :: Value )
         m
 
@@ -5307,12 +5314,12 @@ family :: forall m. Family m
 family = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, ease : Linear }
+        { arr : ?arr_default, ease : Linear }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "ease" $ do
+            arr <- P.receive _in_arr
             ease <- P.receive _in_ease
-            -- Ease a ease
+            -- Ease arr ease
             P.send _out_out ?out_out
 
 
@@ -5324,14 +5331,14 @@ module Toolkit.HydraGen.Family.Array.FOffset where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_a = Fn.Input :: _ "a"
+_in_arr = Fn.Input :: _ "arr"
 _in_offset = Fn.Input :: _ "offset"
 
 _out_out = Fn.Output :: _ "out"
@@ -5339,7 +5346,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
-        ( a :: Array, offset :: Value )
+        ( arr :: VArray, offset :: Value )
         ( out :: Value )
         m
 
@@ -5347,12 +5354,12 @@ family :: forall m. Family m
 family = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, offset : 0.5 }
+        { arr : ?arr_default, offset : 0.5 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "offset" $ do
+            arr <- P.receive _in_arr
             offset <- P.receive _in_offset
-            -- Offset a offset
+            -- Offset arr offset
             P.send _out_out ?out_out
 
 
@@ -5364,14 +5371,14 @@ module Toolkit.HydraGen.Family.Array.FFit where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_a = Fn.Input :: _ "a"
+_in_arr = Fn.Input :: _ "arr"
 _in_low = Fn.Input :: _ "low"
 _in_high = Fn.Input :: _ "high"
 
@@ -5380,7 +5387,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> array <-}
     Family.Def Unit
-        ( a :: Array, low :: Value, high :: Value )
+        ( arr :: VArray, low :: Value, high :: Value )
         ( out :: Value )
         m
 
@@ -5388,13 +5395,13 @@ family :: forall m. Family m
 family = -- {-> array <-}
     Family.def
         unit
-        { a : ?a_default, low : 0, high : 1 }
+        { arr : ?arr_default, low : 0, high : 1 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "fit" $ do
+            arr <- P.receive _in_arr
             low <- P.receive _in_low
             high <- P.receive _in_high
-            -- Fit a low high
+            -- Fit arr low high
             P.send _out_out ?out_out
 
 
@@ -5406,7 +5413,7 @@ module Toolkit.HydraGen.Family.Audio.FFft where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -5431,7 +5438,7 @@ family = -- {-> audio <-}
         unit
         { a : ?a_default, h : ?h_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "fft" $ do
             a <- P.receive _in_a
             h <- P.receive _in_h
             -- Fft a h
@@ -5446,14 +5453,14 @@ module Toolkit.HydraGen.Family.Audio.FSetSmooth where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_a = Fn.Input :: _ "a"
+_in_audio = Fn.Input :: _ "audio"
 _in_smooth = Fn.Input :: _ "smooth"
 
 _out_out = Fn.Output :: _ "out"
@@ -5461,7 +5468,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
-        ( a :: Audio, smooth :: Value )
+        ( audio :: Audio, smooth :: Value )
         ( out :: Unit )
         m
 
@@ -5469,12 +5476,12 @@ family :: forall m. Family m
 family = -- {-> audio <-}
     Family.def
         unit
-        { a : ?a_default, smooth : 0.4 }
+        { audio : ?audio_default, smooth : 0.4 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "setSmooth" $ do
+            audio <- P.receive _in_audio
             smooth <- P.receive _in_smooth
-            -- SetSmooth a smooth
+            -- SetSmooth audio smooth
             P.send _out_out ?out_out
 
 
@@ -5486,7 +5493,7 @@ module Toolkit.HydraGen.Family.Audio.FSetCutoff where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -5511,7 +5518,7 @@ family = -- {-> audio <-}
         unit
         { a : ?a_default, cutoff : 2 }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "setCutoff" $ do
             a <- P.receive _in_a
             cutoff <- P.receive _in_cutoff
             -- SetCutoff a cutoff
@@ -5526,14 +5533,14 @@ module Toolkit.HydraGen.Family.Audio.FSetBins where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_a = Fn.Input :: _ "a"
+_in_audio = Fn.Input :: _ "audio"
 _in_numBins = Fn.Input :: _ "numBins"
 
 _out_out = Fn.Output :: _ "out"
@@ -5541,7 +5548,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
-        ( a :: Audio, numBins :: Value )
+        ( audio :: Audio, numBins :: Value )
         ( out :: Unit )
         m
 
@@ -5549,12 +5556,12 @@ family :: forall m. Family m
 family = -- {-> audio <-}
     Family.def
         unit
-        { a : ?a_default, numBins : 4 }
+        { audio : ?audio_default, numBins : 4 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "setBins" $ do
+            audio <- P.receive _in_audio
             numBins <- P.receive _in_numBins
-            -- SetBins a numBins
+            -- SetBins audio numBins
             P.send _out_out ?out_out
 
 
@@ -5566,14 +5573,14 @@ module Toolkit.HydraGen.Family.Audio.FSetScale where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_a = Fn.Input :: _ "a"
+_in_audio = Fn.Input :: _ "audio"
 _in_scale = Fn.Input :: _ "scale"
 
 _out_out = Fn.Output :: _ "out"
@@ -5581,7 +5588,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
-        ( a :: Audio, scale :: Value )
+        ( audio :: Audio, scale :: Value )
         ( out :: Unit )
         m
 
@@ -5589,12 +5596,12 @@ family :: forall m. Family m
 family = -- {-> audio <-}
     Family.def
         unit
-        { a : ?a_default, scale : 10 }
+        { audio : ?audio_default, scale : 10 }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "setScale" $ do
+            audio <- P.receive _in_audio
             scale <- P.receive _in_scale
-            -- SetScale a scale
+            -- SetScale audio scale
             P.send _out_out ?out_out
 
 
@@ -5606,14 +5613,14 @@ module Toolkit.HydraGen.Family.Audio.FHide where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_a = Fn.Input :: _ "a"
+_in_audio = Fn.Input :: _ "audio"
 
 
 _out_out = Fn.Output :: _ "out"
@@ -5621,7 +5628,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
-        ( a :: Audio, ?ch_type )
+        ( audio :: Audio, ?ch_type )
         ( out :: Unit )
         m
 
@@ -5629,12 +5636,12 @@ family :: forall m. Family m
 family = -- {-> audio <-}
     Family.def
         unit
-        { a : ?a_default, ?ch_default }
+        { audio : ?audio_default, ?ch_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "hide" $ do
+            audio <- P.receive _in_audio
             --
-            -- Hide a ?input
+            -- Hide audio ?input
             P.send _out_out ?out_out
 
 
@@ -5646,14 +5653,14 @@ module Toolkit.HydraGen.Family.Audio.FShow where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 
 
-_in_a = Fn.Input :: _ "a"
+_in_audio = Fn.Input :: _ "audio"
 
 
 _out_out = Fn.Output :: _ "out"
@@ -5661,7 +5668,7 @@ _out_out = Fn.Output :: _ "out"
 
 type Family m = -- {-> audio <-}
     Family.Def Unit
-        ( a :: Audio, ?ch_type )
+        ( audio :: Audio, ?ch_type )
         ( out :: Unit )
         m
 
@@ -5669,12 +5676,12 @@ family :: forall m. Family m
 family = -- {-> audio <-}
     Family.def
         unit
-        { a : ?a_default, ?ch_default }
+        { audio : ?audio_default, ?ch_default }
         { out : ?out_default }
-        $ Fn.make $ do
-            a <- P.receive _in_a
+        $ Fn.make "show" $ do
+            audio <- P.receive _in_audio
             --
-            -- Show a ?input
+            -- Show audio ?input
             P.send _out_out ?out_out
 
 
@@ -5686,7 +5693,7 @@ module Toolkit.HydraGen.Family.Out.FOut where
 import FamilyImport as FI
 
 
-import Prelude
+import Prelude (Unit, unit, ($), bind, pure)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -5694,14 +5701,14 @@ import Noodle.Family.Def as Family
 
 
 _in_what = Fn.Input :: _ "what"
-_in_src = Fn.Input :: _ "src"
+_in_where = Fn.Input :: _ "where"
 
 _out_out = Fn.Output :: _ "out"
 
 
 type Family m = -- {-> out <-}
     Family.Def Unit
-        ( what :: Texture, src :: Output )
+        ( what :: Texture, where :: Output )
         ( out :: Unit )
         m
 
@@ -5709,10 +5716,10 @@ family :: forall m. Family m
 family = -- {-> out <-}
     Family.def
         unit
-        { what : ?what_default, src : ?src_default }
+        { what : ?what_default, where : ?where_default }
         { out : ?out_default }
-        $ Fn.make $ do
+        $ Fn.make "out" $ do
             what <- P.receive _in_what
-            src <- P.receive _in_src
+            where <- P.receive _in_where
             -- Out what where
             P.send _out_out ?out_out

@@ -25,7 +25,7 @@ family :: forall m. Family m
 family = -- {-> extsource <-}
     Family.def
         unit
-        { src : H.Source0, url : "" }
+        { src : H.defaultSource, url : "" }
         { }
         $ Fn.make "initImage" $ do
             src <- P.receive _in_src

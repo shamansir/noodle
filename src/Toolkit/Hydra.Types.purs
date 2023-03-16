@@ -172,3 +172,7 @@ defaultUpdateFn = const $ pure unit
 
 noValues :: VArray
 noValues = []
+
+
+defaultSource :: Source
+defaultSource = Source All
