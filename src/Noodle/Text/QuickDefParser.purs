@@ -2,67 +2,134 @@ module Noodle.Text.QuickDefParser where
 
 import Prelude
 
-import Data.String.CodeUnits as String
+import Effect.Console (log) as Console
+import Effect.Class (liftEffect)
+
+import Data.List (List)
+import Data.String.CodeUnits as StringCU
 import Data.Array as Array
 import Data.Maybe (Maybe(..))
+import Data.String as String
+import Data.Either (Either(..))
 
-import Text.Parsing.Parser (ParserT) as P
-import Text.Parsing.Parser.String (char, string)  as P
+import Control.Alt ((<|>))
+import Data.Traversable (for)
+
+import Text.Parsing.Parser (ParserT, Parser, runParser, ParseError) as P
+import Text.Parsing.Parser.String (char, string, anyChar, noneOf)  as P
 import Text.Parsing.Parser.Token (alphaNum, space) as P
-import Text.Parsing.Parser.Combinators (between, choice, option, optionMaybe, sepBy) as P
+import Text.Parsing.Parser.Combinators (between, choice, option, optionMaybe, sepBy, lookAhead) as P
+import Text.Parsing.Parser.Combinators ((<?>))
+
 
 import Noodle.Text.QuickDef as QD
 
 
-fnParser :: forall (m :: Type -> Type). Functor m => Monad m => P.ParserT String m QD.QFamily
-fnParser = do
-  family <- validToken
-  _ <- Array.some P.space
-  _ <- P.char ':'
-  _ <- Array.some P.space
-  fnName <- validToken
-  _ <- Array.some P.space
-  _ <- P.string "::"
-  _ <- Array.many P.space
-  inputs <- P.option [] channelsP
-  _ <- Array.many P.space
-  _ <- P.string "=>"
-  _ <- Array.some P.space
-  outputs <-
-    P.choice
-      [ Array.singleton <$> QD.qout <$> validToken
-      , P.option [] channelsP
-      ]
-  pure $ QD.qfmo' family fnName inputs outputs
+-- type Parser m a = Functor m => Monad m => P.ParserT String m a
+-- type Parser a = P.Parser String a
 
-  where
-    validToken = String.fromCharArray <$> Array.some P.alphaNum
-    validDefaultValue = String.fromCharArray <$> Array.some (P.choice [ P.alphaNum, P.char '.' ])
-    validArgument = do
-      P.choice
+
+fnParser :: P.Parser String QD.QFamily
+fnParser = do
+  tag <- alphaNumToken <?> "tag"
+  _ <- sep $ P.char ':'
+  family <- alphaNumToken <?> "family"
+  _ <- sep $ P.string "::"
+  inputs <- P.option [] channels <?> "inputs"
+  _ <- sep $ P.string "=>"
+  outputs <- results
+  _ <- Array.many P.space
+  maybeImpl <- P.optionMaybe $ P.between
+                (P.string "/-|")
+                (P.string "|-/")
+                anything
+                -- (anythingExcept "|-")
+  pure $ QD.qfmoi tag family inputs outputs maybeImpl
+
+
+results :: P.Parser String (Array (Maybe QD.Channel))
+results =
+  P.choice
+      [ Array.singleton <$> QD.qout <$> do
+          type_ <- alphaNumToken
+          _ <- Array.many P.space
+          maybeDefault <- P.optionMaybe $ P.between
+                        (P.char '{')
+                        (P.char '}')
+                        defaultValue
+          pure { type : type_, maybeDefault }
+      , P.option [] channels
+      ] <?> "outputs"
+
+
+arrowSep ∷ P.Parser String Unit
+arrowSep = sep $ P.choice [ P.string "->", StringCU.singleton <$> P.char '→' ]
+
+
+sep :: forall s. P.Parser String s -> P.Parser String Unit
+sep sep_ = do
+    _ <- Array.many P.space
+    _ <- sep_
+    _ <- Array.many P.space
+    pure unit
+
+
+anything :: P.Parser String String
+anything = StringCU.fromCharArray <$> Array.some (P.noneOf [ '|' ])
+
+alphaNumToken :: P.Parser String String
+alphaNumToken = StringCU.fromCharArray <$> Array.some P.alphaNum
+
+defaultValue :: P.Parser String String
+defaultValue = StringCU.fromCharArray <$> Array.some (P.choice [ P.alphaNum, P.char '.', P.char ' ', P.char '_' ])
+
+maybeChannel :: P.Parser String (Maybe QD.Channel)
+maybeChannel =
+  P.choice
         [ P.char '?' *> pure Nothing
         , Just <$> do
-            name <- validToken
-            maybeType <- P.optionMaybe $ P.char ':' *> validToken
+            name <- alphaNumToken
+            maybeType <- P.optionMaybe $ P.char ':' *> alphaNumToken
             _ <- Array.many P.space
             maybeDefault <- P.optionMaybe
+                              -- $ Array.many P.space *>
                               $ P.between
                                 (P.char '{')
                                 (P.char '}')
-                                validDefaultValue
+                                defaultValue
             pure { name, type : maybeType, default : maybeDefault }
         ]
-    arrowSep = do
-      _ <- Array.many P.space
-      _ <- P.choice [ P.string "->", String.singleton <$> P.char '→' ]
-      _ <- Array.many P.space
-      pure unit
-    channelsP =
-      P.between
+
+
+channels :: P.Parser String (Array (Maybe QD.Channel))
+channels =
+  P.between
         (P.char '<')
         (P.char '>')
-        $ Array.fromFoldable <$> P.sepBy validArgument arrowSep
+        $ asArray
+        $ P.sepBy maybeChannel arrowSep
 
 
-familyListParser :: forall (m :: Type -> Type). Functor m => Monad m => P.ParserT String m (Array QD.QFamily)
-familyListParser = Array.many $ fnParser >>= \fn -> P.char '\n' *> pure fn
+-- channelList = forall (m :: Type -> Type). Functor m => Monad m => P.ParserT String m (Array QD.QFamily)
+
+asArray :: forall s a. P.Parser s (List a) -> P.Parser s (Array a)
+asArray = map Array.fromFoldable
+
+
+-- fromList :: forall m. String -> P.Parser String (Array QD.QFamily)
+-- TODO: familyList :: String -> Either (String /\ P.ParseError) (Array QD.QFamily)
+familyList :: String -> Either (P.ParseError) (Array QD.QFamily)
+familyList lines =
+  for (String.split (String.Pattern "\n") lines) $ \s -> P.runParser s fnParser
+
+
+familyList' :: String -> Array QD.QFamily
+familyList' lines =
+  case familyList lines of
+    Left _ -> []
+    Right items -> items
+
+
+-- familyList :: P.Parser String (Array QD.QFamily)
+-- familyList = asArray $ P.sepBy fnParser $ P.char '\n'
+-- familyList = Array.many $ fnParser >>= \fn -> P.char '\n' *> pure fn

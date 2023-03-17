@@ -1,0 +1,6229 @@
+data Hydra
+    = Noise Value Value
+    | Voronoi Value Value Value
+    | Osc Value Value Value
+    | Shape Value Value Value
+    | Gradient Value
+    | Src Texture
+    | Solid Value Value Value Value
+    | Src Source
+    | Prev ?ArgType
+    | Rotate Texture Value Value
+    | Scale Texture Value Value Value Value Value
+    | Pixelate Texture Value Value
+    | Repeat Texture Value Value Value Value
+    | RepeatX Texture Value Value
+    | RepeatY Texture Value Value
+    | Kaleid Texture Value
+    | Scroll Texture Value Value Value Value
+    | ScrollX Texture Value Value
+    | ScrollY Texture Value Value
+    | Posterize Texture Value Value
+    | Shift Texture Value Value Value Value
+    | Invert Texture Value
+    | Contrast Texture Value
+    | Brightness Texture Value
+    | Luma Texture Value Value
+    | Tresh Texture Value Value
+    | Color Texture Value Value Value Value
+    | Saturate Texture Value
+    | Hue Texture Value
+    | Colorama Texture Value
+    | Sum Texture ?ArgType
+    | R Texture Value Value
+    | G Texture Value Value
+    | B Texture Value Value
+    | A Texture Value Value
+    | Add Texture Texture Value
+    | Sub Texture Texture Value
+    | Layer Texture Texture Value
+    | Blend Texture Texture Value
+    | Mult Texture Texture Value
+    | Diff Texture Texture
+    | Mask Texture Texture
+    | ModulateRepeat Texture Texture Value Value Value Value
+    | ModulateRepeatX Texture Texture Value Value
+    | ModulateRepeatY Texture Texture Value Value
+    | ModulateKaleid Texture Texture Value
+    | ModulateScrollX Texture Texture Value Value
+    | ModulateScrollY Texture Texture Value Value
+    | Modulate Texture Texture Value
+    | ModulateScale Texture Texture Value Value
+    | ModulatePixelate Texture Texture Value Value
+    | ModulateRotate Texture Texture Value Value
+    | ModulateHue Texture Texture Value
+    | Render From
+    | Update UpdateFn
+    | SetResolution Value Value
+    | Hush ?Unit_Type
+    | SetFunction GlslFn
+    | Speed Value
+    | Bpm Value
+    | Width
+    | Height
+    | Pi
+    | Time
+    | Mouse
+    | InitCam Source Value
+    | InitImage Source String
+    | InitVideo Source String
+    | Init SourceOptions
+    | InitStream Source ?ArgType
+    | InitScreen Source
+    | Fast VArray Value
+    | Smooth VArray Value
+    | Ease VArray Ease
+    | Offset VArray Value
+    | Fit VArray Value Value
+    | Fft Audio AudioBin
+    | SetSmooth Audio Value
+    | SetCutoff Audio Value
+    | SetBins Audio Value
+    | SetScale Audio Value
+    | Hide Audio ?ArgType
+    | Show Audio ?ArgType
+    | Out Texture Output
+
+
+module Toolkit.HydraGenData where
+
+
+data Hydra
+    = Noise Value Value
+    | Voronoi Value Value Value
+    | Osc Value Value Value
+    | Shape Value Value Value
+    | Gradient Value
+    | Src Texture
+    | Solid Value Value Value Value
+    | Src Source
+    | Prev ?ArgType
+    | Rotate Texture Value Value
+    | Scale Texture Value Value Value Value Value
+    | Pixelate Texture Value Value
+    | Repeat Texture Value Value Value Value
+    | RepeatX Texture Value Value
+    | RepeatY Texture Value Value
+    | Kaleid Texture Value
+    | Scroll Texture Value Value Value Value
+    | ScrollX Texture Value Value
+    | ScrollY Texture Value Value
+    | Posterize Texture Value Value
+    | Shift Texture Value Value Value Value
+    | Invert Texture Value
+    | Contrast Texture Value
+    | Brightness Texture Value
+    | Luma Texture Value Value
+    | Tresh Texture Value Value
+    | Color Texture Value Value Value Value
+    | Saturate Texture Value
+    | Hue Texture Value
+    | Colorama Texture Value
+    | Sum Texture ?ArgType
+    | R Texture Value Value
+    | G Texture Value Value
+    | B Texture Value Value
+    | A Texture Value Value
+    | Add Texture Texture Value
+    | Sub Texture Texture Value
+    | Layer Texture Texture Value
+    | Blend Texture Texture Value
+    | Mult Texture Texture Value
+    | Diff Texture Texture
+    | Mask Texture Texture
+    | ModulateRepeat Texture Texture Value Value Value Value
+    | ModulateRepeatX Texture Texture Value Value
+    | ModulateRepeatY Texture Texture Value Value
+    | ModulateKaleid Texture Texture Value
+    | ModulateScrollX Texture Texture Value Value
+    | ModulateScrollY Texture Texture Value Value
+    | Modulate Texture Texture Value
+    | ModulateScale Texture Texture Value Value
+    | ModulatePixelate Texture Texture Value Value
+    | ModulateRotate Texture Texture Value Value
+    | ModulateHue Texture Texture Value
+    | Render From
+    | Update UpdateFn
+    | SetResolution Value Value
+    | Hush ?Unit_Type
+    | SetFunction GlslFn
+    | Speed Value
+    | Bpm Value
+    | Width
+    | Height
+    | Pi
+    | Time
+    | Mouse
+    | InitCam Source Value
+    | InitImage Source String
+    | InitVideo Source String
+    | Init SourceOptions
+    | InitStream Source ?ArgType
+    | InitScreen Source
+    | Fast VArray Value
+    | Smooth VArray Value
+    | Ease VArray Ease
+    | Offset VArray Value
+    | Fit VArray Value Value
+    | Fft Audio AudioBin
+    | SetSmooth Audio Value
+    | SetCutoff Audio Value
+    | SetBins Audio Value
+    | SetScale Audio Value
+    | Hide Audio ?ArgType
+    | Show Audio ?ArgType
+    | Out Texture Output
+
+
+module Toolkit.HydraGen where
+
+
+import ModuleImport as MI
+
+
+import Prelude (Unit)
+import Noodle.Toolkit3 (Toolkit) as Noodle
+import Noodle.Toolkit3 as Toolkit
+
+
+import Toolkit.HydraGen.Family.Source.FNoise as FNoise
+import Toolkit.HydraGen.Family.Source.FVoronoi as FVoronoi
+import Toolkit.HydraGen.Family.Source.FOsc as FOsc
+import Toolkit.HydraGen.Family.Source.FShape as FShape
+import Toolkit.HydraGen.Family.Source.FGradient as FGradient
+import Toolkit.HydraGen.Family.Source.FSrc as FSrc
+import Toolkit.HydraGen.Family.Source.FSolid as FSolid
+import Toolkit.HydraGen.Family.Source.FSrc as FSrc
+import Toolkit.HydraGen.Family.Source.FPrev as FPrev
+import Toolkit.HydraGen.Family.Geometry.FRotate as FRotate
+import Toolkit.HydraGen.Family.Geometry.FScale as FScale
+import Toolkit.HydraGen.Family.Geometry.FPixelate as FPixelate
+import Toolkit.HydraGen.Family.Geometry.FRepeat as FRepeat
+import Toolkit.HydraGen.Family.Geometry.FRepeatX as FRepeatX
+import Toolkit.HydraGen.Family.Geometry.FRepeatY as FRepeatY
+import Toolkit.HydraGen.Family.Geometry.FKaleid as FKaleid
+import Toolkit.HydraGen.Family.Geometry.FScroll as FScroll
+import Toolkit.HydraGen.Family.Geometry.FScrollX as FScrollX
+import Toolkit.HydraGen.Family.Geometry.FScrollY as FScrollY
+import Toolkit.HydraGen.Family.Color.FPosterize as FPosterize
+import Toolkit.HydraGen.Family.Color.FShift as FShift
+import Toolkit.HydraGen.Family.Color.FInvert as FInvert
+import Toolkit.HydraGen.Family.Color.FContrast as FContrast
+import Toolkit.HydraGen.Family.Color.FBrightness as FBrightness
+import Toolkit.HydraGen.Family.Color.FLuma as FLuma
+import Toolkit.HydraGen.Family.Color.FTresh as FTresh
+import Toolkit.HydraGen.Family.Color.FColor as FColor
+import Toolkit.HydraGen.Family.Color.FSaturate as FSaturate
+import Toolkit.HydraGen.Family.Color.FHue as FHue
+import Toolkit.HydraGen.Family.Color.FColorama as FColorama
+import Toolkit.HydraGen.Family.Color.FSum as FSum
+import Toolkit.HydraGen.Family.Color.FR as FR
+import Toolkit.HydraGen.Family.Color.FG as FG
+import Toolkit.HydraGen.Family.Color.FB as FB
+import Toolkit.HydraGen.Family.Color.FA as FA
+import Toolkit.HydraGen.Family.Blend.FAdd as FAdd
+import Toolkit.HydraGen.Family.Blend.FSub as FSub
+import Toolkit.HydraGen.Family.Blend.FLayer as FLayer
+import Toolkit.HydraGen.Family.Blend.FBlend as FBlend
+import Toolkit.HydraGen.Family.Blend.FMult as FMult
+import Toolkit.HydraGen.Family.Blend.FDiff as FDiff
+import Toolkit.HydraGen.Family.Blend.FMask as FMask
+import Toolkit.HydraGen.Family.Modulate.FModulateRepeat as FModulateRepeat
+import Toolkit.HydraGen.Family.Modulate.FModulateRepeatX as FModulateRepeatX
+import Toolkit.HydraGen.Family.Modulate.FModulateRepeatY as FModulateRepeatY
+import Toolkit.HydraGen.Family.Modulate.FModulateKaleid as FModulateKaleid
+import Toolkit.HydraGen.Family.Modulate.FModulateScrollX as FModulateScrollX
+import Toolkit.HydraGen.Family.Modulate.FModulateScrollY as FModulateScrollY
+import Toolkit.HydraGen.Family.Modulate.FModulate as FModulate
+import Toolkit.HydraGen.Family.Modulate.FModulateScale as FModulateScale
+import Toolkit.HydraGen.Family.Modulate.FModulatePixelate as FModulatePixelate
+import Toolkit.HydraGen.Family.Modulate.FModulateRotate as FModulateRotate
+import Toolkit.HydraGen.Family.Modulate.FModulateHue as FModulateHue
+import Toolkit.HydraGen.Family.Synth.FRender as FRender
+import Toolkit.HydraGen.Family.Synth.FUpdate as FUpdate
+import Toolkit.HydraGen.Family.Synth.FSetResolution as FSetResolution
+import Toolkit.HydraGen.Family.Synth.FHush as FHush
+import Toolkit.HydraGen.Family.Synth.FSetFunction as FSetFunction
+import Toolkit.HydraGen.Family.Synth.FSpeed as FSpeed
+import Toolkit.HydraGen.Family.Synth.FBpm as FBpm
+import Toolkit.HydraGen.Family.Synth.FWidth as FWidth
+import Toolkit.HydraGen.Family.Synth.FHeight as FHeight
+import Toolkit.HydraGen.Family.Synth.FPi as FPi
+import Toolkit.HydraGen.Family.Synth.FTime as FTime
+import Toolkit.HydraGen.Family.Synth.FMouse as FMouse
+import Toolkit.HydraGen.Family.Extsource.FInitCam as FInitCam
+import Toolkit.HydraGen.Family.Extsource.FInitImage as FInitImage
+import Toolkit.HydraGen.Family.Extsource.FInitVideo as FInitVideo
+import Toolkit.HydraGen.Family.Extsource.FInit as FInit
+import Toolkit.HydraGen.Family.Extsource.FInitStream as FInitStream
+import Toolkit.HydraGen.Family.Extsource.FInitScreen as FInitScreen
+import Toolkit.HydraGen.Family.Array.FFast as FFast
+import Toolkit.HydraGen.Family.Array.FSmooth as FSmooth
+import Toolkit.HydraGen.Family.Array.FEase as FEase
+import Toolkit.HydraGen.Family.Array.FOffset as FOffset
+import Toolkit.HydraGen.Family.Array.FFit as FFit
+import Toolkit.HydraGen.Family.Audio.FFft as FFft
+import Toolkit.HydraGen.Family.Audio.FSetSmooth as FSetSmooth
+import Toolkit.HydraGen.Family.Audio.FSetCutoff as FSetCutoff
+import Toolkit.HydraGen.Family.Audio.FSetBins as FSetBins
+import Toolkit.HydraGen.Family.Audio.FSetScale as FSetScale
+import Toolkit.HydraGen.Family.Audio.FHide as FHide
+import Toolkit.HydraGen.Family.Audio.FShow as FShow
+import Toolkit.HydraGen.Family.Out.FOut as FOut
+
+
+type HydraToolkit m
+    = Noodle.Toolkit Unit
+        ( noise :: FNoise.Family m -- {-> source <-}
+
+        , voronoi :: FVoronoi.Family m -- {-> source <-}
+
+        , osc :: FOsc.Family m -- {-> source <-}
+
+        , shape :: FShape.Family m -- {-> source <-}
+
+        , gradient :: FGradient.Family m -- {-> source <-}
+
+        , src :: FSrc.Family m -- {-> source <-}
+
+        , solid :: FSolid.Family m -- {-> source <-}
+
+        , src :: FSrc.Family m -- {-> source <-}
+
+        , prev :: FPrev.Family m -- {-> source <-}
+
+        , rotate :: FRotate.Family m -- {-> geometry <-}
+
+        , scale :: FScale.Family m -- {-> geometry <-}
+
+        , pixelate :: FPixelate.Family m -- {-> geometry <-}
+
+        , repeat :: FRepeat.Family m -- {-> geometry <-}
+
+        , repeatX :: FRepeatX.Family m -- {-> geometry <-}
+
+        , repeatY :: FRepeatY.Family m -- {-> geometry <-}
+
+        , kaleid :: FKaleid.Family m -- {-> geometry <-}
+
+        , scroll :: FScroll.Family m -- {-> geometry <-}
+
+        , scrollX :: FScrollX.Family m -- {-> geometry <-}
+
+        , scrollY :: FScrollY.Family m -- {-> geometry <-}
+
+        , posterize :: FPosterize.Family m -- {-> color <-}
+
+        , shift :: FShift.Family m -- {-> color <-}
+
+        , invert :: FInvert.Family m -- {-> color <-}
+
+        , contrast :: FContrast.Family m -- {-> color <-}
+
+        , brightness :: FBrightness.Family m -- {-> color <-}
+
+        , luma :: FLuma.Family m -- {-> color <-}
+
+        , tresh :: FTresh.Family m -- {-> color <-}
+
+        , color :: FColor.Family m -- {-> color <-}
+
+        , saturate :: FSaturate.Family m -- {-> color <-}
+
+        , hue :: FHue.Family m -- {-> color <-}
+
+        , colorama :: FColorama.Family m -- {-> color <-}
+
+        , sum :: FSum.Family m -- {-> color <-}
+
+        , r :: FR.Family m -- {-> color <-}
+
+        , g :: FG.Family m -- {-> color <-}
+
+        , b :: FB.Family m -- {-> color <-}
+
+        , a :: FA.Family m -- {-> color <-}
+
+        , add :: FAdd.Family m -- {-> blend <-}
+
+        , sub :: FSub.Family m -- {-> blend <-}
+
+        , layer :: FLayer.Family m -- {-> blend <-}
+
+        , blend :: FBlend.Family m -- {-> blend <-}
+
+        , mult :: FMult.Family m -- {-> blend <-}
+
+        , diff :: FDiff.Family m -- {-> blend <-}
+
+        , mask :: FMask.Family m -- {-> blend <-}
+
+        , modulateRepeat :: FModulateRepeat.Family m -- {-> modulate <-}
+
+        , modulateRepeatX :: FModulateRepeatX.Family m -- {-> modulate <-}
+
+        , modulateRepeatY :: FModulateRepeatY.Family m -- {-> modulate <-}
+
+        , modulateKaleid :: FModulateKaleid.Family m -- {-> modulate <-}
+
+        , modulateScrollX :: FModulateScrollX.Family m -- {-> modulate <-}
+
+        , modulateScrollY :: FModulateScrollY.Family m -- {-> modulate <-}
+
+        , modulate :: FModulate.Family m -- {-> modulate <-}
+
+        , modulateScale :: FModulateScale.Family m -- {-> modulate <-}
+
+        , modulatePixelate :: FModulatePixelate.Family m -- {-> modulate <-}
+
+        , modulateRotate :: FModulateRotate.Family m -- {-> modulate <-}
+
+        , modulateHue :: FModulateHue.Family m -- {-> modulate <-}
+
+        , render :: FRender.Family m -- {-> synth <-}
+
+        , update :: FUpdate.Family m -- {-> synth <-}
+
+        , setResolution :: FSetResolution.Family m -- {-> synth <-}
+
+        , hush :: FHush.Family m -- {-> synth <-}
+
+        , setFunction :: FSetFunction.Family m -- {-> synth <-}
+
+        , speed :: FSpeed.Family m -- {-> synth <-}
+
+        , bpm :: FBpm.Family m -- {-> synth <-}
+
+        , width :: FWidth.Family m -- {-> synth <-}
+
+        , height :: FHeight.Family m -- {-> synth <-}
+
+        , pi :: FPi.Family m -- {-> synth <-}
+
+        , time :: FTime.Family m -- {-> synth <-}
+
+        , mouse :: FMouse.Family m -- {-> synth <-}
+
+        , initCam :: FInitCam.Family m -- {-> extsource <-}
+
+        , initImage :: FInitImage.Family m -- {-> extsource <-}
+
+        , initVideo :: FInitVideo.Family m -- {-> extsource <-}
+
+        , init :: FInit.Family m -- {-> extsource <-}
+
+        , initStream :: FInitStream.Family m -- {-> extsource <-}
+
+        , initScreen :: FInitScreen.Family m -- {-> extsource <-}
+
+        , fast :: FFast.Family m -- {-> array <-}
+
+        , smooth :: FSmooth.Family m -- {-> array <-}
+
+        , ease :: FEase.Family m -- {-> array <-}
+
+        , offset :: FOffset.Family m -- {-> array <-}
+
+        , fit :: FFit.Family m -- {-> array <-}
+
+        , fft :: FFft.Family m -- {-> audio <-}
+
+        , setSmooth :: FSetSmooth.Family m -- {-> audio <-}
+
+        , setCutoff :: FSetCutoff.Family m -- {-> audio <-}
+
+        , setBins :: FSetBins.Family m -- {-> audio <-}
+
+        , setScale :: FSetScale.Family m -- {-> audio <-}
+
+        , hide :: FHide.Family m -- {-> audio <-}
+
+        , show :: FShow.Family m -- {-> audio <-}
+
+        , out :: FOut.Family m -- {-> out <-}
+
+        )
+
+
+toolkit :: forall m. HydraToolkit m
+toolkit =
+    Toolkit.from "hydra"
+        { noise : (FNoise.family :: FNoise.Family m )
+        , voronoi : (FVoronoi.family :: FVoronoi.Family m )
+        , osc : (FOsc.family :: FOsc.Family m )
+        , shape : (FShape.family :: FShape.Family m )
+        , gradient : (FGradient.family :: FGradient.Family m )
+        , src : (FSrc.family :: FSrc.Family m )
+        , solid : (FSolid.family :: FSolid.Family m )
+        , src : (FSrc.family :: FSrc.Family m )
+        , prev : (FPrev.family :: FPrev.Family m )
+        , rotate : (FRotate.family :: FRotate.Family m )
+        , scale : (FScale.family :: FScale.Family m )
+        , pixelate : (FPixelate.family :: FPixelate.Family m )
+        , repeat : (FRepeat.family :: FRepeat.Family m )
+        , repeatX : (FRepeatX.family :: FRepeatX.Family m )
+        , repeatY : (FRepeatY.family :: FRepeatY.Family m )
+        , kaleid : (FKaleid.family :: FKaleid.Family m )
+        , scroll : (FScroll.family :: FScroll.Family m )
+        , scrollX : (FScrollX.family :: FScrollX.Family m )
+        , scrollY : (FScrollY.family :: FScrollY.Family m )
+        , posterize : (FPosterize.family :: FPosterize.Family m )
+        , shift : (FShift.family :: FShift.Family m )
+        , invert : (FInvert.family :: FInvert.Family m )
+        , contrast : (FContrast.family :: FContrast.Family m )
+        , brightness : (FBrightness.family :: FBrightness.Family m )
+        , luma : (FLuma.family :: FLuma.Family m )
+        , tresh : (FTresh.family :: FTresh.Family m )
+        , color : (FColor.family :: FColor.Family m )
+        , saturate : (FSaturate.family :: FSaturate.Family m )
+        , hue : (FHue.family :: FHue.Family m )
+        , colorama : (FColorama.family :: FColorama.Family m )
+        , sum : (FSum.family :: FSum.Family m )
+        , r : (FR.family :: FR.Family m )
+        , g : (FG.family :: FG.Family m )
+        , b : (FB.family :: FB.Family m )
+        , a : (FA.family :: FA.Family m )
+        , add : (FAdd.family :: FAdd.Family m )
+        , sub : (FSub.family :: FSub.Family m )
+        , layer : (FLayer.family :: FLayer.Family m )
+        , blend : (FBlend.family :: FBlend.Family m )
+        , mult : (FMult.family :: FMult.Family m )
+        , diff : (FDiff.family :: FDiff.Family m )
+        , mask : (FMask.family :: FMask.Family m )
+        , modulateRepeat : (FModulateRepeat.family :: FModulateRepeat.Family m )
+        , modulateRepeatX : (FModulateRepeatX.family :: FModulateRepeatX.Family m )
+        , modulateRepeatY : (FModulateRepeatY.family :: FModulateRepeatY.Family m )
+        , modulateKaleid : (FModulateKaleid.family :: FModulateKaleid.Family m )
+        , modulateScrollX : (FModulateScrollX.family :: FModulateScrollX.Family m )
+        , modulateScrollY : (FModulateScrollY.family :: FModulateScrollY.Family m )
+        , modulate : (FModulate.family :: FModulate.Family m )
+        , modulateScale : (FModulateScale.family :: FModulateScale.Family m )
+        , modulatePixelate : (FModulatePixelate.family :: FModulatePixelate.Family m )
+        , modulateRotate : (FModulateRotate.family :: FModulateRotate.Family m )
+        , modulateHue : (FModulateHue.family :: FModulateHue.Family m )
+        , render : (FRender.family :: FRender.Family m )
+        , update : (FUpdate.family :: FUpdate.Family m )
+        , setResolution : (FSetResolution.family :: FSetResolution.Family m )
+        , hush : (FHush.family :: FHush.Family m )
+        , setFunction : (FSetFunction.family :: FSetFunction.Family m )
+        , speed : (FSpeed.family :: FSpeed.Family m )
+        , bpm : (FBpm.family :: FBpm.Family m )
+        , width : (FWidth.family :: FWidth.Family m )
+        , height : (FHeight.family :: FHeight.Family m )
+        , pi : (FPi.family :: FPi.Family m )
+        , time : (FTime.family :: FTime.Family m )
+        , mouse : (FMouse.family :: FMouse.Family m )
+        , initCam : (FInitCam.family :: FInitCam.Family m )
+        , initImage : (FInitImage.family :: FInitImage.Family m )
+        , initVideo : (FInitVideo.family :: FInitVideo.Family m )
+        , init : (FInit.family :: FInit.Family m )
+        , initStream : (FInitStream.family :: FInitStream.Family m )
+        , initScreen : (FInitScreen.family :: FInitScreen.Family m )
+        , fast : (FFast.family :: FFast.Family m )
+        , smooth : (FSmooth.family :: FSmooth.Family m )
+        , ease : (FEase.family :: FEase.Family m )
+        , offset : (FOffset.family :: FOffset.Family m )
+        , fit : (FFit.family :: FFit.Family m )
+        , fft : (FFft.family :: FFft.Family m )
+        , setSmooth : (FSetSmooth.family :: FSetSmooth.Family m )
+        , setCutoff : (FSetCutoff.family :: FSetCutoff.Family m )
+        , setBins : (FSetBins.family :: FSetBins.Family m )
+        , setScale : (FSetScale.family :: FSetScale.Family m )
+        , hide : (FHide.family :: FHide.Family m )
+        , show : (FShow.family :: FShow.Family m )
+        , out : (FOut.family :: FOut.Family m )
+        }
+
+
+type Toolkit m = HydraToolkit m
+
+
+module Toolkit.HydraGen where
+
+import ModuleImport as MI
+
+
+import Prelude (Unit)
+import Noodle.Toolkit3 (Toolkit) as Noodle
+import Noodle.Toolkit3 as Toolkit
+
+
+type FNoise m =
+    Family.Def Unit
+        ( scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+noise :: forall m. FNoise m
+noise = -- {-> source <-}
+
+    Family.def
+        unit
+        { scale : 10, offset : 0.1 }
+        { out : ?out_default }
+        $ Fn.make "noise" $ do
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            -- Noise scale offset
+            P.send _out_out ?out_out
+
+
+type FVoronoi m =
+    Family.Def Unit
+        ( scale :: Value, speed :: Value, blending :: Value )
+        ( out :: Texture )
+        m
+
+voronoi :: forall m. FVoronoi m
+voronoi = -- {-> source <-}
+
+    Family.def
+        unit
+        { scale : 5, speed : 0.3, blending : 0.3 }
+        { out : ?out_default }
+        $ Fn.make "voronoi" $ do
+            scale <- P.receive _in_scale
+            speed <- P.receive _in_speed
+            blending <- P.receive _in_blending
+            -- Voronoi scale speed blending
+            P.send _out_out ?out_out
+
+
+type FOsc m =
+    Family.Def Unit
+        ( frequency :: Value, sync :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+osc :: forall m. FOsc m
+osc = -- {-> source <-}
+
+    Family.def
+        unit
+        { frequency : 60, sync : 0.1, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "osc" $ do
+            frequency <- P.receive _in_frequency
+            sync <- P.receive _in_sync
+            offset <- P.receive _in_offset
+            -- Osc frequency sync offset
+            P.send _out_out ?out_out
+
+
+type FShape m =
+    Family.Def Unit
+        ( sides :: Value, radius :: Value, smoothing :: Value )
+        ( out :: Texture )
+        m
+
+shape :: forall m. FShape m
+shape = -- {-> source <-}
+
+    Family.def
+        unit
+        { sides : 60, radius : 0.3, smoothing : 0.01 }
+        { out : ?out_default }
+        $ Fn.make "shape" $ do
+            sides <- P.receive _in_sides
+            radius <- P.receive _in_radius
+            smoothing <- P.receive _in_smoothing
+            -- Shape sides radius smoothing
+            P.send _out_out ?out_out
+
+
+type FGradient m =
+    Family.Def Unit
+        ( speed :: Value )
+        ( out :: Texture )
+        m
+
+gradient :: forall m. FGradient m
+gradient = -- {-> source <-}
+
+    Family.def
+        unit
+        { speed : ?speed_default }
+        { out : ?out_default }
+        $ Fn.make "gradient" $ do
+            speed <- P.receive _in_speed
+            -- Gradient speed
+            P.send _out_out ?out_out
+
+
+type FSrc m =
+    Family.Def Unit
+        ( tex :: Texture )
+        ( out :: Texture )
+        m
+
+src :: forall m. FSrc m
+src = -- {-> source <-}
+
+    Family.def
+        unit
+        { tex : ?tex_default }
+        { out : ?out_default }
+        $ Fn.make "src" $ do
+            tex <- P.receive _in_tex
+            -- Src tex
+            P.send _out_out ?out_out
+
+
+type FSolid m =
+    Family.Def Unit
+        ( r :: Value, g :: Value, b :: Value, a :: Value )
+        ( out :: Texture )
+        m
+
+solid :: forall m. FSolid m
+solid = -- {-> source <-}
+
+    Family.def
+        unit
+        { r : ?r_default, g : ?g_default, b : ?b_default, a : 1 }
+        { out : ?out_default }
+        $ Fn.make "solid" $ do
+            r <- P.receive _in_r
+            g <- P.receive _in_g
+            b <- P.receive _in_b
+            a <- P.receive _in_a
+            -- Solid r g b a
+            P.send _out_out ?out_out
+
+
+type FSrc m =
+    Family.Def Unit
+        ( src :: Source )
+        ( out :: Texture )
+        m
+
+src :: forall m. FSrc m
+src = -- {-> source <-}
+
+    Family.def
+        unit
+        { src : ?src_default }
+        { out : ?out_default }
+        $ Fn.make "src" $ do
+            src <- P.receive _in_src
+            -- Src src
+            P.send _out_out ?out_out
+
+
+type FPrev m =
+    Family.Def Unit
+        ( ?ch_type )
+        ( out :: Texture )
+        m
+
+prev :: forall m. FPrev m
+prev = -- {-> source <-}
+
+    Family.def
+        unit
+        { ?ch_default }
+        { out : ?out_default }
+        $ Fn.make "prev" $ do
+            --
+            -- Prev ?input
+            P.send _out_out ?out_out
+
+
+type FRotate m =
+    Family.Def Unit
+        ( what :: Texture, angle :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+rotate :: forall m. FRotate m
+rotate = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, angle : 10, speed : ?speed_default }
+        { out : ?out_default }
+        $ Fn.make "rotate" $ do
+            what <- P.receive _in_what
+            angle <- P.receive _in_angle
+            speed <- P.receive _in_speed
+            -- Rotate what angle speed
+            P.send _out_out ?out_out
+
+
+type FScale m =
+    Family.Def Unit
+        ( what :: Texture, amount :: Value, xMult :: Value, yMult :: Value, offsetX :: Value, offsetY :: Value )
+        ( out :: Texture )
+        m
+
+scale :: forall m. FScale m
+scale = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 }
+        { out : ?out_default }
+        $ Fn.make "scale" $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            xMult <- P.receive _in_xMult
+            yMult <- P.receive _in_yMult
+            offsetX <- P.receive _in_offsetX
+            offsetY <- P.receive _in_offsetY
+            -- Scale what amount xMult yMult offsetX offsetY
+            P.send _out_out ?out_out
+
+
+type FPixelate m =
+    Family.Def Unit
+        ( what :: Texture, pixelX :: Value, pixelY :: Value )
+        ( out :: Texture )
+        m
+
+pixelate :: forall m. FPixelate m
+pixelate = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, pixelX : 20, pixelY : 20 }
+        { out : ?out_default }
+        $ Fn.make "pixelate" $ do
+            what <- P.receive _in_what
+            pixelX <- P.receive _in_pixelX
+            pixelY <- P.receive _in_pixelY
+            -- Pixelate what pixelX pixelY
+            P.send _out_out ?out_out
+
+
+type FRepeat m =
+    Family.Def Unit
+        ( what :: Texture, repeatX :: Value, repeatY :: Value, offsetX :: Value, offsetY :: Value )
+        ( out :: Texture )
+        m
+
+repeat :: forall m. FRepeat m
+repeat = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, repeatX : 3, repeatY : 3, offsetX : ?offsetX_default, offsetY : ?offsetY_default }
+        { out : ?out_default }
+        $ Fn.make "repeat" $ do
+            what <- P.receive _in_what
+            repeatX <- P.receive _in_repeatX
+            repeatY <- P.receive _in_repeatY
+            offsetX <- P.receive _in_offsetX
+            offsetY <- P.receive _in_offsetY
+            -- Repeat what repeatX repeatY offsetX offsetY
+            P.send _out_out ?out_out
+
+
+type FRepeatX m =
+    Family.Def Unit
+        ( what :: Texture, reps :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+repeatX :: forall m. FRepeatX m
+repeatX = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, reps : 3, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "repeatX" $ do
+            what <- P.receive _in_what
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            -- RepeatX what reps offset
+            P.send _out_out ?out_out
+
+
+type FRepeatY m =
+    Family.Def Unit
+        ( what :: Texture, reps :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+repeatY :: forall m. FRepeatY m
+repeatY = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, reps : 3, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "repeatY" $ do
+            what <- P.receive _in_what
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            -- RepeatY what reps offset
+            P.send _out_out ?out_out
+
+
+type FKaleid m =
+    Family.Def Unit
+        ( what :: Texture, nSides :: Value )
+        ( out :: Texture )
+        m
+
+kaleid :: forall m. FKaleid m
+kaleid = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, nSides : 3 }
+        { out : ?out_default }
+        $ Fn.make "kaleid" $ do
+            what <- P.receive _in_what
+            nSides <- P.receive _in_nSides
+            -- Kaleid what nSides
+            P.send _out_out ?out_out
+
+
+type FScroll m =
+    Family.Def Unit
+        ( what :: Texture, scrollX :: Value, scrollY :: Value, speedX :: Value, speedY :: Value )
+        ( out :: Texture )
+        m
+
+scroll :: forall m. FScroll m
+scroll = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scrollX : 0.5, scrollY : 0.5, speedX : ?speedX_default, speedY : ?speedY_default }
+        { out : ?out_default }
+        $ Fn.make "scroll" $ do
+            what <- P.receive _in_what
+            scrollX <- P.receive _in_scrollX
+            scrollY <- P.receive _in_scrollY
+            speedX <- P.receive _in_speedX
+            speedY <- P.receive _in_speedY
+            -- Scroll what scrollX scrollY speedX speedY
+            P.send _out_out ?out_out
+
+
+type FScrollX m =
+    Family.Def Unit
+        ( what :: Texture, scrollX :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+scrollX :: forall m. FScrollX m
+scrollX = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scrollX : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+        $ Fn.make "scrollX" $ do
+            what <- P.receive _in_what
+            scrollX <- P.receive _in_scrollX
+            speed <- P.receive _in_speed
+            -- ScrollX what scrollX speed
+            P.send _out_out ?out_out
+
+
+type FScrollY m =
+    Family.Def Unit
+        ( what :: Texture, scrollY :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+scrollY :: forall m. FScrollY m
+scrollY = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scrollY : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+        $ Fn.make "scrollY" $ do
+            what <- P.receive _in_what
+            scrollY <- P.receive _in_scrollY
+            speed <- P.receive _in_speed
+            -- ScrollY what scrollY speed
+            P.send _out_out ?out_out
+
+
+type FPosterize m =
+    Family.Def Unit
+        ( what :: Texture, bins :: Value, gamma :: Value )
+        ( out :: Texture )
+        m
+
+posterize :: forall m. FPosterize m
+posterize = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, bins : 3, gamma : 0.6 }
+        { out : ?out_default }
+        $ Fn.make "posterize" $ do
+            what <- P.receive _in_what
+            bins <- P.receive _in_bins
+            gamma <- P.receive _in_gamma
+            -- Posterize what bins gamma
+            P.send _out_out ?out_out
+
+
+type FShift m =
+    Family.Def Unit
+        ( what :: Texture, r :: Value, g :: Value, b :: Value, a :: Value )
+        ( out :: Texture )
+        m
+
+shift :: forall m. FShift m
+shift = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, r : 0.5, g : ?g_default, b : ?b_default, a : ?a_default }
+        { out : ?out_default }
+        $ Fn.make "shift" $ do
+            what <- P.receive _in_what
+            r <- P.receive _in_r
+            g <- P.receive _in_g
+            b <- P.receive _in_b
+            a <- P.receive _in_a
+            -- Shift what r g b a
+            P.send _out_out ?out_out
+
+
+type FInvert m =
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+invert :: forall m. FInvert m
+invert = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, amount : 1 }
+        { out : ?out_default }
+        $ Fn.make "invert" $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            -- Invert what amount
+            P.send _out_out ?out_out
+
+
+type FContrast m =
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+contrast :: forall m. FContrast m
+contrast = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, amount : 1.6 }
+        { out : ?out_default }
+        $ Fn.make "contrast" $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            -- Contrast what amount
+            P.send _out_out ?out_out
+
+
+type FBrightness m =
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+brightness :: forall m. FBrightness m
+brightness = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, amount : 0.4 }
+        { out : ?out_default }
+        $ Fn.make "brightness" $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            -- Brightness what amount
+            P.send _out_out ?out_out
+
+
+type FLuma m =
+    Family.Def Unit
+        ( what :: Texture, treshold :: Value, tolerance :: Value )
+        ( out :: Texture )
+        m
+
+luma :: forall m. FLuma m
+luma = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
+        { out : ?out_default }
+        $ Fn.make "luma" $ do
+            what <- P.receive _in_what
+            treshold <- P.receive _in_treshold
+            tolerance <- P.receive _in_tolerance
+            -- Luma what treshold tolerance
+            P.send _out_out ?out_out
+
+
+type FTresh m =
+    Family.Def Unit
+        ( what :: Texture, treshold :: Value, tolerance :: Value )
+        ( out :: Texture )
+        m
+
+tresh :: forall m. FTresh m
+tresh = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
+        { out : ?out_default }
+        $ Fn.make "tresh" $ do
+            what <- P.receive _in_what
+            treshold <- P.receive _in_treshold
+            tolerance <- P.receive _in_tolerance
+            -- Tresh what treshold tolerance
+            P.send _out_out ?out_out
+
+
+type FColor m =
+    Family.Def Unit
+        ( what :: Texture, r :: Value, g :: Value, b :: Value, a :: Value )
+        ( out :: Texture )
+        m
+
+color :: forall m. FColor m
+color = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, r : 1, g : 1, b : 1, a : 1 }
+        { out : ?out_default }
+        $ Fn.make "color" $ do
+            what <- P.receive _in_what
+            r <- P.receive _in_r
+            g <- P.receive _in_g
+            b <- P.receive _in_b
+            a <- P.receive _in_a
+            -- Color what r g b a
+            P.send _out_out ?out_out
+
+
+type FSaturate m =
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+saturate :: forall m. FSaturate m
+saturate = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, amount : 2 }
+        { out : ?out_default }
+        $ Fn.make "saturate" $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            -- Saturate what amount
+            P.send _out_out ?out_out
+
+
+type FHue m =
+    Family.Def Unit
+        ( what :: Texture, hue :: Value )
+        ( out :: Texture )
+        m
+
+hue :: forall m. FHue m
+hue = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, hue : 0.4 }
+        { out : ?out_default }
+        $ Fn.make "hue" $ do
+            what <- P.receive _in_what
+            hue <- P.receive _in_hue
+            -- Hue what hue
+            P.send _out_out ?out_out
+
+
+type FColorama m =
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+colorama :: forall m. FColorama m
+colorama = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, amount : 0.005 }
+        { out : ?out_default }
+        $ Fn.make "colorama" $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            -- Colorama what amount
+            P.send _out_out ?out_out
+
+
+type FSum m =
+    Family.Def Unit
+        ( what :: Texture, ?ch_type )
+        ( out :: Texture )
+        m
+
+sum :: forall m. FSum m
+sum = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, ?ch_default }
+        { out : ?out_default }
+        $ Fn.make "sum" $ do
+            what <- P.receive _in_what
+            --
+            -- Sum what ?input
+            P.send _out_out ?out_out
+
+
+type FR m =
+    Family.Def Unit
+        ( what :: Texture, scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+r :: forall m. FR m
+r = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "r" $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            -- R what scale offset
+            P.send _out_out ?out_out
+
+
+type FG m =
+    Family.Def Unit
+        ( what :: Texture, scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+g :: forall m. FG m
+g = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "g" $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            -- G what scale offset
+            P.send _out_out ?out_out
+
+
+type FB m =
+    Family.Def Unit
+        ( what :: Texture, scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+b :: forall m. FB m
+b = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "b" $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            -- B what scale offset
+            P.send _out_out ?out_out
+
+
+type FA m =
+    Family.Def Unit
+        ( what :: Texture, scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+a :: forall m. FA m
+a = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "a" $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            -- A what scale offset
+            P.send _out_out ?out_out
+
+
+type FAdd m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+add :: forall m. FAdd m
+add = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+        $ Fn.make "add" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- Add what with amount
+            P.send _out_out ?out_out
+
+
+type FSub m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+sub :: forall m. FSub m
+sub = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+        $ Fn.make "sub" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- Sub what with amount
+            P.send _out_out ?out_out
+
+
+type FLayer m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+layer :: forall m. FLayer m
+layer = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+        $ Fn.make "layer" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- Layer what with amount
+            P.send _out_out ?out_out
+
+
+type FBlend m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+blend :: forall m. FBlend m
+blend = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 0.5 }
+        { out : ?out_default }
+        $ Fn.make "blend" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- Blend what with amount
+            P.send _out_out ?out_out
+
+
+type FMult m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+mult :: forall m. FMult m
+mult = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+        $ Fn.make "mult" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- Mult what with amount
+            P.send _out_out ?out_out
+
+
+type FDiff m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture )
+        ( out :: Texture )
+        m
+
+diff :: forall m. FDiff m
+diff = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default }
+        { out : ?out_default }
+        $ Fn.make "diff" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            -- Diff what with
+            P.send _out_out ?out_out
+
+
+type FMask m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture )
+        ( out :: Texture )
+        m
+
+mask :: forall m. FMask m
+mask = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default }
+        { out : ?out_default }
+        $ Fn.make "mask" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            -- Mask what with
+            P.send _out_out ?out_out
+
+
+type FModulateRepeat m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, repeatX :: Value, repeatY :: Value, offsetX :: Value, offsetY :: Value )
+        ( out :: Texture )
+        m
+
+modulateRepeat :: forall m. FModulateRepeat m
+modulateRepeat = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 }
+        { out : ?out_default }
+        $ Fn.make "modulateRepeat" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            repeatX <- P.receive _in_repeatX
+            repeatY <- P.receive _in_repeatY
+            offsetX <- P.receive _in_offsetX
+            offsetY <- P.receive _in_offsetY
+            -- ModulateRepeat what with repeatX repeatY offsetX offsetY
+            P.send _out_out ?out_out
+
+
+type FModulateRepeatX m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, reps :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+modulateRepeatX :: forall m. FModulateRepeatX m
+modulateRepeatX = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
+        { out : ?out_default }
+        $ Fn.make "modulateRepeatX" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            -- ModulateRepeatX what with reps offset
+            P.send _out_out ?out_out
+
+
+type FModulateRepeatY m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, reps :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+modulateRepeatY :: forall m. FModulateRepeatY m
+modulateRepeatY = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
+        { out : ?out_default }
+        $ Fn.make "modulateRepeatY" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            -- ModulateRepeatY what with reps offset
+            P.send _out_out ?out_out
+
+
+type FModulateKaleid m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, nSides :: Value )
+        ( out :: Texture )
+        m
+
+modulateKaleid :: forall m. FModulateKaleid m
+modulateKaleid = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, nSides : 3 }
+        { out : ?out_default }
+        $ Fn.make "modulateKaleid" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            nSides <- P.receive _in_nSides
+            -- ModulateKaleid what with nSides
+            P.send _out_out ?out_out
+
+
+type FModulateScrollX m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, scrollX :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+modulateScrollX :: forall m. FModulateScrollX m
+modulateScrollX = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, scrollX : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+        $ Fn.make "modulateScrollX" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            scrollX <- P.receive _in_scrollX
+            speed <- P.receive _in_speed
+            -- ModulateScrollX what with scrollX speed
+            P.send _out_out ?out_out
+
+
+type FModulateScrollY m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, scrollY :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+modulateScrollY :: forall m. FModulateScrollY m
+modulateScrollY = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, scrollY : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+        $ Fn.make "modulateScrollY" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            scrollY <- P.receive _in_scrollY
+            speed <- P.receive _in_speed
+            -- ModulateScrollY what with scrollY speed
+            P.send _out_out ?out_out
+
+
+type FModulate m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+modulate :: forall m. FModulate m
+modulate = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 0.1 }
+        { out : ?out_default }
+        $ Fn.make "modulate" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- Modulate what with amount
+            P.send _out_out ?out_out
+
+
+type FModulateScale m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, multiple :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+modulateScale :: forall m. FModulateScale m
+modulateScale = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, multiple : 1, offset : 1 }
+        { out : ?out_default }
+        $ Fn.make "modulateScale" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            multiple <- P.receive _in_multiple
+            offset <- P.receive _in_offset
+            -- ModulateScale what with multiple offset
+            P.send _out_out ?out_out
+
+
+type FModulatePixelate m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, multiple :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+modulatePixelate :: forall m. FModulatePixelate m
+modulatePixelate = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, multiple : 10, offset : 3 }
+        { out : ?out_default }
+        $ Fn.make "modulatePixelate" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            multiple <- P.receive _in_multiple
+            offset <- P.receive _in_offset
+            -- ModulatePixelate what with multiple offset
+            P.send _out_out ?out_out
+
+
+type FModulateRotate m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, multiple :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+modulateRotate :: forall m. FModulateRotate m
+modulateRotate = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, multiple : 1, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "modulateRotate" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            multiple <- P.receive _in_multiple
+            offset <- P.receive _in_offset
+            -- ModulateRotate what with multiple offset
+            P.send _out_out ?out_out
+
+
+type FModulateHue m =
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+modulateHue :: forall m. FModulateHue m
+modulateHue = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+        $ Fn.make "modulateHue" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- ModulateHue what with amount
+            P.send _out_out ?out_out
+
+
+type FRender m =
+    Family.Def Unit
+        ( from :: From )
+        ( out :: Unit )
+        m
+
+render :: forall m. FRender m
+render = -- {-> synth <-}
+
+    Family.def
+        unit
+        { from : All }
+        { out : ?out_default }
+        $ Fn.make "render" $ do
+            from <- P.receive _in_from
+            -- Render from
+            P.send _out_out ?out_out
+
+
+type FUpdate m =
+    Family.Def Unit
+        ( fn :: UpdateFn )
+        ( out :: Unit )
+        m
+
+update :: forall m. FUpdate m
+update = -- {-> synth <-}
+
+    Family.def
+        unit
+        { fn : ?fn_default }
+        { out : ?out_default }
+        $ Fn.make "update" $ do
+            fn <- P.receive _in_fn
+            -- Update fn
+            P.send _out_out ?out_out
+
+
+type FSetResolution m =
+    Family.Def Unit
+        ( width :: Value, height :: Value )
+        ( out :: Unit )
+        m
+
+setResolution :: forall m. FSetResolution m
+setResolution = -- {-> synth <-}
+
+    Family.def
+        unit
+        { width : ?width_default, height : ?height_default }
+        { out : ?out_default }
+        $ Fn.make "setResolution" $ do
+            width <- P.receive _in_width
+            height <- P.receive _in_height
+            -- SetResolution width height
+            P.send _out_out ?out_out
+
+
+type FHush m =
+    Family.Def Unit
+        ( Unit :: Unknown )
+        ( out :: Unit )
+        m
+
+hush :: forall m. FHush m
+hush = -- {-> synth <-}
+
+    Family.def
+        unit
+        { Unit : ?Unit_default }
+        { out : ?out_default }
+        $ Fn.make "hush" $ do
+            Unit <- P.receive _in_Unit
+            -- Hush Unit
+            P.send _out_out ?out_out
+
+
+type FSetFunction m =
+    Family.Def Unit
+        ( fn :: GlslFn )
+        ( out :: Unit )
+        m
+
+setFunction :: forall m. FSetFunction m
+setFunction = -- {-> synth <-}
+
+    Family.def
+        unit
+        { fn : ?fn_default }
+        { out : ?out_default }
+        $ Fn.make "setFunction" $ do
+            fn <- P.receive _in_fn
+            -- SetFunction fn
+            P.send _out_out ?out_out
+
+
+type FSpeed m =
+    Family.Def Unit
+        ( v :: Value )
+        ( out :: Unit )
+        m
+
+speed :: forall m. FSpeed m
+speed = -- {-> synth <-}
+
+    Family.def
+        unit
+        { v : 1 }
+        { out : ?out_default }
+        $ Fn.make "speed" $ do
+            v <- P.receive _in_v
+            -- Speed v
+            P.send _out_out ?out_out
+
+
+type FBpm m =
+    Family.Def Unit
+        ( v :: Value )
+        ( out :: Unit )
+        m
+
+bpm :: forall m. FBpm m
+bpm = -- {-> synth <-}
+
+    Family.def
+        unit
+        { v : 30 }
+        { out : ?out_default }
+        $ Fn.make "bpm" $ do
+            v <- P.receive _in_v
+            -- Bpm v
+            P.send _out_out ?out_out
+
+
+type FWidth m =
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+width :: forall m. FWidth m
+width = -- {-> synth <-}
+
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+        $ Fn.make "width" $ do
+            -- Width
+            P.send _out_out ?out_out
+
+
+type FHeight m =
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+height :: forall m. FHeight m
+height = -- {-> synth <-}
+
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+        $ Fn.make "height" $ do
+            -- Height
+            P.send _out_out ?out_out
+
+
+type FPi m =
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+pi :: forall m. FPi m
+pi = -- {-> synth <-}
+
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+        $ Fn.make "pi" $ do
+            -- Pi
+            P.send _out_out ?out_out
+
+
+type FTime m =
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+time :: forall m. FTime m
+time = -- {-> synth <-}
+
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+        $ Fn.make "time" $ do
+            -- Time
+            P.send _out_out ?out_out
+
+
+type FMouse m =
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+mouse :: forall m. FMouse m
+mouse = -- {-> synth <-}
+
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+        $ Fn.make "mouse" $ do
+            -- Mouse
+            P.send _out_out ?out_out
+
+
+type FInitCam m =
+    Family.Def Unit
+        ( where :: Source, index :: Value )
+        ( out :: Unit )
+        m
+
+initCam :: forall m. FInitCam m
+initCam = -- {-> extsource <-}
+
+    Family.def
+        unit
+        { where : ?where_default, index : ?index_default }
+        { out : ?out_default }
+        $ Fn.make "initCam" $ do
+            where <- P.receive _in_where
+            index <- P.receive _in_index
+            -- InitCam where index
+            P.send _out_out ?out_out
+
+
+type FInitImage m =
+    Family.Def Unit
+        ( where :: Source, url :: String )
+        ( out :: Unit )
+        m
+
+initImage :: forall m. FInitImage m
+initImage = -- {-> extsource <-}
+
+    Family.def
+        unit
+        { where : ?where_default, url : ?url_default }
+        { out : ?out_default }
+        $ Fn.make "initImage" $ do
+            where <- P.receive _in_where
+            url <- P.receive _in_url
+            -- InitImage where url
+            P.send _out_out ?out_out
+
+
+type FInitVideo m =
+    Family.Def Unit
+        ( where :: Source, url :: String )
+        ( out :: Unit )
+        m
+
+initVideo :: forall m. FInitVideo m
+initVideo = -- {-> extsource <-}
+
+    Family.def
+        unit
+        { where : ?where_default, url : ?url_default }
+        { out : ?out_default }
+        $ Fn.make "initVideo" $ do
+            where <- P.receive _in_where
+            url <- P.receive _in_url
+            -- InitVideo where url
+            P.send _out_out ?out_out
+
+
+type FInit m =
+    Family.Def Unit
+        ( where :: SourceOptions )
+        ( out :: Unit )
+        m
+
+init :: forall m. FInit m
+init = -- {-> extsource <-}
+
+    Family.def
+        unit
+        { where : ?where_default }
+        { out : ?out_default }
+        $ Fn.make "init" $ do
+            where <- P.receive _in_where
+            -- Init where
+            P.send _out_out ?out_out
+
+
+type FInitStream m =
+    Family.Def Unit
+        ( where :: Source, ?ch_type )
+        ( out :: Unit )
+        m
+
+initStream :: forall m. FInitStream m
+initStream = -- {-> extsource <-}
+
+    Family.def
+        unit
+        { where : ?where_default, ?ch_default }
+        { out : ?out_default }
+        $ Fn.make "initStream" $ do
+            where <- P.receive _in_where
+            --
+            -- InitStream where ?input
+            P.send _out_out ?out_out
+
+
+type FInitScreen m =
+    Family.Def Unit
+        ( where :: Source )
+        ( out :: Unit )
+        m
+
+initScreen :: forall m. FInitScreen m
+initScreen = -- {-> extsource <-}
+
+    Family.def
+        unit
+        { where : ?where_default }
+        { out : ?out_default }
+        $ Fn.make "initScreen" $ do
+            where <- P.receive _in_where
+            -- InitScreen where
+            P.send _out_out ?out_out
+
+
+type FFast m =
+    Family.Def Unit
+        ( arr :: VArray, speed :: Value )
+        ( out :: Value )
+        m
+
+fast :: forall m. FFast m
+fast = -- {-> array <-}
+
+    Family.def
+        unit
+        { arr : ?arr_default, speed : 1 }
+        { out : ?out_default }
+        $ Fn.make "fast" $ do
+            arr <- P.receive _in_arr
+            speed <- P.receive _in_speed
+            -- Fast arr speed
+            P.send _out_out ?out_out
+
+
+type FSmooth m =
+    Family.Def Unit
+        ( arr :: VArray, smooth :: Value )
+        ( out :: Value )
+        m
+
+smooth :: forall m. FSmooth m
+smooth = -- {-> array <-}
+
+    Family.def
+        unit
+        { arr : ?arr_default, smooth : 1 }
+        { out : ?out_default }
+        $ Fn.make "smooth" $ do
+            arr <- P.receive _in_arr
+            smooth <- P.receive _in_smooth
+            -- Smooth arr smooth
+            P.send _out_out ?out_out
+
+
+type FEase m =
+    Family.Def Unit
+        ( arr :: VArray, ease :: Ease )
+        ( out :: Value )
+        m
+
+ease :: forall m. FEase m
+ease = -- {-> array <-}
+
+    Family.def
+        unit
+        { arr : ?arr_default, ease : Linear }
+        { out : ?out_default }
+        $ Fn.make "ease" $ do
+            arr <- P.receive _in_arr
+            ease <- P.receive _in_ease
+            -- Ease arr ease
+            P.send _out_out ?out_out
+
+
+type FOffset m =
+    Family.Def Unit
+        ( arr :: VArray, offset :: Value )
+        ( out :: Value )
+        m
+
+offset :: forall m. FOffset m
+offset = -- {-> array <-}
+
+    Family.def
+        unit
+        { arr : ?arr_default, offset : 0.5 }
+        { out : ?out_default }
+        $ Fn.make "offset" $ do
+            arr <- P.receive _in_arr
+            offset <- P.receive _in_offset
+            -- Offset arr offset
+            P.send _out_out ?out_out
+
+
+type FFit m =
+    Family.Def Unit
+        ( arr :: VArray, low :: Value, high :: Value )
+        ( out :: Value )
+        m
+
+fit :: forall m. FFit m
+fit = -- {-> array <-}
+
+    Family.def
+        unit
+        { arr : ?arr_default, low : 0, high : 1 }
+        { out : ?out_default }
+        $ Fn.make "fit" $ do
+            arr <- P.receive _in_arr
+            low <- P.receive _in_low
+            high <- P.receive _in_high
+            -- Fit arr low high
+            P.send _out_out ?out_out
+
+
+type FFft m =
+    Family.Def Unit
+        ( a :: Audio, h :: AudioBin )
+        ( out :: Value )
+        m
+
+fft :: forall m. FFft m
+fft = -- {-> audio <-}
+
+    Family.def
+        unit
+        { a : ?a_default, h : ?h_default }
+        { out : ?out_default }
+        $ Fn.make "fft" $ do
+            a <- P.receive _in_a
+            h <- P.receive _in_h
+            -- Fft a h
+            P.send _out_out ?out_out
+
+
+type FSetSmooth m =
+    Family.Def Unit
+        ( audio :: Audio, smooth :: Value )
+        ( out :: Unit )
+        m
+
+setSmooth :: forall m. FSetSmooth m
+setSmooth = -- {-> audio <-}
+
+    Family.def
+        unit
+        { audio : ?audio_default, smooth : 0.4 }
+        { out : ?out_default }
+        $ Fn.make "setSmooth" $ do
+            audio <- P.receive _in_audio
+            smooth <- P.receive _in_smooth
+            -- SetSmooth audio smooth
+            P.send _out_out ?out_out
+
+
+type FSetCutoff m =
+    Family.Def Unit
+        ( a :: Audio, cutoff :: Value )
+        ( out :: Unit )
+        m
+
+setCutoff :: forall m. FSetCutoff m
+setCutoff = -- {-> audio <-}
+
+    Family.def
+        unit
+        { a : ?a_default, cutoff : 2 }
+        { out : ?out_default }
+        $ Fn.make "setCutoff" $ do
+            a <- P.receive _in_a
+            cutoff <- P.receive _in_cutoff
+            -- SetCutoff a cutoff
+            P.send _out_out ?out_out
+
+
+type FSetBins m =
+    Family.Def Unit
+        ( audio :: Audio, numBins :: Value )
+        ( out :: Unit )
+        m
+
+setBins :: forall m. FSetBins m
+setBins = -- {-> audio <-}
+
+    Family.def
+        unit
+        { audio : ?audio_default, numBins : 4 }
+        { out : ?out_default }
+        $ Fn.make "setBins" $ do
+            audio <- P.receive _in_audio
+            numBins <- P.receive _in_numBins
+            -- SetBins audio numBins
+            P.send _out_out ?out_out
+
+
+type FSetScale m =
+    Family.Def Unit
+        ( audio :: Audio, scale :: Value )
+        ( out :: Unit )
+        m
+
+setScale :: forall m. FSetScale m
+setScale = -- {-> audio <-}
+
+    Family.def
+        unit
+        { audio : ?audio_default, scale : 10 }
+        { out : ?out_default }
+        $ Fn.make "setScale" $ do
+            audio <- P.receive _in_audio
+            scale <- P.receive _in_scale
+            -- SetScale audio scale
+            P.send _out_out ?out_out
+
+
+type FHide m =
+    Family.Def Unit
+        ( audio :: Audio, ?ch_type )
+        ( out :: Unit )
+        m
+
+hide :: forall m. FHide m
+hide = -- {-> audio <-}
+
+    Family.def
+        unit
+        { audio : ?audio_default, ?ch_default }
+        { out : ?out_default }
+        $ Fn.make "hide" $ do
+            audio <- P.receive _in_audio
+            --
+            -- Hide audio ?input
+            P.send _out_out ?out_out
+
+
+type FShow m =
+    Family.Def Unit
+        ( audio :: Audio, ?ch_type )
+        ( out :: Unit )
+        m
+
+show :: forall m. FShow m
+show = -- {-> audio <-}
+
+    Family.def
+        unit
+        { audio : ?audio_default, ?ch_default }
+        { out : ?out_default }
+        $ Fn.make "show" $ do
+            audio <- P.receive _in_audio
+            --
+            -- Show audio ?input
+            P.send _out_out ?out_out
+
+
+type FOut m =
+    Family.Def Unit
+        ( what :: Texture, where :: Output )
+        ( out :: Unit )
+        m
+
+out :: forall m. FOut m
+out = -- {-> out <-}
+
+    Family.def
+        unit
+        { what : ?what_default, where : ?where_default }
+        { out : ?out_default }
+        $ Fn.make "out" $ do
+            what <- P.receive _in_what
+            where <- P.receive _in_where
+            -- Out what where
+            P.send _out_out ?out_out
+
+
+
+
+
+type HydraToolkit m
+    = Noodle.Toolkit Unit
+        ( noise : -- {-> source <-}
+
+        , voronoi : -- {-> source <-}
+
+        , osc : -- {-> source <-}
+
+        , shape : -- {-> source <-}
+
+        , gradient : -- {-> source <-}
+
+        , src : -- {-> source <-}
+
+        , solid : -- {-> source <-}
+
+        , src : -- {-> source <-}
+
+        , prev : -- {-> source <-}
+
+        , rotate : -- {-> geometry <-}
+
+        , scale : -- {-> geometry <-}
+
+        , pixelate : -- {-> geometry <-}
+
+        , repeat : -- {-> geometry <-}
+
+        , repeatX : -- {-> geometry <-}
+
+        , repeatY : -- {-> geometry <-}
+
+        , kaleid : -- {-> geometry <-}
+
+        , scroll : -- {-> geometry <-}
+
+        , scrollX : -- {-> geometry <-}
+
+        , scrollY : -- {-> geometry <-}
+
+        , posterize : -- {-> color <-}
+
+        , shift : -- {-> color <-}
+
+        , invert : -- {-> color <-}
+
+        , contrast : -- {-> color <-}
+
+        , brightness : -- {-> color <-}
+
+        , luma : -- {-> color <-}
+
+        , tresh : -- {-> color <-}
+
+        , color : -- {-> color <-}
+
+        , saturate : -- {-> color <-}
+
+        , hue : -- {-> color <-}
+
+        , colorama : -- {-> color <-}
+
+        , sum : -- {-> color <-}
+
+        , r : -- {-> color <-}
+
+        , g : -- {-> color <-}
+
+        , b : -- {-> color <-}
+
+        , a : -- {-> color <-}
+
+        , add : -- {-> blend <-}
+
+        , sub : -- {-> blend <-}
+
+        , layer : -- {-> blend <-}
+
+        , blend : -- {-> blend <-}
+
+        , mult : -- {-> blend <-}
+
+        , diff : -- {-> blend <-}
+
+        , mask : -- {-> blend <-}
+
+        , modulateRepeat : -- {-> modulate <-}
+
+        , modulateRepeatX : -- {-> modulate <-}
+
+        , modulateRepeatY : -- {-> modulate <-}
+
+        , modulateKaleid : -- {-> modulate <-}
+
+        , modulateScrollX : -- {-> modulate <-}
+
+        , modulateScrollY : -- {-> modulate <-}
+
+        , modulate : -- {-> modulate <-}
+
+        , modulateScale : -- {-> modulate <-}
+
+        , modulatePixelate : -- {-> modulate <-}
+
+        , modulateRotate : -- {-> modulate <-}
+
+        , modulateHue : -- {-> modulate <-}
+
+        , render : -- {-> synth <-}
+
+        , update : -- {-> synth <-}
+
+        , setResolution : -- {-> synth <-}
+
+        , hush : -- {-> synth <-}
+
+        , setFunction : -- {-> synth <-}
+
+        , speed : -- {-> synth <-}
+
+        , bpm : -- {-> synth <-}
+
+        , width : -- {-> synth <-}
+
+        , height : -- {-> synth <-}
+
+        , pi : -- {-> synth <-}
+
+        , time : -- {-> synth <-}
+
+        , mouse : -- {-> synth <-}
+
+        , initCam : -- {-> extsource <-}
+
+        , initImage : -- {-> extsource <-}
+
+        , initVideo : -- {-> extsource <-}
+
+        , init : -- {-> extsource <-}
+
+        , initStream : -- {-> extsource <-}
+
+        , initScreen : -- {-> extsource <-}
+
+        , fast : -- {-> array <-}
+
+        , smooth : -- {-> array <-}
+
+        , ease : -- {-> array <-}
+
+        , offset : -- {-> array <-}
+
+        , fit : -- {-> array <-}
+
+        , fft : -- {-> audio <-}
+
+        , setSmooth : -- {-> audio <-}
+
+        , setCutoff : -- {-> audio <-}
+
+        , setBins : -- {-> audio <-}
+
+        , setScale : -- {-> audio <-}
+
+        , hide : -- {-> audio <-}
+
+        , show : -- {-> audio <-}
+
+        , out : -- {-> out <-}
+
+        )
+
+
+toolkit :: forall m. HydraToolkit m
+toolkit =
+    Toolkit.from "hydra"
+        { noise : -- {-> source <-}
+
+        , voronoi : -- {-> source <-}
+
+        , osc : -- {-> source <-}
+
+        , shape : -- {-> source <-}
+
+        , gradient : -- {-> source <-}
+
+        , src : -- {-> source <-}
+
+        , solid : -- {-> source <-}
+
+        , src : -- {-> source <-}
+
+        , prev : -- {-> source <-}
+
+        , rotate : -- {-> geometry <-}
+
+        , scale : -- {-> geometry <-}
+
+        , pixelate : -- {-> geometry <-}
+
+        , repeat : -- {-> geometry <-}
+
+        , repeatX : -- {-> geometry <-}
+
+        , repeatY : -- {-> geometry <-}
+
+        , kaleid : -- {-> geometry <-}
+
+        , scroll : -- {-> geometry <-}
+
+        , scrollX : -- {-> geometry <-}
+
+        , scrollY : -- {-> geometry <-}
+
+        , posterize : -- {-> color <-}
+
+        , shift : -- {-> color <-}
+
+        , invert : -- {-> color <-}
+
+        , contrast : -- {-> color <-}
+
+        , brightness : -- {-> color <-}
+
+        , luma : -- {-> color <-}
+
+        , tresh : -- {-> color <-}
+
+        , color : -- {-> color <-}
+
+        , saturate : -- {-> color <-}
+
+        , hue : -- {-> color <-}
+
+        , colorama : -- {-> color <-}
+
+        , sum : -- {-> color <-}
+
+        , r : -- {-> color <-}
+
+        , g : -- {-> color <-}
+
+        , b : -- {-> color <-}
+
+        , a : -- {-> color <-}
+
+        , add : -- {-> blend <-}
+
+        , sub : -- {-> blend <-}
+
+        , layer : -- {-> blend <-}
+
+        , blend : -- {-> blend <-}
+
+        , mult : -- {-> blend <-}
+
+        , diff : -- {-> blend <-}
+
+        , mask : -- {-> blend <-}
+
+        , modulateRepeat : -- {-> modulate <-}
+
+        , modulateRepeatX : -- {-> modulate <-}
+
+        , modulateRepeatY : -- {-> modulate <-}
+
+        , modulateKaleid : -- {-> modulate <-}
+
+        , modulateScrollX : -- {-> modulate <-}
+
+        , modulateScrollY : -- {-> modulate <-}
+
+        , modulate : -- {-> modulate <-}
+
+        , modulateScale : -- {-> modulate <-}
+
+        , modulatePixelate : -- {-> modulate <-}
+
+        , modulateRotate : -- {-> modulate <-}
+
+        , modulateHue : -- {-> modulate <-}
+
+        , render : -- {-> synth <-}
+
+        , update : -- {-> synth <-}
+
+        , setResolution : -- {-> synth <-}
+
+        , hush : -- {-> synth <-}
+
+        , setFunction : -- {-> synth <-}
+
+        , speed : -- {-> synth <-}
+
+        , bpm : -- {-> synth <-}
+
+        , width : -- {-> synth <-}
+
+        , height : -- {-> synth <-}
+
+        , pi : -- {-> synth <-}
+
+        , time : -- {-> synth <-}
+
+        , mouse : -- {-> synth <-}
+
+        , initCam : -- {-> extsource <-}
+
+        , initImage : -- {-> extsource <-}
+
+        , initVideo : -- {-> extsource <-}
+
+        , init : -- {-> extsource <-}
+
+        , initStream : -- {-> extsource <-}
+
+        , initScreen : -- {-> extsource <-}
+
+        , fast : -- {-> array <-}
+
+        , smooth : -- {-> array <-}
+
+        , ease : -- {-> array <-}
+
+        , offset : -- {-> array <-}
+
+        , fit : -- {-> array <-}
+
+        , fft : -- {-> audio <-}
+
+        , setSmooth : -- {-> audio <-}
+
+        , setCutoff : -- {-> audio <-}
+
+        , setBins : -- {-> audio <-}
+
+        , setScale : -- {-> audio <-}
+
+        , hide : -- {-> audio <-}
+
+        , show : -- {-> audio <-}
+
+        , out : -- {-> out <-}
+
+        }
+
+
+type Toolkit m = HydraToolkit m
+
+
+module Toolkit.HydraGen.Family.Source.FNoise where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_scale = Fn.Input :: _ "scale"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> source <-}
+
+    Family.Def Unit
+        ( scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> source <-}
+
+    Family.def
+        unit
+        { scale : 10, offset : 0.1 }
+        { out : ?out_default }
+        $ Fn.make "noise" $ do
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            -- Noise scale offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Source.FVoronoi where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_scale = Fn.Input :: _ "scale"
+_in_speed = Fn.Input :: _ "speed"
+_in_blending = Fn.Input :: _ "blending"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> source <-}
+
+    Family.Def Unit
+        ( scale :: Value, speed :: Value, blending :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> source <-}
+
+    Family.def
+        unit
+        { scale : 5, speed : 0.3, blending : 0.3 }
+        { out : ?out_default }
+        $ Fn.make "voronoi" $ do
+            scale <- P.receive _in_scale
+            speed <- P.receive _in_speed
+            blending <- P.receive _in_blending
+            -- Voronoi scale speed blending
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Source.FOsc where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_frequency = Fn.Input :: _ "frequency"
+_in_sync = Fn.Input :: _ "sync"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> source <-}
+
+    Family.Def Unit
+        ( frequency :: Value, sync :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> source <-}
+
+    Family.def
+        unit
+        { frequency : 60, sync : 0.1, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "osc" $ do
+            frequency <- P.receive _in_frequency
+            sync <- P.receive _in_sync
+            offset <- P.receive _in_offset
+            -- Osc frequency sync offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Source.FShape where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_sides = Fn.Input :: _ "sides"
+_in_radius = Fn.Input :: _ "radius"
+_in_smoothing = Fn.Input :: _ "smoothing"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> source <-}
+
+    Family.Def Unit
+        ( sides :: Value, radius :: Value, smoothing :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> source <-}
+
+    Family.def
+        unit
+        { sides : 60, radius : 0.3, smoothing : 0.01 }
+        { out : ?out_default }
+        $ Fn.make "shape" $ do
+            sides <- P.receive _in_sides
+            radius <- P.receive _in_radius
+            smoothing <- P.receive _in_smoothing
+            -- Shape sides radius smoothing
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Source.FGradient where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_speed = Fn.Input :: _ "speed"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> source <-}
+
+    Family.Def Unit
+        ( speed :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> source <-}
+
+    Family.def
+        unit
+        { speed : ?speed_default }
+        { out : ?out_default }
+        $ Fn.make "gradient" $ do
+            speed <- P.receive _in_speed
+            -- Gradient speed
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Source.FSrc where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_tex = Fn.Input :: _ "tex"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> source <-}
+
+    Family.Def Unit
+        ( tex :: Texture )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> source <-}
+
+    Family.def
+        unit
+        { tex : ?tex_default }
+        { out : ?out_default }
+        $ Fn.make "src" $ do
+            tex <- P.receive _in_tex
+            -- Src tex
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Source.FSolid where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_r = Fn.Input :: _ "r"
+_in_g = Fn.Input :: _ "g"
+_in_b = Fn.Input :: _ "b"
+_in_a = Fn.Input :: _ "a"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> source <-}
+
+    Family.Def Unit
+        ( r :: Value, g :: Value, b :: Value, a :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> source <-}
+
+    Family.def
+        unit
+        { r : ?r_default, g : ?g_default, b : ?b_default, a : 1 }
+        { out : ?out_default }
+        $ Fn.make "solid" $ do
+            r <- P.receive _in_r
+            g <- P.receive _in_g
+            b <- P.receive _in_b
+            a <- P.receive _in_a
+            -- Solid r g b a
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Source.FSrc where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_src = Fn.Input :: _ "src"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> source <-}
+
+    Family.Def Unit
+        ( src :: Source )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> source <-}
+
+    Family.def
+        unit
+        { src : ?src_default }
+        { out : ?out_default }
+        $ Fn.make "src" $ do
+            src <- P.receive _in_src
+            -- Src src
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Source.FPrev where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> source <-}
+
+    Family.Def Unit
+        ( ?ch_type )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> source <-}
+
+    Family.def
+        unit
+        { ?ch_default }
+        { out : ?out_default }
+        $ Fn.make "prev" $ do
+            --
+            -- Prev ?input
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Geometry.FRotate where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_angle = Fn.Input :: _ "angle"
+_in_speed = Fn.Input :: _ "speed"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> geometry <-}
+
+    Family.Def Unit
+        ( what :: Texture, angle :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, angle : 10, speed : ?speed_default }
+        { out : ?out_default }
+        $ Fn.make "rotate" $ do
+            what <- P.receive _in_what
+            angle <- P.receive _in_angle
+            speed <- P.receive _in_speed
+            -- Rotate what angle speed
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Geometry.FScale where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_amount = Fn.Input :: _ "amount"
+_in_xMult = Fn.Input :: _ "xMult"
+_in_yMult = Fn.Input :: _ "yMult"
+_in_offsetX = Fn.Input :: _ "offsetX"
+_in_offsetY = Fn.Input :: _ "offsetY"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> geometry <-}
+
+    Family.Def Unit
+        ( what :: Texture, amount :: Value, xMult :: Value, yMult :: Value, offsetX :: Value, offsetY :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, amount : 1.5, xMult : 1, yMult : 1, offsetX : 0.5, offsetY : 0.5 }
+        { out : ?out_default }
+        $ Fn.make "scale" $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            xMult <- P.receive _in_xMult
+            yMult <- P.receive _in_yMult
+            offsetX <- P.receive _in_offsetX
+            offsetY <- P.receive _in_offsetY
+            -- Scale what amount xMult yMult offsetX offsetY
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Geometry.FPixelate where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_pixelX = Fn.Input :: _ "pixelX"
+_in_pixelY = Fn.Input :: _ "pixelY"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> geometry <-}
+
+    Family.Def Unit
+        ( what :: Texture, pixelX :: Value, pixelY :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, pixelX : 20, pixelY : 20 }
+        { out : ?out_default }
+        $ Fn.make "pixelate" $ do
+            what <- P.receive _in_what
+            pixelX <- P.receive _in_pixelX
+            pixelY <- P.receive _in_pixelY
+            -- Pixelate what pixelX pixelY
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Geometry.FRepeat where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_repeatX = Fn.Input :: _ "repeatX"
+_in_repeatY = Fn.Input :: _ "repeatY"
+_in_offsetX = Fn.Input :: _ "offsetX"
+_in_offsetY = Fn.Input :: _ "offsetY"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> geometry <-}
+
+    Family.Def Unit
+        ( what :: Texture, repeatX :: Value, repeatY :: Value, offsetX :: Value, offsetY :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, repeatX : 3, repeatY : 3, offsetX : ?offsetX_default, offsetY : ?offsetY_default }
+        { out : ?out_default }
+        $ Fn.make "repeat" $ do
+            what <- P.receive _in_what
+            repeatX <- P.receive _in_repeatX
+            repeatY <- P.receive _in_repeatY
+            offsetX <- P.receive _in_offsetX
+            offsetY <- P.receive _in_offsetY
+            -- Repeat what repeatX repeatY offsetX offsetY
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Geometry.FRepeatX where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_reps = Fn.Input :: _ "reps"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> geometry <-}
+
+    Family.Def Unit
+        ( what :: Texture, reps :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, reps : 3, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "repeatX" $ do
+            what <- P.receive _in_what
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            -- RepeatX what reps offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Geometry.FRepeatY where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_reps = Fn.Input :: _ "reps"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> geometry <-}
+
+    Family.Def Unit
+        ( what :: Texture, reps :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, reps : 3, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "repeatY" $ do
+            what <- P.receive _in_what
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            -- RepeatY what reps offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Geometry.FKaleid where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_nSides = Fn.Input :: _ "nSides"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> geometry <-}
+
+    Family.Def Unit
+        ( what :: Texture, nSides :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, nSides : 3 }
+        { out : ?out_default }
+        $ Fn.make "kaleid" $ do
+            what <- P.receive _in_what
+            nSides <- P.receive _in_nSides
+            -- Kaleid what nSides
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Geometry.FScroll where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_scrollX = Fn.Input :: _ "scrollX"
+_in_scrollY = Fn.Input :: _ "scrollY"
+_in_speedX = Fn.Input :: _ "speedX"
+_in_speedY = Fn.Input :: _ "speedY"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> geometry <-}
+
+    Family.Def Unit
+        ( what :: Texture, scrollX :: Value, scrollY :: Value, speedX :: Value, speedY :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scrollX : 0.5, scrollY : 0.5, speedX : ?speedX_default, speedY : ?speedY_default }
+        { out : ?out_default }
+        $ Fn.make "scroll" $ do
+            what <- P.receive _in_what
+            scrollX <- P.receive _in_scrollX
+            scrollY <- P.receive _in_scrollY
+            speedX <- P.receive _in_speedX
+            speedY <- P.receive _in_speedY
+            -- Scroll what scrollX scrollY speedX speedY
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Geometry.FScrollX where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_scrollX = Fn.Input :: _ "scrollX"
+_in_speed = Fn.Input :: _ "speed"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> geometry <-}
+
+    Family.Def Unit
+        ( what :: Texture, scrollX :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scrollX : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+        $ Fn.make "scrollX" $ do
+            what <- P.receive _in_what
+            scrollX <- P.receive _in_scrollX
+            speed <- P.receive _in_speed
+            -- ScrollX what scrollX speed
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Geometry.FScrollY where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_scrollY = Fn.Input :: _ "scrollY"
+_in_speed = Fn.Input :: _ "speed"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> geometry <-}
+
+    Family.Def Unit
+        ( what :: Texture, scrollY :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> geometry <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scrollY : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+        $ Fn.make "scrollY" $ do
+            what <- P.receive _in_what
+            scrollY <- P.receive _in_scrollY
+            speed <- P.receive _in_speed
+            -- ScrollY what scrollY speed
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FPosterize where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_bins = Fn.Input :: _ "bins"
+_in_gamma = Fn.Input :: _ "gamma"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, bins :: Value, gamma :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, bins : 3, gamma : 0.6 }
+        { out : ?out_default }
+        $ Fn.make "posterize" $ do
+            what <- P.receive _in_what
+            bins <- P.receive _in_bins
+            gamma <- P.receive _in_gamma
+            -- Posterize what bins gamma
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FShift where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_r = Fn.Input :: _ "r"
+_in_g = Fn.Input :: _ "g"
+_in_b = Fn.Input :: _ "b"
+_in_a = Fn.Input :: _ "a"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, r :: Value, g :: Value, b :: Value, a :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, r : 0.5, g : ?g_default, b : ?b_default, a : ?a_default }
+        { out : ?out_default }
+        $ Fn.make "shift" $ do
+            what <- P.receive _in_what
+            r <- P.receive _in_r
+            g <- P.receive _in_g
+            b <- P.receive _in_b
+            a <- P.receive _in_a
+            -- Shift what r g b a
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FInvert where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_amount = Fn.Input :: _ "amount"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, amount : 1 }
+        { out : ?out_default }
+        $ Fn.make "invert" $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            -- Invert what amount
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FContrast where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_amount = Fn.Input :: _ "amount"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, amount : 1.6 }
+        { out : ?out_default }
+        $ Fn.make "contrast" $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            -- Contrast what amount
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FBrightness where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_amount = Fn.Input :: _ "amount"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, amount : 0.4 }
+        { out : ?out_default }
+        $ Fn.make "brightness" $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            -- Brightness what amount
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FLuma where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_treshold = Fn.Input :: _ "treshold"
+_in_tolerance = Fn.Input :: _ "tolerance"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, treshold :: Value, tolerance :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
+        { out : ?out_default }
+        $ Fn.make "luma" $ do
+            what <- P.receive _in_what
+            treshold <- P.receive _in_treshold
+            tolerance <- P.receive _in_tolerance
+            -- Luma what treshold tolerance
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FTresh where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_treshold = Fn.Input :: _ "treshold"
+_in_tolerance = Fn.Input :: _ "tolerance"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, treshold :: Value, tolerance :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, treshold : 0.5, tolerance : 0.1 }
+        { out : ?out_default }
+        $ Fn.make "tresh" $ do
+            what <- P.receive _in_what
+            treshold <- P.receive _in_treshold
+            tolerance <- P.receive _in_tolerance
+            -- Tresh what treshold tolerance
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FColor where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_r = Fn.Input :: _ "r"
+_in_g = Fn.Input :: _ "g"
+_in_b = Fn.Input :: _ "b"
+_in_a = Fn.Input :: _ "a"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, r :: Value, g :: Value, b :: Value, a :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, r : 1, g : 1, b : 1, a : 1 }
+        { out : ?out_default }
+        $ Fn.make "color" $ do
+            what <- P.receive _in_what
+            r <- P.receive _in_r
+            g <- P.receive _in_g
+            b <- P.receive _in_b
+            a <- P.receive _in_a
+            -- Color what r g b a
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FSaturate where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_amount = Fn.Input :: _ "amount"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, amount : 2 }
+        { out : ?out_default }
+        $ Fn.make "saturate" $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            -- Saturate what amount
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FHue where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_hue = Fn.Input :: _ "hue"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, hue :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, hue : 0.4 }
+        { out : ?out_default }
+        $ Fn.make "hue" $ do
+            what <- P.receive _in_what
+            hue <- P.receive _in_hue
+            -- Hue what hue
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FColorama where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_amount = Fn.Input :: _ "amount"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, amount : 0.005 }
+        { out : ?out_default }
+        $ Fn.make "colorama" $ do
+            what <- P.receive _in_what
+            amount <- P.receive _in_amount
+            -- Colorama what amount
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FSum where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, ?ch_type )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, ?ch_default }
+        { out : ?out_default }
+        $ Fn.make "sum" $ do
+            what <- P.receive _in_what
+            --
+            -- Sum what ?input
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FR where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_scale = Fn.Input :: _ "scale"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "r" $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            -- R what scale offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FG where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_scale = Fn.Input :: _ "scale"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "g" $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            -- G what scale offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FB where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_scale = Fn.Input :: _ "scale"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "b" $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            -- B what scale offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Color.FA where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_scale = Fn.Input :: _ "scale"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> color <-}
+
+    Family.Def Unit
+        ( what :: Texture, scale :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> color <-}
+
+    Family.def
+        unit
+        { what : ?what_default, scale : 1, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "a" $ do
+            what <- P.receive _in_what
+            scale <- P.receive _in_scale
+            offset <- P.receive _in_offset
+            -- A what scale offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Blend.FAdd where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> blend <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+        $ Fn.make "add" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- Add what with amount
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Blend.FSub where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> blend <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+        $ Fn.make "sub" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- Sub what with amount
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Blend.FLayer where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> blend <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+        $ Fn.make "layer" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- Layer what with amount
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Blend.FBlend where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> blend <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 0.5 }
+        { out : ?out_default }
+        $ Fn.make "blend" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- Blend what with amount
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Blend.FMult where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> blend <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+        $ Fn.make "mult" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- Mult what with amount
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Blend.FDiff where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> blend <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default }
+        { out : ?out_default }
+        $ Fn.make "diff" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            -- Diff what with
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Blend.FMask where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> blend <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> blend <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default }
+        { out : ?out_default }
+        $ Fn.make "mask" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            -- Mask what with
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Modulate.FModulateRepeat where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_repeatX = Fn.Input :: _ "repeatX"
+_in_repeatY = Fn.Input :: _ "repeatY"
+_in_offsetX = Fn.Input :: _ "offsetX"
+_in_offsetY = Fn.Input :: _ "offsetY"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> modulate <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, repeatX :: Value, repeatY :: Value, offsetX :: Value, offsetY :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, repeatX : 3, repeatY : 3, offsetX : 0.5, offsetY : 0.5 }
+        { out : ?out_default }
+        $ Fn.make "modulateRepeat" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            repeatX <- P.receive _in_repeatX
+            repeatY <- P.receive _in_repeatY
+            offsetX <- P.receive _in_offsetX
+            offsetY <- P.receive _in_offsetY
+            -- ModulateRepeat what with repeatX repeatY offsetX offsetY
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Modulate.FModulateRepeatX where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_reps = Fn.Input :: _ "reps"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> modulate <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, reps :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
+        { out : ?out_default }
+        $ Fn.make "modulateRepeatX" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            -- ModulateRepeatX what with reps offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Modulate.FModulateRepeatY where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_reps = Fn.Input :: _ "reps"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> modulate <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, reps :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, reps : 3, offset : 0.5 }
+        { out : ?out_default }
+        $ Fn.make "modulateRepeatY" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            reps <- P.receive _in_reps
+            offset <- P.receive _in_offset
+            -- ModulateRepeatY what with reps offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Modulate.FModulateKaleid where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_nSides = Fn.Input :: _ "nSides"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> modulate <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, nSides :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, nSides : 3 }
+        { out : ?out_default }
+        $ Fn.make "modulateKaleid" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            nSides <- P.receive _in_nSides
+            -- ModulateKaleid what with nSides
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Modulate.FModulateScrollX where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_scrollX = Fn.Input :: _ "scrollX"
+_in_speed = Fn.Input :: _ "speed"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> modulate <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, scrollX :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, scrollX : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+        $ Fn.make "modulateScrollX" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            scrollX <- P.receive _in_scrollX
+            speed <- P.receive _in_speed
+            -- ModulateScrollX what with scrollX speed
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Modulate.FModulateScrollY where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_scrollY = Fn.Input :: _ "scrollY"
+_in_speed = Fn.Input :: _ "speed"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> modulate <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, scrollY :: Value, speed :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, scrollY : 0.5, speed : ?speed_default }
+        { out : ?out_default }
+        $ Fn.make "modulateScrollY" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            scrollY <- P.receive _in_scrollY
+            speed <- P.receive _in_speed
+            -- ModulateScrollY what with scrollY speed
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Modulate.FModulate where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> modulate <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 0.1 }
+        { out : ?out_default }
+        $ Fn.make "modulate" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- Modulate what with amount
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Modulate.FModulateScale where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_multiple = Fn.Input :: _ "multiple"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> modulate <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, multiple :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, multiple : 1, offset : 1 }
+        { out : ?out_default }
+        $ Fn.make "modulateScale" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            multiple <- P.receive _in_multiple
+            offset <- P.receive _in_offset
+            -- ModulateScale what with multiple offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Modulate.FModulatePixelate where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_multiple = Fn.Input :: _ "multiple"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> modulate <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, multiple :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, multiple : 10, offset : 3 }
+        { out : ?out_default }
+        $ Fn.make "modulatePixelate" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            multiple <- P.receive _in_multiple
+            offset <- P.receive _in_offset
+            -- ModulatePixelate what with multiple offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Modulate.FModulateRotate where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_multiple = Fn.Input :: _ "multiple"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> modulate <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, multiple :: Value, offset :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, multiple : 1, offset : ?offset_default }
+        { out : ?out_default }
+        $ Fn.make "modulateRotate" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            multiple <- P.receive _in_multiple
+            offset <- P.receive _in_offset
+            -- ModulateRotate what with multiple offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Modulate.FModulateHue where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_with = Fn.Input :: _ "with"
+_in_amount = Fn.Input :: _ "amount"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> modulate <-}
+
+    Family.Def Unit
+        ( what :: Texture, with :: Texture, amount :: Value )
+        ( out :: Texture )
+        m
+
+family :: forall m. Family m
+family = -- {-> modulate <-}
+
+    Family.def
+        unit
+        { what : ?what_default, with : ?with_default, amount : 1 }
+        { out : ?out_default }
+        $ Fn.make "modulateHue" $ do
+            what <- P.receive _in_what
+            with <- P.receive _in_with
+            amount <- P.receive _in_amount
+            -- ModulateHue what with amount
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Synth.FRender where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_from = Fn.Input :: _ "from"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> synth <-}
+
+    Family.Def Unit
+        ( from :: From )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> synth <-}
+
+    Family.def
+        unit
+        { from : All }
+        { out : ?out_default }
+        $ Fn.make "render" $ do
+            from <- P.receive _in_from
+            -- Render from
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Synth.FUpdate where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_fn = Fn.Input :: _ "fn"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> synth <-}
+
+    Family.Def Unit
+        ( fn :: UpdateFn )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> synth <-}
+
+    Family.def
+        unit
+        { fn : ?fn_default }
+        { out : ?out_default }
+        $ Fn.make "update" $ do
+            fn <- P.receive _in_fn
+            -- Update fn
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Synth.FSetResolution where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_width = Fn.Input :: _ "width"
+_in_height = Fn.Input :: _ "height"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> synth <-}
+
+    Family.Def Unit
+        ( width :: Value, height :: Value )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> synth <-}
+
+    Family.def
+        unit
+        { width : ?width_default, height : ?height_default }
+        { out : ?out_default }
+        $ Fn.make "setResolution" $ do
+            width <- P.receive _in_width
+            height <- P.receive _in_height
+            -- SetResolution width height
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Synth.FHush where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_Unit = Fn.Input :: _ "Unit"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> synth <-}
+
+    Family.Def Unit
+        ( Unit :: Unknown )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> synth <-}
+
+    Family.def
+        unit
+        { Unit : ?Unit_default }
+        { out : ?out_default }
+        $ Fn.make "hush" $ do
+            Unit <- P.receive _in_Unit
+            -- Hush Unit
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Synth.FSetFunction where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_fn = Fn.Input :: _ "fn"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> synth <-}
+
+    Family.Def Unit
+        ( fn :: GlslFn )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> synth <-}
+
+    Family.def
+        unit
+        { fn : ?fn_default }
+        { out : ?out_default }
+        $ Fn.make "setFunction" $ do
+            fn <- P.receive _in_fn
+            -- SetFunction fn
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Synth.FSpeed where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_v = Fn.Input :: _ "v"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> synth <-}
+
+    Family.Def Unit
+        ( v :: Value )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> synth <-}
+
+    Family.def
+        unit
+        { v : 1 }
+        { out : ?out_default }
+        $ Fn.make "speed" $ do
+            v <- P.receive _in_v
+            -- Speed v
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Synth.FBpm where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_v = Fn.Input :: _ "v"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> synth <-}
+
+    Family.Def Unit
+        ( v :: Value )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> synth <-}
+
+    Family.def
+        unit
+        { v : 30 }
+        { out : ?out_default }
+        $ Fn.make "bpm" $ do
+            v <- P.receive _in_v
+            -- Bpm v
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Synth.FWidth where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> synth <-}
+
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+family :: forall m. Family m
+family = -- {-> synth <-}
+
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+        $ Fn.make "width" $ do
+            -- Width
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Synth.FHeight where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> synth <-}
+
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+family :: forall m. Family m
+family = -- {-> synth <-}
+
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+        $ Fn.make "height" $ do
+            -- Height
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Synth.FPi where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> synth <-}
+
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+family :: forall m. Family m
+family = -- {-> synth <-}
+
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+        $ Fn.make "pi" $ do
+            -- Pi
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Synth.FTime where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> synth <-}
+
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+family :: forall m. Family m
+family = -- {-> synth <-}
+
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+        $ Fn.make "time" $ do
+            -- Time
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Synth.FMouse where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> synth <-}
+
+    Family.Def Unit
+        ( )
+        ( out :: Value )
+        m
+
+family :: forall m. Family m
+family = -- {-> synth <-}
+
+    Family.def
+        unit
+        { }
+        { out : ?out_default }
+        $ Fn.make "mouse" $ do
+            -- Mouse
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Extsource.FInitCam where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_where = Fn.Input :: _ "where"
+_in_index = Fn.Input :: _ "index"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> extsource <-}
+
+    Family.Def Unit
+        ( where :: Source, index :: Value )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> extsource <-}
+
+    Family.def
+        unit
+        { where : ?where_default, index : ?index_default }
+        { out : ?out_default }
+        $ Fn.make "initCam" $ do
+            where <- P.receive _in_where
+            index <- P.receive _in_index
+            -- InitCam where index
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Extsource.FInitImage where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_where = Fn.Input :: _ "where"
+_in_url = Fn.Input :: _ "url"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> extsource <-}
+
+    Family.Def Unit
+        ( where :: Source, url :: String )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> extsource <-}
+
+    Family.def
+        unit
+        { where : ?where_default, url : ?url_default }
+        { out : ?out_default }
+        $ Fn.make "initImage" $ do
+            where <- P.receive _in_where
+            url <- P.receive _in_url
+            -- InitImage where url
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Extsource.FInitVideo where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_where = Fn.Input :: _ "where"
+_in_url = Fn.Input :: _ "url"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> extsource <-}
+
+    Family.Def Unit
+        ( where :: Source, url :: String )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> extsource <-}
+
+    Family.def
+        unit
+        { where : ?where_default, url : ?url_default }
+        { out : ?out_default }
+        $ Fn.make "initVideo" $ do
+            where <- P.receive _in_where
+            url <- P.receive _in_url
+            -- InitVideo where url
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Extsource.FInit where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_where = Fn.Input :: _ "where"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> extsource <-}
+
+    Family.Def Unit
+        ( where :: SourceOptions )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> extsource <-}
+
+    Family.def
+        unit
+        { where : ?where_default }
+        { out : ?out_default }
+        $ Fn.make "init" $ do
+            where <- P.receive _in_where
+            -- Init where
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Extsource.FInitStream where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_where = Fn.Input :: _ "where"
+
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> extsource <-}
+
+    Family.Def Unit
+        ( where :: Source, ?ch_type )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> extsource <-}
+
+    Family.def
+        unit
+        { where : ?where_default, ?ch_default }
+        { out : ?out_default }
+        $ Fn.make "initStream" $ do
+            where <- P.receive _in_where
+            --
+            -- InitStream where ?input
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Extsource.FInitScreen where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_where = Fn.Input :: _ "where"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> extsource <-}
+
+    Family.Def Unit
+        ( where :: Source )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> extsource <-}
+
+    Family.def
+        unit
+        { where : ?where_default }
+        { out : ?out_default }
+        $ Fn.make "initScreen" $ do
+            where <- P.receive _in_where
+            -- InitScreen where
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Array.FFast where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_arr = Fn.Input :: _ "arr"
+_in_speed = Fn.Input :: _ "speed"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> array <-}
+
+    Family.Def Unit
+        ( arr :: VArray, speed :: Value )
+        ( out :: Value )
+        m
+
+family :: forall m. Family m
+family = -- {-> array <-}
+
+    Family.def
+        unit
+        { arr : ?arr_default, speed : 1 }
+        { out : ?out_default }
+        $ Fn.make "fast" $ do
+            arr <- P.receive _in_arr
+            speed <- P.receive _in_speed
+            -- Fast arr speed
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Array.FSmooth where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_arr = Fn.Input :: _ "arr"
+_in_smooth = Fn.Input :: _ "smooth"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> array <-}
+
+    Family.Def Unit
+        ( arr :: VArray, smooth :: Value )
+        ( out :: Value )
+        m
+
+family :: forall m. Family m
+family = -- {-> array <-}
+
+    Family.def
+        unit
+        { arr : ?arr_default, smooth : 1 }
+        { out : ?out_default }
+        $ Fn.make "smooth" $ do
+            arr <- P.receive _in_arr
+            smooth <- P.receive _in_smooth
+            -- Smooth arr smooth
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Array.FEase where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_arr = Fn.Input :: _ "arr"
+_in_ease = Fn.Input :: _ "ease"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> array <-}
+
+    Family.Def Unit
+        ( arr :: VArray, ease :: Ease )
+        ( out :: Value )
+        m
+
+family :: forall m. Family m
+family = -- {-> array <-}
+
+    Family.def
+        unit
+        { arr : ?arr_default, ease : Linear }
+        { out : ?out_default }
+        $ Fn.make "ease" $ do
+            arr <- P.receive _in_arr
+            ease <- P.receive _in_ease
+            -- Ease arr ease
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Array.FOffset where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_arr = Fn.Input :: _ "arr"
+_in_offset = Fn.Input :: _ "offset"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> array <-}
+
+    Family.Def Unit
+        ( arr :: VArray, offset :: Value )
+        ( out :: Value )
+        m
+
+family :: forall m. Family m
+family = -- {-> array <-}
+
+    Family.def
+        unit
+        { arr : ?arr_default, offset : 0.5 }
+        { out : ?out_default }
+        $ Fn.make "offset" $ do
+            arr <- P.receive _in_arr
+            offset <- P.receive _in_offset
+            -- Offset arr offset
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Array.FFit where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_arr = Fn.Input :: _ "arr"
+_in_low = Fn.Input :: _ "low"
+_in_high = Fn.Input :: _ "high"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> array <-}
+
+    Family.Def Unit
+        ( arr :: VArray, low :: Value, high :: Value )
+        ( out :: Value )
+        m
+
+family :: forall m. Family m
+family = -- {-> array <-}
+
+    Family.def
+        unit
+        { arr : ?arr_default, low : 0, high : 1 }
+        { out : ?out_default }
+        $ Fn.make "fit" $ do
+            arr <- P.receive _in_arr
+            low <- P.receive _in_low
+            high <- P.receive _in_high
+            -- Fit arr low high
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Audio.FFft where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_a = Fn.Input :: _ "a"
+_in_h = Fn.Input :: _ "h"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> audio <-}
+
+    Family.Def Unit
+        ( a :: Audio, h :: AudioBin )
+        ( out :: Value )
+        m
+
+family :: forall m. Family m
+family = -- {-> audio <-}
+
+    Family.def
+        unit
+        { a : ?a_default, h : ?h_default }
+        { out : ?out_default }
+        $ Fn.make "fft" $ do
+            a <- P.receive _in_a
+            h <- P.receive _in_h
+            -- Fft a h
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Audio.FSetSmooth where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_audio = Fn.Input :: _ "audio"
+_in_smooth = Fn.Input :: _ "smooth"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> audio <-}
+
+    Family.Def Unit
+        ( audio :: Audio, smooth :: Value )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> audio <-}
+
+    Family.def
+        unit
+        { audio : ?audio_default, smooth : 0.4 }
+        { out : ?out_default }
+        $ Fn.make "setSmooth" $ do
+            audio <- P.receive _in_audio
+            smooth <- P.receive _in_smooth
+            -- SetSmooth audio smooth
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Audio.FSetCutoff where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_a = Fn.Input :: _ "a"
+_in_cutoff = Fn.Input :: _ "cutoff"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> audio <-}
+
+    Family.Def Unit
+        ( a :: Audio, cutoff :: Value )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> audio <-}
+
+    Family.def
+        unit
+        { a : ?a_default, cutoff : 2 }
+        { out : ?out_default }
+        $ Fn.make "setCutoff" $ do
+            a <- P.receive _in_a
+            cutoff <- P.receive _in_cutoff
+            -- SetCutoff a cutoff
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Audio.FSetBins where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_audio = Fn.Input :: _ "audio"
+_in_numBins = Fn.Input :: _ "numBins"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> audio <-}
+
+    Family.Def Unit
+        ( audio :: Audio, numBins :: Value )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> audio <-}
+
+    Family.def
+        unit
+        { audio : ?audio_default, numBins : 4 }
+        { out : ?out_default }
+        $ Fn.make "setBins" $ do
+            audio <- P.receive _in_audio
+            numBins <- P.receive _in_numBins
+            -- SetBins audio numBins
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Audio.FSetScale where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_audio = Fn.Input :: _ "audio"
+_in_scale = Fn.Input :: _ "scale"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> audio <-}
+
+    Family.Def Unit
+        ( audio :: Audio, scale :: Value )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> audio <-}
+
+    Family.def
+        unit
+        { audio : ?audio_default, scale : 10 }
+        { out : ?out_default }
+        $ Fn.make "setScale" $ do
+            audio <- P.receive _in_audio
+            scale <- P.receive _in_scale
+            -- SetScale audio scale
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Audio.FHide where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_audio = Fn.Input :: _ "audio"
+
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> audio <-}
+
+    Family.Def Unit
+        ( audio :: Audio, ?ch_type )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> audio <-}
+
+    Family.def
+        unit
+        { audio : ?audio_default, ?ch_default }
+        { out : ?out_default }
+        $ Fn.make "hide" $ do
+            audio <- P.receive _in_audio
+            --
+            -- Hide audio ?input
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Audio.FShow where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_audio = Fn.Input :: _ "audio"
+
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> audio <-}
+
+    Family.Def Unit
+        ( audio :: Audio, ?ch_type )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> audio <-}
+
+    Family.def
+        unit
+        { audio : ?audio_default, ?ch_default }
+        { out : ?out_default }
+        $ Fn.make "show" $ do
+            audio <- P.receive _in_audio
+            --
+            -- Show audio ?input
+            P.send _out_out ?out_out
+
+
+{- MODULE -}
+
+module Toolkit.HydraGen.Family.Out.FOut where
+
+
+import FamilyImport as FI
+
+
+import Prelude (Unit, unit, ($), bind, pure)
+import Noodle.Fn2 as Fn
+import Noodle.Id (Input(..), Output(..)) as Fn
+import Noodle.Fn2.Process as P
+import Noodle.Family.Def as Family
+
+
+_in_what = Fn.Input :: _ "what"
+_in_where = Fn.Input :: _ "where"
+
+_out_out = Fn.Output :: _ "out"
+
+
+type Family m = -- {-> out <-}
+
+    Family.Def Unit
+        ( what :: Texture, where :: Output )
+        ( out :: Unit )
+        m
+
+family :: forall m. Family m
+family = -- {-> out <-}
+
+    Family.def
+        unit
+        { what : ?what_default, where : ?where_default }
+        { out : ?out_default }
+        $ Fn.make "out" $ do
+            what <- P.receive _in_what
+            where <- P.receive _in_where
+            -- Out what where
+            P.send _out_out ?out_out

@@ -9,15 +9,17 @@ import Data.String.CodeUnits as String
 import Data.String (joinWith, split, Pattern(..)) as String
 import Data.Array as Array
 import Data.Tuple.Nested ((/\))
+import Data.Traversable (for_)
 
 import Control.Monad.Error.Class (class MonadThrow)
 
 import Effect (Effect)
-import Effect.Aff (launchAff, launchAff_, runAff_)
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Aff (launchAff, launchAff_, runAff_)
+import Effect.Aff.Class (liftAff)
 import Effect.Exception (Error)
 
-import Test.Spec (Spec, describe, it)
+import Test.Spec (Spec, describe, it, pending', it)
 import Test.Spec.Assertions (shouldEqual, fail)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
@@ -35,9 +37,10 @@ import Noodle.Text.QuickDefParser as QDP
 import Noodle.Text.Generators as QTGen
 
 
-in_file_path = "./hydra.toolkit"
-out_file_path = "./test/hydra.toolkit.prepurs"
-out_file_path_sample = "./test/hydra.toolkit.prepurs.sample"
+in_file_paths = [ "./hydra.toolkit", "./hydra.v2.toolkit" ]
+out_file_path i = "./test/" <> i <> ".tpurs"
+out_file_path_sample i = "./test/" <> i <> ".tpurs.sample"
+-- out_file_path_sample = "./test/hydra.toolkit.prepurs.sample"
 
 
 {-
@@ -90,6 +93,16 @@ spec = do
       parses
         "test : foo :: <> => Result"
         (QD.qfm "test" "foo" [] "Result")
+        QDP.fnParser
+
+    it "parsing one function with no arguments works, p.2" $ do
+      parses
+        "test : foo :: => Result {Empty}"
+        (QD.qfm'' "test" "foo" [] "Result" "Empty")
+        QDP.fnParser
+      parses
+        "test : foo :: <> => Result {Empty}"
+        (QD.qfm'' "test" "foo" [] "Result" "Empty")
         QDP.fnParser
 
     it "parsing one function with an unkwown argument works" $
@@ -152,6 +165,18 @@ spec = do
         "Unit")
         QDP.fnParser
 
+    it "parsing one function with one parametrized output works" $ do
+      parses
+        "source : noise :: <scale:Value {Number 10.0} -> offset:Value {Number 0.1}> => Texture {Empty}"
+        (QD.qfmo "source" "noise"
+          [ QD.qchantd "scale" "Value" "Number 10.0"
+          , QD.qchantd "offset" "Value" "Number 0.1"
+          ]
+          [ QD.qchantd "out" "Texture" "Empty"
+          ]
+        )
+        QDP.fnParser
+
     it "parsing one function with several outputs works" $ do
       parses
         "synth : update :: <fn:UpdateFn> => <foo:UpdateFn {20} -> bar {5} -> buz -> bzr:Unit {Test}>"
@@ -165,49 +190,63 @@ spec = do
           ])
         QDP.fnParser
 
-    it "parses file" $ do
-        file <- readTextFile UTF8 in_file_path
-        let parseResult = P.runParser file QDP.familyListParser
-        case parseResult of
-          Right result ->
-            Array.length result `shouldEqual` 84
-          Left error ->
-            fail $ show error
+    it "can parse several functions" $ do
+      for_
+        [ "synth : update :: <fn:UpdateFn> => Unit" /\ QD.qfm "synth" "update" [ QD.qchant "fn" "UpdateFn" ] "Unit"
+        , "synth : render :: <from:From {All}> => Unit" /\ QD.qfm "synth" "render" [ QD.qchantd "from" "From" "All" ] "Unit"
+        ]
+        \(line /\ expectation) ->
+          parses line expectation QDP.fnParser
 
-    it "converts properly" $ do
-        file <- readTextFile UTF8 in_file_path
-        let parseResult = P.runParser file QDP.familyListParser
-        sampleContent <- readTextFile UTF8 out_file_path_sample
-        case parseResult of
-          Right familiesList -> do
+    for_ in_file_paths \textFile -> do
 
-            let toolkit = QTGen.ToolkitName "hydra"
-            let localsPrefix = QTGen.LocalsPrefix ""
+      describe ("file " <> textFile) $ do
+        -- file <- readTextFile UTF8 textFile
+        -- let parseResult = P.runParser file QDP.familyListParser
 
-            let toolkitSumType = QTGen.toolkitSumType toolkit familiesList
-            let toolkitDataModule = QTGen.toolkitDataModule toolkit familiesList
-            let toolkitModule = QTGen.toolkitModule QTGen.FamiliesAsModules toolkit localsPrefix [ "ModuleImport as MI" ] familiesList
-            let toolkitModule' = QTGen.toolkitModule QTGen.FamiliesInline  toolkit localsPrefix [ "ModuleImport as MI" ] familiesList
+        it "parses file" $ do
+            fileContent <- readTextFile UTF8 textFile
+            let parseResult = QDP.familyList fileContent
+            case parseResult of
+              Right result ->
+                Array.length result `shouldEqual` 84
+              Left error ->
+                fail $ show error
 
-            let familyModules = String.joinWith "\n\n{- MODULE -}\n\n" (QTGen.familyModule toolkit localsPrefix [ "FamilyImport as FI" ] <$> familiesList)
+        it "converts properly" $ do
+            fileContent <- readTextFile UTF8 textFile
+            let parseResult = QDP.familyList fileContent
+            sampleContent <- readTextFile UTF8 $ out_file_path_sample textFile
+            case parseResult of
+              Right familiesList -> do
 
-            let fileContent =
-                    String.joinWith "\n\n\n"
-                      [ toolkitSumType
-                      , toolkitDataModule
-                      , toolkitModule
-                      , toolkitModule'
+                let toolkit = QTGen.ToolkitName "hydra"
+                let localsPrefix = QTGen.LocalsPrefix ""
 
-                      , familyModules
-                      ]
-            writeTextFile UTF8 out_file_path fileContent
-            _ <- Array.zipWithA shouldEqual
-                      (String.split (String.Pattern "\n") fileContent)
-                      (String.split (String.Pattern "\n") sampleContent)
-            pure unit
-            -- fileContent `shouldEqual` sampleContent
-          Left error ->
-            fail $ show error
+                let toolkitSumType = QTGen.toolkitSumType toolkit familiesList
+                let toolkitDataModule = QTGen.toolkitDataModule toolkit familiesList
+                let toolkitModule = QTGen.toolkitModule QTGen.FamiliesAsModules toolkit localsPrefix [ "ModuleImport as MI" ] familiesList
+                let toolkitModule' = QTGen.toolkitModule QTGen.FamiliesInline  toolkit localsPrefix [ "ModuleImport as MI" ] familiesList
+
+                let familyModules = String.joinWith "\n\n{- MODULE -}\n\n" (QTGen.familyModule toolkit localsPrefix [ "FamilyImport as FI" ] <$> familiesList)
+
+                let tpursFileContent =
+                        String.joinWith "\n\n\n"
+                          [ toolkitSumType
+                          , toolkitDataModule
+                          , toolkitModule
+                          , toolkitModule'
+
+                          , familyModules
+                          ]
+                writeTextFile UTF8 (out_file_path textFile) tpursFileContent
+                _ <- Array.zipWithA shouldEqual
+                          (String.split (String.Pattern "\n") tpursFileContent)
+                          (String.split (String.Pattern "\n") sampleContent)
+                pure unit
+                -- fileContent `shouldEqual` sampleContent
+              Left error ->
+                fail $ show error
 
 
 

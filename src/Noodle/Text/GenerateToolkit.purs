@@ -79,7 +79,7 @@ run opts =
             when familyDirExists $ rmdir familyDirPath
             mkdir familyDirPath
         quickDefsFile <- readTextFile UTF8 opts.definitionFile
-        let parseResult = P.runParser quickDefsFile QDP.familyListParser
+        let parseResult = QDP.familyList quickDefsFile
         case parseResult of
             Right familiesList -> do
                 traverse_ genFamilyFile familiesList

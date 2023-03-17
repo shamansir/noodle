@@ -74,12 +74,21 @@ toolkitDataModuleName tkName =
 
 familyModuleFilename :: QD.QFamily -> String
 familyModuleFilename qfml =
-    ensureStartsFromCapitalLetter qfml.tag <> "." <> toolkitModulePrefix <> ensureStartsFromCapitalLetter qfml.family
+    case qfml.tag of
+        Just familyTag ->
+            ensureStartsFromCapitalLetter familyTag <> "." <> toolkitModulePrefix <> ensureStartsFromCapitalLetter qfml.family
+        Nothing ->
+            toolkitModulePrefix <> ensureStartsFromCapitalLetter qfml.family
 
 
 familyModuleName :: ToolkitName -> QD.QFamily -> String
 familyModuleName tkName qfml =
-    toolkitModuleName tkName <> ".Family." <> ensureStartsFromCapitalLetter qfml.tag <> "." <> familyTypePrefix <> ensureStartsFromCapitalLetter qfml.family
+    case qfml.tag of
+        Just familyTag ->
+            toolkitModuleName tkName <> ".Family." <> ensureStartsFromCapitalLetter familyTag <> "." <> familyTypePrefix <> ensureStartsFromCapitalLetter qfml.family
+        Nothing ->
+            toolkitModuleName tkName <> ".Family." <> familyTypePrefix <> ensureStartsFromCapitalLetter qfml.family
+
 
 
 familyTypeName :: QD.QFamily -> String
@@ -281,11 +290,10 @@ familyModuleImport tkName family =
 --         <> i4 <> (inBrackets channelTypeAndLabel ", " qfml.outputs) <> "\n"
 --         <> i4 <> "m"
 
-
 familyType :: LocalsPrefix -> QD.QFamily -> String
 familyType lp qfml =
     "type Family"
-        <> " m = -- {-> " <> qfml.tag <> " <-}\n"
+        <> " m =" <> tagComment qfml.tag <> "\n"
         <> i <> "Family.Def Unit\n"
         <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.inputs) <> "\n"
         <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.outputs) <> "\n"
@@ -296,12 +304,12 @@ familyTypeReference :: QD.QFamily -> String
 familyTypeReference qfml =
     qfml.family <> " :: "
         <> familyModuleAlias qfml <> ".Family m"
-        <> " -- {-> " <> qfml.tag <> " <-}"
+        <> tagComment qfml.tag
 
 
 familyInlineImplementationReferenceAndLabel :: QD.QFamily -> String
 familyInlineImplementationReferenceAndLabel qfml =
-    qfml.family <> " : -- {-> " <> qfml.tag <> " <-} " <> qfml.family
+    qfml.family <> " :" <> tagComment qfml.tag
 
 
 familyModuleImplementationReferenceAndLabel :: QD.QFamily -> String
@@ -318,7 +326,7 @@ processBody indent qfml =
                 else "")
             <> indent <> outputComment <> "\n"
             <> (if Array.length qfml.outputs > 0 then
-                    (indent <> String.joinWith ("\n" <> indent) (outputSend <$> qfml.outputs) <> "\n")
+                    (indent <> String.joinWith ("\n" <> indent) (outputSend qfml.impl <$> qfml.outputs) <> "\n")
                 else (indent <> "pure unit\n"))
         )
     else (indent <> outputComment <> "\n" <> indent <> "pure unit\n")
@@ -333,14 +341,16 @@ processBody indent qfml =
         inputVarName (Just ch) = ch.name -- "_in_" <> ch.name
         inputReceive Nothing = "--"
         inputReceive (Just ch) = ch.name <> " <- P.receive _in_" <> ch.name
-        outputSend Nothing = "--"
-        outputSend (Just ch) = "P.send _out_" <> ch.name <> " ?out_" <> ch.name
+        outputSend Nothing Nothing = "--"
+        outputSend (Just impl) Nothing = String.trim impl
+        outputSend (Just impl) (Just ch) = "P.send _out_" <> ch.name <> " $ " <> String.trim impl
+        outputSend Nothing (Just ch) = "P.send _out_" <> ch.name <> " ?out_" <> ch.name
 
 
 familyImplementation :: LocalsPrefix -> QD.QFamily -> String
 familyImplementation lp qfml =
     "family :: forall m. Family m\n"
-    <> "family = -- {-> " <> qfml.tag <> " <-}\n"
+    <> "family =" <> tagComment qfml.tag <> "\n"
     <> i <> "Family.def\n"
     <> i2 <> "unit\n"
     <> i2 <> (inCBraces (channelDefaultAndLabel lp) ", " qfml.inputs) <> "\n"
@@ -356,7 +366,7 @@ familyImplementationInline lp qfml =
     <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.outputs) <> "\n"
     <> i2 <> "m" <> "\n\n"
     <> qfml.family <> " :: forall m. " <> familyTypeName qfml <> " m\n"
-    <> qfml.family <> " = -- {-> " <> qfml.tag <> " <-}\n"
+    <> qfml.family <> " =" <> tagComment qfml.tag <> "\n"
     <> i <> "Family.def\n"
     <> i2 <> "unit\n"
     <> i2 <> (inCBraces (channelDefaultAndLabel lp) ", " qfml.inputs) <> "\n"
@@ -376,3 +386,8 @@ channelDefaultAndLabel lPrefix (Just ch) =
     ch.name <> " : " <> (fromMaybe ("?" <> ch.name <> "_default") ((<>) (unwrap lPrefix) <$> ch.default))
 channelDefaultAndLabel _ Nothing =
     "?ch_default"
+
+
+tagComment :: Maybe String -> String
+tagComment Nothing = ""
+tagComment (Just tag) = " -- {-> " <> tag <> " <-}\n"
