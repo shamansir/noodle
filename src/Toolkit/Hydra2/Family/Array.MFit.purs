@@ -34,4 +34,4 @@ family = -- {-> array <-}
             arr <- P.receive _in_arr
             low <- P.receive _in_low
             high <- P.receive _in_high
-            P.send _out_out $ H.VArray arr $ H.Fit low high
+            P.send _out_out $ H.VArray arr $ H.Fit { low, high }

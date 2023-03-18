@@ -122,10 +122,10 @@ data Output
 
 data Ease
     = Linear
-    | Fast Value
-    | Smooth Value
-    | Fit Value Value
-    | Offset Value
+    | Fast Value -- amount
+    | Smooth Value -- amount
+    | Fit { low :: Value, high :: Value }
+    | Offset Value -- amount
     | InOutCubic
     -- | ...
 

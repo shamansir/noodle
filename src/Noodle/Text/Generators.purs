@@ -390,4 +390,4 @@ channelDefaultAndLabel _ Nothing =
 
 tagComment :: Maybe String -> String
 tagComment Nothing = ""
-tagComment (Just tag) = " -- {-> " <> tag <> " <-}\n"
+tagComment (Just tag) = " -- {-> " <> tag <> " <-}"
