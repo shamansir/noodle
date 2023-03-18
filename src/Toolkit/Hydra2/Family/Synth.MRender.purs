@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "render"
+
+
+name :: String
+name = "render"
 
 
 _in_from = Fn.Input :: _ "from"
@@ -40,7 +48,7 @@ family = -- {-> synth <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "render" $ do
+        $ Fn.make name $ do
             from <- P.receive _in_from
             -- TODO
             pure unit

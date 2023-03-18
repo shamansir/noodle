@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "src"
+
+
+name :: String
+name = "src"
 
 
 _in_src = Fn.Input :: _ "src"
@@ -42,7 +50,7 @@ family = -- {-> source <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "src" $ do
+        $ Fn.make name $ do
             src <- P.receive _in_src
             P.send _out_out $ H.From $ H.Source src
 

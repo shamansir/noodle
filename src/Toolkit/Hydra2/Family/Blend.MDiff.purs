@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "diff"
+
+
+name :: String
+name = "diff"
 
 
 _in_what = Fn.Input :: _ "what"
@@ -43,7 +51,7 @@ family = -- {-> blend <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "diff" $ do
+        $ Fn.make name $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             -- Diff what with

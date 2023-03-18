@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "r"
+
+
+name :: String
+name = "r"
 
 
 _in_what = Fn.Input :: _ "what"
@@ -44,7 +52,7 @@ family = -- {-> color <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "r" $ do
+        $ Fn.make name $ do
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset

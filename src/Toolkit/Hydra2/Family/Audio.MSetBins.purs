@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "setBins"
+
+
+name :: String
+name = "setBins"
 
 
 _in_audio = Fn.Input :: _ "audio"
@@ -41,7 +49,7 @@ family = -- {-> audio <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "setBins" $ do
+        $ Fn.make name $ do
             audio <- P.receive _in_audio
             numBins <- P.receive _in_numBins
             -- TODO

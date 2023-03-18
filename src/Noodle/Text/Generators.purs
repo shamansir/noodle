@@ -165,6 +165,7 @@ familyModuleImports =
     [ "Prelude (Unit, unit, ($), bind, pure)"
     , "Noodle.Fn2 as Fn"
     , "Noodle.Id (Input(..), Output(..)) as Fn"
+    , "Noodle.Id (Family(..)) as Node"
     , "Noodle.Fn2.Process as P"
     , "Noodle.Family.Def as Family"
     , "Noodle.Node2 (Node) as N"
@@ -187,11 +188,24 @@ allImports =
 
 familyModule :: ToolkitName -> LocalsPrefix -> Imports -> QD.QFamily -> String
 familyModule tkName lp fmlUserImports qfml =
-    "module " <> familyModuleName tkName qfml <> " (Family, family, Node) where\n\n\n"
+    "module " <> familyModuleName tkName qfml <> " (id, name, Family, family, Node, Inputs, Outputs, defaultInputs, defaultOutputs) where\n\n\n"
     <> allImports fmlUserImports <> "\n\n\n"
     <> allImports familyModuleImports <> "\n\n\n"
+    <> "id = Node.Family :: _ \"" <> qfml.family <> "\"" <> "\n\n\n"
+    <> "name :: String\n"
+    <> "name = \"" <> qfml.family <> "\"" <> "\n\n\n"
     <> String.joinWith "\n" (inputProxyCode <$> qfml.inputs) <> "\n\n"
     <> String.joinWith "\n" (outputProxyCode <$> qfml.outputs) <> "\n\n\n"
+    <> "type Inputs =\n"
+    <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.inputs) <> "\n\n"
+    <> "type Outputs =\n"
+    <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.outputs) <> "\n\n\n"
+    <> "defaultInputs :: Record Inputs\n"
+    <> "defaultInputs =\n"
+    <> i2 <> (inCBraces (channelDefaultAndLabel lp) ", " qfml.inputs) <> "\n\n"
+    <> "defaultOutputs :: Record Outputs\n"
+    <> "defaultOutputs =\n"
+    <> i2 <> (inCBraces (channelDefaultAndLabel lp) ", " qfml.outputs) <> "\n\n\n"
     <> familyType lp qfml <> "\n\n\n"
     <> familyImplementation lp qfml <> "\n\n"
     <> nodeType lp qfml
@@ -306,8 +320,8 @@ familyType lp qfml =
     "type Family"
         <> " m =" <> tagComment qfml.tag <> "\n"
         <> i <> "Family.Def Unit\n"
-        <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.inputs) <> "\n"
-        <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.outputs) <> "\n"
+        <> i2 <> "Inputs" <> "\n"
+        <> i2 <> "Outputs" <> "\n"
         <> i2 <> "m"
 
 
@@ -386,8 +400,8 @@ familyImplementation lp qfml =
     <> "family =" <> tagComment qfml.tag <> "\n"
     <> i <> "Family.def\n"
     <> i2 <> "unit\n"
-    <> i2 <> (inCBraces (channelDefaultAndLabel lp) ", " qfml.inputs) <> "\n"
-    <> i2 <> (inCBraces (channelDefaultAndLabel lp) ", " qfml.outputs) <> "\n"
+    <> i2 <> "defaultInputs" <> "\n"
+    <> i2 <> "defaultOutputs" <> "\n"
     <> i2 <> "$ Fn.make \"" <> qfml.family <> "\" $ " <> processBody i3 qfml
 
 
@@ -416,8 +430,8 @@ nodeType :: LocalsPrefix -> QD.QFamily -> String
 nodeType lp qfml =
     "type Node m =\n"
     <> i <> "N.Node \"" <> qfml.family <> "\" Unit\n"
-    <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.inputs) <> "\n"
-    <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.outputs) <> "\n"
+    <> i2 <> "Inputs" <> "\n"
+    <> i2 <> "Outputs" <> "\n"
     <> i2 <> "m"
 
 

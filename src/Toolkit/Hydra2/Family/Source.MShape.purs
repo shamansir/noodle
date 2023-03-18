@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "shape"
+
+
+name :: String
+name = "shape"
 
 
 _in_sides = Fn.Input :: _ "sides"
@@ -44,7 +52,7 @@ family = -- {-> source <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "shape" $ do
+        $ Fn.make name $ do
             sides <- P.receive _in_sides
             radius <- P.receive _in_radius
             smoothing <- P.receive _in_smoothing

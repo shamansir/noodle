@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "scroll"
+
+
+name :: String
+name = "scroll"
 
 
 _in_what = Fn.Input :: _ "what"
@@ -46,7 +54,7 @@ family = -- {-> geometry <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "scroll" $ do
+        $ Fn.make name $ do
             what <- P.receive _in_what
             scrollX <- P.receive _in_scrollX
             scrollY <- P.receive _in_scrollY

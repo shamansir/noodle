@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "fft"
+
+
+name :: String
+name = "fft"
 
 
 _in_audio = Fn.Input :: _ "audio"
@@ -43,7 +51,7 @@ family = -- {-> audio <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "fft" $ do
+        $ Fn.make name $ do
             audio <- P.receive _in_audio
             h <- P.receive _in_h
             -- Fft a h

@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "out"
+
+
+name :: String
+name = "out"
 
 
 _in_what = Fn.Input :: _ "what"
@@ -43,7 +51,7 @@ family = -- {-> out <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "out" $ do
+        $ Fn.make name $ do
             what <- P.receive _in_what
             target <- P.receive _in_target
             pure unit

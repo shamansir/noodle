@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "setResolution"
+
+
+name :: String
+name = "setResolution"
 
 
 _in_width = Fn.Input :: _ "width"
@@ -41,7 +49,7 @@ family = -- {-> synth <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "setResolution" $ do
+        $ Fn.make name $ do
             width <- P.receive _in_width
             height <- P.receive _in_height
             -- TODO

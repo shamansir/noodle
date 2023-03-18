@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "setSpeed"
+
+
+name :: String
+name = "setSpeed"
 
 
 _in_v = Fn.Input :: _ "v"
@@ -40,7 +48,7 @@ family = -- {-> synth <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "speed" $ do
+        $ Fn.make name $ do
             v <- P.receive _in_v
             -- TODO
             pure unit

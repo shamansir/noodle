@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "voronoi"
+
+
+name :: String
+name = "voronoi"
 
 
 _in_scale = Fn.Input :: _ "scale"
@@ -44,7 +52,7 @@ family = -- {-> source <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "voronoi" $ do
+        $ Fn.make name $ do
             scale <- P.receive _in_scale
             speed <- P.receive _in_speed
             blending <- P.receive _in_blending

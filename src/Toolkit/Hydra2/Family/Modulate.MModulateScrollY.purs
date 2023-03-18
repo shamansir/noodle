@@ -12,6 +12,16 @@ import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 
 
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "modulateScrollY"
+
+
+name :: String
+name = "modulateScrollY"
+
+
 _in_what = Fn.Input :: _ "what"
 _in_with = Fn.Input :: _ "with"
 _in_scrollY = Fn.Input :: _ "scrollY"
@@ -45,7 +55,7 @@ family = -- {-> modulate <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "modulateScrollY" $ do
+        $ Fn.make name $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             scrollY <- P.receive _in_scrollY

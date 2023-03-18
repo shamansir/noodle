@@ -10,7 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
 
+
+id = Node.Family :: _ "prev"
+
+
+name :: String
+name = "prev"
 
 
 _out_out = Fn.Output :: _ "out"
@@ -41,7 +48,7 @@ family = -- {-> source <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "prev" $ do
+        $ Fn.make name $ do
             P.send _out_out $ H.Empty
 
 

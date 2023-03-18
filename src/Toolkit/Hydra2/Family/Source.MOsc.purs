@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "osc"
+
+
+name :: String
+name = "osc"
 
 
 _in_frequency = Fn.Input :: _ "frequency"
@@ -44,7 +52,7 @@ family = -- {-> source <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "osc" $ do
+        $ Fn.make name $ do
             frequency <- P.receive _in_frequency
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset

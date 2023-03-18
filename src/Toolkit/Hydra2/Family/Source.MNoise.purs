@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "noise"
+
+
+name :: String
+name = "noise"
 
 
 _in_scale = Fn.Input :: _ "scale"
@@ -43,7 +51,7 @@ family = -- {-> source <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "noise" $ do
+        $ Fn.make name $ do
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset
             P.send _out_out $ H.From $ H.Noise { scale, offset }

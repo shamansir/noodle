@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "kaleid"
+
+
+name :: String
+name = "kaleid"
 
 
 _in_what = Fn.Input :: _ "what"
@@ -43,7 +51,7 @@ family = -- {-> geometry <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "kaleid" $ do
+        $ Fn.make name $ do
             what <- P.receive _in_what
             nSides <- P.receive _in_nSides
             P.send _out_out $ H.Geometry what $ H.GKaleid { nSides }

@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "repeat"
+
+
+name :: String
+name = "repeat"
 
 
 _in_what = Fn.Input :: _ "what"
@@ -45,7 +53,7 @@ family = -- {-> geometry <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "repeat" $ do
+        $ Fn.make name $ do
             what <- P.receive _in_what
             repeatX <- P.receive _in_repeatX
             repeatY <- P.receive _in_repeatY

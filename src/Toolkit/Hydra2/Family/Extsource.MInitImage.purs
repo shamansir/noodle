@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "initImage"
+
+
+name :: String
+name = "initImage"
 
 
 _in_src = Fn.Input :: _ "src"
@@ -41,7 +49,7 @@ family = -- {-> extsource <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "initImage" $ do
+        $ Fn.make name $ do
             src <- P.receive _in_src
             url <- P.receive _in_url
             pure unit

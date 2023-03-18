@@ -11,6 +11,15 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "pi"
+
+
+name :: String
+name = "pi"
+
 
 
 _out_out = Fn.Output :: _ "out"
@@ -40,7 +49,7 @@ family = -- {-> synth <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "pi" $ do
+        $ Fn.make name $ do
             -- Pi
             P.send _out_out $ H.Pi
 

@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "fit"
+
+
+name :: String
+name = "fit"
 
 
 _in_arr = Fn.Input :: _ "arr"
@@ -44,7 +52,7 @@ family = -- {-> array <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "fit" $ do
+        $ Fn.make name $ do
             arr <- P.receive _in_arr
             low <- P.receive _in_low
             high <- P.receive _in_high

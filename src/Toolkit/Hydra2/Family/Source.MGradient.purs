@@ -10,6 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "gradient"
+
+
+name :: String
+name = "gradient"
 
 
 _in_speed = Fn.Input :: _ "speed"
@@ -42,7 +50,7 @@ family = -- {-> source <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "gradient" $ do
+        $ Fn.make name $ do
             speed <- P.receive _in_speed
             P.send _out_out $ H.From $ H.Gradient { speed }
 

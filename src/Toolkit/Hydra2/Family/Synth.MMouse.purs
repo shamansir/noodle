@@ -10,7 +10,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
 
+
+id = Node.Family :: _ "mouse"
+
+
+name :: String
+name = "mouse"
 
 
 _x_out = Fn.Output :: _ "x"
@@ -44,7 +51,7 @@ family = -- {-> synth <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "mouse" $ do
+        $ Fn.make name $ do
             P.send _x_out H.MouseX
             P.send _y_out H.MouseY
 

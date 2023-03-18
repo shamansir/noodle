@@ -11,6 +11,14 @@ import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
+import Noodle.Id (Family(..)) as Node
+
+
+id = Node.Family :: _ "fast"
+
+
+name :: String
+name = "fast"
 
 
 _in_arr = Fn.Input :: _ "arr"
@@ -44,7 +52,7 @@ family = -- {-> array <-}
         unit
         defaultInputs
         defaultOutputs
-        $ Fn.make "fast" $ do
+        $ Fn.make name $ do
             arr <- P.receive _in_arr
             speed <- P.receive _in_speed
             P.send _out_out $ H.VArray arr $ H.Fast speed
