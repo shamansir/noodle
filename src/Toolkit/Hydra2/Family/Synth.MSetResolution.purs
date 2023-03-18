@@ -9,16 +9,29 @@ import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+import Noodle.Node2 (Node) as N
 
 
 _in_width = Fn.Input :: _ "width"
 _in_height = Fn.Input :: _ "height"
 
 
+type Inputs = ( width :: H.Value, height :: H.Value )
+type Outputs = ( )
+
+
+defaultInputs :: Record Inputs
+defaultInputs = { width : H.None, height : H.None }
+
+
+defaultOutputs :: Record Outputs
+defaultOutputs = { }
+
+
 type Family m = -- {-> synth <-}
     Family.Def Unit
-        ( width :: H.Value, height :: H.Value )
-        ( )
+        Inputs
+        Outputs
         m
 
 
@@ -26,10 +39,17 @@ family :: forall m. Family m
 family = -- {-> synth <-}
     Family.def
         unit
-        { width : H.None, height : H.None }
-        { }
+        defaultInputs
+        defaultOutputs
         $ Fn.make "setResolution" $ do
             width <- P.receive _in_width
             height <- P.receive _in_height
             -- TODO
             pure unit
+
+
+type Node m =
+    N.Node "setResolution" Unit
+        Inputs
+        Outputs
+        m

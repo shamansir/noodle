@@ -9,24 +9,45 @@ import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+import Noodle.Node2 (Node) as N
 
 
 _in_fn = Fn.Input :: _ "fn"
 
 
+type Inputs = ( fn :: H.GlslFn )
+type Outputs = ( )
+
+
+defaultInputs :: Record Inputs
+defaultInputs = { fn : H.defaultGlslFn }
+
+
+defaultOutputs :: Record Outputs
+defaultOutputs = { }
+
+
 type Family m = -- {-> synth <-}
     Family.Def Unit
-        ( fn :: H.GlslFn )
-        ( )
+        Inputs
+        Outputs
         m
+
 
 family :: forall m. Family m
 family = -- {-> synth <-}
     Family.def
         unit
-        { fn : H.defaultGlslFn }
-        { }
+        defaultInputs
+        defaultOutputs
         $ Fn.make "setFunction" $ do
             fn <- P.receive _in_fn
             -- TODO
             pure unit
+
+
+type Node m =
+    N.Node "setFunction" Unit
+        Inputs
+        Outputs
+        m

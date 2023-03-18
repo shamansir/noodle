@@ -9,6 +9,7 @@ import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+import Noodle.Node2 (Node) as N
 
 
 _in_what = Fn.Input :: _ "what"
@@ -21,18 +22,31 @@ _in_offsetY = Fn.Input :: _ "offsetY"
 _out_out = Fn.Output :: _ "out"
 
 
+type Inputs = ( what :: H.Texture, amount :: H.Value, xMult :: H.Value, yMult :: H.Value, offsetX :: H.Value, offsetY :: H.Value )
+type Outputs = ( out :: H.Texture )
+
+
+defaultInputs :: Record Inputs
+defaultInputs = { what : H.Empty, amount : H.Number 1.5, xMult : H.Number 1.0, yMult : H.Number 1.0, offsetX : H.Number 0.5, offsetY : H.Number 0.5 }
+
+
+defaultOutputs :: Record Outputs
+defaultOutputs = { out : H.Empty }
+
+
 type Family m = -- {-> geometry <-}
     Family.Def Unit
-        ( what :: H.Texture, amount :: H.Value, xMult :: H.Value, yMult :: H.Value, offsetX :: H.Value, offsetY :: H.Value )
-        ( out :: H.Texture )
+        Inputs
+        Outputs
         m
+
 
 family :: forall m. Family m
 family = -- {-> geometry <-}
     Family.def
         unit
-        { what : H.Empty, amount : H.Number 1.5, xMult : H.Number 1.0, yMult : H.Number 1.0, offsetX : H.Number 0.5, offsetY : H.Number 0.5 }
-        { out : H.Empty }
+        defaultInputs
+        defaultOutputs
         $ Fn.make "scale" $ do
             what <- P.receive _in_what
             amount <- P.receive _in_amount
@@ -41,3 +55,10 @@ family = -- {-> geometry <-}
             offsetX <- P.receive _in_offsetX
             offsetY <- P.receive _in_offsetY
             P.send _out_out $ H.Geometry what $ H.GScale { amount, xMult, yMult, offsetX, offsetY }
+
+
+type Node m =
+    N.Node "scale" Unit
+        Inputs
+        Outputs
+        m

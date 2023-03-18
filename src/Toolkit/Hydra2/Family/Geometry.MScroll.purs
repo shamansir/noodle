@@ -9,6 +9,7 @@ import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+import Noodle.Node2 (Node) as N
 
 
 _in_what = Fn.Input :: _ "what"
@@ -20,18 +21,31 @@ _in_speedY = Fn.Input :: _ "speedY"
 _out_out = Fn.Output :: _ "out"
 
 
+type Inputs = ( what :: H.Texture, scrollX :: H.Value, scrollY :: H.Value, speedX :: H.Value, speedY :: H.Value )
+type Outputs = ( out :: H.Texture )
+
+
+defaultInputs :: Record Inputs
+defaultInputs = { what : H.Empty, scrollX : H.Number 0.5, scrollY : H.Number 0.5, speedX : H.Number 1.0, speedY : H.Number 1.0 }
+
+
+defaultOutputs :: Record Outputs
+defaultOutputs = { out : H.Empty }
+
+
 type Family m = -- {-> geometry <-}
     Family.Def Unit
-        ( what :: H.Texture, scrollX :: H.Value, scrollY :: H.Value, speedX :: H.Value, speedY :: H.Value )
-        ( out :: H.Texture )
+        Inputs
+        Outputs
         m
+
 
 family :: forall m. Family m
 family = -- {-> geometry <-}
     Family.def
         unit
-        { what : H.Empty, scrollX : H.Number 0.5, scrollY : H.Number 0.5, speedX : H.Number 1.0, speedY : H.Number 1.0 }
-        { out : H.Empty }
+        defaultInputs
+        defaultOutputs
         $ Fn.make "scroll" $ do
             what <- P.receive _in_what
             scrollX <- P.receive _in_scrollX
@@ -39,3 +53,10 @@ family = -- {-> geometry <-}
             speedX <- P.receive _in_speedX
             speedY <- P.receive _in_speedY
             P.send _out_out $ H.Geometry what $ H.GScroll { scrollX, scrollY, speedX, speedY }
+
+
+type Node m =
+    N.Node "scroll" Unit
+        Inputs
+        Outputs
+        m

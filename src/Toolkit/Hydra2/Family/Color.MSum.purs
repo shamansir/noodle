@@ -9,6 +9,7 @@ import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+import Noodle.Node2 (Node) as N
 
 
 _in_what = Fn.Input :: _ "what"
@@ -17,11 +18,24 @@ _in_what = Fn.Input :: _ "what"
 _out_out = Fn.Output :: _ "out"
 
 
+type Inputs = ( what :: H.Texture, todo :: H.TODO )
+type Outputs = ( )
+
+
+defaultInputs :: Record Inputs
+defaultInputs = { what : H.Empty, todo : H.TODO }
+
+
+defaultOutputs :: Record Outputs
+defaultOutputs = { }
+
+
 type Family m = -- {-> color <-}
     Family.Def Unit
-        ( what :: H.Texture, todo :: H.TODO )
-        ( )
+        Inputs
+        Outputs
         m
+
 
 family :: forall m. Family m
 family = -- {-> color <-}
@@ -32,3 +46,10 @@ family = -- {-> color <-}
         $ Fn.make "sum" $ do
             what <- P.receive _in_what
             pure unit
+
+
+type Node m =
+    N.Node "sum" Unit
+        Inputs
+        Outputs
+        m

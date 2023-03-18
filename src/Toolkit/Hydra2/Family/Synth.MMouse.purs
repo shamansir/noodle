@@ -9,7 +9,7 @@ import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
+import Noodle.Node2 (Node) as N
 
 
 
@@ -17,20 +17,40 @@ _x_out = Fn.Output :: _ "x"
 _y_out = Fn.Output :: _ "y"
 
 
-type Family m = -- {-> synth <-}
-    Family.Def Unit
-        ( )
+type Inputs = ( )
+type Outputs =
         ( x :: H.Value
         , y :: H.Value
         )
+
+
+defaultInputs :: Record Inputs
+defaultInputs = { }
+
+
+defaultOutputs :: Record Outputs
+defaultOutputs = { x : H.MouseX, y : H.MouseY }
+
+
+type Family m = -- {-> synth <-}
+    Family.Def Unit
+        Inputs
+        Outputs
         m
 
 family :: forall m. Family m
 family = -- {-> synth <-}
     Family.def
         unit
-        { }
-        { x : H.MouseX, y : H.MouseY }
+        defaultInputs
+        defaultOutputs
         $ Fn.make "mouse" $ do
             P.send _x_out H.MouseX
             P.send _y_out H.MouseY
+
+
+type Node m =
+    N.Node "mouse" Unit
+        Inputs
+        Outputs
+        m

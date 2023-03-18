@@ -70,6 +70,11 @@ import Blessed.UI.Boxes.Line.Option as Line
 import Blessed.UI.Boxes.Line.Event as Line
 -- import Blessed.UI.Line.Li ()
 
+import Noodle.Toolkit3 as Toolkit
+import Noodle.Network2 as Network
+
+
+import Toolkit.Hydra2 (toolkit, Toolkit)
 
 
 mainScreen = nk :: Screen <^> "main-scr"
@@ -81,6 +86,10 @@ inletsBar = nk :: ListBar <^> "node-inlets-bar"
 outletsBar = nk :: ListBar <^> "node-outlets-bar"
 inlets = nk :: ListBar <^> "inlets"
 outlets = nk :: ListBar <^> "outlets"
+
+
+patches = []
+items = []
 
 
 type Palette =
@@ -114,16 +123,6 @@ palette =
     , foreground : "white"
     , background2 : "black"
     }
-
-
-patches :: Array String
-patches =
-    [ "Patch1", "Patch2", "+" ]
-
-
-items :: Array String
-items =
-    [ "foo", "bar", "ololo", "hello", "foo1", "bar1", "ololo1", "hello1", "foo2", "bar2", "ololo2", "hello2" ]
 
 
 type InletsBarKey = ListBar <^> "node-inlets-bar"

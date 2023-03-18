@@ -9,24 +9,44 @@ import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
-
+import Noodle.Node2 (Node) as N
 
 
 
 _out_out = Fn.Output :: _ "out"
 
 
+type Inputs = ( )
+type Outputs = ( out :: H.Value )
+
+
+defaultInputs :: Record Inputs
+defaultInputs = { }
+
+
+defaultOutputs :: Record Outputs
+defaultOutputs = { out : H.Height }
+
+
 type Family m = -- {-> synth <-}
     Family.Def Unit
-        ( )
-        ( out :: H.Value )
+        Inputs
+        Outputs
         m
+
 
 family :: forall m. Family m
 family = -- {-> synth <-}
     Family.def
         unit
-        { }
-        { out : H.Height }
+        defaultInputs
+        defaultOutputs
         $ Fn.make "height"
         $ P.send _out_out H.Height
+
+
+type Node m =
+    N.Node "height" Unit
+        Inputs
+        Outputs
+        m

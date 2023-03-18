@@ -10,6 +10,7 @@ import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+import Noodle.Node2 (Node) as N
 
 
 _in_arr = Fn.Input :: _ "arr"
@@ -18,19 +19,39 @@ _in_speed = Fn.Input :: _ "speed"
 _out_out = Fn.Output :: _ "out"
 
 
+type Inputs = ( arr :: H.VArray, speed :: H.Value )
+type Outputs = ( out :: H.Value )
+
+
+defaultInputs :: Record Inputs
+defaultInputs = { arr : H.noValues, speed : H.Number 1.0 }
+
+
+defaultOutputs :: Record Outputs
+defaultOutputs = { out : H.None }
+
+
 type Family m = -- {-> array <-}
     Family.Def Unit
-        ( arr :: H.VArray, speed :: H.Value )
-        ( out :: H.Value )
+        Inputs
+        Outputs
         m
+
 
 family :: forall m. Family m
 family = -- {-> array <-}
     Family.def
         unit
-        { arr : H.noValues, speed : H.Number 1.0 }
-        { out : H.None }
+        defaultInputs
+        defaultOutputs
         $ Fn.make "fast" $ do
             arr <- P.receive _in_arr
             speed <- P.receive _in_speed
             P.send _out_out $ H.VArray arr $ H.Fast speed
+
+
+type Node m =
+    N.Node "fast" Unit
+        Inputs
+        Outputs
+        m

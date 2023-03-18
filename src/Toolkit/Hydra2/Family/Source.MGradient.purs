@@ -9,6 +9,7 @@ import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+import Noodle.Node2 (Node) as N
 
 
 _in_speed = Fn.Input :: _ "speed"
@@ -16,18 +17,38 @@ _in_speed = Fn.Input :: _ "speed"
 _out_out = Fn.Output :: _ "out"
 
 
+type Inputs = ( speed :: H.Value )
+type Outputs = ( out :: H.Texture )
+
+
+defaultInputs :: Record Inputs
+defaultInputs = { speed : H.Number 1.0 }
+
+
+defaultOutputs :: Record Outputs
+defaultOutputs = { out : H.Empty }
+
+
 type Family m = -- {-> source <-}
     Family.Def Unit
-        ( speed :: H.Value )
-        ( out :: H.Texture )
+        Inputs
+        Outputs
         m
+
 
 family :: forall m. Family m
 family = -- {-> source <-}
     Family.def
         unit
-        { speed : H.Number 1.0 }
-        { out : H.Empty }
+        defaultInputs
+        defaultOutputs
         $ Fn.make "gradient" $ do
             speed <- P.receive _in_speed
             P.send _out_out $ H.From $ H.Gradient { speed }
+
+
+type Node m =
+    N.Node "gradient" Unit
+        Inputs
+        Outputs
+        m

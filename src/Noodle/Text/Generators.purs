@@ -101,6 +101,11 @@ familyModuleAlias qfml =
     familyTypePrefix <> ensureStartsFromCapitalLetter qfml.family
 
 
+familyNodeTypeName :: QD.QFamily -> String
+familyNodeTypeName qfml =
+    familyTypeName qfml <> "Node"
+
+
 toolkitDataTypeName :: ToolkitName -> String
 toolkitDataTypeName = unwrap >>> ensureStartsFromCapitalLetter
 
@@ -162,6 +167,7 @@ familyModuleImports =
     , "Noodle.Id (Input(..), Output(..)) as Fn"
     , "Noodle.Fn2.Process as P"
     , "Noodle.Family.Def as Family"
+    , "Noodle.Node2 (Node) as N"
     ]
 
 
@@ -170,6 +176,7 @@ toolkitModuleImports =
     [ "Prelude (Unit)"
     , "Noodle.Toolkit3 (Toolkit) as Noodle"
     , "Noodle.Toolkit3 as Toolkit"
+    , "Noodle.Node2 (Node) as N"
     ]
 
 
@@ -180,13 +187,14 @@ allImports =
 
 familyModule :: ToolkitName -> LocalsPrefix -> Imports -> QD.QFamily -> String
 familyModule tkName lp fmlUserImports qfml =
-    "module " <> familyModuleName tkName qfml <> " where\n\n\n"
+    "module " <> familyModuleName tkName qfml <> " (Family, family, Node) where\n\n\n"
     <> allImports fmlUserImports <> "\n\n\n"
     <> allImports familyModuleImports <> "\n\n\n"
     <> String.joinWith "\n" (inputProxyCode <$> qfml.inputs) <> "\n\n"
     <> String.joinWith "\n" (outputProxyCode <$> qfml.outputs) <> "\n\n\n"
-    <> familyType lp qfml <> "\n\n"
-    <> familyImplementation lp qfml
+    <> familyType lp qfml <> "\n\n\n"
+    <> familyImplementation lp qfml <> "\n\n"
+    <> nodeType lp qfml
     where
         inputProxyCode (Just ch) = "_in_" <> ch.name <> " = Fn.Input :: _ \"" <> ch.name <> "\""
         inputProxyCode Nothing = ""
@@ -196,13 +204,14 @@ familyModule tkName lp fmlUserImports qfml =
 
 toolkitModule :: Way -> ToolkitName -> LocalsPrefix -> Imports -> Array QD.QFamily -> String
 toolkitModule FamiliesAsModules tkName _ tkUserImports families =
-    "module " <> toolkitModuleName tkName <> " where\n\n\n"
+    "module " <> toolkitModuleName tkName <> " (" <> toolkitTypeName tkName <> ", Toolkit, toolkit, Instances) where\n\n\n"
     <> allImports tkUserImports <> "\n\n\n"
     <> allImports toolkitModuleImports <> "\n\n\n"
     <> importAllFamilies tkName families <> "\n\n\n"
     <> toolkitType tkName families <> "\n\n\n"
     <> toolkitImplementation tkName families <> "\n\n\n"
-    <> "type Toolkit m = " <> toolkitTypeName tkName <> " m"
+    <> "type Toolkit m = " <> toolkitTypeName tkName <> " m" <> "\n\n\n"
+    <> instancesType tkName families
 toolkitModule FamiliesInline tkName lp tkUserImports families =
     "module " <> toolkitModuleName tkName <> " where\n\n"
     <> allImports tkUserImports <> "\n\n\n"
@@ -210,7 +219,9 @@ toolkitModule FamiliesInline tkName lp tkUserImports families =
     <> familiesInlineImplementations lp families <> "\n\n\n"
     <> toolkitTypeInline tkName families <> "\n\n\n"
     <> toolkitImplementationInline tkName families <> "\n\n\n"
-    <> "type Toolkit m = " <> toolkitTypeName tkName <> " m"
+    <> "type Toolkit m = " <> toolkitTypeName tkName <> " m" <> "\n\n\n"
+    <> nodesInlineTypes lp families <> "\n\n\n"
+    <> instancesTypeInline tkName families <> "\n\n\n"
 
 
 toolkitDataModule :: ToolkitName -> Array QD.QFamily -> String
@@ -317,6 +328,28 @@ familyModuleImplementationReferenceAndLabel qfml =
     qfml.family <> " : (" <> familyModuleAlias qfml <> ".family :: " <> familyModuleAlias qfml <> ".Family m )"
 
 
+instancesType :: ToolkitName -> Array (QD.QFamily) -> String
+instancesType _ fmls =
+    "type Instances m =\n"
+        <> i2 <> inBrackets' instancesReferenceAndLabel ("\n" <> i2 <> ", ") fmls
+
+
+instancesTypeInline :: ToolkitName -> Array (QD.QFamily) -> String
+instancesTypeInline _ fmls =
+    "type Instances m =\n"
+        <> i2 <> inBrackets' instancesInlineReferenceAndLabel ("\n" <> i2 <> ", ") fmls
+
+
+instancesReferenceAndLabel :: QD.QFamily -> String
+instancesReferenceAndLabel qfml =
+    qfml.family <> " :: Array ( " <> familyModuleAlias qfml <> ".Node m )"
+
+
+instancesInlineReferenceAndLabel :: QD.QFamily -> String
+instancesInlineReferenceAndLabel qfml =
+    qfml.family <> " :: Array ( " <> familyNodeTypeName qfml <> " m )"
+
+
 processBody :: String -> QD.QFamily -> String
 processBody indent qfml =
     if (Array.length qfml.inputs > 0) || (Array.length qfml.outputs > 0) then
@@ -372,6 +405,29 @@ familyImplementationInline lp qfml =
     <> i2 <> (inCBraces (channelDefaultAndLabel lp) ", " qfml.inputs) <> "\n"
     <> i2 <> (inCBraces (channelDefaultAndLabel lp) ", " qfml.outputs) <> "\n"
     <> i2 <> "$ Fn.make \"" <> qfml.family <> "\" $ " <> processBody i3 qfml
+
+
+nodesInlineTypes :: LocalsPrefix -> Array (QD.QFamily) -> String
+nodesInlineTypes lp fmls =
+    String.joinWith "\n\n" (nodeTypeInline lp <$> fmls) <> "\n\n"
+
+
+nodeType :: LocalsPrefix -> QD.QFamily -> String
+nodeType lp qfml =
+    "type Node m =\n"
+    <> i <> "N.Node \"" <> qfml.family <> "\" Unit\n"
+    <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.inputs) <> "\n"
+    <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.outputs) <> "\n"
+    <> i2 <> "m"
+
+
+nodeTypeInline ::  LocalsPrefix -> QD.QFamily -> String
+nodeTypeInline lp qfml =
+    "type " <> familyNodeTypeName qfml <> " m =\n"
+    <> i <> "N.Node \"" <> qfml.family <> "\" Unit\n"
+    <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.inputs) <> "\n"
+    <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.outputs) <> "\n"
+    <> i2 <> "m"
 
 
 channelTypeAndLabel :: LocalsPrefix -> Maybe QD.Channel -> String

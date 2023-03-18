@@ -9,6 +9,7 @@ import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+import Noodle.Node2 (Node) as N
 
 
 _in_what = Fn.Input :: _ "what"
@@ -17,19 +18,39 @@ _in_hue = Fn.Input :: _ "hue"
 _out_out = Fn.Output :: _ "out"
 
 
+type Inputs = ( what :: H.Texture, hue :: H.Value )
+type Outputs = ( out :: H.Texture )
+
+
+defaultInputs :: Record Inputs
+defaultInputs = { what : H.Empty, hue : H.Number 0.4 }
+
+
+defaultOutputs :: Record Outputs
+defaultOutputs = { out : H.Empty }
+
+
 type Family m = -- {-> color <-}
     Family.Def Unit
-        ( what :: H.Texture, hue :: H.Value )
-        ( out :: H.Texture )
+        Inputs
+        Outputs
         m
+
 
 family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : H.Empty, hue : H.Number 0.4 }
-        { out : H.Empty }
+        defaultInputs
+        defaultOutputs
         $ Fn.make "hue" $ do
             what <- P.receive _in_what
             hue <- P.receive _in_hue
             P.send _out_out $ H.WithColor what $ H.Hue hue
+
+
+type Node m =
+    N.Node "hue" Unit
+        Inputs
+        Outputs
+        m

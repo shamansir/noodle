@@ -9,6 +9,7 @@ import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
+import Noodle.Node2 (Node) as N
 
 
 _in_what = Fn.Input :: _ "what"
@@ -18,20 +19,40 @@ _in_gamma = Fn.Input :: _ "gamma"
 _out_out = Fn.Output :: _ "out"
 
 
+type Inputs = ( what :: H.Texture, bins :: H.Value, gamma :: H.Value )
+type Outputs = ( out :: H.Texture )
+
+
+defaultInputs :: Record Inputs
+defaultInputs = { what : H.Empty, bins : H.Number 3.0, gamma : H.Number 0.6 }
+
+
+defaultOutputs :: Record Outputs
+defaultOutputs = { out : H.Empty }
+
+
 type Family m = -- {-> color <-}
     Family.Def Unit
-        ( what :: H.Texture, bins :: H.Value, gamma :: H.Value )
-        ( out :: H.Texture )
+        Inputs
+        Outputs
         m
+
 
 family :: forall m. Family m
 family = -- {-> color <-}
     Family.def
         unit
-        { what : H.Empty, bins : H.Number 3.0, gamma : H.Number 0.6 }
-        { out : H.Empty }
+        defaultInputs
+        defaultOutputs
         $ Fn.make "posterize" $ do
             what <- P.receive _in_what
             bins <- P.receive _in_bins
             gamma <- P.receive _in_gamma
             P.send _out_out $ H.WithColor what $ H.Posterize { bins, gamma }
+
+
+type Node m =
+    N.Node "posterize" Unit
+        Inputs
+        Outputs
+        m
