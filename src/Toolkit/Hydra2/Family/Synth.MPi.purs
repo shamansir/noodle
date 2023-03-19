@@ -21,6 +21,12 @@ name :: String
 name = "pi"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
 
 _out_out = Fn.Output :: _ "out"
 
@@ -38,7 +44,7 @@ defaultOutputs = { out : H.Pi }
 
 
 type Family (m :: Type -> Type) = -- {-> synth <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -46,7 +52,7 @@ type Family (m :: Type -> Type) = -- {-> synth <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> synth <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -55,7 +61,7 @@ family = -- {-> synth <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "pi" Unit
+    N.Node "pi" State
         Inputs
         Outputs
         m

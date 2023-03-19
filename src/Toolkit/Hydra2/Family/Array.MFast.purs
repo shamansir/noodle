@@ -21,6 +21,13 @@ name :: String
 name = "fast"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_arr = Fn.Input :: _ "arr"
 _in_speed = Fn.Input :: _ "speed"
 
@@ -40,7 +47,7 @@ defaultOutputs = { out : H.None }
 
 
 type Family (m :: Type -> Type) = -- {-> array <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -49,7 +56,7 @@ type Family (m :: Type -> Type) = -- {-> array <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> array <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -59,7 +66,7 @@ family = -- {-> array <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "fast" Unit
+    N.Node "fast" State
         Inputs
         Outputs
         m

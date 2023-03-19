@@ -20,6 +20,13 @@ name :: String
 name = "setSmooth"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_audio = Fn.Input :: _ "audio"
 _in_smooth = Fn.Input :: _ "smooth"
 
@@ -37,7 +44,7 @@ defaultOutputs = { }
 
 
 type Family (m :: Type -> Type) = -- {-> audio <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -46,7 +53,7 @@ type Family (m :: Type -> Type) = -- {-> audio <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> audio <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -56,7 +63,7 @@ family = -- {-> audio <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "setSmooth" Unit
+    N.Node "setSmooth" State
         Inputs
         Outputs
         m

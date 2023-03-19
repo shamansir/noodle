@@ -174,10 +174,13 @@ familyModuleImports =
 
 toolkitModuleImports :: Imports
 toolkitModuleImports =
-    [ "Prelude (Unit)"
+    [ "Prelude (Unit, unit)"
     , "Noodle.Toolkit3 (Toolkit) as Noodle"
     , "Noodle.Toolkit3 as Toolkit"
     , "Noodle.Node2 (Node) as N"
+    , "Noodle.Patch4 (Patch) as Noodle"
+    , "Noodle.Patch4 as Patch"
+    , "Noodle.Id (Family) as Node"
     ]
 
 
@@ -188,12 +191,15 @@ allImports =
 
 familyModule :: ToolkitName -> LocalsPrefix -> Imports -> QD.QFamily -> String
 familyModule tkName lp fmlUserImports qfml =
-    "module " <> familyModuleName tkName qfml <> " (id, name, Family, family, Node, Inputs, Outputs, defaultInputs, defaultOutputs) where\n\n\n"
+    "module " <> familyModuleName tkName qfml <> " (id, name, Family, family, Node, Inputs, Outputs, defaultInputs, defaultOutputs, State) where\n\n\n"
     <> allImports fmlUserImports <> "\n\n\n"
     <> allImports familyModuleImports <> "\n\n\n"
     <> "id = Node.Family :: _ \"" <> qfml.family <> "\"" <> "\n\n\n"
     <> "name :: String\n"
     <> "name = \"" <> qfml.family <> "\"" <> "\n\n\n"
+    <> "type State = Unit" <> "\n\n\n"
+    <> "defaultState :: State" <> "\n"
+    <> "defaultState = unit" <> "\n\n\n"
     <> String.joinWith "\n" (inputProxyCode <$> qfml.inputs) <> "\n\n"
     <> String.joinWith "\n" (outputProxyCode <$> qfml.outputs) <> "\n\n\n"
     <> "type Inputs =\n"
@@ -222,20 +228,32 @@ toolkitModule FamiliesAsModules tkName _ tkUserImports families =
     <> allImports tkUserImports <> "\n\n\n"
     <> allImports toolkitModuleImports <> "\n\n\n"
     <> importAllFamilies tkName families <> "\n\n\n"
+    <> "type State = Unit" <> "\n\n\n"
+    <> "defaultState :: State" <> "\n"
+    <> "defaultState = unit" <> "\n\n\n"
     <> toolkitType tkName families <> "\n\n\n"
     <> toolkitImplementation tkName families <> "\n\n\n"
     <> "type Toolkit m = " <> toolkitTypeName tkName <> " m" <> "\n\n\n"
-    <> instancesType tkName families
+    <> "type Patch m = Noodle.Patch State (Instances m)" <> "\n\n\n"
+    <> instancesType tkName families <> "\n\n\n"
+    <> symbols families <> "\n\n\n"
+    <> spawner tkName families
 toolkitModule FamiliesInline tkName lp tkUserImports families =
     "module " <> toolkitModuleName tkName <> " where\n\n"
     <> allImports tkUserImports <> "\n\n\n"
     <> allImports toolkitModuleImports <> "\n\n\n"
+    <> "type State = Unit" <> "\n\n\n"
+    <> "defaultState :: State" <> "\n"
+    <> "defaultState = unit" <> "\n\n\n"
     <> familiesInlineImplementations lp families <> "\n\n\n"
     <> toolkitTypeInline tkName families <> "\n\n\n"
     <> toolkitImplementationInline tkName families <> "\n\n\n"
     <> "type Toolkit m = " <> toolkitTypeName tkName <> " m" <> "\n\n\n"
+    <> "type Patch m = Noodle.Patch State (Instances m)" <> "\n\n\n"
     <> nodesInlineTypes lp families <> "\n\n\n"
     <> instancesTypeInline tkName families <> "\n\n\n"
+    <> symbolsInline families <> "\n\n\n"
+    <> spawner tkName families
 
 
 toolkitDataModule :: ToolkitName -> Array QD.QFamily -> String
@@ -260,13 +278,13 @@ toolkitSumType tkName families =
 
 toolkitTypeInline :: ToolkitName -> Array QD.QFamily -> String
 toolkitTypeInline tkName fmls =
-    "type " <> toolkitTypeName tkName <> " m\n" <> i <> "= Noodle.Toolkit Unit\n"
+    "type " <> toolkitTypeName tkName <> " m\n" <> i <> "= Noodle.Toolkit State\n"
         <> i2 <> inBrackets' familyInlineImplementationReferenceAndLabel ("\n" <> i2 <> ", ") fmls
 
 
 toolkitType :: ToolkitName -> Array QD.QFamily -> String
 toolkitType tkName fmls =
-    "type " <> toolkitTypeName tkName <> " m\n" <> i <> "= Noodle.Toolkit Unit\n"
+    "type " <> toolkitTypeName tkName <> " m\n" <> i <> "= Noodle.Toolkit State\n"
         <> i2 <> inBrackets' familyTypeReference ("\n" <> i2 <> ", ") fmls
 
 
@@ -310,7 +328,7 @@ familyModuleImport tkName family =
 -- familyTypeAndImplementationInline :: QD.QFamily -> String
 -- familyTypeAndImplementationInline qfml =
 --     qfml.family <> " :: -- {-> " <> qfml.tag <> " <-}\n"
---         <> i3 <> "Family.Def Unit\n"
+--         <> i3 <> "Family.Def State\n"
 --         <> i4 <> (inBrackets channelTypeAndLabel ", " qfml.inputs) <> "\n"
 --         <> i4 <> (inBrackets channelTypeAndLabel ", " qfml.outputs) <> "\n"
 --         <> i4 <> "m"
@@ -319,7 +337,7 @@ familyType :: LocalsPrefix -> QD.QFamily -> String
 familyType lp qfml =
     "type Family"
         <> " m =" <> tagComment qfml.tag <> "\n"
-        <> i <> "Family.Def Unit\n"
+        <> i <> "Family.Def State\n"
         <> i2 <> "Inputs" <> "\n"
         <> i2 <> "Outputs" <> "\n"
         <> i2 <> "m"
@@ -399,7 +417,7 @@ familyImplementation lp qfml =
     "family :: forall m. Family m\n"
     <> "family =" <> tagComment qfml.tag <> "\n"
     <> i <> "Family.def\n"
-    <> i2 <> "unit\n"
+    <> i2 <> "defaultState" <> "\n"
     <> i2 <> "defaultInputs" <> "\n"
     <> i2 <> "defaultOutputs" <> "\n"
     <> i2 <> "$ Fn.make \"" <> qfml.family <> "\" $ " <> processBody i3 qfml
@@ -408,14 +426,14 @@ familyImplementation lp qfml =
 familyImplementationInline :: LocalsPrefix -> QD.QFamily -> String
 familyImplementationInline lp qfml =
     "type " <> familyTypeName qfml <> " m =\n"
-    <> i <> "Family.Def Unit\n"
+    <> i <> "Family.Def State\n"
     <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.inputs) <> "\n"
     <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.outputs) <> "\n"
     <> i2 <> "m" <> "\n\n"
     <> qfml.family <> " :: forall m. " <> familyTypeName qfml <> " m\n"
     <> qfml.family <> " =" <> tagComment qfml.tag <> "\n"
     <> i <> "Family.def\n"
-    <> i2 <> "unit\n"
+    <> i2 <> "defaultState\n"
     <> i2 <> (inCBraces (channelDefaultAndLabel lp) ", " qfml.inputs) <> "\n"
     <> i2 <> (inCBraces (channelDefaultAndLabel lp) ", " qfml.outputs) <> "\n"
     <> i2 <> "$ Fn.make \"" <> qfml.family <> "\" $ " <> processBody i3 qfml
@@ -429,7 +447,7 @@ nodesInlineTypes lp fmls =
 nodeType :: LocalsPrefix -> QD.QFamily -> String
 nodeType lp qfml =
     "type Node m =\n"
-    <> i <> "N.Node \"" <> qfml.family <> "\" Unit\n"
+    <> i <> "N.Node \"" <> qfml.family <> "\" State\n"
     <> i2 <> "Inputs" <> "\n"
     <> i2 <> "Outputs" <> "\n"
     <> i2 <> "m"
@@ -438,7 +456,7 @@ nodeType lp qfml =
 nodeTypeInline ::  LocalsPrefix -> QD.QFamily -> String
 nodeTypeInline lp qfml =
     "type " <> familyNodeTypeName qfml <> " m =\n"
-    <> i <> "N.Node \"" <> qfml.family <> "\" Unit\n"
+    <> i <> "N.Node \"" <> qfml.family <> "\" State\n"
     <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.inputs) <> "\n"
     <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.outputs) <> "\n"
     <> i2 <> "m"
@@ -461,3 +479,44 @@ channelDefaultAndLabel _ Nothing =
 tagComment :: Maybe String -> String
 tagComment Nothing = ""
 tagComment (Just tag) = " -- {-> " <> tag <> " <-}"
+
+
+symbols :: Array QD.QFamily -> String
+symbols fmls =
+    "familySym :: Record\n"
+        <> i2 <> inBrackets' familySymbolTypeAndLabel ("\n" <> i2 <> ", ") fmls <> "\n\n\n" <>
+    "familySym = \n"
+        <> i2 <> inCBraces' familySymbolAndLabel ("\n" <> i2 <> ", ") fmls
+
+
+symbolsInline :: Array QD.QFamily -> String
+symbolsInline fmls =
+    "familySym :: Record\n"
+        <> i2 <> inBrackets' familySymbolTypeAndLabel ("\n" <> i2 <> ", ") fmls <> "\n\n\n" <>
+    "familySym = \n"
+        <> i2 <> inBrackets' familySymbolInlineAndLabel ("\n" <> i2 <> ", ") fmls
+
+
+spawner :: ToolkitName -> Array QD.QFamily -> String
+spawner _ fmls =
+    "spawner :: forall m. Noodle.Patch State (Instances m) -> String -> m (Noodle.Patch State (Instances m))\n" <>
+    "spawner patch = case _ of\n" <>
+    String.joinWith "\n" (spawnerImpl <$> fmls) <> "\n\n"
+    <> i2 <> "_ -> pure patch"
+    where
+        spawnerImpl qfml = i2 <> "\"" <> qfml.family <> "\" -> Patch.spawnAdd familySym." <> qfml.family <> " toolkit patch"
+
+
+familySymbolTypeAndLabel :: QD.QFamily -> String
+familySymbolTypeAndLabel qfml =
+    qfml.family <> " :: Node.Family \"" <> qfml.family <> "\""
+
+
+familySymbolAndLabel :: QD.QFamily -> String
+familySymbolAndLabel qfml =
+    qfml.family <> " : " <> familyModuleAlias qfml <> ".id"
+
+
+familySymbolInlineAndLabel :: QD.QFamily -> String
+familySymbolInlineAndLabel qfml =
+    qfml.family <> " : (Node.Family :: _ \"" <> qfml.family <> "\")"

@@ -20,6 +20,13 @@ name :: String
 name = "initCam"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_src = Fn.Input :: _ "src"
 _in_index = Fn.Input :: _ "index"
 
@@ -37,7 +44,7 @@ defaultOutputs = { }
 
 
 type Family (m :: Type -> Type) = -- {-> extsource <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -46,7 +53,7 @@ type Family (m :: Type -> Type) = -- {-> extsource <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> extsource <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -56,7 +63,7 @@ family = -- {-> extsource <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "initCam" Unit
+    N.Node "initCam" State
         Inputs
         Outputs
         m

@@ -1,7 +1,7 @@
 module Noodle.Id
     ( Family(..), Family', FamilyR
     , family', familyR, familyP
-    , reflectFamily, reflectFamily', reflectFamilyR
+    , reflectFamily, reflectFamily', reflectFamily'', reflectFamilyR
     , keysToFamiliesR
     , Input(..), Input', InputR
     , input', inputR, inputR', inputP
@@ -92,6 +92,10 @@ reflectFamily = reflectSymbol
 
 reflectFamily' :: forall f. Family' f -> String
 reflectFamily' (Family' s) = s
+
+
+reflectFamily'' :: forall f. IsSymbol f => Family' f -> FamilyR
+reflectFamily'' = reflectSymbol >>> FamilyR
 
 
 reflectFamilyR :: FamilyR -> String

@@ -20,6 +20,13 @@ name :: String
 name = "setResolution"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_width = Fn.Input :: _ "width"
 _in_height = Fn.Input :: _ "height"
 
@@ -37,7 +44,7 @@ defaultOutputs = { }
 
 
 type Family (m :: Type -> Type) = -- {-> synth <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -46,7 +53,7 @@ type Family (m :: Type -> Type) = -- {-> synth <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> synth <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -57,7 +64,7 @@ family = -- {-> synth <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "setResolution" Unit
+    N.Node "setResolution" State
         Inputs
         Outputs
         m

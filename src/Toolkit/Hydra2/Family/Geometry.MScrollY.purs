@@ -20,6 +20,13 @@ name :: String
 name = "scrollY"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_what = Fn.Input :: _ "what"
 _in_scrollY = Fn.Input :: _ "scrollY"
 _in_speed = Fn.Input :: _ "speed"
@@ -40,7 +47,7 @@ defaultOutputs = { out : H.Empty }
 
 
 type Family (m :: Type -> Type) = -- {-> geometry <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -49,7 +56,7 @@ type Family (m :: Type -> Type) = -- {-> geometry <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> geometry <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -60,7 +67,7 @@ family = -- {-> geometry <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "scrollY" Unit
+    N.Node "scrollY" State
         Inputs
         Outputs
         m

@@ -3,13 +3,25 @@ module Noodle.Patch4 where
 import Prelude
 
 import Effect (Effect)
+import Effect.Class (class MonadEffect)
+
 import Data.Array ((:))
 import Data.Array as Array
 import Data.Map (Map)
 import Data.Map as Map
+
+import Unsafe.Coerce (unsafeCoerce)
+
+import Prim.RowList as RL
+import Prim.Row (Cons)
+import Record as Record
+import Type.Proxy (Proxy(..))
+import Heterogeneous.Mapping as H
+
 import Noodle.Id (Family)
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
+import Noodle.Toolkit3.Has as Has
 import Noodle.Patch4.Has as Has
 import Noodle.Patch4.MapsFolds as PF
 import Noodle.Patch4.MapsFolds as PI
@@ -17,13 +29,9 @@ import Noodle.Patch4.MapsFolds as PM
 import Noodle.Patch4.MapsFolds.Repr as R
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
-import Prim.RowList as RL
-import Record as Record
-import Unsafe.Coerce (unsafeCoerce)
-import Type.Proxy (Proxy(..))
-import Heterogeneous.Mapping as H
+import Noodle.Family.Def as Family
 import Noodle.Patch4.MapsFolds.Repr (Repr, class FoldToReprsRec, class FoldToReprsMap, NodeLineRec, NodeLineMap)
-import Effect.Class (class MonadEffect)
+
 
 --data LinkOE fo fi = Exists (LinkOf fo fi)
 
@@ -81,6 +89,19 @@ registerNode node (Patch state instances links) =
         state
         (Record.modify (Node.family node) ((:) node) instances) -- NB: notice that Family' f works!
         links
+
+
+spawnAdd
+    :: forall gstate instances' instances f families' families state is os m
+     . MonadEffect m
+    => Has.HasFamilyDef f families' families (Family.Def state is os m)
+    => Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    => Family f
+    -> Toolkit gstate families
+    -> Patch gstate instances
+    -> m (Patch gstate instances)
+spawnAdd family toolkit patch =
+    Toolkit.spawn toolkit family >>= (\node -> pure $ registerNode node patch)
 
 
 nodesOf

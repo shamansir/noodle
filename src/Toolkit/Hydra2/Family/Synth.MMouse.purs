@@ -20,6 +20,13 @@ name :: String
 name = "mouse"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _x_out = Fn.Output :: _ "x"
 _y_out = Fn.Output :: _ "y"
 
@@ -40,7 +47,7 @@ defaultOutputs = { x : H.MouseX, y : H.MouseY }
 
 
 type Family (m :: Type -> Type) = -- {-> synth <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -48,7 +55,7 @@ type Family (m :: Type -> Type) = -- {-> synth <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> synth <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -57,7 +64,7 @@ family = -- {-> synth <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "mouse" Unit
+    N.Node "mouse" State
         Inputs
         Outputs
         m

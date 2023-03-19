@@ -1,12 +1,16 @@
-module Toolkit.Hydra2 (HydraToolkit, Toolkit, toolkit, Families, Instances, noInstances) where
+module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, spawner, familySym) where
 
 
-import Prelude (Unit)
+import Prelude (Unit, unit, pure)
 
 import Effect (Effect)
+import Effect.Class (class MonadEffect)
 
 import Noodle.Toolkit3 (Toolkit) as Noodle
 import Noodle.Toolkit3 as Toolkit
+import Noodle.Patch4 (Patch) as Noodle
+import Noodle.Patch4 as Patch
+import Noodle.Id (Family) as Node
 
 
 import Toolkit.Hydra2.Family.Source.FNoise as FNoise
@@ -92,6 +96,13 @@ import Toolkit.Hydra2.Family.Audio.FSetScale as FSetScale
 import Toolkit.Hydra2.Family.Audio.FHide as FHide
 import Toolkit.Hydra2.Family.Audio.FShow as FShow
 import Toolkit.Hydra2.Family.Out.FOut as FOut
+
+
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
 
 
 type Families (m :: Type -> Type) =
@@ -181,11 +192,11 @@ type Families (m :: Type -> Type) =
         )
 
 
-type HydraToolkit (m :: Type -> Type)
-    = Noodle.Toolkit Unit (Families m)
+type Toolkit (m :: Type -> Type)
+    = Noodle.Toolkit State (Families m)
 
 
-toolkit :: forall (m :: Type -> Type). HydraToolkit m
+toolkit :: forall (m :: Type -> Type). Toolkit m
 toolkit =
     Toolkit.from "hydra"
         { noise : (FNoise.family :: FNoise.Family m)
@@ -272,9 +283,6 @@ toolkit =
         , show : (FShow.family :: FShow.Family m)
         , out : (FOut.family :: FOut.Family m)
         }
-
-
-type Toolkit (m :: Type -> Type) = HydraToolkit m
 
 
 type Instances :: (Type -> Type) -> Row Type
@@ -451,3 +459,270 @@ noInstances =
         , show : ([] :: Array ( FShow.Node m ))
         , out : ([] :: Array ( FOut.Node m ))
         }
+
+
+familySym :: Record
+        ( noise :: Node.Family "noise"
+        , voronoi :: Node.Family "voronoi"
+        , osc :: Node.Family "osc"
+        , shape :: Node.Family "shape"
+        , gradient :: Node.Family "gradient"
+        -- , srctex :: Node.Family "srctex"
+        , solid :: Node.Family "solid"
+        , src :: Node.Family "src"
+        , prev :: Node.Family "prev"
+        , rotate :: Node.Family "rotate"
+        , scale :: Node.Family "scale"
+        , pixelate :: Node.Family "pixelate"
+        , repeat :: Node.Family "repeat"
+        , repeatX :: Node.Family "repeatX"
+        , repeatY :: Node.Family "repeatY"
+        , kaleid :: Node.Family "kaleid"
+        , scroll :: Node.Family "scroll"
+        , scrollX :: Node.Family "scrollX"
+        , scrollY :: Node.Family "scrollY"
+        , posterize :: Node.Family "posterize"
+        , shift :: Node.Family "shift"
+        , invert :: Node.Family "invert"
+        , contrast :: Node.Family "contrast"
+        , brightness :: Node.Family "brightness"
+        , luma :: Node.Family "luma"
+        , tresh :: Node.Family "tresh"
+        , color :: Node.Family "color"
+        , saturate :: Node.Family "saturate"
+        , hue :: Node.Family "hue"
+        , colorama :: Node.Family "colorama"
+        , sum :: Node.Family "sum"
+        , r :: Node.Family "r"
+        , g :: Node.Family "g"
+        , b :: Node.Family "b"
+        , a :: Node.Family "a"
+        , add :: Node.Family "add"
+        , sub :: Node.Family "sub"
+        , layer :: Node.Family "layer"
+        , blend :: Node.Family "blend"
+        , mult :: Node.Family "mult"
+        , diff :: Node.Family "diff"
+        , mask :: Node.Family "mask"
+        , modulateRepeat :: Node.Family "modulateRepeat"
+        , modulateRepeatX :: Node.Family "modulateRepeatX"
+        , modulateRepeatY :: Node.Family "modulateRepeatY"
+        , modulateKaleid :: Node.Family "modulateKaleid"
+        , modulateScrollX :: Node.Family "modulateScrollX"
+        , modulateScrollY :: Node.Family "modulateScrollY"
+        , modulate :: Node.Family "modulate"
+        , modulateScale :: Node.Family "modulateScale"
+        , modulatePixelate :: Node.Family "modulatePixelate"
+        , modulateRotate :: Node.Family "modulateRotate"
+        , modulateHue :: Node.Family "modulateHue"
+        , render :: Node.Family "render"
+        , update :: Node.Family "update"
+        , setResolution :: Node.Family "setResolution"
+        , hush :: Node.Family "hush"
+        , setFunction :: Node.Family "setFunction"
+        , speed :: Node.Family "speed"
+        , bpm :: Node.Family "bpm"
+        , width :: Node.Family "width"
+        , height :: Node.Family "height"
+        , pi :: Node.Family "pi"
+        , time :: Node.Family "time"
+        , mouse :: Node.Family "mouse"
+        , initCam :: Node.Family "initCam"
+        , initImage :: Node.Family "initImage"
+        , initVideo :: Node.Family "initVideo"
+        , init :: Node.Family "init"
+        , initStream :: Node.Family "initStream"
+        , initScreen :: Node.Family "initScreen"
+        , fast :: Node.Family "fast"
+        , smooth :: Node.Family "smooth"
+        , ease :: Node.Family "ease"
+        , offset :: Node.Family "offset"
+        , fit :: Node.Family "fit"
+        , fft :: Node.Family "fft"
+        , setSmooth :: Node.Family "setSmooth"
+        , setCutoff :: Node.Family "setCutoff"
+        , setBins :: Node.Family "setBins"
+        , setScale :: Node.Family "setScale"
+        , hide :: Node.Family "hide"
+        , show :: Node.Family "show"
+        , out :: Node.Family "out"
+        )
+
+
+
+familySym =
+        { noise : FNoise.id
+        , voronoi : FVoronoi.id
+        , osc : FOsc.id
+        , shape : FShape.id
+        , gradient : FGradient.id
+        -- , srctex : FSrctex.id
+        , solid : FSolid.id
+        , src : FSrc.id
+        , prev : FPrev.id
+        , rotate : FRotate.id
+        , scale : FScale.id
+        , pixelate : FPixelate.id
+        , repeat : FRepeat.id
+        , repeatX : FRepeatX.id
+        , repeatY : FRepeatY.id
+        , kaleid : FKaleid.id
+        , scroll : FScroll.id
+        , scrollX : FScrollX.id
+        , scrollY : FScrollY.id
+        , posterize : FPosterize.id
+        , shift : FShift.id
+        , invert : FInvert.id
+        , contrast : FContrast.id
+        , brightness : FBrightness.id
+        , luma : FLuma.id
+        , tresh : FTresh.id
+        , color : FColor.id
+        , saturate : FSaturate.id
+        , hue : FHue.id
+        , colorama : FColorama.id
+        , sum : FSum.id
+        , r : FR.id
+        , g : FG.id
+        , b : FB.id
+        , a : FA.id
+        , add : FAdd.id
+        , sub : FSub.id
+        , layer : FLayer.id
+        , blend : FBlend.id
+        , mult : FMult.id
+        , diff : FDiff.id
+        , mask : FMask.id
+        , modulateRepeat : FModulateRepeat.id
+        , modulateRepeatX : FModulateRepeatX.id
+        , modulateRepeatY : FModulateRepeatY.id
+        , modulateKaleid : FModulateKaleid.id
+        , modulateScrollX : FModulateScrollX.id
+        , modulateScrollY : FModulateScrollY.id
+        , modulate : FModulate.id
+        , modulateScale : FModulateScale.id
+        , modulatePixelate : FModulatePixelate.id
+        , modulateRotate : FModulateRotate.id
+        , modulateHue : FModulateHue.id
+        , render : FRender.id
+        , update : FUpdate.id
+        , setResolution : FSetResolution.id
+        , hush : FHush.id
+        , setFunction : FSetFunction.id
+        , speed : FSpeed.id
+        , bpm : FBpm.id
+        , width : FWidth.id
+        , height : FHeight.id
+        , pi : FPi.id
+        , time : FTime.id
+        , mouse : FMouse.id
+        , initCam : FInitCam.id
+        , initImage : FInitImage.id
+        , initVideo : FInitVideo.id
+        , init : FInit.id
+        , initStream : FInitStream.id
+        , initScreen : FInitScreen.id
+        , fast : FFast.id
+        , smooth : FSmooth.id
+        , ease : FEase.id
+        , offset : FOffset.id
+        , fit : FFit.id
+        , fft : FFft.id
+        , setSmooth : FSetSmooth.id
+        , setCutoff : FSetCutoff.id
+        , setBins : FSetBins.id
+        , setScale : FSetScale.id
+        , hide : FHide.id
+        , show : FShow.id
+        , out : FOut.id
+        }
+
+
+spawner :: forall m. MonadEffect m => Noodle.Patch State (Instances m) -> String -> m (Noodle.Patch State (Instances m))
+spawner patch = case _ of
+        "noise" -> Patch.spawnAdd familySym.noise toolkit patch
+        "voronoi" -> Patch.spawnAdd familySym.voronoi toolkit patch
+        "osc" -> Patch.spawnAdd familySym.osc toolkit patch
+        "shape" -> Patch.spawnAdd familySym.shape toolkit patch
+        "gradient" -> Patch.spawnAdd familySym.gradient toolkit patch
+        -- "srctex" -> Patch.spawnAdd familySym.srctex toolkit patch
+        "solid" -> Patch.spawnAdd familySym.solid toolkit patch
+        "src" -> Patch.spawnAdd familySym.src toolkit patch
+        "prev" -> Patch.spawnAdd familySym.prev toolkit patch
+        "rotate" -> Patch.spawnAdd familySym.rotate toolkit patch
+        "scale" -> Patch.spawnAdd familySym.scale toolkit patch
+        "pixelate" -> Patch.spawnAdd familySym.pixelate toolkit patch
+        "repeat" -> Patch.spawnAdd familySym.repeat toolkit patch
+        "repeatX" -> Patch.spawnAdd familySym.repeatX toolkit patch
+        "repeatY" -> Patch.spawnAdd familySym.repeatY toolkit patch
+        "kaleid" -> Patch.spawnAdd familySym.kaleid toolkit patch
+        "scroll" -> Patch.spawnAdd familySym.scroll toolkit patch
+        "scrollX" -> Patch.spawnAdd familySym.scrollX toolkit patch
+        "scrollY" -> Patch.spawnAdd familySym.scrollY toolkit patch
+        "posterize" -> Patch.spawnAdd familySym.posterize toolkit patch
+        "shift" -> Patch.spawnAdd familySym.shift toolkit patch
+        "invert" -> Patch.spawnAdd familySym.invert toolkit patch
+        "contrast" -> Patch.spawnAdd familySym.contrast toolkit patch
+        "brightness" -> Patch.spawnAdd familySym.brightness toolkit patch
+        "luma" -> Patch.spawnAdd familySym.luma toolkit patch
+        "tresh" -> Patch.spawnAdd familySym.tresh toolkit patch
+        "color" -> Patch.spawnAdd familySym.color toolkit patch
+        "saturate" -> Patch.spawnAdd familySym.saturate toolkit patch
+        "hue" -> Patch.spawnAdd familySym.hue toolkit patch
+        "colorama" -> Patch.spawnAdd familySym.colorama toolkit patch
+        "sum" -> Patch.spawnAdd familySym.sum toolkit patch
+        "r" -> Patch.spawnAdd familySym.r toolkit patch
+        "g" -> Patch.spawnAdd familySym.g toolkit patch
+        "b" -> Patch.spawnAdd familySym.b toolkit patch
+        "a" -> Patch.spawnAdd familySym.a toolkit patch
+        "add" -> Patch.spawnAdd familySym.add toolkit patch
+        "sub" -> Patch.spawnAdd familySym.sub toolkit patch
+        "layer" -> Patch.spawnAdd familySym.layer toolkit patch
+        "blend" -> Patch.spawnAdd familySym.blend toolkit patch
+        "mult" -> Patch.spawnAdd familySym.mult toolkit patch
+        "diff" -> Patch.spawnAdd familySym.diff toolkit patch
+        "mask" -> Patch.spawnAdd familySym.mask toolkit patch
+        "modulateRepeat" -> Patch.spawnAdd familySym.modulateRepeat toolkit patch
+        "modulateRepeatX" -> Patch.spawnAdd familySym.modulateRepeatX toolkit patch
+        "modulateRepeatY" -> Patch.spawnAdd familySym.modulateRepeatY toolkit patch
+        "modulateKaleid" -> Patch.spawnAdd familySym.modulateKaleid toolkit patch
+        "modulateScrollX" -> Patch.spawnAdd familySym.modulateScrollX toolkit patch
+        "modulateScrollY" -> Patch.spawnAdd familySym.modulateScrollY toolkit patch
+        "modulate" -> Patch.spawnAdd familySym.modulate toolkit patch
+        "modulateScale" -> Patch.spawnAdd familySym.modulateScale toolkit patch
+        "modulatePixelate" -> Patch.spawnAdd familySym.modulatePixelate toolkit patch
+        "modulateRotate" -> Patch.spawnAdd familySym.modulateRotate toolkit patch
+        "modulateHue" -> Patch.spawnAdd familySym.modulateHue toolkit patch
+        "render" -> Patch.spawnAdd familySym.render toolkit patch
+        "update" -> Patch.spawnAdd familySym.update toolkit patch
+        "setResolution" -> Patch.spawnAdd familySym.setResolution toolkit patch
+        "hush" -> Patch.spawnAdd familySym.hush toolkit patch
+        "setFunction" -> Patch.spawnAdd familySym.setFunction toolkit patch
+        "speed" -> Patch.spawnAdd familySym.speed toolkit patch
+        "bpm" -> Patch.spawnAdd familySym.bpm toolkit patch
+        "width" -> Patch.spawnAdd familySym.width toolkit patch
+        "height" -> Patch.spawnAdd familySym.height toolkit patch
+        "pi" -> Patch.spawnAdd familySym.pi toolkit patch
+        "time" -> Patch.spawnAdd familySym.time toolkit patch
+        "mouse" -> Patch.spawnAdd familySym.mouse toolkit patch
+        "initCam" -> Patch.spawnAdd familySym.initCam toolkit patch
+        "initImage" -> Patch.spawnAdd familySym.initImage toolkit patch
+        "initVideo" -> Patch.spawnAdd familySym.initVideo toolkit patch
+        "init" -> Patch.spawnAdd familySym.init toolkit patch
+        "initStream" -> Patch.spawnAdd familySym.initStream toolkit patch
+        "initScreen" -> Patch.spawnAdd familySym.initScreen toolkit patch
+        "fast" -> Patch.spawnAdd familySym.fast toolkit patch
+        "smooth" -> Patch.spawnAdd familySym.smooth toolkit patch
+        "ease" -> Patch.spawnAdd familySym.ease toolkit patch
+        "offset" -> Patch.spawnAdd familySym.offset toolkit patch
+        "fit" -> Patch.spawnAdd familySym.fit toolkit patch
+        "fft" -> Patch.spawnAdd familySym.fft toolkit patch
+        "setSmooth" -> Patch.spawnAdd familySym.setSmooth toolkit patch
+        "setCutoff" -> Patch.spawnAdd familySym.setCutoff toolkit patch
+        "setBins" -> Patch.spawnAdd familySym.setBins toolkit patch
+        "setScale" -> Patch.spawnAdd familySym.setScale toolkit patch
+        "hide" -> Patch.spawnAdd familySym.hide toolkit patch
+        "show" -> Patch.spawnAdd familySym.show toolkit patch
+        "out" -> Patch.spawnAdd familySym.out toolkit patch
+
+        _ -> pure patch

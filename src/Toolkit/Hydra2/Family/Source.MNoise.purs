@@ -20,6 +20,13 @@ name :: String
 name = "noise"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_scale = Fn.Input :: _ "scale"
 _in_offset = Fn.Input :: _ "offset"
 
@@ -39,7 +46,7 @@ defaultOutputs = { out : H.Empty }
 
 
 type Family (m :: Type -> Type) = -- {-> source <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -48,7 +55,7 @@ type Family (m :: Type -> Type) = -- {-> source <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> source <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -58,7 +65,7 @@ family = -- {-> source <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "noise" Unit
+    N.Node "noise" State
         Inputs
         Outputs
         m

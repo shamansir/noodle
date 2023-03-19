@@ -20,6 +20,13 @@ name :: String
 name = "gradient"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_speed = Fn.Input :: _ "speed"
 
 _out_out = Fn.Output :: _ "out"
@@ -38,7 +45,7 @@ defaultOutputs = { out : H.Empty }
 
 
 type Family (m :: Type -> Type) = -- {-> source <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -47,7 +54,7 @@ type Family (m :: Type -> Type) = -- {-> source <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> source <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -56,7 +63,7 @@ family = -- {-> source <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "gradient" Unit
+    N.Node "gradient" State
         Inputs
         Outputs
         m

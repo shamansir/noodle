@@ -72,9 +72,10 @@ import Blessed.UI.Boxes.Line.Event as Line
 
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Network2 as Network
+import Noodle.Network2 (Network) as Noodle
 
 
-import Toolkit.Hydra2 (toolkit, HydraToolkit, Instances, noInstances) as Hydra
+import Toolkit.Hydra2 (toolkit, Toolkit, Instances, noInstances, Families) as Hydra
 
 
 mainScreen = nk :: Screen <^> "main-scr"
@@ -144,8 +145,14 @@ type State =
     , lastLink :: Maybe Link
     , linksFrom :: Map RawNodeKey (Map Int Link)
     , linksTo :: Map RawNodeKey (Map Int Link)
-    -- , nodes :: Record (Hydra.Instances Effect)
+    -- , network :: Noodle.Network Unit (Hydra.Families Effect) (Hydra.Instances Effect)
+    -- , network :: TestM Effect
+    , network :: Network Effect
     }
+
+
+newtype Network m =  -- compiler 0.14.5 fails without newtype
+    Network (Noodle.Network Unit (Hydra.Families m) (Hydra.Instances m))
 
 
 initialState :: State
@@ -160,6 +167,7 @@ initialState =
     , linksFrom : Map.empty
     , linksTo : Map.empty
     -- , nodes : Hydra.noInstances
+    , network : Network $ Network.init Hydra.toolkit
     }
 
 

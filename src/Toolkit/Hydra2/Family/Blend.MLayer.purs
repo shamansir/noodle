@@ -20,6 +20,13 @@ name :: String
 name = "layer"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_what = Fn.Input :: _ "what"
 _in_with = Fn.Input :: _ "with"
 _in_amount = Fn.Input :: _ "amount"
@@ -40,7 +47,7 @@ defaultOutputs = { out : H.Empty }
 
 
 type Family (m :: Type -> Type) = -- {-> blend <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -49,7 +56,7 @@ type Family (m :: Type -> Type) = -- {-> blend <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> blend <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -61,7 +68,7 @@ family = -- {-> blend <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "layer" Unit
+    N.Node "layer" State
         Inputs
         Outputs
         m

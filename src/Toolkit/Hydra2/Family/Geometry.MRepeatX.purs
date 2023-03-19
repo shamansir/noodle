@@ -20,6 +20,13 @@ name :: String
 name = "repeatX"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_what = Fn.Input :: _ "what"
 _in_reps = Fn.Input :: _ "reps"
 _in_offset = Fn.Input :: _ "offset"
@@ -40,7 +47,7 @@ defaultOutputs = { out : H.Empty }
 
 
 type Family (m :: Type -> Type) = -- {-> geometry <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -48,7 +55,7 @@ type Family (m :: Type -> Type) = -- {-> geometry <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> geometry <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -60,7 +67,7 @@ family = -- {-> geometry <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "repeatX" Unit
+    N.Node "repeatX" State
         Inputs
         Outputs
         m

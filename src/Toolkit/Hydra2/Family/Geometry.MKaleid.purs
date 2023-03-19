@@ -20,6 +20,13 @@ name :: String
 name = "kaleid"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_what = Fn.Input :: _ "what"
 _in_nSides = Fn.Input :: _ "nSides"
 
@@ -39,7 +46,7 @@ defaultOutputs = { out : H.Empty }
 
 
 type Family (m :: Type -> Type) = -- {-> geometry <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -48,7 +55,7 @@ type Family (m :: Type -> Type) = -- {-> geometry <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> geometry <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -58,7 +65,7 @@ family = -- {-> geometry <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "kaleid" Unit
+    N.Node "kaleid" State
         Inputs
         Outputs
         m

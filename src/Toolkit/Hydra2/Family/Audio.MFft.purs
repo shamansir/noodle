@@ -20,6 +20,13 @@ name :: String
 name = "fft"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_audio = Fn.Input :: _ "audio"
 _in_h = Fn.Input :: _ "h"
 
@@ -39,7 +46,7 @@ defaultOutputs = { out : H.None }
 
 
 type Family (m :: Type -> Type) = -- {-> audio <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -48,7 +55,7 @@ type Family (m :: Type -> Type) = -- {-> audio <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> audio <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -59,7 +66,7 @@ family = -- {-> audio <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "fft" Unit
+    N.Node "fft" State
         Inputs
         Outputs
         m

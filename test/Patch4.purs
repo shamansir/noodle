@@ -184,7 +184,7 @@ spec = do
                 patch = Patch.init toolkit
                             # Patch.registerNode nodeA
 
-            let reprMap = Patch.toRepr (Proxy :: Proxy Aff) (PMF.Repr :: PMF.Repr MyRepr) patch
+            let reprMap = Patch.toRepr (Proxy :: _ Aff) (PMF.Repr :: _ MyRepr) patch
 
             fooReprs <- Record.get _foo reprMap
             barReprs <- Record.get _bar reprMap
@@ -213,7 +213,7 @@ spec = do
                             # Patch.registerNode nodeB
                             # Patch.registerNode nodeC
 
-            let reprMap = Patch.toRepr (Proxy :: Proxy Aff) (PMF.Repr :: PMF.Repr MyRepr) patch
+            let reprMap = Patch.toRepr (Proxy :: _ Aff) (PMF.Repr :: _ MyRepr) patch
 
             fooReprs <- Record.get _foo reprMap
             barReprs <- Record.get _bar reprMap

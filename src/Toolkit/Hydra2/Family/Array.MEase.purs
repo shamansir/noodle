@@ -20,6 +20,13 @@ name :: String
 name = "ease"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_arr = Fn.Input :: _ "arr"
 _in_ease = Fn.Input :: _ "ease"
 
@@ -39,7 +46,7 @@ defaultOutputs = { out : H.None }
 
 
 type Family (m :: Type -> Type) = -- {-> array <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -48,7 +55,7 @@ type Family (m :: Type -> Type) = -- {-> array <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> array <-}
     Family.def
-        unit
+        defaultState
         { arr : H.noValues, ease : H.Linear }
         { out : H.None }
         $ Fn.make name $ do
@@ -58,7 +65,7 @@ family = -- {-> array <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "ease" Unit
+    N.Node "ease" State
         Inputs
         Outputs
         m

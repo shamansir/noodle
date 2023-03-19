@@ -20,6 +20,13 @@ name :: String
 name = "modulateRepeatX"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_what = Fn.Input :: _ "what"
 _in_with = Fn.Input :: _ "with"
 _in_reps = Fn.Input :: _ "reps"
@@ -41,7 +48,7 @@ defaultOutputs = { out : H.Empty }
 
 
 type Family (m :: Type -> Type) = -- {-> modulate <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -50,7 +57,7 @@ type Family (m :: Type -> Type) = -- {-> modulate <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> modulate <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -62,7 +69,7 @@ family = -- {-> modulate <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "modulateRepeatX" Unit
+    N.Node "modulateRepeatX" State
         Inputs
         Outputs
         m

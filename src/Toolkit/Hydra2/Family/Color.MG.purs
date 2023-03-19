@@ -20,6 +20,13 @@ name :: String
 name = "g"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_what = Fn.Input :: _ "what"
 _in_scale = Fn.Input :: _ "scale"
 _in_offset = Fn.Input :: _ "offset"
@@ -40,7 +47,7 @@ defaultOutputs = { out : H.Empty }
 
 
 type Family (m :: Type -> Type) = -- {-> color <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -49,7 +56,7 @@ type Family (m :: Type -> Type) = -- {-> color <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> color <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -60,7 +67,7 @@ family = -- {-> color <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "g" Unit
+    N.Node "g" State
         Inputs
         Outputs
         m

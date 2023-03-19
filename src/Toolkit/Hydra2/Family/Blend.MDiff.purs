@@ -20,6 +20,13 @@ name :: String
 name = "diff"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_what = Fn.Input :: _ "what"
 _in_with = Fn.Input :: _ "with"
 
@@ -39,7 +46,7 @@ defaultOutputs = { out : H.Empty }
 
 
 type Family (m :: Type -> Type) = -- {-> blend <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -48,7 +55,7 @@ type Family (m :: Type -> Type) = -- {-> blend <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> blend <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -59,7 +66,7 @@ family = -- {-> blend <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "diff" Unit
+    N.Node "diff" State
         Inputs
         Outputs
         m

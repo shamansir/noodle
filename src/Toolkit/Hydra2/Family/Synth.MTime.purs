@@ -20,6 +20,13 @@ name :: String
 name = "time"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _out_out = Fn.Output :: _ "out"
 
 
@@ -36,7 +43,7 @@ defaultOutputs = { out : H.Time }
 
 
 type Family (m :: Type -> Type) = -- {-> synth <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -45,7 +52,7 @@ type Family (m :: Type -> Type) = -- {-> synth <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> synth <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -54,7 +61,7 @@ family = -- {-> synth <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "time" Unit
+    N.Node "time" State
         Inputs
         Outputs
         m

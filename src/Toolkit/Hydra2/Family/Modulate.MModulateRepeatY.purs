@@ -13,11 +13,18 @@ import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
 
 
-id = Node.Family :: _ "modulateRepeatX"
+id = Node.Family :: _ "modulateRepeatY"
 
 
 name :: String
-name = "modulateRepeatX"
+name = "modulateRepeatY"
+
+
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
 
 
 _in_what = Fn.Input :: _ "what"
@@ -41,7 +48,7 @@ defaultOutputs = { out : H.Empty }
 
 
 type Family (m :: Type -> Type) = -- {-> modulate <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -50,7 +57,7 @@ type Family (m :: Type -> Type) = -- {-> modulate <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> modulate <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -62,7 +69,7 @@ family = -- {-> modulate <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "modulateRepeatY" Unit
+    N.Node "modulateRepeatY" State
         Inputs
         Outputs
         m

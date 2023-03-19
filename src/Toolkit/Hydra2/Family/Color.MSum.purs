@@ -20,6 +20,13 @@ name :: String
 name = "sum"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_what = Fn.Input :: _ "what"
 
 
@@ -39,7 +46,7 @@ defaultOutputs = { }
 
 
 type Family (m :: Type -> Type) = -- {-> color <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -57,7 +64,7 @@ family = -- {-> color <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "sum" Unit
+    N.Node "sum" State
         Inputs
         Outputs
         m

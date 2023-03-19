@@ -20,6 +20,13 @@ name :: String
 name = "setFunction"
 
 
+type State = Unit
+
+
+defaultState :: State
+defaultState = unit
+
+
 _in_fn = Fn.Input :: _ "fn"
 
 
@@ -36,7 +43,7 @@ defaultOutputs = { }
 
 
 type Family (m :: Type -> Type) = -- {-> synth <-}
-    Family.Def Unit
+    Family.Def State
         Inputs
         Outputs
         m
@@ -45,7 +52,7 @@ type Family (m :: Type -> Type) = -- {-> synth <-}
 family :: forall (m :: Type -> Type). Family m
 family = -- {-> synth <-}
     Family.def
-        unit
+        defaultState
         defaultInputs
         defaultOutputs
         $ Fn.make name $ do
@@ -55,7 +62,7 @@ family = -- {-> synth <-}
 
 
 type Node (m :: Type -> Type) =
-    N.Node "setFunction" Unit
+    N.Node "setFunction" State
         Inputs
         Outputs
         m

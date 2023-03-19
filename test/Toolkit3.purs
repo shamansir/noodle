@@ -4,12 +4,14 @@ import Prelude
 
 import Record.Extra (class Keys)
 import Record.Extra as Record
+import Record (get) as Record
 import Prim.RowList as RL
 import Unsafe.Coerce (unsafeCoerce)
 import Type.Proxy (Proxy(..))
 import Effect.Random (randomInt)
 
 
+import Data.Maybe (Maybe(..))
 import Data.List ((:), List)
 import Data.List as List
 import Data.Array as Array
@@ -23,10 +25,10 @@ import Effect.Console (log) as Console
 
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
-import Noodle.Id (Family(..), Family', class HasInputs, class HasInputsAt) as Node
+import Noodle.Id (Family(..), Family', class HasInputs, class HasInputsAt, FamilyR) as Node
 import Noodle.Id (Input(..), Output(..), InputR) as Fn
 import Noodle.Id (inputs) as Def
-import Noodle.Id (reflect', keysToInputsR, keysToOutputsR, reflectInputR, reflectOutputR)
+import Noodle.Id (reflect', keysToInputsR, keysToOutputsR, reflectInputR, reflectOutputR, reflectFamily'')
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Toolkit3 (Toolkit)
@@ -35,6 +37,7 @@ import Noodle.Toolkit3.MapsFolds as TMF
 import Noodle.Toolkit3.MapsFolds.Repr as TMF
 import Noodle.Fn2.Process as Fn
 import Noodle.Family.Def as Family
+import Noodle.Patch4 as Patch
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -116,7 +119,7 @@ spec = do
 
         it "spawning works" $ do
 
-            nodeA <- Toolkit.spawn toolkit (Node.Family :: Node.Family "foo")
+            nodeA <- Toolkit.spawn toolkit (Node.Family :: _ "foo")
 
             state <- Node.state nodeA
             state `shouldEqual` unit
@@ -124,7 +127,7 @@ spec = do
             atC <- Node.inputs nodeA <#> _.c
             atC `shouldEqual` 32
 
-            nodeB <- Toolkit.spawn toolkit2 (Node.Family :: Node.Family "sum")
+            nodeB <- Toolkit.spawn toolkit2 (Node.Family :: _ "sum")
             atSum <- Node.outputs nodeB <#> _.sum
 
             atSum `shouldEqual` 42
@@ -158,7 +161,7 @@ spec = do
 
 
         it "getting representations" $ do
-            (Toolkit.toRepr (TMF.Repr :: TMF.Repr MyRepr) toolkit2)
+            (Toolkit.toRepr (TMF.Repr :: _ MyRepr) toolkit2)
                 `shouldEqual`
 
                     { foo :
@@ -176,11 +179,47 @@ spec = do
                     }
 
 
+        it " spawn" $ do
+            let families_ = { foo : Node.Family :: _ "foo", bar : Node.Family :: _ "bar" }
+            let families = Toolkit.familyDefsIndexed toolkit2 :: Array FamilyRT
+            let patch = Patch.init toolkit2
+            let
+                testFn "foo" = do
+                    node <- Toolkit.spawn toolkit2 families_.foo
+                    pure $ Patch.registerNode node patch
+                testFn "bar" =
+                    do
+                    node <- Toolkit.spawn toolkit2 families_.bar
+                    pure $ Patch.registerNode node patch
+                testFn _ = pure patch
+            case Array.index families 0 of
+                Just (RT familyR) -> do
+                    maybeNode <- Toolkit.spawn toolkit2 families_.foo
+                    pure unit
+                    -- case maybeNode of
+                    --     Just node -> pure unit
+                    --     Nothing -> fail "foo"
+                Nothing -> fail "families list wasn't produced"
+
+
+
 --newtype Inputs = Inputs (List Fn.InputR)
+
+families_ = { foo : Node.Family :: _ "foo", bar : Node.Family :: _ "bar" }
+testFn' tk patch "foo" = do
+    Patch.spawnAdd families_.foo tk patch
+    -- node <- Toolkit.spawn tk families_.foo
+    -- pure $ Patch.registerNode node patch
+testFn' tk patch "bar" =
+    Patch.spawnAdd families_.bar tk patch
+testFn' _ patch _ = pure patch
+
 
 newtype NameNT = NI String
 
 newtype FamilyNT = FI String
+
+newtype FamilyRT = RT Node.FamilyR
 
 
 derive newtype instance Show NameNT
@@ -188,6 +227,9 @@ derive newtype instance Eq NameNT
 
 derive newtype instance Show FamilyNT
 derive newtype instance Eq FamilyNT
+
+derive newtype instance Show FamilyRT
+derive newtype instance Eq FamilyRT
 
 
 instance TMF.ConvertFamilyDefTo NameNT where
@@ -202,6 +244,12 @@ instance TMF.ConvertFamilyDefIndexedTo FamilyNT where
     convertFamilyDefIndexed
         :: forall f state is os m. IsSymbol f => Node.Family' f -> Family.Def state is os m -> FamilyNT
     convertFamilyDefIndexed family _ = FI $ reflect' family
+
+
+instance TMF.ConvertFamilyDefIndexedTo FamilyRT where
+    convertFamilyDefIndexed
+        :: forall f state is os m. IsSymbol f => Node.Family' f -> Family.Def state is os m -> FamilyRT
+    convertFamilyDefIndexed family _ = RT $ reflectFamily'' family
 
 
 {-
