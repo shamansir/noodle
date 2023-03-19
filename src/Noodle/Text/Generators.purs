@@ -500,11 +500,30 @@ symbolsInline fmls =
 spawner :: ToolkitName -> Array QD.QFamily -> String
 spawner _ fmls =
     "spawner :: forall m. Noodle.Patch State (Instances m) -> String -> m (Noodle.Patch State (Instances m))\n" <>
-    "spawner patch = case _ of\n" <>
+    "spawner = withFamily Patch.spawnAdd\n\n" <>
+    """
+withFamily
+    :: forall b m
+    . Applicative m
+    => (   forall f state fs iis is os
+         . IsSymbol f
+        => Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
+        => Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
+        => Node.Family f
+        -> Toolkit m
+        -> b
+        -> m b
+        )
+    -> b
+    -> String
+    -> m b
+    """
+    <> "\n" <>
+    "withFamily fn b = case _ of\n" <>
     String.joinWith "\n" (spawnerImpl <$> fmls) <> "\n\n"
-    <> i2 <> "_ -> pure patch"
+    <> i2 <> "_ -> pure b"
     where
-        spawnerImpl qfml = i2 <> "\"" <> qfml.family <> "\" -> Patch.spawnAdd familySym." <> qfml.family <> " toolkit patch"
+        spawnerImpl qfml = i2 <> "\"" <> qfml.family <> "\" -> fn familySym." <> qfml.family <> " toolkit b"
 
 
 familySymbolTypeAndLabel :: QD.QFamily -> String
