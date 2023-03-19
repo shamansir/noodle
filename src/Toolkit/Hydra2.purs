@@ -1,7 +1,9 @@
-module Toolkit.Hydra2 (HydraToolkit, toolkit, Toolkit, Instances) where
+module Toolkit.Hydra2 (HydraToolkit, Toolkit, toolkit, Families, Instances, noInstances) where
 
 
 import Prelude (Unit)
+
+import Effect (Effect)
 
 import Noodle.Toolkit3 (Toolkit) as Noodle
 import Noodle.Toolkit3 as Toolkit
@@ -92,8 +94,7 @@ import Toolkit.Hydra2.Family.Audio.FShow as FShow
 import Toolkit.Hydra2.Family.Out.FOut as FOut
 
 
-type HydraToolkit m
-    = Noodle.Toolkit Unit
+type Families (m :: Type -> Type) =
         ( noise :: FNoise.Family m  -- {-> source <-}
         , voronoi :: FVoronoi.Family m  -- {-> source <-}
         , osc :: FOsc.Family m -- {-> source <-}
@@ -180,7 +181,11 @@ type HydraToolkit m
         )
 
 
-toolkit :: forall m. HydraToolkit m
+type HydraToolkit (m :: Type -> Type)
+    = Noodle.Toolkit Unit (Families m)
+
+
+toolkit :: forall (m :: Type -> Type). HydraToolkit m
 toolkit =
     Toolkit.from "hydra"
         { noise : (FNoise.family :: FNoise.Family m)
@@ -269,9 +274,10 @@ toolkit =
         }
 
 
-type Toolkit m = HydraToolkit m
+type Toolkit (m :: Type -> Type) = HydraToolkit m
 
 
+type Instances :: (Type -> Type) -> Row Type
 type Instances m =
         ( noise :: Array ( FNoise.Node m )
         , voronoi :: Array ( FVoronoi.Node m )
@@ -280,7 +286,6 @@ type Instances m =
         , gradient :: Array ( FGradient.Node m )
         , src :: Array ( FSrc.Node m )
         , solid :: Array ( FSolid.Node m )
-        , src :: Array ( FSrc.Node m )
         , prev :: Array ( FPrev.Node m )
         , rotate :: Array ( FRotate.Node m )
         , scale :: Array ( FScale.Node m )
@@ -358,3 +363,91 @@ type Instances m =
         , show :: Array ( FShow.Node m )
         , out :: Array ( FOut.Node m )
         )
+
+
+noInstances :: forall (m :: Type -> Type). Record (Instances m)
+noInstances =
+        { noise : ([] :: Array ( FNoise.Node m ))
+        , voronoi : ([] :: Array ( FVoronoi.Node m ))
+        , osc : ([] :: Array ( FOsc.Node m ))
+        , shape : ([] :: Array ( FShape.Node m ))
+        , gradient : ([] :: Array ( FGradient.Node m ))
+        , src : ([] :: Array ( FSrc.Node m ))
+        , solid : ([] :: Array ( FSolid.Node m ))
+        , prev : ([] :: Array ( FPrev.Node m ))
+        , rotate : ([] :: Array ( FRotate.Node m ))
+        , scale : ([] :: Array ( FScale.Node m ))
+        , pixelate : ([] :: Array ( FPixelate.Node m ))
+        , repeat : ([] :: Array ( FRepeat.Node m ))
+        , repeatX : ([] :: Array ( FRepeatX.Node m ))
+        , repeatY : ([] :: Array ( FRepeatY.Node m ))
+        , kaleid : ([] :: Array ( FKaleid.Node m ))
+        , scroll : ([] :: Array ( FScroll.Node m ))
+        , scrollX : ([] :: Array ( FScrollX.Node m ))
+        , scrollY : ([] :: Array ( FScrollY.Node m ))
+        , posterize : ([] :: Array ( FPosterize.Node m ))
+        , shift : ([] :: Array ( FShift.Node m ))
+        , invert : ([] :: Array ( FInvert.Node m ))
+        , contrast : ([] :: Array ( FContrast.Node m ))
+        , brightness : ([] :: Array ( FBrightness.Node m ))
+        , luma : ([] :: Array ( FLuma.Node m ))
+        , tresh : ([] :: Array ( FTresh.Node m ))
+        , color : ([] :: Array ( FColor.Node m ))
+        , saturate : ([] :: Array ( FSaturate.Node m ))
+        , hue : ([] :: Array ( FHue.Node m ))
+        , colorama : ([] :: Array ( FColorama.Node m ))
+        , sum : ([] :: Array ( FSum.Node m ))
+        , r : ([] :: Array ( FR.Node m ))
+        , g : ([] :: Array ( FG.Node m ))
+        , b : ([] :: Array ( FB.Node m ))
+        , a : ([] :: Array ( FA.Node m ))
+        , add : ([] :: Array ( FAdd.Node m ))
+        , sub : ([] :: Array ( FSub.Node m ))
+        , layer : ([] :: Array ( FLayer.Node m ))
+        , blend : ([] :: Array ( FBlend.Node m ))
+        , mult : ([] :: Array ( FMult.Node m ))
+        , diff : ([] :: Array ( FDiff.Node m ))
+        , mask : ([] :: Array ( FMask.Node m ))
+        , modulateRepeat : ([] :: Array ( FModulateRepeat.Node m ))
+        , modulateRepeatX : ([] :: Array ( FModulateRepeatX.Node m ))
+        , modulateRepeatY : ([] :: Array ( FModulateRepeatY.Node m ))
+        , modulateKaleid : ([] :: Array ( FModulateKaleid.Node m ))
+        , modulateScrollX : ([] :: Array ( FModulateScrollX.Node m ))
+        , modulateScrollY : ([] :: Array ( FModulateScrollY.Node m ))
+        , modulate : ([] :: Array ( FModulate.Node m ))
+        , modulateScale : ([] :: Array ( FModulateScale.Node m ))
+        , modulatePixelate : ([] :: Array ( FModulatePixelate.Node m ))
+        , modulateRotate : ([] :: Array ( FModulateRotate.Node m ))
+        , modulateHue : ([] :: Array ( FModulateHue.Node m ))
+        , render : ([] :: Array ( FRender.Node m ))
+        , update : ([] :: Array ( FUpdate.Node m ))
+        , setResolution : ([] :: Array ( FSetResolution.Node m ))
+        , hush : ([] :: Array ( FHush.Node m ))
+        , setFunction : ([] :: Array ( FSetFunction.Node m ))
+        , speed : ([] :: Array ( FSpeed.Node m ))
+        , bpm : ([] :: Array ( FBpm.Node m ))
+        , width : ([] :: Array ( FWidth.Node m ))
+        , height : ([] :: Array ( FHeight.Node m ))
+        , pi : ([] :: Array ( FPi.Node m ))
+        , time : ([] :: Array ( FTime.Node m ))
+        , mouse : ([] :: Array ( FMouse.Node m ))
+        , initCam : ([] :: Array ( FInitCam.Node m ))
+        , initImage : ([] :: Array ( FInitImage.Node m ))
+        , initVideo : ([] :: Array ( FInitVideo.Node m ))
+        , init : ([] :: Array ( FInit.Node m ))
+        , initStream : ([] :: Array ( FInitStream.Node m ))
+        , initScreen : ([] :: Array ( FInitScreen.Node m ))
+        , fast : ([] :: Array ( FFast.Node m ))
+        , smooth : ([] :: Array ( FSmooth.Node m ))
+        , ease : ([] :: Array ( FEase.Node m ))
+        , offset : ([] :: Array ( FOffset.Node m ))
+        , fit : ([] :: Array ( FFit.Node m ))
+        , fft : ([] :: Array ( FFft.Node m ))
+        , setSmooth : ([] :: Array ( FSetSmooth.Node m ))
+        , setCutoff : ([] :: Array ( FSetCutoff.Node m ))
+        , setBins : ([] :: Array ( FSetBins.Node m ))
+        , setScale : ([] :: Array ( FSetScale.Node m ))
+        , hide : ([] :: Array ( FHide.Node m ))
+        , show : ([] :: Array ( FShow.Node m ))
+        , out : ([] :: Array ( FOut.Node m ))
+        }

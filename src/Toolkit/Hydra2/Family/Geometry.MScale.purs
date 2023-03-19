@@ -42,14 +42,14 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { out : H.Empty }
 
 
-type Family m = -- {-> geometry <-}
+type Family (m :: Type -> Type) = -- {-> geometry <-}
     Family.Def Unit
         Inputs
         Outputs
         m
 
 
-family :: forall m. Family m
+family :: forall (m :: Type -> Type). Family m
 family = -- {-> geometry <-}
     Family.def
         unit
@@ -65,7 +65,7 @@ family = -- {-> geometry <-}
             P.send _out_out $ H.Geometry what $ H.GScale { amount, xMult, yMult, offsetX, offsetY }
 
 
-type Node m =
+type Node (m :: Type -> Type) =
     N.Node "scale" Unit
         Inputs
         Outputs

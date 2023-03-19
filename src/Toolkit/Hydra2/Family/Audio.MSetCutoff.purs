@@ -36,14 +36,14 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { }
 
 
-type Family m = -- {-> audio <-}
+type Family (m :: Type -> Type) = -- {-> audio <-}
     Family.Def Unit
         Inputs
         Outputs
         m
 
 
-family :: forall m. Family m
+family :: forall (m :: Type -> Type). Family m
 family = -- {-> audio <-}
     Family.def
         unit
@@ -56,7 +56,7 @@ family = -- {-> audio <-}
             pure unit
 
 
-type Node m =
+type Node (m :: Type -> Type) =
     N.Node "setCutoff" Unit
         Inputs
         Outputs

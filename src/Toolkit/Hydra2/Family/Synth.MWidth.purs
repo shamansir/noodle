@@ -35,14 +35,14 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { out : H.Width }
 
 
-type Family m = -- {-> synth <-}
+type Family (m :: Type -> Type) = -- {-> synth <-}
     Family.Def Unit
         Inputs
         Outputs
         m
 
 
-family :: forall m. Family m
+family :: forall (m :: Type -> Type). Family m
 family = -- {-> synth <-}
     Family.def
         unit
@@ -52,7 +52,7 @@ family = -- {-> synth <-}
         $ P.send _out_out H.Width
 
 
-type Node m =
+type Node (m :: Type -> Type) =
     N.Node "width" Unit
         Inputs
         Outputs

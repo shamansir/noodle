@@ -38,14 +38,14 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { out : H.None }
 
 
-type Family m = -- {-> array <-}
+type Family (m :: Type -> Type) = -- {-> array <-}
     Family.Def Unit
         Inputs
         Outputs
         m
 
 
-family :: forall m. Family m
+family :: forall (m :: Type -> Type). Family m
 family = -- {-> array <-}
     Family.def
         unit
@@ -57,7 +57,7 @@ family = -- {-> array <-}
             P.send _out_out $ H.VArray arr $ H.Smooth smooth
 
 
-type Node m =
+type Node (m :: Type -> Type) =
     N.Node "smooth" Unit
         Inputs
         Outputs

@@ -38,14 +38,14 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { }
 
 
-type Family m = -- {-> color <-}
+type Family (m :: Type -> Type) = -- {-> color <-}
     Family.Def Unit
         Inputs
         Outputs
         m
 
 
-family :: forall m. Family m
+family :: forall (m :: Type -> Type). Family m
 family = -- {-> color <-}
     Family.def
         unit
@@ -56,7 +56,7 @@ family = -- {-> color <-}
             pure unit
 
 
-type Node m =
+type Node (m :: Type -> Type) =
     N.Node "sum" Unit
         Inputs
         Outputs

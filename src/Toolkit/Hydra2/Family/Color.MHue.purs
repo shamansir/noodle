@@ -38,14 +38,14 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { out : H.Empty }
 
 
-type Family m = -- {-> color <-}
+type Family (m :: Type -> Type) = -- {-> color <-}
     Family.Def Unit
         Inputs
         Outputs
         m
 
 
-family :: forall m. Family m
+family :: forall (m :: Type -> Type). Family m
 family = -- {-> color <-}
     Family.def
         unit
@@ -57,7 +57,7 @@ family = -- {-> color <-}
             P.send _out_out $ H.WithColor what $ H.Hue hue
 
 
-type Node m =
+type Node (m :: Type -> Type) =
     N.Node "hue" Unit
         Inputs
         Outputs

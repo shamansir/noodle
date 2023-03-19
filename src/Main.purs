@@ -74,7 +74,7 @@ import Noodle.Toolkit3 as Toolkit
 import Noodle.Network2 as Network
 
 
-import Toolkit.Hydra2 (toolkit, Toolkit)
+import Toolkit.Hydra2 (toolkit, HydraToolkit, Instances, noInstances) as Hydra
 
 
 mainScreen = nk :: Screen <^> "main-scr"
@@ -88,8 +88,8 @@ inlets = nk :: ListBar <^> "inlets"
 outlets = nk :: ListBar <^> "outlets"
 
 
-patches = []
-items = []
+patches = [ "Patch 1", "Patch 2" ]
+items = [ "foo", "bar", "buz", "hello", "lalala" ]
 
 
 type Palette =
@@ -131,6 +131,9 @@ type NodeBoxKey = Box <^> "node-box"
 type PatchBoxKey = Box <^> "patch-box"
 
 
+-- type Nodes = Hydra.Instances Effect
+
+
 type State =
     { lastInletsBarKey :: InletsBarKey
     , lastNodeBoxKey :: NodeBoxKey
@@ -141,6 +144,7 @@ type State =
     , lastLink :: Maybe Link
     , linksFrom :: Map RawNodeKey (Map Int Link)
     , linksTo :: Map RawNodeKey (Map Int Link)
+    -- , nodes :: Record (Hydra.Instances Effect)
     }
 
 
@@ -155,6 +159,7 @@ initialState =
     , lastLink : Nothing
     , linksFrom : Map.empty
     , linksTo : Map.empty
+    -- , nodes : Hydra.noInstances
     }
 
 

@@ -38,14 +38,14 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { out : H.Empty }
 
 
-type Family m = -- {-> source <-}
+type Family (m :: Type -> Type) = -- {-> source <-}
     Family.Def Unit
         Inputs
         Outputs
         m
 
 
-family :: forall m. Family m
+family :: forall (m :: Type -> Type). Family m
 family = -- {-> source <-}
     Family.def
         unit
@@ -57,7 +57,7 @@ family = -- {-> source <-}
             P.send _out_out $ H.From $ H.Noise { scale, offset }
 
 
-type Node m =
+type Node (m :: Type -> Type) =
     N.Node "noise" Unit
         Inputs
         Outputs

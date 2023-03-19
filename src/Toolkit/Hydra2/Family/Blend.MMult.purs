@@ -39,14 +39,14 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { out : H.Empty }
 
 
-type Family m = -- {-> blend <-}
+type Family (m :: Type -> Type) = -- {-> blend <-}
     Family.Def Unit
         Inputs
         Outputs
         m
 
 
-family :: forall m. Family m
+family :: forall (m :: Type -> Type). Family m
 family = -- {-> blend <-}
     Family.def
         unit
@@ -60,7 +60,7 @@ family = -- {-> blend <-}
             P.send _out_out $ H.BlendOf { what, with } $ H.Mult amount
 
 
-type Node m =
+type Node (m :: Type -> Type) =
     N.Node "mult" Unit
         Inputs
         Outputs

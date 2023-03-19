@@ -37,14 +37,14 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { }
 
 
-type Family m = -- {-> synth <-}
+type Family (m :: Type -> Type) = -- {-> synth <-}
     Family.Def Unit
         Inputs
         Outputs
         m
 
 
-family :: forall m. Family m
+family :: forall (m :: Type -> Type). Family m
 family = -- {-> synth <-}
     Family.def
         unit
@@ -56,7 +56,7 @@ family = -- {-> synth <-}
             pure unit
 
 
-type Node m =
+type Node (m :: Type -> Type) =
     N.Node "update" Unit
         Inputs
         Outputs

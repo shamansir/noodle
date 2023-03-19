@@ -35,14 +35,14 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { }
 
 
-type Family m = -- {-> extsource <-}
+type Family (m :: Type -> Type) = -- {-> extsource <-}
     Family.Def Unit
         Inputs
         Outputs
         m
 
 
-family :: forall m. Family m
+family :: forall (m :: Type -> Type). Family m
 family = -- {-> extsource <-}
     Family.def
         unit
@@ -53,7 +53,7 @@ family = -- {-> extsource <-}
             pure unit
 
 
-type Node m =
+type Node (m :: Type -> Type) =
     N.Node "init" Unit
         Inputs
         Outputs

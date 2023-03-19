@@ -39,13 +39,13 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { x : H.MouseX, y : H.MouseY }
 
 
-type Family m = -- {-> synth <-}
+type Family (m :: Type -> Type) = -- {-> synth <-}
     Family.Def Unit
         Inputs
         Outputs
         m
 
-family :: forall m. Family m
+family :: forall (m :: Type -> Type). Family m
 family = -- {-> synth <-}
     Family.def
         unit
@@ -56,7 +56,7 @@ family = -- {-> synth <-}
             P.send _y_out H.MouseY
 
 
-type Node m =
+type Node (m :: Type -> Type) =
     N.Node "mouse" Unit
         Inputs
         Outputs

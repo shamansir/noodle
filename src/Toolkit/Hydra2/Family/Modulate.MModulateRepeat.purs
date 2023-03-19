@@ -42,14 +42,14 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { out : H.Empty }
 
 
-type Family m = -- {-> modulate <-}
+type Family (m :: Type -> Type) = -- {-> modulate <-}
     Family.Def Unit
         Inputs
         Outputs
         m
 
 
-family :: forall m. Family m
+family :: forall (m :: Type -> Type). Family m
 family = -- {-> modulate <-}
     Family.def
         unit
@@ -65,7 +65,7 @@ family = -- {-> modulate <-}
             P.send _out_out $ H.ModulateWith { what, with } $ H.ModRepeat { repeatX, repeatY, offsetX, offsetY }
 
 
-type Node m =
+type Node (m :: Type -> Type) =
     N.Node "modulateRepeat" Unit
         Inputs
         Outputs

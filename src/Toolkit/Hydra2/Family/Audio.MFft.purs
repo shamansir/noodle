@@ -38,14 +38,14 @@ defaultOutputs :: Record Outputs
 defaultOutputs = { out : H.None }
 
 
-type Family m = -- {-> audio <-}
+type Family (m :: Type -> Type) = -- {-> audio <-}
     Family.Def Unit
         Inputs
         Outputs
         m
 
 
-family :: forall m. Family m
+family :: forall (m :: Type -> Type). Family m
 family = -- {-> audio <-}
     Family.def
         unit
@@ -58,7 +58,7 @@ family = -- {-> audio <-}
             P.send _out_out $ H.Audio audio h
 
 
-type Node m =
+type Node (m :: Type -> Type) =
     N.Node "fft" Unit
         Inputs
         Outputs
