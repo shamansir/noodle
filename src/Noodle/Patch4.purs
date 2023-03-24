@@ -91,7 +91,7 @@ registerNode node (Patch state instances links) =
         links
 
 
-spawnAdd
+spawnAndRegisterNodeIfKnown
     :: forall gstate instances' instances f families' families state is os m
      . MonadEffect m
     => Has.HasFamilyDef f families' families (Family.Def state is os m)
@@ -100,7 +100,7 @@ spawnAdd
     -> Toolkit gstate families
     -> Patch gstate instances
     -> m (Patch gstate instances)
-spawnAdd family toolkit patch =
+spawnAndRegisterNodeIfKnown family toolkit patch =
     Toolkit.spawn toolkit family >>= (\node -> pure $ registerNode node patch)
 
 

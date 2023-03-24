@@ -1,4 +1,4 @@
-module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, spawner, withFamily, familySym) where
+module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, spawnAndRegister, withFamily, familySym) where
 
 
 import Prelude (Unit, unit, pure)
@@ -644,8 +644,8 @@ familySym =
         }
 
 
-spawner :: forall m. MonadEffect m => Noodle.Patch State (Instances m) -> String -> m (Noodle.Patch State (Instances m))
-spawner = withFamily Patch.spawnAdd
+spawnAndRegister :: forall m. MonadEffect m => Noodle.Patch State (Instances m) -> String -> m (Noodle.Patch State (Instances m))
+spawnAndRegister = withFamily Patch.spawnAndRegisterNodeIfKnown
 
 
 withFamily

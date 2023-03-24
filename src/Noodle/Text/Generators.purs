@@ -500,7 +500,7 @@ symbolsInline fmls =
 spawner :: ToolkitName -> Array QD.QFamily -> String
 spawner _ fmls =
     "spawner :: forall m. Noodle.Patch State (Instances m) -> String -> m (Noodle.Patch State (Instances m))\n" <>
-    "spawner = withFamily Patch.spawnAdd\n\n" <>
+    "spawner = withFamily Patch.spawnAndRegisterNodeIfKnown\n\n" <>
     """
 withFamily
     :: forall b m
