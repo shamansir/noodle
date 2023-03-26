@@ -16,6 +16,7 @@ import Control.Monad.Error.Class (class MonadThrow, throwError)
 
 import Data.Either (Either)
 import Data.Tuple (uncurry)
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array ((:))
 import Data.Array as Array
@@ -42,7 +43,7 @@ import Blessed.Internal.NodeKey as NK
 import Blessed.Internal.JsApi as I
 import Blessed.Internal.Codec as Codec
 import Blessed.Internal.Emitter (initial, split, typeOf, toCore, class Fires, class Events, BlessedEvent) as E
-import Blessed.Internal.Foreign (encode, encode', encodeHandler, HandlerIndex(..)) as Foreign
+import Blessed.Internal.Foreign (encode, encode', encodeHandler, encodeHandlerRef, HandlerIndex(..)) as Foreign
 
 
 type InitFn subj id state = (NodeKey subj id -> Op.BlessedOp state Effect)
@@ -241,6 +242,25 @@ nmethod nodeKey name args =
                     nodeEnc /\ nodeHandlers -> Array.snoc allJsons (CA.encode Codec.nodeEnc nodeEnc) /\ (allHandlers <> nodeHandlers)
             jsonArgs /\ handlers = foldr foldF ([] /\ []) args
         in Op.perform (NK.rawify nodeKey) $ Cmd.callEx name jsonArgs handlers
+
+
+cmethod ∷ forall subj id state (m ∷ Type -> Type) e. E.Fires subj e => E.Events e => K.IsSubject subj => IsSymbol id => NodeKey subj id → String → Array Json -> Array (e /\ HandlerFn subj id state) → Op.BlessedOp state m
+cmethod nodeKey name args handlers =
+    Op.getStateRef >>= \stateRef ->
+        let
+            rawNodeKey = NK.rawify nodeKey
+            encodeHandler index (event /\ op) =
+                case E.split event of
+                    eventId /\ arguments ->
+                        let
+                            sHandler = Op.makeHandler nodeKey eventId arguments op
+                            handlerIndex = Foreign.HandlerIndex $ 1000 + index
+                        in Foreign.encodeHandlerRef rawNodeKey handlerIndex sHandler
+                        /\ Foreign.encodeHandler stateRef rawNodeKey handlerIndex sHandler
+            handlersPairs = Array.mapWithIndex encodeHandler handlers
+            encodedHandlersRefs = CA.encode Codec.handlerRefEnc <$> Tuple.fst <$> handlersPairs
+            encodedHandlers = Tuple.snd <$> handlersPairs
+        in Op.perform (NK.rawify nodeKey) $ Cmd.callEx name (args <> encodedHandlersRefs) encodedHandlers
 
 
 subscription ∷ forall subj id state (m ∷ Type -> Type) e. K.IsSubject subj => IsSymbol id => E.Fires subj e => NodeKey subj id → e → HandlerFn subj id state -> Op.BlessedOp state m

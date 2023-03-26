@@ -73,6 +73,7 @@ import Blessed.UI.Boxes.Line.Event as Line
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Network2 as Network
 import Noodle.Network2 (Network) as Noodle
+import Noodle.Patch4 as Patch
 
 
 import Toolkit.Hydra2 (toolkit, Toolkit, Instances, noInstances, Families) as Hydra
@@ -155,6 +156,13 @@ newtype Network m =  -- compiler 0.14.5 fails without newtype
     Network (Noodle.Network Unit (Hydra.Families m) (Hydra.Instances m))
 
 
+initialNetwork :: forall m. Network m
+initialNetwork =
+    Network.init Hydra.toolkit
+    # Network.addPatch "Patch 1" (Patch.init Hydra.toolkit)
+    # Network
+
+
 initialState :: State
 initialState =
     { lastShiftX : 0
@@ -167,7 +175,7 @@ initialState =
     , linksFrom : Map.empty
     , linksTo : Map.empty
     -- , nodes : Hydra.noInstances
-    , network : Network $ Network.init Hydra.toolkit
+    , network : initialNetwork
     }
 
 
@@ -206,6 +214,7 @@ main1 =
             , Box.height $ Dimension.px 1
             , List.mouse true
             , List.items patches
+            -- , ListBar.commands $ mapWithIndex ?wh (patches <> [ "+" ])
             , List.style
                 [ LStyle.bg palette.background
                 , LStyle.item
