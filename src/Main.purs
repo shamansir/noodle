@@ -63,9 +63,9 @@ import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Lists.List.Event as List
 import Blessed.UI.Lists.List.Option as List
 import Blessed.UI.Lists.List.Property as List
-
 import Blessed.UI.Lists.ListBar.Event as ListBar
 import Blessed.UI.Lists.ListBar.Option as ListBar
+import Blessed.UI.Lists.ListBar.Method as ListBar
 import Blessed.UI.Boxes.Line.Option as Line
 import Blessed.UI.Boxes.Line.Event as Line
 -- import Blessed.UI.Line.Li ()
@@ -268,6 +268,12 @@ main1 =
                         -- lastShiftY <- _.lastShiftY <$> State.get
                         -- lastNodeBoxKey <- _.lastNodeBoxKey <$> State.get
                         state <- State.get
+
+                        patchesBar >~ ListBar.setItems
+                            [ "test1" /\ [] /\ \_ _ -> do liftEffect $ Console.log "foo"
+                            , "test2" /\ [] /\ \_ _ -> do liftEffect $ Console.log "bar"
+                            ]
+                        -- patchesBar >~ ListBar.addItemH ?wh [] ?wh
 
                         let top = Offset.px $ state.lastShiftX + 2
                         let left = Offset.px $ 16 + state.lastShiftY + 2
@@ -660,7 +666,7 @@ main2 :: Effect Unit
 main2 =
     let
         lbKey = (nk :: ListBar <^> "test")
-        inletHandler iname = iname /\ [ ] /\ \_ _ -> do pure unit -- liftEffect $ Console.log $ "cmd " <> iname
+        inletHandler iname = iname /\ [ ] /\ \_ _ -> do liftEffect $ Console.log $ "cmd " <> iname
         inletsBarN =
             B.listbar lbKey
                 [ Box.width $ Dimension.percents 90.0
@@ -726,7 +732,12 @@ main2 =
         ]
 
         $ \_ -> do
+            lbKey >~ ListBar.setItems
+                            [ "test1" /\ [] /\ \_ _ -> do liftEffect $ Console.log "foo"
+                            , "test2" /\ [] /\ \_ _ -> do liftEffect $ Console.log "bar"
+                            ]
             lbKey >~ Core.on' ListBar.Select $ \_ _ -> liftEffect $ Console.log "click assigned after"
+            lbKey >~ Core.on' Element.Move $  \_ _ -> liftEffect $ Console.log "click assigned after"
             mainScreen >~ Screen.render
     )
 

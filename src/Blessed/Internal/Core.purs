@@ -245,7 +245,7 @@ nmethod nodeKey name args =
 
 
 cmethod ∷ forall subj id state (m ∷ Type -> Type) e. E.Fires subj e => E.Events e => K.IsSubject subj => IsSymbol id => NodeKey subj id → String → Array Json -> Array (e /\ HandlerFn subj id state) → Op.BlessedOp state m
-cmethod nodeKey name args handlers =
+cmethod nodeKey name jsonArgs handlers =
     Op.getStateRef >>= \stateRef ->
         let
             rawNodeKey = NK.rawify nodeKey
@@ -260,7 +260,9 @@ cmethod nodeKey name args handlers =
             handlersPairs = Array.mapWithIndex encodeHandler handlers
             encodedHandlersRefs = CA.encode Codec.handlerRefEnc <$> Tuple.fst <$> handlersPairs
             encodedHandlers = Tuple.snd <$> handlersPairs
-        in Op.perform (NK.rawify nodeKey) $ Cmd.callEx name (args <> encodedHandlersRefs) encodedHandlers
+        in Op.perform (NK.rawify nodeKey) $ Cmd.callEx name (jsonArgs <> encodedHandlersRefs) encodedHandlers
+        -- in Op.perform (NK.rawify nodeKey) $ Cmd.callEx name (encodedHandlersRefs) encodedHandlers
+        -- in Op.perform (NK.rawify nodeKey) $ Cmd.callEx name jsonArgs encodedHandlers
 
 
 subscription ∷ forall subj id state (m ∷ Type -> Type) e. K.IsSubject subj => IsSymbol id => E.Fires subj e => NodeKey subj id → e → HandlerFn subj id state -> Op.BlessedOp state m

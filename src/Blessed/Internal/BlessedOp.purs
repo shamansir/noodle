@@ -177,6 +177,10 @@ performOnProcess cmd = BlessedOpM $ Free.liftF $ PerformOnProcess cmd unit
 -- type Performer m = I.Command -> m Unit -- TODO: return m (Maybe Json), for getters
 
 
+dumpEnabled :: Boolean
+dumpEnabled = false
+
+
 lift :: forall state m. m Unit -> BlessedOpM state m Unit
 lift m = BlessedOpM $ Free.liftF $ Lift m
 
@@ -228,27 +232,27 @@ runFreeM stateRef fn = do
         go (Lift m) = m
 
         go (PerformOne target cmd next) = do
-            Dump.commandToPerform cmd
+            when dumpEnabled $ Dump.commandToPerform cmd
             _ <- liftEffect $ callForeignCommand target cmd
-            Dump.commandWasPerformed cmd
+            when dumpEnabled $ Dump.commandWasPerformed cmd
             pure next
 
         go (PerformSome target cmds next) = do
-            traverse_ Dump.commandToPerform cmds
+            when dumpEnabled $ traverse_ Dump.commandToPerform cmds
             _ <- traverse (liftEffect <<< callForeignCommand target) cmds
-            traverse_ Dump.commandWasPerformed cmds
+            when dumpEnabled $ traverse_ Dump.commandWasPerformed cmds
             pure next
 
         go (PerformGet target cmd getV) = do
-            Dump.commandToPerform cmd
+            when dumpEnabled $ Dump.commandToPerform cmd
             value <- liftEffect $ callForeignCommand target cmd
-            Dump.commandWasPerformed cmd
+            when dumpEnabled $ Dump.commandWasPerformed cmd
             pure $ getV value
 
         go (PerformOnProcess cmd next) = do
-            Dump.commandToPerform cmd
+            when dumpEnabled $ Dump.commandToPerform cmd
             _ <- liftEffect $ callForeignCommand (I.rawify I.process) cmd
-            Dump.commandWasPerformed cmd
+            when dumpEnabled $ Dump.commandWasPerformed cmd
             pure next
 
         getUserState = liftEffect $ Ref.read stateRef
@@ -258,6 +262,10 @@ runFreeM stateRef fn = do
             -- case Foreign.encodeCommand cmd of
             --     cmd_ /\ [] -> callCommand_ target cmd_
             --     cmd_ /\ handlers -> callCommandEx_ target cmd_ handlers
+            -- FIXME: also the marker for the check in `BlessedOp.js` :
+            -- case 'call':
+            --      if (command.marker == 'CallCommandEx') {
+            -- should be set to the according one this way
 
 
 makeHandler :: forall state subj sym. I.NodeKey subj sym -> E.EventId -> Array Json -> (I.NodeKey subj sym -> I.EventJson -> BlessedOp state Effect) -> I.SHandler state
@@ -265,7 +273,7 @@ makeHandler nodeKey eventId arguments op =
     I.SHandler eventId arguments
         $ \stateRef rawNodeKey evtJson -> do
             -- TODO: check IDs match?
-            Dump.handlerCall rawNodeKey eventId arguments
+            when dumpEnabled $ Dump.handlerCall rawNodeKey eventId arguments
             runM' stateRef $ op nodeKey evtJson
 
 

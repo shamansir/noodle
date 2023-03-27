@@ -14,6 +14,8 @@ data Item
 
 {- TODO -}
 
+-- Child can be an element, index, or string.
+
 
 {-
 addItem text:String
@@ -22,7 +24,7 @@ pushItem child:Item
 popItem -> Item
 unshiftItem child:Item
 shiftItem -> Item
-inserItem index:Int child:Item
+insertItem index:Int child:Item
 getItem child:Item -> Element
 setItem child:Item content:String
 spliceItem i:Int n:Int items:ArrayItem

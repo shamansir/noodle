@@ -37,19 +37,23 @@ import Blessed.UI.Lists.ListBar.Event as ListBar
 import Blessed.UI.Base.Element.Option (OptionsRow) as Box
 
 
-type CommandRaw = { command :: String, eventUID :: String, keys :: Array String }
+newtype CommandRaw = CommandRaw { command :: String, eventUID :: String, keys :: Array String }
 
 newtype CommandsRaw = CommandsRaw (Array CommandRaw)
 
 derive instance Newtype CommandsRaw _
+derive instance Newtype CommandRaw _
+derive newtype instance EncodeJson CommandRaw
+derive newtype instance EncodeJson CommandsRaw
 
-instance EncodeJson CommandsRaw where
-    encodeJson =
-        CA.encode $ wrapIso CommandsRaw $ CA.array $ CA.object "Commands" $ CAR.record
+-- instance EncodeJson CommandsRaw where
+--     encodeJson (CommandRaw array) =
+--         encodeJson (encodeJson <> array
+        {- CA.encode $ wrapIso CommandsRaw $ CA.array $ wrapIso CommandRaw $ CA.object "Command" $ CAR.record -- "Commands" $ CAR.record
             { command : CA.string
             , eventUID : CA.string
             , keys : CA.array CA.string
-            }
+            } -}
 
 
 type OptionsRow r =
@@ -99,5 +103,9 @@ commands cmds =
     E.toCore <$> C.optionWithHandlers (Proxy :: _ "commands") (CommandsRaw commands_) cmdsEvents
     where toCmdEvent (cmd /\ keys /\ handler) = ListBar.Command cmd keys /\ handler
           cmdsEvents = toCmdEvent <$> cmds
-          toCommand triple = { eventUID : E.uniqueId $ Tuple.fst $ toCmdEvent triple, command : Tuple.fst triple, keys : map Key.toString $ Tuple.fst $ Tuple.snd triple }
+          toCommand triple = CommandRaw
+                                { eventUID : E.uniqueId $ Tuple.fst $ toCmdEvent triple
+                                , command : Tuple.fst triple
+                                , keys : map Key.toString $ Tuple.fst $ Tuple.snd triple
+                                }
           commands_ = toCommand <$> cmds

@@ -104,5 +104,5 @@ codec =
             , nodeSubj : CA.string
             , eventType : CA.string
             , eventUID : CA.string
-            , args : CA.array CA.json
+            , args : CA.array CA.json -- FIXME some args are impossible to convert to JSON, make some Dumpable typeclass
             }

@@ -34,6 +34,9 @@ instance Events BlessedEvent where
 class Events e <= Fires (subj :: Subject) e
 
 
+instance Fires subj BlessedEvent
+
+
 toCore :: forall e. Events e => e -> BlessedEvent
 toCore = uncurry BlessedEvent <<< split
     -- case split ie of
