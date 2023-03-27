@@ -17,7 +17,7 @@ import Blessed.Internal.BlessedSubj (Subject, ListBar)
 import Blessed.Internal.NodeKey (NodeKey, class Respresents)
 import Blessed.Internal.Core (method, cmethod, HandlerFn) as C
 
-import Blessed.UI.Lists.ListBar.Option (Commands(..)) as ListBar
+import Blessed.UI.Lists.ListBar.Option (CommandsRaw(..)) as ListBar
 import Blessed.UI.Lists.ListBar.Event (ListBarEvent(..)) as ListBar
 
 {- TODO -}
@@ -32,7 +32,26 @@ setCommands cmds nodeKey =
     where toCmdEvent (cmd /\ keys /\ handler) = ListBar.Command cmd keys /\ handler
           cmdsEvents = toCmdEvent <$> cmds
           toCommand triple = { eventUID : E.uniqueId $ Tuple.fst $ toCmdEvent triple, command : Tuple.fst triple, keys : map Key.toString $ Tuple.fst $ Tuple.snd triple }
-          commands_ = ListBar.Commands $ toCommand <$> cmds
+          commands_ = ListBar.CommandsRaw $ toCommand <$> cmds
+
+
+addItem
+    :: forall (subj :: Subject) (id :: Symbol) state m
+     . E.Fires subj ListBar.ListBarEvent
+    => Respresents ListBar subj id
+    => String -> Array Key -> C.HandlerFn subj id state -> NodeKey subj id -> BlessedOp state m
+addItem cmd keys handler nodeKey =
+    let lbCommandEvt = ListBar.Command cmd keys
+    in C.cmethod nodeKey "addItem"
+        [ encodeJson $ ListBar.CommandsRaw [
+                { eventUID : E.uniqueId lbCommandEvt
+                , command : cmd
+                , keys : map Key.toString keys
+                }
+            ]
+        ]
+        [ ListBar.Command cmd keys /\ handler
+        ]
 
 {-
 setItems items:ArrayString

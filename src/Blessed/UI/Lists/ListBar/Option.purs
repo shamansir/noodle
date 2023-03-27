@@ -37,13 +37,15 @@ import Blessed.UI.Lists.ListBar.Event as ListBar
 import Blessed.UI.Base.Element.Option (OptionsRow) as Box
 
 
-newtype Commands = Commands (Array { command :: String, eventUID :: String, keys :: Array String })
+type CommandRaw = { command :: String, eventUID :: String, keys :: Array String }
 
-derive instance Newtype Commands _
+newtype CommandsRaw = CommandsRaw (Array CommandRaw)
 
-instance EncodeJson Commands where
+derive instance Newtype CommandsRaw _
+
+instance EncodeJson CommandsRaw where
     encodeJson =
-        CA.encode $ wrapIso Commands $ CA.array $ CA.object "Commands" $ CAR.record
+        CA.encode $ wrapIso CommandsRaw $ CA.array $ CA.object "Commands" $ CAR.record
             { command : CA.string
             , eventUID : CA.string
             , keys : CA.array CA.string
@@ -52,7 +54,7 @@ instance EncodeJson Commands where
 
 type OptionsRow r =
     ( items :: Array String
-    , commands :: Commands -- Array (e /\ C.HandlerFn subj id state)
+    , commands :: CommandsRaw -- Array (e /\ C.HandlerFn subj id state)
     -- TODO: , commands :: Array (String /\ Blessed)
     , autoCommandKeys :: Boolean
     -- , style_selected :: Array (EndStyleOption ())
@@ -92,9 +94,9 @@ autoCommandKeys = lbOption (Proxy :: _ "autoCommandKeys")
 commands
     :: forall (subj :: Subject) (id :: Symbol) r state
      . Respresents ListBar subj id
-    => Array (String /\ Array Key /\ C.HandlerFn subj id state) -> ListBarAttribute subj id ( commands :: Commands | r ) state E.BlessedEvent
+    => Array (String /\ Array Key /\ C.HandlerFn subj id state) -> ListBarAttribute subj id ( commands :: CommandsRaw | r ) state E.BlessedEvent
 commands cmds =
-    E.toCore <$> C.optionWithHandlers (Proxy :: _ "commands") (Commands commands_) cmdsEvents
+    E.toCore <$> C.optionWithHandlers (Proxy :: _ "commands") (CommandsRaw commands_) cmdsEvents
     where toCmdEvent (cmd /\ keys /\ handler) = ListBar.Command cmd keys /\ handler
           cmdsEvents = toCmdEvent <$> cmds
           toCommand triple = { eventUID : E.uniqueId $ Tuple.fst $ toCmdEvent triple, command : Tuple.fst triple, keys : map Key.toString $ Tuple.fst $ Tuple.snd triple }
