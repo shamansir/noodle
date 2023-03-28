@@ -257,7 +257,7 @@ function registerNode(node) {
         }
 
         registry[node.nodeId] = { source : node, blessed : blessedObj };
-        ___log('registered at', node.nodeId);
+        ___log('registered node & blessed obj at', node.nodeId);
 
         node.handlers.forEach((handler) => {
             bindHandler(blessedObj, handler);
@@ -298,7 +298,13 @@ function callCommand(rawNodeKey) {
                             case 'call':
                                 if (command.marker == 'CallCommandEx') {
                                     ___log('ex', command.method, command.args);
-                                    blessedObj[command.method].apply(blessedObj, checkForNodes(command.args));
+                                    if (command.method == 'setItems') {
+                                        blessedObj['setItems'].apply(blessedObj, [ adaptListBarCommands(command.args) ]);
+                                    } else if (command.method == 'addItemH') {
+                                        blessedObj['addItem'].apply(blessedObj, adaptListBarSingleCommand(command.args));
+                                    } else {
+                                        blessedObj[command.method].apply(blessedObj, checkForNodes(command.args));
+                                    }
                                 } else {
                                     blessedObj[command.method].apply(blessedObj, command.args);
                                 }
@@ -368,7 +374,7 @@ function callCommandEx(rawNodeKey) {
         return function(handlers) {
 
             // ___log('ccex', 'command', command);
-            // ___log('ccex', 'handlers', handlers);
+            ___log('ccex', 'handlers', handlers);
 
             handlers.forEach((handler) => {
                 handlersFns[handler.index] = handler;
@@ -378,7 +384,7 @@ function callCommandEx(rawNodeKey) {
                 const commandResult = callCommand(rawNodeKey)(command)();
                 handlers.forEach((handler) => {
                     const blessedObj = registry[handler.nodeId] ? registry[handler.nodeId].blessed : null;
-                    ___log(handler.nodeId, handler.event, handler.index, blessedObj ? 'found' : 'not found');
+                    ___log(handler.nodeId, handler.event, handler.index, blessedObj ? 'blessedObj found' : 'blessedObj not found');
                     // FIXME: for links, blessed is not found, also node ID is improper for the newly created nodes, but ok for newly created links
                     // ___log('ccex', 'bindHandler before', handler.nodeId, registry[handler.nodeId], handlersFns[handler.index]);
                     if (blessedObj) {
@@ -390,6 +396,30 @@ function callCommandEx(rawNodeKey) {
             }
         }
     }
+}
+
+function adaptListBarCommands(lbItems) {
+    const cmdsData = lbItems[0].map((v) => v[1]); // the hack to get rid of `jsonCmd` label that is added to make Argonaut properly encode
+    const handlersRefs = lbItems.slice(1);
+    const handlersRefsRec = buildRecord(handlersRefs, (h) => ({ name : h.eventUniqueId, value : h }));
+    // ___log(cmdsData, handlersRefsRec);
+    if (cmdsData.length != handlersRefs.length) {
+        ___log('list bar commands and refs are unueqal in size');
+        return [];
+    }
+    const commands = buildRecord(cmdsData, (cmd, index) => {
+        return adaptListBarCommandValue(handlersRefsRec)(cmd, index)
+    });
+
+    return commands;
+}
+
+function adaptListBarSingleCommand(lbItems) {
+    const cmds = adaptListBarCommands(lbItems);
+    const cmdKey = Object.keys(cmds)[0];
+    const singleCmd = cmds[cmdKey];
+    return [ { text : cmdKey, callback : singleCmd.callback, keys : singleCmd.keys || [] } ];
+
 }
 
 function adaptListBarCommandValue(hs) {

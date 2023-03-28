@@ -42,7 +42,7 @@ setItems cmds nodeKey =
     where toCmdEvent (cmd /\ keys /\ handler) = (E.toCore $ ListBar.Command cmd keys) /\ handler
           cmdsEvents = toCmdEvent <$> cmds
           toJsonArg triple =
-                    ( "jsonCmd" /\
+                    ( "jsonCmd" /\ -- `jsonCmd` is the hack to make Argonaut properly encode the record
                         { eventUID : E.uniqueId $ Tuple.fst $ toCmdEvent triple
                         , command : Tuple.fst triple
                         , keys : map Key.toString $ Tuple.fst $ Tuple.snd triple
@@ -71,9 +71,9 @@ addItemH
     => String -> Array Key -> C.HandlerFn subj id state -> NodeKey subj id -> BlessedOp state m
 addItemH cmd keys handler nodeKey =
     let lbCommandEvt = E.toCore $ ListBar.Command cmd keys
-    in C.cmethod nodeKey "addItem"
-        [ encodeJson $ ListBar.CommandsRaw
-            [ ListBar.CommandRaw
+    in C.cmethod nodeKey "addItemH"
+        [ encodeJson $
+            [ "jsonCmd" /\ -- `jsonCmd` is the hack to make Argonaut properly encode the record
                 { eventUID : E.uniqueId lbCommandEvt
                 , command : cmd
                 , keys : map Key.toString keys

@@ -736,6 +736,8 @@ main2 =
                             [ "test1" /\ [] /\ \_ _ -> do liftEffect $ Console.log "foo"
                             , "test2" /\ [] /\ \_ _ -> do liftEffect $ Console.log "bar"
                             ]
+            lbKey >~ ListBar.addItem "test4" []
+            lbKey >~ ListBar.addItemH "test3" [] \_ _ -> do liftEffect $ Console.log "buz"
             lbKey >~ Core.on' ListBar.Select $ \_ _ -> liftEffect $ Console.log "click assigned after"
             lbKey >~ Core.on' Element.Move $  \_ _ -> liftEffect $ Console.log "click assigned after"
             mainScreen >~ Screen.render
@@ -745,4 +747,4 @@ main2 =
 
 
 main :: Effect Unit
-main = main1
+main = main2
