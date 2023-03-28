@@ -747,4 +747,4 @@ main2 =
 
 
 main :: Effect Unit
-main = main2
+main = main1
