@@ -149,17 +149,33 @@ type State =
     -- , network :: Noodle.Network Unit (Hydra.Families Effect) (Hydra.Instances Effect)
     -- , network :: TestM Effect
     , network :: Network Effect
+    , currentPatch :: Maybe String
     }
 
 
+type NoodleNetwork m = Noodle.Network Unit (Hydra.Families m) (Hydra.Instances m)
+
+
 newtype Network m =  -- compiler 0.14.5 fails without newtype
-    Network (Noodle.Network Unit (Hydra.Families m) (Hydra.Instances m))
+    Network (NoodleNetwork m)
+-- derive instance Newtype (Network m) _ -- fails
+
+
+unwrapN :: forall m. Network m -> NoodleNetwork m
+unwrapN (Network nw') = nw'
+
+
+wrapN :: forall m. NoodleNetwork m -> Network m
+wrapN = Network
+
+
+firstPatchId = "Patch 1"
 
 
 initialNetwork :: forall m. Network m
 initialNetwork =
     Network.init Hydra.toolkit
-    # Network.addPatch "Patch 1" (Patch.init Hydra.toolkit)
+    # Network.addPatch firstPatchId (Patch.init Hydra.toolkit)
     # Network
 
 
@@ -176,6 +192,7 @@ initialState =
     , linksTo : Map.empty
     -- , nodes : Hydra.noInstances
     , network : initialNetwork
+    , currentPatch : Just firstPatchId
     }
 
 
@@ -213,8 +230,8 @@ main1 =
             , Box.width $ Dimension.percents 100.0
             , Box.height $ Dimension.px 1
             , List.mouse true
-            , List.items patches
-            -- , ListBar.commands $ mapWithIndex ?wh (patches <> [ "+" ])
+            -- , List.items patches
+            , ListBar.commands $ addPatchButton : (mapWithIndex patchButton $ Map.toUnfoldable $ Network.patches $ unwrapN initialState.network)
             , List.style
                 [ LStyle.bg palette.background
                 , LStyle.item
@@ -269,10 +286,10 @@ main1 =
                         -- lastNodeBoxKey <- _.lastNodeBoxKey <$> State.get
                         state <- State.get
 
-                        patchesBar >~ ListBar.setItems
-                            [ "test1" /\ [] /\ \_ _ -> do liftEffect $ Console.log "foo"
-                            , "test2" /\ [] /\ \_ _ -> do liftEffect $ Console.log "bar"
-                            ]
+                        -- patchesBar >~ ListBar.setItems
+                        --     [ "test1" /\ [] /\ \_ _ -> do liftEffect $ Console.log "foo"
+                        --     , "test2" /\ [] /\ \_ _ -> do liftEffect $ Console.log "bar"
+                        --     ]
                         -- patchesBar >~ ListBar.addItemH ?wh [] ?wh
 
                         let top = Offset.px $ state.lastShiftX + 2
@@ -390,6 +407,10 @@ main1 =
         )
 
     where
+
+        patchButton _ (id /\ patch) = id /\ [] /\ \_ _ -> pure unit -- store selected patch in state
+
+        addPatchButton = "+" /\ [] /\ \_ _ -> pure unit -- create new patch
 
         forgetLink :: Link -> State -> State
         forgetLink link@(Link props) state =
