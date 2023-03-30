@@ -9,7 +9,7 @@ import Effect.Console as Console
 import Control.Monad.State as State
 
 import Data.Maybe (Maybe(..), fromMaybe, maybe, maybe')
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested ((/\), type (/\))
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
 import Prim.Symbol (class Append) as S
@@ -149,7 +149,7 @@ type State =
     -- , network :: Noodle.Network Unit (Hydra.Families Effect) (Hydra.Instances Effect)
     -- , network :: TestM Effect
     , network :: Network Effect
-    , currentPatch :: Maybe String
+    , currentPatch :: Maybe (Int /\ Patch.Id)
     }
 
 
@@ -169,13 +169,18 @@ wrapN :: forall m. NoodleNetwork m -> Network m
 wrapN = Network
 
 
-firstPatchId = "Patch 1"
+withNetwork :: forall m. (NoodleNetwork m -> NoodleNetwork m) -> Network m -> Network m
+withNetwork f = unwrapN >>> f >>> wrapN
+
+
+patchIdFromIndex :: Int -> String
+patchIdFromIndex = (+) 1 >>> show >>> (<>) "Patch "
 
 
 initialNetwork :: forall m. Network m
 initialNetwork =
     Network.init Hydra.toolkit
-    # Network.addPatch firstPatchId (Patch.init Hydra.toolkit)
+    # Network.addPatch (patchIdFromIndex 0) (Patch.init Hydra.toolkit)
     # Network
 
 
@@ -192,7 +197,7 @@ initialState =
     , linksTo : Map.empty
     -- , nodes : Hydra.noInstances
     , network : initialNetwork
-    , currentPatch : Just firstPatchId
+    , currentPatch : Just (0 /\ patchIdFromIndex 0)
     }
 
 
@@ -231,7 +236,7 @@ main1 =
             , Box.height $ Dimension.px 1
             , List.mouse true
             -- , List.items patches
-            , ListBar.commands $ addPatchButton : (mapWithIndex patchButton $ Map.toUnfoldable $ Network.patches $ unwrapN initialState.network)
+            , ListBar.commands $ patchesLBCommands initialState.network
             , List.style
                 [ LStyle.bg palette.background
                 , LStyle.item
@@ -408,9 +413,33 @@ main1 =
 
     where
 
-        patchButton _ (id /\ patch) = id /\ [] /\ \_ _ -> pure unit -- store selected patch in state
+        patchesLBCommands fromNw = addPatchButton : (mapWithIndex patchButton $ Map.toUnfoldable $ Network.patches $ unwrapN fromNw)
 
-        addPatchButton = "+" /\ [] /\ \_ _ -> pure unit -- create new patch
+        patchButton index (id /\ patch) =
+            id /\ [] /\ \_ _ -> do
+                State.modify_
+                    (_ { currentPatch = Just $ index /\ id })
+                patchesBar >~ ListBar.select index
+                mainScreen >~ Screen.render
+
+        addPatchButton =
+            "+" /\ [] /\ \_ _ -> do
+                let nextPatch = Patch.init Hydra.toolkit
+                state <- State.get
+                let
+                    patchesCount = unwrapN state.network # Network.patchesCount
+                    patchNumId = patchesCount
+                    patchId = patchIdFromIndex patchNumId
+                    nextNW = state.network # withNetwork (Network.addPatch patchId nextPatch)
+                State.modify_
+                    (_
+                        { currentPatch = Just $ patchNumId /\ patchId
+                        , network = nextNW
+                        }
+                    )
+                patchesBar >~ ListBar.setItems $ patchesLBCommands nextNW
+                patchesBar >~ ListBar.select patchNumId
+                mainScreen >~ Screen.render
 
         forgetLink :: Link -> State -> State
         forgetLink link@(Link props) state =

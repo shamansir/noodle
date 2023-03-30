@@ -28,6 +28,10 @@ patch :: forall gstate nodes instances. Patch.Id -> Network gstate nodes instanc
 patch id = Map.lookup id <<< patches
 
 
+patchesCount :: forall gstate nodes instances. Network gstate nodes instances -> Int
+patchesCount = patches >>> Map.size
+
+
 addPatch :: forall gstate nodes instances. Patch.Id -> Patch gstate instances -> Network gstate nodes instances -> Network gstate nodes instances
 addPatch id patch (Network tk patches) =
     Network tk $ Map.insert id patch $ patches
