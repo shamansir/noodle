@@ -40,7 +40,7 @@ import Blessed.Core.Offset as Offset
 import Blessed.Core.Style as Style
 import Blessed.Core.Orientation as Orientation
 
-import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line)
+import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line, Button)
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOpGet, BlessedOp)
@@ -68,6 +68,9 @@ import Blessed.UI.Lists.ListBar.Option as ListBar
 import Blessed.UI.Lists.ListBar.Method as ListBar
 import Blessed.UI.Boxes.Line.Option as Line
 import Blessed.UI.Boxes.Line.Event as Line
+import Blessed.UI.Forms.Button as Button
+import Blessed.UI.Forms.Button.Option as Button
+import Blessed.UI.Forms.Button.Event as Button
 -- import Blessed.UI.Line.Li ()
 
 import Noodle.Toolkit3 as Toolkit
@@ -88,6 +91,7 @@ inletsBar = nk :: ListBar <^> "node-inlets-bar"
 outletsBar = nk :: ListBar <^> "node-outlets-bar"
 inlets = nk :: ListBar <^> "inlets"
 outlets = nk :: ListBar <^> "outlets"
+addPatchButton = nk :: Button <^> "add-patch"
 
 
 patches = [ "Patch 1", "Patch 2" ]
@@ -403,6 +407,23 @@ main1 =
                     pure unit
             ]
 
+        , B.button addPatchButton
+            [ Box.content "+"
+            , Box.top $ Offset.px 0
+            , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
+            , Box.width $ Dimension.px 1
+            , Box.height $ Dimension.px 1
+            , Button.mouse true
+            , Box.style
+                [ Style.fg palette.foreground
+                , Style.bg palette.background2
+                ]
+            , Core.on Button.Press
+                \_ _ ->
+                    liftEffect $ Console.log "press"
+            ]
+            []
+
         ]
 
 
@@ -414,7 +435,7 @@ main1 =
 
     where
 
-        patchesLBCommands fromNw = addPatchButton : (mapWithIndex patchButton $ Map.toUnfoldable $ Network.patches $ unwrapN fromNw)
+        patchesLBCommands fromNw = addPatchButton' : (mapWithIndex patchButton $ Map.toUnfoldable $ Network.patches $ unwrapN fromNw)
 
         patchButton index (id /\ patch) =
             id /\ [] /\ \_ _ -> do
@@ -423,7 +444,7 @@ main1 =
                 -- patchesBar >~ ListBar.selectTab index
                 mainScreen >~ Screen.render
 
-        addPatchButton =
+        addPatchButton' =
             "+" /\ [] /\ \_ _ -> do
                 let nextPatch = Patch.init Hydra.toolkit
                 state <- State.get

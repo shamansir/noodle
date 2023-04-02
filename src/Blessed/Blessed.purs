@@ -31,7 +31,7 @@ import Blessed.UI.Lists.List.Option (OptionsRow) as List
 import Blessed.UI.Lists.ListBar (listbar, listbarAnd) as ListBar
 import Blessed.UI.Lists.ListBar.Option (OptionsRow) as ListBar
 import Blessed.UI.Forms.Button (button, buttonAnd) as Button
--- import Blessed.UI.Lists.Button.Option (OptionsRow) as Button
+import Blessed.UI.Forms.Button.Option (OptionsRow) as Button
 
 
 
@@ -143,7 +143,7 @@ button
     :: forall id r state
      . IsSymbol id
     => NodeKey Subject.Button id
-    -> C.Node Subject.Button id r state {- Button.Event -}
+    -> C.Node Subject.Button id ( Box.OptionsRow + Button.OptionsRow + r ) state {- Button.Event -}
 button = Button.button
 
 
@@ -151,7 +151,7 @@ buttonAnd
     :: forall id r state
      . IsSymbol id
     => NodeKey Subject.Button id
-    -> C.NodeAnd Subject.Button id r state {- Button.Event -}
+    -> C.NodeAnd Subject.Button id ( Box.OptionsRow + Button.OptionsRow + r ) state {- Button.Event -}
 buttonAnd = Button.buttonAnd
 
 
