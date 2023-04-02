@@ -22,6 +22,7 @@ import Data.Map as Map
 import Data.Array ((:))
 import Data.Array as Array
 import Data.Foldable (for_, traverse_)
+import Data.List (toUnfoldable) as List
 
 import Cli.App as Cli
 
@@ -73,6 +74,7 @@ import Blessed.UI.Forms.Button.Option as Button
 import Blessed.UI.Forms.Button.Event as Button
 -- import Blessed.UI.Line.Li ()
 
+import Noodle.Id as Id
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Network2 as Network
 import Noodle.Network2 (Network) as Noodle
@@ -94,8 +96,8 @@ outlets = nk :: ListBar <^> "outlets"
 addPatchButton = nk :: Button <^> "add-patch"
 
 
-patches = [ "Patch 1", "Patch 2" ]
-items = [ "foo", "bar", "buz", "hello", "lalala" ]
+-- patches = [ "Patch 1", "Patch 2" ]
+-- items = [ "foo", "bar", "buz", "hello", "lalala" ]
 
 
 type Palette =
@@ -280,7 +282,7 @@ main1 =
                 , Box.height $ Dimension.percents 40.0
                 , Box.draggable true
                 , Box.scrollable true
-                , List.items items
+                , List.items $ List.toUnfoldable $ Id.reflectFamilyR <$> Toolkit.nodeFamilies Hydra.toolkit
                 , List.mouse true
                 , List.keys true
                 , Box.border [ Border.type_ Border._line, Border.fg palette.nodeListFg ]
@@ -458,6 +460,14 @@ main1 =
                 State.modify_
                     (_ { currentPatch = Just $ index /\ id })
                 -- patchesBar >~ ListBar.selectTab index
+                mainScreen >~ Screen.render
+
+        familyButton index (id /\ family) =
+            id /\ [] /\ \_ _ -> do
+                -- State.modify_
+                --     (_ { currentPatch = Just $ index /\ id })
+                -- patchesBar >~ ListBar.selectTab index
+                -- TODO: try Toolkit.unsafeSpawnR
                 mainScreen >~ Screen.render
 
         forgetLink :: Link -> State -> State
