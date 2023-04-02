@@ -419,8 +419,24 @@ main1 =
                 , Style.bg palette.background2
                 ]
             , Core.on Button.Press
-                \_ _ ->
-                    liftEffect $ Console.log "press"
+                \_ _ -> do
+                    let nextPatch = Patch.init Hydra.toolkit
+                    state <- State.get
+                    let
+                        patchesCount = unwrapN state.network # Network.patchesCount
+                        patchNumId = patchesCount
+                        patchId = patchIdFromIndex patchNumId
+                        nextNW = state.network # withNetwork (Network.addPatch patchId nextPatch)
+                    State.modify_
+                        (_
+                            { currentPatch = Just $ patchNumId /\ patchId
+                            , network = nextNW
+                            }
+                        )
+                    patchesBar >~ ListBar.setItems $ patchesLBCommands nextNW
+                    patchesBar >~ ListBar.select patchNumId
+                    -- TODO: clear the patches box content (ensure all the nodes and links are stored in the network for the previously selected patch)
+                    mainScreen >~ Screen.render
             ]
             []
 
@@ -435,31 +451,13 @@ main1 =
 
     where
 
-        patchesLBCommands fromNw = addPatchButton' : (mapWithIndex patchButton $ Map.toUnfoldable $ Network.patches $ unwrapN fromNw)
+        patchesLBCommands fromNw = mapWithIndex patchButton $ Map.toUnfoldable $ Network.patches $ unwrapN fromNw
 
         patchButton index (id /\ patch) =
             id /\ [] /\ \_ _ -> do
                 State.modify_
                     (_ { currentPatch = Just $ index /\ id })
                 -- patchesBar >~ ListBar.selectTab index
-                mainScreen >~ Screen.render
-
-        addPatchButton' =
-            "+" /\ [] /\ \_ _ -> do
-                let nextPatch = Patch.init Hydra.toolkit
-                state <- State.get
-                let
-                    patchesCount = unwrapN state.network # Network.patchesCount
-                    patchNumId = patchesCount
-                    patchId = patchIdFromIndex patchNumId
-                    nextNW = state.network # withNetwork (Network.addPatch patchId nextPatch)
-                State.modify_
-                    (_
-                        { currentPatch = Just $ patchNumId /\ patchId
-                        , network = nextNW
-                        }
-                    )
-                patchesBar >~ ListBar.setItems $ patchesLBCommands nextNW
                 mainScreen >~ Screen.render
 
         forgetLink :: Link -> State -> State
