@@ -407,6 +407,7 @@ main1 =
 
 
         $ \_ -> do
+            patchesBar >~ ListBar.select 1
             nodeList >~ Box.focus
             mainScreen >~ Screen.render
         )
@@ -419,7 +420,7 @@ main1 =
             id /\ [] /\ \_ _ -> do
                 State.modify_
                     (_ { currentPatch = Just $ index /\ id })
-                patchesBar >~ ListBar.select index
+                -- patchesBar >~ ListBar.selectTab index
                 mainScreen >~ Screen.render
 
         addPatchButton =
@@ -438,7 +439,6 @@ main1 =
                         }
                     )
                 patchesBar >~ ListBar.setItems $ patchesLBCommands nextNW
-                patchesBar >~ ListBar.select patchNumId
                 mainScreen >~ Screen.render
 
         forgetLink :: Link -> State -> State
