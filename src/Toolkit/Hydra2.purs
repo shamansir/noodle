@@ -1,18 +1,25 @@
 module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, spawnAndRegister, withFamily, familySym) where
 
 
-import Prelude (Unit, unit, pure)
+import Prelude (Unit, unit, pure, ($), flip)
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
+
+import Data.Maybe (Maybe(..))
+import Data.Traversable (class Traversable, sequence)
+
 import Control.Applicative (class Applicative)
+import Control.Plus (class Plus, empty)
+
 import Type.Data.Symbol (class IsSymbol)
 
 import Noodle.Toolkit3 (Toolkit) as Noodle
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Patch4 (Patch) as Noodle
 import Noodle.Patch4 as Patch
-import Noodle.Id (Family) as Node
+import Noodle.Id (Family, FamilyR) as Node
+import Noodle.Id (reflectFamilyR) as Id
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as Noodle
 import Noodle.Toolkit3.Has as Has
@@ -644,109 +651,111 @@ familySym =
         }
 
 
-spawnAndRegister :: forall m. MonadEffect m => Noodle.Patch State (Instances m) -> String -> m (Noodle.Patch State (Instances m))
-spawnAndRegister = withFamily Patch.spawnAndRegisterNodeIfKnown
+spawnAndRegister :: forall m. MonadEffect m => Noodle.Patch State (Instances m) -> Node.FamilyR -> m (Maybe (Noodle.Patch State (Instances m)))
+spawnAndRegister patch = withFamily \family tk -> Patch.spawnAndRegisterNodeIfKnown family tk patch
+
+
+-- spawn :: forall m. Plus m => MonadEffect m => Node.FamilyR -> (forall f state fs iis is os. m (Noodle.Node f state is os m))
+-- spawn = withFamily ?wh
 
 
 withFamily
-        :: forall b m
+        :: forall a m
          . Applicative m
         => (  forall f state fs iis is os
            .  IsSymbol f
            => Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
            => Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
            => Node.Family f
-           -> Toolkit m
-           -> b
-           -> m b
+           -> Toolkit m -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
+           -> m a
            )
-        -> b
-        -> String
-        -> m b
-withFamily fn p = case _ of
-        "noise" -> fn familySym.noise toolkit p
-        "voronoi" -> fn familySym.voronoi toolkit p
-        "osc" -> fn familySym.osc toolkit p
-        "shape" -> fn familySym.shape toolkit p
-        "gradient" -> fn familySym.gradient toolkit p
-        -- "srctex" -> fn familySym.srctex toolkit p
-        "solid" -> fn familySym.solid toolkit p
-        "src" -> fn familySym.src toolkit p
-        "prev" -> fn familySym.prev toolkit p
-        "rotate" -> fn familySym.rotate toolkit p
-        "scale" -> fn familySym.scale toolkit p
-        "pixelate" -> fn familySym.pixelate toolkit p
-        "repeat" -> fn familySym.repeat toolkit p
-        "repeatX" -> fn familySym.repeatX toolkit p
-        "repeatY" -> fn familySym.repeatY toolkit p
-        "kaleid" -> fn familySym.kaleid toolkit p
-        "scroll" -> fn familySym.scroll toolkit p
-        "scrollX" -> fn familySym.scrollX toolkit p
-        "scrollY" -> fn familySym.scrollY toolkit p
-        "posterize" -> fn familySym.posterize toolkit p
-        "shift" -> fn familySym.shift toolkit p
-        "invert" -> fn familySym.invert toolkit p
-        "contrast" -> fn familySym.contrast toolkit p
-        "brightness" -> fn familySym.brightness toolkit p
-        "luma" -> fn familySym.luma toolkit p
-        "tresh" -> fn familySym.tresh toolkit p
-        "color" -> fn familySym.color toolkit p
-        "saturate" -> fn familySym.saturate toolkit p
-        "hue" -> fn familySym.hue toolkit p
-        "colorama" -> fn familySym.colorama toolkit p
-        "sum" -> fn familySym.sum toolkit p
-        "r" -> fn familySym.r toolkit p
-        "g" -> fn familySym.g toolkit p
-        "b" -> fn familySym.b toolkit p
-        "a" -> fn familySym.a toolkit p
-        "add" -> fn familySym.add toolkit p
-        "sub" -> fn familySym.sub toolkit p
-        "layer" -> fn familySym.layer toolkit p
-        "blend" -> fn familySym.blend toolkit p
-        "mult" -> fn familySym.mult toolkit p
-        "diff" -> fn familySym.diff toolkit p
-        "mask" -> fn familySym.mask toolkit p
-        "modulateRepeat" -> fn familySym.modulateRepeat toolkit p
-        "modulateRepeatX" -> fn familySym.modulateRepeatX toolkit p
-        "modulateRepeatY" -> fn familySym.modulateRepeatY toolkit p
-        "modulateKaleid" -> fn familySym.modulateKaleid toolkit p
-        "modulateScrollX" -> fn familySym.modulateScrollX toolkit p
-        "modulateScrollY" -> fn familySym.modulateScrollY toolkit p
-        "modulate" -> fn familySym.modulate toolkit p
-        "modulateScale" -> fn familySym.modulateScale toolkit p
-        "modulatePixelate" -> fn familySym.modulatePixelate toolkit p
-        "modulateRotate" -> fn familySym.modulateRotate toolkit p
-        "modulateHue" -> fn familySym.modulateHue toolkit p
-        "render" -> fn familySym.render toolkit p
-        "update" -> fn familySym.update toolkit p
-        "setResolution" -> fn familySym.setResolution toolkit p
-        "hush" -> fn familySym.hush toolkit p
-        "setFunction" -> fn familySym.setFunction toolkit p
-        "speed" -> fn familySym.speed toolkit p
-        "bpm" -> fn familySym.bpm toolkit p
-        "width" -> fn familySym.width toolkit p
-        "height" -> fn familySym.height toolkit p
-        "pi" -> fn familySym.pi toolkit p
-        "time" -> fn familySym.time toolkit p
-        "mouse" -> fn familySym.mouse toolkit p
-        "initCam" -> fn familySym.initCam toolkit p
-        "initImage" -> fn familySym.initImage toolkit p
-        "initVideo" -> fn familySym.initVideo toolkit p
-        "init" -> fn familySym.init toolkit p
-        "initStream" -> fn familySym.initStream toolkit p
-        "initScreen" -> fn familySym.initScreen toolkit p
-        "fast" -> fn familySym.fast toolkit p
-        "smooth" -> fn familySym.smooth toolkit p
-        "ease" -> fn familySym.ease toolkit p
-        "offset" -> fn familySym.offset toolkit p
-        "fit" -> fn familySym.fit toolkit p
-        "fft" -> fn familySym.fft toolkit p
-        "setSmooth" -> fn familySym.setSmooth toolkit p
-        "setCutoff" -> fn familySym.setCutoff toolkit p
-        "setBins" -> fn familySym.setBins toolkit p
-        "setScale" -> fn familySym.setScale toolkit p
-        "hide" -> fn familySym.hide toolkit p
-        "show" -> fn familySym.show toolkit p
-        "out" -> fn familySym.out toolkit p
+        -> Node.FamilyR
+        -> m (Maybe a)
+withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
+        "noise" -> Just $ fn familySym.noise toolkit
+        "voronoi" -> Just $ fn familySym.voronoi toolkit
+        "osc" -> Just $ fn familySym.osc toolkit
+        "shape" -> Just $ fn familySym.shape toolkit
+        "gradient" -> Just $ fn familySym.gradient toolkit
+        -- "srctex" -> Just $ fn familySym.srctex toolkit
+        "solid" -> Just $ fn familySym.solid toolkit
+        "src" -> Just $ fn familySym.src toolkit
+        "prev" -> Just $ fn familySym.prev toolkit
+        "rotate" -> Just $ fn familySym.rotate toolkit
+        "scale" -> Just $ fn familySym.scale toolkit
+        "pixelate" -> Just $ fn familySym.pixelate toolkit
+        "repeat" -> Just $ fn familySym.repeat toolkit
+        "repeatX" -> Just $ fn familySym.repeatX toolkit
+        "repeatY" -> Just $ fn familySym.repeatY toolkit
+        "kaleid" -> Just $ fn familySym.kaleid toolkit
+        "scroll" -> Just $ fn familySym.scroll toolkit
+        "scrollX" -> Just $ fn familySym.scrollX toolkit
+        "scrollY" -> Just $ fn familySym.scrollY toolkit
+        "posterize" -> Just $ fn familySym.posterize toolkit
+        "shift" -> Just $ fn familySym.shift toolkit
+        "invert" -> Just $ fn familySym.invert toolkit
+        "contrast" -> Just $ fn familySym.contrast toolkit
+        "brightness" -> Just $ fn familySym.brightness toolkit
+        "luma" -> Just $ fn familySym.luma toolkit
+        "tresh" -> Just $ fn familySym.tresh toolkit
+        "color" -> Just $ fn familySym.color toolkit
+        "saturate" -> Just $ fn familySym.saturate toolkit
+        "hue" -> Just $ fn familySym.hue toolkit
+        "colorama" -> Just $ fn familySym.colorama toolkit
+        "sum" -> Just $ fn familySym.sum toolkit
+        "r" -> Just $ fn familySym.r toolkit
+        "g" -> Just $ fn familySym.g toolkit
+        "b" -> Just $ fn familySym.b toolkit
+        "a" -> Just $ fn familySym.a toolkit
+        "add" -> Just $ fn familySym.add toolkit
+        "sub" -> Just $ fn familySym.sub toolkit
+        "layer" -> Just $ fn familySym.layer toolkit
+        "blend" -> Just $ fn familySym.blend toolkit
+        "mult" -> Just $ fn familySym.mult toolkit
+        "diff" -> Just $ fn familySym.diff toolkit
+        "mask" -> Just $ fn familySym.mask toolkit
+        "modulateRepeat" -> Just $ fn familySym.modulateRepeat toolkit
+        "modulateRepeatX" -> Just $ fn familySym.modulateRepeatX toolkit
+        "modulateRepeatY" -> Just $ fn familySym.modulateRepeatY toolkit
+        "modulateKaleid" -> Just $ fn familySym.modulateKaleid toolkit
+        "modulateScrollX" -> Just $ fn familySym.modulateScrollX toolkit
+        "modulateScrollY" -> Just $ fn familySym.modulateScrollY toolkit
+        "modulate" -> Just $ fn familySym.modulate toolkit
+        "modulateScale" -> Just $ fn familySym.modulateScale toolkit
+        "modulatePixelate" -> Just $ fn familySym.modulatePixelate toolkit
+        "modulateRotate" -> Just $ fn familySym.modulateRotate toolkit
+        "modulateHue" -> Just $ fn familySym.modulateHue toolkit
+        "render" -> Just $ fn familySym.render toolkit
+        "update" -> Just $ fn familySym.update toolkit
+        "setResolution" -> Just $ fn familySym.setResolution toolkit
+        "hush" -> Just $ fn familySym.hush toolkit
+        "setFunction" -> Just $ fn familySym.setFunction toolkit
+        "speed" -> Just $ fn familySym.speed toolkit
+        "bpm" -> Just $ fn familySym.bpm toolkit
+        "width" -> Just $ fn familySym.width toolkit
+        "height" -> Just $ fn familySym.height toolkit
+        "pi" -> Just $ fn familySym.pi toolkit
+        "time" -> Just $ fn familySym.time toolkit
+        "mouse" -> Just $ fn familySym.mouse toolkit
+        "initCam" -> Just $ fn familySym.initCam toolkit
+        "initImage" -> Just $ fn familySym.initImage toolkit
+        "initVideo" -> Just $ fn familySym.initVideo toolkit
+        "init" -> Just $ fn familySym.init toolkit
+        "initStream" -> Just $ fn familySym.initStream toolkit
+        "initScreen" -> Just $ fn familySym.initScreen toolkit
+        "fast" -> Just $ fn familySym.fast toolkit
+        "smooth" -> Just $ fn familySym.smooth toolkit
+        "ease" -> Just $ fn familySym.ease toolkit
+        "offset" -> Just $ fn familySym.offset toolkit
+        "fit" -> Just $ fn familySym.fit toolkit
+        "fft" -> Just $ fn familySym.fft toolkit
+        "setSmooth" -> Just $ fn familySym.setSmooth toolkit
+        "setCutoff" -> Just $ fn familySym.setCutoff toolkit
+        "setBins" -> Just $ fn familySym.setBins toolkit
+        "setScale" -> Just $ fn familySym.setScale toolkit
+        "hide" -> Just $ fn familySym.hide toolkit
+        "show" -> Just $ fn familySym.show toolkit
+        "out" -> Just $ fn familySym.out toolkit
 
-        _ -> pure p
+        _ -> Nothing

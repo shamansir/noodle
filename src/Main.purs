@@ -9,6 +9,7 @@ import Effect.Console as Console
 import Control.Monad.State as State
 
 import Data.Maybe (Maybe(..), fromMaybe, maybe, maybe')
+import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
@@ -19,7 +20,7 @@ import Data.FunctorWithIndex (mapWithIndex)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Array ((:))
+import Data.Array ((:), (!!))
 import Data.Array as Array
 import Data.Foldable (for_, traverse_)
 import Data.List (toUnfoldable) as List
@@ -79,9 +80,11 @@ import Noodle.Toolkit3 as Toolkit
 import Noodle.Network2 as Network
 import Noodle.Network2 (Network) as Noodle
 import Noodle.Patch4 as Patch
+import Noodle.Patch4 (Patch) as Noodle
+import Noodle.Node2 as Node
 
 
-import Toolkit.Hydra2 (toolkit, Toolkit, Instances, noInstances, Families) as Hydra
+import Toolkit.Hydra2 as Hydra
 
 
 mainScreen = nk :: Screen <^> "main-scr"
@@ -221,6 +224,10 @@ inletsOutletsStyle =
         ]
 
 
+families :: Array Id.FamilyR
+families = List.toUnfoldable $ Toolkit.nodeFamilies Hydra.toolkit
+
+
 main1 :: Effect Unit
 main1 =
   Cli.run initialState
@@ -282,7 +289,7 @@ main1 =
                 , Box.height $ Dimension.percents 40.0
                 , Box.draggable true
                 , Box.scrollable true
-                , List.items $ List.toUnfoldable $ Id.reflectFamilyR <$> Toolkit.nodeFamilies Hydra.toolkit
+                , List.items $ Id.reflectFamilyR <$> families
                 , List.mouse true
                 , List.keys true
                 , Box.border [ Border.type_ Border._line, Border.fg palette.nodeListFg ]
@@ -297,11 +304,18 @@ main1 =
                         -- lastNodeBoxKey <- _.lastNodeBoxKey <$> State.get
                         state <- State.get
 
+                        {- -}
+                        let mbCurrentPatchId = Tuple.snd <$> state.currentPatch
+                        let mbCurrentPatch = mbCurrentPatchId >>= \id -> Network.patch id $ unwrapN state.network
+                        {- -}
+
                         -- patchesBar >~ ListBar.setItems
                         --     [ "test1" /\ [] /\ \_ _ -> do liftEffect $ Console.log "foo"
                         --     , "test2" /\ [] /\ \_ _ -> do liftEffect $ Console.log "bar"
                         --     ]
                         -- patchesBar >~ ListBar.addItemH ?wh [] ?wh
+
+                        -- Hydra.withFamily
 
                         let top = Offset.px $ state.lastShiftX + 2
                         let left = Offset.px $ 16 + state.lastShiftY + 2
@@ -309,8 +323,27 @@ main1 =
                         let nextInletsBar = NodeKey.next state.lastInletsBarKey
                         let nextOutletsBar = NodeKey.next state.lastOutletsBarKey
 
+                        {- -}
                         selected <- List.selected ~< nodeList
-                        -- liftEffect $ Console.log $ show selected
+                        let mbSelectedFamily = families !! selected
+                        -- mbNextNode <-
+                        case (/\) <$> mbSelectedFamily <*> mbCurrentPatch of
+                            Just (familyR /\ curPatch) -> do
+                                _ <- Hydra.withFamily
+                                        (\family tk -> do
+                                            node <- Toolkit.spawn tk family
+                                            inputs <- Node.inputs node
+                                            outputs <- Node.outputs node
+                                            -- let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Unit (Hydra.Instances _))
+                                            let nextPatch' = Hydra.spawnAndRegister curPatch familyR
+                                            state <- State.get
+                                            pure unit
+                                        )
+                                        familyR
+                                pure unit
+                            Nothing -> pure unit
+                        liftEffect $ Console.log $ show selected
+                        {- -}
 
                         let is = [ "a", "b", "c" ]
                         let os = [ "sum", "x" ]
