@@ -3,7 +3,7 @@ module Main where
 import Prelude
 
 import Effect (Effect)
-import Effect.Class (liftEffect)
+import Effect.Class (liftEffect, class MonadEffect)
 import Effect.Console as Console
 
 import Control.Monad.State as State
@@ -45,7 +45,7 @@ import Blessed.Core.Orientation as Orientation
 import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line, Button)
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
-import Blessed.Internal.BlessedOp (BlessedOpGet, BlessedOp)
+import Blessed.Internal.BlessedOp (BlessedOpGet, BlessedOp, BlessedOpM)
 import Blessed.Internal.NodeKey (nk, NodeKey(..), type (<^>), RawNodeKey)
 import Blessed.Internal.NodeKey as NodeKey
 import Blessed.Internal.Emitter (class Fires) as E
@@ -82,6 +82,8 @@ import Noodle.Network2 (Network) as Noodle
 import Noodle.Patch4 as Patch
 import Noodle.Patch4 (Patch) as Noodle
 import Noodle.Node2 as Node
+import Noodle.Node2 (Node) as Noodle
+import Noodle.Family.Def as Family
 
 
 import Toolkit.Hydra2 as Hydra
@@ -157,6 +159,7 @@ type State =
     , linksTo :: Map RawNodeKey (Map Int Link)
     -- , network :: Noodle.Network Unit (Hydra.Families Effect) (Hydra.Instances Effect)
     -- , network :: TestM Effect
+    -- , network :: Network (BlessedOpM State Effect)
     , network :: Network Effect
     , currentPatch :: Maybe (Int /\ Patch.Id)
     }
@@ -329,16 +332,20 @@ main1 =
                         -- mbNextNode <-
                         case (/\) <$> mbSelectedFamily <*> mbCurrentPatch of
                             Just (familyR /\ curPatch) -> do
-                                _ <- Hydra.withFamily
-                                        (\family tk -> do
-                                            node <- Toolkit.spawn tk family
+                                _ <- liftEffect $ Hydra.withFamily
+                                        {- ((\family def tk -> do
+                                            (node :: Noodle.Node _ _ _ _ _) <- Toolkit.spawn tk family
                                             inputs <- Node.inputs node
                                             outputs <- Node.outputs node
+                                            -- Console.log $ show <$> Record.keys inputs
+                                            -- Console.log $ show <$> Record.keys outputs
                                             -- let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Unit (Hydra.Instances _))
                                             let nextPatch' = Hydra.spawnAndRegister curPatch familyR
+                                            -- let nodes = Patch.nodesOf family
                                             state <- State.get
                                             pure unit
-                                        )
+                                        )) -}
+                                        (withFamilyFn curPatch)
                                         familyR
                                 pure unit
                             Nothing -> pure unit
@@ -485,6 +492,50 @@ main1 =
         )
 
     where
+
+        {-
+        withFamilyFn
+            :: forall f state fs iis is os
+             . Hydra.KnowsNodesOf f state fs iis is os (BlessedOpM State Effect)
+            => Noodle.Patch Hydra.State (Hydra.Instances (BlessedOpM State Effect))
+            -> Id.Family f
+            -> Family.Def state is os (BlessedOpM State Effect)
+            -> Hydra.Toolkit (BlessedOpM State Effect)
+            -> BlessedOpM State Effect Unit
+        withFamilyFn curPatch family def tk = do
+            (node :: Noodle.Node f state is os (BlessedOpM State Effect)) <- Toolkit.spawn tk family
+            inputs <- Node.inputs node
+            outputs <- Node.outputs node
+            -- Console.log $ show <$> Record.keys inputs
+            -- Console.log $ show <$> Record.keys outputs
+            let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Unit (Hydra.Instances (BlessedOpM State Effect)))
+            -- let nextPatch' = Hydra.spawnAndRegister curPatch familyR
+            let nodes = Patch.nodesOf family
+            state <- State.get
+            pure unit
+        -}
+
+        withFamilyFn
+            :: forall f state fs iis is os m
+             . MonadEffect m
+            -- MonadState State m
+            => Hydra.KnowsNodesOf f state fs iis is os m
+            => Noodle.Patch Hydra.State (Hydra.Instances m)
+            -> Id.Family f
+            -> Family.Def state is os m
+            -> Hydra.Toolkit m
+            -> m (Noodle.Patch Unit (Hydra.Instances m))
+        withFamilyFn curPatch family def tk = do
+            (node :: Noodle.Node f state is os m) <- Toolkit.spawn tk family
+            inputs <- Node.inputs node
+            outputs <- Node.outputs node
+            -- Console.log $ show <$> Record.keys inputs
+            -- Console.log $ show <$> Record.keys outputs
+            let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Unit (Hydra.Instances m))
+            -- let nextPatch' = Hydra.spawnAndRegister curPatch familyR
+            let (nodes :: Array (Noodle.Node f state is os m)) = Patch.nodesOf family nextPatch
+            -- state <- State.get
+            pure nextPatch
 
         patchesLBCommands fromNw = mapWithIndex patchButton $ Map.toUnfoldable $ Network.patches $ unwrapN fromNw
 

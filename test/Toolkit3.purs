@@ -49,7 +49,6 @@ import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
 import Type.Data.Symbol (reflectSymbol, class IsSymbol)
 
-
 import Test.Repr.Toolkit3 (MyRepr(..))
 
 
@@ -179,7 +178,7 @@ spec = do
                     }
 
 
-        it " spawn" $ do
+        it "spawn" $ do
             let families_ = { foo : Node.Family :: _ "foo", bar : Node.Family :: _ "bar" }
             let families = Toolkit.familyDefsIndexed toolkit2 :: Array FamilyRT
             let patch = Patch.init toolkit2
@@ -194,12 +193,21 @@ spec = do
                 testFn _ = pure patch
             case Array.index families 0 of
                 Just (RT familyR) -> do
-                    maybeNode <- Toolkit.spawn toolkit2 families_.foo
+                    -- maybeNode <- Toolkit.spawn toolkit2 families_.foo -- FIXME: spawn node of the given family
                     pure unit
-                    -- case maybeNode of
-                    --     Just node -> pure unit
-                    --     Nothing -> fail "foo"
                 Nothing -> fail "families list wasn't produced"
+
+        {-
+        it "unsafe spawn" $ do
+            let families = Toolkit.familyDefsIndexed toolkit2 :: Array FamilyRT
+            case Array.index families 0 of
+                Just (RT familyR) -> do
+                    maybeNode <- Toolkit.unsafeSpawnR toolkit2 familyR
+                    case maybeNode of
+                        Just _ -> pure unit
+                        Nothing -> fail "falied to spawn"
+                Nothing -> fail "families list wasn't produced"
+        -}
 
 
 
@@ -207,11 +215,11 @@ spec = do
 
 families_ = { foo : Node.Family :: _ "foo", bar : Node.Family :: _ "bar" }
 testFn' tk patch "foo" = do
-    Patch.spawnAdd families_.foo tk patch
+    Patch.spawnAndRegisterNodeIfKnown families_.foo tk patch
     -- node <- Toolkit.spawn tk families_.foo
     -- pure $ Patch.registerNode node patch
 testFn' tk patch "bar" =
-    Patch.spawnAdd families_.bar tk patch
+    Patch.spawnAndRegisterNodeIfKnown families_.bar tk patch
 testFn' _ patch _ = pure patch
 
 
