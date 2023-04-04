@@ -332,7 +332,7 @@ main1 =
                         -- mbNextNode <-
                         case (/\) <$> mbSelectedFamily <*> mbCurrentPatch of
                             Just (familyR /\ curPatch) -> do
-                                _ <- liftEffect $ Hydra.withFamily
+                                _ <- Hydra.withFamily
                                         {- ((\family def tk -> do
                                             (node :: Noodle.Node _ _ _ _ _) <- Toolkit.spawn tk family
                                             inputs <- Node.inputs node
@@ -516,26 +516,35 @@ main1 =
         -}
 
         withFamilyFn
-            :: forall f state fs iis is os m
-             . MonadEffect m
+            :: forall f state fs iis is os
+            --  . MonadEffect m
             -- MonadState State m
-            => Hydra.HasNodesOf f state fs iis is os m
-            => Noodle.Patch Hydra.State (Hydra.Instances m)
+            -- => Hydra.HasNodesOf f state fs iis is os m
+            -- => Noodle.Patch Hydra.State (Hydra.Instances m)
+            -- -> Id.Family f
+            -- -> Family.Def state is os m
+            -- -> Hydra.Toolkit m
+            -- -> m (Noodle.Patch Unit (Hydra.Instances m))
+             . Hydra.HasNodesOf f state fs iis is os Effect
+            => Noodle.Patch Hydra.State (Hydra.Instances Effect)
             -> Id.Family f
-            -> Family.Def state is os m
-            -> Hydra.Toolkit m
-            -> m (Noodle.Patch Unit (Hydra.Instances m))
+            -> Family.Def state is os Effect
+            -> Hydra.Toolkit Effect
+            -- -> m (Noodle.Patch Unit (Hydra.Instances Effect))
+            -> BlessedOpM State Effect Unit
         withFamilyFn curPatch family def tk = do
-            (node :: Noodle.Node f state is os m) <- Toolkit.spawn tk family
-            inputs <- Node.inputs node
-            outputs <- Node.outputs node
-            -- Console.log $ show <$> Record.keys inputs
-            -- Console.log $ show <$> Record.keys outputs
-            let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Unit (Hydra.Instances m))
-            -- let nextPatch' = Hydra.spawnAndRegister curPatch familyR
-            let (nodes :: Array (Noodle.Node f state is os m)) = Patch.nodesOf family nextPatch
-            -- state <- State.get
-            pure nextPatch
+            mbNextPatch <- liftEffect $ do
+                (node :: Noodle.Node f state is os Effect) <- Toolkit.spawn tk family
+                inputs <- Node.inputs node
+                outputs <- Node.outputs node
+                -- Console.log $ show <$> Record.keys inputs
+                -- Console.log $ show <$> Record.keys outputs
+                let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Unit (Hydra.Instances Effect))
+                -- let nextPatch' = Hydra.spawnAndRegister curPatch familyR
+                let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
+                -- state <- State.get
+                pure nextPatch
+            pure unit
 
         patchesLBCommands fromNw = mapWithIndex patchButton $ Map.toUnfoldable $ Network.patches $ unwrapN fromNw
 

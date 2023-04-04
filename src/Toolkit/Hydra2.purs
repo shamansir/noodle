@@ -1,9 +1,9 @@
-module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, spawnAndRegister, withFamily, familySym, class HasNodesOf) where
+module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
 
 
-import Prelude (Unit, unit, ($))
+import Prelude (Unit, unit, ($), (<$>))
 
-import Effect.Class (class MonadEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 
 import Data.Maybe (Maybe(..))
 import Data.Traversable (sequence)
@@ -653,8 +653,8 @@ familySym =
         }
 
 
-spawnAndRegister :: forall m. MonadEffect m => Noodle.Patch State (Instances m) -> Node.FamilyR -> m (Maybe (Noodle.Patch State (Instances m)))
-spawnAndRegister patch = withFamily \family _ tk -> Patch.spawnAndRegisterNodeIfKnown family tk patch
+-- spawnAndRegister :: forall m t. MonadEffect m => MonadEffect t => Noodle.Patch State (Instances m) -> Node.FamilyR -> t (Maybe (Noodle.Patch State (Instances m)))
+-- spawnAndRegister patch = withFamily \family _ tk -> ?wh <$> Patch.spawnAndRegisterNodeIfKnown family tk patch
 
 
 -- spawn :: forall m. Plus m => MonadEffect m => Node.FamilyR -> (forall f state fs iis is os. m (Noodle.Node f state is os m))
@@ -678,8 +678,8 @@ instance ( IsSymbol f
 
 
 withFamily
-        :: forall a m
-         . Applicative m
+        :: forall a m t
+         . Applicative t
         => (  forall f state fs iis is os
            .  HasNodesOf f state fs iis is os m
            => Node.Family f
@@ -690,10 +690,10 @@ withFamily
         --    -> Proxy is
         --    -> Proxy os
         --    -> Proxy state
-           -> m a
+           -> t a
            )
         -> Node.FamilyR
-        -> m (Maybe a)
+        -> t (Maybe a)
 withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "noise" -> Just $ fn familySym.noise families.noise toolkit
         "voronoi" -> Just $ fn familySym.voronoi families.voronoi toolkit
