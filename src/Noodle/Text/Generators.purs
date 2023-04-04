@@ -174,13 +174,22 @@ familyModuleImports =
 
 toolkitModuleImports :: Imports
 toolkitModuleImports =
-    [ "Prelude (Unit, unit)"
+    [ "Prelude (Unit, unit, ($))"
+    , "Effect.Class (class MonadEffect)"
+    , "Data.Maybe (Maybe(..))"
+    , "Data.Traversable (sequence)"
+    , "Control.Applicative (class Applicative)"
+    , "Type.Data.Symbol (class IsSymbol)"
+    , "Noodle.Id (Family, FamilyR) as Node"
+    , "Noodle.Id (reflectFamilyR) as Id"
+    , "Noodle.Family.Def as Family"
     , "Noodle.Toolkit3 (Toolkit) as Noodle"
     , "Noodle.Toolkit3 as Toolkit"
-    , "Noodle.Node2 (Node) as N"
     , "Noodle.Patch4 (Patch) as Noodle"
     , "Noodle.Patch4 as Patch"
-    , "Noodle.Id (Family) as Node"
+    , "Noodle.Node2 (Node) as Noodle"
+    , "Noodle.Toolkit3.Has (class HasFamilyDef) as Has"
+    , "Noodle.Patch4.Has (class HasInstancesOf) as Has"
     ]
 
 
@@ -231,12 +240,14 @@ toolkitModule FamiliesAsModules tkName _ tkUserImports families =
     <> "type State = Unit" <> "\n\n\n"
     <> "defaultState :: State" <> "\n"
     <> "defaultState = unit" <> "\n\n\n"
+    <> familiesType tkName families <> "\n\n\n"
     <> familiesImplementation tkName families <> "\n\n\n"
     <> toolkitType tkName families <> "\n\n\n"
     <> toolkitImplementation tkName families <> "\n\n\n"
-    <> "type Toolkit m = " <> toolkitTypeName tkName <> " m" <> "\n\n\n"
-    <> "type Patch m = Noodle.Patch State (Instances m)" <> "\n\n\n"
+    <> "type Toolkit (m :: Type -> Type) = " <> toolkitTypeName tkName <> " m" <> "\n\n\n"
+    <> "type Patch (m :: Type -> Type) = Noodle.Patch State (Instances m)" <> "\n\n\n"
     <> instancesType tkName families <> "\n\n\n"
+    <> noInstancesImplementation tkName families <> "\n\n\n"
     <> symbols families <> "\n\n\n"
     <> spawner tkName families
 toolkitModule FamiliesInline tkName lp tkUserImports families =
@@ -249,8 +260,8 @@ toolkitModule FamiliesInline tkName lp tkUserImports families =
     <> familiesInlineImplementations lp families <> "\n\n\n"
     <> toolkitTypeInline tkName families <> "\n\n\n"
     <> toolkitImplementationInline tkName families <> "\n\n\n"
-    <> "type Toolkit m = " <> toolkitTypeName tkName <> " m" <> "\n\n\n"
-    <> "type Patch m = Noodle.Patch State (Instances m)" <> "\n\n\n"
+    <> "type Toolkit (m :: Type -> Type) = " <> toolkitTypeName tkName <> " m" <> "\n\n\n"
+    <> "type Patch (m :: Type -> Type) = Noodle.Patch State (Instances m)" <> "\n\n\n"
     <> nodesInlineTypes lp families <> "\n\n\n"
     <> instancesTypeInline tkName families <> "\n\n\n"
     <> symbolsInline families <> "\n\n\n"
@@ -279,19 +290,18 @@ toolkitSumType tkName families =
 
 toolkitTypeInline :: ToolkitName -> Array QD.QFamily -> String
 toolkitTypeInline tkName fmls =
-    "type " <> toolkitTypeName tkName <> " m\n" <> i <> "= Noodle.Toolkit State\n"
+    "type " <> toolkitTypeName tkName <> " (m :: Type -> Type)\n" <> i <> "= Noodle.Toolkit State\n"
         <> i2 <> inBrackets' familyInlineImplementationReferenceAndLabel ("\n" <> i2 <> ", ") fmls
 
 
 toolkitType :: ToolkitName -> Array QD.QFamily -> String
 toolkitType tkName fmls =
-    "type " <> toolkitTypeName tkName <> " m\n" <> i <> "= Noodle.Toolkit State (Families m)\n"
-        <> i2 <> inBrackets' familyTypeReference ("\n" <> i2 <> ", ") fmls
+    "type " <> toolkitTypeName tkName <> " (m :: Type -> Type)\n" <> i <> "= Noodle.Toolkit State (Families m)"
 
 
 toolkitImplementationInline :: ToolkitName -> Array QD.QFamily -> String
 toolkitImplementationInline tkName fmls =
-    "toolkit :: forall m. " <> toolkitTypeName tkName <> " m\n" <>
+    "toolkit :: forall (m :: Type -> Type). " <> toolkitTypeName tkName <> " m\n" <>
     "toolkit =\n"
         <> i <> "Toolkit.from \"" <> unwrap tkName <> "\"\n"
         <> i2 <> inCBraces' familyInlineImplementationReferenceAndLabel ("\n" <> i2 <> ", ") fmls
@@ -299,16 +309,23 @@ toolkitImplementationInline tkName fmls =
 
 toolkitImplementation :: ToolkitName -> Array QD.QFamily -> String
 toolkitImplementation tkName fmls =
-    "toolkit :: forall m. " <> toolkitTypeName tkName <> " m\n" <>
+    "toolkit :: forall (m :: Type -> Type). " <> toolkitTypeName tkName <> " m\n" <>
     "toolkit =\n"
         <> i <> "Toolkit.from \"" <> unwrap tkName <> "\" families\n"
         -- <> i2 <> inCBraces' familyModuleImplementationReferenceAndLabel ("\n" <> i2 <> ", ") fmls
 
 
+familiesType :: ToolkitName -> Array QD.QFamily -> String
+familiesType tkName fmls =
+    "type Families (m :: Type -> Type) =\n"
+        <> i2 <> inBrackets' familyTypeReference ("\n" <> i2 <> ", ") fmls
+
+
 familiesImplementation :: ToolkitName -> Array QD.QFamily -> String
 familiesImplementation tkName fmls =
-    "families :: forall m. Record (Families m)\n" <>
+    "families :: forall (m :: Type -> Type). Record (Families m)\n" <>
     "families =\n"
+        -- <> i2 <> inBrackets' familyTypeReference ("\n" <> i2 <> ", ") fmls
         <> i2 <> inCBraces' familyModuleImplementationReferenceAndLabel ("\n" <> i2 <> ", ") fmls
 
 
@@ -370,12 +387,14 @@ familyModuleImplementationReferenceAndLabel qfml =
 
 instancesType :: ToolkitName -> Array (QD.QFamily) -> String
 instancesType _ fmls =
+    "type Instances :: (Type -> Type) -> Row Type\n" <>
     "type Instances m =\n"
         <> i2 <> inBrackets' instancesReferenceAndLabel ("\n" <> i2 <> ", ") fmls
 
 
 instancesTypeInline :: ToolkitName -> Array (QD.QFamily) -> String
 instancesTypeInline _ fmls =
+    "type Instances :: (Type -> Type) -> Row Type\n" <>
     "type Instances m =\n"
         <> i2 <> inBrackets' instancesInlineReferenceAndLabel ("\n" <> i2 <> ", ") fmls
 
@@ -383,6 +402,18 @@ instancesTypeInline _ fmls =
 instancesReferenceAndLabel :: QD.QFamily -> String
 instancesReferenceAndLabel qfml =
     qfml.family <> " :: Array ( " <> familyModuleAlias qfml <> ".Node m )"
+
+
+noInstancesImplementation :: ToolkitName -> Array (QD.QFamily) -> String
+noInstancesImplementation _ fmls =
+    "noInstances :: forall (m :: Type -> Type). Record (Instances m)\n" <>
+    "noInstances =\n"
+        <> i2 <> inCBraces' noInstancesFamilyImplementationAndType ("\n" <> i2 <> ", ") fmls
+
+
+noInstancesFamilyImplementationAndType :: QD.QFamily -> String
+noInstancesFamilyImplementationAndType qfml =
+    qfml.family <> " : ([] :: Array ( " <> familyModuleAlias qfml <> ".Node m ))"
 
 
 instancesInlineReferenceAndLabel :: QD.QFamily -> String
@@ -509,25 +540,25 @@ spawner :: ToolkitName -> Array QD.QFamily -> String
 spawner _ fmls =
     """
 spawnAndRegister :: forall m. MonadEffect m => Noodle.Patch State (Instances m) -> Node.FamilyR -> m (Maybe (Noodle.Patch State (Instances m)))
-spawnAndRegister patch = withFamily \\family _ tk -> Patch.spawnAndRegisterNodeIfKnown family tk patch
+spawnAndRegister patch = withFamily \family _ tk -> Patch.spawnAndRegisterNodeIfKnown family tk patch
 
 
 class ( IsSymbol f
         , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
         , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
-        ) <= KnowsNodesOf f state fs iis is os m
+        ) <= HasNodesOf f state fs iis is os m
 
 instance ( IsSymbol f
         , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
         , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
-        ) => KnowsNodesOf f state fs iis is os m
+        ) => HasNodesOf f state fs iis is os m
 
 
 withFamily
     :: forall b m
     . Applicative m
     => (  forall f state fs iis is os
-        .  KnowsNodesOf f state fs iis is os m
+        .  HasNodesOf f state fs iis is os m
         => Node.Family f
         -> Family.Def state is os m
         -> Toolkit m
@@ -535,13 +566,12 @@ withFamily
         )
     -> Node.FamilyR
     -> m (Maybe a)
-    """
-    <> "\n" <>
-    "withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of\n" <>
+withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
+""" <> "\n" <>
     String.joinWith "\n" (spawnerImpl <$> fmls) <> "\n\n"
     <> i2 <> "_ -> Nothing"
     where
-        spawnerImpl qfml = i2 <> "\"" <> qfml.family <> "\" -> Just $ fn familySym." <> qfml.family <> " families." <> qfml.family <> " toolkit b"
+        spawnerImpl qfml = i2 <> "\"" <> qfml.family <> "\" -> Just $ fn familySym." <> qfml.family <> " families." <> qfml.family <> " toolkit"
 
 
 familySymbolTypeAndLabel :: QD.QFamily -> String

@@ -1,30 +1,27 @@
-module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, spawnAndRegister, withFamily, familySym, class KnowsNodesOf) where
+module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, spawnAndRegister, withFamily, familySym, class HasNodesOf) where
 
 
-import Prelude (Unit, unit, pure, ($), flip)
+import Prelude (Unit, unit, ($))
 
-import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
 import Data.Maybe (Maybe(..))
-import Data.Traversable (class Traversable, sequence)
+import Data.Traversable (sequence)
 
 import Control.Applicative (class Applicative)
-import Control.Plus (class Plus, empty)
 
 import Type.Data.Symbol (class IsSymbol)
-import Type.Proxy (Proxy(..))
 
+import Noodle.Id (Family, FamilyR) as Node
+import Noodle.Id (reflectFamilyR) as Id
+import Noodle.Family.Def as Family
 import Noodle.Toolkit3 (Toolkit) as Noodle
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Patch4 (Patch) as Noodle
 import Noodle.Patch4 as Patch
-import Noodle.Id (Family, FamilyR) as Node
-import Noodle.Id (reflectFamilyR) as Id
-import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as Noodle
-import Noodle.Toolkit3.Has as Has
-import Noodle.Patch4.Has as Has
+import Noodle.Toolkit3.Has (class HasFamilyDef) as Has
+import Noodle.Patch4.Has (class HasInstancesOf) as Has
 
 
 import Toolkit.Hydra2.Family.Source.FNoise as FNoise
@@ -206,7 +203,7 @@ type Families (m :: Type -> Type) =
         )
 
 
-families :: forall m. Record (Families m)
+families :: forall (m :: Type -> Type). Record (Families m)
 families =
         { noise : (FNoise.family :: FNoise.Family m)
         , voronoi : (FVoronoi.family :: FVoronoi.Family m)
@@ -671,12 +668,12 @@ spawnAndRegister patch = withFamily \family _ tk -> Patch.spawnAndRegisterNodeIf
 class ( IsSymbol f
         , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
         , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
-        ) <= KnowsNodesOf f state fs iis is os m
+        ) <= HasNodesOf f state fs iis is os m
 
 instance ( IsSymbol f
         , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
         , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
-        ) => KnowsNodesOf f state fs iis is os m
+        ) => HasNodesOf f state fs iis is os m
 
 
 
@@ -684,7 +681,7 @@ withFamily
         :: forall a m
          . Applicative m
         => (  forall f state fs iis is os
-           .  KnowsNodesOf f state fs iis is os m
+           .  HasNodesOf f state fs iis is os m
            => Node.Family f
            -> Family.Def state is os m
            -> Toolkit m  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?

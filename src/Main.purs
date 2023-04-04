@@ -496,7 +496,7 @@ main1 =
         {-
         withFamilyFn
             :: forall f state fs iis is os
-             . Hydra.KnowsNodesOf f state fs iis is os (BlessedOpM State Effect)
+             . Hydra.HasNodesOf f state fs iis is os (BlessedOpM State Effect)
             => Noodle.Patch Hydra.State (Hydra.Instances (BlessedOpM State Effect))
             -> Id.Family f
             -> Family.Def state is os (BlessedOpM State Effect)
@@ -519,7 +519,7 @@ main1 =
             :: forall f state fs iis is os m
              . MonadEffect m
             -- MonadState State m
-            => Hydra.KnowsNodesOf f state fs iis is os m
+            => Hydra.HasNodesOf f state fs iis is os m
             => Noodle.Patch Hydra.State (Hydra.Instances m)
             -> Id.Family f
             -> Family.Def state is os m
