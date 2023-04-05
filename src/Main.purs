@@ -331,16 +331,16 @@ main1 =
                         selected <- List.selected ~< nodeList
                         let mbSelectedFamily = families !! selected
                         -- mbNextNode <-
-                        case (/\) <$> mbSelectedFamily <*> mbCurrentPatch of
-                            Just (familyR /\ curPatch) -> do
-                                _ <- Hydra.withFamily
-                                        (withFamilyFn curPatch)
-                                        familyR
-                                pure unit
-                            Nothing -> pure unit
+                        _ <- case (/\) <$> mbSelectedFamily <*> mbCurrentPatch of
+                            Just (familyR /\ curPatch) ->
+                                Hydra.withFamily
+                                    (addNodeOfGivenFamily curPatch)
+                                    familyR
+                            Nothing -> pure Nothing
                         liftEffect $ Console.log $ show selected
                         {- -}
 
+                        {-
                         let is = [ "a", "b", "c" ]
                         let os = [ "sum", "x" ]
 
@@ -383,12 +383,11 @@ main1 =
                                     , List.keys true
                                     , ListBar.autoCommandKeys true
                                     , inletsOutletsStyle
-                                    {- , Core.on ListBar.Select
-                                        \_ _ -> do
-                                            liftEffect $ Console.log "inlet"
-                                            inletSelected <- List.selected ~< nextInletsBar
-                                            liftEffect $ Console.log $ show inletSelected
-                                    -}
+                                    -- , Core.on ListBar.Select
+                                    --     \_ _ -> do
+                                    --         liftEffect $ Console.log "inlet"
+                                    --         inletSelected <- List.selected ~< nextInletsBar
+                                    --         liftEffect $ Console.log $ show inletSelected
                                     ]
                                     [ ]
 
@@ -407,12 +406,11 @@ main1 =
                                     , List.mouse true
                                     , List.keys true
                                     , inletsOutletsStyle
-                                    {- , Core.on ListBar.Select
-                                        \_ _ -> do
-                                            liftEffect $ Console.log "outlet"
-                                            outletSelected <- List.selected ~< nextOutletsBar
-                                            liftEffect $ Console.log $ show outletSelected
-                                    -}
+                                    -- , Core.on ListBar.Select
+                                    --     \_ _ -> do
+                                    --         liftEffect $ Console.log "outlet"
+                                    --         outletSelected <- List.selected ~< nextOutletsBar
+                                    --         liftEffect $ Console.log $ show outletSelected
                                     ]
                                     [
                                     ]
@@ -430,6 +428,7 @@ main1 =
                             } )
 
                         mainScreen >~ Screen.render
+                        -}
 
                         pure unit
                 ]
@@ -482,7 +481,7 @@ main1 =
 
     where
 
-        withFamilyFn
+        addNodeOfGivenFamily
             :: forall f state fs iis rli is rlo os
              . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
             => Noodle.Patch Hydra.State (Hydra.Instances Effect)
@@ -490,7 +489,7 @@ main1 =
             -> Family.Def state is os Effect
             -> Hydra.Toolkit Effect
             -> BlessedOpM State Effect _
-        withFamilyFn curPatch family def tk = do
+        addNodeOfGivenFamily curPatch family def tk = do
             state <- State.get
 
             let nextNodeBox = NodeKey.next state.lastNodeBoxKey
@@ -589,6 +588,20 @@ main1 =
                         ]
                         [
                         ]
+
+            patchBox >~ Node.append nextNodeBoxN
+            nextNodeBox >~ Node.append inletsBarN
+            nextNodeBox >~ Node.append outletsBarN
+
+            State.modify_ (_
+                { lastShiftX = state.lastShiftX + 1
+                , lastShiftY = state.lastShiftY + 1
+                , lastNodeBoxKey = nextNodeBox
+                , lastInletsBarKey = nextInletsBar
+                , lastOutletsBarKey = nextOutletsBar
+                } )
+
+            mainScreen >~ Screen.render
 
             pure { nextNodeBoxN, inletsBarN, outletsBarN }
 
