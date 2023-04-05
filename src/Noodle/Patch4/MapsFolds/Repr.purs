@@ -9,7 +9,8 @@ module Noodle.Patch4.MapsFolds.Repr
   , class FoldToReprsRec
   , class FoldToReprsMap
   , class ExtractReprs
-  , class ToReprHelper
+  , class ToReprHelper, class ToReprFoldToMapsHelper
+  , nodeToRepr, nodeToMapRepr
   )
   where
 
@@ -104,6 +105,8 @@ instance toReprTopInstance ::
         (m (Array (NodeLineRec f repr repr_is repr_os)))
     where
     mappingWithIndex (ToReprTop repr) fsym =
+        traverseWithIndex $ const $ nodeToRepr (ToReprTop repr)
+        {-
         traverseWithIndex (\i node -> do
             let id = Node.id node
             state <- Node.state node
@@ -114,11 +117,49 @@ instance toReprTopInstance ::
                 /\ HM.hmapWithIndex (ToReprDownI id repr) inputs
                 /\ HM.hmapWithIndex (ToReprDownO id repr) outputs
         )
+        -}
 
         {-
         toRepr (FamilyP $ familyP sym) s
             /\ HM.hmapWithIndex (ToReprDownI (familyP sym) repr) iRec
             /\ HM.hmapWithIndex (ToReprDownO (familyP sym) repr) oRec -}
+
+
+nodeToRepr
+    :: forall m is os repr state f iks repr_is oks repr_os
+     . MonadEffect m
+    => ToReprHelper m f is iks os oks repr_is repr_os repr state
+    => ToReprTop m repr
+    -> Node f state is os m
+    -> m (NodeLineRec f repr repr_is repr_os)
+nodeToRepr (ToReprTop repr) node = do
+    let id = Node.id node
+    state <- Node.state node
+    inputs <- Node.inputs node
+    outputs <- Node.outputs node
+    pure $ id
+        /\ toRepr (NodeP id) state
+        /\ HM.hmapWithIndex (ToReprDownI id repr) inputs
+        /\ HM.hmapWithIndex (ToReprDownO id repr) outputs
+
+
+nodeToMapRepr
+    :: forall m is os repr state f iks oks
+     . MonadEffect m
+    => ToReprFoldToMapsHelper f is iks os oks repr state
+    => ToReprTop m repr
+    -> Node f state is os m
+    -> m (NodeLineMap f repr)
+nodeToMapRepr (ToReprTop repr) node = do
+    let id = Node.id node
+    state <- Node.state node
+    inputs <- Node.inputs node
+    outputs <- Node.outputs node
+    pure $ id
+        /\ toRepr (NodeP id) state
+        /\ HF.hfoldlWithIndex (ToReprDownI id repr) (Map.empty :: Map InputR repr) inputs
+        /\ HF.hfoldlWithIndex (ToReprDownO id repr) (Map.empty :: Map OutputR repr) outputs
+
 
 {-
 instance foldToReprsMap ::
