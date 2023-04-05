@@ -24,6 +24,7 @@ import Data.Array ((:), (!!))
 import Data.Array as Array
 import Data.Foldable (for_, traverse_)
 import Data.List (toUnfoldable) as List
+import Record.Extra (class Keys, keys) as Record
 
 import Cli.App as Cli
 
@@ -333,18 +334,6 @@ main1 =
                         case (/\) <$> mbSelectedFamily <*> mbCurrentPatch of
                             Just (familyR /\ curPatch) -> do
                                 _ <- Hydra.withFamily
-                                        {- ((\family def tk -> do
-                                            (node :: Noodle.Node _ _ _ _ _) <- Toolkit.spawn tk family
-                                            inputs <- Node.inputs node
-                                            outputs <- Node.outputs node
-                                            -- Console.log $ show <$> Record.keys inputs
-                                            -- Console.log $ show <$> Record.keys outputs
-                                            -- let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Unit (Hydra.Instances _))
-                                            let nextPatch' = Hydra.spawnAndRegister curPatch familyR
-                                            -- let nodes = Patch.nodesOf family
-                                            state <- State.get
-                                            pure unit
-                                        )) -}
                                         (withFamilyFn curPatch)
                                         familyR
                                 pure unit
@@ -493,58 +482,115 @@ main1 =
 
     where
 
-        {-
         withFamilyFn
-            :: forall f state fs iis is os
-             . Hydra.HasNodesOf f state fs iis is os (BlessedOpM State Effect)
-            => Noodle.Patch Hydra.State (Hydra.Instances (BlessedOpM State Effect))
-            -> Id.Family f
-            -> Family.Def state is os (BlessedOpM State Effect)
-            -> Hydra.Toolkit (BlessedOpM State Effect)
-            -> BlessedOpM State Effect Unit
-        withFamilyFn curPatch family def tk = do
-            (node :: Noodle.Node f state is os (BlessedOpM State Effect)) <- Toolkit.spawn tk family
-            inputs <- Node.inputs node
-            outputs <- Node.outputs node
-            -- Console.log $ show <$> Record.keys inputs
-            -- Console.log $ show <$> Record.keys outputs
-            let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Unit (Hydra.Instances (BlessedOpM State Effect)))
-            -- let nextPatch' = Hydra.spawnAndRegister curPatch familyR
-            let nodes = Patch.nodesOf family
-            state <- State.get
-            pure unit
-        -}
-
-        withFamilyFn
-            :: forall f state fs iis is os
-            --  . MonadEffect m
-            -- MonadState State m
-            -- => Hydra.HasNodesOf f state fs iis is os m
-            -- => Noodle.Patch Hydra.State (Hydra.Instances m)
-            -- -> Id.Family f
-            -- -> Family.Def state is os m
-            -- -> Hydra.Toolkit m
-            -- -> m (Noodle.Patch Unit (Hydra.Instances m))
-             . Hydra.HasNodesOf f state fs iis is os Effect
+            :: forall f state fs iis rli is rlo os
+             . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
             => Noodle.Patch Hydra.State (Hydra.Instances Effect)
             -> Id.Family f
             -> Family.Def state is os Effect
             -> Hydra.Toolkit Effect
-            -- -> m (Noodle.Patch Unit (Hydra.Instances Effect))
-            -> BlessedOpM State Effect Unit
+            -> BlessedOpM State Effect _
         withFamilyFn curPatch family def tk = do
-            mbNextPatch <- liftEffect $ do
+            state <- State.get
+
+            let nextNodeBox = NodeKey.next state.lastNodeBoxKey
+            let nextInletsBar = NodeKey.next state.lastInletsBarKey
+            let nextOutletsBar = NodeKey.next state.lastOutletsBarKey
+
+            let top = Offset.px $ state.lastShiftX + 2
+            let left = Offset.px $ 16 + state.lastShiftY + 2
+
+            rec <- liftEffect $ do
                 (node :: Noodle.Node f state is os Effect) <- Toolkit.spawn tk family
                 inputs <- Node.inputs node
                 outputs <- Node.outputs node
                 -- Console.log $ show <$> Record.keys inputs
                 -- Console.log $ show <$> Record.keys outputs
-                let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Unit (Hydra.Instances Effect))
+                let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Hydra.State (Hydra.Instances Effect))
                 -- let nextPatch' = Hydra.spawnAndRegister curPatch familyR
                 let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
                 -- state <- State.get
-                pure nextPatch
-            pure unit
+                pure { nextPatch, node, inputs, outputs, nodes }
+
+            let is /\ os = Node.shape rec.node
+            -- let is /\ os = Record.keys (rec.inputs :: Record is) /\ Record.keys (rec.outputs :: Record os)
+
+            let
+                nextNodeBoxN =
+                    B.box nextNodeBox
+                        [ Box.draggable true
+                        , Box.top top
+                        , Box.left left
+                        , Box.width $ Dimension.px 25
+                        , Box.height $ Dimension.px 5
+                        , Box.border
+                            [ Border.type_ Border._line
+                            , Border.fg palette.nodeBoxBorder
+                            , Border.ch $ Border.fill ':'
+                            ]
+                        , Box.style
+                            [ Style.focus
+                                [ ES.border
+                                    [ Border.fg palette.nodeListSelFg
+                                    ]
+                                ]
+                            ]
+                        , Core.on Element.Move $ onNodeMove nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
+                        ]
+                        [ ]
+
+            let
+                inletHandler idx iname =
+                    iname /\ [] /\ onInletSelect nextNodeBox idx iname
+                inletsBarN =
+                    B.listbar nextInletsBar
+                        [ Box.width $ Dimension.percents 90.0
+                        , Box.height $ Dimension.px 1
+                        , Box.top $ Offset.px 0
+                        , Box.left $ Offset.px 0
+                        -- , List.items is
+                        , ListBar.commands $ List.toUnfoldable $ mapWithIndex inletHandler $ Id.reflectInputR <$> is
+                        -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex inletHandler $ is
+                        , List.mouse true
+                        , List.keys true
+                        , ListBar.autoCommandKeys true
+                        , inletsOutletsStyle
+                        {- , Core.on ListBar.Select
+                            \_ _ -> do
+                                liftEffect $ Console.log "inlet"
+                                inletSelected <- List.selected ~< nextInletsBar
+                                liftEffect $ Console.log $ show inletSelected
+                        -}
+                        ]
+                        [ ]
+
+
+            let
+                outletHandler idx oname =
+                    oname /\ [] /\ onOutletSelect nextNodeBox idx oname
+                outletsBarN =
+                    B.listbar nextOutletsBar
+                        [ Box.width $ Dimension.percents 90.0
+                        , Box.height $ Dimension.px 1
+                        , Box.top $ Offset.px 2
+                        , Box.left $ Offset.px 0
+                        -- , List.items os
+                        , ListBar.commands $ List.toUnfoldable $ mapWithIndex outletHandler $ Id.reflectOutputR <$> os
+                        -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex outletHandler $ os
+                        , List.mouse true
+                        , List.keys true
+                        , inletsOutletsStyle
+                        {- , Core.on ListBar.Select
+                            \_ _ -> do
+                                liftEffect $ Console.log "outlet"
+                                outletSelected <- List.selected ~< nextOutletsBar
+                                liftEffect $ Console.log $ show outletSelected
+                        -}
+                        ]
+                        [
+                        ]
+
+            pure { nextNodeBoxN, inletsBarN, outletsBarN }
 
         patchesLBCommands fromNw = mapWithIndex patchButton $ Map.toUnfoldable $ Network.patches $ unwrapN fromNw
 

@@ -11,6 +11,7 @@ import Data.Traversable (sequence)
 import Control.Applicative (class Applicative)
 
 import Type.Data.Symbol (class IsSymbol)
+import Type.RowList as RL
 
 import Noodle.Id (Family, FamilyR) as Node
 import Noodle.Id (reflectFamilyR) as Id
@@ -22,6 +23,7 @@ import Noodle.Patch4 as Patch
 import Noodle.Node2 (Node) as Noodle
 import Noodle.Toolkit3.Has (class HasFamilyDef) as Has
 import Noodle.Patch4.Has (class HasInstancesOf) as Has
+import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Has
 
 
 import Toolkit.Hydra2.Family.Source.FNoise as FNoise
@@ -654,7 +656,7 @@ familySym =
 
 
 -- spawnAndRegister :: forall m t. MonadEffect m => MonadEffect t => Noodle.Patch State (Instances m) -> Node.FamilyR -> t (Maybe (Noodle.Patch State (Instances m)))
--- spawnAndRegister patch = withFamily \family _ tk -> ?wh <$> Patch.spawnAndRegisterNodeIfKnown family tk patch
+-- spawnAndRegister patch = withFamily \family _ tk -> Patch.spawnAndRegisterNodeIfKnown family tk patch
 
 
 -- spawn :: forall m. Plus m => MonadEffect m => Node.FamilyR -> (forall f state fs iis is os. m (Noodle.Node f state is os m))
@@ -668,20 +670,24 @@ familySym =
 class ( IsSymbol f
         , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
         , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
-        ) <= HasNodesOf f state fs iis is os m
+        , Has.HasInputsAt is rli
+        , Has.HasOutputsAt os rlo
+        ) <= HasNodesOf f state fs iis rli is rlo os m
 
 instance ( IsSymbol f
         , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
         , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
-        ) => HasNodesOf f state fs iis is os m
+        , Has.HasInputsAt is rli
+        , Has.HasOutputsAt os rlo
+        ) => HasNodesOf f state fs iis rli is rlo os m
 
 
 
 withFamily
         :: forall a m t
          . Applicative t
-        => (  forall f state fs iis is os
-           .  HasNodesOf f state fs iis is os m
+        => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type)
+           .  HasNodesOf f state fs iis rli is rlo os m
            => Node.Family f
            -> Family.Def state is os m
            -> Toolkit m  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
