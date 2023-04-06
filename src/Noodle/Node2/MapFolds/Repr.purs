@@ -1,7 +1,7 @@
 module Noodle.Node2.MapsFolds.Repr
   ( Repr(..)
-  , ToReprDownI, ToReprDownO
   , ToReprTop(..)
+  , ToReprDownI, ToReprDownO
   , class HasRepr
   , toRepr
   , NodeLineRec
@@ -36,6 +36,7 @@ import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 
 
+-- TODO: move to a separate top-level `Repr` module, may be find a way to keep non-top constructors hidden
 data ToReprTop :: forall k. (Type -> Type) -> k -> Type
 data ToReprTop m repr = ToReprTop (Repr repr)
 data ToReprDownI :: forall k. Symbol -> k -> Type

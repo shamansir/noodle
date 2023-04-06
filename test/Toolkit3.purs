@@ -33,6 +33,8 @@ import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
+import Noodle.Node2.MapsFolds as NMF
+import Noodle.Node2.MapsFolds.Repr as NMF
 import Noodle.Toolkit3.MapsFolds as TMF
 import Noodle.Toolkit3.MapsFolds.Repr as TMF
 import Noodle.Fn2.Process as Fn

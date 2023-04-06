@@ -40,9 +40,12 @@ import Type.Proxy (Proxy(..))
 -- import Heterogeneous.Mapping as H
 import Noodle.Family.Def as Family
 import Noodle.Toolkit3.Has as Has
+import Noodle.Node2.MapsFolds as NM
+import Noodle.Node2.MapsFolds as NF
+import Noodle.Node2.MapsFolds.Repr as NR
 import Noodle.Toolkit3.MapsFolds as TM
 import Noodle.Toolkit3.MapsFolds as TF
-import Noodle.Toolkit3.MapsFolds.Repr as R
+import Noodle.Toolkit3.MapsFolds.Repr as TR
 
 import Noodle.Id
 import Noodle.Node2 (Node)
@@ -127,8 +130,8 @@ toShapes (Toolkit _ defs) =
 
 toRepr
     :: forall gstate fs families reprs repr
-     . R.ExtractReprs fs families reprs repr
-    => R.Repr repr
+     . TR.ExtractReprs fs families reprs repr
+    => TR.Repr repr
     -> Toolkit gstate families
     -> Record reprs
 toRepr repr (Toolkit _ defs) =

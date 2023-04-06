@@ -667,14 +667,16 @@ familySym =
 -- patchProxy = Proxy :: forall pstate m. _ (Noodle.Patch pstate (Instances m))
 
 
-class ( IsSymbol f
+class
+        ( IsSymbol f
         , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
         , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
         , Has.HasInputsAt is rli
         , Has.HasOutputsAt os rlo
         ) <= HasNodesOf f state fs iis rli is rlo os m
 
-instance ( IsSymbol f
+instance
+        ( IsSymbol f
         , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
         , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
         , Has.HasInputsAt is rli

@@ -36,6 +36,8 @@ import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
+import Noodle.Node2.MapsFolds as NMF
+import Noodle.Node2.MapsFolds.Repr as NMF
 import Noodle.Patch4.MapsFolds as PMF
 import Noodle.Patch4.MapsFolds.Repr as PMF
 import Noodle.Family.Def as Family
@@ -184,7 +186,7 @@ spec = do
                 patch = Patch.init toolkit
                             # Patch.registerNode nodeA
 
-            let reprMap = Patch.toRepr (Proxy :: _ Aff) (PMF.Repr :: _ MyRepr) patch
+            let reprMap = Patch.toRepr (Proxy :: _ Aff) (NMF.Repr :: _ MyRepr) patch
 
             fooReprs <- Record.get _foo reprMap
             barReprs <- Record.get _bar reprMap
@@ -213,7 +215,7 @@ spec = do
                             # Patch.registerNode nodeB
                             # Patch.registerNode nodeC
 
-            let reprMap = Patch.toRepr (Proxy :: _ Aff) (PMF.Repr :: _ MyRepr) patch
+            let reprMap = Patch.toRepr (Proxy :: _ Aff) (NMF.Repr :: _ MyRepr) patch
 
             fooReprs <- Record.get _foo reprMap
             barReprs <- Record.get _bar reprMap
@@ -243,7 +245,7 @@ newtype S = S { foo :: String }
 derive newtype instance Show S
 derive newtype instance Eq S
 
-instance PMF.ConvertNodeTo S where
+instance NMF.ConvertNodeTo S where
     convertNode node = S { foo : reflectFamily' (Node.family node) }
 
 
@@ -259,12 +261,12 @@ newtype F f = F (Family' f)
 reflectF :: forall f. F f -> String
 reflectF (F family) = reflectFamily' family
 
-instance extractFamily :: PMF.ConvertNodeTo (F f') where
+instance extractFamily :: NMF.ConvertNodeTo (F f') where
     convertNode :: forall f state is os m. Node f state is os m -> F f'
     convertNode node = F $ (unsafeCoerce $ Node.family node :: Family' f')
 
 -- FIMXE: include `nodes` type into constraint
-instance PMF.ConvertNodeIndexedTo I where
+instance NMF.ConvertNodeIndexedTo I where
     convertNodeIndexed _ n _ = I n
 
 
@@ -274,7 +276,7 @@ newtype Shape =
 
 instance (HasInputsAt is ksi
         , HasOutputsAt os kso
-        ) => PMF.ConvertNodeTo' is os ksi kso Shape where
+        ) => NMF.ConvertNodeTo' is os ksi kso Shape where
     convertNode'
         :: forall f' state' m'
          . Node f' state' is os m'

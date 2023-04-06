@@ -190,6 +190,7 @@ toolkitModuleImports =
     , "Noodle.Node2 (Node) as Noodle"
     , "Noodle.Toolkit3.Has (class HasFamilyDef) as Has"
     , "Noodle.Patch4.Has (class HasInstancesOf) as Has"
+    , "Noodle.Id (class HasInputsAt, class HasOutputsAt) as Has"
     ]
 
 
@@ -200,7 +201,7 @@ allImports =
 
 familyModule :: ToolkitName -> LocalsPrefix -> Imports -> QD.QFamily -> String
 familyModule tkName lp fmlUserImports qfml =
-    "module " <> familyModuleName tkName qfml <> " (id, name, Family, family, Node, Inputs, Outputs, defaultInputs, defaultOutputs, State) where\n\n\n"
+    "module " <> familyModuleName tkName qfml <> " (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where\n\n\n"
     <> allImports fmlUserImports <> "\n\n\n"
     <> allImports familyModuleImports <> "\n\n\n"
     <> "id = Node.Family :: _ \"" <> qfml.family <> "\"" <> "\n\n\n"
@@ -524,7 +525,7 @@ symbols :: Array QD.QFamily -> String
 symbols fmls =
     "familySym :: Record\n"
         <> i2 <> inBrackets' familySymbolTypeAndLabel ("\n" <> i2 <> ", ") fmls <> "\n\n\n" <>
-    "familySym = \n"
+    "familySym =\n"
         <> i2 <> inCBraces' familySymbolAndLabel ("\n" <> i2 <> ", ") fmls
 
 
@@ -532,26 +533,28 @@ symbolsInline :: Array QD.QFamily -> String
 symbolsInline fmls =
     "familySym :: Record\n"
         <> i2 <> inBrackets' familySymbolTypeAndLabel ("\n" <> i2 <> ", ") fmls <> "\n\n\n" <>
-    "familySym = \n"
+    "familySym =\n"
         <> i2 <> inBrackets' familySymbolInlineAndLabel ("\n" <> i2 <> ", ") fmls
 
 
 spawner :: ToolkitName -> Array QD.QFamily -> String
 spawner _ fmls =
     """
-spawnAndRegister :: forall m. MonadEffect m => Noodle.Patch State (Instances m) -> Node.FamilyR -> m (Maybe (Noodle.Patch State (Instances m)))
-spawnAndRegister patch = withFamily \family _ tk -> Patch.spawnAndRegisterNodeIfKnown family tk patch
-
-
-class ( IsSymbol f
+class
+        ( IsSymbol f
         , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
         , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
-        ) <= HasNodesOf f state fs iis is os m
+        , Has.HasInputsAt is rli
+        , Has.HasOutputsAt os rlo
+        ) <= HasNodesOf f state fs iis rli is rlo os m
 
-instance ( IsSymbol f
+instance
+        ( IsSymbol f
         , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
         , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
-        ) => HasNodesOf f state fs iis is os m
+        , Has.HasInputsAt is rli
+        , Has.HasOutputsAt os rlo
+        ) => HasNodesOf f state fs iis rli is rlo os m
 
 
 withFamily

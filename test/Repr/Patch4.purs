@@ -2,7 +2,7 @@ module Test.Repr.Patch4 where
 
 import Prelude
 
-import Noodle.Patch4.MapsFolds.Repr (class HasRepr)
+import Noodle.Node2.MapsFolds.Repr (class HasRepr)
 
 
 data MyRepr
