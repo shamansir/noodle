@@ -44,6 +44,7 @@ import Noodle.Node2 (Node)
 import Noodle.Id (Family) as Node
 import Noodle.Id (FamilyR) as Toolkit
 import Noodle.Node2 (dimensions, family) as Node
+import Noodle.Node2.MapsFolds as Node
 import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
 import Noodle.Patch4.MapsFolds as Patch
@@ -144,7 +145,7 @@ unwrapNodeHtml' (NodeHtml' html) = html
 --     convertNode = renderNode >>> NodeHtml
 
 
-instance Patch.ConvertNodeTo NodeHtml' where
+instance Node.ConvertNodeTo NodeHtml' where
     convertNode :: forall f state is os m g. {- FIXME: RL.RowToList is g ⇒ RL.RowToList os g ⇒ Record.Keys g ⇒ -} Node f state is os m -> NodeHtml'
     convertNode = renderNode >>> NodeHtml'
 

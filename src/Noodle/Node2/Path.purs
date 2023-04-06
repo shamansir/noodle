@@ -1,4 +1,4 @@
-module Noodle.Patch4.Path where
+module Noodle.Node2.Path where
 
 
 import Noodle.Id (NodeId, Input', Output')

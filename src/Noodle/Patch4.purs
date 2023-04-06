@@ -30,7 +30,8 @@ import Noodle.Patch4.MapsFolds.Repr as R
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Family.Def as Family
-import Noodle.Patch4.MapsFolds.Repr (Repr, class FoldToReprsRec, class FoldToReprsMap, NodeLineRec, NodeLineMap)
+import Noodle.Node2.MapsFolds.Repr (Repr, NodeLineRec, NodeLineMap) as R
+import Noodle.Patch4.MapsFolds.Repr (class FoldToReprsRec, class FoldToReprsMap)
 
 
 --data LinkOE fo fi = Exists (LinkOf fo fi)

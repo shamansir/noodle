@@ -21,7 +21,8 @@ import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
-import Noodle.Patch4.MapsFolds.Repr (class HasRepr, NodeLineRec)
+import Noodle.Node2.MapsFolds.Repr (class HasRepr, NodeLineRec)
+import Noodle.Node2.MapsFolds.Repr (Repr(..)) as NMF
 import Noodle.Patch4.MapsFolds.Repr as PMF
 -- import Test.Repr.Patch4 (MyRepr)
 import Noodle.Node2 (Node)
@@ -99,7 +100,7 @@ main = do
     reprMap =
           Patch.toRepr
               (Proxy :: Proxy Effect)
-              (PMF.Repr :: PMF.Repr AlwaysUnitRepr)
+              (NMF.Repr :: NMF.Repr AlwaysUnitRepr)
               patch
     state = app unit nw
 

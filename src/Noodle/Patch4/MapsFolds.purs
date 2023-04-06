@@ -26,7 +26,9 @@ import Data.UniqueHash (UniqueHash)
 import Noodle.Id (Family', NodeId, familyP, InputR, class HasInputsAt, class HasOutputsAt)
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
-import Noodle.Patch4.MapsFolds.Repr (Repr, ToReprTop(..), NodeLineRec, NodeLineMap, class FoldToReprsRec, class FoldToReprsMap, class ExtractReprs)
+import Noodle.Node2.MapsFolds as NMF
+import Noodle.Node2.MapsFolds.Repr (Repr, ToReprTop(..), NodeLineRec, NodeLineMap)
+import Noodle.Patch4.MapsFolds.Repr (class FoldToReprsRec, class FoldToReprsMap, class ExtractReprs)
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -122,31 +124,31 @@ instance initInstances ::
 
 class
     ( RL.RowToList instances rli
-    , ConvertNodeTo x, ConvertNodesTo (Array x)
+    , NMF.ConvertNodeTo x, ConvertNodesTo (Array x)
     , HM.MapRecordWithIndex rli (HM.ConstMapping (MapNodes x)) instances target
     ) <= Map (rli :: RL.RowList Type) (instances :: Row Type) (target :: Row Type) x
 
 instance mapInstances ::
     ( RL.RowToList instances rli
-    , ConvertNodeTo x, ConvertNodesTo (Array x)
+    , NMF.ConvertNodeTo x, ConvertNodesTo (Array x)
     , HM.MapRecordWithIndex rli (HM.ConstMapping (MapNodes x)) instances target
     ) => Map rli instances target x
 
 class
     ( RL.RowToList instances rli
-    , ConvertNodeTo x, ConvertNodesTo (Array x)
+    , NMF.ConvertNodeTo x, ConvertNodesTo (Array x)
     , HM.MapRecordWithIndex rli (MapNodesIndexed x) instances target
     ) <= MapI (rli :: RL.RowList Type) (instances :: Row Type) (target :: Row Type) x
 
 instance mapInstancesIndexed ::
     ( RL.RowToList instances rli
-    , ConvertNodeTo x, ConvertNodesTo (Array x)
+    , NMF.ConvertNodeTo x, ConvertNodesTo (Array x)
     , HM.MapRecordWithIndex rli (MapNodesIndexed x) instances target
     ) => MapI rli instances target x
 
 
 instance mappingTo ::
-    ( ConvertNodeTo x ) =>
+    ( NMF.ConvertNodeTo x ) =>
     HM.Mapping
         (MapNodes x)
         (Array (Node f state is os m))
@@ -156,7 +158,7 @@ instance mappingTo ::
 
 
 instance mappingIndexedTo ::
-    ( IsSymbol f, ConvertNodeIndexedTo x, ConvertNodesIndexedTo (Array x) ) =>
+    ( IsSymbol f, NMF.ConvertNodeIndexedTo x, ConvertNodesIndexedTo (Array x) ) =>
     HM.MappingWithIndex
         (MapNodesIndexed x)
         (Proxy f)
@@ -169,14 +171,14 @@ instance mappingIndexedTo ::
 
 class
     ( Monoid (ff result)
-    , ConvertNodeTo result
+    , NMF.ConvertNodeTo result
     , RL.RowToList instances rla
     , HF.FoldlRecord (HF.ConstFolding (FoldNodes ff result)) (ff result) rla instances (ff result)
     ) <= Fold (rla :: RL.RowList Type) (instances :: Row Type) (ff :: Type -> Type) result
 
 instance foldInstances ::
     ( Monoid (ff result)
-    , ConvertNodeTo result
+    , NMF.ConvertNodeTo result
     , RL.RowToList instances rla
     , HF.FoldlRecord (HF.ConstFolding (FoldNodes ff result)) (ff result) rla instances (ff result)
     ) => Fold rla instances ff result
@@ -184,31 +186,31 @@ instance foldInstances ::
 
 class
     ( Monoid (ff result)
-    , ConvertNodeIndexedTo result
+    , NMF.ConvertNodeIndexedTo result
     , RL.RowToList instances rla
     , HF.FoldlRecord (FoldNodesIndexed ff result) (ff result) rla instances (ff result)
     ) <= FoldI (rla :: RL.RowList Type) (instances :: Row Type) (ff :: Type -> Type) result
 
 instance foldInstacesIndexed ::
     ( Monoid (ff result)
-    , ConvertNodeIndexedTo result
+    , NMF.ConvertNodeIndexedTo result
     , RL.RowToList instances rla
     , HF.FoldlRecord (FoldNodesIndexed ff result) (ff result) rla instances (ff result)
     ) => FoldI rla instances ff result
 
 
 instance foldNodesArr ::
-    ConvertNodeTo x
+    NMF.ConvertNodeTo x
     => HF.Folding
             (FoldNodes Array x)
             (Array x)
             (Array (Node f state is os m))
             (Array x)
     where
-    folding FoldNodes acc nodes = acc <> (convertNode <$> nodes)
+    folding FoldNodes acc nodes = acc <> (NMF.convertNode <$> nodes)
 
 instance foldNodesIndexedArr ::
-    ( IsSymbol f, ConvertNodeIndexedTo x )
+    ( IsSymbol f, NMF.ConvertNodeIndexedTo x )
     => HF.FoldingWithIndex
             (FoldNodesIndexed Array x)
             (Proxy f)
@@ -216,22 +218,22 @@ instance foldNodesIndexedArr ::
             (Array (Node f state is os m))
             (Array x)
     where
-    foldingWithIndex FoldNodesIndexed psym acc nodes = acc <> Array.mapWithIndex (convertNodeIndexed $ familyP psym) nodes
+    foldingWithIndex FoldNodesIndexed psym acc nodes = acc <> Array.mapWithIndex (NMF.convertNodeIndexed $ familyP psym) nodes
 
 
 instance foldNodesList ::
-    ConvertNodeTo x
+    NMF.ConvertNodeTo x
     => HF.Folding
             (FoldNodes List x)
             (List x)
             (Array (Node f state is os m))
             (List x)
     where
-    folding FoldNodes acc nodes = acc <> (Array.toUnfoldable $ convertNode <$> nodes)
+    folding FoldNodes acc nodes = acc <> (Array.toUnfoldable $ NMF.convertNode <$> nodes)
 
 
 instance foldNodesIndexedList ::
-    ( IsSymbol f, ConvertNodeIndexedTo x )
+    ( IsSymbol f, NMF.ConvertNodeIndexedTo x )
     => HF.FoldingWithIndex
             (FoldNodesIndexed List x)
             (Proxy f)
@@ -239,24 +241,10 @@ instance foldNodesIndexedList ::
             (Array (Node f state is os m))
             (List x)
     where
-    foldingWithIndex FoldNodesIndexed psym acc nodes = acc <> (List.mapWithIndex (convertNodeIndexed $ familyP psym) $ Array.toUnfoldable nodes)
+    foldingWithIndex FoldNodesIndexed psym acc nodes = acc <> (List.mapWithIndex (NMF.convertNodeIndexed $ familyP psym) $ Array.toUnfoldable nodes)
 
 
 {- Converters -}
-
-
---class ConvertNodeTo' :: RL.RowList -> Row Type -> Row Type -> Type -> Constraint
-class (HasInputsAt is irl, HasOutputsAt os orl) <= ConvertNodeTo' (is :: Row Type) (os :: Row Type) irl orl x | is -> irl, os -> orl where
-    convertNode' :: forall f state m. Node f state is os m -> x
-
-
--- class ConvertNodeTo (focus :: Focus) x where
-class ConvertNodeTo x where
-    convertNode :: forall f state is os m. Node f state is os m -> x
-
-
-class ConvertNodeIndexedTo x where
-    convertNodeIndexed :: forall f state is os m. IsSymbol f => Family' f -> Int -> Node f state is os m -> x
 
 
 class ConvertNodesTo x where
@@ -268,29 +256,29 @@ class ConvertNodesIndexedTo x where
     convertNodesIndexed :: forall f state is os m. Family' f -> Array (Node f state is os m) -> x
 
 
-instance convertNodesToArray :: ConvertNodeTo x => ConvertNodesTo (Array x) where
-    convertNodes arr = convertNode <$> arr
+instance convertNodesToArray :: NMF.ConvertNodeTo x => ConvertNodesTo (Array x) where
+    convertNodes arr = NMF.convertNode <$> arr
 
 {-
--- instance convertNodesIndexedToArray :: ConvertNodeTo x => ConvertNodesIndexedTo (Array x) where
+-- instance convertNodesIndexedToArray :: NMF.ConvertNodeTo x => NMF.ConvertNodesIndexedTo (Array x) where
 --     convertNodesIndexed fsym arr = convertNode <$> arr
 
-instance extractShape :: (HasInputsAt is irl, HasOutputsAt os orl) => ConvertNodeTo' is os irl orl (List InputR) where
+instance extractShape :: (HasInputsAt is irl, HasOutputsAt os orl) => NMF.ConvertNodeTo' is os irl orl (List InputR) where
     convertNode' :: forall f state m. Node f state is os m -> List InputR
     convertNode' node = Node.inputsShape node
 
 
-instance extractId :: ConvertNodeTo (NodeId f') where
+instance extractId :: NMF.ConvertNodeTo (NodeId f') where
     convertNode :: forall f state is os m. Node f state is os m -> NodeId f'
     convertNode node = unsafeCoerce $ Node.id node
 
 
-instance extractFamily :: ConvertNodeTo (Family' f') where
+instance extractFamily :: NMF.ConvertNodeTo (Family' f') where
     convertNode :: forall f state is os m. Node f state is os m -> Family' f'
     convertNode node = unsafeCoerce $ Node.family node
 
 
-instance extractHash :: ConvertNodeTo UniqueHash where
+instance extractHash :: NMF.ConvertNodeTo UniqueHash where
     convertNode :: forall f state is os m. Node f state is os m -> UniqueHash
     convertNode = Node.hash
 
@@ -327,24 +315,6 @@ instance extractNodeWithIndex :: ConvertNodeIndexedTo (NodeWithIndex f' state' i
         -> NodeWithIndex f' state' is' os' m'
     convertNodeIndexed family idx node = NodeWithIndex $ unsafeCoerce family /\ idx /\ unsafeCoerce node
 -}
-
-instance convertToItself :: ConvertNodeTo (Node f' state' is' os' m') where
-    convertNode :: forall f state is os m. Node f state is os m -> Node f' state' is' os' m'
-    -- convertNode :: Node f' state' is' os' m' -> Node f' state' is' os' m'
-    convertNode = unsafeCoerce
-    -- convertNode = identity
-
-
-instance convertIndexedToItself :: ConvertNodeIndexedTo (Node f' state' is' os' m') where
-    convertNodeIndexed
-        :: forall f state is os m
-         . IsSymbol f
-        => Family' f
-        -> Int
-        -> Node f state is os m
-        -> Node f' state' is' os' m'
-    convertNodeIndexed _ _ = unsafeCoerce
-
 
 
 {- Implementations -}
