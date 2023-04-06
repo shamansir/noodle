@@ -21,7 +21,8 @@ import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
-import Noodle.Node2.MapsFolds.Repr (class HasRepr, NodeLineRec)
+import Noodle.Node2.MapsFolds.Flatten (NodeLineRec)
+import Noodle.Node2.MapsFolds.Repr (class HasRepr)
 import Noodle.Node2.MapsFolds.Repr (Repr(..)) as NMF
 import Noodle.Patch4.MapsFolds.Repr as PMF
 -- import Test.Repr.Patch4 (MyRepr)

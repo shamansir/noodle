@@ -15,9 +15,11 @@ import Heterogeneous.Mapping as HM
 import Heterogeneous.Folding as HF
 
 import Noodle.Id (class ListsInstances)
-import Noodle.Node2.MapsFolds.Repr as NR
+import Noodle.Node2.MapsFolds.Flatten (NodeLineRec, NodeLineMap) as NR
+import Noodle.Node2.MapsFolds.Repr (ToReprTop) as NR
 
 
+class FoldToReprsRec :: forall k. (Type -> Type) -> k -> RL.RowList Type -> Row Type -> Symbol -> Type -> Row Type -> Row Type -> Constraint
 class
     ( MonadEffect m
     , RL.RowToList instances rla
@@ -45,21 +47,21 @@ class
     , RL.RowToList instances rla
     , HF.FoldlRecord
         (NR.ToReprTop m repr)
-        (m (Array (NR.NodeLineMap f repr)))
+        (m (Array (NR.NodeLineMap repr)))
         rla
         instances
-        (m (Array (NR.NodeLineMap f repr)))
-    ) <= FoldToReprsMap m rla instances f repr
+        (m (Array (NR.NodeLineMap repr)))
+    ) <= FoldToReprsMap m rla instances repr
 instance
     ( MonadEffect m
     , RL.RowToList instances rla
     , HF.FoldlRecord
         (NR.ToReprTop m repr)
-        (m (Array (NR.NodeLineMap f repr)))
+        (m (Array (NR.NodeLineMap repr)))
         rla
         instances
-        (m (Array (NR.NodeLineMap f repr)))
-    ) => FoldToReprsMap m rla instances f repr
+        (m (Array (NR.NodeLineMap repr)))
+    ) => FoldToReprsMap m rla instances repr
 
 
 class

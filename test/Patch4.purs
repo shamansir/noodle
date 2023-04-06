@@ -15,7 +15,8 @@ import Data.Array as Array
 import Data.String as String
 import Data.List (List)
 import Data.List as List
-import Data.Bifunctor (bimap)
+import Data.Bifunctor (bimap, lmap)
+import Data.Map as Map
 
 import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
@@ -38,6 +39,7 @@ import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
 import Noodle.Node2.MapsFolds as NMF
 import Noodle.Node2.MapsFolds.Repr as NMF
+import Noodle.Node2.MapsFolds.Flatten as NMF
 import Noodle.Patch4.MapsFolds as PMF
 import Noodle.Patch4.MapsFolds.Repr as PMF
 import Noodle.Family.Def as Family
@@ -236,6 +238,47 @@ spec = do
                     /\ Unit_
                     /\ { a : String_ "aaa", b : String_ "bbb", c : Int_ 32 }
                     /\ { x : Bool_ false }
+                ]
+
+            pure unit
+
+
+        it "repr-ing to map works with all families registered" $ do
+
+            nodeA <- Toolkit.spawn toolkit _foo
+            nodeB <- Toolkit.spawn toolkit _bar
+            nodeC <- Toolkit.spawn toolkit _bar
+
+            let
+                patch :: Patch Unit (Instances Aff)
+                patch = Patch.init toolkit
+                            # Patch.registerNode nodeA
+                            # Patch.registerNode nodeB
+                            # Patch.registerNode nodeC
+
+            (reprsArr :: Array (NMF.NodeLineMap MyRepr)) <- Patch.toReprFlat (Proxy :: _ Aff) (NMF.Repr :: _ MyRepr) patch
+
+            (NMF.flatten'' <$> reprsArr) `shouldEqual`
+                [
+
+                     "bar"
+                        /\ Unit_
+                        /\ [ "a" /\ String_ "aaa", "b" /\ String_ "bbb", "c" /\ Int_ 32 ]
+                        /\ [ "x" /\ Bool_ false ]
+
+                ,
+                    "bar"
+                        /\ Unit_
+                        /\ [ "a" /\ String_ "aaa", "b" /\ String_ "bbb", "c" /\ Int_ 32 ]
+                        /\ [ "x" /\ Bool_ false ]
+
+                ,
+                    "foo"
+                        /\ Unit_
+                        -- /\ [ "foo" /\ String_ "aaa", "bar" /\ String_ "bbb", "c" /\ Int_ 32 ]
+                        /\ [ "bar" /\ String_ "bbb", "c" /\ Int_ 32, "foo" /\ String_ "aaa" ]
+                        /\ [ "out" /\ Bool_ false ]
+
                 ]
 
             pure unit

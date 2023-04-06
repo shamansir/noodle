@@ -11,7 +11,11 @@ module Noodle.Id
     , output', outputR, outputR', outputP
     , reflectOutput, reflectOutput', reflectOutputR
     , keysToOutputsR
-    , NodeId, makeNodeId, reflectNodeId
+    , NodeId, NodeId', NodeIdR
+    , makeNodeId
+    , split, split', splitR
+    , nodeId', nodeIdR, nodeIdR'
+    , reflectNodeId, reflectNodeId', reflectNodeIdR
     , familyOf, hashOf
     , class Reflect, reflect
     , class Reflect', reflect'
@@ -31,6 +35,7 @@ import Prelude
 
 import Effect (Effect)
 import Data.Symbol (class IsSymbol, reflectSymbol)
+import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (UniqueHash)
 import Data.UniqueHash as UniqueHash
@@ -223,11 +228,26 @@ newtype NodeId f = NodeId (Family' f /\ UniqueHash)
 derive newtype instance eqNodeId :: Eq (NodeId f)
 derive newtype instance ordNodeId :: Ord (NodeId f)
 derive newtype instance showNodeId :: Show (NodeId f)
-instance Reflect' (NodeId f) where reflect' = reflectNodeId
+instance Reflect' (NodeId f) where reflect' = joinDots <<< reflectNodeId
 
 
-reflectNodeId :: forall f. NodeId f -> String
-reflectNodeId (NodeId (family' /\ uuid)) = reflect' family' <> "::" <> UniqueHash.toString uuid
+newtype NodeId' (f :: Symbol) = NodeId' (FamilyR /\ UniqueHash)
+derive newtype instance eqNodeId' :: Eq (NodeId' f)
+derive newtype instance ordNodeId' :: Ord (NodeId' f)
+derive newtype instance showNodeId' :: Show (NodeId' f)
+instance Reflect' (NodeId' o) where reflect' = joinDots <<< reflectNodeId'
+
+
+newtype NodeIdR = NodeIdR (FamilyR /\ UniqueHash)
+derive newtype instance eqNodeIdR :: Eq NodeIdR
+derive newtype instance ordNodeIdR :: Ord NodeIdR
+derive newtype instance showNodeIdR :: Show NodeIdR
+instance Reflect' NodeIdR where reflect' = joinDots <<< reflectNodeIdR
+-- instance FromKeysR NodeIdR where fromKeysR = keysToNodeIdsR
+
+
+joinDots :: String /\ String -> String
+joinDots = uncurry \a b -> a <> "::" <> b
 
 
 makeNodeId :: forall f. Family' f -> Effect (NodeId f)
@@ -240,6 +260,42 @@ familyOf (NodeId (family' /\ _)) = family'
 
 hashOf :: forall f. NodeId f -> UniqueHash
 hashOf (NodeId (_ /\ uuid)) = uuid
+
+
+split :: forall f. IsSymbol f => NodeId f -> FamilyR /\ UniqueHash
+split (NodeId (family' /\ uuid)) = reflectFamily'' family' /\ uuid
+
+
+split' :: forall f. NodeId' f -> FamilyR /\ UniqueHash
+split' (NodeId' pair) = pair
+
+
+splitR :: NodeIdR -> FamilyR /\ UniqueHash
+splitR (NodeIdR pair) = pair
+
+
+nodeId' :: forall f. IsSymbol f => NodeId f -> NodeId' f
+nodeId' (NodeId (family' /\ uuid)) = NodeId' $ reflectFamily'' family' /\ uuid
+
+
+nodeIdR :: forall f. IsSymbol f => NodeId f -> NodeIdR
+nodeIdR = split >>> NodeIdR
+
+
+nodeIdR' :: forall f. NodeId' f -> NodeIdR
+nodeIdR' = split' >>> NodeIdR
+
+
+reflectNodeId :: forall f. NodeId f -> String /\ String
+reflectNodeId (NodeId (family' /\ uuid)) = reflect' family' /\ UniqueHash.toString uuid
+
+
+reflectNodeId' :: forall f. NodeId' f -> String /\ String
+reflectNodeId' (NodeId' (familyR /\ uuid)) = reflect' familyR /\ UniqueHash.toString uuid
+
+
+reflectNodeIdR :: NodeIdR -> String /\ String
+reflectNodeIdR (NodeIdR (familyR /\ uuid)) = reflect' familyR /\ UniqueHash.toString uuid
 
 
 -- TODO: extend to HasInputs, HasOutputs with getAtInput, getAtOutput, updateInputs, updateOutputs, ...

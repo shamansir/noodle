@@ -30,7 +30,8 @@ import Noodle.Patch4.MapsFolds.Repr as R
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
 import Noodle.Family.Def as Family
-import Noodle.Node2.MapsFolds.Repr (Repr, NodeLineRec, NodeLineMap) as R
+import Noodle.Node2.MapsFolds.Flatten (NodeLineRec, NodeLineMap) as R
+import Noodle.Node2.MapsFolds.Repr (Repr) as R
 import Noodle.Patch4.MapsFolds.Repr (class FoldToReprsRec, class FoldToReprsMap)
 
 
@@ -203,14 +204,13 @@ toRepr mproxy repr (Patch _ instances _) =
     PF.toReprs mproxy repr instances
 
 
-{-
-toRepr'
-    :: forall f gstate m (instances :: Row Type) (rla ∷ RL.RowList Type) (ff :: Type -> Type) repr
+toReprFlat
+    :: forall gstate m (instances :: Row Type) (rla ∷ RL.RowList Type) repr
      . MonadEffect m
-    => FoldToReprsMap m rla instances f repr
-    => Repr repr
+    => FoldToReprsMap m rla instances repr
+    => Proxy m
+    -> R.Repr repr
     -> Patch gstate instances
-    -> m (Array (NodeLineMap f repr))
-toRepr' repr (Patch _ instances _) =
-    PF.toReprs' repr instances
--}
+    -> m (Array (R.NodeLineMap repr))
+toReprFlat mproxy repr (Patch _ instances _) =
+    PF.toReprsFlat mproxy repr instances

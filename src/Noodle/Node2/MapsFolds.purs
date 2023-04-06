@@ -1,14 +1,9 @@
 module Noodle.Node2.MapsFolds where
 
-import Prelude
-
 import Type.Data.Symbol (class IsSymbol)
 
-import Data.UniqueHash (UniqueHash)
-import Noodle.Id (Family', NodeId, familyP, InputR, class HasInputsAt, class HasOutputsAt)
+import Noodle.Id (class HasInputsAt, class HasOutputsAt, Family')
 import Noodle.Node2 (Node)
-import Noodle.Node2 as Node
-import Noodle.Node2.MapsFolds.Repr (Repr, ToReprTop(..), NodeLineRec, NodeLineMap)
 
 import Unsafe.Coerce (unsafeCoerce)
 

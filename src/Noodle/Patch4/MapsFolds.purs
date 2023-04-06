@@ -27,7 +27,8 @@ import Noodle.Id (Family', NodeId, familyP, InputR, class HasInputsAt, class Has
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Node2.MapsFolds as NMF
-import Noodle.Node2.MapsFolds.Repr (Repr, ToReprTop(..), NodeLineRec, NodeLineMap)
+import Noodle.Node2.MapsFolds.Flatten (NodeLineRec, NodeLineMap)
+import Noodle.Node2.MapsFolds.Repr (Repr, ToReprTop(..))
 import Noodle.Patch4.MapsFolds.Repr (class FoldToReprsRec, class FoldToReprsMap, class ExtractReprs)
 
 import Unsafe.Coerce (unsafeCoerce)
@@ -390,14 +391,13 @@ toReprs _ repr =
     HM.hmapWithIndex (ToReprTop repr :: ToReprTop m repr)
 
 
-{-
-toReprs'
-    :: forall f m (instances :: Row Type) (rla ∷ RL.RowList Type) (ff :: Type -> Type) repr
+toReprsFlat
+    :: forall m (instances :: Row Type) (rla ∷ RL.RowList Type) repr
      . MonadEffect m
-    => FoldToReprsMap m rla instances f repr
-    => Repr repr
+    => FoldToReprsMap m rla instances repr
+    => Proxy m
+    -> Repr repr
     -> Record instances
-    -> m (Array (NodeLineMap f repr))
-toReprs' repr =
-    HF.hfoldlWithIndex (ToReprTop repr :: ToReprTop m repr) (pure [] :: m (Array (NodeLineMap f repr)))
--}
+    -> m (Array (NodeLineMap repr))
+toReprsFlat _ repr =
+    HF.hfoldlWithIndex (ToReprTop repr :: ToReprTop m repr) (pure [] :: m (Array (NodeLineMap repr)))
