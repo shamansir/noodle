@@ -5,76 +5,17 @@ module Noodle.Patch4.MapsFolds.Repr
   )
   where
 
-import Prelude
 
 import Effect.Class (class MonadEffect)
-import Data.Symbol (class IsSymbol)
-import Type.Proxy (Proxy)
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Map (Map)
-import Data.Map as Map
-import Data.Array as Array
 --import Data.FoldableWithIndex (foldlWithIndex)
-import Data.TraversableWithIndex (traverseWithIndex)
 import Prim.RowList as RL
 
 
 import Heterogeneous.Mapping as HM
 import Heterogeneous.Folding as HF
 
-import Noodle.Id (NodeId, familyP, inputP, outputP, InputR, OutputR, Input, inputR', outputR', class ListsInstances)
-import Noodle.Family.Def as Family
-import Noodle.Node2.Path (Path(..))
-import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn
-import Noodle.Node2 (Node)
-import Noodle.Node2 as Node
+import Noodle.Id (class ListsInstances)
 import Noodle.Node2.MapsFolds.Repr as NR
-
-
-{-
-instance foldToReprsRec ::
-    ( Semigroup (m (Array (NR.NodeLineRec f repr repr_is repr_os)))
-    , MonadEffect m
-    , ToReprFoldToRecsHelper f is iks os oks repr_is repr_os repr state
-    )
-    => HF.FoldingWithIndex
-            (NR.ToReprTop repr)
-            (Proxy sym)
-            (m (Array (NR.NodeLineRec f repr repr_is repr_os)))
-            (Array (Node f state is os m))
-            (m (Array (NR.NodeLineRec f repr repr_is repr_os)))
-    where
-    foldingWithIndex (NR.ToReprTop repr) _ acc nodes =
-        acc <> traverseWithIndex (\i node -> do
-            let id = Node.id node
-            state <- Node.state node
-            inputs <- Node.inputs node
-            outputs <- Node.outputs node
-            pure $ id
-                /\ toRepr (NodeP id) state
-                /\ HM.hmapWithIndex (ToReprDownI id repr) inputs
-                /\ HM.hmapWithIndex (ToReprDownO id repr) outputs
-        ) nodes
--}
-
-
-        {-
-        traverseWithIndex (\i node -> do
-            let id = Node.id node
-            state <- Node.state node
-            inputs <- Node.inputs node
-            outputs <- Node.outputs node
-            pure $ id
-                /\ toRepr (NodeP id) state
-                /\ HM.hmapWithIndex (ToReprDownI id repr) inputs
-                /\ HM.hmapWithIndex (ToReprDownO id repr) outputs
-        )
-        -}
-
-        {-
-        toRepr (FamilyP $ familyP sym) s
-            /\ HM.hmapWithIndex (ToReprDownI (familyP sym) repr) iRec
-            /\ HM.hmapWithIndex (ToReprDownO (familyP sym) repr) oRec -}
 
 
 class

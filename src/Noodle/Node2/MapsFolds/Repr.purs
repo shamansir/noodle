@@ -30,7 +30,7 @@ import Heterogeneous.Folding as HF
 
 import Noodle.Id (NodeId, familyP, inputP, outputP, InputR, OutputR, Input, inputR', outputR', class ListsInstances)
 import Noodle.Family.Def as Family
-import Noodle.Node2.Path (Path(..))
+import Noodle.Node2.Path (InNode(..))
 import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
@@ -51,7 +51,7 @@ data Repr a = Repr
 
 
 class HasRepr a repr where
-    toRepr :: forall f i o. Path f i o -> a -> repr -- include Repr as kind here?
+    toRepr :: forall f i o. InNode f i o -> a -> repr -- include Repr as kind here?
 
 
 

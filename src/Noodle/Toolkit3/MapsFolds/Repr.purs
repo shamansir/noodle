@@ -1,4 +1,13 @@
-module Noodle.Toolkit3.MapsFolds.Repr where
+module Noodle.Toolkit3.MapsFolds.Repr
+    ( Repr(..)
+    , ToReprTop(..)
+    , ToReprDownI, ToReprDownO
+    , class HasRepr
+    , toRepr
+    , class ToReprHelper
+    , class ExtractReprs
+    )
+    where
 
 import Prelude
 
@@ -11,7 +20,7 @@ import Heterogeneous.Mapping as HM
 
 import Noodle.Id (Family', familyP, inputP, outputP, class ListsFamilies)
 import Noodle.Family.Def as Family
-import Noodle.Toolkit3.Path (Path(..))
+import Noodle.Toolkit3.Path (InToolkit(..))
 import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn
 
 
@@ -30,7 +39,7 @@ data Repr a = Repr
 
 
 class HasRepr a repr where
-    toRepr :: forall f i o. Path f i o -> a -> repr -- include Repr as kind here?
+    toRepr :: forall f i o. InToolkit f i o -> a -> repr -- include Repr as kind here?
 
 
 instance toReprTopInstance ::
