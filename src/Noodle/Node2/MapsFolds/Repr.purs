@@ -26,7 +26,7 @@ import Prim.RowList as RL
 import Heterogeneous.Mapping as HM
 import Heterogeneous.Folding as HF
 
-import Noodle.Id (NodeId, familyP, inputP, outputP, InputR, OutputR, Input, inputR', outputR', class ListsInstances, nodeIdR)
+import Noodle.Id (InputR, NodeId, OutputR, inputP, inputR', nodeIdR, outputP, outputR')
 import Noodle.Node2.MapsFolds.Flatten (NodeLineRec, NodeLineMap)
 import Noodle.Node2.Path (InNode(..))
 import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn

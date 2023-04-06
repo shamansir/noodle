@@ -275,9 +275,28 @@ spec = do
                 ,
                     "foo"
                         /\ Unit_
-                        -- /\ [ "foo" /\ String_ "aaa", "bar" /\ String_ "bbb", "c" /\ Int_ 32 ]
                         /\ [ "bar" /\ String_ "bbb", "c" /\ Int_ 32, "foo" /\ String_ "aaa" ]
                         /\ [ "out" /\ Bool_ false ]
+
+                    {- FIXME: right sorting
+                    "foo"
+                        /\ Unit_
+                        /\ [ "foo" /\ String_ "aaa", "bar" /\ String_ "bbb", "c" /\ Int_ 32 ]
+                        /\ [ "out" /\ Bool_ false ]
+
+                ,
+
+                     "bar"
+                        /\ Unit_
+                        /\ [ "a" /\ String_ "aaa", "b" /\ String_ "bbb", "c" /\ Int_ 32 ]
+                        /\ [ "x" /\ Bool_ false ]
+
+                ,
+                    "bar"
+                        /\ Unit_
+                        /\ [ "a" /\ String_ "aaa", "b" /\ String_ "bbb", "c" /\ Int_ 32 ]
+                        /\ [ "x" /\ Bool_ false ]
+                    -}
 
                 ]
 
