@@ -1,23 +1,25 @@
 module Noodle.SymOrder
     ( SymOrder, TCons, T
-    , class Index, index
-    -- , order
-    , class Length, length
     , class Values, values
     , type (:::)
-    , class Orders, order
+    , length, index
     , sort
     ) where
 
 import Prelude
 
-import Data.Const (Const)
-
-import Data.Symbol (SProxy, class IsSymbol, reflectSymbol)
-import Type.Proxy (Proxy(..))
 import Data.Array ((:))
-import Data.Array (sortWith) as Array
--- import Data.Typelevel.Num.Reps (type (:*), D0, D1, D3) -- FIXME: use typelevel numbers? for quick calculations?
+import Data.Array as Array
+import Data.Const (Const)
+import Data.Maybe (Maybe(..))
+import Data.Symbol (SProxy, class IsSymbol, reflectSymbol)
+import Data.Tuple.Nested ((/\))
+import Data.Typelevel.Num.Ops (class Add, class Succ)
+import Data.Typelevel.Num.Reps (type (:*), D0, D1, D2, D3)
+import Data.Typelevel.Num.Sets (class Pos, class Nat)
+import Data.Vec (Vec, (+>))
+import Data.Vec as Vec
+import Type.Proxy (Proxy(..))
 
 -- data TOrder
 -- foreign import data TCons :: Type -> TOrder -> TOrder
@@ -60,31 +62,8 @@ type Test :: SymOrder
 type Test = ("foo" ::: "bar" ::: "lll" ::: T)
 
 
-class Length (order :: SymOrder) where
-    length :: Proxy order -> Int
-
-
-class Index (order :: SymOrder) where
-    index :: Proxy order -> Int
-
-
 class Values (order :: SymOrder) where
     values :: Proxy order -> Array String
-
-
-instance Length T where
-    length _ = 0
-
-else instance Length tail => Length (TCons sym tail) where
-    length _ = 1 + length (Proxy :: _ tail)
-
-
-instance Index T where
-    index _ = -1
-
-else instance (Length tail, Index tail) => Index (TCons sym tail) where
-    index _ = length (Proxy :: _ (TCons sym tail)) - 1
-
 
 instance Values T where
     values _ = []
@@ -93,20 +72,36 @@ else instance (IsSymbol sym, Values tail) => Values (TCons sym tail) where
     values _ = reflectSymbol (Proxy :: _ sym) : values (Proxy :: _ tail)
 
 
-class Orders (order :: SymOrder) a where
-    order :: Proxy order -> a -> Int
-
-instance Orders T String where
-    order _ _ = -1
-
-else instance (Index tail, Length tail, IsSymbol sym) => Orders (TCons sym tail) String where
-    order _ val =
-        if reflectSymbol (Proxy :: _ sym) == val then index (Proxy :: _ (TCons sym tail)) else -1
+class VecValues (order :: SymOrder) n where
+    vecValues :: Proxy order -> Vec n String
 
 
+instance VecValues T D0 where
+    vecValues _ = Vec.empty
 
-sort :: forall (order :: SymOrder). Orders order String => Proxy order -> Array String -> Array String
-sort _ = Array.sortWith $ order (Proxy :: _ order)
+else instance (Succ ntail nres, IsSymbol sym, VecValues tail ntail) => VecValues (TCons sym tail) nres where
+    vecValues _ = reflectSymbol (Proxy :: _ sym) +> vecValues (Proxy :: _ tail)
+
+
+length :: forall (order :: SymOrder). Values order => Proxy order -> Int
+length = values >>> Array.length
+
+
+index :: forall (order :: SymOrder). Values order => Proxy order -> Int
+index p = length p - 1
+
+
+sort :: forall (order :: SymOrder). Values order => Proxy order -> Array String -> Array String
+sort o what =
+    let vals = values o
+    in Array.sortWith
+        (\v ->
+            -- FIXME: 0(n^2)
+            case Array.elemIndex v vals of
+                Just n -> n
+                Nothing -> top
+        )
+        what
 
 
 -- sortedKeys :: Keys

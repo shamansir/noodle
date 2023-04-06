@@ -54,6 +54,7 @@ spec = do
         it "sorts properly" $ do
             SO.sort (Proxy :: _ ThreeItems) [ "bar", "foo", "lll" ] `shouldEqual` [ "foo", "bar", "lll" ]
             SO.sort (Proxy :: _ ACB) [ "a", "b", "c" ] `shouldEqual` [ "a", "c", "b" ]
+            SO.sort (Proxy :: _ ACB) [ "a", "b", "c", "d" ] `shouldEqual` [ "a", "c", "b", "d" ]
             SO.sort (Proxy :: _ One) [ "second", "third", "fourth", "first", "seventh" ] `shouldEqual` [ "first", "second", "third", "fourth", "seventh" ]
 
         {-}
