@@ -1,4 +1,4 @@
-module Test.SymOrder where
+module Test.SOrder where
 
 import Prelude
 
@@ -7,23 +7,23 @@ import Test.Spec (Spec, pending, describe, it, pending')
 import Test.Spec.Assertions (fail, shouldEqual)
 import Type.Proxy (Proxy(..))
 
-import Noodle.SymOrder (type (:::))
-import Noodle.SymOrder as SO
+import Data.SOrder (type (:::))
+import Data.SOrder as SO
 
 
-type ThreeItems :: SO.SymOrder
+type ThreeItems :: SO.SOrder
 type ThreeItems = "foo" ::: "bar" ::: "lll" ::: SO.T
 
 
-type ACB :: SO.SymOrder
+type ACB :: SO.SOrder
 type ACB = "a" ::: "c" ::: "b" ::: SO.T
 
 
-type Empty :: SO.SymOrder
+type Empty :: SO.SOrder
 type Empty = SO.T
 
 
-type One :: SO.SymOrder
+type One :: SO.SOrder
 type One = "first" ::: SO.T
 
 
@@ -45,11 +45,11 @@ spec = do
             SO.index (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T)) `shouldEqual` 2
 
         it "properly collects values" $ do
-            SO.values (Proxy :: _ SO.T) `shouldEqual` []
-            SO.values (Proxy :: _ ("foo" ::: SO.T)) `shouldEqual` [ "foo" ]
-            SO.values (Proxy :: _ ("foo" ::: "bar" ::: SO.T)) `shouldEqual` [ "foo", "bar" ]
-            SO.values (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T)) `shouldEqual` [ "foo", "bar", "buz" ]
-            SO.values (Proxy :: _ ACB) `shouldEqual` [ "a", "c", "b" ]
+            SO.reflect (Proxy :: _ SO.T) `shouldEqual` []
+            SO.reflect (Proxy :: _ ("foo" ::: SO.T)) `shouldEqual` [ "foo" ]
+            SO.reflect (Proxy :: _ ("foo" ::: "bar" ::: SO.T)) `shouldEqual` [ "foo", "bar" ]
+            SO.reflect (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T)) `shouldEqual` [ "foo", "bar", "buz" ]
+            SO.reflect (Proxy :: _ ACB) `shouldEqual` [ "a", "c", "b" ]
 
         it "sorts properly" $ do
             SO.sort (Proxy :: _ ThreeItems) [ "bar", "foo", "lll" ] `shouldEqual` [ "foo", "bar", "lll" ]

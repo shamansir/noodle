@@ -163,7 +163,6 @@ instance foldToReprDownOInstance ::
         map # Map.insert (outputR' $ outputP sym) (toRepr (OutputP nodeId $ outputP sym) a)
 
 
-
 class
     ( MonadEffect m
     , IsSymbol sym

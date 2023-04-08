@@ -19,7 +19,7 @@ import Test.Patch4 (spec) as Patch4
 import Test.Flex (spec) as Flex
 import Test.UniqueHash (spec) as UniqueHash
 import Test.Parsing (spec) as Parsing
-import Test.SymOrder (spec) as SymOrder
+import Test.SOrder (spec) as SOrder
 
 
 main :: Effect Unit
@@ -46,5 +46,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Parsing.spec
   describe "Flex"
     Flex.spec
-  describe "SymOrder"
-    SymOrder.spec
+  describe "SOrder"
+    SOrder.spec
