@@ -2,6 +2,7 @@ module Noodle.Fn2
   ( Fn
   , class ToFn, toFn
   , Name, name
+  , Orders
   , make, run, run'
   , shape
   --, with
@@ -56,6 +57,10 @@ import Noodle.Fn2.Protocol as Protocol
 type Name = String
 
 
+type Orders (iorder :: SOrder) (oorder :: SOrder) =
+    { inputs :: Proxy iorder, outputs :: Proxy oorder }
+
+
 data Fn state (is :: Row Type) (os :: Row Type) m = Fn Name { inputs :: SOrder, outputs :: SOrder } (ProcessM state is os m Unit)
 
 
@@ -63,7 +68,7 @@ class ToFn a state is os where
     toFn :: forall m. a -> Fn state is os m
 
 
-make :: forall state is iorder os oorder m. HasSymbolsOrder iorder is => HasSymbolsOrder oorder os => Name -> { inputs :: Proxy iorder, outputs :: Proxy oorder } -> ProcessM state is os m Unit -> Fn state is os m
+make :: forall state is iorder os oorder m. HasSymbolsOrder iorder is => HasSymbolsOrder oorder os => Name -> Orders iorder oorder -> ProcessM state is os m Unit -> Fn state is os m
 make name order = Fn name { inputs : SOrder.instantiate (Proxy :: _ is) order.inputs, outputs : SOrder.instantiate (Proxy :: _ os) order.outputs }
 
 

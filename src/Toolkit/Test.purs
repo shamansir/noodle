@@ -2,7 +2,10 @@ module Toolkit.Test where
 
 import Prelude
 
+import Type.Proxy (Proxy(..))
+
 import Data.Tuple.Nested ((/\))
+import Data.SOrder (SOrder, type (:::), T)
 
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2 as Fn
@@ -35,28 +38,57 @@ type TestToolkit m =
     Toolkit Unit (Families m)
 
 
+familiesOrder
+    = Proxy :: _ ( "foo" ::: "bar" ::: "sum" ::: T )
+
+
+fooOrders :: Fn.Orders _ _
+fooOrders =
+    { inputs : Proxy :: _ ( "foo" ::: "bar" ::: "c" ::: T )
+    , outputs : Proxy :: _ ( "out" ::: T )
+    }
+
+
+barOrders :: Fn.Orders _ _
+barOrders =
+    { inputs : Proxy :: _ ( "a" ::: "b" ::: "c" ::: T )
+    , outputs : Proxy :: _ ( "out" ::: T )
+    }
+
+
+sumOrders :: Fn.Orders _ _
+sumOrders =
+    { inputs : Proxy :: _ ( "a" ::: "b" ::: T )
+    , outputs : Proxy :: _ ( "sum" ::: T )
+    }
+
+
 -- toolkit :: Toolkit
 toolkit :: forall m. TestToolkit m
 toolkit =
     Toolkit.from "test"
+        familiesOrder
         { foo :
             Family.def
                 unit
                 { foo : "aaa", bar : "bbb", c : 32 }
                 { out : false }
-                $ Fn.make "foo" $ pure unit
+                $ Fn.make "foo" fooOrders
+                $ pure unit
         , bar :
             Family.def
                 unit
                 { a : "aaa", b : "bbb", c : 32 }
                 { x : false }
-                $ Fn.make "bar" $ pure unit
+                $ Fn.make "bar" barOrders
+                $ pure unit
         , sum :
             Family.def
                 unit
                 { a : 2, b : 3 }
                 { sum : 0 }
-                $ Fn.make "sum" $ do
+                $ Fn.make "sum" sumOrders
+                $ do
                     a <- P.receive (Fn.Input :: Fn.Input "a")
                     b <- P.receive (Fn.Input :: Fn.Input "b")
                     P.send (Fn.Output :: Fn.Output "sum") $ a + b

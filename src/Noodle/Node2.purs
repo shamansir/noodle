@@ -94,12 +94,12 @@ make
     => Family f
     -> state
     -> Proxy iorder
+    -> Proxy oorder
     -> Record is
-    -> Proxy iorder
     -> Record os
     -> ProcessM state is os m Unit
     -> m (Node f state is os m)
-make family state iorder is oorder os process =
+make family state iorder oorder is os process =
     make' (family' family) state is os $ Fn.make (reflect family) { inputs : iorder, outputs : oorder } process
 
 

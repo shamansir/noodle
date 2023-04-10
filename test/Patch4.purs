@@ -7,7 +7,9 @@ import Effect.Class (liftEffect)
 import Effect.Console (log) as Console
 import Effect.Aff (Aff)
 import Record as Record
+
 import Type.Proxy (Proxy(..))
+import Type.Data.Symbol (reflectSymbol)
 
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Tuple.Nested (over1, T2) as Tuple
@@ -17,6 +19,7 @@ import Data.List (List)
 import Data.List as List
 import Data.Bifunctor (bimap, lmap)
 import Data.Map as Map
+import Data.SOrder (SOrder, type (:::), T)
 
 import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
@@ -31,7 +34,6 @@ import Noodle.Fn2 as Fn
 import Noodle.Id (reflectFamily', reflect', NodeId, familyOf, Family', class HasInputsAt, class HasOutputsAt)
 import Noodle.Id (Family(..), Family') as Node
 import Noodle.Id (Input(..), Output(..), InputR, OutputR) as Fn
-import Type.Data.Symbol (reflectSymbol)
 
 import Noodle.Toolkit3 (Toolkit)
 import Noodle.Toolkit3 as Toolkit
@@ -81,6 +83,22 @@ type ReprInstances m =
     ) -}
 
 
+familiesOrder
+    = Proxy :: _ ( "foo" ::: "bar" ::: T )
+
+
+fooOrders =
+    { inputs : Proxy :: _ ( "foo" ::: "bar" ::: "c" ::: T )
+    , outputs : Proxy :: _ ( "out" ::: T )
+    }
+
+
+barOrders =
+    { inputs : Proxy :: _ ( "a" ::: "b" ::: "c" ::: T )
+    , outputs : Proxy :: _ ( "x" ::: T )
+    }
+
+
 spec :: Spec Unit
 spec = do
 
@@ -90,18 +108,19 @@ spec = do
             (toolkit :: MyToolkit Aff) =
             -- toolkit =
                 Toolkit.from "test"
+                    familiesOrder
                     { foo :
                         Family.def
                             unit
                             { foo : "aaa", bar : "bbb", c : 32 }
                             { out : false }
-                            $ Fn.make "foo" $ pure unit
+                            $ Fn.make "foo" fooOrders $ pure unit
                     , bar :
                         Family.def
                             unit
                             { a : "aaa", b : "bbb", c : 32 }
                             { x : false }
-                            $ Fn.make "bar" $ pure unit
+                            $ Fn.make "bar" barOrders $ pure unit
                     }
 
             extractFamily :: forall f z. Tuple.T2 (NodeId f) z -> Tuple.T2 String z

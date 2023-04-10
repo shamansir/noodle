@@ -15,6 +15,8 @@ import Data.List (List(..)) as List
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Bifunctor (bimap)
+import Data.SOrder (SOrder, type (:::), T)
+import Type.Proxy (Proxy(..))
 
 -- import Noodle.Node.Shape (noInlets, noOutlets) as Shape
 -- import Noodle.Node ((<~>), (+>), (<+))
@@ -36,13 +38,17 @@ import Signal.Time as SignalT
 _sum = Node.Family :: Node.Family "sum"
 
 
+io = Proxy :: _ ("a" ::: "b" ::: T)
+oo = Proxy :: _ ("sum" ::: T)
+
+
 spec :: Spec Unit
 spec = do
 
     describe "creating & initial values" $ do
 
         it "is initialized properly" $ do
-            node <- Node.make _sum unit { a : 2, b : 3 } { sum : 0 } $ pure unit
+            node <- Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 } $ pure unit
 
             state <- Node.state node
             state `shouldEqual` unit
@@ -73,7 +79,7 @@ spec = do
         it "function is performed properly" $ do
 
             node <-
-                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
@@ -93,7 +99,7 @@ spec = do
 
         it "is possible to extract shape" $ do
             node <-
-                Node.make _sum unit { a : 2, b : 3 } { sum : 0 } $ pure unit
+                Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 } $ pure unit
 
             (reflect' <$> Node.inputsShape node) `shouldEqual` ( "a" : "b" : List.Nil )
             (reflect' <$> Node.outputsShape node) `shouldEqual` ( "sum" : List.Nil )
@@ -107,14 +113,14 @@ spec = do
 
         it "is possible to connect nodes" $ do
             nodeA <-
-                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
                         P.send (Fn.Output :: Fn.Output "sum") $ a + b
 
             nodeB <-
-                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
@@ -141,14 +147,14 @@ spec = do
 
         it "is possible to connect nodes and keep sending values" $ do
             nodeA <-
-                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
                         P.send (Fn.Output :: Fn.Output "sum") $ a + b
 
             nodeB <-
-                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
@@ -183,14 +189,14 @@ spec = do
 
         it "disconnecting works" $ do
             nodeA <-
-                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
                         P.send (Fn.Output :: Fn.Output "sum") $ a + b
 
             nodeB <-
-                Node.make _sum unit { a : 2, b : 3 } { sum : 0 }
+                Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
                         a <- P.receive (Fn.Input :: Fn.Input "a")
                         b <- P.receive (Fn.Input :: Fn.Input "b")
