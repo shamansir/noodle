@@ -38,31 +38,6 @@ type TestToolkit m =
     Toolkit Unit (Families m)
 
 
-familiesOrder
-    = Proxy :: _ ( "foo" ::: "bar" ::: "sum" ::: T )
-
-
-fooOrders :: Fn.Orders _ _
-fooOrders =
-    { inputs : Proxy :: _ ( "foo" ::: "bar" ::: "c" ::: T )
-    , outputs : Proxy :: _ ( "out" ::: T )
-    }
-
-
-barOrders :: Fn.Orders _ _
-barOrders =
-    { inputs : Proxy :: _ ( "a" ::: "b" ::: "c" ::: T )
-    , outputs : Proxy :: _ ( "out" ::: T )
-    }
-
-
-sumOrders :: Fn.Orders _ _
-sumOrders =
-    { inputs : Proxy :: _ ( "a" ::: "b" ::: T )
-    , outputs : Proxy :: _ ( "sum" ::: T )
-    }
-
-
 -- toolkit :: Toolkit
 toolkit :: forall m. TestToolkit m
 toolkit =
@@ -117,3 +92,28 @@ toolkit =
                 )
         }
     -}
+
+
+familiesOrder
+    = Proxy :: _ ( "foo" ::: "bar" ::: "sum" ::: T )
+
+
+fooOrders :: Fn.Orders _ _
+fooOrders =
+    { inputs : Proxy :: _ ( "foo" ::: "bar" ::: "c" ::: T )
+    , outputs : Proxy :: _ ( "out" ::: T )
+    }
+
+
+barOrders :: Fn.Orders _ _
+barOrders =
+    { inputs : Proxy :: _ ( "a" ::: "b" ::: "c" ::: T )
+    , outputs : Proxy :: _ ( "out" ::: T )
+    }
+
+
+sumOrders :: Fn.Orders _ _
+sumOrders =
+    { inputs : Proxy :: _ ( "a" ::: "b" ::: T )
+    , outputs : Proxy :: _ ( "sum" ::: T )
+    }

@@ -5,8 +5,12 @@ import Prelude (Unit, unit, ($), (<$>))
 
 import Effect.Class (class MonadEffect, liftEffect)
 
+import Type.Proxy (Proxy(..))
+
 import Data.Maybe (Maybe(..))
 import Data.Traversable (sequence)
+import Data.SOrder (type (:::), T, SOrder)
+import Data.SOrder (Auto, auto) as SOrder
 
 import Control.Applicative (class Applicative)
 
@@ -293,13 +297,16 @@ families =
         }
 
 
+familiesOrder = Proxy :: _ SOrder.Auto
+
+
 type Toolkit (m :: Type -> Type)
     = Noodle.Toolkit State (Families m)
 
 
 toolkit :: forall (m :: Type -> Type). Toolkit m
 toolkit =
-    Toolkit.from "hydra" families
+    Toolkit.from "hydra" familiesOrder families
 
 
 type Instances :: (Type -> Type) -> Row Type

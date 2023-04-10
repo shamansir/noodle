@@ -169,9 +169,9 @@ spec = do
                             # Patch.registerNode nodeB
                             # Patch.registerNode nodeC
 
-            (reflectF <$> Patch.nodes_ patch) `shouldEqual` [ "bar", "bar", "foo" ]
+            (reflectF <$> Patch.nodes_ patch) `shouldEqual` [ "foo", "bar", "bar" ]
 
-            (Node.family >>> reflectFamily' <$> Patch.nodes patch) `shouldEqual` [ "bar", "bar", "foo" ]
+            (Node.family >>> reflectFamily' <$> Patch.nodes patch) `shouldEqual` [ "foo", "bar", "bar" ]
 
             {- (Node.state <$> Patch.nodes patch) `shouldEqual` [ "bar", "bar", "foo" ] -}
 
@@ -279,7 +279,11 @@ spec = do
 
             (NMF.flatten'' <$> reprsArr) `shouldEqual`
                 [
-
+                    "foo"
+                        /\ Unit_
+                        /\ [ "foo" /\ String_ "aaa", "bar" /\ String_ "bbb", "c" /\ Int_ 32 ]
+                        /\ [ "out" /\ Bool_ false ]
+                ,
                      "bar"
                         /\ Unit_
                         /\ [ "a" /\ String_ "aaa", "b" /\ String_ "bbb", "c" /\ Int_ 32 ]
@@ -291,11 +295,6 @@ spec = do
                         /\ [ "a" /\ String_ "aaa", "b" /\ String_ "bbb", "c" /\ Int_ 32 ]
                         /\ [ "x" /\ Bool_ false ]
 
-                ,
-                    "foo"
-                        /\ Unit_
-                        /\ [ "bar" /\ String_ "bbb", "c" /\ Int_ 32, "foo" /\ String_ "aaa" ]
-                        /\ [ "out" /\ Bool_ false ]
 
                     {- FIXME: right sorting
                     "foo"

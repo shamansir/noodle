@@ -2,14 +2,19 @@ module Test.Toolkit3 where
 
 import Prelude
 
+import Effect (Effect)
+import Effect.Aff (Aff)
+import Effect.Class (liftEffect, class MonadEffect)
+import Effect.Console (log) as Console
+import Effect.Random (randomInt)
+
+import Type.Proxy (Proxy(..))
+
 import Record.Extra (class Keys)
 import Record.Extra as Record
 import Record (get) as Record
 import Prim.RowList as RL
 import Unsafe.Coerce (unsafeCoerce)
-import Type.Proxy (Proxy(..))
-import Effect.Random (randomInt)
-
 
 import Data.Maybe (Maybe(..))
 import Data.List ((:), List)
@@ -17,11 +22,7 @@ import Data.List as List
 import Data.Array as Array
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Bifunctor (bimap)
-import Effect (Effect)
-import Effect.Aff (Aff)
-import Effect.Class (liftEffect, class MonadEffect)
-import Effect.Console (log) as Console
-
+import Data.SOrder (type (:::), T)
 
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
@@ -77,12 +78,14 @@ spec = do
 
         let (toolkit :: Toolkit1 Aff) =
                 Toolkit.from "test"
+                    families1Order
                     { foo :
                         Family.def
                             unit
                             { foo : "aaa", bar : "bbb", c : 32 }
                             { out : false }
-                            $ Fn.make "foo" $ pure unit
+                            $ Fn.make "foo" fooOrders
+                            $ pure unit
                     -- , bar :
                     --     unit
                     --     /\ { foo : "aaa", bar : "bbb", c : 32 }
@@ -96,24 +99,25 @@ spec = do
 
             (toolkit2 :: Toolkit2 Aff) =
                 Toolkit.from "test2"
+                    families2Order
                     { foo :
                         Family.def
                             unit
                             { foo : "aaa", bar : "bbb", c : 32 }
                             { out : false }
-                            $ Fn.make "foo" $ pure unit
+                            $ Fn.make "foo" fooOrders $ pure unit
                     , bar :
                         Family.def
                             unit
                             { a : "aaa", b : "bbb", c : "ccc" }
                             { x : 12 }
-                            $ Fn.make "bar" $ pure unit
+                            $ Fn.make "bar" barOrders $ pure unit
                     , sum :
                         Family.def
                             unit
                             { a : 40, b : 2 }
                             { sum : 42 }
-                            $ Fn.make "sumFn" $ pure unit
+                            $ Fn.make "sumFn" sumOrders $ pure unit
                     }
 
         -- TODO: add `Random` effect
@@ -138,7 +142,7 @@ spec = do
 
         it "getting family list" $ do
             (reflect' <$> Toolkit.nodeFamilies toolkit) `shouldEqual` ( "foo" : List.Nil )
-            (reflect' <$> Toolkit.nodeFamilies toolkit2) `shouldEqual` ( "bar" : "foo" : "sum" : List.Nil )
+            (reflect' <$> Toolkit.nodeFamilies toolkit2) `shouldEqual` ( "foo" : "bar" : "sum" : List.Nil )
 
             Toolkit.familyDefs toolkit `shouldEqual` [ NI "foo" ]
 
@@ -155,7 +159,7 @@ spec = do
                     { bar :
                         [ "a", "b", "c" ] /\ [ "x" ]
                     , foo :
-                        [ "bar", "c", "foo" ] /\ [ "out" ]
+                        [ "foo", "bar", "c" ] /\ [ "out" ]
                     , sum :
                         [ "a", "b" ] /\ [ "sum" ]
                     }
@@ -211,6 +215,33 @@ spec = do
                 Nothing -> fail "families list wasn't produced"
         -}
 
+families1Order
+    = Proxy :: _ ( "foo" ::: "bar" ::: "sum" ::: T )
+
+
+families2Order
+    = Proxy :: _ ( "foo" ::: "bar" ::: "sum" ::: T )
+
+
+fooOrders :: Fn.Orders _ _
+fooOrders =
+    { inputs : Proxy :: _ ( "foo" ::: "bar" ::: "c" ::: T )
+    , outputs : Proxy :: _ ( "out" ::: T )
+    }
+
+
+barOrders :: Fn.Orders _ _
+barOrders =
+    { inputs : Proxy :: _ ( "a" ::: "b" ::: "c" ::: T )
+    , outputs : Proxy :: _ ( "out" ::: T )
+    }
+
+
+sumOrders :: Fn.Orders _ _
+sumOrders =
+    { inputs : Proxy :: _ ( "a" ::: "b" ::: T )
+    , outputs : Proxy :: _ ( "sum" ::: T )
+    }
 
 
 --newtype Inputs = Inputs (List Fn.InputR)

@@ -183,6 +183,9 @@ toolkitModuleImports =
     , "Data.Traversable (sequence)"
     , "Control.Applicative (class Applicative)"
     , "Type.Data.Symbol (class IsSymbol)"
+    , "Type.Proxy (Proxy(..))"
+    , "Data.SOrder (SOrder, type (:::), T)"
+    , "Data.SOrder as SOrder"
     , "Noodle.Id (Family, FamilyR) as Node"
     , "Noodle.Id (reclect, reflect') as Id"
     , "Noodle.Family.Def as Family"
@@ -220,9 +223,9 @@ familyModule tkName lp fmlUserImports qfml =
     <> "type Outputs =\n"
     <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.outputs) <> "\n\n\n"
     <> "type InputsOrder :: SOrder" <> "\n"
-    <> "type InputsOrder = " <> String.joinWith " ::: " (inputSymbol <$> qfml.inputs) <> " ::: SOrder.T)\n\n\n"
+    <> "type InputsOrder = " <> String.joinWith " ::: " (inputSymbol <$> qfml.inputs) <> " ::: T)\n\n\n"
     <> "type OutputsOrder :: SOrder" <> "\n"
-    <> "type OutputsOrder = (" <> String.joinWith " ::: " (outputSymbol <$> qfml.outputs) <> " ::: SOrder.T)\n\n\n"
+    <> "type OutputsOrder = (" <> String.joinWith " ::: " (outputSymbol <$> qfml.outputs) <> " ::: T)\n\n\n"
     <> "defaultInputs :: Record Inputs\n"
     <> "defaultInputs =\n"
     <> i2 <> (inCBraces (channelDefaultAndLabel lp) ", " qfml.inputs) <> "\n\n"
@@ -253,6 +256,7 @@ toolkitModule FamiliesAsModules tkName _ tkUserImports families =
     <> "defaultState :: State" <> "\n"
     <> "defaultState = unit" <> "\n\n\n"
     <> familiesType tkName families <> "\n\n\n"
+    <> familiesOrder tkName families <> "\n\n\n"
     <> familiesImplementation tkName families <> "\n\n\n"
     <> toolkitType tkName families <> "\n\n\n"
     <> toolkitImplementation tkName families <> "\n\n\n"
@@ -315,7 +319,7 @@ toolkitImplementationInline :: ToolkitName -> Array QD.QFamily -> String
 toolkitImplementationInline tkName fmls =
     "toolkit :: forall (m :: Type -> Type). " <> toolkitTypeName tkName <> " m\n" <>
     "toolkit =\n"
-        <> i <> "Toolkit.from \"" <> unwrap tkName <> "\"\n"
+        <> i <> "Toolkit.from \"" <> unwrap tkName <> " familiesOrder\"\n"
         <> i2 <> inCBraces' familyInlineImplementationReferenceAndLabel ("\n" <> i2 <> ", ") fmls
 
 
@@ -323,7 +327,7 @@ toolkitImplementation :: ToolkitName -> Array QD.QFamily -> String
 toolkitImplementation tkName fmls =
     "toolkit :: forall (m :: Type -> Type). " <> toolkitTypeName tkName <> " m\n" <>
     "toolkit =\n"
-        <> i <> "Toolkit.from \"" <> unwrap tkName <> "\" families\n"
+        <> i <> "Toolkit.from \"" <> unwrap tkName <> "\" familiesOrder families\n"
         -- <> i2 <> inCBraces' familyModuleImplementationReferenceAndLabel ("\n" <> i2 <> ", ") fmls
 
 
@@ -331,6 +335,14 @@ familiesType :: ToolkitName -> Array QD.QFamily -> String
 familiesType tkName fmls =
     "type Families (m :: Type -> Type) =\n"
         <> i2 <> inBrackets' familyTypeReference ("\n" <> i2 <> ", ") fmls
+
+
+familiesOrder :: ToolkitName -> Array QD.QFamily -> String
+familiesOrder tkName fmls =
+    "familiesOrder :: Proxy _\n" <>
+    "familiesOrder =\n" <>
+        -- <> i2 <> inBrackets' (\fml -> "\"" <> fml.family <> "\"") ("\n" <> i2 <> "::: ") fmls
+        i2 <> wrap "( )" "(   " ("\n" <> i2 <> "::: T\n" <> i2 <> ")") (\fml -> "\"" <> fml.family <> "\"") ("\n" <> i2 <> "::: ") fmls
 
 
 familiesImplementation :: ToolkitName -> Array QD.QFamily -> String
