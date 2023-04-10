@@ -11,6 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
+import Data.SOrder (SOrder, type (:::), T)
+import Type.Proxy (Proxy(..))
 
 
 id = Node.Family :: _ "width"
@@ -32,6 +34,14 @@ _out_out = Fn.Output :: _ "out"
 
 type Inputs = ( )
 type Outputs = ( out :: H.Value )
+
+
+type InputsOrder :: SOrder
+type InputsOrder = T
+
+
+type OutputsOrder :: SOrder
+type OutputsOrder = "out" ::: T
 
 
 defaultInputs :: Record Inputs
@@ -56,6 +66,9 @@ family = -- {-> synth <-}
         defaultInputs
         defaultOutputs
         $ Fn.make name
+        { inputs : Proxy :: _ InputsOrder
+        , outputs : Proxy :: _ OutputsOrder
+        }
         $ P.send _out_out H.Width
 
 

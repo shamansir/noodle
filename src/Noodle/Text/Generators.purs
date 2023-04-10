@@ -163,6 +163,9 @@ type Imports = Array String
 familyModuleImports :: Imports
 familyModuleImports =
     [ "Prelude (Unit, unit, ($), bind, pure)"
+    , "Type.Proxy (Proxy(..))"
+    , "Data.SOrder (SOrder, type (:::), T)"
+    , "Data.SOrder as SOrder"
     , "Noodle.Fn2 as Fn"
     , "Noodle.Id (Input(..), Output(..)) as Fn"
     , "Noodle.Id (Family(..)) as Node"
@@ -181,7 +184,7 @@ toolkitModuleImports =
     , "Control.Applicative (class Applicative)"
     , "Type.Data.Symbol (class IsSymbol)"
     , "Noodle.Id (Family, FamilyR) as Node"
-    , "Noodle.Id (reflectFamilyR) as Id"
+    , "Noodle.Id (reclect, reflect') as Id"
     , "Noodle.Family.Def as Family"
     , "Noodle.Toolkit3 (Toolkit) as Noodle"
     , "Noodle.Toolkit3 as Toolkit"
@@ -206,7 +209,7 @@ familyModule tkName lp fmlUserImports qfml =
     <> allImports familyModuleImports <> "\n\n\n"
     <> "id = Node.Family :: _ \"" <> qfml.family <> "\"" <> "\n\n\n"
     <> "name :: String\n"
-    <> "name = \"" <> qfml.family <> "\"" <> "\n\n\n"
+    <> "name = Id.reflect family\n\n\n"
     <> "type State = Unit" <> "\n\n\n"
     <> "defaultState :: State" <> "\n"
     <> "defaultState = unit" <> "\n\n\n"
@@ -216,6 +219,10 @@ familyModule tkName lp fmlUserImports qfml =
     <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.inputs) <> "\n\n"
     <> "type Outputs =\n"
     <> i2 <> (inBrackets (channelTypeAndLabel lp) ", " qfml.outputs) <> "\n\n\n"
+    <> "type InputsOrder :: SOrder" <> "\n"
+    <> "type InputsOrder = " <> String.joinWith " ::: " (inputSymbol <$> qfml.inputs) <> " ::: SOrder.T)\n\n\n"
+    <> "type OutputsOrder :: SOrder" <> "\n"
+    <> "type OutputsOrder = (" <> String.joinWith " ::: " (outputSymbol <$> qfml.outputs) <> " ::: SOrder.T)\n\n\n"
     <> "defaultInputs :: Record Inputs\n"
     <> "defaultInputs =\n"
     <> i2 <> (inCBraces (channelDefaultAndLabel lp) ", " qfml.inputs) <> "\n\n"
@@ -226,6 +233,10 @@ familyModule tkName lp fmlUserImports qfml =
     <> familyImplementation lp qfml <> "\n\n"
     <> nodeType lp qfml
     where
+        inputSymbol (Just ch) = "\"" <> ch.name <> "\""
+        inputSymbol Nothing = "??"
+        outputSymbol (Just ch) = "\"" <> ch.name <> "\""
+        outputSymbol Nothing = "??"
         inputProxyCode (Just ch) = "_in_" <> ch.name <> " = Fn.Input :: _ \"" <> ch.name <> "\""
         inputProxyCode Nothing = ""
         outputProxyCode (Just ch) = "_out_" <> ch.name <> " = Fn.Output :: _ \"" <> ch.name <> "\""
@@ -460,7 +471,7 @@ familyImplementation lp qfml =
     <> i2 <> "defaultState" <> "\n"
     <> i2 <> "defaultInputs" <> "\n"
     <> i2 <> "defaultOutputs" <> "\n"
-    <> i2 <> "$ Fn.make \"" <> qfml.family <> "\" $ " <> processBody i3 qfml
+    <> i2 <> "$ Fn.make \"" <> qfml.family <> "\" { inputs : (Proxy :: _ InputsOrder), outputs : (Proxy :: _ OutputsOrder) $ " <> processBody i3 qfml
 
 
 familyImplementationInline :: LocalsPrefix -> QD.QFamily -> String
@@ -569,7 +580,7 @@ withFamily
         )
     -> Node.FamilyR
     -> m (Maybe a)
-withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
+withFamily fn familyR = sequence $ case Id.reflect' familyR of
 """ <> "\n" <>
     String.joinWith "\n" (spawnerImpl <$> fmls) <> "\n\n"
     <> i2 <> "_ -> Nothing"

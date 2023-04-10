@@ -1,10 +1,12 @@
 module Data.SOrder
     ( SOrder, TCons, T
-    , class SymbolsHaveOrder, reflect
-    , class SymbolsHaveOrderTL, reflectTL
+    , none
+    , class IsSymbolsOrder, reflect
+    , class IsSymbolsOrderTL, reflectTL
+    , class HasSymbolsOrder, instantiate, instantiateImpl
     , type (:::)
-    , length, index
-    , sort, sortBy
+    , length, index, length', index'
+    , sort, sortBy, sort', sortBy', sortL, sortByL, sortL', sortByL'
     -- , class HasOrder
     ) where
 
@@ -12,6 +14,7 @@ import Prelude
 
 import Data.Array ((:))
 import Data.Array as Array
+import Data.List as List
 import Data.Const (Const)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy, class IsSymbol, reflectSymbol)
@@ -23,6 +26,8 @@ import Data.Vec (Vec, (+>))
 import Data.Vec as Vec
 import Data.Map (Map)
 import Data.Map as Map
+
+import Data.List (List)
 
 import Type.Proxy (Proxy(..))
 
@@ -66,60 +71,110 @@ foreign import data TCons :: Symbol -> SOrder -> SOrder
 foreign import data T :: SOrder
 
 
-instantiate :: forall (order :: SOrder). SymbolsHaveOrder order => Proxy order -> SOrder
-instantiate = reflect >>> Array.mapWithIndex (flip (/\)) >>> Map.fromFoldable >>> SOrder
+instantiateImpl :: forall (order :: SOrder). IsSymbolsOrder order => Proxy order -> SOrder
+instantiateImpl = reflect >>> Array.mapWithIndex (flip (/\)) >>> Map.fromFoldable >>> SOrder
 
 
 type Test :: SOrder
 type Test = ("foo" ::: "bar" ::: "lll" ::: T)
 
 
--- class HasOrder (order :: SOrder) a
+none :: SOrder
+none = SOrder $ Map.empty
+
+
+class HasSymbolsOrder :: SOrder -> Row Type -> Constraint
+class IsSymbolsOrder order <= HasSymbolsOrder (order :: SOrder) rl where
+    instantiate :: Proxy rl -> Proxy order -> SOrder
+instance IsSymbolsOrder order => HasSymbolsOrder order a where
+    instantiate = const $ instantiateImpl
 
 -- instance HasOrder (order :: SOrder) a
 
 
 -- TODO: to set & so on.
-class SymbolsHaveOrderTL (order :: SOrder) (n :: Type) where
+class IsSymbolsOrderTL (order :: SOrder) (n :: Type) where
     reflectTL :: Proxy order -> Vec n String
 
 
-instance SymbolsHaveOrderTL T D0 where
+instance IsSymbolsOrderTL T D0 where
     reflectTL _ = Vec.empty
-else instance (Succ ntail nres, IsSymbol sym, SymbolsHaveOrderTL tail ntail) => SymbolsHaveOrderTL (TCons sym tail) nres where
+else instance (Succ ntail nres, IsSymbol sym, IsSymbolsOrderTL tail ntail) => IsSymbolsOrderTL (TCons sym tail) nres where
     reflectTL _ = reflectSymbol (Proxy :: _ sym) +> reflectTL (Proxy :: _ tail)
 
 
-class SymbolsHaveOrder (order :: SOrder) where
+class IsSymbolsOrder (order :: SOrder) where
     reflect :: Proxy order -> Array String
 
-instance SymbolsHaveOrder T where
+instance IsSymbolsOrder T where
     reflect _ = []
-else instance (IsSymbol sym, SymbolsHaveOrder tail) => SymbolsHaveOrder (TCons sym tail) where
+else instance (IsSymbol sym, IsSymbolsOrder tail) => IsSymbolsOrder (TCons sym tail) where
     reflect _ = reflectSymbol (Proxy :: _ sym) : reflect (Proxy :: _ tail)
-else instance SymbolsHaveOrder (TCons sym tail) where
+else instance IsSymbolsOrder (TCons sym tail) where
     reflect _ = []
 
 
-length :: forall (order :: SOrder). SymbolsHaveOrder order => Proxy order -> Int
+length :: forall (order :: SOrder). IsSymbolsOrder order => Proxy order -> Int
 length = reflect >>> Array.length
 
 
-index :: forall (order :: SOrder). SymbolsHaveOrder order => Proxy order -> Int
+length' :: SOrder -> Int
+length' (SOrder map) = Map.size map
+
+
+index :: forall (order :: SOrder). IsSymbolsOrder order => Proxy order -> Int
 index p = length p - 1
 
 
-sort :: forall (order :: SOrder). SymbolsHaveOrder order => Proxy order -> Array String -> Array String
+index' :: SOrder -> String -> Maybe Int
+index' (SOrder map) = flip Map.lookup map
+
+
+sort :: forall (order :: SOrder). IsSymbolsOrder order => Proxy order -> Array String -> Array String
 sort p = sortBy p identity
 
 
-sortBy :: forall (order :: SOrder) a. SymbolsHaveOrder order => Proxy order -> (a -> String) -> Array a -> Array a
-sortBy o toKey what =
-    let (SOrder indexMap) = instantiate o
-    in Array.sortWith
+sort' :: SOrder -> Array String -> Array String
+sort' so =
+    sortBy' so identity
+
+
+sortL :: forall (order :: SOrder). IsSymbolsOrder order => Proxy order -> List String -> List String
+sortL o =
+    sortL' $ instantiateImpl o
+
+
+sortL' :: SOrder -> List String -> List String
+sortL' so =
+    sortByL' so identity
+
+
+sortBy :: forall (order :: SOrder) a. IsSymbolsOrder order => Proxy order -> (a -> String) -> Array a -> Array a
+sortBy o =
+    sortBy' $ instantiateImpl o
+
+
+sortBy' :: forall a. SOrder -> (a -> String) -> Array a -> Array a
+sortBy' (SOrder indexMap) toKey =
+    Array.sortWith
         (\v ->
             case Map.lookup (toKey v) indexMap of
                 Just n -> n
                 Nothing -> top
         )
-        what
+
+
+sortByL :: forall (order :: SOrder) a. Ord a => IsSymbolsOrder order => Proxy order -> (a -> String) -> List a -> List a
+sortByL o =
+    sortByL' $ instantiateImpl o
+
+
+sortByL' :: forall a. Ord a => SOrder -> (a -> String) -> List a -> List a
+sortByL' (SOrder indexMap) toKey =
+    List.sortBy
+        (\v1 v2 ->
+            case indexOf v1 /\ indexOf v2 of
+                Just n1 /\ Just n2 -> compare n1 n2
+                _ -> compare v1 v2
+        )
+    where indexOf = flip Map.lookup indexMap <<< toKey

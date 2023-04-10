@@ -11,6 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
+import Data.SOrder (SOrder, type (:::), T)
+import Type.Proxy (Proxy(..))
 
 
 id = Node.Family :: _ "modulateScrollX"
@@ -39,6 +41,14 @@ type Inputs = ( what :: H.Texture, with :: H.Texture, scrollX :: H.Value, speed 
 type Outputs = ( out :: H.Texture )
 
 
+type InputsOrder :: SOrder
+type InputsOrder = "what" ::: "with" ::: "scrollX" ::: "speed" ::: T
+
+
+type OutputsOrder :: SOrder
+type OutputsOrder = "out" ::: T
+
+
 defaultInputs :: Record Inputs
 defaultInputs = { what : H.Empty, with : H.Empty, scrollX : H.Number 0.5, speed : H.Number 1.0 }
 
@@ -60,7 +70,9 @@ family = -- {-> modulate <-}
         defaultState
         defaultInputs
         defaultOutputs
-        $ Fn.make name $ do
+        $ Fn.make name
+            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             scrollX <- P.receive _in_scrollX

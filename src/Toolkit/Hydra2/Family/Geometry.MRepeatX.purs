@@ -11,6 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
+import Data.SOrder (SOrder, type (:::), T)
+import Type.Proxy (Proxy(..))
 
 
 id = Node.Family :: _ "repeatX"
@@ -38,6 +40,14 @@ type Inputs = ( what :: H.Texture, reps :: H.Value, offset :: H.Value )
 type Outputs = ( out :: H.Texture )
 
 
+type InputsOrder :: SOrder
+type InputsOrder = "what" ::: "reps" ::: "offset" ::: T
+
+
+type OutputsOrder :: SOrder
+type OutputsOrder = "out" ::: T
+
+
 defaultInputs :: Record Inputs
 defaultInputs = { what : H.Empty, reps : H.Number 3.0, offset : H.Number 0.0 }
 
@@ -58,7 +68,9 @@ family = -- {-> geometry <-}
         defaultState
         defaultInputs
         defaultOutputs
-        $ Fn.make name $ do
+        $ Fn.make name
+            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            $ do
             what <- P.receive _in_what
             reps <- P.receive _in_reps
             offset <- P.receive _in_offset

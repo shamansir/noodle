@@ -143,7 +143,7 @@ instance foldToReprDownIInstance ::
         a
         (Map InputR repr)
     where
-    foldingWithIndex (ToReprDownI nodeId _) sym map a =
+    foldingWithIndex (ToReprDownI nodeId _) sym map a = -- ORDER!
         map # Map.insert (inputR' $ inputP sym) (toRepr (InputP nodeId $ inputP sym) a)
 
 
@@ -159,7 +159,7 @@ instance foldToReprDownOInstance ::
         a
         (Map OutputR repr)
     where
-    foldingWithIndex (ToReprDownO nodeId _) sym map a =
+    foldingWithIndex (ToReprDownO nodeId _) sym map a = -- ORDER!
         map # Map.insert (outputR' $ outputP sym) (toRepr (OutputP nodeId $ outputP sym) a)
 
 

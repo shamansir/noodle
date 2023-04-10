@@ -40,6 +40,8 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (UniqueHash)
 import Data.UniqueHash as UniqueHash
 import Data.List (List)
+import Data.SOrder (SOrder)
+import Data.SOrder as SOrder
 
 import Record.Extra as Record
 import Prim.Row as R
@@ -61,7 +63,7 @@ class Reflect' a where
 
 
 class FromKeysR a where
-    fromKeysR :: forall (w :: Row Type -> Type) (rows :: Row Type) rl. RL.RowToList rows rl => Record.Keys rl => w rows -> List a
+    fromKeysR :: forall (w :: Row Type -> Type) (rows :: Row Type) rl. RL.RowToList rows rl => Record.Keys rl => SOrder -> w rows -> List a
 
 
 data Family (f :: Symbol) = Family
@@ -111,22 +113,22 @@ familyP :: forall proxy f. IsSymbol f => proxy f -> Family' f
 familyP = reflectSymbol >>> Family'
 
 
-keysToFamiliesR :: forall w fs rl. RL.RowToList fs rl => Record.Keys rl => w fs -> List FamilyR
-keysToFamiliesR = Record.keys >>> (<$>) FamilyR
+keysToFamiliesR :: forall w fs rl. RL.RowToList fs rl => Record.Keys rl => SOrder -> w fs -> List FamilyR
+keysToFamiliesR order = Record.keys >>> SOrder.sortL' order >>> (<$>) FamilyR
 
 
-data Input (i :: Symbol) = Input
+data Input (i :: Symbol) = Input -- TODO: Int
 instance Reflect Input where reflect = reflectInput
 
 
-newtype Input' (i :: Symbol) = Input' String
+newtype Input' (i :: Symbol) = Input' String -- TODO: Int /\ String
 derive newtype instance eqInput' :: Eq (Input' i)
 derive newtype instance ordInput' :: Ord (Input' i)
 derive newtype instance showInput' :: Show (Input' i)
 instance Reflect' (Input' i) where reflect' = reflectInput'
 
 
-newtype InputR = InputR String
+newtype InputR = InputR String -- TODO: Int /\ String
 derive newtype instance eqInputR :: Eq InputR
 derive newtype instance ordInputR :: Ord InputR
 derive newtype instance showInputR :: Show InputR
@@ -161,26 +163,26 @@ reflectInputR :: InputR -> String
 reflectInputR (InputR s) = s
 
 
-keysToInputsR :: forall w is rl. HasInputsAt is rl => w is -> List InputR
-keysToInputsR = Record.keys >>> (<$>) InputR
+keysToInputsR :: forall w is rl. HasInputsAt is rl => SOrder -> w is -> List InputR
+keysToInputsR order = Record.keys >>> SOrder.sortL' order >>> (<$>) InputR
 
 
 -- _in :: InputR -> String
 -- _in = reflect'
 
 
-data Output (o :: Symbol) = Output
+data Output (o :: Symbol) = Output -- TODO: Int
 instance Reflect Output where reflect = reflectOutput
 
 
-newtype Output' (o :: Symbol) = Output' String
+newtype Output' (o :: Symbol) = Output' String -- TODO: Int /\ String
 derive newtype instance eqOutput' :: Eq (Output' o)
 derive newtype instance ordOutput' :: Ord (Output' o)
 derive newtype instance showOutput' :: Show (Output' o)
 instance Reflect' (Output' o) where reflect' = reflectOutput'
 
 
-newtype OutputR = OutputR String
+newtype OutputR = OutputR String -- TODO: Int /\ String
 derive newtype instance eqOutputR :: Eq OutputR
 derive newtype instance ordOutputR :: Ord OutputR
 derive newtype instance showOutputR :: Show OutputR
@@ -216,8 +218,8 @@ reflectOutputR :: OutputR -> String
 reflectOutputR (OutputR s) = s
 
 
-keysToOutputsR :: forall w os rl. HasInputsAt os rl => w os -> List OutputR
-keysToOutputsR = Record.keys >>> (<$>) OutputR
+keysToOutputsR :: forall w os rl. HasInputsAt os rl => SOrder -> w os -> List OutputR -- TODO: Array OutputR?
+keysToOutputsR order = Record.keys >>> SOrder.sortL' order >>> (<$>) OutputR
 
 
 -- _in :: InputR -> String
@@ -306,7 +308,7 @@ instance (RL.RowToList is rli, Record.Keys rli) => HasInputsAt is rli
 
 
 class HasInputsAt is rli <= HasInputs is rli a | a -> is, a -> rli
-    where inputs :: a -> List String
+    where inputs :: a -> List InputR
 -- class HasInputsAt is rli <= HasInputs' is rli
 --     where
 --         --inputs' :: forall proxy. proxy is -> List InputR

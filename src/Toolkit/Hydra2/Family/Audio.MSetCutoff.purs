@@ -11,6 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
+import Data.SOrder (SOrder, type (:::), T)
+import Type.Proxy (Proxy(..))
 
 
 id = Node.Family :: _ "setCutoff"
@@ -35,6 +37,14 @@ type Inputs = ( audio :: H.Audio, cutoff :: H.Value )
 type Outputs = ( )
 
 
+type InputsOrder :: SOrder
+type InputsOrder = "audio" ::: "cutoff" ::: T
+
+
+type OutputsOrder :: SOrder
+type OutputsOrder = T
+
+
 defaultInputs :: Record Inputs
 defaultInputs = { audio : H.Silence, cutoff : H.Number 2.0 }
 
@@ -56,7 +66,9 @@ family = -- {-> audio <-}
         defaultState
         defaultInputs
         defaultOutputs
-        $ Fn.make name $ do
+        $ Fn.make name
+            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            $ do
             audio <- P.receive _in_audio
             cutoff <- P.receive _in_cutoff
             -- SetCutoff a cutoff

@@ -11,6 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
+import Data.SOrder (SOrder, type (:::), T)
+import Type.Proxy (Proxy(..))
 
 
 id = Node.Family :: _ "b"
@@ -38,6 +40,14 @@ type Inputs = ( what :: H.Texture, scale :: H.Value, offset :: H.Value )
 type Outputs = ( out :: H.Texture )
 
 
+type InputsOrder :: SOrder
+type InputsOrder = "what" ::: "scale" ::: "offset" ::: T
+
+
+type OutputsOrder :: SOrder
+type OutputsOrder = "out" ::: T
+
+
 defaultInputs :: Record Inputs
 defaultInputs = { what : H.Empty, scale : H.Number 1.0, offset : H.Number 0.0 }
 
@@ -59,7 +69,9 @@ family = -- {-> color <-}
         defaultState
         defaultInputs
         defaultOutputs
-        $ Fn.make name $ do
+        $ Fn.make name
+            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            $ do
             what <- P.receive _in_what
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset

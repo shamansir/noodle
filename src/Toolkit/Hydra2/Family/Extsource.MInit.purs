@@ -11,6 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
+import Data.SOrder (SOrder, type (:::), T)
+import Type.Proxy (Proxy(..))
 
 
 id = Node.Family :: _ "init"
@@ -34,6 +36,14 @@ type Inputs = ( options :: H.SourceOptions )
 type Outputs = ( )
 
 
+type InputsOrder :: SOrder
+type InputsOrder = "options" ::: T
+
+
+type OutputsOrder :: SOrder
+type OutputsOrder = T
+
+
 defaultInputs :: Record Inputs
 defaultInputs = { options : { src : H.Canvas } }
 
@@ -55,7 +65,9 @@ family = -- {-> extsource <-}
         defaultState
         defaultInputs
         defaultOutputs
-        $ Fn.make name $ do
+        $ Fn.make name
+            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            $ do
             options <- P.receive _in_options
             pure unit
 

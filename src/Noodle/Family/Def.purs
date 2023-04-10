@@ -12,6 +12,7 @@ import Prim.RowList as RL
 
 import Noodle.Id
 import Noodle.Fn2 (Fn)
+import Noodle.Fn2 as Fn
 
 
 
@@ -20,9 +21,13 @@ newtype Def state (is :: Row Type) (os :: Row Type) (m :: Type -> Type) =
 
 
 instance HasInputsAt is rli => HasInputs is rli (Def state is os m) where
-    inputs :: Def state is os m -> List String
-    -- inputs _ = keysToInputsR (Proxy :: Proxy is)
-    inputs (Def (_ /\ is /\ _ /\ _)) = Record.keys is
+    inputs :: Def state is os m -> List InputR
+    inputs = Fn.inputsShape <<< fn
+
+
+instance HasOutputsAt os rlo => HasOutputs os rlo (Def state is os m) where
+    outputs :: Def state is os m -> List OutputR
+    outputs = Fn.outputsShape <<< fn
 
 
 fn :: forall state is os m. Def state is os m -> Fn state is os m

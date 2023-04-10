@@ -11,6 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
+import Data.SOrder (SOrder, type (:::), T)
+import Type.Proxy (Proxy(..))
 
 
 id = Node.Family :: _ "sum"
@@ -37,6 +39,14 @@ type Inputs = ( what :: H.Texture, todo :: H.TODO )
 type Outputs = ( )
 
 
+type InputsOrder :: SOrder
+type InputsOrder = "what" ::: "todo" ::: T
+
+
+type OutputsOrder :: SOrder
+type OutputsOrder = T
+
+
 defaultInputs :: Record Inputs
 defaultInputs = { what : H.Empty, todo : H.TODO }
 
@@ -58,7 +68,9 @@ family = -- {-> color <-}
         unit
         { what : H.Empty, todo : H.TODO }
         { }
-        $ Fn.make name $ do
+        $ Fn.make name
+            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            $ do
             what <- P.receive _in_what
             pure unit
 

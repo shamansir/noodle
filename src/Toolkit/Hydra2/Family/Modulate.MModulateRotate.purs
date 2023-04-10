@@ -11,6 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
+import Data.SOrder (SOrder, type (:::), T)
+import Type.Proxy (Proxy(..))
 
 
 id = Node.Family :: _ "modulateRotate"
@@ -39,6 +41,14 @@ type Inputs = ( what :: H.Texture, with :: H.Texture, multiple :: H.Value, offse
 type Outputs = ( out :: H.Texture )
 
 
+type InputsOrder :: SOrder
+type InputsOrder = "what" ::: "with" ::: "multiple" ::: "offset" ::: T
+
+
+type OutputsOrder :: SOrder
+type OutputsOrder = "out" ::: T
+
+
 defaultInputs :: Record Inputs
 defaultInputs = { what : H.Empty, with : H.Empty, multiple : H.Number 1.0, offset : H.Number 0.0 }
 
@@ -60,7 +70,9 @@ family = -- {-> modulate <-}
         defaultState
         defaultInputs
         defaultOutputs
-        $ Fn.make name $ do
+        $ Fn.make name
+            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            $ do
             what <- P.receive _in_what
             with <- P.receive _in_with
             multiple <- P.receive _in_multiple

@@ -12,6 +12,7 @@ module Noodle.Fn2
   , imapState
   , cloneReplace
   , inputsShape, outputsShape
+  , inputsOrder, outputsOrder
   )
   where
 
@@ -30,6 +31,8 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.List (List)
 import Data.List (length, filter) as List
+import Data.SOrder (SOrder, class HasSymbolsOrder)
+import Data.SOrder (instantiate) as SOrder
 
 import Type.Proxy (Proxy(..))
 
@@ -53,15 +56,15 @@ import Noodle.Fn2.Protocol as Protocol
 type Name = String
 
 
-data Fn state (is :: Row Type) (os :: Row Type) m = Fn Name (ProcessM state is os m Unit)
+data Fn state (is :: Row Type) (os :: Row Type) m = Fn Name { inputs :: SOrder, outputs :: SOrder } (ProcessM state is os m Unit)
 
 
 class ToFn a state is os where
     toFn :: forall m. a -> Fn state is os m
 
 
-make :: forall state is os m. Name -> ProcessM state is os m Unit -> Fn state is os m
-make = Fn
+make :: forall state is iorder os oorder m. HasSymbolsOrder iorder is => HasSymbolsOrder oorder os => Name -> { inputs :: Proxy iorder, outputs :: Proxy oorder } -> ProcessM state is os m Unit -> Fn state is os m
+make name order = Fn name { inputs : SOrder.instantiate (Proxy :: _ is) order.inputs, outputs : SOrder.instantiate (Proxy :: _ os) order.outputs }
 
 
 {- Creating -}
@@ -87,11 +90,11 @@ program = do
 
 
 mapM :: forall state is os m m'. (m ~> m') -> Fn state is os m -> Fn state is os m'
-mapM f (Fn name processM) = Fn name $ Process.mapMM f processM
+mapM f (Fn name order processM) = Fn name order $ Process.mapMM f processM
 
 
 imapState :: forall state state' is os m. (state -> state') -> (state' -> state) -> Fn state is os m -> Fn state' is os m
-imapState f g (Fn name processM) = Fn name $ Process.imapMState f g processM
+imapState f g (Fn name order processM) = Fn name order $ Process.imapMState f g processM
 
 {- Running -}
 
@@ -105,7 +108,7 @@ run default state protocol (Fn _ _ _ processM) = do
 
 
 run :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os -> Fn state is os m -> m ( state /\ Record is /\ Record os )
-run protocol (Fn _ process) = do
+run protocol (Fn _ _ process) = do
     _ <- Process.runM protocol process
     nextState <- liftEffect $ protocol.getState unit
     nextInputs <- liftEffect $ Tuple.snd <$> protocol.getInputs unit
@@ -114,7 +117,7 @@ run protocol (Fn _ process) = do
 
 
 run' :: forall state is os m. MonadRec m => MonadEffect m => Protocol state is os -> Fn state is os m -> m Unit
-run' protocol (Fn _ process) =
+run' protocol (Fn _ _ process) =
     Process.runM protocol process
 
 
@@ -122,15 +125,24 @@ run' protocol (Fn _ process) =
 
 
 name :: forall state is os m. Fn state is os m -> Name
-name (Fn n _) = n
+name (Fn n _ _) = n
 
 
 inputsShape :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> List InputR
-inputsShape (Fn _ _) = fromKeysR (Proxy :: Proxy is)
+inputsShape (Fn _ { inputs } _) = fromKeysR inputs (Proxy :: Proxy is)
 
 
 outputsShape :: forall state is (os :: Row Type) m rlo. HasOutputsAt os rlo => Fn state is os m -> List OutputR
-outputsShape (Fn _ _) = fromKeysR (Proxy :: Proxy os)
+outputsShape (Fn _ { outputs } _) = fromKeysR outputs (Proxy :: Proxy os)
+
+
+inputsOrder :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> SOrder
+inputsOrder (Fn _ { inputs } _) = inputs
+
+
+outputsOrder :: forall state (is :: Row Type) os m rlo. HasOutputsAt os rlo => Fn state is os m -> SOrder
+outputsOrder (Fn _ { outputs } _) = outputs
+
 
 
 -- TODO: mapRecord
@@ -176,8 +188,8 @@ findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex (Tu
 
 
 cloneReplace :: forall state is os m. Fn state is os m -> ProcessM state is os m Unit -> Fn state is os m
-cloneReplace (Fn name _) newProcessM =
-    Fn name newProcessM
+cloneReplace (Fn name order _) newProcessM =
+    Fn name order newProcessM
 
 
 {-}

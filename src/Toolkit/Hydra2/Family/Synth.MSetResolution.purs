@@ -11,6 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
+import Data.SOrder (SOrder, type (:::), T)
+import Type.Proxy (Proxy(..))
 
 
 id = Node.Family :: _ "setResolution"
@@ -35,6 +37,14 @@ type Inputs = ( width :: H.Value, height :: H.Value )
 type Outputs = ( )
 
 
+type InputsOrder :: SOrder
+type InputsOrder = "width" ::: "height" ::: T
+
+
+type OutputsOrder :: SOrder
+type OutputsOrder = T
+
+
 defaultInputs :: Record Inputs
 defaultInputs = { width : H.None, height : H.None }
 
@@ -56,7 +66,9 @@ family = -- {-> synth <-}
         defaultState
         defaultInputs
         defaultOutputs
-        $ Fn.make name $ do
+        $ Fn.make name
+            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            $ do
             width <- P.receive _in_width
             height <- P.receive _in_height
             -- TODO

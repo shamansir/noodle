@@ -35,6 +35,9 @@ import Record.Unsafe as RecordU
 import Record.Extra (keys) as Record
 import Type.Proxy (Proxy(..))
 
+import Data.SOrder (SOrder, class HasSymbolsOrder)
+import Data.SOrder (instantiate) as SOrder
+
 
 -- import Heterogeneous.Folding as H
 -- import Heterogeneous.Mapping as H
@@ -58,7 +61,7 @@ type Name = String
 
 
 data Toolkit :: Type -> Row Type -> Type
-data Toolkit gstate (families :: Row Type) = Toolkit Name (Record families)
+data Toolkit gstate (families :: Row Type) = Toolkit Name SOrder (Record families)
 
 
 {- type NodeDesc state is os m =
@@ -71,12 +74,12 @@ data Toolkit gstate (families :: Row Type) = Toolkit Name (Record families)
     } -}
 
 
-from :: forall gstate (families :: Row Type). Name -> Record families -> Toolkit gstate families
-from = Toolkit
+from :: forall gstate (families :: Row Type) (forder :: SOrder). HasSymbolsOrder forder families => Name -> Proxy forder -> Record families -> Toolkit gstate families
+from name forder = Toolkit name $ SOrder.instantiate (Proxy :: _ families) forder
 
 
 toRecord :: forall gstate (families :: Row Type). Toolkit gstate families -> Record families
-toRecord (Toolkit _ tk) = tk
+toRecord (Toolkit _ _ tk) = tk
 
 
 familyDefs
@@ -84,7 +87,7 @@ familyDefs
      . TF.Fold rl families Array x
     => Toolkit gstate families
     -> Array x
-familyDefs (Toolkit _ defs) = TF.hfoldl defs
+familyDefs (Toolkit _ _ defs) = TF.hfoldl defs  -- FIXME: ORDER
 
 
 familyDefsIndexed
@@ -92,7 +95,7 @@ familyDefsIndexed
      . TF.FoldI rl families Array x
     => Toolkit gstate families
     -> Array x
-familyDefsIndexed (Toolkit _ defs) = TF.hfoldlWithIndex defs
+familyDefsIndexed (Toolkit _ _ defs) = TF.hfoldlWithIndex defs -- FIXME: ORDER
 
 
 -- toStates ∷ ∀ gstate rl (families :: Row Type) (states :: Row Type). TM.ToStates rl families states ⇒ Toolkit gstate families → Record states
@@ -104,7 +107,7 @@ mapFamilies
      . TM.Map rl families families' x
     => Toolkit gstate families
     -> Record families'
-mapFamilies (Toolkit _ defs) =
+mapFamilies (Toolkit _ _ defs) =
     TM.hmap (Proxy :: Proxy x) defs
 
 
@@ -115,7 +118,7 @@ mapFamiliesIndexed
     => TM.MapI rl families families' x
     => Toolkit gstate families
     -> Record families'
-mapFamiliesIndexed (Toolkit _ defs) =
+mapFamiliesIndexed (Toolkit _ _ defs) =
     TM.hmapWithIndex (Proxy :: Proxy x) defs
 
 
@@ -124,7 +127,7 @@ toShapes
      . TM.MapToShapes fs families shapes
     => Toolkit gstate families
     -> Record shapes
-toShapes (Toolkit _ defs) =
+toShapes (Toolkit _ _ defs) =
     TM.toShapes defs
 
 
@@ -134,7 +137,7 @@ toRepr
     => TR.Repr repr
     -> Toolkit gstate families
     -> Record reprs
-toRepr repr (Toolkit _ defs) =
+toRepr repr (Toolkit _ _ defs) =
     TM.toReprs repr defs
 
 
@@ -145,7 +148,7 @@ spawn
     => Toolkit gstate families
     -> Family f
     -> m (Node f state is os m)
-spawn (Toolkit _ tk) fsym =
+spawn (Toolkit _ _ tk) fsym =
     Record.get fsym tk
         # makeNode
     where
@@ -160,7 +163,7 @@ unsafeSpawn
     => Toolkit gstate families
     -> Family' f
     -> m (Maybe (Family f /\ Node f state is os m))
-unsafeSpawn toolkit@(Toolkit name tk) family =
+unsafeSpawn toolkit@(Toolkit name _ tk) family =
     if List.elem (reflect' family) $ Record.keys tk then
         let (family_ :: Family f) = reifySymbol (reflect' family) unsafeCoerce
         in Just <$> ((/\) family_) <$> (spawn toolkit family_)
@@ -175,7 +178,7 @@ unsafeSpawnR
     => Toolkit gstate families
     -> FamilyR
     -> m (Maybe (Node f state is os m))
-unsafeSpawnR toolkit@(Toolkit name tk) family =
+unsafeSpawnR toolkit@(Toolkit _ name tk) family =
     if List.elem (reflect' family) $ Record.keys tk then
         RecordU.unsafeGet familyStr tk
             # makeNode
@@ -188,11 +191,11 @@ unsafeSpawnR toolkit@(Toolkit name tk) family =
 
 
 name :: forall gstate families. Toolkit gstate families -> Name
-name (Toolkit name _) = name
+name (Toolkit name _ _) = name
 
 
 nodeFamilies :: forall ks gstate families. ListsFamilies families ks => Toolkit gstate families -> List FamilyR
-nodeFamilies (Toolkit _ _) = keysToFamiliesR (Proxy :: Proxy families)
+nodeFamilies (Toolkit _ order _) = keysToFamiliesR order (Proxy :: Proxy families)
 
 
 {-

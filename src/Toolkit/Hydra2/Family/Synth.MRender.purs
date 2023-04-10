@@ -11,6 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
+import Data.SOrder (SOrder, type (:::), T)
+import Type.Proxy (Proxy(..))
 
 
 id = Node.Family :: _ "render"
@@ -34,6 +36,14 @@ type Inputs = ( from :: H.From )
 type Outputs = ( )
 
 
+type InputsOrder :: SOrder
+type InputsOrder = "from" ::: T
+
+
+type OutputsOrder :: SOrder
+type OutputsOrder = T
+
+
 defaultInputs :: Record Inputs
 defaultInputs = { from : H.All }
 
@@ -55,7 +65,9 @@ family = -- {-> synth <-}
         defaultState
         defaultInputs
         defaultOutputs
-        $ Fn.make name $ do
+        $ Fn.make name
+            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            $ do
             from <- P.receive _in_from
             -- TODO
             pure unit

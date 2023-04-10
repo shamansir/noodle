@@ -19,8 +19,9 @@ import Heterogeneous.Folding as HF
 
 import Noodle.Id (Family', familyP, class ListsFamilies)
 import Noodle.Id (InputR, OutputR, keysToInputsR, keysToOutputsR) as Fn
-import Noodle.Id (class HasInputsAt, class HasOutputsAt, reflectInputR, reflectOutputR) as Fn
+import Noodle.Id (class HasInputsAt, class HasOutputsAt, reflectInputR, reflectOutputR, inputs, outputs) as Fn
 import Noodle.Family.Def as Family
+import Noodle.Fn2 as Fn
 import Noodle.Toolkit3.MapsFolds.Repr (Repr, ToReprTop(..), class ExtractReprs)
 
 
@@ -93,9 +94,9 @@ instance toShapesMap ::
         (Family.Def state is os m)
         (List Fn.InputR /\ List Fn.OutputR)
     where
-    mapping ToShape _ =
-        Fn.keysToInputsR (Proxy :: Proxy is)
-        /\ Fn.keysToOutputsR (Proxy :: Proxy os)
+    mapping ToShape def =
+        Fn.keysToInputsR (Family.fn def # Fn.inputsOrder) (Proxy :: Proxy is)
+        /\ Fn.keysToOutputsR (Family.fn def # Fn.outputsOrder) (Proxy :: Proxy os)
 
 
 instance extractShapeMap ::

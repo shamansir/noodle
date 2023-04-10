@@ -13,6 +13,8 @@ import Data.Eq (class Eq)
 -- import Data.Char.Gen as CG
 import Data.Newtype (class Newtype)
 import Data.UniqueHash as UniqueHash
+import Data.SOrder as SOrder
+import Data.SOrder (SOrder, class HasSymbolsOrder)
 
 import Data.Array as Array
 import Data.Bifunctor (lmap, rmap, bimap)
@@ -83,12 +85,33 @@ class (RL.RowToList os g, Record.Keys g) <= HasOutputs os g
 -}
 
 
-make :: forall f state is os m. IsSymbol f => MonadEffect m => Family f -> state -> Record is -> Record os -> ProcessM state is os m Unit -> m (Node f state is os m)
-make family state is os process =
-    make' (family' family) state is os $ Fn.make (reflect family) process
+make
+    :: forall f state (is :: Row Type) (iorder :: SOrder) (os :: Row Type) (oorder :: SOrder) m
+     . IsSymbol f
+    => HasSymbolsOrder iorder is
+    => HasSymbolsOrder oorder os
+    => MonadEffect m
+    => Family f
+    -> state
+    -> Proxy iorder
+    -> Record is
+    -> Proxy iorder
+    -> Record os
+    -> ProcessM state is os m Unit
+    -> m (Node f state is os m)
+make family state iorder is oorder os process =
+    make' (family' family) state is os $ Fn.make (reflect family) { inputs : iorder, outputs : oorder } process
 
 
-make' :: forall f state is os m. MonadEffect m => Family' f -> state -> Record is -> Record os -> Fn state is os m -> m (Node f state is os m)
+make'
+    :: forall f state (is :: Row Type) (os :: Row Type) m
+     . MonadEffect m
+    => Family' f
+    -> state
+    -> Record is
+    -> Record os
+    -> Fn state is os m
+    -> m (Node f state is os m)
 make' family state is os fn = do
     nodeId <- liftEffect $ makeNodeId family
     tracker /\ protocol <- Protocol.make state is os

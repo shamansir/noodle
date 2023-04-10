@@ -11,6 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
+import Data.SOrder (SOrder, type (:::), T)
+import Type.Proxy (Proxy(..))
 
 
 id = Node.Family :: _ "fit"
@@ -38,6 +40,14 @@ type Inputs = ( arr :: H.VArray, low :: H.Value, high :: H.Value )
 type Outputs = ( out :: H.Value )
 
 
+type InputsOrder :: SOrder
+type InputsOrder = "arr" ::: "low" ::: "hight" ::: T
+
+
+type OutputsOrder :: SOrder
+type OutputsOrder = "out" ::: T
+
+
 defaultInputs :: Record Inputs
 defaultInputs = { arr : H.noValues, low : H.Number 0.0, high : H.Number 1.1 }
 
@@ -59,7 +69,9 @@ family = -- {-> array <-}
         defaultState
         defaultInputs
         defaultOutputs
-        $ Fn.make name $ do
+        $ Fn.make name
+            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            $ do
             arr <- P.receive _in_arr
             low <- P.receive _in_low
             high <- P.receive _in_high
