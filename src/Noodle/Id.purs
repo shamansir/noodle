@@ -36,10 +36,12 @@ import Prelude
 import Effect (Effect)
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Tuple (uncurry)
+import Data.Tuple (fst, snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (UniqueHash)
 import Data.UniqueHash as UniqueHash
 import Data.List (List)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.SOrder (SOrder)
 import Data.SOrder as SOrder
 
@@ -62,8 +64,20 @@ class Reflect' a where
     reflect' :: a -> String
 
 
+class Indexed a where
+    index :: a -> Int
+
+
 class FromKeysR a where
     fromKeysR :: forall (w :: Row Type -> Type) (rows :: Row Type) rl. RL.RowToList rows rl => Record.Keys rl => SOrder -> w rows -> List a
+
+
+toPair :: forall proxy sym. IsSymbol sym => Indexed (proxy sym) => proxy sym -> String /\ Int
+toPair p = reflect p /\ index p
+
+
+toPair' :: forall a. Reflect' => Indexed a => a-> String /\ Int
+toPair' p = reflect' p /\ index p
 
 
 data Family (f :: Symbol) = Family
@@ -117,22 +131,25 @@ keysToFamiliesR :: forall w fs rl. RL.RowToList fs rl => Record.Keys rl => SOrde
 keysToFamiliesR order = Record.keys >>> SOrder.sortL' order >>> (<$>) FamilyR
 
 
-data Input (i :: Symbol) = Input -- TODO: Int
+data Input (i :: Symbol) = Input Int -- TODO: Int
 instance Reflect Input where reflect = reflectInput
+instance Indexed (Input i) where index (Input iindex) = iindex
 
 
-newtype Input' (i :: Symbol) = Input' String -- TODO: Int /\ String
+newtype Input' (i :: Symbol) = Input' (Int /\ String) -- TODO: Int /\ String
 derive newtype instance eqInput' :: Eq (Input' i)
 derive newtype instance ordInput' :: Ord (Input' i)
 derive newtype instance showInput' :: Show (Input' i)
 instance Reflect' (Input' i) where reflect' = reflectInput'
+instance Indexed (Input' i) where index (Input' pair) = Tuple.fst pair
 
 
-newtype InputR = InputR String -- TODO: Int /\ String
+newtype InputR = InputR (Int /\ String) -- TODO: Int /\ String
 derive newtype instance eqInputR :: Eq InputR
 derive newtype instance ordInputR :: Ord InputR
 derive newtype instance showInputR :: Show InputR
 instance Reflect' InputR where reflect' = reflectInputR
+instance Indexed InputR where index (InputR pair) = Tuple.fst pair
 instance FromKeysR InputR where fromKeysR = keysToInputsR
 
 
@@ -156,11 +173,11 @@ reflectInput = reflectSymbol
 
 
 reflectInput' :: forall i. Input' i -> String
-reflectInput' (Input' s) = s
+reflectInput' (Input' pair) = Tuple.snd pair
 
 
 reflectInputR :: InputR -> String
-reflectInputR (InputR s) = s
+reflectInputR (InputR pair) = Tuple.snd pair
 
 
 keysToInputsR :: forall w is rl. HasInputsAt is rl => SOrder -> w is -> List InputR
@@ -171,39 +188,42 @@ keysToInputsR order = Record.keys >>> SOrder.sortL' order >>> (<$>) InputR
 -- _in = reflect'
 
 
-data Output (o :: Symbol) = Output -- TODO: Int
+data Output (o :: Symbol) = Output Int
 instance Reflect Output where reflect = reflectOutput
+instance Indexed (Output o) where index (Output oindex) = oindex
 
 
-newtype Output' (o :: Symbol) = Output' String -- TODO: Int /\ String
+newtype Output' (o :: Symbol) = Output' (Int /\ String) -- TODO: Int /\ String
 derive newtype instance eqOutput' :: Eq (Output' o)
 derive newtype instance ordOutput' :: Ord (Output' o)
 derive newtype instance showOutput' :: Show (Output' o)
 instance Reflect' (Output' o) where reflect' = reflectOutput'
+instance Indexed (Output' i) where index (Output' pair) = Tuple.fst pair
 
 
-newtype OutputR = OutputR String -- TODO: Int /\ String
+newtype OutputR = OutputR (Int /\ String) -- TODO: Int /\ String
 derive newtype instance eqOutputR :: Eq OutputR
 derive newtype instance ordOutputR :: Ord OutputR
 derive newtype instance showOutputR :: Show OutputR
 instance Reflect' OutputR where reflect' = reflectOutputR
+instance Indexed OutputR where index (OutputR pair) = Tuple.fst pair
 instance FromKeysR OutputR where fromKeysR = keysToOutputsR
 
 
 output' :: forall o. IsSymbol o => Output o -> Output' o
-output' = reflectSymbol >>> Output'
+output' = toPair >>> Output'
 
 
 outputR :: forall o. IsSymbol o => Output o -> OutputR
-outputR = reflectSymbol >>> OutputR
+outputR = toPair >>> OutputR
 
 
 outputR' :: forall o. Output' o -> OutputR
-outputR' = reflectOutput' >>> OutputR
+outputR' = toPair' >>> OutputR
 
 
 outputP :: forall proxy o. IsSymbol o => proxy o -> Output' o
-outputP = reflectSymbol >>> Output'
+outputP = toPair >>> Output'
 
 
 reflectOutput :: forall o. IsSymbol o => Output o -> String
@@ -211,11 +231,11 @@ reflectOutput = reflectSymbol
 
 
 reflectOutput' :: forall o. Output' o -> String
-reflectOutput' (Output' s) = s
+reflectOutput' (Output' s) = Tuple.snd s
 
 
 reflectOutputR :: OutputR -> String
-reflectOutputR (OutputR s) = s
+reflectOutputR (OutputR s) = Tuple.snd s
 
 
 keysToOutputsR :: forall w os rl. HasInputsAt os rl => SOrder -> w os -> List OutputR -- TODO: Array OutputR?

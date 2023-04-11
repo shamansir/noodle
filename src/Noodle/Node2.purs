@@ -45,7 +45,7 @@ import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol, Tracker, InputChange(..), OutputChange(..))
 import Noodle.Fn2.Protocol as Protocol
 import Noodle.Fn2 (Fn)
-import Noodle.Fn2 (inputsShape, outputsShape, run, run', make, cloneReplace) as Fn
+import Noodle.Fn2 (inputsShape, outputsShape, inputsOrder, outputsOrder, run, run', make, cloneReplace) as Fn
 
 import Record (get, set) as Record
 import Record.Extra (keys, class Keys) as Record
@@ -360,6 +360,14 @@ inputsShape (Node _ _ _ fn) = Fn.inputsShape fn
 
 outputsShape :: forall f state is (os :: Row Type) m rlo. HasOutputsAt os rlo => Node f state is os m -> List OutputR
 outputsShape (Node _ _ _ fn) = Fn.outputsShape fn
+
+
+inputsOrder :: forall f state is os m rli. HasInputsAt is rli => Node f state is os m -> SOrder
+inputsOrder (Node _ _ _ fn) = Fn.inputsOrder fn
+
+
+outputsOrder :: forall f state is os m rlo. HasOutputsAt os rlo => Node f state is os m -> SOrder
+outputsOrder (Node _ _ _ fn) = Fn.outputsOrder fn
 
 
 -- TODO: mapRecord
