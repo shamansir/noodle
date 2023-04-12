@@ -19,6 +19,7 @@ module Noodle.Id
     , familyOf, hashOf
     , class Reflect, reflect
     , class Reflect', reflect'
+    , class Indexed, index
     , class FromKeysR, fromKeysR
     -- FIXME: make classes below internal
     , class HasInputsAt, class HasOutputsAt
@@ -41,6 +42,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (UniqueHash)
 import Data.UniqueHash as UniqueHash
 import Data.List (List)
+import Data.List (mapWithIndex) as List
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.SOrder (SOrder)
 import Data.SOrder as SOrder
@@ -48,6 +50,7 @@ import Data.SOrder as SOrder
 import Record.Extra as Record
 import Prim.Row as R
 import Type.RowList as RL
+import Type.Proxy (Proxy(..))
 
 
 -- naming in general as follows:
@@ -72,16 +75,20 @@ class FromKeysR a where
     fromKeysR :: forall (w :: Row Type -> Type) (rows :: Row Type) rl. RL.RowToList rows rl => Record.Keys rl => SOrder -> w rows -> List a
 
 
-toPair :: forall proxy sym. IsSymbol sym => Indexed (proxy sym) => proxy sym -> String /\ Int
-toPair p = reflect p /\ index p
+instance Reflect proxy where
+    reflect = reflectSymbol
 
 
-toPair' :: forall a. Reflect' => Indexed a => a-> String /\ Int
-toPair' p = reflect' p /\ index p
+toPair :: forall proxy sym. IsSymbol sym => Reflect proxy => Indexed (proxy sym) => proxy sym -> Int /\ String
+toPair p =  index p /\ reflect p
+
+
+toPair' :: forall a. Reflect' a => Indexed a => a -> Int /\ String
+toPair' p = index p /\ reflect' p
 
 
 data Family (f :: Symbol) = Family
-instance Reflect Family where reflect = reflectFamily
+-- instance Reflect Family where reflect = reflectFamily -- covered by Reflect proxy instance
 
 
 newtype Family' (f :: Symbol) = Family' String
@@ -100,15 +107,15 @@ instance FromKeysR FamilyR where fromKeysR = keysToFamiliesR
 
 
 family' :: forall f. IsSymbol f => Family f -> Family' f
-family' = reflectSymbol >>> Family'
+family' = reflect >>> Family'
 
 
 familyR :: forall f. IsSymbol f => Family f -> FamilyR
-familyR = reflectSymbol >>> FamilyR
+familyR = reflect >>> FamilyR
 
 
 reflectFamily :: forall f. IsSymbol f => Family f -> String
-reflectFamily = reflectSymbol
+reflectFamily = reflect
 
 
 reflectFamily' :: forall f. Family' f -> String
@@ -116,7 +123,7 @@ reflectFamily' (Family' s) = s
 
 
 reflectFamily'' :: forall f. IsSymbol f => Family' f -> FamilyR
-reflectFamily'' = reflectSymbol >>> FamilyR
+reflectFamily'' = reflect >>> FamilyR
 
 
 reflectFamilyR :: FamilyR -> String
@@ -124,7 +131,7 @@ reflectFamilyR (FamilyR s) = s
 
 
 familyP :: forall proxy f. IsSymbol f => proxy f -> Family' f
-familyP = reflectSymbol >>> Family'
+familyP = reflect >>> Family'
 
 
 keysToFamiliesR :: forall w fs rl. RL.RowToList fs rl => Record.Keys rl => SOrder -> w fs -> List FamilyR
@@ -132,7 +139,7 @@ keysToFamiliesR order = Record.keys >>> SOrder.sortL' order >>> (<$>) FamilyR
 
 
 data Input (i :: Symbol) = Input Int -- TODO: Int
-instance Reflect Input where reflect = reflectInput
+-- instance Reflect Input where reflect = reflectInput -- covered by Reflect proxy instance
 instance Indexed (Input i) where index (Input iindex) = iindex
 
 
@@ -154,22 +161,22 @@ instance FromKeysR InputR where fromKeysR = keysToInputsR
 
 
 input' :: forall i. IsSymbol i => Input i -> Input' i
-input' = inputP
+input' (Input n) = Input' $ n /\ reflect (Proxy :: _ i)
 
 
 inputR :: forall i. IsSymbol i => Input i -> InputR
-inputR = reflectSymbol >>> InputR
+inputR = toPair >>> InputR
 
 inputR' :: forall i. Input' i -> InputR
-inputR' = reflectInput' >>> InputR
+inputR' = toPair' >>> InputR
 
 
-inputP :: forall proxy i. IsSymbol i => proxy i -> Input' i
-inputP = reflectSymbol >>> Input'
+inputP :: forall proxy i. IsSymbol i => Indexed (proxy i) => Reflect proxy => proxy i -> Input' i
+inputP = toPair >>> Input'
 
 
 reflectInput :: forall i. IsSymbol i => Input i -> String
-reflectInput = reflectSymbol
+reflectInput = reflect
 
 
 reflectInput' :: forall i. Input' i -> String
@@ -181,7 +188,7 @@ reflectInputR (InputR pair) = Tuple.snd pair
 
 
 keysToInputsR :: forall w is rl. HasInputsAt is rl => SOrder -> w is -> List InputR
-keysToInputsR order = Record.keys >>> SOrder.sortL' order >>> (<$>) InputR
+keysToInputsR order = Record.keys >>> SOrder.sortL' order >>> List.mapWithIndex (/\) >>> map InputR
 
 
 -- _in :: InputR -> String
@@ -189,7 +196,7 @@ keysToInputsR order = Record.keys >>> SOrder.sortL' order >>> (<$>) InputR
 
 
 data Output (o :: Symbol) = Output Int
-instance Reflect Output where reflect = reflectOutput
+-- instance Reflect Output where reflect = reflectOutput -- covered by Reflect proxy instance
 instance Indexed (Output o) where index (Output oindex) = oindex
 
 
@@ -222,12 +229,12 @@ outputR' :: forall o. Output' o -> OutputR
 outputR' = toPair' >>> OutputR
 
 
-outputP :: forall proxy o. IsSymbol o => proxy o -> Output' o
+outputP :: forall proxy o. IsSymbol o => Indexed (proxy o) => proxy o -> Output' o
 outputP = toPair >>> Output'
 
 
 reflectOutput :: forall o. IsSymbol o => Output o -> String
-reflectOutput = reflectSymbol
+reflectOutput = reflect
 
 
 reflectOutput' :: forall o. Output' o -> String
@@ -239,7 +246,7 @@ reflectOutputR (OutputR s) = Tuple.snd s
 
 
 keysToOutputsR :: forall w os rl. HasInputsAt os rl => SOrder -> w os -> List OutputR -- TODO: Array OutputR?
-keysToOutputsR order = Record.keys >>> SOrder.sortL' order >>> (<$>) OutputR
+keysToOutputsR order = Record.keys >>> SOrder.sortL' order >>> List.mapWithIndex (/\) >>> map OutputR
 
 
 -- _in :: InputR -> String
