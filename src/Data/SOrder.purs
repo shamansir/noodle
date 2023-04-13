@@ -9,6 +9,7 @@ module Data.SOrder
     , length, index, length', index'
     , sort, sortBy, sort', sortBy', sortL, sortByL, sortL', sortByL'
     -- , class HasOrder
+    , s1, s2, s3, s4, s5, s6, s7, s8, s9
     ) where
 
 import Prelude
@@ -191,3 +192,39 @@ sortByL' (SOrder indexMap) toKey =
                 _ -> compare v1 v2
         )
     where indexOf = flip Map.lookup indexMap <<< toKey
+
+
+s1 :: forall proxy sym1. IsSymbol sym1 => proxy sym1 -> Proxy (sym1 ::: T)
+s1 _ = Proxy
+
+
+s2 :: forall proxy sym1 sym2. IsSymbol sym1 => IsSymbol sym2 => proxy sym1 -> proxy sym2 -> Proxy (sym1 ::: sym2 ::: T)
+s2 _ _ = Proxy
+
+
+s3 :: forall proxy sym1 sym2 sym3. IsSymbol sym1 => IsSymbol sym2 => IsSymbol sym3 => proxy sym1 -> proxy sym2 -> proxy sym3 -> Proxy (sym1 ::: sym2 ::: sym3 ::: T)
+s3 _ _ _ = Proxy
+
+
+s4 :: forall proxy sym1 sym2 sym3 sym4. IsSymbol sym1 => IsSymbol sym2 => IsSymbol sym3 => IsSymbol sym4 => proxy sym1 -> proxy sym2 -> proxy sym3 -> proxy sym4 -> Proxy (sym1 ::: sym2 ::: sym3 ::: sym4 ::: T)
+s4 _ _ _ _ = Proxy
+
+
+s5 :: forall proxy sym1 sym2 sym3 sym4 sym5. IsSymbol sym1 => IsSymbol sym2 => IsSymbol sym3 => IsSymbol sym4 => IsSymbol sym5 => proxy sym1 -> proxy sym2 -> proxy sym3 -> proxy sym4 -> proxy sym5 -> Proxy (sym1 ::: sym2 ::: sym3 ::: sym4 ::: sym5 ::: T)
+s5 _ _ _ _ _ = Proxy
+
+
+s6 :: forall proxy sym1 sym2 sym3 sym4 sym5 sym6. IsSymbol sym1 => IsSymbol sym2 => IsSymbol sym3 => IsSymbol sym4 => IsSymbol sym5 => IsSymbol sym6 => proxy sym1 -> proxy sym2 -> proxy sym3 -> proxy sym4 -> proxy sym5 -> proxy sym6 -> Proxy (sym1 ::: sym2 ::: sym3 ::: sym4 ::: sym5 ::: sym6 ::: T)
+s6 _ _ _ _ _ _ = Proxy
+
+
+s7 :: forall proxy sym1 sym2 sym3 sym4 sym5 sym6 sym7. IsSymbol sym1 => IsSymbol sym2 => IsSymbol sym3 => IsSymbol sym4 => IsSymbol sym5 => IsSymbol sym6 => IsSymbol sym7 => proxy sym1 -> proxy sym2 -> proxy sym3 -> proxy sym4 -> proxy sym5 -> proxy sym6 -> proxy sym7 -> Proxy (sym1 ::: sym2 ::: sym3 ::: sym4 ::: sym5 ::: sym6 ::: sym7 ::: T)
+s7 _ _ _ _ _ _ _ = Proxy
+
+
+s8 :: forall proxy sym1 sym2 sym3 sym4 sym5 sym6 sym7 sym8. IsSymbol sym1 => IsSymbol sym2 => IsSymbol sym3 => IsSymbol sym4 => IsSymbol sym5 => IsSymbol sym6 => IsSymbol sym7 => IsSymbol sym8 => proxy sym1 -> proxy sym2 -> proxy sym3 -> proxy sym4 -> proxy sym5 -> proxy sym6 -> proxy sym7 -> proxy sym8 -> Proxy (sym1 ::: sym2 ::: sym3 ::: sym4 ::: sym5 ::: sym6 ::: sym7 ::: sym8 ::: T)
+s8 _ _ _ _ _ _ _ _ = Proxy
+
+
+s9 :: forall proxy sym1 sym2 sym3 sym4 sym5 sym6 sym7 sym8 sym9. IsSymbol sym1 => IsSymbol sym2 => IsSymbol sym3 => IsSymbol sym4 => IsSymbol sym5 => IsSymbol sym6 => IsSymbol sym7 => IsSymbol sym8 => IsSymbol sym9 => proxy sym1 -> proxy sym2 -> proxy sym3 -> proxy sym4 -> proxy sym5 -> proxy sym6 -> proxy sym7 -> proxy sym8 -> proxy sym9 -> Proxy (sym1 ::: sym2 ::: sym3 ::: sym4 ::: sym5 ::: sym6 ::: sym7 ::: sym8 ::: sym9 ::: T)
+s9 _ _ _ _ _ _ _ _ _ = Proxy
