@@ -11,7 +11,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T)
+import Data.SOrder (SOrder, type (:::), T, s1, s2)
 import Type.Proxy (Proxy(..))
 
 
@@ -29,22 +29,22 @@ defaultState :: State
 defaultState = unit
 
 
-_in_scale = Fn.Input :: _ "scale"
-_in_offset = Fn.Input :: _ "offset"
+_in_scale  = Fn.Input  1 :: _ "scale"
+_in_offset = Fn.Input  2 :: _ "offset"
 
-_out_out = Fn.Output :: _ "out"
+_out_out   = Fn.Output 1 :: _ "out"
 
 
 type Inputs = ( scale :: H.Value, offset :: H.Value )
 type Outputs = ( out :: H.Texture )
 
 
-type InputsOrder :: SOrder
-type InputsOrder = "scale" ::: "offset" ::: T
+inputsOrder :: _
+inputsOrder = s2 _in_scale _in_offset
 
 
-type OutputsOrder :: SOrder
-type OutputsOrder = "out" ::: T
+outputsOrder :: _
+outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
@@ -69,7 +69,7 @@ family = -- {-> source <-}
         defaultInputs
         defaultOutputs
         $ Fn.make name
-            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             scale <- P.receive _in_scale
             offset <- P.receive _in_offset

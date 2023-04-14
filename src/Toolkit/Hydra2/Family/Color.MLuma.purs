@@ -11,7 +11,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T)
+import Data.SOrder (SOrder, type (:::), T, s1, s3)
 import Type.Proxy (Proxy(..))
 
 
@@ -29,23 +29,23 @@ defaultState :: State
 defaultState = unit
 
 
-_in_what = Fn.Input :: _ "what"
-_in_treshold = Fn.Input :: _ "treshold"
-_in_tolerance = Fn.Input :: _ "tolerance"
+_in_what      = Fn.Input 1 :: _ "what"
+_in_treshold  = Fn.Input 2 :: _ "treshold"
+_in_tolerance = Fn.Input 3 :: _ "tolerance"
 
-_out_out = Fn.Output :: _ "out"
+_out_out      = Fn.Output 1 :: _ "out"
 
 
 type Inputs = ( what :: H.Texture, treshold :: H.Value, tolerance :: H.Value )
 type Outputs = ( out :: H.Texture )
 
 
-type InputsOrder :: SOrder
-type InputsOrder = "what" ::: "treshold" ::: "tolerance" ::: T
+inputsOrder :: _
+inputsOrder = s3 _in_what _in_treshold _in_tolerance
 
 
-type OutputsOrder :: SOrder
-type OutputsOrder = "out" ::: T
+outputsOrder :: _
+outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
@@ -70,7 +70,7 @@ family = -- {-> color <-}
         defaultInputs
         defaultOutputs
         $ Fn.make name
-            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             what <- P.receive _in_what
             treshold <- P.receive _in_treshold

@@ -11,7 +11,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T)
+import Data.SOrder (SOrder, type (:::), T, s1, s5)
 import Type.Proxy (Proxy(..))
 
 
@@ -29,25 +29,25 @@ defaultState :: State
 defaultState = unit
 
 
-_in_what = Fn.Input :: _ "what"
-_in_repeatX = Fn.Input :: _ "repeatX"
-_in_repeatY = Fn.Input :: _ "repeatY"
-_in_offsetX = Fn.Input :: _ "offsetX"
-_in_offsetY = Fn.Input :: _ "offsetY"
+_in_what    = Fn.Input  1 :: _ "what"
+_in_repeatX = Fn.Input  2 :: _ "repeatX"
+_in_repeatY = Fn.Input  3 :: _ "repeatY"
+_in_offsetX = Fn.Input  4 :: _ "offsetX"
+_in_offsetY = Fn.Input  5 :: _ "offsetY"
 
-_out_out = Fn.Output :: _ "out"
+_out_out    = Fn.Output 1 :: _ "out"
 
 
 type Inputs = ( what :: H.Texture, repeatX :: H.Value, repeatY :: H.Value, offsetX :: H.Value, offsetY :: H.Value )
 type Outputs = ( out :: H.Texture )
 
 
-type InputsOrder :: SOrder
-type InputsOrder = "what" ::: "repeatX" ::: "repeatY" ::: "offsetX" ::: "offsetY" ::: T
+inputsOrder :: _
+inputsOrder = s5 _in_what _in_repeatX _in_repeatY _in_offsetX _in_offsetY
 
 
-type OutputsOrder :: SOrder
-type OutputsOrder = "out" ::: T
+outputsOrder :: _
+outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
@@ -71,7 +71,7 @@ family = -- {-> geometry <-}
         defaultInputs
         defaultOutputs
         $ Fn.make name
-            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             what <- P.receive _in_what
             repeatX <- P.receive _in_repeatX

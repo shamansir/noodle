@@ -64,9 +64,9 @@ toolkit =
                 { sum : 0 }
                 $ Fn.make "sum" sumOrders
                 $ do
-                    a <- P.receive (Fn.Input :: Fn.Input "a")
-                    b <- P.receive (Fn.Input :: Fn.Input "b")
-                    P.send (Fn.Output :: Fn.Output "sum") $ a + b
+                    a <- P.receive (Fn.Input 1 :: Fn.Input "a")
+                    b <- P.receive (Fn.Input 2 :: Fn.Input "b")
+                    P.send (Fn.Output 1 :: Fn.Output "sum") $ a + b
         }
 
     {-

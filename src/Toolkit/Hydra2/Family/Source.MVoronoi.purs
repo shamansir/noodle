@@ -11,7 +11,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T)
+import Data.SOrder (SOrder, type (:::), T, s1, s3)
 import Type.Proxy (Proxy(..))
 
 
@@ -29,23 +29,23 @@ defaultState :: State
 defaultState = unit
 
 
-_in_scale = Fn.Input :: _ "scale"
-_in_speed = Fn.Input :: _ "speed"
-_in_blending = Fn.Input :: _ "blending"
+_in_scale    = Fn.Input  1 :: _ "scale"
+_in_speed    = Fn.Input  2 :: _ "speed"
+_in_blending = Fn.Input  3 :: _ "blending"
 
-_out_out = Fn.Output :: _ "out"
+_out_out     = Fn.Output 1 :: _ "out"
 
 
 type Inputs = ( scale :: H.Value, speed :: H.Value, blending :: H.Value )
 type Outputs = ( out :: H.Texture )
 
 
-type InputsOrder :: SOrder
-type InputsOrder = "scale" ::: "speed" ::: "blending" ::: T
+inputsOrder :: _
+inputsOrder = s3 _in_scale _in_speed _in_blending
 
 
-type OutputsOrder :: SOrder
-type OutputsOrder = "out" ::: T
+outputsOrder :: _
+outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
@@ -70,7 +70,7 @@ family = -- {-> source <-}
         defaultInputs
         defaultOutputs
         $ Fn.make name
-            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             scale <- P.receive _in_scale
             speed <- P.receive _in_speed

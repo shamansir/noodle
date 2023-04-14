@@ -11,7 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T)
+import Data.SOrder (SOrder, type (:::), T, s2)
+import Data.SOrder (empty) as SOrder
 import Type.Proxy (Proxy(..))
 
 
@@ -29,8 +30,8 @@ defaultState :: State
 defaultState = unit
 
 
-_x_out = Fn.Output :: _ "x"
-_y_out = Fn.Output :: _ "y"
+_out_x = Fn.Output 1 :: _ "x"
+_out_y = Fn.Output 2 :: _ "y"
 
 
 type Inputs = ( )
@@ -40,12 +41,12 @@ type Outputs =
         )
 
 
-type InputsOrder :: SOrder
-type InputsOrder = T
+inputsOrder :: _
+inputsOrder = SOrder.empty
 
 
-type OutputsOrder :: SOrder
-type OutputsOrder = "x" ::: "y" ::: T
+outputsOrder :: _
+outputsOrder = s2 _out_x _out_y
 
 
 defaultInputs :: Record Inputs
@@ -69,10 +70,10 @@ family = -- {-> synth <-}
         defaultInputs
         defaultOutputs
         $ Fn.make name
-            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            { inputs : inputsOrder, outputs : outputsOrder }
             $ do
-            P.send _x_out H.MouseX
-            P.send _y_out H.MouseY
+            P.send _out_x H.MouseX
+            P.send _out_y H.MouseY
 
 
 type Node (m :: Type -> Type) =

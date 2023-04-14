@@ -11,7 +11,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T)
+import Data.SOrder (SOrder, type (:::), T, s2, s1)
 import Type.Proxy (Proxy(..))
 
 
@@ -29,22 +29,21 @@ defaultState :: State
 defaultState = unit
 
 
-_in_arr = Fn.Input :: _ "arr"
-_in_ease = Fn.Input :: _ "ease"
+_in_arr  = Fn.Input  1 :: _ "arr"
+_in_ease = Fn.Input  2 :: _ "ease"
 
-_out_out = Fn.Output :: _ "out"
+_out_out = Fn.Output 1 :: _ "out"
 
 
 type Inputs = ( arr :: H.VArray, ease :: H.Ease )
 type Outputs = ( out :: H.Value )
 
 
-type InputsOrder :: SOrder
-type InputsOrder = "arr" ::: "ease" ::: T
+inputsOrder ∷ _
+inputsOrder = s2 _in_arr _in_ease
 
-
-type OutputsOrder :: SOrder
-type OutputsOrder = "out" ::: T
+outputsOrder ∷ _
+outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
@@ -69,7 +68,7 @@ family = -- {-> array <-}
         { arr : H.noValues, ease : H.Linear }
         { out : H.None }
         $ Fn.make name
-            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             arr <- P.receive _in_arr
             ease <- P.receive _in_ease

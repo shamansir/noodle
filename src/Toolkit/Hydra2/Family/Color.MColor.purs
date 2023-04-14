@@ -11,7 +11,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T)
+import Data.SOrder (SOrder, type (:::), T, s1, s5)
 import Type.Proxy (Proxy(..))
 
 
@@ -29,25 +29,25 @@ defaultState :: State
 defaultState = unit
 
 
-_in_what = Fn.Input :: _ "what"
-_in_r = Fn.Input :: _ "r"
-_in_g = Fn.Input :: _ "g"
-_in_b = Fn.Input :: _ "b"
-_in_a = Fn.Input :: _ "a"
+_in_what = Fn.Input  1 :: _ "what"
+_in_r    = Fn.Input  2 :: _ "r"
+_in_g    = Fn.Input  3 :: _ "g"
+_in_b    = Fn.Input  4 :: _ "b"
+_in_a    = Fn.Input  5 :: _ "a"
 
-_out_out = Fn.Output :: _ "out"
+_out_out = Fn.Output 1 :: _ "out"
 
 
 type Inputs = ( what :: H.Texture, r :: H.Value, g :: H.Value, b :: H.Value, a :: H.Value )
 type Outputs = ( out :: H.Texture )
 
 
-type InputsOrder :: SOrder
-type InputsOrder = "what" ::: "r" ::: "g" ::: "b" ::: "a" ::: T
+inputsOrder :: _
+inputsOrder = s5 _in_what _in_r _in_g _in_b _in_a
 
 
-type OutputsOrder :: SOrder
-type OutputsOrder = "out" ::: T
+outputsOrder :: _
+outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
@@ -72,7 +72,7 @@ family = -- {-> color <-}
         defaultInputs
         defaultOutputs
         $ Fn.make name
-            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             what <- P.receive _in_what
             r <- P.receive _in_r

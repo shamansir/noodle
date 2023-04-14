@@ -11,7 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T)
+import Data.SOrder (SOrder, type (:::), T, s2)
+import Data.SOrder (empty) as SOrder
 import Type.Proxy (Proxy(..))
 
 
@@ -29,20 +30,20 @@ defaultState :: State
 defaultState = unit
 
 
-_in_audio = Fn.Input :: _ "audio"
-_in_smooth = Fn.Input :: _ "smooth"
+_in_audio  = Fn.Input 1 :: _ "audio"
+_in_smooth = Fn.Input 2 :: _ "smooth"
 
 
 type Inputs = ( audio :: H.Audio, smooth :: H.Value )
 type Outputs = ( )
 
 
-type InputsOrder :: SOrder
-type InputsOrder = "audio" ::: "smooth" ::: T
+inputsOrder :: _
+inputsOrder = s2 _in_audio _in_smooth
 
 
-type OutputsOrder :: SOrder
-type OutputsOrder = T
+outputsOrder :: _
+outputsOrder = SOrder.empty
 
 
 defaultInputs :: Record Inputs
@@ -67,7 +68,7 @@ family = -- {-> audio <-}
         defaultInputs
         defaultOutputs
         $ Fn.make name
-            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             audio <- P.receive _in_audio
             smooth <- P.receive _in_smooth

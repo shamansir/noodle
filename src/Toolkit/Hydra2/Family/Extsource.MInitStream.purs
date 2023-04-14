@@ -11,7 +11,8 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T)
+import Data.SOrder (SOrder, type (:::), T, s1)
+import Data.SOrder (empty) as SOrder
 import Type.Proxy (Proxy(..))
 
 
@@ -29,19 +30,19 @@ defaultState :: State
 defaultState = unit
 
 
-_in_src = Fn.Input :: _ "src"
+_in_src = Fn.Input 1 :: _ "src"
 
 
 type Inputs = ( src :: H.Source, todo :: H.TODO )
 type Outputs = ( )
 
 
-type InputsOrder :: SOrder
-type InputsOrder = "src" ::: "todo" ::: T
+inputsOrder :: _
+inputsOrder = s1 _in_src
 
 
-type OutputsOrder :: SOrder
-type OutputsOrder = T
+outputsOrder :: _
+outputsOrder = SOrder.empty
 
 
 defaultInputs :: Record Inputs
@@ -65,7 +66,7 @@ family = -- {-> extsource <-}
         defaultInputs
         defaultOutputs
         $ Fn.make name
-            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             src <- P.receive _in_src
             pure unit

@@ -11,7 +11,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T)
+import Data.SOrder (SOrder, type (:::), T, s1, s3)
 import Type.Proxy (Proxy(..))
 
 
@@ -29,23 +29,23 @@ defaultState :: State
 defaultState = unit
 
 
-_in_sides = Fn.Input :: _ "sides"
-_in_radius = Fn.Input :: _ "radius"
-_in_smoothing = Fn.Input :: _ "smoothing"
+_in_sides     = Fn.Input 1 :: _ "sides"
+_in_radius    = Fn.Input 2 :: _ "radius"
+_in_smoothing = Fn.Input 3 :: _ "smoothing"
 
-_out_out = Fn.Output :: _ "out"
+_out_out = Fn.Output 1 :: _ "out"
 
 
 type Inputs = ( sides :: H.Value, radius :: H.Value, smoothing :: H.Value )
 type Outputs = ( out :: H.Texture )
 
 
-type InputsOrder :: SOrder
-type InputsOrder = "sides" ::: "radius" ::: "smoothing" ::: T
+inputsOrder :: _
+inputsOrder = s3 _in_sides _in_radius _in_smoothing
 
 
-type OutputsOrder :: SOrder
-type OutputsOrder = "out" ::: T
+outputsOrder :: _
+outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
@@ -70,7 +70,7 @@ family = -- {-> source <-}
         defaultInputs
         defaultOutputs
         $ Fn.make name
-            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             sides <- P.receive _in_sides
             radius <- P.receive _in_radius

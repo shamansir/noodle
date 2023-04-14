@@ -15,12 +15,14 @@ import Data.Symbol (class IsSymbol)
 import Type.Proxy (Proxy)
 import Data.Tuple.Nested ((/\), type (/\))
 import Prim.RowList as RL
+import Data.SOrder (SOrder)
 
 import Heterogeneous.Mapping as HM
 
-import Noodle.Id (Family', familyP, inputP, outputP, class ListsFamilies)
+import Noodle.Id (Family', familyP, inputP', outputP', class ListsFamilies)
 import Noodle.Family.Def as Family
 import Noodle.Toolkit3.Path (InToolkit(..))
+import Noodle.Fn2 (inputsOrder, outputsOrder) as Fn
 import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn
 
 
@@ -28,9 +30,9 @@ import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn
 data ToReprTop :: forall k. k -> Type
 data ToReprTop repr = ToReprTop (Repr repr)
 data ToReprDownI :: forall k. Symbol -> k -> Type
-data ToReprDownI f repr = ToReprDownI (Family' f) (Repr repr)
+data ToReprDownI f repr = ToReprDownI (Family' f) SOrder (Repr repr)
 data ToReprDownO :: forall k. Symbol -> k -> Type
-data ToReprDownO f repr = ToReprDownO (Family' f) (Repr repr)
+data ToReprDownO f repr = ToReprDownO (Family' f) SOrder (Repr repr)
 
 
 data Repr :: forall k. k -> Type
@@ -50,10 +52,10 @@ instance toReprTopInstance ::
         (Family.Def state is os m)
         (repr /\ Record repr_is /\ Record repr_os)
     where
-    mappingWithIndex (ToReprTop repr) fsym (Family.Def (s /\ iRec /\ oRec /\ _)) =
+    mappingWithIndex (ToReprTop repr) fsym (Family.Def (s /\ iRec /\ oRec /\ fn)) =
         toRepr (FamilyP $ familyP fsym) s
-            /\ HM.hmapWithIndex (ToReprDownI (familyP fsym) repr) iRec
-            /\ HM.hmapWithIndex (ToReprDownO (familyP fsym) repr) oRec
+            /\ HM.hmapWithIndex (ToReprDownI (familyP fsym) (Fn.inputsOrder fn) repr) iRec
+            /\ HM.hmapWithIndex (ToReprDownO (familyP fsym) (Fn.outputsOrder fn) repr) oRec
 
 
 instance toReprDownIInstance ::
@@ -66,7 +68,7 @@ instance toReprDownIInstance ::
         a
         repr -- (FromRepr repr)
     where
-    mappingWithIndex (ToReprDownI family _) isym = toRepr (InputP family $ inputP isym)
+    mappingWithIndex (ToReprDownI family iorder _) isym = toRepr (InputP family $ inputP' iorder isym)
 
 
 instance toReprDownOInstance ::
@@ -79,7 +81,7 @@ instance toReprDownOInstance ::
         a
         repr -- (FromRepr repr)
     where
-    mappingWithIndex (ToReprDownO family _) osym = toRepr (OutputP family $ outputP osym)
+    mappingWithIndex (ToReprDownO family oorder _) osym = toRepr (OutputP family $ outputP' oorder osym)
 
 
 

@@ -1,7 +1,7 @@
 module Data.SOrder
     ( SOrder, TCons, T
-    , Auto, None
-    , auto, none
+    , Auto, Empty
+    , auto, empty
     , class IsSymbolsOrder, reflect
     , class IsSymbolsOrderTL, reflectTL
     , class HasSymbolsOrder, instantiate, instantiateImpl
@@ -85,16 +85,16 @@ type Auto :: SOrder
 type Auto = T
 
 
-type None :: SOrder
-type None = T
+type Empty :: SOrder
+type Empty = T
 
 
-none :: SOrder
-none = SOrder $ Map.empty
+empty :: Proxy Empty
+empty = Proxy
 
 
 auto :: SOrder
-auto = none
+auto = SOrder $ Map.empty
 
 
 class HasSymbolsOrder :: SOrder -> Row Type -> Constraint

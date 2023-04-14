@@ -20,13 +20,15 @@ import Data.Map as Map
 import Data.Array as Array
 --import Data.FoldableWithIndex (foldlWithIndex)
 import Data.TraversableWithIndex (traverseWithIndex)
+import Data.SOrder (SOrder)
+import Data.SOrder as SOrder
 import Prim.RowList as RL
 
 
 import Heterogeneous.Mapping as HM
 import Heterogeneous.Folding as HF
 
-import Noodle.Id (InputR, NodeId, OutputR, inputP, inputR', nodeIdR, outputP, outputR')
+import Noodle.Id (InputR, NodeId, OutputR, inputP', inputR', nodeIdR, outputP', outputR')
 import Noodle.Node2.MapsFolds.Flatten (NodeLineRec, NodeLineMap)
 import Noodle.Node2.Path (InNode(..))
 import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn
@@ -38,9 +40,9 @@ import Noodle.Node2 as Node
 data ToReprTop :: forall k. (Type -> Type) -> k -> Type
 data ToReprTop m repr = ToReprTop (Repr repr)
 data ToReprDownI :: forall k. Symbol -> k -> Type
-data ToReprDownI f repr = ToReprDownI (NodeId f) (Repr repr)
+data ToReprDownI f repr = ToReprDownI (NodeId f) SOrder (Repr repr)
 data ToReprDownO :: forall k. Symbol -> k -> Type
-data ToReprDownO f repr = ToReprDownO (NodeId f) (Repr repr)
+data ToReprDownO f repr = ToReprDownO (NodeId f) SOrder (Repr repr)
 
 
 data Repr :: forall k. k -> Type
@@ -61,14 +63,17 @@ nodeToRepr
     -> Node f state is os m
     -> m (NodeLineRec f repr repr_is repr_os)
 nodeToRepr (ToReprTop repr) node = do
-    let id = Node.id node
+    let
+        (id :: NodeId f) = Node.id node
+        iorder = Node.inputsOrder node
+        oorder = Node.outputsOrder node
     state <- Node.state node
     inputs <- Node.inputs node
     outputs <- Node.outputs node
     pure $ id
         /\ toRepr (NodeP id) state
-        /\ HM.hmapWithIndex (ToReprDownI id repr) inputs
-        /\ HM.hmapWithIndex (ToReprDownO id repr) outputs
+        /\ HM.hmapWithIndex (ToReprDownI id iorder repr) inputs
+        /\ HM.hmapWithIndex (ToReprDownO id oorder repr) outputs
 
 
 nodeToMapRepr
@@ -79,14 +84,17 @@ nodeToMapRepr
     -> Node f state is os m
     -> m (NodeLineMap repr)
 nodeToMapRepr (ToReprTop repr) node = do
-    let id = Node.id node
+    let
+        (id :: NodeId f) = Node.id node
+        iorder = Node.inputsOrder node
+        oorder = Node.outputsOrder node
     state <- Node.state node
     inputs <- Node.inputs node
     outputs <- Node.outputs node
     pure $ nodeIdR id
         /\ toRepr (NodeP id) state
-        /\ HF.hfoldlWithIndex (ToReprDownI id repr) (Map.empty :: Map InputR repr) inputs
-        /\ HF.hfoldlWithIndex (ToReprDownO id repr) (Map.empty :: Map OutputR repr) outputs
+        /\ HF.hfoldlWithIndex (ToReprDownI id iorder repr) (Map.empty :: Map InputR repr) inputs
+        /\ HF.hfoldlWithIndex (ToReprDownO id oorder repr) (Map.empty :: Map OutputR repr) outputs
 
 
 instance toReprTopInstance ::
@@ -111,12 +119,13 @@ instance toReprDownIInstance ::
     , HasRepr a repr
     ) =>
     HM.MappingWithIndex
-        (ToReprDownI family repr)
+        (ToReprDownI node_id repr)
         (Proxy i)
         a
         repr -- (FromRepr repr)
     where
-    mappingWithIndex (ToReprDownI family _) isym = toRepr (InputP family $ inputP isym)
+    mappingWithIndex (ToReprDownI node_id iorder _) isym =
+        toRepr (InputP node_id $ inputP' iorder isym)
 
 
 instance toReprDownOInstance ::
@@ -124,12 +133,13 @@ instance toReprDownOInstance ::
     , HasRepr a repr
     ) =>
     HM.MappingWithIndex
-        (ToReprDownO family repr)
+        (ToReprDownO node_id repr)
         (Proxy o)
         a
         repr -- (FromRepr repr)
     where
-    mappingWithIndex (ToReprDownO family _) osym = toRepr (OutputP family $ outputP osym)
+    mappingWithIndex (ToReprDownO node_id oorder _) osym =
+        toRepr (OutputP node_id $ outputP' oorder osym)
 
 
 instance foldToReprDownIInstance ::
@@ -143,8 +153,9 @@ instance foldToReprDownIInstance ::
         a
         (Map InputR repr)
     where
-    foldingWithIndex (ToReprDownI nodeId _) sym map a = -- ORDER!
-        map # Map.insert (inputR' $ inputP sym) (toRepr (InputP nodeId $ inputP sym) a)
+    foldingWithIndex (ToReprDownI nodeId iorder _) sym map a = -- ORDER!
+        map # Map.insert (inputR' input') (toRepr (InputP nodeId input') a)
+        where input' = inputP' iorder sym
 
 
 
@@ -159,8 +170,9 @@ instance foldToReprDownOInstance ::
         a
         (Map OutputR repr)
     where
-    foldingWithIndex (ToReprDownO nodeId _) sym map a = -- ORDER!
-        map # Map.insert (outputR' $ outputP sym) (toRepr (OutputP nodeId $ outputP sym) a)
+    foldingWithIndex (ToReprDownO nodeId oorder _) sym map a = -- ORDER!
+        map # Map.insert (outputR' output') (toRepr (OutputP nodeId output') a)
+        where output' = outputP' oorder sym
 
 
 class
@@ -214,12 +226,15 @@ instance foldToReprsMap ::
     where
     foldingWithIndex (ToReprTop repr) _ acc nodes =
         acc <> traverseWithIndex (\i node -> do
-            let (id :: NodeId f) = Node.id node
+            let
+                (id :: NodeId f) = Node.id node
+                iorder = Node.inputsOrder node
+                oorder = Node.outputsOrder node
             state <- Node.state node
             inputs <- Node.inputs node
             outputs <- Node.outputs node
             pure $ nodeIdR id
                 /\ toRepr (NodeP id) state
-                /\ HF.hfoldlWithIndex (ToReprDownI id repr) (Map.empty :: Map InputR repr) inputs
-                /\ HF.hfoldlWithIndex (ToReprDownO id repr) (Map.empty :: Map OutputR repr) outputs
+                /\ HF.hfoldlWithIndex (ToReprDownI id iorder repr) (Map.empty :: Map InputR repr) inputs
+                /\ HF.hfoldlWithIndex (ToReprDownO id oorder repr) (Map.empty :: Map OutputR repr) outputs
         ) nodes

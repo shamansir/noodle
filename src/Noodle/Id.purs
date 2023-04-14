@@ -4,11 +4,11 @@ module Noodle.Id
     , reflectFamily, reflectFamily', reflectFamily'', reflectFamilyR
     , keysToFamiliesR
     , Input(..), Input', InputR
-    , input', inputR, inputR', inputP
+    , input', inputR, inputR', inputP, inputP'
     , reflectInput, reflectInput', reflectInputR
     , keysToInputsR
     , Output(..), Output', OutputR
-    , output', outputR, outputR', outputP
+    , output', outputR, outputR', outputP, outputP'
     , reflectOutput, reflectOutput', reflectOutputR
     , keysToOutputsR
     , NodeId, NodeId', NodeIdR
@@ -33,24 +33,23 @@ module Noodle.Id
 
 import Prelude
 
-
-import Effect (Effect)
-import Data.Symbol (class IsSymbol, reflectSymbol)
-import Data.Tuple (uncurry)
-import Data.Tuple (fst, snd) as Tuple
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.UniqueHash (UniqueHash)
-import Data.UniqueHash as UniqueHash
+import Color.Scheme.X11 (wheat)
 import Data.List (List)
 import Data.List (mapWithIndex) as List
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.SOrder (SOrder)
 import Data.SOrder as SOrder
-
-import Record.Extra as Record
+import Data.Symbol (class IsSymbol, reflectSymbol)
+import Data.Tuple (fst, snd) as Tuple
+import Data.Tuple (uncurry, curry)
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.UniqueHash (UniqueHash)
+import Data.UniqueHash as UniqueHash
+import Effect (Effect)
 import Prim.Row as R
-import Type.RowList as RL
+import Record.Extra as Record
 import Type.Proxy (Proxy(..))
+import Type.RowList as RL
 
 
 -- naming in general as follows:
@@ -145,7 +144,7 @@ instance Indexed (Input i) where index (Input iindex) = iindex
 
 newtype Input' (i :: Symbol) = Input' (Int /\ String) -- TODO: Int /\ String
 derive newtype instance eqInput' :: Eq (Input' i)
-derive newtype instance ordInput' :: Ord (Input' i)
+instance ordInput' :: Ord (Input' i) where compare (Input' a) (Input' b) = compare (Tuple.fst a) (Tuple.fst b)
 derive newtype instance showInput' :: Show (Input' i)
 instance Reflect' (Input' i) where reflect' = reflectInput'
 instance Indexed (Input' i) where index (Input' pair) = Tuple.fst pair
@@ -153,7 +152,7 @@ instance Indexed (Input' i) where index (Input' pair) = Tuple.fst pair
 
 newtype InputR = InputR (Int /\ String) -- TODO: Int /\ String
 derive newtype instance eqInputR :: Eq InputR
-derive newtype instance ordInputR :: Ord InputR
+instance ordInputR :: Ord InputR where compare (InputR a) (InputR b) = compare (Tuple.fst a) (Tuple.fst b)
 derive newtype instance showInputR :: Show InputR
 instance Reflect' InputR where reflect' = reflectInputR
 instance Indexed InputR where index (InputR pair) = Tuple.fst pair
@@ -167,12 +166,17 @@ input' (Input n) = Input' $ n /\ reflect (Proxy :: _ i)
 inputR :: forall i. IsSymbol i => Input i -> InputR
 inputR = toPair >>> InputR
 
+
 inputR' :: forall i. Input' i -> InputR
 inputR' = toPair' >>> InputR
 
 
 inputP :: forall proxy i. IsSymbol i => Indexed (proxy i) => Reflect proxy => proxy i -> Input' i
 inputP = toPair >>> Input'
+
+
+inputP' :: forall proxy i. IsSymbol i => Reflect proxy => SOrder -> proxy i -> Input' i
+inputP' order p = Input' $ fromMaybe (-1) (SOrder.index' order $ reflect p) /\ reflect p
 
 
 reflectInput :: forall i. IsSymbol i => Input i -> String
@@ -202,7 +206,7 @@ instance Indexed (Output o) where index (Output oindex) = oindex
 
 newtype Output' (o :: Symbol) = Output' (Int /\ String) -- TODO: Int /\ String
 derive newtype instance eqOutput' :: Eq (Output' o)
-derive newtype instance ordOutput' :: Ord (Output' o)
+instance ordOutput' :: Ord (Output' i) where compare (Output' a) (Output' b) = compare (Tuple.fst a) (Tuple.fst b)
 derive newtype instance showOutput' :: Show (Output' o)
 instance Reflect' (Output' o) where reflect' = reflectOutput'
 instance Indexed (Output' i) where index (Output' pair) = Tuple.fst pair
@@ -210,7 +214,7 @@ instance Indexed (Output' i) where index (Output' pair) = Tuple.fst pair
 
 newtype OutputR = OutputR (Int /\ String) -- TODO: Int /\ String
 derive newtype instance eqOutputR :: Eq OutputR
-derive newtype instance ordOutputR :: Ord OutputR
+instance ordOutputR :: Ord OutputR where compare (OutputR a) (OutputR b) = compare (Tuple.fst a) (Tuple.fst b)
 derive newtype instance showOutputR :: Show OutputR
 instance Reflect' OutputR where reflect' = reflectOutputR
 instance Indexed OutputR where index (OutputR pair) = Tuple.fst pair
@@ -231,6 +235,10 @@ outputR' = toPair' >>> OutputR
 
 outputP :: forall proxy o. IsSymbol o => Indexed (proxy o) => proxy o -> Output' o
 outputP = toPair >>> Output'
+
+
+outputP' :: forall proxy o. IsSymbol o => Reflect proxy => SOrder -> proxy o -> Output' o
+outputP' order p = Output' $ fromMaybe (-1) (SOrder.index' order $ reflect p) /\ reflect p
 
 
 reflectOutput :: forall o. IsSymbol o => Output o -> String

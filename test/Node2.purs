@@ -38,6 +38,11 @@ import Signal.Time as SignalT
 _sum = Node.Family :: Node.Family "sum"
 
 
+_aI = Fn.Input 1 :: Fn.Input "a"
+_bI = Fn.Input 2 :: Fn.Input "b"
+_sumO = (Fn.Output 1 :: Fn.Output "sum")
+
+
 io = Proxy :: _ ("a" ::: "b" ::: T)
 oo = Proxy :: _ ("sum" ::: T)
 
@@ -55,21 +60,21 @@ spec = do
 
             atA <- Node.inputs node <#> _.a
             atA `shouldEqual` 2
-            atA' <- node `Node.atI` (Fn.Input :: Fn.Input "a")
+            atA' <- node `Node.atI` _aI
             atA' `shouldEqual` 2
             atA'' <- node `Node._at` _.a
             atA'' `shouldEqual` 2
 
             atB <- Node.inputs node <#> _.b
             atB `shouldEqual` 3
-            atB' <- node `Node.atI` (Fn.Input :: Fn.Input "b")
+            atB' <- node `Node.atI` _bI
             atB' `shouldEqual` 3
             atB'' <- node `Node._at` _.b
             atB'' `shouldEqual` 3
 
             atSum <- Node.outputs node <#> _.sum
             atSum `shouldEqual` 0
-            atSum' <- node `Node.atO` (Fn.Output :: Fn.Output "sum")
+            atSum' <- node `Node.atO` _sumO
             atSum' `shouldEqual` 0
             atSum'' <- node `Node.at_` _.sum
             atSum'' `shouldEqual` 0
@@ -81,9 +86,9 @@ spec = do
             node <-
                 Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
-                        a <- P.receive (Fn.Input :: Fn.Input "a")
-                        b <- P.receive (Fn.Input :: Fn.Input "b")
-                        P.send (Fn.Output :: Fn.Output "sum") $ a + b
+                        a <- P.receive _aI
+                        b <- P.receive _bI
+                        P.send (Fn.Output 0 :: Fn.Output "sum") $ a + b
 
             atSum <- node `Node.at_` _.sum
             atSum `shouldEqual` 0
@@ -115,23 +120,23 @@ spec = do
             nodeA <-
                 Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
-                        a <- P.receive (Fn.Input :: Fn.Input "a")
-                        b <- P.receive (Fn.Input :: Fn.Input "b")
-                        P.send (Fn.Output :: Fn.Output "sum") $ a + b
+                        a <- P.receive _aI
+                        b <- P.receive _bI
+                        P.send (Fn.Output 0 :: Fn.Output "sum") $ a + b
 
             nodeB <-
                 Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
-                        a <- P.receive (Fn.Input :: Fn.Input "a")
-                        b <- P.receive (Fn.Input :: Fn.Input "b")
-                        P.send (Fn.Output :: Fn.Output "sum") $ a + b
+                        a <- P.receive _aI
+                        b <- P.receive _bI
+                        P.send (Fn.Output 0 :: Fn.Output "sum") $ a + b
 
-            -- Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 4
-            Node.sendIn nodeA (Fn.Input :: Fn.Input "a") 4
+            -- Node.with nodeA $ P.sendIn _aI 4
+            Node.sendIn nodeA _aI 4
 
             _ <- Node.connect
-                    (Fn.Output :: Fn.Output "sum")
-                    (Fn.Input :: Fn.Input "b")
+                    (Fn.Output 0 :: Fn.Output "sum")
+                    _bI
                     identity
                     nodeA
                     nodeB
@@ -149,23 +154,23 @@ spec = do
             nodeA <-
                 Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
-                        a <- P.receive (Fn.Input :: Fn.Input "a")
-                        b <- P.receive (Fn.Input :: Fn.Input "b")
-                        P.send (Fn.Output :: Fn.Output "sum") $ a + b
+                        a <- P.receive _aI
+                        b <- P.receive _bI
+                        P.send _sumO $ a + b
 
             nodeB <-
                 Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
-                        a <- P.receive (Fn.Input :: Fn.Input "a")
-                        b <- P.receive (Fn.Input :: Fn.Input "b")
-                        P.send (Fn.Output :: Fn.Output "sum") $ a + b
+                        a <- P.receive _aI
+                        b <- P.receive _bI
+                        P.send _sumO $ a + b
 
-            -- Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 4
-            Node.sendIn nodeA (Fn.Input :: Fn.Input "a") 4
+            -- Node.with nodeA $ P.sendIn _aI 4
+            Node.sendIn nodeA _aI 4
 
             _ <- Node.connect
-                    (Fn.Output :: Fn.Output "sum")
-                    (Fn.Input :: Fn.Input "b")
+                    _sumO
+                    _bI
                     identity
                     nodeA
                     nodeB
@@ -176,8 +181,8 @@ spec = do
             atSumB <- nodeB `Node.at_` _.sum
             atSumB `shouldEqual` (4 + 3 + 2)
 
-            -- Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 7
-            Node.sendIn nodeA (Fn.Input :: Fn.Input "a") 7
+            -- Node.with nodeA $ P.sendIn _aI 7
+            Node.sendIn nodeA _aI 7
 
             _ <- Node.run nodeA
             _ <- Node.run nodeB
@@ -191,23 +196,23 @@ spec = do
             nodeA <-
                 Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
-                        a <- P.receive (Fn.Input :: Fn.Input "a")
-                        b <- P.receive (Fn.Input :: Fn.Input "b")
-                        P.send (Fn.Output :: Fn.Output "sum") $ a + b
+                        a <- P.receive _aI
+                        b <- P.receive _bI
+                        P.send _sumO $ a + b
 
             nodeB <-
                 Node.make _sum unit io oo { a : 2, b : 3 } { sum : 0 }
                     $ do
-                        a <- P.receive (Fn.Input :: Fn.Input "a")
-                        b <- P.receive (Fn.Input :: Fn.Input "b")
-                        P.send (Fn.Output :: Fn.Output "sum") $ a + b
+                        a <- P.receive _aI
+                        b <- P.receive _bI
+                        P.send _sumO $ a + b
 
-            -- Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 4
-            Node.sendIn nodeA (Fn.Input :: Fn.Input "a") 4
+            -- Node.with nodeA $ P.sendIn _aI 4
+            Node.sendIn nodeA _aI 4
 
             link <- Node.connect
-                    (Fn.Output :: Fn.Output "sum")
-                    (Fn.Input :: Fn.Input "b")
+                    _sumO
+                    _bI
                     identity
                     nodeA
                     nodeB
@@ -221,8 +226,8 @@ spec = do
             success <- Node.disconnect link nodeA nodeB
             success `shouldEqual` true
 
-            -- Node.with nodeA $ P.sendIn (Fn.Input :: Fn.Input "a") 7
-            Node.sendIn nodeA (Fn.Input :: Fn.Input "a") 7
+            -- Node.with nodeA $ P.sendIn _aI 7
+            Node.sendIn nodeA _aI 7
 
             _ <- Node.run nodeA
             _ <- Node.run nodeB

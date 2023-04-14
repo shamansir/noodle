@@ -64,9 +64,9 @@ type TestInputs = ( foo :: String, i2 :: Boolean )
 type TestOutputs = ( bar :: Int, o2 :: Boolean )
 
 
-_fooInput = Fn.Input :: Fn.Input "foo"
-_i3Input = Fn.Input :: Fn.Input "i3"
-_barOutput = Fn.Output :: Fn.Output "bar"
+_fooInput = Fn.Input 1 :: Fn.Input "foo"
+_i3Input = Fn.Input 3 :: Fn.Input "i3"
+_barOutput = Fn.Output 1 :: Fn.Output "bar"
 
 
 

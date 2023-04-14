@@ -11,7 +11,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T)
+import Data.SOrder (SOrder, type (:::), T, s1)
 import Type.Proxy (Proxy(..))
 
 
@@ -29,21 +29,21 @@ defaultState :: State
 defaultState = unit
 
 
-_in_speed = Fn.Input :: _ "speed"
+_in_speed = Fn.Input  1 :: _ "speed"
 
-_out_out = Fn.Output :: _ "out"
+_out_out  = Fn.Output 1 :: _ "out"
 
 
 type Inputs = ( speed :: H.Value )
 type Outputs = ( out :: H.Texture )
 
 
-type InputsOrder :: SOrder
-type InputsOrder = "speed" ::: T
+inputsOrder :: _
+inputsOrder = s1 _in_speed
 
 
-type OutputsOrder :: SOrder
-type OutputsOrder = "out" ::: T
+outputsOrder :: _
+outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
@@ -68,7 +68,7 @@ family = -- {-> source <-}
         defaultInputs
         defaultOutputs
         $ Fn.make name
-            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             speed <- P.receive _in_speed
             P.send _out_out $ H.From $ H.Gradient { speed }

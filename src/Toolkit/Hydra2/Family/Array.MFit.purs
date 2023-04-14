@@ -11,7 +11,7 @@ import Noodle.Fn2.Process as P
 import Noodle.Family.Def as Family
 import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
-import Data.SOrder (SOrder, type (:::), T)
+import Data.SOrder (SOrder, type (:::), T, s1, s3)
 import Type.Proxy (Proxy(..))
 
 
@@ -29,23 +29,23 @@ defaultState :: State
 defaultState = unit
 
 
-_in_arr = Fn.Input :: _ "arr"
-_in_low = Fn.Input :: _ "low"
-_in_high = Fn.Input :: _ "high"
+_in_arr  = Fn.Input  1 :: _ "arr"
+_in_low  = Fn.Input  2 :: _ "low"
+_in_high = Fn.Input  3 :: _ "high"
 
-_out_out = Fn.Output :: _ "out"
+_out_out = Fn.Output 1 :: _ "out"
 
 
 type Inputs = ( arr :: H.VArray, low :: H.Value, high :: H.Value )
 type Outputs = ( out :: H.Value )
 
 
-type InputsOrder :: SOrder
-type InputsOrder = "arr" ::: "low" ::: "hight" ::: T
+inputsOrder :: _
+inputsOrder = s3 _in_arr _in_low _in_high
 
 
-type OutputsOrder :: SOrder
-type OutputsOrder = "out" ::: T
+outputsOrder :: _
+outputsOrder = s1 _out_out
 
 
 defaultInputs :: Record Inputs
@@ -70,7 +70,7 @@ family = -- {-> array <-}
         defaultInputs
         defaultOutputs
         $ Fn.make name
-            { inputs : Proxy :: _ InputsOrder, outputs : Proxy :: _ OutputsOrder }
+            { inputs : inputsOrder, outputs : outputsOrder }
             $ do
             arr <- P.receive _in_arr
             low <- P.receive _in_low
