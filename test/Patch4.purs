@@ -150,7 +150,24 @@ spec = do
 
             link <- Node.connect outA inC (if _ then 1 else 0) nodeA nodeB
 
-            let nextPath = Patch.registerLink link patch
+            let nextPatch = Patch.registerLink link patch
+
+            -- TODO
+
+            pure unit
+
+
+        it "storing links works, p.2" $ do
+
+            nodeA <- Toolkit.spawn toolkit _foo
+            nodeB <- Toolkit.spawn toolkit _bar
+
+            let
+                patch = Patch.init toolkit
+                outA = Fn.Output 0 :: Fn.Output "out"
+                inC = Fn.Input 2 :: Fn.Input "c"
+
+            link /\ nextPatch <- Patch.connect outA inC (if _ then 1 else 0) nodeA nodeB patch
 
             -- TODO
 

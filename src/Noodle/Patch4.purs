@@ -4,21 +4,30 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
+import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Array ((:))
 import Data.Array as Array
+import Data.List as List
 import Data.Map (Map)
 import Data.Map as Map
+import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.Traversable (sequence)
+import Data.Symbol (class IsSymbol)
 
+import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 import Unsafe.Coerce (unsafeCoerce)
 
 import Prim.RowList as RL
 import Prim.Row (Cons)
 import Record as Record
+import Record.Extra as Record
 import Type.Proxy (Proxy(..))
 import Heterogeneous.Mapping as H
 
-import Noodle.Id (Family)
+import Noodle.Id (Family, NodeId, NodeIdR)
+import Noodle.Id as Id
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Toolkit3.Has as Has
@@ -136,6 +145,141 @@ registerLink link (Patch state instances links) =
     { from : Map.insert (Node.toFromId link) (unsafeCoerce link) links.from
     , to : Map.insert (Node.toToId link) (unsafeCoerce link) links.to
     }
+
+
+forgetLink
+    :: forall gstate instances fo fi i o
+     . Node.Link fo fi i o
+    -> Patch gstate instances
+    -> Patch gstate instances
+forgetLink link (Patch state instances links) =
+  Patch
+    state
+    instances
+    { from : Map.delete (Node.toFromId link) links.from
+    , to : Map.delete (Node.toToId link) links.to
+    }
+
+
+connect
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
+     . MonadEffect m
+    => MonadRec m
+    => Has.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
+    => Has.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
+    => Id.HasOutput oA doutA osA' osA
+    => Id.HasInput iB dinB isB' isB
+    => Id.Output oA
+    -> Id.Input iB
+    -> (doutA -> dinB)
+    -> Node fA stateA isA osA m
+    -> Node fB stateB isB osB m
+    -> Patch gstate ins
+    -> m (Patch gstate ins /\ Node.Link fA fB oA iB)
+connect o i f na nb patch =
+    Node.connect o i f na nb >>= \link -> pure $ registerLink link patch /\ link
+
+
+-- TODO: unsafeConnect
+
+
+connectAlike
+    :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
+     . MonadEffect m
+    => MonadRec m
+    => Has.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
+    => Has.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
+    => Id.HasOutput oA d osA' osA
+    => Id.HasInput iB d isB' isB
+    => Id.Output oA
+    -> Id.Input iB
+    -> Node fA stateA isA osA m
+    -> Node fB stateB isB osB m
+    -> Patch gstate ins
+    -> m (Patch gstate ins /\ Node.Link fA fB oA iB)
+connectAlike o i na nb patch =
+    Node.connectAlike o i na nb >>= \link -> pure $ registerLink link patch /\ link
+
+
+connect'
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
+     . MonadEffect m
+    => MonadRec m
+    => Has.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
+    => Has.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
+    => Id.HasOutput oA doutA osA' osA
+    => Id.HasInput iB dinB isB' isB
+    => Id.Output' oA
+    -> Id.Input' iB
+    -> (doutA -> dinB)
+    -> Node fA stateA isA osA m
+    -> Node fB stateB isB osB m
+    -> Patch gstate ins
+    -> m (Patch gstate ins /\ Node.Link fA fB oA iB)
+connect' o i f na nb patch =
+    Node.connect' o i f na nb >>= \link -> pure $ registerLink link patch /\ link
+
+
+-- TODO: unsafeConnect
+
+
+connectAlike'
+    :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
+     . MonadEffect m
+    => MonadRec m
+    => Has.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
+    => Has.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
+    => Id.HasOutput oA d osA' osA
+    => Id.HasInput iB d isB' isB
+    => Id.Output' oA
+    -> Id.Input' iB
+    -> Node fA stateA isA osA m
+    -> Node fB stateB isB osB m
+    -> Patch gstate ins
+    -> m (Patch gstate ins /\ Node.Link fA fB oA iB)
+connectAlike' o i na nb patch =
+    Node.connectAlike' o i na nb >>= \link -> pure $ registerLink link patch /\ link
+
+
+disconnect
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' gstate ins insA insB m
+     . MonadEffect m
+    => MonadRec m
+    => Has.HasInstancesOf fA insA ins (Array (Node fA stateA isA osA m))
+    => Has.HasInstancesOf fB insB ins (Array (Node fB stateB isB osB m))
+    => Id.HasOutput oA doutA osA' osA
+    => Id.HasInput iB dinB isB' isB
+    => Show dinB
+    => Node.Link fA fB oA iB
+    -> Node fA stateA isA osA m
+    -> Node fB stateB isB osB m
+    -> Patch gstate ins
+    -> m (Patch gstate ins /\ Boolean)
+disconnect link na nb patch =
+    Node.disconnect link na nb >>= \flag -> pure $ forgetLink link patch /\ flag
+
+
+-- unsafeConnect
+
+
+{-
+withNode :: forall gstate (instances' :: Row Type) (instances ∷ Row Type) rli m a. RL.RowToList instances rli => Record.Keys rli => Applicative m => (forall f state is os. NodeId f -> Node f state is os m -> Patch gstate instances -> m a) -> NodeIdR -> Patch gstate instances -> m (Maybe a)
+withNode fn nodeId patch@(Patch _ instances _) =
+    let
+        familyR /\ hash = Id.splitR nodeId
+        familyStr = Id.reflect' familyR
+    in
+        if List.elem (Id.reflect' familyR) $ Record.keys instances then
+            let
+                familyNodeArray = Record.unsafeGet familyStr instances
+                maybeNode = Array.find ?wh familyNodeArray
+            in case maybeNode of
+                    Just node ->
+                        sequence $ Just $ fn node patch
+                    Nothing ->
+                        pure Nothing
+        else
+            pure Nothing -}
 
 
 nodes_

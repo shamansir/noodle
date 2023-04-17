@@ -13,5 +13,6 @@ in conf // {
     , "transformers"
     , "newtype"
     , "refs"
+    , "expect-inferred"
     ]
 }

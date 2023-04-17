@@ -15,12 +15,13 @@ import Data.Newtype (class Newtype)
 import Data.UniqueHash as UniqueHash
 import Data.SOrder as SOrder
 import Data.SOrder (SOrder, class HasSymbolsOrder)
+import Data.Symbol (reifySymbol)
 
 import Data.Array as Array
 import Data.Bifunctor (lmap, rmap, bimap)
 import Data.Functor.Invariant (class Invariant)
 import Data.Traversable as T
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.List (List)
@@ -213,14 +214,15 @@ subscribeOutputs (Node _ tracker _ _) = Tuple.snd <$> tracker.outputs
 subscribeState :: forall f state is os m. Node f state is os m -> Signal state
 subscribeState (Node _ tracker _ _) = tracker.state
 
+
 -- private?
 sendOut :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m -> Output o -> dout -> m Unit
-sendOut node o = liftEffect <<< sendOut_ node o
+sendOut node o = liftEffect <<< sendOutE node o
 
 
 -- private?
-sendOut_ :: forall f o state is os os' m dout. HasOutput o dout os' os => Node f state is os m -> Output o -> dout -> Effect Unit
-sendOut_ (Node _ _ protocol _) output dout =
+sendOutE :: forall f o state is os os' m dout. HasOutput o dout os' os => Node f state is os m -> Output o -> dout -> Effect Unit
+sendOutE (Node _ _ protocol _) output dout =
     protocol.modifyOutputs
         (\curOutputs ->
             (SingleOutput $ outputR output) /\ Record.set output dout curOutputs
@@ -228,16 +230,43 @@ sendOut_ (Node _ _ protocol _) output dout =
 
 
 -- private?
-sendIn :: forall f i state is is' os m din. MonadEffect m => HasInput i din is' is => Node f state is os m -> Input i -> din -> m Unit
-sendIn node i = liftEffect <<< sendIn_ node i
+sendOut' :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m -> Output' o -> dout -> m Unit
+sendOut' node o = liftEffect <<< sendOutE' node o
 
 
 -- private?
-sendIn_ :: forall f i state is is' os m din. IsSymbol i => HasInput i din is' is => Node f state is os m -> Input i -> din -> Effect Unit
-sendIn_ (Node _ _ protocol _) input din =
+sendOutE' :: forall f o state is os os' m dout. HasOutput o dout os' os => Node f state is os m -> Output' o -> dout -> Effect Unit
+sendOutE' (Node _ _ protocol _) output dout =
+    protocol.modifyOutputs
+        (\curOutputs ->
+            (SingleOutput $ outputR' output) /\ Record.set output dout curOutputs
+        )
+
+
+-- private?
+sendIn :: forall f i state is is' os m din. MonadEffect m => HasInput i din is' is => Node f state is os m -> Input i -> din -> m Unit
+sendIn node i = liftEffect <<< sendInE node i
+
+
+-- private?
+sendInE :: forall f i state is is' os m din. IsSymbol i => HasInput i din is' is => Node f state is os m -> Input i -> din -> Effect Unit
+sendInE (Node _ _ protocol _) input din =
     protocol.modifyInputs
         (\curInputs ->
             (SingleInput $ inputR input) /\ Record.set input din curInputs
+        )
+
+
+sendIn' :: forall f i state is is' os m din. MonadEffect m => HasInput i din is' is => Node f state is os m -> Input' i -> din -> m Unit
+sendIn' node i = liftEffect <<< sendInE' node i
+
+
+-- private?
+sendInE' :: forall f i state is is' os m din. IsSymbol i => HasInput i din is' is => Node f state is os m -> Input' i -> din -> Effect Unit
+sendInE' (Node _ _ protocol _) input din =
+    protocol.modifyInputs
+        (\curInputs ->
+            (SingleInput $ inputR' input) /\ Record.set input din curInputs
         )
 
 
@@ -277,23 +306,6 @@ toFullId (Link nodeA outA inB nodeB _) =
     FullId $ reflect' nodeA <> ">>" <> reflect' outA <> "--" <> reflect' inB <> "<<" <> reflect' nodeB
 
 
-connect'
-    :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' m
-     . MonadEffect m
-    => MonadRec m
-    => HasOutput oA d osA' osA
-    => HasInput iB d isB' isB
-    => Output oA
-    -> Input iB
-    -> Node fA stateA isA osA m
-    -> Node fB stateB isB osB m
-    -> m (Link fA fB oA iB)
-connect'
-    outputA
-    inputB =
-    connect outputA inputB identity
-
-
 connect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m
      . MonadEffect m
@@ -318,10 +330,74 @@ connect
             sendToBIfFlagIsOn dout = do
                 -- Monad.whenM
                 flagOn <- Ref.read flagRef
-                if flagOn then sendIn_ nodeB inputB dout
+                if flagOn then sendInE nodeB inputB dout
                 else pure unit
         Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
         pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
+
+
+connectAlike
+    :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' m
+     . MonadEffect m
+    => MonadRec m
+    => HasOutput oA d osA' osA
+    => HasInput iB d isB' isB
+    => Output oA
+    -> Input iB
+    -> Node fA stateA isA osA m
+    -> Node fB stateB isB osB m
+    -> m (Link fA fB oA iB)
+connectAlike
+    outputA
+    inputB =
+    connect outputA inputB identity
+
+
+connect'
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m
+     . MonadEffect m
+    => MonadRec m
+    => HasOutput oA doutA osA' osA
+    => HasInput iB dinB isB' isB
+    => Output' oA
+    -> Input' iB
+    -> (doutA -> dinB)
+    -> Node fA stateA isA osA m
+    -> Node fB stateB isB osB m
+    -> m (Link fA fB oA iB)
+connect'
+    outputA
+    inputB
+    convert
+    nodeA@(Node nodeAId _ _ _)
+    nodeB@(Node nodeBId _ _ _) =
+    liftEffect $ do
+        flagRef <- Ref.new true
+        let
+            sendToBIfFlagIsOn dout = do
+                -- Monad.whenM
+                flagOn <- Ref.read flagRef
+                if flagOn then sendInE' nodeB inputB dout
+                else pure unit
+        Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
+        pure $ Link nodeAId outputA inputB nodeBId $ Ref.write false flagRef
+
+
+connectAlike'
+    :: forall fA fB oA iB d stateA stateB isA isB isB' osA osB osA' m
+     . MonadEffect m
+    => MonadRec m
+    => HasOutput oA d osA' osA
+    => HasInput iB d isB' isB
+    => Output' oA
+    -> Input' iB
+    -> Node fA stateA isA osA m
+    -> Node fB stateB isB osB m
+    -> m (Link fA fB oA iB)
+connectAlike'
+    outputA
+    inputB =
+    connect' outputA inputB identity
 
 
 disconnect
@@ -341,6 +417,15 @@ disconnect (Link nodeAIdL _ _ nodeBIdL doDisconnect) (Node nodeAId _ _ _) (Node 
     if (nodeAIdL == nodeAId) && (nodeBIdL == nodeBId) then
         liftEffect doDisconnect >>= (const $ pure true)
     else pure false
+
+
+
+-- withInput :: forall f state is is' os m a. Applicative m => InputR -> (forall i din. Input i -> Node f state is os m -> a) -> Node f state is os m -> a
+-- withInput inputR fn node = reifySymbol (reflect' inputR) (\input -> fn input node)
+
+
+-- withOutput :: forall f state is is' os m a. Applicative m => OutputR -> (forall i din. Output i -> Node f state is os m -> a) -> Node f state is os m -> a
+-- withOutput outputR fn node = reifySymbol (reflect' outputR) (\output -> fn output node)
 
 
 {-
@@ -400,6 +485,24 @@ dimensionsBy
     -> Node f state is os m
     -> Int /\ Int
 dimensionsBy iPred oPred = shape >>> bimap (List.filter iPred >>> List.length) (List.filter oPred >>> List.length)
+
+
+-- between two nodes
+-- between two nodes, in patch
+
+
+{- withInput
+    :: forall b m
+    . Applicative m
+    => (  forall f state fs iis is os
+        .  HasNodesOf f state fs iis is os m
+        => Node.Family f
+        -> Family.Def state is os m
+        -> Toolkit m
+        -> m a
+        )
+    -> Node.FamilyR
+    -> m (Maybe a) -}
 
 
 {-
