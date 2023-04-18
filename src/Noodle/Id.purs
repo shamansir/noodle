@@ -16,7 +16,7 @@ module Noodle.Id
     , split, split', splitR
     , nodeId', nodeIdR, nodeIdR'
     , reflectNodeId, reflectNodeId', reflectNodeIdR
-    , familyOf, hashOf
+    , familyOf, hashOf, hashOfR
     , class Reflect, reflect
     , class Reflect', reflect'
     , class Indexed, index
@@ -297,6 +297,10 @@ familyOf (NodeId (family' /\ _)) = family'
 
 hashOf :: forall f. NodeId f -> UniqueHash
 hashOf (NodeId (_ /\ uuid)) = uuid
+
+
+hashOfR :: forall f. NodeIdR -> UniqueHash
+hashOfR (NodeIdR (_ /\ uuid)) = uuid
 
 
 split :: forall f. IsSymbol f => NodeId f -> FamilyR /\ UniqueHash

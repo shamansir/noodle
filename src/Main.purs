@@ -512,6 +512,15 @@ main1 =
                 pure { nextPatch, node, inputs, outputs, nodes }
 
             let is /\ os = Node.shape rec.node
+
+            -- TODO: probably use Repr to create inlet bars and outlet bars, this way using Input' / Output' instances, we will probably be able to connect things
+            --       or not Repr but some fold over inputs / outputs shape
+            --       but the question remains: when we have some selected input for the receiving node in the handler, wherefrom do we get the node id of the output?
+            --       we have the family encoded as symbol and hash of the is the thing that changes in real-time
+            --       so we need to recreate the family. In case of Hydra, we have access to families' symbols but also by symbols.
+            --       we have `lastClickedOtlet` in the state.
+            --       Maybe try using `Exists` as we're sure the Node Family exists but don't want to parametrize `State` type with it.
+
             -- let is /\ os = Record.keys (rec.inputs :: Record is) /\ Record.keys (rec.outputs :: Record os)
 
             let

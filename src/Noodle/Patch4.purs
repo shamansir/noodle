@@ -262,9 +262,9 @@ disconnect link na nb patch =
 -- unsafeConnect
 
 
-{-
-withNode :: forall gstate (instances' :: Row Type) (instances ∷ Row Type) rli m a. RL.RowToList instances rli => Record.Keys rli => Applicative m => (forall f state is os. NodeId f -> Node f state is os m -> Patch gstate instances -> m a) -> NodeIdR -> Patch gstate instances -> m (Maybe a)
-withNode fn nodeId patch@(Patch _ instances _) =
+-- TODO: some generic existential type
+withNode :: forall gstate (instances' :: Row Type) (instances ∷ Row Type) rli m a. RL.RowToList instances rli => Record.Keys rli => Applicative m => (forall f state is os. Node f state is os m -> m a) -> NodeIdR -> Patch gstate instances -> m (Maybe a)
+withNode fn nodeId (Patch _ instances _) =
     let
         familyR /\ hash = Id.splitR nodeId
         familyStr = Id.reflect' familyR
@@ -272,14 +272,14 @@ withNode fn nodeId patch@(Patch _ instances _) =
         if List.elem (Id.reflect' familyR) $ Record.keys instances then
             let
                 familyNodeArray = Record.unsafeGet familyStr instances
-                maybeNode = Array.find ?wh familyNodeArray
+                maybeNode = Array.find (\node -> Id.hashOf (Node.id node) == Id.hashOfR nodeId) familyNodeArray
             in case maybeNode of
                     Just node ->
-                        sequence $ Just $ fn node patch
+                        sequence $ Just $ fn node
                     Nothing ->
                         pure Nothing
         else
-            pure Nothing -}
+            pure Nothing
 
 
 nodes_

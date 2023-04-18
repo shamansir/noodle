@@ -62,7 +62,7 @@ import Effect.Console (log) as Console
 
 
 -- store inputs list in the node (or the family def) itself, create it when we create the node
-data Node f state (is :: Row Type) (os :: Row Type) m
+data Node (f :: Symbol) state (is :: Row Type) (os :: Row Type) m
     = Node
         (NodeId f)
         (Tracker state is os)
