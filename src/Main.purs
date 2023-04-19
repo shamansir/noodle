@@ -154,7 +154,7 @@ type State =
     , lastOutletsBarKey :: OutletsBarKey
     , lastShiftX :: Int
     , lastShiftY :: Int
-    , lastClickedOutlet :: Maybe { node :: NodeBoxKey, index :: Int, subj :: String }
+    , lastClickedOutlet :: Maybe { node :: NodeBoxKey, index :: Int, subj :: String, family :: Id.HoldsNodeId }
     , lastLink :: Maybe Link
     , linksFrom :: Map RawNodeKey (Map Int Link)
     , linksTo :: Map RawNodeKey (Map Int Link)
@@ -512,6 +512,7 @@ main1 =
                 pure { nextPatch, node, inputs, outputs, nodes }
 
             let is /\ os = Node.shape rec.node
+            let nodeId = Node.id rec.node
 
             -- TODO: probably use Repr to create inlet bars and outlet bars, this way using Input' / Output' instances, we will probably be able to connect things
             --       or not Repr but some fold over inputs / outputs shape
@@ -575,7 +576,7 @@ main1 =
 
             let
                 outletHandler idx oname =
-                    oname /\ [] /\ onOutletSelect nextNodeBox idx oname
+                    oname /\ [] /\ onOutletSelect nodeId nextNodeBox idx oname
                 outletsBarN =
                     B.listbar nextOutletsBar
                         [ Box.width $ Dimension.percents 90.0
@@ -654,11 +655,11 @@ main1 =
                 , lastLink = Just link
                 }
 
-        onOutletSelect :: NodeBoxKey -> Int -> String -> OutletsBarKey → EventJson → BlessedOp State Effect
-        onOutletSelect onode index oname _ _ = do
+        onOutletSelect :: forall f. IsSymbol f => Id.NodeId f -> NodeBoxKey -> Int -> String -> OutletsBarKey → EventJson → BlessedOp State Effect
+        onOutletSelect nodeId onode index oname _ _ = do
             -- liftEffect $ Console.log $ "handler " <> oname
             State.modify_
-                (_ { lastClickedOutlet = Just { index, subj : oname, node : onode } })
+                (_ { lastClickedOutlet = Just { index, subj : oname, node : onode, family : Id.holdNodeId nodeId } })
 
         onInletSelect :: NodeBoxKey -> Int -> String -> InletsBarKey → EventJson → BlessedOp State Effect
         onInletSelect inode idx iname _ _ = do

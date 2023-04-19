@@ -26,6 +26,8 @@ module Noodle.Id
     , class HasInput, class HasOutput, class HasFamily
     , class HasInputs, inputs, class HasOutputs, outputs
     , class ListsFamilies, class ListsInstances
+    , HoldsFamily, holdFamily, withFamily
+    , HoldsNodeId, holdNodeId, withNodeId
     -- , class HasInputs', inputs'
     -- , class IsSymbol
     )
@@ -135,6 +137,40 @@ familyP = reflect >>> Family'
 
 keysToFamiliesR :: forall w fs rl. RL.RowToList fs rl => Record.Keys rl => SOrder -> w fs -> List FamilyR
 keysToFamiliesR order = Record.keys >>> SOrder.sortL' order >>> (<$>) FamilyR
+
+
+newtype HoldsFamily = HoldsFamily (forall r. (forall sym. IsSymbol sym => Family sym -> r) -> r)
+
+
+holdFamily :: forall sym. IsSymbol sym => Family sym -> HoldsFamily
+holdFamily sym = HoldsFamily (_ $ sym)
+
+
+withFamily :: forall r. HoldsFamily -> (forall sym. IsSymbol sym => Family sym -> r) -> r
+withFamily (HoldsFamily fn) = fn
+
+
+-- test1 :: HoldsFamily
+-- test1 = holdFamily (Family :: Family "foo")
+
+
+-- test2 :: String
+-- test2 = withFamily test1 reflectFamily
+
+
+newtype HoldsNodeId = HoldsNodeId (forall r. (forall sym. IsSymbol sym => NodeId sym -> r) -> r)
+
+
+holdNodeId :: forall sym. IsSymbol sym => NodeId sym -> HoldsNodeId
+holdNodeId sym = HoldsNodeId (_ $ sym)
+
+
+withNodeId :: forall r. HoldsNodeId -> (forall sym. IsSymbol sym => NodeId sym -> r) -> r
+withNodeId (HoldsNodeId fn) = fn
+
+
+--test3 :: forall sym. Family "foo"
+-- test3 = withFamily test1 identity
 
 
 data Input (i :: Symbol) = Input Int -- TODO: Int
