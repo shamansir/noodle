@@ -41,6 +41,7 @@ import Color.Scheme.X11 (wheat)
 import Data.List (List)
 import Data.List (mapWithIndex) as List
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.KeyHolder as KH
 import Data.SOrder (SOrder)
 import Data.SOrder as SOrder
 import Data.Symbol (class IsSymbol, reflectSymbol)
@@ -152,6 +153,16 @@ withFamily :: forall r. HoldsFamily -> (forall sym. IsSymbol sym => Family sym -
 withFamily (HoldsFamily fn) = fn
 
 
+instance KH.Holder Family HoldsFamily where
+    hold = holdFamily
+    extract = withFamily
+
+
+instance KH.ReifyTo Family where
+    reify :: forall a sym. IsSymbol sym => Proxy sym -> a -> Family sym
+    reify _ _ = Family
+
+
 -- test1 :: HoldsFamily
 -- test1 = holdFamily (Family :: Family "foo")
 
@@ -233,6 +244,16 @@ withInput :: forall r. HoldsInput -> (forall sym. IsSymbol sym => Input sym -> r
 withInput (HoldsInput fn) = fn
 
 
+instance KH.Holder Input HoldsInput where
+    hold = holdInput
+    extract = withInput
+
+
+instance KH.ReifyOrderedTo Input where
+    reifyAt :: forall sym a. IsSymbol sym => Int -> Proxy sym -> a -> Input sym
+    reifyAt n _ _ = Input n
+
+
 -- _in :: InputR -> String
 -- _in = reflect'
 
@@ -295,10 +316,6 @@ keysToOutputsR :: forall w os rl. HasOutputsAt os rl => SOrder -> w os -> List O
 keysToOutputsR order = Record.keys >>> SOrder.sortL' order >>> List.mapWithIndex (/\) >>> map OutputR
 
 
-keysToOutputsH :: forall w os rl. HasOutputsAt os rl => SOrder -> w os -> List HoldsOutput -- TODO: Array OutputR?
-keysToOutputsH order = Record.keys >>> SOrder.sortL' order >>> List.mapWithIndex (/\) >>> map OutputR
-
-
 newtype HoldsOutput = HoldsOutput (forall r. (forall sym. IsSymbol sym => Output sym -> r) -> r)
 
 
@@ -308,6 +325,16 @@ holdOutput sym = HoldsOutput (_ $ sym)
 
 withOutput :: forall r. HoldsOutput -> (forall sym. IsSymbol sym => Output sym -> r) -> r
 withOutput (HoldsOutput fn) = fn
+
+
+instance KH.Holder Output HoldsOutput where
+    hold = holdOutput
+    extract = withOutput
+
+
+instance KH.ReifyOrderedTo Output where
+    reifyAt :: forall a sym. IsSymbol sym => Int -> Proxy sym -> a -> Output sym
+    reifyAt n _ _ = Output n
 
 
 -- _in :: InputR -> String
@@ -401,6 +428,16 @@ holdNodeId sym = HoldsNodeId (_ $ sym)
 
 withNodeId :: forall r. HoldsNodeId -> (forall sym. IsSymbol sym => NodeId sym -> r) -> r
 withNodeId (HoldsNodeId fn) = fn
+
+
+instance KH.Holder NodeId HoldsNodeId where
+    hold = holdNodeId
+    extract = withNodeId
+
+
+-- instance KH.ReifyOrderedTo Input where
+--     reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> Input sym
+--     reifyAt n _ = Input n
 
 
 -- TODO: extend to HasInputs, HasOutputs with getAtInput, getAtOutput, updateInputs, updateOutputs, ...

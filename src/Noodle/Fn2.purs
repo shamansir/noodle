@@ -141,12 +141,12 @@ outputsShape :: forall state is (os :: Row Type) m rlo. HasOutputsAt os rlo => F
 outputsShape (Fn _ { outputs } _) = fromKeysR outputs (Proxy :: Proxy os)
 
 
-inputsShapeH :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> List HoldsInput
+{- inputsShapeH :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> List HoldsInput
 inputsShapeH (Fn _ { inputs } _) = fromKeysR inputs (Proxy :: Proxy is)
 
 
 outputsShapeH :: forall state is (os :: Row Type) m rlo. HasOutputsAt os rlo => Fn state is os m -> List HoldsOutput
-outputsShapeH (Fn _ { outputs } _) = fromKeysR outputs (Proxy :: Proxy os)
+outputsShapeH (Fn _ { outputs } _) = fromKeysR outputs (Proxy :: Proxy os) -}
 
 
 inputsOrder :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> SOrder

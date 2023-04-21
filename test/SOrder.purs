@@ -9,6 +9,8 @@ import Type.Proxy (Proxy(..))
 
 import Data.SOrder (type (:::))
 import Data.SOrder as SO
+import Data.KeyHolder as KH
+import Data.Symbol (SProxy, class IsSymbol, reflectSymbol)
 
 
 type ThreeItems :: SO.SOrder
@@ -56,6 +58,68 @@ spec = do
             SO.sort (Proxy :: _ ACB) [ "a", "b", "c" ] `shouldEqual` [ "a", "c", "b" ]
             SO.sort (Proxy :: _ ACB) [ "a", "b", "c", "d" ] `shouldEqual` [ "a", "c", "b", "d" ]
             SO.sort (Proxy :: _ One) [ "second", "third", "fourth", "first", "seventh" ] `shouldEqual` [ "first", "second", "third", "fourth", "seventh" ]
+
+    describe "using KeyHolder" $ do
+
+        it "properly sorts keys of record" $ do
+            let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
+            ((\convs -> withConvS convs reflectSymbol) <$> (KH.orderedKeys (Proxy :: Proxy SProxy) order { buz : "test", foo : 2, bar : false } :: Array ConvS)) `shouldEqual` [ "foo", "bar", "buz" ]
+
+        {- it "properly sorts keys of the row" $ do
+            let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
+            ((\conv -> withConv conv reflectSymbol) <$> (KH.orderedKeysFromRow (Proxy :: Proxy SProxy) order (Proxy :: Proxy ( buz :: String, foo :: Int, bar :: Boolean )) :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ] -}
+
+        it "properly sorts keys of record with index" $ do
+            let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
+            ((\conv -> withConv conv reflectSymbol) <$> (KH.orderedKeys (Proxy :: Proxy SymH) order { buz : "test", foo : 2, bar : false } :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ]
+
+
+        it "properly sorts keys of record with index. p.2" $ do
+            let order = SO.instantiateImpl (Proxy :: _ ("bar" ::: "foo" ::: "buz" ::: SO.T))
+            ((\conv -> withConv conv reflectSymH) <$> (KH.orderedKeys (Proxy :: Proxy SymH) order { buz : "test", foo : 2, bar : false } :: Array Conv)) `shouldEqual` [ "bar", "foo", "buz" ]
+
+
+data SymH (s :: Symbol) = SymH Int
+
+
+reflectSymH :: forall sym. IsSymbol sym => SymH sym -> String
+reflectSymH (SymH n) = reflectSymbol (Proxy :: _ sym) <> show n
+
+
+newtype ConvS = ConvS (forall r. (forall sym. IsSymbol sym => SProxy sym -> r) -> r)
+newtype Conv = Conv (forall r. (forall sym. IsSymbol sym => SymH sym -> r) -> r)
+
+
+holdConvS :: forall sym. IsSymbol sym => SProxy sym -> ConvS
+holdConvS sym = ConvS (_ $ sym)
+
+
+withConvS :: forall r. ConvS -> (forall sym. IsSymbol sym => SProxy sym -> r) -> r
+withConvS (ConvS fn) = fn
+
+
+holdConv :: forall sym. IsSymbol sym => SymH sym -> Conv
+holdConv sym = Conv (_ $ sym)
+
+
+withConv :: forall r. Conv -> (forall sym. IsSymbol sym => SymH sym -> r) -> r
+withConv (Conv fn) = fn
+
+
+instance KH.Holder SProxy ConvS where
+    hold = holdConvS
+    extract = withConvS
+
+
+instance KH.Holder SymH Conv where
+    hold = holdConv
+    extract = withConv
+
+
+instance KH.ReifyOrderedTo SymH where
+    reifyAt :: forall a sym. IsSymbol sym => Int -> Proxy sym -> a -> SymH sym
+    reifyAt n _ _ = SymH n
+
 
         {-}
         describe "order values" $ do

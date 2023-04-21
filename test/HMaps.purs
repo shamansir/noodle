@@ -274,8 +274,12 @@ showTwice r = do
 test' = showTwice { a: "foo" , b: 42 , c: false }
 
 
--- data HoldProps :: forall k. k -> Type
+data HoldProps :: forall k. (Symbol -> Type) -> k -> Type
 data HoldProps (p :: Symbol -> Type) x = HoldProps
+
+
+data HoldPropsInOrder :: forall k. (Symbol -> Type) -> k -> Type
+data HoldPropsInOrder (p :: Symbol -> Type) x = HoldPropsInOrder
 
 
 class Holder (proxy :: Symbol -> Type) x where
@@ -283,8 +287,13 @@ class Holder (proxy :: Symbol -> Type) x where
   extract :: forall r. x -> (forall sym. IsSymbol sym => proxy sym -> r) -> r
 
 
-class FromProxy (trg :: Symbol -> Type) where
-  fromProxy :: forall sym. IsSymbol sym => Proxy sym -> trg sym
+class ReifyTo (trg :: Symbol -> Type) where
+  reify :: forall sym. IsSymbol sym => Proxy sym -> trg sym
+
+
+
+class ReifyOrderedTo (trg :: Symbol -> Type) where
+  reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> trg sym
 
 
 instance Holder ProxyTest HoldsSymbol where
@@ -292,29 +301,54 @@ instance Holder ProxyTest HoldsSymbol where
   extract = withSymbol
 
 
-instance FromProxy ProxyTest where
-  fromProxy :: forall sym. Proxy sym -> ProxyTest sym
-  fromProxy _ = ProxyTest
+instance ReifyTo ProxyTest where
+  reify :: forall sym. Proxy sym -> ProxyTest sym
+  reify _ = ProxyTest
+
+
+instance ReifyOrderedTo ProxyTest where
+  reifyAt :: forall sym. Int -> Proxy sym -> ProxyTest sym
+  reifyAt _ _ = ProxyTest
 
 
 instance holdProps ::
-  (IsSymbol sym, Holder p x, FromProxy p) =>
+  (IsSymbol sym, Holder p x, ReifyTo p) =>
   FoldingWithIndex (HoldProps p x) (Proxy sym) (Array x) a (Array x) where
   foldingWithIndex HoldProps prop symbols _ =
-    hold (fromProxy prop :: p sym) : symbols
+    hold (reify prop :: p sym) : symbols
 
 
-order :: forall r p x.
-  Holder p x => FromProxy p => Proxy p ->
+instance holdPropsOrd ::
+  (IsSymbol sym, Holder p x, ReifyOrderedTo p) =>
+  FoldingWithIndex (HoldPropsInOrder p x) (Proxy sym) (Array x) a (Array x) where
+  foldingWithIndex HoldPropsInOrder prop symbols _ =
+    hold (reifyAt 0 prop :: p sym) : symbols
+
+
+holdKeys :: forall r p x.
+  Holder p x => ReifyTo p => Proxy p ->
   HFoldlWithIndex (HoldProps p x) (Array x) { | r } (Array x) =>
   { | r } ->
   (Array x)
-order _ r =
+holdKeys _ r =
   hfoldlWithIndex (HoldProps :: HoldProps p x) ([] :: Array x) r
+
+
+order :: forall r p x.
+  Holder p x => ReifyOrderedTo p => Proxy p ->
+  HFoldlWithIndex (HoldPropsInOrder p x) (Array x) { | r } (Array x) =>
+  { | r } ->
+  (Array x)
+order _ r =
+  hfoldlWithIndex (HoldPropsInOrder :: HoldPropsInOrder p x) ([] :: Array x) r
 
 
 test1 :: Array HoldsSymbol
 test1 = order (Proxy :: _ ProxyTest) { foo : "a", bar : 42 }
+
+
+test2 :: Array HoldsSymbol
+test2 = holdKeys (Proxy :: _ ProxyTest) { foo : "a", bar : 42 }
 
 
 data ProxyTest (s :: Symbol) = ProxyTest
