@@ -274,32 +274,48 @@ showTwice r = do
 test' = showTwice { a: "foo" , b: 42 , c: false }
 
 
-data HoldProps = HoldProps
+data HoldProps :: forall k. k -> Type
+data HoldProps x = HoldProps
+
+
+class Holder (proxy :: Symbol -> Type) x where
+  hold :: forall sym. IsSymbol sym => Int -> proxy sym -> x
+  extract :: forall r. x -> (forall sym. IsSymbol sym => proxy sym -> r) -> r
+
+
+instance Holder Proxy HoldsSymbol where
+  hold = const holdSymbol
+  extract = withSymbol
 
 
 instance holdProps ::
-  (Show a, IsSymbol sym) =>
-  FoldingWithIndex HoldProps (SProxy sym) (Array HoldsSymbol) a (Array HoldsSymbol) where
+  (Show a, IsSymbol sym, Holder p x) =>
+  FoldingWithIndex (HoldProps x) (p sym) (Array x) a (Array x) where
   foldingWithIndex HoldProps prop symbols _ =
-    holdSymbol prop : symbols
+    hold 0 prop : symbols
 
 
-withRecordKeys :: forall r is.
-  HFoldlWithIndex HoldProps (Array HoldsSymbol) { | r } (Array HoldsSymbol) =>
+order :: forall r x.
+  Holder Proxy x =>
+  HFoldlWithIndex (HoldProps x) (Array x) { | r } (Array x) =>
   { | r } ->
-  (Array HoldsSymbol)
-withRecordKeys r =
-  hfoldlWithIndex HoldProps ([] :: Array HoldsSymbol) r
+  (Array x)
+order r =
+  hfoldlWithIndex (HoldProps :: HoldProps x) ([] :: Array x) r
 
 
-newtype HoldsSymbol = HoldsSymbol (forall r. (forall proxy sym. IsSymbol sym => proxy sym -> r) -> r)
+test1 :: Array HoldsSymbol
+test1 = order { foo : "a", bar : 42 }
 
 
-holdSymbol :: forall proxy sym. IsSymbol sym => proxy sym -> HoldsSymbol
+newtype HoldsSymbol = HoldsSymbol (forall r. (forall sym. IsSymbol sym => Proxy sym -> r) -> r)
+
+
+holdSymbol :: forall sym. IsSymbol sym => Proxy sym -> HoldsSymbol
 holdSymbol sym = HoldsSymbol (_ $ sym)
 
 
-withSymbol :: forall r. HoldsSymbol -> (forall proxy sym. IsSymbol sym => proxy sym -> r) -> r
+withSymbol :: forall r. HoldsSymbol -> (forall sym. IsSymbol sym => Proxy sym -> r) -> r
 withSymbol (HoldsSymbol fn) = fn
 
 
