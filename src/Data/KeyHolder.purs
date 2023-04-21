@@ -7,6 +7,8 @@ import Data.Array as Array
 import Data.List (List)
 import Data.List as List
 import Data.Maybe as Maybe
+import Data.Tuple as Tuple
+import Data.Tuple.Nested ((/\), type (/\))
 
 
 import Type.Proxy (Proxy)
@@ -43,6 +45,9 @@ class ReifyOrderedTo (trg :: Symbol -> Type) where
   reifyAt :: forall a sym. IsSymbol sym => Int -> Proxy sym -> a -> trg sym
 
 
+newtype IdxTag x = IdxTagged (Int /\ x)
+
+
 instance holdKeysI ::
   (IsSymbol sym, Holder p x, ReifyTo p) =>
   FoldingWithIndex (HoldProps p x) (Proxy sym) (Array x) a (Array x) where
@@ -52,10 +57,12 @@ instance holdKeysI ::
 
 instance holdKeysOrderedI ::
   (IsSymbol sym, Holder p x, ReifyOrderedTo p) =>
-  FoldingWithIndex (HoldPropsInOrder p x) (Proxy sym) (Array x) a (Array x) where
+  FoldingWithIndex (HoldPropsInOrder p x) (Proxy sym) (Array (Int /\ x)) a (Array (Int /\ x)) where
   foldingWithIndex (HoldPropsInOrder order) prop symbols a =
-    Maybe.fromMaybe symbols $ Array.insertAt index (hold (reifyAt index prop a :: p sym)) symbols
-    where index = Maybe.fromMaybe (-1) $ SOrder.index' order $ reflectSymbol prop
+    Array.insertBy cmpF (index /\ hold (reifyAt index prop a :: p sym)) symbols
+    where
+      cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
+      index = Maybe.fromMaybe (-1) $ SOrder.index' order $ reflectSymbol prop
 
 
 holdKeys :: forall (r :: Row Type) p x.
@@ -80,13 +87,13 @@ orderedKeys
   :: forall (r :: Row Type) p x.
   Holder p x =>
   ReifyOrderedTo p =>
-  HFoldlWithIndex (HoldPropsInOrder p x) (Array x) { | r } (Array x) =>
+  HFoldlWithIndex (HoldPropsInOrder p x) (Array (Int /\ x)) { | r } (Array (Int /\ x)) =>
   Proxy p ->
   SOrder ->
   { | r } ->
   (Array x)
 orderedKeys _ order r =
-  hfoldlWithIndex (HoldPropsInOrder order :: HoldPropsInOrder p x) ([] :: Array x) r
+  Tuple.snd <$> hfoldlWithIndex (HoldPropsInOrder order :: HoldPropsInOrder p x) ([] :: Array (Int /\ x)) r
 
 
 orderedKeysFromRow

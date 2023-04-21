@@ -16,6 +16,7 @@ import Prelude
 
 import Data.Array ((:))
 import Data.Array as Array
+import Data.Tuple as Tuple
 import Data.List as List
 import Data.Const (Const)
 import Data.Maybe (Maybe(..))
@@ -28,6 +29,7 @@ import Data.Vec (Vec, (+>))
 import Data.Vec as Vec
 import Data.Map (Map)
 import Data.Map as Map
+import Data.String as String
 
 import Data.List (List)
 
@@ -192,6 +194,10 @@ sortByL' (SOrder indexMap) toKey =
                 _ -> compare v1 v2
         )
     where indexOf = flip Map.lookup indexMap <<< toKey
+
+
+instance Show SOrder where
+    show (SOrder omap) = String.joinWith " ::: " $ map (\(idx /\ sym) -> show idx <> " " <> sym) $ Array.sortWith Tuple.fst $ map Tuple.swap $ Map.toUnfoldable omap
 
 
 s1 :: forall proxy sym1. IsSymbol sym1 => proxy sym1 -> Proxy (sym1 ::: T)
