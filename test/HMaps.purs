@@ -27,10 +27,14 @@ import Heterogeneous.Mapping
 import Prim.Row (class Cons) as Row
 import Type.Proxy (Proxy(..))
 import Data.List (List)
+import Data.List as List
+import Data.Array ((:))
+import Data.Array as Array
 
 import Record as Record
 import Record.Extra as Record
 import Prim.Row as R
+import Prim.RowList as RL
 import Type.RowList as RL
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -268,6 +272,37 @@ showTwice r = do
 
 
 test' = showTwice { a: "foo" , b: 42 , c: false }
+
+
+data HoldProps = HoldProps
+
+
+instance holdProps ::
+  (Show a, IsSymbol sym) =>
+  FoldingWithIndex HoldProps (SProxy sym) (Array HoldsSymbol) a (Array HoldsSymbol) where
+  foldingWithIndex HoldProps prop symbols _ =
+    holdSymbol prop : symbols
+
+
+withRecordKeys :: forall r is.
+  HFoldlWithIndex HoldProps (Array HoldsSymbol) { | r } (Array HoldsSymbol) =>
+  { | r } ->
+  (Array HoldsSymbol)
+withRecordKeys r =
+  hfoldlWithIndex HoldProps ([] :: Array HoldsSymbol) r
+
+
+newtype HoldsSymbol = HoldsSymbol (forall r. (forall proxy sym. IsSymbol sym => proxy sym -> r) -> r)
+
+
+holdSymbol :: forall proxy sym. IsSymbol sym => proxy sym -> HoldsSymbol
+holdSymbol sym = HoldsSymbol (_ $ sym)
+
+
+withSymbol :: forall r. HoldsSymbol -> (forall proxy sym. IsSymbol sym => proxy sym -> r) -> r
+withSymbol (HoldsSymbol fn) = fn
+
+
 
 {-
 showWithIndex :: forall hlist.

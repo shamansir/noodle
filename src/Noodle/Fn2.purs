@@ -47,7 +47,7 @@ import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.State.Class (class MonadState)
 import Control.Monad.State as State
 
-import Noodle.Id (class HasInputsAt, class HasOutputsAt, InputR, OutputR, fromKeysR)
+import Noodle.Id (class HasInputsAt, class HasOutputsAt, InputR, OutputR, fromKeysR, HoldsInput, HoldsOutput)
 import Noodle.Fn2.Process (ProcessM)
 import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol)
@@ -139,6 +139,14 @@ inputsShape (Fn _ { inputs } _) = fromKeysR inputs (Proxy :: Proxy is)
 
 outputsShape :: forall state is (os :: Row Type) m rlo. HasOutputsAt os rlo => Fn state is os m -> List OutputR
 outputsShape (Fn _ { outputs } _) = fromKeysR outputs (Proxy :: Proxy os)
+
+
+inputsShapeH :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> List HoldsInput
+inputsShapeH (Fn _ { inputs } _) = fromKeysR inputs (Proxy :: Proxy is)
+
+
+outputsShapeH :: forall state is (os :: Row Type) m rlo. HasOutputsAt os rlo => Fn state is os m -> List HoldsOutput
+outputsShapeH (Fn _ { outputs } _) = fromKeysR outputs (Proxy :: Proxy os)
 
 
 inputsOrder :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> SOrder

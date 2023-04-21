@@ -550,7 +550,7 @@ main1 =
 
             let
                 inletHandler idx iname =
-                    iname /\ [] /\ onInletSelect nextNodeBox idx iname
+                    iname /\ [] /\ onInletSelect nodeId (Id.Input 0 :: _ "foo") nextNodeBox idx iname
                 inletsBarN =
                     B.listbar nextInletsBar
                         [ Box.width $ Dimension.percents 90.0
@@ -576,7 +576,7 @@ main1 =
 
             let
                 outletHandler idx oname =
-                    oname /\ [] /\ onOutletSelect nodeId nextNodeBox idx oname
+                    oname /\ [] /\ onOutletSelect nodeId (Id.Output 0 :: _ "foo") nextNodeBox idx oname
                 outletsBarN =
                     B.listbar nextOutletsBar
                         [ Box.width $ Dimension.percents 90.0
@@ -655,14 +655,14 @@ main1 =
                 , lastLink = Just link
                 }
 
-        onOutletSelect :: forall f. IsSymbol f => Id.NodeId f -> NodeBoxKey -> Int -> String -> OutletsBarKey → EventJson → BlessedOp State Effect
-        onOutletSelect nodeId onode index oname _ _ = do
+        onOutletSelect ::  forall f o. IsSymbol f => IsSymbol o => Id.NodeId f -> Id.Output o -> NodeBoxKey -> Int -> String -> OutletsBarKey → EventJson → BlessedOp State Effect
+        onOutletSelect nodeId outputId onode index oname _ _ = do
             -- liftEffect $ Console.log $ "handler " <> oname
             State.modify_
                 (_ { lastClickedOutlet = Just { index, subj : oname, node : onode, family : Id.holdNodeId nodeId } })
 
-        onInletSelect :: NodeBoxKey -> Int -> String -> InletsBarKey → EventJson → BlessedOp State Effect
-        onInletSelect inode idx iname _ _ = do
+        onInletSelect :: forall f i. IsSymbol f => IsSymbol i => Id.NodeId f -> Id.Input i -> NodeBoxKey -> Int -> String -> InletsBarKey → EventJson → BlessedOp State Effect
+        onInletSelect nodeId inputId inode idx iname _ _ = do
             state <- State.get
             -- liftEffect $ Console.log $ "handler " <> iname
             case state.lastClickedOutlet of

@@ -28,6 +28,8 @@ module Noodle.Id
     , class ListsFamilies, class ListsInstances
     , HoldsFamily, holdFamily, withFamily
     , HoldsNodeId, holdNodeId, withNodeId
+    , HoldsInput, holdInput, withInput
+    , HoldsOutput, holdOutput, withOutput
     -- , class HasInputs', inputs'
     -- , class IsSymbol
     )
@@ -158,17 +160,6 @@ withFamily (HoldsFamily fn) = fn
 -- test2 = withFamily test1 reflectFamily
 
 
-newtype HoldsNodeId = HoldsNodeId (forall r. (forall sym. IsSymbol sym => NodeId sym -> r) -> r)
-
-
-holdNodeId :: forall sym. IsSymbol sym => NodeId sym -> HoldsNodeId
-holdNodeId sym = HoldsNodeId (_ $ sym)
-
-
-withNodeId :: forall r. HoldsNodeId -> (forall sym. IsSymbol sym => NodeId sym -> r) -> r
-withNodeId (HoldsNodeId fn) = fn
-
-
 --test3 :: forall sym. Family "foo"
 -- test3 = withFamily test1 identity
 
@@ -231,6 +222,17 @@ keysToInputsR :: forall w is rl. HasInputsAt is rl => SOrder -> w is -> List Inp
 keysToInputsR order = Record.keys >>> SOrder.sortL' order >>> List.mapWithIndex (/\) >>> map InputR
 
 
+newtype HoldsInput = HoldsInput (forall r. (forall sym. IsSymbol sym => Input sym -> r) -> r)
+
+
+holdInput :: forall sym. IsSymbol sym => Input sym -> HoldsInput
+holdInput sym = HoldsInput (_ $ sym)
+
+
+withInput :: forall r. HoldsInput -> (forall sym. IsSymbol sym => Input sym -> r) -> r
+withInput (HoldsInput fn) = fn
+
+
 -- _in :: InputR -> String
 -- _in = reflect'
 
@@ -291,6 +293,21 @@ reflectOutputR (OutputR s) = Tuple.snd s
 
 keysToOutputsR :: forall w os rl. HasInputsAt os rl => SOrder -> w os -> List OutputR -- TODO: Array OutputR?
 keysToOutputsR order = Record.keys >>> SOrder.sortL' order >>> List.mapWithIndex (/\) >>> map OutputR
+
+
+keysToOutputsH :: forall w os rl. HasInputsAt os rl => SOrder -> w os -> List HoldsOutput -- TODO: Array OutputR?
+keysToOutputsH order = Record.keys >>> SOrder.sortL' order >>> List.mapWithIndex (/\) >>> map OutputR
+
+
+newtype HoldsOutput = HoldsOutput (forall r. (forall sym. IsSymbol sym => Output sym -> r) -> r)
+
+
+holdOutput :: forall sym. IsSymbol sym => Output sym -> HoldsOutput
+holdOutput sym = HoldsOutput (_ $ sym)
+
+
+withOutput :: forall r. HoldsOutput -> (forall sym. IsSymbol sym => Output sym -> r) -> r
+withOutput (HoldsOutput fn) = fn
 
 
 -- _in :: InputR -> String
@@ -375,6 +392,17 @@ reflectNodeIdR :: NodeIdR -> String /\ String
 reflectNodeIdR (NodeIdR (familyR /\ uuid)) = reflect' familyR /\ UniqueHash.toString uuid
 
 
+newtype HoldsNodeId = HoldsNodeId (forall r. (forall sym. IsSymbol sym => NodeId sym -> r) -> r)
+
+
+holdNodeId :: forall sym. IsSymbol sym => NodeId sym -> HoldsNodeId
+holdNodeId sym = HoldsNodeId (_ $ sym)
+
+
+withNodeId :: forall r. HoldsNodeId -> (forall sym. IsSymbol sym => NodeId sym -> r) -> r
+withNodeId (HoldsNodeId fn) = fn
+
+
 -- TODO: extend to HasInputs, HasOutputs with getAtInput, getAtOutput, updateInputs, updateOutputs, ...
  -- FIXME: use newtype
 -- FIXME: another module?
@@ -391,6 +419,17 @@ class HasInputsAt is rli <= HasInputs is rli a | a -> is, a -> rli
 class HasOutputsAt os rlo <= HasOutputs os rlo a | a -> os, a -> rlo
     where outputs :: a -> List OutputR
 
+
+class HasInputsAt is rli <= HasInputsH is rli a | a -> is, a -> rli
+    where inputsH :: a -> List HoldsInput
+-- class HasInputsAt is rli <= HasInputs' is rli
+--     where
+--         --inputs' :: forall proxy. proxy is -> List InputR
+--         inputs' :: Unit -> List InputR
+class HasOutputsAt os rlo <= HasOutputsH os rlo a | a -> os, a -> rlo
+    where outputsH :: a -> List HoldsOutput
+
+
 class (RL.RowToList os rlo, Record.Keys rlo) <= HasOutputsAt os rlo
 instance (RL.RowToList os rlo, Record.Keys rlo) => HasOutputsAt os rlo
 
@@ -406,6 +445,7 @@ instance (RL.RowToList ins rlin, Record.Keys rlin) => ListsInstances ins rlin
 -- class HasInput :: forall k. Symbol -> k -> Row k -> Row k -> Constraint
 class (IsSymbol i, R.Cons i din is' is) <= HasInput i din is' is
 instance (IsSymbol i, R.Cons i din is' is) => HasInput i din is' is
+
 class (IsSymbol o, R.Cons o dout os' os) <= HasOutput o dout os' os
 instance (IsSymbol o, R.Cons o dout os' os) => HasOutput o dout os' os
 
