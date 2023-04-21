@@ -274,48 +274,64 @@ showTwice r = do
 test' = showTwice { a: "foo" , b: 42 , c: false }
 
 
-data HoldProps :: forall k. k -> Type
-data HoldProps x = HoldProps
+-- data HoldProps :: forall k. k -> Type
+data HoldProps (p :: Symbol -> Type) x = HoldProps
 
 
 class Holder (proxy :: Symbol -> Type) x where
-  hold :: forall sym. IsSymbol sym => Int -> proxy sym -> x
+  hold :: forall sym. IsSymbol sym => proxy sym -> x
   extract :: forall r. x -> (forall sym. IsSymbol sym => proxy sym -> r) -> r
 
 
-instance Holder Proxy HoldsSymbol where
-  hold = const holdSymbol
+class FromProxy (trg :: Symbol -> Type) where
+  fromProxy :: forall sym. IsSymbol sym => Proxy sym -> trg sym
+
+
+instance Holder ProxyTest HoldsSymbol where
+  hold = holdSymbol
   extract = withSymbol
 
 
+instance FromProxy ProxyTest where
+  fromProxy :: forall sym. Proxy sym -> ProxyTest sym
+  fromProxy _ = ProxyTest
+
+
 instance holdProps ::
-  (Show a, IsSymbol sym, Holder p x) =>
-  FoldingWithIndex (HoldProps x) (p sym) (Array x) a (Array x) where
+  (IsSymbol sym, Holder p x, FromProxy p) =>
+  FoldingWithIndex (HoldProps p x) (Proxy sym) (Array x) a (Array x) where
   foldingWithIndex HoldProps prop symbols _ =
-    hold 0 prop : symbols
+    hold (fromProxy prop :: p sym) : symbols
 
 
-order :: forall r x.
-  Holder Proxy x =>
-  HFoldlWithIndex (HoldProps x) (Array x) { | r } (Array x) =>
+order :: forall r p x.
+  Holder p x => FromProxy p => Proxy p ->
+  HFoldlWithIndex (HoldProps p x) (Array x) { | r } (Array x) =>
   { | r } ->
   (Array x)
-order r =
-  hfoldlWithIndex (HoldProps :: HoldProps x) ([] :: Array x) r
+order _ r =
+  hfoldlWithIndex (HoldProps :: HoldProps p x) ([] :: Array x) r
 
 
 test1 :: Array HoldsSymbol
-test1 = order { foo : "a", bar : 42 }
+test1 = order (Proxy :: _ ProxyTest) { foo : "a", bar : 42 }
 
 
-newtype HoldsSymbol = HoldsSymbol (forall r. (forall sym. IsSymbol sym => Proxy sym -> r) -> r)
+data ProxyTest (s :: Symbol) = ProxyTest
 
 
-holdSymbol :: forall sym. IsSymbol sym => Proxy sym -> HoldsSymbol
+newtype HoldsSymbol = HoldsSymbol (forall r. (forall sym. IsSymbol sym => ProxyTest sym -> r) -> r)
+
+
+holdSymbol :: forall sym. IsSymbol sym => ProxyTest sym -> HoldsSymbol
 holdSymbol sym = HoldsSymbol (_ $ sym)
 
 
-withSymbol :: forall r. HoldsSymbol -> (forall sym. IsSymbol sym => Proxy sym -> r) -> r
+holdSymbolP :: forall sym. IsSymbol sym => Proxy sym -> HoldsSymbol
+holdSymbolP sym = HoldsSymbol (_ $ (ProxyTest :: _ sym))
+
+
+withSymbol :: forall r. HoldsSymbol -> (forall sym. IsSymbol sym => ProxyTest sym -> r) -> r
 withSymbol (HoldsSymbol fn) = fn
 
 

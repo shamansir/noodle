@@ -291,11 +291,11 @@ reflectOutputR :: OutputR -> String
 reflectOutputR (OutputR s) = Tuple.snd s
 
 
-keysToOutputsR :: forall w os rl. HasInputsAt os rl => SOrder -> w os -> List OutputR -- TODO: Array OutputR?
+keysToOutputsR :: forall w os rl. HasOutputsAt os rl => SOrder -> w os -> List OutputR -- TODO: Array OutputR?
 keysToOutputsR order = Record.keys >>> SOrder.sortL' order >>> List.mapWithIndex (/\) >>> map OutputR
 
 
-keysToOutputsH :: forall w os rl. HasInputsAt os rl => SOrder -> w os -> List HoldsOutput -- TODO: Array OutputR?
+keysToOutputsH :: forall w os rl. HasOutputsAt os rl => SOrder -> w os -> List HoldsOutput -- TODO: Array OutputR?
 keysToOutputsH order = Record.keys >>> SOrder.sortL' order >>> List.mapWithIndex (/\) >>> map OutputR
 
 
