@@ -68,9 +68,9 @@ spec = do
             liftEffect $ Console.log $ show order
             ((\convs -> withConvS convs reflectSymbol) <$> (KH.orderedKeys (Proxy :: Proxy SProxy) order { buz : "test", foo : 2, bar : false } :: Array ConvS)) `shouldEqual` [ "foo", "bar", "buz" ]
 
-        {- it "properly sorts keys of the row" $ do
+        it "properly sorts keys of the row" $ do
             let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
-            ((\conv -> withConv conv reflectSymbol) <$> (KH.orderedKeysFromRow (Proxy :: Proxy SProxy) order (Proxy :: Proxy ( buz :: String, foo :: Int, bar :: Boolean )) :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ] -}
+            ((\conv -> withConv conv reflectSymbol) <$> (KH.orderedKeysFromRow (Proxy :: Proxy SProxy) order (Proxy :: _ ( buz :: String, foo :: Int, bar :: Boolean )) :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ]
 
         it "properly sorts keys of record with index" $ do
             let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))

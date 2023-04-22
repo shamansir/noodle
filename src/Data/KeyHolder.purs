@@ -9,6 +9,10 @@ import Data.List as List
 import Data.Maybe as Maybe
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Record.Xiaomian as X
+import Type.Proxy (Proxy(..))
+import Type.Data.Symbol (SProxy(..))
+import Prim.RowList as RL
 
 
 import Type.Proxy (Proxy)
@@ -96,17 +100,25 @@ orderedKeys _ order r =
   Tuple.snd <$> hfoldlWithIndex (HoldPropsInOrder order :: HoldPropsInOrder p x) ([] :: Array (Int /\ x)) r
 
 
+{-
 orderedKeysFromRow
-  :: forall (row :: Row Type) p x.
+  :: forall (row :: Row Type) p x rl (sym :: Symbol) keys.
+  IsSymbol sym =>
   Holder p x =>
   ReifyOrderedTo p =>
-  HFoldlWithIndex (HoldPropsInOrder p x) (Array x) (Proxy row) (Array x) =>
+  RL.RowToList keys rl =>
+  HFoldlWithIndex (HoldPropsInOrder p x) (Array (Int /\ x)) { | row } (Array (Int /\ x)) =>
+  -- HFoldlWithIndex (HoldPropsInOrder p x) (Array x) (SProxy sym) (Array x) =>
   Proxy p ->
   SOrder ->
   (Proxy row) ->
   (Array x)
-orderedKeysFromRow _ order r =
-  hfoldlWithIndex (HoldPropsInOrder order :: HoldPropsInOrder p x) ([] :: Array x) r
+orderedKeysFromRow proxy order _ =
+  orderedKeys proxy order (Proxy :: Proxy ({ a :: SProxy "a", b :: SProxy "b", c :: SProxy "c" }))
+-}
+
+  -- orderedKeys proxy order (Proxy (RProxy ( a :: SProxy "a", b :: SProxy "b", c :: SProxy "c" )))
+  -- orderedKeys proxy order $ (X.getKeysRecord' (Proxy :: _ (Record row) ) :: Record keys)
 
 
 instance ReifyTo Proxy where
@@ -151,3 +163,30 @@ orderedKeysL
 orderedKeysL _ order r =
   hfoldlWithIndex (HoldPropsInOrder order :: HoldPropsInOrder p x) (List.Nil :: List x) r
 -}
+
+
+class IsSymbolsOrderH (order :: SOrder) x where
+    reflectH :: Proxy order -> Array x
+
+
+instance IsSymbolsOrderH SOrder.T x where
+    reflectH _ = []
+else instance (IsSymbol sym, Holder Proxy x, IsSymbolsOrderH tail x) => IsSymbolsOrderH (SOrder.TCons sym tail) x where
+    reflectH _ = hold (Proxy :: _ sym) : reflectH (Proxy :: _ tail)
+
+
+class Keys (xs :: RL.RowList Type) x where
+  keysImpl :: Proxy xs -> Array x
+
+instance nilKeys :: Keys RL.Nil x where
+  keysImpl _ = mempty
+
+instance consKeys ::
+  ( IsSymbol name
+  , Holder Proxy x
+  , Keys tail x
+  ) => Keys (RL.Cons name ty tail) x where
+  keysImpl _ = first : rest
+    where
+      first = hold (Proxy :: _ name)
+      rest = keysImpl (Proxy :: _ tail)
