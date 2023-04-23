@@ -24,7 +24,10 @@ import Data.Array ((:), (!!))
 import Data.Array as Array
 import Data.Foldable (for_, traverse_)
 import Data.List (toUnfoldable) as List
+import Data.KeyHolder as KH
 import Record.Extra (class Keys, keys) as Record
+import Unsafe.Coerce (unsafeCoerce)
+import Data.String as String
 
 import Cli.App as Cli
 
@@ -501,17 +504,22 @@ main1 =
 
             rec <- liftEffect $ do
                 (node :: Noodle.Node f state is os Effect) <- Toolkit.spawn tk family
-                inputs <- Node.inputs node
-                outputs <- Node.outputs node
-                -- Console.log $ show <$> Record.keys inputs
-                -- Console.log $ show <$> Record.keys outputs
+                (inputs :: Record is) <- Node.inputs node
+                (outputs :: Record os) <- Node.outputs node
+                let (iss :: Array Id.HoldsInput) = KH.orderedKeys' (Proxy :: _ Id.Input) (Node.inputsOrder node) inputs
+                let (oss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
+                -- let os = KH.orderedKeys (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
+                let is /\ os = Node.shape node
+                -- Console.log $ String.joinWith ":" $ List.toUnfoldable $ show <$> Record.keys inputs
+                -- Console.log $ String.joinWith ":" $ List.toUnfoldable $ show <$> Record.keys outputs
                 let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Hydra.State (Hydra.Instances Effect))
                 -- let nextPatch' = Hydra.spawnAndRegister curPatch familyR
                 let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
                 -- state <- State.get
-                pure { nextPatch, node, inputs, outputs, nodes }
+                pure { nextPatch, node, inputs, is, os, outputs, nodes }
 
-            let is /\ os = Node.shape rec.node
+            -- let is /\ os = Node.shapeH rec.node
+            let is /\ os = Array.fromFoldable rec.is /\ Array.fromFoldable rec.os
             let nodeId = Node.id rec.node
 
             -- TODO: probably use Repr to create inlet bars and outlet bars, this way using Input' / Output' instances, we will probably be able to connect things
@@ -558,7 +566,7 @@ main1 =
                         , Box.top $ Offset.px 0
                         , Box.left $ Offset.px 0
                         -- , List.items is
-                        , ListBar.commands $ List.toUnfoldable $ mapWithIndex inletHandler $ Id.reflectInputR <$> is
+                        , ListBar.commands $ mapWithIndex inletHandler $ Id.reflect' <$> is
                         -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex inletHandler $ is
                         , List.mouse true
                         , List.keys true
@@ -584,7 +592,7 @@ main1 =
                         , Box.top $ Offset.px 2
                         , Box.left $ Offset.px 0
                         -- , List.items os
-                        , ListBar.commands $ List.toUnfoldable $ mapWithIndex outletHandler $ Id.reflectOutputR <$> os
+                        , ListBar.commands $ mapWithIndex outletHandler $ Id.reflect' <$> os
                         -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex outletHandler $ os
                         , List.mouse true
                         , List.keys true

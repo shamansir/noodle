@@ -13,6 +13,7 @@ module Noodle.Fn2
   , imapState
   , cloneReplace
   , inputsShape, outputsShape
+  , inputsShapeH, outputsShapeH
   , inputsOrder, outputsOrder
   )
   where
@@ -34,6 +35,7 @@ import Data.List (List)
 import Data.List (length, filter) as List
 import Data.SOrder (SOrder, class HasSymbolsOrder)
 import Data.SOrder (instantiate) as SOrder
+import Data.KeyHolder as KH
 
 import Type.Proxy (Proxy(..))
 
@@ -47,7 +49,8 @@ import Control.Monad.Rec.Class (class MonadRec)
 import Control.Monad.State.Class (class MonadState)
 import Control.Monad.State as State
 
-import Noodle.Id (class HasInputsAt, class HasOutputsAt, InputR, OutputR, fromKeysR, HoldsInput, HoldsOutput)
+import Data.KeyHolder as KH
+import Noodle.Id (class HasInputsAt, class HasOutputsAt, Input, Output, InputR, OutputR, fromKeysR, HoldsInput, HoldsOutput)
 import Noodle.Fn2.Process (ProcessM)
 import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol)
@@ -134,19 +137,19 @@ name (Fn n _ _) = n
 
 
 inputsShape :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> List InputR
-inputsShape (Fn _ { inputs } _) = fromKeysR inputs (Proxy :: Proxy is)
+inputsShape (Fn _ { inputs } _) = fromKeysR inputs (Proxy :: _ is)
 
 
 outputsShape :: forall state is (os :: Row Type) m rlo. HasOutputsAt os rlo => Fn state is os m -> List OutputR
-outputsShape (Fn _ { outputs } _) = fromKeysR outputs (Proxy :: Proxy os)
+outputsShape (Fn _ { outputs } _) = fromKeysR outputs (Proxy :: _ os)
 
 
-{- inputsShapeH :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> List HoldsInput
-inputsShapeH (Fn _ { inputs } _) = fromKeysR inputs (Proxy :: Proxy is)
+inputsShapeH :: forall state (is :: Row Type) os m rli. KH.KeysO rli Input HoldsInput => HasInputsAt is rli => Fn state is os m -> Array HoldsInput
+inputsShapeH (Fn _ { inputs } _) = KH.orderedKeys' (Proxy :: _ Input) inputs (Proxy :: _ is)
 
 
-outputsShapeH :: forall state is (os :: Row Type) m rlo. HasOutputsAt os rlo => Fn state is os m -> List HoldsOutput
-outputsShapeH (Fn _ { outputs } _) = fromKeysR outputs (Proxy :: Proxy os) -}
+outputsShapeH :: forall state is (os :: Row Type) m rlo. KH.KeysO rlo Output HoldsOutput => HasOutputsAt os rlo => Fn state is os m -> Array HoldsOutput
+outputsShapeH (Fn _ { outputs } _) = KH.orderedKeys' (Proxy :: _ Output) outputs (Proxy :: _ os)
 
 
 inputsOrder :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> SOrder

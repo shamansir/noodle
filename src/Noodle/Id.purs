@@ -23,6 +23,7 @@ module Noodle.Id
     , class FromKeysR, fromKeysR
     -- FIXME: make classes below internal
     , class HasInputsAt, class HasOutputsAt
+    , class HasInputsAt', class HasOutputsAt'
     , class HasInput, class HasOutput, class HasFamily
     , class HasInputs, inputs, class HasOutputs, outputs
     , class ListsFamilies, class ListsInstances
@@ -40,6 +41,7 @@ import Prelude
 import Color.Scheme.X11 (wheat)
 import Data.List (List)
 import Data.List (mapWithIndex) as List
+import Data.Array as Array
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.KeyHolder as KH
 import Data.SOrder (SOrder)
@@ -159,7 +161,7 @@ instance KH.Holder Family HoldsFamily where
 
 
 instance KH.ReifyTo Family where
-    reify :: forall a sym. IsSymbol sym => Proxy sym -> Family sym
+    reify :: forall sym. IsSymbol sym => Proxy sym -> Family sym
     reify _ = Family
 
 
@@ -247,6 +249,10 @@ holdInput sym = HoldsInput (_ $ sym)
 
 withInput :: forall r. HoldsInput -> (forall sym. IsSymbol sym => Input sym -> r) -> r
 withInput (HoldsInput fn) = fn
+
+
+instance Reflect' HoldsInput where
+    reflect' hi = withInput hi reflectInput
 
 
 instance KH.Holder Input HoldsInput where
@@ -337,6 +343,10 @@ withOutput :: forall r. HoldsOutput -> (forall sym. IsSymbol sym => Output sym -
 withOutput (HoldsOutput fn) = fn
 
 
+instance Reflect' HoldsOutput where
+    reflect' ho = withOutput ho reflectOutput
+
+
 instance KH.Holder Output HoldsOutput where
     hold = holdOutput
     extract = withOutput
@@ -394,7 +404,7 @@ hashOf :: forall f. NodeId f -> UniqueHash
 hashOf (NodeId (_ /\ uuid)) = uuid
 
 
-hashOfR :: forall f. NodeIdR -> UniqueHash
+hashOfR :: NodeIdR -> UniqueHash
 hashOfR (NodeIdR (_ /\ uuid)) = uuid
 
 
@@ -462,6 +472,10 @@ class (RL.RowToList is rli, Record.Keys rli) <= HasInputsAt is rli
 instance (RL.RowToList is rli, Record.Keys rli) => HasInputsAt is rli
 
 
+class (RL.RowToList is rli, KH.KeysO rli Input HoldsInput) <= HasInputsAt' is rli
+instance (RL.RowToList is rli, KH.KeysO rli Input HoldsInput) => HasInputsAt' is rli
+
+
 class HasInputsAt is rli <= HasInputs is rli a | a -> is, a -> rli
     where inputs :: a -> List InputR
 -- class HasInputsAt is rli <= HasInputs' is rli
@@ -484,6 +498,10 @@ class HasOutputsAt os rlo <= HasOutputsH os rlo a | a -> os, a -> rlo
 
 class (RL.RowToList os rlo, Record.Keys rlo) <= HasOutputsAt os rlo
 instance (RL.RowToList os rlo, Record.Keys rlo) => HasOutputsAt os rlo
+
+
+class (RL.RowToList os rlo, KH.KeysO rlo Output HoldsOutput) <= HasOutputsAt' os rlo
+instance (RL.RowToList os rlo, KH.KeysO rlo Output HoldsOutput) => HasOutputsAt' os rlo
 
 
 class (RL.RowToList fs rlf, Record.Keys rlf) <= ListsFamilies fs rlf

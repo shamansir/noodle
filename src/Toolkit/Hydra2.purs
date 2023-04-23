@@ -27,7 +27,7 @@ import Noodle.Patch4 as Patch
 import Noodle.Node2 (Node) as Noodle
 import Noodle.Toolkit3.Has (class HasFamilyDef) as Has
 import Noodle.Patch4.Has (class HasInstancesOf) as Has
-import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Has
+import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasInputsAt', class HasOutputsAt') as Has
 
 
 import Toolkit.Hydra2.Family.Source.FNoise as FNoise
@@ -679,7 +679,9 @@ class
         , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
         , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
         , Has.HasInputsAt is rli
+        , Has.HasInputsAt' is rli
         , Has.HasOutputsAt os rlo
+        , Has.HasOutputsAt' os rlo
         ) <= HasNodesOf f state fs iis rli is rlo os m
 
 instance
@@ -687,7 +689,9 @@ instance
         , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
         , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
         , Has.HasInputsAt is rli
+        , Has.HasInputsAt' is rli
         , Has.HasOutputsAt os rlo
+        , Has.HasOutputsAt' os rlo
         ) => HasNodesOf f state fs iis rli is rlo os m
 
 

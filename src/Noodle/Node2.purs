@@ -27,6 +27,7 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Data.List (List)
 import Data.List (length, filter) as List
 import Data.UniqueHash (UniqueHash)
+import Data.KeyHolder as KH
 
 import Type.Proxy (Proxy(..))
 
@@ -46,7 +47,7 @@ import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol, Tracker, InputChange(..), OutputChange(..))
 import Noodle.Fn2.Protocol as Protocol
 import Noodle.Fn2 (Fn)
-import Noodle.Fn2 (inputsShape, outputsShape, inputsOrder, outputsOrder, run, run', make, cloneReplace) as Fn
+import Noodle.Fn2 (inputsShape, outputsShape, inputsShapeH, outputsShapeH, inputsOrder, outputsOrder, run, run', make, cloneReplace) as Fn
 
 import Record (get, set) as Record
 import Record.Extra (keys, class Keys) as Record
@@ -447,6 +448,14 @@ outputsShape :: forall f state is (os :: Row Type) m rlo. HasOutputsAt os rlo =>
 outputsShape (Node _ _ _ fn) = Fn.outputsShape fn
 
 
+inputsShapeH :: forall f state (is :: Row Type) os m rli. KH.KeysO rli Input HoldsInput => HasInputsAt is rli => Node f state is os m -> Array HoldsInput
+inputsShapeH (Node _ _ _ fn) = Fn.inputsShapeH fn
+
+
+outputsShapeH :: forall f state is (os :: Row Type) m rlo. KH.KeysO rlo Output HoldsOutput => HasOutputsAt os rlo => Node f state is os m -> Array HoldsOutput
+outputsShapeH (Node _ _ _ fn) = Fn.outputsShapeH fn
+
+
 inputsOrder :: forall f state is os m rli. HasInputsAt is rli => Node f state is os m -> SOrder
 inputsOrder (Node _ _ _ fn) = Fn.inputsOrder fn
 
@@ -465,6 +474,17 @@ shape
     => Node f state is os m
     -> List InputR /\ List OutputR
 shape node = inputsShape node /\ outputsShape node
+
+
+shapeH
+    :: forall f state (is :: Row Type) (os :: Row Type) m rli rlo
+     . KH.KeysO rli Input HoldsInput
+    => KH.KeysO rlo Output HoldsOutput
+    => HasInputsAt is rli
+    => HasOutputsAt os rlo
+    => Node f state is os m
+    -> Array HoldsInput /\ Array HoldsOutput
+shapeH node = inputsShapeH node /\ outputsShapeH node
 
 
 dimensions

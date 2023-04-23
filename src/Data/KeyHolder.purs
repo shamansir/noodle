@@ -36,12 +36,12 @@ data HoldPropsR :: forall k. (Symbol -> Type) -> k -> k -> Type
 data HoldPropsR (p :: Symbol -> Type) x repr = HoldPropsR
 
 
-data HoldPropsInOrder :: forall k. (Symbol -> Type) -> k -> Type
-data HoldPropsInOrder (p :: Symbol -> Type) x = HoldPropsInOrder SOrder
+data HoldPropsInOrder :: forall k. RL.RowList Type -> (Symbol -> Type) -> k -> Type
+data HoldPropsInOrder rl (p :: Symbol -> Type) x = HoldPropsInOrder SOrder
 
 
-data HoldPropsInOrderR :: forall k. (Symbol -> Type) -> k -> k -> Type
-data HoldPropsInOrderR (p :: Symbol -> Type) x repr = HoldPropsInOrderR SOrder
+data HoldPropsInOrderR :: forall k. RL.RowList Type -> (Symbol -> Type) -> k -> k -> Type
+data HoldPropsInOrderR rl (p :: Symbol -> Type) x repr = HoldPropsInOrderR SOrder
 
 
 class Holder (proxy :: Symbol -> Type) x where
@@ -75,7 +75,7 @@ class ReifyWithReprOrderedTo (trg :: Symbol -> Type) repr where
 instance holdKeysI ::
   (IsSymbol sym, Holder p x, ReifyTo p) =>
   FoldingWithIndex (HoldProps p x) (Proxy sym) (Array x) a (Array x) where
-  foldingWithIndex HoldProps prop symbols a =
+  foldingWithIndex HoldProps prop symbols _ =
     symbols <> [ hold (reify prop :: p sym) ]
 
 
@@ -88,20 +88,19 @@ instance holdKeysIR ::
           (p /\ repr) -> hold p /\ repr
     ]
 
-
 instance holdKeysOrderedI ::
   (IsSymbol sym, Holder p x, ReifyOrderedTo p) =>
-  FoldingWithIndex (HoldPropsInOrder p x) (Proxy sym) (Array (Int /\ x)) a (Array (Int /\ x)) where
-  foldingWithIndex (HoldPropsInOrder order) prop symbols a =
+  FoldingWithIndex (HoldPropsInOrder rl p x) (Proxy sym) (Array (Int /\ x)) a (Array (Int /\ x)) where
+  foldingWithIndex (HoldPropsInOrder order) prop symbols _ =
     Array.insertBy cmpF (index /\ hold (reifyAt index prop :: p sym)) symbols
     where
       cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
-      index = Maybe.fromMaybe (-1) $ SOrder.index' order $ reflectSymbol prop
+      index = SOrder.indexOf order prop
 
 
 instance holdKeysOrderedIR ::
   (IsSymbol sym, Holder p x, ReifyWithReprOrderedTo p repr, Repr a repr) =>
-  FoldingWithIndex (HoldPropsInOrderR p x repr) (Proxy sym) (Array (Int /\ x /\ repr)) a (Array (Int /\ x /\ repr)) where
+  FoldingWithIndex (HoldPropsInOrderR rl p x repr) (Proxy sym) (Array (Int /\ x /\ repr)) a (Array (Int /\ x /\ repr)) where
   foldingWithIndex (HoldPropsInOrderR order) prop symbols a =
     Array.insertBy cmpF (index /\
       case (reifyRAt index prop a :: p sym /\ repr) of
@@ -109,7 +108,7 @@ instance holdKeysOrderedIR ::
     ) symbols
     where
       cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
-      index = Maybe.fromMaybe (-1) $ SOrder.index' order $ reflectSymbol prop
+      index = SOrder.indexOf order prop
 
 
 holdKeys :: forall (r :: Row Type) p x.
@@ -131,16 +130,32 @@ holdKeysFromRow _ r =
 
 
 orderedKeys
-  :: forall (r :: Row Type) p x.
+  :: forall (r :: Row Type) rl p x.
   Holder p x =>
   ReifyOrderedTo p =>
-  HFoldlWithIndex (HoldPropsInOrder p x) (Array (Int /\ x)) { | r } (Array (Int /\ x)) =>
+  RL.RowToList r rl =>
+  HFoldlWithIndex (HoldPropsInOrder rl p x) (Array (Int /\ x)) { | r } (Array (Int /\ x)) =>
   Proxy p ->
   SOrder ->
   { | r } ->
   (Array x)
 orderedKeys _ order r =
-  Tuple.snd <$> hfoldlWithIndex (HoldPropsInOrder order :: HoldPropsInOrder p x) ([] :: Array (Int /\ x)) r
+  Tuple.snd <$> hfoldlWithIndex (HoldPropsInOrder order :: HoldPropsInOrder rl p x) ([] :: Array (Int /\ x)) r
+
+
+orderedKeysF
+  :: forall (r :: Row Type) rl p x.
+  Holder p x =>
+  ReifyOrderedTo p =>
+  RL.RowToList r rl =>
+  HFoldlWithIndex (HoldPropsInOrder rl p x) (Array (Int /\ x)) { | r } (Array (Int /\ x)) =>
+  Proxy rl ->
+  Proxy p ->
+  SOrder ->
+  { | r } ->
+  (Array x)
+orderedKeysF _ p  order r =
+  orderedKeys p order r
 
 
 {-
@@ -166,7 +181,7 @@ orderedKeysFromRow proxy order _ =
 
 instance ReifyTo Proxy where
     reify :: forall sym. IsSymbol sym => Proxy sym -> Proxy sym
-    reify p = p
+    reify = identity
 
 
 instance ReifyTo SProxy where
@@ -176,7 +191,7 @@ instance ReifyTo SProxy where
 
 instance ReifyOrderedTo Proxy where
     reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> Proxy sym
-    reifyAt _ p = p
+    reifyAt _ = identity
 
 
 instance ReifyOrderedTo SProxy where
@@ -243,8 +258,7 @@ class Keys (xs :: RL.RowList Type) x where
 
 instance nilKeys :: Keys RL.Nil x where
   keysImpl _ = mempty
-
-instance consKeys ::
+else instance consKeys ::
   ( IsSymbol name
   , Holder Proxy x
   , Keys tail x
@@ -255,21 +269,25 @@ instance consKeys ::
       rest = keysImpl (Proxy :: _ tail)
 
 
-class KeysO (xs :: RL.RowList Type) x where
-  keysImplO :: SOrder -> Proxy xs -> Array x
+class KeysO (xs :: RL.RowList Type) (proxy :: Symbol -> Type) x where
+  keysImplO :: Proxy proxy -> SOrder -> Proxy xs -> Array (Int /\ x)
 
-instance nilKeysO :: KeysO RL.Nil x where
-  keysImplO _ _ = mempty
-
-instance consKeysO ::
+instance nilKeysO :: KeysO RL.Nil proxy x where
+  keysImplO _ _ _ = mempty
+else instance consKeysO ::
   ( IsSymbol name
-  , Holder Proxy x
-  , KeysO tail x
-  ) => KeysO (RL.Cons name ty tail) x where
-  keysImplO order _ = first : rest -- FIXME: order!
+  , Holder proxy x
+  , ReifyOrderedTo proxy
+  , KeysO tail proxy x
+  ) => KeysO (RL.Cons name ty tail) proxy x where
+  keysImplO :: forall xs. Proxy proxy -> SOrder -> Proxy xs -> Array (Int /\ x)
+  keysImplO p order _ =
+    Array.insertBy cmpF (index /\ held) ordered
     where
-      first = hold (Proxy :: _ name) -- FIXME: order!, use ReifyAt
-      rest = keysImplO order (Proxy :: _ tail)
+      cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
+      index = SOrder.indexOf order (Proxy :: _ name)
+      held = hold (reifyAt index (Proxy :: Proxy name) :: proxy name)
+      ordered = keysImplO p order (Proxy :: _ tail)
 
 
 keys :: forall g row rl x
@@ -280,10 +298,11 @@ keys :: forall g row rl x
 keys _ = keysImpl (Proxy :: _ rl)
 
 
-keysO :: forall g row rl x
+orderedKeys' :: forall g row rl proxy x
    . RL.RowToList row rl
-  => KeysO rl x
-  => SOrder
+  => KeysO rl proxy x
+  => Proxy proxy
+  -> SOrder
   -> g row -- this will work for any type with the row as a param!
   -> Array x
-keysO order _ = keysImplO order (Proxy :: _ rl)
+orderedKeys' p order _ = Tuple.snd <$> keysImplO p order (Proxy :: _ rl)

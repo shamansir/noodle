@@ -66,22 +66,26 @@ spec = do
         it "properly sorts keys of record" $ do
             let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
             liftEffect $ Console.log $ show order
-            ((\convs -> withConvS convs reflectSymbol) <$> (KH.orderedKeys (Proxy :: Proxy SProxy) order { buz : "test", foo : 2, bar : false } :: Array ConvS)) `shouldEqual` [ "foo", "bar", "buz" ]
+            ((\convs -> withConvS convs reflectSymbol) <$> (KH.orderedKeys (Proxy :: _ SProxy) order { buz : "test", foo : 2, bar : false } :: Array ConvS)) `shouldEqual` [ "foo", "bar", "buz" ]
 
         it "properly sorts keys of the row" $ do
             let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
-            ((\convp -> withConvP convp reflectSymbol) <$> (KH.keysO order (Proxy :: _ ( buz :: String, foo :: Int, bar :: Boolean )) :: Array ConvP)) `shouldEqual` [ "foo", "bar", "buz" ]
+            ((\conv -> withConv conv reflectSymbol) <$> (KH.orderedKeys' (Proxy :: _ SymH) order (Proxy :: _ ( buz :: String, foo :: Int, bar :: Boolean )) :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ]
+
+        it "properly sorts keys of record with record" $ do
+            let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
+            liftEffect $ Console.log $ show order
+            ((\conv -> withConv conv reflectSymbol) <$> (KH.orderedKeys' (Proxy :: _ SymH) order { buz : "test", foo : 2, bar : false } :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ]
 
         it "properly sorts keys of record with index" $ do
             let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
             liftEffect $ Console.log $ show order
-            ((\conv -> withConv conv reflectSymbol) <$> (KH.orderedKeys (Proxy :: Proxy SymH) order { buz : "test", foo : 2, bar : false } :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ]
-
+            ((\conv -> withConv conv reflectSymbol) <$> (KH.orderedKeys (Proxy :: _ SymH) order { buz : "test", foo : 2, bar : false } :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ]
 
         it "properly sorts keys of record with index. p.2" $ do
             let order = SO.instantiateImpl (Proxy :: _ ("bar" ::: "foo" ::: "buz" ::: SO.T))
             liftEffect $ Console.log $ show order
-            ((\conv -> withConv conv reflectSymH) <$> (KH.orderedKeys (Proxy :: Proxy SymH) order { buz : "test", foo : 2, bar : false } :: Array Conv)) `shouldEqual` [ "bar0", "foo1", "buz2" ]
+            ((\conv -> withConv conv reflectSymH) <$> (KH.orderedKeys (Proxy :: _ SymH) order { buz : "test", foo : 2, bar : false } :: Array Conv)) `shouldEqual` [ "bar0", "foo1", "buz2" ]
 
 
 data SymH (s :: Symbol) = SymH Int

@@ -10,6 +10,7 @@ module Data.SOrder
     , sort, sortBy, sort', sortBy', sortL, sortByL, sortL', sortByL'
     -- , class HasOrder
     , s1, s2, s3, s4, s5, s6, s7, s8, s9
+    , indexOf
     ) where
 
 import Prelude
@@ -19,7 +20,7 @@ import Data.Array as Array
 import Data.Tuple as Tuple
 import Data.List as List
 import Data.Const (Const)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Symbol (SProxy, class IsSymbol, reflectSymbol)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Typelevel.Num.Ops (class Add, class Succ)
@@ -194,6 +195,10 @@ sortByL' (SOrder indexMap) toKey =
                 _ -> compare v1 v2
         )
     where indexOf = flip Map.lookup indexMap <<< toKey
+
+
+indexOf :: forall proxy sym. IsSymbol sym => SOrder -> proxy sym -> Int
+indexOf order p = fromMaybe (-1) <<< index' order $ reflectSymbol p
 
 
 instance Show SOrder where
