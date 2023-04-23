@@ -159,8 +159,13 @@ instance KH.Holder Family HoldsFamily where
 
 
 instance KH.ReifyTo Family where
-    reify :: forall a sym. IsSymbol sym => Proxy sym -> a -> Family sym
-    reify _ _ = Family
+    reify :: forall a sym. IsSymbol sym => Proxy sym -> Family sym
+    reify _ = Family
+
+
+instance KH.ReifyWithReprTo Family repr where
+    reifyR :: forall a sym. KH.Repr a repr => IsSymbol sym => Proxy sym -> a -> Family sym /\ repr
+    reifyR _ a = Family /\ KH.repr a
 
 
 -- test1 :: HoldsFamily
@@ -250,8 +255,13 @@ instance KH.Holder Input HoldsInput where
 
 
 instance KH.ReifyOrderedTo Input where
-    reifyAt :: forall sym a. IsSymbol sym => Int -> Proxy sym -> a -> Input sym
-    reifyAt n _ _ = Input n
+    reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> Input sym
+    reifyAt n _ = Input n
+
+
+instance KH.ReifyWithReprOrderedTo Input repr where
+    reifyRAt :: forall a sym. KH.Repr a repr => IsSymbol sym => Int -> Proxy sym -> a -> Input sym /\ repr
+    reifyRAt n _ a = Input n /\ KH.repr a
 
 
 -- _in :: InputR -> String
@@ -333,8 +343,13 @@ instance KH.Holder Output HoldsOutput where
 
 
 instance KH.ReifyOrderedTo Output where
-    reifyAt :: forall a sym. IsSymbol sym => Int -> Proxy sym -> a -> Output sym
-    reifyAt n _ _ = Output n
+    reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> Output sym
+    reifyAt n _ = Output n
+
+
+instance KH.ReifyWithReprOrderedTo Output repr where
+    reifyRAt :: forall a sym. KH.Repr a repr => IsSymbol sym => Int -> Proxy sym -> a -> Output sym /\ repr
+    reifyRAt n _ a = Output n /\ KH.repr a
 
 
 -- _in :: InputR -> String

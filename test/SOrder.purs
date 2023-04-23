@@ -70,7 +70,7 @@ spec = do
 
         it "properly sorts keys of the row" $ do
             let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
-            ((\conv -> withConv conv reflectSymbol) <$> (KH.orderedKeysFromRow (Proxy :: Proxy SProxy) order (Proxy :: _ ( buz :: String, foo :: Int, bar :: Boolean )) :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ]
+            ((\convp -> withConvP convp reflectSymbol) <$> (KH.keysO order (Proxy :: _ ( buz :: String, foo :: Int, bar :: Boolean )) :: Array ConvP)) `shouldEqual` [ "foo", "bar", "buz" ]
 
         it "properly sorts keys of record with index" $ do
             let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
@@ -91,6 +91,7 @@ reflectSymH :: forall sym. IsSymbol sym => SymH sym -> String
 reflectSymH (SymH n) = reflectSymbol (Proxy :: _ sym) <> show n
 
 
+newtype ConvP = ConvP (forall r. (forall sym. IsSymbol sym => Proxy sym -> r) -> r)
 newtype ConvS = ConvS (forall r. (forall sym. IsSymbol sym => SProxy sym -> r) -> r)
 newtype Conv = Conv (forall r. (forall sym. IsSymbol sym => SymH sym -> r) -> r)
 
@@ -103,12 +104,25 @@ withConvS :: forall r. ConvS -> (forall sym. IsSymbol sym => SProxy sym -> r) ->
 withConvS (ConvS fn) = fn
 
 
+holdConvP :: forall sym. IsSymbol sym => Proxy sym -> ConvP
+holdConvP sym = ConvP (_ $ sym)
+
+
+withConvP :: forall r. ConvP -> (forall sym. IsSymbol sym => Proxy sym -> r) -> r
+withConvP (ConvP fn) = fn
+
+
 holdConv :: forall sym. IsSymbol sym => SymH sym -> Conv
 holdConv sym = Conv (_ $ sym)
 
 
 withConv :: forall r. Conv -> (forall sym. IsSymbol sym => SymH sym -> r) -> r
 withConv (Conv fn) = fn
+
+
+instance KH.Holder Proxy ConvP where
+    hold = holdConvP
+    extract = withConvP
 
 
 instance KH.Holder SProxy ConvS where
@@ -122,8 +136,8 @@ instance KH.Holder SymH Conv where
 
 
 instance KH.ReifyOrderedTo SymH where
-    reifyAt :: forall a sym. IsSymbol sym => Int -> Proxy sym -> a -> SymH sym
-    reifyAt n _ _ = SymH n
+    reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> SymH sym
+    reifyAt n _ = SymH n
 
 
         {-}
