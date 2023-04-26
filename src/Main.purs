@@ -88,9 +88,11 @@ import Noodle.Patch4 (Patch) as Noodle
 import Noodle.Node2 as Node
 import Noodle.Node2 (Node) as Noodle
 import Noodle.Family.Def as Family
+import Noodle.Node2.MapsFolds.Repr (nodeToRepr, nodeToMapRepr, Repr(..), class HasRepr, class ToReprHelper) as R
 
 
 import Toolkit.Hydra2 as Hydra
+import Toolkit.Hydra2.BlessedRepr as Hydra
 
 
 mainScreen = nk :: Screen <^> "main-scr"
@@ -485,8 +487,9 @@ main1 =
     where
 
         addNodeOfGivenFamily
-            :: forall f state fs iis rli is rlo os
+            :: forall f state fs iis rli is rlo os repr_is repr_os
              . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
+            => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.BlessedRepr state
             => Noodle.Patch Hydra.State (Hydra.Instances Effect)
             -> Id.Family f
             -> Family.Def state is os Effect
@@ -515,11 +518,12 @@ main1 =
                 let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Hydra.State (Hydra.Instances Effect))
                 -- let nextPatch' = Hydra.spawnAndRegister curPatch familyR
                 let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
+                let repr = R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.BlessedRepr)  node
                 -- state <- State.get
-                pure { nextPatch, node, inputs, is, os, outputs, nodes }
+                pure { nextPatch, node, inputs, is, iss, os, oss, outputs, nodes }
 
             -- let is /\ os = Node.shapeH rec.node
-            let is /\ os = Array.fromFoldable rec.is /\ Array.fromFoldable rec.os
+            let is /\ os = Array.fromFoldable rec.iss /\ Array.fromFoldable rec.oss
             let nodeId = Node.id rec.node
 
             -- TODO: probably use Repr to create inlet bars and outlet bars, this way using Input' / Output' instances, we will probably be able to connect things
@@ -703,7 +707,6 @@ main1 =
             patchBox >~ removeLink link
             State.modify_ $ forgetLink link
             mainScreen >~ Screen.render
-
 
 type LinkLineParams =
     { top :: Int

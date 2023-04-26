@@ -55,14 +55,14 @@ class HasRepr a repr where
 
 
 
-nodeToRepr
+nodeToRepr'
     :: forall m is os repr state f iks repr_is oks repr_os
      . MonadEffect m
     => ToReprHelper m f is iks os oks repr_is repr_os repr state
     => ToReprTop m repr
     -> Node f state is os m
     -> m (NodeLineRec f repr repr_is repr_os)
-nodeToRepr (ToReprTop repr) node = do
+nodeToRepr' (ToReprTop repr) node = do
     let
         (id :: NodeId f) = Node.id node
         iorder = Node.inputsOrder node
@@ -76,14 +76,26 @@ nodeToRepr (ToReprTop repr) node = do
         /\ HM.hmapWithIndex (ToReprDownO id oorder repr) outputs
 
 
-nodeToMapRepr
+nodeToRepr
+    :: forall m is os repr state f iks repr_is oks repr_os
+     . MonadEffect m
+    => ToReprHelper m f is iks os oks repr_is repr_os repr state
+    => Proxy m
+    -> Repr repr
+    -> Node f state is os m
+    -> m (NodeLineRec f repr repr_is repr_os)
+nodeToRepr _ repr =
+    nodeToRepr' $ ToReprTop repr
+
+
+nodeToMapRepr'
     :: forall m is os repr state f iks oks
      . MonadEffect m
     => ToReprFoldToMapsHelper f is iks os oks repr state
     => ToReprTop m repr
     -> Node f state is os m
     -> m (NodeLineMap repr)
-nodeToMapRepr (ToReprTop repr) node = do
+nodeToMapRepr' (ToReprTop repr) node = do
     let
         (id :: NodeId f) = Node.id node
         iorder = Node.inputsOrder node
@@ -95,6 +107,18 @@ nodeToMapRepr (ToReprTop repr) node = do
         /\ toRepr (NodeP id) state
         /\ HF.hfoldlWithIndex (ToReprDownI id iorder repr) (Map.empty :: Map InputR repr) inputs
         /\ HF.hfoldlWithIndex (ToReprDownO id oorder repr) (Map.empty :: Map OutputR repr) outputs
+
+
+nodeToMapRepr
+    :: forall m is os repr state f iks oks
+     . MonadEffect m
+    => ToReprFoldToMapsHelper f is iks os oks repr state
+    => Proxy m
+    -> Repr repr
+    -> Node f state is os m
+    -> m (NodeLineMap repr)
+nodeToMapRepr _ repr =
+    nodeToMapRepr' $ ToReprTop repr
 
 
 instance toReprTopInstance ::
@@ -111,7 +135,7 @@ instance toReprTopInstance ::
         (m (Array (NodeLineRec f repr repr_is repr_os))) -- FIXME becomes orphan instance when put in Patch4.MapsFolds.Repr
     where
     mappingWithIndex (ToReprTop repr) fsym =
-        traverseWithIndex $ const $ nodeToRepr (ToReprTop repr)
+        traverseWithIndex $ const $ nodeToRepr' (ToReprTop repr)
 
 
 instance toReprDownIInstance ::

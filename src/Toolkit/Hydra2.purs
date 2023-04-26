@@ -28,8 +28,9 @@ import Noodle.Node2 (Node) as Noodle
 import Noodle.Toolkit3.Has (class HasFamilyDef) as Has
 import Noodle.Patch4.Has (class HasInstancesOf) as Has
 import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasInputsAt', class HasOutputsAt') as Has
+import Noodle.Node2.MapsFolds.Repr as NMF
 
-
+import Toolkit.Hydra2.BlessedRepr (BlessedRepr)
 import Toolkit.Hydra2.Family.Source.FNoise as FNoise
 import Toolkit.Hydra2.Family.Source.FVoronoi as FVoronoi
 import Toolkit.Hydra2.Family.Source.FOsc as FOsc
@@ -699,8 +700,10 @@ instance
 withFamily
         :: forall a m t
          . Applicative t
-        => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type)
+        => MonadEffect m
+        => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
            .  HasNodesOf f state fs iis rli is rlo os m
+           => NMF.ToReprHelper m f is rli os rlo repr_is repr_os BlessedRepr state
            => Node.Family f
            -> Family.Def state is os m
            -> Toolkit m  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
