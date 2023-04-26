@@ -35,7 +35,7 @@ _in_offset = Fn.Input  2 :: _ "offset"
 _out_out   = Fn.Output 1 :: _ "out"
 
 
-type Inputs = ( arr :: H.VArray, offset :: H.Value )
+type Inputs = ( arr :: H.Values, offset :: H.Value )
 type Outputs = ( out :: H.Value )
 
 

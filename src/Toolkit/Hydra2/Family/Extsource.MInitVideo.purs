@@ -34,7 +34,7 @@ _in_src = Fn.Input 1 :: _ "src"
 _in_url = Fn.Input 2 :: _ "url"
 
 
-type Inputs = ( src :: H.Source, url :: String )
+type Inputs = ( src :: H.Source, url :: H.Url )
 type Outputs = ( )
 
 
@@ -47,7 +47,7 @@ outputsOrder = SOrder.empty
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { src : H.defaultSource, url : "" }
+defaultInputs = { src : H.defaultSource, url : H.noUrl }
 
 
 defaultOutputs :: Record Outputs

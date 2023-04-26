@@ -35,7 +35,7 @@ _in_smooth = Fn.Input  2 :: _ "smooth"
 _out_out   = Fn.Output 1 :: _ "out"
 
 
-type Inputs = ( arr :: H.VArray, smooth :: H.Value )
+type Inputs = ( arr :: H.Values, smooth :: H.Value )
 type Outputs = ( out :: H.Value )
 
 

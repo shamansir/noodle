@@ -36,7 +36,7 @@ _in_high = Fn.Input  3 :: _ "high"
 _out_out = Fn.Output 1 :: _ "out"
 
 
-type Inputs = ( arr :: H.VArray, low :: H.Value, high :: H.Value )
+type Inputs = ( arr :: H.Values, low :: H.Value, high :: H.Value )
 type Outputs = ( out :: H.Value )
 
 

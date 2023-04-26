@@ -8,16 +8,18 @@ import Effect (Effect)
 data TODO = TODO
 
 
-type Context =
-    { time :: Number
-    -- , ...
-    }
+newtype Context =
+    Context
+        { time :: Number
+        -- , ...
+        }
+
 
 data Value
     = None
     | Required -- a.k.a. Undefined
     | Number Number
-    | VArray (Array Value) Ease
+    | VArray Values Ease
     | Dep (Context -> Number)
     -- | ...
     | Time
@@ -30,7 +32,7 @@ data Value
     | Audio Audio AudioBin
 
 
-type VArray = Array Value
+newtype Values = Values (Array Value)
 
 
 data Texture
@@ -148,30 +150,45 @@ data AudioBin
     | H4
     -- ..
 
-type UpdateFn = Context -> Effect Unit
+newtype UpdateFn = UpdateFn (Context -> Effect Unit)
 
 
 data Canvas = Canvas
 
 
-type SourceOptions =
-    { src :: Canvas
-    -- , ...
-    }
+newtype SourceOptions =
+    SourceOptions
+        { src :: Canvas
+        -- , ...
+        }
 
-type GlslFn = Unit -- TODO
+
+defaultSourceOptions :: SourceOptions
+defaultSourceOptions =
+    SourceOptions
+        { src : Canvas }
+
+
+newtype GlslFn = GlslFn Unit
+
+
+newtype Url = Url String
+
+
+noUrl :: Url
+noUrl = Url ""
 
 
 defaultGlslFn :: GlslFn
-defaultGlslFn = unit
+defaultGlslFn = GlslFn unit
 
 
 defaultUpdateFn :: UpdateFn
-defaultUpdateFn = const $ pure unit
+defaultUpdateFn = UpdateFn $ const $ pure unit
 
 
-noValues :: VArray
-noValues = []
+noValues :: Values
+noValues = Values []
 
 
 defaultSource :: Source

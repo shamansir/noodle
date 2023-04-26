@@ -46,7 +46,7 @@ outputsOrder = SOrder.empty
 
 
 defaultInputs :: Record Inputs
-defaultInputs = { options : { src : H.Canvas } }
+defaultInputs = { options : H.defaultSourceOptions }
 
 
 defaultOutputs :: Record Outputs

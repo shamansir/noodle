@@ -35,7 +35,7 @@ _in_ease = Fn.Input  2 :: _ "ease"
 _out_out = Fn.Output 1 :: _ "out"
 
 
-type Inputs = ( arr :: H.VArray, ease :: H.Ease )
+type Inputs = ( arr :: H.Values, ease :: H.Ease )
 type Outputs = ( out :: H.Value )
 
 

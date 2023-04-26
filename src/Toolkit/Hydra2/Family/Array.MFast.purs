@@ -36,7 +36,7 @@ _in_speed = Fn.Input  2 :: _ "speed"
 _out_out  = Fn.Output 1 :: _ "out"
 
 
-type Inputs = ( arr :: H.VArray, speed :: H.Value )
+type Inputs = ( arr :: H.Values, speed :: H.Value )
 type Outputs = ( out :: H.Value )
 
 
