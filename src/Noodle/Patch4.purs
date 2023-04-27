@@ -26,7 +26,7 @@ import Record.Extra as Record
 import Type.Proxy (Proxy(..))
 import Heterogeneous.Mapping as H
 
-import Noodle.Id (Family, NodeId, NodeIdR)
+import Noodle.Id (Family, Family', NodeId, NodeIdR)
 import Noodle.Id as Id
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
@@ -261,10 +261,32 @@ disconnect link na nb patch =
 
 -- unsafeConnect
 
+newtype HoldsNode' f m = HoldsNode' (forall r. (forall state is os. IsSymbol f => Node f state is os m -> r) -> r)
+
+
+newtype HoldsNode = HoldsNode (forall r. (forall f state is os m. IsSymbol f => Node f state is os m -> r) -> r)
+
+
+holdNode :: forall f state is os m. IsSymbol f => Node f state is os m -> HoldsNode
+holdNode node = HoldsNode (_ $ node)
+
+
+holdNode' :: forall f state is os m. IsSymbol f => Node f state is os m -> HoldsNode' f m
+holdNode' node = HoldsNode' (_ $ node)
+
+
+findNode :: forall gstate (instances' :: Row Type) (instances ∷ Row Type) rli f state is os m. Has.HasInstancesOf f instances' instances (Array (Node f state is os m)) => RL.RowToList instances rli => Record.Keys rli => NodeId f -> Patch gstate instances -> Maybe (Node f state is os m)
+findNode nodeId (Patch _ instances _) =
+    let
+        (family :: Family' f) = Id.familyOf nodeId
+        (familiesArray :: Array (Node f state is os m)) = Record.get family instances
+    in
+        Array.find (\otherNode -> Node.id otherNode == nodeId) familiesArray
+
 
 -- TODO: some generic existential type
-withNode :: forall gstate (instances' :: Row Type) (instances ∷ Row Type) rli m a. RL.RowToList instances rli => Record.Keys rli => Applicative m => (forall f state is os. Node f state is os m -> m a) -> NodeIdR -> Patch gstate instances -> m (Maybe a)
-withNode fn nodeId (Patch _ instances _) =
+withNode' :: forall gstate (instances' :: Row Type) (instances ∷ Row Type) rli m a. RL.RowToList instances rli => Record.Keys rli => Applicative m => (forall f state is os. Node f state is os m -> m a) -> NodeIdR -> Patch gstate instances -> m (Maybe a)
+withNode' fn nodeId (Patch _ instances _) =
     let
         familyR /\ hash = Id.splitR nodeId
         familyStr = Id.reflect' familyR
