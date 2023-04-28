@@ -159,7 +159,14 @@ type State =
     , lastOutletsBarKey :: OutletsBarKey
     , lastShiftX :: Int
     , lastShiftY :: Int
-    , lastClickedOutlet :: Maybe { node :: NodeBoxKey, index :: Int, subj :: String, nodeId :: Id.HoldsNodeId, outputId :: Id.HoldsOutput }
+    , lastClickedOutlet :: Maybe
+        { nodeKey :: NodeBoxKey
+        , index :: Int
+        , subj :: String
+        , nodeId :: Id.HoldsNodeId
+        , outputId :: Id.HoldsOutput
+        , node :: Patch.HoldsNode -- Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect
+        }
     , lastLink :: Maybe Link
     , linksFrom :: Map RawNodeKey (Map Int Link)
     , linksTo :: Map RawNodeKey (Map Int Link)
@@ -516,6 +523,7 @@ main1 =
                 -- Console.log $ String.joinWith ":" $ List.toUnfoldable $ show <$> Record.keys inputs
                 -- Console.log $ String.joinWith ":" $ List.toUnfoldable $ show <$> Record.keys outputs
                 let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Hydra.State (Hydra.Instances Effect))
+                -- let (nodeHolder :: Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect) = Patch.holdNode' nextPatch node
                 -- let nextPatch' = Hydra.spawnAndRegister curPatch familyR
                 let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
                 let repr = R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.BlessedRepr)  node
@@ -526,6 +534,8 @@ main1 =
             let is /\ os = Array.fromFoldable rec.iss /\ Array.fromFoldable rec.oss
             let repr = rec.repr
             let nodeId = Node.id rec.node
+            let (node :: Noodle.Node f state is os Effect) = rec.node
+            let (nodeHolder :: Patch.HoldsNode) = Patch.holdNode rec.nextPatch node
 
             -- TODO: probably use Repr to create inlet bars and outlet bars, this way using Input' / Output' instances, we will probably be able to connect things
             --       or not Repr but some fold over inputs / outputs shape
@@ -586,6 +596,51 @@ main1 =
                         ]
                         [ ]
 
+                onInletSelect :: forall f i. IsSymbol f => IsSymbol i => Id.NodeId f -> Id.Input i -> NodeBoxKey -> Int -> String -> InletsBarKey → EventJson → BlessedOp State Effect
+                onInletSelect inodeId inputId inodeKey idx iname _ _ = do
+                    state <- State.get
+                    -- liftEffect $ Console.log $ "handler " <> iname
+                    case state.lastClickedOutlet of
+                        Just lco ->
+                            if inodeKey /= lco.nodeKey then do
+                                linkCmp <- createLink
+                                            state.lastLink
+                                            lco.nodeKey
+                                            (OutletIndex lco.index)
+                                            inodeKey
+                                            (InletIndex idx)
+                                State.modify_ $ storeLink linkCmp
+                                patchBox >~ appendLink linkCmp
+                                _ <- Id.withOutput
+                                    lco.outputId
+                                    \outputId ->
+                                        Patch.withNode lco.node
+                                            \patch onode ->
+                                                pure unit
+                                                -- ?wh
+                                                -- Patch.connect outputId inputId ?wh onode ?wh patch
+                                {-
+                                _ <- Id.withNodeId lco.nodeId (\onodeId ->
+                                    case (/\) <$> Patch.findNode onodeId curPatch <*> Patch.findNode inodeId curPatch of
+                                        Just (onode /\ inode) ->
+                                    -- TODO: Patch.findNode
+                                            Id.withOutput
+                                                lco.outputId
+                                                (\outputId -> do
+                                                    _ <- Patch.connect outputId inputId ?wh onode inode curPatch
+                                                    pure unit
+                                                )
+                                        Nothing -> pure unit
+                                )
+                                -}
+                                -- TODO: Patch.connect
+                                linkCmp # linkOn Element.Click onLinkClick
+                            else pure unit
+                        Nothing -> pure unit
+                    State.modify_
+                        (_ { lastClickedOutlet = Nothing })
+
+
 
             let
                 outletHandler idx oname =
@@ -611,6 +666,13 @@ main1 =
                         ]
                         [
                         ]
+
+                onOutletSelect ::  forall f o. IsSymbol f => IsSymbol o => Id.NodeId f -> Id.Output o -> NodeBoxKey -> Int -> String -> OutletsBarKey → EventJson → BlessedOp State Effect
+                onOutletSelect nodeId outputId onodeKey index oname _ _ = do
+                    -- liftEffect $ Console.log $ "handler " <> oname
+                    State.modify_
+                        (_ { lastClickedOutlet = Just { index, subj : oname, nodeKey : onodeKey, nodeId : Id.holdNodeId nodeId, outputId : Id.holdOutput outputId, node : nodeHolder } })
+
 
             patchBox >~ Node.append nextNodeBoxN
             nextNodeBox >~ Node.append inletsBarN
@@ -667,45 +729,6 @@ main1 =
                     Map.alter (pushLink props.id link) (NodeKey.rawify props.toNode) state.linksTo
                 , lastLink = Just link
                 }
-
-        onOutletSelect ::  forall f o. IsSymbol f => IsSymbol o => Id.NodeId f -> Id.Output o -> NodeBoxKey -> Int -> String -> OutletsBarKey → EventJson → BlessedOp State Effect
-        onOutletSelect nodeId outputId onode index oname _ _ = do
-            -- liftEffect $ Console.log $ "handler " <> oname
-            State.modify_
-                (_ { lastClickedOutlet = Just { index, subj : oname, node : onode, nodeId : Id.holdNodeId nodeId, outputId : Id.holdOutput outputId } })
-
-        onInletSelect :: forall f i. IsSymbol f => IsSymbol i => Id.NodeId f -> Id.Input i -> NodeBoxKey -> Int -> String -> InletsBarKey → EventJson → BlessedOp State Effect
-        onInletSelect inodeId inputId inode idx iname _ _ = do
-            state <- State.get
-            -- liftEffect $ Console.log $ "handler " <> iname
-            case state.lastClickedOutlet of
-                Just lco ->
-                    if inode /= lco.node then do
-                        linkCmp <- createLink
-                                    state.lastLink
-                                    lco.node
-                                    (OutletIndex lco.index)
-                                    inode
-                                    (InletIndex idx)
-                        State.modify_ $ storeLink linkCmp
-                        patchBox >~ appendLink linkCmp
-                        _ <- Id.withNodeId lco.nodeId (\onodeId ->
-                            case Patch.findNode onodeId curPatch of
-                                Just onode ->
-                            -- TODO: Patch.findNode
-                                    Id.withOutput
-                                        lco.outputId
-                                        (\outputId ->
-                                            Patch.connect outputId inputId ?wh onode inode curPatch
-                                        )
-                                Nothing -> pure unit
-                        )
-                        -- TODO: Patch.connect
-                        linkCmp # linkOn Element.Click onLinkClick
-                    else pure unit
-                Nothing -> pure unit
-            State.modify_
-                (_ { lastClickedOutlet = Nothing })
 
         onNodeMove :: NodeBoxKey -> NodeBoxKey → EventJson → BlessedOp State Effect
         onNodeMove nodeKey _ _ = do

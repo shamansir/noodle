@@ -538,3 +538,25 @@ findOutput pred (Fn _ _ outputs _) = Array.index outputs =<< Array.findIndex (Tu
 with :: forall f state is os m. MonadEffect m => MonadRec m => Node f state is os m -> ProcessM state is os m Unit -> m Unit
 with (Node _ _ protocol fn) process =
     Fn.run' protocol $ Fn.cloneReplace fn process
+
+
+newtype HoldsNode' f m = HoldsNode' (forall r. (forall state is os. IsSymbol f => Node f state is os m -> r) -> r)
+
+
+newtype HoldsNode = HoldsNode (forall r. (forall f state is os m. IsSymbol f => Node f state is os m -> r) -> r)
+
+
+holdNode :: forall f state is os m. IsSymbol f => Node f state is os m -> HoldsNode
+holdNode node = HoldsNode (_ $ node)
+
+
+holdNode' :: forall f state is os m. IsSymbol f => Node f state is os m -> HoldsNode' f m
+holdNode' node = HoldsNode' (_ $ node)
+
+
+withNode :: forall r. HoldsNode -> (forall f state is os m. IsSymbol f => Node f state is os m -> r) -> r
+withNode (HoldsNode f) = f
+
+
+withNode' :: forall f m r. HoldsNode' f m -> (forall state is os. IsSymbol f => Node f state is os m -> r) -> r
+withNode' (HoldsNode' f) = f

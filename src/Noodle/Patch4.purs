@@ -26,7 +26,7 @@ import Record.Extra as Record
 import Type.Proxy (Proxy(..))
 import Heterogeneous.Mapping as H
 
-import Noodle.Id (Family, Family', NodeId, NodeIdR)
+import Noodle.Id (Family, Family', NodeId, NodeIdR, HoldsNodeId)
 import Noodle.Id as Id
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
@@ -261,21 +261,89 @@ disconnect link na nb patch =
 
 -- unsafeConnect
 
-newtype HoldsNode' f m = HoldsNode' (forall r. (forall state is os. IsSymbol f => Node f state is os m -> r) -> r)
+
+newtype HoldsNode =
+    HoldsNode
+        (forall r.
+            (  forall f gstate instances' instances rli state is os m
+             . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+            => RL.RowToList instances rli
+            => Record.Keys rli
+            => Patch gstate instances
+            -> Node f state is os m
+            -> r
+            )
+        -> r)
 
 
-newtype HoldsNode = HoldsNode (forall r. (forall f state is os m. IsSymbol f => Node f state is os m -> r) -> r)
+newtype HoldsNode' gstate instances m =
+    HoldsNode'
+        (forall r.
+            (  forall instances' rli f state is os
+             . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+            => RL.RowToList instances rli
+            => Record.Keys rli
+            => Patch gstate instances
+            -> Node f state is os m
+            -> r
+            )
+        -> r)
 
 
-holdNode :: forall f state is os m. IsSymbol f => Node f state is os m -> HoldsNode
-holdNode node = HoldsNode (_ $ node)
+holdNode
+    :: forall f gstate instances' instances rli state is os m
+     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    => RL.RowToList instances rli
+    => Record.Keys rli
+    => IsSymbol f => Patch gstate instances -> Node f state is os m -> HoldsNode
+holdNode patch node = HoldsNode \f -> f patch node
 
 
-holdNode' :: forall f state is os m. IsSymbol f => Node f state is os m -> HoldsNode' f m
-holdNode' node = HoldsNode' (_ $ node)
+holdNode'
+    :: forall f gstate instances' instances rli state is os m
+     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    => RL.RowToList instances rli
+    => Record.Keys rli
+    => Patch gstate instances -> Node f state is os m -> HoldsNode' gstate instances m
+holdNode' patch node = HoldsNode' \f -> f patch node
 
 
-findNode :: forall gstate (instances' :: Row Type) (instances ∷ Row Type) rli f state is os m. Has.HasInstancesOf f instances' instances (Array (Node f state is os m)) => RL.RowToList instances rli => Record.Keys rli => NodeId f -> Patch gstate instances -> Maybe (Node f state is os m)
+withNode
+    :: forall r
+     . HoldsNode ->
+        (  forall f gstate instances' instances rli state is os m
+         . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+        => RL.RowToList instances rli
+        => Record.Keys rli
+        => Patch gstate instances
+        -> Node f state is os m
+        -> r
+        )
+    -> r
+withNode (HoldsNode f) = f
+
+
+withNode'
+    :: forall gstate instances m r
+     . HoldsNode' gstate instances m ->
+        (  forall instances' rli f state is os
+         . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+        => RL.RowToList instances rli
+        => Record.Keys rli
+        => Patch gstate instances
+        -> Node f state is os m
+        -> r
+        )
+    -> r
+withNode' (HoldsNode' f) = f
+
+
+findNode
+    :: forall gstate (instances' :: Row Type) (instances ∷ Row Type) rli f state is os m
+     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    => RL.RowToList instances rli
+    => Record.Keys rli
+    => NodeId f -> Patch gstate instances -> Maybe (Node f state is os m)
 findNode nodeId (Patch _ instances _) =
     let
         (family :: Family' f) = Id.familyOf nodeId
@@ -285,6 +353,7 @@ findNode nodeId (Patch _ instances _) =
 
 
 -- TODO: some generic existential type
+{-
 withNode' :: forall gstate (instances' :: Row Type) (instances ∷ Row Type) rli m a. RL.RowToList instances rli => Record.Keys rli => Applicative m => (forall f state is os. Node f state is os m -> m a) -> NodeIdR -> Patch gstate instances -> m (Maybe a)
 withNode' fn nodeId (Patch _ instances _) =
     let
@@ -301,7 +370,7 @@ withNode' fn nodeId (Patch _ instances _) =
                     Nothing ->
                         pure Nothing
         else
-            pure Nothing
+            pure Nothing -}
 
 
 nodes_
