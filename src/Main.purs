@@ -165,7 +165,7 @@ type State =
         , subj :: String
         , nodeId :: Id.HoldsNodeId
         , outputId :: Id.HoldsOutput
-        , node :: Patch.HoldsNode -- Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect
+        , node :: Patch.HoldsNode Effect -- Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect
         }
     , lastLink :: Maybe Link
     , linksFrom :: Map RawNodeKey (Map Int Link)
@@ -535,7 +535,7 @@ main1 =
             let repr = rec.repr
             let nodeId = Node.id rec.node
             let (node :: Noodle.Node f state is os Effect) = rec.node
-            let (nodeHolder :: Patch.HoldsNode) = Patch.holdNode rec.nextPatch node
+            let (nodeHolder :: Patch.HoldsNode Effect) = Patch.holdNode rec.nextPatch node
 
             -- TODO: probably use Repr to create inlet bars and outlet bars, this way using Input' / Output' instances, we will probably be able to connect things
             --       or not Repr but some fold over inputs / outputs shape
@@ -611,14 +611,14 @@ main1 =
                                             (InletIndex idx)
                                 State.modify_ $ storeLink linkCmp
                                 patchBox >~ appendLink linkCmp
-                                _ <- Id.withOutput
+                                _ <- liftEffect $ Id.withOutput
                                     lco.outputId
                                     \outputId ->
                                         Patch.withNode lco.node
                                             \patch onode ->
                                                 pure unit
                                                 -- ?wh
-                                                -- Patch.connect outputId inputId ?wh onode ?wh patch
+                                                -- Patch.connect outputId inputId ?wh onode node patch
                                 {-
                                 _ <- Id.withNodeId lco.nodeId (\onodeId ->
                                     case (/\) <$> Patch.findNode onodeId curPatch <*> Patch.findNode inodeId curPatch of

@@ -262,18 +262,18 @@ disconnect link na nb patch =
 -- unsafeConnect
 
 
-newtype HoldsNode =
+newtype HoldsNode m =
     HoldsNode
         (forall r.
-            (  forall f gstate instances' instances rli state is os m
+            (  forall f gstate instances' instances rli state is os
              . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
             => RL.RowToList instances rli
             => Record.Keys rli
             => Patch gstate instances
             -> Node f state is os m
-            -> r
+            -> m r
             )
-        -> r)
+        -> m r)
 
 
 newtype HoldsNode' gstate instances m =
@@ -295,7 +295,7 @@ holdNode
      . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
     => RL.RowToList instances rli
     => Record.Keys rli
-    => IsSymbol f => Patch gstate instances -> Node f state is os m -> HoldsNode
+    => IsSymbol f => Patch gstate instances -> Node f state is os m -> HoldsNode m
 holdNode patch node = HoldsNode \f -> f patch node
 
 
@@ -309,17 +309,18 @@ holdNode' patch node = HoldsNode' \f -> f patch node
 
 
 withNode
-    :: forall r
-     . HoldsNode ->
-        (  forall f gstate instances' instances rli state is os m
+    :: forall r m
+     . HoldsNode m ->
+    --    -> Proxy m ->
+        (  forall f gstate instances' instances rli state is os
          . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
         => RL.RowToList instances rli
         => Record.Keys rli
         => Patch gstate instances
         -> Node f state is os m
-        -> r
+        -> m r
         )
-    -> r
+    -> m r
 withNode (HoldsNode f) = f
 
 
