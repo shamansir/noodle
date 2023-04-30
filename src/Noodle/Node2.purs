@@ -560,3 +560,69 @@ withNode (HoldsNode f) = f
 
 withNode' :: forall f m r. HoldsNode' f m -> (forall state is os. IsSymbol f => Node f state is os m -> r) -> r
 withNode' (HoldsNode' f) = f
+
+
+newtype HoldsInputInNode'' f state is os m = HoldsInputInNode'' (forall r. (forall i din is'. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r)
+
+
+newtype HoldsInputInNode' f m = HoldsInputInNode' (forall r. (forall state i din is is' os. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r)
+
+
+newtype HoldsInputInNode = HoldsInputInNode (forall r. (forall f state i din is is' os m. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r)
+
+
+holdInputInNode :: forall f state i din is is' os m. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> HoldsInputInNode
+holdInputInNode node input = HoldsInputInNode \f -> f node input
+
+
+holdInputInNode' :: forall f state i din is is' os m. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> HoldsInputInNode' f m
+holdInputInNode' node input = HoldsInputInNode' \f -> f node input
+
+
+holdInputInNode'' :: forall f state i din is is' os m. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> HoldsInputInNode'' f state is os m
+holdInputInNode'' node input = HoldsInputInNode'' \f -> f node input
+
+
+withInputInNode :: forall r. HoldsInputInNode -> (forall f state i din is is' os m. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r
+withInputInNode (HoldsInputInNode f) = f
+
+
+withInputInNode' :: forall f m r. HoldsInputInNode' f m -> (forall state i din is is' os. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r)  -> r
+withInputInNode' (HoldsInputInNode' f) = f
+
+
+withInputInNode'' :: forall f state is os m r. HoldsInputInNode'' f state is os m -> (forall i din is'. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r
+withInputInNode'' (HoldsInputInNode'' f) = f
+
+
+newtype HoldsOutputInNode'' f state is os m = HoldsOutputInNode'' (forall r. (forall o dout os'. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r) -> r)
+
+
+newtype HoldsOutputInNode' f m = HoldsOutputInNode' (forall r. (forall state o dout is os os'. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r) -> r)
+
+
+newtype HoldsOutputInNode = HoldsOutputInNode (forall r. (forall f state o dout is os os' m. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r) -> r)
+
+
+holdOutputInNode :: forall f state o dout is os os' m. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> HoldsOutputInNode
+holdOutputInNode node output = HoldsOutputInNode \f -> f node output
+
+
+holdOutputInNode' :: forall f state o dout is os os' m. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> HoldsOutputInNode' f m
+holdOutputInNode' node output = HoldsOutputInNode' \f -> f node output
+
+
+holdOutputInNode'' :: forall f state o dout is os os' m. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> HoldsOutputInNode'' f state is os m
+holdOutputInNode'' node output = HoldsOutputInNode'' \f -> f node output
+
+
+withOutputInNode :: forall r. HoldsOutputInNode -> (forall f state o dout is os os' m. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r) -> r
+withOutputInNode (HoldsOutputInNode f) = f
+
+
+withOutputInNode' :: forall f m r. HoldsOutputInNode' f m -> (forall state o dout is os os'. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r)  -> r
+withOutputInNode' (HoldsOutputInNode' f) = f
+
+
+withOutputInNode'' :: forall f state is os m r. HoldsOutputInNode'' f state is os m -> (forall o dout os'. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r) -> r
+withOutputInNode'' (HoldsOutputInNode'' f) = f

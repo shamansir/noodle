@@ -616,9 +616,10 @@ main1 =
                                     \outputId ->
                                         Patch.withNode lco.node
                                             \patch onode ->
-                                                pure unit
+                                                -- pure unit
                                                 -- ?wh
-                                                -- Patch.connect outputId inputId ?wh onode node patch
+                                                --Node.connect outputId inputId identity onode node
+                                                -- Patch.connect outputId inputId identity onode node patch
                                 {-
                                 _ <- Id.withNodeId lco.nodeId (\onodeId ->
                                     case (/\) <$> Patch.findNode onodeId curPatch <*> Patch.findNode inodeId curPatch of
