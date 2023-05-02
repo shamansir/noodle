@@ -13,7 +13,7 @@ module Noodle.Fn2
   , imapState
   , cloneReplace
   , inputsShape, outputsShape
-  , inputsShapeH, outputsShapeH
+  , inputsShapeHeld, outputsShapeHeld
   , inputsOrder, outputsOrder
   )
   where
@@ -144,12 +144,12 @@ outputsShape :: forall state is (os :: Row Type) m rlo. HasOutputsAt os rlo => F
 outputsShape (Fn _ { outputs } _) = fromKeysR outputs (Proxy :: _ os)
 
 
-inputsShapeH :: forall state (is :: Row Type) os m rli. KH.KeysO rli Input HoldsInput => HasInputsAt is rli => Fn state is os m -> Array HoldsInput
-inputsShapeH (Fn _ { inputs } _) = KH.orderedKeys' (Proxy :: _ Input) inputs (Proxy :: _ is)
+inputsShapeHeld :: forall state (is :: Row Type) os m rli. KH.KeysO rli Input HoldsInput => HasInputsAt is rli => Fn state is os m -> Array HoldsInput
+inputsShapeHeld (Fn _ { inputs } _) = KH.orderedKeys' (Proxy :: _ Input) inputs (Proxy :: _ is)
 
 
-outputsShapeH :: forall state is (os :: Row Type) m rlo. KH.KeysO rlo Output HoldsOutput => HasOutputsAt os rlo => Fn state is os m -> Array HoldsOutput
-outputsShapeH (Fn _ { outputs } _) = KH.orderedKeys' (Proxy :: _ Output) outputs (Proxy :: _ os)
+outputsShapeHeld :: forall state is (os :: Row Type) m rlo. KH.KeysO rlo Output HoldsOutput => HasOutputsAt os rlo => Fn state is os m -> Array HoldsOutput
+outputsShapeHeld (Fn _ { outputs } _) = KH.orderedKeys' (Proxy :: _ Output) outputs (Proxy :: _ os)
 
 
 inputsOrder :: forall state (is :: Row Type) os m rli. HasInputsAt is rli => Fn state is os m -> SOrder

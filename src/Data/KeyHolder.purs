@@ -49,6 +49,11 @@ class Holder (proxy :: Symbol -> Type) x where
   extract :: forall r. x -> (forall sym. IsSymbol sym => proxy sym -> r) -> r
 
 
+-- class Holder1 (proxy :: Symbol -> Type) s x where
+--   hold1 :: forall sym. IsSymbol sym => s -> proxy sym -> x
+--   extract1 :: forall r. x -> (forall sym. IsSymbol sym => s -> proxy sym -> r) -> r
+
+
 class ReifyTo (trg :: Symbol -> Type) where
   reify :: forall sym. IsSymbol sym => Proxy sym -> trg sym
 
@@ -290,6 +295,28 @@ else instance consKeysO ::
       ordered = keysImplO p order (Proxy :: _ tail)
 
 
+{-
+class KeysO1 (xs :: RL.RowList Type) (proxy :: Symbol -> Type) s x where
+  keysImplO1 :: Proxy proxy -> s -> SOrder -> Proxy xs -> Array (Int /\ x)
+
+instance nilKeysOS :: KeysO1 RL.Nil proxy s x where
+  keysImplO1 _ _ _ _ = mempty
+else instance consKeysOS ::
+  ( IsSymbol name
+  , Holder1 proxy s x
+  , ReifyOrderedTo proxy
+  , KeysO1 tail proxy s x
+  ) => KeysO1 (RL.Cons name ty tail) proxy s x where
+  keysImplO1 :: forall xs. Proxy proxy -> s -> SOrder -> Proxy xs -> Array (Int /\ x)
+  keysImplO1 p s order _ =
+    Array.insertBy cmpF (index /\ held) ordered
+    where
+      cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
+      index = SOrder.indexOf order (Proxy :: _ name)
+      held = hold1 s (reifyAt index (Proxy :: Proxy name) :: proxy name)
+      ordered = keysImplO1 p s order (Proxy :: _ tail)
+-}
+
 keys :: forall g row rl x
    . RL.RowToList row rl
   => Keys rl x
@@ -306,3 +333,16 @@ orderedKeys' :: forall g row rl proxy x
   -> g row -- this will work for any type with the row as a param!
   -> Array x
 orderedKeys' p order _ = Tuple.snd <$> keysImplO p order (Proxy :: _ rl)
+
+
+{-
+orderedKeys1' :: forall g row rl proxy s x
+   . RL.RowToList row rl
+  => KeysO1 rl proxy s x
+  => Proxy proxy
+  -> s
+  -> SOrder
+  -> g row -- this will work for any type with the row as a param!
+  -> Array x
+orderedKeys1' p s order _ = Tuple.snd <$> keysImplO1 p s order (Proxy :: _ rl)
+-}

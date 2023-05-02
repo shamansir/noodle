@@ -47,7 +47,7 @@ import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol, Tracker, InputChange(..), OutputChange(..))
 import Noodle.Fn2.Protocol as Protocol
 import Noodle.Fn2 (Fn)
-import Noodle.Fn2 (inputsShape, outputsShape, inputsShapeH, outputsShapeH, inputsOrder, outputsOrder, run, run', make, cloneReplace) as Fn
+import Noodle.Fn2 (inputsShape, outputsShape, inputsShapeHeld, outputsShapeHeld, inputsOrder, outputsOrder, run, run', make, cloneReplace) as Fn
 
 import Record (get, set) as Record
 import Record.Extra (keys, class Keys) as Record
@@ -448,12 +448,21 @@ outputsShape :: forall f state is (os :: Row Type) m rlo. HasOutputsAt os rlo =>
 outputsShape (Node _ _ _ fn) = Fn.outputsShape fn
 
 
-inputsShapeH :: forall f state (is :: Row Type) os m rli. KH.KeysO rli Input HoldsInput => HasInputsAt is rli => Node f state is os m -> Array HoldsInput
-inputsShapeH (Node _ _ _ fn) = Fn.inputsShapeH fn
+inputsShapeHeld :: forall f state (is :: Row Type) os m rli. KH.KeysO rli Input HoldsInput => HasInputsAt is rli => Node f state is os m -> Array HoldsInput
+inputsShapeHeld (Node _ _ _ fn) = Fn.inputsShapeHeld fn
 
 
-outputsShapeH :: forall f state is (os :: Row Type) m rlo. KH.KeysO rlo Output HoldsOutput => HasOutputsAt os rlo => Node f state is os m -> Array HoldsOutput
-outputsShapeH (Node _ _ _ fn) = Fn.outputsShapeH fn
+outputsShapeHeld :: forall f state is (os :: Row Type) m rlo. KH.KeysO rlo Output HoldsOutput => HasOutputsAt os rlo => Node f state is os m -> Array HoldsOutput
+outputsShapeHeld (Node _ _ _ fn) = Fn.outputsShapeHeld fn
+
+{-
+inputsShapeInNode :: forall f state (is :: Row Type) os m rli. KH.KeysO rli Input HoldsInputInNode => HasInputsAt is rli => Node f state is os m -> Array HoldsInputInNode
+inputsShapeInNode (Node _ _ _ fn) = KH.orderedKeys' (Proxy :: _ Input) (Fn.inputsOrder fn) (Proxy :: _ is)
+
+
+outputsShapeInNode :: forall f state is (os :: Row Type) m rlo. KH.KeysO rlo Output HoldsOutputInNode => HasOutputsAt os rlo => Node f state is os m -> Array HoldsOutputInNode
+outputsShapeInNode (Node _ _ _ fn) = KH.orderedKeys' (Proxy :: _ Output) (Fn.outputsOrder fn) (Proxy :: _ os)
+-}
 
 
 inputsOrder :: forall f state is os m rli. HasInputsAt is rli => Node f state is os m -> SOrder
@@ -476,7 +485,7 @@ shape
 shape node = inputsShape node /\ outputsShape node
 
 
-shapeH
+shapeHeld
     :: forall f state (is :: Row Type) (os :: Row Type) m rli rlo
      . KH.KeysO rli Input HoldsInput
     => KH.KeysO rlo Output HoldsOutput
@@ -484,7 +493,7 @@ shapeH
     => HasOutputsAt os rlo
     => Node f state is os m
     -> Array HoldsInput /\ Array HoldsOutput
-shapeH node = inputsShapeH node /\ outputsShapeH node
+shapeHeld node = inputsShapeHeld node /\ outputsShapeHeld node
 
 
 dimensions
@@ -626,3 +635,67 @@ withOutputInNode' (HoldsOutputInNode' f) = f
 
 withOutputInNode'' :: forall f state is os m r. HoldsOutputInNode'' f state is os m -> (forall o dout os'. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> r) -> r
 withOutputInNode'' (HoldsOutputInNode'' f) = f
+
+
+{-
+instance KH.Holder1 Input (Node f state is os m) HoldsInputInNode where
+    hold1 :: forall i din is'. IsSymbol i => HasInput i din is' is => Node f state is os m -> Input i -> HoldsInputInNode
+    hold1 = holdInputInNode
+    extract1 :: forall r is'. HoldsInputInNode -> (forall i din is'. IsSymbol i => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r
+    extract1 = withInputInNode
+-}
+
+
+{-
+class KeysO (xs :: RL.RowList Type) (proxy :: Symbol -> Type) x where
+  keysImplO :: Proxy proxy -> SOrder -> Proxy xs -> Array (Int /\ x)
+
+instance nilKeysO :: KeysO RL.Nil proxy x where
+  keysImplO _ _ _ = mempty
+else instance consKeysO ::
+  ( IsSymbol name
+  , Holder proxy x
+  , ReifyOrderedTo proxy
+  , KeysO tail proxy x
+  ) => KeysO (RL.Cons name ty tail) proxy x where
+  keysImplO :: forall xs. Proxy proxy -> SOrder -> Proxy xs -> Array (Int /\ x)
+  keysImplO p order _ =
+    Array.insertBy cmpF (index /\ held) ordered
+    where
+      cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
+      index = SOrder.indexOf order (Proxy :: _ name)
+      held = hold (reifyAt index (Proxy :: Proxy name) :: proxy name)
+      ordered = keysImplO p order (Proxy :: _ tail)
+-}
+
+
+class (IsSymbol f) <= HoldsInputs (is :: Row Type) (rli :: RL.RowList Type) f state os m | is -> rli where
+    inputsHeld :: Proxy rli -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
+
+
+instance nilHoldsInputs :: (IsSymbol f) => HoldsInputs is RL.Nil f state os m where
+  inputsHeld :: Proxy RL.Nil -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
+  inputsHeld _ _ = mempty
+else instance consHoldsInputs ::
+  ( IsSymbol f, HasInput i din is' is
+--   , HasInputsAt is (RL.Cons i din tail)
+  , HasInputsAt is tail
+  , HoldsInputs is tail f state os m
+  ) => HoldsInputs is (RL.Cons i din tail) f state os m where
+  inputsHeld :: forall rli. Proxy rli -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
+  inputsHeld _ node =
+    Array.insertBy cmpF (index /\ holdInputInNode node (Input index :: Input i)) (inputsHeld (Proxy :: _ tail) node)
+    where
+      order = inputsOrder node
+      cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
+      index = SOrder.indexOf order (Proxy :: _ i)
+    --   held = hold1 s (reifyAt index (Proxy :: Proxy name) :: proxy name)
+    --   ordered = inputsHeld (Proxy :: _ tail)
+
+
+orderedInputs :: forall rli f state is os m
+   . IsSymbol f
+  => HoldsInputs is rli f state os m
+  => Node f state is os m
+  -> Array HoldsInputInNode
+orderedInputs node = Tuple.snd <$> inputsHeld (Proxy :: _ rli) node

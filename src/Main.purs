@@ -518,7 +518,12 @@ main1 =
                 (outputs :: Record os) <- Node.outputs node
                 let (iss :: Array Id.HoldsInput) = KH.orderedKeys' (Proxy :: _ Id.Input) (Node.inputsOrder node) inputs
                 let (oss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
-                -- let os = KH.orderedKeys (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
+                let (isss :: Array Node.HoldsInputInNode) = Node.orderedInputs node
+                -- let (osss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
+
+                -- TODO
+                -- let (issh :: Array Node.HoldsInputInNode) = KH.orderedKeys1' (Proxy :: _ Id.Input) node (Node.inputsOrder node) inputs
+                -- let (ossh :: Array Node.HoldsOutputInNode) = KH.orderedKeys1' (Proxy :: _ Id.Output) node (Node.outputsOrder node) outputs
                 let is /\ os = Node.shape node
                 -- Console.log $ String.joinWith ":" $ List.toUnfoldable $ show <$> Record.keys inputs
                 -- Console.log $ String.joinWith ":" $ List.toUnfoldable $ show <$> Record.keys outputs
@@ -616,7 +621,7 @@ main1 =
                                     \outputId ->
                                         Patch.withNode lco.node
                                             \patch onode ->
-                                                -- pure unit
+                                                pure unit
                                                 -- ?wh
                                                 --Node.connect outputId inputId identity onode node
                                                 -- Patch.connect outputId inputId identity onode node patch
