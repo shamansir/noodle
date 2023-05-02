@@ -699,3 +699,7 @@ orderedInputs :: forall rli f state is os m
   => Node f state is os m
   -> Array HoldsInputInNode
 orderedInputs node = Tuple.snd <$> inputsHeld (Proxy :: _ rli) node
+
+
+instance Reflect' HoldsInputInNode where
+    reflect' hiin = withInputInNode hiin (const reflect)

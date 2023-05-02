@@ -40,6 +40,7 @@ import Blessed.Core.Coord ((<+>), (<->))
 import Blessed.Core.Coord as Coord
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.EndStyle as ES
+import Blessed.Core.Key (Key) as C
 import Blessed.Core.Key as Key
 import Blessed.Core.ListStyle as LStyle
 import Blessed.Core.Offset as Offset
@@ -533,10 +534,10 @@ main1 =
                 let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
                 let repr = R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.BlessedRepr)  node
                 -- state <- State.get
-                pure { nextPatch, node, inputs, is, iss, os, oss, outputs, nodes, repr }
+                pure { nextPatch, node, inputs, is, iss, isss, os, oss, outputs, nodes, repr }
 
             -- let is /\ os = Node.shapeH rec.node
-            let is /\ os = Array.fromFoldable rec.iss /\ Array.fromFoldable rec.oss
+            let is /\ os = Array.fromFoldable rec.isss /\ Array.fromFoldable rec.oss
             let repr = rec.repr
             let nodeId = Node.id rec.node
             let (node :: Noodle.Node f state is os Effect) = rec.node
@@ -577,8 +578,9 @@ main1 =
                         [ ]
 
             let
-                inletHandler idx iname =
-                    iname /\ [] /\ onInletSelect nodeId (Id.Input 0 :: _ "foo") nextNodeBox idx iname
+                inletHandler :: forall f nstate i din is is' os m. IsSymbol f => Id.HasInput i din is' is => Int -> Noodle.Node f nstate is os m -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
+                inletHandler idx node input =
+                    Id.reflect input /\ [] /\ onInletSelect nodeId input nextNodeBox idx (Id.reflect input)
                 inletsBarN =
                     B.listbar nextInletsBar
                         [ Box.width $ Dimension.percents 90.0
@@ -586,7 +588,7 @@ main1 =
                         , Box.top $ Offset.px 0
                         , Box.left $ Offset.px 0
                         -- , List.items is
-                        , ListBar.commands $ mapWithIndex inletHandler $ Id.reflect' <$> is
+                        , ListBar.commands $ mapWithIndex (\idx hiin -> Node.withInputInNode hiin (inletHandler idx)) is
                         -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex inletHandler $ is
                         , List.mouse true
                         , List.keys true
@@ -601,7 +603,7 @@ main1 =
                         ]
                         [ ]
 
-                onInletSelect :: forall f i. IsSymbol f => IsSymbol i => Id.NodeId f -> Id.Input i -> NodeBoxKey -> Int -> String -> InletsBarKey → EventJson → BlessedOp State Effect
+                onInletSelect :: forall i. IsSymbol f => IsSymbol i => Id.NodeId f -> Id.Input i -> NodeBoxKey -> Int -> String -> InletsBarKey → EventJson → BlessedOp State Effect
                 onInletSelect inodeId inputId inodeKey idx iname _ _ = do
                     state <- State.get
                     -- liftEffect $ Console.log $ "handler " <> iname
