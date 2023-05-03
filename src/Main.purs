@@ -603,8 +603,9 @@ main1 =
                                             --     \patch onode ->
                                                     --pure unit
                                                     -- ?wh
-                                                    link <- Node.connect outputId inputId ?wh onode node
-                                                    pure unit
+                                                    link <- Node.connect outputId inputId unsafeCoerce onode node
+                                                    let nextPatch' = Patch.registerLink link curPatch
+                                                    pure nextPatch'
 
                                                     -- Patch.connect outputId inputId identity onode node patch
                                     {-
