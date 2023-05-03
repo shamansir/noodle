@@ -165,7 +165,7 @@ type State =
         , index :: Int
         , subj :: String
         , nodeId :: Id.HoldsNodeId
-        , outputId :: Node.HoldsOutputInNode
+        , outputId :: Node.HoldsOutputInNodeM Effect
         , node :: Patch.HoldsNode Effect -- Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect
         }
     , lastLink :: Maybe Link
@@ -519,8 +519,8 @@ main1 =
                 (outputs :: Record os) <- Node.outputs node
                 let (iss :: Array Id.HoldsInput) = KH.orderedKeys' (Proxy :: _ Id.Input) (Node.inputsOrder node) inputs
                 let (oss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
-                let (isss :: Array Node.HoldsInputInNode) = Node.orderedInputs node
-                let (osss :: Array Node.HoldsOutputInNode) = Node.orderedOutputs node
+                let (isss :: Array (Node.HoldsInputInNodeM Effect)) = Node.orderedInputsM node
+                let (osss :: Array (Node.HoldsOutputInNodeM Effect)) = Node.orderedOutputsM node
                 -- let (osss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
 
                 -- TODO
@@ -579,7 +579,7 @@ main1 =
                         [ ]
 
             let
-                inletHandler :: forall f nstate i din is is' os m. IsSymbol f => Id.HasInput i din is' is => Int -> Noodle.Node f nstate is os m -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
+                inletHandler :: forall f nstate i din is is' os. IsSymbol f => Id.HasInput i din is' is => Int -> Noodle.Node f nstate is os Effect -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
                 inletHandler idx node inputId =
                     Id.reflect inputId /\ [] /\ \_ _ -> do
                         let inodeKey = nextNodeBox
@@ -596,14 +596,16 @@ main1 =
                                                 (InletIndex idx)
                                     State.modify_ $ storeLink linkCmp
                                     patchBox >~ appendLink linkCmp
-                                    _ <- liftEffect $ Node.withOutputInNode
+                                    _ <- liftEffect $ Node.withOutputInNodeM
                                         lco.outputId
-                                        \node outputId ->
-                                            Patch.withNode lco.node
-                                                \patch onode ->
-                                                    pure unit
+                                        \onode outputId -> do
+                                            -- Patch.withNode lco.node
+                                            --     \patch onode ->
+                                                    --pure unit
                                                     -- ?wh
-                                                    --Node.connect outputId inputId identity onode node
+                                                    link <- Node.connect outputId inputId ?wh onode node
+                                                    pure unit
+
                                                     -- Patch.connect outputId inputId identity onode node patch
                                     {-
                                     _ <- Id.withNodeId lco.nodeId (\onodeId ->
@@ -633,7 +635,7 @@ main1 =
                         , Box.top $ Offset.px 0
                         , Box.left $ Offset.px 0
                         -- , List.items is
-                        , ListBar.commands $ mapWithIndex (\idx hiin -> Node.withInputInNode hiin (inletHandler idx)) is
+                        , ListBar.commands $ mapWithIndex (\idx hiin -> Node.withInputInNodeM hiin (inletHandler idx)) is
                         -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex inletHandler $ is
                         , List.mouse true
                         , List.keys true
@@ -650,7 +652,7 @@ main1 =
 
 
             let
-                outletHandler :: forall f nstate o dout is os os' m. IsSymbol f => Id.HasOutput o dout os' os => Int -> Noodle.Node f nstate is os m -> Id.Output o -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
+                outletHandler :: forall f nstate o dout is os os'. IsSymbol f => Id.HasOutput o dout os' os => Int -> Noodle.Node f nstate is os Effect -> Id.Output o -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
                 outletHandler index node output =
                     Id.reflect output /\ [] /\ \_ _ -> do
                         -- liftEffect $ Console.log $ "handler " <> oname
@@ -658,7 +660,7 @@ main1 =
                             (_
                                 { lastClickedOutlet =
                                     Just
-                                        { index, subj : Id.reflect output, nodeKey : nextNodeBox, nodeId : Id.holdNodeId nodeId, outputId : Node.holdOutputInNode node output, node : nodeHolder } })
+                                        { index, subj : Id.reflect output, nodeKey : nextNodeBox, nodeId : Id.holdNodeId nodeId, outputId : Node.holdOutputInNodeM node output, node : nodeHolder } })
                         -- onOutletSelect nodeId output nextNodeBox idx (Id.reflect output)
                 outletsBarN =
                     B.listbar nextOutletsBar
@@ -667,7 +669,7 @@ main1 =
                         , Box.top $ Offset.px 2
                         , Box.left $ Offset.px 0
                         -- , List.items os
-                        , ListBar.commands $ mapWithIndex (\idx hoin -> Node.withOutputInNode hoin (outletHandler idx)) os
+                        , ListBar.commands $ mapWithIndex (\idx hoin -> Node.withOutputInNodeM hoin (outletHandler idx)) os
                         -- , ListBar.commands $ mapWithIndex outletHandler $ Id.reflect' <$> os
                         -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex outletHandler $ os
                         , List.mouse true
