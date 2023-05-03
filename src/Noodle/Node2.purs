@@ -670,21 +670,21 @@ else instance consKeysO ::
 
 
 class (IsSymbol f) <= HoldsInputs (is :: Row Type) (rli :: RL.RowList Type) f state os m | is -> rli where
-    inputsHeld :: Proxy rli -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
+    holdInputs :: Proxy rli -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
 
 
 instance nilHoldsInputs :: (IsSymbol f) => HoldsInputs is RL.Nil f state os m where
-  inputsHeld :: Proxy RL.Nil -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
-  inputsHeld _ _ = mempty
+  holdInputs :: Proxy RL.Nil -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
+  holdInputs _ _ = mempty
 else instance consHoldsInputs ::
   ( IsSymbol f, HasInput i din is' is
 --   , HasInputsAt is (RL.Cons i din tail)
   , HasInputsAt is tail
   , HoldsInputs is tail f state os m
   ) => HoldsInputs is (RL.Cons i din tail) f state os m where
-  inputsHeld :: forall rli. Proxy rli -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
-  inputsHeld _ node =
-    Array.insertBy cmpF (index /\ holdInputInNode node (Input index :: Input i)) (inputsHeld (Proxy :: _ tail) node)
+  holdInputs :: forall rli. Proxy rli -> Node f state is os m -> Array (Int /\ HoldsInputInNode)
+  holdInputs _ node =
+    Array.insertBy cmpF (index /\ holdInputInNode node (Input index :: Input i)) (holdInputs (Proxy :: _ tail) node)
     where
       order = inputsOrder node
       cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
@@ -698,8 +698,44 @@ orderedInputs :: forall rli f state is os m
   => HoldsInputs is rli f state os m
   => Node f state is os m
   -> Array HoldsInputInNode
-orderedInputs node = Tuple.snd <$> inputsHeld (Proxy :: _ rli) node
+orderedInputs node = Tuple.snd <$> holdInputs (Proxy :: _ rli) node
 
 
 instance Reflect' HoldsInputInNode where
     reflect' hiin = withInputInNode hiin (const reflect)
+
+
+class (IsSymbol f) <= HoldsOutputs (os :: Row Type) (rlo :: RL.RowList Type) f state is m | os -> rlo where
+    holdOutputs :: Proxy rlo -> Node f state is os m -> Array (Int /\ HoldsOutputInNode)
+
+
+instance nilHoldsOutputs :: (IsSymbol f) => HoldsOutputs os RL.Nil f state is m where
+  holdOutputs :: Proxy RL.Nil -> Node f state is os m -> Array (Int /\ HoldsOutputInNode)
+  holdOutputs _ _ = mempty
+else instance consHoldsOutputs ::
+  ( IsSymbol f, HasOutput o dout os' os
+--   , HasInputsAt is (RL.Cons i din tail)
+  , HasOutputsAt os tail
+  , HoldsOutputs os tail f state is m
+  ) => HoldsOutputs os (RL.Cons o dout tail) f state is m where
+  holdOutputs :: forall rlo. Proxy rlo -> Node f state is os m -> Array (Int /\ HoldsOutputInNode)
+  holdOutputs _ node =
+    Array.insertBy cmpF (index /\ holdOutputInNode node (Output index :: _ o)) (holdOutputs (Proxy :: _ tail) node)
+    where
+      order = outputsOrder node
+      cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
+      index = SOrder.indexOf order (Proxy :: _ o)
+    --   held = hold1 s (reifyAt index (Proxy :: Proxy name) :: proxy name)
+    --   ordered = inputsHeld (Proxy :: _ tail)
+
+
+orderedOutputs :: forall rlo f state is os m
+   . IsSymbol f
+  => HoldsOutputs os rlo f state is m
+  => Node f state is os m
+  -> Array HoldsOutputInNode
+orderedOutputs node = Tuple.snd <$> holdOutputs (Proxy :: _ rlo) node
+
+
+instance Reflect' HoldsOutputInNode where
+    reflect' hoin = withOutputInNode hoin (const reflect)

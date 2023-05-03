@@ -165,7 +165,7 @@ type State =
         , index :: Int
         , subj :: String
         , nodeId :: Id.HoldsNodeId
-        , outputId :: Id.HoldsOutput
+        , outputId :: Node.HoldsOutputInNode
         , node :: Patch.HoldsNode Effect -- Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect
         }
     , lastLink :: Maybe Link
@@ -520,6 +520,7 @@ main1 =
                 let (iss :: Array Id.HoldsInput) = KH.orderedKeys' (Proxy :: _ Id.Input) (Node.inputsOrder node) inputs
                 let (oss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
                 let (isss :: Array Node.HoldsInputInNode) = Node.orderedInputs node
+                let (osss :: Array Node.HoldsOutputInNode) = Node.orderedOutputs node
                 -- let (osss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
 
                 -- TODO
@@ -534,10 +535,10 @@ main1 =
                 let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
                 let repr = R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.BlessedRepr)  node
                 -- state <- State.get
-                pure { nextPatch, node, inputs, is, iss, isss, os, oss, outputs, nodes, repr }
+                pure { nextPatch, node, inputs, is, iss, isss, osss, os, oss, outputs, nodes, repr }
 
             -- let is /\ os = Node.shapeH rec.node
-            let is /\ os = Array.fromFoldable rec.isss /\ Array.fromFoldable rec.oss
+            let is /\ os = Array.fromFoldable rec.isss /\ Array.fromFoldable rec.osss
             let repr = rec.repr
             let nodeId = Node.id rec.node
             let (node :: Noodle.Node f state is os Effect) = rec.node
@@ -579,8 +580,52 @@ main1 =
 
             let
                 inletHandler :: forall f nstate i din is is' os m. IsSymbol f => Id.HasInput i din is' is => Int -> Noodle.Node f nstate is os m -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
-                inletHandler idx node input =
-                    Id.reflect input /\ [] /\ onInletSelect nodeId input nextNodeBox idx (Id.reflect input)
+                inletHandler idx node inputId =
+                    Id.reflect inputId /\ [] /\ \_ _ -> do
+                        let inodeKey = nextNodeBox
+                        state <- State.get
+                        -- liftEffect $ Console.log $ "handler " <> iname
+                        case state.lastClickedOutlet of
+                            Just lco ->
+                                if inodeKey /= lco.nodeKey then do
+                                    linkCmp <- createLink
+                                                state.lastLink
+                                                lco.nodeKey
+                                                (OutletIndex lco.index)
+                                                inodeKey
+                                                (InletIndex idx)
+                                    State.modify_ $ storeLink linkCmp
+                                    patchBox >~ appendLink linkCmp
+                                    _ <- liftEffect $ Node.withOutputInNode
+                                        lco.outputId
+                                        \node outputId ->
+                                            Patch.withNode lco.node
+                                                \patch onode ->
+                                                    pure unit
+                                                    -- ?wh
+                                                    --Node.connect outputId inputId identity onode node
+                                                    -- Patch.connect outputId inputId identity onode node patch
+                                    {-
+                                    _ <- Id.withNodeId lco.nodeId (\onodeId ->
+                                        case (/\) <$> Patch.findNode onodeId curPatch <*> Patch.findNode inodeId curPatch of
+                                            Just (onode /\ inode) ->
+                                        -- TODO: Patch.findNode
+                                                Id.withOutput
+                                                    lco.outputId
+                                                    (\outputId -> do
+                                                        _ <- Patch.connect outputId inputId ?wh onode inode curPatch
+                                                        pure unit
+                                                    )
+                                            Nothing -> pure unit
+                                    )
+                                    -}
+                                    -- TODO: Patch.connect
+                                    linkCmp # linkOn Element.Click onLinkClick
+                                else pure unit
+                            Nothing -> pure unit
+                        State.modify_
+                            (_ { lastClickedOutlet = Nothing })
+                    -- onInletSelect nodeId input nextNodeBox idx (Id.reflect input)
                 inletsBarN =
                     B.listbar nextInletsBar
                         [ Box.width $ Dimension.percents 90.0
@@ -603,56 +648,18 @@ main1 =
                         ]
                         [ ]
 
-                onInletSelect :: forall i. IsSymbol f => IsSymbol i => Id.NodeId f -> Id.Input i -> NodeBoxKey -> Int -> String -> InletsBarKey → EventJson → BlessedOp State Effect
-                onInletSelect inodeId inputId inodeKey idx iname _ _ = do
-                    state <- State.get
-                    -- liftEffect $ Console.log $ "handler " <> iname
-                    case state.lastClickedOutlet of
-                        Just lco ->
-                            if inodeKey /= lco.nodeKey then do
-                                linkCmp <- createLink
-                                            state.lastLink
-                                            lco.nodeKey
-                                            (OutletIndex lco.index)
-                                            inodeKey
-                                            (InletIndex idx)
-                                State.modify_ $ storeLink linkCmp
-                                patchBox >~ appendLink linkCmp
-                                _ <- liftEffect $ Id.withOutput
-                                    lco.outputId
-                                    \outputId ->
-                                        Patch.withNode lco.node
-                                            \patch onode ->
-                                                pure unit
-                                                -- ?wh
-                                                --Node.connect outputId inputId identity onode node
-                                                -- Patch.connect outputId inputId identity onode node patch
-                                {-
-                                _ <- Id.withNodeId lco.nodeId (\onodeId ->
-                                    case (/\) <$> Patch.findNode onodeId curPatch <*> Patch.findNode inodeId curPatch of
-                                        Just (onode /\ inode) ->
-                                    -- TODO: Patch.findNode
-                                            Id.withOutput
-                                                lco.outputId
-                                                (\outputId -> do
-                                                    _ <- Patch.connect outputId inputId ?wh onode inode curPatch
-                                                    pure unit
-                                                )
-                                        Nothing -> pure unit
-                                )
-                                -}
-                                -- TODO: Patch.connect
-                                linkCmp # linkOn Element.Click onLinkClick
-                            else pure unit
-                        Nothing -> pure unit
-                    State.modify_
-                        (_ { lastClickedOutlet = Nothing })
-
-
 
             let
-                outletHandler idx oname =
-                    oname /\ [] /\ onOutletSelect nodeId (Id.Output 0 :: _ "foo") nextNodeBox idx oname
+                outletHandler :: forall f nstate o dout is os os' m. IsSymbol f => Id.HasOutput o dout os' os => Int -> Noodle.Node f nstate is os m -> Id.Output o -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
+                outletHandler index node output =
+                    Id.reflect output /\ [] /\ \_ _ -> do
+                        -- liftEffect $ Console.log $ "handler " <> oname
+                        State.modify_
+                            (_
+                                { lastClickedOutlet =
+                                    Just
+                                        { index, subj : Id.reflect output, nodeKey : nextNodeBox, nodeId : Id.holdNodeId nodeId, outputId : Node.holdOutputInNode node output, node : nodeHolder } })
+                        -- onOutletSelect nodeId output nextNodeBox idx (Id.reflect output)
                 outletsBarN =
                     B.listbar nextOutletsBar
                         [ Box.width $ Dimension.percents 90.0
@@ -660,7 +667,8 @@ main1 =
                         , Box.top $ Offset.px 2
                         , Box.left $ Offset.px 0
                         -- , List.items os
-                        , ListBar.commands $ mapWithIndex outletHandler $ Id.reflect' <$> os
+                        , ListBar.commands $ mapWithIndex (\idx hoin -> Node.withOutputInNode hoin (outletHandler idx)) os
+                        -- , ListBar.commands $ mapWithIndex outletHandler $ Id.reflect' <$> os
                         -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex outletHandler $ os
                         , List.mouse true
                         , List.keys true
@@ -674,12 +682,6 @@ main1 =
                         ]
                         [
                         ]
-
-                onOutletSelect ::  forall f o. IsSymbol f => IsSymbol o => Id.NodeId f -> Id.Output o -> NodeBoxKey -> Int -> String -> OutletsBarKey → EventJson → BlessedOp State Effect
-                onOutletSelect nodeId outputId onodeKey index oname _ _ = do
-                    -- liftEffect $ Console.log $ "handler " <> oname
-                    State.modify_
-                        (_ { lastClickedOutlet = Just { index, subj : oname, nodeKey : onodeKey, nodeId : Id.holdNodeId nodeId, outputId : Id.holdOutput outputId, node : nodeHolder } })
 
 
             patchBox >~ Node.append nextNodeBoxN
