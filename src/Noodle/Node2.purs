@@ -834,3 +834,28 @@ orderedOutputsM node = Tuple.snd <$> holdOutputsM (Proxy :: _ rlo) node
 
 instance Reflect' (HoldsOutputInNodeM m) where
     reflect' hoin = withOutputInNodeM hoin (const reflect)
+
+
+{- foreign import data MkRepl :: Type -> Repl
+
+data Repl
+
+
+class ToRepl a (repl :: Repl) where
+    toRepl :: a -> Maybe Repl
+-}
+
+
+data Repr a = Repr a
+
+
+class ToRepr a repr where
+    toRepr :: a -> Maybe (Repr repr)
+
+
+class FromRepr repr a where
+    fromRepr :: Repr repr -> Maybe a
+
+
+-- instance Converts a a where
+--     convert = identity
