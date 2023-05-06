@@ -32,7 +32,7 @@ instance Eq MyRepr
         eq _ _ = false
 
 
-instance HasRepr String MyRepr  where toRepr _ = String_
+instance HasRepr String MyRepr where toRepr _ = String_
 instance HasRepr Int MyRepr where toRepr _ = Int_
 instance HasRepr Unit MyRepr where toRepr _ _ = Unit_
 instance HasRepr Boolean MyRepr where toRepr _ = Bool_
