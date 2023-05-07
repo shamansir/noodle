@@ -585,40 +585,25 @@ main1 =
 
             let
                 connectToOutput
-                    :: forall fA fB iB dinB stateB isB isB' osB
-                     . IsSymbol fB
+                    ::
+                       forall fA fB iB oA dinB doutA stateA stateB isA isB isB' osA osB osA'
+                     . IsSymbol fA
+                    => IsSymbol fB
                     => Id.HasInput iB dinB isB' isB
                     => FromRepr Hydra.BlessedRepr dinB
+                    => Id.HasOutput oA doutA osA' osA
+                    => ToRepr doutA Hydra.BlessedRepr
                     => Proxy dinB
                     -> Noodle.Node fB stateB isB osB Effect
                     -> Id.Input iB
-                    -> (forall oA doutA isA osA osA' stateA
-                     . IsSymbol fA
-                    => Id.HasOutput oA doutA osA' osA
-                    => ToRepr doutA Hydra.BlessedRepr
-                    => Proxy doutA
+                    -> Proxy doutA
                     -> Noodle.Node fA stateA isA osA Effect
                     -> Id.Output oA
-                    -> Effect (Noodle.Patch Hydra.State (Hydra.Instances Effect)))
-                connectToOutput pdin inode inputId = \pdout onode outputId -> do
-                    -- Patch.withNode lco.node
-                    --     \patch onode ->
-                            --pure unit
-                            -- ?wh
-                            -- let toRepr
-                            link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) pdout pdin outputId inputId onode inode
-                            let nextPatch' = Patch.registerLink link curPatch
-                            pure nextPatch'
-                testF
-                    ::
-                       forall doutA fA stateA isA osA oA
-                     . ToRepr doutA Hydra.BlessedRepr
-                    => Proxy doutA
-                    -> Noodle.Node fA stateA isA osA Effect
-                    -> Id.Output oA
-                    -> Effect Unit
-                testF pdout onode outputId =
-                    pure unit
+                    -> Effect (Noodle.Patch Hydra.State (Hydra.Instances Effect))
+                connectToOutput pdin inode inputId pdout onode outputId = do
+                    link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) pdout pdin outputId inputId onode inode
+                    let nextPatch' = Patch.registerLink link curPatch
+                    pure nextPatch'
                 inletHandler :: forall f nstate i din is is' os. IsSymbol f => Id.HasInput i din is' is => ToRepr din Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr din => Int -> Proxy din -> Noodle.Node f nstate is os Effect -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
                 inletHandler idx pdin inode inputId =
                     Id.reflect inputId /\ [] /\ \_ _ -> do
@@ -638,7 +623,7 @@ main1 =
                                     patchBox >~ appendLink linkCmp
                                     _ <- liftEffect $ Node.withOutputInNodeMRepr
                                         (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
-                                        (testF)
+                                        (connectToOutput pdin inode inputId)
                                         -- (\pdout node outputId -> ?wh)
                                         -- (connectToOutput pdin inode inputId)
 
