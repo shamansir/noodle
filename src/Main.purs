@@ -28,7 +28,7 @@ import Data.KeyHolder as KH
 import Record.Extra (class Keys, keys) as Record
 import Unsafe.Coerce (unsafeCoerce)
 import Data.String as String
-import Data.Repr (class FromRepr, class ToRepr, class FromToReprRow)
+import Data.Repr (Repr, class FromRepr, class ToRepr, class FromToReprRow, toRepr, fromRepr)
 
 import Cli.App as Cli
 
@@ -585,28 +585,42 @@ main1 =
 
             let
                 connectToOutput
-                    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA'
-                     . IsSymbol fA => IsSymbol fB
-                    => Id.HasOutput oA doutA osA' osA
+                    :: forall fA fB iB dinB stateB isB isB' osB
+                     . IsSymbol fB
                     => Id.HasInput iB dinB isB' isB
-                    => ToRepr doutA Hydra.BlessedRepr
                     => FromRepr Hydra.BlessedRepr dinB
-                    => Noodle.Node fB stateB isB osB Effect
+                    => Proxy dinB
+                    -> Noodle.Node fB stateB isB osB Effect
                     -> Id.Input iB
+                    -> (forall oA doutA isA osA osA' stateA
+                     . IsSymbol fA
+                    => Id.HasOutput oA doutA osA' osA
+                    => ToRepr doutA Hydra.BlessedRepr
+                    => Proxy doutA
                     -> Noodle.Node fA stateA isA osA Effect
                     -> Id.Output oA
-                    -> Effect (Noodle.Patch Hydra.State (Hydra.Instances Effect))
-                connectToOutput inode inputId onode outputId = do
+                    -> Effect (Noodle.Patch Hydra.State (Hydra.Instances Effect)))
+                connectToOutput pdin inode inputId = \pdout onode outputId -> do
                     -- Patch.withNode lco.node
                     --     \patch onode ->
                             --pure unit
                             -- ?wh
                             -- let toRepr
-                            link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) outputId inputId onode inode
+                            link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) pdout pdin outputId inputId onode inode
                             let nextPatch' = Patch.registerLink link curPatch
                             pure nextPatch'
-                inletHandler :: forall f nstate i din is is' os. IsSymbol f => Id.HasInput i din is' is => ToRepr din Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr din => Int -> Noodle.Node f nstate is os Effect -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
-                inletHandler idx inode inputId =
+                testF
+                    ::
+                       forall doutA fA stateA isA osA oA
+                     . ToRepr doutA Hydra.BlessedRepr
+                    => Proxy doutA
+                    -> Noodle.Node fA stateA isA osA Effect
+                    -> Id.Output oA
+                    -> Effect Unit
+                testF pdout onode outputId =
+                    pure unit
+                inletHandler :: forall f nstate i din is is' os. IsSymbol f => Id.HasInput i din is' is => ToRepr din Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr din => Int -> Proxy din -> Noodle.Node f nstate is os Effect -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
+                inletHandler idx pdin inode inputId =
                     Id.reflect inputId /\ [] /\ \_ _ -> do
                         let inodeKey = nextNodeBox
                         state <- State.get
@@ -623,8 +637,22 @@ main1 =
                                     State.modify_ $ storeLink linkCmp
                                     patchBox >~ appendLink linkCmp
                                     _ <- liftEffect $ Node.withOutputInNodeMRepr
-                                        lco.outputId
-                                        (connectToOutput inode inputId)
+                                        (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
+                                        (testF)
+                                        -- (\pdout node outputId -> ?wh)
+                                        -- (connectToOutput pdin inode inputId)
+
+
+                                        {-
+                                        \pdout onode outputId -> do
+                                            -- link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) outputId inputId onode inode
+                                            link <-
+                                                Node.connect outputId inputId
+                                                    ?wh
+                                                    -- (\dout -> ?wh (toRepr dout :: Maybe (Repr Hydra.BlessedRepr)))
+                                                    onode inode
+                                            let nextPatch' = Patch.registerLink link curPatch
+                                            pure nextPatch'
                                             -- Patch.withNode lco.node
                                             --     \patch onode ->
                                                     --pure unit
@@ -636,6 +664,9 @@ main1 =
                                                     -- pure unit
 
                                                     -- Patch.connect outputId inputId identity onode node patch
+
+                                        -}
+
                                     {-
                                     _ <- Id.withNodeId lco.nodeId (\onodeId ->
                                         case (/\) <$> Patch.findNode onodeId curPatch <*> Patch.findNode inodeId curPatch of
@@ -681,15 +712,15 @@ main1 =
 
 
             let
-                outletHandler :: forall f nstate o dout is os os'. IsSymbol f => Id.HasOutput o dout os' os => ToRepr dout Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr dout => Int -> Noodle.Node f nstate is os Effect -> Id.Output o -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
-                outletHandler index node output =
+                outletHandler :: forall f nstate o dout is os os'. IsSymbol f => Id.HasOutput o dout os' os => ToRepr dout Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr dout => Int -> Proxy dout -> Noodle.Node f nstate is os Effect -> Id.Output o -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
+                outletHandler index _ node output =
                     Id.reflect output /\ [] /\ \_ _ -> do
                         -- liftEffect $ Console.log $ "handler " <> oname
                         State.modify_
                             (_
                                 { lastClickedOutlet =
                                     Just
-                                        { index, subj : Id.reflect output, nodeKey : nextNodeBox, nodeId : Id.holdNodeId nodeId, outputId : Node.holdOutputInNodeMRepr node output, node : nodeHolder } })
+                                        { index, subj : Id.reflect output, nodeKey : nextNodeBox, nodeId : Id.holdNodeId nodeId, outputId : Node.holdOutputInNodeMRepr (Proxy :: _ dout) node output, node : nodeHolder } })
                         -- onOutletSelect nodeId output nextNodeBox idx (Id.reflect output)
                 outletsBarN =
                     B.listbar nextOutletsBar
