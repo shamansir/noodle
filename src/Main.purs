@@ -28,6 +28,7 @@ import Data.KeyHolder as KH
 import Record.Extra (class Keys, keys) as Record
 import Unsafe.Coerce (unsafeCoerce)
 import Data.String as String
+import Data.Repr (class FromRepr, class ToRepr, class FromToReprRow)
 
 import Cli.App as Cli
 
@@ -498,6 +499,8 @@ main1 =
             :: forall f state fs iis rli is rlo os repr_is repr_os
              . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
             => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.BlessedRepr state
+            => FromToReprRow rli is Hydra.BlessedRepr
+            => FromToReprRow rlo os Hydra.BlessedRepr
             => Noodle.Patch Hydra.State (Hydra.Instances Effect)
             -> Id.Family f
             -> Family.Def state is os Effect
@@ -521,6 +524,8 @@ main1 =
                 let (oss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
                 let (isss :: Array (Node.HoldsInputInNodeM Effect)) = Node.orderedInputsM node
                 let (osss :: Array (Node.HoldsOutputInNodeM Effect)) = Node.orderedOutputsM node
+                let (issss :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)) = Node.orderedInputsMRepr node
+                let (ossss :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)) = Node.orderedOutputsMRepr node
                 -- let (osss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
 
                 -- TODO
@@ -535,10 +540,10 @@ main1 =
                 let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
                 let repr = R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.BlessedRepr)  node
                 -- state <- State.get
-                pure { nextPatch, node, inputs, is, iss, isss, osss, os, oss, outputs, nodes, repr }
+                pure { nextPatch, node, inputs, is, iss, isss, issss, os, oss, ossss, outputs, nodes, repr }
 
             -- let is /\ os = Node.shapeH rec.node
-            let is /\ os = Array.fromFoldable rec.isss /\ Array.fromFoldable rec.osss
+            let is /\ os = Array.fromFoldable rec.issss /\ Array.fromFoldable rec.ossss
             let repr = rec.repr
             let nodeId = Node.id rec.node
             let (node :: Noodle.Node f state is os Effect) = rec.node
@@ -579,7 +584,7 @@ main1 =
                         [ ]
 
             let
-                inletHandler :: forall f nstate i din is is' os. IsSymbol f => Id.HasInput i din is' is => Int -> Noodle.Node f nstate is os Effect -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
+                inletHandler :: forall f nstate i din is is' os. IsSymbol f => Id.HasInput i din is' is => ToRepr din Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr din => Int -> Noodle.Node f nstate is os Effect -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
                 inletHandler idx node inputId =
                     Id.reflect inputId /\ [] /\ \_ _ -> do
                         let inodeKey = nextNodeBox
@@ -603,6 +608,7 @@ main1 =
                                             --     \patch onode ->
                                                     --pure unit
                                                     -- ?wh
+                                                    -- let toRepr
                                                     link <- Node.connect outputId inputId ?wh onode node
                                                     let nextPatch' = Patch.registerLink link curPatch
                                                     pure nextPatch'
@@ -636,7 +642,7 @@ main1 =
                         , Box.top $ Offset.px 0
                         , Box.left $ Offset.px 0
                         -- , List.items is
-                        , ListBar.commands $ mapWithIndex (\idx hiin -> Node.withInputInNodeM hiin (inletHandler idx)) is
+                        , ListBar.commands $ mapWithIndex (\idx hiinr -> Node.withInputInNodeMRepr hiinr (inletHandler idx)) is
                         -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex inletHandler $ is
                         , List.mouse true
                         , List.keys true
@@ -653,7 +659,7 @@ main1 =
 
 
             let
-                outletHandler :: forall f nstate o dout is os os'. IsSymbol f => Id.HasOutput o dout os' os => Int -> Noodle.Node f nstate is os Effect -> Id.Output o -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
+                outletHandler :: forall f nstate o dout is os os'. IsSymbol f => Id.HasOutput o dout os' os => ToRepr dout Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr dout => Int -> Noodle.Node f nstate is os Effect -> Id.Output o -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
                 outletHandler index node output =
                     Id.reflect output /\ [] /\ \_ _ -> do
                         -- liftEffect $ Console.log $ "handler " <> oname
@@ -670,7 +676,7 @@ main1 =
                         , Box.top $ Offset.px 2
                         , Box.left $ Offset.px 0
                         -- , List.items os
-                        , ListBar.commands $ mapWithIndex (\idx hoin -> Node.withOutputInNodeM hoin (outletHandler idx)) os
+                        , ListBar.commands $ mapWithIndex (\idx hoinr -> Node.withOutputInNodeMRepr hoinr (outletHandler idx)) os
                         -- , ListBar.commands $ mapWithIndex outletHandler $ Id.reflect' <$> os
                         -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex outletHandler $ os
                         , List.mouse true

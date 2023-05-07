@@ -11,6 +11,7 @@ import Data.Maybe (Maybe(..))
 import Data.Traversable (sequence)
 import Data.SOrder (type (:::), T, SOrder)
 import Data.SOrder (Auto, auto) as SOrder
+import Data.Repr (class FromToReprRow)
 
 import Control.Applicative (class Applicative)
 
@@ -703,9 +704,12 @@ withFamily
         => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
            .  HasNodesOf f state fs iis rli is rlo os m
            => NMF.ToReprHelper m f is rli os rlo repr_is repr_os BlessedRepr state
+           => FromToReprRow rli is BlessedRepr
+           => FromToReprRow rlo os BlessedRepr
            => Node.Family f
            -> Family.Def state is os m
            -> Toolkit m  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
+           -- FIXME: use the existentials like `Node2.HoldsInput` etc.
            -- But may be it's just spawnAndRegister lacking toolkit type definition
         --    -> Proxy m
         --    -> Proxy is

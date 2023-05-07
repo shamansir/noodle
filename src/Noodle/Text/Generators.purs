@@ -72,6 +72,11 @@ toolkitDataModuleName tkName =
     "Toolkit." <> ensureStartsFromCapitalLetter (unwrap tkName) <> toolkitDataModuleNamePostfix
 
 
+toolkitReprName :: ToolkitName -> String
+toolkitReprName tkName =
+    ensureStartsFromCapitalLetter (unwrap tkName) <> toolkitTypeNamePostfix
+
+
 familyModuleFilename :: QD.QFamily -> String
 familyModuleFilename qfml =
     case qfml.tag of
@@ -147,6 +152,7 @@ familyTypePrefix = "F" :: String
 toolkitTypeNamePostfix = "Toolkit" :: String
 toolkitModuleNamePostfix = "Gen" :: String
 toolkitDataModuleNamePostfix = "GenData" :: String
+toolkitReprTypePostfix = "Repr" :: String
 
 
 i = "    " :: String
@@ -262,6 +268,7 @@ toolkitModule FamiliesAsModules tkName _ tkUserImports families =
     <> toolkitImplementation tkName families <> "\n\n\n"
     <> "type Toolkit (m :: Type -> Type) = " <> toolkitTypeName tkName <> " m" <> "\n\n\n"
     <> "type Patch (m :: Type -> Type) = Noodle.Patch State (Instances m)" <> "\n\n\n"
+    <> "type TkRepr = " <> toolkitReprName tkName <> " m" <> "\n\n\n"
     <> instancesType tkName families <> "\n\n\n"
     <> noInstancesImplementation tkName families <> "\n\n\n"
     <> symbols families <> "\n\n\n"
@@ -278,6 +285,7 @@ toolkitModule FamiliesInline tkName lp tkUserImports families =
     <> toolkitImplementationInline tkName families <> "\n\n\n"
     <> "type Toolkit (m :: Type -> Type) = " <> toolkitTypeName tkName <> " m" <> "\n\n\n"
     <> "type Patch (m :: Type -> Type) = Noodle.Patch State (Instances m)" <> "\n\n\n"
+    <> "type TkRepr = " <> toolkitReprName tkName <> " m" <> "\n\n\n"
     <> nodesInlineTypes lp families <> "\n\n\n"
     <> instancesTypeInline tkName families <> "\n\n\n"
     <> symbolsInline families <> "\n\n\n"
@@ -585,6 +593,9 @@ withFamily
     . Applicative m
     => (  forall f state fs iis is os
         .  HasNodesOf f state fs iis is os m
+        => NMF.ToReprHelper m f is rli os rlo repr_is repr_os TkRepr state
+        => FromToReprRow rli is TkRepr
+        => FromToReprRow rlo os TkRepr
         => Node.Family f
         -> Family.Def state is os m
         -> Toolkit m

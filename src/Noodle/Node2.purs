@@ -308,6 +308,11 @@ toFullId (Link nodeA outA inB nodeB _) =
     FullId $ reflect' nodeA <> ">>" <> reflect' outA <> "--" <> reflect' inB <> "<<" <> reflect' nodeB
 
 
+
+-- TODO: connectByRepr (use Data.Repr.ToRepr, Data.Repr.FromRepr ) ! -> then add the same to patch
+
+-- TODO: Path.connect2 (from different patches)
+
 connect
     :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m
      . MonadEffect m
