@@ -345,10 +345,10 @@ main1 =
                         selected <- List.selected ~< nodeList
                         let mbSelectedFamily = families !! selected
                         -- mbNextNode <-
-                        _ <- case (/\) <$> mbSelectedFamily <*> mbCurrentPatch of
-                            Just (familyR /\ curPatch) ->
+                        _ <- case (/\) <$> mbSelectedFamily <*> ((/\) <$> mbCurrentPatch <*> mbCurrentPatchId) of
+                            Just (familyR /\ curPatch /\ curPatchId) ->
                                 Hydra.withFamily
-                                    (addNodeOfGivenFamily curPatch)
+                                    (addNodeOfGivenFamily curPatchId curPatch)
                                     familyR
                             Nothing -> pure Nothing
                         liftEffect $ Console.log $ show selected
@@ -501,12 +501,13 @@ main1 =
             => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.BlessedRepr state
             => FromToReprRow rli is Hydra.BlessedRepr
             => FromToReprRow rlo os Hydra.BlessedRepr
-            => Noodle.Patch Hydra.State (Hydra.Instances Effect)
+            => Patch.Id
+            -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
             -> Id.Family f
             -> Family.Def state is os Effect
             -> Hydra.Toolkit Effect
             -> BlessedOpM State Effect _
-        addNodeOfGivenFamily curPatch family def tk = do
+        addNodeOfGivenFamily curPatchId curPatch family def tk = do
             state <- State.get
 
             let nextNodeBox = NodeKey.next state.lastNodeBoxKey
@@ -543,7 +544,7 @@ main1 =
                 pure { nextPatch, node, inputs, is, iss, isss, issss, os, oss, ossss, outputs, nodes, repr }
 
             -- let is /\ os = Node.shapeH rec.node
-            let is /\ os = Array.fromFoldable rec.issss /\ Array.fromFoldable rec.ossss
+            let is /\ os = rec.issss /\ rec.ossss
             let repr = rec.repr
             let nodeId = Node.id rec.node
             let (node :: Noodle.Node f state is os Effect) = rec.node
@@ -584,6 +585,7 @@ main1 =
                         [ ]
 
             let
+                {-
                 connectToOutput
                     ::
                        forall fA fB iB oA dinB doutA stateA stateB isA isB isB' osA osB osA'
@@ -604,6 +606,7 @@ main1 =
                     link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) pdout pdin outputId inputId onode inode
                     let nextPatch' = Patch.registerLink link curPatch
                     pure nextPatch'
+                -}
                 inletHandler :: forall f nstate i din is is' os. IsSymbol f => Id.HasInput i din is' is => ToRepr din Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr din => Int -> Proxy din -> Noodle.Node f nstate is os Effect -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
                 inletHandler idx pdin inode inputId =
                     Id.reflect inputId /\ [] /\ \_ _ -> do
@@ -621,12 +624,18 @@ main1 =
                                                 (InletIndex idx)
                                     State.modify_ $ storeLink linkCmp
                                     patchBox >~ appendLink linkCmp
-                                    _ <- liftEffect $ Node.withOutputInNodeMRepr
-                                        (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
-                                        (connectToOutput pdin inode inputId)
+                                    nextPatch' <- liftEffect $ Node.withOutputInNodeMRepr
+                                        (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr) -- w/o type given here compiler fails to resolve constraints somehow
+                                        (\_ onode outputId -> do
+                                            link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) outputId inputId onode inode
+                                            let nextPatch' = Patch.registerLink link curPatch
+                                            pure nextPatch'
+                                        )
+                                        -- (connectToOutput pdin inode inputId)
                                         -- (\pdout node outputId -> ?wh)
                                         -- (connectToOutput pdin inode inputId)
 
+                                    State.modify_ (\s -> s { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network })
 
                                         {-
                                         \pdout onode outputId -> do
@@ -698,14 +707,14 @@ main1 =
 
             let
                 outletHandler :: forall f nstate o dout is os os'. IsSymbol f => Id.HasOutput o dout os' os => ToRepr dout Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr dout => Int -> Proxy dout -> Noodle.Node f nstate is os Effect -> Id.Output o -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
-                outletHandler index _ node output =
+                outletHandler index pdout node output =
                     Id.reflect output /\ [] /\ \_ _ -> do
                         -- liftEffect $ Console.log $ "handler " <> oname
                         State.modify_
                             (_
                                 { lastClickedOutlet =
                                     Just
-                                        { index, subj : Id.reflect output, nodeKey : nextNodeBox, nodeId : Id.holdNodeId nodeId, outputId : Node.holdOutputInNodeMRepr (Proxy :: _ dout) node output, node : nodeHolder } })
+                                        { index, subj : Id.reflect output, nodeKey : nextNodeBox, nodeId : Id.holdNodeId nodeId, outputId : Node.holdOutputInNodeMRepr pdout node output, node : nodeHolder } })
                         -- onOutletSelect nodeId output nextNodeBox idx (Id.reflect output)
                 outletsBarN =
                     B.listbar nextOutletsBar

@@ -416,15 +416,13 @@ connectByRepr
     => ToRepr doutA repr
     => FromRepr repr dinB
     => Proxy repr
-    -> Proxy doutA
-    -> Proxy dinB
     -> Output oA
     -> Input iB
     -> Node fA stateA isA osA m
     -> Node fB stateB isB osB m
     -> m (Link fA fB oA iB)
 connectByRepr
-    _ _ _
+    _
     outputA
     inputB
     nodeA@(Node nodeAId _ _ _)
