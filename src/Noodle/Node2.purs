@@ -28,7 +28,7 @@ import Data.List (List)
 import Data.List (length, filter) as List
 import Data.UniqueHash (UniqueHash)
 import Data.KeyHolder as KH
-import Data.Repr (class FromRepr, class ToRepr, class FromToReprRow)
+import Data.Repr (Repr, class FromRepr, class ToRepr, class FromToReprRow, toRepr, fromRepr)
 
 import Type.Proxy (Proxy(..))
 
@@ -334,10 +334,10 @@ connect
     liftEffect $ do
         flagRef <- Ref.new true
         let
-            sendToBIfFlagIsOn dout = do
+            sendToBIfFlagIsOn din = do
                 -- Monad.whenM
                 flagOn <- Ref.read flagRef
-                if flagOn then sendInE nodeB inputB dout
+                if flagOn then sendInE nodeB inputB din
                 else pure unit
         Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
         pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
@@ -381,10 +381,10 @@ connect'
     liftEffect $ do
         flagRef <- Ref.new true
         let
-            sendToBIfFlagIsOn dout = do
+            sendToBIfFlagIsOn din = do
                 -- Monad.whenM
                 flagOn <- Ref.read flagRef
-                if flagOn then sendInE' nodeB inputB dout
+                if flagOn then sendInE' nodeB inputB din
                 else pure unit
         Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
         pure $ Link nodeAId outputA inputB nodeBId $ Ref.write false flagRef
@@ -405,6 +405,43 @@ connectAlike'
     outputA
     inputB =
     connect' outputA inputB identity
+
+
+connectByRepr
+    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA' m repr
+     . MonadEffect m
+    => MonadRec m
+    => HasOutput oA doutA osA' osA
+    => HasInput iB dinB isB' isB
+    => ToRepr doutA repr
+    => FromRepr repr dinB
+    => Proxy repr
+    -> Output oA
+    -> Input iB
+    -> Node fA stateA isA osA m
+    -> Node fB stateB isB osB m
+    -> m (Link fA fB oA iB)
+connectByRepr
+    _
+    outputA
+    inputB
+    nodeA@(Node nodeAId _ _ _)
+    nodeB@(Node nodeBId _ _ _) =
+    liftEffect $ do
+        flagRef <- Ref.new true
+        let
+            convert :: doutA -> Maybe dinB
+            convert dout = (toRepr dout :: Maybe (Repr repr)) >>= fromRepr
+            sendToBWhenConditionsMet :: Maybe dinB -> Effect Unit
+            sendToBWhenConditionsMet (Just din) = do
+                -- Monad.whenM
+                flagOn <- Ref.read flagRef
+                if flagOn then sendInE nodeB inputB din
+                else pure unit
+            sendToBWhenConditionsMet Nothing =
+                pure unit
+        Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendToBWhenConditionsMet
+        pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
 
 
 disconnect

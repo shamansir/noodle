@@ -166,7 +166,7 @@ type State =
         , index :: Int
         , subj :: String
         , nodeId :: Id.HoldsNodeId
-        , outputId :: Node.HoldsOutputInNodeM Effect
+        , outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr
         , node :: Patch.HoldsNode Effect -- Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect
         }
     , lastLink :: Maybe Link
@@ -584,8 +584,29 @@ main1 =
                         [ ]
 
             let
+                connectToOutput
+                    :: forall fA fB oA iB doutA dinB stateA stateB isA isB isB' osA osB osA'
+                     . IsSymbol fA => IsSymbol fB
+                    => Id.HasOutput oA doutA osA' osA
+                    => Id.HasInput iB dinB isB' isB
+                    => ToRepr doutA Hydra.BlessedRepr
+                    => FromRepr Hydra.BlessedRepr dinB
+                    => Noodle.Node fB stateB isB osB Effect
+                    -> Id.Input iB
+                    -> Noodle.Node fA stateA isA osA Effect
+                    -> Id.Output oA
+                    -> Effect (Noodle.Patch Hydra.State (Hydra.Instances Effect))
+                connectToOutput inode inputId onode outputId = do
+                    -- Patch.withNode lco.node
+                    --     \patch onode ->
+                            --pure unit
+                            -- ?wh
+                            -- let toRepr
+                            link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) outputId inputId onode inode
+                            let nextPatch' = Patch.registerLink link curPatch
+                            pure nextPatch'
                 inletHandler :: forall f nstate i din is is' os. IsSymbol f => Id.HasInput i din is' is => ToRepr din Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr din => Int -> Noodle.Node f nstate is os Effect -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
-                inletHandler idx node inputId =
+                inletHandler idx inode inputId =
                     Id.reflect inputId /\ [] /\ \_ _ -> do
                         let inodeKey = nextNodeBox
                         state <- State.get
@@ -601,17 +622,18 @@ main1 =
                                                 (InletIndex idx)
                                     State.modify_ $ storeLink linkCmp
                                     patchBox >~ appendLink linkCmp
-                                    _ <- liftEffect $ Node.withOutputInNodeM
+                                    _ <- liftEffect $ Node.withOutputInNodeMRepr
                                         lco.outputId
-                                        \onode outputId -> do
+                                        (connectToOutput inode inputId)
                                             -- Patch.withNode lco.node
                                             --     \patch onode ->
                                                     --pure unit
                                                     -- ?wh
                                                     -- let toRepr
-                                                    link <- Node.connect outputId inputId ?wh onode node
-                                                    let nextPatch' = Patch.registerLink link curPatch
-                                                    pure nextPatch'
+                                                    -- link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) outputId inputId onode node
+                                                    -- let nextPatch' = Patch.registerLink link curPatch
+                                                    -- pure nextPatch'
+                                                    -- pure unit
 
                                                     -- Patch.connect outputId inputId identity onode node patch
                                     {-
@@ -667,7 +689,7 @@ main1 =
                             (_
                                 { lastClickedOutlet =
                                     Just
-                                        { index, subj : Id.reflect output, nodeKey : nextNodeBox, nodeId : Id.holdNodeId nodeId, outputId : Node.holdOutputInNodeM node output, node : nodeHolder } })
+                                        { index, subj : Id.reflect output, nodeKey : nextNodeBox, nodeId : Id.holdNodeId nodeId, outputId : Node.holdOutputInNodeMRepr node output, node : nodeHolder } })
                         -- onOutletSelect nodeId output nextNodeBox idx (Id.reflect output)
                 outletsBarN =
                     B.listbar nextOutletsBar
