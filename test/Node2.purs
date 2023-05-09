@@ -4,6 +4,7 @@ import Prelude
 
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console (log) as Console
+import Effect.Aff (Aff)
 
 
 import Test.Spec (Spec, pending, describe, describeOnly, it)
@@ -284,7 +285,7 @@ spec = do
             (reflect' <$> (Node.orderedNodeBoundKeysTest' (Proxy :: _ Fn.Input) (Node.inputsOrder node) inputsRow node :: Array Fn.HoldsInput))  `shouldEqual` [ "e", "b", "a", "c", "d" ]
 
             (reflect' <$> (Node.orderedNodeInputsTest node :: Array Fn.HoldsInput))  `shouldEqual` [ "e", "b", "a", "c", "d" ]
-            -- (reflect' <$> (Node.orderedNodeInputsTest node :: forall m. Array (Node.HoldsInputInNodeM m)))  `shouldEqual` [ "e", "b", "a", "c", "d" ]
+            (reflect' <$> (Node.orderedNodeInputsTest' node :: Array (Node.HoldsInputInNodeM Aff)))  `shouldEqual` [ "e", "b", "a", "c", "d" ]
 
             pure unit
             -- (reflect' <$> Node.orderedInputs nodeA) `shouldEqual` [ "e", "b", "a", "c", "d" ]
