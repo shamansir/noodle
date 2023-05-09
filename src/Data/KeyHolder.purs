@@ -274,6 +274,14 @@ else instance consKeys ::
       rest = keysImpl (Proxy :: _ tail)
 
 
+keys :: forall g row rl x
+   . RL.RowToList row rl
+  => Keys rl x
+  => g row -- this will work for any type with the row as a param!
+  -> Array x
+keys _ = keysImpl (Proxy :: _ rl)
+
+
 class KeysO (xs :: RL.RowList Type) (proxy :: Symbol -> Type) x where
   keysImplO :: Proxy proxy -> SOrder -> Proxy xs -> Array (Int /\ x)
 
@@ -293,7 +301,6 @@ else instance consKeysO ::
       index = SOrder.indexOf order (Proxy :: _ name)
       held = hold (reifyAt index (Proxy :: Proxy name) :: proxy name)
       ordered = keysImplO p order (Proxy :: _ tail)
-
 
 {-
 class KeysO1 (xs :: RL.RowList Type) (proxy :: Symbol -> Type) s x where
@@ -317,12 +324,7 @@ else instance consKeysOS ::
       ordered = keysImplO1 p s order (Proxy :: _ tail)
 -}
 
-keys :: forall g row rl x
-   . RL.RowToList row rl
-  => Keys rl x
-  => g row -- this will work for any type with the row as a param!
-  -> Array x
-keys _ = keysImpl (Proxy :: _ rl)
+
 
 
 orderedKeys' :: forall g row rl proxy x

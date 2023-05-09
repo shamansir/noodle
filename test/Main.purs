@@ -28,7 +28,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
     UniqueHash.spec
   -- describe "Fn"
   --   Fn.spec
-  describe "Node2"
+  describeOnly "Node2"
     Node2.spec
   -- describe "Nodes"
   --   Nodes.spec

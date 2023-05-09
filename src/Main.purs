@@ -23,7 +23,7 @@ import Data.Map as Map
 import Data.Array ((:), (!!))
 import Data.Array as Array
 import Data.Foldable (for_, traverse_)
-import Data.List (toUnfoldable) as List
+import Data.List (toUnfoldable, length) as List
 import Data.KeyHolder as KH
 import Record.Extra (class Keys, keys) as Record
 import Unsafe.Coerce (unsafeCoerce)
@@ -523,6 +523,8 @@ main1 =
                 (outputs :: Record os) <- Node.outputs node
                 let (iss :: Array Id.HoldsInput) = KH.orderedKeys' (Proxy :: _ Id.Input) (Node.inputsOrder node) inputs
                 let (oss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
+                let (iss2 :: Array Node.HoldsInputInNode) = Node.orderedInputs node
+                let (oss2 :: Array Node.HoldsOutputInNode) = Node.orderedOutputs node
                 let (isss :: Array (Node.HoldsInputInNodeM Effect)) = Node.orderedInputsM node
                 let (osss :: Array (Node.HoldsOutputInNodeM Effect)) = Node.orderedOutputsM node
                 let (issss :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)) = Node.orderedInputsMRepr node
@@ -541,10 +543,20 @@ main1 =
                 let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
                 let repr = R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.BlessedRepr)  node
                 -- state <- State.get
-                pure { nextPatch, node, inputs, is, iss, isss, issss, os, oss, ossss, outputs, nodes, repr }
+                pure { nextPatch, node, inputs, is, iss, iss2, isss, issss, os, oss, oss2, osss, ossss, outputs, nodes, repr }
 
             -- let is /\ os = Node.shapeH rec.node
             let is /\ os = rec.issss /\ rec.ossss
+            liftEffect $ Console.log $ "is" <> (show $ List.length rec.is)
+            liftEffect $ Console.log $ "os" <> (show $ List.length rec.os)
+            liftEffect $ Console.log $ "iss" <> (show $ Array.length rec.iss)
+            liftEffect $ Console.log $ "oss" <> (show $ Array.length rec.oss)
+            liftEffect $ Console.log $ "iss2-" <> (show $ Array.length rec.iss2)
+            liftEffect $ Console.log $ "oss2-" <> (show $ Array.length rec.oss2)
+            liftEffect $ Console.log $ "isss" <> (show $ Array.length rec.isss)
+            liftEffect $ Console.log $ "osss" <> (show $ Array.length rec.osss)
+            liftEffect $ Console.log $ "issss" <> (show $ Array.length rec.issss)
+            liftEffect $ Console.log $ "ossss" <> (show $ Array.length rec.ossss)
             let repr = rec.repr
             let nodeId = Node.id rec.node
             let (node :: Noodle.Node f state is os Effect) = rec.node
