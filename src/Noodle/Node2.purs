@@ -990,6 +990,19 @@ instance Holder Input (Node f state is os m) HoldsInput where
   hold input _ = KH.hold input
 
 
+{-
+instance (IsSymbol f, HasInputsAt is irl) => Holder Input (Node f state is os m) (HoldsInputInNodeM m) where
+  hold :: forall i din is'. IsSymbol i => HasInput i din is' is => Input i -> Node f state is os m -> HoldsInputInNodeM m
+  hold input node = holdInputInNodeM node input
+-}
+
+
+{- instance (IsSymbol f, HasInputsAt is irl) => Holder Input (Node f state is os m) (HoldsInputInNode'' f state is os m) where
+  hold :: forall i din is'. IsSymbol i => HasInput i din is' is => Input i -> Node f state is os m -> HoldsInputInNode'' f state is os m
+  hold input node = holdInputInNode'' node input -}
+
+
+
 class ReifyOrderedTo proxy a where
   reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> a -> proxy sym
 
@@ -1004,54 +1017,52 @@ instance ReifyOrderedTo Input (Node f state is os m) where
   reifyAt n _ _ = Input n
 
 
-class TestNodeBoundKeys (xs :: RL.RowList Type) (proxy :: Symbol -> Type) a x where
-  testNBKeysImpl :: Proxy proxy -> SOrder -> Proxy xs -> a -> Array (Int /\ x)
+class TestSubjBoundKeys (xs :: RL.RowList Type) (proxy :: Symbol -> Type) a x where
+  testSBKeysImpl :: Proxy proxy -> SOrder -> Proxy xs -> a -> Array (Int /\ x)
 
 
-instance nilKeysTest :: TestNodeBoundKeys RL.Nil proxy a x where
-  testNBKeysImpl _ _ _ _ = mempty
+instance nilKeysTest :: TestSubjBoundKeys RL.Nil proxy a x where
+  testSBKeysImpl _ _ _ _ = mempty
 else instance consKeysO ::
   ( IsSymbol name
   , Holder proxy a x
   , ReifyOrderedTo proxy a
-  , TestNodeBoundKeys tail proxy a x
-  ) => TestNodeBoundKeys (RL.Cons name ty tail) proxy a x where
-  testNBKeysImpl :: forall xs. Proxy proxy -> SOrder -> Proxy xs -> a -> Array (Int /\ x)
-  testNBKeysImpl p order _ a =
+  , TestSubjBoundKeys tail proxy a x
+  ) => TestSubjBoundKeys (RL.Cons name ty tail) proxy a x where
+  testSBKeysImpl :: forall xs. Proxy proxy -> SOrder -> Proxy xs -> a -> Array (Int /\ x)
+  testSBKeysImpl p order _ a =
     Array.insertBy cmpF (index /\ held) ordered
     where
       cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
       index = SOrder.indexOf order (Proxy :: _ name)
       held = hold (reifyAt index (Proxy :: Proxy name) a :: proxy name) a
-      ordered = testNBKeysImpl p order (Proxy :: _ tail) a
+      ordered = testSBKeysImpl p order (Proxy :: _ tail) a
 
 
 orderedNodeBoundKeysTest :: forall g row rl proxy x
    . RL.RowToList row rl
-  => TestNodeBoundKeys rl proxy Unit x
+  => TestSubjBoundKeys rl proxy Unit x
   => Proxy proxy
   -> SOrder
   -> g row -- this will work for any type with the row as a param!
   -> Array x
-orderedNodeBoundKeysTest p order _ = Tuple.snd <$> testNBKeysImpl p order (Proxy :: _ rl) unit
+orderedNodeBoundKeysTest p order _ = Tuple.snd <$> testSBKeysImpl p order (Proxy :: _ rl) unit
 
 
 orderedNodeBoundKeysTest' :: forall g row rl proxy x f state is os m
    . RL.RowToList row rl
-  => TestNodeBoundKeys rl proxy (Node f state is os m) x
+  => TestSubjBoundKeys rl proxy (Node f state is os m) x
   => Proxy proxy
   -> SOrder
   -> g row -- this will work for any type with the row as a param!
   -> Node f state is os m
   -> Array x
-orderedNodeBoundKeysTest' p order _ node = Tuple.snd <$> testNBKeysImpl p order (Proxy :: _ rl) node
+orderedNodeBoundKeysTest' p order _ node = Tuple.snd <$> testSBKeysImpl p order (Proxy :: _ rl) node
 
 
-orderedNodeBoundKeysTest'' :: forall rl proxy x f state is os m
-   . RL.RowToList is rl
-  => TestNodeBoundKeys rl proxy (Node f state is os m) x
-  => Proxy proxy
-  -> SOrder
-  -> Node f state is os m
-  -> Array x
-orderedNodeBoundKeysTest'' p order node = Tuple.snd <$> testNBKeysImpl p order (Proxy :: _ rl) node
+orderedNodeInputsTest :: forall rl iholder f state is os m
+   . HasInputsAt is rl
+  => TestSubjBoundKeys rl Input (Node f state is os m) iholder
+  => Node f state is os m
+  -> Array iholder
+orderedNodeInputsTest node = Tuple.snd <$> testSBKeysImpl (Proxy :: _ Input) (inputsOrder node) (Proxy :: _ rl) node
