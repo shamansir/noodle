@@ -18,7 +18,7 @@ import Control.Applicative (class Applicative)
 import Type.Data.Symbol (class IsSymbol)
 import Type.RowList as RL
 
-import Noodle.Id (Family, FamilyR) as Node
+import Noodle.Id (Family, FamilyR, Input, Output) as Node
 import Noodle.Id (reflectFamilyR) as Id
 import Noodle.Family.Def as Family
 import Noodle.Toolkit3 (Toolkit) as Noodle
@@ -26,6 +26,7 @@ import Noodle.Toolkit3 as Toolkit
 import Noodle.Patch4 (Patch) as Noodle
 import Noodle.Patch4 as Patch
 import Noodle.Node2 (Node) as Noodle
+import Noodle.Node2 as Node
 import Noodle.Toolkit3.Has (class HasFamilyDef) as Has
 import Noodle.Patch4.Has (class HasInstancesOf) as Has
 import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasInputsAt', class HasOutputsAt') as Has
@@ -704,6 +705,10 @@ withFamily
         => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
            .  HasNodesOf f state fs iis rli is rlo os m
            => NMF.ToReprHelper m f is rli os rlo repr_is repr_os BlessedRepr state
+           => Node.TestNodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m BlessedRepr)
+           => Node.TestNodeBoundKeys Node.O rlo Node.Output f state is os m (Node.HoldsOutputInNodeMRepr m BlessedRepr)
+        --    => Node.TestNodeBoundKeys Node.I rli Node.Input f state is os m x
+        --    => Node.TestNodeBoundKeys Node.O rlo Node.Output f state is os m x
            => FromToReprRow rli is BlessedRepr
            => FromToReprRow rlo os BlessedRepr
            => Node.Family f

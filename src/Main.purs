@@ -501,6 +501,8 @@ main1 =
             => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.BlessedRepr state
             => FromToReprRow rli is Hydra.BlessedRepr
             => FromToReprRow rlo os Hydra.BlessedRepr
+            => Node.TestNodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)
+            => Node.TestNodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
             => Patch.Id
             -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
             -> Id.Family f
@@ -529,6 +531,9 @@ main1 =
                 let (osss :: Array (Node.HoldsOutputInNodeM Effect)) = Node.orderedOutputsM node
                 let (issss :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)) = Node.orderedInputsMRepr node
                 let (ossss :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)) = Node.orderedOutputsMRepr node
+                let (issss1 :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)) = Node.orderedNodeInputsTest' node
+                let (ossss1 :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)) = Node.orderedNodeOutputsTest' node
+                -- let (ossss1 :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)) = Node.orderedNodeOutputsTest' node
                 -- let (osss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
 
                 -- TODO
@@ -543,20 +548,22 @@ main1 =
                 let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
                 let repr = R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.BlessedRepr)  node
                 -- state <- State.get
-                pure { nextPatch, node, inputs, is, iss, iss2, isss, issss, os, oss, oss2, osss, ossss, outputs, nodes, repr }
+                pure { nextPatch, node, inputs, is, iss, iss2, isss, issss, issss1, os, oss, oss2, osss, ossss, ossss1, outputs, nodes, repr }
 
             -- let is /\ os = Node.shapeH rec.node
-            let is /\ os = rec.issss /\ rec.ossss
+            let is /\ os = rec.issss1 /\ rec.ossss1
             liftEffect $ Console.log $ "is" <> (show $ List.length rec.is)
             liftEffect $ Console.log $ "os" <> (show $ List.length rec.os)
             liftEffect $ Console.log $ "iss" <> (show $ Array.length rec.iss)
             liftEffect $ Console.log $ "oss" <> (show $ Array.length rec.oss)
             liftEffect $ Console.log $ "iss2-" <> (show $ Array.length rec.iss2)
             liftEffect $ Console.log $ "oss2-" <> (show $ Array.length rec.oss2)
-            liftEffect $ Console.log $ "isss" <> (show $ Array.length rec.isss)
-            liftEffect $ Console.log $ "osss" <> (show $ Array.length rec.osss)
-            liftEffect $ Console.log $ "issss" <> (show $ Array.length rec.issss)
-            liftEffect $ Console.log $ "ossss" <> (show $ Array.length rec.ossss)
+            -- liftEffect $ Console.log $ "isss" <> (show $ Array.length rec.isss)
+            -- liftEffect $ Console.log $ "osss" <> (show $ Array.length rec.osss)
+            -- liftEffect $ Console.log $ "issss" <> (show $ Array.length rec.issss)
+            -- liftEffect $ Console.log $ "ossss" <> (show $ Array.length rec.ossss)
+            liftEffect $ Console.log $ "issss1" <> (show $ Array.length rec.issss1)
+            liftEffect $ Console.log $ "ossss1" <> (show $ Array.length rec.ossss1)
             let repr = rec.repr
             let nodeId = Node.id rec.node
             let (node :: Noodle.Node f state is os Effect) = rec.node

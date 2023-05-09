@@ -277,6 +277,9 @@ spec = do
             let inputsRow = Node.inputsRow node
             let outputsRow = Node.outputsRow node
 
+            let (aaa :: Array (Node.HoldsInputInNodeMRepr Aff MyRepr)) = Node.orderedNodeInputsTest' node
+            let (bbb :: Array (Node.HoldsInputInNodeMRepr Aff MyRepr)) = Node.orderedNodeInputsTest' node
+
             (reflect' <$> (KH.orderedKeys' (Proxy :: _ Fn.Input) (Node.inputsOrder node) inputsRec :: Array Fn.HoldsInput)) `shouldEqual` [ "e", "b", "a", "c", "d" ]
             (reflect' <$> (KH.orderedKeys' (Proxy :: _ Fn.Output) (Node.outputsOrder node) outputsRec :: Array Fn.HoldsOutput)) `shouldEqual` [ "a", "f", "b", "d", "c", "e" ]
 
