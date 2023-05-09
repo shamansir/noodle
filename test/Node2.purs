@@ -18,6 +18,8 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Bifunctor (bimap)
 import Data.SOrder (SOrder, type (:::), T)
 import Data.KeyHolder as KH
+import Data.Repr as R
+import Data.Maybe (Maybe(..))
 
 import Type.Proxy (Proxy(..))
 
@@ -69,7 +71,7 @@ _ecoO = Fn.Output 5 :: _ "e"
 
 ico = Proxy :: _ ("e" ::: "b" ::: "a" ::: "c" ::: "d" ::: T)
 -- ico = Proxy :: _ ("a" ::: "b" ::: "c" ::: "d" ::: "e" ::: T)
-oco = Proxy :: _ ("a" ::: "b" ::: "d" ::: "c" ::: "e" ::: T)
+oco = Proxy :: _ ("a" ::: "f" ::: "b" ::: "d" ::: "c" ::: "e" ::: T)
 
 
 spec :: Spec Unit
@@ -266,7 +268,7 @@ spec = do
 
         it "works from `Node.HoldsInput` / `Node.HoldsOutput`" $ do
             node <-
-                Node.make _corder unit ico oco { a : 3, b: "a", c : 5, d : 9, e : 10 } { a : 1, b : 2, c : 3, d : 4, e : 5 }
+                Node.make _corder unit ico oco { a : 3, b: "a", c : 5, d : 9, e : 10 } { a : 1, b : 2, c : 3, d : 4, e : 5, f : 7 }
                     $ pure unit
 
             inputsRec <- Node.inputs node
@@ -276,19 +278,39 @@ spec = do
             let outputsRow = Node.outputsRow node
 
             (reflect' <$> (KH.orderedKeys' (Proxy :: _ Fn.Input) (Node.inputsOrder node) inputsRec :: Array Fn.HoldsInput)) `shouldEqual` [ "e", "b", "a", "c", "d" ]
-            (reflect' <$> (KH.orderedKeys' (Proxy :: _ Fn.Output) (Node.outputsOrder node) outputsRec :: Array Fn.HoldsOutput)) `shouldEqual` [ "a", "b", "d", "c", "e" ]
+            (reflect' <$> (KH.orderedKeys' (Proxy :: _ Fn.Output) (Node.outputsOrder node) outputsRec :: Array Fn.HoldsOutput)) `shouldEqual` [ "a", "f", "b", "d", "c", "e" ]
 
             (reflect' <$> (KH.orderedKeys' (Proxy :: _ Fn.Input) (Node.inputsOrder node) inputsRow :: Array Fn.HoldsInput)) `shouldEqual` [ "e", "b", "a", "c", "d" ]
-            (reflect' <$> (KH.orderedKeys' (Proxy :: _ Fn.Output) (Node.outputsOrder node) outputsRow :: Array Fn.HoldsOutput)) `shouldEqual` [ "a", "b", "d", "c", "e" ]
+            (reflect' <$> (KH.orderedKeys' (Proxy :: _ Fn.Output) (Node.outputsOrder node) outputsRow :: Array Fn.HoldsOutput)) `shouldEqual` [ "a", "f", "b", "d", "c", "e" ]
 
             (reflect' <$> (Node.orderedNodeBoundKeysTest (Proxy :: _ Fn.Input) (Node.inputsOrder node) inputsRow :: Array Fn.HoldsInput))  `shouldEqual` [ "e", "b", "a", "c", "d" ]
             (reflect' <$> (Node.orderedNodeBoundKeysTest' (Proxy :: _ Fn.Input) (Node.inputsOrder node) inputsRow node :: Array Fn.HoldsInput))  `shouldEqual` [ "e", "b", "a", "c", "d" ]
 
             (reflect' <$> (Node.orderedNodeInputsTest node :: Array Fn.HoldsInput))  `shouldEqual` [ "e", "b", "a", "c", "d" ]
             (reflect' <$> (Node.orderedNodeInputsTest' node :: Array (Node.HoldsInputInNodeM Aff)))  `shouldEqual` [ "e", "b", "a", "c", "d" ]
+            (reflect' <$> (Node.orderedNodeInputsTest' node :: Array (Node.HoldsInputInNodeMRepr Aff MyRepr)))  `shouldEqual` [ "e", "b", "a", "c", "d" ]
+            (reflect' <$> (Node.orderedNodeOutputsTest' node :: Array (Node.HoldsOutputInNodeMRepr Aff MyRepr)))  `shouldEqual`[ "a", "f", "b", "d", "c", "e" ]
 
             pure unit
             -- (reflect' <$> Node.orderedInputs nodeA) `shouldEqual` [ "e", "b", "a", "c", "d" ]
             -- (reflect' <$> Node.orderedOutputs nodeA) `shouldEqual` [ "a", "b", "d", "c", "e" ]
 
         -- TODO: test hashes
+
+
+data MyRepr
+    = IntRepr Int
+    | StringRepr String
+
+
+instance R.ToRepr Int MyRepr where toRepr = R.exists <<< IntRepr
+instance R.ToRepr String MyRepr where toRepr = R.exists <<< StringRepr
+
+
+instance R.FromRepr MyRepr Int where
+    fromRepr (R.Repr (IntRepr n)) = Just n
+    fromRepr _ = Nothing
+
+instance R.FromRepr MyRepr String where
+    fromRepr (R.Repr (StringRepr s)) = Just s
+    fromRepr _ = Nothing
