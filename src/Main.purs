@@ -93,20 +93,10 @@ import Noodle.Family.Def as Family
 import Noodle.Node2.MapsFolds.Repr (nodeToRepr, nodeToMapRepr, Repr(..), class HasRepr, class ToReprHelper) as R
 
 
+import Cli.Keys as Key
+
 import Toolkit.Hydra2 as Hydra
 import Toolkit.Hydra2.BlessedRepr as Hydra
-
-
-mainScreen = nk :: Screen <^> "main-scr"
-patchesBar = nk :: ListBar <^> "patches-bar"
-patchBox = nk :: Box <^> "patch-box"
-nodeList = nk :: List <^> "node-list"
-nodeBox = nk :: Box <^> "node-box"
-inletsBar = nk :: ListBar <^> "node-inlets-bar"
-outletsBar = nk :: ListBar <^> "node-outlets-bar"
-inlets = nk :: ListBar <^> "inlets"
-outlets = nk :: ListBar <^> "outlets"
-addPatchButton = nk :: Button <^> "add-patch"
 
 
 -- patches = [ "Patch 1", "Patch 2" ]
@@ -215,9 +205,9 @@ initialState :: State
 initialState =
     { lastShiftX : 0
     , lastShiftY : 0
-    , lastNodeBoxKey : nodeBox
-    , lastInletsBarKey : inletsBar
-    , lastOutletsBarKey : outletsBar
+    , lastNodeBoxKey : Key.nodeBox
+    , lastInletsBarKey : Key.inletsBar
+    , lastOutletsBarKey : Key.outletsBar
     , lastClickedOutlet : Nothing
     , lastLink : Nothing
     , linksFrom : Map.empty
@@ -249,7 +239,7 @@ families = List.toUnfoldable $ Toolkit.nodeFamilies Hydra.toolkit
 main1 :: Effect Unit
 main1 =
   Cli.run initialState
-    (B.screenAnd mainScreen
+    (B.screenAnd Key.mainScreen
 
         [ Screen.title "Noodle"
         , Screen.smartCSR true
@@ -260,7 +250,7 @@ main1 =
                 Blessed.exit
         ]
 
-        [ B.listbar patchesBar
+        [ B.listbar Key.patchesBar
             [ Box.top $ Offset.px 0
             , Box.left $ Offset.px 0
             , Box.width $ Dimension.percents 100.0
@@ -282,7 +272,7 @@ main1 =
             ]
             []
 
-        , B.box patchBox
+        , B.box Key.patchBox
 
             [ Box.top $ Offset.calc $ Coord.center <+> Coord.px 1
             , Box.left $ Offset.center
@@ -300,7 +290,7 @@ main1 =
                 ]
             ]
 
-            [ B.listAnd nodeList
+            [ B.listAnd Key.nodeList
                 [ Box.top $ Offset.px 0
                 , Box.left $ Offset.px 0
                 , Box.width $ Dimension.px 14
@@ -342,7 +332,7 @@ main1 =
                         let nextOutletsBar = NodeKey.next state.lastOutletsBarKey
 
                         {- -}
-                        selected <- List.selected ~< nodeList
+                        selected <- List.selected ~< Key.nodeList
                         let mbSelectedFamily = families !! selected
                         -- mbNextNode <-
                         _ <- case (/\) <$> mbSelectedFamily <*> ((/\) <$> mbCurrentPatch <*> mbCurrentPatchId) of
@@ -451,7 +441,7 @@ main1 =
                     pure unit
             ]
 
-        , B.button addPatchButton
+        , B.button Key.addPatchButton
             [ Box.content "+"
             , Box.top $ Offset.px 0
             , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
@@ -477,10 +467,10 @@ main1 =
                             , network = nextNW
                             }
                         )
-                    patchesBar >~ ListBar.setItems $ patchesLBCommands nextNW
-                    patchesBar >~ ListBar.select patchNumId
+                    Key.patchesBar >~ ListBar.setItems $ patchesLBCommands nextNW
+                    Key.patchesBar >~ ListBar.select patchNumId
                     -- TODO: clear the patches box content (ensure all the nodes and links are stored in the network for the previously selected patch)
-                    mainScreen >~ Screen.render
+                    Key.mainScreen >~ Screen.render
             ]
             []
 
@@ -488,9 +478,9 @@ main1 =
 
 
         $ \_ -> do
-            patchesBar >~ ListBar.select 1
-            nodeList >~ Box.focus
-            mainScreen >~ Screen.render
+            Key.patchesBar >~ ListBar.select 1
+            Key.nodeList >~ Box.focus
+            Key.mainScreen >~ Screen.render
         )
 
     where
@@ -546,7 +536,7 @@ main1 =
                 -- let (nodeHolder :: Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect) = Patch.holdNode' nextPatch node
                 -- let nextPatch' = Hydra.spawnAndRegister curPatch familyR
                 let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
-                let repr = R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.BlessedRepr)  node
+                repr <- R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.BlessedRepr) node
                 -- state <- State.get
                 pure { nextPatch, node, inputs, is, iss, iss2, isss, issss, issss1, os, oss, oss2, osss, ossss, ossss1, outputs, nodes, repr }
 
@@ -642,7 +632,7 @@ main1 =
                                                 inodeKey
                                                 (InletIndex idx)
                                     State.modify_ $ storeLink linkCmp
-                                    patchBox >~ appendLink linkCmp
+                                    Key.patchBox >~ appendLink linkCmp
                                     nextPatch' <- liftEffect $ Node.withOutputInNodeMRepr
                                         (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr) -- w/o type given here compiler fails to resolve constraints somehow
                                         (\_ onode outputId -> do
@@ -759,7 +749,7 @@ main1 =
                         ]
 
 
-            patchBox >~ Node.append nextNodeBoxN
+            Key.patchBox >~ Node.append nextNodeBoxN
             nextNodeBox >~ Node.append inletsBarN
             nextNodeBox >~ Node.append outletsBarN
 
@@ -771,7 +761,7 @@ main1 =
                 , lastOutletsBarKey = nextOutletsBar
                 } )
 
-            mainScreen >~ Screen.render
+            Key.mainScreen >~ Screen.render
 
             pure { nextNodeBoxN, inletsBarN, outletsBarN }
 
@@ -782,7 +772,7 @@ main1 =
                 State.modify_
                     (_ { currentPatch = Just $ index /\ id })
                 -- patchesBar >~ ListBar.selectTab index
-                mainScreen >~ Screen.render
+                Key.mainScreen >~ Screen.render
 
         familyButton index (id /\ family) =
             id /\ [] /\ \_ _ -> do
@@ -790,7 +780,7 @@ main1 =
                 --     (_ { currentPatch = Just $ index /\ id })
                 -- patchesBar >~ ListBar.selectTab index
                 -- TODO: try Toolkit.unsafeSpawnR
-                mainScreen >~ Screen.render
+                Key.mainScreen >~ Screen.render
 
         forgetLink :: Link -> State -> State
         forgetLink link@(Link props) state =
@@ -825,9 +815,9 @@ main1 =
         onLinkClick :: forall id. Link -> Line <^> id → EventJson → BlessedOp State Effect
         onLinkClick link _ _ = do
             -- liftEffect $ Console.log "click link"
-            patchBox >~ removeLink link
+            Key.patchBox >~ removeLink link
             State.modify_ $ forgetLink link
-            mainScreen >~ Screen.render
+            Key.mainScreen >~ Screen.render
 
 type LinkLineParams =
     { top :: Int
@@ -874,11 +864,6 @@ newtype OutletIndex = OutletIndex Int
 newtype InletIndex = InletIndex Int
 
 
-lineA = nk :: Line <^> "line-a"
-lineB = nk :: Line <^> "line-b"
-lineC = nk :: Line <^> "line-c"
-
-
 type LinkHandler = forall id. IsSymbol id => Link -> Line <^> id → EventJson → BlessedOp State Effect
 
 
@@ -890,9 +875,9 @@ createLink maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletI
     toNodeTop <- Element.top ~< toNode
     let
 
-        keyLinkA = fromMaybe lineA $ NodeKey.next <$> _.a <$> _.keys <$> unwrap <$> maybePrev
-        keyLinkB = fromMaybe lineB $ NodeKey.next <$> _.b <$> _.keys <$> unwrap <$> maybePrev
-        keyLinkC = fromMaybe lineC $ NodeKey.next <$> _.c <$> _.keys <$> unwrap <$> maybePrev
+        keyLinkA = fromMaybe Key.lineA $ NodeKey.next <$> _.a <$> _.keys <$> unwrap <$> maybePrev
+        keyLinkB = fromMaybe Key.lineB $ NodeKey.next <$> _.b <$> _.keys <$> unwrap <$> maybePrev
+        keyLinkC = fromMaybe Key.lineC $ NodeKey.next <$> _.c <$> _.keys <$> unwrap <$> maybePrev
         calc = calcLink { fromNodeLeft, fromNodeTop, toNodeLeft, toNodeTop } (OutletIndex outletIdx) (InletIndex intletIdx)
 
         -- this.link.a = blessed.line({ left : calc.a.left, top : calc.a.top, width : calc.a.width, height : calc.a.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
@@ -1089,7 +1074,7 @@ main2 =
                 ]
                 [ ]
   in Cli.run initialState
-    (B.screenAnd mainScreen
+    (B.screenAnd Key.mainScreen
 
         [ Screen.title "Noodle"
         , Screen.smartCSR true
@@ -1113,7 +1098,7 @@ main2 =
             lbKey >~ ListBar.addItemH "test3" [] \_ _ -> do liftEffect $ Console.log "buz"
             lbKey >~ Core.on' ListBar.Select $ \_ _ -> liftEffect $ Console.log "click assigned after"
             lbKey >~ Core.on' Element.Move $  \_ _ -> liftEffect $ Console.log "click assigned after"
-            mainScreen >~ Screen.render
+            Key.mainScreen >~ Screen.render
     )
 
 -- FIXME: removing links isn't working yet, click works now
