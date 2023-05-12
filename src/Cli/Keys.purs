@@ -19,6 +19,18 @@ addPatchButton = nk :: Button <^> "add-patch"
 
 {- For links -}
 
-lineA = nk :: Line <^> "line-a"
-lineB = nk :: Line <^> "line-b"
-lineC = nk :: Line <^> "line-c"
+
+type LineA = Line <^> "line-a"
+type LineB = Line <^> "line-b"
+type LineC = Line <^> "line-c"
+
+
+lineA = nk :: LineA
+lineB = nk :: LineB
+lineC = nk :: LineC
+
+
+type InletsBarKey = ListBar <^> "node-inlets-bar"
+type OutletsBarKey = ListBar <^> "node-outlets-bar"
+type NodeBoxKey = Box <^> "node-box"
+type PatchBoxKey = Box <^> "patch-box"

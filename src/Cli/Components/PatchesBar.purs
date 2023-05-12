@@ -10,7 +10,7 @@ import Data.FunctorWithIndex (mapWithIndex)
 import Data.Tuple.Nested ((/\))
 
 import Blessed as B
-import Blessed ((>~), (~<))
+import Blessed ((>~))
 
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
@@ -19,16 +19,16 @@ import Blessed.Core.EndStyle as ES
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Lists.List.Option as List
-import Blessed.UI.Lists.ListBar.Event as ListBar
-import Blessed.UI.Lists.ListBar.Option as ListBar
-import Blessed.UI.Lists.ListBar.Method as ListBar
+import Blessed.UI.Lists.ListBar.Option (commands) as ListBar
 import Blessed.UI.Base.Screen.Method as Screen
 
 import Cli.Keys as Key
 import Cli.Palette (palette)
 
 
+
 -- Map Patch.Id (Patch gstate instances)
+-- component ∷ ∀ (t106 ∷ Type) (t110 ∷ Row Type). Map String t106 → SNode { currentPatch ∷ Maybe (Tuple Int String) | t110 }
 component patches =
     B.listbar Key.patchesBar
         [ Box.top $ Offset.px 0
@@ -53,9 +53,11 @@ component patches =
         []
 
 
+--patchesLBCommands ∷ ∀ (t41 ∷ Type -> Type) (t45 ∷ Type) (t46 ∷ Type) (t47 ∷ Type) (t48 ∷ Type) (t49 ∷ Row Type) (t50 ∷ Type) (t51 ∷ Type) (t52 ∷ Type -> Type). FunctorWithIndex t50 t41 ⇒ Unfoldable t41 ⇒ Map t51 t45 → t41 (Tuple t51 (Tuple (Array t46) (t47 → t48 → BlessedOpM { currentPatch ∷ Maybe (Tuple t50 t51) | t49 } t52 Unit ) ) )
 patchesLBCommands = mapWithIndex patchButton <<< Map.toUnfoldable
 
 
+--patchButton ∷ ∀ (t5 ∷ Type) (t10 ∷ Type) (t11 ∷ Type) (t13 ∷ Type) (t20 ∷ Row Type) (t24 ∷ Type) (t25 ∷ Type) (t30 ∷ Type -> Type). t24 → Tuple t25 t5 → Tuple t25 (Tuple (Array t10) (t11 → t13 → BlessedOpM { currentPatch ∷ Maybe (Tuple t24 t25) | t20 } t30 Unit ) )
 patchButton index (id /\ patch) =
     id /\ [] /\ \_ _ -> do
         State.modify_

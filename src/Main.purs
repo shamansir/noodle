@@ -30,8 +30,6 @@ import Unsafe.Coerce (unsafeCoerce)
 import Data.String as String
 import Data.Repr (Repr, class FromRepr, class ToRepr, class FromToReprRow, toRepr, fromRepr)
 
-import Cli.App as Cli
-
 import Blessed ((>~), (~<))
 import Blessed (exit) as Blessed
 import Blessed as B
@@ -93,8 +91,15 @@ import Noodle.Family.Def as Family
 import Noodle.Node2.MapsFolds.Repr (nodeToRepr, nodeToMapRepr, Repr(..), class HasRepr, class ToReprHelper) as R
 
 
+import Cli.App as Cli
+import Cli.Keys (NodeBoxKey)
 import Cli.Keys as Key
 import Cli.Palette (palette)
+import Cli.Style as Style
+import Cli.State (initial, patchIdFromIndex) as State
+import Cli.State (State, Link(..), InletIndex(..), OutletIndex(..))
+import Cli.State.NwWraper (Network, wrapN, unwrapN, withNetwork)
+import Cli.Components.Link as Link
 
 import Toolkit.Hydra2 as Hydra
 import Toolkit.Hydra2.BlessedRepr as Hydra
@@ -104,101 +109,7 @@ import Toolkit.Hydra2.BlessedRepr as Hydra
 -- items = [ "foo", "bar", "buz", "hello", "lalala" ]
 
 
-
-type InletsBarKey = ListBar <^> "node-inlets-bar"
-type OutletsBarKey = ListBar <^> "node-outlets-bar"
-type NodeBoxKey = Box <^> "node-box"
-type PatchBoxKey = Box <^> "patch-box"
-
-
 -- type Nodes = Hydra.Instances Effect
-
-
-type State =
-    { lastInletsBarKey :: InletsBarKey
-    , lastNodeBoxKey :: NodeBoxKey
-    , lastOutletsBarKey :: OutletsBarKey
-    , lastShiftX :: Int
-    , lastShiftY :: Int
-    , lastClickedOutlet :: Maybe
-        { nodeKey :: NodeBoxKey
-        , index :: Int
-        , subj :: String
-        , nodeId :: Id.HoldsNodeId
-        , outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr
-        , node :: Patch.HoldsNode Effect -- Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect
-        }
-    , lastLink :: Maybe Link
-    , linksFrom :: Map RawNodeKey (Map Int Link)
-    , linksTo :: Map RawNodeKey (Map Int Link)
-    -- , network :: Noodle.Network Unit (Hydra.Families Effect) (Hydra.Instances Effect)
-    -- , network :: TestM Effect
-    -- , network :: Network (BlessedOpM State Effect)
-    , network :: Network Effect
-    , currentPatch :: Maybe (Int /\ Patch.Id)
-    }
-
-
-type NoodleNetwork m = Noodle.Network Unit (Hydra.Families m) (Hydra.Instances m)
-
-
-newtype Network m =  -- compiler 0.14.5 fails without newtype
-    Network (NoodleNetwork m)
--- derive instance Newtype (Network m) _ -- fails
-
-
-unwrapN :: forall m. Network m -> NoodleNetwork m
-unwrapN (Network nw') = nw'
-
-
-wrapN :: forall m. NoodleNetwork m -> Network m
-wrapN = Network
-
-
-withNetwork :: forall m. (NoodleNetwork m -> NoodleNetwork m) -> Network m -> Network m
-withNetwork f = unwrapN >>> f >>> wrapN
-
-
-patchIdFromIndex :: Int -> String
-patchIdFromIndex = (+) 1 >>> show >>> (<>) "Patch "
-
-
-initialNetwork :: forall m. Network m
-initialNetwork =
-    Network.init Hydra.toolkit
-    # Network.addPatch (patchIdFromIndex 0) (Patch.init Hydra.toolkit)
-    # Network
-
-
-initialState :: State
-initialState =
-    { lastShiftX : 0
-    , lastShiftY : 0
-    , lastNodeBoxKey : Key.nodeBox
-    , lastInletsBarKey : Key.inletsBar
-    , lastOutletsBarKey : Key.outletsBar
-    , lastClickedOutlet : Nothing
-    , lastLink : Nothing
-    , linksFrom : Map.empty
-    , linksTo : Map.empty
-    -- , nodes : Hydra.noInstances
-    , network : initialNetwork
-    , currentPatch : Just (0 /\ patchIdFromIndex 0)
-    }
-
-
-inletsOutletsStyle =
-    List.style
-        [ LStyle.bg palette.background
-        , LStyle.item
-            [ ES.fg palette.itemNotSelected
-            , ES.bg palette.background
-            ]
-        , LStyle.selected
-            [ ES.fg palette.itemSelected
-            , ES.bg palette.background
-            ]
-        ]
 
 
 families :: Array Id.FamilyR
@@ -207,7 +118,7 @@ families = List.toUnfoldable $ Toolkit.nodeFamilies Hydra.toolkit
 
 main1 :: Effect Unit
 main1 =
-  Cli.run initialState
+  Cli.run State.initial
     (B.screenAnd Key.mainScreen
 
         [ Screen.title "Noodle"
@@ -226,7 +137,7 @@ main1 =
             , Box.height $ Dimension.px 1
             , List.mouse true
             -- , List.items patches
-            , ListBar.commands $ patchesLBCommands initialState.network
+            , ListBar.commands $ patchesLBCommands State.initial.network
             , List.style
                 [ LStyle.bg palette.background
                 , LStyle.item
@@ -428,7 +339,7 @@ main1 =
                     let
                         patchesCount = unwrapN state.network # Network.patchesCount
                         patchNumId = patchesCount
-                        patchId = patchIdFromIndex patchNumId
+                        patchId = State.patchIdFromIndex patchNumId
                         nextNW = state.network # withNetwork (Network.addPatch patchId nextPatch)
                     State.modify_
                         (_
@@ -594,14 +505,14 @@ main1 =
                         case state.lastClickedOutlet of
                             Just lco ->
                                 if inodeKey /= lco.nodeKey then do
-                                    linkCmp <- createLink
+                                    linkCmp <- Link.create
                                                 state.lastLink
                                                 lco.nodeKey
                                                 (OutletIndex lco.index)
                                                 inodeKey
                                                 (InletIndex idx)
-                                    State.modify_ $ storeLink linkCmp
-                                    Key.patchBox >~ appendLink linkCmp
+                                    State.modify_ $ Link.store linkCmp
+                                    Key.patchBox >~ Link.append linkCmp
                                     nextPatch' <- liftEffect $ Node.withOutputInNodeMRepr
                                         (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr) -- w/o type given here compiler fails to resolve constraints somehow
                                         (\_ onode outputId -> do
@@ -654,7 +565,7 @@ main1 =
                                     )
                                     -}
                                     -- TODO: Patch.connect
-                                    linkCmp # linkOn Element.Click onLinkClick
+                                    linkCmp # Link.on Element.Click onLinkClick
                                 else pure unit
                             Nothing -> pure unit
                         State.modify_
@@ -672,7 +583,7 @@ main1 =
                         , List.mouse true
                         , List.keys true
                         , ListBar.autoCommandKeys true
-                        , inletsOutletsStyle
+                        , Style.inletsOutlets
                         {- , Core.on ListBar.Select
                             \_ _ -> do
                                 liftEffect $ Console.log "inlet"
@@ -706,7 +617,7 @@ main1 =
                         -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex outletHandler $ os
                         , List.mouse true
                         , List.keys true
-                        , inletsOutletsStyle
+                        , Style.inletsOutlets
                         {- , Core.on ListBar.Select
                             \_ _ -> do
                                 liftEffect $ Console.log "outlet"
@@ -751,239 +662,21 @@ main1 =
                 -- TODO: try Toolkit.unsafeSpawnR
                 Key.mainScreen >~ Screen.render
 
-        forgetLink :: Link -> State -> State
-        forgetLink link@(Link props) state =
-            state
-                { linksFrom =
-                    Map.update (Map.delete props.id >>> Just) (NodeKey.rawify props.fromNode) state.linksFrom
-                , linksTo =
-                    Map.update (Map.delete props.id >>> Just) (NodeKey.rawify props.toNode) state.linksTo
-                }
-
-        pushLink :: Int -> Link -> Maybe (Map Int Link) -> Maybe (Map Int Link)
-        pushLink id link (Just map) = Just $ Map.insert id link map
-        pushLink id link Nothing = Just $ Map.singleton id link
-
-        storeLink :: Link -> State -> State
-        storeLink link@(Link props) state =
-            state
-                { linksFrom =
-                    Map.alter (pushLink props.id link) (NodeKey.rawify props.fromNode) state.linksFrom
-                , linksTo =
-                    Map.alter (pushLink props.id link) (NodeKey.rawify props.toNode) state.linksTo
-                , lastLink = Just link
-                }
-
+        -- TODO: to Link module?
         onNodeMove :: NodeBoxKey -> NodeBoxKey → EventJson → BlessedOp State Effect
         onNodeMove nodeKey _ _ = do
             state <- State.get
             let rawNk = NodeKey.rawify nodeKey
-            for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) updateLink
-            for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) updateLink
+            for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) Link.update
+            for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) Link.update
 
+        -- TODO: to Link module?
         onLinkClick :: forall id. Link -> Line <^> id → EventJson → BlessedOp State Effect
         onLinkClick link _ _ = do
             -- liftEffect $ Console.log "click link"
-            Key.patchBox >~ removeLink link
-            State.modify_ $ forgetLink link
+            Key.patchBox >~ Link.remove link
+            State.modify_ $ Link.forget link
             Key.mainScreen >~ Screen.render
-
-type LinkLineParams =
-    { top :: Int
-    , left :: Int
-    , width :: Int
-    , height :: Int
-    }
-
-
-type NodePositions =
-    { fromNodeLeft :: Int
-    , fromNodeTop :: Int
-    , toNodeLeft :: Int
-    , toNodeTop :: Int
-    }
-
-
-type LinkCalc =
-    { a :: LinkLineParams
-    , b :: LinkLineParams
-    , c :: LinkLineParams
-    }
-
-
-newtype Link =
-    Link
-    { id :: Int
-    , blessed :: { a :: Core.Blessed State, b :: Core.Blessed State, c :: Core.Blessed State }
-    , fromNode :: NodeBoxKey
-    , toNode :: NodeBoxKey
-    , outletIndex :: Int
-    , inletIndex :: Int
-    , keys ::
-        { a :: Line <^> "line-a"
-        , b :: Line <^> "line-b"
-        , c :: Line <^> "line-c"
-        }
-    }
-
-derive instance Newtype Link _
-
-
-newtype OutletIndex = OutletIndex Int
-newtype InletIndex = InletIndex Int
-
-
-type LinkHandler = forall id. IsSymbol id => Link -> Line <^> id → EventJson → BlessedOp State Effect
-
-
-createLink :: Maybe Link -> NodeBoxKey -> OutletIndex -> NodeBoxKey -> InletIndex -> BlessedOpGet State Effect Link
-createLink maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) = do
-    fromNodeLeft <- Element.left ~< fromNode
-    fromNodeTop <- Element.top ~< fromNode
-    toNodeLeft <- Element.left ~< toNode
-    toNodeTop <- Element.top ~< toNode
-    let
-
-        keyLinkA = fromMaybe Key.lineA $ NodeKey.next <$> _.a <$> _.keys <$> unwrap <$> maybePrev
-        keyLinkB = fromMaybe Key.lineB $ NodeKey.next <$> _.b <$> _.keys <$> unwrap <$> maybePrev
-        keyLinkC = fromMaybe Key.lineC $ NodeKey.next <$> _.c <$> _.keys <$> unwrap <$> maybePrev
-        calc = calcLink { fromNodeLeft, fromNodeTop, toNodeLeft, toNodeTop } (OutletIndex outletIdx) (InletIndex intletIdx)
-
-        -- this.link.a = blessed.line({ left : calc.a.left, top : calc.a.top, width : calc.a.width, height : calc.a.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
-        -- this.link.b = blessed.line({ left : calc.b.left, top : calc.b.top, width : calc.b.width, height : calc.b.height, orientation : 'horizontal', type : 'bg', ch : '∼', fg : PALETTE[8] });
-        -- this.link.c = blessed.line({ left : calc.c.left, top : calc.c.top, width : calc.c.width, height : calc.c.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
-
-        linkA = B.line keyLinkA
-                    [ Box.left $ Offset.px calc.a.left
-                    , Box.top $ Offset.px calc.a.top
-                    , Box.width $ Dimension.px calc.a.width
-                    , Box.height $ Dimension.px calc.a.height
-                    , Line.orientation $ Orientation.Vertical
-                    , Line.ch '≀'
-                    , Line.fg $ palette.linkColor
-                    ]
-
-        linkB = B.line keyLinkB
-                    [ Box.left $ Offset.px calc.b.left
-                    , Box.top $ Offset.px calc.b.top
-                    , Box.width $ Dimension.px calc.b.width
-                    , Box.height $ Dimension.px calc.b.height
-                    , Line.orientation $ Orientation.Horizontal
-                    , Line.type_ $ Border._bg
-                    , Line.ch '∼'
-                    , Line.fg $ palette.linkColor
-                    ]
-
-        linkC = B.line keyLinkC
-                    [ Box.left $ Offset.px calc.c.left
-                    , Box.top $ Offset.px calc.c.top
-                    , Box.width $ Dimension.px calc.c.width
-                    , Box.height $ Dimension.px calc.c.height
-                    , Line.orientation $ Orientation.Vertical
-                    , Line.type_ $ Border._bg
-                    , Line.ch '≀'
-                    , Line.fg $ palette.linkColor
-                    ]
-
-        link =
-            Link
-                { id : maybe 0 ((+) 1) $ _.id <$> unwrap <$> maybePrev
-                , fromNode
-                , toNode
-                , outletIndex : outletIdx
-                , inletIndex : intletIdx
-                , blessed : { a : linkA [], b : linkB [], c : linkC [] }
-                , keys : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
-                }
-
-    pure link
-
-
-calcLink :: NodePositions -> OutletIndex -> InletIndex -> LinkCalc
-calcLink np (OutletIndex outletIdx) (InletIndex intletIdx) =
-    let
-        xo = np.fromNodeLeft + (outletIdx * 6)
-        yo = np.fromNodeTop + 3
-        xi = np.toNodeLeft + (intletIdx * 6)
-        yi = np.toNodeTop + 1
-        my = floor $ abs (toNumber yi - toNumber yo) / 2.0
-        acalc =
-            if yo <= yi then -- outlet above inlet
-                { left : xo, top : yo, width : 1, height : my }
-            else
-                { left : xi, top : yi, width : 1, height : my }
-        bcalc =
-            if yo <= yi then -- outlet above inlet
-                if xo <= xi then -- outlet on the left from inlet
-                    { left : xo, top : yo + my, width : xi - xo, height : 1 }
-                else
-                    { left : xi, top : yo + my, width : xo - xi, height : 1 }
-            else
-                if xi <= xo then -- inlet on the left from outlet
-                    { left : xi, top : yi + my, width : xo - xi, height : 1 }
-                else
-                    { left : xo, top : yi + my, width : xi - xo, height : 1 }
-        ccalc =
-            if yo <= yi then -- outlet above inlet
-                { left : xi, top : yo + my, width : 1, height : my }
-            else
-                { left : xo, top : yi + my, width : 1, height : my }
-    in
-    { a : acalc
-    , b : bcalc
-    , c : ccalc
-    }
-
-
-appendLink :: Link -> PatchBoxKey -> BlessedOp State Effect
-appendLink (Link link) pnk = do
-    pnk >~ Node.append link.blessed.a
-    pnk >~ Node.append link.blessed.b
-    pnk >~ Node.append link.blessed.c
-
-
-removeLink :: Link -> PatchBoxKey -> BlessedOp State Effect
-removeLink (Link link) pnk = do
-    pnk >~ Node.remove link.blessed.a
-    pnk >~ Node.remove link.blessed.b
-    pnk >~ Node.remove link.blessed.c
-
-
-
-linkOn :: forall e. E.Fires Line e => e -> LinkHandler -> Link -> BlessedOp State Effect
-linkOn evt handler (Link link) = do
-    link.keys.a >~ Core.on' evt (handler $ Link link)
-    link.keys.b >~ Core.on' evt (handler $ Link link)
-    link.keys.c >~ Core.on' evt (handler $ Link link)
-
-
-updateLink :: Link -> BlessedOp State Effect
-updateLink (Link link) = do
-    fromNodeLeft <- Element.left ~< link.fromNode
-    fromNodeTop <- Element.top ~< link.fromNode
-    toNodeLeft <- Element.left ~< link.toNode
-    toNodeTop <- Element.top ~< link.toNode
-
-    let calc =
-            calcLink
-            { fromNodeLeft, fromNodeTop, toNodeLeft, toNodeTop }
-            (OutletIndex link.outletIndex)
-            (InletIndex link.inletIndex)
-
-    link.keys.a >~ Element.setLeft $ Offset.px calc.a.left
-    link.keys.a >~ Element.setTop $ Offset.px calc.a.top
-    link.keys.a >~ Element.setWidth $ Dimension.px calc.a.width
-    link.keys.a >~ Element.setHeight $ Dimension.px calc.a.height
-
-    link.keys.b >~ Element.setLeft $ Offset.px calc.b.left
-    link.keys.b >~ Element.setTop $ Offset.px calc.b.top
-    link.keys.b >~ Element.setWidth $ Dimension.px calc.b.width
-    link.keys.b >~ Element.setHeight $ Dimension.px calc.b.height
-
-    link.keys.c >~ Element.setLeft $ Offset.px calc.c.left
-    link.keys.c >~ Element.setTop $ Offset.px calc.c.top
-    link.keys.c >~ Element.setWidth $ Dimension.px calc.c.width
-    link.keys.c >~ Element.setHeight $ Dimension.px calc.c.height
 
 
 -- ⊲ ⊳ ⋎ ⋏ ≺ ≻ ⊽ ⋀ ⋁ ∻ ∶ ∼ ∽ ∾ :: ∻ ∼ ∽ ≀ ⊶ ⊷ ⊸ ⋮ ⋯ ⋰ ⋱ ⊺ ⊢ ⊣ ⊤ ⊥ ⊦ ∣ ∤ ∥ ∦ ∗ ∘ ∙ ⋄ ⋅ ⋆ ⋇ > ⋁
@@ -1004,7 +697,7 @@ main2 =
                 , List.mouse true
                 , List.keys true
                 , ListBar.autoCommandKeys true
-                , inletsOutletsStyle
+                , Style.inletsOutlets
                 , Core.on ListBar.Select
                     \_ _ -> do
                         -- liftEffect $ Console.log "inlet"
@@ -1042,7 +735,7 @@ main2 =
                     -- []
                 ]
                 [ ]
-  in Cli.run initialState
+  in Cli.run State.initial
     (B.screenAnd Key.mainScreen
 
         [ Screen.title "Noodle"
