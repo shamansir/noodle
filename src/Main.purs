@@ -101,6 +101,7 @@ import Cli.State (State, Link(..), InletIndex(..), OutletIndex(..))
 import Cli.State.NwWraper (Network, wrapN, unwrapN, withNetwork)
 import Cli.Components.Link as Link
 import Cli.Components.PatchesBar as PatchesBar
+import Cli.Components.AddPatch as AddPatch
 
 import Toolkit.Hydra2 as Hydra
 import Toolkit.Hydra2.BlessedRepr as Hydra
@@ -302,39 +303,7 @@ main1 =
                     pure unit
             ]
 
-        , B.button Key.addPatchButton
-            [ Box.content "+"
-            , Box.top $ Offset.px 0
-            , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
-            , Box.width $ Dimension.px 1
-            , Box.height $ Dimension.px 1
-            , Button.mouse true
-            , Box.style
-                [ Style.fg palette.foreground
-                , Style.bg palette.background2
-                ]
-            , Core.on Button.Press
-                \_ _ -> do
-                    let nextPatch = Patch.init Hydra.toolkit
-                    state <- State.get
-                    let
-                        patchesCount = unwrapN state.network # Network.patchesCount
-                        patchNumId = patchesCount
-                        patchId = State.patchIdFromIndex patchNumId
-                        nextNW = state.network # withNetwork (Network.addPatch patchId nextPatch)
-                    State.modify_
-                        (_
-                            { currentPatch = Just $ patchNumId /\ patchId
-                            , network = nextNW
-                            }
-                        )
-                    PatchesBar.updatePatches $ Network.patches $ unwrapN nextNW -- TODO: load patches from state in PatchesBar, just call some refresh/update
-                    PatchesBar.selectPatch patchNumId
-                    -- TODO: clear the patches box content (ensure all the nodes and links are stored in the network for the previously selected patch)
-                    Key.mainScreen >~ Screen.render
-            ]
-            []
-
+        , AddPatch.component
         ]
 
 
