@@ -100,6 +100,7 @@ import Cli.State (initial, patchIdFromIndex) as State
 import Cli.State (State, Link(..), InletIndex(..), OutletIndex(..))
 import Cli.State.NwWraper (Network, wrapN, unwrapN, withNetwork)
 import Cli.Components.Link as Link
+import Cli.Components.PatchesBar as PatchesBar
 
 import Toolkit.Hydra2 as Hydra
 import Toolkit.Hydra2.BlessedRepr as Hydra
@@ -130,27 +131,7 @@ main1 =
                 Blessed.exit
         ]
 
-        [ B.listbar Key.patchesBar
-            [ Box.top $ Offset.px 0
-            , Box.left $ Offset.px 0
-            , Box.width $ Dimension.percents 100.0
-            , Box.height $ Dimension.px 1
-            , List.mouse true
-            -- , List.items patches
-            , ListBar.commands $ patchesLBCommands State.initial.network
-            , List.style
-                [ LStyle.bg palette.background
-                , LStyle.item
-                    [ ES.fg palette.itemNotSelected
-                    , ES.bg palette.background
-                    ]
-                , LStyle.selected
-                    [ ES.fg palette.itemSelected
-                    , ES.bg palette.background
-                    ]
-                ]
-            ]
-            []
+        [ PatchesBar.component $ Network.patches $ unwrapN State.initial.network
 
         , B.box Key.patchBox
 
@@ -347,8 +328,8 @@ main1 =
                             , network = nextNW
                             }
                         )
-                    Key.patchesBar >~ ListBar.setItems $ patchesLBCommands nextNW
-                    Key.patchesBar >~ ListBar.select patchNumId
+                    PatchesBar.updatePatches $ Network.patches $ unwrapN nextNW -- TODO: load patches from state in PatchesBar, just call some refresh/update
+                    PatchesBar.selectPatch patchNumId
                     -- TODO: clear the patches box content (ensure all the nodes and links are stored in the network for the previously selected patch)
                     Key.mainScreen >~ Screen.render
             ]
@@ -358,7 +339,7 @@ main1 =
 
 
         $ \_ -> do
-            Key.patchesBar >~ ListBar.select 1
+            PatchesBar.selectPatch 1
             Key.nodeList >~ Box.focus
             Key.mainScreen >~ Screen.render
         )
@@ -644,8 +625,6 @@ main1 =
             Key.mainScreen >~ Screen.render
 
             pure { nextNodeBoxN, inletsBarN, outletsBarN }
-
-        patchesLBCommands fromNw = mapWithIndex patchButton $ Map.toUnfoldable $ Network.patches $ unwrapN fromNw
 
         patchButton index (id /\ patch) =
             id /\ [] /\ \_ _ -> do
