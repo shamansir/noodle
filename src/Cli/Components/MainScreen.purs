@@ -8,6 +8,7 @@ import Blessed ((>~))
 import Blessed as B
 import Blessed (exit) as Blessed
 
+import Blessed.Internal.Core as Core
 import Blessed.Core.Key (alpha, control, escape) as Key
 
 import Blessed.UI.Base.Screen.Event (key) as Screen
@@ -21,6 +22,7 @@ import Noodle.Toolkit3 as Toolkit
 
 import Cli.Keys (mainScreen, nodeList) as Key
 import Cli.State.NwWraper (unwrapN)
+import Cli.State (State)
 import Cli.State (initial) as State
 
 import Cli.Components.PatchBox as PatchBox
@@ -34,6 +36,7 @@ families :: Array Id.FamilyR
 families = List.toUnfoldable $ Toolkit.nodeFamilies Hydra.toolkit
 
 
+component ∷ Core.Blessed State
 component =
     B.screenAnd Key.mainScreen
 

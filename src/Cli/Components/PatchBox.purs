@@ -5,6 +5,8 @@ import Prelude
 
 import Blessed as B
 
+import Blessed.Internal.Core as Core
+
 import Blessed.UI.Boxes.Box.Option as Box
 
 import Blessed.Core.Border (type_, _line, fg) as Border
@@ -16,13 +18,13 @@ import Blessed.Core.Style as Style
 
 import Cli.Palette (palette)
 import Cli.Keys as Key
-
+import Cli.State (State)
 import Cli.Components.Library as Library
 
 import Noodle.Id as Id
 
 
-component :: Array Id.FamilyR -> _
+component :: Array Id.FamilyR -> Core.Blessed State
 component families =
     B.box Key.patchBox
 

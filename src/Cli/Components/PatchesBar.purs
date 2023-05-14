@@ -4,7 +4,8 @@ import Prelude
 
 import Control.Monad.State as State
 
-import Data.Maybe(Maybe(..))
+import Data.Maybe (Maybe(..))
+import Data.Map (Map)
 import Data.Map (toUnfoldable) as Map
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Tuple.Nested ((/\))
@@ -12,6 +13,7 @@ import Data.Tuple.Nested ((/\))
 import Blessed as B
 import Blessed ((>~))
 
+import Blessed.Internal.Core as Core
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.ListStyle as LStyle
@@ -23,10 +25,15 @@ import Blessed.UI.Lists.ListBar.Option (commands) as ListBar
 import Blessed.UI.Lists.ListBar.Method (setItems, select) as ListBar
 import Blessed.UI.Base.Screen.Method as Screen
 
+import Noodle.Patch4 (Patch)
+import Noodle.Patch4 (Id) as Patch
+
 import Cli.Keys as Key
 import Cli.Palette (palette)
+import Cli.State (State)
 
 
+component :: forall gstate instances. Map Patch.Id (Patch gstate instances) -> Core.Blessed State
 
 -- Map Patch.Id (Patch gstate instances)
 -- component ∷ ∀ (t106 ∷ Type) (t110 ∷ Row Type). Map String t106 → SNode { currentPatch ∷ Maybe (Tuple Int String) | t110 }

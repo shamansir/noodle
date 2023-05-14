@@ -26,6 +26,7 @@ import Blessed.UI.Base.Screen.Method (render) as Screen
 
 import Cli.Keys as Key
 import Cli.Palette (palette)
+import Cli.State (State)
 import Cli.State (patchIdFromIndex) as State
 import Cli.State.NwWraper (unwrapN, withNetwork)
 import Cli.Components.PatchesBar as PatchesBar
@@ -36,6 +37,7 @@ import Noodle.Patch4 as Patch
 import Toolkit.Hydra2 as Hydra
 
 
+component ∷ Core.Blessed State
 component =
     B.button Key.addPatchButton
             [ Box.content "+"

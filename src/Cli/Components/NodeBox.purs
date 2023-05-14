@@ -3,110 +3,61 @@ module Cli.Components.NodeBox where
 import Prelude
 
 import Effect (Effect)
-import Effect.Class (liftEffect, class MonadEffect)
+import Effect.Class (liftEffect)
 import Effect.Console as Console
 
 import Control.Monad.State as State
 
-import Data.Maybe (Maybe(..), fromMaybe, maybe, maybe')
-import Data.Tuple (snd) as Tuple
-import Data.Tuple.Nested ((/\), type (/\))
+import Data.Maybe (fromMaybe)
+import Data.Tuple.Nested ((/\))
 import Type.Proxy (Proxy(..))
-import Data.Symbol (class IsSymbol)
-import Prim.Symbol (class Append) as S
-import Data.Int (floor, toNumber)
-import Data.Ord (abs)
-import Data.FunctorWithIndex (mapWithIndex)
-import Data.Newtype (class Newtype, unwrap)
-import Data.Map (Map)
 import Data.Map as Map
-import Data.Array ((:), (!!))
 import Data.Array as Array
-import Data.Foldable (for_, traverse_)
-import Data.List (toUnfoldable, length) as List
+import Data.Foldable (for_)
+import Data.List (length) as List
 import Data.KeyHolder as KH
-import Record.Extra (class Keys, keys) as Record
-import Unsafe.Coerce (unsafeCoerce)
-import Data.String as String
-import Data.Repr (Repr, class FromRepr, class ToRepr, class FromToReprRow, toRepr, fromRepr)
+import Data.Repr (class FromToReprRow)
 
-import Blessed ((>~), (~<))
-import Blessed (exit) as Blessed
+import Blessed ((>~))
 import Blessed as B
 
 import Blessed.Core.Border as Border
-import Blessed.Core.Coord ((<+>), (<->))
-import Blessed.Core.Coord as Coord
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.EndStyle as ES
-import Blessed.Core.Key (Key) as C
-import Blessed.Core.Key as Key
-import Blessed.Core.ListStyle as LStyle
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Style as Style
-import Blessed.Core.Orientation as Orientation
 
-import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line, Button)
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
-import Blessed.Internal.BlessedOp (BlessedOpGet, BlessedOp, BlessedOpM)
-import Blessed.Internal.NodeKey (nk, NodeKey(..), type (<^>), RawNodeKey)
+import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
 import Blessed.Internal.NodeKey as NodeKey
-import Blessed.Internal.Emitter (class Fires) as E
 
-import Blessed.UI.Base.Element.Event as Element
-import Blessed.UI.Base.Element.Property as Element
-import Blessed.UI.Base.Element.PropertySet as Element
-import Blessed.UI.Base.Node.Method as Node
-import Blessed.UI.Base.Screen as Screen
-import Blessed.UI.Base.Screen.Event as Screen
-import Blessed.UI.Base.Screen.Method as Screen
-import Blessed.UI.Base.Screen.Option as Screen
-import Blessed.UI.Boxes.Box as Box
-import Blessed.UI.Boxes.Box.Event as Box
-import Blessed.UI.Boxes.Box.Method as Box
+import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
+import Blessed.UI.Base.Node.Method (append) as Node
+import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Lists.List.Event as List
-import Blessed.UI.Lists.List.Option as List
-import Blessed.UI.Lists.List.Property as List
-import Blessed.UI.Lists.ListBar.Event as ListBar
-import Blessed.UI.Lists.ListBar.Option as ListBar
-import Blessed.UI.Lists.ListBar.Method as ListBar
-import Blessed.UI.Boxes.Line.Option as Line
-import Blessed.UI.Boxes.Line.Event as Line
-import Blessed.UI.Forms.Button as Button
-import Blessed.UI.Forms.Button.Option as Button
-import Blessed.UI.Forms.Button.Event as Button
 -- import Blessed.UI.Line.Li ()
 
 import Noodle.Id as Id
 import Noodle.Toolkit3 as Toolkit
-import Noodle.Network2 as Network
-import Noodle.Network2 (Network) as Noodle
 import Noodle.Patch4 as Patch
 import Noodle.Patch4 (Patch) as Noodle
 import Noodle.Node2 as Node
 import Noodle.Node2 (Node) as Noodle
 import Noodle.Family.Def as Family
-import Noodle.Node2.MapsFolds.Repr (nodeToRepr, nodeToMapRepr, Repr(..), class HasRepr, class ToReprHelper) as R
+import Noodle.Node2.MapsFolds.Repr (class ToReprHelper, Repr(..), nodeToRepr) as R
 
 
-import Cli.App as Cli
 import Cli.Keys (NodeBoxKey)
-import Cli.Keys as Key
+import Cli.Keys (mainScreen, patchBox) as Key
 import Cli.Palette (palette)
-import Cli.Style as Style
-import Cli.State (initial, patchIdFromIndex) as State
-import Cli.State (State, Link(..), InletIndex(..), OutletIndex(..))
-import Cli.State.NwWraper (Network, wrapN, unwrapN, withNetwork)
+import Cli.State (State)
 import Cli.Components.Link as Link
-import Cli.Components.PatchesBar as PatchesBar
-import Cli.Components.AddPatch as AddPatch
 import Cli.Components.NodeBox.InletsBar as InletsBar
 import Cli.Components.NodeBox.OutletsBar as OutletsBar
 
-import Toolkit.Hydra2 as Hydra
-import Toolkit.Hydra2.BlessedRepr as Hydra
+import Toolkit.Hydra2 (class HasNodesOf, Instances, State, Toolkit) as Hydra
+import Toolkit.Hydra2.BlessedRepr (BlessedRepr) as Hydra
 
 
 fromFamily

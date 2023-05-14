@@ -15,7 +15,6 @@ import Blessed ((>~), (~<))
 
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Dimension as Dimension
-import Blessed.Core.Orientation as Orientation
 import Blessed.Core.Border as Border
 import Blessed.Core.ListStyle as LStyle
 import Blessed.Core.EndStyle as ES
@@ -23,13 +22,10 @@ import Blessed.Core.EndStyle as ES
 import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey as NodeKey
 
-import Blessed.UI.Boxes.Box as Box
-import Blessed.UI.Boxes.Box.Event as Box
-import Blessed.UI.Boxes.Box.Method as Box
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Lists.List.Event as List
-import Blessed.UI.Lists.List.Option as List
-import Blessed.UI.Lists.List.Property as List
+import Blessed.UI.Lists.List.Event (ListEvent(..)) as List
+import Blessed.UI.Lists.List.Option (items, keys, mouse, style) as List
+import Blessed.UI.Lists.List.Property (selected) as List
 
 
 import Noodle.Id as Id
@@ -37,6 +33,7 @@ import Noodle.Network2 as Network
 
 import Cli.Keys as Key
 import Cli.Palette (palette)
+import Cli.State (State)
 import Cli.State.NwWraper (unwrapN)
 
 import Cli.Components.NodeBox as NodeBox
@@ -48,6 +45,7 @@ import Toolkit.Hydra2 as Hydra
 import Prelude
 
 
+component :: Array Id.FamilyR -> Core.Blessed State
 component families =
     B.listAnd Key.nodeList
         [ Box.top $ Offset.px 0

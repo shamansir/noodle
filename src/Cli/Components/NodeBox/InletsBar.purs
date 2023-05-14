@@ -9,56 +9,34 @@ import Effect.Class (liftEffect)
 import Type.Proxy (Proxy(..))
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Repr (Repr, class FromRepr, class ToRepr, class FromToReprRow, toRepr, fromRepr)
+import Data.Repr (class FromRepr, class ToRepr)
 import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
-import Type.Row (type (+))
 
-import Blessed ((>~), (~<))
-import Blessed (exit) as Blessed
+import Blessed ((>~))
 import Blessed as B
 
-import Blessed.Core.Border as Border
-import Blessed.Core.Coord ((<+>), (<->))
-import Blessed.Core.Coord as Coord
 import Blessed.Core.Dimension as Dimension
-import Blessed.Core.EndStyle as ES
 import Blessed.Core.Key (Key) as C
-import Blessed.Core.Key as Key
-import Blessed.Core.ListStyle as LStyle
 import Blessed.Core.Offset as Offset
-import Blessed.Core.Style as Style
-import Blessed.Core.Orientation as Orientation
 
-import Blessed.Internal.Core (Blessed, Node, NodeAnd, run, runAnd) as C
+import Blessed.Internal.Core (Blessed) as C
 import Blessed.Internal.JsApi (EventJson)
-import Blessed.Internal.BlessedOp (BlessedOpGet, BlessedOp, BlessedOpM)
-import Blessed.Internal.NodeKey (nk, NodeKey(..), type (<^>), RawNodeKey)
-import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line, Button)
+import Blessed.Internal.BlessedOp (BlessedOp)
+import Blessed.Internal.NodeKey (type (<^>))
+import Blessed.Internal.BlessedSubj (Line, ListBar)
 
-import Blessed.UI.Base.Element.Event as Element
-import Blessed.UI.Base.Element.Property as Element
-import Blessed.UI.Base.Element.PropertySet as Element
-import Blessed.UI.Base.Screen as Screen
-import Blessed.UI.Base.Screen.Event as Screen
-import Blessed.UI.Base.Screen.Method as Screen
-import Blessed.UI.Base.Screen.Option as Screen
-import Blessed.UI.Boxes.Box as Box
-import Blessed.UI.Boxes.Box.Event as Box
-import Blessed.UI.Boxes.Box.Method as Box
+import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
+import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Lists.List.Event as List
-import Blessed.UI.Lists.List.Option as List
-import Blessed.UI.Lists.List.Property as List
-import Blessed.UI.Lists.ListBar.Event as ListBar
-import Blessed.UI.Lists.ListBar.Option as ListBar
-import Blessed.UI.Lists.ListBar.Method as ListBar
+import Blessed.UI.Lists.List.Option (keys, mouse) as List
+import Blessed.UI.Lists.ListBar.Option (autoCommandKeys, commands) as ListBar
 import Blessed.Internal.Core as Core
 
 import Cli.Keys (NodeBoxKey, InletsBarKey)
 import Cli.Keys as Key
 import Cli.Style as Style
-import Cli.State (State, Link(..), OutletIndex(..), InletIndex(..))
+import Cli.State (State, Link, OutletIndex(..), InletIndex(..))
 import Cli.State.NwWraper (wrapN, unwrapN)
 import Cli.Components.Link as Link
 
@@ -69,29 +47,28 @@ import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
 import Noodle.Network2 as Network
 import Noodle.Family.Def as Family
-import Noodle.Node2.MapsFolds.Repr (nodeToRepr, nodeToMapRepr, Repr(..), class HasRepr, class ToReprHelper) as R
 
-import Toolkit.Hydra2 as Hydra
-import Toolkit.Hydra2.BlessedRepr as Hydra
+import Toolkit.Hydra2 (Instances, State) as Hydra
+import Toolkit.Hydra2.BlessedRepr (BlessedRepr) as Hydra
 
 
 component
-    :: forall id r f state fs iis rli is rlo os repr_is repr_os
-     . {- Hydra.HasNodesOf f state fs iis rli is rlo os Effect
-    => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.BlessedRepr state
-    => FromToReprRow rli is Hydra.BlessedRepr
-    => FromToReprRow rlo os Hydra.BlessedRepr
-    => Node.TestNodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)
-    => Node.TestNodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
-    => -} Patch.Id
+    :: forall f state is os
+    -- :: forall id r f state fs iis rli is rlo os repr_is repr_os
+    --  . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
+    -- => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.BlessedRepr state
+    -- => FromToReprRow rli is Hydra.BlessedRepr
+    -- => FromToReprRow rlo os Hydra.BlessedRepr
+    -- => Node.TestNodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)
+    -- => Node.TestNodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
+     . Patch.Id
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> NodeBoxKey
     -> InletsBarKey
     -> Id.Family f
     -> Family.Def state is os Effect
     -> Array (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)
-    -> _
-    -- -> C.Node ListBar id ( ListBar.OptionsRow + r ) state
+    -> C.Blessed State
 component curPatchId curPatch nextNodeBox nextInletsBar family _ is =
     B.listbar nextInletsBar
         [ Box.width $ Dimension.percents 90.0
