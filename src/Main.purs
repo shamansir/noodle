@@ -102,8 +102,10 @@ import Cli.State.NwWraper (Network, wrapN, unwrapN, withNetwork)
 
 import Cli.Components.Link as Link
 import Cli.Components.PatchesBar as PatchesBar
+import Cli.Components.PatchBox as PatchBox
 import Cli.Components.AddPatch as AddPatch
 import Cli.Components.Library as Library
+import Cli.Components.MainScreen as MainScreen
 
 import Toolkit.Hydra2 as Hydra
 import Toolkit.Hydra2.BlessedRepr as Hydra
@@ -116,56 +118,13 @@ import Toolkit.Hydra2.BlessedRepr as Hydra
 -- type Nodes = Hydra.Instances Effect
 
 
-families :: Array Id.FamilyR
-families = List.toUnfoldable $ Toolkit.nodeFamilies Hydra.toolkit
+-- families :: Array Id.FamilyR
+-- families = List.toUnfoldable $ Toolkit.nodeFamilies Hydra.toolkit
 
 
 main1 :: Effect Unit
 main1 =
-  Cli.run State.initial
-    (B.screenAnd Key.mainScreen
-
-        [ Screen.title "Noodle"
-        , Screen.smartCSR true
-        , Screen.fullUnicode true
-        , Screen.key
-            [ Key.escape, Key.alpha 'q', (Key.control $ Key.alpha 'C') ]
-            $ \_ kevt -> do
-                Blessed.exit
-        ]
-
-        [ PatchesBar.component $ Network.patches $ unwrapN State.initial.network
-
-        , B.box Key.patchBox
-
-            [ Box.top $ Offset.calc $ Coord.center <+> Coord.px 1
-            , Box.left $ Offset.center
-            , Box.width $ Dimension.percents 100.0
-            , Box.height $ Dimension.calc $ Coord.percents 100.0 <-> Coord.px 1
-            , Box.content "Patch"
-            , Box.tags true
-            , Box.border
-                [ Border.type_ Border._line
-                ]
-            , Box.style
-                [ Style.fg palette.foreground
-                , Style.bg palette.background2
-                , Style.border [ Border.fg palette.border ]
-                ]
-            ]
-
-            [ Library.component families
-            ]
-
-        , AddPatch.component
-        ]
-
-
-        $ \_ -> do
-            PatchesBar.selectPatch 1
-            Key.nodeList >~ Box.focus
-            Key.mainScreen >~ Screen.render
-        )
+  Cli.run State.initial MainScreen.component
 
 
 -- ⊲ ⊳ ⋎ ⋏ ≺ ≻ ⊽ ⋀ ⋁ ∻ ∶ ∼ ∽ ∾ :: ∻ ∼ ∽ ≀ ⊶ ⊷ ⊸ ⋮ ⋯ ⋰ ⋱ ⊺ ⊢ ⊣ ⊤ ⊥ ⊦ ∣ ∤ ∥ ∦ ∗ ∘ ∙ ⋄ ⋅ ⋆ ⋇ > ⋁
