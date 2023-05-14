@@ -98,7 +98,7 @@ component families =
                             (NodeBox.fromFamily curPatchId curPatch)
                             familyR
                     Nothing -> pure Nothing
-                liftEffect $ Console.log $ show selected
+                -- liftEffect $ Console.log $ show selected
                 {- -}
 
                 {-

@@ -117,18 +117,18 @@ fromFamily curPatchId curPatch family def tk = do
 
     -- let is /\ os = Node.shapeH rec.node
     let is /\ os = rec.issss1 /\ rec.ossss1
-    liftEffect $ Console.log $ "is" <> (show $ List.length rec.is)
-    liftEffect $ Console.log $ "os" <> (show $ List.length rec.os)
-    liftEffect $ Console.log $ "iss" <> (show $ Array.length rec.iss)
-    liftEffect $ Console.log $ "oss" <> (show $ Array.length rec.oss)
-    liftEffect $ Console.log $ "iss2-" <> (show $ Array.length rec.iss2)
-    liftEffect $ Console.log $ "oss2-" <> (show $ Array.length rec.oss2)
-    -- liftEffect $ Console.log $ "isss" <> (show $ Array.length rec.isss)
-    -- liftEffect $ Console.log $ "osss" <> (show $ Array.length rec.osss)
-    -- liftEffect $ Console.log $ "issss" <> (show $ Array.length rec.issss)
-    -- liftEffect $ Console.log $ "ossss" <> (show $ Array.length rec.ossss)
-    liftEffect $ Console.log $ "issss1" <> (show $ Array.length rec.issss1)
-    liftEffect $ Console.log $ "ossss1" <> (show $ Array.length rec.ossss1)
+    -- liftEffect $ Console.log $ "is" <> (show $ List.length rec.is)
+    -- liftEffect $ Console.log $ "os" <> (show $ List.length rec.os)
+    -- liftEffect $ Console.log $ "iss" <> (show $ Array.length rec.iss)
+    -- liftEffect $ Console.log $ "oss" <> (show $ Array.length rec.oss)
+    -- liftEffect $ Console.log $ "iss2-" <> (show $ Array.length rec.iss2)
+    -- liftEffect $ Console.log $ "oss2-" <> (show $ Array.length rec.oss2)
+    -- -- liftEffect $ Console.log $ "isss" <> (show $ Array.length rec.isss)
+    -- -- liftEffect $ Console.log $ "osss" <> (show $ Array.length rec.osss)
+    -- -- liftEffect $ Console.log $ "issss" <> (show $ Array.length rec.issss)
+    -- -- liftEffect $ Console.log $ "ossss" <> (show $ Array.length rec.ossss)
+    -- liftEffect $ Console.log $ "issss1" <> (show $ Array.length rec.issss1)
+    -- liftEffect $ Console.log $ "ossss1" <> (show $ Array.length rec.ossss1)
     let repr = rec.repr
     let nodeId = Node.id rec.node
     let (node :: Noodle.Node f state is os Effect) = rec.node
@@ -156,6 +156,7 @@ fromFamily curPatchId curPatch family def tk = do
                 , Box.left left
                 , Box.width $ Dimension.px 25
                 , Box.height $ Dimension.px 5
+                , Box.label $ Id.reflect family
                 , Box.border
                     [ Border.type_ Border._line
                     , Border.fg palette.nodeBoxBorder
