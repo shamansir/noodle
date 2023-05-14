@@ -102,12 +102,13 @@ import Cli.State.NwWraper (Network, wrapN, unwrapN, withNetwork)
 import Cli.Components.Link as Link
 import Cli.Components.PatchesBar as PatchesBar
 import Cli.Components.AddPatch as AddPatch
+import Cli.Components.NodeBox.InletsBar as InletsBar
 
 import Toolkit.Hydra2 as Hydra
 import Toolkit.Hydra2.BlessedRepr as Hydra
 
 
-addNodeOfGivenFamily
+fromFamily
     :: forall f state fs iis rli is rlo os repr_is repr_os
      . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
     => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.BlessedRepr state
@@ -121,7 +122,7 @@ addNodeOfGivenFamily
     -> Family.Def state is os Effect
     -> Hydra.Toolkit Effect
     -> BlessedOpM State Effect _
-addNodeOfGivenFamily curPatchId curPatch family def tk = do
+fromFamily curPatchId curPatch family def tk = do
     state <- State.get
 
     let nextNodeBox = NodeKey.next state.lastNodeBoxKey
@@ -192,6 +193,7 @@ addNodeOfGivenFamily curPatchId curPatch family def tk = do
     -- let is /\ os = Record.keys (rec.inputs :: Record is) /\ Record.keys (rec.outputs :: Record os)
 
     let
+        inletsBarN = InletsBar.component curPatchId curPatch nextNodeBox nextInletsBar family def is
         nextNodeBoxN =
             B.box nextNodeBox
                 [ Box.draggable true
@@ -211,130 +213,9 @@ addNodeOfGivenFamily curPatchId curPatch family def tk = do
                             ]
                         ]
                     ]
-                , Core.on Element.Move $ onNodeMove nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
+                , Core.on Element.Move $ onMove nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
                 ]
                 [ ]
-
-    let
-        {-
-        connectToOutput
-            ::
-                forall fA fB iB oA dinB doutA stateA stateB isA isB isB' osA osB osA'
-                . IsSymbol fA
-            => IsSymbol fB
-            => Id.HasInput iB dinB isB' isB
-            => FromRepr Hydra.BlessedRepr dinB
-            => Id.HasOutput oA doutA osA' osA
-            => ToRepr doutA Hydra.BlessedRepr
-            => Proxy dinB
-            -> Noodle.Node fB stateB isB osB Effect
-            -> Id.Input iB
-            -> Proxy doutA
-            -> Noodle.Node fA stateA isA osA Effect
-            -> Id.Output oA
-            -> Effect (Noodle.Patch Hydra.State (Hydra.Instances Effect))
-        connectToOutput pdin inode inputId pdout onode outputId = do
-            link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) pdout pdin outputId inputId onode inode
-            let nextPatch' = Patch.registerLink link curPatch
-            pure nextPatch'
-        -}
-        inletHandler :: forall f nstate i din is is' os. IsSymbol f => Id.HasInput i din is' is => ToRepr din Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr din => Int -> Proxy din -> Noodle.Node f nstate is os Effect -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
-        inletHandler idx pdin inode inputId =
-            Id.reflect inputId /\ [] /\ \_ _ -> do
-                let inodeKey = nextNodeBox
-                state <- State.get
-                -- liftEffect $ Console.log $ "handler " <> iname
-                case state.lastClickedOutlet of
-                    Just lco ->
-                        if inodeKey /= lco.nodeKey then do
-                            linkCmp <- Link.create
-                                        state.lastLink
-                                        lco.nodeKey
-                                        (OutletIndex lco.index)
-                                        inodeKey
-                                        (InletIndex idx)
-                            State.modify_ $ Link.store linkCmp
-                            Key.patchBox >~ Link.append linkCmp
-                            nextPatch' <- liftEffect $ Node.withOutputInNodeMRepr
-                                (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr) -- w/o type given here compiler fails to resolve constraints somehow
-                                (\_ onode outputId -> do
-                                    link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) outputId inputId onode inode
-                                    let nextPatch' = Patch.registerLink link curPatch
-                                    pure nextPatch'
-                                )
-                                -- (connectToOutput pdin inode inputId)
-                                -- (\pdout node outputId -> ?wh)
-                                -- (connectToOutput pdin inode inputId)
-
-                            State.modify_ (\s -> s { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network })
-
-                                {-
-                                \pdout onode outputId -> do
-                                    -- link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) outputId inputId onode inode
-                                    link <-
-                                        Node.connect outputId inputId
-                                            ?wh
-                                            -- (\dout -> ?wh (toRepr dout :: Maybe (Repr Hydra.BlessedRepr)))
-                                            onode inode
-                                    let nextPatch' = Patch.registerLink link curPatch
-                                    pure nextPatch'
-                                    -- Patch.withNode lco.node
-                                    --     \patch onode ->
-                                            --pure unit
-                                            -- ?wh
-                                            -- let toRepr
-                                            -- link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) outputId inputId onode node
-                                            -- let nextPatch' = Patch.registerLink link curPatch
-                                            -- pure nextPatch'
-                                            -- pure unit
-
-                                            -- Patch.connect outputId inputId identity onode node patch
-
-                                -}
-
-                            {-
-                            _ <- Id.withNodeId lco.nodeId (\onodeId ->
-                                case (/\) <$> Patch.findNode onodeId curPatch <*> Patch.findNode inodeId curPatch of
-                                    Just (onode /\ inode) ->
-                                -- TODO: Patch.findNode
-                                        Id.withOutput
-                                            lco.outputId
-                                            (\outputId -> do
-                                                _ <- Patch.connect outputId inputId ?wh onode inode curPatch
-                                                pure unit
-                                            )
-                                    Nothing -> pure unit
-                            )
-                            -}
-                            -- TODO: Patch.connect
-                            linkCmp # Link.on Element.Click onLinkClick
-                        else pure unit
-                    Nothing -> pure unit
-                State.modify_
-                    (_ { lastClickedOutlet = Nothing })
-            -- onInletSelect nodeId input nextNodeBox idx (Id.reflect input)
-        inletsBarN =
-            B.listbar nextInletsBar
-                [ Box.width $ Dimension.percents 90.0
-                , Box.height $ Dimension.px 1
-                , Box.top $ Offset.px 0
-                , Box.left $ Offset.px 0
-                -- , List.items is
-                , ListBar.commands $ mapWithIndex (\idx hiinr -> Node.withInputInNodeMRepr hiinr (inletHandler idx)) is
-                -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex inletHandler $ is
-                , List.mouse true
-                , List.keys true
-                , ListBar.autoCommandKeys true
-                , Style.inletsOutlets
-                {- , Core.on ListBar.Select
-                    \_ _ -> do
-                        liftEffect $ Console.log "inlet"
-                        inletSelected <- List.selected ~< nextInletsBar
-                        liftEffect $ Console.log $ show inletSelected
-                -}
-                ]
-                [ ]
-
 
     let
         outletHandler :: forall f nstate o dout is os os'. IsSymbol f => Id.HasOutput o dout os' os => ToRepr dout Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr dout => Int -> Proxy dout -> Noodle.Node f nstate is os Effect -> Id.Output o -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
@@ -388,19 +269,9 @@ addNodeOfGivenFamily curPatchId curPatch family def tk = do
     pure { nextNodeBoxN, inletsBarN, outletsBarN }
 
 
--- TODO: to Link module?
-onNodeMove :: NodeBoxKey -> NodeBoxKey → EventJson → BlessedOp State Effect
-onNodeMove nodeKey _ _ = do
+onMove :: NodeBoxKey -> NodeBoxKey → EventJson → BlessedOp State Effect
+onMove nodeKey _ _ = do
     state <- State.get
     let rawNk = NodeKey.rawify nodeKey
     for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) Link.update
     for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) Link.update
-
-
--- TODO: to Link module?
-onLinkClick :: forall id. Link -> Line <^> id → EventJson → BlessedOp State Effect
-onLinkClick link _ _ = do
-    -- liftEffect $ Console.log "click link"
-    Key.patchBox >~ Link.remove link
-    State.modify_ $ Link.forget link
-    Key.mainScreen >~ Screen.render

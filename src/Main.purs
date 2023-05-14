@@ -167,16 +167,6 @@ main1 =
             Key.mainScreen >~ Screen.render
         )
 
-    where
-
-        familyButton index (id /\ family) =
-            id /\ [] /\ \_ _ -> do
-                -- State.modify_
-                --     (_ { currentPatch = Just $ index /\ id })
-                -- patchesBar >~ ListBar.selectTab index
-                -- TODO: try Toolkit.unsafeSpawnR
-                Key.mainScreen >~ Screen.render
-
 
 -- ⊲ ⊳ ⋎ ⋏ ≺ ≻ ⊽ ⋀ ⋁ ∻ ∶ ∼ ∽ ∾ :: ∻ ∼ ∽ ≀ ⊶ ⊷ ⊸ ⋮ ⋯ ⋰ ⋱ ⊺ ⊢ ⊣ ⊤ ⊥ ⊦ ∣ ∤ ∥ ∦ ∗ ∘ ∙ ⋄ ⋅ ⋆ ⋇ > ⋁
 

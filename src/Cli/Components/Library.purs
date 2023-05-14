@@ -97,7 +97,7 @@ component families =
                 _ <- case (/\) <$> mbSelectedFamily <*> ((/\) <$> mbCurrentPatch <*> mbCurrentPatchId) of
                     Just (familyR /\ curPatch /\ curPatchId) ->
                         Hydra.withFamily
-                            (NodeBox.addNodeOfGivenFamily curPatchId curPatch)
+                            (NodeBox.fromFamily curPatchId curPatch)
                             familyR
                     Nothing -> pure Nothing
                 liftEffect $ Console.log $ show selected
