@@ -119,28 +119,6 @@ component curPatchId curPatch nextNodeBox nextInletsBar family _ is =
         [ ]
 
 
-{-
-connectToOutput
-    ::
-        forall fA fB iB oA dinB doutA stateA stateB isA isB isB' osA osB osA'
-        . IsSymbol fA
-    => IsSymbol fB
-    => Id.HasInput iB dinB isB' isB
-    => FromRepr Hydra.BlessedRepr dinB
-    => Id.HasOutput oA doutA osA' osA
-    => ToRepr doutA Hydra.BlessedRepr
-    => Proxy dinB
-    -> Noodle.Node fB stateB isB osB Effect
-    -> Id.Input iB
-    -> Proxy doutA
-    -> Noodle.Node fA stateA isA osA Effect
-    -> Id.Output oA
-    -> Effect (Noodle.Patch Hydra.State (Hydra.Instances Effect))
-connectToOutput pdin inode inputId pdout onode outputId = do
-    link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) pdout pdin outputId inputId onode inode
-    let nextPatch' = Patch.registerLink link curPatch
-    pure nextPatch'
--}
 inletHandler :: forall f nstate i din is is' os. IsSymbol f => Id.HasInput i din is' is => ToRepr din Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr din => Patch.Id -> Patch Hydra.State (Hydra.Instances Effect) -> NodeBoxKey -> Int -> Proxy din -> Noodle.Node f nstate is os Effect -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
 inletHandler curPatchId curPatch nextNodeBox idx pdin inode inputId =
     Id.reflect inputId /\ [] /\ \_ _ -> do
@@ -165,51 +143,9 @@ inletHandler curPatchId curPatch nextNodeBox idx pdin inode inputId =
                             let nextPatch' = Patch.registerLink link curPatch
                             pure nextPatch'
                         )
-                        -- (connectToOutput pdin inode inputId)
-                        -- (\pdout node outputId -> ?wh)
-                        -- (connectToOutput pdin inode inputId)
 
                     State.modify_ (\s -> s { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network })
 
-                        {-
-                        \pdout onode outputId -> do
-                            -- link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) outputId inputId onode inode
-                            link <-
-                                Node.connect outputId inputId
-                                    ?wh
-                                    -- (\dout -> ?wh (toRepr dout :: Maybe (Repr Hydra.BlessedRepr)))
-                                    onode inode
-                            let nextPatch' = Patch.registerLink link curPatch
-                            pure nextPatch'
-                            -- Patch.withNode lco.node
-                            --     \patch onode ->
-                                    --pure unit
-                                    -- ?wh
-                                    -- let toRepr
-                                    -- link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) outputId inputId onode node
-                                    -- let nextPatch' = Patch.registerLink link curPatch
-                                    -- pure nextPatch'
-                                    -- pure unit
-
-                                    -- Patch.connect outputId inputId identity onode node patch
-
-                        -}
-
-                    {-
-                    _ <- Id.withNodeId lco.nodeId (\onodeId ->
-                        case (/\) <$> Patch.findNode onodeId curPatch <*> Patch.findNode inodeId curPatch of
-                            Just (onode /\ inode) ->
-                        -- TODO: Patch.findNode
-                                Id.withOutput
-                                    lco.outputId
-                                    (\outputId -> do
-                                        _ <- Patch.connect outputId inputId ?wh onode inode curPatch
-                                        pure unit
-                                    )
-                            Nothing -> pure unit
-                    )
-                    -}
-                    -- TODO: Patch.connect
                     linkCmp # Link.on Element.Click onLinkClick
                 else pure unit
             Nothing -> pure unit

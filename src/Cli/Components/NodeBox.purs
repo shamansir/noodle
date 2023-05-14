@@ -103,6 +103,7 @@ import Cli.Components.Link as Link
 import Cli.Components.PatchesBar as PatchesBar
 import Cli.Components.AddPatch as AddPatch
 import Cli.Components.NodeBox.InletsBar as InletsBar
+import Cli.Components.NodeBox.OutletsBar as OutletsBar
 
 import Toolkit.Hydra2 as Hydra
 import Toolkit.Hydra2.BlessedRepr as Hydra
@@ -193,7 +194,10 @@ fromFamily curPatchId curPatch family def tk = do
     -- let is /\ os = Record.keys (rec.inputs :: Record is) /\ Record.keys (rec.outputs :: Record os)
 
     let
-        inletsBarN = InletsBar.component curPatchId curPatch nextNodeBox nextInletsBar family def is
+        inletsBarN =
+            InletsBar.component curPatchId curPatch nextNodeBox nextInletsBar family def is
+        outletsBarN =
+            OutletsBar.component nodeHolder nextNodeBox nextOutletsBar os
         nextNodeBoxN =
             B.box nextNodeBox
                 [ Box.draggable true
@@ -216,41 +220,6 @@ fromFamily curPatchId curPatch family def tk = do
                 , Core.on Element.Move $ onMove nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
                 ]
                 [ ]
-
-    let
-        outletHandler :: forall f nstate o dout is os os'. IsSymbol f => Id.HasOutput o dout os' os => ToRepr dout Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr dout => Int -> Proxy dout -> Noodle.Node f nstate is os Effect -> Id.Output o -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
-        outletHandler index pdout node output =
-            Id.reflect output /\ [] /\ \_ _ -> do
-                -- liftEffect $ Console.log $ "handler " <> oname
-                State.modify_
-                    (_
-                        { lastClickedOutlet =
-                            Just
-                                { index, subj : Id.reflect output, nodeKey : nextNodeBox, nodeId : Id.holdNodeId nodeId, outputId : Node.holdOutputInNodeMRepr pdout node output, node : nodeHolder } })
-                -- onOutletSelect nodeId output nextNodeBox idx (Id.reflect output)
-        outletsBarN =
-            B.listbar nextOutletsBar
-                [ Box.width $ Dimension.percents 90.0
-                , Box.height $ Dimension.px 1
-                , Box.top $ Offset.px 2
-                , Box.left $ Offset.px 0
-                -- , List.items os
-                , ListBar.commands $ mapWithIndex (\idx hoinr -> Node.withOutputInNodeMRepr hoinr (outletHandler idx)) os
-                -- , ListBar.commands $ mapWithIndex outletHandler $ Id.reflect' <$> os
-                -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex outletHandler $ os
-                , List.mouse true
-                , List.keys true
-                , Style.inletsOutlets
-                {- , Core.on ListBar.Select
-                    \_ _ -> do
-                        liftEffect $ Console.log "outlet"
-                        outletSelected <- List.selected ~< nextOutletsBar
-                        liftEffect $ Console.log $ show outletSelected
-                -}
-                ]
-                [
-                ]
-
 
     Key.patchBox >~ Node.append nextNodeBoxN
     nextNodeBox >~ Node.append inletsBarN
