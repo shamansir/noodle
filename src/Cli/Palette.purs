@@ -2,8 +2,8 @@ module Cli.Palette where
 
 import Prelude
 
+import Color (Color)
 import Color as Color
-
 import Data.Maybe (Maybe(..))
 import Data.Tuple (uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -61,8 +61,7 @@ toArray p =
 
 
 type Item =
-    { hex :: Maybe String
-    , rgb :: Maybe { r :: Int, g :: Int, b :: Int }
+    { color :: Maybe Color
     , repr :: String
     , label :: String
     , index :: Maybe (Int /\ Maybe Int)
@@ -71,17 +70,19 @@ type Item =
 
 item :: Int -> String -> Int -> Int -> Int -> String -> Item
 item idx hex r g b name =
-    { index : Just (idx /\ Nothing), hex : Just hex, rgb : Just { r, g, b }, repr : hex, label : name }
+    let color = Color.rgb r g b
+    in { index : Just (idx /\ Nothing), color : Just color, repr : hex, label : name }
 
 
 item' :: Int -> Int -> String -> Int -> Int -> Int -> String -> Item
 item' idx idx' hex r g b name =
-    { index : Just (idx /\ Just idx'), hex : Just hex, rgb : Just { r, g, b }, repr : hex, label : name }
+    let color = Color.rgb r g b
+    in { index : Just (idx /\ Just idx'), color : Just color, repr : hex, label : name }
 
 
 qitem :: String -> String -> Item
 qitem color label =
-    { index : Nothing, hex : Nothing, rgb : Nothing, repr : color, label }
+    { index : Nothing, color : Nothing, repr : color, label }
 
 
 qitem' :: String -> Item
@@ -91,13 +92,14 @@ qitem' color =
 
 rgb :: Int -> Int -> Int -> String -> Item
 rgb r g b name =
-    { index : Nothing, hex : Nothing, rgb : Just { r, g, b }, repr : Color.toHexString (Color.rgb r g b), label : name }
+    let color = Color.rgb r g b
+    in { index : Nothing, color : Just color, repr : Color.toHexString color, label : name }
 
 
 hsl :: Number -> Number -> Number -> String -> Item
 hsl h s l name =
-    { index : Nothing, hex : Nothing, rgb : Just { r, g, b }, repr : Color.toHexString (Color.hsl h s l), label : name }
-    where { r, g, b } = Color.toRGBA $ Color.hsl h s l
+    let color = Color.hsl h s l
+    in { index : Nothing, color : Just color, repr : Color.toHexString color, label : name }
 
 
 pico8 :: Array Item
@@ -830,3 +832,22 @@ x11colors =
     , rgb 139 139 0 "yellow4"
     , rgb 154 205 50 "yellowgreen"
     ]
+
+
+rgbStr :: Item -> String
+rgbStr item =
+    case Color.toRGBA <$> item.color of
+        Just { r, g, b } -> show r <> " " <> show g <> " " <> show b
+        Nothing -> "? ? ?"
+
+
+fullInfo :: Item -> String
+fullInfo item =
+    item.label <> "\t" <> item.repr <> " " <> colorValueStr
+    where
+        colorValueStr =
+            case (Color.toRGBA <$> item.color) /\ (Color.toHexString <$> item.color) of
+                Just { r, g, b } /\ Just hex -> "/" <> show r <> " " <> show g <> " " <> show b <> "/ " <> hex
+                Just { r, g, b } /\ Nothing -> "/" <> show r <> " " <> show g <> " " <> show b <> "/"
+                Nothing /\ Just hex -> hex
+                Nothing /\ Nothing -> ""

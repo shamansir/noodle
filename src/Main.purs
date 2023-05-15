@@ -95,7 +95,7 @@ import Cli.App as Cli
 import Cli.Keys (NodeBoxKey)
 import Cli.Keys as Key
 import Cli.Palette (Palette, palette)
-import Cli.Palette (toArray, pico8, hydraFns, x11colors, qitem, qitem') as Palette
+import Cli.Palette (fullInfo, toArray, pico8, hydraFns, x11colors, qitem, qitem') as Palette
 import Cli.Style as Style
 import Cli.State (initial, patchIdFromIndex) as State
 import Cli.State (State, Link(..), InletIndex(..), OutletIndex(..))
@@ -107,6 +107,7 @@ import Cli.Components.PatchBox as PatchBox
 import Cli.Components.AddPatch as AddPatch
 import Cli.Components.Library as Library
 import Cli.Components.MainScreen as MainScreen
+import Cli.Components.PaletteList as PaletteList
 
 import Toolkit.Hydra2 as Hydra
 import Toolkit.Hydra2.BlessedRepr as Hydra
@@ -131,29 +132,9 @@ main1 =
 -- ⊲ ⊳ ⋎ ⋏ ≺ ≻ ⊽ ⋀ ⋁ ∻ ∶ ∼ ∽ ∾ :: ∻ ∼ ∽ ≀ ⊶ ⊷ ⊸ ⋮ ⋯ ⋰ ⋱ ⊺ ⊢ ⊣ ⊤ ⊥ ⊦ ∣ ∤ ∥ ∦ ∗ ∘ ∙ ⋄ ⋅ ⋆ ⋇ > ⋁
 
 
-selfNamedColors :: Array String
-selfNamedColors = [ "red", "green", "blue", "yellow" ]
-
-
-testPalette :: Palette -> Effect Unit
-testPalette palette =
-    let
-        paletteKey = (nk :: List <^> "palette")
-        pitemToListRow item = "{" <> item.repr <> "-bg}      {/" <> item.repr <> "-bg} {" <> item.repr <> "-fg}" <> item.label <> "{/" <> item.repr <> "-fg}"
-        paletteComp =
-            B.list paletteKey
-                [ Box.width $ Dimension.percents 40.0
-                , Box.height $ Dimension.percents 100.0
-                , Box.top $ Offset.px 0
-                , Box.left $ Offset.px 0
-                , List.items $ pitemToListRow <$> (Palette.qitem "white" "title" : (Palette.qitem' <$> selfNamedColors) <> Palette.pico8 <> Palette.toArray palette <> Palette.hydraFns <> Palette.x11colors)
-                , List.mouse true
-                , List.keys true
-                , Box.tags true
-                , Box.scrollable true
-                ]
-                [ ]
-  in Cli.run unit
+testPalette :: Effect Unit
+testPalette =
+  Cli.run unit
     (B.screenAnd Key.mainScreen
 
         [ Screen.title "Palette"
@@ -165,7 +146,7 @@ testPalette palette =
                 Blessed.exit
         ]
 
-        [ paletteComp
+        [ PaletteList.component 0 0
         ]
 
         $ \_ -> do
@@ -175,4 +156,4 @@ testPalette palette =
 
 main :: Effect Unit
 -- main = main1
-main = testPalette palette
+main = testPalette
