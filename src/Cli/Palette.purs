@@ -2,7 +2,7 @@ module Cli.Palette where
 
 import Prelude
 
-
+import Data.Tuple.Nested ((/\), type (/\))
 
 type Palette =
     { background :: String
@@ -35,3 +35,20 @@ palette =
     , foreground : "white"
     , background2 : "black"
     }
+
+
+toArray :: Palette -> Array (String /\ String)
+toArray p =
+    [ p.background /\ "background"
+    , p.itemNotSelected /\ "itemNotSelected"
+    , p.itemSelected /\ "itemSelected"
+    , p.border /\ "border"
+    , p.nodeListFg /\ "nodeListFg"
+    , p.nodeListSelFg /\ "nodeListSelFg"
+    , p.nodeBoxBorder /\ "nodeBoxBorder"
+    , p.familyMarker /\ "familyMarker"
+    , p.linkColor /\ "linkColor"
+    , p.focusedBorder /\ "focusedBorder"
+    , p.foreground /\ "foreground"
+    , p.background2 /\ "background2"
+    ]
