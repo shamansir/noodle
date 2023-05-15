@@ -156,7 +156,8 @@ fromFamily curPatchId curPatch family def tk = do
                 , Box.left left
                 , Box.width $ Dimension.px 25
                 , Box.height $ Dimension.px 5
-                , Box.label $ Id.reflect family
+                , Box.label $ "{red-fg}" <> Id.reflect family <> "{/red-fg}"
+                , Box.tags true
                 , Box.border
                     [ Border.type_ Border._line
                     , Border.fg palette.nodeBoxBorder
