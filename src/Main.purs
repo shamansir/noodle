@@ -95,7 +95,7 @@ import Cli.App as Cli
 import Cli.Keys (NodeBoxKey)
 import Cli.Keys as Key
 import Cli.Palette (Palette, palette)
-import Cli.Palette (toArray) as Palette
+import Cli.Palette (toArray, pico8, hydraFns, x11colors, qitem, qitem') as Palette
 import Cli.Style as Style
 import Cli.State (initial, patchIdFromIndex) as State
 import Cli.State (State, Link(..), InletIndex(..), OutletIndex(..))
@@ -135,64 +135,22 @@ selfNamedColors :: Array String
 selfNamedColors = [ "red", "green", "blue", "yellow" ]
 
 
-pcolor :: Int -> String -> Int -> Int -> Int -> String -> String /\ String
-pcolor idx hex r g b name = hex /\ name
-
-
-labeledColors :: Array (String /\ String)
-labeledColors =
-    [ pcolor 0 "#000000" 0 0 0 "black"
-    , pcolor 1 "#1D2B53" 29 43 83 "dark-blue"
-    , pcolor 2 "#7E2553" 126 37 83 "dark-purple"
-    , pcolor 3 "#008751" 0 135 81 "dark-green"
-    , pcolor 4 "#AB5236" 171 82 54 "brown"
-    , pcolor 5 "#5F574F" 95 87 79 "dark-grey"
-    , pcolor 6 "#C2C3C7" 194 195 199 "light-grey"
-    , pcolor 7 "#FFF1E8" 255 241 232 "white"
-    , pcolor 8 "#FF004D" 255 0 77 "red"
-    , pcolor 9 "#FFA300" 255 163 0 "orange"
-    , pcolor 10 "#FFEC27" 255 236 39 "yellow"
-    , pcolor 11 "#00E436" 0 228 54 "green"
-    , pcolor 12 "#29ADFF" 41 173 255 "blue"
-    , pcolor 13 "#83769C" 131 118 156 "lavender"
-    , pcolor 14 "#FF77A8" 255 119 168 "pink"
-    , pcolor 15 "#FFCCAA" 255 204 170 "light-peach"
-    , pcolor 128 "#291814" 41 24 20 "brownish-black"
-    , pcolor 129 "#111D35" 17 29 53 "darker-blue"
-    , pcolor 130 "#422136" 66 33 54 "darker-purple"
-    , pcolor 131 "#125359" 18 83 89 "blue-green"
-    , pcolor 132 "#742F29" 116 47 41 "dark-brown"
-    , pcolor 133 "#49333B" 73 51 59 "darker-grey"
-    , pcolor 134 "#A28879" 162 136 121 "medium-grey"
-    , pcolor 135 "#F3EF7D" 243 239 125 "light-yellow"
-    , pcolor 136 "#BE1250" 190 18 80 "dark-red"
-    , pcolor 137 "#FF6C24" 255 108 36 "dark-orange"
-    , pcolor 138 "#A8E72E" 168 231 46 "lime-green"
-    , pcolor 139 "#00B543" 0 181 67 "medium-green"
-    , pcolor 140 "#065AB5" 6 90 181 "true-blue"
-    , pcolor 141 "#754665" 117 70 101 "mauve"
-    , pcolor 142 "#FF6E59" 255 110 89 "dark-peach"
-    , pcolor 143 "#FF9D81" 255 157 129 "peach"
-    ]
-
-
-
 testPalette :: Palette -> Effect Unit
 testPalette palette =
     let
         paletteKey = (nk :: List <^> "palette")
-        colorToPair c = c /\ c
-        pairToListItem (color /\ title) = "{" <> color <> "-bg}      {/" <> color <> "-bg} {" <> color <> "-fg}" <> title <> "{/" <> color <> "-fg}"
+        pitemToListRow item = "{" <> item.repr <> "-bg}      {/" <> item.repr <> "-bg} {" <> item.repr <> "-fg}" <> item.label <> "{/" <> item.repr <> "-fg}"
         paletteComp =
             B.list paletteKey
                 [ Box.width $ Dimension.percents 40.0
                 , Box.height $ Dimension.percents 100.0
                 , Box.top $ Offset.px 0
                 , Box.left $ Offset.px 0
-                , List.items $ pairToListItem <$> (("white" /\ "title") : (colorToPair <$> selfNamedColors) <> labeledColors <> Palette.toArray palette)
+                , List.items $ pitemToListRow <$> (Palette.qitem "white" "title" : (Palette.qitem' <$> selfNamedColors) <> Palette.pico8 <> Palette.toArray palette <> Palette.hydraFns <> Palette.x11colors)
                 , List.mouse true
                 , List.keys true
                 , Box.tags true
+                , Box.scrollable true
                 ]
                 [ ]
   in Cli.run unit
