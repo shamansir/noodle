@@ -25,13 +25,14 @@ data Format
 
 data Tag
     = Plain String
-    | FgC Color Tagged
-    | Fg String Tagged
-    | BgC Color Tagged
-    | Bg String Tagged
-    | Align Align Tagged
-    | Format Format Tagged
-    | Split Tagged Tagged
+    | FgC Color Tag
+    | Fg String Tag
+    | BgC Color Tag
+    | Bg String Tag
+    | Align Align Tag
+    | Format Format Tag
+    | Split Tag Tag
+    | Pair Tag Tag
 
 
 
@@ -49,62 +50,133 @@ instance Show Format where
     show Invisible = "invisible"
 
 
+infixl 6 Pair as <+>
 
-plains :: String -> Tagged
-plains = Tagged <<< singleton <<< plain
+
+s :: String -> Tag
+s = plain
 
 
 plain :: String -> Tag
 plain = Plain
 
 
-lefts :: Tagged -> Tagged
-lefts = Tagged <<< singleton <<< left
+lefts :: String -> Tag
+lefts = left <<< plain
 
 
-left :: Tagged -> Tag
+left :: Tag -> Tag
 left = Align Left
 
 
-rights :: Tagged -> Tagged
-rights = Tagged <<< singleton <<< right
+rights :: String -> Tag
+rights = right <<< plain
 
 
-right :: Tagged -> Tag
+right :: Tag -> Tag
 right = Align Right
 
 
-centers :: Tagged -> Tagged
-centers = Tagged <<< singleton <<< right
+centers :: String -> Tag
+centers = center <<< plain
 
 
-center :: Tagged -> Tag
+center :: Tag -> Tag
 center = Align Center
+
+
+bolds :: String -> Tag
+bolds = bold <<< plain
+
+
+bold :: Tag -> Tag
+bold = Format Bold
+
+
+underlines :: String -> Tag
+underlines = underline <<< plain
+
+
+underline :: Tag -> Tag
+underline = Format Underline
+
+
+blinks :: String -> Tag
+blinks = blink <<< plain
+
+
+blink :: Tag -> Tag
+blink = Format Blink
+
+
+inverses :: String -> Tag
+inverses = inverse <<< plain
+
+
+inverse :: Tag -> Tag
+inverse = Format Inverse
+
+
+invisibles :: String -> Tag
+invisibles = invisible <<< plain
+
+
+invisible :: Tag -> Tag
+invisible = Format Invisible
+
+
+fgcs :: Color -> String -> Tag
+fgcs c = fgc c <<< plain
+
+
+fgc :: Color -> Tag -> Tag
+fgc = FgC
+
+
+fgs :: String -> String -> Tag
+fgs cs = fg cs <<< plain
+
+
+fg :: String -> Tag -> Tag
+fg = Fg
+
+
+bgcs :: Color -> String -> Tag
+bgcs c = bgc c <<< plain
+
+
+bgc :: Color -> Tag -> Tag
+bgc = BgC
+
+
+bgs :: String -> String -> Tag
+bgs cs = bg cs <<< plain
+
+
+bg :: String -> Tag -> Tag
+bg = Bg
+
+
+split :: Tag -> Tag -> Tag
+split = Split
 
 
 -- TODO: do syntax?
 
-
-newtype Tagged = Tagged (Array Tag)
-
-instance Show Tagged where
-    show = render
-
-
-
-render :: Tagged -> String
-render (Tagged arr) = String.joinWith "" $ tagToString <$> arr
+instance Show Tag where
+    show = tagToString
 
 
 tagToString :: Tag -> String
 tagToString = case _ of
     Plain str -> str
-    FgC color tagged -> wrap (Color.toHexString color <> "-fg") tagged
+    FgC color tagged -> wrap (Color.toHexString color <> "-fg") $  tagged
     Fg color tagged -> wrap (color <> "-fg") tagged
     BgC color tagged -> wrap (Color.toHexString color <> "-bg") tagged
     Bg color tagged -> wrap (color <> "-bg") tagged
     Align align tagged -> wrap (show align) tagged
     Format format tagged -> wrap (show format) tagged
-    Split taggedA taggedB -> render taggedA <> "{|}" <> render taggedB
+    Split taggedA taggedB -> tagToString taggedA <> "{|}" <> tagToString taggedB
+    Pair taggedA taggedB -> tagToString taggedA <> tagToString taggedB
     where
-        wrap tag tagged = "{" <> tag <> "}" <> render tagged <> "{/" <> tag <> "}"
+        wrap tag tagged = "{" <> tag <> "}" <> tagToString tagged <> "{/" <> tag <> "}"
