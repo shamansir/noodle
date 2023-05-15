@@ -36,11 +36,11 @@ selfNamedColors :: Array String
 selfNamedColors = [ "red", "green", "blue", "yellow" ]
 
 
-component :: forall state. Int -> Int -> Core.Blessed state
-component left top =
+component :: forall state. Int -> Int -> Number -> Number -> Core.Blessed state
+component left top width height =
     B.list paletteKey
-        [ Box.width $ Dimension.percents 40.0
-        , Box.height $ Dimension.percents 100.0
+        [ Box.width $ Dimension.percents width
+        , Box.height $ Dimension.percents height
         , Box.top $ Offset.px top
         , Box.left $ Offset.px left
         , List.items $ pitemToListRow <$> (Palette.qitem "white" "title" : (Palette.qitem' <$> selfNamedColors) <> Palette.pico8 <> Palette.toArray palette <> Palette.hydraFns <> Palette.x11colors)

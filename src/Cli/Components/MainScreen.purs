@@ -28,6 +28,7 @@ import Cli.State (initial) as State
 import Cli.Components.PatchBox as PatchBox
 import Cli.Components.PatchesBar as PatchesBar
 import Cli.Components.AddPatch as AddPatch
+import Cli.Components.PaletteList as PaletteList
 
 import Toolkit.Hydra2 (toolkit) as Hydra
 
@@ -36,6 +37,8 @@ families :: Array Id.FamilyR
 families = List.toUnfoldable $ Toolkit.nodeFamilies Hydra.toolkit
 
 
+
+-- TODO: take toolkit here
 component ∷ Core.Blessed State
 component =
     B.screenAnd Key.mainScreen
@@ -52,6 +55,7 @@ component =
         [ PatchesBar.component $ Network.patches $ unwrapN State.initial.network
         , PatchBox.component families
         , AddPatch.component
+        , PaletteList.component 125 2 30.0 96.0
         ]
 
 
