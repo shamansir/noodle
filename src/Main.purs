@@ -94,7 +94,7 @@ import Noodle.Node2.MapsFolds.Repr (nodeToRepr, nodeToMapRepr, Repr(..), class H
 import Cli.App as Cli
 import Cli.Keys (NodeBoxKey)
 import Cli.Keys as Key
-import Cli.Palette (palette)
+import Cli.Palette (Palette, palette)
 import Cli.Style as Style
 import Cli.State (initial, patchIdFromIndex) as State
 import Cli.State (State, Link(..), InletIndex(..), OutletIndex(..))
@@ -130,63 +130,32 @@ main1 =
 -- ⊲ ⊳ ⋎ ⋏ ≺ ≻ ⊽ ⋀ ⋁ ∻ ∶ ∼ ∽ ∾ :: ∻ ∼ ∽ ≀ ⊶ ⊷ ⊸ ⋮ ⋯ ⋰ ⋱ ⊺ ⊢ ⊣ ⊤ ⊥ ⊦ ∣ ∤ ∥ ∦ ∗ ∘ ∙ ⋄ ⋅ ⋆ ⋇ > ⋁
 
 
-main2 :: Effect Unit
-main2 =
+allColors :: Array (String /\ String)
+allColors = [ "red" /\ "test", "green" /\ "test", "blue" /\ "test", "yellow" /\ "test", "test" /\ "test", "test" /\ "test", "test" /\ "test" ]
+
+
+testPalette :: Palette -> Effect Unit
+testPalette palette =
     let
-        lbKey = (nk :: ListBar <^> "test")
-        inletHandler iname = iname /\ [ ] /\ \_ _ -> do liftEffect $ Console.log $ "cmd " <> iname
-        inletsBarN =
-            B.listbar lbKey
-                [ Box.width $ Dimension.percents 90.0
-                , Box.height $ Dimension.px 1
+        paletteKey = (nk :: List <^> "palette")
+        paletteToArray _ = []
+        toListItem (color /\ title) = "{" <> color <> "-bg}      {/" <> color <> "-bg} {" <> color <> "-fg}" <> title <> "{/" <> color <> "-fg}"
+        paletteComp =
+            B.list paletteKey
+                [ Box.width $ Dimension.percents 40.0
+                , Box.height $ Dimension.percents 100.0
                 , Box.top $ Offset.px 0
                 , Box.left $ Offset.px 0
-                , ListBar.commands $ inletHandler <$> [ "a", "b", "c" ]
+                , List.items $ toListItem <$> (("white" /\ "title") : allColors)
                 , List.mouse true
                 , List.keys true
-                , ListBar.autoCommandKeys true
-                , Style.inletsOutlets
-                , Core.on ListBar.Select
-                    \_ _ -> do
-                        -- liftEffect $ Console.log "inlet"
-                        inletSelected <- List.selected ~< lbKey
-                        -- liftEffect $ Console.log $ show inletSelected
-                        pure unit
-                -- FIXME: this way it is only possible to assign to one type of events
-                -- FIXME: make all B.listBar, B.box methods and so on return object with `Blessed.Event == Blessed.CoreEvent`
-                -- FIXME: and/or don't restrict Blessed.* methods to particular events
-                , Core.on Element.Click
-                    \_ _ -> do
-                        liftEffect $ Console.log "preassigned click"
+                , Box.tags true
                 ]
                 [ ]
-        nbKey = (nk :: Box <^> "node-box")
-        testNodeBox =
-            B.box nbKey
-                [ Box.draggable true
-                , Box.top $ Offset.px 10
-                , Box.left $ Offset.px 10
-                , Box.width $ Dimension.px 25
-                , Box.height $ Dimension.px 5
-                , Box.border
-                    [ Border.type_ Border._line
-                    , Border.fg palette.nodeBoxBorder
-                    , Border.ch $ Border.fill ':'
-                    ]
-                , Box.style
-                    [ Style.focus -- FIXME: makes it fail on drag
-                        [ ES.border
-                            [ Border.fg palette.nodeListSelFg
-                            ]
-                        ]
-                    ]
-                    -- []
-                ]
-                [ ]
-  in Cli.run State.initial
+  in Cli.run unit
     (B.screenAnd Key.mainScreen
 
-        [ Screen.title "Noodle"
+        [ Screen.title "Palette"
         , Screen.smartCSR true
         , Screen.fullUnicode true
         , Screen.key
@@ -195,24 +164,14 @@ main2 =
                 Blessed.exit
         ]
 
-        [ inletsBarN
-        , testNodeBox
+        [ paletteComp
         ]
 
         $ \_ -> do
-            lbKey >~ ListBar.setItems
-                            [ "test1" /\ [] /\ \_ _ -> do liftEffect $ Console.log "foo"
-                            , "test2" /\ [] /\ \_ _ -> do liftEffect $ Console.log "bar"
-                            ]
-            lbKey >~ ListBar.addItem "test4" []
-            lbKey >~ ListBar.addItemH "test3" [] \_ _ -> do liftEffect $ Console.log "buz"
-            lbKey >~ Core.on' ListBar.Select $ \_ _ -> liftEffect $ Console.log "click assigned after"
-            lbKey >~ Core.on' Element.Move $  \_ _ -> liftEffect $ Console.log "click assigned after"
             Key.mainScreen >~ Screen.render
     )
 
--- FIXME: removing links isn't working yet, click works now
-
 
 main :: Effect Unit
-main = main1
+-- main = main1
+main = testPalette palette
