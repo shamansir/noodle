@@ -20,6 +20,8 @@ import Data.Repr (class FromToReprRow)
 
 import Blessed ((>~))
 import Blessed as B
+import Blessed.Tagger (fg, s)
+import Blessed.Tagger (render) as T
 
 import Blessed.Core.Border as Border
 import Blessed.Core.Dimension as Dimension
@@ -66,8 +68,8 @@ fromFamily
     => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.BlessedRepr state
     => FromToReprRow rli is Hydra.BlessedRepr
     => FromToReprRow rlo os Hydra.BlessedRepr
-    => Node.TestNodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)
-    => Node.TestNodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
+    => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)
+    => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f
@@ -156,7 +158,7 @@ fromFamily curPatchId curPatch family def tk = do
                 , Box.left left
                 , Box.width $ Dimension.px 25
                 , Box.height $ Dimension.px 5
-                , Box.label $ "{red-fg}" <> Id.reflect family <> "{/red-fg}"
+                , Box.label $ T.render $ fg "red" $ s $ Id.reflect family
                 , Box.tags true
                 , Box.border
                     [ Border.type_ Border._line

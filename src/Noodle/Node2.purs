@@ -1046,34 +1046,34 @@ instance ReifyOrderedTo Output (Node f state is os m) where
   reifyAt n _ _ = Output n
 
 
-class TestSubjBoundKeys (xs :: RL.RowList Type) (proxy :: Symbol -> Type) a x where
-  testSBKeysImpl :: Proxy proxy -> SOrder -> Proxy xs -> a -> Array (Int /\ x)
+class SubjectBoundKeys (xs :: RL.RowList Type) (proxy :: Symbol -> Type) a x where
+  subjectBoundKeysImpl :: Proxy proxy -> SOrder -> Proxy xs -> a -> Array (Int /\ x)
 
 
-instance nilKeysTest :: TestSubjBoundKeys RL.Nil proxy a x where
-  testSBKeysImpl _ _ _ _ = mempty
+instance nilKeysTest :: SubjectBoundKeys RL.Nil proxy a x where
+  subjectBoundKeysImpl _ _ _ _ = mempty
 else instance consKeysTest ::
   ( IsSymbol name
   , Holder proxy a x
   , ReifyOrderedTo proxy a
-  , TestSubjBoundKeys tail proxy a x
-  ) => TestSubjBoundKeys (RL.Cons name ty tail) proxy a x where
-  testSBKeysImpl :: forall xs. Proxy proxy -> SOrder -> Proxy xs -> a -> Array (Int /\ x)
-  testSBKeysImpl p order _ a =
+  , SubjectBoundKeys tail proxy a x
+  ) => SubjectBoundKeys (RL.Cons name ty tail) proxy a x where
+  subjectBoundKeysImpl :: forall xs. Proxy proxy -> SOrder -> Proxy xs -> a -> Array (Int /\ x)
+  subjectBoundKeysImpl p order _ a =
     Array.insertBy cmpF (index /\ held) ordered
     where
       cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
       index = SOrder.indexOf order (Proxy :: _ name)
       held = hold (reifyAt index (Proxy :: Proxy name) a :: proxy name) a
-      ordered = testSBKeysImpl p order (Proxy :: _ tail) a
+      ordered = subjectBoundKeysImpl p order (Proxy :: _ tail) a
 
 
-class TestNodeBoundKeys k (xs :: RL.RowList Type) (proxy :: Symbol -> Type) f state is os m x where
-  testNBKeysImpl :: Proxy k -> Proxy proxy -> SOrder -> Proxy xs -> Node f state is os m -> Array (Int /\ x)
+class NodeBoundKeys k (xs :: RL.RowList Type) (proxy :: Symbol -> Type) f state is os m x where
+  nodeBoundKeysImpl :: Proxy k -> Proxy proxy -> SOrder -> Proxy xs -> Node f state is os m -> Array (Int /\ x)
 
 
 {-
-Noodle.Node2.TestNodeBoundKeys I
+Noodle.Node2.NodeBoundKeys I
                                 rli7
                                 Input
                                 f8
@@ -1087,79 +1087,79 @@ Noodle.Node2.TestNodeBoundKeys I
 
 
 
-instance nilNKeysITest :: TestNodeBoundKeys k RL.Nil proxy f state is os m x where
-  testNBKeysImpl _ _ _ _ = mempty
+instance nilNKeysITest :: NodeBoundKeys k RL.Nil proxy f state is os m x where
+  nodeBoundKeysImpl _ _ _ _ = mempty
 else instance consNKeysITest ::
   ( IsSymbol name
   , HolderI proxy name ty is is' f m x
   , ReifyOrderedTo proxy (Node f state is os m)
-  , TestNodeBoundKeys I tail proxy f state is os m x
-  ) => TestNodeBoundKeys I (RL.Cons name ty tail) proxy f state is os m x where
-  testNBKeysImpl :: forall xs. Proxy I -> Proxy proxy -> SOrder -> Proxy xs -> Node f state is os m -> Array (Int /\ x)
-  testNBKeysImpl pi p order _ node =
+  , NodeBoundKeys I tail proxy f state is os m x
+  ) => NodeBoundKeys I (RL.Cons name ty tail) proxy f state is os m x where
+  nodeBoundKeysImpl :: forall xs. Proxy I -> Proxy proxy -> SOrder -> Proxy xs -> Node f state is os m -> Array (Int /\ x)
+  nodeBoundKeysImpl pi p order _ node =
     Array.insertBy cmpF (index /\ held) ordered
     where
       cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
       index = SOrder.indexOf order (Proxy :: _ name)
       held = holdI (reifyAt index (Proxy :: Proxy name) node :: proxy name) node
-      ordered = testNBKeysImpl pi p order (Proxy :: _ tail) node
+      ordered = nodeBoundKeysImpl pi p order (Proxy :: _ tail) node
 else instance consNKeysOTest ::
   ( IsSymbol name
   , HolderO proxy name ty os os' f m x
   , ReifyOrderedTo proxy (Node f state is os m)
-  , TestNodeBoundKeys O tail proxy f state is os m x
-  ) => TestNodeBoundKeys O (RL.Cons name ty tail) proxy f state is os m x where
-  testNBKeysImpl :: forall xs. Proxy O -> Proxy proxy -> SOrder -> Proxy xs -> Node f state is os m -> Array (Int /\ x)
-  testNBKeysImpl po p order _ node =
+  , NodeBoundKeys O tail proxy f state is os m x
+  ) => NodeBoundKeys O (RL.Cons name ty tail) proxy f state is os m x where
+  nodeBoundKeysImpl :: forall xs. Proxy O -> Proxy proxy -> SOrder -> Proxy xs -> Node f state is os m -> Array (Int /\ x)
+  nodeBoundKeysImpl po p order _ node =
     Array.insertBy cmpF (index /\ held) ordered
     where
       cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
       index = SOrder.indexOf order (Proxy :: _ name)
       held = holdO (reifyAt index (Proxy :: Proxy name) node :: proxy name) node
-      ordered = testNBKeysImpl po p order (Proxy :: _ tail) node
+      ordered = nodeBoundKeysImpl po p order (Proxy :: _ tail) node
 else instance consNKeysITest' ::
   ( IsSymbol name
   , HolderI Input name ty is is' f m (HoldsInputInNodeMRepr m repr)
   , ReifyOrderedTo Input (Node f state is os m)
-  , TestNodeBoundKeys I tail Input f state is os m (HoldsInputInNodeMRepr m repr)
-  ) => TestNodeBoundKeys I (RL.Cons name ty tail) Input f state is os m (HoldsInputInNodeMRepr m repr) where
-  testNBKeysImpl :: forall xs. Proxy I -> Proxy Input -> SOrder -> Proxy xs -> Node f state is os m -> Array (Int /\ (HoldsInputInNodeMRepr m repr))
-  testNBKeysImpl pi p order _ node =
+  , NodeBoundKeys I tail Input f state is os m (HoldsInputInNodeMRepr m repr)
+  ) => NodeBoundKeys I (RL.Cons name ty tail) Input f state is os m (HoldsInputInNodeMRepr m repr) where
+  nodeBoundKeysImpl :: forall xs. Proxy I -> Proxy Input -> SOrder -> Proxy xs -> Node f state is os m -> Array (Int /\ (HoldsInputInNodeMRepr m repr))
+  nodeBoundKeysImpl pi p order _ node =
     Array.insertBy cmpF (index /\ held) ordered
     where
       cmpF tupleA tupleB = compare (Tuple.fst tupleA) (Tuple.fst tupleB)
       index = SOrder.indexOf order (Proxy :: _ name)
       held = holdI (reifyAt index (Proxy :: Proxy name) node :: Input name) node
-      ordered = testNBKeysImpl pi p order (Proxy :: _ tail) node
+      ordered = nodeBoundKeysImpl pi p order (Proxy :: _ tail) node
 
 
 orderedNodeBoundKeysTest :: forall g row rl proxy x
    . RL.RowToList row rl
-  => TestSubjBoundKeys rl proxy Unit x
+  => SubjectBoundKeys rl proxy Unit x
   => Proxy proxy
   -> SOrder
   -> g row -- this will work for any type with the row as a param!
   -> Array x
-orderedNodeBoundKeysTest p order _ = Tuple.snd <$> testSBKeysImpl p order (Proxy :: _ rl) unit
+orderedNodeBoundKeysTest p order _ = Tuple.snd <$> subjectBoundKeysImpl p order (Proxy :: _ rl) unit
 
 
 orderedNodeBoundKeysTest' :: forall g row rl proxy x f state is os m
    . RL.RowToList row rl
-  => TestSubjBoundKeys rl proxy (Node f state is os m) x
+  => SubjectBoundKeys rl proxy (Node f state is os m) x
   => Proxy proxy
   -> SOrder
   -> g row -- this will work for any type with the row as a param!
   -> Node f state is os m
   -> Array x
-orderedNodeBoundKeysTest' p order _ node = Tuple.snd <$> testSBKeysImpl p order (Proxy :: _ rl) node
+orderedNodeBoundKeysTest' p order _ node = Tuple.snd <$> subjectBoundKeysImpl p order (Proxy :: _ rl) node
 
 
 orderedNodeInputsTest :: forall rl iholder f state is os m
    . HasInputsAt is rl
-  => TestSubjBoundKeys rl Input (Node f state is os m) iholder
+  => SubjectBoundKeys rl Input (Node f state is os m) iholder
   => Node f state is os m
   -> Array iholder
-orderedNodeInputsTest node = Tuple.snd <$> testSBKeysImpl (Proxy :: _ Input) (inputsOrder node) (Proxy :: _ rl) node
+orderedNodeInputsTest node = Tuple.snd <$> subjectBoundKeysImpl (Proxy :: _ Input) (inputsOrder node) (Proxy :: _ rl) node
 
 
 data I
@@ -1170,24 +1170,24 @@ data O
 
 orderedNodeInputsTest' :: forall rl iholder f state is os m
    . HasInputsAt is rl
-  => TestNodeBoundKeys I rl Input f state is os m iholder
+  => NodeBoundKeys I rl Input f state is os m iholder
   => Node f state is os m
   -> Array iholder
-orderedNodeInputsTest' node = Tuple.snd <$> testNBKeysImpl (Proxy :: _ I) (Proxy :: _ Input) (inputsOrder node) (Proxy :: _ rl) node
+orderedNodeInputsTest' node = Tuple.snd <$> nodeBoundKeysImpl (Proxy :: _ I) (Proxy :: _ Input) (inputsOrder node) (Proxy :: _ rl) node
 
 
 orderedNodeInputsTest'' :: forall rl iholder f state is os m
    . HasInputsAt is rl
-  => TestNodeBoundKeys I rl Input f state is os m iholder
+  => NodeBoundKeys I rl Input f state is os m iholder
   => Proxy rl
   -> Node f state is os m
   -> Array iholder
-orderedNodeInputsTest'' prl node = Tuple.snd <$> testNBKeysImpl (Proxy :: _ I) (Proxy :: _ Input) (inputsOrder node) prl node
+orderedNodeInputsTest'' prl node = Tuple.snd <$> nodeBoundKeysImpl (Proxy :: _ I) (Proxy :: _ Input) (inputsOrder node) prl node
 
 
 orderedNodeOutputsTest' :: forall rl oholder f state is os m
    . HasOutputsAt os rl
-  => TestNodeBoundKeys O rl Output f state is os m oholder
+  => NodeBoundKeys O rl Output f state is os m oholder
   => Node f state is os m
   -> Array oholder
-orderedNodeOutputsTest' node = Tuple.snd <$> testNBKeysImpl (Proxy :: _ O) (Proxy :: _ Output) (outputsOrder node) (Proxy :: _ rl) node
+orderedNodeOutputsTest' node = Tuple.snd <$> nodeBoundKeysImpl (Proxy :: _ O) (Proxy :: _ Output) (outputsOrder node) (Proxy :: _ rl) node

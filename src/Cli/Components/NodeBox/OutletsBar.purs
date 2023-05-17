@@ -46,8 +46,8 @@ component
     -- => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.BlessedRepr state
     -- => FromToReprRow rli is Hydra.BlessedRepr
     -- => FromToReprRow rlo os Hydra.BlessedRepr
-    -- => Node.TestNodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)
-    -- => Node.TestNodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
+    -- => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)
+    -- => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
     :: Patch.HoldsNode Effect
     -> NodeBoxKey
     -> OutletsBarKey

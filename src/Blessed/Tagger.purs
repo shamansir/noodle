@@ -50,7 +50,7 @@ instance Show Format where
     show Invisible = "invisible"
 
 
-infixl 6 Pair as <+>
+infixl 6 Pair as <:>
 
 
 s :: String -> Tag
@@ -164,11 +164,11 @@ split = Split
 -- TODO: do syntax?
 
 instance Show Tag where
-    show = tagToString
+    show = render
 
 
-tagToString :: Tag -> String
-tagToString = case _ of
+render :: Tag -> String
+render = case _ of
     Plain str -> str
     FgC color tagged -> wrap (Color.toHexString color <> "-fg") $  tagged
     Fg color tagged -> wrap (color <> "-fg") tagged
@@ -176,7 +176,7 @@ tagToString = case _ of
     Bg color tagged -> wrap (color <> "-bg") tagged
     Align align tagged -> wrap (show align) tagged
     Format format tagged -> wrap (show format) tagged
-    Split taggedA taggedB -> tagToString taggedA <> "{|}" <> tagToString taggedB
-    Pair taggedA taggedB -> tagToString taggedA <> tagToString taggedB
+    Split taggedA taggedB -> render taggedA <> "{|}" <> render taggedB
+    Pair taggedA taggedB -> render taggedA <> render taggedB
     where
-        wrap tag tagged = "{" <> tag <> "}" <> tagToString tagged <> "{/" <> tag <> "}"
+        wrap tag tagged = "{" <> tag <> "}" <> render tagged <> "{/" <> tag <> "}"

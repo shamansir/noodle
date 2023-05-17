@@ -3,6 +3,8 @@ module Cli.Components.PaletteList where
 import Prelude
 
 import Data.Array ((:), (!!))
+import Blessed.Tagger (s, bg ,fg, (<:>))
+import Blessed.Tagger (render) as Tags
 
 import Blessed as B
 import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line, Button)
@@ -29,7 +31,8 @@ paletteKey = (nk :: List <^> "palette")
 
 
 pitemToListRow :: Palette.Item -> String
-pitemToListRow item = "{" <> item.repr <> "-bg}      {/" <> item.repr <> "-bg} {" <> item.repr <> "-fg}" <> Palette.fullInfo item <> "{/" <> item.repr <> "-fg}"
+pitemToListRow item =
+    Tags.render $ bg item.repr (s "      ") <:> s " " <:> fg item.repr (s $ Palette.fullInfo item)
 
 
 selfNamedColors :: Array String

@@ -705,10 +705,10 @@ withFamily
         => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
            .  HasNodesOf f state fs iis rli is rlo os m
            => NMF.ToReprHelper m f is rli os rlo repr_is repr_os BlessedRepr state
-           => Node.TestNodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m BlessedRepr)
-           => Node.TestNodeBoundKeys Node.O rlo Node.Output f state is os m (Node.HoldsOutputInNodeMRepr m BlessedRepr)
-        --    => Node.TestNodeBoundKeys Node.I rli Node.Input f state is os m x
-        --    => Node.TestNodeBoundKeys Node.O rlo Node.Output f state is os m x
+           => Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m BlessedRepr)
+           => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m (Node.HoldsOutputInNodeMRepr m BlessedRepr)
+        --    => Node.NodeBoundKeys Node.I rli Node.Input f state is os m x
+        --    => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m x
            => FromToReprRow rli is BlessedRepr
            => FromToReprRow rlo os BlessedRepr
            => Node.Family f
