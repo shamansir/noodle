@@ -49,25 +49,25 @@ import Noodle.Network2 as Network
 import Noodle.Family.Def as Family
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
-import Toolkit.Hydra2.BlessedRepr (BlessedRepr) as Hydra
+import Toolkit.Hydra2.Repr (TextRepr) as Hydra
 
 
 component
     :: forall f state is os
     -- :: forall id r f state fs iis rli is rlo os repr_is repr_os
     --  . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
-    -- => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.BlessedRepr state
-    -- => FromToReprRow rli is Hydra.BlessedRepr
-    -- => FromToReprRow rlo os Hydra.BlessedRepr
-    -- => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)
-    -- => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
+    -- => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.TextRepr state
+    -- => FromToReprRow rli is Hydra.TextRepr
+    -- => FromToReprRow rlo os Hydra.TextRepr
+    -- => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.TextRepr)
+    -- => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.TextRepr)
      . Patch.Id
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> NodeBoxKey
     -> InletsBarKey
     -> Id.Family f
     -> Family.Def state is os Effect
-    -> Array (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)
+    -> Array (Node.HoldsInputInNodeMRepr Effect Hydra.TextRepr)
     -> C.Blessed State
 component curPatchId curPatch nextNodeBox nextInletsBar family _ is =
     B.listbar nextInletsBar
@@ -96,7 +96,7 @@ component curPatchId curPatch nextNodeBox nextInletsBar family _ is =
         [ ]
 
 
-inletHandler :: forall f nstate i din is is' os. IsSymbol f => Id.HasInput i din is' is => ToRepr din Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr din => Patch.Id -> Patch Hydra.State (Hydra.Instances Effect) -> NodeBoxKey -> Int -> Proxy din -> Noodle.Node f nstate is os Effect -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
+inletHandler :: forall f nstate i din is is' os. IsSymbol f => Id.HasInput i din is' is => ToRepr din Hydra.TextRepr => FromRepr Hydra.TextRepr din => Patch.Id -> Patch Hydra.State (Hydra.Instances Effect) -> NodeBoxKey -> Int -> Proxy din -> Noodle.Node f nstate is os Effect -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
 inletHandler curPatchId curPatch nextNodeBox idx pdin inode inputId =
     Id.reflect inputId /\ [] /\ \_ _ -> do
         let inodeKey = nextNodeBox
@@ -114,9 +114,9 @@ inletHandler curPatchId curPatch nextNodeBox idx pdin inode inputId =
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
                     nextPatch' <- liftEffect $ Node.withOutputInNodeMRepr
-                        (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr) -- w/o type given here compiler fails to resolve constraints somehow
+                        (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.TextRepr) -- w/o type given here compiler fails to resolve constraints somehow
                         (\_ onode outputId -> do
-                            link <- Node.connectByRepr (Proxy :: _ Hydra.BlessedRepr) outputId inputId onode inode
+                            link <- Node.connectByRepr (Proxy :: _ Hydra.TextRepr) outputId inputId onode inode
                             let nextPatch' = Patch.registerLink link curPatch
                             pure nextPatch'
                         )

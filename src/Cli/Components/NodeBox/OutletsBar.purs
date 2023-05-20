@@ -37,21 +37,21 @@ import Noodle.Node2 (Node) as Noodle
 import Noodle.Node2 as Node
 import Noodle.Patch4 as Patch
 
-import Toolkit.Hydra2.BlessedRepr (BlessedRepr) as Hydra
+import Toolkit.Hydra2.Repr (TextRepr) as Hydra
 
 
 component
     -- forall id r f state fs iis rli is rlo os repr_is repr_os
     -- . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
-    -- => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.BlessedRepr state
-    -- => FromToReprRow rli is Hydra.BlessedRepr
-    -- => FromToReprRow rlo os Hydra.BlessedRepr
-    -- => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)
-    -- => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
+    -- => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.TextRepr state
+    -- => FromToReprRow rli is Hydra.TextRepr
+    -- => FromToReprRow rlo os Hydra.TextRepr
+    -- => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.TextRepr)
+    -- => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.TextRepr)
     :: Patch.HoldsNode Effect
     -> NodeBoxKey
     -> OutletsBarKey
-    -> Array (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
+    -> Array (Node.HoldsOutputInNodeMRepr Effect Hydra.TextRepr)
     -> C.Blessed State
 component nodeHolder nextNodeBox nextOutletsBar os =
     B.listbar nextOutletsBar
@@ -74,7 +74,7 @@ component nodeHolder nextNodeBox nextOutletsBar os =
         ]
 
 
-outletHandler :: forall f nstate o dout is os os'. IsSymbol f => Id.HasOutput o dout os' os => ToRepr dout Hydra.BlessedRepr => FromRepr Hydra.BlessedRepr dout => Patch.HoldsNode Effect -> NodeBoxKey -> Int -> Proxy dout -> Noodle.Node f nstate is os Effect -> Id.Output o -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
+outletHandler :: forall f nstate o dout is os os'. IsSymbol f => Id.HasOutput o dout os' os => ToRepr dout Hydra.TextRepr => FromRepr Hydra.TextRepr dout => Patch.HoldsNode Effect -> NodeBoxKey -> Int -> Proxy dout -> Noodle.Node f nstate is os Effect -> Id.Output o -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
 outletHandler nodeHolder nextNodeBox index pdout node output =
     Id.reflect output /\ [] /\ \_ _ -> do
         -- liftEffect $ Console.log $ "handler " <> oname

@@ -59,17 +59,17 @@ import Cli.Components.NodeBox.InletsBar as InletsBar
 import Cli.Components.NodeBox.OutletsBar as OutletsBar
 
 import Toolkit.Hydra2 (class HasNodesOf, Instances, State, Toolkit) as Hydra
-import Toolkit.Hydra2.BlessedRepr (BlessedRepr) as Hydra
+import Toolkit.Hydra2.Repr (TextRepr) as Hydra
 
 
 fromFamily
     :: forall f state fs iis rli is rlo os repr_is repr_os
      . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
-    => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.BlessedRepr state
-    => FromToReprRow rli is Hydra.BlessedRepr
-    => FromToReprRow rlo os Hydra.BlessedRepr
-    => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)
-    => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)
+    => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.TextRepr state
+    => FromToReprRow rli is Hydra.TextRepr
+    => FromToReprRow rlo os Hydra.TextRepr
+    => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.TextRepr)
+    => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.TextRepr)
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f
@@ -96,11 +96,11 @@ fromFamily curPatchId curPatch family def tk = do
         let (oss2 :: Array Node.HoldsOutputInNode) = Node.orderedOutputs node
         let (isss :: Array (Node.HoldsInputInNodeM Effect)) = Node.orderedInputsM node
         let (osss :: Array (Node.HoldsOutputInNodeM Effect)) = Node.orderedOutputsM node
-        let (issss :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)) = Node.orderedInputsMRepr node
-        let (ossss :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)) = Node.orderedOutputsMRepr node
-        let (issss1 :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.BlessedRepr)) = Node.orderedNodeInputsTest' node
-        let (ossss1 :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)) = Node.orderedNodeOutputsTest' node
-        -- let (ossss1 :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.BlessedRepr)) = Node.orderedNodeOutputsTest' node
+        let (issss :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.TextRepr)) = Node.orderedInputsMRepr node
+        let (ossss :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.TextRepr)) = Node.orderedOutputsMRepr node
+        let (issss1 :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.TextRepr)) = Node.orderedNodeInputsTest' node
+        let (ossss1 :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.TextRepr)) = Node.orderedNodeOutputsTest' node
+        -- let (ossss1 :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.TextRepr)) = Node.orderedNodeOutputsTest' node
         -- let (osss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
 
         -- TODO
@@ -113,7 +113,7 @@ fromFamily curPatchId curPatch family def tk = do
         -- let (nodeHolder :: Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect) = Patch.holdNode' nextPatch node
         -- let nextPatch' = Hydra.spawnAndRegister curPatch familyR
         let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
-        repr <- R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.BlessedRepr) node
+        repr <- R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.TextRepr) node
         -- state <- State.get
         pure { nextPatch, node, inputs, is, iss, iss2, isss, issss, issss1, os, oss, oss2, osss, ossss, ossss1, outputs, nodes, repr }
 
