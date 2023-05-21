@@ -47,7 +47,7 @@ import Noodle.Patch4 (Patch) as Noodle
 import Noodle.Node2 as Node
 import Noodle.Node2 (Node) as Noodle
 import Noodle.Family.Def as Family
-import Noodle.Node2.MapsFolds.Repr (class ToReprHelper, Repr(..), nodeToRepr) as R
+import Noodle.Node2.MapsFolds.Repr (class ToReprHelper, class ToReprFoldToMapsHelper, Repr(..), nodeToRepr, nodeToMapRepr) as R
 
 
 import Cli.Keys (NodeBoxKey)
@@ -66,6 +66,7 @@ fromFamily
     :: forall f state fs iis rli is rlo os repr_is repr_os
      . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
     => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
+    => R.ToReprFoldToMapsHelper f is rli os rlo Hydra.WrapRepr state
     => FromToReprRow rli is Hydra.WrapRepr
     => FromToReprRow rlo os Hydra.WrapRepr
     => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
@@ -114,8 +115,9 @@ fromFamily curPatchId curPatch family def tk = do
         -- let nextPatch' = Hydra.spawnAndRegister curPatch familyR
         let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
         repr <- R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
+        mapRepr <- R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
         -- state <- State.get
-        pure { nextPatch, node, inputs, is, iss, iss2, isss, issss, issss1, os, oss, oss2, osss, ossss, ossss1, outputs, nodes, repr }
+        pure { nextPatch, node, inputs, is, iss, iss2, isss, issss, issss1, os, oss, oss2, osss, ossss, ossss1, outputs, nodes, repr, mapRepr }
 
     -- let is /\ os = Node.shapeH rec.node
     let is /\ os = rec.issss1 /\ rec.ossss1
@@ -132,6 +134,7 @@ fromFamily curPatchId curPatch family def tk = do
     -- liftEffect $ Console.log $ "issss1" <> (show $ Array.length rec.issss1)
     -- liftEffect $ Console.log $ "ossss1" <> (show $ Array.length rec.ossss1)
     let repr = rec.repr
+    -- let mapRepr = rec.mapRepr
     let nodeId = Node.id rec.node
     let (node :: Noodle.Node f state is os Effect) = rec.node
     let (nodeHolder :: Patch.HoldsNode Effect) = Patch.holdNode rec.nextPatch node
