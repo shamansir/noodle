@@ -49,7 +49,7 @@ import Noodle.Network2 as Network
 import Noodle.Family.Def as Family
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
-import Toolkit.Hydra2.Repr (TextRepr) as Hydra
+import Toolkit.Hydra2.Repr.Text (TextRepr) as Hydra
 
 
 component

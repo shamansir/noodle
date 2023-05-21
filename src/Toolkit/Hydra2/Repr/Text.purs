@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Repr where
+module Toolkit.Hydra2.Repr.Text where
 
 import Prelude
 

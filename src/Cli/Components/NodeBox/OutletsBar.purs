@@ -37,7 +37,7 @@ import Noodle.Node2 (Node) as Noodle
 import Noodle.Node2 as Node
 import Noodle.Patch4 as Patch
 
-import Toolkit.Hydra2.Repr (TextRepr) as Hydra
+import Toolkit.Hydra2.Repr.Text (TextRepr) as Hydra
 
 
 component

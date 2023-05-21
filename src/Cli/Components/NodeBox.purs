@@ -59,7 +59,7 @@ import Cli.Components.NodeBox.InletsBar as InletsBar
 import Cli.Components.NodeBox.OutletsBar as OutletsBar
 
 import Toolkit.Hydra2 (class HasNodesOf, Instances, State, Toolkit) as Hydra
-import Toolkit.Hydra2.Repr (TextRepr) as Hydra
+import Toolkit.Hydra2.Repr.Text (TextRepr) as Hydra
 
 
 fromFamily

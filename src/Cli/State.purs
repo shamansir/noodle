@@ -25,7 +25,7 @@ import Cli.Keys (nodeBox, inletsBar, outletsBar) as Key
 import Cli.State.NwWraper (Network, wrapN)
 
 import Toolkit.Hydra2 (toolkit) as Hydra
-import Toolkit.Hydra2.Repr (TextRepr) as Hydra
+import Toolkit.Hydra2.Repr.Text (TextRepr) as Hydra
 
 
 type State =

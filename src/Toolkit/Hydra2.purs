@@ -32,7 +32,7 @@ import Noodle.Patch4.Has (class HasInstancesOf) as Has
 import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasInputsAt', class HasOutputsAt') as Has
 import Noodle.Node2.MapsFolds.Repr as NMF
 
-import Toolkit.Hydra2.Repr (TextRepr)
+import Toolkit.Hydra2.Repr.Text (TextRepr)
 import Toolkit.Hydra2.Family.Source.FNoise as FNoise
 import Toolkit.Hydra2.Family.Source.FVoronoi as FVoronoi
 import Toolkit.Hydra2.Family.Source.FOsc as FOsc
