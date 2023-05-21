@@ -30,6 +30,10 @@ import Data.Maybe (Maybe(..))
 data Repr a = Repr a
 
 
+instance Functor Repr where
+  map f = unwrap >>> f >>> Repr
+
+
 class ToRepr a repr where
     toRepr :: a -> Maybe (Repr repr)
 

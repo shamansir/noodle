@@ -25,7 +25,7 @@ import Cli.Keys (nodeBox, inletsBar, outletsBar) as Key
 import Cli.State.NwWraper (Network, wrapN)
 
 import Toolkit.Hydra2 (toolkit) as Hydra
-import Toolkit.Hydra2.Repr.Text (TextRepr) as Hydra
+import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 
 
 type State =
@@ -39,7 +39,7 @@ type State =
         , index :: Int
         , subj :: String
         , nodeId :: Id.HoldsNodeId
-        , outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.TextRepr
+        , outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr
         , node :: Patch.HoldsNode Effect -- Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect
         }
     , lastLink :: Maybe Link

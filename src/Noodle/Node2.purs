@@ -1081,7 +1081,7 @@ Noodle.Node2.NodeBoundKeys I
                                 is10
                                 os11
                                 Effect
-                                (HoldsInputInNodeMRepr Effect TextRepr) -}
+                                (HoldsInputInNodeMRepr Effect WrapRepr) -}
 
 
 

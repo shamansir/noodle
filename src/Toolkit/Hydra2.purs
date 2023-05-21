@@ -32,7 +32,7 @@ import Noodle.Patch4.Has (class HasInstancesOf) as Has
 import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasInputsAt', class HasOutputsAt') as Has
 import Noodle.Node2.MapsFolds.Repr as NMF
 
-import Toolkit.Hydra2.Repr.Text (TextRepr)
+import Toolkit.Hydra2.Repr.Wrap (WrapRepr)
 import Toolkit.Hydra2.Family.Source.FNoise as FNoise
 import Toolkit.Hydra2.Family.Source.FVoronoi as FVoronoi
 import Toolkit.Hydra2.Family.Source.FOsc as FOsc
@@ -704,13 +704,13 @@ withFamily
         => MonadEffect m
         => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
            .  HasNodesOf f state fs iis rli is rlo os m
-           => NMF.ToReprHelper m f is rli os rlo repr_is repr_os TextRepr state
-           => Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m TextRepr)
-           => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m (Node.HoldsOutputInNodeMRepr m TextRepr)
+           => NMF.ToReprHelper m f is rli os rlo repr_is repr_os WrapRepr state
+           => Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m WrapRepr)
+           => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m (Node.HoldsOutputInNodeMRepr m WrapRepr)
         --    => Node.NodeBoundKeys Node.I rli Node.Input f state is os m x
         --    => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m x
-           => FromToReprRow rli is TextRepr
-           => FromToReprRow rlo os TextRepr
+           => FromToReprRow rli is WrapRepr
+           => FromToReprRow rlo os WrapRepr
            => Node.Family f
            -> Family.Def state is os m
            -> Toolkit m  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
