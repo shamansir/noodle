@@ -4,6 +4,11 @@ import Prelude
 
 import Effect (Effect)
 
+import Color (Color)
+import Color as Color
+
+import Data.Mark (class Mark)
+
 
 data TODO = TODO
 
@@ -194,3 +199,84 @@ noValues = Values []
 
 defaultSource :: Source
 defaultSource = Source All
+
+
+
+
+
+{- MARK -}
+
+
+instance Mark Value where
+    mark :: Value -> Color
+    mark = const $ Color.rgb 155 205 155
+
+
+instance Mark Texture where
+    mark :: Texture -> Color
+    mark = const $ Color.rgb 148 0 211
+
+
+instance Mark From where
+    mark :: From -> Color
+    mark = const $ Color.rgb 205 16 118
+
+
+instance Mark TODO where
+    mark :: TODO -> Color
+    mark = const $ Color.rgb 24 116 205
+
+
+instance Mark Context where
+    mark :: Context -> Color
+    mark = const $ Color.rgb 238 201 0
+
+
+instance Mark UpdateFn where
+    mark :: UpdateFn -> Color
+    mark = const $ Color.rgb 219 112 147
+
+
+instance Mark Source where
+    mark :: Source -> Color
+    mark = const $ Color.rgb 238 154 73
+
+
+instance Mark Url where
+    mark :: Url -> Color
+    mark = const $ Color.rgb 150 205 205
+
+
+instance Mark GlslFn where
+    mark :: GlslFn -> Color
+    mark = const $ Color.rgb 139 137 137
+
+
+instance Mark SourceOptions where
+    mark :: SourceOptions -> Color
+    mark = const $ Color.rgb 139 102 139
+
+
+instance Mark Values where
+    mark :: Values -> Color
+    mark = const $ Color.rgb 205 181 205
+
+
+instance Mark Ease where
+    mark :: Ease -> Color
+    mark = const $ Color.rgb 240 128 128
+
+
+instance Mark Audio where
+    mark :: Audio -> Color
+    mark = const $ Color.rgb 173 255 47
+
+
+instance Mark AudioBin where
+    mark :: AudioBin -> Color
+    mark = const $ Color.rgb 238 230 133
+
+
+instance Mark Output where
+    mark :: Output -> Color
+    mark = const $ Color.rgb 250 250 205

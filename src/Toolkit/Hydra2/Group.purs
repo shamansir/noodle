@@ -5,6 +5,13 @@ import Prelude
 
 import Data.Symbol (class IsSymbol)
 
+
+import Color (Color)
+import Color as Color
+
+import Data.Mark (class Mark)
+
+
 import Noodle.Id (Family) as Node
 import Noodle.Id (reflectFamily) as Id
 
@@ -120,3 +127,30 @@ toGroup family = case Id.reflectFamily family of
     "width" -> Synth
 
     _ -> Unknown
+
+
+instance Mark Group where
+    mark = case _ of
+        Array -> Color.rgb 229 102 255
+        Audio -> Color.rgb 255 102 179
+        Blend -> Color.rgb 102 255 177
+        Color -> Color.rgb 179 255 102
+        Extsource -> Color.rgb 102 179 255
+        Geometry -> Color.rgb 255 230 102
+        Modulate -> Color.rgb 102 255 230
+        Out -> Color.rgb 199 21 133 -- 102 205 170
+        Source -> Color.rgb 255 127 102
+        Synth -> Color.rgb 128 102 255
+        Unknown -> Color.rgb 139 199 101
+
+
+    -- [ hsl 10.0 1.0 0.7 "source"
+    -- , hsl 50.0 1.0 0.7 "geometry"
+    -- , hsl 90.0 1.0 0.7 "color"
+    -- , hsl 130.0 1.0 0.7 "blend"
+    -- , hsl 170.0 1.0 0.7 "modulate"
+    -- , hsl 210.0 1.0 0.7 "extsource"
+    -- , hsl 250.0 1.0 0.7 "synth"
+    -- , hsl 290.0 1.0 0.7 "array"
+    -- , hsl 330.0 1.0 0.7 "audio"
+    -- ]

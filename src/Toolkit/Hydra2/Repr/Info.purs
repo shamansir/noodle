@@ -2,6 +2,10 @@ module Toolkit.Hydra2.Repr.Info where
 
 import Prelude
 
+import Color (Color)
+import Color as Color
+import Data.Mark (class Mark)
+
 import Data.Array as Array
 import Data.String as String
 import Data.Maybe (Maybe(..))
@@ -29,7 +33,6 @@ class FullInfo a where
     full :: a -> String
 
 
-
 instance ShortInfo H.Value where
     short :: H.Value -> String
     short = case _ of
@@ -45,7 +48,6 @@ instance ShortInfo H.Value where
         H.Height -> "↕" --
         H.Pi -> "π"
         H.Audio audio bin -> short audio <> short bin
-
 
 
 instance ShortInfo Unit where
