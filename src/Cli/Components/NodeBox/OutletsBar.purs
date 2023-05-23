@@ -74,7 +74,19 @@ component nodeHolder nextNodeBox nextOutletsBar os =
         ]
 
 
-outletHandler :: forall f nstate o dout is os os'. IsSymbol f => Id.HasOutput o dout os' os => ToRepr dout Hydra.WrapRepr => FromRepr Hydra.WrapRepr dout => Patch.HoldsNode Effect -> NodeBoxKey -> Int -> Proxy dout -> Noodle.Node f nstate is os Effect -> Id.Output o -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
+outletHandler
+    :: forall f nstate o dout is os os'
+     . IsSymbol f
+    => Id.HasOutput o dout os' os
+    => ToRepr dout Hydra.WrapRepr
+    => FromRepr Hydra.WrapRepr dout
+    => Patch.HoldsNode Effect
+    -> NodeBoxKey
+    -> Int
+    -> Proxy dout
+    -> Noodle.Node f nstate is os Effect
+    -> Id.Output o
+    -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
 outletHandler nodeHolder nextNodeBox index pdout node output =
     Id.reflect output /\ [] /\ \_ _ -> do
         -- liftEffect $ Console.log $ "handler " <> oname

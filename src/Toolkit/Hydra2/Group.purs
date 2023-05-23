@@ -6,14 +6,13 @@ import Prelude
 import Data.Symbol (class IsSymbol)
 
 
-import Color (Color)
 import Color as Color
 
 import Data.Mark (class Mark)
 
 
 import Noodle.Id (Family) as Node
-import Noodle.Id (reflectFamily) as Id
+import Noodle.Id (FamilyR, familyR, reflectFamilyR) as Id
 
 
 data Group
@@ -34,7 +33,11 @@ data Group
 
 -- may be return a
 toGroup :: forall f. IsSymbol f => Node.Family f -> Group
-toGroup family = case Id.reflectFamily family of
+toGroup = toGroupR <<< Id.familyR
+
+
+toGroupR :: Id.FamilyR -> Group
+toGroupR family = case Id.reflectFamilyR family of
     "ease" -> Array
     "fast" -> Array
     "fit" -> Array

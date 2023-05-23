@@ -9,14 +9,17 @@ import Effect.Console as Console
 import Control.Monad.State as State
 
 import Data.Maybe (fromMaybe)
-import Data.Tuple.Nested ((/\))
+import Data.Tuple.Nested ((/\), type (/\))
 import Type.Proxy (Proxy(..))
+import Data.Map (Map)
 import Data.Map as Map
 import Data.Array as Array
 import Data.Foldable (for_)
 import Data.List (length) as List
 import Data.KeyHolder as KH
 import Data.Repr (class FromToReprRow, class ToReprRow)
+import Data.Symbol (class IsSymbol)
+import Data.Mark (mark)
 
 import Signal (Signal, (~>))
 import Signal as Signal
@@ -25,7 +28,7 @@ import Signal.Channel as Channel
 
 import Blessed ((>~))
 import Blessed as B
-import Blessed.Tagger (fg, s)
+import Blessed.Tagger (fgc, s) as T
 import Blessed.Tagger (render) as T
 
 import Blessed.Core.Border as Border
@@ -70,6 +73,7 @@ import Cli.Components.NodeBox.InletsBar as InletsBar
 import Cli.Components.NodeBox.OutletsBar as OutletsBar
 
 import Toolkit.Hydra2 (class HasNodesOf, Instances, State, Toolkit) as Hydra
+import Toolkit.Hydra2.Group (toGroup) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
 
@@ -176,7 +180,7 @@ fromFamily curPatchId curPatch family def tk = do
                 , Box.left left
                 , Box.width $ Dimension.px 25
                 , Box.height $ Dimension.px 5
-                , Box.label $ T.render $ fg "red" $ s $ Id.reflect family
+                , Box.label $ toLabel family
                 , Box.tags true
                 , Box.border
                     [ Border.type_ Border._line
@@ -193,6 +197,9 @@ fromFamily curPatchId curPatch family def tk = do
                 , Core.on Element.Move $ onMove nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
                 ]
                 [ ]
+
+    liftEffect $ renderUpdate mapRepr
+    liftEffect $ Signal.runSignal $ updates ~> renderUpdate
 
     Key.patchBox >~ Node.append nextNodeBoxN
     nextNodeBox >~ Node.append inletsBarN
@@ -211,9 +218,20 @@ fromFamily curPatchId curPatch family def tk = do
     pure { nextNodeBoxN, inletsBarN, outletsBarN }
 
 
+renderUpdate :: Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr -> Effect Unit
+renderUpdate _ =
+    pure unit
+
+
 onMove :: NodeBoxKey -> NodeBoxKey → EventJson → BlessedOp State Effect
 onMove nodeKey _ _ = do
     state <- State.get
     let rawNk = NodeKey.rawify nodeKey
     for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) Link.update
     for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) Link.update
+
+
+toLabel :: forall f. IsSymbol f => Id.Family f -> String
+toLabel family =
+    let color = mark $ Hydra.toGroup family
+    in T.render $ T.fgc color $ T.s $ Id.reflectFamily family

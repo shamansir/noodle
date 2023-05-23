@@ -96,8 +96,21 @@ component curPatchId curPatch nextNodeBox nextInletsBar family _ is =
         [ ]
 
 
-inletHandler :: forall f nstate i din is is' os. IsSymbol f => Id.HasInput i din is' is => ToRepr din Hydra.WrapRepr => FromRepr Hydra.WrapRepr din => Patch.Id -> Patch Hydra.State (Hydra.Instances Effect) -> NodeBoxKey -> Int -> Proxy din -> Noodle.Node f nstate is os Effect -> Id.Input i -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
-inletHandler curPatchId curPatch nextNodeBox idx pdin inode inputId =
+inletHandler
+    :: forall f nstate i din is is' os
+     . IsSymbol f
+    => Id.HasInput i din is' is
+    => ToRepr din Hydra.WrapRepr
+    => FromRepr Hydra.WrapRepr din
+    => Patch.Id
+    -> Patch Hydra.State (Hydra.Instances Effect)
+    -> NodeBoxKey
+    -> Int
+    -> Proxy din
+    -> Noodle.Node f nstate is os Effect
+    -> Id.Input i
+    -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
+inletHandler curPatchId curPatch nextNodeBox idx _ inode inputId =
     Id.reflect inputId /\ [] /\ \_ _ -> do
         let inodeKey = nextNodeBox
         state <- State.get
