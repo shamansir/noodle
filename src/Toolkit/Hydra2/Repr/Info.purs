@@ -16,6 +16,7 @@ import Noodle.Node2.MapsFolds.Repr as NMF
 import Noodle.Node2.Path (InNode)
 
 import Toolkit.Hydra2.Types as H
+import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..)) as W
 
 
 data InfoRepr = InfoRepr { short :: String, full :: String }
@@ -269,3 +270,45 @@ instance (ShortInfo a, FullInfo a) => NMF.HasRepr a InfoRepr where
 instance (ShortInfo a, FullInfo a) => R.ToRepr a InfoRepr where
     toRepr :: a -> Maybe (R.Repr InfoRepr)
     toRepr = R.exists <<< InfoRepr <<< \a -> { short : short a, full : full a }
+
+
+instance FullInfo W.WrapRepr where
+    full :: W.WrapRepr -> String
+    full = case _ of
+        W.Value v -> full v
+        W.Unit u -> full u
+        W.Texture tex -> full tex
+        W.From f -> full f
+        W.TODO todo -> full todo
+        W.Context ctx -> full ctx
+        W.UpdateFn fn -> full fn
+        W.Source src -> full src
+        W.Url url -> full url
+        W.GlslFn glsl -> full glsl
+        W.SourceOptions opts -> full opts
+        W.Values vals -> full vals
+        W.Ease ease -> full ease
+        W.Audio audio -> full audio
+        W.AudioBin bin -> full bin
+        W.Output out -> full out
+
+
+instance ShortInfo W.WrapRepr where
+    short :: W.WrapRepr -> String
+    short = case _ of
+        W.Value v -> short v
+        W.Unit u -> short u
+        W.Texture tex -> short tex
+        W.From f -> short f
+        W.TODO todo -> short todo
+        W.Context ctx -> short ctx
+        W.UpdateFn fn -> short fn
+        W.Source src -> short src
+        W.Url url -> short url
+        W.GlslFn glsl -> short glsl
+        W.SourceOptions opts -> short opts
+        W.Values vals -> short vals
+        W.Ease ease -> short ease
+        W.Audio audio -> short audio
+        W.AudioBin bin -> short bin
+        W.Output out -> short out

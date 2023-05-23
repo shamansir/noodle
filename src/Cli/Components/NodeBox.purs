@@ -16,7 +16,12 @@ import Data.Array as Array
 import Data.Foldable (for_)
 import Data.List (length) as List
 import Data.KeyHolder as KH
-import Data.Repr (class FromToReprRow)
+import Data.Repr (class FromToReprRow, class ToReprRow)
+
+import Signal (Signal, (~>))
+import Signal as Signal
+import Signal.Channel (Channel)
+import Signal.Channel as Channel
 
 import Blessed ((>~))
 import Blessed as B
@@ -47,7 +52,13 @@ import Noodle.Patch4 (Patch) as Noodle
 import Noodle.Node2 as Node
 import Noodle.Node2 (Node) as Noodle
 import Noodle.Family.Def as Family
-import Noodle.Node2.MapsFolds.Repr (class ToReprHelper, class ToReprFoldToMapsHelper, Repr(..), nodeToRepr, nodeToMapRepr) as R
+import Noodle.Node2.MapsFolds.Repr
+    ( class ToReprHelper, class ToReprFoldToMapsHelper
+    , Repr(..)
+    , nodeToRepr, nodeToMapRepr
+    , subscribeReprChanges, subscribeReprMapChanges
+    ) as R
+import Noodle.Node2.MapsFolds.Flatten as R
 
 
 import Cli.Keys (NodeBoxKey)
@@ -60,6 +71,7 @@ import Cli.Components.NodeBox.OutletsBar as OutletsBar
 
 import Toolkit.Hydra2 (class HasNodesOf, Instances, State, Toolkit) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
 
 
 fromFamily
@@ -116,8 +128,10 @@ fromFamily curPatchId curPatch family def tk = do
         let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
         repr <- R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
         mapRepr <- R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
+        let (updates' :: Signal (R.NodeLineRec f Hydra.WrapRepr repr_is repr_os)) = R.subscribeReprChanges (R.Repr :: _ Hydra.WrapRepr) node
+        let (updates :: Signal (R.NodeLineMap Hydra.WrapRepr)) = R.subscribeReprMapChanges (R.Repr :: _ Hydra.WrapRepr) node
         -- state <- State.get
-        pure { nextPatch, node, inputs, is, iss, iss2, isss, issss, issss1, os, oss, oss2, osss, ossss, ossss1, outputs, nodes, repr, mapRepr }
+        pure { nextPatch, node, inputs, is, iss, iss2, isss, issss, issss1, os, oss, oss2, osss, ossss, ossss1, outputs, nodes, repr, mapRepr, updates }
 
     -- let is /\ os = Node.shapeH rec.node
     let is /\ os = rec.issss1 /\ rec.ossss1
@@ -134,8 +148,9 @@ fromFamily curPatchId curPatch family def tk = do
     -- liftEffect $ Console.log $ "issss1" <> (show $ Array.length rec.issss1)
     -- liftEffect $ Console.log $ "ossss1" <> (show $ Array.length rec.ossss1)
     let repr = rec.repr
-    -- let mapRepr = rec.mapRepr
+    let mapRepr = rec.mapRepr
     let nodeId = Node.id rec.node
+    let updates = rec.updates
     let (node :: Noodle.Node f state is os Effect) = rec.node
     let (nodeHolder :: Patch.HoldsNode Effect) = Patch.holdNode rec.nextPatch node
 
