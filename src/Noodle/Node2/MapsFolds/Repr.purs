@@ -6,6 +6,7 @@ module Noodle.Node2.MapsFolds.Repr
   , toRepr
   , class ToReprHelper, class ToReprFoldToMapsHelper
   , nodeToRepr, nodeToMapRepr
+  , subscribeReprChanges, subscribeReprMapChanges
   )
   where
 
@@ -23,6 +24,9 @@ import Data.TraversableWithIndex (traverseWithIndex)
 import Data.SOrder (SOrder)
 import Data.SOrder as SOrder
 import Prim.RowList as RL
+
+import Signal (Signal, (~>))
+import Signal as Signal
 
 
 import Heterogeneous.Mapping as HM
@@ -119,6 +123,64 @@ nodeToMapRepr
     -> m (NodeLineMap repr)
 nodeToMapRepr _ repr =
     nodeToMapRepr' $ ToReprTop repr
+
+
+subscribeReprChanges'
+    :: forall f state is iks os oks m repr repr_is repr_os
+     . ToReprHelper m f is iks os oks repr_is repr_os repr state
+    => ToReprTop m repr
+    -> Node f state is os m
+    -> Signal (NodeLineRec f repr repr_is repr_os)
+subscribeReprChanges' (ToReprTop repr) node =
+    let
+        (id :: NodeId f) = Node.id node
+        iorder = Node.inputsOrder node
+        oorder = Node.outputsOrder node
+        toReprs (state /\ inputs /\ outputs) =
+            id
+            /\ toRepr (NodeP id) state
+            /\ HM.hmapWithIndex (ToReprDownI id iorder repr) inputs
+            /\ HM.hmapWithIndex (ToReprDownO id oorder repr) outputs
+    in toReprs <$> Node.subscribeChanges node
+
+
+subscribeReprChanges
+    :: forall f state is iks os oks m repr repr_is repr_os
+     . ToReprHelper m f is iks os oks repr_is repr_os repr state
+    => Repr repr
+    -> Node f state is os m
+    -> Signal (NodeLineRec f repr repr_is repr_os)
+subscribeReprChanges repr =
+    subscribeReprChanges' $ ToReprTop repr
+
+
+subscribeReprMapChanges'
+    :: forall f state is iks os oks m repr
+     . ToReprFoldToMapsHelper f is iks os oks repr state
+    => ToReprTop m repr
+    -> Node f state is os m
+    -> Signal (NodeLineMap repr)
+subscribeReprMapChanges' (ToReprTop repr) node =
+    let
+        (id :: NodeId f) = Node.id node
+        iorder = Node.inputsOrder node
+        oorder = Node.outputsOrder node
+        toReprs (state /\ inputs /\ outputs) =
+            nodeIdR id
+            /\ toRepr (NodeP id) state
+            /\ HF.hfoldlWithIndex (ToReprDownI id iorder repr) (Map.empty :: Map InputR repr) inputs
+            /\ HF.hfoldlWithIndex (ToReprDownO id oorder repr) (Map.empty :: Map OutputR repr) outputs
+    in toReprs <$> Node.subscribeChanges node
+
+
+subscribeReprMapChanges
+    :: forall f state is iks os oks m repr
+     . ToReprFoldToMapsHelper f is iks os oks repr state
+    => Repr repr
+    -> Node f state is os m
+    -> Signal (NodeLineMap repr)
+subscribeReprMapChanges repr =
+    subscribeReprMapChanges' $ ToReprTop repr
 
 
 instance toReprTopInstance ::

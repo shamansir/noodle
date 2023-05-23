@@ -226,6 +226,10 @@ subscribeState :: forall f state is os m. Node f state is os m -> Signal state
 subscribeState (Node _ tracker _ _) = tracker.state
 
 
+subscribeChanges :: forall f state is os m. Node f state is os m -> Signal (state /\ Record is /\ Record os)
+subscribeChanges node = (\s is os -> s /\ is /\ os) <$> subscribeState node <*> subscribeInputs node <*> subscribeOutputs node
+
+
 -- private?
 sendOut :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m -> Output o -> dout -> m Unit
 sendOut node o = liftEffect <<< sendOutE node o
