@@ -31,6 +31,7 @@ import Noodle.Patch4 (Id) as Patch
 import Cli.Keys as Key
 import Cli.Palette as Palette
 import Cli.State (State)
+import Cli.Style as Style
 
 
 component :: forall gstate instances. Map Patch.Id (Patch gstate instances) -> Core.Blessed State
@@ -46,17 +47,7 @@ component patches =
         , List.mouse true
         -- , List.items patches
         , ListBar.commands $ lbCommands patches
-        , List.style
-            [ LStyle.bg Palette.background'
-            , LStyle.item
-                [ ES.fg Palette.itemNotSelected'
-                , ES.bg Palette.background'
-                ]
-            , LStyle.selected
-                [ ES.fg Palette.itemSelected'
-                , ES.bg Palette.background'
-                ]
-            ]
+        , Style.patchesBar
         ]
         []
 

@@ -68,6 +68,7 @@ import Cli.Keys (NodeBoxKey)
 import Cli.Keys (mainScreen, patchBox) as Key
 import Cli.Palette as Palette
 import Cli.State (State)
+import Cli.Style as Style
 import Cli.Components.Link as Link
 import Cli.Components.NodeBox.InletsBar as InletsBar
 import Cli.Components.NodeBox.OutletsBar as OutletsBar
@@ -182,18 +183,8 @@ fromFamily curPatchId curPatch family def tk = do
                 , Box.height $ Dimension.px 5
                 , Box.label $ toLabel family
                 , Box.tags true
-                , Box.border
-                    [ Border.type_ Border._line
-                    , Border.fg $ Palette.nodeBoxBorder'
-                    , Border.ch $ Border.fill ':'
-                    ]
-                , Box.style
-                    [ Style.focus
-                        [ ES.border
-                            [ Border.fg Palette.nodeListSelFg'
-                            ]
-                        ]
-                    ]
+                , Style.nodeBoxBorder
+                , Style.nodeBox
                 , Core.on Element.Move $ onMove nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
                 ]
                 [ ]

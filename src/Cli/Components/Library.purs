@@ -34,6 +34,7 @@ import Cli.Keys as Key
 import Cli.Palette as Palette
 import Cli.State (State)
 import Cli.State.NwWraper (unwrapN)
+import Cli.Style (library, libraryBorder) as Style
 
 import Cli.Components.NodeBox as NodeBox
 
@@ -60,11 +61,8 @@ component families =
         , List.mouse true
         , List.keys true
         , Box.tags true
-        , Box.border [ Border.type_ Border._line, Border.fg Palette.nodeListFg' ]
-        , List.style
-            [ LStyle.item [ ES.fg Palette.nodeListFg' ]
-            , LStyle.selected [ ES.fg Palette.nodeListSelFg' ]
-            ]
+        , Style.library
+        , Style.libraryBorder
         , Core.on List.Select
             \_ _ -> do
                 -- lastShiftX <- _.lastShiftX <$> State.get

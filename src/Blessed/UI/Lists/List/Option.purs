@@ -112,8 +112,11 @@ invertSelected
 invertSelected = listOption (Proxy :: _ "invertSelected")
 
 
+type StyleAttrubute subj id state e r = ListAttribute subj id ( style :: Array (LS.ListStyleOption ()) | r ) state e
+
+
 style
     :: forall (subj :: Subject) (id :: Symbol) r state e
      . Respresents List subj id
-    => Array (LS.ListStyleOption ()) -> ListAttribute subj id ( style :: Array (LS.ListStyleOption ()) | r ) state e
+    => Array (LS.ListStyleOption ()) -> StyleAttrubute subj id state e r
 style = listOption (Proxy :: _ "style")

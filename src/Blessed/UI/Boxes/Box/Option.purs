@@ -71,17 +71,23 @@ underline
 underline = E.underline
 
 
+type StyleAttrubute subj id state e r = BoxAttribute subj id ( style :: Array (StyleOption ()) | r ) state e
+
+
 style
     :: forall (subj :: Subject) (id :: Symbol) r state e
      . Extends Element subj => Respresents Box subj id
-    => Array (StyleOption ()) -> BoxAttribute subj id ( style :: Array (StyleOption ()) | r ) state e
+    => Array (StyleOption ()) -> StyleAttrubute subj id state e r
 style = E.style
+
+
+type BorderAttrubute subj id state e r = BoxAttribute subj id ( border :: Array (BorderOption ()) | r ) state e
 
 
 border
     :: forall (subj :: Subject) (id :: Symbol) r state e
      . Extends Element subj => Respresents Box subj id
-    => Array (BorderOption ()) -> BoxAttribute subj id ( border :: Array (BorderOption ()) | r ) state e
+    => Array (BorderOption ()) -> BorderAttrubute subj id state e r
 border = E.border
 
 

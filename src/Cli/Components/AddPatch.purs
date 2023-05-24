@@ -30,6 +30,7 @@ import Cli.State (State)
 import Cli.State (patchIdFromIndex) as State
 import Cli.State.NwWraper (unwrapN, withNetwork)
 import Cli.Components.PatchesBar as PatchesBar
+import Cli.Style as Style
 
 import Noodle.Network2 as Network
 import Noodle.Patch4 as Patch
@@ -46,10 +47,7 @@ component =
             , Box.width $ Dimension.px 1
             , Box.height $ Dimension.px 1
             , Button.mouse true
-            , Box.style
-                [ Style.fg Palette.foreground'
-                , Style.bg Palette.background2'
-                ]
+            , Style.addPatch
             , Core.on Button.Press
                 \_ _ -> do
                     let nextPatch = Patch.init Hydra.toolkit

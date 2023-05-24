@@ -38,6 +38,7 @@ import Cli.State (State, Link(..), OutletIndex(..), InletIndex(..), NodePosition
 import Cli.Keys (PatchBoxKey, NodeBoxKey)
 import Cli.Keys (lineA, lineB, lineC) as Key
 import Cli.Palette as Palette
+import Cli.Style as Style
 
 -- TODO: forall state. BlessedOp state Effect
 
@@ -62,37 +63,26 @@ create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) 
         -- this.link.b = blessed.line({ left : calc.b.left, top : calc.b.top, width : calc.b.width, height : calc.b.height, orientation : 'horizontal', type : 'bg', ch : '∼', fg : PALETTE[8] });
         -- this.link.c = blessed.line({ left : calc.c.left, top : calc.c.top, width : calc.c.width, height : calc.c.height, orientation : 'vertical', type : 'bg', ch : '≀', fg : PALETTE[8] });
 
-        linkA = B.line keyLinkA
+        linkA = B.line keyLinkA (
                     [ Box.left $ Offset.px calc.a.left
                     , Box.top $ Offset.px calc.a.top
                     , Box.width $ Dimension.px calc.a.width
                     , Box.height $ Dimension.px calc.a.height
-                    , Line.orientation $ Orientation.Vertical
-                    , Line.ch '≀'
-                    , Line.fg Palette.linkColor'
-                    ]
+                    ] <> Style.linkA )
 
-        linkB = B.line keyLinkB
+        linkB = B.line keyLinkB (
                     [ Box.left $ Offset.px calc.b.left
                     , Box.top $ Offset.px calc.b.top
                     , Box.width $ Dimension.px calc.b.width
                     , Box.height $ Dimension.px calc.b.height
-                    , Line.orientation $ Orientation.Horizontal
-                    , Line.type_ $ Border._bg
-                    , Line.ch '∼'
-                    , Line.fg Palette.linkColor'
-                    ]
+                    ] <> Style.linkB )
 
-        linkC = B.line keyLinkC
+        linkC = B.line keyLinkC (
                     [ Box.left $ Offset.px calc.c.left
                     , Box.top $ Offset.px calc.c.top
                     , Box.width $ Dimension.px calc.c.width
                     , Box.height $ Dimension.px calc.c.height
-                    , Line.orientation $ Orientation.Vertical
-                    , Line.type_ $ Border._bg
-                    , Line.ch '≀'
-                    , Line.fg Palette.linkColor'
-                    ]
+                    ] <> Style.linkC )
 
         link =
             Link

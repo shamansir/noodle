@@ -9,17 +9,16 @@ import Blessed.Internal.Core as Core
 
 import Blessed.UI.Boxes.Box.Option as Box
 
-import Blessed.Core.Border (type_, _line, fg) as Border
+import Blessed.Core.Border (type_, _line) as Border
 import Blessed.Core.Coord ((<+>), (<->))
 import Blessed.Core.Coord as Coord
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Offset as Offset
-import Blessed.Core.Style as Style
 
-import Cli.Palette as Palette
 import Cli.Keys as Key
 import Cli.State (State)
 import Cli.Components.Library as Library
+import Cli.Style (patchBox, patchBoxBorder) as Style
 
 import Noodle.Id as Id
 
@@ -34,14 +33,8 @@ component families =
         , Box.height $ Dimension.calc $ Coord.percents 100.0 <-> Coord.px 1
         , Box.content "Patch"
         , Box.tags true
-        , Box.border
-            [ Border.type_ Border._line
-            ]
-        , Box.style
-            [ Style.fg Palette.foreground'
-            , Style.bg Palette.background2'
-            , Style.border [ Border.fg Palette.border' ]
-            ]
+        , Style.patchBox
+        , Style.patchBoxBorder
         ]
 
         [ Library.component families

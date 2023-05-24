@@ -74,5 +74,5 @@ fullInfo item =
 repr :: Item -> String
 repr item =
     case Color.toHexString <$> item.color of
-        Just hex -> "#" <> hex
+        Just hex -> hex
         Nothing -> item.repr
