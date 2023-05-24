@@ -24,7 +24,11 @@ import Blessed.UI.Lists.List.Property as List
 
 
 import Cli.Palette (Palette, palette)
-import Cli.Palette (Item, fullInfo, toArray, pico8, hydraFns, x11colors, qitem, qitem') as Palette
+import Cli.Palette.Item (Item, fullInfo, qitem, qitem') as Palette
+import Cli.Palette.Set.Hydra (hydraFns) as Palette
+import Cli.Palette.Set.Pico8 (pico8) as Palette
+import Cli.Palette.Set.X11 (x11colors) as Palette
+import Cli.Palette (toArray) as Palette
 
 
 paletteKey = (nk :: List <^> "palette")

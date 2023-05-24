@@ -17,6 +17,7 @@ import Blessed.Core.Offset as Offset
 import Blessed.Core.Style as Style
 
 import Cli.Palette (palette)
+import Cli.Palette.Item (repr)
 import Cli.Keys as Key
 import Cli.State (State)
 import Cli.Components.Library as Library
@@ -38,9 +39,9 @@ component families =
             [ Border.type_ Border._line
             ]
         , Box.style
-            [ Style.fg palette.foreground
-            , Style.bg palette.background2
-            , Style.border [ Border.fg palette.border ]
+            [ Style.fg $ repr palette.foreground
+            , Style.bg $ repr palette.background2
+            , Style.border [ Border.fg $ repr palette.border ]
             ]
         ]
 

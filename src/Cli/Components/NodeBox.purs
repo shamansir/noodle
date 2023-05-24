@@ -67,6 +67,7 @@ import Noodle.Node2.MapsFolds.Flatten as R
 import Cli.Keys (NodeBoxKey)
 import Cli.Keys (mainScreen, patchBox) as Key
 import Cli.Palette (palette)
+import Cli.Palette.Item (repr) as P
 import Cli.State (State)
 import Cli.Components.Link as Link
 import Cli.Components.NodeBox.InletsBar as InletsBar
@@ -184,13 +185,13 @@ fromFamily curPatchId curPatch family def tk = do
                 , Box.tags true
                 , Box.border
                     [ Border.type_ Border._line
-                    , Border.fg palette.nodeBoxBorder
+                    , Border.fg $ P.repr palette.nodeBoxBorder
                     , Border.ch $ Border.fill ':'
                     ]
                 , Box.style
                     [ Style.focus
                         [ ES.border
-                            [ Border.fg palette.nodeListSelFg
+                            [ Border.fg $ P.repr palette.nodeListSelFg
                             ]
                         ]
                     ]

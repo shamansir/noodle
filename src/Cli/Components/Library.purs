@@ -32,6 +32,7 @@ import Noodle.Network2 as Network
 
 import Cli.Keys as Key
 import Cli.Palette (palette)
+import Cli.Palette.Item (repr)
 import Cli.State (State)
 import Cli.State.NwWraper (unwrapN)
 
@@ -60,10 +61,10 @@ component families =
         , List.mouse true
         , List.keys true
         , Box.tags true
-        , Box.border [ Border.type_ Border._line, Border.fg palette.nodeListFg ]
+        , Box.border [ Border.type_ Border._line, Border.fg $ repr palette.nodeListFg ]
         , List.style
-            [ LStyle.item [ ES.fg palette.nodeListFg ]
-            , LStyle.selected [ ES.fg palette.nodeListSelFg ]
+            [ LStyle.item [ ES.fg $ repr palette.nodeListFg ]
+            , LStyle.selected [ ES.fg $ repr palette.nodeListSelFg ]
             ]
         , Core.on List.Select
             \_ _ -> do

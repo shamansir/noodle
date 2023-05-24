@@ -38,6 +38,7 @@ import Cli.State (State, Link(..), OutletIndex(..), InletIndex(..), NodePosition
 import Cli.Keys (PatchBoxKey, NodeBoxKey)
 import Cli.Keys (lineA, lineB, lineC) as Key
 import Cli.Palette (palette)
+import Cli.Palette.Item (repr)
 
 -- TODO: forall state. BlessedOp state Effect
 
@@ -69,7 +70,7 @@ create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) 
                     , Box.height $ Dimension.px calc.a.height
                     , Line.orientation $ Orientation.Vertical
                     , Line.ch '≀'
-                    , Line.fg $ palette.linkColor
+                    , Line.fg $ repr palette.linkColor
                     ]
 
         linkB = B.line keyLinkB
@@ -80,7 +81,7 @@ create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) 
                     , Line.orientation $ Orientation.Horizontal
                     , Line.type_ $ Border._bg
                     , Line.ch '∼'
-                    , Line.fg $ palette.linkColor
+                    , Line.fg $ repr palette.linkColor
                     ]
 
         linkC = B.line keyLinkC
@@ -91,7 +92,7 @@ create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) 
                     , Line.orientation $ Orientation.Vertical
                     , Line.type_ $ Border._bg
                     , Line.ch '≀'
-                    , Line.fg $ palette.linkColor
+                    , Line.fg $ repr palette.linkColor
                     ]
 
         link =
