@@ -28,7 +28,7 @@ import Signal.Channel as Channel
 
 import Blessed ((>~))
 import Blessed as B
-import Blessed.Tagger (fgc, s) as T
+import Blessed.Tagger (fgc, bgc, s) as T
 import Blessed.Tagger (render) as T
 
 import Blessed.Core.Border as Border
@@ -67,6 +67,7 @@ import Noodle.Node2.MapsFolds.Flatten as R
 import Cli.Keys (NodeBoxKey)
 import Cli.Keys (mainScreen, patchBox) as Key
 import Cli.Palette as Palette
+import Cli.Palette.Item (crepr) as Palette
 import Cli.State (State)
 import Cli.Style as Style
 import Cli.Components.Link as Link
@@ -225,4 +226,4 @@ onMove nodeKey _ _ = do
 toLabel :: forall f. IsSymbol f => Id.Family f -> String
 toLabel family =
     let color = mark $ Hydra.toGroup family
-    in T.render $ T.fgc color $ T.s $ Id.reflectFamily family
+    in T.render $ T.bgc (Palette.crepr Palette.nodeBg) $ T.fgc color $ T.s $ Id.reflectFamily family

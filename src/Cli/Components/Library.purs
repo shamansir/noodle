@@ -128,7 +128,7 @@ component families =
                             , Box.style
                                 [ Style.focus
                                     [ ES.border
-                                        [ Border.fg palette.nodeListSelFg
+                                        [ Border.fg palette.librarySelection
                                         ]
                                     ]
                                 ]

@@ -76,3 +76,10 @@ repr item =
     case Color.toHexString <$> item.color of
         Just hex -> hex
         Nothing -> item.repr
+
+
+crepr :: Item -> Color
+crepr item =
+    case item.color of
+        Just color -> color
+        Nothing -> Color.black
