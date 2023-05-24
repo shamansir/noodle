@@ -25,8 +25,7 @@ import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Screen.Method (render) as Screen
 
 import Cli.Keys as Key
-import Cli.Palette (palette)
-import Cli.Palette.Item (repr)
+import Cli.Palette as Palette
 import Cli.State (State)
 import Cli.State (patchIdFromIndex) as State
 import Cli.State.NwWraper (unwrapN, withNetwork)
@@ -48,8 +47,8 @@ component =
             , Box.height $ Dimension.px 1
             , Button.mouse true
             , Box.style
-                [ Style.fg $ repr palette.foreground
-                , Style.bg $ repr palette.background2
+                [ Style.fg Palette.foreground'
+                , Style.bg Palette.background2'
                 ]
             , Core.on Button.Press
                 \_ _ -> do

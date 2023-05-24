@@ -37,8 +37,7 @@ import Blessed.UI.Boxes.Line.Option (ch, fg, orientation, type_) as Line
 import Cli.State (State, Link(..), OutletIndex(..), InletIndex(..), NodePositions, LinkCalc)
 import Cli.Keys (PatchBoxKey, NodeBoxKey)
 import Cli.Keys (lineA, lineB, lineC) as Key
-import Cli.Palette (palette)
-import Cli.Palette.Item (repr)
+import Cli.Palette as Palette
 
 -- TODO: forall state. BlessedOp state Effect
 
@@ -70,7 +69,7 @@ create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) 
                     , Box.height $ Dimension.px calc.a.height
                     , Line.orientation $ Orientation.Vertical
                     , Line.ch '≀'
-                    , Line.fg $ repr palette.linkColor
+                    , Line.fg Palette.linkColor'
                     ]
 
         linkB = B.line keyLinkB
@@ -81,7 +80,7 @@ create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) 
                     , Line.orientation $ Orientation.Horizontal
                     , Line.type_ $ Border._bg
                     , Line.ch '∼'
-                    , Line.fg $ repr palette.linkColor
+                    , Line.fg Palette.linkColor'
                     ]
 
         linkC = B.line keyLinkC
@@ -92,7 +91,7 @@ create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) 
                     , Line.orientation $ Orientation.Vertical
                     , Line.type_ $ Border._bg
                     , Line.ch '≀'
-                    , Line.fg $ repr palette.linkColor
+                    , Line.fg Palette.linkColor'
                     ]
 
         link =

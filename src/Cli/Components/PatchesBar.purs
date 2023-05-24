@@ -29,8 +29,7 @@ import Noodle.Patch4 (Patch)
 import Noodle.Patch4 (Id) as Patch
 
 import Cli.Keys as Key
-import Cli.Palette (palette)
-import Cli.Palette.Item (repr)
+import Cli.Palette as Palette
 import Cli.State (State)
 
 
@@ -48,14 +47,14 @@ component patches =
         -- , List.items patches
         , ListBar.commands $ lbCommands patches
         , List.style
-            [ LStyle.bg $ repr palette.background
+            [ LStyle.bg Palette.background'
             , LStyle.item
-                [ ES.fg $ repr palette.itemNotSelected
-                , ES.bg $ repr palette.background
+                [ ES.fg Palette.itemNotSelected'
+                , ES.bg Palette.background'
                 ]
             , LStyle.selected
-                [ ES.fg $ repr palette.itemSelected
-                , ES.bg $ repr palette.background
+                [ ES.fg Palette.itemSelected'
+                , ES.bg Palette.background'
                 ]
             ]
         ]

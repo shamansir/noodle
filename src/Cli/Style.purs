@@ -2,8 +2,7 @@ module Cli.Style where
 
 import Prelude
 
-import Cli.Palette (palette)
-import Cli.Palette.Item (repr)
+import Cli.Palette as Palette
 
 
 import Blessed.UI.Lists.List.Option as List
@@ -13,13 +12,13 @@ import Blessed.Core.ListStyle as LStyle
 
 inletsOutlets =
     List.style
-        [ LStyle.bg $ repr palette.background
+        [ LStyle.bg Palette.background'
         , LStyle.item
-            [ ES.fg $ repr palette.itemNotSelected
-            , ES.bg $ repr palette.background
+            [ ES.fg Palette.itemNotSelected'
+            , ES.bg Palette.background'
             ]
         , LStyle.selected
-            [ ES.fg $ repr palette.itemSelected
-            , ES.bg $ repr palette.background
+            [ ES.fg Palette.itemSelected'
+            , ES.bg Palette.background'
             ]
         ]
