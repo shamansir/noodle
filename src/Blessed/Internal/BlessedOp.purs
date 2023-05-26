@@ -18,6 +18,7 @@ import Control.Monad.State as State
 import Data.Bifunctor (lmap, rmap, bimap)
 import Data.Either (Either)
 import Data.Either as Either
+import Data.Foldable (sequence_)
 import Data.Traversable (traverse, traverse_)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Tuple (uncurry)
@@ -77,7 +78,6 @@ type BlessedOpDef state m = Ref state -> BlessedOp state m
 -- type BlessedOpJsonGet state m a = BlessedOpM state m a
 type BlessedOpGet state m a = BlessedOp' state m a
 type BlessedOpSet state m = BlessedOp state m
-
 
 
 newtype BlessedOpM state m a = BlessedOpM (Free (BlessedOpF state m) a)
@@ -275,6 +275,17 @@ makeHandler nodeKey eventId arguments op =
             -- TODO: check IDs match?
             when dumpEnabled $ Dump.handlerCall rawNodeKey eventId arguments
             runM' stateRef $ op nodeKey evtJson
+
+
+imapState :: forall stateA stateB m a. MonadEffect m => (stateA -> stateB) -> (stateB -> stateA) -> BlessedOpF stateA m a -> BlessedOpF stateB m (m a)
+imapState toStateB toStateA = case _ of
+    GetStateRef k -> GetStateRef $ \refB -> liftEffect $ Ref.read refB >>= (toStateA >>> Ref.new) >>= (k >>> pure)
+    State k -> State \stateB -> bimap pure toStateB $ k $ toStateA stateB
+    Lift m -> Lift $ pure m
+    PerformOne nid cmd a -> PerformOne nid cmd $ pure a
+    PerformSome nid cmds a -> PerformSome nid cmds $ pure a
+    PerformGet nid getCmd k -> PerformGet nid getCmd (k >>> pure)
+    PerformOnProcess cmd a -> PerformOnProcess cmd $ pure a
 
 
 foreign import execute_ :: I.BlessedEnc -> Effect Unit
