@@ -31,6 +31,7 @@ import Blessed.Internal.Core as Core
 import Cli.Keys (NodeBoxKey, OutletsBoxKey)
 import Cli.Style as Style
 import Cli.State (State)
+import Cli.Components.NodeBox.OutletButton as OutletButton
 
 import Noodle.Id as Id
 import Noodle.Node2 (Node) as Noodle
@@ -70,28 +71,4 @@ component nodeHolder nextNodeBox nextOutletsBox os =
                 liftEffect $ Console.log $ show outletSelected
         -}
         ]
-        [
-        ]
-
-
-outletHandler
-    :: forall f nstate o dout is os os'
-     . IsSymbol f
-    => Id.HasOutput o dout os' os
-    => ToRepr dout Hydra.WrapRepr
-    => FromRepr Hydra.WrapRepr dout
-    => Patch.HoldsNode Effect
-    -> NodeBoxKey
-    -> Int
-    -> Proxy dout
-    -> Noodle.Node f nstate is os Effect
-    -> Id.Output o
-    -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
-outletHandler nodeHolder nextNodeBox index pdout node output =
-    Id.reflect output /\ [] /\ \_ _ -> do
-        -- liftEffect $ Console.log $ "handler " <> oname
-        State.modify_
-            (_
-                { lastClickedOutlet =
-                    Just
-                        { index, subj : Id.reflect output, nodeKey : nextNodeBox, nodeId : Id.holdNodeId (Node.id node), outputId : Node.holdOutputInNodeMRepr pdout node output, node : nodeHolder } })
+        $ mapWithIndex (\idx hoinr -> Node.withOutputInNodeMRepr hoinr (OutletButton.component nodeHolder nextNodeBox nextOutletsBox idx)) os

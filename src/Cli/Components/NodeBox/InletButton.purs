@@ -52,6 +52,8 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Repr (class FromRepr, class ToRepr)
 import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
+import Data.Lazy (Lazy)
+import Data.Lazy as Lazy
 
 import Blessed ((>~))
 import Blessed as B
@@ -119,21 +121,21 @@ component curPatchId curPatch nextNodeBox idx pdin inode inputId =
         , Core.on Button.Press
             \_ _ -> onPress curPatchId curPatch nextNodeBox idx pdin inode inputId
         , Core.on Element.MouseOver
-            \_ _ -> onMouseOver
+            $ onMouseOver idx
         , Core.on Element.MouseOut
-            \_ _ -> onMouseOut
+            \_ _ -> onMouseOut idx
         ]
         []
 
 
-onMouseOver :: BlessedOp State Effect
-onMouseOver =
-    liftEffect $ Console.log "over"
+onMouseOver :: Int -> _ -> _ -> BlessedOp State Effect
+onMouseOver idx _ _ =
+    liftEffect $ Console.log $ "over" <> show idx
 
 
-onMouseOut :: BlessedOp State Effect
-onMouseOut =
-    liftEffect $ Console.log "out"
+onMouseOut :: Int -> BlessedOp State Effect
+onMouseOut idx =
+    liftEffect $ Console.log $ "out" <> show idx
 
 
 onPress

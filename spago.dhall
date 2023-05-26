@@ -48,6 +48,7 @@ to generate this file without the comments in this block.
   , "integers"
   , "invariant"
   , "js-fileio"
+  , "lazy"
   , "lists"
   , "math"
   , "maybe"
