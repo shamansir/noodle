@@ -110,20 +110,20 @@ component
     -> Core.Blessed State
 component curPatchId curPatch nextNodeBox idx pdin inode inputId =
     B.button Key.inletButton
-        [ Box.content "+"
+        [ Box.content $ "⋱" <> show idx <> "⋰"
         , Box.top $ Offset.px 0
-        , Box.left $ Offset.px $ idx * 2
+        , Box.left $ Offset.px $ idx * 4
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
-        , Box.width $ Dimension.px 1
+        , Box.width $ Dimension.px 3
         , Box.height $ Dimension.px 1
         , Button.mouse true
         , Style.addPatch
         , Core.on Button.Press
-            \_ _ -> onPress curPatchId curPatch nextNodeBox idx pdin inode inputId
-        , Core.on Element.MouseOver
-            $ onMouseOver idx
-        , Core.on Element.MouseOut
-            \_ _ -> onMouseOut idx
+            $ onPress curPatchId curPatch nextNodeBox idx pdin inode inputId
+        -- , Core.on Element.MouseOver
+        --     $ onMouseOver idx
+        -- , Core.on Element.MouseOut
+        --     \_ _ -> onMouseOut idx
         ]
         []
 
@@ -151,9 +151,14 @@ onPress
     -> Proxy din
     -> Noodle.Node f nstate is os Effect
     -> Id.Input i
+    -> _
+    -> _
     -> BlessedOp State Effect
-onPress curPatchId curPatch nextNodeBox idx _ inode inputId =
+onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
     {-Id.reflect inputId /\ [] /\ \_ _ -> -} do
+        let altIdx = Id.index inputId
+        liftEffect $ Console.log $ "press" <> show idx
+        liftEffect $ Console.log $ "apress" <> show altIdx
         let inodeKey = nextNodeBox
         state <- State.get
         -- liftEffect $ Console.log $ "handler " <> iname

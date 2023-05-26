@@ -118,8 +118,9 @@ inletsOutlets :: forall subj id state e r. Extends Element subj => Respresents B
 inletsOutlets =
     Box.style
         [ Style.fg Palette.itemSelected'
-        , Style.bg Palette.libraryBg'
+        , Style.bg Palette.nodeBg'
         ]
+
 
 {- inletsOutlets :: forall subj id state e r. Respresents List subj id => List.StyleAttrubute subj id state e r
 inletsOutlets =

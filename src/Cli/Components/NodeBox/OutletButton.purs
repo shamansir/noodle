@@ -62,20 +62,20 @@ component
     -> Core.Blessed State
 component nodeHolder nextNodeBox nextOutletsBox idx pdout node outputId =
     B.button Key.outletButton
-        [ Box.content "+"
+        [ Box.content $ "⋰" <> show idx <> "⋱"
         , Box.top $ Offset.px 0
-        , Box.left $ Offset.px $ idx * 2
+        , Box.left $ Offset.px $ idx * 4
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
-        , Box.width $ Dimension.px 1
+        , Box.width $ Dimension.px 3
         , Box.height $ Dimension.px 1
         , Button.mouse true
         , Style.addPatch
         , Core.on Button.Press
             \_ _ -> onPress nodeHolder nextNodeBox idx pdout node outputId
-        , Core.on Element.MouseOver
-            $ onMouseOver idx
-        , Core.on Element.MouseOut
-            \_ _ -> onMouseOut idx
+        -- , Core.on Element.MouseOver
+        --     $ onMouseOver idx
+        -- , Core.on Element.MouseOut
+        --     \_ _ -> onMouseOut idx
         ]
         []
 
@@ -96,12 +96,13 @@ onPress
     -- -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
 onPress nodeHolder nextNodeBox index pdout node output =
     {- Id.reflect output /\ [] /\ \_ _ -> -} do
-        -- liftEffect $ Console.log $ "handler " <> oname
+        liftEffect $ Console.log $ "press" <> show index
         State.modify_
             (_
                 { lastClickedOutlet =
                     Just
                         { index, subj : Id.reflect output, nodeKey : nextNodeBox, nodeId : Id.holdNodeId (Node.id node), outputId : Node.holdOutputInNodeMRepr pdout node output, node : nodeHolder } })
+
 
 
 onMouseOver :: Int -> _ -> _ -> BlessedOp State Effect
