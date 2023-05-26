@@ -71,8 +71,8 @@ import Cli.Palette.Item (crepr) as Palette
 import Cli.State (State)
 import Cli.Style as Style
 import Cli.Components.Link as Link
-import Cli.Components.NodeBox.InletsBar as InletsBar
-import Cli.Components.NodeBox.OutletsBar as OutletsBar
+import Cli.Components.NodeBox.InletsBox as InletsBox
+import Cli.Components.NodeBox.OutletsBox as OutletsBox
 
 import Toolkit.Hydra2 (class HasNodesOf, Instances, State, Toolkit) as Hydra
 import Toolkit.Hydra2.Group (toGroup) as Hydra
@@ -99,8 +99,8 @@ fromFamily curPatchId curPatch family def tk = do
     state <- State.get
 
     let nextNodeBox = NodeKey.next state.lastNodeBoxKey
-    let nextInletsBar = NodeKey.next state.lastInletsBarKey
-    let nextOutletsBar = NodeKey.next state.lastOutletsBarKey
+    let nextInletsBox = NodeKey.next state.lastInletsBoxKey
+    let nextOutletsBox = NodeKey.next state.lastOutletsBoxKey
 
     let top = Offset.px $ state.lastShiftX + 2
     let left = Offset.px $ 16 + state.lastShiftY + 2
@@ -171,10 +171,10 @@ fromFamily curPatchId curPatch family def tk = do
     -- let is /\ os = Record.keys (rec.inputs :: Record is) /\ Record.keys (rec.outputs :: Record os)
 
     let
-        inletsBarN =
-            InletsBar.component curPatchId curPatch nextNodeBox nextInletsBar family def is
-        outletsBarN =
-            OutletsBar.component nodeHolder nextNodeBox nextOutletsBar os
+        inletsBoxN =
+            InletsBox.component curPatchId curPatch nextNodeBox nextInletsBox family def is
+        outletsBoxN =
+            OutletsBox.component nodeHolder nextNodeBox nextOutletsBox os
         nextNodeBoxN =
             B.box nextNodeBox
                 [ Box.draggable true
@@ -194,20 +194,20 @@ fromFamily curPatchId curPatch family def tk = do
     liftEffect $ Signal.runSignal $ updates ~> renderUpdate
 
     Key.patchBox >~ Node.append nextNodeBoxN
-    nextNodeBox >~ Node.append inletsBarN
-    nextNodeBox >~ Node.append outletsBarN
+    nextNodeBox >~ Node.append inletsBoxN
+    nextNodeBox >~ Node.append outletsBoxN
 
     State.modify_ (_
         { lastShiftX = state.lastShiftX + 1
         , lastShiftY = state.lastShiftY + 1
         , lastNodeBoxKey = nextNodeBox
-        , lastInletsBarKey = nextInletsBar
-        , lastOutletsBarKey = nextOutletsBar
+        , lastInletsBoxKey = nextInletsBox
+        , lastOutletsBoxKey = nextOutletsBox
         } )
 
     Key.mainScreen >~ Screen.render
 
-    pure { nextNodeBoxN, inletsBarN, outletsBarN }
+    pure { nextNodeBoxN, inletsBoxN, outletsBoxN }
 
 
 renderUpdate :: Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr -> Effect Unit

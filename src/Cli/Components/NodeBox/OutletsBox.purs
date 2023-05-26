@@ -1,4 +1,4 @@
-module Cli.Components.NodeBox.OutletsBar where
+module Cli.Components.NodeBox.OutletsBox where
 
 import Prelude
 
@@ -28,7 +28,7 @@ import Blessed.UI.Lists.List.Option (keys, mouse) as List
 import Blessed.UI.Lists.ListBar.Option (commands) as ListBar
 import Blessed.Internal.Core as Core
 
-import Cli.Keys (NodeBoxKey, OutletsBarKey)
+import Cli.Keys (NodeBoxKey, OutletsBoxKey)
 import Cli.Style as Style
 import Cli.State (State)
 
@@ -50,23 +50,23 @@ component
     -- => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     :: Patch.HoldsNode Effect
     -> NodeBoxKey
-    -> OutletsBarKey
+    -> OutletsBoxKey
     -> Array (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     -> C.Blessed State
-component nodeHolder nextNodeBox nextOutletsBar os =
-    B.listbar nextOutletsBar
+component nodeHolder nextNodeBox nextOutletsBox os =
+    B.box nextOutletsBox
         [ Box.width $ Dimension.percents 90.0
         , Box.height $ Dimension.px 1
         , Box.top $ Offset.px 2
         , Box.left $ Offset.px 0
-        , ListBar.commands $ mapWithIndex (\idx hoinr -> Node.withOutputInNodeMRepr hoinr (outletHandler nodeHolder nextNodeBox idx)) os
-        , List.mouse true
-        , List.keys true
+        -- , ListBar.commands $ mapWithIndex (\idx hoinr -> Node.withOutputInNodeMRepr hoinr (outletHandler nodeHolder nextNodeBox idx)) os
+        -- , List.mouse true
+        -- , List.keys true
         , Style.inletsOutlets
         {- , Core.on ListBar.Select
             \_ _ -> do
                 liftEffect $ Console.log "outlet"
-                outletSelected <- List.selected ~< nextOutletsBar
+                outletSelected <- List.selected ~< nextOutletsBox
                 liftEffect $ Console.log $ show outletSelected
         -}
         ]

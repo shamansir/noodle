@@ -114,7 +114,14 @@ nodeBoxBorder =
         ]
 
 
-inletsOutlets :: forall subj id state e r. Respresents List subj id => List.StyleAttrubute subj id state e r
+inletsOutlets :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
+inletsOutlets =
+    Box.style
+        [ Style.fg Palette.itemSelected'
+        , Style.bg Palette.libraryBg'
+        ]
+
+{- inletsOutlets :: forall subj id state e r. Respresents List subj id => List.StyleAttrubute subj id state e r
 inletsOutlets =
     List.style
         [ LStyle.bg Palette.libraryBg'
@@ -126,13 +133,16 @@ inletsOutlets =
             [ ES.fg Palette.itemSelected'
             , ES.bg Palette.libraryBg'
             ]
-        ]
+        ] -}
 
+
+-- ⊲ ⊳ ⋎ ⋏ ≺ ≻ ⊽ ⋀ ⋁ ∻ ∶ ∾ :: ∻ ∼ ∽ ≀ ⊶ ⊷ ⊸ ⋮ ⋯ ⋰ ⋱ ⊺ ⊢ ⊣ ⊤ ⊥ ⊦ ∣ ∤ ∥ ∦ ∗ · ∘ ∙ ⋄ ⋅ ⋆ ⋇ > ⋁
 
 linkA :: forall subj id state e. Respresents Line subj id => Array (C.Attribute subj id _ state e)
 linkA =
     [ Line.orientation $ Orientation.Vertical
-    , Line.ch '≀'
+    , Line.type_ $ Border._bg
+    , Line.ch '⊽' -- '≀'
     , Line.fg Palette.linkFg'
     , Line.bg Palette.patchBg'
     ]
@@ -142,7 +152,7 @@ linkB :: forall subj id state e. Respresents Line subj id => Array (C.Attribute 
 linkB =
     [ Line.orientation $ Orientation.Horizontal
     , Line.type_ $ Border._bg
-    , Line.ch '∼'
+    , Line.ch '⊳' -- '∼'
     , Line.fg Palette.linkFg'
     , Line.bg Palette.patchBg'
     ]
@@ -152,7 +162,7 @@ linkC :: forall subj id state e. Respresents Line subj id => Array (C.Attribute 
 linkC =
     [ Line.orientation $ Orientation.Vertical
     , Line.type_ $ Border._bg
-    , Line.ch '≀'
+    , Line.ch '⊽' -- '≀'
     , Line.fg Palette.linkFg'
     , Line.bg Palette.patchBg'
     ]

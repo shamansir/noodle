@@ -8,12 +8,12 @@ import Blessed.Internal.NodeKey (nk, type (<^>))
 mainScreen = nk :: Screen <^> "main-scr"
 patchesBar = nk :: ListBar <^> "patches-bar"
 patchBox = nk :: Box <^> "patch-box"
-nodeList = nk :: List <^> "node-list"
+library = nk :: List <^> "library"
 nodeBox = nk :: Box <^> "node-box"
-inletsBar = nk :: ListBar <^> "node-inlets-bar"
-outletsBar = nk :: ListBar <^> "node-outlets-bar"
-inlets = nk :: ListBar <^> "inlets"
-outlets = nk :: ListBar <^> "outlets"
+inletsBox = nk :: Box <^> "node-inlets-box"
+outletsBox = nk :: Box <^> "node-outlets-box"
+inletButton = nk :: Button <^> "inlet-button"
+outletButton = nk :: Button <^> "outlet-button"
 addPatchButton = nk :: Button <^> "add-patch"
 
 
@@ -30,7 +30,7 @@ lineB = nk :: LineB
 lineC = nk :: LineC
 
 
-type InletsBarKey = ListBar <^> "node-inlets-bar"
-type OutletsBarKey = ListBar <^> "node-outlets-bar"
+type InletsBoxKey = Box <^> "node-inlets-box"
+type OutletsBoxKey = Box <^> "node-outlets-box"
 type NodeBoxKey = Box <^> "node-box"
 type PatchBoxKey = Box <^> "patch-box"

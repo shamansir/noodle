@@ -19,9 +19,9 @@ import Noodle.Node2 as Node
 import Noodle.Patch4 as Patch
 import Noodle.Network2 (init, addPatch) as Network
 
-import Cli.Keys (InletsBarKey, NodeBoxKey, OutletsBarKey)
+import Cli.Keys (InletsBoxKey, NodeBoxKey, OutletsBoxKey)
 import Cli.Keys (LineA, LineB, LineC) as Key
-import Cli.Keys (nodeBox, inletsBar, outletsBar) as Key
+import Cli.Keys (nodeBox, inletsBox, outletsBox) as Key
 import Cli.State.NwWraper (Network, wrapN)
 
 import Toolkit.Hydra2 (toolkit) as Hydra
@@ -29,9 +29,9 @@ import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 
 
 type State =
-    { lastInletsBarKey :: InletsBarKey
+    { lastInletsBoxKey :: InletsBoxKey
     , lastNodeBoxKey :: NodeBoxKey
-    , lastOutletsBarKey :: OutletsBarKey
+    , lastOutletsBoxKey :: OutletsBoxKey
     , lastShiftX :: Int
     , lastShiftY :: Int
     , lastClickedOutlet :: Maybe
@@ -58,8 +58,8 @@ initial =
     { lastShiftX : 0
     , lastShiftY : 0
     , lastNodeBoxKey : Key.nodeBox
-    , lastInletsBarKey : Key.inletsBar
-    , lastOutletsBarKey : Key.outletsBar
+    , lastInletsBoxKey : Key.inletsBox
+    , lastOutletsBoxKey : Key.outletsBox
     , lastClickedOutlet : Nothing
     , lastLink : Nothing
     , linksFrom : Map.empty

@@ -20,7 +20,7 @@ import Noodle.Id as Id
 import Noodle.Network2 as Network
 import Noodle.Toolkit3 as Toolkit
 
-import Cli.Keys (mainScreen, nodeList) as Key
+import Cli.Keys (mainScreen, library) as Key
 import Cli.State.NwWraper (unwrapN)
 import Cli.State (State)
 import Cli.State (initial) as State
@@ -55,11 +55,10 @@ component =
         [ PatchesBar.component $ Network.patches $ unwrapN State.initial.network
         , PatchBox.component families
         , AddPatch.component
-        , PaletteList.component 125 2 30.0 96.0
+        -- , PaletteList.component 125 2 30.0 96.0
         ]
-
 
         $ \_ -> do
             PatchesBar.selectPatch 1
-            Key.nodeList >~ Box.focus
+            Key.library >~ Box.focus
             Key.mainScreen >~ Screen.render

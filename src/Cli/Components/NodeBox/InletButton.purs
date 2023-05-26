@@ -1,6 +1,46 @@
-module Cli.Components.NodeBox.InletsBar where
+module Cli.Components.NodeBox.InletButton where
 
 import Prelude
+
+
+import Effect.Class (liftEffect)
+
+import Effect.Console (log) as Console
+
+import Control.Monad.State (get, modify_) as State
+
+import Data.Maybe (Maybe(..))
+import Data.Tuple.Nested ((/\))
+
+import Blessed as B
+import Blessed ((>~))
+
+import Blessed.Core.Offset as Offset
+import Blessed.Core.Coord as Coord
+import Blessed.Core.Coord ((<->))
+import Blessed.Core.Dimension as Dimension
+import Blessed.Core.Style as Style
+import Blessed.Internal.Core as Core
+
+import Blessed.UI.Boxes.Box.Option (content, height, left, style, top, width) as Box
+
+import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
+import Blessed.UI.Forms.Button.Option (mouse) as Button
+import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
+import Blessed.UI.Base.Screen.Method (render) as Screen
+
+import Cli.Keys as Key
+import Cli.Palette as Palette
+import Cli.State (State)
+import Cli.State (patchIdFromIndex) as State
+import Cli.State.NwWraper (unwrapN, withNetwork)
+import Cli.Components.PatchesBar as PatchesBar
+import Cli.Style as Style
+
+import Noodle.Network2 as Network
+import Noodle.Patch4 as Patch
+
+import Toolkit.Hydra2 as Hydra
 
 import Control.Monad.State as State
 
@@ -33,7 +73,7 @@ import Blessed.UI.Lists.List.Option (keys, mouse) as List
 import Blessed.UI.Lists.ListBar.Option (autoCommandKeys, commands) as ListBar
 import Blessed.Internal.Core as Core
 
-import Cli.Keys (NodeBoxKey, InletsBarKey)
+import Cli.Keys (NodeBoxKey, InletsBoxKey)
 import Cli.Keys as Key
 import Cli.Style as Style
 import Cli.State (State, Link, OutletIndex(..), InletIndex(..))
@@ -53,50 +93,6 @@ import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 
 
 component
-    :: forall f state is os
-    -- :: forall id r f state fs iis rli is rlo os repr_is repr_os
-    --  . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
-    -- => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
-    -- => FromToReprRow rli is Hydra.WrapRepr
-    -- => FromToReprRow rlo os Hydra.WrapRepr
-    -- => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
-    -- => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-     . Patch.Id
-    -> Patch Hydra.State (Hydra.Instances Effect)
-    -> NodeBoxKey
-    -> InletsBarKey
-    -> Id.Family f
-    -> Family.Def state is os Effect
-    -> Array (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
-    -> C.Blessed State
-component curPatchId curPatch nextNodeBox nextInletsBar family _ is =
-    B.listbar nextInletsBar
-        [ Box.width $ Dimension.percents 90.0
-        , Box.height $ Dimension.px 1
-        , Box.top $ Offset.px 0
-        , Box.left $ Offset.px 0
-        -- , List.items is
-
-
-        , ListBar.commands $ mapWithIndex (\idx hiinr -> Node.withInputInNodeMRepr hiinr (inletHandler curPatchId curPatch nextNodeBox idx)) is
-
-
-        -- , ListBar.commands $ List.toUnfoldable $ mapWithIndex inletHandler $ is
-        , List.mouse true
-        , List.keys true
-        , ListBar.autoCommandKeys true
-        , Style.inletsOutlets
-        {- , Core.on ListBar.Select
-            \_ _ -> do
-                liftEffect $ Console.log "inlet"
-                inletSelected <- List.selected ~< nextInletsBar
-                liftEffect $ Console.log $ show inletSelected
-        -}
-        ]
-        [ ]
-
-
-inletHandler
     :: forall f nstate i din is is' os
      . IsSymbol f
     => Id.HasInput i din is' is
@@ -109,9 +105,53 @@ inletHandler
     -> Proxy din
     -> Noodle.Node f nstate is os Effect
     -> Id.Input i
-    -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-inlets-bar" State
-inletHandler curPatchId curPatch nextNodeBox idx _ inode inputId =
-    Id.reflect inputId /\ [] /\ \_ _ -> do
+    -> Core.Blessed State
+component curPatchId curPatch nextNodeBox idx pdin inode inputId =
+    B.button Key.inletButton
+        [ Box.content "+"
+        , Box.top $ Offset.px 0
+        , Box.left $ Offset.px $ idx * 2
+        -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
+        , Box.width $ Dimension.px 1
+        , Box.height $ Dimension.px 1
+        , Button.mouse true
+        , Style.addPatch
+        , Core.on Button.Press
+            \_ _ -> onPress curPatchId curPatch nextNodeBox idx pdin inode inputId
+        , Core.on Element.MouseOver
+            \_ _ -> onMouseOver
+        , Core.on Element.MouseOut
+            \_ _ -> onMouseOut
+        ]
+        []
+
+
+onMouseOver :: BlessedOp State Effect
+onMouseOver =
+    liftEffect $ Console.log "over"
+
+
+onMouseOut :: BlessedOp State Effect
+onMouseOut =
+    liftEffect $ Console.log "out"
+
+
+onPress
+    :: forall f nstate i din is is' os
+     . IsSymbol f
+    => Id.HasInput i din is' is
+    => ToRepr din Hydra.WrapRepr
+    => FromRepr Hydra.WrapRepr din
+    => Patch.Id
+    -> Patch Hydra.State (Hydra.Instances Effect)
+    -> NodeBoxKey
+    -> Int
+    -> Proxy din
+    -> Noodle.Node f nstate is os Effect
+    -> Id.Input i
+    -> BlessedOp State Effect
+onPress curPatchId curPatch nextNodeBox idx _ inode inputId =
+    {-Id.reflect inputId /\ [] /\ \_ _ -> -} do
         let inodeKey = nextNodeBox
         state <- State.get
         -- liftEffect $ Console.log $ "handler " <> iname
@@ -144,7 +184,7 @@ inletHandler curPatchId curPatch nextNodeBox idx _ inode inputId =
     -- onInletSelect nodeId input nextNodeBox idx (Id.reflect input)
 
 
--- TODO: to Link module?
+-- TODO: move to Link module?
 onLinkClick :: forall id. Link -> Line <^> id → EventJson → BlessedOp State Effect
 onLinkClick link _ _ = do
     -- liftEffect $ Console.log "click link"

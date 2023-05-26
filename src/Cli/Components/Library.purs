@@ -50,7 +50,7 @@ import Prelude
 
 component :: Array Id.FamilyR -> Core.Blessed State
 component families =
-    B.listAnd Key.nodeList
+    B.listAnd Key.library
         [ Box.top $ Offset.px 0
         , Box.left $ Offset.px 0
         , Box.width $ Dimension.px 14
@@ -81,11 +81,11 @@ component families =
                 let top = Offset.px $ state.lastShiftX + 2
                 let left = Offset.px $ 16 + state.lastShiftY + 2
                 let nextNodeBox = NodeKey.next state.lastNodeBoxKey
-                let nextInletsBar = NodeKey.next state.lastInletsBarKey
-                let nextOutletsBar = NodeKey.next state.lastOutletsBarKey
+                let nextInletsBox = NodeKey.next state.lastInletsBoxKey
+                let nextOutletsBox = NodeKey.next state.lastOutletsBoxKey
 
                 {- -}
-                selected <- List.selected ~< Key.nodeList
+                selected <- List.selected ~< Key.library
                 let mbSelectedFamily = families !! selected
 
                 {-
@@ -139,8 +139,8 @@ component families =
                 let
                     inletHandler idx iname =
                         iname /\ [] /\ onInletSelect nextNodeBox idx iname
-                    inletsBarN =
-                        B.listbar nextInletsBar
+                    inletsBoxN =
+                        B.listbar nextInletsBox
                             [ Box.width $ Dimension.percents 90.0
                             , Box.height $ Dimension.px 1
                             , Box.top $ Offset.px 0
@@ -154,7 +154,7 @@ component families =
                             -- , Core.on ListBar.Select
                             --     \_ _ -> do
                             --         liftEffect $ Console.log "inlet"
-                            --         inletSelected <- List.selected ~< nextInletsBar
+                            --         inletSelected <- List.selected ~< nextInletsBox
                             --         liftEffect $ Console.log $ show inletSelected
                             ]
                             [ ]
@@ -163,8 +163,8 @@ component families =
                 let
                     outletHandler idx oname =
                         oname /\ [] /\ onOutletSelect nextNodeBox idx oname
-                    outletsBarN =
-                        B.listbar nextOutletsBar
+                    outletsBoxN =
+                        B.listbar nextOutletsBox
                             [ Box.width $ Dimension.percents 90.0
                             , Box.height $ Dimension.px 1
                             , Box.top $ Offset.px 2
@@ -177,22 +177,22 @@ component families =
                             -- , Core.on ListBar.Select
                             --     \_ _ -> do
                             --         liftEffect $ Console.log "outlet"
-                            --         outletSelected <- List.selected ~< nextOutletsBar
+                            --         outletSelected <- List.selected ~< nextOutletsBox
                             --         liftEffect $ Console.log $ show outletSelected
                             ]
                             [
                             ]
 
                 patchBox >~ Node.append nextNodeBoxN
-                nextNodeBox >~ Node.append inletsBarN
-                nextNodeBox >~ Node.append outletsBarN
+                nextNodeBox >~ Node.append inletsBoxN
+                nextNodeBox >~ Node.append outletsBoxN
 
                 State.modify_ (_
                     { lastShiftX = state.lastShiftX + 1
                     , lastShiftY = state.lastShiftY + 1
                     , lastNodeBoxKey = nextNodeBox
-                    , lastInletsBarKey = nextInletsBar
-                    , lastOutletsBarKey = nextOutletsBar
+                    , lastInletsBoxKey = nextInletsBox
+                    , lastOutletsBoxKey = nextOutletsBox
                     } )
 
                 mainScreen >~ Screen.render

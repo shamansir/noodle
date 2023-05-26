@@ -46,6 +46,7 @@ import Blessed.Internal.Emitter (initial, split, typeOf, toCore, class Fires, cl
 import Blessed.Internal.Foreign (encode, encode', encodeHandler, encodeHandlerRef, HandlerIndex(..)) as Foreign
 
 
+-- TODO: these function types make reading the code and finding proper things to fit complex, try to get rid of them in the end
 type InitFn subj id state = (NodeKey subj id -> Op.BlessedOp state Effect)
 type HandlerFn subj id state = (NodeKey subj id -> I.EventJson -> Op.BlessedOp state Effect)
 
@@ -72,6 +73,7 @@ type Blessed state = I.SNode state
 
 
 -- see Halogen.Svg.Elements + Halogen.Svg.Properties
+-- TODO: these function types make reading the code and finding proper things to fit complex, try to get rid of them in the end
 type Node (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state E.BlessedEvent) -> Array (Blessed state) -> Blessed state
 type NodeAnd (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state E.BlessedEvent) -> Array (Blessed state) -> InitFn subj id state -> Blessed state
 type Leaf (subj :: K.Subject) (id :: Symbol) (r :: Row Type) state = Array (Attribute subj id r state E.BlessedEvent) -> Blessed state
