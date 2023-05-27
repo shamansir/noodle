@@ -75,7 +75,7 @@ import Blessed.UI.Lists.List.Option (keys, mouse) as List
 import Blessed.UI.Lists.ListBar.Option (autoCommandKeys, commands) as ListBar
 import Blessed.Internal.Core as Core
 
-import Cli.Keys (NodeBoxKey, InletsBoxKey)
+import Cli.Keys (NodeBoxKey, InletsBoxKey, InletButtonKey)
 import Cli.Keys as Key
 import Cli.Style as Style
 import Cli.State (State, Link, OutletIndex(..), InletIndex(..))
@@ -100,7 +100,8 @@ component
     => Id.HasInput i din is' is
     => ToRepr din Hydra.WrapRepr
     => FromRepr Hydra.WrapRepr din
-    => Patch.Id
+    => InletButtonKey
+    -> Patch.Id
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> NodeBoxKey
     -> Int
@@ -108,8 +109,8 @@ component
     -> Noodle.Node f nstate is os Effect
     -> Id.Input i
     -> Core.Blessed State
-component curPatchId curPatch nextNodeBox idx pdin inode inputId =
-    B.button Key.inletButton
+component buttonKey curPatchId curPatch nextNodeBox idx pdin inode inputId =
+    B.button buttonKey
         [ Box.content $ "⋱" <> show idx <> "⋰"
         , Box.top $ Offset.px 0
         , Box.left $ Offset.px $ idx * 4
@@ -157,8 +158,8 @@ onPress
 onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
     {-Id.reflect inputId /\ [] /\ \_ _ -> -} do
         let altIdx = Id.index inputId
-        liftEffect $ Console.log $ "press" <> show idx
-        liftEffect $ Console.log $ "apress" <> show altIdx
+        -- liftEffect $ Console.log $ "press" <> show idx
+        -- liftEffect $ Console.log $ "apress" <> show altIdx
         let inodeKey = nextNodeBox
         state <- State.get
         -- liftEffect $ Console.log $ "handler " <> iname
@@ -188,6 +189,7 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
             Nothing -> pure unit
         State.modify_
             (_ { lastClickedOutlet = Nothing })
+        Key.mainScreen >~ Screen.render -- FIXME: only re-render patchBox
     -- onInletSelect nodeId input nextNodeBox idx (Id.reflect input)
 
 

@@ -9,10 +9,13 @@ import Control.Monad.State as State
 import Effect (Effect)
 import Type.Proxy (Proxy)
 import Data.FunctorWithIndex (mapWithIndex)
+import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Repr (class FromRepr, class ToRepr)
 import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
+import Data.Foldable (foldr)
+import Data.Array ((:))
 
 import Blessed as B
 
@@ -22,6 +25,7 @@ import Blessed.Core.Offset as Offset
 
 import Blessed.Internal.Core (Blessed) as C
 import Blessed.Internal.BlessedSubj (ListBar)
+import Blessed.Internal.NodeKey (next) as Key
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Lists.List.Option (keys, mouse) as List
@@ -29,6 +33,7 @@ import Blessed.UI.Lists.ListBar.Option (commands) as ListBar
 import Blessed.Internal.Core as Core
 
 import Cli.Keys (NodeBoxKey, OutletsBoxKey)
+import Cli.Keys (outletButton) as Key
 import Cli.Style as Style
 import Cli.State (State)
 import Cli.Components.NodeBox.OutletButton as OutletButton
@@ -71,4 +76,14 @@ component nodeHolder nextNodeBox nextOutletsBox os =
                 liftEffect $ Console.log $ show outletSelected
         -}
         ]
-        $ mapWithIndex (\idx hoinr -> Node.withOutputInNodeMRepr hoinr (OutletButton.component nodeHolder nextNodeBox nextOutletsBox idx)) os
+        -- $ mapWithIndex (\idx hoinr -> Node.withOutputInNodeMRepr hoinr (OutletButton.component nodeHolder nextNodeBox nextOutletsBox idx)) os
+        $ mapWithIndex mapF
+        $ fillKeys os
+    where
+        fillKeys =
+            Tuple.snd <<< foldr foldF (Key.outletButton /\ [])
+        foldF hoinr (prevKey /\ pairs) =
+            let nextKey = Key.next prevKey
+            in nextKey /\ ((nextKey /\ hoinr) : pairs)
+        mapF idx (nextKey /\ hoinr) =
+            Node.withOutputInNodeMRepr hoinr (OutletButton.component nextKey nodeHolder nextNodeBox nextOutletsBox idx)

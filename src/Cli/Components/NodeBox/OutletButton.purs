@@ -34,7 +34,7 @@ import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 
-import Cli.Keys (NodeBoxKey, OutletsBoxKey)
+import Cli.Keys (NodeBoxKey, OutletsBoxKey, OutletButtonKey)
 import Cli.Style as Style
 import Cli.State (State)
 
@@ -52,7 +52,8 @@ component
     => Id.HasOutput o dout os' os
     => ToRepr dout Hydra.WrapRepr
     => FromRepr Hydra.WrapRepr dout
-    => Patch.HoldsNode Effect
+    => OutletButtonKey
+    -> Patch.HoldsNode Effect
     -> NodeBoxKey
     -> OutletsBoxKey
     -> Int
@@ -60,8 +61,8 @@ component
     -> Noodle.Node f nstate is os Effect
     -> Id.Output o
     -> Core.Blessed State
-component nodeHolder nextNodeBox nextOutletsBox idx pdout node outputId =
-    B.button Key.outletButton
+component buttonKey nodeHolder nextNodeBox nextOutletsBox idx pdout node outputId =
+    B.button buttonKey
         [ Box.content $ "⋰" <> show idx <> "⋱"
         , Box.top $ Offset.px 0
         , Box.left $ Offset.px $ idx * 4
@@ -96,7 +97,7 @@ onPress
     -- -> String /\ Array C.Key /\ Core.HandlerFn ListBar "node-outlets-bar" State
 onPress nodeHolder nextNodeBox index pdout node output =
     {- Id.reflect output /\ [] /\ \_ _ -> -} do
-        liftEffect $ Console.log $ "press" <> show index
+        -- liftEffect $ Console.log $ "press" <> show index
         State.modify_
             (_
                 { lastClickedOutlet =

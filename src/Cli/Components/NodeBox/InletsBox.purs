@@ -8,16 +8,20 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Type.Proxy (Proxy(..))
 import Data.FunctorWithIndex (mapWithIndex)
+import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Repr (class FromRepr, class ToRepr)
 import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
+import Data.Foldable (foldr)
+import Data.Array ((:))
 
 import Blessed ((>~))
 import Blessed as B
 
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Key (Key) as C
+import Blessed.Internal.NodeKey (next) as Key
 import Blessed.Core.Offset as Offset
 
 import Blessed.Internal.Core (Blessed) as C
@@ -94,4 +98,13 @@ component curPatchId curPatch nextNodeBox nextInletsBox family _ is =
                 liftEffect $ Console.log $ show inletSelected
         -}
         ]
-        $ mapWithIndex (\idx hiinr -> Node.withInputInNodeMRepr hiinr (InletButton.component curPatchId curPatch nextNodeBox idx)) is
+        $ mapWithIndex mapF
+        $ fillKeys is
+    where
+        fillKeys =
+            Tuple.snd <<< foldr foldF (Key.inletButton /\ [])
+        foldF hinnr (prevKey /\ pairs) =
+            let nextKey = Key.next prevKey
+            in nextKey /\ ((nextKey /\ hinnr) : pairs)
+        mapF idx (nextKey /\ hiinr) =
+            Node.withInputInNodeMRepr hiinr (InletButton.component nextKey curPatchId curPatch nextNodeBox idx)
