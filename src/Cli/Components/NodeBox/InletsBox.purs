@@ -15,10 +15,12 @@ import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
 import Data.Foldable (foldr)
 import Data.Array ((:))
+import Data.Array (length) as Array
 
 import Blessed ((>~))
 import Blessed as B
 
+import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Key (Key) as C
 import Blessed.Internal.NodeKey (next) as Key
@@ -57,6 +59,14 @@ import Toolkit.Hydra2 (Instances, State) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 
 
+width :: Int -> Dimension
+width = Dimension.px <<< widthN
+
+
+widthN :: Int -> Int
+widthN count = (InletButton.widthN + 1) * count
+
+
 component
     :: forall f state is os
     -- :: forall id r f state fs iis rli is rlo os repr_is repr_os
@@ -76,7 +86,7 @@ component
     -> C.Blessed State
 component curPatchId curPatch nextNodeBox nextInletsBox family _ is =
     B.box nextInletsBox
-        [ Box.width $ Dimension.percents 90.0
+        [ Box.width $ width $ Array.length is
         , Box.height $ Dimension.px 1
         , Box.top $ Offset.px 0
         , Box.left $ Offset.px 0

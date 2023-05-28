@@ -16,9 +16,11 @@ import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
 import Data.Foldable (foldr)
 import Data.Array ((:))
+import Data.Array (length) as Array
 
 import Blessed as B
 
+import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Key (Key) as C
 import Blessed.Core.Offset as Offset
@@ -46,6 +48,14 @@ import Noodle.Patch4 as Patch
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 
 
+width :: Int -> Dimension
+width = Dimension.px <<< widthN
+
+
+widthN :: Int -> Int
+widthN count = (OutletButton.widthN + 1) * count
+
+
 component
     -- forall id r f state fs iis rli is rlo os repr_is repr_os
     -- . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
@@ -61,7 +71,7 @@ component
     -> C.Blessed State
 component nodeHolder nextNodeBox nextOutletsBox os =
     B.box nextOutletsBox
-        [ Box.width $ Dimension.percents 90.0
+        [ Box.width $ width $ Array.length os
         , Box.height $ Dimension.px 1
         , Box.top $ Offset.px 2
         , Box.left $ Offset.px 0

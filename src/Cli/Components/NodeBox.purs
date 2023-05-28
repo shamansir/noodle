@@ -19,6 +19,7 @@ import Data.List (length) as List
 import Data.KeyHolder as KH
 import Data.Repr (class FromToReprRow, class ToReprRow)
 import Data.Symbol (class IsSymbol)
+import Data.String as String
 import Data.Mark (mark)
 
 import Signal (Signal, (~>))
@@ -32,6 +33,7 @@ import Blessed.Tagger (fgc, bgc, s) as T
 import Blessed.Tagger (render) as T
 
 import Blessed.Core.Border as Border
+import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.EndStyle as ES
 import Blessed.Core.Offset as Offset
@@ -78,6 +80,11 @@ import Toolkit.Hydra2 (class HasNodesOf, Instances, State, Toolkit) as Hydra
 import Toolkit.Hydra2.Group (toGroup) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
+
+
+width :: String -> Int -> Int -> Dimension
+width familyName isCount osCount =
+    Dimension.px $ (max (String.length familyName) $ max (InletsBox.widthN isCount) (OutletsBox.widthN osCount)) + 4
 
 
 fromFamily
@@ -180,7 +187,7 @@ fromFamily curPatchId curPatch family def tk = do
                 [ Box.draggable true
                 , Box.top top
                 , Box.left left
-                , Box.width $ Dimension.px 25
+                , Box.width $ width (Id.reflect family) (Array.length is) (Array.length os)
                 , Box.height $ Dimension.px 5
                 , Box.label $ toLabel family
                 , Box.tags true

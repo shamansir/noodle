@@ -18,8 +18,10 @@ import Data.Maybe (Maybe(..))
 import Blessed as B
 import Cli.Keys as Key
 
+import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Key (Key) as C
+import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 import Blessed.Internal.BlessedOp (BlessedOp)
 
@@ -46,6 +48,18 @@ import Noodle.Patch4 as Patch
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 
 
+width :: Dimension
+width = Dimension.px widthN
+
+
+widthN :: Int
+widthN = 3
+
+
+left :: Int -> Offset
+left idx = Offset.px $ idx * (widthN + 1)
+
+
 component
     :: forall f nstate o dout is os os'
      . IsSymbol f
@@ -65,12 +79,12 @@ component buttonKey nodeHolder nextNodeBox nextOutletsBox idx pdout node outputI
     B.button buttonKey
         [ Box.content $ "⋰" <> show idx <> "⋱"
         , Box.top $ Offset.px 0
-        , Box.left $ Offset.px $ idx * 4
+        , Box.left $ left idx
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
-        , Box.width $ Dimension.px 3
+        , Box.width width
         , Box.height $ Dimension.px 1
         , Button.mouse true
-        , Style.addPatch
+        , Style.inletsOutlets
         , Core.on Button.Press
             \_ _ -> onPress nodeHolder nextNodeBox idx pdout node outputId
         -- , Core.on Element.MouseOver
@@ -102,7 +116,11 @@ onPress nodeHolder nextNodeBox index pdout node output =
             (_
                 { lastClickedOutlet =
                     Just
-                        { index, subj : Id.reflect output, nodeKey : nextNodeBox, nodeId : Id.holdNodeId (Node.id node), outputId : Node.holdOutputInNodeMRepr pdout node output, node : nodeHolder } })
+                        { index, subj : Id.reflect output, nodeKey : nextNodeBox
+                        , nodeId : Id.holdNodeId (Node.id node), node : nodeHolder
+                        , outputId : Node.holdOutputInNodeMRepr pdout node output }
+                        }
+            )
 
 
 

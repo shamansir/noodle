@@ -58,8 +58,10 @@ import Data.Lazy as Lazy
 import Blessed ((>~))
 import Blessed as B
 
+import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Key (Key) as C
+import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 
 import Blessed.Internal.Core (Blessed) as C
@@ -94,6 +96,18 @@ import Toolkit.Hydra2 (Instances, State) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 
 
+width :: Dimension
+width = Dimension.px widthN
+
+
+widthN :: Int
+widthN = 3
+
+
+left :: Int -> Offset
+left idx = Offset.px $ idx * (widthN + 1)
+
+
 component
     :: forall f nstate i din is is' os
      . IsSymbol f
@@ -113,12 +127,12 @@ component buttonKey curPatchId curPatch nextNodeBox idx pdin inode inputId =
     B.button buttonKey
         [ Box.content $ "⋱" <> show idx <> "⋰"
         , Box.top $ Offset.px 0
-        , Box.left $ Offset.px $ idx * 4
+        , Box.left $ left idx
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
-        , Box.width $ Dimension.px 3
+        , Box.width width
         , Box.height $ Dimension.px 1
         , Button.mouse true
-        , Style.addPatch
+        , Style.inletsOutlets
         , Core.on Button.Press
             $ onPress curPatchId curPatch nextNodeBox idx pdin inode inputId
         -- , Core.on Element.MouseOver
