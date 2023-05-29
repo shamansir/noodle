@@ -91,9 +91,12 @@ import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
 import Noodle.Network2 as Network
 import Noodle.Family.Def as Family
+import Noodle.Node2.MapsFolds.Repr as NMF
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
+import Toolkit.Hydra2.Repr.Info (short, full) as Info
 
 
 width :: Dimension
@@ -108,6 +111,11 @@ left :: Int -> Offset
 left idx = Offset.px $ idx * (widthN + 1)
 
 
+content ::forall i. IsSymbol i => Int -> Id.Input i -> Maybe Hydra.WrapRepr -> String
+content idx inputId (Just repr) = Info.short repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+content idx inputId Nothing = "⋱" <> show idx <> "⋰"
+
+
 component
     :: forall f nstate i din is is' os
      . IsSymbol f
@@ -119,13 +127,14 @@ component
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> NodeBoxKey
     -> Int
-    -> Proxy din
+    -> Maybe Hydra.WrapRepr
+    -> Proxy din -- Hydra.WrapRepr?
     -> Noodle.Node f nstate is os Effect
     -> Id.Input i
     -> Core.Blessed State
-component buttonKey curPatchId curPatch nextNodeBox idx pdin inode inputId =
+component buttonKey curPatchId curPatch nextNodeBox idx maybeRepr pdin inode inputId =
     B.button buttonKey
-        [ Box.content $ "⋱" <> show idx <> "⋰"
+        [ Box.content $ content idx inputId maybeRepr
         , Box.top $ Offset.px 0
         , Box.left $ left idx
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1

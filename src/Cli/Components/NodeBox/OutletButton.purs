@@ -46,6 +46,7 @@ import Noodle.Node2 as Node
 import Noodle.Patch4 as Patch
 
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra2.Repr.Info (short, full) as Info
 
 
 width :: Dimension
@@ -60,6 +61,11 @@ left :: Int -> Offset
 left idx = Offset.px $ idx * (widthN + 1)
 
 
+content ::forall o. IsSymbol o => Int -> Id.Output o -> Maybe Hydra.WrapRepr -> String
+content idx outputId (Just repr) = Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
+content idx outputId Nothing = "⋰" <> show idx <> "⋱"
+
+
 component
     :: forall f nstate o dout is os os'
      . IsSymbol f
@@ -71,13 +77,14 @@ component
     -> NodeBoxKey
     -> OutletsBoxKey
     -> Int
+    -> Maybe Hydra.WrapRepr
     -> Proxy dout
     -> Noodle.Node f nstate is os Effect
     -> Id.Output o
     -> Core.Blessed State
-component buttonKey nodeHolder nextNodeBox nextOutletsBox idx pdout node outputId =
+component buttonKey nodeHolder nextNodeBox nextOutletsBox idx maybeRepr pdout node outputId =
     B.button buttonKey
-        [ Box.content $ "⋰" <> show idx <> "⋱"
+        [ Box.content $ content idx outputId maybeRepr
         , Box.top $ Offset.px 0
         , Box.left $ left idx
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1

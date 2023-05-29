@@ -82,7 +82,7 @@ component
     -> InletsBoxKey
     -> Id.Family f
     -> Family.Def state is os Effect
-    -> Array (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
+    -> Array (Maybe Hydra.WrapRepr /\ Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     -> C.Blessed State
 component curPatchId curPatch nextNodeBox nextInletsBox family _ is =
     B.box nextInletsBox
@@ -116,5 +116,6 @@ component curPatchId curPatch nextNodeBox nextInletsBox family _ is =
         foldF hinnr (prevKey /\ pairs) =
             let nextKey = Key.next prevKey
             in nextKey /\ ((nextKey /\ hinnr) : pairs)
-        mapF idx (nextKey /\ hiinr) =
-            Node.withInputInNodeMRepr hiinr (InletButton.component nextKey curPatchId curPatch nextNodeBox idx)
+        mapF idx (nextKey /\ (maybeRepr /\ hiinr)) =
+            -- FIXME: either pass Repr inside `withInputInNodeMRepr` or get rid of `HoldsInputInNodeMRepr` completely since we have ways to get Repr from outside using folds
+            Node.withInputInNodeMRepr hiinr (InletButton.component nextKey curPatchId curPatch nextNodeBox idx maybeRepr)

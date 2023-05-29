@@ -67,7 +67,7 @@ component
     :: Patch.HoldsNode Effect
     -> NodeBoxKey
     -> OutletsBoxKey
-    -> Array (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
+    -> Array (Maybe Hydra.WrapRepr /\ Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     -> C.Blessed State
 component nodeHolder nextNodeBox nextOutletsBox os =
     B.box nextOutletsBox
@@ -95,5 +95,6 @@ component nodeHolder nextNodeBox nextOutletsBox os =
         foldF hoinr (prevKey /\ pairs) =
             let nextKey = Key.next prevKey
             in nextKey /\ ((nextKey /\ hoinr) : pairs)
-        mapF idx (nextKey /\ hoinr) =
-            Node.withOutputInNodeMRepr hoinr (OutletButton.component nextKey nodeHolder nextNodeBox nextOutletsBox idx)
+        mapF idx (nextKey /\ (maybeRepr /\ hoinr)) =
+            -- FIXME: either pass Repr inside `withInputInNodeMRepr` or get rid of `HoldsInputInNodeMRepr` completely since we have ways to get Repr from outside using folds
+            Node.withOutputInNodeMRepr hoinr (OutletButton.component nextKey nodeHolder nextNodeBox nextOutletsBox idx maybeRepr)

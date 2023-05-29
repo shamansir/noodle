@@ -34,6 +34,14 @@ class FullInfo a where
     full :: a -> String
 
 
+instance ShortInfo InfoRepr where
+    short (InfoRepr info) = info.short
+
+
+instance FullInfo InfoRepr where
+    full (InfoRepr info) = info.full
+
+
 instance ShortInfo H.Value where
     short :: H.Value -> String
     short = case _ of

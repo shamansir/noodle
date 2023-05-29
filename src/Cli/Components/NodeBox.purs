@@ -8,7 +8,7 @@ import Effect.Console as Console
 
 import Control.Monad.State as State
 
-import Data.Maybe (fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested ((/\), type (/\))
 import Type.Proxy (Proxy(..))
 import Data.Map (Map)
@@ -161,11 +161,13 @@ fromFamily curPatchId curPatch family def tk = do
     -- liftEffect $ Console.log $ "issss1" <> (show $ Array.length rec.issss1)
     -- liftEffect $ Console.log $ "ossss1" <> (show $ Array.length rec.ossss1)
     let repr = rec.repr
-    let mapRepr = rec.mapRepr
+    let mapRepr@(nodeId /\ stateRepr /\ inputsReps /\ outputReprs) = rec.mapRepr
     let nodeId = Node.id rec.node
     let updates = rec.updates
     let (node :: Noodle.Node f state is os Effect) = rec.node
     let (nodeHolder :: Patch.HoldsNode Effect) = Patch.holdNode rec.nextPatch node
+    let isWithReprs = (\hiinr -> Node.withInputInNodeMRepr hiinr (\_ _ inputId -> Map.lookup (Id.inputR inputId) inputsReps) /\ hiinr) <$> is
+    let osWithReprs = (\hoinr -> Node.withOutputInNodeMRepr hoinr (\_ _ outputId -> Map.lookup (Id.outputR outputId) outputReprs) /\ hoinr) <$> os
 
     -- TODO: probably use Repr to create inlet bars and outlet bars, this way using Input' / Output' instances, we will probably be able to connect things
     --       or not Repr but some fold over inputs / outputs shape
@@ -179,9 +181,9 @@ fromFamily curPatchId curPatch family def tk = do
 
     let
         inletsBoxN =
-            InletsBox.component curPatchId curPatch nextNodeBox nextInletsBox family def is
+            InletsBox.component curPatchId curPatch nextNodeBox nextInletsBox family def isWithReprs
         outletsBoxN =
-            OutletsBox.component nodeHolder nextNodeBox nextOutletsBox os
+            OutletsBox.component nodeHolder nextNodeBox nextOutletsBox osWithReprs
         nextNodeBoxN =
             B.box nextNodeBox
                 [ Box.draggable true
@@ -210,7 +212,8 @@ fromFamily curPatchId curPatch family def tk = do
         , lastNodeBoxKey = nextNodeBox
         , lastInletsBoxKey = nextInletsBox
         , lastOutletsBoxKey = nextOutletsBox
-        } )
+        }
+    )
 
     Key.mainScreen >~ Screen.render
 
