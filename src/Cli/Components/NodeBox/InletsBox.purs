@@ -16,6 +16,8 @@ import Data.Maybe (Maybe(..))
 import Data.Foldable (foldr)
 import Data.Array ((:))
 import Data.Array (length) as Array
+import Data.Map (Map)
+import Data.Map as Map
 
 import Blessed ((>~))
 import Blessed as B
@@ -39,7 +41,7 @@ import Blessed.UI.Lists.List.Option (keys, mouse) as List
 import Blessed.UI.Lists.ListBar.Option (autoCommandKeys, commands) as ListBar
 import Blessed.Internal.Core as Core
 
-import Cli.Keys (NodeBoxKey, InletsBoxKey)
+import Cli.Keys (NodeBoxKey, InletsBoxKey, InletButtonKey)
 import Cli.Keys as Key
 import Cli.Style as Style
 import Cli.State (State, Link, OutletIndex(..), InletIndex(..))
@@ -67,6 +69,9 @@ widthN :: Int -> Int
 widthN count = (InletButton.widthN + 1) * count
 
 
+type KeysMap = Map Id.InputR InletButtonKey
+
+
 component
     :: forall f state is os
     -- :: forall id r f state fs iis rli is rlo os repr_is repr_os
@@ -83,8 +88,9 @@ component
     -> Id.Family f
     -> Family.Def state is os Effect
     -> Array (Maybe Hydra.WrapRepr /\ Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
-    -> C.Blessed State
+    -> KeysMap /\ C.Blessed State
 component curPatchId curPatch nextNodeBox nextInletsBox family _ is =
+    Map.empty /\ (
     B.box nextInletsBox
         [ Box.width $ width $ Array.length is
         , Box.height $ Dimension.px 1
@@ -109,7 +115,7 @@ component curPatchId curPatch nextNodeBox nextInletsBox family _ is =
         -}
         ]
         $ mapWithIndex mapF
-        $ fillKeys is
+        $ fillKeys is )
     where
         fillKeys =
             Tuple.snd <<< foldr foldF (Key.inletButton /\ [])

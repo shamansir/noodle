@@ -3,7 +3,7 @@ module Cli.Components.NodeBox where
 import Prelude
 
 import Effect (Effect)
-import Effect.Class (liftEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
 
 import Control.Monad.State as State
@@ -42,12 +42,14 @@ import Blessed.Core.Style as Style
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
+import Blessed.Internal.BlessedOp (runM) as Blessed
 import Blessed.Internal.NodeKey as NodeKey
 
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Base.Node.Method (append) as Node
 import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Option as Box
+import Blessed.UI.Boxes.Box.Method as Box
 -- import Blessed.UI.Line.Li ()
 
 import Noodle.Id as Id
@@ -180,9 +182,9 @@ fromFamily curPatchId curPatch family def tk = do
     -- let is /\ os = Record.keys (rec.inputs :: Record is) /\ Record.keys (rec.outputs :: Record os)
 
     let
-        inletsBoxN =
+        inletsKeys /\ inletsBoxN =
             InletsBox.component curPatchId curPatch nextNodeBox nextInletsBox family def isWithReprs
-        outletsBoxN =
+        outletsKeys /\ outletsBoxN =
             OutletsBox.component nodeHolder nextNodeBox nextOutletsBox osWithReprs
         nextNodeBoxN =
             B.box nextNodeBox
@@ -198,9 +200,11 @@ fromFamily curPatchId curPatch family def tk = do
                 , Core.on Element.Move $ onMove nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
                 ]
                 [ ]
+        renderNodeUpdate :: forall a. R.NodeLineMap Hydra.WrapRepr -> BlessedOp a Effect
+        renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
 
-    liftEffect $ renderUpdate mapRepr
-    liftEffect $ Signal.runSignal $ updates ~> renderUpdate
+    renderNodeUpdate mapRepr
+    liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate)
 
     Key.patchBox >~ Node.append nextNodeBoxN
     nextNodeBox >~ Node.append inletsBoxN
@@ -220,9 +224,10 @@ fromFamily curPatchId curPatch family def tk = do
     pure { nextNodeBoxN, inletsBoxN, outletsBoxN }
 
 
-renderUpdate :: Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr -> Effect Unit
-renderUpdate _ =
-    pure unit
+renderUpdate :: forall a. NodeBoxKey -> InletsBox.KeysMap -> OutletsBox.KeysMap -> Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr -> BlessedOp a Effect
+renderUpdate _ _ _ _ = do
+    -- Key.patchBox >~ Box.setContent "{center}Some different {red-fg}content{/red-fg}.{/center}"
+    Key.mainScreen >~ Screen.render
 
 
 onMove :: NodeBoxKey -> NodeBoxKey → EventJson → BlessedOp State Effect

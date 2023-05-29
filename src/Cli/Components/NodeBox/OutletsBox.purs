@@ -17,6 +17,8 @@ import Data.Maybe (Maybe(..))
 import Data.Foldable (foldr)
 import Data.Array ((:))
 import Data.Array (length) as Array
+import Data.Map (Map)
+import Data.Map as Map
 
 import Blessed as B
 
@@ -34,7 +36,7 @@ import Blessed.UI.Lists.List.Option (keys, mouse) as List
 import Blessed.UI.Lists.ListBar.Option (commands) as ListBar
 import Blessed.Internal.Core as Core
 
-import Cli.Keys (NodeBoxKey, OutletsBoxKey)
+import Cli.Keys (NodeBoxKey, OutletsBoxKey, OutletButtonKey)
 import Cli.Keys (outletButton) as Key
 import Cli.Style as Style
 import Cli.State (State)
@@ -56,6 +58,9 @@ widthN :: Int -> Int
 widthN count = (OutletButton.widthN + 1) * count
 
 
+type KeysMap = Map Id.OutputR OutletButtonKey
+
+
 component
     -- forall id r f state fs iis rli is rlo os repr_is repr_os
     -- . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
@@ -68,8 +73,9 @@ component
     -> NodeBoxKey
     -> OutletsBoxKey
     -> Array (Maybe Hydra.WrapRepr /\ Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
-    -> C.Blessed State
+    -> KeysMap /\ C.Blessed State
 component nodeHolder nextNodeBox nextOutletsBox os =
+    Map.empty /\ (
     B.box nextOutletsBox
         [ Box.width $ width $ Array.length os
         , Box.height $ Dimension.px 1
@@ -88,7 +94,7 @@ component nodeHolder nextNodeBox nextOutletsBox os =
         ]
         -- $ mapWithIndex (\idx hoinr -> Node.withOutputInNodeMRepr hoinr (OutletButton.component nodeHolder nextNodeBox nextOutletsBox idx)) os
         $ mapWithIndex mapF
-        $ fillKeys os
+        $ fillKeys os )
     where
         fillKeys =
             Tuple.snd <<< foldr foldF (Key.outletButton /\ [])
