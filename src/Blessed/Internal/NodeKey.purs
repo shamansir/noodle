@@ -3,6 +3,7 @@ module Blessed.Internal.NodeKey where
 import Prelude
 import Prim.Symbol (class Append) as S
 
+import Data.Enum (class Enum)
 import Data.Newtype (class Newtype)
 import Data.Symbol (class IsSymbol, reflectSymbol, reifySymbol)
 import Data.Maybe (Maybe(..))
@@ -10,6 +11,8 @@ import Type.Proxy (Proxy(..))
 import Data.Tuple (curry, uncurry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Unsafe.Coerce (unsafeCoerce)
+import Data.Unfoldable1 (class Unfoldable1)
+import Data.Unfoldable1.Extra (iterateN)
 
 
 import Data.Argonaut.Encode (class EncodeJson)
@@ -47,16 +50,31 @@ nk :: forall subj sym. NodeKey subj sym
 nk = NodeKey Nothing
 
 
+first :: forall subj sym. NodeKey subj sym
+first = NodeKey $ Just 0
+
+
 next :: forall subj sym. NodeKey subj sym -> NodeKey subj sym
 next (NodeKey maybeN) = NodeKey $ nextN maybeN
     where
-        nextN (Just n) = Just $ n + 1
-        nextN Nothing = Just 0
+        nextN (Just n) = if n < top then Just $ n + 1 else Nothing
+        nextN Nothing = Just bottom
+
+
+prev :: forall subj sym. NodeKey subj sym -> NodeKey subj sym
+prev (NodeKey maybeN) = NodeKey $ prevN maybeN
+    where
+        prevN (Just n) = if n > bottom then Just $ n - 1 else Nothing
+        prevN Nothing = Just top
 
 
 -- private
 setN :: forall subj sym. Int -> NodeKey subj sym -> NodeKey subj sym
 setN n _ = NodeKey $ Just n
+
+
+getN :: forall subj sym.  NodeKey subj sym -> Maybe Int
+getN (NodeKey maybeN) = maybeN
 
 
 append :: forall subjA symA subjB symB symC. S.Append symA symB symC => NodeKey subjA symA -> NodeKey subjB symB -> NodeKey subjA symC
@@ -100,6 +118,42 @@ getId (NodeKey maybeN) = reflectSymbol (Proxy :: _ sym) <> "__" <> rawNPostfix m
 
 getSubject :: forall subj sym. K.IsSubject subj => IsSymbol sym => NodeKey subj sym -> K.Subject_
 getSubject _ = K.reflectSubject (Proxy :: _ subj)
+
+
+instance Ord (NodeKey subj sym) where
+    compare (NodeKey mbA) (NodeKey mbB) = compare mbA mbB
+
+
+instance Bounded (NodeKey subj sym) where
+    top = NodeKey $ Just top
+    bottom = NodeKey $ Just bottom
+
+
+instance Enum (NodeKey subj sym) where
+    succ prevNk =
+        let nextNk = next prevNk
+        in case nextNk of
+            NodeKey (Just _) -> Just nextNk
+            NodeKey Nothing -> Nothing
+    pred nextNk =
+        let prevNk = prev nextNk
+        in case prevNk of
+            NodeKey (Just _) -> Just prevNk
+            NodeKey Nothing -> Nothing
+
+
+chain :: forall f subj id. Unfoldable1 f => Int -> f (NodeKey subj id)
+chain = iterateN next first
+
+
+continue :: forall f subjA subjB idA idB. Unfoldable1 f => NodeKey subjA idA -> Int -> f (NodeKey subjB idB)
+continue (NodeKey (Just n)) = iterateN next $ NodeKey $ Just n
+continue (NodeKey Nothing) = iterateN next first
+
+
+nestChain :: forall f subjA subjB idA idB. Unfoldable1 f => NodeKey subjA idA -> Int -> f (NodeKey subjB idB)
+nestChain (NodeKey (Just n)) = iterateN next $ NodeKey $ Just $ n * 1000
+nestChain (NodeKey Nothing) = iterateN next first
 
 
 -- FIXME: `Belongs`?

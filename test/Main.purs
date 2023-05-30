@@ -20,6 +20,7 @@ import Test.Flex (spec) as Flex
 import Test.UniqueHash (spec) as UniqueHash
 import Test.Parsing (spec) as Parsing
 import Test.SOrder (spec) as SOrder
+import Test.NodeKey (spec) as NodeKey
 
 
 main :: Effect Unit
@@ -48,3 +49,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Flex.spec
   describe "SOrder"
     SOrder.spec
+  describeOnly "NodeKey"
+    NodeKey.spec

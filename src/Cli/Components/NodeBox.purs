@@ -21,6 +21,7 @@ import Data.Repr (class FromToReprRow, class ToReprRow)
 import Data.Symbol (class IsSymbol)
 import Data.String as String
 import Data.Mark (mark)
+import Data.TraversableWithIndex (traverseWithIndex)
 
 import Signal (Signal, (~>))
 import Signal as Signal
@@ -225,9 +226,19 @@ fromFamily curPatchId curPatch family def tk = do
 
 
 renderUpdate :: forall a. NodeBoxKey -> InletsBox.KeysMap -> OutletsBox.KeysMap -> Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr -> BlessedOp a Effect
-renderUpdate _ _ _ _ = do
-    -- Key.patchBox >~ Box.setContent "{center}Some different {red-fg}content{/red-fg}.{/center}"
+renderUpdate _ inputsKeysMap outputsKeysMap (nodeId /\ stateRepr /\ inputsReps /\ outputReprs) = do
+    _ <- traverseWithIndex updateInput inputsReps
+    _ <- traverseWithIndex updateOutput outputReprs
     Key.mainScreen >~ Screen.render
+    where
+        updateInput inputR repr =
+            case Map.lookup inputR inputsKeysMap of
+                Just inputKey -> inputKey >~ Box.setContent "foo"
+                Nothing -> pure unit
+        updateOutput outputR repr =
+            case Map.lookup outputR outputsKeysMap of
+                Just outputKey -> outputKey >~ Box.setContent "foo"
+                Nothing -> pure unit
 
 
 onMove :: NodeBoxKey -> NodeBoxKey → EventJson → BlessedOp State Effect

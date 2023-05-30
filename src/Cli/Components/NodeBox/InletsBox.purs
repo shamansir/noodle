@@ -15,7 +15,7 @@ import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
 import Data.Foldable (foldr)
 import Data.Array ((:))
-import Data.Array (length) as Array
+import Data.Array (length, replicate, zip) as Array
 import Data.Map (Map)
 import Data.Map as Map
 
@@ -32,6 +32,7 @@ import Blessed.Internal.Core (Blessed) as C
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Internal.NodeKey (type (<^>))
+import Blessed.Internal.NodeKey (nestChain) as NK
 import Blessed.Internal.BlessedSubj (Line, ListBar)
 
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
@@ -90,7 +91,7 @@ component
     -> Array (Maybe Hydra.WrapRepr /\ Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     -> KeysMap /\ C.Blessed State
 component curPatchId curPatch nextNodeBox nextInletsBox family _ is =
-    Map.empty /\ (
+    inputsKeysMap /\
     B.box nextInletsBox
         [ Box.width $ width $ Array.length is
         , Box.height $ Dimension.px 1
@@ -114,14 +115,17 @@ component curPatchId curPatch nextNodeBox nextInletsBox family _ is =
                 liftEffect $ Console.log $ show inletSelected
         -}
         ]
-        $ mapWithIndex mapF
-        $ fillKeys is )
+        inputsButtons
     where
-        fillKeys =
-            Tuple.snd <<< foldr foldF (Key.inletButton /\ [])
-        foldF hinnr (prevKey /\ pairs) =
-            let nextKey = Key.next prevKey
-            in nextKey /\ ((nextKey /\ hinnr) : pairs)
-        mapF idx (nextKey /\ (maybeRepr /\ hiinr)) =
+        keysArray :: Array InletButtonKey
+        keysArray = NK.nestChain nextNodeBox $ Array.length is
+        inputsKeysMap =
+            Map.fromFoldable $ toKeyPair <$> Array.zip keysArray is
+        toKeyPair (buttonKey /\ (_ /\ hiinr)) =
+            Node.withInputInNodeMRepr hiinr \_ _ inputId -> Id.inputR inputId
+            /\ buttonKey
+        inputsButtons =
+            mapWithIndex mapF $ Array.zip keysArray is
+        mapF idx (buttonKey /\ (maybeRepr /\ hiinr)) =
             -- FIXME: either pass Repr inside `withInputInNodeMRepr` or get rid of `HoldsInputInNodeMRepr` completely since we have ways to get Repr from outside using folds
-            Node.withInputInNodeMRepr hiinr (InletButton.component nextKey curPatchId curPatch nextNodeBox idx maybeRepr)
+            Node.withInputInNodeMRepr hiinr (InletButton.component buttonKey curPatchId curPatch nextNodeBox idx maybeRepr)
