@@ -1,7 +1,7 @@
 module Cli.Keys where
 
 
-import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line, Button)
+import Blessed.Internal.BlessedSubj (Screen, ListBar, Box, List, Line, Button, TextBox)
 import Blessed.Internal.NodeKey (nk, type (<^>))
 
 
@@ -11,6 +11,7 @@ type NodeBoxKey = Box <^> "node-box"
 type PatchBoxKey = Box <^> "patch-box"
 type InletButtonKey = Button <^> "inlet-button"
 type OutletButtonKey = Button <^> "outlet-button"
+type TextBoxKey = TextBox <^> "text-box"
 
 
 mainScreen = nk :: Screen <^> "main-scr"
@@ -23,6 +24,7 @@ outletsBox = nk :: OutletsBoxKey
 inletButton = nk :: InletButtonKey
 outletButton = nk :: OutletButtonKey
 addPatchButton = nk :: Button <^> "add-patch"
+textBox = nk :: TextBoxKey
 
 
 {- For links -}

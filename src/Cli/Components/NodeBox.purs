@@ -51,6 +51,7 @@ import Blessed.UI.Base.Node.Method (append) as Node
 import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method as Box
+import Blessed.UI.Forms.TextArea.Option as TextArea
 -- import Blessed.UI.Line.Li ()
 
 import Noodle.Id as Id
@@ -70,7 +71,7 @@ import Noodle.Node2.MapsFolds.Flatten as R
 
 
 import Cli.Keys (NodeBoxKey)
-import Cli.Keys (mainScreen, patchBox) as Key
+import Cli.Keys (mainScreen, patchBox, textBox) as Key
 import Cli.Palette as Palette
 import Cli.Palette.Item (crepr) as Palette
 import Cli.State (State)
@@ -90,6 +91,9 @@ import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
 width :: String -> Int -> Int -> Dimension
 width familyName isCount osCount =
     Dimension.px $ (max (String.length familyName) $ max (InletsBox.widthN isCount) (OutletsBox.widthN osCount)) + 4
+
+
+-- widthN :: String -> Int -> Int -> Dimension
 
 
 fromFamily
@@ -203,6 +207,18 @@ fromFamily curPatchId curPatch family def tk = do
                 , Core.on Element.Move $ onMove nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
                 ]
                 [ ]
+        inputText =
+            B.textBox Key.textBox
+                [ Box.top $ Offset.px 1
+                , Box.left $ Offset.px 0
+                , Box.content "text"
+                , Box.width $ Dimension.percents 90.0
+                , Box.height $ Dimension.px 1
+                , Style.inputBox
+                , TextArea.mouse true
+                , TextArea.inputOnFocus true
+                ]
+                [ ]
         renderNodeUpdate :: forall a. R.NodeLineMap Hydra.WrapRepr -> BlessedOp a Effect
         renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
 
@@ -212,6 +228,7 @@ fromFamily curPatchId curPatch family def tk = do
     Key.patchBox >~ Node.append nextNodeBoxN
     nextNodeBox >~ Node.append inletsBoxN
     nextNodeBox >~ Node.append outletsBoxN
+    nextNodeBox >~ Node.append inputText
 
     State.modify_ (_
         { lastShiftX = state.lastShiftX + 1
