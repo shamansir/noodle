@@ -15,7 +15,7 @@ import Blessed.Internal.NodeKey (NodeKey)
 import Blessed.Internal.Core (Blessed, Node, NodeAnd, run, runAnd) as C
 import Blessed.Internal.Emitter (BlessedEvent) as C
 import Blessed.Internal.Command (withProcess) as I
-import Blessed.Internal.BlessedSubj (Screen, Box, Line, List, ListBar, Button) as Subject
+import Blessed.Internal.BlessedSubj as Subject
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOp', performOnProcess) as I
 
 
@@ -32,7 +32,12 @@ import Blessed.UI.Lists.ListBar (listbar, listbarAnd) as ListBar
 import Blessed.UI.Lists.ListBar.Option (OptionsRow) as ListBar
 import Blessed.UI.Forms.Button (button, buttonAnd) as Button
 import Blessed.UI.Forms.Button.Option (OptionsRow) as Button
-
+import Blessed.UI.Forms.Checkbox (checkbox, checkboxAnd) as Checkbox
+import Blessed.UI.Forms.Checkbox.Option (OptionsRow) as Checkbox
+import Blessed.UI.Forms.TextArea (textArea, textAreaAnd) as TextArea
+import Blessed.UI.Forms.TextArea.Option (OptionsRow) as TextArea
+import Blessed.UI.Forms.TextBox (textBox, textBoxAnd) as TextBox
+import Blessed.UI.Forms.TextBox.Option (OptionsRow) as TextBox
 
 
 import Data.Codec.Argonaut as CA
@@ -153,6 +158,54 @@ buttonAnd
     => NodeKey Subject.Button id
     -> C.NodeAnd Subject.Button id ( Box.OptionsRow + Button.OptionsRow + r ) state {- Button.Event -}
 buttonAnd = Button.buttonAnd
+
+
+checkbox
+    :: forall id r state
+     . IsSymbol id
+    => NodeKey Subject.Checkbox id
+    -> C.Node Subject.Checkbox id ( Box.OptionsRow + Checkbox.OptionsRow + r ) state {- Checkbox.Event -}
+checkbox = Checkbox.checkbox
+
+
+checkboxAnd
+    :: forall id r state
+     . IsSymbol id
+    => NodeKey Subject.Checkbox id
+    -> C.NodeAnd Subject.Checkbox id ( Box.OptionsRow + Checkbox.OptionsRow + r ) state {- Checkbox.Event -}
+checkboxAnd = Checkbox.checkboxAnd
+
+
+textArea
+    :: forall id r state
+     . IsSymbol id
+    => NodeKey Subject.TextArea id
+    -> C.Node Subject.TextArea id ( Box.OptionsRow + TextArea.OptionsRow + r ) state {- TextArea.Event -}
+textArea = TextArea.textArea
+
+
+textAreaAnd
+    :: forall id r state
+     . IsSymbol id
+    => NodeKey Subject.TextArea id
+    -> C.NodeAnd Subject.TextArea id ( Box.OptionsRow + TextArea.OptionsRow + r ) state {- TextBox.Event -}
+textAreaAnd = TextArea.textAreaAnd
+
+
+textBox
+    :: forall id r state
+     . IsSymbol id
+    => NodeKey Subject.TextBox id
+    -> C.Node Subject.TextBox id ( Box.OptionsRow + TextArea.OptionsRow + TextBox.OptionsRow + r ) state {- TextBox.Event -}
+textBox = TextBox.textBox
+
+
+textBoxAnd
+    :: forall id r state
+     . IsSymbol id
+    => NodeKey Subject.TextBox id
+    -> C.NodeAnd Subject.TextBox id ( Box.OptionsRow + TextArea.OptionsRow + TextBox.OptionsRow + r ) state {- TextBox.Event -}
+textBoxAnd = TextBox.textBoxAnd
 
 
 exit :: forall state m. I.BlessedOp state m

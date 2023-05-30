@@ -14,7 +14,8 @@ import Blessed.Internal.BlessedSubj (Subject, TextBox)
 import Blessed.Internal.NodeKey (class Respresents)
 
 
-import Blessed.UI.Boxes.Box.Option (OptionsRow) as Input
+import Blessed.UI.Boxes.Box.Option (OptionsRow) as Box
+import Blessed.UI.Forms.TextArea.Option (OptionsRow) as TextArea
 
 
 type OptionsRow r =
@@ -25,7 +26,7 @@ type OptionsRow r =
 type Options = Record (OptionsRow ())
 
 
-type TextBoxAttribute subj id r state e = C.Attribute subj id (Input.OptionsRow + OptionsRow + r) state e
+type TextBoxAttribute subj id r state e = C.Attribute subj id (Box.OptionsRow + TextArea.OptionsRow + OptionsRow + r) state e
 
 
 textBoxOption
