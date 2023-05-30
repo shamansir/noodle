@@ -78,6 +78,8 @@ import Cli.Style as Style
 import Cli.Components.Link as Link
 import Cli.Components.NodeBox.InletsBox as InletsBox
 import Cli.Components.NodeBox.OutletsBox as OutletsBox
+import Cli.Components.NodeBox.InletButton as InletButton
+import Cli.Components.NodeBox.OutletButton as OutletButton
 
 import Toolkit.Hydra2 (class HasNodesOf, Instances, State, Toolkit) as Hydra
 import Toolkit.Hydra2.Group (toGroup) as Hydra
@@ -233,11 +235,11 @@ renderUpdate _ inputsKeysMap outputsKeysMap (nodeId /\ stateRepr /\ inputsReps /
     where
         updateInput inputR repr =
             case Map.lookup inputR inputsKeysMap of
-                Just inputKey -> inputKey >~ Box.setContent "foo"
+                Just inputKey -> inputKey >~ Box.setContent $ InletButton.content' 0 inputR $ Just repr
                 Nothing -> pure unit
         updateOutput outputR repr =
             case Map.lookup outputR outputsKeysMap of
-                Just outputKey -> outputKey >~ Box.setContent "foo"
+                Just outputKey -> outputKey >~ Box.setContent $ OutletButton.content' 0 outputR $ Just repr
                 Nothing -> pure unit
 
 

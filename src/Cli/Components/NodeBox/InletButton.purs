@@ -112,8 +112,12 @@ left idx = Offset.px $ idx * (widthN + 1)
 
 
 content ::forall i. IsSymbol i => Int -> Id.Input i -> Maybe Hydra.WrapRepr -> String
-content idx inputId (Just repr) = Info.short repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
-content idx inputId Nothing = "⋱" <> show idx <> "⋰"
+content idx inputId = content' idx $ Id.inputR inputId
+
+
+content' :: Int -> Id.InputR -> Maybe Hydra.WrapRepr -> String
+content' idx inputId (Just repr) = Info.short repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+content' idx inputId Nothing = "⋱" <> show idx <> "⋰"
 
 
 component
