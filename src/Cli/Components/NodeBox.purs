@@ -71,7 +71,7 @@ import Noodle.Node2.MapsFolds.Flatten as R
 
 
 import Cli.Keys (NodeBoxKey)
-import Cli.Keys (mainScreen, patchBox, textBox) as Key
+import Cli.Keys (mainScreen, patchBox) as Key
 import Cli.Palette as Palette
 import Cli.Palette.Item (crepr) as Palette
 import Cli.State (State)
@@ -207,6 +207,7 @@ fromFamily curPatchId curPatch family def tk = do
                 , Core.on Element.Move $ onMove nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
                 ]
                 [ ]
+        {-
         inputText =
             B.textBox Key.textBox
                 [ Box.top $ Offset.px 1
@@ -219,6 +220,7 @@ fromFamily curPatchId curPatch family def tk = do
                 , TextArea.inputOnFocus true
                 ]
                 [ ]
+                -}
         renderNodeUpdate :: forall a. R.NodeLineMap Hydra.WrapRepr -> BlessedOp a Effect
         renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
 
@@ -228,7 +230,7 @@ fromFamily curPatchId curPatch family def tk = do
     Key.patchBox >~ Node.append nextNodeBoxN
     nextNodeBox >~ Node.append inletsBoxN
     nextNodeBox >~ Node.append outletsBoxN
-    nextNodeBox >~ Node.append inputText
+    -- nextNodeBox >~ Node.append inputText
 
     State.modify_ (_
         { lastShiftX = state.lastShiftX + 1

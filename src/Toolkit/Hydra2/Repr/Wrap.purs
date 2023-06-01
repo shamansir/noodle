@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Data.Repr as R -- (class ToRepr, class FromRepr, toRepr, fromRepr)
-
+import Data.Mark (class Mark, mark)
 
 import Noodle.Node2.MapsFolds.Repr as NMF
 import Noodle.Node2.Path (InNode)
@@ -290,3 +290,43 @@ instance R.FromRepr WrapRepr H.Output where
     fromRepr :: R.Repr WrapRepr -> Maybe H.Output
     fromRepr (R.Repr (Output output)) = Just output
     fromRepr _ = Nothing
+
+
+instance Mark WrapRepr where
+    mark = case _ of
+        Value v -> mark v
+        Unit unit -> mark unit
+        Texture t -> mark t
+        From from -> mark from
+        TODO todo -> mark todo
+        Context ctx -> mark ctx
+        UpdateFn fn -> mark fn
+        Source src -> mark src
+        Url url -> mark url
+        GlslFn fn -> mark fn
+        SourceOptions so -> mark so
+        Values vs -> mark vs
+        Ease e -> mark e
+        Audio a -> mark a
+        AudioBin ab -> mark ab
+        Output o -> mark o
+
+    {-
+    mark = case _ of
+        Value _ -> X11.lightyellow -- X11.seagreen-- mark HG.Synth
+        Unit _ -> X11.lightgray
+        Texture _ -> X11.darkorange
+        From _ -> X11.limegreen
+        TODO _ -> X11.burlywood
+        Context _ -> X11.papayawhip
+        UpdateFn _ -> X11.salmon
+        Source _ -> X11.cornsilk
+        Url _ -> X11.cornflowerblue
+        GlslFn _ -> X11.crimson
+        SourceOptions _ -> X11.palevioletred
+        Values _ -> mark HG.Array
+        Ease _ -> X11.darkgoldenrod
+        Audio _ -> mark HG.Audio
+        AudioBin _ -> X11.aqua
+        Output _ -> X11.blue
+    -}

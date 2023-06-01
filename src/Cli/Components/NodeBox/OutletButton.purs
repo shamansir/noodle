@@ -14,6 +14,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Repr (class FromRepr, class ToRepr)
 import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
+import Data.Mark (mark)
 
 import Blessed as B
 import Cli.Keys as Key
@@ -24,6 +25,7 @@ import Blessed.Core.Key (Key) as C
 import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 import Blessed.Internal.BlessedOp (BlessedOp)
+import Blessed.Tagger as T
 
 import Blessed.Internal.Core (Blessed) as C
 import Blessed.Internal.BlessedSubj (ListBar)
@@ -66,7 +68,9 @@ content idx outputId = content' idx $ Id.outputR outputId
 
 
 content' :: Int -> Id.OutputR -> Maybe Hydra.WrapRepr -> String
-content' idx outputId (Just repr) = Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
+content' idx outputId (Just repr) =
+    T.render $ T.fgcs (mark repr) $ Info.short repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
 content' idx outputId Nothing = "⋰" <> show idx <> "⋱"
 
 
@@ -94,6 +98,7 @@ component buttonKey nodeHolder nextNodeBox nextOutletsBox idx maybeRepr pdout no
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
         , Box.width width
         , Box.height $ Dimension.px 1
+        , Box.tags true
         , Button.mouse true
         , Style.inletsOutlets
         , Core.on Button.Press

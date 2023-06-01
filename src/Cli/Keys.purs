@@ -11,7 +11,7 @@ type NodeBoxKey = Box <^> "node-box"
 type PatchBoxKey = Box <^> "patch-box"
 type InletButtonKey = Button <^> "inlet-button"
 type OutletButtonKey = Button <^> "outlet-button"
-type TextBoxKey = TextBox <^> "text-box"
+-- type TextBoxKey = TextBox <^> "text-box"
 
 
 mainScreen = nk :: Screen <^> "main-scr"
@@ -24,7 +24,7 @@ outletsBox = nk :: OutletsBoxKey
 inletButton = nk :: InletButtonKey
 outletButton = nk :: OutletButtonKey
 addPatchButton = nk :: Button <^> "add-patch"
-textBox = nk :: TextBoxKey
+-- textBox = nk :: TextBoxKey
 
 
 {- For links -}

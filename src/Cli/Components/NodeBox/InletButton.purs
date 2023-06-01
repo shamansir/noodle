@@ -11,9 +11,11 @@ import Control.Monad.State (get, modify_) as State
 
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
+import Data.Mark (mark)
 
 import Blessed as B
 import Blessed ((>~))
+import Blessed.Tagger as T
 
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Coord as Coord
@@ -54,6 +56,7 @@ import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
 import Data.Lazy (Lazy)
 import Data.Lazy as Lazy
+
 
 import Blessed ((>~))
 import Blessed as B
@@ -114,9 +117,10 @@ left idx = Offset.px $ idx * (widthN + 1)
 content ::forall i. IsSymbol i => Int -> Id.Input i -> Maybe Hydra.WrapRepr -> String
 content idx inputId = content' idx $ Id.inputR inputId
 
-
+-- TODO: mark with color
 content' :: Int -> Id.InputR -> Maybe Hydra.WrapRepr -> String
-content' idx inputId (Just repr) = Info.short repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+content' idx inputId (Just repr) =
+    T.render $ T.fgcs (mark repr) $ Info.short repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
 content' idx inputId Nothing = "⋱" <> show idx <> "⋰"
 
 
@@ -144,6 +148,7 @@ component buttonKey curPatchId curPatch nextNodeBox idx maybeRepr pdin inode inp
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
         , Box.width width
         , Box.height $ Dimension.px 1
+        , Box.tags true
         , Button.mouse true
         , Style.inletsOutlets
         , Core.on Button.Press

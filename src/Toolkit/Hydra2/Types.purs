@@ -5,7 +5,8 @@ import Prelude
 import Effect (Effect)
 
 import Color (Color)
-import Color as Color
+import Color (rgb) as Color
+import Color.Scheme.X11 as X11
 
 import Data.Mark (class Mark)
 
@@ -214,7 +215,8 @@ instance Mark Value where
 
 instance Mark Texture where
     mark :: Texture -> Color
-    mark = const $ Color.rgb 148 0 211
+    mark = const $ X11.darkorange
+    -- mark = const $ Color.rgb 148 0 211
 
 
 instance Mark From where
@@ -280,3 +282,25 @@ instance Mark AudioBin where
 instance Mark Output where
     mark :: Output -> Color
     mark = const $ Color.rgb 250 250 205
+
+
+
+    {-
+    mark = case _ of
+        Value _ -> X11.lightyellow -- X11.seagreen-- mark HG.Synth
+        Unit _ -> X11.lightgray
+        Texture _ -> X11.darkorange
+        From _ -> X11.limegreen
+        TODO _ -> X11.burlywood
+        Context _ -> X11.papayawhip
+        UpdateFn _ -> X11.salmon
+        Source _ -> X11.cornsilk
+        Url _ -> X11.cornflowerblue
+        GlslFn _ -> X11.crimson
+        SourceOptions _ -> X11.palevioletred
+        Values _ -> mark HG.Array
+        Ease _ -> X11.darkgoldenrod
+        Audio _ -> mark HG.Audio
+        AudioBin _ -> X11.aqua
+        Output _ -> X11.blue
+    -}
