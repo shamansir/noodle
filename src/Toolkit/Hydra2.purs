@@ -300,7 +300,121 @@ families =
         }
 
 
-familiesOrder = Proxy :: _ SOrder.Auto
+type FamiliesOrder =
+
+        --  Source
+
+            "noise"
+        ::: "voronoi"
+        ::: "osc"
+        ::: "shape"
+        ::: "gradient"
+        ::: "src"
+        ::: "solid"
+        ::: "prev"
+
+        --  Geometry
+
+        ::: "rotate"
+        ::: "scale"
+        ::: "pixelate"
+        ::: "repeat"
+        ::: "repeatX"
+        ::: "repeatY"
+        ::: "kaleid"
+        ::: "scroll"
+        ::: "scrollX"
+        ::: "scrollY"
+
+        --  Color
+
+        ::: "posterize"
+        ::: "shift"
+        ::: "invert"
+        ::: "contrast"
+        ::: "brightness"
+        ::: "luma"
+        ::: "tresh"
+        ::: "color"
+        ::: "saturate"
+        ::: "hue"
+        ::: "sum"
+        ::: "r"
+        ::: "g"
+        ::: "b"
+        ::: "a"
+
+        --  Blend
+
+        ::: "add"
+        ::: "sub"
+        ::: "layer"
+        ::: "blend"
+        ::: "mult"
+        ::: "diff"
+        ::: "mask"
+
+        --  Modulate
+
+        ::: "modulateRepeat"
+        ::: "modulateRepeatX"
+        ::: "modulateRepeatY"
+        ::: "modulateKaleid"
+        ::: "modulateScrollX"
+        ::: "modulateScrollY"
+        ::: "modulateScale"
+        ::: "modulatePixelate"
+        ::: "modulateRotate"
+        ::: "modulateHue"
+        ::: "modulate"
+
+        --  ExternalSources
+
+        ::: "initCam"
+        ::: "initImage"
+        ::: "initVideo"
+        ::: "initStream"
+        ::: "initScreen"
+        ::: "init"
+
+        --  Synth Settings
+
+        ::: "render"
+        ::: "update"
+        ::: "setResolution"
+        ::: "hush"
+        ::: "setFunction"
+        ::: "speed"
+        ::: "bpm"
+        ::: "width"
+        ::: "height"
+        ::: "time"
+        ::: "mouse"
+
+        --  Array
+
+        ::: "fast"
+        ::: "smooth"
+        ::: "ease"
+        ::: "offset"
+        ::: "fit"
+
+        --  Audio
+
+        ::: "fft"
+        ::: "setSmooth"
+        ::: "setCutoff"
+        ::: "setBins"
+        ::: "setScale"
+        ::: "hide"
+        ::: "show"
+
+        --  .
+
+        ::: T
+
+
+familiesOrder = Proxy :: _ FamiliesOrder
 
 
 type Toolkit (m :: Type -> Type)
