@@ -15,11 +15,12 @@ import Data.Either (Either(..))
 import Control.Alt ((<|>))
 import Data.Traversable (for)
 
-import Text.Parsing.Parser (ParserT, Parser, runParser, ParseError) as P
-import Text.Parsing.Parser.String (char, string, anyChar, noneOf)  as P
-import Text.Parsing.Parser.Token (alphaNum, space) as P
-import Text.Parsing.Parser.Combinators (between, choice, option, optionMaybe, sepBy, lookAhead) as P
-import Text.Parsing.Parser.Combinators ((<?>))
+import Parsing (ParserT, Parser, runParser, ParseError) as P
+import Parsing.String (char, string, anyChar)  as P
+import Parsing.String.Basic (noneOf) as P
+import Parsing.Token (alphaNum, space) as P
+import Parsing.Combinators (between, choice, option, optionMaybe, sepBy, lookAhead) as P
+import Parsing.Combinators ((<?>))
 
 
 import Noodle.Text.QuickDef as QD

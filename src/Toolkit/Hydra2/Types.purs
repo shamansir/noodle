@@ -5,9 +5,10 @@ import Prelude
 import Effect (Effect)
 
 import Color (Color)
-import Color (rgb) as Color
-import Color.Scheme.X11 as X11
+import Color (rgb, black) as Color
+import Cli.Palette.Set.X11 as X11
 
+import Data.Maybe (fromMaybe)
 import Data.Mark (class Mark)
 
 
@@ -215,7 +216,7 @@ instance Mark Value where
 
 instance Mark Texture where
     mark :: Texture -> Color
-    mark = const $ X11.darkorange
+    mark = const $ fromMaybe Color.black X11.darkorange.color
     -- mark = const $ Color.rgb 148 0 211
 
 

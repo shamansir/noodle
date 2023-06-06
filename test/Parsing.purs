@@ -24,10 +24,10 @@ import Test.Spec.Assertions (shouldEqual, fail)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 
-import Text.Parsing.Parser as P
-import Text.Parsing.Parser.String as P
-import Text.Parsing.Parser.Token as P
-import Text.Parsing.Parser.Combinators (choice, sepBy) as P
+import Parsing.Parser as P
+import Parsing.Parser.String as P
+import Parsing.Parser.Token as P
+import Parsing.Parser.Combinators (choice, sepBy) as P
 
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, writeTextFile, appendTextFile)

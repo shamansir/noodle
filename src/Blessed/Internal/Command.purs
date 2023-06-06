@@ -2,9 +2,6 @@ module Blessed.Internal.Command where
 
 import Prelude ((>>>))
 
-import Foreign.JSON
-import Foreign (Foreign)
-
 import Data.Codec (Codec) as CA
 import Data.Argonaut.Core (Json)
 import Data.Codec.Argonaut as CA

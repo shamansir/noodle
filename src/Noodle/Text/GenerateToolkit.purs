@@ -14,10 +14,10 @@ import Effect.Aff (launchAff, launchAff_, runAff_)
 import Effect.Class (liftEffect)
 import Effect.Console (log) as Console
 
-import Text.Parsing.Parser as P
-import Text.Parsing.Parser.String as P
-import Text.Parsing.Parser.Token as P
-import Text.Parsing.Parser.Combinators (choice, sepBy) as P
+import Parsing as P
+import Parsing.String as P
+import Parsing.Token as P
+import Parsing.Combinators (choice, sepBy) as P
 
 import Options.Applicative as OA
 import Options.Applicative ((<**>))

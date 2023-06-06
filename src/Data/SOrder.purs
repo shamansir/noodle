@@ -21,7 +21,8 @@ import Data.Tuple as Tuple
 import Data.List as List
 import Data.Const (Const)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Symbol (SProxy, class IsSymbol, reflectSymbol)
+import Data.Symbol (class IsSymbol)
+import Data.SProxy (class SProxy, reflectSymbol)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Typelevel.Num.Ops (class Add, class Succ)
 import Data.Typelevel.Num.Reps (type (:*), D0, D1, D2, D3)
@@ -197,7 +198,7 @@ sortByL' (SOrder indexMap) toKey =
     where indexOf = flip Map.lookup indexMap <<< toKey
 
 
-indexOf :: forall proxy sym. IsSymbol sym => SOrder -> proxy sym -> Int
+indexOf :: forall proxy sym. SProxy proxy => IsSymbol sym => SOrder -> proxy sym -> Int
 indexOf order p = fromMaybe (-1) <<< index' order $ reflectSymbol p
 
 

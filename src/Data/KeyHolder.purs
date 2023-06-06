@@ -9,16 +9,16 @@ import Data.List as List
 import Data.Maybe as Maybe
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Record.Xiaomian as X
+-- import Record.Xiaomian as X
 import Type.Proxy (Proxy(..))
-import Type.Data.Symbol (SProxy(..))
 import Prim.RowList as RL
 
 
 import Type.Proxy (Proxy)
-import Data.Symbol (class IsSymbol, reflectSymbol, SProxy(..))
+import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.SOrder (SOrder)
 import Data.SOrder as SOrder
+import Data.SProxy (class SProxy)
 
 import Heterogeneous.Folding
     ( class HFoldlWithIndex
@@ -189,19 +189,9 @@ instance ReifyTo Proxy where
     reify = identity
 
 
-instance ReifyTo SProxy where
-    reify :: forall sym. IsSymbol sym => Proxy sym -> SProxy sym
-    reify _ = SProxy
-
-
 instance ReifyOrderedTo Proxy where
     reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> Proxy sym
     reifyAt _ = identity
-
-
-instance ReifyOrderedTo SProxy where
-    reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> SProxy sym
-    reifyAt _ _ = SProxy
 
 
 instance ReifyWithReprTo Proxy repr where
@@ -209,19 +199,9 @@ instance ReifyWithReprTo Proxy repr where
     reifyR _ a = Proxy /\ repr a
 
 
-instance ReifyWithReprTo SProxy repr where
-    reifyR :: forall a sym. Repr a repr => IsSymbol sym => Proxy sym -> a -> SProxy sym /\ repr
-    reifyR _ a = SProxy /\ repr a
-
-
 instance ReifyWithReprOrderedTo Proxy repr where
     reifyRAt :: forall a sym. Repr a repr => IsSymbol sym => Int -> Proxy sym -> a -> Proxy sym /\ repr
     reifyRAt _ _ a = Proxy /\ repr a
-
-
-instance ReifyWithReprOrderedTo SProxy repr where
-    reifyRAt :: forall a sym. Repr a repr => IsSymbol sym => Int -> Proxy sym -> a -> SProxy sym /\ repr
-    reifyRAt _ _ a = SProxy /\ repr a
 
 
 {-

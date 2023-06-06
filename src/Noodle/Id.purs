@@ -38,9 +38,8 @@ module Noodle.Id
 
 import Prelude
 
-import Color.Scheme.X11 (wheat)
 import Data.List (List)
-import Data.List (mapWithIndex) as List
+import Data.FunctorWithIndex (mapWithIndex)
 import Data.Array as Array
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.KeyHolder as KH
@@ -237,7 +236,7 @@ reflectInputR (InputR pair) = Tuple.snd pair
 
 
 keysToInputsR :: forall w is rl. HasInputsAt is rl => SOrder -> w is -> List InputR
-keysToInputsR order = Record.keys >>> SOrder.sortL' order >>> List.mapWithIndex (/\) >>> map InputR
+keysToInputsR order = Record.keys >>> SOrder.sortL' order >>> mapWithIndex (/\) >>> map InputR
 
 
 newtype HoldsInput = HoldsInput (forall r. (forall sym. IsSymbol sym => Input sym -> r) -> r)
@@ -329,7 +328,7 @@ reflectOutputR (OutputR s) = Tuple.snd s
 
 
 keysToOutputsR :: forall w os rl. HasOutputsAt os rl => SOrder -> w os -> List OutputR -- TODO: Array OutputR?
-keysToOutputsR order = Record.keys >>> SOrder.sortL' order >>> List.mapWithIndex (/\) >>> map OutputR
+keysToOutputsR order = Record.keys >>> SOrder.sortL' order >>> mapWithIndex (/\) >>> map OutputR
 
 
 newtype HoldsOutput = HoldsOutput (forall r. (forall sym. IsSymbol sym => Output sym -> r) -> r)

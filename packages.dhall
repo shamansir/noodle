@@ -99,34 +99,27 @@ in  upstream
 -------------------------------
 -}
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.14.2-20210622/packages.dhall sha256:c4949646febb03c7b1f329c9f48921c3a1e6afee133330fd24b5aa4a88112973
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.8-20230605/packages.dhall sha256:f11cab6a50a55dfc53c4a86e5c611c502aa0fc7f280134c4ffd6dbc62c27faf8
 
-in upstream
-  -- with metadata.version = "v0.14.1"
-  with halogen-svg-elems.repo = "https://github.com/shamansir/purescript-halogen-svg-elems.git"
-  with halogen-svg-elems.version = "2505905e51c5bb0ecd82e77cdee81d34dc37b029"
+in  upstream
+  with halogen-svg-elems.repo
+       = "https://github.com/shamansir/purescript-halogen-svg-elems.git"
+  with halogen-svg-elems.version = "2bc876ede676dba9544f03ab3caa618f35621e2c"
   with purescript-wire =
-    { dependencies =
-        [ "aff"
-        , "filterable"
-        , "refs"
-        , "unsafe-reference"
-        ]
-    , repo =
-       "https://github.com/robertdp/purescript-wire.git"
-    , version =
-        "v0.4.2"
+    { dependencies = [ "aff", "filterable", "refs", "unsafe-reference" ]
+    , repo = "https://github.com/robertdp/purescript-wire.git"
+    , version = "v0.4.2"
     }
   with default-values =
     { dependencies =
-        [ "prelude"
-        , "either"
-        , "maybe"
-        , "tuples"
-        , "lists"
-        , "ordered-collections"
-        , "foreign-object"
-        ]
+      [ "prelude"
+      , "either"
+      , "maybe"
+      , "tuples"
+      , "lists"
+      , "ordered-collections"
+      , "foreign-object"
+      ]
     , repo = "https://github.com/imsaravana369/purescript-default.git"
     , version = "v1.0.1"
     }

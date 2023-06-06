@@ -10,7 +10,8 @@ import Prim.Row as Row
 import Prim.RowList as RL
 import Record.Builder (Builder)
 import Record.Builder as Builder
-import Type.Prelude (class IsSymbol, Proxy(..), RLProxy(..), SProxy(..), RProxy(..))
+import Data.Symbol (class IsSymbol)
+import Type.Proxy (Proxy(..)) --, RLProxy(..), SProxy(..), RProxy(..))
 
 class ReflectRecordProxy a where
   reflectRecordProxy :: a

@@ -1,8 +1,12 @@
 // "use strict";
 
-const blessed = require('blessed');
-const fs = require('fs');
-const util = require('util');
+// const blessed = require('blessed');
+// const fs = require('fs');
+// const util = require('util');
+
+import * as blessed from 'blessed';
+import * as fs from 'fs';
+import * as util from 'util';
 
 // console.log(blessed);
 
@@ -443,6 +447,6 @@ function adaptListBarCommandValue(hs) {
     }
 }
 
-exports.execute_ = execute;
-exports.registerNode_ = registerNode;
-exports.callCommandEx_ = callCommandEx;
+export const execute_ = execute;
+export const registerNode_ = registerNode;
+export const callCommandEx_ = callCommandEx;

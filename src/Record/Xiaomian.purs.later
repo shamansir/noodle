@@ -5,9 +5,9 @@ module Record.Xiaomian where
 import Record.Naporitan as N
 import Prim.Row as Row
 import Prim.RowList as RL
-import Type.Prelude (RProxy(..), SProxy)
 
-getKeysRow :: forall proxy r keys. GetKeysRow r keys => proxy r -> RProxy keys
+
+getKeysRow :: forall proxy r keys. GetKeysRow r keys => proxy r -> Proxy keys
 getKeysRow _ = RProxy
 
 getKeysRecord
@@ -26,14 +26,14 @@ getKeysRecord'
   -> { | keys }
 getKeysRecord' _ = N.reflectRecordProxy
 
-class GetKeysRow (r :: # Type) (keys :: # Type) | r -> keys
+class GetKeysRow (r :: Row Type) (keys :: Row Type) | r -> keys
 
 instance getKeysRowInst ::
   ( RL.RowToList r rl
   , GetKeysRowInst rl keys
   ) => GetKeysRow r keys
 
-class GetKeysRowInst (rl :: RL.RowList Type) (keys :: # Type)
+class GetKeysRowInst (rl :: RL.RowList Type) (keys :: Row Type)
   | rl -> keys
 
 instance getKeysRowInstNil :: GetKeysRowInst RL.Nil ()

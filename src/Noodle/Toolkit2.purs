@@ -13,7 +13,7 @@ import Prelude
 
 import Data.Semigroup (class Semigroup)
 import Data.String (joinWith)
-import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol, reifySymbol)
 import Data.List as List
 import Data.List (List)
 import Data.Maybe as Maybe
@@ -23,6 +23,7 @@ import Data.Traversable (sequence)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 
+import Type.Proxy (Proxy(..))
 
 import Effect.Console (log)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -73,7 +74,7 @@ class GetState from state where
 
 instance toState ::
   (IsSymbol sym, GetState a b) =>
-  H.MappingWithIndex ToState (SProxy sym) a b where
+  H.MappingWithIndex ToState (Proxy sym) a b where
     mappingWithIndex ToState prop a = getState prop a
 
 
