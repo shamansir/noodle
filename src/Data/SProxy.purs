@@ -42,4 +42,4 @@ class Reflect' a where
 
 
 instance SProxy proxy => Reflect proxy where
-    reflect = reflect <<< proxify
+    reflect = reflectSymbol
