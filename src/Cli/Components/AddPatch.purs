@@ -2,6 +2,7 @@ module Cli.Components.AddPatch where
 
 import Prelude
 
+import Effect (Effect)
 import Effect.Class (liftEffect)
 
 import Effect.Console (log) as Console
@@ -54,7 +55,7 @@ component =
         , Style.addPatch
         , Core.on Button.Press
             \_ _ -> do
-                let nextPatch = Patch.init Hydra.toolkit
+                let nextPatch = Patch.init (Hydra.toolkit :: Hydra.Toolkit Effect)
                 state <- State.get
                 let
                     patchesCount = unwrapN state.network # Network.patchesCount

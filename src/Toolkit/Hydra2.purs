@@ -212,7 +212,7 @@ type Families (m :: Type -> Type) =
         )
 
 
-families :: forall (m :: Type -> Type). Record (Families m)
+families :: forall (m :: Type -> Type). MonadEffect m => Record (Families m)
 families =
         { noise : (FNoise.family :: FNoise.Family m)
         , voronoi : (FVoronoi.family :: FVoronoi.Family m)
@@ -421,7 +421,7 @@ type Toolkit (m :: Type -> Type)
     = Noodle.Toolkit State (Families m)
 
 
-toolkit :: forall (m :: Type -> Type). Toolkit m
+toolkit :: forall (m :: Type -> Type). MonadEffect m => Toolkit m
 toolkit =
     Toolkit.from "hydra" familiesOrder families
 

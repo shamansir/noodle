@@ -2,6 +2,8 @@ module Cli.Components.MainScreen where
 
 import Prelude
 
+import Effect (Effect)
+
 import Data.List (toUnfoldable) as List
 
 import Blessed ((>~))
@@ -30,11 +32,11 @@ import Cli.Components.PatchesBar as PatchesBar
 import Cli.Components.AddPatch as AddPatch
 import Cli.Components.PaletteList as PaletteList
 
-import Toolkit.Hydra2 (toolkit) as Hydra
+import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 
 
 families :: Array Id.FamilyR
-families = List.toUnfoldable $ Toolkit.nodeFamilies Hydra.toolkit
+families = List.toUnfoldable $ Toolkit.nodeFamilies (Hydra.toolkit :: Hydra.Toolkit Effect)
 
 
 

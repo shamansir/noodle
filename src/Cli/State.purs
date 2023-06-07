@@ -4,6 +4,7 @@ import Prelude
 
 
 import Effect (Effect)
+import Effect.Class (class MonadEffect)
 
 import Data.Maybe (Maybe(..))
 import Data.Map (Map)
@@ -24,7 +25,7 @@ import Cli.Keys (LineA, LineB, LineC) as Key
 import Cli.Keys (nodeBox, inletsBox, outletsBox) as Key
 import Cli.State.NwWraper (Network, wrapN)
 
-import Toolkit.Hydra2 (toolkit) as Hydra
+import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 
 
@@ -70,10 +71,10 @@ initial =
     }
 
 
-initialNetwork :: forall m. Network m
+initialNetwork :: Network Effect
 initialNetwork =
     Network.init Hydra.toolkit
-    # Network.addPatch (patchIdFromIndex 0) (Patch.init Hydra.toolkit)
+    # Network.addPatch (patchIdFromIndex 0) (Patch.init (Hydra.toolkit :: Hydra.Toolkit Effect))
     # wrapN
 
 

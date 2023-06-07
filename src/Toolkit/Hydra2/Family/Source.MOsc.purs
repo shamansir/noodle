@@ -4,7 +4,7 @@ module Toolkit.Hydra2.Family.Source.FOsc where
 import Toolkit.Hydra2.Types as H
 
 
-import Prelude (Unit, unit, ($), bind, pure)
+import Prelude (Unit, unit, ($), bind, pure, discard)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -13,6 +13,9 @@ import Noodle.Node2 (Node) as N
 import Noodle.Id (Family(..)) as Node
 import Data.SOrder (SOrder, type (:::), T, s1, s3)
 import Type.Proxy (Proxy(..))
+
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Console as Console
 
 
 id = Node.Family :: _ "osc"
@@ -63,7 +66,7 @@ type Family (m :: Type -> Type) = -- {-> source <-}
         m
 
 
-family :: forall (m :: Type -> Type). Family m
+family :: forall (m :: Type -> Type). MonadEffect m => Family m
 family = -- {-> source <-}
     Family.def
         defaultState
@@ -72,6 +75,7 @@ family = -- {-> source <-}
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
+            liftEffect $ Console.log "osc"
             frequency <- P.receive _in_frequency
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset
