@@ -22,7 +22,8 @@ import Data.Foldable (foldr, class Foldable)
 import Data.Traversable (sequence)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
-
+import Data.SProxy (proxify)
+import Data.SProxy (reflectSymbol) as SP
 import Type.Proxy (Proxy(..))
 
 import Effect.Console (log)
@@ -50,7 +51,7 @@ data Family (s :: Symbol) = Family String
 
 
 family :: forall proxy s. IsSymbol s => proxy s -> Family s
-family f = Family $ reflectSymbol f
+family f = Family $ SP.reflectSymbol f
 
 
 produceFamily :: forall s. IsSymbol s => String -> Family s
@@ -107,7 +108,7 @@ spawn
     -> d
     -> m (Node state d)
 spawn (Toolkit tk) sym st =
-    Record.get sym tk
+    Record.get (proxify sym) tk
         # Node.make' st
 
 

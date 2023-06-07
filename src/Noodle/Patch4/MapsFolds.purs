@@ -11,6 +11,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Array as Array
 import Data.List (List)
 import Data.List as List
+import Data.FunctorWithIndex (mapWithIndex)
 
 import Type.Data.Symbol (class IsSymbol)
 import Type.Proxy (Proxy)
@@ -242,7 +243,7 @@ instance foldNodesIndexedList ::
             (Array (Node f state is os m))
             (List x)
     where
-    foldingWithIndex FoldNodesIndexed psym acc nodes = acc <> (List.mapWithIndex (NMF.convertNodeIndexed $ familyP psym) $ Array.toUnfoldable nodes)
+    foldingWithIndex FoldNodesIndexed psym acc nodes = acc <> (mapWithIndex (NMF.convertNodeIndexed $ familyP psym) $ Array.toUnfoldable nodes)
 
 
 {- Converters -}

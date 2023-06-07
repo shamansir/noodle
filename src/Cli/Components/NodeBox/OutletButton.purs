@@ -15,6 +15,7 @@ import Data.Repr (class FromRepr, class ToRepr)
 import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
 import Data.Mark (mark)
+import Data.SProxy (reflect)
 
 import Blessed as B
 import Cli.Keys as Key
@@ -132,7 +133,7 @@ onPress nodeHolder nextNodeBox index pdout node output =
             (_
                 { lastClickedOutlet =
                     Just
-                        { index, subj : Id.reflect output, nodeKey : nextNodeBox
+                        { index, subj : reflect output, nodeKey : nextNodeBox
                         , nodeId : Id.holdNodeId (Node.id node), node : nodeHolder
                         , outputId : Node.holdOutputInNodeMRepr pdout node output }
                         }

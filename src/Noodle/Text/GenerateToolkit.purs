@@ -23,7 +23,8 @@ import Options.Applicative as OA
 import Options.Applicative ((<**>))
 
 import Node.Encoding (Encoding(..))
-import Node.FS.Aff (mkdir, rmdir, readTextFile, writeTextFile, appendTextFile, exists)
+import Node.FS.Stats (isDirectory)
+import Node.FS.Aff (mkdir, rmdir, readTextFile, writeTextFile, appendTextFile, stat)
 
 import Noodle.Text.Generators as QTG
 import Noodle.Text.QuickDef as QD
@@ -70,12 +71,12 @@ run opts =
                 , "LocalsPrefix: " <> if String.null opts.localsPrefix then "none" else "\'" <> opts.localsPrefix <> "\'"
                 ]
         when (not opts.keepRootDirectory) $ do
-            rootDirExists <- exists rootDirPath
+            rootDirExists <- isDirectory <$> stat rootDirPath
             when rootDirExists $ rmdir rootDirPath
             mkdir rootDirPath
         when (not opts.keepFamiliesDirectory) $ do
             let familyDirPath = rootDirPath <> QTG.familiesModulesDirectoryPath
-            familyDirExists <- exists familyDirPath
+            familyDirExists <- isDirectory <$> stat familyDirPath
             when familyDirExists $ rmdir familyDirPath
             mkdir familyDirPath
         quickDefsFile <- readTextFile UTF8 opts.definitionFile

@@ -53,6 +53,7 @@ to generate this file without the comments in this block.
   , "maybe"
   , "newtype"
   , "node-buffer"
+  , "node-fs"
   , "node-fs-aff"
   , "node-path"
   , "node-streams"

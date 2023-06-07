@@ -25,8 +25,9 @@ import Data.Maybe as Maybe
 import Data.Tuple (Tuple(..))
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol, reifySymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol, reifySymbol)
 import Data.List (List)
+import Data.SProxy (reflect')
 
 import Prim.RowList as RL
 import Record.Extra (class Keys, keys)
@@ -50,7 +51,7 @@ import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
 
-import Noodle.Id (Input, InputR, Output, OutputR, inputR, outputR, reflect')
+import Noodle.Id (Input, InputR, Output, OutputR, inputR, outputR)
 import Noodle.Fn2.Protocol (InputChange(..), OutputChange(..), Protocol)
 
 

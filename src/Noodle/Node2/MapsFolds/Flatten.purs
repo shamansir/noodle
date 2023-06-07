@@ -9,8 +9,9 @@ import Data.Map (toUnfoldable) as Map
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Bifunctor (lmap)
+import Data.SProxy (reflect')
 
-import Noodle.Id (FamilyR, InputR, NodeId, NodeIdR, OutputR, reflect', splitR, reflectNodeIdR)
+import Noodle.Id (FamilyR, InputR, NodeId, NodeIdR, OutputR, splitR, reflectNodeIdR)
 
 
 type NodeLineRec f repr repr_is repr_os =

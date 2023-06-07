@@ -15,6 +15,7 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (sequence)
 import Data.Symbol (class IsSymbol)
+import Data.SProxy (proxify)
 
 import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 import Unsafe.Coerce (unsafeCoerce)
@@ -98,7 +99,7 @@ registerNode
 registerNode node (Patch state instances links) =
     Patch
         state
-        (Record.modify (Node.family node) ((:) node) instances) -- NB: notice that Family' f works!
+        (Record.modify (proxify $ Node.family node) ((:) node) instances) -- NB: notice that Family' f works!
         links
 
 
@@ -121,7 +122,7 @@ nodesOf
     => Family f
     -> Patch ps instances
     -> Array (Node f state is os m)
-nodesOf family (Patch _ instances _) = Record.get family instances
+nodesOf family (Patch _ instances _) = Record.get (proxify family) instances
 
 
 howMany
@@ -348,7 +349,7 @@ findNode
 findNode nodeId (Patch _ instances _) =
     let
         (family :: Family' f) = Id.familyOf nodeId
-        (familiesArray :: Array (Node f state is os m)) = Record.get family instances
+        (familiesArray :: Array (Node f state is os m)) = Record.get (proxify family) instances
     in
         Array.find (\otherNode -> Node.id otherNode == nodeId) familiesArray
 

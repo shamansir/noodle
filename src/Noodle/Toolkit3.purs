@@ -23,6 +23,7 @@ import Data.List as List
 import Data.List (List)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\), (/\))
+import Data.SProxy (proxify, reflect')
 
 
 import Effect.Class (class MonadEffect)
@@ -149,7 +150,7 @@ spawn
     -> Family f
     -> m (Node f state is os m)
 spawn (Toolkit _ _ tk) fsym =
-    Record.get fsym tk
+    Record.get (proxify fsym) tk
         # makeNode
     where
       makeNode (Family.Def (state /\ is /\ os /\ fn)) = Node.make' (family' fsym) state is os fn

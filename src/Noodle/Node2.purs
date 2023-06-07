@@ -16,6 +16,7 @@ import Data.UniqueHash as UniqueHash
 import Data.SOrder as SOrder
 import Data.SOrder (SOrder, class HasSymbolsOrder)
 import Data.Symbol (reifySymbol)
+import Data.SProxy (proxify, class Reflect, class Reflect', reflect, reflect')
 
 import Data.Array ((:))
 import Data.Array as Array
@@ -174,11 +175,11 @@ outputsRow _ = Proxy :: _ os
 
 
 atInput :: forall f i state is' is os m din. MonadEffect m => HasInput i din is' is => Input i -> Node f state is os m -> m din
-atInput i node = inputs node <#> Record.get i
+atInput i node = inputs node <#> Record.get (proxify i)
 
 
 atOutput :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Output o -> Node f state is os m -> m dout
-atOutput o node = outputs node <#> Record.get o
+atOutput o node = outputs node <#> Record.get (proxify o)
 
 
 atI :: forall f i state is' is os m din. MonadEffect m => HasInput i din is' is => Node f state is os m -> Input i -> m din
@@ -240,7 +241,7 @@ sendOutE :: forall f o state is os os' m dout. HasOutput o dout os' os => Node f
 sendOutE (Node _ _ protocol _) output dout =
     protocol.modifyOutputs
         (\curOutputs ->
-            (SingleOutput $ outputR output) /\ Record.set output dout curOutputs
+            (SingleOutput $ outputR output) /\ Record.set (proxify output) dout curOutputs
         )
 
 
@@ -254,7 +255,7 @@ sendOutE' :: forall f o state is os os' m dout. HasOutput o dout os' os => Node 
 sendOutE' (Node _ _ protocol _) output dout =
     protocol.modifyOutputs
         (\curOutputs ->
-            (SingleOutput $ outputR' output) /\ Record.set output dout curOutputs
+            (SingleOutput $ outputR' output) /\ Record.set (proxify output) dout curOutputs
         )
 
 
@@ -268,7 +269,7 @@ sendInE :: forall f i state is is' os m din. IsSymbol i => HasInput i din is' is
 sendInE (Node _ _ protocol _) input din =
     protocol.modifyInputs
         (\curInputs ->
-            (SingleInput $ inputR input) /\ Record.set input din curInputs
+            (SingleInput $ inputR input) /\ Record.set (proxify input) din curInputs
         )
 
 
@@ -281,7 +282,7 @@ sendInE' :: forall f i state is is' os m din. IsSymbol i => HasInput i din is' i
 sendInE' (Node _ _ protocol _) input din =
     protocol.modifyInputs
         (\curInputs ->
-            (SingleInput $ inputR' input) /\ Record.set input din curInputs
+            (SingleInput $ inputR' input) /\ Record.set (proxify input) din curInputs
         )
 
 
@@ -352,7 +353,7 @@ connect
                 flagOn <- Ref.read flagRef
                 if flagOn then sendInE nodeB inputB din
                 else pure unit
-        Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
+        Signal.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
         pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
 
 
@@ -399,7 +400,7 @@ connect'
                 flagOn <- Ref.read flagRef
                 if flagOn then sendInE' nodeB inputB din
                 else pure unit
-        Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
+        Signal.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
         pure $ Link nodeAId outputA inputB nodeBId $ Ref.write false flagRef
 
 
@@ -453,7 +454,7 @@ connectByRepr
                 else pure unit
             sendToBWhenConditionsMet Nothing =
                 pure unit
-        Signal.runSignal $ subscribeOutput (Record.get outputA) nodeA ~> convert ~> sendToBWhenConditionsMet
+        Signal.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBWhenConditionsMet
         pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
 
 

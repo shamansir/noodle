@@ -17,8 +17,6 @@ module Noodle.Id
     , nodeId', nodeIdR, nodeIdR'
     , reflectNodeId, reflectNodeId', reflectNodeIdR
     , familyOf, hashOf, hashOfR
-    , class Reflect, reflect
-    , class Reflect', reflect'
     , class Indexed, index
     , class FromKeysR, fromKeysR
     -- FIXME: make classes below internal
@@ -51,6 +49,8 @@ import Data.Tuple (uncurry, curry)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.UniqueHash (UniqueHash)
 import Data.UniqueHash as UniqueHash
+import Data.SProxy (class SProxy, proxify, class Reflect, class Reflect', reflect, reflect')
+
 import Effect (Effect)
 import Prim.Row as R
 import Record.Extra as Record
@@ -64,24 +64,12 @@ import Type.RowList as RL
 -- SomeIdR = SomeIdR String  -- contructor is closed, R is for "raw", stores only representation
 
 
-class Reflect (proxy :: Symbol -> Type) where -- almost the same as IsSymbol
-    reflect :: forall sym. IsSymbol sym => proxy sym -> String
-
-
-class Reflect' a where
-    reflect' :: a -> String
-
-
 class Indexed a where
     index :: a -> Int
 
 
 class FromKeysR a where
     fromKeysR :: forall (w :: Row Type -> Type) (rows :: Row Type) rl. RL.RowToList rows rl => Record.Keys rl => SOrder -> w rows -> List a
-
-
-instance Reflect proxy where
-    reflect = reflectSymbol
 
 
 toPair :: forall proxy sym. IsSymbol sym => Reflect proxy => Indexed (proxy sym) => proxy sym -> Int /\ String

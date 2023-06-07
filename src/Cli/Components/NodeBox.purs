@@ -22,6 +22,7 @@ import Data.Symbol (class IsSymbol)
 import Data.String as String
 import Data.Mark (mark)
 import Data.TraversableWithIndex (traverseWithIndex)
+import Data.SProxy (reflect)
 
 import Signal (Signal, (~>))
 import Signal as Signal
@@ -198,7 +199,7 @@ fromFamily curPatchId curPatch family def tk = do
                 [ Box.draggable true
                 , Box.top top
                 , Box.left left
-                , Box.width $ width (Id.reflect family) (Array.length is) (Array.length os)
+                , Box.width $ width (reflect family) (Array.length is) (Array.length os)
                 , Box.height $ Dimension.px 5
                 , Box.label $ toLabel family
                 , Box.tags true

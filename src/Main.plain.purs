@@ -5,6 +5,7 @@ import Prelude
 import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse_)
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.SProxy (proxify, reflect')
 import Type.Proxy (Proxy(..))
 import Record as Record
 import Record.Extra as Record
@@ -31,7 +32,6 @@ import Noodle.Node2 as Node
 import Noodle.Id (Family(..), Family') as Node
 import Noodle.Id (NodeId, class HasInputsAt, class HasOutputsAt)
 import Noodle.Id (familyOf, reflectFamily') as Id
-import Noodle.Id (reflect')
 
 import Toolkit.Test (toolkit)
 import Toolkit.Test (Instances) as TestToolkit
@@ -105,9 +105,9 @@ main = do
               patch
     state = app unit nw
 
-  fooReprs <- Record.get _foo reprMap
-  barReprs <- Record.get _bar reprMap
-  sumReprs <- Record.get _sum reprMap
+  fooReprs <- Record.get (proxify _foo) reprMap
+  barReprs <- Record.get (proxify _bar) reprMap
+  sumReprs <- Record.get (proxify _sum) reprMap
   --   -- Patch.nodes patch
 
   log "families"
