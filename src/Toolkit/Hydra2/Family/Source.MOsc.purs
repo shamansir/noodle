@@ -75,7 +75,7 @@ family = -- {-> source <-}
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
-            liftEffect $ Console.log "osc"
+            -- liftEffect $ Console.log "osc"
             frequency <- P.receive _in_frequency
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset

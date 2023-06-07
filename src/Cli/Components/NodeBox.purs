@@ -228,6 +228,8 @@ fromFamily curPatchId curPatch family def tk = do
     renderNodeUpdate mapRepr
     liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate)
 
+    liftEffect $ Node.listenUpdatesAndRun node
+
     Key.patchBox >~ Node.append nextNodeBoxN
     nextNodeBox >~ Node.append inletsBoxN
     nextNodeBox >~ Node.append outletsBoxN

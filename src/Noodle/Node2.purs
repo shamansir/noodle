@@ -58,6 +58,7 @@ import Signal (Signal, (~>))
 import Signal as Signal
 import Signal.Channel (Channel)
 import Signal.Channel as Channel
+import Signal.Extra (runSignal) as SignalX
 
 import Unsafe.Coerce (unsafeCoerce)
 import Effect.Console (log) as Console
@@ -121,6 +122,79 @@ make' family state is os fn = do
     nodeId <- liftEffect $ makeNodeId family
     tracker /\ protocol <- Protocol.make state is os
     pure $ Node nodeId tracker protocol fn
+
+
+{- makeRun
+    :: forall f state (is :: Row Type) (iorder :: SOrder) (os :: Row Type) (oorder :: SOrder) m
+     . IsSymbol f
+    => HasSymbolsOrder iorder is
+    => HasSymbolsOrder oorder os
+    => MonadRec m
+    => MonadEffect m
+    => Family f
+    -> state
+    -> Proxy iorder
+    -> Proxy oorder
+    -> Record is
+    -> Record os
+    -> ProcessM state is os m Unit
+    -> m (Node f state is os m)
+makeRun family state iorder oorder is os process = do
+  node <- make family state iorder oorder is os process
+  listenUpdatesAndRun node
+  pure node
+
+
+makeRun'
+    :: forall f state (is :: Row Type) (os :: Row Type) m
+     . MonadRec m
+    => MonadEffect m
+    => Family' f
+    -> state
+    -> Record is
+    -> Record os
+    -> Fn state is os m
+    -> m (Node f state is os m)
+makeRun' family state is os fn = do
+  node <- make' family state is os fn
+  listenUpdatesAndRun node
+  pure node -}
+
+
+-- TODO: private
+runOnInputUpdates
+    :: forall f state (is :: Row Type) (os :: Row Type) m
+    .  MonadRec m
+    => MonadEffect m
+    => Node f state is os m
+    -> m Unit
+runOnInputUpdates node =
+  SignalX.runSignal $ subscribeInputs node ~> const (run node)
+
+
+-- TODO: private
+runOnStateUpdates
+    :: forall f state (is :: Row Type) (os :: Row Type) m
+    .  MonadRec m
+    => MonadEffect m
+    => Node f state is os m
+    -> m Unit
+runOnStateUpdates node =
+  SignalX.runSignal $ subscribeState node ~> const (run node)
+
+
+--- FIXME: find better name
+listenUpdatesAndRun
+  :: forall f state (is :: Row Type) (os :: Row Type) m
+   . MonadRec m
+  => MonadEffect m
+  => Node f state is os m
+  -> m Unit
+listenUpdatesAndRun node = do
+  runOnInputUpdates node
+  runOnStateUpdates node
+  run node
+  -- TODO: FIXME: trigger current update on inputs, so that UI will be informed
 
 
 id :: forall f state is os m. Node f state is os m -> NodeId f

@@ -72,11 +72,13 @@ component =
                 PatchesBar.selectPatch patchNumId
                 -- TODO: clear the patches box content (ensure all the nodes and links are stored in the network for the previously selected patch)
                 Key.mainScreen >~ Screen.render
+        {-
         , Core.on Element.MouseOver
             \_ _ -> do
                 liftEffect $ Console.log "over"
         , Core.on Element.MouseOut
             \_ _ -> do
                 liftEffect $ Console.log "out"
+        -}
         ]
         []
