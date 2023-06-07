@@ -20,12 +20,12 @@ data Group
     | Audio
     | Blend
     | Color
-    | Extsource
+    | ExternalSources
     | Geometry
     | Modulate
     | Out
     | Source
-    | Synth
+    | SynthSettings
     | Unknown
 
 
@@ -38,96 +38,100 @@ toGroup = toGroupR <<< Id.familyR
 
 toGroupR :: Id.FamilyR -> Group
 toGroupR family = case Id.reflectFamilyR family of
-    "ease" -> Array
-    "fast" -> Array
-    "fit" -> Array
-    "offset" -> Array
-    "smooth" -> Array
+    "noise" -> Source
+    "voronoi" -> Source
+    "osc" -> Source
+    "shape" -> Source
+    "gradient" -> Source
+    "src" -> Source
+    "solid" -> Source
+    "prev" -> Source
 
-    "fft" -> Audio
-    "hide" -> Audio
-    "setBins" -> Audio
-    "setCutoff" -> Audio
-    "setScale" -> Audio
-    "setSmooth" -> Audio
-
-    "show" -> Blend
-    "add" -> Blend
-    "diff" -> Blend
-    "layer" -> Blend
-    "mask" -> Blend
-    "mult" -> Blend
-    "sub" -> Blend
-
-    "r" -> Color
-    "g" -> Color
-    "a" -> Color
-    "b" -> Color
-    "brightness" -> Color
-    "color" -> Color
-    "colorama" -> Color
-    "contrast" -> Color
-    "hue" -> Color
-    "invert" -> Color
-    "luma" -> Color
-    "posterize" -> Color
-    "saturate" -> Color
-    "shift" -> Color
-    "sum" -> Color
-    "tresh" -> Color
-
-    "init" -> Extsource
-    "initCam" -> Extsource
-    "initImage" -> Extsource
-    "initScreen" -> Extsource
-    "initStream" -> Extsource
-    "initVideo" -> Extsource
-
-    "kaleid" -> Geometry
+    "rotate" -> Geometry
+    "scale" -> Geometry
     "pixelate" -> Geometry
     "repeat" -> Geometry
     "repeatX" -> Geometry
     "repeatY" -> Geometry
-    "rotate" -> Geometry
-    "scale" -> Geometry
+    "kaleid" -> Geometry
     "scroll" -> Geometry
     "scrollX" -> Geometry
     "scrollY" -> Geometry
 
-    "modulate" -> Modulate
-    "modulateKaleid" -> Modulate
-    "modulatePixelate" -> Modulate
+    "posterize" -> Color
+    "shift" -> Color
+    "invert" -> Color
+    "contrast" -> Color
+    "brightness" -> Color
+    "luma" -> Color
+    "tresh" -> Color
+    "color" -> Color
+    "saturate" -> Color
+    "hue" -> Color
+    "colorama" -> Color
+    "sum" -> Color
+    "r" -> Color
+    "g" -> Color
+    "b" -> Color
+    "a" -> Color
+
+    "add" -> Blend
+    "sub" -> Blend
+    "layer" -> Blend
+    "blend" -> Blend
+    "mult" -> Blend
+    "diff" -> Blend
+    "mask" -> Blend
+
     "modulateRepeat" -> Modulate
     "modulateRepeatX" -> Modulate
     "modulateRepeatY" -> Modulate
-    "modulateRotate" -> Modulate
-    "modulateScale" -> Modulate
+    "modulateKaleid" -> Modulate
     "modulateScrollX" -> Modulate
     "modulateScrollY" -> Modulate
+    "modulate" -> Modulate
+    "modulateScale" -> Modulate
+    "modulatePixelate" -> Modulate
+    "modulateRotate" -> Modulate
+    "modulateHue" -> Modulate
+
+    "initCam" -> ExternalSources
+    "initImage" -> ExternalSources
+    "initVideo" -> ExternalSources
+    "init" -> ExternalSources
+    "initStream" -> ExternalSources
+    "initScreen" -> ExternalSources
+
+    "render" -> SynthSettings
+    "update" -> SynthSettings
+    "setResolution" -> SynthSettings
+    "hush" -> SynthSettings
+    "setFunction" -> SynthSettings
+    "speed" -> SynthSettings
+    "bpm" -> SynthSettings
+    "width" -> SynthSettings
+    "height" -> SynthSettings
+    "time" -> SynthSettings
+    "mouse" -> SynthSettings
+    "pi" -> SynthSettings
+
+    "fft" -> Audio
+    "setSmooth" -> Audio
+    "setCutoff" -> Audio
+    "setBins" -> Audio
+    "setScale" -> Audio
+    "hide" -> Audio
+    "show" -> Audio
+
+    "setScale" -> Audio
+
+    "fast" -> Array
+    "smooth" -> Array
+    "ease" -> Array
+    "offset" -> Array
+    "fit" -> Array
 
     "out" -> Out
-
-    "gradient" -> Source
-    "noise" -> Source
-    "osc" -> Source
-    "prev" -> Source
-    "shape" -> Source
-    "solid" -> Source
-    "src" -> Source
-    "voronoi" -> Source
-
-    "bpm" -> Synth
-    "height" -> Synth
-    "hush" -> Synth
-    "mouse" -> Synth
-    "pi" -> Synth
-    "render" -> Synth
-    "setFunction" -> Synth
-    "setResolution" -> Synth
-    "speed" -> Synth
-    "time" -> Synth
-    "update" -> Synth
-    "width" -> Synth
 
     _ -> Unknown
 
@@ -138,12 +142,12 @@ instance Mark Group where
         Audio -> Color.rgb 255 102 179
         Blend -> Color.rgb 102 255 177
         Color -> Color.rgb 179 255 102
-        Extsource -> Color.rgb 102 179 255
+        ExternalSources -> Color.rgb 102 179 255
         Geometry -> Color.rgb 255 230 102
         Modulate -> Color.rgb 102 255 230
         Out -> Color.rgb 199 21 133 -- 102 205 170
         Source -> Color.rgb 255 127 102
-        Synth -> Color.rgb 128 102 255
+        SynthSettings -> Color.rgb 128 102 255
         Unknown -> Color.rgb 139 199 101
 
 

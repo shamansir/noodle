@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Family.Extsource.FInitImage where
+module Toolkit.Hydra2.Family.ExternalSources.FInitImage where
 
 
 import Toolkit.Hydra2.Types as H

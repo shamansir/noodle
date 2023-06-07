@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Family.Extsource.FInitVideo where
+module Toolkit.Hydra2.Family.ExternalSources.FInitVideo where
 
 
 import Toolkit.Hydra2.Types as H

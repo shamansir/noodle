@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Family.Extsource.FInit where
+module Toolkit.Hydra2.Family.ExternalSources.FInit where
 
 
 import Toolkit.Hydra2.Types as H

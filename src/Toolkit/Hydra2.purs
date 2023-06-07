@@ -97,12 +97,12 @@ import Toolkit.Hydra2.Family.Synth.FHeight as FHeight
 import Toolkit.Hydra2.Family.Synth.FPi as FPi
 import Toolkit.Hydra2.Family.Synth.FTime as FTime
 import Toolkit.Hydra2.Family.Synth.FMouse as FMouse
-import Toolkit.Hydra2.Family.Extsource.FInitCam as FInitCam
-import Toolkit.Hydra2.Family.Extsource.FInitImage as FInitImage
-import Toolkit.Hydra2.Family.Extsource.FInitVideo as FInitVideo
-import Toolkit.Hydra2.Family.Extsource.FInit as FInit
-import Toolkit.Hydra2.Family.Extsource.FInitStream as FInitStream
-import Toolkit.Hydra2.Family.Extsource.FInitScreen as FInitScreen
+import Toolkit.Hydra2.Family.ExternalSources.FInitCam as FInitCam
+import Toolkit.Hydra2.Family.ExternalSources.FInitImage as FInitImage
+import Toolkit.Hydra2.Family.ExternalSources.FInitVideo as FInitVideo
+import Toolkit.Hydra2.Family.ExternalSources.FInit as FInit
+import Toolkit.Hydra2.Family.ExternalSources.FInitStream as FInitStream
+import Toolkit.Hydra2.Family.ExternalSources.FInitScreen as FInitScreen
 import Toolkit.Hydra2.Family.Array.FFast as FFast
 import Toolkit.Hydra2.Family.Array.FSmooth as FSmooth
 import Toolkit.Hydra2.Family.Array.FEase as FEase
@@ -338,6 +338,7 @@ type FamiliesOrder =
         ::: "color"
         ::: "saturate"
         ::: "hue"
+        ::: "colorama"
         ::: "sum"
         ::: "r"
         ::: "g"
@@ -368,7 +369,7 @@ type FamiliesOrder =
         ::: "modulateHue"
         ::: "modulate"
 
-        --  ExternalSources
+        --  External Sources
 
         ::: "initCam"
         ::: "initImage"
@@ -390,6 +391,7 @@ type FamiliesOrder =
         ::: "height"
         ::: "time"
         ::: "mouse"
+        ::: "pi"
 
         --  Array
 
@@ -410,6 +412,8 @@ type FamiliesOrder =
         ::: "show"
 
         --  .
+
+        ::: "out"
 
         ::: T
 

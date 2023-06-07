@@ -265,12 +265,12 @@ import Toolkit.HydraGen.Family.Synth.FHeight as FHeight
 import Toolkit.HydraGen.Family.Synth.FPi as FPi
 import Toolkit.HydraGen.Family.Synth.FTime as FTime
 import Toolkit.HydraGen.Family.Synth.FMouse as FMouse
-import Toolkit.HydraGen.Family.Extsource.FInitCam as FInitCam
-import Toolkit.HydraGen.Family.Extsource.FInitImage as FInitImage
-import Toolkit.HydraGen.Family.Extsource.FInitVideo as FInitVideo
-import Toolkit.HydraGen.Family.Extsource.FInit as FInit
-import Toolkit.HydraGen.Family.Extsource.FInitStream as FInitStream
-import Toolkit.HydraGen.Family.Extsource.FInitScreen as FInitScreen
+import Toolkit.HydraGen.Family.ExternalSources.FInitCam as FInitCam
+import Toolkit.HydraGen.Family.ExternalSources.FInitImage as FInitImage
+import Toolkit.HydraGen.Family.ExternalSources.FInitVideo as FInitVideo
+import Toolkit.HydraGen.Family.ExternalSources.FInit as FInit
+import Toolkit.HydraGen.Family.ExternalSources.FInitStream as FInitStream
+import Toolkit.HydraGen.Family.ExternalSources.FInitScreen as FInitScreen
 import Toolkit.HydraGen.Family.Array.FFast as FFast
 import Toolkit.HydraGen.Family.Array.FSmooth as FSmooth
 import Toolkit.HydraGen.Family.Array.FEase as FEase
@@ -8929,7 +8929,7 @@ type Node m =
 
 {- MODULE -}
 
-module Toolkit.HydraGen.Family.Extsource.FInitCam (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
+module Toolkit.HydraGen.Family.ExternalSources.FInitCam (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
 
 
 import FamilyImport as FI
@@ -9008,7 +9008,7 @@ type Node m =
 
 {- MODULE -}
 
-module Toolkit.HydraGen.Family.Extsource.FInitImage (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
+module Toolkit.HydraGen.Family.ExternalSources.FInitImage (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
 
 
 import FamilyImport as FI
@@ -9087,7 +9087,7 @@ type Node m =
 
 {- MODULE -}
 
-module Toolkit.HydraGen.Family.Extsource.FInitVideo (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
+module Toolkit.HydraGen.Family.ExternalSources.FInitVideo (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
 
 
 import FamilyImport as FI
@@ -9166,7 +9166,7 @@ type Node m =
 
 {- MODULE -}
 
-module Toolkit.HydraGen.Family.Extsource.FInit (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
+module Toolkit.HydraGen.Family.ExternalSources.FInit (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
 
 
 import FamilyImport as FI
@@ -9243,7 +9243,7 @@ type Node m =
 
 {- MODULE -}
 
-module Toolkit.HydraGen.Family.Extsource.FInitStream (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
+module Toolkit.HydraGen.Family.ExternalSources.FInitStream (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
 
 
 import FamilyImport as FI
@@ -9322,7 +9322,7 @@ type Node m =
 
 {- MODULE -}
 
-module Toolkit.HydraGen.Family.Extsource.FInitScreen (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
+module Toolkit.HydraGen.Family.ExternalSources.FInitScreen (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
 
 
 import FamilyImport as FI
