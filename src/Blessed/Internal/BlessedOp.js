@@ -4,7 +4,7 @@
 // const fs = require('fs');
 // const util = require('util');
 
-import * as blessed from 'blessed';
+import blessed from 'blessed';
 import * as fs from 'fs';
 import * as util from 'util';
 
