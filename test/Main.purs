@@ -29,7 +29,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
     UniqueHash.spec
   -- describe "Fn"
   --   Fn.spec
-  describeOnly "Node2"
+  describe "Node2"
     Node2.spec
   -- describe "Nodes"
   --   Nodes.spec
@@ -49,5 +49,5 @@ main = launchAff_ $ runSpec [consoleReporter] do
     Flex.spec
   describe "SOrder"
     SOrder.spec
-  describeOnly "NodeKey"
+  describe "NodeKey"
     NodeKey.spec

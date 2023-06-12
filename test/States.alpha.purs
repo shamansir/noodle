@@ -7,10 +7,11 @@ import Effect.Aff (Aff)
 import Data.Array as Array
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
-import Data.Symbol (class IsSymbol, SProxy(..), reifySymbol, reflectSymbol)
+import Data.Symbol (class IsSymbol, reifySymbol, reflectSymbol)
 import Data.Traversable (sequence)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.SProxy (proxify)
 
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
@@ -77,7 +78,7 @@ getDefaultState'
    -> proxy l
    -> a
 getDefaultState' rec label =
-    Record.get label rec
+    Record.get (proxify label) rec
 
 
 
@@ -130,7 +131,7 @@ getDefaultStateP'
    => Record x
    -> proxy l
    -> a
-getDefaultStateP' rec label = Record.get label rec # getDefault
+getDefaultStateP' rec label = Record.get (proxify label) rec # getDefault
 
 
 getInstanceStateP
@@ -152,7 +153,7 @@ getInstanceStateP'
    -> proxy l
    -> Int
    -> Maybe a
-getInstanceStateP' rec label idx = Record.get label rec # flip getInstance idx
+getInstanceStateP' rec label idx = Record.get (proxify label) rec # flip getInstance idx
 
 
 getFooStateP :: String
@@ -210,7 +211,7 @@ instancesM =
 --getDefaultStateM ∷ ∀ proxy l a r'. IsSymbol l ⇒ Cons l (One a) r' (NodeStatesM One) ⇒ proxy l → a
 getDefaultStateM ∷ ∀ (proxy ∷ Symbol -> Type) (l ∷ Symbol) (a ∷ Type) (r' ∷ Row Type). IsSymbol l ⇒ Cons l (One a) r' (NodeStatesM One) ⇒ proxy l → a
 getDefaultStateM label =
-    Record.get label defaultsM # unwrap
+    Record.get (proxify label) defaultsM # unwrap
     -- getDefaultStateM' (unsafeCoerce $ defaultsM :: _) label
     -- FIXME: getDefaultStateM' defaultsM label
     -- getDefaultStateM' defaultsM _foo
@@ -224,7 +225,7 @@ getDefaultStateM'
    -> proxy l
    -> a
 getDefaultStateM' rec label =
-    Record.get label rec # unwrap
+    Record.get (proxify label) rec # unwrap
 
 
 getInstanceStateM
@@ -237,7 +238,7 @@ getInstanceStateM
 getInstanceStateM label idx =
     -- getInstanceState' ?wh
     --getInstanceState' (?wh :: Record (_ Array)) label idx
-    Record.get label instancesM # flip Array.index idx
+    Record.get (proxify label) instancesM # flip Array.index idx
 
 
 getInstanceStateM'
@@ -249,7 +250,7 @@ getInstanceStateM'
    -> Int
    -> Maybe a
 getInstanceStateM' rec label idx =
-    Record.get label rec # flip Array.index idx
+    Record.get (proxify label) rec # flip Array.index idx
 
 
 

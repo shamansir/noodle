@@ -20,6 +20,7 @@ import Data.SOrder (SOrder, type (:::), T)
 import Data.KeyHolder as KH
 import Data.Repr as R
 import Data.Maybe (Maybe(..))
+import Data.SProxy (reflect, reflect')
 
 import Type.Proxy (Proxy(..))
 
@@ -32,7 +33,6 @@ import Noodle.Fn2 as Fn
 import Noodle.Fn2.Process as P
 import Noodle.Id (Family(..)) as Node
 import Noodle.Id (Input(..), Output(..), InputR(..), HoldsInput, HoldsOutput) as Fn
-import Noodle.Id (reflect, reflect')
 
 import Signal ((~>), Signal)
 import Signal as Signal
@@ -264,7 +264,7 @@ spec = do
 
             pure unit
 
-    describeOnly "inputs / outputs orders" $ do
+    describe "inputs / outputs orders" $ do
 
         it "works from `Node.HoldsInput` / `Node.HoldsOutput`" $ do
             node <-

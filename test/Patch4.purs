@@ -20,6 +20,7 @@ import Data.List as List
 import Data.Bifunctor (bimap, lmap)
 import Data.Map as Map
 import Data.SOrder (SOrder, type (:::), T)
+import Data.SProxy (reflect', proxify)
 
 import Test.Spec (Spec, pending, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
@@ -31,7 +32,7 @@ import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
-import Noodle.Id (reflectFamily', reflect', NodeId, familyOf, Family', class HasInputsAt, class HasOutputsAt)
+import Noodle.Id (reflectFamily', NodeId, familyOf, Family', class HasInputsAt, class HasOutputsAt)
 import Noodle.Id (Family(..), Family') as Node
 import Noodle.Id (Input(..), Output(..), InputR, OutputR) as Fn
 
@@ -226,8 +227,8 @@ spec = do
 
             let reprMap = Patch.toRepr (Proxy :: _ Aff) (NMF.Repr :: _ MyRepr) patch
 
-            fooReprs <- Record.get _foo reprMap
-            barReprs <- Record.get _bar reprMap
+            fooReprs <- Record.get (proxify _foo) reprMap
+            barReprs <- Record.get (proxify _bar) reprMap
 
             (extractFamily <$> fooReprs) `shouldEqual`
                 [ "foo"
@@ -255,8 +256,8 @@ spec = do
 
             let reprMap = Patch.toRepr (Proxy :: _ Aff) (NMF.Repr :: _ MyRepr) patch
 
-            fooReprs <- Record.get _foo reprMap
-            barReprs <- Record.get _bar reprMap
+            fooReprs <- Record.get (proxify _foo) reprMap
+            barReprs <- Record.get (proxify _bar) reprMap
 
             (extractFamily <$> fooReprs) `shouldEqual`
                 [ "foo"

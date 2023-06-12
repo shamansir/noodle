@@ -5,6 +5,7 @@ import Prelude
 
 
 import Data.Symbol
+import Data.SProxy as S
 import Unsafe.Coerce (unsafeCoerce)
 
 import Type.Proxy (Proxy)
@@ -23,4 +24,4 @@ testReflect (AnotherSymbol s) = s
 
 
 materialize :: forall s. IsSymbol s => MySymbolType s -> AnotherSymbol s
-materialize = reflectSymbol >>> AnotherSymbol
+materialize = S.reflectSymbol >>> AnotherSymbol

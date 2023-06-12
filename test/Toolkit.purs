@@ -12,7 +12,7 @@ import Data.Identity (Identity)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
-import Data.Symbol (class IsSymbol, SProxy(..), reifySymbol, reflectSymbol)
+import Data.Symbol (class IsSymbol, reifySymbol, reflectSymbol)
 import Data.Traversable (sequence)
 import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))

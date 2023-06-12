@@ -23,13 +23,14 @@ import Data.Array as Array
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Bifunctor (bimap)
 import Data.SOrder (type (:::), T)
+import Data.SProxy (reflect')
 
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Family(..), Family', class HasInputs, class HasInputsAt, FamilyR) as Node
 import Noodle.Id (Input(..), Output(..), InputR) as Fn
 import Noodle.Id (inputs) as Def
-import Noodle.Id (reflect', keysToInputsR, keysToOutputsR, reflectInputR, reflectOutputR, reflectFamily'')
+import Noodle.Id (keysToInputsR, keysToOutputsR, reflectInputR, reflectOutputR, reflectFamily'')
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Toolkit3 (Toolkit)

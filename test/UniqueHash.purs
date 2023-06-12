@@ -16,6 +16,7 @@ import Test.Signal (expectFn, expect)
 
 import Data.UniqueHash as UniqueHash
 import Noodle.Id as N
+import Data.SProxy (reflect')
 import Effect.Console (log) as Console
 
 spec :: Spec Unit
@@ -39,8 +40,8 @@ spec = do
 
             nodeId <- N.makeNodeId $ N.family' (N.Family :: N.Family "foo")
 
-            String.take 5 (N.reflect' nodeId) `shouldEqual` "foo::"
-            (String.length (N.reflect' nodeId) > 0) `shouldEqual` true
-            (String.length (N.reflect' nodeId) <= 40) `shouldEqual` true
+            String.take 5 (reflect' nodeId) `shouldEqual` "foo::"
+            (String.length (reflect' nodeId) > 0) `shouldEqual` true
+            (String.length (reflect' nodeId) <= 40) `shouldEqual` true
 
             pure unit

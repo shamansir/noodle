@@ -10,6 +10,7 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Symbol (reflectSymbol, class IsSymbol)
 import Prim.Symbol (class Compare)
+import Data.SProxy (reflect')
 import Record.Extra (keys)
 import Effect.Console (log) as Console
 import Type.Proxy (Proxy(..))
@@ -44,7 +45,6 @@ import Noodle.Fn2.Process as Fn
 import Noodle.Fn2.Process as Process
 import Noodle.Fn2.Protocol (Protocol)
 import Noodle.Fn2.Protocol as Protocol
-import Noodle.Id (reflect')
 import Noodle.Id (Family(..)) as Node
 import Noodle.Id (Input(..), Output(..)) as Fn
 
