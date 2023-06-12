@@ -7,7 +7,7 @@ module Test.HMaps
 
 import Prelude
 
-import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.String as String
 import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested ((/\), type (/\))
@@ -198,7 +198,7 @@ newtype ZipProps fns = ZipProps { | fns }
 
 instance zipProps ::
   (IsSymbol sym, Row.Cons sym (a -> b) x fns) =>
-  MappingWithIndex (ZipProps fns) (SProxy sym) a b where
+  MappingWithIndex (ZipProps fns) (Proxy sym) a b where
   mappingWithIndex (ZipProps fns) prop = Record.get prop fns
 
 
@@ -225,7 +225,7 @@ data ShowProps = ShowProps
 
 instance showProps ::
   (Show a, IsSymbol sym) =>
-  FoldingWithIndex ShowProps (SProxy sym) String a String where
+  FoldingWithIndex ShowProps (Proxy sym) String a String where
   foldingWithIndex ShowProps prop str a =
     pre <> reflectSymbol prop <> ": " <> show a
     where

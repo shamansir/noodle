@@ -3,7 +3,7 @@ module Test.HMaps2 where
 import Effect (Effect)
 import Effect.Console (log)
 
-import Data.Symbol (class IsSymbol, SProxy(..), reflectSymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.String as String
 import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested ((/\), type (/\))

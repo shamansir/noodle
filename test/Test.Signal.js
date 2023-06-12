@@ -1,6 +1,6 @@
 // module Test.Signal
 
-exports.tickP = function tickP(constant, initial, interval, values) {
+export const tickP = function tickP(constant, initial, interval, values) {
     var vals = values.slice();
     var out = constant(vals.shift());
     if (vals.length) {
@@ -14,18 +14,18 @@ exports.tickP = function tickP(constant, initial, interval, values) {
     return out;
   };
 
-  exports.incEff = function (val) {
-    return function () { return val + 1; };
-  };
+export const incEff = function (val) {
+  return function () { return val + 1; };
+};
 
-  exports.incAffP = function (right) {
-    return function (val) {
-      return function (callback) {
-        return function () {
-          setTimeout(function () {
-            callback(right(val + 1))();
-          }, 0);
-        };
+export const incAffP = function (right) {
+  return function (val) {
+    return function (callback) {
+      return function () {
+        setTimeout(function () {
+          callback(right(val + 1))();
+        }, 0);
       };
     };
   };
+};

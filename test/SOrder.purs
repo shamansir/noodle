@@ -12,7 +12,9 @@ import Type.Proxy (Proxy(..))
 import Data.SOrder (type (:::))
 import Data.SOrder as SO
 import Data.KeyHolder as KH
-import Data.Symbol (SProxy, class IsSymbol, reflectSymbol)
+import Data.Symbol (class IsSymbol, reflectSymbol)
+import Data.SProxy (class SProxy)
+import Data.SProxy (reflect) as S
 
 
 type ThreeItems :: SO.SOrder
@@ -66,26 +68,29 @@ spec = do
         it "properly sorts keys of record" $ do
             let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
             liftEffect $ Console.log $ show order
-            ((\convs -> withConvS convs reflectSymbol) <$> (KH.orderedKeys (Proxy :: _ SProxy) order { buz : "test", foo : 2, bar : false } :: Array ConvS)) `shouldEqual` [ "foo", "bar", "buz" ]
+            ((\convs -> withConvS convs S.reflect) <$> (KH.orderedKeys (Proxy :: _ SymS) order { buz : "test", foo : 2, bar : false } :: Array ConvS)) `shouldEqual` [ "foo", "bar", "buz" ]
 
         it "properly sorts keys of the row" $ do
             let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
-            ((\conv -> withConv conv reflectSymbol) <$> (KH.orderedKeys' (Proxy :: _ SymH) order (Proxy :: _ ( buz :: String, foo :: Int, bar :: Boolean )) :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ]
+            ((\conv -> withConv conv S.reflect) <$> (KH.orderedKeys' (Proxy :: _ SymH) order (Proxy :: _ ( buz :: String, foo :: Int, bar :: Boolean )) :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ]
 
         it "properly sorts keys of record with record" $ do
             let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
             liftEffect $ Console.log $ show order
-            ((\conv -> withConv conv reflectSymbol) <$> (KH.orderedKeys' (Proxy :: _ SymH) order { buz : "test", foo : 2, bar : false } :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ]
+            ((\conv -> withConv conv S.reflect) <$> (KH.orderedKeys' (Proxy :: _ SymH) order { buz : "test", foo : 2, bar : false } :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ]
 
         it "properly sorts keys of record with index" $ do
             let order = SO.instantiateImpl (Proxy :: _ ("foo" ::: "bar" ::: "buz" ::: SO.T))
             liftEffect $ Console.log $ show order
-            ((\conv -> withConv conv reflectSymbol) <$> (KH.orderedKeys (Proxy :: _ SymH) order { buz : "test", foo : 2, bar : false } :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ]
+            ((\conv -> withConv conv S.reflect) <$> (KH.orderedKeys (Proxy :: _ SymH) order { buz : "test", foo : 2, bar : false } :: Array Conv)) `shouldEqual` [ "foo", "bar", "buz" ]
 
         it "properly sorts keys of record with index. p.2" $ do
             let order = SO.instantiateImpl (Proxy :: _ ("bar" ::: "foo" ::: "buz" ::: SO.T))
             liftEffect $ Console.log $ show order
             ((\conv -> withConv conv reflectSymH) <$> (KH.orderedKeys (Proxy :: _ SymH) order { buz : "test", foo : 2, bar : false } :: Array Conv)) `shouldEqual` [ "bar0", "foo1", "buz2" ]
+
+
+data SymS (s :: Symbol) = SymS
 
 
 data SymH (s :: Symbol) = SymH Int
@@ -96,15 +101,15 @@ reflectSymH (SymH n) = reflectSymbol (Proxy :: _ sym) <> show n
 
 
 newtype ConvP = ConvP (forall r. (forall sym. IsSymbol sym => Proxy sym -> r) -> r)
-newtype ConvS = ConvS (forall r. (forall sym. IsSymbol sym => SProxy sym -> r) -> r)
+newtype ConvS = ConvS (forall r. (forall sym. IsSymbol sym => SymS sym -> r) -> r)
 newtype Conv = Conv (forall r. (forall sym. IsSymbol sym => SymH sym -> r) -> r)
 
 
-holdConvS :: forall sym. IsSymbol sym => SProxy sym -> ConvS
+holdConvS :: forall sym. IsSymbol sym => SymS sym -> ConvS
 holdConvS sym = ConvS (_ $ sym)
 
 
-withConvS :: forall r. ConvS -> (forall sym. IsSymbol sym => SProxy sym -> r) -> r
+withConvS :: forall r. ConvS -> (forall sym. IsSymbol sym => SymS sym -> r) -> r
 withConvS (ConvS fn) = fn
 
 
@@ -129,7 +134,7 @@ instance KH.Holder Proxy ConvP where
     extract = withConvP
 
 
-instance KH.Holder SProxy ConvS where
+instance KH.Holder SymS ConvS where
     hold = holdConvS
     extract = withConvS
 
@@ -142,6 +147,11 @@ instance KH.Holder SymH Conv where
 instance KH.ReifyOrderedTo SymH where
     reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> SymH sym
     reifyAt n _ = SymH n
+
+
+instance KH.ReifyOrderedTo SymS where
+    reifyAt :: forall sym. IsSymbol sym => Int -> Proxy sym -> SymS sym
+    reifyAt _ _ = SymS
 
 
         {-}
