@@ -192,7 +192,7 @@ listenUpdatesAndRun
   -> m Unit
 listenUpdatesAndRun node = do
   runOnInputUpdates node
-  runOnStateUpdates node
+  runOnStateUpdates node -- may be running on state updates is not needed
   run node
   -- TODO: FIXME: trigger current update on inputs, so that UI will be informed
 

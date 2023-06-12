@@ -5,6 +5,7 @@ import Prelude
 import Data.Maybe (Maybe(..))
 import Data.Repr as R -- (class ToRepr, class FromRepr, toRepr, fromRepr)
 import Data.Mark (class Mark, mark)
+import Data.String as String
 
 import Noodle.Node2.MapsFolds.Repr as NMF
 import Noodle.Node2.Path (InNode)
@@ -204,25 +205,25 @@ instance R.ToRepr H.Output WrapRepr where
 
 instance R.FromRepr WrapRepr H.Value where
     fromRepr :: R.Repr WrapRepr -> Maybe H.Value
-    fromRepr (R.Repr (Value value)) = Just value -- FIXME
+    fromRepr (R.Repr (Value value)) = Just value
     fromRepr _ = Nothing
 
 
 instance R.FromRepr WrapRepr H.Texture where
     fromRepr :: R.Repr WrapRepr -> Maybe H.Texture
-    fromRepr (R.Repr (Texture texture)) = Just texture -- FIXME
+    fromRepr (R.Repr (Texture texture)) = Just texture
     fromRepr _ = Nothing
 
 
 instance R.FromRepr WrapRepr H.From where
     fromRepr :: R.Repr WrapRepr -> Maybe H.From
-    fromRepr (R.Repr (From from)) = Just from -- FIXME
+    fromRepr (R.Repr (From from)) = Just from
     fromRepr _ = Nothing
 
 
 instance R.FromRepr WrapRepr H.TODO where
     fromRepr :: R.Repr WrapRepr -> Maybe H.TODO
-    fromRepr (R.Repr (TODO todo)) = Just todo -- FIXME
+    fromRepr (R.Repr (TODO todo)) = Just todo
     fromRepr _ = Nothing
 
 
@@ -234,55 +235,55 @@ instance R.FromRepr WrapRepr H.Context where
 
 instance R.FromRepr WrapRepr H.UpdateFn where
     fromRepr :: R.Repr WrapRepr -> Maybe H.UpdateFn
-    fromRepr (R.Repr (UpdateFn updatefn)) = Just updatefn -- FIXME
+    fromRepr (R.Repr (UpdateFn updatefn)) = Just updatefn
     fromRepr _ = Nothing
 
 
 instance R.FromRepr WrapRepr H.Source where
     fromRepr :: R.Repr WrapRepr -> Maybe H.Source
-    fromRepr (R.Repr (Source source)) = Just source -- FIXME
+    fromRepr (R.Repr (Source source)) = Just source
     fromRepr _ = Nothing
 
 
 instance R.FromRepr WrapRepr H.Url where
     fromRepr :: R.Repr WrapRepr -> Maybe H.Url
-    fromRepr (R.Repr (Url url)) = Just url -- FIXME
+    fromRepr (R.Repr (Url url)) = Just url
     fromRepr _ = Nothing
 
 
 instance R.FromRepr WrapRepr H.GlslFn where
     fromRepr :: R.Repr WrapRepr -> Maybe H.GlslFn
-    fromRepr (R.Repr (GlslFn glslfn)) = Just glslfn -- FIXME
+    fromRepr (R.Repr (GlslFn glslfn)) = Just glslfn
     fromRepr _ = Nothing
 
 
 instance R.FromRepr WrapRepr H.SourceOptions where
     fromRepr :: R.Repr WrapRepr -> Maybe H.SourceOptions
-    fromRepr (R.Repr (SourceOptions sourceoptions)) = Just sourceoptions -- FIXME
+    fromRepr (R.Repr (SourceOptions sourceoptions)) = Just sourceoptions
     fromRepr _ = Nothing
 
 
 instance R.FromRepr WrapRepr H.Values where
     fromRepr :: R.Repr WrapRepr -> Maybe H.Values
-    fromRepr (R.Repr (Values values)) = Just values  -- FIXME
+    fromRepr (R.Repr (Values values)) = Just values
     fromRepr _ = Nothing
 
 
 instance R.FromRepr WrapRepr H.Ease where
     fromRepr :: R.Repr WrapRepr -> Maybe H.Ease
-    fromRepr (R.Repr (Ease ease)) = Just ease -- FIXME
+    fromRepr (R.Repr (Ease ease)) = Just ease
     fromRepr _ = Nothing
 
 
 instance R.FromRepr WrapRepr H.Audio where
     fromRepr :: R.Repr WrapRepr -> Maybe H.Audio
-    fromRepr (R.Repr (Audio audio)) = Just audio -- FIXME
+    fromRepr (R.Repr (Audio audio)) = Just audio
     fromRepr _ = Nothing
 
 
 instance R.FromRepr WrapRepr H.AudioBin where
     fromRepr :: R.Repr WrapRepr -> Maybe H.AudioBin
-    fromRepr (R.Repr (AudioBin audiobin)) = Just audiobin -- FIXME
+    fromRepr (R.Repr (AudioBin audiobin)) = Just audiobin
     fromRepr _ = Nothing
 
 
@@ -310,6 +311,26 @@ instance Mark WrapRepr where
         Audio a -> mark a
         AudioBin ab -> mark ab
         Output o -> mark o
+
+
+instance Show WrapRepr where
+    show = case _ of
+        Value v -> show v
+        Unit unit -> show unit
+        Texture t -> show t
+        From from -> show from
+        TODO todo -> show todo
+        Context ctx -> show ctx
+        UpdateFn fn -> show fn
+        Source src -> show src
+        Url url -> show url
+        GlslFn fn -> show fn
+        SourceOptions so -> show so
+        Values vs -> show vs
+        Ease e -> show e
+        Audio a -> show a
+        AudioBin ab -> show ab
+        Output o -> show o
 
     {-
     mark = case _ of

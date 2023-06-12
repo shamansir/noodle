@@ -147,8 +147,8 @@ instance ShortInfo H.Audio where
     short :: H.Audio -> String
     short = case _ of
         H.Silence -> "⏹" -- 🔇
-        H.Mic -> ""
-        H.File -> ""
+        H.Mic -> "" -- TODO
+        H.File -> "" -- TODO
 
 
 instance ShortInfo H.AudioBin where
@@ -165,108 +165,90 @@ instance ShortInfo H.Output where
     short :: H.Output -> String
     short = case _ of
         H.Screen -> "SCR"
-        H.Output0 -> "OUT0" -- ⎑0
-        H.Output1 -> "OUT1" -- ⎑1
-        H.Output2 -> "OUT2" -- ⎑2
+        H.Output0 -> "⎑0" -- OUT0
+        H.Output1 -> "⎑1" -- OUT1
+        H.Output2 -> "⎑2" -- OUT2
 
 
 
 instance FullInfo H.Value where
     full :: H.Value -> String
-    full = case _ of
-        H.None -> "None"
-        H.Required -> "Required"
-        H.Number n -> show n
-        H.VArray vals ease -> full vals <> " at " <> full ease
-        H.Dep _ -> "Dep"
-        H.Time -> "Time"
-        H.MouseX -> "Mouse X"
-        H.MouseY -> "Mouse Y"
-        H.Width -> "Width"
-        H.Height -> "Height"
-        H.Pi -> "Pi"
-        H.Audio audio bin -> full audio <> " @ " <> full bin
+    full = show
 
 
 instance FullInfo Unit where
     full :: Unit -> String
-    full _ = "Unit"
+    full = show
 
 
 instance FullInfo H.Texture where
     full :: H.Texture -> String
-    full = case _ of
-        H.Empty -> "Empty"
-        H.From src -> "From " <> full src
-        H.BlendOf { what, with } blend -> "BND" -- TODO: <> short blend
-        H.WithColor texture op -> "CLR" -- TODO: expand op
-        H.ModulateWith texture mod -> "MOD" -- TODO: expand mod
-        H.Geometry texture gmt -> "GMT" -- TODO: expand gmt
+    full = show
 
 
 instance FullInfo H.From where
     full :: H.From -> String
-    full = short -- TODO
+    full = show
 
 
 instance FullInfo H.TODO where
     full :: H.TODO -> String
-    full = const "TODO"
+    full = show
 
 
 instance FullInfo H.Context where
     full :: H.Context -> String
-    full = const "Context" -- TODO
+    full = show
 
 
 instance FullInfo H.UpdateFn where
     full :: H.UpdateFn -> String
-    full = short -- TODO
+    full = show
 
 
 instance FullInfo H.Source where
     full :: H.Source -> String
-    full = short -- TODO
+    full = show
 
 
 instance FullInfo H.Url where
     full :: H.Url -> String
-    full = short -- TODO
+    full = show
 
 
 instance FullInfo H.GlslFn where
     full :: H.GlslFn -> String
-    full = short -- TODO
+    full = show
 
 
 instance FullInfo H.SourceOptions where
     full :: H.SourceOptions -> String
-    full = short -- TODO
+    full = show
 
 
 instance FullInfo H.Values where
     full :: H.Values -> String
-    full (H.Values array) = "[" <> String.joinWith "," (full <$> array) <> "]"
+    full = show
 
 
 instance FullInfo H.Ease where
     full :: H.Ease -> String
-    full = short -- TODO
+    full = show
 
 
 instance FullInfo H.Audio where
     full :: H.Audio -> String
-    full = short -- TODO
+    full = show
 
 
 instance FullInfo H.AudioBin where
     full :: H.AudioBin -> String
-    full = short -- TODO
+    full = show
 
 
 instance FullInfo H.Output where
     full :: H.Output -> String
-    full = short -- TODO
+    full = show
 
 
 

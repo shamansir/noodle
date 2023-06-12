@@ -17,6 +17,8 @@ import Type.Proxy (Proxy(..))
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
 
+import Toolkit.Hydra2.Repr.Info (full)
+
 
 id = Node.Family :: _ "osc"
 
@@ -75,10 +77,11 @@ family = -- {-> source <-}
         $ Fn.make name
             { inputs : inputsOrder, outputs : outputsOrder }
             $ do
-            -- liftEffect $ Console.log "osc"
+            -- liftEffect $ Console.log "osc fn run"
             frequency <- P.receive _in_frequency
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset
+            -- liftEffect $ Console.log $ full $ H.From $ H.Osc { frequency, sync, offset }
             P.send _out_out $ H.From $ H.Osc { frequency, sync, offset }
 
 

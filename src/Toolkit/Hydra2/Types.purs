@@ -10,6 +10,7 @@ import Cli.Palette.Set.X11 as X11
 
 import Data.Maybe (fromMaybe)
 import Data.Mark (class Mark)
+import Data.String as String
 
 
 data TODO = TODO
@@ -305,3 +306,126 @@ instance Mark Output where
         AudioBin _ -> X11.aqua
         Output _ -> X11.blue
     -}
+
+
+instance Show Value where
+    show :: Value -> String
+    show = case _ of
+        None -> "<None>"
+        Required -> "<Required>"
+        Number n -> "<" <> show n <> ">"
+        VArray vals ease -> "<" <> show vals <> " at " <> show ease <> ">"
+        Dep _ -> "<Dep>"
+        Time -> "<Time>"
+        MouseX -> "<Mouse X>"
+        MouseY -> "<Mouse Y>"
+        Width -> "<Width>"
+        Height -> "<Height>"
+        Pi -> "<Pi>"
+        Audio audio bin -> "<" <> show audio <> " @ " <> show bin <> ">"
+
+
+instance Show Texture where
+    show :: Texture -> String
+    show = case _ of
+        Empty -> "Empty"
+        From src -> "From " <> show src
+        BlendOf { what, with } blend -> "Blend " <> show what <> " -< " <> show with {- TODO: <> " :: " <> show blend -}
+        WithColor texture op -> "With Color " <> {- TODO : show op <> " " <> -} show texture
+        ModulateWith texture mod -> "Modulate " <> show texture {- TODO: <> " " <> show mod -}
+        Geometry texture gmt -> "Geometry " <> show texture {- TODO: <> " " <> show gmt -}
+
+
+instance Show From where
+    show :: From -> String
+    show = case _ of
+        All -> "From all"
+        Output out -> "From output " <> show out
+
+
+instance Show TODO where
+    show :: TODO -> String
+    show = const "TODO"
+
+
+instance Show Context where
+    show :: Context -> String
+    show (Context { time }) = "Context { " <> show time <> " }"
+
+
+instance Show UpdateFn where
+    show :: UpdateFn -> String
+    show = const "Update Function" -- TODO
+
+
+instance Show Source where
+    show :: Source -> String
+    show = case _ of
+        Dynamic -> "Dynamic"
+        Video -> "Video"
+        Gradient { speed } -> "Gradient " <> show speed
+        Camera -> "Camera" -- 🎥
+        Noise { scale, offset } -> "Noise " <> show scale <> " " <> show offset
+        Osc { frequency, sync, offset } -> "Osc " <> show frequency <> " " <> show sync <> " " <> show offset
+        Shape { sides, radius, smoothing } -> "Shape " <> show sides <> " " <> show radius <> " " <> show smoothing
+        Solid { r, g, b, a } -> "Solid " <> show r <> " " <> show g <> " " <> show b <> " " <> show a
+        Source from -> show from
+        Voronoi { scale, speed, blending } -> "Voronoi " <> show scale <> " " <> show speed <> " " <> show blending
+
+
+instance Show Url where
+    show :: Url -> String
+    show (Url url) = "Url: " <> show url
+
+
+instance Show GlslFn where
+    show :: GlslFn -> String
+    show = const "GLSL Fn"
+
+
+instance Show SourceOptions where
+    show :: SourceOptions -> String
+    show (SourceOptions { src }) = "Source Options { " {- TODO : <> show src -} <> " }"
+
+
+instance Show Values where
+    show :: Values -> String
+    show (Values array) = "[" <> String.joinWith "," (show <$> array) <> "]"
+
+
+instance Show Ease where
+    show :: Ease -> String
+    show = case _ of
+        Linear -> "Linear"
+        Fast v -> "Fast " <> show v
+        Smooth v -> "Smooth " <> show v
+        Fit { low, high } -> "Fit " <> show low <> " < " <> show high
+        Offset v -> "Offset " <> show v
+        InOutCubic -> "InOutCubic"
+
+
+instance Show Audio where
+    show :: Audio -> String
+    show = case _ of
+        Silence -> "Silence"
+        Mic -> "Microphone"
+        File -> "File"
+
+
+instance Show AudioBin where
+    show :: AudioBin -> String
+    show = case _ of
+        H0 -> "Bin 0"
+        H1 -> "Bin 1"
+        H2 -> "Bin 2"
+        H3 -> "Bin 3"
+        H4 -> "Bin 4"
+
+
+instance Show Output where
+    show :: Output -> String
+    show = case _ of
+        Screen -> "Screen"
+        Output0 -> "Output 0"
+        Output1 -> "Output 1"
+        Output2 -> "Output 2"
