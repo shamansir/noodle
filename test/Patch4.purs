@@ -302,7 +302,7 @@ spec = do
                         /\ [ "foo" /\ String_ "aaa", "bar" /\ String_ "bbb", "c" /\ Int_ 32 ]
                         /\ [ "out" /\ Bool_ false ]
                 ,
-                     "bar"
+                    "bar"
                         /\ Unit_
                         /\ [ "a" /\ String_ "aaa", "b" /\ String_ "bbb", "c" /\ Int_ 32 ]
                         /\ [ "x" /\ Bool_ false ]

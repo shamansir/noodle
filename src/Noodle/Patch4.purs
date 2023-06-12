@@ -16,6 +16,7 @@ import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (sequence)
 import Data.Symbol (class IsSymbol)
 import Data.SProxy (proxify)
+import Data.SOrder (SOrder)
 
 import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 import Unsafe.Coerce (unsafeCoerce)
@@ -56,7 +57,7 @@ type Links =
   }
 
 
-data Patch gstate (instances :: Row Type) = Patch gstate (Record instances) Links
+data Patch gstate (instances :: Row Type) = Patch gstate SOrder (Record instances) Links
 
 
 init
@@ -84,6 +85,7 @@ init'
 init' state tk =
     Patch
         state
+        (Toolkit.familiesOrder tk)
         (PI.init $ Toolkit.toRecord tk)
         { from : Map.empty
         , to : Map.empty
@@ -96,9 +98,10 @@ registerNode
     => Node f state is os m
     -> Patch ps instances
     -> Patch ps instances
-registerNode node (Patch state instances links) =
+registerNode node (Patch state forder instances links) =
     Patch
         state
+        forder
         (Record.modify (proxify $ Node.family node) ((:) node) instances) -- NB: notice that Family' f works!
         links
 
@@ -122,7 +125,7 @@ nodesOf
     => Family f
     -> Patch ps instances
     -> Array (Node f state is os m)
-nodesOf family (Patch _ instances _) = Record.get (proxify family) instances
+nodesOf family (Patch _ _ instances _) = Record.get (proxify family) instances
 
 
 howMany
@@ -139,9 +142,10 @@ registerLink
      . Node.Link fo fi i o
     -> Patch gstate instances
     -> Patch gstate instances
-registerLink link (Patch state instances links) =
+registerLink link (Patch state forder instances links) =
   Patch
     state
+    forder
     instances
     { from : Map.insert (Node.toFromId link) (unsafeCoerce link) links.from
     , to : Map.insert (Node.toToId link) (unsafeCoerce link) links.to
@@ -153,9 +157,10 @@ forgetLink
      . Node.Link fo fi i o
     -> Patch gstate instances
     -> Patch gstate instances
-forgetLink link (Patch state instances links) =
+forgetLink link (Patch state forder instances links) =
   Patch
     state
+    forder
     instances
     { from : Map.delete (Node.toFromId link) links.from
     , to : Map.delete (Node.toToId link) links.to
@@ -346,7 +351,7 @@ findNode
     => RL.RowToList instances rli
     => Record.Keys rli
     => NodeId f -> Patch gstate instances -> Maybe (Node f state is os m)
-findNode nodeId (Patch _ instances _) =
+findNode nodeId (Patch _ _ instances _) =
     let
         (family :: Family' f) = Id.familyOf nodeId
         (familiesArray :: Array (Node f state is os m)) = Record.get (proxify family) instances
@@ -357,7 +362,7 @@ findNode nodeId (Patch _ instances _) =
 -- TODO: some generic existential type
 {-
 withNode' :: forall gstate (instances' :: Row Type) (instances ∷ Row Type) rli m a. RL.RowToList instances rli => Record.Keys rli => Applicative m => (forall f state is os. Node f state is os m -> m a) -> NodeIdR -> Patch gstate instances -> m (Maybe a)
-withNode' fn nodeId (Patch _ instances _) =
+withNode' fn nodeId (Patch _ _ instances _) =
     let
         familyR /\ hash = Id.splitR nodeId
         familyStr = Id.reflect' familyR
@@ -380,7 +385,7 @@ nodes_
      . PF.Fold rla instances ff result
     => Patch gstate instances
     -> ff result
-nodes_ (Patch _ instances _) =
+nodes_ (Patch _ _ instances _) =
     PF.hfoldl_ instances
 
 
@@ -389,7 +394,7 @@ nodes
      . PF.Fold rla instances Array (Node f state is os m)
     => Patch gstate instances
     -> Array (Node f state is os m)
-nodes (Patch _ instances _) =
+nodes (Patch _ _ instances _) =
     PF.hfoldl instances
 
 
@@ -398,7 +403,7 @@ nodesIndexed_
      . PF.FoldI rla instances ff result
     => Patch gstate instances
     -> ff result
-nodesIndexed_ (Patch _ instances _) =
+nodesIndexed_ (Patch _ _ instances _) =
     PF.hfoldlWithIndex_ instances
 
 
@@ -407,7 +412,7 @@ nodesIndexed
      . PF.FoldI rla instances Array (PF.NodeWithIndex f state is os m)
     => Patch gstate instances
     -> Array (PF.NodeWithIndex f state is os m)
-nodesIndexed (Patch _ instances _) =
+nodesIndexed (Patch _ _ instances _) =
      PF.hfoldlWithIndex instances
 
 
@@ -416,7 +421,7 @@ nodesMap
      . PM.Map rli instances instances' x
     => Patch gstate instances
     -> Record instances'
-nodesMap (Patch _ instances _) =
+nodesMap (Patch _ _ instances _) =
     PM.hmap (Proxy :: Proxy x) instances
 
 
@@ -425,7 +430,7 @@ nodesMapIndexed
      . PM.MapI rli instances instances' x
     => Patch gstate instances
     -> Record instances'
-nodesMapIndexed (Patch _ instances _) =
+nodesMapIndexed (Patch _ _ instances _) =
     PM.hmapWithIndex (Proxy :: Proxy x) instances
 
 
@@ -437,7 +442,7 @@ toRepr
     -> R.Repr repr
     -> Patch gstate instances
     -> Record reprs
-toRepr mproxy repr (Patch _ instances _) =
+toRepr mproxy repr (Patch _ _ instances _) =
     PF.toReprs mproxy repr instances
 
 
@@ -449,5 +454,5 @@ toReprFlat
     -> R.Repr repr
     -> Patch gstate instances
     -> m (Array (R.NodeLineMap repr))
-toReprFlat mproxy repr (Patch _ instances _) =
+toReprFlat mproxy repr (Patch _ _ instances _) =
     PF.toReprsFlat mproxy repr instances

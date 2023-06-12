@@ -3,6 +3,7 @@ module Noodle.Toolkit3
   , from
   , name
   , nodeFamilies
+  , familiesOrder
   , spawn
   , toRecord
   --, toStates
@@ -89,6 +90,10 @@ familyDefs
     => Toolkit gstate families
     -> Array x
 familyDefs (Toolkit _ _ defs) = TF.hfoldl defs  -- FIXME: ORDER
+
+
+familiesOrder :: forall gstate families. Toolkit gstate families -> SOrder
+familiesOrder (Toolkit _ forder _) = forder
 
 
 familyDefsIndexed
