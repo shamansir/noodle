@@ -153,6 +153,9 @@ fromFamily curPatchId curPatch family def tk = do
         mapRepr <- R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
         let (updates' :: Signal (R.NodeLineRec f Hydra.WrapRepr repr_is repr_os)) = R.subscribeReprChanges (R.Repr :: _ Hydra.WrapRepr) node
         let (updates :: Signal (R.NodeLineMap Hydra.WrapRepr)) = R.subscribeReprMapChanges (R.Repr :: _ Hydra.WrapRepr) node
+
+        -- Node.listenUpdatesAndRun node -- just Node.run ??
+        Node.run node
         -- state <- State.get
         pure { nextPatch, node, inputs, is, iss, iss2, isss, issss, issss1, os, oss, oss2, osss, ossss, ossss1, outputs, nodes, repr, mapRepr, updates }
 
@@ -225,19 +228,25 @@ fromFamily curPatchId curPatch family def tk = do
         renderNodeUpdate :: forall a. R.NodeLineMap Hydra.WrapRepr -> BlessedOp a Effect
         renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
 
-    renderNodeUpdate mapRepr
+    --renderNodeUpdate mapRepr
     liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate)
 
-    liftEffect $ Node.listenUpdatesAndRun node
-
-    mapRepr2 <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) rec.node
-    renderNodeUpdate mapRepr2 -- FIXME: why it doesn't apply values for `osc` node and for any other too, as I get it? for example: default `osc` out value stays in UI, however log is performed from its `process` function (yeah?)
-    -- liftEffect $ Console.log $ show mapRepr
-    -- FIXME: try logging/tracking all NodeLineRec updates
+    -- liftEffect $ Node.listenUpdatesAndRun node
+    -- liftEffect $ Node.run node
 
     Key.patchBox >~ Node.append nextNodeBoxN
     nextNodeBox >~ Node.append inletsBoxN
     nextNodeBox >~ Node.append outletsBoxN
+
+    mapRepr2 <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) rec.node
+     -- FIXME: why it doesn't apply values for `osc` node and for any other too, as I get it? for example: default `osc` out value stays in UI, however log is performed from its `process` function (yeah?)
+    -- liftEffect $ Console.log $ show atOut
+    -- liftEffect $ Console.log $ show mapRepr
+    -- liftEffect $ Console.log $ show mapRepr2
+    -- FIXME: try logging/tracking all NodeLineRec updates
+
+
+    renderNodeUpdate mapRepr2
     -- nextNodeBox >~ Node.append inputText
 
     State.modify_ (_
