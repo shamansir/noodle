@@ -66,7 +66,7 @@ component =
         -- , List.mouse true
         -- , List.keys true
         -- , ListBar.autoCommandKeys true
-        , Style.inletsOutlets
+        , Style.statusLine
         {- , Core.on ListBar.Select
             \_ _ -> do
                 liftEffect $ Console.log "inlet"

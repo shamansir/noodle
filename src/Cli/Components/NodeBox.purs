@@ -32,7 +32,7 @@ import Signal.Channel as Channel
 
 import Blessed ((>~))
 import Blessed as B
-import Blessed.Tagger (fgc, bgc, s) as T
+import Blessed.Tagger (fgc, bgc, s, fgcs) as T
 import Blessed.Tagger (render) as T
 
 import Blessed.Core.Border as Border
@@ -75,7 +75,7 @@ import Noodle.Node2.MapsFolds.Flatten as R
 
 
 import Cli.Keys (NodeBoxKey)
-import Cli.Keys (mainScreen, patchBox) as Key
+import Cli.Keys (mainScreen, patchBox, statusLine) as Key
 import Cli.Palette as Palette
 import Cli.Palette.Item (crepr) as Palette
 import Cli.State (State)
@@ -233,6 +233,10 @@ fromFamily curPatchId curPatch family def tk = do
                 , Style.nodeBoxBorder
                 , Style.nodeBox
                 , Core.on Element.Move $ onMove nextNodeBox -- FIXME: onNodeMove receives wrong `NodeKey` in the handler, probably thanks to `proxies` passed around
+                , Core.on Element.MouseOver
+                    $ onMouseOver family
+                , Core.on Element.MouseOut
+                    $ onMouseOut
                 ]
                 [ ]
         {-
@@ -325,3 +329,18 @@ toLabel :: forall f. IsSymbol f => Id.Family f -> String
 toLabel family =
     let color = mark $ Hydra.toGroup family
     in T.render $ T.bgc (Palette.crepr Palette.nodeBg) $ T.fgc color $ T.s $ Id.reflectFamily family
+
+
+onMouseOver :: forall f. IsSymbol f => Id.Family f -> _ -> _ -> BlessedOp State Effect
+onMouseOver family _ _ = do
+    -- maybeRepr <- liftEffect $ Signal.get reprSignal
+    -- -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
+    Key.statusLine >~ Box.setContent $ T.render $ T.fgcs (Palette.crepr Palette.familyName) $ reflect family
+    Key.mainScreen >~ Screen.render
+    --liftEffect $ Console.log $ "over" <> show idx
+
+
+onMouseOut :: _ -> _ -> BlessedOp State Effect
+onMouseOut _ _ = do
+    Key.statusLine >~ Box.setContent ""
+    Key.mainScreen >~ Screen.render

@@ -85,14 +85,15 @@ content' idx inputId (Just repr) =
 content' idx inputId Nothing = "⋱" <> show idx <> "⋰"
 
 
-slContent :: forall i. IsSymbol i => Int -> Id.Input i -> Maybe Hydra.WrapRepr -> String
-slContent idx inputId = slContent' idx $ Id.inputR inputId
+slContent :: forall f i. IsSymbol i => IsSymbol f => Id.Family' f -> Int -> Id.Input i -> Maybe Hydra.WrapRepr -> String
+slContent family idx inputId = slContent' (Id.familyR' family) idx $ Id.inputR inputId
 
 
-slContent' :: Int -> Id.InputR -> Maybe Hydra.WrapRepr -> String
-slContent' idx inputId (Just repr) =
-    T.render $ (T.fgcs (C.crepr Palette.inputId) $ Id.reflectInputR inputId) <:> T.s " " <:> (T.fgcs (mark repr) $ Info.full repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
-slContent' idx inputId Nothing = "⋱" <> show idx <> "⋰"
+slContent' :: Id.FamilyR -> Int -> Id.InputR -> Maybe Hydra.WrapRepr -> String
+slContent' familyR idx inputId (Just repr) =
+    -- TODO: show group as well
+    T.render $ (T.fgcs (C.crepr Palette.familyName) $ Id.reflectFamilyR familyR) <:> T.s " " <:> (T.fgcs (C.crepr Palette.inputId) $ Id.reflectInputR inputId) <:> T.s " " <:> (T.fgcs (mark repr) $ Info.full repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
+slContent' familyR idx inputId Nothing = "⋱" <> show idx <> "⋰"
 
 
 component
@@ -127,19 +128,19 @@ component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr re
         , Core.on Button.Press
             $ onPress curPatchId curPatch nextNodeBox idx pdin inode inputId
         , Core.on Element.MouseOver
-            $ onMouseOver nextInfoBox idx inputId maybeRepr reprSignal
+            $ onMouseOver (Node.family inode) nextInfoBox idx inputId maybeRepr reprSignal
         , Core.on Element.MouseOut
             $ onMouseOut nextInfoBox idx
         ]
         []
 
 
-onMouseOver :: forall i. IsSymbol i => InfoBoxKey -> Int -> Id.Input i -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
-onMouseOver infoBox idx inputId _ reprSignal _ _ = do
+onMouseOver :: forall i f. IsSymbol i => IsSymbol f => Id.Family' f ->  InfoBoxKey -> Int -> Id.Input i -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
+onMouseOver family infoBox idx inputId _ reprSignal _ _ = do
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
     infoBox >~ Box.setContent $ T.render $ T.fgcs (C.crepr Palette.inputId) $ reflect inputId
-    statusLine >~ Box.setContent $ slContent idx inputId maybeRepr
+    statusLine >~ Box.setContent $ slContent family idx inputId maybeRepr
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx
 

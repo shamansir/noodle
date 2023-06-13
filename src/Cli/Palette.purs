@@ -25,6 +25,7 @@ fg = Pico.white :: Item
 patchBg = Pico.darkerGrey :: Item
 inputId = X11.bisque3 :: Item
 outputId = X11.cadetblue2 :: Item
+familyName = Pico.blue :: Item -- FIXME: use `mark`
 
 
 networkBg' = repr networkBg :: String

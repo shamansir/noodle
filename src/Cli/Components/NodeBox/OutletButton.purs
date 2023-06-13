@@ -76,16 +76,17 @@ content' idx outputId (Just repr) =
 content' idx outputId Nothing = "⋰" <> show idx <> "⋱"
 
 
-slContent ::forall o. IsSymbol o => Int -> Id.Output o -> Maybe Hydra.WrapRepr -> String
-slContent idx outputId = slContent' idx $ Id.outputR outputId
+slContent ::forall f o. IsSymbol f => IsSymbol o => Id.Family' f -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> String
+slContent family idx outputId = slContent' (Id.familyR' family) idx $ Id.outputR outputId
 
 
-slContent' :: Int -> Id.OutputR -> Maybe Hydra.WrapRepr -> String
-slContent' idx outputId (Just repr) =
-    T.render $ (T.fgcs (C.crepr Palette.outputId) $ Id.reflectOutputR outputId) <:> T.s " " <:> (T.fgcs (mark repr) $ Info.full repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
+slContent' :: Id.FamilyR -> Int -> Id.OutputR -> Maybe Hydra.WrapRepr -> String
+slContent' familyR idx outputId (Just repr) =
+    -- TODO: show group as well
+    T.render $ (T.fgcs (C.crepr Palette.familyName) $ Id.reflectFamilyR familyR) <:> T.s " " <:> (T.fgcs (C.crepr Palette.outputId) $ Id.reflectOutputR outputId) <:> T.s " " <:> (T.fgcs (mark repr) $ Info.full repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
     --T.render $ T.fgcs (mark repr) $ Info.full repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
-slContent' idx outputId Nothing = "⋰" <> show idx <> "⋱"
+slContent' familyR idx outputId Nothing = "⋰" <> show idx <> "⋱"
 
 
 component
@@ -106,7 +107,7 @@ component
     -> Noodle.Node f nstate is os Effect
     -> Id.Output o
     -> Core.Blessed State
-component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeRepr reprSignal pdout node outputId =
+component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeRepr reprSignal pdout onode outputId =
     B.button buttonKey
         [ Box.content $ content idx outputId maybeRepr
         , Box.top $ Offset.px 0
@@ -118,9 +119,9 @@ component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeR
         , Button.mouse true
         , Style.inletsOutlets
         , Core.on Button.Press
-            \_ _ -> onPress nodeHolder nextNodeBox idx pdout node outputId
+            \_ _ -> onPress nodeHolder nextNodeBox idx pdout onode outputId
         , Core.on Element.MouseOver
-            $ onMouseOver nextInfoBox idx outputId maybeRepr reprSignal
+            $ onMouseOver (Node.family onode) nextInfoBox idx outputId maybeRepr reprSignal
         , Core.on Element.MouseOut
             $ onMouseOut nextInfoBox idx
         ]
@@ -156,12 +157,12 @@ onPress nodeHolder nextNodeBox index pdout node output =
 
 
 
-onMouseOver :: forall o. IsSymbol o => InfoBoxKey -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
-onMouseOver infoBox idx outputId _ reprSignal _ _ = do
+onMouseOver :: forall o f. IsSymbol o => IsSymbol f => Id.Family' f -> InfoBoxKey -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
+onMouseOver family infoBox idx outputId _ reprSignal _ _ = do
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect outputId
     infoBox >~ Box.setContent $ T.render $ T.fgcs (C.crepr Palette.outputId) $ reflect outputId
-    statusLine >~ Box.setContent $ slContent idx outputId maybeRepr
+    statusLine >~ Box.setContent $ slContent family idx outputId maybeRepr
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx
 
@@ -169,5 +170,6 @@ onMouseOver infoBox idx outputId _ reprSignal _ _ = do
 onMouseOut :: InfoBoxKey -> Int -> _ -> _ -> BlessedOp State Effect
 onMouseOut infoBox idx _ _ = do
     infoBox >~ Box.setContent ""
+    statusLine >~ Box.setContent ""
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "out" <> show idx

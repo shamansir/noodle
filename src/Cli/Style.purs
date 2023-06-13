@@ -138,6 +138,14 @@ inletsOutlets =
         ]
 
 
+statusLine :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
+statusLine =
+    Box.style
+        [ Style.fg Palette.fg'
+        , Style.bg Palette.nodeBg'
+        ]
+
+
 {- inletsOutlets :: forall subj id state e r. Respresents List subj id => List.StyleAttrubute subj id state e r
 inletsOutlets =
     List.style
