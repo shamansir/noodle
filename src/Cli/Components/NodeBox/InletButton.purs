@@ -48,6 +48,7 @@ import Cli.Style (inletsOutlets) as Style
 import Cli.Components.Link as Link
 import Cli.Palette.Set.X11 as X11
 import Cli.Palette.Item (crepr) as C
+import Cli.Palette as Palette
 
 import Noodle.Network2 as Network
 import Noodle.Patch4 as Patch
@@ -90,7 +91,7 @@ slContent idx inputId = slContent' idx $ Id.inputR inputId
 
 slContent' :: Int -> Id.InputR -> Maybe Hydra.WrapRepr -> String
 slContent' idx inputId (Just repr) =
-    T.render $ (T.fgcs (C.crepr X11.bisque3) $ Id.reflectInputR inputId) <:> T.s " " <:> (T.fgcs (mark repr) $ Info.full repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    T.render $ (T.fgcs (C.crepr Palette.inputId) $ Id.reflectInputR inputId) <:> T.s " " <:> (T.fgcs (mark repr) $ Info.full repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
 slContent' idx inputId Nothing = "⋱" <> show idx <> "⋰"
 
 
@@ -136,7 +137,8 @@ component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr re
 onMouseOver :: forall i. IsSymbol i => InfoBoxKey -> Int -> Id.Input i -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
 onMouseOver infoBox idx inputId _ reprSignal _ _ = do
     maybeRepr <- liftEffect $ Signal.get reprSignal
-    infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
+    -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
+    infoBox >~ Box.setContent $ T.render $ T.fgcs (C.crepr Palette.inputId) $ reflect inputId
     statusLine >~ Box.setContent $ slContent idx inputId maybeRepr
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx

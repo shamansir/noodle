@@ -105,6 +105,14 @@ nodeBox =
         ]
 
 
+infoBox :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
+infoBox =
+    Box.style
+        [ Style.fg Palette.nodeFg'
+        , Style.bg Palette.nodeBg'
+        ]
+
+
 inputBox :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
 inputBox =
     Box.style

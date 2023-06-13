@@ -216,7 +216,9 @@ fromFamily curPatchId curPatch family def tk = do
                 -- , Box.width $ Dimension.calc $ C.px boxWidth <-> C.px 2 -- FIXME: didn't work
                 , Box.width $ Dimension.px $ boxWidth - 2
                 , Box.height $ Dimension.px 1
+                , Box.tags true
                 , Box.content ""
+                , Style.infoBox
                 ]
                 [ ]
         nextNodeBoxN =

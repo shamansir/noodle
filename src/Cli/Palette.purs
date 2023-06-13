@@ -23,6 +23,8 @@ linkFg = Pico.lightPeach :: Item
 focusedBorder = qitem "white" "focusedBorder" :: Item
 fg = Pico.white :: Item
 patchBg = Pico.darkerGrey :: Item
+inputId = X11.bisque3 :: Item
+outputId = X11.cadetblue2 :: Item
 
 
 networkBg' = repr networkBg :: String
