@@ -27,6 +27,7 @@ import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Tagger as T
+import Blessed.Tagger ((<:>))
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
@@ -39,6 +40,8 @@ import Blessed.UI.Base.Screen.Method (render) as Screen
 import Cli.Keys (NodeBoxKey, OutletsBoxKey, OutletButtonKey, InfoBoxKey, mainScreen, statusLine)
 import Cli.Style as Style
 import Cli.State (State)
+import Cli.Palette.Set.X11 as X11
+import Cli.Palette.Item (crepr) as C
 
 import Noodle.Id as Id
 import Noodle.Node2 (Node) as Noodle
@@ -78,7 +81,8 @@ slContent idx outputId = slContent' idx $ Id.outputR outputId
 
 slContent' :: Int -> Id.OutputR -> Maybe Hydra.WrapRepr -> String
 slContent' idx outputId (Just repr) =
-    T.render $ T.fgcs (mark repr) $ Info.full repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    T.render $ (T.fgcs (C.crepr X11.bisque3) $ Id.reflectOutputR outputId) <:> T.s " " <:> (T.fgcs (mark repr) $ Info.full repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    --T.render $ T.fgcs (mark repr) $ Info.full repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
 slContent' idx outputId Nothing = "⋰" <> show idx <> "⋱"
 
@@ -154,7 +158,7 @@ onPress nodeHolder nextNodeBox index pdout node output =
 onMouseOver :: forall o. IsSymbol o => InfoBoxKey -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
 onMouseOver infoBox idx outputId _ reprSignal _ _ = do
     maybeRepr <- liftEffect $ Signal.get reprSignal
-    infoBox >~ Box.setContent $ show idx
+    infoBox >~ Box.setContent $ show idx <> " " <> reflect outputId
     statusLine >~ Box.setContent $ slContent idx outputId maybeRepr
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx

@@ -23,7 +23,7 @@ data Format
     | Invisible
 
 
-data Tag
+data Tag -- TODO: Semigroup instance
     = Plain String
     | FgC Color Tag
     | Fg String Tag
