@@ -42,7 +42,7 @@ import Blessed.UI.Lists.List.Option (keys, mouse) as List
 import Blessed.UI.Lists.ListBar.Option (autoCommandKeys, commands) as ListBar
 import Blessed.Internal.Core as Core
 
-import Cli.Keys (NodeBoxKey, InletsBoxKey, InletButtonKey)
+import Cli.Keys (NodeBoxKey, InletsBoxKey, InletButtonKey, InfoBoxKey)
 import Cli.Keys as Key
 import Cli.Style as Style
 import Cli.State (State, Link, OutletIndex(..), InletIndex(..))
@@ -85,12 +85,13 @@ component
      . Patch.Id
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> NodeBoxKey
+    -> InfoBoxKey
     -> InletsBoxKey
     -> Id.Family f
     -> Family.Def state is os Effect
     -> Array (Maybe Hydra.WrapRepr /\ Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     -> KeysMap /\ C.Blessed State
-component curPatchId curPatch nextNodeBox nextInletsBox family _ is =
+component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family _ is =
     inputsKeysMap /\
     B.box nextInletsBox
         [ Box.width $ width $ Array.length is
@@ -128,4 +129,4 @@ component curPatchId curPatch nextNodeBox nextInletsBox family _ is =
             mapWithIndex mapF $ Array.zip keysArray is
         mapF idx (buttonKey /\ (maybeRepr /\ hiinr)) =
             -- FIXME: either pass Repr inside `withInputInNodeMRepr` or get rid of `HoldsInputInNodeMRepr` completely since we have ways to get Repr from outside using folds
-            Node.withInputInNodeMRepr hiinr (InletButton.component buttonKey curPatchId curPatch nextNodeBox idx maybeRepr)
+            Node.withInputInNodeMRepr hiinr (InletButton.component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr)

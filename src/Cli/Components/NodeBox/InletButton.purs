@@ -76,11 +76,12 @@ import Blessed.Internal.BlessedSubj (Line, ListBar)
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Option as Box
+import Blessed.UI.Boxes.Box.Method as Box
 import Blessed.UI.Lists.List.Option (keys, mouse) as List
 import Blessed.UI.Lists.ListBar.Option (autoCommandKeys, commands) as ListBar
 import Blessed.Internal.Core as Core
 
-import Cli.Keys (NodeBoxKey, InletsBoxKey, InletButtonKey)
+import Cli.Keys (NodeBoxKey, InfoBoxKey, InletsBoxKey, InletButtonKey, mainScreen)
 import Cli.Keys as Key
 import Cli.Style as Style
 import Cli.State (State, Link, OutletIndex(..), InletIndex(..))
@@ -131,6 +132,7 @@ component
     => ToRepr din Hydra.WrapRepr
     => FromRepr Hydra.WrapRepr din
     => InletButtonKey
+    -> InfoBoxKey
     -> Patch.Id
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> NodeBoxKey
@@ -140,7 +142,7 @@ component
     -> Noodle.Node f nstate is os Effect
     -> Id.Input i
     -> Core.Blessed State
-component buttonKey curPatchId curPatch nextNodeBox idx maybeRepr pdin inode inputId =
+component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr pdin inode inputId =
     B.button buttonKey
         [ Box.content $ content idx inputId maybeRepr
         , Box.top $ Offset.px 0
@@ -153,22 +155,26 @@ component buttonKey curPatchId curPatch nextNodeBox idx maybeRepr pdin inode inp
         , Style.inletsOutlets
         , Core.on Button.Press
             $ onPress curPatchId curPatch nextNodeBox idx pdin inode inputId
-        -- , Core.on Element.MouseOver
-        --     $ onMouseOver idx
-        -- , Core.on Element.MouseOut
-        --     \_ _ -> onMouseOut idx
+        , Core.on Element.MouseOver
+            $ onMouseOver nextInfoBox idx
+        , Core.on Element.MouseOut
+            $ onMouseOut nextInfoBox idx
         ]
         []
 
 
-onMouseOver :: Int -> _ -> _ -> BlessedOp State Effect
-onMouseOver idx _ _ =
-    liftEffect $ Console.log $ "over" <> show idx
+onMouseOver :: InfoBoxKey -> Int -> _ -> _ -> BlessedOp State Effect
+onMouseOver infoBox idx _ _ = do
+    infoBox >~ Box.setContent $ show idx
+    mainScreen >~ Screen.render
+    --liftEffect $ Console.log $ "over" <> show idx
 
 
-onMouseOut :: Int -> BlessedOp State Effect
-onMouseOut idx =
-    liftEffect $ Console.log $ "out" <> show idx
+onMouseOut :: InfoBoxKey -> Int -> _ -> _ -> BlessedOp State Effect
+onMouseOut infoBox idx _ _ = do
+    infoBox >~ Box.setContent ""
+    mainScreen >~ Screen.render
+    --liftEffect $ Console.log $ "out" <> show idx
 
 
 onPress

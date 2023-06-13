@@ -6,6 +6,7 @@ import Blessed.Internal.NodeKey (nk, type (<^>))
 
 
 type InletsBoxKey = Box <^> "node-inlets-box"
+type InfoBoxKey = Box <^> "node-info-box"
 type OutletsBoxKey = Box <^> "node-outlets-box"
 type NodeBoxKey = Box <^> "node-box"
 type PatchBoxKey = Box <^> "patch-box"
@@ -21,6 +22,7 @@ library = nk :: List <^> "library"
 nodeBox = nk :: NodeBoxKey
 inletsBox = nk :: InletsBoxKey
 outletsBox = nk :: OutletsBoxKey
+infoBox = nk :: InfoBoxKey
 inletButton = nk :: InletButtonKey
 outletButton = nk :: OutletButtonKey
 addPatchButton = nk :: Button <^> "add-patch"

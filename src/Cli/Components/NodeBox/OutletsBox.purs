@@ -37,7 +37,7 @@ import Blessed.UI.Lists.List.Option (keys, mouse) as List
 import Blessed.UI.Lists.ListBar.Option (commands) as ListBar
 import Blessed.Internal.Core as Core
 
-import Cli.Keys (NodeBoxKey, OutletsBoxKey, OutletButtonKey)
+import Cli.Keys (NodeBoxKey, OutletsBoxKey, OutletButtonKey, InfoBoxKey)
 import Cli.Keys (outletButton) as Key
 import Cli.Style as Style
 import Cli.State (State)
@@ -72,10 +72,11 @@ component
     -- => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     :: Patch.HoldsNode Effect
     -> NodeBoxKey
+    -> InfoBoxKey
     -> OutletsBoxKey
     -> Array (Maybe Hydra.WrapRepr /\ Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     -> KeysMap /\ C.Blessed State
-component nodeHolder nextNodeBox nextOutletsBox os =
+component nodeHolder nextNodeBox nextInfoBox nextOutletsBox os =
     outputsKeysMap /\
     B.box nextOutletsBox
         [ Box.width $ width $ Array.length os
@@ -106,7 +107,7 @@ component nodeHolder nextNodeBox nextOutletsBox os =
             mapWithIndex mapF $ Array.zip keysArray os
         mapF idx (buttonKey /\ (maybeRepr /\ hoinr)) =
             -- FIXME: either pass Repr inside `withInputInNodeMRepr` or get rid of `HoldsInputInNodeMRepr` completely since we have ways to get Repr from outside using folds
-            Node.withOutputInNodeMRepr hoinr (OutletButton.component buttonKey nodeHolder nextNodeBox nextOutletsBox idx maybeRepr)
+            Node.withOutputInNodeMRepr hoinr (OutletButton.component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeRepr)
 
 
 {-}

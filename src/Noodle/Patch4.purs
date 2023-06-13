@@ -15,8 +15,9 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Traversable (sequence)
 import Data.Symbol (class IsSymbol)
-import Data.SProxy (proxify)
+import Data.SProxy (proxify, reflect)
 import Data.SOrder (SOrder)
+import Data.SOrder as SOrder
 
 import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 import Unsafe.Coerce (unsafeCoerce)
@@ -57,7 +58,7 @@ type Links =
   }
 
 
-data Patch gstate (instances :: Row Type) = Patch gstate SOrder (Record instances) Links
+data Patch gstate (instances :: Row Type) = Patch gstate SOrder (Record instances) Links -- FIXME: may be families order is not relevant here
 
 
 init
@@ -125,7 +126,8 @@ nodesOf
     => Family f
     -> Patch ps instances
     -> Array (Node f state is os m)
-nodesOf family (Patch _ _ instances _) = Record.get (proxify family) instances
+nodesOf family (Patch _ _ instances _) =
+    Record.get (proxify family) instances
 
 
 howMany
@@ -394,7 +396,9 @@ nodes
      . PF.Fold rla instances Array (Node f state is os m)
     => Patch gstate instances
     -> Array (Node f state is os m)
-nodes (Patch _ _ instances _) =
+nodes (Patch _ forder instances _) =
+    -- SOrder.sortBy' forder (reflect <<< Node.family)
+    -- $ PF.hfoldl instances
     PF.hfoldl instances
 
 

@@ -78,11 +78,11 @@ component families =
 
                 -- Hydra.withFamily
 
-                let top = Offset.px $ state.lastShiftX + 2
-                let left = Offset.px $ 16 + state.lastShiftY + 2
-                let nextNodeBox = NodeKey.next state.lastNodeBoxKey
-                let nextInletsBox = NodeKey.next state.lastInletsBoxKey
-                let nextOutletsBox = NodeKey.next state.lastOutletsBoxKey
+                -- let top = Offset.px $ state.lastShiftX + 2
+                -- let left = Offset.px $ 16 + state.lastShiftY + 2
+                -- let nextNodeBox = NodeKey.next state.lastNodeBoxKey
+                -- let nextInletsBox = NodeKey.next state.lastInletsBoxKey
+                -- let nextOutletsBox = NodeKey.next state.lastOutletsBoxKey
 
                 {- -}
                 selected <- List.selected ~< Key.library

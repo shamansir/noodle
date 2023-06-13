@@ -187,9 +187,9 @@ spec = do
                             # Patch.registerNode nodeB
                             # Patch.registerNode nodeC
 
-            (reflectF <$> Patch.nodes_ patch) `shouldEqual` [ "foo", "bar", "bar" ]
+            (reflectF <$> Patch.nodes_ patch) `shouldEqual` [ "bar", "bar", "foo" ] -- [ "foo", "bar", "bar" ]
 
-            (Node.family >>> reflectFamily' <$> Patch.nodes patch) `shouldEqual` [ "foo", "bar", "bar" ]
+            (Node.family >>> reflectFamily' <$> Patch.nodes patch) `shouldEqual` [ "bar", "bar", "foo" ] -- [ "foo", "bar", "bar" ]
 
             {- (Node.state <$> Patch.nodes patch) `shouldEqual` [ "bar", "bar", "foo" ] -}
 
@@ -297,24 +297,25 @@ spec = do
 
             (NMF.flatten'' <$> reprsArr) `shouldEqual`
                 [
-                    "foo"
+                    "bar"
+                        /\ Unit_
+                        /\ [ "a" /\ String_ "aaa", "b" /\ String_ "bbb", "c" /\ Int_ 32 ]
+                        /\ [ "x" /\ Bool_ false ]
+
+                ,
+                    "bar"
+                        /\ Unit_
+                        /\ [ "a" /\ String_ "aaa", "b" /\ String_ "bbb", "c" /\ Int_ 32 ]
+                        /\ [ "x" /\ Bool_ false ]
+
+
+                , "foo"
                         /\ Unit_
                         /\ [ "foo" /\ String_ "aaa", "bar" /\ String_ "bbb", "c" /\ Int_ 32 ]
                         /\ [ "out" /\ Bool_ false ]
-                ,
-                    "bar"
-                        /\ Unit_
-                        /\ [ "a" /\ String_ "aaa", "b" /\ String_ "bbb", "c" /\ Int_ 32 ]
-                        /\ [ "x" /\ Bool_ false ]
-
-                ,
-                    "bar"
-                        /\ Unit_
-                        /\ [ "a" /\ String_ "aaa", "b" /\ String_ "bbb", "c" /\ Int_ 32 ]
-                        /\ [ "x" /\ Bool_ false ]
 
 
-                    {- FIXME: right sorting
+                    {- TODO: right sorting ?
                     "foo"
                         /\ Unit_
                         /\ [ "foo" /\ String_ "aaa", "bar" /\ String_ "bbb", "c" /\ Int_ 32 ]

@@ -40,6 +40,8 @@ import Blessed.Core.Dimension as Dimension
 import Blessed.Core.EndStyle as ES
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Style as Style
+import Blessed.Core.Coord as C
+import Blessed.Core.Coord ((<->))
 
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
@@ -91,7 +93,12 @@ import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
 
 width :: String -> Int -> Int -> Dimension
 width familyName isCount osCount =
-    Dimension.px $ (max (String.length familyName) $ max (InletsBox.widthN isCount) (OutletsBox.widthN osCount)) + 4
+    Dimension.px $ widthN familyName isCount osCount
+
+
+widthN :: String -> Int -> Int -> Int
+widthN familyName isCount osCount =
+    (max (String.length familyName) $ max (InletsBox.widthN isCount) (OutletsBox.widthN osCount)) + 4
 
 
 -- widthN :: String -> Int -> Int -> Dimension
@@ -115,9 +122,10 @@ fromFamily
 fromFamily curPatchId curPatch family def tk = do
     state <- State.get
 
-    let nextNodeBox = NodeKey.next state.lastNodeBoxKey
-    let nextInletsBox = NodeKey.next state.lastInletsBoxKey
-    let nextOutletsBox = NodeKey.next state.lastOutletsBoxKey
+    let nextNodeBox = NodeKey.next state.lastKeys.nodeBox
+    let nextInletsBox = NodeKey.next state.lastKeys.inletsBox
+    let nextOutletsBox = NodeKey.next state.lastKeys.outletsBox
+    let nextInfoBox = NodeKey.next state.lastKeys.infoBox
 
     let top = Offset.px $ state.lastShiftX + 2
     let left = Offset.px $ 16 + state.lastShiftY + 2
@@ -193,16 +201,27 @@ fromFamily curPatchId curPatch family def tk = do
     -- let is /\ os = Record.keys (rec.inputs :: Record is) /\ Record.keys (rec.outputs :: Record os)
 
     let
+        boxWidth = widthN (reflect family) (Array.length is) (Array.length os)
         inletsKeys /\ inletsBoxN =
-            InletsBox.component curPatchId curPatch nextNodeBox nextInletsBox family def isWithReprs
+            InletsBox.component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family def isWithReprs
         outletsKeys /\ outletsBoxN =
-            OutletsBox.component nodeHolder nextNodeBox nextOutletsBox osWithReprs
+            OutletsBox.component nodeHolder nextNodeBox nextInfoBox nextOutletsBox osWithReprs
+        infoBoxN =
+            B.box nextInfoBox
+                [ Box.top $ Offset.px 1
+                , Box.left $ Offset.px 0
+                -- , Box.width $ Dimension.calc $ C.px boxWidth <-> C.px 2 -- FIXME: didn't work
+                , Box.width $ Dimension.px $ boxWidth - 2
+                , Box.height $ Dimension.px 1
+                , Box.content "Test me"
+                ]
+                [ ]
         nextNodeBoxN =
             B.box nextNodeBox
                 [ Box.draggable true
                 , Box.top top
                 , Box.left left
-                , Box.width $ width (reflect family) (Array.length is) (Array.length os)
+                , Box.width $ Dimension.px boxWidth
                 , Box.height $ Dimension.px 5
                 , Box.label $ toLabel family
                 , Box.tags true
@@ -236,6 +255,7 @@ fromFamily curPatchId curPatch family def tk = do
 
     Key.patchBox >~ Node.append nextNodeBoxN
     nextNodeBox >~ Node.append inletsBoxN
+    nextNodeBox >~ Node.append infoBoxN
     nextNodeBox >~ Node.append outletsBoxN
 
     mapRepr2 <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) rec.node
@@ -249,12 +269,18 @@ fromFamily curPatchId curPatch family def tk = do
     renderNodeUpdate mapRepr2
     -- nextNodeBox >~ Node.append inputText
 
+    let
+        lastKeys =
+            { nodeBox : nextNodeBox
+            , inletsBox : nextInletsBox
+            , outletsBox : nextOutletsBox
+            , infoBox : nextInfoBox
+            }
+
     State.modify_ (_
         { lastShiftX = state.lastShiftX + 1
         , lastShiftY = state.lastShiftY + 1
-        , lastNodeBoxKey = nextNodeBox
-        , lastInletsBoxKey = nextInletsBox
-        , lastOutletsBoxKey = nextOutletsBox
+        , lastKeys = lastKeys
         }
     )
 

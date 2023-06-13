@@ -20,6 +20,7 @@ import Data.SProxy (reflect)
 import Blessed as B
 import Cli.Keys as Key
 
+import Blessed ((>~))
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
 import Blessed.Core.Key (Key) as C
@@ -32,14 +33,16 @@ import Blessed.Internal.Core (Blessed) as C
 import Blessed.Internal.BlessedSubj (ListBar)
 
 import Blessed.UI.Boxes.Box.Option as Box
+import Blessed.UI.Boxes.Box.Method as Box
 import Blessed.UI.Lists.List.Option (keys, mouse) as List
 import Blessed.UI.Lists.ListBar.Option (commands) as ListBar
 import Blessed.Internal.Core as Core
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
+import Blessed.UI.Base.Screen.Method (render) as Screen
 
-import Cli.Keys (NodeBoxKey, OutletsBoxKey, OutletButtonKey)
+import Cli.Keys (NodeBoxKey, OutletsBoxKey, OutletButtonKey, InfoBoxKey, mainScreen)
 import Cli.Style as Style
 import Cli.State (State)
 
@@ -82,6 +85,7 @@ component
     => ToRepr dout Hydra.WrapRepr
     => FromRepr Hydra.WrapRepr dout
     => OutletButtonKey
+    -> InfoBoxKey
     -> Patch.HoldsNode Effect
     -> NodeBoxKey
     -> OutletsBoxKey
@@ -91,7 +95,7 @@ component
     -> Noodle.Node f nstate is os Effect
     -> Id.Output o
     -> Core.Blessed State
-component buttonKey nodeHolder nextNodeBox nextOutletsBox idx maybeRepr pdout node outputId =
+component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeRepr pdout node outputId =
     B.button buttonKey
         [ Box.content $ content idx outputId maybeRepr
         , Box.top $ Offset.px 0
@@ -104,10 +108,10 @@ component buttonKey nodeHolder nextNodeBox nextOutletsBox idx maybeRepr pdout no
         , Style.inletsOutlets
         , Core.on Button.Press
             \_ _ -> onPress nodeHolder nextNodeBox idx pdout node outputId
-        -- , Core.on Element.MouseOver
-        --     $ onMouseOver idx
-        -- , Core.on Element.MouseOut
-        --     \_ _ -> onMouseOut idx
+        , Core.on Element.MouseOver
+            $ onMouseOver nextInfoBox idx
+        , Core.on Element.MouseOut
+            $ onMouseOut nextInfoBox idx
         ]
         []
 
@@ -141,11 +145,15 @@ onPress nodeHolder nextNodeBox index pdout node output =
 
 
 
-onMouseOver :: Int -> _ -> _ -> BlessedOp State Effect
-onMouseOver idx _ _ =
-    liftEffect $ Console.log $ "over" <> show idx
+onMouseOver :: InfoBoxKey -> Int -> _ -> _ -> BlessedOp State Effect
+onMouseOver infoBox idx _ _ = do
+    infoBox >~ Box.setContent $ show idx
+    mainScreen >~ Screen.render
+    --liftEffect $ Console.log $ "over" <> show idx
 
 
-onMouseOut :: Int -> BlessedOp State Effect
-onMouseOut idx =
-    liftEffect $ Console.log $ "out" <> show idx
+onMouseOut :: InfoBoxKey -> Int -> _ -> _ -> BlessedOp State Effect
+onMouseOut infoBox idx _ _ = do
+    infoBox >~ Box.setContent ""
+    mainScreen >~ Screen.render
+    --liftEffect $ Console.log $ "out" <> show idx
