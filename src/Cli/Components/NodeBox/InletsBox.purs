@@ -2,60 +2,34 @@ module Cli.Components.NodeBox.InletsBox where
 
 import Prelude
 
-import Control.Monad.State as State
-
 import Effect (Effect)
-import Effect.Class (liftEffect)
-import Type.Proxy (Proxy(..))
 import Data.FunctorWithIndex (mapWithIndex)
-import Data.Tuple (snd) as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
-import Data.Repr (class FromRepr, class ToRepr)
-import Data.Symbol (class IsSymbol)
-import Data.Maybe (Maybe(..))
-import Data.Foldable (foldr)
-import Data.Array ((:))
-import Data.Array (length, replicate, zip) as Array
+import Data.Maybe (Maybe)
+import Data.Array (length, zip) as Array
 import Data.Map (Map)
 import Data.Map as Map
 
-import Blessed ((>~))
 import Blessed as B
 
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
-import Blessed.Core.Key (Key) as C
-import Blessed.Internal.NodeKey (next) as Key
 import Blessed.Core.Offset as Offset
 
 import Blessed.Internal.Core (Blessed) as C
-import Blessed.Internal.JsApi (EventJson)
-import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.NodeKey (type (<^>))
 import Blessed.Internal.NodeKey (nestChain) as NK
-import Blessed.Internal.BlessedSubj (Line, ListBar)
 
-import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
-import Blessed.UI.Base.Screen.Method (render) as Screen
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Lists.List.Option (keys, mouse) as List
-import Blessed.UI.Lists.ListBar.Option (autoCommandKeys, commands) as ListBar
-import Blessed.Internal.Core as Core
 
 import Cli.Keys (NodeBoxKey, InletsBoxKey, InletButtonKey, InfoBoxKey)
-import Cli.Keys as Key
 import Cli.Style as Style
-import Cli.State (State, Link, OutletIndex(..), InletIndex(..))
-import Cli.State.NwWraper (wrapN, unwrapN)
-import Cli.Components.Link as Link
+import Cli.State (State)
 import Cli.Components.NodeBox.InletButton as InletButton
 
 import Noodle.Id as Id
-import Noodle.Node2 (Node) as Noodle
 import Noodle.Node2 as Node
 import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
-import Noodle.Network2 as Network
 import Noodle.Family.Def as Family
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
@@ -70,7 +44,7 @@ widthN :: Int -> Int
 widthN count = (InletButton.widthN + 1) * count
 
 
-type KeysMap = Map Id.InputR InletButtonKey
+type KeysMap = Map Id.InputR InletButtonKey -- TODO: store in State?
 
 
 component

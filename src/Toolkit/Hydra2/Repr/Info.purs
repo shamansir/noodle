@@ -68,7 +68,7 @@ instance ShortInfo H.Texture where
     short :: H.Texture -> String
     short = case _ of
         H.Empty -> "∅"
-        H.From from -> "&" <> short from
+        H.From from -> short from --"&" <> short from
         H.BlendOf { what, with } blend -> "BND" -- TODO: <> short blend
         H.WithColor texture op -> "CLR" -- TODO: expand op
         H.ModulateWith texture mod -> "MOD" -- TODO: expand mod

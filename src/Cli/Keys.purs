@@ -12,6 +12,7 @@ type NodeBoxKey = Box <^> "node-box"
 type PatchBoxKey = Box <^> "patch-box"
 type InletButtonKey = Button <^> "inlet-button"
 type OutletButtonKey = Button <^> "outlet-button"
+type StatusLineKey = Box <^> "status-line"
 -- type TextBoxKey = TextBox <^> "text-box"
 
 
@@ -19,6 +20,7 @@ mainScreen = nk :: Screen <^> "main-scr"
 patchesBar = nk :: ListBar <^> "patches-bar"
 patchBox = nk :: PatchBoxKey
 library = nk :: List <^> "library"
+statusLine = nk :: StatusLineKey
 nodeBox = nk :: NodeBoxKey
 inletsBox = nk :: InletsBoxKey
 outletsBox = nk :: OutletsBoxKey

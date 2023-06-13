@@ -4,13 +4,9 @@ import Prelude
 
 
 import Control.Monad.State as State
-import Effect.Class (liftEffect)
-import Effect.Console (log) as Console
 
 import Effect (Effect)
 import Type.Proxy (Proxy)
-import Data.FunctorWithIndex (mapWithIndex)
-import Data.Tuple.Nested ((/\), type (/\))
 import Data.Repr (class FromRepr, class ToRepr)
 import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
@@ -18,24 +14,17 @@ import Data.Mark (mark)
 import Data.SProxy (reflect)
 
 import Blessed as B
-import Cli.Keys as Key
 
 import Blessed ((>~))
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
-import Blessed.Core.Key (Key) as C
 import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Tagger as T
 
-import Blessed.Internal.Core (Blessed) as C
-import Blessed.Internal.BlessedSubj (ListBar)
-
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Boxes.Box.Method as Box
-import Blessed.UI.Lists.List.Option (keys, mouse) as List
-import Blessed.UI.Lists.ListBar.Option (commands) as ListBar
+import Blessed.UI.Boxes.Box.Method (setContent) as Box
 import Blessed.Internal.Core as Core
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
@@ -52,7 +41,7 @@ import Noodle.Node2 as Node
 import Noodle.Patch4 as Patch
 
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
-import Toolkit.Hydra2.Repr.Info (short, full) as Info
+import Toolkit.Hydra2.Repr.Info (short) as Info
 
 
 width :: Dimension

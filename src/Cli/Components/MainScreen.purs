@@ -31,6 +31,7 @@ import Cli.Components.PatchBox as PatchBox
 import Cli.Components.PatchesBar as PatchesBar
 import Cli.Components.AddPatch as AddPatch
 import Cli.Components.PaletteList as PaletteList
+import Cli.Components.StatusLine as StatusLine
 
 import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 
@@ -58,6 +59,7 @@ component =
         , PatchBox.component families
         , AddPatch.component
         -- , PaletteList.component 125 2 30.0 96.0
+        , StatusLine.component
         ]
 
         $ \_ -> do

@@ -49,8 +49,8 @@ center :: Coord
 center = Center
 
 
-infixl 6 sum as <+>
-infixl 6 sub as <->
+infixl 6 sum as <+> -- FIXME: implement Semiring ?
+infixl 6 sub as <-> -- FIXME: implement Ring ?
 
 
 render :: Coord -> String
