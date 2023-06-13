@@ -4,7 +4,7 @@ module Toolkit.Hydra2.Family.Source.FOsc where
 import Toolkit.Hydra2.Types as H
 
 
-import Prelude (Unit, unit, ($), bind, pure, discard)
+import Prelude (Unit, unit, ($), bind, pure, discard, show)
 import Noodle.Fn2 as Fn
 import Noodle.Id (Input(..), Output(..)) as Fn
 import Noodle.Fn2.Process as P
@@ -80,6 +80,7 @@ family = -- {-> source <-}
             frequency <- P.receive _in_frequency
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset
+            -- liftEffect $ Console.log $ show $ H.Osc { frequency, sync, offset }
             P.send _out_out $ H.From $ H.Osc { frequency, sync, offset }
 
 

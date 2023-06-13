@@ -163,8 +163,8 @@ fromFamily curPatchId curPatch family def tk = do
         let (updates' :: Signal (R.NodeLineRec f Hydra.WrapRepr repr_is repr_os)) = R.subscribeReprChanges (R.Repr :: _ Hydra.WrapRepr) node
         let (updates :: Signal (R.NodeLineMap Hydra.WrapRepr)) = R.subscribeReprMapChanges (R.Repr :: _ Hydra.WrapRepr) node
 
-        -- Node.listenUpdatesAndRun node -- just Node.run ??
-        Node.run node
+        Node.listenUpdatesAndRun node -- just Node.run ??
+        -- Node.run node
         -- state <- State.get
         pure { nextPatch, node, inputs, is, iss, iss2, isss, issss, issss1, os, oss, oss2, osss, ossss, ossss1, outputs, nodes, repr, mapRepr, updates }
 
@@ -216,7 +216,7 @@ fromFamily curPatchId curPatch family def tk = do
                 -- , Box.width $ Dimension.calc $ C.px boxWidth <-> C.px 2 -- FIXME: didn't work
                 , Box.width $ Dimension.px $ boxWidth - 2
                 , Box.height $ Dimension.px 1
-                , Box.content "Test me"
+                , Box.content ""
                 ]
                 [ ]
         nextNodeBoxN =
@@ -250,10 +250,8 @@ fromFamily curPatchId curPatch family def tk = do
         renderNodeUpdate :: forall a. R.NodeLineMap Hydra.WrapRepr -> BlessedOp a Effect
         renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
 
-    stateRef <- Blessed.getStateRef
-
     --renderNodeUpdate mapRepr
-    liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM stateRef <<< renderNodeUpdate)
+    liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate)
 
     -- liftEffect $ Node.listenUpdatesAndRun node
     -- liftEffect $ Node.run node
@@ -296,6 +294,7 @@ fromFamily curPatchId curPatch family def tk = do
 
 renderUpdate :: forall a. NodeBoxKey -> InletsBox.KeysMap -> OutletsBox.KeysMap -> Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr -> BlessedOp a Effect
 renderUpdate _ inputsKeysMap outputsKeysMap (nodeId /\ stateRepr /\ inputsReps /\ outputReprs) = do
+    -- liftEffect $ Console.log $ show outputReprs
     _ <- traverseWithIndex updateInput inputsReps
     _ <- traverseWithIndex updateOutput outputReprs
     Key.mainScreen >~ Screen.render
