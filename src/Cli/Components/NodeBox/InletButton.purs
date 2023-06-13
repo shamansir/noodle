@@ -81,7 +81,7 @@ import Blessed.UI.Lists.List.Option (keys, mouse) as List
 import Blessed.UI.Lists.ListBar.Option (autoCommandKeys, commands) as ListBar
 import Blessed.Internal.Core as Core
 
-import Cli.Keys (NodeBoxKey, InfoBoxKey, InletsBoxKey, InletButtonKey, mainScreen)
+import Cli.Keys (NodeBoxKey, InfoBoxKey, InletsBoxKey, InletButtonKey, mainScreen, statusLine)
 import Cli.Keys as Key
 import Cli.Style as Style
 import Cli.State (State, Link, OutletIndex(..), InletIndex(..))
@@ -115,7 +115,7 @@ left :: Int -> Offset
 left idx = Offset.px $ idx * (widthN + 1)
 
 
-content ::forall i. IsSymbol i => Int -> Id.Input i -> Maybe Hydra.WrapRepr -> String
+content :: forall i. IsSymbol i => Int -> Id.Input i -> Maybe Hydra.WrapRepr -> String
 content idx inputId = content' idx $ Id.inputR inputId
 
 -- TODO: mark with color
@@ -123,6 +123,16 @@ content' :: Int -> Id.InputR -> Maybe Hydra.WrapRepr -> String
 content' idx inputId (Just repr) =
     T.render $ T.fgcs (mark repr) $ Info.short repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
 content' idx inputId Nothing = "⋱" <> show idx <> "⋰"
+
+
+slContent :: forall i. IsSymbol i => Int -> Id.Input i -> Maybe Hydra.WrapRepr -> String
+slContent idx inputId = slContent' idx $ Id.inputR inputId
+
+
+slContent' :: Int -> Id.InputR -> Maybe Hydra.WrapRepr -> String
+slContent' idx inputId (Just repr) =
+    T.render $ T.fgcs (mark repr) $ Info.full repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+slContent' idx inputId Nothing = "⋱" <> show idx <> "⋰"
 
 
 component
@@ -156,16 +166,17 @@ component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr pd
         , Core.on Button.Press
             $ onPress curPatchId curPatch nextNodeBox idx pdin inode inputId
         , Core.on Element.MouseOver
-            $ onMouseOver nextInfoBox idx
+            $ onMouseOver nextInfoBox idx inputId maybeRepr
         , Core.on Element.MouseOut
             $ onMouseOut nextInfoBox idx
         ]
         []
 
 
-onMouseOver :: InfoBoxKey -> Int -> _ -> _ -> BlessedOp State Effect
-onMouseOver infoBox idx _ _ = do
+onMouseOver :: forall i. IsSymbol i => InfoBoxKey -> Int -> Id.Input i -> Maybe Hydra.WrapRepr -> _ -> _ -> BlessedOp State Effect
+onMouseOver infoBox idx inputId maybeRepr _ _ = do
     infoBox >~ Box.setContent $ show idx
+    statusLine >~ Box.setContent $ slContent idx inputId maybeRepr
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx
 
@@ -173,6 +184,7 @@ onMouseOver infoBox idx _ _ = do
 onMouseOut :: InfoBoxKey -> Int -> _ -> _ -> BlessedOp State Effect
 onMouseOut infoBox idx _ _ = do
     infoBox >~ Box.setContent ""
+    statusLine >~ Box.setContent ""
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "out" <> show idx
 

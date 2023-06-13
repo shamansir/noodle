@@ -31,7 +31,7 @@ import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Base.Screen.Method (render) as Screen
 
-import Cli.Keys (NodeBoxKey, OutletsBoxKey, OutletButtonKey, InfoBoxKey, mainScreen)
+import Cli.Keys (NodeBoxKey, OutletsBoxKey, OutletButtonKey, InfoBoxKey, mainScreen, statusLine)
 import Cli.Style as Style
 import Cli.State (State)
 
@@ -41,7 +41,7 @@ import Noodle.Node2 as Node
 import Noodle.Patch4 as Patch
 
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
-import Toolkit.Hydra2.Repr.Info (short) as Info
+import Toolkit.Hydra2.Repr.Info (short, full) as Info
 
 
 width :: Dimension
@@ -65,6 +65,17 @@ content' idx outputId (Just repr) =
     T.render $ T.fgcs (mark repr) $ Info.short repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
     -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
 content' idx outputId Nothing = "⋰" <> show idx <> "⋱"
+
+
+slContent ::forall o. IsSymbol o => Int -> Id.Output o -> Maybe Hydra.WrapRepr -> String
+slContent idx outputId = slContent' idx $ Id.outputR outputId
+
+
+slContent' :: Int -> Id.OutputR -> Maybe Hydra.WrapRepr -> String
+slContent' idx outputId (Just repr) =
+    T.render $ T.fgcs (mark repr) $ Info.full repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
+    -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
+slContent' idx outputId Nothing = "⋰" <> show idx <> "⋱"
 
 
 component
@@ -98,7 +109,7 @@ component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeR
         , Core.on Button.Press
             \_ _ -> onPress nodeHolder nextNodeBox idx pdout node outputId
         , Core.on Element.MouseOver
-            $ onMouseOver nextInfoBox idx
+            $ onMouseOver nextInfoBox idx outputId maybeRepr
         , Core.on Element.MouseOut
             $ onMouseOut nextInfoBox idx
         ]
@@ -134,9 +145,10 @@ onPress nodeHolder nextNodeBox index pdout node output =
 
 
 
-onMouseOver :: InfoBoxKey -> Int -> _ -> _ -> BlessedOp State Effect
-onMouseOver infoBox idx _ _ = do
+onMouseOver :: forall o. IsSymbol o => InfoBoxKey -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> _ -> _ -> BlessedOp State Effect
+onMouseOver infoBox idx outputId maybeRepr _ _ = do
     infoBox >~ Box.setContent $ show idx
+    statusLine >~ Box.setContent $ slContent idx outputId maybeRepr
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx
 

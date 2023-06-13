@@ -54,7 +54,8 @@ component =
         , Box.height $ Dimension.px 1
         , Box.top $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 2
         , Box.left $ Offset.px 1
-        , Box.content "Test Me"
+        , Box.tags true
+        , Box.content ""
         -- , List.items is
 
 
