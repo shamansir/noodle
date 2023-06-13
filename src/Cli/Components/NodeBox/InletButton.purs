@@ -3,103 +3,58 @@ module Cli.Components.NodeBox.InletButton where
 import Prelude
 
 
+import Effect (Effect)
 import Effect.Class (liftEffect)
-
-import Effect.Console (log) as Console
 
 import Control.Monad.State (get, modify_) as State
 
 import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested ((/\))
 import Data.Mark (mark)
+import Data.Repr (class FromRepr, class ToRepr)
+import Data.Symbol (class IsSymbol)
+
+import Type.Proxy (Proxy(..))
+import Signal (Signal)
+import Signal (get) as Signal
 
 import Blessed as B
 import Blessed ((>~))
 import Blessed.Tagger as T
 
+import Blessed.Core.Dimension (Dimension)
+import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
-import Blessed.Core.Coord as Coord
-import Blessed.Core.Coord ((<->))
 import Blessed.Core.Dimension as Dimension
-import Blessed.Core.Style as Style
 import Blessed.Internal.Core as Core
-
+import Blessed.Internal.JsApi (EventJson)
+import Blessed.Internal.BlessedOp (BlessedOp)
+import Blessed.Internal.NodeKey (type (<^>))
+import Blessed.Internal.BlessedSubj (Line)
 import Blessed.UI.Boxes.Box.Option (content, height, left, style, top, width) as Box
-
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Screen.Method (render) as Screen
+import Blessed.UI.Boxes.Box.Option as Box
+import Blessed.UI.Boxes.Box.Method as Box
 
 import Cli.Keys as Key
-import Cli.Palette as Palette
-import Cli.State (State)
-import Cli.State (patchIdFromIndex) as State
-import Cli.State.NwWraper (unwrapN, withNetwork)
-import Cli.Components.PatchesBar as PatchesBar
-import Cli.Style as Style
+import Cli.Keys (NodeBoxKey, InfoBoxKey, InletButtonKey, mainScreen, statusLine)
+import Cli.State (State, Link, OutletIndex(..), InletIndex(..))
+import Cli.State.NwWraper (unwrapN, wrapN)
+import Cli.Style (inletsOutlets) as Style
+import Cli.Components.Link as Link
 
 import Noodle.Network2 as Network
 import Noodle.Patch4 as Patch
-
-import Toolkit.Hydra2 as Hydra
-
-import Control.Monad.State as State
-
-import Effect (Effect)
-import Effect.Class (liftEffect)
-import Type.Proxy (Proxy(..))
-import Data.FunctorWithIndex (mapWithIndex)
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Repr (class FromRepr, class ToRepr)
-import Data.Symbol (class IsSymbol)
-import Data.Maybe (Maybe(..))
-import Data.Lazy (Lazy)
-import Data.Lazy as Lazy
-
-
-import Blessed ((>~))
-import Blessed as B
-
-import Blessed.Core.Dimension (Dimension)
-import Blessed.Core.Dimension as Dimension
-import Blessed.Core.Key (Key) as C
-import Blessed.Core.Offset (Offset)
-import Blessed.Core.Offset as Offset
-
-import Blessed.Internal.Core (Blessed) as C
-import Blessed.Internal.JsApi (EventJson)
-import Blessed.Internal.BlessedOp (BlessedOp)
-import Blessed.Internal.NodeKey (type (<^>))
-import Blessed.Internal.BlessedSubj (Line, ListBar)
-
-import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
-import Blessed.UI.Base.Screen.Method (render) as Screen
-import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Boxes.Box.Method as Box
-import Blessed.UI.Lists.List.Option (keys, mouse) as List
-import Blessed.UI.Lists.ListBar.Option (autoCommandKeys, commands) as ListBar
-import Blessed.Internal.Core as Core
-
-import Cli.Keys (NodeBoxKey, InfoBoxKey, InletsBoxKey, InletButtonKey, mainScreen, statusLine)
-import Cli.Keys as Key
-import Cli.Style as Style
-import Cli.State (State, Link, OutletIndex(..), InletIndex(..))
-import Cli.State.NwWraper (wrapN, unwrapN)
-import Cli.Components.Link as Link
 
 import Noodle.Id as Id
 import Noodle.Node2 (Node) as Noodle
 import Noodle.Node2 as Node
 import Noodle.Patch4 (Patch)
-import Noodle.Patch4 as Patch
-import Noodle.Network2 as Network
-import Noodle.Family.Def as Family
-import Noodle.Node2.MapsFolds.Repr as NMF
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
-import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
 import Toolkit.Hydra2.Repr.Info (short, full) as Info
 
 
@@ -148,11 +103,12 @@ component
     -> NodeBoxKey
     -> Int
     -> Maybe Hydra.WrapRepr
+    -> Signal (Maybe Hydra.WrapRepr)
     -> Proxy din -- Hydra.WrapRepr?
     -> Noodle.Node f nstate is os Effect
     -> Id.Input i
     -> Core.Blessed State
-component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr pdin inode inputId =
+component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr reprSignal pdin inode inputId =
     B.button buttonKey
         [ Box.content $ content idx inputId maybeRepr
         , Box.top $ Offset.px 0
@@ -166,22 +122,23 @@ component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr pd
         , Core.on Button.Press
             $ onPress curPatchId curPatch nextNodeBox idx pdin inode inputId
         , Core.on Element.MouseOver
-            $ onMouseOver nextInfoBox idx inputId maybeRepr
+            $ onMouseOver nextInfoBox idx inputId maybeRepr reprSignal
         , Core.on Element.MouseOut
             $ onMouseOut nextInfoBox idx
         ]
         []
 
 
-onMouseOver :: forall i. IsSymbol i => InfoBoxKey -> Int -> Id.Input i -> Maybe Hydra.WrapRepr -> _ -> _ -> BlessedOp State Effect
-onMouseOver infoBox idx inputId maybeRepr _ _ = do
+onMouseOver :: forall i. IsSymbol i => InfoBoxKey -> Int -> Id.Input i -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
+onMouseOver infoBox idx inputId _ reprSignal _ _ = do
+    maybeRepr <- liftEffect $ Signal.get reprSignal
     infoBox >~ Box.setContent $ show idx
     statusLine >~ Box.setContent $ slContent idx inputId maybeRepr
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx
 
 
-onMouseOut :: InfoBoxKey -> Int -> _ -> _ -> BlessedOp State Effect
+onMouseOut :: InfoBoxKey -> Int ->  _ -> _ -> BlessedOp State Effect
 onMouseOut infoBox idx _ _ = do
     infoBox >~ Box.setContent ""
     statusLine >~ Box.setContent ""

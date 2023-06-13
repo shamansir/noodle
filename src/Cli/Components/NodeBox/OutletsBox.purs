@@ -20,6 +20,8 @@ import Data.Array (length, zip) as Array
 import Data.Map (Map)
 import Data.Map as Map
 
+import Signal (Signal)
+
 import Blessed as B
 
 import Blessed.Core.Dimension (Dimension)
@@ -74,9 +76,10 @@ component
     -> NodeBoxKey
     -> InfoBoxKey
     -> OutletsBoxKey
+    -> Signal (Id.OutputR -> Maybe Hydra.WrapRepr)
     -> Array (Maybe Hydra.WrapRepr /\ Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     -> KeysMap /\ C.Blessed State
-component nodeHolder nextNodeBox nextInfoBox nextOutletsBox os =
+component nodeHolder nextNodeBox nextInfoBox nextOutletsBox oReprSignal os =
     outputsKeysMap /\
     B.box nextOutletsBox
         [ Box.width $ width $ Array.length os
@@ -96,6 +99,8 @@ component nodeHolder nextNodeBox nextInfoBox nextOutletsBox os =
         ]
         outputsButtons
     where
+        extractOutput :: Id.OutputR -> Signal (Id.OutputR -> Maybe Hydra.WrapRepr) -> Signal (Maybe Hydra.WrapRepr)
+        extractOutput outputR = map ((#) outputR)
         keysArray :: Array OutletButtonKey
         keysArray = NK.nestChain nextNodeBox $ Array.length os
         outputsKeysMap =
@@ -107,7 +112,10 @@ component nodeHolder nextNodeBox nextInfoBox nextOutletsBox os =
             mapWithIndex mapF $ Array.zip keysArray os
         mapF idx (buttonKey /\ (maybeRepr /\ hoinr)) =
             -- FIXME: either pass Repr inside `withInputInNodeMRepr` or get rid of `HoldsInputInNodeMRepr` completely since we have ways to get Repr from outside using folds
-            Node.withOutputInNodeMRepr hoinr (OutletButton.component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeRepr)
+            Node.withOutputInNodeMRepr hoinr
+                (\pdout node output ->
+                    OutletButton.component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeRepr (extractOutput (Id.outputR output) oReprSignal) pdout node output
+                )
 
 
 {-}

@@ -6,12 +6,17 @@ import Prelude
 import Control.Monad.State as State
 
 import Effect (Effect)
+import Effect.Class (liftEffect)
+
 import Type.Proxy (Proxy)
 import Data.Repr (class FromRepr, class ToRepr)
 import Data.Symbol (class IsSymbol)
 import Data.Maybe (Maybe(..))
 import Data.Mark (mark)
 import Data.SProxy (reflect)
+
+import Signal (Signal)
+import Signal (get) as Signal
 
 import Blessed as B
 
@@ -91,11 +96,12 @@ component
     -> OutletsBoxKey
     -> Int
     -> Maybe Hydra.WrapRepr
+    -> Signal (Maybe Hydra.WrapRepr)
     -> Proxy dout
     -> Noodle.Node f nstate is os Effect
     -> Id.Output o
     -> Core.Blessed State
-component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeRepr pdout node outputId =
+component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeRepr reprSignal pdout node outputId =
     B.button buttonKey
         [ Box.content $ content idx outputId maybeRepr
         , Box.top $ Offset.px 0
@@ -109,7 +115,7 @@ component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeR
         , Core.on Button.Press
             \_ _ -> onPress nodeHolder nextNodeBox idx pdout node outputId
         , Core.on Element.MouseOver
-            $ onMouseOver nextInfoBox idx outputId maybeRepr
+            $ onMouseOver nextInfoBox idx outputId maybeRepr reprSignal
         , Core.on Element.MouseOut
             $ onMouseOut nextInfoBox idx
         ]
@@ -145,8 +151,9 @@ onPress nodeHolder nextNodeBox index pdout node output =
 
 
 
-onMouseOver :: forall o. IsSymbol o => InfoBoxKey -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> _ -> _ -> BlessedOp State Effect
-onMouseOver infoBox idx outputId maybeRepr _ _ = do
+onMouseOver :: forall o. IsSymbol o => InfoBoxKey -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> Signal (Maybe Hydra.WrapRepr) -> _ -> _ -> BlessedOp State Effect
+onMouseOver infoBox idx outputId _ reprSignal _ _ = do
+    maybeRepr <- liftEffect $ Signal.get reprSignal
     infoBox >~ Box.setContent $ show idx
     statusLine >~ Box.setContent $ slContent idx outputId maybeRepr
     mainScreen >~ Screen.render

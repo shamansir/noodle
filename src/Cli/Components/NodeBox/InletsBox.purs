@@ -9,6 +9,8 @@ import Data.Maybe (Maybe)
 import Data.Array (length, zip) as Array
 import Data.Map (Map)
 import Data.Map as Map
+import Signal (Signal)
+import Signal as Signal
 
 import Blessed as B
 
@@ -63,9 +65,10 @@ component
     -> InletsBoxKey
     -> Id.Family f
     -> Family.Def state is os Effect
+    -> Signal (Id.InputR -> Maybe Hydra.WrapRepr)
     -> Array (Maybe Hydra.WrapRepr /\ Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     -> KeysMap /\ C.Blessed State
-component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family _ is =
+component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family _ iReprSignal is =
     inputsKeysMap /\
     B.box nextInletsBox
         [ Box.width $ width $ Array.length is
@@ -92,6 +95,8 @@ component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family _ is 
         ]
         inputsButtons
     where
+        extractInput :: Id.InputR -> Signal (Id.InputR -> Maybe Hydra.WrapRepr) -> Signal (Maybe Hydra.WrapRepr)
+        extractInput inputR = map ((#) inputR)
         keysArray :: Array InletButtonKey
         keysArray = NK.nestChain nextNodeBox $ Array.length is
         inputsKeysMap =
@@ -103,4 +108,7 @@ component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family _ is 
             mapWithIndex mapF $ Array.zip keysArray is
         mapF idx (buttonKey /\ (maybeRepr /\ hiinr)) =
             -- FIXME: either pass Repr inside `withInputInNodeMRepr` or get rid of `HoldsInputInNodeMRepr` completely since we have ways to get Repr from outside using folds
-            Node.withInputInNodeMRepr hiinr (InletButton.component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr)
+            Node.withInputInNodeMRepr hiinr
+                (\pdin node input ->
+                    InletButton.component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr (extractInput (Id.inputR input) iReprSignal) pdin node input
+                )

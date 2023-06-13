@@ -5,6 +5,7 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
+import Effect.Ref (Ref)
 
 import Control.Monad.State as State
 
@@ -46,7 +47,7 @@ import Blessed.Core.Coord ((<->))
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
-import Blessed.Internal.BlessedOp (runM) as Blessed
+import Blessed.Internal.BlessedOp (runM, getStateRef) as Blessed
 import Blessed.Internal.NodeKey as NodeKey
 
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
@@ -187,6 +188,8 @@ fromFamily curPatchId curPatch family def tk = do
     let updates = rec.updates
     let (node :: Noodle.Node f state is os Effect) = rec.node
     let (nodeHolder :: Patch.HoldsNode Effect) = Patch.holdNode rec.nextPatch node
+    let (toInputSignal :: Signal (R.NodeLineMap Hydra.WrapRepr) -> Signal (Id.InputR -> Maybe Hydra.WrapRepr)) = map R.getInputFromMap
+    let (toOutputSignal :: Signal (R.NodeLineMap Hydra.WrapRepr) -> Signal (Id.OutputR -> Maybe Hydra.WrapRepr)) = map R.getOutputFromMap
     let isWithReprs = (\hiinr -> Node.withInputInNodeMRepr hiinr (\_ _ inputId -> Map.lookup (Id.inputR inputId) inputsReps) /\ hiinr) <$> is
     let osWithReprs = (\hoinr -> Node.withOutputInNodeMRepr hoinr (\_ _ outputId -> Map.lookup (Id.outputR outputId) outputReprs) /\ hoinr) <$> os
 
@@ -203,9 +206,9 @@ fromFamily curPatchId curPatch family def tk = do
     let
         boxWidth = widthN (reflect family) (Array.length is) (Array.length os)
         inletsKeys /\ inletsBoxN =
-            InletsBox.component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family def isWithReprs
+            InletsBox.component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family def (toInputSignal updates) isWithReprs
         outletsKeys /\ outletsBoxN =
-            OutletsBox.component nodeHolder nextNodeBox nextInfoBox nextOutletsBox osWithReprs
+            OutletsBox.component nodeHolder nextNodeBox nextInfoBox nextOutletsBox (toOutputSignal updates) osWithReprs
         infoBoxN =
             B.box nextInfoBox
                 [ Box.top $ Offset.px 1
@@ -247,8 +250,10 @@ fromFamily curPatchId curPatch family def tk = do
         renderNodeUpdate :: forall a. R.NodeLineMap Hydra.WrapRepr -> BlessedOp a Effect
         renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
 
+    stateRef <- Blessed.getStateRef
+
     --renderNodeUpdate mapRepr
-    liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate)
+    liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM stateRef <<< renderNodeUpdate)
 
     -- liftEffect $ Node.listenUpdatesAndRun node
     -- liftEffect $ Node.run node
@@ -297,11 +302,13 @@ renderUpdate _ inputsKeysMap outputsKeysMap (nodeId /\ stateRepr /\ inputsReps /
     where
         updateInput inputR repr =
             case Map.lookup inputR inputsKeysMap of
-                Just inputKey -> inputKey >~ Box.setContent $ InletButton.content' 0 inputR $ Just repr
+                Just inputKey -> do
+                    inputKey >~ Box.setContent $ InletButton.content' 0 inputR $ Just repr
                 Nothing -> pure unit
         updateOutput outputR repr =
             case Map.lookup outputR outputsKeysMap of
-                Just outputKey -> outputKey >~ Box.setContent $ OutletButton.content' 0 outputR $ Just repr
+                Just outputKey -> do
+                    outputKey >~ Box.setContent $ OutletButton.content' 0 outputR $ Just repr
                 Nothing -> pure unit
 
 

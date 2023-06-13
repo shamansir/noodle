@@ -5,13 +5,18 @@ import Prelude
 import Data.UniqueHash (UniqueHash)
 -- import Data.Array ()
 import Data.Map (Map)
-import Data.Map (toUnfoldable) as Map
+import Data.Map (toUnfoldable, lookup) as Map
+import Data.Maybe (Maybe)
 import Data.Tuple (fst)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Bifunctor (lmap)
-import Data.SProxy (reflect')
+import Data.SProxy (reflect', proxify)
+import Data.Symbol (class IsSymbol)
 
-import Noodle.Id (FamilyR, InputR, NodeId, NodeIdR, OutputR, splitR, reflectNodeIdR)
+import Prim.Row (class Cons)
+import Record as Record
+
+import Noodle.Id (FamilyR, Input, InputR, NodeId, NodeIdR, Output, OutputR, splitR, reflectNodeIdR)
 
 
 type NodeLineRec f repr repr_is repr_os =
@@ -31,3 +36,27 @@ flatten' (nodeId /\ repr /\ inputsMap /\ outputsMap) = reflectNodeIdR nodeId /\ 
 
 flatten'' :: forall repr. NodeLineMap repr -> String /\ repr /\ Array (String /\ repr) /\ Array (String /\ repr)
 flatten'' = flatten' >>> lmap fst
+
+
+getStateFromRec :: forall f repr repr_is repr_os. NodeLineRec f repr repr_is repr_os -> repr
+getStateFromRec (_ /\ state /\ _ /\ _) = state
+
+
+getStateFromMap :: forall repr. NodeLineMap repr -> repr
+getStateFromMap (_ /\ state /\ _ /\ _) = state
+
+
+getInputFromRec :: forall f repr repr_is repr_os i trash. IsSymbol i => Cons i repr trash repr_is => NodeLineRec f repr repr_is repr_os -> Input i -> repr
+getInputFromRec (_ /\ _ /\ inputs /\ _) input = Record.get (proxify input) inputs
+
+
+getOutputFromRec :: forall f repr repr_is repr_os o trash. IsSymbol o => Cons o repr trash repr_os => NodeLineRec f repr repr_is repr_os -> Output o -> repr
+getOutputFromRec (_ /\ _ /\ _ /\ outputs) output = Record.get (proxify output) outputs
+
+
+getInputFromMap :: forall repr. NodeLineMap repr -> InputR -> Maybe repr
+getInputFromMap (_ /\ _ /\ inputs /\ _) input = Map.lookup input inputs
+
+
+getOutputFromMap :: forall repr. NodeLineMap repr -> OutputR -> Maybe repr
+getOutputFromMap (_ /\ _ /\ _ /\ outputs) output = Map.lookup output outputs
