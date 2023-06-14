@@ -347,6 +347,37 @@ withNode'
 withNode' (HoldsNode' f) = f
 
 
+{-
+withNode2
+    :: forall gstate instances instances' rli r m
+     . RL.RowToList instances rli
+    => Record.Keys rli
+    => HoldsNode m
+    -> HoldsNode m
+    ->
+    --    -> Proxy m ->
+        (  forall
+                  fA stateA isA osA
+                  fB stateB isB osB
+         . Has.HasInstancesOf fA instances' instances (Array (Node fA stateA isA osA m))
+        => Has.HasInstancesOf fB instances' instances (Array (Node fB stateB isB osB m))
+        => Node fA stateA isA osA m
+        -> Node fB stateB isB osB m
+        -> Patch gstate instances
+        -> m r
+        )
+    -> Patch gstate instances
+    -> m r
+withNode2 (HoldsNode fA) (HoldsNode fB) f patch =
+    fA
+        (\_ nodeA ->
+            fB
+                (\_ nodeB ->
+                    f nodeA nodeB patch
+                )
+        ) -}
+
+
 findNode
     :: forall gstate (instances' :: Row Type) (instances ∷ Row Type) rli f state is os m
      . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))

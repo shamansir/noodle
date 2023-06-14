@@ -1,6 +1,5 @@
 module Data.Record.Pairs where
 
-import Prelude
 
 import Data.Symbol (class IsSymbol)
 
