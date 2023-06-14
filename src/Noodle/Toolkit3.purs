@@ -14,6 +14,7 @@ module Noodle.Toolkit3
   , mapFamilies, mapFamiliesIndexed
   --, inputsFromDef, outputsFromDef
   , toShapes, toRepr
+  , class DataInterchange
   )
   where
 
@@ -25,12 +26,15 @@ import Data.List (List)
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.SProxy (proxify, reflect')
+import Data.Symbol (class IsSymbol)
+import Data.Record.Pairs (class Pairs, class Converts)
 
 
 import Effect.Class (class MonadEffect)
 
 -- import Prim.Row (class Cons, class Lacks, class Nub)
--- import Prim.RowList (RowList, class RowToList)
+import Prim.RowList (RowList, class RowToList)
+import Prim.RowList as RL
 import Record (get) as Record
 import Record.Unsafe as RecordU
 -- import Record.Extra (class Keys)
@@ -202,6 +206,35 @@ name (Toolkit name _ _) = name
 
 nodeFamilies :: forall ks gstate families. ListsFamilies families ks => Toolkit gstate families -> List FamilyR
 nodeFamilies (Toolkit _ order _) = keysToFamiliesR order (Proxy :: Proxy families)
+
+
+class DataInterchange (flA :: RowList Type) (flB :: RowList Type)
+
+
+instance nilNilDataInterchange :: DataInterchange RL.Nil RL.Nil
+else instance consNilDataInterchange ::
+  ( IsSymbol f
+  , DataInterchange tail RL.Nil
+  ) => DataInterchange (RL.Cons f (Family.Def state is os m) tail) RL.Nil
+else instance nilConsDataInterchange ::
+  ( IsSymbol f
+  , DataInterchange tail RL.Nil
+  ) => DataInterchange RL.Nil (RL.Cons f (Family.Def state is os m) tail)
+else instance consConsDataInterchange ::
+  ( IsSymbol fA
+  , IsSymbol fB
+  , RL.RowToList osA osArl
+  , RL.RowToList isA isBrl
+  , Pairs osArl isBrl
+  , DataInterchange tailA (RL.Cons fB (Family.Def stateB isB osB m) tailB)
+  , DataInterchange (RL.Cons fA (Family.Def stateA isA osA m) tailA) tailB
+  -- , DataInterchange RL.Nil (RL.Cons fB (Family.Def stateB isB osB m) tailB)
+  -- , DataInterchange (RL.Cons fA (Family.Def stateA isA osA m) tailA) RL.Nil
+  ) => DataInterchange (RL.Cons fA (Family.Def stateA isA osA m) tailA) (RL.Cons fB (Family.Def stateB isB osB m) tailB)
+
+
+ensureDataInterchangeIn :: forall state families fl. DataInterchange fl fl => RL.RowToList families fl => Toolkit state families -> Unit
+ensureDataInterchangeIn _ = unit
 
 
 {-

@@ -1,11 +1,12 @@
-module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, familySym, class HasNodesOf) where
+module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, withFamily2, familySym, class HasNodesOf, class HasReprableNodesOf) where
 
 
-import Prelude (Unit, unit, ($), (<$>))
+import Prelude (Unit, unit, ($), (<$>), join)
 
 import Effect.Class (class MonadEffect, liftEffect)
 
 import Type.Proxy (Proxy(..))
+import Data.Record.Pairs (class Pairs)
 
 import Data.Maybe (Maybe(..))
 import Data.Traversable (sequence)
@@ -816,20 +817,37 @@ instance
         ) => HasNodesOf f state fs iis rli is rlo os m
 
 
+class
+        ( HasNodesOf f state fs iis rli is rlo os m
+        , NMF.ToReprHelper m f is rli os rlo repr_is repr_os WrapRepr state
+        , NMF.ToReprFoldToMapsHelper f is rli os rlo WrapRepr state
+        , Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m WrapRepr)
+        , Node.NodeBoundKeys Node.O rlo Node.Output f state is os m (Node.HoldsOutputInNodeMRepr m WrapRepr)
+        --    => Node.NodeBoundKeys Node.I rli Node.Input f state is os m x
+        --    => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m x
+        , FromToReprRow rli is WrapRepr
+        , FromToReprRow rlo os WrapRepr
+        ) <= HasReprableNodesOf f state fs iis rli is rlo os repr_is repr_os m
+
+instance
+        ( HasNodesOf f state fs iis rli is rlo os m
+        , NMF.ToReprHelper m f is rli os rlo repr_is repr_os WrapRepr state
+        , NMF.ToReprFoldToMapsHelper f is rli os rlo WrapRepr state
+        , Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m WrapRepr)
+        , Node.NodeBoundKeys Node.O rlo Node.Output f state is os m (Node.HoldsOutputInNodeMRepr m WrapRepr)
+        --    => Node.NodeBoundKeys Node.I rli Node.Input f state is os m x
+        --    => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m x
+        , FromToReprRow rli is WrapRepr
+        , FromToReprRow rlo os WrapRepr
+        ) => HasReprableNodesOf f state fs iis rli is rlo os repr_is repr_os m
+
+
 withFamily
         :: forall a m t
          . Applicative t
         => MonadEffect m
         => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
-           .  HasNodesOf f state fs iis rli is rlo os m
-           => NMF.ToReprHelper m f is rli os rlo repr_is repr_os WrapRepr state
-           => NMF.ToReprFoldToMapsHelper f is rli os rlo WrapRepr state
-           => Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m WrapRepr)
-           => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m (Node.HoldsOutputInNodeMRepr m WrapRepr)
-        --    => Node.NodeBoundKeys Node.I rli Node.Input f state is os m x
-        --    => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m x
-           => FromToReprRow rli is WrapRepr
-           => FromToReprRow rlo os WrapRepr
+           .  HasReprableNodesOf f state fs iis rli is rlo os repr_is repr_os m
            => Node.Family f
            -> Family.Def state is os m
            -> Toolkit m  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
@@ -930,3 +948,34 @@ withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "out" -> Just $ fn familySym.out families.out toolkit
 
         _ -> Nothing
+
+
+withFamily2
+        :: forall a m t
+         . Applicative t
+        => MonadEffect m
+        => (  forall fA stateA fsA iisA (rliA :: RL.RowList Type) (isA :: Row Type) (rloA :: RL.RowList Type) (osA :: Row Type) repr_isA repr_osA
+                     fB stateB fsB iisB (rliB :: RL.RowList Type) (isB :: Row Type) (rloB :: RL.RowList Type) (osB :: Row Type) repr_isB repr_osB
+           .  HasReprableNodesOf fA stateA fsA iisA rliA isA rloA osA repr_isA repr_osA m
+           => HasReprableNodesOf fB stateB fsB iisB rliB isB rloB osB repr_isB repr_osB m
+        --    => Pairs rloA rliB
+           => Node.Family fA
+           -> Node.Family fB
+           -> Family.Def stateA isA osA m
+           -> Family.Def stateB isB osB m
+           -> Toolkit m
+           -> t a
+           )
+        -> Node.FamilyR
+        -> Node.FamilyR
+        -> t (Maybe a)
+withFamily2 fn familyAR familyBR =
+        join <$> withFamily
+                (\familyA defA _ ->
+                     withFamily
+                        (\familyB defB _ ->
+                            fn familyA familyB defA defB toolkit
+                        )
+                        familyBR
+                )
+                familyAR

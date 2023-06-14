@@ -102,9 +102,9 @@ calculate :: NodePositions -> OutletIndex -> InletIndex -> LinkCalc
 calculate np (OutletIndex outletIdx) (InletIndex intletIdx) =
     let
         xo = np.fromNodeLeft + (outletIdx * 6)
-        yo = np.fromNodeTop + 3
+        yo = np.fromNodeTop + 4
         xi = np.toNodeLeft + (intletIdx * 6)
-        yi = np.toNodeTop + 1
+        yi = np.toNodeTop
         my = floor $ abs (toNumber yi - toNumber yo) / 2.0
         acalc =
             if yo <= yi then -- outlet above inlet
