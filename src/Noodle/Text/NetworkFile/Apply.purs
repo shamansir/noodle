@@ -2,16 +2,19 @@ module Noodle.Text.NetworkFile.Apply where
 
 import Prelude
 
-import Effect.Class (class MonadEffect)
+import Effect.Class (class MonadEffect, liftEffect)
+import Control.Monad.Rec.Class (class MonadRec)
 
 import Data.Traversable (traverse)
 import Data.Foldable (foldr)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
+import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
+import Data.Array as Array
 
 import Noodle.Network2 (Network(..))
 import Noodle.Network2 as NW
@@ -31,17 +34,17 @@ import Noodle.Text.NetworkFile.Command (Command(..)) as C
 
 -- applyFile :: forall m gstate (nodes :: Row Type) (instances :: Row Type). MonadEffect m => Array Command -> Network gstate nodes instances -> m (Network gstate nodes instances)
 applyFile
-    :: forall m gstate (nodes :: Row Type) (instances :: Row Type) repr o dout i din
-     . IsSymbol o => IsSymbol i => MonadEffect m
-    => Proxy repr -> Network gstate nodes instances -> Array Command -> Array (Network gstate nodes instances -> m (Network gstate nodes instances))
-applyFile prepr (Network tk patches) =
-    map applyCommand
+    :: forall m gstate (nodes :: Row Type) (instances :: Row Type) repr
+     . MonadRec m => MonadEffect m
+    => Proxy repr -> Network gstate nodes instances -> Array Command -> m (Network gstate nodes instances)
+applyFile prepr nw commands =
+    Tuple.fst <$> Array.foldM applyCommand (nw /\ nodesMap) commands
     where
         nodesMap :: Map String (Patch.HoldsNode' gstate instances m)
         nodesMap = Map.empty
-        applyCommand (C.Header _ _) nw = pure nw
-        applyCommand (C.MakeNode _ _ _ _) nw = pure nw
-        applyCommand (C.Connect srcId srcOutputIdx dstId srcInputIdx) nw =
+        applyCommand nw (C.Header _ _) = pure nw
+        applyCommand nw (C.MakeNode _ _ _ _) = pure nw
+        applyCommand nw (C.Connect srcId srcOutputIdx dstId dstInputIdx) =
             case (/\) <$> Map.lookup srcId nodesMap <*> Map.lookup dstId nodesMap of
                 Just ((srcNode :: (Patch.HoldsNode' gstate instances m)) /\ (dstNode :: (Patch.HoldsNode' gstate instances m))) ->
                     Patch.withNode2'
@@ -59,9 +62,26 @@ applyFile prepr (Network tk patches) =
 
                             -- case (/\) <$> Node.findHeldOutputByIndex nodeA srcOutputIdx <*> Node.findHeldInputByIndex nodeB srcInputIdx of
                             --     Just ((outputA :: Node.HoldsOutputInNodeMRepr m repr) /\ (inputB :: Node.HoldsInputInNodeMRepr m repr)) ->
-                            -- let (nodeAOutputs :: Array (Node.HoldsInputInNodeMRepr m repr)) = Node.orderedNodeOutputsTest' nodeA
-                            -- in pure nw
-                            pure nw
+                            let
+                                (nodeAOutputs :: Array (Node.HoldsOutputInNodeMRepr m repr)) = Node.orderedOutputsMRepr nodeA
+                                (nodeBInputs :: Array (Node.HoldsInputInNodeMRepr m repr)) = Node.orderedInputsMRepr nodeB
+                                (maybeFoundOutput :: Maybe (Node.HoldsOutputInNodeMRepr m repr)) = Array.index nodeAOutputs srcOutputIdx
+                                (maybeFoundInput :: Maybe (Node.HoldsInputInNodeMRepr m repr)) = Array.index nodeBInputs dstInputIdx
+                            in case (/\) <$> maybeFoundOutput <*> maybeFoundInput of
+                                Just (holdsOutput /\ holdsInput) ->
+                                    Node.withOutputInNodeMRepr
+                                        holdsOutput
+                                        (\_ onode outputId -> do
+                                            Node.withInputInNodeMRepr
+                                                holdsInput
+                                                (\_ inode inputId -> do
+                                                    link <- Node.connectByRepr prepr outputId inputId onode inode
+                                                    pure nw
+                                                )
+                                        )
+                                Nothing ->
+                                    pure nw
+                            -- pure nw
                             {-
                             case (/\) <$> (Node.findHeldOutputByIndex nodeA srcOutputIdx) <*> Node.findHeldInputByIndex nodeB srcInputIdx of
                                 Just ((outputA :: Node.HoldsOutputInNodeMRepr m repr) /\ (inputB :: Node.HoldsInputInNodeMRepr m repr)) ->

@@ -1,4 +1,4 @@
-module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, withFamily2, familySym, class HasNodesOf, class HasReprableNodesOf) where
+module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, withFamily2, familySym) where
 
 
 import Prelude (Unit, unit, ($), (<$>), join)
@@ -28,7 +28,7 @@ import Noodle.Patch4 (Patch) as Noodle
 import Noodle.Patch4 as Patch
 import Noodle.Node2 (Node) as Noodle
 import Noodle.Node2 as Node
-import Noodle.Toolkit3.Has (class HasFamilyDef) as Has
+import Noodle.Toolkit3.Has (class HasFamilyDef, class HasReprableNodesOf) as Has
 import Noodle.Patch4.Has (class HasInstancesOf) as Has
 import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasInputsAt', class HasOutputsAt') as Has
 import Noodle.Node2.MapsFolds.Repr as NMF
@@ -796,58 +796,12 @@ familySym =
 -- patchProxy = Proxy :: forall pstate m. _ (Noodle.Patch pstate (Instances m))
 
 
-class
-        ( IsSymbol f
-        , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
-        , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
-        , Has.HasInputsAt is rli
-        , Has.HasInputsAt' is rli
-        , Has.HasOutputsAt os rlo
-        , Has.HasOutputsAt' os rlo
-        ) <= HasNodesOf f state fs iis rli is rlo os m
-
-instance
-        ( IsSymbol f
-        , Has.HasFamilyDef f fs (Families m) (Family.Def state is os m)
-        , Has.HasInstancesOf f iis (Instances m) (Array (Noodle.Node f state is os m))
-        , Has.HasInputsAt is rli
-        , Has.HasInputsAt' is rli
-        , Has.HasOutputsAt os rlo
-        , Has.HasOutputsAt' os rlo
-        ) => HasNodesOf f state fs iis rli is rlo os m
-
-
-class
-        ( HasNodesOf f state fs iis rli is rlo os m
-        , NMF.ToReprHelper m f is rli os rlo repr_is repr_os WrapRepr state
-        , NMF.ToReprFoldToMapsHelper f is rli os rlo WrapRepr state
-        , Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m WrapRepr)
-        , Node.NodeBoundKeys Node.O rlo Node.Output f state is os m (Node.HoldsOutputInNodeMRepr m WrapRepr)
-        --    => Node.NodeBoundKeys Node.I rli Node.Input f state is os m x
-        --    => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m x
-        , FromToReprRow rli is WrapRepr
-        , FromToReprRow rlo os WrapRepr
-        ) <= HasReprableNodesOf f state fs iis rli is rlo os repr_is repr_os m
-
-instance
-        ( HasNodesOf f state fs iis rli is rlo os m
-        , NMF.ToReprHelper m f is rli os rlo repr_is repr_os WrapRepr state
-        , NMF.ToReprFoldToMapsHelper f is rli os rlo WrapRepr state
-        , Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m WrapRepr)
-        , Node.NodeBoundKeys Node.O rlo Node.Output f state is os m (Node.HoldsOutputInNodeMRepr m WrapRepr)
-        --    => Node.NodeBoundKeys Node.I rli Node.Input f state is os m x
-        --    => Node.NodeBoundKeys Node.O rlo Node.Output f state is os m x
-        , FromToReprRow rli is WrapRepr
-        , FromToReprRow rlo os WrapRepr
-        ) => HasReprableNodesOf f state fs iis rli is rlo os repr_is repr_os m
-
-
 withFamily
         :: forall a m t
          . Applicative t
         => MonadEffect m
         => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
-           .  HasReprableNodesOf f state fs iis rli is rlo os repr_is repr_os m
+           .  Has.HasReprableNodesOf (Families m) (Instances m) WrapRepr f state fs iis rli is rlo os repr_is repr_os m
            => Node.Family f
            -> Family.Def state is os m
            -> Toolkit m  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
@@ -956,8 +910,8 @@ withFamily2
         => MonadEffect m
         => (  forall fA stateA fsA iisA (rliA :: RL.RowList Type) (isA :: Row Type) (rloA :: RL.RowList Type) (osA :: Row Type) repr_isA repr_osA
                      fB stateB fsB iisB (rliB :: RL.RowList Type) (isB :: Row Type) (rloB :: RL.RowList Type) (osB :: Row Type) repr_isB repr_osB
-           .  HasReprableNodesOf fA stateA fsA iisA rliA isA rloA osA repr_isA repr_osA m
-           => HasReprableNodesOf fB stateB fsB iisB rliB isB rloB osB repr_isB repr_osB m
+           .  Has.HasReprableNodesOf (Families m) (Instances m) WrapRepr fA stateA fsA iisA rliA isA rloA osA repr_isA repr_osA m
+           => Has.HasReprableNodesOf (Families m) (Instances m) WrapRepr fB stateB fsB iisB rliB isB rloB osB repr_isB repr_osB m
         --    => Pairs rloA rliB
            => Node.Family fA
            -> Node.Family fB

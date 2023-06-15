@@ -60,6 +60,7 @@ import Blessed.UI.Forms.TextArea.Option as TextArea
 
 import Noodle.Id as Id
 import Noodle.Toolkit3 as Toolkit
+import Noodle.Toolkit3.Has (class HasNodesOf) as Toolkit
 import Noodle.Patch4 as Patch
 import Noodle.Patch4 (Patch) as Noodle
 import Noodle.Node2 as Node
@@ -86,7 +87,7 @@ import Cli.Components.NodeBox.OutletsBox as OutletsBox
 import Cli.Components.NodeBox.InletButton as InletButton
 import Cli.Components.NodeBox.OutletButton as OutletButton
 
-import Toolkit.Hydra2 (class HasNodesOf, Instances, State, Toolkit) as Hydra
+import Toolkit.Hydra2 (Families, Instances, State, Toolkit) as Hydra
 import Toolkit.Hydra2.Group (toGroup) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
@@ -107,7 +108,7 @@ widthN familyName isCount osCount =
 
 fromFamily
     :: forall f state fs iis rli is rlo os repr_is repr_os
-     . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
+     . Toolkit.HasNodesOf (Hydra.Families Effect) (Hydra.Instances Effect) f state fs iis rli is rlo os Effect
     => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
     => R.ToReprFoldToMapsHelper f is rli os rlo Hydra.WrapRepr state
     => FromToReprRow rli is Hydra.WrapRepr

@@ -273,10 +273,12 @@ disconnect link na nb patch =
 newtype HoldsNode m =
     HoldsNode
         (forall r.
-            (  forall f gstate instances' instances rli state is os
+            (  forall f gstate instances' instances rli state is os isrl osrl
              . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
             => RL.RowToList instances rli
             => Record.Keys rli
+            => Id.HasInputsAt is isrl
+            => Id.HasOutputsAt os osrl
             => Patch gstate instances
             -> Node f state is os m
             -> m r
@@ -287,10 +289,12 @@ newtype HoldsNode m =
 newtype HoldsNode' gstate instances m =
     HoldsNode'
         (forall r.
-            (  forall instances' rli f state is os
+            (  forall instances' rli f state is os isrl osrl
              . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
             => RL.RowToList instances rli
             => Record.Keys rli
+            => Id.HasInputsAt is isrl
+            => Id.HasOutputsAt os osrl
             => Patch gstate instances
             -> Node f state is os m
             -> r
@@ -299,11 +303,13 @@ newtype HoldsNode' gstate instances m =
 
 
 holdNode
-    :: forall f gstate instances' instances rli state is os m
+    :: forall f gstate instances' instances rli state is os isrl osrl m
      . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
     => RL.RowToList instances rli
     => Record.Keys rli
     => IsSymbol f
+    => Id.HasInputsAt is isrl
+    => Id.HasOutputsAt os osrl
     => Patch gstate instances
     -> Node f state is os m
     -> HoldsNode m
@@ -311,10 +317,12 @@ holdNode patch node = HoldsNode \f -> f patch node
 
 
 holdNode'
-    :: forall f gstate instances' instances rli state is os m
+    :: forall f gstate instances' instances rli state is os isrl osrl m
      . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
     => RL.RowToList instances rli
     => Record.Keys rli
+    => Id.HasInputsAt is isrl
+    => Id.HasOutputsAt os osrl
     => Patch gstate instances
     -> Node f state is os m
     -> HoldsNode' gstate instances m
@@ -325,10 +333,12 @@ withNode
     :: forall r m
      . HoldsNode m ->
     --    -> Proxy m ->
-        (  forall f gstate instances' instances rli state is os
+        (  forall f gstate instances' instances rli state is os isrl osrl
          . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
         => RL.RowToList instances rli
         => Record.Keys rli
+        => Id.HasInputsAt is isrl
+        => Id.HasOutputsAt os osrl
         => Patch gstate instances
         -> Node f state is os m
         -> m r
@@ -340,10 +350,12 @@ withNode (HoldsNode f) = f
 withNode'
     :: forall gstate instances m r
      . HoldsNode' gstate instances m ->
-        (  forall instances' rli f state is os
+        (  forall instances' rli f state is os isrl osrl
          . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
         => RL.RowToList instances rli
         => Record.Keys rli
+        => Id.HasInputsAt is isrl
+        => Id.HasOutputsAt os osrl
         => Patch gstate instances
         -> Node f state is os m
         -> r

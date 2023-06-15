@@ -238,6 +238,28 @@ ensureDataInterchangeIn _ = unit
 
 
 {-
+type WithFamilyFn
+        = forall a m t
+         . Applicative t
+        => MonadEffect m
+        => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
+           .  HasReprableNodesOf f state fs iis rli is rlo os repr_is repr_os m
+           => Family f
+           -> Family.Def state is os m
+           -> Toolkit m  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
+           -- FIXME: use the existentials like `Node2.HoldsInput` etc.
+           -- But may be it's just spawnAndRegister lacking toolkit type definition
+        --    -> Proxy m
+        --    -> Proxy is
+        --    -> Proxy os
+        --    -> Proxy state
+           -> t a
+           )
+        -> Node.FamilyR
+        -> t (Maybe a)
+-}
+
+{-
 inputsFromDef :: forall rli state is os m. HasInputsAt is rli => Family.Def state is os m -> List InputR
 inputsFromDef _ = keysToInputsR (Proxy :: Proxy is)
 
