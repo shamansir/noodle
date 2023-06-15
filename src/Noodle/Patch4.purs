@@ -303,7 +303,10 @@ holdNode
      . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
     => RL.RowToList instances rli
     => Record.Keys rli
-    => IsSymbol f => Patch gstate instances -> Node f state is os m -> HoldsNode m
+    => IsSymbol f
+    => Patch gstate instances
+    -> Node f state is os m
+    -> HoldsNode m
 holdNode patch node = HoldsNode \f -> f patch node
 
 
@@ -312,7 +315,9 @@ holdNode'
      . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
     => RL.RowToList instances rli
     => Record.Keys rli
-    => Patch gstate instances -> Node f state is os m -> HoldsNode' gstate instances m
+    => Patch gstate instances
+    -> Node f state is os m
+    -> HoldsNode' gstate instances m
 holdNode' patch node = HoldsNode' \f -> f patch node
 
 
@@ -347,35 +352,74 @@ withNode'
 withNode' (HoldsNode' f) = f
 
 
-{-
 withNode2
-    :: forall gstate instances instances' rli r m
-     . RL.RowToList instances rli
-    => Record.Keys rli
-    => HoldsNode m
+    :: forall r m
+     . HoldsNode m
     -> HoldsNode m
     ->
     --    -> Proxy m ->
         (  forall
                   fA stateA isA osA
                   fB stateB isB osB
-         . Has.HasInstancesOf fA instances' instances (Array (Node fA stateA isA osA m))
-        => Has.HasInstancesOf fB instances' instances (Array (Node fB stateB isB osB m))
+                  gstateA instancesA' instancesA rliA
+                  gstateB instancesB' instancesB rliB
+         . Has.HasInstancesOf fA instancesA' instancesA (Array (Node fA stateA isA osA m))
+        => Has.HasInstancesOf fB instancesB' instancesB (Array (Node fB stateB isB osB m))
+        => RL.RowToList instancesA rliA
+        => Record.Keys rliA
+        => RL.RowToList instancesB rliB
+        => Record.Keys rliB
         => Node fA stateA isA osA m
         -> Node fB stateB isB osB m
-        -> Patch gstate instances
+        -> Patch gstateA instancesA
+        -> Patch gstateB instancesB
         -> m r
         )
-    -> Patch gstate instances
     -> m r
-withNode2 (HoldsNode fA) (HoldsNode fB) f patch =
+withNode2 (HoldsNode fA) (HoldsNode fB) f =
     fA
-        (\_ nodeA ->
+        (\patchA nodeA ->
             fB
-                (\_ nodeB ->
-                    f nodeA nodeB patch
+                (\patchB nodeB ->
+                    f nodeA nodeB patchA patchB
                 )
-        ) -}
+        )
+
+
+withNode2'
+    :: forall r m
+            gstateA instancesA
+            gstateB instancesB
+     . HoldsNode' gstateA instancesA m
+    -> HoldsNode' gstateB instancesB m
+    ->
+    --    -> Proxy m ->
+        (  forall
+                  fA stateA isA osA
+                  fB stateB isB osB
+                  instancesA' rliA
+                  instancesB' rliB
+         . Has.HasInstancesOf fA instancesA' instancesA (Array (Node fA stateA isA osA m))
+        => Has.HasInstancesOf fB instancesB' instancesB (Array (Node fB stateB isB osB m))
+        => RL.RowToList instancesA rliA
+        => Record.Keys rliA
+        => RL.RowToList instancesB rliB
+        => Record.Keys rliB
+        => Node fA stateA isA osA m
+        -> Node fB stateB isB osB m
+        -> Patch gstateA instancesA
+        -> Patch gstateB instancesB
+        -> m r
+        )
+    -> m r
+withNode2' (HoldsNode' fA) (HoldsNode' fB) f =
+    fA
+        (\patchA nodeA ->
+            fB
+                (\patchB nodeB ->
+                    f nodeA nodeB patchA patchB
+                )
+        )
 
 
 findNode
@@ -383,7 +427,9 @@ findNode
      . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
     => RL.RowToList instances rli
     => Record.Keys rli
-    => NodeId f -> Patch gstate instances -> Maybe (Node f state is os m)
+    => NodeId f
+    -> Patch gstate instances
+    -> Maybe (Node f state is os m)
 findNode nodeId (Patch _ _ instances _) =
     let
         (family :: Family' f) = Id.familyOf nodeId

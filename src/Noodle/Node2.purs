@@ -703,6 +703,82 @@ withNode' :: forall f m r. HoldsNode' f m -> (forall state is os. IsSymbol f => 
 withNode' (HoldsNode' f) = f
 
 
+withNode2
+  :: forall r
+   . HoldsNode
+  -> HoldsNode
+  -> (forall fA stateA isA osA fB stateB isB osB mA mB. IsSymbol fA => IsSymbol fB => Node fA stateA isA osA mA -> Node fB stateB isB osB mB -> r)
+  -> r
+withNode2 holdsFA holdsFB fn =
+  withNode
+      holdsFA
+      (\nodeA ->
+            withNode
+              holdsFB
+              (\nodeB ->
+                  fn nodeA nodeB
+              )
+      )
+
+withNode2'
+  :: forall fA fB m r
+   . HoldsNode' fA m
+  -> HoldsNode' fB m
+  -> (forall stateA isA osA stateB isB osB. IsSymbol fA => IsSymbol fB => Node fA stateA isA osA m -> Node fB stateB isB osB m -> r)
+  -> r
+withNode2' holdsFA holdsFB fn =
+  withNode'
+      holdsFA
+      (\nodeA ->
+            withNode'
+              holdsFB
+              (\nodeB ->
+                  fn nodeA nodeB
+              )
+      )
+
+
+findInputByIndex :: forall f state i din is is' os m. IsSymbol i => HasInput i din is' is => Int -> Node f state is os m -> Maybe (Input i /\ Proxy din)
+findInputByIndex _ _ = Nothing
+
+
+findInput :: forall f state i din is is' os m. IsSymbol i => HasInput i din is' is => InputR -> Node f state is os m -> Maybe (Input i /\ Proxy din)
+findInput _ _ = Nothing
+
+
+findHeldInput :: forall f state i din is is' os m repr. IsSymbol f => HasInput i din is' is => ToRepr din repr => FromRepr repr din => Node f state is os m -> InputR -> Maybe (HoldsInputInNodeMRepr m repr)
+findHeldInput node n = case findInput n node of
+    Just ((input :: Input i) /\ (pdin :: Proxy din)) -> Just $ holdInputInNodeMRepr pdin node input
+    Nothing -> Nothing
+
+
+findHeldInputByIndex :: forall f state i din is is' os m repr. IsSymbol f => HasInput i din is' is => ToRepr din repr => FromRepr repr din => Node f state is os m -> Int -> Maybe (HoldsInputInNodeMRepr m repr)
+findHeldInputByIndex node n = case findInputByIndex n node of
+    Just ((input :: Input i) /\ (pdin :: Proxy din)) -> Just $ holdInputInNodeMRepr pdin node input
+    Nothing -> Nothing
+
+
+findOutputByIndex :: forall f state o dout is os os' m. IsSymbol o => HasOutput o dout os' os => Int -> Node f state is os m -> Maybe (Output o /\ Proxy dout)
+findOutputByIndex _ _ = Nothing
+
+
+findOutput :: forall f state o dout is os os' m. IsSymbol o => HasOutput o dout os' os => InputR -> Node f state is os m -> Maybe (Output o /\ Proxy dout)
+findOutput _ _ = Nothing
+
+
+findHeldOutput :: forall f state o dout is os os' m repr. IsSymbol f => HasOutput o dout os' os => ToRepr dout repr => FromRepr repr dout => Node f state is os m -> InputR -> Maybe (HoldsOutputInNodeMRepr m repr)
+findHeldOutput node n = case findOutput n node of
+    Just ((output :: Output o) /\ (pdout :: Proxy dout)) -> Just $ holdOutputInNodeMRepr pdout node output
+    Nothing -> Nothing
+
+
+findHeldOutputByIndex :: forall f state o dout is os os' m repr. IsSymbol f => HasOutput o dout os' os => ToRepr dout repr => FromRepr repr dout => Node f state is os m -> Int -> Maybe (HoldsOutputInNodeMRepr m repr)
+findHeldOutputByIndex node n = case findOutputByIndex n node of
+    Just ((output :: Output o) /\ (pdout :: Proxy dout)) -> Just $ holdOutputInNodeMRepr pdout node output
+    Nothing -> Nothing
+
+
+
 newtype HoldsInputInNode = HoldsInputInNode (forall r. (forall f state i din is is' os m. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r)
 newtype HoldsInputInNode' f m = HoldsInputInNode' (forall r. (forall state i din is is' os. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r)
 newtype HoldsInputInNode'' f state is os m = HoldsInputInNode'' (forall r. (forall i din is'. IsSymbol f => HasInput i din is' is => Node f state is os m -> Input i -> r) -> r)
@@ -726,7 +802,7 @@ holdInputInNodeM :: forall f state i din is is' os m. IsSymbol f => HasInput i d
 holdInputInNodeM node input = HoldsInputInNodeM \f -> f node input
 
 
-holdInputInNodeMRepr :: forall f state i din is is' os m repr. IsSymbol f => HasInput i din is' is => ToRepr din repr => FromRepr repr din => Proxy din -> Node f state is os m -> Input i -> HoldsInputInNodeMRepr m repr
+holdInputInNodeMRepr :: forall f state i din is is' os m repr. IsSymbol f => IsSymbol i => HasInput i din is' is => ToRepr din repr => FromRepr repr din => Proxy din -> Node f state is os m -> Input i -> HoldsInputInNodeMRepr m repr
 holdInputInNodeMRepr p node input = HoldsInputInNodeMRepr \f -> f p node input
 
 
