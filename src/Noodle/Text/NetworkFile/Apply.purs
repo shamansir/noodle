@@ -4,6 +4,10 @@ import Prelude
 
 import Effect.Class (class MonadEffect, liftEffect)
 import Control.Monad.Rec.Class (class MonadRec)
+import Prim.RowList as RL
+
+import Record as Record
+import Record.Extra as Record
 
 import Data.Traversable (traverse)
 import Data.Foldable (foldr)
@@ -46,17 +50,20 @@ type Handlers gstate instances m =
 
 -- applyFile :: forall m gstate (nodes :: Row Type) (instances :: Row Type). MonadEffect m => Array Command -> Network gstate nodes instances -> m (Network gstate nodes instances)
 applyFile
-    :: forall m gstate (families :: Row Type) (instances :: Row Type) repr fsrl
+    :: forall m gstate (families :: Row Type) (instances :: Row Type) repr fsrl isrl
      . MonadRec m
     => MonadEffect m
     => Id.ListsFamilies families fsrl
+    => RL.RowToList instances isrl
+    => Record.Keys isrl
     => Toolkit.WithFamilyFn m gstate families instances repr
     -> Proxy repr
+    -> Patch gstate instances
     -> Network gstate families instances
     -> Handlers gstate instances m
     -> Array Command
     -> m (Network gstate families instances)
-applyFile withFamilyFn prepr nw handlers commands =
+applyFile withFamilyFn prepr curPatch nw handlers commands =
     Tuple.fst <$> Array.foldM applyCommand (nw /\ nodesMap) commands
     where
         nodesMap :: Map String (Patch.HoldsNode' gstate instances m)
@@ -71,6 +78,8 @@ applyFile withFamilyFn prepr nw handlers commands =
                     _ <- withFamilyFn
                         (\family def _ -> do
                             node <- Toolkit.spawn tk family
+                            let (nextPatch :: Patch gstate instances) = Patch.registerNode node curPatch
+                            handlers.onNodeCreated (xPos /\ yPos) (Patch.holdNode' nextPatch node :: Patch.HoldsNode' gstate instances m)
                             handlers.onNodeCreated2 (xPos /\ yPos) (Node.holdNode' node)
                             pure unit
                         )
