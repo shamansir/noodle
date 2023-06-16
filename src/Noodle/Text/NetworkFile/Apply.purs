@@ -6,6 +6,8 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Control.Monad.Rec.Class (class MonadRec)
 import Prim.RowList as RL
 
+import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
+
 import Record as Record
 import Record.Extra as Record
 

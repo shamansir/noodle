@@ -1,6 +1,6 @@
 module Noodle.Id
     ( Family(..), Family', FamilyR
-    , family', familyR, familyP, familyR'
+    , family', familyR, familyP, familyR', familyRev
     , reflectFamily, reflectFamily', reflectFamily'', reflectFamilyR
     , keysToFamiliesR
     , Input(..), Input', InputR
@@ -101,6 +101,10 @@ instance FromKeysR FamilyR where fromKeysR = keysToFamiliesR
 
 family' :: forall f. IsSymbol f => Family f -> Family' f
 family' = reflect >>> Family'
+
+
+familyRev :: forall f. IsSymbol f => Family' f -> Family f
+familyRev _ = Family
 
 
 familyR :: forall f. IsSymbol f => Family f -> FamilyR

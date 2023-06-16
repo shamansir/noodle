@@ -50,7 +50,7 @@ type KeysMap = Map Id.InputR InletButtonKey -- TODO: store in State?
 
 
 component
-    :: forall f state is os
+    :: forall f
     -- :: forall id r f state fs iis rli is rlo os repr_is repr_os
     --  . Hydra.HasNodesOf f state fs iis rli is rlo os Effect
     -- => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
@@ -64,11 +64,10 @@ component
     -> InfoBoxKey
     -> InletsBoxKey
     -> Id.Family f
-    -> Family.Def state is os Effect
     -> Signal (Id.InputR -> Maybe Hydra.WrapRepr)
     -> Array (Maybe Hydra.WrapRepr /\ Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     -> KeysMap /\ C.Blessed State
-component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family _ iReprSignal is =
+component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family iReprSignal is =
     inputsKeysMap /\
     B.box nextInletsBox
         [ Box.width $ width $ Array.length is

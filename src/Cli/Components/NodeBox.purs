@@ -105,8 +105,7 @@ widthN familyName isCount osCount =
 
 -- widthN :: String -> Int -> Int -> Dimension
 
-
-fromFamily
+fromNode
     :: forall f state fs iis rli is rlo os repr_is repr_os
      . Toolkit.HasNodesOf (Hydra.Families Effect) (Hydra.Instances Effect) f state fs iis rli is rlo os Effect
     => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
@@ -118,12 +117,15 @@ fromFamily
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f
-    -> Family.Def state is os Effect
+    -> Noodle.Node f state is os Effect
     -> Hydra.Toolkit Effect
     -> BlessedOpM State Effect _
-fromFamily curPatchId curPatch family def tk = do
+fromNode curPatchId curPatch family node tk = do
+    liftEffect $ Node.listenUpdatesAndRun node -- just Node.run ??
+
     state <- State.get
 
+    let (updates :: Signal (R.NodeLineMap Hydra.WrapRepr)) = R.subscribeReprMapChanges (R.Repr :: _ Hydra.WrapRepr) node
     let nextNodeBox = NodeKey.next state.lastKeys.nodeBox
     let nextInletsBox = NodeKey.next state.lastKeys.inletsBox
     let nextOutletsBox = NodeKey.next state.lastKeys.outletsBox
@@ -132,63 +134,11 @@ fromFamily curPatchId curPatch family def tk = do
     let top = Offset.px $ state.lastShiftX + 2
     let left = Offset.px $ 16 + state.lastShiftY + 2
 
-    rec <- liftEffect $ do
-        (node :: Noodle.Node f state is os Effect) <- Toolkit.spawn tk family
-        (inputs :: Record is) <- Node.inputs node
-        (outputs :: Record os) <- Node.outputs node
-        let (iss :: Array Id.HoldsInput) = KH.orderedKeys' (Proxy :: _ Id.Input) (Node.inputsOrder node) inputs
-        let (oss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
-        let (iss2 :: Array Node.HoldsInputInNode) = Node.orderedInputs node
-        let (oss2 :: Array Node.HoldsOutputInNode) = Node.orderedOutputs node
-        let (isss :: Array (Node.HoldsInputInNodeM Effect)) = Node.orderedInputsM node
-        let (osss :: Array (Node.HoldsOutputInNodeM Effect)) = Node.orderedOutputsM node
-        let (issss :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedInputsMRepr node
-        let (ossss :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedOutputsMRepr node
-        let (issss1 :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeInputsTest' node
-        let (ossss1 :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeOutputsTest' node
-        -- let (ossss1 :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeOutputsTest' node
-        -- let (osss :: Array Id.HoldsOutput) = KH.orderedKeys' (Proxy :: _ Id.Output) (Node.outputsOrder node) outputs
+    let (is :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeInputsTest' node
+    let (os :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeOutputsTest' node
 
-        -- TODO
-        -- let (issh :: Array Node.HoldsInputInNode) = KH.orderedKeys1' (Proxy :: _ Id.Input) node (Node.inputsOrder node) inputs
-        -- let (ossh :: Array Node.HoldsOutputInNode) = KH.orderedKeys1' (Proxy :: _ Id.Output) node (Node.outputsOrder node) outputs
-        let is /\ os = Node.shape node
-        -- Console.log $ String.joinWith ":" $ List.toUnfoldable $ show <$> Record.keys inputs
-        -- Console.log $ String.joinWith ":" $ List.toUnfoldable $ show <$> Record.keys outputs
-        let nextPatch = Patch.registerNode node (curPatch :: Noodle.Patch Hydra.State (Hydra.Instances Effect))
-        -- let (nodeHolder :: Patch.HoldsNode' Hydra.State (Hydra.Instances Effect) Effect) = Patch.holdNode' nextPatch node
-        -- let nextPatch' = Hydra.spawnAndRegister curPatch familyR
-        let (nodes :: Array (Noodle.Node f state is os Effect)) = Patch.nodesOf family nextPatch
-        repr <- R.nodeToRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
-        mapRepr <- R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
-        let (updates' :: Signal (R.NodeLineRec f Hydra.WrapRepr repr_is repr_os)) = R.subscribeReprChanges (R.Repr :: _ Hydra.WrapRepr) node
-        let (updates :: Signal (R.NodeLineMap Hydra.WrapRepr)) = R.subscribeReprMapChanges (R.Repr :: _ Hydra.WrapRepr) node
-
-        Node.listenUpdatesAndRun node -- just Node.run ??
-        -- Node.run node
-        -- state <- State.get
-        pure { nextPatch, node, inputs, is, iss, iss2, isss, issss, issss1, os, oss, oss2, osss, ossss, ossss1, outputs, nodes, repr, mapRepr, updates }
-
-    -- let is /\ os = Node.shapeH rec.node
-    let is /\ os = rec.issss1 /\ rec.ossss1
-    -- liftEffect $ Console.log $ "is" <> (show $ List.length rec.is)
-    -- liftEffect $ Console.log $ "os" <> (show $ List.length rec.os)
-    -- liftEffect $ Console.log $ "iss" <> (show $ Array.length rec.iss)
-    -- liftEffect $ Console.log $ "oss" <> (show $ Array.length rec.oss)
-    -- liftEffect $ Console.log $ "iss2-" <> (show $ Array.length rec.iss2)
-    -- liftEffect $ Console.log $ "oss2-" <> (show $ Array.length rec.oss2)
-    -- -- liftEffect $ Console.log $ "isss" <> (show $ Array.length rec.isss)
-    -- -- liftEffect $ Console.log $ "osss" <> (show $ Array.length rec.osss)
-    -- -- liftEffect $ Console.log $ "issss" <> (show $ Array.length rec.issss)
-    -- -- liftEffect $ Console.log $ "ossss" <> (show $ Array.length rec.ossss)
-    -- liftEffect $ Console.log $ "issss1" <> (show $ Array.length rec.issss1)
-    -- liftEffect $ Console.log $ "ossss1" <> (show $ Array.length rec.ossss1)
-    let repr = rec.repr
-    let mapRepr@(nodeId /\ stateRepr /\ inputsReps /\ outputReprs) = rec.mapRepr
-    let nodeId = Node.id rec.node
-    let updates = rec.updates
-    let (node :: Noodle.Node f state is os Effect) = rec.node
-    let (nodeHolder :: Patch.HoldsNode Effect) = Patch.holdNode rec.nextPatch node
+    mapRepr@(nodeId /\ stateRepr /\ inputsReps /\ outputReprs) <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
+    let (nodeHolder :: Patch.HoldsNode Effect) = Patch.holdNode curPatch node
     let (toInputSignal :: Signal (R.NodeLineMap Hydra.WrapRepr) -> Signal (Id.InputR -> Maybe Hydra.WrapRepr)) = map R.getInputFromMap
     let (toOutputSignal :: Signal (R.NodeLineMap Hydra.WrapRepr) -> Signal (Id.OutputR -> Maybe Hydra.WrapRepr)) = map R.getOutputFromMap
     let isWithReprs = (\hiinr -> Node.withInputInNodeMRepr hiinr (\_ _ inputId -> Map.lookup (Id.inputR inputId) inputsReps) /\ hiinr) <$> is
@@ -207,7 +157,7 @@ fromFamily curPatchId curPatch family def tk = do
     let
         boxWidth = widthN (reflect family) (Array.length is) (Array.length os)
         inletsKeys /\ inletsBoxN =
-            InletsBox.component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family def (toInputSignal updates) isWithReprs
+            InletsBox.component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family (toInputSignal updates) isWithReprs
         outletsKeys /\ outletsBoxN =
             OutletsBox.component nodeHolder nextNodeBox nextInfoBox nextOutletsBox (toOutputSignal updates) osWithReprs
         infoBoxN =
@@ -268,7 +218,7 @@ fromFamily curPatchId curPatch family def tk = do
     nextNodeBox >~ Node.append infoBoxN
     nextNodeBox >~ Node.append outletsBoxN
 
-    mapRepr2 <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) rec.node
+    mapRepr2 <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
      -- FIXME: why it doesn't apply values for `osc` node and for any other too, as I get it? for example: default `osc` out value stays in UI, however log is performed from its `process` function (yeah?)
     -- liftEffect $ Console.log $ show atOut
     -- liftEffect $ Console.log $ show mapRepr
@@ -297,6 +247,28 @@ fromFamily curPatchId curPatch family def tk = do
     Key.mainScreen >~ Screen.render
 
     pure { nextNodeBoxN, inletsBoxN, outletsBoxN }
+
+
+
+fromFamily
+    :: forall f state fs iis rli is rlo os repr_is repr_os
+     . Toolkit.HasNodesOf (Hydra.Families Effect) (Hydra.Instances Effect) f state fs iis rli is rlo os Effect
+    => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
+    => R.ToReprFoldToMapsHelper f is rli os rlo Hydra.WrapRepr state
+    => FromToReprRow rli is Hydra.WrapRepr
+    => FromToReprRow rlo os Hydra.WrapRepr
+    => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
+    => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
+    => Patch.Id
+    -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
+    -> Id.Family f
+    -> Family.Def state is os Effect
+    -> Hydra.Toolkit Effect
+    -> BlessedOpM State Effect _
+fromFamily curPatchId curPatch family _ tk = do
+    (node :: Noodle.Node f state is os Effect) <- liftEffect $ Toolkit.spawn tk family
+
+    fromNode curPatchId curPatch family node tk
 
 
 renderUpdate :: forall a. NodeBoxKey -> InletsBox.KeysMap -> OutletsBox.KeysMap -> Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr -> BlessedOp a Effect
