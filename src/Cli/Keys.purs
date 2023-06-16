@@ -28,6 +28,7 @@ infoBox = nk :: InfoBoxKey
 inletButton = nk :: InletButtonKey
 outletButton = nk :: OutletButtonKey
 addPatchButton = nk :: Button <^> "add-patch"
+loadFileButton = nk :: Button <^> "load-file"
 -- textBox = nk :: TextBoxKey
 
 

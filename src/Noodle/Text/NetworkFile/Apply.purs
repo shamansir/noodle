@@ -14,14 +14,19 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Type.Proxy (Proxy(..))
 import Data.Symbol (class IsSymbol)
+import Data.SProxy (reflect')
 import Data.Array as Array
+import Data.List as List
 
 import Noodle.Network2 (Network(..))
 import Noodle.Network2 as NW
 import Noodle.Patch4 as Patch
 import Noodle.Patch4 (Patch)
+import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
 import Noodle.Id as Id
+import Noodle.Toolkit3 (Toolkit)
+import Noodle.Toolkit3 as Toolkit
 
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -30,21 +35,49 @@ import Noodle.Text.NetworkFile.Command (Command)
 import Noodle.Text.NetworkFile.Command (Command(..)) as C
 
 
+type Handlers gstate instances m =
+    { onNodeCreated :: Int /\ Int -> Patch.HoldsNode' gstate instances m -> m Unit
+    , onNodeCreated2 :: forall f. IsSymbol f => Int /\ Int -> Node.HoldsNode' f m -> m Unit
+    , onConnect :: forall fA fB oA iB. Node.Link fA fB oA iB -> m Unit
+    }
+
+
 -- TODO: use NoodleM
 
 -- applyFile :: forall m gstate (nodes :: Row Type) (instances :: Row Type). MonadEffect m => Array Command -> Network gstate nodes instances -> m (Network gstate nodes instances)
 applyFile
-    :: forall m gstate (nodes :: Row Type) (instances :: Row Type) repr
-     . MonadRec m => MonadEffect m
-    => Proxy repr -> Network gstate nodes instances -> Array Command -> m (Network gstate nodes instances)
-applyFile prepr nw commands =
+    :: forall m gstate (families :: Row Type) (instances :: Row Type) repr fsrl
+     . MonadRec m
+    => MonadEffect m
+    => Id.ListsFamilies families fsrl
+    => Toolkit.WithFamilyFn m gstate families instances repr
+    -> Proxy repr
+    -> Network gstate families instances
+    -> Handlers gstate instances m
+    -> Array Command
+    -> m (Network gstate families instances)
+applyFile withFamilyFn prepr nw handlers commands =
     Tuple.fst <$> Array.foldM applyCommand (nw /\ nodesMap) commands
     where
         nodesMap :: Map String (Patch.HoldsNode' gstate instances m)
         nodesMap = Map.empty
-        applyCommand nw (C.Header _ _) = pure nw
-        applyCommand nw (C.MakeNode _ _ _ _) = pure nw
-        applyCommand nw (C.Connect srcId srcOutputIdx dstId dstInputIdx) =
+        applyCommand :: (Network gstate families instances /\ Map String (Patch.HoldsNode' gstate instances m)) -> Command -> m (Network gstate families instances /\ Map String (Patch.HoldsNode' gstate instances m))
+        applyCommand pair (C.Header _ _) = pure pair
+        applyCommand pair@((Network tk _) /\ _) (C.MakeNode familyStr xPos yPos _) = do
+            let nodeFamilies = Toolkit.nodeFamilies (tk :: Toolkit gstate families)
+            let maybeFamilyR = List.find (reflect' >>> eq familyStr) nodeFamilies
+            case maybeFamilyR of
+                Just familyR -> do
+                    _ <- withFamilyFn
+                        (\family def _ -> do
+                            node <- Toolkit.spawn tk family
+                            handlers.onNodeCreated2 (xPos /\ yPos) (Node.holdNode' node)
+                            pure unit
+                        )
+                        familyR
+                    pure pair
+                Nothing -> pure pair
+        applyCommand pair (C.Connect srcId srcOutputIdx dstId dstInputIdx) =
             case (/\) <$> Map.lookup srcId nodesMap <*> Map.lookup dstId nodesMap of
                 Just ((srcNode :: (Patch.HoldsNode' gstate instances m)) /\ (dstNode :: (Patch.HoldsNode' gstate instances m))) ->
                     Patch.withNode2'
@@ -76,11 +109,12 @@ applyFile prepr nw commands =
                                                 holdsInput
                                                 (\_ inode inputId -> do
                                                     link <- Node.connectByRepr prepr outputId inputId onode inode
-                                                    pure nw
+                                                    handlers.onConnect link
+                                                    pure pair
                                                 )
                                         )
                                 Nothing ->
-                                    pure nw
+                                    pure pair
                             -- pure nw
                             {-
                             case (/\) <$> (Node.findHeldOutputByIndex nodeA srcOutputIdx) <*> Node.findHeldInputByIndex nodeB srcInputIdx of
@@ -93,5 +127,5 @@ applyFile prepr nw commands =
                     -- Node.withNode'
                     -- Node.findHeldInputByIndex
                     -- Node.connectByRepr prepr outputId inputId onode inode
-                Nothing -> pure nw
+                Nothing -> pure pair
             -- pure nw

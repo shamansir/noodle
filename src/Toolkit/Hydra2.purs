@@ -796,25 +796,7 @@ familySym =
 -- patchProxy = Proxy :: forall pstate m. _ (Noodle.Patch pstate (Instances m))
 
 
-withFamily
-        :: forall a m t
-         . Applicative t
-        => MonadEffect m
-        => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
-           .  Has.HasReprableNodesOf (Families m) (Instances m) WrapRepr f state fs iis rli is rlo os repr_is repr_os m
-           => Node.Family f
-           -> Family.Def state is os m
-           -> Toolkit m  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
-           -- FIXME: use the existentials like `Node2.HoldsInput` etc.
-           -- But may be it's just spawnAndRegister lacking toolkit type definition
-        --    -> Proxy m
-        --    -> Proxy is
-        --    -> Proxy os
-        --    -> Proxy state
-           -> t a
-           )
-        -> Node.FamilyR
-        -> t (Maybe a)
+withFamily :: forall m. Toolkit.WithFamilyFn m State (Families m) (Instances m) WrapRepr
 withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "noise" -> Just $ fn familySym.noise families.noise toolkit
         "voronoi" -> Just $ fn familySym.voronoi families.voronoi toolkit
@@ -904,25 +886,13 @@ withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         _ -> Nothing
 
 
+-- instance Toolkit.HasWithFamilyFn m State (Families m) (Instances m) WrapRepr where
+--         withFamilyImpl :: Toolkit.WithFamilyFn m State (Families m) (Instances m) WrapRepr
+--         withFamilyImpl = withFamily
+
+
 withFamily2
-        :: forall a m t
-         . Applicative t
-        => MonadEffect m
-        => (  forall fA stateA fsA iisA (rliA :: RL.RowList Type) (isA :: Row Type) (rloA :: RL.RowList Type) (osA :: Row Type) repr_isA repr_osA
-                     fB stateB fsB iisB (rliB :: RL.RowList Type) (isB :: Row Type) (rloB :: RL.RowList Type) (osB :: Row Type) repr_isB repr_osB
-           .  Has.HasReprableNodesOf (Families m) (Instances m) WrapRepr fA stateA fsA iisA rliA isA rloA osA repr_isA repr_osA m
-           => Has.HasReprableNodesOf (Families m) (Instances m) WrapRepr fB stateB fsB iisB rliB isB rloB osB repr_isB repr_osB m
-        --    => Pairs rloA rliB
-           => Node.Family fA
-           -> Node.Family fB
-           -> Family.Def stateA isA osA m
-           -> Family.Def stateB isB osB m
-           -> Toolkit m
-           -> t a
-           )
-        -> Node.FamilyR
-        -> Node.FamilyR
-        -> t (Maybe a)
+        :: forall m. Toolkit.WithFamilyFn2 m State (Families m) (Instances m) WrapRepr
 withFamily2 fn familyAR familyBR =
         join <$> withFamily
                 (\familyA defA _ ->

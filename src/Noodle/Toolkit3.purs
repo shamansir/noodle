@@ -8,13 +8,14 @@ module Noodle.Toolkit3
   , toRecord
   --, toStates
   , unsafeSpawn
-  , unsafeSpawnR
+  , unsafeSpawnR, unsafeSpawnR'
   , familyDefs
   , familyDefsIndexed
   , mapFamilies, mapFamiliesIndexed
   --, inputsFromDef, outputsFromDef
   , toShapes, toRepr
   , class DataInterchange
+  , WithFamilyFn, WithFamilyFn2
   )
   where
 
@@ -55,6 +56,7 @@ import Noodle.Node2.MapsFolds.Repr as NR
 import Noodle.Toolkit3.MapsFolds as TM
 import Noodle.Toolkit3.MapsFolds as TF
 import Noodle.Toolkit3.MapsFolds.Repr as TR
+import Noodle.Toolkit3.Has (class HasReprableNodesOf)
 
 import Noodle.Id
 import Noodle.Node2 (Node)
@@ -183,21 +185,35 @@ unsafeSpawn toolkit@(Toolkit name _ tk) family =
 unsafeSpawnR
     :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os m ks
      . MonadEffect m
+    => IsSymbol f
     => ListsFamilies families ks
-    => Has.HasFamilyDef' f families' families (Family.Def state is os m)
+    -- => Has.HasFamilyDef' f families' families (Family.Def state is os m) -- it's unsafe in the end
     => Toolkit gstate families
     -> FamilyR
     -> m (Maybe (Node f state is os m))
-unsafeSpawnR toolkit@(Toolkit _ name tk) family =
-    if List.elem (reflect' family) $ Record.keys tk then
+unsafeSpawnR toolkit@(Toolkit _ name tk) familyR =
+    if List.elem (reflect' familyR) $ Record.keys tk then
         RecordU.unsafeGet familyStr tk
             # makeNode
             <#> Just
     else pure Nothing
     where
-        familyStr = reflect' family
+        familyStr = reflect' familyR
         (family_ :: Family' f) = reifySymbol familyStr unsafeCoerce
         makeNode (state /\ is /\ os /\ fn) = Node.make' family_ state is os fn
+
+
+unsafeSpawnR'
+    :: forall f (families :: Row Type) (families' ∷ Row Type) gstate state is os m ks
+     . MonadEffect m
+    => IsSymbol f
+    => ListsFamilies families ks
+    -- => Has.HasFamilyDef' f families' families (Family.Def state is os m) -- it's unsafe in the end
+    => Toolkit gstate families
+    -> FamilyR
+    -> m (Maybe (Node.HoldsNode' f m))
+unsafeSpawnR' toolkit familyR =
+    map Node.holdNode' <$> (unsafeSpawnR toolkit familyR :: m (Maybe (Node f state is os m)))
 
 
 name :: forall gstate families. Toolkit gstate families -> Name
@@ -237,27 +253,49 @@ ensureDataInterchangeIn :: forall state families fl. DataInterchange fl fl => RL
 ensureDataInterchangeIn _ = unit
 
 
+-- FIMXE: convert into class?
+
+type WithFamilyFn (m :: Type -> Type) gstate families instances repr
+    =  forall t a
+     . Applicative t
+    => MonadEffect m
+    => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
+        .  HasReprableNodesOf families instances repr f state fs iis rli is rlo os repr_is repr_os m
+        => Family f
+        -> Family.Def state is os m
+        -> Toolkit gstate families  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
+        -> t a
+        )
+    -> FamilyR
+    -> t (Maybe a)
+
+
+type WithFamilyFn2 (m :: Type -> Type) gstate families instances repr
+    = forall t a
+        . Applicative t
+    => MonadEffect m
+    => (  forall fA stateA fsA iisA (rliA :: RL.RowList Type) (isA :: Row Type) (rloA :: RL.RowList Type) (osA :: Row Type) repr_isA repr_osA
+                 fB stateB fsB iisB (rliB :: RL.RowList Type) (isB :: Row Type) (rloB :: RL.RowList Type) (osB :: Row Type) repr_isB repr_osB
+        .  Has.HasReprableNodesOf families instances repr fA stateA fsA iisA rliA isA rloA osA repr_isA repr_osA m
+        => Has.HasReprableNodesOf families instances repr fB stateB fsB iisB rliB isB rloB osB repr_isB repr_osB m
+    --    => Pairs rloA rliB
+        => Family fA
+        -> Family fB
+        -> Family.Def stateA isA osA m
+        -> Family.Def stateB isB osB m
+        -> Toolkit gstate families
+        -> t a
+        )
+    -> FamilyR
+    -> FamilyR
+    -> t (Maybe a)
+
+
 {-
-type WithFamilyFn
-        = forall a m t
-         . Applicative t
-        => MonadEffect m
-        => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
-           .  HasReprableNodesOf f state fs iis rli is rlo os repr_is repr_os m
-           => Family f
-           -> Family.Def state is os m
-           -> Toolkit m  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
-           -- FIXME: use the existentials like `Node2.HoldsInput` etc.
-           -- But may be it's just spawnAndRegister lacking toolkit type definition
-        --    -> Proxy m
-        --    -> Proxy is
-        --    -> Proxy os
-        --    -> Proxy state
-           -> t a
-           )
-        -> Node.FamilyR
-        -> t (Maybe a)
+class HasWithFamilyFn m gstate families instances repr where
+    withFamilyImpl :: WithFamilyFn m gstate families instances repr
 -}
+
 
 {-
 inputsFromDef :: forall rli state is os m. HasInputsAt is rli => Family.Def state is os m -> List InputR
