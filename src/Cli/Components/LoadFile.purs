@@ -5,6 +5,8 @@ import Prelude
 import Effect (Effect)
 import Control.Monad.Rec.Class (class MonadRec)
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
 
 import Effect.Console (log) as Console
 
@@ -97,11 +99,11 @@ addNodeBox tk patch node =
 
 
 handlers
-    :: State
+    :: Ref State
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> Network Hydra.State (Hydra.Families Effect) (Hydra.Instances Effect)
     -> File.Handlers Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr
-handlers state patch (Network tk _) =
+handlers stateRef patch (Network tk _) =
     { onNodeCreated : \(x /\ y) pHoldsNode -> do
         -- _ <- BlessedOp.runM state (
         --     Patch.withNode'
@@ -123,7 +125,7 @@ handlers state patch (Network tk _) =
         _ <- Patch.withNodeMRepr
             (pHoldsNode :: Patch.HoldsNodeMRepr Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr)
             (\patch node ->
-                BlessedOp.runM state (addNodeBox (tk :: Hydra.Toolkit Effect) patch node)
+                BlessedOp.runM' stateRef (addNodeBox (tk :: Hydra.Toolkit Effect) patch node)
             )
         {-
         _ <- BlessedOp.runM state (
@@ -156,6 +158,7 @@ component =
         , Core.on Button.Press
             \_ _ -> do
                 state <- State.get
+                stateRef <- BlessedOp.getStateRef
                 let network = unwrapN state.network
                 let mbCurrentPatchId = Tuple.snd <$> state.currentPatch
                 let mbCurrentPatch = mbCurrentPatchId >>= \id -> Network.patch id network
@@ -168,7 +171,7 @@ component =
                                     (Proxy :: _ Hydra.WrapRepr)
                                     patch
                                     network
-                                    (handlers state patch network)
+                                    (handlers stateRef patch network)
                                     [
                                         Cmd.MakeNode "osc" 40 60 "osc-1"
                                     ]
