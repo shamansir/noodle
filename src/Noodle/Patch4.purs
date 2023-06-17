@@ -18,6 +18,7 @@ import Data.Symbol (class IsSymbol)
 import Data.SProxy (proxify, reflect)
 import Data.SOrder (SOrder)
 import Data.SOrder as SOrder
+import Data.Repr (class FromToReprRow)
 
 import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 import Unsafe.Coerce (unsafeCoerce)
@@ -45,6 +46,8 @@ import Noodle.Family.Def as Family
 import Noodle.Node2.MapsFolds.Flatten (NodeLineRec, NodeLineMap) as R
 import Noodle.Node2.MapsFolds.Repr (Repr) as R
 import Noodle.Patch4.MapsFolds.Repr (class FoldToReprsRec, class FoldToReprsMap)
+import Noodle.Node2.MapsFolds.Repr (class ToReprHelper, class ToReprFoldToMapsHelper) as R
+
 
 
 --data LinkOE fo fi = Exists (LinkOf fo fi)
@@ -302,6 +305,28 @@ newtype HoldsNode' gstate instances m =
         -> r)
 
 
+newtype HoldsNodeMRepr gstate instances m repr =
+    HoldsNodeMRepr
+        (forall r.
+            (  forall instances' rli f state is os isrl osrl repr_is repr_os
+             . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+            => RL.RowToList instances rli
+            => Record.Keys rli
+            => Id.HasInputsAt is isrl
+            => Id.HasOutputsAt os osrl
+            => R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
+            => R.ToReprFoldToMapsHelper f is isrl os osrl repr state
+            => FromToReprRow isrl is repr
+            => FromToReprRow osrl os repr
+            => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
+            => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
+            => Patch gstate instances
+            -> Node f state is os m
+            -> r
+            )
+        -> r)
+
+
 holdNode
     :: forall f gstate instances' instances rli state is os isrl osrl m
      . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
@@ -327,6 +352,25 @@ holdNode'
     -> Node f state is os m
     -> HoldsNode' gstate instances m
 holdNode' patch node = HoldsNode' \f -> f patch node
+
+
+holdNodeMRepr
+    :: forall gstate instances m repr instances' rli f state is os isrl osrl repr_is repr_os
+     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    => RL.RowToList instances rli
+    => Record.Keys rli
+    => Id.HasInputsAt is isrl
+    => Id.HasOutputsAt os osrl
+    => R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
+    => R.ToReprFoldToMapsHelper f is isrl os osrl repr state
+    => FromToReprRow isrl is repr
+    => FromToReprRow osrl os repr
+    => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
+    => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
+    => Patch gstate instances
+    -> Node f state is os m
+    -> HoldsNodeMRepr gstate instances m repr
+holdNodeMRepr patch node = HoldsNodeMRepr \f -> f patch node
 
 
 withNode
@@ -432,6 +476,30 @@ withNode2' (HoldsNode' fA) (HoldsNode' fB) f =
                     f nodeA nodeB patchA patchB
                 )
         )
+
+
+withNodeMRepr
+    :: forall r gstate instances repr m
+     . HoldsNodeMRepr gstate instances m repr ->
+    --    -> Proxy m ->
+        (  forall instances' rli f state is os isrl osrl repr_is repr_os
+         . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+        => RL.RowToList instances rli
+        => Record.Keys rli
+        => Id.HasInputsAt is isrl
+        => Id.HasOutputsAt os osrl
+        => R.ToReprHelper m f is isrl os osrl repr_is repr_os repr state
+        => R.ToReprFoldToMapsHelper f is isrl os osrl repr state
+        => FromToReprRow isrl is repr
+        => FromToReprRow osrl os repr
+        => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
+        => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
+        => Patch gstate instances
+        -> Node f state is os m
+        -> m r
+        )
+    -> m r
+withNodeMRepr (HoldsNodeMRepr f) = f
 
 
 findNode

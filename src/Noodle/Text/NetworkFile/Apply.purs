@@ -41,9 +41,10 @@ import Noodle.Text.NetworkFile.Command (Command)
 import Noodle.Text.NetworkFile.Command (Command(..)) as C
 
 
-type Handlers gstate instances m =
+type Handlers gstate instances m repr =
     { onNodeCreated :: Int /\ Int -> Patch.HoldsNode' gstate instances m -> m Unit
     , onNodeCreated2 :: forall f. IsSymbol f => Int /\ Int -> Node.HoldsNode' f m -> m Unit
+    , onNodeCreated3:: Int /\ Int -> Patch.HoldsNodeMRepr gstate instances m repr -> m Unit
     , onConnect :: forall fA fB oA iB. Node.Link fA fB oA iB -> m Unit
     }
 
@@ -62,7 +63,7 @@ applyFile
     -> Proxy repr
     -> Patch gstate instances
     -> Network gstate families instances
-    -> Handlers gstate instances m
+    -> Handlers gstate instances m repr
     -> Array Command
     -> m (Network gstate families instances)
 applyFile withFamilyFn prepr curPatch nw handlers commands =
@@ -83,6 +84,7 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
                             let (nextPatch :: Patch gstate instances) = Patch.registerNode node curPatch
                             handlers.onNodeCreated (xPos /\ yPos) (Patch.holdNode' nextPatch node :: Patch.HoldsNode' gstate instances m)
                             handlers.onNodeCreated2 (xPos /\ yPos) (Node.holdNode' node)
+                            handlers.onNodeCreated3 (xPos /\ yPos) (Patch.holdNodeMRepr nextPatch node :: Patch.HoldsNodeMRepr gstate instances m repr)
                             pure unit
                         )
                         familyR

@@ -63,6 +63,7 @@ import Noodle.Toolkit3 as Toolkit
 import Noodle.Toolkit3.Has (class HasNodesOf) as Toolkit
 import Noodle.Patch4 as Patch
 import Noodle.Patch4 (Patch) as Noodle
+import Noodle.Patch4.Has as Has
 import Noodle.Node2 as Node
 import Noodle.Node2 (Node) as Noodle
 import Noodle.Family.Def as Family
@@ -106,8 +107,8 @@ widthN familyName isCount osCount =
 -- widthN :: String -> Int -> Int -> Dimension
 
 fromNode
-    :: forall f state fs iis rli is rlo os repr_is repr_os
-     . Toolkit.HasNodesOf (Hydra.Families Effect) (Hydra.Instances Effect) f state fs iis rli is rlo os Effect
+    :: forall f state rli is rlo os repr_is repr_os instances'
+     . Has.HasInstancesOf f instances' (Hydra.Instances Effect) (Array (Noodle.Node f state is os Effect))
     => R.ToReprHelper Effect f is rli os rlo repr_is repr_os Hydra.WrapRepr state
     => R.ToReprFoldToMapsHelper f is rli os rlo Hydra.WrapRepr state
     => FromToReprRow rli is Hydra.WrapRepr
@@ -118,9 +119,8 @@ fromNode
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f
     -> Noodle.Node f state is os Effect
-    -> Hydra.Toolkit Effect
     -> BlessedOpM State Effect _
-fromNode curPatchId curPatch family node tk = do
+fromNode curPatchId curPatch family node = do
     liftEffect $ Node.listenUpdatesAndRun node -- just Node.run ??
 
     state <- State.get
@@ -268,7 +268,7 @@ fromFamily
 fromFamily curPatchId curPatch family _ tk = do
     (node :: Noodle.Node f state is os Effect) <- liftEffect $ Toolkit.spawn tk family
 
-    fromNode curPatchId curPatch family node tk
+    fromNode curPatchId curPatch family node
 
 
 renderUpdate :: forall a. NodeBoxKey -> InletsBox.KeysMap -> OutletsBox.KeysMap -> Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr -> BlessedOp a Effect

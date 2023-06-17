@@ -41,7 +41,7 @@ instance
 class
     ( IsSymbol f
     , HasFamilyDef f fs families (Family.Def state is os m)
-    , HasInstancesOf f iis instances(Array (Noodle.Node f state is os m))
+    , HasInstancesOf f iis instances (Array (Noodle.Node f state is os m))
     , Has.HasInputsAt is rli
     , Has.HasInputsAt' is rli
     , Has.HasOutputsAt os rlo

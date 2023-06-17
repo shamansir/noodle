@@ -30,6 +30,7 @@ import Cli.State (initial) as State
 import Cli.Components.PatchBox as PatchBox
 import Cli.Components.PatchesBar as PatchesBar
 import Cli.Components.AddPatch as AddPatch
+import Cli.Components.LoadFile as LoadFile
 import Cli.Components.PaletteList as PaletteList
 import Cli.Components.StatusLine as StatusLine
 
@@ -58,6 +59,7 @@ component =
         [ PatchesBar.component $ Network.patches $ unwrapN State.initial.network
         , PatchBox.component families
         , AddPatch.component
+        , LoadFile.component
         -- , PaletteList.component 125 2 30.0 96.0
         , StatusLine.component
         ]
