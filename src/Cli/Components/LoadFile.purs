@@ -17,6 +17,7 @@ import Control.Monad.State (get, modify_) as State
 
 import Data.Maybe (Maybe(..))
 import Data.Tuple (snd) as Tuple
+import Data.Map as Map
 import Data.Tuple.Nested ((/\))
 import Data.Repr (class FromToReprRow, class ToReprRow)
 import Record.Extra as Record
@@ -44,10 +45,11 @@ import Blessed.UI.Base.Screen.Method (render) as Screen
 
 import Cli.Keys as Key
 import Cli.Palette as Palette
-import Cli.State (State)
+import Cli.State (State, OutletIndex(..), InletIndex(..))
 import Cli.State (patchIdFromIndex) as State
 import Cli.State.NwWraper (unwrapN, withNetwork)
 import Cli.Components.NodeBox as NodeBox
+import Cli.Components.Link as Link
 import Cli.Style as Style
 
 import Noodle.Id as Id
@@ -134,7 +136,21 @@ handlers stateRef patch (Network tk _) =
                 (addNodeBox (tk :: Hydra.Toolkit Effect))
             ) -}
         pure unit
-    , onConnect : \link -> pure unit
+    , onConnect : \(onode /\ inode) (outletIdx /\ inletIdx) link ->
+        BlessedOp.runM' stateRef $ do
+            state <- State.get
+            case (/\) <$> Map.lookup onode state.nodeKeysMap <*> Map.lookup inode state.nodeKeysMap of
+                Just (onodeKey /\ inodeKey) -> do
+                    linkCmp <- Link.create
+                                state.lastLink
+                                onodeKey
+                                (OutletIndex outletIdx)
+                                inodeKey
+                                (InletIndex inletIdx)
+                    State.modify_ $ Link.store linkCmp
+                    Key.patchBox >~ Link.append linkCmp
+                    pure unit
+                Nothing -> pure unit
     }
 
 

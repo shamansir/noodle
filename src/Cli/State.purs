@@ -39,6 +39,7 @@ type State =
     , linksFrom :: Map RawNodeKey (Map Int Link)
     , linksTo :: Map RawNodeKey (Map Int Link)
     , lastKeys :: LastKeys
+    , nodeKeysMap :: Map Id.NodeIdR NodeBoxKey
     -- , network :: Noodle.Network Unit (Hydra.Families Effect) (Hydra.Instances Effect)
     -- , network :: TestM Effect
     -- , network :: Network (BlessedOpM State Effect)
@@ -61,6 +62,7 @@ initial =
     , lastLink : Nothing
     , linksFrom : Map.empty
     , linksTo : Map.empty
+    , nodeKeysMap : Map.empty
     -- , nodes : Hydra.noInstances
     }
 

@@ -397,7 +397,6 @@ toFullId (Link nodeA outA inB nodeB _) =
     FullId $ reflect' nodeA <> ">>" <> reflect' outA <> "--" <> reflect' inB <> "<<" <> reflect' nodeB
 
 
-
 -- TODO: connectByRepr (use Data.Repr.ToRepr, Data.Repr.FromRepr ) ! -> then add the same to patch
 
 -- TODO: Path.connect2 (from different patches)

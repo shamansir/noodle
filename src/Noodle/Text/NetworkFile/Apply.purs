@@ -45,7 +45,7 @@ type Handlers gstate instances m repr =
     { onNodeCreated :: Int /\ Int -> Patch.HoldsNode' gstate instances m -> m Unit
     , onNodeCreated2 :: forall f. IsSymbol f => Int /\ Int -> Node.HoldsNode' f m -> m Unit
     , onNodeCreated3:: Int /\ Int -> Patch.HoldsNodeMRepr gstate instances m repr -> m Unit
-    , onConnect :: forall fA fB oA iB. Node.Link fA fB oA iB -> m Unit
+    , onConnect :: forall fA fB oA iB. Id.NodeIdR /\ Id.NodeIdR -> Int /\ Int -> Node.Link fA fB oA iB -> m Unit
     }
 
 
@@ -82,7 +82,7 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
                         (\family def _ -> do
                             node <- Toolkit.spawn tk family
                             let (nextPatch :: Patch gstate instances) = Patch.registerNode node curPatch
-                            handlers.onNodeCreated (xPos /\ yPos) (Patch.holdNode' nextPatch node :: Patch.HoldsNode' gstate instances m)
+                            handlers.onNodeCreated  (xPos /\ yPos) (Patch.holdNode' nextPatch node :: Patch.HoldsNode' gstate instances m)
                             handlers.onNodeCreated2 (xPos /\ yPos) (Node.holdNode' node)
                             handlers.onNodeCreated3 (xPos /\ yPos) (Patch.holdNodeMRepr nextPatch node :: Patch.HoldsNodeMRepr gstate instances m repr)
                             pure unit
@@ -122,7 +122,8 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
                                                 holdsInput
                                                 (\_ inode inputId -> do
                                                     link <- Node.connectByRepr prepr outputId inputId onode inode
-                                                    handlers.onConnect link
+                                                    let nextPatch = Patch.registerLink link curPatch
+                                                    handlers.onConnect (Id.nodeIdR (Node.id inode) /\ Id.nodeIdR (Node.id onode)) (srcOutputIdx /\ dstInputIdx) link
                                                     pure pair
                                                 )
                                         )
