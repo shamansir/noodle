@@ -241,12 +241,13 @@ fromNode curPatchId curPatch family node = do
         { lastShiftX = state.lastShiftX + 1
         , lastShiftY = state.lastShiftY + 1
         , lastKeys = lastKeys
+        , nodeKeysMap = Map.insert nodeId nextNodeBox state.nodeKeysMap
         }
     )
 
     Key.mainScreen >~ Screen.render
 
-    pure { nextNodeBoxN, inletsBoxN, outletsBoxN }
+    pure { nextNodeBoxN, inletsBoxN, outletsBoxN, nextNodeBox }
 
 
 

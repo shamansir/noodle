@@ -502,6 +502,60 @@ withNodeMRepr
 withNodeMRepr (HoldsNodeMRepr f) = f
 
 
+withNode2MRepr
+    :: forall r m repr
+            gstateA instancesA
+            gstateB instancesB
+     . HoldsNodeMRepr gstateA instancesA m repr
+    -> HoldsNodeMRepr gstateB instancesB m repr
+    ->
+    --    -> Proxy m ->
+        (  forall
+                  fA stateA isA isrlA osA osrlA
+                  fB stateB isB isrlB osB osrlB
+                  repr_isA repr_osA
+                  repr_isB repr_osB
+                  instancesA' rliA
+                  instancesB' rliB
+         . Has.HasInstancesOf fA instancesA' instancesA (Array (Node fA stateA isA osA m))
+        => Has.HasInstancesOf fB instancesB' instancesB (Array (Node fB stateB isB osB m))
+        => RL.RowToList instancesA rliA
+        => Record.Keys rliA
+        => RL.RowToList instancesB rliB
+        => Record.Keys rliB
+        => Id.HasInputsAt isA isrlA
+        => Id.HasOutputsAt osA osrlA
+        => Id.HasInputsAt isB isrlB
+        => Id.HasOutputsAt osB osrlB
+        => R.ToReprHelper m fA isA isrlA osA osrlA repr_isA repr_osA repr stateA
+        => R.ToReprHelper m fB isB isrlB osB osrlB repr_isB repr_osB repr stateB
+        => R.ToReprFoldToMapsHelper fA isA isrlA osA osrlA repr stateA
+        => R.ToReprFoldToMapsHelper fB isB isrlB osB osrlB repr stateB
+        => FromToReprRow isrlA isA repr
+        => FromToReprRow isrlB isB repr
+        => FromToReprRow osrlA osA repr
+        => FromToReprRow osrlA osA repr
+        => Node.NodeBoundKeys Node.I isrlA Id.Input fA stateA isA osA m (Node.HoldsInputInNodeMRepr m repr)
+        => Node.NodeBoundKeys Node.O osrlA Id.Output fA stateA isA osA m (Node.HoldsOutputInNodeMRepr m repr)
+        => Node.NodeBoundKeys Node.I isrlB Id.Input fB stateB isB osB m (Node.HoldsInputInNodeMRepr m repr)
+        => Node.NodeBoundKeys Node.O osrlB Id.Output fB stateB isB osB m (Node.HoldsOutputInNodeMRepr m repr)
+        => Node fA stateA isA osA m
+        -> Node fB stateB isB osB m
+        -> Patch gstateA instancesA
+        -> Patch gstateB instancesB
+        -> m r
+        )
+    -> m r
+withNode2MRepr (HoldsNodeMRepr fA) (HoldsNodeMRepr fB) f =
+    fA
+        (\patchA nodeA ->
+            fB
+                (\patchB nodeB ->
+                    f nodeA nodeB patchA patchB
+                )
+        )
+
+
 findNode
     :: forall gstate (instances' :: Row Type) (instances ∷ Row Type) rli f state is os m
      . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))

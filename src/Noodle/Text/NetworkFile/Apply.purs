@@ -15,7 +15,7 @@ import Data.Traversable (traverse)
 import Data.Foldable (foldr)
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Type.Proxy (Proxy(..))
@@ -49,6 +49,9 @@ type Handlers gstate instances m repr =
     }
 
 
+type IdMapping gstate instances m repr = Map String (Patch.HoldsNodeMRepr gstate instances m repr)
+
+
 -- TODO: use NoodleM
 
 -- applyFile :: forall m gstate (nodes :: Row Type) (instances :: Row Type). MonadEffect m => Array Command -> Network gstate nodes instances -> m (Network gstate nodes instances)
@@ -69,31 +72,32 @@ applyFile
 applyFile withFamilyFn prepr curPatch nw handlers commands =
     Tuple.fst <$> Array.foldM applyCommand (nw /\ nodesMap) commands
     where
-        nodesMap :: Map String (Patch.HoldsNode' gstate instances m)
+        nodesMap :: IdMapping gstate instances m repr
         nodesMap = Map.empty
-        applyCommand :: (Network gstate families instances /\ Map String (Patch.HoldsNode' gstate instances m)) -> Command -> m (Network gstate families instances /\ Map String (Patch.HoldsNode' gstate instances m))
+        applyCommand :: (Network gstate families instances /\ IdMapping gstate instances m repr)  -> Command -> m (Network gstate families instances /\ IdMapping gstate instances m repr)
         applyCommand pair (C.Header _ _) = pure pair
-        applyCommand pair@((Network tk _) /\ _) (C.MakeNode familyStr xPos yPos _) = do
+        applyCommand (nw@(Network tk _) /\ nodesMap) (C.MakeNode familyStr xPos yPos mappingId) = do
             let nodeFamilies = Toolkit.nodeFamilies (tk :: Toolkit gstate families)
             let maybeFamilyR = List.find (reflect' >>> eq familyStr) nodeFamilies
             case maybeFamilyR of
                 Just familyR -> do
-                    _ <- withFamilyFn
+                    maybeHeldNode <- withFamilyFn
                         (\family def _ -> do
                             node <- Toolkit.spawn tk family
                             let (nextPatch :: Patch gstate instances) = Patch.registerNode node curPatch
-                            handlers.onNodeCreated  (xPos /\ yPos) (Patch.holdNode' nextPatch node :: Patch.HoldsNode' gstate instances m)
-                            handlers.onNodeCreated2 (xPos /\ yPos) (Node.holdNode' node)
-                            handlers.onNodeCreated3 (xPos /\ yPos) (Patch.holdNodeMRepr nextPatch node :: Patch.HoldsNodeMRepr gstate instances m repr)
-                            pure unit
+                            let (heldNode :: Patch.HoldsNodeMRepr gstate instances m repr) = Patch.holdNodeMRepr nextPatch node
+                            -- handlers.onNodeCreated  (xPos /\ yPos) (Patch.holdNode' nextPatch node :: Patch.HoldsNode' gstate instances m)
+                            -- handlers.onNodeCreated2 (xPos /\ yPos) (Node.holdNode' node)
+                            handlers.onNodeCreated3 (xPos /\ yPos) heldNode
+                            pure heldNode
                         )
                         familyR
-                    pure pair
-                Nothing -> pure pair
+                    pure $ nw /\ fromMaybe nodesMap ((\heldNode -> Map.insert mappingId heldNode nodesMap) <$> maybeHeldNode)
+                Nothing -> pure $ nw /\ nodesMap
         applyCommand pair (C.Connect srcId srcOutputIdx dstId dstInputIdx) =
             case (/\) <$> Map.lookup srcId nodesMap <*> Map.lookup dstId nodesMap of
-                Just ((srcNode :: (Patch.HoldsNode' gstate instances m)) /\ (dstNode :: (Patch.HoldsNode' gstate instances m))) ->
-                    Patch.withNode2'
+                Just ((srcNode :: Patch.HoldsNodeMRepr gstate instances m repr) /\ (dstNode :: Patch.HoldsNodeMRepr gstate instances m repr)) ->
+                    Patch.withNode2MRepr
                          srcNode
                          dstNode
                          (\nodeA nodeB _ _ ->
