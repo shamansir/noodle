@@ -3,6 +3,7 @@ module Noodle.Text.NetworkFile.Apply where
 import Prelude
 
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Console as Console
 import Control.Monad.Rec.Class (class MonadRec)
 import Prim.RowList as RL
 
@@ -70,10 +71,10 @@ applyFile
     -> Array Command
     -> m (Network gstate families instances)
 applyFile withFamilyFn prepr curPatch nw handlers commands =
-    Tuple.fst <$> Array.foldM applyCommand (nw /\ nodesMap) commands
+    Tuple.fst <$> Array.foldM applyCommand (nw /\ Map.empty) commands
     where
-        nodesMap :: IdMapping gstate instances m repr
-        nodesMap = Map.empty
+        -- nodesMap :: IdMapping gstate instances m repr
+        -- nodesMap = Map.empty
         applyCommand :: (Network gstate families instances /\ IdMapping gstate instances m repr)  -> Command -> m (Network gstate families instances /\ IdMapping gstate instances m repr)
         applyCommand pair (C.Header _ _) = pure pair
         applyCommand (nw@(Network tk _) /\ nodesMap) (C.MakeNode familyStr xPos yPos mappingId) = do
@@ -94,7 +95,7 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
                         familyR
                     pure $ nw /\ fromMaybe nodesMap ((\heldNode -> Map.insert mappingId heldNode nodesMap) <$> maybeHeldNode)
                 Nothing -> pure $ nw /\ nodesMap
-        applyCommand pair (C.Connect srcId srcOutputIdx dstId dstInputIdx) =
+        applyCommand (nw /\ nodesMap) (C.Connect srcId srcOutputIdx dstId dstInputIdx) =
             case (/\) <$> Map.lookup srcId nodesMap <*> Map.lookup dstId nodesMap of
                 Just ((srcNode :: Patch.HoldsNodeMRepr gstate instances m repr) /\ (dstNode :: Patch.HoldsNodeMRepr gstate instances m repr)) ->
                     Patch.withNode2MRepr
@@ -113,26 +114,27 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
                             -- case (/\) <$> Node.findHeldOutputByIndex nodeA srcOutputIdx <*> Node.findHeldInputByIndex nodeB srcInputIdx of
                             --     Just ((outputA :: Node.HoldsOutputInNodeMRepr m repr) /\ (inputB :: Node.HoldsInputInNodeMRepr m repr)) ->
                             let
-                                (nodeAOutputs :: Array (Node.HoldsOutputInNodeMRepr m repr)) = Node.orderedOutputsMRepr nodeA
-                                (nodeBInputs :: Array (Node.HoldsInputInNodeMRepr m repr)) = Node.orderedInputsMRepr nodeB
+                                (nodeAOutputs :: Array (Node.HoldsOutputInNodeMRepr m repr)) = Node.orderedNodeOutputsTest' nodeA
+                                (nodeBInputs :: Array (Node.HoldsInputInNodeMRepr m repr)) = Node.orderedNodeInputsTest' nodeB
                                 (maybeFoundOutput :: Maybe (Node.HoldsOutputInNodeMRepr m repr)) = Array.index nodeAOutputs srcOutputIdx
                                 (maybeFoundInput :: Maybe (Node.HoldsInputInNodeMRepr m repr)) = Array.index nodeBInputs dstInputIdx
-                            in case (/\) <$> maybeFoundOutput <*> maybeFoundInput of
-                                Just (holdsOutput /\ holdsInput) ->
-                                    Node.withOutputInNodeMRepr
-                                        holdsOutput
-                                        (\_ onode outputId -> do
-                                            Node.withInputInNodeMRepr
-                                                holdsInput
-                                                (\_ inode inputId -> do
-                                                    link <- Node.connectByRepr prepr outputId inputId onode inode
-                                                    let nextPatch = Patch.registerLink link curPatch
-                                                    handlers.onConnect (Id.nodeIdR (Node.id inode) /\ Id.nodeIdR (Node.id onode)) (srcOutputIdx /\ dstInputIdx) link
-                                                    pure pair
-                                                )
-                                        )
-                                Nothing ->
-                                    pure pair
+                            in do
+                                case (/\) <$> maybeFoundOutput <*> maybeFoundInput of
+                                    Just (holdsOutput /\ holdsInput) ->
+                                        Node.withOutputInNodeMRepr
+                                            holdsOutput
+                                            (\_ onode outputId -> do
+                                                Node.withInputInNodeMRepr
+                                                    holdsInput
+                                                    (\_ inode inputId -> do
+                                                        link <- Node.connectByRepr prepr outputId inputId onode inode
+                                                        let nextPatch = Patch.registerLink link curPatch
+                                                        handlers.onConnect (Id.nodeIdR (Node.id inode) /\ Id.nodeIdR (Node.id onode)) (srcOutputIdx /\ dstInputIdx) link
+                                                        pure $ nw /\ nodesMap
+                                                    )
+                                            )
+                                    Nothing ->
+                                        pure $ nw /\ nodesMap
                             -- pure nw
                             {-
                             case (/\) <$> (Node.findHeldOutputByIndex nodeA srcOutputIdx) <*> Node.findHeldInputByIndex nodeB srcInputIdx of
@@ -145,5 +147,5 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
                     -- Node.withNode'
                     -- Node.findHeldInputByIndex
                     -- Node.connectByRepr prepr outputId inputId onode inode
-                Nothing -> pure pair
+                Nothing -> pure $ nw /\ nodesMap
             -- pure nw

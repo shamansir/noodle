@@ -139,10 +139,6 @@ handlers stateRef patch (Network tk _) =
     , onConnect : \(onode /\ inode) (outletIdx /\ inletIdx) link ->
         BlessedOp.runM' stateRef $ do
             state <- State.get
-            liftEffect $ Console.log $ show onode
-            liftEffect $ Console.log $ show outletIdx
-            liftEffect $ Console.log $ show onode
-            liftEffect $ Console.log $ show inletIdx
             case (/\) <$> Map.lookup onode state.nodeKeysMap <*> Map.lookup inode state.nodeKeysMap of
                 Just (onodeKey /\ inodeKey) -> do
                     linkCmp <- Link.create
@@ -195,7 +191,7 @@ component =
                                     (handlers stateRef patch network)
                                     [ Cmd.MakeNode "osc" 40 60 "osc-1"
                                     , Cmd.MakeNode "pi" 20 20 "pi-1"
-                                    , Cmd.Connect "pi" 0 "osc" 0
+                                    , Cmd.Connect "pi-1" 0 "osc-1" 0
                                     ]
                             pure unit
                     Nothing -> pure unit

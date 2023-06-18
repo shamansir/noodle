@@ -832,6 +832,14 @@ newtype HoldsOutputInNodeM m = HoldsOutputInNodeM (forall r. (forall f state o d
 newtype HoldsOutputInNodeMRepr m repr = HoldsOutputInNodeMRepr (forall r. (forall f state o dout is os os'. IsSymbol f => HasOutput o dout os' os => ToRepr dout repr => FromRepr repr dout => Proxy dout -> Node f state is os m -> Output o -> r) -> r)
 
 
+instance Show (HoldsInputInNodeMRepr m repr) where
+    show hinput = withInputInNodeMRepr hinput \_ _ input -> reflect input
+
+
+instance Show (HoldsOutputInNodeMRepr m repr) where
+    show houtput = withOutputInNodeMRepr houtput \_ _ output -> reflect output
+
+
 holdOutputInNode :: forall f state o dout is os os' m. IsSymbol f => HasOutput o dout os' os => Node f state is os m -> Output o -> HoldsOutputInNode
 holdOutputInNode node output = HoldsOutputInNode \f -> f node output
 
