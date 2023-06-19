@@ -192,6 +192,7 @@ component =
                                     [ Cmd.MakeNode "osc" 40 60 "osc-1"
                                     , Cmd.MakeNode "pi" 20 20 "pi-1"
                                     , Cmd.Connect "pi-1" 0 "osc-1" 0
+                                    , Cmd.Send "osc-1" 1 "V N 20.0"
                                     ]
                             pure unit
                     Nothing -> pure unit

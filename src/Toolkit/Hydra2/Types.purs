@@ -11,6 +11,7 @@ import Cli.Palette.Set.X11 as X11
 import Data.Maybe (fromMaybe)
 import Data.Mark (class Mark)
 import Data.String as String
+import Data.FromToFile (class Encode, encode, class Decode, decode)
 
 
 data TODO = TODO
@@ -332,7 +333,7 @@ instance Show Texture where
         From src -> "From " <> show src
         BlendOf { what, with } blend -> "Blend " <> show what <> " -< " <> show with {- TODO: <> " :: " <> show blend -}
         WithColor texture op -> "With Color " <> {- TODO : show op <> " " <> -} show texture
-        ModulateWith texture mod -> "Modulate " <> show texture {- TODO: <> " " <> show mod -}
+        ModulateWith { what, with } mod -> "Modulate " <> show what <> " -< " <> show with {- TODO: <> " " <> show mod -}
         Geometry texture gmt -> "Geometry " <> show texture {- TODO: <> " " <> show gmt -}
 
 
@@ -429,3 +430,126 @@ instance Show Output where
         Output0 -> "Output 0"
         Output1 -> "Output 1"
         Output2 -> "Output 2"
+
+
+instance Encode Value where
+    encode :: Value -> String
+    encode = case _ of
+        None -> "X"
+        Required -> "R"
+        Number n -> "N " <> encode n
+        VArray vals ease -> "VA " <> encode vals <> " $$ " <> encode ease <> ""
+        Dep _ -> "D" -- TODO
+        Time -> "T"
+        MouseX -> "MX"
+        MouseY -> "MY"
+        Width -> "W"
+        Height -> "H"
+        Pi -> "PI"
+        Audio audio bin -> "A " <> encode audio <> " " <> encode bin
+
+
+instance Encode Texture where
+    encode :: Texture -> String
+    encode = case _ of
+        Empty -> "EMP"
+        From src -> "F " <> encode src
+        BlendOf { what, with } blend -> "B " <> encode what <> " " <> encode with {- TODO: <> " " <> encode blend -}
+        WithColor texture op -> "C " <> {- TODO : encode op <> " " <> -} encode texture
+        ModulateWith { what, with } mod -> "M " <> encode what <> " " <> encode with {- TODO: <> " " <> encode mod -}
+        Geometry texture gmt -> "G " <> encode texture {- TODO: <> " " <> encode gmt -}
+
+
+instance Encode From where
+    encode :: From -> String
+    encode = case _ of
+        All -> "ALL"
+        Output out -> "OUT " <> encode out
+
+
+instance Encode TODO where
+    encode :: TODO -> String
+    encode = const "TODO"
+
+
+instance Encode Context where
+    encode :: Context -> String
+    encode (Context { time }) = "{ " <> encode time <> " }"
+
+
+instance Encode UpdateFn where
+    encode :: UpdateFn -> String
+    encode = const "UF" -- TODO
+
+
+instance Encode Source where
+    encode :: Source -> String
+    encode = case _ of
+        Dynamic -> "D"
+        Video -> "V"
+        Gradient { speed } -> "G " <> encode speed
+        Camera -> "C"
+        Noise { scale, offset } -> "N " <> encode scale <> " " <> encode offset
+        Osc { frequency, sync, offset } -> "OSC " <> encode frequency <> " " <> encode sync <> " " <> encode offset
+        Shape { sides, radius, smoothing } -> "SHP " <> encode sides <> " " <> encode radius <> " " <> encode smoothing
+        Solid { r, g, b, a } -> "S " <> encode r <> " " <> encode g <> " " <> encode b <> " " <> encode a
+        Source from -> "SRC " <> encode from
+        Voronoi { scale, speed, blending } -> "V " <> encode scale <> " " <> encode speed <> " " <> encode blending
+
+
+instance Encode Url where
+    encode :: Url -> String
+    encode (Url url) = encode url
+
+
+instance Encode GlslFn where
+    encode :: GlslFn -> String
+    encode = const "GLSL" -- TODO
+
+
+instance Encode SourceOptions where
+    encode :: SourceOptions -> String
+    encode (SourceOptions { src }) = "SO" {- TODO : <> encode src -}
+
+
+instance Encode Values where
+    encode :: Values -> String
+    encode (Values array) = String.joinWith " <> " (encode <$> array) <> " %%"
+
+
+instance Encode Ease where
+    encode :: Ease -> String
+    encode = case _ of
+        Linear -> "LIN"
+        Fast v -> "FST " <> encode v
+        Smooth v -> "SMT " <> encode v
+        Fit { low, high } -> "FIT " <> encode low <> " < " <> encode high
+        Offset v -> "OFF " <> encode v
+        InOutCubic -> "IOC"
+
+
+instance Encode Audio where
+    encode :: Audio -> String
+    encode = case _ of
+        Silence -> "SIL"
+        Mic -> "MIC"
+        File -> "FIL"
+
+
+instance Encode AudioBin where
+    encode :: AudioBin -> String
+    encode = case _ of
+        H0 -> "H 0"
+        H1 -> "H 1"
+        H2 -> "H 2"
+        H3 -> "H 3"
+        H4 -> "H 4"
+
+
+instance Encode Output where
+    encode :: Output -> String
+    encode = case _ of
+        Screen -> "SCR"
+        Output0 -> "OUT 0"
+        Output1 -> "OUT 1"
+        Output2 -> "OUT 2"

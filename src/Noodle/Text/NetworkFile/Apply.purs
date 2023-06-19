@@ -24,6 +24,8 @@ import Data.Symbol (class IsSymbol)
 import Data.SProxy (reflect')
 import Data.Array as Array
 import Data.List as List
+import Data.String.Read (class Read, read)
+import Data.Repr (Repr, wrap, fromRepr, class ToRepr, class FromRepr, class ReadWriteRepr, readRepr)
 
 import Noodle.Network2 (Network(..))
 import Noodle.Network2 as NW
@@ -75,6 +77,13 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
     where
         -- nodesMap :: IdMapping gstate instances m repr
         -- nodesMap = Map.empty
+        tryReadAndSend :: forall f state i din is is' os. Id.HasInput i din is' is => ReadWriteRepr repr => ToRepr din repr => FromRepr repr din => String -> Proxy din -> Node f state is os m -> Id.Input i -> m Unit
+        tryReadAndSend valueStr _ node input =
+            let (maybeDin :: Maybe din) = (readRepr valueStr :: Maybe (Repr repr)) >>= fromRepr
+            in case maybeDin of
+                Just din -> Node.sendIn node input din
+                Nothing -> pure unit
+            -- pure unit
         applyCommand :: (Network gstate families instances /\ IdMapping gstate instances m repr)  -> Command -> m (Network gstate families instances /\ IdMapping gstate instances m repr)
         applyCommand pair (C.Header _ _) = pure pair
         applyCommand (nw@(Network tk _) /\ nodesMap) (C.MakeNode familyStr xPos yPos mappingId) = do
@@ -149,3 +158,21 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
                     -- Node.connectByRepr prepr outputId inputId onode inode
                 Nothing -> pure $ nw /\ nodesMap
             -- pure nw
+        applyCommand (nw /\ nodesMap) (C.Send nodeId inputIdx valueStr) =
+            case Map.lookup nodeId nodesMap of
+                Just (nodeHeld :: Patch.HoldsNodeMRepr gstate instances m repr) ->
+                    Patch.withNodeMRepr
+                        nodeHeld
+                        (\_ node ->
+                            let
+                                (nodeInputs :: Array (Node.HoldsInputInNodeMRepr m repr)) = Node.orderedNodeInputsTest' node
+                                (maybeFoundInput :: Maybe (Node.HoldsInputInNodeMRepr m repr)) = Array.index nodeInputs inputIdx
+                            in case maybeFoundInput of
+                                Just holdsInput -> do
+                                    Node.withInputInNodeMRepr
+                                        holdsInput
+                                        (tryReadAndSend valueStr)
+                                    pure $ nw /\ nodesMap
+                                Nothing -> pure $ nw /\ nodesMap
+                        )
+                Nothing -> pure $ nw /\ nodesMap

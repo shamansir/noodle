@@ -6,6 +6,9 @@ module Data.Repr
     , class ToReprRow, toReprRow, toReprRowBuilder
     -- , class FromReprRow, fromReprRow, fromReprRowBuilder
     , class FromToReprRow
+    , class ReadRepr, readRepr
+    , class WriteRepr, writeRepr
+    , class ReadWriteRepr
     )
     where
 
@@ -40,6 +43,20 @@ class ToRepr a repr where
 
 class FromRepr repr a where
     fromRepr :: Repr repr -> Maybe a
+
+
+class ReadRepr repr where
+    readRepr :: String -> Maybe (Repr repr)
+
+
+class WriteRepr repr where
+    writeRepr :: Repr repr -> String
+
+
+class (ReadRepr repr, WriteRepr repr) <= ReadWriteRepr repr
+
+
+instance (ReadRepr repr, WriteRepr repr) => ReadWriteRepr repr
 
 
 -- wrap :: forall a. a -> Repr a

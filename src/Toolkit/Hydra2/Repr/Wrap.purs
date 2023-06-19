@@ -6,6 +6,10 @@ import Data.Maybe (Maybe(..))
 import Data.Repr as R -- (class ToRepr, class FromRepr, toRepr, fromRepr)
 import Data.Mark (class Mark, mark)
 import Data.String as String
+import Data.String.Read (read)
+import Data.FromToFile (class Encode, encode)
+import Data.String.CodePoints as String
+import Data.Number as Number
 
 import Noodle.Node2.MapsFolds.Repr as NMF
 import Noodle.Node2.Path (InNode)
@@ -351,3 +355,45 @@ instance Show WrapRepr where
         AudioBin _ -> X11.aqua
         Output _ -> X11.blue
     -}
+
+
+{-wrapParser :: Parser String WrapRepr
+wrapParser =
+    string "V" *> valueParser
+    <|>
+    string "U" *> pure unit -}
+
+
+instance Encode WrapRepr where
+    encode = case _ of
+        Value v -> "V " <> encode v
+        Unit unit -> "U"
+        Texture t -> "T " <> encode t
+        From from -> "FR " <> encode from
+        TODO todo -> "TODO"
+        Context ctx -> "CTX " <> encode ctx
+        UpdateFn fn -> "FN " <> encode fn
+        Source src -> "SRC " <> encode src
+        Url url -> "URL " <> encode url
+        GlslFn fn -> "GLSL " <> encode fn
+        SourceOptions so -> "SO " <> encode so
+        Values vs -> "VS " <> encode vs
+        Ease e -> "E " <> encode e
+        Audio a -> "A " <> encode a
+        AudioBin ab -> "AB " <> encode ab
+        Output o -> "OUT " <> encode o
+
+
+instance R.ReadRepr WrapRepr where
+    readRepr :: String -> Maybe (R.Repr WrapRepr)
+    readRepr s =
+        if (String.take 4 s == "V N ") then
+            case Number.fromString $ String.drop 4 s of
+                Just n -> Just $ R.wrap $ Value $ H.Number n
+                Nothing -> Nothing
+        else Nothing
+
+
+instance R.WriteRepr WrapRepr where
+    writeRepr :: R.Repr WrapRepr -> String
+    writeRepr = R.unwrap >>> encode

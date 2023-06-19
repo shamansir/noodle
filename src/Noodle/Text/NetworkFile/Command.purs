@@ -7,3 +7,4 @@ data Command
     = Header String String
     | MakeNode String Int Int String
     | Connect String Int String Int
+    | Send String Int String

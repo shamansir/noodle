@@ -3,7 +3,7 @@ module Noodle.Toolkit3.Has where
 
 import Type.Data.Symbol (class IsSymbol)
 import Prim.Row as Row
-import Data.Repr (class FromToReprRow)
+import Data.Repr (class FromToReprRow, class ReadWriteRepr)
 
 import Noodle.Id (Family, FamilyR, Input, Output) as Node
 import Noodle.Patch4.Has (class HasInstancesOf)
@@ -60,7 +60,8 @@ instance
 
 
 class
-    ( HasNodesOf families instances f state fs iis rli is rlo os m
+    ( ReadWriteRepr repr
+    , HasNodesOf families instances f state fs iis rli is rlo os m
     , NMF.ToReprHelper m f is rli os rlo repr_is repr_os repr state
     , NMF.ToReprFoldToMapsHelper f is rli os rlo repr state
     , Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
@@ -72,7 +73,8 @@ class
     ) <= HasReprableNodesOf families instances repr f state fs iis rli is rlo os repr_is repr_os m
 
 instance
-    ( HasNodesOf families instances f state fs iis rli is rlo os m
+    ( ReadWriteRepr repr
+    , HasNodesOf families instances f state fs iis rli is rlo os m
     , NMF.ToReprHelper m f is rli os rlo repr_is repr_os repr state
     , NMF.ToReprFoldToMapsHelper f is rli os rlo repr state
     , Node.NodeBoundKeys Node.I rli Node.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
