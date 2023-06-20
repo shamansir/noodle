@@ -13,6 +13,7 @@ import Data.Mark (mark)
 import Data.Repr (class FromRepr, class ToRepr)
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.SProxy (reflect)
+import Data.Tuple.Nested ((/\), type (/\))
 
 import Type.Proxy (Proxy(..))
 import Signal (Signal)
@@ -42,7 +43,7 @@ import Blessed.UI.Boxes.Box.Method as Box
 
 import Cli.Keys as Key
 import Cli.Keys (NodeBoxKey, InfoBoxKey, InletButtonKey, mainScreen, statusLine)
-import Cli.State (State, Link, OutletIndex(..), InletIndex(..))
+import Cli.State (State, Link, OutletIndex(..), InletIndex(..), logCommandM)
 import Cli.State.NwWraper (unwrapN, wrapN)
 import Cli.Style (inletsOutlets) as Style
 import Cli.Components.Link as Link
@@ -57,6 +58,7 @@ import Noodle.Id as Id
 import Noodle.Node2 (Node) as Noodle
 import Noodle.Node2 as Node
 import Noodle.Patch4 (Patch)
+import Noodle.Text.NetworkFile.Command as Cmd
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
@@ -175,6 +177,7 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
         -- liftEffect $ Console.log $ "press" <> show idx
         -- liftEffect $ Console.log $ "apress" <> show altIdx
         let inodeKey = nextNodeBox
+        let inodeId = Node.id inode
         state <- State.get
         -- liftEffect $ Console.log $ "handler " <> iname
         case state.lastClickedOutlet of
@@ -193,8 +196,12 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
                         (\_ onode outputId -> do
                             link <- Node.connectByRepr (Proxy :: _ Hydra.WrapRepr) outputId inputId onode inode
                             let nextPatch' = Patch.registerLink link curPatch
-                            pure nextPatch'
+                            pure $ nextPatch'
                         )
+
+                    let onodeId = Id.withNodeId lco.nodeId reflect
+
+                    logCommandM $ Cmd.Connect onodeId lco.index (reflect inodeId) idx -- TODO: log somewhere else in a special place
 
                     State.modify_ (\s -> s { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network })
 

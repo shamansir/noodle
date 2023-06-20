@@ -23,7 +23,7 @@ import Data.Symbol (class IsSymbol)
 import Data.String as String
 import Data.Mark (mark)
 import Data.TraversableWithIndex (traverseWithIndex)
-import Data.SProxy (reflect)
+import Data.SProxy (reflect, reflect')
 
 import Signal (Signal, (~>))
 import Signal as Signal
@@ -80,13 +80,14 @@ import Cli.Keys (NodeBoxKey)
 import Cli.Keys (mainScreen, patchBox, statusLine) as Key
 import Cli.Palette as Palette
 import Cli.Palette.Item (crepr) as Palette
-import Cli.State (State)
+import Cli.State (State, logCommandM)
 import Cli.Style as Style
 import Cli.Components.Link as Link
 import Cli.Components.NodeBox.InletsBox as InletsBox
 import Cli.Components.NodeBox.OutletsBox as OutletsBox
 import Cli.Components.NodeBox.InletButton as InletButton
 import Cli.Components.NodeBox.OutletButton as OutletButton
+import Noodle.Text.NetworkFile.Command as Cmd
 
 import Toolkit.Hydra2 (Families, Instances, State, Toolkit) as Hydra
 import Toolkit.Hydra2.Group (toGroup) as Hydra
@@ -131,13 +132,18 @@ fromNode curPatchId curPatch family node = do
     let nextOutletsBox = NodeKey.next state.lastKeys.outletsBox
     let nextInfoBox = NodeKey.next state.lastKeys.infoBox
 
-    let top = Offset.px $ state.lastShiftX + 2
-    let left = Offset.px $ 16 + state.lastShiftY + 2
+    let topN = state.lastShiftX + 2
+    let leftN = 16 + state.lastShiftY + 2
+    let top = Offset.px topN
+    let left = Offset.px leftN
+
+    (nodeId /\ _ /\ inputsReps /\ outputReprs) <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
+
+    logCommandM $ Cmd.MakeNode (reflect family) topN leftN $ reflect' nodeId -- TODO: log somewhere else in a special place
 
     let (is :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeInputsTest' node
     let (os :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeOutputsTest' node
 
-    mapRepr@(nodeId /\ stateRepr /\ inputsReps /\ outputReprs) <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
     let (nodeHolder :: Patch.HoldsNode Effect) = Patch.holdNode curPatch node
     let (toInputSignal :: Signal (R.NodeLineMap Hydra.WrapRepr) -> Signal (Id.InputR -> Maybe Hydra.WrapRepr)) = map R.getInputFromMap
     let (toOutputSignal :: Signal (R.NodeLineMap Hydra.WrapRepr) -> Signal (Id.OutputR -> Maybe Hydra.WrapRepr)) = map R.getOutputFromMap

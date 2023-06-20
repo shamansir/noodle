@@ -17,6 +17,7 @@ geometry : kaleid :: <what:Texture {Empty} -> nSides:Value {Number 3.0}> => Text
 geometry : scroll :: <what:Texture {Empty} -> scrollX:Value {Number 0.5} -> scrollY:Value {Number 0.5} -> speedX:Value -> speedY:Value> => Texture {Empty} /-| H.Geometry what $ H.GScroll { scrollX, scrollY, speedX, speedY } |-/
 geometry : scrollX :: <what:Texture {Empty} -> scrollX:Value {Number 0.5} -> speed:Value {Number 1.0}> => Texture {Empty} /-| H.Geometry what $ H.GScrollX { scrollX, speed } |-/
 geometry : scrollY :: <what:Texture {Empty} -> scrollY:Value {Number 0.5} -> speed:Value {Number 1.0}> => Texture {Empty} /-| H.Geometry what $ H.GScrollY { scrollY, speed } |-/
+feed : number :: <in:Value {Number 0.0}> => out:Value {Number 0.0}
 color : posterize :: <what:Texture {Empty} -> bins:Value {Number 3.0} -> gamma:Value {Number 0.6}> => Texture {Empty} /-| H.WithColor what $ H.Posterize { bins, gamma } |-/
 color : shift :: <what:Texture {Empty} -> r:Value {Number 0.5} -> g:Value {Number 0.5} -> b:Value {Number 0.5} -> a:Value {Number 0.5}> => Texture {Empty} /-| H.WithColor what $ H.Shift { r, g, b, a } |-/
 color : invert :: <what:Texture {Empty} -> amount:Value {Number 1.0}> => Texture {Empty} /-| H.WithColor what $ H.Invert amount |-/

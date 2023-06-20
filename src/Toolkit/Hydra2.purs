@@ -52,6 +52,7 @@ import Toolkit.Hydra2.Family.Geometry.FKaleid as FKaleid
 import Toolkit.Hydra2.Family.Geometry.FScroll as FScroll
 import Toolkit.Hydra2.Family.Geometry.FScrollX as FScrollX
 import Toolkit.Hydra2.Family.Geometry.FScrollY as FScrollY
+import Toolkit.Hydra2.Family.Feed.Number as FNumber
 import Toolkit.Hydra2.Family.Color.FPosterize as FPosterize
 import Toolkit.Hydra2.Family.Color.FShift as FShift
 import Toolkit.Hydra2.Family.Color.FInvert as FInvert
@@ -127,7 +128,8 @@ defaultState = unit
 
 
 type Families (m :: Type -> Type) =
-        ( noise :: FNoise.Family m  -- {-> source <-}
+        ( number :: FNumber.Family m  -- {-> feed <-}
+        , noise :: FNoise.Family m  -- {-> source <-}
         , voronoi :: FVoronoi.Family m  -- {-> source <-}
         , osc :: FOsc.Family m -- {-> source <-}
         , shape :: FShape.Family m  -- {-> source <-}
@@ -215,7 +217,8 @@ type Families (m :: Type -> Type) =
 
 families :: forall (m :: Type -> Type). MonadEffect m => Record (Families m)
 families =
-        { noise : (FNoise.family :: FNoise.Family m)
+        { number : (FNumber.family :: FNumber.Family m)
+        , noise : (FNoise.family :: FNoise.Family m)
         , voronoi : (FVoronoi.family :: FVoronoi.Family m)
         , osc : (FOsc.family :: FOsc.Family m)
         , shape : (FShape.family :: FShape.Family m)
@@ -303,9 +306,13 @@ families =
 
 type FamiliesOrder =
 
+        --  Feed
+
+            "number"
+
         --  Source
 
-            "noise"
+        ::: "noise"
         ::: "voronoi"
         ::: "osc"
         ::: "shape"
@@ -433,7 +440,8 @@ toolkit =
 
 type Instances :: (Type -> Type) -> Row Type
 type Instances m =
-        ( noise :: Array ( FNoise.Node m )
+        ( number :: Array ( FNumber.Node m )
+        , noise :: Array ( FNoise.Node m )
         , voronoi :: Array ( FVoronoi.Node m )
         , osc :: Array ( FOsc.Node m )
         , shape :: Array ( FShape.Node m )
@@ -521,7 +529,8 @@ type Instances m =
 
 noInstances :: forall (m :: Type -> Type). Record (Instances m)
 noInstances =
-        { noise : ([] :: Array ( FNoise.Node m ))
+        { number : ([] :: Array ( FNumber.Node m ))
+        , noise : ([] :: Array ( FNoise.Node m ))
         , voronoi : ([] :: Array ( FVoronoi.Node m ))
         , osc : ([] :: Array ( FOsc.Node m ))
         , shape : ([] :: Array ( FShape.Node m ))
@@ -608,7 +617,8 @@ noInstances =
 
 
 familySym :: Record
-        ( noise :: Node.Family "noise"
+        ( number :: Node.Family "number"
+        , noise :: Node.Family "noise"
         , voronoi :: Node.Family "voronoi"
         , osc :: Node.Family "osc"
         , shape :: Node.Family "shape"
@@ -697,7 +707,8 @@ familySym :: Record
 
 
 familySym =
-        { noise : FNoise.id
+        { number : FNumber.id
+        , noise : FNoise.id
         , voronoi : FVoronoi.id
         , osc : FOsc.id
         , shape : FShape.id
@@ -798,6 +809,7 @@ familySym =
 
 withFamily :: forall m. Toolkit.WithFamilyFn m State (Families m) (Instances m) WrapRepr
 withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
+        "number" -> Just $ fn familySym.number families.number toolkit
         "noise" -> Just $ fn familySym.noise families.noise toolkit
         "voronoi" -> Just $ fn familySym.voronoi families.voronoi toolkit
         "osc" -> Just $ fn familySym.osc families.osc toolkit

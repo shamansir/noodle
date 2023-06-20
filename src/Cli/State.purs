@@ -11,6 +11,12 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (class Newtype)
+import Data.List (List)
+import Data.List as List
+import Data.Array ((:))
+import Data.Array as Array
+
+import Control.Monad.State.Class (class MonadState, modify_)
 
 import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey (RawNodeKey)
@@ -24,6 +30,8 @@ import Cli.Keys (InletsBoxKey, NodeBoxKey, OutletsBoxKey, InfoBoxKey)
 import Cli.Keys (LineA, LineB, LineC) as Key
 import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox) as Key
 import Cli.State.NwWraper (Network, wrapN)
+
+import Noodle.Text.NetworkFile.Command (Command)
 
 import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
@@ -40,6 +48,7 @@ type State =
     , linksTo :: Map RawNodeKey (Map Int Link)
     , lastKeys :: LastKeys
     , nodeKeysMap :: Map Id.NodeIdR NodeBoxKey
+    , commandLog :: Array Command
     -- , network :: Noodle.Network Unit (Hydra.Families Effect) (Hydra.Instances Effect)
     -- , network :: TestM Effect
     -- , network :: Network (BlessedOpM State Effect)
@@ -63,6 +72,7 @@ initial =
     , linksFrom : Map.empty
     , linksTo : Map.empty
     , nodeKeysMap : Map.empty
+    , commandLog : []
     -- , nodes : Hydra.noInstances
     }
 
@@ -139,3 +149,11 @@ type LastKeys =
     , outletsBox :: OutletsBoxKey
     , infoBox :: InfoBoxKey
     }
+
+
+logCommand :: Command -> State -> State
+logCommand cmd state = state { commandLog = cmd : state.commandLog }
+
+
+logCommandM :: forall m. MonadState State m => Command -> m Unit
+logCommandM = modify_ <<< logCommand

@@ -21,6 +21,7 @@ data Group
     | Blend
     | Color
     | ExternalSources
+    | Feed
     | Geometry
     | Modulate
     | Out
@@ -38,6 +39,8 @@ toGroup = toGroupR <<< Id.familyR
 
 toGroupR :: Id.FamilyR -> Group
 toGroupR family = case Id.reflectFamilyR family of
+    "number" -> Feed
+
     "noise" -> Source
     "voronoi" -> Source
     "osc" -> Source
@@ -144,6 +147,7 @@ instance Mark Group where
         Color -> Color.rgb 179 255 102
         ExternalSources -> Color.rgb 102 179 255
         Geometry -> Color.rgb 255 230 102
+        Feed -> Color.rgb 255 255 255
         Modulate -> Color.rgb 102 255 230
         Out -> Color.rgb 199 21 133 -- 102 205 170
         Source -> Color.rgb 255 127 102

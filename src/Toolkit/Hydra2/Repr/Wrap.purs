@@ -41,6 +41,11 @@ data WrapRepr
 --     toRepr _ a = WrapRepr
 
 
+instance NMF.HasRepr Number WrapRepr where
+    toRepr :: forall f i o. InNode f i o -> Number -> WrapRepr
+    toRepr _ = H.Number >>> Value
+
+
 instance NMF.HasRepr H.Value WrapRepr where
     toRepr :: forall f i o. InNode f i o -> H.Value -> WrapRepr
     toRepr _ = Value
