@@ -50,6 +50,7 @@ import Cli.State (patchIdFromIndex) as State
 import Cli.State.NwWraper (unwrapN, withNetwork)
 import Cli.Components.NodeBox as NodeBox
 import Cli.Components.Link as Link
+import Cli.Components.NodeBox.HasBody (class HasBody, run)
 import Cli.Style as Style
 
 import Noodle.Id as Id
@@ -71,6 +72,7 @@ import Noodle.Toolkit3.Has (class HasNodesOf) as Toolkit
 
 import Toolkit.Hydra2 as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra2.Family.Render.Cli (Cli) as Hydra
 
 import Unsafe.Coerce (unsafeCoerce)
 import Noodle.Text.NetworkFile.Apply as File
@@ -92,6 +94,7 @@ addNodeBox
     => FromToReprRow osrl os Hydra.WrapRepr
     => Node.NodeBoundKeys Node.I isrl Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O osrl Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
+    => HasBody (Hydra.Cli f) f state is os Effect
     => Toolkit Hydra.State (Hydra.Families Effect)
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> Node f state is os Effect
@@ -104,7 +107,7 @@ handlers
     :: Ref State
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> Network Hydra.State (Hydra.Families Effect) (Hydra.Instances Effect)
-    -> File.Handlers Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr
+    -> File.Handlers Hydra.Cli Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr
 handlers stateRef patch (Network tk _) =
     { onNodeCreated : \(x /\ y) pHoldsNode -> do
         -- _ <- BlessedOp.runM state (
@@ -125,7 +128,7 @@ handlers stateRef patch (Network tk _) =
         pure unit
     , onNodeCreated3 : \(x /\ y) pHoldsNode -> do
         _ <- Patch.withNodeMRepr
-            (pHoldsNode :: Patch.HoldsNodeMRepr Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr)
+            (pHoldsNode :: Patch.HoldsNodeMRepr Hydra.Cli Hydra.State (Hydra.Instances Effect) Effect Hydra.WrapRepr)
             (\patch node ->
                 BlessedOp.runM' stateRef (addNodeBox (tk :: Hydra.Toolkit Effect) patch node)
             )

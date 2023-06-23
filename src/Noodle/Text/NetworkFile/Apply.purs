@@ -44,32 +44,32 @@ import Noodle.Text.NetworkFile.Command (Command)
 import Noodle.Text.NetworkFile.Command (Command(..)) as C
 
 
-type Handlers gstate instances m repr =
+type Handlers x gstate instances m repr =
     { onNodeCreated :: Int /\ Int -> Patch.HoldsNode' gstate instances m -> m Unit
     , onNodeCreated2 :: forall f. IsSymbol f => Int /\ Int -> Node.HoldsNode' f m -> m Unit
-    , onNodeCreated3:: Int /\ Int -> Patch.HoldsNodeMRepr gstate instances m repr -> m Unit
+    , onNodeCreated3:: Int /\ Int -> Patch.HoldsNodeMRepr x gstate instances m repr -> m Unit
     , onConnect :: forall fA fB oA iB. Id.NodeIdR /\ Id.NodeIdR -> Int /\ Int -> Node.Link fA fB oA iB -> m Unit
     }
 
 
-type IdMapping gstate instances m repr = Map String (Patch.HoldsNodeMRepr gstate instances m repr)
+type IdMapping x gstate instances m repr = Map String (Patch.HoldsNodeMRepr x gstate instances m repr)
 
 
 -- TODO: use NoodleM
 
 -- applyFile :: forall m gstate (nodes :: Row Type) (instances :: Row Type). MonadEffect m => Array Command -> Network gstate nodes instances -> m (Network gstate nodes instances)
 applyFile
-    :: forall m gstate (families :: Row Type) (instances :: Row Type) repr fsrl isrl
+    :: forall x m gstate (families :: Row Type) (instances :: Row Type) repr fsrl isrl
      . MonadRec m
     => MonadEffect m
     => Id.ListsFamilies families fsrl
     => RL.RowToList instances isrl
     => Record.Keys isrl
-    => Toolkit.WithFamilyFn m gstate families instances repr
+    => Toolkit.WithFamilyFn x m gstate families instances repr
     -> Proxy repr
     -> Patch gstate instances
     -> Network gstate families instances
-    -> Handlers gstate instances m repr
+    -> Handlers x gstate instances m repr
     -> Array Command
     -> m (Network gstate families instances)
 applyFile withFamilyFn prepr curPatch nw handlers commands =
@@ -84,7 +84,7 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
                 Just din -> Node.sendIn node input din
                 Nothing -> pure unit
             -- pure unit
-        applyCommand :: (Network gstate families instances /\ IdMapping gstate instances m repr)  -> Command -> m (Network gstate families instances /\ IdMapping gstate instances m repr)
+        applyCommand :: (Network gstate families instances /\ IdMapping x gstate instances m repr)  -> Command -> m (Network gstate families instances /\ IdMapping x gstate instances m repr)
         applyCommand pair (C.Header _ _) = pure pair
         applyCommand (nw@(Network tk _) /\ nodesMap) (C.MakeNode familyStr xPos yPos mappingId) = do
             let nodeFamilies = Toolkit.nodeFamilies (tk :: Toolkit gstate families)
@@ -95,7 +95,7 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
                         (\family def _ -> do
                             node <- Toolkit.spawn tk family
                             let (nextPatch :: Patch gstate instances) = Patch.registerNode node curPatch
-                            let (heldNode :: Patch.HoldsNodeMRepr gstate instances m repr) = Patch.holdNodeMRepr nextPatch node
+                            let (heldNode :: Patch.HoldsNodeMRepr x gstate instances m repr) = Patch.holdNodeMRepr nextPatch node
                             -- handlers.onNodeCreated  (xPos /\ yPos) (Patch.holdNode' nextPatch node :: Patch.HoldsNode' gstate instances m)
                             -- handlers.onNodeCreated2 (xPos /\ yPos) (Node.holdNode' node)
                             handlers.onNodeCreated3 (xPos /\ yPos) heldNode
@@ -106,7 +106,7 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
                 Nothing -> pure $ nw /\ nodesMap
         applyCommand (nw /\ nodesMap) (C.Connect srcId srcOutputIdx dstId dstInputIdx) =
             case (/\) <$> Map.lookup srcId nodesMap <*> Map.lookup dstId nodesMap of
-                Just ((srcNode :: Patch.HoldsNodeMRepr gstate instances m repr) /\ (dstNode :: Patch.HoldsNodeMRepr gstate instances m repr)) ->
+                Just ((srcNode :: Patch.HoldsNodeMRepr x gstate instances m repr) /\ (dstNode :: Patch.HoldsNodeMRepr x gstate instances m repr)) ->
                     Patch.withNode2MRepr
                          srcNode
                          dstNode
@@ -160,7 +160,7 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
             -- pure nw
         applyCommand (nw /\ nodesMap) (C.Send nodeId inputIdx valueStr) =
             case Map.lookup nodeId nodesMap of
-                Just (nodeHeld :: Patch.HoldsNodeMRepr gstate instances m repr) ->
+                Just (nodeHeld :: Patch.HoldsNodeMRepr x gstate instances m repr) ->
                     Patch.withNodeMRepr
                         nodeHeld
                         (\_ node ->

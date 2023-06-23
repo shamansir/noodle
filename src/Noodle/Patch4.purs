@@ -49,6 +49,8 @@ import Noodle.Patch4.MapsFolds.Repr (class FoldToReprsRec, class FoldToReprsMap)
 import Noodle.Node2.MapsFolds.Repr (class ToReprHelper, class ToReprFoldToMapsHelper) as R
 
 
+import Cli.Components.NodeBox.HasBody (class HasBody)
+
 
 --data LinkOE fo fi = Exists (LinkOf fo fi)
 
@@ -305,7 +307,7 @@ newtype HoldsNode' gstate instances m =
         -> r)
 
 
-newtype HoldsNodeMRepr gstate instances m repr =
+newtype HoldsNodeMRepr (x :: Symbol -> Type) gstate instances m repr =
     HoldsNodeMRepr
         (forall r.
             (  forall instances' rli f state is os isrl osrl repr_is repr_os
@@ -320,6 +322,7 @@ newtype HoldsNodeMRepr gstate instances m repr =
             => FromToReprRow osrl os repr
             => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
             => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
+            => HasBody (x f) f state is os m
             => Patch gstate instances
             -> Node f state is os m
             -> r
@@ -355,7 +358,7 @@ holdNode' patch node = HoldsNode' \f -> f patch node
 
 
 holdNodeMRepr
-    :: forall gstate instances m repr instances' rli f state is os isrl osrl repr_is repr_os
+    :: forall x gstate instances m repr instances' rli f state is os isrl osrl repr_is repr_os
      . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
     => RL.RowToList instances rli
     => Record.Keys rli
@@ -367,9 +370,10 @@ holdNodeMRepr
     => FromToReprRow osrl os repr
     => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
     => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
+    => HasBody (x f) f state is os m
     => Patch gstate instances
     -> Node f state is os m
-    -> HoldsNodeMRepr gstate instances m repr
+    -> HoldsNodeMRepr x gstate instances m repr
 holdNodeMRepr patch node = HoldsNodeMRepr \f -> f patch node
 
 
@@ -479,8 +483,8 @@ withNode2' (HoldsNode' fA) (HoldsNode' fB) f =
 
 
 withNodeMRepr
-    :: forall r gstate instances repr m
-     . HoldsNodeMRepr gstate instances m repr ->
+    :: forall r x gstate instances repr m
+     . HoldsNodeMRepr x gstate instances m repr ->
     --    -> Proxy m ->
         (  forall instances' rli f state is os isrl osrl repr_is repr_os
          . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
@@ -494,6 +498,7 @@ withNodeMRepr
         => FromToReprRow osrl os repr
         => Node.NodeBoundKeys Node.I isrl Id.Input f state is os m (Node.HoldsInputInNodeMRepr m repr)
         => Node.NodeBoundKeys Node.O osrl Id.Output f state is os m (Node.HoldsOutputInNodeMRepr m repr)
+        => HasBody (x f) f state is os m
         => Patch gstate instances
         -> Node f state is os m
         -> m r
@@ -503,11 +508,11 @@ withNodeMRepr (HoldsNodeMRepr f) = f
 
 
 withNode2MRepr
-    :: forall r m repr
+    :: forall x r m repr
             gstateA instancesA
             gstateB instancesB
-     . HoldsNodeMRepr gstateA instancesA m repr
-    -> HoldsNodeMRepr gstateB instancesB m repr
+     . HoldsNodeMRepr x gstateA instancesA m repr
+    -> HoldsNodeMRepr x gstateB instancesB m repr
     ->
     --    -> Proxy m ->
         (  forall
@@ -539,6 +544,8 @@ withNode2MRepr
         => Node.NodeBoundKeys Node.O osrlA Id.Output fA stateA isA osA m (Node.HoldsOutputInNodeMRepr m repr)
         => Node.NodeBoundKeys Node.I isrlB Id.Input fB stateB isB osB m (Node.HoldsInputInNodeMRepr m repr)
         => Node.NodeBoundKeys Node.O osrlB Id.Output fB stateB isB osB m (Node.HoldsOutputInNodeMRepr m repr)
+        => HasBody (x fA) fA stateA isA osA m
+        => HasBody (x fB) fB stateB isB osB m
         => Node fA stateA isA osA m
         -> Node fB stateB isB osB m
         -> Patch gstateA instancesA

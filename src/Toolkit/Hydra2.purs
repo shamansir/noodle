@@ -33,6 +33,7 @@ import Noodle.Patch4.Has (class HasInstancesOf) as Has
 import Noodle.Id (class HasInputsAt, class HasOutputsAt, class HasInputsAt', class HasOutputsAt') as Has
 import Noodle.Node2.MapsFolds.Repr as NMF
 
+import Toolkit.Hydra2.Family.Render.Cli (Cli) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr)
 import Toolkit.Hydra2.Family.Source.FNoise as FNoise
 import Toolkit.Hydra2.Family.Source.FVoronoi as FVoronoi
@@ -807,7 +808,7 @@ familySym =
 -- patchProxy = Proxy :: forall pstate m. _ (Noodle.Patch pstate (Instances m))
 
 
-withFamily :: forall m. Toolkit.WithFamilyFn m State (Families m) (Instances m) WrapRepr
+withFamily :: forall m. Toolkit.WithFamilyFn Hydra.Cli m State (Families m) (Instances m) WrapRepr
 withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
         "number" -> Just $ fn familySym.number families.number toolkit
         "noise" -> Just $ fn familySym.noise families.noise toolkit
@@ -904,7 +905,7 @@ withFamily fn familyR = sequence $ case Id.reflectFamilyR familyR of
 
 
 withFamily2
-        :: forall m. Toolkit.WithFamilyFn2 m State (Families m) (Instances m) WrapRepr
+        :: forall m. Toolkit.WithFamilyFn2 Hydra.Cli m State (Families m) (Instances m) WrapRepr
 withFamily2 fn familyAR familyBR =
         join <$> withFamily
                 (\familyA defA _ ->

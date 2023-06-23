@@ -87,12 +87,15 @@ import Cli.Components.NodeBox.InletsBox as InletsBox
 import Cli.Components.NodeBox.OutletsBox as OutletsBox
 import Cli.Components.NodeBox.InletButton as InletButton
 import Cli.Components.NodeBox.OutletButton as OutletButton
+import Cli.Components.NodeBox.HasBody (class HasBody, run, class HasBody', run')
+
 import Noodle.Text.NetworkFile.Command as Cmd
 
 import Toolkit.Hydra2 (Families, Instances, State, Toolkit) as Hydra
 import Toolkit.Hydra2.Group (toGroup) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
+import Toolkit.Hydra2.Family.Render.Cli (Cli) as Hydra
 
 
 width :: String -> Int -> Int -> Dimension
@@ -116,6 +119,7 @@ fromNode
     => FromToReprRow rlo os Hydra.WrapRepr
     => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
+    => HasBody (Hydra.Cli f) f state is os Effect
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f
@@ -266,6 +270,7 @@ fromFamily
     => FromToReprRow rlo os Hydra.WrapRepr
     => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
+    => HasBody (Hydra.Cli f) f state is os Effect
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f
