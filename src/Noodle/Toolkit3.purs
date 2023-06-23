@@ -272,7 +272,7 @@ type WithFamilyFn (m :: Type -> Type) gstate families instances repr
 
 type WithFamilyFn2 (m :: Type -> Type) gstate families instances repr
     = forall t a
-        . Applicative t
+     . Applicative t
     => MonadEffect m
     => (  forall fA stateA fsA iisA (rliA :: RL.RowList Type) (isA :: Row Type) (rloA :: RL.RowList Type) (osA :: Row Type) repr_isA repr_osA
                  fB stateB fsB iisB (rliB :: RL.RowList Type) (isB :: Row Type) (rloB :: RL.RowList Type) (osB :: Row Type) repr_isB repr_osB
@@ -289,6 +289,25 @@ type WithFamilyFn2 (m :: Type -> Type) gstate families instances repr
     -> FamilyR
     -> FamilyR
     -> t (Maybe a)
+
+
+{-
+type WithNodeFn (m :: Type -> Type) gstate families instances repr
+    =  forall t a
+     . Applicative t
+    => MonadEffect m
+    => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
+        .  HasReprableNodesOf families instances repr f state fs iis rli is rlo os repr_is repr_os m
+        => Family f
+        -> Family.Def state is os m
+        -> Toolkit gstate families  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
+        -> Node f state is os m
+        -> t a
+        )
+    -> FamilyR
+    -> t (Maybe a)
+
+-}
 
 
 {-

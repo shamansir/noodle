@@ -52,7 +52,7 @@ import Toolkit.Hydra2.Family.Geometry.FKaleid as FKaleid
 import Toolkit.Hydra2.Family.Geometry.FScroll as FScroll
 import Toolkit.Hydra2.Family.Geometry.FScrollX as FScrollX
 import Toolkit.Hydra2.Family.Geometry.FScrollY as FScrollY
-import Toolkit.Hydra2.Family.Feed.Number as FNumber
+import Toolkit.Hydra2.Family.Feed.FNumber as FNumber
 import Toolkit.Hydra2.Family.Color.FPosterize as FPosterize
 import Toolkit.Hydra2.Family.Color.FShift as FShift
 import Toolkit.Hydra2.Family.Color.FInvert as FInvert

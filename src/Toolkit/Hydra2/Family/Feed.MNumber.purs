@@ -1,4 +1,4 @@
-module Toolkit.Hydra2.Family.Feed.Number where
+module Toolkit.Hydra2.Family.Feed.FNumber where
 
 
 import Toolkit.Hydra2.Types as H
