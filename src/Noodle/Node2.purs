@@ -307,7 +307,7 @@ subscribeChanges node = (\s is os -> s /\ is /\ os) <$> subscribeState node <*> 
 
 
 -- private?
-sendOut :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m -> Output o -> dout -> m Unit
+sendOut :: forall f o state is os os' m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m' -> Output o -> dout -> m Unit
 sendOut node o = liftEffect <<< sendOutE node o
 
 
@@ -321,7 +321,7 @@ sendOutE (Node _ _ protocol _) output dout =
 
 
 -- private?
-sendOut' :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m -> Output' o -> dout -> m Unit
+sendOut' :: forall f o state is os os' m m' dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m' -> Output' o -> dout -> m Unit
 sendOut' node o = liftEffect <<< sendOutE' node o
 
 
@@ -335,7 +335,7 @@ sendOutE' (Node _ _ protocol _) output dout =
 
 
 -- private?
-sendIn :: forall f i state is is' os m din. MonadEffect m => HasInput i din is' is => Node f state is os m -> Input i -> din -> m Unit
+sendIn :: forall f i state is is' os m m' din. MonadEffect m => HasInput i din is' is => Node f state is os m' -> Input i -> din -> m Unit
 sendIn node i = liftEffect <<< sendInE node i
 
 
@@ -348,7 +348,7 @@ sendInE (Node _ _ protocol _) input din =
         )
 
 
-sendIn' :: forall f i state is is' os m din. MonadEffect m => HasInput i din is' is => Node f state is os m -> Input' i -> din -> m Unit
+sendIn' :: forall f i state is is' os m m' din. MonadEffect m => HasInput i din is' is => Node f state is os m' -> Input' i -> din -> m Unit
 sendIn' node i = liftEffect <<< sendInE' node i
 
 

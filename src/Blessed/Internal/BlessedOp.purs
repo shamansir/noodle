@@ -182,7 +182,11 @@ dumpEnabled = false
 
 
 lift :: forall state m. m Unit -> BlessedOpM state m Unit
-lift m = BlessedOpM $ Free.liftF $ Lift m
+lift = lift'
+
+
+lift' :: forall state m. m ~> BlessedOpM state m
+lift' m = BlessedOpM $ Free.liftF $ Lift m
 
 
 runM

@@ -10,6 +10,9 @@ import Blessed.Internal.BlessedOp (BlessedOp)
 import Noodle.Node2 (Node)
 
 
+-- TODO: we have the conflict between m for `Node` and `BlessedOp` in the result,
+--       we can not afford `MonadEffect` for `BlessedOp` due to problems in compiling handlers (see `HandlerFn` in `Blessed` which is bound to `Effect` for this reason)
+
 class HasBody x f state is os m {- repr -} | x -> f, f -> state is os where
 --     {-
 --     component :: x -> Blessed state m
