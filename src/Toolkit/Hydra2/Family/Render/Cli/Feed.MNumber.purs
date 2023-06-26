@@ -85,7 +85,7 @@ render nodeBoxKey node = do
                         let mbNumber = Number.fromString content
                         -- liftEffect $ Console.log content
                         Blessed.lift $ case mbNumber of
-                            Just number -> Node.sendOutE node FNumber._out_out $ T.Number number
+                            Just number -> Node.sendOut node FNumber._out_out $ T.Number number
                             -- Just number -> Node.sendOut node FNumber._out_out $ T.Number number
                             Nothing -> pure unit
                         pure unit
