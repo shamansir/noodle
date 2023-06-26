@@ -6,6 +6,7 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
 import Effect.Ref (Ref)
+import Effect.Ref as Ref
 
 import Control.Monad.State as State
 
@@ -47,7 +48,7 @@ import Blessed.Core.Coord ((<->))
 import Blessed.Internal.Core as Core
 import Blessed.Internal.JsApi (EventJson)
 import Blessed.Internal.BlessedOp (BlessedOp, BlessedOpM)
-import Blessed.Internal.BlessedOp (runM, getStateRef) as Blessed
+import Blessed.Internal.BlessedOp (runM, runM', getStateRef, imapState) as Blessed
 import Blessed.Internal.NodeKey as NodeKey
 
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
@@ -87,7 +88,9 @@ import Cli.Components.NodeBox.InletsBox as InletsBox
 import Cli.Components.NodeBox.OutletsBox as OutletsBox
 import Cli.Components.NodeBox.InletButton as InletButton
 import Cli.Components.NodeBox.OutletButton as OutletButton
-import Cli.Components.NodeBox.HasBody (class HasBody, run, class HasBody', run')
+import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody')
+import Cli.Components.NodeBox.HasBody (run, run') as NodeBody
+import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState, class IsNodeState, default)
 
 import Noodle.Text.NetworkFile.Command as Cmd
 
@@ -120,6 +123,7 @@ fromNode
     => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     => HasBody (Hydra.Cli f) f state is os Effect
+    => IsNodeState state
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f
@@ -235,8 +239,14 @@ fromNode curPatchId curPatch family node = do
     -- liftEffect $ Console.log $ show mapRepr2
     -- FIXME: try logging/tracking all NodeLineRec updates
 
-
     renderNodeUpdate mapRepr2
+
+    (stateRef :: Ref state) <- liftEffect $ Ref.new default
+
+    -- run :: Proxy x -> NodeBoxKey -> Node f state is os m -> {- Signal repr -> -} BlessedOp state m
+    -- _ <- Blessed.imapState ?wh ?wh $ NodeBody.run (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
+    liftEffect $ Blessed.runM' stateRef $ NodeBody.run (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
+
     -- nextNodeBox >~ Node.append inputText
 
     let
@@ -271,6 +281,7 @@ fromFamily
     => Node.NodeBoundKeys Node.I rli Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O rlo Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     => HasBody (Hydra.Cli f) f state is os Effect
+    => IsNodeState state
     => Patch.Id
     -> Noodle.Patch Hydra.State (Hydra.Instances Effect)
     -> Id.Family f

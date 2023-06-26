@@ -27,3 +27,6 @@ class HasBody' x y {- repr -} state m | x -> y state where
 
 
 -- type RenderBody f state is os m = NodeBoxKey -> Node f state is os m -> {- Signal repr -> -} BlessedOp state m
+
+
+-- newtype HoldsNode = HoldsNode (forall r. (forall f state is os m. IsSymbol f => Node f state is os m -> r) -> r)

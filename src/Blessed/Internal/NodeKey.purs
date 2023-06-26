@@ -77,7 +77,7 @@ getN :: forall subj sym.  NodeKey subj sym -> Maybe Int
 getN (NodeKey maybeN) = maybeN
 
 
-append :: forall subjA symA subjB symB symC. S.Append symA symB symC => NodeKey subjA symA -> NodeKey subjB symB -> NodeKey subjA symC
+append :: forall subjA symA subjB symB symC. S.Append symA symB symC => NodeKey subjA symA -> NodeKey subjB symB -> NodeKey subjB symC
 append (NodeKey (Just nA)) (NodeKey (Just nB)) = nk # setN (nA * 1000 + nB)
 append (NodeKey Nothing) (NodeKey (Just nB)) = nk # setN nB
 append (NodeKey (Just nA)) (NodeKey Nothing) = nk # setN (nA * 1000)

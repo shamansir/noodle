@@ -64,6 +64,7 @@ import Noodle.Node2 as Node
 
 import Unsafe.Coerce (unsafeCoerce)
 import Cli.Components.NodeBox.HasBody (class HasBody)
+import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState, class IsNodeState, default)
 
 
 type Name = String
@@ -263,6 +264,7 @@ type WithFamilyFn (x :: Symbol -> Type) (m :: Type -> Type) gstate families inst
     => (  forall f state fs iis (rli :: RL.RowList Type) (is :: Row Type) (rlo :: RL.RowList Type) (os :: Row Type) repr_is repr_os
         .  HasReprableNodesOf families instances repr f state fs iis rli is rlo os repr_is repr_os m
         => HasBody (x f) f state is os m
+        => IsNodeState state
         => Family f
         -> Family.Def state is os m
         -> Toolkit gstate families  -- FIXME: toolkit is needed to be passed in the function for the constraints HasFamilyDef/HasInstancesOf to work, maybe only Proxy m is needed?
@@ -282,6 +284,8 @@ type WithFamilyFn2 (x :: Symbol -> Type) (m :: Type -> Type) gstate families ins
         => Has.HasReprableNodesOf families instances repr fB stateB fsB iisB rliB isB rloB osB repr_isB repr_osB m
         => HasBody (x fA) fA stateA isA osA m
         => HasBody (x fB) fB stateB isB osB m
+        => IsNodeState stateA
+        => IsNodeState stateB
     --    => Pairs rloA rliB
         => Family fA
         -> Family fB

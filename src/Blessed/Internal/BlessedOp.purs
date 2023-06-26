@@ -288,6 +288,10 @@ imapState toStateB toStateA = case _ of
     PerformOnProcess cmd a -> PerformOnProcess cmd $ pure a
 
 
+-- imapStateM :: forall stateA stateB m a. MonadEffect m => (stateA -> stateB) -> (stateB -> stateA) -> BlessedOpM stateA m a -> BlessedOpM stateB m (m a)
+-- imapStateM atob btoa (BlessedOpM free) = BlessedOpM $ Free.liftF $ imapState atob btoa $ ?wh free
+
+
 foreign import execute_ :: I.BlessedEnc -> Effect Unit
 foreign import registerNode_ :: I.NodeEnc -> Effect Unit
 foreign import callCommandEx_ :: I.RawNodeKey -> I.CommandEnc -> Array I.HandlerCallEnc -> Effect Json

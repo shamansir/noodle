@@ -79,6 +79,7 @@ import Noodle.Text.NetworkFile.Apply as File
 import Noodle.Text.NetworkFile.Command as Cmd
 
 import Cli.State.NwWraper (unwrapN, withNetwork)
+import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState)
 
 
 addNodeBox
@@ -95,6 +96,7 @@ addNodeBox
     => Node.NodeBoundKeys Node.I isrl Id.Input f state is os Effect (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)
     => Node.NodeBoundKeys Node.O osrl Id.Output f state is os Effect (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)
     => HasBody (Hydra.Cli f) f state is os Effect
+    => IsNodeState state
     => Toolkit Hydra.State (Hydra.Families Effect)
     -> Patch Hydra.State (Hydra.Instances Effect)
     -> Node f state is os Effect

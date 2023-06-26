@@ -15,6 +15,7 @@ import Data.List (List)
 import Data.List as List
 import Data.Array ((:))
 import Data.Array as Array
+import Effect.Ref (Ref)
 
 import Control.Monad.State.Class (class MonadState, modify_)
 
@@ -30,12 +31,12 @@ import Cli.Keys (InletsBoxKey, NodeBoxKey, OutletsBoxKey, InfoBoxKey)
 import Cli.Keys (LineA, LineB, LineC) as Key
 import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox) as Key
 import Cli.State.NwWraper (Network, wrapN)
+import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState)
 
 import Noodle.Text.NetworkFile.Command (Command)
 
 import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
-
 
 type State =
     { network :: Network Effect
@@ -49,6 +50,7 @@ type State =
     , lastKeys :: LastKeys
     , nodeKeysMap :: Map Id.NodeIdR NodeBoxKey
     , commandLog :: Array Command
+    , innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
     -- , network :: Noodle.Network Unit (Hydra.Families Effect) (Hydra.Instances Effect)
     -- , network :: TestM Effect
     -- , network :: Network (BlessedOpM State Effect)
@@ -73,6 +75,7 @@ initial =
     , linksTo : Map.empty
     , nodeKeysMap : Map.empty
     , commandLog : []
+    , innerStates : Map.empty
     -- , nodes : Hydra.noInstances
     }
 
