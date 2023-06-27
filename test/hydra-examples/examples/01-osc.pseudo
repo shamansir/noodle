@@ -1,0 +1,13 @@
+s0 # initCam
+
+a # show
+a # setBins 3
+
+osc 60.0 0.1 0.0
+ # modulate (src s0) 2
+ # saturate 0.7
+ # pixelate 10.0 15.0
+ # scale (\_ -> a # fft 0)
+ # out o0
+
+o0 # render
