@@ -89,8 +89,36 @@ instance Bind Program where
 
 
 instance Core.Show Command where
-    show cmd = "i"
+    show Unknown = "unknown"
+    show End = "end"
+    show (Pair cmdA cmdB) = Core.show cmdA <> " -> " <> Core.show cmdB
+    show (One (WithFrom from)) = "1 with from"
+    show (One (WithAudio str)) = "1 with audio"
+    show (One (InitCam str)) = "1 init cam"
+    show (One (Render _)) = "1 render"
+    show (Continue (WithColor _)) = "cont with color"
+    show (Continue (WithModulate _)) = "cont with mod"
+    show (Continue (WithGeometry _)) = "cont with geom"
+    show (Continue (WithSource _)) = "cont with src"
+    show (To _) = "out"
+    show _ = "???"
 
+
+{-}
+instance Core.Show Command where
+    show Unknown = "unknown"
+    show End = "end"
+    show (Pair cmdA cmdB) = Core.show cmdA <> " -> " <> Core.show cmdB
+    show (One (WithFrom from)) = "with from"
+    show (One (WithAudio str)) = "with audio"
+    show (One (InitCam str)) = "init cam"
+    show (One (Render _)) = "render"
+    show (Continue (WithColor _)) = "cont with color"
+    show (Continue (WithModulate _)) = "cont with mod"
+    show (Continue (WithGeometry _)) = "cont with geom"
+    show (Continue (WithSource _)) = "cont with src"
+    show (To from) = "out"
+-}
 
 instance Core.Show a => Core.Show (Program a) where
     show :: Program a -> String
@@ -101,8 +129,8 @@ commandOf :: forall a. Program a -> Command
 commandOf (Program cmd _) = cmd
 
 
-s0 ∷ Program Unit
-s0 = unknown
+s0 ∷ From
+s0 = S0
 
 
 o0 ∷ Output
@@ -115,7 +143,8 @@ initCam = q <<< One <<< InitCam
 setBins _ _ = unknown
 
 
-src _ = From
+src :: From -> From
+src = identity
 
 
 a = unknown
