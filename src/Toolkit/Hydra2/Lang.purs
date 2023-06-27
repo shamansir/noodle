@@ -17,21 +17,28 @@ import Control.Bind (class Bind)
 import Toolkit.Hydra2.Types
 
 
+data Chainable
+    = WithColor ColorOp
+    | WithModulate Modulate
+    | WithGeometry Geometry
+    | WithSource Source
+
+
+data Single
+    = WithFrom From
+    | WithAudio String -- FIXME
+    | InitCam From
+    | Render Output
+
 
 data Command
     = Unknown
     | End
     | Pair Command Command -- parent -> child ?
     -- | Batch (Array Command)
-    | WithSource Source
-    | WithFrom From
-    | WithAudio String -- FIXME
-    | WithColor ColorOp
-    | WithModulate Modulate
-    | WithGeometry Geometry
-    | InitCam From
-    | Render Output
-
+    | One Single
+    | Continue Chainable
+    | To From
 
 
 data Program a = -- same as Writer?
@@ -102,7 +109,7 @@ o0 ∷ Output
 o0 = Output0
 
 
-initCam = q <<< InitCam
+initCam = q <<< One <<< InitCam
 
 
 setBins _ _ = unknown
@@ -118,27 +125,27 @@ show _ = unknown
 
 osc ∷ Value → Value → Value → Program Unit → Program Unit
 osc frequency sync offset =
-    append $ q $ WithSource $ Osc { frequency, sync, offset }
+    append $ q $ Continue $ WithSource $ Osc { frequency, sync, offset }
 
 
 modulate :: From -> Value -> Program Unit -> Program Unit
 modulate _ value =
-    append $ q $ WithModulate $ Modulate value
+    append $ q $ Continue $ WithModulate $ Modulate value
 
 
 saturate :: Value -> Program Unit -> Program Unit
 saturate v =
-    append $ q $ WithColor $ Saturate v
+    append $ q $ Continue $ WithColor $ Saturate v
 
 
 pixelate ∷ Value → Value → Program Unit → Program Unit
 pixelate pixelX pixelY =
-    append $ q $ WithGeometry $ GPixelate { pixelX, pixelY }
+    append $ q $ Continue $ WithGeometry $ GPixelate { pixelX, pixelY }
 
 
 scale ∷ Value → Program Unit → Program Unit
 scale amount =
-    append $ q $ WithGeometry $ GScale
+    append $ q $ Continue $ WithGeometry $ GScale
         { amount
         , offsetX : Number 0.0
         , offsetY : Number 0.0
@@ -152,14 +159,14 @@ fn _ = None
 
 out :: Output -> Program Unit -> Program Unit
 out output =
-    append $ q $ WithFrom $ Output output
+    append $ q $ To $ Output output
 
 
 fft _ _ _ = unknown
 
 
 render :: Output -> Program Unit
-render = q <<< Render
+render = q <<< One <<< Render
 
 
 n :: Number -> Value
