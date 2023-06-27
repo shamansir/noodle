@@ -9,6 +9,7 @@ import Effect (Effect)
 import Effect.Console as Console
 
 import Data.Functor (class Functor)
+import Data.Semigroup (class Semigroup)
 import Control.Apply (class Apply)
 import Control.Bind (class Bind)
 
@@ -19,21 +20,46 @@ import Toolkit.Hydra2.Types
 
 data Command
     = Unknown
-    | Batch (Array Command)
-    | WithSource Source Command
-    | WithFrom From Command
-    | WithAudio Audio String Command
-    | WithColor ColorOp Command
+    | End
+    | Pair Command Command -- parent -> child ?
+    -- | Batch (Array Command)
+    | WithSource Source
+    | WithFrom From
+    | WithAudio String -- FIXME
+    | WithColor ColorOp
+    | WithModulate Modulate
+    | WithGeometry Geometry
+    | InitCam From
     | Render Output
 
 
 
 data Program a = -- same as Writer?
-    Program (Array Command) a
+    Program Command a
 
 
-unknown ∷ Program Unit
-unknown = Program [ Unknown ] unit
+unknown ∷ Program Unit -- private
+unknown = Program Unknown unit
+
+
+q :: Command -> Program Unit -- private
+q cmd = Program cmd unit
+
+
+instance Semigroup Command where
+    append = Pair
+
+
+-- instance Semigroup (Program Unit) where
+--     append :: Program Unit -> Program Unit -> Program Unit
+--     append (Program cmdA _) (Program cmdB _) =
+--         Program ( cmdA <> cmdB ) unit
+
+
+instance Semigroup a => Semigroup (Program a) where
+    append :: Program a -> Program a -> Program a
+    append (Program cmdA a) (Program cmdB b) =
+        Program ( cmdA <> cmdB ) (a <> b)
 
 
 instance Functor Program where
@@ -64,8 +90,8 @@ instance Core.Show a => Core.Show (Program a) where
     show (Program items a) = Core.show items <> "    " <> Core.show a
 
 
-commandsOf :: forall a. Program a -> Array Command
-commandsOf (Program items _) = items
+commandOf :: forall a. Program a -> Command
+commandOf (Program cmd _) = cmd
 
 
 s0 ∷ Program Unit
@@ -76,12 +102,13 @@ o0 ∷ Output
 o0 = Output0
 
 
-initCam _ = unknown
+initCam = q <<< InitCam
+
 
 setBins _ _ = unknown
 
 
-src _ = unknown
+src _ = From
 
 
 a = unknown
@@ -89,33 +116,50 @@ a = unknown
 show _ = unknown
 
 
-osc ∷ forall a. Value → Value → Value → Program a → Program Unit
-osc frequency sync offset program =
-    Program [ WithSource (Osc { frequency, sync, offset }) $ Batch $ commandsOf program ] unit
-
-modulate _ _ _ = unknown
+osc ∷ Value → Value → Value → Program Unit → Program Unit
+osc frequency sync offset =
+    append $ q $ WithSource $ Osc { frequency, sync, offset }
 
 
-saturate v program =
-    Program [ WithColor (Saturate v) $ Batch $ commandsOf program ] unit
-
-pixelate _ _ _ = unknown
-
-scale _ _ = unknown
+modulate :: From -> Value -> Program Unit -> Program Unit
+modulate _ value =
+    append $ q $ WithModulate $ Modulate value
 
 
-fn _ = unknown
+saturate :: Value -> Program Unit -> Program Unit
+saturate v =
+    append $ q $ WithColor $ Saturate v
+
+
+pixelate ∷ Value → Value → Program Unit → Program Unit
+pixelate pixelX pixelY =
+    append $ q $ WithGeometry $ GPixelate { pixelX, pixelY }
+
+
+scale ∷ Value → Program Unit → Program Unit
+scale amount =
+    append $ q $ WithGeometry $ GScale
+        { amount
+        , offsetX : Number 0.0
+        , offsetY : Number 0.0
+        , xMult : Number 1.0
+        , yMult : Number 1.0
+        }
+
+
+fn _ = None
+
 
 out :: Output -> Program Unit -> Program Unit
-out output program =
-    Program [ WithFrom (Output output) $ Batch $ commandsOf program ] unit
+out output =
+    append $ q $ WithFrom $ Output output
 
 
 fft _ _ _ = unknown
 
 
 render :: Output -> Program Unit
-render out = Program [ Render out ] unit
+render = q <<< Render
 
 
 n :: Number -> Value

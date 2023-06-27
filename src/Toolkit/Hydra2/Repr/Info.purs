@@ -79,6 +79,7 @@ instance ShortInfo H.From where
     short :: H.From -> String
     short = case _ of
         H.All -> "∀"
+        H.S0 -> "S0"
         H.Output out -> short out
 
 

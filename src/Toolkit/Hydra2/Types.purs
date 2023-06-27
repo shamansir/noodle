@@ -143,6 +143,8 @@ data Ease
 
 data From
     = All
+    | S0
+    -- | ...
     | Output Output
 
 
@@ -341,6 +343,7 @@ instance Show From where
     show :: From -> String
     show = case _ of
         All -> "From all"
+        S0 -> "From source 0"
         Output out -> "From output " <> show out
 
 
@@ -464,6 +467,7 @@ instance Encode From where
     encode :: From -> String
     encode = case _ of
         All -> "ALL"
+        S0 -> "SRC"
         Output out -> "OUT " <> encode out
 
 
