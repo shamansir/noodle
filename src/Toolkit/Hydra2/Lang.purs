@@ -17,7 +17,7 @@ import Control.Bind (class Bind)
 import Toolkit.Hydra2.Types
 
 
-data Chainable
+data Chainable -- TODO / FIXME see if `Types.Texture` is may be the same
     = WithColor ColorOp
     | WithModulate Modulate
     | WithGeometry Geometry
@@ -25,8 +25,7 @@ data Chainable
 
 
 data Single
-    = WithFrom From
-    | WithAudio String -- FIXME
+    = WithAudio String -- FIXME
     | InitCam From
     | Render Output
 
@@ -92,7 +91,6 @@ instance Core.Show Command where
     show Unknown = "unknown"
     show End = "end"
     show (Pair cmdA cmdB) = Core.show cmdA <> " -> " <> Core.show cmdB
-    show (One (WithFrom from)) = "1 with from"
     show (One (WithAudio str)) = "1 with audio"
     show (One (InitCam str)) = "1 init cam"
     show (One (Render _)) = "1 render"
