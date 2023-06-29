@@ -1,0 +1,4 @@
+g( scale = 1, offset )
+
+// default
+osc(60,0.1,1.5).layer(gradient().g()).out(o0)
