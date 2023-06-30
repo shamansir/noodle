@@ -44,6 +44,7 @@ instance ToCode Source where
     toCode = case _ of
         Dynamic -> "/* dyn */"
         Video -> "/* video */"
+        S0 -> "s0"
         Gradient { speed } -> fn "gradient" [ speed ]
         Camera -> "/* camera */" -- 🎥
         Noise { scale, offset } -> fn "noise" [ scale, offset ]
@@ -110,7 +111,6 @@ instance ToCode From where
     toCode :: From -> String
     toCode = case _ of
         All -> "/* all *."
-        S0 -> "s0"
         Output out -> toCode out
 
 

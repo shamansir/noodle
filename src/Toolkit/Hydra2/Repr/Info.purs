@@ -79,7 +79,6 @@ instance ShortInfo H.From where
     short :: H.From -> String
     short = case _ of
         H.All -> "∀"
-        H.S0 -> "S0"
         H.Output out -> short out
 
 
@@ -103,6 +102,7 @@ instance ShortInfo H.Source where
     short = case _ of
         H.Dynamic -> "DYN"
         H.Video -> "VID"
+        H.S0 -> "S0"
         H.Gradient _ -> "GRD"
         H.Camera -> "CAM" -- 🎥
         H.Noise _ -> "NZE"

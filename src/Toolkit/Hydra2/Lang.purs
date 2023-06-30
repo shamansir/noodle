@@ -15,24 +15,27 @@ import Control.Bind (class Bind)
 
 
 import Toolkit.Hydra2.Types
+import Toolkit.Hydra2.Types (Value(..)) as T
 
 
-data Chainable -- TODO / FIXME see if `Types.Texture` is may be the same
-    = WithColor ColorOp
-    | WithModulate Modulate
-    | WithGeometry Geometry
-    | WithSource Source
+data Chainable -- TODO / FIXME `Types.Texture` is almost the same
+    = WithColor ColorOp Chainable
+    | ModulateWith Chainable Modulate Chainable
+    | Geometry Geometry Chainable
+    | BlendOf Chainable Blend Chainable
+    | From Source
+    | None
 
 
 data Single
     = WithAudio String -- FIXME
-    | InitCam From
+    | InitCam Source
     | Render Output
 
 
 data Command
     = Unknown
-    | End
+    | End Output Chainable
     | Pair Command Command -- parent -> child ?
     -- | Batch (Array Command)
     | One Single
@@ -89,15 +92,16 @@ instance Bind Program where
 
 instance Core.Show Command where
     show Unknown = "unknown"
-    show End = "end"
+    show (End _ _) = "end"
     show (Pair cmdA cmdB) = Core.show cmdA <> " -> " <> Core.show cmdB
     show (One (WithAudio str)) = "1 with audio"
     show (One (InitCam str)) = "1 init cam"
     show (One (Render _)) = "1 render"
-    show (Continue (WithColor _)) = "cont with color"
-    show (Continue (WithModulate _)) = "cont with mod"
-    show (Continue (WithGeometry _)) = "cont with geom"
-    show (Continue (WithSource _)) = "cont with src"
+    show (Continue (WithColor _ _)) = "cont with color"
+    show (Continue (ModulateWith _ _ _)) = "cont with mod"
+    show (Continue (Geometry _ _)) = "cont with geom"
+    show (Continue (BlendOf _ _ _)) = "cont with blend"
+    show (Continue (From _)) = "cont with src"
     show (To _) = "out"
     show _ = "???"
 
@@ -127,7 +131,7 @@ commandOf :: forall a. Program a -> Command
 commandOf (Program cmd _) = cmd
 
 
-s0 ∷ From
+s0 ∷ Source
 s0 = S0
 
 
@@ -141,8 +145,8 @@ initCam = q <<< One <<< InitCam
 setBins _ _ = unknown
 
 
-src :: From -> From
-src = identity
+src :: Source -> Chainable
+src = From
 
 
 a = unknown
@@ -150,29 +154,29 @@ a = unknown
 show _ = unknown
 
 
-osc ∷ Value → Value → Value → Program Unit → Program Unit
+osc ∷ Value → Value → Value → Chainable
 osc frequency sync offset =
-    append $ q $ Continue $ WithSource $ Osc { frequency, sync, offset }
+    From $ Osc { frequency, sync, offset }
 
 
-modulate :: From -> Value -> Program Unit -> Program Unit
-modulate _ value =
-    append $ q $ Continue $ WithModulate $ Modulate value
+modulate :: Chainable -> Value -> Chainable -> Chainable
+modulate chain value =
+    ModulateWith chain $ Modulate value
 
 
-saturate :: Value -> Program Unit -> Program Unit
+saturate :: Value -> Chainable -> Chainable
 saturate v =
-    append $ q $ Continue $ WithColor $ Saturate v
+    WithColor $ Saturate v
 
 
-pixelate ∷ Value → Value → Program Unit → Program Unit
+pixelate ∷ Value → Value → Chainable -> Chainable
 pixelate pixelX pixelY =
-    append $ q $ Continue $ WithGeometry $ GPixelate { pixelX, pixelY }
+    Geometry $ GPixelate { pixelX, pixelY }
 
 
-scale ∷ Value → Program Unit → Program Unit
+scale ∷ Value → Chainable → Chainable
 scale amount =
-    append $ q $ Continue $ WithGeometry $ GScale
+    Geometry $ GScale
         { amount
         , offsetX : Number 0.0
         , offsetY : Number 0.0
@@ -181,12 +185,12 @@ scale amount =
         }
 
 
-fn _ = None
+fn _ = T.None
 
 
-out :: Output -> Program Unit -> Program Unit
+out :: Output -> Chainable -> Program Unit
 out output =
-    append $ q $ To $ Output output
+    q <<< End output
 
 
 fft _ _ _ = unknown

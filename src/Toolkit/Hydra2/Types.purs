@@ -54,7 +54,8 @@ data Texture
 
 
 data Source
-    = Dynamic
+    = S0
+    | Dynamic
     | Video
     | Camera
     | Gradient { speed :: Value }
@@ -143,7 +144,6 @@ data Ease
 
 data From
     = All
-    | S0
     -- | ...
     | Output Output
 
@@ -343,7 +343,6 @@ instance Show From where
     show :: From -> String
     show = case _ of
         All -> "From all"
-        S0 -> "From source 0"
         Output out -> "From output " <> show out
 
 
@@ -365,6 +364,7 @@ instance Show UpdateFn where
 instance Show Source where
     show :: Source -> String
     show = case _ of
+        S0 -> "S0"
         Dynamic -> "Dynamic"
         Video -> "Video"
         Gradient { speed } -> "Gradient " <> show speed
@@ -467,7 +467,6 @@ instance Encode From where
     encode :: From -> String
     encode = case _ of
         All -> "ALL"
-        S0 -> "SRC"
         Output out -> "OUT " <> encode out
 
 
@@ -489,6 +488,7 @@ instance Encode UpdateFn where
 instance Encode Source where
     encode :: Source -> String
     encode = case _ of
+        S0 -> "S0"
         Dynamic -> "D"
         Video -> "V"
         Gradient { speed } -> "G " <> encode speed
