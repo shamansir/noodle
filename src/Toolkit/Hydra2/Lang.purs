@@ -18,7 +18,7 @@ import Toolkit.Hydra2.Types
 import Toolkit.Hydra2.Types (Value(..)) as T
 
 import Toolkit.Hydra2.Lang.ToCode
-import Toolkit.Hydra2.Lang.ToCode (fn) as ToCode
+import Toolkit.Hydra2.Lang.ToCode (fnPs) as ToCode
 
 
 type Chainable = Texture
@@ -109,21 +109,21 @@ instance Core.Show Command where
     show (To _) = "out"
 
 
-instance ToCode Command where
-    toCode = case _ of
-        Unknown -> "/* unknown */"
-        End output chainable -> toCode chainable <> " # " <> ToCode.fn "out" [ output ]
-        Pair cmdA cmdB -> toCode cmdA <> "\n" <> toCode cmdB
+instance ToCode PS Command where
+    toCode _ = case _ of
+        Unknown -> "{- unknown -}"
+        End output chainable -> toCode pureScript chainable <> " # " <> ToCode.fnPs "out" [ output ]
+        Pair cmdA cmdB -> toCode pureScript cmdA <> "\n" <> toCode pureScript cmdB
         One (WithAudio str) -> "withAudio()"
         One (InitCam str) -> "withCam()"
         One (Render _) -> "render()"
-        Continue chainable -> "." <> toCode chainable
+        Continue chainable -> "." <> toCode pureScript chainable
         To _ -> "to()"
         -- _ -> "???"
 
 
-instance ToCode (Program a) where
-    toCode (Program cmd _) = toCode cmd
+instance ToCode PS (Program a) where
+    toCode _ (Program cmd _) = toCode pureScript cmd
 
 
 {-

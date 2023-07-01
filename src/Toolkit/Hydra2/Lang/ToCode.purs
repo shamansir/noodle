@@ -11,9 +11,18 @@ import Data.Tuple as Tuple
 import Data.Tuple.Nested (type (/\), (/\))
 
 import Toolkit.Hydra2.Types
+import Type.Proxy (Proxy(..))
 
-class ToCode a where
-    toCode :: a -> String
+
+data Target
+
+
+foreign import data JS :: Target
+foreign import data PS :: Target
+
+
+class ToCode (target :: Target) a where
+    toCode :: Proxy target -> a -> String
 
 
 class ToFn arg a where
@@ -21,52 +30,68 @@ class ToFn arg a where
 
 
 -- fn :: String -> Array (String /\ Value) -> String
--- fn name vals = name <> "(" <> (String.joinWith "," $ toCode <$> Tuple.snd <$> vals) <> ")"
+-- fn name vals = name <> "(" <> (String.joinWith "," $ toCode pureScript <$> Tuple.snd <$> vals) <> ")"
 
 
-fn :: forall a. ToCode a => String -> Array a -> String
-fn name vals = fns name $ toCode <$> vals
+pureScript :: _ PS
+pureScript = Proxy
 
 
-fns :: String -> Array String -> String
-fns name vals = name <> " ( " <> (String.joinWith " " vals) <> " ) "
+fnPs :: forall a. ToCode PS a => String -> Array a -> String
+fnPs name vals = fnsPs name $ toCode pureScript <$> vals
 
 
-fne :: String -> String
-fne name = name <> " (  ) "
+fnsPs :: String -> Array String -> String
+fnsPs name vals = name <> " " <> (String.joinWith " " vals)
 
 
-instance ToCode Value where
-    toCode :: Value -> String
-    toCode = case _ of
-        None -> "/* none */"
-        Required -> "/* required */"
-        Number n -> Core.show n
-        VArray vals ease -> toCode vals -- FIXME: use `ease`
-        Dep _ -> "<Dep>"
+fnePs :: String -> String
+fnePs name = name
+
+
+fnJs :: forall a. ToCode PS a => String -> Array a -> String
+fnJs name vals = fnsPs name $ toCode pureScript <$> vals
+
+
+fnsJs :: String -> Array String -> String
+fnsJs name vals = name <> "( " <> (String.joinWith "," vals) <> " )"
+
+
+fneJs :: String -> String
+fneJs name = name <> "()"
+
+
+instance ToCode PS Value where
+    toCode :: Proxy PS -> Value -> String
+    toCode _ = case _ of
+        None -> "{- none -}"
+        Required -> "{- required -}"
+        Number n -> "(n " <> Core.show n <> ")"
+        VArray vals ease -> toCode pureScript vals -- FIXME: use `ease`
+        Dep _ -> "{- dep-fn -}"
         Time -> "time"
         MouseX -> "mouseX"
         MouseY -> "mouseY"
         Width -> "width"
         Height -> "height"
         Pi -> "pi"
-        Audio audio bin -> "a.fft[" <> toCode bin <> "]" -- FIXME: use `audio`
+        Audio audio bin -> "a.fft[" <> toCode pureScript bin <> "]" -- FIXME: use `audio`
 
 
-instance ToCode Source where
-    toCode :: Source -> String
-    toCode = case _ of
-        Dynamic -> "/* dyn */"
-        Video -> "/* video */"
+instance ToCode PS Source where
+    toCode :: Proxy PS -> Source -> String
+    toCode _ = case _ of
+        Dynamic -> "{- dyn -}"
+        Video -> "{- video -}"
         S0 -> "s0"
-        Gradient { speed } -> fn "gradient" [ speed ]
-        Camera -> "/* camera */" -- 🎥
-        Noise { scale, offset } -> fn "noise" [ scale, offset ]
-        Osc { frequency, sync, offset } -> fn "osc" [ frequency, sync, offset ]
-        Shape { sides, radius, smoothing } -> fn "shape" [ sides, radius, smoothing ]
-        Solid { r, g, b, a } -> fn "solid" [ r, g, b, a ]
-        Source from -> toCode from <> "()"
-        Voronoi { scale, speed, blending } -> fn "voronoi" [ scale, speed, blending ]
+        Gradient { speed } -> fnPs "gradient" [ speed ]
+        Camera -> "{- camera -}" -- 🎥
+        Noise { scale, offset } -> fnPs "noise" [ scale, offset ]
+        Osc { frequency, sync, offset } -> fnPs "osc" [ frequency, sync, offset ]
+        Shape { sides, radius, smoothing } -> fnPs "shape" [ sides, radius, smoothing ]
+        Solid { r, g, b, a } -> fnPs "solid" [ r, g, b, a ]
+        Source from -> toCode pureScript from <> "()"
+        Voronoi { scale, speed, blending } -> fnPs "voronoi" [ scale, speed, blending ]
 
 
 instance ToFn Value ColorOp where
@@ -133,69 +158,69 @@ instance ToFn Value Geometry where
         GScrollY { scrollY, speed } -> "scrollY" /\ [ scrollY, speed ]
 
 
-instance ToCode ColorOp where
-    toCode :: ColorOp -> String
-    toCode cop =
+instance ToCode PS ColorOp where
+    toCode :: Proxy PS -> ColorOp -> String
+    toCode _ cop =
         case (toFn cop :: String /\ Array Value) of
-            name /\ args -> fn name args
+            name /\ args -> fnPs name args
 
 
-instance ToCode Blend where
-    toCode :: Blend -> String
-    toCode blend =
+instance ToCode PS Blend where
+    toCode :: Proxy PS -> Blend -> String
+    toCode _ blend =
         case (toFn blend :: String /\ Array Value) of
-            name /\ args -> fn name args
+            name /\ args -> fnPs name args
 
 
-instance ToCode Modulate where
-    toCode :: Modulate -> String
-    toCode mod =
+instance ToCode PS Modulate where
+    toCode :: Proxy PS -> Modulate -> String
+    toCode _ mod =
         case (toFn mod :: String /\ Array Value) of
-            name /\ args -> fn name args
+            name /\ args -> fnPs name args
 
 
-instance ToCode Geometry where
-    toCode :: Geometry -> String
-    toCode geom =
+instance ToCode PS Geometry where
+    toCode :: Proxy PS -> Geometry -> String
+    toCode _ geom =
         case (toFn geom :: String /\ Array Value) of
-            name /\ args -> fn name args
+            name /\ args -> fnPs name args
 
 
-instance ToCode From where
-    toCode :: From -> String
-    toCode = case _ of
-        All -> "/* all */"
-        Output out -> toCode out
+instance ToCode PS From where
+    toCode :: Proxy PS -> From -> String
+    toCode _ = case _ of
+        All -> "{- all -}"
+        Output out -> toCode pureScript out
 
 
-instance ToCode Output where
-    toCode :: Output -> String
-    toCode = case _ of
-        Screen -> "/* screen */"
+instance ToCode PS Output where
+    toCode :: Proxy PS -> Output -> String
+    toCode _ = case _ of
+        Screen -> "{- screen -}"
         Output0 -> "o0"
         Output1 -> "o1"
         Output2 -> "o2"
 
 
-instance ToCode Values where
-    toCode :: Values -> String
-    toCode (Values array) = "[" <> String.joinWith "," (toCode <$> array) <> "]" -- FIXME: use `ease`
+instance ToCode PS Values where
+    toCode :: Proxy PS -> Values -> String
+    toCode _ (Values array) = "[" <> String.joinWith "," (toCode pureScript <$> array) <> "]" -- FIXME: use `ease`
 
 
-instance ToCode Ease where
-    toCode :: Ease -> String
-    toCode = case _ of
+instance ToCode PS Ease where
+    toCode :: Proxy PS -> Ease -> String
+    toCode _ = case _ of
         Linear -> "linear"
-        Fast v -> fn "fast" [ v ]
-        Smooth v -> fn "smooth" [ v ]
-        Fit { low, high } -> fn "fit" [ low, high ]
-        Offset v -> fn "offset" [ v ]
+        Fast v -> fnPs "fast" [ v ]
+        Smooth v -> fnPs "smooth" [ v ]
+        Fit { low, high } -> fnPs "fit" [ low, high ]
+        Offset v -> fnPs "offset" [ v ]
         InOutCubic -> "inOutCubic"
 
 
-instance ToCode AudioBin where
-    toCode :: AudioBin -> String
-    toCode = case _ of
+instance ToCode PS AudioBin where
+    toCode :: Proxy PS -> AudioBin -> String
+    toCode _ = case _ of
         H0 -> "0"
         H1 -> "1"
         H2 -> "2"
@@ -203,24 +228,24 @@ instance ToCode AudioBin where
         H4 -> "4"
 
 
-instance ToCode Texture where
-    toCode :: Texture -> String
-    toCode = case _ of
-        Empty -> "/* empty */"
-        From src -> toCode src
+instance ToCode PS Texture where
+    toCode :: Proxy PS -> Texture -> String
+    toCode _ = case _ of
+        Empty -> "{- empty -}"
+        From src -> toCode pureScript src
         BlendOf { what, with } blend ->
-            toCode with <> " # " <>
+            toCode pureScript with <> " # " <>
             case (toFn blend :: String /\ Array Value) of
-                name /\ args -> fns name $ toCode what : (toCode <$> args)
+                name /\ args -> fnsPs name $ toCode pureScript what : (toCode pureScript <$> args)
         WithColor texture cop ->
-            toCode texture <> " # " <>
+            toCode pureScript texture <> " # " <>
             case (toFn cop :: String /\ Array Value) of
-                name /\ args -> fn name args
+                name /\ args -> fnPs name args
         ModulateWith { what, with } mod ->
-            toCode with <> " # " <>
+            toCode pureScript with <> " # " <>
             case (toFn mod :: String /\ Array Value) of
-                name /\ args -> fns name $ toCode what : (toCode <$> args)
+                name /\ args -> fnsPs name $ toCode pureScript what : (toCode pureScript <$> args)
         Geometry texture gmt ->
-            toCode texture <> " # " <>
+            toCode pureScript texture <> " # " <>
             case (toFn gmt :: String /\ Array Value) of
-                name /\ args -> fn name args
+                name /\ args -> fnPs name args
