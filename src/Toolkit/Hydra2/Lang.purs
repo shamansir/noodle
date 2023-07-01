@@ -15,7 +15,7 @@ import Control.Bind (class Bind)
 import Toolkit.Hydra2.Types (From, Output, Source, Texture, Audio, OnAudio)
 
 import Toolkit.Hydra2.Lang.ToCode
-import Toolkit.Hydra2.Lang.ToCode (fnPs) as ToCode
+import Toolkit.Hydra2.Lang.ToCode (fnPs, fnJs) as ToCode
 
 
 data Single
@@ -83,11 +83,22 @@ instance ToCode PS Command where
         One (Render out) -> toCode pureScript out <> " # render"
         Continue texture -> "." <> toCode pureScript texture
         To _ -> "to()"
-        -- _ -> "???"
+else instance ToCode JS Command where
+    toCode _ = case _ of
+        Unknown -> "/* unknown */"
+        End output texture -> toCode javaScript texture <> "\n\t." <> ToCode.fnJs "out" [ output ]
+        Pair cmdA cmdB -> toCode javaScript cmdA <> "\n" <> toCode javaScript cmdB
+        One (WithAudio onaudio) -> toCode javaScript onaudio
+        One (InitCam src) -> toCode javaScript src <> ".initCam()"
+        One (Render out) -> toCode javaScript out <> ".render()"
+        Continue texture -> "." <> toCode javaScript texture
+        To _ -> "to()"
 
 
 instance ToCode PS (Program a) where
     toCode _ (Program cmd _) = toCode pureScript cmd
+else instance ToCode JS (Program a) where
+    toCode _ (Program cmd _) = toCode javaScript cmd
 
 
 {-

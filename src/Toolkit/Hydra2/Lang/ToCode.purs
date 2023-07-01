@@ -56,12 +56,12 @@ fnePs :: String -> String
 fnePs name = name
 
 
-fnJs :: forall a. ToCode PS a => String -> Array a -> String
-fnJs name vals = fnsPs name $ toCode pureScript <$> vals
+fnJs :: forall a. ToCode JS a => String -> Array a -> String
+fnJs name vals = fnsJs name $ toCode javaScript <$> vals
 
 
 fnsJs :: String -> Array String -> String
-fnsJs name vals = name <> "( " <> (String.joinWith "," vals) <> " )"
+fnsJs name vals = name <> "( " <> (String.joinWith ", " vals) <> " )"
 
 
 fneJs :: String -> String
@@ -155,7 +155,7 @@ instance ToCode PS Value where
         None -> "{- none -}"
         Required -> "{- required -}"
         Number n -> "(n " <> Core.show n <> ")"
-        VArray vals ease -> toCode pureScript vals -- FIXME: use `ease`
+        VArray vals ease -> toCode pureScript vals <> "\n\t# " <> toCode pureScript ease
         Dep _ -> "{- dep-fn -}"
         Time -> "time"
         MouseX -> "mouseX"
@@ -182,11 +182,13 @@ instance ToCode PS Source where
         Voronoi { scale, speed, blending } -> fnPs "voronoi" [ scale, speed, blending ]
 
 
+
 instance ToCode PS ColorOp where
     toCode :: Proxy PS -> ColorOp -> String
     toCode _ cop =
         case (toFn cop :: String /\ Array Value) of
             name /\ args -> fnPs name args
+
 
 
 instance ToCode PS Blend where
@@ -196,11 +198,13 @@ instance ToCode PS Blend where
             name /\ args -> fnPs name args
 
 
+
 instance ToCode PS Modulate where
     toCode :: Proxy PS -> Modulate -> String
     toCode _ mod =
         case (toFn mod :: String /\ Array Value) of
             name /\ args -> fnPs name args
+
 
 
 instance ToCode PS Geometry where
@@ -210,11 +214,13 @@ instance ToCode PS Geometry where
             name /\ args -> fnPs name args
 
 
+
 instance ToCode PS From where
     toCode :: Proxy PS -> From -> String
     toCode _ = case _ of
         All -> "{- all -}"
         Output out -> toCode pureScript out
+
 
 
 instance ToCode PS Output where
@@ -248,12 +254,14 @@ instance ToCode PS AudioBin where
         H4 -> "H4"
 
 
+
 instance ToCode PS Audio where
     toCode :: Proxy PS -> Audio -> String
     toCode _ = case _ of
         Silence -> "s"
         Mic -> "a"
         File -> "file"
+
 
 
 instance ToCode PS Texture where
@@ -280,8 +288,150 @@ instance ToCode PS Texture where
                 name /\ args -> fnPs name args
 
 
+
 instance ToCode PS OnAudio where
     toCode :: Proxy PS -> OnAudio -> String
     toCode _ = case _ of
         Show audio -> toCode pureScript audio <> " # " <> fnePs "show"
         SetBins audio n -> toCode pureScript audio <> " # " <> fnsPs "setBins" [ Core.show n ]
+
+
+
+{- JAVASCRIPT -}
+
+
+instance ToCode JS Value where
+    toCode :: Proxy JS -> Value -> String
+    toCode _ = case _ of
+        None -> "/* none */"
+        Required -> "/* required */"
+        Number n -> Core.show n
+        VArray vals ease -> toCode javaScript vals <> "\n\t." <> toCode javaScript ease
+        Dep _ -> "/* dep-fn */"
+        Time -> "time"
+        MouseX -> "mouseX"
+        MouseY -> "mouseY"
+        Width -> "width"
+        Height -> "height"
+        Pi -> "pi"
+        Audio audio bin -> toCode javaScript audio <> ".fft[" <> toCode javaScript bin <> "]"
+
+
+instance ToCode JS Source where
+    toCode :: Proxy JS -> Source -> String
+    toCode _ = case _ of
+        Dynamic -> "/* dyn */"
+        Video -> "/* video */"
+        S0 -> "s0"
+        Gradient { speed } -> fnJs "gradient" [ speed ]
+        Camera -> "/* camera */" -- 🎥
+        Noise { scale, offset } -> fnJs "noise" [ scale, offset ]
+        Osc { frequency, sync, offset } -> fnJs "osc" [ frequency, sync, offset ]
+        Shape { sides, radius, smoothing } -> fnJs "shape" [ sides, radius, smoothing ]
+        Solid { r, g, b, a } -> fnJs "solid" [ r, g, b, a ]
+        Source from -> toCode javaScript from <> "()"
+        Voronoi { scale, speed, blending } -> fnJs "voronoi" [ scale, speed, blending ]
+
+
+instance ToCode JS ColorOp where
+    toCode :: Proxy JS -> ColorOp -> String
+    toCode _ cop =
+        case (toFn cop :: String /\ Array Value) of
+            name /\ args -> fnJs name args
+
+
+instance ToCode JS Blend where
+    toCode :: Proxy JS -> Blend -> String
+    toCode _ blend =
+        case (toFn blend :: String /\ Array Value) of
+            name /\ args -> fnJs name args
+
+
+instance ToCode JS Modulate where
+    toCode :: Proxy JS -> Modulate -> String
+    toCode _ mod =
+        case (toFn mod :: String /\ Array Value) of
+            name /\ args -> fnJs name args
+
+
+instance ToCode JS Geometry where
+    toCode :: Proxy JS -> Geometry -> String
+    toCode _ geom =
+        case (toFn geom :: String /\ Array Value) of
+            name /\ args -> fnJs name args
+
+
+instance ToCode JS From where
+    toCode :: Proxy JS -> From -> String
+    toCode _ = case _ of
+        All -> "/* all */"
+        Output out -> toCode javaScript out
+
+
+instance ToCode JS Output where
+    toCode :: Proxy JS -> Output -> String
+    toCode _ = case _ of
+        Screen -> "/* screen */"
+        Output0 -> "o0"
+        Output1 -> "o1"
+        Output2 -> "o2"
+
+
+instance ToCode JS Ease where
+    toCode :: Proxy JS -> Ease -> String
+    toCode _ ease =
+        case (toFn ease :: String /\ Array Value) of
+            name /\ args -> fnJs name args
+
+
+instance ToCode JS AudioBin where
+    toCode :: Proxy JS -> AudioBin -> String
+    toCode _ = case _ of
+        H0 -> "0"
+        H1 -> "1"
+        H2 -> "2"
+        H3 -> "3"
+        H4 -> "4"
+
+
+instance ToCode JS Audio where
+    toCode :: Proxy JS -> Audio -> String
+    toCode _ = case _ of
+        Silence -> "s"
+        Mic -> "a"
+        File -> "file"
+
+instance ToCode JS Values where
+    toCode :: Proxy JS -> Values -> String
+    toCode _ (Values array) = "[" <> String.joinWith "," (toCode javaScript <$> array) <> "]" -- FIXME: use `ease`
+
+
+instance ToCode JS Texture where
+    toCode :: Proxy JS -> Texture -> String
+    toCode _ = case _ of
+        Empty -> "/* empty */"
+        From S0 -> "src("  <> toCode javaScript S0 <> ")"
+        From src -> toCode javaScript src
+        BlendOf { what, with } blend ->
+            toCode javaScript with <> "\n\t." <>
+            case (toFn blend :: String /\ Array Value) of
+                name /\ args -> fnsJs name $ toCode javaScript what : (toCode javaScript <$> args)
+        WithColor texture cop ->
+            toCode javaScript texture <> "\n\t." <>
+            case (toFn cop :: String /\ Array Value) of
+                name /\ args -> fnJs name args
+        ModulateWith { what, with } mod ->
+            toCode javaScript with <> "\n\t." <>
+            case (toFn mod :: String /\ Array Value) of
+                name /\ args -> fnsJs name $ toCode javaScript what : (toCode javaScript <$> args)
+        Geometry texture gmt ->
+            toCode javaScript texture <> "\n\t." <>
+            case (toFn gmt :: String /\ Array Value) of
+                name /\ args -> fnJs name args
+
+
+instance ToCode JS OnAudio where
+    toCode :: Proxy JS -> OnAudio -> String
+    toCode _ = case _ of
+        Show audio -> toCode javaScript audio <> "." <> fneJs "show"
+        SetBins audio n -> toCode javaScript audio <> "." <> fnsJs "setBins" [ Core.show n ]

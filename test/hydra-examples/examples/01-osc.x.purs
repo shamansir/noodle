@@ -9,7 +9,7 @@ import Effect.Console as Console
 
 
 import Toolkit.Hydra2.Lang
-import Toolkit.Hydra2.Lang.ToCode (toCode, pureScript)
+import Toolkit.Hydra2.Lang.ToCode (toCode, pureScript, javaScript)
 import Toolkit.Hydra2.Lang.Api
 
 example :: Program Unit
@@ -33,3 +33,4 @@ example = do
 main :: Effect Unit
 main = do
     Console.log $ toCode pureScript example
+    Console.log $ toCode javaScript example
