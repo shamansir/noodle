@@ -3,6 +3,7 @@ module Toolkit.Hydra2.Lang.ToCode where
 import Prelude
 import Prelude (show) as Core
 
+import Data.Array ((:))
 import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.Semigroup ((<>))
@@ -24,7 +25,11 @@ class ToFn arg a where
 
 
 fn :: forall a. ToCode a => String -> Array a -> String
-fn name vals = name <> " ( " <> (String.joinWith " " $ toCode <$> vals) <> " ) "
+fn name vals = fns name $ toCode <$> vals
+
+
+fns :: String -> Array String -> String
+fns name vals = name <> " ( " <> (String.joinWith " " vals) <> " ) "
 
 
 fne :: String -> String
@@ -64,24 +69,24 @@ instance ToCode Source where
         Voronoi { scale, speed, blending } -> fn "voronoi" [ scale, speed, blending ]
 
 
-instance ToCode ColorOp where
-    toCode :: ColorOp -> String
-    toCode = case _ of
-        R { scale, offset } -> fn "r" [ scale, offset ]
-        G { scale, offset } -> fn "g" [ scale, offset ]
-        B { scale, offset } -> fn "b" [ scale, offset ]
-        A { scale, offset } -> fn "a" [ scale, offset ]
-        Posterize { bins, gamma } -> fn "a" [ bins, gamma ]
-        Shift { r, g, b, a } -> fn "shift" [ r, g, b, a ]
-        Invert amount -> fn "invert" [ amount ]
-        Contrast amount -> fn "contrast" [ amount ]
-        Brightness amount -> fn "brightness" [ amount ]
-        Luma { treshold, tolerance } -> fn "luma" [ treshold, tolerance ]
-        Tresh { treshold, tolerance } -> fn "tresh" [ treshold, tolerance ]
-        Color { r, g, b, a } -> fn "color" [ r, g, b, a ]
-        Saturate amount -> fn "saturate" [ amount ]
-        Hue amount -> fn "hue" [ amount ]
-        Colorama amount -> fn "colorama" [ amount ]
+instance ToFn Value ColorOp where
+    toFn :: ColorOp -> String /\ Array Value
+    toFn = case _ of
+        R { scale, offset } -> "r" /\ [ scale, offset ]
+        G { scale, offset } -> "g" /\ [ scale, offset ]
+        B { scale, offset } -> "b" /\ [ scale, offset ]
+        A { scale, offset } -> "a" /\ [ scale, offset ]
+        Posterize { bins, gamma } -> "a" /\ [ bins, gamma ]
+        Shift { r, g, b, a } -> "shift" /\ [ r, g, b, a ]
+        Invert amount -> "invert" /\ [ amount ]
+        Contrast amount -> "contrast" /\ [ amount ]
+        Brightness amount -> "brightness" /\ [ amount ]
+        Luma { treshold, tolerance } -> "luma" /\ [ treshold, tolerance ]
+        Tresh { treshold, tolerance } -> "tresh" /\ [ treshold, tolerance ]
+        Color { r, g, b, a } -> "color" /\ [ r, g, b, a ]
+        Saturate amount -> "saturate" /\ [ amount ]
+        Hue amount -> "hue" /\ [ amount ]
+        Colorama amount -> "colorama" /\ [ amount ]
 
 
 instance ToFn Value Modulate where
@@ -101,6 +106,47 @@ instance ToFn Value Modulate where
         ModScrollY { scrollY, speed } -> "modScrollY" /\ [ scrollY, speed ]
 
 
+instance ToFn Value Blend where
+    toFn :: Blend -> String /\ Array Value
+    toFn = case _ of
+        Blend amount -> "blend" /\ [ amount ]
+        Add amount -> "add" /\ [ amount ]
+        Sub amount -> "sub" /\ [ amount ]
+        Mult amount -> "mult" /\ [ amount ]
+        Diff -> "diff" /\ []
+        Layer _ -> "layer" /\ []
+        Mask -> "mask" /\ []
+
+
+instance ToFn Value Geometry where
+    toFn :: Geometry -> String /\ Array Value
+    toFn = case _ of
+        GKaleid { nSides } -> "kaleid" /\ [ nSides ]
+        GPixelate { pixelX, pixelY } -> "pixelate" /\ [ pixelX, pixelY ]
+        GRepeat { offsetX, offsetY, repeatX, repeatY } -> "repeat" /\ [ offsetX, offsetY, repeatX, repeatY ]
+        GRepeatX { offset, reps } -> "repeatX" /\ [ offset, reps ]
+        GRepeatY { offset, reps } -> "repeatY" /\ [ offset, reps ]
+        GRotate { angle, speed } -> "rotate" /\ [ angle, speed ]
+        GScale { amount, xMult, yMult, offsetX, offsetY } -> "scale" /\ [ amount, xMult, yMult, offsetX, offsetY ]
+        GScroll { scrollX, scrollY, speedX, speedY } -> "scroll" /\ [ scrollX, scrollY, speedX, speedY ]
+        GScrollX { scrollX, speed } -> "scrollX" /\ [ scrollX, speed ]
+        GScrollY { scrollY, speed } -> "scrollY" /\ [ scrollY, speed ]
+
+
+instance ToCode ColorOp where
+    toCode :: ColorOp -> String
+    toCode cop =
+        case (toFn cop :: String /\ Array Value) of
+            name /\ args -> fn name args
+
+
+instance ToCode Blend where
+    toCode :: Blend -> String
+    toCode blend =
+        case (toFn blend :: String /\ Array Value) of
+            name /\ args -> fn name args
+
+
 instance ToCode Modulate where
     toCode :: Modulate -> String
     toCode mod =
@@ -110,17 +156,9 @@ instance ToCode Modulate where
 
 instance ToCode Geometry where
     toCode :: Geometry -> String
-    toCode = case _ of
-        GKaleid { nSides } -> fn "kaleid" [ nSides ]
-        GPixelate { pixelX, pixelY } -> fn "pixelate" [ pixelX, pixelY ]
-        GRepeat { offsetX, offsetY, repeatX, repeatY } -> fn "repeat" [ offsetX, offsetY, repeatX, repeatY ]
-        GRepeatX { offset, reps } -> fn "repeatX" [ offset, reps ]
-        GRepeatY { offset, reps } -> fn "repeatY" [ offset, reps ]
-        GRotate { angle, speed } -> fn "rotate" [ angle, speed ]
-        GScale { amount, xMult, yMult, offsetX, offsetY } -> fn "scale" [ amount, xMult, yMult, offsetX, offsetY ]
-        GScroll { scrollX, scrollY, speedX, speedY } -> fn "scroll" [ scrollX, scrollY, speedX, speedY ]
-        GScrollX { scrollX, speed } -> fn "scrollX" [ scrollX, speed ]
-        GScrollY { scrollY, speed } -> fn "scrollY" [ scrollY, speed ]
+    toCode geom =
+        case (toFn geom :: String /\ Array Value) of
+            name /\ args -> fn name args
 
 
 instance ToCode From where
@@ -169,8 +207,20 @@ instance ToCode Texture where
     toCode :: Texture -> String
     toCode = case _ of
         Empty -> "/* empty */"
-        From src -> toCode src <> "()"
-        BlendOf { what, with } blend -> toCode what <> " # " <> fn "blend" [ with ] -- TODO use blend
-        WithColor texture op -> toCode texture <> " # " <> fne "color" -- TODO use op
-        ModulateWith { what, with } mod -> toCode with <> " # " <> fn "modulate" [ what ] -- TODO use mod
-        Geometry texture gmt -> toCode texture <> " # " <> fne "geom" -- TODO use gmt
+        From src -> toCode src
+        BlendOf { what, with } blend ->
+            toCode with <> " # " <>
+            case (toFn blend :: String /\ Array Value) of
+                name /\ args -> fns name $ toCode what : (toCode <$> args)
+        WithColor texture cop ->
+            toCode texture <> " # " <>
+            case (toFn cop :: String /\ Array Value) of
+                name /\ args -> fn name args
+        ModulateWith { what, with } mod ->
+            toCode with <> " # " <>
+            case (toFn mod :: String /\ Array Value) of
+                name /\ args -> fns name $ toCode what : (toCode <$> args)
+        Geometry texture gmt ->
+            toCode texture <> " # " <>
+            case (toFn gmt :: String /\ Array Value) of
+                name /\ args -> fn name args
