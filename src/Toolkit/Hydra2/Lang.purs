@@ -17,7 +17,14 @@ import Control.Bind (class Bind)
 import Toolkit.Hydra2.Types
 import Toolkit.Hydra2.Types (Value(..)) as T
 
+import Toolkit.Hydra2.Lang.ToCode
+import Toolkit.Hydra2.Lang.ToCode (fn) as ToCode
 
+
+type Chainable = Texture
+
+
+{-
 data Chainable -- TODO / FIXME `Types.Texture` is almost the same
     = WithColor ColorOp Chainable
     | ModulateWith Chainable Modulate Chainable
@@ -25,6 +32,7 @@ data Chainable -- TODO / FIXME `Types.Texture` is almost the same
     | BlendOf Chainable Blend Chainable
     | From Source
     | None
+-}
 
 
 data Single
@@ -92,18 +100,42 @@ instance Bind Program where
 
 instance Core.Show Command where
     show Unknown = "unknown"
-    show (End _ _) = "end"
+    show (End _ chainable) = "end { " <> Core.show chainable <> " }"
     show (Pair cmdA cmdB) = Core.show cmdA <> " -> " <> Core.show cmdB
     show (One (WithAudio str)) = "1 with audio"
     show (One (InitCam str)) = "1 init cam"
     show (One (Render _)) = "1 render"
-    show (Continue (WithColor _ _)) = "cont with color"
-    show (Continue (ModulateWith _ _ _)) = "cont with mod"
-    show (Continue (Geometry _ _)) = "cont with geom"
-    show (Continue (BlendOf _ _ _)) = "cont with blend"
-    show (Continue (From _)) = "cont with src"
+    show (Continue chainable) = "cont with ( " <> Core.show chainable <> " )"
     show (To _) = "out"
     show _ = "???"
+
+
+instance ToCode Command where
+    toCode = case _ of
+        Unknown -> "/* unknown */"
+        End output chainable -> toCode chainable <> "." <> ToCode.fn "out" [ output ]
+        Pair cmdA cmdB -> toCode cmdA <> "\n" <> toCode cmdB
+        One (WithAudio str) -> "withAudio()"
+        One (InitCam str) -> "withCam()"
+        One (Render _) -> "render()"
+        Continue chainable -> "." <> toCode chainable
+        To _ -> "to()"
+        -- _ -> "???"
+
+
+instance ToCode (Program a) where
+    toCode (Program cmd _) = toCode cmd
+
+
+{-
+instance Core.Show Chainable where
+    show (WithColor _ c) = "color <- " <> Core.show c
+    show (ModulateWith ca _ cb) = "mod <- " <> Core.show ca <> " <- " <> Core.show cb
+    show (Geometry _ c) = "geom <- " <> Core.show c
+    show (BlendOf ca _ cb) = "blend <- " <> Core.show ca <> " <- " <> Core.show cb
+    show (From _) = "src"
+    show None = "none"
+-}
 
 
 {-}
@@ -160,23 +192,23 @@ osc frequency sync offset =
 
 
 modulate :: Chainable -> Value -> Chainable -> Chainable
-modulate chain value =
-    ModulateWith chain $ Modulate value
+modulate what value with =
+    ModulateWith { what, with } $ Modulate value
 
 
 saturate :: Value -> Chainable -> Chainable
 saturate v =
-    WithColor $ Saturate v
+    flip WithColor $ Saturate v
 
 
 pixelate ∷ Value → Value → Chainable -> Chainable
 pixelate pixelX pixelY =
-    Geometry $ GPixelate { pixelX, pixelY }
+    flip Geometry $ GPixelate { pixelX, pixelY }
 
 
 scale ∷ Value → Chainable → Chainable
 scale amount =
-    Geometry $ GScale
+    flip Geometry $ GScale
         { amount
         , offsetX : Number 0.0
         , offsetY : Number 0.0

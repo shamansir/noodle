@@ -9,6 +9,7 @@ import Effect.Console as Console
 
 
 import Toolkit.Hydra2.Lang
+import Toolkit.Hydra2.Lang.ToCode (toCode)
 
 example :: Program Unit
 example = do
@@ -30,4 +31,4 @@ example = do
 
 main :: Effect Unit
 main =
-    Console.log $ Core.show example
+    Console.log $ toCode example

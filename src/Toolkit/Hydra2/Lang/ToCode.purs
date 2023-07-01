@@ -18,7 +18,7 @@ class ToCode a where
 -- fn name vals = name <> "(" <> (String.joinWith "," $ toCode <$> Tuple.snd <$> vals) <> ")"
 
 
-fn :: String -> Array Value -> String
+fn :: forall a. ToCode a => String -> Array a -> String
 fn name vals = name <> "(" <> (String.joinWith "," $ toCode <$> vals) <> ")"
 
 
@@ -110,7 +110,7 @@ instance ToCode Geometry where
 instance ToCode From where
     toCode :: From -> String
     toCode = case _ of
-        All -> "/* all *."
+        All -> "/* all */"
         Output out -> toCode out
 
 
@@ -150,16 +150,12 @@ instance ToCode AudioBin where
 
 
 
-
-
-{- TODO:
 instance ToCode Texture where
     toCode :: Texture -> String
     toCode = case _ of
         Empty -> "/* empty */"
         From src -> toCode src <> "()"
-        BlendOf { what, with } blend -> fn "blend" [ what, with ]
-        WithColor texture op -> "With Color " <> {- TODO : show op <> " " <> -|} show texture
-        ModulateWith { what, with } mod -> "Modulate " <> show what <> " -< " <> show with {- TODO: <> " " <> show mod -|}
-        Geometry texture gmt -> "Geometry " <> show texture {- TODO: <> " " <> show gmt -|}
--}
+        BlendOf { what, with } blend -> toCode what <> "." <> fn "blend" [ with ] -- TODO use blend
+        WithColor texture op -> "." <> fn "blend" [ texture ] -- TODO use op
+        ModulateWith { what, with } mod -> toCode what <> "." <> fn "modulate" [ with ] -- TODO use mod
+        Geometry texture gmt -> "." <> fn "geom" [ texture ] -- TODO use gmt
