@@ -76,7 +76,7 @@ instance Bind Program where
 instance ToCode PS Command where
     toCode _ = case _ of
         Unknown -> "{- unknown -}"
-        End output texture -> toCode pureScript texture <> " # " <> ToCode.fnPs "out" [ output ]
+        End output texture -> toCode pureScript texture <> "\n\t# " <> ToCode.fnPs "out" [ output ]
         Pair cmdA cmdB -> toCode pureScript cmdA <> "\n" <> toCode pureScript cmdB
         One (WithAudio onaudio) -> toCode pureScript onaudio
         One (InitCam src) -> toCode pureScript src <> " # initCam"

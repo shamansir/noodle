@@ -14,8 +14,10 @@ import Type.Proxy (Proxy(..))
 data Target
 
 
+-- could they be split into different files?
 foreign import data JS :: Target
 foreign import data PS :: Target
+foreign import data NDF :: Target
 
 
 class ToCode (target :: Target) a where
@@ -32,6 +34,14 @@ class ToFn arg a where
 
 pureScript :: _ PS
 pureScript = Proxy
+
+
+javaScript :: _ JS
+javaScript = Proxy
+
+
+nodes :: _ NDF
+nodes = Proxy
 
 
 fnPs :: forall a. ToCode PS a => String -> Array a -> String
@@ -58,37 +68,7 @@ fneJs :: String -> String
 fneJs name = name <> "()"
 
 
-instance ToCode PS Value where
-    toCode :: Proxy PS -> Value -> String
-    toCode _ = case _ of
-        None -> "{- none -}"
-        Required -> "{- required -}"
-        Number n -> "(n " <> Core.show n <> ")"
-        VArray vals ease -> toCode pureScript vals -- FIXME: use `ease`
-        Dep _ -> "{- dep-fn -}"
-        Time -> "time"
-        MouseX -> "mouseX"
-        MouseY -> "mouseY"
-        Width -> "width"
-        Height -> "height"
-        Pi -> "pi"
-        Audio audio bin -> toCode pureScript audio <> " # fft " <> toCode pureScript bin
-
-
-instance ToCode PS Source where
-    toCode :: Proxy PS -> Source -> String
-    toCode _ = case _ of
-        Dynamic -> "{- dyn -}"
-        Video -> "{- video -}"
-        S0 -> "(src s0)"
-        Gradient { speed } -> fnPs "gradient" [ speed ]
-        Camera -> "{- camera -}" -- 🎥
-        Noise { scale, offset } -> fnPs "noise" [ scale, offset ]
-        Osc { frequency, sync, offset } -> fnPs "osc" [ frequency, sync, offset ]
-        Shape { sides, radius, smoothing } -> fnPs "shape" [ sides, radius, smoothing ]
-        Solid { r, g, b, a } -> fnPs "solid" [ r, g, b, a ]
-        Source from -> toCode pureScript from <> "()"
-        Voronoi { scale, speed, blending } -> fnPs "voronoi" [ scale, speed, blending ]
+{- TOFN GENERIC -}
 
 
 instance ToFn Value ColorOp where
@@ -155,6 +135,53 @@ instance ToFn Value Geometry where
         GScrollY { scrollY, speed } -> "scrollY" /\ [ scrollY, speed ]
 
 
+instance ToFn Value Ease where
+    toFn :: Ease -> String /\ Array Value
+    toFn = case _ of
+        Linear -> "linear" /\ []
+        Fast v -> "fast" /\ [ v ]
+        Smooth v -> "smooth" /\ [ v ]
+        Fit { low, high } -> "fit" /\ [ low, high ]
+        Offset v -> "offset" /\ [ v ]
+        InOutCubic -> "inOutCubic" /\ []
+
+
+{- PURESCRIPT -}
+
+
+instance ToCode PS Value where
+    toCode :: Proxy PS -> Value -> String
+    toCode _ = case _ of
+        None -> "{- none -}"
+        Required -> "{- required -}"
+        Number n -> "(n " <> Core.show n <> ")"
+        VArray vals ease -> toCode pureScript vals -- FIXME: use `ease`
+        Dep _ -> "{- dep-fn -}"
+        Time -> "time"
+        MouseX -> "mouseX"
+        MouseY -> "mouseY"
+        Width -> "width"
+        Height -> "height"
+        Pi -> "pi"
+        Audio audio bin -> toCode pureScript audio <> " # fft " <> toCode pureScript bin
+
+
+instance ToCode PS Source where
+    toCode :: Proxy PS -> Source -> String
+    toCode _ = case _ of
+        Dynamic -> "{- dyn -}"
+        Video -> "{- video -}"
+        S0 -> "s0"
+        Gradient { speed } -> fnPs "gradient" [ speed ]
+        Camera -> "{- camera -}" -- 🎥
+        Noise { scale, offset } -> fnPs "noise" [ scale, offset ]
+        Osc { frequency, sync, offset } -> fnPs "osc" [ frequency, sync, offset ]
+        Shape { sides, radius, smoothing } -> fnPs "shape" [ sides, radius, smoothing ]
+        Solid { r, g, b, a } -> fnPs "solid" [ r, g, b, a ]
+        Source from -> toCode pureScript from <> "()"
+        Voronoi { scale, speed, blending } -> fnPs "voronoi" [ scale, speed, blending ]
+
+
 instance ToCode PS ColorOp where
     toCode :: Proxy PS -> ColorOp -> String
     toCode _ cop =
@@ -206,13 +233,9 @@ instance ToCode PS Values where
 
 instance ToCode PS Ease where
     toCode :: Proxy PS -> Ease -> String
-    toCode _ = case _ of
-        Linear -> "linear"
-        Fast v -> fnPs "fast" [ v ]
-        Smooth v -> fnPs "smooth" [ v ]
-        Fit { low, high } -> fnPs "fit" [ low, high ]
-        Offset v -> fnPs "offset" [ v ]
-        InOutCubic -> "inOutCubic"
+    toCode _ ease =
+        case (toFn ease :: String /\ Array Value) of
+            name /\ args -> fnPs name args
 
 
 instance ToCode PS AudioBin where
@@ -237,21 +260,22 @@ instance ToCode PS Texture where
     toCode :: Proxy PS -> Texture -> String
     toCode _ = case _ of
         Empty -> "{- empty -}"
+        From S0 -> "(src "  <> toCode pureScript S0 <> ")"
         From src -> toCode pureScript src
         BlendOf { what, with } blend ->
-            toCode pureScript with <> " # " <>
+            toCode pureScript with <> "\n\t# " <>
             case (toFn blend :: String /\ Array Value) of
                 name /\ args -> fnsPs name $ toCode pureScript what : (toCode pureScript <$> args)
         WithColor texture cop ->
-            toCode pureScript texture <> " # " <>
+            toCode pureScript texture <> "\n\t# " <>
             case (toFn cop :: String /\ Array Value) of
                 name /\ args -> fnPs name args
         ModulateWith { what, with } mod ->
-            toCode pureScript with <> " # " <>
+            toCode pureScript with <> "\n\t# " <>
             case (toFn mod :: String /\ Array Value) of
                 name /\ args -> fnsPs name $ toCode pureScript what : (toCode pureScript <$> args)
         Geometry texture gmt ->
-            toCode pureScript texture <> " # " <>
+            toCode pureScript texture <> "\n\t# " <>
             case (toFn gmt :: String /\ Array Value) of
                 name /\ args -> fnPs name args
 
