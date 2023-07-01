@@ -29,7 +29,7 @@ data Value
     | Required -- a.k.a. Undefined
     | Number Number
     | VArray Values Ease
-    | Dep (Context -> Number)
+    | Dep (Context -> Value)
     -- | ...
     | Time
     | MouseX
@@ -185,6 +185,11 @@ newtype GlslFn = GlslFn Unit
 
 
 newtype Url = Url String
+
+
+data OnAudio
+    = Show Audio
+    | SetBins Audio Int
 
 
 noUrl :: Url

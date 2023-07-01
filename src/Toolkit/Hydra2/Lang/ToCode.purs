@@ -1,16 +1,13 @@
 module Toolkit.Hydra2.Lang.ToCode where
 
-import Prelude
+import Prelude (($), (<$>), (<>))
 import Prelude (show) as Core
 
-import Data.Array ((:))
-import Data.Maybe (Maybe(..))
-import Data.String as String
-import Data.Semigroup ((<>))
-import Data.Tuple as Tuple
-import Data.Tuple.Nested (type (/\), (/\))
-
 import Toolkit.Hydra2.Types
+
+import Data.Array ((:))
+import Data.String as String
+import Data.Tuple.Nested (type (/\), (/\))
 import Type.Proxy (Proxy(..))
 
 
@@ -75,7 +72,7 @@ instance ToCode PS Value where
         Width -> "width"
         Height -> "height"
         Pi -> "pi"
-        Audio audio bin -> "a.fft[" <> toCode pureScript bin <> "]" -- FIXME: use `audio`
+        Audio audio bin -> toCode pureScript audio <> " # fft " <> toCode pureScript bin
 
 
 instance ToCode PS Source where
@@ -83,7 +80,7 @@ instance ToCode PS Source where
     toCode _ = case _ of
         Dynamic -> "{- dyn -}"
         Video -> "{- video -}"
-        S0 -> "s0"
+        S0 -> "(src s0)"
         Gradient { speed } -> fnPs "gradient" [ speed ]
         Camera -> "{- camera -}" -- 🎥
         Noise { scale, offset } -> fnPs "noise" [ scale, offset ]
@@ -221,11 +218,19 @@ instance ToCode PS Ease where
 instance ToCode PS AudioBin where
     toCode :: Proxy PS -> AudioBin -> String
     toCode _ = case _ of
-        H0 -> "0"
-        H1 -> "1"
-        H2 -> "2"
-        H3 -> "3"
-        H4 -> "4"
+        H0 -> "H0"
+        H1 -> "H1"
+        H2 -> "H2"
+        H3 -> "H3"
+        H4 -> "H4"
+
+
+instance ToCode PS Audio where
+    toCode :: Proxy PS -> Audio -> String
+    toCode _ = case _ of
+        Silence -> "s"
+        Mic -> "a"
+        File -> "file"
 
 
 instance ToCode PS Texture where
@@ -249,3 +254,10 @@ instance ToCode PS Texture where
             toCode pureScript texture <> " # " <>
             case (toFn gmt :: String /\ Array Value) of
                 name /\ args -> fnPs name args
+
+
+instance ToCode PS OnAudio where
+    toCode :: Proxy PS -> OnAudio -> String
+    toCode _ = case _ of
+        Show audio -> toCode pureScript audio <> " # " <> fnePs "show"
+        SetBins audio n -> toCode pureScript audio <> " # " <> fnsPs "setBins" [ Core.show n ]
