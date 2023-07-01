@@ -3,6 +3,7 @@ module Toolkit.Hydra2.Lang.ToCode where
 import Prelude
 import Prelude (show) as Core
 
+import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.Semigroup ((<>))
 import Data.Tuple as Tuple
@@ -14,12 +15,20 @@ class ToCode a where
     toCode :: a -> String
 
 
+class ToFn arg a where
+    toFn :: a -> String /\ Array arg
+
+
 -- fn :: String -> Array (String /\ Value) -> String
 -- fn name vals = name <> "(" <> (String.joinWith "," $ toCode <$> Tuple.snd <$> vals) <> ")"
 
 
 fn :: forall a. ToCode a => String -> Array a -> String
-fn name vals = name <> "(" <> (String.joinWith "," $ toCode <$> vals) <> ")"
+fn name vals = name <> " ( " <> (String.joinWith " " $ toCode <$> vals) <> " ) "
+
+
+fne :: String -> String
+fne name = name <> " (  ) "
 
 
 instance ToCode Value where
@@ -75,21 +84,28 @@ instance ToCode ColorOp where
         Colorama amount -> fn "colorama" [ amount ]
 
 
+instance ToFn Value Modulate where
+    toFn :: Modulate -> String /\ Array Value
+    toFn = case _ of
+        Modulate amount -> "modulate" /\ [ amount ]
+        ModHue amount -> "modHue" /\ [ amount ]
+        ModKaleid { nSides } -> "modKaleid" /\ [ nSides ]
+        ModPixelate { multiple, offset } -> "modPixelate" /\ [ multiple, offset ]
+        ModRepeat { offsetX, offsetY, repeatX, repeatY } -> "modRepeat" /\ [ offsetX, offsetY, repeatX, repeatY ]
+        ModRepeatX { offset, reps } -> "modRepeatX" /\ [ offset, reps ]
+        ModRepeatY { offset, reps } -> "modRepeatY" /\ [ offset, reps ]
+        ModRotate { multiple, offset } -> "modRotate" /\ [ multiple, offset ]
+        ModScale { multiple, offset } -> "modScale" /\ [ multiple, offset ]
+        ModScroll { scrollX, scrollY, speedX, speedY } -> "modScroll" /\ [ scrollX, scrollY, speedX, speedY ]
+        ModScrollX { scrollX, speed } -> "modScrollX" /\ [ scrollX, speed ]
+        ModScrollY { scrollY, speed } -> "modScrollY" /\ [ scrollY, speed ]
+
+
 instance ToCode Modulate where
     toCode :: Modulate -> String
-    toCode = case _ of
-        Modulate amount -> fn "modulate" [ amount ]
-        ModHue amount -> fn "modHue" [ amount ]
-        ModKaleid { nSides } -> fn "modKaleid" [ nSides ]
-        ModPixelate { multiple, offset } -> fn "modPixelate" [ multiple, offset ]
-        ModRepeat { offsetX, offsetY, repeatX, repeatY } -> fn "modRepeat" [ offsetX, offsetY, repeatX, repeatY ]
-        ModRepeatX { offset, reps } -> fn "modRepeatX" [ offset, reps ]
-        ModRepeatY { offset, reps } -> fn "modRepeatY" [ offset, reps ]
-        ModRotate { multiple, offset } -> fn "modRotate" [ multiple, offset ]
-        ModScale { multiple, offset } -> fn "modScale" [ multiple, offset ]
-        ModScroll { scrollX, scrollY, speedX, speedY } -> fn "modScroll" [ scrollX, scrollY, speedX, speedY ]
-        ModScrollX { scrollX, speed } -> fn "modScrollX" [ scrollX, speed ]
-        ModScrollY { scrollY, speed } -> fn "modScrollY" [ scrollY, speed ]
+    toCode mod =
+        case (toFn mod :: String /\ Array Value) of
+            name /\ args -> fn name args
 
 
 instance ToCode Geometry where
@@ -149,13 +165,12 @@ instance ToCode AudioBin where
         H4 -> "4"
 
 
-
 instance ToCode Texture where
     toCode :: Texture -> String
     toCode = case _ of
         Empty -> "/* empty */"
         From src -> toCode src <> "()"
-        BlendOf { what, with } blend -> toCode what <> "." <> fn "blend" [ with ] -- TODO use blend
-        WithColor texture op -> "." <> fn "blend" [ texture ] -- TODO use op
-        ModulateWith { what, with } mod -> toCode what <> "." <> fn "modulate" [ with ] -- TODO use mod
-        Geometry texture gmt -> "." <> fn "geom" [ texture ] -- TODO use gmt
+        BlendOf { what, with } blend -> toCode what <> " # " <> fn "blend" [ with ] -- TODO use blend
+        WithColor texture op -> toCode texture <> " # " <> fne "color" -- TODO use op
+        ModulateWith { what, with } mod -> toCode with <> " # " <> fn "modulate" [ what ] -- TODO use mod
+        Geometry texture gmt -> toCode texture <> " # " <> fne "geom" -- TODO use gmt

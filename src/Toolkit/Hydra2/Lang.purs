@@ -107,13 +107,12 @@ instance Core.Show Command where
     show (One (Render _)) = "1 render"
     show (Continue chainable) = "cont with ( " <> Core.show chainable <> " )"
     show (To _) = "out"
-    show _ = "???"
 
 
 instance ToCode Command where
     toCode = case _ of
         Unknown -> "/* unknown */"
-        End output chainable -> toCode chainable <> "." <> ToCode.fn "out" [ output ]
+        End output chainable -> toCode chainable <> " # " <> ToCode.fn "out" [ output ]
         Pair cmdA cmdB -> toCode cmdA <> "\n" <> toCode cmdB
         One (WithAudio str) -> "withAudio()"
         One (InitCam str) -> "withCam()"
