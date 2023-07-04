@@ -5,13 +5,11 @@ import Prelude
 import Effect (Effect)
 import Effect.Class (class MonadEffect)
 
-import Data.Maybe (Maybe(..))
-import Type.Proxy (Proxy(..))
-import Cli.Components.NodeBox.HasBody (class HasBody, run, class HasBody', run')
+import Type.Proxy (Proxy)
+import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody')
 
 import Cli.Keys (NodeBoxKey)
 
-import Signal (Signal)
 import Blessed.Internal.BlessedOp (BlessedOp)
 
 import Toolkit.Hydra2.Family.Feed.FNumber (Inputs, Outputs, State, Node) as FNumber
@@ -45,17 +43,3 @@ else instance HasBody' (Cli "out") (FOut.Node m) FOut.State m where
 else instance HasBody' (Cli f) (Node f state is os m) state m where
    run' :: Proxy (Cli f) -> NodeBoxKey -> Node f state is os m -> BlessedOp state m
    run' _ _ _ = pure unit
-
-
-testFn ::
-    forall f state is os m.
-    HasBody (Cli f) f state is os m
-    => NodeBoxKey -> Node f state is os m -> BlessedOp state m
-testFn = run (Proxy :: _ (Cli f))
-
-
-testFn2 ::
-    forall f state is os m.
-    HasBody' (Cli f) (Node f state is os m) state m
-    => NodeBoxKey -> Node f state is os m -> BlessedOp state m
-testFn2 = run' (Proxy :: _ (Cli f))

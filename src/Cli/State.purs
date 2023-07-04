@@ -4,17 +4,13 @@ import Prelude
 
 
 import Effect (Effect)
-import Effect.Class (class MonadEffect)
 
 import Data.Maybe (Maybe(..))
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (class Newtype)
-import Data.List (List)
-import Data.List as List
 import Data.Array ((:))
-import Data.Array as Array
 import Effect.Ref (Ref)
 
 import Control.Monad.State.Class (class MonadState, modify_)
@@ -37,6 +33,9 @@ import Noodle.Text.NetworkFile.Command (Command)
 
 import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra2.Lang (Program)
+import Toolkit.Hydra2.Lang (empty) as Program
+
 
 type State =
     { network :: Network Effect
@@ -50,6 +49,7 @@ type State =
     , lastKeys :: LastKeys
     , nodeKeysMap :: Map Id.NodeIdR NodeBoxKey
     , commandLog :: Array Command
+    , program :: Program Unit
     , innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
     -- , network :: Noodle.Network Unit (Hydra.Families Effect) (Hydra.Instances Effect)
     -- , network :: TestM Effect
@@ -75,6 +75,7 @@ initial =
     , linksTo : Map.empty
     , nodeKeysMap : Map.empty
     , commandLog : []
+    , program : Program.empty
     , innerStates : Map.empty
     -- , nodes : Hydra.noInstances
     }

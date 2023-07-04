@@ -401,6 +401,7 @@ instance ToCode JS Audio where
         Mic -> "a"
         File -> "file"
 
+
 instance ToCode JS Values where
     toCode :: Proxy JS -> Values -> String
     toCode _ (Values array) = "[" <> String.joinWith "," (toCode javaScript <$> array) <> "]" -- FIXME: use `ease`

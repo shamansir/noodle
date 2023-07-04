@@ -38,6 +38,7 @@ import Noodle.Node2.Path (InNode(..))
 import Noodle.Id (class HasInputsAt, class HasOutputsAt) as Fn
 import Noodle.Node2 (Node)
 import Noodle.Node2 as Node
+import Noodle.Fn2.Protocol (ChangeFocus(..))
 
 
 -- TODO: move to a separate top-level `Repr` module, may be find a way to keep non-top constructors hidden
@@ -74,7 +75,8 @@ nodeToRepr' (ToReprTop repr) node = do
     state <- Node.state node
     inputs <- Node.inputs node
     outputs <- Node.outputs node
-    pure $ id
+    pure $ Everything
+        /\ id
         /\ toRepr (NodeP id) state
         /\ HM.hmapWithIndex (ToReprDownI id iorder repr) inputs
         /\ HM.hmapWithIndex (ToReprDownO id oorder repr) outputs
@@ -107,7 +109,8 @@ nodeToMapRepr' (ToReprTop repr) node = do
     state <- Node.state node
     inputs <- Node.inputs node
     outputs <- Node.outputs node
-    pure $ nodeIdR id
+    pure $ Everything
+        /\ nodeIdR id
         /\ toRepr (NodeP id) state
         /\ HF.hfoldlWithIndex (ToReprDownI id iorder repr) (Map.empty :: Map InputR repr) inputs
         /\ HF.hfoldlWithIndex (ToReprDownO id oorder repr) (Map.empty :: Map OutputR repr) outputs
@@ -136,8 +139,9 @@ subscribeReprChanges' (ToReprTop repr) node =
         (id :: NodeId f) = Node.id node
         iorder = Node.inputsOrder node
         oorder = Node.outputsOrder node
-        toReprs (state /\ inputs /\ outputs) =
-            id
+        toReprs (chFocus /\ state /\ inputs /\ outputs) =
+            chFocus
+            /\ id
             /\ toRepr (NodeP id) state
             /\ HM.hmapWithIndex (ToReprDownI id iorder repr) inputs
             /\ HM.hmapWithIndex (ToReprDownO id oorder repr) outputs
@@ -165,8 +169,9 @@ subscribeReprMapChanges' (ToReprTop repr) node =
         (id :: NodeId f) = Node.id node
         iorder = Node.inputsOrder node
         oorder = Node.outputsOrder node
-        toReprs (state /\ inputs /\ outputs) =
-            nodeIdR id
+        toReprs (chFocus /\ state /\ inputs /\ outputs) =
+            chFocus
+            /\ nodeIdR id
             /\ toRepr (NodeP id) state
             /\ HF.hfoldlWithIndex (ToReprDownI id iorder repr) (Map.empty :: Map InputR repr) inputs
             /\ HF.hfoldlWithIndex (ToReprDownO id oorder repr) (Map.empty :: Map OutputR repr) outputs
@@ -319,7 +324,8 @@ instance foldToReprsMap ::
             state <- Node.state node
             inputs <- Node.inputs node
             outputs <- Node.outputs node
-            pure $ nodeIdR id
+            pure $ Everything
+                /\ nodeIdR id
                 /\ toRepr (NodeP id) state
                 /\ HF.hfoldlWithIndex (ToReprDownI id iorder repr) (Map.empty :: Map InputR repr) inputs
                 /\ HF.hfoldlWithIndex (ToReprDownO id oorder repr) (Map.empty :: Map OutputR repr) outputs

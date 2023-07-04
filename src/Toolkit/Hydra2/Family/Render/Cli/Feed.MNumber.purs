@@ -35,16 +35,15 @@ import Blessed.Internal.Core as Core
 
 import Blessed.UI.Base.Node.Method as Node
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Boxes.Box.Method as Box
 import Blessed.UI.Forms.TextArea.Option as TextArea
 import Blessed.UI.Forms.TextArea.Event as TextArea
 import Blessed.UI.Boxes.Box.Property as Element
 
 import Noodle.Node2 as Node
 
-import Cli.Components.NodeBox.HasBody (class HasBody)
 import Cli.Keys (NodeBoxKey)
 import Cli.Style as Style
+-- import Cli.State (logCommandM)
 
 -- import Noodle.Node2 (Node)
 
@@ -86,7 +85,7 @@ render nodeBoxKey node = do
                         -- liftEffect $ Console.log content
                         Blessed.lift $ case mbNumber of
                             Just number -> Node.sendOut node FNumber._out_out $ T.Number number
-                            -- Just number -> Node.sendOut node FNumber._out_out $ T.Number number
+                                -- Just number -> Node.sendOut node FNumber._out_out $ T.Number number
                             Nothing -> pure unit
                         pure unit
                 ]

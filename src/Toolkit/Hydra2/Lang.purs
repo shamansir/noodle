@@ -1,6 +1,6 @@
 module Toolkit.Hydra2.Lang where
 
-import Prelude (class Apply, class Bind, class Functor, class Semigroup, ($), (<>))
+import Prelude (class Apply, class Bind, class Functor, class Semigroup, ($), (<>), Unit, unit)
 import Prelude (class Show, show) as Core
 
 
@@ -40,6 +40,10 @@ data Program a = -- same as Writer?
 
 instance Semigroup Command where
     append = Pair
+
+
+empty :: Program Unit
+empty = Program Unknown unit
 
 
 -- instance Semigroup (Program Unit) where

@@ -47,7 +47,7 @@ import Control.Monad.State as State
 import Noodle.Id
 import Noodle.Fn2.Process (ProcessM)
 import Noodle.Fn2.Process as Process
-import Noodle.Fn2.Protocol (Protocol, Tracker, InputChange(..), OutputChange(..))
+import Noodle.Fn2.Protocol (Protocol, Tracker, InputChange(..), OutputChange(..), ChangeFocus)
 import Noodle.Fn2.Protocol as Protocol
 import Noodle.Fn2 (Fn)
 import Noodle.Fn2 (inputsShape, outputsShape, inputsShapeHeld, outputsShapeHeld, inputsOrder, outputsOrder, run, run', make, cloneReplace) as Fn
@@ -290,6 +290,10 @@ subscribeInputs :: forall f state is os m. Node f state is os m -> Signal (Recor
 subscribeInputs (Node _ tracker _ _) = Tuple.snd <$> tracker.inputs
 
 
+subscribeInputs' :: forall f state is os m. Node f state is os m -> Signal (InputChange /\ Record is)
+subscribeInputs' (Node _ tracker _ _) = tracker.inputs
+
+
 subscribeOutput :: forall f state is os m dout. (Record os -> dout) -> Node f state is os m -> Signal dout
 subscribeOutput fn node = fn <$> subscribeOutputs node
 
@@ -298,12 +302,16 @@ subscribeOutputs :: forall f state is os m. Node f state is os m -> Signal (Reco
 subscribeOutputs (Node _ tracker _ _) = Tuple.snd <$> tracker.outputs
 
 
+subscribeOutputs' :: forall f state is os m. Node f state is os m -> Signal (OutputChange /\ Record os)
+subscribeOutputs' (Node _ tracker _ _) = tracker.outputs
+
+
 subscribeState :: forall f state is os m. Node f state is os m -> Signal state
 subscribeState (Node _ tracker _ _) = tracker.state
 
 
-subscribeChanges :: forall f state is os m. Node f state is os m -> Signal (state /\ Record is /\ Record os)
-subscribeChanges node = (\s is os -> s /\ is /\ os) <$> subscribeState node <*> subscribeInputs node <*> subscribeOutputs node
+subscribeChanges :: forall f state is os m. Node f state is os m -> Signal (ChangeFocus /\ state /\ Record is /\ Record os)
+subscribeChanges (Node _ tracker _ _) = tracker.all
 
 
 -- private?

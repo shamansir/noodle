@@ -1,7 +1,7 @@
 module Noodle.Node2.Path where
 
 
-import Noodle.Id (NodeId, Input', Output')
+import Noodle.Id (Input', NodeId, Output')
 
 
 data InNode f i o

@@ -32,5 +32,7 @@ example = do
 
 main :: Effect Unit
 main = do
+    Console.log "\nPureScript\n"
     Console.log $ toCode pureScript example
+    Console.log "\nJavaScript\n"
     Console.log $ toCode javaScript example

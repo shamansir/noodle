@@ -5,6 +5,8 @@ module Noodle.Fn2.Protocol
   , InputChange(..), OutputChange(..)
   , inputs, outputs
   , lastInput, lastOutput
+  , ChangeFocus(..)
+  , FocusedUpdate
 --   , ITest1, ITest2, ITest3, IFnTest1, IFnTest2, IFnTest3
 --   , OTest1, OTest2, OTest3, OFnTest1, OFnTest2, OFnTest3
 --   , CurIFn, CurOFn, CurIVal, CurOVal
@@ -19,6 +21,7 @@ import Data.Maybe (Maybe(..))
 import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Bifunctor (bimap)
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -60,14 +63,23 @@ type CurOFn m = OFnTest3 m -}
 
 
 data InputChange
-    = SingleInput InputR
+    = SingleInput InputR -- TODO: HoldsInput
     | AllInputs
     -- TODO: add Hot / Cold
 
 
 data OutputChange
-    = SingleOutput OutputR
+    = SingleOutput OutputR -- TODO: HoldsOutput
     | AllOutputs
+
+
+data ChangeFocus
+    = Everything
+    | StateChange
+    | AllInputsChange
+    | InputChange InputR -- TODO: HoldsInput
+    | AllOutputsChange
+    | OutputChange OutputR -- TODO: HoldsOutput
 
 
 inputChangeToMaybe :: InputChange -> Maybe InputR
@@ -104,6 +116,7 @@ type Tracker state is os =
     { state :: Signal state
     , inputs :: Signal (InputChange /\ Record is)
     , outputs :: Signal (OutputChange /\ Record os)
+    , all :: Signal (FocusedUpdate state is os)
     -- , lastInput :: w (Maybe InputId)
     -- , lastOutput :: w (Maybe OutputId)
     -- , lastInput :: w (forall i. IsSymbol i => Maybe (Input i))
@@ -188,6 +201,11 @@ onSignals state inputs outputs = do
 -}
 
 
+type PreUpdatesRow state is os = (Boolean /\ state) /\ (Boolean /\ InputChange /\ Record is) /\ (Boolean /\ OutputChange /\ Record os)
+type PostUpdatesRow state is os = ChangeFocus /\ PreUpdatesRow state is os
+type FocusedUpdate state is os = ChangeFocus /\ state /\ Record is /\ Record os
+
+
 make
     :: forall state is os m
     .  MonadEffect m
@@ -198,28 +216,73 @@ make
 make state inputs outputs =
     liftEffect $ do
 
-        stateCh <- channel state
-        inputsCh <- channel (AllInputs /\ inputs)
-        outputsCh <- channel (AllOutputs /\ outputs)
+         -- boolean flags help to find out which signal was updated the latest in the merged all changes by flipping them on modification
+
+        let
+            stateInit = true /\ state
+            inputsInit = true /\ AllInputs /\ inputs
+            outputsInit = true /\ AllOutputs /\ outputs
+
+            (initAll :: PostUpdatesRow state is os) = Everything /\ stateInit /\ inputsInit /\ outputsInit
+
+        stateCh <- channel stateInit
+        inputsCh <- channel inputsInit
+        outputsCh <- channel outputsInit
+        -- allChangesCh <- channel initAll
 
         let
             stateSig = Channel.subscribe stateCh
             inputsSig = Channel.subscribe inputsCh
             outputsSig = Channel.subscribe outputsCh
+            changesSig = Signal.foldp foldUpdates initAll (toPreUpdateRow <$> stateSig <*> inputsSig <*> outputsSig)
+
+            foldUpdates :: PreUpdatesRow state is os -> PostUpdatesRow state is os -> PostUpdatesRow state is os
+            foldUpdates
+                lastChange@((bState /\ state) /\ (bInput /\ inputChange /\ is) /\ (bOutput /\ outputChange /\ os))
+                (_ /\ (bStatePrev /\ _) /\ (bInputPrev /\ _ /\ _) /\ (bOutputPrev /\ _))
+                =
+                    if bState == not bStatePrev then
+                        StateChange /\ lastChange
+                    else if bInput == not bInputPrev then
+                        case inputChange of
+                            AllInputs ->
+                                AllInputsChange /\ lastChange
+                            SingleInput inputR ->
+                                InputChange inputR /\ lastChange
+                    else if bOutput == not bOutputPrev then
+                        case outputChange of
+                            AllOutputs ->
+                                AllOutputsChange /\ lastChange
+                            SingleOutput inputR ->
+                                OutputChange inputR /\ lastChange
+                    else Everything /\ lastChange
+
+
+            toPreUpdateRow
+                :: (Boolean /\ state)
+                -> (Boolean /\ InputChange /\ Record is)
+                -> (Boolean /\ OutputChange /\ Record os)
+                -> PreUpdatesRow state is os
+            toPreUpdateRow = (/\) >>> Tuple.curry
+
+        let
             tracker :: Tracker state is os
             tracker =
-                { state : stateSig
-                , inputs : inputsSig
-                , outputs : outputsSig
+                { state : Tuple.snd <$> stateSig
+                , inputs : Tuple.snd <$>inputsSig
+                , outputs : Tuple.snd <$> outputsSig
+                , all : map (bimap Tuple.snd $ bimap (Tuple.snd >>> Tuple.snd) (Tuple.snd >>> Tuple.snd)) <$> changesSig
                 }
+
             protocol :: Protocol state is os
             protocol =
-                { getInputs : const $ liftEffect $ Signal.get inputsSig
-                , getOutputs : const $ liftEffect $ Signal.get outputsSig
-                , getState : const $ liftEffect $ Signal.get stateSig
-                , modifyInputs : \f -> liftEffect $ Signal.get inputsSig >>= Tuple.snd >>> f >>> Channel.send inputsCh
-                , modifyOutputs : \f -> liftEffect $ Signal.get outputsSig >>= Tuple.snd >>> f >>> Channel.send outputsCh
-                , modifyState : \f -> liftEffect $ Signal.get stateSig >>= f >>> Channel.send stateCh
+                { getInputs : const $ liftEffect $ Signal.get $ Tuple.snd <$> inputsSig
+                , getOutputs : const $ liftEffect $ Signal.get $ Tuple.snd <$> outputsSig
+                , getState : const $ liftEffect $ Signal.get $ Tuple.snd <$> stateSig
+                -- bwlow we flip the flags on every update in particular signal
+                , modifyInputs : \f -> liftEffect $ Signal.get inputsSig >>= bimap not (Tuple.snd >>> f) >>> Channel.send inputsCh
+                , modifyOutputs : \f -> liftEffect $ Signal.get outputsSig >>= bimap not (Tuple.snd >>> f) >>> Channel.send outputsCh -- Tuple.snd >>> f >>> Channel.send outputsCh
+                , modifyState : \f -> liftEffect $ Signal.get stateSig >>= bimap not f >>> Channel.send stateCh -- f >>> Channel.send stateCh
                 }
 
         pure $ tracker /\ protocol
