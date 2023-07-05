@@ -75,8 +75,7 @@ nodeToRepr' (ToReprTop repr) node = do
     state <- Node.state node
     inputs <- Node.inputs node
     outputs <- Node.outputs node
-    pure $ Everything
-        /\ id
+    pure $ id
         /\ toRepr (NodeP id) state
         /\ HM.hmapWithIndex (ToReprDownI id iorder repr) inputs
         /\ HM.hmapWithIndex (ToReprDownO id oorder repr) outputs
@@ -109,8 +108,7 @@ nodeToMapRepr' (ToReprTop repr) node = do
     state <- Node.state node
     inputs <- Node.inputs node
     outputs <- Node.outputs node
-    pure $ Everything
-        /\ nodeIdR id
+    pure $ nodeIdR id
         /\ toRepr (NodeP id) state
         /\ HF.hfoldlWithIndex (ToReprDownI id iorder repr) (Map.empty :: Map InputR repr) inputs
         /\ HF.hfoldlWithIndex (ToReprDownO id oorder repr) (Map.empty :: Map OutputR repr) outputs
@@ -133,7 +131,7 @@ subscribeReprChanges'
      . ToReprHelper m f is iks os oks repr_is repr_os repr state
     => ToReprTop m repr
     -> Node f state is os m
-    -> Signal (NodeLineRec f repr repr_is repr_os)
+    -> Signal (ChangeFocus /\ NodeLineRec f repr repr_is repr_os)
 subscribeReprChanges' (ToReprTop repr) node =
     let
         (id :: NodeId f) = Node.id node
@@ -153,7 +151,7 @@ subscribeReprChanges
      . ToReprHelper m f is iks os oks repr_is repr_os repr state
     => Repr repr
     -> Node f state is os m
-    -> Signal (NodeLineRec f repr repr_is repr_os)
+    -> Signal (ChangeFocus /\ NodeLineRec f repr repr_is repr_os)
 subscribeReprChanges repr =
     subscribeReprChanges' $ ToReprTop repr
 
@@ -163,7 +161,7 @@ subscribeReprMapChanges'
      . ToReprFoldToMapsHelper f is iks os oks repr state
     => ToReprTop m repr
     -> Node f state is os m
-    -> Signal (NodeLineMap repr)
+    -> Signal (ChangeFocus /\ NodeLineMap repr)
 subscribeReprMapChanges' (ToReprTop repr) node =
     let
         (id :: NodeId f) = Node.id node
@@ -183,7 +181,7 @@ subscribeReprMapChanges
      . ToReprFoldToMapsHelper f is iks os oks repr state
     => Repr repr
     -> Node f state is os m
-    -> Signal (NodeLineMap repr)
+    -> Signal (ChangeFocus /\ NodeLineMap repr)
 subscribeReprMapChanges repr =
     subscribeReprMapChanges' $ ToReprTop repr
 
@@ -324,8 +322,7 @@ instance foldToReprsMap ::
             state <- Node.state node
             inputs <- Node.inputs node
             outputs <- Node.outputs node
-            pure $ Everything
-                /\ nodeIdR id
+            pure $ nodeIdR id
                 /\ toRepr (NodeP id) state
                 /\ HF.hfoldlWithIndex (ToReprDownI id iorder repr) (Map.empty :: Map InputR repr) inputs
                 /\ HF.hfoldlWithIndex (ToReprDownO id oorder repr) (Map.empty :: Map OutputR repr) outputs

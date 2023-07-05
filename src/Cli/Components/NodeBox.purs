@@ -25,6 +25,7 @@ import Data.String as String
 import Data.Mark (mark)
 import Data.TraversableWithIndex (traverseWithIndex)
 import Data.SProxy (reflect, reflect')
+import Data.Tuple as Tuple
 
 import Signal (Signal, (~>))
 import Signal as Signal
@@ -75,6 +76,7 @@ import Noodle.Node2.MapsFolds.Repr
     , subscribeReprChanges, subscribeReprMapChanges
     ) as R
 import Noodle.Node2.MapsFolds.Flatten as R
+import Noodle.Fn2.Protocol (ChangeFocus(..))
 
 
 import Cli.Keys (NodeBoxKey)
@@ -134,7 +136,8 @@ fromNode curPatchId curPatch family node = do
 
     state <- State.get
 
-    let (updates :: Signal (R.NodeLineMap Hydra.WrapRepr)) = R.subscribeReprMapChanges (R.Repr :: _ Hydra.WrapRepr) node
+    let (updates :: Signal (ChangeFocus /\ R.NodeLineMap Hydra.WrapRepr)) = R.subscribeReprMapChanges (R.Repr :: _ Hydra.WrapRepr) node
+    let (updates' :: Signal (R.NodeLineMap Hydra.WrapRepr)) = map Tuple.snd updates
     let nextNodeBox = NodeKey.next state.lastKeys.nodeBox
     let nextInletsBox = NodeKey.next state.lastKeys.inletsBox
     let nextOutletsBox = NodeKey.next state.lastKeys.outletsBox
@@ -171,9 +174,9 @@ fromNode curPatchId curPatch family node = do
     let
         boxWidth = widthN (reflect family) (Array.length is) (Array.length os)
         inletsKeys /\ inletsBoxN =
-            InletsBox.component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family (toInputSignal updates) isWithReprs
+            InletsBox.component curPatchId curPatch nextNodeBox nextInfoBox nextInletsBox family (toInputSignal updates') isWithReprs
         outletsKeys /\ outletsBoxN =
-            OutletsBox.component nodeHolder nextNodeBox nextInfoBox nextOutletsBox (toOutputSignal updates) osWithReprs
+            OutletsBox.component nodeHolder nextNodeBox nextInfoBox nextOutletsBox (toOutputSignal updates') osWithReprs
         infoBoxN =
             B.box nextInfoBox
                 [ Box.top $ Offset.px 1
@@ -218,7 +221,7 @@ fromNode curPatchId curPatch family node = do
                 ]
                 [ ]
                 -}
-        renderNodeUpdate :: forall a. R.NodeLineMap Hydra.WrapRepr -> BlessedOp a Effect
+        renderNodeUpdate :: forall a. ChangeFocus /\ R.NodeLineMap Hydra.WrapRepr -> BlessedOp a Effect
         renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
 
     --renderNodeUpdate mapRepr
@@ -239,7 +242,7 @@ fromNode curPatchId curPatch family node = do
     -- liftEffect $ Console.log $ show mapRepr2
     -- FIXME: try logging/tracking all NodeLineRec updates
 
-    renderNodeUpdate mapRepr2
+    renderNodeUpdate $ Everything /\ mapRepr2
 
     (stateRef :: Ref state) <- liftEffect $ Ref.new default
 
@@ -294,8 +297,8 @@ fromFamily curPatchId curPatch family _ tk = do
     fromNode curPatchId curPatch family node
 
 
-renderUpdate :: forall a. NodeBoxKey -> InletsBox.KeysMap -> OutletsBox.KeysMap -> Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr -> BlessedOp a Effect
-renderUpdate _ inputsKeysMap outputsKeysMap (nodeId /\ stateRepr /\ inputsReps /\ outputReprs) = do
+renderUpdate :: forall a. NodeBoxKey -> InletsBox.KeysMap -> OutletsBox.KeysMap -> ChangeFocus /\ Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr -> BlessedOp a Effect
+renderUpdate _ inputsKeysMap outputsKeysMap (_ /\ nodeId /\ stateRepr /\ inputsReps /\ outputReprs) = do
     -- liftEffect $ Console.log $ show outputReprs
     _ <- traverseWithIndex updateInput inputsReps
     _ <- traverseWithIndex updateOutput outputReprs
