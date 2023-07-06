@@ -4,6 +4,9 @@ import Prelude
 
 
 import Effect (Effect)
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
 
 import Data.Maybe (Maybe(..))
 import Data.Map (Map)
@@ -11,7 +14,6 @@ import Data.Map as Map
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Newtype (class Newtype)
 import Data.Array ((:))
-import Effect.Ref (Ref)
 
 import Control.Monad.State.Class (class MonadState, modify_)
 
@@ -161,3 +163,7 @@ logCommand cmd state = state { commandLog = cmd : state.commandLog }
 
 logCommandM :: forall m. MonadState State m => Command -> m Unit
 logCommandM = modify_ <<< logCommand
+
+
+logCommandByRef :: forall m. MonadEffect m => Command -> Ref State -> m Unit
+logCommandByRef cmd = liftEffect <<< Ref.modify_ (logCommand cmd)

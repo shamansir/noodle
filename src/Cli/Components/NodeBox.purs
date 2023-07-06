@@ -9,6 +9,7 @@ import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
 import Control.Monad.State as State
+import Control.Monad.State (class MonadState)
 
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple.Nested ((/\), type (/\))
@@ -83,7 +84,7 @@ import Cli.Keys (NodeBoxKey)
 import Cli.Keys (mainScreen, patchBox, statusLine) as Key
 import Cli.Palette as Palette
 import Cli.Palette.Item (crepr) as Palette
-import Cli.State (State, logCommandM)
+import Cli.State (State, logCommandM, logCommandByRef)
 import Cli.Style as Style
 import Cli.Components.Link as Link
 import Cli.Components.NodeBox.InletsBox as InletsBox
@@ -224,8 +225,11 @@ fromNode curPatchId curPatch family node = do
         renderNodeUpdate :: forall a. ChangeFocus /\ R.NodeLineMap Hydra.WrapRepr -> BlessedOp a Effect
         renderNodeUpdate = renderUpdate nextNodeBox inletsKeys outletsKeys
 
+    (stateRef :: Ref State) <- Blessed.getStateRef
+
     --renderNodeUpdate mapRepr
     liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate)
+    liftEffect $ Signal.runSignal $ updates ~> logDataCommand stateRef
 
     -- liftEffect $ Node.listenUpdatesAndRun node
     -- liftEffect $ Node.run node
@@ -244,11 +248,11 @@ fromNode curPatchId curPatch family node = do
 
     renderNodeUpdate $ Everything /\ mapRepr2
 
-    (stateRef :: Ref state) <- liftEffect $ Ref.new default
+    (nodeStateRef :: Ref state) <- liftEffect $ Ref.new default
 
     -- run :: Proxy x -> NodeBoxKey -> Node f state is os m -> {- Signal repr -> -} BlessedOp state m
     -- _ <- Blessed.imapState ?wh ?wh $ NodeBody.run (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
-    liftEffect $ Blessed.runM' stateRef $ NodeBody.run (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
+    liftEffect $ Blessed.runM' nodeStateRef $ NodeBody.run (Proxy :: _ (Hydra.Cli f)) nextNodeBox node
 
     -- nextNodeBox >~ Node.append inputText
 
@@ -297,7 +301,23 @@ fromFamily curPatchId curPatch family _ tk = do
     fromNode curPatchId curPatch family node
 
 
-renderUpdate :: forall a. NodeBoxKey -> InletsBox.KeysMap -> OutletsBox.KeysMap -> ChangeFocus /\ Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr -> BlessedOp a Effect
+logDataCommand
+    :: forall m
+     . MonadEffect m
+    => Ref State
+    -> ChangeFocus /\ Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr
+    -> m Unit
+logDataCommand stateRef _
+    = flip logCommandByRef stateRef $ Cmd.MakeNode "foo" 5 5 "bar"
+
+
+renderUpdate
+    :: forall a
+     . NodeBoxKey
+    -> InletsBox.KeysMap
+    -> OutletsBox.KeysMap
+    -> ChangeFocus /\ Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr
+    -> BlessedOp a Effect
 renderUpdate _ inputsKeysMap outputsKeysMap (_ /\ nodeId /\ stateRepr /\ inputsReps /\ outputReprs) = do
     -- liftEffect $ Console.log $ show outputReprs
     _ <- traverseWithIndex updateInput inputsReps
