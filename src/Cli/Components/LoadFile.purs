@@ -157,6 +157,22 @@ handlers stateRef patch (Network tk _) =
                     Key.mainScreen >~ Screen.render
                     pure unit
                 Nothing -> pure unit
+    , onConnect2 : \(onode /\ inode) (outletId /\ inletId) link ->
+        BlessedOp.runM' stateRef $ do
+            state <- State.get
+            case (/\) <$> Map.lookup onode state.nodeKeysMap <*> Map.lookup inode state.nodeKeysMap of
+                Just (onodeKey /\ inodeKey) -> do
+                    linkCmp <- Link.create
+                                state.lastLink
+                                onodeKey
+                                (OutletIndex outletIdx)
+                                inodeKey
+                                (InletIndex inletIdx)
+                    State.modify_ $ Link.store linkCmp
+                    Key.patchBox >~ Link.append linkCmp
+                    Key.mainScreen >~ Screen.render
+                    pure unit
+                Nothing -> pure unit
     }
 
 

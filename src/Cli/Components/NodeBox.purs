@@ -27,6 +27,7 @@ import Data.Mark (mark)
 import Data.TraversableWithIndex (traverseWithIndex)
 import Data.SProxy (reflect, reflect')
 import Data.Tuple as Tuple
+import Data.FromToFile (class Encode, encode)
 
 import Signal (Signal, (~>))
 import Signal as Signal
@@ -307,8 +308,13 @@ logDataCommand
     => Ref State
     -> ChangeFocus /\ Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr
     -> m Unit
-logDataCommand stateRef _
-    = flip logCommandByRef stateRef $ Cmd.MakeNode "foo" 5 5 "bar"
+logDataCommand stateRef (chFocus /\ nodeId /\ _ /\ _ /\ outputs)
+    = case chFocus of
+        OutputChange output ->
+            case Map.lookup output outputs of
+                Just wrapRepr -> flip logCommandByRef stateRef $ Cmd.Send (reflect' nodeId) 0 $ encode wrapRepr
+                Nothing -> pure unit
+        _ -> pure unit
 
 
 renderUpdate
