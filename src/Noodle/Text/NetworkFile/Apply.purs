@@ -26,6 +26,7 @@ import Data.Array as Array
 import Data.List as List
 import Data.String.Read (class Read, read)
 import Data.Repr (Repr, wrap, fromRepr, class ToRepr, class FromRepr, class ReadWriteRepr, readRepr)
+import Data.FunctorWithIndex (mapWithIndex)
 
 import Noodle.Network2 (Network(..))
 import Noodle.Network2 as NW
@@ -49,7 +50,7 @@ type Handlers x gstate instances m repr =
     , onNodeCreated2 :: forall f. IsSymbol f => Int /\ Int -> Node.HoldsNode' f m -> m Unit
     , onNodeCreated3:: Int /\ Int -> Patch.HoldsNodeMRepr x gstate instances m repr -> m Unit
     , onConnect :: forall fA fB oA iB. Id.NodeIdR /\ Id.NodeIdR -> Int /\ Int -> Node.Link fA fB oA iB -> m Unit
-    , onConnect2 :: forall fA fB oA iB. Id.NodeIdR /\ Id.NodeIdR -> Id.Output oA /\ Id.Input iB -> Node.Link fA fB oA iB -> m Unit
+    , onConnect2 :: forall fA fB oA iB. Id.NodeIdR /\ Id.NodeIdR -> Int /\ Int -> Id.Output oA /\ Id.Input iB -> Node.Link fA fB oA iB -> m Unit
     }
 
 
@@ -158,11 +159,11 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
                             let
                                 (nodeAOutputs :: Array (Node.HoldsOutputInNodeMRepr m repr)) = Node.orderedNodeOutputsTest' nodeA
                                 (nodeBInputs :: Array (Node.HoldsInputInNodeMRepr m repr)) = Node.orderedNodeInputsTest' nodeB
-                                (maybeFoundOutput :: Maybe (Node.HoldsOutputInNodeMRepr m repr)) = Array.find (\holdsOutput -> Node.withOutputInNodeMRepr holdsOutput (\_ _ output -> reflect output) == srcOutputId) nodeAOutputs -- TODO: some typeclass like `HoldsOutput/IsOutput`, to return only Output haha
-                                (maybeFoundInput :: Maybe (Node.HoldsInputInNodeMRepr m repr)) = Array.find (\holdsInput -> Node.withInputInNodeMRepr holdsInput (\_ _ input -> reflect input) == dstInputId) nodeBInputs -- TODO: same
+                                (maybeFoundOutput :: Maybe (Int /\ Node.HoldsOutputInNodeMRepr m repr)) = Array.find (\(idx /\ holdsOutput) -> Node.withOutputInNodeMRepr holdsOutput (\_ _ output -> reflect output) == srcOutputId) $ mapWithIndex (/\) nodeAOutputs -- TODO: some typeclass like `HoldsOutput/IsOutput`, to return only Output haha
+                                (maybeFoundInput :: Maybe (Int /\ Node.HoldsInputInNodeMRepr m repr)) = Array.find (\(idx /\ holdsInput) -> Node.withInputInNodeMRepr holdsInput (\_ _ input -> reflect input) == dstInputId) $ mapWithIndex (/\) nodeBInputs -- TODO: same
                             in do
                                 case (/\) <$> maybeFoundOutput <*> maybeFoundInput of
-                                    Just (holdsOutput /\ holdsInput) ->
+                                    Just ((oidx /\ holdsOutput) /\ (iidx /\ holdsInput)) ->
                                         Node.withOutputInNodeMRepr
                                             holdsOutput
                                             (\_ onode outputId -> do
@@ -171,7 +172,7 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
                                                     (\_ inode inputId -> do
                                                         link <- Node.connectByRepr prepr outputId inputId onode inode
                                                         let nextPatch = Patch.registerLink link curPatch
-                                                        handlers.onConnect2 (Id.nodeIdR (Node.id inode) /\ Id.nodeIdR (Node.id onode)) (outputId /\ inputId) link
+                                                        handlers.onConnect2 (Id.nodeIdR (Node.id inode) /\ Id.nodeIdR (Node.id onode)) (oidx /\ iidx) (outputId /\ inputId) link
                                                         pure $ nw /\ nodesMap
                                                     )
                                             )
