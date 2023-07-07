@@ -63,7 +63,7 @@ component =
         , LoadFile.component
         -- , PaletteList.component 125 2 30.0 96.0
         , StatusLine.component
-        , CommandLog.component
+        -- , CommandLog.component
         ]
 
         $ \_ -> do

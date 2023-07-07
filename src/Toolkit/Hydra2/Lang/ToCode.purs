@@ -15,6 +15,7 @@ data Target
 
 
 -- could they be split into different files?
+-- TODO: NDF format is not bound to Hydra, rather to Noodle Engine, move it to external module
 foreign import data JS :: Target
 foreign import data PS :: Target
 foreign import data NDF :: Target
@@ -38,6 +39,10 @@ pureScript = Proxy
 
 javaScript :: _ JS
 javaScript = Proxy
+
+
+ndf :: _ NDF
+ndf = Proxy
 
 
 nodes :: _ NDF

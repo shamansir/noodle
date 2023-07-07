@@ -10,7 +10,10 @@ import Data.Array (length, zip) as Array
 import Data.Map (Map)
 import Data.Map as Map
 
+import Control.Monad.State (get) as State
+
 import Blessed as B
+import Blessed ((>~))
 
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Dimension as Dimension
@@ -20,8 +23,10 @@ import Blessed.Core.Coord ((<->))
 
 import Blessed.Internal.Core (Blessed) as C
 import Blessed.Internal.NodeKey (nestChain) as NK
+import Blessed.Internal.BlessedOp (BlessedOp)
 
 import Blessed.UI.Boxes.Box.Option as Box
+import Blessed.UI.Boxes.Box.Method as Box
 
 import Cli.Keys (commandLogBox) as Keys
 import Cli.Style as Style
@@ -33,6 +38,7 @@ import Noodle.Node2 as Node
 import Noodle.Patch4 (Patch)
 import Noodle.Patch4 as Patch
 import Noodle.Family.Def as Family
+import Noodle.Text.NetworkFile.Command (commandsToNdf)
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
@@ -55,7 +61,7 @@ component =
         , Box.top $ Offset.px 5
         , Box.left $ Offset.px 5
         , Box.tags true
-        , Box.content "Test Me"
+        , Box.content "."
         -- , List.items is
 
 
@@ -76,4 +82,10 @@ component =
         -}
         ]
         [ ]
-        \_ -> pure unit
+        $ const refresh
+
+
+refresh :: BlessedOp State Effect
+refresh = do
+    state <- State.get
+    Keys.commandLogBox >~ Box.setContent $ commandsToNdf state.commandLog
