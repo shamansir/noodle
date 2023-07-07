@@ -33,6 +33,7 @@ import Cli.Components.AddPatch as AddPatch
 import Cli.Components.LoadFile as LoadFile
 import Cli.Components.PaletteList as PaletteList
 import Cli.Components.StatusLine as StatusLine
+import Cli.Components.CommandLog as CommandLog
 
 import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 
@@ -62,6 +63,7 @@ component =
         , LoadFile.component
         -- , PaletteList.component 125 2 30.0 96.0
         , StatusLine.component
+        , CommandLog.component
         ]
 
         $ \_ -> do

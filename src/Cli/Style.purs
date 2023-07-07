@@ -146,6 +146,28 @@ statusLine =
         ]
 
 
+commandLog :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.StyleAttrubute subj id state e r
+commandLog =
+    Box.style
+        [ Style.fg Palette.secondaryFg'
+        , Style.bg Palette.patchBg'
+        , Style.border
+            [ Border.fg Palette.libraryBorder'
+            , Border.bg Palette.patchBg'
+            ]
+        ]
+
+
+commandLogBorder :: forall subj id state e r. Extends Element subj => Respresents Box subj id => Box.BorderAttrubute subj id state e r
+commandLogBorder =
+    Box.border
+        [ Border.type_ Border._line
+        , Border.fg $ Palette.libraryBorder'
+        , Border.bg $ Palette.patchBg'
+        -- , Border.ch $ Border.fill ':'
+        ]
+
+
 {- inletsOutlets :: forall subj id state e r. Respresents List subj id => List.StyleAttrubute subj id state e r
 inletsOutlets =
     List.style

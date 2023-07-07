@@ -22,6 +22,7 @@ nodeSelection = Pico.lightPeach :: Item
 linkFg = Pico.lightPeach :: Item
 focusedBorder = qitem "white" "focusedBorder" :: Item
 fg = Pico.white :: Item
+secondaryFg = Pico.lightGrey :: Item
 patchBg = Pico.darkerGrey :: Item
 inputId = X11.bisque3 :: Item
 outputId = X11.cadetblue2 :: Item
@@ -43,6 +44,7 @@ nodeSelection' = repr nodeSelection :: String
 linkFg' = repr linkFg :: String
 focusedBorder' = repr focusedBorder :: String
 fg' = repr fg :: String
+secondaryFg' = repr secondaryFg :: String
 patchBg' = repr patchBg :: String
 
 
