@@ -1,4 +1,4 @@
-module Cli.Components.CommandLog where
+module Cli.Components.CommandLogBox where
 
 import Prelude
 
@@ -62,6 +62,7 @@ component =
         , Box.left $ Offset.px 5
         , Box.tags true
         , Box.content "."
+        , Box.hidden true
         -- , List.items is
 
 

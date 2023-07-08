@@ -28,12 +28,13 @@ import Cli.State (State)
 import Cli.State (initial) as State
 
 import Cli.Components.PatchBox as PatchBox
-import Cli.Components.PatchesBar as PatchesBar
-import Cli.Components.AddPatch as AddPatch
-import Cli.Components.LoadFile as LoadFile
+import Cli.Components.PatchesListbar as PatchesListbar
+import Cli.Components.AddPatchButton as AddPatchButton
+import Cli.Components.LoadFileButton as LoadFileButton
 import Cli.Components.PaletteList as PaletteList
 import Cli.Components.StatusLine as StatusLine
-import Cli.Components.CommandLog as CommandLog
+import Cli.Components.CommandLogButton as CommandLogButton
+import Cli.Components.CommandLogBox as CommandLogBox
 
 import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 
@@ -57,16 +58,17 @@ component =
                 Blessed.exit
         ]
 
-        [ PatchesBar.component $ Network.patches $ unwrapN State.initial.network
+        [ PatchesListbar.component $ Network.patches $ unwrapN State.initial.network
         , PatchBox.component families
-        , AddPatch.component
-        , LoadFile.component
+        , AddPatchButton.component
+        , LoadFileButton.component
+        , CommandLogButton.component
         -- , PaletteList.component 125 2 30.0 96.0
         , StatusLine.component
-        -- , CommandLog.component
+        , CommandLogBox.component
         ]
 
         $ \_ -> do
-            PatchesBar.selectPatch 1
+            PatchesListbar.selectPatch 1
             Key.library >~ Box.focus
             Key.mainScreen >~ Screen.render

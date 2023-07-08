@@ -30,7 +30,7 @@ outletButton = nk :: OutletButtonKey
 addPatchButton = nk :: Button <^> "add-patch"
 loadFileButton = nk :: Button <^> "load-file"
 commandLogBox = nk :: Box <^> "command-log"
--- textBox = nk :: TextBoxKey
+hydraCodeBox = nk :: Box <^> "hydra-code"
 
 
 {- For links -}

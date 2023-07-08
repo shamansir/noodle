@@ -1,4 +1,4 @@
-module Cli.Components.LoadFile where
+module Cli.Components.LoadFileButton where
 
 import Prelude
 

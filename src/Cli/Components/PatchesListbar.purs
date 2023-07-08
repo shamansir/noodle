@@ -1,4 +1,4 @@
-module Cli.Components.PatchesBar where
+module Cli.Components.PatchesListbar where
 
 import Prelude
 
