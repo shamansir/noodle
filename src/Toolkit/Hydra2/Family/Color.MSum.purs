@@ -30,7 +30,7 @@ defaultState :: State
 defaultState = unit
 
 
-_in_what = Fn.Input 1 :: _ "what"
+_in_what = Fn.Input 0 :: _ "what"
 
 
 type Inputs = ( what :: H.Texture, todo :: H.TODO )

@@ -308,11 +308,12 @@ logDataCommand
     => Ref State
     -> ChangeFocus /\ Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr
     -> m Unit
-logDataCommand stateRef (chFocus /\ nodeId /\ _ /\ _ /\ outputs)
-    = case chFocus of
+logDataCommand stateRef (chFocus /\ nodeId /\ _ /\ _ /\ outputs) =
+    case chFocus of
         OutputChange output ->
             case Map.lookup output outputs of
-                Just wrapRepr -> flip logCommandByRef stateRef $ Cmd.Send (reflect' nodeId) 0 $ encode wrapRepr
+                Just wrapRepr ->
+                    flip logCommandByRef stateRef $ Cmd.SendO_ (reflect' nodeId) (reflect' output) $ encode wrapRepr
                 Nothing -> pure unit
         _ -> pure unit
 

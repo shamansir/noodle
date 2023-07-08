@@ -29,10 +29,10 @@ defaultState :: State
 defaultState = unit
 
 
-_in_scale  = Fn.Input  1 :: _ "scale"
-_in_offset = Fn.Input  2 :: _ "offset"
+_in_scale  = Fn.Input  0 :: _ "scale"
+_in_offset = Fn.Input  1 :: _ "offset"
 
-_out_out   = Fn.Output 1 :: _ "out"
+_out_out   = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( scale :: H.Value, offset :: H.Value )

@@ -30,7 +30,7 @@ defaultState :: State
 defaultState = unit
 
 
-_in_options = Fn.Input 1 :: _ "options"
+_in_options = Fn.Input 0 :: _ "options"
 
 
 type Inputs = ( options :: H.SourceOptions )

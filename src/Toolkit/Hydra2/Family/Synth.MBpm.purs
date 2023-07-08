@@ -30,7 +30,7 @@ defaultState :: State
 defaultState = unit
 
 
-_in_v = Fn.Input 1 :: _ "v"
+_in_v = Fn.Input 0 :: _ "v"
 
 
 type Inputs = ( v :: H.Value )

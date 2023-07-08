@@ -30,7 +30,7 @@ defaultState :: State
 defaultState = unit
 
 
-_in_src = Fn.Input 1 :: _ "src"
+_in_src = Fn.Input 0 :: _ "src"
 
 
 type Inputs = ( src :: H.Source )

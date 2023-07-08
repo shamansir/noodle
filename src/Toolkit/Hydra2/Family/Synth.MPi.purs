@@ -31,7 +31,7 @@ defaultState :: State
 defaultState = unit
 
 
-_out_out = Fn.Output 1 :: _ "out"
+_out_out = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( )

@@ -30,8 +30,8 @@ defaultState :: State
 defaultState = unit
 
 
-_in_audio  = Fn.Input 1 :: _ "audio"
-_in_smooth = Fn.Input 2 :: _ "smooth"
+_in_audio  = Fn.Input 0 :: _ "audio"
+_in_smooth = Fn.Input 1 :: _ "smooth"
 
 
 type Inputs = ( audio :: H.Audio, smooth :: H.Value )

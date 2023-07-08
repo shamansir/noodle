@@ -30,8 +30,8 @@ defaultState :: State
 defaultState = unit
 
 
-_in_what   = Fn.Input  1 :: _ "what"
-_in_target = Fn.Input  2 :: _ "target"
+_in_what   = Fn.Input  0 :: _ "what"
+_in_target = Fn.Input  1 :: _ "target"
 
 type Inputs = ( what :: H.Texture, target :: H.Output )
 type Outputs = ( )

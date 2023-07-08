@@ -29,11 +29,11 @@ defaultState :: State
 defaultState = unit
 
 
-_in_sides     = Fn.Input 1 :: _ "sides"
-_in_radius    = Fn.Input 2 :: _ "radius"
-_in_smoothing = Fn.Input 3 :: _ "smoothing"
+_in_sides     = Fn.Input 0 :: _ "sides"
+_in_radius    = Fn.Input 1 :: _ "radius"
+_in_smoothing = Fn.Input 2 :: _ "smoothing"
 
-_out_out = Fn.Output 1 :: _ "out"
+_out_out = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( sides :: H.Value, radius :: H.Value, smoothing :: H.Value )

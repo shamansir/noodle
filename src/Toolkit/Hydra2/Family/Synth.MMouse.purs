@@ -30,8 +30,8 @@ defaultState :: State
 defaultState = unit
 
 
-_out_x = Fn.Output 1 :: _ "x"
-_out_y = Fn.Output 2 :: _ "y"
+_out_x = Fn.Output 0 :: _ "x"
+_out_y = Fn.Output 1 :: _ "y"
 
 
 type Inputs = ( )

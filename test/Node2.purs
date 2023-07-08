@@ -43,9 +43,9 @@ import Signal.Time as SignalT
 _sum = Node.Family :: _ "sum"
 
 
-_aI = Fn.Input 1 :: _ "a"
-_bI = Fn.Input 2 :: _ "b"
-_sumO = Fn.Output 1 :: _ "sum"
+_aI = Fn.Input 0 :: _ "a"
+_bI = Fn.Input 1 :: _ "b"
+_sumO = Fn.Output 0 :: _ "sum"
 
 
 iso = Proxy :: _ ("a" ::: "b" ::: T)
@@ -56,16 +56,16 @@ _corder = Node.Family :: _ "corder"
 
 
 {-
-_acoI = Fn.Input 3 :: _ "a"
-_bcoI = Fn.Input 2 :: _ "b"
-_ccoI = Fn.Input 4 :: _ "c"
-_dcoI = Fn.Input 5 :: _ "d"
-_ecoI = Fn.Input 1 :: _ "e"
-_acoO = Fn.Output 1 :: _ "a"
-_bcoO = Fn.Output 2 :: _ "b"
-_ccoO = Fn.Output 4 :: _ "c"
-_dcoO = Fn.Output 3 :: _ "d"
-_ecoO = Fn.Output 5 :: _ "e"
+_acoI = Fn.Input 2 :: _ "a"
+_bcoI = Fn.Input 1 :: _ "b"
+_ccoI = Fn.Input 3 :: _ "c"
+_dcoI = Fn.Input 4 :: _ "d"
+_ecoI = Fn.Input 0 :: _ "e"
+_acoO = Fn.Output 0 :: _ "a"
+_bcoO = Fn.Output 1 :: _ "b"
+_ccoO = Fn.Output 3 :: _ "c"
+_dcoO = Fn.Output 2 :: _ "d"
+_ecoO = Fn.Output 4 :: _ "e"
 -}
 
 

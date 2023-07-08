@@ -29,11 +29,11 @@ defaultState :: State
 defaultState = unit
 
 
-_in_scale    = Fn.Input  1 :: _ "scale"
-_in_speed    = Fn.Input  2 :: _ "speed"
-_in_blending = Fn.Input  3 :: _ "blending"
+_in_scale    = Fn.Input  0 :: _ "scale"
+_in_speed    = Fn.Input  1 :: _ "speed"
+_in_blending = Fn.Input  2 :: _ "blending"
 
-_out_out     = Fn.Output 1 :: _ "out"
+_out_out     = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( scale :: H.Value, speed :: H.Value, blending :: H.Value )

@@ -29,9 +29,9 @@ defaultState :: State
 defaultState = unit
 
 
-_in_src  = Fn.Input  1 :: _ "src"
+_in_src  = Fn.Input  0 :: _ "src"
 
-_out_out = Fn.Output 1 :: _ "out"
+_out_out = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( src :: H.From )

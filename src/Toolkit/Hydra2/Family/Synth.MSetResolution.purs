@@ -30,8 +30,8 @@ defaultState :: State
 defaultState = unit
 
 
-_in_width  = Fn.Input 1 :: _ "width"
-_in_height = Fn.Input 2 :: _ "height"
+_in_width  = Fn.Input 0 :: _ "width"
+_in_height = Fn.Input 1 :: _ "height"
 
 
 type Inputs = ( width :: H.Value, height :: H.Value )

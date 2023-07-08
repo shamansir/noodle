@@ -29,9 +29,9 @@ defaultState :: State
 defaultState = unit
 
 
-_in_audio = Fn.Input  1 :: _ "audio"
+_in_audio = Fn.Input  0 :: _ "audio"
 
-_out_out  = Fn.Output 1 :: _ "out"
+_out_out  = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( audio :: H.Audio, todo :: H.TODO )

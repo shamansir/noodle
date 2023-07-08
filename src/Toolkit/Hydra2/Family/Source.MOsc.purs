@@ -34,11 +34,11 @@ defaultState :: State
 defaultState = unit
 
 
-_in_frequency = Fn.Input  1 :: _ "frequency"
-_in_sync      = Fn.Input  2 :: _ "sync"
-_in_offset    = Fn.Input  3 :: _ "offset"
+_in_frequency = Fn.Input  0 :: _ "frequency"
+_in_sync      = Fn.Input  1 :: _ "sync"
+_in_offset    = Fn.Input  2 :: _ "offset"
 
-_out_out      = Fn.Output 1 :: _ "out"
+_out_out      = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( frequency :: H.Value, sync :: H.Value, offset :: H.Value )

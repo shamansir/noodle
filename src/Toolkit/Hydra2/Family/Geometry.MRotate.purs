@@ -29,11 +29,11 @@ defaultState :: State
 defaultState = unit
 
 
-_in_what  = Fn.Input  1 :: _ "what"
-_in_angle = Fn.Input  2 :: _ "angle"
-_in_speed = Fn.Input  3 :: _ "speed"
+_in_what  = Fn.Input  0 :: _ "what"
+_in_angle = Fn.Input  1 :: _ "angle"
+_in_speed = Fn.Input  2 :: _ "speed"
 
-_out_out  = Fn.Output 1 :: _ "out"
+_out_out  = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( what :: H.Texture, angle :: H.Value, speed :: H.Value )

@@ -29,11 +29,11 @@ defaultState :: State
 defaultState = unit
 
 
-_in_what   = Fn.Input  1 :: _ "what"
-_in_pixelX = Fn.Input  2 :: _ "pixelX"
-_in_pixelY = Fn.Input  3 :: _ "pixelY"
+_in_what   = Fn.Input  0 :: _ "what"
+_in_pixelX = Fn.Input  1 :: _ "pixelX"
+_in_pixelY = Fn.Input  2 :: _ "pixelY"
 
-_out_out   = Fn.Output 1 :: _ "out"
+_out_out   = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( what :: H.Texture, pixelX :: H.Value, pixelY :: H.Value )

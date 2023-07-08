@@ -22,6 +22,7 @@ import Data.Symbol (class IsSymbol, reflectSymbol)
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.Bifunctor (bimap)
+import Data.SProxy (reflect, reflect')
 
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -80,6 +81,18 @@ data ChangeFocus
     | InputChange InputR -- TODO: HoldsInput
     | AllOutputsChange
     | OutputChange OutputR -- TODO: HoldsOutput
+
+
+instance Show ChangeFocus where
+    show :: ChangeFocus -> String
+    show =
+        case _ of
+            Everything -> "all"
+            StateChange -> "state"
+            AllInputsChange -> "inputs"
+            InputChange inputR -> "input " <> show inputR -- reflect' inputR
+            AllOutputsChange -> "outputs"
+            OutputChange outputR -> "output " <> show outputR -- reflect' outputR
 
 
 inputChangeToMaybe :: InputChange -> Maybe InputR
@@ -253,8 +266,8 @@ make state inputs outputs =
                         case outputChange of
                             AllOutputs ->
                                 AllOutputsChange /\ lastChange
-                            SingleOutput inputR ->
-                                OutputChange inputR /\ lastChange
+                            SingleOutput outputR ->
+                                OutputChange outputR /\ lastChange
                     else Everything /\ lastChange
 
 

@@ -91,6 +91,11 @@ class (RL.RowToList os g, Record.Keys g) <= HasOutputs os g
 -}
 
 
+instance IsSymbol f => Eq (Node f state is os m) where
+    eq :: Node f state is os m -> Node f state is os m -> Boolean
+    eq nodeA nodeB = reflect' (id nodeA) == reflect' (id nodeB)
+
+
 make
     :: forall f state (is :: Row Type) (iorder :: SOrder) (os :: Row Type) (oorder :: SOrder) m
      . IsSymbol f
@@ -390,6 +395,14 @@ derive newtype instance eqFullId :: Eq FullId
 derive newtype instance ordFromId :: Ord FromId
 derive newtype instance ordToId :: Ord ToId
 derive newtype instance ordFullId :: Ord FullId
+
+
+fromNode :: forall fo fi o i. Link fo fi o i -> NodeId fo
+fromNode (Link nodeA _ _ _ _) = nodeA
+
+
+toNode :: forall fo fi o i. Link fo fi o i -> NodeId fi
+toNode (Link _ _ _ nodeB _) = nodeB
 
 
 toFromId :: forall fo fi o i. Link fo fi o i -> FromId

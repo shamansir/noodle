@@ -29,11 +29,11 @@ defaultState :: State
 defaultState = unit
 
 
-_in_what  = Fn.Input  1 :: _ "what"
-_in_bins  = Fn.Input  2 :: _ "bins"
-_in_gamma = Fn.Input  3 :: _ "gamma"
+_in_what  = Fn.Input  0 :: _ "what"
+_in_bins  = Fn.Input  1 :: _ "bins"
+_in_gamma = Fn.Input  2 :: _ "gamma"
 
-_out_out  = Fn.Output 1 :: _ "out"
+_out_out  = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( what :: H.Texture, bins :: H.Value, gamma :: H.Value )

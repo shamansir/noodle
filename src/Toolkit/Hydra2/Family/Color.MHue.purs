@@ -29,10 +29,10 @@ defaultState :: State
 defaultState = unit
 
 
-_in_what = Fn.Input  1 :: _ "what"
-_in_hue  = Fn.Input  2 :: _ "hue"
+_in_what = Fn.Input  0 :: _ "what"
+_in_hue  = Fn.Input  1 :: _ "hue"
 
-_out_out = Fn.Output 1 :: _ "out"
+_out_out = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( what :: H.Texture, hue :: H.Value )

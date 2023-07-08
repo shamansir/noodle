@@ -29,13 +29,13 @@ defaultState :: State
 defaultState = unit
 
 
-_in_what = Fn.Input  1 :: _ "what"
-_in_r    = Fn.Input  2 :: _ "r"
-_in_g    = Fn.Input  3 :: _ "g"
-_in_b    = Fn.Input  4 :: _ "b"
-_in_a    = Fn.Input  5 :: _ "a"
+_in_what = Fn.Input  0 :: _ "what"
+_in_r    = Fn.Input  1 :: _ "r"
+_in_g    = Fn.Input  2 :: _ "g"
+_in_b    = Fn.Input  3 :: _ "b"
+_in_a    = Fn.Input  4 :: _ "a"
 
-_out_out = Fn.Output 1 :: _ "out"
+_out_out = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( what :: H.Texture, r :: H.Value, g :: H.Value, b :: H.Value, a :: H.Value )

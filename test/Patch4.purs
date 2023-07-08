@@ -147,7 +147,7 @@ spec = do
             let
                 patch = Patch.init toolkit
                 outA = Fn.Output 0 :: Fn.Output "out"
-                inC = Fn.Input 2 :: Fn.Input "c"
+                inC = Fn.Input 1 :: Fn.Input "c"
 
             link <- Node.connect outA inC (if _ then 1 else 0) nodeA nodeB
 
@@ -166,7 +166,7 @@ spec = do
             let
                 patch = Patch.init toolkit
                 outA = Fn.Output 0 :: Fn.Output "out"
-                inC = Fn.Input 2 :: Fn.Input "c"
+                inC = Fn.Input 1 :: Fn.Input "c"
 
             link /\ nextPatch <- Patch.connect outA inC (if _ then 1 else 0) nodeA nodeB patch
 

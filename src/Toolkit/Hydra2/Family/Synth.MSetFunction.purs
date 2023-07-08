@@ -30,7 +30,7 @@ defaultState :: State
 defaultState = unit
 
 
-_in_fn = Fn.Input 1 :: _ "fn"
+_in_fn = Fn.Input 0 :: _ "fn"
 
 
 type Inputs = ( fn :: H.GlslFn )

@@ -61,6 +61,7 @@ type Id = String
 type Links =
   { from :: Map Node.FromId (forall fo fi i o. Node.Link fo fi i o)
   , to :: Map Node.ToId (forall fo fi i o. Node.Link fo fi i o)
+  , byNode :: Map Id.NodeIdR (Array (Node.FromId /\ Node.ToId))
   }
 
 
@@ -96,6 +97,7 @@ init' state tk =
         (PI.init $ Toolkit.toRecord tk)
         { from : Map.empty
         , to : Map.empty
+        , byNode : Map.empty
         }
 
 
@@ -111,6 +113,23 @@ registerNode node (Patch state forder instances links) =
         forder
         (Record.modify (proxify $ Node.family node) ((:) node) instances) -- NB: notice that Family' f works!
         links
+
+
+forgetNode -- TODO: test
+    :: forall ps instances' instances f state is os m
+     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    => Node f state is os m
+    -> Patch ps instances
+    -> Patch ps instances
+forgetNode node (Patch state forder instances links) =
+    Patch
+        state
+        forder
+        (Record.modify (proxify $ Node.family node) (Array.delete node) instances) -- NB: notice that Family' f works!
+        links
+
+
+-- TODO: forgetLinksOf
 
 
 spawnAndRegisterNodeIfKnown
@@ -157,6 +176,7 @@ registerLink link (Patch state forder instances links) =
     instances
     { from : Map.insert (Node.toFromId link) (unsafeCoerce link) links.from
     , to : Map.insert (Node.toToId link) (unsafeCoerce link) links.to
+    , byNode : links.byNode -- FIXME
     }
 
 
@@ -172,6 +192,7 @@ forgetLink link (Patch state forder instances links) =
     instances
     { from : Map.delete (Node.toFromId link) links.from
     , to : Map.delete (Node.toToId link) links.to
+    , byNode : links.byNode -- FIXME
     }
 
 

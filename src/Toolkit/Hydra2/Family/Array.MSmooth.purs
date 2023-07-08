@@ -29,10 +29,10 @@ defaultState :: State
 defaultState = unit
 
 
-_in_arr    = Fn.Input  1 :: _ "arr"
-_in_smooth = Fn.Input  2 :: _ "smooth"
+_in_arr    = Fn.Input  0 :: _ "arr"
+_in_smooth = Fn.Input  1 :: _ "smooth"
 
-_out_out   = Fn.Output 1 :: _ "out"
+_out_out   = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( arr :: H.Values, smooth :: H.Value )

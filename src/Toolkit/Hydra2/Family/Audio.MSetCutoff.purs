@@ -30,8 +30,8 @@ defaultState :: State
 defaultState = unit
 
 
-_in_audio  = Fn.Input 1 :: _ "audio"
-_in_cutoff = Fn.Input 1 :: _ "cutoff"
+_in_audio  = Fn.Input 0 :: _ "audio"
+_in_cutoff = Fn.Input 0 :: _ "cutoff"
 
 
 type Inputs = ( audio :: H.Audio, cutoff :: H.Value )

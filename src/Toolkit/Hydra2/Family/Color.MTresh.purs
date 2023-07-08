@@ -29,11 +29,11 @@ defaultState :: State
 defaultState = unit
 
 
-_in_what      = Fn.Input 1 :: _ "what"
-_in_treshold  = Fn.Input 2 :: _ "treshold"
-_in_tolerance = Fn.Input 3 :: _ "tolerance"
+_in_what      = Fn.Input  0 :: _ "what"
+_in_treshold  = Fn.Input  1 :: _ "treshold"
+_in_tolerance = Fn.Input  2 :: _ "tolerance"
 
-_out_out      = Fn.Output 1 :: _ "out"
+_out_out      = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( what :: H.Texture, treshold :: H.Value, tolerance :: H.Value )

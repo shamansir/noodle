@@ -29,11 +29,11 @@ defaultState :: State
 defaultState = unit
 
 
-_in_what    = Fn.Input  1 :: _ "what"
-_in_scrollX = Fn.Input  2 :: _ "scrollX"
-_in_speed   = Fn.Input  3 :: _ "speed"
+_in_what    = Fn.Input  0 :: _ "what"
+_in_scrollX = Fn.Input  1 :: _ "scrollX"
+_in_speed   = Fn.Input  2 :: _ "speed"
 
-_out_out    = Fn.Output 1 :: _ "out"
+_out_out    = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( what :: H.Texture, scrollX :: H.Value, speed :: H.Value )

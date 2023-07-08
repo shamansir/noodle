@@ -29,14 +29,14 @@ defaultState :: State
 defaultState = unit
 
 
-_in_what    = Fn.Input  1 :: _ "what"
-_in_with    = Fn.Input  2 :: _ "with"
-_in_repeatX = Fn.Input  3 :: _ "repeatX"
-_in_repeatY = Fn.Input  4 :: _ "repeatY"
-_in_offsetX = Fn.Input  5 :: _ "offsetX"
-_in_offsetY = Fn.Input  6 :: _ "offsetY"
+_in_what    = Fn.Input  0 :: _ "what"
+_in_with    = Fn.Input  1 :: _ "with"
+_in_repeatX = Fn.Input  2 :: _ "repeatX"
+_in_repeatY = Fn.Input  3 :: _ "repeatY"
+_in_offsetX = Fn.Input  4 :: _ "offsetX"
+_in_offsetY = Fn.Input  5 :: _ "offsetY"
 
-_out_out    = Fn.Output 1 :: _ "out"
+_out_out    = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( what :: H.Texture, with :: H.Texture, repeatX :: H.Value, repeatY :: H.Value, offsetX :: H.Value, offsetY :: H.Value )

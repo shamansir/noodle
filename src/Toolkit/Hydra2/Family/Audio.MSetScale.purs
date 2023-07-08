@@ -30,8 +30,8 @@ defaultState :: State
 defaultState = unit
 
 
-_in_audio = Fn.Input 1 :: _ "audio"
-_in_scale = Fn.Input 2 :: _ "scale"
+_in_audio = Fn.Input 0 :: _ "audio"
+_in_scale = Fn.Input 1 :: _ "scale"
 
 
 type Inputs = ( audio :: H.Audio, scale :: H.Value )

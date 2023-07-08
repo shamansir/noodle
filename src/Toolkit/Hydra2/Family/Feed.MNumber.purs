@@ -29,9 +29,9 @@ defaultState :: State
 defaultState = 0.0
 
 
-_in_in   = Fn.Input 1 :: _ "in" -- TODO: make hidden
+_in_in     = Fn.Input  0 :: _ "in" -- TODO: make hidden
 
-_out_out   = Fn.Output 1 :: _ "out"
+_out_out   = Fn.Output 0 :: _ "out"
 
 
 type Inputs = ( in :: H.Value )
