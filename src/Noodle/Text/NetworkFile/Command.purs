@@ -4,6 +4,7 @@ import Prelude (show, ($), (<$>))
 
 import Data.Semigroup ((<>))
 import Data.String as String
+import Data.Array as Array
 
 import Type.Proxy (Proxy)
 
@@ -36,4 +37,4 @@ instance ToCode NDF Command where
 
 -- instance ToCode NDF (Array Command) where
 commandsToNdf :: Array Command -> String
-commandsToNdf cmds = String.joinWith "\n" $ toCode ndf <$> cmds
+commandsToNdf cmds = String.joinWith "\n" $ toCode ndf <$> Array.reverse cmds

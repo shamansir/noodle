@@ -12,7 +12,7 @@ import Data.Maybe (Maybe(..))
 import Data.Mark (mark)
 import Data.Repr (class FromRepr, class ToRepr)
 import Data.Symbol (class IsSymbol, reflectSymbol)
-import Data.SProxy (reflect)
+import Data.SProxy (reflect, reflect')
 import Data.Tuple.Nested ((/\), type (/\))
 
 import Type.Proxy (Proxy(..))
@@ -199,9 +199,9 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
                             pure $ nextPatch'
                         )
 
-                    let onodeId = Id.withNodeId lco.nodeId reflect
+                    let onodeId = Id.withNodeId lco.nodeId reflect'
 
-                    logCommandM $ Cmd.Connect onodeId lco.index (reflect inodeId) idx -- TODO: log somewhere else in a special place
+                    logCommandM $ Cmd.Connect onodeId lco.index (reflect' inodeId) idx -- TODO: log somewhere else in a special place
 
                     State.modify_ (\s -> s { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network })
 
