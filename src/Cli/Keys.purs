@@ -29,6 +29,7 @@ inletButton = nk :: InletButtonKey
 outletButton = nk :: OutletButtonKey
 addPatchButton = nk :: Button <^> "add-patch"
 loadFileButton = nk :: Button <^> "load-file"
+commandLogButton = nk :: Button <^> "toggle-command-log"
 commandLogBox = nk :: Box <^> "command-log"
 hydraCodeBox = nk :: Box <^> "hydra-code"
 

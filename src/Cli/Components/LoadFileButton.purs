@@ -185,7 +185,7 @@ component ::
     -> Network Hydra.State (Hydra.Families Effect) (Hydra.Instances Effect)
     -> -} Core.Blessed State
 component =
-    B.button Key.addPatchButton
+    B.button Key.loadFileButton
         [ Box.content "L"
         , Box.top $ Offset.px 0
         , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 3

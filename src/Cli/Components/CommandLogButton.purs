@@ -48,7 +48,7 @@ import Toolkit.Hydra2 as Hydra
 
 component ∷ Core.Blessed State
 component =
-    B.button Key.addPatchButton
+    B.button Key.commandLogButton
         [ Box.content "C"
         , Box.top $ Offset.px 0
         , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 5

@@ -31,9 +31,9 @@ import Cli.Components.PatchBox as PatchBox
 import Cli.Components.PatchesListbar as PatchesListbar
 import Cli.Components.AddPatchButton as AddPatchButton
 import Cli.Components.LoadFileButton as LoadFileButton
+import Cli.Components.CommandLogButton as CommandLogButton
 import Cli.Components.PaletteList as PaletteList
 import Cli.Components.StatusLine as StatusLine
-import Cli.Components.CommandLogButton as CommandLogButton
 import Cli.Components.CommandLogBox as CommandLogBox
 
 import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
