@@ -83,14 +83,14 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
         tryReadAndSend valueStr _ node input =
             let (maybeDin :: Maybe din) = (readRepr valueStr :: Maybe (Repr repr)) >>= fromRepr
             in case maybeDin of
-                Just din -> Node.sendIn node input din
+                Just din -> Node.sendIn node input din *> Node.run node
                 Nothing -> pure unit
 
         tryReadAndSendO :: forall f state o dout is os os'. Id.HasOutput o dout os' os => ReadWriteRepr repr => ToRepr dout repr => FromRepr repr dout => String -> Proxy dout -> Node f state is os m -> Id.Output o -> m Unit
         tryReadAndSendO valueStr _ node output =
             let (maybeDout :: Maybe dout) = (readRepr valueStr :: Maybe (Repr repr)) >>= fromRepr
             in case maybeDout of
-                Just dout -> Node.sendOut node output dout
+                Just dout -> Node.sendOut node output dout *> Node.run node
                 Nothing -> pure unit
             -- pure unit
 
