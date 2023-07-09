@@ -15,6 +15,7 @@ import Data.List ((:))
 import Data.List (List(..), fromFoldable) as List
 import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
+import Data.Int as Int
 import Data.Bifunctor (bimap)
 import Data.SOrder (SOrder, type (:::), T)
 import Data.KeyHolder as KH
@@ -308,6 +309,18 @@ data MyRepr
 
 instance R.ToRepr Int MyRepr where toRepr = R.exists <<< IntRepr
 instance R.ToRepr String MyRepr where toRepr = R.exists <<< StringRepr
+
+instance R.ReadRepr MyRepr where
+    readRepr :: String -> Maybe (_ MyRepr)
+    readRepr str =
+        case (Int.fromString str :: Maybe Int) of -- <|>
+            Just int -> Just $ R.Repr $ IntRepr int
+            Nothing -> Just $ R.Repr $ StringRepr str
+
+instance R.WriteRepr MyRepr where
+    writeRepr :: R.Repr MyRepr -> String
+    writeRepr (R.Repr (IntRepr int)) = show int
+    writeRepr (R.Repr (StringRepr str)) = str
 
 
 instance R.FromRepr MyRepr Int where

@@ -1,7 +1,10 @@
 module Test.Repr where
 
 import Prelude
+
+import Data.String.Read (read)
 import Data.Maybe (Maybe(..))
+import Data.Int as Int
 
 import Data.Repr (Repr(..), class ToRepr)
 import Data.Repr as Repr
@@ -44,6 +47,21 @@ instance Repr.FromRepr MyRepr Int where
 instance Repr.FromRepr MyRepr String where
     fromRepr (Repr (String_ str)) = Just str
     fromRepr _                    = Nothing
+
+
+instance Repr.ReadRepr MyRepr where
+    readRepr :: String -> Maybe (_ MyRepr)
+    readRepr =
+        case _ of
+            "unit" -> Just (Repr.Repr Unit_)
+            str ->
+                case (read str :: Maybe Boolean) of -- <|>
+                    Just bool -> Just $ Repr.Repr $ Bool_ bool
+                    Nothing ->
+                        case (Int.fromString str :: Maybe Int) of -- <|>
+                            Just int -> Just $ Repr.Repr $ Int_ int
+                            Nothing -> Just $ Repr.Repr $ String_ str
+
 
 
 {- instance HasRepr String MyRepr where toRepr _ = String_
