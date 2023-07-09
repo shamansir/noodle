@@ -1,4 +1,4 @@
-module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, withFamily2, familySym) where
+module Toolkit.Hydra2 (State, Toolkit, toolkit, Families, Instances, noInstances, withFamily, withFamily2, familySym, producesCode, codeOrder) where
 
 
 import Prelude (Unit, unit, ($), (<$>), join)
@@ -13,6 +13,7 @@ import Data.Traversable (sequence)
 import Data.SOrder (type (:::), T, SOrder)
 import Data.SOrder (Auto, auto) as SOrder
 import Data.Repr (class FromToReprRow)
+import Data.SProxy (reflect)
 
 import Control.Applicative (class Applicative)
 
@@ -916,3 +917,44 @@ withFamily2 fn familyAR familyBR =
                         familyBR
                 )
                 familyAR
+
+
+producesCode :: forall f. IsSymbol f => Node.Family f -> Boolean
+producesCode family = case reflect family of
+        "out" -> true
+
+        "initCam" -> true
+        "initImage" -> true
+        "initVideo" -> true
+        "init" -> true
+        "initScreen" -> true
+        "initStream" -> true
+
+        "speed" -> true
+        "bpm" -> true
+        "setResolution" -> true
+        "update" -> true
+        "render" -> true
+
+        _ -> false
+
+
+codeOrder :: forall f. IsSymbol f => Node.Family f -> Int
+codeOrder family = case reflect family of
+        "speed" -> 0
+        "bpm" -> 0
+        "setResolution" -> 0
+        "update" -> 0
+
+        "initCam" -> 1
+        "initImage" -> 1
+        "initVideo" -> 1
+        "init" -> 1
+        "initScreen" -> 1
+        "initStream" -> 1
+
+        "out" -> 2
+
+        "render" -> 3
+
+        _ -> 4

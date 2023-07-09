@@ -98,7 +98,7 @@ import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState, class IsNodeState,
 
 import Noodle.Text.NetworkFile.Command as Cmd
 
-import Toolkit.Hydra2 (Families, Instances, State, Toolkit) as Hydra
+import Toolkit.Hydra2 (Families, Instances, State, Toolkit, producesCode) as Hydra
 import Toolkit.Hydra2.Group (toGroup) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
@@ -232,6 +232,8 @@ fromNode curPatchId curPatch family node = do
     liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate)
     liftEffect $ Signal.runSignal $ updates ~> logDataCommand stateRef
 
+    liftEffect $ when (Hydra.producesCode family) $ Signal.runSignal $ updates ~> updateCodeFor stateRef
+
     -- liftEffect $ Node.listenUpdatesAndRun node
     -- liftEffect $ Node.run node
 
@@ -315,6 +317,24 @@ logDataCommand stateRef (chFocus /\ nodeId /\ _ /\ _ /\ outputs) =
                 Just wrapRepr ->
                     flip logCommandByRef stateRef $ Cmd.SendO_ (reflect' nodeId) (reflect' output) $ encode wrapRepr
                 Nothing -> pure unit
+        _ -> pure unit
+
+
+updateCodeFor
+    :: forall m
+     . MonadEffect m
+    => Ref State
+    -> ChangeFocus /\ Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr
+    -> m Unit
+updateCodeFor stateRef (chFocus /\ nodeId /\ _ /\ _ /\ outputs) =
+    case chFocus of
+        OutputChange output ->
+            pure unit
+            {-
+            case Map.lookup output outputs of
+                Just wrapRepr ->
+                    flip logCommandByRef stateRef $ Cmd.SendO_ (reflect' nodeId) (reflect' output) $ encode wrapRepr
+                Nothing -> pure unit -}
         _ -> pure unit
 
 
