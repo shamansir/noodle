@@ -80,7 +80,6 @@ family = -- {-> source <-}
             frequency <- P.receive _in_frequency
             sync <- P.receive _in_sync
             offset <- P.receive _in_offset
-            -- liftEffect $ Console.log $ show $ H.Osc { frequency, sync, offset }
             P.send _out_out $ H.From $ H.Osc { frequency, sync, offset }
 
 

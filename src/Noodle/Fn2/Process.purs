@@ -43,6 +43,7 @@ import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
+import Effect.Console as Console
 -- import Noodle.Fn.Protocol (Protocol)
 
 import Prim.Row (class Cons)

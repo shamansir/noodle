@@ -257,16 +257,32 @@ atInput :: forall f i state is' is os m din. MonadEffect m => HasInput i din is'
 atInput i node = inputs node <#> Record.get (proxify i)
 
 
+atInput' :: forall f i state is' is os m din. MonadEffect m => HasInput i din is' is => Input' i -> Node f state is os m -> m din
+atInput' i node = inputs node <#> Record.get (proxify i)
+
+
 atOutput :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Output o -> Node f state is os m -> m dout
 atOutput o node = outputs node <#> Record.get (proxify o)
+
+
+atOutput' :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Output' o -> Node f state is os m -> m dout
+atOutput' o node = outputs node <#> Record.get (proxify o)
 
 
 atI :: forall f i state is' is os m din. MonadEffect m => HasInput i din is' is => Node f state is os m -> Input i -> m din
 atI = flip atInput
 
 
+atI' :: forall f i state is' is os m din. MonadEffect m => HasInput i din is' is => Node f state is os m -> Input' i -> m din
+atI' = flip atInput'
+
+
 atO :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m -> Output o -> m dout
 atO = flip atOutput
+
+
+atO' :: forall f o state is os os' m dout. MonadEffect m => HasOutput o dout os' os => Node f state is os m -> Output' o -> m dout
+atO' = flip atOutput'
 
 -- TODO: operator
 -- at' ∷ ∀ (m ∷ Type -> Type) (t364 ∷ Type) (state ∷ Type) (os ∷ Row Type) (is ∷ Row Type) (dout :: Type). Functor m ⇒ Node f state is os m → (Record is -> dout) -> m dout
@@ -440,15 +456,19 @@ connect
     convert
     nodeA@(Node nodeAId _ _ _)
     nodeB@(Node nodeBId _ _ _) =
-    liftEffect $ do
-        flagRef <- Ref.new true
+    do
+        flagRef <- liftEffect $ Ref.new true
         let
+            sendToBIfFlagIsOn :: dinB -> Effect Unit
             sendToBIfFlagIsOn din = do
                 -- Monad.whenM
                 flagOn <- Ref.read flagRef
                 if flagOn then sendInE nodeB inputB din
                 else pure unit
-        Signal.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
+        -- TODO: get current value at output and send it to input
+        liftEffect $ Signal.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
+        (doutA :: doutA) <- atO nodeA outputA
+        liftEffect $ sendToBIfFlagIsOn $ convert doutA
         pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
 
 
@@ -487,15 +507,19 @@ connect'
     convert
     nodeA@(Node nodeAId _ _ _)
     nodeB@(Node nodeBId _ _ _) =
-    liftEffect $ do
-        flagRef <- Ref.new true
+    do
+        flagRef <- liftEffect $ Ref.new true
         let
+            sendToBIfFlagIsOn :: dinB -> Effect Unit
             sendToBIfFlagIsOn din = do
                 -- Monad.whenM
                 flagOn <- Ref.read flagRef
                 if flagOn then sendInE' nodeB inputB din
                 else pure unit
-        Signal.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
+        liftEffect $ SignalX.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBIfFlagIsOn
+        (doutA :: doutA) <- atO' nodeA outputA
+        liftEffect $ sendToBIfFlagIsOn $ convert doutA
+        -- TODO: get current value at output and send it to input
         pure $ Link nodeAId outputA inputB nodeBId $ Ref.write false flagRef
 
 
@@ -536,8 +560,8 @@ connectByRepr
     inputB
     nodeA@(Node nodeAId _ _ _)
     nodeB@(Node nodeBId _ _ _) =
-    liftEffect $ do
-        flagRef <- Ref.new true
+    do
+        flagRef <- liftEffect $ Ref.new true
         let
             convert :: doutA -> Maybe dinB
             convert dout = (toRepr dout :: Maybe (Repr repr)) >>= fromRepr
@@ -549,7 +573,11 @@ connectByRepr
                 else pure unit
             sendToBWhenConditionsMet Nothing =
                 pure unit
-        Signal.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBWhenConditionsMet
+        -- TODO: get current value at output and send it to input
+        liftEffect $ Signal.runSignal $ subscribeOutput (Record.get $ proxify outputA) nodeA ~> convert ~> sendToBWhenConditionsMet
+        (doutA :: doutA) <- atO nodeA outputA
+        liftEffect $ sendToBWhenConditionsMet $ convert doutA
+        -- run nodeB -- TODO: running also works
         pure $ Link nodeAId (output' outputA) (input' inputB) nodeBId $ Ref.write false flagRef
 
 
