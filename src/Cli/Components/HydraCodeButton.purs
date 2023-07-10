@@ -38,7 +38,7 @@ component =
         , Style.addPatch
         , Core.on Button.Press
             \_ _ -> do
-                Key.hydraCodeButton >~ Element.toggle
+                Key.hydraCodeBox >~ Element.toggle
                 HydraCodeBox.refresh
                 Key.mainScreen >~ Screen.render
         {-

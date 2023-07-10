@@ -43,7 +43,7 @@ import Noodle.Node2 as Node
 
 import Cli.Keys (NodeBoxKey)
 import Cli.Style as Style
--- import Cli.State (logCommandM)
+-- import Cli.State (logNdfCommandM)
 
 -- import Noodle.Node2 (Node)
 

@@ -43,7 +43,7 @@ import Blessed.UI.Boxes.Box.Method as Box
 
 import Cli.Keys as Key
 import Cli.Keys (NodeBoxKey, InfoBoxKey, InletButtonKey, mainScreen, statusLine)
-import Cli.State (State, Link, OutletIndex(..), InletIndex(..), logCommandM)
+import Cli.State (State, Link, OutletIndex(..), InletIndex(..), logNdfCommandM)
 import Cli.State.NwWraper (unwrapN, wrapN)
 import Cli.Style (inletsOutlets) as Style
 import Cli.Components.Link as Link
@@ -201,7 +201,7 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
 
                     let onodeId = Id.withNodeId lco.nodeId reflect'
 
-                    logCommandM $ Cmd.Connect onodeId lco.index (reflect' inodeId) idx -- TODO: log somewhere else in a special place
+                    logNdfCommandM $ Cmd.Connect onodeId lco.index (reflect' inodeId) idx -- TODO: log somewhere else in a special place
 
                     State.modify_ (\s -> s { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network })
 

@@ -85,7 +85,7 @@ import Cli.Keys (NodeBoxKey)
 import Cli.Keys (mainScreen, patchBox, statusLine) as Key
 import Cli.Palette as Palette
 import Cli.Palette.Item (crepr) as Palette
-import Cli.State (State, logCommandM, logCommandByRef)
+import Cli.State (State, logNdfCommandM, logNdfCommandByRef)
 import Cli.Style as Style
 import Cli.Components.Link as Link
 import Cli.Components.NodeBox.InletsBox as InletsBox
@@ -153,7 +153,7 @@ fromNode curPatchId curPatch family node = do
 
     (nodeId /\ _ /\ inputsReps /\ outputReprs) <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
 
-    logCommandM $ Cmd.MakeNode (reflect family) topN leftN $ reflect' nodeId -- TODO: log somewhere else in a special place
+    logNdfCommandM $ Cmd.MakeNode (reflect family) topN leftN $ reflect' nodeId -- TODO: log somewhere else in a special place
 
     let (is :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeInputsTest' node
     let (os :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeOutputsTest' node
@@ -316,7 +316,7 @@ logDataCommand stateRef (chFocus /\ nodeId /\ _ /\ _ /\ outputs) =
         OutputChange output ->
             case Map.lookup output outputs of
                 Just wrapRepr ->
-                    flip logCommandByRef stateRef $ Cmd.SendO_ (reflect' nodeId) (reflect' output) $ encode wrapRepr
+                    flip logNdfCommandByRef stateRef $ Cmd.SendO_ (reflect' nodeId) (reflect' output) $ encode wrapRepr
                 Nothing -> pure unit
         _ -> pure unit
 
@@ -336,7 +336,7 @@ updateCodeFor stateRef family (chFocus /\ nodeId /\ _ /\ _ /\ outputs) =
             {-
             case Map.lookup output outputs of
                 Just wrapRepr ->
-                    flip logCommandByRef stateRef $ Cmd.SendO_ (reflect' nodeId) (reflect' output) $ encode wrapRepr
+                    flip logNdfCommandByRef stateRef $ Cmd.SendO_ (reflect' nodeId) (reflect' output) $ encode wrapRepr
                 Nothing -> pure unit -}
         _ -> pure unit
 

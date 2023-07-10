@@ -3,12 +3,6 @@ module Cli.Components.CommandLogBox where
 import Prelude
 
 import Effect (Effect)
-import Data.FunctorWithIndex (mapWithIndex)
-import Data.Tuple.Nested ((/\), type (/\))
-import Data.Maybe (Maybe)
-import Data.Array (length, zip) as Array
-import Data.Map (Map)
-import Data.Map as Map
 
 import Control.Monad.State (get) as State
 
@@ -22,26 +16,17 @@ import Blessed.Core.Coord as Coord
 import Blessed.Core.Coord ((<->))
 
 import Blessed.Internal.Core (Blessed) as C
-import Blessed.Internal.NodeKey (nestChain) as NK
 import Blessed.Internal.BlessedOp (BlessedOp)
 
 import Blessed.UI.Boxes.Box.Option as Box
-import Blessed.UI.Boxes.Box.Method as Box
+import Blessed.UI.Boxes.Box.Method (setContent) as Box
 
 import Cli.Keys (commandLogBox) as Keys
 import Cli.Style as Style
 import Cli.State (State)
 import Cli.Components.NodeBox.InletButton as InletButton
 
-import Noodle.Id as Id
-import Noodle.Node2 as Node
-import Noodle.Patch4 (Patch)
-import Noodle.Patch4 as Patch
-import Noodle.Family.Def as Family
 import Noodle.Text.NetworkFile.Command (commandsToNdf)
-
-import Toolkit.Hydra2 (Instances, State) as Hydra
-import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 
 
 width :: Int -> Dimension

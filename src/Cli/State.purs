@@ -161,13 +161,25 @@ formProgram :: Map Id.NodeIdR Lang.Command -> Lang.Program Unit
 formProgram _ = Program.empty
 
 
-logCommand :: NdfFile.Command -> State -> State
-logCommand cmd state = state { commandLog = cmd : state.commandLog }
+logLangCommand :: Id.NodeIdR -> Lang.Command -> State -> State
+logLangCommand nodeId cmd state = state { program = Map.insert nodeId cmd state.program }
 
 
-logCommandM :: forall m. MonadState State m => NdfFile.Command -> m Unit
-logCommandM = modify_ <<< logCommand
+logLangCommandM :: forall m. MonadState State m => Id.NodeIdR -> Lang.Command -> m Unit
+logLangCommandM nodeId = modify_ <<< logLangCommand nodeId
 
 
-logCommandByRef :: forall m. MonadEffect m => NdfFile.Command -> Ref State -> m Unit
-logCommandByRef cmd = liftEffect <<< Ref.modify_ (logCommand cmd)
+logLangCommandByRef :: forall m. MonadEffect m => Id.NodeIdR -> Lang.Command -> Ref State -> m Unit
+logLangCommandByRef nodeId cmd = liftEffect <<< Ref.modify_ (logLangCommand nodeId cmd)
+
+
+logNdfCommand :: NdfFile.Command -> State -> State
+logNdfCommand cmd state = state { commandLog = cmd : state.commandLog }
+
+
+logNdfCommandM :: forall m. MonadState State m => NdfFile.Command -> m Unit
+logNdfCommandM = modify_ <<< logNdfCommand
+
+
+logNdfCommandByRef :: forall m. MonadEffect m => NdfFile.Command -> Ref State -> m Unit
+logNdfCommandByRef cmd = liftEffect <<< Ref.modify_ (logNdfCommand cmd)
