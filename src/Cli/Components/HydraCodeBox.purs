@@ -31,6 +31,7 @@ import Blessed.UI.Boxes.Box.Method as Box
 import Cli.Keys (hydraCodeBox) as Keys
 import Cli.Style as Style
 import Cli.State (State)
+import Cli.State (formProgram) as State
 import Cli.Components.NodeBox.InletButton as InletButton
 
 import Noodle.Id as Id
@@ -42,6 +43,7 @@ import Noodle.Text.NetworkFile.Command (commandsToNdf)
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
+import Toolkit.Hydra2.Lang.ToCode (toCode, javaScript) as Lang
 
 
 width :: Int -> Dimension
@@ -89,4 +91,4 @@ component =
 refresh :: BlessedOp State Effect
 refresh = do
     state <- State.get
-    Keys.hydraCodeBox >~ Box.setContent $ commandsToNdf state.commandLog
+    Keys.hydraCodeBox >~ Box.setContent $ Lang.toCode Lang.javaScript $ State.formProgram state.program

@@ -31,12 +31,12 @@ import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox) as Key
 import Cli.State.NwWraper (Network, wrapN)
 import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState)
 
-import Noodle.Text.NetworkFile.Command (Command)
+import Noodle.Text.NetworkFile.Command (Command) as NdfFile
 
 import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
-import Toolkit.Hydra2.Lang (Program)
 import Toolkit.Hydra2.Lang (empty) as Program
+import Toolkit.Hydra2.Lang (Program, Command) as Lang
 
 
 type State =
@@ -50,8 +50,8 @@ type State =
     , linksTo :: Map RawNodeKey (Map Int Link)
     , lastKeys :: LastKeys
     , nodeKeysMap :: Map Id.NodeIdR NodeBoxKey
-    , commandLog :: Array Command
-    , program :: Program Unit
+    , commandLog :: Array NdfFile.Command
+    , program :: Map Id.NodeIdR Lang.Command
     , innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
     -- , network :: Noodle.Network Unit (Hydra.Families Effect) (Hydra.Instances Effect)
     -- , network :: TestM Effect
@@ -77,7 +77,7 @@ initial =
     , linksTo : Map.empty
     , nodeKeysMap : Map.empty
     , commandLog : []
-    , program : Program.empty
+    , program : Map.empty
     , innerStates : Map.empty
     -- , nodes : Hydra.noInstances
     }
@@ -157,13 +157,17 @@ type LastKeys =
     }
 
 
-logCommand :: Command -> State -> State
+formProgram :: Map Id.NodeIdR Lang.Command -> Lang.Program Unit
+formProgram _ = Program.empty
+
+
+logCommand :: NdfFile.Command -> State -> State
 logCommand cmd state = state { commandLog = cmd : state.commandLog }
 
 
-logCommandM :: forall m. MonadState State m => Command -> m Unit
+logCommandM :: forall m. MonadState State m => NdfFile.Command -> m Unit
 logCommandM = modify_ <<< logCommand
 
 
-logCommandByRef :: forall m. MonadEffect m => Command -> Ref State -> m Unit
+logCommandByRef :: forall m. MonadEffect m => NdfFile.Command -> Ref State -> m Unit
 logCommandByRef cmd = liftEffect <<< Ref.modify_ (logCommand cmd)

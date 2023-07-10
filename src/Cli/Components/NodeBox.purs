@@ -103,6 +103,7 @@ import Toolkit.Hydra2.Group (toGroup) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
 import Toolkit.Hydra2.Family.Render.Cli (Cli) as Hydra
+import Toolkit.Hydra2.Lang as Lang
 
 
 width :: String -> Int -> Int -> Dimension
@@ -232,7 +233,7 @@ fromNode curPatchId curPatch family node = do
     liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate)
     liftEffect $ Signal.runSignal $ updates ~> logDataCommand stateRef
 
-    liftEffect $ when (Hydra.producesCode family) $ Signal.runSignal $ updates ~> updateCodeFor stateRef
+    liftEffect $ when (Hydra.producesCode family) $ Signal.runSignal $ updates ~> updateCodeFor stateRef family
 
     -- liftEffect $ Node.listenUpdatesAndRun node
     -- liftEffect $ Node.run node
@@ -321,12 +322,14 @@ logDataCommand stateRef (chFocus /\ nodeId /\ _ /\ _ /\ outputs) =
 
 
 updateCodeFor
-    :: forall m
+    :: forall m f
      . MonadEffect m
+    => IsSymbol f
     => Ref State
+    -> Id.Family f
     -> ChangeFocus /\ Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr
     -> m Unit
-updateCodeFor stateRef (chFocus /\ nodeId /\ _ /\ _ /\ outputs) =
+updateCodeFor stateRef family (chFocus /\ nodeId /\ _ /\ _ /\ outputs) =
     case chFocus of
         OutputChange output ->
             pure unit

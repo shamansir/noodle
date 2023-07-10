@@ -31,6 +31,7 @@ addPatchButton = nk :: Button <^> "add-patch"
 loadFileButton = nk :: Button <^> "load-file"
 commandLogButton = nk :: Button <^> "toggle-command-log"
 commandLogBox = nk :: Box <^> "command-log"
+hydraCodeButton = nk :: Button <^> "toggle-hydra-code"
 hydraCodeBox = nk :: Box <^> "hydra-code"
 
 
