@@ -34,7 +34,7 @@ import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..))
 data Single
     = WithAudio OnAudio
     | InitCam Source
-    | Render Output
+    | Render From
 
 
 data Command
@@ -167,16 +167,20 @@ codeOrder family = case reflect family of
 
 
 
-updateToCommand :: forall f. IsSymbol f => Id.Family f -> R.NodeLineMap WrapRepr -> Int /\ Command
+updateToCommand :: forall f. IsSymbol f => Id.Family f -> R.NodeLineMap WrapRepr -> Command -- Int /\ Command?
 updateToCommand family (nodeId /\ _ /\ inputs /\ outputs) =
     case reflect family of
         "out" ->
-            2 /\
-                case (/\) <$> Map.lookupBy' reflect' "what" inputs <*> Map.lookupBy' reflect' "target" inputs of
+            case (/\) <$> Map.lookupBy' reflect' "what" inputs <*> Map.lookupBy' reflect' "target" inputs of
                     Just (Texture texture /\ Output target) ->
                         End target texture
                     _ -> Unknown
-        _ -> 4 /\ Unknown
+        "render" ->
+            case Map.lookupBy' reflect' "from" inputs of
+                    Just (From target) ->
+                        One $ Render target
+                    _ -> Unknown
+        _ -> Unknown
 
 
 formProgram :: Map Id.NodeIdR Command -> Program Unit

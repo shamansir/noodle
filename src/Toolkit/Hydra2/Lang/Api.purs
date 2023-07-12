@@ -94,7 +94,11 @@ fft = flip Audio
 
 
 render :: Output -> Program Unit
-render = q <<< One <<< Render
+render = q <<< One <<< Render <<< Output
+
+
+renderAll :: Program Unit
+renderAll = q $ One $ Render All
 
 
 n :: Number -> Value
