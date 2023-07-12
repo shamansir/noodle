@@ -1,6 +1,6 @@
 module Toolkit.Hydra2.Lang where
 
-import Prelude (class Apply, class Bind, class Functor, class Semigroup, ($), (<>), Unit, unit)
+import Prelude
 import Prelude (class Show, show) as Core
 
 
@@ -14,7 +14,11 @@ import Control.Bind (class Bind)
 import Data.Symbol (class IsSymbol)
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.SProxy (reflect, reflect')
+import Data.Maybe(Maybe(..))
 import Data.Map (Map)
+import Data.Map as Map
+import Data.Map.Extra as Map
+import Data.List as List
 
 
 import Noodle.Id as Id
@@ -53,6 +57,13 @@ instance Semigroup Command where
 
 empty :: Program Unit
 empty = Program Unknown unit
+
+
+append :: Program Unit -> Command -> Program Unit
+append (Program Unknown _) Unknown = Program Unknown unit
+append (Program Unknown _) cmd = Program cmd unit
+append (Program cmd _) Unknown = Program cmd unit
+append (Program cmdA _) cmdB = Program (Pair cmdA cmdB) unit
 
 
 -- instance Semigroup (Program Unit) where
@@ -155,13 +166,21 @@ codeOrder family = case reflect family of
         _ -> 4
 
 
-updateToCommand :: forall f. IsSymbol f => Id.Family f -> R.NodeLineMap WrapRepr -> Command
-updateToCommand family (nodeId /\ _ /\ _ /\ outputs) =
-    Unknown
+
+updateToCommand :: forall f. IsSymbol f => Id.Family f -> R.NodeLineMap WrapRepr -> Int /\ Command
+updateToCommand family (nodeId /\ _ /\ inputs /\ outputs) =
+    case reflect family of
+        "out" ->
+            2 /\
+                case (/\) <$> Map.lookupBy' reflect' "what" inputs <*> Map.lookupBy' reflect' "target" inputs of
+                    Just (Texture texture /\ Output target) ->
+                        End target texture
+                    _ -> Unknown
+        _ -> 4 /\ Unknown
 
 
 formProgram :: Map Id.NodeIdR Command -> Program Unit
-formProgram _ = empty
+formProgram = Map.values >>> List.foldl append empty
 
 
 {-

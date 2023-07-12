@@ -1,8 +1,27 @@
 module Data.Map.Extra
-    (type (/->)) where
+    ( type (/->)
+    , lookupBy
+    , lookupBy'
+    ) where
+
+import Prelude ((>>>), class Ord, class Eq, (==))
 
 
+import Data.Maybe (Maybe(..))
 import Data.Map (Map)
+import Data.Map as Map
+import Data.List as List
+import Data.Tuple as Tuple
 
 
 infixr 6 type Map as /->
+
+
+
+-- lookupBy :: forall k v. Ord k => (k -> Boolean) -> (k /-> v) -> Maybe v
+lookupBy :: forall k v. Ord k => (k -> Boolean) -> Map k v -> Maybe v
+lookupBy f = Map.filterKeys f >>> Map.values >>> List.head
+
+
+lookupBy' :: forall a k v. Ord k => Eq a => (k -> a) -> a -> Map k v -> Maybe v
+lookupBy' f sample = lookupBy (f >>> (==) sample)
