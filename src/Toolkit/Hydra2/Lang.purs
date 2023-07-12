@@ -11,11 +11,20 @@ import Control.Apply (class Apply)
 import Control.Bind (class Bind)
 -}
 
+import Data.Symbol (class IsSymbol)
+import Data.Tuple.Nested ((/\), type (/\))
+import Data.SProxy (reflect, reflect')
+import Data.Map (Map)
+
+
+import Noodle.Id as Id
+import Noodle.Node2.MapsFolds.Flatten as R
 
 import Toolkit.Hydra2.Types (From, Output, Source, Texture, Audio, OnAudio)
 
 import Toolkit.Hydra2.Lang.ToCode
 import Toolkit.Hydra2.Lang.ToCode (fnPs, fnJs) as ToCode
+import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..))
 
 
 data Single
@@ -103,6 +112,56 @@ instance ToCode PS (Program a) where
     toCode _ (Program cmd _) = toCode pureScript cmd
 else instance ToCode JS (Program a) where
     toCode _ (Program cmd _) = toCode javaScript cmd
+
+
+producesCode :: forall f. IsSymbol f => Id.Family f -> Boolean
+producesCode family = case reflect family of
+        "out" -> true
+
+        "initCam" -> true
+        "initImage" -> true
+        "initVideo" -> true
+        "init" -> true
+        "initScreen" -> true
+        "initStream" -> true
+
+        "speed" -> true
+        "bpm" -> true
+        "setResolution" -> true
+        "update" -> true
+        "render" -> true
+
+        _ -> false
+
+
+codeOrder :: forall f. IsSymbol f => Id.Family f -> Int
+codeOrder family = case reflect family of
+        "speed" -> 0
+        "bpm" -> 0
+        "setResolution" -> 0
+        "update" -> 0
+
+        "initCam" -> 1
+        "initImage" -> 1
+        "initVideo" -> 1
+        "init" -> 1
+        "initScreen" -> 1
+        "initStream" -> 1
+
+        "out" -> 2
+
+        "render" -> 3
+
+        _ -> 4
+
+
+updateToCommand :: forall f. IsSymbol f => Id.Family f -> R.NodeLineMap WrapRepr -> Command
+updateToCommand family (nodeId /\ _ /\ _ /\ outputs) =
+    Unknown
+
+
+formProgram :: Map Id.NodeIdR Command -> Program Unit
+formProgram _ = empty
 
 
 {-

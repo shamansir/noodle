@@ -157,10 +157,6 @@ type LastKeys =
     }
 
 
-formProgram :: Map Id.NodeIdR Lang.Command -> Lang.Program Unit
-formProgram _ = Program.empty
-
-
 logLangCommand :: Id.NodeIdR -> Lang.Command -> State -> State
 logLangCommand nodeId cmd state = state { program = Map.insert nodeId cmd state.program }
 

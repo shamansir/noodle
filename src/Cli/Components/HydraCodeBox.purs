@@ -24,9 +24,9 @@ import Blessed.UI.Boxes.Box.Method (setContent) as Box
 import Cli.Keys (hydraCodeBox) as Keys
 import Cli.Style as Style
 import Cli.State (State)
-import Cli.State (formProgram) as State
 import Cli.Components.NodeBox.InletButton as InletButton
 
+import Toolkit.Hydra2.Lang (formProgram) as Lang
 import Toolkit.Hydra2.Lang.ToCode (toCode, javaScript) as Lang
 
 
@@ -75,4 +75,4 @@ component =
 refresh :: BlessedOp State Effect
 refresh = do
     state <- State.get
-    Keys.hydraCodeBox >~ Box.setContent $ Lang.toCode Lang.javaScript $ State.formProgram state.program
+    Keys.hydraCodeBox >~ Box.setContent $ Lang.toCode Lang.javaScript $ Lang.formProgram state.program

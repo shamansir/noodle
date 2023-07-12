@@ -4,6 +4,7 @@ import Prelude (($), (<$>), (<>))
 import Prelude (show) as Core
 
 import Toolkit.Hydra2.Types
+import Toolkit.Hydra2.Repr.Wrap (WrapRepr)
 
 import Data.Array ((:))
 import Data.String as String
@@ -441,3 +442,9 @@ instance ToCode JS OnAudio where
     toCode _ = case _ of
         Show audio -> toCode javaScript audio <> "." <> fneJs "show"
         SetBins audio n -> toCode javaScript audio <> "." <> fnsJs "setBins" [ Core.show n ]
+
+
+instance ToCode lang WrapRepr where
+    toCode :: Proxy lang -> WrapRepr -> String
+    toCode _ = case _ of
+        _ -> "" -- FIXME: implement

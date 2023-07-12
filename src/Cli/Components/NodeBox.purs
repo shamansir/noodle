@@ -85,7 +85,7 @@ import Cli.Keys (NodeBoxKey)
 import Cli.Keys (mainScreen, patchBox, statusLine) as Key
 import Cli.Palette as Palette
 import Cli.Palette.Item (crepr) as Palette
-import Cli.State (State, logNdfCommandM, logNdfCommandByRef)
+import Cli.State (State, logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
 import Cli.Style as Style
 import Cli.Components.Link as Link
 import Cli.Components.NodeBox.InletsBox as InletsBox
@@ -98,12 +98,13 @@ import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState, class IsNodeState,
 
 import Noodle.Text.NetworkFile.Command as Cmd
 
-import Toolkit.Hydra2 (Families, Instances, State, Toolkit, producesCode) as Hydra
+import Toolkit.Hydra2 (Families, Instances, State, Toolkit) as Hydra
 import Toolkit.Hydra2.Group (toGroup) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Repr.Info (InfoRepr) as Hydra
 import Toolkit.Hydra2.Family.Render.Cli (Cli) as Hydra
 import Toolkit.Hydra2.Lang as Lang
+import Toolkit.Hydra2.Lang.ToCode as Lang
 
 
 width :: String -> Int -> Int -> Dimension
@@ -233,7 +234,7 @@ fromNode curPatchId curPatch family node = do
     liftEffect $ Signal.runSignal $ updates ~> (Blessed.runM unit <<< renderNodeUpdate)
     liftEffect $ Signal.runSignal $ updates ~> logDataCommand stateRef
 
-    liftEffect $ when (Hydra.producesCode family) $ Signal.runSignal $ updates ~> updateCodeFor stateRef family
+    liftEffect $ when (Lang.producesCode family) $ Signal.runSignal $ updates ~> updateCodeFor stateRef family
 
     -- liftEffect $ Node.listenUpdatesAndRun node
     -- liftEffect $ Node.run node
@@ -309,7 +310,7 @@ logDataCommand
     :: forall m
      . MonadEffect m
     => Ref State
-    -> ChangeFocus /\ Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr
+    -> ChangeFocus /\ R.NodeLineMap Hydra.WrapRepr
     -> m Unit
 logDataCommand stateRef (chFocus /\ nodeId /\ _ /\ _ /\ outputs) =
     case chFocus of
@@ -327,18 +328,10 @@ updateCodeFor
     => IsSymbol f
     => Ref State
     -> Id.Family f
-    -> ChangeFocus /\ Id.NodeIdR /\ Hydra.WrapRepr /\ Map Id.InputR Hydra.WrapRepr /\ Map Id.OutputR Hydra.WrapRepr
+    -> ChangeFocus /\ R.NodeLineMap Hydra.WrapRepr
     -> m Unit
-updateCodeFor stateRef family (chFocus /\ nodeId /\ _ /\ _ /\ outputs) =
-    case chFocus of
-        OutputChange output ->
-            pure unit
-            {-
-            case Map.lookup output outputs of
-                Just wrapRepr ->
-                    flip logNdfCommandByRef stateRef $ Cmd.SendO_ (reflect' nodeId) (reflect' output) $ encode wrapRepr
-                Nothing -> pure unit -}
-        _ -> pure unit
+updateCodeFor stateRef family update@(_ /\ nodeId /\ _) =
+    flip (logLangCommandByRef nodeId) stateRef $ Lang.updateToCommand family $ Tuple.snd update
 
 
 renderUpdate

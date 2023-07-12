@@ -16,7 +16,6 @@ import Noodle.Node2.Path (InNode)
 
 import Toolkit.Hydra2.Types as H
 
-
 data WrapRepr
     = Value H.Value
     | Unit Unit
