@@ -24,7 +24,7 @@ import Data.List as List
 import Noodle.Id as Id
 import Noodle.Node2.MapsFolds.Flatten as R
 
-import Toolkit.Hydra2.Types (From, Output, Source, Texture, Audio, OnAudio)
+import Toolkit.Hydra2.Types (From, Output, Source, Texture, Audio, OnAudio, Value, SourceOptions)
 
 import Toolkit.Hydra2.Lang.ToCode
 import Toolkit.Hydra2.Lang.ToCode (fnPs, fnJs) as ToCode
@@ -33,7 +33,14 @@ import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..))
 
 data Single
     = WithAudio OnAudio
+    | Speed Value
+    | Bpm Value
+    | Hush
+    | Init SourceOptions
     | InitCam Source
+    | InitCamIdx Source Value
+    | InitScreen Source
+    | SetResolution Value Value
     | Render From
 
 
@@ -103,8 +110,15 @@ instance ToCode PS Command where
         End output texture -> toCode pureScript texture <> "\n\t# " <> ToCode.fnPs "out" [ output ]
         Pair cmdA cmdB -> toCode pureScript cmdA <> "\n" <> toCode pureScript cmdB
         One (WithAudio onaudio) -> toCode pureScript onaudio
-        One (InitCam src) -> toCode pureScript src <> " # initCam"
         One (Render out) -> toCode pureScript out <> " # render"
+        One (Speed val) -> toCode pureScript val <> " # speed"
+        One (Bpm val) -> toCode pureScript val <> " # bpm"
+        One Hush -> "hush"
+        One (Init so) -> "init" -- FIXME: toCode pureScript so <> " # init"
+        One (InitScreen src) -> toCode pureScript src <> " # initScreen"
+        One (InitCam src) -> toCode pureScript src <> " # initCam"
+        One (InitCamIdx src index) -> toCode pureScript src <> " # initCamIdx " <> toCode pureScript index
+        One (SetResolution width height) -> "{ width : " <> toCode pureScript width <> ", height : " <> toCode pureScript height <> " # setResolution"
         Continue texture -> "." <> toCode pureScript texture
         To _ -> "to()"
 else instance ToCode JS Command where
@@ -113,8 +127,16 @@ else instance ToCode JS Command where
         End output texture -> toCode javaScript texture <> "\n\t." <> ToCode.fnJs "out" [ output ]
         Pair cmdA cmdB -> toCode javaScript cmdA <> "\n" <> toCode javaScript cmdB
         One (WithAudio onaudio) -> toCode javaScript onaudio
-        One (InitCam src) -> toCode javaScript src <> ".initCam()"
+        -- One (InitCam src index) -> toCode javaScript src <> ".initCam( " <> toCode javaScript index <> " )"
         One (Render out) -> toCode javaScript out <> ".render()"
+        One (Speed val) -> "speed = " <> toCode javaScript val
+        One (Bpm val) -> "bpm = " <> toCode javaScript val
+        One Hush -> "hush()"
+        One (Init so) -> "init" -- FIXME: toCode javaScript so <> " # init"
+        One (InitScreen src) -> "initScreen( " <> toCode javaScript src <> " )"
+        One (InitCam src) -> "initCam( " <> toCode javaScript src <> " )"
+        One (InitCamIdx src index) -> "initCam( " <> toCode javaScript src <> " , " <> toCode javaScript index <> " )"
+        One (SetResolution width height) -> "setResolution( " <> toCode javaScript width <> " , " <> toCode javaScript height <> " )"
         Continue texture -> "." <> toCode javaScript texture
         To _ -> "to()"
 
@@ -170,17 +192,94 @@ codeOrder family = case reflect family of
 updateToCommand :: forall f. IsSymbol f => Id.Family f -> R.NodeLineMap WrapRepr -> Command -- Int /\ Command?
 updateToCommand family (nodeId /\ _ /\ inputs /\ outputs) =
     case reflect family of
+
         "out" ->
-            case (/\) <$> Map.lookupBy' reflect' "what" inputs <*> Map.lookupBy' reflect' "target" inputs of
-                    Just (Texture texture /\ Output target) ->
-                        End target texture
-                    _ -> Unknown
+            fn2 "what" "target" $ case _ of
+                Just (Texture texture /\ Output target) ->
+                    End target texture
+                _ -> Unknown
+
         "render" ->
-            case Map.lookupBy' reflect' "from" inputs of
-                    Just (From target) ->
-                        One $ Render target
-                    _ -> Unknown
+            fn1 "from" $ case _ of
+                Just (From target) ->
+                    One $ Render target
+                _ -> Unknown
+
+        "speed" ->
+            fn1 "v" $ case _ of
+                Just (Value val) ->
+                    One $ Speed val
+                _ -> Unknown
+
+        "bpm" ->
+            fn1 "v" $ case _ of
+                Just (Value val) ->
+                    One $ Bpm val
+                _ -> Unknown
+
+        "hush" ->
+            One Hush
+
+        "update" ->
+            Unknown
+            -- FIXME
+
+        "setFunction" ->
+            Unknown
+            -- FIXME
+
+        "init" ->
+            fn1 "options" $ case _ of
+                Just (SourceOptions so) ->
+                    One $ Init so
+                _ -> Unknown
+
+        "initImage" ->
+            -- fn2 "src" "url" $ case _ of
+            -- eiher src or url
+            -- FIXME
+            Unknown
+
+        "initCam" ->
+            fn2 "src" "index" $ case _ of -- FIXME index should be optional
+                Just (Source src /\ Value index) ->
+                    One $ InitCamIdx src index
+                _ -> fn1 "src" $ case _ of
+                        Just (Source src) ->
+                            One $ InitCam src
+                        _ -> Unknown
+
+        "initVideo" ->
+            -- fn2 "src" "url" $ case _ of
+            -- eiher src or url
+            -- FIXME
+            Unknown
+
+        "initScreen" ->
+            fn1 "options" $ case _ of
+                Just (Source src) ->
+                    One $ InitScreen src
+                _ -> Unknown
+
+        "initStream" ->
+            -- fn1 "src" $ case _ of
+            -- TODO
+            Unknown
+
+        "setResolution" ->
+            fn2 "width" "height" $ case _ of
+                Just (Value width /\ Value height) ->
+                    One $ SetResolution width height
+                _ -> Unknown
+
+
+
         _ -> Unknown
+    where
+        fn1 i0 cnv =
+            cnv $ Map.lookupBy' reflect' i0 inputs
+        fn2 i0 i1 cnv =
+            cnv $ (/\) <$> Map.lookupBy' reflect' i0 inputs <*> Map.lookupBy' reflect' i1 inputs
 
 
 formProgram :: Map Id.NodeIdR Command -> Program Unit
