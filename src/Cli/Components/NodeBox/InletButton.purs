@@ -59,6 +59,7 @@ import Noodle.Node2 (Node) as Noodle
 import Noodle.Node2 as Node
 import Noodle.Patch4 (Patch)
 import Noodle.Text.NetworkFile.Command as Cmd
+import Noodle.Text.NetworkFile.Command (commandsToNdf)
 
 import Toolkit.Hydra2 (Instances, State) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
@@ -202,6 +203,10 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
                     let onodeId = Id.withNodeId lco.nodeId reflect'
 
                     logNdfCommandM $ Cmd.Connect onodeId lco.index (reflect' inodeId) idx -- TODO: log somewhere else in a special place
+                    -- FIXME: duplicates `CommandLogBox.refresh`, done due to cycle in dependencies
+                    state <- State.get
+                    Key.commandLogBox >~ Box.setContent $ commandsToNdf state.commandLog
+                    -- END
 
                     State.modify_ (\s -> s { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network })
 

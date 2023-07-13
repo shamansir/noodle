@@ -95,6 +95,8 @@ import Cli.Components.NodeBox.OutletButton as OutletButton
 import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody')
 import Cli.Components.NodeBox.HasBody (run, run') as NodeBody
 import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState, class IsNodeState, default)
+import Cli.Components.CommandLogBox as CommandLogBox
+import Cli.Components.HydraCodeBox as HydraCodeBox
 
 import Noodle.Text.NetworkFile.Command as Cmd
 
@@ -155,6 +157,7 @@ fromNode curPatchId curPatch family node = do
     (nodeId /\ _ /\ inputsReps /\ outputReprs) <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
 
     logNdfCommandM $ Cmd.MakeNode (reflect family) topN leftN $ reflect' nodeId -- TODO: log somewhere else in a special place
+    CommandLogBox.refresh
 
     let (is :: Array (Node.HoldsInputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeInputsTest' node
     let (os :: Array (Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr)) = Node.orderedNodeOutputsTest' node
@@ -316,8 +319,9 @@ logDataCommand stateRef (chFocus /\ nodeId /\ _ /\ _ /\ outputs) =
     case chFocus of
         OutputChange output ->
             case Map.lookup output outputs of
-                Just wrapRepr ->
+                Just wrapRepr -> do
                     flip logNdfCommandByRef stateRef $ Cmd.SendO_ (reflect' nodeId) (reflect' output) $ encode wrapRepr
+                    liftEffect $ Blessed.runM' stateRef CommandLogBox.refresh
                 Nothing -> pure unit
         _ -> pure unit
 
@@ -330,8 +334,9 @@ updateCodeFor
     -> Id.Family f
     -> ChangeFocus /\ R.NodeLineMap Hydra.WrapRepr
     -> m Unit
-updateCodeFor stateRef family update@(_ /\ nodeId /\ _) =
+updateCodeFor stateRef family update@(_ /\ nodeId /\ _) = do
     flip (logLangCommandByRef nodeId) stateRef $ Lang.updateToCommand family $ Tuple.snd update
+    liftEffect $ Blessed.runM' stateRef HydraCodeBox.refresh
 
 
 renderUpdate
