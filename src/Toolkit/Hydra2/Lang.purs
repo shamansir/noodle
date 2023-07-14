@@ -24,7 +24,7 @@ import Data.List as List
 import Noodle.Id as Id
 import Noodle.Node2.MapsFolds.Flatten as R
 
-import Toolkit.Hydra2.Types (From, Output, Source, Texture, Audio, OnAudio, Value, SourceOptions)
+import Toolkit.Hydra2.Types (From(..), Output, Source, Texture, Audio, OnAudio, Value, SourceOptions) as H
 
 import Toolkit.Hydra2.Lang.ToCode
 import Toolkit.Hydra2.Lang.ToCode (fnPs, fnJs) as ToCode
@@ -32,26 +32,26 @@ import Toolkit.Hydra2.Repr.Wrap (WrapRepr(..))
 
 
 data Single
-    = WithAudio OnAudio
-    | Speed Value
-    | Bpm Value
+    = WithAudio H.OnAudio
+    | Speed H.Value
+    | Bpm H.Value
     | Hush
-    | Init SourceOptions
-    | InitCam Source
-    | InitCamIdx Source Value
-    | InitScreen Source
-    | SetResolution Value Value
-    | Render From
+    | Init H.SourceOptions
+    | InitCam H.Source
+    | InitCamIdx H.Source H.Value
+    | InitScreen H.Source
+    | SetResolution H.Value H.Value
+    | Render H.From
 
 
 data Command
     = Unknown
-    | End Output Texture
+    | End H.Output H.Texture
     | Pair Command Command -- parent -> child ?
     -- | Batch (Array Command)
     | One Single
-    | Continue Texture
-    | To From
+    | Continue H.Texture
+    | To H.From -- FIXME: is it used?
 
 
 data Program a = -- same as Writer?
@@ -128,6 +128,7 @@ else instance ToCode JS Command where
         Pair cmdA cmdB -> toCode javaScript cmdA <> "\n" <> toCode javaScript cmdB
         One (WithAudio onaudio) -> toCode javaScript onaudio
         -- One (InitCam src index) -> toCode javaScript src <> ".initCam( " <> toCode javaScript index <> " )"
+        One (Render H.All) -> "render()"
         One (Render out) -> toCode javaScript out <> ".render()"
         One (Speed val) -> "speed = " <> toCode javaScript val
         One (Bpm val) -> "bpm = " <> toCode javaScript val

@@ -1,6 +1,6 @@
 module Noodle.Text.NetworkFile.Command where
 
-import Prelude (show, ($), (<$>))
+import Prelude (show, ($), (<$>), identity, class Eq)
 
 import Data.Semigroup ((<>))
 import Data.String as String
@@ -21,6 +21,9 @@ data Command
     | SendO_ String String String
 
 
+derive instance Eq Command
+
+
 instance ToCode NDF Command where
     toCode :: Proxy NDF -> Command -> String
     toCode _ =
@@ -37,4 +40,8 @@ instance ToCode NDF Command where
 
 -- instance ToCode NDF (Array Command) where
 commandsToNdf :: Array Command -> String
-commandsToNdf cmds = String.joinWith "\n" $ toCode ndf <$> Array.reverse cmds
+commandsToNdf cmds = String.joinWith "\n" $ toCode ndf <$> (optimize $ Array.reverse cmds)
+
+
+optimize :: Array Command -> Array Command
+optimize = identity -- TODO

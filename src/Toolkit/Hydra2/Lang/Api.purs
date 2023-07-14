@@ -33,6 +33,10 @@ initCam ∷ Source → Program Unit
 initCam = q <<< One <<< InitCam
 
 
+initCam' ∷ Source → Value -> Program Unit
+initCam' s = q <<< One <<< InitCamIdx s
+
+
 src :: Source -> Texture
 src = From
 
