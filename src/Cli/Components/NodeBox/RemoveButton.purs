@@ -3,6 +3,9 @@ module Cli.Components.NodeBox.RemoveButton where
 import Prelude
 
 
+import Data.SProxy (reflect, reflect')
+import Data.Symbol (class IsSymbol)
+
 import Blessed as B
 
 import Blessed ((>~))
@@ -21,16 +24,23 @@ import Blessed.Internal.Core as Core
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
+import Blessed.UI.Base.Screen.Method (render) as Screen
 
-import Cli.Keys (RemoveButtonKey)
+import Cli.Keys (RemoveButtonKey, InfoBoxKey)
+import Cli.Keys (mainScreen, statusLine) as Key
 import Cli.Style as Style
+import Cli.Palette.Item (crepr) as C
+import Cli.Palette as Palette
+import Cli.Palette.Set.Pico8 as Pico
+
+import Noodle.Id as Id
 
 
-component :: forall state. RemoveButtonKey -> Core.Blessed state
-component buttonKey =
+component :: forall f state. IsSymbol f => Id.Family f -> InfoBoxKey -> RemoveButtonKey -> Core.Blessed state
+component family infoBoxKey buttonKey =
     B.button buttonKey
-        [ Box.content "."
-        , Box.top $ Offset.px $ -1
+        [ Box.content $ T.render $ T.fgcs (C.crepr Pico.blue) "⨯"
+        , Box.top $ Offset.px $ 3
         , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 3
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
         , Box.width $ Dimension.px 1
@@ -41,8 +51,17 @@ component buttonKey =
         , Core.on Button.Press
             \_ _ -> pure unit --TODO
         , Core.on Element.MouseOver
-            \_ _ -> buttonKey >~ Box.setContent "x"
+            \_ _ -> do
+                buttonKey >~ Box.setContent $ T.render $ T.fgcs (C.crepr Pico.red) "⨯" -- "╳"
+                infoBoxKey >~ Box.setContent $ T.render $ T.fgcs (C.crepr Pico.red) "remove"
+                Key.statusLine >~ Box.setContent $ T.render $ T.fgcs (C.crepr Pico.red) "remove" <:> T.s " " <:> (T.fgcs (C.crepr Palette.familyName) $ reflect family)
+                Key.mainScreen >~ Screen.render -- FIXME: refresh only the area
         , Core.on Element.MouseOut
-            \_ _ -> buttonKey >~ Box.setContent "."
+            \_ _ -> do
+                buttonKey >~ Box.setContent $ T.render $ T.fgcs (C.crepr Pico.blue) "⨯"
+                -- Info box : delete this node
+                infoBoxKey >~ Box.setContent ""
+                Key.statusLine >~ Box.setContent ""
+                Key.mainScreen >~ Screen.render -- FIXME: refresh only the area
         ]
         []

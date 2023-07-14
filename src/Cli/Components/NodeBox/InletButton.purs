@@ -94,9 +94,10 @@ slContent family idx inputId = slContent' (Id.familyR' family) idx $ Id.inputR i
 
 slContent' :: Id.FamilyR -> Int -> Id.InputR -> Maybe Hydra.WrapRepr -> String
 slContent' familyR idx inputId (Just repr) =
-    -- TODO: show group as well
+    -- TODO: show node id and group as well
     T.render $ (T.fgcs (C.crepr Palette.familyName) $ Id.reflectFamilyR familyR) <:> T.s " " <:> (T.fgcs (C.crepr Palette.inputId) $ Id.reflectInputR inputId) <:> T.s " " <:> (T.fgcs (mark repr) $ Info.full repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
-slContent' familyR idx inputId Nothing = "⋱" <> show idx <> "⋰"
+slContent' familyR idx inputId Nothing =
+    "⋱" <> show idx <> "⋰"
 
 
 component

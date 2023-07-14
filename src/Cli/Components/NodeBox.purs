@@ -190,7 +190,7 @@ fromNode curPatchId curPatch family node = do
         infoBoxN =
             InfoBox.component nextInfoBox $ boxWidth - 2
         removeButtonN =
-            RemoveButton.component nextRemoveButton
+            RemoveButton.component family nextInfoBox nextRemoveButton
         nextNodeBoxN =
             B.box nextNodeBox
                 [ Box.draggable true
