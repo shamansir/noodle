@@ -21,7 +21,7 @@ import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
 
-import Cli.Keys (hydraCodeBox) as Keys
+import Cli.Keys (hydraCodeBox) as Key
 import Cli.Style as Style
 import Cli.State (State)
 import Cli.Components.NodeBox.InletButton as InletButton
@@ -41,7 +41,7 @@ widthN count = (InletButton.widthN + 1) * count
 component
     :: C.Blessed State
 component =
-    B.boxAnd Keys.hydraCodeBox
+    B.boxAnd Key.hydraCodeBox
         [ Box.width $ Dimension.calc $ Coord.percents 40.0 <-> Coord.px 5
         , Box.height $ Dimension.calc $ Coord.percents 100.0 <-> Coord.px 10
         , Box.top $ Offset.px 5
@@ -75,4 +75,4 @@ component =
 refresh :: BlessedOp State Effect
 refresh = do
     state <- State.get
-    Keys.hydraCodeBox >~ Box.setContent $ Lang.toCode Lang.javaScript $ Lang.formProgram state.program
+    Key.hydraCodeBox >~ Box.setContent $ Lang.toCode Lang.javaScript $ Lang.formProgram state.program

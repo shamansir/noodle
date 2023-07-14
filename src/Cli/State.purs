@@ -25,9 +25,9 @@ import Noodle.Node2 as Node
 import Noodle.Patch4 as Patch
 import Noodle.Network2 (init, addPatch) as Network
 
-import Cli.Keys (InletsBoxKey, NodeBoxKey, OutletsBoxKey, InfoBoxKey)
+import Cli.Keys (InletsBoxKey, NodeBoxKey, OutletsBoxKey, InfoBoxKey, RemoveButtonKey)
 import Cli.Keys (LineA, LineB, LineC) as Key
-import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox) as Key
+import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton) as Key
 import Cli.State.NwWraper (Network, wrapN)
 import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState)
 
@@ -70,6 +70,7 @@ initial =
         , inletsBox : Key.inletsBox
         , outletsBox : Key.outletsBox
         , infoBox : Key.infoBox
+        , removeButton : Key.removeButton
         }
     , lastClickedOutlet : Nothing
     , lastLink : Nothing
@@ -154,6 +155,7 @@ type LastKeys =
     , nodeBox :: NodeBoxKey
     , outletsBox :: OutletsBoxKey
     , infoBox :: InfoBoxKey
+    , removeButton :: RemoveButtonKey
     }
 
 

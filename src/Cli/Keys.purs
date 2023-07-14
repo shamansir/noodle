@@ -13,6 +13,7 @@ type PatchBoxKey = Box <^> "patch-box"
 type InletButtonKey = Button <^> "inlet-button"
 type OutletButtonKey = Button <^> "outlet-button"
 type StatusLineKey = Box <^> "status-line"
+type RemoveButtonKey = Button <^> "remove-button"
 -- type TextBoxKey = TextBox <^> "text-box"
 
 
@@ -27,6 +28,7 @@ outletsBox = nk :: OutletsBoxKey
 infoBox = nk :: InfoBoxKey
 inletButton = nk :: InletButtonKey
 outletButton = nk :: OutletButtonKey
+removeButton = nk :: RemoveButtonKey
 addPatchButton = nk :: Button <^> "add-patch"
 loadFileButton = nk :: Button <^> "load-file"
 commandLogButton = nk :: Button <^> "toggle-command-log"

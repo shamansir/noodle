@@ -92,6 +92,8 @@ import Cli.Components.NodeBox.InletsBox as InletsBox
 import Cli.Components.NodeBox.OutletsBox as OutletsBox
 import Cli.Components.NodeBox.InletButton as InletButton
 import Cli.Components.NodeBox.OutletButton as OutletButton
+import Cli.Components.NodeBox.RemoveButton as RemoveButton
+import Cli.Components.NodeBox.InfoBox as InfoBox
 import Cli.Components.NodeBox.HasBody (class HasBody, class HasBody')
 import Cli.Components.NodeBox.HasBody (run, run') as NodeBody
 import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState, class IsNodeState, default)
@@ -148,6 +150,7 @@ fromNode curPatchId curPatch family node = do
     let nextInletsBox = NodeKey.next state.lastKeys.inletsBox
     let nextOutletsBox = NodeKey.next state.lastKeys.outletsBox
     let nextInfoBox = NodeKey.next state.lastKeys.infoBox
+    let nextRemoveButton = NodeKey.next state.lastKeys.removeButton
 
     let topN = state.lastShiftX + 2
     let leftN = 16 + state.lastShiftY + 2
@@ -185,17 +188,9 @@ fromNode curPatchId curPatch family node = do
         outletsKeys /\ outletsBoxN =
             OutletsBox.component nodeHolder nextNodeBox nextInfoBox nextOutletsBox (toOutputSignal updates') osWithReprs
         infoBoxN =
-            B.box nextInfoBox
-                [ Box.top $ Offset.px 1
-                , Box.left $ Offset.px 0
-                -- , Box.width $ Dimension.calc $ C.px boxWidth <-> C.px 2 -- FIXME: didn't work
-                , Box.width $ Dimension.px $ boxWidth - 2
-                , Box.height $ Dimension.px 1
-                , Box.tags true
-                , Box.content ""
-                , Style.infoBox
-                ]
-                [ ]
+            InfoBox.component nextInfoBox $ boxWidth - 2
+        removeButtonN =
+            RemoveButton.component nextRemoveButton
         nextNodeBoxN =
             B.box nextNodeBox
                 [ Box.draggable true
@@ -243,9 +238,11 @@ fromNode curPatchId curPatch family node = do
     -- liftEffect $ Node.run node
 
     Key.patchBox >~ Node.append nextNodeBoxN
+
     nextNodeBox >~ Node.append inletsBoxN
     nextNodeBox >~ Node.append infoBoxN
     nextNodeBox >~ Node.append outletsBoxN
+    nextNodeBox >~ Node.append removeButtonN
 
     mapRepr2 <- liftEffect $ R.nodeToMapRepr (Proxy :: _ Effect) (R.Repr :: _ Hydra.WrapRepr) node
      -- FIXME: why it doesn't apply values for `osc` node and for any other too, as I get it? for example: default `osc` out value stays in UI, however log is performed from its `process` function (yeah?)
@@ -270,6 +267,7 @@ fromNode curPatchId curPatch family node = do
             , inletsBox : nextInletsBox
             , outletsBox : nextOutletsBox
             , infoBox : nextInfoBox
+            , removeButton : nextRemoveButton
             }
 
     State.modify_ (_

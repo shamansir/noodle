@@ -23,7 +23,7 @@ import Blessed.Internal.NodeKey (nestChain) as NK
 
 import Blessed.UI.Boxes.Box.Option as Box
 
-import Cli.Keys (statusLine) as Keys
+import Cli.Keys (statusLine) as Key
 import Cli.Style as Style
 import Cli.State (State)
 import Cli.Components.NodeBox.InletButton as InletButton
@@ -49,7 +49,7 @@ widthN count = (InletButton.widthN + 1) * count
 component
     :: C.Blessed State
 component =
-    B.box Keys.statusLine
+    B.box Key.statusLine
         [ Box.width $ Dimension.calc $ Coord.percents 100.0 <-> Coord.px 2
         , Box.height $ Dimension.px 1
         , Box.top $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 2
