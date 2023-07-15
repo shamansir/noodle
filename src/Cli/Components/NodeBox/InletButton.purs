@@ -22,7 +22,6 @@ import Signal (get) as Signal
 import Blessed as B
 import Blessed ((>~))
 import Blessed.Tagger as T
-import Blessed.Tagger ((<:>))
 
 import Blessed.Core.Dimension (Dimension)
 import Blessed.Core.Offset (Offset)
@@ -50,6 +49,7 @@ import Cli.Components.Link as Link
 import Cli.Palette.Set.X11 as X11
 import Cli.Palette.Item (crepr) as C
 import Cli.Palette as Palette
+import Cli.Tagging as T
 
 import Noodle.Network2 as Network
 import Noodle.Patch4 as Patch
@@ -78,28 +78,6 @@ left :: Int -> Offset
 left idx = Offset.px $ idx * (widthN + 1)
 
 
-content :: forall i. IsSymbol i => Int -> Id.Input i -> Maybe Hydra.WrapRepr -> String
-content idx inputId = content' idx $ Id.inputR inputId
-
--- TODO: mark with color
-content' :: Int -> Id.InputR -> Maybe Hydra.WrapRepr -> String
-content' idx inputId (Just repr) =
-    T.render $ T.fgcs (mark repr) $ Info.short repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
-content' idx inputId Nothing = "⋱" <> show idx <> "⋰"
-
-
-slContent :: forall f i. IsSymbol i => IsSymbol f => Id.Family' f -> Int -> Id.Input i -> Maybe Hydra.WrapRepr -> String
-slContent family idx inputId = slContent' (Id.familyR' family) idx $ Id.inputR inputId
-
-
-slContent' :: Id.FamilyR -> Int -> Id.InputR -> Maybe Hydra.WrapRepr -> String
-slContent' familyR idx inputId (Just repr) =
-    -- TODO: show node id and group as well
-    T.render $ (T.fgcs (C.crepr Palette.familyName) $ Id.reflectFamilyR familyR) <:> T.s " " <:> (T.fgcs (C.crepr Palette.inputId) $ Id.reflectInputR inputId) <:> T.s " " <:> (T.fgcs (mark repr) $ Info.full repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
-slContent' familyR idx inputId Nothing =
-    "⋱" <> show idx <> "⋰"
-
-
 component
     :: forall f nstate i din is is' os
      . IsSymbol f
@@ -120,7 +98,7 @@ component
     -> Core.Blessed State
 component buttonKey nextInfoBox curPatchId curPatch nextNodeBox idx maybeRepr reprSignal pdin inode inputId =
     B.button buttonKey
-        [ Box.content $ content idx inputId maybeRepr
+        [ Box.content $ T.render $ T.input idx inputId maybeRepr
         , Box.top $ Offset.px 0
         , Box.left $ left idx
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
@@ -143,8 +121,8 @@ onMouseOver :: forall i f. IsSymbol i => IsSymbol f => Id.Family' f ->  InfoBoxK
 onMouseOver family infoBox idx inputId _ reprSignal _ _ = do
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
-    infoBox >~ Box.setContent $ T.render $ T.fgcs (C.crepr Palette.inputId) $ reflect inputId
-    statusLine >~ Box.setContent $ slContent family idx inputId maybeRepr
+    infoBox >~ Box.setContent $ T.render $ T.inputInfoBox inputId
+    statusLine >~ Box.setContent $ T.render $ T.inputStatusLine family idx inputId maybeRepr
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx
 

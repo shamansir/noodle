@@ -27,7 +27,6 @@ import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.Tagger as T
-import Blessed.Tagger ((<:>))
 
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
@@ -43,6 +42,7 @@ import Cli.State (State)
 import Cli.Palette.Set.X11 as X11
 import Cli.Palette.Item (crepr) as C
 import Cli.Palette as Palette
+import Cli.Tagging as T
 
 import Noodle.Id as Id
 import Noodle.Node2 (Node) as Noodle
@@ -65,30 +65,6 @@ left :: Int -> Offset
 left idx = Offset.px $ idx * (widthN + 1)
 
 
-content ::forall o. IsSymbol o => Int -> Id.Output o -> Maybe Hydra.WrapRepr -> String
-content idx outputId = content' idx $ Id.outputR outputId
-
-
-content' :: Int -> Id.OutputR -> Maybe Hydra.WrapRepr -> String
-content' idx outputId (Just repr) =
-    T.render $ T.fgcs (mark repr) $ Info.short repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
-    -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
-content' idx outputId Nothing = "⋰" <> show idx <> "⋱"
-
-
-slContent ::forall f o. IsSymbol f => IsSymbol o => Id.Family' f -> Int -> Id.Output o -> Maybe Hydra.WrapRepr -> String
-slContent family idx outputId = slContent' (Id.familyR' family) idx $ Id.outputR outputId
-
-
-slContent' :: Id.FamilyR -> Int -> Id.OutputR -> Maybe Hydra.WrapRepr -> String
-slContent' familyR idx outputId (Just repr) =
-    -- TODO: show group as well
-    T.render $ (T.fgcs (C.crepr Palette.familyName) $ Id.reflectFamilyR familyR) <:> T.s " " <:> (T.fgcs (C.crepr Palette.outputId) $ Id.reflectOutputR outputId) <:> T.s " " <:> (T.fgcs (mark repr) $ Info.full repr) -- "⋱" <> show idx <> "⋰" <> Info.short repr
-    --T.render $ T.fgcs (mark repr) $ Info.full repr -- "⋱" <> show idx <> "⋰" <> Info.short repr
-    -- Info.short repr -- "⋰" <> show idx <> "⋱" <> Info.short repr
-slContent' familyR idx outputId Nothing = "⋰" <> show idx <> "⋱"
-
-
 component
     :: forall f nstate o dout is os os'
      . IsSymbol f
@@ -109,7 +85,7 @@ component
     -> Core.Blessed State
 component buttonKey nextInfoBox nodeHolder nextNodeBox nextOutletsBox idx maybeRepr reprSignal pdout onode outputId =
     B.button buttonKey
-        [ Box.content $ content idx outputId maybeRepr
+        [ Box.content $ T.render $ T.output idx outputId maybeRepr
         , Box.top $ Offset.px 0
         , Box.left $ left idx
         -- , Box.left $ Offset.calc $ Coord.percents 100.0 <-> Coord.px 1
@@ -161,8 +137,8 @@ onMouseOver :: forall o f. IsSymbol o => IsSymbol f => Id.Family' f -> InfoBoxKe
 onMouseOver family infoBox idx outputId _ reprSignal _ _ = do
     maybeRepr <- liftEffect $ Signal.get reprSignal
     -- infoBox >~ Box.setContent $ show idx <> " " <> reflect outputId
-    infoBox >~ Box.setContent $ T.render $ T.fgcs (C.crepr Palette.outputId) $ reflect outputId
-    statusLine >~ Box.setContent $ slContent family idx outputId maybeRepr
+    infoBox >~ Box.setContent $ T.render $ T.outputInfoBox outputId
+    statusLine >~ Box.setContent $ T.render $ T.outputStatusLine family idx outputId maybeRepr
     mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx
 

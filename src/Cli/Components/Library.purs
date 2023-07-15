@@ -35,6 +35,7 @@ import Cli.Palette as Palette
 import Cli.State (State)
 import Cli.State.NwWraper (unwrapN)
 import Cli.Style (library, libraryBorder) as Style
+import Cli.Tagging as T
 
 import Cli.Components.NodeBox as NodeBox
 
@@ -57,7 +58,7 @@ component families =
         , Box.height $ Dimension.percents 65.0
         , Box.draggable true
         , Box.scrollable true
-        , List.items $ toItem <$> families
+        , List.items $ (T.render <<< T.libraryItem) <$> families
         , List.mouse true
         , List.keys true
         , Box.tags true
@@ -203,9 +204,3 @@ component families =
         []
         \_ ->
             pure unit
-
-
-toItem :: Id.FamilyR -> String
-toItem familyR =
-    let color = mark $ Hydra.toGroupR familyR
-    in T.render $ T.fgc color $ T.s $ Id.reflectFamilyR familyR

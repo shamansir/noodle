@@ -87,6 +87,7 @@ import Cli.Palette as Palette
 import Cli.Palette.Item (crepr) as Palette
 import Cli.State (State, logNdfCommandM, logNdfCommandByRef, logLangCommandByRef)
 import Cli.Style as Style
+import Cli.Tagging as T
 import Cli.Components.Link as Link
 import Cli.Components.NodeBox.InletsBox as InletsBox
 import Cli.Components.NodeBox.OutletsBox as OutletsBox
@@ -198,7 +199,7 @@ fromNode curPatchId curPatch family node = do
                 , Box.left left
                 , Box.width $ Dimension.px boxWidth
                 , Box.height $ Dimension.px 5
-                , Box.label $ toLabel family
+                , Box.label $ T.render $ T.nodeLabel family
                 , Box.tags true
                 , Style.nodeBoxBorder
                 , Style.nodeBox
@@ -353,12 +354,12 @@ renderUpdate _ inputsKeysMap outputsKeysMap (_ /\ nodeId /\ stateRepr /\ inputsR
         updateInput inputR repr =
             case Map.lookup inputR inputsKeysMap of
                 Just inputKey -> do
-                    inputKey >~ Box.setContent $ InletButton.content' 0 inputR $ Just repr
+                    inputKey >~ Box.setContent $ T.render $ T.input' 0 inputR $ Just repr
                 Nothing -> pure unit
         updateOutput outputR repr =
             case Map.lookup outputR outputsKeysMap of
                 Just outputKey -> do
-                    outputKey >~ Box.setContent $ OutletButton.content' 0 outputR $ Just repr
+                    outputKey >~ Box.setContent $ T.render $ T.output' 0 outputR $ Just repr
                 Nothing -> pure unit
 
 
@@ -370,17 +371,11 @@ onMove nodeKey _ _ = do
     for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) Link.update
 
 
-toLabel :: forall f. IsSymbol f => Id.Family f -> String
-toLabel family =
-    let color = mark $ Hydra.toGroup family
-    in T.render $ T.bgc (Palette.crepr Palette.nodeBg) $ T.fgc color $ T.s $ Id.reflectFamily family
-
-
 onMouseOver :: forall f. IsSymbol f => Id.Family f -> _ -> _ -> BlessedOp State Effect
 onMouseOver family _ _ = do
     -- maybeRepr <- liftEffect $ Signal.get reprSignal
     -- -- infoBox >~ Box.setContent $ show idx <> " " <> reflect inputId
-    Key.statusLine >~ Box.setContent $ T.render $ T.fgcs (Palette.crepr Palette.familyName) $ reflect family
+    Key.statusLine >~ Box.setContent $ T.render $ T.nodeMouseOver family
     Key.mainScreen >~ Screen.render
     --liftEffect $ Console.log $ "over" <> show idx
 

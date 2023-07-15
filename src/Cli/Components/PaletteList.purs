@@ -3,7 +3,7 @@ module Cli.Components.PaletteList where
 import Prelude
 
 import Data.Array ((:))
-import Blessed.Tagger (s, bg ,fg, (<:>))
+import Blessed.Tagger (s, bg ,fg)
 import Blessed.Tagger (render) as Tags
 
 import Blessed as B
@@ -22,14 +22,15 @@ import Cli.Palette.Set.Hydra (hydraFns) as Palette
 import Cli.Palette.Set.Pico8 (pico8) as Palette
 import Cli.Palette.Set.X11 (x11colors) as Palette
 import Cli.Palette (asArray) as Palette
+import Cli.Tagging as T
 
 
 paletteKey = (nk :: List <^> "palette")
 
 
 pitemToListRow :: Palette.Item -> String
-pitemToListRow item =
-    Tags.render $ bg item.repr (s "      ") <:> s " " <:> fg item.repr (s $ Palette.fullInfo item)
+pitemToListRow =
+    Tags.render <<< T.paletteItem
 
 
 selfNamedColors :: Array String

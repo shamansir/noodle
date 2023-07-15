@@ -50,7 +50,9 @@ instance Show Format where
     show Invisible = "invisible"
 
 
-infixl 6 Pair as <:>
+instance Semigroup Tag where
+    append :: Tag -> Tag -> Tag
+    append = Pair
 
 
 s :: String -> Tag
