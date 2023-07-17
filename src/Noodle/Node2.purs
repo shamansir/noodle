@@ -600,6 +600,15 @@ disconnect (Link nodeAIdL _ _ nodeBIdL doDisconnect) (Node nodeAId _ _ _) (Node 
     else pure false
 
 
+unsafeDisconnect
+    :: forall fA fB oA iB m
+    .  MonadEffect m
+    => Link fA fB oA iB
+    -> m Boolean
+unsafeDisconnect (Link _ _ _ _ doDisconnect) =
+  liftEffect doDisconnect >>= (const $ pure true)
+
+
 
 -- withInput :: forall f state is is' os m a. Applicative m => InputR -> (forall i din. Input i -> Node f state is os m -> a) -> Node f state is os m -> a
 -- withInput inputR fn node = reifySymbol (reflect' inputR) (\input -> fn input node)

@@ -219,6 +219,30 @@ forgetLink link (Patch state forder instances links) =
     }
 
 
+allLinksOf
+    :: forall ps instances' instances f state is os m
+     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    => Node f state is os m
+    -> Patch ps instances
+    -> Array HoldsLink
+allLinksOf node (Patch _ _ _ links) =
+    case Map.lookup (Id.nodeIdR $ Node.id node) links.byNode of
+        Just linksArray ->
+            Array.concatMap addLinks $ foldr (:) [] linksArray
+        Nothing -> []
+    where
+        addLinks (fromId /\ toId) =
+            case Map.lookup fromId links.from of
+                Just fromLink ->
+                    case Map.lookup toId links.to of
+                        Just toLink -> [ fromLink, toLink ]
+                        Nothing -> [ fromLink ]
+                Nothing ->
+                    case Map.lookup toId links.to of
+                        Just toLink -> [ toLink ]
+                        Nothing -> []
+
+
 removeNode -- TODO: test
     :: forall ps instances' instances f state is os m
      . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
@@ -227,30 +251,9 @@ removeNode -- TODO: test
     -> Patch ps instances
 removeNode node =
     forgetNode node
-    >>> case _ of
-        patch@(Patch _ _ _ links) ->
-            case Map.lookup (Id.nodeIdR $ Node.id node) links.byNode of
-                Just linksArray ->
-                    foldr forgetPair patch linksArray
-                Nothing -> patch
+    >>> \patch -> foldr forget patch $ allLinksOf node patch
     where
-        forgetPair (fromId /\ toId) patch@(Patch _ _ _ links) =
-            case Map.lookup fromId links.from of
-                Just fromLink ->
-                    case Map.lookup toId links.to of
-                        Just toLink ->
-                            patch
-                            # withLink fromLink forgetLink
-                            # withLink toLink forgetLink
-                        Nothing ->
-                            patch
-                            # withLink fromLink forgetLink
-                Nothing ->
-                    case Map.lookup toId links.to of
-                        Just toLink ->
-                            patch
-                            # withLink toLink forgetLink
-                        Nothing -> patch
+        forget holdsLink = withLink holdsLink forgetLink
 
 
 connect
@@ -349,9 +352,6 @@ disconnect
     -> m (Patch gstate ins /\ Boolean)
 disconnect link na nb patch =
     Node.disconnect link na nb >>= \flag -> pure $ forgetLink link patch /\ flag
-
-
--- unsafeConnect
 
 
 newtype HoldsNode m =

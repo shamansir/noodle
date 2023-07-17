@@ -27,6 +27,7 @@ import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
 import Blessed.Internal.Core as Core
 import Blessed.Internal.NodeKey as NodeKey
+import Blessed.UI.Base.Node.Method as Node
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
@@ -37,13 +38,14 @@ import Cli.Keys (mainScreen, statusLine) as Key
 import Cli.Style as Style
 import Cli.Tagging as T
 import Cli.State (State)
-import Cli.State.NwWraper (withNetwork) as State
+import Cli.State.NwWraper (unwrapN, withNetwork) as State
 import Cli.Components.Link as Link
 
 import Noodle.Id as Id
 import Noodle.Network2 as Network
 import Noodle.Node2 (Node)
-import Noodle.Patch4 (removeNode) as Patch
+import Noodle.Node2 (unsafeDisconnect) as Node
+import Noodle.Patch4 (removeNode, allLinksOf, withLink) as Patch
 import Noodle.Patch4.Has as Has
 
 import Toolkit.Hydra2 (Instances) as Hydra
@@ -77,10 +79,16 @@ component family node nodeBoxKey infoBoxKey buttonKey =
                     Just patchId ->
                         case Map.lookup patchId state.patchKeysMap of
                             Just patchBoxKey -> do
+                                case Network.patch patchId $ State.unwrapN state.network of
+                                    Just patch ->
+                                        for_ (Patch.allLinksOf node patch) \holdsLink -> Patch.withLink holdsLink Node.unsafeDisconnect
+                                    Nothing -> pure unit
                                 State.modify_
                                     (_ { network = State.withNetwork (Network.withPatch patchId $ Patch.removeNode node) state.network })
                                 Link.removeAllOf nodeBoxKey patchBoxKey
                                 State.modify_ $ Link.forgetAllFromTo nodeBoxKey
+                                nodeBoxKey >~ Node.detach
+                                Key.mainScreen >~ Screen.render
                             Nothing -> pure unit
                     Nothing -> pure unit
         , Core.on Element.MouseOver
