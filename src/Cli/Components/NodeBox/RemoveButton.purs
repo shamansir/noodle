@@ -3,14 +3,20 @@ module Cli.Components.NodeBox.RemoveButton where
 import Prelude
 
 
-import Data.SProxy (reflect, reflect')
+import Effect (Effect)
+
 import Data.Symbol (class IsSymbol)
+import Data.Tuple as Tuple
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Foldable (for_)
+import Data.Map (lookup, empty) as Map
+
+import Control.Monad.State (get, modify_) as State
 
 import Blessed as B
 
 import Blessed ((>~))
 import Blessed.Core.Dimension as Dimension
-import Blessed.Core.Offset (Offset)
 import Blessed.Core.Offset as Offset
 import Blessed.Core.Coord as Coord
 import Blessed.Core.Coord ((<->))
@@ -20,21 +26,40 @@ import Blessed.Tagger (render) as T
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
 import Blessed.Internal.Core as Core
+import Blessed.Internal.NodeKey as NodeKey
 import Blessed.UI.Forms.Button.Option (mouse) as Button
 import Blessed.UI.Forms.Button.Event (ButtonEvent(..)) as Button
 import Blessed.UI.Base.Element.Event (ElementEvent(..)) as Element
 import Blessed.UI.Base.Screen.Method (render) as Screen
 
-import Cli.Keys (RemoveButtonKey, InfoBoxKey)
+import Cli.Keys (PatchBoxKey, NodeBoxKey, RemoveButtonKey, InfoBoxKey)
 import Cli.Keys (mainScreen, statusLine) as Key
 import Cli.Style as Style
 import Cli.Tagging as T
+import Cli.State (State)
+import Cli.State.NwWraper (withNetwork) as State
+import Cli.Components.Link as Link
 
 import Noodle.Id as Id
+import Noodle.Network2 as Network
+import Noodle.Node2 (Node)
+import Noodle.Patch4 (removeNode) as Patch
+import Noodle.Patch4.Has as Has
+
+import Toolkit.Hydra2 (Instances) as Hydra
 
 
-component :: forall f state. IsSymbol f => Id.Family f -> InfoBoxKey -> RemoveButtonKey -> Core.Blessed state
-component family infoBoxKey buttonKey =
+component
+    :: forall f instances' state is os
+     . IsSymbol f
+    => Has.HasInstancesOf f instances' (Hydra.Instances Effect) (Array (Node f state is os Effect))
+    => Id.Family f
+    -> Node f state is os Effect
+    -> NodeBoxKey
+    -> InfoBoxKey
+    -> RemoveButtonKey
+    -> Core.Blessed State
+component family node nodeBoxKey infoBoxKey buttonKey =
     B.button buttonKey
         [ Box.content $ T.render $ T.removeButtonOut
         , Box.top $ Offset.px $ 3
@@ -46,7 +71,18 @@ component family infoBoxKey buttonKey =
         , Button.mouse true
         , Style.inletsOutlets
         , Core.on Button.Press
-            \_ _ -> pure unit --TODO
+            \_ _ -> do
+                state <- State.get
+                case Tuple.snd <$> state.currentPatch of
+                    Just patchId ->
+                        case Map.lookup patchId state.patchKeysMap of
+                            Just patchBoxKey -> do
+                                State.modify_
+                                    (_ { network = State.withNetwork (Network.withPatch patchId $ Patch.removeNode node) state.network })
+                                Link.removeAllOf nodeBoxKey patchBoxKey
+                                State.modify_ $ Link.forgetAllFromTo nodeBoxKey
+                            Nothing -> pure unit
+                    Nothing -> pure unit
         , Core.on Element.MouseOver
             \_ _ -> do
                 buttonKey >~ Box.setContent $ T.render $ T.removeButtonOver

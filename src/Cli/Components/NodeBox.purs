@@ -81,7 +81,7 @@ import Noodle.Node2.MapsFolds.Flatten as R
 import Noodle.Fn2.Protocol (ChangeFocus(..))
 
 
-import Cli.Keys (NodeBoxKey)
+import Cli.Keys (NodeBoxKey, PatchBoxKey)
 import Cli.Keys (mainScreen, patchBox, statusLine) as Key
 import Cli.Palette as Palette
 import Cli.Palette.Item (crepr) as Palette
@@ -191,7 +191,7 @@ fromNode curPatchId curPatch family node = do
         infoBoxN =
             InfoBox.component nextInfoBox $ boxWidth - 2
         removeButtonN =
-            RemoveButton.component family nextInfoBox nextRemoveButton
+            RemoveButton.component family node nextNodeBox nextInfoBox nextRemoveButton
         nextNodeBoxN =
             B.box nextNodeBox
                 [ Box.draggable true

@@ -11,6 +11,10 @@ import Type.Data.Symbol (class IsSymbol)
 import Data.Ord (abs)
 import Data.Map (Map)
 import Data.Map as Map
+import Data.List (List)
+import Data.Foldable (for_, foldr)
+
+import Control.Monad.State as State
 
 import Blessed ((>~), (~<))
 import Blessed (line) as B
@@ -205,7 +209,23 @@ store link@(Link props) state =
         }
 
 
-
 push :: Int -> Link -> Maybe (Map Int Link) -> Maybe (Map Int Link)
 push id link (Just map) = Just $ Map.insert id link map
 push id link Nothing = Just $ Map.singleton id link
+
+
+forgetAllFromTo :: NodeBoxKey -> State -> State
+forgetAllFromTo nbKey state =
+    let
+        rawNk = NodeKey.rawify nbKey
+        allLinks :: List Link
+        allLinks = (Map.values $ fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) <> (Map.values $ fromMaybe Map.empty $ Map.lookup rawNk state.linksTo)
+    in foldr forget state allLinks
+
+
+removeAllOf :: NodeBoxKey -> PatchBoxKey -> BlessedOp State Effect
+removeAllOf nk pnk = do
+    state <- State.get
+    let rawNk = NodeKey.rawify nk
+    for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) $ flip remove pnk
+    for_ (fromMaybe Map.empty $ Map.lookup rawNk state.linksTo) $ flip remove pnk

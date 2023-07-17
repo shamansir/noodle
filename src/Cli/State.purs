@@ -25,9 +25,9 @@ import Noodle.Node2 as Node
 import Noodle.Patch4 as Patch
 import Noodle.Network2 (init, addPatch) as Network
 
-import Cli.Keys (InletsBoxKey, NodeBoxKey, OutletsBoxKey, InfoBoxKey, RemoveButtonKey)
+import Cli.Keys (InletsBoxKey, NodeBoxKey, OutletsBoxKey, InfoBoxKey, RemoveButtonKey, PatchBoxKey)
 import Cli.Keys (LineA, LineB, LineC) as Key
-import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton) as Key
+import Cli.Keys (nodeBox, inletsBox, outletsBox, infoBox, removeButton, patchBox) as Key
 import Cli.State.NwWraper (Network, wrapN)
 import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState)
 
@@ -50,6 +50,7 @@ type State =
     , linksTo :: Map RawNodeKey (Map Int Link)
     , lastKeys :: LastKeys
     , nodeKeysMap :: Map Id.NodeIdR NodeBoxKey
+    , patchKeysMap :: Map Patch.Id PatchBoxKey
     , commandLog :: Array NdfFile.Command
     , program :: Map Id.NodeIdR Lang.Command
     , innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
@@ -77,6 +78,7 @@ initial =
     , linksFrom : Map.empty
     , linksTo : Map.empty
     , nodeKeysMap : Map.empty
+    , patchKeysMap : Map.singleton (patchIdFromIndex 0) Key.patchBox
     , commandLog : []
     , program : Map.empty
     , innerStates : Map.empty

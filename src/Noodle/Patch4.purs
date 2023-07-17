@@ -19,6 +19,7 @@ import Data.SProxy (proxify, reflect)
 import Data.SOrder (SOrder)
 import Data.SOrder as SOrder
 import Data.Repr (class FromToReprRow)
+import Data.Foldable (foldr)
 
 import Record.Unsafe (unsafeGet, unsafeSet, unsafeDelete) as Record
 import Unsafe.Coerce (unsafeCoerce)
@@ -58,9 +59,10 @@ import Cli.Components.NodeBox.HoldsNodeState (class IsNodeState) -- FIXME: shoul
 type Id = String
 
 
+
 type Links =
-  { from :: Map Node.FromId (forall fo fi i o. Node.Link fo fi i o)
-  , to :: Map Node.ToId (forall fo fi i o. Node.Link fo fi i o)
+  { from :: Map Node.FromId HoldsLink
+  , to :: Map Node.ToId HoldsLink
   , byNode :: Map Id.NodeIdR (Array (Node.FromId /\ Node.ToId))
   }
 
@@ -166,7 +168,9 @@ howMany f = nodesOf f >>> Array.length
 
 registerLink
     :: forall gstate instances fo fi i o
-     . Node.Link fo fi i o
+     . IsSymbol fo
+    => IsSymbol fi
+    => Node.Link fo fi i o
     -> Patch gstate instances
     -> Patch gstate instances
 registerLink link (Patch state forder instances links) =
@@ -174,15 +178,31 @@ registerLink link (Patch state forder instances links) =
     state
     forder
     instances
-    { from : Map.insert (Node.toFromId link) (unsafeCoerce link) links.from
-    , to : Map.insert (Node.toToId link) (unsafeCoerce link) links.to
-    , byNode : links.byNode -- FIXME
+    { from : Map.insert fromId linkHeld links.from
+    , to : Map.insert toId linkHeld links.to
+    , byNode
+        : appendTo (fromId /\ toId) nodeFromIdR
+        $ appendTo (fromId /\ toId) nodeToIdR
+        $ links.byNode
     }
+   where
+    fromId = Node.toFromId link
+    toId = Node.toToId link
+    linkHeld = holdLink link
+    nodeFromIdR = Id.nodeIdR $ Node.fromNode link
+    nodeToIdR = Id.nodeIdR $ Node.toNode link
+    appendTo value =
+        Map.alter $
+            case _ of
+                Just array -> Just $ value : array
+                Nothing -> Just [ value ]
 
 
 forgetLink
     :: forall gstate instances fo fi i o
-     . Node.Link fo fi i o
+     . IsSymbol fo
+    => IsSymbol fi
+    => Node.Link fo fi i o
     -> Patch gstate instances
     -> Patch gstate instances
 forgetLink link (Patch state forder instances links) =
@@ -192,8 +212,45 @@ forgetLink link (Patch state forder instances links) =
     instances
     { from : Map.delete (Node.toFromId link) links.from
     , to : Map.delete (Node.toToId link) links.to
-    , byNode : links.byNode -- FIXME
+    , byNode
+        : Map.delete (Id.nodeIdR $ Node.fromNode link)
+        $ Map.delete (Id.nodeIdR $ Node.toNode link)
+        $ links.byNode
     }
+
+
+removeNode -- TODO: test
+    :: forall ps instances' instances f state is os m
+     . Has.HasInstancesOf f instances' instances (Array (Node f state is os m))
+    => Node f state is os m
+    -> Patch ps instances
+    -> Patch ps instances
+removeNode node =
+    forgetNode node
+    >>> case _ of
+        patch@(Patch _ _ _ links) ->
+            case Map.lookup (Id.nodeIdR $ Node.id node) links.byNode of
+                Just linksArray ->
+                    foldr forgetPair patch linksArray
+                Nothing -> patch
+    where
+        forgetPair (fromId /\ toId) patch@(Patch _ _ _ links) =
+            case Map.lookup fromId links.from of
+                Just fromLink ->
+                    case Map.lookup toId links.to of
+                        Just toLink ->
+                            patch
+                            # withLink fromLink forgetLink
+                            # withLink toLink forgetLink
+                        Nothing ->
+                            patch
+                            # withLink fromLink forgetLink
+                Nothing ->
+                    case Map.lookup toId links.to of
+                        Just toLink ->
+                            patch
+                            # withLink toLink forgetLink
+                        Nothing -> patch
 
 
 connect
@@ -705,3 +762,15 @@ toReprFlat
     -> m (Array (R.NodeLineMap repr))
 toReprFlat mproxy repr (Patch _ _ instances _) =
     PF.toReprsFlat mproxy repr instances
+
+
+
+newtype HoldsLink = HoldsLink (forall r. (forall fo fi i o. IsSymbol fo => IsSymbol fi => Node.Link fo fi i o -> r) -> r)
+
+
+holdLink :: forall fo fi i o. IsSymbol fo => IsSymbol fi => Node.Link fo fi i o -> HoldsLink
+holdLink link = HoldsLink (_ $ link)
+
+
+withLink :: forall r. HoldsLink -> (forall fo fi i o. IsSymbol fo => IsSymbol fi => Node.Link fo fi i o -> r) -> r
+withLink (HoldsLink f) = f
