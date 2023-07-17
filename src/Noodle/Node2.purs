@@ -604,9 +604,9 @@ unsafeDisconnect
     :: forall fA fB oA iB m
     .  MonadEffect m
     => Link fA fB oA iB
-    -> m Boolean
+    -> m Unit
 unsafeDisconnect (Link _ _ _ _ doDisconnect) =
-  liftEffect doDisconnect >>= (const $ pure true)
+  liftEffect doDisconnect
 
 
 

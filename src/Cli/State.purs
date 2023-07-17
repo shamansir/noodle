@@ -45,9 +45,9 @@ type State =
     , lastShiftX :: Int
     , lastShiftY :: Int
     , lastClickedOutlet :: Maybe OutletInfo
-    , lastLink :: Maybe Link
-    , linksFrom :: Map RawNodeKey (Map Int Link)
-    , linksTo :: Map RawNodeKey (Map Int Link)
+    , lastLink :: Maybe LinkState
+    , linksFrom :: Map RawNodeKey (Map Int LinkState)
+    , linksTo :: Map RawNodeKey (Map Int LinkState)
     , lastKeys :: LastKeys
     , nodeKeysMap :: Map Id.NodeIdR NodeBoxKey
     , patchKeysMap :: Map Patch.Id PatchBoxKey
@@ -93,8 +93,8 @@ initialNetwork =
     # wrapN
 
 
-newtype Link =
-    Link
+newtype LinkState =
+    LinkState
     { id :: Int
     , blessed :: { a :: Core.Blessed State, b :: Core.Blessed State, c :: Core.Blessed State }
     , fromNode :: NodeBoxKey
@@ -108,7 +108,7 @@ newtype Link =
         }
     }
 
-derive instance Newtype Link _
+derive instance Newtype LinkState _
 
 
 type LinkLineParams =

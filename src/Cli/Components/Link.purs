@@ -38,7 +38,7 @@ import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Line.Option (ch, fg, orientation, type_) as Line
 
 
-import Cli.State (State, Link(..), OutletIndex(..), InletIndex(..), NodePositions, LinkCalc)
+import Cli.State (State, LinkState(..), OutletIndex(..), InletIndex(..), NodePositions, LinkCalc)
 import Cli.Keys (PatchBoxKey, NodeBoxKey)
 import Cli.Keys (lineA, lineB, lineC) as Key
 import Cli.Palette as Palette
@@ -47,10 +47,10 @@ import Cli.Style as Style
 -- TODO: forall state. BlessedOp state Effect
 
 
-type LinkHandler = forall id. IsSymbol id => Link -> Line <^> id → EventJson → BlessedOp State Effect
+type LinkHandler = forall id. IsSymbol id => LinkState -> Line <^> id → EventJson → BlessedOp State Effect
 
 
-create :: Maybe Link -> NodeBoxKey -> OutletIndex -> NodeBoxKey -> InletIndex -> BlessedOpGet State Effect Link
+create :: Maybe LinkState -> NodeBoxKey -> OutletIndex -> NodeBoxKey -> InletIndex -> BlessedOpGet State Effect LinkState
 create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) = do
     fromNodeLeft <- Element.left ~< fromNode
     fromNodeTop <- Element.top ~< fromNode
@@ -88,8 +88,8 @@ create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) 
                     , Box.height $ Dimension.px calc.c.height
                     ] <> Style.linkC )
 
-        link =
-            Link
+        linkState =
+            LinkState
                 { id : maybe 0 ((+) 1) $ _.id <$> unwrap <$> maybePrev
                 , fromNode
                 , toNode
@@ -99,7 +99,7 @@ create maybePrev fromNode (OutletIndex outletIdx) toNode (InletIndex intletIdx) 
                 , keys : { a : keyLinkA, b : keyLinkB, c : keyLinkC }
                 }
 
-    pure link
+    pure linkState
 
 
 calculate :: NodePositions -> OutletIndex -> InletIndex -> LinkCalc
@@ -138,29 +138,29 @@ calculate np (OutletIndex outletIdx) (InletIndex intletIdx) =
     }
 
 
-append :: Link -> PatchBoxKey -> BlessedOp State Effect
-append (Link link) pnk = do
+append :: LinkState -> PatchBoxKey -> BlessedOp State Effect
+append (LinkState link) pnk = do
     pnk >~ Node.append link.blessed.a
     pnk >~ Node.append link.blessed.b
     pnk >~ Node.append link.blessed.c
 
 
-remove :: Link -> PatchBoxKey -> BlessedOp State Effect
-remove (Link link) pnk = do
+remove :: LinkState -> PatchBoxKey -> BlessedOp State Effect
+remove (LinkState link) pnk = do
     pnk >~ Node.remove link.blessed.a
     pnk >~ Node.remove link.blessed.b
     pnk >~ Node.remove link.blessed.c
 
 
-on :: forall e. E.Fires Line e => e -> LinkHandler -> Link -> BlessedOp State Effect
-on evt handler (Link link) = do
-    link.keys.a >~ Core.on' evt (handler $ Link link)
-    link.keys.b >~ Core.on' evt (handler $ Link link)
-    link.keys.c >~ Core.on' evt (handler $ Link link)
+on :: forall e. E.Fires Line e => e -> LinkHandler -> LinkState -> BlessedOp State Effect
+on evt handler (LinkState link) = do
+    link.keys.a >~ Core.on' evt (handler $ LinkState link)
+    link.keys.b >~ Core.on' evt (handler $ LinkState link)
+    link.keys.c >~ Core.on' evt (handler $ LinkState link)
 
 
-update :: Link -> BlessedOp State Effect
-update (Link link) = do
+update :: LinkState -> BlessedOp State Effect
+update (LinkState link) = do
     fromNodeLeft <- Element.left ~< link.fromNode
     fromNodeTop <- Element.top ~< link.fromNode
     toNodeLeft <- Element.left ~< link.toNode
@@ -188,8 +188,8 @@ update (Link link) = do
     link.keys.c >~ Element.setHeight $ Dimension.px calc.c.height
 
 
-forget :: Link -> State -> State
-forget link@(Link props) state =
+forget :: LinkState -> State -> State
+forget link@(LinkState props) state =
     state
         { linksFrom =
             Map.update (Map.delete props.id >>> Just) (NodeKey.rawify props.fromNode) state.linksFrom
@@ -198,8 +198,8 @@ forget link@(Link props) state =
         }
 
 
-store :: Link -> State -> State
-store link@(Link props) state =
+store :: LinkState -> State -> State
+store link@(LinkState props) state =
     state
         { linksFrom =
             Map.alter (push props.id link) (NodeKey.rawify props.fromNode) state.linksFrom
@@ -209,7 +209,7 @@ store link@(Link props) state =
         }
 
 
-push :: Int -> Link -> Maybe (Map Int Link) -> Maybe (Map Int Link)
+push :: Int -> LinkState -> Maybe (Map Int LinkState) -> Maybe (Map Int LinkState)
 push id link (Just map) = Just $ Map.insert id link map
 push id link Nothing = Just $ Map.singleton id link
 
@@ -218,7 +218,7 @@ forgetAllFromTo :: NodeBoxKey -> State -> State
 forgetAllFromTo nbKey state =
     let
         rawNk = NodeKey.rawify nbKey
-        allLinks :: List Link
+        allLinks :: List LinkState
         allLinks = (Map.values $ fromMaybe Map.empty $ Map.lookup rawNk state.linksFrom) <> (Map.values $ fromMaybe Map.empty $ Map.lookup rawNk state.linksTo)
     in foldr forget state allLinks
 

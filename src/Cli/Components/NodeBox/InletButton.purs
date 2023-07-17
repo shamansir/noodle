@@ -42,7 +42,7 @@ import Blessed.UI.Boxes.Box.Method as Box
 
 import Cli.Keys as Key
 import Cli.Keys (NodeBoxKey, InfoBoxKey, InletButtonKey, mainScreen, statusLine)
-import Cli.State (State, Link, OutletIndex(..), InletIndex(..), logNdfCommandM)
+import Cli.State (State, LinkState, OutletIndex(..), InletIndex(..), logNdfCommandM)
 import Cli.State.NwWraper (unwrapN, wrapN)
 import Cli.Style (inletsOutlets) as Style
 import Cli.Components.Link as Link
@@ -171,12 +171,12 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
                                 (InletIndex idx)
                     State.modify_ $ Link.store linkCmp
                     Key.patchBox >~ Link.append linkCmp
-                    nextPatch' <- liftEffect $ Node.withOutputInNodeMRepr
+                    nextPatch' /\ holdsLink <- liftEffect $ Node.withOutputInNodeMRepr
                         (lco.outputId :: Node.HoldsOutputInNodeMRepr Effect Hydra.WrapRepr) -- w/o type given here compiler fails to resolve constraints somehow
                         (\_ onode outputId -> do
                             link <- Node.connectByRepr (Proxy :: _ Hydra.WrapRepr) outputId inputId onode inode
                             let nextPatch' = Patch.registerLink link curPatch
-                            pure $ nextPatch'
+                            pure $ nextPatch' /\ Patch.holdLink link
                         )
 
                     let onodeId = Id.withNodeId lco.nodeId reflect'
@@ -189,7 +189,7 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
 
                     State.modify_ (\s -> s { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network })
 
-                    linkCmp # Link.on Element.Click onLinkClick
+                    linkCmp # Link.on Element.Click (onLinkClick holdsLink)
                 else pure unit
             Nothing -> pure unit
         State.modify_
@@ -199,9 +199,10 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
 
 
 -- TODO: move to Link module?
-onLinkClick :: forall id. Link -> Line <^> id → EventJson → BlessedOp State Effect
-onLinkClick link _ _ = do
+onLinkClick :: forall id. Patch.HoldsLink -> LinkState -> Line <^> id → EventJson → BlessedOp State Effect
+onLinkClick holdsLink linkState _ _ = do
     -- liftEffect $ Console.log "click link"
-    Key.patchBox >~ Link.remove link
-    State.modify_ $ Link.forget link
+    Patch.withLink holdsLink Node.unsafeDisconnect
+    Key.patchBox >~ Link.remove linkState
+    State.modify_ $ Link.forget linkState
     Key.mainScreen >~ Screen.render
