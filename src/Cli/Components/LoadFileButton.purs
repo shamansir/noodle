@@ -75,6 +75,7 @@ import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
 import Toolkit.Hydra2.Family.Render.Cli (Cli) as Hydra
 
 import Unsafe.Coerce (unsafeCoerce)
+import Noodle.Text.NdfFile (toNdfCode, from) as NdfFile
 import Noodle.Text.NdfFile.Apply as File
 import Noodle.Text.NdfFile.Command as Cmd
 
@@ -210,12 +211,14 @@ component =
                                     patch
                                     network
                                     (handlers stateRef patch network)
-                                    [ Cmd.MakeNode "osc" 40 60 "osc-1"
-                                    , Cmd.MakeNode "pi" 20 20 "pi-1"
-                                    , Cmd.Connect "pi-1" 0 "osc-1" 0
-                                    , Cmd.Send "osc-1" 1 "V N 20.0"
-                                    , Cmd.Send "osc-1" 2 "V N 40.0"
-                                    ]
+                                    $ NdfFile.from
+                                        "hydra" 0.1
+                                        [ Cmd.MakeNode "osc" 40 60 "osc-1"
+                                        , Cmd.MakeNode "pi" 20 20 "pi-1"
+                                        , Cmd.Connect "pi-1" 0 "osc-1" 0
+                                        , Cmd.Send "osc-1" 1 "V N 20.0"
+                                        , Cmd.Send "osc-1" 2 "V N 40.0"
+                                        ]
                             pure unit
                     Nothing -> pure unit
         ]

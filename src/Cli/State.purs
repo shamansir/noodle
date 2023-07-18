@@ -32,6 +32,8 @@ import Cli.State.NwWraper (Network, wrapN)
 import Cli.Components.NodeBox.HoldsNodeState (HoldsNodeState)
 
 import Noodle.Text.NdfFile.Command (Command) as NdfFile
+import Noodle.Text.NdfFile (init, append) as NdfFile
+import Noodle.Text.NdfFile (NdfFile)
 
 import Toolkit.Hydra2 (toolkit, Toolkit) as Hydra
 import Toolkit.Hydra2.Repr.Wrap (WrapRepr) as Hydra
@@ -51,7 +53,7 @@ type State =
     , lastKeys :: LastKeys
     , nodeKeysMap :: Map Id.NodeIdR NodeBoxKey
     , patchKeysMap :: Map Patch.Id PatchBoxKey
-    , commandLog :: Array NdfFile.Command
+    , commandLog :: NdfFile
     , program :: Map Id.NodeIdR Lang.Command
     , innerStates :: Map Id.NodeIdR (Ref HoldsNodeState)
     -- , network :: Noodle.Network Unit (Hydra.Families Effect) (Hydra.Instances Effect)
@@ -79,7 +81,7 @@ initial =
     , linksTo : Map.empty
     , nodeKeysMap : Map.empty
     , patchKeysMap : Map.singleton (patchIdFromIndex 0) Key.patchBox
-    , commandLog : []
+    , commandLog : NdfFile.init "hydra" 0.1
     , program : Map.empty
     , innerStates : Map.empty
     -- , nodes : Hydra.noInstances
@@ -174,7 +176,7 @@ logLangCommandByRef nodeId cmd = liftEffect <<< Ref.modify_ (logLangCommand node
 
 
 logNdfCommand :: NdfFile.Command -> State -> State
-logNdfCommand cmd state = state { commandLog = cmd : state.commandLog }
+logNdfCommand cmd state = state { commandLog = NdfFile.append cmd state.commandLog }
 
 
 logNdfCommandM :: forall m. MonadState State m => NdfFile.Command -> m Unit

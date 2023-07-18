@@ -28,16 +28,26 @@ instance Show NdfFile where
 
 instance ToCode NDF NdfFile where
     toCode :: Proxy NDF -> NdfFile -> String
-    toCode _ =
-        case _ of
-            NdfFile (Header (tk /\ version)) commands ->
-                tk <> " " <> show version <> "\n" <>
-                commandsToNdf commands
+    toCode = const toNdfCode
 
 
 init :: String -> Number -> NdfFile
 init tk version = NdfFile (Header $ tk /\ version) []
 
 
+from :: String -> Number -> Array Command -> NdfFile
+from tk version = NdfFile $ Header (tk /\ version)
+
+
 append :: Command -> NdfFile -> NdfFile
 append cmd (NdfFile header cmds) = NdfFile header $ cmd : cmds
+
+
+toNdfCode :: NdfFile -> String
+toNdfCode (NdfFile (Header (tk /\ version)) commands) =
+    tk <> " " <> show version <> "\n" <>
+    commandsToNdf commands
+
+
+extractCommands :: NdfFile -> Array Command
+extractCommands (NdfFile _ commands) = commands

@@ -41,6 +41,8 @@ import Noodle.Toolkit3 as Toolkit
 import Unsafe.Coerce (unsafeCoerce)
 
 
+import Noodle.Text.NdfFile (NdfFile)
+import Noodle.Text.NdfFile (extractCommands) as NdfFile
 import Noodle.Text.NdfFile.Command (Command)
 import Noodle.Text.NdfFile.Command (Command(..)) as C
 
@@ -72,10 +74,10 @@ applyFile
     -> Patch gstate instances
     -> Network gstate families instances
     -> Handlers x gstate instances m repr
-    -> Array Command
+    -> NdfFile
     -> m (Network gstate families instances)
-applyFile withFamilyFn prepr curPatch nw handlers commands =
-    Tuple.fst <$> Array.foldM applyCommand (nw /\ Map.empty) commands
+applyFile withFamilyFn prepr curPatch nw handlers ndfFile =
+    Tuple.fst <$> Array.foldM applyCommand (nw /\ Map.empty) (NdfFile.extractCommands ndfFile)
     where
         -- nodesMap :: IdMapping gstate instances m repr
         -- nodesMap = Map.empty
@@ -94,7 +96,7 @@ applyFile withFamilyFn prepr curPatch nw handlers commands =
                 Nothing -> pure unit
             -- pure unit
 
-        applyCommand :: (Network gstate families instances /\ IdMapping x gstate instances m repr)  -> Command -> m (Network gstate families instances /\ IdMapping x gstate instances m repr)
+        applyCommand :: (Network gstate families instances /\ IdMapping x gstate instances m repr) -> Command -> m (Network gstate families instances /\ IdMapping x gstate instances m repr)
 
         applyCommand (nw@(Network tk _) /\ nodesMap) (C.MakeNode familyStr xPos yPos mappingId) = do
             let nodeFamilies = Toolkit.nodeFamilies (tk :: Toolkit gstate families)

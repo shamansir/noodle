@@ -26,7 +26,7 @@ import Cli.Style as Style
 import Cli.State (State)
 import Cli.Components.NodeBox.InletButton as InletButton
 
-import Noodle.Text.NdfFile.Command (commandsToNdf)
+import Noodle.Text.NdfFile (toNdfCode) as NdfFile
 
 
 width :: Int -> Dimension
@@ -74,4 +74,4 @@ component =
 refresh :: BlessedOp State Effect
 refresh = do
     state <- State.get
-    Key.commandLogBox >~ Box.setContent $ commandsToNdf state.commandLog
+    Key.commandLogBox >~ Box.setContent $ NdfFile.toNdfCode state.commandLog
