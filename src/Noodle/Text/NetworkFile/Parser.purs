@@ -5,19 +5,22 @@ import Prelude
 import Data.Foldable (fold)
 import Effect (Effect)
 import Parsing (Parser, runParser)
-import Parsing.String (char, string)
-import Parsing.String.Basic (alphaNum, space, number)
-import Parsing.Combinators (many1Till)
+import Parsing.String (char, string, anyChar, anyTill)
+import Parsing.String.Basic (alphaNum, space, number, intDecimal)
+import Parsing.Combinators (try, many1Till, sepEndBy, sepEndBy1, many1)
 import Control.Alt ((<|>))
 import Data.Array (many)
+import Data.List.NonEmpty as NEL
 import Data.String as String
 import Data.String.NonEmpty.CodeUnits as CU
 import Data.String.NonEmpty.Internal as StringX
+import Data.Tuple as Tuple
 import Data.Tuple.Nested ((/\), type (/\))
 
 myFile :: String
 myFile =
   """hydra 0.1
+osc 40 60 osc-0
 osc 40 60 osc-0
 pi 20 20 pi-0
 number 40 40 num-0
@@ -25,7 +28,7 @@ number 40 40 num-0
 <> num-0 0 osc-0 1
 -> osc-0 0 N 20.0
 ~> num-0 0 N 40.0
-  """
+"""
 
 data Command
     = MakeNode String Int Int String
@@ -45,22 +48,88 @@ newtype Header = Header (String /\ Number)
 data Program = Program Header (Array Command)
 
 
-alphaNumTill :: forall a. Parser String a -> Parser String String
-alphaNumTill stopAt =
-  many1Till alphaNum stopAt <#> CU.fromFoldable1 <#> StringX.toString
+tokenChar :: Parser String Char
+tokenChar = alphaNum <|> char '-'
+
+
+nelToString p = p <#> CU.fromFoldable1 <#> StringX.toString
+
+
+tokenTill :: forall a. Parser String a -> Parser String String
+tokenTill stopAt =
+  nelToString $ many1Till tokenChar stopAt
 
 
 eol :: Parser String Unit
 eol = char '\n' *> pure unit
 
 
+createCommand :: Parser String Command
+createCommand = do
+    family <- tokenTill space
+    _ <- many space
+    x <- intDecimal
+    _ <- many1 space
+    y <- intDecimal
+    _ <- many1 space
+    instanceId <- tokenTill eol
+    pure $ MakeNode family x y instanceId
+
+
+connectCommand :: Parser String Command
+connectCommand = do
+    _ <- string "<>"
+    _ <- many1 space
+    instanceFromId <- tokenTill space
+    _ <- many space
+    outputIndex <- intDecimal
+    _ <- many1 space
+    instanceToId <- tokenTill space
+    _ <- many space
+    inputIndex <- intDecimal
+    eol
+    pure $ Connect instanceFromId outputIndex instanceToId inputIndex
+
+
+sendCommand :: Parser String Command
+sendCommand = do
+    _ <- string "->"
+    _ <- many1 space
+    instanceId <- tokenTill space
+    _ <- many space
+    inputIndex <- intDecimal
+    _ <- many1 space
+    valueStr <- Tuple.fst <$> anyTill eol
+    pure $ Send instanceId inputIndex valueStr
+
+
+sendOCommand :: Parser String Command
+sendOCommand = do
+    _ <- string "~>"
+    _ <- many1 space
+    instanceId <- tokenTill space
+    _ <- many space
+    outputIndex <- intDecimal
+    _ <- many1 space
+    valueStr <- Tuple.fst <$> anyTill eol
+    pure $ SendO instanceId outputIndex valueStr
+
+
+command :: Parser String Command
+command =
+  try connectCommand
+  <|> try sendCommand
+  <|> try sendOCommand
+  <|> try createCommand
+
+
 parser :: Parser String Program
 parser = do
-  toolkit <- alphaNumTill space
+  toolkit <- tokenTill space
   version <- number
   eol
-  _ <- string "osc"
-  pure $ Program (Header $ toolkit /\ version) []
+  cmds <- many1 command
+  pure $ Program (Header $ toolkit /\ version) $ NEL.toUnfoldable cmds
 
 
 class ToCode x where
