@@ -26,7 +26,15 @@ secondaryFg = Pico.lightGrey :: Item
 patchBg = Pico.darkerGrey :: Item
 inputId = X11.bisque3 :: Item
 outputId = X11.cadetblue2 :: Item
+inputIdx = X11.greenyellow :: Item
+outputIdx = X11.green3 :: Item
 familyName = Pico.blue :: Item -- FIXME: use `mark`
+operator = Pico.blueGreen :: Item -- FIXME: use `mark`
+nodeId = Pico.lavender :: Item -- FIXME: use `mark`
+coord = Pico.green :: Item -- FIXME: use `mark`
+value = Pico.brown :: Item -- FIXME: use `mark`
+toolkit = Pico.orange :: Item -- FIXME: use `mark`
+version = Pico.darkPeach :: Item -- FIXME: use `mark`
 
 
 networkBg' = repr networkBg :: String

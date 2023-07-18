@@ -21,12 +21,14 @@ import Blessed.Internal.BlessedOp (BlessedOp)
 import Blessed.UI.Boxes.Box.Option as Box
 import Blessed.UI.Boxes.Box.Method (setContent) as Box
 
+import Blessed.Tagger as T
+
 import Cli.Keys (commandLogBox) as Key
 import Cli.Style as Style
 import Cli.State (State)
 import Cli.Components.NodeBox.InletButton as InletButton
 
-import Noodle.Text.NdfFile (toNdfCode) as NdfFile
+import Noodle.Text.NdfFile (toNdfCode, toTaggedNdfCode) as NdfFile
 
 
 width :: Int -> Dimension
@@ -74,4 +76,5 @@ component =
 refresh :: BlessedOp State Effect
 refresh = do
     state <- State.get
-    Key.commandLogBox >~ Box.setContent $ NdfFile.toNdfCode state.commandLog
+    Key.commandLogBox >~ Box.setContent $ T.render $ NdfFile.toTaggedNdfCode state.commandLog
+    -- Key.commandLogBox >~ Box.setContent $ NdfFile.toNdfCode state.commandLog

@@ -23,7 +23,7 @@ data Format
     | Invisible
 
 
-data Tag -- TODO: Semigroup instance
+data Tag
     = Plain String
     | FgC Color Tag
     | Fg String Tag
@@ -161,6 +161,14 @@ bg = Bg
 
 split :: Tag -> Tag -> Tag
 split = Split
+
+
+nl :: Tag
+nl = s "\n"
+
+
+joinWith :: Tag -> Array Tag -> Tag
+joinWith sep ts = s $ String.joinWith (render sep) $ render <$> ts
 
 
 -- TODO: do syntax?

@@ -8,9 +8,12 @@ import Data.Array ((:))
 import Data.Tuple.Nested ((/\), type (/\))
 import Data.String (joinWith) as String
 
-import Noodle.Text.NdfFile.Command (Command, commandsToNdf)
+import Blessed.Tagger as T
+import Cli.Tagging as T
 
-import Toolkit.Hydra2.Lang.ToCode (class ToCode, toCode, NDF, ndf)
+import Noodle.Text.NdfFile.Command (Command, commandsToNdf, commandsToTaggedNdf)
+
+import Toolkit.Hydra2.Lang.ToCode (class ToCode, toCode, class ToTaggedCode, toTaggedCode, NDF, ndf)
 
 
 newtype Header = Header (String /\ Number)
@@ -35,6 +38,11 @@ instance ToCode NDF NdfFile where
     toCode = const toNdfCode
 
 
+instance ToTaggedCode NDF NdfFile where
+    toTaggedCode :: Proxy NDF -> NdfFile -> T.Tag
+    toTaggedCode = const toTaggedNdfCode
+
+
 init :: String -> Number -> NdfFile
 init tk version = NdfFile (Header $ tk /\ version) []
 
@@ -51,6 +59,12 @@ toNdfCode :: NdfFile -> String
 toNdfCode (NdfFile (Header (tk /\ version)) commands) =
     tk <> " " <> show version <> "\n" <>
     commandsToNdf commands
+
+
+toTaggedNdfCode :: NdfFile -> T.Tag
+toTaggedNdfCode (NdfFile (Header (tk /\ version)) commands) =
+    T.toolkit tk <> T.s " " <> T.version version <> T.nl <>
+    commandsToTaggedNdf commands
 
 
 extractCommands :: NdfFile -> Array Command

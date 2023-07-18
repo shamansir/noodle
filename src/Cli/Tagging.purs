@@ -124,3 +124,49 @@ libraryItem familyR =
 paletteItem :: Palette.Item -> Tag
 paletteItem item =
     T.bg item.repr (T.s "      ") <> T.s " " <> T.fg item.repr (T.s $ Palette.fullInfo item)
+
+
+-- Commands
+
+toolkit :: String -> Tag
+toolkit = T.fgc (C.crepr Palette.toolkit) <<< T.s
+
+
+version :: Number -> Tag
+version = T.fgc (C.crepr Palette.version) <<< T.s <<< show
+
+
+family :: String -> Tag
+family = T.fgc (C.crepr Palette.familyName) <<< T.s
+
+
+nodeId :: String -> Tag
+nodeId = T.fgc (C.crepr Palette.nodeId) <<< T.s
+
+
+operator :: String -> Tag
+operator = T.fgc (C.crepr Palette.operator) <<< T.s
+
+
+value :: String -> Tag
+value = T.fgc (C.crepr Palette.value) <<< T.s
+
+
+coord :: Int -> Tag
+coord = T.fgc (C.crepr Palette.coord) <<< T.s <<< show
+
+
+inputIdx :: Int -> Tag
+inputIdx = T.fgc (C.crepr Palette.inputIdx) <<< T.s <<< show
+
+
+outputIdx :: Int -> Tag
+outputIdx = T.fgc (C.crepr Palette.outputIdx) <<< T.s <<< show
+
+
+inputId :: String -> Tag
+inputId = T.fgc (C.crepr Palette.inputId) <<< T.s
+
+
+outputId :: String -> Tag
+outputId = T.fgc (C.crepr Palette.outputId) <<< T.s

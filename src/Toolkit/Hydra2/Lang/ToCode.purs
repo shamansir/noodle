@@ -12,6 +12,9 @@ import Data.Tuple.Nested (type (/\), (/\))
 import Type.Proxy (Proxy(..))
 
 
+import Blessed.Tagger as T
+
+
 data Target
 
 
@@ -24,6 +27,10 @@ foreign import data NDF :: Target
 
 class ToCode (target :: Target) a where
     toCode :: Proxy target -> a -> String
+
+
+class ToTaggedCode (target :: Target) a where
+    toTaggedCode :: Proxy target -> a -> T.Tag
 
 
 class ToFn arg a where
@@ -218,7 +225,6 @@ instance ToCode PS Geometry where
     toCode _ geom =
         case (toFn geom :: String /\ Array Value) of
             name /\ args -> fnPs name args
-
 
 
 instance ToCode PS From where

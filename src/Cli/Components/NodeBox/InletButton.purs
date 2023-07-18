@@ -58,7 +58,7 @@ import Noodle.Id as Id
 import Noodle.Node2 (Node) as Noodle
 import Noodle.Node2 as Node
 import Noodle.Patch4 (Patch)
-import Noodle.Text.NdfFile (toNdfCode) as NdfFile
+import Noodle.Text.NdfFile (toNdfCode, toTaggedNdfCode) as NdfFile
 import Noodle.Text.NdfFile.Command as Cmd
 import Noodle.Text.NdfFile.Command (commandsToNdf)
 
@@ -185,7 +185,8 @@ onPress curPatchId curPatch nextNodeBox idx _ inode inputId _ _ =
                     logNdfCommandM $ Cmd.Connect onodeId lco.index (reflect' inodeId) idx -- TODO: log somewhere else in a special place
                     -- FIXME: duplicates `CommandLogBox.refresh`, done due to cycle in dependencies
                     state <- State.get
-                    Key.commandLogBox >~ Box.setContent $ NdfFile.toNdfCode state.commandLog
+                    Key.commandLogBox >~ Box.setContent $ T.render $ NdfFile.toTaggedNdfCode state.commandLog
+                    -- Key.commandLogBox >~ Box.setContent $ NdfFile.toNdfCode state.commandLog
                     -- END
 
                     State.modify_ (\s -> s { network = wrapN $ Network.withPatch curPatchId (const nextPatch') $ unwrapN $ s.network })
